@@ -424,8 +424,6 @@
 		08FB7795FE84155DC02AAC07 /* Source */ = {
 			isa = PBXGroup;
 			children = (
-				05F108A21978D2E500F2F288 /* TransportModel */,
-				05F108951978D28F00F2F288 /* FluidModel */,
 				05E6DBEC17EB62A100FA1F7E /* SU2_CFD.cpp */,
 				05E6DB8917EB61E600FA1F7E /* config_structure.cpp */,
 				05E6DBBC17EB62A000FA1F7E /* definition_structure.cpp */,
@@ -438,6 +436,8 @@
 				052D517F17A21FAC003BE8B2 /* Solver */,
 				052D515817A1D352003BE8B2 /* Variable */,
 				05D28619178BCA1200DD76AE /* Numerics */,
+				05F108951978D28F00F2F288 /* FluidModel */,
+				05F108A21978D2E500F2F288 /* TransportModel */,
 			);
 			name = Source;
 			sourceTree = "<group>";

@@ -2,7 +2,7 @@
  * \file numerics_structure.inl
  * \brief In-Line subroutines of the <i>numerics_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.1 "eagle"
+ * \version 3.2.4 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -218,6 +218,11 @@ inline void CNumerics::SetLinearizedVar(double *val_deltau_i, double *val_deltau
 inline void CNumerics::SetAdjointVarGradient(double **val_psivar_grad_i, double **val_psivar_grad_j) {
 	PsiVar_Grad_i = val_psivar_grad_i;
 	PsiVar_Grad_j = val_psivar_grad_j;
+}
+
+inline void CNumerics::SetAdjointVarLimiter(double *val_psivar_lim_i, double *val_psivar_lim_j) {
+	PsiVar_Lim_i = val_psivar_lim_i;
+	PsiVar_Lim_j = val_psivar_lim_j;
 }
 
 inline void CNumerics::SetTurbVar(double *val_turbvar_i, double *val_turbvar_j) {

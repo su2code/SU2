@@ -3,7 +3,7 @@
 ## \file mesh_adaptation.py
 #  \brief Python script for doing the grid adaptation using the SU2 suite.
 #  \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 3.2.1 "eagle"
+#  \version 3.2.4 "eagle"
 #
 # SU2, Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
 #
@@ -53,7 +53,7 @@ def main():
     options.save_all   = options.save_all  == "True"
 
     if options.oldpartitions != "oldpartitions":
-        print ("\n IMPORTANT: -p is no longer available in SU2 v3.2.1, use -n flag instead \n")
+        print ("\n IMPORTANT: -p is no longer available in SU2 v3.2.4, use -n flag instead \n")
         sys.exit()
     
     # Run Mesh Adaptation

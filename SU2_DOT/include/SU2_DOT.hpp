@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines of the code SU2_DOT.
  *        The subroutines and functions are in the <i>SU2_DOT.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.1 "eagle"
+ * \version 3.2.4 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *

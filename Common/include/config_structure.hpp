@@ -3,7 +3,7 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>config_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.1 "eagle"
+ * \version 3.2.4 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -46,7 +46,7 @@ using namespace std;
  * \brief Main class for defining the problem; basically this class reads the configuration file, and
  *        stores all the information.
  * \author F. Palacios.
- * \version 3.2.1 "eagle"
+ * \version 3.2.4 "eagle"
  */
 class CConfig {
 private:
@@ -54,8 +54,10 @@ private:
 	unsigned short iZone, nZone; /*!< \brief Number of zones in the mesh. */
 	double OrderMagResidual; /*!< \brief Order of magnitude reduction. */
 	double MinLogResidual; /*!< \brief Minimum value of the log residual. */
+	double EA_ScaleFactor; /*!< \brief Equivalent Area scaling factor */
 	double* EA_IntLimit; /*!< \brief Integration limits of the Equivalent Area computation */
   double AdjointLimit; /*!< \brief Adjoint variable limit */
+  double* Subsonic_Nacelle_Box; /*!< \brief Coordinates of the box subsonic region */
 	double* Hold_GridFixed_Coord; /*!< \brief Coordinates of the box to hold fixed the nbumerical grid */
 	unsigned short ConvCriteria;	/*!< \brief Kind of convergence criteria. */
   unsigned short nFFD_Iter; 	/*!< \brief Iteration for the point inversion problem. */
@@ -83,6 +85,7 @@ private:
 	Sens_Remove_Sharp,			/*!< \brief Flag for removing or not the sharp edges from the sensitivity computation. */
 	Hold_GridFixed,	/*!< \brief Flag hold fixed some part of the mesh during the deformation. */
 	Axisymmetric, /*!< \brief Flag for axisymmetric calculations */
+	DebugMode, /*!< \brief Flag for debug mode */
 	Show_Adj_Sens, /*!< \brief Flag for outputting sensitivities on exit */
   ionization;  /*!< \brief Flag for determining if free electron gas is in the mixture */
 	bool Visualize_Partition;	/*!< \brief Flag to visualize each partition in the DDM. */
@@ -93,18 +96,17 @@ private:
 	double WeightCd; /*!< \brief Weight of the drag coefficient. */
 	unsigned short Unsteady_Simulation;	/*!< \brief Steady or unsteady (time stepping or dual time stepping) computation. */
 	unsigned short nStartUpIter;	/*!< \brief Start up iterations using the fine grid. */
-	double CteViscDrag;		/*!< \brief Constant value of the viscous drag. */
   double FixAzimuthalLine; /*!< \brief Fix an azimuthal line due to misalignments of the nearfield. */
 	double *DV_Value;		/*!< \brief Previous value of the design variable. */
 	double LimiterCoeff;				/*!< \brief Limiter coefficient */
   unsigned long LimiterIter;	/*!< \brief Freeze the value of the limiter after a number of iterations */
 	double SharpEdgesCoeff;				/*!< \brief Coefficient to identify the limit of a sharp edge. */
   unsigned short SystemMeasurements; /*!< \brief System of measurements. */
-  unsigned short Kind_Regime;	/*!< \brief Kind of adjoint function. */
-	unsigned short Kind_ObjFunc;	/*!< \brief Kind of objective function. */
-	unsigned short Kind_SensSmooth;	/*!< \brief Kind of sensitivity smoothing technique. */
-	unsigned short Continuous_Eqns;	/*!< \brief Which equations to treat continuously (Hybrid adjoint) */
-	unsigned short Discrete_Eqns;	/*!< \brief Which equations to treat discretely (Hybrid adjoint). */
+  unsigned short Kind_Regime;  /*!< \brief Kind of adjoint function. */
+  unsigned short Kind_ObjFunc;  /*!< \brief Kind of objective function. */
+  unsigned short Kind_SensSmooth; /*!< \brief Kind of sensitivity smoothing technique. */
+  unsigned short Continuous_Eqns; /*!< \brief Which equations to treat continuously (Hybrid adjoint)*/
+  unsigned short Discrete_Eqns; /*!< \brief Which equations to treat discretely (Hybrid adjoint). */
 	unsigned short *Design_Variable; /*!< \brief Kind of design variable. */
 	double RatioDensity,				/*!< \brief Ratio of density for a free surface problem. */
 	RatioViscosity,				/*!< \brief Ratio of viscosity for a free surface problem. */
@@ -242,9 +244,8 @@ private:
 	CFLRedCoeff_AdjFlow,	/*!< \brief CFL reduction coefficient for the adjoint problem. */
 	CFLRedCoeff_AdjTurb,	/*!< \brief CFL reduction coefficient for the adjoint problem. */
 	CFLFineGrid,		/*!< \brief CFL of the finest grid. */
+  Max_DeltaTime,  		/*!< \brief Max delta time. */
 	Unst_CFL;		/*!< \brief Unsteady CFL number. */
-	unsigned short MaxChildren;		/*!< \brief Maximum number of children. */
-	double MaxDimension;			/*!< \brief Maximum dimension of the aglomerated element compared with the whole domain. */
 	bool AddIndNeighbor;			/*!< \brief Include indirect neighbor in the agglomeration process. */
 	unsigned short nDV;		/*!< \brief Number of design variables. */
   unsigned short nGridMovement;		/*!< \brief Number of grid movement types specified. */
@@ -260,7 +261,7 @@ private:
 	unsigned short *MG_PreSmooth,	/*!< \brief Multigrid Pre smoothing. */
 	*MG_PostSmooth,					/*!< \brief Multigrid Post smoothing. */
 	*MG_CorrecSmooth;					/*!< \brief Multigrid Jacobi implicit smoothing of the correction. */
-	unsigned short Kind_Solver,	/*!< \brief Kind of solver Euler, NS, Continuous adjoint, etc. */
+	unsigned short Kind_Solver,	/*!< \brief Kind of solver Euler, NS, Continuous adjoint, etc.  */
 	Kind_FluidModel,			/*!< \brief Kind of the Fluid Model: Ideal or Van der Walls, ... . */
 	Kind_ViscosityModel,			/*!< \brief Kind of the Viscosity Model*/
 	Kind_ConductivityModel,			/*!< \brief Kind of the Thermal Conductivity Model*/
@@ -397,6 +398,7 @@ private:
 	Cauchy_Func_AdjFlow,				/*!< \brief Function where to apply the convergence criteria in the adjoint problem. */
 	Cauchy_Func_LinFlow,				/*!< \brief Function where to apply the convergence criteria in the linearized problem. */
 	Cauchy_Elems;						/*!< \brief Number of elements to evaluate. */
+	unsigned short Residual_Func_Flow;	/*!< \brief Equation to apply residual convergence to. */
 	unsigned long StartConv_Iter;	/*!< \brief Start convergence criteria at iteration. */
 	double Cauchy_Eps,	/*!< \brief Epsilon used for the convergence. */
 	Cauchy_Eps_OneShot,	/*!< \brief Epsilon used for the one shot method convergence. */
@@ -407,7 +409,7 @@ private:
 	Wrt_Con_Freq_DualTime;				/*!< \brief Writing convergence history frequency. */
 	bool Wrt_Unsteady;  /*!< \brief Write unsteady data adding header and prefix. */
 	bool LowFidelitySim;  /*!< \brief Compute a low fidelity simulation. */
-	bool Restart,	/*!< \brief Restart solution (for direct, adjoint, and linearized problems). */
+	bool Restart,	/*!< \brief Restart solution (for direct, adjoint, and linearized problems).*/
 	Restart_Flow;	/*!< \brief Restart flow solution for adjoint and linearized problems. */
 	unsigned short nMarker_Monitoring,	/*!< \brief Number of markers to monitor. */
 	nMarker_Designing,					/*!< \brief Number of markers for the objective function. */
@@ -544,14 +546,14 @@ private:
 	Energy_FreeStream,     /*!< \brief Total energy of the fluid.  */
 	ModVel_FreeStream,     /*!< \brief Total density of the fluid.  */
 	ModVel_FreeStreamND,     /*!< \brief Total density of the fluid.  */
-	Density_FreeStream,     /*!< \brief Total density of the fluid.  */
+	Density_FreeStream,     /*!< \brief Total density of the fluid. */
 	Viscosity_FreeStream,     /*!< \brief Total density of the fluid.  */
 	Tke_FreeStream,     /*!< \brief Total turbulent kinetic energy of the fluid.  */
 	Intermittency_FreeStream,     /*!< \brief Freestream intermittency (for sagt transition model) of the fluid.  */
 	TurbulenceIntensity_FreeStream,     /*!< \brief Freestream turbulent intensity (for sagt transition model) of the fluid.  */
 	Turb2LamViscRatio_FreeStream,          /*!< \brief Ratio of turbulent to laminar viscosity. */
 	NuFactor_FreeStream,  /*!< \brief Ratio of turbulent to laminar viscosity. */
-	Pressure_FreeStream,     /*!< \brief Total pressure of the fluid.  */
+	Pressure_FreeStream,     /*!< \brief Total pressure of the fluid. */
 	Temperature_FreeStream,  /*!< \brief Total temperature of the fluid.  */
   Temperature_ve_FreeStream,  /*!< \brief Total vibrational-electronic temperature of the fluid.  */
   *MassFrac_FreeStream, /*!< \brief Mixture mass fractions of the fluid. */
@@ -559,10 +561,10 @@ private:
 	Prandtl_Turb,     /*!< \brief Turbulent Prandtl number for the gas.  */
 	Length_Ref,       /*!< \brief Reference length for non-dimensionalization. */
 	Mesh_Scale_Change,       /*!< \brief Conversion factor from grid units to meters. */
-	Pressure_Ref,     /*!< \brief Reference pressure for non-dimensionalization. */
-	Temperature_Ref,  /*!< \brief Reference temperature for non-dimensionalization. */
-	Density_Ref,      /*!< \brief Reference density for non-dimensionalization. */
-	Velocity_Ref,     /*!< \brief Reference velocity for non-dimensionalization. */
+	Pressure_Ref,     /*!< \brief Reference pressure for non-dimensionalization.  */
+	Temperature_Ref,  /*!< \brief Reference temperature for non-dimensionalization.*/
+	Density_Ref,      /*!< \brief Reference density for non-dimensionalization.*/
+	Velocity_Ref,     /*!< \brief Reference velocity for non-dimensionalization.*/
 	Time_Ref,         /*!< \brief Reference time for non-dimensionalization. */
 	Viscosity_Ref,    /*!< \brief Reference viscosity for non-dimensionalization. */
 	Conductivity_Ref,    /*!< \brief Reference conductivity for non-dimensionalization. */
@@ -583,7 +585,6 @@ private:
 	int ***Reactions;					/*!< \brief Reaction map for chemically reacting, multi-species flows. */
   double ***Omega00,        /*!< \brief Collision integrals (Omega(0,0)) */
   ***Omega11;                  /*!< \brief Collision integrals (Omega(1,1)) */
-  bool CuthillMckee_Ordering; /*!< \brief Cuthill–McKee ordering algorithm. */
 	bool Mesh_Output; /*!< \brief Flag to specify whether a new mesh should be written in the converted units. */
 	double ElasticyMod,			/*!< \brief Young's modulus of elasticity. */
 	PoissonRatio,						/*!< \brief Poisson's ratio. */
@@ -848,6 +849,7 @@ private:
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
   template <class Tenum>
+  
   void addRiemannOption(const string name, unsigned short & nMarker_Riemann, string * & Marker_Riemann, unsigned short* & option_field, const map<string, Tenum> & enum_map,
                                  double* & var1, double* & var2, double** & FlowDir){
     assert(option_map.find(name) == option_map.end());
@@ -856,11 +858,11 @@ private:
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
-  void addInletFixedOption(const string name, unsigned short & nMarker_Inlet, string * & Marker_Inlet,
+  void addExhaustOption(const string name, unsigned short & nMarker_Exhaust, string * & Marker_Exhaust,
                       double* & Ttotal, double* & Ptotal){
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string,bool>(name,true));
-    COptionBase* val = new COptionInletFixed(name, nMarker_Inlet, Marker_Inlet, Ttotal, Ptotal);
+    COptionBase* val = new COptionExhaust(name, nMarker_Exhaust, Marker_Exhaust, Ttotal, Ptotal);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
@@ -980,12 +982,6 @@ public:
 	void SetRefOriginMoment_Z(unsigned short val_marker, double val_origin);
 
 	/*!
-	 * \brief Get maximum number of children in the agglomeration process.
-	 * \return Maximum number of children.
-	 */
-	unsigned short GetMaxChildren(void);
-
-	/*!
 	 * \brief Get index of the upper and lower horizontal plane.
 	 * \param[in] index - 0 means upper surface, and 1 means lower surface.
 	 * \return Index of the upper and lower surface.
@@ -998,6 +994,13 @@ public:
 	 * \return Integration limits for the equivalent area computation.
 	 */
 	double GetEA_IntLimit(unsigned short index);
+  
+  /*!
+	 * \brief Get the integration limits for the equivalent area computation.
+	 * \param[in] index - 0 means x_min, and 1 means x_max.
+	 * \return Integration limits for the equivalent area computation.
+	 */
+	double GetEA_ScaleFactor(void);
 
   /*!
 	 * \brief Get the limit value for the adjoint variables.
@@ -1011,6 +1014,12 @@ public:
 	 */
 	double *GetHold_GridFixed_Coord(void);
 
+  /*!
+   * \brief Get the the coordinates where of the box where a subsonic region is imposed.
+   * \return Coordinates where of the box where the grid is going to be a subsonic region.
+   */
+  double *GetSubsonic_Nacelle_Box(void);
+  
 	/*!
 	 * \brief Get the power of the dual volume in the grid adaptation sensor.
 	 * \return Power of the dual volume in the grid adaptation sensor.
@@ -1032,12 +1041,6 @@ public:
 	 *         and it will use and interpolation.
 	 */
 	unsigned short GetAxis_Orientation(void);
-
-	/*!
-	 * \brief Get the maximum dimension of the agglomerated element compared with the whole domain.
-	 * \return Maximum dimension of the agglomerated element.
-	 */
-	double GetMaxDimension(void);
 
 	/*!
 	 * \brief Get the ratio of density for a free surface problem.
@@ -1905,7 +1908,13 @@ public:
 	 * \return CFL number for unsteady simulations.
 	 */
 	double GetUnst_CFL(void);
-
+  
+  /*!
+   * \brief Get the Courant Friedrich Levi number for unsteady simulations.
+   * \return CFL number for unsteady simulations.
+   */
+  double GetMax_DeltaTime(void);
+  
 	/*!
 	 * \brief Get a parameter of the particular design variable.
 	 * \param[in] val_dv - Number of the design variable that we want to read.
@@ -3767,6 +3776,12 @@ public:
 	 * \return Name of the file with the appropriate objective function extension.
 	 */
   string GetObjFunc_Extension(string val_filename);
+  
+        /*!
+  	 * \brief Get functional that is going to be used to evaluate the residual flow convergence.
+  	 * \return Functional that is going to be used to evaluate the residual flow convergence.
+  	 */
+  	unsigned short GetResidual_Func_Flow(void);
 
 	/*!
 	 * \brief Get functional that is going to be used to evaluate the flow convergence.
@@ -4158,6 +4173,12 @@ public:
 	 * \return <code>TRUE</code> if there is a rotational frame; otherwise <code>FALSE</code>.
 	 */
 	bool GetAxisymmetric(void);
+  
+  /*!
+	 * \brief Get information about the axisymmetric frame.
+	 * \return <code>TRUE</code> if there is a rotational frame; otherwise <code>FALSE</code>.
+	 */
+	bool GetDebugMode(void);
 
 	/*!
 	 * \brief Get information about there is a smoothing of the grid coordinates.
@@ -4324,12 +4345,6 @@ public:
 	 */
 	double GetWeightCd(void);
 
-	/*!
-	 * \brief Value of ther constant viscous drag for Cl/Cd computation.
-	 * \return Value of ther constant viscous drag for Cl/Cd computation.
-	 */
-	double GetCteViscDrag(void);
-
   /*!
 	 * \brief Value of the azimuthal line to fix due to a misalignments of the nearfield.
 	 * \return Azimuthal line to fix due to a misalignments of the nearfield.
@@ -4420,12 +4435,6 @@ public:
 	 * \return <code>TRUE</code> if a conversion is requested; otherwise <code>FALSE</code>.
 	 */
 	bool GetCGNS_To_SU2(void);
-
-  /*!
-	 * \brief Get Cuthill–McKee ordering algorithm.
-	 * \return <code>TRUE</code> if the converted mesh should be written; otherwise <code>FALSE</code>.
-	 */
-	bool GetCuthillMckee_Ordering(void);
 
 	/*!
 	 * \brief Get information about whether a converted mesh should be written.

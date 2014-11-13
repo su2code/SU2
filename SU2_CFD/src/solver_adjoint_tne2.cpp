@@ -2,7 +2,7 @@
  * \file solution_adjoint_mean.cpp
  * \brief Main subrotuines for solving adjoint problems (Euler, Navier-Stokes, etc.).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.1 "eagle"
+ * \version 3.2.4 "eagle"
  *
  * Copyright (C) 2012 Aerospace Design Laboratory
  *
@@ -89,6 +89,11 @@ CAdjTNE2EulerSolver::CAdjTNE2EulerSolver(CGeometry *geometry, CConfig *config, u
   Residual_RMS = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 0.0;
   Residual_Max = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_Max[iVar]  = 0.0;
   Point_Max    = new unsigned long[nVar];  for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar]  = 0;
+  Point_Max_Coord = new double*[nVar];
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Point_Max_Coord[iVar] = new double[nDim];
+    for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
+  }
 	Residual_i   = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_i[iVar]    = 0.0;
   Residual_j   = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_j[iVar]    = 0.0;
 	Res_Conv_i   = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Res_Conv_i[iVar]    = 0.0;
@@ -242,8 +247,9 @@ CAdjTNE2EulerSolver::CAdjTNE2EulerSolver(CGeometry *geometry, CConfig *config, u
     
 		/*--- In case there is no file ---*/
 		if (restart_file.fail()) {
-			cout << "There is no adjoint restart file!! " << filename.data() << "."<< endl;
-			exit(1);
+		  if (rank == MASTER_NODE)
+		    cout << "There is no adjoint restart file!! " << filename.data() << "."<< endl;
+			exit(EXIT_FAILURE);
 		}
     
 		/*--- In case this is a parallel simulation, we need to perform the
@@ -1018,7 +1024,6 @@ void CAdjTNE2EulerSolver::SetForceProj_Vector(CGeometry *geometry,
 #endif
   
 	/*--- Compute coefficients needed for objective function evaluation. ---*/
-	C_d += config->GetCteViscDrag();
 	double C_p    = 1.0/(0.5*RefDensity*RefAreaCoeff*RefVel2);
 	double invCD  = 1.0 / C_d;
 	double CLCD2  = C_l / (C_d*C_d);
@@ -1049,7 +1054,7 @@ void CAdjTNE2EulerSolver::SetForceProj_Vector(CGeometry *geometry,
             break;
           case SIDEFORCE_COEFFICIENT :
             if ((nDim == 2) && (rank == MASTER_NODE)) { cout << "This functional is not possible in 2D!!" << endl;
-              exit(1);
+              exit(EXIT_FAILURE);
             }
             if (nDim == 3) { ForceProj_Vector[0] = -C_p*sin(Beta) * cos(Alpha); ForceProj_Vector[1] = C_p*cos(Beta); ForceProj_Vector[2] = -C_p*sin(Beta) * sin(Alpha); }
             break;
@@ -1071,11 +1076,11 @@ void CAdjTNE2EulerSolver::SetForceProj_Vector(CGeometry *geometry,
               ForceProj_Vector[2] = 0.0; }
             break;
           case MOMENT_X_COEFFICIENT :
-            if ((nDim == 2) && (rank == MASTER_NODE)) { cout << "This functional is not possible in 2D!!" << endl; exit(1); }
+            if ((nDim == 2) && (rank == MASTER_NODE)) { cout << "This functional is not possible in 2D!!" << endl; exit(EXIT_FAILURE); }
             if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = -C_p*(z - z_origin)/RefLengthMoment; ForceProj_Vector[2] = C_p*(y - y_origin)/RefLengthMoment; }
             break;
           case MOMENT_Y_COEFFICIENT :
-            if ((nDim == 2) && (rank == MASTER_NODE)) { cout << "This functional is not possible in 2D!!" << endl; exit(1); }
+            if ((nDim == 2) && (rank == MASTER_NODE)) { cout << "This functional is not possible in 2D!!" << endl; exit(EXIT_FAILURE); }
             if (nDim == 3) { ForceProj_Vector[0] = C_p*(z - z_origin)/RefLengthMoment; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = -C_p*(x - x_origin)/RefLengthMoment; }
             break;
           case MOMENT_Z_COEFFICIENT :
@@ -1096,7 +1101,7 @@ void CAdjTNE2EulerSolver::SetForceProj_Vector(CGeometry *geometry,
             break;
           case FORCE_Z_COEFFICIENT :
             if ((nDim == 2) && (rank == MASTER_NODE)) {cout << "This functional is not possible in 2D!!" << endl;
-              exit(1);
+              exit(EXIT_FAILURE);
             }
             if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = C_p; }
             break;
@@ -1712,7 +1717,7 @@ void CAdjTNE2EulerSolver::ExplicitEuler_Iteration(CGeometry *geometry,
       Res = local_Residual[iVar];// + local_Res_TruncError[iVar];
 			node[iPoint]->AddSolution(iVar, -Res*Delta);
 			AddRes_RMS(iVar, Res*Res);
-      AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex());
+      AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
 		}
     
 	}
@@ -1764,7 +1769,7 @@ void CAdjTNE2EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry,
 			LinSysRes[total_index] = -(LinSysRes[total_index]);
 			LinSysSol[total_index] = 0.0;
 			AddRes_RMS(iVar, LinSysRes[total_index]*LinSysRes[total_index]);
-      AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->node[iPoint]->GetGlobalIndex());
+      AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
       
       if (LinSysRes[total_index] != LinSysRes[total_index])
         cout << "Linsysres NaN!" << endl;
@@ -2450,6 +2455,11 @@ CAdjTNE2NSSolver::CAdjTNE2NSSolver(CGeometry *geometry,
 	Residual_RMS  = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 0.0;
 	Residual_Max  = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_Max[iVar]  = 0.0;
 	Point_Max  = new unsigned long[nVar]; for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar]  = 0;
+  Point_Max_Coord = new double*[nVar];
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Point_Max_Coord[iVar] = new double[nDim];
+    for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
+  }
 	Residual_i    = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_i[iVar]    = 0.0;
 	Residual_j    = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_j[iVar]    = 0.0;
 	Res_Conv_i = new double[nVar];  for (iVar = 0; iVar < nVar; iVar++) Res_Conv_i[iVar]    = 0.0;
@@ -2603,8 +2613,9 @@ CAdjTNE2NSSolver::CAdjTNE2NSSolver(CGeometry *geometry,
     
 		/*--- In case there is no file ---*/
 		if (restart_file.fail()) {
-			cout << "There is no adjoint restart file!! " << filename.data() << "."<< endl;
-			exit(1);
+		  if (rank == MASTER_NODE)
+		    cout << "There is no adjoint restart file!! " << filename.data() << "."<< endl;
+			exit(EXIT_FAILURE);
 		}
     
 		/*--- In case this is a parallel simulation, we need to perform the
