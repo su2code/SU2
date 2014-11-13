@@ -203,7 +203,14 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Fluid model */
   addEnumOption("FLUID_MODEL", Kind_FluidModel, FluidModel_Map, STANDARD_AIR);
 
-
+  //Teus, 5-11-2014
+  //addStringOption("FLUID_SUBLIBRARY", thermolib, string(" "));
+  //addStringListOption("FLUID_COMPONENTS"    , ncomp, comp);
+  //default_Conc[0] = 1.0;
+  //for (i = 1; i < ncomp; i++) {
+  //    default_conc[i] = 0.0;
+  //}
+  //addDoubleArrayOption("FLUID_CONCENTRATIONS", ncomp, conc, default_conc);
 
   /* CONFIG_CATEGORY: Freestream Conditions */
   /*--- Options related to freestream specification ---*/

@@ -7534,6 +7534,7 @@ Build Configuration Summary:
     TecIO support:        $enabletecio
     Mutation++ support:   $have_Mutationpp
     Jsoncpp support: 	  $have_Jsoncpp
+    FluidProp support: 	  $have_FluidProp
 
     External includes:    $su2_externals_INCLUDES
     External libs:        $su2_externals_LIBS
@@ -7574,6 +7575,7 @@ Build Configuration Summary:
     TecIO support:        $enabletecio
     Mutation++ support:   $have_Mutationpp
     Jsoncpp support: 	  $have_Jsoncpp
+    FluidProp support: 	  $have_FluidProp
 
     External includes:    $su2_externals_INCLUDES
     External libs:        $su2_externals_LIBS

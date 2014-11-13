@@ -1922,6 +1922,26 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
           config->SetTemperature_FreeStream(Temperature_FreeStream);
         }
         break;
+
+      case FLUIDPROP:
+        string thermolib = "RefProp";
+        const int ncomp = 1;
+        string comp[ncomp];
+        double conc[ncomp];
+        comp[0] = "nitrogen";
+        conc[0] = 1.0;
+        FluidModel = new CFluidProp(thermolib, ncomp, comp, conc);
+        if(fs_temperature) {
+          FluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
+          Density_FreeStream = FluidModel->GetDensity();
+          config->SetDensity_FreeStream(Density_FreeStream);
+        }
+        else {
+          FluidModel->SetTDState_Prho(Pressure_FreeStream, Density_FreeStream );
+          Temperature_FreeStream = FluidModel->GetTemperature();
+          config->SetTemperature_FreeStream(Temperature_FreeStream);
+        }
+        break;
     }
     
     Mach2Vel_FreeStream = FluidModel->GetSoundSpeed();
@@ -2128,12 +2148,23 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
       FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
       break;
       
-    case PR_GAS:
+   case PR_GAS:
       FluidModel = new CPengRobinson(Gamma, Gas_ConstantND, config->GetPressure_Critical() /config->GetPressure_Ref(),
                                      config->GetTemperature_Critical()/config->GetTemperature_Ref(), config->GetAcentric_Factor());
       FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
       break;
-      
+          
+   case FLUIDPROP:
+      string thermolib = "RefProp";
+      const int ncomp = 1;
+      string comp[ncomp];
+      double conc[ncomp];
+      comp[0] = "nitrogen";
+      conc[0] = 1.0;
+      FluidModel = new CFluidProp(thermolib, ncomp, comp, conc);
+      FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
+      break;
+          
 	}
   
   Energy_FreeStreamND = FluidModel->GetStaticEnergy() + 0.5*ModVel_FreeStreamND*ModVel_FreeStreamND;
