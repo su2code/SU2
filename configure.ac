@@ -21,9 +21,9 @@ AM_INIT_AUTOMAKE([subdir-objects foreign])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES(yes)])
 
 
+
 # AC_CONFIG_HEADERS([config.h])
-AC_PROG_CXX
-AC_PROG_CC
+SU2_SET_COMPILERS
 AM_PROG_CC_C_O
 AC_PROG_RANLIB
 AC_PROG_MKDIR_P
@@ -40,9 +40,6 @@ AC_CHECK_SIZEOF(double)
 AC_CHECK_SIZEOF(void *)
 
 # optional bindings
-AC_ARG_WITH(MPI,
-    	AS_HELP_STRING([--with-MPI[=ARG]], [Build parallel version with MPI tools, ARG = MPI C++ compiler]),
-	[with_MPI=$withval], [with_MPI="no"])
 AC_ARG_WITH(CGNS-lib,
     	AS_HELP_STRING([--with-CGNS-lib[=ARG]], [CGNS library directory, ARG = path to libcgns.a]),
 	[with_CGNS_lib=$withval], [with_CGNS_lib="no"])
@@ -259,16 +256,6 @@ AC_SUBST([JSONCPP_CXX])
 AC_SUBST([JSONCPP_LD])
 
 
-########################### MPI
-
-have_MPI="no"
-if test "$with_MPI" != "no"
-then
-	CXX="$with_MPI"
-	CXXFLAGS="-DHAVE_MPI "$CXXFLAGS""
-	have_MPI="yes"
-fi
-
 ###########################
 
 AM_CONDITIONAL([BUILD_CFD],[test $build_CFD != "no"])
@@ -304,7 +291,8 @@ Build Configuration Summary:
     Source code location: ${abs_srcdir}
     Install location: 	  ${abs_prefix}
     Version:              ${VERSION}
-    Compiler:             ${CXX}
+    C++ Compiler:         ${CXX}
+    C Compiler:           ${CC}
     Preprocessor flags:   ${CPPFLAGS}
     Compiler flags:       ${CXXFLAGS}
     Linker flags:         ${LDFLAGS}
