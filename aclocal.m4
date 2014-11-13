@@ -1035,6 +1035,7 @@ AC_SUBST([am__untar])
 ]) # _AM_PROG_TAR
 
 m4_include([m4/ax_tls.m4])
+m4_include([m4/compiler.m4])
 m4_include([m4/metis.m4])
 m4_include([m4/parmetis.m4])
 m4_include([m4/tecio.m4])
