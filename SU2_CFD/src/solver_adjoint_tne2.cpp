@@ -3017,7 +3017,7 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
   
   double *Normal, UnitNormal[3], Area;
   double *U, *V, **GV;
-  double **GY, *sIk, **Js;
+  double **GY, **GsY, *sIk, **Js;
   double *GsT, *GsTve;
   double *Ds, mu, ktr, kve;
   double *eves, *hs, rho, rhos, Ys;
@@ -3041,12 +3041,14 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
   /*--- Initialize arrays ---*/
   hs    = new double[nSpecies];
   dnvel = new double[nDim];
-  sIk = new double[nDim];
-  GY = new double*[nSpecies];
-  Js = new double*[nSpecies];
+  sIk   = new double[nDim];
+  GY    = new double*[nSpecies];
+  GsY   = new double*[nSpecies];
+  Js    = new double*[nSpecies];
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    GY[iSpecies] = new double[nDim];
-    Js[iSpecies] = new double[nDim];
+    GY[iSpecies]  = new double[nDim];
+    GsY[iSpecies] = new double[nDim];
+    Js[iSpecies]  = new double[nDim];
   }
   GsT   = new double[nDim];
   GsTve = new double[nDim];
@@ -3136,7 +3138,7 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
               hs[iSpecies] = solver_container[TNE2_SOL]->node[iPoint]->
                   CalcHs(config, V[T_INDEX], eves[iSpecies], iSpecies);
             
-            /*--- Calculate diffusion velocity, Js ---*/
+            /*--- Calculate mass fraction gradient ---*/
             for (iDim = 0; iDim < nDim; iDim++)
               sIk[iDim] = 0.0;
             rho = V[RHO_INDEX];
@@ -3146,12 +3148,26 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
               for (iDim = 0; iDim < nDim; iDim++) {
                 GY[iSpecies][iDim] = 1.0/rho*( GV[RHOS_INDEX+iSpecies][iDim]
                                               -Ys*GV[RHO_INDEX][iDim]       );
-                sIk[iDim] += rho*Ds[iSpecies]*GY[iSpecies][iDim];
               }
             }
-            for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+            
+            /*--- Calculate tangential mass fraction gradient ---*/
+            for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+              dnPsi_k = 0.0;
               for (iDim = 0; iDim < nDim; iDim++)
-                Js[iSpecies][iDim] = -rho*Ds[iSpecies]*GY[iSpecies][iDim]+Ys*sIk[iDim];
+                dnPsi_k += GY[iSpecies][iDim]*UnitNormal[iDim];
+              for (iDim = 0; iDim < nDim; iDim++) {
+                GsY[iSpecies][iDim] = GY[iSpecies][iDim] - dnPsi_k*UnitNormal[iDim];
+                sIk[iDim] = rho*Ds[iSpecies]*GsY[iSpecies][iDim];
+              }
+            }
+            
+            /*--- Calculate diffusion velocity, Js ---*/
+            for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+              Ys = V[RHOS_INDEX+iSpecies]/rho;
+              for (iDim = 0; iDim < nDim; iDim++)
+                Js[iSpecies][iDim] = -rho*Ds[iSpecies]*GsY[iSpecies][iDim]+Ys*sIk[iDim];
+            }
             
             /*--- Calculate normal derivative of the velocity ---*/
             for (iDim = 0; iDim < nDim; iDim++) {
@@ -3322,9 +3338,11 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
   delete [] sIk;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     delete [] GY[iSpecies];
+    delete [] GsY[iSpecies];
     delete [] Js[iSpecies];
   }
   delete [] GY;
+  delete [] GsY;
   delete [] Js;
   delete [] GsT;
   delete [] GsTve;

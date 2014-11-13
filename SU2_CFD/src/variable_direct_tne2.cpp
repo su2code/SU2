@@ -1094,11 +1094,11 @@ bool CTNE2EulerVariable::SetPrimVar_Compressible(CConfig *config) {
   
   /*--- Convert conserved to primitive variables ---*/
   nonPhys = Cons2PrimVar(config, Solution, Primitive, dPdU, dTdU, dTvedU, eves, Cvves);
-//  if (nonPhys) {
-//    for (iVar = 0; iVar < nVar; iVar++)
-//      Solution[iVar] = Solution_Old[iVar];
-//    bkup = Cons2PrimVar(config, Solution, Primitive, dPdU, dTdU, dTvedU, eves, Cvves);
-//  }
+  if (nonPhys) {
+    for (iVar = 0; iVar < nVar; iVar++)
+      Solution[iVar] = Solution_Old[iVar];
+    bkup = Cons2PrimVar(config, Solution, Primitive, dPdU, dTdU, dTvedU, eves, Cvves);
+  }
   
   SetVelocity2();
   
@@ -1219,7 +1219,7 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, double *U, double *V,
     if (U[iSpecies] < 0.0) {
       V[RHOS_INDEX+iSpecies] = 1E-20;
       U[iSpecies]            = 1E-20;
-      nonPhys                = true;
+//      nonPhys                = true;
     } else
       V[RHOS_INDEX+iSpecies] = U[iSpecies];
     V[RHO_INDEX]            += U[iSpecies];

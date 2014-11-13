@@ -5410,7 +5410,8 @@ CTNE2NSSolver::~CTNE2NSSolver(void) {
 void CTNE2NSSolver::Preprocessing(CGeometry *geometry, CSolver **solution_container, CConfig *config,
                                   unsigned short iMesh, unsigned short iRKStep,
                                   unsigned short RunTime_EqSystem, bool Output) {
-	unsigned long iPoint, ErrorCounter = 0;
+	unsigned long iPoint, jPoint, ErrorCounter = 0;
+  unsigned short iNeigh, nNeigh, iVar;
   bool nonPhys;
   bool adjoint      = config->GetAdjoint();
 	bool implicit     = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
@@ -5420,6 +5421,11 @@ void CTNE2NSSolver::Preprocessing(CGeometry *geometry, CSolver **solution_contai
   bool center       = ((config->GetKind_ConvNumScheme_TNE2() == SPACE_CENTERED) ||
                        (adjoint && config->GetKind_ConvNumScheme_AdjTNE2() == SPACE_CENTERED));
   int rank;
+  double tmp;
+  double *errU, *errV;
+  
+  errU = new double[nVar];
+  errV = new double[nPrimVar];
   
 #ifdef NO_MPI
   rank = MASTER_NODE;
@@ -5436,7 +5442,30 @@ void CTNE2NSSolver::Preprocessing(CGeometry *geometry, CSolver **solution_contai
 		/*--- Set the primitive variables incompressible (dens, vx, vy, vz, beta)
      and compressible (temp, vx, vy, vz, press, dens, enthal, sos)---*/
 		nonPhys = node[iPoint]->SetPrimVar_Compressible(config);
-    if (nonPhys) ErrorCounter++;
+    if (nonPhys) {
+      ErrorCounter++;
+      
+//      /*--- If nonphysical, replace with an average of the adjacent nodes ---*/
+//      nNeigh = geometry->node[iPoint]->GetnPoint();
+//      for (iVar = 0; iVar < nVar; iVar++) {
+//        tmp = 0;
+//        for (iNeigh = 0; iNeigh < nNeigh; iNeigh++) {
+//          jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
+//          tmp += node[jPoint]->GetSolution(iVar);
+//        }
+//        tmp = tmp/nNeigh;
+//        node[iPoint]->SetSolution(iVar, tmp);
+//      }
+//      for (iVar = 0; iVar < nPrimVar; iVar++) {
+//        tmp = 0;
+//        for (iNeigh = 0; iNeigh < nNeigh; iNeigh++) {
+//          jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
+//          tmp += node[jPoint]->GetPrimVar(iVar);
+//        }
+//        tmp = tmp/nNeigh;
+//        node[iPoint]->SetPrimVar(iVar, tmp);
+//      }
+    }
     
 		/*--- Initialize the convective, source and viscous residual vector ---*/
 		if (!Output) LinSysRes.SetBlock_Zero(iPoint);
@@ -5485,6 +5514,8 @@ void CTNE2NSSolver::Preprocessing(CGeometry *geometry, CSolver **solution_contai
   if ((ErrorCounter != 0) && (rank == MASTER_NODE))
     cout <<"The solution contains "<< ErrorCounter << " non-physical points." << endl;
   
+  delete [] errU;
+  delete [] errV;
 }
 
 void CTNE2NSSolver::SetTime_Step(CGeometry *geometry,
@@ -5651,7 +5682,7 @@ void CTNE2NSSolver::SetTime_Step(CGeometry *geometry,
     /*--- Calculate local inv. and visc. dTs, take the minimum of the two ---*/
 		Local_Delta_Time      = config->GetCFL(iMesh)*Vol / node[iPoint]->GetMax_Lambda_Inv();
 		Local_Delta_Time_Visc = config->GetCFL(iMesh)*K_v*Vol*Vol/ node[iPoint]->GetMax_Lambda_Visc();
-		Local_Delta_Time      = min(Local_Delta_Time, Local_Delta_Time_Visc);
+//		Local_Delta_Time      = min(Local_Delta_Time, Local_Delta_Time_Visc);
 		Global_Delta_Time     = min(Global_Delta_Time, Local_Delta_Time);
     
     /*--- Store minimum and maximum dt's within the grid for printing ---*/
@@ -5661,6 +5692,32 @@ void CTNE2NSSolver::SetTime_Step(CGeometry *geometry,
     /*--- Set the time step ---*/
 		node[iPoint]->SetDelta_Time(Local_Delta_Time);
 	}
+  
+  /*--- Communicate minimum and maximum time steps ---*/
+#ifndef NO_MPI
+  double rbuf_time_min, rbuf_time_max, sbuf_time_min, sbuf_time_max;
+  sbuf_time_min = Min_Delta_Time;
+  sbuf_time_max = Max_Delta_Time;
+#ifdef WINDOWS
+  MPI_Reduce(&sbuf_time_min, &rbuf_time_min, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
+  MPI_Bcast(&rbuf_time_min, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+  MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Reduce(&sbuf_time_max, &rbuf_time_max, 1, MPI_DOUBLE, MPI_MAX, MASTER_NODE, MPI_COMM_WORLD);
+  MPI_Bcast(&rbuf_time_max, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+  MPI_Barrier(MPI_COMM_WORLD);
+#else
+  MPI::COMM_WORLD.Reduce(&sbuf_time_min, &rbuf_time_min, 1, MPI::DOUBLE, MPI::MIN, MASTER_NODE);
+  MPI::COMM_WORLD.Bcast(&rbuf_time_min, 1, MPI::DOUBLE, MASTER_NODE);
+  MPI::COMM_WORLD.Barrier();
+  MPI::COMM_WORLD.Reduce(&sbuf_time_max, &rbuf_time_max, 1, MPI::DOUBLE, MPI::MAX, MASTER_NODE);
+  MPI::COMM_WORLD.Bcast(&rbuf_time_max, 1, MPI::DOUBLE, MASTER_NODE);
+  MPI::COMM_WORLD.Barrier();
+#endif
+  Min_Delta_Time = rbuf_time_min;
+  Max_Delta_Time = rbuf_time_max;
+#endif
+  
+  
   
 	/*--- Check if there is any element with only one neighbor...
    a CV that is inside another CV ---*/
