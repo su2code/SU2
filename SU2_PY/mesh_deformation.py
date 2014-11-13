@@ -3,7 +3,7 @@
 ## \file mesh_deformation.py
 #  \brief Python script for doing the parallel deformation using SU2_DEF.
 #  \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 3.2.1 "eagle"
+#  \version 3.2.4 "eagle"
 #
 # SU2, Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
 #
@@ -41,23 +41,19 @@ def main():
                       help="old number of PARTITIONS (use -n instead)", metavar="OLDPARTITIONS")
     parser.add_option("-d", "--divide_grid", dest="divide_grid", default="True",
                       help="DIVIDE_GRID the numerical grid", metavar="DIVIDE_GRID")
-    parser.add_option("-m", "--merge_grid",     dest="merge_grid",     default="True",
-                      help="MERGE_GRID the deformed grid", metavar="MERGE_GRID")
 
     (options, args)=parser.parse_args()
     options.partitions = int( options.partitions )
     options.divide_grid = options.divide_grid.upper() == 'TRUE'
-    options.merge_grid  = options.merge_grid.upper()  == 'TRUE'
     
     if options.oldpartitions != "oldpartitions":
-        print ("\n IMPORTANT: -p is no longer available in SU2 v3.2.1, use -n flag instead \n")
+        print ("\n IMPORTANT: -p is no longer available in SU2 v3.2.4, use -n flag instead \n")
         sys.exit()
     
     # Run Parallel Comutation
     mesh_deformation ( options.filename    ,
                        options.partitions  , 
-                       options.divide_grid ,
-                       options.merge_grid   )
+                       options.divide_grid  )
 #: def main()
 
   
@@ -67,8 +63,7 @@ def main():
 
 def mesh_deformation( filename           ,
                       partitions  = 2    , 
-                      divide_grid = True ,
-                      merge_grid  = True  ):
+                      divide_grid = True  ):
     
     # Config
     config = SU2.io.Config(filename)
@@ -78,8 +73,12 @@ def mesh_deformation( filename           ,
     
     # State
     state = SU2.io.State()
-    state.FILES.MESH = config.MESH_FILENAME
     
+    # Decomposition
+    info = SU2.run.decompose(config)
+
+    state.FILES.MESH = config.MESH_FILENAME
+
     # Deformation
     info = SU2.run.DEF(config)
     state.update(info)

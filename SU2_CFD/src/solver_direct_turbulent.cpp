@@ -2,7 +2,7 @@
  * \file solution_direct_turbulent.cpp
  * \brief Main subrotuines for solving direct problems (Euler, Navier-Stokes, etc.).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.1 "eagle"
+ * \version 3.2.4 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -628,7 +628,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
       LinSysRes[total_index] = - LinSysRes[total_index];
       LinSysSol[total_index] = 0.0;
       AddRes_RMS(iVar, LinSysRes[total_index]*LinSysRes[total_index]);
-      AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->node[iPoint]->GetGlobalIndex());
+      AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
     }
   }
   
@@ -997,8 +997,16 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
     /*--- Define some auxiliar vector related with the residual ---*/
     Residual = new double[nVar]; Residual_RMS = new double[nVar];
     Residual_i = new double[nVar]; Residual_j = new double[nVar];
-    Residual_Max = new double[nVar]; Point_Max = new unsigned long[nVar];
+    Residual_Max = new double[nVar];
     
+    /*--- Define some structures for locating max residuals ---*/
+    Point_Max = new unsigned long[nVar];
+    for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar] = 0;
+    Point_Max_Coord = new double*[nVar];
+    for (iVar = 0; iVar < nVar; iVar++) {
+      Point_Max_Coord[iVar] = new double[nDim];
+      for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
+    }
     
     /*--- Define some auxiliar vector related with the solution ---*/
     Solution = new double[nVar];
@@ -1107,7 +1115,7 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
     restart_file.open(filename.data(), ios::in);
     if (restart_file.fail()) {
       cout << "There is no turbulent restart file!!" << endl;
-      exit(1);
+      exit(EXIT_FAILURE);
     }
     
     /*--- In case this is a parallel simulation, we need to perform the
@@ -2160,6 +2168,10 @@ void CTurbSASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig
   string UnstExt, text_line;
   ifstream restart_file;
   string restart_filename = config->GetSolution_FlowFileName();
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
   
   /*--- Modify file name for an unsteady restart ---*/
   if (dual_time)
@@ -2168,8 +2180,9 @@ void CTurbSASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig
   /*--- Open the restart file, throw an error if this fails. ---*/
   restart_file.open(restart_filename.data(), ios::in);
   if (restart_file.fail()) {
-    cout << "There is no flow restart file!! " << restart_filename.data() << "."<< endl;
-    exit(1);
+    if (rank == MASTER_NODE)
+      cout << "There is no flow restart file!! " << restart_filename.data() << "."<< endl;
+    exit(EXIT_FAILURE);
   }
   
   /*--- In case this is a parallel simulation, we need to perform the
@@ -2301,8 +2314,16 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
     /*--- Define some auxiliary vector related with the residual ---*/
     Residual = new double[nVar]; Residual_RMS = new double[nVar];
     Residual_i = new double[nVar]; Residual_j = new double[nVar];
-    Residual_Max = new double[nVar]; Point_Max = new unsigned long[nVar];
+    Residual_Max = new double[nVar];
     
+    /*--- Define some structures for locating max residuals ---*/
+    Point_Max = new unsigned long[nVar];
+    for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar] = 0;
+    Point_Max_Coord = new double*[nVar];
+    for (iVar = 0; iVar < nVar; iVar++) {
+      Point_Max_Coord[iVar] = new double[nDim];
+      for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
+    }
     
     /*--- Define some auxiliary vector related with the solution ---*/
     Solution = new double[nVar];
@@ -2418,7 +2439,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
     restart_file.open(filename.data(), ios::in);
     if (restart_file.fail()) {
       cout << "There is no turbulent restart file!!" << endl;
-      exit(1);
+      exit(EXIT_FAILURE);
     }
     
     /*--- In case this is a parallel simulation, we need to perform the
@@ -3037,8 +3058,16 @@ CTurbMLSolver::CTurbMLSolver(CGeometry *geometry, CConfig *config, unsigned shor
     /*--- Define some auxiliar vector related with the residual ---*/
     Residual = new double[nVar]; Residual_RMS = new double[nVar];
     Residual_i = new double[nVar]; Residual_j = new double[nVar];
-    Residual_Max = new double[nVar]; Point_Max = new unsigned long[nVar];
+    Residual_Max = new double[nVar];
     
+    /*--- Define some structures for locating max residuals ---*/
+    Point_Max = new unsigned long[nVar];
+    for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar] = 0;
+    Point_Max_Coord = new double*[nVar];
+    for (iVar = 0; iVar < nVar; iVar++) {
+      Point_Max_Coord[iVar] = new double[nDim];
+      for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
+    }
     
     /*--- Define some auxiliar vector related with the solution ---*/
     Solution = new double[nVar];
@@ -3147,7 +3176,7 @@ CTurbMLSolver::CTurbMLSolver(CGeometry *geometry, CConfig *config, unsigned shor
     restart_file.open(filename.data(), ios::in);
     if (restart_file.fail()) {
       cout << "There is no turbulent restart file!!" << endl;
-      exit(1);
+      exit(EXIT_FAILURE);
     }
     
     /*--- In case this is a parallel simulation, we need to perform the
@@ -3782,7 +3811,10 @@ void CTurbMLSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig
   string UnstExt, text_line;
   ifstream restart_file;
   string restart_filename = config->GetSolution_FlowFileName();
-  
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
   /*--- Modify file name for an unsteady restart ---*/
   if (dual_time)
     restart_filename = config->GetUnsteady_FileName(restart_filename, val_iter);
@@ -3790,8 +3822,9 @@ void CTurbMLSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig
   /*--- Open the restart file, throw an error if this fails. ---*/
   restart_file.open(restart_filename.data(), ios::in);
   if (restart_file.fail()) {
-    cout << "There is no flow restart file!! " << restart_filename.data() << "."<< endl;
-    exit(1);
+    if (rank == MASTER_NODE)
+      cout << "There is no flow restart file!! " << restart_filename.data() << "."<< endl;
+    exit(EXIT_FAILURE);
   }
   
   /*--- In case this is a parallel simulation, we need to perform the

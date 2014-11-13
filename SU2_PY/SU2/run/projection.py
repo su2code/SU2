@@ -1,7 +1,7 @@
 ## \file projection.py
 #  \brief python package for running gradient projection
 #  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 3.2.1 "eagle"
+#  \version 3.2.4 "eagle"
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -99,7 +99,7 @@ def projection( config, step = 1e-3 ):
     data_plot = su2util.ordered_bunch()
     data_plot['VARIABLE']     = range(len(raw_gradients)) 
     data_plot['GRADIENT']     = raw_gradients             
-    data_plot['FINDIFF_STEP'] = step                       
+    data_plot['FINDIFF_STEP'] = step
     su2util.write_plot(grad_plotname,output_format,data_plot)
 
     # gradient output dictionary

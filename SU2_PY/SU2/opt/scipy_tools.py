@@ -3,7 +3,7 @@
 ## \file scipy_tools.py
 #  \brief tools for interfacing with scipy
 #  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 3.2.1 "eagle"
+#  \version 3.2.4 "eagle"
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -96,8 +96,8 @@ def scipy_slsqp(project,x0=None,xb=None,its=100,grads=True):
                           args           = (project,)     , 
                           bounds         = xb             ,
                           iter           = its            ,
-                          iprint         = 1              ,
-                          full_output    = 2              ,
+                          iprint         = 2              ,
+                          full_output    = True              ,
                           acc            = 1e-10          ,
                           epsilon        = 1.0e-06         )
     
@@ -114,9 +114,7 @@ def obj_f(x,project):
         su2:         minimize f(x), list[nobj]
         scipy_slsqp: minimize f(x), float
     """
-    
-    print ""
-    
+        
     obj = project.obj_f(x)
     
     obj = obj[0]

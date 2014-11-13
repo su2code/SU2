@@ -36,10 +36,10 @@ CScaler* parse_cscaler(Json::Value json){
     return scaler;
   }else{
     cout << "NoMatch for scaler type: "<< type << endl;
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   cout << "Shouldnt' be here" << endl;
-  exit(1);
+  exit(EXIT_FAILURE);
   
   return NULL;
 }
@@ -203,7 +203,7 @@ CSumNeuron::CSumNeuron(Json::Value json){
     this->activator = new CLinearActivator(json["Value"]);
   }else{
     cout << "Unknown activator type: " << type << endl;
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 }
 #endif
@@ -444,7 +444,7 @@ string get_file_contents(string filename){
     return(contents);
   }
   cout << "Predictor filename " << filename << " not found" <<endl;
-  exit(1);
+  exit(EXIT_FAILURE);
 }
 
 // TODO: Separate filename from parse script. (make a function of a Node)
@@ -527,7 +527,7 @@ CScalePredictor::CScalePredictor(string filename){
 #else
   CScalePredictor::CScalePredictor(string filename){
     cout << "Must have JsonCpp installed" << endl;
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 #endif
 CScalePredictor::~CScalePredictor(){
@@ -579,7 +579,7 @@ void CSANondimInputs::Set(SpalartAllmarasInputs* sainputs){
     cout << "dist = " << dist << endl;
     cout << "distSq = " << distSq << endl;
     cout << "nuSum = " << nuSum << endl;
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   
   double * turbViscGrad = sainputs->GetTurbKinViscGradient();

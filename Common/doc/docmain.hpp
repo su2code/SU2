@@ -25,6 +25,12 @@
  */
 
 /*!
+ * \defgroup Config Descriptions of Configuration Options.
+ * \brief Group of variables that can be set using the configuration file.
+ */
+
+/*!
+
  * \defgroup ConvDiscr Discretization of the convective terms.
  * \brief Group of classes which define the numerical methods for 
  *		  discretizing the convective terms of a Partial Differential Equation. 

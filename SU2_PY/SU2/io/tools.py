@@ -3,7 +3,7 @@
 ## \file tools.py
 #  \brief file i/o functions
 #  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 3.2.1 "eagle"
+#  \version 3.2.4 "eagle"
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -703,7 +703,7 @@ def get_optFileFormat(plot_format,special_cases=None):
 def get_extension(output_format):
     
     if (output_format == "PARAVIEW")        : return ".csv"
-    if (output_format == "TECPLOT")         : return ".plt"
+    if (output_format == "TECPLOT")         : return ".dat"
     if (output_format == "TECPLOT_BINARY")  : return ".plt"
     if (output_format == "SOLUTION")        : return ".dat"  
     if (output_format == "RESTART")         : return ".dat"  

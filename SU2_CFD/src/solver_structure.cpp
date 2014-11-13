@@ -2,7 +2,7 @@
  * \file solver_structure.cpp
  * \brief Main subrotuines for solving direct, adjoint and linearized problems.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.1 "eagle"
+ * \version 3.2.4 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -32,6 +32,7 @@ CSolver::CSolver(void) {
   Residual_i = NULL;
   Residual_j = NULL;
   Point_Max = NULL;
+  Point_Max_Coord = NULL;
   Solution = NULL;
   Solution_i = NULL;
   Solution_j = NULL;
@@ -72,6 +73,13 @@ CSolver::~CSolver(void) {
    if (Residual_i != NULL) delete [] Residual_i;
    if (Residual_j != NULL) delete [] Residual_j;
    if (Point_Max != NULL) delete [] Point_Max;
+   
+   if (Point_Max_Coord != NULL) {
+   for (iVar = 0; iVar < nVar; iVar++)
+   delete Point_Max_Coord[iVar];
+   delete [] Point_Max_Coord;
+   }
+   
    if (Solution != NULL) delete [] Solution;
    if (Solution_i != NULL) delete [] Solution_i;
    if (Solution_j != NULL) delete [] Solution_j;
@@ -158,18 +166,29 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
   
 #ifndef HAVE_MPI
   
-  for (iVar = 0; iVar < nVar; iVar++)
-    SetRes_RMS(iVar, max(EPS, sqrt(GetRes_RMS(iVar)/geometry->GetnPoint())));
+  for (iVar = 0; iVar < nVar; iVar++) {
+    
+    if (GetRes_RMS(iVar) != GetRes_RMS(iVar)) {
+      cout << "\n !!! Error: There is a NaN in the residual. Now exiting... !!! \n" << endl;
+      exit(EXIT_FAILURE);
+    }
+
+    SetRes_RMS(iVar, max(EPS*EPS, sqrt(GetRes_RMS(iVar)/geometry->GetnPoint())));
+    
+  }
   
 #else
   
-  int nProcessor, iProcessor;
+  int nProcessor, iProcessor, rank;
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   
-  double *sbuf_residual, *rbuf_residual;
+  double *sbuf_residual, *rbuf_residual, *sbuf_coord, *rbuf_coord, *Coord;
   unsigned long *sbuf_point, *rbuf_point, Local_nPointDomain, Global_nPointDomain;
+  unsigned short iDim;
   
   /*--- Set the L2 Norm residual in all the processors ---*/
+  
   sbuf_residual  = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) sbuf_residual[iVar] = 0.0;
   rbuf_residual  = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) rbuf_residual[iVar] = 0.0;
   
@@ -180,9 +199,22 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
   MPI_Allreduce(sbuf_residual, rbuf_residual, nVar, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   MPI_Allreduce(&Local_nPointDomain, &Global_nPointDomain, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
   
-  for (iVar = 0; iVar < nVar; iVar++)
-    SetRes_RMS(iVar, max(EPS, sqrt(rbuf_residual[iVar]/Global_nPointDomain)));
-//    SetRes_RMS(iVar, max(EPS, sqrt(rbuf_residual[iVar])));
+  
+  for (iVar = 0; iVar < nVar; iVar++) {
+    
+    if (rbuf_residual[iVar] != rbuf_residual[iVar]) {
+      
+      if (rank == MASTER_NODE)
+        cout << "\n !!! Error: There is a NaN in the residual. Now exiting... !!! \n" << endl;
+      
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Abort(MPI_COMM_WORLD,1);
+      
+    }
+    
+    SetRes_RMS(iVar, max(EPS*EPS, sqrt(rbuf_residual[iVar]/Global_nPointDomain)));
+    
+  }
   
   delete [] sbuf_residual;
   delete [] rbuf_residual;
@@ -190,21 +222,27 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
   /*--- Set the Maximum residual in all the processors ---*/
   sbuf_residual = new double [nVar]; for (iVar = 0; iVar < nVar; iVar++) sbuf_residual[iVar] = 0.0;
   sbuf_point = new unsigned long [nVar]; for (iVar = 0; iVar < nVar; iVar++) sbuf_point[iVar] = 0;
+  sbuf_coord = new double[nVar*nDim]; for (iVar = 0; iVar < nVar*nDim; iVar++) sbuf_coord[iVar] = 0.0;
   
   rbuf_residual = new double [nProcessor*nVar]; for (iVar = 0; iVar < nProcessor*nVar; iVar++) rbuf_residual[iVar] = 0.0;
   rbuf_point = new unsigned long [nProcessor*nVar]; for (iVar = 0; iVar < nProcessor*nVar; iVar++) rbuf_point[iVar] = 0;
-  
+  rbuf_coord = new double[nProcessor*nVar*nDim]; for (iVar = 0; iVar < nProcessor*nVar*nDim; iVar++) rbuf_coord[iVar] = 0.0;
+
   for (iVar = 0; iVar < nVar; iVar++) {
     sbuf_residual[iVar] = GetRes_Max(iVar);
     sbuf_point[iVar] = GetPoint_Max(iVar);
+    Coord = GetPoint_Max_Coord(iVar);
+    for (iDim = 0; iDim < nDim; iDim++)
+      sbuf_coord[iVar*nDim+iDim] = Coord[iDim];
   }
   
   MPI_Allgather(sbuf_residual, nVar, MPI_DOUBLE, rbuf_residual, nVar, MPI_DOUBLE, MPI_COMM_WORLD);
   MPI_Allgather(sbuf_point, nVar, MPI_UNSIGNED_LONG, rbuf_point, nVar, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-  
+  MPI_Allgather(sbuf_coord, nVar*nDim, MPI_DOUBLE, rbuf_coord, nVar*nDim, MPI_DOUBLE, MPI_COMM_WORLD);
+
   for (iVar = 0; iVar < nVar; iVar++) {
     for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-      AddRes_Max(iVar, rbuf_residual[iProcessor*nVar+iVar], rbuf_point[iProcessor*nVar+iVar]);
+      AddRes_Max(iVar, rbuf_residual[iProcessor*nVar+iVar], rbuf_point[iProcessor*nVar+iVar], &rbuf_coord[iProcessor*nVar*nDim+iVar*nDim]);
     }
   }
   
@@ -213,6 +251,9 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
   
   delete [] sbuf_point;
   delete [] rbuf_point;
+  
+  delete [] sbuf_coord;
+  delete [] rbuf_coord;
   
 #endif
   
@@ -1148,32 +1189,38 @@ void CSolver::SetPressureLaplacian(CGeometry *geometry, double *PressureLaplacia
   
 }
 
-void CSolver::Gauss_Elimination(double** A, double* rhs, unsigned long nVar) {
-  unsigned long jVar, kVar, iVar;
+void CSolver::Gauss_Elimination(double** A, double* rhs, unsigned short nVar) {
+  
+  short iVar, jVar, kVar;
   double weight, aux;
   
   if (nVar == 1)
-    rhs[0] /= (A[0][0]+EPS*EPS);
+    rhs[0] /= A[0][0];
   else {
+    
     /*--- Transform system in Upper Matrix ---*/
-    for (iVar = 1; iVar < nVar; iVar++) {
+    
+    for (iVar = 1; iVar < (short)nVar; iVar++) {
       for (jVar = 0; jVar < iVar; jVar++) {
-        weight = A[iVar][jVar]/(A[jVar][jVar]+EPS*EPS);
-        for (kVar = jVar; kVar < nVar; kVar++)
+        weight = A[iVar][jVar]/A[jVar][jVar];
+        for (kVar = jVar; kVar < (short)nVar; kVar++)
           A[iVar][kVar] -= weight*A[jVar][kVar];
         rhs[iVar] -= weight*rhs[jVar];
       }
     }
+    
     /*--- Backwards substitution ---*/
-    rhs[nVar-1] = rhs[nVar-1]/(A[nVar-1][nVar-1]+EPS*EPS);
-    for (short iVar = nVar-2; iVar >= 0; iVar--) {
+    
+    rhs[nVar-1] = rhs[nVar-1]/A[nVar-1][nVar-1];
+    for (iVar = (short)nVar-2; iVar >= 0; iVar--) {
       aux = 0;
-      for (jVar = iVar+1; jVar < nVar; jVar++)
+      for (jVar = iVar+1; jVar < (short)nVar; jVar++)
         aux += A[iVar][jVar]*rhs[jVar];
-      rhs[iVar] = (rhs[iVar]-aux)/(A[iVar][iVar]+EPS*EPS);
+      rhs[iVar] = (rhs[iVar]-aux)/A[iVar][iVar];
       if (iVar == 0) break;
     }
   }
+  
 }
 
 void CSolver::Aeroelastic(CSurfaceMovement *surface_movement, CGeometry *geometry, CConfig *config, unsigned long ExtIter) {
@@ -1341,7 +1388,7 @@ void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, double Cl, doubl
       printf("\n\n   !!! Error !!!\n");
       printf("Grid movement kind Aeroelastic is only available in 2 dimensions.");
       printf("Now exiting...\n\n");
-      exit(0);
+      exit(EXIT_FAILURE);
     }
   }
   
@@ -1512,7 +1559,7 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
   /*--- In case there is no restart file ---*/
   if (restart_file.fail()) {
     cout << "SU2 flow file " << filename << " not found" << endl;
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   
   /*--- Output the file name to the console. ---*/
@@ -1758,8 +1805,9 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   
   /*--- In case there is no file ---*/
   if (solution_file.fail()) {
-    cout << "There is no SU2 restart file!!" << endl;
-    exit(1);
+    if (rank == MASTER_NODE)
+      cout << "There is no SU2 restart file!!" << endl;
+    exit(EXIT_FAILURE);
   }
   
   /*--- Output the file name to the console. ---*/

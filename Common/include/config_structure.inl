@@ -2,7 +2,7 @@
  * \file config_structure.inl
  * \brief In-Line subroutines of the <i>config_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.1 "eagle"
+ * \version 3.2.4 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -56,17 +56,17 @@ inline long CConfig::GetUnst_RestartIter(void) { return Unst_RestartIter; }
 
 inline long CConfig::GetUnst_AdjointIter(void) { return Unst_AdjointIter; }
 
-inline unsigned short CConfig::GetMaxChildren(void) { return MaxChildren; }
-
 inline string CConfig::GetPlaneTag(unsigned short index) { return PlaneTag[index]; }
 
 inline double CConfig::GetEA_IntLimit(unsigned short index) { return EA_IntLimit[index]; }
+
+inline double CConfig::GetEA_ScaleFactor(void) { return EA_ScaleFactor; }
 
 inline double CConfig::GetAdjointLimit(void) { return AdjointLimit; }
 
 inline double *CConfig::GetHold_GridFixed_Coord(void) { return Hold_GridFixed_Coord; }
 
-inline double CConfig::GetMaxDimension(void) { return MaxDimension; }
+inline double *CConfig::GetSubsonic_Nacelle_Box(void) { return Subsonic_Nacelle_Box; }
 
 inline double CConfig::GetRatioDensity(void) { return RatioDensity; }
 
@@ -362,6 +362,8 @@ inline double CConfig::GetCFL(unsigned short val_mesh) {	return CFL[val_mesh]; }
 inline void CConfig::SetCFL(unsigned short val_mesh, double val_cfl) { CFL[val_mesh] = val_cfl; }
 
 inline double CConfig::GetUnst_CFL(void) {	return Unst_CFL; }
+
+inline double CConfig::GetMax_DeltaTime(void) {	return Max_DeltaTime; }
 
 inline double CConfig::GetParamDV(unsigned short val_dv, unsigned short val_param) {	return ParamDV[val_dv][val_param]; }
 
@@ -916,6 +918,8 @@ inline string CConfig::GetSurfAdjCoeff_FileName(void) { return SurfAdjCoeff_File
 
 inline string CConfig::GetSurfLinCoeff_FileName(void) { return SurfLinCoeff_FileName; }
 
+inline unsigned short CConfig::GetResidual_Func_Flow(void) { return Residual_Func_Flow; }
+
 inline unsigned short CConfig::GetCauchy_Func_Flow(void) { return Cauchy_Func_Flow; }
 
 inline unsigned short CConfig::GetCauchy_Func_AdjFlow(void) { return Cauchy_Func_AdjFlow; }
@@ -964,8 +968,6 @@ inline double CConfig::GetPosition_Plane(void) { return Position_Plane; }
 
 inline double CConfig::GetWeightCd(void) { return WeightCd; }
 
-inline double CConfig::GetCteViscDrag(void) { return CteViscDrag; }
-
 inline double CConfig::GetFixAzimuthalLine(void) { return FixAzimuthalLine; }
 
 inline double CConfig::GetCFLRedCoeff_Turb(void) { return CFLRedCoeff_Turb; }
@@ -975,6 +977,8 @@ inline bool CConfig::GetGrid_Movement(void) { return Grid_Movement; }
 inline bool CConfig::GetRotating_Frame(void) { return Rotating_Frame; }
 
 inline bool CConfig::GetAxisymmetric(void) { return Axisymmetric; }
+
+inline bool CConfig::GetDebugMode(void) { return DebugMode; }
 
 inline bool CConfig::GetAdaptBoundary(void) { return AdaptBoundary; }
 
@@ -1009,8 +1013,6 @@ inline bool CConfig::GetSens_Remove_Sharp(void) { return Sens_Remove_Sharp; }
 inline bool CConfig::GetHold_GridFixed(void) { return Hold_GridFixed; }
 
 inline bool CConfig::GetCGNS_To_SU2(void) {return CGNS_To_SU2; }
-
-inline bool CConfig::GetCuthillMckee_Ordering(void) { return CuthillMckee_Ordering; }
 
 inline bool CConfig::GetMesh_Output(void) { return Mesh_Output; }
 

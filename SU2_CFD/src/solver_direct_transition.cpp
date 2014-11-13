@@ -2,7 +2,7 @@
  * \file solution_direct_turbulent.cpp
  * \brief Main subrotuines for solving direct problems (Euler, Navier-Stokes, etc.).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.1 "eagle"
+ * \version 3.2.4 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -58,7 +58,16 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
 		/*--- Define some auxillary vectors related to the residual ---*/
 		Residual     = new double[nVar]; Residual_RMS = new double[nVar];
 		Residual_i   = new double[nVar]; Residual_j   = new double[nVar];
-    Residual_Max = new double[nVar]; Point_Max    = new unsigned long[nVar];
+    Residual_Max = new double[nVar];
+
+    /*--- Define some structures for locating max residuals ---*/
+    Point_Max = new unsigned long[nVar];
+    for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar] = 0;
+    Point_Max_Coord = new double*[nVar];
+    for (iVar = 0; iVar < nVar; iVar++) {
+      Point_Max_Coord[iVar] = new double[nDim];
+      for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
+    }
 
 		/*--- Define some auxiliar vector related with the solution ---*/
 		Solution   = new double[nVar];
@@ -156,7 +165,7 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
 		restart_file.open(cstr, ios::in);
 		if (restart_file.fail()) {
 			cout << "There is no turbulent restart file!!" << endl;
-			exit(1);
+			exit(EXIT_FAILURE);
 		}
 		
 		for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
@@ -246,7 +255,7 @@ void CTransLMSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
       LinSysRes[total_index] = -LinSysRes[total_index];
       LinSysSol[total_index] = 0.0;
       AddRes_RMS(iVar, LinSysRes[total_index]*LinSysRes[total_index]*Vol);
-      AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->node[iPoint]->GetGlobalIndex());
+      AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
     }
   }
   

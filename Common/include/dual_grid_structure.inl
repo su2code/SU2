@@ -2,7 +2,7 @@
  * \file dual_grid_structure.inl
  * \brief In-Line subroutines of the <i>dual_grid_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.1 "eagle"
+ * \version 3.2.4 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *

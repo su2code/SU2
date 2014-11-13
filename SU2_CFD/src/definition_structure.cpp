@@ -2,7 +2,7 @@
  * \file definition_structure.cpp
  * \brief Main subroutines used by SU2_CFD.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.1 "eagle"
+ * \version 3.2.4 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -55,7 +55,7 @@ unsigned short GetnZone(string val_mesh_filename, unsigned short val_format, CCo
         cout << "There is no geometry file (GetnZone))!" << endl;
         
 #ifndef HAVE_MPI
-        exit(1);
+        exit(EXIT_FAILURE);
 #else
         MPI_Abort(MPI_COMM_WORLD,1);
         MPI_Finalize();
@@ -130,8 +130,8 @@ unsigned short GetnDim(string val_mesh_filename, unsigned short val_format) {
       
       /*--- Local variables which are needed when calling the CGNS mid-level API. ---*/
       
-      int fn, nbases, nzones, file_type;
-      int cell_dim, phys_dim;
+      int fn, nbases = 0, nzones = 0, file_type;
+      int cell_dim = 0, phys_dim = 0;
       char basename[CGNS_STRING_SIZE];
       
       /*--- Check whether the supplied file is truly a CGNS file. ---*/
@@ -140,19 +140,19 @@ unsigned short GetnDim(string val_mesh_filename, unsigned short val_format) {
         printf( "\n\n   !!! Error !!!\n" );
         printf( " %s is not a CGNS file.\n", val_mesh_filename.c_str());
         printf( " Now exiting...\n\n");
-        exit(0);
+        exit(EXIT_FAILURE);
       }
       
       /*--- Open the CGNS file for reading. The value of fn returned
        is the specific index number for this file and will be
        repeatedly used in the function calls. ---*/
       
-      if ( cg_open(val_mesh_filename.c_str(),CG_MODE_READ,&fn) ) cg_error_exit();
+      if (cg_open(val_mesh_filename.c_str(),CG_MODE_READ,&fn)) cg_error_exit();
       
       /*--- Get the number of databases. This is the highest node
        in the CGNS heirarchy. ---*/
       
-      if ( cg_nbases(fn, &nbases) ) cg_error_exit();
+      if (cg_nbases(fn,&nbases)) cg_error_exit();
       
       /*--- Check if there is more than one database. Throw an
        error if there is because this reader can currently
@@ -162,19 +162,22 @@ unsigned short GetnDim(string val_mesh_filename, unsigned short val_format) {
         printf("\n\n   !!! Error !!!\n" );
         printf("CGNS reader currently incapable of handling more than 1 database.");
         printf("Now exiting...\n\n");
-        exit(0);
+        exit(EXIT_FAILURE);
       }
       
       /*--- Read the databases. Note that the indexing starts at 1. ---*/
+      
       for ( int i = 1; i <= nbases; i++ ) {
         
-        if ( cg_base_read(fn, i, basename, &cell_dim, &phys_dim) ) cg_error_exit();
+        if (cg_base_read(fn,i,basename,&cell_dim,&phys_dim)) cg_error_exit();
         
         /*--- Get the number of zones for this base. ---*/
         
-        if ( cg_nzones(fn, i, &nzones) ) cg_error_exit();
+        if (cg_nzones(fn, i, &nzones)) cg_error_exit();
         
       }
+      
+      /*--- Set the problem dimension as read from the CGNS file ---*/
       
       nDim = cell_dim;
       
@@ -206,19 +209,15 @@ void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned
     if (rank == MASTER_NODE) cout << "Setting point connectivity." << endl;
     geometry[iZone][MESH_0]->SetPoint_Connectivity();
     
-    if (config[iZone]->GetCuthillMckee_Ordering()) {
-      
-      /*--- Renumbering points using Reverse Cuthill McKee ordering ---*/
-      
-      if (rank == MASTER_NODE) cout << "Renumbering points (Reverse Cuthill McKee Ordering)." << endl;
-      geometry[iZone][MESH_0]->SetRCM_Ordering(config[iZone]);
-      
-      /*--- recompute elements surrounding points, points surrounding points ---*/
-      
-      if (rank == MASTER_NODE) cout << "Recomputing point connectivity." << endl;
-      geometry[iZone][MESH_0]->SetPoint_Connectivity();
-      
-    }
+    /*--- Renumbering points using Reverse Cuthill McKee ordering ---*/
+    
+    if (rank == MASTER_NODE) cout << "Renumbering points (Reverse Cuthill McKee Ordering)." << endl;
+    geometry[iZone][MESH_0]->SetRCM_Ordering(config[iZone]);
+    
+    /*--- recompute elements surrounding points, points surrounding points ---*/
+    
+    if (rank == MASTER_NODE) cout << "Recomputing point connectivity." << endl;
+    geometry[iZone][MESH_0]->SetPoint_Connectivity();
     
     /*--- Compute elements surrounding elements ---*/
     
@@ -391,7 +390,7 @@ void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry,
       case SST: menter_sst = true; break;
       case ML: machine_learning = true;break;
         
-      default: cout << "Specified turbulence model unavailable or none selected" << endl; exit(1); break;
+      default: cout << "Specified turbulence model unavailable or none selected" << endl; exit(EXIT_FAILURE); break;
     }
   
   /*--- Definition of the Class for the solution: solver_container[DOMAIN][MESH_LEVEL][EQUATION]. Note that euler, ns
@@ -473,7 +472,7 @@ void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry,
       solver_container[iMGlevel][LINFLOW_SOL] = new CLinEulerSolver(geometry[iMGlevel], config);
     }
     if (lin_ns) {
-      cout <<"Equation not implemented." << endl; exit(1); break;
+      cout <<"Equation not implemented." << endl; exit(EXIT_FAILURE); break;
     }
     
   }
@@ -536,7 +535,7 @@ void Integration_Preprocessing(CIntegration **integration_container,
       case SA: spalart_allmaras = true; break;
       case SST: menter_sst = true; break;
       case ML: machine_learning = true; break;
-      default: cout << "Specified turbulence model unavailable or none selected" << endl; exit(1); break;
+      default: cout << "Specified turbulence model unavailable or none selected" << endl; exit(EXIT_FAILURE); break;
     }
   }
   
@@ -564,7 +563,7 @@ void Integration_Preprocessing(CIntegration **integration_container,
   
   /*--- Allocate solution for linear problem (at the moment we use the same scheme as the adjoint problem) ---*/
   if (lin_euler) integration_container[LINFLOW_SOL] = new CMultiGridIntegration(config);
-  if (lin_ns) { cout <<"Equation not implemented." << endl; exit(1); }
+  if (lin_ns) { cout <<"Equation not implemented." << endl; exit(EXIT_FAILURE); }
   
 }
 
@@ -653,7 +652,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
       case SA: spalart_allmaras = true; break;
       case ML: machine_learning = true; break;
       case SST: menter_sst = true; constants = solver_container[MESH_0][TURB_SOL]->GetConstants(); break;
-      default: cout << "Specified turbulence model unavailable or none selected" << endl; exit(1); break;
+      default: cout << "Specified turbulence model unavailable or none selected" << endl; exit(EXIT_FAILURE); break;
     }
   
   /*--- Number of variables for the template ---*/
@@ -707,7 +706,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
         for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
           numerics_container[iMGlevel][TEMPLATE_SOL][CONV_TERM] = new CConvective_Template(nDim, nVar_Template, config);
         break;
-      default : cout << "Convective scheme not implemented (template_solver)." << endl; exit(1); break;
+      default : cout << "Convective scheme not implemented (template_solver)." << endl; exit(EXIT_FAILURE); break;
     }
     
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
@@ -731,7 +730,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
     /*--- Definition of the convective scheme for each equation and mesh level ---*/
     switch (config->GetKind_ConvNumScheme_Flow()) {
       case NO_CONVECTIVE :
-        cout << "No convective scheme." << endl; exit(1);
+        cout << "No convective scheme." << endl; exit(EXIT_FAILURE);
         break;
         
       case SPACE_CENTERED :
@@ -742,7 +741,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
             case LAX : numerics_container[MESH_0][FLOW_SOL][CONV_TERM] = new CCentLax_Flow(nDim,nVar_Flow, config); break;
             case JST : numerics_container[MESH_0][FLOW_SOL][CONV_TERM] = new CCentJST_Flow(nDim,nVar_Flow, config); break;
             case JST_KE : numerics_container[MESH_0][FLOW_SOL][CONV_TERM] = new CCentJST_KE_Flow(nDim,nVar_Flow, config); break;
-          default : cout << "Centered scheme not implemented." << endl; exit(1); break;
+          default : cout << "Centered scheme not implemented." << endl; exit(EXIT_FAILURE); break;
           }
           
           if (!config->GetLowFidelitySim()) {
@@ -766,7 +765,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
             case NO_CENTERED : cout << "No centered scheme." << endl; break;
             case LAX : numerics_container[MESH_0][FLOW_SOL][CONV_TERM] = new CCentLaxArtComp_Flow(nDim, nVar_Flow, config); break;
             case JST : numerics_container[MESH_0][FLOW_SOL][CONV_TERM] = new CCentJSTArtComp_Flow(nDim, nVar_Flow, config); break;
-            default : cout << "Centered scheme not implemented." << endl; exit(1); break;
+            default : cout << "Centered scheme not implemented." << endl; exit(EXIT_FAILURE); break;
           }
           for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
             numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CCentLaxArtComp_Flow(nDim,nVar_Flow, config);
@@ -778,7 +777,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
         }
         if (freesurface) {
           /*--- FreeSurface flow, use artificial compressibility method ---*/
-          cout << "Centered scheme not implemented." << endl; exit(1);
+          cout << "Centered scheme not implemented." << endl; exit(EXIT_FAILURE);
         }
         break;
       case SPACE_UPWIND :
@@ -837,7 +836,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
               }
               break;
               
-            default : cout << "Upwind scheme not implemented." << endl; exit(1); break;
+            default : cout << "Upwind scheme not implemented." << endl; exit(EXIT_FAILURE); break;
           }
           
         }
@@ -851,7 +850,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
                 numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwArtComp_Flow(nDim, nVar_Flow, config);
               }
               break;
-            default : cout << "Upwind scheme not implemented." << endl; exit(1); break;
+            default : cout << "Upwind scheme not implemented." << endl; exit(EXIT_FAILURE); break;
           }
         }
         if (freesurface) {
@@ -864,14 +863,14 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
                 numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwArtComp_FreeSurf_Flow(nDim, nVar_Flow, config);
               }
               break;
-            default : cout << "Upwind scheme not implemented." << endl; exit(1); break;
+            default : cout << "Upwind scheme not implemented." << endl; exit(EXIT_FAILURE); break;
           }
         }
         
         break;
         
       default :
-        cout << "Convective scheme not implemented (euler and ns)." << endl; exit(1);
+        cout << "Convective scheme not implemented (euler and ns)." << endl; exit(EXIT_FAILURE);
         break;
     }
     
@@ -947,7 +946,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
     /*--- Definition of the convective scheme for each equation and mesh level ---*/
     switch (config->GetKind_ConvNumScheme_TNE2()) {
       case NO_CONVECTIVE :
-        cout << "No convective scheme." << endl; exit(1);
+        cout << "No convective scheme." << endl; exit(EXIT_FAILURE);
         break;
         
       case SPACE_CENTERED :
@@ -960,7 +959,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
               numerics_container[iMGlevel][TNE2_SOL][CONV_BOUND_TERM] = new CUpwRoe_TNE2(nDim, nVar_TNE2,  nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
             }
             break;
-          default : cout << "Centered scheme not implemented." << endl; exit(1); break;
+          default : cout << "Centered scheme not implemented." << endl; exit(EXIT_FAILURE); break;
         }
         break;
         
@@ -1010,12 +1009,12 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
             }
             break;
             
-          default : cout << "Upwind scheme not implemented." << endl; exit(1); break;
+          default : cout << "Upwind scheme not implemented." << endl; exit(EXIT_FAILURE); break;
         }
         break;
         
       default :
-        cout << "Convective scheme not implemented (TNE2)." << endl; exit(1);
+        cout << "Convective scheme not implemented (TNE2)." << endl; exit(EXIT_FAILURE);
         break;
     }
     
@@ -1052,7 +1051,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
         }
         break;
       default :
-        cout << "Convective scheme not implemented (turbulent)." << endl; exit(1);
+        cout << "Convective scheme not implemented (turbulent)." << endl; exit(EXIT_FAILURE);
         break;
     }
     
@@ -1101,7 +1100,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
         }
         break;
       default :
-        cout << "Convective scheme not implemented (transition)." << endl; exit(1);
+        cout << "Convective scheme not implemented (transition)." << endl; exit(EXIT_FAILURE);
         break;
     }
     
@@ -1154,7 +1153,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
     
     switch (config->GetKind_ConvNumScheme_AdjFlow()) {
       case NO_CONVECTIVE :
-        cout << "No convective scheme." << endl; exit(1);
+        cout << "No convective scheme." << endl; exit(EXIT_FAILURE);
         break;
         
       case SPACE_CENTERED :
@@ -1167,7 +1166,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
             case NO_CENTERED : cout << "No centered scheme." << endl; break;
             case LAX : numerics_container[MESH_0][ADJFLOW_SOL][CONV_TERM] = new CCentLax_AdjFlow(nDim, nVar_Adj_Flow, config); break;
             case JST : numerics_container[MESH_0][ADJFLOW_SOL][CONV_TERM] = new CCentJST_AdjFlow(nDim, nVar_Adj_Flow, config); break;
-            default : cout << "Centered scheme not implemented." << endl; exit(1); break;
+            default : cout << "Centered scheme not implemented." << endl; exit(EXIT_FAILURE); break;
           }
           
           for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
@@ -1186,7 +1185,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
             case NO_CENTERED : cout << "No centered scheme." << endl; break;
             case LAX : numerics_container[MESH_0][ADJFLOW_SOL][CONV_TERM] = new CCentLaxArtComp_AdjFlow(nDim, nVar_Adj_Flow, config); break;
             case JST : numerics_container[MESH_0][ADJFLOW_SOL][CONV_TERM] = new CCentJSTArtComp_AdjFlow(nDim, nVar_Adj_Flow, config); break;
-            default : cout << "Centered scheme not implemented." << endl; exit(1); break;
+            default : cout << "Centered scheme not implemented." << endl; exit(EXIT_FAILURE); break;
           }
           
           for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
@@ -1213,7 +1212,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
                 numerics_container[iMGlevel][ADJFLOW_SOL][CONV_BOUND_TERM] = new CUpwRoe_AdjFlow(nDim, nVar_Adj_Flow, config);
               }
               break;
-            default : cout << "Upwind scheme not implemented." << endl; exit(1); break;
+            default : cout << "Upwind scheme not implemented." << endl; exit(EXIT_FAILURE); break;
           }
         }
         
@@ -1229,14 +1228,14 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
                 numerics_container[iMGlevel][ADJFLOW_SOL][CONV_BOUND_TERM] = new CUpwRoeArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
               }
               break;
-            default : cout << "Upwind scheme not implemented." << endl; exit(1); break;
+            default : cout << "Upwind scheme not implemented." << endl; exit(EXIT_FAILURE); break;
           }
         }
 
         break;
         
       default :
-        cout << "Convective scheme not implemented (adj_euler and adj_ns)." << endl; exit(1);
+        cout << "Convective scheme not implemented (adj_euler and adj_ns)." << endl; exit(EXIT_FAILURE);
         break;
     }
     
@@ -1321,14 +1320,14 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
     /*--- Definition of the convective scheme for each equation and mesh level ---*/
     switch (config->GetKind_ConvNumScheme_AdjTNE2()) {
       case NO_CONVECTIVE :
-        cout << "No convective scheme." << endl; exit(1);
+        cout << "No convective scheme." << endl; exit(EXIT_FAILURE);
         break;
       case SPACE_CENTERED :
         switch (config->GetKind_Centered_AdjTNE2()) {
           case NO_CENTERED : cout << "No centered scheme." << endl; break;
           case LAX : numerics_container[MESH_0][ADJTNE2_SOL][CONV_TERM] = new CCentLax_AdjTNE2(nDim, nVar_Adj_TNE2, nPrimVar_Adj_TNE2, nPrimVarGrad_Adj_TNE2, config); break;
           case JST : numerics_container[MESH_0][ADJTNE2_SOL][CONV_TERM] = new CCentJST_AdjTNE2(nDim, nVar_Adj_TNE2, config); break;
-          default : cout << "Centered scheme not implemented." << endl; exit(1); break;
+          default : cout << "Centered scheme not implemented." << endl; exit(EXIT_FAILURE); break;
         }
         for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
           numerics_container[iMGlevel][ADJTNE2_SOL][CONV_TERM] = new CCentLax_AdjTNE2(nDim, nVar_Adj_TNE2, nPrimVar_Adj_TNE2, nPrimVarGrad_Adj_TNE2, config);
@@ -1352,12 +1351,12 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
               numerics_container[iMGlevel][ADJTNE2_SOL][CONV_BOUND_TERM] = new CUpwSW_AdjTNE2(nDim, nVar_Adj_TNE2, nPrimVar_Adj_TNE2, nPrimVarGrad_Adj_TNE2, config);
             }
             break;
-          default : cout << "Upwind scheme not implemented." << endl; exit(1); break;
+          default : cout << "Upwind scheme not implemented." << endl; exit(EXIT_FAILURE); break;
         }
         break;
         
       default :
-        cout << "Convective scheme not implemented (adj_tne2_euler and adj_tne2_ns)." << endl; exit(1);
+        cout << "Convective scheme not implemented (adj_tne2_euler and adj_tne2_ns)." << endl; exit(EXIT_FAILURE);
         break;
     }
     
@@ -1387,13 +1386,13 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
         switch (config->GetKind_Centered_LinFlow()) {
           case LAX : numerics_container[MESH_0][LINFLOW_SOL][CONV_TERM] = new CCentLax_LinFlow(nDim, nVar_Lin_Flow, config); break;
           case JST : numerics_container[MESH_0][LINFLOW_SOL][CONV_TERM] = new CCentJST_LinFlow(nDim, nVar_Lin_Flow, config); break;
-          default : cout << "Centered scheme not implemented." << endl; exit(1); break;
+          default : cout << "Centered scheme not implemented." << endl; exit(EXIT_FAILURE); break;
         }
         for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
           numerics_container[iMGlevel][LINFLOW_SOL][CONV_TERM] = new CCentLax_LinFlow(nDim, nVar_Lin_Flow, config);
         break;
       default :
-        cout << "Convective scheme not implemented (lin_euler)." << endl; exit(1);
+        cout << "Convective scheme not implemented (lin_euler)." << endl; exit(EXIT_FAILURE);
         break;
     }
     
@@ -1413,10 +1412,10 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
           if (spalart_allmaras) {
             numerics_container[iMGlevel][ADJTURB_SOL][CONV_TERM] = new CUpwSca_AdjTurb(nDim, nVar_Adj_Turb, config);
           }
-          else if (menter_sst) {cout << "Adjoint SST turbulence model not implemented." << endl; exit(1);}
+          else if (menter_sst) {cout << "Adjoint SST turbulence model not implemented." << endl; exit(EXIT_FAILURE);}
         break;
       default :
-        cout << "Convective scheme not implemented (adj_turb)." << endl; exit(1);
+        cout << "Convective scheme not implemented (adj_turb)." << endl; exit(EXIT_FAILURE);
         break;
     }
     
@@ -1425,7 +1424,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
       if (spalart_allmaras){
         numerics_container[iMGlevel][ADJTURB_SOL][VISC_TERM] = new CAvgGradCorrected_AdjTurb(nDim, nVar_Adj_Turb, config);
       }
-      else if (menter_sst) {cout << "Adjoint SST turbulence model not implemented." << endl; exit(1);}
+      else if (menter_sst) {cout << "Adjoint SST turbulence model not implemented." << endl; exit(EXIT_FAILURE);}
     }
     
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
@@ -1434,13 +1433,13 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
         numerics_container[iMGlevel][ADJTURB_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_AdjTurb(nDim, nVar_Adj_Turb, config);
         numerics_container[iMGlevel][ADJTURB_SOL][SOURCE_SECOND_TERM] = new CSourceConservative_AdjTurb(nDim, nVar_Adj_Turb, config);
       }
-      else if (menter_sst) {cout << "Adjoint SST turbulence model not implemented." << endl; exit(1);}
+      else if (menter_sst) {cout << "Adjoint SST turbulence model not implemented." << endl; exit(EXIT_FAILURE);}
     }
     
     /*--- Definition of the boundary condition method ---*/
     for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
       if (spalart_allmaras) numerics_container[iMGlevel][ADJTURB_SOL][CONV_BOUND_TERM] = new CUpwLin_AdjTurb(nDim, nVar_Adj_Turb, config);
-      else if (menter_sst) {cout << "Adjoint SST turbulence model not implemented." << endl; exit(1);}
+      else if (menter_sst) {cout << "Adjoint SST turbulence model not implemented." << endl; exit(EXIT_FAILURE);}
     }
     
   }

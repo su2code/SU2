@@ -5,7 +5,7 @@ namespace SU2MPI {
   // Safetly exits with MPI
   void FinalizeAndExit1(){
 #ifndef HAVE_MPI
-    exit(1);
+    exit(EXIT_FAILURE);
 #else
     MPI_Abort(MPI_COMM_WORLD,1);
     MPI_Finalize();

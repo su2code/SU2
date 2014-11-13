@@ -2,7 +2,7 @@
  * \file solution_direct_elasticity.cpp
  * \brief Main subrotuines for solving the linear elasticity equation.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.1 "eagle"
+ * \version 3.2.4 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -27,7 +27,7 @@ CFEASolver::CFEASolver(void) : CSolver() { }
 CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
   
 	unsigned long iPoint;
-	unsigned short nMarker, iVar, jVar, NodesElement = 0, nLineLets;
+	unsigned short nMarker, iDim, iVar, jVar, NodesElement = 0, nLineLets;
   double dull_val;
   
   int rank = MASTER_NODE;
@@ -52,6 +52,11 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
   Residual_RMS = new double[nVar];      for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 0.0;
   Residual_Max = new double[nVar];      for (iVar = 0; iVar < nVar; iVar++) Residual_Max[iVar]  = 0.0;
   Point_Max = new unsigned long[nVar];  for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar]     = 0;
+  Point_Max_Coord = new double*[nVar];
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Point_Max_Coord[iVar] = new double[nDim];
+    for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
+  }
   
   /*--- Define some auxiliary vectors related to the solution ---*/
   
@@ -130,7 +135,7 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
     
 		if (restart_file.fail()) {
 			cout << "There is no fea restart file!!" << endl;
-			exit(1);
+			exit(EXIT_FAILURE);
 		}
     
     /*--- In case this is a parallel simulation, we need to perform the
@@ -1297,7 +1302,7 @@ void CFEASolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_c
 		for (iVar = 0; iVar < nVar; iVar++) {
 			total_index = iPoint*nVar+iVar;
 			AddRes_RMS(iVar, LinSysAux[total_index]*LinSysAux[total_index]);
-      AddRes_Max(iVar, fabs(LinSysAux[total_index]), geometry->node[iPoint]->GetGlobalIndex());
+      AddRes_Max(iVar, fabs(LinSysAux[total_index]), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
 		}
 	}
   

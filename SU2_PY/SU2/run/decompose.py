@@ -1,7 +1,7 @@
 ## \file decompose.py
 #  \brief python package for decomposing meshes
 #  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 3.2.1 "eagle"
+#  \version 3.2.4 "eagle"
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
