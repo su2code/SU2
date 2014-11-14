@@ -146,17 +146,23 @@ class Config(ordered_bunch):
         if not dv_old: dv_old = [0.0]*n_dv
         assert len(dv_new) == len(dv_old) , 'unexpected design vector length'
         
+        # handle param
+        param_dv = self['DV_PARAM']
+
         # apply scale
         dv_scales = def_dv['SCALE']
         dv_new = [ dv_new[i]*dv_scl for i,dv_scl in enumerate(dv_scales) ]
         dv_old = [ dv_old[i]*dv_scl for i,dv_scl in enumerate(dv_scales) ]
         
         # Change the parameters of the design variables
+
         self['DV_KIND'] = def_dv['KIND']
-        self.update({ 'DV_MARKER'    : def_dv['MARKER'][0] ,
-                      'DV_PARAM'     : def_dv['PARAM']     ,
-                      'DV_VALUE_OLD' : dv_old              ,
-                      'DV_VALUE_NEW' : dv_new              })
+        param_dv['PARAM'] = def_dv['PARAM']
+        param_dv['FFDTAG'] = def_dv['FFDTAG']
+
+        self.update({ 'DV_MARKER'        : def_dv['MARKER'][0] ,
+                      'DV_VALUE_OLD'     : dv_old              ,
+                      'DV_VALUE_NEW'     : dv_new              })
         
     def __eq__(self,konfig):
         return super(Config,self).__eq__(konfig)
@@ -317,20 +323,31 @@ def read_config(filename):
                 info_General = info_General.split(';')
                 # build list of dv params, convert string to float
                 dv_Parameters = []
-                
+                dv_FFDTag     = []
+
                 for this_dvParam in info_General:
                     this_dvParam = this_dvParam.strip('()')
                     this_dvParam = this_dvParam.split(",")
                     
                     # if FFD change the first element to work with numbers and float(x)
                     if data_dict["DV_KIND"][0] in ['FFD_SETTING','FFD_CONTROL_POINT','FFD_DIHEDRAL_ANGLE','FFD_TWIST_ANGLE','FFD_ROTATION','FFD_CAMBER','FFD_THICKNESS','FFD_CONTROL_POINT_2D','FFD_CAMBER_2D','FFD_THICKNESS_2D']:
+                        this_dvFFDTag = this_dvParam[0]
                         this_dvParam[0] = '0'
-                    
+                    else:
+                        this_dvFFDTag = []
+
                     this_dvParam = [ float(x) for x in this_dvParam ]
                     
+                    dv_FFDTag     = dv_FFDTag     + [this_dvFFDTag]
                     dv_Parameters = dv_Parameters + [this_dvParam]
-                data_dict[this_param] = dv_Parameters
-                break     
+            
+            # store in a dictionary
+                dv_Definitions = { 'FFDTAG' : dv_FFDTag     ,
+                                   'PARAM'  : dv_Parameters }
+
+
+                data_dict[this_param] = dv_Definitions
+                break
             
             # comma delimited lists of floats
             if case("DV_VALUE_OLD")    : pass
@@ -594,41 +611,31 @@ def write_config(filename,param_dict):
             
             # semicolon delimited lists of comma delimited lists
             if case("DV_PARAM") :
-              
-                if 'DEFINITION_DV' in param_dict:
-                    new_value_ = param_dict["DEFINITION_DV"]
+
+                assert isinstance(new_value['PARAM'],list) , 'incorrect specification of DV_PARAM'
+                if not isinstance(new_value['PARAM'][0],list): new_value = [ new_value ]
                 
-                assert isinstance(new_value,list) , 'incorrect specification of DV_PARAM'
-                if not isinstance(new_value[0],list): new_value = [ new_value ]
-                
-                for i_value in range(len(new_value)):
+                for i_value in range(len(new_value['PARAM'])):
+
                     output_file.write("( ")
-                    this_list = new_value[i_value]
-                    n_lists = len(new_value[i_value])
+                    this_param_list = new_value['PARAM'][i_value]
+                    this_ffd_list = new_value['FFDTAG'][i_value]
+                    n_lists = len(this_param_list)
                     
-                    if 'DEFINITION_DV' in param_dict:
-                       this_kind = new_value_['KIND'][i_value]
-                       # Copy the FFD tag if there is information
-                       if this_kind in ['FFD_SETTING','FFD_CONTROL_POINT','FFD_DIHEDRAL_ANGLE','FFD_TWIST_ANGLE','FFD_ROTATION','FFD_CAMBER','FFD_THICKNESS','FFD_CONTROL_POINT_2D','FFD_CAMBER_2D','FFD_THICKNESS_2D']:
-                           output_file.write("%s, " % new_value_['FFDTAG'][i_value])
-                           for j_value in range(1,n_lists):
-                               output_file.write("%s" % this_list[j_value])
-                               if j_value+1 < n_lists:
-                                   output_file.write(", ")
-                       # No FFD design variable
-                       else:
-                           for j_value in range(n_lists):
-                               output_file.write("%s" % this_list[j_value])
-                               if j_value+1 < n_lists:
-                                  output_file.write(", ")
+                    if this_ffd_list != []:
+                      output_file.write("%s, " % this_ffd_list)
+                      for j_value in range(1,n_lists):
+                        output_file.write("%s" % this_param_list[j_value])
+                        if j_value+1 < n_lists:
+                          output_file.write(", ")
                     else:
-                        for j_value in range(n_lists):
-                            output_file.write("%s" % this_list[j_value])
-                            if j_value+1 < n_lists:
-                                output_file.write(", ")
-      
+                      for j_value in range(n_lists):
+                        output_file.write("%s" % this_param_list[j_value])
+                        if j_value+1 < n_lists:
+                          output_file.write(", ")
+
                     output_file.write(") ")
-                    if i_value+1 < len(new_value):
+                    if i_value+1 < len(new_value['PARAM']):
                         output_file.write("; ")
                 break
             
