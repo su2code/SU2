@@ -488,7 +488,8 @@ private:
 	bool CGNS_To_SU2;      		 	/*!< \brief Flag to specify whether a CGNS mesh is converted to SU2 format. */
 	unsigned short nSpecies, 		/*!< \brief No of species present in plasma */
 	nReactions;									/*!< \brief Number of reactions in chemical model. */
-	bool Wrt_Vol_Sol,                /*!< \brief Write a volume solution file */
+	bool Low_MemoryOutput,      /*!< \brief Write a volume solution file */
+  Wrt_Vol_Sol,                /*!< \brief Write a volume solution file */
 	Wrt_Srf_Sol,                /*!< \brief Write a surface solution file */
 	Wrt_Restart,                /*!< \brief Write a restart solution file */
 	Wrt_Csv_Sol,                /*!< \brief Write a surface comma-separated values solution file */
@@ -2102,6 +2103,12 @@ public:
 	 * \return <code>TRUE</code> means that a volume solution file will be written.
 	 */
 	bool GetWrt_Vol_Sol(void);
+  
+  /*!
+	 * \brief Get information about writing a volume solution file.
+	 * \return <code>TRUE</code> means that a volume solution file will be written.
+	 */
+  bool GetLow_MemoryOutput(void);
 
 	/*!
 	 * \brief Get information about writing a surface solution file.

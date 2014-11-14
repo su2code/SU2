@@ -822,6 +822,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Writing convergence history frequency for the dual time */
   addUnsignedLongOption("WRT_CON_FREQ_DUALTIME",  Wrt_Con_Freq_DualTime, 10);
   /* DESCRIPTION: Write a volume solution file */
+  addBoolOption("LOW_MEMORY_OUTPUT", Low_MemoryOutput, false);
+  /* DESCRIPTION: Write a volume solution file */
   addBoolOption("WRT_VOL_SOL", Wrt_Vol_Sol, true);
   /* DESCRIPTION: Write a surface solution file */
   addBoolOption("WRT_SRF_SOL", Wrt_Srf_Sol, true);
