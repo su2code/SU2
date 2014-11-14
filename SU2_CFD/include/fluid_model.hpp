@@ -42,7 +42,7 @@ using namespace std;
  * \brief Main class for defining the Thermo-Physical Model
  * a child class for each particular Model (Ideal-Gas, Van der Waals, etc.)
  * \author: S.Vitale, G.Gori, M.Pini
- * \version 3.2.3 "eagle"
+ * \version 3.2.4 "eagle"
  */
 class CFluidModel {
 protected:
@@ -232,7 +232,7 @@ public:
  * \class CIdealGas
  * \brief Child class for defining ideal gas model.
  * \author: S.Vitale, M.Pini.
- * \version 3.2.3 "eagle"
+ * \version 3.2.4 "eagle"
  */
 class CIdealGas : public CFluidModel {
 
@@ -318,10 +318,10 @@ public:
 
 
 /*!
- * \derived class CVanDerWaalsGas
+ * derived class CVanDerWaalsGas
  * \brief Child class for defining the Van der Waals model.
  * \author: S.Vitale, M.Pini
- * \version 3.2.3 "eagle"
+ * \version 3.2.4 "eagle"
  */
 class CVanDerWaalsGas : public CIdealGas {
 
@@ -366,7 +366,6 @@ public:
 		 * \param[in] P - first thermodynamic variable.
 		 * \param[in] rho - second thermodynamic variable.
 		 */
-
 		void SetTDState_Prho (double P, double rho );
 
 		/*!
@@ -374,14 +373,12 @@ public:
 		 * \param[in] P - first thermodynamic variable.
 		 * \param[in] rho - second thermodynamic variable.
 		 */
-
 		void SetEnergy_Prho (double P, double rho );
 
 		/*!
 		 * \brief virtual member that would be different for each gas model implemented
-		 * \param[in] InputSpec - Input pair for FLP calls ("hs").
-		 * \param[in] th1 - first thermodynamic variable (h).
-		 * \param[in] th2 - second thermodynamic variable (s).
+		 * \param[in] h - first thermodynamic variable (h).
+		 * \param[in] s - second thermodynamic variable (s).
 		 *
 		 */
 		void SetTDState_hs (double h, double s );
@@ -389,9 +386,8 @@ public:
 
 		/*!
 		 * \brief virtual member that would be different for each gas model implemented
-		 * \param[in] InputSpec - Input pair for FLP calls ("rhoT").
-		 * \param[in] th1 - first thermodynamic variable (rho).
-		 * \param[in] th2 - second thermodynamic variable (T).
+		 * \param[in] rho - first thermodynamic variable (rho).
+		 * \param[in] T - second thermodynamic variable (T).
 		 *
 		 */
 		void SetTDState_rhoT (double rho, double T );
@@ -403,7 +399,7 @@ public:
  * \derived class CPengRobinson
  * \brief Child class for defining the Peng-Robinson model.
  * \author: S.Vitale, G. Gori
- * \version 3.2.3 "eagle"
+ * \version 3.2.4 "eagle"
  */
 class CPengRobinson : public CIdealGas {
 

@@ -4,7 +4,7 @@
 #  \brief Python script for automatically generating a list of FFD variables.
 #  \author T. Economon, F. Palacios,
 #   Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 3.2.3
+#  \version 3.2.4
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
