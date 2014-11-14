@@ -2,7 +2,7 @@
  * \file config_structure.cpp
  * \brief Main file for reading the config file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.3 "eagle"
+ * \version 3.2.4 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -188,12 +188,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    *  \ingroup Config*/
   addEnumOption("PHYSICAL_PROBLEM", Kind_Solver, Solver_Map, NO_SOLVER);
   /*!\par MATH_PROBLEM
-   *  DESCRIPTION: Mathematical problem
-   *  Options: DIRECT, ADJOINT \ingroup Config*/
+   *  DESCRIPTION: Mathematical problem \n  Options: DIRECT, ADJOINT \ingroup Config*/
   addMathProblemOption("MATH_PROBLEM" , Adjoint, false , OneShot, false, Linearized, false, Restart_Flow, false);
   /*!\par KIND_TURB_MODEL
-   *  DESCRIPTION: Specify turbulence model
-   *  Options: SA, SST, ML, NONE (default) \ingroup Config*/
+   *  DESCRIPTION: Specify turbulence model \n Options: SA, SST, ML, NONE (default) \ingroup Config*/
   addEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, NO_TURB_MODEL);
 
   /* DESCRIPTION: Specify transition model */
@@ -206,8 +204,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Perform a low fidelity simulation */
   addBoolOption("LOW_FIDELITY_SIMULATION", LowFidelitySim, false);
   /*!\par RESTART_SOL
-   *  DESCRIPTION: Restart solution from native solution file
-   *  Options: NO, YES \ingroup Config */
+   *  DESCRIPTION: Restart solution from native solution file \n Options: NO, YES \ingroup Config */
   addBoolOption("RESTART_SOL", Restart, false);
   /*!\par VISUALIZE_PART
    *  DESCRIPTION: Write a tecplot file for each partition \ingroup Config*/
@@ -276,7 +273,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Artifical compressibility factor  */
   addDoubleOption("ARTCOMP_FACTOR", ArtComp_Factor, 1.0);
   /*!\par MACH_NUMBER
-   *  DESCRIPTION:  Mach number (non-dimensional, based on the free-stream values) \ingroup Config*/
+   *  DESCRIPTION:  Mach number (non-dimensional, based on the free-stream values). 0.0 by default \ingroup Config*/
   addDoubleOption("MACH_NUMBER", Mach, 0.0);
   /* DESCRIPTION: Free-stream option to choose between density and temperature for initializing the solution */
   addEnumOption("FREESTREAM_OPTION", Kind_FreeStreamOption, FreeStreamOption_Map, TEMPERATURE_FS);
@@ -375,21 +372,28 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    * DESCRIPTION: Marker(s) of the surface where objective function (design problem) will be evaluated \ingroup Config*/
   addStringListOption("MARKER_DESIGNING", nMarker_Designing, Marker_Designing);
   /*!\par GEO_MARKER
-   * DESCRIPTION: Marker(s) of the surface where evaluate the geometrical functions */
+   * DESCRIPTION: Marker(s) of the surface where evaluate the geometrical functions \ingroup Config*/
   addStringListOption("GEO_MARKER", nMarker_GeoEval, Marker_GeoEval);
-  /* DESCRIPTION: Euler wall boundary marker(s) */
+  /*!\par MARKER_EULER
+   * DESCRIPTION: Euler wall boundary marker(s) \ingroup Config*/
   addStringListOption("MARKER_EULER", nMarker_Euler, Marker_Euler);
-  /* DESCRIPTION: Far-field boundary marker(s) */
+  /*!\par MARKER_FAR
+   * DESCRIPTION: Far-field boundary marker(s) \ingroup Config*/
   addStringListOption("MARKER_FAR", nMarker_FarField, Marker_FarField);
-  /* DESCRIPTION: Symmetry boundary condition */
+  /*!\par MARKER_SYM
+   * DESCRIPTION: Symmetry boundary condition \ingroup Config*/
   addStringListOption("MARKER_SYM", nMarker_SymWall, Marker_SymWall);
-  /* DESCRIPTION: Symmetry boundary condition */
+  /*!\par MARKER_PRESSURE
+   * DESCRIPTION: Symmetry boundary condition \ingroup Config*/
   addStringListOption("MARKER_PRESSURE", nMarker_Pressure, Marker_Pressure);
-  /* DESCRIPTION: Near-Field boundary condition */
+  /*!\par MARKER_NEARFIELD
+   * DESCRIPTION: Near-Field boundary condition \ingroup Config*/
   addStringListOption("MARKER_NEARFIELD", nMarker_NearFieldBound, Marker_NearFieldBound);
-  /* DESCRIPTION: Zone interface boundary marker(s) */
+  /*!\par MARKER_INTERFACE
+   * DESCRIPTION: Zone interface boundary marker(s) \ingroup Config*/
   addStringListOption("MARKER_INTERFACE", nMarker_InterfaceBound, Marker_InterfaceBound);
-  /* DESCRIPTION: Dirichlet boundary marker(s) */
+  /*!\par MARKER_DIRICHLET
+   *  DESCRIPTION: Dirichlet boundary marker(s) \ingroup Config*/
   addStringListOption("MARKER_DIRICHLET", nMarker_Dirichlet, Marker_Dirichlet);
   /* DESCRIPTION: Neumann boundary marker(s) */
   addStringListOption("MARKER_NEUMANN", nMarker_Neumann, Marker_Neumann);
@@ -432,9 +436,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Riemann boundary marker(s) with the following formats, a unit vector. */
   addRiemannOption("MARKER_RIEMANN", nMarker_Riemann, Marker_Riemann, Kind_Data_Riemann, Riemann_Map, Riemann_Var1, Riemann_Var2, Riemann_FlowDir);
   /*!\par MARKER_SUPERSONIC_INLET
-   *  DESCRIPTION: % Supersonic inlet boundary marker(s)
-   Format: (inlet marker, temperature, static pressure, velocity_x,
-   velocity_y, velocity_z, ... ), i.e. primitive variables specified. \ingroup Config*/
+   *  DESCRIPTION: Supersonic inlet boundary marker(s) \n   Format: (inlet marker, temperature, static pressure, velocity_x,   velocity_y, velocity_z, ... ), i.e. primitive variables specified. \ingroup Config*/
   addInletOption("MARKER_SUPERSONIC_INLET", nMarker_Supersonic_Inlet, Marker_Supersonic_Inlet,
                  Inlet_Temperature, Inlet_Pressure, Inlet_Velocity);
   /*!\par MARKER_OUTLET
@@ -647,7 +649,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addConvectOption("CONV_NUM_METHOD_FLOW", Kind_ConvNumScheme_Flow, Kind_Centered_Flow, Kind_Upwind_Flow);
   /* DESCRIPTION: Spatial numerical order integration */
   addEnumOption("SPATIAL_ORDER_FLOW", SpatialOrder_Flow, SpatialOrder_Map, SECOND_ORDER);
-  /* DESCRIPTION: Slope limiter */
+  /*!\par SLOPE_LIMITER_FLOW
+   * DESCRIPTION: Slope limiter for the direct solution. \n OPTIONS: VENKATAKRISHNAAN (default), BARTH_JESPERSEN, SHARP_EDGES \ingroup Config*/
   addEnumOption("SLOPE_LIMITER_FLOW", Kind_SlopeLimit_Flow, Limiter_Map, VENKATAKRISHNAN);
   default_vec_3d[0] = 0.15; default_vec_3d[1] = 0.5; default_vec_3d[2] = 0.02;
   /* DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients */
@@ -657,7 +660,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addConvectOption("CONV_NUM_METHOD_ADJFLOW", Kind_ConvNumScheme_AdjFlow, Kind_Centered_AdjFlow, Kind_Upwind_AdjFlow);
   /* DESCRIPTION: Spatial numerical order integration */
   addEnumOption("SPATIAL_ORDER_ADJFLOW", SpatialOrder_AdjFlow, SpatialOrder_Map, SECOND_ORDER);
-  /* DESCRIPTION: Slope limiter */
+  /*!\par SLOPE_LIMITER_ADJFLOW
+     * DESCRIPTION: Slope limiter for the adjoint solution. \n OPTIONS: VENKATAKRISHNAAN (default), BARTH_JESPERSEN, SHARP_EDGES \ingroup Config*/
   addEnumOption("SLOPE_LIMITER_ADJFLOW", Kind_SlopeLimit_AdjFlow, Limiter_Map, VENKATAKRISHNAN);
   default_vec_3d[0] = 0.15; default_vec_3d[1] = 0.5; default_vec_3d[2] = 0.02;
   /* DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients */
@@ -743,7 +747,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("FROZEN_VISC", Frozen_Visc, true);
    /* DESCRIPTION:  */
   addDoubleOption("FIX_AZIMUTHAL_LINE", FixAzimuthalLine, 90.0);
-  /* DESCRIPTION: Remove sharp edges from the sensitivity evaluation */
+  /*!\par SENS_REMOVE_SHARP
+   * DESCRIPTION: Remove sharp edges from the sensitivity evaluation  \n Format: SENS_REMOVE_SHARP = YES \n Default: NO \ingroup Config*/
   addBoolOption("SENS_REMOVE_SHARP", Sens_Remove_Sharp, false);
   /* DESCRIPTION: P-norm for heat-flux based objective functions. */
 	addDoubleOption("PNORM_HEATFLUX", pnorm_heat, 1.0);
@@ -1000,6 +1005,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	addDoubleListOption("DV_VALUE", nDV, DV_Value);
 	/* DESCRIPTION: Parameters of the shape deformation
    - FFD_CONTROL_POINT_2D ( FFDBox ID, i_Ind, j_Ind, x_Disp, y_Disp )
+   - FFD_RADIUS_2D ( FFDBox ID )
    - FFD_CAMBER_2D ( FFDBox ID, i_Ind )
    - FFD_THICKNESS_2D ( FFDBox ID, i_Ind )
    - HICKS_HENNE ( Lower Surface (0)/Upper Surface (1)/Only one Surface (2), x_Loc )
@@ -3078,7 +3084,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     case SU2_SOL: cout << "|  |_____/   \\____/  |____|   Suite (Solution Exporting Code)           |" << endl; break;
   }
 
-  cout << "|                             Release 3.2.3 \"eagle\"                     |" << endl;
+  cout << "|                             Release 3.2.4 \"eagle\"                     |" << endl;
   cout <<"-------------------------------------------------------------------------" << endl;
   cout << "| SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).       |" << endl;
   cout << "| SU2 is distributed in the hope that it will be useful,                |" << endl;
@@ -3315,6 +3321,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       switch (Design_Variable[iDV]) {
         case FFD_SETTING:           cout << "Setting the FFD box structure." ; break;
         case FFD_CONTROL_POINT_2D:  cout << "FFD 2D (control point) <-> "; break;
+        case FFD_RADIUS_2D:        cout << "FFD 2D (radious)"; break;
         case FFD_CAMBER_2D:         cout << "FFD 2D (camber) <-> "; break;
         case FFD_THICKNESS_2D:      cout << "FFD 2D (thickness) <-> "; break;
         case HICKS_HENNE:           cout << "Hicks Henne <-> " ; break;
@@ -3351,6 +3358,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         if (Design_Variable[iDV] == FFD_SETTING) nParamDV = 0;
         if (Design_Variable[iDV] == SURFACE_FILE) nParamDV = 0;
         if (Design_Variable[iDV] == FFD_CONTROL_POINT_2D) nParamDV = 5;
+        if (Design_Variable[iDV] == FFD_RADIUS_2D) nParamDV = 1;
         if (Design_Variable[iDV] == FFD_CAMBER_2D) nParamDV = 2;
         if (Design_Variable[iDV] == FFD_THICKNESS_2D) nParamDV = 2;
         if (Design_Variable[iDV] == HICKS_HENNE) nParamDV = 2;
@@ -3381,7 +3389,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
                (Design_Variable[iDV] == FFD_CONTROL_POINT_2D) ||
                (Design_Variable[iDV] == FFD_CAMBER_2D) ||
                (Design_Variable[iDV] == FFD_THICKNESS_2D) ||
-               (Design_Variable[iDV] == FFD_CONTROL_POINT_2D) ||
+               (Design_Variable[iDV] == FFD_RADIUS_2D) ||
                (Design_Variable[iDV] == FFD_CONTROL_POINT) ||
                (Design_Variable[iDV] == FFD_DIHEDRAL_ANGLE) ||
                (Design_Variable[iDV] == FFD_TWIST_ANGLE) ||

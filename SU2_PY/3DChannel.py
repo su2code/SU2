@@ -3,7 +3,7 @@
 ## \file 3DChannel.py
 #  \brief Python script for box meshing
 #  \author F. Palacios
-#  \version 3.2.3 "eagle"
+#  \version 3.2.4 "eagle"
 #
 # SU2, Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
 #
