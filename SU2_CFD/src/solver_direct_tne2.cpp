@@ -7108,120 +7108,21 @@ void CTNE2NSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
   
   
   /*--- Local variables ---*/
-  bool implicit;
-	unsigned short iDim, iSpecies, iVar;
-  unsigned short RHOS_INDEX, RHO_INDEX, T_INDEX, TVE_INDEX;
-	unsigned long iVertex, iPoint, jPoint;
-	double pcontrol;
-  double rho, rhos, Yj, eves, hs;
-	double *Normal, Area;
-  double *Ds, *V, Ys, *Yst, *dYdn, SdYdn;
-  double **GradV;
-  
-  /*--- Assign booleans ---*/
-	implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
-  
-  /*--- Set "Proportional control" coefficient ---*/
-  pcontrol = 0.6;
-  
-  /*--- Get species mass fractions at the wall ---*/
-  Yst = config->GetWall_Catalycity();
-  
-  /*--- Get the locations of the primitive variables ---*/
-  RHOS_INDEX = node[0]->GetRhosIndex();
-  RHO_INDEX  = node[0]->GetRhoIndex();
-  T_INDEX    = node[0]->GetTIndex();
-  TVE_INDEX  = node[0]->GetTveIndex();
-  
-  /*--- Allocate arrays ---*/
-  dYdn  = new double[nSpecies];
-  
-	/*--- Loop over all of the vertices on this boundary marker ---*/
-	for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-    
-		/*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
-		if (geometry->node[iPoint]->GetDomain()) {
-      
-			/*--- Compute dual-grid area and boundary normal ---*/
-			Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
-			Area = 0.0;
-			for (iDim = 0; iDim < nDim; iDim++)
-				Area += Normal[iDim]*Normal[iDim];
-			Area = sqrt (Area);
-      
-			/*--- Initialize the convective & viscous residuals to zero ---*/
-			for (iVar = 0; iVar < nVar; iVar++)
-				Res_Visc[iVar] = 0.0;
-      
-      /*--- Get primitive information ---*/
-      V = node[iPoint]->GetPrimVar();
-      Ds = node[iPoint]->GetDiffusionCoeff();
-      
-      /*--- Rename for convenience ---*/
-      rho = V[RHO_INDEX];
-      
-      /*--- Calculate revised wall species densities ---*/
-      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-        rhos = Yst[iSpecies]*rho;
-        node[iPoint]->SetPrimVar(rhos, RHOS_INDEX+iSpecies);
-      }
-      
-      /*--- Calculate revised primitive variable gradients ---*/
-      SetPrimVar_Gradient_LS(geometry, config, iPoint);
-      GradV = node[iPoint]->GetGradient_Primitive();
-      
-      /*--- Calculate normal derivative of mass fraction ---*/
-      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-        Ys = V[RHOS_INDEX+iSpecies]/rho;
-        dYdn[iSpecies] = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          dYdn[iSpecies] += 1.0/rho * (GradV[RHOS_INDEX+iSpecies][iDim] -
-                                       Ys*GradV[RHO_INDEX][iDim])*Normal[iDim];
-      }
-      
-      /*--- Calculate supplementary quantities ---*/
-      SdYdn = 0.0;
-      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-        SdYdn += rho*Ds[iSpecies]*dYdn[iSpecies];
-      
-      /*--- Calculate visc. residual from applied boundary condition ---*/
-      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-        Ys   = V[RHOS_INDEX+iSpecies]/rho;
-        eves = node[iPoint]->CalcEve(config, V[TVE_INDEX], iSpecies);
-        hs   = node[iPoint]->CalcHs(config, V[T_INDEX], eves, iSpecies);
-        Res_Visc[iSpecies] = rho*Ds[iSpecies]*dYdn[iSpecies] - Ys*SdYdn;
-        Res_Visc[nSpecies+nDim]   += Res_Visc[iSpecies]*hs;
-        Res_Visc[nSpecies+nDim+1] += Res_Visc[iSpecies]*eves;
-      }
-      
-			/*--- Viscous contribution to the residual at the wall ---*/
-      LinSysRes.SubtractBlock(iPoint, Res_Visc);
-		}
-	}
-  
-  delete [] dYdn;
-  
-  
-  
-  
-  ///////////// FINITE DIFFERENCE METHOD ///////////////
-//	/*--- Local variables ---*/
 //  bool implicit;
 //	unsigned short iDim, iSpecies, iVar;
-//  unsigned short RHOS_INDEX, RHO_INDEX;
+//  unsigned short RHOS_INDEX, RHO_INDEX, T_INDEX, TVE_INDEX;
 //	unsigned long iVertex, iPoint, jPoint;
 //	double pcontrol;
-//  double rho, Yj, eves, hs;
-//	double *Normal, Area, dij;
-//  double *Di, *Dj, *Ds, *V, *Vi, *Vj, Ys, *Yst, *dYdn, SdYdn;
-//  double **GradY;
+//  double rho, rhos, Yj, eves, hs;
+//	double *Normal, Area;
+//  double *Ds, *V, Ys, *Yst, *dYdn, SdYdn;
+//  double **GradV;
 //  
 //  /*--- Assign booleans ---*/
 //	implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
 //  
 //  /*--- Set "Proportional control" coefficient ---*/
-//  pcontrol = 0.6;
+//  pcontrol = 1.0;
 //  
 //  /*--- Get species mass fractions at the wall ---*/
 //  Yst = config->GetWall_Catalycity();
@@ -7229,14 +7130,11 @@ void CTNE2NSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
 //  /*--- Get the locations of the primitive variables ---*/
 //  RHOS_INDEX = node[0]->GetRhosIndex();
 //  RHO_INDEX  = node[0]->GetRhoIndex();
+//  T_INDEX    = node[0]->GetTIndex();
+//  TVE_INDEX  = node[0]->GetTveIndex();
 //  
 //  /*--- Allocate arrays ---*/
-//  V     = new double[nPrimVar];
-//  Ds    = new double[nSpecies];
 //  dYdn  = new double[nSpecies];
-//  GradY = new double*[nSpecies];
-//  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-//    GradY[iSpecies] = new double[nDim];
 //  
 //	/*--- Loop over all of the vertices on this boundary marker ---*/
 //	for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -7244,20 +7142,6 @@ void CTNE2NSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
 //    
 //		/*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
 //		if (geometry->node[iPoint]->GetDomain()) {
-//      
-//      /*--- Compute closest normal neighbor ---*/
-//      jPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
-//      
-//      /*--- Compute distance between wall & normal neighbor ---*/
-//      dij = 0.0;
-//      for (iDim = 0; iDim < nDim; iDim++) {
-//        dij += (geometry->node[jPoint]->GetCoord(iDim) -
-//                geometry->node[iPoint]->GetCoord(iDim))
-//             * (geometry->node[jPoint]->GetCoord(iDim) -
-//                geometry->node[iPoint]->GetCoord(iDim));
-//      }
-//      dij = sqrt(dij);
-//
 //      
 //			/*--- Compute dual-grid area and boundary normal ---*/
 //			Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
@@ -7271,22 +7155,29 @@ void CTNE2NSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
 //				Res_Visc[iVar] = 0.0;
 //      
 //      /*--- Get primitive information ---*/
-//      Vi = node[iPoint]->GetPrimVar();
-//      Vj = node[jPoint]->GetPrimVar();
-//      Di = node[iPoint]->GetDiffusionCoeff();
-//      Dj = node[jPoint]->GetDiffusionCoeff();
+//      V = node[iPoint]->GetPrimVar();
+//      Ds = node[iPoint]->GetDiffusionCoeff();
 //      
 //      /*--- Rename for convenience ---*/
-//      rho = 0.5*(Vi[RHO_INDEX]+Vj[RHO_INDEX]);
-//      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-//        Ds[iSpecies] = 0.5*(Di[iSpecies] + Dj[iSpecies]);
-//      for (iVar = 0; iVar < nPrimVar; iVar++)
-//        V[iVar] = 0.5*(Vi[iVar]+Vj[iVar]);
+//      rho = V[RHO_INDEX];
+//      
+//      /*--- Calculate revised wall species densities ---*/
+//      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+//        rhos = Yst[iSpecies]*rho;
+//        node[iPoint]->SetPrimVar(rhos, RHOS_INDEX+iSpecies);
+//      }
+//      
+//      /*--- Calculate revised primitive variable gradients ---*/
+//      SetPrimVar_Gradient_LS(geometry, config, iPoint);
+//      GradV = node[iPoint]->GetGradient_Primitive();
 //      
 //      /*--- Calculate normal derivative of mass fraction ---*/
 //      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-//        Yj = Vj[RHOS_INDEX+iSpecies]/Vj[RHO_INDEX];
-//        dYdn[iSpecies] = (Yj - Yst[iSpecies])/dij;
+//        Ys = V[RHOS_INDEX+iSpecies]/rho;
+//        dYdn[iSpecies] = 0.0;
+//        for (iDim = 0; iDim < nDim; iDim++)
+//          dYdn[iSpecies] += 1.0/rho * (GradV[RHOS_INDEX+iSpecies][iDim] -
+//                                       Ys*GradV[RHO_INDEX][iDim])*Normal[iDim];
 //      }
 //      
 //      /*--- Calculate supplementary quantities ---*/
@@ -7294,11 +7185,11 @@ void CTNE2NSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
 //      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
 //        SdYdn += rho*Ds[iSpecies]*dYdn[iSpecies];
 //      
+//      /*--- Calculate visc. residual from applied boundary condition ---*/
 //      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-//        Ys   = 0.5*(Vi[RHOS_INDEX+iSpecies]/Vi[RHO_INDEX] +
-//                    Vj[RHOS_INDEX+iSpecies]/Vj[RHO_INDEX]  );
-//        hs   = node[iPoint]->CalcHs(V, config, iSpecies);
-//        eves = node[iPoint]->CalcEve(V, config, iSpecies);
+//        Ys   = V[RHOS_INDEX+iSpecies]/rho;
+//        eves = node[iPoint]->CalcEve(config, V[TVE_INDEX], iSpecies);
+//        hs   = node[iPoint]->CalcHs(config, V[T_INDEX], eves, iSpecies);
 //        Res_Visc[iSpecies] = rho*Ds[iSpecies]*dYdn[iSpecies] - Ys*SdYdn;
 //        Res_Visc[nSpecies+nDim]   += Res_Visc[iSpecies]*hs;
 //        Res_Visc[nSpecies+nDim+1] += Res_Visc[iSpecies]*eves;
@@ -7309,11 +7200,119 @@ void CTNE2NSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
 //		}
 //	}
 //  
-//  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-//    delete [] GradY[iSpecies];
-//  delete [] GradY;
 //  delete [] dYdn;
-//  delete [] Ds;
-//  delete [] V;
+  
+  
+  
+  
+  ///////////// FINITE DIFFERENCE METHOD ///////////////
+	/*--- Local variables ---*/
+  bool implicit;
+	unsigned short iDim, iSpecies, iVar;
+  unsigned short RHOS_INDEX, RHO_INDEX, T_INDEX;
+	unsigned long iVertex, iPoint, jPoint;
+	double pcontrol;
+  double rho, *eves, *hs;
+	double *Normal, Area, dij, UnitNormal[3];
+  double *Di, *Dj, *Vi, *Vj, *Yj, Ys, *Yst, *dYdn, SdYdn;
+  double **GradY;
+  
+  /*--- Assign booleans ---*/
+	implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
+  
+  /*--- Set "Proportional control" coefficient ---*/
+  pcontrol = 0.6;
+  
+  /*--- Get species mass fractions at the wall ---*/
+  Yst = config->GetWall_Catalycity();
+  
+  /*--- Get the locations of the primitive variables ---*/
+  RHOS_INDEX = node[0]->GetRhosIndex();
+  RHO_INDEX  = node[0]->GetRhoIndex();
+  T_INDEX    = node[0] ->GetTIndex();
+  
+  /*--- Allocate arrays ---*/
+  hs    = new double[nSpecies];
+  Yj    = new double[nSpecies];
+  dYdn  = new double[nSpecies];
+  GradY = new double*[nSpecies];
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    GradY[iSpecies] = new double[nDim];
+  
+	/*--- Loop over all of the vertices on this boundary marker ---*/
+	for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    
+		/*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+		if (geometry->node[iPoint]->GetDomain()) {
+      
+      /*--- Compute closest normal neighbor ---*/
+      jPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+      
+      /*--- Compute distance between wall & normal neighbor ---*/
+      dij = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        dij += (geometry->node[jPoint]->GetCoord(iDim) -
+                geometry->node[iPoint]->GetCoord(iDim))
+             * (geometry->node[jPoint]->GetCoord(iDim) -
+                geometry->node[iPoint]->GetCoord(iDim));
+      }
+      dij = sqrt(dij);
+
+      
+			/*--- Compute dual-grid area and boundary normal ---*/
+			Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+			Area = 0.0;
+			for (iDim = 0; iDim < nDim; iDim++)
+				Area += Normal[iDim]*Normal[iDim];
+			Area = sqrt (Area);
+      for (iDim = 0; iDim < nDim; iDim++)
+        UnitNormal[iDim] = -Normal[iDim]/Area;
+      
+      
+			/*--- Initialize the viscous residual to zero ---*/
+			for (iVar = 0; iVar < nVar; iVar++)
+				Res_Visc[iVar] = 0.0;
+      
+      /*--- Get primitive information ---*/
+      Vi = node[iPoint]->GetPrimVar();
+      Vj = node[jPoint]->GetPrimVar();
+      Di = node[iPoint]->GetDiffusionCoeff();
+      Dj = node[jPoint]->GetDiffusionCoeff();
+      eves = node[iPoint]->GetEve();
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+        hs[iSpecies] = node[iPoint]->CalcHs(config, Vi[T_INDEX],
+                                            eves[iSpecies], iSpecies);
+        Yj[iSpecies] = Vj[RHOS_INDEX+iSpecies]/Vj[RHO_INDEX];
+      }
+      rho = Vi[RHO_INDEX];
+      
+      /*--- Calculate normal derivative of mass fraction ---*/
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+        dYdn[iSpecies] = (Yst[iSpecies]-Yj[iSpecies])/dij;
+      
+      /*--- Calculate supplementary quantities ---*/
+      SdYdn = 0.0;
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+        SdYdn += rho*Di[iSpecies]*dYdn[iSpecies];
+      
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+        Res_Visc[iSpecies]         = -(-rho*Di[iSpecies]*dYdn[iSpecies]
+                                       +Yst[iSpecies]*SdYdn            )*Area;
+        Res_Visc[nSpecies+nDim]   += (Res_Visc[iSpecies]*hs[iSpecies]  )*Area;
+        Res_Visc[nSpecies+nDim+1] += (Res_Visc[iSpecies]*eves[iSpecies])*Area;
+      }
+      
+			/*--- Viscous contribution to the residual at the wall ---*/
+      LinSysRes.SubtractBlock(iPoint, Res_Visc);
+		}
+	}
+  
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    delete [] GradY[iSpecies];
+  delete [] GradY;
+  delete [] dYdn;
+  delete [] hs;
+  delete [] Yj;
 }
 
