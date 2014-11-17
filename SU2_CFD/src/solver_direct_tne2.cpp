@@ -7208,14 +7208,16 @@ void CTNE2NSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
   ///////////// FINITE DIFFERENCE METHOD ///////////////
 	/*--- Local variables ---*/
   bool implicit;
-	unsigned short iDim, iSpecies, iVar;
+	unsigned short iDim, iSpecies, jSpecies, iVar, jVar, kVar;
   unsigned short RHOS_INDEX, RHO_INDEX, T_INDEX;
 	unsigned long iVertex, iPoint, jPoint;
 	double pcontrol;
-  double rho, *eves, *hs;
+  double rho, *eves, *hs, Ru, *Ms, *xi;
+  double *dTdU, *dTvedU, *Cvtr, *Cvve;
 	double *Normal, Area, dij, UnitNormal[3];
-  double *Di, *Dj, *Vi, *Vj, *Yj, Ys, *Yst, *dYdn, SdYdn;
+  double *Di, *Dj, *Vi, *Vj, *Yj, *Yst, *dYdn, SdYdn;
   double **GradY;
+  double **dVdU;
   
   /*--- Assign booleans ---*/
 	implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
@@ -7227,9 +7229,9 @@ void CTNE2NSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
   Yst = config->GetWall_Catalycity();
   
   /*--- Get the locations of the primitive variables ---*/
-  RHOS_INDEX = node[0]->GetRhosIndex();
-  RHO_INDEX  = node[0]->GetRhoIndex();
-  T_INDEX    = node[0] ->GetTIndex();
+  RHOS_INDEX    = node[0]->GetRhosIndex();
+  RHO_INDEX     = node[0]->GetRhoIndex();
+  T_INDEX       = node[0] ->GetTIndex();
   
   /*--- Allocate arrays ---*/
   hs    = new double[nSpecies];
@@ -7238,6 +7240,15 @@ void CTNE2NSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
   GradY = new double*[nSpecies];
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     GradY[iSpecies] = new double[nDim];
+  dVdU = new double*[nVar];
+  for (iVar = 0; iVar < nVar; iVar++)
+    dVdU[iVar] = new double[nVar];
+  Cvtr = new double[nSpecies];
+  
+  /*--- Get universal information ---*/
+  Ru = UNIVERSAL_GAS_CONSTANT;
+  Ms = config->GetMolar_Mass();
+  xi = config->GetRotationModes();
   
 	/*--- Loop over all of the vertices on this boundary marker ---*/
 	for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -7285,7 +7296,10 @@ void CTNE2NSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
                                             eves[iSpecies], iSpecies);
         Yj[iSpecies] = Vj[RHOS_INDEX+iSpecies]/Vj[RHO_INDEX];
       }
-      rho = Vi[RHO_INDEX];
+      rho    = Vi[RHO_INDEX];
+      dTdU   = node[iPoint]->GetdTdU();
+      dTvedU = node[iPoint]->GetdTvedU();
+      
       
       /*--- Calculate normal derivative of mass fraction ---*/
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
@@ -7305,6 +7319,69 @@ void CTNE2NSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
       
 			/*--- Viscous contribution to the residual at the wall ---*/
       LinSysRes.SubtractBlock(iPoint, Res_Visc);
+      
+      if (implicit) {
+        
+        /*--- Initialize the transformation matrix ---*/
+        for (iVar = 0; iVar < nVar; iVar++)
+          for (jVar = 0; jVar < nVar; jVar++) {
+            dVdU[iVar][jVar] = 0.0;
+            Jacobian_j[iVar][jVar] = 0.0;
+            Jacobian_i[iVar][jVar] = 0.0;
+          }
+        
+        /*--- Populate transformation matrix ---*/
+        // dYsdrk
+        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+          for (jSpecies = 0; jSpecies < nSpecies; jSpecies++)
+            dVdU[iSpecies][jSpecies] += -1.0/rho*Yst[iSpecies];
+          dVdU[iSpecies][iSpecies] += 1.0/rho;
+        }
+        for (iVar = 0; iVar < nVar; iVar++) {
+          dVdU[nSpecies+nDim][iVar]   = dTdU[iVar];
+          dVdU[nSpecies+nDim+1][iVar] = dTvedU[iVar];
+        }
+        
+        /*--- Calculate supplementary quantities ---*/
+        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+          Cvtr[iSpecies] = (3.0/2.0 + xi[iSpecies]/2.0)*Ru/Ms[iSpecies];
+        }
+        Cvve = node[iPoint]->GetCvve();
+        
+        /*--- Take the primitive var. Jacobian & store in Jac. jj ---*/
+        // Species mass fraction
+        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+          for (jSpecies = 0; jSpecies < nSpecies; jSpecies++)
+            Jacobian_j[iSpecies][jSpecies] += -Yst[iSpecies]*rho*Di[jSpecies]/dij;
+          Jacobian_j[iSpecies][iSpecies] += rho*Di[iSpecies]/dij - SdYdn;
+        }
+        
+        // Temperature
+        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+          for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+            Jacobian_j[nSpecies+nDim][iSpecies] += Jacobian_j[jSpecies][iSpecies]*hs[iSpecies];
+          }
+          Jacobian_j[nSpecies+nDim][nSpecies+nDim] += Res_Visc[iSpecies]/Area*(Ru/Ms[iSpecies] +
+                                                                                Cvtr[iSpecies]  );
+          Jacobian_j[nSpecies+nDim][nSpecies+nDim+1] += Res_Visc[iSpecies]/Area*Cvve[iSpecies];
+        }
+        
+        // Vib.-El. Temperature
+        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+          for (jSpecies = 0; jSpecies < nSpecies; jSpecies++)
+            Jacobian_j[nSpecies+nDim+1][iSpecies] += Jacobian_j[jSpecies][iSpecies]*eves[iSpecies];
+          Jacobian_j[nSpecies+nDim+1][nSpecies+nDim+1] += Res_Visc[iSpecies]/Area*Cvve[iSpecies];
+        }
+        
+        /*--- Multiply by the transformation matrix and store in Jac. ii ---*/
+        for (iVar = 0; iVar < nVar; iVar++)
+          for (jVar = 0; jVar < nVar; jVar++)
+            for (kVar = 0; kVar < nVar; kVar++)
+              Jacobian_i[iVar][jVar] += Jacobian_j[iVar][kVar]*dVdU[kVar][jVar]*Area;
+       
+        /*--- Apply to the linear system ---*/
+        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+      }
 		}
 	}
   
@@ -7314,5 +7391,9 @@ void CTNE2NSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
   delete [] dYdn;
   delete [] hs;
   delete [] Yj;
+  for (iVar = 0; iVar < nVar; iVar++)
+    delete [] dVdU[iVar];
+  delete [] dVdU;
+  delete [] Cvtr;
 }
 
