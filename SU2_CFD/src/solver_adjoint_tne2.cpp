@@ -3024,12 +3024,12 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
   double qx;
   double *dnvel;
   
-  double *Psi, **GPsi, **GsPsi;
+  double *Psi, **GPsi, **GsPsi, *GnPsi;
   double **SigmaPhi;
   double dnPsi_k, div_phi;
   
   double eps;
-  double B22, B31, B33, B34;
+  double B21, B22, B31, B33, B34;
   
   /*--- Get primitive array layout ---*/
   T_INDEX    = solver_container[TNE2_SOL]->node_infty->GetTIndex();
@@ -3056,6 +3056,7 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
   GsPsi = new double*[nVar];
   for (iVar = 0; iVar < nVar; iVar++)
     GsPsi[iVar] = new double[nDim];
+  GnPsi = new double[nVar];
   
   SigmaPhi = new double *[nDim];
   for (iDim = 0; iDim < nDim; iDim++)
@@ -3158,7 +3159,7 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
                 dnPsi_k += GY[iSpecies][iDim]*UnitNormal[iDim];
               for (iDim = 0; iDim < nDim; iDim++) {
                 GsY[iSpecies][iDim] = GY[iSpecies][iDim] - dnPsi_k*UnitNormal[iDim];
-                sIk[iDim] = rho*Ds[iSpecies]*GsY[iSpecies][iDim];
+                sIk[iDim] += rho*Ds[iSpecies]*GsY[iSpecies][iDim];
               }
             }
             
@@ -3311,6 +3312,73 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
       case ISOTHERMAL_NONCATALYTIC:
         break;
       case ISOTHERMAL_CATALYTIC:
+        
+        /*--- Loop over all boundary nodes ---*/
+        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          if (geometry->node[iPoint]->GetDomain()) {
+            
+            /*--- Calculate geometric quantities ---*/
+            Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+            Area = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++)
+              Area += Normal[iDim]*Normal[iDim];
+            Area = sqrt(Area);
+            for (iDim = 0; iDim < nDim; iDim++)
+              UnitNormal[iDim] = Normal[iDim] / Area;
+            
+            /*--- Get flow quantities ---*/
+            U   = solver_container[TNE2_SOL]->node[iPoint]->GetSolution();
+            V   = solver_container[TNE2_SOL]->node[iPoint]->GetPrimVar();
+            GV  = solver_container[TNE2_SOL]->node[iPoint]->GetGradient_Primitive();
+            Ds  = solver_container[TNE2_SOL]->node[iPoint]->GetDiffusionCoeff();
+            mu  = solver_container[TNE2_SOL]->node[iPoint]->GetLaminarViscosity();
+            ktr = solver_container[TNE2_SOL]->node[iPoint]->GetThermalConductivity();
+            kve = solver_container[TNE2_SOL]->node[iPoint]->GetThermalConductivity_ve();
+            eves = solver_container[TNE2_SOL]->node[iPoint]->GetEve();
+            for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+              hs[iSpecies] = solver_container[TNE2_SOL]->node[iPoint]->
+              CalcHs(config, V[T_INDEX], eves[iSpecies], iSpecies);
+            
+            /*--- Calculate mass fraction gradient ---*/
+            for (iDim = 0; iDim < nDim; iDim++)
+              sIk[iDim] = 0.0;
+            rho = V[RHO_INDEX];
+            for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+              rhos = V[RHOS_INDEX+iSpecies];
+              Ys   = rhos/rho;
+              for (iDim = 0; iDim < nDim; iDim++) {
+                GY[iSpecies][iDim] = 1.0/rho*( GV[RHOS_INDEX+iSpecies][iDim]
+                                              -Ys*GV[RHO_INDEX][iDim]       );
+                sIk[iDim] += rho*Ds[iSpecies]*GY[iSpecies][iDim];
+              }
+            }
+            
+            /*--- Calculate diffusion velocity, Js ---*/
+            for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+              Ys = V[RHOS_INDEX+iSpecies]/rho;
+              for (iDim = 0; iDim < nDim; iDim++)
+                Js[iSpecies][iDim] = -rho*Ds[iSpecies]*GY[iSpecies][iDim]+Ys*sIk[iDim];
+            }
+            
+            /*--- Get adjoint quantities ---*/
+            Psi  = node[iPoint]->GetSolution();
+            GPsi = node[iPoint]->GetGradient();
+            
+            /*--- Calculate normal derivatives of the adjoint variables ---*/
+            for (iVar = 0; iVar < nVar; iVar++) {
+              GnPsi[iVar] = 0.0;
+              for (iDim = 0; iDim < nDim; iDim++)
+                GnPsi[iVar] = GPsi[iVar][iDim]*UnitNormal[iDim];
+            }
+            
+            
+            /*--- Calculate sensitivites ---*/
+            //
+            B21 = 0.0;
+          }
+        }
         break;
     }
     
@@ -3349,6 +3417,7 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
   for (iVar = 0; iVar < nVar; iVar++)
     delete [] GsPsi[iVar];
   delete [] GsPsi;
+  delete [] GnPsi;
   for (iDim = 0; iDim < nDim; iDim++)
     delete [] SigmaPhi[iDim];
   delete [] SigmaPhi;
@@ -3640,11 +3709,11 @@ void CAdjTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry,
         phi[iDim] = d[iDim];
       
       /*--- Apply the B.C. to the linear system ---*/
-      for (iDim = 0; iDim < nDim; iDim++)
+      for (iDim = 0; iDim < nDim; iDim++) {
         LinSysRes.SetBlock_Zero(iPoint, nSpecies+iDim);
-      node[iPoint]->SetVel_ResTruncError_Zero();
-			for (iDim = 0; iDim < nDim; iDim++)
-				node[iPoint]->SetSolution_Old(nSpecies+iDim, phi[iDim]);
+        node[iPoint]->SetVal_ResTruncError_Zero(nSpecies+iDim);
+        node[iPoint]->SetSolution_Old(nSpecies+iDim, phi[iDim]);
+      }
 			if (implicit) {
 				for (iVar = nSpecies; iVar < nSpecies+nDim; iVar++) {
 					total_index = iPoint*nVar+iVar;
@@ -3691,6 +3760,8 @@ void CAdjTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry,
       /*--- Apply the B.C. to the linear system ---*/
       LinSysRes.SetBlock_Zero(iPoint, nSpecies+nDim);
       LinSysRes.SetBlock_Zero(iPoint, nSpecies+nDim+1);
+      node[iPoint]->SetVal_ResTruncError_Zero(nSpecies+nDim);
+      node[iPoint]->SetVal_ResTruncError_Zero(nSpecies+nDim+1);
       node[iPoint]->SetSolution_Old(nSpecies+nDim, q);
       node[iPoint]->SetSolution_Old(nSpecies+nDim+1, q);
       if (implicit) {
@@ -4056,7 +4127,7 @@ void CAdjTNE2NSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
   double psiE, psiEve;
   
   /*--- Sets the boundary condition for the adjoint species density ---*/
-  // For catalytic boundaries, Psi_rs = -PsiE*hs -PsiEve*eves
+  // For catalytic boundaries, Psi_rs = 0
   
   /*--- Use already implemented Isothermal BC as a baseline ---*/
   BC_Isothermal_Wall(geometry, solver_container, conv_numerics, visc_numerics,
@@ -4085,6 +4156,7 @@ void CAdjTNE2NSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
         for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
           LinSysRes.SetBlock_Zero(iPoint, iSpecies);
           node[iPoint]->SetSolution_Old(iSpecies, 0.0);
+          node[iPoint]->SetVal_ResTruncError_Zero(iSpecies);
           if (implicit) {
             total_index = iPoint*nVar+(iSpecies);
             Jacobian.DeleteValsRowi(total_index);
