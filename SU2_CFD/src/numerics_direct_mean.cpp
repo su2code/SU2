@@ -1654,7 +1654,8 @@ void CUpwGeneralRoe_Flow::ComputeRoeAverage() {
 	RoeKappa = (Kappa_i + Kappa_j + 4*RoeKappa)/6;
 	RoeChi = 0.5*(Chi_i + Chi_j);
 	RoeChi = (Chi_i + Chi_j + 4*RoeChi)/6;
-	// /* It works only using the hat values*/
+
+	//
 
 	RoeKappaStaticEnthalpy = 0.5*(StaticEnthalpy_i*Kappa_i + StaticEnthalpy_j*Kappa_j);
 	RoeKappaStaticEnthalpy = (StaticEnthalpy_i*Kappa_i + StaticEnthalpy_j*Kappa_j + 4*RoeKappaStaticEnthalpy)/6;

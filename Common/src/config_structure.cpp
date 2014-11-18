@@ -42,7 +42,7 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
   SetParsing(case_filename);
 
   /*--- Configuration file postprocessing ---*/
-  
+
   SetPostprocessing(val_software, val_iZone, val_nDim);
 
   /*--- Configuration file boundaries/markers seting ---*/
@@ -50,7 +50,7 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
   SetMarkers(val_software, val_iZone);
 
   /*--- Configuration file output ---*/
-  
+
   if ((rank == MASTER_NODE) && (verb_level == VERB_HIGH) && (val_iZone != 1))
     SetOutput(val_software, val_iZone);
 
@@ -1331,10 +1331,43 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       Kind_Regime == FREESURFACE) { Wrt_Unsteady = false; }
   else { Wrt_Unsteady = true; }
 
-// TODO (PostProc config) Insert that you can use the US system only with STANDARD_AIR
-// TODO (PostProc config) Insert that you can use realgas feature only with Roe and Riemman BC
 
+  /* Check for Measurement System */
+  if (SystemMeasurements == US && Kind_FluidModel != STANDARD_AIR) {
+          cout << "Only STANDARD_AIR fluid model can be used with US Measurement System" << endl;
+          exit(EXIT_FAILURE);
+     }
 
+  /* Check for Convective scheme available for NICF */
+  if ((Kind_FluidModel == VW_GAS || Kind_FluidModel == PR_GAS)) {
+	  if (Kind_ConvNumScheme_Flow != SPACE_UPWIND){
+        cout << "Only ROE Upwind scheme can be used for Not Ideal Compressible Fluids" << endl;
+        exit(EXIT_FAILURE);
+	  }else{
+		  if(Kind_Upwind_Flow != ROE){
+			  cout << "Only ROE Upwind scheme can be used for Not Ideal Compressible Fluids" << endl;
+			  exit(EXIT_FAILURE);
+		  }
+	  }
+   }
+
+  /* Check for Boundary condition available for NICF */
+  if ((Kind_FluidModel == VW_GAS || Kind_FluidModel == PR_GAS)) {
+	  if(nMarker_Inlet != 0){
+		  cout << "Riemann Boundary conditions must be used for inlet and outlet with Not Ideal Compressible Fluids " << endl;
+		  exit(EXIT_FAILURE);
+	  }
+	  if(nMarker_Outlet != 0){
+		  cout << "Riemann Boundary conditions must be used outlet with Not Ideal Compressible Fluids " << endl;
+		  exit(EXIT_FAILURE);
+	  }
+
+	  if(nMarker_FarField != 0){
+		  cout << "Far Field BC is not generalized for Not Ideal Compressible Fluids " << endl;
+		  exit(EXIT_FAILURE);
+	  }
+
+  }
   /*--- Set grid movement kind to NO_MOVEMENT if not specified, which means
    that we also set the Grid_Movement flag to false. We initialize to the
    number of zones here, because we are guaranteed to at least have one. ---*/
@@ -3074,7 +3107,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   unsigned short iMarker_Euler, iMarker_Custom, iMarker_FarField,
   iMarker_SymWall, iMarker_PerBound, iMarker_Pressure, iMarker_NearFieldBound,
-  iMarker_InterfaceBound, iMarker_Dirichlet, iMarker_Inlet, iMarker_Outlet,
+  iMarker_InterfaceBound, iMarker_Dirichlet, iMarker_Inlet,iMarker_Riemann, iMarker_Outlet,
   iMarker_Isothermal, iMarker_IsothermalNonCatalytic, iMarker_IsothermalCatalytic,
   iMarker_HeatFlux, iMarker_HeatFluxNonCatalytic, iMarker_HeatFluxCatalytic,
   iMarker_NacelleInflow, iMarker_NacelleExhaust, iMarker_Displacement,
@@ -4250,6 +4283,14 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
   }
 
+  if (nMarker_Riemann != 0) {
+      cout << "Riemann boundary marker(s): ";
+      for (iMarker_Riemann = 0; iMarker_Riemann < nMarker_Riemann; iMarker_Riemann++) {
+        cout << Marker_Riemann[iMarker_Riemann];
+        if (iMarker_Riemann < nMarker_Riemann-1) cout << ", ";
+        else cout <<"."<<endl;
+    }
+  }
   if (nMarker_NacelleInflow != 0) {
     cout << "Nacelle inflow boundary marker(s): ";
     for (iMarker_NacelleInflow = 0; iMarker_NacelleInflow < nMarker_NacelleInflow; iMarker_NacelleInflow++) {

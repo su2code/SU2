@@ -2,7 +2,7 @@
  * fluid_model_ppr.cpp
  * \brief Source of the Peng-Robinson model.
  * \author: S.Vitale, G.Gori, M.Pini, A.Guardone, P.Colonna
- * \version 3.2.4 "eagle"
+ * \version 3.2.1 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -93,11 +93,17 @@ void CPengRobinson::SetTDState_rhoe (double rho, double e ) {
 
     DpDT_d = Gas_Constant /(1/rho - b) - 2*a*sqrt(alpha2(Temperature))*B / A;
 
-    Cv = Gas_Constant/Gamma_Minus_One - a/b/sqrt2 * ( 2*sqrt(alpha2(Temperature)) * B +k*B*sqrt(Temperature/TstarCrit) + 0.5*k*sqrt(alpha2(Temperature)/Temperature/TstarCrit)) * fv;
+
+//changed november
+    //Cv = Gas_Constant/Gamma_Minus_One - a/b/sqrt2 * ( 2*sqrt(alpha2(Temperature)) * B +k*B*sqrt(Temperature/TstarCrit) + 0.5*k*sqrt(alpha2(Temperature)/Temperature/TstarCrit)) * fv;
+Cv = Gas_Constant/Gamma_Minus_One + ( a*k*(k+1)*fv ) / ( 2*b*sqrt(2*Temperature*TstarCrit) );
+
 
     dPde_rho = DpDT_d/Cv;
 
-    DeDd_T = g1/((1-g)*(1-g));
+//changed november
+    //DeDd_T = g1/((1-g)*(1-g));
+DeDd_T = - a*(1+k) / ( 2*b*sqrt2 ) * sqrt(alpha2(Temperature)) / ( 1 - ( b*sqrt2 / (1/rho+b) )*( b*sqrt2 / (1/rho+b) ) ) * (b*sqrt2*(rho*b+1-b)/(1+rho*b)/(1+rho*b));
 
     dPdrho_e = DpDd_T - dPde_rho*DeDd_T;
 
@@ -156,7 +162,10 @@ void CPengRobinson::SetTDState_PT (double P, double T ) {
 	rho= P/(Zed*Gas_Constant*T);
 	fv = atanh( rho * b * sqrt2/(1 + rho*b));
 
+//changed november
     e = T*Gas_Constant/Gamma_Minus_One + a*k*(k+1)*fv/(b*sqrt2*sqrt(TstarCrit))*sqrt(T) - a*(k+1)*(k+1)*fv/(b*sqrt2);
+//e = T*Gas_Constant/Gamma_Minus_One - a*(k+1)*sqrt( alpha2(T) )*fv / (b*sqrt2);
+
 	SetTDState_rhoe(rho, e);
 
 //	cout <<"After  "<< Pressure <<" "<< Temperature <<endl;
@@ -185,7 +194,7 @@ void CPengRobinson::SetTDState_hs (double h, double s ){
 
 
 	A = Gas_Constant/ Gamma_Minus_One;
-	T = 1.0*h*Gamma_Minus_One/Gas_Constant/Gamma;
+	T = h*Gamma_Minus_One/Gas_Constant/Gamma;
 	v = exp(-1/Gamma_Minus_One*log(T) + s/Gas_Constant);
 
 
@@ -301,8 +310,10 @@ void CPengRobinson::SetEnergy_Prho (double P, double rho ) {
     T = ( -B + sqrt(B*B - 4*A*C) ) / (2*A);
     T *= T;
 
-
+//changed november
     ad = a*sqrt(alpha2(T)/2)/b*(sqrt(alpha2(T)) + k*sqrt(T/TstarCrit))*atanh( rho * b * sqrt(2)/(1 + rho*b) ) ;
+//ad = a*(k+1)*sqrt( alpha2(T) ) / ( b*sqrt(2) ) * atanh( rho * b * sqrt(2)/(1 + rho*b) ) ;
+
     StaticEnergy = T * Gas_Constant / Gamma_Minus_One - ad;
 
 }
@@ -310,6 +321,7 @@ void CPengRobinson::SetEnergy_Prho (double P, double rho ) {
 void CPengRobinson::SetTDState_rhoT (double rho, double T){
 	double fv,e, sqrt2=sqrt(2);
 	fv = atanh( rho * b * sqrt2/(1 + rho*b));
+//	e = T*Gas_Constant/Gamma_Minus_One + a*(k+1)*sqrt( alpha2(T) ) / ( b*sqrt(2) ) * fv;
 	e = T*Gas_Constant/Gamma_Minus_One + a*k*(k+1)*fv/(b*sqrt2*sqrt(TstarCrit))*sqrt(T) - a*(k+1)*(k+1)*fv/(b*sqrt2);
 	SetTDState_rhoe(rho, e);
 }
