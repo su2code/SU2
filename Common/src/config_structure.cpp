@@ -1331,6 +1331,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       Kind_Regime == FREESURFACE) { Wrt_Unsteady = false; }
   else { Wrt_Unsteady = true; }
 
+// TODO (PostProc config) Insert that you can use the US system only with STANDARD_AIR
+// TODO (PostProc config) Insert that you can use realgas feature only with Roe and Riemman BC
+
+
   /*--- Set grid movement kind to NO_MOVEMENT if not specified, which means
    that we also set the Grid_Movement flag to false. We initialize to the
    number of zones here, because we are guaranteed to at least have one. ---*/

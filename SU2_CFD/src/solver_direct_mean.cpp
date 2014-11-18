@@ -1855,7 +1855,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
   bool tkeNeeded          = ((config->GetKind_Solver() == RANS) && (config->GetKind_Turb_Model() == SST));
   bool fs_temperature     = (config->GetKind_FreeStreamOption() == TEMPERATURE_FS);
   bool ideal_gas       = (config->GetKind_FluidModel() == STANDARD_AIR || config->GetKind_FluidModel() == IDEAL_GAS );
-  bool standard_air       = (config->GetKind_FluidModel() == STANDARD_AIR || (config->GetKind_FluidModel() == IDEAL_GAS && Gamma == 1.4));
+  bool standard_air       = (config->GetKind_FluidModel() == STANDARD_AIR);
 
   if (compressible) {
     
