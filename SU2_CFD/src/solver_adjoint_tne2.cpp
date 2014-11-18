@@ -3022,14 +3022,14 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
   double *Ds, mu, ktr, kve;
   double *eves, *hs, rho, rhos, Ys;
   double qx;
-  double *dnvel;
+  double *dnvel, dnT, dnTve, Jsn;
   
   double *Psi, **GPsi, **GsPsi, *GnPsi;
   double **SigmaPhi;
   double dnPsi_k, div_phi;
   
   double eps;
-  double B21, B22, B31, B33, B34;
+  double B21, B22, B23, B24, B31, B33, B34;
   
   /*--- Get primitive array layout ---*/
   T_INDEX    = solver_container[TNE2_SOL]->node_infty->GetTIndex();
@@ -3362,6 +3362,18 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
                 Js[iSpecies][iDim] = -rho*Ds[iSpecies]*GY[iSpecies][iDim]+Ys*sIk[iDim];
             }
             
+            /*--- Calculate normal derivative of the velocity & temperature ---*/
+            dnT   = 0.0;
+            dnTve = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++) {
+              dnvel[iDim] = 0.0;
+              for (jDim = 0; jDim < nDim; jDim++) {
+                dnvel[iDim] = GV[VEL_INDEX+iDim][jDim]*UnitNormal[jDim];
+              }
+              dnT   += GV[T_INDEX][iDim]*UnitNormal[iDim];
+              dnTve += GV[T_INDEX][iDim]*UnitNormal[iDim];
+            }
+            
             /*--- Get adjoint quantities ---*/
             Psi  = node[iPoint]->GetSolution();
             GPsi = node[iPoint]->GetGradient();
@@ -3373,10 +3385,61 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
                 GnPsi[iVar] = GPsi[iVar][iDim]*UnitNormal[iDim];
             }
             
+            /*--- Calculate SigmaPhi ---*/
+            div_phi = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++) {
+              div_phi += GPsi[nSpecies+iDim][iDim];
+              for (jDim = 0; jDim < nDim; jDim++)
+                SigmaPhi[iDim][jDim] = 0.0;
+            }
+            for (iDim = 0; iDim < nDim; iDim++) {
+              for (jDim = 0; jDim < nDim; jDim++) {
+                SigmaPhi[iDim][jDim] += ( GPsi[nSpecies+iDim][jDim]
+                                         +GPsi[nSpecies+jDim][iDim] );
+              }
+              SigmaPhi[iDim][iDim] -= 2.0/3.0 * div_phi;
+            }
+            
             
             /*--- Calculate sensitivites ---*/
-            //
+            // \sum_k[(dnPsirs)(Js\cdot n) + (dnPsiE)(Js\cdot n)hs + (dnPsiEve)(Js\cdot n)eves
             B21 = 0.0;
+            for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+              Jsn = 0.0;
+              for (iDim = 0; iDim < nDim; iDim++)
+                Jsn += Js[iSpecies][iDim]*UnitNormal[iDim];
+              B21 += ( GnPsi[iSpecies]
+                      +GnPsi[nSpecies+nDim]*hs[iSpecies]
+                      +GnPsi[nSpecies+nDim+1]*eves[iSpecies])*Jsn;
+            }
+            
+            // mu(SigmaPhi \cdot \vec{n})
+            B22 = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++)
+              for (jDim = 0; jDim < nDim; jDim++)
+                B22 += mu*UnitNormal[iDim]*SigmaPhi[iDim][jDim]*dnvel[jDim];
+            
+            // dnPsiE * kdnT
+            B23 = GnPsi[nSpecies+nDim] * ktr * dnT;
+            
+            // (dnPsiE+dnPsiEve) * (kvednTve)
+            B24 = (GnPsi[nSpecies+nDim]+GnPsi[nSpecies+nDim+1]) * kve *dnTve;
+            
+            
+            /*--- Sum the contribution from each of the sensitivities ---*/
+            CSensitivity[iMarker][iVertex] = (B21+B22+B23+B24)*Area;
+            
+            /*--- If the sensitivity is from a sharp edge, neglect it ---*/
+            if (config->GetSens_Remove_Sharp()) {
+              eps = config->GetLimiterCoeff()*config->GetRefElemLength();
+              if ( geometry->node[iPoint]->GetSharpEdge_Distance() <
+                  config->GetSharpEdgesCoeff()*eps                   )
+                CSensitivity[iMarker][iVertex] = 0.0;
+            }
+            
+            /*--- Add the sensitivity to the total geometric sensitivity ---*/
+            Sens_Geo[iMarker] -= CSensitivity[iMarker][iVertex]*Area;
+            
           }
         }
         break;
