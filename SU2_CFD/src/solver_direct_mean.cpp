@@ -2212,10 +2212,41 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
     cout <<"-- Input conditions:"<< endl;
 
     if (compressible) {
-      cout << "Specific gas constant: " << config->GetGas_Constant();
-      if (config->GetSystemMeasurements() == SI) cout << " N.m/kg.K." << endl;
-      else if (config->GetSystemMeasurements() == US) cout << " lbf.ft/slug.R." << endl;
+    	switch (config->GetKind_FluidModel()) {
+
+    	    case STANDARD_AIR:
+    	      cout << "Fluid Model: STANDARD_AIR "<< endl;
+    	      cout << "Specific gas constant: " << config->GetGas_Constant();
+    	      if (config->GetSystemMeasurements() == SI) cout << " N.m/kg.K." << endl;
+    	      else if (config->GetSystemMeasurements() == US) cout << " lbf.ft/slug.R." << endl;
+    	      cout << "Specific Heat Ratio: 1.4000 "<<endl;
+    	      break;
+
+    	    case IDEAL_GAS:
+    	    	 cout << "Fluid Model: IDEAL_GAS "<< endl;
+			     cout << "Specific gas constant: " << config->GetGas_Constant() << " N.m/kg.K." << endl;
+			     cout << "Specific Heat Ratio: "<< Gamma <<endl;
+    	      break;
+
+    	    case VW_GAS:
+    	    	cout << "Fluid Model: Van der Waals "<< endl;
+			    cout << "Specific gas constant: " << config->GetGas_Constant() << " N.m/kg.K." << endl;
+			    cout << "Specific Heat Ratio: "<< Gamma <<endl;
+			    cout << "Critical Pressure (non-dim):   " << config->GetPressure_Critical() /config->GetPressure_Ref() << endl;
+			    cout << "Critical Temperature (non-dim) :  " << config->GetTemperature_Critical() /config->GetTemperature_Ref() << endl;
+			    break;
+
+    	    case PR_GAS:
+    	    	cout << "Fluid Model: Peng-Robinson "<< endl;
+				cout << "Specific gas constant: " << config->GetGas_Constant() << " N.m/kg.K." << endl;
+				cout << "Specific Heat Ratio: "<< Gamma <<endl;
+				cout << "Critical Pressure (non-dim):   " << config->GetPressure_Critical() /config->GetPressure_Ref() << endl;
+				cout << "Critical Temperature (non-dim) :  " << config->GetTemperature_Critical() /config->GetTemperature_Ref() << endl;
+				break;
+
+    		}
     }
+
 
     if (incompressible || freesurface) {
       cout << "Bulk modulus: " << config->GetBulk_Modulus();
@@ -3215,10 +3246,13 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
       /*--- Recompute the extrapolated quantities in a more
        thermodynamic consistent way  ---*/
+      /*--- Secondary variable are not extrapoalted order is not extrapolated ---*/
 
-//      if (compressible) {
-//    	  ComputeConsExtrapolation(config);
-//      }
+      if (compressible) {
+    	  ComputeConsExtrapolation(config);
+      }
+
+
 
       /*--- Check for non-physical solutions after reconstruction. If found,
        use the cell-average value of the solution. This results in a locally
@@ -3377,15 +3411,15 @@ void CEulerSolver::ComputeConsExtrapolation(CConfig *config){
 
 
 	double density_i = Primitive_i[nDim+2];
-	double temperature_i = Primitive_i[0];
+	double pressure_i = Primitive_i[nDim +1];
 	double velocity2_i = 0.0;
 	for (unsigned short iDim = 0; iDim < nDim; iDim++) {
 		velocity2_i += Primitive_i[iDim+1]*Primitive_i[iDim+1];
 	}
 
-	FluidModel->SetTDState_rhoT(density_i, temperature_i);
+	FluidModel->SetTDState_Prho(pressure_i, density_i);
 
-	Primitive_i[nDim+1]= FluidModel->GetPressure();
+	Primitive_i[0]= FluidModel->GetTemperature();
 	Primitive_i[nDim+3]= FluidModel->GetStaticEnergy() + Primitive_i[nDim+1]/Primitive_i[nDim+2] + 0.5*velocity2_i;
 	Primitive_i[nDim+4]= FluidModel->GetSoundSpeed();
 	Secondary_i[0]=FluidModel->GetdPdrho_e();
@@ -3394,15 +3428,15 @@ void CEulerSolver::ComputeConsExtrapolation(CConfig *config){
 
 
 	double density_j = Primitive_j[nDim+2];
-	double temperature_j = Primitive_j[0];
+	double pressure_j = Primitive_j[nDim+1];
 	double velocity2_j = 0.0;
 	for (unsigned short iDim = 0; iDim < nDim; iDim++) {
 		velocity2_j += Primitive_j[iDim+1]*Primitive_j[iDim+1];
 	}
 
-	FluidModel->SetTDState_rhoT(density_j, temperature_j);
+	FluidModel->SetTDState_Prho(pressure_j, density_j);
 
-	Primitive_j[nDim+1]= FluidModel->GetPressure();
+	Primitive_j[0]= FluidModel->GetTemperature();
 	Primitive_j[nDim+3]= FluidModel->GetStaticEnergy() + Primitive_j[nDim+1]/Primitive_j[nDim+2] + 0.5*velocity2_j;
 	Primitive_j[nDim+4]=FluidModel->GetSoundSpeed();
 	Secondary_j[0]=FluidModel->GetdPdrho_e();
