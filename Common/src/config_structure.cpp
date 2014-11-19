@@ -1257,6 +1257,8 @@ void CConfig::SetParsing(char case_filename[MAX_STRING_SIZE]) {
 void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_izone, unsigned short val_nDim) {
 
   unsigned short iZone, iCFL;
+  bool ideal_gas       = (Kind_FluidModel == STANDARD_AIR || Kind_FluidModel == IDEAL_GAS );
+  bool standard_air       = (Kind_FluidModel == STANDARD_AIR);
 
   int size = SINGLE_NODE;
 #ifdef HAVE_MPI
@@ -1269,6 +1271,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     Output_FileFormat = TECPLOT;
   }
 #endif
+
+
 
   /*--- Store the SU2 module that we are executing. ---*/
 
@@ -1333,13 +1337,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
 
   /* Check for Measurement System */
-  if (SystemMeasurements == US && Kind_FluidModel != STANDARD_AIR) {
+  if (SystemMeasurements == US && standard_air) {
           cout << "Only STANDARD_AIR fluid model can be used with US Measurement System" << endl;
           exit(EXIT_FAILURE);
      }
 
   /* Check for Convective scheme available for NICF */
-  if ((Kind_FluidModel == VW_GAS || Kind_FluidModel == PR_GAS)) {
+  if (!ideal_gas) {
 	  if (Kind_ConvNumScheme_Flow != SPACE_UPWIND){
         cout << "Only ROE Upwind scheme can be used for Not Ideal Compressible Fluids" << endl;
         exit(EXIT_FAILURE);
@@ -1352,7 +1356,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
    }
 
   /* Check for Boundary condition available for NICF */
-  if ((Kind_FluidModel == VW_GAS || Kind_FluidModel == PR_GAS)) {
+  if (!ideal_gas) {
 	  if(nMarker_Inlet != 0){
 		  cout << "Riemann Boundary conditions must be used for inlet and outlet with Not Ideal Compressible Fluids " << endl;
 		  exit(EXIT_FAILURE);
@@ -1368,6 +1372,22 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 	  }
 
   }
+
+  /* Check for Boundary condition available for NICF */
+    if (ideal_gas) {
+    	if(SystemMeasurements == US && standard_air){
+    		if(Kind_ViscosityModel != SUTHERLAND){
+    			cout << "Only SUTHERLAND viscosity model can be used with US Measurement  " << endl;
+    			exit(EXIT_FAILURE);
+    			}
+    	}
+  	  if(Kind_ConductivityModel != CONSTANT_PRANDTL ){
+  		  cout << "Only CONSTANT_PRANDTL thermal conductivity model can be used with STANDARD_AIR and IDEAL_GAS" << endl;
+  		  exit(EXIT_FAILURE);
+  	  }
+
+    }
+
   /*--- Set grid movement kind to NO_MOVEMENT if not specified, which means
    that we also set the Grid_Movement flag to false. We initialize to the
    number of zones here, because we are guaranteed to at least have one. ---*/
