@@ -639,6 +639,10 @@ BUILD_PRT_FALSE
 BUILD_PRT_TRUE
 BUILD_CFD_FALSE
 BUILD_CFD_TRUE
+LAPACK_LD
+LAPACK_CXX
+BUILD_LAPACK_FALSE
+BUILD_LAPACK_TRUE
 JSONCPP_LD
 JSONCPP_CXX
 BUILD_JSONCPP_FALSE
@@ -781,6 +785,8 @@ with_Mutationpp_lib
 with_Mutationpp_include
 with_Jsoncpp_lib
 with_Jsoncpp_include
+with_LAPACK_lib
+with_LAPACK_include
 enable_CFD
 enable_PRT
 enable_DOT
@@ -1455,6 +1461,9 @@ Optional Packages:
                           jsoncpp_SYS.a
   --with-Jsoncpp-include=ARG
                           Jsoncpp include directory, ARG = path to json.h
+  --with-LAPACK-lib=ARG   LAPACK library directory, ARG = path to liblapacke.a
+  --with-LAPACK-include=ARG
+                          LAPACK include directory, ARG = path to lapacke.h
 
 Some influential environment variables:
   CXX         C++ compiler command
@@ -5486,10 +5495,10 @@ $as_echo "$ac_cv_tls" >&6; }
 
 
 if (test $enablemetis = yes); then
-  su2_externals_INCLUDES="-DHAVE_METIS $METIS_INCLUDE $su2_externals_INCLUDES"
-  su2_externals_LIBS="$METIS_LIB $su2_externals_LIBS"
+su2_externals_INCLUDES="-DHAVE_METIS $METIS_INCLUDE $su2_externals_INCLUDES"
+su2_externals_LIBS="$METIS_LIB $su2_externals_LIBS"
 else
-  su2_externals_INCLUDES="$su2_externals_INCLUDES"
+su2_externals_INCLUDES="$su2_externals_INCLUDES"
 fi
  if test x$enablemetis = xyes; then
   BUILD_METIS_TRUE=
@@ -5500,7 +5509,6 @@ else
 fi
 
 ac_config_files="$ac_config_files externals/metis/Makefile"
-
 
 
 
@@ -5562,6 +5570,22 @@ if test "${with_Jsoncpp_include+set}" = set; then :
   withval=$with_Jsoncpp_include; with_Jsoncpp_include=$withval
 else
   with_Jsoncpp_include="no"
+fi
+
+
+# Check whether --with-LAPACK-lib was given.
+if test "${with_LAPACK_lib+set}" = set; then :
+  withval=$with_LAPACK_lib; with_LAPACK_lib=$withval
+else
+  with_LAPACK_lib="no"
+fi
+
+
+# Check whether --with-LAPACK-include was given.
+if test "${with_LAPACK_include+set}" = set; then :
+  withval=$with_LAPACK_include; with_LAPACK_include=$withval
+else
+  with_LAPACK_include="no"
 fi
 
 # Check whether --enable-CFD was given.
@@ -5920,6 +5944,107 @@ fi
 
 
 
+##########################
+
+# check for lib
+LAPACKlib=liblapacke.a
+LAPACKheader=lapacke.h
+have_LAPACK="no"
+
+if test "$with_LAPACK_lib" != "no"
+then
+as_ac_File=`$as_echo "ac_cv_file_$with_LAPACK_lib/$LAPACKlib" | $as_tr_sh`
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $with_LAPACK_lib/$LAPACKlib" >&5
+$as_echo_n "checking for $with_LAPACK_lib/$LAPACKlib... " >&6; }
+if eval \${$as_ac_File+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  test "$cross_compiling" = yes &&
+  as_fn_error $? "cannot check for file existence when cross compiling" "$LINENO" 5
+if test -r "$with_LAPACK_lib/$LAPACKlib"; then
+  eval "$as_ac_File=yes"
+else
+  eval "$as_ac_File=no"
+fi
+fi
+eval ac_res=\$$as_ac_File
+	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+$as_echo "$ac_res" >&6; }
+if eval test \"x\$"$as_ac_File"\" = x"yes"; then :
+  have_LAPACK="yes"
+else
+  have_LAPACK="no"
+fi
+
+if test "$have_LAPACK" == "no"
+then
+as_fn_error $? "LAPACK requested but library file not found." "$LINENO" 5
+fi
+fi
+
+# check for header
+if test "$have_LAPACK" != "no"
+then
+if test "$with_LAPACK_include" != "no"
+then
+as_ac_File=`$as_echo "ac_cv_file_$with_LAPACK_include/$LAPACKheader" | $as_tr_sh`
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $with_LAPACK_include/$LAPACKheader" >&5
+$as_echo_n "checking for $with_LAPACK_include/$LAPACKheader... " >&6; }
+if eval \${$as_ac_File+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  test "$cross_compiling" = yes &&
+  as_fn_error $? "cannot check for file existence when cross compiling" "$LINENO" 5
+if test -r "$with_LAPACK_include/$LAPACKheader"; then
+  eval "$as_ac_File=yes"
+else
+  eval "$as_ac_File=no"
+fi
+fi
+eval ac_res=\$$as_ac_File
+	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+$as_echo "$ac_res" >&6; }
+if eval test \"x\$"$as_ac_File"\" = x"yes"; then :
+  have_LAPACK='yes'
+else
+  have_LAPACK='no'
+fi
+
+if test "$have_LAPACK" == "no"
+then
+as_fn_error $? "LAPACK requested but header file not found." "$LINENO" 5
+fi
+else
+have_LAPACK="no"
+fi
+fi
+
+if test "$have_LAPACK" != "no"
+then
+ if true; then
+  BUILD_LAPACK_TRUE=
+  BUILD_LAPACK_FALSE='#'
+else
+  BUILD_LAPACK_TRUE='#'
+  BUILD_LAPACK_FALSE=
+fi
+
+LAPACK_CXX="-DHAVE_LAPACK -I"$with_LAPACK_include""
+LAPACK_LD="$with_LAPACK_lib"/$LAPACKlib
+else
+ if false; then
+  BUILD_LAPACK_TRUE=
+  BUILD_LAPACK_FALSE='#'
+else
+  BUILD_LAPACK_TRUE='#'
+  BUILD_LAPACK_FALSE=
+fi
+
+LAPACK_CXX=
+LAPACK_LD=
+fi
+
+
 
 ########################### MPI
 
@@ -6197,6 +6322,14 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${BUILD_JSONCPP_TRUE}" && test -z "${BUILD_JSONCPP_FALSE}"; then
   as_fn_error $? "conditional \"BUILD_JSONCPP\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${BUILD_LAPACK_TRUE}" && test -z "${BUILD_LAPACK_FALSE}"; then
+  as_fn_error $? "conditional \"BUILD_LAPACK\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${BUILD_LAPACK_TRUE}" && test -z "${BUILD_LAPACK_FALSE}"; then
+  as_fn_error $? "conditional \"BUILD_LAPACK\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${BUILD_CFD_TRUE}" && test -z "${BUILD_CFD_FALSE}"; then
@@ -7396,6 +7529,7 @@ Build Configuration Summary:
     TecIO support:        $enabletecio
     Mutation++ support:   $have_Mutationpp
     Jsoncpp support: 	  $have_Jsoncpp
+    LAPACK support:       $have_LAPACK
 
     External includes:    $su2_externals_INCLUDES
     External libs:        $su2_externals_LIBS
@@ -7436,6 +7570,7 @@ Build Configuration Summary:
     TecIO support:        $enabletecio
     Mutation++ support:   $have_Mutationpp
     Jsoncpp support: 	  $have_Jsoncpp
+    LAPACK support:       $have_LAPACK
 
     External includes:    $su2_externals_INCLUDES
     External libs:        $su2_externals_LIBS
