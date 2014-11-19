@@ -1956,10 +1956,16 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       nVar_Extra  = solver[TURB_SOL]->GetnOutputVariables();
       nVar_Total += nVar_Extra;
     }
-    if ((Kind_Solver == TNE2_EULER)         ||
-        (Kind_Solver == TNE2_NAVIER_STOKES)) {
+    if (( Kind_Solver == TNE2_EULER        ) ||
+        ( Kind_Solver == TNE2_NAVIER_STOKES)   ) {
       iVar_Extra  = nVar_Total;
       nVar_Extra  = solver[TNE2_SOL]->GetnVar();
+      nVar_Total += nVar_Extra;
+    }
+    if (( Kind_Solver == ADJ_TNE2_EULER         ) ||
+        ( Kind_Solver == ADJ_TNE2_NAVIER_STOKES )   ) {
+      iVar_Extra  = nVar_Total;
+      nVar_Extra  = solver[ADJTNE2_SOL]->GetnVar();
       nVar_Total += nVar_Extra;
     }
   }
@@ -2292,6 +2298,13 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       if ((Kind_Solver == TNE2_EULER) || (Kind_Solver == TNE2_NAVIER_STOKES)) {
         for (unsigned short iVar = 0; iVar < nVar_Extra; iVar++) {
           Data[jVar][jPoint] =  solver[TNE2_SOL]->OutputVariables[iPoint*nVar_Extra+iVar];
+          jVar++;
+        }
+      }
+      if (( Kind_Solver == ADJ_TNE2_EULER        ) ||
+          ( Kind_Solver == ADJ_TNE2_NAVIER_STOKES)   ) {
+        for (unsigned short iVar = 0; iVar < nVar_Extra; iVar++) {
+          Data[jVar][jPoint] =  solver[ADJTNE2_SOL]->OutputVariables[iPoint*nVar_Extra+iVar];
           jVar++;
         }
       }
@@ -3543,8 +3556,13 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
           if (Kind_Solver == RANS) {
             Buffer_Send_Var[jPoint] = solver[TURB_SOL]->OutputVariables[iPoint*nVar_Extra+jVar];
           }
-          if ((Kind_Solver == TNE2_EULER) || (Kind_Solver == TNE2_NAVIER_STOKES)) {
+          if (( Kind_Solver == TNE2_EULER         ) ||
+              ( Kind_Solver == TNE2_NAVIER_STOKES )   ) {
             Buffer_Send_Var[jPoint] = solver[TNE2_SOL]->OutputVariables[iPoint*nVar_Extra+jVar];
+          }
+          if (( Kind_Solver == ADJ_TNE2_EULER         ) ||
+              ( Kind_Solver == ADJ_TNE2_NAVIER_STOKES )   ) {
+            Buffer_Send_Var[jPoint] = solver[ADJTNE2_SOL]->OutputVariables[iPoint*nVar_Extra+jVar];
           }
           jPoint++;
           
@@ -3897,9 +3915,9 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
   
   if (config->GetExtraOutput()) {
     string *headings = NULL;
-    //if (Kind_Solver == RANS){
-    headings = solver[TURB_SOL]->OutputHeadingNames;
-    //}
+    if (Kind_Solver == RANS){
+      headings = solver[TURB_SOL]->OutputHeadingNames;
+    }
     
     for (iVar = 0; iVar < nVar_Extra; iVar++) {
       if (headings == NULL){

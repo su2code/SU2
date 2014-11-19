@@ -224,9 +224,9 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, CSolver **s
     
     if (config->GetExtraOutput()) {
       string *headings = NULL;
-      //if (Kind_Solver == RANS){
-      headings = solver[TURB_SOL]->OutputHeadingNames;
-      //}
+      if (Kind_Solver == RANS){
+        headings = solver[TURB_SOL]->OutputHeadingNames;
+      }
       for (iVar = 0; iVar < nVar_Extra; iVar++) {
         //Tecplot_File << ", \"ExtraOutput_" << iVar+1<<"\"";
         if (headings == NULL){

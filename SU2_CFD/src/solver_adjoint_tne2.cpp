@@ -132,6 +132,12 @@ CAdjTNE2EulerSolver::CAdjTNE2EulerSolver(CGeometry *geometry, CConfig *config, u
   LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
   
+  /*--- Create the structure for storing extra information ---*/
+  if (config->GetExtraOutput()) {
+    nOutputVariables = nVar;
+    OutputVariables.Initialize(nPoint, nPointDomain, nOutputVariables, 0.0);
+  }
+  
 	/*--- Allocate Jacobians for implicit time-stepping ---*/
   if (config->GetKind_TimeIntScheme_AdjTNE2() == EULER_IMPLICIT) {
 		Jacobian_ii = new double* [nVar];
@@ -2421,6 +2427,12 @@ CAdjTNE2NSSolver::CAdjTNE2NSSolver(CGeometry *geometry,
   LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
   
+  /*--- Create the structure for storing extra information ---*/
+  if (config->GetExtraOutput()) {
+    nOutputVariables = nVar;
+    OutputVariables.Initialize(nPoint, nPointDomain, nOutputVariables, 0.0);
+  }
+  
 	/*--- Jacobians and vector structures for implicit computations ---*/
 	if (config->GetKind_TimeIntScheme_AdjTNE2() == EULER_IMPLICIT) {
     
@@ -3069,6 +3081,13 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
   rank = MASTER_NODE;
 #endif
   
+  /*--- Initialize the extra output for detailed surf. sensitivity visualization ---*/
+  if (config->GetExtraOutput())
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++)
+      for (iVar = 0; iVar < nVar; iVar++)
+        OutputVariables[iPoint* (unsigned long) nOutputVariables + iVar] = 0.0;
+      
+  
   /*--- Compute gradient of adjoint variables on the surface ---*/
   SetSurface_Gradient(geometry, config);
   
@@ -3268,6 +3287,22 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
                 CSensitivity[iMarker][iVertex] = 0.0;
             }
             
+            /*--- Collect detailed surface sensitivity data ---*/
+            if (config->GetExtraOutput()) {
+              
+              // Diffusion processes
+              OutputVariables[iPoint* (unsigned long) nOutputVariables + 0] += B31;
+              
+              // Viscous processes
+              OutputVariables[iPoint* (unsigned long) nOutputVariables + 1] += B22;
+              
+              // T-R Conduction
+              OutputVariables[iPoint* (unsigned long) nOutputVariables + 2] += B33;
+              
+              // V-E Conduction
+              OutputVariables[iPoint* (unsigned long) nOutputVariables + 3] += B34;
+            }
+            
             /*--- Add the sensitivity to the total geometric sensitivity ---*/
             Sens_Geo[iMarker] -= CSensitivity[iMarker][iVertex]*Area;
           }
@@ -3435,6 +3470,22 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
               if ( geometry->node[iPoint]->GetSharpEdge_Distance() <
                   config->GetSharpEdgesCoeff()*eps                   )
                 CSensitivity[iMarker][iVertex] = 0.0;
+            }
+            
+            /*--- Collect detailed surface sensitivity data ---*/
+            if (config->GetExtraOutput()) {
+              
+              // Diffusion processes
+              OutputVariables[iPoint* (unsigned long) nOutputVariables + 0] += B21;
+              
+              // Viscous processes
+              OutputVariables[iPoint* (unsigned long) nOutputVariables + 1] += B22;
+              
+              // T-R Conduction
+              OutputVariables[iPoint* (unsigned long) nOutputVariables + 2] += B23;
+              
+              // V-E Conduction
+              OutputVariables[iPoint* (unsigned long) nOutputVariables + 3] += B24;
             }
             
             /*--- Add the sensitivity to the total geometric sensitivity ---*/
