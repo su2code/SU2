@@ -2340,6 +2340,7 @@ CSource_AdjTNE2::~CSource_AdjTNE2(void) {
   delete [] dIdr;
   delete [] dJdr;
   delete [] SdIdr;
+  delete [] Js;
   
 }
 
@@ -2350,9 +2351,9 @@ void CSource_AdjTNE2::ComputeSourceViscous (double *val_residual, CConfig *confi
   // one for each component (diffusion, momentum transport, thermal transport,
   // and vib-el. thermal transport).
   
-  unsigned short iDim, jDim, iSpecies, iVar;
+  unsigned short iDim, jDim, iSpecies, jSpecies, iVar;
   double rho, Tve, rCvtr, rCvve;
-  double mu, ktr, kve;
+  double *Ds, mu, ktr, kve;
   double *Ms, *xi, Ru;
   double div_vel, div_velorho, velGInvRho;
   double **GPsi, GPsiEGvel[3], GPhiEta, GPsiEvelPi;
@@ -2371,6 +2372,7 @@ void CSource_AdjTNE2::ComputeSourceViscous (double *val_residual, CConfig *confi
   Ru    = UNIVERSAL_GAS_CONSTANT;
   Ms    = config->GetMolar_Mass();
   xi    = config->GetRotationModes();
+  Ds    = Diffusion_Coeff_i;
   mu    = Laminar_Viscosity_i;
   ktr   = Thermal_Conductivity_i;
   kve   = Thermal_Conductivity_ve_i;
@@ -2379,27 +2381,42 @@ void CSource_AdjTNE2::ComputeSourceViscous (double *val_residual, CConfig *confi
     vel[iDim] = V_i[VEL_INDEX+iDim];
     div_vel  += PrimVar_Grad_i[VEL_INDEX+iDim][iDim];
   }
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    Y[iSpecies] = V_i[RHOS_INDEX+iSpecies]/V_i[RHO_INDEX];
   
   /*--- Calculate specific heat ---*/
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     Cvtrs[iSpecies] = (3.0+xi[iSpecies])/2.0*Ru/Ms[iSpecies];
   }
   
-  /*--- Convert from species density to mass-fraction, Y ---*/
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    V[RHOS_INDEX+iSpecies] = V_i[RHOS_INDEX+iSpecies]/rho;
-    for (iDim = 0; iDim < nDim; iDim++)
-      GV[RHOS_INDEX+iSpecies][iDim] = 1.0/rho*(PrimVar_Grad_i[RHOS_INDEX+iSpecies][iDim] -
-                                               V[RHOS_INDEX+iSpecies]*
-                                               PrimVar_Grad_i[RHO_INDEX][iDim]);
-  }
-  
   /*--- Copy remaining quantities to V & GV ---*/
-  for (iVar = nSpecies; iVar < nPrimVar; iVar++)
+  for (iVar = 0; iVar < nPrimVar; iVar++)
     V[iVar] = V_i[iVar];
-  for (iVar = nSpecies; iVar < nPrimVarGrad; iVar++)
+  for (iVar = 0; iVar < nPrimVarGrad; iVar++)
     for (iDim = 0; iDim < nDim; iDim++)
       GV[iVar][iDim] = PrimVar_Grad_i[iVar][iDim];
+  
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    for (iDim = 0; iDim < nDim; iDim++)
+      GY[iSpecies][iDim] = 1/rho*(GV[RHOS_INDEX+iSpecies][iDim] -
+                                  Y[iSpecies]*GV[RHO_INDEX][iDim]);
+  }
+  
+  /*--- Convert from species density to mass-fraction, Y ---*/
+//  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+//    V[RHOS_INDEX+iSpecies] = V_i[RHOS_INDEX+iSpecies]/rho;
+//    for (iDim = 0; iDim < nDim; iDim++)
+//      GV[RHOS_INDEX+iSpecies][iDim] = 1.0/rho*(PrimVar_Grad_i[RHOS_INDEX+iSpecies][iDim] -
+//                                               V[RHOS_INDEX+iSpecies]*
+//                                               PrimVar_Grad_i[RHO_INDEX][iDim]);
+//  }
+//  
+//  /*--- Copy remaining quantities to V & GV ---*/
+//  for (iVar = nSpecies; iVar < nPrimVar; iVar++)
+//    V[iVar] = V_i[iVar];
+//  for (iVar = nSpecies; iVar < nPrimVarGrad; iVar++)
+//    for (iDim = 0; iDim < nDim; iDim++)
+//      GV[iVar][iDim] = PrimVar_Grad_i[iVar][iDim];
   
   /*--- Calculate supporting quantities ---*/
   // GPsiEGvel = GPsiE * G{u,v,w} = {GPsiEdotGu, GPsiEdotGv, GPsiEdotGw}
@@ -2478,6 +2495,95 @@ void CSource_AdjTNE2::ComputeSourceViscous (double *val_residual, CConfig *confi
   for (iDim = 0; iDim < nDim; iDim++)
     for (jDim = 0; jDim < nDim; jDim++)
       GPsiEvelPi += GPsi[nSpecies+nDim][iDim]*vel[jDim]*pi[iDim][jDim];
+  
+  
+  /*--- Calculate diffusion-related useful values ---*/
+  // Sum_k (Ik)
+  for (iDim = 0; iDim < nDim; iDim++) {
+    SIk[iDim] = 0.0;
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+      SIk[iDim] += rho*Ds[iSpecies]*GY[iSpecies][iDim];
+  }
+  
+  // Diffusion velocity Js
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    for (iDim = 0; iDim < nDim; iDim++)
+      Js[iSpecies][iDim] = -rho*Ds[iSpecies]*GY[iSpecies][iDim] + Y[iSpecies]*SIk[iDim];
+  }
+  
+  // Initialize arrays
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    for (jSpecies = 0; jSpecies < nSpecies; jSpecies++)
+      for (iDim = 0; iDim < nDim; iDim++) {
+        dIdr[iSpecies][jSpecies][iDim] = 0.0;
+        dJdr[iSpecies][jSpecies][iDim] = 0.0;
+      }
+  
+  // dI/dr
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+      for (iDim = 0; iDim < nDim; iDim++) {
+        dIdr[jSpecies][iSpecies][iDim] += Ds[jSpecies]/rho*Y[jSpecies]*GV[RHO_INDEX][iDim];
+      }
+    }
+    for (iDim = 0; iDim < nDim; iDim++)
+      dIdr[iSpecies][iSpecies][iDim] += -Ds[iSpecies]/rho*GV[RHO_INDEX][iDim];
+  }
+  
+  // Sum_k (dIk/dr)
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    for (iDim = 0; iDim < nDim; iDim++) {
+      SdIdr[iSpecies][iDim] = 0.0;
+      for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+        SdIdr[iSpecies][iDim] += dIdr[jSpecies][iSpecies][iDim];
+      }
+    }
+  }
+  
+  // dJ/dr
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+      for (iDim = 0; iDim < nDim; iDim++) {
+        dJdr[jSpecies][iSpecies][iDim] += (-dIdr[jSpecies][iSpecies][iDim]
+                                           -1/rho*Y[jSpecies]*SIk[iDim]
+                                           +Y[jSpecies]*SdIdr[iSpecies][iDim]);
+      }
+    }
+    for (iDim = 0; iDim < nDim; iDim++)
+      dJdr[iSpecies][iSpecies][iDim] += 1/rho*SIk[iDim];
+  }
+  
+  /*--- Contribution to viscous residual from Av1 ---*/
+  // Species mass
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    for (jSpecies =0; jSpecies < nSpecies; jSpecies++) {
+      for (iDim = 0; iDim < nDim; iDim++) {
+        val_residual[iSpecies] +=
+        -GPsi[jSpecies][iDim]       *(dJdr[jSpecies][iSpecies][iDim])*Volume
+        -GPsi[nSpecies+nDim][iDim]  *(dJdr[jSpecies][iSpecies][iDim]*hs[jSpecies] +
+                                      Js[jSpecies][iDim]*
+                                      ((Ru/Ms[jSpecies]+Cvtrs[jSpecies])*dTdU_i[iSpecies]+
+                                       Cvve_i[jSpecies]*dTvedU_i[iSpecies]))*Volume
+        -GPsi[nSpecies+nDim+1][iDim]*(dJdr[jSpecies][iSpecies][iDim]*eve_i[jSpecies] +
+                                      Js[jSpecies][iDim]*
+                                      (Cvve_i[jSpecies]*dTvedU_i[iSpecies]))*Volume;
+      }
+    }
+  }
+  // Remaining terms
+  for (iVar = nSpecies; iVar < nVar; iVar++) {
+    for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+      for (iDim = 0; iDim < nDim; iDim++) {
+        val_residual[iVar] +=
+        -GPsi[nSpecies+nDim][iDim]*(Js[jSpecies][iDim]*
+                                    ((Ru/Ms[jSpecies]+Cvtrs[jSpecies])*dTdU_i[iVar]+
+                                     Cvve_i[jSpecies]*dTvedU_i[iVar]))*Volume
+        -GPsi[nSpecies+nDim+1][iDim]*(Js[jSpecies][iDim]*
+                                      (Cvve_i[jSpecies]*dTvedU_i[iVar]))*Volume;
+      }
+    }
+  }
+  
   
   /*--- Contribution ot viscous source from Av2 (momentum transport) ---*/
   // Fv2 = [0, ..., 0, tx, ty, tz, utx+vty+wtz, 0]

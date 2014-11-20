@@ -2042,8 +2042,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         /*--- Assign gas properties ---*/
         
         // Wall mass fractions for catalytic boundaries
-        Wall_Catalycity[0] = 0.9;
-        Wall_Catalycity[1] = 0.1;
+        Wall_Catalycity[0] = 0.999;
+        Wall_Catalycity[1] = 0.001;
         
         // Rotational modes of energy storage
         RotationModes[0] = 2.0;
