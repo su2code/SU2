@@ -51,6 +51,12 @@ elif not which('mpiexec') is None:
 else:
     mpi_Command = ''
     
+from .. import EvaluationFailure, DivergenceFailure
+return_code_map = {
+    1 : EvaluationFailure ,
+    2 : DivergenceFailure ,
+}
+    
 # ------------------------------------------------------------
 #  SU2 Suite Interface Functions
 # ------------------------------------------------------------
@@ -274,7 +280,11 @@ def run_command( Command ):
         raise SystemExit , message
     elif return_code > 0:
         message = "Path = %s\nCommand = %s\nSU2 process returned error '%s'\n%s" % (os.path.abspath(','),Command,return_code,message)
-        raise Exception , message
+        if return_code in return_code_map.keys():
+            exception = return_code_map[return_code]
+        else:
+            exception = RuntimeError
+        raise exception , message
     else:
         sys.stdout.write(message)
             

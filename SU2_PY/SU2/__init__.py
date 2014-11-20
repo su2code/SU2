@@ -16,3 +16,11 @@ try:
         readline.parse_and_bind("tab: complete")
 except:
     pass
+
+
+class EvaluationFailure(RuntimeError):
+    pass
+
+class DivergenceFailure(EvaluationFailure):
+    pass
+
