@@ -2282,8 +2282,8 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
 					 if (config->GetSystemMeasurements() == SI) cout << " K." << endl;
 					 else if (config->GetSystemMeasurements() == US) cout << " R." << endl;
 					 cout << "Laminar Viscosity (non-dim): " << config->GetMu_ConstantND()<<endl;
-					 cout << "Ref. Temperature: " << config->GetMu_Temperature_RefND()<<endl;
-					 cout << "Sutherland constant: "<< config->GetMu_SND()<<endl;
+					 cout << "Ref. Temperature (non-dim): " << config->GetMu_Temperature_RefND()<<endl;
+					 cout << "Sutherland constant (non-dim): "<< config->GetMu_SND()<<endl;
 				  break;
 
 			}
