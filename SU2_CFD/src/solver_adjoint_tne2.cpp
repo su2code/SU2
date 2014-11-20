@@ -1432,11 +1432,6 @@ void CAdjTNE2EulerSolver::Upwind_Residual(CGeometry *geometry,
                       (config->GetSpatialOrder_AdjTNE2() == SECOND_ORDER_LIMITER))
                      && (iMesh == MESH_0));
   limiter         = (config->GetSpatialOrder_AdjTNE2() == SECOND_ORDER_LIMITER);
-
-  if (second_order)
-    cout << "WARNING!!! Upwind_Residual: 2nd order accuracy not in place!" << endl;
-  if (limiter)
-    cout << "WARNING!!! Upwind_Residual: Limiter not in place!" << endl;
   
   
   /*--- Pass structure of the primitive variable vector to CNumerics ---*/
@@ -3024,10 +3019,10 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
   /*--- Variable declarations ---*/
   unsigned short iDim, jDim, iMarker, iSpecies, iVar;
   unsigned short T_INDEX, TVE_INDEX, VEL_INDEX, RHO_INDEX, RHOS_INDEX;
-  unsigned long iPoint, iVertex;
+  unsigned long iPoint, jPoint, iVertex;
   int rank;
   
-  double *Normal, UnitNormal[3], Area;
+  double *Normal, UnitNormal[3], Area, dij;
   double *U, *V, **GV;
   double **GY, **GsY, *sIk, **Js;
   double *GsT, *GsTve;
@@ -3363,6 +3358,18 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
             for (iDim = 0; iDim < nDim; iDim++)
               UnitNormal[iDim] = Normal[iDim] / Area;
             
+            /*--- Get the point normal to the vertex ---*/
+            jPoint = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
+            /*--- Compute distance between wall & normal neighbor ---*/
+            dij = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++) {
+              dij += (geometry->node[jPoint]->GetCoord(iDim) -
+                      geometry->node[iPoint]->GetCoord(iDim))
+                   * (geometry->node[jPoint]->GetCoord(iDim) -
+                      geometry->node[iPoint]->GetCoord(iDim));
+            }
+            dij = sqrt(dij);
+            
             /*--- Get flow quantities ---*/
             U   = solver_container[TNE2_SOL]->node[iPoint]->GetSolution();
             V   = solver_container[TNE2_SOL]->node[iPoint]->GetPrimVar();
@@ -3398,6 +3405,7 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
             }
             
             /*--- Calculate normal derivative of the velocity & temperature ---*/
+            //////////////// PROJECTION ////////////////
             dnT   = 0.0;
             dnTve = 0.0;
             for (iDim = 0; iDim < nDim; iDim++) {
@@ -3408,17 +3416,38 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
               dnT   += GV[T_INDEX][iDim]*UnitNormal[iDim];
               dnTve += GV[T_INDEX][iDim]*UnitNormal[iDim];
             }
+            //////////////// PROJECTION ////////////////
+            
+            //////////////// FINITE DIFFERENCE ////////////////
+//            double *Vj;
+//            Vj = solver_container[TNE2_SOL]->node[jPoint]->GetPrimVar();
+//            for (iDim = 0; iDim < nDim; iDim++)
+//              dnvel[iDim] = (Vj[VEL_INDEX+iDim]-Vj[VEL_INDEX+iDim])/dij;
+//            dnT   = ( Vj[T_INDEX]  - V[T_INDEX]   )/dij;
+//            dnTve = ( Vj[TVE_INDEX]- V[TVE_INDEX] )/dij;
+            //////////////// FINITE DIFFERENCE ////////////////
             
             /*--- Get adjoint quantities ---*/
             Psi  = node[iPoint]->GetSolution();
             GPsi = node[iPoint]->GetGradient();
             
             /*--- Calculate normal derivatives of the adjoint variables ---*/
+            //////////////// PROJECTION ////////////////
             for (iVar = 0; iVar < nVar; iVar++) {
               GnPsi[iVar] = 0.0;
               for (iDim = 0; iDim < nDim; iDim++)
                 GnPsi[iVar] = GPsi[iVar][iDim]*UnitNormal[iDim];
             }
+            //////////////// PROJECTION ////////////////
+            
+            
+            //////////////// FINITE DIFFERENCE ////////////////
+//            double *Psij;
+//            Psij = node[jPoint]->GetSolution();
+//            for (iVar = 0; iVar < nVar; iVar++)
+//              GnPsi[iVar] = (Psij[iVar]-Psi[iVar])/dij;
+            //////////////// FINITE DIFFERENCE ////////////////
+            
             
             /*--- Calculate SigmaPhi ---*/
             div_phi = 0.0;
