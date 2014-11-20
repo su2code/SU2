@@ -292,7 +292,7 @@ if test "$have_FluidProp" != "no"
 then
 AM_CONDITIONAL(BUILD_FluidProp,true)
 FluidProp_CXX="-DHAVE_FluidProp -I"$with_FluidProp_include""
-FluidProp_LD="$with_FluidProp_lib"/$FluidProplib
+FluidProp_LD="$with_FluidProp_lib"/$FluidProplib -ldl
 else
 AM_CONDITIONAL(BUILD_FluidProp,false)
 FluidProp_CXX=
