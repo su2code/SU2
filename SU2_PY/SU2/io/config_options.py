@@ -61,6 +61,7 @@ class DEFINITION_DV(ordered_bunch):
         self.SCALE  = []
         self.MARKER = []
         self.PARAM  = []
+        self.FFDTAG = []
         self.update(ordered_bunch(*args,**kwarg))
     
     def append(self,new_dv):
@@ -68,6 +69,7 @@ class DEFINITION_DV(ordered_bunch):
         self.SCALE. append(new_dv['SCALE'])
         self.MARKER.append(new_dv['MARKER'])
         self.PARAM. append(new_dv['PARAM'])
+        self.FFDTAG.append(new_dv['FFDTAG'])
     
     def extend(self,new_dvs):
         assert isinstance(new_dvs,DEFINITION_DV) , 'input must be of type DEFINITION_DV'
@@ -75,3 +77,4 @@ class DEFINITION_DV(ordered_bunch):
         self.SCALE. extend(new_dvs['SCALE'])
         self.MARKER.extend(new_dvs['MARKER'])
         self.PARAM. extend(new_dvs['PARAM'])
+        self.FFDTAG.extend(new_dvs['FFDTAG'])
