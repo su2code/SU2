@@ -90,7 +90,7 @@ def run_su2(x,config,state,results):
         # --------------------------------------------------------------
         try:
             info = SU2.run.direct(konfig)
-        except SU2.DivergenceFailure:
+        except: # SU2.DivergenceFailure:
             iterations = 900000
             info = ztate
         else:
