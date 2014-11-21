@@ -5731,6 +5731,7 @@ private:
   
   double **SigmaPhi;
   double **SigmaPsiE;
+  double **SigmaVel;
   bool implicit;			/*!< \brief Implicit calculus. */
 public:
   
