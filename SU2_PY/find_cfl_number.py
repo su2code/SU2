@@ -36,13 +36,13 @@ from SU2.util import ordered_bunch, ordered_dict
 # ----------------------------------------------------------------------
 
 # Run the cfl experiment here (local or absolute path)
-RUN_FOLDER      = 'EVALUATIONS_EXPERIMENT_1/'
+RUN_FOLDER      = 'EVALUATIONS_EXPERIMENT_1/' 
 CONFIG_FILENAME = 'config_NACA0012.cfg'
-NUMBER_PART     = 4
-MAX_ANALYSES    = 10
-SEARCH_BRACKET  = [ 0.001, 10.0, 100.0 ]
-AOA_VALUES      = [ 0.0, 10.0, 25.0 ]
-LIMITER_VALUES  = [ 0.1, 1.0, 10.0 ]
+NUMBER_PART     = 4                        # number of grid partitions
+MAX_ANALYSES    = 10                       # per cfl optimization
+SEARCH_BRACKET  = [ 0.001, 10.0, 100.0 ]   # cfl search bracket
+AOA_VALUES      = [ 0.0, 10.0, 25.0 ]      # run each of these
+LIMITER_VALUES  = [ 0.1, 1.0, 10.0 ]       # run each of these
 
 
 # ----------------------------------------------------------------------
