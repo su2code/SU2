@@ -1,11 +1,17 @@
 # SU2/__init__.py
 
-from . import run
-from . import io
-from . import mesh
-from . import eval
-from . import opt
-from . import util
+class EvaluationFailure(RuntimeError):
+    pass
+class DivergenceFailure(EvaluationFailure):
+    pass
+
+
+import run
+import io
+import mesh
+import eval
+import opt
+import util
 
 try:
     import readline
@@ -18,9 +24,5 @@ except:
     pass
 
 
-class EvaluationFailure(RuntimeError):
-    pass
 
-class DivergenceFailure(EvaluationFailure):
-    pass
 
