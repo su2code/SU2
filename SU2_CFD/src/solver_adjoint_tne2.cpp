@@ -3472,9 +3472,9 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
               Jsn = 0.0;
               for (iDim = 0; iDim < nDim; iDim++)
                 Jsn += Js[iSpecies][iDim]*UnitNormal[iDim];
-              B21 += ( GnPsi[iSpecies]
-                      +GnPsi[nSpecies+nDim]*hs[iSpecies]
-                      +GnPsi[nSpecies+nDim+1]*eves[iSpecies])*Jsn;
+              B21 += -( GnPsi[iSpecies]
+                       +GnPsi[nSpecies+nDim]*hs[iSpecies]
+                       +GnPsi[nSpecies+nDim+1]*eves[iSpecies])*Jsn;
             }
             
             // mu(SigmaPhi \cdot \vec{n})
