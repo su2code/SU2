@@ -133,7 +133,7 @@ void CSysSolve::ModGramSchmidt(int i, vector<vector<double> > & Hsbg, vector<CSy
     if (rank == MASTER_NODE)
       cout << "\n !!! Error: The FGMRES solver has diverged. Now exiting... !!! \n" << endl;
 #ifndef HAVE_MPI
-		exit(EXIT_FAILURE);
+		exit(EXIT_DIVERGENCE);
 #else
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Abort(MPI_COMM_WORLD,1);
@@ -173,7 +173,7 @@ void CSysSolve::ModGramSchmidt(int i, vector<vector<double> > & Hsbg, vector<CSy
 //    
 //    cerr << "The FGMRES linear solver has diverged" << endl;
 //#ifndef HAVE_MPI
-//    exit(EXIT_FAILURE);
+//    exit(EXIT_DIVERGENCE);
 //#else
 //    MPI_Abort(MPI_COMM_WORLD,1);
 //    MPI_Finalize();

@@ -1361,7 +1361,7 @@ void CSysMatrix::ComputeLineletPreconditioner(const CSysVector & vec, CSysVector
     if (rank == MASTER_NODE) cout << "ERROR: Linelet not implemented in parallel." << endl;
     
 #ifndef HAVE_MPI
-    exit(1);
+    exit(EXIT_FAILURE);
 #else
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Abort(MPI_COMM_WORLD,1);

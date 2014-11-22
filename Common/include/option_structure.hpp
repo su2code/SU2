@@ -100,6 +100,8 @@ enum SU2_COMPONENT {
   SU2_SOL = 7	/*!< \brief Running the SU2_SOL software. */
 };
 
+const unsigned int EXIT_DIVERGENCE = 2;		/*!< \brief Exit code (divergence). */
+
 const unsigned int BUFSIZE = 3000000;		/*!< \brief MPI buffer. */
 const unsigned int MAX_PARAMETERS = 10;		/*!< \brief Maximum number of parameters for a design variable definition. */
 const unsigned int MAX_NUMBER_MARKER = 5000;	/*!< \brief Maximum number of markers. */

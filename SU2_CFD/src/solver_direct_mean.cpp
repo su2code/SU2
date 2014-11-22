@@ -6647,7 +6647,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
             default:
                 cout << "Warning! Invalid Riemann input!" << endl;
-		exit(1);
+		exit(EXIT_FAILURE);
 
                 break;
 
