@@ -373,7 +373,7 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
       cout << "\n !!! Error: NaNs detected in solution. Now exiting... !!! \n" << endl;
     
 #ifndef HAVE_MPI
-		exit(EXIT_FAILURE);
+		exit(EXIT_DIVERGENCE);
 #else
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Abort(MPI_COMM_WORLD,1);
