@@ -3414,7 +3414,7 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
                 dnvel[iDim] = GV[VEL_INDEX+iDim][jDim]*UnitNormal[jDim];
               }
               dnT   += GV[T_INDEX][iDim]*UnitNormal[iDim];
-              dnTve += GV[T_INDEX][iDim]*UnitNormal[iDim];
+              dnTve += GV[TVE_INDEX][iDim]*UnitNormal[iDim];
             }
             //////////////// PROJECTION ////////////////
             
