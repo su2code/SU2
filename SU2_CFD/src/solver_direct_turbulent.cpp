@@ -1768,13 +1768,15 @@ void CTurbSASolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_conta
   
 }
 
-void CTurbSASolver::BC_Engine_Bleed(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CTurbSASolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   
-  unsigned long iPoint, iVertex;
   unsigned short iDim;
-  double *V_inflow, *V_domain, *Normal;
+  unsigned long iVertex, iPoint;
+  double *V_exhaust, *V_domain, *Normal;
   
   Normal = new double[nDim];
+  
+  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   
   /*--- Loop over all the vertices on this boundary marker ---*/
   
@@ -1786,9 +1788,14 @@ void CTurbSASolver::BC_Engine_Bleed(CGeometry *geometry, CSolver **solver_contai
     
     if (geometry->node[iPoint]->GetDomain()) {
       
-      /*--- Allocate the value at the inflow ---*/
+      /*--- Normal vector for this vertex (negate for outward convention) ---*/
       
-      V_inflow = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
+      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+      for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+      
+      /*--- Allocate the value at the infinity ---*/
+      
+      V_exhaust = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
       
       /*--- Retrieve solution at the farfield boundary node ---*/
       
@@ -1796,19 +1803,17 @@ void CTurbSASolver::BC_Engine_Bleed(CGeometry *geometry, CSolver **solver_contai
       
       /*--- Set various quantities in the solver class ---*/
       
-      conv_numerics->SetPrimitive(V_domain, V_inflow);
+      conv_numerics->SetPrimitive(V_domain, V_exhaust);
       
-      /*--- Set the turbulent variables. Here we use a Neumann BC such
-       that the turbulent variable is copied from the interior of the
-       domain to the outlet before computing the residual. ---*/
+      /*--- Set the turbulent variable states (prescribed for an inflow) ---*/
       
-      conv_numerics->SetTurbVar(node[iPoint]->GetSolution(), node[iPoint]->GetSolution());
+      Solution_i[0] = node[iPoint]->GetSolution(0);
+      Solution_j[0] = nu_tilde_Inf;
       
-      /*--- Set Normal (negate for outward convention) ---*/
+      conv_numerics->SetTurbVar(Solution_i, Solution_j);
       
-      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-      for (iDim = 0; iDim < nDim; iDim++)
-        Normal[iDim] = -Normal[iDim];
+      /*--- Set various other quantities in the conv_numerics class ---*/
+      
       conv_numerics->SetNormal(Normal);
       
       /*--- Compute the residual using an upwind scheme ---*/
@@ -1827,11 +1832,11 @@ void CTurbSASolver::BC_Engine_Bleed(CGeometry *geometry, CSolver **solver_contai
       
       /*--- Conservative variables w/o reconstruction ---*/
       
-      visc_numerics->SetPrimitive(V_domain, V_inflow);
+      visc_numerics->SetPrimitive(V_domain, V_exhaust);
       
       /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
       
-      visc_numerics->SetTurbVar(node[iPoint]->GetSolution(), node[iPoint]->GetSolution());
+      visc_numerics->SetTurbVar(Solution_i, Solution_j);
       visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
       
       /*--- Compute residual, and Jacobians ---*/
@@ -1852,7 +1857,7 @@ void CTurbSASolver::BC_Engine_Bleed(CGeometry *geometry, CSolver **solver_contai
   
 }
 
-void CTurbSASolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CTurbSASolver::BC_Engine_Bleed(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   
   unsigned short iDim;
   unsigned long iVertex, iPoint;
