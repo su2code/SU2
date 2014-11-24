@@ -5773,17 +5773,27 @@ void CEulerSolver::GetEngine_Properties(CGeometry *geometry, CConfig *config, un
   delete [] Inflow_Mach_Local;
   delete [] Inflow_Pressure_Local;
   delete [] Inflow_Area_Local;
-
-  delete [] Bleed_MassFlow_Total;
-  delete [] Bleed_Temperature_Total;
-  delete [] Bleed_Pressure_Total;
-  delete [] Bleed_Area_Total;
+  
+  delete [] Inflow_MassFlow_Total;
+  delete [] Inflow_Mach_Total;
+  delete [] Inflow_Pressure_Total;
+  delete [] Inflow_Area_Total;
 
   delete [] Exhaust_MassFlow_Local;
   delete [] Exhaust_Area_Local;
 
   delete [] Exhaust_MassFlow_Total;
   delete [] Exhaust_Area_Total;
+  
+  delete [] Bleed_MassFlow_Local;
+  delete [] Bleed_Temperature_Local;
+  delete [] Bleed_Pressure_Local;
+  delete [] Bleed_Area_Local;
+  
+  delete [] Bleed_MassFlow_Total;
+  delete [] Bleed_Temperature_Total;
+  delete [] Bleed_Pressure_Total;
+  delete [] Bleed_Area_Total;
 
 }
 
