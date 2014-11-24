@@ -5410,8 +5410,7 @@ CTNE2NSSolver::~CTNE2NSSolver(void) {
 void CTNE2NSSolver::Preprocessing(CGeometry *geometry, CSolver **solution_container, CConfig *config,
                                   unsigned short iMesh, unsigned short iRKStep,
                                   unsigned short RunTime_EqSystem, bool Output) {
-	unsigned long iPoint, jPoint, ErrorCounter = 0;
-  unsigned short iNeigh, nNeigh, iVar;
+	unsigned long iPoint, ErrorCounter = 0;
   bool nonPhys;
   bool adjoint      = config->GetAdjoint();
 	bool implicit     = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
@@ -5421,7 +5420,6 @@ void CTNE2NSSolver::Preprocessing(CGeometry *geometry, CSolver **solution_contai
   bool center       = ((config->GetKind_ConvNumScheme_TNE2() == SPACE_CENTERED) ||
                        (adjoint && config->GetKind_ConvNumScheme_AdjTNE2() == SPACE_CENTERED));
   int rank;
-  double tmp;
   double *errU, *errV;
   
   errU = new double[nVar];
@@ -5444,27 +5442,6 @@ void CTNE2NSSolver::Preprocessing(CGeometry *geometry, CSolver **solution_contai
 		nonPhys = node[iPoint]->SetPrimVar_Compressible(config);
     if (nonPhys) {
       ErrorCounter++;
-      
-//      /*--- If nonphysical, replace with an average of the adjacent nodes ---*/
-//      nNeigh = geometry->node[iPoint]->GetnPoint();
-//      for (iVar = 0; iVar < nVar; iVar++) {
-//        tmp = 0;
-//        for (iNeigh = 0; iNeigh < nNeigh; iNeigh++) {
-//          jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
-//          tmp += node[jPoint]->GetSolution(iVar);
-//        }
-//        tmp = tmp/nNeigh;
-//        node[iPoint]->SetSolution(iVar, tmp);
-//      }
-//      for (iVar = 0; iVar < nPrimVar; iVar++) {
-//        tmp = 0;
-//        for (iNeigh = 0; iNeigh < nNeigh; iNeigh++) {
-//          jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
-//          tmp += node[jPoint]->GetPrimVar(iVar);
-//        }
-//        tmp = tmp/nNeigh;
-//        node[iPoint]->SetPrimVar(iVar, tmp);
-//      }
     }
     
 		/*--- Initialize the convective, source and viscous residual vector ---*/

@@ -468,13 +468,16 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
   
 }
 
-void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolver *AdjSolver, CSolver *FlowSolution, unsigned long iExtIter, unsigned short val_iZone) {
+void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry,
+                                    CSolver *AdjSolver, CSolver *FlowSolution,
+                                    unsigned long iExtIter,
+                                    unsigned short val_iZone) {
   
 #ifdef NO_MPI
   
   unsigned long iPoint, iVertex;
   double *Solution, xCoord, yCoord, zCoord, *IntBoundary_Jump;
-  unsigned short iMarker;
+  unsigned short iDim, iMarker, iVar;
   char cstr[200], buffer[50];
   ofstream SurfAdj_file;
   
@@ -502,37 +505,78 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
   SurfAdj_file.precision(15);
   SurfAdj_file.open(cstr, ios::out);
   
-  if (geometry->GetnDim() == 2) {
-    SurfAdj_file <<  "\"Point\",\"Sensitivity\",\"PsiRho\",\"Phi_x\",\"Phi_y\",\"PsiE\",\"x_coord\",\"y_coord\"" << endl;
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if (config->GetMarker_All_Plotting(iMarker) == YES)
-        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          Solution = AdjSolver->node[iPoint]->GetSolution();
-          IntBoundary_Jump = AdjSolver->node[iPoint]->GetIntBoundary_Jump();
-          xCoord = geometry->node[iPoint]->GetCoord(0);
-          yCoord = geometry->node[iPoint]->GetCoord(1);
-          SurfAdj_file << scientific << iPoint << ", " << AdjSolver->GetCSensitivity(iMarker,iVertex) << ", " << Solution[0] << ", "
-          << Solution[1] << ", " << Solution[2] << ", " << Solution[3] <<", " << xCoord <<", "<< yCoord << endl;
-        }
-    }
-  }
   
-  if (geometry->GetnDim() == 3) {
-    SurfAdj_file <<  "\"Point\",\"Sensitivity\",\"PsiRho\",\"Phi_x\",\"Phi_y\",\"Phi_z\",\"PsiE\",\"x_coord\",\"y_coord\",\"z_coord\"" << endl;
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if (config->GetMarker_All_Plotting(iMarker) == YES)
-        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          Solution = AdjSolver->node[iPoint]->GetSolution();
-          xCoord = geometry->node[iPoint]->GetCoord(0);
-          yCoord = geometry->node[iPoint]->GetCoord(1);
-          zCoord = geometry->node[iPoint]->GetCoord(2);
-          
-          SurfAdj_file << scientific << iPoint << ", " << AdjSolver->GetCSensitivity(iMarker,iVertex) << ", " << Solution[0] << ", "
-          << Solution[1] << ", " << Solution[2] << ", " << Solution[3] << ", " << Solution[4] << ", "<< xCoord <<", "<< yCoord <<", "<< zCoord << endl;
+  switch (config->GetKind_Solver()) {
+    case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
+      if (geometry->GetnDim() == 2) {
+        SurfAdj_file <<  "\"Point\",\"Sensitivity\",\"PsiRho\",\"Phi_x\",\"Phi_y\",\"PsiE\",\"x_coord\",\"y_coord\"" << endl;
+        for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+          if (config->GetMarker_All_Plotting(iMarker) == YES)
+            for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+              iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+              Solution = AdjSolver->node[iPoint]->GetSolution();
+              IntBoundary_Jump = AdjSolver->node[iPoint]->GetIntBoundary_Jump();
+              xCoord = geometry->node[iPoint]->GetCoord(0);
+              yCoord = geometry->node[iPoint]->GetCoord(1);
+              SurfAdj_file << scientific << iPoint << ", " << AdjSolver->GetCSensitivity(iMarker,iVertex) << ", " << Solution[0] << ", "
+              << Solution[1] << ", " << Solution[2] << ", " << Solution[3] <<", " << xCoord <<", "<< yCoord << endl;
+            }
         }
-    }
+      }
+      
+      if (geometry->GetnDim() == 3) {
+        SurfAdj_file <<  "\"Point\",\"Sensitivity\",\"PsiRho\",\"Phi_x\",\"Phi_y\",\"Phi_z\",\"PsiE\",\"x_coord\",\"y_coord\",\"z_coord\"" << endl;
+        for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+          if (config->GetMarker_All_Plotting(iMarker) == YES)
+            for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+              iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+              Solution = AdjSolver->node[iPoint]->GetSolution();
+              xCoord = geometry->node[iPoint]->GetCoord(0);
+              yCoord = geometry->node[iPoint]->GetCoord(1);
+              zCoord = geometry->node[iPoint]->GetCoord(2);
+              
+              SurfAdj_file << scientific << iPoint << ", " << AdjSolver->GetCSensitivity(iMarker,iVertex) << ", " << Solution[0] << ", "
+              << Solution[1] << ", " << Solution[2] << ", " << Solution[3] << ", " << Solution[4] << ", "<< xCoord <<", "<< yCoord <<", "<< zCoord << endl;
+            }
+        }
+      }
+      break;
+      
+    case ADJ_TNE2_EULER: case ADJ_TNE2_NAVIER_STOKES:
+      
+      if (geometry->GetnDim() == 2) {
+        SurfAdj_file <<  "\"Point\",\"Sensitivity\",\"PsiRho\",\"Phi_x\",\"Phi_y\",\"PsiE\",\"x_coord\",\"y_coord\"" << endl;
+        for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+          if (config->GetMarker_All_Plotting(iMarker) == YES)
+            for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+              iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+              Solution = AdjSolver->node[iPoint]->GetSolution();
+              IntBoundary_Jump = AdjSolver->node[iPoint]->GetIntBoundary_Jump();
+              xCoord = geometry->node[iPoint]->GetCoord(0);
+              yCoord = geometry->node[iPoint]->GetCoord(1);
+              SurfAdj_file << scientific << iPoint << ", " << AdjSolver->GetCSensitivity(iMarker,iVertex) << ", " << Solution[0] << ", "
+              << Solution[1] << ", " << Solution[2] << ", " << Solution[3] <<", " << xCoord <<", "<< yCoord << endl;
+            }
+        }
+      }
+      
+      if (geometry->GetnDim() == 3) {
+        SurfAdj_file <<  "\"Point\",\"Sensitivity\",\"PsiRho\",\"Phi_x\",\"Phi_y\",\"Phi_z\",\"PsiE\",\"x_coord\",\"y_coord\",\"z_coord\"" << endl;
+        for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+          if (config->GetMarker_All_Plotting(iMarker) == YES)
+            for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+              iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+              Solution = AdjSolver->node[iPoint]->GetSolution();
+              xCoord = geometry->node[iPoint]->GetCoord(0);
+              yCoord = geometry->node[iPoint]->GetCoord(1);
+              zCoord = geometry->node[iPoint]->GetCoord(2);
+              
+              SurfAdj_file << scientific << iPoint << ", " << AdjSolver->GetCSensitivity(iMarker,iVertex) << ", " << Solution[0] << ", "
+              << Solution[1] << ", " << Solution[2] << ", " << Solution[3] << ", " << Solution[4] << ", "<< xCoord <<", "<< yCoord <<", "<< zCoord << endl;
+            }
+        }
+      }
+      break;
   }
   
   SurfAdj_file.close();
@@ -3420,9 +3464,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   
   if ((Kind_Solver == ADJ_EULER)         ||
       (Kind_Solver == ADJ_NAVIER_STOKES) ||
-      (Kind_Solver == ADJ_RANS)          ||
-      (Kind_Solver == ADJ_TNE2_EULER)    ||
-      (Kind_Solver == ADJ_TNE2_NAVIER_STOKES)) {
+      (Kind_Solver == ADJ_RANS)) {
     
     /*--- First, loop through the mesh in order to find and store the
      value of the surface sensitivity at any surface nodes. They
@@ -3453,6 +3495,78 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
           Buffer_Send_Res[jPoint] = solver[ADJFLOW_SOL]->node[iPoint]->GetSensor(iPoint);
         if (config->GetKind_ConvNumScheme() == SPACE_UPWIND)
           Buffer_Send_Res[jPoint] = solver[ADJFLOW_SOL]->node[iPoint]->GetLimiter(0);
+        
+        jPoint++;
+      }
+    }
+    
+    /*--- Gather the data on the master node. ---*/
+#ifdef WINDOWS
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    MPI_Gather(Buffer_Send_Res, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Res, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+#else
+    MPI::COMM_WORLD.Barrier();
+    MPI::COMM_WORLD.Gather(Buffer_Send_Var, nBuffer_Scalar, MPI::DOUBLE,
+                           Buffer_Recv_Var, nBuffer_Scalar, MPI::DOUBLE,
+                           MASTER_NODE);
+    MPI::COMM_WORLD.Gather(Buffer_Send_Res, nBuffer_Scalar, MPI::DOUBLE,
+                           Buffer_Recv_Res, nBuffer_Scalar, MPI::DOUBLE,
+                           MASTER_NODE);
+#endif
+    
+    /*--- The master node unpacks and sorts this variable by global index ---*/
+    if (rank == MASTER_NODE) {
+      jPoint = 0; iVar = iVar_Sens;
+      for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+        for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
+          
+          /*--- Get global index, then loop over each variable and store ---*/
+          iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
+          Data[iVar+0][iGlobal_Index] = Buffer_Recv_Var[jPoint];
+          Data[iVar+1][iGlobal_Index] = Buffer_Recv_Res[jPoint];
+          jPoint++;
+        }
+        /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
+        jPoint = (iProcessor+1)*nBuffer_Scalar;
+      }
+    }
+  }
+  
+  /*--- Communicate the surface sensitivity ---*/
+  
+  if ((Kind_Solver == ADJ_TNE2_EULER) ||
+      (Kind_Solver == ADJ_TNE2_NAVIER_STOKES)) {
+    
+    /*--- First, loop through the mesh in order to find and store the
+     value of the surface sensitivity at any surface nodes. They
+     will be placed in an auxiliary vector and then communicated like
+     all other volumetric variables. ---*/
+    
+    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) Aux_Sens[iPoint] = 0.0;
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+      if (config->GetMarker_All_Plotting(iMarker) == YES) {
+        for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          Aux_Sens[iPoint] = solver[ADJTNE2_SOL]->GetCSensitivity(iMarker,iVertex);
+        }
+      }
+    
+    /*--- Loop over this partition to collect the current variable ---*/
+    jPoint = 0;
+    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+      
+      /*--- Check for halos & write only if requested ---*/
+      
+      if (geometry->node[iPoint]->GetDomain() || Wrt_Halo) {
+        
+        /*--- Load buffers with the skin friction, heat transfer, y+ variables. ---*/
+        
+        Buffer_Send_Var[jPoint] = Aux_Sens[iPoint];
+        if (config->GetKind_ConvNumScheme_AdjTNE2() == SPACE_CENTERED)
+          Buffer_Send_Res[jPoint] = solver[ADJTNE2_SOL]->node[iPoint]->GetSensor(iPoint);
+        if (config->GetKind_ConvNumScheme_AdjTNE2() == SPACE_UPWIND)
+          Buffer_Send_Res[jPoint] = solver[ADJTNE2_SOL]->node[iPoint]->GetLimiter(0);
         
         jPoint++;
       }

@@ -3028,7 +3028,7 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
   double *GsT, *GsTve;
   double *Ds, mu, ktr, kve;
   double *eves, *hs, rho, rhos, Ys;
-  double qx;
+  double qx, *wdot;
   double *dnvel, dnT, dnTve, Jsn;
   
   double *Psi, **GPsi, **GsPsi, *GnPsi;
@@ -3046,6 +3046,7 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
   RHOS_INDEX = solver_container[TNE2_SOL]->node_infty->GetRhosIndex();
   
   /*--- Initialize arrays ---*/
+  wdot  = new double[nSpecies];
   hs    = new double[nSpecies];
   dnvel = new double[nDim];
   sIk   = new double[nDim];
@@ -3404,6 +3405,11 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
                 Js[iSpecies][iDim] = -rho*Ds[iSpecies]*GY[iSpecies][iDim]+Ys*sIk[iDim];
             }
             
+            /*--- Compute mass source terms ---*/
+            numerics->ComputeChemistry(Residual_i, Jacobian_i, config);
+            for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+              wdot[iSpecies] = Residual_i[iSpecies]/geometry->node[iPoint]->GetVolume();
+            
             /*--- Calculate normal derivative of the velocity & temperature ---*/
             //////////////// PROJECTION ////////////////
             dnT   = 0.0;
@@ -3472,9 +3478,10 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
               Jsn = 0.0;
               for (iDim = 0; iDim < nDim; iDim++)
                 Jsn += Js[iSpecies][iDim]*UnitNormal[iDim];
-              B21 += -( GnPsi[iSpecies]
-                       +GnPsi[nSpecies+nDim]*hs[iSpecies]
-                       +GnPsi[nSpecies+nDim+1]*eves[iSpecies])*Jsn;
+//              B21 += -( GnPsi[iSpecies]
+//                       +GnPsi[nSpecies+nDim]*hs[iSpecies]
+//                       +GnPsi[nSpecies+nDim+1]*eves[iSpecies])*Jsn;
+              B21 += -(GnPsi[iSpecies]*wdot[iSpecies]);
             }
             
             // mu(SigmaPhi \cdot \vec{n})
@@ -3484,10 +3491,14 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
                 B22 += mu*UnitNormal[iDim]*SigmaPhi[iDim][jDim]*dnvel[jDim];
             
             // dnPsiE * kdnT
-            B23 = GnPsi[nSpecies+nDim] * ktr * dnT;
+//            B23 = GnPsi[nSpecies+nDim] * ktr * dnT;
+            B23 = 0.0;
             
             // (dnPsiE+dnPsiEve) * (kvednTve)
-            B24 = (GnPsi[nSpecies+nDim]+GnPsi[nSpecies+nDim+1]) * kve *dnTve;
+//            B24 = (GnPsi[nSpecies+nDim]+GnPsi[nSpecies+nDim+1]) * kve *dnTve;
+            B24 = 0.0;
+            for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+              B24 += GnPsi[nSpecies+nDim+1]*wdot[iSpecies]*eves[iSpecies];
             
             
             /*--- Sum the contribution from each of the sensitivities ---*/
@@ -3544,6 +3555,7 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
 #endif
   
   /*--- Deallocate arrays ---*/
+  delete [] wdot;
   delete [] hs;
   delete [] dnvel;
   delete [] sIk;
