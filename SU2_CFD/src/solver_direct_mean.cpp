@@ -5698,7 +5698,7 @@ void CEulerSolver::GetEngine_Properties(CGeometry *geometry, CConfig *config, un
       cout << "Engine bleed ("<< config->GetMarker_EngineBleed(iMarker_EngineBleed);
       if (config->GetSystemMeasurements() == SI) cout << "): Mass flow (kg/s): ";
       else if (config->GetSystemMeasurements() == US) cout << "): Mass flow (slug/s): ";
-      cout << Bleed_MassFlow_Total[iMarker_EngineInflow] * config->GetDensity_Ref() * config->GetVelocity_Ref();
+      cout << Bleed_MassFlow_Total[iMarker_EngineBleed] * config->GetDensity_Ref() * config->GetVelocity_Ref();
       if (config->GetSystemMeasurements() == SI) cout << ", Temp (K): ";
       else if (config->GetSystemMeasurements() == US) cout << ", Temp (R): ";
       cout << Bleed_Temperature_Total[iMarker_EngineBleed] * config->GetTemperature_Ref()
