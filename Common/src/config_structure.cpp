@@ -85,10 +85,11 @@ void CConfig::SetPointersNull(void){
   Marker_PerDonor=NULL;       Marker_NearFieldBound=NULL;   Marker_InterfaceBound=NULL;
   Marker_Dirichlet=NULL;      Marker_Dirichlet_Elec=NULL;   Marker_Inlet=NULL;
   Marker_Supersonic_Inlet=NULL;    Marker_Outlet=NULL;      Marker_Out_1D=NULL;
-  Marker_Isothermal=NULL;     Marker_HeatFlux=NULL;         Marker_NacelleInflow=NULL;
+  Marker_Isothermal=NULL;     Marker_HeatFlux=NULL;         Marker_EngineInflow=NULL;
+  Marker_EngineBleed=NULL;
   Marker_IsothermalCatalytic=NULL; Marker_IsothermalNonCatalytic=NULL;
   Marker_HeatFluxNonCatalytic=NULL; Marker_HeatFluxCatalytic=NULL;
-  Marker_NacelleExhaust=NULL; Marker_Displacement=NULL;     Marker_Load=NULL;
+  Marker_EngineExhaust=NULL; Marker_Displacement=NULL;     Marker_Load=NULL;
   Marker_FlowLoad=NULL;       Marker_Neumann=NULL;          Marker_Neumann_Elec=NULL;
   Marker_All_TagBound=NULL;        Marker_CfgFile_TagBound=NULL;       Marker_All_KindBC=NULL;
   Marker_CfgFile_KindBC=NULL;    Marker_All_SendRecv=NULL; Marker_All_PerBound=NULL;
@@ -98,8 +99,10 @@ void CConfig::SetPointersNull(void){
   Dirichlet_Value=NULL;       Nozzle_Ttotal=NULL;
   Nozzle_Ptotal=NULL;         Inlet_Ttotal=NULL;            Inlet_Ptotal=NULL;
   Inlet_FlowDir=NULL;         Inlet_Temperature=NULL;       Inlet_Pressure=NULL;
-  Inlet_Velocity=NULL;        FanFace_Mach_Target=NULL;     FanFace_Mach=NULL;
-  FanFace_Pressure=NULL;      Outlet_Pressure=NULL;         Isothermal_Temperature=NULL;
+  Inlet_Velocity=NULL;        Inflow_Mach_Target=NULL;     Inflow_Mach=NULL;
+  Inflow_Pressure=NULL;      Bleed_Temperature_Target=NULL;       Bleed_Temperature=NULL;
+  Bleed_MassFlow_Target=NULL; Bleed_MassFlow=NULL;
+  Bleed_Pressure=NULL;        Outlet_Pressure=NULL;         Isothermal_Temperature=NULL;
   Heat_Flux=NULL;             Displ_Value=NULL;             Load_Value=NULL;
   FlowLoad_Value=NULL;        Periodic_RotCenter=NULL;      Periodic_RotAngles=NULL;
   Periodic_Translation=NULL;  Periodic_Center=NULL;         Periodic_Rotation=NULL;
@@ -476,19 +479,23 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Specified heat flux wall boundary marker(s)
    Format: ( Heat flux marker, wall heat flux (static), ... ) */
   addStringDoubleListOption("MARKER_HEATFLUX_CATALYTIC", nMarker_HeatFluxCatalytic, Marker_HeatFluxCatalytic, Heat_Flux);
-  /*!\par MARKER_NACELLE_INFLOW
-   *  DESCRIPTION: Nacelle inflow boundary marker(s)
+  /*!\par MARKER_ENGINE_INFLOW
+   *  DESCRIPTION: Engine inflow boundary marker(s)
    Format: ( nacelle inflow marker, fan face Mach, ... ) \ingroup Config*/
-  addStringDoubleListOption("MARKER_NACELLE_INFLOW", nMarker_NacelleInflow, Marker_NacelleInflow, FanFace_Mach_Target);
+  addStringDoubleListOption("MARKER_ENGINE_INFLOW", nMarker_EngineInflow, Marker_EngineInflow, Inflow_Mach_Target);
+  /*!\par MARKER_ENGINE_BLEED
+   *  DESCRIPTION: Engine bleed boundary marker(s)
+   Format: ( nacelle inflow marker, flux, ... ) \ingroup Config*/
+  addBleedOption("MARKER_ENGINE_BLEED", nMarker_EngineBleed, Marker_EngineBleed, Bleed_MassFlow_Target, Bleed_Temperature_Target);
   /* DESCRIPTION: Engine subsonic intake region */
-  addBoolOption("SUBSONIC_NACELLE_INFLOW", Engine_Intake, false);
+  addBoolOption("SUBSONIC_ENGINE_INFLOW", Engine_Intake, false);
   default_vec_6d[0] = -1E15; default_vec_6d[1] = -1E15; default_vec_6d[2] = -1E15;
   default_vec_6d[3] =  1E15; default_vec_6d[4] =  1E15; default_vec_6d[5] =  1E15;
   /* DESCRIPTION: Coordinates of the box to impose a subsonic nacellle (Xmin, Ymin, Zmin, Xmax, Ymax, Zmax) */
-  addDoubleArrayOption("SUBSONIC_NACELLE_BOX", 6, Subsonic_Nacelle_Box, default_vec_6d);
-  /* DESCRIPTION: Nacelle exhaust boundary marker(s)
+  addDoubleArrayOption("SUBSONIC_ENGINE_BOX", 6, Subsonic_Engine_Box, default_vec_6d);
+  /* DESCRIPTION: Engine exhaust boundary marker(s)
    Format: (nacelle exhaust marker, total nozzle temp, total nozzle pressure, ... )*/
-  addExhaustOption("MARKER_NACELLE_EXHAUST", nMarker_NacelleExhaust, Marker_NacelleExhaust, Nozzle_Ttotal, Nozzle_Ptotal);
+  addExhaustOption("MARKER_ENGINE_EXHAUST", nMarker_EngineExhaust, Marker_EngineExhaust, Nozzle_Ttotal, Nozzle_Ptotal);
   /* DESCRIPTION: Displacement boundary marker(s) */
   addStringDoubleListOption("MARKER_NORMAL_DISPL", nMarker_Displacement, Marker_Displacement, Displ_Value);
   /* DESCRIPTION: Load boundary marker(s) */
@@ -496,7 +503,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Flow load boundary marker(s) */
   addStringDoubleListOption("MARKER_FLOWLOAD", nMarker_FlowLoad, Marker_FlowLoad, FlowLoad_Value);
   /* DESCRIPTION: Damping factor for engine inlet condition */
-  addDoubleOption("DAMP_NACELLE_INFLOW", Damp_Nacelle_Inflow, 0.1);
+  addDoubleOption("DAMP_ENGINE_INFLOW", Damp_Engine_Inflow, 0.1);
   /* DESCRIPTION: Outlet boundary marker(s) over which to calculate 1-D flow properties
    Format: ( outlet marker) */
   addStringListOption("MARKER_OUT_1D", nMarker_Out_1D, Marker_Out_1D);
@@ -2826,7 +2833,7 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
   nMarker_InterfaceBound + nMarker_Dirichlet + nMarker_Neumann + nMarker_Riemann+ nMarker_Inlet +
   nMarker_Outlet + nMarker_Isothermal + nMarker_IsothermalCatalytic +
   nMarker_IsothermalNonCatalytic + nMarker_HeatFlux + nMarker_HeatFluxCatalytic +
-  nMarker_HeatFluxNonCatalytic + nMarker_NacelleInflow + nMarker_NacelleExhaust +
+  nMarker_HeatFluxNonCatalytic + nMarker_EngineInflow + nMarker_EngineBleed + nMarker_EngineExhaust +
   nMarker_Dirichlet_Elec + nMarker_Displacement + nMarker_Load +
   nMarker_FlowLoad + nMarker_Pressure + nMarker_Custom +
   nMarker_ActDisk_Inlet + nMarker_ActDisk_Outlet + nMarker_Out_1D + 2*nDomain;
@@ -2848,7 +2855,7 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
   iMarker_NearFieldBound, iMarker_InterfaceBound, iMarker_Dirichlet,
   iMarker_Inlet, iMarker_Riemann, iMarker_Outlet, iMarker_Isothermal, iMarker_IsothermalCatalytic,
   iMarker_IsothermalNonCatalytic, iMarker_HeatFlux, iMarker_HeatFluxNoncatalytic,
-  iMarker_HeatFluxCatalytic, iMarker_NacelleInflow, iMarker_NacelleExhaust,
+  iMarker_HeatFluxCatalytic, iMarker_EngineInflow, iMarker_EngineBleed, iMarker_EngineExhaust,
   iMarker_Displacement, iMarker_Load, iMarker_FlowLoad, iMarker_Neumann,
   iMarker_Monitoring, iMarker_Designing, iMarker_GeoEval, iMarker_Plotting,
   iMarker_DV, iMarker_Moving, iMarker_Supersonic_Inlet,
@@ -2873,7 +2880,7 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
   nMarker_InterfaceBound + nMarker_Dirichlet + nMarker_Neumann + nMarker_Inlet + nMarker_Riemann +
   nMarker_Outlet + nMarker_Isothermal + nMarker_IsothermalNonCatalytic +
   nMarker_IsothermalCatalytic + nMarker_HeatFlux + nMarker_HeatFluxNonCatalytic +
-  nMarker_HeatFluxCatalytic + nMarker_NacelleInflow + nMarker_NacelleExhaust +
+  nMarker_HeatFluxCatalytic + nMarker_EngineInflow + nMarker_EngineBleed + nMarker_EngineExhaust +
   nMarker_Supersonic_Inlet + nMarker_Displacement + nMarker_Load +
   nMarker_FlowLoad + nMarker_Custom +
   nMarker_ActDisk_Inlet + nMarker_ActDisk_Outlet + nMarker_Out_1D;
@@ -2976,20 +2983,33 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
     iMarker_Config++;
   }
 
-  FanFace_Mach = new double[nMarker_NacelleInflow];
-  FanFace_Pressure = new double[nMarker_NacelleInflow];
+  Inflow_Mach = new double[nMarker_EngineInflow];
+  Inflow_Pressure = new double[nMarker_EngineInflow];
 
-  for (iMarker_NacelleInflow = 0; iMarker_NacelleInflow < nMarker_NacelleInflow; iMarker_NacelleInflow++) {
-    Marker_CfgFile_TagBound[iMarker_Config] = Marker_NacelleInflow[iMarker_NacelleInflow];
-    Marker_CfgFile_KindBC[iMarker_Config] = NACELLE_INFLOW;
-    FanFace_Mach[iMarker_NacelleInflow] = 0.0;
-    FanFace_Pressure[iMarker_NacelleInflow] = 0.0;
+  for (iMarker_EngineInflow = 0; iMarker_EngineInflow < nMarker_EngineInflow; iMarker_EngineInflow++) {
+    Marker_CfgFile_TagBound[iMarker_Config] = Marker_EngineInflow[iMarker_EngineInflow];
+    Marker_CfgFile_KindBC[iMarker_Config] = ENGINE_INFLOW;
+    Inflow_Mach[iMarker_EngineInflow] = 0.0;
+    Inflow_Pressure[iMarker_EngineInflow] = 0.0;
+    iMarker_Config++;
+  }
+  
+  Bleed_MassFlow = new double[nMarker_EngineBleed];
+  Bleed_Temperature = new double[nMarker_EngineBleed];
+  Bleed_Pressure = new double[nMarker_EngineInflow];
+
+  for (iMarker_EngineBleed = 0; iMarker_EngineBleed < nMarker_EngineBleed; iMarker_EngineBleed++) {
+    Marker_CfgFile_TagBound[iMarker_Config] = Marker_EngineBleed[iMarker_EngineBleed];
+    Marker_CfgFile_KindBC[iMarker_Config] = ENGINE_BLEED;
+    Bleed_MassFlow[iMarker_EngineBleed] = 0.0;
+    Bleed_Temperature[iMarker_EngineBleed] = 0.0;
+    Bleed_Pressure[iMarker_EngineBleed] = 0.0;
     iMarker_Config++;
   }
 
-  for (iMarker_NacelleExhaust = 0; iMarker_NacelleExhaust < nMarker_NacelleExhaust; iMarker_NacelleExhaust++) {
-    Marker_CfgFile_TagBound[iMarker_Config] = Marker_NacelleExhaust[iMarker_NacelleExhaust];
-    Marker_CfgFile_KindBC[iMarker_Config] = NACELLE_EXHAUST;
+  for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++) {
+    Marker_CfgFile_TagBound[iMarker_Config] = Marker_EngineExhaust[iMarker_EngineExhaust];
+    Marker_CfgFile_KindBC[iMarker_Config] = ENGINE_EXHAUST;
     iMarker_Config++;
   }
 
@@ -3130,7 +3150,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   iMarker_InterfaceBound, iMarker_Dirichlet, iMarker_Inlet,iMarker_Riemann, iMarker_Outlet,
   iMarker_Isothermal, iMarker_IsothermalNonCatalytic, iMarker_IsothermalCatalytic,
   iMarker_HeatFlux, iMarker_HeatFluxNonCatalytic, iMarker_HeatFluxCatalytic,
-  iMarker_NacelleInflow, iMarker_NacelleExhaust, iMarker_Displacement,
+  iMarker_EngineInflow, iMarker_EngineBleed, iMarker_EngineExhaust, iMarker_Displacement,
   iMarker_Load, iMarker_FlowLoad,  iMarker_Neumann, iMarker_Monitoring,
   iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_DV,
   iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_ActDisk_Inlet,
@@ -4311,20 +4331,30 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         else cout <<"."<<endl;
     }
   }
-  if (nMarker_NacelleInflow != 0) {
-    cout << "Nacelle inflow boundary marker(s): ";
-    for (iMarker_NacelleInflow = 0; iMarker_NacelleInflow < nMarker_NacelleInflow; iMarker_NacelleInflow++) {
-      cout << Marker_NacelleInflow[iMarker_NacelleInflow];
-      if (iMarker_NacelleInflow < nMarker_NacelleInflow-1) cout << ", ";
+  
+  if (nMarker_EngineInflow != 0) {
+    cout << "Engine inflow boundary marker(s): ";
+    for (iMarker_EngineInflow = 0; iMarker_EngineInflow < nMarker_EngineInflow; iMarker_EngineInflow++) {
+      cout << Marker_EngineInflow[iMarker_EngineInflow];
+      if (iMarker_EngineInflow < nMarker_EngineInflow-1) cout << ", ";
+      else cout <<"."<<endl;
+    }
+  }
+  
+  if (nMarker_EngineBleed != 0) {
+    cout << "Engine bleed boundary marker(s): ";
+    for (iMarker_EngineBleed = 0; iMarker_EngineBleed < nMarker_EngineBleed; iMarker_EngineBleed++) {
+      cout << Marker_EngineBleed[iMarker_EngineBleed];
+      if (iMarker_EngineBleed < nMarker_EngineBleed-1) cout << ", ";
       else cout <<"."<<endl;
     }
   }
 
-  if (nMarker_NacelleExhaust != 0) {
-    cout << "Nacelle exhaust boundary marker(s): ";
-    for (iMarker_NacelleExhaust = 0; iMarker_NacelleExhaust < nMarker_NacelleExhaust; iMarker_NacelleExhaust++) {
-      cout << Marker_NacelleExhaust[iMarker_NacelleExhaust];
-      if (iMarker_NacelleExhaust < nMarker_NacelleExhaust-1) cout << ", ";
+  if (nMarker_EngineExhaust != 0) {
+    cout << "Engine exhaust boundary marker(s): ";
+    for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++) {
+      cout << Marker_EngineExhaust[iMarker_EngineExhaust];
+      if (iMarker_EngineExhaust < nMarker_EngineExhaust-1) cout << ", ";
       else cout <<"."<<endl;
     }
   }
@@ -4996,7 +5026,7 @@ CConfig::~CConfig(void)
 
   if (EA_IntLimit!=NULL)    delete[] EA_IntLimit;
   if (Hold_GridFixed_Coord!=NULL)    delete[] Hold_GridFixed_Coord ;
-  if (Subsonic_Nacelle_Box!=NULL)    delete[] Subsonic_Nacelle_Box ;
+  if (Subsonic_Engine_Box!=NULL)    delete[] Subsonic_Engine_Box ;
   if (DV_Value!=NULL)    delete[] DV_Value;
   if (Design_Variable!=NULL)    delete[] Design_Variable;
   if (Dirichlet_Value!=NULL)    delete[] Dirichlet_Value;
@@ -5008,9 +5038,14 @@ CConfig::~CConfig(void)
   if (Inlet_Temperature!=NULL)    delete[] Inlet_Temperature;
   if (Inlet_Pressure!=NULL)    delete[] Inlet_Pressure;
   if (Inlet_Velocity!=NULL)    delete[] Inlet_Velocity ;
-  if (FanFace_Mach_Target!=NULL)    delete[] FanFace_Mach_Target;
-  if (FanFace_Mach!=NULL)    delete[]  FanFace_Mach;
-  if (FanFace_Pressure!=NULL)    delete[] FanFace_Pressure;
+  if (Inflow_Mach_Target!=NULL)    delete[] Inflow_Mach_Target;
+  if (Inflow_Mach!=NULL)    delete[]  Inflow_Mach;
+  if (Inflow_Pressure!=NULL)    delete[] Inflow_Pressure;
+  if (Bleed_MassFlow_Target!=NULL)    delete[] Bleed_MassFlow_Target;
+  if (Bleed_MassFlow!=NULL)    delete[]  Bleed_MassFlow;
+  if (Bleed_Temperature_Target!=NULL)    delete[] Bleed_Temperature_Target;
+  if (Bleed_Temperature!=NULL)    delete[]  Bleed_Temperature;
+  if (Bleed_Pressure!=NULL)    delete[] Bleed_Pressure;
   if (Outlet_Pressure!=NULL)    delete[] Outlet_Pressure;
   if (Isothermal_Temperature!=NULL)    delete[] Isothermal_Temperature;
   if (Heat_Flux!=NULL)    delete[] Heat_Flux;
@@ -5054,8 +5089,9 @@ CConfig::~CConfig(void)
   if (Marker_Outlet!=NULL )             delete[] Marker_Outlet;
   if (Marker_Out_1D!=NULL )             delete[] Marker_Out_1D;
   if (Marker_Isothermal!=NULL )         delete[] Marker_Isothermal;
-  if (Marker_NacelleInflow!=NULL )      delete[] Marker_NacelleInflow;
-  if (Marker_NacelleExhaust!=NULL )     delete[] Marker_NacelleExhaust;
+  if (Marker_EngineInflow!=NULL )      delete[] Marker_EngineInflow;
+  if (Marker_EngineBleed!=NULL )      delete[] Marker_EngineBleed;
+  if (Marker_EngineExhaust!=NULL )     delete[] Marker_EngineExhaust;
   if (Marker_Displacement!=NULL )       delete[] Marker_Displacement;
   if (Marker_Load!=NULL )               delete[] Marker_Load;
   if (Marker_FlowLoad!=NULL )           delete[] Marker_FlowLoad;
@@ -5601,17 +5637,17 @@ bool CConfig::GetDirichlet_Boundary(string val_marker) {
 }
 
 double CConfig::GetNozzle_Ttotal(string val_marker) {
-  unsigned short iMarker_NacelleExhaust;
-  for (iMarker_NacelleExhaust = 0; iMarker_NacelleExhaust < nMarker_NacelleExhaust; iMarker_NacelleExhaust++)
-    if (Marker_NacelleExhaust[iMarker_NacelleExhaust] == val_marker) break;
-  return Nozzle_Ttotal[iMarker_NacelleExhaust];
+  unsigned short iMarker_EngineExhaust;
+  for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++)
+    if (Marker_EngineExhaust[iMarker_EngineExhaust] == val_marker) break;
+  return Nozzle_Ttotal[iMarker_EngineExhaust];
 }
 
 double CConfig::GetNozzle_Ptotal(string val_marker) {
-  unsigned short iMarker_NacelleExhaust;
-  for (iMarker_NacelleExhaust = 0; iMarker_NacelleExhaust < nMarker_NacelleExhaust; iMarker_NacelleExhaust++)
-    if (Marker_NacelleExhaust[iMarker_NacelleExhaust] == val_marker) break;
-  return Nozzle_Ptotal[iMarker_NacelleExhaust];
+  unsigned short iMarker_EngineExhaust;
+  for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++)
+    if (Marker_EngineExhaust[iMarker_EngineExhaust] == val_marker) break;
+  return Nozzle_Ptotal[iMarker_EngineExhaust];
 }
 
 double CConfig::GetInlet_Ttotal(string val_marker) {
@@ -5747,25 +5783,60 @@ double CConfig::GetWall_HeatFlux(string val_marker) {
   return Heat_Flux[iMarker_HeatFlux];
 }
 
-double CConfig::GetFanFace_Mach_Target(string val_marker) {
-  unsigned short iMarker_NacelleInflow;
-  for (iMarker_NacelleInflow = 0; iMarker_NacelleInflow < nMarker_NacelleInflow; iMarker_NacelleInflow++)
-    if (Marker_NacelleInflow[iMarker_NacelleInflow] == val_marker) break;
-  return FanFace_Mach_Target[iMarker_NacelleInflow];
+double CConfig::GetInflow_Mach_Target(string val_marker) {
+  unsigned short iMarker_EngineInflow;
+  for (iMarker_EngineInflow = 0; iMarker_EngineInflow < nMarker_EngineInflow; iMarker_EngineInflow++)
+    if (Marker_EngineInflow[iMarker_EngineInflow] == val_marker) break;
+  return Inflow_Mach_Target[iMarker_EngineInflow];
 }
 
-double CConfig::GetFanFace_Pressure(string val_marker) {
-  unsigned short iMarker_NacelleInflow;
-  for (iMarker_NacelleInflow = 0; iMarker_NacelleInflow < nMarker_NacelleInflow; iMarker_NacelleInflow++)
-    if (Marker_NacelleInflow[iMarker_NacelleInflow] == val_marker) break;
-  return FanFace_Pressure[iMarker_NacelleInflow];
+double CConfig::GetBleed_MassFlow_Target(string val_marker) {
+  unsigned short iMarker_EngineBleed;
+  for (iMarker_EngineBleed = 0; iMarker_EngineBleed < nMarker_EngineBleed; iMarker_EngineBleed++)
+    if (Marker_EngineBleed[iMarker_EngineBleed] == val_marker) break;
+  return Bleed_MassFlow_Target[iMarker_EngineBleed];
 }
 
-double CConfig::GetFanFace_Mach(string val_marker) {
-  unsigned short iMarker_NacelleInflow;
-  for (iMarker_NacelleInflow = 0; iMarker_NacelleInflow < nMarker_NacelleInflow; iMarker_NacelleInflow++)
-    if (Marker_NacelleInflow[iMarker_NacelleInflow] == val_marker) break;
-  return FanFace_Mach[iMarker_NacelleInflow];
+double CConfig::GetBleed_Temperature_Target(string val_marker) {
+  unsigned short iMarker_EngineBleed;
+  for (iMarker_EngineBleed = 0; iMarker_EngineBleed < nMarker_EngineBleed; iMarker_EngineBleed++)
+    if (Marker_EngineBleed[iMarker_EngineBleed] == val_marker) break;
+  return Bleed_Temperature_Target[iMarker_EngineBleed];
+}
+
+double CConfig::GetInflow_Pressure(string val_marker) {
+  unsigned short iMarker_EngineInflow;
+  for (iMarker_EngineInflow = 0; iMarker_EngineInflow < nMarker_EngineInflow; iMarker_EngineInflow++)
+    if (Marker_EngineInflow[iMarker_EngineInflow] == val_marker) break;
+  return Inflow_Pressure[iMarker_EngineInflow];
+}
+
+double CConfig::GetBleed_Pressure(string val_marker) {
+  unsigned short iMarker_EngineBleed;
+  for (iMarker_EngineBleed = 0; iMarker_EngineBleed < nMarker_EngineBleed; iMarker_EngineBleed++)
+    if (Marker_EngineBleed[iMarker_EngineBleed] == val_marker) break;
+  return Bleed_Pressure[iMarker_EngineBleed];
+}
+
+double CConfig::GetInflow_Mach(string val_marker) {
+  unsigned short iMarker_EngineInflow;
+  for (iMarker_EngineInflow = 0; iMarker_EngineInflow < nMarker_EngineInflow; iMarker_EngineInflow++)
+    if (Marker_EngineInflow[iMarker_EngineInflow] == val_marker) break;
+  return Inflow_Mach[iMarker_EngineInflow];
+}
+
+double CConfig::GetBleed_MassFlow(string val_marker) {
+  unsigned short iMarker_EngineBleed;
+  for (iMarker_EngineBleed = 0; iMarker_EngineBleed < nMarker_EngineBleed; iMarker_EngineBleed++)
+    if (Marker_EngineBleed[iMarker_EngineBleed] == val_marker) break;
+  return Bleed_MassFlow[iMarker_EngineBleed];
+}
+
+double CConfig::GetBleed_Temperature(string val_marker) {
+  unsigned short iMarker_EngineBleed;
+  for (iMarker_EngineBleed = 0; iMarker_EngineBleed < nMarker_EngineBleed; iMarker_EngineBleed++)
+    if (Marker_EngineBleed[iMarker_EngineBleed] == val_marker) break;
+  return Bleed_Temperature[iMarker_EngineBleed];
 }
 
 double CConfig::GetDispl_Value(string val_marker) {

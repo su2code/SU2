@@ -57,7 +57,7 @@ private:
 	double EA_ScaleFactor; /*!< \brief Equivalent Area scaling factor */
 	double* EA_IntLimit; /*!< \brief Integration limits of the Equivalent Area computation */
   double AdjointLimit; /*!< \brief Adjoint variable limit */
-  double* Subsonic_Nacelle_Box; /*!< \brief Coordinates of the box subsonic region */
+  double* Subsonic_Engine_Box; /*!< \brief Coordinates of the box subsonic region */
 	double* Hold_GridFixed_Coord; /*!< \brief Coordinates of the box to hold fixed the nbumerical grid */
 	unsigned short ConvCriteria;	/*!< \brief Kind of convergence criteria. */
   unsigned short nFFD_Iter; 	/*!< \brief Iteration for the point inversion problem. */
@@ -89,7 +89,7 @@ private:
 	Show_Adj_Sens, /*!< \brief Flag for outputting sensitivities on exit */
   ionization;  /*!< \brief Flag for determining if free electron gas is in the mixture */
 	bool Visualize_Partition;	/*!< \brief Flag to visualize each partition in the DDM. */
-  double Damp_Nacelle_Inflow;	/*!< \brief Damping factor for the engine inlet. */
+  double Damp_Engine_Inflow;	/*!< \brief Damping factor for the engine inlet. */
 	double Damp_Res_Restric,	/*!< \brief Damping factor for the residual restriction. */
 	Damp_Correc_Prolong; /*!< \brief Damping factor for the correction prolongation. */
 	double Position_Plane; /*!< \brief Position of the Near-Field (y coordinate 2D, and z coordinate 3D). */
@@ -146,9 +146,10 @@ private:
 	nMarker_HeatFlux,       /*!< \brief Number of constant heat flux wall boundaries. */
   nMarker_HeatFluxNonCatalytic, /*!< \brief Number of constant heat flux wall boundaries. */
   nMarker_HeatFluxCatalytic, /*!< \brief Number of constant heat flux wall boundaries. */
-	nMarker_NacelleExhaust,					/*!< \brief Number of nacelle exhaust flow markers. */
-	nMarker_NacelleInflow,					/*!< \brief Number of nacelle inflow flow markers. */
-	nMarker_Displacement,					/*!< \brief Number of displacement surface markers. */
+	nMarker_EngineExhaust,					/*!< \brief Number of nacelle exhaust flow markers. */
+	nMarker_EngineInflow,					/*!< \brief Number of nacelle inflow flow markers. */
+  nMarker_EngineBleed,					/*!< \brief Number of nacelle inflow flow markers. */
+  nMarker_Displacement,					/*!< \brief Number of displacement surface markers. */
 	nMarker_Load,					/*!< \brief Number of load surface markers. */
 	nMarker_FlowLoad,					/*!< \brief Number of load surface markers. */
 	nMarker_Neumann,				/*!< \brief Number of Neumann flow markers. */
@@ -181,8 +182,9 @@ private:
 	*Marker_HeatFlux,       /*!< \brief Constant heat flux wall markers. */
   *Marker_HeatFluxNonCatalytic,       /*!< \brief Constant heat flux wall markers. */
   *Marker_HeatFluxCatalytic,       /*!< \brief Constant heat flux wall markers. */
-	*Marker_NacelleInflow,					/*!< \brief Nacelle Inflow flow markers. */
-	*Marker_NacelleExhaust,					/*!< \brief Nacelle Exhaust flow markers. */
+	*Marker_EngineInflow,					/*!< \brief Engine Inflow flow markers. */
+  *Marker_EngineBleed,					/*!< \brief Engine Inflow flow markers. */
+  *Marker_EngineExhaust,					/*!< \brief Engine Exhaust flow markers. */
 	*Marker_Displacement,					/*!< \brief Displacement markers. */
 	*Marker_Load,					/*!< \brief Load markers. */
 	*Marker_FlowLoad,					/*!< \brief Flow Load markers. */
@@ -200,10 +202,15 @@ private:
 	double *Inlet_Temperature;    /*!< \brief Specified temperatures for a supersonic inlet boundaries. */
 	double *Inlet_Pressure;    /*!< \brief Specified static pressures for supersonic inlet boundaries. */
 	double **Inlet_Velocity;  /*!< \brief Specified flow velocity vectors for supersonic inlet boundaries. */
-	double *FanFace_Mach_Target;    /*!< \brief Specified fan face mach for nacelle boundaries. */
-	double *FanFace_Mach;    /*!< \brief Specified fan face mach for nacelle boundaries. */
-	double *FanFace_Pressure;    /*!< \brief Specified fan face mach for nacelle boundaries. */
-    double *Outlet_Pressure;    /*!< \brief Specified back pressures (static) for outlet boundaries. */
+	double *Inflow_Mach_Target;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+	double *Inflow_Mach;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+	double *Inflow_Pressure;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  double *Bleed_MassFlow_Target;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  double *Bleed_MassFlow;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  double *Bleed_Temperature_Target;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  double *Bleed_Temperature;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  double *Bleed_Pressure;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  double *Outlet_Pressure;    /*!< \brief Specified back pressures (static) for outlet boundaries. */
 	double *Isothermal_Temperature; /*!< \brief Specified isothermal wall temperatures (static). */
   double *Wall_Catalycity; /*!< \brief Specified wall species mass-fractions for catalytic boundaries. */
 	double *Heat_Flux;  /*!< \brief Specified wall heat fluxes. */
@@ -866,6 +873,14 @@ private:
     COptionBase* val = new COptionExhaust(name, nMarker_Exhaust, Marker_Exhaust, Ttotal, Ptotal);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
+  
+  void addBleedOption(const string name, unsigned short & nMarker_Bleed, string * & Marker_Bleed,
+                        double* & MassFlow_Target, double* & Temp_Target){
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionBleed(name, nMarker_Bleed, Marker_Bleed, MassFlow_Target, Temp_Target);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
 
   void addPeriodicOption(const string & name, unsigned short & nMarker_PerBound,
                     string* & Marker_PerBound, string* & Marker_PerDonor,
@@ -1019,7 +1034,7 @@ public:
    * \brief Get the the coordinates where of the box where a subsonic region is imposed.
    * \return Coordinates where of the box where the grid is going to be a subsonic region.
    */
-  double *GetSubsonic_Nacelle_Box(void);
+  double *GetSubsonic_Engine_Box(void);
   
 	/*!
 	 * \brief Get the power of the dual volume in the grid adaptation sensor.
@@ -1953,13 +1968,19 @@ public:
 	 * \brief Get the total number of boundary markers.
 	 * \return Total number of boundary markers.
 	 */
-	unsigned short GetnMarker_NacelleInflow(void);
+	unsigned short GetnMarker_EngineInflow(void);
+  
+  /*!
+   * \brief Get the total number of boundary markers.
+   * \return Total number of boundary markers.
+   */
+  unsigned short GetnMarker_EngineBleed(void);
 
-    /*!
+  /*!
 	 * \brief Get the total number of boundary markers.
 	 * \return Total number of boundary markers.
 	 */
-	unsigned short GetnMarker_NacelleExhaust(void);
+	unsigned short GetnMarker_EngineExhaust(void);
 
     /*!
 	 * \brief Get the total number of boundary markers.
@@ -2201,7 +2222,15 @@ public:
 	 * \return Value of the index that is in the geometry file for the surface that
 	 *         has the marker <i>val_marker</i>.
 	 */
-	string GetMarker_NacelleInflow(unsigned short val_marker);
+	string GetMarker_EngineInflow(unsigned short val_marker);
+  
+  /*!
+   * \brief Get the index of the surface defined in the geometry file.
+   * \param[in] val_marker - Value of the marker in which we are interested.
+   * \return Value of the index that is in the geometry file for the surface that
+   *         has the marker <i>val_marker</i>.
+   */
+  string GetMarker_EngineBleed(unsigned short val_marker);
 
 	/*!
 	 * \brief Get the index of the surface defined in the geometry file.
@@ -2209,7 +2238,7 @@ public:
 	 * \return Value of the index that is in the geometry file for the surface that
 	 *         has the marker <i>val_marker</i>.
 	 */
-	string GetMarker_NacelleExhaust(unsigned short val_marker);
+	string GetMarker_EngineExhaust(unsigned short val_marker);
 
     /*!
 	 * \brief Get the name of the surface defined in the geometry file.
@@ -4326,7 +4355,7 @@ public:
 	 * \brief Value of the damping factor for the engine inlet bc.
 	 * \return Value of the damping factor.
 	 */
-	double GetDamp_Nacelle_Inflow(void);
+	double GetDamp_Engine_Inflow(void);
 
 	/*!
 	 * \brief Value of the damping factor for the residual restriction.
@@ -4683,42 +4712,97 @@ public:
 	 */
 	double *GetWall_Catalycity(void);
 
-
 	/*!
 	 * \brief Get the back pressure (static) at an outlet boundary.
 	 * \param[in] val_index - Index corresponding to the outlet boundary.
 	 * \return The outlet pressure.
 	 */
-	double GetFanFace_Mach_Target(string val_marker);
+	double GetInflow_Mach_Target(string val_marker);
 
     /*!
 	 * \brief Get the back pressure (static) at an outlet boundary.
 	 * \param[in] val_index - Index corresponding to the outlet boundary.
 	 * \return The outlet pressure.
 	 */
-	double GetFanFace_Mach(string val_marker);
+	double GetInflow_Mach(string val_marker);
 
     /*!
 	 * \brief Get the back pressure (static) at an outlet boundary.
 	 * \param[in] val_index - Index corresponding to the outlet boundary.
 	 * \return The outlet pressure.
 	 */
-	void SetFanFace_Mach(unsigned short val_imarker, double val_fanface_mach);
+	void SetInflow_Mach(unsigned short val_imarker, double val_fanface_mach);
 
     /*!
 	 * \brief Get the back pressure (static) at an outlet boundary.
 	 * \param[in] val_index - Index corresponding to the outlet boundary.
 	 * \return The outlet pressure.
 	 */
-	double GetFanFace_Pressure(string val_marker);
+	double GetInflow_Pressure(string val_marker);
 
     /*!
 	 * \brief Get the back pressure (static) at an outlet boundary.
 	 * \param[in] val_index - Index corresponding to the outlet boundary.
 	 * \return The outlet pressure.
 	 */
-	void SetFanFace_Pressure(unsigned short val_imarker, double val_fanface_pressure);
-
+	void SetInflow_Pressure(unsigned short val_imarker, double val_fanface_pressure);
+  
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The outlet pressure.
+   */
+  double GetBleed_Temperature_Target(string val_marker);
+  
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The outlet pressure.
+   */
+  double GetBleed_Temperature(string val_marker);
+  
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The outlet pressure.
+   */
+  void SetBleed_Temperature(unsigned short val_imarker, double val_bleed_temp);
+  
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The outlet pressure.
+   */
+  double GetBleed_MassFlow_Target(string val_marker);
+  
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The outlet pressure.
+   */
+  double GetBleed_MassFlow(string val_marker);
+  
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The outlet pressure.
+   */
+  void SetBleed_MassFlow(unsigned short val_imarker, double val_bleed_massflow);
+  
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The outlet pressure.
+   */
+  double GetBleed_Pressure(string val_marker);
+  
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The outlet pressure.
+   */
+  void SetBleed_Pressure(unsigned short val_imarker, double val_fanface_pressure);
+  
 	/*!
 	 * \brief Get the displacement value at an displacement boundary.
 	 * \param[in] val_index - Index corresponding to the displacement boundary.

@@ -807,7 +807,18 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	virtual void BC_Nacelle_Inflow(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
+	virtual void BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  virtual void BC_Engine_Bleed(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
     
 	/*!
 	 * \brief A virtual member.
@@ -818,7 +829,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	virtual void BC_Nacelle_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
+	virtual void BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
     
 	/*!
 	 * \brief A virtual member.
@@ -1221,7 +1232,7 @@ public:
 	 * \param[in] val_marker - Surface marker where the coefficient is computed.
 	 * \return Value of the mass flow rate on the surface <i>val_marker</i>.
 	 */
-	virtual double GetFanFace_MassFlow(unsigned short val_marker);
+	virtual double GetInflow_MassFlow(unsigned short val_marker);
     
     /*!
 	 * \brief A virtual member.
@@ -1235,14 +1246,14 @@ public:
 	 * \param[in] val_marker - Surface marker where the coefficient is computed.
 	 * \return Value of the fan face pressure on the surface <i>val_marker</i>.
 	 */
-	virtual double GetFanFace_Pressure(unsigned short val_marker);
+	virtual double GetInflow_Pressure(unsigned short val_marker);
     
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] val_marker - Surface marker where the coefficient is computed.
 	 * \return Value of the fan face mach on the surface <i>val_marker</i>.
 	 */
-	virtual double GetFanFace_Mach(unsigned short val_marker);
+	virtual double GetInflow_Mach(unsigned short val_marker);
     
 	/*!
 	 * \brief A virtual member.
@@ -1907,7 +1918,7 @@ public:
   * \param[in] geometry - Geometrical definition of the problem.
   * \param[in] solution - Container vector with all the solutions.
   */
-	virtual void GetNacelle_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
+	virtual void GetEngine_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
   
   /*!
    * \brief A virtual member.
@@ -2009,6 +2020,7 @@ protected:
   Mach_Inf,	/*!< \brief Mach number at the infinity. */
 	Density_Inf,	/*!< \brief Density at the infinity. */
 	Energy_Inf,			/*!< \brief Energy at the infinity. */
+  Temperature_Inf,			/*!< \brief Energy at the infinity. */
 	Pressure_Inf,		/*!< \brief Pressure at the infinity. */
 	*Velocity_Inf;		/*!< \brief Flow Velocity vector at the infinity. */
 	
@@ -2045,16 +2057,23 @@ protected:
   ***CharacPrimVar,		/*!< \brief Value of the characteristic variables at each boundary. */
 	*ForceInviscid,		/*!< \brief Inviscid force for each boundary. */
 	*MomentInviscid,	/*!< \brief Inviscid moment for each boundary. */
-	*FanFace_MassFlow,	/*!< \brief Mass flow rate for each boundary. */
+	*Inflow_MassFlow,	/*!< \brief Mass flow rate for each boundary. */
+  *Bleed_MassFlow,	/*!< \brief Mass flow rate for each boundary. */
 	*Exhaust_MassFlow,	/*!< \brief Mass flow rate for each boundary. */
-	*FanFace_Pressure,	/*!< \brief Fan face pressure for each boundary. */
-	*FanFace_Mach,	/*!< \brief Fan face mach number for each boundary. */
-	*FanFace_Area,	/*!< \brief Boundary total area. */
+	*Inflow_Pressure,	/*!< \brief Fan face pressure for each boundary. */
+	*Inflow_Mach,	/*!< \brief Fan face mach number for each boundary. */
+	*Inflow_Area,	/*!< \brief Boundary total area. */
+  *Bleed_Pressure,	/*!< \brief Fan face pressure for each boundary. */
+  *Bleed_Temperature,	/*!< \brief Fan face mach number for each boundary. */
+  *Bleed_Area,	/*!< \brief Boundary total area. */
   *Exhaust_Area,	/*!< \brief Boundary total area. */
-  FanFace_MassFlow_Total,	/*!< \brief Mass flow rate for each boundary. */
+  Inflow_MassFlow_Total,	/*!< \brief Mass flow rate for each boundary. */
+  Bleed_MassFlow_Total,	/*!< \brief Mass flow rate for each boundary. */
   Exhaust_MassFlow_Total,	/*!< \brief Mass flow rate for each boundary. */
-	FanFace_Pressure_Total,	/*!< \brief Fan face pressure for each boundary. */
-	FanFace_Mach_Total,	/*!< \brief Fan face mach number for each boundary. */
+	Inflow_Pressure_Total,	/*!< \brief Fan face pressure for each boundary. */
+	Inflow_Mach_Total,	/*!< \brief Fan face mach number for each boundary. */
+  Bleed_Pressure_Total,	/*!< \brief Fan face pressure for each boundary. */
+  Bleed_Temperature_Total,	/*!< \brief Fan face mach number for each boundary. */
 	InverseDesign;	/*!< \brief Inverse design functional for each boundary. */
 	
   double
@@ -2609,9 +2628,21 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Nacelle_Inflow(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
+	void BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                           CConfig *config, unsigned short val_marker);
-    
+  
+  /*!
+   * \brief Impose the nacelle bleed boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Engine_Bleed(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
+                        CConfig *config, unsigned short val_marker);
+  
 	/*!
 	 * \brief Impose the ancelle exhaust boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -2621,7 +2652,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Nacelle_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
+	void BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                            CConfig *config, unsigned short val_marker);
     
 	/*!
@@ -2639,7 +2670,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solution - Container vector with all the solutions.
 	 */
-	void GetNacelle_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
+	void GetEngine_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
   
   /*!
 	 * \brief Update the AoA and freestream velocity at the farfield.
@@ -2764,7 +2795,7 @@ public:
 	 * \param val_marker Surface where the coeficient is going to be computed.
 	 * \return Value of the mass flow rate on the surface <i>val_marker</i>.
 	 */
-	double GetFanFace_MassFlow(unsigned short val_marker);
+	double GetInflow_MassFlow(unsigned short val_marker);
     
     /*!
 	 * \brief Provide the mass flow rate.
@@ -2778,14 +2809,14 @@ public:
 	 * \param val_marker Surface where the coeficient is going to be computed.
 	 * \return Value of the fan face pressure on the surface <i>val_marker</i>.
 	 */
-	double GetFanFace_Pressure(unsigned short val_marker);
+	double GetInflow_Pressure(unsigned short val_marker);
     
 	/*!
 	 * \brief Provide the mass flow rate.
 	 * \param val_marker Surface where the coeficient is going to be computed.
 	 * \return Value of the fan face mach on the surface <i>val_marker</i>.
 	 */
-	double GetFanFace_Mach(unsigned short val_marker);
+	double GetInflow_Mach(unsigned short val_marker);
     
 	/*!
 	 * \brief Provide the non dimensional sideforce coefficient (inviscid contribution).
@@ -3673,7 +3704,7 @@ public:
                    unsigned short val_marker);
     
     /*!
-	 * \brief Impose the nacelle inflow boundary condition.
+	 * \brief Impose the engine inflow boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] conv_numerics - Description of the numerical method.
@@ -3681,11 +3712,23 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Nacelle_Inflow(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
+	void BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                           CConfig *config, unsigned short val_marker);
-    
+  
+  /*!
+   * \brief Impose the engine bleed boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Engine_Bleed(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
+                        CConfig *config, unsigned short val_marker);
+
 	/*!
-	 * \brief Impose the ancelle exhaust boundary condition.
+	 * \brief Impose the engine exhaust boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] conv_numerics - Description of the numerical method.
@@ -3693,7 +3736,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Nacelle_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
+	void BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                            CConfig *config, unsigned short val_marker);
     
     /*!
@@ -4299,7 +4342,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solution - Container vector with all the solutions.
 	 */
-	void GetNacelle_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
+	void GetEngine_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
   
 	/*!
 	 * \brief Created the force projection vector for adjoint boundary conditions.
@@ -4505,7 +4548,7 @@ public:
                    unsigned short val_marker);
     
 	/*!
-	 * \brief Impose the nacelle inflow adjoint boundary condition.
+	 * \brief Impose the engine inflow adjoint boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
 	 * \param[in] conv_numerics - Description of the numerical method.
@@ -4513,11 +4556,23 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Nacelle_Inflow(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
+	void BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                           CConfig *config, unsigned short val_marker);
-    
+  
+  /*!
+   * \brief Impose the engine bleed adjoint boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Engine_Bleed(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
+                        CConfig *config, unsigned short val_marker);
+  
 	/*!
-	 * \brief Impose the nacelle exhaust boundary condition.
+	 * \brief Impose the engine exhaust boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
 	 * \param[in] conv_numerics - Description of the numerical method.
@@ -4525,7 +4580,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Nacelle_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
+	void BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                            CConfig *config, unsigned short val_marker);
     
 	/*!

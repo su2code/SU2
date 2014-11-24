@@ -9819,8 +9819,8 @@ void CMultiGridGeometry::SetSuitableNeighbors(vector<unsigned long> *Suitable_In
 
 void CMultiGridGeometry::SetPoint_Connectivity(CGeometry *fine_grid) {
   
-  unsigned long iFinePoint, iFinePoint_Neighbor, iParent, iCoarsePoint, iCoarsePoint_Complete;
-  unsigned short iChildren, iNode, nChildren;
+  unsigned long iFinePoint, iFinePoint_Neighbor, iParent, iCoarsePoint;
+  unsigned short iChildren, iNode;
   
   /*--- Set the point surrounding a point ---*/
   
