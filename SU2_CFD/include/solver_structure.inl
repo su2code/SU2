@@ -127,13 +127,13 @@ inline double CSolver::GetSurface_CMy(unsigned short val_marker) { return 0; }
 
 inline double CSolver::GetSurface_CMz(unsigned short val_marker) { return 0; }
 
-inline double CSolver::GetFanFace_MassFlow(unsigned short val_marker) { return 0; }
+inline double CSolver::GetInflow_MassFlow(unsigned short val_marker) { return 0; }
 
 inline double CSolver::GetExhaust_MassFlow(unsigned short val_marker) { return 0; }
 
-inline double CSolver::GetFanFace_Pressure(unsigned short val_marker) { return 0; }
+inline double CSolver::GetInflow_Pressure(unsigned short val_marker) { return 0; }
 
-inline double CSolver::GetFanFace_Mach(unsigned short val_marker) { return 0; }
+inline double CSolver::GetInflow_Mach(unsigned short val_marker) { return 0; }
 
 inline double CSolver::GetCSideForce_Inv(unsigned short val_marker) { return 0; }
 
@@ -402,10 +402,13 @@ inline void CSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
 inline void CSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, 
 										 CConfig *config, unsigned short val_marker) { }
 
-inline void CSolver::BC_Nacelle_Inflow(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, 
+inline void CSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, 
 										  CConfig *config, unsigned short val_marker) { }
-											
-inline void CSolver::BC_Nacelle_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, 
+
+inline void CSolver::BC_Engine_Bleed(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
+                                      CConfig *config, unsigned short val_marker) { }
+
+inline void CSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, 
 										  CConfig *config, unsigned short val_marker) { }
 																						
 inline void CSolver::BC_Neumann(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, 
@@ -417,7 +420,7 @@ inline void CSolver::BC_Dielec(CGeometry *geometry, CSolver **solver_container, 
 inline void CSolver::BC_Electrode(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, 
 									CConfig *config, unsigned short val_marker) { }
             
-inline void CSolver::GetNacelle_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) { }
+inline void CSolver::GetEngine_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) { }
 
 inline void CSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_container,
                                      CConfig *config, unsigned short iMesh, bool Output) { }
@@ -576,13 +579,13 @@ inline double CEulerSolver::GetSurface_CMy(unsigned short val_marker) { return S
 
 inline double CEulerSolver::GetSurface_CMz(unsigned short val_marker) { return Surface_CMz[val_marker]; }
 
-inline double CEulerSolver::GetFanFace_MassFlow(unsigned short val_marker) { return FanFace_MassFlow[val_marker]; }
+inline double CEulerSolver::GetInflow_MassFlow(unsigned short val_marker) { return Inflow_MassFlow[val_marker]; }
 
 inline double CEulerSolver::GetExhaust_MassFlow(unsigned short val_marker) { return Exhaust_MassFlow[val_marker]; }
 
-inline double CEulerSolver::GetFanFace_Pressure(unsigned short val_marker) { return FanFace_Pressure[val_marker]; }
+inline double CEulerSolver::GetInflow_Pressure(unsigned short val_marker) { return Inflow_Pressure[val_marker]; }
 
-inline double CEulerSolver::GetFanFace_Mach(unsigned short val_marker) { return FanFace_Mach[val_marker]; }
+inline double CEulerSolver::GetInflow_Mach(unsigned short val_marker) { return Inflow_Mach[val_marker]; }
 
 inline double CEulerSolver::GetCSideForce_Inv(unsigned short val_marker) { return CSideForce_Inv[val_marker]; }
 

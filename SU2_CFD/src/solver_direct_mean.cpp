@@ -54,8 +54,10 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
 
   /*--- Engine simulation array initialization ---*/
 
-  FanFace_MassFlow = NULL;  FanFace_Pressure = NULL;
-  FanFace_Mach = NULL;  FanFace_Area = NULL;
+  Inflow_MassFlow = NULL;  Inflow_Pressure = NULL;
+  Inflow_Mach = NULL;  Inflow_Area = NULL;
+  Bleed_MassFlow = NULL;  Bleed_Pressure = NULL;
+  Bleed_Temperature = NULL;  Inflow_Area = NULL;
   Exhaust_MassFlow = NULL;  Exhaust_Area = NULL;
 
   /*--- Numerical methods array initialization ---*/
@@ -87,7 +89,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
-  double Gas_Constant = config->GetGas_ConstantND();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
   bool adjoint = config->GetAdjoint();
@@ -118,8 +119,10 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   CEquivArea_Inv = NULL;  CNearFieldOF_Inv = NULL;
 
-  FanFace_MassFlow = NULL;  Exhaust_MassFlow = NULL;  Exhaust_Area = NULL;
-  FanFace_Pressure = NULL;  FanFace_Mach = NULL;  FanFace_Area = NULL;
+  Inflow_MassFlow = NULL;  Exhaust_MassFlow = NULL;  Exhaust_Area = NULL;
+  Inflow_Pressure = NULL;  Inflow_Mach = NULL;  Inflow_Area = NULL;
+  Bleed_MassFlow = NULL;    Bleed_Pressure = NULL;  Bleed_Temperature = NULL;
+  Bleed_Area = NULL;
 
   iPoint_UndLapl = NULL;  jPoint_UndLapl = NULL;
   LowMach_Precontioner = NULL;
@@ -350,12 +353,16 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   /*--- Engine simulation ---*/
 
-  FanFace_MassFlow  = new double[nMarker];
+  Inflow_MassFlow  = new double[nMarker];
+  Bleed_MassFlow  = new double[nMarker];
   Exhaust_MassFlow  = new double[nMarker];
   Exhaust_Area      = new double[nMarker];
-  FanFace_Pressure  = new double[nMarker];
-  FanFace_Mach      = new double[nMarker];
-  FanFace_Area      = new double[nMarker];
+  Inflow_Pressure  = new double[nMarker];
+  Inflow_Mach      = new double[nMarker];
+  Inflow_Area      = new double[nMarker];
+  Bleed_Pressure  = new double[nMarker];
+  Bleed_Temperature      = new double[nMarker];
+  Bleed_Area      = new double[nMarker];
 
   /*--- Init total coefficients ---*/
 
@@ -369,20 +376,25 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   /*--- Read farfield conditions ---*/
 
-  Density_Inf  = config->GetDensity_FreeStreamND();
-  Pressure_Inf = config->GetPressure_FreeStreamND();
-  Velocity_Inf = config->GetVelocity_FreeStreamND();
-  Energy_Inf   = config->GetEnergy_FreeStreamND();
-  Mach_Inf     = config->GetMach();
+  Density_Inf     = config->GetDensity_FreeStreamND();
+  Pressure_Inf    = config->GetPressure_FreeStreamND();
+  Velocity_Inf    = config->GetVelocity_FreeStreamND();
+  Energy_Inf      = config->GetEnergy_FreeStreamND();
+  Temperature_Inf = config->GetTemperature_FreeStreamND();
+  Mach_Inf        = config->GetMach();
 
   /*--- Initializate fan face pressure, fan face mach number, and mass flow rate ---*/
 
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    FanFace_MassFlow[iMarker] = 0.0;
+    Inflow_MassFlow[iMarker] = 0.0;
+    Bleed_MassFlow[iMarker] = 0.0;
     Exhaust_MassFlow[iMarker] = 0.0;
-    FanFace_Mach[iMarker] = Mach_Inf;
-    FanFace_Pressure[iMarker] = Pressure_Inf;
-    FanFace_Area[iMarker] = 0.0;
+    Inflow_Mach[iMarker] = Mach_Inf;
+    Inflow_Pressure[iMarker] = Pressure_Inf;
+    Inflow_Area[iMarker] = 0.0;
+    Bleed_Temperature[iMarker] = Temperature_Inf;
+    Bleed_Pressure[iMarker] = Pressure_Inf;
+    Bleed_Area[iMarker] = 0.0;
     Exhaust_Area[iMarker] = 0.0;
   }
 
@@ -575,12 +587,15 @@ CEulerSolver::~CEulerSolver(void) {
   if (CNearFieldOF_Inv != NULL)  delete [] CNearFieldOF_Inv;
   if (ForceInviscid != NULL)     delete [] ForceInviscid;
   if (MomentInviscid != NULL)    delete [] MomentInviscid;
-  if (FanFace_MassFlow != NULL)  delete [] FanFace_MassFlow;
+  if (Inflow_MassFlow != NULL)  delete [] Inflow_MassFlow;
   if (Exhaust_MassFlow != NULL)  delete [] Exhaust_MassFlow;
   if (Exhaust_Area != NULL)      delete [] Exhaust_Area;
-  if (FanFace_Pressure != NULL)  delete [] FanFace_Pressure;
-  if (FanFace_Mach != NULL)      delete [] FanFace_Mach;
-  if (FanFace_Area != NULL)      delete [] FanFace_Area;
+  if (Inflow_Pressure != NULL)  delete [] Inflow_Pressure;
+  if (Inflow_Mach != NULL)      delete [] Inflow_Mach;
+  if (Inflow_Area != NULL)      delete [] Inflow_Area;
+  if (Bleed_Pressure != NULL)  delete [] Bleed_Pressure;
+  if (Bleed_Temperature != NULL)      delete [] Bleed_Temperature;
+  if (Bleed_Area != NULL)      delete [] Bleed_Area;
   if (iPoint_UndLapl != NULL)       delete [] iPoint_UndLapl;
   if (jPoint_UndLapl != NULL)       delete [] jPoint_UndLapl;
   if (Primitive != NULL)        delete [] Primitive;
@@ -1858,7 +1873,6 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
   bool turbulent          = config->GetKind_Solver() == RANS;
   bool tkeNeeded          = ((config->GetKind_Solver() == RANS) && (config->GetKind_Turb_Model() == SST));
   bool fs_temperature     = (config->GetKind_FreeStreamOption() == TEMPERATURE_FS);
-  bool ideal_gas       = (config->GetKind_FluidModel() == STANDARD_AIR || config->GetKind_FluidModel() == IDEAL_GAS );
   bool standard_air       = (config->GetKind_FluidModel() == STANDARD_AIR);
 
   if (compressible) {
@@ -2635,7 +2649,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
       double Velocity_FreeStream[3] = {0.0, 0.0, 0.0}, Velocity_FreeStreamND[3] = {0.0, 0.0, 0.0}, Viscosity_FreeStream,
       Density_FreeStream, Pressure_FreeStream, Density_FreeStreamND, Pressure_FreeStreamND, ModVel_FreeStreamND,
       Energy_FreeStreamND, ModVel_FreeStream, T_ref = 0.0, S = 0.0, Mu_ref = 0.0, *Coord, MinCoordValues[3],
-      MaxCoordValues[3], *Subsonic_Nacelle_Box;
+      MaxCoordValues[3], *Subsonic_Engine_Box;
       
 
       double Mach = 0.40;
@@ -2686,10 +2700,10 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
 
           Coord = geometry[iMesh]->node[iPoint]->GetCoord();
 
-          Subsonic_Nacelle_Box = config->GetSubsonic_Nacelle_Box();
+          Subsonic_Engine_Box = config->GetSubsonic_Engine_Box();
           
-          MinCoordValues[0] = Subsonic_Nacelle_Box[0]; MinCoordValues[1] = Subsonic_Nacelle_Box[1]; MinCoordValues[2] = Subsonic_Nacelle_Box[2];
-          MaxCoordValues[0] = Subsonic_Nacelle_Box[3]; MaxCoordValues[1] = Subsonic_Nacelle_Box[4]; MaxCoordValues[2] = Subsonic_Nacelle_Box[5];
+          MinCoordValues[0] = Subsonic_Engine_Box[0]; MinCoordValues[1] = Subsonic_Engine_Box[1]; MinCoordValues[2] = Subsonic_Engine_Box[2];
+          MaxCoordValues[0] = Subsonic_Engine_Box[3]; MaxCoordValues[1] = Subsonic_Engine_Box[4]; MaxCoordValues[2] = Subsonic_Engine_Box[5];
           
           if (((Coord[0] >= MinCoordValues[0]) && (Coord[0] <= MaxCoordValues[0])) &&
               ((Coord[1] >= MinCoordValues[1]) && (Coord[1] <= MaxCoordValues[1])) &&
@@ -2851,13 +2865,12 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   bool compressible     = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible   = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface      = (config->GetKind_Regime() == FREESURFACE);
-  bool engine           = ((config->GetnMarker_NacelleInflow() != 0) || (config->GetnMarker_NacelleExhaust() != 0));
+  bool engine           = ((config->GetnMarker_EngineInflow() != 0) || (config->GetnMarker_EngineBleed() != 0) || (config->GetnMarker_EngineExhaust() != 0));
   bool fixed_cl         = config->GetFixed_CL_Mode();
-  bool ideal_gas = (config->GetKind_FluidModel() == STANDARD_AIR || config->GetKind_FluidModel() == IDEAL_GAS );
 
   /*--- Compute nacelle inflow and exhaust properties ---*/
 
-  if (engine) { GetNacelle_Properties(geometry, config, iMesh, Output); }
+  if (engine) { GetEngine_Properties(geometry, config, iMesh, Output); }
 
   /*--- Update the angle of attack at the far-field for fixed CL calculations. ---*/
 
@@ -5340,14 +5353,18 @@ void CEulerSolver::SetPreconditioner(CConfig *config, unsigned short iPoint) {
 
 }
 
-void CEulerSolver::GetNacelle_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) {
-  unsigned short iDim, iMarker, iVar;
+void CEulerSolver::GetEngine_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) {
+  
+  unsigned short iDim, iMarker;
   unsigned long iVertex, iPoint;
-  double Pressure, Velocity[3], Velocity2, MassFlow, Density, Energy, Area,
-  Mach, SoundSpeed, Flow_Dir[3], alpha;
+  double Pressure, Temperature, Velocity[3], Velocity2, MassFlow, Density, Energy, Area,
+  Mach, SoundSpeed;
+  unsigned short iMarker_EngineInflow, iMarker_EngineBleed, iMarker_EngineExhaust;
 
-  unsigned short nMarker_NacelleInflow = config->GetnMarker_NacelleInflow();
-  unsigned short nMarker_NacelleExhaust = config->GetnMarker_NacelleExhaust();
+  double Gas_Constant = config->GetGas_ConstantND();
+  unsigned short nMarker_EngineInflow = config->GetnMarker_EngineInflow();
+  unsigned short nMarker_EngineBleed = config->GetnMarker_EngineBleed();
+  unsigned short nMarker_EngineExhaust = config->GetnMarker_EngineExhaust();
 
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -5355,19 +5372,26 @@ void CEulerSolver::GetNacelle_Properties(CGeometry *geometry, CConfig *config, u
 #endif
 
   /*--- Compute the numerical fan face Mach number, and the total area of the inflow ---*/
+  
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
-    FanFace_MassFlow[iMarker] = 0.0;
-    FanFace_Mach[iMarker] = 0.0;
-    FanFace_Pressure[iMarker] = 0.0;
-    FanFace_Area[iMarker] = 0.0;
+    Inflow_MassFlow[iMarker] = 0.0;
+    Inflow_Mach[iMarker] = 0.0;
+    Inflow_Pressure[iMarker] = 0.0;
+    Inflow_Area[iMarker] = 0.0;
+
+    Bleed_MassFlow[iMarker] = 0.0;
+    Bleed_Pressure[iMarker] = 0.0;
+    Bleed_Temperature[iMarker] = 0.0;
+    Bleed_Area[iMarker] = 0.0;
 
     Exhaust_MassFlow[iMarker] = 0.0;
     Exhaust_Area[iMarker] = 0.0;
 
-    if (config->GetMarker_All_KindBC(iMarker) == NACELLE_INFLOW) {
+    if (config->GetMarker_All_KindBC(iMarker) == ENGINE_INFLOW) {
 
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
         if (geometry->node[iPoint]->GetDomain()) {
@@ -5389,18 +5413,55 @@ void CEulerSolver::GetNacelle_Properties(CGeometry *geometry, CConfig *config, u
           SoundSpeed = sqrt(Gamma*Pressure/Density);
           Mach       = sqrt(Velocity2)/SoundSpeed;
 
-          /*--- Compute the FanFace_MassFlow, FanFace_Pressure, FanFace_Mach, and FanFace_Area ---*/
-          FanFace_MassFlow[iMarker] += MassFlow;
-          FanFace_Pressure[iMarker] += Pressure*Area;
-          FanFace_Mach[iMarker] += Mach*Area;
-          FanFace_Area[iMarker] += Area;
+          /*--- Compute the Inflow_MassFlow, Inflow_Pressure, Inflow_Mach, and Inflow_Area ---*/
+          
+          Inflow_MassFlow[iMarker] += MassFlow;
+          Inflow_Pressure[iMarker] += Pressure*Area;
+          Inflow_Mach[iMarker] += Mach*Area;
+          Inflow_Area[iMarker] += Area;
 
         }
       }
 
     }
+    
+    if (config->GetMarker_All_KindBC(iMarker) == ENGINE_BLEED) {
+      
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        
+        if (geometry->node[iPoint]->GetDomain()) {
+          
+          geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
+          
+          Density = node[iPoint]->GetSolution(0);
+          Velocity2 = 0.0; Area = 0.0; MassFlow = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) {
+            Area += Vector[iDim]*Vector[iDim];
+            Velocity[iDim] = node[iPoint]->GetSolution(iDim+1)/Density;
+            Velocity2 += Velocity[iDim]*Velocity[iDim];
+            MassFlow -= Vector[iDim]*node[iPoint]->GetSolution(iDim+1);
+          }
+          
+          Area       = sqrt (Area);
+          Energy     = node[iPoint]->GetSolution(nVar-1)/Density;
+          Pressure   = Gamma_Minus_One*Density*(Energy-0.5*Velocity2);
+          Temperature = Pressure / (Gas_Constant * Density);
+          
+          /*--- Compute the Bleed_MassFlow, Bleed_Pressure, Bleed_Temperature, and Bleed_Area ---*/
+          
+          Bleed_MassFlow[iMarker] += MassFlow;
+          Bleed_Pressure[iMarker] += Pressure*Area;
+          Bleed_Temperature[iMarker] += Temperature*Area;
+          Bleed_Area[iMarker] += Area;
+          
+        }
+      }
+      
+    }
 
-    if (config->GetMarker_All_KindBC(iMarker) == NACELLE_EXHAUST) {
+    if (config->GetMarker_All_KindBC(iMarker) == ENGINE_EXHAUST) {
 
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
@@ -5419,6 +5480,7 @@ void CEulerSolver::GetNacelle_Properties(CGeometry *geometry, CConfig *config, u
             MassFlow += Vector[iDim]*node[iPoint]->GetSolution(iDim+1);
 
           /*--- Compute the mass Exhaust_MassFlow ---*/
+          
           Exhaust_MassFlow[iMarker] += MassFlow;
           Exhaust_Area[iMarker] += Area;
 
@@ -5430,73 +5492,112 @@ void CEulerSolver::GetNacelle_Properties(CGeometry *geometry, CConfig *config, u
   }
 
   /*--- Copy to the appropriate structure ---*/
-  unsigned short iMarker_NacelleInflow, iMarker_NacelleExhaust;
+  
+  double *Inflow_MassFlow_Local = new double [nMarker_EngineInflow];
+  double *Inflow_Mach_Local = new double [nMarker_EngineInflow];
+  double *Inflow_Pressure_Local = new double [nMarker_EngineInflow];
+  double *Inflow_Area_Local = new double [nMarker_EngineInflow];
 
-  double *FanFace_MassFlow_Local = new double [nMarker_NacelleInflow];
-  double *FanFace_Mach_Local = new double [nMarker_NacelleInflow];
-  double *FanFace_Pressure_Local = new double [nMarker_NacelleInflow];
-  double *FanFace_Area_Local = new double [nMarker_NacelleInflow];
+  double *Inflow_MassFlow_Total = new double [nMarker_EngineInflow];
+  double *Inflow_Mach_Total = new double [nMarker_EngineInflow];
+  double *Inflow_Pressure_Total = new double [nMarker_EngineInflow];
+  double *Inflow_Area_Total = new double [nMarker_EngineInflow];
 
-  double *FanFace_MassFlow_Total = new double [nMarker_NacelleInflow];
-  double *FanFace_Mach_Total = new double [nMarker_NacelleInflow];
-  double *FanFace_Pressure_Total = new double [nMarker_NacelleInflow];
-  double *FanFace_Area_Total = new double [nMarker_NacelleInflow];
+  for (iMarker_EngineInflow = 0; iMarker_EngineInflow < nMarker_EngineInflow; iMarker_EngineInflow++) {
+    Inflow_MassFlow_Local[iMarker_EngineInflow] = 0.0;
+    Inflow_Mach_Local[iMarker_EngineInflow] = 0.0;
+    Inflow_Pressure_Local[iMarker_EngineInflow] = 0.0;
+    Inflow_Area_Local[iMarker_EngineInflow] = 0.0;
 
-  for (iMarker_NacelleInflow = 0; iMarker_NacelleInflow < nMarker_NacelleInflow; iMarker_NacelleInflow++) {
-    FanFace_MassFlow_Local[iMarker_NacelleInflow] = 0.0;
-    FanFace_Mach_Local[iMarker_NacelleInflow] = 0.0;
-    FanFace_Pressure_Local[iMarker_NacelleInflow] = 0.0;
-    FanFace_Area_Local[iMarker_NacelleInflow] = 0.0;
-
-    FanFace_MassFlow_Total[iMarker_NacelleInflow] = 0.0;
-    FanFace_Mach_Total[iMarker_NacelleInflow] = 0.0;
-    FanFace_Pressure_Total[iMarker_NacelleInflow] = 0.0;
-    FanFace_Area_Total[iMarker_NacelleInflow] = 0.0;
+    Inflow_MassFlow_Total[iMarker_EngineInflow] = 0.0;
+    Inflow_Mach_Total[iMarker_EngineInflow] = 0.0;
+    Inflow_Pressure_Total[iMarker_EngineInflow] = 0.0;
+    Inflow_Area_Total[iMarker_EngineInflow] = 0.0;
+  }
+  
+  double *Bleed_MassFlow_Local = new double [nMarker_EngineBleed];
+  double *Bleed_Temperature_Local = new double [nMarker_EngineBleed];
+  double *Bleed_Pressure_Local = new double [nMarker_EngineBleed];
+  double *Bleed_Area_Local = new double [nMarker_EngineBleed];
+  
+  double *Bleed_MassFlow_Total = new double [nMarker_EngineBleed];
+  double *Bleed_Temperature_Total = new double [nMarker_EngineBleed];
+  double *Bleed_Pressure_Total = new double [nMarker_EngineBleed];
+  double *Bleed_Area_Total = new double [nMarker_EngineBleed];
+  
+  for (iMarker_EngineBleed = 0; iMarker_EngineBleed < nMarker_EngineBleed; iMarker_EngineBleed++) {
+    Bleed_MassFlow_Local[iMarker_EngineBleed] = 0.0;
+    Bleed_Temperature_Local[iMarker_EngineBleed] = 0.0;
+    Bleed_Pressure_Local[iMarker_EngineBleed] = 0.0;
+    Bleed_Area_Local[iMarker_EngineBleed] = 0.0;
+    
+    Bleed_MassFlow_Total[iMarker_EngineBleed] = 0.0;
+    Bleed_Temperature_Total[iMarker_EngineBleed] = 0.0;
+    Bleed_Pressure_Total[iMarker_EngineBleed] = 0.0;
+    Bleed_Area_Total[iMarker_EngineBleed] = 0.0;
   }
 
-  double *Exhaust_MassFlow_Local = new double [nMarker_NacelleExhaust];
-  double *Exhaust_Area_Local = new double [nMarker_NacelleExhaust];
+  double *Exhaust_MassFlow_Local = new double [nMarker_EngineExhaust];
+  double *Exhaust_Area_Local = new double [nMarker_EngineExhaust];
 
-  double *Exhaust_MassFlow_Total = new double [nMarker_NacelleExhaust];
-  double *Exhaust_Area_Total = new double [nMarker_NacelleExhaust];
+  double *Exhaust_MassFlow_Total = new double [nMarker_EngineExhaust];
+  double *Exhaust_Area_Total = new double [nMarker_EngineExhaust];
 
-  for (iMarker_NacelleExhaust = 0; iMarker_NacelleExhaust < nMarker_NacelleExhaust; iMarker_NacelleExhaust++) {
-    Exhaust_MassFlow_Local[iMarker_NacelleExhaust] = 0.0;
-    Exhaust_Area_Local[iMarker_NacelleExhaust] = 0.0;
+  for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++) {
+    Exhaust_MassFlow_Local[iMarker_EngineExhaust] = 0.0;
+    Exhaust_Area_Local[iMarker_EngineExhaust] = 0.0;
 
-    Exhaust_MassFlow_Total[iMarker_NacelleExhaust] = 0.0;
-    Exhaust_Area_Total[iMarker_NacelleExhaust] = 0.0;
+    Exhaust_MassFlow_Total[iMarker_EngineExhaust] = 0.0;
+    Exhaust_Area_Total[iMarker_EngineExhaust] = 0.0;
   }
 
-  /*--- Compute the numerical fan face Mach number, and the total area of the inflow ---*/
+  /*--- Compute the numerical fan face Mach number, mach number, temperature and the total area ---*/
+  
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
-    if (config->GetMarker_All_KindBC(iMarker) == NACELLE_INFLOW) {
+    if (config->GetMarker_All_KindBC(iMarker) == ENGINE_INFLOW) {
 
-      /*--- Loop over all the boundaries with nacelle inflow bc ---*/
-      for (iMarker_NacelleInflow = 0; iMarker_NacelleInflow < nMarker_NacelleInflow; iMarker_NacelleInflow++) {
+      for (iMarker_EngineInflow = 0; iMarker_EngineInflow < nMarker_EngineInflow; iMarker_EngineInflow++) {
 
-        /*--- Add the FanFace_MassFlow, FanFace_Mach, FanFace_Pressure and FanFace_Area to the particular boundary ---*/
-        if (config->GetMarker_All_TagBound(iMarker) == config->GetMarker_NacelleInflow(iMarker_NacelleInflow)) {
-          FanFace_MassFlow_Local[iMarker_NacelleInflow] += FanFace_MassFlow[iMarker];
-          FanFace_Mach_Local[iMarker_NacelleInflow] += FanFace_Mach[iMarker];
-          FanFace_Pressure_Local[iMarker_NacelleInflow] += FanFace_Pressure[iMarker];
-          FanFace_Area_Local[iMarker_NacelleInflow] += FanFace_Area[iMarker];
+        /*--- Add the Inflow_MassFlow, Inflow_Mach, Inflow_Pressure and Inflow_Area to the particular boundary ---*/
+        
+        if (config->GetMarker_All_TagBound(iMarker) == config->GetMarker_EngineInflow(iMarker_EngineInflow)) {
+          Inflow_MassFlow_Local[iMarker_EngineInflow] += Inflow_MassFlow[iMarker];
+          Inflow_Mach_Local[iMarker_EngineInflow] += Inflow_Mach[iMarker];
+          Inflow_Pressure_Local[iMarker_EngineInflow] += Inflow_Pressure[iMarker];
+          Inflow_Area_Local[iMarker_EngineInflow] += Inflow_Area[iMarker];
         }
 
       }
 
     }
+    
+    if (config->GetMarker_All_KindBC(iMarker) == ENGINE_BLEED) {
+      
+      for (iMarker_EngineBleed = 0; iMarker_EngineBleed < nMarker_EngineBleed; iMarker_EngineBleed++) {
+        
+        /*--- Add the Bleed_MassFlow, Bleed_Temperature, Bleed_Pressure and Bleed_Area to the particular boundary ---*/
+        
+        if (config->GetMarker_All_TagBound(iMarker) == config->GetMarker_EngineBleed(iMarker_EngineBleed)) {
+          Bleed_MassFlow_Local[iMarker_EngineBleed] += Bleed_MassFlow[iMarker];
+          Bleed_Temperature_Local[iMarker_EngineBleed] += Bleed_Temperature[iMarker];
+          Bleed_Pressure_Local[iMarker_EngineBleed] += Bleed_Pressure[iMarker];
+          Bleed_Area_Local[iMarker_EngineBleed] += Bleed_Area[iMarker];
+        }
+        
+      }
+      
+    }
 
-    if (config->GetMarker_All_KindBC(iMarker) == NACELLE_EXHAUST) {
+    if (config->GetMarker_All_KindBC(iMarker) == ENGINE_EXHAUST) {
 
-      /*--- Loop over all the boundaries with nacelle inflow bc ---*/
-      for (iMarker_NacelleExhaust= 0; iMarker_NacelleExhaust < nMarker_NacelleExhaust; iMarker_NacelleExhaust++) {
+      for (iMarker_EngineExhaust= 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++) {
 
         /*--- Add the Exhaust_MassFlow, and Exhaust_Area to the particular boundary ---*/
-        if (config->GetMarker_All_TagBound(iMarker) == config->GetMarker_NacelleExhaust(iMarker_NacelleExhaust)) {
-          Exhaust_MassFlow_Local[iMarker_NacelleExhaust] += Exhaust_MassFlow[iMarker];
-          Exhaust_Area_Local[iMarker_NacelleExhaust] += Exhaust_Area[iMarker];
+        
+        if (config->GetMarker_All_TagBound(iMarker) == config->GetMarker_EngineExhaust(iMarker_EngineExhaust)) {
+          Exhaust_MassFlow_Local[iMarker_EngineExhaust] += Exhaust_MassFlow[iMarker];
+          Exhaust_Area_Local[iMarker_EngineExhaust] += Exhaust_Area[iMarker];
         }
 
       }
@@ -5507,42 +5608,73 @@ void CEulerSolver::GetNacelle_Properties(CGeometry *geometry, CConfig *config, u
 
 #ifdef HAVE_MPI
 
-  MPI_Allreduce(FanFace_MassFlow_Local, FanFace_MassFlow_Total, nMarker_NacelleInflow, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  MPI_Allreduce(FanFace_Mach_Local, FanFace_Mach_Total, nMarker_NacelleInflow, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  MPI_Allreduce(FanFace_Pressure_Local, FanFace_Pressure_Total, nMarker_NacelleInflow, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  MPI_Allreduce(FanFace_Area_Local, FanFace_Area_Total, nMarker_NacelleInflow, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  MPI_Allreduce(Exhaust_MassFlow_Local, Exhaust_MassFlow_Total, nMarker_NacelleExhaust, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  MPI_Allreduce(Exhaust_Area_Local, Exhaust_Area_Total, nMarker_NacelleExhaust, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(Inflow_MassFlow_Local, Inflow_MassFlow_Total, nMarker_EngineInflow, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(Inflow_Mach_Local, Inflow_Mach_Total, nMarker_EngineInflow, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(Inflow_Pressure_Local, Inflow_Pressure_Total, nMarker_EngineInflow, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(Inflow_Area_Local, Inflow_Area_Total, nMarker_EngineInflow, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+  MPI_Allreduce(Bleed_MassFlow_Local, Bleed_MassFlow_Total, nMarker_EngineBleed, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(Bleed_Temperature_Local, Bleed_Temperature_Total, nMarker_EngineBleed, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(Bleed_Pressure_Local, Bleed_Pressure_Total, nMarker_EngineBleed, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(Bleed_Area_Local, Bleed_Area_Total, nMarker_EngineBleed, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+  MPI_Allreduce(Exhaust_MassFlow_Local, Exhaust_MassFlow_Total, nMarker_EngineExhaust, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(Exhaust_Area_Local, Exhaust_Area_Total, nMarker_EngineExhaust, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
 #else
 
-  for (iMarker_NacelleInflow = 0; iMarker_NacelleInflow < nMarker_NacelleInflow; iMarker_NacelleInflow++) {
-    FanFace_MassFlow_Total[iMarker_NacelleInflow]   = FanFace_MassFlow_Local[iMarker_NacelleInflow];
-    FanFace_Mach_Total[iMarker_NacelleInflow]       = FanFace_Mach_Local[iMarker_NacelleInflow];
-    FanFace_Pressure_Total[iMarker_NacelleInflow]   = FanFace_Pressure_Local[iMarker_NacelleInflow];
-    FanFace_Area_Total[iMarker_NacelleInflow]       = FanFace_Area_Local[iMarker_NacelleInflow];
+  for (iMarker_EngineInflow = 0; iMarker_EngineInflow < nMarker_EngineInflow; iMarker_EngineInflow++) {
+    Inflow_MassFlow_Total[iMarker_EngineInflow]   = Inflow_MassFlow_Local[iMarker_EngineInflow];
+    Inflow_Mach_Total[iMarker_EngineInflow]       = Inflow_Mach_Local[iMarker_EngineInflow];
+    Inflow_Pressure_Total[iMarker_EngineInflow]   = Inflow_Pressure_Local[iMarker_EngineInflow];
+    Inflow_Area_Total[iMarker_EngineInflow]       = Inflow_Area_Local[iMarker_EngineInflow];
+  }
+  
+  for (iMarker_EngineBleed = 0; iMarker_EngineBleed < nMarker_EngineBleed; iMarker_EngineBleed++) {
+    Bleed_MassFlow_Total[iMarker_EngineBleed]   = Bleed_MassFlow_Local[iMarker_EngineBleed];
+    Bleed_Temperature_Total[iMarker_EngineBleed] = Bleed_Temperature_Local[iMarker_EngineBleed];
+    Bleed_Pressure_Total[iMarker_EngineBleed]   = Bleed_Pressure_Local[iMarker_EngineBleed];
+    Bleed_Area_Total[iMarker_EngineBleed]       = Bleed_Area_Local[iMarker_EngineBleed];
   }
 
-  for (iMarker_NacelleExhaust = 0; iMarker_NacelleExhaust < nMarker_NacelleExhaust; iMarker_NacelleExhaust++) {
-    Exhaust_MassFlow_Total[iMarker_NacelleExhaust]  = Exhaust_MassFlow_Local[iMarker_NacelleExhaust];
-    Exhaust_Area_Total[iMarker_NacelleExhaust]      = Exhaust_Area_Local[iMarker_NacelleExhaust];
+  for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++) {
+    Exhaust_MassFlow_Total[iMarker_EngineExhaust]  = Exhaust_MassFlow_Local[iMarker_EngineExhaust];
+    Exhaust_Area_Total[iMarker_EngineExhaust]      = Exhaust_Area_Local[iMarker_EngineExhaust];
   }
 
 #endif
 
-  /*--- Compute the value of FanFace_Area_Total, and FanFace_Pressure_Total, and
+  /*--- Compute the value of Inflow_Area_Total, and Inflow_Pressure_Total, and
    set the value in the config structure for future use ---*/
-  for (iMarker_NacelleInflow = 0; iMarker_NacelleInflow < nMarker_NacelleInflow; iMarker_NacelleInflow++) {
-    if (FanFace_Area_Total[iMarker_NacelleInflow] != 0.0) FanFace_Mach_Total[iMarker_NacelleInflow] /= FanFace_Area_Total[iMarker_NacelleInflow];
-    else FanFace_Mach_Total[iMarker_NacelleInflow] = 0.0;
-    if (FanFace_Area_Total[iMarker_NacelleInflow] != 0.0) FanFace_Pressure_Total[iMarker_NacelleInflow] /= FanFace_Area_Total[iMarker_NacelleInflow];
-    else FanFace_Pressure_Total[iMarker_NacelleInflow] = 0.0;
+  
+  for (iMarker_EngineInflow = 0; iMarker_EngineInflow < nMarker_EngineInflow; iMarker_EngineInflow++) {
+    if (Inflow_Area_Total[iMarker_EngineInflow] != 0.0) Inflow_Mach_Total[iMarker_EngineInflow] /= Inflow_Area_Total[iMarker_EngineInflow];
+    else Inflow_Mach_Total[iMarker_EngineInflow] = 0.0;
+    if (Inflow_Area_Total[iMarker_EngineInflow] != 0.0) Inflow_Pressure_Total[iMarker_EngineInflow] /= Inflow_Area_Total[iMarker_EngineInflow];
+    else Inflow_Pressure_Total[iMarker_EngineInflow] = 0.0;
 
     if (iMesh == MESH_0) {
-      config->SetFanFace_Mach(iMarker_NacelleInflow, FanFace_Mach_Total[iMarker_NacelleInflow]);
-      config->SetFanFace_Pressure(iMarker_NacelleInflow, FanFace_Pressure_Total[iMarker_NacelleInflow]);
+      config->SetInflow_Mach(iMarker_EngineInflow, Inflow_Mach_Total[iMarker_EngineInflow]);
+      config->SetInflow_Pressure(iMarker_EngineInflow, Inflow_Pressure_Total[iMarker_EngineInflow]);
     }
 
+  }
+  
+  /*--- Compute the value of Bleed_Area_Total, and Bleed_Pressure_Total, and
+   set the value in the config structure for future use ---*/
+  
+  for (iMarker_EngineBleed = 0; iMarker_EngineBleed < nMarker_EngineBleed; iMarker_EngineBleed++) {
+    if (Bleed_Area_Total[iMarker_EngineBleed] != 0.0) Bleed_Temperature_Total[iMarker_EngineBleed] /= Bleed_Area_Total[iMarker_EngineBleed];
+    else Bleed_Temperature_Total[iMarker_EngineBleed] = 0.0;
+    if (Bleed_Area_Total[iMarker_EngineBleed] != 0.0) Bleed_Pressure_Total[iMarker_EngineBleed] /= Bleed_Area_Total[iMarker_EngineBleed];
+    else Bleed_Pressure_Total[iMarker_EngineBleed] = 0.0;
+    
+    if (iMesh == MESH_0) {
+      config->SetBleed_Temperature(iMarker_EngineBleed, Bleed_Temperature_Total[iMarker_EngineBleed]);
+      config->SetBleed_MassFlow(iMarker_EngineBleed, Bleed_MassFlow_Total[iMarker_EngineBleed]);
+      config->SetBleed_Pressure(iMarker_EngineBleed, Bleed_Pressure_Total[iMarker_EngineBleed]);
+    }
+    
   }
 
   bool write_heads = (((config->GetExtIter() % (config->GetWrt_Con_Freq()*20)) == 0));
@@ -5553,81 +5685,99 @@ void CEulerSolver::GetNacelle_Properties(CGeometry *geometry, CConfig *config, u
     cout.setf(ios::fixed,ios::floatfield);
 
     cout << endl << "---------------------------- Engine properties --------------------------" << endl;
-    for (iMarker_NacelleInflow = 0; iMarker_NacelleInflow < nMarker_NacelleInflow; iMarker_NacelleInflow++) {
-      cout << "Nacelle inflow ("<< config->GetMarker_NacelleInflow(iMarker_NacelleInflow);
+    for (iMarker_EngineInflow = 0; iMarker_EngineInflow < nMarker_EngineInflow; iMarker_EngineInflow++) {
+      cout << "Engine inflow ("<< config->GetMarker_EngineInflow(iMarker_EngineInflow);
       if (config->GetSystemMeasurements() == SI) cout << "): Mass flow (kg/s): ";
       else if (config->GetSystemMeasurements() == US) cout << "): Mass flow (slug/s): ";
-      cout << FanFace_MassFlow_Total[iMarker_NacelleInflow] * config->GetDensity_Ref() * config->GetVelocity_Ref()
-      << ", Mach: " << FanFace_Mach_Total[iMarker_NacelleInflow]
-      << ", Area: " << FanFace_Area_Total[iMarker_NacelleInflow] <<"."<< endl;
+      cout << Inflow_MassFlow_Total[iMarker_EngineInflow] * config->GetDensity_Ref() * config->GetVelocity_Ref()
+      << ", Mach: " << Inflow_Mach_Total[iMarker_EngineInflow]
+      << ", Area: " << Inflow_Area_Total[iMarker_EngineInflow] <<"."<< endl;
+    }
+    
+    for (iMarker_EngineBleed = 0; iMarker_EngineBleed < nMarker_EngineBleed; iMarker_EngineBleed++) {
+      cout << "Engine bleed ("<< config->GetMarker_EngineBleed(iMarker_EngineBleed);
+      if (config->GetSystemMeasurements() == SI) cout << "): Mass flow (kg/s): ";
+      else if (config->GetSystemMeasurements() == US) cout << "): Mass flow (slug/s): ";
+      cout << Bleed_MassFlow_Total[iMarker_EngineInflow] * config->GetDensity_Ref() * config->GetVelocity_Ref();
+      if (config->GetSystemMeasurements() == SI) cout << ", Temp (K): ";
+      else if (config->GetSystemMeasurements() == US) cout << ", Temp (R): ";
+      cout << Bleed_Temperature_Total[iMarker_EngineBleed] * config->GetTemperature_Ref()
+      << ", Area: " << Bleed_Area_Total[iMarker_EngineBleed] <<"."<< endl;
     }
 
-    for (iMarker_NacelleExhaust = 0; iMarker_NacelleExhaust < nMarker_NacelleExhaust; iMarker_NacelleExhaust++) {
-      cout << "Nacelle exhaust ("<< config->GetMarker_NacelleExhaust(iMarker_NacelleExhaust);
+    for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++) {
+      cout << "Engine exhaust ("<< config->GetMarker_EngineExhaust(iMarker_EngineExhaust);
       if (config->GetSystemMeasurements() == SI) cout << "): Mass flow (kg/s): ";
       else if (config->GetSystemMeasurements() == US) cout << "): Mass flow (slug/s): ";
-      cout << Exhaust_MassFlow_Total[iMarker_NacelleExhaust] * config->GetDensity_Ref() * config->GetVelocity_Ref()
-      << ", Area: " << Exhaust_Area_Total[iMarker_NacelleExhaust] <<"."<< endl;
+      cout << Exhaust_MassFlow_Total[iMarker_EngineExhaust] * config->GetDensity_Ref() * config->GetVelocity_Ref()
+      << ", Area: " << Exhaust_Area_Total[iMarker_EngineExhaust] <<"."<< endl;
     }
     cout << "-------------------------------------------------------------------------" << endl;
 
   }
 
-  /*--- Check the flow orientation in the nacelle inflow ---*/
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+//  /*--- Check the flow orientation in the engine inflow ---*/
+//  
+//  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+//
+//    if (config->GetMarker_All_KindBC(iMarker) == ENGINE_INFLOW) {
+//
+//      /*--- Loop over all the vertices on this boundary marker ---*/
+//      
+//      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+//
+//        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+//
+//        /*--- Normal vector for this vertex (negate for outward convention) ---*/
+//        
+//        geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
+//
+//        for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = -Vector[iDim];
+//
+//        Area = 0.0;
+//        for (iDim = 0; iDim < nDim; iDim++)
+//          Area += Vector[iDim]*Vector[iDim];
+//        Area = sqrt (Area);
+//
+//        /*--- Compute unitary vector ---*/
+//        
+//        for (iDim = 0; iDim < nDim; iDim++)
+//          Vector[iDim] /= Area;
+//
+//        /*--- The flow direction is defined by the local velocity on the surface ---*/
+//        
+//        for (iDim = 0; iDim < nDim; iDim++)
+//          Flow_Dir[iDim] = node[iPoint]->GetSolution(iDim+1) / node[iPoint]->GetSolution(0);
+//
+//        /*--- Dot product of normal and flow direction. ---*/
+//        
+//        alpha = 0.0;
+//        for (iDim = 0; iDim < nDim; iDim++)
+//          alpha += Vector[iDim]*Flow_Dir[iDim];
+//
+//        /*--- Flow in the wrong direction. ---*/
+//        
+//        if (alpha < 0.0) {
+//
+//          /*--- Copy the old solution ---*/
+//          for (iVar = 0; iVar < nVar; iVar++)
+//            node[iPoint]->SetSolution(iVar, node[iPoint]->GetSolution_Old(iVar));
+//
+//        }
+//
+//      }
+//    }
+//  }
 
-    if (config->GetMarker_All_KindBC(iMarker) == NACELLE_INFLOW) {
+  delete [] Inflow_MassFlow_Local;
+  delete [] Inflow_Mach_Local;
+  delete [] Inflow_Pressure_Local;
+  delete [] Inflow_Area_Local;
 
-      /*--- Loop over all the vertices on this boundary marker ---*/
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-
-        /*--- Normal vector for this vertex (negate for outward convention) ---*/
-        geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
-
-        for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = -Vector[iDim];
-
-        Area = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          Area += Vector[iDim]*Vector[iDim];
-        Area = sqrt (Area);
-
-        /*--- Compute unitary vector ---*/
-        for (iDim = 0; iDim < nDim; iDim++)
-          Vector[iDim] /= Area;
-
-        /*--- The flow direction is defined by the local velocity on the surface ---*/
-        for (iDim = 0; iDim < nDim; iDim++)
-          Flow_Dir[iDim] = node[iPoint]->GetSolution(iDim+1) / node[iPoint]->GetSolution(0);
-
-        /*--- Dot product of normal and flow direction. ---*/
-        alpha = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          alpha += Vector[iDim]*Flow_Dir[iDim];
-
-        /*--- Flow in the wrong direction. ---*/
-        if (alpha < 0.0) {
-
-          /*--- Copy the old solution ---*/
-          for (iVar = 0; iVar < nVar; iVar++)
-            node[iPoint]->SetSolution(iVar, node[iPoint]->GetSolution_Old(iVar));
-
-        }
-
-      }
-    }
-  }
-
-  delete [] FanFace_MassFlow_Local;
-  delete [] FanFace_Mach_Local;
-  delete [] FanFace_Pressure_Local;
-  delete [] FanFace_Area_Local;
-
-  delete [] FanFace_MassFlow_Total;
-  delete [] FanFace_Mach_Total;
-  delete [] FanFace_Pressure_Total;
-  delete [] FanFace_Area_Total;
+  delete [] Bleed_MassFlow_Total;
+  delete [] Bleed_Temperature_Total;
+  delete [] Bleed_Pressure_Total;
+  delete [] Bleed_Area_Total;
 
   delete [] Exhaust_MassFlow_Local;
   delete [] Exhaust_Area_Local;
@@ -5790,8 +5940,6 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
   
 }
 
-//#ifndef CHECK_FLATPLATE_SST
-//
 //void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container,
 //                                 CNumerics *numerics, CConfig *config, unsigned short val_marker) {
 //
@@ -5910,181 +6058,222 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
 //  }
 //
 //}
-//
-//#else
 
 void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container,
                                  CNumerics *numerics, CConfig *config, unsigned short val_marker) {
-    unsigned short iDim, iVar, jVar, kVar, jDim;
-    unsigned long iPoint, iVertex;
-    double Pressure = 0.0, *Normal = NULL, *GridVel = NULL, Area, UnitNormal[3], *NormalArea,
-    ProjGridVel = 0.0, turb_ke;
-    double Density_b, StaticEnergy_b, Enthalpy_b, *Velocity_b, Kappa_b, Chi_b, ProjVelocity_b, Energy_b, VelMagnitude2_b, Pressure_b;
-    double Density_i, *Velocity_i, ProjVelocity_i, Energy_i, VelMagnitude2_i;
-    double **Jacobian_b, **DubDu;
-    bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-    bool grid_movement = config->GetGrid_Movement();
-    bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-    bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-    bool freesurface = (config->GetKind_Regime() == FREESURFACE);
-    bool tkeNeeded = ((config->GetKind_Solver() == RANS) && (config->GetKind_Turb_Model() == SST));
-    Normal = new double[nDim];
-    NormalArea = new double[nDim];
-    Velocity_b = new double[nDim];
-    Velocity_i = new double[nDim];
-    Jacobian_b = new double*[nVar];
-    DubDu = new double*[nVar];
-    for (iVar = 0; iVar < nVar; iVar++) {
-        Jacobian_b[iVar] = new double[nVar];
-        DubDu[iVar] = new double[nVar];
-    }
-    /*--- Loop over all the vertices on this boundary marker ---*/
-    for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-        iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-        /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
-        if (geometry->node[iPoint]->GetDomain()) {
-            /*--- Normal vector for this vertex (negative for outward convention) ---*/
-            geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-            Area = 0.0;
-            for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-            Area = sqrt (Area);
-            for (iDim = 0; iDim < nDim; iDim++) {
-                NormalArea[iDim] = -Normal[iDim];
-                UnitNormal[iDim] = -Normal[iDim]/Area;
-            }
-            /*--- Compressible solver ---*/
-            if (compressible) {
-                /*--- Get the state i ---*/
-                VelMagnitude2_i = 0.0; ProjVelocity_i = 0.0;
-                for(iDim = 0; iDim < nDim; iDim++) {
-                    Velocity_i[iDim] = node[iPoint]->GetVelocity(iDim);
-                    ProjVelocity_i += Velocity_i[iDim]*UnitNormal[iDim];
-                    VelMagnitude2_i += Velocity_i[iDim]*Velocity_i[iDim];
-                }
-                Density_i = node[iPoint]->GetDensity();
-                Energy_i = node[iPoint]->GetEnergy();
-                /*--- Compute the boundary state b ---*/
-                for (iDim = 0; iDim < nDim; iDim++)
-                    Velocity_b[iDim] = Velocity_i[iDim] - ProjVelocity_i * UnitNormal[iDim];
-                if (grid_movement) {
-                    GridVel = geometry->node[iPoint]->GetGridVel();
-                    ProjGridVel = 0.0;
-                    for (iDim = 0; iDim < nDim; iDim++)
-                        ProjGridVel += GridVel[iDim]*UnitNormal[iDim];
-                    for (iDim = 0; iDim < nDim; iDim++)
-                        Velocity_b[iDim] += ProjGridVel * UnitNormal[iDim];
-                }
-                VelMagnitude2_b = 0.0;
-                for (iDim = 0; iDim < nDim; iDim++)
-                    VelMagnitude2_b += Velocity_b[iDim] * Velocity_b[iDim];
-                /*--- Add the kinetic energy correction ---*/
-                turb_ke = 0.0;
-                if (tkeNeeded) turb_ke = solver_container[TURB_SOL]->node[iPoint]->GetSolution(0);
-                Density_b = Density_i;
-                StaticEnergy_b = Energy_i - 0.5 * VelMagnitude2_i - turb_ke;
-                Energy_b = StaticEnergy_b + 0.5 * VelMagnitude2_b;
-                FluidModel->SetTDState_rhoe(Density_b, StaticEnergy_b);
-                Kappa_b = FluidModel->GetdPde_rho() / Density_b;
-                Chi_b = FluidModel->GetdPdrho_e() - Kappa_b * StaticEnergy_b;
-                Pressure_b = FluidModel->GetPressure();
-                Enthalpy_b = Energy_b + Pressure_b/Density_b;
-                if (tkeNeeded) {
-                    Pressure += (2.0/3.0)*node[iPoint]->GetDensity()*turb_ke;
-                }
-                /*--- Compute the residual ---*/
-                numerics->GetInviscidProjFlux(&Density_b, Velocity_b, &Pressure_b, &Enthalpy_b, NormalArea, Residual);
-            }
-            /*--- Incompressible solver ---*/
-            if (incompressible || freesurface) {
-                Pressure = node[iPoint]->GetPressureInc();
-                /*--- Add the kinetic energy correction ---*/
-                turb_ke = 0.0;
-                if (tkeNeeded) {
-                    turb_ke = solver_container[TURB_SOL]->node[iPoint]->GetSolution(0);
-                    Pressure += (2.0/3.0)*node[iPoint]->GetDensity()*turb_ke;
-                }
-                /*--- Compute the residual ---*/
-                Residual[0] = 0.0;
-                for (iDim = 0; iDim < nDim; iDim++)
-                    Residual[iDim+1] = Pressure*UnitNormal[iDim]*Area;
-                if (compressible || freesurface) {
-                    Residual[nVar-1] = 0.0;
-                }
-                /*--- Adjustment to energy equation due to grid motion ---*/
-                if (grid_movement) {
-                    ProjGridVel = 0.0;
-                    GridVel = geometry->node[iPoint]->GetGridVel();
-                    for (iDim = 0; iDim < nDim; iDim++)
-                        ProjGridVel += GridVel[iDim]*UnitNormal[iDim];
-                    Residual[nVar-1] = Pressure*ProjGridVel*Area;
-                }
-            }
-            /*--- Add value to the residual ---*/
-            LinSysRes.AddBlock(iPoint, Residual);
-            /*--- Form Jacobians for implicit computations ---*/
-            if (implicit) {
-                /*--- Initialize Jacobian ---*/
-                for (iVar = 0; iVar < nVar; iVar++) {
-                    for (jVar = 0; jVar < nVar; jVar++)
-                        Jacobian_i[iVar][jVar] = 0.0;
-                }
-                /*--- Compressible solver ---*/
-                if (compressible) {
-                    /*--- Compute DubDu ---*/
-                    for (iVar = 0; iVar < nVar; iVar++) {
-                        for (jVar = 0; jVar < nVar; jVar++)
-                            DubDu[iVar][jVar]= 0.0;
-                        DubDu[iVar][iVar]= 1.0;
-                    }
-                    for(iDim = 0; iDim<nDim; iDim++)
-                        for(jDim = 0; jDim<nDim; jDim++)
-                            DubDu[iDim+1][jDim+1] -= UnitNormal[iDim]*UnitNormal[jDim];
-                    DubDu[nVar-1][0] += 0.5*ProjVelocity_i*ProjVelocity_i;
-                    for(iDim = 0; iDim<nDim; iDim++) {
-                        DubDu[nVar-1][iDim+1] -= ProjVelocity_i*UnitNormal[iDim];
-                    }
-                    /*--- Compute flux Jacobian in state b ---*/
-                    numerics->GetInviscidProjJac(Velocity_b, &Enthalpy_b, &Chi_b, &Kappa_b, NormalArea, 1, Jacobian_b);
-                    // Check for grid movement, should be already considered since Jacobian b is computed from u_b
-                    // if (grid_movement) {
-                    // Jacobian_b[nVar-1][0] += 0.5*ProjGridVel*ProjGridVel;
-                    // for (iDim = 0; iDim < nDim; iDim++)
-                    // Jacobian_b[nVar-1][iDim+1] -= ProjGridVel * UnitNormal[iDim];
-                    // }
-                    /*--- Compute numerical flux Jacobian at node i ---*/
-                    for(iVar = 0; iVar < nVar; iVar++)
-                        for(jVar = 0; jVar < nVar; jVar++)
-                            for(kVar = 0; kVar < nVar; kVar++)
-                                Jacobian_i[iVar][jVar] += Jacobian_b[iVar][kVar] * DubDu[kVar][jVar];
-                    /*--- Add the Jacobian to the sparse matrix ---*/
-                    Jacobian.AddBlock(iPoint,iPoint,Jacobian_i);
-                }
-                /*--- Incompressible solver ---*/
-                if (incompressible || freesurface) {
-                    for (iDim = 0; iDim < nDim; iDim++)
-                        Jacobian_i[iDim+1][0] = -Normal[iDim];
-                    Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-                }
-            }
+  
+  unsigned short iDim, iVar, jVar, kVar, jDim;
+  unsigned long iPoint, iVertex;
+  double Pressure = 0.0, *Normal = NULL, *GridVel = NULL, Area, UnitNormal[3], *NormalArea,
+  ProjGridVel = 0.0, turb_ke;
+  double Density_b, StaticEnergy_b, Enthalpy_b, *Velocity_b, Kappa_b, Chi_b, Energy_b, VelMagnitude2_b, Pressure_b;
+  double Density_i, *Velocity_i, ProjVelocity_i = 0.0, Energy_i, VelMagnitude2_i;
+  double **Jacobian_b, **DubDu;
+  
+  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool grid_movement = config->GetGrid_Movement();
+  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
+  bool tkeNeeded = ((config->GetKind_Solver() == RANS) && (config->GetKind_Turb_Model() == SST));
+  
+  Normal = new double[nDim];
+  NormalArea = new double[nDim];
+  Velocity_b = new double[nDim];
+  Velocity_i = new double[nDim];
+  Jacobian_b = new double*[nVar];
+  DubDu = new double*[nVar];
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Jacobian_b[iVar] = new double[nVar];
+    DubDu[iVar] = new double[nVar];
+  }
+  
+  /*--- Loop over all the vertices on this boundary marker ---*/
+  
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    
+    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+    
+    if (geometry->node[iPoint]->GetDomain()) {
+      
+      /*--- Normal vector for this vertex (negative for outward convention) ---*/
+      
+      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+      Area = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
+      Area = sqrt (Area);
+      for (iDim = 0; iDim < nDim; iDim++) {
+        NormalArea[iDim] = -Normal[iDim];
+        UnitNormal[iDim] = -Normal[iDim]/Area;
+      }
+      
+      /*--- Compressible solver ---*/
+      
+      if (compressible) {
+        
+        /*--- Get the state i ---*/
+        
+        VelMagnitude2_i = 0.0; ProjVelocity_i = 0.0;
+        for(iDim = 0; iDim < nDim; iDim++) {
+          Velocity_i[iDim] = node[iPoint]->GetVelocity(iDim);
+          ProjVelocity_i += Velocity_i[iDim]*UnitNormal[iDim];
+          VelMagnitude2_i += Velocity_i[iDim]*Velocity_i[iDim];
         }
+        Density_i = node[iPoint]->GetDensity();
+        Energy_i = node[iPoint]->GetEnergy();
+        
+        /*--- Compute the boundary state b ---*/
+        
+        for (iDim = 0; iDim < nDim; iDim++)
+          Velocity_b[iDim] = Velocity_i[iDim] - ProjVelocity_i * UnitNormal[iDim];
+        if (grid_movement) {
+          GridVel = geometry->node[iPoint]->GetGridVel();
+          ProjGridVel = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++)
+            ProjGridVel += GridVel[iDim]*UnitNormal[iDim];
+          for (iDim = 0; iDim < nDim; iDim++)
+            Velocity_b[iDim] += ProjGridVel * UnitNormal[iDim];
+        }
+        VelMagnitude2_b = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          VelMagnitude2_b += Velocity_b[iDim] * Velocity_b[iDim];
+        
+        /*--- Add the kinetic energy correction ---*/
+        
+        turb_ke = 0.0;
+        if (tkeNeeded) turb_ke = solver_container[TURB_SOL]->node[iPoint]->GetSolution(0);
+        Density_b = Density_i;
+        StaticEnergy_b = Energy_i - 0.5 * VelMagnitude2_i - turb_ke;
+        Energy_b = StaticEnergy_b + 0.5 * VelMagnitude2_b;
+        FluidModel->SetTDState_rhoe(Density_b, StaticEnergy_b);
+        Kappa_b = FluidModel->GetdPde_rho() / Density_b;
+        Chi_b = FluidModel->GetdPdrho_e() - Kappa_b * StaticEnergy_b;
+        Pressure_b = FluidModel->GetPressure();
+        Enthalpy_b = Energy_b + Pressure_b/Density_b;
+        if (tkeNeeded) { Pressure += (2.0/3.0)*node[iPoint]->GetDensity()*turb_ke; }
+        
+        /*--- Compute the residual ---*/
+        
+        numerics->GetInviscidProjFlux(&Density_b, Velocity_b, &Pressure_b, &Enthalpy_b, NormalArea, Residual);
+      }
+      
+      /*--- Incompressible solver ---*/
+      
+      if (incompressible || freesurface) {
+        
+        Pressure = node[iPoint]->GetPressureInc();
+        
+        /*--- Add the kinetic energy correction ---*/
+        
+        turb_ke = 0.0;
+        if (tkeNeeded) {
+          turb_ke = solver_container[TURB_SOL]->node[iPoint]->GetSolution(0);
+          Pressure += (2.0/3.0)*node[iPoint]->GetDensity()*turb_ke;
+        }
+        
+        /*--- Compute the residual ---*/
+        
+        Residual[0] = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          Residual[iDim+1] = Pressure*UnitNormal[iDim]*Area;
+        if (compressible || freesurface) {
+          Residual[nVar-1] = 0.0;
+        }
+        
+        /*--- Adjustment to energy equation due to grid motion ---*/
+        
+        if (grid_movement) {
+          ProjGridVel = 0.0;
+          GridVel = geometry->node[iPoint]->GetGridVel();
+          for (iDim = 0; iDim < nDim; iDim++)
+            ProjGridVel += GridVel[iDim]*UnitNormal[iDim];
+          Residual[nVar-1] = Pressure*ProjGridVel*Area;
+        }
+      }
+      
+      /*--- Add value to the residual ---*/
+      
+      LinSysRes.AddBlock(iPoint, Residual);
+      
+      /*--- Form Jacobians for implicit computations ---*/
+      
+      if (implicit) {
+        
+        /*--- Initialize Jacobian ---*/
+        
+        for (iVar = 0; iVar < nVar; iVar++) {
+          for (jVar = 0; jVar < nVar; jVar++)
+            Jacobian_i[iVar][jVar] = 0.0;
+        }
+        
+        /*--- Compressible solver ---*/
+        
+        if (compressible) {
+          
+          /*--- Compute DubDu ---*/
+          
+          for (iVar = 0; iVar < nVar; iVar++) {
+            for (jVar = 0; jVar < nVar; jVar++)
+              DubDu[iVar][jVar]= 0.0;
+            DubDu[iVar][iVar]= 1.0;
+          }
+          
+          for(iDim = 0; iDim<nDim; iDim++)
+            for(jDim = 0; jDim<nDim; jDim++)
+              DubDu[iDim+1][jDim+1] -= UnitNormal[iDim]*UnitNormal[jDim];
+          DubDu[nVar-1][0] += 0.5*ProjVelocity_i*ProjVelocity_i;
+          for(iDim = 0; iDim<nDim; iDim++) {
+            DubDu[nVar-1][iDim+1] -= ProjVelocity_i*UnitNormal[iDim];
+          }
+          
+          /*--- Compute flux Jacobian in state b ---*/
+          
+          numerics->GetInviscidProjJac(Velocity_b, &Enthalpy_b, &Chi_b, &Kappa_b, NormalArea, 1, Jacobian_b);
+          
+          // Check for grid movement, should be already considered since Jacobian b is computed from u_b
+          // if (grid_movement) {
+          // Jacobian_b[nVar-1][0] += 0.5*ProjGridVel*ProjGridVel;
+          // for (iDim = 0; iDim < nDim; iDim++)
+          // Jacobian_b[nVar-1][iDim+1] -= ProjGridVel * UnitNormal[iDim];
+          // }
+          
+          /*--- Compute numerical flux Jacobian at node i ---*/
+          
+          for(iVar = 0; iVar < nVar; iVar++)
+            for(jVar = 0; jVar < nVar; jVar++)
+              for(kVar = 0; kVar < nVar; kVar++)
+                Jacobian_i[iVar][jVar] += Jacobian_b[iVar][kVar] * DubDu[kVar][jVar];
+          
+          /*--- Add the Jacobian to the sparse matrix ---*/
+          
+          Jacobian.AddBlock(iPoint,iPoint,Jacobian_i);
+        }
+        
+        /*--- Incompressible solver ---*/
+        
+        if (incompressible || freesurface) {
+          for (iDim = 0; iDim < nDim; iDim++)
+            Jacobian_i[iDim+1][0] = -Normal[iDim];
+          Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+        }
+        
+      }
     }
-    delete [] Normal;
-    delete [] NormalArea;
-    delete [] Velocity_b;
-    delete [] Velocity_i;
-    for (iVar = 0; iVar < nVar; iVar++) {
-        delete [] Jacobian_b[iVar];
-        delete [] DubDu[iVar];
-    }
-    delete [] Jacobian_b;
-    delete [] DubDu;
+  }
+  
+  delete [] Normal;
+  delete [] NormalArea;
+  delete [] Velocity_b;
+  delete [] Velocity_i;
+  for (iVar = 0; iVar < nVar; iVar++) {
+    delete [] Jacobian_b[iVar];
+    delete [] DubDu[iVar];
+  }
+  delete [] Jacobian_b;
+  delete [] DubDu;
+  
 }
-
-//#endif
-
-
-
-
 
 void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                 CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
@@ -7577,15 +7766,15 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
 
 }
 
-void CEulerSolver::BC_Nacelle_Inflow(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   
   unsigned short iDim;
-  unsigned long iVertex, iPoint, Point_Normal;
-  double Pressure, P_Fan, Velocity[3], Velocity2, Entropy, Target_FanFace_Mach = 0.0, Density, Energy,
-  Riemann, Area, UnitNormal[3], Vn, SoundSpeed, Vn_Exit, P_Fan_inc, P_Fan_old, M_Fan_old;
+  unsigned long iVertex, iPoint;
+  double Pressure, Inflow_Pressure, Velocity[3], Velocity2, Entropy, Target_Inflow_Mach = 0.0, Density, Energy,
+  Riemann, Area, UnitNormal[3], Vn, SoundSpeed, Vn_Exit, Inflow_Pressure_inc, Inflow_Pressure_old, Inflow_Mach_old;
   double *V_inflow, *V_domain;
 
-  double DampingFactor = config->GetDamp_Nacelle_Inflow();
+  double DampingFactor = config->GetDamp_Engine_Inflow();
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool viscous              = config->GetViscous();
   double Gas_Constant = config->GetGas_ConstantND();
@@ -7596,20 +7785,20 @@ void CEulerSolver::BC_Nacelle_Inflow(CGeometry *geometry, CSolver **solver_conta
 
   /*--- Retrieve the specified target fan face mach in the nacelle. ---*/
   
-  Target_FanFace_Mach = config->GetFanFace_Mach_Target(Marker_Tag);
+  Target_Inflow_Mach = config->GetInflow_Mach_Target(Marker_Tag);
 
   /*--- Retrieve the old fan face pressure and mach number in the nacelle (this has been computed in a preprocessing). ---*/
   
-  P_Fan_old = config->GetFanFace_Pressure(Marker_Tag);  // Note that has been computed by the code (non-dimensional).
-  M_Fan_old = config->GetFanFace_Mach(Marker_Tag);
+  Inflow_Pressure_old = config->GetInflow_Pressure(Marker_Tag);  // Note that has been computed by the code (non-dimensional).
+  Inflow_Mach_old = config->GetInflow_Mach(Marker_Tag);
 
   /*--- Compute the Pressure increment ---*/
   
-  P_Fan_inc = ((M_Fan_old/Target_FanFace_Mach) - 1.0) * config->GetPressure_FreeStreamND();
+  Inflow_Pressure_inc = ((Inflow_Mach_old/Target_Inflow_Mach) - 1.0) * config->GetPressure_FreeStreamND();
 
   /*--- Estimate the new fan face pressure ---*/
   
-  P_Fan = (1.0 - DampingFactor)*P_Fan_old + DampingFactor * (P_Fan_old + P_Fan_inc);
+  Inflow_Pressure = (1.0 - DampingFactor)*Inflow_Pressure_old + DampingFactor * (Inflow_Pressure_old + Inflow_Pressure_inc);
 
   /*--- Loop over all the vertices on this boundary marker ---*/
   
@@ -7624,10 +7813,6 @@ void CEulerSolver::BC_Nacelle_Inflow(CGeometry *geometry, CSolver **solver_conta
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
     
     if (geometry->node[iPoint]->GetDomain()) {
-
-      /*--- Index of the closest interior node ---*/
-      
-      Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
       
@@ -7669,9 +7854,9 @@ void CEulerSolver::BC_Nacelle_Inflow(CGeometry *geometry, CSolver **solver_conta
 
       /*--- Compute the new fictious state at the outlet ---*/
       
-      Density    = pow(P_Fan/Entropy,1.0/Gamma);
-      Pressure   = P_Fan;
-      SoundSpeed = sqrt(Gamma*P_Fan/Density);
+      Density    = pow(Inflow_Pressure/Entropy,1.0/Gamma);
+      Pressure   = Inflow_Pressure;
+      SoundSpeed = sqrt(Gamma*Inflow_Pressure/Density);
       Vn_Exit    = Riemann - 2.0*SoundSpeed/Gamma_Minus_One;
       Velocity2  = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
@@ -7679,7 +7864,7 @@ void CEulerSolver::BC_Nacelle_Inflow(CGeometry *geometry, CSolver **solver_conta
         Velocity2 += Velocity[iDim]*Velocity[iDim];
       }
 
-      Energy = P_Fan/(Density*Gamma_Minus_One) + 0.5*Velocity2;
+      Energy = Inflow_Pressure/(Density*Gamma_Minus_One) + 0.5*Velocity2;
       if (tkeNeeded) Energy += GetTke_Inf();
 
       /*--- Conservative variables, using the derived quantities ---*/
@@ -7718,7 +7903,7 @@ void CEulerSolver::BC_Nacelle_Inflow(CGeometry *geometry, CSolver **solver_conta
         /*--- Set the normal vector and the coordinates ---*/
         
         visc_numerics->SetNormal(Normal);
-        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint]->GetCoord());
 
         /*--- Primitive variables, and gradient ---*/
         
@@ -7749,11 +7934,179 @@ void CEulerSolver::BC_Nacelle_Inflow(CGeometry *geometry, CSolver **solver_conta
 
 }
 
-void CEulerSolver::BC_Nacelle_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CEulerSolver::BC_Engine_Bleed(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   
   unsigned short iDim;
-  unsigned long iVertex, iPoint, Point_Normal;
-  double P_Exhaust, T_Exhaust, Velocity[3], Velocity2, H_Exhaust, Temperature, Riemann, Area, UnitNormal[3], Pressure, Density, Energy, Mach2, SoundSpeed2, SoundSpeed_Exhaust2, Vel_Mag, alpha, aa, bb, cc, dd, Flow_Dir[3];
+  unsigned long iVertex, iPoint;
+  double Pressure, Bleed_Pressure, Velocity[3], Velocity2, Entropy, Target_Bleed_MassFlow = 0.0, Density, Energy,
+  Riemann, Area, UnitNormal[3], Vn, SoundSpeed, Vn_Exit, Bleed_Pressure_inc, Bleed_Pressure_old, Bleed_MassFlow_old;
+  double *V_inflow, *V_domain;
+  
+  double DampingFactor = config->GetDamp_Engine_Inflow();
+  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool viscous              = config->GetViscous();
+  double Gas_Constant = config->GetGas_ConstantND();
+  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+  bool tkeNeeded = ((config->GetKind_Solver() == RANS) && (config->GetKind_Turb_Model() == SST));
+  
+  double *Normal = new double[nDim];
+  
+  /*--- Retrieve the specified target bleed mass flow in the engine (non-dimensional). ---*/
+  
+  Target_Bleed_MassFlow = config->GetBleed_MassFlow_Target(Marker_Tag) / (config->GetDensity_Ref() * config->GetVelocity_Ref());
+  
+  /*--- Retrieve the old Bleed pressure and mass flow rate number in the engine bleed (this has been computed in a preprocessing). ---*/
+  
+  Bleed_Pressure_old = config->GetBleed_Pressure(Marker_Tag);
+  Bleed_MassFlow_old = config->GetBleed_MassFlow(Marker_Tag);
+  
+  /*--- Compute the Pressure increment ---*/
+  
+  Bleed_Pressure_inc = ((Bleed_MassFlow_old/Target_Bleed_MassFlow) - 1.0) * config->GetPressure_FreeStreamND();
+  
+  /*--- Estimate the new Bleed face pressure ---*/
+  
+  Bleed_Pressure = (1.0 - DampingFactor)*Bleed_Pressure_old + DampingFactor * (Bleed_Pressure_old + Bleed_Pressure_inc);
+  
+  /*--- Loop over all the vertices on this boundary marker ---*/
+  
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    
+    /*--- Allocate the value at the outlet ---*/
+    
+    V_inflow = GetCharacPrimVar(val_marker, iVertex);
+    
+    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    
+    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+    
+    if (geometry->node[iPoint]->GetDomain()) {
+      
+      /*--- Normal vector for this vertex (negate for outward convention) ---*/
+      
+      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+      for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+      
+      Area = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+        Area += Normal[iDim]*Normal[iDim];
+      Area = sqrt (Area);
+      
+      for (iDim = 0; iDim < nDim; iDim++)
+        UnitNormal[iDim] = Normal[iDim]/Area;
+      
+      /*--- Current solution at this boundary node ---*/
+      
+      V_domain = node[iPoint]->GetPrimitive();
+      
+      /*--- Subsonic nacelle inflow: there is one incoming characteristic,
+       therefore one variable can be specified (back pressure) and is used
+       to update the conservative variables.
+       
+       Compute the entropy and the acoustic variable. These
+       riemann invariants, as well as the tangential velocity components,
+       are extrapolated. ---*/
+      
+      Density = V_domain[nDim+2];
+      Velocity2 = 0.0; Vn = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Velocity[iDim] = V_domain[iDim+1];
+        Velocity2 += Velocity[iDim]*Velocity[iDim];
+        Vn += Velocity[iDim]*UnitNormal[iDim];
+      }
+      Energy     = V_domain[nDim+3] - V_domain[nDim+1]/V_domain[nDim+2];
+      Pressure   = V_domain[nDim+1];
+      SoundSpeed = sqrt(Gamma*Pressure/Density);
+      Entropy = Pressure*pow(1.0/Density,Gamma);
+      Riemann = Vn + 2.0*SoundSpeed/Gamma_Minus_One;
+      
+      /*--- Compute the new fictious state at the outlet ---*/
+      
+      Density    = pow(Bleed_Pressure/Entropy,1.0/Gamma);
+      Pressure   = Bleed_Pressure;
+      SoundSpeed = sqrt(Gamma*Bleed_Pressure/Density);
+      Vn_Exit    = Riemann - 2.0*SoundSpeed/Gamma_Minus_One;
+      Velocity2  = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Velocity[iDim] = Velocity[iDim] + (Vn_Exit-Vn)*UnitNormal[iDim];
+        Velocity2 += Velocity[iDim]*Velocity[iDim];
+      }
+      
+      Energy = Bleed_Pressure/(Density*Gamma_Minus_One) + 0.5*Velocity2;
+      if (tkeNeeded) Energy += GetTke_Inf();
+      
+      /*--- Conservative variables, using the derived quantities ---*/
+      
+      V_inflow[0] = Pressure / ( Gas_Constant * Density);
+      for (iDim = 0; iDim < nDim; iDim++)
+        V_inflow[iDim+1] = Velocity[iDim];
+      V_inflow[nDim+1] = Pressure;
+      V_inflow[nDim+2] = Density;
+      V_inflow[nDim+3] = Energy + Pressure/Density;
+      
+      /*--- Set various quantities in the solver class ---*/
+      
+      conv_numerics->SetNormal(Normal);
+      conv_numerics->SetPrimitive(V_domain, V_inflow);
+      
+      /*--- Compute the residual using an upwind scheme ---*/
+      
+      conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+      LinSysRes.AddBlock(iPoint, Residual);
+      
+      /*--- Jacobian contribution for implicit integration ---*/
+      
+      if (implicit)
+        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+      
+      /*--- Viscous contribution ---*/
+      
+      if (viscous) {
+        
+        /*--- Set laminar and eddy viscosity at the infinity ---*/
+        
+        V_inflow[nDim+5] = node[iPoint]->GetLaminarViscosity();
+        V_inflow[nDim+6] = node[iPoint]->GetEddyViscosity();
+        
+        /*--- Set the normal vector and the coordinates ---*/
+        
+        visc_numerics->SetNormal(Normal);
+        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint]->GetCoord());
+        
+        /*--- Primitive variables, and gradient ---*/
+        
+        visc_numerics->SetPrimitive(V_domain, V_inflow);
+        visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
+        
+        /*--- Turbulent kinetic energy ---*/
+        
+        if (config->GetKind_Turb_Model() == SST)
+          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
+        
+        /*--- Compute and update residual ---*/
+        
+        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+        LinSysRes.SubtractBlock(iPoint, Residual);
+        
+        /*--- Jacobian contribution for implicit integration ---*/
+        
+        if (implicit)
+          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+        
+      }
+      
+    }
+  }
+  
+  delete [] Normal;
+  
+}
+
+void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  
+  unsigned short iDim;
+  unsigned long iVertex, iPoint;
+  double Exhaust_Pressure, Exhaust_Temperature, Velocity[3], Velocity2, H_Exhaust, Temperature, Riemann, Area, UnitNormal[3], Pressure, Density, Energy, Mach2, SoundSpeed2, SoundSpeed_Exhaust2, Vel_Mag, alpha, aa, bb, cc, dd, Flow_Dir[3];
   double *V_exhaust, *V_domain;
   double Gas_Constant = config->GetGas_ConstantND();
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
@@ -7776,10 +8129,6 @@ void CEulerSolver::BC_Nacelle_Exhaust(CGeometry *geometry, CSolver **solver_cont
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
     
     if (geometry->node[iPoint]->GetDomain()) {
-
-      /*--- Index of the closest interior node ---*/
-      
-      Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
       
@@ -7804,13 +8153,13 @@ void CEulerSolver::BC_Nacelle_Exhaust(CGeometry *geometry, CSolver **solver_cont
 
       /*--- Retrieve the specified total conditions for this inlet. ---*/
       
-      P_Exhaust  = config->GetNozzle_Ptotal(Marker_Tag);
-      T_Exhaust  = config->GetNozzle_Ttotal(Marker_Tag);
+      Exhaust_Pressure  = config->GetNozzle_Ptotal(Marker_Tag);
+      Exhaust_Temperature  = config->GetNozzle_Ttotal(Marker_Tag);
 
       /*--- Non-dim. the inputs if necessary. ---*/
       
-      P_Exhaust /= config->GetPressure_Ref();
-      T_Exhaust /= config->GetTemperature_Ref();
+      Exhaust_Pressure /= config->GetPressure_Ref();
+      Exhaust_Temperature /= config->GetTemperature_Ref();
 
       /*--- Store primitives and set some variables for clarity. ---*/
       
@@ -7822,7 +8171,7 @@ void CEulerSolver::BC_Nacelle_Exhaust(CGeometry *geometry, CSolver **solver_cont
       }
       Energy = V_domain[nDim+3] - V_domain[nDim+1]/V_domain[nDim+2];
       Pressure = V_domain[nDim+1];
-      H_Exhaust     = (Gamma*Gas_Constant/Gamma_Minus_One)*T_Exhaust;
+      H_Exhaust     = (Gamma*Gas_Constant/Gamma_Minus_One)*Exhaust_Temperature;
       SoundSpeed2 = Gamma*Pressure/Density;
 
       /*--- Compute the acoustic Riemann invariant that is extrapolated
@@ -7886,7 +8235,7 @@ void CEulerSolver::BC_Nacelle_Exhaust(CGeometry *geometry, CSolver **solver_cont
 
       /*--- Static pressure using isentropic relation at a point ---*/
       
-      Pressure = P_Exhaust*pow((Temperature/T_Exhaust),Gamma/Gamma_Minus_One);
+      Pressure = Exhaust_Pressure*pow((Temperature/Exhaust_Temperature),Gamma/Gamma_Minus_One);
 
       /*--- Density at the inlet from the gas law ---*/
       
@@ -7933,7 +8282,7 @@ void CEulerSolver::BC_Nacelle_Exhaust(CGeometry *geometry, CSolver **solver_cont
         /*--- Set the normal vector and the coordinates ---*/
         
         visc_numerics->SetNormal(Normal);
-        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint]->GetCoord());
 
         /*--- Primitive variables, and gradient ---*/
         
@@ -9127,7 +9476,6 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
-  double Gas_Constant = config->GetGas_ConstantND();
   bool adjoint = config->GetAdjoint();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
@@ -9403,13 +9751,17 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   CEquivArea_Inv   = new double[nMarker];
   CNearFieldOF_Inv = new double[nMarker];
 
-  /*--- Nacelle simulation ---*/
-  FanFace_MassFlow  = new double[nMarker];
+  /*--- Engine simulation ---*/
+  Inflow_MassFlow  = new double[nMarker];
+  Bleed_MassFlow  = new double[nMarker];
   Exhaust_MassFlow  = new double[nMarker];
   Exhaust_Area      = new double[nMarker];
-  FanFace_Pressure  = new double[nMarker];
-  FanFace_Mach      = new double[nMarker];
-  FanFace_Area      = new double[nMarker];
+  Inflow_Pressure  = new double[nMarker];
+  Inflow_Mach      = new double[nMarker];
+  Inflow_Area      = new double[nMarker];
+  Bleed_Pressure  = new double[nMarker];
+  Bleed_Temperature      = new double[nMarker];
+  Bleed_Area      = new double[nMarker];
 
   /*--- Init total coefficients ---*/
   Total_CDrag   = 0.0;	Total_CLift       = 0.0;  Total_CSideForce   = 0.0;
@@ -9463,11 +9815,11 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 
   /*--- Initializate Fan Face Pressure ---*/
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    FanFace_MassFlow[iMarker] = 0.0;
+    Inflow_MassFlow[iMarker] = 0.0;
     Exhaust_MassFlow[iMarker] = 0.0;
     Exhaust_Area[iMarker] = 0.0;
-    FanFace_Pressure[iMarker] = Pressure_Inf;
-    FanFace_Mach[iMarker] = Mach_Inf;
+    Inflow_Pressure[iMarker] = Pressure_Inf;
+    Inflow_Mach[iMarker] = Mach_Inf;
   }
 
   /*--- Initialize the cauchy critera array for fixed CL mode ---*/
@@ -9702,12 +10054,12 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   bool freesurface          = (config->GetKind_Regime() == FREESURFACE);
   bool tkeNeeded            = (turb_model == SST);
   bool fixed_cl             = config->GetFixed_CL_Mode();
-  bool engine               = ((config->GetnMarker_NacelleInflow() != 0) || (config->GetnMarker_NacelleExhaust() != 0));
-  bool ideal_gas = (config->GetKind_FluidModel() == STANDARD_AIR || config->GetKind_FluidModel() == IDEAL_GAS );
+  bool engine               = ((config->GetnMarker_EngineInflow() != 0) || (config->GetnMarker_EngineBleed() != 0) ||
+                               (config->GetnMarker_EngineExhaust() != 0));
 
   /*--- Compute nacelle inflow and exhaust properties ---*/
 
-  if (engine) GetNacelle_Properties(geometry, config, iMesh, Output);
+  if (engine) GetEngine_Properties(geometry, config, iMesh, Output);
 
   /*--- Update the angle of attack at the far-field for fixed CL calculations. ---*/
 

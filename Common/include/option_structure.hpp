@@ -656,8 +656,8 @@ enum BC_TYPE {
   ELEC_DIELEC_BOUNDARY = 22,	/*!< \brief Dipoisson boundary definition for the poissonal potential. */
   ELEC_NEUMANN = 23,		/*!< \brief Boundary Neumann definition. */
   SUPERSONIC_INLET = 24,		/*!< \brief Boundary supersonic inlet definition. */
-  NACELLE_INFLOW = 25,		/*!< \brief Boundary nacelle inflow. */
-  NACELLE_EXHAUST = 26,		/*!< \brief Boundary nacelle exhaust. */
+  ENGINE_INFLOW = 25,		/*!< \brief Boundary nacelle inflow. */
+  ENGINE_EXHAUST = 26,		/*!< \brief Boundary nacelle exhaust. */
   ISOTHERMAL = 28,      /*!< \brief No slip isothermal wall boundary condition. */
   HEAT_FLUX  = 29,      /*!< \brief No slip constant heat flux wall boundary condition. */
   PRESSURE_BOUNDARY = 30,   	/*!< \brief Pressure boundary condition. */
@@ -667,6 +667,7 @@ enum BC_TYPE {
   ISOTHERMAL_CATALYTIC = 34, /*!< \brief No-slip, constant temperature, catalytic bc. */
   ACTDISK_INLET = 35,	/*!< \brief Actuator disk inlet boundary definition. */
   ACTDISK_OUTLET = 36,	/*!< \brief Actuator disk outlet boundary definition. */
+  ENGINE_BLEED = 37,		/*!< \brief Boundary engine bleed. */
   SEND_RECEIVE = 99,		/*!< \brief Boundary send-receive definition. */
   RIEMANN_BOUNDARY= 100   /*!< \brief Riemann Boundary definition. */
 };
@@ -2193,6 +2194,71 @@ public:
     this->marker = NULL;
     this->ttotal = NULL;
     this->ptotal = NULL;
+    this->size = 0; // There is no default value for list
+  }
+  
+};
+
+//Inlet condition where the input direction is assumed
+class COptionBleed : public COptionBase{
+  string name; // identifier for the option
+  unsigned short & size;
+  string * & marker;
+  double * & massflow_target;
+  double * & temp_target;
+  
+public:
+  COptionBleed(string option_field_name, unsigned short & nMarker_Bleed, string* & Marker_Bleed, double* & MassFlow_Target, double* & Temp_Target) : size(nMarker_Bleed), marker(Marker_Bleed), massflow_target(MassFlow_Target), temp_target(Temp_Target){
+    this->name = option_field_name;
+  }
+  
+  ~COptionBleed(){};
+  
+  string SetValue(vector<string> option_value){
+    
+    unsigned long totalVals = option_value.size();
+    if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)){
+      this->size = 0;
+      this->marker = NULL;
+      this->massflow_target = NULL;
+      this->temp_target = NULL;
+      return "";
+    }
+    
+    if (totalVals % 3 != 0){
+      string newstring;
+      newstring.append(this->name);
+      newstring.append(": must have a number of entries divisible by 3");
+      this->size = 0;
+      this->marker = NULL;
+      this->massflow_target = NULL;
+      this->temp_target = NULL;
+      return newstring;
+    }
+    
+    unsigned long nVals = totalVals / 3;
+    this->size = nVals;
+    this->marker = new string[nVals];
+    this->massflow_target = new double[nVals];
+    this->temp_target = new double[nVals];
+    
+    for (int i = 0; i < nVals; i++){
+      this->marker[i].assign(option_value[3*i]);
+      istringstream ss_1st(option_value[3*i + 1]);
+      if (!(ss_1st >> this->massflow_target[i]))
+        return badValue(option_value, "bleed fixed", this->name);
+      istringstream ss_2nd(option_value[3*i + 2]);
+      if (!(ss_2nd >> this->temp_target[i]))
+        return badValue(option_value, "bleed fixed", this->name);
+    }
+    
+    return "";
+  }
+  
+  void SetDefault(){
+    this->marker = NULL;
+    this->massflow_target = NULL;
+    this->temp_target = NULL;
     this->size = 0; // There is no default value for list
   }
   

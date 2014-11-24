@@ -183,12 +183,11 @@ void CPengRobinson::SetTDState_Prho (double P, double rho ) {
 void CPengRobinson::SetTDState_hs (double h, double s ){
 
 	double T,fv,sqrt2=sqrt(2.0),A;
-	double f,f1, v;
-	double dv = 1.0;
+	double f, v;
 	double x1,x2, xmid, dx, fx1,fx2, fmid,rtb;
 	double toll = 1e-9, FACTOR=0.2;
 	double cons_s,cons_h;
-	unsigned short countrtb=0, countnw = 0, NTRY=10, ITMAX=100, ITMAXNW=150;
+	unsigned short countrtb=0, countnw = 0, NTRY=10, ITMAX=100;
 
 //	 cout <<"Before  "<< h <<" "<< s <<endl;
 

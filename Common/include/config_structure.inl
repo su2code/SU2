@@ -22,9 +22,15 @@
 
 #pragma once
 
-inline void CConfig::SetFanFace_Mach(unsigned short val_imarker, double val_fanface_mach) { FanFace_Mach[val_imarker] = val_fanface_mach; }
+inline void CConfig::SetInflow_Mach(unsigned short val_imarker, double val_fanface_mach) { Inflow_Mach[val_imarker] = val_fanface_mach; }
 
-inline void CConfig::SetFanFace_Pressure(unsigned short val_imarker, double val_fanface_pressure) { FanFace_Pressure[val_imarker] = val_fanface_pressure; }
+inline void CConfig::SetInflow_Pressure(unsigned short val_imarker, double val_fanface_pressure) { Inflow_Pressure[val_imarker] = val_fanface_pressure; }
+
+inline void CConfig::SetBleed_Temperature(unsigned short val_imarker, double val_bleed_temp) { Bleed_Temperature[val_imarker] = val_bleed_temp; }
+
+inline void CConfig::SetBleed_MassFlow(unsigned short val_imarker, double val_bleed_massflow) { Bleed_MassFlow[val_imarker] = val_bleed_massflow; }
+
+inline void CConfig::SetBleed_Pressure(unsigned short val_imarker, double val_bleed_pressure) { Bleed_Pressure[val_imarker] = val_bleed_pressure; }
 
 inline unsigned short CConfig::GetnZone(void) { return nZone; }
 
@@ -66,7 +72,7 @@ inline double CConfig::GetAdjointLimit(void) { return AdjointLimit; }
 
 inline double *CConfig::GetHold_GridFixed_Coord(void) { return Hold_GridFixed_Coord; }
 
-inline double *CConfig::GetSubsonic_Nacelle_Box(void) { return Subsonic_Nacelle_Box; }
+inline double *CConfig::GetSubsonic_Engine_Box(void) { return Subsonic_Engine_Box; }
 
 inline double CConfig::GetRatioDensity(void) { return RatioDensity; }
 
@@ -784,9 +790,11 @@ inline void CConfig::SetnMarker_All(unsigned short val_nmarker) { nMarker_All = 
 
 inline string CConfig::GetMarker_All_TagBound(unsigned short val_marker) { return Marker_All_TagBound[val_marker]; }
 
-inline string CConfig::GetMarker_NacelleInflow(unsigned short val_marker) { return Marker_NacelleInflow[val_marker]; }
+inline string CConfig::GetMarker_EngineInflow(unsigned short val_marker) { return Marker_EngineInflow[val_marker]; }
 
-inline string CConfig::GetMarker_NacelleExhaust(unsigned short val_marker) { return Marker_NacelleExhaust[val_marker]; }
+inline string CConfig::GetMarker_EngineBleed(unsigned short val_marker) { return Marker_EngineBleed[val_marker]; }
+
+inline string CConfig::GetMarker_EngineExhaust(unsigned short val_marker) { return Marker_EngineExhaust[val_marker]; }
 
 inline string CConfig::GetMarker_Monitoring(unsigned short val_marker) { return Marker_Monitoring[val_marker]; }
 
@@ -844,9 +852,11 @@ inline unsigned short CConfig::GetMarker_All_Moving(unsigned short val_marker) {
 
 inline unsigned short CConfig::GetnMarker_All(void) { return nMarker_All; }
 
-inline unsigned short CConfig::GetnMarker_NacelleInflow(void) {	return nMarker_NacelleInflow; }
+inline unsigned short CConfig::GetnMarker_EngineInflow(void) {	return nMarker_EngineInflow; }
 
-inline unsigned short CConfig::GetnMarker_NacelleExhaust(void) { return nMarker_NacelleExhaust; }
+inline unsigned short CConfig::GetnMarker_EngineBleed(void) {	return nMarker_EngineBleed; }
+
+inline unsigned short CConfig::GetnMarker_EngineExhaust(void) { return nMarker_EngineExhaust; }
 
 inline unsigned short CConfig::GetnMarker_InterfaceBound(void) { return nMarker_InterfaceBound; }
 
@@ -958,7 +968,7 @@ inline double CConfig::GetOrderMagResidual(void) { return OrderMagResidual; }
 
 inline double CConfig::GetMinLogResidual(void) { return MinLogResidual; }
 
-inline double CConfig::GetDamp_Nacelle_Inflow(void) { return Damp_Nacelle_Inflow; }
+inline double CConfig::GetDamp_Engine_Inflow(void) { return Damp_Engine_Inflow; }
 
 inline double CConfig::GetDamp_Res_Restric(void) { return Damp_Res_Restric; }
 

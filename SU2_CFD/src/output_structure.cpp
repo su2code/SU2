@@ -5675,11 +5675,10 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
 void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CConfig **config,
                                       unsigned long iExtIter, unsigned short val_nZone) {
 
-  int rank = MASTER_NODE, size = SINGLE_NODE;
+  int rank = MASTER_NODE;
 
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD,&size);
 #endif
   
   unsigned short iZone;

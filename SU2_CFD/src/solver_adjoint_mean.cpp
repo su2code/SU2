@@ -1598,7 +1598,7 @@ void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   
   /*--- Compute nacelle inflow and exhaust properties ---*/
   
-  GetNacelle_Properties(geometry, config, iMesh, Output);
+  GetEngine_Properties(geometry, config, iMesh, Output);
   
   /*--- Residual initialization ---*/
   
@@ -2464,7 +2464,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
     
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       
-      if (config->GetMarker_All_KindBC(iMarker) == FAR_FIELD or config->GetMarker_All_KindBC(iMarker) == INLET_FLOW or config->GetMarker_All_KindBC(iMarker) == SUPERSONIC_INLET or config->GetMarker_All_KindBC(iMarker) == NACELLE_INFLOW  ) {
+      if (config->GetMarker_All_KindBC(iMarker) == FAR_FIELD or config->GetMarker_All_KindBC(iMarker) == INLET_FLOW or config->GetMarker_All_KindBC(iMarker) == SUPERSONIC_INLET or config->GetMarker_All_KindBC(iMarker) == ENGINE_INFLOW  ) {
         
         Sens_Mach[iMarker]  = 0.0;
         Sens_AoA[iMarker]   = 0.0;
@@ -2833,20 +2833,21 @@ void CAdjEulerSolver::Smooth_Sensitivity(CGeometry *geometry, CSolver **solver_c
   
 }
 
-void CAdjEulerSolver::GetNacelle_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) {
+void CAdjEulerSolver::GetEngine_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) {
   unsigned short iDim, iMarker, iVar;
   unsigned long iVertex, iPoint;
   double Area, Flow_Dir[3], alpha;
   
-  unsigned short nMarker_NacelleInflow = config->GetnMarker_NacelleInflow();
-  unsigned short nMarker_NacelleExhaust = config->GetnMarker_NacelleExhaust();
+  unsigned short nMarker_EngineInflow = config->GetnMarker_EngineInflow();
+  unsigned short nMarker_EngineBleed = config->GetnMarker_EngineBleed();
+  unsigned short nMarker_EngineExhaust = config->GetnMarker_EngineExhaust();
   
-  if ((nMarker_NacelleInflow != 0) || (nMarker_NacelleExhaust != 0)) {
+  if ((nMarker_EngineInflow != 0) || (nMarker_EngineBleed != 0) || (nMarker_EngineExhaust != 0)) {
     
     /*--- Check the flow orientation in the nacelle inflow ---*/
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       
-      if (config->GetMarker_All_KindBC(iMarker) == NACELLE_EXHAUST) {
+      if (config->GetMarker_All_KindBC(iMarker) == ENGINE_EXHAUST) {
         
         /*--- Loop over all the vertices on this boundary marker ---*/
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
@@ -4329,7 +4330,7 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   
 }
 
-void CAdjEulerSolver::BC_Nacelle_Inflow(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CAdjEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   
   double *Normal, *V_domain, *V_inflow, *Psi_domain, *Psi_inflow, P_Fan, Velocity[3], Velocity2, Density, Vn, UnitNormal[3], Area, a1;
   unsigned short iVar, iDim;
@@ -4379,7 +4380,7 @@ void CAdjEulerSolver::BC_Nacelle_Inflow(CGeometry *geometry, CSolver **solver_co
       
       /*--- Subsonic flow is assumed. ---*/
       
-      P_Fan = config->GetFanFace_Pressure(Marker_Tag);
+      P_Fan = config->GetInflow_Pressure(Marker_Tag);
       Density = V_domain[nDim+2];
       Velocity2 = 0.0; Vn = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
@@ -4430,7 +4431,108 @@ void CAdjEulerSolver::BC_Nacelle_Inflow(CGeometry *geometry, CSolver **solver_co
   
 }
 
-void CAdjEulerSolver::BC_Nacelle_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CAdjEulerSolver::BC_Engine_Bleed(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  
+  double *Normal, *V_domain, *V_inflow, *Psi_domain, *Psi_inflow, P_Fan, Velocity[3], Velocity2, Density, Vn, UnitNormal[3], Area, a1;
+  unsigned short iVar, iDim;
+  unsigned long iVertex, iPoint;
+  
+  bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
+  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+  
+  Normal = new double[nDim];
+  Psi_domain = new double[nVar]; Psi_inflow = new double[nVar];
+  
+  /*--- Loop over all the vertices ---*/
+  
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    
+    /*--- If the node belong to the domain ---*/
+    
+    if (geometry->node[iPoint]->GetDomain()) {
+      
+      /*--- Normal vector for this vertex (negate for outward convention) ---*/
+      
+      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+      for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+      conv_numerics->SetNormal(Normal);
+      
+      Area = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+        Area += Normal[iDim]*Normal[iDim];
+      Area = sqrt (Area);
+      
+      for (iDim = 0; iDim < nDim; iDim++)
+        UnitNormal[iDim] = Normal[iDim]/Area;
+      
+      /*--- Allocate the value at the inflow ---*/
+      
+      V_inflow = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
+      
+      /*--- Retrieve solution at the boundary node ---*/
+      
+      V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
+      
+      /*--- Adjoint flow solution at the boundary ---*/
+      
+      for (iVar = 0; iVar < nVar; iVar++)
+        Psi_domain[iVar] = node[iPoint]->GetSolution(iVar);
+      
+      /*--- Subsonic flow is assumed. ---*/
+      
+      P_Fan = config->GetInflow_Pressure(Marker_Tag);
+      Density = V_domain[nDim+2];
+      Velocity2 = 0.0; Vn = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Velocity[iDim] = V_domain[iDim+1];
+        Velocity2 += Velocity[iDim]*Velocity[iDim];
+        Vn += Velocity[iDim]*UnitNormal[iDim];
+      }
+      
+      /*--- Shorthand for repeated term in the boundary conditions ---*/
+      
+      a1 = Gamma*(P_Fan/(Density*Gamma_Minus_One))/Vn;
+      
+      /*--- Impose values for PsiRho & Phi using PsiE from domain. ---*/
+      
+      Psi_inflow[nVar-1] = Psi_domain[nVar-1];
+      Psi_inflow[0] = 0.5*Psi_inflow[nVar-1]*Velocity2;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Psi_inflow[0]   += Psi_inflow[nVar-1]*a1*Velocity[iDim]*UnitNormal[iDim];
+        Psi_inflow[iDim+1] = -Psi_inflow[nVar-1]*(a1*UnitNormal[iDim] + Velocity[iDim]);
+      }
+      
+      /*--- Set the flow and adjoint states in the solver ---*/
+      
+      conv_numerics->SetPrimitive(V_domain, V_inflow);
+      conv_numerics->SetAdjointVar(Psi_domain, Psi_inflow);
+      
+      /*--- Compute the residual ---*/
+      
+      conv_numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij,
+                                     Jacobian_ji, Jacobian_jj, config);
+      
+      /*--- Add and Subtract Residual ---*/
+      
+      LinSysRes.SubtractBlock(iPoint, Residual_i);
+      
+      /*--- Implicit contribution to the residual ---*/
+      
+      if (implicit)
+        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
+      
+    }
+  }
+  
+  /*--- Free locally allocated memory ---*/
+  
+  delete [] Normal;
+  delete [] Psi_domain; delete [] Psi_inflow;
+  
+}
+
+void CAdjEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   
   unsigned long iVertex, iPoint, Point_Normal;
   double Area, UnitNormal[3], *Normal, *V_domain, *V_exhaust, *Psi_domain, *Psi_exhaust;
@@ -4871,7 +4973,7 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   
   /*--- Compute nacelle inflow and exhaust properties ---*/
   
-  GetNacelle_Properties(geometry, config, iMesh, Output);
+  GetEngine_Properties(geometry, config, iMesh, Output);
   
   /*--- Residual initialization ---*/
   
@@ -5472,7 +5574,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
     
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       
-      if (config->GetMarker_All_KindBC(iMarker) == FAR_FIELD or config->GetMarker_All_KindBC(iMarker) == INLET_FLOW or config->GetMarker_All_KindBC(iMarker) == SUPERSONIC_INLET or config->GetMarker_All_KindBC(iMarker) == NACELLE_INFLOW  ) {
+      if (config->GetMarker_All_KindBC(iMarker) == FAR_FIELD or config->GetMarker_All_KindBC(iMarker) == INLET_FLOW or config->GetMarker_All_KindBC(iMarker) == SUPERSONIC_INLET or config->GetMarker_All_KindBC(iMarker) == ENGINE_INFLOW  ) {
         
         Sens_Mach[iMarker]  = 0.0;
         Sens_AoA[iMarker]   = 0.0;
