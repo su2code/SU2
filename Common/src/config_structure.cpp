@@ -1262,1557 +1262,1562 @@ void CConfig::SetParsing(char case_filename[MAX_STRING_SIZE]) {
 }
 
 void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_izone, unsigned short val_nDim) {
-
-  unsigned short iZone, iCFL;
-  bool ideal_gas       = (Kind_FluidModel == STANDARD_AIR || Kind_FluidModel == IDEAL_GAS );
-  bool standard_air       = (Kind_FluidModel == STANDARD_AIR);
-
-  int size = SINGLE_NODE;
+    
+    unsigned short iZone, iCFL;
+    bool ideal_gas       = (Kind_FluidModel == STANDARD_AIR || Kind_FluidModel == IDEAL_GAS );
+    bool standard_air       = (Kind_FluidModel == STANDARD_AIR);
+    
+    int size = SINGLE_NODE;
 #ifdef HAVE_MPI
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
-
+    
 #ifndef HAVE_TECIO
-  if (Output_FileFormat == TECPLOT_BINARY) {
-    cout << "Tecplot binary file requested but SU2 was built without TecIO support." << "\n";
-    Output_FileFormat = TECPLOT;
-  }
+    if (Output_FileFormat == TECPLOT_BINARY) {
+        cout << "Tecplot binary file requested but SU2 was built without TecIO support." << "\n";
+        Output_FileFormat = TECPLOT;
+    }
 #endif
-
-
-
-  /*--- Store the SU2 module that we are executing. ---*/
-
-  Kind_SU2 = val_software;
-
-  /*--- Only SU2_PRT, and SU2_CFD work with CGNS ---*/
-
-  if ((Kind_SU2 != SU2_PRT) && (Kind_SU2 != SU2_CFD) && (Kind_SU2 != SU2_SOL)) {
-    if (Mesh_FileFormat == CGNS) {
-      cout << "This software is not prepared for CGNS, please switch to SU2" << endl;
-      exit(EXIT_FAILURE);
+    
+    
+    
+    /*--- Store the SU2 module that we are executing. ---*/
+    
+    Kind_SU2 = val_software;
+    
+    /*--- Only SU2_PRT, and SU2_CFD work with CGNS ---*/
+    
+    if ((Kind_SU2 != SU2_PRT) && (Kind_SU2 != SU2_CFD) && (Kind_SU2 != SU2_SOL)) {
+        if (Mesh_FileFormat == CGNS) {
+            cout << "This software is not prepared for CGNS, please switch to SU2" << endl;
+            exit(EXIT_FAILURE);
+        }
     }
-  }
-
-  
-  /*--- Initialize non-physical points/reconstructions to zero ---*/
-  Nonphys_Points   = 0;
-  Nonphys_Reconstr = 0;
-  
-
-  /*--- Don't do any deformation if there is no Design variable information ---*/
-
-  if (Design_Variable == NULL) {
-    Design_Variable = new unsigned short [1];
-    nDV = 1; Design_Variable[0] = NONE;
-  }
-
-  /*--- If multiple processors the grid should be always in native .su2 format ---*/
-
-  if ((size > SINGLE_NODE) && ((Kind_SU2 == SU2_CFD) || (Kind_SU2 == SU2_SOL))) Mesh_FileFormat = SU2;
-
-  /*--- Don't divide the numerical grid unless running SU2_DEF ---*/
-
-  if (Kind_SU2 != SU2_DEF) Divide_Element = false;
-
-  /*--- Identification of free-surface problem, this problems are always unsteady and incompressible. ---*/
-
-  if (Kind_Regime == FREESURFACE) {
-    if (Unsteady_Simulation != DT_STEPPING_2ND) Unsteady_Simulation = DT_STEPPING_1ST;
-  }
-
-  if (Kind_Solver == POISSON_EQUATION) {
-    Unsteady_Simulation = STEADY;
-  }
-
-  /*--- Set the number of external iterations to 1 for the steady state problem ---*/
-
-  if ((Kind_Solver == LINEAR_ELASTICITY) || (Kind_Solver == HEAT_EQUATION) ||
-      (Kind_Solver == WAVE_EQUATION) || (Kind_Solver == POISSON_EQUATION)) {
-    nMultiLevel = 0;
-    if (Unsteady_Simulation == STEADY) nExtIter = 1;
-    else Unst_nIntIter = 2;
-  }
-
-  /*--- Decide whether we should be writing unsteady solution files. ---*/
-
-  if (Unsteady_Simulation == STEADY ||
-      Unsteady_Simulation == TIME_STEPPING ||
-      Unsteady_Simulation == TIME_SPECTRAL  ||
-      Kind_Regime == FREESURFACE) { Wrt_Unsteady = false; }
-  else { Wrt_Unsteady = true; }
-
-
-  /* Check for Measurement System */
-  if (SystemMeasurements == US && standard_air) {
-          cout << "Only STANDARD_AIR fluid model can be used with US Measurement System" << endl;
-          exit(EXIT_FAILURE);
-     }
-
-  /* Check for Convective scheme available for NICF */
-  if (!ideal_gas) {
-	  if (Kind_ConvNumScheme_Flow != SPACE_UPWIND){
-        cout << "Only ROE Upwind scheme can be used for Not Ideal Compressible Fluids" << endl;
+    
+    
+    /*--- Initialize non-physical points/reconstructions to zero ---*/
+    
+    Nonphys_Points   = 0;
+    Nonphys_Reconstr = 0;
+    
+    /*--- Don't do any deformation if there is no Design variable information ---*/
+    
+    if (Design_Variable == NULL) {
+        Design_Variable = new unsigned short [1];
+        nDV = 1; Design_Variable[0] = NONE;
+    }
+    
+    /*--- If multiple processors the grid should be always in native .su2 format ---*/
+    
+    if ((size > SINGLE_NODE) && ((Kind_SU2 == SU2_CFD) || (Kind_SU2 == SU2_SOL))) Mesh_FileFormat = SU2;
+    
+    /*--- Don't divide the numerical grid unless running SU2_DEF ---*/
+    
+    if (Kind_SU2 != SU2_DEF) Divide_Element = false;
+    
+    /*--- Identification of free-surface problem, this problems are always unsteady and incompressible. ---*/
+    
+    if (Kind_Regime == FREESURFACE) {
+        if (Unsteady_Simulation != DT_STEPPING_2ND) Unsteady_Simulation = DT_STEPPING_1ST;
+    }
+    
+    if (Kind_Solver == POISSON_EQUATION) {
+        Unsteady_Simulation = STEADY;
+    }
+    
+    /*--- Set the number of external iterations to 1 for the steady state problem ---*/
+    
+    if ((Kind_Solver == LINEAR_ELASTICITY) || (Kind_Solver == HEAT_EQUATION) ||
+        (Kind_Solver == WAVE_EQUATION) || (Kind_Solver == POISSON_EQUATION)) {
+        nMultiLevel = 0;
+        if (Unsteady_Simulation == STEADY) nExtIter = 1;
+        else Unst_nIntIter = 2;
+    }
+    
+    /*--- Decide whether we should be writing unsteady solution files. ---*/
+    
+    if (Unsteady_Simulation == STEADY ||
+        Unsteady_Simulation == TIME_STEPPING ||
+        Unsteady_Simulation == TIME_SPECTRAL  ||
+        Kind_Regime == FREESURFACE) { Wrt_Unsteady = false; }
+    else { Wrt_Unsteady = true; }
+    
+    
+    /*--- Check for Measurement System ---*/
+    
+    if (SystemMeasurements == US && !standard_air) {
+        cout << "Only STANDARD_AIR fluid model can be used with US Measurement System" << endl;
         exit(EXIT_FAILURE);
-	  }else{
-		  if(Kind_Upwind_Flow != ROE){
-			  cout << "Only ROE Upwind scheme can be used for Not Ideal Compressible Fluids" << endl;
-			  exit(EXIT_FAILURE);
-		  }
-	  }
-   }
-
-  /* Check for Boundary condition available for NICF */
-  if (!ideal_gas) {
-	  if(nMarker_Inlet != 0){
-		  cout << "Riemann Boundary conditions must be used for inlet and outlet with Not Ideal Compressible Fluids " << endl;
-		  exit(EXIT_FAILURE);
-	  }
-	  if(nMarker_Outlet != 0){
-		  cout << "Riemann Boundary conditions must be used outlet with Not Ideal Compressible Fluids " << endl;
-		  exit(EXIT_FAILURE);
-	  }
-
-	  if(nMarker_FarField != 0){
-		  cout << "Far Field BC is not generalized for Not Ideal Compressible Fluids " << endl;
-		  exit(EXIT_FAILURE);
-	  }
-
-  }
-
-  /* Check for Boundary condition available for NICF */
+    }
+    
+    /*--- Check for Convective scheme available for NICF ---*/
+    
+    if (!ideal_gas) {
+        if (Kind_ConvNumScheme_Flow != SPACE_UPWIND){
+            cout << "Only ROE Upwind scheme can be used for Not Ideal Compressible Fluids" << endl;
+            exit(EXIT_FAILURE);
+        }
+        else {
+            if (Kind_Upwind_Flow != ROE){
+                cout << "Only ROE Upwind scheme can be used for Not Ideal Compressible Fluids" << endl;
+                exit(EXIT_FAILURE);
+            }
+        }
+    }
+    
+    /*--- Check for Boundary condition available for NICF ---*/
+    
+    if (!ideal_gas) {
+        if (nMarker_Inlet != 0) {
+            cout << "Riemann Boundary conditions must be used for inlet and outlet with Not Ideal Compressible Fluids " << endl;
+            exit(EXIT_FAILURE);
+        }
+        if (nMarker_Outlet != 0) {
+            cout << "Riemann Boundary conditions must be used outlet with Not Ideal Compressible Fluids " << endl;
+            exit(EXIT_FAILURE);
+        }
+        
+        if (nMarker_FarField != 0) {
+            cout << "Far Field BC is not generalized for Not Ideal Compressible Fluids " << endl;
+            exit(EXIT_FAILURE);
+        }
+        
+    }
+    
+    /*--- Check for Boundary condition available for NICF ---*/
+    
     if (ideal_gas) {
-    	if(SystemMeasurements == US && standard_air){
-    		if(Kind_ViscosityModel != SUTHERLAND){
-    			cout << "Only SUTHERLAND viscosity model can be used with US Measurement  " << endl;
-    			exit(EXIT_FAILURE);
-    			}
-    	}
-  	  if(Kind_ConductivityModel != CONSTANT_PRANDTL ){
-  		  cout << "Only CONSTANT_PRANDTL thermal conductivity model can be used with STANDARD_AIR and IDEAL_GAS" << endl;
-  		  exit(EXIT_FAILURE);
-  	  }
-
-    }
-
-  /*--- Set grid movement kind to NO_MOVEMENT if not specified, which means
-   that we also set the Grid_Movement flag to false. We initialize to the
-   number of zones here, because we are guaranteed to at least have one. ---*/
-
-  if (Kind_GridMovement == NULL) {
-    Kind_GridMovement = new unsigned short[nZone];
-    for (unsigned short iZone = 0; iZone < nZone; iZone++ )
-      Kind_GridMovement[iZone] = NO_MOVEMENT;
-    if (Grid_Movement == true) {
-      cout << "GRID_MOVEMENT = YES but no type provided in GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  /*--- If we're solving a purely steady problem with no prescribed grid
-   movement (both rotating frame and moving walls can be steady), make sure that
-   there is no grid motion ---*/
-
-  if ((Kind_SU2 == SU2_CFD || Kind_SU2 == SU2_SOL) &&
-      (Unsteady_Simulation == STEADY) &&
-      ((Kind_GridMovement[ZONE_0] != MOVING_WALL) &&
-       (Kind_GridMovement[ZONE_0] != ROTATING_FRAME)))
-    Grid_Movement = false;
-
-  /*--- If it is not specified, set the mesh motion mach number
-   equal to the freestream value. ---*/
-
-  if (Grid_Movement && Mach_Motion == 0.0)
-    Mach_Motion = Mach;
-
-  /*--- Set the boolean flag if we are in a rotating frame (source term). ---*/
-
-  if (Grid_Movement && Kind_GridMovement[ZONE_0] == ROTATING_FRAME)
-    Rotating_Frame = true;
-  else
-    Rotating_Frame = false;
-
-  /*--- Check the number of moving markers against the number of grid movement
-   types provided (should be equal, except that rigid motion and rotating frame
-   do not depend on surface specification). ---*/
-
-  if (Grid_Movement && (Kind_GridMovement[ZONE_0] != RIGID_MOTION) &&
-      (Kind_GridMovement[ZONE_0] != ROTATING_FRAME) &&
-      (nGridMovement != nMarker_Moving)) {
-    cout << "Number of GRID_MOVEMENT_KIND must match number of MARKER_MOVING!!" << endl;
-    exit(EXIT_FAILURE);
-  }
-
-  /*--- Make sure that there aren't more than one rigid motion or
-   rotating frame specified in GRID_MOVEMENT_KIND. ---*/
-
-  if (Grid_Movement && (Kind_GridMovement[ZONE_0] == RIGID_MOTION) &&
-      (nGridMovement > 1)) {
-    cout << "Can not support more than one type of rigid motion in GRID_MOVEMENT_KIND!!" << endl;
-    exit(EXIT_FAILURE);
-  }
-  if (Grid_Movement && (Kind_GridMovement[ZONE_0] == ROTATING_FRAME) &&
-      (nGridMovement > 1)) {
-    cout << "Can not support more than one rotating frame in GRID_MOVEMENT_KIND!!" << endl;
-    exit(EXIT_FAILURE);
-  }
-
-  /*--- In case the grid movement parameters have not been declared in the
-   config file, set them equal to zero for safety. Also check to make sure
-   that for each option, a value has been declared for each moving marker. ---*/
-
-  unsigned short nMoving;
-  if (nGridMovement > nZone) nMoving = nGridMovement;
-  else nMoving = nZone;
-
-  /*--- Motion Origin: ---*/
-  if (Motion_Origin_X == NULL) {
-    Motion_Origin_X = new double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Motion_Origin_X[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nMotion_Origin_X != nGridMovement)) {
-      cout << "Length of MOTION_ORIGIN_X must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  if (Motion_Origin_Y == NULL) {
-    Motion_Origin_Y = new double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Motion_Origin_Y[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nMotion_Origin_Y != nGridMovement)) {
-      cout << "Length of MOTION_ORIGIN_Y must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  if (Motion_Origin_Z == NULL) {
-    Motion_Origin_Z = new double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Motion_Origin_Z[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nMotion_Origin_Z != nGridMovement)) {
-      cout << "Length of MOTION_ORIGIN_Z must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  if (MoveMotion_Origin == NULL) {
-    MoveMotion_Origin = new unsigned short[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      MoveMotion_Origin[iZone] = 0;
-  } else {
-    if (Grid_Movement && (nMoveMotion_Origin != nGridMovement)) {
-      cout << "Length of MOVE_MOTION_ORIGIN must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  /*--- Translation: ---*/
-
-  if (Translation_Rate_X == NULL) {
-    Translation_Rate_X = new double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Translation_Rate_X[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nTranslation_Rate_X != nGridMovement)) {
-      cout << "Length of TRANSLATION_RATE_X must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  if (Translation_Rate_Y == NULL) {
-    Translation_Rate_Y = new double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Translation_Rate_Y[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nTranslation_Rate_Y != nGridMovement)) {
-      cout << "Length of TRANSLATION_RATE_Y must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  if (Translation_Rate_Z == NULL) {
-    Translation_Rate_Z = new double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Translation_Rate_Z[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nTranslation_Rate_Z != nGridMovement)) {
-      cout << "Length of TRANSLATION_RATE_Z must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  /*--- Rotation: ---*/
-
-  if (Rotation_Rate_X == NULL) {
-    Rotation_Rate_X = new double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Rotation_Rate_X[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nRotation_Rate_X != nGridMovement)) {
-      cout << "Length of ROTATION_RATE_X must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  if (Rotation_Rate_Y == NULL) {
-    Rotation_Rate_Y = new double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Rotation_Rate_Y[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nRotation_Rate_Y != nGridMovement)) {
-      cout << "Length of ROTATION_RATE_Y must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  if (Rotation_Rate_Z == NULL) {
-    Rotation_Rate_Z = new double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Rotation_Rate_Z[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nRotation_Rate_Z != nGridMovement)) {
-      cout << "Length of ROTATION_RATE_Z must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  /*--- Pitching: ---*/
-
-  if (Pitching_Omega_X == NULL) {
-    Pitching_Omega_X = new double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Pitching_Omega_X[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nPitching_Omega_X != nGridMovement)) {
-      cout << "Length of PITCHING_OMEGA_X must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  if (Pitching_Omega_Y == NULL) {
-    Pitching_Omega_Y = new double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Pitching_Omega_Y[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nPitching_Omega_Y != nGridMovement)) {
-      cout << "Length of PITCHING_OMEGA_Y must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  if (Pitching_Omega_Z == NULL) {
-    Pitching_Omega_Z = new double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Pitching_Omega_Z[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nPitching_Omega_Z != nGridMovement)) {
-      cout << "Length of PITCHING_OMEGA_Z must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  /*--- Pitching Amplitude: ---*/
-
-  if (Pitching_Ampl_X == NULL) {
-    Pitching_Ampl_X = new double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Pitching_Ampl_X[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nPitching_Ampl_X != nGridMovement)) {
-      cout << "Length of PITCHING_AMPL_X must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  if (Pitching_Ampl_Y == NULL) {
-    Pitching_Ampl_Y = new double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Pitching_Ampl_Y[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nPitching_Ampl_Y != nGridMovement)) {
-      cout << "Length of PITCHING_AMPL_Y must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  if (Pitching_Ampl_Z == NULL) {
-    Pitching_Ampl_Z = new double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Pitching_Ampl_Z[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nPitching_Ampl_Z != nGridMovement)) {
-      cout << "Length of PITCHING_AMPL_Z must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  /*--- Pitching Phase: ---*/
-
-  if (Pitching_Phase_X == NULL) {
-    Pitching_Phase_X = new double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Pitching_Phase_X[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nPitching_Phase_X != nGridMovement)) {
-      cout << "Length of PITCHING_PHASE_X must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  if (Pitching_Phase_Y == NULL) {
-    Pitching_Phase_Y = new double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Pitching_Phase_Y[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nPitching_Phase_Y != nGridMovement)) {
-      cout << "Length of PITCHING_PHASE_Y must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  if (Pitching_Phase_Z == NULL) {
-    Pitching_Phase_Z = new double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Pitching_Phase_Z[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nPitching_Phase_Z != nGridMovement)) {
-      cout << "Length of PITCHING_PHASE_Z must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  /*--- Plunging: ---*/
-
-  if (Plunging_Omega_X == NULL) {
-    Plunging_Omega_X = new double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Plunging_Omega_X[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nPlunging_Omega_X != nGridMovement)) {
-      cout << "Length of PLUNGING_OMEGA_X must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  if (Plunging_Omega_Y == NULL) {
-    Plunging_Omega_Y = new double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Plunging_Omega_Y[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nPlunging_Omega_Y != nGridMovement)) {
-      cout << "Length of PLUNGING_OMEGA_Y must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  if (Plunging_Omega_Z == NULL) {
-    Plunging_Omega_Z = new double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Plunging_Omega_Z[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nPlunging_Omega_Z != nGridMovement)) {
-      cout << "Length of PLUNGING_OMEGA_Z must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  /*--- Plunging Amplitude: ---*/
-
-  if (Plunging_Ampl_X == NULL) {
-    Plunging_Ampl_X = new double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Plunging_Ampl_X[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nPlunging_Ampl_X != nGridMovement)) {
-      cout << "Length of PLUNGING_AMPL_X must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  if (Plunging_Ampl_Y == NULL) {
-    Plunging_Ampl_Y = new double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Plunging_Ampl_Y[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nPlunging_Ampl_Y != nGridMovement)) {
-      cout << "Length of PLUNGING_AMPL_Y must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  if (Plunging_Ampl_Z == NULL) {
-    Plunging_Ampl_Z = new double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Plunging_Ampl_Z[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nPlunging_Ampl_Z != nGridMovement)) {
-      cout << "Length of PLUNGING_AMPL_Z must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  /*--- Use the various rigid-motion input frequencies to determine the period to be used with time-spectral cases.
-   There are THREE types of motion to consider, namely: rotation, pitching, and plunging.
-   The largest period of motion is the one to be used for time-spectral calculations. ---*/
-
-  if (Unsteady_Simulation == TIME_SPECTRAL) {
-
-    unsigned short N_MOTION_TYPES = 3;
-    double *periods;
-    periods = new double[N_MOTION_TYPES];
-
-    /*--- rotation: ---*/
-
-    double Omega_mag_rot = sqrt(pow(Rotation_Rate_X[ZONE_0],2)+pow(Rotation_Rate_Y[ZONE_0],2)+pow(Rotation_Rate_Z[ZONE_0],2));
-    if (Omega_mag_rot > 0)
-      periods[0] = 2*PI_NUMBER/Omega_mag_rot;
-    else
-      periods[0] = 0.0;
-
-    /*--- pitching: ---*/
-
-    double Omega_mag_pitch = sqrt(pow(Pitching_Omega_X[ZONE_0],2)+pow(Pitching_Omega_Y[ZONE_0],2)+pow(Pitching_Omega_Z[ZONE_0],2));
-    if (Omega_mag_pitch > 0)
-      periods[1] = 2*PI_NUMBER/Omega_mag_pitch;
-    else
-      periods[1] = 0.0;
-
-    /*--- plunging: ---*/
-
-    double Omega_mag_plunge = sqrt(pow(Plunging_Omega_X[ZONE_0],2)+pow(Plunging_Omega_Y[ZONE_0],2)+pow(Plunging_Omega_Z[ZONE_0],2));
-    if (Omega_mag_plunge > 0)
-      periods[2] = 2*PI_NUMBER/Omega_mag_plunge;
-    else
-      periods[2] = 0.0;
-
-    /*--- determine which period is largest ---*/
-
-    unsigned short iVar;
-    TimeSpectral_Period = 0.0;
-    for (iVar = 0; iVar < N_MOTION_TYPES; iVar++) {
-      if (periods[iVar] > TimeSpectral_Period)
-        TimeSpectral_Period = periods[iVar];
-    }
-
-    delete periods;
-
-  }
-
-  /*--- Initialize the RefOriginMoment Pointer ---*/
-
-  RefOriginMoment = NULL;
-  RefOriginMoment = new double[3];
-  RefOriginMoment[0] = 0.0; RefOriginMoment[1] = 0.0; RefOriginMoment[2] = 0.0;
-
-  /*--- In case the moment origin coordinates have not been declared in the
-   config file, set them equal to zero for safety. Also check to make sure
-   that for each marker, a value has been declared for the moment origin.
-   Unless only one value was specified, then set this value for all the markers
-   being monitored. ---*/
-
-  unsigned short iMarker;
-
-  if ((nRefOriginMoment_X != nRefOriginMoment_Y) || (nRefOriginMoment_X != nRefOriginMoment_Z) ) {
-    cout << "ERROR: Length of REF_ORIGIN_MOMENT_X, REF_ORIGIN_MOMENT_Y and REF_ORIGIN_MOMENT_Z must be the same!!" << endl;
-    exit(EXIT_FAILURE);
-  }
-
-  if (RefOriginMoment_X == NULL) {
-    RefOriginMoment_X = new double[nMarker_Monitoring];
-    for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ )
-      RefOriginMoment_X[iMarker] = 0.0;
-  } else {
-    if (nRefOriginMoment_X == 1) {
-
-      double aux_RefOriginMoment_X = RefOriginMoment_X[0];
-      delete [] RefOriginMoment_X;
-      RefOriginMoment_X = new double[nMarker_Monitoring];
-      nRefOriginMoment_X = nMarker_Monitoring;
-
-      for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ )
-        RefOriginMoment_X[iMarker] = aux_RefOriginMoment_X;
-    }
-    else if (nRefOriginMoment_X != nMarker_Monitoring) {
-      cout << "ERROR: Length of REF_ORIGIN_MOMENT_X must match number of Monitoring Markers!!" << endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  if (RefOriginMoment_Y == NULL) {
-    RefOriginMoment_Y = new double[nMarker_Monitoring];
-    for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ )
-      RefOriginMoment_Y[iMarker] = 0.0;
-  } else {
-    if (nRefOriginMoment_Y == 1) {
-
-      double aux_RefOriginMoment_Y = RefOriginMoment_Y[0];
-      delete [] RefOriginMoment_Y;
-      RefOriginMoment_Y = new double[nMarker_Monitoring];
-      nRefOriginMoment_Y = nMarker_Monitoring;
-
-      for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ )
-        RefOriginMoment_Y[iMarker] = aux_RefOriginMoment_Y;
-    }
-    else if (nRefOriginMoment_Y != nMarker_Monitoring) {
-      cout << "ERROR: Length of REF_ORIGIN_MOMENT_Y must match number of Monitoring Markers!!" << endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  if (RefOriginMoment_Z == NULL) {
-    RefOriginMoment_Z = new double[nMarker_Monitoring];
-    for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ )
-      RefOriginMoment_Z[iMarker] = 0.0;
-  } else {
-    if (nRefOriginMoment_Z == 1) {
-
-      double aux_RefOriginMoment_Z = RefOriginMoment_Z[0];
-      delete [] RefOriginMoment_Z;
-      RefOriginMoment_Z = new double[nMarker_Monitoring];
-      nRefOriginMoment_Z = nMarker_Monitoring;
-
-      for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ )
-        RefOriginMoment_Z[iMarker] = aux_RefOriginMoment_Z;
-    }
-    else if (nRefOriginMoment_Z != nMarker_Monitoring) {
-      cout << "ERROR: Length of REF_ORIGIN_MOMENT_Z must match number of Monitoring Markers!!" << endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  /*--- Set the boolean flag if we are carrying out an aeroelastic simulation. ---*/
-
-  if (Grid_Movement && (Kind_GridMovement[ZONE_0] == AEROELASTIC || Kind_GridMovement[ZONE_0] == AEROELASTIC_RIGID_MOTION))
-    Aeroelastic_Simulation = true;
-  else
-    Aeroelastic_Simulation = false;
-
-  /*--- Initializing the size for the solutions of the Aeroelastic problem. ---*/
-
-
-  if (Grid_Movement && Aeroelastic_Simulation) {
-    Aeroelastic_np1.resize(nMarker_Monitoring);
-    Aeroelastic_n.resize(nMarker_Monitoring);
-    Aeroelastic_n1.resize(nMarker_Monitoring);
-    for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++) {
-      Aeroelastic_np1[iMarker].resize(2);
-      Aeroelastic_n[iMarker].resize(2);
-      Aeroelastic_n1[iMarker].resize(2);
-      for (int i =0; i<2; i++) {
-        Aeroelastic_np1[iMarker][i].resize(2);
-        Aeroelastic_n[iMarker][i].resize(2);
-        Aeroelastic_n1[iMarker][i].resize(2);
-        for (int j=0; j<2; j++) {
-          Aeroelastic_np1[iMarker][i][j] = 0.0;
-          Aeroelastic_n[iMarker][i][j] = 0.0;
-          Aeroelastic_n1[iMarker][i][j] = 0.0;
+        if (SystemMeasurements == US && standard_air){
+            if (Kind_ViscosityModel != SUTHERLAND){
+                cout << "Only SUTHERLAND viscosity model can be used with US Measurement  " << endl;
+                exit(EXIT_FAILURE);
+            }
         }
-      }
+        if (Kind_ConductivityModel != CONSTANT_PRANDTL ){
+            cout << "Only CONSTANT_PRANDTL thermal conductivity model can be used with STANDARD_AIR and IDEAL_GAS" << endl;
+            exit(EXIT_FAILURE);
+        }
+        
     }
-  }
-
-  /*--- Allocate memory for the plunge and pitch and initialized them to zero ---*/
-
-  if (Grid_Movement && Aeroelastic_Simulation) {
-    Aeroelastic_pitch = new double[nMarker_Monitoring];
-    Aeroelastic_plunge = new double[nMarker_Monitoring];
-    for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ ) {
-      Aeroelastic_pitch[iMarker] = 0.0;
-      Aeroelastic_plunge[iMarker] = 0.0;
-    }
-  }
-
-  /*--- Fluid-Structure problems always have grid movement ---*/
-
-  if (Kind_Solver == FLUID_STRUCTURE_EULER ||
-      Kind_Solver == FLUID_STRUCTURE_NAVIER_STOKES) {
-    if (Kind_Turb_Model != NONE)
-      Kind_Solver = FLUID_STRUCTURE_RANS;
-    Grid_Movement = true;
-  }
-
-  if (FullMG) FinestMesh = nMultiLevel;
-  else FinestMesh = MESH_0;
-
-  if ((Kind_Solver == NAVIER_STOKES) &&
-      (Kind_Turb_Model != NONE))
-    Kind_Solver = RANS;
-
-  if (Kind_Regime == FREESURFACE) GravityForce = true;
-
-  Kappa_1st_Flow = Kappa_Flow[0];
-  Kappa_2nd_Flow = Kappa_Flow[1];
-  Kappa_4th_Flow = Kappa_Flow[2];
-  Kappa_1st_AdjFlow = Kappa_AdjFlow[0];
-  Kappa_2nd_AdjFlow = Kappa_AdjFlow[1];
-  Kappa_4th_AdjFlow = Kappa_AdjFlow[2];
-  Kappa_1st_LinFlow = Kappa_AdjFlow[0];
-  Kappa_4th_LinFlow = Kappa_AdjFlow[1];
-
-  // make the MG_PreSmooth, MG_PostSmooth, and MG_CorrecSmooth arrays consistent with nMultiLevel
-  unsigned short * tmp_smooth = new unsigned short[nMultiLevel+1];
-
-  if ((nMG_PreSmooth != nMultiLevel+1) && (nMG_PreSmooth != 0)) {
-    if (nMG_PreSmooth > nMultiLevel+1) {
-
-      // truncate by removing unnecessary elements at the end
-      for (unsigned int i = 0; i <= nMultiLevel; i++)
-        tmp_smooth[i] = MG_PreSmooth[i];
-      delete [] MG_PreSmooth;
-    } else {
-
-      // add additional elements equal to last element
-      for (unsigned int i = 0; i < nMG_PreSmooth; i++)
-        tmp_smooth[i] = MG_PreSmooth[i];
-      for (unsigned int i = nMG_PreSmooth; i <= nMultiLevel; i++)
-        tmp_smooth[i] = MG_PreSmooth[nMG_PreSmooth-1];
-      delete [] MG_PreSmooth;
-    }
-
-    nMG_PreSmooth = nMultiLevel+1;
-    MG_PreSmooth = new unsigned short[nMG_PreSmooth];
-    for (unsigned int i = 0; i < nMG_PreSmooth; i++)
-      MG_PreSmooth[i] = tmp_smooth[i];
-  }
-  if ((nMultiLevel != 0) && (nMG_PreSmooth == 0)) {
-    delete [] MG_PreSmooth;
-    nMG_PreSmooth = nMultiLevel+1;
-    MG_PreSmooth = new unsigned short[nMG_PreSmooth];
-    for (unsigned int i = 0; i < nMG_PreSmooth; i++)
-      MG_PreSmooth[i] = i+1;
-  }
-
-  if ((nMG_PostSmooth != nMultiLevel+1) && (nMG_PostSmooth != 0)) {
-    if (nMG_PostSmooth > nMultiLevel+1) {
-      // truncate by removing unnecessary elements at the end
-      for (unsigned int i = 0; i <= nMultiLevel; i++)
-        tmp_smooth[i] = MG_PostSmooth[i];
-      delete [] MG_PostSmooth;
-    } else {
-      // add additional elements equal to last element
-      for (unsigned int i = 0; i < nMG_PostSmooth; i++)
-        tmp_smooth[i] = MG_PostSmooth[i];
-      for (unsigned int i = nMG_PostSmooth; i <= nMultiLevel; i++)
-        tmp_smooth[i] = MG_PostSmooth[nMG_PostSmooth-1];
-      delete [] MG_PostSmooth;
-    }
-    nMG_PostSmooth = nMultiLevel+1;
-    MG_PostSmooth = new unsigned short[nMG_PostSmooth];
-    for (unsigned int i = 0; i < nMG_PostSmooth; i++)
-      MG_PostSmooth[i] = tmp_smooth[i];
-  }
-  if ((nMultiLevel != 0) && (nMG_PostSmooth == 0)) {
-    delete [] MG_PostSmooth;
-    nMG_PostSmooth = nMultiLevel+1;
-    MG_PostSmooth = new unsigned short[nMG_PostSmooth];
-    for (unsigned int i = 0; i < nMG_PostSmooth; i++)
-      MG_PostSmooth[i] = 0;
-  }
-
-  if ((nMG_CorrecSmooth != nMultiLevel+1) && (nMG_CorrecSmooth != 0)) {
-    if (nMG_CorrecSmooth > nMultiLevel+1) {
-      // truncate by removing unnecessary elements at the end
-      for (unsigned int i = 0; i <= nMultiLevel; i++)
-        tmp_smooth[i] = MG_CorrecSmooth[i];
-      delete [] MG_CorrecSmooth;
-    } else {
-      // add additional elements equal to last element
-      for (unsigned int i = 0; i < nMG_CorrecSmooth; i++)
-        tmp_smooth[i] = MG_CorrecSmooth[i];
-      for (unsigned int i = nMG_CorrecSmooth; i <= nMultiLevel; i++)
-        tmp_smooth[i] = MG_CorrecSmooth[nMG_CorrecSmooth-1];
-      delete [] MG_CorrecSmooth;
-    }
-    nMG_CorrecSmooth = nMultiLevel+1;
-    MG_CorrecSmooth = new unsigned short[nMG_CorrecSmooth];
-    for (unsigned int i = 0; i < nMG_CorrecSmooth; i++)
-      MG_CorrecSmooth[i] = tmp_smooth[i];
-  }
-  if ((nMultiLevel != 0) && (nMG_CorrecSmooth == 0)) {
-    delete [] MG_CorrecSmooth;
-    nMG_CorrecSmooth = nMultiLevel+1;
-    MG_CorrecSmooth = new unsigned short[nMG_CorrecSmooth];
-    for (unsigned int i = 0; i < nMG_CorrecSmooth; i++)
-      MG_CorrecSmooth[i] = 0;
-  }
-
-  // override MG Smooth parameters
-  if (nMG_PreSmooth != 0)
-    MG_PreSmooth[MESH_0] = 1;
-  if (nMG_PostSmooth != 0) {
-    MG_PostSmooth[MESH_0] = 0;
-    MG_PostSmooth[nMultiLevel] = 0;
-  }
-  if (nMG_CorrecSmooth != 0)
-    MG_CorrecSmooth[nMultiLevel] = 0;
-
-  if (Restart) FullMG = false;
-
-  if (Adjoint) {
-    if (Kind_Solver == EULER) Kind_Solver = ADJ_EULER;
-    if (Kind_Solver == NAVIER_STOKES) Kind_Solver = ADJ_NAVIER_STOKES;
-    if (Kind_Solver == RANS) Kind_Solver = ADJ_RANS;
-    if (Kind_Solver == TNE2_EULER) Kind_Solver = ADJ_TNE2_EULER;
-    if (Kind_Solver == TNE2_NAVIER_STOKES) Kind_Solver = ADJ_TNE2_NAVIER_STOKES;
-  }
-
-  if (Linearized) {
-    if (Kind_Solver == EULER) Kind_Solver = LIN_EULER;
-  }
-
-  if (Unsteady_Simulation == TIME_STEPPING) {
-    nMultiLevel = 0;
-    MGCycle = 0;
-  }
-
-  nCFL = nMultiLevel+1;
-  CFL = new double[nCFL];
-  CFL[0] = CFLFineGrid;
-  if (Adjoint) CFL[0] = CFL[0] * CFLRedCoeff_AdjFlow;
-  
-  for (iCFL = 1; iCFL < nCFL; iCFL++)
-    CFL[iCFL] = CFL[iCFL-1];
-
-  if (nRKStep == 0) {
-    nRKStep = 1;
-    RK_Alpha_Step = new double[1]; RK_Alpha_Step[0] = 1.0;
-  }
-
-  if ((Kind_SU2 == SU2_CFD) && (Kind_Solver == NO_SOLVER)) {
-    cout << "PHYSICAL_PROBLEM must be set in the configuration file" << endl;
-    exit(EXIT_FAILURE);
-  }
-
-  /*--- Set a flag for viscous simulations ---*/
-
-  Viscous = (( Kind_Solver == NAVIER_STOKES          ) ||
-             ( Kind_Solver == ADJ_NAVIER_STOKES      ) ||
-             ( Kind_Solver == RANS                   ) ||
-             ( Kind_Solver == ADJ_RANS               ) ||
-             ( Kind_Solver == TNE2_NAVIER_STOKES     ) ||
-             ( Kind_Solver == ADJ_TNE2_NAVIER_STOKES )   );
-
-
-  /*--- Re-scale the length based parameters. The US system uses feet, 
-   but SU2 assumes that the grid is in inches ---*/
-  
-  if ((SystemMeasurements == US) && (Kind_SU2 == SU2_CFD)) {
-
-    for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++) {
-      RefOriginMoment_X[iMarker] = RefOriginMoment_X[iMarker]/12.0;
-      RefOriginMoment_Y[iMarker] = RefOriginMoment_Y[iMarker]/12.0;
-      RefOriginMoment_Z[iMarker] = RefOriginMoment_Z[iMarker]/12.0;
-    }
-
-    for (iMarker = 0; iMarker < nGridMovement; iMarker++) {
-      Motion_Origin_X[iMarker] = Motion_Origin_X[iMarker]/12.0;
-      Motion_Origin_Y[iMarker] = Motion_Origin_Y[iMarker]/12.0;
-      Motion_Origin_Z[iMarker] = Motion_Origin_Z[iMarker]/12.0;
-    }
-
-    RefLengthMoment = RefLengthMoment/12.0;
-    if (val_nDim == 2) RefAreaCoeff = RefAreaCoeff/12.0;
-    else RefAreaCoeff = RefAreaCoeff/144.0;
-    Length_Reynolds = Length_Reynolds/12.0;
-    RefElemLength = RefElemLength/12.0;
     
-    EA_IntLimit[0] = EA_IntLimit[0]/12.0;
-    EA_IntLimit[1] = EA_IntLimit[1]/12.0;
-    EA_IntLimit[2] = EA_IntLimit[2]/12.0;
+    /*--- Set grid movement kind to NO_MOVEMENT if not specified, which means
+     that we also set the Grid_Movement flag to false. We initialize to the
+     number of zones here, because we are guaranteed to at least have one. ---*/
     
-    Section_Location[0] = Section_Location[0]/12.0;
-    Section_Location[1] = Section_Location[1]/12.0;
-    
-  }
-
-  /*--- Reacting flows initialization ---*/
-
-  if (( Kind_Solver == TNE2_EULER             ) ||
-      ( Kind_Solver == TNE2_NAVIER_STOKES     ) ||
-      ( Kind_Solver == ADJ_TNE2_EULER         ) ||
-      ( Kind_Solver == ADJ_TNE2_NAVIER_STOKES )   ) {
-
-    Kappa_1st_TNE2    = Kappa_TNE2[0];
-    Kappa_2nd_TNE2    = Kappa_TNE2[1];
-    Kappa_4th_TNE2    = Kappa_TNE2[2];
-    Kappa_1st_AdjTNE2 = Kappa_AdjTNE2[0];
-    Kappa_2nd_AdjTNE2 = Kappa_AdjTNE2[1];
-    Kappa_4th_AdjTNE2 = Kappa_AdjTNE2[2];
-
-
-    unsigned short maxEl = 0;
-    unsigned short iSpecies, jSpecies, iEl;
-
-    switch (Kind_GasModel) {
-      case ONESPECIES:
-        /*--- Define parameters of the gas model ---*/
-        nSpecies    = 1;
-        ionization  = false;
-
-        /*--- Allocate vectors for gas properties ---*/
-        Molar_Mass         = new double[nSpecies];
-        CharVibTemp        = new double[nSpecies];
-        RotationModes      = new double[nSpecies];
-        Enthalpy_Formation = new double[nSpecies];
-        Wall_Catalycity    = new double[nSpecies];
-        Ref_Temperature    = new double[nSpecies];
-        nElStates          = new unsigned short[nSpecies];
-
-
-
-        MassFrac_FreeStream = new double[nSpecies];
-        MassFrac_FreeStream[0] = 1.0;
-
-        /*--- Assign gas properties ---*/
-        // Rotational modes of energy storage
-        RotationModes[0] = 2.0;
-        // Molar mass [kg/kmol]
-        Molar_Mass[0] = 14.0067+15.9994;
-        // Characteristic vibrational temperatures for calculating e_vib [K]
-        //CharVibTemp[0] = 3395.0;
-        CharVibTemp[0] = 1000.0;
-        // Formation enthalpy: (JANAF values, [KJ/Kmol])
-        Enthalpy_Formation[0] = 0.0;					//N2
-        // Reference temperature (JANAF values, [K])
-        Ref_Temperature[0] = 0.0;
-
-        /*        nElStates[0] = 0;
-         CharElTemp   = new double *[nSpecies];
-         degen        = new double *[nSpecies];
-
-         OSPthetae    = new double[nElStates[0]];
-         OSPthetae[0] = 1.0;
-         OSPg         = new double[nElStates[0]];
-         OSPg[0]      = 1.0;
-
-         CharElTemp[0] = OSPthetae;
-         degen[0] = OSPg;*/
-
-        break;
-
-      case N2:
-
-        /*--- Define parameters of the gas model ---*/
-        nSpecies    = 2;
-        nReactions  = 2;
-        ionization  = false;
-
-        /*--- Allocate vectors for gas properties ---*/
-        Wall_Catalycity      = new double[nSpecies];
-        Molar_Mass           = new double[nSpecies];
-        CharVibTemp          = new double[nSpecies];
-        RotationModes        = new double[nSpecies];
-        Enthalpy_Formation   = new double[nSpecies];
-        Ref_Temperature      = new double[nSpecies];
-        Diss                 = new double[nSpecies];
-        ArrheniusCoefficient = new double[nReactions];
-        ArrheniusEta         = new double[nReactions];
-        ArrheniusTheta       = new double[nReactions];
-        Tcf_a                = new double[nReactions];
-        Tcf_b                = new double[nReactions];
-        Tcb_a                = new double[nReactions];
-        Tcb_b                = new double[nReactions];
-        nElStates            = new unsigned short[nSpecies];
-        Reactions = new int**[nReactions];
-        for (unsigned short iRxn = 0; iRxn < nReactions; iRxn++) {
-          Reactions[iRxn] = new int*[2];
-          for (unsigned short ii = 0; ii < 2; ii++)
-            Reactions[iRxn][ii] = new int[6];
+    if (Kind_GridMovement == NULL) {
+        Kind_GridMovement = new unsigned short[nZone];
+        for (unsigned short iZone = 0; iZone < nZone; iZone++ )
+            Kind_GridMovement[iZone] = NO_MOVEMENT;
+        if (Grid_Movement == true) {
+            cout << "GRID_MOVEMENT = YES but no type provided in GRID_MOVEMENT_KIND!!" << endl;
+            exit(EXIT_FAILURE);
         }
-
-        // Omega[iSpecies][jSpecies][iCoeff]
-        Omega00 = new double**[nSpecies];
-        Omega11 = new double**[nSpecies];
-        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-          Omega00[iSpecies] = new double*[nSpecies];
-          Omega11[iSpecies] = new double*[nSpecies];
-          for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
-            Omega00[iSpecies][jSpecies] = new double[4];
-            Omega11[iSpecies][jSpecies] = new double[4];
-          }
-        }
-
-        MassFrac_FreeStream = new double[nSpecies];
-        MassFrac_FreeStream[0] = 0.99;
-        MassFrac_FreeStream[1] = 0.01;
-
-        /*--- Assign gas properties ---*/
-
-        // Wall mass fractions for catalytic boundaries
-        Wall_Catalycity[0] = 0.7;
-        Wall_Catalycity[1] = 0.3;
-
-        // Rotational modes of energy storage
-        RotationModes[0] = 2.0;
-        RotationModes[1] = 0.0;
-
-        // Molar mass [kg/kmol]
-        Molar_Mass[0] = 2.0*14.0067;
-        Molar_Mass[1] = 14.0067;
-
-        // Characteristic vibrational temperatures
-        CharVibTemp[0] = 3395.0;
-        CharVibTemp[1] = 0.0;
-
-        // Formation enthalpy: (JANAF values [KJ/Kmol])
-        Enthalpy_Formation[0] = 0.0;					//N2
-        Enthalpy_Formation[1] = 472.683E3;		//N
-
-        // Reference temperature (JANAF values, [K])
-        Ref_Temperature[0] = 0.0;
-        Ref_Temperature[1] = 298.15;
-
-        // Number of electron states
-        nElStates[0] = 15;                    // N2
-        nElStates[1] = 3;                     // N
-        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-          maxEl = max(maxEl, nElStates[iSpecies]);
-
-        /*--- Allocate electron data arrays ---*/
-        CharElTemp = new double*[nSpecies];
-        degen      = new double*[nSpecies];
-        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-          CharElTemp[iSpecies] = new double[maxEl];
-          degen[iSpecies]      = new double[maxEl];
-        }
-
-        /*--- Initialize the arrays ---*/
-        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-          for (iEl = 0; iEl < maxEl; iEl++) {
-            CharElTemp[iSpecies][iEl] = 0.0;
-            degen[iSpecies][iEl] = 0.0;
-          }
-        }
-
-        /*--- Assign values to data structures ---*/
-        // N2: 15 states
-        CharElTemp[0][0]  = 0.000000000000000E+00;
-        CharElTemp[0][1]  = 7.223156514095200E+04;
-        CharElTemp[0][2]  = 8.577862640384000E+04;
-        CharElTemp[0][3]  = 8.605026716160000E+04;
-        CharElTemp[0][4]  = 9.535118627874400E+04;
-        CharElTemp[0][5]  = 9.805635702203200E+04;
-        CharElTemp[0][6]  = 9.968267656935200E+04;
-        CharElTemp[0][7]  = 1.048976467715200E+05;
-        CharElTemp[0][8]  = 1.116489555200000E+05;
-        CharElTemp[0][9]  = 1.225836470400000E+05;
-        CharElTemp[0][10] = 1.248856873600000E+05;
-        CharElTemp[0][11] = 1.282476158188320E+05;
-        CharElTemp[0][12] = 1.338060936000000E+05;
-        CharElTemp[0][13] = 1.404296391107200E+05;
-        CharElTemp[0][14] = 1.504958859200000E+05;
-        degen[0][0]  = 1;
-        degen[0][1]  = 3;
-        degen[0][2]  = 6;
-        degen[0][3]  = 6;
-        degen[0][4]  = 3;
-        degen[0][5]  = 1;
-        degen[0][6]  = 2;
-        degen[0][7]  = 2;
-        degen[0][8]  = 5;
-        degen[0][9]  = 1;
-        degen[0][10] = 6;
-        degen[0][11] = 6;
-        degen[0][12] = 10;
-        degen[0][13] = 6;
-        degen[0][14] = 6;
-        // N: 3 states
-        CharElTemp[1][0] = 0.000000000000000E+00;
-        CharElTemp[1][1] = 2.766469645581980E+04;
-        CharElTemp[1][2] = 4.149309313560210E+04;
-        degen[1][0] = 4;
-        degen[1][1] = 10;
-        degen[1][2] = 6;
-
-        /*--- Set Arrhenius coefficients for chemical reactions ---*/
-        // Pre-exponential factor
-        ArrheniusCoefficient[0]  = 7.0E21;
-        ArrheniusCoefficient[1]  = 3.0E22;
-        // Rate-controlling temperature exponent
-        ArrheniusEta[0]  = -1.60;
-        ArrheniusEta[1]  = -1.60;
-        // Characteristic temperature
-        ArrheniusTheta[0] = 113200.0;
-        ArrheniusTheta[1] = 113200.0;
-
-        /*--- Set reaction maps ---*/
-        // N2 + N2 -> 2N + N2
-        Reactions[0][0][0]=0;		Reactions[0][0][1]=0;		Reactions[0][0][2]=nSpecies;
-        Reactions[0][1][0]=1;		Reactions[0][1][1]=1;		Reactions[0][1][2] =0;
-        // N2 + N -> 2N + N
-        Reactions[1][0][0]=0;		Reactions[1][0][1]=1;		Reactions[1][0][2]=nSpecies;
-        Reactions[1][1][0]=1;		Reactions[1][1][1]=1;		Reactions[1][1][2]=1;
-
-        /*--- Set rate-controlling temperature exponents ---*/
-        //  -----------  Tc = Ttr^a * Tve^b  -----------
-        //
-        // Forward Reactions
-        //   Dissociation:      a = 0.5, b = 0.5  (OR a = 0.7, b =0.3)
-        //   Exchange:          a = 1,   b = 0
-        //   Impact ionization: a = 0,   b = 1
-        //
-        // Backward Reactions
-        //   Recomb ionization:      a = 0, b = 1
-        //   Impact ionization:      a = 0, b = 1
-        //   N2 impact dissociation: a = 0, b = 1
-        //   Others:                 a = 1, b = 0
-        Tcf_a[0] = 0.5; Tcf_b[0] = 0.5; Tcb_a[0] = 1;  Tcb_b[0] = 0;
-        Tcf_a[1] = 0.5; Tcf_b[1] = 0.5; Tcb_a[1] = 1;  Tcb_b[1] = 0;
-
-        /*--- Dissociation potential [KJ/kg] ---*/
-        Diss[0] = 3.36E4;
-        Diss[1] = 0.0;
-
-        /*--- Collision integral data ---*/
-        Omega00[0][0][0] = -6.0614558E-03;  Omega00[0][0][1] = 1.2689102E-01;   Omega00[0][0][2] = -1.0616948E+00;  Omega00[0][0][3] = 8.0955466E+02;
-        Omega00[0][1][0] = -1.0796249E-02;  Omega00[0][1][1] = 2.2656509E-01;   Omega00[0][1][2] = -1.7910602E+00;  Omega00[0][1][3] = 4.0455218E+03;
-        Omega00[1][0][0] = -1.0796249E-02;  Omega00[1][0][1] = 2.2656509E-01;   Omega00[1][0][2] = -1.7910602E+00;  Omega00[1][0][3] = 4.0455218E+03;
-        Omega00[1][1][0] = -9.6083779E-03;  Omega00[1][1][1] = 2.0938971E-01;   Omega00[1][1][2] = -1.7386904E+00;  Omega00[1][1][3] = 3.3587983E+03;
-
-        Omega11[0][0][0] = -7.6303990E-03;  Omega11[0][0][1] = 1.6878089E-01;   Omega11[0][0][2] = -1.4004234E+00;  Omega11[0][0][3] = 2.1427708E+03;
-        Omega11[0][1][0] = -8.3493693E-03;  Omega11[0][1][1] = 1.7808911E-01;   Omega11[0][1][2] = -1.4466155E+00;  Omega11[0][1][3] = 1.9324210E+03;
-        Omega11[1][0][0] = -8.3493693E-03;  Omega11[1][0][1] = 1.7808911E-01;   Omega11[1][0][2] = -1.4466155E+00;  Omega11[1][0][3] = 1.9324210E+03;
-        Omega11[1][1][0] = -7.7439615E-03;  Omega11[1][1][1] = 1.7129007E-01;   Omega11[1][1][2] = -1.4809088E+00;  Omega11[1][1][3] = 2.1284951E+03;
-
-        break;
-
-      case AIR5:
-        /*--- Define parameters of the gas model ---*/
-        nSpecies    = 5;
-        nReactions  = 17;
-        ionization  = false;
-
-        /*--- Allocate vectors for gas properties ---*/
-        Wall_Catalycity      = new double[nSpecies];
-        Molar_Mass           = new double[nSpecies];
-        CharVibTemp          = new double[nSpecies];
-        RotationModes        = new double[nSpecies];
-        Enthalpy_Formation   = new double[nSpecies];
-        Ref_Temperature      = new double[nSpecies];
-        ArrheniusCoefficient = new double[nReactions];
-        ArrheniusEta         = new double[nReactions];
-        ArrheniusTheta       = new double[nReactions];
-        Tcf_a                = new double[nReactions];
-        Tcf_b                = new double[nReactions];
-        Tcb_a                = new double[nReactions];
-        Tcb_b                = new double[nReactions];
-        nElStates            = new unsigned short[nSpecies];
-        Reactions            = new int**[nReactions];
-        for (unsigned short iRxn = 0; iRxn < nReactions; iRxn++) {
-          Reactions[iRxn] = new int*[2];
-          for (unsigned short ii = 0; ii < 2; ii++)
-            Reactions[iRxn][ii] = new int[6];
-        }
-
-        // Omega[iSpecies][jSpecies][iCoeff]
-        Omega00 = new double**[nSpecies];
-        Omega11 = new double**[nSpecies];
-        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-          Omega00[iSpecies] = new double*[nSpecies];
-          Omega11[iSpecies] = new double*[nSpecies];
-          for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
-            Omega00[iSpecies][jSpecies] = new double[4];
-            Omega11[iSpecies][jSpecies] = new double[4];
-          }
-        }
-
-        // Wall mass fractions for catalytic boundaries
-        Wall_Catalycity[0] = 0.4;
-        Wall_Catalycity[1] = 0.4;
-        Wall_Catalycity[2] = 0.1;
-        Wall_Catalycity[3] = 0.05;
-        Wall_Catalycity[4] = 0.05;
-
-        // Free stream mass fractions
-        MassFrac_FreeStream = new double[nSpecies];
-        MassFrac_FreeStream[0] = 0.78;
-        MassFrac_FreeStream[1] = 0.19;
-        MassFrac_FreeStream[2] = 0.01;
-        MassFrac_FreeStream[3] = 0.01;
-        MassFrac_FreeStream[4] = 0.01;
-
-        /*--- Assign gas properties ---*/
-        // Rotational modes of energy storage
-        RotationModes[0] = 2.0;
-        RotationModes[1] = 2.0;
-        RotationModes[2] = 2.0;
-        RotationModes[3] = 0.0;
-        RotationModes[4] = 0.0;
-
-        // Molar mass [kg/kmol]
-        Molar_Mass[0] = 2.0*14.0067;
-        Molar_Mass[1] = 2.0*15.9994;
-        Molar_Mass[2] = 14.0067+15.9994;
-        Molar_Mass[3] = 14.0067;
-        Molar_Mass[4] = 15.9994;
-
-        //Characteristic vibrational temperatures
-        CharVibTemp[0] = 3395.0;
-        CharVibTemp[1] = 2239.0;
-        CharVibTemp[2] = 2817.0;
-        CharVibTemp[3] = 0.0;
-        CharVibTemp[4] = 0.0;
-
-        // Formation enthalpy: (JANAF values [KJ/Kmol])
-        Enthalpy_Formation[0] = 0.0;					//N2
-        Enthalpy_Formation[1] = 0.0;					//O2
-        Enthalpy_Formation[2] = 90.291E3;			//NO
-        Enthalpy_Formation[3] = 472.683E3;		//N
-        Enthalpy_Formation[4] = 249.173E3;		//O
-
-        // Reference temperature (JANAF values, [K])
-        Ref_Temperature[0] = 0.0;
-        Ref_Temperature[1] = 0.0;
-        Ref_Temperature[2] = 298.15;
-        Ref_Temperature[3] = 298.15;
-        Ref_Temperature[4] = 298.15;
-
-        // Number of electron states
-        nElStates[0] = 15;                    // N2
-        nElStates[1] = 7;                     // O2
-        nElStates[2] = 16;                    // NO
-        nElStates[3] = 3;                     // N
-        nElStates[4] = 5;                     // O
-        /////
-
-        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-          maxEl = max(maxEl, nElStates[iSpecies]);
-
-        /*--- Allocate electron data arrays ---*/
-        CharElTemp = new double*[nSpecies];
-        degen      = new double*[nSpecies];
-        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-          CharElTemp[iSpecies] = new double[maxEl];
-          degen[iSpecies]      = new double[maxEl];
-        }
-
-        /*--- Initialize the arrays ---*/
-        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-          for (iEl = 0; iEl < maxEl; iEl++) {
-            CharElTemp[iSpecies][iEl] = 0.0;
-            degen[iSpecies][iEl] = 0.0;
-          }
-        }
-
-        //N2: 15 states
-        CharElTemp[0][0]  = 0.000000000000000E+00;
-        CharElTemp[0][1]  = 7.223156514095200E+04;
-        CharElTemp[0][2]  = 8.577862640384000E+04;
-        CharElTemp[0][3]  = 8.605026716160000E+04;
-        CharElTemp[0][4]  = 9.535118627874400E+04;
-        CharElTemp[0][5]  = 9.805635702203200E+04;
-        CharElTemp[0][6]  = 9.968267656935200E+04;
-        CharElTemp[0][7]  = 1.048976467715200E+05;
-        CharElTemp[0][8]  = 1.116489555200000E+05;
-        CharElTemp[0][9]  = 1.225836470400000E+05;
-        CharElTemp[0][10] = 1.248856873600000E+05;
-        CharElTemp[0][11] = 1.282476158188320E+05;
-        CharElTemp[0][12] = 1.338060936000000E+05;
-        CharElTemp[0][13] = 1.404296391107200E+05;
-        CharElTemp[0][14] = 1.504958859200000E+05;
-        degen[0][0]  = 1;
-        degen[0][1]  = 3;
-        degen[0][2]  = 6;
-        degen[0][3]  = 6;
-        degen[0][4]  = 3;
-        degen[0][5]  = 1;
-        degen[0][6]  = 2;
-        degen[0][7]  = 2;
-        degen[0][8]  = 5;
-        degen[0][9]  = 1;
-        degen[0][10] = 6;
-        degen[0][11] = 6;
-        degen[0][12] = 10;
-        degen[0][13] = 6;
-        degen[0][14] = 6;
-
-        // O2: 7 states
-        CharElTemp[1][0] = 0.000000000000000E+00;
-        CharElTemp[1][1] = 1.139156019700800E+04;
-        CharElTemp[1][2] = 1.898473947826400E+04;
-        CharElTemp[1][3] = 4.755973576639200E+04;
-        CharElTemp[1][4] = 4.991242097343200E+04;
-        CharElTemp[1][5] = 5.092268575561600E+04;
-        CharElTemp[1][6] = 7.189863255967200E+04;
-        degen[1][0] = 3;
-        degen[1][1] = 2;
-        degen[1][2] = 1;
-        degen[1][3] = 1;
-        degen[1][4] = 6;
-        degen[1][5] = 3;
-        degen[1][6] = 3;
-
-        // NO: 16 states
-        CharElTemp[2][0]  = 0.000000000000000E+00;
-        CharElTemp[2][1]  = 5.467345760000000E+04;
-        CharElTemp[2][2]  = 6.317139627802400E+04;
-        CharElTemp[2][3]  = 6.599450342445600E+04;
-        CharElTemp[2][4]  = 6.906120960000000E+04;
-        CharElTemp[2][5]  = 7.049998480000000E+04;
-        CharElTemp[2][6]  = 7.491055017560000E+04;
-        CharElTemp[2][7]  = 7.628875293968000E+04;
-        CharElTemp[2][8]  = 8.676188537552000E+04;
-        CharElTemp[2][9]  = 8.714431182368000E+04;
-        CharElTemp[2][10] = 8.886077063728000E+04;
-        CharElTemp[2][11] = 8.981755614528000E+04;
-        CharElTemp[2][12] = 8.988445919208000E+04;
-        CharElTemp[2][13] = 9.042702132000000E+04;
-        CharElTemp[2][14] = 9.064283760000000E+04;
-        CharElTemp[2][15] = 9.111763341600000E+04;
-        degen[2][0]  = 4;
-        degen[2][1]  = 8;
-        degen[2][2]  = 2;
-        degen[2][3]  = 4;
-        degen[2][4]  = 4;
-        degen[2][5]  = 4;
-        degen[2][6]  = 4;
-        degen[2][7]  = 2;
-        degen[2][8]  = 4;
-        degen[2][9]  = 2;
-        degen[2][10] = 4;
-        degen[2][11] = 4;
-        degen[2][12] = 2;
-        degen[2][13] = 2;
-        degen[2][14] = 2;
-        degen[2][15] = 4;
-
-        // N: 3 states
-        CharElTemp[3][0] = 0.000000000000000E+00;
-        CharElTemp[3][1] = 2.766469645581980E+04;
-        CharElTemp[3][2] = 4.149309313560210E+04;
-        degen[3][0] = 4;
-        degen[3][1] = 10;
-        degen[3][2] = 6;
-
-        // O: 5 states
-        CharElTemp[4][0] = 0.000000000000000E+00;
-        CharElTemp[4][1] = 2.277077570280000E+02;
-        CharElTemp[4][2] = 3.265688785704000E+02;
-        CharElTemp[4][3] = 2.283028632262240E+04;
-        CharElTemp[4][4] = 4.861993036434160E+04;
-        degen[4][0] = 5;
-        degen[4][1] = 3;
-        degen[4][2] = 1;
-        degen[4][3] = 5;
-        degen[4][4] = 1;
-
-        /*--- Set reaction maps ---*/
-        // N2 dissociation
-        Reactions[0][0][0]=0;		Reactions[0][0][1]=0;		Reactions[0][0][2]=nSpecies;		Reactions[0][1][0]=3;		Reactions[0][1][1]=3;		Reactions[0][1][2] =0;
-        Reactions[1][0][0]=0;		Reactions[1][0][1]=1;		Reactions[1][0][2]=nSpecies;		Reactions[1][1][0]=3;		Reactions[1][1][1]=3;		Reactions[1][1][2] =1;
-        Reactions[2][0][0]=0;		Reactions[2][0][1]=2;		Reactions[2][0][2]=nSpecies;		Reactions[2][1][0]=3;		Reactions[2][1][1]=3;		Reactions[2][1][2] =2;
-        Reactions[3][0][0]=0;		Reactions[3][0][1]=3;		Reactions[3][0][2]=nSpecies;		Reactions[3][1][0]=3;		Reactions[3][1][1]=3;		Reactions[3][1][2] =3;
-        Reactions[4][0][0]=0;		Reactions[4][0][1]=4;		Reactions[4][0][2]=nSpecies;		Reactions[4][1][0]=3;		Reactions[4][1][1]=3;		Reactions[4][1][2] =4;
-        // O2 dissociation
-        Reactions[5][0][0]=1;		Reactions[5][0][1]=0;		Reactions[5][0][2]=nSpecies;		Reactions[5][1][0]=4;		Reactions[5][1][1]=4;		Reactions[5][1][2] =0;
-        Reactions[6][0][0]=1;		Reactions[6][0][1]=1;		Reactions[6][0][2]=nSpecies;		Reactions[6][1][0]=4;		Reactions[6][1][1]=4;		Reactions[6][1][2] =1;
-        Reactions[7][0][0]=1;		Reactions[7][0][1]=2;		Reactions[7][0][2]=nSpecies;		Reactions[7][1][0]=4;		Reactions[7][1][1]=4;		Reactions[7][1][2] =2;
-        Reactions[8][0][0]=1;		Reactions[8][0][1]=3;		Reactions[8][0][2]=nSpecies;		Reactions[8][1][0]=4;		Reactions[8][1][1]=4;		Reactions[8][1][2] =3;
-        Reactions[9][0][0]=1;		Reactions[9][0][1]=4;		Reactions[9][0][2]=nSpecies;		Reactions[9][1][0]=4;		Reactions[9][1][1]=4;		Reactions[9][1][2] =4;
-        // NO dissociation
-        Reactions[10][0][0]=2;		Reactions[10][0][1]=0;		Reactions[10][0][2]=nSpecies;		Reactions[10][1][0]=3;		Reactions[10][1][1]=4;		Reactions[10][1][2] =0;
-        Reactions[11][0][0]=2;		Reactions[11][0][1]=1;		Reactions[11][0][2]=nSpecies;		Reactions[11][1][0]=3;		Reactions[11][1][1]=4;		Reactions[11][1][2] =1;
-        Reactions[12][0][0]=2;		Reactions[12][0][1]=2;		Reactions[12][0][2]=nSpecies;		Reactions[12][1][0]=3;		Reactions[12][1][1]=4;		Reactions[12][1][2] =2;
-        Reactions[13][0][0]=2;		Reactions[13][0][1]=3;		Reactions[13][0][2]=nSpecies;		Reactions[13][1][0]=3;		Reactions[13][1][1]=4;		Reactions[13][1][2] =3;
-        Reactions[14][0][0]=2;		Reactions[14][0][1]=4;		Reactions[14][0][2]=nSpecies;		Reactions[14][1][0]=3;		Reactions[14][1][1]=4;		Reactions[14][1][2] =4;
-        // N2 + O -> NO + N
-        Reactions[15][0][0]=0;		Reactions[15][0][1]=4;		Reactions[15][0][2]=nSpecies;		Reactions[15][1][0]=2;		Reactions[15][1][1]=3;		Reactions[15][1][2]= nSpecies;
-        // NO + O -> O2 + N
-        Reactions[16][0][0]=2;		Reactions[16][0][1]=4;		Reactions[16][0][2]=nSpecies;		Reactions[16][1][0]=1;		Reactions[16][1][1]=3;		Reactions[16][1][2]= nSpecies;
-
-        /*--- Set Arrhenius coefficients for reactions ---*/
-        // Pre-exponential factor
-        ArrheniusCoefficient[0]  = 7.0E21;
-        ArrheniusCoefficient[1]  = 7.0E21;
-        ArrheniusCoefficient[2]  = 7.0E21;
-        ArrheniusCoefficient[3]  = 3.0E22;
-        ArrheniusCoefficient[4]  = 3.0E22;
-        ArrheniusCoefficient[5]  = 2.0E21;
-        ArrheniusCoefficient[6]  = 2.0E21;
-        ArrheniusCoefficient[7]  = 2.0E21;
-        ArrheniusCoefficient[8]  = 1.0E22;
-        ArrheniusCoefficient[9]  = 1.0E22;
-        ArrheniusCoefficient[10] = 5.0E15;
-        ArrheniusCoefficient[11] = 5.0E15;
-        ArrheniusCoefficient[12] = 5.0E15;
-        ArrheniusCoefficient[13] = 1.1E17;
-        ArrheniusCoefficient[14] = 1.1E17;
-        ArrheniusCoefficient[15] = 6.4E17;
-        ArrheniusCoefficient[16] = 8.4E12;
-
-        // Rate-controlling temperature exponent
-        ArrheniusEta[0]  = -1.60;
-        ArrheniusEta[1]  = -1.60;
-        ArrheniusEta[2]  = -1.60;
-        ArrheniusEta[3]  = -1.60;
-        ArrheniusEta[4]  = -1.60;
-        ArrheniusEta[5]  = -1.50;
-        ArrheniusEta[6]  = -1.50;
-        ArrheniusEta[7]  = -1.50;
-        ArrheniusEta[8]  = -1.50;
-        ArrheniusEta[9]  = -1.50;
-        ArrheniusEta[10] = 0.0;
-        ArrheniusEta[11] = 0.0;
-        ArrheniusEta[12] = 0.0;
-        ArrheniusEta[13] = 0.0;
-        ArrheniusEta[14] = 0.0;
-        ArrheniusEta[15] = -1.0;
-        ArrheniusEta[16] = 0.0;
-
-        // Characteristic temperature
-        ArrheniusTheta[0]  = 113200.0;
-        ArrheniusTheta[1]  = 113200.0;
-        ArrheniusTheta[2]  = 113200.0;
-        ArrheniusTheta[3]  = 113200.0;
-        ArrheniusTheta[4]  = 113200.0;
-        ArrheniusTheta[5]  = 59500.0;
-        ArrheniusTheta[6]  = 59500.0;
-        ArrheniusTheta[7]  = 59500.0;
-        ArrheniusTheta[8]  = 59500.0;
-        ArrheniusTheta[9]  = 59500.0;
-        ArrheniusTheta[10] = 75500.0;
-        ArrheniusTheta[11] = 75500.0;
-        ArrheniusTheta[12] = 75500.0;
-        ArrheniusTheta[13] = 75500.0;
-        ArrheniusTheta[14] = 75500.0;
-        ArrheniusTheta[15] = 38400.0;
-        ArrheniusTheta[16] = 19450.0;
-
-        /*--- Set rate-controlling temperature exponents ---*/
-        //  -----------  Tc = Ttr^a * Tve^b  -----------
-        //
-        // Forward Reactions
-        //   Dissociation:      a = 0.5, b = 0.5  (OR a = 0.7, b =0.3)
-        //   Exchange:          a = 1,   b = 0
-        //   Impact ionization: a = 0,   b = 1
-        //
-        // Backward Reactions
-        //   Recomb ionization:      a = 0, b = 1
-        //   Impact ionization:      a = 0, b = 1
-        //   N2 impact dissociation: a = 0, b = 1
-        //   Others:                 a = 1, b = 0
-        Tcf_a[0]  = 0.5; Tcf_b[0]  = 0.5; Tcb_a[0]  = 1;  Tcb_b[0] = 0;
-        Tcf_a[1]  = 0.5; Tcf_b[1]  = 0.5; Tcb_a[1]  = 1;  Tcb_b[1] = 0;
-        Tcf_a[2]  = 0.5; Tcf_b[2]  = 0.5; Tcb_a[2]  = 1;  Tcb_b[2] = 0;
-        Tcf_a[3]  = 0.5; Tcf_b[3]  = 0.5; Tcb_a[3]  = 1;  Tcb_b[3] = 0;
-        Tcf_a[4]  = 0.5; Tcf_b[4]  = 0.5; Tcb_a[4]  = 1;  Tcb_b[4] = 0;
-
-        Tcf_a[5]  = 0.5; Tcf_b[5]  = 0.5; Tcb_a[5]  = 1;  Tcb_b[5] = 0;
-        Tcf_a[6]  = 0.5; Tcf_b[6]  = 0.5; Tcb_a[6]  = 1;  Tcb_b[6] = 0;
-        Tcf_a[7]  = 0.5; Tcf_b[7]  = 0.5; Tcb_a[7]  = 1;  Tcb_b[7] = 0;
-        Tcf_a[8]  = 0.5; Tcf_b[8]  = 0.5; Tcb_a[8]  = 1;  Tcb_b[8] = 0;
-        Tcf_a[9]  = 0.5; Tcf_b[9]  = 0.5; Tcb_a[9]  = 1;  Tcb_b[9] = 0;
-
-        Tcf_a[10] = 0.5; Tcf_b[10] = 0.5; Tcb_a[10] = 1;  Tcb_b[10] = 0;
-        Tcf_a[11] = 0.5; Tcf_b[11] = 0.5; Tcb_a[11] = 1;  Tcb_b[11] = 0;
-        Tcf_a[12] = 0.5; Tcf_b[12] = 0.5; Tcb_a[12] = 1;  Tcb_b[12] = 0;
-        Tcf_a[13] = 0.5; Tcf_b[13] = 0.5; Tcb_a[13] = 1;  Tcb_b[13] = 0;
-        Tcf_a[14] = 0.5; Tcf_b[14] = 0.5; Tcb_a[14] = 1;  Tcb_b[14] = 0;
-
-        Tcf_a[15] = 1.0; Tcf_b[15] = 0.0; Tcb_a[15] = 1;  Tcb_b[15] = 0;
-        Tcf_a[16] = 1.0; Tcf_b[16] = 0.0; Tcb_a[16] = 1;  Tcb_b[16] = 0;
-
-        /*--- Collision integral data ---*/
-        // Omega(0,0) ----------------------
-        //N2
-        Omega00[0][0][0] = -6.0614558E-03;  Omega00[0][0][1] = 1.2689102E-01;   Omega00[0][0][2] = -1.0616948E+00;  Omega00[0][0][3] = 8.0955466E+02;
-        Omega00[0][1][0] = -3.7959091E-03;  Omega00[0][1][1] = 9.5708295E-02;   Omega00[0][1][2] = -1.0070611E+00;  Omega00[0][1][3] = 8.9392313E+02;
-        Omega00[0][2][0] = -1.9295666E-03;  Omega00[0][2][1] = 2.7995735E-02;   Omega00[0][2][2] = -3.1588514E-01;  Omega00[0][2][3] = 1.2880734E+02;
-        Omega00[0][3][0] = -1.0796249E-02;  Omega00[0][3][1] = 2.2656509E-01;   Omega00[0][3][2] = -1.7910602E+00;  Omega00[0][3][3] = 4.0455218E+03;
-        Omega00[0][4][0] = -2.7244269E-03;  Omega00[0][4][1] = 6.9587171E-02;   Omega00[0][4][2] = -7.9538667E-01;  Omega00[0][4][3] = 4.0673730E+02;
-        //O2
-        Omega00[1][0][0] = -3.7959091E-03;  Omega00[1][0][1] = 9.5708295E-02;   Omega00[1][0][2] = -1.0070611E+00;  Omega00[1][0][3] = 8.9392313E+02;
-        Omega00[1][1][0] = -8.0682650E-04;  Omega00[1][1][1] = 1.6602480E-02;   Omega00[1][1][2] = -3.1472774E-01;  Omega00[1][1][3] = 1.4116458E+02;
-        Omega00[1][2][0] = -6.4433840E-04;  Omega00[1][2][1] = 8.5378580E-03;   Omega00[1][2][2] = -2.3225102E-01;  Omega00[1][2][3] = 1.1371608E+02;
-        Omega00[1][3][0] = -1.1453028E-03;  Omega00[1][3][1] = 1.2654140E-02;   Omega00[1][3][2] = -2.2435218E-01;  Omega00[1][3][3] = 7.7201588E+01;
-        Omega00[1][4][0] = -4.8405803E-03;  Omega00[1][4][1] = 1.0297688E-01;   Omega00[1][4][2] = -9.6876576E-01;  Omega00[1][4][3] = 6.1629812E+02;
-        //NO
-        Omega00[2][0][0] = -1.9295666E-03;  Omega00[2][0][1] = 2.7995735E-02;   Omega00[2][0][2] = -3.1588514E-01;  Omega00[2][0][3] = 1.2880734E+02;
-        Omega00[2][1][0] = -6.4433840E-04;  Omega00[2][1][1] = 8.5378580E-03;   Omega00[2][1][2] = -2.3225102E-01;  Omega00[2][1][3] = 1.1371608E+02;
-        Omega00[2][2][0] = -0.0000000E+00;  Omega00[2][2][1] = -1.1056066E-02;  Omega00[2][2][2] = -5.9216250E-02;  Omega00[2][2][3] = 7.2542367E+01;
-        Omega00[2][3][0] = -1.5770918E-03;  Omega00[2][3][1] = 1.9578381E-02;   Omega00[2][3][2] = -2.7873624E-01;  Omega00[2][3][3] = 9.9547944E+01;
-        Omega00[2][4][0] = -1.0885815E-03;  Omega00[2][4][1] = 1.1883688E-02;   Omega00[2][4][2] = -2.1844909E-01;  Omega00[2][4][3] = 7.5512560E+01;
-        //N
-        Omega00[3][0][0] = -1.0796249E-02;  Omega00[3][0][1] = 2.2656509E-01;   Omega00[3][0][2] = -1.7910602E+00;  Omega00[3][0][3] = 4.0455218E+03;
-        Omega00[3][1][0] = -1.1453028E-03;  Omega00[3][1][1] = 1.2654140E-02;   Omega00[3][1][2] = -2.2435218E-01;  Omega00[3][1][3] = 7.7201588E+01;
-        Omega00[3][2][0] = -1.5770918E-03;  Omega00[3][2][1] = 1.9578381E-02;   Omega00[3][2][2] = -2.7873624E-01;  Omega00[3][2][3] = 9.9547944E+01;
-        Omega00[3][3][0] = -9.6083779E-03;  Omega00[3][3][1] = 2.0938971E-01;   Omega00[3][3][2] = -1.7386904E+00;  Omega00[3][3][3] = 3.3587983E+03;
-        Omega00[3][4][0] = -7.8147689E-03;  Omega00[3][4][1] = 1.6792705E-01;   Omega00[3][4][2] = -1.4308628E+00;  Omega00[3][4][3] = 1.6628859E+03;
-        //O
-        Omega00[4][0][0] = -2.7244269E-03;  Omega00[4][0][1] = 6.9587171E-02;   Omega00[4][0][2] = -7.9538667E-01;  Omega00[4][0][3] = 4.0673730E+02;
-        Omega00[4][1][0] = -4.8405803E-03;  Omega00[4][1][1] = 1.0297688E-01;   Omega00[4][1][2] = -9.6876576E-01;  Omega00[4][1][3] = 6.1629812E+02;
-        Omega00[4][2][0] = -1.0885815E-03;  Omega00[4][2][1] = 1.1883688E-02;   Omega00[4][2][2] = -2.1844909E-01;  Omega00[4][2][3] = 7.5512560E+01;
-        Omega00[4][3][0] = -7.8147689E-03;  Omega00[4][3][1] = 1.6792705E-01;   Omega00[4][3][2] = -1.4308628E+00;  Omega00[4][3][3] = 1.6628859E+03;
-        Omega00[4][4][0] = -6.4040535E-03;  Omega00[4][4][1] = 1.4629949E-01;   Omega00[4][4][2] = -1.3892121E+00;  Omega00[4][4][3] = 2.0903441E+03;
-
-        // Omega(1,1) ----------------------
-        //N2
-        Omega11[0][0][0] = -7.6303990E-03;  Omega11[0][0][1] = 1.6878089E-01;   Omega11[0][0][2] = -1.4004234E+00;  Omega11[0][0][3] = 2.1427708E+03;
-        Omega11[0][1][0] = -8.0457321E-03;  Omega11[0][1][1] = 1.9228905E-01;   Omega11[0][1][2] = -1.7102854E+00;  Omega11[0][1][3] = 5.2213857E+03;
-        Omega11[0][2][0] = -6.8237776E-03;  Omega11[0][2][1] = 1.4360616E-01;   Omega11[0][2][2] = -1.1922240E+00;  Omega11[0][2][3] = 1.2433086E+03;
-        Omega11[0][3][0] = -8.3493693E-03;  Omega11[0][3][1] = 1.7808911E-01;   Omega11[0][3][2] = -1.4466155E+00;  Omega11[0][3][3] = 1.9324210E+03;
-        Omega11[0][4][0] = -8.3110691E-03;  Omega11[0][4][1] = 1.9617877E-01;   Omega11[0][4][2] = -1.7205427E+00;  Omega11[0][4][3] = 4.0812829E+03;
-        //O2
-        Omega11[1][0][0] = -8.0457321E-03;  Omega11[1][0][1] = 1.9228905E-01;   Omega11[1][0][2] = -1.7102854E+00;  Omega11[1][0][3] = 5.2213857E+03;
-        Omega11[1][1][0] = -6.2931612E-03;  Omega11[1][1][1] = 1.4624645E-01;   Omega11[1][1][2] = -1.3006927E+00;  Omega11[1][1][3] = 1.8066892E+03;
-        Omega11[1][2][0] = -6.8508672E-03;  Omega11[1][2][1] = 1.5524564E-01;   Omega11[1][2][2] = -1.3479583E+00;  Omega11[1][2][3] = 2.0037890E+03;
-        Omega11[1][3][0] = -1.0608832E-03;  Omega11[1][3][1] = 1.1782595E-02;   Omega11[1][3][2] = -2.1246301E-01;  Omega11[1][3][3] = 8.4561598E+01;
-        Omega11[1][4][0] = -3.7969686E-03;  Omega11[1][4][1] = 7.6789981E-02;   Omega11[1][4][2] = -7.3056809E-01;  Omega11[1][4][3] = 3.3958171E+02;
-        //NO
-        Omega11[2][0][0] = -6.8237776E-03;  Omega11[2][0][1] = 1.4360616E-01;   Omega11[2][0][2] = -1.1922240E+00;  Omega11[2][0][3] = 1.2433086E+03;
-        Omega11[2][1][0] = -6.8508672E-03;  Omega11[2][1][1] = 1.5524564E-01;   Omega11[2][1][2] = -1.3479583E+00;  Omega11[2][1][3] = 2.0037890E+03;
-        Omega11[2][2][0] = -7.4942466E-03;  Omega11[2][2][1] = 1.6626193E-01;   Omega11[2][2][2] = -1.4107027E+00;  Omega11[2][2][3] = 2.3097604E+03;
-        Omega11[2][3][0] = -1.4719259E-03;  Omega11[2][3][1] = 1.8446968E-02;   Omega11[2][3][2] = -2.6460411E-01;  Omega11[2][3][3] = 1.0911124E+02;
-        Omega11[2][4][0] = -1.0066279E-03;  Omega11[2][4][1] = 1.1029264E-02;   Omega11[2][4][2] = -2.0671266E-01;  Omega11[2][4][3] = 8.2644384E+01;
-        //N
-        Omega11[3][0][0] = -8.3493693E-03;  Omega11[3][0][1] = 1.7808911E-01;   Omega11[3][0][2] = -1.4466155E+00;  Omega11[3][0][3] = 1.9324210E+03;
-        Omega11[3][1][0] = -1.0608832E-03;  Omega11[3][1][1] = 1.1782595E-02;   Omega11[3][1][2] = -2.1246301E-01;  Omega11[3][1][3] = 8.4561598E+01;
-        Omega11[3][2][0] = -1.4719259E-03;  Omega11[3][2][1] = 1.8446968E-02;   Omega11[3][2][2] = -2.6460411E-01;  Omega11[3][2][3] = 1.0911124E+02;
-        Omega11[3][3][0] = -7.7439615E-03;  Omega11[3][3][1] = 1.7129007E-01;   Omega11[3][3][2] = -1.4809088E+00;  Omega11[3][3][3] = 2.1284951E+03;
-        Omega11[3][4][0] = -5.0478143E-03;  Omega11[3][4][1] = 1.0236186E-01;   Omega11[3][4][2] = -9.0058935E-01;  Omega11[3][4][3] = 4.4472565E+02;
-        //O
-        Omega11[4][0][0] = -8.3110691E-03;  Omega11[4][0][1] = 1.9617877E-01;   Omega11[4][0][2] = -1.7205427E+00;  Omega11[4][0][3] = 4.0812829E+03;
-        Omega11[4][1][0] = -3.7969686E-03;  Omega11[4][1][1] = 7.6789981E-02;   Omega11[4][1][2] = -7.3056809E-01;  Omega11[4][1][3] = 3.3958171E+02;
-        Omega11[4][2][0] = -1.0066279E-03;  Omega11[4][2][1] = 1.1029264E-02;   Omega11[4][2][2] = -2.0671266E-01;  Omega11[4][2][3] = 8.2644384E+01;
-        Omega11[4][3][0] = -5.0478143E-03;  Omega11[4][3][1] = 1.0236186E-01;   Omega11[4][3][2] = -9.0058935E-01;  Omega11[4][3][3] = 4.4472565E+02;
-        Omega11[4][4][0] = -4.2451096E-03;  Omega11[4][4][1] = 9.6820337E-02;   Omega11[4][4][2] = -9.9770795E-01;  Omega11[4][4][3] = 8.3320644E+02;
-
-        break;
     }
-  }
-
-  /*--- Check for constant lift mode  ---*/
-  if (Fixed_CL_Mode) {
-
-    /*--- The initial AoA will be taken as the value input in the 
-     config file (the default is zero). ---*/
-
-    /*--- We will force the use of the cauchy convergence criteria for
-     constant lift mode. ---*/
-
-    ConvCriteria = CAUCHY;
-    Cauchy_Func_Flow = LIFT_COEFFICIENT;
-
-    /*--- Initialize the update flag for the AoA with each iteration to false ---*/
-
-    Update_AoA = false;
-
-  }
-
-  /*--- Check for 2nd order w/ limiting for JST and correct ---*/
-  
-  if ((Kind_ConvNumScheme_Flow == SPACE_CENTERED) && (Kind_Centered_Flow == JST) && (SpatialOrder_Flow == SECOND_ORDER_LIMITER))
-    SpatialOrder_Flow = SECOND_ORDER;
-  
-  if ((Kind_ConvNumScheme_AdjFlow == SPACE_CENTERED) && (Kind_Centered_AdjFlow == JST) && (SpatialOrder_AdjFlow == SECOND_ORDER_LIMITER))
-    SpatialOrder_AdjFlow = SECOND_ORDER;
-
-  delete [] tmp_smooth;
-
+    
+    /*--- If we're solving a purely steady problem with no prescribed grid
+     movement (both rotating frame and moving walls can be steady), make sure that
+     there is no grid motion ---*/
+    
+    if ((Kind_SU2 == SU2_CFD || Kind_SU2 == SU2_SOL) &&
+        (Unsteady_Simulation == STEADY) &&
+        ((Kind_GridMovement[ZONE_0] != MOVING_WALL) &&
+         (Kind_GridMovement[ZONE_0] != ROTATING_FRAME)))
+        Grid_Movement = false;
+    
+    /*--- If it is not specified, set the mesh motion mach number
+     equal to the freestream value. ---*/
+    
+    if (Grid_Movement && Mach_Motion == 0.0)
+        Mach_Motion = Mach;
+    
+    /*--- Set the boolean flag if we are in a rotating frame (source term). ---*/
+    
+    if (Grid_Movement && Kind_GridMovement[ZONE_0] == ROTATING_FRAME)
+        Rotating_Frame = true;
+    else
+        Rotating_Frame = false;
+    
+    /*--- Check the number of moving markers against the number of grid movement
+     types provided (should be equal, except that rigid motion and rotating frame
+     do not depend on surface specification). ---*/
+    
+    if (Grid_Movement && (Kind_GridMovement[ZONE_0] != RIGID_MOTION) &&
+        (Kind_GridMovement[ZONE_0] != ROTATING_FRAME) &&
+        (nGridMovement != nMarker_Moving)) {
+        cout << "Number of GRID_MOVEMENT_KIND must match number of MARKER_MOVING!!" << endl;
+        exit(EXIT_FAILURE);
+    }
+    
+    /*--- Make sure that there aren't more than one rigid motion or
+     rotating frame specified in GRID_MOVEMENT_KIND. ---*/
+    
+    if (Grid_Movement && (Kind_GridMovement[ZONE_0] == RIGID_MOTION) &&
+        (nGridMovement > 1)) {
+        cout << "Can not support more than one type of rigid motion in GRID_MOVEMENT_KIND!!" << endl;
+        exit(EXIT_FAILURE);
+    }
+    if (Grid_Movement && (Kind_GridMovement[ZONE_0] == ROTATING_FRAME) &&
+        (nGridMovement > 1)) {
+        cout << "Can not support more than one rotating frame in GRID_MOVEMENT_KIND!!" << endl;
+        exit(EXIT_FAILURE);
+    }
+    
+    /*--- In case the grid movement parameters have not been declared in the
+     config file, set them equal to zero for safety. Also check to make sure
+     that for each option, a value has been declared for each moving marker. ---*/
+    
+    unsigned short nMoving;
+    if (nGridMovement > nZone) nMoving = nGridMovement;
+    else nMoving = nZone;
+    
+    /*--- Motion Origin: ---*/
+    if (Motion_Origin_X == NULL) {
+        Motion_Origin_X = new double[nMoving];
+        for (iZone = 0; iZone < nMoving; iZone++ )
+            Motion_Origin_X[iZone] = 0.0;
+    } else {
+        if (Grid_Movement && (nMotion_Origin_X != nGridMovement)) {
+            cout << "Length of MOTION_ORIGIN_X must match GRID_MOVEMENT_KIND!!" << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    if (Motion_Origin_Y == NULL) {
+        Motion_Origin_Y = new double[nMoving];
+        for (iZone = 0; iZone < nMoving; iZone++ )
+            Motion_Origin_Y[iZone] = 0.0;
+    } else {
+        if (Grid_Movement && (nMotion_Origin_Y != nGridMovement)) {
+            cout << "Length of MOTION_ORIGIN_Y must match GRID_MOVEMENT_KIND!!" << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    if (Motion_Origin_Z == NULL) {
+        Motion_Origin_Z = new double[nMoving];
+        for (iZone = 0; iZone < nMoving; iZone++ )
+            Motion_Origin_Z[iZone] = 0.0;
+    } else {
+        if (Grid_Movement && (nMotion_Origin_Z != nGridMovement)) {
+            cout << "Length of MOTION_ORIGIN_Z must match GRID_MOVEMENT_KIND!!" << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    if (MoveMotion_Origin == NULL) {
+        MoveMotion_Origin = new unsigned short[nMoving];
+        for (iZone = 0; iZone < nMoving; iZone++ )
+            MoveMotion_Origin[iZone] = 0;
+    } else {
+        if (Grid_Movement && (nMoveMotion_Origin != nGridMovement)) {
+            cout << "Length of MOVE_MOTION_ORIGIN must match GRID_MOVEMENT_KIND!!" << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    /*--- Translation: ---*/
+    
+    if (Translation_Rate_X == NULL) {
+        Translation_Rate_X = new double[nMoving];
+        for (iZone = 0; iZone < nMoving; iZone++ )
+            Translation_Rate_X[iZone] = 0.0;
+    } else {
+        if (Grid_Movement && (nTranslation_Rate_X != nGridMovement)) {
+            cout << "Length of TRANSLATION_RATE_X must match GRID_MOVEMENT_KIND!!" << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    if (Translation_Rate_Y == NULL) {
+        Translation_Rate_Y = new double[nMoving];
+        for (iZone = 0; iZone < nMoving; iZone++ )
+            Translation_Rate_Y[iZone] = 0.0;
+    } else {
+        if (Grid_Movement && (nTranslation_Rate_Y != nGridMovement)) {
+            cout << "Length of TRANSLATION_RATE_Y must match GRID_MOVEMENT_KIND!!" << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    if (Translation_Rate_Z == NULL) {
+        Translation_Rate_Z = new double[nMoving];
+        for (iZone = 0; iZone < nMoving; iZone++ )
+            Translation_Rate_Z[iZone] = 0.0;
+    } else {
+        if (Grid_Movement && (nTranslation_Rate_Z != nGridMovement)) {
+            cout << "Length of TRANSLATION_RATE_Z must match GRID_MOVEMENT_KIND!!" << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    /*--- Rotation: ---*/
+    
+    if (Rotation_Rate_X == NULL) {
+        Rotation_Rate_X = new double[nMoving];
+        for (iZone = 0; iZone < nMoving; iZone++ )
+            Rotation_Rate_X[iZone] = 0.0;
+    } else {
+        if (Grid_Movement && (nRotation_Rate_X != nGridMovement)) {
+            cout << "Length of ROTATION_RATE_X must match GRID_MOVEMENT_KIND!!" << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    if (Rotation_Rate_Y == NULL) {
+        Rotation_Rate_Y = new double[nMoving];
+        for (iZone = 0; iZone < nMoving; iZone++ )
+            Rotation_Rate_Y[iZone] = 0.0;
+    } else {
+        if (Grid_Movement && (nRotation_Rate_Y != nGridMovement)) {
+            cout << "Length of ROTATION_RATE_Y must match GRID_MOVEMENT_KIND!!" << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    if (Rotation_Rate_Z == NULL) {
+        Rotation_Rate_Z = new double[nMoving];
+        for (iZone = 0; iZone < nMoving; iZone++ )
+            Rotation_Rate_Z[iZone] = 0.0;
+    } else {
+        if (Grid_Movement && (nRotation_Rate_Z != nGridMovement)) {
+            cout << "Length of ROTATION_RATE_Z must match GRID_MOVEMENT_KIND!!" << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    /*--- Pitching: ---*/
+    
+    if (Pitching_Omega_X == NULL) {
+        Pitching_Omega_X = new double[nMoving];
+        for (iZone = 0; iZone < nMoving; iZone++ )
+            Pitching_Omega_X[iZone] = 0.0;
+    } else {
+        if (Grid_Movement && (nPitching_Omega_X != nGridMovement)) {
+            cout << "Length of PITCHING_OMEGA_X must match GRID_MOVEMENT_KIND!!" << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    if (Pitching_Omega_Y == NULL) {
+        Pitching_Omega_Y = new double[nMoving];
+        for (iZone = 0; iZone < nMoving; iZone++ )
+            Pitching_Omega_Y[iZone] = 0.0;
+    } else {
+        if (Grid_Movement && (nPitching_Omega_Y != nGridMovement)) {
+            cout << "Length of PITCHING_OMEGA_Y must match GRID_MOVEMENT_KIND!!" << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    if (Pitching_Omega_Z == NULL) {
+        Pitching_Omega_Z = new double[nMoving];
+        for (iZone = 0; iZone < nMoving; iZone++ )
+            Pitching_Omega_Z[iZone] = 0.0;
+    } else {
+        if (Grid_Movement && (nPitching_Omega_Z != nGridMovement)) {
+            cout << "Length of PITCHING_OMEGA_Z must match GRID_MOVEMENT_KIND!!" << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    /*--- Pitching Amplitude: ---*/
+    
+    if (Pitching_Ampl_X == NULL) {
+        Pitching_Ampl_X = new double[nMoving];
+        for (iZone = 0; iZone < nMoving; iZone++ )
+            Pitching_Ampl_X[iZone] = 0.0;
+    } else {
+        if (Grid_Movement && (nPitching_Ampl_X != nGridMovement)) {
+            cout << "Length of PITCHING_AMPL_X must match GRID_MOVEMENT_KIND!!" << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    if (Pitching_Ampl_Y == NULL) {
+        Pitching_Ampl_Y = new double[nMoving];
+        for (iZone = 0; iZone < nMoving; iZone++ )
+            Pitching_Ampl_Y[iZone] = 0.0;
+    } else {
+        if (Grid_Movement && (nPitching_Ampl_Y != nGridMovement)) {
+            cout << "Length of PITCHING_AMPL_Y must match GRID_MOVEMENT_KIND!!" << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    if (Pitching_Ampl_Z == NULL) {
+        Pitching_Ampl_Z = new double[nMoving];
+        for (iZone = 0; iZone < nMoving; iZone++ )
+            Pitching_Ampl_Z[iZone] = 0.0;
+    } else {
+        if (Grid_Movement && (nPitching_Ampl_Z != nGridMovement)) {
+            cout << "Length of PITCHING_AMPL_Z must match GRID_MOVEMENT_KIND!!" << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    /*--- Pitching Phase: ---*/
+    
+    if (Pitching_Phase_X == NULL) {
+        Pitching_Phase_X = new double[nMoving];
+        for (iZone = 0; iZone < nMoving; iZone++ )
+            Pitching_Phase_X[iZone] = 0.0;
+    } else {
+        if (Grid_Movement && (nPitching_Phase_X != nGridMovement)) {
+            cout << "Length of PITCHING_PHASE_X must match GRID_MOVEMENT_KIND!!" << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    if (Pitching_Phase_Y == NULL) {
+        Pitching_Phase_Y = new double[nMoving];
+        for (iZone = 0; iZone < nMoving; iZone++ )
+            Pitching_Phase_Y[iZone] = 0.0;
+    } else {
+        if (Grid_Movement && (nPitching_Phase_Y != nGridMovement)) {
+            cout << "Length of PITCHING_PHASE_Y must match GRID_MOVEMENT_KIND!!" << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    if (Pitching_Phase_Z == NULL) {
+        Pitching_Phase_Z = new double[nMoving];
+        for (iZone = 0; iZone < nMoving; iZone++ )
+            Pitching_Phase_Z[iZone] = 0.0;
+    } else {
+        if (Grid_Movement && (nPitching_Phase_Z != nGridMovement)) {
+            cout << "Length of PITCHING_PHASE_Z must match GRID_MOVEMENT_KIND!!" << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    /*--- Plunging: ---*/
+    
+    if (Plunging_Omega_X == NULL) {
+        Plunging_Omega_X = new double[nMoving];
+        for (iZone = 0; iZone < nMoving; iZone++ )
+            Plunging_Omega_X[iZone] = 0.0;
+    } else {
+        if (Grid_Movement && (nPlunging_Omega_X != nGridMovement)) {
+            cout << "Length of PLUNGING_OMEGA_X must match GRID_MOVEMENT_KIND!!" << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    if (Plunging_Omega_Y == NULL) {
+        Plunging_Omega_Y = new double[nMoving];
+        for (iZone = 0; iZone < nMoving; iZone++ )
+            Plunging_Omega_Y[iZone] = 0.0;
+    } else {
+        if (Grid_Movement && (nPlunging_Omega_Y != nGridMovement)) {
+            cout << "Length of PLUNGING_OMEGA_Y must match GRID_MOVEMENT_KIND!!" << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    if (Plunging_Omega_Z == NULL) {
+        Plunging_Omega_Z = new double[nMoving];
+        for (iZone = 0; iZone < nMoving; iZone++ )
+            Plunging_Omega_Z[iZone] = 0.0;
+    } else {
+        if (Grid_Movement && (nPlunging_Omega_Z != nGridMovement)) {
+            cout << "Length of PLUNGING_OMEGA_Z must match GRID_MOVEMENT_KIND!!" << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    /*--- Plunging Amplitude: ---*/
+    
+    if (Plunging_Ampl_X == NULL) {
+        Plunging_Ampl_X = new double[nMoving];
+        for (iZone = 0; iZone < nMoving; iZone++ )
+            Plunging_Ampl_X[iZone] = 0.0;
+    } else {
+        if (Grid_Movement && (nPlunging_Ampl_X != nGridMovement)) {
+            cout << "Length of PLUNGING_AMPL_X must match GRID_MOVEMENT_KIND!!" << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    if (Plunging_Ampl_Y == NULL) {
+        Plunging_Ampl_Y = new double[nMoving];
+        for (iZone = 0; iZone < nMoving; iZone++ )
+            Plunging_Ampl_Y[iZone] = 0.0;
+    } else {
+        if (Grid_Movement && (nPlunging_Ampl_Y != nGridMovement)) {
+            cout << "Length of PLUNGING_AMPL_Y must match GRID_MOVEMENT_KIND!!" << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    if (Plunging_Ampl_Z == NULL) {
+        Plunging_Ampl_Z = new double[nMoving];
+        for (iZone = 0; iZone < nMoving; iZone++ )
+            Plunging_Ampl_Z[iZone] = 0.0;
+    } else {
+        if (Grid_Movement && (nPlunging_Ampl_Z != nGridMovement)) {
+            cout << "Length of PLUNGING_AMPL_Z must match GRID_MOVEMENT_KIND!!" << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    /*--- Use the various rigid-motion input frequencies to determine the period to be used with time-spectral cases.
+     There are THREE types of motion to consider, namely: rotation, pitching, and plunging.
+     The largest period of motion is the one to be used for time-spectral calculations. ---*/
+    
+    if (Unsteady_Simulation == TIME_SPECTRAL) {
+        
+        unsigned short N_MOTION_TYPES = 3;
+        double *periods;
+        periods = new double[N_MOTION_TYPES];
+        
+        /*--- rotation: ---*/
+        
+        double Omega_mag_rot = sqrt(pow(Rotation_Rate_X[ZONE_0],2)+pow(Rotation_Rate_Y[ZONE_0],2)+pow(Rotation_Rate_Z[ZONE_0],2));
+        if (Omega_mag_rot > 0)
+            periods[0] = 2*PI_NUMBER/Omega_mag_rot;
+        else
+            periods[0] = 0.0;
+        
+        /*--- pitching: ---*/
+        
+        double Omega_mag_pitch = sqrt(pow(Pitching_Omega_X[ZONE_0],2)+pow(Pitching_Omega_Y[ZONE_0],2)+pow(Pitching_Omega_Z[ZONE_0],2));
+        if (Omega_mag_pitch > 0)
+            periods[1] = 2*PI_NUMBER/Omega_mag_pitch;
+        else
+            periods[1] = 0.0;
+        
+        /*--- plunging: ---*/
+        
+        double Omega_mag_plunge = sqrt(pow(Plunging_Omega_X[ZONE_0],2)+pow(Plunging_Omega_Y[ZONE_0],2)+pow(Plunging_Omega_Z[ZONE_0],2));
+        if (Omega_mag_plunge > 0)
+            periods[2] = 2*PI_NUMBER/Omega_mag_plunge;
+        else
+            periods[2] = 0.0;
+        
+        /*--- determine which period is largest ---*/
+        
+        unsigned short iVar;
+        TimeSpectral_Period = 0.0;
+        for (iVar = 0; iVar < N_MOTION_TYPES; iVar++) {
+            if (periods[iVar] > TimeSpectral_Period)
+                TimeSpectral_Period = periods[iVar];
+        }
+        
+        delete periods;
+        
+    }
+    
+    /*--- Initialize the RefOriginMoment Pointer ---*/
+    
+    RefOriginMoment = NULL;
+    RefOriginMoment = new double[3];
+    RefOriginMoment[0] = 0.0; RefOriginMoment[1] = 0.0; RefOriginMoment[2] = 0.0;
+    
+    /*--- In case the moment origin coordinates have not been declared in the
+     config file, set them equal to zero for safety. Also check to make sure
+     that for each marker, a value has been declared for the moment origin.
+     Unless only one value was specified, then set this value for all the markers
+     being monitored. ---*/
+    
+    unsigned short iMarker;
+    
+    if ((nRefOriginMoment_X != nRefOriginMoment_Y) || (nRefOriginMoment_X != nRefOriginMoment_Z) ) {
+        cout << "ERROR: Length of REF_ORIGIN_MOMENT_X, REF_ORIGIN_MOMENT_Y and REF_ORIGIN_MOMENT_Z must be the same!!" << endl;
+        exit(EXIT_FAILURE);
+    }
+    
+    if (RefOriginMoment_X == NULL) {
+        RefOriginMoment_X = new double[nMarker_Monitoring];
+        for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ )
+            RefOriginMoment_X[iMarker] = 0.0;
+    } else {
+        if (nRefOriginMoment_X == 1) {
+            
+            double aux_RefOriginMoment_X = RefOriginMoment_X[0];
+            delete [] RefOriginMoment_X;
+            RefOriginMoment_X = new double[nMarker_Monitoring];
+            nRefOriginMoment_X = nMarker_Monitoring;
+            
+            for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ )
+                RefOriginMoment_X[iMarker] = aux_RefOriginMoment_X;
+        }
+        else if (nRefOriginMoment_X != nMarker_Monitoring) {
+            cout << "ERROR: Length of REF_ORIGIN_MOMENT_X must match number of Monitoring Markers!!" << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    if (RefOriginMoment_Y == NULL) {
+        RefOriginMoment_Y = new double[nMarker_Monitoring];
+        for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ )
+            RefOriginMoment_Y[iMarker] = 0.0;
+    } else {
+        if (nRefOriginMoment_Y == 1) {
+            
+            double aux_RefOriginMoment_Y = RefOriginMoment_Y[0];
+            delete [] RefOriginMoment_Y;
+            RefOriginMoment_Y = new double[nMarker_Monitoring];
+            nRefOriginMoment_Y = nMarker_Monitoring;
+            
+            for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ )
+                RefOriginMoment_Y[iMarker] = aux_RefOriginMoment_Y;
+        }
+        else if (nRefOriginMoment_Y != nMarker_Monitoring) {
+            cout << "ERROR: Length of REF_ORIGIN_MOMENT_Y must match number of Monitoring Markers!!" << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    if (RefOriginMoment_Z == NULL) {
+        RefOriginMoment_Z = new double[nMarker_Monitoring];
+        for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ )
+            RefOriginMoment_Z[iMarker] = 0.0;
+    } else {
+        if (nRefOriginMoment_Z == 1) {
+            
+            double aux_RefOriginMoment_Z = RefOriginMoment_Z[0];
+            delete [] RefOriginMoment_Z;
+            RefOriginMoment_Z = new double[nMarker_Monitoring];
+            nRefOriginMoment_Z = nMarker_Monitoring;
+            
+            for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ )
+                RefOriginMoment_Z[iMarker] = aux_RefOriginMoment_Z;
+        }
+        else if (nRefOriginMoment_Z != nMarker_Monitoring) {
+            cout << "ERROR: Length of REF_ORIGIN_MOMENT_Z must match number of Monitoring Markers!!" << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    /*--- Set the boolean flag if we are carrying out an aeroelastic simulation. ---*/
+    
+    if (Grid_Movement && (Kind_GridMovement[ZONE_0] == AEROELASTIC || Kind_GridMovement[ZONE_0] == AEROELASTIC_RIGID_MOTION))
+        Aeroelastic_Simulation = true;
+    else
+        Aeroelastic_Simulation = false;
+    
+    /*--- Initializing the size for the solutions of the Aeroelastic problem. ---*/
+    
+    
+    if (Grid_Movement && Aeroelastic_Simulation) {
+        Aeroelastic_np1.resize(nMarker_Monitoring);
+        Aeroelastic_n.resize(nMarker_Monitoring);
+        Aeroelastic_n1.resize(nMarker_Monitoring);
+        for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++) {
+            Aeroelastic_np1[iMarker].resize(2);
+            Aeroelastic_n[iMarker].resize(2);
+            Aeroelastic_n1[iMarker].resize(2);
+            for (int i =0; i<2; i++) {
+                Aeroelastic_np1[iMarker][i].resize(2);
+                Aeroelastic_n[iMarker][i].resize(2);
+                Aeroelastic_n1[iMarker][i].resize(2);
+                for (int j=0; j<2; j++) {
+                    Aeroelastic_np1[iMarker][i][j] = 0.0;
+                    Aeroelastic_n[iMarker][i][j] = 0.0;
+                    Aeroelastic_n1[iMarker][i][j] = 0.0;
+                }
+            }
+        }
+    }
+    
+    /*--- Allocate memory for the plunge and pitch and initialized them to zero ---*/
+    
+    if (Grid_Movement && Aeroelastic_Simulation) {
+        Aeroelastic_pitch = new double[nMarker_Monitoring];
+        Aeroelastic_plunge = new double[nMarker_Monitoring];
+        for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ ) {
+            Aeroelastic_pitch[iMarker] = 0.0;
+            Aeroelastic_plunge[iMarker] = 0.0;
+        }
+    }
+    
+    /*--- Fluid-Structure problems always have grid movement ---*/
+    
+    if (Kind_Solver == FLUID_STRUCTURE_EULER ||
+        Kind_Solver == FLUID_STRUCTURE_NAVIER_STOKES) {
+        if (Kind_Turb_Model != NONE)
+            Kind_Solver = FLUID_STRUCTURE_RANS;
+        Grid_Movement = true;
+    }
+    
+    if (FullMG) FinestMesh = nMultiLevel;
+    else FinestMesh = MESH_0;
+    
+    if ((Kind_Solver == NAVIER_STOKES) &&
+        (Kind_Turb_Model != NONE))
+        Kind_Solver = RANS;
+    
+    if (Kind_Regime == FREESURFACE) GravityForce = true;
+    
+    Kappa_1st_Flow = Kappa_Flow[0];
+    Kappa_2nd_Flow = Kappa_Flow[1];
+    Kappa_4th_Flow = Kappa_Flow[2];
+    Kappa_1st_AdjFlow = Kappa_AdjFlow[0];
+    Kappa_2nd_AdjFlow = Kappa_AdjFlow[1];
+    Kappa_4th_AdjFlow = Kappa_AdjFlow[2];
+    Kappa_1st_LinFlow = Kappa_AdjFlow[0];
+    Kappa_4th_LinFlow = Kappa_AdjFlow[1];
+    
+    // make the MG_PreSmooth, MG_PostSmooth, and MG_CorrecSmooth arrays consistent with nMultiLevel
+    unsigned short * tmp_smooth = new unsigned short[nMultiLevel+1];
+    
+    if ((nMG_PreSmooth != nMultiLevel+1) && (nMG_PreSmooth != 0)) {
+        if (nMG_PreSmooth > nMultiLevel+1) {
+            
+            // truncate by removing unnecessary elements at the end
+            for (unsigned int i = 0; i <= nMultiLevel; i++)
+                tmp_smooth[i] = MG_PreSmooth[i];
+            delete [] MG_PreSmooth;
+        } else {
+            
+            // add additional elements equal to last element
+            for (unsigned int i = 0; i < nMG_PreSmooth; i++)
+                tmp_smooth[i] = MG_PreSmooth[i];
+            for (unsigned int i = nMG_PreSmooth; i <= nMultiLevel; i++)
+                tmp_smooth[i] = MG_PreSmooth[nMG_PreSmooth-1];
+            delete [] MG_PreSmooth;
+        }
+        
+        nMG_PreSmooth = nMultiLevel+1;
+        MG_PreSmooth = new unsigned short[nMG_PreSmooth];
+        for (unsigned int i = 0; i < nMG_PreSmooth; i++)
+            MG_PreSmooth[i] = tmp_smooth[i];
+    }
+    if ((nMultiLevel != 0) && (nMG_PreSmooth == 0)) {
+        delete [] MG_PreSmooth;
+        nMG_PreSmooth = nMultiLevel+1;
+        MG_PreSmooth = new unsigned short[nMG_PreSmooth];
+        for (unsigned int i = 0; i < nMG_PreSmooth; i++)
+            MG_PreSmooth[i] = i+1;
+    }
+    
+    if ((nMG_PostSmooth != nMultiLevel+1) && (nMG_PostSmooth != 0)) {
+        if (nMG_PostSmooth > nMultiLevel+1) {
+            // truncate by removing unnecessary elements at the end
+            for (unsigned int i = 0; i <= nMultiLevel; i++)
+                tmp_smooth[i] = MG_PostSmooth[i];
+            delete [] MG_PostSmooth;
+        } else {
+            // add additional elements equal to last element
+            for (unsigned int i = 0; i < nMG_PostSmooth; i++)
+                tmp_smooth[i] = MG_PostSmooth[i];
+            for (unsigned int i = nMG_PostSmooth; i <= nMultiLevel; i++)
+                tmp_smooth[i] = MG_PostSmooth[nMG_PostSmooth-1];
+            delete [] MG_PostSmooth;
+        }
+        nMG_PostSmooth = nMultiLevel+1;
+        MG_PostSmooth = new unsigned short[nMG_PostSmooth];
+        for (unsigned int i = 0; i < nMG_PostSmooth; i++)
+            MG_PostSmooth[i] = tmp_smooth[i];
+    }
+    if ((nMultiLevel != 0) && (nMG_PostSmooth == 0)) {
+        delete [] MG_PostSmooth;
+        nMG_PostSmooth = nMultiLevel+1;
+        MG_PostSmooth = new unsigned short[nMG_PostSmooth];
+        for (unsigned int i = 0; i < nMG_PostSmooth; i++)
+            MG_PostSmooth[i] = 0;
+    }
+    
+    if ((nMG_CorrecSmooth != nMultiLevel+1) && (nMG_CorrecSmooth != 0)) {
+        if (nMG_CorrecSmooth > nMultiLevel+1) {
+            // truncate by removing unnecessary elements at the end
+            for (unsigned int i = 0; i <= nMultiLevel; i++)
+                tmp_smooth[i] = MG_CorrecSmooth[i];
+            delete [] MG_CorrecSmooth;
+        } else {
+            // add additional elements equal to last element
+            for (unsigned int i = 0; i < nMG_CorrecSmooth; i++)
+                tmp_smooth[i] = MG_CorrecSmooth[i];
+            for (unsigned int i = nMG_CorrecSmooth; i <= nMultiLevel; i++)
+                tmp_smooth[i] = MG_CorrecSmooth[nMG_CorrecSmooth-1];
+            delete [] MG_CorrecSmooth;
+        }
+        nMG_CorrecSmooth = nMultiLevel+1;
+        MG_CorrecSmooth = new unsigned short[nMG_CorrecSmooth];
+        for (unsigned int i = 0; i < nMG_CorrecSmooth; i++)
+            MG_CorrecSmooth[i] = tmp_smooth[i];
+    }
+    if ((nMultiLevel != 0) && (nMG_CorrecSmooth == 0)) {
+        delete [] MG_CorrecSmooth;
+        nMG_CorrecSmooth = nMultiLevel+1;
+        MG_CorrecSmooth = new unsigned short[nMG_CorrecSmooth];
+        for (unsigned int i = 0; i < nMG_CorrecSmooth; i++)
+            MG_CorrecSmooth[i] = 0;
+    }
+    
+    // override MG Smooth parameters
+    if (nMG_PreSmooth != 0)
+        MG_PreSmooth[MESH_0] = 1;
+    if (nMG_PostSmooth != 0) {
+        MG_PostSmooth[MESH_0] = 0;
+        MG_PostSmooth[nMultiLevel] = 0;
+    }
+    if (nMG_CorrecSmooth != 0)
+        MG_CorrecSmooth[nMultiLevel] = 0;
+    
+    if (Restart) FullMG = false;
+    
+    if (Adjoint) {
+        if (Kind_Solver == EULER) Kind_Solver = ADJ_EULER;
+        if (Kind_Solver == NAVIER_STOKES) Kind_Solver = ADJ_NAVIER_STOKES;
+        if (Kind_Solver == RANS) Kind_Solver = ADJ_RANS;
+        if (Kind_Solver == TNE2_EULER) Kind_Solver = ADJ_TNE2_EULER;
+        if (Kind_Solver == TNE2_NAVIER_STOKES) Kind_Solver = ADJ_TNE2_NAVIER_STOKES;
+    }
+    
+    if (Linearized) {
+        if (Kind_Solver == EULER) Kind_Solver = LIN_EULER;
+    }
+    
+    if (Unsteady_Simulation == TIME_STEPPING) {
+        nMultiLevel = 0;
+        MGCycle = 0;
+    }
+    
+    nCFL = nMultiLevel+1;
+    CFL = new double[nCFL];
+    CFL[0] = CFLFineGrid;
+    if (Adjoint) CFL[0] = CFL[0] * CFLRedCoeff_AdjFlow;
+    
+    for (iCFL = 1; iCFL < nCFL; iCFL++)
+        CFL[iCFL] = CFL[iCFL-1];
+    
+    if (nRKStep == 0) {
+        nRKStep = 1;
+        RK_Alpha_Step = new double[1]; RK_Alpha_Step[0] = 1.0;
+    }
+    
+    if ((Kind_SU2 == SU2_CFD) && (Kind_Solver == NO_SOLVER)) {
+        cout << "PHYSICAL_PROBLEM must be set in the configuration file" << endl;
+        exit(EXIT_FAILURE);
+    }
+    
+    /*--- Set a flag for viscous simulations ---*/
+    
+    Viscous = (( Kind_Solver == NAVIER_STOKES          ) ||
+               ( Kind_Solver == ADJ_NAVIER_STOKES      ) ||
+               ( Kind_Solver == RANS                   ) ||
+               ( Kind_Solver == ADJ_RANS               ) ||
+               ( Kind_Solver == TNE2_NAVIER_STOKES     ) ||
+               ( Kind_Solver == ADJ_TNE2_NAVIER_STOKES )   );
+    
+    
+    /*--- Re-scale the length based parameters. The US system uses feet,
+     but SU2 assumes that the grid is in inches ---*/
+    
+    if ((SystemMeasurements == US) && (Kind_SU2 == SU2_CFD)) {
+        
+        for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++) {
+            RefOriginMoment_X[iMarker] = RefOriginMoment_X[iMarker]/12.0;
+            RefOriginMoment_Y[iMarker] = RefOriginMoment_Y[iMarker]/12.0;
+            RefOriginMoment_Z[iMarker] = RefOriginMoment_Z[iMarker]/12.0;
+        }
+        
+        for (iMarker = 0; iMarker < nGridMovement; iMarker++) {
+            Motion_Origin_X[iMarker] = Motion_Origin_X[iMarker]/12.0;
+            Motion_Origin_Y[iMarker] = Motion_Origin_Y[iMarker]/12.0;
+            Motion_Origin_Z[iMarker] = Motion_Origin_Z[iMarker]/12.0;
+        }
+        
+        RefLengthMoment = RefLengthMoment/12.0;
+        if (val_nDim == 2) RefAreaCoeff = RefAreaCoeff/12.0;
+        else RefAreaCoeff = RefAreaCoeff/144.0;
+        Length_Reynolds = Length_Reynolds/12.0;
+        RefElemLength = RefElemLength/12.0;
+        
+        EA_IntLimit[0] = EA_IntLimit[0]/12.0;
+        EA_IntLimit[1] = EA_IntLimit[1]/12.0;
+        EA_IntLimit[2] = EA_IntLimit[2]/12.0;
+        
+        Section_Location[0] = Section_Location[0]/12.0;
+        Section_Location[1] = Section_Location[1]/12.0;
+        
+    }
+    
+    /*--- Reacting flows initialization ---*/
+    
+    if (( Kind_Solver == TNE2_EULER             ) ||
+        ( Kind_Solver == TNE2_NAVIER_STOKES     ) ||
+        ( Kind_Solver == ADJ_TNE2_EULER         ) ||
+        ( Kind_Solver == ADJ_TNE2_NAVIER_STOKES )   ) {
+        
+        Kappa_1st_TNE2    = Kappa_TNE2[0];
+        Kappa_2nd_TNE2    = Kappa_TNE2[1];
+        Kappa_4th_TNE2    = Kappa_TNE2[2];
+        Kappa_1st_AdjTNE2 = Kappa_AdjTNE2[0];
+        Kappa_2nd_AdjTNE2 = Kappa_AdjTNE2[1];
+        Kappa_4th_AdjTNE2 = Kappa_AdjTNE2[2];
+        
+        
+        unsigned short maxEl = 0;
+        unsigned short iSpecies, jSpecies, iEl;
+        
+        switch (Kind_GasModel) {
+            case ONESPECIES:
+                /*--- Define parameters of the gas model ---*/
+                nSpecies    = 1;
+                ionization  = false;
+                
+                /*--- Allocate vectors for gas properties ---*/
+                Molar_Mass         = new double[nSpecies];
+                CharVibTemp        = new double[nSpecies];
+                RotationModes      = new double[nSpecies];
+                Enthalpy_Formation = new double[nSpecies];
+                Wall_Catalycity    = new double[nSpecies];
+                Ref_Temperature    = new double[nSpecies];
+                nElStates          = new unsigned short[nSpecies];
+                
+                
+                
+                MassFrac_FreeStream = new double[nSpecies];
+                MassFrac_FreeStream[0] = 1.0;
+                
+                /*--- Assign gas properties ---*/
+                // Rotational modes of energy storage
+                RotationModes[0] = 2.0;
+                // Molar mass [kg/kmol]
+                Molar_Mass[0] = 14.0067+15.9994;
+                // Characteristic vibrational temperatures for calculating e_vib [K]
+                //CharVibTemp[0] = 3395.0;
+                CharVibTemp[0] = 1000.0;
+                // Formation enthalpy: (JANAF values, [KJ/Kmol])
+                Enthalpy_Formation[0] = 0.0;					//N2
+                // Reference temperature (JANAF values, [K])
+                Ref_Temperature[0] = 0.0;
+                
+                /*        nElStates[0] = 0;
+                 CharElTemp   = new double *[nSpecies];
+                 degen        = new double *[nSpecies];
+                 
+                 OSPthetae    = new double[nElStates[0]];
+                 OSPthetae[0] = 1.0;
+                 OSPg         = new double[nElStates[0]];
+                 OSPg[0]      = 1.0;
+                 
+                 CharElTemp[0] = OSPthetae;
+                 degen[0] = OSPg;*/
+                
+                break;
+                
+            case N2:
+                
+                /*--- Define parameters of the gas model ---*/
+                nSpecies    = 2;
+                nReactions  = 2;
+                ionization  = false;
+                
+                /*--- Allocate vectors for gas properties ---*/
+                Wall_Catalycity      = new double[nSpecies];
+                Molar_Mass           = new double[nSpecies];
+                CharVibTemp          = new double[nSpecies];
+                RotationModes        = new double[nSpecies];
+                Enthalpy_Formation   = new double[nSpecies];
+                Ref_Temperature      = new double[nSpecies];
+                Diss                 = new double[nSpecies];
+                ArrheniusCoefficient = new double[nReactions];
+                ArrheniusEta         = new double[nReactions];
+                ArrheniusTheta       = new double[nReactions];
+                Tcf_a                = new double[nReactions];
+                Tcf_b                = new double[nReactions];
+                Tcb_a                = new double[nReactions];
+                Tcb_b                = new double[nReactions];
+                nElStates            = new unsigned short[nSpecies];
+                Reactions = new int**[nReactions];
+                for (unsigned short iRxn = 0; iRxn < nReactions; iRxn++) {
+                    Reactions[iRxn] = new int*[2];
+                    for (unsigned short ii = 0; ii < 2; ii++)
+                        Reactions[iRxn][ii] = new int[6];
+                }
+                
+                // Omega[iSpecies][jSpecies][iCoeff]
+                Omega00 = new double**[nSpecies];
+                Omega11 = new double**[nSpecies];
+                for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+                    Omega00[iSpecies] = new double*[nSpecies];
+                    Omega11[iSpecies] = new double*[nSpecies];
+                    for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+                        Omega00[iSpecies][jSpecies] = new double[4];
+                        Omega11[iSpecies][jSpecies] = new double[4];
+                    }
+                }
+                
+                MassFrac_FreeStream = new double[nSpecies];
+                MassFrac_FreeStream[0] = 0.99;
+                MassFrac_FreeStream[1] = 0.01;
+                
+                /*--- Assign gas properties ---*/
+                
+                // Wall mass fractions for catalytic boundaries
+                Wall_Catalycity[0] = 0.7;
+                Wall_Catalycity[1] = 0.3;
+                
+                // Rotational modes of energy storage
+                RotationModes[0] = 2.0;
+                RotationModes[1] = 0.0;
+                
+                // Molar mass [kg/kmol]
+                Molar_Mass[0] = 2.0*14.0067;
+                Molar_Mass[1] = 14.0067;
+                
+                // Characteristic vibrational temperatures
+                CharVibTemp[0] = 3395.0;
+                CharVibTemp[1] = 0.0;
+                
+                // Formation enthalpy: (JANAF values [KJ/Kmol])
+                Enthalpy_Formation[0] = 0.0;					//N2
+                Enthalpy_Formation[1] = 472.683E3;		//N
+                
+                // Reference temperature (JANAF values, [K])
+                Ref_Temperature[0] = 0.0;
+                Ref_Temperature[1] = 298.15;
+                
+                // Number of electron states
+                nElStates[0] = 15;                    // N2
+                nElStates[1] = 3;                     // N
+                for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+                    maxEl = max(maxEl, nElStates[iSpecies]);
+                
+                /*--- Allocate electron data arrays ---*/
+                CharElTemp = new double*[nSpecies];
+                degen      = new double*[nSpecies];
+                for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+                    CharElTemp[iSpecies] = new double[maxEl];
+                    degen[iSpecies]      = new double[maxEl];
+                }
+                
+                /*--- Initialize the arrays ---*/
+                for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+                    for (iEl = 0; iEl < maxEl; iEl++) {
+                        CharElTemp[iSpecies][iEl] = 0.0;
+                        degen[iSpecies][iEl] = 0.0;
+                    }
+                }
+                
+                /*--- Assign values to data structures ---*/
+                // N2: 15 states
+                CharElTemp[0][0]  = 0.000000000000000E+00;
+                CharElTemp[0][1]  = 7.223156514095200E+04;
+                CharElTemp[0][2]  = 8.577862640384000E+04;
+                CharElTemp[0][3]  = 8.605026716160000E+04;
+                CharElTemp[0][4]  = 9.535118627874400E+04;
+                CharElTemp[0][5]  = 9.805635702203200E+04;
+                CharElTemp[0][6]  = 9.968267656935200E+04;
+                CharElTemp[0][7]  = 1.048976467715200E+05;
+                CharElTemp[0][8]  = 1.116489555200000E+05;
+                CharElTemp[0][9]  = 1.225836470400000E+05;
+                CharElTemp[0][10] = 1.248856873600000E+05;
+                CharElTemp[0][11] = 1.282476158188320E+05;
+                CharElTemp[0][12] = 1.338060936000000E+05;
+                CharElTemp[0][13] = 1.404296391107200E+05;
+                CharElTemp[0][14] = 1.504958859200000E+05;
+                degen[0][0]  = 1;
+                degen[0][1]  = 3;
+                degen[0][2]  = 6;
+                degen[0][3]  = 6;
+                degen[0][4]  = 3;
+                degen[0][5]  = 1;
+                degen[0][6]  = 2;
+                degen[0][7]  = 2;
+                degen[0][8]  = 5;
+                degen[0][9]  = 1;
+                degen[0][10] = 6;
+                degen[0][11] = 6;
+                degen[0][12] = 10;
+                degen[0][13] = 6;
+                degen[0][14] = 6;
+                // N: 3 states
+                CharElTemp[1][0] = 0.000000000000000E+00;
+                CharElTemp[1][1] = 2.766469645581980E+04;
+                CharElTemp[1][2] = 4.149309313560210E+04;
+                degen[1][0] = 4;
+                degen[1][1] = 10;
+                degen[1][2] = 6;
+                
+                /*--- Set Arrhenius coefficients for chemical reactions ---*/
+                // Pre-exponential factor
+                ArrheniusCoefficient[0]  = 7.0E21;
+                ArrheniusCoefficient[1]  = 3.0E22;
+                // Rate-controlling temperature exponent
+                ArrheniusEta[0]  = -1.60;
+                ArrheniusEta[1]  = -1.60;
+                // Characteristic temperature
+                ArrheniusTheta[0] = 113200.0;
+                ArrheniusTheta[1] = 113200.0;
+                
+                /*--- Set reaction maps ---*/
+                // N2 + N2 -> 2N + N2
+                Reactions[0][0][0]=0;		Reactions[0][0][1]=0;		Reactions[0][0][2]=nSpecies;
+                Reactions[0][1][0]=1;		Reactions[0][1][1]=1;		Reactions[0][1][2] =0;
+                // N2 + N -> 2N + N
+                Reactions[1][0][0]=0;		Reactions[1][0][1]=1;		Reactions[1][0][2]=nSpecies;
+                Reactions[1][1][0]=1;		Reactions[1][1][1]=1;		Reactions[1][1][2]=1;
+                
+                /*--- Set rate-controlling temperature exponents ---*/
+                //  -----------  Tc = Ttr^a * Tve^b  -----------
+                //
+                // Forward Reactions
+                //   Dissociation:      a = 0.5, b = 0.5  (OR a = 0.7, b =0.3)
+                //   Exchange:          a = 1,   b = 0
+                //   Impact ionization: a = 0,   b = 1
+                //
+                // Backward Reactions
+                //   Recomb ionization:      a = 0, b = 1
+                //   Impact ionization:      a = 0, b = 1
+                //   N2 impact dissociation: a = 0, b = 1
+                //   Others:                 a = 1, b = 0
+                Tcf_a[0] = 0.5; Tcf_b[0] = 0.5; Tcb_a[0] = 1;  Tcb_b[0] = 0;
+                Tcf_a[1] = 0.5; Tcf_b[1] = 0.5; Tcb_a[1] = 1;  Tcb_b[1] = 0;
+                
+                /*--- Dissociation potential [KJ/kg] ---*/
+                Diss[0] = 3.36E4;
+                Diss[1] = 0.0;
+                
+                /*--- Collision integral data ---*/
+                Omega00[0][0][0] = -6.0614558E-03;  Omega00[0][0][1] = 1.2689102E-01;   Omega00[0][0][2] = -1.0616948E+00;  Omega00[0][0][3] = 8.0955466E+02;
+                Omega00[0][1][0] = -1.0796249E-02;  Omega00[0][1][1] = 2.2656509E-01;   Omega00[0][1][2] = -1.7910602E+00;  Omega00[0][1][3] = 4.0455218E+03;
+                Omega00[1][0][0] = -1.0796249E-02;  Omega00[1][0][1] = 2.2656509E-01;   Omega00[1][0][2] = -1.7910602E+00;  Omega00[1][0][3] = 4.0455218E+03;
+                Omega00[1][1][0] = -9.6083779E-03;  Omega00[1][1][1] = 2.0938971E-01;   Omega00[1][1][2] = -1.7386904E+00;  Omega00[1][1][3] = 3.3587983E+03;
+                
+                Omega11[0][0][0] = -7.6303990E-03;  Omega11[0][0][1] = 1.6878089E-01;   Omega11[0][0][2] = -1.4004234E+00;  Omega11[0][0][3] = 2.1427708E+03;
+                Omega11[0][1][0] = -8.3493693E-03;  Omega11[0][1][1] = 1.7808911E-01;   Omega11[0][1][2] = -1.4466155E+00;  Omega11[0][1][3] = 1.9324210E+03;
+                Omega11[1][0][0] = -8.3493693E-03;  Omega11[1][0][1] = 1.7808911E-01;   Omega11[1][0][2] = -1.4466155E+00;  Omega11[1][0][3] = 1.9324210E+03;
+                Omega11[1][1][0] = -7.7439615E-03;  Omega11[1][1][1] = 1.7129007E-01;   Omega11[1][1][2] = -1.4809088E+00;  Omega11[1][1][3] = 2.1284951E+03;
+                
+                break;
+                
+            case AIR5:
+                /*--- Define parameters of the gas model ---*/
+                nSpecies    = 5;
+                nReactions  = 17;
+                ionization  = false;
+                
+                /*--- Allocate vectors for gas properties ---*/
+                Wall_Catalycity      = new double[nSpecies];
+                Molar_Mass           = new double[nSpecies];
+                CharVibTemp          = new double[nSpecies];
+                RotationModes        = new double[nSpecies];
+                Enthalpy_Formation   = new double[nSpecies];
+                Ref_Temperature      = new double[nSpecies];
+                ArrheniusCoefficient = new double[nReactions];
+                ArrheniusEta         = new double[nReactions];
+                ArrheniusTheta       = new double[nReactions];
+                Tcf_a                = new double[nReactions];
+                Tcf_b                = new double[nReactions];
+                Tcb_a                = new double[nReactions];
+                Tcb_b                = new double[nReactions];
+                nElStates            = new unsigned short[nSpecies];
+                Reactions            = new int**[nReactions];
+                for (unsigned short iRxn = 0; iRxn < nReactions; iRxn++) {
+                    Reactions[iRxn] = new int*[2];
+                    for (unsigned short ii = 0; ii < 2; ii++)
+                        Reactions[iRxn][ii] = new int[6];
+                }
+                
+                // Omega[iSpecies][jSpecies][iCoeff]
+                Omega00 = new double**[nSpecies];
+                Omega11 = new double**[nSpecies];
+                for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+                    Omega00[iSpecies] = new double*[nSpecies];
+                    Omega11[iSpecies] = new double*[nSpecies];
+                    for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+                        Omega00[iSpecies][jSpecies] = new double[4];
+                        Omega11[iSpecies][jSpecies] = new double[4];
+                    }
+                }
+                
+                // Wall mass fractions for catalytic boundaries
+                Wall_Catalycity[0] = 0.4;
+                Wall_Catalycity[1] = 0.4;
+                Wall_Catalycity[2] = 0.1;
+                Wall_Catalycity[3] = 0.05;
+                Wall_Catalycity[4] = 0.05;
+                
+                // Free stream mass fractions
+                MassFrac_FreeStream = new double[nSpecies];
+                MassFrac_FreeStream[0] = 0.78;
+                MassFrac_FreeStream[1] = 0.19;
+                MassFrac_FreeStream[2] = 0.01;
+                MassFrac_FreeStream[3] = 0.01;
+                MassFrac_FreeStream[4] = 0.01;
+                
+                /*--- Assign gas properties ---*/
+                // Rotational modes of energy storage
+                RotationModes[0] = 2.0;
+                RotationModes[1] = 2.0;
+                RotationModes[2] = 2.0;
+                RotationModes[3] = 0.0;
+                RotationModes[4] = 0.0;
+                
+                // Molar mass [kg/kmol]
+                Molar_Mass[0] = 2.0*14.0067;
+                Molar_Mass[1] = 2.0*15.9994;
+                Molar_Mass[2] = 14.0067+15.9994;
+                Molar_Mass[3] = 14.0067;
+                Molar_Mass[4] = 15.9994;
+                
+                //Characteristic vibrational temperatures
+                CharVibTemp[0] = 3395.0;
+                CharVibTemp[1] = 2239.0;
+                CharVibTemp[2] = 2817.0;
+                CharVibTemp[3] = 0.0;
+                CharVibTemp[4] = 0.0;
+                
+                // Formation enthalpy: (JANAF values [KJ/Kmol])
+                Enthalpy_Formation[0] = 0.0;					//N2
+                Enthalpy_Formation[1] = 0.0;					//O2
+                Enthalpy_Formation[2] = 90.291E3;			//NO
+                Enthalpy_Formation[3] = 472.683E3;		//N
+                Enthalpy_Formation[4] = 249.173E3;		//O
+                
+                // Reference temperature (JANAF values, [K])
+                Ref_Temperature[0] = 0.0;
+                Ref_Temperature[1] = 0.0;
+                Ref_Temperature[2] = 298.15;
+                Ref_Temperature[3] = 298.15;
+                Ref_Temperature[4] = 298.15;
+                
+                // Number of electron states
+                nElStates[0] = 15;                    // N2
+                nElStates[1] = 7;                     // O2
+                nElStates[2] = 16;                    // NO
+                nElStates[3] = 3;                     // N
+                nElStates[4] = 5;                     // O
+                /////
+                
+                for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+                    maxEl = max(maxEl, nElStates[iSpecies]);
+                
+                /*--- Allocate electron data arrays ---*/
+                CharElTemp = new double*[nSpecies];
+                degen      = new double*[nSpecies];
+                for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+                    CharElTemp[iSpecies] = new double[maxEl];
+                    degen[iSpecies]      = new double[maxEl];
+                }
+                
+                /*--- Initialize the arrays ---*/
+                for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+                    for (iEl = 0; iEl < maxEl; iEl++) {
+                        CharElTemp[iSpecies][iEl] = 0.0;
+                        degen[iSpecies][iEl] = 0.0;
+                    }
+                }
+                
+                //N2: 15 states
+                CharElTemp[0][0]  = 0.000000000000000E+00;
+                CharElTemp[0][1]  = 7.223156514095200E+04;
+                CharElTemp[0][2]  = 8.577862640384000E+04;
+                CharElTemp[0][3]  = 8.605026716160000E+04;
+                CharElTemp[0][4]  = 9.535118627874400E+04;
+                CharElTemp[0][5]  = 9.805635702203200E+04;
+                CharElTemp[0][6]  = 9.968267656935200E+04;
+                CharElTemp[0][7]  = 1.048976467715200E+05;
+                CharElTemp[0][8]  = 1.116489555200000E+05;
+                CharElTemp[0][9]  = 1.225836470400000E+05;
+                CharElTemp[0][10] = 1.248856873600000E+05;
+                CharElTemp[0][11] = 1.282476158188320E+05;
+                CharElTemp[0][12] = 1.338060936000000E+05;
+                CharElTemp[0][13] = 1.404296391107200E+05;
+                CharElTemp[0][14] = 1.504958859200000E+05;
+                degen[0][0]  = 1;
+                degen[0][1]  = 3;
+                degen[0][2]  = 6;
+                degen[0][3]  = 6;
+                degen[0][4]  = 3;
+                degen[0][5]  = 1;
+                degen[0][6]  = 2;
+                degen[0][7]  = 2;
+                degen[0][8]  = 5;
+                degen[0][9]  = 1;
+                degen[0][10] = 6;
+                degen[0][11] = 6;
+                degen[0][12] = 10;
+                degen[0][13] = 6;
+                degen[0][14] = 6;
+                
+                // O2: 7 states
+                CharElTemp[1][0] = 0.000000000000000E+00;
+                CharElTemp[1][1] = 1.139156019700800E+04;
+                CharElTemp[1][2] = 1.898473947826400E+04;
+                CharElTemp[1][3] = 4.755973576639200E+04;
+                CharElTemp[1][4] = 4.991242097343200E+04;
+                CharElTemp[1][5] = 5.092268575561600E+04;
+                CharElTemp[1][6] = 7.189863255967200E+04;
+                degen[1][0] = 3;
+                degen[1][1] = 2;
+                degen[1][2] = 1;
+                degen[1][3] = 1;
+                degen[1][4] = 6;
+                degen[1][5] = 3;
+                degen[1][6] = 3;
+                
+                // NO: 16 states
+                CharElTemp[2][0]  = 0.000000000000000E+00;
+                CharElTemp[2][1]  = 5.467345760000000E+04;
+                CharElTemp[2][2]  = 6.317139627802400E+04;
+                CharElTemp[2][3]  = 6.599450342445600E+04;
+                CharElTemp[2][4]  = 6.906120960000000E+04;
+                CharElTemp[2][5]  = 7.049998480000000E+04;
+                CharElTemp[2][6]  = 7.491055017560000E+04;
+                CharElTemp[2][7]  = 7.628875293968000E+04;
+                CharElTemp[2][8]  = 8.676188537552000E+04;
+                CharElTemp[2][9]  = 8.714431182368000E+04;
+                CharElTemp[2][10] = 8.886077063728000E+04;
+                CharElTemp[2][11] = 8.981755614528000E+04;
+                CharElTemp[2][12] = 8.988445919208000E+04;
+                CharElTemp[2][13] = 9.042702132000000E+04;
+                CharElTemp[2][14] = 9.064283760000000E+04;
+                CharElTemp[2][15] = 9.111763341600000E+04;
+                degen[2][0]  = 4;
+                degen[2][1]  = 8;
+                degen[2][2]  = 2;
+                degen[2][3]  = 4;
+                degen[2][4]  = 4;
+                degen[2][5]  = 4;
+                degen[2][6]  = 4;
+                degen[2][7]  = 2;
+                degen[2][8]  = 4;
+                degen[2][9]  = 2;
+                degen[2][10] = 4;
+                degen[2][11] = 4;
+                degen[2][12] = 2;
+                degen[2][13] = 2;
+                degen[2][14] = 2;
+                degen[2][15] = 4;
+                
+                // N: 3 states
+                CharElTemp[3][0] = 0.000000000000000E+00;
+                CharElTemp[3][1] = 2.766469645581980E+04;
+                CharElTemp[3][2] = 4.149309313560210E+04;
+                degen[3][0] = 4;
+                degen[3][1] = 10;
+                degen[3][2] = 6;
+                
+                // O: 5 states
+                CharElTemp[4][0] = 0.000000000000000E+00;
+                CharElTemp[4][1] = 2.277077570280000E+02;
+                CharElTemp[4][2] = 3.265688785704000E+02;
+                CharElTemp[4][3] = 2.283028632262240E+04;
+                CharElTemp[4][4] = 4.861993036434160E+04;
+                degen[4][0] = 5;
+                degen[4][1] = 3;
+                degen[4][2] = 1;
+                degen[4][3] = 5;
+                degen[4][4] = 1;
+                
+                /*--- Set reaction maps ---*/
+                // N2 dissociation
+                Reactions[0][0][0]=0;		Reactions[0][0][1]=0;		Reactions[0][0][2]=nSpecies;		Reactions[0][1][0]=3;		Reactions[0][1][1]=3;		Reactions[0][1][2] =0;
+                Reactions[1][0][0]=0;		Reactions[1][0][1]=1;		Reactions[1][0][2]=nSpecies;		Reactions[1][1][0]=3;		Reactions[1][1][1]=3;		Reactions[1][1][2] =1;
+                Reactions[2][0][0]=0;		Reactions[2][0][1]=2;		Reactions[2][0][2]=nSpecies;		Reactions[2][1][0]=3;		Reactions[2][1][1]=3;		Reactions[2][1][2] =2;
+                Reactions[3][0][0]=0;		Reactions[3][0][1]=3;		Reactions[3][0][2]=nSpecies;		Reactions[3][1][0]=3;		Reactions[3][1][1]=3;		Reactions[3][1][2] =3;
+                Reactions[4][0][0]=0;		Reactions[4][0][1]=4;		Reactions[4][0][2]=nSpecies;		Reactions[4][1][0]=3;		Reactions[4][1][1]=3;		Reactions[4][1][2] =4;
+                // O2 dissociation
+                Reactions[5][0][0]=1;		Reactions[5][0][1]=0;		Reactions[5][0][2]=nSpecies;		Reactions[5][1][0]=4;		Reactions[5][1][1]=4;		Reactions[5][1][2] =0;
+                Reactions[6][0][0]=1;		Reactions[6][0][1]=1;		Reactions[6][0][2]=nSpecies;		Reactions[6][1][0]=4;		Reactions[6][1][1]=4;		Reactions[6][1][2] =1;
+                Reactions[7][0][0]=1;		Reactions[7][0][1]=2;		Reactions[7][0][2]=nSpecies;		Reactions[7][1][0]=4;		Reactions[7][1][1]=4;		Reactions[7][1][2] =2;
+                Reactions[8][0][0]=1;		Reactions[8][0][1]=3;		Reactions[8][0][2]=nSpecies;		Reactions[8][1][0]=4;		Reactions[8][1][1]=4;		Reactions[8][1][2] =3;
+                Reactions[9][0][0]=1;		Reactions[9][0][1]=4;		Reactions[9][0][2]=nSpecies;		Reactions[9][1][0]=4;		Reactions[9][1][1]=4;		Reactions[9][1][2] =4;
+                // NO dissociation
+                Reactions[10][0][0]=2;		Reactions[10][0][1]=0;		Reactions[10][0][2]=nSpecies;		Reactions[10][1][0]=3;		Reactions[10][1][1]=4;		Reactions[10][1][2] =0;
+                Reactions[11][0][0]=2;		Reactions[11][0][1]=1;		Reactions[11][0][2]=nSpecies;		Reactions[11][1][0]=3;		Reactions[11][1][1]=4;		Reactions[11][1][2] =1;
+                Reactions[12][0][0]=2;		Reactions[12][0][1]=2;		Reactions[12][0][2]=nSpecies;		Reactions[12][1][0]=3;		Reactions[12][1][1]=4;		Reactions[12][1][2] =2;
+                Reactions[13][0][0]=2;		Reactions[13][0][1]=3;		Reactions[13][0][2]=nSpecies;		Reactions[13][1][0]=3;		Reactions[13][1][1]=4;		Reactions[13][1][2] =3;
+                Reactions[14][0][0]=2;		Reactions[14][0][1]=4;		Reactions[14][0][2]=nSpecies;		Reactions[14][1][0]=3;		Reactions[14][1][1]=4;		Reactions[14][1][2] =4;
+                // N2 + O -> NO + N
+                Reactions[15][0][0]=0;		Reactions[15][0][1]=4;		Reactions[15][0][2]=nSpecies;		Reactions[15][1][0]=2;		Reactions[15][1][1]=3;		Reactions[15][1][2]= nSpecies;
+                // NO + O -> O2 + N
+                Reactions[16][0][0]=2;		Reactions[16][0][1]=4;		Reactions[16][0][2]=nSpecies;		Reactions[16][1][0]=1;		Reactions[16][1][1]=3;		Reactions[16][1][2]= nSpecies;
+                
+                /*--- Set Arrhenius coefficients for reactions ---*/
+                // Pre-exponential factor
+                ArrheniusCoefficient[0]  = 7.0E21;
+                ArrheniusCoefficient[1]  = 7.0E21;
+                ArrheniusCoefficient[2]  = 7.0E21;
+                ArrheniusCoefficient[3]  = 3.0E22;
+                ArrheniusCoefficient[4]  = 3.0E22;
+                ArrheniusCoefficient[5]  = 2.0E21;
+                ArrheniusCoefficient[6]  = 2.0E21;
+                ArrheniusCoefficient[7]  = 2.0E21;
+                ArrheniusCoefficient[8]  = 1.0E22;
+                ArrheniusCoefficient[9]  = 1.0E22;
+                ArrheniusCoefficient[10] = 5.0E15;
+                ArrheniusCoefficient[11] = 5.0E15;
+                ArrheniusCoefficient[12] = 5.0E15;
+                ArrheniusCoefficient[13] = 1.1E17;
+                ArrheniusCoefficient[14] = 1.1E17;
+                ArrheniusCoefficient[15] = 6.4E17;
+                ArrheniusCoefficient[16] = 8.4E12;
+                
+                // Rate-controlling temperature exponent
+                ArrheniusEta[0]  = -1.60;
+                ArrheniusEta[1]  = -1.60;
+                ArrheniusEta[2]  = -1.60;
+                ArrheniusEta[3]  = -1.60;
+                ArrheniusEta[4]  = -1.60;
+                ArrheniusEta[5]  = -1.50;
+                ArrheniusEta[6]  = -1.50;
+                ArrheniusEta[7]  = -1.50;
+                ArrheniusEta[8]  = -1.50;
+                ArrheniusEta[9]  = -1.50;
+                ArrheniusEta[10] = 0.0;
+                ArrheniusEta[11] = 0.0;
+                ArrheniusEta[12] = 0.0;
+                ArrheniusEta[13] = 0.0;
+                ArrheniusEta[14] = 0.0;
+                ArrheniusEta[15] = -1.0;
+                ArrheniusEta[16] = 0.0;
+                
+                // Characteristic temperature
+                ArrheniusTheta[0]  = 113200.0;
+                ArrheniusTheta[1]  = 113200.0;
+                ArrheniusTheta[2]  = 113200.0;
+                ArrheniusTheta[3]  = 113200.0;
+                ArrheniusTheta[4]  = 113200.0;
+                ArrheniusTheta[5]  = 59500.0;
+                ArrheniusTheta[6]  = 59500.0;
+                ArrheniusTheta[7]  = 59500.0;
+                ArrheniusTheta[8]  = 59500.0;
+                ArrheniusTheta[9]  = 59500.0;
+                ArrheniusTheta[10] = 75500.0;
+                ArrheniusTheta[11] = 75500.0;
+                ArrheniusTheta[12] = 75500.0;
+                ArrheniusTheta[13] = 75500.0;
+                ArrheniusTheta[14] = 75500.0;
+                ArrheniusTheta[15] = 38400.0;
+                ArrheniusTheta[16] = 19450.0;
+                
+                /*--- Set rate-controlling temperature exponents ---*/
+                //  -----------  Tc = Ttr^a * Tve^b  -----------
+                //
+                // Forward Reactions
+                //   Dissociation:      a = 0.5, b = 0.5  (OR a = 0.7, b =0.3)
+                //   Exchange:          a = 1,   b = 0
+                //   Impact ionization: a = 0,   b = 1
+                //
+                // Backward Reactions
+                //   Recomb ionization:      a = 0, b = 1
+                //   Impact ionization:      a = 0, b = 1
+                //   N2 impact dissociation: a = 0, b = 1
+                //   Others:                 a = 1, b = 0
+                Tcf_a[0]  = 0.5; Tcf_b[0]  = 0.5; Tcb_a[0]  = 1;  Tcb_b[0] = 0;
+                Tcf_a[1]  = 0.5; Tcf_b[1]  = 0.5; Tcb_a[1]  = 1;  Tcb_b[1] = 0;
+                Tcf_a[2]  = 0.5; Tcf_b[2]  = 0.5; Tcb_a[2]  = 1;  Tcb_b[2] = 0;
+                Tcf_a[3]  = 0.5; Tcf_b[3]  = 0.5; Tcb_a[3]  = 1;  Tcb_b[3] = 0;
+                Tcf_a[4]  = 0.5; Tcf_b[4]  = 0.5; Tcb_a[4]  = 1;  Tcb_b[4] = 0;
+                
+                Tcf_a[5]  = 0.5; Tcf_b[5]  = 0.5; Tcb_a[5]  = 1;  Tcb_b[5] = 0;
+                Tcf_a[6]  = 0.5; Tcf_b[6]  = 0.5; Tcb_a[6]  = 1;  Tcb_b[6] = 0;
+                Tcf_a[7]  = 0.5; Tcf_b[7]  = 0.5; Tcb_a[7]  = 1;  Tcb_b[7] = 0;
+                Tcf_a[8]  = 0.5; Tcf_b[8]  = 0.5; Tcb_a[8]  = 1;  Tcb_b[8] = 0;
+                Tcf_a[9]  = 0.5; Tcf_b[9]  = 0.5; Tcb_a[9]  = 1;  Tcb_b[9] = 0;
+                
+                Tcf_a[10] = 0.5; Tcf_b[10] = 0.5; Tcb_a[10] = 1;  Tcb_b[10] = 0;
+                Tcf_a[11] = 0.5; Tcf_b[11] = 0.5; Tcb_a[11] = 1;  Tcb_b[11] = 0;
+                Tcf_a[12] = 0.5; Tcf_b[12] = 0.5; Tcb_a[12] = 1;  Tcb_b[12] = 0;
+                Tcf_a[13] = 0.5; Tcf_b[13] = 0.5; Tcb_a[13] = 1;  Tcb_b[13] = 0;
+                Tcf_a[14] = 0.5; Tcf_b[14] = 0.5; Tcb_a[14] = 1;  Tcb_b[14] = 0;
+                
+                Tcf_a[15] = 1.0; Tcf_b[15] = 0.0; Tcb_a[15] = 1;  Tcb_b[15] = 0;
+                Tcf_a[16] = 1.0; Tcf_b[16] = 0.0; Tcb_a[16] = 1;  Tcb_b[16] = 0;
+                
+                /*--- Collision integral data ---*/
+                // Omega(0,0) ----------------------
+                //N2
+                Omega00[0][0][0] = -6.0614558E-03;  Omega00[0][0][1] = 1.2689102E-01;   Omega00[0][0][2] = -1.0616948E+00;  Omega00[0][0][3] = 8.0955466E+02;
+                Omega00[0][1][0] = -3.7959091E-03;  Omega00[0][1][1] = 9.5708295E-02;   Omega00[0][1][2] = -1.0070611E+00;  Omega00[0][1][3] = 8.9392313E+02;
+                Omega00[0][2][0] = -1.9295666E-03;  Omega00[0][2][1] = 2.7995735E-02;   Omega00[0][2][2] = -3.1588514E-01;  Omega00[0][2][3] = 1.2880734E+02;
+                Omega00[0][3][0] = -1.0796249E-02;  Omega00[0][3][1] = 2.2656509E-01;   Omega00[0][3][2] = -1.7910602E+00;  Omega00[0][3][3] = 4.0455218E+03;
+                Omega00[0][4][0] = -2.7244269E-03;  Omega00[0][4][1] = 6.9587171E-02;   Omega00[0][4][2] = -7.9538667E-01;  Omega00[0][4][3] = 4.0673730E+02;
+                //O2
+                Omega00[1][0][0] = -3.7959091E-03;  Omega00[1][0][1] = 9.5708295E-02;   Omega00[1][0][2] = -1.0070611E+00;  Omega00[1][0][3] = 8.9392313E+02;
+                Omega00[1][1][0] = -8.0682650E-04;  Omega00[1][1][1] = 1.6602480E-02;   Omega00[1][1][2] = -3.1472774E-01;  Omega00[1][1][3] = 1.4116458E+02;
+                Omega00[1][2][0] = -6.4433840E-04;  Omega00[1][2][1] = 8.5378580E-03;   Omega00[1][2][2] = -2.3225102E-01;  Omega00[1][2][3] = 1.1371608E+02;
+                Omega00[1][3][0] = -1.1453028E-03;  Omega00[1][3][1] = 1.2654140E-02;   Omega00[1][3][2] = -2.2435218E-01;  Omega00[1][3][3] = 7.7201588E+01;
+                Omega00[1][4][0] = -4.8405803E-03;  Omega00[1][4][1] = 1.0297688E-01;   Omega00[1][4][2] = -9.6876576E-01;  Omega00[1][4][3] = 6.1629812E+02;
+                //NO
+                Omega00[2][0][0] = -1.9295666E-03;  Omega00[2][0][1] = 2.7995735E-02;   Omega00[2][0][2] = -3.1588514E-01;  Omega00[2][0][3] = 1.2880734E+02;
+                Omega00[2][1][0] = -6.4433840E-04;  Omega00[2][1][1] = 8.5378580E-03;   Omega00[2][1][2] = -2.3225102E-01;  Omega00[2][1][3] = 1.1371608E+02;
+                Omega00[2][2][0] = -0.0000000E+00;  Omega00[2][2][1] = -1.1056066E-02;  Omega00[2][2][2] = -5.9216250E-02;  Omega00[2][2][3] = 7.2542367E+01;
+                Omega00[2][3][0] = -1.5770918E-03;  Omega00[2][3][1] = 1.9578381E-02;   Omega00[2][3][2] = -2.7873624E-01;  Omega00[2][3][3] = 9.9547944E+01;
+                Omega00[2][4][0] = -1.0885815E-03;  Omega00[2][4][1] = 1.1883688E-02;   Omega00[2][4][2] = -2.1844909E-01;  Omega00[2][4][3] = 7.5512560E+01;
+                //N
+                Omega00[3][0][0] = -1.0796249E-02;  Omega00[3][0][1] = 2.2656509E-01;   Omega00[3][0][2] = -1.7910602E+00;  Omega00[3][0][3] = 4.0455218E+03;
+                Omega00[3][1][0] = -1.1453028E-03;  Omega00[3][1][1] = 1.2654140E-02;   Omega00[3][1][2] = -2.2435218E-01;  Omega00[3][1][3] = 7.7201588E+01;
+                Omega00[3][2][0] = -1.5770918E-03;  Omega00[3][2][1] = 1.9578381E-02;   Omega00[3][2][2] = -2.7873624E-01;  Omega00[3][2][3] = 9.9547944E+01;
+                Omega00[3][3][0] = -9.6083779E-03;  Omega00[3][3][1] = 2.0938971E-01;   Omega00[3][3][2] = -1.7386904E+00;  Omega00[3][3][3] = 3.3587983E+03;
+                Omega00[3][4][0] = -7.8147689E-03;  Omega00[3][4][1] = 1.6792705E-01;   Omega00[3][4][2] = -1.4308628E+00;  Omega00[3][4][3] = 1.6628859E+03;
+                //O
+                Omega00[4][0][0] = -2.7244269E-03;  Omega00[4][0][1] = 6.9587171E-02;   Omega00[4][0][2] = -7.9538667E-01;  Omega00[4][0][3] = 4.0673730E+02;
+                Omega00[4][1][0] = -4.8405803E-03;  Omega00[4][1][1] = 1.0297688E-01;   Omega00[4][1][2] = -9.6876576E-01;  Omega00[4][1][3] = 6.1629812E+02;
+                Omega00[4][2][0] = -1.0885815E-03;  Omega00[4][2][1] = 1.1883688E-02;   Omega00[4][2][2] = -2.1844909E-01;  Omega00[4][2][3] = 7.5512560E+01;
+                Omega00[4][3][0] = -7.8147689E-03;  Omega00[4][3][1] = 1.6792705E-01;   Omega00[4][3][2] = -1.4308628E+00;  Omega00[4][3][3] = 1.6628859E+03;
+                Omega00[4][4][0] = -6.4040535E-03;  Omega00[4][4][1] = 1.4629949E-01;   Omega00[4][4][2] = -1.3892121E+00;  Omega00[4][4][3] = 2.0903441E+03;
+                
+                // Omega(1,1) ----------------------
+                //N2
+                Omega11[0][0][0] = -7.6303990E-03;  Omega11[0][0][1] = 1.6878089E-01;   Omega11[0][0][2] = -1.4004234E+00;  Omega11[0][0][3] = 2.1427708E+03;
+                Omega11[0][1][0] = -8.0457321E-03;  Omega11[0][1][1] = 1.9228905E-01;   Omega11[0][1][2] = -1.7102854E+00;  Omega11[0][1][3] = 5.2213857E+03;
+                Omega11[0][2][0] = -6.8237776E-03;  Omega11[0][2][1] = 1.4360616E-01;   Omega11[0][2][2] = -1.1922240E+00;  Omega11[0][2][3] = 1.2433086E+03;
+                Omega11[0][3][0] = -8.3493693E-03;  Omega11[0][3][1] = 1.7808911E-01;   Omega11[0][3][2] = -1.4466155E+00;  Omega11[0][3][3] = 1.9324210E+03;
+                Omega11[0][4][0] = -8.3110691E-03;  Omega11[0][4][1] = 1.9617877E-01;   Omega11[0][4][2] = -1.7205427E+00;  Omega11[0][4][3] = 4.0812829E+03;
+                //O2
+                Omega11[1][0][0] = -8.0457321E-03;  Omega11[1][0][1] = 1.9228905E-01;   Omega11[1][0][2] = -1.7102854E+00;  Omega11[1][0][3] = 5.2213857E+03;
+                Omega11[1][1][0] = -6.2931612E-03;  Omega11[1][1][1] = 1.4624645E-01;   Omega11[1][1][2] = -1.3006927E+00;  Omega11[1][1][3] = 1.8066892E+03;
+                Omega11[1][2][0] = -6.8508672E-03;  Omega11[1][2][1] = 1.5524564E-01;   Omega11[1][2][2] = -1.3479583E+00;  Omega11[1][2][3] = 2.0037890E+03;
+                Omega11[1][3][0] = -1.0608832E-03;  Omega11[1][3][1] = 1.1782595E-02;   Omega11[1][3][2] = -2.1246301E-01;  Omega11[1][3][3] = 8.4561598E+01;
+                Omega11[1][4][0] = -3.7969686E-03;  Omega11[1][4][1] = 7.6789981E-02;   Omega11[1][4][2] = -7.3056809E-01;  Omega11[1][4][3] = 3.3958171E+02;
+                //NO
+                Omega11[2][0][0] = -6.8237776E-03;  Omega11[2][0][1] = 1.4360616E-01;   Omega11[2][0][2] = -1.1922240E+00;  Omega11[2][0][3] = 1.2433086E+03;
+                Omega11[2][1][0] = -6.8508672E-03;  Omega11[2][1][1] = 1.5524564E-01;   Omega11[2][1][2] = -1.3479583E+00;  Omega11[2][1][3] = 2.0037890E+03;
+                Omega11[2][2][0] = -7.4942466E-03;  Omega11[2][2][1] = 1.6626193E-01;   Omega11[2][2][2] = -1.4107027E+00;  Omega11[2][2][3] = 2.3097604E+03;
+                Omega11[2][3][0] = -1.4719259E-03;  Omega11[2][3][1] = 1.8446968E-02;   Omega11[2][3][2] = -2.6460411E-01;  Omega11[2][3][3] = 1.0911124E+02;
+                Omega11[2][4][0] = -1.0066279E-03;  Omega11[2][4][1] = 1.1029264E-02;   Omega11[2][4][2] = -2.0671266E-01;  Omega11[2][4][3] = 8.2644384E+01;
+                //N
+                Omega11[3][0][0] = -8.3493693E-03;  Omega11[3][0][1] = 1.7808911E-01;   Omega11[3][0][2] = -1.4466155E+00;  Omega11[3][0][3] = 1.9324210E+03;
+                Omega11[3][1][0] = -1.0608832E-03;  Omega11[3][1][1] = 1.1782595E-02;   Omega11[3][1][2] = -2.1246301E-01;  Omega11[3][1][3] = 8.4561598E+01;
+                Omega11[3][2][0] = -1.4719259E-03;  Omega11[3][2][1] = 1.8446968E-02;   Omega11[3][2][2] = -2.6460411E-01;  Omega11[3][2][3] = 1.0911124E+02;
+                Omega11[3][3][0] = -7.7439615E-03;  Omega11[3][3][1] = 1.7129007E-01;   Omega11[3][3][2] = -1.4809088E+00;  Omega11[3][3][3] = 2.1284951E+03;
+                Omega11[3][4][0] = -5.0478143E-03;  Omega11[3][4][1] = 1.0236186E-01;   Omega11[3][4][2] = -9.0058935E-01;  Omega11[3][4][3] = 4.4472565E+02;
+                //O
+                Omega11[4][0][0] = -8.3110691E-03;  Omega11[4][0][1] = 1.9617877E-01;   Omega11[4][0][2] = -1.7205427E+00;  Omega11[4][0][3] = 4.0812829E+03;
+                Omega11[4][1][0] = -3.7969686E-03;  Omega11[4][1][1] = 7.6789981E-02;   Omega11[4][1][2] = -7.3056809E-01;  Omega11[4][1][3] = 3.3958171E+02;
+                Omega11[4][2][0] = -1.0066279E-03;  Omega11[4][2][1] = 1.1029264E-02;   Omega11[4][2][2] = -2.0671266E-01;  Omega11[4][2][3] = 8.2644384E+01;
+                Omega11[4][3][0] = -5.0478143E-03;  Omega11[4][3][1] = 1.0236186E-01;   Omega11[4][3][2] = -9.0058935E-01;  Omega11[4][3][3] = 4.4472565E+02;
+                Omega11[4][4][0] = -4.2451096E-03;  Omega11[4][4][1] = 9.6820337E-02;   Omega11[4][4][2] = -9.9770795E-01;  Omega11[4][4][3] = 8.3320644E+02;
+                
+                break;
+        }
+    }
+    
+    /*--- Check for constant lift mode  ---*/
+    if (Fixed_CL_Mode) {
+        
+        /*--- The initial AoA will be taken as the value input in the 
+         config file (the default is zero). ---*/
+        
+        /*--- We will force the use of the cauchy convergence criteria for
+         constant lift mode. ---*/
+        
+        ConvCriteria = CAUCHY;
+        Cauchy_Func_Flow = LIFT_COEFFICIENT;
+        
+        /*--- Initialize the update flag for the AoA with each iteration to false ---*/
+        
+        Update_AoA = false;
+        
+    }
+    
+    /*--- Check for 2nd order w/ limiting for JST and correct ---*/
+    
+    if ((Kind_ConvNumScheme_Flow == SPACE_CENTERED) && (Kind_Centered_Flow == JST) && (SpatialOrder_Flow == SECOND_ORDER_LIMITER))
+        SpatialOrder_Flow = SECOND_ORDER;
+    
+    if ((Kind_ConvNumScheme_AdjFlow == SPACE_CENTERED) && (Kind_Centered_AdjFlow == JST) && (SpatialOrder_AdjFlow == SECOND_ORDER_LIMITER))
+        SpatialOrder_AdjFlow = SECOND_ORDER;
+    
+    delete [] tmp_smooth;
+    
 }
 
 void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) {
