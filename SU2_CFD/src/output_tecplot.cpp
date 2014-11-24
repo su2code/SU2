@@ -931,6 +931,7 @@ void COutput::SetTecplot_MeshBinary(CConfig *config, CGeometry *geometry, unsign
   enum	 ZoneType { ORDERED=0, FELINESEG=1, FETRIANGLE=2, FEQUADRILATERAL=3, FETETRAHEDRON=4, FEBRICK=5, FEPOLYGON=6, FEPOLYHEDRON=7 };
   
   /*--- Consistent data for Tecplot zones ---*/
+  
   Debug						= 0;
   IsDouble					= 1;
   NPts						= (INTEGER4)nGlobal_Poin;
@@ -947,6 +948,7 @@ void COutput::SetTecplot_MeshBinary(CConfig *config, CGeometry *geometry, unsign
   ShareConnectivityFromZone	= 0;
   
   /*--- Write Tecplot solution file ---*/
+  
   if (!wrote_base_file) {
     
     file.str(string());
@@ -954,6 +956,7 @@ void COutput::SetTecplot_MeshBinary(CConfig *config, CGeometry *geometry, unsign
 
 #ifdef HAVE_MPI
 	/*--- Remove the domain number from the filename ---*/
+    
     int nProcessor;
 	MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
     if (nProcessor > 1) buffer.erase(buffer.end()-2, buffer.end());
@@ -967,6 +970,7 @@ void COutput::SetTecplot_MeshBinary(CConfig *config, CGeometry *geometry, unsign
     else cout << "Error: wrong number of dimensions: " << dims << endl;
     
     /*--- Open Tecplot file ---*/
+    
     err = TECINI112((char *)config->GetFlow_FileName().c_str(),
                     (char *)variables.c_str(),
                     (char *)file.str().c_str(),
@@ -1009,6 +1013,7 @@ void COutput::SetTecplot_MeshBinary(CConfig *config, CGeometry *geometry, unsign
       if (err) cout << "Error writing Tecplot zone data" << endl;
       
       /*--- write node coordinates and data if not done already---*/
+      
       if (first_zone) {
         
         if (config->GetKind_SU2() == SU2_SOL) {
@@ -1037,6 +1042,7 @@ void COutput::SetTecplot_MeshBinary(CConfig *config, CGeometry *geometry, unsign
     if (nGlobal_Quad > 0) {
       
       /*--- Write the zone header information ---*/
+      
       ZoneType = FEQUADRILATERAL; NElm = (INTEGER4)nGlobal_Quad; N = NElm*N_POINTS_QUADRILATERAL;
       
       err = TECZNE112((char*)"Quadrilateral Elements",
@@ -1063,6 +1069,7 @@ void COutput::SetTecplot_MeshBinary(CConfig *config, CGeometry *geometry, unsign
       if (err) cout << "Error writing Tecplot zone data" << endl;
       
       /*--- write node coordinates and data if not done already---*/
+      
       if (first_zone) {
         
         if (config->GetKind_SU2() == SU2_SOL) {
@@ -1091,6 +1098,7 @@ void COutput::SetTecplot_MeshBinary(CConfig *config, CGeometry *geometry, unsign
     if (nGlobal_Tetr > 0) {
       
       /*--- Write the zone header information ---*/
+      
       ZoneType = FETETRAHEDRON; NElm = (INTEGER4)nGlobal_Tetr; N = NElm*N_POINTS_TETRAHEDRON;
       
       err = TECZNE112((char*)"Tetrahedral Elements",
@@ -1117,6 +1125,7 @@ void COutput::SetTecplot_MeshBinary(CConfig *config, CGeometry *geometry, unsign
       if (err) cout << "Error writing Tecplot zone data" << endl;
       
       /*--- write node coordinates and data if not done already---*/
+      
       if (first_zone) {
         
         if (config->GetKind_SU2() == SU2_SOL) {
@@ -1145,6 +1154,7 @@ void COutput::SetTecplot_MeshBinary(CConfig *config, CGeometry *geometry, unsign
     if (nGlobal_Hexa > 0) {
       
       /*--- Write the zone header information ---*/
+      
       ZoneType = FEBRICK; NElm = (INTEGER4)nGlobal_Hexa; N = NElm*N_POINTS_HEXAHEDRON;
       
       err = TECZNE112((char*)"Hexahedral Elements",
@@ -1171,6 +1181,7 @@ void COutput::SetTecplot_MeshBinary(CConfig *config, CGeometry *geometry, unsign
       if (err) cout << "Error writing Tecplot zone data" << endl;
       
       /*--- write node coordinates and data if not done already---*/
+      
       if (first_zone) {
         
         if (config->GetKind_SU2() == SU2_SOL) {

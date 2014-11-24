@@ -2845,16 +2845,19 @@ void CAdjEulerSolver::GetEngine_Properties(CGeometry *geometry, CConfig *config,
   if ((nMarker_EngineInflow != 0) || (nMarker_EngineBleed != 0) || (nMarker_EngineExhaust != 0)) {
     
     /*--- Check the flow orientation in the nacelle inflow ---*/
+    
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       
       if (config->GetMarker_All_KindBC(iMarker) == ENGINE_EXHAUST) {
         
         /*--- Loop over all the vertices on this boundary marker ---*/
+        
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           
           /*--- Normal vector for this vertex (negate for outward convention) ---*/
+          
           geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
           
           for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = -Vector[iDim];
@@ -2865,22 +2868,27 @@ void CAdjEulerSolver::GetEngine_Properties(CGeometry *geometry, CConfig *config,
           Area = sqrt (Area);
           
           /*--- Compute unitary vector ---*/
+          
           for (iDim = 0; iDim < nDim; iDim++)
             Vector[iDim] /= Area;
           
           /*--- The flow direction is defined by the local velocity on the surface ---*/
+          
           for (iDim = 0; iDim < nDim; iDim++)
             Flow_Dir[iDim] = node[iPoint]->GetSolution(iDim+1) / node[iPoint]->GetSolution(0);
           
           /*--- Dot product of normal and flow direction. ---*/
+          
           alpha = 0.0;
           for (iDim = 0; iDim < nDim; iDim++)
             alpha += Vector[iDim]*Flow_Dir[iDim];
           
           /*--- Flow in the wrong direction. ---*/
+          
           if (alpha < 0.0) {
             
             /*--- Copy the old solution ---*/
+            
             for (iVar = 0; iVar < nVar; iVar++)
               node[iPoint]->SetSolution(iVar, node[iPoint]->GetSolution_Old(iVar));
             
@@ -2888,6 +2896,56 @@ void CAdjEulerSolver::GetEngine_Properties(CGeometry *geometry, CConfig *config,
           
         }
       }
+      
+      if (config->GetMarker_All_KindBC(iMarker) == ENGINE_BLEED) {
+        
+        /*--- Loop over all the vertices on this boundary marker ---*/
+        
+        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          
+          /*--- Normal vector for this vertex (negate for outward convention) ---*/
+          
+          geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
+          
+          for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = -Vector[iDim];
+          
+          Area = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++)
+            Area += Vector[iDim]*Vector[iDim];
+          Area = sqrt (Area);
+          
+          /*--- Compute unitary vector ---*/
+          
+          for (iDim = 0; iDim < nDim; iDim++)
+            Vector[iDim] /= Area;
+          
+          /*--- The flow direction is defined by the local velocity on the surface ---*/
+          
+          for (iDim = 0; iDim < nDim; iDim++)
+            Flow_Dir[iDim] = node[iPoint]->GetSolution(iDim+1) / node[iPoint]->GetSolution(0);
+          
+          /*--- Dot product of normal and flow direction. ---*/
+          
+          alpha = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++)
+            alpha += Vector[iDim]*Flow_Dir[iDim];
+          
+          /*--- Flow in the wrong direction. ---*/
+          
+          if (alpha < 0.0) {
+            
+            /*--- Copy the old solution ---*/
+            
+            for (iVar = 0; iVar < nVar; iVar++)
+              node[iPoint]->SetSolution(iVar, node[iPoint]->GetSolution_Old(iVar));
+            
+          }
+          
+        }
+      }
+      
     }
     
   }
