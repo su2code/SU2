@@ -5355,10 +5355,10 @@ void CEulerSolver::SetPreconditioner(CConfig *config, unsigned short iPoint) {
 
 void CEulerSolver::GetEngine_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) {
   
-  unsigned short iDim, iMarker;
+  unsigned short iDim, iMarker, iVar;
   unsigned long iVertex, iPoint;
   double Pressure, Temperature, Velocity[3], Velocity2, MassFlow, Density, Energy, Area,
-  Mach, SoundSpeed;
+  Mach, SoundSpeed, Flow_Dir[3], alpha;
   unsigned short iMarker_EngineInflow, iMarker_EngineBleed, iMarker_EngineExhaust;
 
   double Gas_Constant = config->GetGas_ConstantND();
@@ -5716,58 +5716,108 @@ void CEulerSolver::GetEngine_Properties(CGeometry *geometry, CConfig *config, un
 
   }
 
-//  /*--- Check the flow orientation in the engine inflow ---*/
-//  
-//  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-//
-//    if (config->GetMarker_All_KindBC(iMarker) == ENGINE_INFLOW) {
-//
-//      /*--- Loop over all the vertices on this boundary marker ---*/
-//      
-//      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-//
-//        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-//
-//        /*--- Normal vector for this vertex (negate for outward convention) ---*/
-//        
-//        geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
-//
-//        for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = -Vector[iDim];
-//
-//        Area = 0.0;
-//        for (iDim = 0; iDim < nDim; iDim++)
-//          Area += Vector[iDim]*Vector[iDim];
-//        Area = sqrt (Area);
-//
-//        /*--- Compute unitary vector ---*/
-//        
-//        for (iDim = 0; iDim < nDim; iDim++)
-//          Vector[iDim] /= Area;
-//
-//        /*--- The flow direction is defined by the local velocity on the surface ---*/
-//        
-//        for (iDim = 0; iDim < nDim; iDim++)
-//          Flow_Dir[iDim] = node[iPoint]->GetSolution(iDim+1) / node[iPoint]->GetSolution(0);
-//
-//        /*--- Dot product of normal and flow direction. ---*/
-//        
-//        alpha = 0.0;
-//        for (iDim = 0; iDim < nDim; iDim++)
-//          alpha += Vector[iDim]*Flow_Dir[iDim];
-//
-//        /*--- Flow in the wrong direction. ---*/
-//        
-//        if (alpha < 0.0) {
-//
-//          /*--- Copy the old solution ---*/
-//          for (iVar = 0; iVar < nVar; iVar++)
-//            node[iPoint]->SetSolution(iVar, node[iPoint]->GetSolution_Old(iVar));
-//
-//        }
-//
-//      }
-//    }
-//  }
+  /*--- Check the flow orientation in the engine inflow ---*/
+  
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+
+    if (config->GetMarker_All_KindBC(iMarker) == ENGINE_INFLOW) {
+
+      /*--- Loop over all the vertices on this boundary marker ---*/
+      
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+        /*--- Normal vector for this vertex (negate for outward convention) ---*/
+        
+        geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
+
+        for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = -Vector[iDim];
+
+        Area = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          Area += Vector[iDim]*Vector[iDim];
+        Area = sqrt (Area);
+
+        /*--- Compute unitary vector ---*/
+        
+        for (iDim = 0; iDim < nDim; iDim++)
+          Vector[iDim] /= Area;
+
+        /*--- The flow direction is defined by the local velocity on the surface ---*/
+        
+        for (iDim = 0; iDim < nDim; iDim++)
+          Flow_Dir[iDim] = node[iPoint]->GetSolution(iDim+1) / node[iPoint]->GetSolution(0);
+
+        /*--- Dot product of normal and flow direction. ---*/
+        
+        alpha = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          alpha += Vector[iDim]*Flow_Dir[iDim];
+
+        /*--- Flow in the wrong direction. ---*/
+        
+        if (alpha < 0.0) {
+
+          /*--- Copy the old solution ---*/
+          for (iVar = 0; iVar < nVar; iVar++)
+            node[iPoint]->SetSolution(iVar, node[iPoint]->GetSolution_Old(iVar));
+
+        }
+
+      }
+    }
+      
+      if ((config->GetMarker_All_KindBC(iMarker) == ENGINE_EXHAUST) ||
+          (config->GetMarker_All_KindBC(iMarker) == ENGINE_BLEED)) {
+          
+          /*--- Loop over all the vertices on this boundary marker ---*/
+          
+          for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+              
+              iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+              
+              /*--- Normal vector for this vertex (negate for outward convention) ---*/
+              
+              geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
+              
+              for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = -Vector[iDim];
+              
+              Area = 0.0;
+              for (iDim = 0; iDim < nDim; iDim++)
+                  Area += Vector[iDim]*Vector[iDim];
+              Area = sqrt (Area);
+              
+              /*--- Compute unitary vector ---*/
+              
+              for (iDim = 0; iDim < nDim; iDim++)
+                  Vector[iDim] /= Area;
+              
+              /*--- The flow direction is defined by the local velocity on the surface ---*/
+              
+              for (iDim = 0; iDim < nDim; iDim++)
+                  Flow_Dir[iDim] = node[iPoint]->GetSolution(iDim+1) / node[iPoint]->GetSolution(0);
+              
+              /*--- Dot product of normal and flow direction. ---*/
+              
+              alpha = 0.0;
+              for (iDim = 0; iDim < nDim; iDim++)
+                  alpha += Vector[iDim]*Flow_Dir[iDim];
+              
+              /*--- Flow in the wrong direction. ---*/
+              
+              if (alpha > 0.0) {
+                  
+                  /*--- Copy the old solution ---*/
+                  for (iVar = 0; iVar < nVar; iVar++)
+                      node[iPoint]->SetSolution(iVar, node[iPoint]->GetSolution_Old(iVar));
+                  
+              }
+              
+          }
+      }
+      
+  }
 
   delete [] Inflow_MassFlow_Local;
   delete [] Inflow_Mach_Local;
@@ -7903,39 +7953,39 @@ void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_contai
 
       /*--- Viscous contribution ---*/
       
-//      if (viscous) {
-//
-//        /*--- Set laminar and eddy viscosity at the infinity ---*/
-//        
-//        V_inflow[nDim+5] = node[iPoint]->GetLaminarViscosity();
-//        V_inflow[nDim+6] = node[iPoint]->GetEddyViscosity();
-//
-//        /*--- Set the normal vector and the coordinates ---*/
-//        
-//        visc_numerics->SetNormal(Normal);
-//        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint]->GetCoord());
-//
-//        /*--- Primitive variables, and gradient ---*/
-//        
-//        visc_numerics->SetPrimitive(V_domain, V_inflow);
-//        visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
-//
-//        /*--- Turbulent kinetic energy ---*/
-//        
-//        if (config->GetKind_Turb_Model() == SST)
-//          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
-//
-//        /*--- Compute and update residual ---*/
-//        
-//        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-//        LinSysRes.SubtractBlock(iPoint, Residual);
-//
-//        /*--- Jacobian contribution for implicit integration ---*/
-//        
-//        if (implicit)
-//          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-//
-//      }
+      if (viscous) {
+
+        /*--- Set laminar and eddy viscosity at the infinity ---*/
+        
+        V_inflow[nDim+5] = node[iPoint]->GetLaminarViscosity();
+        V_inflow[nDim+6] = node[iPoint]->GetEddyViscosity();
+
+        /*--- Set the normal vector and the coordinates ---*/
+        
+        visc_numerics->SetNormal(Normal);
+        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint]->GetCoord());
+
+        /*--- Primitive variables, and gradient ---*/
+        
+        visc_numerics->SetPrimitive(V_domain, V_inflow);
+        visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
+
+        /*--- Turbulent kinetic energy ---*/
+        
+        if (config->GetKind_Turb_Model() == SST)
+          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
+
+        /*--- Compute and update residual ---*/
+        
+        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+        LinSysRes.SubtractBlock(iPoint, Residual);
+
+        /*--- Jacobian contribution for implicit integration ---*/
+        
+        if (implicit)
+          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+
+      }
 
     }
   }
@@ -8114,39 +8164,39 @@ void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_conta
 
       /*--- Viscous contribution ---*/
       
-//      if (viscous) {
-//
-//        /*--- Set laminar and eddy viscosity at the infinity ---*/
-//        
-//        V_exhaust[nDim+5] = node[iPoint]->GetLaminarViscosity();
-//        V_exhaust[nDim+6] = node[iPoint]->GetEddyViscosity();
-//
-//        /*--- Set the normal vector and the coordinates ---*/
-//        
-//        visc_numerics->SetNormal(Normal);
-//        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint]->GetCoord());
-//
-//        /*--- Primitive variables, and gradient ---*/
-//        
-//        visc_numerics->SetPrimitive(V_domain, V_exhaust);
-//        visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
-//
-//        /*--- Turbulent kinetic energy ---*/
-//        
-//        if (config->GetKind_Turb_Model() == SST)
-//          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
-//
-//        /*--- Compute and update residual ---*/
-//        
-//        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-//        LinSysRes.SubtractBlock(iPoint, Residual);
-//
-//        /*--- Jacobian contribution for implicit integration ---*/
-//        
-//        if (implicit)
-//          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-//
-//      }
+      if (viscous) {
+
+        /*--- Set laminar and eddy viscosity at the infinity ---*/
+        
+        V_exhaust[nDim+5] = node[iPoint]->GetLaminarViscosity();
+        V_exhaust[nDim+6] = node[iPoint]->GetEddyViscosity();
+
+        /*--- Set the normal vector and the coordinates ---*/
+        
+        visc_numerics->SetNormal(Normal);
+        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint]->GetCoord());
+
+        /*--- Primitive variables, and gradient ---*/
+        
+        visc_numerics->SetPrimitive(V_domain, V_exhaust);
+        visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
+
+        /*--- Turbulent kinetic energy ---*/
+        
+        if (config->GetKind_Turb_Model() == SST)
+          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
+
+        /*--- Compute and update residual ---*/
+        
+        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+        LinSysRes.SubtractBlock(iPoint, Residual);
+
+        /*--- Jacobian contribution for implicit integration ---*/
+        
+        if (implicit)
+          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+
+      }
 
     }
   }
@@ -8159,11 +8209,11 @@ void CEulerSolver::BC_Engine_Bleed(CGeometry *geometry, CSolver **solver_contain
   
   unsigned short iDim;
   unsigned long iVertex, iPoint;
-  double Bleed_Pressure, Target_Bleed_MassFlow, Bleed_Pressure_old, Bleed_MassFlow_old, Bleed_Pressure_inc, Bleed_Temperature, Velocity[3], Velocity2, H_Exhaust, Temperature, Riemann, Area, UnitNormal[3], Pressure, Density, Energy, Mach2, SoundSpeed2, SoundSpeed_Exhaust2, Vel_Mag, alpha, aa, bb, cc, dd, Flow_Dir[3];
-  double *V_exhaust, *V_domain;
+  double Bleed_Pressure, Target_Bleed_MassFlow, Bleed_Pressure_old, Bleed_MassFlow_old, Bleed_Pressure_inc, Bleed_Temperature, Velocity[3], Velocity2, H_Bleed, Temperature, Riemann, Area, UnitNormal[3], Pressure, Density, Energy, Mach2, SoundSpeed2, SoundSpeed_Bleed2, Vel_Mag, alpha, aa, bb, cc, dd, Flow_Dir[3];
+  double *V_bleed, *V_domain;
   double Gas_Constant = config->GetGas_ConstantND();
   
-  double DampingFactor = config->GetDamp_Engine_Inflow();
+    double DampingFactor = config->GetDamp_Engine_Bleed();
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool viscous = config->GetViscous();
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
@@ -8200,7 +8250,7 @@ void CEulerSolver::BC_Engine_Bleed(CGeometry *geometry, CSolver **solver_contain
     
     /*--- Allocate the value at the exhaust ---*/
     
-    V_exhaust = GetCharacPrimVar(val_marker, iVertex);
+    V_bleed = GetCharacPrimVar(val_marker, iVertex);
     
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     
@@ -8239,7 +8289,7 @@ void CEulerSolver::BC_Engine_Bleed(CGeometry *geometry, CSolver **solver_contain
       }
       Energy = V_domain[nDim+3] - V_domain[nDim+1]/V_domain[nDim+2];
       Pressure = V_domain[nDim+1];
-      H_Exhaust     = (Gamma*Gas_Constant/Gamma_Minus_One)*Bleed_Temperature;
+      H_Bleed     = (Gamma*Gas_Constant/Gamma_Minus_One)*Bleed_Temperature;
       SoundSpeed2 = Gamma*Pressure/Density;
       
       /*--- Compute the acoustic Riemann invariant that is extrapolated
@@ -8251,7 +8301,7 @@ void CEulerSolver::BC_Engine_Bleed(CGeometry *geometry, CSolver **solver_contain
       
       /*--- Total speed of sound ---*/
       
-      SoundSpeed_Exhaust2 = Gamma_Minus_One*(H_Exhaust - (Energy + Pressure/Density)+0.5*Velocity2) + SoundSpeed2;
+      SoundSpeed_Bleed2 = Gamma_Minus_One*(H_Bleed - (Energy + Pressure/Density)+0.5*Velocity2) + SoundSpeed2;
       
       /*--- The flow direction is defined by the surface normal ---*/
       
@@ -8269,7 +8319,7 @@ void CEulerSolver::BC_Engine_Bleed(CGeometry *geometry, CSolver **solver_contain
       
       aa =  1.0 + 0.5*Gamma_Minus_One*alpha*alpha;
       bb = -1.0*Gamma_Minus_One*alpha*Riemann;
-      cc =  0.5*Gamma_Minus_One*Riemann*Riemann - 2.0*SoundSpeed_Exhaust2/Gamma_Minus_One;
+      cc =  0.5*Gamma_Minus_One*Riemann*Riemann - 2.0*SoundSpeed_Bleed2/Gamma_Minus_One;
       
       /*--- Solve quadratic equation for velocity magnitude. Value must
        be positive, so the choice of root is clear. ---*/
@@ -8282,7 +8332,7 @@ void CEulerSolver::BC_Engine_Bleed(CGeometry *geometry, CSolver **solver_contain
       
       /*--- Compute speed of sound from total speed of sound eqn. ---*/
       
-      SoundSpeed2 = SoundSpeed_Exhaust2 - 0.5*Gamma_Minus_One*Velocity2;
+      SoundSpeed2 = SoundSpeed_Bleed2 - 0.5*Gamma_Minus_One*Velocity2;
       
       /*--- Mach squared (cut between 0-1), use to adapt velocity ---*/
       
@@ -8290,7 +8340,7 @@ void CEulerSolver::BC_Engine_Bleed(CGeometry *geometry, CSolver **solver_contain
       Mach2 = min(1.0,Mach2);
       Velocity2   = Mach2*SoundSpeed2;
       Vel_Mag     = sqrt(Velocity2);
-      SoundSpeed2 = SoundSpeed_Exhaust2 - 0.5*Gamma_Minus_One*Velocity2;
+      SoundSpeed2 = SoundSpeed_Bleed2 - 0.5*Gamma_Minus_One*Velocity2;
       
       /*--- Compute new velocity vector at the inlet ---*/
       
@@ -8316,17 +8366,17 @@ void CEulerSolver::BC_Engine_Bleed(CGeometry *geometry, CSolver **solver_contain
       
       /*--- Primitive variables, using the derived quantities ---*/
       
-      V_exhaust[0] = Temperature;
+      V_bleed[0] = Temperature;
       for (iDim = 0; iDim < nDim; iDim++)
-        V_exhaust[iDim+1] = Velocity[iDim];
-      V_exhaust[nDim+1] = Pressure;
-      V_exhaust[nDim+2] = Density;
-      V_exhaust[nDim+3] = Energy + Pressure/Density;
+        V_bleed[iDim+1] = Velocity[iDim];
+      V_bleed[nDim+1] = Pressure;
+      V_bleed[nDim+2] = Density;
+      V_bleed[nDim+3] = Energy + Pressure/Density;
       
       /*--- Set various quantities in the solver class ---*/
       
       conv_numerics->SetNormal(Normal);
-      conv_numerics->SetPrimitive(V_domain, V_exhaust);
+      conv_numerics->SetPrimitive(V_domain, V_bleed);
       
       /*--- Compute the residual using an upwind scheme ---*/
       
@@ -8340,39 +8390,39 @@ void CEulerSolver::BC_Engine_Bleed(CGeometry *geometry, CSolver **solver_contain
       
       /*--- Viscous contribution ---*/
       
-//      if (viscous) {
-//        
-//        /*--- Set laminar and eddy viscosity at the infinity ---*/
-//        
-//        V_exhaust[nDim+5] = node[iPoint]->GetLaminarViscosity();
-//        V_exhaust[nDim+6] = node[iPoint]->GetEddyViscosity();
-//        
-//        /*--- Set the normal vector and the coordinates ---*/
-//        
-//        visc_numerics->SetNormal(Normal);
-//        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint]->GetCoord());
-//        
-//        /*--- Primitive variables, and gradient ---*/
-//        
-//        visc_numerics->SetPrimitive(V_domain, V_exhaust);
-//        visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
-//        
-//        /*--- Turbulent kinetic energy ---*/
-//        
-//        if (config->GetKind_Turb_Model() == SST)
-//          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
-//        
-//        /*--- Compute and update residual ---*/
-//        
-//        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-//        LinSysRes.SubtractBlock(iPoint, Residual);
-//        
-//        /*--- Jacobian contribution for implicit integration ---*/
-//        
-//        if (implicit)
-//          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-//        
-//      }
+      if (viscous) {
+        
+        /*--- Set laminar and eddy viscosity at the infinity ---*/
+        
+        V_bleed[nDim+5] = node[iPoint]->GetLaminarViscosity();
+        V_bleed[nDim+6] = node[iPoint]->GetEddyViscosity();
+        
+        /*--- Set the normal vector and the coordinates ---*/
+        
+        visc_numerics->SetNormal(Normal);
+        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint]->GetCoord());
+        
+        /*--- Primitive variables, and gradient ---*/
+        
+        visc_numerics->SetPrimitive(V_domain, V_bleed);
+        visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
+        
+        /*--- Turbulent kinetic energy ---*/
+        
+        if (config->GetKind_Turb_Model() == SST)
+          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
+        
+        /*--- Compute and update residual ---*/
+        
+        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+        LinSysRes.SubtractBlock(iPoint, Residual);
+        
+        /*--- Jacobian contribution for implicit integration ---*/
+        
+        if (implicit)
+          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+        
+      }
       
     }
   }
