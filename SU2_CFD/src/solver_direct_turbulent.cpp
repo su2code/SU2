@@ -1732,28 +1732,28 @@ void CTurbSASolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_conta
       
       Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
       
-      /*--- Viscous contribution ---*/
-      
-      visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint]->GetCoord());
-      visc_numerics->SetNormal(Normal);
-      
-      /*--- Conservative variables w/o reconstruction ---*/
-      
-      visc_numerics->SetPrimitive(V_domain, V_inflow);
-      
-      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
-      
-      visc_numerics->SetTurbVar(node[iPoint]->GetSolution(), node[iPoint]->GetSolution());
-      visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
-      
-      /*--- Compute residual, and Jacobians ---*/
-      
-      visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-      
-      /*--- Subtract residual, and update Jacobians ---*/
-      
-      LinSysRes.SubtractBlock(iPoint, Residual);
-      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+//      /*--- Viscous contribution ---*/
+//      
+//      visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint]->GetCoord());
+//      visc_numerics->SetNormal(Normal);
+//      
+//      /*--- Conservative variables w/o reconstruction ---*/
+//      
+//      visc_numerics->SetPrimitive(V_domain, V_inflow);
+//      
+//      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
+//      
+//      visc_numerics->SetTurbVar(node[iPoint]->GetSolution(), node[iPoint]->GetSolution());
+//      visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
+//      
+//      /*--- Compute residual, and Jacobians ---*/
+//      
+//      visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+//      
+//      /*--- Subtract residual, and update Jacobians ---*/
+//      
+//      LinSysRes.SubtractBlock(iPoint, Residual);
+//      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
       
     }
   }
@@ -1821,28 +1821,28 @@ void CTurbSASolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_cont
       
       Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
       
-      /*--- Viscous contribution ---*/
-      
-      visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint]->GetCoord());
-      visc_numerics->SetNormal(Normal);
-      
-      /*--- Conservative variables w/o reconstruction ---*/
-      
-      visc_numerics->SetPrimitive(V_domain, V_exhaust);
-      
-      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
-      
-      visc_numerics->SetTurbVar(Solution_i, Solution_j);
-      visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
-      
-      /*--- Compute residual, and Jacobians ---*/
-      
-      visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-      
-      /*--- Subtract residual, and update Jacobians ---*/
-      
-      LinSysRes.SubtractBlock(iPoint, Residual);
-      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+//      /*--- Viscous contribution ---*/
+//      
+//      visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint]->GetCoord());
+//      visc_numerics->SetNormal(Normal);
+//      
+//      /*--- Conservative variables w/o reconstruction ---*/
+//      
+//      visc_numerics->SetPrimitive(V_domain, V_exhaust);
+//      
+//      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
+//      
+//      visc_numerics->SetTurbVar(Solution_i, Solution_j);
+//      visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
+//      
+//      /*--- Compute residual, and Jacobians ---*/
+//      
+//      visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+//      
+//      /*--- Subtract residual, and update Jacobians ---*/
+//      
+//      LinSysRes.SubtractBlock(iPoint, Residual);
+//      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
       
     }
   }
@@ -1910,28 +1910,28 @@ void CTurbSASolver::BC_Engine_Bleed(CGeometry *geometry, CSolver **solver_contai
       
       Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
       
-      /*--- Viscous contribution ---*/
-      
-      visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint]->GetCoord());
-      visc_numerics->SetNormal(Normal);
-      
-      /*--- Conservative variables w/o reconstruction ---*/
-      
-      visc_numerics->SetPrimitive(V_domain, V_exhaust);
-      
-      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
-      
-      visc_numerics->SetTurbVar(Solution_i, Solution_j);
-      visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
-      
-      /*--- Compute residual, and Jacobians ---*/
-      
-      visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-      
-      /*--- Subtract residual, and update Jacobians ---*/
-      
-      LinSysRes.SubtractBlock(iPoint, Residual);
-      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+//      /*--- Viscous contribution ---*/
+//      
+//      visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint]->GetCoord());
+//      visc_numerics->SetNormal(Normal);
+//      
+//      /*--- Conservative variables w/o reconstruction ---*/
+//      
+//      visc_numerics->SetPrimitive(V_domain, V_exhaust);
+//      
+//      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
+//      
+//      visc_numerics->SetTurbVar(Solution_i, Solution_j);
+//      visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
+//      
+//      /*--- Compute residual, and Jacobians ---*/
+//      
+//      visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+//      
+//      /*--- Subtract residual, and update Jacobians ---*/
+//      
+//      LinSysRes.SubtractBlock(iPoint, Residual);
+//      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
       
     }
   }
