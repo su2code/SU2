@@ -488,7 +488,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    Format: ( nacelle inflow marker, flux, ... ) \ingroup Config*/
   addBleedOption("MARKER_ENGINE_BLEED", nMarker_EngineBleed, Marker_EngineBleed, Bleed_MassFlow_Target, Bleed_Temperature_Target);
   /* DESCRIPTION: Engine subsonic intake region */
-  addBoolOption("SUBSONIC_ENGINE_INFLOW", Engine_Intake, false);
+  addBoolOption("SUBSONIC_ENGINE", Engine_Intake, false);
   default_vec_6d[0] = -1E15; default_vec_6d[1] = -1E15; default_vec_6d[2] = -1E15;
   default_vec_6d[3] =  1E15; default_vec_6d[4] =  1E15; default_vec_6d[5] =  1E15;
   /* DESCRIPTION: Coordinates of the box to impose a subsonic nacellle (Xmin, Ymin, Zmin, Xmax, Ymax, Zmax) */
@@ -503,7 +503,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Flow load boundary marker(s) */
   addStringDoubleListOption("MARKER_FLOWLOAD", nMarker_FlowLoad, Marker_FlowLoad, FlowLoad_Value);
   /* DESCRIPTION: Damping factor for engine inlet condition */
-  addDoubleOption("DAMP_ENGINE_INFLOW", Damp_Engine_Inflow, 0.1);
+  addDoubleOption("DAMP_ENGINE_INFLOW", Damp_Engine_Inflow, 0.75);
+  /* DESCRIPTION: Damping factor for engine bleed condition */
+  addDoubleOption("DAMP_ENGINE_BLEED", Damp_Engine_Bleed, 0.01);
   /* DESCRIPTION: Outlet boundary marker(s) over which to calculate 1-D flow properties
    Format: ( outlet marker) */
   addStringListOption("MARKER_OUT_1D", nMarker_Out_1D, Marker_Out_1D);

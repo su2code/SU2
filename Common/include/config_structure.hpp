@@ -90,7 +90,8 @@ private:
   ionization;  /*!< \brief Flag for determining if free electron gas is in the mixture */
 	bool Visualize_Partition;	/*!< \brief Flag to visualize each partition in the DDM. */
   double Damp_Engine_Inflow;	/*!< \brief Damping factor for the engine inlet. */
-	double Damp_Res_Restric,	/*!< \brief Damping factor for the residual restriction. */
+    double Damp_Engine_Bleed;	/*!< \brief Damping factor for the engine bleed. */
+    double Damp_Res_Restric,	/*!< \brief Damping factor for the residual restriction. */
 	Damp_Correc_Prolong; /*!< \brief Damping factor for the correction prolongation. */
 	double Position_Plane; /*!< \brief Position of the Near-Field (y coordinate 2D, and z coordinate 3D). */
 	double WeightCd; /*!< \brief Weight of the drag coefficient. */
@@ -4356,6 +4357,12 @@ public:
 	 * \return Value of the damping factor.
 	 */
 	double GetDamp_Engine_Inflow(void);
+    
+    /*!
+     * \brief Value of the damping factor for the engine bleed inlet bc.
+     * \return Value of the damping factor.
+     */
+    double GetDamp_Engine_Bleed(void);
 
 	/*!
 	 * \brief Value of the damping factor for the residual restriction.

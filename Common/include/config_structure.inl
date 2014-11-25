@@ -970,6 +970,8 @@ inline double CConfig::GetMinLogResidual(void) { return MinLogResidual; }
 
 inline double CConfig::GetDamp_Engine_Inflow(void) { return Damp_Engine_Inflow; }
 
+inline double CConfig::GetDamp_Engine_Bleed(void) { return Damp_Engine_Bleed; }
+
 inline double CConfig::GetDamp_Res_Restric(void) { return Damp_Res_Restric; }
 
 inline double CConfig::GetDamp_Correc_Prolong(void) { return Damp_Correc_Prolong; }
