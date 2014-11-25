@@ -543,8 +543,8 @@ private:
 	Pressure_Critical,   /*!< \brief Critical Pressure for real fluid model.  */
 	Density_Critical,   /*!< \brief Critical Density for real fluid model.  */
 	Acentric_Factor,   /*!< \brief Acentric Factor for real fluid model.  */
-	Mu_ConstantND,   /*!< \brief Constant Viscosity for CostantViscosity model.  */
-	Kt_ConstantND,   /*!< \brief Constant Thermal Conductivity for CostantConductivity model.  */
+	Mu_ConstantND,   /*!< \brief Constant Viscosity for ConstantViscosity model.  */
+	Kt_ConstantND,   /*!< \brief Constant Thermal Conductivity for ConstantConductivity model.  */
 	Mu_RefND,   /*!< \brief reference viscosity for Sutherland model.  */
 	Mu_Temperature_RefND,   /*!< \brief reference Temperature for Sutherland model.  */
 	Mu_SND,   /*!< \brief reference S for Sutherland model.  */
