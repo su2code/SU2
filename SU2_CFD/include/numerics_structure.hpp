@@ -859,7 +859,7 @@ public:
 	 * \param[in] val_laminar_viscosity - Laminar viscosity.
 	 * \param[in] val_eddy_viscosity - Eddy viscosity.
 	 * \param[in] val_thermal_conductivity - Thermal Conductivity.
-	 * \param[in] val_heat_capacity_cp - Heat Capacity at costant pressure.
+	 * \param[in] val_heat_capacity_cp - Heat Capacity at constant pressure.
 	 */
     
 void GetViscousProjFlux(double *val_primvar, double **val_gradprimvar,
