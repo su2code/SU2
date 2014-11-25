@@ -964,7 +964,7 @@ CTurbSASolver::CTurbSASolver(void) : CTurbSolver() { }
 CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned short iMesh, CFluidModel* FluidModel) : CTurbSolver() {
   unsigned short iVar, iDim, nLineLets;
   unsigned long iPoint, index;
-  double Density_Inf, Viscosity_Inf, Factor_nu_Inf, dull_val, T_ref = 0.0, S = 0.0, Mu_ref = 0.0;
+  double Density_Inf, Viscosity_Inf, Factor_nu_Inf, dull_val;
 
   bool restart = (config->GetRestart() || config->GetRestart_Flow());
   bool adjoint = config->GetAdjoint();
@@ -1094,10 +1094,6 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
     ifstream restart_file;
     string filename = config->GetSolution_FlowFileName();
     double Density, StaticEnergy, Laminar_Viscosity, nu, nu_hat, muT = 0.0, U[5];
-    double Temperature, Temperature_Dim, Pressure;
-    double Temperature_Ref = config->GetTemperature_Ref();
-    double Viscosity_Ref   = config->GetViscosity_Ref();
-    double Gas_Constant    = config->GetGas_ConstantND();
     
     /*--- Modify file name for an unsteady restart ---*/
     if (dual_time) {

@@ -154,14 +154,15 @@ CSysVector::CSysVector(const unsigned long & numBlk, const unsigned long & numBl
 
 CSysVector::~CSysVector() {
   delete [] vec_val;
-  nElm = -1;
-	nElmDomain = -1;
-  nBlk = -1;
-  nBlkDomain = -1;
-  nVar = -1;
+  
+  nElm = 0; nElmDomain = 0;
+  nBlk = 0; nBlkDomain = 0;
+  nVar = 0;
+  
 #ifdef HAVE_MPI
-  myrank = -1;
+  myrank = 0;
 #endif
+  
 }
 
 void CSysVector::Initialize(const unsigned long & numBlk, const unsigned long & numBlkDomain, const unsigned short & numVar, const double & val) {

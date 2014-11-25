@@ -214,7 +214,7 @@ public:
 	 * \param[in] geo_coarse - Geometrical definition of the coarse grid.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void SetProlongated_Solution(unsigned short RunTime_EqSystem, CSolver **sol_fine, CSolver **sol_coarse, 
+	virtual void SetProlongated_Solution(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse, 
 										 CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
 	
 	/*! 
@@ -239,7 +239,7 @@ public:
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 * \param[in] InclSharedDomain - Include the shared domain in the interpolation.
 	 */
-	virtual void SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolver **sol_fine, CSolver **sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
+	virtual void SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
 
 	/*! 
 	 * \brief A virtual member.
@@ -250,7 +250,7 @@ public:
 	 * \param[in] geo_coarse - Geometrical definition of the coarse grid.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void SetRestricted_Gradient(unsigned short RunTime_EqSystem, CSolver **sol_fine, CSolver **sol_coarse, 
+	virtual void SetRestricted_Gradient(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
 										CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
 	
 	/*! 
@@ -304,7 +304,7 @@ public:
 	 * \param[in] val_smooth_coeff - Relaxation factor.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void Smooth_Solution(unsigned short RunTime_EqSystem, CSolver **solver, CGeometry *geometry,
+	virtual void Smooth_Solution(unsigned short RunTime_EqSystem, CSolver *solver, CGeometry *geometry,
                        unsigned short val_nSmooth, double val_smooth_coeff, CConfig *config);
 
 };
@@ -459,7 +459,7 @@ public:
 	 * \param[in] geo_coarse - Geometrical definition of the coarse grid.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void SetRestricted_Gradient(unsigned short RunTime_EqSystem, CSolver **sol_fine, CSolver **sol_coarse, 
+	void SetRestricted_Gradient(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse, 
 								CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
 
 	/*! 
@@ -524,7 +524,7 @@ public:
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 * \param[in] InclSharedDomain - Include the shared domain in the interpolation.
 	 */
-	void SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolver **sol_fine, CSolver **sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
+	void SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
   
 };
 

@@ -410,6 +410,8 @@ inline void CVariable::SetEddyViscosityInc(double eddy_visc) { }
 
 inline void CVariable::SetThermalConductivity(double thermalConductivity) { }
 
+inline void CVariable::SetThermalConductivity(CConfig *config) { }
+
 inline void CVariable::SetSpecificHeatCp(double Cp) { }
 
 inline void CVariable::SetVorticity(void) { }
