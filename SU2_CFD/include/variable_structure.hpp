@@ -1415,7 +1415,13 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	virtual void SetThermalConductivity(double thermalConductivity);
-
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void SetThermalConductivity(CConfig *config);
+  
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.

@@ -45,15 +45,15 @@ inline void CIntegration::NonDimensional_Parameters(CGeometry **geometry, CSolve
 	
 inline void CIntegration::SetProlongated_Correction(CSolver *sol_fine, CGeometry *geo_fine, CConfig *config, unsigned short iMesh) { }
 
-inline void CIntegration::SetProlongated_Solution(unsigned short RunTime_EqSystem, CSolver **sol_fine, CSolver **sol_coarse,
+inline void CIntegration::SetProlongated_Solution(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
 												  CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) { }
 
 inline void CIntegration::SetRestricted_Residual(CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, 
 											     CGeometry *geo_coarse, CConfig *config)  { }
 
-inline void CIntegration::SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolver **sol_fine, CSolver **sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config)  { }
+inline void CIntegration::SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config)  { }
 
-inline void CIntegration::SetRestricted_Gradient(unsigned short RunTime_EqSystem, CSolver **sol_fine, CSolver **sol_coarse, 
+inline void CIntegration::SetRestricted_Gradient(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse, 
 												 CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) { }
 	
 inline void CIntegration::SetResidual_Term(CGeometry *geometry, CSolver *flow) { }
@@ -67,4 +67,4 @@ inline void CIntegration::SingleGrid_Iteration(CGeometry ***geometry, CSolver **
 inline void CIntegration::SetPotential_Solver(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container, 
                                               CConfig **config, unsigned short RunTime_EqSystem, unsigned short iMesh, unsigned short iZone) { }
                                               
-inline void CIntegration::Smooth_Solution(unsigned short RunTime_EqSystem, CSolver **solver, CGeometry *geometry, unsigned short val_nSmooth, double val_smooth_coeff, CConfig *config) { }
+inline void CIntegration::Smooth_Solution(unsigned short RunTime_EqSystem, CSolver *solver, CGeometry *geometry, unsigned short val_nSmooth, double val_smooth_coeff, CConfig *config) { }
