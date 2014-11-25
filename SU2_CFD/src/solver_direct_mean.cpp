@@ -5441,7 +5441,7 @@ void CEulerSolver::GetEngine_Properties(CGeometry *geometry, CConfig *config, un
             Area += Vector[iDim]*Vector[iDim];
             Velocity[iDim] = node[iPoint]->GetSolution(iDim+1)/Density;
             Velocity2 += Velocity[iDim]*Velocity[iDim];
-            MassFlow -= Vector[iDim]*node[iPoint]->GetSolution(iDim+1);
+            MassFlow += Vector[iDim]*node[iPoint]->GetSolution(iDim+1);
           }
           
           Area       = sqrt (Area);
