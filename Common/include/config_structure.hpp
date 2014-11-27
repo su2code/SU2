@@ -482,7 +482,8 @@ private:
 	AdjWave_FileName,					/*!< \brief Adjoint wave variables output file. */
 	Residual_FileName,				/*!< \brief Residual variables output file. */
 	Conv_FileName,					/*!< \brief Convergence history output file. */
-	Restart_FlowFileName,			/*!< \brief Restart file for flow variables. */
+  Breakdown_FileName,			    /*!< \brief Breakdown output file. */
+  Restart_FlowFileName,			/*!< \brief Restart file for flow variables. */
 	Restart_WaveFileName,			/*!< \brief Restart file for wave variables. */
 	Restart_HeatFileName,			/*!< \brief Restart file for heat variables. */
 	Restart_LinFileName,			/*!< \brief Restart file for linearized flow variables. */
@@ -3678,6 +3679,12 @@ public:
 	 * \return Name of the file with convergence history of the problem.
 	 */
 	string GetConv_FileName(void);
+    
+  /*!
+   * \brief Get the name of the file with the forces breakdown of the problem.
+   * \return Name of the file with forces breakdown of the problem.
+   */
+  string GetBreakdown_FileName(void);
 
 	/*!
 	 * \brief Get the name of the file with the flow variables.

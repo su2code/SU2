@@ -452,10 +452,8 @@ MPI_Barrier(MPI_COMM_WORLD);
             output->SetForceSections(solver_container[ZONE_0][MESH_0][FLOW_SOL],
                                      geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
           
-//          /*--- Compute 1D output. ---*/
-//          if (config->GetWrt_1D_Output())
-//            output->OneDimensionalOutput(solver_container[ZONE_0][MESH_0][FLOW_SOL],
-//                                         geometry_container[ZONE_0][MESH_0], config_container[ZONE_0]);
+//          output->SetForces_Breakdown(geometry_container, solver_container,
+//                                      config_container, integration_container, false, UsedTime, ZONE_0);
           
         }
     

@@ -794,6 +794,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /* DESCRIPTION: Output file convergence history (w/o extension) */
   addStringOption("CONV_FILENAME", Conv_FileName, string("history"));
+  /* DESCRIPTION: Output file forces breakdown */
+  addStringOption("BREAKDOWN_FILENAME", Breakdown_FileName, string("forces_breakdown.dat"));
   /* DESCRIPTION: Restart flow input file */
   addStringOption("SOLUTION_FLOW_FILENAME", Solution_FlowFileName, string("solution_flow.dat"));
   /* DESCRIPTION: Restart linear flow input file */
@@ -4146,6 +4148,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
 
     cout << "Convergence history file name: " << Conv_FileName << "." << endl;
+
+    cout << "Forces breakdown file name: " << Breakdown_FileName << "." << endl;
 
     if ((Kind_Solver != LINEAR_ELASTICITY) && (Kind_Solver != HEAT_EQUATION) && (Kind_Solver != WAVE_EQUATION)) {
       if (!Linearized && !Adjoint) {
