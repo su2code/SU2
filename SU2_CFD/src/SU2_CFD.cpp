@@ -454,9 +454,9 @@ MPI_Barrier(MPI_COMM_WORLD);
                                      geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
 
           /*--- Output a file with the forces breakdown. ---*/
-
-//          output->SetForces_Breakdown(geometry_container, solver_container,
-//                                      config_container, integration_container, ZONE_0);
+          
+          output->SetForces_Breakdown(geometry_container, solver_container,
+                                      config_container, integration_container, ZONE_0);
           
         }
     
