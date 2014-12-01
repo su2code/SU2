@@ -1150,19 +1150,19 @@ public:
 	 */
 	virtual double GetCMz_Visc(unsigned short val_marker);
     
-    /*!
-	 * \brief A virtual member.
-	 * \param[in] val_marker - Surface marker where the coefficient is computed.
-	 * \return Value of the lift coefficient on the surface <i>val_marker</i>.
-	 */
-	virtual double GetSurface_CLift(unsigned short val_marker);
-    
-    /*!
-	 * \brief A virtual member.
-	 * \param[in] val_marker - Surface marker where the coefficient is computed.
-	 * \return Value of the drag coefficient on the surface <i>val_marker</i>.
-	 */
-	virtual double GetSurface_CDrag(unsigned short val_marker);
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the lift coefficient on the surface <i>val_marker</i>.
+   */
+  virtual double GetSurface_CLift(unsigned short val_marker);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the drag coefficient on the surface <i>val_marker</i>.
+   */
+  virtual double GetSurface_CDrag(unsigned short val_marker);
   
   /*!
    * \brief A virtual member.
@@ -1170,6 +1170,13 @@ public:
    * \return Value of the side force coefficient on the surface <i>val_marker</i>.
    */
   virtual double GetSurface_CSideForce(unsigned short val_marker);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the side force coefficient on the surface <i>val_marker</i>.
+   */
+  virtual double GetSurface_CEff(unsigned short val_marker);
   
   /*!
    * \brief A virtual member.
@@ -1191,28 +1198,98 @@ public:
    * \return Value of the z force coefficient on the surface <i>val_marker</i>.
    */
   virtual double GetSurface_CFz(unsigned short val_marker);
-    
-    /*!
-	 * \brief A virtual member.
-	 * \param[in] val_marker - Surface marker where the coefficient is computed.
-	 * \return Value of the x moment coefficient on the surface <i>val_marker</i>.
-	 */
-	virtual double GetSurface_CMx(unsigned short val_marker);
-    
-    /*!
-	 * \brief A virtual member.
-	 * \param[in] val_marker - Surface marker where the coefficient is computed.
-	 * \return Value of the y moment coefficient on the surface <i>val_marker</i>.
-	 */
-	virtual double GetSurface_CMy(unsigned short val_marker);
-    
-    /*!
-	 * \brief A virtual member.
-	 * \param[in] val_marker - Surface marker where the coefficient is computed.
-	 * \return Value of the z moment coefficient on the surface <i>val_marker</i>.
-	 */
-	virtual double GetSurface_CMz(unsigned short val_marker);
-
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the x moment coefficient on the surface <i>val_marker</i>.
+   */
+  virtual double GetSurface_CMx(unsigned short val_marker);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the y moment coefficient on the surface <i>val_marker</i>.
+   */
+  virtual double GetSurface_CMy(unsigned short val_marker);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the z moment coefficient on the surface <i>val_marker</i>.
+   */
+  virtual double GetSurface_CMz(unsigned short val_marker);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the lift coefficient on the surface <i>val_marker</i>.
+   */
+  virtual double GetSurface_CLift_Inv(unsigned short val_marker);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the drag coefficient on the surface <i>val_marker</i>.
+   */
+  virtual double GetSurface_CDrag_Inv(unsigned short val_marker);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the side force coefficient on the surface <i>val_marker</i>.
+   */
+  virtual double GetSurface_CSideForce_Inv(unsigned short val_marker);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the side force coefficient on the surface <i>val_marker</i>.
+   */
+  virtual double GetSurface_CEff_Inv(unsigned short val_marker);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the x force coefficient on the surface <i>val_marker</i>.
+   */
+  virtual double GetSurface_CFx_Inv(unsigned short val_marker);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the y force coefficient on the surface <i>val_marker</i>.
+   */
+  virtual double GetSurface_CFy_Inv(unsigned short val_marker);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the z force coefficient on the surface <i>val_marker</i>.
+   */
+  virtual double GetSurface_CFz_Inv(unsigned short val_marker);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the x moment coefficient on the surface <i>val_marker</i>.
+   */
+  virtual double GetSurface_CMx_Inv(unsigned short val_marker);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the y moment coefficient on the surface <i>val_marker</i>.
+   */
+  virtual double GetSurface_CMy_Inv(unsigned short val_marker);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the z moment coefficient on the surface <i>val_marker</i>.
+   */
+  virtual double GetSurface_CMz_Inv(unsigned short val_marker);
+  
   /*!
 	 * \brief A virtual member.
 	 * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -1497,7 +1574,42 @@ public:
 	 * \return Value of the drag coefficient (inviscid contribution).
 	 */
 	virtual double GetAllBound_CEff_Inv(void);
-    
+  
+  /*!
+   * \brief A virtual member.
+   * \return Value of the drag coefficient (inviscid contribution).
+   */
+  virtual double GetAllBound_CMx_Inv(void);
+  /*!
+   * \brief A virtual member.
+   * \return Value of the drag coefficient (inviscid contribution).
+   */
+  virtual double GetAllBound_CMy_Inv(void);
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of the drag coefficient (inviscid contribution).
+   */
+  virtual double GetAllBound_CMz_Inv(void);
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of the drag coefficient (inviscid contribution).
+   */
+  virtual double GetAllBound_CFx_Inv(void);
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of the drag coefficient (inviscid contribution).
+   */
+  virtual double GetAllBound_CFy_Inv(void);
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of the drag coefficient (inviscid contribution).
+   */
+  virtual double GetAllBound_CFz_Inv(void);
+  
 	/*!
 	 * \brief A virtual member.
 	 * \return Value of the lift coefficient (viscous contribution).
@@ -2037,6 +2149,7 @@ protected:
   *Surface_CLift_Inv, /*!< \brief Lift coefficient (inviscid contribution) for each monitoring surface. */
   *Surface_CDrag_Inv, /*!< \brief Drag coefficient (inviscid contribution) for each monitoring surface. */
   *Surface_CSideForce_Inv, /*!< \brief Side-force coefficient (inviscid contribution) for each monitoring surface. */
+  *Surface_CEff_Inv, /*!< \brief Side-force coefficient (inviscid contribution) for each monitoring surface. */
   *Surface_CFx_Inv,   /*!< \brief x Force coefficient (inviscid contribution) for each monitoring surface. */
   *Surface_CFy_Inv,   /*!< \brief y Force coefficient (inviscid contribution) for each monitoring surface. */
   *Surface_CFz_Inv,   /*!< \brief z Force coefficient (inviscid contribution) for each monitoring surface. */
@@ -2126,6 +2239,7 @@ protected:
   double *Surface_CLift,   /*!< \brief Lift coefficient for each monitoring surface. */
   *Surface_CDrag,          /*!< \brief Drag coefficient for each monitoring surface. */
   *Surface_CSideForce,     /*!< \brief Side-force coefficient for each monitoring surface. */
+  *Surface_CEff,     /*!< \brief Side-force coefficient for each monitoring surface. */
   *Surface_CFx,            /*!< \brief x Force coefficient for each monitoring surface. */
   *Surface_CFy,            /*!< \brief y Force coefficient for each monitoring surface. */
   *Surface_CFz,            /*!< \brief z Force coefficient for each monitoring surface. */
@@ -2742,6 +2856,13 @@ public:
   double GetSurface_CSideForce(unsigned short val_marker);
   
   /*!
+   * \brief Provide the non dimensional side-force coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the side-force coefficient on the surface <i>val_marker</i>.
+   */
+  double GetSurface_CEff(unsigned short val_marker);
+  
+  /*!
    * \brief Provide the non dimensional x force coefficient.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the x force coefficient on the surface <i>val_marker</i>.
@@ -2782,7 +2903,77 @@ public:
 	 * \return Value of the z moment coefficient on the surface <i>val_marker</i>.
 	 */
 	double GetSurface_CMz(unsigned short val_marker);
-    
+  
+  /*!
+   * \brief Provide the non dimensional lift coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the lift coefficient on the surface <i>val_marker</i>.
+   */
+  double GetSurface_CLift_Inv(unsigned short val_marker);
+  
+  /*!
+   * \brief Provide the non dimensional drag coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the drag coefficient on the surface <i>val_marker</i>.
+   */
+  double GetSurface_CDrag_Inv(unsigned short val_marker);
+  
+  /*!
+   * \brief Provide the non dimensional side-force coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the side-force coefficient on the surface <i>val_marker</i>.
+   */
+  double GetSurface_CSideForce_Inv(unsigned short val_marker);
+  
+  /*!
+   * \brief Provide the non dimensional side-force coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the side-force coefficient on the surface <i>val_marker</i>.
+   */
+  double GetSurface_CEff_Inv(unsigned short val_marker);
+  
+  /*!
+   * \brief Provide the non dimensional x force coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the x force coefficient on the surface <i>val_marker</i>.
+   */
+  double GetSurface_CFx_Inv(unsigned short val_marker);
+  
+  /*!
+   * \brief Provide the non dimensional y force coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the y force coefficient on the surface <i>val_marker</i>.
+   */
+  double GetSurface_CFy_Inv(unsigned short val_marker);
+  
+  /*!
+   * \brief Provide the non dimensional z force coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the z force coefficient on the surface <i>val_marker</i>.
+   */
+  double GetSurface_CFz_Inv(unsigned short val_marker);
+  
+  /*!
+   * \brief Provide the non dimensional x moment coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the x moment coefficient on the surface <i>val_marker</i>.
+   */
+  double GetSurface_CMx_Inv(unsigned short val_marker);
+  
+  /*!
+   * \brief Provide the non dimensional y moment coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the y moment coefficient on the surface <i>val_marker</i>.
+   */
+  double GetSurface_CMy_Inv(unsigned short val_marker);
+  
+  /*!
+   * \brief Provide the non dimensional z moment coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the z moment coefficient on the surface <i>val_marker</i>.
+   */
+  double GetSurface_CMz_Inv(unsigned short val_marker);
+  
 	/*!
 	 * \brief Provide the non dimensional drag coefficient (inviscid contribution).
 	 * \param val_marker Surface where the coeficient is going to be computed.
@@ -3029,7 +3220,43 @@ public:
 	 * \return Value of the efficiency coefficient (inviscid contribution).
 	 */
 	double GetAllBound_CEff_Inv(void);
-    
+  
+  /*!
+   * \brief Get the inviscid contribution to the efficiency coefficient.
+   * \return Value of the efficiency coefficient (inviscid contribution).
+   */
+  double GetAllBound_CMx_Inv(void);
+  
+  /*!
+   * \brief Get the inviscid contribution to the efficiency coefficient.
+   * \return Value of the efficiency coefficient (inviscid contribution).
+   */
+  double GetAllBound_CMy_Inv(void);
+  
+  /*!
+   * \brief Get the inviscid contribution to the efficiency coefficient.
+   * \return Value of the efficiency coefficient (inviscid contribution).
+   */
+  double GetAllBound_CMz_Inv(void);
+  
+  /*!
+   * \brief Get the inviscid contribution to the efficiency coefficient.
+   * \return Value of the efficiency coefficient (inviscid contribution).
+   */
+  double GetAllBound_CFx_Inv(void);
+  
+  /*!
+   * \brief Get the inviscid contribution to the efficiency coefficient.
+   * \return Value of the efficiency coefficient (inviscid contribution).
+   */
+  double GetAllBound_CFy_Inv(void);
+  
+  /*!
+   * \brief Get the inviscid contribution to the efficiency coefficient.
+   * \return Value of the efficiency coefficient (inviscid contribution).
+   */
+  double GetAllBound_CFz_Inv(void);
+  
 	/*!
 	 * \brief Provide the Pressure coefficient.
 	 * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -3229,6 +3456,7 @@ private:
   *Surface_CLift_Visc,/*!< \brief Lift coefficient (viscous contribution) for each monitoring surface. */
   *Surface_CDrag_Visc,/*!< \brief Drag coefficient (viscous contribution) for each monitoring surface. */
   *Surface_CSideForce_Visc,/*!< \brief Side-force coefficient (viscous contribution) for each monitoring surface. */
+  *Surface_CEff_Visc,/*!< \brief Side-force coefficient (viscous contribution) for each monitoring surface. */
   *Surface_CFx_Visc,  /*!< \brief Force x coefficient (viscous contribution) for each monitoring surface. */
   *Surface_CFy_Visc,  /*!< \brief Force y coefficient (viscous contribution) for each monitoring surface. */
   *Surface_CFz_Visc,  /*!< \brief Force z coefficient (viscous contribution) for each monitoring surface. */
@@ -6637,6 +6865,42 @@ public:
 	 * \return Value of the efficiency coefficient (inviscid contribution).
 	 */
 	double GetAllBound_CEff_Inv(void);
+  
+  /*!
+   * \brief Get the inviscid contribution to the efficiency coefficient.
+   * \return Value of the efficiency coefficient (inviscid contribution).
+   */
+  double GetAllBound_CMx_Inv(void);
+  
+  /*!
+   * \brief Get the inviscid contribution to the efficiency coefficient.
+   * \return Value of the efficiency coefficient (inviscid contribution).
+   */
+  double GetAllBound_CMy_Inv(void);
+  
+  /*!
+   * \brief Get the inviscid contribution to the efficiency coefficient.
+   * \return Value of the efficiency coefficient (inviscid contribution).
+   */
+  double GetAllBound_CMz_Inv(void);
+  
+  /*!
+   * \brief Get the inviscid contribution to the efficiency coefficient.
+   * \return Value of the efficiency coefficient (inviscid contribution).
+   */
+  double GetAllBound_CFx_Inv(void);
+  
+  /*!
+   * \brief Get the inviscid contribution to the efficiency coefficient.
+   * \return Value of the efficiency coefficient (inviscid contribution).
+   */
+  double GetAllBound_CFy_Inv(void);
+  
+  /*!
+   * \brief Get the inviscid contribution to the efficiency coefficient.
+   * \return Value of the efficiency coefficient (inviscid contribution).
+   */
+  double GetAllBound_CFz_Inv(void);
   
 	/*!
 	 * \brief Provide the Pressure coefficient.

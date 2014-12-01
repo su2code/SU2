@@ -433,6 +433,6 @@ public:
    * \param[in] val_nZone - iZone index.
    */
   void SetForces_Breakdown(CGeometry ***geometry, CSolver ****solver_container, CConfig **config,
-                           CIntegration ***integration, bool DualTime, double timeused, unsigned short val_iZone);
+                           CIntegration ***integration, unsigned short val_iZone);
   
 };

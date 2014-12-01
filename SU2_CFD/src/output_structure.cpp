@@ -4084,6 +4084,7 @@ void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
     monitoring_coeff += ",\"CLift_"  + Monitoring_Tag + "\"";
     monitoring_coeff += ",\"CDrag_"  + Monitoring_Tag + "\"";
     monitoring_coeff += ",\"CSideForce_" + Monitoring_Tag + "\"";
+    monitoring_coeff += ",\"CL/CD_" + Monitoring_Tag + "\"";
     monitoring_coeff += ",\"CFx_"    + Monitoring_Tag + "\"";
     monitoring_coeff += ",\"CFy_"    + Monitoring_Tag + "\"";
     monitoring_coeff += ",\"CFz_"    + Monitoring_Tag + "\"";
@@ -4320,6 +4321,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
     *Surface_CLift      = NULL,
     *Surface_CDrag      = NULL,
     *Surface_CSideForce = NULL,
+    *Surface_CEff       = NULL,
     *Surface_CFx        = NULL,
     *Surface_CFy        = NULL,
     *Surface_CFz        = NULL,
@@ -4381,6 +4383,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
     Surface_CLift      = new double[config[ZONE_0]->GetnMarker_Monitoring()];
     Surface_CDrag      = new double[config[ZONE_0]->GetnMarker_Monitoring()];
     Surface_CSideForce = new double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CEff       = new double[config[ZONE_0]->GetnMarker_Monitoring()];
     Surface_CFx        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
     Surface_CFy        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
     Surface_CFz        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
@@ -4452,6 +4455,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
             Surface_CLift[iMarker_Monitoring]      = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CLift(iMarker_Monitoring);
             Surface_CDrag[iMarker_Monitoring]      = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CDrag(iMarker_Monitoring);
             Surface_CSideForce[iMarker_Monitoring] = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CSideForce(iMarker_Monitoring);
+            Surface_CEff[iMarker_Monitoring]       = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CEff(iMarker_Monitoring);
             Surface_CFx[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFx(iMarker_Monitoring);
             Surface_CFy[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFy(iMarker_Monitoring);
             Surface_CFz[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFz(iMarker_Monitoring);
@@ -4745,6 +4749,8 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
                 sprintf(surface_coeff, ", %12.10f",Surface_CDrag[iMarker_Monitoring]);
                 strcat(monitoring_coeff, surface_coeff);
                 sprintf(surface_coeff, ", %12.10f",Surface_CSideForce[iMarker_Monitoring]);
+                strcat(monitoring_coeff, surface_coeff);
+                sprintf(surface_coeff, ", %12.10f",Surface_CEff[iMarker_Monitoring]);
                 strcat(monitoring_coeff, surface_coeff);
                 sprintf(surface_coeff, ", %12.10f",Surface_CFx[iMarker_Monitoring]);
                 strcat(monitoring_coeff, surface_coeff);
@@ -5452,6 +5458,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
       delete [] Surface_CLift;
       delete [] Surface_CDrag;
       delete [] Surface_CSideForce;
+      delete [] Surface_CEff;
       delete [] Surface_CFx;
       delete [] Surface_CFy;
       delete [] Surface_CFz;
@@ -5468,74 +5475,41 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
                                   CSolver ****solver_container,
                                   CConfig **config,
                                   CIntegration ***integration,
-                                  bool DualTime_Iteration,
-                                  double timeused,
                                   unsigned short val_iZone) {
   
-  unsigned short FinestMesh = config[val_iZone]->GetFinestMesh();
+  char cstr[200];
+  unsigned short iMarker, iMarker_Monitoring;
+  ofstream Breakdown_file;
+  int rank = MASTER_NODE;
   
-  int rank;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#else
-  rank = MASTER_NODE;
 #endif
   
-  /*--- Output using only the master node ---*/
+  unsigned short FinestMesh = config[val_iZone]->GetFinestMesh();
+  unsigned short nDim = geometry[val_iZone][FinestMesh]->GetnDim();
+  bool compressible = (config[val_iZone]->GetKind_Regime() == COMPRESSIBLE);
+  bool isothermal = false;
+  for (iMarker = 0; iMarker < config[val_iZone]->GetnMarker_All(); iMarker++) {
+    if ((config[val_iZone]->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ||
+        (config[val_iZone]->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_CATALYTIC) ||
+        (config[val_iZone]->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_NONCATALYTIC))
+      isothermal = true;
+  }
+  bool turbulent = (config[val_iZone]->GetKind_Solver() == RANS);
+  bool flow = ((config[val_iZone]->GetKind_Regime() == EULER) || (config[val_iZone]->GetKind_Regime() == NAVIER_STOKES) ||
+               (config[val_iZone]->GetKind_Regime() == RANS));
   
-  if (rank == MASTER_NODE) {
-    
-    char cstr[200];
-    unsigned long iExtIter = config[val_iZone]->GetExtIter();
-    ofstream Breakdown_file;
-    
-    /*--- Write file name with extension ---*/
-    
-    string filename = config[val_iZone]->GetBreakdown_FileName();
-    strcpy (cstr, filename.data());
-    
-    Breakdown_file.open(cstr, ios::out);
-    Breakdown_file.precision(15);
-    
-    /*--- WARNING: These buffers have hard-coded lengths. Note that you
-     may have to adjust them to be larger if adding more entries. ---*/
-    char begin[1000], direct_coeff[1000], surface_coeff[1000], monitoring_coeff[10000], end[1000];
-    
-    unsigned short iMarker, iMarker_Monitoring;
-    
-    unsigned short nDim = geometry[val_iZone][FinestMesh]->GetnDim();
-    
-    bool compressible = (config[val_iZone]->GetKind_Regime() == COMPRESSIBLE);
-    bool incompressible = (config[val_iZone]->GetKind_Regime() == INCOMPRESSIBLE);
-    bool isothermal = false;
-    for (iMarker = 0; iMarker < config[val_iZone]->GetnMarker_All(); iMarker++)
-      if ((config[val_iZone]->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ||
-          (config[val_iZone]->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_CATALYTIC) ||
-          (config[val_iZone]->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_NONCATALYTIC))
-        isothermal = true;
-    bool turbulent = ((config[val_iZone]->GetKind_Solver() == RANS) || (config[val_iZone]->GetKind_Solver() == ADJ_RANS) ||
-                      (config[val_iZone]->GetKind_Solver() == FLUID_STRUCTURE_RANS));
-    bool flow = ((config[val_iZone]->GetKind_Regime() == EULER) || (config[val_iZone]->GetKind_Regime() == NAVIER_STOKES) ||
-    (config[val_iZone]->GetKind_Regime() == RANS));
-    
-    bool output_per_surface = false;
-    if (config[val_iZone]->GetnMarker_Monitoring() > 1) output_per_surface = true;
+  /*--- Output the mean flow solution using only the master node ---*/
+  
+  if ((rank == MASTER_NODE) && (flow)) {
     
     /*--- Initialize variables to store information from all domains (direct solution) ---*/
     
-    double Total_CLift = 0.0, Total_CDrag = 0.0, Total_CSideForce = 0.0, Total_CMx = 0.0, Total_CMy = 0.0, Total_CMz = 0.0, Total_CEff = 0.0, Total_CFx = 0.0, Total_CFy = 0.0, Total_CFz = 0.0, Total_Heat = 0.0, Total_MaxHeat = 0.0;
-    
-    /*--- Coefficients Monitored arrays ---*/
-    
-    double *Surface_CLift      = NULL,
-    *Surface_CDrag      = NULL,
-    *Surface_CSideForce = NULL,
-    *Surface_CFx        = NULL,
-    *Surface_CFy        = NULL,
-    *Surface_CFz        = NULL,
-    *Surface_CMx        = NULL,
-    *Surface_CMy        = NULL,
-    *Surface_CMz        = NULL;
+    double Total_CLift = 0.0, Total_CDrag = 0.0, Total_CSideForce = 0.0, Total_CMx = 0.0, Total_CMy = 0.0, Total_CMz = 0.0, Total_CEff = 0.0, Total_CFx = 0.0, Total_CFy = 0.0, Total_CFz = 0.0,
+    Inv_CLift = 0.0, Inv_CDrag = 0.0, Inv_CSideForce = 0.0, Inv_CMx = 0.0, Inv_CMy = 0.0, Inv_CMz = 0.0, Inv_CEff = 0.0, Inv_CFx = 0.0, Inv_CFy = 0.0, Inv_CFz = 0.0, Total_Heat = 0.0, Total_MaxHeat = 0.0,
+    *Surface_CLift = NULL, *Surface_CDrag = NULL, *Surface_CSideForce = NULL, *Surface_CEff = NULL, *Surface_CFx = NULL, *Surface_CFy = NULL,  *Surface_CFz = NULL, *Surface_CMx = NULL, *Surface_CMy = NULL, *Surface_CMz = NULL,
+    *Surface_CLift_Inv = NULL, *Surface_CDrag_Inv = NULL, *Surface_CSideForce_Inv = NULL, *Surface_CEff_Inv = NULL, *Surface_CFx_Inv = NULL, *Surface_CFy_Inv = NULL,  *Surface_CFz_Inv = NULL, *Surface_CMx_Inv = NULL, *Surface_CMy_Inv = NULL, *Surface_CMz_Inv = NULL;
     
     /*--- Initialize number of variables ---*/
     
@@ -5557,6 +5531,7 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
     Surface_CLift      = new double[config[ZONE_0]->GetnMarker_Monitoring()];
     Surface_CDrag      = new double[config[ZONE_0]->GetnMarker_Monitoring()];
     Surface_CSideForce = new double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CEff       = new double[config[ZONE_0]->GetnMarker_Monitoring()];
     Surface_CFx        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
     Surface_CFy        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
     Surface_CFz        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
@@ -5564,132 +5539,166 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
     Surface_CMy        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
     Surface_CMz        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
     
-    /*--- Write information from nodes ---*/
+    Surface_CLift_Inv      = new double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CDrag_Inv      = new double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CSideForce_Inv = new double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CEff_Inv       = new double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CFx_Inv        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CFy_Inv        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CFz_Inv        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CMx_Inv        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CMy_Inv        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CMz_Inv        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
+
+    /*--- Flow solution coefficients ---*/
     
-    if (flow) {
-      
-      /*--- Flow solution coefficients ---*/
-      
-      Total_CLift       = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CLift();
-      Total_CDrag       = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CDrag();
-      Total_CSideForce  = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CSideForce();
-      Total_CEff        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CEff();
-      Total_CMx         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CMx();
-      Total_CMy         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CMy();
-      Total_CMz         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CMz();
-      Total_CFx         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFx();
-      Total_CFy         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFy();
-      Total_CFz         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFz();
-      
-      if (isothermal) {
-        Total_Heat     = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_HeatFlux();
-        Total_MaxHeat  = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_MaxHeatFlux();
-      }
-      
-      
-      /*--- Look over the markers being monitored and get the desired values ---*/
-      
-      if (output_per_surface) {
-        
-        for (iMarker_Monitoring = 0; iMarker_Monitoring < config[ZONE_0]->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-          Surface_CLift[iMarker_Monitoring]      = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CLift(iMarker_Monitoring);
-          Surface_CDrag[iMarker_Monitoring]      = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CDrag(iMarker_Monitoring);
-          Surface_CSideForce[iMarker_Monitoring] = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CSideForce(iMarker_Monitoring);
-          Surface_CFx[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFx(iMarker_Monitoring);
-          Surface_CFy[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFy(iMarker_Monitoring);
-          Surface_CFz[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFz(iMarker_Monitoring);
-          Surface_CMx[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CMx(iMarker_Monitoring);
-          Surface_CMy[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CMy(iMarker_Monitoring);
-          Surface_CMz[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CMz(iMarker_Monitoring);
-        }
-        
-      }
-      
+    Total_CLift       = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CLift();
+    Total_CDrag       = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CDrag();
+    Total_CSideForce  = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CSideForce();
+    Total_CEff        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CEff();
+    Total_CMx         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CMx();
+    Total_CMy         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CMy();
+    Total_CMz         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CMz();
+    Total_CFx         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFx();
+    Total_CFy         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFy();
+    Total_CFz         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFz();
+    
+    /*--- Flow inviscid solution coefficients ---*/
+    
+    Inv_CLift       = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CLift_Inv();
+    Inv_CDrag       = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CDrag_Inv();
+    Inv_CSideForce  = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CSideForce_Inv();
+    Inv_CEff        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CEff_Inv();
+    Inv_CMx         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CMx_Inv();
+    Inv_CMy         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CMy_Inv();
+    Inv_CMz         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CMz_Inv();
+    Inv_CFx         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CFx_Inv();
+    Inv_CFy         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CFy_Inv();
+    Inv_CFz         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CFz_Inv();
+    
+    if (isothermal) {
+      Total_Heat     = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_HeatFlux();
+      Total_MaxHeat  = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_MaxHeatFlux();
     }
     
-    /*--- Prepare the history file output, note that the dual
-     time output don't write to the history file ---*/
+    /*--- Look over the markers being monitored and get the desired values ---*/
     
-    if (!DualTime_Iteration) {
+    for (iMarker_Monitoring = 0; iMarker_Monitoring < config[ZONE_0]->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+      Surface_CLift[iMarker_Monitoring]      = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CLift(iMarker_Monitoring);
+      Surface_CDrag[iMarker_Monitoring]      = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CDrag(iMarker_Monitoring);
+      Surface_CSideForce[iMarker_Monitoring] = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CSideForce(iMarker_Monitoring);
+      Surface_CEff[iMarker_Monitoring]       = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CEff(iMarker_Monitoring);
+      Surface_CFx[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFx(iMarker_Monitoring);
+      Surface_CFy[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFy(iMarker_Monitoring);
+      Surface_CFz[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFz(iMarker_Monitoring);
+      Surface_CMx[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CMx(iMarker_Monitoring);
+      Surface_CMy[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CMy(iMarker_Monitoring);
+      Surface_CMz[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CMz(iMarker_Monitoring);
       
-      /*--- Write the begining of the history file ---*/
-      
-      sprintf (begin, "%12d", int(iExtIter));
-      
-      /*--- Write the end of the history file ---*/
-      
-      sprintf (end, ", %12.10f\n", timeused/60.0);
-      
-      /*--- Write the solution and residual of the forces breakdown file ---*/
-      
-      if (flow) {
-        
-        sprintf (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f",
-                 Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy,
-                 Total_CFz, Total_CEff);
-        if (isothermal) {
-          sprintf (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx, Total_CMy,
-                   Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_Heat, Total_MaxHeat);
-        }
-        
-      /*--- Append one by one the surface coeff to monitoring coeff. (Think better way do this, maybe use string) ---*/
-
-      if (output_per_surface) {
-        
-        for (iMarker_Monitoring = 0; iMarker_Monitoring < config[ZONE_0]->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-          
-          if (iMarker_Monitoring == 0) {
-            sprintf(monitoring_coeff, ", %12.10f",Surface_CLift[iMarker_Monitoring]);
-          }
-          else {
-            sprintf(surface_coeff, ", %12.10f",Surface_CLift[iMarker_Monitoring]);
-            strcat(monitoring_coeff, surface_coeff);
-          }
-          
-          sprintf(surface_coeff, ", %12.10f",Surface_CDrag[iMarker_Monitoring]);
-          strcat(monitoring_coeff, surface_coeff);
-          sprintf(surface_coeff, ", %12.10f",Surface_CSideForce[iMarker_Monitoring]);
-          strcat(monitoring_coeff, surface_coeff);
-          sprintf(surface_coeff, ", %12.10f",Surface_CFx[iMarker_Monitoring]);
-          strcat(monitoring_coeff, surface_coeff);
-          sprintf(surface_coeff, ", %12.10f",Surface_CFy[iMarker_Monitoring]);
-          strcat(monitoring_coeff, surface_coeff);
-          sprintf(surface_coeff, ", %12.10f",Surface_CFz[iMarker_Monitoring]);
-          strcat(monitoring_coeff, surface_coeff);
-          sprintf(surface_coeff, ", %12.10f",Surface_CMx[iMarker_Monitoring]);
-          strcat(monitoring_coeff, surface_coeff);
-          sprintf(surface_coeff, ", %12.10f",Surface_CMy[iMarker_Monitoring]);
-          strcat(monitoring_coeff, surface_coeff);
-          sprintf(surface_coeff, ", %12.10f",Surface_CMz[iMarker_Monitoring]);
-          strcat(monitoring_coeff, surface_coeff);
-        }
-      }
-      
-      }
-  
-      if ((!DualTime_Iteration) && (flow)) {
-          
-          if (compressible) Breakdown_file << begin << direct_coeff;
-          if (incompressible) Breakdown_file << begin << direct_coeff;
-          if (output_per_surface) Breakdown_file << monitoring_coeff;
-          Breakdown_file << end;
-          Breakdown_file.flush();
-        
-        }
-      }
+      Surface_CLift_Inv[iMarker_Monitoring]      = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CLift_Inv(iMarker_Monitoring);
+      Surface_CDrag_Inv[iMarker_Monitoring]      = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CDrag_Inv(iMarker_Monitoring);
+      Surface_CSideForce_Inv[iMarker_Monitoring] = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CSideForce_Inv(iMarker_Monitoring);
+      Surface_CEff_Inv[iMarker_Monitoring]       = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CEff_Inv(iMarker_Monitoring);
+      Surface_CFx_Inv[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFx_Inv(iMarker_Monitoring);
+      Surface_CFy_Inv[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFy_Inv(iMarker_Monitoring);
+      Surface_CFz_Inv[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFz_Inv(iMarker_Monitoring);
+      Surface_CMx_Inv[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CMx_Inv(iMarker_Monitoring);
+      Surface_CMy_Inv[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CMy_Inv(iMarker_Monitoring);
+      Surface_CMz_Inv[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CMz_Inv(iMarker_Monitoring);
+    }
     
-      delete [] Surface_CLift;
-      delete [] Surface_CDrag;
-      delete [] Surface_CSideForce;
-      delete [] Surface_CFx;
-      delete [] Surface_CFy;
-      delete [] Surface_CFz;
-      delete [] Surface_CMx;
-      delete [] Surface_CMy;
-      delete [] Surface_CMz;
+    /*--- Write file name with extension ---*/
+    
+    string filename = config[val_iZone]->GetBreakdown_FileName();
+    strcpy (cstr, filename.data());
+    
+    Breakdown_file.open(cstr, ios::out);
+    Breakdown_file.precision(15);
+    
+    
+    Breakdown_file << endl <<"-------------------------------------------------------------------------" << endl;
+    Breakdown_file <<"|    _____   _    _   ___                                               |" << endl;
+    Breakdown_file <<"|   / ____| | |  | | |__ \\    Web: su2.stanford.edu                     |" << endl;
+    Breakdown_file <<"|  | (___   | |  | |    ) |   Twitter: @su2code                         |" << endl;
+    Breakdown_file <<"|   \\___ \\  | |  | |   / /    Forum: www.cfd-online.com/Forums/su2/     |" << endl;
+    Breakdown_file <<"|   ____) | | |__| |  / /_                                              |" << endl;
+    Breakdown_file <<"|  |_____/   \\____/  |____|   Suite (Computational Fluid Dynamics Code) |" << endl;
+    Breakdown_file <<"|                             Release 3.2.4 \"eagle\"                     |" << endl;
+    Breakdown_file <<"-------------------------------------------------------------------------" << endl;
+    Breakdown_file << "| SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).       |" << endl;
+    Breakdown_file << "| SU2 is distributed in the hope that it will be useful,                |" << endl;
+    Breakdown_file << "| but WITHOUT ANY WARRANTY; without even the implied warranty of        |" << endl;
+    Breakdown_file << "| MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU      |" << endl;
+    Breakdown_file << "| Lesser General Public License (version 2.1) for more details.         |" << endl;
+    Breakdown_file <<"-------------------------------------------------------------------------" << endl;
+    
+    Breakdown_file << endl << endl << endl <<"Forces breakdown:" << endl << endl;
 
-      Breakdown_file.close();
+    Breakdown_file << "Total CL: " << Total_CLift << ". Inviscid CL: " << Inv_CLift <<"."<< endl;
+    Breakdown_file << "Total CD: " << Total_CDrag << ". Inviscid CD: " << Inv_CDrag <<"."<< endl;
+    Breakdown_file << "Total CSF: " << Total_CSideForce << ". Inviscid CSF: " << Inv_CSideForce <<"."<< endl;
+    Breakdown_file << "Total CL/CD: " << Total_CEff << ". Inviscid CL/CD: " << Inv_CEff <<"."<< endl;
+    
+    Breakdown_file << "Total CMx: " << Total_CMx << ". Inviscid CMx: " << Inv_CMx <<"."<< endl;
+    Breakdown_file << "Total CMy: " << Total_CMy << ". Inviscid CMy: " << Inv_CMy <<"."<< endl;
+    Breakdown_file << "Total CMz: " << Total_CMz << ". Inviscid CMz: " << Inv_CMz <<"."<< endl;
+    
+    Breakdown_file << "Total CFx: " << Total_CFx << ". Inviscid CFx: " << Inv_CFx <<"."<< endl;
+    Breakdown_file << "Total CFy: " << Total_CFy << ". Inviscid CFy: " << Inv_CFy <<"."<< endl;
+    Breakdown_file << "Total CFz: " << Total_CFz << ". Inviscid CFz: " << Inv_CFz <<"."<< endl;
+    
+    if (isothermal) {
+      Breakdown_file << "Toal heat flux: "<< Total_Heat << endl;
+      Breakdown_file << "Maximum heat flux: "<< Total_MaxHeat << endl;
+    }
+    
+    Breakdown_file << endl << endl;
 
+    for (iMarker_Monitoring = 0; iMarker_Monitoring < config[ZONE_0]->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+      
+      Breakdown_file << "Surface name" << config[val_iZone]->GetMarker_Monitoring(iMarker_Monitoring) << endl;
+      
+      Breakdown_file << "Total CL: "<< Surface_CLift[iMarker_Monitoring] << ". Inviscid CL: " << Surface_CLift_Inv[iMarker_Monitoring] <<"."<< endl;
+      Breakdown_file << "Total CD: "<< Surface_CDrag[iMarker_Monitoring] << ". Inviscid CD: " << Surface_CDrag_Inv[iMarker_Monitoring] <<"."<< endl;
+      Breakdown_file << "Total CSF: "<< Surface_CSideForce[iMarker_Monitoring] << ". Inviscid CSF: " << Surface_CSideForce_Inv[iMarker_Monitoring] <<"."<< endl;
+      Breakdown_file << "Total CL/CD: "<< Surface_CEff[iMarker_Monitoring] << ". Inviscid CL/CD: " << Surface_CEff_Inv[iMarker_Monitoring] <<"."<< endl;
+      
+      Breakdown_file << "Total CMx: "<< Surface_CMx[iMarker_Monitoring] << ". Inviscid CMx: " << Surface_CMx_Inv[iMarker_Monitoring] <<"."<< endl;
+      Breakdown_file << "Total CMy: "<< Surface_CMy[iMarker_Monitoring] << ". Inviscid CMy: " << Surface_CMy_Inv[iMarker_Monitoring] <<"."<< endl;
+      Breakdown_file << "Total CMz: "<< Surface_CMz[iMarker_Monitoring] << ". Inviscid CMz: " << Surface_CMz_Inv[iMarker_Monitoring] <<"."<< endl;
+      
+      Breakdown_file << "Total CFx: "<< Surface_CFx[iMarker_Monitoring] << ". Inviscid CFx: " << Surface_CFx_Inv[iMarker_Monitoring] <<"."<< endl;
+      Breakdown_file << "Total CFy: "<< Surface_CFy[iMarker_Monitoring] << ". Inviscid CFy: " << Surface_CFy_Inv[iMarker_Monitoring] <<"."<< endl;
+      Breakdown_file << "Total CFz: "<< Surface_CFz[iMarker_Monitoring] << ". Inviscid CFz: " << Surface_CFz_Inv[iMarker_Monitoring] <<"."<< endl;
+      
+      Breakdown_file << endl;
+
+    }
+    
+    delete [] Surface_CLift;
+    delete [] Surface_CDrag;
+    delete [] Surface_CSideForce;
+    delete [] Surface_CEff;
+    delete [] Surface_CFx;
+    delete [] Surface_CFy;
+    delete [] Surface_CFz;
+    delete [] Surface_CMx;
+    delete [] Surface_CMy;
+    delete [] Surface_CMz;
+    
+    delete [] Surface_CLift_Inv;
+    delete [] Surface_CDrag_Inv;
+    delete [] Surface_CSideForce_Inv;
+    delete [] Surface_CEff_Inv;
+    delete [] Surface_CFx_Inv;
+    delete [] Surface_CFy_Inv;
+    delete [] Surface_CFz_Inv;
+    delete [] Surface_CMx_Inv;
+    delete [] Surface_CMy_Inv;
+    delete [] Surface_CMz_Inv;
+    
+    Breakdown_file.close();
+    
   }
   
 }
