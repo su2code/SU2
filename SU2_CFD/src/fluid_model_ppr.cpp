@@ -173,7 +173,7 @@ void CPengRobinson::SetTDState_hs (double h, double s ){
 	double x1, x2, xmid, dx, fx1, fx2, fmid, rtb;
 	double toll = 1e-9, FACTOR=0.2;
 	double cons_s, cons_h;
-	unsigned short countrtb=0, countnw = 0, NTRY=10, ITMAX=100;
+	unsigned short countrtb=0, NTRY=10, ITMAX=100;
 
 	A = Gas_Constant / Gamma_Minus_One;
 	T = h*Gamma_Minus_One/Gas_Constant/Gamma;
