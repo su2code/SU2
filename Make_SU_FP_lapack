@@ -1,0 +1,4 @@
+./bootstrap
+./configure --with-FluidProp-lib=$FLUIDPROP/lib --with-FluidProp-include=$FLUIDPROP/api/c --with-LAPACK-lib=LAPACK-dir/ --with-LAPACK-include=LAPACK-dir/lapacke/include/ LDFLAGS=-ldl
+make
+sudo make install

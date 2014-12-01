@@ -416,6 +416,14 @@ inline double CConfig::GetTemperature_Critical(void) { return Temperature_Critic
 
 inline double CConfig::GetAcentric_Factor(void) { return Acentric_Factor; }
 
+inline string CConfig::GetFluidSubLib(void) { return FluidSubLib; }
+
+inline unsigned short CConfig::GetnComp(void) { return nComp; }
+
+inline string* CConfig::GetCompNames(void) { return CompNames; }
+
+inline double* CConfig::GetMoleFracs(void) { return MoleFracs; }
+
 inline unsigned short CConfig::GetKind_ViscosityModel(void) { return Kind_ViscosityModel; }
 
 inline double CConfig::GetMu_ConstantND(void) { return Mu_ConstantND; }

@@ -204,13 +204,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("FLUID_MODEL", Kind_FluidModel, FluidModel_Map, STANDARD_AIR);
 
   //Teus, 5-11-2014
-  //addStringOption("FLUID_SUBLIBRARY", thermolib, string(" "));
-  //addStringListOption("FLUID_COMPONENTS"    , ncomp, comp);
-  //default_Conc[0] = 1.0;
-  //for (i = 1; i < ncomp; i++) {
-  //    default_conc[i] = 0.0;
-  //}
-  //addDoubleArrayOption("FLUID_CONCENTRATIONS", ncomp, conc, default_conc);
+  addStringOption("FLUID_SUBLIBRARY", FluidSubLib, string("xxxxxxxx"));
+  addUnsignedShortOption("FLUID_N_COMPONENTS", nComp, 1);
+  addStringListOption("FLUID_COMPONENTS", nComp, CompNames);
+  addDoubleListOption("FLUID_MOLE_FRACS", nComp, MoleFracs);
 
   /* CONFIG_CATEGORY: Freestream Conditions */
   /*--- Options related to freestream specification ---*/
@@ -229,8 +226,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("CRITICAL_PRESSURE", Pressure_Critical, 3588550.0);
   /* DESCRIPTION: Critical Density, default value for MDM */
   addDoubleOption("CRITICAL_DENSITY", Density_Critical, 263.0);
-
   /*--- Options related to VAN der WAALS MODEL and PENG ROBINSON ---*/
+
   /* DESCRIPTION: Critical Density, default value for MDM */
    addDoubleOption("ACENTRIC_FACTOR", Acentric_Factor, 0.035);
 

@@ -529,8 +529,8 @@ private:
 	Gas_Constant_Ref, /*!< \brief Reference specific gas constant. */
 	Temperature_Critical,   /*!< \brief Critical Temperature for real fluid model.  */
 	Pressure_Critical,   /*!< \brief Critical Pressure for real fluid model.  */
-	Density_Critical,   /*!< \brief Critical Density for real fluid model.  */
-	Acentric_Factor,   /*!< \brief Acentric Factor for real fluid model.  */
+	Density_Critical,    /*!< \brief Critical Density for real fluid model.  */
+	Acentric_Factor,     /*!< \brief Acentric Factor for real fluid model.  */
 	Mu_ConstantND,   /*!< \brief Constant Viscosity for CostantViscosity model.  */
 	Mu_RefND,   /*!< \brief reference viscosity for Sutherland model.  */
 	Mu_Temperature_RefND,   /*!< \brief reference Temperature for Sutherland model.  */
@@ -659,6 +659,11 @@ private:
   unsigned long Nonphys_Points, /*!< \brief Current number of non-physical points in the solution. */
   Nonphys_Reconstr;      /*!< \brief Current number of non-physical reconstructions for 2nd-order upwinding. */
   
+  string FluidSubLib;         /*!< \brief Name of fluid thermodynamic sub-library.  */
+  unsigned short nComp;       /*!< \brief Number of components in the fluid.  */
+  string* CompNames;           /*!< \brief Names of fluid components.  */
+  double *MoleFracs;            /*!< \brief Mole fractions of fluid components.  */
+
   /*!< \brief param is a map from the option name (config file string) to a pointer to an option child class */
 //	map<string, CAnyOptionRef*> param;
 
@@ -2436,6 +2441,30 @@ public:
 	 * \return Critical pressure.
 	 */
 	double GetAcentric_Factor(void);
+
+	/*!
+	 * \brief Get the name of the fluid thermodynamic sub-library.
+	 * \return Fluid thermodynamic sub-library name.
+	 */
+	string GetFluidSubLib(void);
+	
+	/*!
+	 * \brief Get the number of the components in the fluid.
+	 * \return Numbers of components in the fluid.
+	 */
+	unsigned short GetnComp(void);
+	
+	/*!
+	 * \brief Get the names of the components of the fluid.
+	 * \return Component names of the fluid.
+	 */
+	string* GetCompNames(void);
+	
+	/*!
+	 * \brief Get the values of the mole fraction of the components.
+	 * \return Mole fractions of components.
+	 */
+	double* GetMoleFracs(void);
 
 	/*!
 	 * \brief Get the value of the critical temperature.

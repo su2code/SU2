@@ -1,0 +1,4 @@
+./bootstrap
+./configure --with-FluidProp-lib=$FLUIDPROP/lib --with-FluidProp-include=$FLUIDPROP/api/c 
+make
+sudo make install

@@ -1924,13 +1924,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
         break;
 
       case FLUIDPROP:
-        string thermolib = "RefProp";
-        const int ncomp = 1;
-        string comp[ncomp];
-        double conc[ncomp];
-        comp[0] = "nitrogen";
-        conc[0] = 1.0;
-        FluidModel = new CFluidProp(thermolib, ncomp, comp, conc);
+        FluidModel = new CFluidProp(config->GetFluidSubLib(), config->GetnComp(), config->GetCompNames(), config->GetMoleFracs());
         if(fs_temperature) {
           FluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
           Density_FreeStream = FluidModel->GetDensity();
@@ -2155,13 +2149,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
       break;
           
    case FLUIDPROP:
-      string thermolib = "RefProp";
-      const int ncomp = 1;
-      string comp[ncomp];
-      double conc[ncomp];
-      comp[0] = "nitrogen";
-      conc[0] = 1.0;
-      FluidModel = new CFluidProp(thermolib, ncomp, comp, conc);
+      FluidModel = new CFluidProp(config->GetFluidSubLib(), config->GetnComp(), config->GetCompNames(), config->GetMoleFracs());
       FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
       break;
           

@@ -17,8 +17,6 @@ bin_PROGRAMS = ../bin/SU2_CFD
 ___bin_SU2_CFD_SOURCES = ../include/definition_structure.hpp \
         ../include/fluid_model.hpp \
         ../include/fluid_model.inl \
-        ../include/fluidprop.h \
-        ../include/size3264.h \
         ../include/integration_structure.hpp \
 		../include/integration_structure.inl \
 		../include/iteration_structure.hpp \

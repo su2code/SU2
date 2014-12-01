@@ -21,9 +21,9 @@
  */
 
 #include "../include/fluid_model.hpp"
-#include "../include/fluidprop.h"
+#include "fluidprop.h"
 
-#define LEN_FLUIDNAMES 32
+#define LEN_FLUIDNAMES 256
 #define LEN_COMPONENTS 32
 
 
@@ -34,18 +34,18 @@ CFluidProp::CFluidProp() : CFluidModel() {
 
 CFluidProp::CFluidProp(string thermolib, int ncomp, string* comp, double* conc ) : CFluidModel() {
 
-    string  libraryName[10];
+	string  libraryName[10];
 
-    libraryName[0] = "freeStanMix";
-    libraryName[1] = "IF97";
-    libraryName[2] = "GasMix";
-    libraryName[3] = "LuTEoS";
-    libraryName[4] = "PCP-SAFT";
-	libraryName[5] = "RefProp";
-    libraryName[6] = "ScalingLaws";
-	libraryName[7] = "StanMix";
-	libraryName[8] = "TPSI";
-	libraryName[9] = "vThermo";
+	libraryName[0] = "freeStanMix";
+	libraryName[1] = "IF97";
+	libraryName[2] = "GasMix";
+	libraryName[3] = "PCP-SAFT";
+	libraryName[4] = "RefProp";
+	libraryName[5] = "ScalingLaws";
+	libraryName[6] = "StanMix";
+	libraryName[7] = "TPSI";
+	libraryName[8] = "vThermo";
+	//libraryName[9] = "LuTEoS";
 
 	cout << " " << "\n";
 
@@ -71,7 +71,7 @@ CFluidProp::CFluidProp(string thermolib, int ncomp, string* comp, double* conc )
 	}
 
 	ThermoLib = thermolib;
-    nComp = ncomp;
+	nComp = ncomp;
 	Comp= comp;
 	Conc = conc;
 
@@ -118,18 +118,30 @@ void CFluidProp::SetTDState_rhoe (double rho, double e ){
 	const char* pair = "vu";
 	//rho = rho*rho_ref;
 	//e = e*e_ref;
-    Density = rho;
-    StaticEnergy = e;
-    double v = 1.0/rho;
+	Density = rho;
+	StaticEnergy = e;
+	double v = 1.0/rho;
 
-	Pressure = fluidprop_pressure ( pair, v, e );
+        //struct fluidstate_t output;
+        //double x[20], y[20];
+        //fluidprop_allprops( pair, v, e, &output, x, y); 
+        //Pressure = output.P;
+	//Temperature = output.T;
+	//SoundSpeed2 = pow( output.c, 2);
+	//Entropy = output.s;
+	//dPdrho_e = output.alpha;
+	//dPde_rho = output.beta;
+	//dTdrho_e = Temperature * dPde_rho * pow(v,2);
+	//dTde_rho = 1. / output.cv;
+
+        Pressure = fluidprop_pressure ( pair, v, e );
 	Temperature = fluidprop_temperature ( pair, v, e );
 	SoundSpeed2 = pow( fluidprop_soundspeed ( pair, v, e ), 2);
 	Entropy = fluidprop_entropy ( pair, v, e );
-	dPdrho_e = 0.0;
-	dPde_rho = 0.0;
-	dTdrho_e = 0.0;
-	dTde_rho = 0.0;
+	dPdrho_e = fluidprop_alpha ( pair, v, e );
+	dPde_rho = fluidprop_beta ( pair, v, e );
+	dTdrho_e = Temperature * dPde_rho * pow(v,2);
+	dTde_rho = 1. / fluidprop_heatcapv ( pair, v, e );
 
 }
 
@@ -141,14 +153,14 @@ void CFluidProp::SetTDState_PT (double P, double T ){
 	Pressure = P;
 	Temperature = T;
 
-    Density = fluidprop_density ( pair, P, T );
-    StaticEnergy = fluidprop_intenergy ( pair, P, T );
+	Density = fluidprop_density ( pair, P, T );
+	StaticEnergy = fluidprop_intenergy ( pair, P, T );
 	SoundSpeed2 = pow( fluidprop_soundspeed ( pair, P, T ),2);
 	Entropy = fluidprop_entropy ( pair, P, T );
-	dPdrho_e = 0.0;
-	dPde_rho = 0.0;
-	dTdrho_e = 0.0;
-	dTde_rho = 0.0;
+	dPdrho_e = fluidprop_alpha ( pair, P, T );
+	dPde_rho = fluidprop_beta ( pair, P, T );
+	dTdrho_e = T * dPde_rho / pow(Density,2);
+	dTde_rho = 1. / fluidprop_heatcapv ( pair, P, T );
 
 }
 
@@ -160,14 +172,14 @@ void CFluidProp::SetTDState_Prho (double P, double rho ){
 	Pressure = P;
 	Density = rho;
 
-    Temperature = fluidprop_temperature ( pair, P, rho );
-    StaticEnergy = fluidprop_intenergy ( pair, P, rho );
+	Temperature = fluidprop_temperature ( pair, P, rho );
+	StaticEnergy = fluidprop_intenergy ( pair, P, rho );
 	SoundSpeed2 = pow( fluidprop_soundspeed ( pair, P, rho ),2);
 	Entropy = fluidprop_entropy ( pair, P, rho );
-	dPdrho_e = 0.0;
-	dPde_rho = 0.0;
-	dTdrho_e = 0.0;
-	dTde_rho = 0.0;
+	dPdrho_e = fluidprop_alpha ( pair, P, rho );
+	dPde_rho = fluidprop_beta ( pair, P, rho );
+	dTdrho_e = Temperature * dPde_rho / pow(rho,2);
+	dTde_rho = 1. / fluidprop_heatcapv ( pair, P, rho );
 
 }
 
@@ -176,7 +188,7 @@ void CFluidProp::SetEnergy_Prho (double P, double rho ){
 	const char* pair = "Pd";
 	//P = P*P_ref;
 	//rho = rho*rho_ref;
-    StaticEnergy = fluidprop_intenergy ( pair, P, rho );
+	StaticEnergy = fluidprop_intenergy ( pair, P, rho );
 
 }
 
@@ -187,43 +199,43 @@ void CFluidProp::SetTDState_hs (double h, double s ){
 	//s = s*s_ref;
 	Entropy = s;
 
-    Pressure = fluidprop_pressure ( pair, h, s );
-    Temperature = fluidprop_temperature ( pair, h, s );
-    Density = fluidprop_density ( pair, h, s );
-    StaticEnergy = h - Pressure/Density;
+	Pressure = fluidprop_pressure ( pair, h, s );
+	Temperature = fluidprop_temperature ( pair, h, s );
+	Density = fluidprop_density ( pair, h, s );
+	StaticEnergy = h - Pressure/Density;
 	SoundSpeed2 = pow( fluidprop_soundspeed ( pair, h, s ),2);
-	dPdrho_e = 0.0;
-	dPde_rho = 0.0;
-	dTdrho_e = 0.0;
-	dTde_rho = 0.0;
+	dPdrho_e = fluidprop_alpha ( pair, h, s );
+	dPde_rho = fluidprop_beta ( pair, h, s );
+	dTdrho_e = Temperature * dPde_rho / pow(Density,2);
+	dTde_rho = 1. / fluidprop_heatcapv ( pair, h, s );
 
 }
 
 void CFluidProp::SetTDState_rhoT (double rho, double T ){
     
-    const char* pair = "Td";
-    //T = T*T_ref;
-    //rho = rho*rho_ref;
-    Density = rho;
-    Temperature = T;
+	const char* pair = "Td";
+	//T = T*T_ref;
+	//rho = rho*rho_ref;
+	Density = rho;
+	Temperature = T;
     
-    Pressure = fluidprop_pressure ( pair, T, rho );
-    Temperature = fluidprop_temperature ( pair, T, rho );
-    SoundSpeed2 = pow( fluidprop_soundspeed ( pair, T, rho), 2);
-    Entropy = fluidprop_entropy ( pair, T, rho );
-    dPdrho_e = 0.0;
-    dPde_rho = 0.0;
-    dTdrho_e = 0.0;
-    dTde_rho = 0.0;
+	Pressure = fluidprop_pressure ( pair, T, rho );
+	Temperature = fluidprop_temperature ( pair, T, rho );
+	SoundSpeed2 = pow( fluidprop_soundspeed ( pair, T, rho), 2);
+	Entropy = fluidprop_entropy ( pair, T, rho );
+	dPdrho_e = fluidprop_alpha ( pair, T, rho );
+	dPde_rho = fluidprop_beta ( pair, T, rho );
+	dTdrho_e = T * dPde_rho / pow(rho,2);
+	dTde_rho = 1. / fluidprop_heatcapv ( pair, T, rho );
     
 }
 
 void CFluidProp::SetTDState_NonDim () {
 
-    Pressure = Pressure/P_ref;
-    Temperature = Temperature/T_ref;
-    Density = Density/rho_ref;
-    StaticEnergy = StaticEnergy/e_ref;
+	Pressure = Pressure/P_ref;
+	Temperature = Temperature/T_ref;
+	Density = Density/rho_ref;
+	StaticEnergy = StaticEnergy/e_ref;
 	SoundSpeed2 = SoundSpeed2/pow(v_ref,2);
 	dPdrho_e = dPdrho_e/dPdrho_e_ref;
 	dPde_rho = dPde_rho/dPde_rho_ref;
