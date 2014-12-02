@@ -1608,13 +1608,17 @@ void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
     
     SharpEdge_Distance = geometry->node[iPoint]->GetSharpEdge_Distance();
     
+    /*--- Initialize the non-physical points vector ---*/
+
+    node[iPoint]->SetNon_Physical(false);
+    
     /*--- Set the primitive variables incompressible and compressible
      adjoint variables ---*/
     
     if (compressible) RightSol = node[iPoint]->SetPrimVar_Compressible(SharpEdge_Distance, false, config);
     if (incompressible) RightSol = node[iPoint]->SetPrimVar_Incompressible(SharpEdge_Distance, false, config);
     if (freesurface) RightSol = node[iPoint]->SetPrimVar_FreeSurface(SharpEdge_Distance, false, config);
-    if (!RightSol) ErrorCounter++;
+    if (!RightSol) { node[iPoint]->SetNon_Physical(true); ErrorCounter++; }
     
     /*--- Initialize the convective residual vector ---*/
     
@@ -1631,6 +1635,7 @@ void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
     /*--- Limiter computation ---*/
     
     if (limiter) SetSolution_Limiter(geometry, config);
+    
   }
   
   /*--- Artificial dissipation for centered schemes ---*/
@@ -1644,7 +1649,7 @@ void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
     }
   }
   
-  /*--- Implicit solution ---*/
+  /*--- Initialize the Jacobian for implicit integration ---*/
   
   if (implicit) Jacobian.SetValZero();
   
@@ -1654,8 +1659,7 @@ void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
   MPI_Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
-  if (Output && (ErrorCounter >= 50) && (rank == MASTER_NODE) && (iMesh == MESH_0))
-    cout <<"The solution contains "<< ErrorCounter << " non-physical points." << endl;
+  if (iMesh == MESH_0) config->SetNonphysical_Points(ErrorCounter);
   
 }
 
@@ -1795,8 +1799,8 @@ void CAdjEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
       for (iVar = 0; iVar < nVar; iVar++) {
         Project_Grad_i = 0; Project_Grad_j = 0;
         for (iDim = 0; iDim < nDim; iDim++) {
-          Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim];
-          Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim];
+          Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim]*node[iPoint]->GetNon_Physical();
+          Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim]*node[jPoint]->GetNon_Physical();
         }
         if (limiter) {
           Solution_i[iVar] = Psi_i[iVar] + Project_Grad_i*Limiter_i[iDim];
@@ -5041,13 +5045,17 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
     
     SharpEdge_Distance = geometry->node[iPoint]->GetSharpEdge_Distance();
     
+    /*--- Initialize the non-physical points vector ---*/
+    
+    node[iPoint]->SetNon_Physical(false);
+    
     /*--- Set the primitive variables incompressible and compressible
      adjoint variables ---*/
     
     if (compressible) RightSol = node[iPoint]->SetPrimVar_Compressible(SharpEdge_Distance, false, config);
     if (incompressible) RightSol = node[iPoint]->SetPrimVar_Incompressible(SharpEdge_Distance, false, config);
     if (freesurface) RightSol = node[iPoint]->SetPrimVar_FreeSurface(SharpEdge_Distance, false, config);
-    if (!RightSol) ErrorCounter++;
+    if (!RightSol) { node[iPoint]->SetNon_Physical(true); ErrorCounter++; }
     
     /*--- Initialize the convective residual vector ---*/
     
@@ -5088,8 +5096,7 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
   MPI_Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
-  if (Output && (ErrorCounter >= 50) && (rank == MASTER_NODE) && (iMesh == MESH_0))
-    cout <<"The solution contains "<< ErrorCounter << " non-physical points." << endl;
+  if (iMesh == MESH_0) config->SetNonphysical_Points(ErrorCounter);
   
 }
 
