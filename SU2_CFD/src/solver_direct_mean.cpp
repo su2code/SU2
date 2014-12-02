@@ -3253,7 +3253,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
                                    CConfig *config, unsigned short iMesh) {
 
   double **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j,
-  *V_i, *V_j, *S_i, *S_j, *Limiter_i = NULL, *Limiter_j = NULL, YDistance, GradHidrosPress, sqvel;
+  *V_i, *V_j, *S_i, *S_j, *Limiter_i = NULL, *Limiter_j = NULL, YDistance, GradHidrosPress, sqvel, Non_Physical = 1.0;
   unsigned long iEdge, iPoint, jPoint, counter_local = 0, counter_global = 0;
   unsigned short iDim, iVar;
   bool neg_density_i = false, neg_density_j = false, neg_pressure_i = false, neg_pressure_j = false;
@@ -3312,9 +3312,10 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
       for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
         Project_Grad_i = 0.0; Project_Grad_j = 0.0;
+        Non_Physical = node[iPoint]->GetNon_Physical()*node[jPoint]->GetNon_Physical();
         for (iDim = 0; iDim < nDim; iDim++) {
-          Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim]*node[iPoint]->GetNon_Physical();
-          Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim]*node[jPoint]->GetNon_Physical();
+          Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim]*Non_Physical;
+          Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim]*Non_Physical;
         }
         if (limiter) {
           Primitive_i[iVar] = V_i[iVar] + Limiter_i[iVar]*Project_Grad_i;
@@ -3331,11 +3332,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
        thermodynamic consistent way  ---*/
       /*--- Secondary variable are not extrapoalted order is not extrapolated ---*/
 
-      if (!ideal_gas) {
-    	  ComputeConsExtrapolation(config);
-      }
-
-
+      if (!ideal_gas) { ComputeConsExtrapolation(config); }
 
       /*--- Check for non-physical solutions after reconstruction. If found,
        use the cell-average value of the solution. This results in a locally
