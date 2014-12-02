@@ -52,6 +52,10 @@ inline double CVariable::GetDistance(void) { return 0; }
 
 inline double CVariable::GetMassFraction(unsigned short val_Species) { return 0; }
 
+inline void CVariable::SetNon_Physical(bool val_value) { Non_Physical = !val_value; }
+
+inline double CVariable::GetNon_Physical(void) { return double(Non_Physical); }
+
 inline void CVariable::SetSolution(unsigned short val_var, double val_solution) { Solution[val_var] = val_solution; }
 
 inline void CVariable::SetUndivided_Laplacian(unsigned short val_var, double val_undivided_laplacian) { Undivided_Laplacian[val_var] = val_undivided_laplacian; }

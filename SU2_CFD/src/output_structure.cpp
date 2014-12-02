@@ -5054,6 +5054,10 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
             if (nDim == 3) cout << ", " << Coord[2];
             cout <<   ")." << endl;
             
+            /*--- Print out the number of non-physical points and reconstructions ---*/
+            if (config[val_iZone]->GetNonphysical_Points() > 0)
+              cout << "There are " << config[val_iZone]->GetNonphysical_Points() << " non-physical points in the solution." << endl;
+
             if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
             else cout << endl << " IntIter" << "  ExtIter";
             
@@ -5076,6 +5080,10 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
             if (nDim == 3) cout << ", " << Coord[2];
             cout <<   ")." << endl;
             
+            /*--- Print out the number of non-physical points and reconstructions ---*/
+            if (config[val_iZone]->GetNonphysical_Points() > 0)
+              cout << "There are " << config[val_iZone]->GetNonphysical_Points() << " non-physical points in the solution." << endl;
+
             if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
             else cout << endl << " IntIter" << "  ExtIter";
             

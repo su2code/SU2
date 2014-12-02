@@ -2882,10 +2882,14 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 
   /*--- Compute distance function to zero level set (Set LevelSet and Distance primitive variables)---*/
 
-  if (freesurface) SetFreeSurface_Distance(geometry, config);
+  if (freesurface) { SetFreeSurface_Distance(geometry, config); }
 
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
 
+    /*--- Initialize the non-physical points vector ---*/
+    
+    node[iPoint]->SetNon_Physical(false);
+    
     /*--- Incompressible flow, primitive variables nDim+3, (P,vx,vy,vz,rho,beta),
      FreeSurface Incompressible flow, primitive variables nDim+5, (P,vx,vy,vz,rho,beta,LevelSet,Dist),
      Compressible flow, primitive variables nDim+5, (T,vx,vy,vz,P,rho,h,c) ---*/
@@ -2896,7 +2900,7 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
     }
     if (incompressible) { RightSol = node[iPoint]->SetPrimVar_Incompressible(Density_Inf, config); }
     if (freesurface) {    RightSol = node[iPoint]->SetPrimVar_FreeSurface(config); }
-    if (!RightSol) ErrorCounter++;
+    if (!RightSol) { node[iPoint]->SetNon_Physical(true); ErrorCounter++; }
 
     /*--- Initialize the residual vector (except for output of the residuals) ---*/
 
@@ -2944,6 +2948,7 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   if (implicit) Jacobian.SetValZero();
 
   /*--- Error message ---*/
+  
 #ifdef HAVE_MPI
   unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
   MPI_Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
@@ -3308,8 +3313,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
         Project_Grad_i = 0.0; Project_Grad_j = 0.0;
         for (iDim = 0; iDim < nDim; iDim++) {
-          Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim];
-          Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim];
+          Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim]*node[iPoint]->GetNon_Physical();
+          Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim]*node[jPoint]->GetNon_Physical();
         }
         if (limiter) {
           Primitive_i[iVar] = V_i[iVar] + Limiter_i[iVar]*Project_Grad_i;
@@ -10209,14 +10214,20 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
 
   /*--- Compute distance function to zero level set ---*/
 
-  if (freesurface) SetFreeSurface_Distance(geometry, config);
+  if (freesurface) { SetFreeSurface_Distance(geometry, config); }
 
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
+
+    /*--- Retrieve the value of the kinetic energy (if need it) ---*/
 
     if (turb_model != NONE) {
       eddy_visc = solver_container[TURB_SOL]->node[iPoint]->GetmuT();
       if (tkeNeeded) turb_ke = solver_container[TURB_SOL]->node[iPoint]->GetSolution(0);
     }
+    
+    /*--- Initialize the non-physical points vector ---*/
+    
+    node[iPoint]->SetNon_Physical(false);
 
     /*--- Incompressible flow, primitive variables nDim+3, (P,vx,vy,vz,rho,beta),
      FreeSurface Incompressible flow, primitive variables nDim+4, (P,vx,vy,vz,rho,beta,dist),
@@ -10229,7 +10240,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
 
     if (incompressible) RightSol = node[iPoint]->SetPrimVar_Incompressible(Density_Inf, Viscosity_Inf, eddy_visc, turb_ke, config);
     if (freesurface) RightSol = node[iPoint]->SetPrimVar_FreeSurface(eddy_visc, turb_ke, config);
-    if (!RightSol) ErrorCounter++;
+    if (!RightSol) { node[iPoint]->SetNon_Physical(true); ErrorCounter++; }
 
     /*--- Initialize the convective, source and viscous residual vector ---*/
 
