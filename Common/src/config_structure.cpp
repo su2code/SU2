@@ -739,6 +739,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /* DESCRIPTION: Limit value for the adjoint variable */
   addDoubleOption("LIMIT_ADJFLOW", AdjointLimit, 1E6);
+  /* DESCRIPTION: Multigrid with the adjoint problem */
+  addBoolOption("MG_ADJFLOW", MG_AdjointFlow, true);
   /* DESCRIPTION: Adjoint problem boundary condition */
   addEnumOption("OBJECTIVE_FUNCTION", Kind_ObjFunc, Objective_Map, DRAG_COEFFICIENT);
   default_vec_2d[0] = 0.0; default_vec_2d[1] = 1.0;
@@ -1283,8 +1285,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
 #endif
     
-    
-    
     /*--- Store the SU2 module that we are executing. ---*/
     
     Kind_SU2 = val_software;
@@ -1298,7 +1298,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         }
     }
     
-    
+    /*--- Deactivate the multigrid in the adjoint problem ---*/
+  
+    if (Adjoint && !MG_AdjointFlow) { nMultiLevel = 0; }
+  
     /*--- Initialize non-physical points/reconstructions to zero ---*/
     
     Nonphys_Points   = 0;
