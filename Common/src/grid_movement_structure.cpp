@@ -1,10 +1,10 @@
 /*!
  * \file grid_movement_structure.cpp
- * \brief Subroutines for doing the grid movement using different strategies.
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.4 "eagle"
+ * \brief Subroutines for doing the grid movement using different strategies
+ * \author F. Palacios
+ * \version 3.2.5 "eagle"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
