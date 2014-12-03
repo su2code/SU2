@@ -3,11 +3,10 @@
 ## \file set_ffd_design_var.py.py
 #  \brief Python script for automatically generating a list of FFD variables.
 #  \author T. Economon, F. Palacios,
-#   Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
 #  \version 3.2.4
 #
-# Stanford University Unstructured (SU2) Code
-# Copyright (C) 2012 Aerospace Design Laboratory
+#
+# Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by

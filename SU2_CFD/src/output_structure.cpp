@@ -1,10 +1,10 @@
 /*!
  * \file output_structure.cpp
- * \brief Main subroutines for output solver information.
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.4 "eagle"
+ * \brief Main subroutines for output solver information
+ * \author F. Palacios, T. Economon
+ * \version 3.2.5 "eagle"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -5607,14 +5607,14 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
     
     Breakdown_file << endl <<"-------------------------------------------------------------------------" << endl;
     Breakdown_file <<"|    _____   _    _   ___                                               |" << endl;
-    Breakdown_file <<"|   / ____| | |  | | |__ \\    Web: su2.stanford.edu                     |" << endl;
-    Breakdown_file <<"|  | (___   | |  | |    ) |   Twitter: @su2code                         |" << endl;
-    Breakdown_file <<"|   \\___ \\  | |  | |   / /    Forum: www.cfd-online.com/Forums/su2/     |" << endl;
+    Breakdown_file <<"|   / ____| | |  | | |__ \\    Release 3.2.5 \"eagle\"                     |" << endl;
+    Breakdown_file <<"|  | (___   | |  | |    ) |                                             |" << endl;
+    Breakdown_file <<"|   \\___ \\  | |  | |   / /                                              |" << endl;
     Breakdown_file <<"|   ____) | | |__| |  / /_                                              |" << endl;
     Breakdown_file <<"|  |_____/   \\____/  |____|   Suite (Computational Fluid Dynamics Code) |" << endl;
-    Breakdown_file <<"|                             Release 3.2.4 \"eagle\"                     |" << endl;
+    Breakdown_file << "|                                                                       |" << endl;
     Breakdown_file <<"-------------------------------------------------------------------------" << endl;
-    Breakdown_file << "| SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).       |" << endl;
+    Breakdown_file << "| Copyright (C) 2012-2014 SU2 <https://github.com/su2code>              |" << endl;
     Breakdown_file << "| SU2 is distributed in the hope that it will be useful,                |" << endl;
     Breakdown_file << "| but WITHOUT ANY WARRANTY; without even the implied warranty of        |" << endl;
     Breakdown_file << "| MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU      |" << endl;

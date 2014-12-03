@@ -1,10 +1,10 @@
 /*!
  * \file config_structure.cpp
- * \brief Main file for reading the config file.
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.4 "eagle"
+ * \brief Main file for managing the config file
+ * \author F. Palacios
+ * \version 3.2.5 "eagle"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -3170,9 +3170,9 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   cout << endl <<"-------------------------------------------------------------------------" << endl;
   cout <<"|    _____   _    _   ___                                               |" << endl;
-  cout <<"|   / ____| | |  | | |__ \\    Web: su2.stanford.edu                     |" << endl;
-  cout <<"|  | (___   | |  | |    ) |   Twitter: @su2code                         |" << endl;
-  cout <<"|   \\___ \\  | |  | |   / /    Forum: www.cfd-online.com/Forums/su2/     |" << endl;
+  cout <<"|   / ____| | |  | | |__ \\    Release 3.2.5 \"eagle\"                     |" << endl;
+  cout <<"|  | (___   | |  | |    ) |                                             |" << endl;
+  cout <<"|   \\___ \\  | |  | |   / /                                              |" << endl;
   cout <<"|   ____) | | |__| |  / /_                                              |" << endl;
   switch (val_software) {
     case SU2_CFD: cout << "|  |_____/   \\____/  |____|   Suite (Computational Fluid Dynamics Code) |" << endl; break;
@@ -3184,9 +3184,9 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     case SU2_SOL: cout << "|  |_____/   \\____/  |____|   Suite (Solution Exporting Code)           |" << endl; break;
   }
 
-  cout << "|                             Release 3.2.4 \"eagle\"                     |" << endl;
+  cout << "|                                                                       |" << endl;
   cout <<"-------------------------------------------------------------------------" << endl;
-  cout << "| SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).       |" << endl;
+  cout << "| Copyright (C) 2012-2014 SU2 <https://github.com/su2code>              |" << endl;
   cout << "| SU2 is distributed in the hope that it will be useful,                |" << endl;
   cout << "| but WITHOUT ANY WARRANTY; without even the implied warranty of        |" << endl;
   cout << "| MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU      |" << endl;

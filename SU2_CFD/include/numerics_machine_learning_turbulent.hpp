@@ -1,11 +1,10 @@
 /*!
  * \file numerics_machine_learning_direct_turbulent.hpp
  * \brief Header for caller functions of the turbulence models.
+ * \author B. Tracey
+ * \version 3.2.5 "eagle"
  *
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.4 "eagle"
- *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -20,7 +19,6 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
-
 
 #pragma once
 
