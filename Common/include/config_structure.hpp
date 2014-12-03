@@ -564,7 +564,8 @@ private:
 	TurbulenceIntensity_FreeStream,     /*!< \brief Freestream turbulent intensity (for sagt transition model) of the fluid.  */
 	Turb2LamViscRatio_FreeStream,          /*!< \brief Ratio of turbulent to laminar viscosity. */
 	NuFactor_FreeStream,  /*!< \brief Ratio of turbulent to laminar viscosity. */
-	Pressure_FreeStream,     /*!< \brief Total pressure of the fluid. */
+  NuFactor_Engine,  /*!< \brief Ratio of turbulent to laminar viscosity at the engine. */
+  Pressure_FreeStream,     /*!< \brief Total pressure of the fluid. */
 	Temperature_FreeStream,  /*!< \brief Total temperature of the fluid.  */
   Temperature_ve_FreeStream,  /*!< \brief Total vibrational-electronic temperature of the fluid.  */
   *MassFrac_FreeStream, /*!< \brief Mixture mass fractions of the fluid. */
@@ -1450,6 +1451,12 @@ public:
 	 * \return Non-dimensionalized freestream intensity.
 	 */
 	double GetNuFactor_FreeStream(void);
+  
+  /*!
+   * \brief Get the value of the non-dimensionalized engine turbulence intensity.
+   * \return Non-dimensionalized engine intensity.
+   */
+  double GetNuFactor_Engine(void);
 
 	/*!
 	 * \brief Get the value of the turbulent to laminar viscosity ratio.

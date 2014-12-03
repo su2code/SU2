@@ -220,6 +220,8 @@ inline double CConfig::GetOmega_FreeStream(void) { return Omega_FreeStream; }
 
 inline double CConfig::GetNuFactor_FreeStream(void) { return NuFactor_FreeStream; }
 
+inline double CConfig::GetNuFactor_Engine(void) { return NuFactor_Engine; }
+
 inline double CConfig::GetIntermittency_FreeStream(void) { return Intermittency_FreeStream; }
 
 inline double CConfig::GetTurbulenceIntensity_FreeStream(void) { return TurbulenceIntensity_FreeStream; }
