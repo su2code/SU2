@@ -1107,10 +1107,15 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
   double nuRef = 1.0;
   double nu = Laminar_Viscosity_i / Density_i;
   double nuscale = nu / nuRef;
+  double distalt = dist_i;
   double nuhatalt = Turbulent_Kinematic_Viscosity / nuscale;
   double omega = SANondimInputs->OmegaBar * SANondimInputs->OmegaNondim;
   double omegaalt = omega / nuscale;
   double nuhatgradmagalt = SANondimInputs->NuHatGradNorm / (nuscale * nuscale);
+  double omeganondimeralt = (1/distalt) * (nuhatalt / distalt);
+  double sourcenondimeralt = (nuhatalt / distalt) * (nuhatalt / distalt);
+  double nondim_nuhatgradmagalt = nuhatgradmagalt / sourcenondimeralt;
+  double nondimOmegaAlt = omegaalt / omeganondimeralt;
   
 //  double Laminar_Kinematic_Viscosity = Laminar_Viscosity_i / Density_i;
   
@@ -1365,6 +1370,33 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
     
     // Predict using Nnet
     MLModel->Predict(netInput, netOutput);
+    
+    // Gather the appropriate values
+    Residual[0] = 0;
+    Residual[1] = 0;
+    Residual[2] = 0;
+    Residual[3] = netOutput[0];
+    
+    for (int i=0; i < nResidual; i++){
+      NondimResidual[i] = Residual[i];
+    }
+    SANondimInputs->NondimensionalizeSource(nResidual, NondimResidual);
+  }else if(featureset.compare("source_alt")==0){
+    nInputMLVariables =4;
+    nOutputMLVariables = 1;
+    netInput = new double[nInputMLVariables];
+    netOutput = new double[nOutputMLVariables];
+    
+    netInput[0] = sourcenondimeralt;
+    netInput[1] = SANondimInputs->Chi;
+    netInput[2] = nondimOmegaAlt;
+    netInput[3] = nondim_nuhatgradmagalt;
+    
+    
+    // Predict using Nnet
+    MLModel->Predict(netInput, netOutput);
+
+    netOutput[0] *= nuscale * nuscale;
     
     // Gather the appropriate values
     Residual[0] = 0;
