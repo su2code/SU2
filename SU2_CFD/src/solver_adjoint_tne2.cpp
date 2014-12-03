@@ -3207,12 +3207,20 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
             for (iDim = 0; iDim < nDim; iDim++)
               GsTve[iDim] = GV[TVE_INDEX][iDim] - dnPsi_k*UnitNormal[iDim];
             
+            /*--- Compute mass source terms ---*/
+            // Note: Source term is multiplied by volume as a default.
+            //       Sensitivity does not include this volume, so need to 'undo'
+            //       the multiplication.
+            numerics->ComputeChemistry(Residual_i, Jacobian_i, config);
+            for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+              wdot[iSpecies] = Residual_i[iSpecies]/geometry->node[iPoint]->GetVolume();
+            
             /*--- Calculate vibrational-electronic source term ---*/
             // Note: Source term is multiplied by volume as a default.
             //       Sensitivity does not include this volume, so need to 'undo'
             //       the multiplication.
             numerics->ComputeVibRelaxation(Residual_i, Jacobian_i, config);
-            qx = Residual_i[nSpecies+nDim+1]*geometry->node[iPoint]->GetVolume();
+            qx = Residual_i[nSpecies+nDim+1]/geometry->node[iPoint]->GetVolume();
             
             /*--- Get adjoint quantities ---*/
             Psi  = node[iPoint]->GetSolution();
@@ -3268,8 +3276,11 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
             B34 = 0.0;
             for (iDim = 0; iDim < nDim; iDim++)
               B34 += -( GsPsi[nSpecies+nDim][iDim]
-                       +GsPsi[nSpecies+nDim+1][iDim]) * (kve*GsTve[iDim])
-                   + qx*Psi[nSpecies+nDim+1];
+                       +GsPsi[nSpecies+nDim+1][iDim]) * (kve*GsTve[iDim]);
+            B34 += qx*Psi[nSpecies+nDim+1];
+            for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+              B34 += wdot[iSpecies]*( Psi[iSpecies]
+                                     +Psi[nSpecies+nDim+1]*eves[iSpecies]);
             
             
             /*--- Sum the contribution from each of the sensitivities ---*/
