@@ -3808,7 +3808,7 @@ public:
 
 class CTurbSASolver: public CTurbSolver {
 private:
-	double nu_tilde_Inf;
+	double nu_tilde_Inf, nu_tilde_Engine;
 	
 public:
 	/*!
