@@ -1,10 +1,10 @@
 /*!
  * \file output_tecplot.cpp
  * \brief Main subroutines for output solver information.
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.4 "eagle"
+ * \author F. Palacios, T. Economon, Michael Colonno
+ * \version 3.2.5 "eagle"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -23,6 +23,289 @@
 #include "../include/output_structure.hpp"
 
 string AssembleVariableNames(CGeometry *geometry, CConfig *config, unsigned short nVar_Consv, unsigned short *NVar);
+
+void COutput::SetTecplotNode_ASCII(CConfig *config, CGeometry *geometry, CSolver **solver, char mesh_filename[MAX_STRING_SIZE], bool surf_sol) {
+  
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  int size = SINGLE_NODE;
+  MPI_Comm_size(MPI_COMM_WORLD,&size);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+  
+  unsigned long iElem, iPoint;
+  unsigned short iVar;
+  nVar_Consv = geometry->GetnDim()+2;
+  bool grid_movement  = config->GetGrid_Movement();
+  unsigned short Kind_Solver = config->GetKind_Solver();
+  ofstream Tecplot_File;
+  unsigned long Total_nElem_Bound, *PointSurface = NULL, nPointSurface = 0;
+  unsigned short iMarker;
+
+  /*--- Open Tecplot ASCII file and write the header. ---*/
+
+  Tecplot_File.open(mesh_filename, ios::out);
+  Tecplot_File.precision(6);
+  if (surf_sol) Tecplot_File << "TITLE = \"Visualization of the surface solution\"" << endl;
+  else Tecplot_File << "TITLE = \"Visualization of the volumetric solution\"" << endl;
+  
+  if (geometry->GetnDim() == 2) { Tecplot_File << "VARIABLES = \"x\",\"y\""; }
+  else { Tecplot_File << "VARIABLES = \"x\",\"y\",\"z\""; }
+  
+  /*--- Add names for conservative, limiters, and residual variables ---*/
+  
+  for (iVar = 0; iVar < nVar_Consv; iVar++) {
+    Tecplot_File << ",\"Conservative_" << iVar+1 << "\"";
+  }
+  if (config->GetWrt_Limiters()) {
+    for (iVar = 0; iVar < nVar_Consv; iVar++) {
+      Tecplot_File << ",\"Limiter_" << iVar+1 << "\"";
+    }
+  }
+  if (config->GetWrt_Residuals()) {
+    for (iVar = 0; iVar < nVar_Consv; iVar++) {
+      Tecplot_File << ",\"Residual_" << iVar+1 << "\"";
+    }
+  }
+  
+  /*--- Add names for any extra variables (this will need to be adjusted). ---*/
+  
+  if (grid_movement) {
+    if (geometry->GetnDim() == 2) {
+      Tecplot_File << ",\"Grid_Velx\",\"Grid_Vely\"";
+    } else {
+      Tecplot_File << ",\"Grid_Velx\",\"Grid_Vely\",\"Grid_Velz\"";
+    }
+  }
+  
+  if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+    Tecplot_File << ",\"Pressure\",\"Temperature\",\"Pressure_Coefficient\",\"Mach\"";
+    if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+      Tecplot_File << ",\"Laminar_Viscosity\", \"Skin_Friction_Coefficient\", \"Heat_Flux\", \"Y_Plus\"";
+      if (Kind_Solver == RANS) { Tecplot_File << ", \"Eddy_Viscosity\""; }
+    }
+    if (config->GetWrt_SharpEdges()) { Tecplot_File << ", \"Sharp_Edge_Dist\""; }
+  }
+  
+  if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS) ) {
+    Tecplot_File << ", \"Surface_Sensitivity\", \"Solution_Sensor\"";
+  }
+  
+  Tecplot_File << endl;
+  
+  if (surf_sol) {
+    
+    /*--- It is important to do a renumbering to don't add points
+     that do not belong to the surfaces ---*/
+    
+    PointSurface = new unsigned long[geometry->GetnPoint()];
+    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
+      if (geometry->node[iPoint]->GetBoundary()) {
+        PointSurface[iPoint] = nPointSurface;
+        nPointSurface++;
+      }
+    
+    /*--- Compute the total number of elements ---*/
+    
+    Total_nElem_Bound = 0;
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (config->GetMarker_All_Plotting(iMarker) == YES) {
+        Total_nElem_Bound += geometry->GetnElem_Bound(iMarker);
+      }
+    }
+    
+    if (Total_nElem_Bound != 0) {
+      
+      /*--- Write the header of the file ---*/
+
+      Tecplot_File << "ZONE T= \"MPI rank: " << rank << "\", ";
+      Tecplot_File << "NODES= "<< nPointSurface <<", ELEMENTS= "<< Total_nElem_Bound <<", DATAPACKING= POINT";
+      if (geometry->GetnDim() == 2) Tecplot_File << ", ZONETYPE= FELINESEG"<< endl;
+      if (geometry->GetnDim() == 3) Tecplot_File << ", ZONETYPE= FEQUADRILATERAL"<< endl;
+      
+      /*--- Only write the coordiantes of the points that are on the surfaces ---*/
+      
+      if (geometry->GetnDim() == 3) {
+        for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
+          if (geometry->node[iPoint]->GetBoundary()) {
+            for(iVar = 0; iVar < solver[FLOW_SOL]->GetnVar(); iVar++)
+              Tecplot_File << scientific << solver[FLOW_SOL]->node[iPoint]->GetSolution(iVar) << "\t";
+            Tecplot_File << "\n";
+          }
+      }
+      else {
+        for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
+          if (geometry->node[iPoint]->GetBoundary()) {
+            for(iVar = 0; iVar < solver[FLOW_SOL]->GetnVar(); iVar++)
+              Tecplot_File << scientific << solver[FLOW_SOL]->node[iPoint]->GetSolution(iVar) << "\t";
+            Tecplot_File << "\n";
+          }
+      }
+      
+      /*--- Write the cells using the new numbering ---*/
+      
+      for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+        if (config->GetMarker_All_Plotting(iMarker) == YES)
+          for(iElem = 0; iElem < geometry->GetnElem_Bound(iMarker); iElem++) {
+            if (geometry->GetnDim() == 2) {
+              Tecplot_File << PointSurface[geometry->bound[iMarker][iElem]->GetNode(0)]+1 << " "
+              << PointSurface[geometry->bound[iMarker][iElem]->GetNode(1)]+1 << endl;
+            }
+            if (geometry->GetnDim() == 3) {
+              if (geometry->bound[iMarker][iElem]->GetnNodes() == 3) {
+                Tecplot_File << PointSurface[geometry->bound[iMarker][iElem]->GetNode(0)]+1 << " "
+                << PointSurface[geometry->bound[iMarker][iElem]->GetNode(1)]+1 << " "
+                << PointSurface[geometry->bound[iMarker][iElem]->GetNode(2)]+1 << " "
+                << PointSurface[geometry->bound[iMarker][iElem]->GetNode(2)]+1 << endl;
+              }
+              if (geometry->bound[iMarker][iElem]->GetnNodes() == 4) {
+                Tecplot_File << PointSurface[geometry->bound[iMarker][iElem]->GetNode(0)]+1 << " "
+                << PointSurface[geometry->bound[iMarker][iElem]->GetNode(1)]+1 << " "
+                << PointSurface[geometry->bound[iMarker][iElem]->GetNode(2)]+1 << " "
+                << PointSurface[geometry->bound[iMarker][iElem]->GetNode(3)]+1 << endl;
+              }
+            }
+          }
+    }
+    else {
+      
+      /*--- No elements in the surface ---*/
+      
+      if (geometry->GetnDim() == 2) {
+        Tecplot_File << "ZONE ";
+        Tecplot_File << "T= \"MPI rank: " << rank << "\", ";
+        Tecplot_File << "NODES= 1, ELEMENTS= 1, DATAPACKING=POINT, ZONETYPE=FELINESEG"<< endl;
+        for(iVar = 0; iVar < solver[FLOW_SOL]->GetnVar(); iVar++)
+          Tecplot_File << scientific << "0.0\t";
+        Tecplot_File << "\n";
+        Tecplot_File << "1 1"<< endl;
+      }
+      if (geometry->GetnDim() == 3) {
+        Tecplot_File << "ZONE ";
+        Tecplot_File << "T= \"MPI rank: " << rank << "\", ";
+        Tecplot_File << "NODES= 1, ELEMENTS= 1, DATAPACKING=POINT, ZONETYPE=FEQUADRILATERAL"<< endl;
+        for(iVar = 0; iVar < solver[FLOW_SOL]->GetnVar(); iVar++)
+          Tecplot_File << scientific << "0.0\t";
+        Tecplot_File << "\n";
+        Tecplot_File << "1 1 1 1"<< endl;
+      }
+    }
+    
+    /*--- Dealocate memory and close the file ---*/
+    
+    delete[] PointSurface;
+    Tecplot_File.close();
+    
+  }
+  
+  else {
+    
+    Tecplot_File << "ZONE ";
+    Tecplot_File << "T= \"MPI rank: " << rank << "\", ";
+    Tecplot_File << "NODES= "<< geometry->GetnPoint() <<", ELEMENTS= "<< geometry->GetnElem() <<", DATAPACKING= POINT";
+    if (geometry->GetnDim() == 2) Tecplot_File << ", ZONETYPE= FEQUADRILATERAL"<< endl;
+    if (geometry->GetnDim() == 3) Tecplot_File << ", ZONETYPE= FEBRICK"<< endl;
+    
+    /*--- Adding coordinates ---*/
+    
+    for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+      for(iVar = 0; iVar < solver[FLOW_SOL]->GetnVar(); iVar++)
+        Tecplot_File << scientific << solver[FLOW_SOL]->node[iPoint]->GetSolution(iVar) << "\t";
+      Tecplot_File << "\n";
+    }
+    
+    /*--- Adding conectivity ---*/
+    
+    for(iElem = 0; iElem < geometry->GetnElem(); iElem++) {
+      if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE) {
+        Tecplot_File <<
+        geometry->elem[iElem]->GetNode(0)+1 <<" "<< geometry->elem[iElem]->GetNode(1)+1 <<" "<<
+        geometry->elem[iElem]->GetNode(2)+1 <<" "<< geometry->elem[iElem]->GetNode(2)+1 << endl;
+      }
+      if (geometry->elem[iElem]->GetVTK_Type() == RECTANGLE) {
+        Tecplot_File <<
+        geometry->elem[iElem]->GetNode(0)+1 <<" "<< geometry->elem[iElem]->GetNode(1)+1 <<" "<<
+        geometry->elem[iElem]->GetNode(2)+1 <<" "<< geometry->elem[iElem]->GetNode(3)+1 << endl;
+      }
+      if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON) {
+        Tecplot_File <<
+        geometry->elem[iElem]->GetNode(0)+1 <<" "<< geometry->elem[iElem]->GetNode(1)+1 <<" "<<
+        geometry->elem[iElem]->GetNode(2)+1 <<" "<< geometry->elem[iElem]->GetNode(2)+1 <<" "<<
+        geometry->elem[iElem]->GetNode(3)+1 <<" "<< geometry->elem[iElem]->GetNode(3)+1 <<" "<<
+        geometry->elem[iElem]->GetNode(3)+1 <<" "<< geometry->elem[iElem]->GetNode(3)+1 << endl;
+      }
+      if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON) {
+        Tecplot_File <<
+        geometry->elem[iElem]->GetNode(0)+1 <<" "<< geometry->elem[iElem]->GetNode(1)+1 <<" "<<
+        geometry->elem[iElem]->GetNode(2)+1 <<" "<< geometry->elem[iElem]->GetNode(3)+1 <<" "<<
+        geometry->elem[iElem]->GetNode(4)+1 <<" "<< geometry->elem[iElem]->GetNode(5)+1 <<" "<<
+        geometry->elem[iElem]->GetNode(6)+1 <<" "<< geometry->elem[iElem]->GetNode(7)+1 << endl;
+      }
+      if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID) {
+        Tecplot_File <<
+        geometry->elem[iElem]->GetNode(0)+1 <<" "<< geometry->elem[iElem]->GetNode(1)+1 <<" "<<
+        geometry->elem[iElem]->GetNode(2)+1 <<" "<< geometry->elem[iElem]->GetNode(3)+1 <<" "<<
+        geometry->elem[iElem]->GetNode(4)+1 <<" "<< geometry->elem[iElem]->GetNode(4)+1 <<" "<<
+        geometry->elem[iElem]->GetNode(4)+1 <<" "<< geometry->elem[iElem]->GetNode(4)+1 << endl;
+      }
+      if (geometry->elem[iElem]->GetVTK_Type() == WEDGE) {
+        Tecplot_File <<
+        geometry->elem[iElem]->GetNode(0)+1 <<" "<< geometry->elem[iElem]->GetNode(1)+1 <<" "<<
+        geometry->elem[iElem]->GetNode(1)+1 <<" "<< geometry->elem[iElem]->GetNode(2)+1 <<" "<<
+        geometry->elem[iElem]->GetNode(3)+1 <<" "<< geometry->elem[iElem]->GetNode(4)+1 <<" "<<
+        geometry->elem[iElem]->GetNode(4)+1 <<" "<< geometry->elem[iElem]->GetNode(5)+1 << endl;
+      }
+    }
+    
+    Tecplot_File.close();
+    
+  }
+  
+  
+#ifdef HAVE_MPI
+  
+  MPI_Barrier(MPI_COMM_WORLD);
+  
+  /*--- Add solution files to a single file ---*/
+  
+  if (rank == MASTER_NODE) {
+    
+    ofstream Tecplot_File;
+    string filename, text_line;
+    char buffer_char[50], out_file[MAX_STRING_SIZE];
+
+    if (surf_sol) filename = config->GetSurfFlowCoeff_FileName();
+    else filename = config->GetFlow_FileName();
+    filename.erase(filename.end()-2,filename.end());
+    strcpy(mesh_filename, filename.c_str());
+    sprintf (buffer_char, ".dat");
+    strcat(mesh_filename, buffer_char);
+    
+    Tecplot_File.open(mesh_filename, ios::out);
+    
+    for (int iRank = 0; iRank < size; iRank++) {
+      if (surf_sol) filename = config->GetSurfFlowCoeff_FileName();
+      else filename = config->GetFlow_FileName();
+      filename.erase(filename.end()-2,filename.end());
+      strcpy(out_file, filename.c_str());
+      sprintf (buffer_char, "_%i.dat", iRank+1);
+      strcat(out_file, buffer_char);
+      ifstream Tecplot_File_;
+      Tecplot_File_.open(out_file, ios::in);
+      while (getline (Tecplot_File_, text_line)) {
+        Tecplot_File << text_line << endl;
+      }
+      Tecplot_File_.close();
+      remove (out_file);
+    }
+    
+    Tecplot_File.close();
+    
+  }
+  
+#endif
+  
+}
 
 void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol) {
   
@@ -648,6 +931,7 @@ void COutput::SetTecplot_MeshBinary(CConfig *config, CGeometry *geometry, unsign
   enum	 ZoneType { ORDERED=0, FELINESEG=1, FETRIANGLE=2, FEQUADRILATERAL=3, FETETRAHEDRON=4, FEBRICK=5, FEPOLYGON=6, FEPOLYHEDRON=7 };
   
   /*--- Consistent data for Tecplot zones ---*/
+  
   Debug						= 0;
   IsDouble					= 1;
   NPts						= (INTEGER4)nGlobal_Poin;
@@ -664,6 +948,7 @@ void COutput::SetTecplot_MeshBinary(CConfig *config, CGeometry *geometry, unsign
   ShareConnectivityFromZone	= 0;
   
   /*--- Write Tecplot solution file ---*/
+  
   if (!wrote_base_file) {
     
     file.str(string());
@@ -671,6 +956,7 @@ void COutput::SetTecplot_MeshBinary(CConfig *config, CGeometry *geometry, unsign
 
 #ifdef HAVE_MPI
 	/*--- Remove the domain number from the filename ---*/
+    
     int nProcessor;
 	MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
     if (nProcessor > 1) buffer.erase(buffer.end()-2, buffer.end());
@@ -684,6 +970,7 @@ void COutput::SetTecplot_MeshBinary(CConfig *config, CGeometry *geometry, unsign
     else cout << "Error: wrong number of dimensions: " << dims << endl;
     
     /*--- Open Tecplot file ---*/
+    
     err = TECINI112((char *)config->GetFlow_FileName().c_str(),
                     (char *)variables.c_str(),
                     (char *)file.str().c_str(),
@@ -726,6 +1013,7 @@ void COutput::SetTecplot_MeshBinary(CConfig *config, CGeometry *geometry, unsign
       if (err) cout << "Error writing Tecplot zone data" << endl;
       
       /*--- write node coordinates and data if not done already---*/
+      
       if (first_zone) {
         
         if (config->GetKind_SU2() == SU2_SOL) {
@@ -754,6 +1042,7 @@ void COutput::SetTecplot_MeshBinary(CConfig *config, CGeometry *geometry, unsign
     if (nGlobal_Quad > 0) {
       
       /*--- Write the zone header information ---*/
+      
       ZoneType = FEQUADRILATERAL; NElm = (INTEGER4)nGlobal_Quad; N = NElm*N_POINTS_QUADRILATERAL;
       
       err = TECZNE112((char*)"Quadrilateral Elements",
@@ -780,6 +1069,7 @@ void COutput::SetTecplot_MeshBinary(CConfig *config, CGeometry *geometry, unsign
       if (err) cout << "Error writing Tecplot zone data" << endl;
       
       /*--- write node coordinates and data if not done already---*/
+      
       if (first_zone) {
         
         if (config->GetKind_SU2() == SU2_SOL) {
@@ -808,6 +1098,7 @@ void COutput::SetTecplot_MeshBinary(CConfig *config, CGeometry *geometry, unsign
     if (nGlobal_Tetr > 0) {
       
       /*--- Write the zone header information ---*/
+      
       ZoneType = FETETRAHEDRON; NElm = (INTEGER4)nGlobal_Tetr; N = NElm*N_POINTS_TETRAHEDRON;
       
       err = TECZNE112((char*)"Tetrahedral Elements",
@@ -834,6 +1125,7 @@ void COutput::SetTecplot_MeshBinary(CConfig *config, CGeometry *geometry, unsign
       if (err) cout << "Error writing Tecplot zone data" << endl;
       
       /*--- write node coordinates and data if not done already---*/
+      
       if (first_zone) {
         
         if (config->GetKind_SU2() == SU2_SOL) {
@@ -862,6 +1154,7 @@ void COutput::SetTecplot_MeshBinary(CConfig *config, CGeometry *geometry, unsign
     if (nGlobal_Hexa > 0) {
       
       /*--- Write the zone header information ---*/
+      
       ZoneType = FEBRICK; NElm = (INTEGER4)nGlobal_Hexa; N = NElm*N_POINTS_HEXAHEDRON;
       
       err = TECZNE112((char*)"Hexahedral Elements",
@@ -888,6 +1181,7 @@ void COutput::SetTecplot_MeshBinary(CConfig *config, CGeometry *geometry, unsign
       if (err) cout << "Error writing Tecplot zone data" << endl;
       
       /*--- write node coordinates and data if not done already---*/
+      
       if (first_zone) {
         
         if (config->GetKind_SU2() == SU2_SOL) {

@@ -2,10 +2,10 @@
  * \file output_structure.hpp
  * \brief Headers of the main subroutines for generating the file outputs.
  *        The subroutines and functions are in the <i>output_structure.cpp</i> file.
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.4 "eagle"
+ * \author F. Palacios
+ * \version 3.2.5 "eagle"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -49,7 +49,7 @@ using namespace std;
  * \brief Class for writing the flow, adjoint and linearized solver 
  *        solution (including the history solution, and parallel stuff).
  * \author F. Palacios, T. Economon, M. Colonno.
- * \version 3.2.4 "eagle"
+ * \version 3.2.5 "eagle"
  */
 class COutput {
 
@@ -326,6 +326,12 @@ public:
 
   /*!
 	 * \brief Write a Tecplot ASCII solution file.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 */
+	void SetTecplotNode_ASCII(CConfig *config, CGeometry *geometry, CSolver **solver, char mesh_filename[MAX_STRING_SIZE], bool surf_sol);
+
+  /*!
+	 * \brief Write a Tecplot ASCII solution file.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] val_iZone - Current zone.
@@ -414,5 +420,19 @@ public:
 	 */
 	void SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geometry, CSolver ****solver_container, CConfig **config,
                               CIntegration ***integration, bool DualTime, double timeused, unsigned short val_iZone);
-
+  
+  /*!
+   * \brief Write the history file and the convergence on the screen for serial computations.
+   * \param[in] ConvHist_file - Pointer to the convergence history file (which is defined in the main subroutine).
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] integration - Generic subroutines for space integration, time integration, and monitoring.
+   * \param[in] iExtIter - Current external (time) iteration.
+   * \param[in] timeused - Current number of clock tick in the computation (related with total time).
+   * \param[in] val_nZone - iZone index.
+   */
+  void SetForces_Breakdown(CGeometry ***geometry, CSolver ****solver_container, CConfig **config,
+                           CIntegration ***integration, unsigned short val_iZone);
+  
 };

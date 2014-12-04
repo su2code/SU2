@@ -1,10 +1,10 @@
 /*!
  * \file geometry_structure.cpp
  * \brief Main subroutines for creating the primal grid and multigrid structure.
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.4 "eagle"
+ * \author F. Palacios
+ * \version 3.2.5 "eagle"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -4389,9 +4389,6 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
               case PYRA_5:
                 VTK_Type = 14;
                 break;
-              default:
-                VTK_Type = -1;
-                break;
             }
             
             /*--- Transfer the nodes for this element. ---*/
@@ -4535,7 +4532,6 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
                 case HEXA_8: VTK_Type = 12; break;
                 case PENTA_6: VTK_Type = 13; break;
                 case PYRA_5: VTK_Type = 14; break;
-                default: VTK_Type = -1; break;
               }
               /*--- Transfer the nodes for this element. ---*/
               for ( int j = 1; j < npe+1; j++ ) {
@@ -9819,8 +9815,8 @@ void CMultiGridGeometry::SetSuitableNeighbors(vector<unsigned long> *Suitable_In
 
 void CMultiGridGeometry::SetPoint_Connectivity(CGeometry *fine_grid) {
   
-  unsigned long iFinePoint, iFinePoint_Neighbor, iParent, iCoarsePoint, iCoarsePoint_Complete;
-  unsigned short iChildren, iNode, nChildren;
+  unsigned long iFinePoint, iFinePoint_Neighbor, iParent, iCoarsePoint;
+  unsigned short iChildren, iNode;
   
   /*--- Set the point surrounding a point ---*/
   

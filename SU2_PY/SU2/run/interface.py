@@ -1,10 +1,9 @@
 ## \file interface.py
 #  \brief python package interfacing with the SU2 suite
-#  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 3.2.4 "eagle"
+#  \author T. Lukaczyk, F. Palacios
+#  \version 3.2.5 "eagle"
 #
-# Stanford University Unstructured (SU2) Code
-# Copyright (C) 2012 Aerospace Design Laboratory
+# Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -50,6 +49,12 @@ elif not which('mpiexec') is None:
     mpi_Command = 'mpiexec -n %i %s'
 else:
     mpi_Command = ''
+    
+from .. import EvaluationFailure, DivergenceFailure
+return_code_map = {
+    1 : EvaluationFailure ,
+    2 : DivergenceFailure ,
+}
     
 # ------------------------------------------------------------
 #  SU2 Suite Interface Functions
@@ -274,7 +279,11 @@ def run_command( Command ):
         raise SystemExit , message
     elif return_code > 0:
         message = "Path = %s\nCommand = %s\nSU2 process returned error '%s'\n%s" % (os.path.abspath(','),Command,return_code,message)
-        raise Exception , message
+        if return_code in return_code_map.keys():
+            exception = return_code_map[return_code]
+        else:
+            exception = RuntimeError
+        raise exception , message
     else:
         sys.stdout.write(message)
             

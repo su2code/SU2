@@ -1,10 +1,10 @@
 /*!
  * \file variable_direct_mean.cpp
  * \brief Definition of the solution fields.
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.4 "eagle"
+ * \author F. Palacios, T. Economon
+ * \version 3.2.5 "eagle"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -58,7 +58,7 @@ CEulerVariable::CEulerVariable(double val_density, double *val_velocity, double 
   /*--- Allocate and initialize the primitive variables and gradients ---*/
   if (incompressible) { nPrimVar = nDim+5; nPrimVarGrad = nDim+3; }
   if (freesurface)    { nPrimVar = nDim+7; nPrimVarGrad = nDim+6; }
-  if (compressible)   { nPrimVar = nDim+7; nPrimVarGrad = nDim+4;
+  if (compressible)   { nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
     if (viscous) { nSecondaryVar = 8; nSecondaryVarGrad = 2; }
     else { nSecondaryVar = 2; nSecondaryVarGrad = 2; }
   }
@@ -214,7 +214,7 @@ CEulerVariable::CEulerVariable(double *val_solution, unsigned short val_nDim, un
 	/*--- Allocate and initialize the primitive variables and gradients ---*/
   if (incompressible) { nPrimVar = nDim+5; nPrimVarGrad = nDim+3; }
   if (freesurface)    { nPrimVar = nDim+7; nPrimVarGrad = nDim+6; }
-  if (compressible)   { nPrimVar = nDim+7; nPrimVarGrad = nDim+4;
+  if (compressible)   { nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
     if (viscous) { nSecondaryVar = 8; nSecondaryVarGrad = 2; }
     else { nSecondaryVar = 2; nSecondaryVarGrad = 2; }
   }
@@ -590,11 +590,12 @@ bool CNSVariable::SetPrimVar_Compressible(double eddy_visc, double turb_ke, CFlu
 
   /* check will be moved inside fluid model plus error description strings*/
   FluidModel->SetTDState_rhoe(density, staticEnergy);
+  double temperature = FluidModel->GetTemperature();
 
   check_dens = SetDensity();
   check_press = SetPressure(FluidModel->GetPressure());
   check_sos = SetSoundSpeed(FluidModel->GetSoundSpeed2());
-  check_temp = SetTemperature(FluidModel->GetTemperature());
+  check_temp = SetTemperature(temperature);
   
   /*--- Check that the solution has a physical meaning ---*/
   
@@ -612,11 +613,12 @@ bool CNSVariable::SetPrimVar_Compressible(double eddy_visc, double turb_ke, CFlu
 	double staticEnergy = GetEnergy()-0.5*Velocity2 - turb_ke;
 	/* check will be moved inside fluid model plus error description strings*/
 	FluidModel->SetTDState_rhoe(density, staticEnergy);
+    double temperature = FluidModel->GetTemperature();
 
 	check_dens = SetDensity();
 	check_press = SetPressure(FluidModel->GetPressure());
 	check_sos = SetSoundSpeed(FluidModel->GetSoundSpeed2());
-	check_temp = SetTemperature(FluidModel->GetTemperature());
+	check_temp = SetTemperature(temperature);
     
     RightVol = false;
     
@@ -624,15 +626,20 @@ bool CNSVariable::SetPrimVar_Compressible(double eddy_visc, double turb_ke, CFlu
   
   /*--- Set enthalpy ---*/
   
-	SetEnthalpy();                                  // Requires pressure computation.
+  SetEnthalpy();                                  // Requires pressure computation.
   
   /*--- Set laminar viscosity ---*/
   
-	SetLaminarViscosity(FluidModel->GetLaminarViscosity(FluidModel->GetTemperature(), GetDensity()));
+  SetLaminarViscosity(FluidModel->GetLaminarViscosity());
   
   /*--- Set eddy viscosity ---*/
   
   SetEddyViscosity(eddy_visc);
+
+  /*--- Set thermal conductivity ---*/
+  SetThermalConductivity(FluidModel->GetThermalConductivity());
+
+  SetSpecificHeatCp(FluidModel->GetCp());
   
   return RightVol;
   
@@ -640,15 +647,21 @@ bool CNSVariable::SetPrimVar_Compressible(double eddy_visc, double turb_ke, CFlu
 
 void CNSVariable::SetSecondaryVar_Compressible(CFluidModel *FluidModel) {
 
-	SetdPdrho_e(FluidModel->GetdPdrho_e());
-	SetdPde_rho(FluidModel->GetdPde_rho());
-    /*--- Compute secondary thermo-physical properties (partial derivatives...) ---*/
+    /*--- Compute secondary thermodynamic properties (partial derivatives...) ---*/
+
+	SetdPdrho_e( FluidModel->GetdPdrho_e() );
+	SetdPde_rho( FluidModel->GetdPde_rho() );
 
 	SetdTdrho_e( FluidModel->GetdTdrho_e() );
 	SetdTde_rho( FluidModel->GetdTde_rho() );
 
+    /*--- Compute secondary thermo-physical properties (partial derivatives...) ---*/
+
 	Setdmudrho_T( FluidModel->Getdmudrho_T() );
 	SetdmudT_rho( FluidModel->GetdmudT_rho() );
+
+	Setdktdrho_T( FluidModel->Getdktdrho_T() );
+	SetdktdT_rho( FluidModel->GetdktdT_rho() );
 
 }
 

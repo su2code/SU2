@@ -1,10 +1,10 @@
 /*!
  * \file output_structure.cpp
- * \brief Main subroutines for output solver information.
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.4 "eagle"
+ * \brief Main subroutines for output solver information
+ * \author F. Palacios, T. Economon
+ * \version 3.2.5 "eagle"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -4035,6 +4035,7 @@ void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
       isothermal = true;
   
   /*--- Write file name with extension ---*/
+  
   string filename = config->GetConv_FileName();
   strcpy (cstr, filename.data());
   
@@ -4083,6 +4084,7 @@ void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
     monitoring_coeff += ",\"CLift_"  + Monitoring_Tag + "\"";
     monitoring_coeff += ",\"CDrag_"  + Monitoring_Tag + "\"";
     monitoring_coeff += ",\"CSideForce_" + Monitoring_Tag + "\"";
+    monitoring_coeff += ",\"CL/CD_" + Monitoring_Tag + "\"";
     monitoring_coeff += ",\"CFx_"    + Monitoring_Tag + "\"";
     monitoring_coeff += ",\"CFy_"    + Monitoring_Tag + "\"";
     monitoring_coeff += ",\"CFz_"    + Monitoring_Tag + "\"";
@@ -4278,9 +4280,9 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
     bool fea = (config[val_iZone]->GetKind_Solver() == LINEAR_ELASTICITY);
     bool TNE2 = ((config[val_iZone]->GetKind_Solver() == TNE2_EULER) || (config[val_iZone]->GetKind_Solver() == TNE2_NAVIER_STOKES) ||
                  (config[val_iZone]->GetKind_Solver() == ADJ_TNE2_EULER) || (config[val_iZone]->GetKind_Solver() == ADJ_TNE2_NAVIER_STOKES));
-    bool flow = (config[val_iZone]->GetKind_Regime() == EULER) || (config[val_iZone]->GetKind_Regime() == NAVIER_STOKES) ||
-    (config[val_iZone]->GetKind_Regime() == RANS) || (config[val_iZone]->GetKind_Regime() == ADJ_EULER) ||
-    (config[val_iZone]->GetKind_Regime() == ADJ_NAVIER_STOKES) || (config[val_iZone]->GetKind_Regime() == ADJ_RANS);
+    bool flow = (config[val_iZone]->GetKind_Solver() == EULER) || (config[val_iZone]->GetKind_Solver() == NAVIER_STOKES) ||
+    (config[val_iZone]->GetKind_Solver() == RANS) || (config[val_iZone]->GetKind_Solver() == ADJ_EULER) ||
+    (config[val_iZone]->GetKind_Solver() == ADJ_NAVIER_STOKES) || (config[val_iZone]->GetKind_Solver() == ADJ_RANS);
     
     bool output_per_surface = false;
     if(config[val_iZone]->GetnMarker_Monitoring() > 1) output_per_surface = true;
@@ -4319,6 +4321,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
     *Surface_CLift      = NULL,
     *Surface_CDrag      = NULL,
     *Surface_CSideForce = NULL,
+    *Surface_CEff       = NULL,
     *Surface_CFx        = NULL,
     *Surface_CFy        = NULL,
     *Surface_CFz        = NULL,
@@ -4380,6 +4383,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
     Surface_CLift      = new double[config[ZONE_0]->GetnMarker_Monitoring()];
     Surface_CDrag      = new double[config[ZONE_0]->GetnMarker_Monitoring()];
     Surface_CSideForce = new double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CEff       = new double[config[ZONE_0]->GetnMarker_Monitoring()];
     Surface_CFx        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
     Surface_CFy        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
     Surface_CFz        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
@@ -4451,6 +4455,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
             Surface_CLift[iMarker_Monitoring]      = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CLift(iMarker_Monitoring);
             Surface_CDrag[iMarker_Monitoring]      = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CDrag(iMarker_Monitoring);
             Surface_CSideForce[iMarker_Monitoring] = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CSideForce(iMarker_Monitoring);
+            Surface_CEff[iMarker_Monitoring]       = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CEff(iMarker_Monitoring);
             Surface_CFx[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFx(iMarker_Monitoring);
             Surface_CFy[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFy(iMarker_Monitoring);
             Surface_CFz[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFz(iMarker_Monitoring);
@@ -4745,6 +4750,8 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
                 strcat(monitoring_coeff, surface_coeff);
                 sprintf(surface_coeff, ", %12.10f",Surface_CSideForce[iMarker_Monitoring]);
                 strcat(monitoring_coeff, surface_coeff);
+                sprintf(surface_coeff, ", %12.10f",Surface_CEff[iMarker_Monitoring]);
+                strcat(monitoring_coeff, surface_coeff);
                 sprintf(surface_coeff, ", %12.10f",Surface_CFx[iMarker_Monitoring]);
                 strcat(monitoring_coeff, surface_coeff);
                 sprintf(surface_coeff, ", %12.10f",Surface_CFy[iMarker_Monitoring]);
@@ -4999,7 +5006,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
             if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
             else cout << endl << " IntIter" << " ExtIter";
             if (incompressible || freesurface) cout << "   Res[Press]";
-            else cout << "      Res[Rho]";
+            else cout << "      Res[Rho]";//,cout << "     Res[RhoE]";
             
             switch (config[val_iZone]->GetKind_Turb_Model()){
               case SA:	cout << "       Res[nu]"; break;
@@ -5047,6 +5054,10 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
             if (nDim == 3) cout << ", " << Coord[2];
             cout <<   ")." << endl;
             
+            /*--- Print out the number of non-physical points and reconstructions ---*/
+            if (config[val_iZone]->GetNonphysical_Points() > 0)
+              cout << "There are " << config[val_iZone]->GetNonphysical_Points() << " non-physical points in the solution." << endl;
+
             if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
             else cout << endl << " IntIter" << "  ExtIter";
             
@@ -5069,6 +5080,10 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
             if (nDim == 3) cout << ", " << Coord[2];
             cout <<   ")." << endl;
             
+            /*--- Print out the number of non-physical points and reconstructions ---*/
+            if (config[val_iZone]->GetNonphysical_Points() > 0)
+              cout << "There are " << config[val_iZone]->GetNonphysical_Points() << " non-physical points in the solution." << endl;
+
             if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
             else cout << endl << " IntIter" << "  ExtIter";
             
@@ -5190,8 +5205,13 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
           cout.setf(ios::fixed,ios::floatfield);
           
           if (incompressible || freesurface) cout.width(13);
-          else  cout.width(14);
-          cout << log10(residual_flow[0]);
+         else  cout.width(14);
+         cout << log10(residual_flow[0]);
+//          else  cout.width(14),
+//                 cout << log10(residual_flow[0]),
+//                 cout.width(14);
+//          if ( nDim==2 ) cout << log10(residual_flow[3]);
+//          if ( nDim==3 ) cout << log10(residual_flow[4]);
           
           switch(nVar_Turb) {
             case 1: cout.width(14); cout << log10(residual_turbulent[0]); break;
@@ -5446,6 +5466,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
       delete [] Surface_CLift;
       delete [] Surface_CDrag;
       delete [] Surface_CSideForce;
+      delete [] Surface_CEff;
       delete [] Surface_CFx;
       delete [] Surface_CFy;
       delete [] Surface_CFz;
@@ -5456,6 +5477,351 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
       delete [] aeroelastic_plunge;
     }
   }
+}
+
+void COutput::SetForces_Breakdown(CGeometry ***geometry,
+                                  CSolver ****solver_container,
+                                  CConfig **config,
+                                  CIntegration ***integration,
+                                  unsigned short val_iZone) {
+  
+  char cstr[200];
+  unsigned short iMarker, iMarker_Monitoring;
+  ofstream Breakdown_file;
+  int rank = MASTER_NODE;
+  
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+  
+  unsigned short FinestMesh = config[val_iZone]->GetFinestMesh();
+  unsigned short nDim = geometry[val_iZone][FinestMesh]->GetnDim();
+  bool isothermal = false;
+  for (iMarker = 0; iMarker < config[val_iZone]->GetnMarker_All(); iMarker++) {
+    if ((config[val_iZone]->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ||
+        (config[val_iZone]->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_CATALYTIC) ||
+        (config[val_iZone]->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_NONCATALYTIC))
+      isothermal = true;
+  }
+  bool flow = ((config[val_iZone]->GetKind_Solver() == EULER) || (config[val_iZone]->GetKind_Solver() == NAVIER_STOKES) ||
+               (config[val_iZone]->GetKind_Solver() == RANS));
+  
+  /*--- Output the mean flow solution using only the master node ---*/
+  
+  if ((rank == MASTER_NODE) && (flow)) {
+    
+    /*--- Initialize variables to store information from all domains (direct solution) ---*/
+    
+    double Total_CLift = 0.0, Total_CDrag = 0.0, Total_CSideForce = 0.0, Total_CMx = 0.0, Total_CMy = 0.0, Total_CMz = 0.0, Total_CEff = 0.0, Total_CFx = 0.0, Total_CFy = 0.0, Total_CFz = 0.0,
+    Inv_CLift = 0.0, Inv_CDrag = 0.0, Inv_CSideForce = 0.0, Inv_CMx = 0.0, Inv_CMy = 0.0, Inv_CMz = 0.0, Inv_CEff = 0.0, Inv_CFx = 0.0, Inv_CFy = 0.0, Inv_CFz = 0.0, Total_Heat = 0.0, Total_MaxHeat = 0.0,
+    *Surface_CLift = NULL, *Surface_CDrag = NULL, *Surface_CSideForce = NULL, *Surface_CEff = NULL, *Surface_CFx = NULL, *Surface_CFy = NULL,  *Surface_CFz = NULL, *Surface_CMx = NULL, *Surface_CMy = NULL, *Surface_CMz = NULL,
+    *Surface_CLift_Inv = NULL, *Surface_CDrag_Inv = NULL, *Surface_CSideForce_Inv = NULL, *Surface_CEff_Inv = NULL, *Surface_CFx_Inv = NULL, *Surface_CFy_Inv = NULL,  *Surface_CFz_Inv = NULL, *Surface_CMx_Inv = NULL, *Surface_CMy_Inv = NULL, *Surface_CMz_Inv = NULL;
+    
+    /*--- Allocate memory for the coefficients being monitored ---*/
+    
+    Surface_CLift      = new double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CDrag      = new double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CSideForce = new double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CEff       = new double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CFx        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CFy        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CFz        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CMx        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CMy        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CMz        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
+    
+    Surface_CLift_Inv      = new double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CDrag_Inv      = new double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CSideForce_Inv = new double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CEff_Inv       = new double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CFx_Inv        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CFy_Inv        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CFz_Inv        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CMx_Inv        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CMy_Inv        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CMz_Inv        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
+
+    /*--- Flow solution coefficients ---*/
+    
+    Total_CLift       = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CLift();
+    Total_CDrag       = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CDrag();
+    Total_CSideForce  = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CSideForce();
+    Total_CEff        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CEff();
+    Total_CMx         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CMx();
+    Total_CMy         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CMy();
+    Total_CMz         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CMz();
+    Total_CFx         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFx();
+    Total_CFy         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFy();
+    Total_CFz         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFz();
+    
+    /*--- Flow inviscid solution coefficients ---*/
+    
+    Inv_CLift       = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CLift_Inv();
+    Inv_CDrag       = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CDrag_Inv();
+    Inv_CSideForce  = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CSideForce_Inv();
+    Inv_CEff        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CEff_Inv();
+    Inv_CMx         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CMx_Inv();
+    Inv_CMy         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CMy_Inv();
+    Inv_CMz         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CMz_Inv();
+    Inv_CFx         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CFx_Inv();
+    Inv_CFy         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CFy_Inv();
+    Inv_CFz         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CFz_Inv();
+    
+    if (isothermal) {
+      Total_Heat     = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_HeatFlux();
+      Total_MaxHeat  = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_MaxHeatFlux();
+    }
+    
+    /*--- Look over the markers being monitored and get the desired values ---*/
+    
+    for (iMarker_Monitoring = 0; iMarker_Monitoring < config[ZONE_0]->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+      Surface_CLift[iMarker_Monitoring]      = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CLift(iMarker_Monitoring);
+      Surface_CDrag[iMarker_Monitoring]      = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CDrag(iMarker_Monitoring);
+      Surface_CSideForce[iMarker_Monitoring] = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CSideForce(iMarker_Monitoring);
+      Surface_CEff[iMarker_Monitoring]       = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CEff(iMarker_Monitoring);
+      Surface_CFx[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFx(iMarker_Monitoring);
+      Surface_CFy[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFy(iMarker_Monitoring);
+      Surface_CFz[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFz(iMarker_Monitoring);
+      Surface_CMx[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CMx(iMarker_Monitoring);
+      Surface_CMy[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CMy(iMarker_Monitoring);
+      Surface_CMz[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CMz(iMarker_Monitoring);
+      
+      Surface_CLift_Inv[iMarker_Monitoring]      = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CLift_Inv(iMarker_Monitoring);
+      Surface_CDrag_Inv[iMarker_Monitoring]      = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CDrag_Inv(iMarker_Monitoring);
+      Surface_CSideForce_Inv[iMarker_Monitoring] = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CSideForce_Inv(iMarker_Monitoring);
+      Surface_CEff_Inv[iMarker_Monitoring]       = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CEff_Inv(iMarker_Monitoring);
+      Surface_CFx_Inv[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFx_Inv(iMarker_Monitoring);
+      Surface_CFy_Inv[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFy_Inv(iMarker_Monitoring);
+      Surface_CFz_Inv[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFz_Inv(iMarker_Monitoring);
+      Surface_CMx_Inv[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CMx_Inv(iMarker_Monitoring);
+      Surface_CMy_Inv[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CMy_Inv(iMarker_Monitoring);
+      Surface_CMz_Inv[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CMz_Inv(iMarker_Monitoring);
+    }
+    
+    /*--- Write file name with extension ---*/
+    
+    string filename = config[val_iZone]->GetBreakdown_FileName();
+    strcpy (cstr, filename.data());
+
+    Breakdown_file.open(cstr, ios::out);
+    
+    Breakdown_file << endl <<"-------------------------------------------------------------------------" << endl;
+    Breakdown_file <<"|    _____   _    _   ___                                               |" << endl;
+    Breakdown_file <<"|   / ____| | |  | | |__ \\    Release 3.2.5 \"eagle\"                     |" << endl;
+    Breakdown_file <<"|  | (___   | |  | |    ) |                                             |" << endl;
+    Breakdown_file <<"|   \\___ \\  | |  | |   / /                                              |" << endl;
+    Breakdown_file <<"|   ____) | | |__| |  / /_                                              |" << endl;
+    Breakdown_file <<"|  |_____/   \\____/  |____|   Suite (Computational Fluid Dynamics Code) |" << endl;
+    Breakdown_file << "|                                                                       |" << endl;
+    Breakdown_file <<"-------------------------------------------------------------------------" << endl;
+    Breakdown_file << "| Copyright (C) 2012-2014 SU2 <https://github.com/su2code>              |" << endl;
+    Breakdown_file << "| SU2 is distributed in the hope that it will be useful,                |" << endl;
+    Breakdown_file << "| but WITHOUT ANY WARRANTY; without even the implied warranty of        |" << endl;
+    Breakdown_file << "| MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU      |" << endl;
+    Breakdown_file << "| Lesser General Public License (version 2.1) for more details.         |" << endl;
+    Breakdown_file <<"-------------------------------------------------------------------------" << endl;
+    
+    Breakdown_file.precision(4);
+
+    Breakdown_file << endl << endl <<"Forces breakdown:" << endl << endl;
+
+    Breakdown_file << "Total CL:    ";
+    Breakdown_file.width(11); Breakdown_file << Total_CLift;
+    Breakdown_file << " | Inviscid CL    (";
+    Breakdown_file.width(5); Breakdown_file << int((Inv_CLift*100.0)/(Total_CLift+EPS));
+    Breakdown_file << "%): ";
+    Breakdown_file.width(11); Breakdown_file << Inv_CLift;
+    Breakdown_file << " | Viscous CL    (";
+    Breakdown_file.width(5); Breakdown_file << int(100.0-(Inv_CLift*100.0)/(Total_CLift+EPS));
+    Breakdown_file << "%): ";
+    Breakdown_file.width(11); Breakdown_file << Total_CLift-Inv_CLift << endl;
+    
+    Breakdown_file << "Total CD:    ";
+    Breakdown_file.width(11); Breakdown_file << Total_CDrag;
+    Breakdown_file << " | Inviscid CD    (";
+    Breakdown_file.width(5); Breakdown_file << int((Inv_CDrag*100.0)/(Total_CDrag+EPS)) << "%): ";;
+    Breakdown_file.width(11); Breakdown_file << Inv_CDrag;
+    Breakdown_file << " | Viscous CD    (";
+    Breakdown_file.width(5); Breakdown_file << int(100.0-(Inv_CDrag*100.0)/(Total_CDrag+EPS));
+    Breakdown_file << "%): ";
+    Breakdown_file.width(11); Breakdown_file << Total_CDrag-Inv_CDrag << endl;
+    
+    if (nDim == 3) {
+      Breakdown_file << "Total CSF:   ";
+      Breakdown_file.width(11); Breakdown_file << Total_CSideForce;
+      Breakdown_file << " | Inviscid CSF   (";
+      Breakdown_file.width(5); Breakdown_file << int((Inv_CSideForce*100.0)/(Total_CSideForce+EPS));
+      Breakdown_file << "%): ";
+      Breakdown_file.width(11); Breakdown_file << Inv_CSideForce;
+      Breakdown_file << " | Viscous CSF   (";
+      Breakdown_file.width(5); Breakdown_file << int(100.0-(Inv_CSideForce*100.0)/(Total_CSideForce+EPS));
+      Breakdown_file << "%): ";
+      Breakdown_file.width(11); Breakdown_file << Total_CSideForce-Inv_CSideForce << endl;
+    }
+
+    Breakdown_file << "Total CL/CD: ";
+    Breakdown_file.width(11); Breakdown_file << Total_CEff;
+    Breakdown_file << " | Inviscid CL/CD (";
+    Breakdown_file.width(5); Breakdown_file << int((Inv_CEff*100.0)/(Total_CEff+EPS));
+    Breakdown_file << "%): ";
+    Breakdown_file.width(11); Breakdown_file << Inv_CEff;
+    Breakdown_file << " | Viscous CL/CD (";
+    Breakdown_file.width(5); Breakdown_file << int(100.0-(Inv_CEff*100.0)/(Total_CEff+EPS));
+    Breakdown_file << "%): ";
+    Breakdown_file.width(11); Breakdown_file << Total_CEff-Inv_CEff << endl;
+
+    if (nDim == 3) {
+      Breakdown_file << "Total CMx:   ";
+      Breakdown_file.width(11); Breakdown_file << Total_CMx;
+      Breakdown_file << " | Inviscid CMx   (";
+      Breakdown_file.width(5); Breakdown_file << int((Inv_CMx*100.0)/(Total_CMx+EPS));
+      Breakdown_file << "%): ";
+      Breakdown_file.width(11); Breakdown_file << Inv_CMx;
+      Breakdown_file << " | Viscous CMx   (";
+      Breakdown_file.width(5); Breakdown_file << int(100.0-(Inv_CMx*100.0)/(Total_CMx+EPS));
+      Breakdown_file << "%): ";
+      Breakdown_file.width(11); Breakdown_file << Total_CMx-Inv_CMx << endl;
+      
+      Breakdown_file << "Total CMy:   ";
+      Breakdown_file.width(11); Breakdown_file << Total_CMy;
+      Breakdown_file << " | Inviscid CMy   (";
+      Breakdown_file.width(5); Breakdown_file << int((Inv_CMy*100.0)/(Total_CMy+EPS));
+      Breakdown_file << "%): ";
+      Breakdown_file.width(11); Breakdown_file << Inv_CMy;
+      Breakdown_file << " | Viscous CMy   (";
+      Breakdown_file.width(5); Breakdown_file << int(100.0-(Inv_CMy*100.0)/(Total_CMy+EPS));
+      Breakdown_file << "%): ";
+      Breakdown_file.width(11); Breakdown_file << Total_CMy-Inv_CMy << endl;
+    }
+
+    Breakdown_file << "Total CMz:   ";
+    Breakdown_file.width(11); Breakdown_file << Total_CMz;
+    Breakdown_file << " | Inviscid CMz   (";
+    Breakdown_file.width(5); Breakdown_file << int((Inv_CMz*100.0)/(Total_CMz+EPS));
+    Breakdown_file << "%): ";
+    Breakdown_file.width(11); Breakdown_file << Inv_CMz;
+    Breakdown_file << " | Viscous CMz   (";
+    Breakdown_file.width(5); Breakdown_file << int(100.0-(Inv_CMz*100.0)/(Total_CMz+EPS));
+    Breakdown_file << "%): ";
+    Breakdown_file.width(11); Breakdown_file << Total_CMz-Inv_CMz << endl;
+
+    Breakdown_file << "Total CFx:   ";
+    Breakdown_file.width(11); Breakdown_file << Total_CFx;
+    Breakdown_file << " | Inviscid CFx   (";
+    Breakdown_file.width(5); Breakdown_file << int((Inv_CFx*100.0)/(Total_CFx+EPS));
+    Breakdown_file << "%): ";
+    Breakdown_file.width(11); Breakdown_file << Inv_CFx;
+    Breakdown_file << " | Viscous CFx   (";
+    Breakdown_file.width(5); Breakdown_file << int(100.0-(Inv_CFx*100.0)/(Total_CFx+EPS));
+    Breakdown_file << "%): ";
+    Breakdown_file.width(11); Breakdown_file << Total_CFx-Inv_CFx << endl;
+
+    Breakdown_file << "Total CFy:   ";
+    Breakdown_file.width(11); Breakdown_file << Total_CFy;
+    Breakdown_file << " | Inviscid CFy   (";
+    Breakdown_file.width(5); Breakdown_file << int((Inv_CFy*100.0)/(Total_CFy+EPS));
+    Breakdown_file << "%): ";
+    Breakdown_file.width(11); Breakdown_file << Inv_CFy;
+    Breakdown_file << " | Viscous CFy   (";
+    Breakdown_file.width(5); Breakdown_file << int(100.0-(Inv_CFy*100.0)/(Total_CFy+EPS));
+    Breakdown_file << "%): ";
+    Breakdown_file.width(11); Breakdown_file << Total_CFy-Inv_CFy << endl;
+
+    if (nDim == 3) {
+      Breakdown_file << "Total CFz:   ";
+      Breakdown_file.width(11); Breakdown_file << Total_CFz;
+      Breakdown_file << " | Inviscid CFz   (";
+      Breakdown_file.width(5); Breakdown_file << int((Inv_CFz*100.0)/(Total_CFz+EPS));
+      Breakdown_file << "%): ";
+      Breakdown_file.width(11); Breakdown_file << Inv_CFz;
+      Breakdown_file << " | Viscous CFz   (";
+      Breakdown_file.width(5); Breakdown_file << int(100.0-(Inv_CFz*100.0)/(Total_CFz+EPS));
+      Breakdown_file << "%): ";
+      Breakdown_file.width(11); Breakdown_file << Total_CFz-Inv_CFz << endl;
+    }
+    
+    Breakdown_file << endl << endl;
+
+    for (iMarker_Monitoring = 0; iMarker_Monitoring < config[ZONE_0]->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+      
+      Breakdown_file << "Surface name: " << config[val_iZone]->GetMarker_Monitoring(iMarker_Monitoring) << endl << endl;
+      
+      Breakdown_file << "Total CL: ";    Breakdown_file.width(14); Breakdown_file << Surface_CLift[iMarker_Monitoring];
+      Breakdown_file << " | Inviscid CL: "; Breakdown_file.width(14); Breakdown_file << Surface_CLift_Inv[iMarker_Monitoring];
+      Breakdown_file << " | Viscous CL: ";  Breakdown_file.width(14); Breakdown_file << Surface_CLift[iMarker_Monitoring]-Surface_CLift_Inv[iMarker_Monitoring] << endl;
+      
+      Breakdown_file << "Total CD: ";    Breakdown_file.width(14); Breakdown_file << Surface_CDrag[iMarker_Monitoring];
+      Breakdown_file << " | Inviscid CD: "; Breakdown_file.width(14); Breakdown_file << Surface_CDrag_Inv[iMarker_Monitoring];
+      Breakdown_file << " | Viscous CD: ";  Breakdown_file.width(14); Breakdown_file << Surface_CDrag[iMarker_Monitoring]-Surface_CDrag_Inv[iMarker_Monitoring] << endl;
+      
+      if (nDim == 3) {
+        Breakdown_file << "Total CSF: ";    Breakdown_file.width(13); Breakdown_file << Surface_CSideForce[iMarker_Monitoring];
+        Breakdown_file << " | Inviscid CSF: "; Breakdown_file.width(13); Breakdown_file << Surface_CSideForce_Inv[iMarker_Monitoring];
+        Breakdown_file << " | Viscous CSF: ";  Breakdown_file.width(13); Breakdown_file << Surface_CSideForce[iMarker_Monitoring]-Surface_CSideForce_Inv[iMarker_Monitoring] << endl;
+      }
+      
+      Breakdown_file << "Total CL/CD: ";    Breakdown_file.width(11); Breakdown_file << Surface_CEff[iMarker_Monitoring];
+      Breakdown_file << " | Inviscid CL/CD: "; Breakdown_file.width(11); Breakdown_file << Surface_CEff_Inv[iMarker_Monitoring];
+      Breakdown_file << " | Viscous CL/CD: ";  Breakdown_file.width(11); Breakdown_file << Surface_CEff[iMarker_Monitoring]-Surface_CEff_Inv[iMarker_Monitoring] << endl;
+      
+      if (nDim == 3) {
+        Breakdown_file << "Total CMx: ";    Breakdown_file.width(13); Breakdown_file << Surface_CMx[iMarker_Monitoring];
+        Breakdown_file << " | Inviscid CMx: "; Breakdown_file.width(13); Breakdown_file << Surface_CMx_Inv[iMarker_Monitoring];
+        Breakdown_file << " | Viscous CMx: ";  Breakdown_file.width(13); Breakdown_file << Surface_CMx[iMarker_Monitoring]-Surface_CMx_Inv[iMarker_Monitoring] << endl;
+        
+        Breakdown_file << "Total CMy: ";    Breakdown_file.width(13); Breakdown_file << Surface_CMy[iMarker_Monitoring];
+        Breakdown_file << " | Inviscid CMy: "; Breakdown_file.width(13); Breakdown_file << Surface_CMy_Inv[iMarker_Monitoring];
+        Breakdown_file << " | Viscous CMy: ";  Breakdown_file.width(13); Breakdown_file << Surface_CMy[iMarker_Monitoring]-Surface_CMy_Inv[iMarker_Monitoring] << endl;
+      }
+      
+      Breakdown_file << "Total CMz: ";    Breakdown_file.width(13); Breakdown_file << Surface_CMz[iMarker_Monitoring];
+      Breakdown_file << " | Inviscid CMz: "; Breakdown_file.width(13); Breakdown_file << Surface_CMz_Inv[iMarker_Monitoring];
+      Breakdown_file << " | Viscous CMz: ";  Breakdown_file.width(13); Breakdown_file << Surface_CMz[iMarker_Monitoring]-Surface_CMz_Inv[iMarker_Monitoring] << endl;
+      
+      Breakdown_file << "Total CFx: ";    Breakdown_file.width(13); Breakdown_file << Surface_CFx[iMarker_Monitoring];
+      Breakdown_file << " | Inviscid CFx: "; Breakdown_file.width(13); Breakdown_file << Surface_CFx_Inv[iMarker_Monitoring];
+      Breakdown_file << " | Viscous CFx: ";  Breakdown_file.width(13); Breakdown_file << Surface_CFx[iMarker_Monitoring]-Surface_CFx_Inv[iMarker_Monitoring] << endl;
+      
+      Breakdown_file << "Total CFy: ";    Breakdown_file.width(13); Breakdown_file << Surface_CFy[iMarker_Monitoring];
+      Breakdown_file << " | Inviscid CFy: "; Breakdown_file.width(13); Breakdown_file << Surface_CFy_Inv[iMarker_Monitoring];
+      Breakdown_file << " | Viscous CFy: ";  Breakdown_file.width(13); Breakdown_file << Surface_CFy[iMarker_Monitoring]-Surface_CFy_Inv[iMarker_Monitoring] << endl;
+      
+      if (nDim == 3) {
+        Breakdown_file << "Total CFz: ";    Breakdown_file.width(13); Breakdown_file << Surface_CFz[iMarker_Monitoring];
+        Breakdown_file << " | Inviscid CFz: "; Breakdown_file.width(13); Breakdown_file << Surface_CFz_Inv[iMarker_Monitoring];
+        Breakdown_file << " | Viscous CFz: ";  Breakdown_file.width(13); Breakdown_file << Surface_CFz[iMarker_Monitoring]-Surface_CFz_Inv[iMarker_Monitoring] << endl;
+      }
+      
+      Breakdown_file << endl;
+
+    }
+    
+    delete [] Surface_CLift;
+    delete [] Surface_CDrag;
+    delete [] Surface_CSideForce;
+    delete [] Surface_CEff;
+    delete [] Surface_CFx;
+    delete [] Surface_CFy;
+    delete [] Surface_CFz;
+    delete [] Surface_CMx;
+    delete [] Surface_CMy;
+    delete [] Surface_CMz;
+    
+    delete [] Surface_CLift_Inv;
+    delete [] Surface_CDrag_Inv;
+    delete [] Surface_CSideForce_Inv;
+    delete [] Surface_CEff_Inv;
+    delete [] Surface_CFx_Inv;
+    delete [] Surface_CFy_Inv;
+    delete [] Surface_CFz_Inv;
+    delete [] Surface_CMx_Inv;
+    delete [] Surface_CMy_Inv;
+    delete [] Surface_CMz_Inv;
+    
+    Breakdown_file.close();
+    
+  }
+  
 }
 
 void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometry, CConfig **config,
@@ -5669,8 +6035,9 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
 
 void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CConfig **config,
                                       unsigned long iExtIter, unsigned short val_nZone) {
-  
+
   int rank = MASTER_NODE;
+
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
@@ -5681,6 +6048,7 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
     
     /*--- Flags identifying the types of files to be written. ---*/
     
+    bool Low_MemoryOutput = config[iZone]->GetLow_MemoryOutput();
     bool Wrt_Vol = config[iZone]->GetWrt_Vol_Sol();
     bool Wrt_Srf = config[iZone]->GetWrt_Srf_Sol();
     bool Wrt_Rst = config[iZone]->GetWrt_Restart();
@@ -5693,14 +6061,14 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
      is only performed if a volume solution file is requested, and it
      is active by default. ---*/
     
-    if (Wrt_Vol || Wrt_Srf) {
+    if ((Wrt_Vol || Wrt_Srf) && (!Low_MemoryOutput)) {
       if (rank == MASTER_NODE) cout <<"Merging grid connectivity." << endl;
       MergeConnectivity(config[iZone], geometry[iZone], iZone);
     }
     
     /*--- Merge the solution data needed for volume solutions and restarts ---*/
     
-    if (Wrt_Vol || Wrt_Srf || Wrt_Rst) {
+    if ((Wrt_Vol || Wrt_Srf || Wrt_Rst) && (!Low_MemoryOutput)) {
       if (rank == MASTER_NODE) cout <<"Merging solution." << endl;
       MergeBaselineSolution(config[iZone], geometry[iZone], solver[iZone], iZone);
     }
@@ -5709,96 +6077,123 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
      This data lives only on the master, and these routines are currently
      executed by the master proc alone (as if in serial). ---*/
     
-    if (rank == MASTER_NODE) {
-      
-      if (Wrt_Vol) {
+    if (!Low_MemoryOutput) {
+      if (rank == MASTER_NODE) {
         
-        if (rank == MASTER_NODE)
-          cout <<"Writing volume solution file." << endl;
-        
-        switch (FileFormat) {
-            
-          case TECPLOT:
-            
-            /*--- Write a Tecplot ASCII file ---*/
-            
-            SetTecplot_ASCII(config[iZone], geometry[iZone], solver,iZone, val_nZone, false);
-            DeallocateConnectivity(config[iZone], geometry[iZone], false);
-            break;
-            
-          case TECPLOT_BINARY:
-            
-            /*--- Write a Tecplot binary solution file ---*/
-            
-            SetTecplot_MeshBinary(config[iZone], geometry[iZone], iZone);
-            SetTecplot_Solution(config[iZone], geometry[iZone], iZone);
-            break;
-            
-          case CGNS_SOL:
-            
-            /*--- Write a CGNS solution file ---*/
-            
-            SetCGNS_Solution(config[iZone], geometry[iZone], iZone);
-            break;
-            
-          case PARAVIEW:
-            
-            /*--- Write a Paraview ASCII file ---*/
-            
-            SetParaview_ASCII(config[iZone], geometry[iZone], iZone, val_nZone, false);
-            DeallocateConnectivity(config[iZone], geometry[iZone], false);
-            break;
-            
-          default:
-            break;
+        if (Wrt_Vol) {
+          
+          if (rank == MASTER_NODE)
+            cout <<"Writing volume solution file." << endl;
+          
+          switch (FileFormat) {
+              
+            case TECPLOT:
+              
+              /*--- Write a Tecplot ASCII file ---*/
+              
+              SetTecplot_ASCII(config[iZone], geometry[iZone], solver,iZone, val_nZone, false);
+              DeallocateConnectivity(config[iZone], geometry[iZone], false);
+              break;
+              
+            case TECPLOT_BINARY:
+              
+              /*--- Write a Tecplot binary solution file ---*/
+              
+              SetTecplot_MeshBinary(config[iZone], geometry[iZone], iZone);
+              SetTecplot_Solution(config[iZone], geometry[iZone], iZone);
+              break;
+              
+            case CGNS_SOL:
+              
+              /*--- Write a CGNS solution file ---*/
+              
+              SetCGNS_Solution(config[iZone], geometry[iZone], iZone);
+              break;
+              
+            case PARAVIEW:
+              
+              /*--- Write a Paraview ASCII file ---*/
+              
+              SetParaview_ASCII(config[iZone], geometry[iZone], iZone, val_nZone, false);
+              DeallocateConnectivity(config[iZone], geometry[iZone], false);
+              break;
+              
+            default:
+              break;
+          }
+          
         }
         
+        if (Wrt_Srf) {
+          
+          if (rank == MASTER_NODE) cout <<"Writing surface solution file." << endl;
+          
+          switch (FileFormat) {
+              
+            case TECPLOT:
+              
+              /*--- Write a Tecplot ASCII file ---*/
+              
+              SetTecplot_ASCII(config[iZone], geometry[iZone], solver, iZone, val_nZone, true);
+              DeallocateConnectivity(config[iZone], geometry[iZone], true);
+              break;
+              
+            case TECPLOT_BINARY:
+              
+              /*--- Write a Tecplot binary solution file ---*/
+              
+              SetTecplot_SurfaceMesh(config[iZone], geometry[iZone], iZone);
+              SetTecplot_SurfaceSolution(config[iZone], geometry[iZone], iZone);
+              break;
+              
+            case PARAVIEW:
+              
+              /*--- Write a Paraview ASCII file ---*/
+              
+              SetParaview_ASCII(config[iZone], geometry[iZone], iZone, val_nZone, true);
+              DeallocateConnectivity(config[iZone], geometry[iZone], true);
+              break;
+              
+            default:
+              break;
+          }
+        }
+        
+        if (FileFormat == TECPLOT_BINARY) {
+          if (!wrote_base_file)
+            DeallocateConnectivity(config[iZone], geometry[iZone], false);
+          if (!wrote_surf_file)
+            DeallocateConnectivity(config[iZone], geometry[iZone], wrote_surf_file);
+        }
+        
+        if (Wrt_Vol || Wrt_Srf)
+          DeallocateSolution(config[iZone], geometry[iZone]);
+      }
+      
+    }
+  
+    else {
+      
+      if (Wrt_Vol) {
+        if (rank == MASTER_NODE)
+          cout <<"Writing volume solution file." << endl;
+        char buffer_char[50], out_file[MAX_STRING_SIZE];
+        string filename = config[iZone]->GetFlow_FileName();
+        sprintf (buffer_char, ".dat");
+        strcpy(out_file, filename.c_str()); strcat(out_file, buffer_char);
+        SetTecplotNode_ASCII(config[iZone], geometry[iZone], solver, out_file, false);
       }
       
       if (Wrt_Srf) {
-        
-        if (rank == MASTER_NODE) cout <<"Writing surface solution file." << endl;
-        
-        switch (FileFormat) {
-            
-          case TECPLOT:
-            
-            /*--- Write a Tecplot ASCII file ---*/
-            
-            SetTecplot_ASCII(config[iZone], geometry[iZone],solver, iZone, val_nZone, true);
-            DeallocateConnectivity(config[iZone], geometry[iZone], true);
-            break;
-            
-          case TECPLOT_BINARY:
-            
-            /*--- Write a Tecplot binary solution file ---*/
-            
-            SetTecplot_SurfaceMesh(config[iZone], geometry[iZone], iZone);
-            SetTecplot_SurfaceSolution(config[iZone], geometry[iZone], iZone);
-            break;
-            
-          case PARAVIEW:
-            
-            /*--- Write a Paraview ASCII file ---*/
-            
-            SetParaview_ASCII(config[iZone], geometry[iZone], iZone, val_nZone, true);
-            DeallocateConnectivity(config[iZone], geometry[iZone], true);
-            break;
-            
-          default:
-            break;
-        }
+        if (rank == MASTER_NODE)
+          cout <<"Writing surface solution file." << endl;
+        char buffer_char[50], out_file[MAX_STRING_SIZE];
+        string filename = config[iZone]->GetSurfFlowCoeff_FileName();
+        sprintf (buffer_char, ".dat");
+        strcpy(out_file, filename.c_str()); strcat(out_file, buffer_char);
+        SetTecplotNode_ASCII(config[iZone], geometry[iZone], solver, out_file, true);
       }
-      
-      if (FileFormat == TECPLOT_BINARY) {
-        if (!wrote_base_file)
-          DeallocateConnectivity(config[iZone], geometry[iZone], false);
-        if (!wrote_surf_file)
-          DeallocateConnectivity(config[iZone], geometry[iZone], wrote_surf_file);
-      }
-      
-      if (Wrt_Vol || Wrt_Srf)
-        DeallocateSolution(config[iZone], geometry[iZone]);
+
     }
     
     /*--- Final broadcast (informing other procs that the base output
