@@ -2,10 +2,10 @@
 
 ## \file patient_designspace.py
 #  \brief Python script for running multiple design configurations in multiple sessions
-#  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 3.2.3 "eagle"
+#  \author T. Lukaczyk
+#  \version 3.2.5 "eagle"
 #
-# SU2, Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
+# Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public

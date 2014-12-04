@@ -2,10 +2,10 @@
  * \file config_structure.hpp
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>config_structure.cpp</i> file.
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.3 "eagle"
+ * \author F. Palacios
+ * \version 3.2.5 "eagle"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -46,7 +46,7 @@ using namespace std;
  * \brief Main class for defining the problem; basically this class reads the configuration file, and
  *        stores all the information.
  * \author F. Palacios.
- * \version 3.2.3 "eagle"
+ * \version 3.2.5 "eagle"
  */
 class CConfig {
 private:
@@ -57,7 +57,8 @@ private:
 	double EA_ScaleFactor; /*!< \brief Equivalent Area scaling factor */
 	double* EA_IntLimit; /*!< \brief Integration limits of the Equivalent Area computation */
   double AdjointLimit; /*!< \brief Adjoint variable limit */
-  double* Subsonic_Nacelle_Box; /*!< \brief Coordinates of the box subsonic region */
+  bool MG_AdjointFlow; /*!< \brief MG with the adjoint flow problem */
+  double* Subsonic_Engine_Box; /*!< \brief Coordinates of the box subsonic region */
 	double* Hold_GridFixed_Coord; /*!< \brief Coordinates of the box to hold fixed the nbumerical grid */
 	unsigned short ConvCriteria;	/*!< \brief Kind of convergence criteria. */
   unsigned short nFFD_Iter; 	/*!< \brief Iteration for the point inversion problem. */
@@ -85,11 +86,13 @@ private:
 	Sens_Remove_Sharp,			/*!< \brief Flag for removing or not the sharp edges from the sensitivity computation. */
 	Hold_GridFixed,	/*!< \brief Flag hold fixed some part of the mesh during the deformation. */
 	Axisymmetric, /*!< \brief Flag for axisymmetric calculations */
+	DebugMode, /*!< \brief Flag for debug mode */
 	Show_Adj_Sens, /*!< \brief Flag for outputting sensitivities on exit */
   ionization;  /*!< \brief Flag for determining if free electron gas is in the mixture */
 	bool Visualize_Partition;	/*!< \brief Flag to visualize each partition in the DDM. */
-  double Damp_Nacelle_Inflow;	/*!< \brief Damping factor for the engine inlet. */
-	double Damp_Res_Restric,	/*!< \brief Damping factor for the residual restriction. */
+  double Damp_Engine_Inflow;	/*!< \brief Damping factor for the engine inlet. */
+    double Damp_Engine_Bleed;	/*!< \brief Damping factor for the engine bleed. */
+    double Damp_Res_Restric,	/*!< \brief Damping factor for the residual restriction. */
 	Damp_Correc_Prolong; /*!< \brief Damping factor for the correction prolongation. */
 	double Position_Plane; /*!< \brief Position of the Near-Field (y coordinate 2D, and z coordinate 3D). */
 	double WeightCd; /*!< \brief Weight of the drag coefficient. */
@@ -101,11 +104,11 @@ private:
   unsigned long LimiterIter;	/*!< \brief Freeze the value of the limiter after a number of iterations */
 	double SharpEdgesCoeff;				/*!< \brief Coefficient to identify the limit of a sharp edge. */
   unsigned short SystemMeasurements; /*!< \brief System of measurements. */
-  unsigned short Kind_Regime;  /*!< \brief Kind of adjoint function. \n SYNTAX: REGIME_TYPE = COMPRESSIBLE.\ingroup Config */
-  unsigned short Kind_ObjFunc;  /*!< \brief Kind of objective function. \n SYNTAX: OBJECTIVE_FUNCTION = DRAG_COEFFICIENT \ingroup Config */
-  unsigned short Kind_SensSmooth; /*!< \brief Kind of sensitivity smoothing technique.  \n SYNTAX: SENS_SMOOTHING = NO_SMOOTH  \ingroup Config */
-  unsigned short Continuous_Eqns; /*!< \brief Which equations to treat continuously (Hybrid adjoint)  \n SYNTAX: CONTINUOUS_EQNS = EULER_EQNS \ingroup Config */
-  unsigned short Discrete_Eqns; /*!< \brief Which equations to treat discretely (Hybrid adjoint). \n SYNTAX: DISCRETE_EQNS NONE_EQNS \ingroup Config  */
+  unsigned short Kind_Regime;  /*!< \brief Kind of adjoint function. */
+  unsigned short Kind_ObjFunc;  /*!< \brief Kind of objective function. */
+  unsigned short Kind_SensSmooth; /*!< \brief Kind of sensitivity smoothing technique. */
+  unsigned short Continuous_Eqns; /*!< \brief Which equations to treat continuously (Hybrid adjoint)*/
+  unsigned short Discrete_Eqns; /*!< \brief Which equations to treat discretely (Hybrid adjoint). */
 	unsigned short *Design_Variable; /*!< \brief Kind of design variable. */
 	double RatioDensity,				/*!< \brief Ratio of density for a free surface problem. */
 	RatioViscosity,				/*!< \brief Ratio of viscosity for a free surface problem. */
@@ -145,9 +148,10 @@ private:
 	nMarker_HeatFlux,       /*!< \brief Number of constant heat flux wall boundaries. */
   nMarker_HeatFluxNonCatalytic, /*!< \brief Number of constant heat flux wall boundaries. */
   nMarker_HeatFluxCatalytic, /*!< \brief Number of constant heat flux wall boundaries. */
-	nMarker_NacelleExhaust,					/*!< \brief Number of nacelle exhaust flow markers. */
-	nMarker_NacelleInflow,					/*!< \brief Number of nacelle inflow flow markers. */
-	nMarker_Displacement,					/*!< \brief Number of displacement surface markers. */
+	nMarker_EngineExhaust,					/*!< \brief Number of nacelle exhaust flow markers. */
+	nMarker_EngineInflow,					/*!< \brief Number of nacelle inflow flow markers. */
+  nMarker_EngineBleed,					/*!< \brief Number of nacelle inflow flow markers. */
+  nMarker_Displacement,					/*!< \brief Number of displacement surface markers. */
 	nMarker_Load,					/*!< \brief Number of load surface markers. */
 	nMarker_FlowLoad,					/*!< \brief Number of load surface markers. */
 	nMarker_Neumann,				/*!< \brief Number of Neumann flow markers. */
@@ -180,8 +184,9 @@ private:
 	*Marker_HeatFlux,       /*!< \brief Constant heat flux wall markers. */
   *Marker_HeatFluxNonCatalytic,       /*!< \brief Constant heat flux wall markers. */
   *Marker_HeatFluxCatalytic,       /*!< \brief Constant heat flux wall markers. */
-	*Marker_NacelleInflow,					/*!< \brief Nacelle Inflow flow markers. */
-	*Marker_NacelleExhaust,					/*!< \brief Nacelle Exhaust flow markers. */
+	*Marker_EngineInflow,					/*!< \brief Engine Inflow flow markers. */
+  *Marker_EngineBleed,					/*!< \brief Engine Inflow flow markers. */
+  *Marker_EngineExhaust,					/*!< \brief Engine Exhaust flow markers. */
 	*Marker_Displacement,					/*!< \brief Displacement markers. */
 	*Marker_Load,					/*!< \brief Load markers. */
 	*Marker_FlowLoad,					/*!< \brief Flow Load markers. */
@@ -199,10 +204,15 @@ private:
 	double *Inlet_Temperature;    /*!< \brief Specified temperatures for a supersonic inlet boundaries. */
 	double *Inlet_Pressure;    /*!< \brief Specified static pressures for supersonic inlet boundaries. */
 	double **Inlet_Velocity;  /*!< \brief Specified flow velocity vectors for supersonic inlet boundaries. */
-	double *FanFace_Mach_Target;    /*!< \brief Specified fan face mach for nacelle boundaries. */
-	double *FanFace_Mach;    /*!< \brief Specified fan face mach for nacelle boundaries. */
-	double *FanFace_Pressure;    /*!< \brief Specified fan face mach for nacelle boundaries. */
-    double *Outlet_Pressure;    /*!< \brief Specified back pressures (static) for outlet boundaries. */
+	double *Inflow_Mach_Target;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+	double *Inflow_Mach;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+	double *Inflow_Pressure;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  double *Bleed_MassFlow_Target;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  double *Bleed_MassFlow;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  double *Bleed_Temperature_Target;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  double *Bleed_Temperature;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  double *Bleed_Pressure;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  double *Outlet_Pressure;    /*!< \brief Specified back pressures (static) for outlet boundaries. */
 	double *Isothermal_Temperature; /*!< \brief Specified isothermal wall temperatures (static). */
   double *Wall_Catalycity; /*!< \brief Specified wall species mass-fractions for catalytic boundaries. */
 	double *Heat_Flux;  /*!< \brief Specified wall heat fluxes. */
@@ -243,6 +253,7 @@ private:
 	CFLRedCoeff_AdjFlow,	/*!< \brief CFL reduction coefficient for the adjoint problem. */
 	CFLRedCoeff_AdjTurb,	/*!< \brief CFL reduction coefficient for the adjoint problem. */
 	CFLFineGrid,		/*!< \brief CFL of the finest grid. */
+  Max_DeltaTime,  		/*!< \brief Max delta time. */
 	Unst_CFL;		/*!< \brief Unsteady CFL number. */
 	bool AddIndNeighbor;			/*!< \brief Include indirect neighbor in the agglomeration process. */
 	unsigned short nDV;		/*!< \brief Number of design variables. */
@@ -259,10 +270,12 @@ private:
 	unsigned short *MG_PreSmooth,	/*!< \brief Multigrid Pre smoothing. */
 	*MG_PostSmooth,					/*!< \brief Multigrid Post smoothing. */
 	*MG_CorrecSmooth;					/*!< \brief Multigrid Jacobi implicit smoothing of the correction. */
-	unsigned short Kind_Solver,	/*!< \brief Kind of solver Euler, NS, Continuous adjoint, etc. */
+	unsigned short Kind_Solver,	/*!< \brief Kind of solver Euler, NS, Continuous adjoint, etc.  */
 	Kind_FluidModel,			/*!< \brief Kind of the Fluid Model: Ideal or Van der Walls, ... . */
 	Kind_ViscosityModel,			/*!< \brief Kind of the Viscosity Model*/
+	Kind_ConductivityModel,			/*!< \brief Kind of the Thermal Conductivity Model*/
 	Kind_FreeStreamOption,			/*!< \brief Kind of free stream option to choose if initializing with density or temperature  */
+	Kind_InitOption,			/*!< \brief Kind of Init option to choose if initializing with Reynolds number or with thermodynamic conditions   */
 	Kind_GasModel,				/*!< \brief Kind of the Gas Model. */
 	*Kind_GridMovement,    /*!< \brief Kind of the unsteady mesh movement. */
 	Kind_Gradient_Method,		/*!< \brief Numerical method for computation of spatial gradients. */
@@ -405,7 +418,7 @@ private:
 	Wrt_Con_Freq_DualTime;				/*!< \brief Writing convergence history frequency. */
 	bool Wrt_Unsteady;  /*!< \brief Write unsteady data adding header and prefix. */
 	bool LowFidelitySim;  /*!< \brief Compute a low fidelity simulation. */
-	bool Restart,	/*!< \brief Restart solution (for direct, adjoint, and linearized problems). */
+	bool Restart,	/*!< \brief Restart solution (for direct, adjoint, and linearized problems).*/
 	Restart_Flow;	/*!< \brief Restart flow solution for adjoint and linearized problems. */
 	unsigned short nMarker_Monitoring,	/*!< \brief Number of markers to monitor. */
 	nMarker_Designing,					/*!< \brief Number of markers for the objective function. */
@@ -470,7 +483,8 @@ private:
 	AdjWave_FileName,					/*!< \brief Adjoint wave variables output file. */
 	Residual_FileName,				/*!< \brief Residual variables output file. */
 	Conv_FileName,					/*!< \brief Convergence history output file. */
-	Restart_FlowFileName,			/*!< \brief Restart file for flow variables. */
+  Breakdown_FileName,			    /*!< \brief Breakdown output file. */
+  Restart_FlowFileName,			/*!< \brief Restart file for flow variables. */
 	Restart_WaveFileName,			/*!< \brief Restart file for wave variables. */
 	Restart_HeatFileName,			/*!< \brief Restart file for heat variables. */
 	Restart_LinFileName,			/*!< \brief Restart file for linearized flow variables. */
@@ -486,7 +500,8 @@ private:
 	bool CGNS_To_SU2;      		 	/*!< \brief Flag to specify whether a CGNS mesh is converted to SU2 format. */
 	unsigned short nSpecies, 		/*!< \brief No of species present in plasma */
 	nReactions;									/*!< \brief Number of reactions in chemical model. */
-	bool Wrt_Vol_Sol,                /*!< \brief Write a volume solution file */
+	bool Low_MemoryOutput,      /*!< \brief Write a volume solution file */
+  Wrt_Vol_Sol,                /*!< \brief Write a volume solution file */
 	Wrt_Srf_Sol,                /*!< \brief Write a surface solution file */
 	Wrt_Restart,                /*!< \brief Write a restart solution file */
 	Wrt_Csv_Sol,                /*!< \brief Write a surface comma-separated values solution file */
@@ -531,7 +546,8 @@ private:
 	Pressure_Critical,   /*!< \brief Critical Pressure for real fluid model.  */
 	Density_Critical,   /*!< \brief Critical Density for real fluid model.  */
 	Acentric_Factor,   /*!< \brief Acentric Factor for real fluid model.  */
-	Mu_ConstantND,   /*!< \brief Constant Viscosity for CostantViscosity model.  */
+	Mu_ConstantND,   /*!< \brief Constant Viscosity for ConstantViscosity model.  */
+	Kt_ConstantND,   /*!< \brief Constant Thermal Conductivity for ConstantConductivity model.  */
 	Mu_RefND,   /*!< \brief reference viscosity for Sutherland model.  */
 	Mu_Temperature_RefND,   /*!< \brief reference Temperature for Sutherland model.  */
 	Mu_SND,   /*!< \brief reference S for Sutherland model.  */
@@ -541,14 +557,15 @@ private:
 	Energy_FreeStream,     /*!< \brief Total energy of the fluid.  */
 	ModVel_FreeStream,     /*!< \brief Total density of the fluid.  */
 	ModVel_FreeStreamND,     /*!< \brief Total density of the fluid.  */
-	Density_FreeStream,     /*!< \brief Total density of the fluid.  */
+	Density_FreeStream,     /*!< \brief Total density of the fluid. */
 	Viscosity_FreeStream,     /*!< \brief Total density of the fluid.  */
 	Tke_FreeStream,     /*!< \brief Total turbulent kinetic energy of the fluid.  */
 	Intermittency_FreeStream,     /*!< \brief Freestream intermittency (for sagt transition model) of the fluid.  */
 	TurbulenceIntensity_FreeStream,     /*!< \brief Freestream turbulent intensity (for sagt transition model) of the fluid.  */
 	Turb2LamViscRatio_FreeStream,          /*!< \brief Ratio of turbulent to laminar viscosity. */
 	NuFactor_FreeStream,  /*!< \brief Ratio of turbulent to laminar viscosity. */
-	Pressure_FreeStream,     /*!< \brief Total pressure of the fluid.  */
+  NuFactor_Engine,  /*!< \brief Ratio of turbulent to laminar viscosity at the engine. */
+  Pressure_FreeStream,     /*!< \brief Total pressure of the fluid. */
 	Temperature_FreeStream,  /*!< \brief Total temperature of the fluid.  */
   Temperature_ve_FreeStream,  /*!< \brief Total vibrational-electronic temperature of the fluid.  */
   *MassFrac_FreeStream, /*!< \brief Mixture mass fractions of the fluid. */
@@ -556,12 +573,13 @@ private:
 	Prandtl_Turb,     /*!< \brief Turbulent Prandtl number for the gas.  */
 	Length_Ref,       /*!< \brief Reference length for non-dimensionalization. */
 	Mesh_Scale_Change,       /*!< \brief Conversion factor from grid units to meters. */
-	Pressure_Ref,     /*!< \brief Reference pressure for non-dimensionalization. */
-	Temperature_Ref,  /*!< \brief Reference temperature for non-dimensionalization. */
-	Density_Ref,      /*!< \brief Reference density for non-dimensionalization. */
-	Velocity_Ref,     /*!< \brief Reference velocity for non-dimensionalization. */
+	Pressure_Ref,     /*!< \brief Reference pressure for non-dimensionalization.  */
+	Temperature_Ref,  /*!< \brief Reference temperature for non-dimensionalization.*/
+	Density_Ref,      /*!< \brief Reference density for non-dimensionalization.*/
+	Velocity_Ref,     /*!< \brief Reference velocity for non-dimensionalization.*/
 	Time_Ref,         /*!< \brief Reference time for non-dimensionalization. */
 	Viscosity_Ref,    /*!< \brief Reference viscosity for non-dimensionalization. */
+	Conductivity_Ref,    /*!< \brief Reference conductivity for non-dimensionalization. */
 	Energy_Ref,    /*!< \brief Reference viscosity for non-dimensionalization. */
 	Wall_Temperature,    /*!< \brief Temperature at an isotropic wall in Kelvin. */
 	Omega_Ref,        /*!< \brief Reference angular velocity for non-dimensionalization. */
@@ -579,7 +597,6 @@ private:
 	int ***Reactions;					/*!< \brief Reaction map for chemically reacting, multi-species flows. */
   double ***Omega00,        /*!< \brief Collision integrals (Omega(0,0)) */
   ***Omega11;                  /*!< \brief Collision integrals (Omega(1,1)) */
-  bool CuthillMckee_Ordering; /*!< \brief Cuthill–McKee ordering algorithm. */
 	bool Mesh_Output; /*!< \brief Flag to specify whether a new mesh should be written in the converted units. */
 	double ElasticyMod,			/*!< \brief Young's modulus of elasticity. */
 	PoissonRatio,						/*!< \brief Poisson's ratio. */
@@ -844,6 +861,7 @@ private:
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
   template <class Tenum>
+  
   void addRiemannOption(const string name, unsigned short & nMarker_Riemann, string * & Marker_Riemann, unsigned short* & option_field, const map<string, Tenum> & enum_map,
                                  double* & var1, double* & var2, double** & FlowDir){
     assert(option_map.find(name) == option_map.end());
@@ -852,11 +870,19 @@ private:
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
-  void addInletFixedOption(const string name, unsigned short & nMarker_Inlet, string * & Marker_Inlet,
+  void addExhaustOption(const string name, unsigned short & nMarker_Exhaust, string * & Marker_Exhaust,
                       double* & Ttotal, double* & Ptotal){
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string,bool>(name,true));
-    COptionBase* val = new COptionInletFixed(name, nMarker_Inlet, Marker_Inlet, Ttotal, Ptotal);
+    COptionBase* val = new COptionExhaust(name, nMarker_Exhaust, Marker_Exhaust, Ttotal, Ptotal);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+  
+  void addBleedOption(const string name, unsigned short & nMarker_Bleed, string * & Marker_Bleed,
+                        double* & MassFlow_Target, double* & Temp_Target){
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionBleed(name, nMarker_Bleed, Marker_Bleed, MassFlow_Target, Temp_Target);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
@@ -1012,7 +1038,7 @@ public:
    * \brief Get the the coordinates where of the box where a subsonic region is imposed.
    * \return Coordinates where of the box where the grid is going to be a subsonic region.
    */
-  double *GetSubsonic_Nacelle_Box(void);
+  double *GetSubsonic_Engine_Box(void);
   
 	/*!
 	 * \brief Get the power of the dual volume in the grid adaptation sensor.
@@ -1319,6 +1345,12 @@ public:
 	double GetViscosity_Ref(void);
 
 	/*!
+	 * \brief Get the value of the reference conductivity for non-dimensionalization.
+	 * \return Reference conductivity for non-dimensionalization.
+	 */
+	double GetConductivity_Ref(void);
+
+	/*!
 	 * \brief Get the value of the reference angular velocity for non-dimensionalization.
 	 * \return Reference angular velocity for non-dimensionalization.
 	 */
@@ -1419,6 +1451,12 @@ public:
 	 * \return Non-dimensionalized freestream intensity.
 	 */
 	double GetNuFactor_FreeStream(void);
+  
+  /*!
+   * \brief Get the value of the non-dimensionalized engine turbulence intensity.
+   * \return Non-dimensionalized engine intensity.
+   */
+  double GetNuFactor_Engine(void);
 
 	/*!
 	 * \brief Get the value of the turbulent to laminar viscosity ratio.
@@ -1684,6 +1722,12 @@ public:
 	 */
 	void SetViscosity_Ref(double val_viscosity_ref);
 
+   /*!
+    * \brief Set the Froude number for free surface problems.
+	* \return Value of the Froude number.
+	*/
+	void SetConductivity_Ref(double val_conductivity_ref);
+
   /*!
 	 * \brief Set the Froude number for free surface problems.
 	 * \return Value of the Froude number.
@@ -1890,7 +1934,13 @@ public:
 	 * \return CFL number for unsteady simulations.
 	 */
 	double GetUnst_CFL(void);
-
+  
+  /*!
+   * \brief Get the Courant Friedrich Levi number for unsteady simulations.
+   * \return CFL number for unsteady simulations.
+   */
+  double GetMax_DeltaTime(void);
+  
 	/*!
 	 * \brief Get a parameter of the particular design variable.
 	 * \param[in] val_dv - Number of the design variable that we want to read.
@@ -1928,13 +1978,19 @@ public:
 	 * \brief Get the total number of boundary markers.
 	 * \return Total number of boundary markers.
 	 */
-	unsigned short GetnMarker_NacelleInflow(void);
+	unsigned short GetnMarker_EngineInflow(void);
+  
+  /*!
+   * \brief Get the total number of boundary markers.
+   * \return Total number of boundary markers.
+   */
+  unsigned short GetnMarker_EngineBleed(void);
 
-    /*!
+  /*!
 	 * \brief Get the total number of boundary markers.
 	 * \return Total number of boundary markers.
 	 */
-	unsigned short GetnMarker_NacelleExhaust(void);
+	unsigned short GetnMarker_EngineExhaust(void);
 
     /*!
 	 * \brief Get the total number of boundary markers.
@@ -2094,6 +2150,12 @@ public:
 	 * \return <code>TRUE</code> means that a volume solution file will be written.
 	 */
 	bool GetWrt_Vol_Sol(void);
+  
+  /*!
+	 * \brief Get information about writing a volume solution file.
+	 * \return <code>TRUE</code> means that a volume solution file will be written.
+	 */
+  bool GetLow_MemoryOutput(void);
 
 	/*!
 	 * \brief Get information about writing a surface solution file.
@@ -2170,7 +2232,15 @@ public:
 	 * \return Value of the index that is in the geometry file for the surface that
 	 *         has the marker <i>val_marker</i>.
 	 */
-	string GetMarker_NacelleInflow(unsigned short val_marker);
+	string GetMarker_EngineInflow(unsigned short val_marker);
+  
+  /*!
+   * \brief Get the index of the surface defined in the geometry file.
+   * \param[in] val_marker - Value of the marker in which we are interested.
+   * \return Value of the index that is in the geometry file for the surface that
+   *         has the marker <i>val_marker</i>.
+   */
+  string GetMarker_EngineBleed(unsigned short val_marker);
 
 	/*!
 	 * \brief Get the index of the surface defined in the geometry file.
@@ -2178,7 +2248,7 @@ public:
 	 * \return Value of the index that is in the geometry file for the surface that
 	 *         has the marker <i>val_marker</i>.
 	 */
-	string GetMarker_NacelleExhaust(unsigned short val_marker);
+	string GetMarker_EngineExhaust(unsigned short val_marker);
 
     /*!
 	 * \brief Get the name of the surface defined in the geometry file.
@@ -2420,6 +2490,11 @@ public:
 	unsigned short GetKind_FreeStreamOption(void);
 
 	/*!
+	 * \brief free stream option to initialize the solution
+	 * \return free stream option
+	 */
+	unsigned short GetKind_InitOption(void);
+	/*!
 	 * \brief Get the value of the critical pressure.
 	 * \return Critical pressure.
 	 */
@@ -2444,10 +2519,23 @@ public:
 	unsigned short GetKind_ViscosityModel(void);
 
 	/*!
+	 * \brief Get the value of the thermal conductivity .
+	 * \return Critical temperature.
+	 */
+	unsigned short GetKind_ConductivityModel(void);
+
+	/*!
 	 * \brief Get the value of the critical temperature.
 	 * \return Critical temperature.
 	 */
 	double GetMu_ConstantND(void);
+
+	/*!
+	 * \brief Get the value of the non-dimensional thermal conductivity.
+	 * \return Critical temperature.
+	 */
+	double GetKt_ConstantND(void);
+
 	/*!
 	 * \brief Get the value of the critical temperature.
 	 * \return Critical temperature.
@@ -2471,6 +2559,13 @@ public:
 	 * \return Critical temperature.
 	 */
 	void SetMu_ConstantND(double mu_const);
+
+	/*!
+	 * \brief Get the value of the critical temperature.
+	 * \return Critical temperature.
+	 */
+	void SetKt_ConstantND(double kt_const);
+
 	/*!
 	 * \brief Get the value of the critical temperature.
 	 * \return Critical temperature.
@@ -3592,6 +3687,12 @@ public:
 	 * \return Name of the file with convergence history of the problem.
 	 */
 	string GetConv_FileName(void);
+    
+  /*!
+   * \brief Get the name of the file with the forces breakdown of the problem.
+   * \return Name of the file with forces breakdown of the problem.
+   */
+  string GetBreakdown_FileName(void);
 
 	/*!
 	 * \brief Get the name of the file with the flow variables.
@@ -4124,6 +4225,12 @@ public:
 	 * \return <code>TRUE</code> if there is a rotational frame; otherwise <code>FALSE</code>.
 	 */
 	bool GetAxisymmetric(void);
+  
+  /*!
+	 * \brief Get information about the axisymmetric frame.
+	 * \return <code>TRUE</code> if there is a rotational frame; otherwise <code>FALSE</code>.
+	 */
+	bool GetDebugMode(void);
 
 	/*!
 	 * \brief Get information about there is a smoothing of the grid coordinates.
@@ -4264,7 +4371,13 @@ public:
 	 * \brief Value of the damping factor for the engine inlet bc.
 	 * \return Value of the damping factor.
 	 */
-	double GetDamp_Nacelle_Inflow(void);
+	double GetDamp_Engine_Inflow(void);
+    
+    /*!
+     * \brief Value of the damping factor for the engine bleed inlet bc.
+     * \return Value of the damping factor.
+     */
+    double GetDamp_Engine_Bleed(void);
 
 	/*!
 	 * \brief Value of the damping factor for the residual restriction.
@@ -4380,12 +4493,6 @@ public:
 	 * \return <code>TRUE</code> if a conversion is requested; otherwise <code>FALSE</code>.
 	 */
 	bool GetCGNS_To_SU2(void);
-
-  /*!
-	 * \brief Get Cuthill–McKee ordering algorithm.
-	 * \return <code>TRUE</code> if the converted mesh should be written; otherwise <code>FALSE</code>.
-	 */
-	bool GetCuthillMckee_Ordering(void);
 
 	/*!
 	 * \brief Get information about whether a converted mesh should be written.
@@ -4627,42 +4734,97 @@ public:
 	 */
 	double *GetWall_Catalycity(void);
 
-
 	/*!
 	 * \brief Get the back pressure (static) at an outlet boundary.
 	 * \param[in] val_index - Index corresponding to the outlet boundary.
 	 * \return The outlet pressure.
 	 */
-	double GetFanFace_Mach_Target(string val_marker);
+	double GetInflow_Mach_Target(string val_marker);
 
     /*!
 	 * \brief Get the back pressure (static) at an outlet boundary.
 	 * \param[in] val_index - Index corresponding to the outlet boundary.
 	 * \return The outlet pressure.
 	 */
-	double GetFanFace_Mach(string val_marker);
+	double GetInflow_Mach(string val_marker);
 
     /*!
 	 * \brief Get the back pressure (static) at an outlet boundary.
 	 * \param[in] val_index - Index corresponding to the outlet boundary.
 	 * \return The outlet pressure.
 	 */
-	void SetFanFace_Mach(unsigned short val_imarker, double val_fanface_mach);
+	void SetInflow_Mach(unsigned short val_imarker, double val_fanface_mach);
 
     /*!
 	 * \brief Get the back pressure (static) at an outlet boundary.
 	 * \param[in] val_index - Index corresponding to the outlet boundary.
 	 * \return The outlet pressure.
 	 */
-	double GetFanFace_Pressure(string val_marker);
+	double GetInflow_Pressure(string val_marker);
 
     /*!
 	 * \brief Get the back pressure (static) at an outlet boundary.
 	 * \param[in] val_index - Index corresponding to the outlet boundary.
 	 * \return The outlet pressure.
 	 */
-	void SetFanFace_Pressure(unsigned short val_imarker, double val_fanface_pressure);
-
+	void SetInflow_Pressure(unsigned short val_imarker, double val_fanface_pressure);
+  
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The outlet pressure.
+   */
+  double GetBleed_Temperature_Target(string val_marker);
+  
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The outlet pressure.
+   */
+  double GetBleed_Temperature(string val_marker);
+  
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The outlet pressure.
+   */
+  void SetBleed_Temperature(unsigned short val_imarker, double val_bleed_temp);
+  
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The outlet pressure.
+   */
+  double GetBleed_MassFlow_Target(string val_marker);
+  
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The outlet pressure.
+   */
+  double GetBleed_MassFlow(string val_marker);
+  
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The outlet pressure.
+   */
+  void SetBleed_MassFlow(unsigned short val_imarker, double val_bleed_massflow);
+  
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The outlet pressure.
+   */
+  double GetBleed_Pressure(string val_marker);
+  
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The outlet pressure.
+   */
+  void SetBleed_Pressure(unsigned short val_imarker, double val_fanface_pressure);
+  
 	/*!
 	 * \brief Get the displacement value at an displacement boundary.
 	 * \param[in] val_index - Index corresponding to the displacement boundary.

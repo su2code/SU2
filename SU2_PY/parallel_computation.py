@@ -2,10 +2,10 @@
 
 ## \file parallel_computation.py
 #  \brief Python script for doing the continuous adjoint computation using the SU2 suite.
-#  \author Francisco Palacios, Tom Economon, Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 3.2.3 "eagle"
+#  \author T. Economon, T. Lukaczyk, F. Palacios
+#  \version 3.2.5 "eagle"
 #
-# SU2, Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
+# Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -53,7 +53,7 @@ def main():
         raise Exception("No config file provided. Use -f flag")
     
     if options.oldpartitions != "oldpartitions":
-        print ("\n IMPORTANT: -p is no longer available in SU2 v3.2.3, use -n flag instead \n")
+        print ("\n IMPORTANT: -p is no longer available in SU2 v3.2.4, use -n flag instead \n")
         sys.exit()
 
     parallel_computation( options.filename    ,
@@ -93,7 +93,6 @@ def parallel_computation( filename           ,
     # CFD Solution (direct or adjoint)
     info = SU2.run.CFD(config) 
     state.update(info)
-    #SU2.io.restart2solution(config,state)
 
     # Solution merging
     if config.MATH_PROBLEM == 'DIRECT':
