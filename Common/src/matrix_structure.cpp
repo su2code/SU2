@@ -1,10 +1,10 @@
 /*!
  * \file matrix_structure.cpp
- * \brief Main subroutines for doing the sparse structures.
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.4 "eagle"
+ * \brief Main subroutines for doing the sparse structures
+ * \author F. Palacios
+ * \version 3.2.5 "eagle"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -781,7 +781,7 @@ void CSysMatrix::MatrixVectorProduct(const CSysVector & vec, CSysVector & prod, 
       mat_begin = (index*nVar*nVar); // offset to beginning of matrix block[row_i][col_ind[indx]]
       for (iVar = 0; iVar < nVar; iVar++) {
         for (jVar = 0; jVar < nVar; jVar++) {
-          prod[(const unsigned int)(prod_begin+iVar)] += matrix[(const unsigned int)(mat_begin+iVar*nVar+jVar)]*vec[(const unsigned int)(vec_begin+jVar)];
+          prod[(unsigned long)(prod_begin+iVar)] += matrix[(unsigned long)(mat_begin+iVar*nVar+jVar)]*vec[(unsigned long)(vec_begin+jVar)];
         }
       }
     }
@@ -1118,10 +1118,10 @@ void CSysMatrix::ComputeJacobiPreconditioner(const CSysVector & vec, CSysVector 
   
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     for (iVar = 0; iVar < nVar; iVar++) {
-      prod[(const unsigned int)(iPoint*nVar+iVar)] = 0.0;
+      prod[(unsigned long)(iPoint*nVar+iVar)] = 0.0;
       for (jVar = 0; jVar < nVar; jVar++)
-        prod[(const unsigned int)(iPoint*nVar+iVar)] +=
-        invM[(const unsigned int)(iPoint*nVar*nVar+iVar*nVar+jVar)]*vec[(const unsigned int)(iPoint*nVar+jVar)];
+        prod[(unsigned long)(iPoint*nVar+iVar)] +=
+        invM[(unsigned long)(iPoint*nVar*nVar+iVar*nVar+jVar)]*vec[(unsigned long)(iPoint*nVar+jVar)];
     }
   }
   
@@ -1272,10 +1272,10 @@ void CSysMatrix::ComputeLineletPreconditioner(const CSysVector & vec, CSysVector
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
       if (!LineletBool[iPoint]) {
         for (iVar = 0; iVar < nVar; iVar++) {
-          prod[(const unsigned int)(iPoint*nVar+iVar)] = 0.0;
+          prod[(unsigned long)(iPoint*nVar+iVar)] = 0.0;
           for (jVar = 0; jVar < nVar; jVar++)
-            prod[(const unsigned int)(iPoint*nVar+iVar)] +=
-            invM[(const unsigned int)(iPoint*nVar*nVar+iVar*nVar+jVar)]*vec[(const unsigned int)(iPoint*nVar+jVar)];
+            prod[(unsigned long)(iPoint*nVar+iVar)] +=
+            invM[(unsigned long)(iPoint*nVar*nVar+iVar*nVar+jVar)]*vec[(unsigned long)(iPoint*nVar+jVar)];
         }
       }
     }
@@ -1295,7 +1295,7 @@ void CSysMatrix::ComputeLineletPreconditioner(const CSysVector & vec, CSysVector
       for (iElem = 0; iElem < nElem; iElem++) {
         iPoint = LineletPoint[iLinelet][iElem];
         for (iVar = 0; iVar < nVar; iVar++)
-          rVector[iElem][iVar] = vec[(const unsigned int)(iPoint*nVar+iVar)];
+          rVector[iElem][iVar] = vec[(unsigned long)(iPoint*nVar+iVar)];
       }
       
       /*--- Initialization (iElem = 0) ---*/
@@ -1346,7 +1346,7 @@ void CSysMatrix::ComputeLineletPreconditioner(const CSysVector & vec, CSysVector
       for (iElem = 0; iElem < nElem; iElem++) {
         iPoint = LineletPoint[iLinelet][iElem];
         for (iVar = 0; iVar < nVar; iVar++)
-          prod[(const unsigned int)(iPoint*nVar+iVar)] = zVector[iElem][iVar];
+          prod[(unsigned long)(iPoint*nVar+iVar)] = zVector[iElem][iVar];
       }
       
     }
@@ -1361,7 +1361,7 @@ void CSysMatrix::ComputeLineletPreconditioner(const CSysVector & vec, CSysVector
     if (rank == MASTER_NODE) cout << "ERROR: Linelet not implemented in parallel." << endl;
     
 #ifndef HAVE_MPI
-    exit(1);
+    exit(EXIT_FAILURE);
 #else
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Abort(MPI_COMM_WORLD,1);

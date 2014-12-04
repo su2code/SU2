@@ -1,14 +1,14 @@
 /*!
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.4 "eagle"
+ * \author F. Palacios
+ * \version 3.2.5 "eagle"
  *
  * Many of the classes in this file are templated, and therefore must
  * be declared and defined here; to keep all elements together, there
  * is no corresponding .cpp file at this time.
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -99,6 +99,8 @@ enum SU2_COMPONENT {
   SU2_GEO = 6,	/*!< \brief Running the SU2_GEO software. */
   SU2_SOL = 7	/*!< \brief Running the SU2_SOL software. */
 };
+
+const unsigned int EXIT_DIVERGENCE = 2;		/*!< \brief Exit code (divergence). */
 
 const unsigned int BUFSIZE = 3000000;		/*!< \brief MPI buffer. */
 const unsigned int MAX_PARAMETERS = 10;		/*!< \brief Maximum number of parameters for a design variable definition. */
@@ -334,6 +336,23 @@ static const map<string, ENUM_FLUIDMODEL> FluidModel_Map = CCreateMap<string, EN
 ("VW_GAS", VW_GAS)
 ("PR_GAS", PR_GAS);
 
+
+/*!
+ * \brief types of initialization option
+ */
+
+enum ENUM_INIT_OPTION {
+	REYNOLDS = 0, /*!< \brief _____. */
+	TD_CONDITIONS = 1
+
+};
+
+static const map<string, ENUM_INIT_OPTION> InitOption_Map = CCreateMap<string, ENUM_INIT_OPTION>
+("REYNOLDS", REYNOLDS)
+("TD_CONDITIONS", TD_CONDITIONS);
+
+
+
 /*!
  * \brief types of initialization option
  */
@@ -350,7 +369,7 @@ static const map<string, ENUM_FREESTREAM_OPTION> FreeStreamOption_Map = CCreateM
 
 
 /*!
- * \brief types of fluid model
+ * \brief types of viscosity model
  */
 enum ENUM_VISCOSITYMODEL {
 	CONSTANT_VISCOSITY = 0, /*!< \brief _____. */
@@ -358,8 +377,20 @@ enum ENUM_VISCOSITYMODEL {
 };
 
 static const map<string, ENUM_VISCOSITYMODEL> ViscosityModel_Map = CCreateMap<string, ENUM_VISCOSITYMODEL>
-("COSTANT_VISCOSITY", CONSTANT_VISCOSITY)
+("CONSTANT_VISCOSITY", CONSTANT_VISCOSITY)
 ("SUTHERLAND", SUTHERLAND);
+
+/*!
+ * \brief types of thermal conductivity model
+ */
+enum ENUM_CONDUCTIVITYMODEL {
+	CONSTANT_CONDUCTIVITY = 0, /*!< \brief _____. */
+	CONSTANT_PRANDTL = 1
+};
+
+static const map<string, ENUM_CONDUCTIVITYMODEL> ConductivityModel_Map = CCreateMap<string, ENUM_CONDUCTIVITYMODEL>
+("CONSTANT_CONDUCTIVITY", CONSTANT_CONDUCTIVITY)
+("CONSTANT_PRANDTL", CONSTANT_PRANDTL);
 
 /*!
  * \brief types of spatial discretizations
@@ -625,8 +656,8 @@ enum BC_TYPE {
   ELEC_DIELEC_BOUNDARY = 22,	/*!< \brief Dipoisson boundary definition for the poissonal potential. */
   ELEC_NEUMANN = 23,		/*!< \brief Boundary Neumann definition. */
   SUPERSONIC_INLET = 24,		/*!< \brief Boundary supersonic inlet definition. */
-  NACELLE_INFLOW = 25,		/*!< \brief Boundary nacelle inflow. */
-  NACELLE_EXHAUST = 26,		/*!< \brief Boundary nacelle exhaust. */
+  ENGINE_INFLOW = 25,		/*!< \brief Boundary nacelle inflow. */
+  ENGINE_EXHAUST = 26,		/*!< \brief Boundary nacelle exhaust. */
   ISOTHERMAL = 28,      /*!< \brief No slip isothermal wall boundary condition. */
   HEAT_FLUX  = 29,      /*!< \brief No slip constant heat flux wall boundary condition. */
   PRESSURE_BOUNDARY = 30,   	/*!< \brief Pressure boundary condition. */
@@ -636,6 +667,7 @@ enum BC_TYPE {
   ISOTHERMAL_CATALYTIC = 34, /*!< \brief No-slip, constant temperature, catalytic bc. */
   ACTDISK_INLET = 35,	/*!< \brief Actuator disk inlet boundary definition. */
   ACTDISK_OUTLET = 36,	/*!< \brief Actuator disk outlet boundary definition. */
+  ENGINE_BLEED = 37,		/*!< \brief Boundary engine bleed. */
   SEND_RECEIVE = 99,		/*!< \brief Boundary send-receive definition. */
   RIEMANN_BOUNDARY= 100   /*!< \brief Riemann Boundary definition. */
 };
@@ -648,7 +680,8 @@ enum RIEMANN_TYPE {
   DENSITY_VELOCITY = 2,         /*!< \brief User specifies density and velocity, and flow direction. */
   STATIC_PRESSURE = 3,           /*!< \brief User specifies static pressure. */
   TOTAL_SUPERSONIC_INFLOW = 4,	/*!< \brief User specifies total pressure, total temperature and Velocity components. */
-  STATIC_SUPERSONIC_INFLOW = 5 /*!< \brief User specifies static pressure, static temperature, and Mach components. */
+  STATIC_SUPERSONIC_INFLOW_PT = 5, /*!< \brief User specifies static pressure, static temperature, and Mach components. */
+  STATIC_SUPERSONIC_INFLOW_PD = 6 /*!< \brief User specifies static pressure, static temperature, and Mach components. */
 };
 
 static const map<string, RIEMANN_TYPE> Riemann_Map = CCreateMap<string, RIEMANN_TYPE>
@@ -656,7 +689,8 @@ static const map<string, RIEMANN_TYPE> Riemann_Map = CCreateMap<string, RIEMANN_
 ("DENSITY_VELOCITY", DENSITY_VELOCITY)
 ("STATIC_PRESSURE", STATIC_PRESSURE)
 ("TOTAL_SUPERSONIC_INFLOW", TOTAL_SUPERSONIC_INFLOW)
-("STATIC_SUPERSONIC_INFLOW", STATIC_SUPERSONIC_INFLOW);
+("STATIC_SUPERSONIC_INFLOW_PT", STATIC_SUPERSONIC_INFLOW_PT)
+("STATIC_SUPERSONIC_INFLOW_PD", STATIC_SUPERSONIC_INFLOW_PD);
 
 /*!
  * \brief types inlet boundary treatments
@@ -2160,6 +2194,71 @@ public:
     this->marker = NULL;
     this->ttotal = NULL;
     this->ptotal = NULL;
+    this->size = 0; // There is no default value for list
+  }
+  
+};
+
+//Inlet condition where the input direction is assumed
+class COptionBleed : public COptionBase{
+  string name; // identifier for the option
+  unsigned short & size;
+  string * & marker;
+  double * & massflow_target;
+  double * & temp_target;
+  
+public:
+  COptionBleed(string option_field_name, unsigned short & nMarker_Bleed, string* & Marker_Bleed, double* & MassFlow_Target, double* & Temp_Target) : size(nMarker_Bleed), marker(Marker_Bleed), massflow_target(MassFlow_Target), temp_target(Temp_Target){
+    this->name = option_field_name;
+  }
+  
+  ~COptionBleed(){};
+  
+  string SetValue(vector<string> option_value){
+    
+    unsigned long totalVals = option_value.size();
+    if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)){
+      this->size = 0;
+      this->marker = NULL;
+      this->massflow_target = NULL;
+      this->temp_target = NULL;
+      return "";
+    }
+    
+    if (totalVals % 3 != 0){
+      string newstring;
+      newstring.append(this->name);
+      newstring.append(": must have a number of entries divisible by 3");
+      this->size = 0;
+      this->marker = NULL;
+      this->massflow_target = NULL;
+      this->temp_target = NULL;
+      return newstring;
+    }
+    
+    unsigned long nVals = totalVals / 3;
+    this->size = nVals;
+    this->marker = new string[nVals];
+    this->massflow_target = new double[nVals];
+    this->temp_target = new double[nVals];
+    
+    for (int i = 0; i < nVals; i++){
+      this->marker[i].assign(option_value[3*i]);
+      istringstream ss_1st(option_value[3*i + 1]);
+      if (!(ss_1st >> this->massflow_target[i]))
+        return badValue(option_value, "bleed fixed", this->name);
+      istringstream ss_2nd(option_value[3*i + 2]);
+      if (!(ss_2nd >> this->temp_target[i]))
+        return badValue(option_value, "bleed fixed", this->name);
+    }
+    
+    return "";
+  }
+  
+  void SetDefault(){
+    this->marker = NULL;
+    this->massflow_target = NULL;
+    this->temp_target = NULL;
     this->size = 0; // There is no default value for list
   }
   

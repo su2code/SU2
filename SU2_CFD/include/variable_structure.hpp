@@ -3,10 +3,10 @@
  * \brief Headers of the main subroutines for storing all the variables for 
  *        each kind of governing equation (direct, adjoint and linearized).
  *        The subroutines and functions are in the <i>variable_structure.cpp</i> file.
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.4 "eagle"
+ * \author F. Palacios
+ * \version 3.2.5 "eagle"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -41,13 +41,14 @@ using namespace std;
  * \class CVariable
  * \brief Main class for defining the variables.
  * \author F. Palacios.
- * \version 3.2.4 "eagle"
+ * \version 3.2.5 "eagle"
  */
 class CVariable {
 protected:
 
 	double *Solution,		/*!< \brief Solution of the problem. */
 	*Solution_Old;			/*!< \brief Old solution of the problem R-K. */
+  bool Non_Physical;			/*!< \brief Non-physical points in the solution (force first order). */
 	double *Solution_time_n,	/*!< \brief Solution of the problem at time n for dual-time stepping technique. */
 	*Solution_time_n1;			/*!< \brief Solution of the problem at time n-1 for dual-time stepping technique. */
 	double **Gradient;		/*!< \brief Gradient of the solution of the problem. */ 
@@ -117,6 +118,18 @@ public:
 	 */
 	void SetSolution(unsigned short val_var, double val_solution);
 
+  /*!
+   * \brief Set the value of the non-physical point.
+   * \param[in] val_value - identification of the non-physical point.
+   */
+  void SetNon_Physical(bool val_value);
+  
+  /*!
+   * \brief Get the value of the non-physical point.
+   * \return Value of the Non-physical point.
+   */
+  double GetNon_Physical(void);
+  
 	/*!
 	 * \brief Get the solution.
 	 * \param[in] val_var - Index of the variable.
@@ -936,7 +949,13 @@ public:
    * \return Value of the thermal conductivity (translational/rotational)
    */
   virtual double GetThermalConductivity(void);
-  
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of the specific heat at constant P
+   */
+   virtual double GetSpecificHeatCp(void);
+
   /*!
    * \brief A virtual member.
    * \return Value of the thermal conductivity (vibrational)
@@ -1138,12 +1157,22 @@ public:
      /*!
    	 * \brief A virtual member.
    	 */
-      virtual void Setdmudrho_T(double Setdmudrho_T);
+      virtual void Setdmudrho_T(double dmudrho_T);
 
      /*!
       * \brief A virtual member.
       */
-      virtual void SetdmudT_rho(double SetdmudT_rho);
+      virtual void SetdmudT_rho(double dmudT_rho);
+
+    /*!
+     * \brief A virtual member.
+     */
+     virtual void Setdktdrho_T(double dktdrho_T);
+
+    /*!
+     * \brief A virtual member.
+     */
+     virtual void SetdktdT_rho(double dktdT_rho);
 
 	/*!
 	 * \brief A virtual member.
@@ -1393,6 +1422,24 @@ public:
 	 * \param[in] val_laminar_viscosity_inc - Value of the laminar viscosity (incompressible flows).
 	 */		
 	virtual void SetLaminarViscosityInc(double val_laminar_viscosity_inc);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	virtual void SetThermalConductivity(double thermalConductivity);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void SetThermalConductivity(CConfig *config);
+  
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	virtual void SetSpecificHeatCp(double Cp);
 
 	/*!
 	 * \brief A virtual member.
@@ -1700,7 +1747,7 @@ public:
  * \class CBaselineVariable
  * \brief Main class for defining the variables of a baseline solution from a restart file (for output).
  * \author F. Palacios, T. Economon.
- * \version 3.2.4 "eagle"
+ * \version 3.2.5 "eagle"
  */
 class CBaselineVariable : public CVariable {
 public:
@@ -1730,7 +1777,7 @@ public:
  * \brief Main class for defining the variables of the potential solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios.
- * \version 3.2.4 "eagle"
+ * \version 3.2.5 "eagle"
  */
 class CPotentialVariable : public CVariable {
 	double *Charge_Density;
@@ -1774,7 +1821,7 @@ public:
  * \brief Main class for defining the variables of the wave equation solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios.
- * \version 3.2.4 "eagle"
+ * \version 3.2.5 "eagle"
  */
 class CWaveVariable : public CVariable {
 protected:
@@ -1820,7 +1867,7 @@ public:
  * \brief Main class for defining the variables of the Heat equation solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios.
- * \version 3.2.4 "eagle"
+ * \version 3.2.5 "eagle"
  */
 class CHeatVariable : public CVariable {
 protected:
@@ -1866,7 +1913,7 @@ public:
  * \brief Main class for defining the variables of the FEA equation solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios.
- * \version 3.2.4 "eagle"
+ * \version 3.2.5 "eagle"
  */
 class CFEAVariable : public CVariable {
 protected:
@@ -1940,7 +1987,7 @@ public:
  * \brief Main class for defining the variables of the Euler's solver.
  * \ingroup Euler_Equations
  * \author F. Palacios.
- * \version 3.2.4 "eagle"
+ * \version 3.2.5 "eagle"
  */
 class CEulerVariable : public CVariable {
 protected:
@@ -2427,7 +2474,7 @@ public:
  * \brief Main class for defining the variables of the Navier-Stokes' solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios.
- * \version 3.2.4 "eagle"
+ * \version 3.2.5 "eagle"
  */
 class CNSVariable : public CEulerVariable {
 private:
@@ -2483,6 +2530,16 @@ public:
 	void SetLaminarViscosityInc(double val_laminar_viscosity_inc);
 
 	/*!
+	 * \brief Set the laminar viscosity.
+	 */
+	void SetThermalConductivity(double thermalConductivity);
+
+	/*!
+	 * \brief Set the specific heat Cp.
+	 */
+	void SetSpecificHeatCp(double Cp);
+
+	/*!
 	 * \brief Set the vorticity value.
 	 */
 	void SetVorticity(void);
@@ -2517,12 +2574,24 @@ public:
 	double GetLaminarViscosityInc(void);
 
 	/*!
+	 * \brief Get the thermal conductivity of the flow.
+	 * \return Value of the laminar viscosity of the flow.
+	 */
+	double GetThermalConductivity(void);
+
+	/*!
 	 * \brief Get the eddy viscosity of the flow.
 	 * \return The eddy viscosity of the flow.
 	 */
 	double GetEddyViscosity(void);
-  
-  /*!
+
+	/*!
+	 * \brief Get the specific heat at constant P of the flow.
+	 * \return Value of the specific heat at constant P  of the flow.
+	 */
+	double GetSpecificHeatCp(void);
+
+    /*!
 	 * \brief Get the eddy viscosity of the flow.
 	 * \return The eddy viscosity of the flow.
 	 */
@@ -2569,12 +2638,22 @@ public:
      /*!
       * \brief Set the derivative of laminar viscosity with respect to density (at constant temperature).
       */
-    void Setdmudrho_T(double Setdmudrho_T);
+    void Setdmudrho_T(double dmudrho_T);
 
    /*!
     * \brief Set the derivative of laminar viscosity with respect to temperature (at constant density).
     */
-    void SetdmudT_rho(double SetdmudT_rho);
+    void SetdmudT_rho(double dmudT_rho);
+
+   /*!
+    * \brief Set the derivative of thermal conductivity with respect to density (at constant temperature).
+    */
+    void Setdktdrho_T(double dktdrho_T);
+
+   /*!
+    * \brief Set the derivative of thermal conductivity with respect to temperature (at constant density).
+    */
+    void SetdktdT_rho(double dktdT_rho);
 
 	/*!
 	 * \brief Set all the primitive variables for compressible flows
@@ -2602,7 +2681,7 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 3.2.4 "eagle"
+ * \version 3.2.5 "eagle"
  */
 class CTurbVariable : public CVariable {
 protected:
@@ -2646,7 +2725,7 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 3.2.4 "eagle"
+ * \version 3.2.5 "eagle"
  */
 
 class CTurbSAVariable : public CTurbVariable {
@@ -2693,7 +2772,7 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 3.2.4 "eagle"
+ * \version 3.2.5 "eagle"
  */
 
 class CTurbMLVariable : public CTurbVariable {
@@ -2739,7 +2818,7 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 3.2.4 "eagle"
+ * \version 3.2.5 "eagle"
  */
 
 class CTransLMVariable : public CTurbVariable {
@@ -2791,7 +2870,7 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 3.2.4 "eagle"
+ * \version 3.2.5 "eagle"
  */
 
 class CTurbSSTVariable : public CTurbVariable {
@@ -2853,7 +2932,7 @@ public:
  * \brief Main class for defining the variables of the adjoint potential solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios.
- * \version 3.2.4 "eagle"
+ * \version 3.2.5 "eagle"
  */
 class CAdjPotentialVariable : public CVariable {
 private:
@@ -2888,7 +2967,7 @@ public:
  * \brief Main class for defining the variables of the adjoint Euler solver.
  * \ingroup Euler_Equations
  * \author F. Palacios.
- * \version 3.2.4 "eagle"
+ * \version 3.2.5 "eagle"
  */
 class CAdjEulerVariable : public CVariable {
 protected:
@@ -3007,7 +3086,7 @@ public:
  * \brief Main class for defining the variables of the adjoint Navier-Stokes solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios.
- * \version 3.2.4 "eagle"
+ * \version 3.2.5 "eagle"
  */
 class CAdjNSVariable : public CAdjEulerVariable {	
 private:
@@ -3079,7 +3158,7 @@ public:
  * \brief Main class for defining the variables of the adjoint turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 3.2.4 "eagle"
+ * \version 3.2.5 "eagle"
  */
 class CAdjTurbVariable : public CVariable {
 protected:
@@ -3129,7 +3208,7 @@ public:
  * \brief Main class for defining the variables of the linearized potential equation.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios.
- * \version 3.2.4 "eagle"
+ * \version 3.2.5 "eagle"
  */
 class CLinPotentialVariable : public CVariable {
 public:	
@@ -3140,7 +3219,7 @@ public:
  * \brief Main class for defining the variables of the linearized Euler's equations.
  * \ingroup Euler_Equations
  * \author F. Palacios.
- * \version 3.2.4 "eagle"
+ * \version 3.2.5 "eagle"
  */
 class CLinEulerVariable : public CVariable {
 private:
@@ -3217,7 +3296,7 @@ public:
  * \brief Main class for defining the variables of the linearized Navier-Stokes' equations.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios.
- * \version 3.2.4 "eagle"
+ * \version 3.2.5 "eagle"
  */
 class CLinNSVariable : public CLinEulerVariable {
 public:
@@ -3228,7 +3307,7 @@ public:
  * \brief Main class for defining the variables of the Level Set.
  * \ingroup LevelSet_Model
  * \author F. Palacios.
- * \version 3.2.4 "eagle"
+ * \version 3.2.5 "eagle"
  */
 class CAdjLevelSetVariable : public CVariable {
 public:
@@ -3829,7 +3908,7 @@ public:
 	 * \return Value of the laminar viscosity of the flow.
 	 */
 	double GetThermalConductivity(void);
-  
+
   /*!
 	 * \brief Get the vib-el. thermal conductivity of the flow.
 	 * \return Value of the laminar viscosity of the flow.
@@ -4039,7 +4118,7 @@ public:
  * \brief Main class for defining the variables of the potential solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios.
- * \version 3.2.4 "eagle"
+ * \version 3.2.5 "eagle"
  */
 class CTemplateVariable : public CVariable {
 public:

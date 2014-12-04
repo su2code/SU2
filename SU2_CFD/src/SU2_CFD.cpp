@@ -1,10 +1,10 @@
 /*!
  * \file SU2_CFD.cpp
- * \brief Main file of Computational Fluid Dynamics Code (SU2_CFD).
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.4 "eagle"
+ * \brief Main file of the Computational Fluid Dynamics code
+ * \author F. Palacios, T. Economon
+ * \version 3.2.5 "eagle"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -436,8 +436,8 @@ MPI_Barrier(MPI_COMM_WORLD);
            finest grid. ---*/
           
           if (config_container[ZONE_0]->GetLowFidelitySim()) {
-            integration_container[ZONE_0][FLOW_SOL]->SetProlongated_Solution(RUNTIME_FLOW_SYS, solver_container[ZONE_0][MESH_0], solver_container[ZONE_0][MESH_1], geometry_container[ZONE_0][MESH_0], geometry_container[ZONE_0][MESH_1], config_container[ZONE_0]);
-            integration_container[ZONE_0][FLOW_SOL]->Smooth_Solution(RUNTIME_FLOW_SYS, solver_container[ZONE_0][MESH_0], geometry_container[ZONE_0][MESH_0], 3, 1.25, config_container[ZONE_0]);
+            integration_container[ZONE_0][FLOW_SOL]->SetProlongated_Solution(RUNTIME_FLOW_SYS, solver_container[ZONE_0][MESH_0][FLOW_SOL], solver_container[ZONE_0][MESH_1][FLOW_SOL], geometry_container[ZONE_0][MESH_0], geometry_container[ZONE_0][MESH_1], config_container[ZONE_0]);
+            integration_container[ZONE_0][FLOW_SOL]->Smooth_Solution(RUNTIME_FLOW_SYS, solver_container[ZONE_0][MESH_0][FLOW_SOL], geometry_container[ZONE_0][MESH_0], 3, 1.25, config_container[ZONE_0]);
             solver_container[ZONE_0][MESH_0][config_container[ZONE_0]->GetContainerPosition(RUNTIME_FLOW_SYS)]->Set_MPI_Solution(geometry_container[ZONE_0][MESH_0], config_container[ZONE_0]);
             solver_container[ZONE_0][MESH_0][config_container[ZONE_0]->GetContainerPosition(RUNTIME_FLOW_SYS)]->Preprocessing(geometry_container[ZONE_0][MESH_0], solver_container[ZONE_0][MESH_0], config_container[ZONE_0], MESH_0, 0, RUNTIME_FLOW_SYS, false);
           }
@@ -448,14 +448,15 @@ MPI_Barrier(MPI_COMM_WORLD);
           output->SetResult_Files(solver_container, geometry_container, config_container, ExtIter, nZone);
           
           /*--- Compute the forces at different sections. ---*/
+          
           if (config_container[ZONE_0]->GetPlot_Section_Forces())
             output->SetForceSections(solver_container[ZONE_0][MESH_0][FLOW_SOL],
                                      geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
+
+          /*--- Output a file with the forces breakdown. ---*/
           
-//          /*--- Compute 1D output. ---*/
-//          if (config->GetWrt_1D_Output())
-//            output->OneDimensionalOutput(solver_container[ZONE_0][MESH_0][FLOW_SOL],
-//                                         geometry_container[ZONE_0][MESH_0], config_container[ZONE_0]);
+          output->SetForces_Breakdown(geometry_container, solver_container,
+                                      config_container, integration_container, ZONE_0);
           
         }
     

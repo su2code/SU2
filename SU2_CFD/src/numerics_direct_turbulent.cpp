@@ -1,10 +1,10 @@
 /*!
  * \file numerics_direct_turbulent.cpp
  * \brief This file contains all the convective term discretization.
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.4 "eagle"
+ * \author F. Palacios
+ * \version 3.2.5 "eagle"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -1103,6 +1103,20 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
   double dUDYBar = DUiDXj[0][1] / SANondimInputs->OmegaNondim;
   double dVDYBar = DUiDXj[1][1] / SANondimInputs->OmegaNondim;
   double Turbulent_Kinematic_Viscosity = TurbVar_i[0];
+  
+  double nuRef = 1.0;
+  double nu = Laminar_Viscosity_i / Density_i;
+  double nuscale = nu / nuRef;
+  double distalt = dist_i;
+  double nuhatalt = Turbulent_Kinematic_Viscosity / nuscale;
+  double omega = SANondimInputs->OmegaBar * SANondimInputs->OmegaNondim;
+  double omegaalt = omega / nuscale;
+  double nuhatgradmagalt = SANondimInputs->NuHatGradNorm / (nuscale * nuscale);
+  double omeganondimeralt = (1/distalt) * (nuhatalt / distalt);
+  double sourcenondimeralt = (nuhatalt / distalt) * (nuhatalt / distalt);
+  double nondim_nuhatgradmagalt = nuhatgradmagalt / sourcenondimeralt;
+  double nondimOmegaAlt = omegaalt / omeganondimeralt;
+  
 //  double Laminar_Kinematic_Viscosity = Laminar_Viscosity_i / Density_i;
   
   int nInputMLVariables = 0;
@@ -1367,6 +1381,63 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
       NondimResidual[i] = Residual[i];
     }
     SANondimInputs->NondimensionalizeSource(nResidual, NondimResidual);
+  }else if(featureset.compare("source_alt")==0){
+    nInputMLVariables =4;
+    nOutputMLVariables = 1;
+    netInput = new double[nInputMLVariables];
+    netOutput = new double[nOutputMLVariables];
+    
+    netInput[0] = sourcenondimeralt;
+    netInput[1] = SANondimInputs->Chi;
+    netInput[2] = nondimOmegaAlt;
+    netInput[3] = nondim_nuhatgradmagalt;
+    
+    
+    // Predict using Nnet
+    MLModel->Predict(netInput, netOutput);
+
+    netOutput[0] *= nuscale * nuscale;
+    
+    // Gather the appropriate values
+    Residual[0] = 0;
+    Residual[1] = 0;
+    Residual[2] = 0;
+    Residual[3] = netOutput[0];
+    
+    for (int i=0; i < nResidual; i++){
+      NondimResidual[i] = Residual[i];
+    }
+    SANondimInputs->NondimensionalizeSource(nResidual, NondimResidual);
+  }else if(featureset.compare("source_dim_alt") == 0){
+    nInputMLVariables = 4;
+    nOutputMLVariables = 1;
+    netInput = new double[nInputMLVariables];
+    netOutput = new double[nOutputMLVariables];
+    
+    
+    
+    netInput[0] = nuhatalt;
+    netInput[1] = omegaalt;
+    netInput[2] = nuhatgradmagalt;
+    netInput[3] = dist_i;
+    
+    // Predict using Nnet
+    MLModel->Predict(netInput, netOutput);
+    
+    // Need to scale the output back
+    netOutput[0] *= nuscale * nuscale;
+    
+    // Gather the appropriate values
+    Residual[0] = 0;
+    Residual[1] = 0;
+    Residual[2] = 0;
+    Residual[3] = netOutput[0];
+    
+    for (int i=0; i < nResidual; i++){
+      NondimResidual[i] = Residual[i];
+    }
+    SANondimInputs->NondimensionalizeSource(nResidual, NondimResidual);
+    
   }else if(featureset.compare("source_all")==0){
     nInputMLVariables = 8;
     nOutputMLVariables = 1;

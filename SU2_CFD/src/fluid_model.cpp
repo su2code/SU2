@@ -2,9 +2,9 @@
  * fluid_model.cpp
  * \brief Source of the main thermo-physical subroutines of the SU2 solvers.
  * \author S.Vitale, M.Pini, G.Gori, A.Guardone, P.Colonna
- * \version 3.2.4 "eagle"
+ * \version 3.2.5 "eagle"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -37,8 +37,9 @@ CFluidModel::CFluidModel(void) {
 	dPde_rho = 0.0;
 	dTdrho_e = 0.0;
 	dTde_rho = 0.0;
+	Cp       = 0.0;
 
-	DynamicViscosity = NULL;
+	LaminarViscosity = NULL;
 	ThermalConductivity = NULL;
 
 }
@@ -47,29 +48,29 @@ CFluidModel::~CFluidModel(void) {
 
   }
 
-void CFluidModel::SetViscosityModel (CConfig *config){
+void CFluidModel::SetLaminarViscosityModel (CConfig *config){
 	switch (config->GetKind_ViscosityModel()) {
 
 	case CONSTANT_VISCOSITY:
-		DynamicViscosity = new CConstantViscosity(config->GetMu_ConstantND());
+		LaminarViscosity = new CConstantViscosity( config->GetMu_ConstantND() );
 		break;
 	case SUTHERLAND:
-		DynamicViscosity = new CSutherland(config->GetMu_RefND(), config->GetMu_Temperature_RefND(), config->GetMu_SND());
+		LaminarViscosity = new CSutherland(config->GetMu_RefND(), config->GetMu_Temperature_RefND(), config->GetMu_SND());
 		break;
 
 	}
 }
 
-//void CFluidModel::SetThermalConductivityModel (CConfig *config){
-//	switch (config->GetKind_ThermalConductivityModel()) {
-//
-//	case CONSTANT_THERMALCONDUCTIVITY:
-//		ThermalConductivity = new CConstantThermalConductivity(double kt_const);
-//		break;
-//	case CONSTANT_PRANDTL:
-//		ThermalConductivity = new CConstantPrandtl();
-//		break;
-//
-//	}
-//}
+void CFluidModel::SetThermalConductivityModel (CConfig *config){
+	switch (config->GetKind_ConductivityModel()) {
+
+	case CONSTANT_CONDUCTIVITY:
+		ThermalConductivity = new CConstantConductivity( config->GetKt_ConstantND() );
+		break;
+	case CONSTANT_PRANDTL:
+		ThermalConductivity = new CConstantPrandtl( config->GetPrandtl_Lam() );
+		break;
+
+	}
+}
 
