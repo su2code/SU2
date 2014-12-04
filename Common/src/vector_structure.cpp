@@ -1,10 +1,10 @@
 /*!
  * \file vector_structure.cpp
  * \brief Main classes required for solving linear systems of equations
- * \author Current Development: Stanford University.
- * \version 3.2.3 "eagle"
+ * \author F. Palacios
+ * \version 3.2.5 "eagle"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -154,14 +154,15 @@ CSysVector::CSysVector(const unsigned long & numBlk, const unsigned long & numBl
 
 CSysVector::~CSysVector() {
   delete [] vec_val;
-  nElm = -1;
-	nElmDomain = -1;
-  nBlk = -1;
-  nBlkDomain = -1;
-  nVar = -1;
+  
+  nElm = 0; nElmDomain = 0;
+  nBlk = 0; nBlkDomain = 0;
+  nVar = 0;
+  
 #ifdef HAVE_MPI
-  myrank = -1;
+  myrank = 0;
 #endif
+  
 }
 
 void CSysVector::Initialize(const unsigned long & numBlk, const unsigned long & numBlkDomain, const unsigned short & numVar, const double & val) {

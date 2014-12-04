@@ -1,10 +1,10 @@
 /*!
  * \file solution_adjoint_mean.cpp
  * \brief Main subrotuines for solving adjoint problems (Euler, Navier-Stokes, etc.).
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.3 "eagle"
+ * \author S. Copeland
+ * \version 3.2.5 "eagle"
  *
- * Copyright (C) 2012 Aerospace Design Laboratory
+ * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

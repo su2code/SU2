@@ -1,14 +1,14 @@
 /*!
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.3 "eagle"
+ * \author F. Palacios
+ * \version 3.2.5 "eagle"
  *
  * Many of the classes in this file are templated, and therefore must
  * be declared and defined here; to keep all elements together, there
  * is no corresponding .cpp file at this time.
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -100,6 +100,8 @@ enum SU2_COMPONENT {
   SU2_SOL = 7	/*!< \brief Running the SU2_SOL software. */
 };
 
+const unsigned int EXIT_DIVERGENCE = 2;		/*!< \brief Exit code (divergence). */
+
 const unsigned int BUFSIZE = 3000000;		/*!< \brief MPI buffer. */
 const unsigned int MAX_PARAMETERS = 10;		/*!< \brief Maximum number of parameters for a design variable definition. */
 const unsigned int MAX_NUMBER_MARKER = 5000;	/*!< \brief Maximum number of markers. */
@@ -131,7 +133,7 @@ const double FOUR3 = 4.0 / 3.0;			/*!< \brief Four divided by three. */
 const double PI_NUMBER = 4.0 * atan(1.0);	/*!< \brief Pi number. */
 const int MASTER_NODE = 0;			/*!< \brief Master node for MPI parallelization. */
 const int SINGLE_NODE = 1;			/*!< \brief There is only a node in the MPI parallelization. */
-const int AUX_NODE = 1;			/*!< \brief Computational node that is used for IO stuff. */
+const int SINGLE_ZONE = 1;			/*!< \brief There is only a zone. */
 
 /** General output & CGNS defines **/
 const unsigned int N_ELEM_TYPES = 7;
@@ -334,6 +336,23 @@ static const map<string, ENUM_FLUIDMODEL> FluidModel_Map = CCreateMap<string, EN
 ("VW_GAS", VW_GAS)
 ("PR_GAS", PR_GAS);
 
+
+/*!
+ * \brief types of initialization option
+ */
+
+enum ENUM_INIT_OPTION {
+	REYNOLDS = 0, /*!< \brief _____. */
+	TD_CONDITIONS = 1
+
+};
+
+static const map<string, ENUM_INIT_OPTION> InitOption_Map = CCreateMap<string, ENUM_INIT_OPTION>
+("REYNOLDS", REYNOLDS)
+("TD_CONDITIONS", TD_CONDITIONS);
+
+
+
 /*!
  * \brief types of initialization option
  */
@@ -350,7 +369,7 @@ static const map<string, ENUM_FREESTREAM_OPTION> FreeStreamOption_Map = CCreateM
 
 
 /*!
- * \brief types of fluid model
+ * \brief types of viscosity model
  */
 enum ENUM_VISCOSITYMODEL {
 	CONSTANT_VISCOSITY = 0, /*!< \brief _____. */
@@ -360,6 +379,18 @@ enum ENUM_VISCOSITYMODEL {
 static const map<string, ENUM_VISCOSITYMODEL> ViscosityModel_Map = CCreateMap<string, ENUM_VISCOSITYMODEL>
 ("CONSTANT_VISCOSITY", CONSTANT_VISCOSITY)
 ("SUTHERLAND", SUTHERLAND);
+
+/*!
+ * \brief types of thermal conductivity model
+ */
+enum ENUM_CONDUCTIVITYMODEL {
+	CONSTANT_CONDUCTIVITY = 0, /*!< \brief _____. */
+	CONSTANT_PRANDTL = 1
+};
+
+static const map<string, ENUM_CONDUCTIVITYMODEL> ConductivityModel_Map = CCreateMap<string, ENUM_CONDUCTIVITYMODEL>
+("CONSTANT_CONDUCTIVITY", CONSTANT_CONDUCTIVITY)
+("CONSTANT_PRANDTL", CONSTANT_PRANDTL);
 
 /*!
  * \brief types of spatial discretizations
@@ -625,8 +656,8 @@ enum BC_TYPE {
   ELEC_DIELEC_BOUNDARY = 22,	/*!< \brief Dipoisson boundary definition for the poissonal potential. */
   ELEC_NEUMANN = 23,		/*!< \brief Boundary Neumann definition. */
   SUPERSONIC_INLET = 24,		/*!< \brief Boundary supersonic inlet definition. */
-  NACELLE_INFLOW = 25,		/*!< \brief Boundary nacelle inflow. */
-  NACELLE_EXHAUST = 26,		/*!< \brief Boundary nacelle exhaust. */
+  ENGINE_INFLOW = 25,		/*!< \brief Boundary nacelle inflow. */
+  ENGINE_EXHAUST = 26,		/*!< \brief Boundary nacelle exhaust. */
   ISOTHERMAL = 28,      /*!< \brief No slip isothermal wall boundary condition. */
   HEAT_FLUX  = 29,      /*!< \brief No slip constant heat flux wall boundary condition. */
   PRESSURE_BOUNDARY = 30,   	/*!< \brief Pressure boundary condition. */
@@ -636,6 +667,7 @@ enum BC_TYPE {
   ISOTHERMAL_CATALYTIC = 34, /*!< \brief No-slip, constant temperature, catalytic bc. */
   ACTDISK_INLET = 35,	/*!< \brief Actuator disk inlet boundary definition. */
   ACTDISK_OUTLET = 36,	/*!< \brief Actuator disk outlet boundary definition. */
+  ENGINE_BLEED = 37,		/*!< \brief Boundary engine bleed. */
   SEND_RECEIVE = 99,		/*!< \brief Boundary send-receive definition. */
   RIEMANN_BOUNDARY= 100   /*!< \brief Riemann Boundary definition. */
 };
@@ -648,7 +680,8 @@ enum RIEMANN_TYPE {
   DENSITY_VELOCITY = 2,         /*!< \brief User specifies density and velocity, and flow direction. */
   STATIC_PRESSURE = 3,           /*!< \brief User specifies static pressure. */
   TOTAL_SUPERSONIC_INFLOW = 4,	/*!< \brief User specifies total pressure, total temperature and Velocity components. */
-  STATIC_SUPERSONIC_INFLOW = 5 /*!< \brief User specifies static pressure, static temperature, and Mach components. */
+  STATIC_SUPERSONIC_INFLOW_PT = 5, /*!< \brief User specifies static pressure, static temperature, and Mach components. */
+  STATIC_SUPERSONIC_INFLOW_PD = 6 /*!< \brief User specifies static pressure, static temperature, and Mach components. */
 };
 
 static const map<string, RIEMANN_TYPE> Riemann_Map = CCreateMap<string, RIEMANN_TYPE>
@@ -656,7 +689,8 @@ static const map<string, RIEMANN_TYPE> Riemann_Map = CCreateMap<string, RIEMANN_
 ("DENSITY_VELOCITY", DENSITY_VELOCITY)
 ("STATIC_PRESSURE", STATIC_PRESSURE)
 ("TOTAL_SUPERSONIC_INFLOW", TOTAL_SUPERSONIC_INFLOW)
-("STATIC_SUPERSONIC_INFLOW", STATIC_SUPERSONIC_INFLOW);
+("STATIC_SUPERSONIC_INFLOW_PT", STATIC_SUPERSONIC_INFLOW_PT)
+("STATIC_SUPERSONIC_INFLOW_PD", STATIC_SUPERSONIC_INFLOW_PD);
 
 /*!
  * \brief types inlet boundary treatments
@@ -937,11 +971,13 @@ enum ENUM_PARAM {
   FFD_CONTROL_POINT_2D = 25,	/*!< \brief Free form deformation for 2D design (change a control point). */
   FFD_CAMBER_2D = 26,		/*!< \brief Free form deformation for 3D design (camber change). */
   FFD_THICKNESS_2D = 27,		/*!< \brief Free form deformation for 3D design (thickness change). */
-  FFD_CONTROL_SURFACE = 28		/*!< \brief Free form deformation for 3D design (control surface). */
+  FFD_CONTROL_SURFACE = 28,		/*!< \brief Free form deformation for 3D design (control surface). */
+  FFD_RADIUS_2D = 29		/*!< \brief Free form deformation for 2D design (radious change). */
 };
 static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("FFD_SETTING", FFD_SETTING)
 ("FFD_CONTROL_POINT_2D", FFD_CONTROL_POINT_2D)
+("FFD_RADIUS_2D", FFD_RADIUS_2D)
 ("FFD_CAMBER_2D", FFD_CAMBER_2D)
 ("FFD_THICKNESS_2D", FFD_THICKNESS_2D)
 ("HICKS_HENNE", HICKS_HENNE)
@@ -1779,6 +1815,7 @@ public:
       switch (this->design_variable[iDV]) {
         case FFD_SETTING: nParamDV = 0; break;
         case FFD_CONTROL_POINT_2D: nParamDV = 5; break;
+        case FFD_RADIUS_2D: nParamDV = 1; break;
         case FFD_CAMBER_2D: nParamDV = 2; break;
         case FFD_THICKNESS_2D: nParamDV = 2; break;
         case HICKS_HENNE: nParamDV = 2; break;
@@ -1808,7 +1845,6 @@ public:
         }
       }
 
-      // ?? Not sure what's going on. Didn't touch it.
       for (unsigned short iParamDV = 0; iParamDV < nParamDV; iParamDV++) {
 
         ss << option_value[i] << " ";
@@ -1818,7 +1854,7 @@ public:
              (this->design_variable[iDV] == FFD_CONTROL_POINT_2D) ||
              (this->design_variable[iDV] == FFD_CAMBER_2D) ||
              (this->design_variable[iDV] == FFD_THICKNESS_2D) ||
-             (this->design_variable[iDV] == FFD_CONTROL_POINT_2D) ||
+             (this->design_variable[iDV] == FFD_RADIUS_2D) ||
              (this->design_variable[iDV] == FFD_CONTROL_POINT) ||
              (this->design_variable[iDV] == FFD_DIHEDRAL_ANGLE) ||
              (this->design_variable[iDV] == FFD_TWIST_ANGLE) ||
@@ -1957,27 +1993,26 @@ public:
       this->flowdir[i] = new double[3];
     }
 
-    stringstream ss;
     for (int i = 0; i < nVals; i++){
       this->marker[i].assign(option_value[6*i]);
-      ss << option_value[6*i + 1] << " ";
-      if(!(ss >> this->ttotal[i])){
+      istringstream ss_1st(option_value[6*i + 1]);
+      if(!(ss_1st >> this->ttotal[i])){
         return badValue(option_value, "inlet", this->name);
       }
-      ss << option_value[6*i + 2] << " ";
-      if(!(ss >> this->ptotal[i])){
+      istringstream ss_2nd(option_value[6*i + 2]);
+      if(!(ss_2nd >> this->ptotal[i])){
         return badValue(option_value, "inlet", this->name);
       }
-      ss << option_value[6*i + 3] << " ";
-      if (!(ss >> this->flowdir[i][0])){
+      istringstream ss_3rd(option_value[6*i + 3]);
+      if (!(ss_3rd >> this->flowdir[i][0])){
         return badValue(option_value, "inlet", this->name);
       }
-      ss << option_value[6*i + 4] << " ";
-      if (!(ss >> this->flowdir[i][1])){
+      istringstream ss_4th(option_value[6*i + 4]);
+      if (!(ss_4th >> this->flowdir[i][1])){
         return badValue(option_value, "inlet", this->name);
       }
-      ss << option_value[6*i + 5] << " ";
-      if (!(ss >> this->flowdir[i][2])){
+      istringstream ss_5th(option_value[6*i + 5]);
+      if (!(ss_5th >> this->flowdir[i][2])){
         return badValue(option_value, "inlet", this->name);
       }
     }
@@ -2052,7 +2087,6 @@ public:
       this->flowdir[i] = new double[3];
     }
 
-    stringstream ss;
     for (int i = 0; i < nVals; i++){
       this->marker[i].assign(option_value[7*i]);
         // Check to see if the enum value is in the map
@@ -2066,24 +2100,24 @@ public:
       Tenum val = this->m[option_value[7*i + 1]];
       this->field[i] = val;
 
-      ss << option_value[7*i + 2] << " ";
-      if(!(ss >> this->var1[i])){
+      istringstream ss_1st(option_value[7*i + 2]);
+      if(!(ss_1st >> this->var1[i])){
         return badValue(option_value, "Riemann", this->name);
       }
-      ss << option_value[7*i + 3] << " ";
-      if(!(ss >> this->var2[i])){
+      istringstream ss_2nd(option_value[7*i + 3]);
+      if(!(ss_2nd >> this->var2[i])){
         return badValue(option_value, "Riemann", this->name);
       }
-      ss << option_value[7*i + 4] << " ";
-      if (!(ss >> this->flowdir[i][0])){
+      istringstream ss_3rd(option_value[7*i + 4]);
+      if (!(ss_3rd >> this->flowdir[i][0])){
         return badValue(option_value, "Riemann", this->name);
       }
-      ss << option_value[7*i + 5] << " ";
-      if (!(ss >> this->flowdir[i][1])){
+      istringstream ss_4th(option_value[7*i + 5]);
+      if (!(ss_4th >> this->flowdir[i][1])){
         return badValue(option_value, "Riemann", this->name);
       }
-      ss << option_value[7*i + 6] << " ";
-      if (!(ss >> this->flowdir[i][2])){
+      istringstream ss_5th(option_value[7*i + 6]);
+      if (!(ss_5th >> this->flowdir[i][2])){
         return badValue(option_value, "Riemann", this->name);
       }
     }
@@ -2101,7 +2135,7 @@ public:
 };
 
 //Inlet condition where the input direction is assumed
-class COptionInletFixed : public COptionBase{
+class COptionExhaust : public COptionBase{
   string name; // identifier for the option
   unsigned short & size;
   string * & marker;
@@ -2109,11 +2143,12 @@ class COptionInletFixed : public COptionBase{
   double * & ptotal;
 
 public:
-  COptionInletFixed(string option_field_name, unsigned short & nMarker_Inlet, string* & Marker_Inlet, double* & Ttotal, double* & Ptotal) : size(nMarker_Inlet), marker(Marker_Inlet), ttotal(Ttotal), ptotal(Ptotal){
+  COptionExhaust(string option_field_name, unsigned short & nMarker_Exhaust, string* & Marker_Exhaust, double* & Ttotal, double* & Ptotal) : size(nMarker_Exhaust), marker(Marker_Exhaust), ttotal(Ttotal), ptotal(Ptotal){
     this->name = option_field_name;
   }
 
-  ~COptionInletFixed(){};
+  ~COptionExhaust(){};
+  
   string SetValue(vector<string> option_value){
 
     unsigned long totalVals = option_value.size();
@@ -2141,18 +2176,17 @@ public:
     this->marker = new string[nVals];
     this->ttotal = new double[nVals];
     this->ptotal = new double[nVals];
-    stringstream ss;
+
     for (int i = 0; i < nVals; i++){
       this->marker[i].assign(option_value[3*i]);
-      ss << option_value[3*i + 1] << " ";
-      if (!(ss >> this->ttotal[i])){
-        return badValue(option_value, "inlet fixed", this->name);
-      }
-      ss << option_value[3*i + 2] << " ";
-      if (!(ss >> this->ptotal[i])){
-        return badValue(option_value, "inlet fixed", this->name);
-      }
+      istringstream ss_1st(option_value[3*i + 1]);
+      if (!(ss_1st >> this->ttotal[i]))
+        return badValue(option_value, "exhaust fixed", this->name);
+      istringstream ss_2nd(option_value[3*i + 2]);
+      if (!(ss_2nd >> this->ptotal[i]))
+        return badValue(option_value, "exhaust fixed", this->name);
     }
+    
     return "";
   }
 
@@ -2162,6 +2196,72 @@ public:
     this->ptotal = NULL;
     this->size = 0; // There is no default value for list
   }
+  
+};
+
+//Inlet condition where the input direction is assumed
+class COptionBleed : public COptionBase{
+  string name; // identifier for the option
+  unsigned short & size;
+  string * & marker;
+  double * & massflow_target;
+  double * & temp_target;
+  
+public:
+  COptionBleed(string option_field_name, unsigned short & nMarker_Bleed, string* & Marker_Bleed, double* & MassFlow_Target, double* & Temp_Target) : size(nMarker_Bleed), marker(Marker_Bleed), massflow_target(MassFlow_Target), temp_target(Temp_Target){
+    this->name = option_field_name;
+  }
+  
+  ~COptionBleed(){};
+  
+  string SetValue(vector<string> option_value){
+    
+    unsigned long totalVals = option_value.size();
+    if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)){
+      this->size = 0;
+      this->marker = NULL;
+      this->massflow_target = NULL;
+      this->temp_target = NULL;
+      return "";
+    }
+    
+    if (totalVals % 3 != 0){
+      string newstring;
+      newstring.append(this->name);
+      newstring.append(": must have a number of entries divisible by 3");
+      this->size = 0;
+      this->marker = NULL;
+      this->massflow_target = NULL;
+      this->temp_target = NULL;
+      return newstring;
+    }
+    
+    unsigned long nVals = totalVals / 3;
+    this->size = nVals;
+    this->marker = new string[nVals];
+    this->massflow_target = new double[nVals];
+    this->temp_target = new double[nVals];
+    
+    for (int i = 0; i < nVals; i++){
+      this->marker[i].assign(option_value[3*i]);
+      istringstream ss_1st(option_value[3*i + 1]);
+      if (!(ss_1st >> this->massflow_target[i]))
+        return badValue(option_value, "bleed fixed", this->name);
+      istringstream ss_2nd(option_value[3*i + 2]);
+      if (!(ss_2nd >> this->temp_target[i]))
+        return badValue(option_value, "bleed fixed", this->name);
+    }
+    
+    return "";
+  }
+  
+  void SetDefault(){
+    this->marker = NULL;
+    this->massflow_target = NULL;
+    this->temp_target = NULL;
+    this->size = 0; // There is no default value for list
+  }
+  
 };
 
 class COptionPeriodic : public COptionBase{
@@ -2223,44 +2323,44 @@ public:
     }
 
     double deg2rad = PI_NUMBER/180.0;
-    stringstream ss;
+
     for (int i = 0; i < (nVals/2); i++){
       this->marker_bound[i].assign(option_value[mod_num*i]);
       this->marker_donor[i].assign(option_value[mod_num*i+1]);
-      ss << option_value[mod_num*i + 2] << " ";
-      if (!(ss >> this->rot_center[i][0])){
+      istringstream ss_1st(option_value[mod_num*i + 2]);
+      if (!(ss_1st >> this->rot_center[i][0])){
         return badValue(option_value, "periodic", this->name);
       }
-      ss << option_value[mod_num*i + 3] << " ";
-      if (!(ss >> this->rot_center[i][1])){
+      istringstream ss_2nd(option_value[mod_num*i + 3]);
+      if (!(ss_2nd >> this->rot_center[i][1])){
         return badValue(option_value, "periodic", this->name);
       }
-      ss << option_value[mod_num*i + 4] << " ";
-      if (!(ss >> this->rot_center[i][2])){
+      istringstream ss_3rd(option_value[mod_num*i + 4]);
+      if (!(ss_3rd >> this->rot_center[i][2])){
         return badValue(option_value, "periodic", this->name);
       }
-      ss << option_value[mod_num*i + 5] << " ";
-      if (!(ss >> this->rot_angles[i][0])){
+      istringstream ss_4th(option_value[mod_num*i + 5]);
+      if (!(ss_4th >> this->rot_angles[i][0])){
         return badValue(option_value, "periodic", this->name);
       }
-      ss << option_value[mod_num*i + 6] << " ";
-      if (!(ss >> this->rot_angles[i][1])){
+      istringstream ss_5th(option_value[mod_num*i + 6]);
+      if (!(ss_5th >> this->rot_angles[i][1])){
         return badValue(option_value, "periodic", this->name);
       }
-      ss << option_value[mod_num*i + 7] << " ";
-      if (!(ss >> this->rot_angles[i][2])){
+      istringstream ss_6th(option_value[mod_num*i + 7]);
+      if (!(ss_6th >> this->rot_angles[i][2])){
         return badValue(option_value, "periodic", this->name);
       }
-      ss << option_value[mod_num*i + 8] << " ";
-      if (!(ss >> this->translation[i][0])){
+      istringstream ss_7th(option_value[mod_num*i + 8]);
+      if (!(ss_7th >> this->translation[i][0])){
         return badValue(option_value, "periodic", this->name);
       }
-      ss << option_value[mod_num*i + 9] << " ";
-      if (!(ss >> this->translation[i][1])){
+      istringstream ss_8th(option_value[mod_num*i + 9]);
+      if (!(ss_8th >> this->translation[i][1])){
         return badValue(option_value, "periodic", this->name);
       }
-      ss << option_value[mod_num*i + 10] << " ";
-      if (!(ss >> this->translation[i][2])){
+      istringstream ss_9th(option_value[mod_num*i + 10]);
+      if (!(ss_9th >> this->translation[i][2])){
         return badValue(option_value, "periodic", this->name);
       }
       this->rot_angles[i][0] *= deg2rad;
@@ -2271,40 +2371,40 @@ public:
     for (unsigned long i = (nVals/2); i < nVals; i++){
       this->marker_bound[i].assign(option_value[mod_num*(i-nVals/2)+1]);
       this->marker_donor[i].assign(option_value[mod_num*(i-nVals/2)]);
-      ss << option_value[mod_num*(i-nVals/2) + 2] << " ";
-      if (!(ss >> this->rot_center[i][0])){
+      istringstream ss_1st(option_value[mod_num*(i-nVals/2) + 2]);
+      if (!(ss_1st >> this->rot_center[i][0])){
         return badValue(option_value, "periodic", this->name);
       }
-      ss << option_value[mod_num*(i-nVals/2) + 3] << " ";
-      if (!(ss >> this->rot_center[i][1])){
+      istringstream ss_2nd(option_value[mod_num*(i-nVals/2) + 3]);
+      if (!(ss_2nd >> this->rot_center[i][1])){
         return badValue(option_value, "periodic", this->name);
       }
-      ss << option_value[mod_num*(i-nVals/2) + 4] << " ";
-      if (!(ss >> this->rot_center[i][2])){
+      istringstream ss_3rd(option_value[mod_num*(i-nVals/2) + 4]);
+      if (!(ss_3rd >> this->rot_center[i][2])){
         return badValue(option_value, "periodic", this->name);
       }
-      ss << option_value[mod_num*(i-nVals/2) + 5] << " ";
-      if (!(ss >> this->rot_angles[i][0])){
+      istringstream ss_4th(option_value[mod_num*(i-nVals/2) + 5]);
+      if (!(ss_4th >> this->rot_angles[i][0])){
         return badValue(option_value, "periodic", this->name);
       }
-      ss << option_value[mod_num*(i-nVals/2) + 6] << " ";
-      if (!(ss >> this->rot_angles[i][1])){
+      istringstream ss_5th(option_value[mod_num*(i-nVals/2) + 6]);
+      if (!(ss_5th >> this->rot_angles[i][1])){
         return badValue(option_value, "periodic", this->name);
       }
-      ss << option_value[mod_num*(i-nVals/2) + 7] << " ";
-      if (!(ss >> this->rot_angles[i][2])){
+      istringstream ss_6th(option_value[mod_num*(i-nVals/2) + 7]);
+      if (!(ss_6th >> this->rot_angles[i][2])){
         return badValue(option_value, "periodic", this->name);
       }
-      ss << option_value[mod_num*(i-nVals/2) + 8] << " ";
-      if (!(ss >> this->translation[i][0])){
+      istringstream ss_7th(option_value[mod_num*(i-nVals/2) + 8]);
+      if (!(ss_7th >> this->translation[i][0])){
         return badValue(option_value, "periodic", this->name);
       }
-      ss << option_value[mod_num*(i-nVals/2) + 9] << " ";
-      if (!(ss >> this->translation[i][1])){
+      istringstream ss_8th(option_value[mod_num*(i-nVals/2) + 9]);
+      if (!(ss_8th >> this->translation[i][1])){
         return badValue(option_value, "periodic", this->name);
       }
-      ss << option_value[mod_num*(i-nVals/2) + 10] << " ";
-      if (!(ss >> this->translation[i][2])){
+      istringstream ss_9th(option_value[mod_num*(i-nVals/2) + 10]);
+      if (!(ss_9th >> this->translation[i][2])){
         return badValue(option_value, "periodic", this->name);
       }
       /*--- Mirror the rotational angles and translation vector (rotational
@@ -2400,36 +2500,36 @@ public:
     }
 
     string tname = "actuator disk";
-    stringstream ss;
+
     for (int i = 0; i < this->inlet_size; i++){
       this->marker_inlet[i].assign(option_value[mod_num*i]);
       this->marker_outlet[i].assign(option_value[mod_num*i+1]);
-      ss << option_value[mod_num*i + 2] << " ";
-      if (!(ss >> this->origin[i][0])){
+      istringstream ss_1st(option_value[mod_num*i + 2]);
+      if (!(ss_1st >> this->origin[i][0])){
         return badValue(option_value, tname, this->name);
       }
-      ss << option_value[mod_num*i + 3] << " ";
-      if (!(ss >> this->origin[i][1])){
+      istringstream ss_2nd(option_value[mod_num*i + 3]);
+      if (!(ss_2nd >> this->origin[i][1])){
         return badValue(option_value, tname, this->name);
       }
-      ss << option_value[mod_num*i + 4] << " ";
-      if (!(ss >> this->origin[i][2])){
+      istringstream ss_3rd(option_value[mod_num*i + 4]);
+      if (!(ss_3rd >> this->origin[i][2])){
         return badValue(option_value, tname, this->name);
       }
-      ss << option_value[mod_num*i + 5] << " ";
-      if (!(ss >> this->root_radius[i])){
+      istringstream ss_4th(option_value[mod_num*i + 5]);
+      if (!(ss_4th >> this->root_radius[i])){
         return badValue(option_value, tname, this->name);
       }
-      ss << option_value[mod_num*i + 6] << " ";
-      if (!(ss >> this->tip_radius[i])){
+      istringstream ss_5th(option_value[mod_num*i + 6]);
+      if (!(ss_5th >> this->tip_radius[i])){
         return badValue(option_value, tname, this->name);
       }
-      ss << option_value[mod_num*i + 7] << " ";
-      if (!(ss >> this->ct[i])){
+      istringstream ss_6th(option_value[mod_num*i + 7]);
+      if (!(ss_6th >> this->ct[i])){
         return badValue(option_value, tname, this->name);
       }
-      ss << option_value[mod_num*i + 8] << " ";
-      if (!(ss >> this->omega[i])){
+      istringstream ss_7th(option_value[mod_num*i + 8]);
+      if (!(ss_7th >> this->omega[i])){
         return badValue(option_value, tname, this->name);
       }
     }

@@ -1,10 +1,10 @@
 /*!
  * \file solution_adjoint_turbulent.cpp
  * \brief Main subrotuines for solving adjoint problems (Euler, Navier-Stokes, etc.).
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.3 "eagle"
+ * \author F. Palacios, A. Bueno
+ * \version 3.2.5 "eagle"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -751,7 +751,7 @@ void CAdjTurbSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
      (for non-conservative terms depending on gradients of flow adjoint vars.) ---*/
     PsiVar_Grad_i = solver_container[ADJFLOW_SOL]->node[iPoint]->GetGradient();
     numerics->SetAdjointVarGradient(PsiVar_Grad_i, NULL);
-    
+
     /*--- Set volume and distances to the surface ---*/
     numerics->SetVolume(geometry->node[iPoint]->GetVolume());
     numerics->SetDistance(geometry->node[iPoint]->GetWall_Distance(), 0.0);

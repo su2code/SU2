@@ -2,10 +2,10 @@
 
 ## \file finite_differences.py
 #  \brief Python script for doing the finite differences computation using the SU2 suite.
-#  \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 3.2.3 "eagle"
+#  \author F. Palacios
+#  \version 3.2.5 "eagle"
 #
-# SU2, Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
+# Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -49,7 +49,7 @@ def main():
     options.quiet      = options.quiet.upper() == 'TRUE'
     
     if options.oldpartitions != "oldpartitions":
-        print ("\n IMPORTANT: -p is no longer available in SU2 v3.2.3, use -n flag instead \n")
+        print ("\n IMPORTANT: -p is no longer available in SU2 v3.2.4, use -n flag instead \n")
         sys.exit()
     
     finite_differences( options.filename   ,
