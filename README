@@ -1,5 +1,5 @@
 -----------------------------------------------------------
-  SU2: The Open-Source CFD Code
+  SU2 (v3.2.5 "eagle"): The Open-Source CFD Code
 -----------------------------------------------------------
 
 Computational analysis tools have revolutionized the way we design aerospace systems, but most established codes are proprietary, unavailable, or prohibitively expensive for many users. The SU2 team is changing this, making computational analysis and design freely available as open-source software and involving everyone in its creation and development. 
@@ -44,17 +44,5 @@ $SU2_RUN should point to the folder where all binaries and python scripts were i
 $SU2_HOME should point to the root directory of the source code distribution, i.e., /path/to/SU2vX.X.X/.
 
 Thanks for building, and happy optimizing!
+
 - The SU2 Development Team
-  http://su2.stanford.edu
-
-----------------------------------------------------------
-SU2 Developers:
-
-- Francisco Palacios, Michael R. Colonno
-Engineering Research Associate, Department of Aeronautics & Astronautics. Stanford University.
-
-- Aniket C. Aranake, Sean R. Copeland, Thomas D. Economon, Heather Kline, Trent W. Lukaczyk, David Manosalvas, Kedar R. Naik, Santiago Padron, Brendan D. Tracey, Andrew D. Wendorff
-Ph.D. Candidates (developers in alphabetical order), Department of Aeronautics & Astronautics. Stanford University.
-
-- Juan J. Alonso
-Associate Professor, Department of Aeronautics & Astronautics. Stanford University.
