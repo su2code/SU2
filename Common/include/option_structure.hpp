@@ -1,7 +1,7 @@
 /*!
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
- * \author F. Palacios
+ * \author J. Hicken, B. Tracey
  * \version 3.2.5 "eagle"
  *
  * Many of the classes in this file are templated, and therefore must

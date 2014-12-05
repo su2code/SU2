@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for storing all the variables for 
  *        each kind of governing equation (direct, adjoint and linearized).
  *        The subroutines and functions are in the <i>variable_structure.cpp</i> file.
- * \author F. Palacios
+ * \author F. Palacios, T. Economon
  * \version 3.2.5 "eagle"
  *
  * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.

@@ -1,7 +1,7 @@
 /*!
  * \file solution_adjoint_turbulent.cpp
  * \brief Main subrotuines for solving adjoint problems (Euler, Navier-Stokes, etc.).
- * \author F. Palacios, A. Bueno
+ * \author F. Palacios, A. Bueno, T. Economon
  * \version 3.2.5 "eagle"
  *
  * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.

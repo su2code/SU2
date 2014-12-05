@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for space and time integration. 
  *        The subroutines and functions are in the <i>integration_structure.cpp</i>, 
  *        <i>integration_time.cpp</i>, and <i>integration_notime.cpp</i> files.
- * \author F. Palacios
+ * \author F. Palacios, T. Economon
  * \version 3.2.5 "eagle"
  *
  * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.

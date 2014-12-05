@@ -1,4 +1,4 @@
-## \file config.py
+## \file config_options.py
 #  \brief python package for config
 #  \author T. Lukaczyk, F. Palacios
 #  \version 3.2.5 "eagle"
@@ -53,8 +53,6 @@ class MathProblem(Option):
 
 #: class MathProblem
 
-
-
 class DEFINITION_DV(ordered_bunch):
     """ SU2.io.config.DEFINITION_DV()
     
@@ -102,6 +100,8 @@ class DEFINITION_DV(ordered_bunch):
         self.FFDTAG.extend(new_dvs['FFDTAG'])
         self.PARAM. extend(new_dvs['PARAM'])
 
+#: class DEFINITION_DV
+
 class DV_KIND(ordered_bunch):
   """ SU2.io.config.DV_KIND()
     
@@ -139,3 +139,5 @@ class DV_KIND(ordered_bunch):
     assert isinstance(new_dvs,DV_KIND) , 'input must be of type DV_KIND'
     self.FFDTAG.extend(new_dvs['FFDTAG'])
     self.PARAM. extend(new_dvs['PARAM'])
+
+#: class DV_KIND
