@@ -4389,6 +4389,9 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
               case PYRA_5:
                 VTK_Type = 14;
                 break;
+              default: // error
+                cout << "Kind of element not suppported!" << endl;
+                break;
             }
             
             /*--- Transfer the nodes for this element. ---*/
@@ -4532,6 +4535,7 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
                 case HEXA_8: VTK_Type = 12; break;
                 case PENTA_6: VTK_Type = 13; break;
                 case PYRA_5: VTK_Type = 14; break;
+                default: cout << "Kind of element not suppported!" << endl; break;  // error
               }
               /*--- Transfer the nodes for this element. ---*/
               for ( int j = 1; j < npe+1; j++ ) {

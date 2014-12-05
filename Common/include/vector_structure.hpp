@@ -60,7 +60,6 @@ private:
 	unsigned short nVar; /*!< \brief number of elements in a block */
 	unsigned long nBlk; /*!< \brief number of blocks (or number of blocks on this processor) */
 	unsigned long nBlkDomain; /*!< \brief number of blocks (or number of blocks on this processor without Ghost cells) */
-  unsigned long myrank; /*!< \brief processor rank (only used for parallel runs) */
   double* vec_val; /*!< \brief storage for the element values */
   
 public:

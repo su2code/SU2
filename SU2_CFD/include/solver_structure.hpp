@@ -4,7 +4,7 @@
  *        The subroutines and functions are in the <i>solver_structure.cpp</i>,
  *        <i>solution_direct.cpp</i>, <i>solution_adjoint.cpp</i>, and
  *        <i>solution_linearized.cpp</i> files.
- * \author F. Palacios
+ * \author F. Palacios, T. Economon
  * \version 3.2.5 "eagle"
  *
  * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.

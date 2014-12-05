@@ -1,5 +1,5 @@
 /*!
- * \file solution_direct_turbulent.cpp
+ * \file solution_direct_transition.cpp
  * \brief Main subrotuines for solving direct problems (Euler, Navier-Stokes, etc.).
  * \author A. Aranake
  * \version 3.2.5 "eagle"
