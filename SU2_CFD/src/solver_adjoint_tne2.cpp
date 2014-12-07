@@ -1,5 +1,5 @@
 /*!
- * \file solution_adjoint_mean.cpp
+ * \file solution_adjoint_tne2.cpp
  * \brief Main subrotuines for solving adjoint problems (Euler, Navier-Stokes, etc.).
  * \author S. Copeland
  * \version 3.2.5 "eagle"

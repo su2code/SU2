@@ -1,7 +1,7 @@
 /*!
  * \file grid_movement_structure.cpp
  * \brief Subroutines for doing the grid movement using different strategies
- * \author F. Palacios
+ * \author F. Palacios, T. Economon, S. Padron
  * \version 3.2.5 "eagle"
  *
  * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.

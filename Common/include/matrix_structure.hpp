@@ -2,7 +2,7 @@
  * \file matrix_structure.hpp
  * \brief Headers of the main subroutines for creating the sparse matrices-by-blocks.
  *        The subroutines and functions are in the <i>matrix_structure.cpp</i> file.
- * \author F. Palacios
+ * \author F. Palacios, A. Bueno
  * \version 3.2.5 "eagle"
  *
  * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
