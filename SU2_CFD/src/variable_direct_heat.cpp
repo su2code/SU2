@@ -1,7 +1,7 @@
 /*!
  * \file variable_direct_heat.cpp
  * \brief Definition of the solution fields.
- * \author F. Palacios
+ * \author F. Palacios, T. Economon
  * \version 3.2.5 "eagle"
  *
  * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.

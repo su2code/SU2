@@ -1,7 +1,7 @@
 /*!
  * \file output_tecplot.cpp
  * \brief Main subroutines for output solver information.
- * \author F. Palacios, T. Economon, Michael Colonno
+ * \author F. Palacios, T. Economon, M. Colonno
  * \version 3.2.5 "eagle"
  *
  * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
