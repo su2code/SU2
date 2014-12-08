@@ -2202,9 +2202,9 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
   /*--- Write output to the console if this is the master node and first domain ---*/
 
   if ((rank == MASTER_NODE) && (iMesh == MESH_0)) {
-
+    
     cout.precision(6);
-
+    
     if (compressible) {
       if (viscous) {
         cout << "Viscous flow: Computing pressure using the ideal gas law" << endl;
@@ -2216,10 +2216,10 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
       }
       cout << "Note: Negative pressure, temperature or density is not allowed!" << endl;
     }
-
+    
     if (grid_movement) cout << "Force coefficients computed using MACH_MOTION." << endl;
     else cout << "Force coefficients computed using free-stream values." << endl;
-
+    
     if (incompressible || freesurface) {
       cout << "Viscous and Inviscid flow: rho_ref, and vel_ref" << endl;
       cout << "are based on the free-stream values, p_ref = rho_ref*vel_ref^2." << endl;
@@ -2227,101 +2227,99 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
       cout << "Mach number: "<< config->GetMach() << ", computed using the Bulk modulus." << endl;
       cout << "Angle of attack (deg): "<< config->GetAoA() << ", computed using the the free-stream velocity." << endl;
       cout << "Side slip angle (deg): "<< config->GetAoS() << ", computed using the the free-stream velocity." << endl;
-      if (viscous) cout << "Reynolds number: " << config->GetReynolds() << ", computed using free-stream values."<<endl;
+      if (viscous) cout << "Reynolds number: " << config->GetReynolds() << ", computed using free-stream values."<< endl;
       cout << "Only dimensional computation, the grid should be dimensional." << endl;
     }
-
+    
     cout <<"-- Input conditions:"<< endl;
-
-    cout <<"** Fluid Model:"<< endl;
-
+    
     if (compressible) {
-    	switch (config->GetKind_FluidModel()) {
-
-    	    case STANDARD_AIR:
-    	      cout << "Fluid Model: STANDARD_AIR "<< endl;
-    	      cout << "Specific gas constant: " << config->GetGas_Constant();
-    	      if (config->GetSystemMeasurements() == SI) cout << " N.m/kg.K." << endl;
-    	      else if (config->GetSystemMeasurements() == US) cout << " lbf.ft/slug.R." << endl;
-    	      cout << "Specific gas constant(non-dim): " << config->GetGas_ConstantND()<<endl;
-    	      cout << "Specific Heat Ratio: 1.4000 "<<endl;
-    	      break;
-
-    	    case IDEAL_GAS:
-    	    	 cout << "Fluid Model: IDEAL_GAS "<< endl;
-			     cout << "Specific gas constant: " << config->GetGas_Constant() << " N.m/kg.K." << endl;
-			     cout << "Specific gas constant(non-dim): " << config->GetGas_ConstantND()<<endl;
-			     cout << "Specific Heat Ratio: "<< Gamma <<endl;
-    	      break;
-
-    	    case VW_GAS:
+      switch (config->GetKind_FluidModel()) {
+          
+        case STANDARD_AIR:
+          cout << "Fluid Model: STANDARD_AIR "<< endl;
+          cout << "Specific gas constant: " << config->GetGas_Constant();
+          if (config->GetSystemMeasurements() == SI) cout << " N.m/kg.K." << endl;
+          else if (config->GetSystemMeasurements() == US) cout << " lbf.ft/slug.R." << endl;
+          cout << "Specific gas constant(non-dim): " << config->GetGas_ConstantND()<< endl;
+          cout << "Specific Heat Ratio: 1.4000 "<< endl;
+          break;
+          
+        case IDEAL_GAS:
+          cout << "Fluid Model: IDEAL_GAS "<< endl;
+          cout << "Specific gas constant: " << config->GetGas_Constant() << " N.m/kg.K." << endl;
+          cout << "Specific gas constant(non-dim): " << config->GetGas_ConstantND()<< endl;
+          cout << "Specific Heat Ratio: "<< Gamma << endl;
+          break;
+          
+        case VW_GAS:
     	    	cout << "Fluid Model: Van der Waals "<< endl;
-			    cout << "Specific gas constant: " << config->GetGas_Constant() << " N.m/kg.K." << endl;
-			    cout << "Specific gas constant(non-dim): " << config->GetGas_ConstantND()<<endl;
-			    cout << "Specific Heat Ratio: "<< Gamma <<endl;
-				cout << "Critical Pressure:   " << config->GetPressure_Critical()  << " Pa." << endl;
-				cout << "Critical Temperature:  " << config->GetTemperature_Critical() << " K." << endl;
-			    cout << "Critical Pressure (non-dim):   " << config->GetPressure_Critical() /config->GetPressure_Ref() << endl;
-			    cout << "Critical Temperature (non-dim) :  " << config->GetTemperature_Critical() /config->GetTemperature_Ref() << endl;
-			    break;
-
-    	    case PR_GAS:
+          cout << "Specific gas constant: " << config->GetGas_Constant() << " N.m/kg.K." << endl;
+          cout << "Specific gas constant(non-dim): " << config->GetGas_ConstantND()<< endl;
+          cout << "Specific Heat Ratio: "<< Gamma << endl;
+          cout << "Critical Pressure:   " << config->GetPressure_Critical()  << " Pa." << endl;
+          cout << "Critical Temperature:  " << config->GetTemperature_Critical() << " K." << endl;
+          cout << "Critical Pressure (non-dim):   " << config->GetPressure_Critical() /config->GetPressure_Ref() << endl;
+          cout << "Critical Temperature (non-dim) :  " << config->GetTemperature_Critical() /config->GetTemperature_Ref() << endl;
+          break;
+          
+        case PR_GAS:
     	    	cout << "Fluid Model: Peng-Robinson "<< endl;
-				cout << "Specific gas constant: " << config->GetGas_Constant() << " N.m/kg.K." << endl;
-				cout << "Specific gas constant(non-dim): " << config->GetGas_ConstantND()<<endl;
-				cout << "Specific Heat Ratio: "<< Gamma <<endl;
-				cout << "Critical Pressure:   " << config->GetPressure_Critical()  << " Pa." << endl;
-				cout << "Critical Temperature:  " << config->GetTemperature_Critical() << " K." << endl;
-				cout << "Critical Pressure (non-dim):   " << config->GetPressure_Critical() /config->GetPressure_Ref() << endl;
-				cout << "Critical Temperature (non-dim) :  " << config->GetTemperature_Critical() /config->GetTemperature_Ref() << endl;
-				break;
-
+          cout << "Specific gas constant: " << config->GetGas_Constant() << " N.m/kg.K." << endl;
+          cout << "Specific gas constant(non-dim): " << config->GetGas_ConstantND()<< endl;
+          cout << "Specific Heat Ratio: "<< Gamma << endl;
+          cout << "Critical Pressure:   " << config->GetPressure_Critical()  << " Pa." << endl;
+          cout << "Critical Temperature:  " << config->GetTemperature_Critical() << " K." << endl;
+          cout << "Critical Pressure (non-dim):   " << config->GetPressure_Critical() /config->GetPressure_Ref() << endl;
+          cout << "Critical Temperature (non-dim) :  " << config->GetTemperature_Critical() /config->GetTemperature_Ref() << endl;
+          break;
+          
     		}
-    	if(viscous){
-			switch (config->GetKind_ViscosityModel()) {
-
-				case CONSTANT_VISCOSITY:
-				  cout << "Viscosity Model: CONSTANT_VISCOSITY  "<< endl;
-				  cout << "Laminar Viscosity: " << config->GetMu_ConstantND()*Viscosity_Ref;
-				  if (config->GetSystemMeasurements() == SI) cout << " N.s/m^2." << endl;
-				  else if (config->GetSystemMeasurements() == US) cout << " lbf.s/ft^2." << endl;
-				  cout << "Laminar Viscosity (non-dim): " << config->GetMu_ConstantND()<<endl;
-				  break;
-
-				case SUTHERLAND:
-					 cout << "Viscosity Model: SUTHERLAND "<< endl;
-					 cout << "Ref. Laminar Viscosity: " << config->GetMu_RefND()*Viscosity_Ref;
-					 if (config->GetSystemMeasurements() == SI) cout << " N.s/m^2." << endl;
-					 else if (config->GetSystemMeasurements() == US) cout << " lbf.s/ft^2." << endl;
-					 cout << "Ref. Temperature: " << config->GetMu_Temperature_RefND()*config->GetTemperature_Ref();
-					 if (config->GetSystemMeasurements() == SI) cout << " K." << endl;
-					 else if (config->GetSystemMeasurements() == US) cout << " R." << endl;
-					 cout << "Sutherland Constant: "<< config->GetMu_SND()*config->GetTemperature_Ref();
-					 if (config->GetSystemMeasurements() == SI) cout << " K." << endl;
-					 else if (config->GetSystemMeasurements() == US) cout << " R." << endl;
-					 cout << "Laminar Viscosity (non-dim): " << config->GetMu_ConstantND()<<endl;
-					 cout << "Ref. Temperature (non-dim): " << config->GetMu_Temperature_RefND()<<endl;
-					 cout << "Sutherland constant (non-dim): "<< config->GetMu_SND()<<endl;
-				  break;
-
-			}
-			switch (config->GetKind_ConductivityModel()) {
-
-				case CONSTANT_PRANDTL:
-				  cout << "Conductivity Model: CONSTANT_PRANDTL  "<< endl;
-				  cout << "Prandtl: " << config->GetPrandtl_Lam()<<endl;
-				  break;
-
-				case CONSTANT_CONDUCTIVITY:
-					 cout << "Conductivity Model: CONSTANT_CONDUCTIVITY "<< endl;
-					 cout << "Molecular Conductivity: " << config->GetKt_ConstantND()*Conductivity_Ref<< " W/m^2.K." << endl;
-					 cout << "Molecular Conductivity (non-dim): " << config->GetKt_ConstantND()<<endl;
-				  break;
-
-			}
-    	}
+      if(viscous){
+        switch (config->GetKind_ViscosityModel()) {
+            
+          case CONSTANT_VISCOSITY:
+            cout << "Viscosity Model: CONSTANT_VISCOSITY  "<< endl;
+            cout << "Laminar Viscosity: " << config->GetMu_ConstantND()*Viscosity_Ref;
+            if (config->GetSystemMeasurements() == SI) cout << " N.s/m^2." << endl;
+            else if (config->GetSystemMeasurements() == US) cout << " lbf.s/ft^2." << endl;
+            cout << "Laminar Viscosity (non-dim): " << config->GetMu_ConstantND()<< endl;
+            break;
+            
+          case SUTHERLAND:
+            cout << "Viscosity Model: SUTHERLAND "<< endl;
+            cout << "Ref. Laminar Viscosity: " << config->GetMu_RefND()*Viscosity_Ref;
+            if (config->GetSystemMeasurements() == SI) cout << " N.s/m^2." << endl;
+            else if (config->GetSystemMeasurements() == US) cout << " lbf.s/ft^2." << endl;
+            cout << "Ref. Temperature: " << config->GetMu_Temperature_RefND()*config->GetTemperature_Ref();
+            if (config->GetSystemMeasurements() == SI) cout << " K." << endl;
+            else if (config->GetSystemMeasurements() == US) cout << " R." << endl;
+            cout << "Sutherland Constant: "<< config->GetMu_SND()*config->GetTemperature_Ref();
+            if (config->GetSystemMeasurements() == SI) cout << " K." << endl;
+            else if (config->GetSystemMeasurements() == US) cout << " R." << endl;
+            cout << "Laminar Viscosity (non-dim): " << config->GetMu_ConstantND()<< endl;
+            cout << "Ref. Temperature (non-dim): " << config->GetMu_Temperature_RefND()<< endl;
+            cout << "Sutherland constant (non-dim): "<< config->GetMu_SND()<< endl;
+            break;
+            
+        }
+        switch (config->GetKind_ConductivityModel()) {
+            
+          case CONSTANT_PRANDTL:
+            cout << "Conductivity Model: CONSTANT_PRANDTL  "<< endl;
+            cout << "Prandtl: " << config->GetPrandtl_Lam()<< endl;
+            break;
+            
+          case CONSTANT_CONDUCTIVITY:
+            cout << "Conductivity Model: CONSTANT_CONDUCTIVITY "<< endl;
+            cout << "Molecular Conductivity: " << config->GetKt_ConstantND()*Conductivity_Ref<< " W/m^2.K." << endl;
+            cout << "Molecular Conductivity (non-dim): " << config->GetKt_ConstantND()<< endl;
+            break;
+            
+        }
+      }
     }
-
+    
     if (incompressible || freesurface) {
       cout << "Bulk modulus: " << config->GetBulk_Modulus();
       if (config->GetSystemMeasurements() == SI) cout << " Pa." << endl;
@@ -2330,21 +2328,21 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
       if (config->GetSystemMeasurements() == SI) cout << " Pa." << endl;
       else if (config->GetSystemMeasurements() == US) cout << " psf." << endl;
     }
-
+    
     cout << "Free-stream pressure: " << config->GetPressure_FreeStream();
     if (config->GetSystemMeasurements() == SI) cout << " Pa." << endl;
     else if (config->GetSystemMeasurements() == US) cout << " psf." << endl;
-
+    
     if (compressible) {
       cout << "Free-stream temperature: " << config->GetTemperature_FreeStream();
       if (config->GetSystemMeasurements() == SI) cout << " K." << endl;
       else if (config->GetSystemMeasurements() == US) cout << " R." << endl;
     }
-
+    
     cout << "Free-stream density: " << config->GetDensity_FreeStream();
     if (config->GetSystemMeasurements() == SI) cout << " kg/m^3." << endl;
     else if (config->GetSystemMeasurements() == US) cout << " slug/ft^3." << endl;
-
+    
     if (nDim == 2) {
       cout << "Free-stream velocity: (" << config->GetVelocity_FreeStream()[0] << ", ";
       cout << config->GetVelocity_FreeStream()[1] << ")";
@@ -2355,17 +2353,17 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
     }
     if (config->GetSystemMeasurements() == SI) cout << " m/s. ";
     else if (config->GetSystemMeasurements() == US) cout << " ft/s. ";
-
+    
     cout << "Magnitude: "	<< config->GetModVel_FreeStream();
     if (config->GetSystemMeasurements() == SI) cout << " m/s." << endl;
     else if (config->GetSystemMeasurements() == US) cout << " ft/s." << endl;
-
+    
     if (compressible) {
       cout << "Free-stream total energy per unit mass: " << config->GetEnergy_FreeStream();
       if (config->GetSystemMeasurements() == SI) cout << " m^2/s^2." << endl;
       else if (config->GetSystemMeasurements() == US) cout << " ft^2/s^2." << endl;
     }
-
+    
     if (viscous) {
       cout << "Free-stream viscosity: " << config->GetViscosity_FreeStream();
       if (config->GetSystemMeasurements() == SI) cout << " N.s/m^2." << endl;
@@ -2379,49 +2377,49 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
         else if (config->GetSystemMeasurements() == US) cout << " 1/s." << endl;
       }
     }
-
+    
     if (unsteady) { cout << "Total time: " << config->GetTotal_UnstTime() << " s. Time step: " << config->GetDelta_UnstTime() << " s." << endl; }
-
+    
     /*--- Print out reference values. ---*/
-
+    
     cout <<"-- Reference values:"<< endl;
-
+    
     if (compressible) {
       cout << "Reference specific gas constant: " << config->GetGas_Constant_Ref();
       if (config->GetSystemMeasurements() == SI) cout << " N.m/kg.K." << endl;
       else if (config->GetSystemMeasurements() == US) cout << " lbf.ft/slug.R." << endl;
     }
-
+    
     cout << "Reference pressure: " << config->GetPressure_Ref();
     if (config->GetSystemMeasurements() == SI) cout << " Pa." << endl;
     else if (config->GetSystemMeasurements() == US) cout << " psf." << endl;
-
+    
     if (compressible) {
       cout << "Reference temperature: " << config->GetTemperature_Ref();
       if (config->GetSystemMeasurements() == SI) cout << " K." << endl;
       else if (config->GetSystemMeasurements() == US) cout << " R." << endl;
     }
-
+    
     cout << "Reference density: " << config->GetDensity_Ref();
     if (config->GetSystemMeasurements() == SI) cout << " kg/m^3." << endl;
     else if (config->GetSystemMeasurements() == US) cout << " slug/ft^3." << endl;
-
+    
     cout << "Reference velocity: " << config->GetVelocity_Ref();
     if (config->GetSystemMeasurements() == SI) cout << " m/s." << endl;
     else if (config->GetSystemMeasurements() == US) cout << " ft/s." << endl;
-
+    
     if (compressible) {
       cout << "Reference energy per unit mass: " << config->GetEnergy_Ref();
       if (config->GetSystemMeasurements() == SI) cout << " m^2/s^2." << endl;
       else if (config->GetSystemMeasurements() == US) cout << " ft^2/s^2." << endl;
     }
-
+    
     if (incompressible || freesurface) {
       cout << "Reference length: " << config->GetLength_Ref();
       if (config->GetSystemMeasurements() == SI) cout << " m." << endl;
       else if (config->GetSystemMeasurements() == US) cout << " in." << endl;
     }
-
+    
     if (viscous) {
       cout << "Reference viscosity: " << config->GetViscosity_Ref();
       if (config->GetSystemMeasurements() == SI) cout << " N.s/m^2." << endl;
@@ -2430,12 +2428,12 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
       if (config->GetSystemMeasurements() == SI) cout << " W/m^2.K." << endl;
       else if (config->GetSystemMeasurements() == US) cout << " lbf/ft.s.R." << endl;
     }
-
-
+    
+    
     if (unsteady) cout << "Reference time: " << config->GetTime_Ref() <<" s." << endl;
-
+    
     /*--- Print out resulting non-dim values here. ---*/
-
+    
     cout << "-- Resulting non-dimensional state:" << endl;
     cout << "Mach number (non-dim): " << config->GetMach() << endl;
     if (viscous) {
@@ -2447,16 +2445,16 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
       cout << "Froude number (non-dim): " << Froude << endl;
       cout << "Lenght of the baseline wave (non-dim): " << 2.0*PI_NUMBER*Froude*Froude << endl;
     }
-
+    
     if (compressible) {
       cout << "Specific gas constant (non-dim): " << config->GetGas_ConstantND() << endl;
       cout << "Free-stream temperature (non-dim): " << config->GetTemperature_FreeStreamND() << endl;
     }
-
+    
     cout << "Free-stream pressure (non-dim): " << config->GetPressure_FreeStreamND() << endl;
-
+    
     cout << "Free-stream density (non-dim): " << config->GetDensity_FreeStreamND() << endl;
-
+    
     if (nDim == 2) {
       cout << "Free-stream velocity (non-dim): (" << config->GetVelocity_FreeStreamND()[0] << ", ";
       cout << config->GetVelocity_FreeStreamND()[1] << "). ";
@@ -2465,9 +2463,9 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
       cout << config->GetVelocity_FreeStreamND()[1] << ", " << config->GetVelocity_FreeStreamND()[2] << "). ";
     }
     cout << "Magnitude: "	 << config->GetModVel_FreeStreamND() << endl;
-
+    
     if (compressible)
-    	cout << "Free-stream total energy per unit mass (non-dim): " << config->GetEnergy_FreeStreamND() << endl;
+      cout << "Free-stream total energy per unit mass (non-dim): " << config->GetEnergy_FreeStreamND() << endl;
     
     if (viscous) {
       cout << "Free-stream viscosity (non-dim): " << config->GetViscosity_FreeStreamND() << endl;
@@ -2476,16 +2474,16 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
         cout << "Free-stream specific dissipation (non-dim): " << config->GetOmega_FreeStreamND() << endl;
       }
     }
-
+    
     if (unsteady) {
       cout << "Total time (non-dim): " << config->GetTotal_UnstTimeND() << endl;
       cout << "Time step (non-dim): " << config->GetDelta_UnstTimeND() << endl;
     }
-
+    
     cout << endl;
-
+    
   }
-
+  
 }
 
 void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter) {

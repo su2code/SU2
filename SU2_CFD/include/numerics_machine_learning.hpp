@@ -99,7 +99,7 @@ class CActivator{
 public:
 	CActivator();
 	~CActivator();
-	virtual double Activate(double combination){cout<< "IN BASE ACTIVATOR THIS IS BAD" <<endl; return 0;};
+	virtual double Activate(double combination){cout<< "IN BASE ACTIVATOR THIS IS BAD" << endl; return 0;};
 };
 
 class CTanhActivator : public CActivator{

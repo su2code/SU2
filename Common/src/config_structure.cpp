@@ -3228,7 +3228,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         switch (Kind_Turb_Model) {
           case SA:  cout << "Spalart Allmaras" << endl; break;
           case SST: cout << "Menter's SST"     << endl; break;
-          case ML: cout << "Machine Learning" <<endl;break;
+          case ML: cout << "Machine Learning" << endl;break;
         }
         break;
       case TNE2_EULER:
@@ -3275,8 +3275,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     if (EquivArea) {
       cout <<"The equivalent area is going to be evaluated on the near-field."<< endl;
-      cout <<"The lower integration limit is "<<EA_IntLimit[0]<<", and the upper is "<<EA_IntLimit[1]<<"."<<endl;
-      cout <<"The near-field is situated at "<<EA_IntLimit[2]<<"."<<endl;
+      cout <<"The lower integration limit is "<<EA_IntLimit[0]<<", and the upper is "<<EA_IntLimit[1]<<"."<< endl;
+      cout <<"The near-field is situated at "<<EA_IntLimit[2]<<"."<< endl;
     }
 
     if (Grid_Movement) {
@@ -3306,16 +3306,16 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     if (Adjoint || Linearized)
       cout << "Read flow solution from: " << Solution_FlowFileName << "." << endl;
 
-    if (RefAreaCoeff == 0) cout << "The reference length/area will be computed using y(2D) or z(3D) projection." <<endl;
-    else cout << "The reference length/area (force coefficient) is " << RefAreaCoeff << "." <<endl;
-    cout << "The reference length (moment computation) is " << RefLengthMoment << "." <<endl;
+    if (RefAreaCoeff == 0) cout << "The reference length/area will be computed using y(2D) or z(3D) projection." << endl;
+    else cout << "The reference length/area (force coefficient) is " << RefAreaCoeff << "." << endl;
+    cout << "The reference length (moment computation) is " << RefLengthMoment << "." << endl;
 
     if ((nRefOriginMoment_X > 1) || (nRefOriginMoment_Y > 1) || (nRefOriginMoment_Z > 1)) {
       cout << "Surface(s) where the force coefficients are evaluated and their reference origin for moment computation: ";
       for (iMarker_Monitoring = 0; iMarker_Monitoring < nMarker_Monitoring; iMarker_Monitoring++) {
         cout << Marker_Monitoring[iMarker_Monitoring] << " (" << RefOriginMoment_X[iMarker_Monitoring] <<", "<<RefOriginMoment_Y[iMarker_Monitoring] <<", "<< RefOriginMoment_Z[iMarker_Monitoring] << ")";
         if (iMarker_Monitoring < nMarker_Monitoring-1) cout << ", ";
-        else cout <<"."<<endl;
+        else cout <<"."<< endl;
       }
     }
     else {
@@ -3324,7 +3324,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       for (iMarker_Monitoring = 0; iMarker_Monitoring < nMarker_Monitoring; iMarker_Monitoring++) {
         cout << Marker_Monitoring[iMarker_Monitoring];
         if (iMarker_Monitoring < nMarker_Monitoring-1) cout << ", ";
-        else cout <<"."<<endl;
+        else cout <<"."<< endl;
       }
     }
 
@@ -3335,7 +3335,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         if (iMarker_Designing < nMarker_Designing-1) cout << ", ";
         else cout <<".";
       }
-      cout<<endl;
+      cout<< endl;
     }
 
     cout << "Surface(s) plotted in the output file: ";
@@ -3344,7 +3344,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       if (iMarker_Plotting < nMarker_Plotting-1) cout << ", ";
       else cout <<".";
     }
-    cout<<endl;
+    cout<< endl;
 
     if (nMarker_DV != 0) {
       cout << "Surface(s) affected by the design variables: ";
@@ -3353,7 +3353,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         if (iMarker_DV < nMarker_DV-1) cout << ", ";
         else cout <<".";
       }
-      cout<<endl;
+      cout<< endl;
     }
 
     if ((Kind_GridMovement[ZONE_0] == DEFORMING) || (Kind_GridMovement[ZONE_0] == MOVING_WALL)) {
@@ -3363,7 +3363,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         if (iMarker_Moving < nMarker_Moving-1) cout << ", ";
         else cout <<".";
       }
-      cout<<endl;
+      cout<< endl;
     }
 
   }
@@ -3376,7 +3376,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         if (iMarker_GeoEval < nMarker_GeoEval-1) cout << ", ";
         else cout <<".";
       }
-      cout<<endl;
+      cout<< endl;
     }
   }
 
@@ -3407,7 +3407,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		cout << endl <<"---------------------- Grid deformation parameters ----------------------" << endl;
 		cout << "Grid deformation using a linear elasticity method." << endl;
 
-    if (Hold_GridFixed == YES) cout << "Hold some regions of the mesh fixed (hardcode implementation)." <<endl;
+    if (Hold_GridFixed == YES) cout << "Hold some regions of the mesh fixed (hardcode implementation)." << endl;
   }
 
   if (val_software == SU2_DOT) {
@@ -3416,7 +3416,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   if ((val_software == SU2_DEF) || (val_software == SU2_DOT)) {
 
-    cout << "Design variables definition (markers <-> value <-> param):" <<endl;
+    cout << "Design variables definition (markers <-> value <-> param):" << endl;
 
     for (unsigned short iDV = 0; iDV < nDV; iDV++) {
 
@@ -3548,7 +3548,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 	if (val_software == SU2_CFD) {
 		cout << endl <<"---------------------- Space numerical integration ----------------------" << endl;
 
-		if (SmoothNumGrid) cout << "There are some smoothing iterations on the grid coordinates." <<endl;
+		if (SmoothNumGrid) cout << "There are some smoothing iterations on the grid coordinates." << endl;
 
 		if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
 
@@ -3838,7 +3838,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
 
     if ((Kind_Regime == INCOMPRESSIBLE) || (Kind_Regime == FREESURFACE)) {
-      cout << "Artificial compressibility factor: " << ArtComp_Factor << "." <<endl;
+      cout << "Artificial compressibility factor: " << ArtComp_Factor << "." << endl;
     }
 
     cout << endl <<"---------------------- Time numerical integration -----------------------" << endl;
@@ -3847,13 +3847,13 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         cout << "Local time stepping (steady state simulation)." << endl; break;
       case TIME_STEPPING:
         cout << "Unsteady simulation using a time stepping strategy."<< endl;
-        if (Unst_CFL != 0.0) cout << "Time step computed by the code. Unsteady CFL number: " << Unst_CFL <<"."<<endl;
+        if (Unst_CFL != 0.0) cout << "Time step computed by the code. Unsteady CFL number: " << Unst_CFL <<"."<< endl;
         else cout << "Unsteady time step provided by the user (s): "<< Delta_UnstTime << "." << endl;
         break;
       case DT_STEPPING_1ST: case DT_STEPPING_2ND:
         if (Unsteady_Simulation == DT_STEPPING_1ST) cout << "Unsteady simulation, dual time stepping strategy (first order in time)."<< endl;
         if (Unsteady_Simulation == DT_STEPPING_2ND) cout << "Unsteady simulation, dual time stepping strategy (second order in time)."<< endl;
-        if (Unst_CFL != 0.0) cout << "Time step computed by the code. Unsteady CFL number: " << Unst_CFL <<"."<<endl;
+        if (Unst_CFL != 0.0) cout << "Time step computed by the code. Unsteady CFL number: " << Unst_CFL <<"."<< endl;
         else cout << "Unsteady time step provided by the user (s): "<< Delta_UnstTime << "." << endl;
         cout << "Total number of internal Dual Time iterations: "<< Unst_nIntIter <<"." << endl;
         break;
@@ -3876,31 +3876,31 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           switch (Kind_Linear_Solver) {
             case BCGSTAB:
               cout << "BCGSTAB is used for solving the linear system." << endl;
-              cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<<endl;
-              cout << "Max number of iterations: "<< Linear_Solver_Iter <<"."<<endl;
-              cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<<endl;
+              cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<< endl;
+              cout << "Max number of iterations: "<< Linear_Solver_Iter <<"."<< endl;
+              cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<< endl;
               break;
             case FGMRES || RFGMRES:
               cout << "FGMRES is used for solving the linear system." << endl;
-              cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<<endl;
-              cout << "Max number of iterations: "<< Linear_Solver_Iter <<"."<<endl;
-              cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<<endl;
+              cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<< endl;
+              cout << "Max number of iterations: "<< Linear_Solver_Iter <<"."<< endl;
+              cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<< endl;
               break;
             case SMOOTHER_JACOBI:
               cout << "A Jacobi method is used for smoothing the linear system." << endl;
-              cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<<endl;
+              cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<< endl;
               break;
             case SMOOTHER_ILU:
               cout << "A ILU0 method is used for smoothing the linear system." << endl;
-              cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<<endl;
+              cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<< endl;
               break;
             case SMOOTHER_LUSGS:
               cout << "A LU-SGS method is used for smoothing the linear system." << endl;
-              cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<<endl;
+              cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<< endl;
               break;
             case SMOOTHER_LINELET:
               cout << "A Linelet method is used for smoothing the linear system." << endl;
-              cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<<endl;
+              cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<< endl;
               break;
           }
           break;
@@ -3914,15 +3914,15 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           switch (Kind_Linear_Solver) {
             case BCGSTAB:
               cout << "BCGSTAB is used for solving the linear system." << endl;
-              cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<<endl;
-              cout << "Max number of iterations: "<< Linear_Solver_Iter <<"."<<endl;
-              cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<<endl;
+              cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<< endl;
+              cout << "Max number of iterations: "<< Linear_Solver_Iter <<"."<< endl;
+              cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<< endl;
               break;
             case FGMRES || RFGMRES:
               cout << "FGMRES is used for solving the linear system." << endl;
-              cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<<endl;
-              cout << "Max number of iterations: "<< Linear_Solver_Iter <<"."<<endl;
-              cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<<endl;
+              cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<< endl;
+              cout << "Max number of iterations: "<< Linear_Solver_Iter <<"."<< endl;
+              cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<< endl;
               break;
           }
           break;
@@ -3985,8 +3985,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       if (MGCycle == 0) cout << "V Multigrid Cycle, with " << nMultiLevel << " multigrid levels."<< endl;
       if (MGCycle == 1) cout << "W Multigrid Cycle, with " << nMultiLevel << " multigrid levels."<< endl;
 
-      cout << "Damping factor for the residual restriction: " << Damp_Res_Restric <<"."<<endl;
-      cout << "Damping factor for the correction prolongation: " << Damp_Correc_Prolong <<"."<<endl;
+      cout << "Damping factor for the residual restriction: " << Damp_Res_Restric <<"."<< endl;
+      cout << "Damping factor for the correction prolongation: " << Damp_Correc_Prolong <<"."<< endl;
     }
 
     if ((Kind_Solver != LINEAR_ELASTICITY) && (Kind_Solver != HEAT_EQUATION) && (Kind_Solver != WAVE_EQUATION)) {
@@ -4045,7 +4045,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     cout << endl <<"------------------------- Convergence criteria --------------------------" << endl;
 
-    cout << "Maximum number of iterations: " << nExtIter <<"."<<endl;
+    cout << "Maximum number of iterations: " << nExtIter <<"."<< endl;
 
     if (ConvCriteria == CAUCHY) {
       if (!Adjoint && !Linearized)
@@ -4124,13 +4124,13 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     switch (Kind_Adaptation) {
       case GRAD_FLOW: case GRAD_ADJOINT: case GRAD_FLOW_ADJ: case ROBUST: case COMPUTABLE: case COMPUTABLE_ROBUST: case REMAINING:
-        cout << "Power of the dual volume in the adaptation sensor: " << DualVol_Power <<endl;
-        cout << "Percentage of new elements in the adaptation process: " << New_Elem_Adapt << "."<<endl;
+        cout << "Power of the dual volume in the adaptation sensor: " << DualVol_Power << endl;
+        cout << "Percentage of new elements in the adaptation process: " << New_Elem_Adapt << "."<< endl;
         break;
     }
 
     if (Analytical_Surface != NONE)
-      cout << "Use analytical definition for including points in the surfaces." <<endl;
+      cout << "Use analytical definition for including points in the surfaces." << endl;
 
   }
 
@@ -4138,11 +4138,12 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   if (val_software == SU2_CFD) {
 
-    cout << "Writing a flow solution every " << Wrt_Sol_Freq <<" iterations."<<endl;
-    cout << "Writing the convergence history every " << Wrt_Con_Freq <<" iterations."<<endl;
+    if (Low_MemoryOutput) cout << "Writing output files with low memory RAM requirements."<< endl;
+    cout << "Writing a flow solution every " << Wrt_Sol_Freq <<" iterations."<< endl;
+    cout << "Writing the convergence history every " << Wrt_Con_Freq <<" iterations."<< endl;
     if ((Unsteady_Simulation == DT_STEPPING_1ST) || (Unsteady_Simulation == DT_STEPPING_2ND))  {
-      cout << "Writing the dual time flow solution every " << Wrt_Sol_Freq_DualTime <<" iterations."<<endl;
-      cout << "Writing the dual time convergence history every " << Wrt_Con_Freq_DualTime <<" iterations."<<endl;
+      cout << "Writing the dual time flow solution every " << Wrt_Sol_Freq_DualTime <<" iterations."<< endl;
+      cout << "Writing the dual time convergence history every " << Wrt_Con_Freq_DualTime <<" iterations."<< endl;
     }
 
     switch (Output_FileFormat) {
@@ -4186,6 +4187,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   }
 
   if (val_software == SU2_SOL) {
+    if (Low_MemoryOutput) cout << "Writing output files with low memory RAM requirements."<< endl;
     switch (Output_FileFormat) {
       case PARAVIEW: cout << "The output file format is Paraview ASCII (.dat)." << endl; break;
       case TECPLOT: cout << "The output file format is Tecplot ASCII (.dat)." << endl; break;
@@ -4245,7 +4247,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     for (iMarker_Euler = 0; iMarker_Euler < nMarker_Euler; iMarker_Euler++) {
       cout << Marker_Euler[iMarker_Euler];
       if (iMarker_Euler < nMarker_Euler-1) cout << ", ";
-      else cout <<"."<<endl;
+      else cout <<"."<< endl;
     }
   }
 
@@ -4254,7 +4256,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     for (iMarker_FarField = 0; iMarker_FarField < nMarker_FarField; iMarker_FarField++) {
       cout << Marker_FarField[iMarker_FarField];
       if (iMarker_FarField < nMarker_FarField-1) cout << ", ";
-      else cout <<"."<<endl;
+      else cout <<"."<< endl;
     }
   }
 
@@ -4263,7 +4265,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     for (iMarker_SymWall = 0; iMarker_SymWall < nMarker_SymWall; iMarker_SymWall++) {
       cout << Marker_SymWall[iMarker_SymWall];
       if (iMarker_SymWall < nMarker_SymWall-1) cout << ", ";
-      else cout <<"."<<endl;
+      else cout <<"."<< endl;
     }
   }
 
@@ -4272,7 +4274,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     for (iMarker_Pressure = 0; iMarker_Pressure < nMarker_Pressure; iMarker_Pressure++) {
       cout << Marker_Pressure[iMarker_Pressure];
       if (iMarker_Pressure < nMarker_Pressure-1) cout << ", ";
-      else cout <<"."<<endl;
+      else cout <<"."<< endl;
     }
   }
 
@@ -4281,7 +4283,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     for (iMarker_PerBound = 0; iMarker_PerBound < nMarker_PerBound; iMarker_PerBound++) {
       cout << Marker_PerBound[iMarker_PerBound];
       if (iMarker_PerBound < nMarker_PerBound-1) cout << ", ";
-      else cout <<"."<<endl;
+      else cout <<"."<< endl;
     }
   }
 
@@ -4290,7 +4292,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     for (iMarker_NearFieldBound = 0; iMarker_NearFieldBound < nMarker_NearFieldBound; iMarker_NearFieldBound++) {
       cout << Marker_NearFieldBound[iMarker_NearFieldBound];
       if (iMarker_NearFieldBound < nMarker_NearFieldBound-1) cout << ", ";
-      else cout <<"."<<endl;
+      else cout <<"."<< endl;
     }
   }
 
@@ -4299,7 +4301,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     for (iMarker_InterfaceBound = 0; iMarker_InterfaceBound < nMarker_InterfaceBound; iMarker_InterfaceBound++) {
       cout << Marker_InterfaceBound[iMarker_InterfaceBound];
       if (iMarker_InterfaceBound < nMarker_InterfaceBound-1) cout << ", ";
-      else cout <<"."<<endl;
+      else cout <<"."<< endl;
     }
   }
 
@@ -4308,7 +4310,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     for (iMarker_Dirichlet = 0; iMarker_Dirichlet < nMarker_Dirichlet; iMarker_Dirichlet++) {
       cout << Marker_Dirichlet[iMarker_Dirichlet];
       if (iMarker_Dirichlet < nMarker_Dirichlet-1) cout << ", ";
-      else cout <<"."<<endl;
+      else cout <<"."<< endl;
     }
   }
 
@@ -4317,7 +4319,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     for (iMarker_FlowLoad = 0; iMarker_FlowLoad < nMarker_FlowLoad; iMarker_FlowLoad++) {
       cout << Marker_FlowLoad[iMarker_FlowLoad];
       if (iMarker_FlowLoad < nMarker_FlowLoad-1) cout << ", ";
-      else cout <<"."<<endl;
+      else cout <<"."<< endl;
     }
   }
 
@@ -4326,7 +4328,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     for (iMarker_Neumann = 0; iMarker_Neumann < nMarker_Neumann; iMarker_Neumann++) {
       cout << Marker_Neumann[iMarker_Neumann];
       if (iMarker_Neumann < nMarker_Neumann-1) cout << ", ";
-      else cout <<"."<<endl;
+      else cout <<"."<< endl;
     }
   }
 
@@ -4335,7 +4337,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_Inlet; iMarker_Inlet++) {
       cout << Marker_Inlet[iMarker_Inlet];
       if (iMarker_Inlet < nMarker_Inlet-1) cout << ", ";
-      else cout <<"."<<endl;
+      else cout <<"."<< endl;
     }
   }
 
@@ -4344,7 +4346,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       for (iMarker_Riemann = 0; iMarker_Riemann < nMarker_Riemann; iMarker_Riemann++) {
         cout << Marker_Riemann[iMarker_Riemann];
         if (iMarker_Riemann < nMarker_Riemann-1) cout << ", ";
-        else cout <<"."<<endl;
+        else cout <<"."<< endl;
     }
   }
   
@@ -4353,7 +4355,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     for (iMarker_EngineInflow = 0; iMarker_EngineInflow < nMarker_EngineInflow; iMarker_EngineInflow++) {
       cout << Marker_EngineInflow[iMarker_EngineInflow];
       if (iMarker_EngineInflow < nMarker_EngineInflow-1) cout << ", ";
-      else cout <<"."<<endl;
+      else cout <<"."<< endl;
     }
   }
   
@@ -4362,7 +4364,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     for (iMarker_EngineBleed = 0; iMarker_EngineBleed < nMarker_EngineBleed; iMarker_EngineBleed++) {
       cout << Marker_EngineBleed[iMarker_EngineBleed];
       if (iMarker_EngineBleed < nMarker_EngineBleed-1) cout << ", ";
-      else cout <<"."<<endl;
+      else cout <<"."<< endl;
     }
   }
 
@@ -4371,7 +4373,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++) {
       cout << Marker_EngineExhaust[iMarker_EngineExhaust];
       if (iMarker_EngineExhaust < nMarker_EngineExhaust-1) cout << ", ";
-      else cout <<"."<<endl;
+      else cout <<"."<< endl;
     }
   }
 
@@ -4380,7 +4382,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     for (iMarker_Supersonic_Inlet = 0; iMarker_Supersonic_Inlet < nMarker_Supersonic_Inlet; iMarker_Supersonic_Inlet++) {
       cout << Marker_Supersonic_Inlet[iMarker_Supersonic_Inlet];
       if (iMarker_Supersonic_Inlet < nMarker_Supersonic_Inlet-1) cout << ", ";
-      else cout <<"."<<endl;
+      else cout <<"."<< endl;
     }
   }
 
@@ -4389,7 +4391,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
       cout << Marker_Outlet[iMarker_Outlet];
       if (iMarker_Outlet < nMarker_Outlet-1) cout << ", ";
-      else cout <<"."<<endl;
+      else cout <<"."<< endl;
     }
   }
 
@@ -4398,7 +4400,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     for (iMarker_Isothermal = 0; iMarker_Isothermal < nMarker_Isothermal; iMarker_Isothermal++) {
       cout << Marker_Isothermal[iMarker_Isothermal];
       if (iMarker_Isothermal < nMarker_Isothermal-1) cout << ", ";
-      else cout <<"."<<endl;
+      else cout <<"."<< endl;
     }
   }
 
@@ -4407,7 +4409,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     for (iMarker_IsothermalNonCatalytic = 0; iMarker_IsothermalNonCatalytic < nMarker_IsothermalNonCatalytic; iMarker_IsothermalNonCatalytic++) {
       cout << Marker_IsothermalNonCatalytic[iMarker_IsothermalNonCatalytic];
       if (iMarker_IsothermalNonCatalytic < nMarker_IsothermalNonCatalytic-1) cout << ", ";
-      else cout <<"."<<endl;
+      else cout <<"."<< endl;
     }
   }
 
@@ -4416,7 +4418,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     for (iMarker_IsothermalCatalytic = 0; iMarker_IsothermalCatalytic < nMarker_IsothermalCatalytic; iMarker_IsothermalCatalytic++) {
       cout << Marker_IsothermalCatalytic[iMarker_IsothermalCatalytic];
       if (iMarker_IsothermalCatalytic < nMarker_IsothermalCatalytic-1) cout << ", ";
-      else cout <<"."<<endl;
+      else cout <<"."<< endl;
     }
   }
 
@@ -4425,7 +4427,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     for (iMarker_HeatFlux = 0; iMarker_HeatFlux < nMarker_HeatFlux; iMarker_HeatFlux++) {
       cout << Marker_HeatFlux[iMarker_HeatFlux];
       if (iMarker_HeatFlux < nMarker_HeatFlux-1) cout << ", ";
-      else cout <<"."<<endl;
+      else cout <<"."<< endl;
     }
   }
 
@@ -4434,7 +4436,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     for (iMarker_HeatFluxNonCatalytic = 0; iMarker_HeatFluxNonCatalytic < nMarker_HeatFluxNonCatalytic; iMarker_HeatFluxNonCatalytic++) {
       cout << Marker_HeatFluxNonCatalytic[iMarker_HeatFluxNonCatalytic];
       if (iMarker_HeatFluxNonCatalytic < nMarker_HeatFluxNonCatalytic-1) cout << ", ";
-      else cout <<"."<<endl;
+      else cout <<"."<< endl;
     }
   }
 
@@ -4443,7 +4445,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     for (iMarker_HeatFluxCatalytic = 0; iMarker_HeatFluxCatalytic < nMarker_HeatFluxCatalytic; iMarker_HeatFluxCatalytic++) {
       cout << Marker_HeatFluxCatalytic[iMarker_HeatFluxCatalytic];
       if (iMarker_HeatFluxCatalytic < nMarker_HeatFluxCatalytic-1) cout << ", ";
-      else cout <<"."<<endl;
+      else cout <<"."<< endl;
     }
   }
 
@@ -4452,7 +4454,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     for (iMarker_Displacement = 0; iMarker_Displacement < nMarker_Displacement; iMarker_Displacement++) {
       cout << Marker_Displacement[iMarker_Displacement];
       if (iMarker_Displacement < nMarker_Displacement-1) cout << ", ";
-      else cout <<"."<<endl;
+      else cout <<"."<< endl;
     }
   }
 
@@ -4461,7 +4463,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     for (iMarker_Load = 0; iMarker_Load < nMarker_Load; iMarker_Load++) {
       cout << Marker_Load[iMarker_Load];
       if (iMarker_Load < nMarker_Load-1) cout << ", ";
-      else cout <<"."<<endl;
+      else cout <<"."<< endl;
     }
   }
 
@@ -4470,7 +4472,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     for (iMarker_Neumann = 0; iMarker_Neumann < nMarker_Neumann; iMarker_Neumann++) {
       cout << Marker_Neumann[iMarker_Neumann];
       if (iMarker_Neumann < nMarker_Neumann-1) cout << ", ";
-      else cout <<"."<<endl;
+      else cout <<"."<< endl;
     }
   }
 
@@ -4479,7 +4481,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     for (iMarker_Custom = 0; iMarker_Custom < nMarker_Custom; iMarker_Custom++) {
       cout << Marker_Custom[iMarker_Custom];
       if (iMarker_Custom < nMarker_Custom-1) cout << ", ";
-      else cout <<"."<<endl;
+      else cout <<"."<< endl;
     }
   }
 
@@ -4488,7 +4490,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		for (iMarker_ActDisk_Inlet = 0; iMarker_ActDisk_Inlet < nMarker_ActDisk_Inlet; iMarker_ActDisk_Inlet++) {
 			cout << Marker_ActDisk_Inlet[iMarker_ActDisk_Inlet];
 			if (iMarker_ActDisk_Inlet < nMarker_ActDisk_Inlet-1) cout << ", ";
-			else cout <<"."<<endl;
+			else cout <<"."<< endl;
 		}
 	}
 
@@ -4497,7 +4499,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		for (iMarker_ActDisk_Outlet = 0; iMarker_ActDisk_Outlet < nMarker_ActDisk_Outlet; iMarker_ActDisk_Outlet++) {
 			cout << Marker_ActDisk_Outlet[iMarker_ActDisk_Outlet];
 			if (iMarker_ActDisk_Outlet < nMarker_ActDisk_Outlet-1) cout << ", ";
-			else cout <<"."<<endl;
+			else cout <<"."<< endl;
 		}
 	}
 

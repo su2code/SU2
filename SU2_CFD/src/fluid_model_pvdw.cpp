@@ -70,7 +70,7 @@ void CVanDerWaalsGas::SetTDState_PT (double P, double T ) {
 
 //    Z= max(B, 0.99);
 
-//	cout <<"Before  "<< P <<" "<< T <<endl;
+//	cout <<"Before  "<< P <<" "<< T << endl;
 	if(Zed > 0.1)
 		Z=min(Zed, 0.99);
 	else
@@ -85,8 +85,8 @@ void CVanDerWaalsGas::SetTDState_PT (double P, double T ) {
 	}while(abs(DZ)>toll && count < nmax);
 
 	if (count == nmax){
-		cout << "Warning Newton-Raphson exceed number of max iteration in PT"<<endl;
-		cout << "Compressibility factor  "<< Z << " would be substituted with "<< Zed<<endl;
+		cout << "Warning Newton-Raphson exceed number of max iteration in PT"<< endl;
+		cout << "Compressibility factor  "<< Z << " would be substituted with "<< Zed<< endl;
 	}
 
 	// check if the solution is physical otherwise uses previous point  solution
@@ -99,7 +99,7 @@ void CVanDerWaalsGas::SetTDState_PT (double P, double T ) {
     double e = T*Gas_Constant/Gamma_Minus_One - a*Density;
 	SetTDState_rhoe(Density, e);
 
-//	cout <<"After  "<< Pressure <<" "<< Temperature <<endl;
+//	cout <<"After  "<< Pressure <<" "<< Temperature << endl;
 
 }
 
@@ -119,7 +119,7 @@ void CVanDerWaalsGas::SetTDState_hs (double h, double s ){
     unsigned short count=0, NTRY=10, ITMAX=100;
     double cons_s,cons_h;
 
-//    cout <<"Before  "<< h <<" "<< s <<endl;
+//    cout <<"Before  "<< h <<" "<< s << endl;
 
     T = 1.0*h*Gamma_Minus_One/Gas_Constant/Gamma;
     v =exp(-1/Gamma_Minus_One*log(T) + s/Gas_Constant);
@@ -154,7 +154,7 @@ void CVanDerWaalsGas::SetTDState_hs (double h, double s ){
 	f=fx1;
 	fmid=fx2;
 	if (f*fmid >= 0.0){
-		cout<< "Root must be bracketed for bisection in rtbis"<<endl;
+		cout<< "Root must be bracketed for bisection in rtbis"<< endl;
 		SetTDState_rhoT(Density, Temperature);
 	}
 	rtb = f < 0.0 ? (dx=x2-x1,x1) : (dx=x1-x2,x2);
@@ -167,7 +167,7 @@ void CVanDerWaalsGas::SetTDState_hs (double h, double s ){
 
 		v = xmid;
 		if(count==ITMAX){
-			cout <<"Too many bisections in rtbis" <<endl;
+			cout <<"Too many bisections in rtbis" << endl;
 		}
 
 
@@ -179,10 +179,10 @@ void CVanDerWaalsGas::SetTDState_hs (double h, double s ){
 	cons_s= abs((Entropy-s)/s);
 
 	if(cons_h >1e-3 or cons_s >1e-3){
-		cout<< "TD consistency not verified in hs call"<<endl;
+		cout<< "TD consistency not verified in hs call"<< endl;
 	}
 
-//	cout <<"After  "<< StaticEnergy + Pressure/Density <<" "<< Entropy<<" "<< fmid <<" "<< f<< " "<< count<<endl;
+//	cout <<"After  "<< StaticEnergy + Pressure/Density <<" "<< Entropy<<" "<< fmid <<" "<< f<< " "<< count<< endl;
 
 
 

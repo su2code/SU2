@@ -446,17 +446,18 @@ MPI_Barrier(MPI_COMM_WORLD);
            surface solution, and surface comma-separated value files. ---*/
           
           output->SetResult_Files(solver_container, geometry_container, config_container, ExtIter, nZone);
-          
-          /*--- Compute the forces at different sections. ---*/
-          
-          if (config_container[ZONE_0]->GetPlot_Section_Forces())
-            output->SetForceSections(solver_container[ZONE_0][MESH_0][FLOW_SOL],
-                                     geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
 
           /*--- Output a file with the forces breakdown. ---*/
           
           output->SetForces_Breakdown(geometry_container, solver_container,
                                       config_container, integration_container, ZONE_0);
+
+          /*--- Compute the forces at different sections. ---*/
+          
+          if (config_container[ZONE_0]->GetPlot_Section_Forces()) {
+            output->SetForceSections(solver_container[ZONE_0][MESH_0][FLOW_SOL],
+                                     geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
+          }
           
         }
     
@@ -469,16 +470,19 @@ MPI_Barrier(MPI_COMM_WORLD);
   }
   
   /*--- Output some information to the console. ---*/
+  
   if (rank == MASTER_NODE) {
     cout << endl;
     
   /*--- Print out the number of non-physical points and reconstructions ---*/
+    
   if (config_container[ZONE_0]->GetNonphysical_Points() > 0)
     cout << "Warning: there are " << config_container[ZONE_0]->GetNonphysical_Points() << " non-physical points in the solution." << endl;
   if (config_container[ZONE_0]->GetNonphysical_Reconstr() > 0)
     cout << "Warning: " << config_container[ZONE_0]->GetNonphysical_Reconstr() << " reconstructed states for upwinding are non-physical." << endl;
   
   /*--- Close the convergence history file. ---*/
+    
     ConvHist_file.close();
     cout << "History file, closed." << endl;
   }
