@@ -5791,50 +5791,142 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
       
       Breakdown_file << "Surface name: " << config[val_iZone]->GetMarker_Monitoring(iMarker_Monitoring) << endl << endl;
       
-      Breakdown_file << "Total CL: ";    Breakdown_file.width(14); Breakdown_file << Surface_CLift[iMarker_Monitoring];
-      Breakdown_file << " | Inviscid CL: "; Breakdown_file.width(14); Breakdown_file << Surface_CLift_Inv[iMarker_Monitoring];
-      Breakdown_file << " | Viscous CL: ";  Breakdown_file.width(14); Breakdown_file << Surface_CLift[iMarker_Monitoring]-Surface_CLift_Inv[iMarker_Monitoring] << endl;
-      
-      Breakdown_file << "Total CD: ";    Breakdown_file.width(14); Breakdown_file << Surface_CDrag[iMarker_Monitoring];
-      Breakdown_file << " | Inviscid CD: "; Breakdown_file.width(14); Breakdown_file << Surface_CDrag_Inv[iMarker_Monitoring];
-      Breakdown_file << " | Viscous CD: ";  Breakdown_file.width(14); Breakdown_file << Surface_CDrag[iMarker_Monitoring]-Surface_CDrag_Inv[iMarker_Monitoring] << endl;
+      Breakdown_file << "Total CL    (";
+      Breakdown_file.width(5); Breakdown_file << int((Surface_CLift[iMarker_Monitoring]*100.0)/(Total_CLift+EPS));
+      Breakdown_file << "%): ";
+      Breakdown_file.width(11); Breakdown_file << Surface_CLift[iMarker_Monitoring];
+      Breakdown_file << " | Inviscid CL    (";
+      Breakdown_file.width(5); Breakdown_file << int((Surface_CLift_Inv[iMarker_Monitoring]*100.0)/(Surface_CLift[iMarker_Monitoring]+EPS));
+      Breakdown_file << "%): ";
+      Breakdown_file.width(11); Breakdown_file << Surface_CLift_Inv[iMarker_Monitoring];
+      Breakdown_file << " | Viscous CL    (";
+      Breakdown_file.width(5); Breakdown_file << int(100.0-(Surface_CLift_Inv[iMarker_Monitoring]*100.0)/(Surface_CLift[iMarker_Monitoring]+EPS));
+      Breakdown_file << "%): ";
+      Breakdown_file.width(11); Breakdown_file << Surface_CLift[iMarker_Monitoring]-Surface_CLift_Inv[iMarker_Monitoring] << endl;
+
+      Breakdown_file << "Total CD    (";
+      Breakdown_file.width(5); Breakdown_file << int((Surface_CDrag[iMarker_Monitoring]*100.0)/(Total_CDrag+EPS));
+      Breakdown_file << "%): ";
+      Breakdown_file.width(11); Breakdown_file << Surface_CDrag[iMarker_Monitoring];
+      Breakdown_file << " | Inviscid CD    (";
+      Breakdown_file.width(5); Breakdown_file << int((Surface_CDrag_Inv[iMarker_Monitoring]*100.0)/(Surface_CDrag[iMarker_Monitoring]+EPS));
+      Breakdown_file << "%): ";
+      Breakdown_file.width(11); Breakdown_file << Surface_CDrag_Inv[iMarker_Monitoring];
+      Breakdown_file << " | Viscous CD    (";
+      Breakdown_file.width(5); Breakdown_file << int(100.0-(Surface_CDrag_Inv[iMarker_Monitoring]*100.0)/(Surface_CDrag[iMarker_Monitoring]+EPS));
+      Breakdown_file << "%): ";
+      Breakdown_file.width(11); Breakdown_file << Surface_CDrag[iMarker_Monitoring]-Surface_CDrag_Inv[iMarker_Monitoring] << endl;
       
       if (nDim == 3) {
-        Breakdown_file << "Total CSF: ";    Breakdown_file.width(13); Breakdown_file << Surface_CSideForce[iMarker_Monitoring];
-        Breakdown_file << " | Inviscid CSF: "; Breakdown_file.width(13); Breakdown_file << Surface_CSideForce_Inv[iMarker_Monitoring];
-        Breakdown_file << " | Viscous CSF: ";  Breakdown_file.width(13); Breakdown_file << Surface_CSideForce[iMarker_Monitoring]-Surface_CSideForce_Inv[iMarker_Monitoring] << endl;
+        Breakdown_file << "Total CSF   (";
+        Breakdown_file.width(5); Breakdown_file << int((Surface_CSideForce[iMarker_Monitoring]*100.0)/(Total_CSideForce+EPS));
+        Breakdown_file << "%): ";
+        Breakdown_file.width(11); Breakdown_file << Surface_CSideForce[iMarker_Monitoring];
+        Breakdown_file << " | Inviscid CSF   (";
+        Breakdown_file.width(5); Breakdown_file << int((Surface_CSideForce_Inv[iMarker_Monitoring]*100.0)/(Surface_CSideForce[iMarker_Monitoring]+EPS));
+        Breakdown_file << "%): ";
+        Breakdown_file.width(11); Breakdown_file << Surface_CSideForce_Inv[iMarker_Monitoring];
+        Breakdown_file << " | Viscous CSF   (";
+        Breakdown_file.width(5); Breakdown_file << int(100.0-(Surface_CSideForce_Inv[iMarker_Monitoring]*100.0)/(Surface_CSideForce[iMarker_Monitoring]+EPS));
+        Breakdown_file << "%): ";
+        Breakdown_file.width(11); Breakdown_file << Surface_CSideForce[iMarker_Monitoring]-Surface_CSideForce_Inv[iMarker_Monitoring] << endl;
       }
       
-      Breakdown_file << "Total CL/CD: ";    Breakdown_file.width(11); Breakdown_file << Surface_CEff[iMarker_Monitoring];
-      Breakdown_file << " | Inviscid CL/CD: "; Breakdown_file.width(11); Breakdown_file << Surface_CEff_Inv[iMarker_Monitoring];
-      Breakdown_file << " | Viscous CL/CD: ";  Breakdown_file.width(11); Breakdown_file << Surface_CEff[iMarker_Monitoring]-Surface_CEff_Inv[iMarker_Monitoring] << endl;
+      Breakdown_file << "Total CL/CD (";
+      Breakdown_file.width(5); Breakdown_file << int((Surface_CEff[iMarker_Monitoring]*100.0)/(Total_CEff+EPS));
+      Breakdown_file << "%): ";
+      Breakdown_file.width(11); Breakdown_file << Surface_CEff[iMarker_Monitoring];
+      Breakdown_file << " | Inviscid CL/CD (";
+      Breakdown_file.width(5); Breakdown_file << int((Surface_CEff_Inv[iMarker_Monitoring]*100.0)/(Surface_CEff[iMarker_Monitoring]+EPS));
+      Breakdown_file << "%): ";
+      Breakdown_file.width(11); Breakdown_file << Surface_CEff_Inv[iMarker_Monitoring];
+      Breakdown_file << " | Viscous CL/CD (";
+      Breakdown_file.width(5); Breakdown_file << int(100.0-(Surface_CEff_Inv[iMarker_Monitoring]*100.0)/(Surface_CEff[iMarker_Monitoring]+EPS));
+      Breakdown_file << "%): ";
+
+      Breakdown_file.width(11); Breakdown_file << Surface_CEff[iMarker_Monitoring]-Surface_CEff_Inv[iMarker_Monitoring] << endl;
       
       if (nDim == 3) {
-        Breakdown_file << "Total CMx: ";    Breakdown_file.width(13); Breakdown_file << Surface_CMx[iMarker_Monitoring];
-        Breakdown_file << " | Inviscid CMx: "; Breakdown_file.width(13); Breakdown_file << Surface_CMx_Inv[iMarker_Monitoring];
-        Breakdown_file << " | Viscous CMx: ";  Breakdown_file.width(13); Breakdown_file << Surface_CMx[iMarker_Monitoring]-Surface_CMx_Inv[iMarker_Monitoring] << endl;
         
-        Breakdown_file << "Total CMy: ";    Breakdown_file.width(13); Breakdown_file << Surface_CMy[iMarker_Monitoring];
-        Breakdown_file << " | Inviscid CMy: "; Breakdown_file.width(13); Breakdown_file << Surface_CMy_Inv[iMarker_Monitoring];
-        Breakdown_file << " | Viscous CMy: ";  Breakdown_file.width(13); Breakdown_file << Surface_CMy[iMarker_Monitoring]-Surface_CMy_Inv[iMarker_Monitoring] << endl;
+        Breakdown_file << "Total CMx   (";
+        Breakdown_file.width(5); Breakdown_file << int((Surface_CMx[iMarker_Monitoring]*100.0)/(Total_CMx+EPS));
+        Breakdown_file << "%): ";
+        Breakdown_file.width(11); Breakdown_file << Surface_CMx[iMarker_Monitoring];
+        Breakdown_file << " | Inviscid CMx   (";
+        Breakdown_file.width(5); Breakdown_file << int((Surface_CMx_Inv[iMarker_Monitoring]*100.0)/(Surface_CMx[iMarker_Monitoring]+EPS));
+        Breakdown_file << "%): ";
+        Breakdown_file.width(11); Breakdown_file << Surface_CMx_Inv[iMarker_Monitoring];
+        Breakdown_file << " | Viscous CMx   (";
+        Breakdown_file.width(5); Breakdown_file << int(100.0-(Surface_CMx_Inv[iMarker_Monitoring]*100.0)/(Surface_CMx[iMarker_Monitoring]+EPS));
+        Breakdown_file << "%): ";
+        Breakdown_file.width(11); Breakdown_file << Surface_CMx[iMarker_Monitoring]-Surface_CMx_Inv[iMarker_Monitoring] << endl;
+        
+        Breakdown_file << "Total CMy   (";
+        Breakdown_file.width(5); Breakdown_file << int((Surface_CMy[iMarker_Monitoring]*100.0)/(Total_CMy+EPS));
+        Breakdown_file << "%): ";
+        Breakdown_file.width(11); Breakdown_file << Surface_CMy[iMarker_Monitoring];
+        Breakdown_file << " | Inviscid CMy   (";
+        Breakdown_file.width(5); Breakdown_file << int((Surface_CMy_Inv[iMarker_Monitoring]*100.0)/(Surface_CMy[iMarker_Monitoring]+EPS));
+        Breakdown_file << "%): ";
+        Breakdown_file.width(11); Breakdown_file << Surface_CMy_Inv[iMarker_Monitoring];
+        Breakdown_file << " | Viscous CMy   (";
+        Breakdown_file.width(5); Breakdown_file << int(100.0-(Surface_CMy_Inv[iMarker_Monitoring]*100.0)/(Surface_CMy[iMarker_Monitoring]+EPS));
+        Breakdown_file << "%): ";
+        Breakdown_file.width(11); Breakdown_file << Surface_CMy[iMarker_Monitoring]-Surface_CMy_Inv[iMarker_Monitoring] << endl;
       }
       
-      Breakdown_file << "Total CMz: ";    Breakdown_file.width(13); Breakdown_file << Surface_CMz[iMarker_Monitoring];
-      Breakdown_file << " | Inviscid CMz: "; Breakdown_file.width(13); Breakdown_file << Surface_CMz_Inv[iMarker_Monitoring];
-      Breakdown_file << " | Viscous CMz: ";  Breakdown_file.width(13); Breakdown_file << Surface_CMz[iMarker_Monitoring]-Surface_CMz_Inv[iMarker_Monitoring] << endl;
+      Breakdown_file << "Total CMz   (";
+      Breakdown_file.width(5); Breakdown_file << int((Surface_CMz[iMarker_Monitoring]*100.0)/(Total_CMz+EPS));
+      Breakdown_file << "%): ";
+      Breakdown_file.width(11); Breakdown_file << Surface_CMz[iMarker_Monitoring];
+      Breakdown_file << " | Inviscid CMz   (";
+      Breakdown_file.width(5); Breakdown_file << int((Surface_CMz_Inv[iMarker_Monitoring]*100.0)/(Surface_CMz[iMarker_Monitoring]+EPS));
+      Breakdown_file << "%): ";
+      Breakdown_file.width(11); Breakdown_file << Surface_CMz_Inv[iMarker_Monitoring];
+      Breakdown_file << " | Viscous CMz   (";
+      Breakdown_file.width(5); Breakdown_file << int(100.0-(Surface_CMz_Inv[iMarker_Monitoring]*100.0)/(Surface_CMz[iMarker_Monitoring]+EPS));
+      Breakdown_file << "%): ";
+      Breakdown_file.width(11); Breakdown_file << Surface_CMz[iMarker_Monitoring]-Surface_CMz_Inv[iMarker_Monitoring] << endl;
       
-      Breakdown_file << "Total CFx: ";    Breakdown_file.width(13); Breakdown_file << Surface_CFx[iMarker_Monitoring];
-      Breakdown_file << " | Inviscid CFx: "; Breakdown_file.width(13); Breakdown_file << Surface_CFx_Inv[iMarker_Monitoring];
-      Breakdown_file << " | Viscous CFx: ";  Breakdown_file.width(13); Breakdown_file << Surface_CFx[iMarker_Monitoring]-Surface_CFx_Inv[iMarker_Monitoring] << endl;
+      Breakdown_file << "Total CFx   (";
+      Breakdown_file.width(5); Breakdown_file << int((Surface_CFx[iMarker_Monitoring]*100.0)/(Total_CFx+EPS));
+      Breakdown_file << "%): ";
+      Breakdown_file.width(11); Breakdown_file << Surface_CFx[iMarker_Monitoring];
+      Breakdown_file << " | Inviscid CFx   (";
+      Breakdown_file.width(5); Breakdown_file << int((Surface_CFx_Inv[iMarker_Monitoring]*100.0)/(Surface_CFx[iMarker_Monitoring]+EPS));
+      Breakdown_file << "%): ";
+      Breakdown_file.width(11); Breakdown_file << Surface_CFx_Inv[iMarker_Monitoring];
+      Breakdown_file << " | Viscous CFx   (";
+      Breakdown_file.width(5); Breakdown_file << int(100.0-(Surface_CFx_Inv[iMarker_Monitoring]*100.0)/(Surface_CFx[iMarker_Monitoring]+EPS));
+      Breakdown_file << "%): ";
+      Breakdown_file.width(11); Breakdown_file << Surface_CFx[iMarker_Monitoring]-Surface_CFx_Inv[iMarker_Monitoring] << endl;
       
-      Breakdown_file << "Total CFy: ";    Breakdown_file.width(13); Breakdown_file << Surface_CFy[iMarker_Monitoring];
-      Breakdown_file << " | Inviscid CFy: "; Breakdown_file.width(13); Breakdown_file << Surface_CFy_Inv[iMarker_Monitoring];
-      Breakdown_file << " | Viscous CFy: ";  Breakdown_file.width(13); Breakdown_file << Surface_CFy[iMarker_Monitoring]-Surface_CFy_Inv[iMarker_Monitoring] << endl;
+      Breakdown_file << "Total CFy   (";
+      Breakdown_file.width(5); Breakdown_file << int((Surface_CFy[iMarker_Monitoring]*100.0)/(Total_CFy+EPS));
+      Breakdown_file << "%): ";
+      Breakdown_file.width(11); Breakdown_file << Surface_CFy[iMarker_Monitoring];
+      Breakdown_file << " | Inviscid CFy   (";
+      Breakdown_file.width(5); Breakdown_file << int((Surface_CFy_Inv[iMarker_Monitoring]*100.0)/(Surface_CFy[iMarker_Monitoring]+EPS));
+      Breakdown_file << "%): ";
+      Breakdown_file.width(11); Breakdown_file << Surface_CFy_Inv[iMarker_Monitoring];
+      Breakdown_file << " | Viscous CFy   (";
+      Breakdown_file.width(5); Breakdown_file << int(100.0-(Surface_CFy_Inv[iMarker_Monitoring]*100.0)/(Surface_CFy[iMarker_Monitoring]+EPS));
+      Breakdown_file << "%): ";
+      Breakdown_file.width(11); Breakdown_file << Surface_CFy[iMarker_Monitoring]-Surface_CFy_Inv[iMarker_Monitoring] << endl;
       
       if (nDim == 3) {
-        Breakdown_file << "Total CFz: ";    Breakdown_file.width(13); Breakdown_file << Surface_CFz[iMarker_Monitoring];
-        Breakdown_file << " | Inviscid CFz: "; Breakdown_file.width(13); Breakdown_file << Surface_CFz_Inv[iMarker_Monitoring];
-        Breakdown_file << " | Viscous CFz: ";  Breakdown_file.width(13); Breakdown_file << Surface_CFz[iMarker_Monitoring]-Surface_CFz_Inv[iMarker_Monitoring] << endl;
+        Breakdown_file << "Total CFz   (";
+        Breakdown_file.width(5); Breakdown_file << int((Surface_CFz[iMarker_Monitoring]*100.0)/(Total_CFz+EPS));
+        Breakdown_file << "%): ";
+        Breakdown_file.width(11); Breakdown_file << Surface_CFz[iMarker_Monitoring];
+        Breakdown_file << " | Inviscid CFz  (";
+        Breakdown_file.width(5); Breakdown_file << int((Surface_CFz_Inv[iMarker_Monitoring]*100.0)/(Surface_CFz[iMarker_Monitoring]+EPS));
+        Breakdown_file << "%): ";
+        Breakdown_file.width(11); Breakdown_file << Surface_CFz_Inv[iMarker_Monitoring];
+        Breakdown_file << " | Viscous CFz (";
+        Breakdown_file.width(5); Breakdown_file << int(100.0-(Surface_CFz_Inv[iMarker_Monitoring]*100.0)/(Surface_CFz[iMarker_Monitoring]+EPS));
+        Breakdown_file << "%): ";
+        Breakdown_file.width(11); Breakdown_file << Surface_CFz[iMarker_Monitoring]-Surface_CFz_Inv[iMarker_Monitoring] << endl;
       }
       
       Breakdown_file << endl;
