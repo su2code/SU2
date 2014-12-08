@@ -1,7 +1,7 @@
 /*!
  * \file linear_solvers_structure.inl
  * \brief inline subroutines of the <i>linear_solvers_structure.hpp</i> file.
- * \author J. Hicken
+ * \author J. Hicken, F. Palacios
  * \version 3.2.5 "eagle"
  *
  * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
