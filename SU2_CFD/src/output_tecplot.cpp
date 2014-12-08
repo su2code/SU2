@@ -35,13 +35,12 @@ void COutput::SetTecplotNode_ASCII(CConfig *config, CGeometry *geometry, CSolver
   
   unsigned long iElem, iPoint;
   unsigned short iVar;
-  nVar_Consv = geometry->GetnDim()+2;
   bool grid_movement  = config->GetGrid_Movement();
   unsigned short Kind_Solver = config->GetKind_Solver();
   ofstream Tecplot_File;
   unsigned long Total_nElem_Bound, *PointSurface = NULL, nPointSurface = 0;
   unsigned short iMarker;
-
+  
   /*--- Open Tecplot ASCII file and write the header. ---*/
 
   Tecplot_File.open(mesh_filename, ios::out);
@@ -49,49 +48,73 @@ void COutput::SetTecplotNode_ASCII(CConfig *config, CGeometry *geometry, CSolver
   if (surf_sol) Tecplot_File << "TITLE = \"Visualization of the surface solution\"" << endl;
   else Tecplot_File << "TITLE = \"Visualization of the volumetric solution\"" << endl;
   
-  if (geometry->GetnDim() == 2) { Tecplot_File << "VARIABLES = \"x\",\"y\""; }
-  else { Tecplot_File << "VARIABLES = \"x\",\"y\",\"z\""; }
-  
-  /*--- Add names for conservative, limiters, and residual variables ---*/
-  
-  for (iVar = 0; iVar < nVar_Consv; iVar++) {
-    Tecplot_File << ",\"Conservative_" << iVar+1 << "\"";
-  }
-  if (config->GetWrt_Limiters()) {
+  /*--- Write the list of the fields in the restart file.
+   Without including the PointID---*/
+  if (config->GetKind_SU2() == SU2_SOL) {
+    
+    /*--- If SU2_SOL called this routine, we already have a set of output
+     variables with the appropriate string tags stored in the config class. ---*/
+    Tecplot_File << "VARIABLES = ";
+    nVar_Total = config->fields.size() - 1;
+    for (unsigned short iField = 1; iField < config->fields.size(); iField++) {
+      Tecplot_File << config->fields[iField];
+    }
+    
+    Tecplot_File << endl;
+    
+  } else {
+    
+    if (geometry->GetnDim() == 2) { Tecplot_File << "VARIABLES = \"x\",\"y\""; }
+    else { Tecplot_File << "VARIABLES = \"x\",\"y\",\"z\""; }
+    
+    /*--- Add names for conservative, limiters, and residual variables ---*/
+    
     for (iVar = 0; iVar < nVar_Consv; iVar++) {
-      Tecplot_File << ",\"Limiter_" << iVar+1 << "\"";
+      Tecplot_File << ",\"Conservative_" << iVar+1 << "\"";
     }
-  }
-  if (config->GetWrt_Residuals()) {
-    for (iVar = 0; iVar < nVar_Consv; iVar++) {
-      Tecplot_File << ",\"Residual_" << iVar+1 << "\"";
+    
+    if (!config->GetLow_MemoryOutput()) {
+      
+      if (config->GetWrt_Limiters()) {
+        for (iVar = 0; iVar < nVar_Consv; iVar++) {
+          Tecplot_File << ",\"Limiter_" << iVar+1 << "\"";
+        }
+      }
+      if (config->GetWrt_Residuals()) {
+        for (iVar = 0; iVar < nVar_Consv; iVar++) {
+          Tecplot_File << ",\"Residual_" << iVar+1 << "\"";
+        }
+      }
+      
+      /*--- Add names for any extra variables (this will need to be adjusted). ---*/
+      
+      if (grid_movement) {
+        if (geometry->GetnDim() == 2) {
+          Tecplot_File << ",\"Grid_Velx\",\"Grid_Vely\"";
+        } else {
+          Tecplot_File << ",\"Grid_Velx\",\"Grid_Vely\",\"Grid_Velz\"";
+        }
+      }
+      
+      if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+        Tecplot_File << ",\"Pressure\",\"Temperature\",\"Pressure_Coefficient\",\"Mach\"";
+        if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+          Tecplot_File << ",\"Laminar_Viscosity\", \"Skin_Friction_Coefficient\", \"Heat_Flux\", \"Y_Plus\"";
+          if (Kind_Solver == RANS) { Tecplot_File << ", \"Eddy_Viscosity\""; }
+        }
+        if (config->GetWrt_SharpEdges()) { Tecplot_File << ", \"Sharp_Edge_Dist\""; }
+      }
+      
+      if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS) ) {
+        Tecplot_File << ", \"Surface_Sensitivity\", \"Solution_Sensor\"";
+      }
+      
     }
+
+    Tecplot_File << endl;
+
   }
   
-  /*--- Add names for any extra variables (this will need to be adjusted). ---*/
-  
-  if (grid_movement) {
-    if (geometry->GetnDim() == 2) {
-      Tecplot_File << ",\"Grid_Velx\",\"Grid_Vely\"";
-    } else {
-      Tecplot_File << ",\"Grid_Velx\",\"Grid_Vely\",\"Grid_Velz\"";
-    }
-  }
-  
-  if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-    Tecplot_File << ",\"Pressure\",\"Temperature\",\"Pressure_Coefficient\",\"Mach\"";
-    if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-      Tecplot_File << ",\"Laminar_Viscosity\", \"Skin_Friction_Coefficient\", \"Heat_Flux\", \"Y_Plus\"";
-      if (Kind_Solver == RANS) { Tecplot_File << ", \"Eddy_Viscosity\""; }
-    }
-    if (config->GetWrt_SharpEdges()) { Tecplot_File << ", \"Sharp_Edge_Dist\""; }
-  }
-  
-  if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS) ) {
-    Tecplot_File << ", \"Surface_Sensitivity\", \"Solution_Sensor\"";
-  }
-  
-  Tecplot_File << endl;
   
   if (surf_sol) {
     
@@ -274,8 +297,15 @@ void COutput::SetTecplotNode_ASCII(CConfig *config, CGeometry *geometry, CSolver
     string filename, text_line;
     char buffer_char[50], out_file[MAX_STRING_SIZE];
 
-    if (surf_sol) filename = config->GetSurfFlowCoeff_FileName();
-    else filename = config->GetFlow_FileName();
+    if (!config->GetAdjoint()) {
+      if (surf_sol) filename = config->GetSurfFlowCoeff_FileName();
+      else filename = config->GetFlow_FileName();
+    }
+    else {
+      if (surf_sol) filename = config->GetSurfAdjCoeff_FileName();
+      else filename = config->GetAdj_FileName();
+    }
+    
     filename.erase(filename.end()-2,filename.end());
     strcpy(mesh_filename, filename.c_str());
     sprintf (buffer_char, ".dat");
@@ -284,8 +314,16 @@ void COutput::SetTecplotNode_ASCII(CConfig *config, CGeometry *geometry, CSolver
     Tecplot_File.open(mesh_filename, ios::out);
     
     for (int iRank = 0; iRank < size; iRank++) {
-      if (surf_sol) filename = config->GetSurfFlowCoeff_FileName();
-      else filename = config->GetFlow_FileName();
+      
+      if (!config->GetAdjoint()) {
+        if (surf_sol) filename = config->GetSurfFlowCoeff_FileName();
+        else filename = config->GetFlow_FileName();
+      }
+      else {
+        if (surf_sol) filename = config->GetSurfAdjCoeff_FileName();
+        else filename = config->GetAdj_FileName();
+      }
+      
       filename.erase(filename.end()-2,filename.end());
       strcpy(out_file, filename.c_str());
       sprintf (buffer_char, "_%i.dat", iRank+1);
@@ -438,87 +476,91 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, CSolver **s
     for (iVar = 0; iVar < nVar_Consv; iVar++) {
       Tecplot_File << ",\"Conservative_" << iVar+1 << "\"";
     }
-    if (config->GetWrt_Limiters()) {
-      for (iVar = 0; iVar < nVar_Consv; iVar++) {
-        Tecplot_File << ",\"Limiter_" << iVar+1 << "\"";
+    
+    if (!config->GetLow_MemoryOutput()) {
+      
+      if (config->GetWrt_Limiters()) {
+        for (iVar = 0; iVar < nVar_Consv; iVar++) {
+          Tecplot_File << ",\"Limiter_" << iVar+1 << "\"";
+        }
       }
-    }
-    if (config->GetWrt_Residuals()) {
-      for (iVar = 0; iVar < nVar_Consv; iVar++) {
-        Tecplot_File << ",\"Residual_" << iVar+1 << "\"";
+      if (config->GetWrt_Residuals()) {
+        for (iVar = 0; iVar < nVar_Consv; iVar++) {
+          Tecplot_File << ",\"Residual_" << iVar+1 << "\"";
+        }
       }
-    }
-    
-    /*--- Add names for any extra variables (this will need to be adjusted). ---*/
-    if (grid_movement) {
-      if (nDim == 2) {
-        Tecplot_File << ",\"Grid_Velx\",\"Grid_Vely\"";
-      } else {
-        Tecplot_File << ",\"Grid_Velx\",\"Grid_Vely\",\"Grid_Velz\"";
+      
+      /*--- Add names for any extra variables (this will need to be adjusted). ---*/
+      if (grid_movement) {
+        if (nDim == 2) {
+          Tecplot_File << ",\"Grid_Velx\",\"Grid_Vely\"";
+        } else {
+          Tecplot_File << ",\"Grid_Velx\",\"Grid_Vely\",\"Grid_Velz\"";
+        }
       }
-    }
-    
-    if (config->GetKind_Regime() == FREESURFACE) {
-      Tecplot_File << ",\"Density\"";
-    }
-    
-    if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-      Tecplot_File << ",\"Pressure\",\"Temperature\",\"Pressure_Coefficient\",\"Mach\"";
-    }
-    
-    if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-      Tecplot_File << ",\"Laminar_Viscosity\", \"Skin_Friction_Coefficient\", \"Heat_Flux\", \"Y_Plus\"";
-    }
-    
-    if (Kind_Solver == RANS) {
-      Tecplot_File << ", \"Eddy_Viscosity\"";
-    }
-    
-    if (config->GetWrt_SharpEdges()) {
+      
+      if (config->GetKind_Regime() == FREESURFACE) {
+        Tecplot_File << ",\"Density\"";
+      }
+      
       if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-        Tecplot_File << ", \"Sharp_Edge_Dist\"";
+        Tecplot_File << ",\"Pressure\",\"Temperature\",\"Pressure_Coefficient\",\"Mach\"";
       }
-    }
-    
-    if ((Kind_Solver == TNE2_EULER) || (Kind_Solver == TNE2_NAVIER_STOKES)) {
-      Tecplot_File << ",\"Mach\",\"Pressure\",\"Temperature\",\"Temperature_ve\"";
-    }
-    
-    if (Kind_Solver == TNE2_NAVIER_STOKES) {
-      for (unsigned short iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++)
-      Tecplot_File << ",\"DiffusionCoeff_" << iSpecies << "\"";
-      Tecplot_File << ",\"Laminar_Viscosity\",\"ThermConductivity\",\"ThermConductivity_ve\"";
-    }
-    
-    if (Kind_Solver == POISSON_EQUATION) {
-      unsigned short iDim;
-      for (iDim = 0; iDim < geometry->GetnDim(); iDim++)
-      Tecplot_File << ",\"poissonField_" << iDim+1 << "\"";
-    }
-    
-    if (( Kind_Solver == ADJ_EULER              ) ||
-        ( Kind_Solver == ADJ_NAVIER_STOKES      ) ||
-        ( Kind_Solver == ADJ_RANS               ) ||
-        ( Kind_Solver == ADJ_TNE2_EULER         ) ||
-        ( Kind_Solver == ADJ_TNE2_NAVIER_STOKES )   ) {
-      Tecplot_File << ", \"Surface_Sensitivity\", \"Solution_Sensor\"";
-    }
-    
-    if (Kind_Solver == LINEAR_ELASTICITY) {
-      Tecplot_File << ", \"Von_Mises_Stress\", \"Flow_Pressure\"";
-    }
-    
-    if (config->GetExtraOutput()) {
-      string *headings = NULL;
-      //if (Kind_Solver == RANS){
-      headings = solver[TURB_SOL]->OutputHeadingNames;
-      //}
-      for (iVar = 0; iVar < nVar_Extra; iVar++) {
-        //Tecplot_File << ", \"ExtraOutput_" << iVar+1<<"\"";
-        if (headings == NULL){
-          Tecplot_File << ", \"ExtraOutput_" << iVar+1<<"\"";
-        }else{
-          Tecplot_File << ", \""<< headings[iVar] <<"\"";
+      
+      if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+        Tecplot_File << ",\"Laminar_Viscosity\", \"Skin_Friction_Coefficient\", \"Heat_Flux\", \"Y_Plus\"";
+      }
+      
+      if (Kind_Solver == RANS) {
+        Tecplot_File << ", \"Eddy_Viscosity\"";
+      }
+      
+      if (config->GetWrt_SharpEdges()) {
+        if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+          Tecplot_File << ", \"Sharp_Edge_Dist\"";
+        }
+      }
+      
+      if ((Kind_Solver == TNE2_EULER) || (Kind_Solver == TNE2_NAVIER_STOKES)) {
+        Tecplot_File << ",\"Mach\",\"Pressure\",\"Temperature\",\"Temperature_ve\"";
+      }
+      
+      if (Kind_Solver == TNE2_NAVIER_STOKES) {
+        for (unsigned short iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++)
+          Tecplot_File << ",\"DiffusionCoeff_" << iSpecies << "\"";
+        Tecplot_File << ",\"Laminar_Viscosity\",\"ThermConductivity\",\"ThermConductivity_ve\"";
+      }
+      
+      if (Kind_Solver == POISSON_EQUATION) {
+        unsigned short iDim;
+        for (iDim = 0; iDim < geometry->GetnDim(); iDim++)
+          Tecplot_File << ",\"poissonField_" << iDim+1 << "\"";
+      }
+      
+      if (( Kind_Solver == ADJ_EULER              ) ||
+          ( Kind_Solver == ADJ_NAVIER_STOKES      ) ||
+          ( Kind_Solver == ADJ_RANS               ) ||
+          ( Kind_Solver == ADJ_TNE2_EULER         ) ||
+          ( Kind_Solver == ADJ_TNE2_NAVIER_STOKES )   ) {
+        Tecplot_File << ", \"Surface_Sensitivity\", \"Solution_Sensor\"";
+      }
+      
+      if (Kind_Solver == LINEAR_ELASTICITY) {
+        Tecplot_File << ", \"Von_Mises_Stress\", \"Flow_Pressure\"";
+      }
+      
+      if (config->GetExtraOutput()) {
+        string *headings = NULL;
+        //if (Kind_Solver == RANS){
+        headings = solver[TURB_SOL]->OutputHeadingNames;
+        //}
+        for (iVar = 0; iVar < nVar_Extra; iVar++) {
+          //Tecplot_File << ", \"ExtraOutput_" << iVar+1<<"\"";
+          if (headings == NULL){
+            Tecplot_File << ", \"ExtraOutput_" << iVar+1<<"\"";
+          }else{
+            Tecplot_File << ", \""<< headings[iVar] <<"\"";
+          }
         }
       }
     }

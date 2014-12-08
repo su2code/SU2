@@ -30,13 +30,11 @@ int main(int argc, char *argv[]) {
 	ofstream ConvHist_file;
 	char file_name[MAX_STRING_SIZE];
 	int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
 
 #ifdef HAVE_MPI
 	/*--- MPI initialization, and buffer setting ---*/
 	MPI_Init(&argc,&argv);
 	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-	MPI_Comm_size(MPI_COMM_WORLD,&size);
 #endif
   
 	/*--- Pointer to different structures that will be used throughout the entire code ---*/
