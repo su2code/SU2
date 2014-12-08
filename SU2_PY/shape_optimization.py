@@ -38,8 +38,6 @@ def main():
                       help="try to restart from project file NAME", metavar="NAME")
     parser.add_option("-n", "--partitions", dest="partitions", default=1,
                       help="number of PARTITIONS", metavar="PARTITIONS")
-    parser.add_option("-p", "--oldpartitions", dest="oldpartitions", default="oldpartitions",
-                      help="old number of PARTITIONS (use -n instead)", metavar="OLDPARTITIONS")
     parser.add_option("-g", "--gradient", dest="gradient", default="Adjoint",
                       help="Method for computing the GRADIENT (ADJOINT, FINDIFF, NONE)", metavar="GRADIENT")
     parser.add_option("-q", "--quiet", dest="quiet", default="False",
@@ -60,10 +58,6 @@ def main():
     options.step        = float( options.step )
     options.quiet       = options.quiet.upper() == 'TRUE'
     options.gradient    = options.gradient.upper()
-    
-    if options.oldpartitions != "oldpartitions":
-        print ("\n IMPORTANT: -p is no longer available in SU2 v3.2.4, use -n flag instead \n")
-        sys.exit()
     
     shape_optimization( options.filename    ,
                         options.projectname ,

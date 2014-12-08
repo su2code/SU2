@@ -465,7 +465,7 @@ string get_file_contents(string filename){
     in.close();
     return(contents);
   }
-  cout << "Predictor filename " << filename << " not found" <<endl;
+  cout << "Predictor filename " << filename << " not found" << endl;
   exit(EXIT_FAILURE);
 }
 
@@ -484,7 +484,7 @@ CScalePredictor::CScalePredictor(string filename){
   Json::Reader reader;
   bool parsingSuccessful = reader.parse(contents, root);
   if (!parsingSuccessful){
-    std::cout << "Failed to parse \n" << reader.getFormatedErrorMessages()<<endl;
+    std::cout << "Failed to parse \n" << reader.getFormatedErrorMessages()<< endl;
   }
   
   // Get the input scaler
@@ -529,7 +529,7 @@ CScalePredictor::CScalePredictor(string filename){
       }
       cout.precision(16);
       if (mismatch){
-        cout << "Prediction mismatch" <<endl;
+        cout << "Prediction mismatch" << endl;
         for (int j = 0; j < nOutputs; j++){
           cout << "j = " <<  " true: " << output[j] << " pred: " << predOutput[j] << " rel error: " << abs(output[j] - predOutput[j])/(max) <<  endl;
         }

@@ -37,8 +37,6 @@ def main():
                       help="read config from FILE", metavar="FILE")
     parser.add_option("-n", "--partitions", dest="partitions", default=2,
                       help="number of PARTITIONS", metavar="PARTITIONS")
-    parser.add_option("-p", "--oldpartitions", dest="oldpartitions", default="oldpartitions",
-                      help="old number of PARTITIONS (use -n instead)", metavar="OLDPARTITIONS")
     parser.add_option("-c", "--compute",    dest="compute",    default="True",
                       help="COMPUTE direct and adjoint problem", metavar="COMPUTE")
     parser.add_option("-d", "--divide_grid",dest="divide_grid",default="True",
@@ -52,10 +50,6 @@ def main():
     if options.filename == None:
         raise Exception("No config file provided. Use -f flag")
     
-    if options.oldpartitions != "oldpartitions":
-        print ("\n IMPORTANT: -p is no longer available in SU2 v3.2.4, use -n flag instead \n")
-        sys.exit()
-
     parallel_computation( options.filename    ,
                           options.partitions  ,
                           options.compute     ,

@@ -192,8 +192,8 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     if (rank == MASTER_NODE) {
       cout << "Non-linear iter.: " << iNonlinear_Iter+1 << "/" << config->GetGridDef_Nonlinear_Iter()
       << ". Linear iter.: " << IterLinSol << ". ";
-      if (nDim == 2) cout << "Min. area: " << MinVolume << ". Error: " << NumError << "." <<endl;
-      else cout << "Min. volume: " << MinVolume << ". Error: " << NumError << "." <<endl;
+      if (nDim == 2) cout << "Min. area: " << MinVolume << ". Error: " << NumError << "." << endl;
+      else cout << "Min. volume: " << MinVolume << ". Error: " << NumError << "." << endl;
     }
     
   }
@@ -5969,7 +5969,7 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
         
 #ifdef HAVE_MPI
         if (config->GetKind_SU2() == SU2_PRT)
-          if (rank == MASTER_NODE) cout << "Surface points: " << nSurfacePoints[iFFDBox] <<"."<<endl;
+          if (rank == MASTER_NODE) cout << "Surface points: " << nSurfacePoints[iFFDBox] <<"."<< endl;
 #endif
         
         nSurfacePoints[iFFDBox] = my_nSurfPoints;
@@ -5978,12 +5978,12 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
 #ifdef HAVE_MPI
         if (config->GetKind_SU2() != SU2_PRT) {
           MPI_Allreduce(&my_nSurfPoints, &nSurfPoints, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-          if (rank == MASTER_NODE) cout << "Surface points: " << nSurfPoints <<"."<<endl;
+          if (rank == MASTER_NODE) cout << "Surface points: " << nSurfPoints <<"."<< endl;
         }
         else nSurfPoints = my_nSurfPoints;
 #else
 				nSurfPoints = my_nSurfPoints;
-        if (rank == MASTER_NODE) cout << "Surface points: " << nSurfPoints <<"."<<endl;
+        if (rank == MASTER_NODE) cout << "Surface points: " << nSurfPoints <<"."<< endl;
 #endif
 				
 				

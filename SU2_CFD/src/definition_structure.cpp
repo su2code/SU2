@@ -265,7 +265,7 @@ void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned
     geometry[iZone][MESH_0]->ComputeSurf_Curvature(config[iZone]);
     
     if ((config[iZone]->GetMGLevels() != 0) && (rank == MASTER_NODE))
-      cout << "Setting the multigrid structure." <<endl;
+      cout << "Setting the multigrid structure." << endl;
     
   }
   

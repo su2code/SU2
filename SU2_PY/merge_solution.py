@@ -36,15 +36,9 @@ def main():
                       help="read config from FILE", metavar="FILE")
     parser.add_option("-n", "--partitions", dest="partitions", default=-1,
                       help="number of PARTITIONS", metavar="PARTITIONS")
-    parser.add_option("-p", "--oldpartitions", dest="oldpartitions", default="oldpartitions",
-                      help="old number of PARTITIONS (use -n instead)", metavar="OLDPARTITIONS")
 
     (options, args)=parser.parse_args()
     options.partitions = int(options.partitions)
-    
-    if options.oldpartitions != "oldpartitions":
-        print ("\n IMPORTANT: -p is no longer available in SU2 v3.2.4, use -n flag instead \n")
-        sys.exit()
     
     merge_solution( options.filename   ,
                     options.partitions  )

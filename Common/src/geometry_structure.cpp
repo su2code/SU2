@@ -978,7 +978,7 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
   SigmaK = sqrt(SigmaK/double(TotalnPointDomain));
   
   if (rank == MASTER_NODE)
-    cout << "Max K: " << MaxK << ". Mean K: " << MeanK << ". Standard deviation K: " << SigmaK << "." <<endl;
+    cout << "Max K: " << MaxK << ". Mean K: " << MeanK << ". Standard deviation K: " << SigmaK << "." << endl;
   
   Point_Critical.clear();
   
@@ -6178,7 +6178,7 @@ void CPhysicalGeometry::MatchInterface(CConfig *config) {
     unsigned long *Buffer_Send_nVertex = new unsigned long [1];
     unsigned long *Buffer_Receive_nVertex = new unsigned long [nProcessor];
     
-    if (rank == MASTER_NODE) cout << "Set Interface boundary conditions (if any)." <<endl;
+    if (rank == MASTER_NODE) cout << "Set Interface boundary conditions (if any)." << endl;
     
     /*--- Compute the number of vertex that have interfase boundary condition
      without including the ghost nodes ---*/
@@ -6315,7 +6315,7 @@ void CPhysicalGeometry::MatchNearField(CConfig *config) {
     unsigned long iVertex, iPoint, jVertex, jPoint = 0, pPoint = 0;
     double *Coord_i, *Coord_j, dist = 0.0, mindist, maxdist;
     
-    cout << "Set Near-Field boundary conditions. " <<endl;
+    cout << "Set Near-Field boundary conditions. " << endl;
     
     maxdist = 0.0;
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
@@ -6366,7 +6366,7 @@ void CPhysicalGeometry::MatchNearField(CConfig *config) {
     unsigned long *Buffer_Send_nVertex = new unsigned long [1];
     unsigned long *Buffer_Receive_nVertex = new unsigned long [nProcessor];
     
-    if (rank == MASTER_NODE) cout << "Set Near-Field boundary conditions." <<endl;
+    if (rank == MASTER_NODE) cout << "Set Near-Field boundary conditions." << endl;
     
     /*--- Compute the number of vertex that have nearfield boundary condition
      without including the ghost nodes ---*/
@@ -6526,8 +6526,8 @@ void CPhysicalGeometry::MatchActuator_Disk(CConfig *config) {
       unsigned long *Buffer_Send_nVertex = new unsigned long [1];
       unsigned long *Buffer_Receive_nVertex = new unsigned long [nProcessor];
       
-      if ((iBC == 0) && (rank == MASTER_NODE)) cout << "Set Actuator Disk inlet boundary conditions." <<endl;
-      if ((iBC == 1) && (rank == MASTER_NODE)) cout << "Set Actuator Disk outlet boundary conditions." <<endl;
+      if ((iBC == 0) && (rank == MASTER_NODE)) cout << "Set Actuator Disk inlet boundary conditions." << endl;
+      if ((iBC == 1) && (rank == MASTER_NODE)) cout << "Set Actuator Disk outlet boundary conditions." << endl;
       
       /*--- Compute the number of vertex that have an actuator disk outlet boundary condition
        without including the ghost nodes ---*/
@@ -6733,7 +6733,7 @@ void CPhysicalGeometry::MatchZone(CConfig *config, CGeometry *geometry_donor, CC
   unsigned long *Buffer_Send_nVertex = new unsigned long [1];
   unsigned long *Buffer_Receive_nVertex = new unsigned long [nProcessor];
   
-  if (val_iZone == ZONE_0) cout << "Set zone boundary conditions (if any)." <<endl;
+  if (val_iZone == ZONE_0) cout << "Set zone boundary conditions (if any)." << endl;
   
   nLocalVertex_Zone = 0;
   for (iMarker = 0; iMarker < config_donor->GetnMarker_All(); iMarker++)
@@ -6941,8 +6941,8 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
 #endif
   
   if ((rank == MASTER_NODE) && (action == ALLOCATE)) {
-    if (nDim == 2) cout <<"Area of the computational grid: "<< DomainVolume <<"."<<endl;
-    if (nDim == 3) cout <<"Volume of the computational grid: "<< DomainVolume <<"."<<endl;
+    if (nDim == 2) cout <<"Area of the computational grid: "<< DomainVolume <<"."<< endl;
+    if (nDim == 3) cout <<"Volume of the computational grid: "<< DomainVolume <<"."<< endl;
   }
   
   config->SetDomainVolume(DomainVolume);
@@ -7145,7 +7145,7 @@ void CPhysicalGeometry::SetMeshFile (CConfig *config, string val_mesh_out_filena
     output_file << elem[iElem]->GetVTK_Type();
     for (iNodes = 0; iNodes < elem[iElem]->GetnNodes(); iNodes++)
       output_file << "\t" << elem[iElem]->GetNode(iNodes);
-    output_file << "\t"<<iElem<<endl;
+    output_file << "\t"<<iElem<< endl;
   }
   
   /*--- Write the node coordinates ---*/
@@ -7170,7 +7170,7 @@ void CPhysicalGeometry::SetMeshFile (CConfig *config, string val_mesh_out_filena
     if (bound[iMarker][0]->GetVTK_Type() != VERTEX) {
       
       Grid_Marker = config->GetMarker_All_TagBound(iMarker);
-      output_file << "MARKER_TAG= " << Grid_Marker <<endl;
+      output_file << "MARKER_TAG= " << Grid_Marker << endl;
       output_file << "MARKER_ELEMS= " << nElem_Bound[iMarker]<< endl;
       
       if (nDim == 2) {
@@ -8475,7 +8475,7 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
   CreateMirror[2] = true;
   
   /*--- Send an initial message to the console. ---*/
-  cout << "Setting the periodic boundary conditions." <<endl;
+  cout << "Setting the periodic boundary conditions." << endl;
   
   /*--- Loop through each marker to find any periodic boundaries. ---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
@@ -12181,14 +12181,14 @@ void CPeriodicGeometry::SetMeshFile(CGeometry *geometry, CConfig *config, string
     output_file << elem[iElem]->GetVTK_Type();
     for (iNodes = 0; iNodes < elem[iElem]->GetnNodes(); iNodes++)
       output_file << "\t" << NewSort[elem[iElem]->GetNode(iNodes)];
-    output_file << "\t"<<iElem<<endl;
+    output_file << "\t"<<iElem<< endl;
   }
   
   output_file << "NPOIN= " << nPoint << "\t" << nPoint - GhostPoints << endl;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     for (iDim = 0; iDim < nDim; iDim++)
       output_file << scientific << "\t" << node[NewSort[iPoint]]->GetCoord(iDim) ;
-    output_file << "\t" << iPoint <<endl;
+    output_file << "\t" << iPoint << endl;
   }
   
   output_file << "NMARK= " << nMarker << endl;
@@ -12196,7 +12196,7 @@ void CPeriodicGeometry::SetMeshFile(CGeometry *geometry, CConfig *config, string
     if (bound[iMarker][0]->GetVTK_Type() != VERTEX) {
       
       Grid_Marker = config->GetMarker_All_TagBound(iMarker);
-      output_file << "MARKER_TAG= " << Grid_Marker <<endl;
+      output_file << "MARKER_TAG= " << Grid_Marker << endl;
       output_file << "MARKER_ELEMS= " << nElem_Bound[iMarker] + nNewElem_BoundPer[iMarker] << endl;
       
       for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
