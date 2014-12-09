@@ -2180,6 +2180,8 @@ protected:
   *Bleed_Temperature,	/*!< \brief Fan face mach number for each boundary. */
   *Bleed_Area,	/*!< \brief Boundary total area. */
   *Exhaust_Area,	/*!< \brief Boundary total area. */
+  *Exhaust_Pressure,	/*!< \brief Fan face pressure for each boundary. */
+  *Exhaust_Temperature,	/*!< \brief Fan face mach number for each boundary. */
   Inflow_MassFlow_Total,	/*!< \brief Mass flow rate for each boundary. */
   Bleed_MassFlow_Total,	/*!< \brief Mass flow rate for each boundary. */
   Exhaust_MassFlow_Total,	/*!< \brief Mass flow rate for each boundary. */
