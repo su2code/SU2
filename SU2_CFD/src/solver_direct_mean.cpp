@@ -58,6 +58,7 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
   Inflow_Mach = NULL;  Inflow_Area = NULL;
   Bleed_MassFlow = NULL;  Bleed_Pressure = NULL;
   Bleed_Temperature = NULL;  Inflow_Area = NULL;
+  Exhaust_Pressure = NULL; Exhaust_Temperature = NULL;
   Exhaust_MassFlow = NULL;  Exhaust_Area = NULL;
 
   /*--- Numerical methods array initialization ---*/
@@ -119,7 +120,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   CEquivArea_Inv = NULL;  CNearFieldOF_Inv = NULL;
 
-  Inflow_MassFlow = NULL;  Exhaust_MassFlow = NULL;  Exhaust_Area = NULL;
+  Inflow_MassFlow = NULL;  Exhaust_MassFlow = NULL;  Exhaust_Area = NULL; Exhaust_Pressure = NULL;  Exhaust_Temperature = NULL;
   Inflow_Pressure = NULL;  Inflow_Mach = NULL;  Inflow_Area = NULL;
   Bleed_MassFlow = NULL;    Bleed_Pressure = NULL;  Bleed_Temperature = NULL;
   Bleed_Area = NULL;
@@ -358,6 +359,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   Inflow_MassFlow  = new double[nMarker];
   Bleed_MassFlow  = new double[nMarker];
   Exhaust_MassFlow  = new double[nMarker];
+  Exhaust_Pressure  = new double[nMarker];
+  Exhaust_Temperature = new double[nMarker];
   Exhaust_Area      = new double[nMarker];
   Inflow_Pressure  = new double[nMarker];
   Inflow_Mach      = new double[nMarker];
@@ -391,6 +394,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
     Inflow_MassFlow[iMarker] = 0.0;
     Bleed_MassFlow[iMarker] = 0.0;
     Exhaust_MassFlow[iMarker] = 0.0;
+    Exhaust_Temperature[iMarker] = Temperature_Inf;
+    Exhaust_Pressure[iMarker] = Pressure_Inf;
     Inflow_Mach[iMarker] = Mach_Inf;
     Inflow_Pressure[iMarker] = Pressure_Inf;
     Inflow_Area[iMarker] = 0.0;
@@ -599,6 +604,8 @@ CEulerSolver::~CEulerSolver(void) {
   if (Inflow_Area != NULL)      delete [] Inflow_Area;
   if (Bleed_Pressure != NULL)  delete [] Bleed_Pressure;
   if (Bleed_Temperature != NULL)      delete [] Bleed_Temperature;
+  if (Exhaust_Pressure != NULL)  delete [] Exhaust_Pressure;
+  if (Exhaust_Temperature != NULL)      delete [] Exhaust_Temperature;
   if (Bleed_Area != NULL)      delete [] Bleed_Area;
   if (iPoint_UndLapl != NULL)       delete [] iPoint_UndLapl;
   if (jPoint_UndLapl != NULL)       delete [] jPoint_UndLapl;
@@ -5344,6 +5351,8 @@ void CEulerSolver::GetEngine_Properties(CGeometry *geometry, CConfig *config, un
     Bleed_Area[iMarker] = 0.0;
 
     Exhaust_MassFlow[iMarker] = 0.0;
+    Exhaust_Pressure[iMarker] = 0.0;
+    Exhaust_Temperature[iMarker] = 0.0;
     Exhaust_Area[iMarker] = 0.0;
 
     if (config->GetMarker_All_KindBC(iMarker) == ENGINE_INFLOW) {
@@ -5428,18 +5437,25 @@ void CEulerSolver::GetEngine_Properties(CGeometry *geometry, CConfig *config, un
 
           geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
 
-          Area = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++)
+          Density = node[iPoint]->GetSolution(0);
+          Velocity2 = 0.0; Area = 0.0; MassFlow = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) {
             Area += Vector[iDim]*Vector[iDim];
-          Area = sqrt (Area);
-
-          MassFlow = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++)
+            Velocity[iDim] = node[iPoint]->GetSolution(iDim+1)/Density;
+            Velocity2 += Velocity[iDim]*Velocity[iDim];
             MassFlow += Vector[iDim]*node[iPoint]->GetSolution(iDim+1);
+          }
+          
+          Area       = sqrt (Area);
+          Energy     = node[iPoint]->GetSolution(nVar-1)/Density;
+          Pressure   = Gamma_Minus_One*Density*(Energy-0.5*Velocity2);
+          Temperature = Pressure / (Gas_Constant * Density);
 
           /*--- Compute the mass Exhaust_MassFlow ---*/
           
           Exhaust_MassFlow[iMarker] += MassFlow;
+          Exhaust_Pressure[iMarker] += Pressure*Area;
+          Exhaust_Temperature[iMarker] += Temperature*Area;
           Exhaust_Area[iMarker] += Area;
 
         }
@@ -5496,16 +5512,24 @@ void CEulerSolver::GetEngine_Properties(CGeometry *geometry, CConfig *config, un
   }
 
   double *Exhaust_MassFlow_Local = new double [nMarker_EngineExhaust];
+  double *Exhaust_Temperature_Local = new double [nMarker_EngineExhaust];
+  double *Exhaust_Pressure_Local = new double [nMarker_EngineExhaust];
   double *Exhaust_Area_Local = new double [nMarker_EngineExhaust];
 
   double *Exhaust_MassFlow_Total = new double [nMarker_EngineExhaust];
+  double *Exhaust_Temperature_Total = new double [nMarker_EngineExhaust];
+  double *Exhaust_Pressure_Total = new double [nMarker_EngineExhaust];
   double *Exhaust_Area_Total = new double [nMarker_EngineExhaust];
 
   for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++) {
     Exhaust_MassFlow_Local[iMarker_EngineExhaust] = 0.0;
+    Exhaust_Temperature_Local[iMarker_EngineBleed] = 0.0;
+    Exhaust_Pressure_Local[iMarker_EngineBleed] = 0.0;
     Exhaust_Area_Local[iMarker_EngineExhaust] = 0.0;
 
     Exhaust_MassFlow_Total[iMarker_EngineExhaust] = 0.0;
+    Exhaust_Temperature_Total[iMarker_EngineBleed] = 0.0;
+    Exhaust_Pressure_Total[iMarker_EngineBleed] = 0.0;
     Exhaust_Area_Total[iMarker_EngineExhaust] = 0.0;
   }
 
@@ -5555,6 +5579,8 @@ void CEulerSolver::GetEngine_Properties(CGeometry *geometry, CConfig *config, un
         
         if (config->GetMarker_All_TagBound(iMarker) == config->GetMarker_EngineExhaust(iMarker_EngineExhaust)) {
           Exhaust_MassFlow_Local[iMarker_EngineExhaust] += Exhaust_MassFlow[iMarker];
+          Exhaust_Temperature_Local[iMarker_EngineExhaust] += Exhaust_Temperature[iMarker];
+          Exhaust_Pressure_Local[iMarker_EngineExhaust] += Exhaust_Pressure[iMarker];
           Exhaust_Area_Local[iMarker_EngineExhaust] += Exhaust_Area[iMarker];
         }
 
@@ -5577,6 +5603,8 @@ void CEulerSolver::GetEngine_Properties(CGeometry *geometry, CConfig *config, un
   MPI_Allreduce(Bleed_Area_Local, Bleed_Area_Total, nMarker_EngineBleed, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
   MPI_Allreduce(Exhaust_MassFlow_Local, Exhaust_MassFlow_Total, nMarker_EngineExhaust, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(Exhaust_Temperature_Local, Exhaust_Temperature_Total, nMarker_EngineExhaust, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(Exhaust_Pressure_Local, Exhaust_Pressure_Total, nMarker_EngineExhaust, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   MPI_Allreduce(Exhaust_Area_Local, Exhaust_Area_Total, nMarker_EngineExhaust, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
 #else
@@ -5589,14 +5617,16 @@ void CEulerSolver::GetEngine_Properties(CGeometry *geometry, CConfig *config, un
   }
   
   for (iMarker_EngineBleed = 0; iMarker_EngineBleed < nMarker_EngineBleed; iMarker_EngineBleed++) {
-    Bleed_MassFlow_Total[iMarker_EngineBleed]   = Bleed_MassFlow_Local[iMarker_EngineBleed];
+    Bleed_MassFlow_Total[iMarker_EngineBleed]    = Bleed_MassFlow_Local[iMarker_EngineBleed];
     Bleed_Temperature_Total[iMarker_EngineBleed] = Bleed_Temperature_Local[iMarker_EngineBleed];
-    Bleed_Pressure_Total[iMarker_EngineBleed]   = Bleed_Pressure_Local[iMarker_EngineBleed];
-    Bleed_Area_Total[iMarker_EngineBleed]       = Bleed_Area_Local[iMarker_EngineBleed];
+    Bleed_Pressure_Total[iMarker_EngineBleed]    = Bleed_Pressure_Local[iMarker_EngineBleed];
+    Bleed_Area_Total[iMarker_EngineBleed]        = Bleed_Area_Local[iMarker_EngineBleed];
   }
 
   for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++) {
     Exhaust_MassFlow_Total[iMarker_EngineExhaust]  = Exhaust_MassFlow_Local[iMarker_EngineExhaust];
+    Exhaust_Temperature_Total[iMarker_EngineExhaust] = Exhaust_Temperature_Local[iMarker_EngineExhaust];
+    Exhaust_Pressure_Total[iMarker_EngineExhaust]   = Exhaust_Pressure_Local[iMarker_EngineExhaust];
     Exhaust_Area_Total[iMarker_EngineExhaust]      = Exhaust_Area_Local[iMarker_EngineExhaust];
   }
 
@@ -5667,7 +5697,13 @@ void CEulerSolver::GetEngine_Properties(CGeometry *geometry, CConfig *config, un
       cout << "Engine exhaust ("<< config->GetMarker_EngineExhaust(iMarker_EngineExhaust);
       if (config->GetSystemMeasurements() == SI) cout << "): Mass flow (kg/s): ";
       else if (config->GetSystemMeasurements() == US) cout << "): Mass flow (slug/s): ";
-      cout << Exhaust_MassFlow_Total[iMarker_EngineExhaust] * config->GetDensity_Ref() * config->GetVelocity_Ref()
+      cout << Exhaust_MassFlow_Total[iMarker_EngineExhaust] * config->GetDensity_Ref() * config->GetVelocity_Ref();
+      if (config->GetSystemMeasurements() == SI) cout << ", Temp (K): ";
+      else if (config->GetSystemMeasurements() == US) cout << ", Temp (R): ";
+      cout << Exhaust_Temperature_Total[iMarker_EngineExhaust] * config->GetTemperature_Ref();
+      if (config->GetSystemMeasurements() == SI) cout << ", Pressure (Pa): ";
+      else if (config->GetSystemMeasurements() == US) cout << ", Pressure (psf): ";
+      cout << Exhaust_Pressure_Total[iMarker_EngineExhaust] * config->GetPressure_Ref()
       << ", Area: " << Exhaust_Area_Total[iMarker_EngineExhaust] <<"."<< endl;
     }
     cout << "-------------------------------------------------------------------------" << endl;
@@ -5788,9 +5824,13 @@ void CEulerSolver::GetEngine_Properties(CGeometry *geometry, CConfig *config, un
   delete [] Inflow_Area_Total;
 
   delete [] Exhaust_MassFlow_Local;
+  delete [] Exhaust_Temperature_Local;
+  delete [] Exhaust_Pressure_Local;
   delete [] Exhaust_Area_Local;
 
   delete [] Exhaust_MassFlow_Total;
+  delete [] Exhaust_Temperature_Total;
+  delete [] Exhaust_Pressure_Total;
   delete [] Exhaust_Area_Total;
   
   delete [] Bleed_MassFlow_Local;
@@ -9728,6 +9768,8 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   Inflow_MassFlow  = new double[nMarker];
   Bleed_MassFlow  = new double[nMarker];
   Exhaust_MassFlow  = new double[nMarker];
+  Exhaust_Pressure  = new double[nMarker];
+  Exhaust_Temperature      = new double[nMarker];
   Exhaust_Area      = new double[nMarker];
   Inflow_Pressure  = new double[nMarker];
   Inflow_Mach      = new double[nMarker];
