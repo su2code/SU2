@@ -5523,13 +5523,13 @@ void CEulerSolver::GetEngine_Properties(CGeometry *geometry, CConfig *config, un
 
   for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++) {
     Exhaust_MassFlow_Local[iMarker_EngineExhaust] = 0.0;
-    Exhaust_Temperature_Local[iMarker_EngineBleed] = 0.0;
-    Exhaust_Pressure_Local[iMarker_EngineBleed] = 0.0;
+    Exhaust_Temperature_Local[iMarker_EngineExhaust] = 0.0;
+    Exhaust_Pressure_Local[iMarker_EngineExhaust] = 0.0;
     Exhaust_Area_Local[iMarker_EngineExhaust] = 0.0;
 
     Exhaust_MassFlow_Total[iMarker_EngineExhaust] = 0.0;
-    Exhaust_Temperature_Total[iMarker_EngineBleed] = 0.0;
-    Exhaust_Pressure_Total[iMarker_EngineBleed] = 0.0;
+    Exhaust_Temperature_Total[iMarker_EngineExhaust] = 0.0;
+    Exhaust_Pressure_Total[iMarker_EngineExhaust] = 0.0;
     Exhaust_Area_Total[iMarker_EngineExhaust] = 0.0;
   }
 
