@@ -5664,6 +5664,16 @@ void CEulerSolver::GetEngine_Properties(CGeometry *geometry, CConfig *config, un
     }
     
   }
+  
+  /*--- Compute the value of Exhaust_Area_Total, and Exhaust_Pressure_Total, and
+   set the value in the config structure for future use ---*/
+  
+  for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++) {
+    if (Exhaust_Area_Total[iMarker_EngineExhaust] != 0.0) Exhaust_Temperature_Total[iMarker_EngineExhaust] /= Exhaust_Area_Total[iMarker_EngineExhaust];
+    else Exhaust_Temperature_Total[iMarker_EngineExhaust] = 0.0;
+    if (Exhaust_Area_Total[iMarker_EngineExhaust] != 0.0) Exhaust_Pressure_Total[iMarker_EngineExhaust] /= Exhaust_Area_Total[iMarker_EngineExhaust];
+    else Exhaust_Pressure_Total[iMarker_EngineExhaust] = 0.0;
+  }
 
   bool write_heads = (((config->GetExtIter() % (config->GetWrt_Con_Freq()*20)) == 0));
 
