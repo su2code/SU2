@@ -611,7 +611,8 @@ void CNumerics::GetInviscidProjJac(double *val_U, double *val_V,
   
   /*--- Rename for convenience ---*/
   rho    = val_V[RHO_INDEX];
-  H      = val_V[H_INDEX];
+//  H      = val_V[H_INDEX];
+  H = (val_U[nSpecies+nDim]+val_V[P_INDEX])/val_V[RHO_INDEX];
   rhoEve = val_U[nSpecies+nDim+1];
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     rhos[iSpecies] = val_V[RHOS_INDEX+iSpecies];
@@ -917,86 +918,86 @@ void CNumerics::GetPMatrix(double *U, double *V, double *val_dPdU,
 	if(nDim == 2) {
 		
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-      val_p_tensor[iSpecies][iSpecies]   = 1.0/a2;
-      val_p_tensor[iSpecies][nSpecies]   = 0.0;
-      val_p_tensor[iSpecies][nSpecies+1] = V[RHOS_INDEX+iSpecies] / (2.0*rho*a2);
-      val_p_tensor[iSpecies][nSpecies+2] = V[RHOS_INDEX+iSpecies] / (2.0*rho*a2);
-      val_p_tensor[iSpecies][nSpecies+3] = 0.0;
+      val_p_tensor[iSpecies][iSpecies]   += 1.0/a2;
+      val_p_tensor[iSpecies][nSpecies]   += 0.0;
+      val_p_tensor[iSpecies][nSpecies+1] += V[RHOS_INDEX+iSpecies] / (2.0*rho*a2);
+      val_p_tensor[iSpecies][nSpecies+2] += V[RHOS_INDEX+iSpecies] / (2.0*rho*a2);
+      val_p_tensor[iSpecies][nSpecies+3] += 0.0;
       
-      val_p_tensor[nSpecies][iSpecies]   = V[VEL_INDEX]   / a2;
-      val_p_tensor[nSpecies+1][iSpecies] = V[VEL_INDEX+1] / a2;
-      val_p_tensor[nSpecies+2][iSpecies] = (val_dPdU[nSpecies+nDim]*sqvel-val_dPdU[iSpecies])
-                                         / (val_dPdU[nSpecies+nDim]*a2);
-      val_p_tensor[nSpecies+3][iSpecies] = 0.0;
+      val_p_tensor[nSpecies][iSpecies]   += V[VEL_INDEX]   / a2;
+      val_p_tensor[nSpecies+1][iSpecies] += V[VEL_INDEX+1] / a2;
+      val_p_tensor[nSpecies+2][iSpecies] += (val_dPdU[nSpecies+nDim]*sqvel-val_dPdU[iSpecies])
+                                          / (val_dPdU[nSpecies+nDim]*a2);
+      val_p_tensor[nSpecies+3][iSpecies] += 0.0;
     }
     
-		val_p_tensor[nSpecies][nSpecies]     = l[0];
-    val_p_tensor[nSpecies][nSpecies+1]   = (V[VEL_INDEX]+a*val_normal[0]) / (2.0*a2);
-    val_p_tensor[nSpecies][nSpecies+2]   = (V[VEL_INDEX]-a*val_normal[0]) / (2.0*a2);
-    val_p_tensor[nSpecies][nSpecies+3]   = 0.0;
+		val_p_tensor[nSpecies][nSpecies]     += l[0];
+    val_p_tensor[nSpecies][nSpecies+1]   += (V[VEL_INDEX]+a*val_normal[0]) / (2.0*a2);
+    val_p_tensor[nSpecies][nSpecies+2]   += (V[VEL_INDEX]-a*val_normal[0]) / (2.0*a2);
+    val_p_tensor[nSpecies][nSpecies+3]   += 0.0;
     
-    val_p_tensor[nSpecies+1][nSpecies]   = l[1];
-    val_p_tensor[nSpecies+1][nSpecies+1] = (V[VEL_INDEX+1]+a*val_normal[1]) / (2.0*a2);
-    val_p_tensor[nSpecies+1][nSpecies+2] = (V[VEL_INDEX+1]-a*val_normal[1]) / (2.0*a2);
-    val_p_tensor[nSpecies+1][nSpecies+3] = 0.0;
+    val_p_tensor[nSpecies+1][nSpecies]   += l[1];
+    val_p_tensor[nSpecies+1][nSpecies+1] += (V[VEL_INDEX+1]+a*val_normal[1]) / (2.0*a2);
+    val_p_tensor[nSpecies+1][nSpecies+2] += (V[VEL_INDEX+1]-a*val_normal[1]) / (2.0*a2);
+    val_p_tensor[nSpecies+1][nSpecies+3] += 0.0;
     
-    val_p_tensor[nSpecies+2][nSpecies]   = vV;
-    val_p_tensor[nSpecies+2][nSpecies+1] = ((V[H_INDEX])+a*vU) / (2.0*a2);
-    val_p_tensor[nSpecies+2][nSpecies+2] = ((V[H_INDEX])-a*vU) / (2.0*a2);
-    val_p_tensor[nSpecies+2][nSpecies+3] = -val_dPdU[nSpecies+nDim+1] / (val_dPdU[nSpecies+nDim]*a2);
+    val_p_tensor[nSpecies+2][nSpecies]   += vV;
+    val_p_tensor[nSpecies+2][nSpecies+1] += ((V[H_INDEX])+a*vU) / (2.0*a2);
+    val_p_tensor[nSpecies+2][nSpecies+2] += ((V[H_INDEX])-a*vU) / (2.0*a2);
+    val_p_tensor[nSpecies+2][nSpecies+3] += -val_dPdU[nSpecies+nDim+1] / (val_dPdU[nSpecies+nDim]*a2);
     
-    val_p_tensor[nSpecies+3][nSpecies]   = 0.0;
-    val_p_tensor[nSpecies+3][nSpecies+1] = eve / (2.0*a2);
-    val_p_tensor[nSpecies+3][nSpecies+2] = eve / (2.0*a2);
-    val_p_tensor[nSpecies+3][nSpecies+3] = 1.0 / a2;
+    val_p_tensor[nSpecies+3][nSpecies]   += 0.0;
+    val_p_tensor[nSpecies+3][nSpecies+1] += eve / (2.0*a2);
+    val_p_tensor[nSpecies+3][nSpecies+2] += eve / (2.0*a2);
+    val_p_tensor[nSpecies+3][nSpecies+3] += 1.0 / a2;
   
 	} else {
     
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-      val_p_tensor[iSpecies][iSpecies]   = 1.0/a2;
-      val_p_tensor[iSpecies][nSpecies]   = 0.0;
-      val_p_tensor[iSpecies][nSpecies+1] = 0.0;
-      val_p_tensor[iSpecies][nSpecies+2] = V[RHOS_INDEX+iSpecies] / (2.0*rho*a2);
-      val_p_tensor[iSpecies][nSpecies+3] = V[RHOS_INDEX+iSpecies] / (2.0*rho*a2);
-      val_p_tensor[iSpecies][nSpecies+4] = 0.0;
+      val_p_tensor[iSpecies][iSpecies]   += 1.0/a2;
+      val_p_tensor[iSpecies][nSpecies]   += 0.0;
+      val_p_tensor[iSpecies][nSpecies+1] += 0.0;
+      val_p_tensor[iSpecies][nSpecies+2] += V[RHOS_INDEX+iSpecies] / (2.0*rho*a2);
+      val_p_tensor[iSpecies][nSpecies+3] += V[RHOS_INDEX+iSpecies] / (2.0*rho*a2);
+      val_p_tensor[iSpecies][nSpecies+4] += 0.0;
       
-      val_p_tensor[nSpecies][iSpecies]   = V[VEL_INDEX]   / a2;
-      val_p_tensor[nSpecies+1][iSpecies] = V[VEL_INDEX+1] / a2;
-      val_p_tensor[nSpecies+2][iSpecies] = V[VEL_INDEX+2] / a2;
-      val_p_tensor[nSpecies+3][iSpecies] = (val_dPdU[nSpecies+3]*sqvel-val_dPdU[iSpecies])
-                                         / (val_dPdU[nSpecies+3]*a2);
-      val_p_tensor[nSpecies+4][iSpecies] = 0.0;
+      val_p_tensor[nSpecies][iSpecies]   += V[VEL_INDEX]   / a2;
+      val_p_tensor[nSpecies+1][iSpecies] += V[VEL_INDEX+1] / a2;
+      val_p_tensor[nSpecies+2][iSpecies] += V[VEL_INDEX+2] / a2;
+      val_p_tensor[nSpecies+3][iSpecies] += (val_dPdU[nSpecies+nDim]*sqvel-val_dPdU[iSpecies])
+                                         / (val_dPdU[nSpecies+nDim]*a2);
+      val_p_tensor[nSpecies+4][iSpecies] += 0.0;
     }
     
-		val_p_tensor[nSpecies][nSpecies]     = l[0];
-    val_p_tensor[nSpecies][nSpecies+1]   = m[0];
-    val_p_tensor[nSpecies][nSpecies+2]   = (V[VEL_INDEX]+a*val_normal[0]) / (2.0*a2);
-    val_p_tensor[nSpecies][nSpecies+3]   = (V[VEL_INDEX]-a*val_normal[0]) / (2.0*a2);
-    val_p_tensor[nSpecies][nSpecies+4]   = 0.0;
+		val_p_tensor[nSpecies][nSpecies]     += l[0];
+    val_p_tensor[nSpecies][nSpecies+1]   += m[0];
+    val_p_tensor[nSpecies][nSpecies+2]   += (V[VEL_INDEX]+a*val_normal[0]) / (2.0*a2);
+    val_p_tensor[nSpecies][nSpecies+3]   += (V[VEL_INDEX]-a*val_normal[0]) / (2.0*a2);
+    val_p_tensor[nSpecies][nSpecies+4]   += 0.0;
     
-    val_p_tensor[nSpecies+1][nSpecies]   = l[1];
-    val_p_tensor[nSpecies+1][nSpecies+1] = m[1];
-    val_p_tensor[nSpecies+1][nSpecies+2] = (V[VEL_INDEX+1]+a*val_normal[1]) / (2.0*a2);
-    val_p_tensor[nSpecies+1][nSpecies+3] = (V[VEL_INDEX+1]-a*val_normal[1]) / (2.0*a2);
-    val_p_tensor[nSpecies+1][nSpecies+4] = 0.0;
+    val_p_tensor[nSpecies+1][nSpecies]   += l[1];
+    val_p_tensor[nSpecies+1][nSpecies+1] += m[1];
+    val_p_tensor[nSpecies+1][nSpecies+2] += (V[VEL_INDEX+1]+a*val_normal[1]) / (2.0*a2);
+    val_p_tensor[nSpecies+1][nSpecies+3] += (V[VEL_INDEX+1]-a*val_normal[1]) / (2.0*a2);
+    val_p_tensor[nSpecies+1][nSpecies+4] += 0.0;
     
-    val_p_tensor[nSpecies+2][nSpecies]   = l[2];
-    val_p_tensor[nSpecies+2][nSpecies+1] = m[2];
-    val_p_tensor[nSpecies+2][nSpecies+2] = (V[VEL_INDEX+2]+a*val_normal[2]) / (2.0*a2);
-    val_p_tensor[nSpecies+2][nSpecies+3] = (V[VEL_INDEX+2]-a*val_normal[2]) / (2.0*a2);
-    val_p_tensor[nSpecies+2][nSpecies+4] = 0.0;
+    val_p_tensor[nSpecies+2][nSpecies]   += l[2];
+    val_p_tensor[nSpecies+2][nSpecies+1] += m[2];
+    val_p_tensor[nSpecies+2][nSpecies+2] += (V[VEL_INDEX+2]+a*val_normal[2]) / (2.0*a2);
+    val_p_tensor[nSpecies+2][nSpecies+3] += (V[VEL_INDEX+2]-a*val_normal[2]) / (2.0*a2);
+    val_p_tensor[nSpecies+2][nSpecies+4] += 0.0;
     
-    val_p_tensor[nSpecies+3][nSpecies]   = vV;
-    val_p_tensor[nSpecies+3][nSpecies+1] = vW;
-    val_p_tensor[nSpecies+3][nSpecies+2] = ((V[H_INDEX])+a*vU) / (2.0*a2);
-    val_p_tensor[nSpecies+3][nSpecies+3] = ((V[H_INDEX])-a*vU) / (2.0*a2);
-    val_p_tensor[nSpecies+3][nSpecies+4] = -val_dPdU[nSpecies+nDim+1] / (val_dPdU[nSpecies+nDim]*a2);
+    val_p_tensor[nSpecies+3][nSpecies]   += vV;
+    val_p_tensor[nSpecies+3][nSpecies+1] += vW;
+    val_p_tensor[nSpecies+3][nSpecies+2] += ((V[H_INDEX])+a*vU) / (2.0*a2);
+    val_p_tensor[nSpecies+3][nSpecies+3] += ((V[H_INDEX])-a*vU) / (2.0*a2);
+    val_p_tensor[nSpecies+3][nSpecies+4] += -val_dPdU[nSpecies+nDim+1] / (val_dPdU[nSpecies+nDim]*a2);
     
-    val_p_tensor[nSpecies+4][nSpecies]   = 0.0;
-    val_p_tensor[nSpecies+4][nSpecies+1] = 0.0;
-    val_p_tensor[nSpecies+4][nSpecies+2] = eve / (2.0*a2);
-    val_p_tensor[nSpecies+4][nSpecies+3] = eve / (2.0*a2);
-    val_p_tensor[nSpecies+4][nSpecies+4] = 1.0 / a2;
+    val_p_tensor[nSpecies+4][nSpecies]   += 0.0;
+    val_p_tensor[nSpecies+4][nSpecies+1] += 0.0;
+    val_p_tensor[nSpecies+4][nSpecies+2] += eve / (2.0*a2);
+    val_p_tensor[nSpecies+4][nSpecies+3] += eve / (2.0*a2);
+    val_p_tensor[nSpecies+4][nSpecies+4] += 1.0 / a2;
 	}
 }
 
@@ -1099,89 +1100,89 @@ void CNumerics::GetPMatrix_inv(double *U, double *V, double *val_dPdU,
 
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
       for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
-        val_invp_tensor[iSpecies][jSpecies] = -(V[RHOS_INDEX+iSpecies]/rho) * val_dPdU[jSpecies];
+        val_invp_tensor[iSpecies][jSpecies] += -(V[RHOS_INDEX+iSpecies]/rho) * val_dPdU[jSpecies];
       }
-      val_invp_tensor[iSpecies][iSpecies]  += a2;
-      val_invp_tensor[iSpecies][nSpecies]   = val_dPdU[nSpecies+nDim] * V[VEL_INDEX] * (V[RHOS_INDEX+iSpecies]/rho);
-      val_invp_tensor[iSpecies][nSpecies+1] = val_dPdU[nSpecies+nDim] * V[VEL_INDEX+1] * (V[RHOS_INDEX+iSpecies]/rho);
-      val_invp_tensor[iSpecies][nSpecies+2] = -val_dPdU[nSpecies+nDim] * (V[RHOS_INDEX+iSpecies]/rho);
-      val_invp_tensor[iSpecies][nSpecies+3] = -val_dPdU[nSpecies+nDim+1] * (V[RHOS_INDEX+iSpecies]/rho);
+      val_invp_tensor[iSpecies][iSpecies]   += a2;
+      val_invp_tensor[iSpecies][nSpecies]   += val_dPdU[nSpecies+nDim] * V[VEL_INDEX] * (V[RHOS_INDEX+iSpecies]/rho);
+      val_invp_tensor[iSpecies][nSpecies+1] += val_dPdU[nSpecies+nDim] * V[VEL_INDEX+1] * (V[RHOS_INDEX+iSpecies]/rho);
+      val_invp_tensor[iSpecies][nSpecies+2] += -val_dPdU[nSpecies+nDim] * (V[RHOS_INDEX+iSpecies]/rho);
+      val_invp_tensor[iSpecies][nSpecies+3] += -val_dPdU[nSpecies+nDim+1] * (V[RHOS_INDEX+iSpecies]/rho);
       
-      val_invp_tensor[nSpecies][iSpecies]   = -vV;
-      val_invp_tensor[nSpecies+1][iSpecies] = val_dPdU[iSpecies] - vU*a;
-      val_invp_tensor[nSpecies+2][iSpecies] = val_dPdU[iSpecies] + vU*a;
-      val_invp_tensor[nSpecies+3][iSpecies] = -eve * val_dPdU[iSpecies];
+      val_invp_tensor[nSpecies][iSpecies]   += -vV;
+      val_invp_tensor[nSpecies+1][iSpecies] += val_dPdU[iSpecies] - vU*a;
+      val_invp_tensor[nSpecies+2][iSpecies] += val_dPdU[iSpecies] + vU*a;
+      val_invp_tensor[nSpecies+3][iSpecies] += -eve * val_dPdU[iSpecies];
     }
     
-    val_invp_tensor[nSpecies][nSpecies]     = l[0];
-    val_invp_tensor[nSpecies][nSpecies+1]   = l[1];
-    val_invp_tensor[nSpecies][nSpecies+2]   = 0.0;
-    val_invp_tensor[nSpecies][nSpecies+3]   = 0.0;
+    val_invp_tensor[nSpecies][nSpecies]     += l[0];
+    val_invp_tensor[nSpecies][nSpecies+1]   += l[1];
+    val_invp_tensor[nSpecies][nSpecies+2]   += 0.0;
+    val_invp_tensor[nSpecies][nSpecies+3]   += 0.0;
     
-    val_invp_tensor[nSpecies+1][nSpecies]   = a*val_normal[0] - val_dPdU[nSpecies+nDim]*V[VEL_INDEX];
-    val_invp_tensor[nSpecies+1][nSpecies+1] = a*val_normal[1] - val_dPdU[nSpecies+nDim]*V[VEL_INDEX+1];
-    val_invp_tensor[nSpecies+1][nSpecies+2] = val_dPdU[nSpecies+nDim];
-    val_invp_tensor[nSpecies+1][nSpecies+3] = val_dPdU[nSpecies+nDim+1];
+    val_invp_tensor[nSpecies+1][nSpecies]   += a*val_normal[0] - val_dPdU[nSpecies+nDim]*V[VEL_INDEX];
+    val_invp_tensor[nSpecies+1][nSpecies+1] += a*val_normal[1] - val_dPdU[nSpecies+nDim]*V[VEL_INDEX+1];
+    val_invp_tensor[nSpecies+1][nSpecies+2] += val_dPdU[nSpecies+nDim];
+    val_invp_tensor[nSpecies+1][nSpecies+3] += val_dPdU[nSpecies+nDim+1];
     
-    val_invp_tensor[nSpecies+2][nSpecies]   = -a*val_normal[0] - val_dPdU[nSpecies+nDim]*V[VEL_INDEX];
-    val_invp_tensor[nSpecies+2][nSpecies+1] = -a*val_normal[1] - val_dPdU[nSpecies+nDim]*V[VEL_INDEX+1];
-    val_invp_tensor[nSpecies+2][nSpecies+2] = val_dPdU[nSpecies+nDim];
-    val_invp_tensor[nSpecies+2][nSpecies+3] = val_dPdU[nSpecies+nDim+1];
+    val_invp_tensor[nSpecies+2][nSpecies]   += -a*val_normal[0] - val_dPdU[nSpecies+nDim]*V[VEL_INDEX];
+    val_invp_tensor[nSpecies+2][nSpecies+1] += -a*val_normal[1] - val_dPdU[nSpecies+nDim]*V[VEL_INDEX+1];
+    val_invp_tensor[nSpecies+2][nSpecies+2] += val_dPdU[nSpecies+nDim];
+    val_invp_tensor[nSpecies+2][nSpecies+3] += val_dPdU[nSpecies+nDim+1];
     
-    val_invp_tensor[nSpecies+3][nSpecies]   = val_dPdU[nSpecies+nDim] * V[VEL_INDEX] * eve;
-    val_invp_tensor[nSpecies+3][nSpecies+1] = val_dPdU[nSpecies+nDim] * V[VEL_INDEX+1] * eve;
-    val_invp_tensor[nSpecies+3][nSpecies+2] = -val_dPdU[nSpecies+nDim] * eve;
-    val_invp_tensor[nSpecies+3][nSpecies+3] = a2 - val_dPdU[nSpecies+nDim+1]*eve;
+    val_invp_tensor[nSpecies+3][nSpecies]   += val_dPdU[nSpecies+nDim] * V[VEL_INDEX] * eve;
+    val_invp_tensor[nSpecies+3][nSpecies+1] += val_dPdU[nSpecies+nDim] * V[VEL_INDEX+1] * eve;
+    val_invp_tensor[nSpecies+3][nSpecies+2] += -val_dPdU[nSpecies+nDim] * eve;
+    val_invp_tensor[nSpecies+3][nSpecies+3] += a2 - val_dPdU[nSpecies+nDim+1]*eve;
   
   } else {
     
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
       for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
-        val_invp_tensor[iSpecies][jSpecies] = -(V[RHOS_INDEX+iSpecies]/rho) * val_dPdU[jSpecies];
+        val_invp_tensor[iSpecies][jSpecies] += -(V[RHOS_INDEX+iSpecies]/rho) * val_dPdU[jSpecies];
       }
-      val_invp_tensor[iSpecies][iSpecies]  += a2;
-      val_invp_tensor[iSpecies][nSpecies]   = val_dPdU[nSpecies+nDim] * V[VEL_INDEX] * (V[RHOS_INDEX+iSpecies]/rho);
-      val_invp_tensor[iSpecies][nSpecies+1] = val_dPdU[nSpecies+nDim] * V[VEL_INDEX+1] * (V[RHOS_INDEX+iSpecies]/rho);
-      val_invp_tensor[iSpecies][nSpecies+2] = val_dPdU[nSpecies+nDim] * V[VEL_INDEX+2] * (V[RHOS_INDEX+iSpecies]/rho);
-      val_invp_tensor[iSpecies][nSpecies+3] = -val_dPdU[nSpecies+nDim] * (V[RHOS_INDEX+iSpecies]/rho);
-      val_invp_tensor[iSpecies][nSpecies+4] = -val_dPdU[nSpecies+nDim+1] * (V[RHOS_INDEX+iSpecies]/rho);
+      val_invp_tensor[iSpecies][iSpecies]   += a2;
+      val_invp_tensor[iSpecies][nSpecies]   += val_dPdU[nSpecies+nDim] * V[VEL_INDEX] * (V[RHOS_INDEX+iSpecies]/rho);
+      val_invp_tensor[iSpecies][nSpecies+1] += val_dPdU[nSpecies+nDim] * V[VEL_INDEX+1] * (V[RHOS_INDEX+iSpecies]/rho);
+      val_invp_tensor[iSpecies][nSpecies+2] += val_dPdU[nSpecies+nDim] * V[VEL_INDEX+2] * (V[RHOS_INDEX+iSpecies]/rho);
+      val_invp_tensor[iSpecies][nSpecies+3] += -val_dPdU[nSpecies+nDim] * (V[RHOS_INDEX+iSpecies]/rho);
+      val_invp_tensor[iSpecies][nSpecies+4] += -val_dPdU[nSpecies+nDim+1] * (V[RHOS_INDEX+iSpecies]/rho);
       
-      val_invp_tensor[nSpecies][iSpecies]   = -vV;
-      val_invp_tensor[nSpecies+1][iSpecies] = -vW;
-      val_invp_tensor[nSpecies+2][iSpecies] = val_dPdU[iSpecies] - vU*a;
-      val_invp_tensor[nSpecies+3][iSpecies] = val_dPdU[iSpecies] + vU*a;
-      val_invp_tensor[nSpecies+4][iSpecies] = -eve * val_dPdU[iSpecies];
+      val_invp_tensor[nSpecies][iSpecies]   += -vV;
+      val_invp_tensor[nSpecies+1][iSpecies] += -vW;
+      val_invp_tensor[nSpecies+2][iSpecies] += val_dPdU[iSpecies] - vU*a;
+      val_invp_tensor[nSpecies+3][iSpecies] += val_dPdU[iSpecies] + vU*a;
+      val_invp_tensor[nSpecies+4][iSpecies] += -eve * val_dPdU[iSpecies];
     }
     
-    val_invp_tensor[nSpecies][nSpecies]     = l[0];
-    val_invp_tensor[nSpecies][nSpecies+1]   = l[1];
-    val_invp_tensor[nSpecies][nSpecies+2]   = l[2];
-    val_invp_tensor[nSpecies][nSpecies+3]   = 0.0;
-    val_invp_tensor[nSpecies][nSpecies+4]   = 0.0;
+    val_invp_tensor[nSpecies][nSpecies]     += l[0];
+    val_invp_tensor[nSpecies][nSpecies+1]   += l[1];
+    val_invp_tensor[nSpecies][nSpecies+2]   += l[2];
+    val_invp_tensor[nSpecies][nSpecies+3]   += 0.0;
+    val_invp_tensor[nSpecies][nSpecies+4]   += 0.0;
     
-    val_invp_tensor[nSpecies+1][nSpecies]   = m[0];
-    val_invp_tensor[nSpecies+1][nSpecies+1] = m[1];
-    val_invp_tensor[nSpecies+1][nSpecies+2] = m[2];
-    val_invp_tensor[nSpecies+1][nSpecies+3] = 0.0;
-    val_invp_tensor[nSpecies+1][nSpecies+4] = 0.0;
+    val_invp_tensor[nSpecies+1][nSpecies]   += m[0];
+    val_invp_tensor[nSpecies+1][nSpecies+1] += m[1];
+    val_invp_tensor[nSpecies+1][nSpecies+2] += m[2];
+    val_invp_tensor[nSpecies+1][nSpecies+3] += 0.0;
+    val_invp_tensor[nSpecies+1][nSpecies+4] += 0.0;
     
-    val_invp_tensor[nSpecies+2][nSpecies]   = a*val_normal[0] - val_dPdU[nSpecies+nDim]*V[VEL_INDEX];
-    val_invp_tensor[nSpecies+2][nSpecies+1] = a*val_normal[1] - val_dPdU[nSpecies+nDim]*V[VEL_INDEX+1];
-    val_invp_tensor[nSpecies+2][nSpecies+2] = a*val_normal[2] - val_dPdU[nSpecies+nDim]*V[VEL_INDEX+2];
-    val_invp_tensor[nSpecies+2][nSpecies+3] = val_dPdU[nSpecies+nDim];
-    val_invp_tensor[nSpecies+2][nSpecies+4] = val_dPdU[nSpecies+nDim+1];
+    val_invp_tensor[nSpecies+2][nSpecies]   += a*val_normal[0] - val_dPdU[nSpecies+nDim]*V[VEL_INDEX];
+    val_invp_tensor[nSpecies+2][nSpecies+1] += a*val_normal[1] - val_dPdU[nSpecies+nDim]*V[VEL_INDEX+1];
+    val_invp_tensor[nSpecies+2][nSpecies+2] += a*val_normal[2] - val_dPdU[nSpecies+nDim]*V[VEL_INDEX+2];
+    val_invp_tensor[nSpecies+2][nSpecies+3] += val_dPdU[nSpecies+nDim];
+    val_invp_tensor[nSpecies+2][nSpecies+4] += val_dPdU[nSpecies+nDim+1];
     
-    val_invp_tensor[nSpecies+3][nSpecies]   = -a*val_normal[0] - val_dPdU[nSpecies+nDim]*V[VEL_INDEX];
-    val_invp_tensor[nSpecies+3][nSpecies+1] = -a*val_normal[1] - val_dPdU[nSpecies+nDim]*V[VEL_INDEX+1];
-    val_invp_tensor[nSpecies+3][nSpecies+2] = -a*val_normal[2] - val_dPdU[nSpecies+nDim]*V[VEL_INDEX+2];
-    val_invp_tensor[nSpecies+3][nSpecies+3] = val_dPdU[nSpecies+nDim];
-    val_invp_tensor[nSpecies+3][nSpecies+4] = val_dPdU[nSpecies+nDim+1];
+    val_invp_tensor[nSpecies+3][nSpecies]   += -a*val_normal[0] - val_dPdU[nSpecies+nDim]*V[VEL_INDEX];
+    val_invp_tensor[nSpecies+3][nSpecies+1] += -a*val_normal[1] - val_dPdU[nSpecies+nDim]*V[VEL_INDEX+1];
+    val_invp_tensor[nSpecies+3][nSpecies+2] += -a*val_normal[2] - val_dPdU[nSpecies+nDim]*V[VEL_INDEX+2];
+    val_invp_tensor[nSpecies+3][nSpecies+3] += val_dPdU[nSpecies+nDim];
+    val_invp_tensor[nSpecies+3][nSpecies+4] += val_dPdU[nSpecies+nDim+1];
     
-    val_invp_tensor[nSpecies+4][nSpecies]   = val_dPdU[nSpecies+nDim] * V[VEL_INDEX] * eve;
-    val_invp_tensor[nSpecies+4][nSpecies+1] = val_dPdU[nSpecies+nDim] * V[VEL_INDEX+1] * eve;
-    val_invp_tensor[nSpecies+4][nSpecies+2] = val_dPdU[nSpecies+nDim] * V[VEL_INDEX+2] * eve;
-    val_invp_tensor[nSpecies+4][nSpecies+3] = -val_dPdU[nSpecies+nDim] * eve;
-    val_invp_tensor[nSpecies+4][nSpecies+4] = a2 - val_dPdU[nSpecies+nDim+1]*eve;
+    val_invp_tensor[nSpecies+4][nSpecies]   += val_dPdU[nSpecies+nDim] * V[VEL_INDEX] * eve;
+    val_invp_tensor[nSpecies+4][nSpecies+1] += val_dPdU[nSpecies+nDim] * V[VEL_INDEX+1] * eve;
+    val_invp_tensor[nSpecies+4][nSpecies+2] += val_dPdU[nSpecies+nDim] * V[VEL_INDEX+2] * eve;
+    val_invp_tensor[nSpecies+4][nSpecies+3] += -val_dPdU[nSpecies+nDim] * eve;
+    val_invp_tensor[nSpecies+4][nSpecies+4] += a2 - val_dPdU[nSpecies+nDim+1]*eve;
 	}
 }
 

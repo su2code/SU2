@@ -158,7 +158,7 @@ void CUpwRoe_AdjTNE2::ComputeResidual (double *val_residual_i,
   soundspeed_i = V_i[A_INDEX];
   ProjVel = 0.0;
   for (iDim = 0; iDim < nDim; iDim++)
-    ProjVel += V_i[VEL_INDEX+iDim];
+    ProjVel += V_i[VEL_INDEX+iDim]*UnitNormal[iDim];
   for (iVar = 0; iVar < nSpecies+nDim-1; iVar++)
     Lambda[iVar] = ProjVel;
   Lambda[nSpecies+nDim-1] = ProjVel + soundspeed_i;
@@ -185,6 +185,7 @@ void CUpwRoe_AdjTNE2::ComputeResidual (double *val_residual_i,
   // 1/2*(P|Lam|P^-1)^T * (Uj - Ui)
   for (iVar = 0; iVar < nVar; iVar++)
     for (jVar = 0; jVar < nVar; jVar++)
+      //val_residual_i[iVar] -= 0.5*PLPinv[jVar][iVar]*(Psi_j[jVar]-Psi_i[jVar])*Area;
       val_residual_i[iVar] -= 0.5*PLPinv[jVar][iVar]*(Psi_i[jVar]-Psi_j[jVar])*Area;
   
   
@@ -194,6 +195,8 @@ void CUpwRoe_AdjTNE2::ComputeResidual (double *val_residual_i,
   if (implicit) {
     for (iVar = 0; iVar < nVar; iVar++) {
       for (jVar = 0; jVar < nVar; jVar++) {
+        //val_Jacobian_ii[iVar][jVar] = 0.5*Ai[jVar][iVar] + 0.5*PLPinv[jVar][iVar]*Area;
+        //val_Jacobian_ij[iVar][jVar] = 0.5*Ai[jVar][iVar] - 0.5*PLPinv[jVar][iVar]*Area;
         val_Jacobian_ii[iVar][jVar] = 0.5*Ai[jVar][iVar] - 0.5*PLPinv[jVar][iVar]*Area;
         val_Jacobian_ij[iVar][jVar] = 0.5*Ai[jVar][iVar] + 0.5*PLPinv[jVar][iVar]*Area;
       }
@@ -207,7 +210,7 @@ void CUpwRoe_AdjTNE2::ComputeResidual (double *val_residual_i,
   soundspeed_j = V_j[A_INDEX];
   ProjVel = 0.0;
   for (iDim = 0; iDim < nDim; iDim++)
-    ProjVel += V_j[VEL_INDEX+iDim];
+    ProjVel += V_j[VEL_INDEX+iDim]*UnitNormal[iDim];
   for (iVar = 0; iVar < nSpecies+nDim-1; iVar++)
     Lambda[iVar] = ProjVel;
   Lambda[nSpecies+nDim-1] = ProjVel + soundspeed_j;
@@ -231,10 +234,18 @@ void CUpwRoe_AdjTNE2::ComputeResidual (double *val_residual_i,
     }
   }
   
+  // HACK: The y-z and z-y momentum elements of PLP are off by a factor of 2.
+  //       I can't find the source of the problem
+//  if (nDim == 3) {
+//    PLPinv[nSpecies+1][nSpecies+2] = 2*PLPinv[nSpecies+1][nSpecies+2];
+//    PLPinv[nSpecies+2][nSpecies+1] = 2*PLPinv[nSpecies+2][nSpecies+1];
+//  }
+  
   /*--- Calculate the 'viscous' portion of the flux ---*/
   // 1/2*(P|Lam|P^-1)^T * (Uj - Ui)
   for (iVar = 0; iVar < nVar; iVar++)
     for (jVar = 0; jVar < nVar; jVar++)
+      //val_residual_j[iVar] += 0.5*PLPinv[jVar][iVar]*(Psi_j[jVar]-Psi_i[jVar])*Area;
       val_residual_j[iVar] += 0.5*PLPinv[jVar][iVar]*(Psi_i[jVar]-Psi_j[jVar])*Area;
   
   /*--- Populate Jacobian matrices ---*/
@@ -243,27 +254,41 @@ void CUpwRoe_AdjTNE2::ComputeResidual (double *val_residual_i,
   if (implicit) {
     for (iVar = 0; iVar < nVar; iVar++) {
       for (jVar = 0; jVar < nVar; jVar++) {
+        //val_Jacobian_ji[iVar][jVar] = -0.5*Aj[jVar][iVar] - 0.5*PLPinv[jVar][iVar]*Area;
+        //val_Jacobian_jj[iVar][jVar] = -0.5*Aj[jVar][iVar] + 0.5*PLPinv[jVar][iVar]*Area;
         val_Jacobian_ji[iVar][jVar] = -0.5*Aj[jVar][iVar] + 0.5*PLPinv[jVar][iVar]*Area;
         val_Jacobian_jj[iVar][jVar] = -0.5*Aj[jVar][iVar] - 0.5*PLPinv[jVar][iVar]*Area;
       }
     }
   }
   
-//  ////////// OLD
+  ////////// OLD
+  
+  /*--- Calculate mean variables ---*/
+//  for (iVar = 0; iVar < nVar; iVar++) {
+//    MeanU[iVar]      = 0.5*(U_i[iVar]+U_j[iVar]);
+////    MeandPdU[iVar]   = 0.5*(dPdU_i[iVar]  + dPdU_j[iVar]);
+////    MeandTdU[iVar]   = 0.5*(dTdU_i[iVar]  + dTdU_j[iVar]);
+////    MeandTvedU[iVar] = 0.5*(dTvedU_i[iVar]+ dTvedU_j[iVar]);
+//  }
+////  for (iVar = 0; iVar < nPrimVar; iVar++) {
+////    MeanV[iVar] = 0.5*(V_i[iVar] + V_j[iVar]);
+////  }
 //  
-//  /*--- Calculate mean variables ---*/
-//  for (iVar = 0; iVar < nVar; iVar++)
-//    MeanU[iVar] = 0.5*(U_i[iVar]+U_j[iVar]);
+////  cout << "nVar: " << nVar << endl;
+////  cout << "nPrimVar: " << nPrimVar << endl;
+////  cin.get();
+//  
 //  var->Cons2PrimVar(config, MeanU, MeanV, MeandPdU, MeandTdU,
 //                    MeandTvedU, MeanEve, MeanCvve);
-//  MeanSoundSpeed = MeanV[A_INDEX];
+//  MeanSoundSpeed = MeanV[A_INDEX]*Area;
 //  
 //  for (iVar = 0; iVar < nVar; iVar++)
 //    DiffPsi[iVar] = Psi_j[iVar] - Psi_i[iVar];
 //  
 //  ProjVel = 0.0;
 //  for (iDim = 0; iDim < nDim; iDim++)
-//    ProjVel += MeanV[VEL_INDEX+iDim]*UnitNormal[iDim];
+//    ProjVel += MeanV[VEL_INDEX+iDim]*Normal[iDim];
 //  
 //  /*--- Calculate eigenvalues of the interface state, ij ---*/
 //  for (iVar = 0; iVar < nSpecies+nDim-1; iVar++)
@@ -271,8 +296,8 @@ void CUpwRoe_AdjTNE2::ComputeResidual (double *val_residual_i,
 //  Lambda[nSpecies+nDim-1] = ProjVel + MeanSoundSpeed;
 //  Lambda[nSpecies+nDim]   = ProjVel - MeanSoundSpeed;
 //  Lambda[nSpecies+nDim+1] = ProjVel;
-//  for (iVar = 0; iVar < nVar; iVar++)
-//    Lambda[iVar] = fabs(Lambda[iVar]);
+////  for (iVar = 0; iVar < nVar; iVar++)
+////    Lambda[iVar] = fabs(Lambda[iVar]);
 //  
 //  /*--- Calculate left and right eigenvector matrices ---*/
 //  CreateBasis(UnitNormal);
@@ -289,12 +314,59 @@ void CUpwRoe_AdjTNE2::ComputeResidual (double *val_residual_i,
 //    }
 //  }
 //  
+//  cout << "Ai: " << endl;
+//  for (iVar = 0; iVar < nVar; iVar++) {
+//    for (jVar = 0; jVar < nVar; jVar++)
+//      cout << Ai[iVar][jVar] << "\t";
+//    cout << endl;
+//  }
+//  cout << "PLPinv: " << endl;
+//  for (iVar = 0; iVar < nVar; iVar++) {
+//    for (jVar = 0; jVar < nVar; jVar++)
+//      cout << PLPinv[iVar][jVar] << "\t";
+//    cout << endl;
+//  }
+//  cout << "PLPinv: " << endl;
+//  for (iVar = 0; iVar < nVar; iVar++) {
+//    for (jVar = 0; jVar < nVar; jVar++)
+//      cout << (Ai[iVar][jVar] - PLPinv[iVar][jVar])/Ai[iVar][jVar] << "\t";
+//    cout << endl;
+//  }
+//  cout << endl << endl;
+//  cout << "n: " << UnitNormal[0] << ", " << UnitNormal[1] << ", " << UnitNormal[2] << endl;
+//  cout << "l: " << l[0] << ", " << l[1] << ", " << l[2] << endl;
+//  cout << "m: " << m[0] << ", " << m[1] << ", " << m[2] << endl;
+//  cout  << "ndotl" << l[0]*UnitNormal[0] + l[1]*UnitNormal[1] + l[2]*UnitNormal[2] << endl;
+//  cout  << "ndotm" << m[0]*UnitNormal[0] + m[1]*UnitNormal[1] + m[2]*UnitNormal[2] << endl;
+//  cout  << "mdotl" << m[0]*l[0] + l[1]*m[1] + l[2]*m[2] << endl;
+//  cout << endl;
+//  double tmp;
+//  tmp = (1.0+dPdU_i[nSpecies+nDim])*V_i[P_INDEX]/V_i[RHO_INDEX];
+//  cout << "Soundspeed^2: " << tmp << ", " << V_i[A_INDEX]*V_i[A_INDEX] << endl;
+//  cout << "MeanSoundspeed: " << MeanSoundSpeed*MeanSoundSpeed/(Area*Area) << endl;
+//  
+//  cout << endl;
+//  
+//  cout << "PPinv: " << endl;
+//  for (iVar = 0; iVar < nVar; iVar++) {
+//    for (jVar = 0; jVar < nVar; jVar++) {
+//      PLPinv[iVar][jVar] = 0.0;
+//      for (kVar = 0; kVar < nVar; kVar++) {
+//        PLPinv[iVar][jVar] += invP[iVar][kVar]*P[kVar][jVar];
+//      }
+//      cout << PLPinv[iVar][jVar] << "\t";
+//    }
+//    cout << endl;
+//  }
+//  
+//  cin.get();
+//  
 //  /*--- Calculate the 'viscous' portion of the flux ---*/
 //  // 1/2*(P|Lam|P^-1)^T * (Uj - Ui)
 //  for (iVar = 0; iVar < nVar; iVar++) {
 //    for (jVar = 0; jVar < nVar; jVar++) {
-//      val_residual_i[iVar] -= 0.5*PLPinv[jVar][iVar]*(Psi_i[jVar]-Psi_j[jVar])*Area;
-//      val_residual_j[iVar] += 0.5*PLPinv[jVar][iVar]*(Psi_i[jVar]-Psi_j[jVar])*Area;
+//      val_residual_i[iVar] -= 0.5*PLPinv[jVar][iVar]*(Psi_i[jVar]-Psi_j[jVar]);
+//      val_residual_j[iVar] += 0.5*PLPinv[jVar][iVar]*(Psi_i[jVar]-Psi_j[jVar]);
 //    }
 //  }
 //  
@@ -305,10 +377,10 @@ void CUpwRoe_AdjTNE2::ComputeResidual (double *val_residual_i,
 //  if (implicit) {
 //    for (iVar = 0; iVar < nVar; iVar++) {
 //      for (jVar = 0; jVar < nVar; jVar++) {
-//        val_Jacobian_ii[iVar][jVar] = 0.5*Ai[jVar][iVar] - 0.5*PLPinv[jVar][iVar]*Area;
-//        val_Jacobian_ij[iVar][jVar] = 0.5*Ai[jVar][iVar] + 0.5*PLPinv[jVar][iVar]*Area;
-//        val_Jacobian_ji[iVar][jVar] = -0.5*Aj[jVar][iVar] + 0.5*PLPinv[jVar][iVar]*Area;
-//        val_Jacobian_jj[iVar][jVar] = -0.5*Aj[jVar][iVar] - 0.5*PLPinv[jVar][iVar]*Area;
+//        val_Jacobian_ii[iVar][jVar] = 0.5*Ai[jVar][iVar] - 0.5*PLPinv[jVar][iVar];
+//        val_Jacobian_ij[iVar][jVar] = 0.5*Ai[jVar][iVar] + 0.5*PLPinv[jVar][iVar];
+//        val_Jacobian_ji[iVar][jVar] = -0.5*Aj[jVar][iVar] + 0.5*PLPinv[jVar][iVar];
+//        val_Jacobian_jj[iVar][jVar] = -0.5*Aj[jVar][iVar] - 0.5*PLPinv[jVar][iVar];
 //      }
 //    }
 //  }
