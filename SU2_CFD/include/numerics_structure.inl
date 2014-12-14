@@ -1,10 +1,10 @@
 /*!
  * \file numerics_structure.inl
  * \brief In-Line subroutines of the <i>numerics_structure.hpp</i> file.
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.3 "eagle"
+ * \author F. Palacios, T. Economon
+ * \version 3.2.5 "eagle"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -131,8 +131,8 @@ inline void CNumerics::SetPrimitive(double *val_v_i, double *val_v_j) {
 }
 
 inline void CNumerics::SetSecondary(double *val_s_i, double *val_s_j) {
-  S_i = val_s_i;
-  S_j = val_s_j;
+  	S_i = val_s_i;
+  	S_j = val_s_j;
 }
 
 inline void CNumerics::SetConservative(double *val_u_0, double *val_u_1, double *val_u_2) {

@@ -3,10 +3,10 @@
  * \brief Headers of the main subroutines for space and time integration. 
  *        The subroutines and functions are in the <i>integration_structure.cpp</i>, 
  *        <i>integration_time.cpp</i>, and <i>integration_notime.cpp</i> files.
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.3 "eagle"
+ * \author F. Palacios, T. Economon
+ * \version 3.2.5 "eagle"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -42,7 +42,7 @@ using namespace std;
  * \brief Main class for doing the space integration, time integration, and monitoring 
  *        of a system of Partial Differential Equations (PDE).
  * \author F. Palacios.
- * \version 3.2.3 "eagle"
+ * \version 3.2.5 "eagle"
  */
 class CIntegration {
 protected:
@@ -214,7 +214,7 @@ public:
 	 * \param[in] geo_coarse - Geometrical definition of the coarse grid.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void SetProlongated_Solution(unsigned short RunTime_EqSystem, CSolver **sol_fine, CSolver **sol_coarse, 
+	virtual void SetProlongated_Solution(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse, 
 										 CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
 	
 	/*! 
@@ -239,7 +239,7 @@ public:
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 * \param[in] InclSharedDomain - Include the shared domain in the interpolation.
 	 */
-	virtual void SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolver **sol_fine, CSolver **sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
+	virtual void SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
 
 	/*! 
 	 * \brief A virtual member.
@@ -250,7 +250,7 @@ public:
 	 * \param[in] geo_coarse - Geometrical definition of the coarse grid.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void SetRestricted_Gradient(unsigned short RunTime_EqSystem, CSolver **sol_fine, CSolver **sol_coarse, 
+	virtual void SetRestricted_Gradient(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
 										CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
 	
 	/*! 
@@ -304,7 +304,7 @@ public:
 	 * \param[in] val_smooth_coeff - Relaxation factor.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void Smooth_Solution(unsigned short RunTime_EqSystem, CSolver **solver, CGeometry *geometry,
+	virtual void Smooth_Solution(unsigned short RunTime_EqSystem, CSolver *solver, CGeometry *geometry,
                        unsigned short val_nSmooth, double val_smooth_coeff, CConfig *config);
 
 };
@@ -313,7 +313,7 @@ public:
  * \class CMultiGridIntegration
  * \brief Class for doing the numerical integration using a multigrid method.
  * \author F. Palacios.
- * \version 3.2.3 "eagle"
+ * \version 3.2.5 "eagle"
  */
 class CMultiGridIntegration : public CIntegration {
 protected:
@@ -459,7 +459,7 @@ public:
 	 * \param[in] geo_coarse - Geometrical definition of the coarse grid.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void SetRestricted_Gradient(unsigned short RunTime_EqSystem, CSolver **sol_fine, CSolver **sol_coarse, 
+	void SetRestricted_Gradient(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse, 
 								CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
 
 	/*! 
@@ -485,7 +485,7 @@ public:
  * \class CSingleGridIntegration
  * \brief Class for doing the numerical integration of the turbulence model.
  * \author A. Bueno.
- * \version 3.2.3 "eagle"
+ * \version 3.2.5 "eagle"
  */
 class CSingleGridIntegration : public CIntegration {
 public:
@@ -524,7 +524,7 @@ public:
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 * \param[in] InclSharedDomain - Include the shared domain in the interpolation.
 	 */
-	void SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolver **sol_fine, CSolver **sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
+	void SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
   
 };
 

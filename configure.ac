@@ -9,11 +9,12 @@
 #
 # Major Changes/Contributions:
 # METIS & TECIO integration added by Ben Kirk, 3/24/2014
+# LAPACK connection added by Teus van der Stelt, 11/13/2014
 #
 ##########################
 
-AC_INIT([SU2], [3.2.3], [susquared-dev@lists.stanford.edu],
-        [SU2], [http://su2.stanford.edu])
+AC_INIT([SU2], [3.2.5], [susquared-dev@lists.stanford.edu],
+        [SU2], [https://github.com/su2code])
 AC_PREREQ([2.59])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CANONICAL_TARGET
@@ -61,14 +62,13 @@ AC_CONFIG_FILES([externals/tecio/Makefile])
 # Metis
 CONFIGURE_METIS
 if (test $enablemetis = yes); then
-  su2_externals_INCLUDES="-DHAVE_METIS $METIS_INCLUDE $su2_externals_INCLUDES"
-  su2_externals_LIBS="$METIS_LIB $su2_externals_LIBS"
+su2_externals_INCLUDES="-DHAVE_METIS $METIS_INCLUDE $su2_externals_INCLUDES"
+su2_externals_LIBS="$METIS_LIB $su2_externals_LIBS"
 else
-  su2_externals_INCLUDES="$su2_externals_INCLUDES"
+su2_externals_INCLUDES="$su2_externals_INCLUDES"
 fi
 AM_CONDITIONAL(BUILD_METIS, test x$enablemetis = xyes)
 AC_CONFIG_FILES([externals/metis/Makefile])
-
 
 AC_SUBST([su2_externals_INCLUDES])
 AC_SUBST([su2_externals_LIBS])
@@ -96,6 +96,12 @@ AC_ARG_WITH(Jsoncpp-lib,
 AC_ARG_WITH(Jsoncpp-include,
    	AS_HELP_STRING([--with-Jsoncpp-include[=ARG]], [Jsoncpp include directory, ARG = path to json.h]),
 	[with_Jsoncpp_include=$withval], [with_Jsoncpp_include="no"])
+AC_ARG_WITH(LAPACK-lib,
+    AS_HELP_STRING([--with-LAPACK-lib[=ARG]], [LAPACK library directory, ARG = path to liblapacke.a]),
+    [with_LAPACK_lib=$withval], [with_LAPACK_lib="no"])
+AC_ARG_WITH(LAPACK-include,
+    AS_HELP_STRING([--with-LAPACK-include[=ARG]], [LAPACK include directory, ARG = path to lapacke.h]),
+    [with_LAPACK_include=$withval], [with_LAPACK_include="no"])
 AC_ARG_ENABLE(CFD,
    	AS_HELP_STRING([--disable-CFD], [build the SU2_CFD executable (default = yes)]),
 	[build_CFD=$enableval], [build_CFD="yes"])
@@ -250,6 +256,49 @@ fi
 AC_SUBST([JSONCPP_CXX])
 AC_SUBST([JSONCPP_LD])
 
+##########################
+
+# check for lib
+LAPACKlib=liblapacke.a
+LAPACKheader=lapacke.h
+have_LAPACK="no"
+
+if test "$with_LAPACK_lib" != "no"
+then
+AC_CHECK_FILE([$with_LAPACK_lib/$LAPACKlib],[have_LAPACK="yes"],[have_LAPACK="no"])
+if test "$have_LAPACK" == "no"
+then
+AC_MSG_ERROR([LAPACK requested but library file not found.])
+fi
+fi
+
+# check for header
+if test "$have_LAPACK" != "no"
+then
+if test "$with_LAPACK_include" != "no"
+then
+AC_CHECK_FILE([$with_LAPACK_include/$LAPACKheader],[have_LAPACK='yes'],[have_LAPACK='no'])
+if test "$have_LAPACK" == "no"
+then
+AC_MSG_ERROR([LAPACK requested but header file not found.])
+fi
+else
+have_LAPACK="no"
+fi
+fi
+
+if test "$have_LAPACK" != "no"
+then
+AM_CONDITIONAL(BUILD_LAPACK,true)
+LAPACK_CXX="-DHAVE_LAPACK -I"$with_LAPACK_include""
+LAPACK_LD="$with_LAPACK_lib"/$LAPACKlib
+else
+AM_CONDITIONAL(BUILD_LAPACK,false)
+LAPACK_CXX=
+LAPACK_LD=
+fi
+AC_SUBST([LAPACK_CXX])
+AC_SUBST([LAPACK_LD])
 
 ########################### MPI
 
@@ -306,6 +355,7 @@ Build Configuration Summary:
     TecIO support:        $enabletecio
     Mutation++ support:   $have_Mutationpp
     Jsoncpp support: 	  $have_Jsoncpp
+    LAPACK support:       $have_LAPACK
 
     External includes:    $su2_externals_INCLUDES
     External libs:        $su2_externals_LIBS

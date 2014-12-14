@@ -1,10 +1,10 @@
 /*!
  * \file SU2_DOT.cpp
  * \brief Main file of the Gradient Projection Code (SU2_DOT).
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.3 "eagle"
+ * \author F. Palacios
+ * \version 3.2.5 "eagle"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -137,6 +137,7 @@ int main(int argc, char *argv[]) {
     /*--- Free Form deformation based ---*/
     
     if ((config->GetDesign_Variable(iDV) == FFD_CONTROL_POINT_2D) ||
+        (config->GetDesign_Variable(iDV) == FFD_RADIUS_2D) ||
         (config->GetDesign_Variable(iDV) == FFD_CAMBER_2D) ||
         (config->GetDesign_Variable(iDV) == FFD_THICKNESS_2D) ||
         (config->GetDesign_Variable(iDV) == FFD_CONTROL_POINT) ||
@@ -180,6 +181,7 @@ int main(int argc, char *argv[]) {
         
         switch ( config->GetDesign_Variable(iDV) ) {
           case FFD_CONTROL_POINT_2D : surface_mov->SetFFDCPChange_2D(boundary, config, FFDBox[iFFDBox], iDV, true); break;
+          case FFD_RADIUS_2D :       surface_mov->SetFFDCPChange_2D_rad(boundary, config, FFDBox[iFFDBox], iDV, true); break;
           case FFD_CAMBER_2D :        surface_mov->SetFFDCamber_2D(boundary, config, FFDBox[iFFDBox], iDV, true); break;
           case FFD_THICKNESS_2D :     surface_mov->SetFFDThickness_2D(boundary, config, FFDBox[iFFDBox], iDV, true); break;
           case FFD_CONTROL_POINT :    surface_mov->SetFFDCPChange(boundary, config, FFDBox[iFFDBox], iDV, true); break;
