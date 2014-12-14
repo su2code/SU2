@@ -1,10 +1,10 @@
 /*!
  * \file variable_structure.inl
  * \brief In-Line subroutines of the <i>variable_structure.hpp</i> file.
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.3 "eagle"
+ * \author F. Palacios, T. Economon
+ * \version 3.2.5 "eagle"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -51,6 +51,10 @@ inline double CVariable::GetLevelSet(void) { return 0; }
 inline double CVariable::GetDistance(void) { return 0; }
 
 inline double CVariable::GetMassFraction(unsigned short val_Species) { return 0; }
+
+inline void CVariable::SetNon_Physical(bool val_value) { Non_Physical = !val_value; }
+
+inline double CVariable::GetNon_Physical(void) { return double(Non_Physical); }
 
 inline void CVariable::SetSolution(unsigned short val_var, double val_solution) { Solution[val_var] = val_solution; }
 
@@ -248,6 +252,8 @@ inline double* CVariable::GetDiffusionCoeff(void) { return NULL; }
 
 inline double CVariable::GetThermalConductivity(void) { return 0; }
 
+inline double CVariable::GetSpecificHeatCp(void) { return 0; }
+
 inline double CVariable::GetThermalConductivity_ve(void) { return 0; }
 
 inline double CVariable::GetVorticity(unsigned short val_dim) { return 0; }
@@ -332,6 +338,10 @@ inline void CVariable::Setdmudrho_T(double dmudrho_T) { }
 
 inline void CVariable::SetdmudT_rho(double dmudT_rho) { }
 
+inline void CVariable::Setdktdrho_T(double dktdrho_T) { }
+
+inline void CVariable::SetdktdT_rho(double dktdT_rho) { }
+
 inline bool CVariable::SetPressure(double Gamma) { return false; }
 
 inline bool CVariable::SetPressure(CConfig *config) { return false; }
@@ -401,6 +411,12 @@ inline void CVariable::SetLaminarViscosityInc(double val_laminar_viscosity_inc) 
 inline void CVariable::SetEddyViscosity(double eddy_visc) { }
 
 inline void CVariable::SetEddyViscosityInc(double eddy_visc) { }
+
+inline void CVariable::SetThermalConductivity(double thermalConductivity) { }
+
+inline void CVariable::SetThermalConductivity(CConfig *config) { }
+
+inline void CVariable::SetSpecificHeatCp(double Cp) { }
 
 inline void CVariable::SetVorticity(void) { }
 
@@ -661,12 +677,24 @@ inline double CNSVariable::GetLaminarViscosity(void) { return Primitive[nDim+5];
 
 inline double CNSVariable::GetLaminarViscosityInc(void) { return Primitive[nDim+3]; }
 
+inline double CNSVariable::GetThermalConductivity(void) { return Primitive[nDim+7]; }
+
+inline double CNSVariable::GetSpecificHeatCp(void) { return Primitive[nDim+8]; }
+
 inline double CNSVariable::GetVorticity(unsigned short val_dim) { return Vorticity[val_dim]; }
 
 inline double CNSVariable::GetStrainMag(void) { return StrainMag; }
 
 inline void CNSVariable::SetLaminarViscosity(double laminarViscosity) {
     Primitive[nDim+5] = laminarViscosity;
+}
+
+inline void CNSVariable::SetThermalConductivity(double thermalConductivity) {
+    Primitive[nDim+7] = thermalConductivity;
+}
+
+inline void CNSVariable::SetSpecificHeatCp(double Cp) {
+    Primitive[nDim+8] = Cp;
 }
 
 inline void CNSVariable::SetdTdrho_e(double dTdrho_e) {  
@@ -683,6 +711,14 @@ inline void CNSVariable::Setdmudrho_T(double dmudrho_T) {
 
 inline void CNSVariable::SetdmudT_rho(double dmudT_rho) { 
    Secondary[5] = dmudT_rho; 
+}
+
+inline void CNSVariable::Setdktdrho_T(double dktdrho_T) {  
+   Secondary[6] = dktdrho_T; 
+}
+
+inline void CNSVariable::SetdktdT_rho(double dktdT_rho) { 
+   Secondary[7] = dktdT_rho; 
 }
 
 inline void CNSVariable::SetLaminarViscosityInc(double val_laminar_viscosity_inc) { Primitive[nDim+3] = val_laminar_viscosity_inc; }

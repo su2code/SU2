@@ -1,23 +1,23 @@
 /*!
  * \file solution_direct_tne2.cpp
  * \brief Main subrotuines for solving flows in thermochemical nonequilibrium.
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.3 "eagle"
+ * \author S. Copeland
+ * \version 3.2.5 "eagle"
  *
- * Copyright (C) 2012 Aerospace Design Laboratory
+ * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * SU2 is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
+ * SU2 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include "../include/solver_structure.hpp"
@@ -1928,7 +1928,7 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
       cout << "Mach number: "<< config->GetMach() << ", computed using the Bulk modulus." << endl;
       cout << "Angle of attack (deg): "<< config->GetAoA() << ", computed using the the free-stream velocity." << endl;
       cout << "Side slip angle (deg): "<< config->GetAoS() << ", computed using the the free-stream velocity." << endl;
-      if (viscous) cout << "Reynolds number: " << config->GetReynolds() << ", computed using free-stream values."<<endl;
+      if (viscous) cout << "Reynolds number: " << config->GetReynolds() << ", computed using free-stream values."<< endl;
       cout << "Only dimensional computation, the grid should be dimensional." << endl;
     }
     

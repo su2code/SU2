@@ -1,10 +1,10 @@
- /*!
+/*!
  * \file linear_solvers_structure.cpp
  * \brief Main classes required for solving linear systems of equations
- * \author Current Development: Stanford University.
- * \version 3.2.3 "eagle"
+ * \author J. Hicken, F. Palacios
+ * \version 3.2.5 "eagle"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -133,7 +133,7 @@ void CSysSolve::ModGramSchmidt(int i, vector<vector<double> > & Hsbg, vector<CSy
     if (rank == MASTER_NODE)
       cout << "\n !!! Error: The FGMRES solver has diverged. Now exiting... !!! \n" << endl;
 #ifndef HAVE_MPI
-		exit(EXIT_FAILURE);
+		exit(EXIT_DIVERGENCE);
 #else
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Abort(MPI_COMM_WORLD,1);
@@ -173,7 +173,7 @@ void CSysSolve::ModGramSchmidt(int i, vector<vector<double> > & Hsbg, vector<CSy
 //    
 //    cerr << "The FGMRES linear solver has diverged" << endl;
 //#ifndef HAVE_MPI
-//    exit(EXIT_FAILURE);
+//    exit(EXIT_DIVERGENCE);
 //#else
 //    MPI_Abort(MPI_COMM_WORLD,1);
 //    MPI_Finalize();
