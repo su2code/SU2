@@ -1,10 +1,10 @@
 /*!
  * \file SU2_SOL.cpp
  * \brief Main file for the solution export/conversion code (SU2_SOL).
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.2 "eagle"
+ * \author F. Palacios
+ * \version 3.2.5 "eagle"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -30,13 +30,11 @@ int main(int argc, char *argv[]) {
 	ofstream ConvHist_file;
 	char file_name[MAX_STRING_SIZE];
 	int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
 
 #ifdef HAVE_MPI
 	/*--- MPI initialization, and buffer setting ---*/
 	MPI_Init(&argc,&argv);
 	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-	MPI_Comm_size(MPI_COMM_WORLD,&size);
 #endif
   
 	/*--- Pointer to different structures that will be used throughout the entire code ---*/

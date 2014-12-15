@@ -1,23 +1,23 @@
 /*!
- * \file solution_adjoint_mean.cpp
+ * \file solution_adjoint_tne2.cpp
  * \brief Main subrotuines for solving adjoint problems (Euler, Navier-Stokes, etc.).
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.2 "eagle"
+ * \author S. Copeland
+ * \version 3.2.5 "eagle"
  *
- * Copyright (C) 2012 Aerospace Design Laboratory
+ * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * SU2 is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
+ * SU2 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include "../include/solver_structure.hpp"
@@ -89,6 +89,11 @@ CAdjTNE2EulerSolver::CAdjTNE2EulerSolver(CGeometry *geometry, CConfig *config, u
   Residual_RMS = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 0.0;
   Residual_Max = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_Max[iVar]  = 0.0;
   Point_Max    = new unsigned long[nVar];  for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar]  = 0;
+  Point_Max_Coord = new double*[nVar];
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Point_Max_Coord[iVar] = new double[nDim];
+    for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
+  }
 	Residual_i   = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_i[iVar]    = 0.0;
   Residual_j   = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_j[iVar]    = 0.0;
 	Res_Conv_i   = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Res_Conv_i[iVar]    = 0.0;
@@ -1019,7 +1024,6 @@ void CAdjTNE2EulerSolver::SetForceProj_Vector(CGeometry *geometry,
 #endif
   
 	/*--- Compute coefficients needed for objective function evaluation. ---*/
-	C_d += config->GetCteViscDrag();
 	double C_p    = 1.0/(0.5*RefDensity*RefAreaCoeff*RefVel2);
 	double invCD  = 1.0 / C_d;
 	double CLCD2  = C_l / (C_d*C_d);
@@ -1713,7 +1717,7 @@ void CAdjTNE2EulerSolver::ExplicitEuler_Iteration(CGeometry *geometry,
       Res = local_Residual[iVar];// + local_Res_TruncError[iVar];
 			node[iPoint]->AddSolution(iVar, -Res*Delta);
 			AddRes_RMS(iVar, Res*Res);
-      AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex());
+      AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
 		}
     
 	}
@@ -1765,7 +1769,7 @@ void CAdjTNE2EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry,
 			LinSysRes[total_index] = -(LinSysRes[total_index]);
 			LinSysSol[total_index] = 0.0;
 			AddRes_RMS(iVar, LinSysRes[total_index]*LinSysRes[total_index]);
-      AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->node[iPoint]->GetGlobalIndex());
+      AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
       
       if (LinSysRes[total_index] != LinSysRes[total_index])
         cout << "Linsysres NaN!" << endl;
@@ -2451,6 +2455,11 @@ CAdjTNE2NSSolver::CAdjTNE2NSSolver(CGeometry *geometry,
 	Residual_RMS  = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 0.0;
 	Residual_Max  = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_Max[iVar]  = 0.0;
 	Point_Max  = new unsigned long[nVar]; for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar]  = 0;
+  Point_Max_Coord = new double*[nVar];
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Point_Max_Coord[iVar] = new double[nDim];
+    for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
+  }
 	Residual_i    = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_i[iVar]    = 0.0;
 	Residual_j    = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_j[iVar]    = 0.0;
 	Res_Conv_i = new double[nVar];  for (iVar = 0; iVar < nVar; iVar++) Res_Conv_i[iVar]    = 0.0;

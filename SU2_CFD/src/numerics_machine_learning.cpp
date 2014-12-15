@@ -1,3 +1,25 @@
+/*!
+ * \file numerics_template.cpp
+ * \brief This file contains all the convective term discretization.
+ * \author B. Tracey
+ * \version 3.2.5 "eagle"
+ *
+ * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
+ *
+ * SU2 is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * SU2 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "../include/numerics_machine_learning.hpp"
 using namespace std;
 
@@ -443,7 +465,7 @@ string get_file_contents(string filename){
     in.close();
     return(contents);
   }
-  cout << "Predictor filename " << filename << " not found" <<endl;
+  cout << "Predictor filename " << filename << " not found" << endl;
   exit(EXIT_FAILURE);
 }
 
@@ -462,7 +484,7 @@ CScalePredictor::CScalePredictor(string filename){
   Json::Reader reader;
   bool parsingSuccessful = reader.parse(contents, root);
   if (!parsingSuccessful){
-    std::cout << "Failed to parse \n" << reader.getFormatedErrorMessages()<<endl;
+    std::cout << "Failed to parse \n" << reader.getFormatedErrorMessages()<< endl;
   }
   
   // Get the input scaler
@@ -507,7 +529,7 @@ CScalePredictor::CScalePredictor(string filename){
       }
       cout.precision(16);
       if (mismatch){
-        cout << "Prediction mismatch" <<endl;
+        cout << "Prediction mismatch" << endl;
         for (int j = 0; j < nOutputs; j++){
           cout << "j = " <<  " true: " << output[j] << " pred: " << predOutput[j] << " rel error: " << abs(output[j] - predOutput[j])/(max) <<  endl;
         }

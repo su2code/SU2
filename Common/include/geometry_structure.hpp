@@ -2,10 +2,10 @@
  * \file geometry_structure.hpp
  * \brief Headers of the main subroutines for creating the geometrical structure.
  *        The subroutines and functions are in the <i>geometry_structure.cpp</i> file.
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.2 "eagle"
+ * \author F. Palacios
+ * \version 3.2.5 "eagle"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -52,7 +52,7 @@ using namespace std;
  * \brief Parent class for defining the geometry of the problem (complete geometry, 
  *        multigrid agglomerated geometry, only boundary geometry, etc..)
  * \author F. Palacios.
- * \version 3.2.2 "eagle"
+ * \version 3.2.5 "eagle"
  */
 class CGeometry {
 protected:
@@ -424,6 +424,15 @@ public:
 	 */
 	virtual void SetBoundTecPlot(char mesh_filename[MAX_STRING_SIZE], bool new_file, CConfig *config);
 
+  /*!
+	 * \brief A virtual member.
+   * \param[in] mesh_filename - Name of the file where the tecplot information is going to be stored.
+   * \param[in] new_file - Boolean to decide if aopen a new file or add to a old one
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	virtual void SetBoundSTL(char mesh_filename[MAX_STRING_SIZE], bool new_file, CConfig *config);
+
+  
 	/*! 
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.		 
@@ -820,7 +829,7 @@ public:
  * \brief Class for reading a defining the primal grid which is read from the 
  *        grid file in .su2 format.
  * \author F. Palacios.
- * \version 3.2.2 "eagle"
+ * \version 3.2.5 "eagle"
  */
 class CPhysicalGeometry : public CGeometry {
 
@@ -1290,7 +1299,7 @@ public:
  * \brief Class for defining the multigrid geometry, the main delicated part is the 
  *        agglomeration stage, which is done in the declaration.
  * \author F. Palacios.
- * \version 3.2.2 "eagle"
+ * \version 3.2.5 "eagle"
  */
 class CMultiGridGeometry : public CGeometry {
 
@@ -1460,7 +1469,7 @@ public:
  * \brief Class for only defining the boundary of the geometry, this class is only 
  *        used in case we are not interested in the volumetric grid.
  * \author F. Palacios.
- * \version 3.2.2 "eagle"
+ * \version 3.2.5 "eagle"
  */
 class CBoundaryGeometry : public CGeometry {
   
@@ -1560,7 +1569,7 @@ public:
  * \class CPeriodicGeometry
  * \brief Class for defining a periodic boundary condition.
  * \author T. Economon, F. Palacios.
- * \version 3.2.2 "eagle"
+ * \version 3.2.5 "eagle"
  */
 class CPeriodicGeometry : public CGeometry {
 	CPrimalGrid*** newBoundPer;            /*!< \brief Boundary vector for new periodic elements (primal grid information). */
@@ -1606,7 +1615,7 @@ public:
  * \struct CMultiGridQueue
  * \brief Class for a multigrid queue system
  * \author F. Palacios.
- * \version 3.2.2 "eagle"
+ * \version 3.2.5 "eagle"
  * \date Aug 12, 2012
  */
 class CMultiGridQueue {

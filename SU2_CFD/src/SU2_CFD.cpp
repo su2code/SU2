@@ -1,10 +1,10 @@
 /*!
  * \file SU2_CFD.cpp
- * \brief Main file of Computational Fluid Dynamics Code (SU2_CFD).
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.2 "eagle"
+ * \brief Main file of the Computational Fluid Dynamics code
+ * \author F. Palacios, T. Economon
+ * \version 3.2.5 "eagle"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,25 +21,6 @@
  */
 
 #include "../include/SU2_CFD.hpp"
-
-/*
- * Pseudocode:
- *  Initialize data structures
- *  Parse the input file and load settings
- *  Load in the geometry from the mesh
- *  Set up the solver structure for the particular PDE
- *  Set up the time integration scheme
- *  Set up the numerical methods for spatial integration
- *  Instantiate the output class
- *
- *  for (ExtIter = 0; ExtIter < MaxIter; ExtIter++) {
- *    Make an iteration (problem dependent)
- *    Check Convergence of the flow solution (problem dependent)
- *    Write convergence history
- *  }
- *  Write solution files
- *  Deallocate memory
- */
 
 using namespace std;
 
@@ -96,7 +77,7 @@ int main(int argc, char *argv[]) {
   
   nZone = GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
   nDim  = GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
-  
+
   /*--- Definition and of the containers for all possible zones. ---*/
   
   solver_container      = new CSolver***[nZone];
@@ -455,8 +436,8 @@ MPI_Barrier(MPI_COMM_WORLD);
            finest grid. ---*/
           
           if (config_container[ZONE_0]->GetLowFidelitySim()) {
-            integration_container[ZONE_0][FLOW_SOL]->SetProlongated_Solution(RUNTIME_FLOW_SYS, solver_container[ZONE_0][MESH_0], solver_container[ZONE_0][MESH_1], geometry_container[ZONE_0][MESH_0], geometry_container[ZONE_0][MESH_1], config_container[ZONE_0]);
-            integration_container[ZONE_0][FLOW_SOL]->Smooth_Solution(RUNTIME_FLOW_SYS, solver_container[ZONE_0][MESH_0], geometry_container[ZONE_0][MESH_0], 3, 1.25, config_container[ZONE_0]);
+            integration_container[ZONE_0][FLOW_SOL]->SetProlongated_Solution(RUNTIME_FLOW_SYS, solver_container[ZONE_0][MESH_0][FLOW_SOL], solver_container[ZONE_0][MESH_1][FLOW_SOL], geometry_container[ZONE_0][MESH_0], geometry_container[ZONE_0][MESH_1], config_container[ZONE_0]);
+            integration_container[ZONE_0][FLOW_SOL]->Smooth_Solution(RUNTIME_FLOW_SYS, solver_container[ZONE_0][MESH_0][FLOW_SOL], geometry_container[ZONE_0][MESH_0], 3, 1.25, config_container[ZONE_0]);
             solver_container[ZONE_0][MESH_0][config_container[ZONE_0]->GetContainerPosition(RUNTIME_FLOW_SYS)]->Set_MPI_Solution(geometry_container[ZONE_0][MESH_0], config_container[ZONE_0]);
             solver_container[ZONE_0][MESH_0][config_container[ZONE_0]->GetContainerPosition(RUNTIME_FLOW_SYS)]->Preprocessing(geometry_container[ZONE_0][MESH_0], solver_container[ZONE_0][MESH_0], config_container[ZONE_0], MESH_0, 0, RUNTIME_FLOW_SYS, false);
           }
@@ -465,16 +446,18 @@ MPI_Barrier(MPI_COMM_WORLD);
            surface solution, and surface comma-separated value files. ---*/
           
           output->SetResult_Files(solver_container, geometry_container, config_container, ExtIter, nZone);
+
+          /*--- Output a file with the forces breakdown. ---*/
           
+          output->SetForces_Breakdown(geometry_container, solver_container,
+                                      config_container, integration_container, ZONE_0);
+
           /*--- Compute the forces at different sections. ---*/
-          if (config_container[ZONE_0]->GetPlot_Section_Forces())
+          
+          if (config_container[ZONE_0]->GetPlot_Section_Forces()) {
             output->SetForceSections(solver_container[ZONE_0][MESH_0][FLOW_SOL],
                                      geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
-          
-//          /*--- Compute 1D output. ---*/
-//          if (config->GetWrt_1D_Output())
-//            output->OneDimensionalOutput(solver_container[ZONE_0][MESH_0][FLOW_SOL],
-//                                         geometry_container[ZONE_0][MESH_0], config_container[ZONE_0]);
+          }
           
         }
     
@@ -487,16 +470,19 @@ MPI_Barrier(MPI_COMM_WORLD);
   }
   
   /*--- Output some information to the console. ---*/
+  
   if (rank == MASTER_NODE) {
     cout << endl;
     
   /*--- Print out the number of non-physical points and reconstructions ---*/
+    
   if (config_container[ZONE_0]->GetNonphysical_Points() > 0)
     cout << "Warning: there are " << config_container[ZONE_0]->GetNonphysical_Points() << " non-physical points in the solution." << endl;
   if (config_container[ZONE_0]->GetNonphysical_Reconstr() > 0)
     cout << "Warning: " << config_container[ZONE_0]->GetNonphysical_Reconstr() << " reconstructed states for upwinding are non-physical." << endl;
   
   /*--- Close the convergence history file. ---*/
+    
     ConvHist_file.close();
     cout << "History file, closed." << endl;
   }
