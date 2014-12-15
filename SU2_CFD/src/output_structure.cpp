@@ -1146,15 +1146,18 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
   }
   
   /*--- Allocate a temporary array for the connectivity ---*/
+
   Conn_Elem = new int[nLocalElem*NODES_PER_ELEMENT];
-  
+
   /*--- Load all elements of the current type into the buffer
    to be sent to the master node. ---*/
+  
   jNode = 0; jElem = 0; nElem_Total = 0; bool isHalo;
   for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
     if(geometry->elem[iElem]->GetVTK_Type() == Elem_Type) {
       
       /*--- Check if this is a halo node. ---*/
+      
       isHalo = false;
       for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
         iPoint = geometry->elem[iElem]->GetNode(iNode);
@@ -1173,6 +1176,7 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
           Conn_Elem[jNode] = (int)geometry->elem[iElem]->GetNode(iNode) + 1;
           
           /*--- Increment jNode as the counter. ---*/
+          
           jNode++;
         }
       }

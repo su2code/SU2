@@ -1399,7 +1399,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   for (iDomain = 0; iDomain < nDomain; iDomain++) {
     
     if (rank == MASTER_NODE) {
-      
+
       /*--- Interior dimensionalization. Loop over the original grid to perform the
        dimensionalizaton of the domain variables ---*/
       
@@ -1567,7 +1567,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
       Buffer_Send_ReceivedDomain_Periodic       = new unsigned long [Buffer_Send_nTotalReceivedDomain_Periodic];
       Buffer_Send_ReceivedDomain_PeriodicTrans  = new unsigned long [Buffer_Send_nTotalReceivedDomain_Periodic];
       Buffer_Send_ReceivedDomain_PeriodicDonor  = new unsigned long [Buffer_Send_nTotalReceivedDomain_Periodic];
-      
+
       if (iDomain != MASTER_NODE) {
         
 #ifdef HAVE_MPI
@@ -1636,6 +1636,13 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
         nElemWedge        = Buffer_Send_nElemWedge;
         nElemPyramid      = Buffer_Send_nElemPyramid;
         
+        nelem_triangle = nElemTriangle;
+        nelem_quad = nElemRectangle;
+        nelem_tetra = nElemTetrahedron;
+        nelem_hexa = nElemHexahedron;
+        nelem_wedge = nElemWedge;
+        nelem_pyramid = nElemPyramid;
+
         nBoundLineTotal      = Buffer_Send_nBoundLineTotal;
         nBoundTriangleTotal  = Buffer_Send_nBoundTriangleTotal;
         nBoundRectangleTotal = Buffer_Send_nBoundRectangleTotal;
@@ -1713,6 +1720,15 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
         MPI_Waitall(24, recv_req, recv_stat);
         
 #endif
+        
+        /*--- Update the number of elements (local) ---*/
+
+        nelem_triangle = nElemTriangle;
+        nelem_quad = nElemRectangle;
+        nelem_tetra = nElemTetrahedron;
+        nelem_hexa = nElemHexahedron;
+        nelem_wedge = nElemWedge;
+        nelem_pyramid = nElemPyramid;
         
         /*--- Marker_All_TagBound and Marker_All_SendRecv, set the same values in the config files of all the files ---*/
         
@@ -2815,9 +2831,6 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
     }
     
   }
-  
-  if(rank == MASTER_NODE)
-    cout << "Finished grid partitioning." << endl;
   
 }
 
@@ -8006,11 +8019,14 @@ void CPhysicalGeometry::SetColorGrid(CConfig *config) {
         iElem_Tetrahedron++;
       }
     }
+    
     /*--- Add final value to element pointer array ---*/
+    
     if (GetnDim() == 2) eptr[ne] = 3*ne;
     else eptr[ne] = 4*ne;
     
     METIS_PartMeshNodal(&ne, &nn, eptr, elmnts, NULL, NULL, &nparts, NULL, NULL, &edgecut, epart, npart);
+    
     cout << "Finished partitioning using METIS. ("  << edgecut << " edge cuts)." << endl;
     
     for (iPoint = 0; iPoint < nPoint; iPoint++)

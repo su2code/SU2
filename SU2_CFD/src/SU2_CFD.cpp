@@ -30,10 +30,10 @@ int main(int argc, char *argv[]) {
   double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
   unsigned long ExtIter = 0;
   unsigned short iMesh, iZone, iSol, nZone, nDim;
+  char config_file_name[MAX_STRING_SIZE];
   ofstream ConvHist_file;
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
-  
   
   /*--- MPI initialization, and buffer setting ---*/
 
@@ -63,7 +63,6 @@ int main(int argc, char *argv[]) {
   /*--- Load in the number of zones and spatial dimensions in the mesh file (If no config
    file is specified, default.cfg is used) ---*/
   
-  char config_file_name[200];
   if (argc == 2){ strcpy(config_file_name,argv[1]); }
   else{ strcpy(config_file_name, "default.cfg"); }
   
@@ -84,9 +83,9 @@ int main(int argc, char *argv[]) {
   integration_container = new CIntegration**[nZone];
   numerics_container    = new CNumerics****[nZone];
   config_container      = new CConfig*[nZone];
-  geometry_container    = new CGeometry **[nZone];
-  surface_movement      = new CSurfaceMovement *[nZone];
-  grid_movement         = new CVolumetricMovement *[nZone];
+  geometry_container    = new CGeometry**[nZone];
+  surface_movement      = new CSurfaceMovement*[nZone];
+  grid_movement         = new CVolumetricMovement*[nZone];
   FFDBox                = new CFreeFormDefBox**[nZone];
   
   for (iZone = 0; iZone < nZone; iZone++) {
@@ -113,12 +112,14 @@ int main(int argc, char *argv[]) {
     config_container[iZone] = new CConfig(config_file_name, SU2_CFD, iZone, nZone, nDim, VERB_HIGH);
     
     /*--- Change the name of the input-output files for a parallel computation ---*/
+    
     config_container[iZone]->SetFileNameDomain(rank+1);
     
     /*--- Definition of the geometry class to store the primal grid in the partitioning process. ---*/
     
     CGeometry *geometry_aux = NULL;
     
+
     if (rank == MASTER_NODE) {
       
       /*--- Read the grid using the master node ---*/
@@ -127,6 +128,8 @@ int main(int argc, char *argv[]) {
       geometry_aux = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
       config_container[iZone]->SetKind_SU2(SU2_CFD);
       
+      cout << endl <<"---------------------------- Grid partitioning --------------------------" << endl;
+
       /*--- Color the initial grid and set the send-receive domains ---*/
       
       geometry_aux->SetColorGrid(config_container[iZone]);
