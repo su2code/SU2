@@ -1,10 +1,10 @@
 /*!
  * \file solver_structure.cpp
  * \brief Main subrotuines for solving direct, adjoint and linearized problems.
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.2 "eagle"
+ * \author F. Palacios, T. Economon
+ * \version 3.2.5 "eagle"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -32,6 +32,7 @@ CSolver::CSolver(void) {
   Residual_i = NULL;
   Residual_j = NULL;
   Point_Max = NULL;
+  Point_Max_Coord = NULL;
   Solution = NULL;
   Solution_i = NULL;
   Solution_j = NULL;
@@ -72,6 +73,13 @@ CSolver::~CSolver(void) {
    if (Residual_i != NULL) delete [] Residual_i;
    if (Residual_j != NULL) delete [] Residual_j;
    if (Point_Max != NULL) delete [] Point_Max;
+   
+   if (Point_Max_Coord != NULL) {
+   for (iVar = 0; iVar < nVar; iVar++)
+   delete Point_Max_Coord[iVar];
+   delete [] Point_Max_Coord;
+   }
+   
    if (Solution != NULL) delete [] Solution;
    if (Solution_i != NULL) delete [] Solution_i;
    if (Solution_j != NULL) delete [] Solution_j;
@@ -175,8 +183,9 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   
-  double *sbuf_residual, *rbuf_residual;
+  double *sbuf_residual, *rbuf_residual, *sbuf_coord, *rbuf_coord, *Coord;
   unsigned long *sbuf_point, *rbuf_point, Local_nPointDomain, Global_nPointDomain;
+  unsigned short iDim;
   
   /*--- Set the L2 Norm residual in all the processors ---*/
   
@@ -213,21 +222,27 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
   /*--- Set the Maximum residual in all the processors ---*/
   sbuf_residual = new double [nVar]; for (iVar = 0; iVar < nVar; iVar++) sbuf_residual[iVar] = 0.0;
   sbuf_point = new unsigned long [nVar]; for (iVar = 0; iVar < nVar; iVar++) sbuf_point[iVar] = 0;
+  sbuf_coord = new double[nVar*nDim]; for (iVar = 0; iVar < nVar*nDim; iVar++) sbuf_coord[iVar] = 0.0;
   
   rbuf_residual = new double [nProcessor*nVar]; for (iVar = 0; iVar < nProcessor*nVar; iVar++) rbuf_residual[iVar] = 0.0;
   rbuf_point = new unsigned long [nProcessor*nVar]; for (iVar = 0; iVar < nProcessor*nVar; iVar++) rbuf_point[iVar] = 0;
-  
+  rbuf_coord = new double[nProcessor*nVar*nDim]; for (iVar = 0; iVar < nProcessor*nVar*nDim; iVar++) rbuf_coord[iVar] = 0.0;
+
   for (iVar = 0; iVar < nVar; iVar++) {
     sbuf_residual[iVar] = GetRes_Max(iVar);
     sbuf_point[iVar] = GetPoint_Max(iVar);
+    Coord = GetPoint_Max_Coord(iVar);
+    for (iDim = 0; iDim < nDim; iDim++)
+      sbuf_coord[iVar*nDim+iDim] = Coord[iDim];
   }
   
   MPI_Allgather(sbuf_residual, nVar, MPI_DOUBLE, rbuf_residual, nVar, MPI_DOUBLE, MPI_COMM_WORLD);
   MPI_Allgather(sbuf_point, nVar, MPI_UNSIGNED_LONG, rbuf_point, nVar, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-  
+  MPI_Allgather(sbuf_coord, nVar*nDim, MPI_DOUBLE, rbuf_coord, nVar*nDim, MPI_DOUBLE, MPI_COMM_WORLD);
+
   for (iVar = 0; iVar < nVar; iVar++) {
     for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-      AddRes_Max(iVar, rbuf_residual[iProcessor*nVar+iVar], rbuf_point[iProcessor*nVar+iVar]);
+      AddRes_Max(iVar, rbuf_residual[iProcessor*nVar+iVar], rbuf_point[iProcessor*nVar+iVar], &rbuf_coord[iProcessor*nVar*nDim+iVar*nDim]);
     }
   }
   
@@ -236,6 +251,9 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
   
   delete [] sbuf_point;
   delete [] rbuf_point;
+  
+  delete [] sbuf_coord;
+  delete [] rbuf_coord;
   
 #endif
   

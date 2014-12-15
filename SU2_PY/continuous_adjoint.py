@@ -2,10 +2,10 @@
 
 ## \file continuous_adjoint.py
 #  \brief Python script for doing the continuous adjoint computation using the SU2 suite.
-#  \author Francisco Palacios, Tom Economon, Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 3.2.2 "eagle"
+#  \author F. Palacios, T. Economon, T. Lukaczyk
+#  \version 3.2.5 "eagle"
 #
-# SU2, Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
+# Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -37,8 +37,6 @@ def main():
                       help="read config from FILE", metavar="FILE")
     parser.add_option("-n", "--partitions", dest="partitions", default=1,
                       help="number of PARTITIONS", metavar="PARTITIONS")
-    parser.add_option("-p", "--oldpartitions", dest="oldpartitions", default="oldpartitions",
-                      help="old number of PARTITIONS (use -n instead)", metavar="OLDPARTITIONS")
     parser.add_option("-c", "--compute",    dest="compute",    default="True",
                       help="COMPUTE direct and adjoint problem", metavar="COMPUTE")
     parser.add_option("-s", "--step",       dest="step",       default=1E-4,
@@ -51,11 +49,7 @@ def main():
     options.step        = float( options.step )
     options.compute     = options.compute.upper() == 'TRUE'
     options.divide_grid = options.divide_grid.upper() == 'TRUE'
-    
-    if options.oldpartitions != "oldpartitions":
-        print ("\n IMPORTANT: -p is no longer available in SU2 v3.2.2, use -n flag instead \n")
-        sys.exit()
-    
+        
     continuous_adjoint( options.filename    ,
                         options.partitions  ,
                         options.compute     ,

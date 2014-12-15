@@ -1,10 +1,10 @@
 /*!
  * \file transport_model.inl
  * \brief In-Line subroutines of the <i>solver_structure.hpp</i> file.
- * \author S.Vitale, M.Pini, G.Gori, A.Guardone, P.Colonna
- * \version 3.2.2 "eagle"
+ * \author S. Vitale, M. Pini, G. Gori, A. Guardone, P. Colonna
+ * \version 3.2.5 "eagle"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,8 +26,10 @@ inline double CViscosityModel::GetViscosity() { return Mu; }
 inline double CViscosityModel::Getdmudrho_T () { return dmudrho_T; }
 inline double CViscosityModel::GetdmudT_rho() { return dmudT_rho; }
 inline void CViscosityModel::SetViscosity(double T, double rho) {}
+inline void CViscosityModel::SetDerViscosity(double T, double rho) {}
 
-inline double CThermalConductivityModel::GetThermalConductivity() { return Kt; }
-inline double CThermalConductivityModel::GetDerThermalConductivity_rho_T () { return dktdrho_T; }
-inline double CThermalConductivityModel::GetDerThermalConductivity_T_rho () { return dktdT_rho; }
-inline void CThermalConductivityModel::SetThermalConductivity(double par1, double par2) {}
+inline double CConductivityModel::GetConductivity() { return Kt; }
+inline double CConductivityModel::Getdktdrho_T () { return dktdrho_T; }
+inline double CConductivityModel::GetdktdT_rho () { return dktdT_rho; }
+inline void CConductivityModel::SetConductivity(double T, double rho, double mu, double cp) {}
+inline void CConductivityModel::SetDerConductivity(double T, double rho, double dmudrho_T, double dmudT_rho, double cp) {}
