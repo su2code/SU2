@@ -5134,6 +5134,7 @@ void CConfig::SetFileNameDomain(unsigned short val_domain) {
   char buffer[10];
 
   /*--- Standard surface output ---*/
+  
   old_name = SurfFlowCoeff_FileName;
   if (size > 1) {
     sprintf (buffer, "_%d", int(val_domain));
@@ -5167,6 +5168,7 @@ void CConfig::SetFileNameDomain(unsigned short val_domain) {
   if (size > 1) {
 
     /*--- Standard flow and adjoint output ---*/
+    
     sprintf (buffer, "_%d", int(val_domain));
     old_name = Flow_FileName;
     Flow_FileName = old_name + buffer;
@@ -5178,13 +5180,6 @@ void CConfig::SetFileNameDomain(unsigned short val_domain) {
     sprintf (buffer, "_%d", int(val_domain));
     old_name = Adj_FileName;
     Adj_FileName = old_name + buffer;
-
-    /*--- Mesh files ---*/
-    sprintf (buffer, "_%d.su2", int(val_domain));
-    old_name = Mesh_FileName;
-    unsigned short lastindex = old_name.find_last_of(".");
-    old_name = old_name.substr(0, lastindex);
-    Mesh_FileName = old_name + buffer;
 
   }
 #endif

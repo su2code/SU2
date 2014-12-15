@@ -75,9 +75,6 @@ def parallel_computation( filename           ,
     # State
     state = SU2.io.State()
     
-    # Decomposition
-    info = SU2.run.decompose(config)
-    
     # check for existing files
     if not compute:
         state.find_files(config)
