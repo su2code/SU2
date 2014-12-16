@@ -31,7 +31,7 @@ int main(int argc, char *argv[]) {
 	char config_file_name[MAX_STRING_SIZE];
 	int rank = MASTER_NODE;
 
-  /*--- MPI initialization, and buffer setting ---*/
+  /*--- MPI initialization ---*/
 
 #ifdef HAVE_MPI
 	MPI_Init(&argc,&argv);
@@ -40,12 +40,12 @@ int main(int argc, char *argv[]) {
   
 	/*--- Pointer to different structures that will be used throughout the entire code ---*/
   
-	COutput *output = NULL;
+	COutput *output                = NULL;
 	CGeometry **geometry_container = NULL;
-	CSolver **solver_container = NULL;
-	CConfig **config_container = NULL;
+	CSolver **solver_container     = NULL;
+	CConfig **config_container     = NULL;
 	
-  /*--- Load in the number of zones and spatial dimensions in the mesh file (If no config
+  /*--- Load in the number of zones and spatial dimensions in the mesh file (if no config
    file is specified, default.cfg is used) ---*/
   
   if (argc == 2){ strcpy(config_file_name,argv[1]); }
@@ -54,7 +54,7 @@ int main(int argc, char *argv[]) {
   /*--- Read the name and format of the input mesh file ---*/
   
   CConfig *config = NULL;
-  config = new CConfig(config_file_name, SU2_CFD);
+  config = new CConfig(config_file_name, SU2_SOL);
   
 	/*--- Definition of the containers per zones ---*/
   

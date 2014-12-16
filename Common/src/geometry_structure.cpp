@@ -2568,13 +2568,11 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
   short *Marker_All_SendRecv_Copy;
   bool CheckStart;
   
-  int rank = MASTER_NODE;
   int size = SINGLE_NODE;
   
 #ifdef HAVE_MPI
   /*--- MPI initialization ---*/
   MPI_Comm_size(MPI_COMM_WORLD,&size);
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 #endif
   
   nDomain = size+1;
@@ -2790,10 +2788,14 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
       Tag_to_Marker[config->GetMarker_CfgFile_TagBound(Marker_Tag)] = Marker_Tag;
       config->SetMarker_All_KindBC(iMarker, config->GetMarker_CfgFile_KindBC(Marker_Tag));
       config->SetMarker_All_Monitoring(iMarker, config->GetMarker_CfgFile_Monitoring(Marker_Tag));
+      config->SetMarker_All_GeoEval(iMarker, config->GetMarker_CfgFile_GeoEval(Marker_Tag));
+      config->SetMarker_All_Designing(iMarker, config->GetMarker_CfgFile_Designing(Marker_Tag));
       config->SetMarker_All_Plotting(iMarker, config->GetMarker_CfgFile_Plotting(Marker_Tag));
+      config->SetMarker_All_DV(iMarker, config->GetMarker_CfgFile_DV(Marker_Tag));
       config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
       config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
-      
+      config->SetMarker_All_Out_1D(iMarker, config->GetMarker_CfgFile_Out_1D(Marker_Tag));
+
     }
     
     /*--- Send-Receive boundaries definition ---*/
@@ -3566,8 +3568,8 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
           config->SetMarker_All_DV(iMarker, config->GetMarker_CfgFile_DV(Marker_Tag));
           config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
           config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
-          config->SetMarker_All_SendRecv(iMarker, NONE);
           config->SetMarker_All_Out_1D(iMarker, config->GetMarker_CfgFile_Out_1D(Marker_Tag));
+          config->SetMarker_All_SendRecv(iMarker, NONE);
           
         }
         
@@ -4588,8 +4590,9 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
           config->SetMarker_All_DV(iMarker, config->GetMarker_CfgFile_DV(Marker_Tag));
           config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
           config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
-          config->SetMarker_All_SendRecv(iMarker, NONE);
           config->SetMarker_All_Out_1D(iMarker, config->GetMarker_CfgFile_Out_1D(Marker_Tag));
+          config->SetMarker_All_SendRecv(iMarker, NONE);
+
         }
         iMarker++;
       }
@@ -5003,8 +5006,9 @@ void CPhysicalGeometry::Read_NETCDF_Format(CConfig *config, string val_mesh_file
     config->SetMarker_All_Plotting(iMarker, config->GetMarker_CfgFile_Plotting(Marker_Tag));
     config->SetMarker_All_DV(iMarker, config->GetMarker_CfgFile_DV(Marker_Tag));
     config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
-    config->SetMarker_All_SendRecv(iMarker, NONE);
     config->SetMarker_All_Out_1D(iMarker, config->GetMarker_CfgFile_Out_1D(Marker_Tag));
+    config->SetMarker_All_SendRecv(iMarker, NONE);
+
   }
   
 }
@@ -7136,10 +7140,12 @@ void CPhysicalGeometry::SetMeshFile (CConfig *config, string val_mesh_out_filena
   strcpy (cstr, val_mesh_out_filename.c_str());
   
   /*--- Open .su2 grid file ---*/
+  
   output_file.precision(15);
   output_file.open(cstr, ios::out);
   
   /*--- Write dimension, number of elements and number of points ---*/
+  
   output_file << "NDIME= " << nDim << endl;
   output_file << "NELEM= " << nElem << endl;
   for (iElem = 0; iElem < nElem; iElem++) {
@@ -7150,6 +7156,7 @@ void CPhysicalGeometry::SetMeshFile (CConfig *config, string val_mesh_out_filena
   }
   
   /*--- Write the node coordinates ---*/
+  
   output_file << "NPOIN= " << nPoint << "\t" << nPointDomain << endl;
   output_file.precision(15);
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
@@ -7164,6 +7171,7 @@ void CPhysicalGeometry::SetMeshFile (CConfig *config, string val_mesh_out_filena
   }
   
   /*--- Loop through and write the boundary info ---*/
+  
   output_file << "NMARK= " << nMarker << endl;
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
@@ -7208,13 +7216,16 @@ void CPhysicalGeometry::SetMeshFile (CConfig *config, string val_mesh_out_filena
   }
   
   /*--- Get the total number of periodic transformations ---*/
+  
   nPeriodic = config->GetnPeriodicIndex();
   output_file << "NPERIODIC= " << nPeriodic << endl;
   
   /*--- From iPeriodic obtain the iMarker ---*/
+  
   for (iPeriodic = 0; iPeriodic < nPeriodic; iPeriodic++) {
     
     /*--- Retrieve the supplied periodic information. ---*/
+    
     center = config->GetPeriodicCenter(iPeriodic);
     angles = config->GetPeriodicRotation(iPeriodic);
     transl = config->GetPeriodicTranslate(iPeriodic);
@@ -7228,214 +7239,6 @@ void CPhysicalGeometry::SetMeshFile (CConfig *config, string val_mesh_out_filena
   
   
   output_file.close();
-}
-
-void CPhysicalGeometry::SetMeshFile(CConfig *config, string val_mesh_out_filename, string val_mesh_in_filename) {
-  
-  unsigned long iElem, iPoint, iElem_Bound, nElem_, nElem_Bound_, vnodes_edge[2], vnodes_triangle[3], vnodes_quad[4], vnodes_tetra[4], vnodes_hexa[8], vnodes_wedge[6], vnodes_pyramid[5], vnodes_vertex;
-  unsigned short iMarker, iDim, iChar, iPeriodic, nPeriodic = 0, VTK_Type, nDim_, nMarker_, transform;
-  char *cstr;
-  double *center, *angles, *transl;
-  long SendRecv;
-  ofstream output_file;
-  ifstream input_file;
-  string Grid_Marker, text_line, Marker_Tag;
-  string::size_type position;
-  
-  /*--- Open output_file .su2 grid file ---*/
-  cstr = new char [val_mesh_out_filename.size()+1];
-  strcpy (cstr, val_mesh_out_filename.c_str());
-  output_file.precision(15);
-  output_file.open(cstr, ios::out);
-  
-  /*--- Open input_file .su2 grid file ---*/
-  cstr = new char [val_mesh_in_filename.size()+1];
-  strcpy (cstr, val_mesh_in_filename.c_str());
-  input_file.open(cstr, ios::out);
-  
-  /*--- Read grid file with format SU2 ---*/
-  while (getline (input_file, text_line)) {
-    
-    /*--- Read the dimension of the problem ---*/
-    position = text_line.find ("NDIME=",0);
-    if (position != string::npos) {
-      text_line.erase (0,6); nDim_ = atoi(text_line.c_str());
-      output_file << "NDIME= " << nDim_ << endl;
-    }
-    
-    /*--- Read the information about inner elements ---*/
-    position = text_line.find ("NELEM=",0);
-    if (position != string::npos) {
-      text_line.erase (0,6); nElem_ = atoi(text_line.c_str());
-      output_file << "NELEM= " << nElem_ << endl;
-      
-      
-      /*--- Loop over all the volumetric elements ---*/
-      for (iElem = 0; iElem < nElem_;  iElem++) {
-        getline(input_file, text_line);
-        istringstream elem_line(text_line);
-        
-        elem_line >> VTK_Type;
-        output_file << VTK_Type;
-        
-        switch(VTK_Type) {
-          case TRIANGLE:
-            elem_line >> vnodes_triangle[0]; elem_line >> vnodes_triangle[1]; elem_line >> vnodes_triangle[2];
-            output_file << "\t" << vnodes_triangle[0] << "\t" << vnodes_triangle[1] << "\t" << vnodes_triangle[2] << endl;
-            break;
-          case RECTANGLE:
-            elem_line >> vnodes_quad[0]; elem_line >> vnodes_quad[1]; elem_line >> vnodes_quad[2]; elem_line >> vnodes_quad[3];
-            output_file << "\t" << vnodes_quad[0] << "\t" << vnodes_quad[1] << "\t" << vnodes_quad[2] << "\t" << vnodes_quad[3] << endl;
-            break;
-          case TETRAHEDRON:
-            elem_line >> vnodes_tetra[0]; elem_line >> vnodes_tetra[1]; elem_line >> vnodes_tetra[2]; elem_line >> vnodes_tetra[3];
-            output_file << "\t" << vnodes_tetra[0] << "\t" << vnodes_tetra[1] << "\t" << vnodes_tetra[2] << "\t" << vnodes_tetra[3] << endl;
-            break;
-          case HEXAHEDRON:
-            elem_line >> vnodes_hexa[0]; elem_line >> vnodes_hexa[1]; elem_line >> vnodes_hexa[2];
-            elem_line >> vnodes_hexa[3]; elem_line >> vnodes_hexa[4]; elem_line >> vnodes_hexa[5];
-            elem_line >> vnodes_hexa[6]; elem_line >> vnodes_hexa[7];
-            output_file << "\t" << vnodes_hexa[0] << "\t" << vnodes_hexa[1] << "\t" << vnodes_hexa[2] << "\t" << vnodes_hexa[3] << "\t" << vnodes_hexa[4] << "\t" << vnodes_hexa[5] << "\t" << vnodes_hexa[6] << "\t" << vnodes_hexa[7] << endl;
-            break;
-          case WEDGE:
-            elem_line >> vnodes_wedge[0]; elem_line >> vnodes_wedge[1]; elem_line >> vnodes_wedge[2];
-            elem_line >> vnodes_wedge[3]; elem_line >> vnodes_wedge[4]; elem_line >> vnodes_wedge[5];
-            output_file << "\t" << vnodes_wedge[0] << "\t" << vnodes_wedge[1] << "\t" << vnodes_wedge[2] << "\t" << vnodes_wedge[3] << "\t" << vnodes_wedge[4] << "\t" << vnodes_wedge[5] << endl;
-            break;
-          case PYRAMID:
-            elem_line >> vnodes_pyramid[0]; elem_line >> vnodes_pyramid[1]; elem_line >> vnodes_pyramid[2];
-            elem_line >> vnodes_pyramid[3]; elem_line >> vnodes_pyramid[4];
-            output_file << "\t" << vnodes_pyramid[0] << "\t" << vnodes_pyramid[1] << "\t" << vnodes_pyramid[2] << "\t" << vnodes_pyramid[3] << "\t" << vnodes_pyramid[4] << endl;
-            break;
-        }
-      }
-    }
-    
-    /*--- Coordinates ---*/
-    position = text_line.find ("NPOIN=",0);
-    if (position != string::npos) {
-      
-      /*--- Skip the lines about the points ---*/
-      for (iPoint = 0; iPoint < nPoint;  iPoint++) {
-        getline(input_file, text_line);
-      }
-      
-      /*--- Add the new coordinates ---*/
-      output_file << "NPOIN= " << nPoint << "\t" << nPointDomain << endl;
-      for (iPoint = 0; iPoint < nPoint; iPoint++) {
-        for (iDim = 0; iDim < nDim; iDim++)
-          output_file << scientific << node[iPoint]->GetCoord(iDim) << "\t";
-#ifndef HAVE_MPI
-        output_file << iPoint << endl;
-#else
-        output_file << iPoint << "\t" << node[iPoint]->GetGlobalIndex() << endl;
-#endif
-      }
-      
-    }
-    
-    /*--- Write the physical boundaries ---*/
-    position = text_line.find ("NMARK=",0);
-    if (position != string::npos) {
-      
-      text_line.erase (0,6); nMarker_ = atoi(text_line.c_str());
-      output_file << "NMARK= " << nMarker_ << endl;
-      
-      for (iMarker = 0 ; iMarker < nMarker_; iMarker++) {
-        
-        getline (input_file,text_line);
-        text_line.erase (0,11);
-        string::size_type position;
-        for (iChar = 0; iChar < 20; iChar++) {
-          position = text_line.find( " ", 0 );
-          if(position != string::npos) text_line.erase (position,1);
-          position = text_line.find( "\r", 0 );
-          if(position != string::npos) text_line.erase (position,1);
-          position = text_line.find( "\n", 0 );
-          if(position != string::npos) text_line.erase (position,1);
-        }
-        Marker_Tag = text_line.c_str();
-        
-        /*--- Standart physical boundary ---*/
-        if (Marker_Tag != "SEND_RECEIVE") {
-          
-          getline (input_file, text_line);
-          
-          text_line.erase (0,13); nElem_Bound_ = atoi(text_line.c_str());
-          output_file << "MARKER_TAG= " << Marker_Tag << endl;
-          output_file << "MARKER_ELEMS= " << nElem_Bound_<< endl;
-          
-          for (iElem_Bound = 0; iElem_Bound < nElem_Bound_; iElem_Bound++) {
-            
-            getline(input_file, text_line);
-            istringstream bound_line(text_line);
-            
-            bound_line >> VTK_Type;
-            output_file << VTK_Type;
-            
-            switch(VTK_Type) {
-              case LINE:
-                bound_line >> vnodes_edge[0]; bound_line >> vnodes_edge[1];
-                output_file << "\t" << vnodes_edge[0] << "\t" << vnodes_edge[1] << endl;
-                break;
-              case TRIANGLE:
-                bound_line >> vnodes_triangle[0]; bound_line >> vnodes_triangle[1]; bound_line >> vnodes_triangle[2];
-                output_file << "\t" << vnodes_triangle[0] << "\t" << vnodes_triangle[1] << "\t" << vnodes_triangle[2] << endl;
-                break;
-              case RECTANGLE:
-                bound_line >> vnodes_quad[0]; bound_line >> vnodes_quad[1]; bound_line >> vnodes_quad[2]; bound_line >> vnodes_quad[3];
-                output_file << "\t" << vnodes_quad[0] << "\t" << vnodes_quad[1] << "\t" << vnodes_quad[2] << "\t" << vnodes_quad[3] << endl;
-                break;
-            }
-          }
-          
-        }
-        
-        /*--- Send-Receive boundaries definition ---*/
-        else {
-          output_file << "MARKER_TAG= SEND_RECEIVE" << endl;
-          getline (input_file,text_line);
-          text_line.erase (0,13); nElem_Bound_ = atoi(text_line.c_str());
-          output_file << "MARKER_ELEMS= " << nElem_Bound_ << endl;
-          getline (input_file, text_line); text_line.erase (0,8);
-          SendRecv = atoi(text_line.c_str());
-          output_file << "SEND_TO= " << SendRecv << endl;
-          
-          for (iElem_Bound = 0; iElem_Bound < nElem_Bound_; iElem_Bound++) {
-            getline(input_file,text_line);
-            istringstream bound_line(text_line);
-            bound_line >> VTK_Type; bound_line >> vnodes_vertex; bound_line >> transform;
-            output_file << VTK_Type << "\t" << vnodes_vertex << "\t" << transform << endl;
-          }
-        }
-        
-      }
-    }
-  }
-  
-  
-  /*--- Get the total number of periodic transformations ---*/
-  nPeriodic = config->GetnPeriodicIndex();
-  output_file << "NPERIODIC= " << nPeriodic << endl;
-  
-  /*--- From iPeriodic obtain the iMarker ---*/
-  for (iPeriodic = 0; iPeriodic < nPeriodic; iPeriodic++) {
-    
-    /*--- Retrieve the supplied periodic information. ---*/
-    center = config->GetPeriodicCenter(iPeriodic);
-    angles = config->GetPeriodicRotation(iPeriodic);
-    transl = config->GetPeriodicTranslate(iPeriodic);
-    
-    output_file << "PERIODIC_INDEX= " << iPeriodic << endl;
-    output_file << center[0] << "\t" << center[1] << "\t" << center[2] << endl;
-    output_file << angles[0] << "\t" << angles[1] << "\t" << angles[2] << endl;
-    output_file << transl[0] << "\t" << transl[1] << "\t" << transl[2] << endl;
-    
-  }
-  
-  input_file.close();
-  output_file.close();
-  
 }
 
 void CPhysicalGeometry::SetCoord_Smoothing (unsigned short val_nSmooth, double val_smooth_coeff, CConfig *config) {
@@ -10649,8 +10452,8 @@ CBoundaryGeometry::CBoundaryGeometry(CConfig *config, string val_mesh_filename, 
           config->SetMarker_All_DV(iMarker, config->GetMarker_CfgFile_DV(Marker_Tag));
           config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
           config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
-          config->SetMarker_All_SendRecv(iMarker, NONE);
           config->SetMarker_All_Out_1D(iMarker, config->GetMarker_CfgFile_Out_1D(Marker_Tag));
+          config->SetMarker_All_SendRecv(iMarker, NONE);
           
         }
         

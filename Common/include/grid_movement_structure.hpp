@@ -1325,7 +1325,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] val_mesh_filename - Name of the grid output file.
 	 */		
-	void WriteFFDInfo(CGeometry *geometry, CConfig *config, string val_mesh_filename);
+	void WriteFFDInfo(CGeometry *geometry, CConfig *config);
   
   /*!
 	 * \brief Write the Free Form information in the SU2 file.
