@@ -348,6 +348,14 @@ public:
   void SetTecplot_MeshASCII(CConfig *config, CGeometry *geometry, bool surf_sol, bool new_file);
 
   /*!
+   * \brief Write the nodal coordinates and connectivity to a Tecplot binary mesh file.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] val_iZone - iZone index.
+   */
+  void SetSU2_MeshASCII(CConfig *config, CGeometry *geometry);
+
+  /*!
 	 * \brief Write the nodal coordinates and connectivity to a Tecplot binary mesh file.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] geometry - Geometrical definition of the problem.

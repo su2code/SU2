@@ -6391,8 +6391,8 @@ void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned sho
     
     /*--- Flags identifying the types of files to be written. ---*/
     
-    bool Wrt_Vol = config[iZone]->GetWrt_Vol_Sol();
-    bool Wrt_Srf = config[iZone]->GetWrt_Srf_Sol();
+    bool Wrt_Vol = config[iZone]->GetWrt_Vol_Sol() && config[iZone]->GetVisualize_Deformation();
+    bool Wrt_Srf = config[iZone]->GetWrt_Srf_Sol() && config[iZone]->GetVisualize_Deformation();;
     
     /*--- Merge the node coordinates and connectivity if necessary. This
      is only performed if a volume solution file is requested, and it
@@ -6422,7 +6422,6 @@ void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned sho
         /*--- Write a Tecplot ASCII file ---*/
         
         SetTecplot_MeshASCII(config[iZone], geometry[iZone], false, new_file);
-        DeallocateConnectivity(config[iZone], geometry[iZone], false);
         
       }
       
@@ -6433,9 +6432,18 @@ void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned sho
         /*--- Write a Tecplot ASCII file ---*/
         
         SetTecplot_MeshASCII(config[iZone], geometry[iZone], true, new_file);
-        DeallocateConnectivity(config[iZone], geometry[iZone], true);
         
       }
+
+      if (rank == MASTER_NODE) cout <<"Writing .su2 file." << endl;
+      
+      /*--- Write a .su2 ASCII file ---*/
+      
+      SetSU2_MeshASCII(config[iZone], geometry[iZone]);
+      
+      /*--- Deallocate connectivity ---*/
+
+      DeallocateConnectivity(config[iZone], geometry[iZone], true);
       
     }
     
