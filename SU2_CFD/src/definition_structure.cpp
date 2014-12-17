@@ -2,7 +2,7 @@
  * \file definition_structure.cpp
  * \brief Main subroutines used by SU2_CFD.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.3 "eagle"
+ * \version 3.2.4 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -209,19 +209,15 @@ void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned
     if (rank == MASTER_NODE) cout << "Setting point connectivity." << endl;
     geometry[iZone][MESH_0]->SetPoint_Connectivity();
     
-    if (config[iZone]->GetCuthillMckee_Ordering()) {
-      
-      /*--- Renumbering points using Reverse Cuthill McKee ordering ---*/
-      
-      if (rank == MASTER_NODE) cout << "Renumbering points (Reverse Cuthill McKee Ordering)." << endl;
-      geometry[iZone][MESH_0]->SetRCM_Ordering(config[iZone]);
-      
-      /*--- recompute elements surrounding points, points surrounding points ---*/
-      
-      if (rank == MASTER_NODE) cout << "Recomputing point connectivity." << endl;
-      geometry[iZone][MESH_0]->SetPoint_Connectivity();
-      
-    }
+    /*--- Renumbering points using Reverse Cuthill McKee ordering ---*/
+    
+    if (rank == MASTER_NODE) cout << "Renumbering points (Reverse Cuthill McKee Ordering)." << endl;
+    geometry[iZone][MESH_0]->SetRCM_Ordering(config[iZone]);
+    
+    /*--- recompute elements surrounding points, points surrounding points ---*/
+    
+    if (rank == MASTER_NODE) cout << "Recomputing point connectivity." << endl;
+    geometry[iZone][MESH_0]->SetPoint_Connectivity();
     
     /*--- Compute elements surrounding elements ---*/
     
@@ -423,7 +419,7 @@ void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry,
     }
     if (turbulent) {
       if (spalart_allmaras) {
-        solver_container[iMGlevel][TURB_SOL] = new CTurbSASolver(geometry[iMGlevel], config, iMGlevel);
+        solver_container[iMGlevel][TURB_SOL] = new CTurbSASolver(geometry[iMGlevel], config, iMGlevel, solver_container[iMGlevel][FLOW_SOL]->GetFluidModel() );
         solver_container[iMGlevel][FLOW_SOL]->Preprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
         solver_container[iMGlevel][TURB_SOL]->Postprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel);
       }
@@ -880,15 +876,30 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
     
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
     if (compressible) {
-      /*--- Compressible flow ---*/
-      numerics_container[MESH_0][FLOW_SOL][VISC_TERM] = new CAvgGradCorrected_Flow(nDim, nVar_Flow, config);
-      for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-        numerics_container[iMGlevel][FLOW_SOL][VISC_TERM] = new CAvgGrad_Flow(nDim, nVar_Flow, config);
-      
-      /*--- Definition of the boundary condition method ---*/
-      for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-        numerics_container[iMGlevel][FLOW_SOL][VISC_BOUND_TERM] = new CAvgGrad_Flow(nDim, nVar_Flow, config);
-    }
+    	if(ideal_gas){
+
+			/*--- Compressible flow Ideal gas ---*/
+		  numerics_container[MESH_0][FLOW_SOL][VISC_TERM] = new CAvgGradCorrected_Flow(nDim, nVar_Flow, config);
+		  for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
+			numerics_container[iMGlevel][FLOW_SOL][VISC_TERM] = new CAvgGrad_Flow(nDim, nVar_Flow, config);
+
+		  /*--- Definition of the boundary condition method ---*/
+		  for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
+			numerics_container[iMGlevel][FLOW_SOL][VISC_BOUND_TERM] = new CAvgGrad_Flow(nDim, nVar_Flow, config);
+
+    	}else{
+
+    	/*--- Compressible flow Realgas ---*/
+		  numerics_container[MESH_0][FLOW_SOL][VISC_TERM] = new CGeneralAvgGradCorrected_Flow(nDim, nVar_Flow, config);
+		  for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
+			numerics_container[iMGlevel][FLOW_SOL][VISC_TERM] = new CGeneralAvgGrad_Flow(nDim, nVar_Flow, config);
+
+		  /*--- Definition of the boundary condition method ---*/
+		  for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
+			numerics_container[iMGlevel][FLOW_SOL][VISC_BOUND_TERM] = new CGeneralAvgGrad_Flow(nDim, nVar_Flow, config);
+
+    	}
+	}
     if (incompressible) {
       /*--- Incompressible flow, use artificial compressibility method ---*/
       numerics_container[MESH_0][FLOW_SOL][VISC_TERM] = new CAvgGradCorrectedArtComp_Flow(nDim, nVar_Flow, config);

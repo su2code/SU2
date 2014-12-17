@@ -2,7 +2,7 @@
  * \file solver_structure.inl
  * \brief In-Line subroutines of the <i>solver_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.3 "eagle"
+ * \version 3.2.4 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -32,7 +32,7 @@ inline void CSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::Set_MPI_Primitive(CGeometry *geometry, CConfig *config) { }
 
-inline void CSolver::Set_MPI_Secondary(CGeometry *geometry, CConfig *config) { }
+//inline void CSolver::Set_MPI_Secondary(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config) { }
 
@@ -40,7 +40,7 @@ inline void CSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *conf
 
 inline void CSolver::Set_MPI_Primitive_Limiter(CGeometry *geometry, CConfig *config) { }
 
-inline void CSolver::Set_MPI_Secondary_Limiter(CGeometry *geometry, CConfig *config) { }
+//inline void CSolver::Set_MPI_Secondary_Limiter(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config, unsigned short iMesh) { }
 
@@ -89,15 +89,15 @@ inline void CSolver::SetPrimitive_Limiter_MPI(CGeometry *geometry, CConfig *conf
 
 inline void CSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) { }
 
-inline void CSolver::SetSecondary_Gradient_GG(CGeometry *geometry, CConfig *config) { }
+//inline void CSolver::SetSecondary_Gradient_GG(CGeometry *geometry, CConfig *config) { }
 
-inline void CSolver::SetSecondary_Gradient_LS(CGeometry *geometry, CConfig *config) { }
+//inline void CSolver::SetSecondary_Gradient_LS(CGeometry *geometry, CConfig *config) { }
 
-inline void CSolver::Set_MPI_Secondary_Gradient(CGeometry *geometry, CConfig *config) { }
+//inline void CSolver::Set_MPI_Secondary_Gradient(CGeometry *geometry, CConfig *config) { }
 
-inline void CSolver::SetSecondary_Limiter_MPI(CGeometry *geometry, CConfig *config) { }
+//inline void CSolver::SetSecondary_Limiter_MPI(CGeometry *geometry, CConfig *config) { }
 
-inline void CSolver::SetSecondary_Limiter(CGeometry *geometry, CConfig *config) { }
+//inline void CSolver::SetSecondary_Limiter(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::SetPreconditioner(CConfig *config, unsigned short iPoint) { }
 
@@ -127,13 +127,13 @@ inline double CSolver::GetSurface_CMy(unsigned short val_marker) { return 0; }
 
 inline double CSolver::GetSurface_CMz(unsigned short val_marker) { return 0; }
 
-inline double CSolver::GetFanFace_MassFlow(unsigned short val_marker) { return 0; }
+inline double CSolver::GetInflow_MassFlow(unsigned short val_marker) { return 0; }
 
 inline double CSolver::GetExhaust_MassFlow(unsigned short val_marker) { return 0; }
 
-inline double CSolver::GetFanFace_Pressure(unsigned short val_marker) { return 0; }
+inline double CSolver::GetInflow_Pressure(unsigned short val_marker) { return 0; }
 
-inline double CSolver::GetFanFace_Mach(unsigned short val_marker) { return 0; }
+inline double CSolver::GetInflow_Mach(unsigned short val_marker) { return 0; }
 
 inline double CSolver::GetCSideForce_Inv(unsigned short val_marker) { return 0; }
 
@@ -402,10 +402,13 @@ inline void CSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
 inline void CSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, 
 										 CConfig *config, unsigned short val_marker) { }
 
-inline void CSolver::BC_Nacelle_Inflow(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, 
+inline void CSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, 
 										  CConfig *config, unsigned short val_marker) { }
-											
-inline void CSolver::BC_Nacelle_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, 
+
+inline void CSolver::BC_Engine_Bleed(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
+                                      CConfig *config, unsigned short val_marker) { }
+
+inline void CSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, 
 										  CConfig *config, unsigned short val_marker) { }
 																						
 inline void CSolver::BC_Neumann(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, 
@@ -417,7 +420,7 @@ inline void CSolver::BC_Dielec(CGeometry *geometry, CSolver **solver_container, 
 inline void CSolver::BC_Electrode(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, 
 									CConfig *config, unsigned short val_marker) { }
             
-inline void CSolver::GetNacelle_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) { }
+inline void CSolver::GetEngine_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) { }
 
 inline void CSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_container,
                                      CConfig *config, unsigned short iMesh, bool Output) { }
@@ -521,6 +524,10 @@ inline double CSolver::GetMin_Delta_Time(unsigned short val_Species) { return 0.
 inline void CSolver::Copy_Zone_Solution(CSolver ***solver1_solution, CGeometry **solver1_geometry, CConfig *solver1_config, 
 										  CSolver ***solver2_solution, CGeometry **solver2_geometry, CConfig *solver2_config) {};
 
+inline CFluidModel* CSolver::GetFluidModel(void) { return NULL;}
+
+inline CFluidModel* CEulerSolver::GetFluidModel(void) { return FluidModel;}
+
 inline double CEulerSolver::GetDensity_Inf(void) { return Density_Inf; }
 
 inline double CEulerSolver::GetModVelocity_Inf(void) { 
@@ -572,13 +579,13 @@ inline double CEulerSolver::GetSurface_CMy(unsigned short val_marker) { return S
 
 inline double CEulerSolver::GetSurface_CMz(unsigned short val_marker) { return Surface_CMz[val_marker]; }
 
-inline double CEulerSolver::GetFanFace_MassFlow(unsigned short val_marker) { return FanFace_MassFlow[val_marker]; }
+inline double CEulerSolver::GetInflow_MassFlow(unsigned short val_marker) { return Inflow_MassFlow[val_marker]; }
 
 inline double CEulerSolver::GetExhaust_MassFlow(unsigned short val_marker) { return Exhaust_MassFlow[val_marker]; }
 
-inline double CEulerSolver::GetFanFace_Pressure(unsigned short val_marker) { return FanFace_Pressure[val_marker]; }
+inline double CEulerSolver::GetInflow_Pressure(unsigned short val_marker) { return Inflow_Pressure[val_marker]; }
 
-inline double CEulerSolver::GetFanFace_Mach(unsigned short val_marker) { return FanFace_Mach[val_marker]; }
+inline double CEulerSolver::GetInflow_Mach(unsigned short val_marker) { return Inflow_Mach[val_marker]; }
 
 inline double CEulerSolver::GetCSideForce_Inv(unsigned short val_marker) { return CSideForce_Inv[val_marker]; }
 

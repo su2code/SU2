@@ -2,7 +2,7 @@
  * transport_model.cpp
  * \brief Source of the main transport properties subroutines of the SU2 solvers.
  * \author: S.Vitale, M.Pini, G.Gori, A.Guardone, P.Colonna
- * \version 3.2.3 "eagle"
+ * \version 3.2.4 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -47,6 +47,8 @@ CConstantViscosity::CConstantViscosity(double mu_const) : CViscosityModel() {
   /*--- Attributes initialization ---*/
 
 	Mu = mu_const;
+	dmudrho_T = 0.0;
+	dmudT_rho = 0.0;
 
 }
 
@@ -75,17 +77,48 @@ CSutherland::~CSutherland(void) { }
 void CSutherland::SetViscosity(double T, double rho) {
 
 	Mu = Mu_ref*pow((T/T_ref),(3.0/2.0))*((T_ref + S)/(T + S));
+
+}
+
+void CSutherland::SetDerViscosity(double T, double rho)  {
+
+	dmudrho_T = 0.0;
+	dmudT_rho = Mu_ref*( (3.0/2.0)*pow( (T/T_ref),(1.0/2.0) )*( (T_ref + S)/(T + S) )
+			    -pow( (T/T_ref),(3.0/2.0) )*(T_ref + S)/(T + S)/(T + S) );
+
+}
+
+
+
+CFluidPropViscosity::CFluidPropViscosity(void) : CViscosityModel() {
+
+}
+
+CFluidPropViscosity::CFluidPropViscosity(double mu_ref, double t_ref, double s) : CViscosityModel() {
+
+}
+
+CFluidPropViscosity::~CFluidPropViscosity(void) { }
+
+
+void CFluidPropViscosity::SetViscosity(double T, double rho) {
+
+	Mu = 0.0; //call_fluidprop;
+
+}
+
+void CFluidPropViscosity::SetDerViscosity(double T, double rho)  {
+
 	dmudrho_T = 0.0;
 	dmudT_rho = 0.0;
 
 }
 
-
 /* ------------------------------------------------- */
 /* ---------- Thermal Conductivity Models ---------- */
 /* ------------------------------------------------- */
 
-CThermalConductivityModel::CThermalConductivityModel(void) {
+CConductivityModel::CConductivityModel(void) {
 
   /*--- Attributes initialization ---*/
 
@@ -95,25 +128,27 @@ CThermalConductivityModel::CThermalConductivityModel(void) {
 
 }
 
-CThermalConductivityModel::~CThermalConductivityModel(void) { }
+CConductivityModel::~CConductivityModel(void) { }
 
 
-CConstantThermalConductivity::CConstantThermalConductivity(void) : CThermalConductivityModel() { }
+CConstantConductivity::CConstantConductivity(void) : CConductivityModel() { }
 
-CConstantThermalConductivity::CConstantThermalConductivity(double kt_const) : CThermalConductivityModel() {
+CConstantConductivity::CConstantConductivity(double kt_const) : CConductivityModel() {
 
   /*--- Attributes initialization ---*/
 
 	Kt = kt_const;
+	dktdrho_T = 0.0;
+	dktdT_rho = 0.0;
 
 }
 
-CConstantThermalConductivity::~CConstantThermalConductivity(void) { }
+CConstantConductivity::~CConstantConductivity(void) { }
 
 
-CConstantPrandtl::CConstantPrandtl(void) : CThermalConductivityModel() { }
+CConstantPrandtl::CConstantPrandtl(void) : CConductivityModel() { }
 
-CConstantPrandtl::CConstantPrandtl(double pr_const) : CThermalConductivityModel() {
+CConstantPrandtl::CConstantPrandtl(double pr_const) : CConductivityModel() {
 
   /*--- Attributes initialization ---*/
 
@@ -121,16 +156,47 @@ CConstantPrandtl::CConstantPrandtl(double pr_const) : CThermalConductivityModel(
 
 }
 
-void CConstantPrandtl::SetThermalConductivity(double par1, double par2) {
+void CConstantPrandtl::SetConductivity(double T, double rho, double mu, double cp) {
 
-	double Cp = par1;
-	double Mu = par2;
+	Kt = mu*cp/Pr_const;
 
-	Kt = Mu*Cp/Pr_const;
+}
+
+void CConstantPrandtl::SetDerConductivity(double T, double rho, double dmudrho_T, double dmudT_rho, double cp) {
+
+	dktdrho_T = dmudrho_T*cp/Pr_const;
+	dktdT_rho = dmudT_rho*cp/Pr_const;
+
+}
+
+CConstantPrandtl::~CConstantPrandtl(void) { }
+
+
+
+
+CFluidPropConductivity::CFluidPropConductivity(void) : CConductivityModel() { }
+
+CFluidPropConductivity::CFluidPropConductivity(double pr_const) : CConductivityModel() {
+
+  /*--- Attributes initialization ---*/
+
+	Pr_const = pr_const;
+
+}
+
+void CFluidPropConductivity::SetConductivity(double T, double rho, double mu, double cp) {
+
+	Kt = 0.0; //call_to_fluidprop
+
+}
+
+void CFluidPropConductivity::SetDerConductivity(double T, double rho, double dmudrho_T, double dmudT_rho, double cp) {
+
 	dktdrho_T = 0.0;
 	dktdT_rho = 0.0;
 
 }
 
-CConstantPrandtl::~CConstantPrandtl(void) { }
+CFluidPropConductivity::~CFluidPropConductivity(void) { }
+
 

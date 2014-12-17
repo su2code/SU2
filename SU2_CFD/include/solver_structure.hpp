@@ -5,7 +5,7 @@
  *        <i>solution_direct.cpp</i>, <i>solution_adjoint.cpp</i>, and
  *        <i>solution_linearized.cpp</i> files.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.3 "eagle"
+ * \version 3.2.4 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -55,7 +55,7 @@ using namespace std;
  * \brief Main class for defining the PDE solution, it requires
  * a child class for each particular solver (Euler, Navier-Stokes, etc.)
  * \author F. Palacios.
- * \version 3.2.3 "eagle"
+ * \version 3.2.4 "eagle"
  */
 class CSolver {
 protected:
@@ -145,11 +145,11 @@ public:
 	 */
 	virtual void Set_MPI_Primitive(CGeometry *geometry, CConfig *config);
   
-  /*!
-	 * \brief Set number of linear solver iterations.
-	 * \param[in] val_iterlinsolver - Number of linear iterations.
-	 */
-	virtual void Set_MPI_Secondary(CGeometry *geometry, CConfig *config);
+//  /*!
+//	 * \brief Set number of linear solver iterations.
+//	 * \param[in] val_iterlinsolver - Number of linear iterations.
+//	 */
+//	virtual void Set_MPI_Secondary(CGeometry *geometry, CConfig *config);
 
     /*!
 	 * \brief Set the value of the max residual and RMS residual.
@@ -177,12 +177,12 @@ public:
 	 */
   virtual void Set_MPI_Primitive_Limiter(CGeometry *geometry, CConfig *config);
  
-  /*!
-	 * \brief Impose the send-receive boundary condition.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-  virtual void Set_MPI_Secondary_Limiter(CGeometry *geometry, CConfig *config);
+//  /*!
+//	 * \brief Impose the send-receive boundary condition.
+//	 * \param[in] geometry - Geometrical definition of the problem.
+//	 * \param[in] config - Definition of the particular problem.
+//	 */
+//  virtual void Set_MPI_Secondary_Limiter(CGeometry *geometry, CConfig *config);
 
   /*!
 	 * \brief Set the fluid solver nondimensionalization.
@@ -192,6 +192,12 @@ public:
   virtual void SetNondimensionalization(CGeometry *geometry, CConfig *config, unsigned short iMesh);
   
 	/*!
+	 * \brief Compute the pressure at the infinity.
+	 * \return Value of the pressure at the infinity.
+	 */
+  virtual CFluidModel* GetFluidModel(void);
+
+  	/*!
 	 * \brief Get number of linear solver iterations.
 	 * \return Number of linear solver iterations.
 	 */
@@ -389,12 +395,12 @@ public:
 	 */
 	virtual void SetPrimitive_Limiter(CGeometry *geometry, CConfig *config);
   
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	virtual void SetSecondary_Limiter(CGeometry *geometry, CConfig *config);
+//	/*!
+//	 * \brief A virtual member.
+//	 * \param[in] geometry - Geometrical definition of the problem.
+//	 * \param[in] config - Definition of the particular problem.
+//	 */
+//	virtual void SetSecondary_Limiter(CGeometry *geometry, CConfig *config);
   
 	/*!
 	 * \brief Compute the pressure laplacian using in a incompressible solver.
@@ -434,7 +440,7 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
@@ -446,7 +452,7 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
@@ -511,7 +517,7 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -522,7 +528,7 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -533,7 +539,7 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -544,7 +550,7 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -555,7 +561,7 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -566,7 +572,7 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -577,7 +583,7 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -588,7 +594,7 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -598,7 +604,8 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] conv_numerics - Description of the numerical method.
+	 * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -613,7 +620,8 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -628,7 +636,8 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -643,7 +652,8 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -698,7 +708,7 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -709,7 +719,8 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -720,7 +731,8 @@ public:
 	 * \brief Impose via the residual the Euler boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Definition of hte solver settings.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -731,7 +743,8 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -742,7 +755,8 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -753,7 +767,8 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -764,15 +779,7 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
-	 */
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -783,7 +790,8 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -794,27 +802,40 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	virtual void BC_Nacelle_Inflow(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
+	virtual void BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  virtual void BC_Engine_Bleed(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
     
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	virtual void BC_Nacelle_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
+	virtual void BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
     
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -825,7 +846,7 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -918,19 +939,19 @@ public:
 	 */
 	virtual void SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config);
   
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	virtual void SetSecondary_Gradient_GG(CGeometry *geometry, CConfig *config);
+//	/*!
+//	 * \brief A virtual member.
+//	 * \param[in] geometry - Geometrical definition of the problem.
+//	 * \param[in] config - Definition of the particular problem.
+//	 */
+//	virtual void SetSecondary_Gradient_GG(CGeometry *geometry, CConfig *config);
   
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	virtual void SetSecondary_Gradient_LS(CGeometry *geometry, CConfig *config);
+//	/*!
+//	 * \brief A virtual member.
+//	 * \param[in] geometry - Geometrical definition of the problem.
+//	 * \param[in] config - Definition of the particular problem.
+//	 */
+//	virtual void SetSecondary_Gradient_LS(CGeometry *geometry, CConfig *config);
   
     /*!
 	 * \brief A virtual member.
@@ -939,12 +960,12 @@ public:
 	 */
 	virtual void Set_MPI_Primitive_Gradient(CGeometry *geometry, CConfig *config);
   
-  /*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	virtual void Set_MPI_Secondary_Gradient(CGeometry *geometry, CConfig *config);
+//  /*!
+//	 * \brief A virtual member.
+//	 * \param[in] geometry - Geometrical definition of the problem.
+//	 * \param[in] config - Definition of the particular problem.
+//	 */
+//	virtual void Set_MPI_Secondary_Gradient(CGeometry *geometry, CConfig *config);
   
   /*!
 	 * \brief A virtual member.
@@ -953,12 +974,12 @@ public:
 	 */
 	virtual void SetPrimitive_Limiter_MPI(CGeometry *geometry, CConfig *config);
   
-  /*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	virtual void SetSecondary_Limiter_MPI(CGeometry *geometry, CConfig *config);
+//  /*!
+//	 * \brief A virtual member.
+//	 * \param[in] geometry - Geometrical definition of the problem.
+//	 * \param[in] config - Definition of the particular problem.
+//	 */
+//	virtual void SetSecondary_Limiter_MPI(CGeometry *geometry, CConfig *config);
   
 	/*!
 	 * \brief A virtual member.
@@ -971,7 +992,7 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
@@ -989,7 +1010,7 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
@@ -1000,7 +1021,7 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
@@ -1078,7 +1099,7 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	virtual void Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
@@ -1087,7 +1108,7 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	virtual void Smooth_Sensitivity(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
@@ -1096,7 +1117,7 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	virtual void Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
@@ -1211,7 +1232,7 @@ public:
 	 * \param[in] val_marker - Surface marker where the coefficient is computed.
 	 * \return Value of the mass flow rate on the surface <i>val_marker</i>.
 	 */
-	virtual double GetFanFace_MassFlow(unsigned short val_marker);
+	virtual double GetInflow_MassFlow(unsigned short val_marker);
     
     /*!
 	 * \brief A virtual member.
@@ -1225,14 +1246,14 @@ public:
 	 * \param[in] val_marker - Surface marker where the coefficient is computed.
 	 * \return Value of the fan face pressure on the surface <i>val_marker</i>.
 	 */
-	virtual double GetFanFace_Pressure(unsigned short val_marker);
+	virtual double GetInflow_Pressure(unsigned short val_marker);
     
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] val_marker - Surface marker where the coefficient is computed.
 	 * \return Value of the fan face mach on the surface <i>val_marker</i>.
 	 */
-	virtual double GetFanFace_Mach(unsigned short val_marker);
+	virtual double GetInflow_Mach(unsigned short val_marker);
     
 	/*!
 	 * \brief A virtual member.
@@ -1733,25 +1754,25 @@ public:
 
   /*!
    * \brief A virtual member.
-   * \return average Mach number evaluated at an exit boundary marker
+   *\return average Mach number evaluated at an exit boundary marker
    */
   virtual double GetOneD_Mach(void);
 
   /*!
    * \brief A virtual member.
-   * \set average Mach number evaluated at an exit boundary marker
+   * set average Mach number evaluated at an exit boundary marker
    */
   virtual void SetOneD_Mach(double AverageMach);
   
   /*!
    * \brief A virtual member.
-   * \return average temperature evaluated at an exit boundary marker
+   *\return average temperature evaluated at an exit boundary marker
    */
   virtual double GetOneD_Temp(void);
   
   /*!
    * \brief A virtual member.
-   * \set average temperature evaluated at an exit boundary marker
+   * set average temperature evaluated at an exit boundary marker
    */
   virtual void SetOneD_Temp(double AverageTemperature);
   
@@ -1763,7 +1784,7 @@ public:
   
   /*!
    * \brief A virtual member.
-   * \set average temperature evaluated at an exit boundary marker
+   * set average temperature evaluated at an exit boundary marker
    */
   virtual void SetOneD_MassFlowRate(double MassFlowRate);
   
@@ -1780,36 +1801,36 @@ public:
   virtual void SetOneD_FluxAvgPress(double PressureRef);
   /*!
    * \brief A virtual member.
-   * \ Get the flux averaged density at a marker. ( = (gamma/(gamma-1)) / ( Pref*(href-1/2 uref^2) )
+   * \ Get the flux averaged density at a marker. (\f$ = (gamma/(gamma-1)) / ( Pref*(href-1/2 uref^2) \f$)
    */
   virtual double GetOneD_FluxAvgDensity(void);
   
   /*!
    * \brief A virtual member.
-   * \ Set the flux averaged density at a marker.( = (gamma/(gamma-1)) / ( Pref*(href-1/2 uref^2) )
+   * \ Set the flux averaged density at a marker.( \f$= (gamma/(gamma-1)) / ( Pref*(href-1/2 uref^2) \f$)
    */
   virtual void SetOneD_FluxAvgDensity(double DensityRef);
   
   /*!
    * \brief A virtual member.
-   * \ Get the flux averaged velocity at a marker. = sqrt ( \int((rho*u)*u^2dA)/\int(rho*u*dA) )
+   * \ Get the flux averaged velocity at a marker. = \f$ \sqrt ( \frac{\int((rho*u)*u^2dA)}{\int(rho*u*dA) }) \f$
    */
   virtual double GetOneD_FluxAvgVelocity(void);
   
   /*!
    * \brief A virtual member.
-   * \ Set the flux averaged velocity at a marker. = sqrt ( \int((rho*u)*u^2dA)/\int(rho*u*dA) )
+   * \ Set the flux averaged velocity at a marker. = \f$ \sqrt (  \frac{\int((rho*u)*u^2dA)}{\int(rho*u*dA) }) \f$
    */
   virtual void SetOneD_FluxAvgVelocity(double VelocityRef);
   
   /*!
    * \brief A virtual member.
-   * \ Get the flux averaged enthalpy at a marker. = \int(rho*u*h dA) / \int(rho *u *dA )
+   * \ Get the flux averaged enthalpy at a marker. =\f$ \frac{ \int(rho*u*h dA) }{ \int(rho *u *dA )} \f$
    */
   virtual double GetOneD_FluxAvgEntalpy(void);
   /*!
    * \brief A virtual member.
-   * \ Set the flux averaged enthalpy at a marker. = \int(rho*u*h dA) / \int(rho *u *dA )
+   * \ Set the flux averaged enthalpy at a marker. =\f$ \frac{ \int(rho*u*h dA) }{ \int(rho *u *dA ) }\f$
    */
   virtual void SetOneD_FluxAvgEntalpy(double EnthalpyRef);
   
@@ -1897,7 +1918,7 @@ public:
   * \param[in] geometry - Geometrical definition of the problem.
   * \param[in] solution - Container vector with all the solutions.
   */
-	virtual void GetNacelle_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
+	virtual void GetEngine_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
   
   /*!
    * \brief A virtual member.
@@ -1945,7 +1966,7 @@ public:
  * \class CBaselineSolver
  * \brief Main class for defining a baseline solution from a restart file (for output).
  * \author F. Palacios, T. Economon.
- * \version 3.2.3 "eagle"
+ * \version 3.2.4 "eagle"
  */
 class CBaselineSolver : public CSolver {
 public:
@@ -1990,7 +2011,7 @@ public:
  * \brief Main class for defining the Euler's flow solver.
  * \ingroup Euler_Equations
  * \author F. Palacios.
- * \version 3.2.3 "eagle"
+ * \version 3.2.4 "eagle"
  */
 class CEulerSolver : public CSolver {
 protected:
@@ -1999,6 +2020,7 @@ protected:
   Mach_Inf,	/*!< \brief Mach number at the infinity. */
 	Density_Inf,	/*!< \brief Density at the infinity. */
 	Energy_Inf,			/*!< \brief Energy at the infinity. */
+  Temperature_Inf,			/*!< \brief Energy at the infinity. */
 	Pressure_Inf,		/*!< \brief Pressure at the infinity. */
 	*Velocity_Inf;		/*!< \brief Flow Velocity vector at the infinity. */
 	
@@ -2035,16 +2057,23 @@ protected:
   ***CharacPrimVar,		/*!< \brief Value of the characteristic variables at each boundary. */
 	*ForceInviscid,		/*!< \brief Inviscid force for each boundary. */
 	*MomentInviscid,	/*!< \brief Inviscid moment for each boundary. */
-	*FanFace_MassFlow,	/*!< \brief Mass flow rate for each boundary. */
+	*Inflow_MassFlow,	/*!< \brief Mass flow rate for each boundary. */
+  *Bleed_MassFlow,	/*!< \brief Mass flow rate for each boundary. */
 	*Exhaust_MassFlow,	/*!< \brief Mass flow rate for each boundary. */
-	*FanFace_Pressure,	/*!< \brief Fan face pressure for each boundary. */
-	*FanFace_Mach,	/*!< \brief Fan face mach number for each boundary. */
-	*FanFace_Area,	/*!< \brief Boundary total area. */
+	*Inflow_Pressure,	/*!< \brief Fan face pressure for each boundary. */
+	*Inflow_Mach,	/*!< \brief Fan face mach number for each boundary. */
+	*Inflow_Area,	/*!< \brief Boundary total area. */
+  *Bleed_Pressure,	/*!< \brief Fan face pressure for each boundary. */
+  *Bleed_Temperature,	/*!< \brief Fan face mach number for each boundary. */
+  *Bleed_Area,	/*!< \brief Boundary total area. */
   *Exhaust_Area,	/*!< \brief Boundary total area. */
-  FanFace_MassFlow_Total,	/*!< \brief Mass flow rate for each boundary. */
+  Inflow_MassFlow_Total,	/*!< \brief Mass flow rate for each boundary. */
+  Bleed_MassFlow_Total,	/*!< \brief Mass flow rate for each boundary. */
   Exhaust_MassFlow_Total,	/*!< \brief Mass flow rate for each boundary. */
-	FanFace_Pressure_Total,	/*!< \brief Fan face pressure for each boundary. */
-	FanFace_Mach_Total,	/*!< \brief Fan face mach number for each boundary. */
+	Inflow_Pressure_Total,	/*!< \brief Fan face pressure for each boundary. */
+	Inflow_Mach_Total,	/*!< \brief Fan face mach number for each boundary. */
+  Bleed_Pressure_Total,	/*!< \brief Fan face pressure for each boundary. */
+  Bleed_Temperature_Total,	/*!< \brief Fan face mach number for each boundary. */
 	InverseDesign;	/*!< \brief Inverse design functional for each boundary. */
 	
   double
@@ -2092,7 +2121,8 @@ protected:
 	Total_CNearFieldOF,			/*!< \brief Total Near-Field Pressure coefficient for all the boundaries. */
   Total_CFreeSurface,			/*!< \brief Total Free Surface coefficient for all the boundaries. */
   Total_CpDiff,			/*!< \brief Total Equivalent Area coefficient for all the boundaries. */
-	Total_HeatFluxDiff;			/*!< \brief Total Equivalent Area coefficient for all the boundaries. */
+	Total_HeatFluxDiff,			/*!< \brief Total Equivalent Area coefficient for all the boundaries. */
+  Total_MassFlowRate;     /*!< \brief Total Mass Flow Rate on monitored boundaries. */
   double *Surface_CLift,   /*!< \brief Lift coefficient for each monitoring surface. */
   *Surface_CDrag,          /*!< \brief Drag coefficient for each monitoring surface. */
   *Surface_CSideForce,     /*!< \brief Side-force coefficient for each monitoring surface. */
@@ -2120,8 +2150,8 @@ protected:
 	*Primitive_i,				/*!< \brief Auxiliary nPrimVar vector for storing the primitive at point i. */
 	*Primitive_j;				/*!< \brief Auxiliary nPrimVar vector for storing the primitive at point j. */
   
-  double *Secondary,		/*!< \brief Auxiliary nPrimVar vector. */
-	*Secondary_i,				/*!< \brief Auxiliary nPrimVar vector for storing the primitive at point i. */
+//  double *Secondary,		/*!< \brief Auxiliary nPrimVar vector. */
+	double *Secondary_i,				/*!< \brief Auxiliary nPrimVar vector for storing the primitive at point i. */
 	*Secondary_j;				/*!< \brief Auxiliary nPrimVar vector for storing the primitive at point j. */
 
   double Cauchy_Value,	/*!< \brief Summed value of the convergence indicator. */
@@ -2135,7 +2165,8 @@ protected:
   CFluidModel  *FluidModel;  /*!< \brief fluid model used in the solver */
 
 public:
-    
+
+
 	/*!
 	 * \brief Constructor of the class.
 	 */
@@ -2188,12 +2219,12 @@ public:
 	 */
   void Set_MPI_Primitive_Limiter(CGeometry *geometry, CConfig *config);
   
-  /*!
-	 * \brief Impose the send-receive boundary condition.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-  void Set_MPI_Secondary_Limiter(CGeometry *geometry, CConfig *config);
+//  /*!
+//	 * \brief Impose the send-receive boundary condition.
+//	 * \param[in] geometry - Geometrical definition of the problem.
+//	 * \param[in] config - Definition of the particular problem.
+//	 */
+//  void Set_MPI_Secondary_Limiter(CGeometry *geometry, CConfig *config);
 
   /*!
 	 * \brief Set the fluid solver nondimensionalization.
@@ -2203,6 +2234,13 @@ public:
   void SetNondimensionalization(CGeometry *geometry, CConfig *config, unsigned short iMesh);
   
 	/*!
+	 * \brief Compute the pressure at the infinity.
+	 * \return Value of the pressure at the infinity.
+	 */
+	CFluidModel* GetFluidModel(void);
+
+
+    /*!
 	 * \brief Compute the density at the infinity.
 	 * \return Value of the density at the infinity.
 	 */
@@ -2225,7 +2263,7 @@ public:
 	 * \return Value of the pressure at the infinity.
 	 */
 	double GetPressure_Inf(void);
-    
+
 	/*!
 	 * \brief Compute the density multiply by velocity at the infinity.
 	 * \param[in] val_dim - Index of the velocity vector.
@@ -2261,7 +2299,7 @@ public:
 	 * \brief Compute the spatial integration using a centered scheme.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
@@ -2273,7 +2311,7 @@ public:
 	 * \brief Compute the spatial integration using a upwind scheme.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
@@ -2281,10 +2319,16 @@ public:
                          CConfig *config, unsigned short iMesh);
     
 	/*!
+	 * \brief Compute the extrapolated quantities, for MUSCL upwind 2nd reconstruction,
+	 * in a more thermodynamic consistent way
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void ComputeConsExtrapolation(CConfig *config);
+	/*!
 	 * \brief Source term integration.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
@@ -2295,7 +2339,7 @@ public:
 	 * \brief Source term integration.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
@@ -2353,21 +2397,21 @@ public:
 	 */
 	void SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config);
   
-  /*!
-	 * \brief Compute the gradient of the primitive variables using Green-Gauss method,
-	 *        and stores the result in the <i>Gradient_Primitive</i> variable.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void SetSecondary_Gradient_GG(CGeometry *geometry, CConfig *config);
+//  /*!
+//	 * \brief Compute the gradient of the primitive variables using Green-Gauss method,
+//	 *        and stores the result in the <i>Gradient_Primitive</i> variable.
+//	 * \param[in] geometry - Geometrical definition of the problem.
+//	 * \param[in] config - Definition of the particular problem.
+//	 */
+//	void SetSecondary_Gradient_GG(CGeometry *geometry, CConfig *config);
   
-	/*!
-	 * \brief Compute the gradient of the primitive variables using a Least-Squares method,
-	 *        and stores the result in the <i>Gradient_Primitive</i> variable.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void SetSecondary_Gradient_LS(CGeometry *geometry, CConfig *config);
+//	/*!
+//	 * \brief Compute the gradient of the primitive variables using a Least-Squares method,
+//	 *        and stores the result in the <i>Gradient_Primitive</i> variable.
+//	 * \param[in] geometry - Geometrical definition of the problem.
+//	 * \param[in] config - Definition of the particular problem.
+//	 */
+//	void SetSecondary_Gradient_LS(CGeometry *geometry, CConfig *config);
     
   /*!
 	 * \brief Compute the gradient of the primitive variables using a Least-Squares method,
@@ -2384,20 +2428,20 @@ public:
 	 */
 	void SetPrimitive_Limiter(CGeometry *geometry, CConfig *config);
   
-  /*!
-	 * \brief Compute the gradient of the primitive variables using a Least-Squares method,
-	 *        and stores the result in the <i>Gradient_Primitive</i> variable.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void Set_MPI_Secondary_Gradient(CGeometry *geometry, CConfig *config);
+//  /*!
+//	 * \brief Compute the gradient of the primitive variables using a Least-Squares method,
+//	 *        and stores the result in the <i>Gradient_Primitive</i> variable.
+//	 * \param[in] geometry - Geometrical definition of the problem.
+//	 * \param[in] config - Definition of the particular problem.
+//	 */
+//	void Set_MPI_Secondary_Gradient(CGeometry *geometry, CConfig *config);
   
-	/*!
-	 * \brief Compute the limiter of the primitive variables.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void SetSecondary_Limiter(CGeometry *geometry, CConfig *config);
+//	/*!
+//	 * \brief Compute the limiter of the primitive variables.
+//	 * \param[in] geometry - Geometrical definition of the problem.
+//	 * \param[in] config - Definition of the particular problem.
+//	 */
+//	void SetSecondary_Limiter(CGeometry *geometry, CConfig *config);
   
 	/*!
 	 * \brief Compute the preconditioner for convergence acceleration by Roe-Turkel method.
@@ -2440,7 +2484,7 @@ public:
 	 * \brief Impose via the residual the Euler wall boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -2451,7 +2495,8 @@ public:
 	 * \brief Impose the far-field boundary condition using characteristics.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -2462,7 +2507,8 @@ public:
 	 * \brief Impose the symmetry boundary condition using the residual.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -2472,7 +2518,7 @@ public:
 	 * \brief Impose the interface boundary condition using the residual.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -2483,7 +2529,7 @@ public:
 	 * \brief Impose the near-field boundary condition using the residual.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -2494,7 +2540,7 @@ public:
 	 * \brief Impose the actuator disk boundary condition using the residual.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -2517,7 +2563,8 @@ public:
 	 * \brief Impose the boundary condition using characteristic recostruction.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -2528,7 +2575,8 @@ public:
 	 * \brief Impose a subsonic inlet boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -2539,7 +2587,8 @@ public:
 	 * \brief Impose a supersonic inlet boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -2550,7 +2599,7 @@ public:
 	 * \brief Impose the dirichlet boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -2561,7 +2610,8 @@ public:
 	 * \brief Impose the outlet boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
      
@@ -2573,22 +2623,36 @@ public:
 	 * \brief Impose the nacelle inflow boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Nacelle_Inflow(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
+	void BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                           CConfig *config, unsigned short val_marker);
-    
+  
+  /*!
+   * \brief Impose the nacelle bleed boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Engine_Bleed(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
+                        CConfig *config, unsigned short val_marker);
+  
 	/*!
 	 * \brief Impose the ancelle exhaust boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Nacelle_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
+	void BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                            CConfig *config, unsigned short val_marker);
     
 	/*!
@@ -2606,7 +2670,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solution - Container vector with all the solutions.
 	 */
-	void GetNacelle_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
+	void GetEngine_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
   
   /*!
 	 * \brief Update the AoA and freestream velocity at the farfield.
@@ -2731,7 +2795,7 @@ public:
 	 * \param val_marker Surface where the coeficient is going to be computed.
 	 * \return Value of the mass flow rate on the surface <i>val_marker</i>.
 	 */
-	double GetFanFace_MassFlow(unsigned short val_marker);
+	double GetInflow_MassFlow(unsigned short val_marker);
     
     /*!
 	 * \brief Provide the mass flow rate.
@@ -2745,14 +2809,14 @@ public:
 	 * \param val_marker Surface where the coeficient is going to be computed.
 	 * \return Value of the fan face pressure on the surface <i>val_marker</i>.
 	 */
-	double GetFanFace_Pressure(unsigned short val_marker);
+	double GetInflow_Pressure(unsigned short val_marker);
     
 	/*!
 	 * \brief Provide the mass flow rate.
 	 * \param val_marker Surface where the coeficient is going to be computed.
 	 * \return Value of the fan face mach on the surface <i>val_marker</i>.
 	 */
-	double GetFanFace_Mach(unsigned short val_marker);
+	double GetInflow_Mach(unsigned short val_marker);
     
 	/*!
 	 * \brief Provide the non dimensional sideforce coefficient (inviscid contribution).
@@ -3072,22 +3136,22 @@ public:
   void SetOneD_FluxAvgDensity(double DensityRef);
   
   /*!
-   * \brief Get the flux averaged velocity at a marker. = sqrt ( \int((rho*u)*u^2dA)/\int(rho*u*dA) )
+   * \brief Get the flux averaged velocity at a marker. = \f$ \sqrt ( \int((rho*u)*u^2dA)/\int(rho*u*dA) )\f$
    */
   double GetOneD_FluxAvgVelocity(void);
   
   /*!
-   * \brief Set the flux averaged velocity at a marker. = sqrt ( \int((rho*u)*u^2dA)/\int(rho*u*dA) )
+   * \brief Set the flux averaged velocity at a marker. =\f$ sqrt ( \int((rho*u)*u^2dA)/\int(rho*u*dA) ) \f$
    */
   void SetOneD_FluxAvgVelocity(double VelocityRef);
   
   /*!
-   * \brief Get the flux averaged enthalpy at a marker. = \int(rho*u*h dA) / \int(rho *u *dA )
+   * \brief Get the flux averaged enthalpy at a marker. = \f$ \int(rho*u*h dA) / \int(rho *u *dA ) \f$
    */
   double GetOneD_FluxAvgEntalpy(void);
   
   /*!
-   * \brief Set the flux averaged enthalpy at a marker. = \int(rho*u*h dA) / \int(rho *u *dA )
+   * \brief Set the flux averaged enthalpy at a marker. =\f$ \int(rho*u*h dA) / \int(rho *u *dA ) \f$
    */
   void SetOneD_FluxAvgEntalpy(double EnthalpyRef);
   
@@ -3145,7 +3209,7 @@ public:
  * \brief Main class for defining the Navier-Stokes flow solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios.
- * \version 3.2.3 "eagle"
+ * \version 3.2.4 "eagle"
  */
 class CNSSolver : public CEulerSolver {
 private:
@@ -3252,7 +3316,8 @@ public:
 	 * \brief Impose a constant heat-flux condition at the wall.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -3262,7 +3327,8 @@ public:
 	 * \brief Impose the Navier-Stokes boundary condition (strong).
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -3326,7 +3392,7 @@ public:
 	 * \brief Compute the viscous residuals.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
@@ -3380,7 +3446,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 3.2.3 "eagle"
+ * \version 3.2.4 "eagle"
  */
 class CTurbSolver : public CSolver {
 protected:
@@ -3440,7 +3506,7 @@ public:
 	 * \brief Compute the spatial integration using a upwind scheme.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
@@ -3452,7 +3518,7 @@ public:
 	 * \brief Compute the viscous residuals for the turbulent equation.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
@@ -3464,7 +3530,8 @@ public:
 	 * \brief Impose the Symmetry Plane boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -3474,7 +3541,7 @@ public:
 	 * \brief Impose via the residual the Euler wall boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -3508,7 +3575,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 3.2.3 "eagle"
+ * \version 3.2.4 "eagle"
  */
 
 class CTurbSASolver: public CTurbSolver {
@@ -3526,7 +3593,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned short iMesh);
+	CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned short iMesh, CFluidModel* FluidModel);
     
 	/*!
 	 * \brief Destructor of the class.
@@ -3557,7 +3624,7 @@ public:
 	 * \brief Source term computation.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
@@ -3568,7 +3635,7 @@ public:
 	 * \brief Source term computation.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
@@ -3579,7 +3646,8 @@ public:
 	 * \brief Impose the Navier-Stokes wall boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -3590,7 +3658,8 @@ public:
 	 * \brief Impose the Navier-Stokes wall boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -3601,7 +3670,8 @@ public:
 	 * \brief Impose the Far Field boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -3612,7 +3682,8 @@ public:
 	 * \brief Impose the inlet boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -3623,7 +3694,8 @@ public:
 	 * \brief Impose the outlet boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -3632,32 +3704,46 @@ public:
                    unsigned short val_marker);
     
     /*!
-	 * \brief Impose the nacelle inflow boundary condition.
+	 * \brief Impose the engine inflow boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Nacelle_Inflow(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
+	void BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                           CConfig *config, unsigned short val_marker);
-    
+  
+  /*!
+   * \brief Impose the engine bleed boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Engine_Bleed(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
+                        CConfig *config, unsigned short val_marker);
+
 	/*!
-	 * \brief Impose the ancelle exhaust boundary condition.
+	 * \brief Impose the engine exhaust boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Nacelle_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
+	void BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                            CConfig *config, unsigned short val_marker);
     
     /*!
 	 * \brief Impose the interface boundary condition using the residual.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -3668,7 +3754,7 @@ public:
 	 * \brief Impose the near-field boundary condition using the residual.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -3692,7 +3778,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author B. Tracey.
- * \version 3.2.3 "eagle"
+ * \version 3.2.4 "eagle"
  */
 
 class CTurbMLSolver: public CTurbSolver {
@@ -3741,7 +3827,7 @@ public:
 	 * \brief Source term computation.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
@@ -3752,7 +3838,7 @@ public:
 	 * \brief Source term computation.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
@@ -3763,7 +3849,8 @@ public:
 	 * \brief Impose the Navier-Stokes wall boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -3774,7 +3861,8 @@ public:
 	 * \brief Impose the Navier-Stokes wall boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -3785,7 +3873,8 @@ public:
 	 * \brief Impose the Far Field boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -3796,7 +3885,8 @@ public:
 	 * \brief Impose the inlet boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -3807,7 +3897,8 @@ public:
 	 * \brief Impose the outlet boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -3834,7 +3925,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Aranake.
- * \version 3.2.3 "eagle"
+ * \version 3.2.4 "eagle"
  */
 
 class CTransLMSolver: public CTurbSolver {
@@ -3861,7 +3952,6 @@ public:
 	/*!
 	 * \brief Correlation function to relate turbulence intensity to transition onset reynolds number
 	 * \param[in]  tu - turbulence intensity
-	 * \param[out] REth - corresponding transition onset reynolds number
 	 */
 	double REthCorrelation(double tu);
     
@@ -3889,7 +3979,7 @@ public:
 	 * \brief Compute the spatial integration using a upwind scheme.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
@@ -3900,7 +3990,7 @@ public:
 	 * \brief Compute the viscous residuals for the turbulent equation.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
@@ -3912,7 +4002,7 @@ public:
 	 * \brief Source term computation.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
@@ -3923,7 +4013,7 @@ public:
 	 * \brief Source term computation.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
@@ -3934,7 +4024,8 @@ public:
 	 * \brief Impose the Navier-Stokes wall boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -3945,7 +4036,8 @@ public:
 	 * \brief Impose the Far Field boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -3956,7 +4048,8 @@ public:
 	 * \brief Impose the inlet boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] conv_numerics - Description of the numerical method.
+	 * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -3967,7 +4060,8 @@ public:
 	 * \brief Impose the outlet boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] conv_numerics - Description of the numerical method.
+	 * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -3979,7 +4073,8 @@ public:
 	 * \brief Impose the symmetry condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] conv_numerics - Description of the numerical method.
+	 * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -4010,7 +4105,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Campos, F. Palacios, T. Economon
- * \version 3.2.3 "eagle"
+ * \version 3.2.4 "eagle"
  */
 
 class CTurbSSTSolver: public CTurbSolver {
@@ -4061,7 +4156,7 @@ public:
 	 * \brief Source term computation.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
@@ -4072,7 +4167,7 @@ public:
 	 * \brief Source term computation.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
@@ -4083,7 +4178,8 @@ public:
 	 * \brief Impose the Navier-Stokes wall boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] conv_numerics - Description of the numerical method.
+	 * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -4094,7 +4190,8 @@ public:
 	 * \brief Impose the Navier-Stokes wall boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] conv_numerics - Description of the numerical method.
+	 * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -4105,7 +4202,8 @@ public:
 	 * \brief Impose the Far Field boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] conv_numerics - Description of the numerical method.
+	 * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -4116,7 +4214,8 @@ public:
 	 * \brief Impose the inlet boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] conv_numerics - Description of the numerical method.
+	 * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -4127,7 +4226,8 @@ public:
 	 * \brief Impose the outlet boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] conv_numerics - Description of the numerical method.
+	 * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -4148,7 +4248,7 @@ public:
  * \brief Main class for defining the Euler's adjoint flow solver.
  * \ingroup Euler_Equations
  * \author F. Palacios.
- * \version 3.2.3 "eagle"
+ * \version 3.2.4 "eagle"
  */
 class CAdjEulerSolver : public CSolver {
 protected:
@@ -4199,6 +4299,17 @@ public:
 	virtual ~CAdjEulerSolver(void);
     
   /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] Iteration - Index of the current iteration.
+   */
+  void SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+                              unsigned short iMesh, unsigned long Iteration);
+
+	/*!
 	 * \brief Impose the send-receive boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
@@ -4231,7 +4342,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solution - Container vector with all the solutions.
 	 */
-	void GetNacelle_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
+	void GetEngine_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
   
 	/*!
 	 * \brief Created the force projection vector for adjoint boundary conditions.
@@ -4272,7 +4383,7 @@ public:
 	 * \brief Compute the spatial integration using a centered scheme for the adjoint equations.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
@@ -4284,7 +4395,7 @@ public:
 	 * \brief Compute the spatial integration using a upwind scheme.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
@@ -4295,7 +4406,7 @@ public:
 	 * \brief Source term integration.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
@@ -4306,7 +4417,7 @@ public:
 	 * \brief Source term integration.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
@@ -4347,7 +4458,7 @@ public:
 	 * \brief Impose via the residual the adjoint Euler wall boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -4358,7 +4469,7 @@ public:
 	 * \brief Impose via the residual the interface adjoint boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -4369,7 +4480,7 @@ public:
 	 * \brief Impose via the residual the near-field adjoint boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -4380,7 +4491,8 @@ public:
 	 * \brief Impose via the residual the adjoint symmetry boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] conv_numerics - Description of the numerical method.
+	 * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -4391,7 +4503,8 @@ public:
 	 * \brief Impose the boundary condition to the far field using characteristics.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] conv_numerics - Description of the numerical method.
+	 * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -4402,18 +4515,32 @@ public:
 	 * \brief Impose the inlet boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] conv_numerics - Description of the numerical method.
+	 * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
 	void BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                   unsigned short val_marker);
     
+
+  /*!
+   * \brief Impose the supersonic inlet boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] solver - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+	void BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
+	              unsigned short val_marker);
+
 	/*!
 	 * \brief Impose the outlet boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] conv_numerics - Description of the numerical method.
+	 * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -4421,25 +4548,39 @@ public:
                    unsigned short val_marker);
     
 	/*!
-	 * \brief Impose the nacelle inflow adjoint boundary condition.
+	 * \brief Impose the engine inflow adjoint boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] conv_numerics - Description of the numerical method.
+	 * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Nacelle_Inflow(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
+	void BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                           CConfig *config, unsigned short val_marker);
-    
+  
+  /*!
+   * \brief Impose the engine bleed adjoint boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Engine_Bleed(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
+                        CConfig *config, unsigned short val_marker);
+  
 	/*!
-	 * \brief Impose the nacelle exhaust boundary condition.
+	 * \brief Impose the engine exhaust boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] conv_numerics - Description of the numerical method.
+	 * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Nacelle_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
+	void BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                            CConfig *config, unsigned short val_marker);
     
 	/*!
@@ -4482,7 +4623,7 @@ public:
 	 * \brief Compute the inviscid sensitivity of the functional.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
@@ -4491,7 +4632,7 @@ public:
 	 * \brief Smooth the inviscid sensitivity of the functional.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void Smooth_Sensitivity(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
@@ -4567,7 +4708,8 @@ public:
 	 * \param[in] ExtIter - External iteration.
 	 */
 	void SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter);
-    
+
+
 };
 
 /*!
@@ -4575,7 +4717,7 @@ public:
  * \brief Main class for defining the Navier-Stokes' adjoint flow solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios.
- * \version 3.2.3 "eagle"
+ * \version 3.2.4 "eagle"
  */
 class CAdjNSSolver : public CAdjEulerSolver {
 public:
@@ -4597,12 +4739,25 @@ public:
 	 * \brief Destructor of the class.
 	 */
 	~CAdjNSSolver(void);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] Iteration - Index of the current iteration.
+   */
+  void SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+                              unsigned short iMesh, unsigned long Iteration);
+
     
 	/*!
 	 * \brief Impose via the residual or brute force the Navier-Stokes adjoint boundary condition (heat flux).
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] conv_numerics - Description of the numerical method.
+	 * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -4613,7 +4768,8 @@ public:
 	 * \brief Impose via the residual or brute force the Navier-Stokes adjoint boundary condition (heat flux).
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] conv_numerics - Description of the numerical method.
+	 * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -4633,7 +4789,7 @@ public:
 	 * \brief Compute the viscous sensitivity of the functional.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
@@ -4642,7 +4798,7 @@ public:
 	 * \brief Compute the viscous residuals for the adjoint equation.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
@@ -4654,7 +4810,7 @@ public:
 	 * \brief Source term computation.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
@@ -4668,7 +4824,7 @@ public:
  * \brief Main class for defining the adjoint turbulence model solver.
  * \ingroup Turbulence_Model
  * \author F. Palacios, A. Bueno.
- * \version 3.2.3 "eagle"
+ * \version 3.2.4 "eagle"
  */
 class CAdjTurbSolver : public CSolver {
 private:
@@ -4723,7 +4879,8 @@ public:
 	 * \brief Impose the Navier-Stokes turbulent adjoint boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] conv_numerics - Description of the numerical method.
+	 * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -4734,7 +4891,8 @@ public:
 	 * \brief Impose an isothermal wall boundary condition (no-slip).
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] conv_numerics - Description of the numerical method.
+	 * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -4745,7 +4903,8 @@ public:
 	 * \brief Impose the boundary condition to the far field using characteristics.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] conv_numerics - Description of the numerical method.
+	 * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -4766,7 +4925,7 @@ public:
 	 * \brief Compute the spatial integration using a upwind scheme.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
@@ -4777,7 +4936,7 @@ public:
 	 * \brief Compute the viscous residuals for the turbulent adjoint equation.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
@@ -4789,7 +4948,7 @@ public:
 	 * \brief Source term computation.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
@@ -4811,7 +4970,7 @@ public:
  * \brief Main class for defining the linearized Euler solver.
  * \ingroup Euler_Equations
  * \author F. Palacios.
- * \version 3.2.3 "eagle"
+ * \version 3.2.4 "eagle"
  */
 class CLinEulerSolver : public CSolver {
 private:
@@ -4853,7 +5012,7 @@ public:
 	 * \brief Compute the spatial integration using a centered scheme for the linearized equations.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
@@ -4872,7 +5031,7 @@ public:
 	 * \brief Impose via the residual the linearized Euler wall boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -4883,7 +5042,8 @@ public:
 	 * \brief Impose the far-field boundary condition using characteristics.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] conv_numerics - Description of the numerical method.
+	 * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -4934,7 +5094,7 @@ public:
 /*! \class CPoissonSolver
  *  \brief Main class for defining the poisson potential solver.
  *  \author F. Palacios.
- *  \version 3.2.3 "eagle"
+ *  \version 3.2.4 "eagle"
  *  \date May 3, 2010.
  */
 class CPoissonSolver : public CSolver {
@@ -4983,7 +5143,7 @@ public:
 	 * \brief Integrate the Poisson equation using a Galerkin method.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
@@ -5010,7 +5170,6 @@ public:
 	 * \brief Impose via the residual the Dirichlet boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -5020,7 +5179,7 @@ public:
 	 * \brief Impose via the residual the Neumann boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -5040,7 +5199,7 @@ public:
 	 * \brief Source term computation.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
@@ -5051,7 +5210,7 @@ public:
 	 * \brief Source term computation.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
@@ -5071,7 +5230,7 @@ public:
 /*! \class CWaveSolver
  *  \brief Main class for defining the wave solver.
  *  \author F. Palacios.
- *  \version 3.2.3 "eagle"
+ *  \version 3.2.4 "eagle"
  *  \date May 3, 2010.
  */
 class CWaveSolver : public CSolver {
@@ -5109,7 +5268,7 @@ public:
 	 * \brief Integrate the Poisson equation using a Galerkin method.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
@@ -5120,7 +5279,7 @@ public:
 	 * \brief Impose via the residual the Euler wall boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -5131,7 +5290,8 @@ public:
 	 * \brief Impose a Dirichlet boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] conv_numerics - Description of the numerical method.
+	 * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -5152,7 +5312,7 @@ public:
 	 * \brief Source term computation.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
@@ -5163,7 +5323,7 @@ public:
 	 * \brief Source term computation.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
@@ -5210,7 +5370,6 @@ public:
 	 * \brief Build stiffness matrix in space.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
 	void SetSpace_Matrix(CGeometry *geometry,
                          CConfig   *config);
@@ -5226,7 +5385,7 @@ public:
 /*! \class CHeatSolver
  *  \brief Main class for defining the heat solver.
  *  \author F. Palacios.
- *  \version 3.2.3 "eagle"
+ *  \version 3.2.4 "eagle"
  *  \date May 3, 2010.
  */
 class CHeatSolver : public CSolver {
@@ -5264,7 +5423,7 @@ public:
 	 * \brief Integrate the Poisson equation using a Galerkin method.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
@@ -5275,7 +5434,8 @@ public:
 	 * \brief Impose via the residual or brute force the Navier-Stokes adjoint boundary condition (heat flux).
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] conv_numerics - Description of the numerical method.
+	 * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -5286,7 +5446,8 @@ public:
 	 * \brief Impose via the residual or brute force the Navier-Stokes adjoint boundary condition (heat flux).
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] conv_numerics - Description of the numerical method.
+	 * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -5306,7 +5467,7 @@ public:
 	 * \brief Source term computation.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
@@ -5344,7 +5505,7 @@ public:
 /*! \class CFEASolver
  *  \brief Main class for defining the FEA solver.
  *  \author F. Palacios.
- *  \version 3.2.3 "eagle"
+ *  \version 3.2.4 "eagle"
  *  \date May 3, 2010.
  */
 class CFEASolver : public CSolver {
@@ -5380,7 +5541,7 @@ public:
 	 * \brief Integrate the Poisson equation using a Galerkin method.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
@@ -5391,7 +5552,7 @@ public:
 	 * \brief Impose a displacement (constraint) boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -5402,7 +5563,7 @@ public:
 	 * \brief Impose a load boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -5413,7 +5574,7 @@ public:
 	 * \brief Impose a load boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -5424,7 +5585,7 @@ public:
 	 * \brief Impose a load boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -5454,7 +5615,7 @@ public:
 	 * \brief Source term computation.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
@@ -5524,7 +5685,7 @@ public:
  * \brief Main class for defining the level set solver.
  * \ingroup LevelSet_Model
  * \author F. Palacios.
- * \version 3.2.3 "eagle"
+ * \version 3.2.4 "eagle"
  */
 class CAdjLevelSetSolver : public CSolver {
 protected:
@@ -5571,7 +5732,8 @@ public:
 	 * \brief Impose the Symmetry Plane boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] conv_numerics - Description of the numerical method.
+	 * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -5600,7 +5762,7 @@ public:
 	 * \brief Compute the spatial integration using a upwind scheme.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
@@ -5611,7 +5773,7 @@ public:
 	 * \brief Source term computation.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
@@ -5622,7 +5784,7 @@ public:
 	 * \brief Source term computation.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
@@ -5633,7 +5795,7 @@ public:
 	 * \brief Impose via the residual the Euler wall boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -5644,7 +5806,8 @@ public:
 	 * \brief Impose the Navier-Stokes wall boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] conv_numerics - Description of the numerical method.
+	 * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -5655,7 +5818,8 @@ public:
 	 * \brief Impose the Far Field boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] conv_numerics - Description of the numerical method.
+	 * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -5666,7 +5830,8 @@ public:
 	 * \brief Impose the Far Field boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] conv_numerics - Description of the numerical method.
+	 * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -5677,7 +5842,8 @@ public:
 	 * \brief Impose the Far Field boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] conv_numerics - Description of the numerical method.
+	 * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -5703,7 +5869,7 @@ public:
  * \brief Main class for defining the template model solver.
  * \ingroup Template_Flow_Equation
  * \author F. Palacios.
- * \version 3.2.3 "eagle"
+ * \version 3.2.4 "eagle"
  */
 class CTemplateSolver : public CSolver {
 private:
@@ -5752,7 +5918,7 @@ public:
 	 * \brief Compute the spatial integration using a centered scheme.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
@@ -5764,7 +5930,7 @@ public:
 	 * \brief Compute the spatial integration using a upwind scheme.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
@@ -5775,7 +5941,7 @@ public:
 	 * \brief Source term integration.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
@@ -5786,7 +5952,7 @@ public:
 	 * \brief Source term integration.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
@@ -5797,7 +5963,7 @@ public:
 	 * \brief Impose via the residual the Euler wall boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -5808,7 +5974,8 @@ public:
 	 * \brief Impose the Navier-Stokes boundary condition (strong).
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] conv_numerics - Description of the numerical method.
+	 * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -5819,7 +5986,8 @@ public:
 	 * \brief Impose the far-field boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] conv_numerics - Description of the numerical method.
+	 * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -5830,7 +5998,8 @@ public:
 	 * \brief Impose the inlet boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] conv_numerics - Description of the numerical method.
+	 * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -5841,7 +6010,8 @@ public:
 	 * \brief Impose the outlet boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] conv_numerics - Description of the numerical method.
+	 * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -5852,7 +6022,8 @@ public:
 	 * \brief Impose the symmetry plane boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] conv_numerics - Description of the numerical method.
+	 * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -5863,7 +6034,7 @@ public:
 	 * \brief Impose the dirichlet boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -6149,7 +6320,7 @@ public:
 	 * \brief Compute the spatial integration using a upwind scheme.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
@@ -6433,7 +6604,7 @@ public:
   
   /*!
 	 * \brief Store the total heat load.
-	 * \param[in] val_Total_Heat - Value of the heat load.
+	 * \param[in] val_Total_HeatMax - Value of the heat load.
 	 */
 	void SetTotal_MaxHeatFlux(double val_Total_MaxHeat);
   
@@ -6867,7 +7038,7 @@ public:
 	 * \brief Compute the spatial integration using a centered scheme for the adjoint equations.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
@@ -6879,7 +7050,7 @@ public:
 	 * \brief Compute the spatial integration using a upwind scheme.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
@@ -6890,7 +7061,7 @@ public:
 	 * \brief Source term integration.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
@@ -6915,7 +7086,7 @@ public:
 	 * \brief Impose via the residual the adjoint Euler wall boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -6926,7 +7097,8 @@ public:
 	 * \brief Impose via the residual the adjoint symmetry boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] conv_numerics - Description of the numerical method.
+	 * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -6937,7 +7109,8 @@ public:
 	 * \brief Impose the boundary condition to the far field using characteristics.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] conv_numerics - Description of the numerical method.
+	 * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -6974,7 +7147,7 @@ public:
 	 * \brief Compute the inviscid sensitivity of the functional.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
@@ -7073,7 +7246,8 @@ public:
 	 * \brief Impose via the residual or brute force the Navier-Stokes adjoint boundary condition (heat flux).
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] conv_numerics - Description of the numerical method.
+	 * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -7084,7 +7258,8 @@ public:
 	 * \brief Impose via the residual or brute force the Navier-Stokes adjoint boundary condition (heat flux).
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] conv_numerics - Description of the numerical method.
+	 * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
@@ -7104,7 +7279,7 @@ public:
 	 * \brief Compute the viscous sensitivity of the functional.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
@@ -7113,7 +7288,7 @@ public:
 	 * \brief Compute the viscous residuals for the adjoint equation.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
@@ -7125,7 +7300,7 @@ public:
 	 * \brief Source term computation.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */

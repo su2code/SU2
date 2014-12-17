@@ -42,7 +42,7 @@ using namespace std;
  * \brief Main class for defining the Thermo-Physical Model
  * a child class for each particular Model (Ideal-Gas, Van der Waals, etc.)
  * \author: S.Vitale, G.Gori, M.Pini
- * \version 3.2.3 "eagle"
+ * \version 3.2.4 "eagle"
  */
 class CFluidModel {
 protected:
@@ -55,10 +55,17 @@ double   	 StaticEnergy,			/*!< \brief Internal Energy. */
 			 dPdrho_e, 				/*!< \brief DpDd_e. */
 			 dPde_rho, 				/*!< \brief DpDe_d. */
 			 dTdrho_e, 				/*!< \brief DTDd_e. */
-			 dTde_rho; 				/*!< \brief DTDe_d. */
+			 dTde_rho, 				/*!< \brief DTDe_d. */
+             Cp,                    /*!< \brief Specific Heat Capacity at constant pressure. */
+			 Mu,					/*!< \brief Specific Heat Capacity at constant pressure. */
+		     dmudrho_T, 			/*!< \brief Specific Heat Capacity at constant pressure. */
+		     dmudT_rho,				/*!< \brief Specific Heat Capacity at constant pressure. */
+		     Kt,					/*!< \brief Specific Heat Capacity at constant pressure. */
+		     dktdrho_T, 			/*!< \brief Specific Heat Capacity at constant pressure. */
+		     dktdT_rho;				/*!< \brief Specific Heat Capacity at constant pressure. */
 
-CViscosityModel *DynamicViscosity;	              /*!< \brief Viscosity */
-CThermalConductivityModel *ThermalConductivity;	  /*!< \brief Thermal Conductivity */
+CViscosityModel *LaminarViscosity;	          /*!< \brief Laminar Viscosity Model */
+CConductivityModel *ThermalConductivity;	  /*!< \brief Thermal Conductivity Model */
 
 public:
 
@@ -108,16 +115,21 @@ public:
 		double GetSoundSpeed2 ();
 
 		/*!
+		 * \brief Get fluid specific heat at constant pressure.
+		 */
+		double GetCp ();
+
+		/*!
 		 * \brief Get fluid dynamic viscosity
 		 */
 
-		double GetLaminarViscosity (double T, double rho);
+		double GetLaminarViscosity ();
 
 		/*!
 		 * \brief Get fluid thermal conductivity
 		 */
 
-		double GetThermalConductivity (double par1, double par2);
+		double GetThermalConductivity ();
 
 		/*!
 		 * \brief Get fluid pressure partial derivative.
@@ -162,7 +174,7 @@ public:
 		/*!
 		 * \brief Set viscosity model.
 		 */
-		void SetViscosityModel (CConfig *config);
+		void SetLaminarViscosityModel (CConfig *config);
 
 		/*!
 		 * \brief Set thermal conductivity model.
@@ -232,7 +244,7 @@ public:
  * \class CIdealGas
  * \brief Child class for defining ideal gas model.
  * \author: S.Vitale, M.Pini.
- * \version 3.2.3 "eagle"
+ * \version 3.2.4 "eagle"
  */
 class CIdealGas : public CFluidModel {
 
@@ -318,16 +330,16 @@ public:
 
 
 /*!
- * \derived class CVanDerWaalsGas
+ * derived class CVanDerWaalsGas
  * \brief Child class for defining the Van der Waals model.
  * \author: S.Vitale, M.Pini
- * \version 3.2.3 "eagle"
+ * \version 3.2.4 "eagle"
  */
 class CVanDerWaalsGas : public CIdealGas {
 
 protected:
 	double
-			a, b;   					/*!< \brief Parameters for the Dimensionless Equation. */
+			a, b, Zed;   					/*!< \brief Parameters for the Dimensionless Equation. */
 
 public:
 
@@ -366,7 +378,6 @@ public:
 		 * \param[in] P - first thermodynamic variable.
 		 * \param[in] rho - second thermodynamic variable.
 		 */
-
 		void SetTDState_Prho (double P, double rho );
 
 		/*!
@@ -374,14 +385,12 @@ public:
 		 * \param[in] P - first thermodynamic variable.
 		 * \param[in] rho - second thermodynamic variable.
 		 */
-
 		void SetEnergy_Prho (double P, double rho );
 
 		/*!
 		 * \brief virtual member that would be different for each gas model implemented
-		 * \param[in] InputSpec - Input pair for FLP calls ("hs").
-		 * \param[in] th1 - first thermodynamic variable (h).
-		 * \param[in] th2 - second thermodynamic variable (s).
+		 * \param[in] h - first thermodynamic variable (h).
+		 * \param[in] s - second thermodynamic variable (s).
 		 *
 		 */
 		void SetTDState_hs (double h, double s );
@@ -389,9 +398,8 @@ public:
 
 		/*!
 		 * \brief virtual member that would be different for each gas model implemented
-		 * \param[in] InputSpec - Input pair for FLP calls ("rhoT").
-		 * \param[in] th1 - first thermodynamic variable (rho).
-		 * \param[in] th2 - second thermodynamic variable (T).
+		 * \param[in] rho - first thermodynamic variable (rho).
+		 * \param[in] T - second thermodynamic variable (T).
 		 *
 		 */
 		void SetTDState_rhoT (double rho, double T );
@@ -403,23 +411,31 @@ public:
  * \derived class CPengRobinson
  * \brief Child class for defining the Peng-Robinson model.
  * \author: S.Vitale, G. Gori
- * \version 3.2.3 "eagle"
+ * \version 3.2.4 "eagle"
  */
 class CPengRobinson : public CIdealGas {
     
 protected:
-    double  a, 						/*!< \brief model parameter. */
-    b, 						/*!< \brief model parameter. */
-    k, 						/*!< \brief model parameter (computed with acentric factor). */
-    TstarCrit;				/*!< \brief Critical temperature. */
-    
+	double  a, 						/*!< \brief model parameter. */
+    		b, 						/*!< \brief model parameter. */
+    		k, 						/*!< \brief model parameter (computed with acentric factor). */
+    		Zed, 						/*!< \brief compressibility factor. */
+    		TstarCrit;				/*!< \brief Critical temperature. */
+
 private:
     
-    /*!
-	    * \brief Internal model parameter.
-	    */
-    double  alpha2 (double T);
+   /*!
+	* \brief Internal model parameter.
+    */
+	double  alpha2 (double T);
     
+
+   /*!
+	* \brief Internal model parameter.
+	*/
+	double  T_v_h (double v, double h);
+
+
 public:
     
     /*!
@@ -524,7 +540,7 @@ public:
     /*!
      * \brief Constructor of the class.
      */
-    CFluidProp(string thermolib, int ncomp, string* comp, double* conc);
+    CFluidProp(string thermolib, int ncomp, string* comp, double* conc, double T_ref, double P_ref, double rho_ref);
     
     /*!
      * \brief Destructor of the class.

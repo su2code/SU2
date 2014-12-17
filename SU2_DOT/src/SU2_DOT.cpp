@@ -2,7 +2,7 @@
  * \file SU2_DOT.cpp
  * \brief Main file of the Gradient Projection Code (SU2_DOT).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.3 "eagle"
+ * \version 3.2.4 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -137,6 +137,7 @@ int main(int argc, char *argv[]) {
     /*--- Free Form deformation based ---*/
     
     if ((config->GetDesign_Variable(iDV) == FFD_CONTROL_POINT_2D) ||
+        (config->GetDesign_Variable(iDV) == FFD_RADIUS_2D) ||
         (config->GetDesign_Variable(iDV) == FFD_CAMBER_2D) ||
         (config->GetDesign_Variable(iDV) == FFD_THICKNESS_2D) ||
         (config->GetDesign_Variable(iDV) == FFD_CONTROL_POINT) ||
@@ -180,6 +181,7 @@ int main(int argc, char *argv[]) {
         
         switch ( config->GetDesign_Variable(iDV) ) {
           case FFD_CONTROL_POINT_2D : surface_mov->SetFFDCPChange_2D(boundary, config, FFDBox[iFFDBox], iDV, true); break;
+          case FFD_RADIUS_2D :       surface_mov->SetFFDCPChange_2D_rad(boundary, config, FFDBox[iFFDBox], iDV, true); break;
           case FFD_CAMBER_2D :        surface_mov->SetFFDCamber_2D(boundary, config, FFDBox[iFFDBox], iDV, true); break;
           case FFD_THICKNESS_2D :     surface_mov->SetFFDThickness_2D(boundary, config, FFDBox[iFFDBox], iDV, true); break;
           case FFD_CONTROL_POINT :    surface_mov->SetFFDCPChange(boundary, config, FFDBox[iFFDBox], iDV, true); break;
@@ -403,6 +405,9 @@ int main(int argc, char *argv[]) {
 				case FREE_SURFACE :
 					if (iDV == 0) Gradient_file << "Free-Surface grad. using cont. adj."<< endl;
 					cout << "Free-surface gradient: "<< Gradient << "." << endl; break;
+        case MASS_FLOW_RATE :
+          if (iDV == 0) Gradient_file << "Mass flow rate grad. using cont. adj."<< endl;
+          cout << "Mass flow rate gradient: "<< Gradient << "." << endl; break;
 			}
 			
 			Gradient_file << Gradient << endl;

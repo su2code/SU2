@@ -2,7 +2,7 @@
  * \file geometry_structure.cpp
  * \brief Main subroutines for creating the primal grid and multigrid structure.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.3 "eagle"
+ * \version 3.2.4 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -1167,12 +1167,15 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
         }
         node[iPoint]->SetCoord(NewCoord);
       }
-      if (config->GetMesh_Output()) {
-        SetMeshFile(config, config->GetMesh_Out_FileName());
-        cout.precision(4);
-        cout << "Scaled mesh by a factor of " << Mesh_Scale_Change << endl;
-        cout << " and wrote to the output file: " << config->GetMesh_Out_FileName() << endl;
-      }
+    }
+    
+    /*--- Output the grid using SU2 format ---*/
+
+    if (config->GetMesh_Output()) {
+      SetMeshFile(config, config->GetMesh_Out_FileName());
+      cout.precision(4);
+      cout << "Scaled mesh by a factor of " << Mesh_Scale_Change << endl;
+      cout << " and wrote to the output file: " << config->GetMesh_Out_FileName() << endl;
     }
     
     /*--- The US system uses feet, but SU2 assumes that the grid is in inches ---*/
@@ -1184,8 +1187,6 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
         }
         node[iPoint]->SetCoord(NewCoord);
       }
-      
-      
     }
     
   }
@@ -4388,9 +4389,6 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
               case PYRA_5:
                 VTK_Type = 14;
                 break;
-              default:
-                VTK_Type = -1;
-                break;
             }
             
             /*--- Transfer the nodes for this element. ---*/
@@ -4534,7 +4532,6 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
                 case HEXA_8: VTK_Type = 12; break;
                 case PENTA_6: VTK_Type = 13; break;
                 case PYRA_5: VTK_Type = 14; break;
-                default: VTK_Type = -1; break;
               }
               /*--- Transfer the nodes for this element. ---*/
               for ( int j = 1; j < npe+1; j++ ) {
@@ -5683,9 +5680,9 @@ void CPhysicalGeometry::SetPoint_Connectivity(void) {
 }
 
 void CPhysicalGeometry::SetRCM_Ordering(CConfig *config) {
-  unsigned long iPoint, AdjPoint, AuxPoint, AddPoint, iElem;
+  unsigned long iPoint, AdjPoint, AuxPoint, AddPoint, iElem, iNode, jNode;
   vector<unsigned long> Queue, AuxQueue, Result;
-  unsigned short Degree, MinDegree, iNode, jNode, iDim, iMarker;
+  unsigned short Degree, MinDegree, iDim, iMarker;
   bool *inQueue;
   
   inQueue = new bool [nPoint];
@@ -5721,29 +5718,35 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig *config) {
       }
     }
     
-    /*--- Sort the auxiliar queue based on the number of neighbors ---*/
-    
-    for (iNode = 0; iNode < AuxQueue.size(); iNode++) {
-      for (jNode = 0; jNode < AuxQueue.size() - 1 - iNode; jNode++) {
-        if (node[AuxQueue[jNode]]->GetnPoint() > node[AuxQueue[jNode+1]]->GetnPoint()) {
-          AuxPoint = AuxQueue[jNode];
-          AuxQueue[jNode] = AuxQueue[jNode+1];
-          AuxQueue[jNode+1] = AuxPoint;
+    if (AuxQueue.size() != 0) {
+      
+      /*--- Sort the auxiliar queue based on the number of neighbors ---*/
+      
+      for (iNode = 0; iNode < AuxQueue.size(); iNode++) {
+        for (jNode = 0; jNode < AuxQueue.size() - 1 - iNode; jNode++) {
+          if (node[AuxQueue[jNode]]->GetnPoint() > node[AuxQueue[jNode+1]]->GetnPoint()) {
+            AuxPoint = AuxQueue[jNode];
+            AuxQueue[jNode] = AuxQueue[jNode+1];
+            AuxQueue[jNode+1] = AuxPoint;
+          }
         }
       }
-    }
-    
-    Queue.insert(Queue.end(), AuxQueue.begin(), AuxQueue.end());
-    for (iNode = 0; iNode < AuxQueue.size(); iNode++) {
-      inQueue[AuxQueue[iNode]] = true;
+      
+      Queue.insert(Queue.end(), AuxQueue.begin(), AuxQueue.end());
+      for (iNode = 0; iNode < AuxQueue.size(); iNode++) {
+        inQueue[AuxQueue[iNode]] = true;
+      }
+      
     }
     
     /*--- Extract the first node from the queue and add it in the first free
      position. ---*/
     
-    AddPoint = Queue[0];
-    Result.push_back(Queue[0]);
-    Queue.erase (Queue.begin(), Queue.begin()+1);
+    if (Queue.size() != 0) {
+      AddPoint = Queue[0];
+      Result.push_back(Queue[0]);
+      Queue.erase (Queue.begin(), Queue.begin()+1);
+    }
     
     /*--- Add to the queue all the nodes adjacent in the increasing
      order of their degree, checking if the element is already
@@ -7663,7 +7666,7 @@ void CPhysicalGeometry::SetBoundTecPlot(char mesh_filename[MAX_STRING_SIZE], boo
   unsigned long iPoint, Total_nElem_Bound, iElem, *PointSurface = NULL, nPointSurface = 0;
   unsigned short Coord_i, iMarker;
   
-  /*--- It is important to do a renumering to don't add points
+  /*--- It is important to do a renumbering to don't add points
    that do not belong to the surfaces ---*/
   
   PointSurface = new unsigned long[nPoint];
@@ -9305,6 +9308,94 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry ***geometry, CConfig **config_c
   
   nPointDomain = Index_CoarseCV;
   
+  /*--- Check that there are no hanging nodes ---*/
+  
+  unsigned long iFinePoint, iFinePoint_Neighbor, iCoarsePoint, iCoarsePoint_Complete;
+  unsigned short iChildren;
+  
+  /*--- Find the point surrounding a point ---*/
+  
+  for (iCoarsePoint = 0; iCoarsePoint < nPointDomain; iCoarsePoint ++) {
+    for (iChildren = 0; iChildren <  node[iCoarsePoint]->GetnChildren_CV(); iChildren ++) {
+      iFinePoint = node[iCoarsePoint]->GetChildren_CV(iChildren);
+      for (iNode = 0; iNode < fine_grid->node[iFinePoint]->GetnPoint(); iNode ++) {
+        iFinePoint_Neighbor = fine_grid->node[iFinePoint]->GetPoint(iNode);
+        iParent = fine_grid->node[iFinePoint_Neighbor]->GetParent_CV();
+        if (iParent != iCoarsePoint) node[iCoarsePoint]->SetPoint(iParent);
+      }
+    }
+  }
+  
+  /*--- Detect isolated points and merge them with its correct neighbor ---*/
+  
+  for (iCoarsePoint = 0; iCoarsePoint < nPointDomain; iCoarsePoint ++) {
+    
+    if (node[iCoarsePoint]->GetnPoint() == 1) {
+      
+      /*--- Find the neighbor of the isolated point. This neighbor is the right control volume ---*/
+      
+      iCoarsePoint_Complete = node[iCoarsePoint]->GetPoint(0);
+      
+      /*--- Add the children to the connected control volume (and modify it parent indexing).
+       Identify the child CV from the finest grid and added to the correct control volume.
+       Set the parent CV of iFinePoint. Instead of using the original
+       (iCoarsePoint) one use the new one (iCoarsePoint_Complete) ---*/
+      
+      nChildren = node[iCoarsePoint_Complete]->GetnChildren_CV();
+      
+      for (iChildren = 0; iChildren <  node[iCoarsePoint]->GetnChildren_CV(); iChildren ++) {
+        iFinePoint = node[iCoarsePoint]->GetChildren_CV(iChildren);
+        node[iCoarsePoint_Complete]->SetChildren_CV(nChildren, iFinePoint);
+        nChildren++;
+        fine_grid->node[iFinePoint]->SetParent_CV(iCoarsePoint_Complete);
+      }
+      
+      /*--- Update the number of children control volumes ---*/
+      
+      node[iCoarsePoint_Complete]->SetnChildren_CV(nChildren);
+      node[iCoarsePoint]->SetnChildren_CV(0);
+      
+    }
+  }
+  
+  //  unsigned long iPointFree = nPointDomain-1;
+  //  iCoarsePoint = 0;
+  //
+  //  do {
+  //
+  //    if (node[iCoarsePoint]->GetnChildren_CV() == 0) {
+  //
+  //      while (node[iPointFree]->GetnChildren_CV() == 0) {
+  //        Index_CoarseCV--;
+  //        iPointFree--;
+  //      }
+  //
+  //      nChildren = node[iPointFree]->GetnChildren_CV();
+  //      for (iChildren = 0; iChildren <  nChildren; iChildren ++) {
+  //        iFinePoint = node[iPointFree]->GetChildren_CV(iChildren);
+  //        node[iCoarsePoint]->SetChildren_CV(iChildren, iFinePoint);
+  //        fine_grid->node[iFinePoint]->SetParent_CV(iCoarsePoint);
+  //      }
+  //      node[iCoarsePoint]->SetnChildren_CV(nChildren);
+  //      node[iPointFree]->SetnChildren_CV(0);
+  //
+  //      Index_CoarseCV--;
+  //      iPointFree--;
+  //
+  //    }
+  //
+  //    iCoarsePoint++;
+  //
+  //  } while ((iCoarsePoint-1) < Index_CoarseCV);
+  //
+  //  nPointDomain = Index_CoarseCV;
+  
+  /*--- Reset the point surrounding a point ---*/
+  
+  for (iCoarsePoint = 0; iCoarsePoint < nPointDomain; iCoarsePoint ++) {
+    node[iCoarsePoint]->ResetPoint();
+  }
+  
   /*--- Dealing with MPI parallelization, the objective is that the received nodes must be agglomerated
    in the same way as the donor nodes. Send the node agglomeration information of the donor
    (parent and children), Sending only occurs with MPI ---*/
@@ -9437,8 +9528,6 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry ***geometry, CConfig **config_c
   
   /*--- Console output with the summary of the agglomeration ---*/
   
-  
-  
   Local_nPointCoarse = nPoint;
   Local_nPointFine = fine_grid->GetnPoint();
   
@@ -9450,12 +9539,12 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry ***geometry, CConfig **config_c
   Global_nPointFine = Local_nPointFine;
 #endif
   
-  double Coeff = 1.0, CFL = 0.0;
+  double Coeff = 1.0, CFL = 0.0, factor = 1.5;
   
   if (iMesh != MESH_0) {
     if (nDim == 2) Coeff = pow(double(Global_nPointFine)/double(Global_nPointCoarse), 1./2.);
     if (nDim == 3) Coeff = pow(double(Global_nPointFine)/double(Global_nPointCoarse), 1./3.);
-    CFL = config->GetCFL(iMesh-1)/Coeff;
+    CFL = factor*config->GetCFL(iMesh-1)/Coeff;
     config->SetCFL(iMesh, CFL);
   }
   
@@ -9466,7 +9555,10 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry ***geometry, CConfig **config_c
     config->SetMGLevels(iMesh-1);
   }
   else {
-    if (rank == MASTER_NODE) cout <<"MG level: "<< iMesh <<"-> CVs: " << Global_nPointCoarse << ". Agglomeration rate 1/" << ratio <<". CFL "<< CFL <<"." << endl;
+    if (rank == MASTER_NODE) {
+      if (iMesh == 1) cout <<"MG level: "<< iMesh-1 <<"-> CVs: " << Global_nPointFine << ". Agglomeration rate 1/1.00. CFL "<< config->GetCFL(iMesh-1) <<"." << endl;
+      cout <<"MG level: "<< iMesh <<"-> CVs: " << Global_nPointCoarse << ". Agglomeration rate 1/" << ratio <<". CFL "<< CFL <<"." << endl;
+    }
   }
   
 }
@@ -9722,12 +9814,13 @@ void CMultiGridGeometry::SetSuitableNeighbors(vector<unsigned long> *Suitable_In
 }
 
 void CMultiGridGeometry::SetPoint_Connectivity(CGeometry *fine_grid) {
+  
   unsigned long iFinePoint, iFinePoint_Neighbor, iParent, iCoarsePoint;
   unsigned short iChildren, iNode;
   
-  /*--- Set the point suronfding a point ---*/
+  /*--- Set the point surrounding a point ---*/
   
-  for (iCoarsePoint = 0; iCoarsePoint < nPoint; iCoarsePoint ++)
+  for (iCoarsePoint = 0; iCoarsePoint < nPoint; iCoarsePoint ++) {
     for (iChildren = 0; iChildren <  node[iCoarsePoint]->GetnChildren_CV(); iChildren ++) {
       iFinePoint = node[iCoarsePoint]->GetChildren_CV(iChildren);
       for (iNode = 0; iNode < fine_grid->node[iFinePoint]->GetnPoint(); iNode ++) {
@@ -9736,6 +9829,7 @@ void CMultiGridGeometry::SetPoint_Connectivity(CGeometry *fine_grid) {
         if (iParent != iCoarsePoint) node[iCoarsePoint]->SetPoint(iParent);
       }
     }
+  }
   
   /*--- Set the number of neighbors variable, this is
    important for JST and multigrid in parallel ---*/
@@ -9919,7 +10013,7 @@ void CMultiGridGeometry::MatchInterface(CConfig *config) {
 
 void CMultiGridGeometry::SetControlVolume(CConfig *config, CGeometry *fine_grid, unsigned short action) {
   
-  unsigned long iFinePoint,iFinePoint_Neighbor, iCoarsePoint, iEdge, iParent, iPoint, jPoint;
+  unsigned long iFinePoint,iFinePoint_Neighbor, iCoarsePoint, iEdge, iParent;
   long FineEdge, CoarseEdge;
   unsigned short iChildren, iNode, iDim;
   bool change_face_orientation;
@@ -9973,16 +10067,8 @@ void CMultiGridGeometry::SetControlVolume(CConfig *config, CGeometry *fine_grid,
     }
   delete[] Normal;
   
-  /*--- Check if there isn't any element with only one neighbor...
-   a CV that is inside another CV ---*/
-  for (iPoint = 0; iPoint < nPoint; iPoint ++) {
-    if (node[iPoint]->GetnPoint() == 1) {
-      jPoint = node[iPoint]->GetPoint(0);
-      node[jPoint]->AddVolume(node[iPoint]->GetVolume());
-    }
-  }
-  
   /*--- Check if there is a normal with null area ---*/
+  
   for (iEdge = 0; iEdge < nEdge; iEdge++) {
     NormalFace = edge[iEdge]->GetNormal();
     Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += NormalFace[iDim]*NormalFace[iDim];

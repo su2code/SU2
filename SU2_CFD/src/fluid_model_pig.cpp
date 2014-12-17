@@ -2,7 +2,7 @@
  * fluid_model_pig.cpp
  * \brief Source of the ideal gas model.
  * \author: S.Vitale, G.Gori, M.Pini, A.Guardone, P.Colonna
- * \version 3.2.3 "eagle"
+ * \version 3.2.4 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -27,6 +27,7 @@ CIdealGas::CIdealGas() : CFluidModel() {
 	Gamma = 0.0;
 	Gamma_Minus_One = 0.0;
 	Gas_Constant = 0.0;
+	Cp = 0.0;
 }
 
 
@@ -34,8 +35,8 @@ CIdealGas::CIdealGas(double gamma, double R ) : CFluidModel() {
 	Gamma = gamma;
 	Gamma_Minus_One = Gamma - 1.0;
 	Gas_Constant = R;
-
- }
+	Cp = Gamma/Gamma_Minus_One*Gas_Constant;
+}
 
 
 CIdealGas::~CIdealGas(void) {

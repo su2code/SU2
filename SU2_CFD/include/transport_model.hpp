@@ -2,7 +2,7 @@
  * transport_model.hpp
  * \brief Headers of the main transport properties subroutines of the SU2 solvers.
  * \author S.Vitale, M.Pini, G.Gori, A.Guardone, P.Colonna
- * \version 3.2.3 "eagle"
+ * \version 3.2.4 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -84,6 +84,10 @@ public:
 		 */
 		virtual	 void SetViscosity(double T, double rho);
 
+		/*!
+		 * \brief Set Viscosity Derivatives.
+		 */
+		virtual	 void SetDerViscosity(double T, double rho);
 
 };
 
@@ -153,6 +157,54 @@ public:
 		 */
 		void SetViscosity(double T, double rho);
 
+		/*!
+		 * \brief Set Viscosity Derivatives.
+		 */
+		void SetDerViscosity(double T, double rho);
+
+};
+
+
+/*!
+ * \class CFluidPropViscosity
+ * \brief this class defines a viscosity according the Chung method implemented
+ * in FluidProp (Power law, Sutherland, Chung, etc.)
+ * \author T.P. van der Stelt
+ * \version 1.0
+ */
+class CFluidPropViscosity : public CViscosityModel {
+protected:
+	double   	 Mu_ref,		/*!< \brief Internal Energy. */
+				 T_ref, 		/*!< \brief DpDd_e. */
+				 S; 			/*!< \brief DpDe_d. */
+
+public:
+
+		/*!
+		 * \brief Constructor of the class.
+		 */
+	    CFluidPropViscosity(void);
+
+	    /*!
+		 * \brief Constructor of the class.
+		 */
+		CFluidPropViscosity(double mu_ref, double t_ref, double s);
+
+		/*!
+		 * \brief Destructor of the class.
+		 */
+		virtual ~CFluidPropViscosity(void);
+
+		/*!
+		 * \brief Set Viscosity.
+		 */
+		void SetViscosity(double T, double rho);
+
+		/*!
+		 * \brief Set Viscosity Derivatives.
+		 */
+		void SetDerViscosity(double T, double rho);
+
 };
 
 
@@ -163,7 +215,7 @@ public:
  * \author S. Vitale, M. Pini
  * \version 1.0
  */
-class CThermalConductivityModel {
+class CConductivityModel {
 protected:
 double   	 Kt,			/*!< \brief Thermal conductivity. */
 			 dktdrho_T, 	/*!< \brief DktDrho_T. */
@@ -173,33 +225,37 @@ public:
 		/*!
 		 * \brief Constructor of the class.
 		 */
-		CThermalConductivityModel(void);
+		CConductivityModel(void);
 
 		/*!
 		 * \brief Destructor of the class.
 		 */
-		virtual ~CThermalConductivityModel(void);
+		virtual ~CConductivityModel(void);
 
 		/*!
 		 * \brief return viscosity value.
 		 */
-		double GetThermalConductivity(void);
+		double GetConductivity(void);
 
 		/*!
 		 * \brief return viscosity partial derivative value.
 		 */
-		double GetDerThermalConductivity_rho_T(void);
+		double Getdktdrho_T(void);
 
 		/*!
 		 * \brief return viscosity partial derivative value.
 		 */
-		double GetDerThermalConductivity_T_rho(void);
+		double GetdktdT_rho(void);
 
 		/*!
 		 * \brief Set Thermal conductivity.
 		 */
-		virtual	 void SetThermalConductivity(double par1, double par2);
+		virtual	 void SetConductivity(double T, double rho, double mu, double cp);
 
+		/*!
+		 * \brief Set Thermal conductivity derivatives.
+		 */
+		virtual	 void SetDerConductivity(double T, double rho, double dmudrho_T, double dmudT_rho, double cp);
 
 };
 
@@ -210,24 +266,24 @@ public:
  * \author S.Vitale, M.Pini
  * \version 1.0
  */
-class CConstantThermalConductivity : public CThermalConductivityModel {
+class CConstantConductivity : public CConductivityModel {
 
 public:
 
 		/*!
 		 * \brief Constructor of the class.
 		 */
-	    CConstantThermalConductivity(void);
+	    CConstantConductivity(void);
 
 		/*!
 		 * \brief Constructor of the class.
 		 */
-	    CConstantThermalConductivity(double kt_const);
+	    CConstantConductivity(double kt_const);
 
 		/*!
 		 * \brief Destructor of the class.
 		 */
-		virtual ~CConstantThermalConductivity(void);
+		virtual ~CConstantConductivity(void);
 
 };
 
@@ -238,7 +294,7 @@ public:
  * \author S.Vitale, M.Pini
  * \version 1.0
  */
-class CConstantPrandtl : public CThermalConductivityModel {
+class CConstantPrandtl : public CConductivityModel {
 protected:
 	double   	 Pr_const;		/*!< \brief Prandtl's number. */
 
@@ -264,7 +320,53 @@ public:
 		 * \brief par1 -> Cp.
 		 * \brief par2 -> Mu.
 		 */
-		void SetThermalConductivity(double par1, double par2);
+		void SetConductivity(double T, double rho, double mu, double cp);
+
+		/*!
+		 * \brief Set Thermal conductivity derivatives.
+		 */
+		void SetDerConductivity(double T, double rho, double dmudrho_T, double dmudT_rho, double cp);
+
+};
+
+
+/*!
+ * \class CFluidPropConductivity
+ * \brief this class defines a thermal conductivity according the Chung method implemented in FluidProp
+ * \author T.P. van der Stelt
+ */
+class CFluidPropConductivity : public CConductivityModel {
+protected:
+	double   	 Pr_const;		/*!< \brief Prandtl's number. */
+
+public:
+
+		/*!
+		 * \brief Constructor of the class.
+		 */
+	    CFluidPropConductivity(void);
+
+		/*!
+		 * \brief Destructor of the class.
+		 */
+		virtual ~CFluidPropConductivity(void);
+
+		/*!
+		 * \brief Constructor of the class.
+		 */
+	    CFluidPropConductivity(double pr_const);
+
+		/*!
+		 * \brief Set Thermal conductivity.
+		 * \brief par1 -> Cp.
+		 * \brief par2 -> Mu.
+		 */
+		void SetConductivity(double T, double rho, double mu, double cp);
+
+		/*!
+		 * \brief Set Thermal conductivity derivatives.
+		 */
+		void SetDerConductivity(double T, double rho, double dmudrho_T, double dmudT_rho, double cp);
 
 };
 

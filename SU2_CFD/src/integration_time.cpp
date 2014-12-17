@@ -2,7 +2,7 @@
  * \file integration_time.cpp
  * \brief Time deppending numerical method.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.3 "eagle"
+ * \version 3.2.4 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -614,15 +614,14 @@ void CMultiGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSyst
   
 }
 
-void CMultiGridIntegration::SetRestricted_Gradient(unsigned short RunTime_EqSystem, CSolver **sol_fine, CSolver **sol_coarse, CGeometry *geo_fine,
+void CMultiGridIntegration::SetRestricted_Gradient(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine,
                                                    CGeometry *geo_coarse, CConfig *config) {
   unsigned long Point_Fine, Point_Coarse;
   unsigned short iVar, iDim, iChildren;
   double Area_Parent, Area_Children, **Gradient_fine;
   
-  const unsigned short SolContainer_Position = config->GetContainerPosition(RunTime_EqSystem);
   const unsigned short nDim = geo_coarse->GetnDim();
-  const unsigned short nVar = sol_coarse[SolContainer_Position]->GetnVar();
+  const unsigned short nVar = sol_coarse->GetnVar();
   
   double **Gradient = new double* [nVar];
   for (iVar = 0; iVar < nVar; iVar++)
@@ -638,13 +637,13 @@ void CMultiGridIntegration::SetRestricted_Gradient(unsigned short RunTime_EqSyst
     for (iChildren = 0; iChildren < geo_coarse->node[Point_Coarse]->GetnChildren_CV(); iChildren++) {
       Point_Fine = geo_coarse->node[Point_Coarse]->GetChildren_CV(iChildren);
       Area_Children = geo_fine->node[Point_Fine]->GetVolume();
-      Gradient_fine = sol_fine[SolContainer_Position]->node[Point_Fine]->GetGradient();
+      Gradient_fine = sol_fine->node[Point_Fine]->GetGradient();
       
       for (iVar = 0; iVar < nVar; iVar++)
         for (iDim = 0; iDim < nDim; iDim++)
           Gradient[iVar][iDim] += Gradient_fine[iVar][iDim]*Area_Children/Area_Parent;
     }
-    sol_coarse[SolContainer_Position]->node[Point_Coarse]->SetGradient(Gradient);
+    sol_coarse->node[Point_Coarse]->SetGradient(Gradient);
   }
   
   for (iVar = 0; iVar < nVar; iVar++)
@@ -803,7 +802,7 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ***geometry, CSolver
   double monitor = 0.0;
   
   unsigned short SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
-  
+
   /*--- Preprocessing ---*/
   
   solver_container[iZone][MESH_0][SolContainer_Position]->Preprocessing(geometry[iZone][MESH_0], solver_container[iZone][MESH_0], config[iZone], MESH_0, 0, RunTime_EqSystem, false);
@@ -846,21 +845,19 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ***geometry, CSolver
   /*--- Copy the solution to the coarse levels, and run the post-processing ---*/
   
   for (iMesh = 0; iMesh < config[iZone]->GetMGLevels(); iMesh++) {
-    SetRestricted_Solution(RunTime_EqSystem, solver_container[iZone][iMesh], solver_container[iZone][iMesh+1],
-                           geometry[iZone][iMesh], geometry[iZone][iMesh+1], config[iZone]);
+    SetRestricted_Solution(RunTime_EqSystem, solver_container[iZone][iMesh][SolContainer_Position], solver_container[iZone][iMesh+1][SolContainer_Position], geometry[iZone][iMesh], geometry[iZone][iMesh+1], config[iZone]);
     solver_container[iZone][iMesh+1][SolContainer_Position]->Postprocessing(geometry[iZone][iMesh+1],
                                                                             solver_container[iZone][iMesh+1], config[iZone], iMesh+1);
   }
   
 }
 
-void CSingleGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolver **sol_fine, CSolver **sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) {
+void CSingleGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) {
   unsigned long iVertex, Point_Fine, Point_Coarse;
   unsigned short iMarker, iVar, iChildren;
   double Area_Parent, Area_Children, *Solution_Fine, *Solution;
   
-  unsigned short SolContainer_Position = config->GetContainerPosition(RunTime_EqSystem);
-  unsigned short nVar = sol_coarse[SolContainer_Position]->GetnVar();
+  unsigned short nVar = sol_coarse->GetnVar();
   
   Solution = new double[nVar];
   
@@ -875,18 +872,18 @@ void CSingleGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSys
       
       Point_Fine = geo_coarse->node[Point_Coarse]->GetChildren_CV(iChildren);
       Area_Children = geo_fine->node[Point_Fine]->GetVolume();
-      Solution_Fine = sol_fine[SolContainer_Position]->node[Point_Fine]->GetSolution();
+      Solution_Fine = sol_fine->node[Point_Fine]->GetSolution();
       for (iVar = 0; iVar < nVar; iVar++)
         Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
     }
     
-    sol_coarse[SolContainer_Position]->node[Point_Coarse]->SetSolution(Solution);
+    sol_coarse->node[Point_Coarse]->SetSolution(Solution);
     
   }
   
   /*--- MPI the new interpolated solution ---*/
   
-  sol_coarse[SolContainer_Position]->Set_MPI_Solution(geo_coarse, config);
+  sol_coarse->Set_MPI_Solution(geo_coarse, config);
   
   /*--- Update solution at the no slip wall boundary, only the first 
    variable (nu_tilde -in SA- and k -in SST-), to guarantee that the eddy viscoisty 
@@ -902,7 +899,7 @@ void CSingleGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSys
           (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_NONCATALYTIC)) {
         for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
           Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
-          sol_coarse[SolContainer_Position]->node[Point_Coarse]->SetSolutionZero(0);
+          sol_coarse->node[Point_Coarse]->SetSolutionZero(0);
         }
       }
     }
