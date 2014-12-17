@@ -25,7 +25,6 @@
 import os, sys, shutil, copy
 
 from .. import io  as su2io
-from decompose import decompose as su2decomp
 from interface import GEO       as SU2_GEO
 from ..util import ordered_bunch
 
@@ -41,7 +40,6 @@ def geometry ( config , step = 1e-3 ):
             SU2.run.GEO()
             
         Assumptions:
-            Redundant decomposition if config.DECOMPOSED == True
             Performs both function and gradient analysis
                         
         Inputs:
@@ -54,8 +52,7 @@ def geometry ( config , step = 1e-3 ):
                 GRADIENTS
                 
         Updates:
-            config.DECOMPOSED
-            
+        
         Executes in:
             ./
     """
@@ -79,9 +76,6 @@ def geometry ( config , step = 1e-3 ):
     dv_new = step
     konfig.unpack_dvs(dv_new,dv_old)    
     
-    # decompose
-    su2decomp(konfig)
-    
     # Run Solution
     SU2_GEO(konfig)
     
@@ -99,8 +93,5 @@ def geometry ( config , step = 1e-3 ):
     if konfig.GEO_MODE == 'GRADIENT':
         gradients = su2io.tools.read_plot(grad_filename)
         info.GRADIENTS.update( gradients )
-    
-    # update super config
-    config.update({ 'DECOMPOSED' : konfig['DECOMPOSED'] })
-    
+
     return info

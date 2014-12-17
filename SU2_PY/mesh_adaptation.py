@@ -79,9 +79,6 @@ def mesh_adaptation( filename             ,
     # Set the number of partitions for parallel computations
     config.NUMBER_PART = partitions
     
-    # Run SU2_PRT for parallel computations
-    SU2.run.decompose(config)
-
     # Call CFD to generate a solution
     SU2.run.CFD(config)
 

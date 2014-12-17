@@ -119,9 +119,8 @@ def adjoint( func_name, config, state=None ):
         Evaluates the aerodynamics gradients using the 
         adjoint methodology with:
             SU2.eval.func()
-               SU2.run.decompose()
-	       SU2.run.deform()
-               SU2.run.direct()
+	          SU2.run.deform()
+            SU2.run.direct()
             SU2.run.adjoint()
             
         Assumptions:
@@ -377,9 +376,8 @@ def findiff( config, state=None, step=1e-4 ):
         Evaluates the aerodynamics gradients using 
         finite differencing with:
             SU2.eval.func()
-               SU2.run.decompose()
-	       SU2.run.deform()
-               SU2.run.direct()
+	          SU2.run.deform()
+            SU2.run.direct()
         
         Assumptions:
             Config is already setup for deformation.
@@ -564,8 +562,7 @@ def geometry( func_name, config, state=None ):
     """ val = SU2.eval.geometry(config,state=None)
     
         Evaluates geometry with the following:
-            SU2.run.decompose()
-	    SU2.run.deform()
+	          SU2.run.deform()
             SU2.run.geometry()
         
         Assumptions:

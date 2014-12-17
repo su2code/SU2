@@ -39,21 +39,17 @@ def main():
                       help="number of PARTITIONS", metavar="PARTITIONS")
     parser.add_option("-c", "--compute",    dest="compute",    default="True",
                       help="COMPUTE direct and adjoint problem", metavar="COMPUTE")
-    parser.add_option("-d", "--divide_grid",dest="divide_grid",default="True",
-                      help="DIVIDE_GRID the numerical grid", metavar="DIVIDE_GRID")
                       
     (options, args)=parser.parse_args()
     options.partitions  = int( options.partitions )
     options.compute     = options.compute.upper() == 'TRUE'
-    options.divide_grid = options.divide_grid.upper() == 'TRUE'
 
     if options.filename == None:
         raise Exception("No config file provided. Use -f flag")
     
     parallel_computation( options.filename    ,
                           options.partitions  ,
-                          options.compute     ,
-                          options.divide_grid  )
+                          options.compute      )
         
 #: def main()
 
@@ -64,13 +60,11 @@ def main():
 
 def parallel_computation( filename           , 
                           partitions  = 0    , 
-                          compute     = True ,
-                          divide_grid = True  ):
+                          compute     = True  ):
     
     # Config
     config = SU2.io.Config(filename)
     config.NUMBER_PART = partitions
-    config.DECOMPOSED  = not divide_grid
     
     # State
     state = SU2.io.State()

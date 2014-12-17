@@ -21,7 +21,6 @@ run/
 	__init__.py
 	
 	interface.py
-	decompose.py
 	direct.py
 	adjoint.py
 	project.py

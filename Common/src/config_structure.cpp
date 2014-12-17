@@ -2831,10 +2831,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
 void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) {
 
+  /*--- Identify the solvers that work in serial ---*/
+
 #ifndef HAVE_MPI
   nDomain = SINGLE_NODE;
 #else
-  /*--- Identify the solvers that work in serial ---*/
   if (val_software != SU2_MSH)
     MPI_Comm_size(MPI_COMM_WORLD, (int*)&nDomain);   // any issue with type conversion here? MC
   else
@@ -2842,6 +2843,7 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 #endif
 
   /*--- Boundary (marker) treatment ---*/
+  
   nMarker_All = nMarker_Euler + nMarker_FarField + nMarker_SymWall +
   nMarker_PerBound + nMarker_NearFieldBound + nMarker_Supersonic_Inlet +
   nMarker_InterfaceBound + nMarker_Dirichlet + nMarker_Neumann + nMarker_Riemann+ nMarker_Inlet +
@@ -2876,9 +2878,9 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
   iMarker_ActDisk_Inlet, iMarker_ActDisk_Outlet, iMarker_Out_1D;
 
   for (iMarker_All = 0; iMarker_All < nMarker_All; iMarker_All++) {
-    Marker_All_TagBound[iMarker_All] = "SEND_RECEIVE";
+    Marker_All_TagBound[iMarker_All]   = "SEND_RECEIVE";
     Marker_All_SendRecv[iMarker_All]   = 0;
-    Marker_All_KindBC[iMarker_All]   = 0;
+    Marker_All_KindBC[iMarker_All]     = 0;
     Marker_All_Monitoring[iMarker_All] = 0;
     Marker_All_GeoEval[iMarker_All]    = 0;
     Marker_All_Designing[iMarker_All]  = 0;
@@ -2886,7 +2888,7 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
     Marker_All_DV[iMarker_All]         = 0;
     Marker_All_Moving[iMarker_All]     = 0;
     Marker_All_PerBound[iMarker_All]   = 0;
-    Marker_All_Out_1D[iMarker_All]   = 0;
+    Marker_All_Out_1D[iMarker_All]     = 0;
   }
 
   nMarker_Config = nMarker_Euler + nMarker_FarField + nMarker_SymWall +
@@ -4787,42 +4789,6 @@ bool CConfig::TokenizeString(string & str, string & option_name,
   return true;
 }
 
-/*
-bool CConfig::GetPython_Option(string & option_name) {
-
-  bool isPython_Option = false;
-
---- Check option name against all known Python options
-   for a match. These are the design options that are
-   never read by the SU2 C++ codes, and we would like
-   to ignore them while processing the config file. ---
-  if (option_name == "OBJFUNC")       isPython_Option = true;
-  if (option_name == "OBJFUNC_SCALE")    isPython_Option = true;
-  if (option_name == "CONST_IEQ")      isPython_Option = true;
-  if (option_name == "CONST_IEQ_SCALE")      isPython_Option = true;
-  if (option_name == "CONST_IEQ_SIGN")     isPython_Option = true;
-  if (option_name == "CONST_IEQ_VALUE") isPython_Option = true;
-  if (option_name == "CONST_EQ")      isPython_Option = true;
-  if (option_name == "CONST_EQ_SCALE")      isPython_Option = true;
-  if (option_name == "CONST_EQ_SIGN")     isPython_Option = true;
-  if (option_name == "CONST_EQ_VALUE") isPython_Option = true;
-  if (option_name == "DEFINITION_DV") isPython_Option = true;
-  if (option_name == "DV_VALUE_NEW") isPython_Option = true;
-  if (option_name == "DV_VALUE_OLD") isPython_Option = true;
-  if (option_name == "NUMBER_PART") isPython_Option = true;
-  if (option_name == "TASKS") isPython_Option = true;
-  if (option_name == "OPT_OBJECTIVE") isPython_Option = true;
-  if (option_name == "OPT_CONSTRAINT") isPython_Option = true;
-  if (option_name == "GRADIENTS") isPython_Option = true;
-  if (option_name == "FIN_DIFF_STEP") isPython_Option = true;
-  if (option_name == "ADAPT_CYCLES") isPython_Option = true;
-  if (option_name == "CONSOLE") isPython_Option = true;
-  if (option_name == "DECOMPOSED") isPython_Option = true;
-
-  return isPython_Option;
-}
- */
-
 unsigned short CConfig::GetMarker_CfgFile_TagBound(string val_marker) {
 
   unsigned short iMarker_Config;
@@ -4898,14 +4864,15 @@ unsigned short CConfig::GetMarker_CfgFile_PerBound(string val_marker) {
   return Marker_CfgFile_PerBound[iMarker_Config];
 }
 
-CConfig::~CConfig(void)
-{
+CConfig::~CConfig(void) {
+  
   if (RK_Alpha_Step!=NULL) delete [] RK_Alpha_Step;
   if (MG_PreSmooth!=NULL) delete [] MG_PreSmooth;
   if (MG_PostSmooth!=NULL) delete [] MG_PostSmooth;
   if (U_FreeStreamND!=NULL) delete [] U_FreeStreamND;
 
   /*--- If allocated, delete arrays for Plasma solver ---*/
+  
   if (Molar_Mass           != NULL) delete [] Molar_Mass;
   if (Gas_Composition      != NULL) delete [] Gas_Composition;
   if (Enthalpy_Formation   != NULL) delete [] Enthalpy_Formation;
@@ -4918,13 +4885,13 @@ CConfig::~CConfig(void)
       delete[] CharElTemp[iSpecies];
     delete [] CharElTemp;
   }
-  if (degen                != NULL) {
+  if (degen != NULL) {
     for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++)
       delete[] degen[iSpecies];
     delete [] degen;
   }
   unsigned short ii, iReaction;
-  if (Reactions            != NULL) {
+  if (Reactions != NULL) {
     for (iReaction = 0; iReaction < nReactions; iReaction++) {
       for (ii = 0; ii < 2; ii++) {
         delete [] Reactions[iReaction][ii];
@@ -4935,6 +4902,7 @@ CConfig::~CConfig(void)
   }
 
   /*--- Free memory for Aeroelastic problems. ---*/
+  
   if (Grid_Movement && Aeroelastic_Simulation) {
 
     delete[] Aeroelastic_pitch;
@@ -4947,6 +4915,7 @@ CConfig::~CConfig(void)
     delete [] Kind_GridMovement;
 
   /*--- motion origin: ---*/
+  
   if (Motion_Origin_X != NULL)
     delete [] Motion_Origin_X;
   if (Motion_Origin_Y != NULL)
@@ -4957,6 +4926,7 @@ CConfig::~CConfig(void)
     delete [] MoveMotion_Origin;
 
   /*--- rotation: ---*/
+  
   if (Rotation_Rate_X != NULL)
     delete [] Rotation_Rate_X;
   if (Rotation_Rate_Y != NULL)
@@ -4965,6 +4935,7 @@ CConfig::~CConfig(void)
     delete [] Rotation_Rate_Z;
 
   /*--- pitching: ---*/
+  
   if (Pitching_Omega_X != NULL)
     delete [] Pitching_Omega_X;
   if (Pitching_Omega_Y != NULL)
@@ -4973,6 +4944,7 @@ CConfig::~CConfig(void)
     delete [] Pitching_Omega_Z;
 
   /*--- pitching amplitude: ---*/
+  
   if (Pitching_Ampl_X != NULL)
     delete [] Pitching_Ampl_X;
   if (Pitching_Ampl_Y != NULL)
@@ -4981,6 +4953,7 @@ CConfig::~CConfig(void)
     delete [] Pitching_Ampl_Z;
 
   /*--- pitching phase: ---*/
+  
   if (Pitching_Phase_X != NULL)
     delete [] Pitching_Phase_X;
   if (Pitching_Phase_Y != NULL)
@@ -4989,6 +4962,7 @@ CConfig::~CConfig(void)
     delete [] Pitching_Phase_Z;
 
   /*--- plunging: ---*/
+  
   if (Plunging_Omega_X != NULL)
     delete [] Plunging_Omega_X;
   if (Plunging_Omega_Y != NULL)
@@ -4997,6 +4971,7 @@ CConfig::~CConfig(void)
     delete [] Plunging_Omega_Z;
 
   /*--- plunging amplitude: ---*/
+  
   if (Plunging_Ampl_X != NULL)
     delete [] Plunging_Ampl_X;
   if (Plunging_Ampl_Y != NULL)
@@ -5013,7 +4988,8 @@ CConfig::~CConfig(void)
   if (RefOriginMoment_Z != NULL)
     delete [] RefOriginMoment_Z;
 
-  /*Marker pointers*/
+  /*--- Marker pointers ---*/
+  
   if (Marker_CfgFile_Out_1D!=NULL)   delete[] Marker_CfgFile_Out_1D;
   if (Marker_All_Out_1D!=NULL)      delete[] Marker_All_Out_1D;
   if (Marker_CfgFile_GeoEval!=NULL)  delete[] Marker_CfgFile_GeoEval;
@@ -5030,17 +5006,18 @@ CConfig::~CConfig(void)
   if (Marker_All_Plotting!=NULL)     delete[] Marker_All_Plotting;
   if (Marker_CfgFile_DV!=NULL)        delete[] Marker_CfgFile_DV;
   if (Marker_All_DV!=NULL)           delete[] Marker_All_DV;
+  if (Marker_CfgFile_Moving!=NULL)   delete[] Marker_CfgFile_Moving;
+  if (Marker_All_Moving!=NULL)      delete[] Marker_All_Moving;
+  if (Marker_CfgFile_PerBound!=NULL) delete[] Marker_CfgFile_PerBound;
+  if (Marker_All_PerBound!=NULL)    delete[] Marker_All_PerBound;
+
   if (Marker_DV!=NULL)               delete[] Marker_DV;
   if (Marker_Moving!=NULL)           delete[] Marker_Moving;
-  if (Marker_All_Moving!=NULL)      delete[] Marker_All_Moving;
-  if (Marker_CfgFile_Moving!=NULL)   delete[] Marker_CfgFile_Moving;
   if (Marker_Monitoring!=NULL)      delete[] Marker_Monitoring;
   if (Marker_Designing!=NULL)       delete[] Marker_Designing;
   if (Marker_GeoEval!=NULL)         delete[] Marker_GeoEval;
   if (Marker_Plotting!=NULL)        delete[] Marker_Plotting;
-  if (Marker_CfgFile_PerBound!=NULL) delete[] Marker_CfgFile_PerBound;
   if (Marker_All_SendRecv!=NULL)    delete[] Marker_All_SendRecv;
-  if (Marker_All_PerBound!=NULL)    delete[] Marker_All_PerBound;
 
   if (EA_IntLimit!=NULL)    delete[] EA_IntLimit;
   if (Hold_GridFixed_Coord!=NULL)    delete[] Hold_GridFixed_Coord ;
@@ -5090,7 +5067,8 @@ CConfig::~CConfig(void)
   if (PlaneTag!=NULL)    delete[] PlaneTag;
   if (CFLRamp!=NULL)    delete[] CFLRamp;
   if (CFL!=NULL)    delete[] CFL;
-  /*String markers*/
+  
+  /*--- String markers ---*/
   if (Marker_Euler!=NULL )              delete[] Marker_Euler;
   if (Marker_FarField!=NULL )           delete[] Marker_FarField;
   if (Marker_Custom!=NULL )             delete[] Marker_Custom;

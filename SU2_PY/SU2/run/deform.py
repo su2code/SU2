@@ -25,7 +25,6 @@
 import os, sys, shutil, copy
 
 from .. import io  as su2io
-from decompose import decompose as su2decomp
 from interface import DEF as SU2_DEF
 
 
@@ -41,7 +40,6 @@ def deform ( config, dv_new=None, dv_old=None ):
             SU2.run.DEF()
             
         Assumptions:
-            Redundant decomposition if config.DECOMPOSED == True
             If optional dv_new ommitted, config is setup for deformation
             If using dv_old, must provide dv_new
             Adds 'deform' suffix to mesh output name
@@ -52,7 +50,6 @@ def deform ( config, dv_new=None, dv_old=None ):
                 FILES.ADJOINT_NAME
                 
         Updates:
-            config.DECOMPOSED
             config.MESH_FILENAME
             config.DV_VALUE_OLD = config.DV_VALUE_NEW
             
@@ -68,9 +65,6 @@ def deform ( config, dv_new=None, dv_old=None ):
     
     # local copy
     konfig = copy.deepcopy(config)
-    
-    # decompose
-    su2decomp(konfig)
     
     # unpack design variables
     if dv_new: konfig.unpack_dvs(dv_new,dv_old)
@@ -92,8 +86,7 @@ def deform ( config, dv_new=None, dv_old=None ):
     SU2_DEF(konfig)
     
     # update super config
-    config.update({ 'DECOMPOSED'    : konfig['DECOMPOSED']        ,
-                    'MESH_FILENAME' : konfig['MESH_OUT_FILENAME'] , 
+    config.update({ 'MESH_FILENAME' : konfig['MESH_OUT_FILENAME'] , 
                     'DV_KIND'       : konfig['DV_KIND']           ,
                     'DV_MARKER'     : konfig['DV_MARKER']         ,
                     'DV_PARAM'      : konfig['DV_PARAM']          ,
