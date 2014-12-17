@@ -23,7 +23,6 @@
 import os, sys, shutil, copy
 
 from .. import io  as su2io
-from ..run import decompose as su2decomp
 from ..run import CFD as SU2_CFD
 from ..run import MSH as SU2_MSH
 
@@ -39,9 +38,6 @@ def full_flow(config):
     
     # local copy
     konfig = copy.deepcopy(config)
-
-    # decompose
-    su2decomp(konfig)    
     
     # set config
     konfig.KIND_ADAPT = 'FULL_FLOW'

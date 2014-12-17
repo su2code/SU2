@@ -25,18 +25,20 @@ using namespace std;
 
 int main(int argc, char *argv[]) {	
   
-	unsigned short iMarker, iDim, iDV, iFFDBox, nZone = 1;
+  unsigned short iZone, nZone = SINGLE_ZONE;
+	unsigned short iMarker, iDim, iDV, iFFDBox;
 	unsigned long iVertex, iPoint;
 	double delta_eps, my_Gradient, Gradient, *Normal, dS, *VarCoord, Sensitivity,
   dalpha[3], deps[3], dalpha_deps;
-	char *cstr;
+	char config_file_name[MAX_STRING_SIZE], *cstr;
 	ofstream Gradient_file, Jacobian_file;
 	bool *UpdatePoint, Comma;
 	int rank = MASTER_NODE;
 	int size = SINGLE_NODE;
-  
+
+  /*--- MPI initialization, and buffer setting ---*/
+
 #ifdef HAVE_MPI
-	/*--- MPI initialization, and buffer setting ---*/
 	MPI_Init(&argc,&argv);
 	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 	MPI_Comm_size(MPI_COMM_WORLD,&size);
@@ -44,57 +46,131 @@ int main(int argc, char *argv[]) {
 	
 	/*--- Pointer to different structures that will be used throughout the entire code ---*/
   
-	CFreeFormDefBox** FFDBox = NULL;
-	CConfig *config = NULL;
-	CGeometry *boundary = NULL;
-	CSurfaceMovement *surface_mov = NULL;
-	
-	/*--- Definition of the Class for the definition of the problem ---*/
+	CConfig **config_container          = NULL;
+	CGeometry **geometry_container      = NULL;
+	CSurfaceMovement *surface_movement  = NULL;
+  CFreeFormDefBox** FFDBox            = NULL;
+
+  /*--- Load in the number of zones and spatial dimensions in the mesh file (if no config
+   file is specified, default.cfg is used) ---*/
   
-	if (argc == 2) config = new CConfig(argv[1], SU2_DOT, ZONE_0, nZone, 0, VERB_HIGH);
-	else {
-		char grid_file[200];
-		strcpy (grid_file, "default.cfg");
-		config = new CConfig(grid_file, SU2_DOT, ZONE_0, nZone, 0, VERB_HIGH);
-	}
-	
+  if (argc == 2){ strcpy(config_file_name,argv[1]); }
+  else{ strcpy(config_file_name, "default.cfg"); }
+  
+  /*--- Read the name and format of the input mesh file ---*/
+  
+  CConfig *config = NULL;
+  config = new CConfig(config_file_name, SU2_DOT);
+  
+  /*--- Definition of the containers per zones ---*/
+  
+  config_container = new CConfig*[nZone];
+  geometry_container = new CGeometry*[nZone];
+  
+  for (iZone = 0; iZone < nZone; iZone++) {
+    config_container[iZone]       = NULL;
+    geometry_container[iZone]     = NULL;
+  }
+  
+  /*--- Loop over all zones to initialize the various classes. In most
+   cases, nZone is equal to one. This represents the solution of a partial
+   differential equation on a single block, unstructured mesh. ---*/
+  
+  for (iZone = 0; iZone < nZone; iZone++) {
+    
+    /*--- Definition of the configuration option class for all zones. In this
+     constructor, the input configuration file is parsed and all options are
+     read and stored. ---*/
+    
+    config_container[iZone] = new CConfig(config_file_name, SU2_DOT, iZone, nZone, 0, VERB_HIGH);
+    
+    /*--- Change the name of the input-output files for a parallel computation ---*/
+    
+    config_container[iZone]->SetFileNameDomain(rank+1);
+    
+    /*--- Definition of the geometry class to store the primal grid in the partitioning process. ---*/
+    
+    CGeometry *geometry_aux = NULL;
+    
+    if (rank == MASTER_NODE) {
+      
+      /*--- Read the grid using the master node ---*/
+      
+      config_container[iZone]->SetKind_SU2(SU2_PRT);
+      geometry_aux = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
+      config_container[iZone]->SetKind_SU2(SU2_DOT);
+      
+      cout << endl <<"---------------------------- Grid partitioning --------------------------" << endl;
+      
+      /*--- Color the initial grid and set the send-receive domains ---*/
+      
+      geometry_aux->SetColorGrid(config_container[iZone]);
+      
+    }
+    
 #ifdef HAVE_MPI
-	/*--- Change the name of the input-output files for the 
-	 parallel computation ---*/
-  
-	config->SetFileNameDomain(rank+1);
+    MPI_Barrier(MPI_COMM_WORLD);
 #endif
-	
-	/*--- Definition of the Class for the boundary of the geometry,
-   note that the orientation of the elements is not checked ---*/
-  
-	boundary = new CBoundaryGeometry(config, config->GetMesh_FileName(), config->GetMesh_FileFormat());
+    
+    /*--- Allocate the memory of the current domain, and
+     divide the grid between the nodes ---*/
+    
+    geometry_container[iZone] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
+    
+    /*--- Add the Send/Receive boundaries ---*/
+    
+    geometry_container[iZone]->SetSendReceive(config_container[iZone]);
+    
+    /*--- Add the Send/Receive boundaries ---*/
+    
+    geometry_container[iZone]->SetBoundaries(config_container[iZone]);
+    
+#ifdef HAVE_MPI
+    MPI_Barrier(MPI_COMM_WORLD);
+#endif
+    
+  }
     
 	if (rank == MASTER_NODE)
 		cout << endl <<"----------------------- Preprocessing computations ----------------------" << endl;
 	
-  /*--- Boundary geometry preprocessing ---*/
+  /*--- Compute elements surrounding points, points surrounding points ---*/
   
-	if (rank == MASTER_NODE) cout << "Identify vertices." <<endl; 
-	boundary->SetVertex();
-	
-	/*--- Create the control volume structures ---*/
+  if (rank == MASTER_NODE) cout << "Setting local point connectivity." <<endl;
+  geometry_container[ZONE_0]->SetPoint_Connectivity();
   
-	if (rank == MASTER_NODE) cout << "Set boundary control volume structure." << endl; 
-	boundary->SetBoundControlVolume(config, ALLOCATE);
+  /*--- Check the orientation before computing geometrical quantities ---*/
+  
+  if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation of the interior elements." <<endl;
+  geometry_container[ZONE_0]->Check_IntElem_Orientation(config_container[ZONE_0]);
+  
+  /*--- Create the edge structure ---*/
+  
+  if (rank == MASTER_NODE) cout << "Identify edges and vertices." <<endl;
+  geometry_container[ZONE_0]->SetEdges(); geometry_container[ZONE_0]->SetVertex(config_container[ZONE_0]);
+  
+  /*--- Compute center of gravity ---*/
+  
+  if (rank == MASTER_NODE) cout << "Computing centers of gravity." << endl;
+  geometry_container[ZONE_0]->SetCG();
+  
+  /*--- Create the dual control volume structures ---*/
+  
+  if (rank == MASTER_NODE) cout << "Setting the bound control volume structure." << endl;
+  geometry_container[ZONE_0]->SetBoundControlVolume(config_container[ZONE_0], ALLOCATE);
   
   /*--- Load the surface sensitivities from file. This is done only
    once: if this is an unsteady problem, a time-average of the surface
    sensitivities at each node is taken within this routine. ---*/
   
   if (rank == MASTER_NODE) cout << "Reading surface sensitivities at each node from file." << endl; 
-  boundary->SetBoundSensitivity(config);
+  geometry_container[ZONE_0]->SetBoundSensitivity(config_container[ZONE_0]);
   
   /*--- Boolean controlling points to be updated ---*/
-	UpdatePoint = new bool[boundary->GetnPoint()];
+	UpdatePoint = new bool[geometry_container[ZONE_0]->GetnPoint()];
 	
 	/*--- Definition of the Class for surface deformation ---*/
-	surface_mov = new CSurfaceMovement();
+	surface_movement = new CSurfaceMovement();
 	
 	/*--- Definition of the FFD deformation class ---*/
 	unsigned short nFFDBox = MAX_NUMBER_FFD;
@@ -105,8 +181,8 @@ int main(int argc, char *argv[]) {
 	
 	/*--- Write the gradient in a external file ---*/
 	if (rank == MASTER_NODE) {
-		cstr = new char [config->GetObjFunc_Grad_FileName().size()+1];
-		strcpy (cstr, config->GetObjFunc_Grad_FileName().c_str());
+		cstr = new char [config_container[ZONE_0]->GetObjFunc_Grad_FileName().size()+1];
+		strcpy (cstr, config_container[ZONE_0]->GetObjFunc_Grad_FileName().c_str());
 		Gradient_file.open(cstr, ios::out);
     
     /*--- Write an additional file with the geometric Jacobian ---*/
@@ -117,10 +193,10 @@ int main(int argc, char *argv[]) {
       
       /*--- Write the CSV file header ---*/
       Comma = false;
-      for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-        if (config->GetMarker_All_DV(iMarker) == YES) {
-          for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
-            iPoint = boundary->vertex[iMarker][iVertex]->GetNode();
+      for (iMarker = 0; iMarker < config_container[ZONE_0]->GetnMarker_All(); iMarker++) {
+        if (config_container[ZONE_0]->GetMarker_All_DV(iMarker) == YES) {
+          for (iVertex = 0; iVertex < geometry_container[ZONE_0]->nVertex[iMarker]; iVertex++) {
+            iPoint = geometry_container[ZONE_0]->vertex[iMarker][iVertex]->GetNode();
             if (!Comma) { Jacobian_file << "\t\"DesignVariable\""; Comma = true;}
             Jacobian_file  << ", " << "\t\"" << iPoint << "\"";
           }
@@ -130,22 +206,22 @@ int main(int argc, char *argv[]) {
     }
 	}
   
-	for (iDV = 0; iDV < config->GetnDV(); iDV++) {
+	for (iDV = 0; iDV < config_container[ZONE_0]->GetnDV(); iDV++) {
 				
     if (size == SINGLE_NODE) { Jacobian_file << iDV; }
     
     /*--- Free Form deformation based ---*/
     
-    if ((config->GetDesign_Variable(iDV) == FFD_CONTROL_POINT_2D) ||
-        (config->GetDesign_Variable(iDV) == FFD_RADIUS_2D) ||
-        (config->GetDesign_Variable(iDV) == FFD_CAMBER_2D) ||
-        (config->GetDesign_Variable(iDV) == FFD_THICKNESS_2D) ||
-        (config->GetDesign_Variable(iDV) == FFD_CONTROL_POINT) ||
-        (config->GetDesign_Variable(iDV) == FFD_DIHEDRAL_ANGLE) ||
-        (config->GetDesign_Variable(iDV) == FFD_TWIST_ANGLE) ||
-        (config->GetDesign_Variable(iDV) == FFD_ROTATION) ||
-        (config->GetDesign_Variable(iDV) == FFD_CAMBER) ||
-        (config->GetDesign_Variable(iDV) == FFD_THICKNESS) ) {
+    if ((config_container[ZONE_0]->GetDesign_Variable(iDV) == FFD_CONTROL_POINT_2D) ||
+        (config_container[ZONE_0]->GetDesign_Variable(iDV) == FFD_RADIUS_2D) ||
+        (config_container[ZONE_0]->GetDesign_Variable(iDV) == FFD_CAMBER_2D) ||
+        (config_container[ZONE_0]->GetDesign_Variable(iDV) == FFD_THICKNESS_2D) ||
+        (config_container[ZONE_0]->GetDesign_Variable(iDV) == FFD_CONTROL_POINT) ||
+        (config_container[ZONE_0]->GetDesign_Variable(iDV) == FFD_DIHEDRAL_ANGLE) ||
+        (config_container[ZONE_0]->GetDesign_Variable(iDV) == FFD_TWIST_ANGLE) ||
+        (config_container[ZONE_0]->GetDesign_Variable(iDV) == FFD_ROTATION) ||
+        (config_container[ZONE_0]->GetDesign_Variable(iDV) == FFD_CAMBER) ||
+        (config_container[ZONE_0]->GetDesign_Variable(iDV) == FFD_THICKNESS) ) {
       
       /*--- Read the FFD information in the first iteration ---*/
       
@@ -156,10 +232,10 @@ int main(int argc, char *argv[]) {
         
         /*--- Read the FFD information from the grid file ---*/
         
-        surface_mov->ReadFFDInfo(boundary, config, FFDBox, config->GetMesh_FileName(), true);
+        surface_movement->ReadFFDInfo(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox, config_container[ZONE_0]->GetMesh_FileName(), true);
         
         /*--- If the FFDBox was not defined in the input file ---*/
-        if (!surface_mov->GetFFDBoxDefinition() && (rank == MASTER_NODE)) {
+        if (!surface_movement->GetFFDBoxDefinition() && (rank == MASTER_NODE)) {
           cout << "The input grid doesn't have the entire FFD information!" << endl;
           cout << "Press any key to exit..." << endl;
           cin.get();
@@ -177,25 +253,25 @@ int main(int argc, char *argv[]) {
       
       /*--- Apply the control point change ---*/
       
-      for (iFFDBox = 0; iFFDBox < surface_mov->GetnFFDBox(); iFFDBox++) {
+      for (iFFDBox = 0; iFFDBox < surface_movement->GetnFFDBox(); iFFDBox++) {
         
-        switch ( config->GetDesign_Variable(iDV) ) {
-          case FFD_CONTROL_POINT_2D : surface_mov->SetFFDCPChange_2D(boundary, config, FFDBox[iFFDBox], iDV, true); break;
-          case FFD_RADIUS_2D :       surface_mov->SetFFDCPChange_2D_rad(boundary, config, FFDBox[iFFDBox], iDV, true); break;
-          case FFD_CAMBER_2D :        surface_mov->SetFFDCamber_2D(boundary, config, FFDBox[iFFDBox], iDV, true); break;
-          case FFD_THICKNESS_2D :     surface_mov->SetFFDThickness_2D(boundary, config, FFDBox[iFFDBox], iDV, true); break;
-          case FFD_CONTROL_POINT :    surface_mov->SetFFDCPChange(boundary, config, FFDBox[iFFDBox], iDV, true); break;
-          case FFD_DIHEDRAL_ANGLE :   surface_mov->SetFFDDihedralAngle(boundary, config, FFDBox[iFFDBox], iDV, true); break;
-          case FFD_TWIST_ANGLE :      surface_mov->SetFFDTwistAngle(boundary, config, FFDBox[iFFDBox], iDV, true); break;
-          case FFD_ROTATION :         surface_mov->SetFFDRotation(boundary, config, FFDBox[iFFDBox], iDV, true); break;
-          case FFD_CAMBER :           surface_mov->SetFFDCamber(boundary, config, FFDBox[iFFDBox], iDV, true); break;
-          case FFD_THICKNESS :        surface_mov->SetFFDThickness(boundary, config, FFDBox[iFFDBox], iDV, true); break;
-          case FFD_CONTROL_SURFACE :  surface_mov->SetFFDControl_Surface(boundary, config, FFDBox[iFFDBox], iDV, true); break;
+        switch (config_container[ZONE_0]->GetDesign_Variable(iDV) ) {
+          case FFD_CONTROL_POINT_2D : surface_movement->SetFFDCPChange_2D(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], iDV, true); break;
+          case FFD_RADIUS_2D :        surface_movement->SetFFDCPChange_2D_rad(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], iDV, true); break;
+          case FFD_CAMBER_2D :        surface_movement->SetFFDCamber_2D(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], iDV, true); break;
+          case FFD_THICKNESS_2D :     surface_movement->SetFFDThickness_2D(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], iDV, true); break;
+          case FFD_CONTROL_POINT :    surface_movement->SetFFDCPChange(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], iDV, true); break;
+          case FFD_DIHEDRAL_ANGLE :   surface_movement->SetFFDDihedralAngle(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], iDV, true); break;
+          case FFD_TWIST_ANGLE :      surface_movement->SetFFDTwistAngle(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], iDV, true); break;
+          case FFD_ROTATION :         surface_movement->SetFFDRotation(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], iDV, true); break;
+          case FFD_CAMBER :           surface_movement->SetFFDCamber(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], iDV, true); break;
+          case FFD_THICKNESS :        surface_movement->SetFFDThickness(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], iDV, true); break;
+          case FFD_CONTROL_SURFACE :  surface_movement->SetFFDControl_Surface(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], iDV, true); break;
         }
         
         /*--- Recompute cartesian coordinates using the new control points position ---*/
         
-        surface_mov->SetCartesianCoord(boundary, config, FFDBox[iFFDBox], iFFDBox);
+        surface_movement->SetCartesianCoord(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], iFFDBox);
         
       }
       
@@ -203,82 +279,82 @@ int main(int argc, char *argv[]) {
 			 
     /*--- HicksHenne design variable ---*/
 
-    else if (config->GetDesign_Variable(iDV) == HICKS_HENNE) {
+    else if (config_container[ZONE_0]->GetDesign_Variable(iDV) == HICKS_HENNE) {
       if (rank == MASTER_NODE) {
         cout << endl << "Design variable number "<< iDV <<"." << endl;
         cout << "Perform 2D deformation of the surface." << endl;
       }
-      surface_mov->SetHicksHenne(boundary, config, iDV, true);
+      surface_movement->SetHicksHenne(geometry_container[ZONE_0], config_container[ZONE_0], iDV, true);
     }
 
     /*--- Displacement design variable ---*/
 
-    else if (config->GetDesign_Variable(iDV) == DISPLACEMENT) {
+    else if (config_container[ZONE_0]->GetDesign_Variable(iDV) == DISPLACEMENT) {
       if (rank == MASTER_NODE) {
         cout << endl << "Design variable number "<< iDV <<"." << endl;
         cout << "Perform 2D deformation of the surface." << endl;
       }
-      surface_mov->SetDisplacement(boundary, config, iDV, true);
+      surface_movement->SetDisplacement(geometry_container[ZONE_0], config_container[ZONE_0], iDV, true);
     }
 
     /*--- Rotation design variable ---*/
 
-    else if (config->GetDesign_Variable(iDV) == ROTATION) {
+    else if (config_container[ZONE_0]->GetDesign_Variable(iDV) == ROTATION) {
       if (rank == MASTER_NODE) {
         cout << endl << "Design variable number "<< iDV <<"." << endl;
         cout << "Perform 2D deformation of the surface." << endl;
       }
-      surface_mov->SetRotation(boundary, config, iDV, true);
+      surface_movement->SetRotation(geometry_container[ZONE_0], config_container[ZONE_0], iDV, true);
     }
     
     /*--- CosBump design variable ---*/
     
-    else if (config->GetDesign_Variable(iDV) == COSINE_BUMP) {
+    else if (config_container[ZONE_0]->GetDesign_Variable(iDV) == COSINE_BUMP) {
       if (rank == MASTER_NODE) {
         cout << endl << "Design variable number "<< iDV <<"." << endl;
         cout << "Perform 2D deformation of the surface." << endl;
       }
-      surface_mov->SetCosBump(boundary, config, iDV, true);
+      surface_movement->SetCosBump(geometry_container[ZONE_0], config_container[ZONE_0], iDV, true);
     }
     
     /*--- Fourier design variable ---*/
     
-    else if (config->GetDesign_Variable(iDV) == FOURIER) {
+    else if (config_container[ZONE_0]->GetDesign_Variable(iDV) == FOURIER) {
       if (rank == MASTER_NODE) {
         cout << endl << "Design variable number "<< iDV <<"." << endl;
         cout << "Perform 2D deformation of the surface." << endl;
       }
-      surface_mov->SetFourier(boundary, config, iDV, true);
+      surface_movement->SetFourier(geometry_container[ZONE_0], config_container[ZONE_0], iDV, true);
     }
 
     /*--- NACA_4Digits design variable ---*/
 
-    else if (config->GetDesign_Variable(iDV) == NACA_4DIGITS) {
+    else if (config_container[ZONE_0]->GetDesign_Variable(iDV) == NACA_4DIGITS) {
       if (rank == MASTER_NODE) {
         cout << endl << "Design variable number "<< iDV <<"." << endl;
         cout << "Perform 2D deformation of the surface." << endl;
       }
-      surface_mov->SetNACA_4Digits(boundary, config);
+      surface_movement->SetNACA_4Digits(geometry_container[ZONE_0], config_container[ZONE_0]);
     }
 
     /*--- Parabolic design variable ---*/
     
-    else if (config->GetDesign_Variable(iDV) == PARABOLIC) {
+    else if (config_container[ZONE_0]->GetDesign_Variable(iDV) == PARABOLIC) {
       if (rank == MASTER_NODE) {
         cout << endl << "Design variable number "<< iDV <<"." << endl;
         cout << "Perform 2D deformation of the surface." << endl;
       }
-      surface_mov->SetParabolic(boundary, config);
+      surface_movement->SetParabolic(geometry_container[ZONE_0], config_container[ZONE_0]);
     }
     
     /*--- Spherical design variable ---*/
     
-    else if (config->GetDesign_Variable(iDV) == SPHERICAL) {
+    else if (config_container[ZONE_0]->GetDesign_Variable(iDV) == SPHERICAL) {
       if (rank == MASTER_NODE) {
         cout << endl << "Design variable number "<< iDV <<"." << endl;
         cout << "Perform 3D deformation of the surface." << endl;
       }
-      surface_mov->SetSpherical(boundary, config, iDV, true);
+      surface_movement->SetSpherical(geometry_container[ZONE_0], config_container[ZONE_0], iDV, true);
     }
 
     /*--- Design variable not implement ---*/
@@ -292,34 +368,34 @@ int main(int argc, char *argv[]) {
 		
     /*--- Load the delta change in the design variable (finite difference step). ---*/
     
-		delta_eps = config->GetDV_Value(iDV);
+		delta_eps = config_container[ZONE_0]->GetDV_Value(iDV);
     my_Gradient = 0.0; Gradient = 0.0;
       
       /*--- Reset update points ---*/
     
-      for (iPoint = 0; iPoint < boundary->GetnPoint(); iPoint++)
+      for (iPoint = 0; iPoint < geometry_container[ZONE_0]->GetnPoint(); iPoint++)
         UpdatePoint[iPoint] = true;
       
-      for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-				if (config->GetMarker_All_DV(iMarker) == YES) {
-					for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
+      for (iMarker = 0; iMarker < config_container[ZONE_0]->GetnMarker_All(); iMarker++) {
+				if (config_container[ZONE_0]->GetMarker_All_DV(iMarker) == YES) {
+					for (iVertex = 0; iVertex < geometry_container[ZONE_0]->nVertex[iMarker]; iVertex++) {
 						
-						iPoint = boundary->vertex[iMarker][iVertex]->GetNode();
-						if ((iPoint < boundary->GetnPointDomain()) && UpdatePoint[iPoint]) {
+						iPoint = geometry_container[ZONE_0]->vertex[iMarker][iVertex]->GetNode();
+						if ((iPoint < geometry_container[ZONE_0]->GetnPointDomain()) && UpdatePoint[iPoint]) {
 							
-							Normal = boundary->vertex[iMarker][iVertex]->GetNormal();
-							VarCoord = boundary->vertex[iMarker][iVertex]->GetVarCoord();
-							Sensitivity = boundary->vertex[iMarker][iVertex]->GetAuxVar();
+							Normal = geometry_container[ZONE_0]->vertex[iMarker][iVertex]->GetNormal();
+							VarCoord = geometry_container[ZONE_0]->vertex[iMarker][iVertex]->GetVarCoord();
+							Sensitivity = geometry_container[ZONE_0]->vertex[iMarker][iVertex]->GetAuxVar();
               
 							dS = 0.0; 
-							for (iDim = 0; iDim < boundary->GetnDim(); iDim++) {
+							for (iDim = 0; iDim < geometry_container[ZONE_0]->GetnDim(); iDim++) {
 								dS += Normal[iDim]*Normal[iDim];
 								deps[iDim] = VarCoord[iDim] / delta_eps;
 							}
 							dS = sqrt(dS);
 
 							dalpha_deps = 0.0;
-							for (iDim = 0; iDim < boundary->GetnDim(); iDim++) {
+							for (iDim = 0; iDim < geometry_container[ZONE_0]->GetnDim(); iDim++) {
 								dalpha[iDim] = Normal[iDim] / dS;
 								dalpha_deps -= dalpha[iDim]*deps[iDim];
 							}
@@ -344,7 +420,7 @@ int main(int argc, char *argv[]) {
 #endif
 		
 		if (rank == MASTER_NODE) {
-			switch (config->GetKind_ObjFunc()) {
+			switch (config_container[ZONE_0]->GetKind_ObjFunc()) {
 				case LIFT_COEFFICIENT : 
 					if (iDV == 0) Gradient_file << "Lift coeff. grad. using cont. adj." << endl;
 					cout << "Lift coefficient gradient: "<< Gradient << "." << endl; break;

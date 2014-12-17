@@ -37,17 +37,13 @@ def main():
                       help="read config from FILE", metavar="FILE")
     parser.add_option("-n", "--partitions", dest="partitions", default=2,
                       help="number of PARTITIONS", metavar="PARTITIONS")
-    parser.add_option("-d", "--divide_grid", dest="divide_grid", default="True",
-                      help="DIVIDE_GRID the numerical grid", metavar="DIVIDE_GRID")
 
     (options, args)=parser.parse_args()
     options.partitions = int( options.partitions )
-    options.divide_grid = options.divide_grid.upper() == 'TRUE'
-        
+    
     # Run Parallel Comutation
     mesh_deformation ( options.filename    ,
-                       options.partitions  , 
-                       options.divide_grid  )
+                       options.partitions   )
 #: def main()
 
   
@@ -56,21 +52,16 @@ def main():
 # -------------------------------------------------------------------
 
 def mesh_deformation( filename           ,
-                      partitions  = 2    , 
-                      divide_grid = True  ):
+                      partitions  = 2     ):
     
     # Config
     config = SU2.io.Config(filename)
     config.NUMBER_PART = partitions
-    config.DECOMPOSED  = not divide_grid
     config.DV_VALUE_NEW = config.DV_VALUE
     
     # State
     state = SU2.io.State()
     
-    # Decomposition
-    info = SU2.run.decompose(config)
-
     state.FILES.MESH = config.MESH_FILENAME
 
     # Deformation

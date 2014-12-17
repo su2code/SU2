@@ -26,7 +26,6 @@ import os, sys, shutil, copy
 
 from .. import io   as su2io
 from .. import util as su2util
-from decompose import decompose as su2decomp
 from interface import DOT as SU2_DOT
 
 
@@ -42,7 +41,6 @@ def projection( config, step = 1e-3 ):
             SU2.run.DOT()
             
         Assumptions:
-            Redundant decomposition if config.DECOMPOSED == True
             Writes tecplot file of gradients
             Adds objective suffix to gradient plot filename
             
@@ -56,7 +54,6 @@ def projection( config, step = 1e-3 ):
                 GRADIENTS.<config.OBJECTIVE_FUNCTION>
                 
         Updates:
-            config.DECOMPOSED
             config.MATH_PROBLEM
             
         Executes in:
@@ -64,10 +61,7 @@ def projection( config, step = 1e-3 ):
     """
     # local copy
     konfig = copy.deepcopy(config)
-    
-    # decompose
-    su2decomp(konfig)
-        
+            
     # choose dv values 
     Definition_DV = konfig['DEFINITION_DV']
     n_DV          = len(Definition_DV['KIND'])
