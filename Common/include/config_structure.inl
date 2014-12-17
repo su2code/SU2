@@ -804,7 +804,7 @@ inline string CConfig::GetMarker_Monitoring(unsigned short val_marker) { return 
 
 inline string CConfig::GetMarker_Moving(unsigned short val_marker) { return Marker_Moving[val_marker]; }
 
-inline short CConfig::GetTagBound_Marker_All(string val_tag) {
+inline short CConfig::GetMarker_All_TagBound(string val_tag) {
 	for (unsigned short iMarker = 0; iMarker < nMarker_All; iMarker++) {
 		if (val_tag == Marker_All_TagBound[iMarker])
 		return iMarker; 

@@ -5947,9 +5947,9 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
 					getline(mesh_file,text_line); istringstream FFDBox_line(text_line);
 					FFDBox_line >> iTag; FFDBox_line >> iPoint;
           
-          if (config->GetTagBound_Marker_All(iTag) != -1) {
+          if (config->GetMarker_All_TagBound(iTag) != -1) {
 
-            iMarker = config->GetTagBound_Marker_All(iTag);
+            iMarker = config->GetMarker_All_TagBound(iTag);
             FFDBox_line >> coord[0]; FFDBox_line >> coord[1]; FFDBox_line >> coord[2];
             
             for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
@@ -6065,7 +6065,12 @@ void CSurfaceMovement::WriteFFDInfo(CGeometry *geometry, CConfig *config) {
       text_line.erase (0,9); unsigned short nFFDBox = atoi(text_line.c_str());
       
       for (iFFDBox = 0 ; iFFDBox < nFFDBox; iFFDBox++) {
-        position = text_line.find ("FFD_SURFACE_POINTS=",0);
+        
+        while (getline (input_file, text_line)) {
+          position = text_line.find ("FFD_SURFACE_POINTS=",0);
+          if (position != string::npos) break;
+        }
+
         text_line.erase (0,19); unsigned long nSurfacePoints = atoi(text_line.c_str());
         
         for (iSurfacePoints = 0; iSurfacePoints < nSurfacePoints; iSurfacePoints++) {
