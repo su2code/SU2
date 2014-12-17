@@ -20,6 +20,8 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifdef HAVE_FluidProp
+
 #include "../include/fluid_model.hpp"
 #include "fluidprop.h"
 
@@ -334,7 +336,7 @@ void CFluidProp::SetTDState_NonDim () {
 
 }
 
-
+#endif
 
 
 

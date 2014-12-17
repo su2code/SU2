@@ -1944,6 +1944,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
         }
         break;
 
+#ifdef HAVE_FluidProp
       case FLUIDPROP:
         printf("Creation of new CFluidProp 1 ...\n");
         FluidModel = new CFluidProp(config->GetFluidSubLib(), config->GetnComp(), config->GetCompNames(), config->GetMoleFracs(),
@@ -1959,6 +1960,8 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
           config->SetTemperature_FreeStream(Temperature_FreeStream);
         }
         break;
+#endif
+
     }
     
     Mach2Vel_FreeStream = FluidModel->GetSoundSpeed();
@@ -2183,8 +2186,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
       FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
       break;
 
-//#ifdef FLUIDPROP
-
+#ifdef HAVE_FluidProp
    case FLUIDPROP:
       //TODO here adding call to nn dim FP
       printf("Creation of new CFluidProp 2 ...\n");
@@ -2192,8 +2194,8 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
                                   config->GetTemperature_Ref(), config->GetPressure_Ref(), config->GetDensity_Ref());
       FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
       break;
+#endif
 
-//#endif
   }
 
   Energy_FreeStreamND = FluidModel->GetStaticEnergy() + 0.5*ModVel_FreeStreamND*ModVel_FreeStreamND;
@@ -2300,7 +2302,8 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
 				cout << "Critical Temperature (non-dim) :  " << config->GetTemperature_Critical() /config->GetTemperature_Ref() << endl;
 				break;
 
-    	    case FLUIDPROP:
+ #ifdef HAVE_FluidProp
+   	    case FLUIDPROP:
     	    	cout << "Fluid Model: FluidProp" << endl;
 	                        cout << "Selected Library       : " << config->GetFluidSubLib() << endl;
 				string* CompNames = config->GetCompNames();
@@ -2313,12 +2316,8 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
 				for( int i = 1; i < config->GetnComp(); i++)
 				   cout << ", " << MoleFracs[i];
 				cout << endl;
-
-				//cout << "Critical Pressure:   " << config->GetPressure_Critical()  << " Pa." << endl;
-				//cout << "Critical Temperature:  " << config->GetTemperature_Critical() << " K." << endl;
-				//cout << "Critical Pressure (non-dim):   " << config->GetPressure_Critical() / config->GetPressure_Ref() << endl;
-				//cout << "Critical Temperature (non-dim) :  " << config->GetTemperature_Critical() / config->GetTemperature_Ref() << endl;
 				break;
+#endif
 
     		}
     	if(viscous){

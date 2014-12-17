@@ -501,6 +501,7 @@ public:
 };
 
 
+#ifdef HAVE_FluidProp
 
 /*!
  * \derived class CFluidProp
@@ -599,7 +600,7 @@ public:
     void SetTDState_NonDim();
 };
 
-
+#endif
 
 #include "fluid_model.inl"
 
