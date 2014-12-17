@@ -2765,7 +2765,9 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
   
   bound = bound_Copy;
   nMarker = nMarker_Physical + nMarker_SendRecv;
+  
   config->SetnMarker_All(nMarker);
+
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     nElem_Bound[iMarker] = nElem_Bound_Copy[iMarker];
   }
@@ -2801,7 +2803,16 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
     /*--- Send-Receive boundaries definition ---*/
     
     else {
+      
       config->SetMarker_All_KindBC(iMarker, SEND_RECEIVE);
+      config->SetMarker_All_Monitoring(iMarker, NO);
+      config->SetMarker_All_GeoEval(iMarker, NO);
+      config->SetMarker_All_Designing(iMarker, NO);
+      config->SetMarker_All_Plotting(iMarker, NO);
+      config->SetMarker_All_DV(iMarker, NO);
+      config->SetMarker_All_Moving(iMarker, NO);
+      config->SetMarker_All_PerBound(iMarker, NO);
+      config->SetMarker_All_Out_1D(iMarker, NO);
       
       for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
         if (config->GetMarker_All_SendRecv(iMarker) < 0)
