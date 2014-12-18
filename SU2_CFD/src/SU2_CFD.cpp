@@ -126,8 +126,6 @@ int main(int argc, char *argv[]) {
       
       geometry_aux = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
       
-      cout << endl <<"---------------------------- Grid partitioning --------------------------" << endl;
-
       /*--- Color the initial grid and set the send-receive domains ---*/
       
       geometry_aux->SetColorGrid(config_container[iZone]);
@@ -492,6 +490,8 @@ MPI_Barrier(MPI_COMM_WORLD);
                                      geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
           }
           
+          if (rank == MASTER_NODE) cout << endl;
+          
         }
     
     /*--- If the convergence criteria has been met, terminate the simulation. ---*/
@@ -505,7 +505,6 @@ MPI_Barrier(MPI_COMM_WORLD);
   /*--- Output some information to the console. ---*/
   
   if (rank == MASTER_NODE) {
-    cout << endl;
     
   /*--- Print out the number of non-physical points and reconstructions ---*/
     

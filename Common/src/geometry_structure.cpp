@@ -7725,6 +7725,9 @@ void CPhysicalGeometry::SetColorGrid(CConfig *config) {
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
   
+  if (size != SINGLE_ZONE)
+    cout << endl <<"---------------------------- Grid partitioning --------------------------" << endl;
+  
   unsigned short nDomain = size;
   
   nElem_Triangle = 0;
@@ -7879,6 +7882,7 @@ void CPhysicalGeometry::SetColorGrid(CConfig *config) {
   delete[] eptr;
   
 #endif
+  
 #endif
   
 }

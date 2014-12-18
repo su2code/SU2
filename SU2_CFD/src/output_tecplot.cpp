@@ -766,8 +766,8 @@ void COutput::SetTecplot_MeshASCII(CConfig *config, CGeometry *geometry, bool su
   char cstr[200];
   ofstream Tecplot_File;
 
-  if (surf_sol) strcpy(cstr, "Surface_Grid.plt");
-  else strcpy(cstr, "Volumetric_Grid.plt");
+  if (surf_sol) strcpy(cstr, "surface_grid.dat");
+  else strcpy(cstr, "volumetric_grid.dat");
   
   /*--- Open Tecplot ASCII file and write the header. ---*/
   

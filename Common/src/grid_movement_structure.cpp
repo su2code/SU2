@@ -2637,11 +2637,17 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
   
   /*--- FFD setting ---*/
   
-  else if (config->GetDesign_Variable(0) == FFD_SETTING)  { cout << "No surface deformation (setting FFD)." << endl; }
+  else if (config->GetDesign_Variable(0) == FFD_SETTING)  {
+    if (rank == MASTER_NODE)
+      cout << "No surface deformation (setting FFD)." << endl;
+  }
 
   /*--- Design variable not implement ---*/
 
-  else { cout << "Design Variable not implement yet" << endl; }
+  else {
+    if (rank == MASTER_NODE)
+      cout << "Design Variable not implement yet" << endl;
+  }
   
 }
 
@@ -2728,7 +2734,7 @@ void CSurfaceMovement::SetParametricCoord(CGeometry *geometry, CConfig *config, 
           
 					/*--- Find the parametric coordinate ---*/
           
-					ParamCoord = FFDBox->GetParametricCoord_Iterative(CartCoord, ParamCoordGuess, config);
+					ParamCoord = FFDBox->GetParametricCoord_Iterative(iPoint, CartCoord, ParamCoordGuess, config);
           
 					/*--- If the parametric coordinates are in (0,1) the point belongs to the FFDBox ---*/
           
@@ -2801,7 +2807,7 @@ void CSurfaceMovement::SetParametricCoordCP(CGeometry *geometry, CConfig *config
 		for (jOrder = 0; jOrder < FFDBoxChild->GetmOrder(); jOrder++)
 			for (kOrder = 0; kOrder < FFDBoxChild->GetnOrder(); kOrder++) {
 				CartCoord = FFDBoxChild->GetCoordControlPoints(iOrder, jOrder, kOrder);
-				ParamCoord = FFDBoxParent->GetParametricCoord_Iterative(CartCoord, ParamCoordGuess, config);
+				ParamCoord = FFDBoxParent->GetParametricCoord_Iterative(0, CartCoord, ParamCoordGuess, config);
 				FFDBoxChild->SetParCoordControlPoints(ParamCoord, iOrder, jOrder, kOrder);
 			}
 
@@ -2890,7 +2896,7 @@ void CSurfaceMovement::UpdateParametricCoord(CGeometry *geometry, CConfig *confi
 			/*--- Find the parametric coordinate using as ParamCoordGuess the previous value ---*/
       
 			ParamCoordGuess[0] = ParamCoord[0]; ParamCoordGuess[1] = ParamCoord[1]; ParamCoordGuess[2] = ParamCoord[2];
-			ParamCoord = FFDBox->GetParametricCoord_Iterative(CartCoord, ParamCoordGuess, config);
+			ParamCoord = FFDBox->GetParametricCoord_Iterative(iPoint, CartCoord, ParamCoordGuess, config);
 					
 			/*--- Set the new value of the parametric coordinates ---*/
       
@@ -3006,244 +3012,240 @@ void CSurfaceMovement::SetCartesianCoord(CGeometry *geometry, CConfig *config, C
 
 
 void CSurfaceMovement::SetFFDCPChange_2D(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox,
-									   unsigned short iDV, bool ResetDef) {
-	
-    double movement[3], Ampl;
-    unsigned short index[3], i, j;
-    string design_FFDBox;
+                                         unsigned short iDV, bool ResetDef) {
   
-    design_FFDBox = config->GetFFDTag(iDV);
-
-    if (design_FFDBox.compare(FFDBox->GetTag()) == 0) {
+  double movement[3], Ampl;
+  unsigned short index[3], i, j;
+  string design_FFDBox;
+  
+  /*--- Set control points to its original value (even if the
+   design variable is not in this box) ---*/
+  
+  if (ResetDef == true) FFDBox->SetOriginalControlPoints();
+  
+  design_FFDBox = config->GetFFDTag(iDV);
+  
+  if (design_FFDBox.compare(FFDBox->GetTag()) == 0) {
     
-      /*--- Set control points to its original value ---*/
-
-      if (ResetDef == true) FFDBox->SetOriginalControlPoints();
-
-      /*--- Compute deformation ---*/
-
-          Ampl = config->GetDV_Value(iDV);
-
-          movement[0] = config->GetParamDV(iDV, 3)*Ampl;
-          movement[1] = config->GetParamDV(iDV, 4)*Ampl;
-          movement[2] = 0.0;
-
-          index[0] = int(config->GetParamDV(iDV, 1));
-          index[1] = int(config->GetParamDV(iDV, 2));
-
-          /*--- Lower surface ---*/
-
-          index[2] = 0;
-
-          if ((int(config->GetParamDV(iDV, 1)) == -1) &&
-              (int(config->GetParamDV(iDV, 2)) != -1)) {
-            for (i = 0; i < FFDBox->GetlOrder(); i++) {
-              index[0] = i;
-              FFDBox->SetControlPoints(index, movement);
-            }
-          }
-
-          if ((int(config->GetParamDV(iDV, 1)) != -1) &&
-              (int(config->GetParamDV(iDV, 2)) == -1)) {
-            for (j = 0; j < FFDBox->GetmOrder(); j++) {
-              index[1] = j;
-              FFDBox->SetControlPoints(index, movement);
-            }
-          }
-
-          if ((int(config->GetParamDV(iDV, 1)) == -1) &&
-              (int(config->GetParamDV(iDV, 2)) == -1)) {
-            for (i = 0; i < FFDBox->GetlOrder(); i++) {
-              index[0] = i;
-              for (j = 0; j < FFDBox->GetmOrder(); j++) {
-                index[1] = j;
-                FFDBox->SetControlPoints(index, movement);
-              }
-            }
-          }
-          if ((int(config->GetParamDV(iDV, 1)) != -1) &&
-              (int(config->GetParamDV(iDV, 2)) != -1)) {
-
-              FFDBox->SetControlPoints(index, movement);
-            }
-
-
-          /*--- Upper surface ---*/
-
-          index[2] = 1;
-
-          if ((int(config->GetParamDV(iDV, 1)) == -1) &&
-              (int(config->GetParamDV(iDV, 2)) != -1)) {
-            for (i = 0; i < FFDBox->GetlOrder(); i++) {
-              index[0] = i;
-              FFDBox->SetControlPoints(index, movement);
-            }
-          }
-
-          if ((int(config->GetParamDV(iDV, 1)) != -1) &&
-              (int(config->GetParamDV(iDV, 2)) == -1)) {
-            for (j = 0; j < FFDBox->GetmOrder(); j++) {
-              index[1] = j;
-              FFDBox->SetControlPoints(index, movement);
-            }
-          }
-
-          if ((int(config->GetParamDV(iDV, 1)) == -1) &&
-              (int(config->GetParamDV(iDV, 2)) == -1)) {
-            for (i = 0; i < FFDBox->GetlOrder(); i++) {
-              index[0] = i;
-              for (j = 0; j < FFDBox->GetmOrder(); j++) {
-                index[1] = j;
-                FFDBox->SetControlPoints(index, movement);
-              }
-            }
-          }
-          if ((int(config->GetParamDV(iDV, 1)) != -1) &&
-              (int(config->GetParamDV(iDV, 2)) != -1)) {
-
-              FFDBox->SetControlPoints(index, movement);
-            }
+    /*--- Compute deformation ---*/
+    
+    Ampl = config->GetDV_Value(iDV);
+    
+    movement[0] = config->GetParamDV(iDV, 3)*Ampl;
+    movement[1] = config->GetParamDV(iDV, 4)*Ampl;
+    movement[2] = 0.0;
+    
+    index[0] = int(config->GetParamDV(iDV, 1));
+    index[1] = int(config->GetParamDV(iDV, 2));
+    
+    /*--- Lower surface ---*/
+    
+    index[2] = 0;
+    
+    if ((int(config->GetParamDV(iDV, 1)) == -1) &&
+        (int(config->GetParamDV(iDV, 2)) != -1)) {
+      for (i = 0; i < FFDBox->GetlOrder(); i++) {
+        index[0] = i;
+        FFDBox->SetControlPoints(index, movement);
+      }
     }
+    
+    if ((int(config->GetParamDV(iDV, 1)) != -1) &&
+        (int(config->GetParamDV(iDV, 2)) == -1)) {
+      for (j = 0; j < FFDBox->GetmOrder(); j++) {
+        index[1] = j;
+        FFDBox->SetControlPoints(index, movement);
+      }
+    }
+    
+    if ((int(config->GetParamDV(iDV, 1)) == -1) &&
+        (int(config->GetParamDV(iDV, 2)) == -1)) {
+      for (i = 0; i < FFDBox->GetlOrder(); i++) {
+        index[0] = i;
+        for (j = 0; j < FFDBox->GetmOrder(); j++) {
+          index[1] = j;
+          FFDBox->SetControlPoints(index, movement);
+        }
+      }
+    }
+    if ((int(config->GetParamDV(iDV, 1)) != -1) &&
+        (int(config->GetParamDV(iDV, 2)) != -1)) {
+      
+      FFDBox->SetControlPoints(index, movement);
+    }
+    
+    
+    /*--- Upper surface ---*/
+    
+    index[2] = 1;
+    
+    if ((int(config->GetParamDV(iDV, 1)) == -1) &&
+        (int(config->GetParamDV(iDV, 2)) != -1)) {
+      for (i = 0; i < FFDBox->GetlOrder(); i++) {
+        index[0] = i;
+        FFDBox->SetControlPoints(index, movement);
+      }
+    }
+    
+    if ((int(config->GetParamDV(iDV, 1)) != -1) &&
+        (int(config->GetParamDV(iDV, 2)) == -1)) {
+      for (j = 0; j < FFDBox->GetmOrder(); j++) {
+        index[1] = j;
+        FFDBox->SetControlPoints(index, movement);
+      }
+    }
+    
+    if ((int(config->GetParamDV(iDV, 1)) == -1) &&
+        (int(config->GetParamDV(iDV, 2)) == -1)) {
+      for (i = 0; i < FFDBox->GetlOrder(); i++) {
+        index[0] = i;
+        for (j = 0; j < FFDBox->GetmOrder(); j++) {
+          index[1] = j;
+          FFDBox->SetControlPoints(index, movement);
+        }
+      }
+    }
+    if ((int(config->GetParamDV(iDV, 1)) != -1) &&
+        (int(config->GetParamDV(iDV, 2)) != -1)) {
+      
+      FFDBox->SetControlPoints(index, movement);
+    }
+  }
 		
 }
 
-
-
-/*------------------------------------------------------------------------------------*/
-
 void CSurfaceMovement::SetFFDCPChange_2D_rad(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox,
-                                                                            unsigned short iDV, bool ResetDef) {
-
-    double movement[3], Ampl;
-    unsigned short index[3], i, j;
-    string design_FFDBox;
-
-    design_FFDBox = config->GetFFDTag(iDV);
-
-    if (design_FFDBox.compare(FFDBox->GetTag()) == 0) {
-
-      /*--- Set control points to its original value ---*/
-
-      if (ResetDef == true) FFDBox->SetOriginalControlPoints();
-
-      /*--- Compute deformation ---*/
-
-          Ampl = config->GetDV_Value(iDV);
-
-          /*--- Lower surface ---*/
-
-          index[2] = 0;
-
-          // Movement down
-          movement[0] = 0.0*Ampl;
-          movement[1] = -1.0*Ampl;
-          movement[2] = 0.0;
-
-          for (i = 0; i < FFDBox->GetlOrder(); i++)
-          {
-              index[0] = i;
-              index[1] = 0;
-              FFDBox->SetControlPoints(index, movement);
-          }
-
-          // Movement left
-          movement[0] = -1.0*Ampl;
-          movement[1] = 0.0*Ampl;
-          movement[2] = 0.0;
-
-
-          for (j = 0; j < FFDBox->GetmOrder(); j++)
-          {
-              index[0] = 0;
-              index[1] = j;
-              FFDBox->SetControlPoints(index, movement);
-          }
-
-
-          // Movement up
-          movement[0] = 0.0*Ampl;
-          movement[1] = 1.0*Ampl;
-          movement[2] = 0.0;
-
-          for (i = 0; i < FFDBox->GetlOrder(); i++)
-          {
-              index[0] = i;
-              index[1] = FFDBox->GetmOrder()-1;
-              FFDBox->SetControlPoints(index, movement);
-          }
-
-          // Movement right
-          movement[0] = 1.0*Ampl;
-          movement[1] = 0.0*Ampl;
-          movement[2] = 0.0;
-
-
-          for (j = 0; j < FFDBox->GetmOrder(); j++)
-          {
-              index[0] = FFDBox->GetlOrder()-1;
-              index[1] = j;
-              FFDBox->SetControlPoints(index, movement);
-          }
-
-      /*--- Upper surface ---*/
-
-          index[2] = 1;
-
-          // Movement down
-          movement[0] = 0.0*Ampl;
-          movement[1] = -1.0*Ampl;
-          movement[2] = 0.0;
-
-          for (i = 0; i < FFDBox->GetlOrder(); i++)
-          {
-              index[0] = i;
-              index[1] = 0;
-              FFDBox->SetControlPoints(index, movement);
-          }
-
-          // Movement left
-          movement[0] = -1.0*Ampl;
-          movement[1] = 0.0*Ampl;
-          movement[2] = 0.0;
-
-
-          for (j = 0; j < FFDBox->GetmOrder(); j++)
-          {
-              index[0] = 0;
-              index[1] = j;
-              FFDBox->SetControlPoints(index, movement);
-          }
-
-
-          // Movement up
-          movement[0] = 0.0*Ampl;
-          movement[1] = 1.0*Ampl;
-          movement[2] = 0.0;
-
-          for (i = 0; i < FFDBox->GetlOrder(); i++)
-          {
-              index[0] = i;
-              index[1] = FFDBox->GetmOrder()-1;
-              FFDBox->SetControlPoints(index, movement);
-          }
-
-          // Movement right
-          movement[0] = 1.0*Ampl;
-          movement[1] = 0.0*Ampl;
-          movement[2] = 0.0;
-
-
-          for (j = 0; j < FFDBox->GetmOrder(); j++)
-          {
-              index[0] = FFDBox->GetlOrder()-1;
-              index[1] = j;
-              FFDBox->SetControlPoints(index, movement);
-          }
-      }
-
+                                             unsigned short iDV, bool ResetDef) {
+  
+  double movement[3], Ampl;
+  unsigned short index[3], i, j;
+  string design_FFDBox;
+  
+  /*--- Set control points to its original value (even if the
+   design variable is not in this box) ---*/
+  
+  if (ResetDef == true) FFDBox->SetOriginalControlPoints();
+  
+  design_FFDBox = config->GetFFDTag(iDV);
+  
+  if (design_FFDBox.compare(FFDBox->GetTag()) == 0) {
+    
+    /*--- Compute deformation ---*/
+    
+    Ampl = config->GetDV_Value(iDV);
+    
+    /*--- Lower surface ---*/
+    
+    index[2] = 0;
+    
+    // Movement down
+    movement[0] = 0.0*Ampl;
+    movement[1] = -1.0*Ampl;
+    movement[2] = 0.0;
+    
+    for (i = 0; i < FFDBox->GetlOrder(); i++)
+    {
+      index[0] = i;
+      index[1] = 0;
+      FFDBox->SetControlPoints(index, movement);
+    }
+    
+    // Movement left
+    movement[0] = -1.0*Ampl;
+    movement[1] = 0.0*Ampl;
+    movement[2] = 0.0;
+    
+    
+    for (j = 0; j < FFDBox->GetmOrder(); j++)
+    {
+      index[0] = 0;
+      index[1] = j;
+      FFDBox->SetControlPoints(index, movement);
+    }
+    
+    
+    // Movement up
+    movement[0] = 0.0*Ampl;
+    movement[1] = 1.0*Ampl;
+    movement[2] = 0.0;
+    
+    for (i = 0; i < FFDBox->GetlOrder(); i++)
+    {
+      index[0] = i;
+      index[1] = FFDBox->GetmOrder()-1;
+      FFDBox->SetControlPoints(index, movement);
+    }
+    
+    // Movement right
+    movement[0] = 1.0*Ampl;
+    movement[1] = 0.0*Ampl;
+    movement[2] = 0.0;
+    
+    
+    for (j = 0; j < FFDBox->GetmOrder(); j++)
+    {
+      index[0] = FFDBox->GetlOrder()-1;
+      index[1] = j;
+      FFDBox->SetControlPoints(index, movement);
+    }
+    
+    /*--- Upper surface ---*/
+    
+    index[2] = 1;
+    
+    // Movement down
+    movement[0] = 0.0*Ampl;
+    movement[1] = -1.0*Ampl;
+    movement[2] = 0.0;
+    
+    for (i = 0; i < FFDBox->GetlOrder(); i++)
+    {
+      index[0] = i;
+      index[1] = 0;
+      FFDBox->SetControlPoints(index, movement);
+    }
+    
+    // Movement left
+    movement[0] = -1.0*Ampl;
+    movement[1] = 0.0*Ampl;
+    movement[2] = 0.0;
+    
+    
+    for (j = 0; j < FFDBox->GetmOrder(); j++)
+    {
+      index[0] = 0;
+      index[1] = j;
+      FFDBox->SetControlPoints(index, movement);
+    }
+    
+    
+    // Movement up
+    movement[0] = 0.0*Ampl;
+    movement[1] = 1.0*Ampl;
+    movement[2] = 0.0;
+    
+    for (i = 0; i < FFDBox->GetlOrder(); i++)
+    {
+      index[0] = i;
+      index[1] = FFDBox->GetmOrder()-1;
+      FFDBox->SetControlPoints(index, movement);
+    }
+    
+    // Movement right
+    movement[0] = 1.0*Ampl;
+    movement[1] = 0.0*Ampl;
+    movement[2] = 0.0;
+    
+    
+    for (j = 0; j < FFDBox->GetmOrder(); j++)
+    {
+      index[0] = FFDBox->GetlOrder()-1;
+      index[1] = j;
+      FFDBox->SetControlPoints(index, movement);
+    }
+  }
+  
 }
-
-/*--------------------------------------------------------------------------------------*/
 
 void CSurfaceMovement::SetFFDCPChange(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox,
 																			unsigned short iDV, bool ResetDef) {
@@ -3252,13 +3254,14 @@ void CSurfaceMovement::SetFFDCPChange(CGeometry *geometry, CConfig *config, CFre
 	unsigned short index[3], i, j, k;
 	string design_FFDBox;
   
+  /*--- Set control points to its original value (even if the
+   design variable is not in this box) ---*/
+  
+  if (ResetDef == true) FFDBox->SetOriginalControlPoints();
+  
 	design_FFDBox = config->GetFFDTag(iDV);
-	
+
 	if (design_FFDBox.compare(FFDBox->GetTag()) == 0) {
-		
-    /*--- Set control points to its original value ---*/
-    
-    if (ResetDef == true) FFDBox->SetOriginalControlPoints();
     
     /*--- Compute deformation ---*/
     
@@ -3351,13 +3354,14 @@ void CSurfaceMovement::SetFFDCamber_2D(CGeometry *geometry, CConfig *config, CFr
 	unsigned short index[3], kIndex;
 	string design_FFDBox;
   
+  /*--- Set control points to its original value (even if the
+   design variable is not in this box) ---*/
+  
+  if (ResetDef == true) FFDBox->SetOriginalControlPoints();
+
 	design_FFDBox = config->GetFFDTag(iDV);
 	
 	if (design_FFDBox.compare(FFDBox->GetTag()) == 0) {
-		
-    /*--- Set control points to its original value ---*/
-    
-    if (ResetDef == true) FFDBox->SetOriginalControlPoints();
     
 		for (kIndex = 0; kIndex < 2; kIndex++) {
       
@@ -3386,14 +3390,15 @@ void CSurfaceMovement::SetFFDThickness_2D(CGeometry *geometry, CConfig *config, 
 	unsigned short index[3], kIndex;
 	string design_FFDBox;
   
+  /*--- Set control points to its original value (even if the
+   design variable is not in this box) ---*/
+  
+  if (ResetDef == true) FFDBox->SetOriginalControlPoints();
+
 	design_FFDBox = config->GetFFDTag(iDV);
 	
 	if (design_FFDBox.compare(FFDBox->GetTag()) == 0) {
-		
-    /*--- Set control points to its original value ---*/
-    
-    if (ResetDef == true) FFDBox->SetOriginalControlPoints();
-		
+				
     for (kIndex = 0; kIndex < 2; kIndex++) {
 			
 			Ampl = config->GetDV_Value(iDV);
@@ -3421,13 +3426,14 @@ void CSurfaceMovement::SetFFDCamber(CGeometry *geometry, CConfig *config, CFreeF
 	unsigned short index[3], kIndex;
 	string design_FFDBox;
   
+  /*--- Set control points to its original value (even if the
+   design variable is not in this box) ---*/
+  
+  if (ResetDef == true) FFDBox->SetOriginalControlPoints();
+
 	design_FFDBox = config->GetFFDTag(iDV);
 	
 	if (design_FFDBox.compare(FFDBox->GetTag()) == 0) {
-		
-    /*--- Set control points to its original value ---*/
-    
-    if (ResetDef == true) FFDBox->SetOriginalControlPoints();
     
 		for (kIndex = 0; kIndex < 2; kIndex++) {
 						
@@ -3455,14 +3461,15 @@ void CSurfaceMovement::SetFFDThickness(CGeometry *geometry, CConfig *config, CFr
 	unsigned short index[3], kIndex;
 	string design_FFDBox;
   
+  /*--- Set control points to its original value (even if the
+   design variable is not in this box) ---*/
+  
+  if (ResetDef == true) FFDBox->SetOriginalControlPoints();
+
 	design_FFDBox = config->GetFFDTag(iDV);
 	
 	if (design_FFDBox.compare(FFDBox->GetTag()) == 0) {
-		
-    /*--- Set control points to its original value ---*/
-    
-    if (ResetDef == true) FFDBox->SetOriginalControlPoints();
-		
+				
     for (kIndex = 0; kIndex < 2; kIndex++) {
 			
 			Ampl = config->GetDV_Value(iDV);
@@ -3490,13 +3497,14 @@ void CSurfaceMovement::SetFFDDihedralAngle(CGeometry *geometry, CConfig *config,
 	double movement[3], theta;
 	string design_FFDBox;
   
+  /*--- Set control points to its original value (even if the
+   design variable is not in this box) ---*/
+  
+  if (ResetDef == true) FFDBox->SetOriginalControlPoints();
+
 	design_FFDBox = config->GetFFDTag(iDV);
 	
 	if (design_FFDBox.compare(FFDBox->GetTag()) == 0) {
-		
-    /*--- Set control points to its original value ---*/
-    
-    if (ResetDef == true) FFDBox->SetOriginalControlPoints();
     
 		/*--- The angle of rotation. ---*/
     
@@ -3524,13 +3532,14 @@ void CSurfaceMovement::SetFFDTwistAngle(CGeometry *geometry, CConfig *config, CF
 	unsigned short index[3];
 	string design_FFDBox;
   
+  /*--- Set control points to its original value (even if the
+   design variable is not in this box) ---*/
+  
+  if (ResetDef == true) FFDBox->SetOriginalControlPoints();
+
 	design_FFDBox = config->GetFFDTag(iDV);
 	
 	if (design_FFDBox.compare(FFDBox->GetTag()) == 0) {
-		
-    /*--- Set control points to its original value ---*/
-    
-    if (ResetDef == true) FFDBox->SetOriginalControlPoints();
     
 		/*--- xyz-coordinates of a point on the line of rotation. ---*/
     
@@ -3605,13 +3614,14 @@ void CSurfaceMovement::SetFFDRotation(CGeometry *geometry, CConfig *config, CFre
 	unsigned short index[3];
 	string design_FFDBox;
   
+  /*--- Set control points to its original value (even if the
+   design variable is not in this box) ---*/
+  
+  if (ResetDef == true) FFDBox->SetOriginalControlPoints();
+
 	design_FFDBox = config->GetFFDTag(iDV);
 	
 	if (design_FFDBox.compare(FFDBox->GetTag()) == 0) {
-		
-    /*--- Set control points to its original value ---*/
-    
-    if (ResetDef == true) FFDBox->SetOriginalControlPoints();
     
 		/*--- xyz-coordinates of a point on the line of rotation. ---*/
     
@@ -3672,13 +3682,14 @@ void CSurfaceMovement::SetFFDControl_Surface(CGeometry *geometry, CConfig *confi
 	unsigned short index[3];
 	string design_FFDBox;
   
+  /*--- Set control points to its original value (even if the
+   design variable is not in this box) ---*/
+  
+  if (ResetDef == true) FFDBox->SetOriginalControlPoints();
+
 	design_FFDBox = config->GetFFDTag(iDV);
 	
 	if (design_FFDBox.compare(FFDBox->GetTag()) == 0) {
-		
-    /*--- Set control points to its original value ---*/
-    
-    if (ResetDef == true) FFDBox->SetOriginalControlPoints();
     
 		/*--- xyz-coordinates of a point on the line of rotation. ---*/
     
@@ -6172,7 +6183,6 @@ void CSurfaceMovement::MergeFFDInfo(CGeometry *geometry, CConfig *config) {
           
           string TagBound_CfgFile = config->GetMarker_CfgFile_TagBound(Buffer_Recv_MarkerIndex_CfgFile[jPoint]);
           GlobalTag[iFFDBox].push_back(TagBound_CfgFile);
-          
           jPoint++;
           
         }
@@ -6198,11 +6208,13 @@ void CSurfaceMovement::MergeFFDInfo(CGeometry *geometry, CConfig *config) {
       delete [] Buffer_Recv_Z;
       delete [] Buffer_Recv_Point;
       delete [] Buffer_Recv_MarkerIndex_CfgFile;
-      delete [] Buffer_Recv_nPoint;
     }
     
   }
 
+  if (rank == MASTER_NODE) {
+    delete [] Buffer_Recv_nPoint;
+  }
   
 #endif
   
@@ -6538,7 +6550,7 @@ void CFreeFormDefBox::SetTecplot(CGeometry *geometry, unsigned short iFFDBox, bo
 	
   nDim = geometry->GetnDim();
   
-  sprintf (FFDBox_filename, "FFD_Boxes.plt");
+  sprintf (FFDBox_filename, "ffd_boxes.dat");
   
   if ((original) && (iFFDBox == 0)) new_file = true;
   else new_file = false;
@@ -6759,7 +6771,7 @@ void CFreeFormDefBox::GetFFDHessian(double *uvw, double *xyz, double **val_Hessi
   
 }
 
-double *CFreeFormDefBox::GetParametricCoord_Iterative(double *xyz, double *ParamCoordGuess, CConfig *config) {
+double *CFreeFormDefBox::GetParametricCoord_Iterative(unsigned long iPoint, double *xyz, double *ParamCoordGuess, CConfig *config) {
   
 	double IndepTerm[3], SOR_Factor = 1.0, MinNormError, NormError, Determinant, AdjHessian[3][3], Temp[3];
 	unsigned short iDim, jDim, RandonCounter;
@@ -6845,16 +6857,18 @@ double *CFreeFormDefBox::GetParametricCoord_Iterative(double *xyz, double *Param
 		  
 		/*--- If we have no convergence with Random_Trials iterations probably we are in a local minima. ---*/
     
-		if ( (((iter % it_max) == 0) && (iter != 0)) || (NormError > 1.8) ) {
+		if (((iter % it_max) == 0) && (iter != 0)) {
+      
 			RandonCounter++;
       if (RandonCounter == Random_Trials) {
-        cout << endl << "Unknown point: (" << xyz[0] <<", "<< xyz[1] <<", "<< xyz[2] <<"). Min Error: "<< MinNormError <<". Iter: "<< iter <<"."<< endl;
+        cout << endl << "Unknown point: "<< iPoint <<" (" << xyz[0] <<", "<< xyz[1] <<", "<< xyz[2] <<"). Min Error: "<< MinNormError <<". Iter: "<< iter <<"."<< endl;
       }
       else {
         SOR_Factor = 0.1;
         for (iDim = 0; iDim < nDim; iDim++)
           ParamCoord[iDim] = double(rand())/double(RAND_MAX);
       }
+      
 		}
     
 	}

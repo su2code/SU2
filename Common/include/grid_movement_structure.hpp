@@ -422,7 +422,7 @@ public:
 	 * \param[in] it_max - Maximal number of iterations.
 	 * \return Parametric coordinates of the point.
 	 */
-	double *GetParametricCoord_Iterative(double *xyz, double *guess, CConfig *config);
+	double *GetParametricCoord_Iterative(unsigned long iPoint, double *xyz, double *guess, CConfig *config);
 	
 	/*! 
 	 * \brief Compute the cross product.

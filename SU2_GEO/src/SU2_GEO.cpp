@@ -97,9 +97,7 @@ int main(int argc, char *argv[]) {
       /*--- Read the grid using the master node ---*/
       
       geometry_aux = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
-      
-      cout << endl <<"---------------------------- Grid partitioning --------------------------" << endl;
-      
+            
       /*--- Color the initial grid and set the send-receive domains ---*/
       
       geometry_aux->SetColorGrid(config_container[iZone]);
