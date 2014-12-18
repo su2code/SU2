@@ -796,7 +796,7 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
   /*--- Local variables needed on all processors ---*/
   
   unsigned short iDim, nDim = geometry->GetnDim();
-  unsigned long iPoint, jPoint;
+  unsigned long iPoint;
   
 #ifndef HAVE_MPI
   
@@ -842,34 +842,33 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
     Coords[iDim] = new double[nGlobal_Poin];
   }
   
-  /*--- Loop over the mesh to collect the coords of the local points. ---*/
+  /*--- Loop over the mesh to collect the coords of the local points ---*/
   
-  jPoint = 0;
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
     
-    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+    /*--- Check if the node belongs to the domain (i.e, not a halo node). 
+     Sort by the global index, even in serial there is a renumbering (e.g. RCM). ---*/
     
     if (!Local_Halo[iPoint]) {
       
       /*--- Retrieve the current coordinates at this node. ---*/
       
+      unsigned long iGlobal_Index = geometry->node[iPoint]->GetGlobalIndex();
+      
       for (iDim = 0; iDim < nDim; iDim++) {
-        Coords[iDim][jPoint] = geometry->node[iPoint]->GetCoord(iDim);
+        Coords[iDim][iGlobal_Index] = geometry->node[iPoint]->GetCoord(iDim);
         
         /*--- If US system, the output should be in inches ---*/
         
-        if (config->GetSystemMeasurements() == US) {
-          Coords[iDim][jPoint] *= 12.0;
+        if ((config->GetSystemMeasurements() == US) && (config->GetKind_SU2() != SU2_DEF)) {
+          Coords[iDim][iGlobal_Index] *= 12.0;
         }
         
       }
       
-      /*--- Increment a counter since we may be skipping over
-       some halo nodes during this loop. ---*/
-      
-      jPoint++;
     }
   }
+
   
   delete [] Local_Halo;
   
@@ -877,6 +876,8 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
   
   /*--- MPI preprocessing ---*/
   int iProcessor, nProcessor, rank;
+  unsigned long jPoint;
+
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
   

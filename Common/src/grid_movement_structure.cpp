@@ -2740,7 +2740,7 @@ void CSurfaceMovement::SetParametricCoord(CGeometry *geometry, CConfig *config, 
             
 						FFDBox->Set_MarkerIndex(iMarker);
 						FFDBox->Set_VertexIndex(iVertex);
-						FFDBox->Set_PointIndex(iPoint);
+            FFDBox->Set_PointIndex(geometry->node[iPoint]->GetGlobalIndex());
 						FFDBox->Set_ParametricCoord(ParamCoord);
 						FFDBox->Set_CartesianCoord(CartCoord);						
 						
@@ -5994,283 +5994,329 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
 
 }
 
+void CSurfaceMovement::MergeFFDInfo(CGeometry *geometry, CConfig *config) {
+  
+  /*--- Local variables needed on all processors ---*/
+  
+  unsigned long iPoint;
+  unsigned short iFFDBox;
+  
+#ifndef HAVE_MPI
+  
+  /*--- In serial, the single process has access to all geometry, so simply
+   load the coordinates into the data structure. ---*/
+  
+  /*--- Total number of points in each FFD box. ---*/
+  
+  for (iFFDBox = 0 ; iFFDBox < nFFDBox; iFFDBox++) {
+    
+    /*--- Loop over the mesh to collect the coords of the local points. ---*/
+    
+    for (iPoint = 0; iPoint < FFDBox[iFFDBox]->GetnSurfacePoint(); iPoint++) {
+      
+      /*--- Retrieve the current parametric coordinates at this node. ---*/
+      
+      GlobalCoordX[iFFDBox].push_back(FFDBox[iFFDBox]->Get_ParametricCoord(iPoint)[0]);
+      GlobalCoordY[iFFDBox].push_back(FFDBox[iFFDBox]->Get_ParametricCoord(iPoint)[1]);
+      GlobalCoordZ[iFFDBox].push_back(FFDBox[iFFDBox]->Get_ParametricCoord(iPoint)[2]);
+      GlobalPoint[iFFDBox].push_back(FFDBox[iFFDBox]->Get_PointIndex(iPoint));
+      
+      /*--- Marker of the boundary in the local domain. ---*/
+      
+      unsigned short MarkerIndex = FFDBox[iFFDBox]->Get_MarkerIndex(iPoint);
+      string TagBound = config->GetMarker_All_TagBound(MarkerIndex);
+      
+      /*--- Find the Marker of the boundary in the config file. ---*/
+      
+      unsigned short MarkerIndex_CfgFile = config->GetMarker_CfgFile_TagBound(TagBound);
+      string TagBound_CfgFile = config->GetMarker_CfgFile_TagBound(MarkerIndex_CfgFile);
+      
+      /*--- Set the value of the tag at this node. ---*/
+      
+      GlobalTag[iFFDBox].push_back(TagBound_CfgFile);
+      
+    }
+    
+  }
+  
+#else
+  
+  /*--- MPI preprocessing ---*/
+  
+  int iProcessor, nProcessor, rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+  
+  /*--- Local variables needed for merging the geometry with MPI. ---*/
+  
+  unsigned long jPoint, iPointLocal;
+  unsigned long Buffer_Send_nPoint[1], *Buffer_Recv_nPoint = NULL;
+  unsigned long nLocalPoint = 0, MaxLocalPoint = 0;
+  unsigned long nBuffer_Scalar = 0;
+  
+  if (rank == MASTER_NODE) Buffer_Recv_nPoint = new unsigned long[nProcessor];
+  
+  for (iFFDBox = 0 ; iFFDBox < nFFDBox; iFFDBox++) {
+    
+    nLocalPoint = 0;
+    for (iPoint = 0; iPoint < FFDBox[iFFDBox]->GetnSurfacePoint(); iPoint++) {
+      iPointLocal = FFDBox[iFFDBox]->Get_PointIndex(iPoint);
+      if (geometry->GetGlobal_to_Local_Point(iPointLocal) < geometry->GetnPointDomain()) {
+        nLocalPoint++;
+      }
+    }
+    Buffer_Send_nPoint[0] = nLocalPoint;
+    
+    /*--- Communicate the total number of nodes on this domain. ---*/
+    
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Gather(&Buffer_Send_nPoint, 1, MPI_UNSIGNED_LONG,
+               Buffer_Recv_nPoint, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+    MPI_Allreduce(&nLocalPoint, &MaxLocalPoint, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
+    
+    nBuffer_Scalar = MaxLocalPoint;
+    
+    /*--- Send and Recv buffers. ---*/
+    
+    double *Buffer_Send_X = new double[MaxLocalPoint];
+    double *Buffer_Recv_X = NULL;
+    
+    double *Buffer_Send_Y = new double[MaxLocalPoint];
+    double *Buffer_Recv_Y = NULL;
+    
+    double *Buffer_Send_Z = new double[MaxLocalPoint];
+    double *Buffer_Recv_Z = NULL;
+    
+    unsigned long *Buffer_Send_Point = new unsigned long[MaxLocalPoint];
+    unsigned long *Buffer_Recv_Point = NULL;
+    
+    unsigned short *Buffer_Send_MarkerIndex_CfgFile = new unsigned short[MaxLocalPoint];
+    unsigned short *Buffer_Recv_MarkerIndex_CfgFile = NULL;
+    
+    /*--- Prepare the receive buffers in the master node only. ---*/
+    
+    if (rank == MASTER_NODE) {
+      
+      Buffer_Recv_X = new double[nProcessor*MaxLocalPoint];
+      Buffer_Recv_Y = new double[nProcessor*MaxLocalPoint];
+      Buffer_Recv_Z = new double[nProcessor*MaxLocalPoint];
+      Buffer_Recv_Point = new unsigned long[nProcessor*MaxLocalPoint];
+      Buffer_Recv_MarkerIndex_CfgFile = new unsigned short[nProcessor*MaxLocalPoint];
+      
+    }
+    
+    /*--- Main communication routine. Loop over each coordinate and perform
+     the MPI comm. Temporary 1-D buffers are used to send the coordinates at
+     all nodes on each partition to the master node. These are then unpacked
+     by the master and sorted by global index in one large n-dim. array. ---*/
+    
+    /*--- Loop over this partition to collect the coords of the local points. ---*/
+    
+    jPoint = 0;
+    for (iPoint = 0; iPoint < FFDBox[iFFDBox]->GetnSurfacePoint(); iPoint++) {
+      
+      iPointLocal = FFDBox[iFFDBox]->Get_PointIndex(iPoint);
+      
+      if (geometry->GetGlobal_to_Local_Point(iPointLocal) < geometry->GetnPointDomain()) {
+        
+        /*--- Load local coords into the temporary send buffer. ---*/
+        
+        Buffer_Send_X[jPoint] = FFDBox[iFFDBox]->Get_ParametricCoord(iPoint)[0];
+        Buffer_Send_Y[jPoint] = FFDBox[iFFDBox]->Get_ParametricCoord(iPoint)[1];
+        Buffer_Send_Z[jPoint] = FFDBox[iFFDBox]->Get_ParametricCoord(iPoint)[2];
+        
+        /*--- Store the global index for this local node. ---*/
+        
+        Buffer_Send_Point[jPoint] = FFDBox[iFFDBox]->Get_PointIndex(iPoint);
+        
+        /*--- Marker of the boundary in the local domain. ---*/
+        
+        unsigned short MarkerIndex = FFDBox[iFFDBox]->Get_MarkerIndex(iPoint);
+        string TagBound = config->GetMarker_All_TagBound(MarkerIndex);
+        
+        /*--- Find the Marker of the boundary in the config file.---*/
+        
+        unsigned short MarkerIndex_CfgFile = config->GetMarker_CfgFile_TagBound(TagBound);
+        Buffer_Send_MarkerIndex_CfgFile[jPoint] = MarkerIndex_CfgFile;
+        
+        jPoint++;
+        
+      }
+      
+    }
+    
+    /*--- Gather the coordinate data on the master node using MPI. ---*/
+    
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Gather(Buffer_Send_X, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_X, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    MPI_Gather(Buffer_Send_Y, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Y, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    MPI_Gather(Buffer_Send_Z, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Z, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    MPI_Gather(Buffer_Send_Point, nBuffer_Scalar, MPI_UNSIGNED_LONG, Buffer_Recv_Point, nBuffer_Scalar, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+    MPI_Gather(Buffer_Send_MarkerIndex_CfgFile, nBuffer_Scalar, MPI_UNSIGNED_SHORT, Buffer_Recv_MarkerIndex_CfgFile, nBuffer_Scalar, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
+
+    /*--- The master node unpacks and sorts this variable by global index ---*/
+    
+    if (rank == MASTER_NODE) {
+      
+      jPoint = 0;
+      
+      for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+        for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
+          
+          /*--- Get global index, then loop over each variable and store ---*/
+          
+          GlobalCoordX[iFFDBox].push_back(Buffer_Recv_X[jPoint]);
+          GlobalCoordY[iFFDBox].push_back(Buffer_Recv_Y[jPoint]);
+          GlobalCoordZ[iFFDBox].push_back(Buffer_Recv_Z[jPoint]);
+          GlobalPoint[iFFDBox].push_back(Buffer_Recv_Point[jPoint]);
+          
+          string TagBound_CfgFile = config->GetMarker_CfgFile_TagBound(Buffer_Recv_MarkerIndex_CfgFile[jPoint]);
+          GlobalTag[iFFDBox].push_back(TagBound_CfgFile);
+          
+          jPoint++;
+          
+        }
+        
+        /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
+        
+        jPoint = (iProcessor+1)*nBuffer_Scalar;
+        
+      }
+    }
+    
+    /*--- Immediately release the temporary data buffers. ---*/
+    
+    delete [] Buffer_Send_X;
+    delete [] Buffer_Send_Y;
+    delete [] Buffer_Send_Z;
+    delete [] Buffer_Send_Point;
+    delete [] Buffer_Send_MarkerIndex_CfgFile;
+    
+    if (rank == MASTER_NODE) {
+      delete [] Buffer_Recv_X;
+      delete [] Buffer_Recv_Y;
+      delete [] Buffer_Recv_Z;
+      delete [] Buffer_Recv_Point;
+      delete [] Buffer_Recv_MarkerIndex_CfgFile;
+      delete [] Buffer_Recv_nPoint;
+    }
+    
+  }
+
+  
+#endif
+  
+}
 
 void CSurfaceMovement::WriteFFDInfo(CGeometry *geometry, CConfig *config) {
   
+  
 	unsigned short iOrder, jOrder, kOrder, iFFDBox, iCornerPoints, iParentFFDBox, iChildFFDBox;
 	unsigned long iSurfacePoints;
-  char cstr[MAX_STRING_SIZE], out_file[MAX_STRING_SIZE], in_file[MAX_STRING_SIZE];
+  char cstr[MAX_STRING_SIZE], mesh_file[MAX_STRING_SIZE];
   string str;
   ofstream output_file;
-  ifstream input_file;
   double *coord;
   string text_line;
-  string::size_type position;
-  vector<string> GlobalTag[MAX_NUMBER_FFD];
-  vector<unsigned long> GlobalPoint[MAX_NUMBER_FFD];
-  vector<double> GlobalCoordX[MAX_NUMBER_FFD];
-  vector<double> GlobalCoordY[MAX_NUMBER_FFD];
-  vector<double> GlobalCoordZ[MAX_NUMBER_FFD];
+  
+  int rank = MASTER_NODE;
+  
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
 
   unsigned short nDim = geometry->GetnDim();
   
-  /*--- Read and store the parametric coordinates using the master node ---*/
+  /*--- Merge the FFD info ---*/
   
-  str = config->GetMesh_FileName();
-  strcpy (in_file, str.c_str());
-  strcpy (cstr, in_file);
-  input_file.open(cstr, ios::out);
-
-  while (getline (input_file, text_line)) {
-
-    /*--- Read the inner elements ---*/
-    
-    position = text_line.find ("NELEM=",0);
-    if (position != string::npos) {
-      text_line.erase (0,6); unsigned long nElem = atoi(text_line.c_str());
-      for (unsigned long iElem = 0; iElem < nElem; iElem++)  {
-        getline(input_file, text_line);
-      }
-    }
-    
-    /*--- Read the inner points ---*/
-    
-    position = text_line.find ("NPOIN=",0);
-    if (position != string::npos) {
-      text_line.erase (0,6); unsigned long nPoint = atoi(text_line.c_str());
-      for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)  {
-        getline(input_file, text_line);
-      }
-    }
-    
-    /*--- Read the boundaries  ---*/
-    
-    position = text_line.find ("NMARK=",0);
-    if (position != string::npos) {
-      text_line.erase (0,6); unsigned short nMarker = atoi(text_line.c_str());
-      for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++) {
-        getline(input_file, text_line);
-        getline(input_file, text_line);
-        text_line.erase (0,13); unsigned long nVertex = atoi(text_line.c_str());
-        for (unsigned long iVertex = 0; iVertex < nVertex; iVertex++)  {
-          getline(input_file, text_line);
-        }
-      }
-    }
-    
-    /*--- Read the FFDBox information  ---*/
-    
-    position = text_line.find ("FFD_NBOX=",0);
-    if (position != string::npos) {
-      text_line.erase (0,9); unsigned short nFFDBox = atoi(text_line.c_str());
-      
-      for (iFFDBox = 0 ; iFFDBox < nFFDBox; iFFDBox++) {
-        
-        while (getline (input_file, text_line)) {
-          position = text_line.find ("FFD_SURFACE_POINTS=",0);
-          if (position != string::npos) break;
-        }
-
-        text_line.erase (0,19); unsigned long nSurfacePoints = atoi(text_line.c_str());
-        
-        for (iSurfacePoints = 0; iSurfacePoints < nSurfacePoints; iSurfacePoints++) {
-          getline(input_file,text_line); istringstream FFDBox_line(text_line);
-          
-          string iTag; unsigned long iPoint; double coord[3];
-          
-          FFDBox_line >> iTag; FFDBox_line >> iPoint;
-          FFDBox_line >> coord[0]; FFDBox_line >> coord[1]; FFDBox_line >> coord[2];
-          
-          GlobalTag[iFFDBox].push_back(iTag);
-          GlobalPoint[iFFDBox].push_back(iPoint);
-          GlobalCoordX[iFFDBox].push_back(coord[0]);
-          GlobalCoordY[iFFDBox].push_back(coord[1]);
-          GlobalCoordZ[iFFDBox].push_back(coord[2]);
-          
-        }
-      }
-    }
-
-  }
-
-  /*--- Read the name of the output file ---*/
+  MergeFFDInfo(geometry, config);
   
-  str = config->GetMesh_Out_FileName();
-  strcpy (out_file, str.c_str());
-  strcpy (cstr, out_file);
+  /*--- Attach to the mesh file the FFD information ---*/
   
-	output_file.precision(15);
-	output_file.open(cstr, ios::out | ios::app);
-	
-	output_file << "FFD_NBOX= " << nFFDBox << endl;
-  
-  if (nFFDBox != 0)
-    output_file << "FFD_NLEVEL= " << nLevel << endl;
-	
-	for (iFFDBox = 0 ; iFFDBox < nFFDBox; iFFDBox++) {
-		
-		output_file << "FFD_TAG= " << FFDBox[iFFDBox]->GetTag() << endl;
-		output_file << "FFD_LEVEL= " << FFDBox[iFFDBox]->GetLevel() << endl;
-
-		output_file << "FFD_DEGREE_I= " << FFDBox[iFFDBox]->GetlOrder()-1 << endl;
-		output_file << "FFD_DEGREE_J= " << FFDBox[iFFDBox]->GetmOrder()-1 << endl;
-		if (nDim == 3) output_file << "FFD_DEGREE_K= " << FFDBox[iFFDBox]->GetnOrder()-1 << endl;
-		
-		output_file << "FFD_PARENTS= " << FFDBox[iFFDBox]->GetnParentFFDBox() << endl;
-		for (iParentFFDBox = 0; iParentFFDBox < FFDBox[iFFDBox]->GetnParentFFDBox(); iParentFFDBox++)
-			output_file << FFDBox[iFFDBox]->GetParentFFDBoxTag(iParentFFDBox) << endl;
-		output_file << "FFD_CHILDREN= " << FFDBox[iFFDBox]->GetnChildFFDBox() << endl;
-		for (iChildFFDBox = 0; iChildFFDBox < FFDBox[iFFDBox]->GetnChildFFDBox(); iChildFFDBox++)
-			output_file << FFDBox[iFFDBox]->GetChildFFDBoxTag(iChildFFDBox) << endl;
-		
-    if (nDim == 2) {
-      output_file << "FFD_CORNER_POINTS= " << FFDBox[iFFDBox]->GetnCornerPoints()/int(2) << endl;
-      for (iCornerPoints = 0; iCornerPoints < FFDBox[iFFDBox]->GetnCornerPoints()/int(2); iCornerPoints++) {
-        coord = FFDBox[iFFDBox]->GetCoordCornerPoints(iCornerPoints);
-        output_file << coord[0] << "\t" << coord[1] << endl;
-      }
-    }
-    else {
-      output_file << "FFD_CORNER_POINTS= " << FFDBox[iFFDBox]->GetnCornerPoints() << endl;
-      for (iCornerPoints = 0; iCornerPoints < FFDBox[iFFDBox]->GetnCornerPoints(); iCornerPoints++) {
-        coord = FFDBox[iFFDBox]->GetCoordCornerPoints(iCornerPoints);
-        output_file << coord[0] << "\t" << coord[1] << "\t" << coord[2] << endl;
-      }
-    }
+  if (rank == MASTER_NODE) {
     
-		/*--- Writing control points ---*/
+    /*--- Read the name of the output file ---*/
     
-		if (FFDBox[iFFDBox]->GetnControlPoints() == 0) {
-			output_file << "FFD_CONTROL_POINTS= 0" << endl;
-		}
-		else {
-			output_file << "FFD_CONTROL_POINTS= " << FFDBox[iFFDBox]->GetnControlPoints() << endl;
-			for (iOrder = 0; iOrder < FFDBox[iFFDBox]->GetlOrder(); iOrder++)
-				for (jOrder = 0; jOrder < FFDBox[iFFDBox]->GetmOrder(); jOrder++)
-					for (kOrder = 0; kOrder < FFDBox[iFFDBox]->GetnOrder(); kOrder++) {
-						coord = FFDBox[iFFDBox]->GetCoordControlPoints(iOrder, jOrder, kOrder);
-						output_file << iOrder << "\t" << jOrder << "\t" << kOrder << "\t" << coord[0] << "\t" << coord[1] << "\t" << coord[2] << endl;
-					}
-		}
+    str = config->GetMesh_Out_FileName();
+    strcpy (mesh_file, str.c_str());
+    strcpy (cstr, mesh_file);
     
-    /*--- Writing surface points ---*/
+    output_file.precision(15);
+    output_file.open(cstr, ios::out | ios::app);
     
-    if (FFDBox[iFFDBox]->GetnControlPoints() == 0) {
-      output_file << "FFD_SURFACE_POINTS= 0" << endl;
-    }
-    else {
-      output_file << "FFD_SURFACE_POINTS= " << GlobalTag[iFFDBox].size() << endl;
-      
-      for (iSurfacePoints = 0; iSurfacePoints < GlobalTag[iFFDBox].size(); iSurfacePoints++) {
-        output_file << scientific << GlobalTag[iFFDBox][iSurfacePoints] << "\t" << GlobalPoint[iFFDBox][iSurfacePoints]
-        << "\t" << GlobalCoordX[iFFDBox][iSurfacePoints] << "\t" << GlobalCoordY[iFFDBox][iSurfacePoints]
-        << "\t" << GlobalCoordZ[iFFDBox][iSurfacePoints] << endl;
-        
-      }
-    }
+    output_file << "FFD_NBOX= " << nFFDBox << endl;
     
-	}
-  
-	output_file.close();
-
-}
-
-void CSurfaceMovement::WriteFFDInfo(CGeometry *geometry, CConfig *config, CFreeFormDefBox **FFDBox, string val_mesh_filename) {
-	ofstream mesh_file;
-	unsigned short iOrder, jOrder, kOrder, iFFDBox, iCornerPoints, iMarker, iParentFFDBox, iChildFFDBox;
-	unsigned long iPoint, iSurfacePoints;
-	char *cstr = new char [val_mesh_filename.size()+1];
-	strcpy (cstr, val_mesh_filename.c_str());
-  double *parcoord, *coord;
-  
-  unsigned short nDim = geometry->GetnDim();
-  
-  if (nFFDBox != 0) {
-    
-    mesh_file.precision(15);
-    mesh_file.open(cstr, ios::out | ios::app);
-    
-    mesh_file << "FFD_NBOX= " << nFFDBox << endl;
-    mesh_file << "FFD_NLEVEL= " << nLevel << endl;
+    if (nFFDBox != 0)
+      output_file << "FFD_NLEVEL= " << nLevel << endl;
     
     for (iFFDBox = 0 ; iFFDBox < nFFDBox; iFFDBox++) {
       
-      mesh_file << "FFD_TAG= " << FFDBox[iFFDBox]->GetTag() << endl;
-      mesh_file << "FFD_LEVEL= " << FFDBox[iFFDBox]->GetLevel() << endl;
+      output_file << "FFD_TAG= " << FFDBox[iFFDBox]->GetTag() << endl;
+      output_file << "FFD_LEVEL= " << FFDBox[iFFDBox]->GetLevel() << endl;
       
-      mesh_file << "FFD_DEGREE_I= " << FFDBox[iFFDBox]->GetlOrder()-1 << endl;
-      mesh_file << "FFD_DEGREE_J= " << FFDBox[iFFDBox]->GetmOrder()-1 << endl;
-      if (nDim == 3) mesh_file << "FFD_DEGREE_K= " << FFDBox[iFFDBox]->GetnOrder()-1 << endl;
+      output_file << "FFD_DEGREE_I= " << FFDBox[iFFDBox]->GetlOrder()-1 << endl;
+      output_file << "FFD_DEGREE_J= " << FFDBox[iFFDBox]->GetmOrder()-1 << endl;
+      if (nDim == 3) output_file << "FFD_DEGREE_K= " << FFDBox[iFFDBox]->GetnOrder()-1 << endl;
       
-      mesh_file << "FFD_PARENTS= " << FFDBox[iFFDBox]->GetnParentFFDBox() << endl;
+      output_file << "FFD_PARENTS= " << FFDBox[iFFDBox]->GetnParentFFDBox() << endl;
       for (iParentFFDBox = 0; iParentFFDBox < FFDBox[iFFDBox]->GetnParentFFDBox(); iParentFFDBox++)
-        mesh_file << FFDBox[iFFDBox]->GetParentFFDBoxTag(iParentFFDBox) << endl;
-      mesh_file << "FFD_CHILDREN= " << FFDBox[iFFDBox]->GetnChildFFDBox() << endl;
+        output_file << FFDBox[iFFDBox]->GetParentFFDBoxTag(iParentFFDBox) << endl;
+      output_file << "FFD_CHILDREN= " << FFDBox[iFFDBox]->GetnChildFFDBox() << endl;
       for (iChildFFDBox = 0; iChildFFDBox < FFDBox[iFFDBox]->GetnChildFFDBox(); iChildFFDBox++)
-        mesh_file << FFDBox[iFFDBox]->GetChildFFDBoxTag(iChildFFDBox) << endl;
+        output_file << FFDBox[iFFDBox]->GetChildFFDBoxTag(iChildFFDBox) << endl;
       
       if (nDim == 2) {
-        mesh_file << "FFD_CORNER_POINTS= " << FFDBox[iFFDBox]->GetnCornerPoints()/int(2) << endl;
+        output_file << "FFD_CORNER_POINTS= " << FFDBox[iFFDBox]->GetnCornerPoints()/int(2) << endl;
         for (iCornerPoints = 0; iCornerPoints < FFDBox[iFFDBox]->GetnCornerPoints()/int(2); iCornerPoints++) {
           coord = FFDBox[iFFDBox]->GetCoordCornerPoints(iCornerPoints);
-          mesh_file << coord[0] << "\t" << coord[1] << endl;
+          output_file << coord[0] << "\t" << coord[1] << endl;
         }
       }
       else {
-        mesh_file << "FFD_CORNER_POINTS= " << FFDBox[iFFDBox]->GetnCornerPoints() << endl;
+        output_file << "FFD_CORNER_POINTS= " << FFDBox[iFFDBox]->GetnCornerPoints() << endl;
         for (iCornerPoints = 0; iCornerPoints < FFDBox[iFFDBox]->GetnCornerPoints(); iCornerPoints++) {
           coord = FFDBox[iFFDBox]->GetCoordCornerPoints(iCornerPoints);
-          mesh_file << coord[0] << "\t" << coord[1] << "\t" << coord[2] << endl;
+          output_file << coord[0] << "\t" << coord[1] << "\t" << coord[2] << endl;
         }
       }
       
-      /*--- No FFD definition ---*/
+      /*--- Writing control points ---*/
+      
       if (FFDBox[iFFDBox]->GetnControlPoints() == 0) {
-        mesh_file << "FFD_CONTROL_POINTS= 0" << endl;
-        mesh_file << "FFD_SURFACE_POINTS= 0" << endl;
+        output_file << "FFD_CONTROL_POINTS= 0" << endl;
       }
       else {
-        mesh_file << "FFD_CONTROL_POINTS= " << FFDBox[iFFDBox]->GetnControlPoints() << endl;
+        output_file << "FFD_CONTROL_POINTS= " << FFDBox[iFFDBox]->GetnControlPoints() << endl;
         for (iOrder = 0; iOrder < FFDBox[iFFDBox]->GetlOrder(); iOrder++)
           for (jOrder = 0; jOrder < FFDBox[iFFDBox]->GetmOrder(); jOrder++)
             for (kOrder = 0; kOrder < FFDBox[iFFDBox]->GetnOrder(); kOrder++) {
-              double *coord = FFDBox[iFFDBox]->GetCoordControlPoints(iOrder, jOrder, kOrder);
-              mesh_file << iOrder << "\t" << jOrder << "\t" << kOrder << "\t" << coord[0] << "\t" << coord[1] << "\t" << coord[2] << endl;
+              coord = FFDBox[iFFDBox]->GetCoordControlPoints(iOrder, jOrder, kOrder);
+              output_file << iOrder << "\t" << jOrder << "\t" << kOrder << "\t" << coord[0] << "\t" << coord[1] << "\t" << coord[2] << endl;
             }
+      }
+      
+      /*--- Writing surface points ---*/
+      
+      if (FFDBox[iFFDBox]->GetnControlPoints() == 0) {
+        output_file << "FFD_SURFACE_POINTS= 0" << endl;
+      }
+      else {
+        output_file << "FFD_SURFACE_POINTS= " << GlobalTag[iFFDBox].size() << endl;
         
-        /*--- Compute the number of points on the new surfaces, note that we are not
-         adding the new ghost points (receive), which eventually are also inside the chunck ---*/
-        unsigned long nSurfacePoint = 0;
-        for (iSurfacePoints = 0; iSurfacePoints < FFDBox[iFFDBox]->GetnSurfacePoint(); iSurfacePoints++) {
-          iPoint = FFDBox[iFFDBox]->Get_PointIndex(iSurfacePoints);
-          
-          /*--- Note that we cannot use && because of the range of
-           geometry->GetGlobal_to_Local_Point(iPoint) is smaller than iPoint ---*/
-          
-          if (iPoint <= geometry->GetMax_GlobalPoint()) {
-            if (geometry->GetGlobal_to_Local_Point(iPoint) != -1) nSurfacePoint++;
-          }
-        }
-        
-        mesh_file << "FFD_SURFACE_POINTS= " << nSurfacePoint << endl;
-        for (iSurfacePoints = 0; iSurfacePoints < FFDBox[iFFDBox]->GetnSurfacePoint(); iSurfacePoints++) {
-          iMarker = FFDBox[iFFDBox]->Get_MarkerIndex(iSurfacePoints);
-          iPoint = FFDBox[iFFDBox]->Get_PointIndex(iSurfacePoints);
-          if (iPoint <= geometry->GetMax_GlobalPoint()) {
-            if (geometry->GetGlobal_to_Local_Point(iPoint) != -1) {
-              parcoord = FFDBox[iFFDBox]->Get_ParametricCoord(iSurfacePoints);
-              mesh_file << scientific << config->GetMarker_All_TagBound(iMarker) << "\t" << geometry->GetGlobal_to_Local_Point(iPoint) << "\t" << parcoord[0] << "\t" << parcoord[1] << "\t" << parcoord[2] << endl;
-            }
-          }
+        for (iSurfacePoints = 0; iSurfacePoints < GlobalTag[iFFDBox].size(); iSurfacePoints++) {
+          output_file << scientific << GlobalTag[iFFDBox][iSurfacePoints] << "\t" << GlobalPoint[iFFDBox][iSurfacePoints]
+          << "\t" << GlobalCoordX[iFFDBox][iSurfacePoints] << "\t" << GlobalCoordY[iFFDBox][iSurfacePoints]
+          << "\t" << GlobalCoordZ[iFFDBox][iSurfacePoints] << endl;
         }
         
       }
       
     }
-    mesh_file.close();
+    
+    output_file.close();
     
   }
-  
+
 }
 
 CFreeFormDefBox::CFreeFormDefBox(void) : CGridMovement() { }

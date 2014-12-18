@@ -4287,6 +4287,13 @@ public:
 	 * \return Index in the config information of the marker <i>val_marker</i>.
 	 */
 	unsigned short GetMarker_CfgFile_TagBound(string val_marker);
+  
+  /*!
+   * \brief Get the name in the config information of the marker number <i>val_marker</i>.
+   * \note When we read the config file, it stores the markers in a particular vector.
+   * \return Name of the marker in the config information of the marker <i>val_marker</i>.
+   */
+  string GetMarker_CfgFile_TagBound(unsigned short val_marker);
 
 	/*!
 	 * \brief Get the boundary information (kind of boundary) in the config information of the marker <i>val_marker</i>.
