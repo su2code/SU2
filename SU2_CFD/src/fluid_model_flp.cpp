@@ -34,7 +34,7 @@ CFluidProp::CFluidProp() : CFluidModel() {
 }
 
 
-CFluidProp::CFluidProp( string thermolib, int ncomp, string* comp, double* conc, double T_ref, double P_ref, double rho_ref ) : CFluidModel() {
+CFluidProp::CFluidProp( string thermolib, int ncomp, string* comp, double* conc, bool HasSinglePhaseOnly, double T_ref, double P_ref, double rho_ref ) : CFluidModel() {
 
 	string  libraryName[10];
 
@@ -78,6 +78,7 @@ CFluidProp::CFluidProp( string thermolib, int ncomp, string* comp, double* conc,
 	nComp = ncomp;
 	Comp= comp;
 	Conc = conc;
+        SinglePhaseOnly = HasSinglePhaseOnly;
 
 	printf("Selected Library       : %s\n", ThermoLib.c_str() );
 
@@ -118,13 +119,10 @@ CFluidProp::~CFluidProp(void) {
 }
 
 
-const bool single_phase = true;
-
-
 void CFluidProp::SetTDState_rhoe (double rho, double e ){
 
 	const char* pair;
-        if (single_phase)
+        if (SinglePhaseOnly)
            pair = "vu_1ph";
         else
            pair = "vu";       
@@ -161,7 +159,7 @@ void CFluidProp::SetTDState_rhoe (double rho, double e ){
 void CFluidProp::SetTDState_PT (double P, double T ){
 
 	const char* pair;
-        if (single_phase)
+        if (SinglePhaseOnly)
            pair = "PT_1ph";
         else
            pair = "PT";       
@@ -198,7 +196,7 @@ void CFluidProp::SetTDState_PT (double P, double T ){
 void CFluidProp::SetTDState_Prho (double P, double rho ){
 
 	const char* pair;
-        if (single_phase)
+        if (SinglePhaseOnly)
            pair = "Pd_1ph";
         else
            pair = "Pd";       
@@ -234,7 +232,7 @@ void CFluidProp::SetTDState_Prho (double P, double rho ){
 void CFluidProp::SetEnergy_Prho (double P, double rho ){
 
 	const char* pair;
-        if (single_phase)
+        if (SinglePhaseOnly)
            pair = "Pd_1ph";
         else
            pair = "Pd";       
@@ -250,7 +248,7 @@ void CFluidProp::SetEnergy_Prho (double P, double rho ){
 void CFluidProp::SetTDState_hs (double h, double s ){
 
 	const char* pair;
-        if (single_phase)
+        if (SinglePhaseOnly)
            pair = "hs_1ph";
         else
            pair = "hs";       
@@ -288,7 +286,7 @@ void CFluidProp::SetTDState_hs (double h, double s ){
 void CFluidProp::SetTDState_rhoT (double rho, double T ){
     
 	const char* pair;
-        if (single_phase)
+        if (SinglePhaseOnly)
            pair = "Td_1ph";
         else
            pair = "Td";       

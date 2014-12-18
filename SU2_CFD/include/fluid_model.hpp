@@ -512,10 +512,11 @@ public:
 class CFluidProp : public CFluidModel {
     
 protected:
-    string ThermoLib;    /*!< \brief Sub-library. */
-    int nComp;           /*!< \brief Number of components. */
-    string* Comp;        /*!< \brief Components. */
-    double* Conc;        /*!< \brief Concentrations. */
+    string ThermoLib;     /*!< \brief Sub-library. */
+    int nComp;            /*!< \brief Number of components. */
+    string* Comp;         /*!< \brief Components. */
+    double* Conc;         /*!< \brief Concentrations. */
+    bool SinglePhaseOnly; /*!< \brief Single phase only: indicates that no phase equilibria are considered. */
     
     double P_ref;
     double v_ref;
@@ -541,7 +542,7 @@ public:
     /*!
      * \brief Constructor of the class.
      */
-    CFluidProp(string thermolib, int ncomp, string* comp, double* conc, double T_ref, double P_ref, double rho_ref);
+    CFluidProp(string thermolib, int ncomp, string* comp, double* conc, bool SinglePhaseOnly, double T_ref, double P_ref, double rho_ref);
     
     /*!
      * \brief Destructor of the class.

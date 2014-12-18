@@ -678,6 +678,7 @@ private:
   unsigned short nComp;       /*!< \brief Number of components in the fluid.  */
   string* CompNames;           /*!< \brief Names of fluid components.  */
   double *MoleFracs;            /*!< \brief Mole fractions of fluid components.  */
+  bool SinglePhaseOnly;       /*!< \brief Single phase only: no phase equilibria are considered.  */
 
   /*!< \brief param is a map from the option name (config file string) to a pointer to an option child class */
 //	map<string, CAnyOptionRef*> param;
@@ -2532,6 +2533,12 @@ public:
 	 * \return Mole fractions of components.
 	 */
 	double* GetMoleFracs(void);
+
+	/*!
+	 * \brief Indicates whether phase equilibria are to be considered in the fluid thermodynamic model.
+	 * \return Single phase only.
+	 */
+	bool HasSinglePhaseOnly(void);
 
 	/*!
 	 * \brief Get the value of the critical temperature.

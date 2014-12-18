@@ -438,6 +438,8 @@ inline string* CConfig::GetCompNames(void) { return CompNames; }
 
 inline double* CConfig::GetMoleFracs(void) { return MoleFracs; }
 
+inline bool CConfig::HasSinglePhaseOnly(void) { return SinglePhaseOnly; }
+
 inline unsigned short CConfig::GetKind_ViscosityModel(void) { return Kind_ViscosityModel; }
 
 inline unsigned short CConfig::GetKind_ConductivityModel(void) { return Kind_ConductivityModel; }

@@ -1948,7 +1948,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
       case FLUIDPROP:
         printf("Creation of new CFluidProp 1 ...\n");
         FluidModel = new CFluidProp(config->GetFluidSubLib(), config->GetnComp(), config->GetCompNames(), config->GetMoleFracs(),
-                                    config->GetTemperature_Ref(), config->GetPressure_Ref(), config->GetDensity_Ref());
+                                    config->HasSinglePhaseOnly(), config->GetTemperature_Ref(), config->GetPressure_Ref(), config->GetDensity_Ref());
         if(fs_temperature) {
           FluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
           Density_FreeStream = FluidModel->GetDensity();
@@ -2191,7 +2191,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
       //TODO here adding call to nn dim FP
       printf("Creation of new CFluidProp 2 ...\n");
       FluidModel = new CFluidProp(config->GetFluidSubLib(), config->GetnComp(), config->GetCompNames(), config->GetMoleFracs(),
-                                  config->GetTemperature_Ref(), config->GetPressure_Ref(), config->GetDensity_Ref());
+                                  config->HasSinglePhaseOnly(), config->GetTemperature_Ref(), config->GetPressure_Ref(), config->GetDensity_Ref());
       FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
       break;
 #endif
