@@ -29,6 +29,11 @@
 #ifdef HAVE_METIS
   #include "metis.h"
 #endif
+#ifndef NO_PARMETIS
+extern "C" {
+#include "parmetis.h"
+}
+#endif
 #ifdef HAVE_CGNS
   #include "cgnslib.h"
 #endif
@@ -123,7 +128,20 @@ public:
 	CPrimalGrid*** newBound;            /*!< \brief Boundary vector for new periodic elements (primal grid information). */
 	unsigned long *nNewElem_Bound;			/*!< \brief Number of new periodic elements of the boundary. */
 
-	/*! 
+  //--------Parmetis variables-----
+  unsigned long * adjacency;
+  unsigned long * xadj;
+  unsigned long local_node;
+  unsigned long local_elem;
+  unsigned long xadj_size;
+  unsigned long adjacency_size;
+  unsigned long *starting_node;
+  unsigned long *ending_node;
+  unsigned long *npoint_procs;
+  unsigned long *Global_to_local_elem;
+  unsigned long no_of_local_elements;
+  
+	/*!
 	 * \brief Constructor of the class.
 	 */
 	CGeometry(void);
@@ -838,10 +856,10 @@ class CPhysicalGeometry : public CGeometry {
 	unsigned long *Local_to_Global_Point;				/*!< \brief Local-global indexation for the points. */
 	unsigned short *Local_to_Global_Marker;	/*!< \brief Local to Global marker. */
 	unsigned short *Global_to_Local_Marker;	/*!< \brief Global to Local marker. */
-
+  
 public:
-
-	/*! 
+  
+	/*!
 	 * \brief Constructor of the class.
 	 */
 	CPhysicalGeometry(void);
@@ -869,6 +887,18 @@ public:
 	 * \param[in] val_nZone - Total number of domains in the grid file.
 	 */
   CPhysicalGeometry(CGeometry *geometry, CConfig *config);
+  
+  /*!
+   * \overload
+   * \brief Reads the geometry of the grid and adjust the boundary
+   *        conditions with the configuration file for parmetis version.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_mesh_filename - Name of the file with the grid information.
+   * \param[in] val_format - Format of the file with the grid information.
+   * \param[in] val_iZone - Domain to be read from the grid file.
+   * \param[in] val_nZone - Total number of domains in the grid file.
+   */
+  CPhysicalGeometry(CGeometry *geometry, CConfig *config, int options);
   
 	/*!
 	 * \brief Destructor of the class.
@@ -915,6 +945,17 @@ public:
 	 * \param[in] val_nZone - Total number of domains in the grid file.
 	 */
 	void Read_SU2_Format(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone);
+  
+  /*!
+   * \brief Reads the geometry of the grid and adjust the boundary
+   *        conditions with the configuration file in parallel (for parmetis).
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_mesh_filename - Name of the file with the grid information.
+   * \param[in] val_format - Format of the file with the grid information.
+   * \param[in] val_iZone - Domain to be read from the grid file.
+   * \param[in] val_nZone - Total number of domains in the grid file.
+   */
+  void Read_SU2_Format_Parallel(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone);
   
   /*!
 	 * \brief Reads the geometry of the grid and adjust the boundary
@@ -1086,10 +1127,16 @@ public:
 	void Check_BoundElem_Orientation(CConfig *config);
 
 	/*! 
-	 * \brief Set the domains for grid grid partitioning.
+	 * \brief Set the domains for grid grid partitioning using METIS.
 	 * \param[in] config - Definition of the particular problem.		 
 	 */
 	void SetColorGrid(CConfig *config);
+  
+  /*!
+   * \brief Set the domains for grid grid partitioning using ParMETIS.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetColorGrid_Parallel(CConfig *config);
   
 	/*!
 	 * \brief Set the rotational velocity at each node.
