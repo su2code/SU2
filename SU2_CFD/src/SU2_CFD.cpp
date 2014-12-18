@@ -124,9 +124,7 @@ int main(int argc, char *argv[]) {
       
       /*--- Read the grid using the master node ---*/
       
-      config_container[iZone]->SetKind_SU2(SU2_PRT);
       geometry_aux = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
-      config_container[iZone]->SetKind_SU2(SU2_CFD);
       
       cout << endl <<"---------------------------- Grid partitioning --------------------------" << endl;
 

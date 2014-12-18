@@ -3001,22 +3001,15 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
       text_line.erase (0,6); nElem = atoi(text_line.c_str());
       
 #ifdef HAVE_MPI
-      if (config->GetKind_SU2() != SU2_PRT) {
-        Local_nElem = nElem;
-        MPI_Allreduce(&Local_nElem, &Global_nElem, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-      }
-      else {
-        Local_nElem = nElem;
-        Global_nElem = Local_nElem;
-      }
+      Local_nElem = nElem;
+      Global_nElem = Local_nElem;
 #else
       Global_nElem = nElem;
 #endif
       
-      if ((rank == MASTER_NODE) && (size > SINGLE_NODE) && (config->GetKind_SU2() != SU2_PRT))
-        cout << Global_nElem << " interior elements including halo cells. " << endl;
-      else if (rank == MASTER_NODE)
+      if (rank == MASTER_NODE) {
         cout << Global_nElem << " interior elements. " << endl;
+      }
       
       /*--- Allocate space for elements ---*/
       
@@ -3326,34 +3319,18 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
       /*--- Communicate the number of each element type to all processors. ---*/
       
 #ifdef HAVE_MPI
-      if (config->GetKind_SU2() != SU2_PRT) {
-        Local_nElemTri = nelem_triangle;
-        Local_nElemQuad = nelem_quad;
-        Local_nElemTet = nelem_tetra;
-        Local_nElemHex = nelem_hexa;
-        Local_nElemWedge = nelem_wedge;
-        Local_nElemPyramid = nelem_pyramid;
-        MPI_Allreduce(&Local_nElemTri, &Global_nelem_triangle, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-        MPI_Allreduce(&Local_nElemQuad, &Global_nelem_quad, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-        MPI_Allreduce(&Local_nElemTet, &Global_nelem_tetra, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-        MPI_Allreduce(&Local_nElemHex, &Global_nelem_hexa, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-        MPI_Allreduce(&Local_nElemWedge, &Global_nelem_wedge, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-        MPI_Allreduce(&Local_nElemPyramid, &Global_nelem_pyramid, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-      }
-      else {
-        Local_nElemTri = nelem_triangle;
-        Global_nelem_triangle = Local_nElemTri;
-        Local_nElemQuad = nelem_quad;
-        Global_nelem_quad = Local_nElemQuad;
-        Local_nElemTet = nelem_tetra;
-        Global_nelem_tetra = Local_nElemTet;
-        Local_nElemHex = nelem_hexa;
-        Global_nelem_hexa = Local_nElemHex;
-        Local_nElemWedge = nelem_wedge;
-        Global_nelem_wedge = Local_nElemWedge;
-        Local_nElemPyramid = nelem_pyramid;
-        Global_nelem_pyramid = Local_nElemPyramid;
-      }
+      Local_nElemTri = nelem_triangle;
+      Global_nelem_triangle = Local_nElemTri;
+      Local_nElemQuad = nelem_quad;
+      Global_nelem_quad = Local_nElemQuad;
+      Local_nElemTet = nelem_tetra;
+      Global_nelem_tetra = Local_nElemTet;
+      Local_nElemHex = nelem_hexa;
+      Global_nelem_hexa = Local_nElemHex;
+      Local_nElemWedge = nelem_wedge;
+      Global_nelem_wedge = Local_nElemWedge;
+      Local_nElemPyramid = nelem_pyramid;
+      Global_nelem_pyramid = Local_nElemPyramid;
 #else
       Global_nelem_triangle = nelem_triangle;
       Global_nelem_quad     = nelem_quad;
@@ -3396,16 +3373,10 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
         /*--- Set some important point information for parallel simulations. ---*/
         
 #ifdef HAVE_MPI
-        if (config->GetKind_SU2() != SU2_PRT) {
-          Local_nPoint = nPoint; Local_nPointDomain = nPointDomain;
-          MPI_Allreduce(&Local_nPoint, &Global_nPoint, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-          MPI_Allreduce(&Local_nPointDomain, &Global_nPointDomain, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-        }
-        else {
-          Local_nPoint = nPoint; Local_nPointDomain = nPointDomain;
-          Global_nPoint = Local_nPoint;
-          Global_nPointDomain = Local_nPointDomain;
-        }
+        Local_nPoint = nPoint;
+        Local_nPointDomain = nPointDomain;
+        Global_nPoint = Local_nPoint;
+        Global_nPointDomain = Local_nPointDomain;
 #else
         Global_nPoint = nPoint;
         Global_nPointDomain = nPointDomain;
