@@ -29,7 +29,7 @@
 #ifdef HAVE_METIS
   #include "metis.h"
 #endif
-#ifndef NO_PARMETIS
+#ifdef HAVE_PARMETIS
 extern "C" {
 #include "parmetis.h"
 }
