@@ -956,6 +956,11 @@ protected:
 	unsigned short nFFDBox;	/*!< \brief Number of FFD FFDBoxes. */
 	unsigned short nLevel;	/*!< \brief Level of the FFD FFDBoxes (parent/child). */
 	bool FFDBoxDefinition;	/*!< \brief If the FFD FFDBox has been defined in the input file. */
+  vector<double> GlobalCoordX[MAX_NUMBER_FFD];
+  vector<double> GlobalCoordY[MAX_NUMBER_FFD];
+  vector<double> GlobalCoordZ[MAX_NUMBER_FFD];
+  vector<string> GlobalTag[MAX_NUMBER_FFD];
+  vector<unsigned long> GlobalPoint[MAX_NUMBER_FFD];
 
 public:
 	
@@ -1319,6 +1324,14 @@ public:
 	 */		
 	void ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFormDefBox **FFDBox, string val_mesh_filename, bool val_fullmesh);
 	
+  /*!
+   * \brief Merge the Free Form information in the SU2 file.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] val_mesh_filename - Name of the grid output file.
+   */
+  void MergeFFDInfo(CGeometry *geometry, CConfig *config);
+  
 	/*! 
 	 * \brief Write the Free Form information in the SU2 file.
 	 * \param[in] config - Definition of the particular problem.
@@ -1326,15 +1339,6 @@ public:
 	 * \param[in] val_mesh_filename - Name of the grid output file.
 	 */		
 	void WriteFFDInfo(CGeometry *geometry, CConfig *config);
-  
-  /*!
-	 * \brief Write the Free Form information in the SU2 file.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
-	 * \param[in] val_mesh_filename - Name of the grid output file.
-	 */
-	void WriteFFDInfo(CGeometry *geometry, CConfig *config, CFreeFormDefBox **FFDBox, string val_mesh_filename);
 	
 	/*! 
 	 * \brief Get information about if there is a complete FFDBox definition, or it is necessary to 

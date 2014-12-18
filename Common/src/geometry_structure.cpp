@@ -1152,7 +1152,8 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
           node[Point_Surface]->SetSolidBoundary(true);
       }
   
-  /*--- Loop over the points element to re-scale the mesh, and plot it ---*/
+  /*--- Loop over the points element to re-scale the mesh, 
+   and plot it (only CFD) ---*/
   
   if (config->GetKind_SU2() == SU2_CFD) {
     
@@ -5655,33 +5656,38 @@ void CPhysicalGeometry::SetPoint_Connectivity(void) {
   unsigned long jElem, Point_Neighbor, iPoint, iElem;
   
   /*--- Loop over all the elements ---*/
-  for(iElem = 0; iElem < nElem; iElem++)
+  
+  for (iElem = 0; iElem < nElem; iElem++)
+    
   /*--- Loop over all the nodes of an element ---*/
+    
     for(iNode = 0; iNode < elem[iElem]->GetnNodes(); iNode++) {
       iPoint = elem[iElem]->GetNode(iNode);
+      
       /*--- Store the element into the point ---*/
+      
       node[iPoint]->SetElem(iElem);
     }
 
   /*--- Loop over all the points ---*/
   
-  for(iPoint = 0; iPoint < nPoint; iPoint++)
+  for (iPoint = 0; iPoint < nPoint; iPoint++)
     
   /*--- Loop over all elements shared by the point ---*/
     
-    for(iElem = 0; iElem < node[iPoint]->GetnElem(); iElem++) {
+    for (iElem = 0; iElem < node[iPoint]->GetnElem(); iElem++) {
       
       jElem = node[iPoint]->GetElem(iElem);
       
       /*--- If we find the point iPoint in the surronding element ---*/
       
-      for(iNode = 0; iNode < elem[jElem]->GetnNodes(); iNode++)
+      for (iNode = 0; iNode < elem[jElem]->GetnNodes(); iNode++)
         
         if (elem[jElem]->GetNode(iNode) == iPoint)
           
         /*--- Localize the local index of the neighbor of iPoint in the element ---*/
           
-          for(iNeighbor = 0; iNeighbor < elem[jElem]->GetnNeighbor_Nodes(iNode); iNeighbor++) {
+          for (iNeighbor = 0; iNeighbor < elem[jElem]->GetnNeighbor_Nodes(iNode); iNeighbor++) {
             Node_Neighbor = elem[jElem]->GetNeighbor_Nodes(iNode,iNeighbor);
             Point_Neighbor = elem[jElem]->GetNode(Node_Neighbor);
             
@@ -5694,7 +5700,7 @@ void CPhysicalGeometry::SetPoint_Connectivity(void) {
   /*--- Set the number of neighbors variable, this is
    important for JST and multigrid in parallel ---*/
   
-  for(iPoint = 0; iPoint < nPoint; iPoint++)
+  for (iPoint = 0; iPoint < nPoint; iPoint++)
     node[iPoint]->SetnNeighbor(node[iPoint]->GetnPoint());
   
 }
@@ -5975,7 +5981,9 @@ void CPhysicalGeometry::SetVertex(CConfig *config) {
     for (iElem = 0; iElem < nElem_Bound[iMarker]; iElem++)
       for(iNode = 0; iNode < bound[iMarker][iElem]->GetnNodes(); iNode++) {
         iPoint = bound[iMarker][iElem]->GetNode(iNode);
+        
         /*--- Set the vertex in the node information ---*/
+        
         if ((node[iPoint]->GetVertex(iMarker) == -1) || (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE)) {
           iVertex = nVertex[iMarker];
           node[iPoint]->SetVertex(nVertex[iMarker],iMarker);
@@ -6003,7 +6011,7 @@ void CPhysicalGeometry::SetVertex(CConfig *config) {
     for (iElem = 0; iElem < nElem_Bound[iMarker]; iElem++)
       for(iNode = 0; iNode < bound[iMarker][iElem]->GetnNodes(); iNode++) {
         iPoint = bound[iMarker][iElem]->GetNode(iNode);
-        
+
         /*--- Set the vertex in the node information ---*/
         
         if ((node[iPoint]->GetVertex(iMarker) == -1) || (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE)) {

@@ -226,14 +226,10 @@ int main(int argc, char *argv[]) {
   output->SetMesh_Files(geometry_container, config_container, SINGLE_ZONE, false);
   
   /*--- Write the the free-form deformation boxes after deformation. ---*/
-  
-  if (rank == MASTER_NODE) {
+
+  if (rank == MASTER_NODE) cout << "Adding FFD information to the SU2 file." << endl;
     
-    cout << "Adding FFD information to the SU2 file." << endl;
-    
-    surface_movement->WriteFFDInfo(geometry_container[ZONE_0], config_container[ZONE_0]);
-    
-  }
+  surface_movement->WriteFFDInfo(geometry_container[ZONE_0], config_container[ZONE_0]);
   
   /*--- Synchronization point after a single solver iteration. Compute the
    wall clock time required. ---*/

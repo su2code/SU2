@@ -211,7 +211,7 @@ int rank = 0;
   
   /*--- Check the subspace size ---*/
   if (m < 1) {
-    if (rank == 0) cerr << "CSysSolve::ConjugateGradient: illegal value for subspace size, m = " << m << endl;
+    if (rank == MASTER_NODE) cerr << "CSysSolve::ConjugateGradient: illegal value for subspace size, m = " << m << endl;
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
 #else
@@ -230,7 +230,7 @@ int rank = 0;
   double norm_r = r.norm();
   double norm0 = b.norm();
   if ( (norm_r < tol*norm0) || (norm_r < eps) ) {
-    if (rank == 0) cout << "CSysSolve::ConjugateGradient(): system solved by initial guess." << endl;
+    if (rank == MASTER_NODE) cout << "CSysSolve::ConjugateGradient(): system solved by initial guess." << endl;
     return 0;
   }
   
@@ -244,7 +244,7 @@ int rank = 0;
   
   /*--- Output header information including initial residual ---*/
   int i = 0;
-  if ((monitoring) && (rank == 0))  {
+  if ((monitoring) && (rank == MASTER_NODE))  {
     WriteHeader("CG", tol, norm_r);
     WriteHistory(i, norm_r, norm0);
   }
@@ -267,7 +267,7 @@ int rank = 0;
     /*--- Check if solution has converged, else output the relative residual if necessary ---*/
     norm_r = r.norm();
     if (norm_r < tol*norm0) break;
-    if (((monitoring) && (rank == 0)) && ((i+1) % 5 == 0)) WriteHistory(i+1, norm_r, norm0);
+    if (((monitoring) && (rank == MASTER_NODE)) && ((i+1) % 5 == 0)) WriteHistory(i+1, norm_r, norm0);
     
     precond(r, z);
     
@@ -283,7 +283,7 @@ int rank = 0;
   
 
   
-  if ((monitoring) && (rank == 0))  {
+  if ((monitoring) && (rank == MASTER_NODE))  {
     cout << "# Conjugate Gradient final (true) residual:" << endl;
     cout << "# Iteration = " << i << ": |res|/|res0| = "  << norm_r/norm0 << endl;
   }
@@ -295,7 +295,7 @@ int rank = 0;
 //  double true_res = r.norm();
 //  
 //  if (fabs(true_res - norm_r) > tol*10.0) {
-//    if (rank == 0) {
+//    if (rank == MASTER_NODE) {
 //      cout << "# WARNING in CSysSolve::ConjugateGradient(): " << endl;
 //      cout << "# true residual norm and calculated residual norm do not agree." << endl;
 //      cout << "# true_res - calc_res = " << true_res - norm_r << endl;
@@ -318,7 +318,7 @@ int rank = 0;
   /*---  Check the subspace size ---*/
   
   if (m < 1) {
-    if (rank == 0) cerr << "CSysSolve::FGMRES: illegal value for subspace size, m = " << m << endl;
+    if (rank == MASTER_NODE) cerr << "CSysSolve::FGMRES: illegal value for subspace size, m = " << m << endl;
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
 #else
@@ -330,7 +330,7 @@ int rank = 0;
   /*---  Check the subspace size ---*/
   
   if (m > 1000) {
-    if (rank == 0) cerr << "CSysSolve::FGMRES: illegal value for subspace size (too high), m = " << m << endl;
+    if (rank == MASTER_NODE) cerr << "CSysSolve::FGMRES: illegal value for subspace size (too high), m = " << m << endl;
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
 #else
@@ -367,7 +367,7 @@ int rank = 0;
     
     /*---  System is already solved ---*/
     
-    if (rank == 0) cout << "CSysSolve::FGMRES(): system solved by initial guess." << endl;
+    if (rank == MASTER_NODE) cout << "CSysSolve::FGMRES(): system solved by initial guess." << endl;
     return 0;
   }
   
@@ -387,7 +387,7 @@ int rank = 0;
   /*---  Output header information including initial residual ---*/
   
   int i = 0;
-  if ((monitoring) && (rank == 0)) {
+  if ((monitoring) && (rank == MASTER_NODE)) {
     WriteHeader("FGMRES", tol, beta);
     WriteHistory(i, beta, norm0);
   }
@@ -427,7 +427,7 @@ int rank = 0;
     
     /*---  Output the relative residual if necessary ---*/
     
-    if ((((monitoring) && (rank == 0)) && ((i+1) % 100 == 0)) && (rank == 0)) WriteHistory(i+1, beta, norm0);
+    if ((((monitoring) && (rank == MASTER_NODE)) && ((i+1) % 100 == 0)) && (rank == MASTER_NODE)) WriteHistory(i+1, beta, norm0);
   }
 
   /*---  Solve the least-squares system and update solution ---*/
@@ -437,7 +437,7 @@ int rank = 0;
     x.Plus_AX(y[k], z[k]);
   }
   
-  if ((monitoring) && (rank == 0)) {
+  if ((monitoring) && (rank == MASTER_NODE)) {
     cout << "# FGMRES final (true) residual:" << endl;
     cout << "# Iteration = " << i << ": |res|/|res0| = " << beta/norm0 << endl;
   }
@@ -448,7 +448,7 @@ int rank = 0;
 //  double res = w[0].norm();
 //  
 //  if (fabs(res - beta) > tol*10) {
-//    if (rank == 0) {
+//    if (rank == MASTER_NODE) {
 //      cout << "# WARNING in CSysSolve::FGMRES(): " << endl;
 //      cout << "# true residual norm and calculated residual norm do not agree." << endl;
 //      cout << "# res - beta = " << res - beta << endl;
@@ -470,7 +470,7 @@ unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x,
   /*--- Check the subspace size ---*/
   
   if (m < 1) {
-    if (rank == 0) cerr << "CSysSolve::BCGSTAB: illegal value for subspace size, m = " << m << endl;
+    if (rank == MASTER_NODE) cerr << "CSysSolve::BCGSTAB: illegal value for subspace size, m = " << m << endl;
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
 #else
@@ -496,7 +496,7 @@ unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x,
   double norm_r = r.norm();
   double norm0 = b.norm();
   if ( (norm_r < tol*norm0) || (norm_r < eps) ) {
-    if (rank == 0) cout << "CSysSolve::BCGSTAB(): system solved by initial guess." << endl;
+    if (rank == MASTER_NODE) cout << "CSysSolve::BCGSTAB(): system solved by initial guess." << endl;
     return 0;
   }
 	
@@ -511,7 +511,7 @@ unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x,
   /*--- Output header information including initial residual ---*/
   
   int i = 0;
-  if ((monitoring) && (rank == 0)) {
+  if ((monitoring) && (rank == MASTER_NODE)) {
     WriteHeader("BCGSTAB", tol, norm_r);
     WriteHistory(i, norm_r, norm0);
   }
@@ -570,11 +570,11 @@ unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x,
     
     norm_r = r.norm();
     if (norm_r < tol*norm0) break;
-    if (((monitoring) && (rank == 0)) && ((i+1) % 5 == 0) && (rank == 0)) WriteHistory(i+1, norm_r, norm0);
+    if (((monitoring) && (rank == MASTER_NODE)) && ((i+1) % 5 == 0) && (rank == MASTER_NODE)) WriteHistory(i+1, norm_r, norm0);
     
   }
 	  
-  if ((monitoring) && (rank == 0)) {
+  if ((monitoring) && (rank == MASTER_NODE)) {
     cout << "# BCGSTAB final (true) residual:" << endl;
     cout << "# Iteration = " << i << ": |res|/|res0| = "  << norm_r/norm0 << endl;
   }
@@ -584,7 +584,7 @@ unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x,
 //  r = b; r -= A_x;
 //  double true_res = r.norm();
 //  
-//  if ((fabs(true_res - norm_r) > tol*10.0) && (rank == 0)) {
+//  if ((fabs(true_res - norm_r) > tol*10.0) && (rank == MASTER_NODE)) {
 //    cout << "# WARNING in CSysSolve::BCGSTAB(): " << endl;
 //    cout << "# true residual norm and calculated residual norm do not agree." << endl;
 //    cout << "# true_res - calc_res = " << true_res <<" "<< norm_r << endl;

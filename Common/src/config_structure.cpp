@@ -4799,6 +4799,11 @@ unsigned short CConfig::GetMarker_CfgFile_TagBound(string val_marker) {
 
   cout <<"The configuration file doesn't have any definition for marker "<< val_marker <<"!!" << endl;
   exit(EXIT_FAILURE);
+  
+}
+
+string CConfig::GetMarker_CfgFile_TagBound(unsigned short val_marker) {
+  return Marker_CfgFile_TagBound[val_marker];
 }
 
 unsigned short CConfig::GetMarker_CfgFile_KindBC(string val_marker) {
