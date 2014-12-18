@@ -1291,9 +1291,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     
     Kind_SU2 = val_software;
     
-    /*--- Only SU2_PRT, and SU2_CFD work with CGNS ---*/
+    /*--- Only SU2_CFD work with CGNS ---*/
     
-    if ((Kind_SU2 != SU2_PRT) && (Kind_SU2 != SU2_CFD) && (Kind_SU2 != SU2_SOL)) {
+    if ((Kind_SU2 != SU2_CFD) && (Kind_SU2 != SU2_SOL)) {
         if (Mesh_FileFormat == CGNS) {
             cout << "This software is not prepared for CGNS, please switch to SU2" << endl;
             exit(EXIT_FAILURE);
@@ -3182,7 +3182,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     case SU2_CFD: cout << "|  |_____/   \\____/  |____|   Suite (Computational Fluid Dynamics Code) |" << endl; break;
     case SU2_DEF: cout << "|  |_____/   \\____/  |____|   Suite (Mesh Deformation Code)             |" << endl; break;
     case SU2_DOT: cout << "|  |_____/   \\____/  |____|   Suite (Gradient Projection Code)          |" << endl; break;
-    case SU2_PRT: cout << "|  |_____/   \\____/  |____|   Suite (Grid Partitioning Code)            |" << endl; break;
     case SU2_MSH: cout << "|  |_____/   \\____/  |____|   Suite (Mesh Adaptation Code)              |" << endl; break;
     case SU2_GEO: cout << "|  |_____/   \\____/  |____|   Suite (Geometry Definition Code)          |" << endl; break;
     case SU2_SOL: cout << "|  |_____/   \\____/  |____|   Suite (Solution Exporting Code)           |" << endl; break;
@@ -4235,11 +4234,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       if (Kind_ObjFunc == NEARFIELD_PRESSURE) cout << "Restart adjoint file name: " << Restart_AdjFileName << "." << endl;
       if (Kind_ObjFunc == LIFT_COEFFICIENT) cout << "Restart adjoint file name: " << Restart_AdjFileName << "." << endl;
     }
-  }
-
-  if (val_software == SU2_PRT) {
-    if (Visualize_Partition) cout << "Visualize the partitions. " << endl;
-    else cout << "Don't visualize the partitions. " << endl;
   }
 
   cout << endl <<"------------------- Config file boundary information --------------------" << endl;
