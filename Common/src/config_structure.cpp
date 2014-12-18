@@ -209,9 +209,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\par RESTART_SOL
    *  DESCRIPTION: Restart solution from native solution file \n Options: NO, YES \ingroup Config */
   addBoolOption("RESTART_SOL", Restart, false);
-  /*!\par VISUALIZE_PART
-   *  DESCRIPTION: Write a tecplot file for each partition \ingroup Config*/
-  addBoolOption("VISUALIZE_PART", Visualize_Partition, false);
   /* DESCRIPTION: System of measurements */
   addEnumOption("SYSTEM_MEASUREMENTS", SystemMeasurements, Measurements_Map, SI);
 
@@ -1189,12 +1186,17 @@ void CConfig::SetParsing(char case_filename[MAX_STRING_SIZE]) {
   string text_line, option_name;
   ifstream case_file;
   vector<string> option_value;
-
+  int rank = MASTER_NODE;
+  
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+  
   /*--- Read the configuration file ---*/
   case_file.open(case_filename, ios::in);
 
   if (case_file.fail()) {
-    cout << "There is no configuration file!!" << endl;
+    if (rank == MASTER_NODE) cout << "There is no configuration file!!" << endl;
     exit(EXIT_FAILURE);
   }
 
@@ -1257,7 +1259,7 @@ void CConfig::SetParsing(char case_filename[MAX_STRING_SIZE]) {
   // See if there were any errors parsing the config file
   if (errorString.size() != 0){
 //    SU2MPI::PrintAndFinalize(errorString);
-    cout << errorString << endl;
+    if (rank == MASTER_NODE) cout << errorString << endl;
     exit(EXIT_FAILURE);
   }
 

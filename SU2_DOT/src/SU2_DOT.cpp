@@ -97,9 +97,7 @@ int main(int argc, char *argv[]) {
       /*--- Read the grid using the master node ---*/
       
       geometry_aux = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
-      
-      cout << endl <<"---------------------------- Grid partitioning --------------------------" << endl;
-      
+            
       /*--- Color the initial grid and set the send-receive domains ---*/
       
       geometry_aux->SetColorGrid(config_container[iZone]);
@@ -253,6 +251,8 @@ int main(int argc, char *argv[]) {
       
       for (iFFDBox = 0; iFFDBox < surface_movement->GetnFFDBox(); iFFDBox++) {
         
+        /*--- Reset FFD box ---*/
+        
         switch (config_container[ZONE_0]->GetDesign_Variable(iDV) ) {
           case FFD_CONTROL_POINT_2D : surface_movement->SetFFDCPChange_2D(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], iDV, true); break;
           case FFD_RADIUS_2D :        surface_movement->SetFFDCPChange_2D_rad(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], iDV, true); break;
@@ -275,7 +275,7 @@ int main(int argc, char *argv[]) {
       
     }
 			 
-    /*--- HicksHenne design variable ---*/
+    /*--- Hicks Henne design variable ---*/
 
     else if (config_container[ZONE_0]->GetDesign_Variable(iDV) == HICKS_HENNE) {
       if (rank == MASTER_NODE) {

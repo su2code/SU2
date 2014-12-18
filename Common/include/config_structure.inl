@@ -94,8 +94,6 @@ inline unsigned short CConfig::GetAxis_Orientation(void) { return Axis_Orientati
 
 inline double CConfig::GetDualVol_Power(void) { return DualVol_Power; }
 
-inline bool CConfig::GetVisualize_Partition(void) { return Visualize_Partition; }
-
 inline bool CConfig::GetExtraOutput(void) { return ExtraOutput; }
 
 inline double CConfig::GetRefAreaCoeff(void) { return RefAreaCoeff; }
