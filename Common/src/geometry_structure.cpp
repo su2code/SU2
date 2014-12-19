@@ -2397,7 +2397,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   
 }
 
-CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config,int option) {
+CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int option) {
   
   unsigned long iter,  iPoint, jPoint, iElem, jElem, iVertex;
   unsigned long nElemTotal = 0, nPointTotal = 0, nPointDomainTotal = 0, nPointGhost = 0, nPointPeriodic = 0, nElemTriangle = 0, nElemRectangle = 0, nElemTetrahedron = 0, nElemHexahedron = 0, nElemWedge = 0, nElemPyramid = 0;
@@ -3582,8 +3582,8 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config,int op
           Local_to_Global_Point[index] = Buffer_Receive_GlobalPointIndex[iPoint];
           
           /*--- Allocating the Point object ---*/
-          if ( nDim == 2 ) node[index] = new CPoint(Buffer_Receive_Coord[iPoint*nDim+0], Buffer_Receive_Coord[iPoint*nDim+1], Local_to_Global_Point[iPoint], config);
-          if ( nDim == 3 ) node[index] = new CPoint(Buffer_Receive_Coord[iPoint*nDim+0], Buffer_Receive_Coord[iPoint*nDim+1], Buffer_Receive_Coord[iPoint*nDim+2], Local_to_Global_Point[iPoint], config);
+          if ( nDim == 2 ) node[index] = new CPoint(Buffer_Receive_Coord[iPoint*nDim+0], Buffer_Receive_Coord[iPoint*nDim+1], Local_to_Global_Point[index], config);
+          if ( nDim == 3 ) node[index] = new CPoint(Buffer_Receive_Coord[iPoint*nDim+0], Buffer_Receive_Coord[iPoint*nDim+1], Buffer_Receive_Coord[iPoint*nDim+2], Local_to_Global_Point[index], config);
           
           /*--- Set the color ---*/
           node[index]->SetColor(Buffer_Receive_Color[iPoint]);
@@ -3604,8 +3604,8 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config,int op
           Local_to_Global_Point[index] = Buffer_Receive_GlobalPointIndex[iPoint];
           
           /*--- Allocating the Point object ---*/
-          if ( nDim == 2 ) node[index] = new CPoint(Buffer_Receive_Coord[iPoint*nDim+0], Buffer_Receive_Coord[iPoint*nDim+1], Local_to_Global_Point[iPoint], config);
-          if ( nDim == 3 ) node[index] = new CPoint(Buffer_Receive_Coord[iPoint*nDim+0], Buffer_Receive_Coord[iPoint*nDim+1], Buffer_Receive_Coord[iPoint*nDim+2], Local_to_Global_Point[iPoint], config);
+          if ( nDim == 2 ) node[index] = new CPoint(Buffer_Receive_Coord[iPoint*nDim+0], Buffer_Receive_Coord[iPoint*nDim+1], Local_to_Global_Point[index], config);
+          if ( nDim == 3 ) node[index] = new CPoint(Buffer_Receive_Coord[iPoint*nDim+0], Buffer_Receive_Coord[iPoint*nDim+1], Buffer_Receive_Coord[iPoint*nDim+2], Local_to_Global_Point[index], config);
           
           /*--- Set the color ---*/
           node[index]->SetColor(Buffer_Receive_Color[iPoint]);
@@ -3632,8 +3632,8 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config,int op
           
           index=temp_node_count;
           Local_to_Global_Point[index] = Buffer_Receive_GlobalPointIndex_loc[iPoint];
-          if ( nDim == 2 ) node[index] = new CPoint(Buffer_Receive_Coord_loc[iPoint*nDim+0], Buffer_Receive_Coord_loc[iPoint*nDim+1], Local_to_Global_Point[iPoint], config);
-          if ( nDim == 3 ) node[index] = new CPoint(Buffer_Receive_Coord_loc[iPoint*nDim+0], Buffer_Receive_Coord_loc[iPoint*nDim+1], Buffer_Receive_Coord_loc[iPoint*nDim+2], Local_to_Global_Point[iPoint], config);
+          if ( nDim == 2 ) node[index] = new CPoint(Buffer_Receive_Coord_loc[iPoint*nDim+0], Buffer_Receive_Coord_loc[iPoint*nDim+1], Local_to_Global_Point[index], config);
+          if ( nDim == 3 ) node[index] = new CPoint(Buffer_Receive_Coord_loc[iPoint*nDim+0], Buffer_Receive_Coord_loc[iPoint*nDim+1], Buffer_Receive_Coord_loc[iPoint*nDim+2], Local_to_Global_Point[index], config);
           node[index]->SetColor(Buffer_Receive_Color_loc[iPoint]);
           temp_node_count++;
           
@@ -3641,8 +3641,8 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config,int op
           
           index=temp_node_count_domain;
           Local_to_Global_Point[index] = Buffer_Receive_GlobalPointIndex_loc[iPoint];
-          if ( nDim == 2 ) node[index] = new CPoint(Buffer_Receive_Coord_loc[iPoint*nDim+0], Buffer_Receive_Coord_loc[iPoint*nDim+1], Local_to_Global_Point[iPoint], config);
-          if ( nDim == 3 ) node[index] = new CPoint(Buffer_Receive_Coord_loc[iPoint*nDim+0], Buffer_Receive_Coord_loc[iPoint*nDim+1], Buffer_Receive_Coord_loc[iPoint*nDim+2], Local_to_Global_Point[iPoint], config);
+          if ( nDim == 2 ) node[index] = new CPoint(Buffer_Receive_Coord_loc[iPoint*nDim+0], Buffer_Receive_Coord_loc[iPoint*nDim+1], Local_to_Global_Point[index], config);
+          if ( nDim == 3 ) node[index] = new CPoint(Buffer_Receive_Coord_loc[iPoint*nDim+0], Buffer_Receive_Coord_loc[iPoint*nDim+1], Buffer_Receive_Coord_loc[iPoint*nDim+2], Local_to_Global_Point[index], config);
           node[index]->SetColor(Buffer_Receive_Color_loc[iPoint]);
           temp_node_count_domain++;
           
