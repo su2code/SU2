@@ -6000,7 +6000,7 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
 	mesh_file.close();
   
 	if (nFFDBox == 0) {
-		if (rank == MASTER_NODE) cout <<"There is no FFD box definition. Just in case, review the .su2 file" << endl;
+		if (rank == MASTER_NODE) cout <<"There is no FFD box definition. Just in case, check the .su2 file" << endl;
 	}
 
 }
