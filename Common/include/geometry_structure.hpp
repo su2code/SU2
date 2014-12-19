@@ -470,6 +470,12 @@ public:
 	virtual void SetColorGrid(CConfig *config);
   
   /*!
+   * \brief A virtual member.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void SetColorGrid_Parallel(CConfig *config);
+  
+  /*!
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.
 	 */
