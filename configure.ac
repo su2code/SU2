@@ -13,7 +13,7 @@
 #
 ##########################
 
-AC_INIT([SU2], [3.2.5], [susquared-dev@lists.stanford.edu],
+AC_INIT([SU2], [3.2.6], [susquared-dev@lists.stanford.edu],
         [SU2], [https://github.com/su2code])
 AC_PREREQ([2.59])
 AC_CONFIG_MACRO_DIR([m4])

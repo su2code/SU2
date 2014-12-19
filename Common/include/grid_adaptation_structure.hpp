@@ -5,7 +5,7 @@
  *        technique definition). The subroutines and functions are in
  *        the <i>grid_movement_structure.cpp</i> file.
  * \author F. Palacios
- * \version 3.2.5 "eagle"
+ * \version 3.2.6 "eagle"
  *
  * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
  *

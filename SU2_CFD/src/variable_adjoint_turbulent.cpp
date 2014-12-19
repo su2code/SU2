@@ -2,7 +2,7 @@
  * \file variable_adjoint_turbulent.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, A. Bueno
- * \version 3.2.5 "eagle"
+ * \version 3.2.6 "eagle"
  *
  * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
  *

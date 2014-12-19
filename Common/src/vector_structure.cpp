@@ -2,7 +2,7 @@
  * \file vector_structure.cpp
  * \brief Main classes required for solving linear systems of equations
  * \author F. Palacios, J. Hicken
- * \version 3.2.5 "eagle"
+ * \version 3.2.6 "eagle"
  *
  * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
  *

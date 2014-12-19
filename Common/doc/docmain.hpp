@@ -2,7 +2,7 @@
  * \file docmain.hpp
  * \brief This file contains documentation for Doxygen and does not have any significance with respect to C++.
  * \author F. Palacios
- * \version 3.2.5 "eagle"
+ * \version 3.2.6 "eagle"
  *
  * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
  *

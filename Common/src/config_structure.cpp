@@ -2,7 +2,7 @@
  * \file config_structure.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 3.2.5 "eagle"
+ * \version 3.2.6 "eagle"
  *
  * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
  *
@@ -3172,7 +3172,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   cout << endl <<"-------------------------------------------------------------------------" << endl;
   cout <<"|    _____   _    _   ___                                               |" << endl;
-  cout <<"|   / ____| | |  | | |__ \\    Release 3.2.5 \"eagle\"                     |" << endl;
+  cout <<"|   / ____| | |  | | |__ \\    Release 3.2.6 \"eagle\"                     |" << endl;
   cout <<"|  | (___   | |  | |    ) |                                             |" << endl;
   cout <<"|   \\___ \\  | |  | |   / /                                              |" << endl;
   cout <<"|   ____) | | |__| |  / /_                                              |" << endl;
