@@ -44,7 +44,7 @@
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       launchStyle = "0"
       useCustomWorkingDirectory = "YES"
-      customWorkingDirectory = "/Users/fpalacios/SU2_SIM/NACA0012"
+      customWorkingDirectory = "/Users/fpalacios/SU2_SIM/CRM_INV"
       buildConfiguration = "Debug"
       ignoresPersistentStateOnLaunch = "NO"
       debugDocumentVersioning = "YES"
@@ -60,7 +60,7 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "turb_NACA0012.cfg"
+            argument = "inv_CRM_JST.cfg"
             isEnabled = "YES">
          </CommandLineArgument>
       </CommandLineArguments>

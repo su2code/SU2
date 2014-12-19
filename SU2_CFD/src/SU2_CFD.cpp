@@ -140,6 +140,10 @@ int main(int argc, char *argv[]) {
     
     geometry_container[iZone][MESH_0] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
     
+    /*--- Deallocate the memory of geometry_aux ---*/
+
+    delete geometry_aux;
+    
     /*--- Add the Send/Receive boundaries ---*/
     
     geometry_container[iZone][MESH_0]->SetSendReceive(config_container[iZone]);

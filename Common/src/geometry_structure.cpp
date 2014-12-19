@@ -8790,10 +8790,10 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
   unsigned long iVertex, iPoint, (*Point2Vertex)[2], nPointLocal = 0, nPointGlobal = 0;
   double Sensitivity;
   bool *PointInDomain;
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
   
 #ifdef HAVE_MPI
+  int rank = MASTER_NODE;
+  int size = SINGLE_NODE;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif

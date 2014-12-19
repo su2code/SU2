@@ -1357,10 +1357,11 @@ void CFEASolver::GetSurface_Pressure(CGeometry *geometry, CConfig *config) {
   ifstream Surface_file;
   char buffer[50], cstr[200];
   
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
   
 #ifdef HAVE_MPI
+  int rank = MASTER_NODE;
+  int size = SINGLE_NODE;
+
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
