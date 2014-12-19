@@ -150,13 +150,16 @@ int main(int argc, char *argv[]) {
     /*--- Allocate the memory of the current domain, and
      divide the grid between the nodes ---*/
     
-    if (config_container[iZone]->GetParMETIS())
+    if (config_container[iZone]->GetParMETIS()) {
+    if (rank==MASTER_NODE) cout << "Communicating partition data and creating halo layers." << endl;
       geometry_container[iZone][MESH_0] = new CPhysicalGeometry(geometry_aux, config_container[iZone], 1);
-    else
+    } else {
       geometry_container[iZone][MESH_0] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
+    }
     
     /*--- Add the Send/Receive boundaries ---*/
     
+    if (rank==MASTER_NODE) cout << "Setting up communication patterns." << endl;
     geometry_container[iZone][MESH_0]->SetSendReceive(config_container[iZone]);
     
     /*--- Add the Send/Receive boundaries ---*/

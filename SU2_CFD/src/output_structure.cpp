@@ -910,6 +910,7 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
       if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
         SendRecv = config->GetMarker_All_SendRecv(iMarker);
         RecvFrom = abs(SendRecv)-1;
+        
         /*--- Checking for less than or equal to the rank, because there may
          be some periodic halo nodes that send info to the same rank. ---*/
         
@@ -945,7 +946,6 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
   }
   nBuffer_Scalar = MaxLocalPoint;
   
-  cout << " Through first comm" << endl;
   /*--- Send and Recv buffers. ---*/
   
   double *Buffer_Send_X = new double[MaxLocalPoint];
@@ -979,9 +979,6 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
       Coords[iDim] = new double[nGlobal_Poin];
     }
   }
-  
-  cout << " 2" << endl;
-
   
   /*--- Main communication routine. Loop over each coordinate and perform
    the MPI comm. Temporary 1-D buffers are used to send the coordinates at
@@ -1019,7 +1016,7 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
       jPoint++;
     }
   }
-  cout << " 3" << endl;
+
   /*--- Gather the coordinate data on the master node using MPI. ---*/
   MPI_Barrier(MPI_COMM_WORLD);
   MPI_Gather(Buffer_Send_X, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_X, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
@@ -1028,7 +1025,7 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
     MPI_Gather(Buffer_Send_Z, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Z, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
   }
   MPI_Gather(Buffer_Send_GlobalIndex, nBuffer_Scalar, MPI_UNSIGNED_LONG, Buffer_Recv_GlobalIndex, nBuffer_Scalar, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
-  cout << " 4" << endl;
+
   /*--- The master node unpacks and sorts this variable by global index ---*/
   
   if (rank == MASTER_NODE) {
@@ -1037,8 +1034,6 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
       for (iPoint = 0; iPoint < Buffer_Recv_nPoin[iProcessor]; iPoint++) {
         /*--- Get global index, then loop over each variable and store ---*/
         iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
-        cout << " Global index " << iGlobal_Index << endl;
-
         Coords[0][iGlobal_Index] = Buffer_Recv_X[jPoint];
         Coords[1][iGlobal_Index] = Buffer_Recv_Y[jPoint];
         if (nDim == 3) Coords[2][iGlobal_Index] = Buffer_Recv_Z[jPoint];
@@ -1048,7 +1043,7 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
       jPoint = (iProcessor+1)*nBuffer_Scalar;
     }
   }
-  cout << " 5" << endl;
+
   /*--- Immediately release the temporary data buffers. ---*/
   
   delete [] Local_Halo;
@@ -1065,7 +1060,6 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
   }
   
 #endif
-  cout << " 6" << endl;
   
 }
 
