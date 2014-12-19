@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for creating the sparse matrices-by-blocks.
  *        The subroutines and functions are in the <i>matrix_structure.cpp</i> file.
  * \author F. Palacios, A. Bueno
- * \version 3.2.5 "eagle"
+ * \version 3.2.6 "eagle"
  *
  * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
  *
@@ -41,7 +41,7 @@ using namespace std;
  * \brief Main class for defining sparse matrices-by-blocks
  with compressed row format.
  * \author A. Bueno, F. Palacios.
- * \version 3.2.5 "eagle"
+ * \version 3.2.6 "eagle"
  */
 class CSysMatrix {
 private:

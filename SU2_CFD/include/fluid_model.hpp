@@ -2,7 +2,7 @@
  * gas_model.hpp
  * \brief Headers of the main thermodynamic subroutines of the SU2 solvers.
  * \author S. Vitale, G. Gori, M. Pini, A. Guardone, P. Colonna
- * \version 3.2.5 "eagle"
+ * \version 3.2.6 "eagle"
  *
  * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
  *
@@ -43,7 +43,7 @@ using namespace std;
  * \brief Main class for defining the Thermo-Physical Model
  * a child class for each particular Model (Ideal-Gas, Van der Waals, etc.)
  * \author: S.Vitale, G.Gori, M.Pini
- * \version 3.2.5 "eagle"
+ * \version 3.2.6 "eagle"
  */
 class CFluidModel {
 protected:
@@ -245,7 +245,7 @@ public:
  * \class CIdealGas
  * \brief Child class for defining ideal gas model.
  * \author: S.Vitale, M.Pini.
- * \version 3.2.5 "eagle"
+ * \version 3.2.6 "eagle"
  */
 class CIdealGas : public CFluidModel {
 
@@ -334,7 +334,7 @@ public:
  * derived class CVanDerWaalsGas
  * \brief Child class for defining the Van der Waals model.
  * \author: S.Vitale, M.Pini
- * \version 3.2.5 "eagle"
+ * \version 3.2.6 "eagle"
  */
 class CVanDerWaalsGas : public CIdealGas {
 
@@ -412,7 +412,7 @@ public:
  * \derived class CPengRobinson
  * \brief Child class for defining the Peng-Robinson model.
  * \author: S.Vitale, G. Gori
- * \version 3.2.5 "eagle"
+ * \version 3.2.6 "eagle"
  */
 class CPengRobinson : public CIdealGas {
 

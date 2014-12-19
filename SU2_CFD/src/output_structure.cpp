@@ -2,7 +2,7 @@
  * \file output_structure.cpp
  * \brief Main subroutines for output solver information
  * \author F. Palacios, T. Economon
- * \version 3.2.5 "eagle"
+ * \version 3.2.6 "eagle"
  *
  * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
  *
@@ -5666,7 +5666,7 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
     
     Breakdown_file << endl <<"-------------------------------------------------------------------------" << endl;
     Breakdown_file <<"|    _____   _    _   ___                                               |" << endl;
-    Breakdown_file <<"|   / ____| | |  | | |__ \\    Release 3.2.5 \"eagle\"                     |" << endl;
+    Breakdown_file <<"|   / ____| | |  | | |__ \\    Release 3.2.6 \"eagle\"                     |" << endl;
     Breakdown_file <<"|  | (___   | |  | |    ) |                                             |" << endl;
     Breakdown_file <<"|   \\___ \\  | |  | |   / /                                              |" << endl;
     Breakdown_file <<"|   ____) | | |__| |  / /_                                              |" << endl;

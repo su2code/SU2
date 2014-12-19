@@ -2,7 +2,7 @@
  * \file numerics_machine_learning_direct_turbulent.hpp
  * \brief Header for caller functions of the turbulence models.
  * \author B. Tracey
- * \version 3.2.5 "eagle"
+ * \version 3.2.6 "eagle"
  *
  * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
  *

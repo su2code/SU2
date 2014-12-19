@@ -2,7 +2,7 @@
  * \file vector_structure.inl
  * \brief inline subroutines of the <i>vector_structure.hpp</i> file.
  * \author F. Palacios, J. Hicken
- * \version 3.2.5 "eagle"
+ * \version 3.2.6 "eagle"
  *
  * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
  *

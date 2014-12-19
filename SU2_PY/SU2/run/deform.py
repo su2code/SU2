@@ -1,7 +1,7 @@
 ## \file deform.py
 #  \brief python package for deforming meshes
 #  \author T. Lukaczyk, F. Palacios
-#  \version 3.2.5 "eagle"
+#  \version 3.2.6 "eagle"
 #
 # Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
 #
