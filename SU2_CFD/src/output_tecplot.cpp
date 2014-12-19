@@ -394,13 +394,6 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, CSolver **s
   if (Kind_Solver == POISSON_EQUATION)
   filename = config->GetStructure_FileName().c_str();
   
-#ifdef HAVE_MPI
-  /*--- Remove the domain number from the surface csv filename ---*/
-  int nProcessor;
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-  if (nProcessor > 1) filename.erase (filename.end()-2, filename.end());
-#endif
-  
   strcpy (cstr, filename.c_str());
   if (Kind_Solver == POISSON_EQUATION) strcpy (cstr, config->GetStructure_FileName().c_str());
   

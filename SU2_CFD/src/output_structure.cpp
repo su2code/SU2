@@ -295,9 +295,6 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
     string filename = config->GetSurfFlowCoeff_FileName();
     ofstream SurfFlow_file;
     
-    /*--- Remove the domain number from the surface csv filename ---*/
-    if (nProcessor > 1) filename.erase (filename.end()-2, filename.end());
-    
     /*--- Write file name with extension if unsteady ---*/
     strcpy (cstr, filename.c_str());
     if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
@@ -614,10 +611,7 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
     char cstr[200], buffer[50];
     ofstream SurfAdj_file;
     string filename = config->GetSurfAdjCoeff_FileName();
-    
-    /*--- Remove the domain number from the surface csv filename ---*/
-    if (nProcessor > 1) filename.erase (filename.end()-2, filename.end());
-    
+        
     /*--- Write file name with extension if unsteady ---*/
     strcpy (cstr, filename.c_str());
     
