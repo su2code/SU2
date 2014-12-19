@@ -780,8 +780,6 @@ inline bool CConfig::GetRestart(void) {	return Restart; }
 
 inline bool CConfig::GetRestart_Flow(void) { return Restart_Flow; }
 
-inline bool CConfig::GetFullMG(void) { return FullMG; }
-
 inline bool CConfig::GetEquivArea(void) { return EquivArea; }
 
 inline bool CConfig::GetInvDesign_Cp(void) { return InvDesign_Cp; }
@@ -945,10 +943,6 @@ inline unsigned short CConfig::GetCauchy_Elems(void) { return Cauchy_Elems; }
 inline unsigned long CConfig::GetStartConv_Iter(void) { return StartConv_Iter; }
 
 inline double CConfig::GetCauchy_Eps(void) { return Cauchy_Eps; }
-
-inline double CConfig::GetCauchy_Eps_OneShot(void) { return Cauchy_Eps_OneShot; }
-
-inline double CConfig::GetCauchy_Eps_FullMG(void) { return Cauchy_Eps_FullMG; }
 
 inline double CConfig::GetDelta_UnstTimeND(void) { return Delta_UnstTimeND; }
 

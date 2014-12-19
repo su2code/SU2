@@ -56,12 +56,7 @@ int main(int argc, char *argv[]) {
   
   if (argc == 2){ strcpy(config_file_name,argv[1]); }
   else{ strcpy(config_file_name, "default.cfg"); }
-  
-  /*--- Read the name and format of the input mesh file ---*/
-  
-  CConfig *config = NULL;
-  config = new CConfig(config_file_name, SU2_DOT);
-  
+    
   /*--- Definition of the containers per zones ---*/
   
   config_container = new CConfig*[nZone];
@@ -83,11 +78,7 @@ int main(int argc, char *argv[]) {
      read and stored. ---*/
     
     config_container[iZone] = new CConfig(config_file_name, SU2_DOT, iZone, nZone, 0, VERB_HIGH);
-    
-    /*--- Change the name of the input-output files for a parallel computation ---*/
-    
-    config_container[iZone]->SetFileNameDomain(rank+1);
-    
+        
     /*--- Definition of the geometry class to store the primal grid in the partitioning process. ---*/
     
     CGeometry *geometry_aux = NULL;

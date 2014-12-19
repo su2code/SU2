@@ -64,19 +64,18 @@ int main(int argc, char *argv[]) {
    file is specified, default.cfg is used) ---*/
   
   if (argc == 2){ strcpy(config_file_name,argv[1]); }
-  else{ strcpy(config_file_name, "default.cfg"); }
+  else { strcpy(config_file_name, "default.cfg"); }
   
-  /*--- Read the name and format of the input mesh file ---*/
+  /*--- Read the name and format of the input mesh file to get from the mesh 
+   file the number of zones and dimensions from the numerical grid (required 
+   for variables allocation)  ---*/
   
   CConfig *config = NULL;
   config = new CConfig(config_file_name, SU2_CFD);
   
-  /*--- Get the number of zones and dimensions from the numerical grid
-   (required for variables allocation) ---*/
-  
   nZone = GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
   nDim  = GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
-
+  
   /*--- Definition and of the containers for all possible zones. ---*/
   
   solver_container      = new CSolver***[nZone];
@@ -111,11 +110,9 @@ int main(int argc, char *argv[]) {
     
     config_container[iZone] = new CConfig(config_file_name, SU2_CFD, iZone, nZone, nDim, VERB_HIGH);
     
-    /*--- Change the name of the input-output files for a parallel computation ---*/
     
-    config_container[iZone]->SetFileNameDomain(rank+1);
-    
-    /*--- Definition of the geometry class to store the primal grid in the partitioning process. ---*/
+    /*--- Definition of the geometry class to store the primal grid in the 
+     partitioning process. ---*/
     
     CGeometry *geometry_aux = NULL;
     
@@ -166,9 +163,10 @@ int main(int argc, char *argv[]) {
    computed, and the multigrid levels are created using an agglomeration procedure. ---*/
   
   Geometrical_Preprocessing(geometry_container, config_container, nZone);
-  
-#ifdef HAVE_MPI
+
   /*--- Synchronization point after the geometrical definition subroutine ---*/
+
+#ifdef HAVE_MPI
 MPI_Barrier(MPI_COMM_WORLD);
 #endif
   
@@ -214,9 +212,10 @@ MPI_Barrier(MPI_COMM_WORLD);
     }
     Solver_Preprocessing(solver_container[iZone], geometry_container[iZone],
                          config_container[iZone], iZone);
-    
-#ifdef HAVE_MPI
+
     /*--- Synchronization point after the solution preprocessing subroutine ---*/
+
+#ifdef HAVE_MPI
     MPI_Barrier(MPI_COMM_WORLD);
 #endif
     
@@ -234,9 +233,10 @@ MPI_Barrier(MPI_COMM_WORLD);
                               config_container[iZone], iZone);
     
     if (rank == MASTER_NODE) cout << "Integration Preprocessing." << endl;
-    
-#ifdef HAVE_MPI
+
     /*--- Synchronization point after the integration definition subroutine ---*/
+
+#ifdef HAVE_MPI
     MPI_Barrier(MPI_COMM_WORLD);
 #endif
     
@@ -252,9 +252,10 @@ MPI_Barrier(MPI_COMM_WORLD);
                            geometry_container[iZone], config_container[iZone], iZone);
     
     if (rank == MASTER_NODE) cout << "Numerics Preprocessing." << endl;
-    
-#ifdef HAVE_MPI
+
     /*--- Synchronization point after the solver definition subroutine ---*/
+
+#ifdef HAVE_MPI
     MPI_Barrier(MPI_COMM_WORLD);
 #endif
     

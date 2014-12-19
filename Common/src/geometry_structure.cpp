@@ -3383,7 +3383,7 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
 #endif
         
         if (rank == MASTER_NODE)
-          cout << Global_nPointDomain << " points, and " << Global_nPoint-Global_nPointDomain << " ghost points." << endl;
+          cout << Global_nPointDomain << " points." << endl;
         
       }
       else if (iCount == 1) {
