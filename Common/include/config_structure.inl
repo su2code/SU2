@@ -96,6 +96,8 @@ inline double CConfig::GetDualVol_Power(void) { return DualVol_Power; }
 
 inline bool CConfig::GetExtraOutput(void) { return ExtraOutput; }
 
+inline bool CConfig::GetParMETIS(void) { return ParMETIS; }
+
 inline double CConfig::GetRefAreaCoeff(void) { return RefAreaCoeff; }
 
 inline double CConfig::GetWaveSpeed(void) { return Wave_Speed; }

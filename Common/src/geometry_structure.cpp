@@ -1114,7 +1114,10 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
   
   switch (val_format) {
     case SU2:
-      Read_SU2_Format(config, val_mesh_filename, val_iZone, val_nZone);
+      if (config->GetParMETIS())
+        Read_SU2_Format_Parallel(config, val_mesh_filename, val_iZone, val_nZone);
+      else
+        Read_SU2_Format(config, val_mesh_filename, val_iZone, val_nZone);
       break;
     case CGNS:
       Read_CGNS_Format(config, val_mesh_filename, val_iZone, val_nZone);
@@ -1133,8 +1136,10 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
       break;
   }
   
-  /*--- Loop over the surface element to set the boundaries ---*/
+  /*--- Loop over the surface element to set the boundaries. Only the master
+   node has the boundaries after the parallel paritioning. ---*/
   
+  if (!config->GetParMETIS()) {
   for (iMarker = 0; iMarker < nMarker; iMarker++)
     for (iElem_Surface = 0; iElem_Surface < nElem_Bound[iMarker]; iElem_Surface++)
       for (iNode_Surface = 0; iNode_Surface < bound[iMarker][iElem_Surface]->GetnNodes(); iNode_Surface++) {
@@ -1151,6 +1156,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
             config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)
           node[Point_Surface]->SetSolidBoundary(true);
       }
+  }
   
   /*--- Loop over the points element to re-scale the mesh, 
    and plot it (only CFD) ---*/
@@ -6672,8 +6678,6 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
 #endif
       }
       
-      
-      
       /*--- Compute the number of points that will be on each processor.
        This is a linear partitioning with the addition of a simple load
        balancing for any remainder points. ---*/
@@ -6685,35 +6689,21 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
       }
       
       /*--- Get the number of remainder points after the even division ---*/
-      rem_points = 0;
       rem_points = nPoint-total_pt_accounted;
-      
       for (unsigned long i=0; i<rem_points; i++) {
-        npoint_procs[i]++; //(check if this is eq to floor or ceil)
+        npoint_procs[i]++;
       }
       
       local_node=npoint_procs[rank];
-      
-      /*--- For debugging, print out the number of local points for each rank ---*/
-      cout <<"Rank " << rank << ": Number of local points is " << local_node << endl;
-      
-      
-      starting_node[0]= 0;
-      ending_node[0]= starting_node[0] + npoint_procs[0] ;
-      
-      
-      
-      for(unsigned long i=1;i<size;i++)
-      {
+      starting_node[0] = 0;
+      ending_node[0]   = starting_node[0] + npoint_procs[0];
+      for(unsigned long i=1;i<size;i++) {
         starting_node[i]= ending_node[i-1];
         ending_node[i]= starting_node[i] + npoint_procs[i] ;
       }
       
-      
-      //--------------------------------------------------------------------------------------
-      //--here we check if a point in the mesh file lies in the domain and if so then store it on the local processor
-      
-      
+      /*--- Here we check if a point in the mesh file lies in the domain 
+       and if so then store it on the local processor ---*/
       
       node = new CPoint*[local_node];   //initialize only the Cpoint with local number of elements
       iPoint = 0;node_count=0;
@@ -7050,9 +7040,6 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   vector<unsigned long>::iterator it;
   local_elem=loc_element_count;
   
-  
-  
-  
   xadj = new unsigned long [npoint_procs[rank]+1];
   xadj[0]=0;
   vector<unsigned long> temp_adjacency;
@@ -7094,8 +7081,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   adjacency = new unsigned long[adj_elem_size];
   
   copy(adjac_vec.begin(),adjac_vec.end(),adjacency);
-  
-  
+
   
   
   xadj_size = npoint_procs[rank]+1;
@@ -7116,13 +7102,13 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   }
   delete [] adjacent_elem;
   
-  //-----------------------------Nelements------------------------------------------
-  mesh_file.open(cstr, ios::in);
-  unsigned short nMarker_local=0;
-  
+  cout << "Finished building the adjacency structure." << endl;
   
   //----------------------------------Markers---------------------------------------------------------
   //---------------------------------------------------------------------------------------------------
+  
+  mesh_file.open(cstr, ios::in);
+  unsigned short nMarker_local=0;
   
   if(rank==MASTER_NODE) {
     

@@ -1178,6 +1178,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Flag specifying if the mesh was decomposed */
   addPythonOption("DECOMPOSED");
 
+  /* DESCRIPTION: Activate ParMETIS mode for testing */
+  addBoolOption("PARMETIS", ParMETIS, false);
+  
   /* END_CONFIG_OPTIONS */
 
 }
