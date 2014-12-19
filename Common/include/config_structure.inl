@@ -1054,8 +1054,6 @@ inline bool CConfig::GetWrt_Srf_Sol(void) { return Wrt_Srf_Sol; }
 
 inline bool CConfig::GetWrt_Csv_Sol(void) { return Wrt_Csv_Sol; }
 
-inline bool CConfig::GetWrt_Restart(void) { return Wrt_Restart; }
-
 inline bool CConfig::GetWrt_Residuals(void) { return Wrt_Residuals; }
 
 inline bool CConfig::GetWrt_Limiters(void) { return Wrt_Limiters; }

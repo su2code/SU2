@@ -498,7 +498,6 @@ private:
 	bool Low_MemoryOutput,      /*!< \brief Write a volume solution file */
   Wrt_Vol_Sol,                /*!< \brief Write a volume solution file */
 	Wrt_Srf_Sol,                /*!< \brief Write a surface solution file */
-	Wrt_Restart,                /*!< \brief Write a restart solution file */
 	Wrt_Csv_Sol,                /*!< \brief Write a surface comma-separated values solution file */
 	Wrt_Residuals,              /*!< \brief Write residuals to solution file */
   Wrt_Limiters,              /*!< \brief Write residuals to solution file */
@@ -2156,12 +2155,6 @@ public:
 	 * \return <code>TRUE</code> means that a surface comma-separated values (CSV) solution file will be written.
 	 */
 	bool GetWrt_Csv_Sol(void);
-
-	/*!
-	 * \brief Get information about writing a restart solution file.
-	 * \return <code>TRUE</code> means that a restart solution file will be written.
-	 */
-	bool GetWrt_Restart(void);
 
 	/*!
 	 * \brief Get information about writing residuals to volume solution file.

@@ -853,8 +853,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("WRT_SRF_SOL", Wrt_Srf_Sol, true);
   /* DESCRIPTION: Write a surface CSV solution file */
   addBoolOption("WRT_CSV_SOL", Wrt_Csv_Sol, true);
-  /* DESCRIPTION: Write a restart solution file */
-  addBoolOption("WRT_RESTART", Wrt_Restart, true);
   /* DESCRIPTION: Output residual info to solution/restart file */
   addBoolOption("WRT_RESIDUALS", Wrt_Residuals, false);
   /* DESCRIPTION: Output residual info to solution/restart file */

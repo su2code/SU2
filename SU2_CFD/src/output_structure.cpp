@@ -4093,8 +4093,7 @@ void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   
   if (config->GetOutput_FileFormat() == TECPLOT) sprintf (buffer, ".dat");
   else if (config->GetOutput_FileFormat() == TECPLOT_BINARY)  sprintf (buffer, ".plt");
-  else if ((config->GetOutput_FileFormat() == CGNS_SOL) ||
-           (config->GetOutput_FileFormat() == PARAVIEW))  sprintf (buffer, ".csv");
+  else if (config->GetOutput_FileFormat() == PARAVIEW)  sprintf (buffer, ".csv");
   strcat(cstr,buffer);
   
   ConvHist_file->open(cstr, ios::out);
@@ -6277,7 +6276,6 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
 #endif
     
     bool Wrt_Csv = config[iZone]->GetWrt_Csv_Sol();
-    bool Wrt_Rst = config[iZone]->GetWrt_Restart();
     
     if (rank == MASTER_NODE) cout << endl << "Writing Comma-Separated Values surface files." << endl;
 
@@ -6311,9 +6309,6 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
     
     unsigned short FileFormat = config[iZone]->GetOutput_FileFormat();
     
-    bool dynamic_mesh = (config[iZone]->GetUnsteady_Simulation() &&
-                         config[iZone]->GetGrid_Movement());
-    
     /*--- Merge the node coordinates and connectivity, if necessary. This
      is only performed if a volume solution file is requested, and it
      is active by default. ---*/
@@ -6331,12 +6326,7 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
     MergeCoordinates(config[iZone], geometry[iZone][MESH_0]);
     
     if (rank == MASTER_NODE) {
-      if (FileFormat == CGNS_SOL) {
-        SetCGNS_Coordinates(config[iZone], geometry[iZone][MESH_0], iZone);
-        if (!wrote_base_file || dynamic_mesh)
-          DeallocateCoordinates(config[iZone], geometry[iZone][MESH_0]);
-      }
-      else if (FileFormat == TECPLOT_BINARY) {
+      if (FileFormat == TECPLOT_BINARY) {
         SetTecplot_MeshBinary(config[iZone], geometry[iZone][MESH_0], iZone);
         SetTecplot_SurfaceMesh(config[iZone], geometry[iZone][MESH_0], iZone);
         if (!wrote_base_file)
@@ -6348,13 +6338,10 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
     
     /*--- Merge the solution data needed for volume solutions and restarts ---*/
     
-    if (Wrt_Vol || Wrt_Srf || Wrt_Rst) {
-      if (rank == MASTER_NODE) cout << "Merging solution in the Master node." << endl;
-      MergeSolution(config[iZone], geometry[iZone][MESH_0],
-                    solver_container[iZone][MESH_0], iZone);
-    }
+    if (rank == MASTER_NODE) cout << "Merging solution in the Master node." << endl;
+    MergeSolution(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0], iZone);
     
-    /*--- Write restart, CGNS, or Tecplot files using the merged data.
+    /*--- Write restart, or Tecplot files using the merged data.
      This data lives only on the master, and these routines are currently
      executed by the master proc alone (as if in serial). ---*/
     
@@ -6362,10 +6349,8 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
       
       /*--- Write a native restart file ---*/
       
-      if (Wrt_Rst) {
-        if (rank == MASTER_NODE) cout << "Writing SU2 native restart file." << endl;
-        SetRestart(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0] ,iZone);
-      }
+      if (rank == MASTER_NODE) cout << "Writing SU2 native restart file." << endl;
+      SetRestart(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0] ,iZone);
       
       if (Wrt_Vol) {
         
@@ -6388,13 +6373,6 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
             SetTecplot_Solution(config[iZone], geometry[iZone][MESH_0], iZone);
             break;
             
-          case CGNS_SOL:
-            
-            /*--- Write a CGNS solution file ---*/
-            
-            if (rank == MASTER_NODE) cout << "Writing CGNS Binary file (volume grid)." << endl;
-            SetCGNS_Solution(config[iZone], geometry[iZone][MESH_0], iZone);
-            break;
             
           case PARAVIEW:
             
@@ -6449,15 +6427,8 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
       
       /*--- Release memory needed for merging the solution data. ---*/
       
-      if ((Wrt_Vol || Wrt_Srf) && (FileFormat == TECPLOT ||
-                                   FileFormat == TECPLOT_BINARY ||
-                                   FileFormat == PARAVIEW)) {
-        DeallocateCoordinates(config[iZone], geometry[iZone][MESH_0]);
-      }
-      
-      if (Wrt_Vol || Wrt_Srf || Wrt_Rst) {
-        DeallocateSolution(config[iZone], geometry[iZone][MESH_0]);
-      }
+      DeallocateCoordinates(config[iZone], geometry[iZone][MESH_0]);
+      DeallocateSolution(config[iZone], geometry[iZone][MESH_0]);
       
     }
     
@@ -6491,7 +6462,6 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
     bool Low_MemoryOutput = config[iZone]->GetLow_MemoryOutput();
     bool Wrt_Vol = config[iZone]->GetWrt_Vol_Sol();
     bool Wrt_Srf = config[iZone]->GetWrt_Srf_Sol();
-    bool Wrt_Rst = config[iZone]->GetWrt_Restart();
     
     /*--- Get the file output format ---*/
     
@@ -6508,12 +6478,12 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
     
     /*--- Merge the solution data needed for volume solutions and restarts ---*/
     
-    if ((Wrt_Vol || Wrt_Srf || Wrt_Rst) && (!Low_MemoryOutput)) {
+    if ((Wrt_Vol || Wrt_Srf) && (!Low_MemoryOutput)) {
       if (rank == MASTER_NODE) cout << "Merging solution in the Master node." << endl;
       MergeBaselineSolution(config[iZone], geometry[iZone], solver[iZone], iZone);
     }
     
-    /*--- Write restart, CGNS, Tecplot or Paraview files using the merged data.
+    /*--- Write restart, Tecplot or Paraview files using the merged data.
      This data lives only on the master, and these routines are currently
      executed by the master proc alone (as if in serial). ---*/
     
@@ -6541,14 +6511,6 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
               if (rank == MASTER_NODE) cout << "Writing Tecplot Binary file (volume grid)." << endl;
               SetTecplot_MeshBinary(config[iZone], geometry[iZone], iZone);
               SetTecplot_Solution(config[iZone], geometry[iZone], iZone);
-              break;
-              
-            case CGNS_SOL:
-              
-              /*--- Write a CGNS solution file ---*/
-              
-              if (rank == MASTER_NODE) cout << "Writing CGNS Binary file (volume grid)." << endl;
-              SetCGNS_Solution(config[iZone], geometry[iZone], iZone);
               break;
               
             case PARAVIEW:
@@ -6690,7 +6652,7 @@ void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned sho
     
     MergeCoordinates(config[iZone], geometry[iZone]);
     
-    /*--- Write restart, CGNS, Tecplot or Paraview files using the merged data.
+    /*--- Write restart, Tecplot or Paraview files using the merged data.
      This data lives only on the master, and these routines are currently
      executed by the master proc alone (as if in serial). ---*/
     
