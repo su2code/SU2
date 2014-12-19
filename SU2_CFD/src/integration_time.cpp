@@ -35,6 +35,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ***geometry,
                                                 unsigned short iZone) {
   unsigned short FinestMesh, iMGLevel;
   double monitor = 1.0;
+  bool FullMG = false;
   
   const bool restart = (config[iZone]->GetRestart() || config[iZone]->GetRestart_Flow());
   const bool startup_multigrid = ((config[iZone]->GetRestart_Flow())     &&
@@ -49,12 +50,20 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ***geometry,
                        (config[iZone]->GetKind_Solver() == FLUID_STRUCTURE_NAVIER_STOKES) ||
                        (config[iZone]->GetKind_Solver() == FLUID_STRUCTURE_RANS));
   const unsigned short SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
+  unsigned short RecursiveParam = config[iZone]->GetMGCycle();
+  
+  if (config[iZone]->GetMGCycle() == FULLMG_CYCLE) {
+    RecursiveParam = V_CYCLE;
+    FullMG = true;
+  }
   
   /*--- If low fidelity simulation ---*/
+  
   if (config[iZone]->GetLowFidelitySim())
     config[iZone]->SetFinestMesh(MESH_1);
   
   /*--- If restart, update multigrid levels at the first multigrid iteration ---*/
+  
   if ((restart && (Iteration == config[iZone]->GetnStartUpIter())) || startup_multigrid) {
     for (iMGLevel = 0; iMGLevel < config[iZone]->GetMGLevels(); iMGLevel++) {
       SetRestricted_Solution(RunTime_EqSystem, solver_container[iZone][iMGLevel][SolContainer_Position],
@@ -64,33 +73,39 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ***geometry,
   }
   
   /*--- Full multigrid strategy and start up with fine grid only works with the direct problem ---*/
-  if (!config[iZone]->GetRestart() && config[iZone]->GetFullMG() &&  direct && ( GetConvergence_FullMG() && (config[iZone]->GetFinestMesh() != MESH_0 ))) {
+
+  if (!config[iZone]->GetRestart() && FullMG && direct && ( Convergence_FullMG && (config[iZone]->GetFinestMesh() != MESH_0 ))) {
     SetProlongated_Solution(RunTime_EqSystem, solver_container[iZone][config[iZone]->GetFinestMesh()-1][SolContainer_Position],
                             solver_container[iZone][config[iZone]->GetFinestMesh()][SolContainer_Position],
                             geometry[iZone][config[iZone]->GetFinestMesh()-1], geometry[iZone][config[iZone]->GetFinestMesh()],
                             config[iZone]);
     config[iZone]->SubtractFinestMesh();
   }
-  
+
   /*--- Set the current finest grid (full multigrid strategy) ---*/
+  
   FinestMesh = config[iZone]->GetFinestMesh();
   
   /*--- Perform the Full Approximation Scheme multigrid ---*/
+  
   MultiGrid_Cycle(geometry, solver_container, numerics_container, config,
-                  FinestMesh, config[iZone]->GetMGCycle(), RunTime_EqSystem,
+                  FinestMesh, RecursiveParam, RunTime_EqSystem,
                   Iteration, iZone);
   
   /*--- Computes primitive variables and gradients in the finest mesh (useful for the next solver (turbulence) and output ---*/
+  
   solver_container[iZone][MESH_0][SolContainer_Position]->Preprocessing(geometry[iZone][MESH_0],
                                                                         solver_container[iZone][MESH_0], config[iZone],
                                                                         MESH_0, NO_RK_ITER, RunTime_EqSystem, true);
   
   /*--- Compute non-dimensional parameters and the convergence monitor ---*/
+  
   NonDimensional_Parameters(geometry[iZone], solver_container[iZone],
                             numerics_container[iZone], config[iZone],
                             FinestMesh, RunTime_EqSystem, Iteration, &monitor);
   
   /*--- Convergence strategy ---*/
+  
   Convergence_Monitoring(geometry[iZone][FinestMesh], config[iZone], Iteration, monitor);
   
 }
@@ -100,7 +115,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ***geometry,
                                             CNumerics *****numerics_container,
                                             CConfig **config,
                                             unsigned short iMesh,
-                                            unsigned short mu,
+                                            unsigned short RecursiveParam,
                                             unsigned short RunTime_EqSystem,
                                             unsigned long Iteration,
                                             unsigned short iZone) {
@@ -180,9 +195,9 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ***geometry,
     
     /*--- Recursive call to MultiGrid_Cycle ---*/
     
-    for (unsigned short imu = 0; imu <= mu; imu++) {
+    for (unsigned short imu = 0; imu <= RecursiveParam; imu++) {
       if (iMesh == config[iZone]->GetMGLevels()-2) MultiGrid_Cycle(geometry, solver_container, numerics_container, config, iMesh+1, 0, RunTime_EqSystem, Iteration, iZone);
-      else MultiGrid_Cycle(geometry, solver_container, numerics_container, config, iMesh+1, mu, RunTime_EqSystem, Iteration, iZone);
+      else MultiGrid_Cycle(geometry, solver_container, numerics_container, config, iMesh+1, RecursiveParam, RunTime_EqSystem, Iteration, iZone);
     }
     
     /*--- Compute prolongated solution, and smooth the correction $u^(new)_k = u_k +  Smooth(I^k_(k+1)(u_(k+1)-I^(k+1)_k u_k))$ ---*/
@@ -369,11 +384,13 @@ void CMultiGridIntegration::Smooth_Solution(unsigned short RunTime_EqSystem, CSo
     }
     
     /*--- Jacobi iterations ---*/
+    
     for (iSmooth = 0; iSmooth < val_nSmooth; iSmooth++) {
       for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
         solver->node[iPoint]->SetResidualSumZero();
       
       /*--- Loop over Interior edges ---*/
+      
       for(iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
         iPoint = geometry->edge[iEdge]->GetNode(0);
         jPoint = geometry->edge[iEdge]->GetNode(1);
@@ -382,11 +399,13 @@ void CMultiGridIntegration::Smooth_Solution(unsigned short RunTime_EqSystem, CSo
         Solution_j = solver->node[jPoint]->GetSolution();
         
         /*--- Accumulate nearest neighbor Residual to Res_sum for each variable ---*/
+        
         solver->node[iPoint]->AddResidual_Sum(Solution_j);
         solver->node[jPoint]->AddResidual_Sum(Solution_i);
       }
       
       /*--- Loop over all mesh points (Update Residuals with averaged sum) ---*/
+      
       for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
         nneigh = geometry->node[iPoint]->GetnPoint();
         Solution_Sum = solver->node[iPoint]->GetResidual_Sum();
@@ -399,6 +418,7 @@ void CMultiGridIntegration::Smooth_Solution(unsigned short RunTime_EqSystem, CSo
       }
       
       /*--- Copy boundary values ---*/
+      
       for(iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
         for(iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();

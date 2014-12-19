@@ -45,7 +45,7 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
 
   SetPostprocessing(val_software, val_iZone, val_nDim);
 
-  /*--- Configuration file boundaries/markers seting ---*/
+  /*--- Configuration file boundaries/markers setting ---*/
   
   SetMarkers(val_software, val_iZone);
 
@@ -192,7 +192,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("PHYSICAL_PROBLEM", Kind_Solver, Solver_Map, NO_SOLVER);
   /*!\par MATH_PROBLEM
    *  DESCRIPTION: Mathematical problem \n  Options: DIRECT, ADJOINT \ingroup Config*/
-  addMathProblemOption("MATH_PROBLEM" , Adjoint, false , OneShot, false, Linearized, false, Restart_Flow, false);
+  addMathProblemOption("MATH_PROBLEM" , Adjoint, false , Linearized, false, Restart_Flow, false);
   /*!\par KIND_TURB_MODEL
    *  DESCRIPTION: Specify turbulence model \n Options: SA, SST, ML, NONE (default) \ingroup Config*/
   addEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, NO_TURB_MODEL);
@@ -627,20 +627,16 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("CAUCHY_FUNC_ADJFLOW", Cauchy_Func_AdjFlow, Sens_Map, SENS_GEOMETRY);
   /* DESCRIPTION: Linearized functional for the Cauchy criteria */
   addEnumOption("CAUCHY_FUNC_LIN", Cauchy_Func_LinFlow, Linear_Obj_Map, DELTA_DRAG_COEFFICIENT);
-  /* DESCRIPTION: Epsilon for a full multigrid method evaluation */
-  addDoubleOption("FULLMG_CAUCHY_EPS", Cauchy_Eps_FullMG, 1E-4);
 
   /* CONFIG_CATEGORY: Multi-grid */
   /*--- Options related to Multi-grid ---*/
 
-  /* DESCRIPTION: Full multi-grid  */
-  addBoolOption("FULLMG", FullMG, false);
   /* DESCRIPTION: Start up iterations using the fine grid only */
   addUnsignedShortOption("START_UP_ITER", nStartUpIter, 0);
   /* DESCRIPTION: Multi-grid Levels */
   addUnsignedShortOption("MGLEVEL", nMultiLevel, 3);
-  /* DESCRIPTION: Multi-grid Cycle (0 = V cycle, 1 = W Cycle) */
-  addUnsignedShortOption("MGCYCLE", MGCycle, 0);
+  /* DESCRIPTION: Multi-grid cycle */
+  addEnumOption("MGCYCLE", MGCycle, MG_Cycle_Map, V_CYCLE);
   /* DESCRIPTION: Multi-grid pre-smoothing level */
   addUShortListOption("MG_PRE_SMOOTH", nMG_PreSmooth, MG_PreSmooth);
   /* DESCRIPTION: Multi-grid post-smoothing level */
@@ -1196,11 +1192,12 @@ void CConfig::SetParsing(char case_filename[MAX_STRING_SIZE]) {
   case_file.open(case_filename, ios::in);
 
   if (case_file.fail()) {
-    if (rank == MASTER_NODE) cout << "There is no configuration file!!" << endl;
+    if (rank == MASTER_NODE) cout << endl << "The configuration file (.cfg) is missing!!" << endl << endl;
     exit(EXIT_FAILURE);
   }
 
   string errorString;
+
   int  err_count = 0;  // How many errors have we found in the config file
   int max_err_count = 30; // Maximum number of errors to print before stopping
 
@@ -1224,6 +1221,7 @@ void CConfig::SetParsing(char case_filename[MAX_STRING_SIZE]) {
           string newString;
           newString.append(option_name);
           newString.append(": invalid option name");
+          newString.append(". Check current SU2 options in config_template.cfg.");
           newString.append("\n");
           errorString.append(newString);
           err_count++;
@@ -1951,7 +1949,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         Grid_Movement = true;
     }
     
-    if (FullMG) FinestMesh = nMultiLevel;
+    if (MGCycle == FULLMG_CYCLE) FinestMesh = nMultiLevel;
     else FinestMesh = MESH_0;
     
     if ((Kind_Solver == NAVIER_STOKES) &&
@@ -2066,7 +2064,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     if (nMG_CorrecSmooth != 0)
         MG_CorrecSmooth[nMultiLevel] = 0;
     
-    if (Restart) FullMG = false;
+    if (Restart) MGCycle = V_CYCLE;
     
     if (Adjoint) {
         if (Kind_Solver == EULER) Kind_Solver = ADJ_EULER;
@@ -2082,7 +2080,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     
     if (Unsteady_Simulation == TIME_STEPPING) {
         nMultiLevel = 0;
-        MGCycle = 0;
+        MGCycle = V_CYCLE;
     }
     
     nCFL = nMultiLevel+1;
@@ -3513,7 +3511,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		}
 	}
 
-	if (((val_software == SU2_CFD) && ( Adjoint || OneShot )) || (val_software == SU2_DOT)) {
+	if (((val_software == SU2_CFD) && ( Adjoint )) || (val_software == SU2_DOT)) {
 
 		cout << endl <<"----------------------- Design problem definition -----------------------" << endl;
 		switch (Kind_ObjFunc) {
@@ -3798,19 +3796,12 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         cout << "Average of gradients with correction (viscous flow terms)." << endl;
     }
 
-    if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS))
-      cout << "Piecewise constant integration of the flow source terms." << endl;
-
-    if (Kind_Solver == ADJ_EULER)
-      cout << "Piecewise constant integration of the adjoint source terms." << endl;
-
     if ((Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS)) {
       cout << "Average of gradients with correction (viscous adjoint terms)." << endl;
     }
 
     if (Kind_Solver == RANS) {
       cout << "Average of gradients with correction (viscous turbulence terms)." << endl;
-      cout << "Piecewise constant integration of the turbulence model source terms." << endl;
     }
 
     if (Kind_Solver == POISSON_EQUATION) {
@@ -3819,20 +3810,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     if ((Kind_Solver == ADJ_RANS) && (!Frozen_Visc)) {
       cout << "Average of gradients with correction (2nd order) for computation of adjoint viscous turbulence terms." << endl;
-      cout << "Piecewise constant integration of the turbulence adjoint model source terms." << endl;
       if (Kind_TimeIntScheme_AdjTurb == EULER_IMPLICIT) cout << "Euler implicit method for the turbulent adjoint equation." << endl;
-    }
-
-    if ((Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS)) {
-      cout << "Piecewise constant integration of the Navier-Stokes eq. source terms." << endl;
-    }
-
-    if (Kind_Solver == POISSON_EQUATION) {
-      cout << "Piecewise constant integration of the poisson potential source terms." << endl;
-    }
-
-    if (Kind_Solver == HEAT_EQUATION) {
-      cout << "Piecewise constant integration of the heat equation source terms." << endl;
     }
 
     switch (Kind_Gradient_Method) {
@@ -3979,14 +3957,12 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       }
     }
 
-    if (FullMG) {
-      cout << "Full Multigrid." << endl;
-    }
-
     if (nMultiLevel !=0) {
+      
       if (nStartUpIter != 0) cout << "A total of " << nStartUpIter << " start up iterations on the fine grid."<< endl;
-      if (MGCycle == 0) cout << "V Multigrid Cycle, with " << nMultiLevel << " multigrid levels."<< endl;
-      if (MGCycle == 1) cout << "W Multigrid Cycle, with " << nMultiLevel << " multigrid levels."<< endl;
+      if (MGCycle == V_CYCLE) cout << "V Multigrid Cycle, with " << nMultiLevel << " multigrid levels."<< endl;
+      if (MGCycle == W_CYCLE) cout << "W Multigrid Cycle, with " << nMultiLevel << " multigrid levels."<< endl;
+      if (MGCycle == FULLMG_CYCLE) cout << "Full Multigrid Cycle, with " << nMultiLevel << " multigrid levels."<< endl;
 
       cout << "Damping factor for the residual restriction: " << Damp_Res_Restric <<"."<< endl;
       cout << "Damping factor for the correction prolongation: " << Damp_Correc_Prolong <<"."<< endl;
@@ -4076,8 +4052,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         }
 
       cout << "Start convergence criteria at iteration " << StartConv_Iter<< "."<< endl;
-      if (OneShot) cout << "Cauchy criteria for one shot method " << Cauchy_Eps_OneShot<< "."<< endl;
-      if (FullMG) cout << "Cauchy criteria for full multigrid " << Cauchy_Eps_FullMG<< "."<< endl;
+      
     }
 
 
@@ -4174,7 +4149,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         cout << "Surface linearized coefficients file name: " << SurfLinCoeff_FileName << "." << endl;
       }
 
-      if (Adjoint || OneShot) {
+      if (Adjoint) {
         cout << "Adjoint solution file name: " << Solution_AdjFileName << "." << endl;
         cout << "Restart adjoint file name: " << Restart_AdjFileName << "." << endl;
         cout << "Adjoint variables file name: " << Adj_FileName << "." << endl;
@@ -5100,68 +5075,6 @@ CConfig::~CConfig(void) {
   if (Marker_HeatFluxNonCatalytic!=NULL )   delete[] Marker_HeatFluxNonCatalytic;
   if (Marker_HeatFluxCatalytic!=NULL )      delete[] Marker_HeatFluxCatalytic;
 
-}
-
-void CConfig::SetFileNameDomain(unsigned short val_domain) {
-
-#ifdef HAVE_MPI
-
-  int size;
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-
-  string old_name;
-  char buffer[10];
-
-  /*--- Standard surface output ---*/
-  
-  old_name = SurfFlowCoeff_FileName;
-  if (size > 1) {
-    sprintf (buffer, "_%d", int(val_domain));
-    SurfFlowCoeff_FileName = old_name + buffer;
-  }
-
-  old_name = SurfAdjCoeff_FileName;
-  if (size > 1) {
-    sprintf (buffer, "_%d", int(val_domain));
-    SurfAdjCoeff_FileName = old_name + buffer;
-  }
-
-  old_name = SurfStructure_FileName;
-  if (size > 1) {
-    sprintf (buffer, "_%d", int(val_domain));
-    SurfStructure_FileName = old_name + buffer;
-  }
-
-  old_name = SurfWave_FileName;
-  if (size > 1) {
-    sprintf (buffer, "_%d", int(val_domain));
-    SurfWave_FileName = old_name + buffer;
-  }
-
-  old_name = SurfHeat_FileName;
-  if (size > 1) {
-    sprintf (buffer, "_%d", int(val_domain));
-    SurfHeat_FileName = old_name + buffer;
-  }
-
-  if (size > 1) {
-
-    /*--- Standard flow and adjoint output ---*/
-    
-    sprintf (buffer, "_%d", int(val_domain));
-    old_name = Flow_FileName;
-    Flow_FileName = old_name + buffer;
-
-    sprintf (buffer, "_%d", int(val_domain));
-    old_name = Structure_FileName;
-    Structure_FileName = old_name + buffer;
-
-    sprintf (buffer, "_%d", int(val_domain));
-    old_name = Adj_FileName;
-    Adj_FileName = old_name + buffer;
-
-  }
-#endif
 }
 
 string CConfig::GetUnsteady_FileName(string val_filename, int val_iter) {

@@ -4960,7 +4960,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
             case EULER :                  case NAVIER_STOKES: case RANS:
             case FLUID_STRUCTURE_EULER :  case FLUID_STRUCTURE_NAVIER_STOKES: case FLUID_STRUCTURE_RANS:
               cout << endl << "Local time stepping summary:" << endl;
-              for (unsigned short iMesh = 0; iMesh <= config[val_iZone]->GetMGLevels(); iMesh++)
+              for (unsigned short iMesh = FinestMesh; iMesh <= config[val_iZone]->GetMGLevels(); iMesh++)
                 cout << "MG level: "<< iMesh << "-> Min. DT: " << solver_container[val_iZone][iMesh][FLOW_SOL]->GetMin_Delta_Time()<<
                 ". Max. DT: " << solver_container[val_iZone][iMesh][FLOW_SOL]->GetMax_Delta_Time() <<
                 ". Limit DT: " << config[val_iZone]->GetMax_DeltaTime() << "." << endl;
@@ -5693,7 +5693,6 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
         Breakdown_file << "Inviscid flow: Computing density based on free-stream" << endl;
         Breakdown_file << "temperature and pressure using the ideal gas law." << endl;
       }
-      Breakdown_file << "Note: Negative pressure, temperature or density is not allowed!" << endl;
     }
     
     if (grid_movement) Breakdown_file << "Force coefficients computed using MACH_MOTION." << endl;
@@ -6286,7 +6285,7 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
     bool Wrt_Csv = config[iZone]->GetWrt_Csv_Sol();
     bool Wrt_Rst = config[iZone]->GetWrt_Restart();
     
-    if (rank == MASTER_NODE) cout << endl << "Writing Comma-separated values surface files." << endl;
+    if (rank == MASTER_NODE) cout << endl << "Writing Comma-Separated Values surface files." << endl;
 
     switch (config[iZone]->GetKind_Solver()) {
         

@@ -68,7 +68,6 @@ private:
 	EquivArea,				/*!< \brief Flag to know if the code is going to compute and plot the equivalent area. */
 	InvDesign_Cp,				/*!< \brief Flag to know if the code is going to compute and plot the inverse design. */
   InvDesign_HeatFlux,				/*!< \brief Flag to know if the code is going to compute and plot the inverse design. */
-	OneShot,				/*!< \brief Flag to know if the code is solving a one shot problem. */
 	Linearized,				/*!< \brief Flag to know if the code is solving a linearized problem. */
 	Grid_Movement,			/*!< \brief Flag to know if there is grid movement. */
     Wind_Gust,              /*!< \brief Flag to know if there is a wind gust. */
@@ -79,7 +78,6 @@ private:
 	GravityForce,			/*!< \brief Flag to know if the gravity force is incuded in the formulation. */
 	SmoothNumGrid,			/*!< \brief Smooth the numerical grid. */
 	AdaptBoundary,			/*!< \brief Adapt the elements on the boundary. */
-	FullMG,					/*!< \brief Full multigrid strategy. */
 	Divide_Element,			/*!< \brief Divide rectables and hexahedrom. */
 	Engine_Intake,			/*!< \brief Engine intake subsonic region. */
 	Frozen_Visc,			/*!< \brief Flag for adjoint problem with/without frozen viscosity. */
@@ -408,9 +406,7 @@ private:
 	Cauchy_Elems;						/*!< \brief Number of elements to evaluate. */
 	unsigned short Residual_Func_Flow;	/*!< \brief Equation to apply residual convergence to. */
 	unsigned long StartConv_Iter;	/*!< \brief Start convergence criteria at iteration. */
-	double Cauchy_Eps,	/*!< \brief Epsilon used for the convergence. */
-	Cauchy_Eps_OneShot,	/*!< \brief Epsilon used for the one shot method convergence. */
-	Cauchy_Eps_FullMG;	/*!< \brief Epsilon used for the full multigrid method convergence. */
+  double Cauchy_Eps;	/*!< \brief Epsilon used for the convergence. */
 	unsigned long Wrt_Sol_Freq,	/*!< \brief Writing solution frequency. */
 	Wrt_Sol_Freq_DualTime,	/*!< \brief Writing solution frequency for Dual Time. */
 	Wrt_Con_Freq,				/*!< \brief Writing convergence history frequency. */
@@ -827,12 +823,11 @@ private:
   }
 
   void addMathProblemOption(const string name, bool & Adjoint, const bool & Adjoint_default,
-                      bool & OneShot, const bool & OneShot_default,
                       bool & Linearized, const bool & Linearized_default,
                             bool & Restart_Flow, const bool & Restart_Flow_default){
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string,bool>(name,true));
-    COptionBase* val = new COptionMathProblem(name, Adjoint, Adjoint_default, OneShot, OneShot_default, Linearized, Linearized_default, Restart_Flow, Restart_Flow_default);
+    COptionBase* val = new COptionMathProblem(name, Adjoint, Adjoint_default, Linearized, Linearized_default, Restart_Flow, Restart_Flow_default);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
@@ -3607,12 +3602,6 @@ public:
   bool GetIonization(void);
 
 	/*!
-	 * \brief Information about doing a full multigrid strategy (start in the coarse level).
-	 * \return <code>TRUE</code> or <code>FALSE</code>  depending if we are performing a full multigrid strategy.
-	 */
-	bool GetFullMG(void);
-
-	/*!
 	 * \brief Information about computing and plotting the equivalent area distribution.
 	 * \return <code>TRUE</code> or <code>FALSE</code>  depending if we are computing the equivalent area.
 	 */
@@ -3870,18 +3859,6 @@ public:
 	 * \return Value of the convergence criteria.
 	 */
 	double GetCauchy_Eps(void);
-
-	/*!
-	 * \brief Get the value of convergence criteria for the one-shot problem.
-	 * \return Value of the convergence criteria.
-	 */
-	double GetCauchy_Eps_OneShot(void);
-
-	/*!
-	 * \brief Get the value of convergence criteria for the full multigrid method.
-	 * \return Value of the convergence criteria.
-	 */
-	double GetCauchy_Eps_FullMG(void);
 
 	/*!
 	 * \brief If we are prforming an unsteady simulation, there is only
@@ -4267,12 +4244,6 @@ public:
 	 * \return Kind of convergence criteria.
 	 */
 	unsigned short GetConvCriteria(void);
-
-	/*!
-	 * \brief This subroutine adds the domain index to the name of some input-output file names.
-	 * \param[in] val_domain - Index of the domain.
-	 */
-	void SetFileNameDomain(unsigned short val_domain);
 
 	/*!
 	 * \brief Get the index in the config information of the marker <i>val_marker</i>.

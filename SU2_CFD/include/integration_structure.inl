@@ -28,8 +28,6 @@ inline bool CIntegration::GetConvergence(void) { return Convergence; }
 
 inline bool CIntegration::GetConvergence_FullMG(void) { return Convergence_FullMG; }
 
-inline bool CIntegration::GetConvergence_OneShot(void) { return Convergence_OneShot; }
-
 inline void CIntegration::SetConvergence(bool value) { Convergence = value; }
 
 inline void CIntegration::MultiGrid_Iteration(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container, 

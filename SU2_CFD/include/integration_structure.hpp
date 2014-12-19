@@ -53,7 +53,6 @@ protected:
 	double Old_Func,	/*!< \brief Old value of the objective function (the function which is monitored). */
 	New_Func;			/*!< \brief Current value of the objective function (the function which is monitored). */
 	bool Convergence,		/*!< \brief To indicate if the flow solver (direct, adjoint, or linearized) has converged or not. */
-	Convergence_OneShot,	/*!< \brief To indicate if the one-shot method has converged. */
 	Convergence_FullMG;		/*!< \brief To indicate if the Full Multigrid has converged and it is necessary to add a new level. */
 	double InitResidual;	/*!< \brief Initial value of the residual to evaluate the convergence level. */
 
@@ -134,13 +133,6 @@ public:
 	 *            otherwise <code>FALSE</code>.
 	 */
 	void SetConvergence(bool value);
-	
-	/*! 
-	 * \brief Get the indicator of the convergence for the one-shot problem.
-	 * \return <code>TRUE</code> means that the convergence criteria is satisfied; 
-	 *         otherwise <code>FALSE</code>.
-	 */
-	bool GetConvergence_OneShot(void);
 	
 	/*! 
 	 * \brief Get the indicator of the convergence for the full multigrid problem.
