@@ -6447,7 +6447,8 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   unsigned long iElem_Bound = 0, iPoint = 0, ielem_div = 0, ielem = 0;
   unsigned long *Local2Global = NULL;
   unsigned long vnodes_edge[2], vnodes_triangle[3], vnodes_quad[4];
-  unsigned long vnodes_tetra[4], vnodes_hexa[8], vnodes_wedge[6], vnodes_pyramid[5], dummyLong, GlobalIndex, iElem;
+  unsigned long vnodes_tetra[4], vnodes_hexa[8], vnodes_wedge[6],
+  vnodes_pyramid[5], dummyLong, GlobalIndex, iElem;
   char cstr[200];
   double Coord_2D[2], Coord_3D[3], dummyDouble;
   string::size_type position;
@@ -6458,12 +6459,12 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   
   /*--- Initialize some additional counters for the parallel partitioning ---*/
   
-  unsigned long total_pt_accounted =0;
-  unsigned long rem_points=0;
-  unsigned long element_count=0;
-  unsigned long node_count=0;
-  bool elem_reqd=false;
-  unsigned long loc_element_count=0;
+  unsigned long total_pt_accounted = 0;
+  unsigned long rem_points = 0;
+  unsigned long element_count = 0;
+  unsigned long node_count = 0;
+  unsigned long loc_element_count = 0;
+  bool elem_reqd = false;
   
   /*--- Initialize counters for local/global points & elements ---*/
 #ifdef HAVE_MPI
@@ -6477,7 +6478,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
   FinestMGLevel = true;
-  Global_nPoint = 0; Global_nPointDomain = 0; Global_nElem = 0;
+  Global_nPoint  = 0; Global_nPointDomain   = 0; Global_nElem = 0;
   nelem_edge     = 0; Global_nelem_edge     = 0;
   nelem_triangle = 0; Global_nelem_triangle = 0;
   nelem_quad     = 0; Global_nelem_quad     = 0;
@@ -6646,12 +6647,13 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
         npoint_procs[i]++;
       }
       
-      local_node=npoint_procs[rank];
+      /*--- Store the local number of nodes and the beginning/end index ---*/
+      local_node = npoint_procs[rank];
       starting_node[0] = 0;
       ending_node[0]   = starting_node[0] + npoint_procs[0];
-      for(unsigned long i=1;i<size;i++) {
-        starting_node[i]= ending_node[i-1];
-        ending_node[i]= starting_node[i] + npoint_procs[i] ;
+      for(unsigned long i = 1; i < size; i++) {
+        starting_node[i] = ending_node[i-1];
+        ending_node[i]   = starting_node[i] + npoint_procs[i] ;
       }
       
       /*--- Here we check if a point in the mesh file lies in the domain 
@@ -6776,11 +6778,10 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
                 }
               }
             }
-            
             if (elem_reqd) {
-              Global_to_local_elem[element_count]=loc_element_count;
-              elem[ielem] = new CTriangle(vnodes_triangle[0], vnodes_triangle[1], vnodes_triangle[2], 2);
-              ielem++; nelem_triangle++;loc_element_count++;
+              Global_to_local_elem[element_count] = loc_element_count;
+              elem[loc_element_count] = new CTriangle(vnodes_triangle[0], vnodes_triangle[1], vnodes_triangle[2], 2);
+              nelem_triangle++;loc_element_count++;
             }
             break;
             
@@ -6797,34 +6798,30 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
                 }
               }
             }
-            
             if(elem_reqd){
-              Global_to_local_elem[element_count]=loc_element_count;
+              Global_to_local_elem[element_count] = loc_element_count;
               elem[loc_element_count] = new CRectangle(vnodes_quad[0], vnodes_quad[1], vnodes_quad[2], vnodes_quad[3], 2);
-              loc_element_count++;
-              ielem++; nelem_quad++;
+              loc_element_count++; nelem_quad++;
             }
             break;
             
           case TETRAHEDRON:
             elem_line >> vnodes_tetra[0]; elem_line >> vnodes_tetra[1]; elem_line >> vnodes_tetra[2]; elem_line >> vnodes_tetra[3];
             for(unsigned long i=0;i<N_POINTS_TETRAHEDRON;i++) {
-            if ((vnodes_tetra[i]>=starting_node[rank])&&(vnodes_tetra[i]<ending_node[rank])){
-              elem_reqd = true;
-              for(unsigned long j=0;j<N_POINTS_TETRAHEDRON;j++) {
-                if(i!=j){
-                  adjacent_elem[vnodes_tetra[i]-starting_node[rank]][adj_counter[vnodes_tetra[i]-starting_node[rank]]]=vnodes_tetra[j];
-                  adj_counter[vnodes_tetra[i]-starting_node[rank]]++;
+              if ((vnodes_tetra[i]>=starting_node[rank])&&(vnodes_tetra[i]<ending_node[rank])){
+                elem_reqd = true;
+                for(unsigned long j=0;j<N_POINTS_TETRAHEDRON;j++) {
+                  if(i!=j){
+                    adjacent_elem[vnodes_tetra[i]-starting_node[rank]][adj_counter[vnodes_tetra[i]-starting_node[rank]]]=vnodes_tetra[j];
+                    adj_counter[vnodes_tetra[i]-starting_node[rank]]++;
+                  }
                 }
               }
             }
-          }
-            
             if(elem_reqd){
-              Global_to_local_elem[element_count]=loc_element_count;
+              Global_to_local_elem[element_count] = loc_element_count;
               elem[loc_element_count] = new CTetrahedron(vnodes_tetra[0], vnodes_tetra[1], vnodes_tetra[2], vnodes_tetra[3]);
-              loc_element_count++;
-              ielem++; nelem_tetra++;
+              loc_element_count++; nelem_tetra++;
             }
             break;
             
@@ -6834,23 +6831,21 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             elem_line >> vnodes_hexa[3]; elem_line >> vnodes_hexa[4]; elem_line >> vnodes_hexa[5];
             elem_line >> vnodes_hexa[6]; elem_line >> vnodes_hexa[7];
             for(unsigned long i=0;i<N_POINTS_HEXAHEDRON;i++) {
-            if ((vnodes_hexa[i]>=starting_node[rank])&&(vnodes_hexa[i]<ending_node[rank])){
-              elem_reqd = true;
-              for(unsigned long j=0;j<N_POINTS_HEXAHEDRON;j++) {
-                if(i!=j){
-                  adjacent_elem[vnodes_hexa[i]-starting_node[rank]][adj_counter[vnodes_hexa[i]-starting_node[rank]]]=vnodes_hexa[j];
-                  adj_counter[vnodes_hexa[i]-starting_node[rank]]++;
+              if ((vnodes_hexa[i]>=starting_node[rank])&&(vnodes_hexa[i]<ending_node[rank])){
+                elem_reqd = true;
+                for(unsigned long j=0;j<N_POINTS_HEXAHEDRON;j++) {
+                  if(i!=j){
+                    adjacent_elem[vnodes_hexa[i]-starting_node[rank]][adj_counter[vnodes_hexa[i]-starting_node[rank]]]=vnodes_hexa[j];
+                    adj_counter[vnodes_hexa[i]-starting_node[rank]]++;
+                  }
                 }
               }
             }
-          }
-            
             if(elem_reqd){
-              Global_to_local_elem[element_count]=loc_element_count;
+              Global_to_local_elem[element_count] = loc_element_count;
               elem[loc_element_count] = new CHexahedron(vnodes_hexa[0], vnodes_hexa[1], vnodes_hexa[2], vnodes_hexa[3],
                                                         vnodes_hexa[4], vnodes_hexa[5], vnodes_hexa[6], vnodes_hexa[7]);
-              loc_element_count++;
-              ielem++; nelem_hexa++;
+              loc_element_count++; nelem_hexa++;
             }
             break;
             
@@ -6859,51 +6854,44 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             elem_line >> vnodes_wedge[0]; elem_line >> vnodes_wedge[1]; elem_line >> vnodes_wedge[2];
             elem_line >> vnodes_wedge[3]; elem_line >> vnodes_wedge[4]; elem_line >> vnodes_wedge[5];
             for(unsigned long i=0;i<N_POINTS_WEDGE;i++) {
-            if ((vnodes_wedge[i]>=starting_node[rank])&&(vnodes_wedge[i]<ending_node[rank])){
-              elem_reqd = true;
-              for(unsigned long j=0;j<N_POINTS_WEDGE;j++) {
-                if(i!=j){
-                  adjacent_elem[vnodes_wedge[i]-starting_node[rank]][adj_counter[vnodes_wedge[i]-starting_node[rank]]]=vnodes_wedge[j];
-                  adj_counter[vnodes_wedge[i]-starting_node[rank]]++;
+              if ((vnodes_wedge[i]>=starting_node[rank])&&(vnodes_wedge[i]<ending_node[rank])){
+                elem_reqd = true;
+                for(unsigned long j=0;j<N_POINTS_WEDGE;j++) {
+                  if(i!=j){
+                    adjacent_elem[vnodes_wedge[i]-starting_node[rank]][adj_counter[vnodes_wedge[i]-starting_node[rank]]]=vnodes_wedge[j];
+                    adj_counter[vnodes_wedge[i]-starting_node[rank]]++;
+                  }
                 }
               }
             }
-          }
-            
             if(elem_reqd){
-              Global_to_local_elem[element_count]=loc_element_count;
+              Global_to_local_elem[element_count] = loc_element_count;
               elem[loc_element_count] = new CWedge(vnodes_wedge[0],vnodes_wedge[1],vnodes_wedge[2],vnodes_wedge[3],vnodes_wedge[4],vnodes_wedge[5]);
-              loc_element_count++;
-              ielem++; nelem_wedge++;
+              loc_element_count++; nelem_wedge++;
             }
             break;
             
           case PYRAMID:
-            
             elem_line >> vnodes_pyramid[0]; elem_line >> vnodes_pyramid[1]; elem_line >> vnodes_pyramid[2];
             elem_line >> vnodes_pyramid[3]; elem_line >> vnodes_pyramid[4];
-            
             for(unsigned long i=0;i<N_POINTS_PYRAMID;i++) {
-            if ((vnodes_pyramid[i]>=starting_node[rank])&&(vnodes_pyramid[i]<ending_node[rank])){
-              elem_reqd = true;
-              for(unsigned long j=0;j<N_POINTS_PYRAMID;j++) {
-                if(i!=j){
-                  adjacent_elem[vnodes_pyramid[i]-starting_node[rank]][adj_counter[vnodes_pyramid[i]-starting_node[rank]]]=vnodes_pyramid[j];
-                  adj_counter[vnodes_pyramid[i]-starting_node[rank]]++;
+              if ((vnodes_pyramid[i]>=starting_node[rank])&&(vnodes_pyramid[i]<ending_node[rank])){
+                elem_reqd = true;
+                for(unsigned long j=0;j<N_POINTS_PYRAMID;j++) {
+                  if(i!=j){
+                    adjacent_elem[vnodes_pyramid[i]-starting_node[rank]][adj_counter[vnodes_pyramid[i]-starting_node[rank]]]=vnodes_pyramid[j];
+                    adj_counter[vnodes_pyramid[i]-starting_node[rank]]++;
+                  }
                 }
               }
             }
-          }
-            
             if(elem_reqd){
               Global_to_local_elem[element_count]=loc_element_count;
               elem[loc_element_count] = new CPyramid(vnodes_pyramid[0],vnodes_pyramid[1],vnodes_pyramid[2],vnodes_pyramid[3],vnodes_pyramid[4]);
-              loc_element_count++;
-              ielem++; nelem_pyramid++;
+              loc_element_count++; nelem_pyramid++;
             }
             break;
         }
-        
         ielem_div++;
         element_count++;
       }
@@ -6932,8 +6920,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   vector<unsigned long> temp_adjacency;
   unsigned long local_count=0;
   
-  // number of local nodes, switch that out in this loop
-  for(unsigned long i=0;i<ending_node[rank]-starting_node[rank];i++) {
+  for(unsigned long i = 0; i < local_node; i++) {
     
     for(unsigned long j=0;j<adj_counter[i];j++) {
       temp_adjacency.push_back(adjacent_elem[i][j]);
@@ -6967,7 +6954,6 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   
   adjac_vec.clear();
   delete[] adj_counter;
-  
   for(iPoint=0;iPoint<local_node;iPoint++) {
     delete[] adjacent_elem[iPoint];
   }
