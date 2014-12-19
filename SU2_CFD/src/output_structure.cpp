@@ -390,6 +390,8 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
     delete [] Buffer_Recv_HeatTransfer;
     delete [] Buffer_Recv_GlobalIndex;
     
+    delete [] Buffer_Recv_nVertex;
+    
   }
   
   /*--- Release the memory for the remaining buffers and exit ---*/
@@ -3577,6 +3579,9 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
 #endif
   
   /*--- Release memory needed for surface coefficients ---*/
+  
+  delete [] Local_Halo;
+  
   if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
     delete [] Aux_Frict; delete [] Aux_Heat; delete [] Aux_yPlus;
   }
@@ -3815,6 +3820,8 @@ void COutput::MergeBaselineSolution(CConfig *config, CGeometry *geometry, CSolve
   }
   
 #endif
+  
+  delete [] Local_Halo;
   
 }
 
