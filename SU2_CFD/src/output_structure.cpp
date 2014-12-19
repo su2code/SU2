@@ -7569,8 +7569,10 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
   unsigned long nLocalVertex_NearField = 0, MaxLocalVertex_NearField = 0;
   int iProcessor;
   
-  unsigned long *Buffer_Receive_nVertex = new unsigned long [nProcessor];
-  unsigned long *Buffer_Send_nVertex = new unsigned long [1];
+  unsigned long *Buffer_Receive_nVertex = NULL;
+  if (rank == MASTER_NODE) {
+    Buffer_Receive_nVertex = new unsigned long [nProcessor];
+  }
   
   /*--- Compute the total number of points of the near-field ghost nodes ---*/
   
@@ -7587,14 +7589,16 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
             nLocalVertex_NearField ++;
       }
   
+  unsigned long *Buffer_Send_nVertex = new unsigned long [1];
   Buffer_Send_nVertex[0] = nLocalVertex_NearField;
   
   /*--- Send Near-Field vertex information --*/
   
   MPI_Allreduce(&nLocalVertex_NearField, &nVertex_NearField, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
   MPI_Allreduce(&nLocalVertex_NearField, &MaxLocalVertex_NearField, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
-  MPI_Allgather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-  
+  MPI_Gather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+  delete [] Buffer_Send_nVertex;
+
   double *Buffer_Send_Xcoord = new double[MaxLocalVertex_NearField];
   double *Buffer_Send_Ycoord = new double[MaxLocalVertex_NearField];
   double *Buffer_Send_Zcoord = new double[MaxLocalVertex_NearField];
@@ -7602,12 +7606,21 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
   double *Buffer_Send_Pressure = new double [MaxLocalVertex_NearField];
   double *Buffer_Send_FaceArea = new double[MaxLocalVertex_NearField];
   
-  double *Buffer_Receive_Xcoord = new double[nProcessor*MaxLocalVertex_NearField];
-  double *Buffer_Receive_Ycoord = new double[nProcessor*MaxLocalVertex_NearField];
-  double *Buffer_Receive_Zcoord = new double[nProcessor*MaxLocalVertex_NearField];
-  unsigned long *Buffer_Receive_IdPoint = new unsigned long[nProcessor*MaxLocalVertex_NearField];
-  double *Buffer_Receive_Pressure = new double[nProcessor*MaxLocalVertex_NearField];
-  double *Buffer_Receive_FaceArea = new double[nProcessor*MaxLocalVertex_NearField];
+  double *Buffer_Receive_Xcoord = NULL;
+  double *Buffer_Receive_Ycoord = NULL;
+  double *Buffer_Receive_Zcoord = NULL;
+  unsigned long *Buffer_Receive_IdPoint = NULL;
+  double *Buffer_Receive_Pressure = NULL;
+  double *Buffer_Receive_FaceArea = NULL;
+  
+  if (rank == MASTER_NODE) {
+    Buffer_Receive_Xcoord = new double[nProcessor*MaxLocalVertex_NearField];
+    Buffer_Receive_Ycoord = new double[nProcessor*MaxLocalVertex_NearField];
+    Buffer_Receive_Zcoord = new double[nProcessor*MaxLocalVertex_NearField];
+    Buffer_Receive_IdPoint = new unsigned long[nProcessor*MaxLocalVertex_NearField];
+    Buffer_Receive_Pressure = new double[nProcessor*MaxLocalVertex_NearField];
+    Buffer_Receive_FaceArea = new double[nProcessor*MaxLocalVertex_NearField];
+  }
   
   unsigned long nBuffer_Xcoord = MaxLocalVertex_NearField;
   unsigned long nBuffer_Ycoord = MaxLocalVertex_NearField;
@@ -7652,7 +7665,13 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
   MPI_Gather(Buffer_Send_IdPoint, nBuffer_IdPoint, MPI_UNSIGNED_LONG, Buffer_Receive_IdPoint, nBuffer_IdPoint, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
   MPI_Gather(Buffer_Send_Pressure, nBuffer_Pressure, MPI_DOUBLE, Buffer_Receive_Pressure, nBuffer_Pressure, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
   MPI_Gather(Buffer_Send_FaceArea, nBuffer_FaceArea, MPI_DOUBLE, Buffer_Receive_FaceArea, nBuffer_FaceArea, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-  
+  delete [] Buffer_Send_Xcoord;
+  delete [] Buffer_Send_Ycoord;
+  delete [] Buffer_Send_Zcoord;
+  delete [] Buffer_Send_IdPoint;
+  delete [] Buffer_Send_Pressure;
+  delete [] Buffer_Send_FaceArea;
+
   if (rank == MASTER_NODE) {
     
     Xcoord = new double[nVertex_NearField];
@@ -7713,22 +7732,17 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
         }
         
       }
+    
+    delete [] Buffer_Receive_nVertex;
+    
+    delete [] Buffer_Receive_Xcoord;
+    delete [] Buffer_Receive_Ycoord;
+    delete [] Buffer_Receive_Zcoord;
+    delete [] Buffer_Receive_IdPoint;
+    delete [] Buffer_Receive_Pressure;
+    delete [] Buffer_Receive_FaceArea;
+    
   }
-  
-  delete [] Buffer_Receive_nVertex;
-  delete [] Buffer_Send_nVertex;
-  
-  delete [] Buffer_Send_Xcoord;
-  delete [] Buffer_Send_Ycoord;
-  delete [] Buffer_Send_Zcoord;
-  delete [] Buffer_Send_IdPoint;
-  delete [] Buffer_Send_Pressure;
-  delete [] Buffer_Send_FaceArea;
-  
-  delete [] Buffer_Receive_Xcoord;
-  delete [] Buffer_Receive_IdPoint;
-  delete [] Buffer_Receive_Pressure;
-  delete [] Buffer_Receive_FaceArea;
   
 #endif
   
