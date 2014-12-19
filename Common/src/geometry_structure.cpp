@@ -11450,21 +11450,26 @@ void CPhysicalGeometry::SetColorGrid_Parallel(CConfig *config) {
   /*--- Create some structures that ParMETIS needs for partitioning the
    mesh. These should be changed to dynamic arrays (and deleted!) ---*/
   
-  idx_t vtxdist[size],elmwgt[local_node],vwgt,adjwgt,wgtflag,ncon,ncommonnodes;
-  idx_t xadj_l[xadj_size];
-  idx_t adjacency_l[adjacency_size];
-  real_t ubvec,tpwgts[size];
+  idx_t vwgt, adjwgt, wgtflag, ncon, ncommonnodes;
+  idx_t *vtxdist     = new idx_t[size];
+  idx_t *xadj_l      = new idx_t[xadj_size];
+  idx_t *adjacency_l = new idx_t[adjacency_size];
+  idx_t *elmwgt      = new idx_t[local_node];
+  idx_t *part        = new idx_t[local_node];
+  
+  real_t ubvec;
+  real_t *tpwgts = new real_t[size];
   
   /*--- Some recommended defaults for the various ParMETIS options. ---*/
+  
   wgtflag = 0;
   numflag = 0;
-  ncon=1;
-  ubvec =1.05;
+  ncon = 1;
+  ubvec = 1.05;
   nparts = size;
   idx_t options[METIS_NOPTIONS];
   METIS_SetDefaultOptions(options);
   options[1] = 1;
-  idx_t part[local_node];
   
   /*--- Initialize the color vector ---*/
   
@@ -11476,20 +11481,20 @@ void CPhysicalGeometry::SetColorGrid_Parallel(CConfig *config) {
     
     /*--- Fill the necessary ParMETIS data arrays ---*/
     
-    for (int i=0;i<size;i++) {
+    for (int i=0; i < size; i++) {
       tpwgts[i]=(float)1/(float)size;
     }
     
-    for (int i=0;i<size;i++) {
+    for (int i = 0; i < size; i++) {
       vtxdist[i]=starting_node[i];
     }
     vtxdist[size] = ending_node[size-1];
     
-    for (int i=0;i<xadj_size;i++) {
+    for (int i = 0; i < xadj_size; i++) {
       xadj_l[i]=xadj[i];
     }
     
-    for (int i=0;i<adjacency_size;i++) {
+    for (int i = 0; i < adjacency_size; i++) {
       adjacency_l[i]=adjacency[i];
     }
     
@@ -11512,6 +11517,15 @@ void CPhysicalGeometry::SetColorGrid_Parallel(CConfig *config) {
     }
     
   }
+  
+  /*--- Free all memory needed for the ParMETIS structures ---*/
+  
+  delete [] vtxdist;
+  delete [] xadj_l;
+  delete [] adjacency_l;
+  delete [] elmwgt;
+  delete [] part;
+  delete [] tpwgts;
   
 #endif
 #endif
