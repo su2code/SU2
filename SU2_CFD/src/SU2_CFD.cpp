@@ -164,6 +164,10 @@ int main(int argc, char *argv[]) {
     
     geometry_container[iZone][MESH_0]->SetBoundaries(config_container[iZone]);
     
+    //char buffer[50];
+    //sprintf (buffer, "partition_%d.dat", int(rank));
+    //geometry_container[iZone][MESH_0]->SetTecPlot(buffer,true);
+    
 #ifdef HAVE_MPI
     MPI_Barrier(MPI_COMM_WORLD);
 #endif
