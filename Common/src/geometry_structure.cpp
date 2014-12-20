@@ -4209,30 +4209,30 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   // DOUBLE CHECK THAT THIS SECTION IS NECESSARY!!!
   // Note that the periodic BC (receive) are also ghost cell
   
-  unsigned long nPointGhost_loc       = 0;
-  unsigned long nPointDomainTotal_loc = 0;
-  unsigned long nPointTotal_loc       = 0;
-  
-  for (iElem = 0; iElem < nElem; iElem++) {
-    
-    /*--- If an element belong to the domain (at least one point belong has the
-     same color as the domain)---*/
-    
-    for (iNode = 0; iNode < elem[iElem]->GetnNodes(); iNode++) {
-      iPoint = elem[iElem]->GetNode(iNode);
-      if (Global_to_Local_Point_loc[iPoint] == -1) {
-        Global_to_Local_Point_loc[iPoint] = 1;
-        nPointTotal_loc++;
-        if ( node[iPoint]->GetColor() != rank ) nPointGhost_loc++;
-        else {
-          nPointDomainTotal_loc++;
-        }
-      }
-    }
-  }
-  
-  //nPoint = nPointTotal_loc;
-  nPointDomain = nPointDomainTotal_loc;
+//  unsigned long nPointGhost_loc       = 0;
+//  unsigned long nPointDomainTotal_loc = 0;
+//  unsigned long nPointTotal_loc       = 0;
+//  
+//  for (iElem = 0; iElem < nElem; iElem++) {
+//    
+//    /*--- If an element belong to the domain (at least one point belong has the
+//     same color as the domain)---*/
+//    
+//    for (iNode = 0; iNode < elem[iElem]->GetnNodes(); iNode++) {
+//      iPoint = elem[iElem]->GetNode(iNode);
+//      if (Global_to_Local_Point_loc[iPoint] == -1) {
+//        Global_to_Local_Point_loc[iPoint] = 1;
+//        nPointTotal_loc++;
+//        if ( node[iPoint]->GetColor() != rank ) nPointGhost_loc++;
+//        else {
+//          nPointDomainTotal_loc++;
+//        }
+//      }
+//    }
+//  }
+//  
+//  //nPoint = nPointTotal_loc;
+//  nPointDomain = nPointDomainTotal_loc;
   
   delete [] Global_to_Local_Point_loc;
   
@@ -11514,7 +11514,7 @@ void CPhysicalGeometry::SetColorGrid_Parallel(CConfig *config) {
   /*--- Create some structures that ParMETIS needs for partitioning. ---*/
   
   idx_t numflag, nparts, edgecut, vwgt, adjwgt, wgtflag, ncon, ncommonnodes;
-  idx_t *vtxdist     = new idx_t[size];
+  idx_t *vtxdist     = new idx_t[size+1];
   idx_t *xadj_l      = new idx_t[xadj_size];
   idx_t *adjacency_l = new idx_t[adjacency_size];
   idx_t *elmwgt      = new idx_t[local_node];
@@ -11548,10 +11548,10 @@ void CPhysicalGeometry::SetColorGrid_Parallel(CConfig *config) {
       tpwgts[i] = 1.0/((real_t)size);
     }
     
+    vtxdist[0] = 0;
     for (int i = 0; i < size; i++) {
-      vtxdist[i] = (idx_t)starting_node[i];
+      vtxdist[i+1] = (idx_t)ending_node[i];
     }
-    vtxdist[size] = (idx_t)ending_node[size-1];
 
     for (int i = 0; i < xadj_size; i++) {
       xadj_l[i] = (idx_t)xadj[i];
