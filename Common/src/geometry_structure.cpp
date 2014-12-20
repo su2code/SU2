@@ -6835,8 +6835,6 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
          adjacency arrays needed by ParMETIS and store the element connectivity.
          Note that every proc starts it's node indexing from zero. ---*/
         
-        // WARNING: be careful here with using ielem or loc_element_count !!!!!
-        
         switch(VTK_Type) {
             
           case TRIANGLE:
@@ -11531,7 +11529,7 @@ void CPhysicalGeometry::SetColorGrid_Parallel(CConfig *config) {
   numflag = 0;
   ncon    = 1;
   ubvec   = 1.05;
-  nparts  = size;
+  nparts  = (idx_t)size;
   idx_t options[METIS_NOPTIONS];
   METIS_SetDefaultOptions(options);
   options[1] = 1;
@@ -11547,20 +11545,20 @@ void CPhysicalGeometry::SetColorGrid_Parallel(CConfig *config) {
     /*--- Fill the necessary ParMETIS data arrays ---*/
     
     for (int i = 0; i < size; i++) {
-      tpwgts[i] = 1.0/((double)size);
+      tpwgts[i] = 1.0/((real_t)size);
     }
     
     for (int i = 0; i < size; i++) {
-      vtxdist[i] = starting_node[i];
+      vtxdist[i] = (idx_t)starting_node[i];
     }
-    vtxdist[size] = ending_node[size-1];
-    
+    vtxdist[size] = (idx_t)ending_node[size-1];
+
     for (int i = 0; i < xadj_size; i++) {
-      xadj_l[i] = xadj[i];
+      xadj_l[i] = (idx_t)xadj[i];
     }
     
     for (int i = 0; i < adjacency_size; i++) {
-      adjacency_l[i] = adjacency[i];
+      adjacency_l[i] = (idx_t)adjacency[i];
     }
     
     /*--- Calling ParMETIS ---*/
