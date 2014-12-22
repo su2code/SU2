@@ -2746,7 +2746,7 @@ void CSurfaceMovement::SetParametricCoord(CGeometry *geometry, CConfig *config, 
             
 						FFDBox->Set_MarkerIndex(iMarker);
 						FFDBox->Set_VertexIndex(iVertex);
-            FFDBox->Set_PointIndex(geometry->node[iPoint]->GetGlobalIndex());
+            FFDBox->Set_PointIndex(iPoint);
 						FFDBox->Set_ParametricCoord(ParamCoord);
 						FFDBox->Set_CartesianCoord(CartCoord);						
 						
@@ -6071,13 +6071,16 @@ void CSurfaceMovement::MergeFFDInfo(CGeometry *geometry, CConfig *config) {
     
     nLocalPoint = 0;
     for (iPoint = 0; iPoint < FFDBox[iFFDBox]->GetnSurfacePoint(); iPoint++) {
+      
       iPointLocal = FFDBox[iFFDBox]->Get_PointIndex(iPoint);
-      if (geometry->GetGlobal_to_Local_Point(iPointLocal) < geometry->GetnPointDomain()) {
+      
+      if (iPointLocal < geometry->GetnPointDomain()) {
         nLocalPoint++;
       }
+      
     }
     Buffer_Send_nPoint[0] = nLocalPoint;
-    
+
     /*--- Communicate the total number of nodes on this domain. ---*/
     
     MPI_Barrier(MPI_COMM_WORLD);
@@ -6086,7 +6089,7 @@ void CSurfaceMovement::MergeFFDInfo(CGeometry *geometry, CConfig *config) {
     MPI_Allreduce(&nLocalPoint, &MaxLocalPoint, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
     
     nBuffer_Scalar = MaxLocalPoint;
-    
+
     /*--- Send and Recv buffers. ---*/
     
     double *Buffer_Send_X = new double[MaxLocalPoint];
@@ -6128,7 +6131,7 @@ void CSurfaceMovement::MergeFFDInfo(CGeometry *geometry, CConfig *config) {
       
       iPointLocal = FFDBox[iFFDBox]->Get_PointIndex(iPoint);
       
-      if (geometry->GetGlobal_to_Local_Point(iPointLocal) < geometry->GetnPointDomain()) {
+      if (iPointLocal < geometry->GetnPointDomain()) {
         
         /*--- Load local coords into the temporary send buffer. ---*/
         
@@ -6138,7 +6141,7 @@ void CSurfaceMovement::MergeFFDInfo(CGeometry *geometry, CConfig *config) {
         
         /*--- Store the global index for this local node. ---*/
         
-        Buffer_Send_Point[jPoint] = FFDBox[iFFDBox]->Get_PointIndex(iPoint);
+        Buffer_Send_Point[jPoint] = geometry->node[FFDBox[iFFDBox]->Get_PointIndex(iPoint)]->GetGlobalIndex();
         
         /*--- Marker of the boundary in the local domain. ---*/
         
