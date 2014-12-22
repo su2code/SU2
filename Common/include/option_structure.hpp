@@ -94,16 +94,16 @@ enum SU2_COMPONENT {
   SU2_CFD = 1,	/*!< \brief Running the SU2_CFD software. */
   SU2_DEF = 2,	/*!< \brief Running the SU2_DEF software. */
   SU2_DOT = 3,	/*!< \brief Running the SU2_DOT software. */
-  SU2_MSH = 5,	/*!< \brief Running the SU2_MSH software. */
-  SU2_GEO = 6,	/*!< \brief Running the SU2_GEO software. */
-  SU2_SOL = 7	/*!< \brief Running the SU2_SOL software. */
+  SU2_MSH = 4,	/*!< \brief Running the SU2_MSH software. */
+  SU2_GEO = 5,	/*!< \brief Running the SU2_GEO software. */
+  SU2_SOL = 6	/*!< \brief Running the SU2_SOL software. */
 };
 
 const unsigned int EXIT_DIVERGENCE = 2;		/*!< \brief Exit code (divergence). */
 
 const unsigned int BUFSIZE = 3000000;		/*!< \brief MPI buffer. */
 const unsigned int MAX_PARAMETERS = 10;		/*!< \brief Maximum number of parameters for a design variable definition. */
-const unsigned int MAX_NUMBER_MARKER = 50000;	/*!< \brief Maximum number of markers. */
+const unsigned int MAX_NUMBER_MARKER = 20000;	/*!< \brief Maximum number of markers. */
 const unsigned int MAX_NUMBER_PERIODIC = 10;	/*!< \brief Maximum number of periodic boundary conditions. */
 const unsigned int MAX_STRING_SIZE = 200;	/*!< \brief Maximum number of domains. */
 const unsigned int MAX_NUMBER_FFD = 10;	/*!< \brief Maximum number of FFDBoxes for the FFD. */
