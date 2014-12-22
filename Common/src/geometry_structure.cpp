@@ -1218,7 +1218,6 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   
   bool *MarkerIn = NULL, **VertexIn = NULL, CheckDomain;
   long vnodes_local[8], *Global_to_Local_Point = NULL;
-  char Marker_All_TagBound[MAX_NUMBER_MARKER][MAX_STRING_SIZE], Buffer_Send_Marker_All_TagBound[MAX_NUMBER_MARKER][MAX_STRING_SIZE];
   vector<long> DomainList;
   short *Marker_All_SendRecv_Copy = NULL;
   string *Marker_All_TagBound_Copy = NULL;
@@ -1235,7 +1234,10 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   unsigned long *Buffer_Send_nBoundLine = new unsigned long[MAX_NUMBER_MARKER];
   unsigned long *Buffer_Send_nBoundTriangle = new unsigned long[MAX_NUMBER_MARKER];
   unsigned long *Buffer_Send_nBoundRectangle = new unsigned long[MAX_NUMBER_MARKER];
-  unsigned short *Buffer_Send_Marker_All_SendRecv = new unsigned short[MAX_NUMBER_MARKER];
+  short *Buffer_Send_Marker_All_SendRecv = new short[MAX_NUMBER_MARKER];
+  char *Marker_All_TagBound = new char[MAX_NUMBER_MARKER*MAX_STRING_SIZE];
+  char *Buffer_Send_Marker_All_TagBound = new char[MAX_NUMBER_MARKER*MAX_STRING_SIZE];
+
   
 #ifdef HAVE_MPI
   
@@ -1450,8 +1452,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
         Buffer_Send_nBoundRectangle[iMarker] = 0;
         
         Buffer_Send_Marker_All_SendRecv[iMarker] = Marker_All_SendRecv_Copy[iMarker];
-        sprintf(Buffer_Send_Marker_All_TagBound[iMarker], "%s", Marker_All_TagBound_Copy[iMarker].c_str());
-        
+        sprintf(&Buffer_Send_Marker_All_TagBound[iMarker*MAX_STRING_SIZE], "%s", Marker_All_TagBound_Copy[iMarker].c_str());
       }
       
       for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
@@ -1597,7 +1598,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
         MPI_Isend(Buffer_Send_nBoundRectangle,     MAX_NUMBER_MARKER, MPI_UNSIGNED_LONG,  iDomain, 20, MPI_COMM_WORLD, &send_req[20]);
         MPI_Isend(Buffer_Send_Marker_All_SendRecv, MAX_NUMBER_MARKER, MPI_SHORT,          iDomain, 21, MPI_COMM_WORLD, &send_req[21]);
         MPI_Isend(Buffer_Send_Marker_All_TagBound,  MAX_NUMBER_MARKER*MAX_STRING_SIZE, MPI_CHAR,           iDomain, 22, MPI_COMM_WORLD, &send_req[22]);
-        
+
         MPI_Isend(&Buffer_Send_nPeriodic,              1, MPI_UNSIGNED_SHORT, iDomain, 23, MPI_COMM_WORLD, &send_req[23]);
         MPI_Isend(Buffer_Send_Center,    nPeriodic*3, MPI_DOUBLE, iDomain, 24, MPI_COMM_WORLD, &send_req[24]);
         MPI_Isend(Buffer_Send_Rotation,  nPeriodic*3, MPI_DOUBLE, iDomain, 25, MPI_COMM_WORLD, &send_req[25]);
@@ -1656,7 +1657,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
           nBoundRectangle[iMarker] = Buffer_Send_nBoundRectangle[iMarker];
           Marker_All_SendRecv[iMarker] = Buffer_Send_Marker_All_SendRecv[iMarker];
           for (iter = 0; iter < MAX_STRING_SIZE; iter++)
-            Marker_All_TagBound[iMarker][iter] = Buffer_Send_Marker_All_TagBound[iMarker][iter];
+            Marker_All_TagBound[iMarker*MAX_STRING_SIZE+iter] = Buffer_Send_Marker_All_TagBound[iMarker*MAX_STRING_SIZE+iter];
         }
         
         Buffer_Receive_Center    = new double[nPeriodic*3];
@@ -1735,7 +1736,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
         
         for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
           config->SetMarker_All_SendRecv(iMarker, Marker_All_SendRecv[iMarker]);
-          config->SetMarker_All_TagBound(iMarker, string(Marker_All_TagBound[iMarker]));
+          config->SetMarker_All_TagBound(iMarker, string(&Marker_All_TagBound[iMarker*MAX_STRING_SIZE]));
         }
         
         /*--- Periodic boundary conditions, set the values in the config files of all the files ---*/
@@ -2348,7 +2349,6 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   
 #endif
   
-  
   if (rank == MASTER_NODE) {
     
     delete [] MarkerIn;
@@ -2388,7 +2388,9 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   delete [] Buffer_Send_nBoundTriangle;
   delete [] Buffer_Send_nBoundRectangle;
   delete [] Buffer_Send_Marker_All_SendRecv;
-  
+  delete [] Marker_All_TagBound;
+  delete [] Buffer_Send_Marker_All_TagBound;
+
 }
 
 CPhysicalGeometry::~CPhysicalGeometry(void) {
@@ -2406,7 +2408,7 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
   unsigned short Counter_Send, Counter_Receive, iMarkerSend, iMarkerReceive;
   unsigned long iVertex, LocalNode;
   
-  unsigned long  nVertexDomain[MAX_NUMBER_MARKER], iPoint, jPoint, iElem;
+  unsigned long  iPoint, jPoint, iElem;
   unsigned short nDomain, iNode, iDomain, jDomain, jNode;
   vector<unsigned long>::iterator it;
   
@@ -2415,11 +2417,14 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
 	vector<vector<unsigned long> > SendDomainLocal; /*!< \brief SendDomain[from domain][to domain] and return the point index of the node that must me sended. */
 	vector<vector<unsigned long> > ReceivedDomainLocal; /*!< \brief SendDomain[from domain][to domain] and return the point index of the node that must me sended. */
   
+  unsigned long *nVertexDomain = new unsigned long[MAX_NUMBER_MARKER];
+
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
-  
-#ifdef HAVE_MPI
+
   /*--- MPI initialization ---*/
+
+#ifdef HAVE_MPI
   MPI_Comm_size(MPI_COMM_WORLD,&size);
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 #endif
@@ -2433,6 +2438,7 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
   
   /*--- Loop over the all the points of the element
    to find the points with different colours, and create the send/received list ---*/
+  
   for (iElem = 0; iElem < nElem; iElem++) {
     for (iNode = 0; iNode < elem[iElem]->GetnNodes(); iNode++) {
       iPoint = elem[iElem]->GetNode(iNode);
@@ -2444,13 +2450,17 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
           jDomain = node[jPoint]->GetColor();
           
           /*--- If different color and connected by an edge, then we add them to the list ---*/
+          
           if (iDomain != jDomain) {
             
             /*--- We send from iDomain to jDomain the value of iPoint, we save the
              global value becuase we need to sort the lists ---*/
+            
             SendDomainLocal[jDomain].push_back(Local_to_Global_Point[iPoint]);
+            
             /*--- We send from jDomain to iDomain the value of jPoint, we save the
              global value becuase we need to sort the lists ---*/
+            
             ReceivedDomainLocal[jDomain].push_back(Local_to_Global_Point[jPoint]);
             
           }
@@ -2461,6 +2471,7 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
   
   /*--- Sort the points that must be sended and delete repeated points, note
    that the sorting should be done with the global point (not the local) ---*/
+  
   for (iDomain = 0; iDomain < nDomain; iDomain++) {
     sort( SendDomainLocal[iDomain].begin(), SendDomainLocal[iDomain].end());
     it = unique( SendDomainLocal[iDomain].begin(), SendDomainLocal[iDomain].end());
@@ -2469,6 +2480,7 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
   
   /*--- Sort the points that must be received and delete repeated points, note
    that the sorting should be done with the global point (not the local) ---*/
+  
   for (iDomain = 0; iDomain < nDomain; iDomain++) {
     sort( ReceivedDomainLocal[iDomain].begin(), ReceivedDomainLocal[iDomain].end());
     it = unique( ReceivedDomainLocal[iDomain].begin(), ReceivedDomainLocal[iDomain].end());
@@ -2477,6 +2489,7 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
   
   /*--- Create Global to Local Point array, note that the array is smaller (Max_GlobalPoint) than the total
    number of points in the simulation  ---*/
+  
   Max_GlobalPoint = 0;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     if (Local_to_Global_Point[iPoint] > Max_GlobalPoint)
@@ -2485,6 +2498,7 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
   Global_to_Local_Point =  new long[Max_GlobalPoint+1]; // +1 to include the bigger point.
   
   /*--- Initialization of the array with -1 this is important for the FFD ---*/
+  
   for (iPoint = 0; iPoint < Max_GlobalPoint+1; iPoint++)
     Global_to_Local_Point[iPoint] = -1;
   
@@ -2493,6 +2507,7 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
     Global_to_Local_Point[Local_to_Global_Point[iPoint]] = iPoint;
   
   /*--- Add the new MPI send receive boundaries, reset the transformation, and save the local value ---*/
+  
   for (iDomain = 0; iDomain < nDomain; iDomain++) {
     if (SendDomainLocal[iDomain].size() != 0) {
       nVertexDomain[nMarker] = SendDomainLocal[iDomain].size();
@@ -2507,6 +2522,7 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
   }
   
   /*--- Add the new MPI receive boundaries, reset the transformation, and save the local value ---*/
+  
   for (iDomain = 0; iDomain < nDomain; iDomain++) {
     if (ReceivedDomainLocal[iDomain].size() != 0) {
       nVertexDomain[nMarker] = ReceivedDomainLocal[iDomain].size();
@@ -2521,6 +2537,7 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
   }
   
   /*--- First compute the Send/Receive boundaries ---*/
+  
   Counter_Send = 0; 	Counter_Receive = 0;
   for (iDomain = 0; iDomain < nDomain; iDomain++)
     if (SendDomainLocal[iDomain].size() != 0) Counter_Send++;
@@ -2532,6 +2549,7 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
   iMarkerReceive = nMarker - Counter_Receive;
   
   /*--- First we do the send ---*/
+  
   for (iDomain = 0; iDomain < nDomain; iDomain++) {
     if (SendDomainLocal[iDomain].size() != 0) {
       for (iVertex = 0; iVertex < GetnElem_Bound(iMarkerSend); iVertex++) {
@@ -2545,6 +2563,7 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
   }
   
   /*--- Second we do the receive ---*/
+  
   for (iDomain = 0; iDomain < nDomain; iDomain++) {
     if (ReceivedDomainLocal[iDomain].size() != 0) {
       for (iVertex = 0; iVertex < GetnElem_Bound(iMarkerReceive); iVertex++) {
@@ -2556,6 +2575,8 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
       iMarkerReceive++;
     }
   }
+  
+  delete [] nVertexDomain;
   
 }
 
@@ -2570,9 +2591,10 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
   bool CheckStart;
   
   int size = SINGLE_NODE;
-  
-#ifdef HAVE_MPI
+
   /*--- MPI initialization ---*/
+
+#ifdef HAVE_MPI
   MPI_Comm_size(MPI_COMM_WORLD,&size);
 #endif
   
