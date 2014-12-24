@@ -177,27 +177,24 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*--- Options related to problem definition and partitioning ---*/
 
   /*!\par REGIME_TYPE
-   *  DESCRIPTION: Adjoint type \ingroup Config*/
+   *  DESCRIPTION: Regime type \n OPTIONS: see \link Regime_Map \endlink \ingroup Config*/
   addEnumOption("REGIME_TYPE", Kind_Regime, Regime_Map, COMPRESSIBLE);
   
   /* DESCRIPTION: Engine subsonic intake region */
   addBoolOption("DEBUG_MODE",DebugMode, false);
   
   /*!\par PHYSICAL_PROBLEM
-   *  DESCRIPTION: Physical governing equations \n
-   *  Options: NONE (default),EULER, NAVIER_STOKES, RANS, POISSON_EQUATION, ADJ_EULER, ADJ_NAVIER_STOKES, ADJ_RANS, LIN_EULER,
-   LIN_NAVIER_STOKES, TNE2_EULER, TNE2_NAVIER_STOKES, ADJ_TNE2_EULER, ADJ_TNE2_NAVIER_STOKES, WAVE_EQUATION, HEAT_EQUATION ,LINEAR_ELASTICITY,
-   FLUID_STRUCTURE_EULER, FLUID_STRUCTURE_NAVIER_STOKES, FLUID_STRUCTURE_RANS, TEMPLATE_SOLVER
-   *  \ingroup Config*/
+   *  DESCRIPTION: Physical governing equations \n Options: see \link Solver_Map \endlink \n Default: NO_SOLVER \ingroup Config*/
   addEnumOption("PHYSICAL_PROBLEM", Kind_Solver, Solver_Map, NO_SOLVER);
   /*!\par MATH_PROBLEM
    *  DESCRIPTION: Mathematical problem \n  Options: DIRECT, ADJOINT \ingroup Config*/
   addMathProblemOption("MATH_PROBLEM" , Adjoint, false , Linearized, false, Restart_Flow, false);
   /*!\par KIND_TURB_MODEL
-   *  DESCRIPTION: Specify turbulence model \n Options: SA, SST, ML, NONE (default) \ingroup Config*/
+   *  DESCRIPTION: Specify turbulence model \n Options: see \link Turb_Model_Map \endlink \n Default: NO_TURB_MODEL \ingroup Config*/
   addEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, NO_TURB_MODEL);
 
-  /* DESCRIPTION: Specify transition model */
+  /*!\par KIND_TRANS_MODEL
+   *  DESCRIPTION: Specify transition model OPTIONS: see \link Trans_Model_Map \endlink \n Default: NO_TRANS_MODEL \ingroup Config*/
   addEnumOption("KIND_TRANS_MODEL", Kind_Trans_Model, Trans_Model_Map, NO_TRANS_MODEL);
 
   /* DESCRIPTION: Axisymmetric simulation */
@@ -209,11 +206,16 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\par RESTART_SOL
    *  DESCRIPTION: Restart solution from native solution file \n Options: NO, YES \ingroup Config */
   addBoolOption("RESTART_SOL", Restart, false);
-  /* DESCRIPTION: System of measurements */
+  /*!\par VISUALIZE_PART
+   *  DESCRIPTION: Write a tecplot file for each partition \ingroup Config*/
+  addBoolOption("VISUALIZE_PART", Visualize_Partition, false);
+  /*!\par SYSTEM_MEASUREMENTS
+   *  DESCRIPTION: System of measurements \n OPTIONS: see \link Measurements_Map \endlink \n Default: SI \ingroup Config*/
   addEnumOption("SYSTEM_MEASUREMENTS", SystemMeasurements, Measurements_Map, SI);
 
   /* CONFIG_CATEGORY: FluidModel */
-  /* DESCRIPTION: Fluid model */
+  /*!\par FLUID_MODEL
+   *  DESCRIPTION: Fluid model \n OPTIONS: See \link FluidModel_Map \endlink \n Default: STANDARD_AIR \ingroup Config*/
   addEnumOption("FLUID_MODEL", Kind_FluidModel, FluidModel_Map, STANDARD_AIR);
 
 
@@ -243,7 +245,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    addDoubleOption("ACENTRIC_FACTOR", Acentric_Factor, 0.035);
 
    /*--- Options related to Viscosity Model ---*/
-  /* DESCRIPTION: model of the viscosity */
+  /*!\par VISCOSITY_MODEL
+   *  DESCRIPTION: model of the viscosity \n OPTIONS: See \link ViscosityModel_Map \endlink \n Default: SUTHERLAND \ingroup Config*/
   addEnumOption("VISCOSITY_MODEL", Kind_ViscosityModel, ViscosityModel_Map, SUTHERLAND);
 
   /*--- Options related to Constant Viscosity Model ---*/
@@ -433,7 +436,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
                         ActDisk_Origin, ActDisk_RootRadius, ActDisk_TipRadius,
                         ActDisk_CT, ActDisk_Omega);
 
-  /* DESCRIPTION: Inlet boundary type */
+  /*!\par INLET_TYPE
+   *  DESCRIPTION: Inlet boundary type \n OPTIONS: see \link Inlet_Map \endlink \n Default: TOTAL_CONDITIONS \ingroup Config*/
   addEnumOption("INLET_TYPE", Kind_Inlet, Inlet_Map, TOTAL_CONDITIONS);
 
   /*!\par MARKER_INLET
@@ -575,9 +579,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* CONFIG_CATEGORY: Linear solver definition */
   /*--- Options related to the linear solvers ---*/
 
-  /* DESCRIPTION: Linear solver for the implicit, mesh deformation, or discrete adjoint systems */
+  /*!\par LINEAR_SOLVER
+   *  DESCRIPTION: Linear solver for the implicit, mesh deformation, or discrete adjoint systems \n OPTIONS: see \link Linear_Solver_Map \endlink \n Default: FGMRES \ingroup Config*/
   addEnumOption("LINEAR_SOLVER", Kind_Linear_Solver, Linear_Solver_Map, FGMRES);
-  /* DESCRIPTION: Preconditioner for the Krylov linear solvers */
+  /*!\par LINEAR_SOLVER_PREC
+   *  DESCRIPTION: Preconditioner for the Krylov linear solvers \n OPTIONS: see \link Linear_Solver_Prec_Map \endlink \n Default: LU_SGS \ingroup Config*/
   addEnumOption("LINEAR_SOLVER_PREC", Kind_Linear_Solver_Prec, Linear_Solver_Prec_Map, LU_SGS);
   /* DESCRIPTION: Minimum error threshold for the linear solver for the implicit formulation */
   addDoubleOption("LINEAR_SOLVER_ERROR", Linear_Solver_Error, 1E-5);
@@ -607,7 +613,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* CONFIG_CATEGORY: Convergence*/
   /*--- Options related to convergence ---*/
   
-  /* DESCRIPTION: Convergence criteria */
+  /*!\par CONV_CRITERIA
+   *  DESCRIPTION: Convergence criteria \n OPTIONS: see \link Converge_Crit_Map \endlink \n Default: RESIDUAL \ingroup Config*/
   addEnumOption("CONV_CRITERIA", ConvCriteria, Converge_Crit_Map, RESIDUAL);
   /* DESCRIPTION: Residual reduction (order of magnitude with respect to the initial value) */
   addDoubleOption("RESIDUAL_REDUCTION", OrderMagResidual, 3.0);
@@ -621,7 +628,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addUnsignedShortOption("CAUCHY_ELEMS", Cauchy_Elems, 100);
   /* DESCRIPTION: Epsilon to control the series convergence */
   addDoubleOption("CAUCHY_EPS", Cauchy_Eps, 1E-10);
-  /* DESCRIPTION: Flow functional for the Cauchy criteria */
+  /*!\par CAUCHY_FUNC_FLOW
+   *  DESCRIPTION: Flow functional for the Cauchy criteria \n OPTIONS: see \link Objective_Map \endlink \n Default: DRAG_COEFFICIENT \ingroup Config*/
   addEnumOption("CAUCHY_FUNC_FLOW", Cauchy_Func_Flow, Objective_Map, DRAG_COEFFICIENT);
   /* DESCRIPTION: Adjoint functional for the Cauchy criteria */
   addEnumOption("CAUCHY_FUNC_ADJFLOW", Cauchy_Func_AdjFlow, Sens_Map, SENS_GEOMETRY);
@@ -662,10 +670,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /* DESCRIPTION: Convective numerical method */
   addConvectOption("CONV_NUM_METHOD_FLOW", Kind_ConvNumScheme_Flow, Kind_Centered_Flow, Kind_Upwind_Flow);
-  /* DESCRIPTION: Spatial numerical order integration */
+  /*!\par SPATIAL_ORDER_FLOW
+   *  DESCRIPTION: Spatial numerical order integration \n OPTIONS: See \link SpatialOrder_Map \endlink \n Default: SECOND_ORDER \ingroup Config*/
   addEnumOption("SPATIAL_ORDER_FLOW", SpatialOrder_Flow, SpatialOrder_Map, SECOND_ORDER);
   /*!\par SLOPE_LIMITER_FLOW
-   * DESCRIPTION: Slope limiter for the direct solution. \n OPTIONS: VENKATAKRISHNAAN (default), BARTH_JESPERSEN, SHARP_EDGES \ingroup Config*/
+   * DESCRIPTION: Slope limiter for the direct solution. \n OPTIONS: See \link Limiter_Map \endlink \n Default VENKATAKRISHNAN \ingroup Config*/
   addEnumOption("SLOPE_LIMITER_FLOW", Kind_SlopeLimit_Flow, Limiter_Map, VENKATAKRISHNAN);
   default_vec_3d[0] = 0.15; default_vec_3d[1] = 0.5; default_vec_3d[2] = 0.02;
   /* DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients */
@@ -673,25 +682,31 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /* DESCRIPTION: Convective numerical method */
   addConvectOption("CONV_NUM_METHOD_ADJFLOW", Kind_ConvNumScheme_AdjFlow, Kind_Centered_AdjFlow, Kind_Upwind_AdjFlow);
-  /* DESCRIPTION: Spatial numerical order integration */
+  /*!\par SPATIAL_ORDER_ADJFLOW
+   *  DESCRIPTION: Spatial numerical order integration \n OPTIONS: See \link SpatialOrder_Map \endlink \n Default: SECOND_ORDER \ingroup Config*/
   addEnumOption("SPATIAL_ORDER_ADJFLOW", SpatialOrder_AdjFlow, SpatialOrder_Map, SECOND_ORDER);
   /*!\par SLOPE_LIMITER_ADJFLOW
-     * DESCRIPTION: Slope limiter for the adjoint solution. \n OPTIONS: VENKATAKRISHNAAN (default), BARTH_JESPERSEN, SHARP_EDGES \ingroup Config*/
+     * DESCRIPTION: Slope limiter for the adjoint solution. \n OPTIONS: See \link Limiter_Map \endlink \n Default VENKATAKRISHNAN \ingroup Config*/
   addEnumOption("SLOPE_LIMITER_ADJFLOW", Kind_SlopeLimit_AdjFlow, Limiter_Map, VENKATAKRISHNAN);
   default_vec_3d[0] = 0.15; default_vec_3d[1] = 0.5; default_vec_3d[2] = 0.02;
   /* DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients */
   addDoubleArrayOption("AD_COEFF_ADJFLOW", 3, Kappa_AdjFlow, default_vec_3d);
 
-  /* DESCRIPTION: Spatial numerical order integration */
+  /*!\par SPATIAL_ORDER_TURB
+   *  DESCRIPTION: Spatial numerical order integration.\n OPTIONS: See \link SpatialOrder_Map \endlink \n Default: FIRST_ORDER \ingroup Config*/
   addEnumOption("SPATIAL_ORDER_TURB", SpatialOrder_Turb, SpatialOrder_Map, FIRST_ORDER);
-  /* DESCRIPTION: Slope limiter */
+  /*!\par SLOPE_LIMITER_TURB
+   *  DESCRIPTION: Slope limiter  \n OPTIONS: See \link Limiter_Map \endlink \n Default VENKATAKRISHNAN \ingroup Config*/
   addEnumOption("SLOPE_LIMITER_TURB", Kind_SlopeLimit_Turb, Limiter_Map, VENKATAKRISHNAN);
-  /* DESCRIPTION: Convective numerical method */
+  /*!\par CONV_NUM_METHOD_TURB
+   *  DESCRIPTION: Convective numerical method \ingroup Config*/
   addConvectOption("CONV_NUM_METHOD_TURB", Kind_ConvNumScheme_Turb, Kind_Centered_Turb, Kind_Upwind_Turb);
   
-  /* DESCRIPTION: Spatial numerical order integration */
+  /*!\par SPATIAL_ORDER_ADJTURB
+   *  DESCRIPTION: Spatial numerical order integration \n OPTIONS: See \link SpatialOrder_Map \endlink \n Default: FIRST_ORDER \ingroup Config*/
   addEnumOption("SPATIAL_ORDER_ADJTURB", SpatialOrder_AdjTurb, SpatialOrder_Map, FIRST_ORDER);
-  /* DESCRIPTION: Slope limiter */
+  /*!\par SLOPE_LIMITER_ADJTURB
+   *  DESCRIPTION: Slope limiter \n OPTIONS: See \link Limiter_Map \endlink \n Default VENKATAKRISHNAN \ingroup Config */
   addEnumOption("SLOPE_LIMITER_ADJTURB", Kind_SlopeLimit_AdjTurb, Limiter_Map, VENKATAKRISHNAN);
   /* DESCRIPTION: Convective numerical method */
   addConvectOption("CONV_NUM_METHOD_ADJTURB", Kind_ConvNumScheme_AdjTurb, Kind_Centered_AdjTurb, Kind_Upwind_AdjTurb);
@@ -702,16 +717,19 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients */
   addDoubleArrayOption("AD_COEFF_LIN", 2, Kappa_LinFlow, default_vec_2d);
 
-  /* DESCRIPTION: Spatial numerical order integration */
+  /*!\par SPATIAL_ORDER_ADJLEVELSET
+   *  DESCRIPTION: Spatial numerical order integration \n OPTIONS: See \link SpatialOrder_Map \endlink \n Default: 2ND_ORDER \ingroup Config*/
   addEnumOption("SPATIAL_ORDER_ADJLEVELSET", SpatialOrder_AdjLevelSet, SpatialOrder_Map, SECOND_ORDER);
-  /* DESCRIPTION: Slope limiter */
+  /*!\par SLOPE_LIMITER_ADJLEVELTSET
+   *  DESCRIPTION: Slope limiter\n OPTIONS: See \link Limiter_Map \endlink \n Default VENKATAKRISHNAN \ingroup Config */
   addEnumOption("SLOPE_LIMITER_ADJLEVELSET", Kind_SlopeLimit_AdjLevelSet, Limiter_Map, VENKATAKRISHNAN);
   /* DESCRIPTION: Convective numerical method */
   addConvectOption("CONV_NUM_METHOD_ADJLEVELSET", Kind_ConvNumScheme_AdjLevelSet, Kind_Centered_AdjLevelSet, Kind_Upwind_AdjLevelSet);
 
   /* DESCRIPTION: Convective numerical method */
   addConvectOption("CONV_NUM_METHOD_TNE2", Kind_ConvNumScheme_TNE2, Kind_Centered_TNE2, Kind_Upwind_TNE2);
-  /* DESCRIPTION: Spatial numerical order integration */
+  /*!\par SPATIAL_ORDER_TNE2
+   *  DESCRIPTION: Spatial numerical order integration \n OPTIONS: See \link SpatialOrder_Map \endlink \n Default: SECOND_ORDER \ingroup Config*/
   addEnumOption("SPATIAL_ORDER_TNE2", SpatialOrder_TNE2, SpatialOrder_Map, SECOND_ORDER);
   /* DESCRIPTION: Slope limiter */
   addEnumOption("SLOPE_LIMITER_TNE2", Kind_SlopeLimit_TNE2, Limiter_Map, VENKATAKRISHNAN);
@@ -721,7 +739,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /* DESCRIPTION: Convective numerical method */
   addConvectOption("CONV_NUM_METHOD_ADJTNE2", Kind_ConvNumScheme_AdjTNE2, Kind_Centered_AdjTNE2, Kind_Upwind_AdjTNE2);
-  /* DESCRIPTION: Spatial numerical order integration */
+  /*!\par SPATIAL_ORDER_ADJTNE2
+   *  DESCRIPTION: Spatial numerical order integration \n OPTIONS: See \link SpatialOrder_Map \endlink \n Default: SECOND_ORDER \ingroup Config*/
   addEnumOption("SPATIAL_ORDER_ADJTNE2", SpatialOrder_AdjTNE2, SpatialOrder_Map, SECOND_ORDER);
   /* DESCRIPTION: Slope limiter */
   addEnumOption("SLOPE_LIMITER_ADJTNE2", Kind_SlopeLimit_AdjTNE2, Limiter_Map, VENKATAKRISHNAN);
@@ -736,8 +755,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("LIMIT_ADJFLOW", AdjointLimit, 1E6);
   /* DESCRIPTION: Multigrid with the adjoint problem */
   addBoolOption("MG_ADJFLOW", MG_AdjointFlow, true);
-  /* DESCRIPTION: Adjoint problem boundary condition */
+  /*!\par OBJECTIVE_FUNCTION
+   *  DESCRIPTION: Adjoint problem boundary condition \n OPTIONS: see \link Objective_Map \endlink \n Default: DRAG_COEFFICIENT \ingroup Config*/
   addEnumOption("OBJECTIVE_FUNCTION", Kind_ObjFunc, Objective_Map, DRAG_COEFFICIENT);
+
   default_vec_2d[0] = 0.0; default_vec_2d[1] = 1.0;
   /* DESCRIPTION: Definition of the airfoil section */
   addDoubleArrayOption("GEO_LOCATION_SECTIONS", 2, Section_Location, default_vec_2d);
@@ -773,37 +794,49 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* CONFIG_CATEGORY: Input/output files and formats */
   /*--- Options related to input/output files and formats ---*/
 
-  /* DESCRIPTION: I/O */
+  /*!\par OUTPUT_FORMAT
+   *  DESCRIPTION: I/O format for output plots. \n OPTIONS: see \link Output_Map \endlink \n Default: TECPLOT \ingroup Config */
   addEnumOption("OUTPUT_FORMAT", Output_FileFormat, Output_Map, TECPLOT);
-  /* DESCRIPTION: Mesh input file format */
+  /*!\par MESH_FORMAT
+   *  DESCRIPTION: Mesh input file format \n OPTIONS: see \link Input_Map \endlink \n Default: SU2 \ingroup Config*/
   addEnumOption("MESH_FORMAT", Mesh_FileFormat, Input_Map, SU2);
   /* DESCRIPTION: Convert a CGNS mesh to SU2 format */
   addBoolOption("CGNS_TO_SU2", CGNS_To_SU2, false);
   /* DESCRIPTION:  Mesh input file */
   addStringOption("MESH_FILENAME", Mesh_FileName, string("mesh.su2"));
 
-  /* DESCRIPTION: Factor for scaling the mesh */
+  /*!\par MESH_SCALE_CHANGE
+   *  DESCRIPTION: Factor for scaling the mesh \ingroup Config */
   addDoubleOption("MESH_SCALE_CHANGE", Mesh_Scale_Change, 1.0);
-  /* DESCRIPTION: Write a new mesh converted to meters */
+  /*!\par MESH_OUTPUT
+   *  DESCRIPTION: Write a new mesh converted to meters \n Default: NO \ingroup Config*/
   addBoolOption("MESH_OUTPUT", Mesh_Output, false);
-  /* DESCRIPTION: Mesh output file */
+  /*!\par MESH_OUT_FILENAME
+   *  DESCRIPTION: Mesh output file name. Used when converting, scaling, or deforming a mesh. \n Default: mesh_out.su2 \ingroup Config*/
   addStringOption("MESH_OUT_FILENAME", Mesh_Out_FileName, string("mesh_out.su2"));
 
-  /* DESCRIPTION: Output file convergence history (w/o extension) */
+  /*!\par CONV_FILENAME
+   *  DESCRIPTION: Output file convergence history (w/o extension) \n Default: history \ingroup Config*/
   addStringOption("CONV_FILENAME", Conv_FileName, string("history"));
   /* DESCRIPTION: Output file forces breakdown */
   addStringOption("BREAKDOWN_FILENAME", Breakdown_FileName, string("forces_breakdown.dat"));
-  /* DESCRIPTION: Restart flow input file */
+    /*!\par SOLUTION_FLOW_FILENAME
+     *  DESCRIPTION: Restart flow input file (the file output under the filename set by RESTART_FLOW_FILENAME) \n Default: solution_flow.dat \ingroup Config */
   addStringOption("SOLUTION_FLOW_FILENAME", Solution_FlowFileName, string("solution_flow.dat"));
-  /* DESCRIPTION: Restart linear flow input file */
+  /*!\par SOLUTION_LIN_FILENAME
+   *  DESCRIPTION: Restart linear flow input file \ingroup Config*/
   addStringOption("SOLUTION_LIN_FILENAME", Solution_LinFileName, string("solution_lin.dat"));
-  /* DESCRIPTION: Restart adjoint input file */
+  /*!\par SOLUTION_ADJ_FILENAME
+   * DESCRIPTION: Restart adjoint input file. Objective function abbreviation is expected. \ingroup Config*/
   addStringOption("SOLUTION_ADJ_FILENAME", Solution_AdjFileName, string("solution_adj.dat"));
-  /* DESCRIPTION: Output file restart flow */
+  /*!\par RESTART_FLOW_FILENAME
+   *  DESCRIPTION: Output file restart flow \ingroup Config*/
   addStringOption("RESTART_FLOW_FILENAME", Restart_FlowFileName, string("restart_flow.dat"));
-  /* DESCRIPTION: Output file linear flow */
+  /*!\par RESTART_LIN_FILENAME
+   *  DESCRIPTION: Output file linear flow \ingroup Config*/
   addStringOption("RESTART_LIN_FILENAME",Restart_LinFileName, string("restart_lin.dat"));
-  /* DESCRIPTION: Output file restart adjoint */
+  /*!\par RESTART_ADJ_FILENAME
+   *  DESCRIPTION: Output file restart adjoint. Objective function abbreviation will be appended. \ingroup Config*/
   addStringOption("RESTART_ADJ_FILENAME", Restart_AdjFileName, string("restart_adj.dat"));
   /* DESCRIPTION: Output file restart wave */
   addStringOption("RESTART_WAVE_FILENAME", Restart_WaveFileName, string("restart_wave.dat"));
@@ -861,7 +894,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("WRT_SHARPEDGES", Wrt_SharpEdges, false);
   /* DESCRIPTION: Output the rind layers in the solution files */
   addBoolOption("WRT_HALO", Wrt_Halo, false);
-  /* DESCRIPTION: Output averaged stagnation pressure on specified exit marker. */
+  /*!\par ONE_D_OUTPUT
+   *  DESCRIPTION: Output averaged stagnation pressure on specified exit marker. \n Use with MARKER_OUT_1D. \ingroup Config*/
   addBoolOption("ONE_D_OUTPUT", Wrt_1D_Output, false);
 
   /* CONFIG_CATEGORY: Dynamic mesh definition */

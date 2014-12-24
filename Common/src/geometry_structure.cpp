@@ -1146,8 +1146,8 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
             config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)
           node[Point_Surface]->SetPhysicalBoundary(true);
         
-        if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL &&
-            config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX &&
+        if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL ||
+            config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX ||
             config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)
           node[Point_Surface]->SetSolidBoundary(true);
       }
@@ -2859,8 +2859,8 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
             config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)
           node[Point_Surface]->SetPhysicalBoundary(true);
         
-        if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL &&
-            config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX &&
+        if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL ||
+            config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX ||
             config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)
           node[Point_Surface]->SetSolidBoundary(true);
       }
@@ -5863,8 +5863,8 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig *config) {
             config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)
           node[InvResult[iPoint]]->SetPhysicalBoundary(true);
         
-        if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL &&
-            config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX &&
+        if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL ||
+            config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX ||
             config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)
           node[InvResult[iPoint]]->SetSolidBoundary(true);
       }
