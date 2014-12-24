@@ -2,7 +2,7 @@
  * \file integration_structure.inl
  * \brief In-Line subroutines of the <i>integration_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 3.2.5 "eagle"
+ * \version 3.2.6 "eagle"
  *
  * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
  *
@@ -27,8 +27,6 @@ inline double CIntegration::GetCauchy_Value(void) { return Cauchy_Value; }
 inline bool CIntegration::GetConvergence(void) { return Convergence; }
 
 inline bool CIntegration::GetConvergence_FullMG(void) { return Convergence_FullMG; }
-
-inline bool CIntegration::GetConvergence_OneShot(void) { return Convergence_OneShot; }
 
 inline void CIntegration::SetConvergence(bool value) { Convergence = value; }
 

@@ -1,7 +1,7 @@
 ## \file adjoint.py
 #  \brief python package for running adjoint problems
 #  \author T. Lukaczyk, F. Palacios
-#  \version 3.2.5 "eagle"
+#  \version 3.2.6 "eagle"
 #
 # Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
 #
@@ -22,7 +22,6 @@ import os, sys, shutil, copy
 
 from .. import io   as su2io
 from .. import mesh as su2mesh
-from decompose import decompose as su2decomp
 
 def adaptation ( config , kind='' ):
     
@@ -36,10 +35,7 @@ def adaptation ( config , kind='' ):
         return {}
     
     # check adapted?
-    
-    # decompose
-    su2decomp(konfig)
-    
+        
     # get adaptation function
     adapt_function = su2mesh.adapt.name_map[kind]
     

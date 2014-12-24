@@ -2,7 +2,7 @@
  * \file solution_direct_tne2.cpp
  * \brief Main subrotuines for solving flows in thermochemical nonequilibrium.
  * \author S. Copeland
- * \version 3.2.5 "eagle"
+ * \version 3.2.6 "eagle"
  *
  * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
  *
@@ -1915,7 +1915,6 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
         cout << "Inviscid flow: Computing density based on free-stream" << endl;
         cout << "temperature and pressure using the ideal gas law." << endl;
       }
-      cout << "Note: Negative pressure, temperature or density is not allowed!" << endl;
     }
     
     if (grid_movement) cout << "Force coefficients computed using MACH_MOTION." << endl;

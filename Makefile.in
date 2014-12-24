@@ -65,12 +65,11 @@ build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
 @BUILD_CFD_TRUE@am__append_1 = SU2_CFD/obj
-@BUILD_PRT_TRUE@am__append_2 = SU2_PRT/obj
-@BUILD_DOT_TRUE@am__append_3 = SU2_DOT/obj
-@BUILD_MSH_TRUE@am__append_4 = SU2_MSH/obj
-@BUILD_DEF_TRUE@am__append_5 = SU2_DEF/obj
-@BUILD_SOL_TRUE@am__append_6 = SU2_SOL/obj
-@BUILD_GEO_TRUE@am__append_7 = SU2_GEO/obj
+@BUILD_DOT_TRUE@am__append_2 = SU2_DOT/obj
+@BUILD_MSH_TRUE@am__append_3 = SU2_MSH/obj
+@BUILD_DEF_TRUE@am__append_4 = SU2_DEF/obj
+@BUILD_SOL_TRUE@am__append_5 = SU2_SOL/obj
+@BUILD_GEO_TRUE@am__append_6 = SU2_GEO/obj
 subdir = .
 DIST_COMMON = README $(am__configure_deps) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(top_srcdir)/configure COPYING INSTALL \
@@ -120,8 +119,8 @@ AM_RECURSIVE_TARGETS = $(RECURSIVE_TARGETS:-recursive=) \
 ETAGS = etags
 CTAGS = ctags
 CSCOPE = cscope
-DIST_SUBDIRS = externals Common/lib SU2_PY SU2_CFD/obj SU2_PRT/obj \
-	SU2_DOT/obj SU2_MSH/obj SU2_DEF/obj SU2_SOL/obj SU2_GEO/obj
+DIST_SUBDIRS = externals Common/lib SU2_PY SU2_CFD/obj SU2_DOT/obj \
+	SU2_MSH/obj SU2_DEF/obj SU2_SOL/obj SU2_GEO/obj
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 distdir = $(PACKAGE)-$(VERSION)
 top_distdir = $(distdir)
@@ -290,7 +289,7 @@ ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS} -I m4
 # build third-party optional dependencies first
 SUBDIRS = externals Common/lib SU2_PY $(am__append_1) $(am__append_2) \
 	$(am__append_3) $(am__append_4) $(am__append_5) \
-	$(am__append_6) $(am__append_7)
+	$(am__append_6)
 all: all-recursive
 
 .SUFFIXES:

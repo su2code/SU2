@@ -2,7 +2,7 @@
  * \file integration_structure.cpp
  * \brief This subroutine includes the space and time integration structure
  * \author F. Palacios, T. Economon
- * \version 3.2.5 "eagle"
+ * \version 3.2.6 "eagle"
  *
  * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
  *
@@ -29,7 +29,6 @@ CIntegration::CIntegration(CConfig *config) {
 	New_Func = 0;
 	Cauchy_Counter = 0;
 	Convergence = false;
-	Convergence_OneShot = false;
 	Convergence_FullMG = false;
 	Cauchy_Serie = new double [config->GetCauchy_Elems()+1];
 }
@@ -297,14 +296,9 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
 				Cauchy_Value += Cauchy_Serie[iCounter];
 		}
     
-		if (Cauchy_Value >= config->GetCauchy_Eps()) Convergence = false;
-		else Convergence = true;
+    if (Cauchy_Value >= config->GetCauchy_Eps()) { Convergence = false; Convergence_FullMG = false; }
+    else { Convergence = true; Convergence_FullMG = true; }
     
-		if (Cauchy_Value >= config->GetCauchy_Eps_OneShot()) Convergence_OneShot = false;
-		else Convergence_OneShot = true;
-    
-		if (Cauchy_Value >= config->GetCauchy_Eps_FullMG()) Convergence_FullMG = false;
-		else Convergence_FullMG = true;
 	}
   
   /*--- Residual based convergence criteria ---*/
@@ -319,8 +313,8 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
     /*--- Check the convergence ---*/
     
     if (((fabs(InitResidual - monitor) >= config->GetOrderMagResidual()) && (monitor < InitResidual))  ||
-        (monitor <= config->GetMinLogResidual())) Convergence = true;
-    else Convergence = false;
+        (monitor <= config->GetMinLogResidual())) { Convergence = true; Convergence_FullMG = true; }
+    else { Convergence = false; Convergence_FullMG = false; }
     
   }
   
@@ -329,11 +323,10 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
   
 	if (Iteration < config->GetStartConv_Iter()) {
 		Convergence = false;
-		Convergence_OneShot = false;
 		Convergence_FullMG = false;
 	}
   
-	if (Already_Converged) Convergence = true;
+  if (Already_Converged) { Convergence = true; Convergence_FullMG = true; }
   
   
   /*--- Apply the same convergence criteria to all the processors ---*/
@@ -360,8 +353,8 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
 
   MPI_Bcast(sbuf_conv, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
   
-  if (sbuf_conv[0] == 1) Convergence = true;
-  else Convergence = false;
+  if (sbuf_conv[0] == 1) { Convergence = true; Convergence_FullMG = true; }
+  else { Convergence = false; Convergence_FullMG = false; }
   
   delete [] sbuf_conv;
   delete [] rbuf_conv;
@@ -387,6 +380,8 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
 #ifdef HAVE_MPI
   MPI_Barrier(MPI_COMM_WORLD);
 #endif
+  
+  if (config->GetFinestMesh() != MESH_0 ) Convergence = false;
   
 }
 

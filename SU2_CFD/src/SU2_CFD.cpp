@@ -2,7 +2,7 @@
  * \file SU2_CFD.cpp
  * \brief Main file of the Computational Fluid Dynamics code
  * \author F. Palacios, T. Economon
- * \version 3.2.5 "eagle"
+ * \version 3.2.6 "eagle"
  *
  * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
  *
@@ -30,10 +30,10 @@ int main(int argc, char *argv[]) {
   double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
   unsigned long ExtIter = 0;
   unsigned short iMesh, iZone, iSol, nZone, nDim;
+  char config_file_name[MAX_STRING_SIZE];
   ofstream ConvHist_file;
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
-  
   
   /*--- MPI initialization, and buffer setting ---*/
 
@@ -63,30 +63,28 @@ int main(int argc, char *argv[]) {
   /*--- Load in the number of zones and spatial dimensions in the mesh file (If no config
    file is specified, default.cfg is used) ---*/
   
-  char config_file_name[200];
   if (argc == 2){ strcpy(config_file_name,argv[1]); }
-  else{ strcpy(config_file_name, "default.cfg"); }
+  else { strcpy(config_file_name, "default.cfg"); }
   
-  /*--- Read the name and format of the input mesh file ---*/
+  /*--- Read the name and format of the input mesh file to get from the mesh 
+   file the number of zones and dimensions from the numerical grid (required 
+   for variables allocation)  ---*/
   
   CConfig *config = NULL;
   config = new CConfig(config_file_name, SU2_CFD);
   
-  /*--- Get the number of zones and dimensions from the numerical grid
-   (required for variables allocation) ---*/
-  
   nZone = GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
   nDim  = GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
-
+  
   /*--- Definition and of the containers for all possible zones. ---*/
   
   solver_container      = new CSolver***[nZone];
   integration_container = new CIntegration**[nZone];
   numerics_container    = new CNumerics****[nZone];
   config_container      = new CConfig*[nZone];
-  geometry_container    = new CGeometry **[nZone];
-  surface_movement      = new CSurfaceMovement *[nZone];
-  grid_movement         = new CVolumetricMovement *[nZone];
+  geometry_container    = new CGeometry**[nZone];
+  surface_movement      = new CSurfaceMovement*[nZone];
+  grid_movement         = new CVolumetricMovement*[nZone];
   FFDBox                = new CFreeFormDefBox**[nZone];
   
   for (iZone = 0; iZone < nZone; iZone++) {
@@ -112,17 +110,51 @@ int main(int argc, char *argv[]) {
     
     config_container[iZone] = new CConfig(config_file_name, SU2_CFD, iZone, nZone, nDim, VERB_HIGH);
     
+    
+    /*--- Definition of the geometry class to store the primal grid in the 
+     partitioning process. ---*/
+    
+    CGeometry *geometry_aux = NULL;
+    
+
+    if (rank == MASTER_NODE) {
+      
+      /*--- Read the grid using the master node ---*/
+      
+      geometry_aux = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
+      
+      /*--- Color the initial grid and set the send-receive domains ---*/
+      
+      geometry_aux->SetColorGrid(config_container[iZone]);
+      
+    }
+    
 #ifdef HAVE_MPI
-    /*--- Change the name of the input-output files for a parallel computation ---*/
-    config_container[iZone]->SetFileNameDomain(rank+1);
+    MPI_Barrier(MPI_COMM_WORLD);
 #endif
-        
-    /*--- Definition of the geometry class. Within this constructor, the
-     mesh file is read and the primal grid is stored (node coords, connectivity,
-     & boundary markers. MESH_0 is the index of the finest mesh. ---*/
     
     geometry_container[iZone] = new CGeometry *[config_container[iZone]->GetMGLevels()+1];
-    geometry_container[iZone][MESH_0] = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
+    
+    /*--- Allocate the memory of the current domain, and
+     divide the grid between the nodes ---*/
+    
+    geometry_container[iZone][MESH_0] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
+    
+    /*--- Deallocate the memory of geometry_aux ---*/
+
+    delete geometry_aux;
+    
+    /*--- Add the Send/Receive boundaries ---*/
+    
+    geometry_container[iZone][MESH_0]->SetSendReceive(config_container[iZone]);
+    
+    /*--- Add the Send/Receive boundaries ---*/
+    
+    geometry_container[iZone][MESH_0]->SetBoundaries(config_container[iZone]);
+    
+#ifdef HAVE_MPI
+    MPI_Barrier(MPI_COMM_WORLD);
+#endif
     
   }
   
@@ -135,9 +167,10 @@ int main(int argc, char *argv[]) {
    computed, and the multigrid levels are created using an agglomeration procedure. ---*/
   
   Geometrical_Preprocessing(geometry_container, config_container, nZone);
-  
-#ifdef HAVE_MPI
+
   /*--- Synchronization point after the geometrical definition subroutine ---*/
+
+#ifdef HAVE_MPI
 MPI_Barrier(MPI_COMM_WORLD);
 #endif
   
@@ -183,9 +216,10 @@ MPI_Barrier(MPI_COMM_WORLD);
     }
     Solver_Preprocessing(solver_container[iZone], geometry_container[iZone],
                          config_container[iZone], iZone);
-    
-#ifdef HAVE_MPI
+
     /*--- Synchronization point after the solution preprocessing subroutine ---*/
+
+#ifdef HAVE_MPI
     MPI_Barrier(MPI_COMM_WORLD);
 #endif
     
@@ -203,9 +237,10 @@ MPI_Barrier(MPI_COMM_WORLD);
                               config_container[iZone], iZone);
     
     if (rank == MASTER_NODE) cout << "Integration Preprocessing." << endl;
-    
-#ifdef HAVE_MPI
+
     /*--- Synchronization point after the integration definition subroutine ---*/
+
+#ifdef HAVE_MPI
     MPI_Barrier(MPI_COMM_WORLD);
 #endif
     
@@ -221,9 +256,10 @@ MPI_Barrier(MPI_COMM_WORLD);
                            geometry_container[iZone], config_container[iZone], iZone);
     
     if (rank == MASTER_NODE) cout << "Numerics Preprocessing." << endl;
-    
-#ifdef HAVE_MPI
+
     /*--- Synchronization point after the solver definition subroutine ---*/
+
+#ifdef HAVE_MPI
     MPI_Barrier(MPI_COMM_WORLD);
 #endif
     
@@ -459,6 +495,8 @@ MPI_Barrier(MPI_COMM_WORLD);
                                      geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
           }
           
+          if (rank == MASTER_NODE) cout << endl;
+          
         }
     
     /*--- If the convergence criteria has been met, terminate the simulation. ---*/
@@ -472,7 +510,6 @@ MPI_Barrier(MPI_COMM_WORLD);
   /*--- Output some information to the console. ---*/
   
   if (rank == MASTER_NODE) {
-    cout << endl;
     
   /*--- Print out the number of non-physical points and reconstructions ---*/
     

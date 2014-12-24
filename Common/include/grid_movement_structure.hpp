@@ -5,7 +5,7 @@
  *        technique definition). The subroutines and functions are in 
  *        the <i>grid_movement_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, S. Padron
- * \version 3.2.5 "eagle"
+ * \version 3.2.6 "eagle"
  *
  * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
  *
@@ -47,7 +47,7 @@ using namespace std;
  * \brief Class for moving the surface and volumetric 
  *        numerical grid (2D and 3D problems).
  * \author F. Palacios.
- * \version 3.2.5 "eagle"
+ * \version 3.2.6 "eagle"
  */
 class CGridMovement {
 public:
@@ -76,7 +76,7 @@ public:
  * \class CFreeFormDefBox
  * \brief Class for defining the free form FFDBox structure.
  * \author F. Palacios & A. Galdran.
- * \version 3.2.5 "eagle"
+ * \version 3.2.6 "eagle"
  */
 class CFreeFormDefBox : public CGridMovement {
 public:
@@ -422,7 +422,7 @@ public:
 	 * \param[in] it_max - Maximal number of iterations.
 	 * \return Parametric coordinates of the point.
 	 */
-	double *GetParametricCoord_Iterative(double *xyz, double *guess, CConfig *config);
+	double *GetParametricCoord_Iterative(unsigned long iPoint, double *xyz, double *guess, CConfig *config);
 	
 	/*! 
 	 * \brief Compute the cross product.
@@ -681,7 +681,7 @@ public:
  * \class CVolumetricMovement
  * \brief Class for moving the volumetric numerical grid.
  * \author F. Palacios, A. Bueno, T. Economon, S. Padron.
- * \version 3.2.5 "eagle"
+ * \version 3.2.6 "eagle"
  */
 class CVolumetricMovement : public CGridMovement {
 protected:
@@ -948,7 +948,7 @@ public:
  * \class CSurfaceMovement
  * \brief Class for moving the surface numerical grid.
  * \author F. Palacios, T. Economon.
- * \version 3.2.5 "eagle"
+ * \version 3.2.6 "eagle"
  */
 class CSurfaceMovement : public CGridMovement {
 protected:
@@ -956,6 +956,11 @@ protected:
 	unsigned short nFFDBox;	/*!< \brief Number of FFD FFDBoxes. */
 	unsigned short nLevel;	/*!< \brief Level of the FFD FFDBoxes (parent/child). */
 	bool FFDBoxDefinition;	/*!< \brief If the FFD FFDBox has been defined in the input file. */
+  vector<double> GlobalCoordX[MAX_NUMBER_FFD];
+  vector<double> GlobalCoordY[MAX_NUMBER_FFD];
+  vector<double> GlobalCoordZ[MAX_NUMBER_FFD];
+  vector<string> GlobalTag[MAX_NUMBER_FFD];
+  vector<unsigned long> GlobalPoint[MAX_NUMBER_FFD];
 
 public:
 	
@@ -1319,22 +1324,21 @@ public:
 	 */		
 	void ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFormDefBox **FFDBox, string val_mesh_filename, bool val_fullmesh);
 	
+  /*!
+   * \brief Merge the Free Form information in the SU2 file.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] val_mesh_filename - Name of the grid output file.
+   */
+  void MergeFFDInfo(CGeometry *geometry, CConfig *config);
+  
 	/*! 
 	 * \brief Write the Free Form information in the SU2 file.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] val_mesh_filename - Name of the grid output file.
 	 */		
-	void WriteFFDInfo(CGeometry *geometry, CConfig *config, string val_mesh_filename);
-  
-  /*!
-	 * \brief Write the Free Form information in the SU2 file.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
-	 * \param[in] val_mesh_filename - Name of the grid output file.
-	 */
-	void WriteFFDInfo(CGeometry *geometry, CConfig *config, CFreeFormDefBox **FFDBox, string val_mesh_filename);
+	void WriteFFDInfo(CGeometry *geometry, CConfig *config);
 	
 	/*! 
 	 * \brief Get information about if there is a complete FFDBox definition, or it is necessary to 

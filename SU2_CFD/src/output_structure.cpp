@@ -2,7 +2,7 @@
  * \file output_structure.cpp
  * \brief Main subroutines for output solver information
  * \author F. Palacios, T. Economon
- * \version 3.2.5 "eagle"
+ * \version 3.2.6 "eagle"
  *
  * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
  *
@@ -295,9 +295,6 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
     string filename = config->GetSurfFlowCoeff_FileName();
     ofstream SurfFlow_file;
     
-    /*--- Remove the domain number from the surface csv filename ---*/
-    if (nProcessor > 1) filename.erase (filename.end()-2, filename.end());
-    
     /*--- Write file name with extension if unsteady ---*/
     strcpy (cstr, filename.c_str());
     if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
@@ -392,6 +389,8 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
     delete [] Buffer_Recv_SkinFriction;
     delete [] Buffer_Recv_HeatTransfer;
     delete [] Buffer_Recv_GlobalIndex;
+    
+    delete [] Buffer_Recv_nVertex;
     
   }
   
@@ -614,10 +613,7 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
     char cstr[200], buffer[50];
     ofstream SurfAdj_file;
     string filename = config->GetSurfAdjCoeff_FileName();
-    
-    /*--- Remove the domain number from the surface csv filename ---*/
-    if (nProcessor > 1) filename.erase (filename.end()-2, filename.end());
-    
+        
     /*--- Write file name with extension if unsteady ---*/
     strcpy (cstr, filename.c_str());
     
@@ -796,7 +792,7 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
   /*--- Local variables needed on all processors ---*/
   
   unsigned short iDim, nDim = geometry->GetnDim();
-  unsigned long iPoint, jPoint;
+  unsigned long iPoint;
   
 #ifndef HAVE_MPI
   
@@ -842,34 +838,33 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
     Coords[iDim] = new double[nGlobal_Poin];
   }
   
-  /*--- Loop over the mesh to collect the coords of the local points. ---*/
+  /*--- Loop over the mesh to collect the coords of the local points ---*/
   
-  jPoint = 0;
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
     
-    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+    /*--- Check if the node belongs to the domain (i.e, not a halo node). 
+     Sort by the global index, even in serial there is a renumbering (e.g. RCM). ---*/
     
     if (!Local_Halo[iPoint]) {
       
       /*--- Retrieve the current coordinates at this node. ---*/
       
+      unsigned long iGlobal_Index = geometry->node[iPoint]->GetGlobalIndex();
+      
       for (iDim = 0; iDim < nDim; iDim++) {
-        Coords[iDim][jPoint] = geometry->node[iPoint]->GetCoord(iDim);
+        Coords[iDim][iGlobal_Index] = geometry->node[iPoint]->GetCoord(iDim);
         
         /*--- If US system, the output should be in inches ---*/
         
-        if (config->GetSystemMeasurements() == US) {
-          Coords[iDim][jPoint] *= 12.0;
+        if ((config->GetSystemMeasurements() == US) && (config->GetKind_SU2() != SU2_DEF)) {
+          Coords[iDim][iGlobal_Index] *= 12.0;
         }
         
       }
       
-      /*--- Increment a counter since we may be skipping over
-       some halo nodes during this loop. ---*/
-      
-      jPoint++;
     }
   }
+
   
   delete [] Local_Halo;
   
@@ -877,6 +872,8 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
   
   /*--- MPI preprocessing ---*/
   int iProcessor, nProcessor, rank;
+  unsigned long jPoint;
+
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
   
@@ -1146,15 +1143,18 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
   }
   
   /*--- Allocate a temporary array for the connectivity ---*/
+
   Conn_Elem = new int[nLocalElem*NODES_PER_ELEMENT];
-  
+
   /*--- Load all elements of the current type into the buffer
    to be sent to the master node. ---*/
+  
   jNode = 0; jElem = 0; nElem_Total = 0; bool isHalo;
   for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
     if(geometry->elem[iElem]->GetVTK_Type() == Elem_Type) {
       
       /*--- Check if this is a halo node. ---*/
+      
       isHalo = false;
       for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
         iPoint = geometry->elem[iElem]->GetNode(iNode);
@@ -1173,6 +1173,7 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
           Conn_Elem[jNode] = (int)geometry->elem[iElem]->GetNode(iNode) + 1;
           
           /*--- Increment jNode as the counter. ---*/
+          
           jNode++;
         }
       }
@@ -3578,6 +3579,9 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
 #endif
   
   /*--- Release memory needed for surface coefficients ---*/
+  
+  delete [] Local_Halo;
+  
   if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
     delete [] Aux_Frict; delete [] Aux_Heat; delete [] Aux_yPlus;
   }
@@ -3816,6 +3820,8 @@ void COutput::MergeBaselineSolution(CConfig *config, CGeometry *geometry, CSolve
   }
   
 #endif
+  
+  delete [] Local_Halo;
   
 }
 
@@ -4094,8 +4100,7 @@ void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   
   if (config->GetOutput_FileFormat() == TECPLOT) sprintf (buffer, ".dat");
   else if (config->GetOutput_FileFormat() == TECPLOT_BINARY)  sprintf (buffer, ".plt");
-  else if ((config->GetOutput_FileFormat() == CGNS_SOL) ||
-           (config->GetOutput_FileFormat() == PARAVIEW))  sprintf (buffer, ".csv");
+  else if (config->GetOutput_FileFormat() == PARAVIEW)  sprintf (buffer, ".csv");
   strcat(cstr,buffer);
   
   ConvHist_file->open(cstr, ios::out);
@@ -4955,7 +4960,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
             case EULER :                  case NAVIER_STOKES: case RANS:
             case FLUID_STRUCTURE_EULER :  case FLUID_STRUCTURE_NAVIER_STOKES: case FLUID_STRUCTURE_RANS:
               cout << endl << "Local time stepping summary:" << endl;
-              for (unsigned short iMesh = 0; iMesh <= config[val_iZone]->GetMGLevels(); iMesh++)
+              for (unsigned short iMesh = FinestMesh; iMesh <= config[val_iZone]->GetMGLevels(); iMesh++)
                 cout << "MG level: "<< iMesh << "-> Min. DT: " << solver_container[val_iZone][iMesh][FLOW_SOL]->GetMin_Delta_Time()<<
                 ". Max. DT: " << solver_container[val_iZone][iMesh][FLOW_SOL]->GetMax_Delta_Time() <<
                 ". Limit DT: " << config[val_iZone]->GetMax_DeltaTime() << "." << endl;
@@ -5531,8 +5536,17 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
   char cstr[200];
   unsigned short iMarker, iMarker_Monitoring;
   ofstream Breakdown_file;
-  int rank = MASTER_NODE;
   
+  int rank = MASTER_NODE;
+  bool compressible       = (config[val_iZone]->GetKind_Regime() == COMPRESSIBLE);
+  bool incompressible     = (config[val_iZone]->GetKind_Regime() == INCOMPRESSIBLE);
+  bool freesurface        = (config[val_iZone]->GetKind_Regime() == FREESURFACE);
+  bool unsteady           = (config[val_iZone]->GetUnsteady_Simulation() != NO);
+  bool viscous            = config[val_iZone]->GetViscous();
+  bool grid_movement      = config[val_iZone]->GetGrid_Movement();
+  bool gravity            = config[val_iZone]->GetGravityForce();
+  bool turbulent          = config[val_iZone]->GetKind_Solver() == RANS;
+
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
@@ -5652,7 +5666,7 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
     
     Breakdown_file << endl <<"-------------------------------------------------------------------------" << endl;
     Breakdown_file <<"|    _____   _    _   ___                                               |" << endl;
-    Breakdown_file <<"|   / ____| | |  | | |__ \\    Release 3.2.5 \"eagle\"                     |" << endl;
+    Breakdown_file <<"|   / ____| | |  | | |__ \\    Release 3.2.6 \"eagle\"                     |" << endl;
     Breakdown_file <<"|  | (___   | |  | |    ) |                                             |" << endl;
     Breakdown_file <<"|   \\___ \\  | |  | |   / /                                              |" << endl;
     Breakdown_file <<"|   ____) | | |__| |  / /_                                              |" << endl;
@@ -5667,26 +5681,303 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
     Breakdown_file <<"-------------------------------------------------------------------------" << endl;
     
     Breakdown_file.precision(4);
-
+    
+    Breakdown_file << endl << endl <<"Problem definition:" << endl << endl;
+    
+    if (compressible) {
+      if (viscous) {
+        Breakdown_file << "Viscous flow: Computing pressure using the ideal gas law" << endl;
+        Breakdown_file << "based on the free-stream temperature and a density computed" << endl;
+        Breakdown_file << "from the Reynolds number." << endl;
+      } else {
+        Breakdown_file << "Inviscid flow: Computing density based on free-stream" << endl;
+        Breakdown_file << "temperature and pressure using the ideal gas law." << endl;
+      }
+    }
+    
+    if (grid_movement) Breakdown_file << "Force coefficients computed using MACH_MOTION." << endl;
+    else Breakdown_file << "Force coefficients computed using free-stream values." << endl;
+    
+    if (incompressible || freesurface) {
+      Breakdown_file << "Viscous and Inviscid flow: rho_ref, and vel_ref" << endl;
+      Breakdown_file << "are based on the free-stream values, p_ref = rho_ref*vel_ref^2." << endl;
+      Breakdown_file << "The free-stream value of the pressure is 0." << endl;
+      Breakdown_file << "Mach number: "<< config[val_iZone]->GetMach() << ", computed using the Bulk modulus." << endl;
+      Breakdown_file << "Angle of attack (deg): "<< config[val_iZone]->GetAoA() << ", computed using the the free-stream velocity." << endl;
+      Breakdown_file << "Side slip angle (deg): "<< config[val_iZone]->GetAoS() << ", computed using the the free-stream velocity." << endl;
+      if (viscous) Breakdown_file << "Reynolds number: " << config[val_iZone]->GetReynolds() << ", computed using free-stream values."<< endl;
+      Breakdown_file << "Only dimensional computation, the grid should be dimensional." << endl;
+    }
+    
+    Breakdown_file <<"-- Input conditions:"<< endl;
+    
+    if (compressible) {
+      switch (config[val_iZone]->GetKind_FluidModel()) {
+          
+        case STANDARD_AIR:
+          Breakdown_file << "Fluid Model: STANDARD_AIR "<< endl;
+          Breakdown_file << "Specific gas constant: " << config[val_iZone]->GetGas_Constant();
+          if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " N.m/kg.K." << endl;
+          else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " lbf.ft/slug.R." << endl;
+          Breakdown_file << "Specific gas constant(non-dim): " << config[val_iZone]->GetGas_ConstantND()<< endl;
+          Breakdown_file << "Specific Heat Ratio: 1.4000 "<< endl;
+          break;
+          
+        case IDEAL_GAS:
+          Breakdown_file << "Fluid Model: IDEAL_GAS "<< endl;
+          Breakdown_file << "Specific gas constant: " << config[val_iZone]->GetGas_Constant() << " N.m/kg.K." << endl;
+          Breakdown_file << "Specific gas constant(non-dim): " << config[val_iZone]->GetGas_ConstantND()<< endl;
+          Breakdown_file << "Specific Heat Ratio: "<< config[val_iZone]->GetGamma() << endl;
+          break;
+          
+        case VW_GAS:
+          Breakdown_file << "Fluid Model: Van der Waals "<< endl;
+          Breakdown_file << "Specific gas constant: " << config[val_iZone]->GetGas_Constant() << " N.m/kg.K." << endl;
+          Breakdown_file << "Specific gas constant(non-dim): " << config[val_iZone]->GetGas_ConstantND()<< endl;
+          Breakdown_file << "Specific Heat Ratio: "<< config[val_iZone]->GetGamma() << endl;
+          Breakdown_file << "Critical Pressure:   " << config[val_iZone]->GetPressure_Critical()  << " Pa." << endl;
+          Breakdown_file << "Critical Temperature:  " << config[val_iZone]->GetTemperature_Critical() << " K." << endl;
+          Breakdown_file << "Critical Pressure (non-dim):   " << config[val_iZone]->GetPressure_Critical() /config[val_iZone]->GetPressure_Ref() << endl;
+          Breakdown_file << "Critical Temperature (non-dim) :  " << config[val_iZone]->GetTemperature_Critical() /config[val_iZone]->GetTemperature_Ref() << endl;
+          break;
+          
+        case PR_GAS:
+          Breakdown_file << "Fluid Model: Peng-Robinson "<< endl;
+          Breakdown_file << "Specific gas constant: " << config[val_iZone]->GetGas_Constant() << " N.m/kg.K." << endl;
+          Breakdown_file << "Specific gas constant(non-dim): " << config[val_iZone]->GetGas_ConstantND()<< endl;
+          Breakdown_file << "Specific Heat Ratio: "<< config[val_iZone]->GetGamma() << endl;
+          Breakdown_file << "Critical Pressure:   " << config[val_iZone]->GetPressure_Critical()  << " Pa." << endl;
+          Breakdown_file << "Critical Temperature:  " << config[val_iZone]->GetTemperature_Critical() << " K." << endl;
+          Breakdown_file << "Critical Pressure (non-dim):   " << config[val_iZone]->GetPressure_Critical() /config[val_iZone]->GetPressure_Ref() << endl;
+          Breakdown_file << "Critical Temperature (non-dim) :  " << config[val_iZone]->GetTemperature_Critical() /config[val_iZone]->GetTemperature_Ref() << endl;
+          break;
+      }
+      
+      if(viscous){
+        
+        switch (config[val_iZone]->GetKind_ViscosityModel()) {
+            
+          case CONSTANT_VISCOSITY:
+            Breakdown_file << "Viscosity Model: CONSTANT_VISCOSITY  "<< endl;
+            Breakdown_file << "Laminar Viscosity: " << config[val_iZone]->GetMu_ConstantND()*config[val_iZone]->GetViscosity_Ref();
+            if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " N.s/m^2." << endl;
+            else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " lbf.s/ft^2." << endl;
+            Breakdown_file << "Laminar Viscosity (non-dim): " << config[val_iZone]->GetMu_ConstantND()<< endl;
+            break;
+            
+          case SUTHERLAND:
+            Breakdown_file << "Viscosity Model: SUTHERLAND "<< endl;
+            Breakdown_file << "Ref. Laminar Viscosity: " << config[val_iZone]->GetMu_RefND()*config[val_iZone]->GetViscosity_Ref();
+            if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " N.s/m^2." << endl;
+            else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " lbf.s/ft^2." << endl;
+            Breakdown_file << "Ref. Temperature: " << config[val_iZone]->GetMu_Temperature_RefND()*config[val_iZone]->GetTemperature_Ref();
+            if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " K." << endl;
+            else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " R." << endl;
+            Breakdown_file << "Sutherland Constant: "<< config[val_iZone]->GetMu_SND()*config[val_iZone]->GetTemperature_Ref();
+            if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " K." << endl;
+            else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " R." << endl;
+            Breakdown_file << "Laminar Viscosity (non-dim): " << config[val_iZone]->GetMu_ConstantND()<< endl;
+            Breakdown_file << "Ref. Temperature (non-dim): " << config[val_iZone]->GetMu_Temperature_RefND()<< endl;
+            Breakdown_file << "Sutherland constant (non-dim): "<< config[val_iZone]->GetMu_SND()<< endl;
+            break;
+            
+        }
+        switch (config[val_iZone]->GetKind_ConductivityModel()) {
+            
+          case CONSTANT_PRANDTL:
+            Breakdown_file << "Conductivity Model: CONSTANT_PRANDTL  "<< endl;
+            Breakdown_file << "Prandtl: " << config[val_iZone]->GetPrandtl_Lam()<< endl;
+            break;
+            
+          case CONSTANT_CONDUCTIVITY:
+            Breakdown_file << "Conductivity Model: CONSTANT_CONDUCTIVITY "<< endl;
+            Breakdown_file << "Molecular Conductivity: " << config[val_iZone]->GetKt_ConstantND()*config[val_iZone]->GetConductivity_Ref()<< " W/m^2.K." << endl;
+            Breakdown_file << "Molecular Conductivity (non-dim): " << config[val_iZone]->GetKt_ConstantND()<< endl;
+            break;
+            
+        }
+      }
+    }
+    
+    if (incompressible || freesurface) {
+      Breakdown_file << "Bulk modulus: " << config[val_iZone]->GetBulk_Modulus();
+      if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " Pa." << endl;
+      else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " psf." << endl;
+      Breakdown_file << "Artificial compressibility factor: " << config[val_iZone]->GetArtComp_Factor();
+      if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " Pa." << endl;
+      else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " psf." << endl;
+    }
+    
+    Breakdown_file << "Free-stream pressure: " << config[val_iZone]->GetPressure_FreeStream();
+    if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " Pa." << endl;
+    else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " psf." << endl;
+    
+    if (compressible) {
+      Breakdown_file << "Free-stream temperature: " << config[val_iZone]->GetTemperature_FreeStream();
+      if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " K." << endl;
+      else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " R." << endl;
+    }
+    
+    Breakdown_file << "Free-stream density: " << config[val_iZone]->GetDensity_FreeStream();
+    if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " kg/m^3." << endl;
+    else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " slug/ft^3." << endl;
+    
+    if (nDim == 2) {
+      Breakdown_file << "Free-stream velocity: (" << config[val_iZone]->GetVelocity_FreeStream()[0] << ", ";
+      Breakdown_file << config[val_iZone]->GetVelocity_FreeStream()[1] << ")";
+    }
+    if (nDim == 3) {
+      Breakdown_file << "Free-stream velocity: (" << config[val_iZone]->GetVelocity_FreeStream()[0] << ", ";
+      Breakdown_file << config[val_iZone]->GetVelocity_FreeStream()[1] << ", " << config[val_iZone]->GetVelocity_FreeStream()[2] << ")";
+    }
+    if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " m/s. ";
+    else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " ft/s. ";
+    
+    Breakdown_file << "Magnitude: "	<< config[val_iZone]->GetModVel_FreeStream();
+    if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " m/s." << endl;
+    else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " ft/s." << endl;
+    
+    if (compressible) {
+      Breakdown_file << "Free-stream total energy per unit mass: " << config[val_iZone]->GetEnergy_FreeStream();
+      if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " m^2/s^2." << endl;
+      else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " ft^2/s^2." << endl;
+    }
+    
+    if (viscous) {
+      Breakdown_file << "Free-stream viscosity: " << config[val_iZone]->GetViscosity_FreeStream();
+      if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " N.s/m^2." << endl;
+      else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " lbf.s/ft^2." << endl;
+      if (turbulent){
+        Breakdown_file << "Free-stream turb. kinetic energy per unit mass: " << config[val_iZone]->GetTke_FreeStream();
+        if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " m^2/s^2." << endl;
+        else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " ft^2/s^2." << endl;
+        Breakdown_file << "Free-stream specific dissipation: " << config[val_iZone]->GetOmega_FreeStream();
+        if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " 1/s." << endl;
+        else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " 1/s." << endl;
+      }
+    }
+    
+    if (unsteady) { Breakdown_file << "Total time: " << config[val_iZone]->GetTotal_UnstTime() << " s. Time step: " << config[val_iZone]->GetDelta_UnstTime() << " s." << endl; }
+    
+    /*--- Print out reference values. ---*/
+    
+    Breakdown_file <<"-- Reference values:"<< endl;
+    
+    if (compressible) {
+      Breakdown_file << "Reference specific gas constant: " << config[val_iZone]->GetGas_Constant_Ref();
+      if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " N.m/kg.K." << endl;
+      else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " lbf.ft/slug.R." << endl;
+    }
+    
+    Breakdown_file << "Reference pressure: " << config[val_iZone]->GetPressure_Ref();
+    if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " Pa." << endl;
+    else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " psf." << endl;
+    
+    if (compressible) {
+      Breakdown_file << "Reference temperature: " << config[val_iZone]->GetTemperature_Ref();
+      if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " K." << endl;
+      else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " R." << endl;
+    }
+    
+    Breakdown_file << "Reference density: " << config[val_iZone]->GetDensity_Ref();
+    if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " kg/m^3." << endl;
+    else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " slug/ft^3." << endl;
+    
+    Breakdown_file << "Reference velocity: " << config[val_iZone]->GetVelocity_Ref();
+    if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " m/s." << endl;
+    else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " ft/s." << endl;
+    
+    if (compressible) {
+      Breakdown_file << "Reference energy per unit mass: " << config[val_iZone]->GetEnergy_Ref();
+      if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " m^2/s^2." << endl;
+      else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " ft^2/s^2." << endl;
+    }
+    
+    if (incompressible || freesurface) {
+      Breakdown_file << "Reference length: " << config[val_iZone]->GetLength_Ref();
+      if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " m." << endl;
+      else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " in." << endl;
+    }
+    
+    if (viscous) {
+      Breakdown_file << "Reference viscosity: " << config[val_iZone]->GetViscosity_Ref();
+      if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " N.s/m^2." << endl;
+      else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " lbf.s/ft^2." << endl;
+      Breakdown_file << "Reference conductivity: " << config[val_iZone]->GetConductivity_Ref();
+      if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " W/m^2.K." << endl;
+      else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " lbf/ft.s.R." << endl;
+    }
+    
+    
+    if (unsteady) Breakdown_file << "Reference time: " << config[val_iZone]->GetTime_Ref() <<" s." << endl;
+    
+    /*--- Print out resulting non-dim values here. ---*/
+    
+    Breakdown_file << "-- Resulting non-dimensional state:" << endl;
+    Breakdown_file << "Mach number (non-dim): " << config[val_iZone]->GetMach() << endl;
+    if (viscous) {
+      Breakdown_file << "Reynolds number (non-dim): " << config[val_iZone]->GetReynolds() <<". Re length: " << config[val_iZone]->GetLength_Reynolds();
+      if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " m." << endl;
+      else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " ft." << endl;
+    }
+    if (gravity) {
+      Breakdown_file << "Froude number (non-dim): " << config[val_iZone]->GetFroude() << endl;
+      Breakdown_file << "Lenght of the baseline wave (non-dim): " << 2.0*PI_NUMBER*config[val_iZone]->GetFroude()*config[val_iZone]->GetFroude() << endl;
+    }
+    
+    if (compressible) {
+      Breakdown_file << "Specific gas constant (non-dim): " << config[val_iZone]->GetGas_ConstantND() << endl;
+      Breakdown_file << "Free-stream temperature (non-dim): " << config[val_iZone]->GetTemperature_FreeStreamND() << endl;
+    }
+    
+    Breakdown_file << "Free-stream pressure (non-dim): " << config[val_iZone]->GetPressure_FreeStreamND() << endl;
+    
+    Breakdown_file << "Free-stream density (non-dim): " << config[val_iZone]->GetDensity_FreeStreamND() << endl;
+    
+    if (nDim == 2) {
+      Breakdown_file << "Free-stream velocity (non-dim): (" << config[val_iZone]->GetVelocity_FreeStreamND()[0] << ", ";
+      Breakdown_file << config[val_iZone]->GetVelocity_FreeStreamND()[1] << "). ";
+    } else {
+      Breakdown_file << "Free-stream velocity (non-dim): (" << config[val_iZone]->GetVelocity_FreeStreamND()[0] << ", ";
+      Breakdown_file << config[val_iZone]->GetVelocity_FreeStreamND()[1] << ", " << config[val_iZone]->GetVelocity_FreeStreamND()[2] << "). ";
+    }
+    Breakdown_file << "Magnitude: "	 << config[val_iZone]->GetModVel_FreeStreamND() << endl;
+    
+    if (compressible)
+      Breakdown_file << "Free-stream total energy per unit mass (non-dim): " << config[val_iZone]->GetEnergy_FreeStreamND() << endl;
+    
+    if (viscous) {
+      Breakdown_file << "Free-stream viscosity (non-dim): " << config[val_iZone]->GetViscosity_FreeStreamND() << endl;
+      if (turbulent){
+        Breakdown_file << "Free-stream turb. kinetic energy (non-dim): " << config[val_iZone]->GetTke_FreeStreamND() << endl;
+        Breakdown_file << "Free-stream specific dissipation (non-dim): " << config[val_iZone]->GetOmega_FreeStreamND() << endl;
+      }
+    }
+    
+    if (unsteady) {
+      Breakdown_file << "Total time (non-dim): " << config[val_iZone]->GetTotal_UnstTimeND() << endl;
+      Breakdown_file << "Time step (non-dim): " << config[val_iZone]->GetDelta_UnstTimeND() << endl;
+    }
+    
     Breakdown_file << endl << endl <<"Forces breakdown:" << endl << endl;
-
+    
     Breakdown_file << "Total CL:    ";
     Breakdown_file.width(11); Breakdown_file << Total_CLift;
-    Breakdown_file << " | Inviscid CL    (";
+    Breakdown_file << " | Pressure Component (";
     Breakdown_file.width(5); Breakdown_file << int((Inv_CLift*100.0)/(Total_CLift+EPS));
     Breakdown_file << "%): ";
     Breakdown_file.width(11); Breakdown_file << Inv_CLift;
-    Breakdown_file << " | Viscous CL    (";
+    Breakdown_file << " | Friction Component (";
     Breakdown_file.width(5); Breakdown_file << int(100.0-(Inv_CLift*100.0)/(Total_CLift+EPS));
     Breakdown_file << "%): ";
     Breakdown_file.width(11); Breakdown_file << Total_CLift-Inv_CLift << endl;
     
     Breakdown_file << "Total CD:    ";
     Breakdown_file.width(11); Breakdown_file << Total_CDrag;
-    Breakdown_file << " | Inviscid CD    (";
+    Breakdown_file << " | Pressure Component (";
     Breakdown_file.width(5); Breakdown_file << int((Inv_CDrag*100.0)/(Total_CDrag+EPS)) << "%): ";;
     Breakdown_file.width(11); Breakdown_file << Inv_CDrag;
-    Breakdown_file << " | Viscous CD    (";
+    Breakdown_file << " | Friction Component (";
     Breakdown_file.width(5); Breakdown_file << int(100.0-(Inv_CDrag*100.0)/(Total_CDrag+EPS));
     Breakdown_file << "%): ";
     Breakdown_file.width(11); Breakdown_file << Total_CDrag-Inv_CDrag << endl;
@@ -5694,11 +5985,11 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
     if (nDim == 3) {
       Breakdown_file << "Total CSF:   ";
       Breakdown_file.width(11); Breakdown_file << Total_CSideForce;
-      Breakdown_file << " | Inviscid CSF   (";
+      Breakdown_file << " | Pressure Component (";
       Breakdown_file.width(5); Breakdown_file << int((Inv_CSideForce*100.0)/(Total_CSideForce+EPS));
       Breakdown_file << "%): ";
       Breakdown_file.width(11); Breakdown_file << Inv_CSideForce;
-      Breakdown_file << " | Viscous CSF   (";
+      Breakdown_file << " | Friction Component (";
       Breakdown_file.width(5); Breakdown_file << int(100.0-(Inv_CSideForce*100.0)/(Total_CSideForce+EPS));
       Breakdown_file << "%): ";
       Breakdown_file.width(11); Breakdown_file << Total_CSideForce-Inv_CSideForce << endl;
@@ -5706,11 +5997,11 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
 
     Breakdown_file << "Total CL/CD: ";
     Breakdown_file.width(11); Breakdown_file << Total_CEff;
-    Breakdown_file << " | Inviscid CL/CD (";
+    Breakdown_file << " | Pressure Component (";
     Breakdown_file.width(5); Breakdown_file << int((Inv_CEff*100.0)/(Total_CEff+EPS));
     Breakdown_file << "%): ";
     Breakdown_file.width(11); Breakdown_file << Inv_CEff;
-    Breakdown_file << " | Viscous CL/CD (";
+    Breakdown_file << " | Friction Component (";
     Breakdown_file.width(5); Breakdown_file << int(100.0-(Inv_CEff*100.0)/(Total_CEff+EPS));
     Breakdown_file << "%): ";
     Breakdown_file.width(11); Breakdown_file << Total_CEff-Inv_CEff << endl;
@@ -5718,22 +6009,22 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
     if (nDim == 3) {
       Breakdown_file << "Total CMx:   ";
       Breakdown_file.width(11); Breakdown_file << Total_CMx;
-      Breakdown_file << " | Inviscid CMx   (";
+      Breakdown_file << " | Pressure Component (";
       Breakdown_file.width(5); Breakdown_file << int((Inv_CMx*100.0)/(Total_CMx+EPS));
       Breakdown_file << "%): ";
       Breakdown_file.width(11); Breakdown_file << Inv_CMx;
-      Breakdown_file << " | Viscous CMx   (";
+      Breakdown_file << " | Friction Component (";
       Breakdown_file.width(5); Breakdown_file << int(100.0-(Inv_CMx*100.0)/(Total_CMx+EPS));
       Breakdown_file << "%): ";
       Breakdown_file.width(11); Breakdown_file << Total_CMx-Inv_CMx << endl;
       
       Breakdown_file << "Total CMy:   ";
       Breakdown_file.width(11); Breakdown_file << Total_CMy;
-      Breakdown_file << " | Inviscid CMy   (";
+      Breakdown_file << " | Pressure Component (";
       Breakdown_file.width(5); Breakdown_file << int((Inv_CMy*100.0)/(Total_CMy+EPS));
       Breakdown_file << "%): ";
       Breakdown_file.width(11); Breakdown_file << Inv_CMy;
-      Breakdown_file << " | Viscous CMy   (";
+      Breakdown_file << " | Friction Component (";
       Breakdown_file.width(5); Breakdown_file << int(100.0-(Inv_CMy*100.0)/(Total_CMy+EPS));
       Breakdown_file << "%): ";
       Breakdown_file.width(11); Breakdown_file << Total_CMy-Inv_CMy << endl;
@@ -5741,33 +6032,33 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
 
     Breakdown_file << "Total CMz:   ";
     Breakdown_file.width(11); Breakdown_file << Total_CMz;
-    Breakdown_file << " | Inviscid CMz   (";
+    Breakdown_file << " | Pressure Component (";
     Breakdown_file.width(5); Breakdown_file << int((Inv_CMz*100.0)/(Total_CMz+EPS));
     Breakdown_file << "%): ";
     Breakdown_file.width(11); Breakdown_file << Inv_CMz;
-    Breakdown_file << " | Viscous CMz   (";
+    Breakdown_file << " | Friction Component (";
     Breakdown_file.width(5); Breakdown_file << int(100.0-(Inv_CMz*100.0)/(Total_CMz+EPS));
     Breakdown_file << "%): ";
     Breakdown_file.width(11); Breakdown_file << Total_CMz-Inv_CMz << endl;
 
     Breakdown_file << "Total CFx:   ";
     Breakdown_file.width(11); Breakdown_file << Total_CFx;
-    Breakdown_file << " | Inviscid CFx   (";
+    Breakdown_file << " | Pressure Component (";
     Breakdown_file.width(5); Breakdown_file << int((Inv_CFx*100.0)/(Total_CFx+EPS));
     Breakdown_file << "%): ";
     Breakdown_file.width(11); Breakdown_file << Inv_CFx;
-    Breakdown_file << " | Viscous CFx   (";
+    Breakdown_file << " | Friction Component (";
     Breakdown_file.width(5); Breakdown_file << int(100.0-(Inv_CFx*100.0)/(Total_CFx+EPS));
     Breakdown_file << "%): ";
     Breakdown_file.width(11); Breakdown_file << Total_CFx-Inv_CFx << endl;
 
     Breakdown_file << "Total CFy:   ";
     Breakdown_file.width(11); Breakdown_file << Total_CFy;
-    Breakdown_file << " | Inviscid CFy   (";
+    Breakdown_file << " | Pressure Component (";
     Breakdown_file.width(5); Breakdown_file << int((Inv_CFy*100.0)/(Total_CFy+EPS));
     Breakdown_file << "%): ";
     Breakdown_file.width(11); Breakdown_file << Inv_CFy;
-    Breakdown_file << " | Viscous CFy   (";
+    Breakdown_file << " | Friction Component (";
     Breakdown_file.width(5); Breakdown_file << int(100.0-(Inv_CFy*100.0)/(Total_CFy+EPS));
     Breakdown_file << "%): ";
     Breakdown_file.width(11); Breakdown_file << Total_CFy-Inv_CFy << endl;
@@ -5775,11 +6066,11 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
     if (nDim == 3) {
       Breakdown_file << "Total CFz:   ";
       Breakdown_file.width(11); Breakdown_file << Total_CFz;
-      Breakdown_file << " | Inviscid CFz   (";
+      Breakdown_file << " | Pressure Component (";
       Breakdown_file.width(5); Breakdown_file << int((Inv_CFz*100.0)/(Total_CFz+EPS));
       Breakdown_file << "%): ";
       Breakdown_file.width(11); Breakdown_file << Inv_CFz;
-      Breakdown_file << " | Viscous CFz   (";
+      Breakdown_file << " | Friction Component (";
       Breakdown_file.width(5); Breakdown_file << int(100.0-(Inv_CFz*100.0)/(Total_CFz+EPS));
       Breakdown_file << "%): ";
       Breakdown_file.width(11); Breakdown_file << Total_CFz-Inv_CFz << endl;
@@ -5787,7 +6078,7 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
     
     Breakdown_file << endl << endl;
 
-    for (iMarker_Monitoring = 0; iMarker_Monitoring < config[ZONE_0]->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+    for (iMarker_Monitoring = 0; iMarker_Monitoring < config[val_iZone]->GetnMarker_Monitoring(); iMarker_Monitoring++) {
       
       Breakdown_file << "Surface name: " << config[val_iZone]->GetMarker_Monitoring(iMarker_Monitoring) << endl << endl;
       
@@ -5795,11 +6086,11 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
       Breakdown_file.width(5); Breakdown_file << int((Surface_CLift[iMarker_Monitoring]*100.0)/(Total_CLift+EPS));
       Breakdown_file << "%): ";
       Breakdown_file.width(11); Breakdown_file << Surface_CLift[iMarker_Monitoring];
-      Breakdown_file << " | Inviscid CL    (";
+      Breakdown_file << " | Pressure Component (";
       Breakdown_file.width(5); Breakdown_file << int((Surface_CLift_Inv[iMarker_Monitoring]*100.0)/(Surface_CLift[iMarker_Monitoring]+EPS));
       Breakdown_file << "%): ";
       Breakdown_file.width(11); Breakdown_file << Surface_CLift_Inv[iMarker_Monitoring];
-      Breakdown_file << " | Viscous CL    (";
+      Breakdown_file << " | Friction Component (";
       Breakdown_file.width(5); Breakdown_file << int(100.0-(Surface_CLift_Inv[iMarker_Monitoring]*100.0)/(Surface_CLift[iMarker_Monitoring]+EPS));
       Breakdown_file << "%): ";
       Breakdown_file.width(11); Breakdown_file << Surface_CLift[iMarker_Monitoring]-Surface_CLift_Inv[iMarker_Monitoring] << endl;
@@ -5808,11 +6099,11 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
       Breakdown_file.width(5); Breakdown_file << int((Surface_CDrag[iMarker_Monitoring]*100.0)/(Total_CDrag+EPS));
       Breakdown_file << "%): ";
       Breakdown_file.width(11); Breakdown_file << Surface_CDrag[iMarker_Monitoring];
-      Breakdown_file << " | Inviscid CD    (";
+      Breakdown_file << " | Pressure Component (";
       Breakdown_file.width(5); Breakdown_file << int((Surface_CDrag_Inv[iMarker_Monitoring]*100.0)/(Surface_CDrag[iMarker_Monitoring]+EPS));
       Breakdown_file << "%): ";
       Breakdown_file.width(11); Breakdown_file << Surface_CDrag_Inv[iMarker_Monitoring];
-      Breakdown_file << " | Viscous CD    (";
+      Breakdown_file << " | Friction Component (";
       Breakdown_file.width(5); Breakdown_file << int(100.0-(Surface_CDrag_Inv[iMarker_Monitoring]*100.0)/(Surface_CDrag[iMarker_Monitoring]+EPS));
       Breakdown_file << "%): ";
       Breakdown_file.width(11); Breakdown_file << Surface_CDrag[iMarker_Monitoring]-Surface_CDrag_Inv[iMarker_Monitoring] << endl;
@@ -5822,11 +6113,11 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
         Breakdown_file.width(5); Breakdown_file << int((Surface_CSideForce[iMarker_Monitoring]*100.0)/(Total_CSideForce+EPS));
         Breakdown_file << "%): ";
         Breakdown_file.width(11); Breakdown_file << Surface_CSideForce[iMarker_Monitoring];
-        Breakdown_file << " | Inviscid CSF   (";
+        Breakdown_file << " | Pressure Component (";
         Breakdown_file.width(5); Breakdown_file << int((Surface_CSideForce_Inv[iMarker_Monitoring]*100.0)/(Surface_CSideForce[iMarker_Monitoring]+EPS));
         Breakdown_file << "%): ";
         Breakdown_file.width(11); Breakdown_file << Surface_CSideForce_Inv[iMarker_Monitoring];
-        Breakdown_file << " | Viscous CSF   (";
+        Breakdown_file << " | Friction Component (";
         Breakdown_file.width(5); Breakdown_file << int(100.0-(Surface_CSideForce_Inv[iMarker_Monitoring]*100.0)/(Surface_CSideForce[iMarker_Monitoring]+EPS));
         Breakdown_file << "%): ";
         Breakdown_file.width(11); Breakdown_file << Surface_CSideForce[iMarker_Monitoring]-Surface_CSideForce_Inv[iMarker_Monitoring] << endl;
@@ -5836,11 +6127,11 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
       Breakdown_file.width(5); Breakdown_file << int((Surface_CEff[iMarker_Monitoring]*100.0)/(Total_CEff+EPS));
       Breakdown_file << "%): ";
       Breakdown_file.width(11); Breakdown_file << Surface_CEff[iMarker_Monitoring];
-      Breakdown_file << " | Inviscid CL/CD (";
+      Breakdown_file << " | Pressure Component (";
       Breakdown_file.width(5); Breakdown_file << int((Surface_CEff_Inv[iMarker_Monitoring]*100.0)/(Surface_CEff[iMarker_Monitoring]+EPS));
       Breakdown_file << "%): ";
       Breakdown_file.width(11); Breakdown_file << Surface_CEff_Inv[iMarker_Monitoring];
-      Breakdown_file << " | Viscous CL/CD (";
+      Breakdown_file << " | Friction Component (";
       Breakdown_file.width(5); Breakdown_file << int(100.0-(Surface_CEff_Inv[iMarker_Monitoring]*100.0)/(Surface_CEff[iMarker_Monitoring]+EPS));
       Breakdown_file << "%): ";
 
@@ -5852,11 +6143,11 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
         Breakdown_file.width(5); Breakdown_file << int((Surface_CMx[iMarker_Monitoring]*100.0)/(Total_CMx+EPS));
         Breakdown_file << "%): ";
         Breakdown_file.width(11); Breakdown_file << Surface_CMx[iMarker_Monitoring];
-        Breakdown_file << " | Inviscid CMx   (";
+        Breakdown_file << " | Pressure Component (";
         Breakdown_file.width(5); Breakdown_file << int((Surface_CMx_Inv[iMarker_Monitoring]*100.0)/(Surface_CMx[iMarker_Monitoring]+EPS));
         Breakdown_file << "%): ";
         Breakdown_file.width(11); Breakdown_file << Surface_CMx_Inv[iMarker_Monitoring];
-        Breakdown_file << " | Viscous CMx   (";
+        Breakdown_file << " | Friction Component (";
         Breakdown_file.width(5); Breakdown_file << int(100.0-(Surface_CMx_Inv[iMarker_Monitoring]*100.0)/(Surface_CMx[iMarker_Monitoring]+EPS));
         Breakdown_file << "%): ";
         Breakdown_file.width(11); Breakdown_file << Surface_CMx[iMarker_Monitoring]-Surface_CMx_Inv[iMarker_Monitoring] << endl;
@@ -5865,11 +6156,11 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
         Breakdown_file.width(5); Breakdown_file << int((Surface_CMy[iMarker_Monitoring]*100.0)/(Total_CMy+EPS));
         Breakdown_file << "%): ";
         Breakdown_file.width(11); Breakdown_file << Surface_CMy[iMarker_Monitoring];
-        Breakdown_file << " | Inviscid CMy   (";
+        Breakdown_file << " | Pressure Component (";
         Breakdown_file.width(5); Breakdown_file << int((Surface_CMy_Inv[iMarker_Monitoring]*100.0)/(Surface_CMy[iMarker_Monitoring]+EPS));
         Breakdown_file << "%): ";
         Breakdown_file.width(11); Breakdown_file << Surface_CMy_Inv[iMarker_Monitoring];
-        Breakdown_file << " | Viscous CMy   (";
+        Breakdown_file << " | Friction Component (";
         Breakdown_file.width(5); Breakdown_file << int(100.0-(Surface_CMy_Inv[iMarker_Monitoring]*100.0)/(Surface_CMy[iMarker_Monitoring]+EPS));
         Breakdown_file << "%): ";
         Breakdown_file.width(11); Breakdown_file << Surface_CMy[iMarker_Monitoring]-Surface_CMy_Inv[iMarker_Monitoring] << endl;
@@ -5879,11 +6170,11 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
       Breakdown_file.width(5); Breakdown_file << int((Surface_CMz[iMarker_Monitoring]*100.0)/(Total_CMz+EPS));
       Breakdown_file << "%): ";
       Breakdown_file.width(11); Breakdown_file << Surface_CMz[iMarker_Monitoring];
-      Breakdown_file << " | Inviscid CMz   (";
+      Breakdown_file << " | Pressure Component (";
       Breakdown_file.width(5); Breakdown_file << int((Surface_CMz_Inv[iMarker_Monitoring]*100.0)/(Surface_CMz[iMarker_Monitoring]+EPS));
       Breakdown_file << "%): ";
       Breakdown_file.width(11); Breakdown_file << Surface_CMz_Inv[iMarker_Monitoring];
-      Breakdown_file << " | Viscous CMz   (";
+      Breakdown_file << " | Friction Component (";
       Breakdown_file.width(5); Breakdown_file << int(100.0-(Surface_CMz_Inv[iMarker_Monitoring]*100.0)/(Surface_CMz[iMarker_Monitoring]+EPS));
       Breakdown_file << "%): ";
       Breakdown_file.width(11); Breakdown_file << Surface_CMz[iMarker_Monitoring]-Surface_CMz_Inv[iMarker_Monitoring] << endl;
@@ -5892,11 +6183,11 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
       Breakdown_file.width(5); Breakdown_file << int((Surface_CFx[iMarker_Monitoring]*100.0)/(Total_CFx+EPS));
       Breakdown_file << "%): ";
       Breakdown_file.width(11); Breakdown_file << Surface_CFx[iMarker_Monitoring];
-      Breakdown_file << " | Inviscid CFx   (";
+      Breakdown_file << " | Pressure Component (";
       Breakdown_file.width(5); Breakdown_file << int((Surface_CFx_Inv[iMarker_Monitoring]*100.0)/(Surface_CFx[iMarker_Monitoring]+EPS));
       Breakdown_file << "%): ";
       Breakdown_file.width(11); Breakdown_file << Surface_CFx_Inv[iMarker_Monitoring];
-      Breakdown_file << " | Viscous CFx   (";
+      Breakdown_file << " | Friction Component (";
       Breakdown_file.width(5); Breakdown_file << int(100.0-(Surface_CFx_Inv[iMarker_Monitoring]*100.0)/(Surface_CFx[iMarker_Monitoring]+EPS));
       Breakdown_file << "%): ";
       Breakdown_file.width(11); Breakdown_file << Surface_CFx[iMarker_Monitoring]-Surface_CFx_Inv[iMarker_Monitoring] << endl;
@@ -5905,11 +6196,11 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
       Breakdown_file.width(5); Breakdown_file << int((Surface_CFy[iMarker_Monitoring]*100.0)/(Total_CFy+EPS));
       Breakdown_file << "%): ";
       Breakdown_file.width(11); Breakdown_file << Surface_CFy[iMarker_Monitoring];
-      Breakdown_file << " | Inviscid CFy   (";
+      Breakdown_file << " | Pressure Component (";
       Breakdown_file.width(5); Breakdown_file << int((Surface_CFy_Inv[iMarker_Monitoring]*100.0)/(Surface_CFy[iMarker_Monitoring]+EPS));
       Breakdown_file << "%): ";
       Breakdown_file.width(11); Breakdown_file << Surface_CFy_Inv[iMarker_Monitoring];
-      Breakdown_file << " | Viscous CFy   (";
+      Breakdown_file << " | Friction Component (";
       Breakdown_file.width(5); Breakdown_file << int(100.0-(Surface_CFy_Inv[iMarker_Monitoring]*100.0)/(Surface_CFy[iMarker_Monitoring]+EPS));
       Breakdown_file << "%): ";
       Breakdown_file.width(11); Breakdown_file << Surface_CFy[iMarker_Monitoring]-Surface_CFy_Inv[iMarker_Monitoring] << endl;
@@ -5919,11 +6210,11 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
         Breakdown_file.width(5); Breakdown_file << int((Surface_CFz[iMarker_Monitoring]*100.0)/(Total_CFz+EPS));
         Breakdown_file << "%): ";
         Breakdown_file.width(11); Breakdown_file << Surface_CFz[iMarker_Monitoring];
-        Breakdown_file << " | Inviscid CFz  (";
+        Breakdown_file << " | Pressure Component (";
         Breakdown_file.width(5); Breakdown_file << int((Surface_CFz_Inv[iMarker_Monitoring]*100.0)/(Surface_CFz[iMarker_Monitoring]+EPS));
         Breakdown_file << "%): ";
         Breakdown_file.width(11); Breakdown_file << Surface_CFz_Inv[iMarker_Monitoring];
-        Breakdown_file << " | Viscous CFz (";
+        Breakdown_file << " | Friction Component (";
         Breakdown_file.width(5); Breakdown_file << int(100.0-(Surface_CFz_Inv[iMarker_Monitoring]*100.0)/(Surface_CFz[iMarker_Monitoring]+EPS));
         Breakdown_file << "%): ";
         Breakdown_file.width(11); Breakdown_file << Surface_CFz[iMarker_Monitoring]-Surface_CFz_Inv[iMarker_Monitoring] << endl;
@@ -5992,9 +6283,8 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
 #endif
     
     bool Wrt_Csv = config[iZone]->GetWrt_Csv_Sol();
-    bool Wrt_Rst = config[iZone]->GetWrt_Restart();
     
-    if (rank == MASTER_NODE) cout << endl << "Writing Comma-separated values surface files." << endl;
+    if (rank == MASTER_NODE) cout << endl << "Writing Comma-Separated Values surface files." << endl;
 
     switch (config[iZone]->GetKind_Solver()) {
         
@@ -6026,9 +6316,6 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
     
     unsigned short FileFormat = config[iZone]->GetOutput_FileFormat();
     
-    bool dynamic_mesh = (config[iZone]->GetUnsteady_Simulation() &&
-                         config[iZone]->GetGrid_Movement());
-    
     /*--- Merge the node coordinates and connectivity, if necessary. This
      is only performed if a volume solution file is requested, and it
      is active by default. ---*/
@@ -6046,12 +6333,7 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
     MergeCoordinates(config[iZone], geometry[iZone][MESH_0]);
     
     if (rank == MASTER_NODE) {
-      if (FileFormat == CGNS_SOL) {
-        SetCGNS_Coordinates(config[iZone], geometry[iZone][MESH_0], iZone);
-        if (!wrote_base_file || dynamic_mesh)
-          DeallocateCoordinates(config[iZone], geometry[iZone][MESH_0]);
-      }
-      else if (FileFormat == TECPLOT_BINARY) {
+      if (FileFormat == TECPLOT_BINARY) {
         SetTecplot_MeshBinary(config[iZone], geometry[iZone][MESH_0], iZone);
         SetTecplot_SurfaceMesh(config[iZone], geometry[iZone][MESH_0], iZone);
         if (!wrote_base_file)
@@ -6063,13 +6345,10 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
     
     /*--- Merge the solution data needed for volume solutions and restarts ---*/
     
-    if (Wrt_Vol || Wrt_Srf || Wrt_Rst) {
-      if (rank == MASTER_NODE) cout << "Merging solution in the Master node." << endl;
-      MergeSolution(config[iZone], geometry[iZone][MESH_0],
-                    solver_container[iZone][MESH_0], iZone);
-    }
+    if (rank == MASTER_NODE) cout << "Merging solution in the Master node." << endl;
+    MergeSolution(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0], iZone);
     
-    /*--- Write restart, CGNS, or Tecplot files using the merged data.
+    /*--- Write restart, or Tecplot files using the merged data.
      This data lives only on the master, and these routines are currently
      executed by the master proc alone (as if in serial). ---*/
     
@@ -6077,10 +6356,8 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
       
       /*--- Write a native restart file ---*/
       
-      if (Wrt_Rst) {
-        if (rank == MASTER_NODE) cout << "Writing SU2 native restart file." << endl;
-        SetRestart(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0] ,iZone);
-      }
+      if (rank == MASTER_NODE) cout << "Writing SU2 native restart file." << endl;
+      SetRestart(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0] ,iZone);
       
       if (Wrt_Vol) {
         
@@ -6103,13 +6380,6 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
             SetTecplot_Solution(config[iZone], geometry[iZone][MESH_0], iZone);
             break;
             
-          case CGNS_SOL:
-            
-            /*--- Write a CGNS solution file ---*/
-            
-            if (rank == MASTER_NODE) cout << "Writing CGNS Binary file (volume grid)." << endl;
-            SetCGNS_Solution(config[iZone], geometry[iZone][MESH_0], iZone);
-            break;
             
           case PARAVIEW:
             
@@ -6164,15 +6434,8 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
       
       /*--- Release memory needed for merging the solution data. ---*/
       
-      if ((Wrt_Vol || Wrt_Srf) && (FileFormat == TECPLOT ||
-                                   FileFormat == TECPLOT_BINARY ||
-                                   FileFormat == PARAVIEW)) {
-        DeallocateCoordinates(config[iZone], geometry[iZone][MESH_0]);
-      }
-      
-      if (Wrt_Vol || Wrt_Srf || Wrt_Rst) {
-        DeallocateSolution(config[iZone], geometry[iZone][MESH_0]);
-      }
+      DeallocateCoordinates(config[iZone], geometry[iZone][MESH_0]);
+      DeallocateSolution(config[iZone], geometry[iZone][MESH_0]);
       
     }
     
@@ -6206,7 +6469,6 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
     bool Low_MemoryOutput = config[iZone]->GetLow_MemoryOutput();
     bool Wrt_Vol = config[iZone]->GetWrt_Vol_Sol();
     bool Wrt_Srf = config[iZone]->GetWrt_Srf_Sol();
-    bool Wrt_Rst = config[iZone]->GetWrt_Restart();
     
     /*--- Get the file output format ---*/
     
@@ -6223,12 +6485,12 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
     
     /*--- Merge the solution data needed for volume solutions and restarts ---*/
     
-    if ((Wrt_Vol || Wrt_Srf || Wrt_Rst) && (!Low_MemoryOutput)) {
+    if ((Wrt_Vol || Wrt_Srf) && (!Low_MemoryOutput)) {
       if (rank == MASTER_NODE) cout << "Merging solution in the Master node." << endl;
       MergeBaselineSolution(config[iZone], geometry[iZone], solver[iZone], iZone);
     }
     
-    /*--- Write restart, CGNS, Tecplot or Paraview files using the merged data.
+    /*--- Write restart, Tecplot or Paraview files using the merged data.
      This data lives only on the master, and these routines are currently
      executed by the master proc alone (as if in serial). ---*/
     
@@ -6256,14 +6518,6 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
               if (rank == MASTER_NODE) cout << "Writing Tecplot Binary file (volume grid)." << endl;
               SetTecplot_MeshBinary(config[iZone], geometry[iZone], iZone);
               SetTecplot_Solution(config[iZone], geometry[iZone], iZone);
-              break;
-              
-            case CGNS_SOL:
-              
-              /*--- Write a CGNS solution file ---*/
-              
-              if (rank == MASTER_NODE) cout << "Writing CGNS Binary file (volume grid)." << endl;
-              SetCGNS_Solution(config[iZone], geometry[iZone], iZone);
               break;
               
             case PARAVIEW:
@@ -6387,8 +6641,8 @@ void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned sho
     
     /*--- Flags identifying the types of files to be written. ---*/
     
-    bool Wrt_Vol = config[iZone]->GetWrt_Vol_Sol();
-    bool Wrt_Srf = config[iZone]->GetWrt_Srf_Sol();
+    bool Wrt_Vol = config[iZone]->GetWrt_Vol_Sol() && config[iZone]->GetVisualize_Deformation();
+    bool Wrt_Srf = config[iZone]->GetWrt_Srf_Sol() && config[iZone]->GetVisualize_Deformation();;
     
     /*--- Merge the node coordinates and connectivity if necessary. This
      is only performed if a volume solution file is requested, and it
@@ -6405,7 +6659,7 @@ void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned sho
     
     MergeCoordinates(config[iZone], geometry[iZone]);
     
-    /*--- Write restart, CGNS, Tecplot or Paraview files using the merged data.
+    /*--- Write restart, Tecplot or Paraview files using the merged data.
      This data lives only on the master, and these routines are currently
      executed by the master proc alone (as if in serial). ---*/
     
@@ -6418,7 +6672,6 @@ void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned sho
         /*--- Write a Tecplot ASCII file ---*/
         
         SetTecplot_MeshASCII(config[iZone], geometry[iZone], false, new_file);
-        DeallocateConnectivity(config[iZone], geometry[iZone], false);
         
       }
       
@@ -6429,9 +6682,18 @@ void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned sho
         /*--- Write a Tecplot ASCII file ---*/
         
         SetTecplot_MeshASCII(config[iZone], geometry[iZone], true, new_file);
-        DeallocateConnectivity(config[iZone], geometry[iZone], true);
         
       }
+
+      if (rank == MASTER_NODE) cout <<"Writing .su2 file." << endl;
+      
+      /*--- Write a .su2 ASCII file ---*/
+      
+      SetSU2_MeshASCII(config[iZone], geometry[iZone]);
+      
+      /*--- Deallocate connectivity ---*/
+
+      DeallocateConnectivity(config[iZone], geometry[iZone], true);
       
     }
     
@@ -6713,11 +6975,11 @@ void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry, C
         
         ofstream Cp_File;
         if (iSection == 0) {
-          Cp_File.open("Cp_Sections.dat", ios::out);
+          Cp_File.open("cp_sections.dat", ios::out);
           Cp_File << "TITLE = \"Airfoil sections\"" << endl;
           Cp_File << "VARIABLES = \"X\",\"Y\",\"Z\",\"Cp\"" << endl;
         }
-        else Cp_File.open("Cp_Sections.dat", ios::app);
+        else Cp_File.open("cp_sections.dat", ios::app);
         
         Cp_File << "ZONE T=\"SECTION_"<< (iSection+1) << "\", NODES= "<< Xcoord_Airfoil.size() << ", ELEMENTS= " << Xcoord_Airfoil.size()-1 << ", DATAPACKING= POINT, ZONETYPE= FELINESEG" << endl;
         
@@ -6776,12 +7038,12 @@ void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry, C
         
         ofstream Load_File;
         if (iSection == 0) {
-          Load_File.open("Load_Distribution.dat", ios::out);
+          Load_File.open("load_distribution.dat", ios::out);
           Load_File << "TITLE = \"Load distribution\"" << endl;
           Load_File << "VARIABLES = \"Y\",\"C<sub>L</sub>\",\"C<sub>D</sub>\",\"C<supb>My</sub>\"" << endl;
           Load_File << "ZONE T=\"Wing load distribution\", NODES= "<< nSection << ", ELEMENTS= " << nSection-1 << ", DATAPACKING= POINT, ZONETYPE= FELINESEG" << endl;
         }
-        else Load_File.open("Load_Distribution.dat", ios::app);
+        else Load_File.open("load_distribution.dat", ios::app);
         
         /*--- Coordinates and pressure value ---*/
         
@@ -7270,8 +7532,10 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
   unsigned long nLocalVertex_NearField = 0, MaxLocalVertex_NearField = 0;
   int iProcessor;
   
-  unsigned long *Buffer_Receive_nVertex = new unsigned long [nProcessor];
-  unsigned long *Buffer_Send_nVertex = new unsigned long [1];
+  unsigned long *Buffer_Receive_nVertex = NULL;
+  if (rank == MASTER_NODE) {
+    Buffer_Receive_nVertex = new unsigned long [nProcessor];
+  }
   
   /*--- Compute the total number of points of the near-field ghost nodes ---*/
   
@@ -7288,14 +7552,16 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
             nLocalVertex_NearField ++;
       }
   
+  unsigned long *Buffer_Send_nVertex = new unsigned long [1];
   Buffer_Send_nVertex[0] = nLocalVertex_NearField;
   
   /*--- Send Near-Field vertex information --*/
   
   MPI_Allreduce(&nLocalVertex_NearField, &nVertex_NearField, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
   MPI_Allreduce(&nLocalVertex_NearField, &MaxLocalVertex_NearField, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
-  MPI_Allgather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-  
+  MPI_Gather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+  delete [] Buffer_Send_nVertex;
+
   double *Buffer_Send_Xcoord = new double[MaxLocalVertex_NearField];
   double *Buffer_Send_Ycoord = new double[MaxLocalVertex_NearField];
   double *Buffer_Send_Zcoord = new double[MaxLocalVertex_NearField];
@@ -7303,12 +7569,21 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
   double *Buffer_Send_Pressure = new double [MaxLocalVertex_NearField];
   double *Buffer_Send_FaceArea = new double[MaxLocalVertex_NearField];
   
-  double *Buffer_Receive_Xcoord = new double[nProcessor*MaxLocalVertex_NearField];
-  double *Buffer_Receive_Ycoord = new double[nProcessor*MaxLocalVertex_NearField];
-  double *Buffer_Receive_Zcoord = new double[nProcessor*MaxLocalVertex_NearField];
-  unsigned long *Buffer_Receive_IdPoint = new unsigned long[nProcessor*MaxLocalVertex_NearField];
-  double *Buffer_Receive_Pressure = new double[nProcessor*MaxLocalVertex_NearField];
-  double *Buffer_Receive_FaceArea = new double[nProcessor*MaxLocalVertex_NearField];
+  double *Buffer_Receive_Xcoord = NULL;
+  double *Buffer_Receive_Ycoord = NULL;
+  double *Buffer_Receive_Zcoord = NULL;
+  unsigned long *Buffer_Receive_IdPoint = NULL;
+  double *Buffer_Receive_Pressure = NULL;
+  double *Buffer_Receive_FaceArea = NULL;
+  
+  if (rank == MASTER_NODE) {
+    Buffer_Receive_Xcoord = new double[nProcessor*MaxLocalVertex_NearField];
+    Buffer_Receive_Ycoord = new double[nProcessor*MaxLocalVertex_NearField];
+    Buffer_Receive_Zcoord = new double[nProcessor*MaxLocalVertex_NearField];
+    Buffer_Receive_IdPoint = new unsigned long[nProcessor*MaxLocalVertex_NearField];
+    Buffer_Receive_Pressure = new double[nProcessor*MaxLocalVertex_NearField];
+    Buffer_Receive_FaceArea = new double[nProcessor*MaxLocalVertex_NearField];
+  }
   
   unsigned long nBuffer_Xcoord = MaxLocalVertex_NearField;
   unsigned long nBuffer_Ycoord = MaxLocalVertex_NearField;
@@ -7353,7 +7628,13 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
   MPI_Gather(Buffer_Send_IdPoint, nBuffer_IdPoint, MPI_UNSIGNED_LONG, Buffer_Receive_IdPoint, nBuffer_IdPoint, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
   MPI_Gather(Buffer_Send_Pressure, nBuffer_Pressure, MPI_DOUBLE, Buffer_Receive_Pressure, nBuffer_Pressure, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
   MPI_Gather(Buffer_Send_FaceArea, nBuffer_FaceArea, MPI_DOUBLE, Buffer_Receive_FaceArea, nBuffer_FaceArea, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-  
+  delete [] Buffer_Send_Xcoord;
+  delete [] Buffer_Send_Ycoord;
+  delete [] Buffer_Send_Zcoord;
+  delete [] Buffer_Send_IdPoint;
+  delete [] Buffer_Send_Pressure;
+  delete [] Buffer_Send_FaceArea;
+
   if (rank == MASTER_NODE) {
     
     Xcoord = new double[nVertex_NearField];
@@ -7414,22 +7695,17 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
         }
         
       }
+    
+    delete [] Buffer_Receive_nVertex;
+    
+    delete [] Buffer_Receive_Xcoord;
+    delete [] Buffer_Receive_Ycoord;
+    delete [] Buffer_Receive_Zcoord;
+    delete [] Buffer_Receive_IdPoint;
+    delete [] Buffer_Receive_Pressure;
+    delete [] Buffer_Receive_FaceArea;
+    
   }
-  
-  delete [] Buffer_Receive_nVertex;
-  delete [] Buffer_Send_nVertex;
-  
-  delete [] Buffer_Send_Xcoord;
-  delete [] Buffer_Send_Ycoord;
-  delete [] Buffer_Send_Zcoord;
-  delete [] Buffer_Send_IdPoint;
-  delete [] Buffer_Send_Pressure;
-  delete [] Buffer_Send_FaceArea;
-  
-  delete [] Buffer_Receive_Xcoord;
-  delete [] Buffer_Receive_IdPoint;
-  delete [] Buffer_Receive_Pressure;
-  delete [] Buffer_Receive_FaceArea;
   
 #endif
   

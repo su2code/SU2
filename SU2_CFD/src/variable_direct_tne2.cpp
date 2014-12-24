@@ -2,7 +2,7 @@
  * \file variable_direct_tne2.cpp
  * \brief Definition of the solution fields.
  * \author S. Copeland
- * \version 3.2.5 "eagle"
+ * \version 3.2.6 "eagle"
  *
  * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
  *

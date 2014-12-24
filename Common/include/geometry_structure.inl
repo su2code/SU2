@@ -2,7 +2,7 @@
  * \file geometry_structure.inl
  * \brief In-Line subroutines of the <i>geometry_structure.hpp</i> file.
  * \author F. Palacios
- * \version 3.2.5 "eagle"
+ * \version 3.2.6 "eagle"
  *
  * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
  *
@@ -83,6 +83,8 @@ inline void CGeometry::SetPeriodicBoundary(CConfig *config) { }
 inline void CGeometry::SetPeriodicBoundary(CGeometry *geometry, CConfig *config) { }
 
 inline void CGeometry::SetSendReceive(CConfig *config) { }
+
+inline void CGeometry::SetBoundaries(CConfig *config) { }
 
 inline void CGeometry::ComputeWall_Distance(CConfig *config) { }
 
@@ -175,8 +177,6 @@ inline void CGeometry::SetTecPlot(char config_filename[MAX_STRING_SIZE], bool ne
 inline void CGeometry::SetMeshFile(CConfig *config, string val_mesh_out_filename) { }
 
 inline void CGeometry::SetMeshFile(CGeometry *geometry, CConfig *config, string val_mesh_out_filename) { }
-
-inline void CGeometry::SetMeshFile(CConfig *config, string val_mesh_out_filename, string val_mesh_in_filename) { }
 
 inline void CGeometry::SetBoundTecPlot(char mesh_filename[MAX_STRING_SIZE], bool new_file, CConfig *config) { }
 

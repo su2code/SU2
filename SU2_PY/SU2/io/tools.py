@@ -3,7 +3,7 @@
 ## \file tools.py
 #  \brief file i/o functions
 #  \author T. Lukaczyk, F. Palacios
-#  \version 3.2.5 "eagle"
+#  \version 3.2.6 "eagle"
 #
 # Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
 #
@@ -801,13 +801,7 @@ def next_folder(folder_format,num_format='%03d'):
 
 
 def expand_part(name,config):
-    if config['DECOMPOSED']:
-        n_part = config['NUMBER_PART']
-        name_pat = add_suffix(name,'%i')
-        names = [name_pat%(i+1) for i in range(n_part)]
-        #names = [name] + [name_pat%(i+1) for i in range(n_part)] # hack - TWL
-    else:
-        names = [name]
+    names = [name]
     return names
 
 def expand_time(name,config):

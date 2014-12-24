@@ -1,7 +1,7 @@
 ## \file interface.py
 #  \brief python package interfacing with the SU2 suite
 #  \author T. Lukaczyk, F. Palacios
-#  \version 3.2.5 "eagle"
+#  \version 3.2.6 "eagle"
 #
 # Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
 #
@@ -59,27 +59,6 @@ return_code_map = {
 # ------------------------------------------------------------
 #  SU2 Suite Interface Functions
 # ------------------------------------------------------------
-
-def PRT(config):
-    """ run SU2_PRT 
-        partitions set by config.NUMBER_PART
-        currently forced to run serially
-    """
-    # local copy
-    konfig = copy.deepcopy(config)
-    
-    tempname = 'config_PRT.cfg'
-    konfig.dump(tempname)
-  
-    processes = konfig['NUMBER_PART']
-    
-    the_Command = 'SU2_PRT ' + tempname
-    the_Command = build_command( the_Command , processes )
-    run_command( the_Command )
-    
-    #os.remove(tempname)
-    
-    return
 
 def CFD(config):
     """ run SU2_CFD

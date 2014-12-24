@@ -2,7 +2,7 @@
  * \file definition_structure.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 3.2.5 "eagle"
+ * \version 3.2.6 "eagle"
  *
  * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
  *
@@ -30,16 +30,6 @@ unsigned short GetnZone(string val_mesh_filename, unsigned short val_format, CCo
   unsigned short iLine, nLine = 10;
   char cstr[200];
   string::size_type position;
-  
-#ifdef HAVE_MPI
-  int size;
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-  if (size != 1) {
-    unsigned short lastindex = val_mesh_filename.find_last_of(".");
-    val_mesh_filename = val_mesh_filename.substr(0, lastindex);
-    val_mesh_filename = val_mesh_filename + "_1.su2";
-  }
-#endif
   
   /*--- Search the mesh file for the 'NZONE' keyword. ---*/
   
@@ -69,6 +59,7 @@ unsigned short GetnZone(string val_mesh_filename, unsigned short val_format, CCo
         getline (mesh_file,text_line);
         
         /*--- Search for the "NZONE" keyword to see if there are multiple Zones ---*/
+        
         position = text_line.find ("NZONE=",0);
         if (position != string::npos) {
           text_line.erase (0,6); nZone = atoi(text_line.c_str());

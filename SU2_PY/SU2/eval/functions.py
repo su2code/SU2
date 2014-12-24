@@ -1,7 +1,7 @@
 ## \file functions.py
 #  \brief python package for functions
 #  \author T. Lukaczyk, F. Palacios
-#  \version 3.2.5 "eagle"
+#  \version 3.2.6 "eagle"
 #
 # Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
 #
@@ -105,8 +105,7 @@ def aerodynamics( config, state=None ):
     """ vals = SU2.eval.aerodynamics(config,state=None)
     
         Evaluates aerodynamics with the following:
-            SU2.run.decompose()
-	    SU2.run.deform()
+	          SU2.run.deform()
             SU2.run.direct()
         
         Assumptions:
@@ -379,7 +378,6 @@ def geometry( func_name, config, state=None ):
     """ val = SU2.eval.geometry(config,state=None)
     
         Evaluates geometry with the following:
-            SU2.run.decompose()
             SU2.run.deform()
             SU2.run.geometry()
         
@@ -480,8 +478,7 @@ def update_mesh(config,state=None):
     """ SU2.eval.update_mesh(config,state=None)
     
         updates mesh with the following:
-            SU2.run.decompose()
-	    SU2.run.deform()
+	          SU2.run.deform()
         
         Assumptions:
             Config is already setup for deformation.
@@ -519,39 +516,8 @@ def update_mesh(config,state=None):
     else:
         log_decomp = None
         log_deform = None
-        
-        
-    # ----------------------------------------------------
-    #  Decomposition    
-    # ----------------------------------------------------
     
-    # redundancy check
-    if not config.get('DECOMPOSED',False):
         
-        # files to pull
-        pull = []
-        link = config['MESH_FILENAME']
-        
-        # output redirection
-        with redirect_folder('DECOMP',pull,link) as push:    
-            with redirect_output(log_decomp):
-            
-                # # RUN DECOMPOSITION # # 
-                info = su2run.decompose(config)
-                state.update(info)
-                              
-                # files to push
-                if info.FILES.has_key('MESH'):
-                    meshname = info.FILES.MESH
-                    names = su2io.expand_part( meshname , config )
-                    push.extend( names )
-                #: if push
-        
-        #: with output redirection
-        
-    #: if not redundant
-    
-    
     # ----------------------------------------------------
     #  Deformation
     # ----------------------------------------------------

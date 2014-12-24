@@ -3,7 +3,7 @@
 ## \file mesh_adaptation.py
 #  \brief Python script for doing the grid adaptation using the SU2 suite.
 #  \author F. Palacios
-#  \version 3.2.5 "eagle"
+#  \version 3.2.6 "eagle"
 #
 # Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
 #
@@ -79,9 +79,6 @@ def mesh_adaptation( filename             ,
     # Set the number of partitions for parallel computations
     config.NUMBER_PART = partitions
     
-    # Run SU2_PRT for parallel computations
-    SU2.run.decompose(config)
-
     # Call CFD to generate a solution
     SU2.run.CFD(config)
 
