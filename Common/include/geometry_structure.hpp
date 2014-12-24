@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for creating the geometrical structure.
  *        The subroutines and functions are in the <i>geometry_structure.cpp</i> file.
  * \author F. Palacios
- * \version 3.2.5 "eagle"
+ * \version 3.2.6 "eagle"
  *
  * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
  *
@@ -52,7 +52,7 @@ using namespace std;
  * \brief Parent class for defining the geometry of the problem (complete geometry, 
  *        multigrid agglomerated geometry, only boundary geometry, etc..)
  * \author F. Palacios.
- * \version 3.2.5 "eagle"
+ * \version 3.2.6 "eagle"
  */
 class CGeometry {
 protected:
@@ -470,7 +470,15 @@ public:
 	 * \param[in] val_domain - Number of domains for parallelization purposes.		 
 	 */
 	virtual void SetSendReceive(CConfig *config);
-
+  
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_domain - Number of domains for parallelization purposes.
+	 */
+	virtual void SetBoundaries(CConfig *config);
+  
 	/*! 
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -527,13 +535,6 @@ public:
 	 * \param[in] val_mesh_out_filename - Name of the output file.
 	 */
 	virtual void SetMeshFile(CGeometry *geometry, CConfig *config, string val_mesh_out_filename);
-
-  /*!
-	 * \brief A virtual member.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_mesh_out_filename - Name of the output file.
-	 */
-	virtual void SetMeshFile(CConfig *config, string val_mesh_out_filename, string val_mesh_in_filename);
 
 	/*! 
 	 * \brief A virtual member.
@@ -829,7 +830,7 @@ public:
  * \brief Class for reading a defining the primal grid which is read from the 
  *        grid file in .su2 format.
  * \author F. Palacios.
- * \version 3.2.5 "eagle"
+ * \version 3.2.6 "eagle"
  */
 class CPhysicalGeometry : public CGeometry {
 
@@ -1134,13 +1135,6 @@ public:
 	 * \param[in] val_mesh_out_filename - Name of the output file.
 	 */	
 	void SetMeshFile(CConfig *config, string val_mesh_out_filename);
-  
-  /*!
-	 * \brief Write the .su2 file, with new domain coordinates
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_mesh_out_filename - Name of the output file.
-	 */
-	void SetMeshFile(CConfig *config, string val_mesh_out_filename, string val_mesh_in_filename);
 
 	/*! 
 	 * \brief Compute some parameters about the grid quality.
@@ -1292,6 +1286,54 @@ public:
 	 */
 	vector<vector<unsigned long> > GetPlanarPoints();
   
+  /*!
+   * \brief Read the sensitivity from an input file.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetBoundSensitivity(CConfig *config);
+  
+  /*!
+   * \brief Compute the sections of a wing.
+   * \param[in] config - Definition of the particular problem.
+   */
+  double Compute_MaxThickness(double *Plane_P0, double *Plane_Normal, unsigned short iSection, CConfig *config, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface);
+  
+  /*!
+   * \brief Compute the sections of a wing.
+   * \param[in] config - Definition of the particular problem.
+   */
+  double Compute_AoA(double *Plane_P0, double *Plane_Normal, unsigned short iSection, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface);
+  
+  /*!
+   * \brief Compute the sections of a wing.
+   * \param[in] config - Definition of the particular problem.
+   */
+  double Compute_Chord(double *Plane_P0, double *Plane_Normal, unsigned short iSection, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface);
+  
+  /*!
+   * \brief Find the minimum thickness of the airfoil.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] original_surface - <code>TRUE</code> if this is the undeformed surface; otherwise <code>FALSE</code>.
+   * \returns The minimum value of the airfoil thickness.
+   */
+  double Compute_Thickness(double *Plane_P0, double *Plane_Normal, unsigned short iSection, double Location, CConfig *config, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface);
+  
+  /*!
+   * \brief Find the total volume of the airfoil.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] original_surface - <code>TRUE</code> if this is the undeformed surface; otherwise <code>FALSE</code>.
+   * \returns The total volume of the airfoil.
+   */
+  double Compute_Area(double *Plane_P0, double *Plane_Normal, unsigned short iSection, CConfig *config, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface);
+  
+  /*!
+   * \brief Find the internal volume of the 3D body.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] original_surface - <code>TRUE</code> if this is the undeformed surface; otherwise <code>FALSE</code>.
+   * \returns The total volume of the 3D body.
+   */
+  double Compute_Volume(CConfig *config, bool original_surface);
+  
 };
 
 /*! 
@@ -1299,7 +1341,7 @@ public:
  * \brief Class for defining the multigrid geometry, the main delicated part is the 
  *        agglomeration stage, which is done in the declaration.
  * \author F. Palacios.
- * \version 3.2.5 "eagle"
+ * \version 3.2.6 "eagle"
  */
 class CMultiGridGeometry : public CGeometry {
 
@@ -1465,111 +1507,10 @@ public:
 };
 
 /*! 
- * \class CBoundaryGeometry
- * \brief Class for only defining the boundary of the geometry, this class is only 
- *        used in case we are not interested in the volumetric grid.
- * \author F. Palacios.
- * \version 3.2.5 "eagle"
- */
-class CBoundaryGeometry : public CGeometry {
-  
-public:
-
-	/*! 
-	 * \brief Constructor of the class.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_mesh_filename - Name of the file with the grid information, be careful 
-	 *            because as input file we don't use a .su2, in this case we use a .csv file.
-	 * \param[in] val_format - Format of the file with the grid information.
-	 */
-	CBoundaryGeometry(CConfig *config, string val_mesh_filename, unsigned short val_format);
-
-	/*! 
-	 * \brief Destructor of the class.
-	 */
-	~CBoundaryGeometry(void);
-
-	/*! 
-	 * \brief Set boundary vertex.
-	 */
-	void SetVertex(void);
-  
-  /*!
-	 * \brief Store boundary points which surround a point.
-	 */
-	void SetPoint_Connectivity(void);
-  
-	/*! 
-	 * \brief Compute the boundary geometrical structure.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] action - Allocate or not the new elements.
-	 */
-	void SetBoundControlVolume(CConfig *config, unsigned short action);
-
-	/*! 
-	 * \brief Read the sensitivity from an input file.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void SetBoundSensitivity(CConfig *config);
-
-  /*!
-	 * \brief Compute the sections of a wing.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-  double Compute_MaxThickness(double *Plane_P0, double *Plane_Normal, unsigned short iSection, CConfig *config, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface);
-
-  /*!
-	 * \brief Compute the sections of a wing.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-  double Compute_AoA(double *Plane_P0, double *Plane_Normal, unsigned short iSection, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface);
-
-  /*!
-	 * \brief Compute the sections of a wing.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-  double Compute_Chord(double *Plane_P0, double *Plane_Normal, unsigned short iSection, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface);
-
-  /*!
-	 * \brief Find the minimum thickness of the airfoil.
-	 * \param[in] config - Definition of the particular problem.
-   * \param[in] original_surface - <code>TRUE</code> if this is the undeformed surface; otherwise <code>FALSE</code>.
-   * \returns The minimum value of the airfoil thickness.
-	 */
-  double Compute_Thickness(double *Plane_P0, double *Plane_Normal, unsigned short iSection, double Location, CConfig *config, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface);
-  
-	/*! 
-	 * \brief Find the total volume of the airfoil.
-	 * \param[in] config - Definition of the particular problem.
-   * \param[in] original_surface - <code>TRUE</code> if this is the undeformed surface; otherwise <code>FALSE</code>.
-   * \returns The total volume of the airfoil.
-	 */
-  double Compute_Area(double *Plane_P0, double *Plane_Normal, unsigned short iSection, CConfig *config, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface);
-
-  /*!
-	 * \brief Find the internal volume of the 3D body.
-	 * \param[in] config - Definition of the particular problem.
-   * \param[in] original_surface - <code>TRUE</code> if this is the undeformed surface; otherwise <code>FALSE</code>.
-   * \returns The total volume of the 3D body.
-	 */
-  double Compute_Volume(CConfig *config, bool original_surface);
-  
-  /*!
-	 * \brief Set the output file for boundaries in Tecplot with surface curvature.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] mesh_filename - Name of the file where the Tecplot
-	 *            information is going to be stored.
-   * \param[in] new_file - Create a new file.
-	 */
-	void SetBoundTecPlot(char mesh_filename[MAX_STRING_SIZE], bool new_file, CConfig *config);
-  
-};
-
-/*! 
  * \class CPeriodicGeometry
  * \brief Class for defining a periodic boundary condition.
  * \author T. Economon, F. Palacios.
- * \version 3.2.5 "eagle"
+ * \version 3.2.6 "eagle"
  */
 class CPeriodicGeometry : public CGeometry {
 	CPrimalGrid*** newBoundPer;            /*!< \brief Boundary vector for new periodic elements (primal grid information). */
@@ -1615,7 +1556,7 @@ public:
  * \struct CMultiGridQueue
  * \brief Class for a multigrid queue system
  * \author F. Palacios.
- * \version 3.2.5 "eagle"
+ * \version 3.2.6 "eagle"
  * \date Aug 12, 2012
  */
 class CMultiGridQueue {

@@ -2,7 +2,7 @@
  * \file dual_grid_structure.cpp
  * \brief Main classes for defining the dual grid
  * \author F. Palacios
- * \version 3.2.5 "eagle"
+ * \version 3.2.6 "eagle"
  *
  * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
  *
@@ -364,7 +364,7 @@ void CEdge::SetCG(double **val_coord) {
 
 double CEdge::GetVolume(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG, double *val_coord_Elem_CG, double *val_coord_Point) {
 	unsigned short iDim;
-	double vec_a[3], vec_b[3], vec_c[3], vec_d[3], Local_Volume;
+  double vec_a[3] = {0.0,0.0,0.0}, vec_b[3] = {0.0,0.0,0.0}, vec_c[3] = {0.0,0.0,0.0}, vec_d[3] = {0.0,0.0,0.0}, Local_Volume;
 
 	for (iDim = 0; iDim < nDim; iDim++) {
 		vec_a[iDim] = val_coord_Edge_CG[iDim]-val_coord_Point[iDim];
@@ -383,7 +383,7 @@ double CEdge::GetVolume(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG
 
 double CEdge::GetVolume(double *val_coord_Edge_CG, double *val_coord_Elem_CG, double *val_coord_Point) {
 	unsigned short iDim;
-	double vec_a[2], vec_b[2], Local_Volume;
+	double vec_a[2] = {0.0,0.0}, vec_b[2] = {0.0,0.0}, Local_Volume;
 
 	for (iDim = 0; iDim < nDim; iDim++) {
 		vec_a[iDim] = val_coord_Elem_CG[iDim]-val_coord_Point[iDim];
@@ -397,7 +397,7 @@ double CEdge::GetVolume(double *val_coord_Edge_CG, double *val_coord_Elem_CG, do
 
 void CEdge::SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG, double *val_coord_Elem_CG) {
 	unsigned short iDim;
-	double vec_a[3], vec_b[3], Dim_Normal[3];
+	double vec_a[3] = {0.0,0.0,0.0}, vec_b[3] = {0.0,0.0,0.0}, Dim_Normal[3];
 
 	for (iDim = 0; iDim < nDim; iDim++) {
 		vec_a[iDim] = val_coord_Elem_CG[iDim]-val_coord_Edge_CG[iDim];

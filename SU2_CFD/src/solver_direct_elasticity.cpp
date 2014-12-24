@@ -2,7 +2,7 @@
  * \file solution_direct_elasticity.cpp
  * \brief Main subrotuines for solving the linear elasticity equation.
  * \author F. Palacios
- * \version 3.2.5 "eagle"
+ * \version 3.2.6 "eagle"
  *
  * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
  *
@@ -1357,10 +1357,11 @@ void CFEASolver::GetSurface_Pressure(CGeometry *geometry, CConfig *config) {
   ifstream Surface_file;
   char buffer[50], cstr[200];
   
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
   
 #ifdef HAVE_MPI
+  int rank = MASTER_NODE;
+  int size = SINGLE_NODE;
+
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
@@ -1375,15 +1376,6 @@ void CFEASolver::GetSurface_Pressure(CGeometry *geometry, CConfig *config) {
     /*--- Prepare to read surface sensitivity files (CSV) ---*/
 
     string surfadj_filename = config->GetSurfFlowCoeff_FileName();
-    
-    /*--- Remove the domain number from the surface csv filename ---*/
-    
-    if (size > SINGLE_NODE) {
-      if ((rank+1 >= 0) && (rank+1 < 10)) surfadj_filename.erase (surfadj_filename.end()-2, surfadj_filename.end());
-      if ((rank+1 >= 10) && (rank+1 < 100)) surfadj_filename.erase (surfadj_filename.end()-3, surfadj_filename.end());
-      if ((rank+1 >= 100) && (rank+1 < 1000)) surfadj_filename.erase (surfadj_filename.end()-4, surfadj_filename.end());
-      if ((rank+1 >= 1000) && (rank+1 < 10000)) surfadj_filename.erase (surfadj_filename.end()-5, surfadj_filename.end());
-    }
     strcpy (cstr, surfadj_filename.c_str());
     
     /*--- Write file name with extension if unsteady or steady ---*/

@@ -37,7 +37,6 @@ from collections import OrderedDict
 
 
 # needed config options
-# DECOMPOSED = YES/NO
 # OPT_CONSTRAINT
 # OPT_OBJECTIVE
 # CONSOLE
@@ -106,9 +105,7 @@ def level0():
         config = SU2.io.Config(config_name)
         config.EXT_ITER = 9
         config.NUMBER_PART = 2
-        
-        SU2.run.PRT(config)
-        
+                
         SU2.run.CFD(config)
     
 def level1():
@@ -310,9 +307,7 @@ def mesh0():
         config = SU2.io.Config(config_name)
         config.EXT_ITER = 9
         config.NUMBER_PART = 2
-        
-        SU2.run.PRT(config)
-        
+                
         SU2.run.CFD(config)    
         
         SU2.io.restart2solution(config)

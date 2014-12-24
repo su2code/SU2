@@ -1,7 +1,7 @@
 ## \file config.py
 #  \brief python package for config 
 #  \author T. Lukaczyk, F. Palacios
-#  \version 3.2.5 "eagle"
+#  \version 3.2.6 "eagle"
 #
 # Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
 #
@@ -367,12 +367,6 @@ def read_config(filename):
                 data_dict[this_param] = float(this_value)
                 break   
             
-            # boolean parameters
-            if case("DECOMPOSED")             :
-                this_value = this_value.upper()
-                data_dict[this_param] = this_value == "TRUE" or this_value == "1"
-                break 
-            
             # int parameters
             if case("NUMBER_PART")            : pass
             if case("AVAILABLE_PROC")         : pass
@@ -510,11 +504,7 @@ def read_config(filename):
         #: for case
         
     #: for line
-    
-    # some defaults
-    if not data_dict.has_key('DECOMPOSED'):
-        data_dict['DECOMPOSED'] = False
-    
+
     #hack - twl
     if not data_dict.has_key('DV_VALUE_NEW'):
         data_dict['DV_VALUE_NEW'] = [0]
@@ -648,13 +638,7 @@ def write_config(filename,param_dict):
             if case("EXT_ITER")               :
                 output_file.write("%i" % new_value)
                 break
-            
-            # boolean parameters
-            if case("DECOMPOSED")             :
-                new_value = str(new_value).upper()
-                output_file.write(new_value)
-                break             
-            
+                        
             if case("DEFINITION_DV") :
                 n_dv = len(new_value['KIND'])
                 if not n_dv:

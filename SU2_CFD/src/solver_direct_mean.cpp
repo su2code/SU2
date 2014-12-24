@@ -2,7 +2,7 @@
  * \file solution_direct_mean.cpp
  * \brief Main subrotuines for solving direct problems (Euler, Navier-Stokes, etc.).
  * \author F. Palacios, T. Economon
- * \version 3.2.5 "eagle"
+ * \version 3.2.6 "eagle"
  *
  * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
  *
@@ -2221,7 +2221,6 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
         cout << "Inviscid flow: Computing density based on free-stream" << endl;
         cout << "temperature and pressure using the ideal gas law." << endl;
       }
-      cout << "Note: Negative pressure, temperature or density is not allowed!" << endl;
     }
     
     if (grid_movement) cout << "Force coefficients computed using MACH_MOTION." << endl;
@@ -8567,7 +8566,7 @@ void CEulerSolver::BC_ActDisk_Boundary(CGeometry *geometry, CSolver **solver_con
 #ifndef HAVE_MPI
     iProcessor = MASTER_NODE;
 #else
-    MPI_Status send_stat[1], recv_stat[1];
+    MPI_Status send_stat[1], recv_stat[1], status;
     MPI_Request send_req[1], recv_req[1];
     MPI_Comm_rank(MPI_COMM_WORLD, &iProcessor);
 #endif
@@ -8602,9 +8601,10 @@ void CEulerSolver::BC_ActDisk_Boundary(CGeometry *geometry, CSolver **solver_con
               for (iVar = 0; iVar < nPrimVar; iVar++)
                 Buffer_Send_V[iVar] = node[iPoint]->GetPrimitive(iVar);
 
+              MPI_Bsend(Buffer_Send_V, nPrimVar, MPI_DOUBLE, jProcessor, iPoint, MPI_COMM_WORLD);
               
-              MPI_Isend(Buffer_Send_V, nPrimVar, MPI_DOUBLE, jProcessor, iPoint, MPI_COMM_WORLD, &send_req[0]);
-              MPI_Waitall(1, send_req, send_stat);
+//              MPI_Isend(Buffer_Send_V, nPrimVar, MPI_DOUBLE, jProcessor, iPoint, MPI_COMM_WORLD, &send_req[0]);
+//              MPI_Waitall(1, send_req, send_stat);
               
             }
 
@@ -8644,8 +8644,12 @@ void CEulerSolver::BC_ActDisk_Boundary(CGeometry *geometry, CSolver **solver_con
 
             if (jProcessor != iProcessor) {
 #ifdef HAVE_MPI
-              MPI_Irecv(Buffer_Receive_V, nPrimVar, MPI_DOUBLE, jProcessor, jPoint, MPI_COMM_WORLD, &recv_req[0]);
-              MPI_Waitall(1, send_req, send_stat);
+              
+              MPI_Recv(Buffer_Receive_V, nPrimVar, MPI_DOUBLE, jProcessor, jPoint, MPI_COMM_WORLD, &status);
+
+//              MPI_Irecv(Buffer_Receive_V, nPrimVar, MPI_DOUBLE, jProcessor, jPoint, MPI_COMM_WORLD, &recv_req[0]);
+//              MPI_Waitall(1, send_req, send_stat);
+
 #endif
             }
             else {

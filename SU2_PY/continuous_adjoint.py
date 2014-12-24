@@ -3,7 +3,7 @@
 ## \file continuous_adjoint.py
 #  \brief Python script for doing the continuous adjoint computation using the SU2 suite.
 #  \author F. Palacios, T. Economon, T. Lukaczyk
-#  \version 3.2.5 "eagle"
+#  \version 3.2.6 "eagle"
 #
 # Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
 #
@@ -41,20 +41,16 @@ def main():
                       help="COMPUTE direct and adjoint problem", metavar="COMPUTE")
     parser.add_option("-s", "--step",       dest="step",       default=1E-4,
                       help="DOT finite difference STEP", metavar="STEP")    
-    parser.add_option("-d", "--divide_grid",dest="divide_grid",default="True",
-                      help="DIVIDE_GRID the numerical grid", metavar="DIVIDE_GRID")
     
     (options, args)=parser.parse_args()
     options.partitions  = int( options.partitions )
     options.step        = float( options.step )
     options.compute     = options.compute.upper() == 'TRUE'
-    options.divide_grid = options.divide_grid.upper() == 'TRUE'
-        
+    
     continuous_adjoint( options.filename    ,
                         options.partitions  ,
                         options.compute     ,
-                        options.step        ,
-                        options.divide_grid  )
+                        options.step         )
         
 #: def main()
 
@@ -66,13 +62,11 @@ def main():
 def continuous_adjoint( filename           , 
                         partitions  = 0    , 
                         compute     = True ,
-                        step        = 1e-4 , 
-                        divide_grid = True  ):
+                        step        = 1e-4  ):
     
     # Config
     config = SU2.io.Config(filename)
     config.NUMBER_PART = partitions
-    config.DECOMPOSED  = not divide_grid
     
     # State
     state = SU2.io.State()
@@ -111,8 +105,7 @@ def continuous_adjoint( filename           ,
 def continuous_design( filename           , 
                        partitions  = 0    , 
                        compute     = True ,
-                       step        = 1e-4 , 
-                       divide_grid = True  ):
+                       step        = 1e-4  ):
     
     # TODO: 
     # step
@@ -120,7 +113,6 @@ def continuous_design( filename           ,
     # Config
     config = SU2.io.Config(filename)
     config.NUMBER_PART = partitions
-    config.DECOMPOSED  = divide_grid
 
     ADJ_NAME = config.OBJECTIVE_FUNCTION
     

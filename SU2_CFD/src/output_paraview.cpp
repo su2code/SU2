@@ -2,7 +2,7 @@
  * \file output_paraview.cpp
  * \brief Main subroutines for output solver information
  * \author F. Palacios
- * \version 3.2.5 "eagle"
+ * \version 3.2.6 "eagle"
  *
  * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
  *
@@ -67,14 +67,7 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
 
   if (Kind_Solver == HEAT_EQUATION)
 		filename = config->GetHeat_FileName().c_str();
-    
-#ifdef HAVE_MPI
-	int nProcessor;
-	/*--- Remove the domain number from the surface csv filename ---*/
-	MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-	if (nProcessor > 1) filename.erase (filename.end()-2, filename.end());
-#endif
-    
+  
 	strcpy (cstr, filename.c_str());
 	if (Kind_Solver == POISSON_EQUATION) strcpy (cstr, config->GetStructure_FileName().c_str());
     
@@ -728,13 +721,6 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
   
   if (Kind_Solver == HEAT_EQUATION)
 		filename = config->GetHeat_FileName().c_str();
-  
-#ifdef HAVE_MPI
-	int nProcessor;
-	/*--- Remove the domain number from the surface csv filename ---*/
-	MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-	if (nProcessor > 1) filename.erase (filename.end()-2, filename.end());
-#endif
   
 	strcpy (cstr, filename.c_str());
 	if (Kind_Solver == POISSON_EQUATION) strcpy (cstr, config->GetStructure_FileName().c_str());

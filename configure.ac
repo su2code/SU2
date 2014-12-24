@@ -13,7 +13,7 @@
 #
 ##########################
 
-AC_INIT([SU2], [3.2.5], [susquared-dev@lists.stanford.edu],
+AC_INIT([SU2], [3.2.6], [susquared-dev@lists.stanford.edu],
         [SU2], [https://github.com/su2code])
 AC_PREREQ([2.59])
 AC_CONFIG_MACRO_DIR([m4])
@@ -105,9 +105,6 @@ AC_ARG_WITH(LAPACK-include,
 AC_ARG_ENABLE(CFD,
    	AS_HELP_STRING([--disable-CFD], [build the SU2_CFD executable (default = yes)]),
 	[build_CFD=$enableval], [build_CFD="yes"])
-AC_ARG_ENABLE(PRT,
-   	AS_HELP_STRING([--disable-PRT], [build the SU2_PRT executable (default = yes)]),
-	[build_PRT=$enableval], [build_PRT="yes"])
 AC_ARG_ENABLE(DOT,
    	AS_HELP_STRING([--disable-DOT], [build the SU2_DOT executable (default = yes)]),
 	[build_DOT=$enableval], [build_DOT="yes"])
@@ -313,7 +310,6 @@ fi
 ###########################
 
 AM_CONDITIONAL([BUILD_CFD],[test $build_CFD != "no"])
-AM_CONDITIONAL([BUILD_PRT],[test $build_PRT != "no"])
 AM_CONDITIONAL([BUILD_DOT],[test $build_DOT != "no"])
 AM_CONDITIONAL([BUILD_MSH],[test $build_MSH != "no"])
 AM_CONDITIONAL([BUILD_DEF],[test $build_DEF != "no"])
@@ -326,7 +322,6 @@ AC_OUTPUT(Makefile \
         externals/Makefile \
 	Common/lib/Makefile \
 	SU2_CFD/obj/Makefile \
-	SU2_PRT/obj/Makefile \
 	SU2_DOT/obj/Makefile \
 	SU2_MSH/obj/Makefile \
 	SU2_DEF/obj/Makefile \
@@ -361,7 +356,6 @@ Build Configuration Summary:
     External libs:        $su2_externals_LIBS
 
     Build SU2_CFD:        $build_CFD
-    Build SU2_PRT:        $build_PRT
     Build SU2_DOT:        $build_DOT
     Build SU2_MSH:        $build_MSH
     Build SU2_DEF:        $build_DEF

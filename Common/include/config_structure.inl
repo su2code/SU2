@@ -2,7 +2,7 @@
  * \file config_structure.inl
  * \brief In-Line subroutines of the <i>config_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 3.2.5 "eagle"
+ * \version 3.2.6 "eagle"
  *
  * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
  *
@@ -37,6 +37,8 @@ inline unsigned short CConfig::GetnZone(void) { return nZone; }
 inline unsigned short CConfig::GetiZone(void) { return iZone; }
 
 inline unsigned short CConfig::GetKind_SU2(void) { return Kind_SU2; }
+
+inline void CConfig::SetKind_SU2(unsigned short val_kind_su2) { Kind_SU2 = val_kind_su2 ; }
 
 inline bool CConfig::GetAdjoint(void) { return Adjoint; }
 
@@ -91,8 +93,6 @@ inline unsigned short CConfig::GetAnalytical_Surface(void) { return Analytical_S
 inline unsigned short CConfig::GetAxis_Orientation(void) { return Axis_Orientation; }
 
 inline double CConfig::GetDualVol_Power(void) { return DualVol_Power; }
-
-inline bool CConfig::GetVisualize_Partition(void) { return Visualize_Partition; }
 
 inline bool CConfig::GetExtraOutput(void) { return ExtraOutput; }
 
@@ -780,8 +780,6 @@ inline bool CConfig::GetRestart(void) {	return Restart; }
 
 inline bool CConfig::GetRestart_Flow(void) { return Restart_Flow; }
 
-inline bool CConfig::GetFullMG(void) { return FullMG; }
-
 inline bool CConfig::GetEquivArea(void) { return EquivArea; }
 
 inline bool CConfig::GetInvDesign_Cp(void) { return InvDesign_Cp; }
@@ -802,7 +800,7 @@ inline string CConfig::GetMarker_Monitoring(unsigned short val_marker) { return 
 
 inline string CConfig::GetMarker_Moving(unsigned short val_marker) { return Marker_Moving[val_marker]; }
 
-inline short CConfig::GetTagBound_Marker_All(string val_tag) {
+inline short CConfig::GetMarker_All_TagBound(string val_tag) {
 	for (unsigned short iMarker = 0; iMarker < nMarker_All; iMarker++) {
 		if (val_tag == Marker_All_TagBound[iMarker])
 		return iMarker; 
@@ -946,10 +944,6 @@ inline unsigned long CConfig::GetStartConv_Iter(void) { return StartConv_Iter; }
 
 inline double CConfig::GetCauchy_Eps(void) { return Cauchy_Eps; }
 
-inline double CConfig::GetCauchy_Eps_OneShot(void) { return Cauchy_Eps_OneShot; }
-
-inline double CConfig::GetCauchy_Eps_FullMG(void) { return Cauchy_Eps_FullMG; }
-
 inline double CConfig::GetDelta_UnstTimeND(void) { return Delta_UnstTimeND; }
 
 inline double CConfig::GetTotal_UnstTimeND(void) { return Total_UnstTimeND; }
@@ -1059,8 +1053,6 @@ inline bool CConfig::GetWrt_Vol_Sol(void) { return Wrt_Vol_Sol; }
 inline bool CConfig::GetWrt_Srf_Sol(void) { return Wrt_Srf_Sol; }
 
 inline bool CConfig::GetWrt_Csv_Sol(void) { return Wrt_Csv_Sol; }
-
-inline bool CConfig::GetWrt_Restart(void) { return Wrt_Restart; }
 
 inline bool CConfig::GetWrt_Residuals(void) { return Wrt_Residuals; }
 

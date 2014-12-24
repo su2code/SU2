@@ -1,7 +1,7 @@
 ## \file direct.py
 #  \brief python package for running direct solutions
 #  \author T. Lukaczyk, F. Palacios
-#  \version 3.2.5 "eagle"
+#  \version 3.2.6 "eagle"
 #
 # Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
 #
@@ -25,7 +25,6 @@
 import os, sys, shutil, copy
 
 from .. import io  as su2io
-from decompose import decompose as su2decomp
 from merge     import merge     as su2merge
 from interface import CFD       as SU2_CFD
 
@@ -42,7 +41,6 @@ def direct ( config ):
             SU2.run.merge()
             
         Assumptions:
-            Redundant decomposition if config.DECOMPOSED == True
             Does not rename restart filename to solution filename
             Adds 'direct' suffix to convergence filename
                         
@@ -53,7 +51,6 @@ def direct ( config ):
                 FILES.DIRECT
                 
         Updates:
-            config.DECOMPOSED
             config.MATH_PROBLEM
             
         Executes in:
@@ -63,9 +60,6 @@ def direct ( config ):
     # local copy
     konfig = copy.deepcopy(config)
 
-    # decompose
-    su2decomp(konfig)
-    
     # setup direct problem
     konfig['MATH_PROBLEM']  = 'DIRECT'
     konfig['CONV_FILENAME'] = konfig['CONV_FILENAME'] + '_direct'    
@@ -91,8 +85,7 @@ def direct ( config ):
     aerodynamics = su2io.read_aerodynamics( history_filename , special_cases, final_avg )
     
     # update super config
-    config.update({ 'DECOMPOSED'   : konfig['DECOMPOSED']   ,
-                    'MATH_PROBLEM' : konfig['MATH_PROBLEM']  })
+    config.update({ 'MATH_PROBLEM' : konfig['MATH_PROBLEM']  })
                     
     # info out
     info = su2io.State()

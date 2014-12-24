@@ -2,7 +2,7 @@
  * \file config_structure.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 3.2.5 "eagle"
+ * \version 3.2.6 "eagle"
  *
  * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
  *
@@ -45,7 +45,7 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
 
   SetPostprocessing(val_software, val_iZone, val_nDim);
 
-  /*--- Configuration file boundaries/markers seting ---*/
+  /*--- Configuration file boundaries/markers setting ---*/
   
   SetMarkers(val_software, val_iZone);
 
@@ -192,7 +192,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("PHYSICAL_PROBLEM", Kind_Solver, Solver_Map, NO_SOLVER);
   /*!\par MATH_PROBLEM
    *  DESCRIPTION: Mathematical problem \n  Options: DIRECT, ADJOINT \ingroup Config*/
-  addMathProblemOption("MATH_PROBLEM" , Adjoint, false , OneShot, false, Linearized, false, Restart_Flow, false);
+  addMathProblemOption("MATH_PROBLEM" , Adjoint, false , Linearized, false, Restart_Flow, false);
   /*!\par KIND_TURB_MODEL
    *  DESCRIPTION: Specify turbulence model \n Options: SA, SST, ML, NONE (default) \ingroup Config*/
   addEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, NO_TURB_MODEL);
@@ -209,9 +209,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\par RESTART_SOL
    *  DESCRIPTION: Restart solution from native solution file \n Options: NO, YES \ingroup Config */
   addBoolOption("RESTART_SOL", Restart, false);
-  /*!\par VISUALIZE_PART
-   *  DESCRIPTION: Write a tecplot file for each partition \ingroup Config*/
-  addBoolOption("VISUALIZE_PART", Visualize_Partition, false);
   /* DESCRIPTION: System of measurements */
   addEnumOption("SYSTEM_MEASUREMENTS", SystemMeasurements, Measurements_Map, SI);
 
@@ -630,20 +627,16 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("CAUCHY_FUNC_ADJFLOW", Cauchy_Func_AdjFlow, Sens_Map, SENS_GEOMETRY);
   /* DESCRIPTION: Linearized functional for the Cauchy criteria */
   addEnumOption("CAUCHY_FUNC_LIN", Cauchy_Func_LinFlow, Linear_Obj_Map, DELTA_DRAG_COEFFICIENT);
-  /* DESCRIPTION: Epsilon for a full multigrid method evaluation */
-  addDoubleOption("FULLMG_CAUCHY_EPS", Cauchy_Eps_FullMG, 1E-4);
 
   /* CONFIG_CATEGORY: Multi-grid */
   /*--- Options related to Multi-grid ---*/
 
-  /* DESCRIPTION: Full multi-grid  */
-  addBoolOption("FULLMG", FullMG, false);
   /* DESCRIPTION: Start up iterations using the fine grid only */
   addUnsignedShortOption("START_UP_ITER", nStartUpIter, 0);
   /* DESCRIPTION: Multi-grid Levels */
   addUnsignedShortOption("MGLEVEL", nMultiLevel, 3);
-  /* DESCRIPTION: Multi-grid Cycle (0 = V cycle, 1 = W Cycle) */
-  addUnsignedShortOption("MGCYCLE", MGCycle, 0);
+  /* DESCRIPTION: Multi-grid cycle */
+  addEnumOption("MGCYCLE", MGCycle, MG_Cycle_Map, V_CYCLE);
   /* DESCRIPTION: Multi-grid pre-smoothing level */
   addUShortListOption("MG_PRE_SMOOTH", nMG_PreSmooth, MG_PreSmooth);
   /* DESCRIPTION: Multi-grid post-smoothing level */
@@ -860,8 +853,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("WRT_SRF_SOL", Wrt_Srf_Sol, true);
   /* DESCRIPTION: Write a surface CSV solution file */
   addBoolOption("WRT_CSV_SOL", Wrt_Csv_Sol, true);
-  /* DESCRIPTION: Write a restart solution file */
-  addBoolOption("WRT_RESTART", Wrt_Restart, true);
   /* DESCRIPTION: Output residual info to solution/restart file */
   addBoolOption("WRT_RESIDUALS", Wrt_Residuals, false);
   /* DESCRIPTION: Output residual info to solution/restart file */
@@ -1189,16 +1180,22 @@ void CConfig::SetParsing(char case_filename[MAX_STRING_SIZE]) {
   string text_line, option_name;
   ifstream case_file;
   vector<string> option_value;
-
+  int rank = MASTER_NODE;
+  
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+  
   /*--- Read the configuration file ---*/
   case_file.open(case_filename, ios::in);
 
   if (case_file.fail()) {
-    cout << "There is no configuration file!!" << endl;
+    if (rank == MASTER_NODE) cout << endl << "The configuration file (.cfg) is missing!!" << endl << endl;
     exit(EXIT_FAILURE);
   }
 
   string errorString;
+
   int  err_count = 0;  // How many errors have we found in the config file
   int max_err_count = 30; // Maximum number of errors to print before stopping
 
@@ -1222,6 +1219,7 @@ void CConfig::SetParsing(char case_filename[MAX_STRING_SIZE]) {
           string newString;
           newString.append(option_name);
           newString.append(": invalid option name");
+          newString.append(". Check current SU2 options in config_template.cfg.");
           newString.append("\n");
           errorString.append(newString);
           err_count++;
@@ -1257,7 +1255,7 @@ void CConfig::SetParsing(char case_filename[MAX_STRING_SIZE]) {
   // See if there were any errors parsing the config file
   if (errorString.size() != 0){
 //    SU2MPI::PrintAndFinalize(errorString);
-    cout << errorString << endl;
+    if (rank == MASTER_NODE) cout << errorString << endl;
     exit(EXIT_FAILURE);
   }
 
@@ -1291,9 +1289,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     
     Kind_SU2 = val_software;
     
-    /*--- Only SU2_PRT, and SU2_CFD work with CGNS ---*/
+    /*--- Only SU2_CFD work with CGNS ---*/
     
-    if ((Kind_SU2 != SU2_PRT) && (Kind_SU2 != SU2_CFD) && (Kind_SU2 != SU2_SOL)) {
+    if ((Kind_SU2 != SU2_CFD) && (Kind_SU2 != SU2_SOL)) {
         if (Mesh_FileFormat == CGNS) {
             cout << "This software is not prepared for CGNS, please switch to SU2" << endl;
             exit(EXIT_FAILURE);
@@ -1949,7 +1947,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         Grid_Movement = true;
     }
     
-    if (FullMG) FinestMesh = nMultiLevel;
+    if (MGCycle == FULLMG_CYCLE) FinestMesh = nMultiLevel;
     else FinestMesh = MESH_0;
     
     if ((Kind_Solver == NAVIER_STOKES) &&
@@ -2064,7 +2062,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     if (nMG_CorrecSmooth != 0)
         MG_CorrecSmooth[nMultiLevel] = 0;
     
-    if (Restart) FullMG = false;
+    if (Restart) MGCycle = V_CYCLE;
     
     if (Adjoint) {
         if (Kind_Solver == EULER) Kind_Solver = ADJ_EULER;
@@ -2080,7 +2078,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     
     if (Unsteady_Simulation == TIME_STEPPING) {
         nMultiLevel = 0;
-        MGCycle = 0;
+        MGCycle = V_CYCLE;
     }
     
     nCFL = nMultiLevel+1;
@@ -2831,10 +2829,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
 void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) {
 
+  /*--- Identify the solvers that work in serial ---*/
+
 #ifndef HAVE_MPI
   nDomain = SINGLE_NODE;
 #else
-  /*--- Identify the solvers that work in serial ---*/
   if (val_software != SU2_MSH)
     MPI_Comm_size(MPI_COMM_WORLD, (int*)&nDomain);   // any issue with type conversion here? MC
   else
@@ -2842,6 +2841,7 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 #endif
 
   /*--- Boundary (marker) treatment ---*/
+  
   nMarker_All = nMarker_Euler + nMarker_FarField + nMarker_SymWall +
   nMarker_PerBound + nMarker_NearFieldBound + nMarker_Supersonic_Inlet +
   nMarker_InterfaceBound + nMarker_Dirichlet + nMarker_Neumann + nMarker_Riemann+ nMarker_Inlet +
@@ -2876,9 +2876,9 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
   iMarker_ActDisk_Inlet, iMarker_ActDisk_Outlet, iMarker_Out_1D;
 
   for (iMarker_All = 0; iMarker_All < nMarker_All; iMarker_All++) {
-    Marker_All_TagBound[iMarker_All] = "SEND_RECEIVE";
+    Marker_All_TagBound[iMarker_All]   = "SEND_RECEIVE";
     Marker_All_SendRecv[iMarker_All]   = 0;
-    Marker_All_KindBC[iMarker_All]   = 0;
+    Marker_All_KindBC[iMarker_All]     = 0;
     Marker_All_Monitoring[iMarker_All] = 0;
     Marker_All_GeoEval[iMarker_All]    = 0;
     Marker_All_Designing[iMarker_All]  = 0;
@@ -2886,7 +2886,7 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
     Marker_All_DV[iMarker_All]         = 0;
     Marker_All_Moving[iMarker_All]     = 0;
     Marker_All_PerBound[iMarker_All]   = 0;
-    Marker_All_Out_1D[iMarker_All]   = 0;
+    Marker_All_Out_1D[iMarker_All]     = 0;
   }
 
   nMarker_Config = nMarker_Euler + nMarker_FarField + nMarker_SymWall +
@@ -3172,7 +3172,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   cout << endl <<"-------------------------------------------------------------------------" << endl;
   cout <<"|    _____   _    _   ___                                               |" << endl;
-  cout <<"|   / ____| | |  | | |__ \\    Release 3.2.5 \"eagle\"                     |" << endl;
+  cout <<"|   / ____| | |  | | |__ \\    Release 3.2.6 \"eagle\"                     |" << endl;
   cout <<"|  | (___   | |  | |    ) |                                             |" << endl;
   cout <<"|   \\___ \\  | |  | |   / /                                              |" << endl;
   cout <<"|   ____) | | |__| |  / /_                                              |" << endl;
@@ -3180,7 +3180,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     case SU2_CFD: cout << "|  |_____/   \\____/  |____|   Suite (Computational Fluid Dynamics Code) |" << endl; break;
     case SU2_DEF: cout << "|  |_____/   \\____/  |____|   Suite (Mesh Deformation Code)             |" << endl; break;
     case SU2_DOT: cout << "|  |_____/   \\____/  |____|   Suite (Gradient Projection Code)          |" << endl; break;
-    case SU2_PRT: cout << "|  |_____/   \\____/  |____|   Suite (Grid Partitioning Code)            |" << endl; break;
     case SU2_MSH: cout << "|  |_____/   \\____/  |____|   Suite (Mesh Adaptation Code)              |" << endl; break;
     case SU2_GEO: cout << "|  |_____/   \\____/  |____|   Suite (Geometry Definition Code)          |" << endl; break;
     case SU2_SOL: cout << "|  |_____/   \\____/  |____|   Suite (Solution Exporting Code)           |" << endl; break;
@@ -3510,7 +3509,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		}
 	}
 
-	if (((val_software == SU2_CFD) && ( Adjoint || OneShot )) || (val_software == SU2_DOT)) {
+	if (((val_software == SU2_CFD) && ( Adjoint )) || (val_software == SU2_DOT)) {
 
 		cout << endl <<"----------------------- Design problem definition -----------------------" << endl;
 		switch (Kind_ObjFunc) {
@@ -3795,19 +3794,12 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         cout << "Average of gradients with correction (viscous flow terms)." << endl;
     }
 
-    if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS))
-      cout << "Piecewise constant integration of the flow source terms." << endl;
-
-    if (Kind_Solver == ADJ_EULER)
-      cout << "Piecewise constant integration of the adjoint source terms." << endl;
-
     if ((Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS)) {
       cout << "Average of gradients with correction (viscous adjoint terms)." << endl;
     }
 
     if (Kind_Solver == RANS) {
       cout << "Average of gradients with correction (viscous turbulence terms)." << endl;
-      cout << "Piecewise constant integration of the turbulence model source terms." << endl;
     }
 
     if (Kind_Solver == POISSON_EQUATION) {
@@ -3816,20 +3808,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     if ((Kind_Solver == ADJ_RANS) && (!Frozen_Visc)) {
       cout << "Average of gradients with correction (2nd order) for computation of adjoint viscous turbulence terms." << endl;
-      cout << "Piecewise constant integration of the turbulence adjoint model source terms." << endl;
       if (Kind_TimeIntScheme_AdjTurb == EULER_IMPLICIT) cout << "Euler implicit method for the turbulent adjoint equation." << endl;
-    }
-
-    if ((Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS)) {
-      cout << "Piecewise constant integration of the Navier-Stokes eq. source terms." << endl;
-    }
-
-    if (Kind_Solver == POISSON_EQUATION) {
-      cout << "Piecewise constant integration of the poisson potential source terms." << endl;
-    }
-
-    if (Kind_Solver == HEAT_EQUATION) {
-      cout << "Piecewise constant integration of the heat equation source terms." << endl;
     }
 
     switch (Kind_Gradient_Method) {
@@ -3976,14 +3955,12 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       }
     }
 
-    if (FullMG) {
-      cout << "Full Multigrid." << endl;
-    }
-
     if (nMultiLevel !=0) {
+      
       if (nStartUpIter != 0) cout << "A total of " << nStartUpIter << " start up iterations on the fine grid."<< endl;
-      if (MGCycle == 0) cout << "V Multigrid Cycle, with " << nMultiLevel << " multigrid levels."<< endl;
-      if (MGCycle == 1) cout << "W Multigrid Cycle, with " << nMultiLevel << " multigrid levels."<< endl;
+      if (MGCycle == V_CYCLE) cout << "V Multigrid Cycle, with " << nMultiLevel << " multigrid levels."<< endl;
+      if (MGCycle == W_CYCLE) cout << "W Multigrid Cycle, with " << nMultiLevel << " multigrid levels."<< endl;
+      if (MGCycle == FULLMG_CYCLE) cout << "Full Multigrid Cycle, with " << nMultiLevel << " multigrid levels."<< endl;
 
       cout << "Damping factor for the residual restriction: " << Damp_Res_Restric <<"."<< endl;
       cout << "Damping factor for the correction prolongation: " << Damp_Correc_Prolong <<"."<< endl;
@@ -4073,8 +4050,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         }
 
       cout << "Start convergence criteria at iteration " << StartConv_Iter<< "."<< endl;
-      if (OneShot) cout << "Cauchy criteria for one shot method " << Cauchy_Eps_OneShot<< "."<< endl;
-      if (FullMG) cout << "Cauchy criteria for full multigrid " << Cauchy_Eps_FullMG<< "."<< endl;
+      
     }
 
 
@@ -4171,7 +4147,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         cout << "Surface linearized coefficients file name: " << SurfLinCoeff_FileName << "." << endl;
       }
 
-      if (Adjoint || OneShot) {
+      if (Adjoint) {
         cout << "Adjoint solution file name: " << Solution_AdjFileName << "." << endl;
         cout << "Restart adjoint file name: " << Restart_AdjFileName << "." << endl;
         cout << "Adjoint variables file name: " << Adj_FileName << "." << endl;
@@ -4233,11 +4209,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       if (Kind_ObjFunc == NEARFIELD_PRESSURE) cout << "Restart adjoint file name: " << Restart_AdjFileName << "." << endl;
       if (Kind_ObjFunc == LIFT_COEFFICIENT) cout << "Restart adjoint file name: " << Restart_AdjFileName << "." << endl;
     }
-  }
-
-  if (val_software == SU2_PRT) {
-    if (Visualize_Partition) cout << "Visualize the partitions. " << endl;
-    else cout << "Don't visualize the partitions. " << endl;
   }
 
   cout << endl <<"------------------- Config file boundary information --------------------" << endl;
@@ -4787,42 +4758,6 @@ bool CConfig::TokenizeString(string & str, string & option_name,
   return true;
 }
 
-/*
-bool CConfig::GetPython_Option(string & option_name) {
-
-  bool isPython_Option = false;
-
---- Check option name against all known Python options
-   for a match. These are the design options that are
-   never read by the SU2 C++ codes, and we would like
-   to ignore them while processing the config file. ---
-  if (option_name == "OBJFUNC")       isPython_Option = true;
-  if (option_name == "OBJFUNC_SCALE")    isPython_Option = true;
-  if (option_name == "CONST_IEQ")      isPython_Option = true;
-  if (option_name == "CONST_IEQ_SCALE")      isPython_Option = true;
-  if (option_name == "CONST_IEQ_SIGN")     isPython_Option = true;
-  if (option_name == "CONST_IEQ_VALUE") isPython_Option = true;
-  if (option_name == "CONST_EQ")      isPython_Option = true;
-  if (option_name == "CONST_EQ_SCALE")      isPython_Option = true;
-  if (option_name == "CONST_EQ_SIGN")     isPython_Option = true;
-  if (option_name == "CONST_EQ_VALUE") isPython_Option = true;
-  if (option_name == "DEFINITION_DV") isPython_Option = true;
-  if (option_name == "DV_VALUE_NEW") isPython_Option = true;
-  if (option_name == "DV_VALUE_OLD") isPython_Option = true;
-  if (option_name == "NUMBER_PART") isPython_Option = true;
-  if (option_name == "TASKS") isPython_Option = true;
-  if (option_name == "OPT_OBJECTIVE") isPython_Option = true;
-  if (option_name == "OPT_CONSTRAINT") isPython_Option = true;
-  if (option_name == "GRADIENTS") isPython_Option = true;
-  if (option_name == "FIN_DIFF_STEP") isPython_Option = true;
-  if (option_name == "ADAPT_CYCLES") isPython_Option = true;
-  if (option_name == "CONSOLE") isPython_Option = true;
-  if (option_name == "DECOMPOSED") isPython_Option = true;
-
-  return isPython_Option;
-}
- */
-
 unsigned short CConfig::GetMarker_CfgFile_TagBound(string val_marker) {
 
   unsigned short iMarker_Config;
@@ -4833,6 +4768,11 @@ unsigned short CConfig::GetMarker_CfgFile_TagBound(string val_marker) {
 
   cout <<"The configuration file doesn't have any definition for marker "<< val_marker <<"!!" << endl;
   exit(EXIT_FAILURE);
+  
+}
+
+string CConfig::GetMarker_CfgFile_TagBound(unsigned short val_marker) {
+  return Marker_CfgFile_TagBound[val_marker];
 }
 
 unsigned short CConfig::GetMarker_CfgFile_KindBC(string val_marker) {
@@ -4898,14 +4838,15 @@ unsigned short CConfig::GetMarker_CfgFile_PerBound(string val_marker) {
   return Marker_CfgFile_PerBound[iMarker_Config];
 }
 
-CConfig::~CConfig(void)
-{
+CConfig::~CConfig(void) {
+  
   if (RK_Alpha_Step!=NULL) delete [] RK_Alpha_Step;
   if (MG_PreSmooth!=NULL) delete [] MG_PreSmooth;
   if (MG_PostSmooth!=NULL) delete [] MG_PostSmooth;
   if (U_FreeStreamND!=NULL) delete [] U_FreeStreamND;
 
   /*--- If allocated, delete arrays for Plasma solver ---*/
+  
   if (Molar_Mass           != NULL) delete [] Molar_Mass;
   if (Gas_Composition      != NULL) delete [] Gas_Composition;
   if (Enthalpy_Formation   != NULL) delete [] Enthalpy_Formation;
@@ -4918,13 +4859,13 @@ CConfig::~CConfig(void)
       delete[] CharElTemp[iSpecies];
     delete [] CharElTemp;
   }
-  if (degen                != NULL) {
+  if (degen != NULL) {
     for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++)
       delete[] degen[iSpecies];
     delete [] degen;
   }
   unsigned short ii, iReaction;
-  if (Reactions            != NULL) {
+  if (Reactions != NULL) {
     for (iReaction = 0; iReaction < nReactions; iReaction++) {
       for (ii = 0; ii < 2; ii++) {
         delete [] Reactions[iReaction][ii];
@@ -4935,6 +4876,7 @@ CConfig::~CConfig(void)
   }
 
   /*--- Free memory for Aeroelastic problems. ---*/
+  
   if (Grid_Movement && Aeroelastic_Simulation) {
 
     delete[] Aeroelastic_pitch;
@@ -4947,6 +4889,7 @@ CConfig::~CConfig(void)
     delete [] Kind_GridMovement;
 
   /*--- motion origin: ---*/
+  
   if (Motion_Origin_X != NULL)
     delete [] Motion_Origin_X;
   if (Motion_Origin_Y != NULL)
@@ -4957,6 +4900,7 @@ CConfig::~CConfig(void)
     delete [] MoveMotion_Origin;
 
   /*--- rotation: ---*/
+  
   if (Rotation_Rate_X != NULL)
     delete [] Rotation_Rate_X;
   if (Rotation_Rate_Y != NULL)
@@ -4965,6 +4909,7 @@ CConfig::~CConfig(void)
     delete [] Rotation_Rate_Z;
 
   /*--- pitching: ---*/
+  
   if (Pitching_Omega_X != NULL)
     delete [] Pitching_Omega_X;
   if (Pitching_Omega_Y != NULL)
@@ -4973,6 +4918,7 @@ CConfig::~CConfig(void)
     delete [] Pitching_Omega_Z;
 
   /*--- pitching amplitude: ---*/
+  
   if (Pitching_Ampl_X != NULL)
     delete [] Pitching_Ampl_X;
   if (Pitching_Ampl_Y != NULL)
@@ -4981,6 +4927,7 @@ CConfig::~CConfig(void)
     delete [] Pitching_Ampl_Z;
 
   /*--- pitching phase: ---*/
+  
   if (Pitching_Phase_X != NULL)
     delete [] Pitching_Phase_X;
   if (Pitching_Phase_Y != NULL)
@@ -4989,6 +4936,7 @@ CConfig::~CConfig(void)
     delete [] Pitching_Phase_Z;
 
   /*--- plunging: ---*/
+  
   if (Plunging_Omega_X != NULL)
     delete [] Plunging_Omega_X;
   if (Plunging_Omega_Y != NULL)
@@ -4997,6 +4945,7 @@ CConfig::~CConfig(void)
     delete [] Plunging_Omega_Z;
 
   /*--- plunging amplitude: ---*/
+  
   if (Plunging_Ampl_X != NULL)
     delete [] Plunging_Ampl_X;
   if (Plunging_Ampl_Y != NULL)
@@ -5013,7 +4962,8 @@ CConfig::~CConfig(void)
   if (RefOriginMoment_Z != NULL)
     delete [] RefOriginMoment_Z;
 
-  /*Marker pointers*/
+  /*--- Marker pointers ---*/
+  
   if (Marker_CfgFile_Out_1D!=NULL)   delete[] Marker_CfgFile_Out_1D;
   if (Marker_All_Out_1D!=NULL)      delete[] Marker_All_Out_1D;
   if (Marker_CfgFile_GeoEval!=NULL)  delete[] Marker_CfgFile_GeoEval;
@@ -5030,17 +4980,18 @@ CConfig::~CConfig(void)
   if (Marker_All_Plotting!=NULL)     delete[] Marker_All_Plotting;
   if (Marker_CfgFile_DV!=NULL)        delete[] Marker_CfgFile_DV;
   if (Marker_All_DV!=NULL)           delete[] Marker_All_DV;
+  if (Marker_CfgFile_Moving!=NULL)   delete[] Marker_CfgFile_Moving;
+  if (Marker_All_Moving!=NULL)      delete[] Marker_All_Moving;
+  if (Marker_CfgFile_PerBound!=NULL) delete[] Marker_CfgFile_PerBound;
+  if (Marker_All_PerBound!=NULL)    delete[] Marker_All_PerBound;
+
   if (Marker_DV!=NULL)               delete[] Marker_DV;
   if (Marker_Moving!=NULL)           delete[] Marker_Moving;
-  if (Marker_All_Moving!=NULL)      delete[] Marker_All_Moving;
-  if (Marker_CfgFile_Moving!=NULL)   delete[] Marker_CfgFile_Moving;
   if (Marker_Monitoring!=NULL)      delete[] Marker_Monitoring;
   if (Marker_Designing!=NULL)       delete[] Marker_Designing;
   if (Marker_GeoEval!=NULL)         delete[] Marker_GeoEval;
   if (Marker_Plotting!=NULL)        delete[] Marker_Plotting;
-  if (Marker_CfgFile_PerBound!=NULL) delete[] Marker_CfgFile_PerBound;
   if (Marker_All_SendRecv!=NULL)    delete[] Marker_All_SendRecv;
-  if (Marker_All_PerBound!=NULL)    delete[] Marker_All_PerBound;
 
   if (EA_IntLimit!=NULL)    delete[] EA_IntLimit;
   if (Hold_GridFixed_Coord!=NULL)    delete[] Hold_GridFixed_Coord ;
@@ -5090,7 +5041,8 @@ CConfig::~CConfig(void)
   if (PlaneTag!=NULL)    delete[] PlaneTag;
   if (CFLRamp!=NULL)    delete[] CFLRamp;
   if (CFL!=NULL)    delete[] CFL;
-  /*String markers*/
+  
+  /*--- String markers ---*/
   if (Marker_Euler!=NULL )              delete[] Marker_Euler;
   if (Marker_FarField!=NULL )           delete[] Marker_FarField;
   if (Marker_Custom!=NULL )             delete[] Marker_Custom;
@@ -5121,73 +5073,6 @@ CConfig::~CConfig(void)
   if (Marker_HeatFluxNonCatalytic!=NULL )   delete[] Marker_HeatFluxNonCatalytic;
   if (Marker_HeatFluxCatalytic!=NULL )      delete[] Marker_HeatFluxCatalytic;
 
-}
-
-void CConfig::SetFileNameDomain(unsigned short val_domain) {
-
-#ifdef HAVE_MPI
-
-  int size;
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-
-  string old_name;
-  char buffer[10];
-
-  /*--- Standard surface output ---*/
-  old_name = SurfFlowCoeff_FileName;
-  if (size > 1) {
-    sprintf (buffer, "_%d", int(val_domain));
-    SurfFlowCoeff_FileName = old_name + buffer;
-  }
-
-  old_name = SurfAdjCoeff_FileName;
-  if (size > 1) {
-    sprintf (buffer, "_%d", int(val_domain));
-    SurfAdjCoeff_FileName = old_name + buffer;
-  }
-
-  old_name = SurfStructure_FileName;
-  if (size > 1) {
-    sprintf (buffer, "_%d", int(val_domain));
-    SurfStructure_FileName = old_name + buffer;
-  }
-
-  old_name = SurfWave_FileName;
-  if (size > 1) {
-    sprintf (buffer, "_%d", int(val_domain));
-    SurfWave_FileName = old_name + buffer;
-  }
-
-  old_name = SurfHeat_FileName;
-  if (size > 1) {
-    sprintf (buffer, "_%d", int(val_domain));
-    SurfHeat_FileName = old_name + buffer;
-  }
-
-  if (size > 1) {
-
-    /*--- Standard flow and adjoint output ---*/
-    sprintf (buffer, "_%d", int(val_domain));
-    old_name = Flow_FileName;
-    Flow_FileName = old_name + buffer;
-
-    sprintf (buffer, "_%d", int(val_domain));
-    old_name = Structure_FileName;
-    Structure_FileName = old_name + buffer;
-
-    sprintf (buffer, "_%d", int(val_domain));
-    old_name = Adj_FileName;
-    Adj_FileName = old_name + buffer;
-
-    /*--- Mesh files ---*/
-    sprintf (buffer, "_%d.su2", int(val_domain));
-    old_name = Mesh_FileName;
-    unsigned short lastindex = old_name.find_last_of(".");
-    old_name = old_name.substr(0, lastindex);
-    Mesh_FileName = old_name + buffer;
-
-  }
-#endif
 }
 
 string CConfig::GetUnsteady_FileName(string val_filename, int val_iter) {
