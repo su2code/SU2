@@ -2406,7 +2406,6 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   unsigned long nBoundTriangleTotal = 0, iBoundTriangleTotal;
   unsigned long nBoundRectangleTotal = 0, iBoundRectangleTotal;
   unsigned long ReceptorColor = 0, DonorColor = 0, Transformation;
-  unsigned long *nElem_Color = NULL, **Elem_Color = NULL, Max_nElem_Color = 0;
   unsigned long nTotalSendDomain_Periodic = 0, iTotalSendDomain_Periodic, nTotalReceivedDomain_Periodic = 0, iTotalReceivedDomain_Periodic, *nSendDomain_Periodic = NULL, *nReceivedDomain_Periodic = NULL;
   unsigned long Buffer_Send_nPointTotal = 0, Buffer_Send_nPointDomainTotal = 0, Buffer_Send_nPointGhost = 0, Buffer_Send_nPointPeriodic = 0;
   unsigned long Buffer_Send_nElemTotal, Buffer_Send_nElemTriangle = 0, Buffer_Send_nElemRectangle = 0, Buffer_Send_nElemTetrahedron = 0, Buffer_Send_nElemHexahedron = 0, Buffer_Send_nElemWedge = 0, Buffer_Send_nElemPyramid = 0;
@@ -2418,9 +2417,9 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   unsigned short iNode, iDim, iMarker, jMarker, nMarkerDomain = 0, iMarkerDomain;
   unsigned short nDomain = 0, iDomain, jDomain, nPeriodic = 0, iPeriodic, overhead = 4, Buffer_Send_nMarkerDomain = 0, Buffer_Send_nDim = 0, Buffer_Send_nZone = 0, Buffer_Send_nPeriodic = 0;
   
-  bool *MarkerIn = NULL, **VertexIn = NULL, CheckDomain;
+  bool *MarkerIn = NULL, **VertexIn = NULL;
   long vnodes_local[8], *Global_to_Local_Point = NULL;
-  char Marker_All_TagBound[MAX_NUMBER_MARKER][MAX_STRING_SIZE], Buffer_Send_Marker_All_TagBound[MAX_NUMBER_MARKER][MAX_STRING_SIZE];
+  
   vector<long> DomainList;
   short *Marker_All_SendRecv_Copy = NULL;
   string *Marker_All_TagBound_Copy = NULL;
@@ -2429,15 +2428,22 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   int size = SINGLE_NODE;
   
   /*--- Some dynamic arrays so we're not allocating too much on the stack ---*/
-  unsigned long *nVertexDomain = new unsigned long[MAX_NUMBER_MARKER];
-  unsigned long *nBoundLine = new unsigned long[MAX_NUMBER_MARKER];
-  unsigned long *nBoundTriangle = new unsigned long[MAX_NUMBER_MARKER];
+  
+  unsigned long *nVertexDomain   = new unsigned long[MAX_NUMBER_MARKER];
+  unsigned long *nBoundLine      = new unsigned long[MAX_NUMBER_MARKER];
+  unsigned long *nBoundTriangle  = new unsigned long[MAX_NUMBER_MARKER];
   unsigned long *nBoundRectangle = new unsigned long[MAX_NUMBER_MARKER];
-  unsigned long *Buffer_Send_nVertexDomain = new unsigned long[MAX_NUMBER_MARKER];
-  unsigned long *Buffer_Send_nBoundLine = new unsigned long[MAX_NUMBER_MARKER];
-  unsigned long *Buffer_Send_nBoundTriangle = new unsigned long[MAX_NUMBER_MARKER];
+  
+  unsigned long *Buffer_Send_nVertexDomain   = new unsigned long[MAX_NUMBER_MARKER];
+  unsigned long *Buffer_Send_nBoundLine      = new unsigned long[MAX_NUMBER_MARKER];
+  unsigned long *Buffer_Send_nBoundTriangle  = new unsigned long[MAX_NUMBER_MARKER];
   unsigned long *Buffer_Send_nBoundRectangle = new unsigned long[MAX_NUMBER_MARKER];
-  unsigned short *Buffer_Send_Marker_All_SendRecv = new unsigned short[MAX_NUMBER_MARKER];
+  
+  short *Buffer_Send_Marker_All_SendRecv = new short[MAX_NUMBER_MARKER];
+  
+  char *Marker_All_TagBound             = new char[MAX_NUMBER_MARKER*MAX_STRING_SIZE];
+  char *Buffer_Send_Marker_All_TagBound = new char[MAX_NUMBER_MARKER*MAX_STRING_SIZE];
+  
   
 #ifdef HAVE_MPI
   
@@ -2741,73 +2747,6 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   
   delete [] local_colour_temp;
   
-  /*--- Sending of colors complete. Now do some post-processing. ---*/
-  
-  nElem_Color = new unsigned long[nDomain];
-  for (iDomain = 0; iDomain < nDomain; iDomain++) nElem_Color[iDomain] = 0;
-  
-  for (iElem = 0; iElem < geometry->no_of_local_elements; iElem++) {
-    DomainList.clear();
-    for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++) {
-      iPoint = geometry->elem[iElem]->GetNode(iNode);
-      iDomain = local_colour_values[iPoint];
-      
-      CheckDomain = true;
-      for (jDomain = 0; jDomain < DomainList.size(); jDomain++) {
-        if (DomainList[jDomain] == iDomain) { CheckDomain = false; break; }
-      }
-      
-      /*--- If the element is not in the list, then add it ---*/
-      if (CheckDomain) {
-        DomainList.push_back(iDomain);
-        nElem_Color[iDomain]++;
-      }
-      
-    }
-  }
-  
-  /*--- Find the maximum number of elements per color to allocate the list ---*/
-  
-  Max_nElem_Color = 0;
-  for (iDomain = 0; iDomain < nDomain; iDomain++) {
-    if (nElem_Color[iDomain] > Max_nElem_Color) {
-      Max_nElem_Color = nElem_Color[iDomain];
-    }
-  }
-  
-  /*--- Allocate the element color array ---*/
-  
-  Elem_Color = new unsigned long* [nDomain];
-  for (iDomain = 0; iDomain < nDomain; iDomain++) {
-    Elem_Color[iDomain] =  new unsigned long[Max_nElem_Color];
-    nElem_Color[iDomain] = 0;
-  }
-  
-  /*--- Create the element list based on the color ---*/
-  
-  for (iElem = 0; iElem < geometry->no_of_local_elements; iElem++) {
-    
-    DomainList.clear();
-    for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++) {
-      iPoint = geometry->elem[iElem]->GetNode(iNode);
-      iDomain = local_colour_values[iPoint];
-      
-      /*--- Check if the element has been already added to the color ---*/
-      
-      CheckDomain = true;
-      for (jDomain = 0; jDomain < DomainList.size(); jDomain++) {
-        if (DomainList[jDomain] == iDomain) { CheckDomain = false; break; }
-      }
-      
-      if (CheckDomain) {
-        DomainList.push_back(iDomain);
-        Elem_Color[iDomain][nElem_Color[iDomain]] = iElem;
-        nElem_Color[iDomain]++;
-      }
-      
-    }
-  }
-  
   /*--- This loop gets the array sizes of points, elements, etc. for each
    rank to send to each other rank. ---*/
   
@@ -3073,7 +3012,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
     
     if (rank == iDomain) {
       
-      for (int jDomain = 0; jDomain < size; jDomain++) {
+      for (jDomain = 0; jDomain < size; jDomain++) {
         
         /*--- A rank does not communicate with itself through MPI ---*/
         
@@ -4316,7 +4255,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
         Buffer_Send_nBoundTriangle[iMarker]  = 0;
         Buffer_Send_nBoundRectangle[iMarker] = 0;
         Buffer_Send_Marker_All_SendRecv[iMarker] = Marker_All_SendRecv_Copy[iMarker];
-        sprintf(Buffer_Send_Marker_All_TagBound[iMarker], "%s",
+        sprintf(&Buffer_Send_Marker_All_TagBound[iMarker*MAX_STRING_SIZE], "%s",
                 Marker_All_TagBound_Copy[iMarker].c_str());
       }
       
@@ -4540,7 +4479,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
           nBoundRectangle[iMarker] = Buffer_Send_nBoundRectangle[iMarker];
           Marker_All_SendRecv[iMarker] = Buffer_Send_Marker_All_SendRecv[iMarker];
           for (iter = 0; iter < MAX_STRING_SIZE; iter++)
-          Marker_All_TagBound[iMarker][iter] = Buffer_Send_Marker_All_TagBound[iMarker][iter];
+          Marker_All_TagBound[iMarker*MAX_STRING_SIZE+iter] = Buffer_Send_Marker_All_TagBound[iMarker*MAX_STRING_SIZE+iter];
         }
         
         Buffer_Receive_Center    = new double[nPeriodic*3];
@@ -4618,7 +4557,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
         MPI_Get_count(&status, MPI_SHORT, &recv_count);
         MPI_Recv(Marker_All_SendRecv, recv_count, MPI_SHORT,
                  MASTER_NODE, 8, MPI_COMM_WORLD, &status);
-        
+
         MPI_Probe(MASTER_NODE, 9, MPI_COMM_WORLD, &status);
         MPI_Get_count(&status, MPI_CHAR, &recv_count);
         MPI_Recv(Marker_All_TagBound, recv_count, MPI_CHAR,
@@ -4633,12 +4572,12 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
         
         /*--- Marker_All_TagBound and Marker_All_SendRecv, set the same
          values in the config files of all the files ---*/
-        
+
         for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
           config->SetMarker_All_SendRecv(iMarker,
                                          Marker_All_SendRecv[iMarker]);
           config->SetMarker_All_TagBound(iMarker,
-                                         string(Marker_All_TagBound[iMarker]));
+                                         string(&Marker_All_TagBound[iMarker*MAX_STRING_SIZE]));
         }
         
         /*--- Periodic boundary conditions ---*/
@@ -4725,7 +4664,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
       Buffer_Receive_ReceivedDomain_PeriodicDonor = new unsigned long[nTotalReceivedDomain_Periodic];
       
     }
-    
+
     /*--- The master should wait to complete the above sends first ---*/
     
 #ifdef HAVE_MPI
@@ -5196,7 +5135,6 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   
   if (rank == MASTER_NODE) {
     delete [] MarkerIn;
-    delete [] nElem_Color;
     delete [] Buffer_Send_Center;
     delete [] Buffer_Send_Rotation;
     delete [] Buffer_Send_Translate;
@@ -5204,17 +5142,14 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
     delete [] Buffer_Send_nReceivedDomain_Periodic;
     delete [] Marker_All_SendRecv_Copy;
     delete [] Marker_All_TagBound_Copy;
-    
-    for (iDomain = 0; iDomain < nDomain; iDomain++) {
-      delete[] Elem_Color[iDomain];
-    }
-    delete[] Elem_Color;
-    delete[] Global_to_Local_Point;
-    
+    delete [] Global_to_Local_Point;
     for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
     delete VertexIn[iMarker];
     delete[] VertexIn;
   }
+  
+  delete [] Marker_All_TagBound;
+  delete [] Buffer_Send_Marker_All_TagBound;
   
   delete [] nSendDomain_Periodic;
   delete [] nReceivedDomain_Periodic;
