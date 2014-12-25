@@ -206,9 +206,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\par RESTART_SOL
    *  DESCRIPTION: Restart solution from native solution file \n Options: NO, YES \ingroup Config */
   addBoolOption("RESTART_SOL", Restart, false);
-  /*!\par VISUALIZE_PART
-   *  DESCRIPTION: Write a tecplot file for each partition \ingroup Config*/
-  addBoolOption("VISUALIZE_PART", Visualize_Partition, false);
   /*!\par SYSTEM_MEASUREMENTS
    *  DESCRIPTION: System of measurements \n OPTIONS: see \link Measurements_Map \endlink \n Default: SI \ingroup Config*/
   addEnumOption("SYSTEM_MEASUREMENTS", SystemMeasurements, Measurements_Map, SI);
