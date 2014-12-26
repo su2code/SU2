@@ -607,6 +607,7 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
     CMatrixVectorProduct* mat_vec = new CSysMatrixVectorProduct(Jacobian, geometry, config);
     
     CPreconditioner* precond = NULL;
+    
     switch (config->GetKind_Linear_Solver_Prec()) {
       case JACOBI:
         Jacobian.BuildJacobiPreconditioner();
@@ -622,6 +623,10 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
       case LINELET:
         Jacobian.BuildJacobiPreconditioner();
         precond = new CLineletPreconditioner(Jacobian, geometry, config);
+        break;
+      default:
+        Jacobian.BuildJacobiPreconditioner();
+        precond = new CJacobiPreconditioner(Jacobian, geometry, config);
         break;
     }
     

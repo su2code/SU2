@@ -61,11 +61,7 @@ CTurbVariable::CTurbVariable(unsigned short val_nDim, unsigned short val_nvar, C
   
 }
 
-CTurbVariable::~CTurbVariable(void) {
-  
-	if (TS_Source != NULL) delete [] TS_Source;
-  
-}
+CTurbVariable::~CTurbVariable(void) { }
 
 double CTurbVariable::GetmuT(){ return muT; }
 
@@ -161,7 +157,11 @@ CTurbSSTVariable::CTurbSSTVariable(double val_kine, double val_omega, double val
     
 }
 
-CTurbSSTVariable::~CTurbSSTVariable(void) { }
+CTurbSSTVariable::~CTurbSSTVariable(void) {
+
+  if (TS_Source != NULL) delete [] TS_Source;
+  
+}
 
 void CTurbSSTVariable::SetBlendingFunc(double val_viscosity, double val_dist, double val_density){
 	unsigned short iDim;

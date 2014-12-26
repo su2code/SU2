@@ -225,7 +225,7 @@ class State(ordered_bunch):
             if not files.has_key(label):
                 if os.path.exists(filename):
                     files[label] = filename
-                    print 'found: %s' % filename
+                    print 'Found: %s' % filename
             else:
                 assert os.path.exists(files[label]) , 'state expected file: %s' % filename
         #: register_file()                

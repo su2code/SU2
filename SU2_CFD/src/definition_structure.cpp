@@ -330,7 +330,7 @@ void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry,
   unsigned short iMGlevel;
   bool euler, ns, turbulent,
   adj_euler, adj_ns, adj_turb,
-  lin_euler, lin_ns, lin_turb,
+  lin_euler, lin_ns,
   tne2_euler, tne2_ns,
   adj_tne2_euler, adj_tne2_ns,
   poisson, wave, fea, heat,
@@ -341,7 +341,7 @@ void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry,
   /*--- Initialize some useful booleans ---*/
   euler            = false;  ns              = false;  turbulent = false;
   adj_euler        = false;	 adj_ns          = false;	 adj_turb  = false;
-  lin_euler        = false;	 lin_ns          = false;  lin_turb  = false;
+  lin_euler        = false;	 lin_ns          = false;
   tne2_euler       = false;  tne2_ns         = false;
   adj_tne2_euler   = false;  adj_tne2_ns     = false;
   spalart_allmaras = false;  menter_sst      = false;   machine_learning = false;
@@ -477,8 +477,7 @@ void Integration_Preprocessing(CIntegration **integration_container,
   bool
   euler, adj_euler, lin_euler,
   ns, adj_ns, lin_ns,
-  turbulent, adj_turb, lin_turb,
-  spalart_allmaras, menter_sst,machine_learning,
+  turbulent, adj_turb,
   tne2_euler, adj_tne2_euler,
   tne2_ns, adj_tne2_ns,
   poisson, wave, fea, heat, template_solver, transition;
@@ -486,8 +485,7 @@ void Integration_Preprocessing(CIntegration **integration_container,
   /*--- Initialize some useful booleans ---*/
   euler            = false; adj_euler        = false; lin_euler         = false;
   ns               = false; adj_ns           = false; lin_ns            = false;
-  turbulent        = false; adj_turb         = false; lin_turb          = false;
-  spalart_allmaras = false; menter_sst       = false; machine_learning  = false;
+  turbulent        = false; adj_turb         = false;
   tne2_euler       = false; adj_tne2_euler   = false;
   tne2_ns          = false; adj_tne2_ns      = false;
   poisson          = false;
@@ -518,16 +516,6 @@ void Integration_Preprocessing(CIntegration **integration_container,
     case ADJ_TNE2_NAVIER_STOKES : tne2_ns = true; adj_tne2_ns = true; break;
     case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
     case LIN_EULER: euler = true; lin_euler = true; break;
-  }
-  
-  /*--- Assign turbulence model booleans --- */
-  if (turbulent) {
-    switch (config->GetKind_Turb_Model()) {
-      case SA: spalart_allmaras = true; break;
-      case SST: menter_sst = true; break;
-      case ML: machine_learning = true; break;
-      default: cout << "Specified turbulence model unavailable or none selected" << endl; exit(EXIT_FAILURE); break;
-    }
   }
   
   /*--- Allocate solution for a template problem ---*/
@@ -577,7 +565,6 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
   nPrimVar_Adj_TNE2     = 0,
   nPrimVarGrad_Adj_TNE2 = 0,
   nVar_Poisson          = 0,
-  nVar_FEA              = 0,
   nVar_Wave             = 0,
   nVar_Heat             = 0,
   nVar_Lin_Flow         = 0;
@@ -586,8 +573,8 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
   
   bool
   euler, adj_euler, lin_euler,
-  ns, adj_ns, lin_ns,
-  turbulent, adj_turb, lin_turb,
+  ns, adj_ns,
+  turbulent, adj_turb,
   tne2_euler, adj_tne2_euler,
   tne2_ns, adj_tne2_ns,
   spalart_allmaras, menter_sst, machine_learning,
@@ -610,7 +597,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
   wave             = false;   heat             = false;   fea              = false;   spalart_allmaras = false;
   tne2_euler       = false;   tne2_ns          = false;
   adj_tne2_euler   = false;	  adj_tne2_ns      = false;
-  lin_euler        = false;   lin_ns           = false;   lin_turb         = false;	 menter_sst       = false;    machine_learning = false;
+  lin_euler        = false;   menter_sst       = false;    machine_learning = false;
   transition       = false;
   template_solver  = false;
   
@@ -662,7 +649,6 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
   if (poisson)			nVar_Poisson = solver_container[MESH_0][POISSON_SOL]->GetnVar();
   
   if (wave)				nVar_Wave = solver_container[MESH_0][WAVE_SOL]->GetnVar();
-  if (fea)				nVar_FEA = solver_container[MESH_0][FEA_SOL]->GetnVar();
   if (heat)				nVar_Heat = solver_container[MESH_0][HEAT_SOL]->GetnVar();
   
   /*--- Number of variables for adjoint problem ---*/

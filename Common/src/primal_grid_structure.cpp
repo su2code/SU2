@@ -131,6 +131,7 @@ CLine::CLine(unsigned long val_point_0, unsigned long val_point_1,
 	unsigned short iDim, iFace;
 
 	/*--- Allocate CG coordinates ---*/
+  
 	nDim = val_nDim;
 	Coord_CG = new double[nDim];
 	for (iDim = 0; iDim < nDim; iDim++)
@@ -143,6 +144,7 @@ CLine::CLine(unsigned long val_point_0, unsigned long val_point_1,
 	}
 	
 	/*--- Allocate and define face structure of the element ---*/
+  
 	Nodes = new unsigned long[nNodes];
 	Nodes[0] = val_point_0;
 	Nodes[1] = val_point_1;

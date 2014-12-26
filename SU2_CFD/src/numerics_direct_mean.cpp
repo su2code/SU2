@@ -59,6 +59,8 @@ CCentJST_Flow::~CCentJST_Flow(void) {
 void CCentJST_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j,
                                     CConfig *config) {
   
+  double U_i[5] = {0.0,0.0,0.0,0.0,0.0}, U_j[5] = {0.0,0.0,0.0,0.0,0.0};
+
   /*--- Pressure, density, enthalpy, energy, and velocity at points i and j ---*/
   
   Pressure_i = V_i[nDim+1];                       Pressure_j = V_j[nDim+1];
@@ -77,7 +79,6 @@ void CCentJST_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_
 
   /*--- Recompute conservative variables ---*/
   
-  double U_i[5], U_j[5];
   U_i[0] = Density_i; U_j[0] = Density_j;
   for (iDim = 0; iDim < nDim; iDim++) {
     U_i[iDim+1] = Density_i*Velocity_i[iDim]; U_j[iDim+1] = Density_j*Velocity_j[iDim];
@@ -118,7 +119,7 @@ void CCentJST_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_
     for (iDim = 0; iDim < nDim; iDim++)
       ProjVelocity += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
     for (iVar = 0; iVar < nVar; iVar++) {
-      val_residual[iVar] -= ProjVelocity * 0.5*(U_i[iVar]+U_j[iVar]);
+      val_residual[iVar] -= ProjVelocity * 0.5*(U_i[iVar] + U_j[iVar]);
       if (implicit) {
         val_Jacobian_i[iVar][iVar] -= 0.5*ProjVelocity;
         val_Jacobian_j[iVar][iVar] -= 0.5*ProjVelocity;
@@ -240,6 +241,8 @@ CCentJST_KE_Flow::~CCentJST_KE_Flow(void) {
 void CCentJST_KE_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j,
                                     CConfig *config) {
 
+  double U_i[5] = {0.0,0.0,0.0,0.0,0.0}, U_j[5] = {0.0,0.0,0.0,0.0,0.0};
+
   /*--- Pressure, density, enthalpy, energy, and velocity at points i and j ---*/
 
   Pressure_i = V_i[nDim+1];                       Pressure_j = V_j[nDim+1];
@@ -258,7 +261,6 @@ void CCentJST_KE_Flow::ComputeResidual(double *val_residual, double **val_Jacobi
 
   /*--- Recompute conservative variables ---*/
 
-  double U_i[5], U_j[5];
   U_i[0] = Density_i; U_j[0] = Density_j;
   for (iDim = 0; iDim < nDim; iDim++) {
     U_i[iDim+1] = Density_i*Velocity_i[iDim]; U_j[iDim+1] = Density_j*Velocity_j[iDim];
@@ -416,6 +418,8 @@ CCentLax_Flow::~CCentLax_Flow(void) {
 void CCentLax_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j,
                                     CConfig *config) {
   
+  double U_i[5] = {0.0,0.0,0.0,0.0,0.0}, U_j[5] = {0.0,0.0,0.0,0.0,0.0};
+
   /*--- Pressure, density, enthalpy, energy, and velocity at points i and j ---*/
   
   Pressure_i = V_i[nDim+1];                       Pressure_j = V_j[nDim+1];
@@ -434,7 +438,6 @@ void CCentLax_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_
   
   /*--- Recompute conservative variables ---*/
   
-  double U_i[5], U_j[5];
   U_i[0] = Density_i; U_j[0] = Density_j;
   for (iDim = 0; iDim < nDim; iDim++) {
     U_i[iDim+1] = Density_i*Velocity_i[iDim]; U_j[iDim+1] = Density_j*Velocity_j[iDim];
@@ -1175,6 +1178,8 @@ CUpwRoe_Flow::~CUpwRoe_Flow(void) {
 
 void CUpwRoe_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
   
+  double U_i[5] = {0.0,0.0,0.0,0.0,0.0}, U_j[5] = {0.0,0.0,0.0,0.0,0.0};
+
 	/*--- Face area (norm or the normal vector) ---*/
   
 	Area = 0.0;
@@ -1209,7 +1214,6 @@ void CUpwRoe_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i
   
   /*--- Recompute conservative variables ---*/
   
-  double U_i[5], U_j[5];
   U_i[0] = Density_i; U_j[0] = Density_j;
   for (iDim = 0; iDim < nDim; iDim++) {
     U_i[iDim+1] = Density_i*Velocity_i[iDim]; U_j[iDim+1] = Density_j*Velocity_j[iDim];
@@ -1424,6 +1428,8 @@ CUpwGeneralRoe_Flow::~CUpwGeneralRoe_Flow(void) {
 
 void CUpwGeneralRoe_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
 
+  double U_i[5] = {0.0,0.0,0.0,0.0,0.0}, U_j[5] = {0.0,0.0,0.0,0.0,0.0};
+
 	/*--- Face area (norm or the normal vector) ---*/
 
   Area = 0.0;
@@ -1437,8 +1443,6 @@ void CUpwGeneralRoe_Flow::ComputeResidual(double *val_residual, double **val_Jac
 		UnitNormal[iDim] = Normal[iDim]/Area;
 
   /*--- Primitive variables at point i ---*/
-
-
 
   Velocity2_i = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
@@ -1481,7 +1485,6 @@ void CUpwGeneralRoe_Flow::ComputeResidual(double *val_residual, double **val_Jac
 
   /*--- Recompute conservative variables ---*/
 
-  double U_i[5], U_j[5];
   U_i[0] = Density_i; U_j[0] = Density_j;
   for (iDim = 0; iDim < nDim; iDim++) {
     U_i[iDim+1] = Density_i*Velocity_i[iDim]; U_j[iDim+1] = Density_j*Velocity_j[iDim];
@@ -1744,11 +1747,10 @@ void CUpwMSW_Flow::ComputeResidual(double *val_residual,
   double P_i, P_j;
   double ProjVel_i, ProjVel_j, ProjVelst_i, ProjVelst_j;
   double sqvel_i, sqvel_j;
-	double epsilon, alpha, w, dp, onemw;
+	double alpha, w, dp, onemw;
   double Proj_ModJac_Tensor_i, Proj_ModJac_Tensor_j;
   
   /*--- Set parameters in the numerical method ---*/
-	epsilon = 1E-4;
   alpha = 6.0;
   
   /*--- Calculate supporting geometry parameters ---*/
@@ -1949,6 +1951,8 @@ CUpwTurkel_Flow::~CUpwTurkel_Flow(void) {
 
 void CUpwTurkel_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
   
+  double U_i[5] = {0.0,0.0,0.0,0.0,0.0}, U_j[5] = {0.0,0.0,0.0,0.0,0.0};
+
   /*--- Face area (norm or the normal vector) ---*/
   
   Area = 0.0;
@@ -1983,7 +1987,6 @@ void CUpwTurkel_Flow::ComputeResidual(double *val_residual, double **val_Jacobia
 
   /*--- Recompute conservative variables ---*/
   
-  double U_i[5], U_j[5];
   U_i[0] = Density_i; U_j[0] = Density_j;
   for (iDim = 0; iDim < nDim; iDim++) {
     U_i[iDim+1] = Density_i*Velocity_i[iDim]; U_j[iDim+1] = Density_j*Velocity_j[iDim];
@@ -2471,6 +2474,8 @@ CCentJSTArtComp_Flow::~CCentJSTArtComp_Flow(void) {
 void CCentJSTArtComp_Flow::ComputeResidual(double *val_residual,
                                            double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
   
+  double U_i[4] = {0.0,0.0,0.0,0.0}, U_j[4] = {0.0,0.0,0.0,0.0};
+
   /*--- Primitive variables at point i and j ---*/
   
   Pressure_i =    V_i[0];       Pressure_j = V_j[0];
@@ -2488,7 +2493,6 @@ void CCentJSTArtComp_Flow::ComputeResidual(double *val_residual,
   
   /*--- Recompute conservative variables ---*/
   
-  double U_i[4], U_j[4];
   U_i[0] = Pressure_i; U_j[0] = Pressure_j;
   for (iDim = 0; iDim < nDim; iDim++) {
     U_i[iDim+1] = DensityInc_i*Velocity_i[iDim]; U_j[iDim+1] = DensityInc_j*Velocity_j[iDim];
@@ -2603,6 +2607,8 @@ CCentLaxArtComp_Flow::~CCentLaxArtComp_Flow(void) {
 void CCentLaxArtComp_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j,
                                            CConfig *config) {
   
+  double U_i[4] = {0.0,0.0,0.0,0.0}, U_j[4] = {0.0,0.0,0.0,0.0};
+
   /*--- Conservative variables at point i and j ---*/
   
   Pressure_i =    V_i[0];       Pressure_j = V_j[0];
@@ -2618,7 +2624,6 @@ void CCentLaxArtComp_Flow::ComputeResidual(double *val_residual, double **val_Ja
   
   /*--- Recompute conservative variables ---*/
 
-  double U_i[4], U_j[4];
   U_i[0] = Pressure_i; U_j[0] = Pressure_j;
   for (iDim = 0; iDim < nDim; iDim++) {
     U_i[iDim+1] = DensityInc_i*Velocity_i[iDim]; U_j[iDim+1] = DensityInc_j*Velocity_j[iDim];

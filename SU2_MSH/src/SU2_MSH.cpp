@@ -81,8 +81,7 @@ int main(int argc, char *argv[]) {
 		 and choose the elements to adapt ---*/
     
 		if ((config->GetKind_Adaptation() != FULL)
-				&& (config->GetKind_Adaptation() != WAKE) && (config->GetKind_Adaptation() != TWOPHASE)
-				&& (config->GetKind_Adaptation() != SMOOTHING) && (config->GetKind_Adaptation() != SUPERSONIC_SHOCK))
+				&& (config->GetKind_Adaptation() != WAKE) && (config->GetKind_Adaptation() != SMOOTHING) && (config->GetKind_Adaptation() != SUPERSONIC_SHOCK))
 			grid_adaptation->GetFlowSolution(geometry, config);
 		
 		switch (config->GetKind_Adaptation()) {
@@ -97,9 +96,6 @@ int main(int argc, char *argv[]) {
 				break;
 			case WAKE:
 				grid_adaptation->SetWake_Refinement(geometry, 1);
-				break;
-			case TWOPHASE:
-				grid_adaptation->SetTwoPhase_Refinement(geometry, 1);
 				break;
 			case SUPERSONIC_SHOCK:
 				grid_adaptation->SetSupShock_Refinement(geometry, config);
@@ -191,7 +187,7 @@ int main(int argc, char *argv[]) {
 		/*--- Write the restart file ---*/
     
 		if ((config->GetKind_Adaptation() != SMOOTHING) && (config->GetKind_Adaptation() != FULL) &&
-				(config->GetKind_Adaptation() != WAKE) && (config->GetKind_Adaptation() != TWOPHASE) &&
+				(config->GetKind_Adaptation() != WAKE) &&
 				(config->GetKind_Adaptation() != SUPERSONIC_SHOCK))
 			grid_adaptation->SetRestart_FlowSolution(config, geo_adapt, config->GetRestart_FlowFileName());
 		

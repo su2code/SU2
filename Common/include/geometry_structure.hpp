@@ -591,7 +591,7 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void ComputeAirfoil_Section(double *Plane_P0, double *Plane_Normal, unsigned short iSection,
+	void ComputeAirfoil_Section(double *Plane_P0, double *Plane_Normal,
                                       double MinXCoord, double MaxXCoord, double *FlowVariable,
                                       vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil,
                                       vector<double> &Zcoord_Airfoil, vector<double> &Variable_Airfoil,

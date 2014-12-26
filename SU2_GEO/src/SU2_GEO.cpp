@@ -214,7 +214,7 @@ int main(int argc, char *argv[]) {
   
   if (rank == MASTER_NODE) cout << "Set airfoil section structure." << endl;
   for (iPlane = 0; iPlane < nPlane; iPlane++) {
-    geometry_container[ZONE_0]->ComputeAirfoil_Section(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, MinXCoord, MaxXCoord, NULL,
+    geometry_container[ZONE_0]->ComputeAirfoil_Section(Plane_P0[iPlane], Plane_Normal[iPlane], MinXCoord, MaxXCoord, NULL,
                                      Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], Variable_Airfoil[iPlane], true, config_container[ZONE_0]);
   }
   
@@ -302,6 +302,9 @@ int main(int argc, char *argv[]) {
 		
 		/*--- Definition of the Class for surface deformation ---*/
 		surface_movement = new CSurfaceMovement();
+    
+    /*--- Copy coordinates to the surface structure ---*/
+    surface_movement->CopyBoundary(geometry_container[ZONE_0], config_container[ZONE_0]);
 		
 		/*--- Definition of the FFD deformation class ---*/
 		FFDBox = new CFreeFormDefBox*[MAX_NUMBER_FFD];
@@ -471,7 +474,7 @@ int main(int argc, char *argv[]) {
       
       /*--- Create airfoil structure ---*/
       for (iPlane = 0; iPlane < nPlane; iPlane++) {
-        geometry_container[ZONE_0]->ComputeAirfoil_Section(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, MinXCoord, MaxXCoord, NULL,
+        geometry_container[ZONE_0]->ComputeAirfoil_Section(Plane_P0[iPlane], Plane_Normal[iPlane], MinXCoord, MaxXCoord, NULL,
                                          Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], Variable_Airfoil[iPlane], false, config_container[ZONE_0]);
       }
       

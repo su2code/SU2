@@ -29,7 +29,6 @@ CPengRobinson::CPengRobinson() : CIdealGas() {
 	TstarCrit = 0.0;
 }
 
-
 CPengRobinson::CPengRobinson(double gamma, double R, double Pstar, double Tstar, double w) : CIdealGas(gamma, R) {
 
 	a = 0.45724*Gas_Constant*Gas_Constant*Tstar*Tstar/Pstar;
@@ -121,7 +120,7 @@ void CPengRobinson::SetTDState_rhoe (double rho, double e ) {
 
 void CPengRobinson::SetTDState_PT (double P, double T ) {
 	double toll= 1e-6;
-	double A, B, Z, DZ, F, F1;
+	double A, B, Z, DZ=1.0, F, F1;
 	double rho, fv, e;
 	double sqrt2=sqrt(2);
 	unsigned short nmax = 20, count=0;
@@ -129,17 +128,15 @@ void CPengRobinson::SetTDState_PT (double P, double T ) {
 	A= a*alpha2(T)*P/(T*Gas_Constant)/(T*Gas_Constant);
 	B= b*P/(T*Gas_Constant);
 
-	if(Zed > 0.1)
-			Z=min(Zed, 0.99);
-		else
-			Z=0.99;
-	DZ= 1.0;
-	do{
+  if (Zed > 0.1) Z = min(Zed, 0.99);
+		else Z=0.99;
+  
+	do {
 		F = Z*Z*Z + Z*Z*(B - 1.0) + Z*(A - 2*B - 3*B*B)  + (B*B*B + B*B - A*B);
 		F1 = 3*Z*Z + 2*Z*(B - 1.0) + (A - 2*B - 3*B*B);
 		DZ = F/F1;
 		Z-= DZ;
-	}while(abs(DZ)>toll && count < nmax);
+	} while(abs(DZ)>toll && count < nmax);
 
 	if (count == nmax){
 		cout << "Warning Newton-Raphson exceed number of max iteration in PT"<< endl;

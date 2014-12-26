@@ -212,9 +212,9 @@ void CAdjLevelSetSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) 
 	unsigned short iVar, iMarker, iPeriodic_Index, MarkerS, MarkerR;
 	unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
 	double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi, *Buffer_Receive_U = NULL, *Buffer_Send_U = NULL;
-	int send_to, receive_from;
   
 #ifdef HAVE_MPI
+  int send_to, receive_from;
   MPI_Status status;
 #endif
   
@@ -224,10 +224,12 @@ void CAdjLevelSetSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) 
         (config->GetMarker_All_SendRecv(iMarker) > 0)) {
 			
 			MarkerS = iMarker;  MarkerR = iMarker+1;
-      
+
+#ifdef HAVE_MPI
       send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
 			receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
-			
+#endif
+	
 			nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
 			nBufferS_Vector = nVertexS*nVar;        nBufferR_Vector = nVertexR*nVar;
       
@@ -250,7 +252,6 @@ void CAdjLevelSetSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) 
       
       /*--- Receive information without MPI ---*/
       for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
         for (iVar = 0; iVar < nVar; iVar++)
           Buffer_Receive_U[iVar*nVertexR+iVertex] = Buffer_Send_U[iVar*nVertexR+iVertex];
       }
@@ -326,9 +327,9 @@ void CAdjLevelSetSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *
 	unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
 	double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi,
   *Buffer_Receive_Limit = NULL, *Buffer_Send_Limit = NULL;
-	int send_to, receive_from;
   
 #ifdef HAVE_MPI
+  int send_to, receive_from;
   MPI_Status status;
 #endif
   
@@ -339,9 +340,11 @@ void CAdjLevelSetSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *
 			
 			MarkerS = iMarker;  MarkerR = iMarker+1;
       
+#ifdef HAVE_MPI
       send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
 			receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
-			
+#endif
+	
 			nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
 			nBufferS_Vector = nVertexS*nVar;        nBufferR_Vector = nVertexR*nVar;
       
@@ -364,7 +367,6 @@ void CAdjLevelSetSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *
       
       /*--- Receive information without MPI ---*/
       for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
         for (iVar = 0; iVar < nVar; iVar++)
           Buffer_Receive_Limit[iVar*nVertexR+iVertex] = Buffer_Send_Limit[iVar*nVertexR+iVertex];
       }
@@ -439,9 +441,9 @@ void CAdjLevelSetSolver::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig 
 	unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
 	double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi,
   *Buffer_Receive_Gradient = NULL, *Buffer_Send_Gradient = NULL;
-	int send_to, receive_from;
 
 #ifdef HAVE_MPI
+  int send_to, receive_from;
   MPI_Status status;
 #endif
   
@@ -455,10 +457,12 @@ void CAdjLevelSetSolver::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig 
         (config->GetMarker_All_SendRecv(iMarker) > 0)) {
 			
 			MarkerS = iMarker;  MarkerR = iMarker+1;
-      
+
+#ifdef HAVE_MPI
       send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
 			receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
-			
+#endif
+
 			nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
 			nBufferS_Vector = nVertexS*nVar*nDim;        nBufferR_Vector = nVertexR*nVar*nDim;
       
@@ -482,7 +486,6 @@ void CAdjLevelSetSolver::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig 
       
       /*--- Receive information without MPI ---*/
       for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
         for (iVar = 0; iVar < nVar; iVar++)
           for (iDim = 0; iDim < nDim; iDim++)
             Buffer_Receive_Gradient[iDim*nVar*nVertexR+iVar*nVertexR+iVertex] = Buffer_Send_Gradient[iDim*nVar*nVertexR+iVar*nVertexR+iVertex];
@@ -644,76 +647,87 @@ void CAdjLevelSetSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_c
 
 void CAdjLevelSetSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
 																								 CConfig *config, unsigned short iMesh) {
-	unsigned short iVar, iDim;
-	unsigned long iPoint;
-  double epsilon, DeltaDirac, lambda, dRho_dPhi, dMud_Phi, Vol, DiffLevelSet, LevelSet, *AdjMeanFlow, **AdjLevelSetGradient, **AdjMeanFlowGradient, Density, Velocity[3], ProjAdj, dFc_dRho[3][4], ProjFlux;
-  
-	double Froude2 = config->GetFroude()*config->GetFroude();
-  
-	for (iVar = 0; iVar < nVar; iVar++)
-		Residual[iVar] = 0;
-
-	/*--- loop over points ---*/
-	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) { 
-		
-		Vol = geometry->node[iPoint]->GetVolume();
-
+//	unsigned short iVar, iDim;
+//	unsigned long iPoint;
+//  double epsilon, DeltaDirac, lambda, dRho_dPhi, dMud_Phi, Vol, DiffLevelSet, LevelSet, *AdjMeanFlow, **AdjLevelSetGradient, **AdjMeanFlowGradient,
+//  Density, Velocity[3] = {0.0,0.0,0.0}, ProjAdj, dFc_dRho[3][4], ProjFlux;
+//  
+//	double Froude2 = config->GetFroude()*config->GetFroude();
+//  
+//	for (iVar = 0; iVar < nVar; iVar++)
+//		Residual[iVar] = 0;
+//
+//	/*--- loop over points ---*/
+//  
+//	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) { 
+//		
+//		Vol = geometry->node[iPoint]->GetVolume();
+//
 //    /*--- Direct problem quantities ---*/
+//    
 //		DiffLevelSet = solver_container[LEVELSET_SOL]->node[iPoint]->GetDiffLevelSet();
 //		LevelSet = solver_container[LEVELSET_SOL]->node[iPoint]->GetSolution(0);
 //		MeanFlow = solver_container[FLOW_SOL]->node[iPoint]->GetSolution();
 //    Density = solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc();
 //    
 //    /*--- Adjoint problem quantities ---*/
+//    
 //		AdjMeanFlow = solver_container[ADJFLOW_SOL]->node[iPoint]->GetSolution();
 //    AdjLevelSetGradient = solver_container[ADJLEVELSET_SOL]->node[iPoint]->GetGradient();
 //    AdjMeanFlowGradient = solver_container[ADJFLOW_SOL]->node[iPoint]->GetGradient();
-    
-    /*--- Projected adjoint velocity ---*/
-    ProjAdj = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Velocity[iDim] = solver_container[FLOW_SOL]->node[iPoint]->GetVelocity(iDim);
-      ProjAdj += Velocity[iDim]*AdjLevelSetGradient[0][iDim];
-    }
-    
-    /*--- Compute the flow solution using the level set value. ---*/
-    epsilon = config->GetFreeSurface_Thickness();
-    DeltaDirac = 0.0;
-    if (fabs(LevelSet) <= epsilon) DeltaDirac = 1.0 - (0.5*(1.0+(LevelSet/epsilon)+(1.0/PI_NUMBER)*sin(PI_NUMBER*LevelSet/epsilon)));
-    
-    /*--- Set the value of the incompressible density for free surface flows (density ratio g/l) ---*/
-    lambda = config->GetRatioDensity();
-    dRho_dPhi = (1.0 - lambda)*DeltaDirac*config->GetDensity_FreeStreamND();
-    
-    /*--- Set the value of the incompressible viscosity for free surface flows (viscosity ratio g/l) ---*/
-    lambda = config->GetRatioViscosity();
-    dMud_Phi = (1.0 - lambda)*DeltaDirac*config->GetViscosity_FreeStreamND();
-
-    /*--- Flux derivative ---*/
-    for (iDim = 0; iDim < nDim; iDim++) {
-      dFc_dRho[iDim][0] = 0.0;
-      dFc_dRho[iDim][1] = Velocity[iDim]*Velocity[0];
-      dFc_dRho[iDim][2] = Velocity[iDim]*Velocity[1];
-      dFc_dRho[iDim][3] = Velocity[iDim]*Velocity[2];
-    }
-    
-    /*--- Projected flux derivative ---*/
-    ProjFlux = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++) {
-      for (iVar = 0; iVar < solver_container[FLOW_SOL]->GetnVar(); iVar++) {
-        ProjFlux += AdjMeanFlowGradient[iVar][iDim]*dFc_dRho[iDim][iVar];
-      }
-    }
-    
- 		Residual[0] = ( ProjFlux -(LevelSet*ProjAdj/Density) - (AdjMeanFlow[nDim]/Froude2))*dRho_dPhi*Vol;
-		
-    /*--- The Free surface objective function requires the levelt set difference ---*/
-    if (config->GetKind_ObjFunc() == FREE_SURFACE) Residual[0] +=  DiffLevelSet* Vol;
-
-		/*--- Add Residual ---*/
-		LinSysRes.AddBlock(iPoint, Residual);
-	}
-	
+//    
+//    /*--- Projected adjoint velocity ---*/
+//    
+//    ProjAdj = 0.0;
+//    for (iDim = 0; iDim < nDim; iDim++) {
+//      Velocity[iDim] = solver_container[FLOW_SOL]->node[iPoint]->GetVelocity(iDim);
+//      ProjAdj += Velocity[iDim]*AdjLevelSetGradient[0][iDim];
+//    }
+//    
+//    /*--- Compute the flow solution using the level set value. ---*/
+//    
+//    epsilon = config->GetFreeSurface_Thickness();
+//    DeltaDirac = 0.0;
+//    if (fabs(LevelSet) <= epsilon) DeltaDirac = 1.0 - (0.5*(1.0+(LevelSet/epsilon)+(1.0/PI_NUMBER)*sin(PI_NUMBER*LevelSet/epsilon)));
+//    
+//    /*--- Set the value of the incompressible density for free surface flows (density ratio g/l) ---*/
+//    
+//    lambda = config->GetRatioDensity();
+//    dRho_dPhi = (1.0 - lambda)*DeltaDirac*config->GetDensity_FreeStreamND();
+//    
+//    /*--- Set the value of the incompressible viscosity for free surface flows (viscosity ratio g/l) ---*/
+//    
+//    lambda = config->GetRatioViscosity();
+//    dMud_Phi = (1.0 - lambda)*DeltaDirac*config->GetViscosity_FreeStreamND();
+//
+//    /*--- Flux derivative ---*/
+//    
+//    for (iDim = 0; iDim < nDim; iDim++) {
+//      dFc_dRho[iDim][0] = 0.0;
+//      dFc_dRho[iDim][1] = Velocity[iDim]*Velocity[0];
+//      dFc_dRho[iDim][2] = Velocity[iDim]*Velocity[1];
+//      dFc_dRho[iDim][3] = Velocity[iDim]*Velocity[2];
+//    }
+//    
+//    /*--- Projected flux derivative ---*/
+//    
+//    ProjFlux = 0.0;
+//    for (iDim = 0; iDim < nDim; iDim++) {
+//      for (iVar = 0; iVar < solver_container[FLOW_SOL]->GetnVar(); iVar++) {
+//        ProjFlux += AdjMeanFlowGradient[iVar][iDim]*dFc_dRho[iDim][iVar];
+//      }
+//    }
+//    
+// 		Residual[0] = ( ProjFlux -(LevelSet*ProjAdj/Density) - (AdjMeanFlow[nDim]/Froude2))*dRho_dPhi*Vol;
+//		
+//    /*--- The Free surface objective function requires the levelt set difference ---*/
+//    
+//    if (config->GetKind_ObjFunc() == FREE_SURFACE) Residual[0] +=  DiffLevelSet* Vol;
+//
+//		/*--- Add Residual ---*/
+//		LinSysRes.AddBlock(iPoint, Residual);
+//	}
+//	
 }
 
 void CAdjLevelSetSolver::Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short iMesh) { }
@@ -971,7 +985,7 @@ void CAdjLevelSetSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_contain
 
 void CAdjLevelSetSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
   
-	unsigned long iPoint, IterLinSol;
+	unsigned long iPoint;
 	double Delta = 0.0, Vol;
 	
 	/*--- Set maximum residual to zero ---*/
@@ -1011,7 +1025,7 @@ void CAdjLevelSetSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **
   /*--- Solve or smooth the linear system ---*/
   
   CSysSolve system;
-  IterLinSol = system.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+  system.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
 	
 	/*--- Update solution (system written in terms of increments), be careful with the update of the
 	 scalar equations which includes the density ---*/

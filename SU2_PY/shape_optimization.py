@@ -40,33 +40,37 @@ def main():
                       help="number of PARTITIONS", metavar="PARTITIONS")
     parser.add_option("-g", "--gradient", dest="gradient", default="Adjoint",
                       help="Method for computing the GRADIENT (ADJOINT, FINDIFF, NONE)", metavar="GRADIENT")
-    parser.add_option("-q", "--quiet", dest="quiet", default="False",
+    parser.add_option("-q", "--quiet", dest="quiet", default="True",
                       help="True/False Quiet all SU2 output (optimizer output only)", metavar="QUIET")
-    parser.add_option("-c", "--cycle", dest="cycle", default=0,
-                      help="number of mesh adaptation CYCLEs", metavar="CYCLE")
-    parser.add_option("-i", "--its", dest="its", default=100,
-                      help="number of ITERations", metavar="ITER")
-    parser.add_option("-s", "--step", dest="step", default=1e-4,
-                      help="finite difference STEP", metavar="STEP")
     
     (options, args)=parser.parse_args()
     
     # process inputs
     options.partitions  = int( options.partitions )
-    options.cycle       = int( options.cycle )
-    options.its         = int( options.its )
-    options.step        = float( options.step )
     options.quiet       = options.quiet.upper() == 'TRUE'
     options.gradient    = options.gradient.upper()
     
+    sys.stdout.write('\n-------------------------------------------------------------------------\n')
+    sys.stdout.write('|    _____   _    _   ___                                               |\n')
+    sys.stdout.write('|   / ____| | |  | | |__ \\    Release 3.2.6 \"eagle\"                     |\n')
+    sys.stdout.write('|  | (___   | |  | |    ) |                                             |\n')
+    sys.stdout.write('|   \\___ \\  | |  | |   / /                                              |\n')
+    sys.stdout.write('|   ____) | | |__| |  / /_                                              |\n')
+    sys.stdout.write('|  |_____/   \\____/  |____|   Aerodynamic Shape Optimization Script     |\n')
+    sys.stdout.write('|                                                                       |\n')
+    sys.stdout.write('-------------------------------------------------------------------------\n')
+    sys.stdout.write('| Copyright (C) 2012-2014 SU2 <https://github.com/su2code>              |\n')
+    sys.stdout.write('| SU2 is distributed in the hope that it will be useful,                |\n')
+    sys.stdout.write('| but WITHOUT ANY WARRANTY; without even the implied warranty of        |\n')
+    sys.stdout.write('| MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU      |\n')
+    sys.stdout.write('| Lesser General Public License (version 2.1) for more details.         |\n')
+    sys.stdout.write('-------------------------------------------------------------------------\n\n')
+
     shape_optimization( options.filename    ,
                         options.projectname ,
                         options.partitions  ,
                         options.gradient    ,
-                        options.quiet       ,
-                        options.cycle       ,
-                        options.its         ,
-                        options.step         )
+                        options.quiet        )
     
 #: main()
 
@@ -74,23 +78,23 @@ def shape_optimization( filename                ,
                         projectname = ''        ,
                         partitions  = 0         , 
                         gradient    = 'ADJOINT' ,
-                        quiet       = False     , 
-                        cycle       = 0         ,
-                        its         = 100       ,
-                        step        = 1e-4       ):
-    
-    # TODO: findif step
-    
+                        quiet       = False      ):
+  
     # Config
     config = SU2.io.Config(filename)
     config.NUMBER_PART = partitions
     if quiet: config.CONSOLE = 'CONCISE'
     config.GRADIENT_METHOD = gradient
     
-    def_dv = config.DEFINITION_DV
-    n_dv   = len(def_dv['KIND'])  
-    x0     = [0.0]*n_dv # initial design
-    xb     = []         # design bounds
+    its      = int ( config.OPT_ITERATIONS )
+    accu     = float ( config.OPT_ACCURACY )
+    bound_dv = float ( config.BOUND_DV )
+    def_dv   = config.DEFINITION_DV
+    n_dv     = len(def_dv['KIND'])
+    x0       = [0.0]*n_dv # initial design
+    xb_low   = [-float(bound_dv)]*n_dv # lower dv bound
+    xb_up    = [float(bound_dv)]*n_dv # upper dv bound
+    xb       = zip(xb_low,xb_up) # design bounds
     
     # State
     state = SU2.io.State()
@@ -104,7 +108,7 @@ def shape_optimization( filename                ,
         project = SU2.opt.Project(config,state)
     
     # Optimize
-    SU2.opt.SLSQP(project,x0,xb,its)
+    SU2.opt.SLSQP(project,x0,xb,its,accu)
     
     # rename project file
     if projectname:

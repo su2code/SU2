@@ -1111,7 +1111,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Evaluate inverse design on the surface  */
   addBoolOption("INV_DESIGN_HEATFLUX", InvDesign_HeatFlux, false);
 
-
   /* CONFIG_CATEGORY: Unsupported options */
   /*--- Options that are experimental and not intended for general use ---*/
 
@@ -1148,6 +1147,15 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Setup for design variables */
   addPythonOption("DEFINITION_DV");
 
+  /* DESCRIPTION: Maximum number of iterations */
+  addPythonOption("OPT_ITERATIONS");
+  
+  /* DESCRIPTION: Requested accuracy */
+  addPythonOption("OPT_ACCURACY");
+  
+  /* DESCRIPTION: Setup for design variables */
+  addPythonOption("BOUND_DV");
+  
   /* DESCRIPTION: Current value of the design variables */
   addPythonOption("DV_VALUE_NEW");
 
@@ -3387,7 +3395,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
 	if (val_software == SU2_MSH) {
 		switch (Kind_Adaptation) {
-		case FULL: case WAKE: case TWOPHASE: case FULL_FLOW: case FULL_ADJOINT: case FULL_LINEAR: case SMOOTHING: case SUPERSONIC_SHOCK:
+		case FULL: case WAKE: case FULL_FLOW: case FULL_ADJOINT: case FULL_LINEAR: case SMOOTHING: case SUPERSONIC_SHOCK:
 			break;
 		case GRAD_FLOW:
 			cout << "Read flow solution from: " << Solution_FlowFileName << "." << endl;
@@ -4083,7 +4091,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       case PERIODIC: cout << "Grid modification to run periodic bc problems." << endl; break;
       case FULL: cout << "Grid adaptation using a complete refinement." << endl; break;
       case WAKE: cout << "Grid adaptation of the wake." << endl; break;
-      case TWOPHASE: cout << "Grid adaptation of the interphase of a free surface flow." << endl; break;
       case FULL_FLOW: cout << "Flow grid adaptation using a complete refinement." << endl; break;
       case FULL_ADJOINT: cout << "Adjoint grid adaptation using a complete refinement." << endl; break;
       case FULL_LINEAR: cout << "Linear grid adaptation using a complete refinement." << endl; break;
