@@ -529,14 +529,6 @@ public:
 	 * \return Value of the Derivative of the Bernstein polynomial.
 	 */		
 	double GetBernsteinDerivative(short val_n, short val_i, double val_t, short val_order);
-	
-  /*!
-	 * \brief The routine computes F(u,v,w)=||X(u,v,w)-(x,y,z)||^2  evaluated at (u,v,w).
-	 * \param[in] val_coord - Parametric coordiates of the target point.
-	 * \param[in] xyz - Cartesians coordinates of the point.
-	 * \return Value of the analytical objective function.
-	 */
-	double GetFFDObjFunc(double *val_coord, double *xyz);
   
 	/*! 
 	 * \brief The routine computes the gradient of F(u,v,w)=||X(u,v,w)-(x,y,z)||^2  evaluated at (u,v,w).

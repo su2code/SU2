@@ -27,7 +27,7 @@ CPoissonSolver::CPoissonSolver(void) : CSolver() { }
 CPoissonSolver::CPoissonSolver(CGeometry *geometry, CConfig *config) : CSolver() {
   
 	unsigned long nPoint, iPoint;
-	unsigned short nMarker, iVar, iDim;
+	unsigned short iVar, iDim;
   
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -37,7 +37,6 @@ CPoissonSolver::CPoissonSolver(CGeometry *geometry, CConfig *config) : CSolver()
 	nDim =          geometry->GetnDim();
   nPoint =        geometry->GetnPoint();
   nPointDomain =  geometry->GetnPointDomain();
-	nMarker =       config->GetnMarker_All();
 	nVar =          1;
 	node =          new CVariable*[nPoint];
   
@@ -460,7 +459,7 @@ void CPoissonSolver::BC_Neumann(CGeometry *geometry, CSolver **solver_container,
 
 void CPoissonSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
   
-	unsigned long iPoint, total_index, IterLinSol;
+	unsigned long iPoint, total_index;
   unsigned short iVar;
 	
 	/*--- Build implicit system ---*/
@@ -488,7 +487,7 @@ void CPoissonSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
   /*--- Solve or smooth the linear system ---*/
   
   CSysSolve system;
-  IterLinSol = system.Solve(StiffMatrix, LinSysRes, LinSysSol, geometry, config);
+  system.Solve(StiffMatrix, LinSysRes, LinSysSol, geometry, config);
   
 	/*--- Update solution (system written in terms of increments) ---*/
   

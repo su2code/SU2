@@ -158,12 +158,19 @@ int main(int argc, char *argv[]) {
   geometry_container[ZONE_0]->SetBoundSensitivity(config_container[ZONE_0]);
   
   /*--- Boolean controlling points to be updated ---*/
+  
 	UpdatePoint = new bool[geometry_container[ZONE_0]->GetnPoint()];
 	
 	/*--- Definition of the Class for surface deformation ---*/
+  
 	surface_movement = new CSurfaceMovement();
-	
+  
+  /*--- Copy coordinates to the surface structure ---*/
+  
+  surface_movement->CopyBoundary(geometry_container[ZONE_0], config_container[ZONE_0]);
+
 	/*--- Definition of the FFD deformation class ---*/
+  
 	unsigned short nFFDBox = MAX_NUMBER_FFD;
 	FFDBox = new CFreeFormDefBox*[nFFDBox];
 	
@@ -171,6 +178,7 @@ int main(int argc, char *argv[]) {
 		cout << endl <<"---------- Start gradient evaluation using surface sensitivity ----------" << endl;
 	
 	/*--- Write the gradient in a external file ---*/
+  
 	if (rank == MASTER_NODE) {
 		cstr = new char [config_container[ZONE_0]->GetObjFunc_Grad_FileName().size()+1];
 		strcpy (cstr, config_container[ZONE_0]->GetObjFunc_Grad_FileName().c_str());
@@ -379,8 +387,8 @@ int main(int argc, char *argv[]) {
 							Normal = geometry_container[ZONE_0]->vertex[iMarker][iVertex]->GetNormal();
 							VarCoord = geometry_container[ZONE_0]->vertex[iMarker][iVertex]->GetVarCoord();
 							Sensitivity = geometry_container[ZONE_0]->vertex[iMarker][iVertex]->GetAuxVar();
-              
-							dS = 0.0; 
+
+              dS = 0.0;
 							for (iDim = 0; iDim < geometry_container[ZONE_0]->GetnDim(); iDim++) {
 								dS += Normal[iDim]*Normal[iDim];
 								deps[iDim] = VarCoord[iDim] / delta_eps;
@@ -392,7 +400,7 @@ int main(int argc, char *argv[]) {
 								dalpha[iDim] = Normal[iDim] / dS;
 								dalpha_deps -= dalpha[iDim]*deps[iDim];
 							}
-							
+
               /*--- Store the geometric sensitivity for this DV (rows) & this node (column) ---*/
               
               if (size == SINGLE_NODE) {

@@ -825,17 +825,24 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
   unsigned short iDim;
   unsigned short nDim = geometry_container[MESH_0]->GetnDim();
   unsigned long iPoint;
-  
+  unsigned short iMGlevel, nMGlevel = config_container->GetMGLevels();
+
   double x, y, x_gust, dgust_dx, dgust_dy, dgust_dt;
-  double gust[2] = {0,0};
-  double *GridVel;
+  double *Gust, *GridVel;
   unsigned short Kind_Grid_Movement = config_container->GetKind_GridMovement(ZONE_0);
-  
+  double NewGridVel[3] = {0.0,0.0,0.0};
+  double GustDer[3] = {0.0,0.0,0.0};
+
   double Physical_dt = config_container->GetDelta_UnstTime();
   unsigned long ExtIter = config_container->GetExtIter();
   double Physical_t = ExtIter*Physical_dt;
   
   double Uinf = solver_container[MESH_0][FLOW_SOL]->GetVelocity_Inf(0); // Assumption gust moves at infinity velocity
+  
+  Gust = new double [nDim];
+  for(iDim = 0; iDim < nDim; iDim++) {
+    Gust[iDim] = 0.0;
+  }
   
   // Vortex variables
   unsigned long nVortex = 0;
@@ -856,31 +863,31 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
   }
   
   /*--- Loop over all multigrid levels ---*/
-  unsigned short iMGlevel, nMGlevel = config_container->GetMGLevels();
   
-  for (iMGlevel = 0; iMGlevel <= nMGlevel; iMGlevel++) { //<= ?
+  for (iMGlevel = 0; iMGlevel <= nMGlevel; iMGlevel++) {
     
     /*--- Loop over each node in the volume mesh ---*/
+    
     for (iPoint = 0; iPoint < geometry_container[iMGlevel]->GetnPoint(); iPoint++) {
       
-      // Reset the Grid Velocity to zero if there is no grid movement
+      /*--- eset the Grid Velocity to zero if there is no grid movement ---*/
       if (Kind_Grid_Movement == NO_MOVEMENT) {
         for(iDim = 0; iDim < nDim; iDim++)
           geometry_container[iMGlevel]->node[iPoint]->SetGridVel(iDim, 0.0);
       }
       
-      //initialize the gust and derivatives to zero everywhere
-      gust[0] = 0;
-      gust[1] = 0;
-      dgust_dx = 0;
-      dgust_dy = 0;
-      dgust_dt = 0;
+      /*--- initialize the gust and derivatives to zero everywhere ---*/
       
-      // Begin applying the gust
+      Gust[0] = 0.0; Gust[1] = 0.0; Gust[2] = 0.0;
+      dgust_dx = 0.0; dgust_dy = 0.0; dgust_dt = 0.0;
+      
+      /*--- Begin applying the gust ---*/
+      
       if (Physical_t >= tbegin) {
         
         x = geometry_container[iMGlevel]->node[iPoint]->GetCoord()[0]; // x-location of the node.
         y = geometry_container[iMGlevel]->node[iPoint]->GetCoord()[1]; // y-location of the node.
+        
         // Gust coordinate
         x_gust = (x - xbegin - Uinf*(Physical_t-tbegin))/L;
         
@@ -890,7 +897,7 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
           case TOP_HAT:
             // Check if we are in the region where the gust is active
             if (x_gust > 0 && x_gust < n) {
-              gust[GustDir] = gust_amp;
+              Gust[GustDir] = gust_amp;
               // Still need to put the gust derivatives. Think about this.
             }
             break;
@@ -898,7 +905,7 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
           case SINE:
             // Check if we are in the region where the gust is active
             if (x_gust > 0 && x_gust < n) {
-              gust[GustDir] = gust_amp*(sin(2*PI_NUMBER*x_gust));
+              Gust[GustDir] = gust_amp*(sin(2*PI_NUMBER*x_gust));
 
               // Gust derivatives
               dgust_dx = gust_amp*2*PI_NUMBER*(cos(2*PI_NUMBER*x_gust))/L;
@@ -910,7 +917,7 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
           case ONE_M_COSINE:
              // Check if we are in the region where the gust is active
              if (x_gust > 0 && x_gust < n) {
-               gust[GustDir] = 0.5*gust_amp*(1-cos(2*PI_NUMBER*x_gust));
+               Gust[GustDir] = 0.5*gust_amp*(1-cos(2*PI_NUMBER*x_gust));
 
                // Gust derivatives
                dgust_dx = 0.5*gust_amp*2*PI_NUMBER*(sin(2*PI_NUMBER*x_gust))/L;
@@ -922,7 +929,7 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
           case EOG:
             // Check if we are in the region where the gust is active
             if (x_gust > 0 && x_gust < n) {
-              gust[GustDir] = -0.37*gust_amp*sin(3*PI_NUMBER*x_gust)*(1-cos(2*PI_NUMBER*x_gust));
+              Gust[GustDir] = -0.37*gust_amp*sin(3*PI_NUMBER*x_gust)*(1-cos(2*PI_NUMBER*x_gust));
             }
             break;
             
@@ -934,8 +941,8 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
                double r2 = pow(x-(x0[i]+Uinf*(Physical_t-tbegin)), 2) + pow(y-y0[i], 2);
                double r = sqrt(r2);
                double v_theta = vort_strenth[i]/(2*PI_NUMBER) * r/(r2+pow(r_core[i],2));
-               gust[0] = gust[0] + v_theta*(y-y0[i])/r;
-               gust[1] = gust[1] - v_theta*(x-(x0[i]+Uinf*(Physical_t-tbegin)))/r;
+               Gust[0] = Gust[0] + v_theta*(y-y0[i])/r;
+               Gust[1] = Gust[1] - v_theta*(x-(x0[i]+Uinf*(Physical_t-tbegin)))/r;
              }
              break;
 
@@ -951,25 +958,28 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
       }
       
       /*--- Set the Wind Gust, Wind Gust Derivatives and the Grid Velocities ---*/
-      double NewGridVel[2] = {0,0};
-      double GustDer[3] = {0,0,0};
+      
       GustDer[0] = dgust_dx;
       GustDer[1] = dgust_dy;
       GustDer[2] = dgust_dt;
       
-      solver_container[iMGlevel][FLOW_SOL]->node[iPoint]->SetWindGust(gust);
+      solver_container[iMGlevel][FLOW_SOL]->node[iPoint]->SetWindGust(Gust);
       solver_container[iMGlevel][FLOW_SOL]->node[iPoint]->SetWindGustDer(GustDer);
       
       GridVel = geometry_container[iMGlevel]->node[iPoint]->GetGridVel();
-      NewGridVel[0] = GridVel[0] - gust[0];
-      NewGridVel[1] = GridVel[1] - gust[1];
       
-      // Store new grid velocity
+      /*--- Store new grid velocity ---*/
+      
       for(iDim = 0; iDim < nDim; iDim++) {
+        NewGridVel[iDim] = GridVel[iDim] - Gust[iDim];
         geometry_container[iMGlevel]->node[iPoint]->SetGridVel(iDim, NewGridVel[iDim]);
       }
+      
     }
   }
+  
+  delete [] Gust;
+  
 }
 
 void InitializeVortexDistribution(unsigned long &nVortex, vector<double>& x0, vector<double>& y0, vector<double>& vort_strength, vector<double>& r_core) {

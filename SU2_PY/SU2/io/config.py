@@ -510,7 +510,13 @@ def read_config(filename):
         data_dict['DV_VALUE_NEW'] = [0]
     if not data_dict.has_key('DV_VALUE_OLD'):
         data_dict['DV_VALUE_OLD'] = [0]
-
+    if not data_dict.has_key('OPT_ITERATIONS'):
+        data_dict['OPT_ITERATIONS'] = 100
+    if not data_dict.has_key('OPT_ACCURACY'):
+        data_dict['OPT_ACCURACY'] = 1e-10
+    if not data_dict.has_key('BOUND_DV'):
+        data_dict['BOUND_DV'] = 1e10
+    
     return data_dict
     
 #: def read_config()

@@ -453,7 +453,7 @@ CVertex::~CVertex() {
 }
 
 void CVertex::SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG, double *val_coord_Elem_CG) {
-	double vec_a[3], vec_b[3], Dim_Normal[3];
+  double vec_a[3] = {0.0,0.0,0.0}, vec_b[3] = {0.0,0.0,0.0}, Dim_Normal[3] = {0.0,0.0,0.0};
 	unsigned short iDim;
 
 	for (iDim = 0; iDim < nDim; iDim++) {

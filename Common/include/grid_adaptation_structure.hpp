@@ -142,13 +142,6 @@ public:
 	void SetWake_Refinement(CGeometry *geometry, unsigned short strength);
 	
 	/*! 
-	 * \brief Do an adaptation of the computational grid on the two phase problem interphase.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] strength - Adaptation Strength.	 
-	 */		
-	void SetTwoPhase_Refinement(CGeometry *geometry, unsigned short strength);
-	
-	/*! 
 	 * \brief Do an adaptation of the computational grid on the supersonic shock region.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.

@@ -325,7 +325,7 @@ void CLinEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
 void CLinEulerSolver::Inviscid_DeltaForces(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 	unsigned long iVertex, Point;
 	unsigned short iDim, iMarker, Boundary, Monitoring;
-	double  *Face_Normal, dS, DeltaPressure, *Velocity;
+	double  *Face_Normal, DeltaPressure, *Velocity;
 	double Alpha = config->GetAoA()*PI_NUMBER / 180.0;
 	double Beta  = config->GetAoS()*PI_NUMBER / 180.0;
 	double RefAreaCoeff = config->GetRefAreaCoeff();
@@ -365,7 +365,6 @@ void CLinEulerSolver::Inviscid_DeltaForces(CGeometry *geometry, CSolver **solver
 					
 					if (Monitoring == YES) {
 						Face_Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-						dS = 0.0; for (iDim = 0; iDim < nDim; iDim++) dS += Face_Normal[iDim]*Face_Normal[iDim]; dS = sqrt(dS);
 						for (iDim = 0; iDim < nDim; iDim++)
 							DeltaForceInviscid[iDim] -= C_p*DeltaPressure*Face_Normal[iDim];
 					}

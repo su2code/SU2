@@ -176,6 +176,9 @@ int main(int argc, char *argv[]) {
   /*--- Definition and initialization of the surface deformation class ---*/
   
   surface_movement = new CSurfaceMovement();
+  
+  /*--- Copy coordinates to the surface structure ---*/
+
   surface_movement->CopyBoundary(geometry_container[ZONE_0], config_container[ZONE_0]);
   
   /*--- Surface grid deformation ---*/
