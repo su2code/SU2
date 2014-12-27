@@ -2,9 +2,9 @@
  * \file output_structure.cpp
  * \brief Main subroutines for output solver information
  * \author F. Palacios, T. Economon
- * \version 3.2.6 "eagle"
+ * \version 3.2.7 "eagle"
  *
- * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
+ * Copyright (C) 2012-2014 SU2 Core Developers.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -5686,14 +5686,14 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
     
     Breakdown_file << endl <<"-------------------------------------------------------------------------" << endl;
     Breakdown_file <<"|    _____   _    _   ___                                               |" << endl;
-    Breakdown_file <<"|   / ____| | |  | | |__ \\    Release 3.2.6 \"eagle\"                     |" << endl;
+    Breakdown_file <<"|   / ____| | |  | | |__ \\    Release 3.2.7 \"eagle\"                     |" << endl;
     Breakdown_file <<"|  | (___   | |  | |    ) |                                             |" << endl;
     Breakdown_file <<"|   \\___ \\  | |  | |   / /                                              |" << endl;
     Breakdown_file <<"|   ____) | | |__| |  / /_                                              |" << endl;
     Breakdown_file <<"|  |_____/   \\____/  |____|   Suite (Computational Fluid Dynamics Code) |" << endl;
     Breakdown_file << "|                                                                       |" << endl;
     Breakdown_file <<"-------------------------------------------------------------------------" << endl;
-    Breakdown_file << "| Copyright (C) 2012-2014 SU2 <https://github.com/su2code>              |" << endl;
+    Breakdown_file << "| Copyright (C) 2012-2014 SU2 Core Developers.                          |" << endl;
     Breakdown_file << "| SU2 is distributed in the hope that it will be useful,                |" << endl;
     Breakdown_file << "| but WITHOUT ANY WARRANTY; without even the implied warranty of        |" << endl;
     Breakdown_file << "| MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU      |" << endl;

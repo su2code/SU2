@@ -19,7 +19,7 @@
     VERSION_PWP_INIT,         // conforms to this PWP-API version
     VERSION_LIB_INIT,         // software library release version
     "Stanford University Aerospace Design Lab",        // company/author description
-    "http://adl.stanford.edu/docs/display/SUSQUARED/Contact (susquared-dev@lists.stanford.edu)",  // support description (phone, web-link).
+    "http://adl.stanford.edu/docs/display/su2code/Contact (su2code-dev@lists.stanford.edu)",  // support description (phone, web-link).
     "Copyright(c) 2012", // copyright description
     0,                        // number of APIs (auto-set at runtime)
     0,                        // default msg callback (auto-set at runtime)

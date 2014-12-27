@@ -2,9 +2,9 @@
  * \file SU2_SOL.cpp
  * \brief Main file for the solution export/conversion code (SU2_SOL).
  * \author F. Palacios, T. Economon
- * \version 3.2.6 "eagle"
+ * \version 3.2.7 "eagle"
  *
- * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
+ * Copyright (C) 2012-2014 SU2 Core Developers.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -27,15 +27,18 @@ using namespace std;
 int main(int argc, char *argv[]) {
   
 	unsigned short iZone, nZone = SINGLE_ZONE;
+  double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
 	ofstream ConvHist_file;
 	char config_file_name[MAX_STRING_SIZE];
 	int rank = MASTER_NODE;
+  int size = SINGLE_NODE;
 
   /*--- MPI initialization ---*/
 
 #ifdef HAVE_MPI
 	MPI_Init(&argc,&argv);
 	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+  MPI_Comm_size(MPI_COMM_WORLD,&size);
 #endif
   
 	/*--- Pointer to different structures that will be used throughout the entire code ---*/
@@ -124,10 +127,13 @@ int main(int argc, char *argv[]) {
     
   }
   
-  /*--- Synchronization point after the geometrical definition subroutine ---*/
-
+  /*--- Set up a timer for performance benchmarking (preprocessing time is included) ---*/
+  
 #ifdef HAVE_MPI
-	MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Barrier(MPI_COMM_WORLD);
+  StartTime = MPI_Wtime();
+#else
+  StartTime = double(clock())/double(CLOCKS_PER_SEC);
 #endif
   
   if (rank == MASTER_NODE)
@@ -244,14 +250,35 @@ int main(int argc, char *argv[]) {
   }
   
 
+  /*--- Synchronization point after a single solver iteration. Compute the
+   wall clock time required. ---*/
+  
 #ifdef HAVE_MPI
-  /*--- Finalize MPI parallelization ---*/
-  MPI_Finalize();
+  MPI_Barrier(MPI_COMM_WORLD);
+  StopTime = MPI_Wtime();
+#else
+  StopTime = double(clock())/double(CLOCKS_PER_SEC);
 #endif
   
-  /*--- End solver ---*/
+  /*--- Compute/print the total time for performance benchmarking. ---*/
+  
+  UsedTime = StopTime-StartTime;
+  if (rank == MASTER_NODE) {
+    cout << "\nCompleted in " << fixed << UsedTime << " seconds on "<< size;
+    if (size == 1) cout << " core." << endl; else cout << " cores." << endl;
+  }
+  
+  /*--- Exit the solver cleanly ---*/
+
   if (rank == MASTER_NODE)
     cout << endl <<"------------------------- Exit Success (SU2_SOL) ------------------------" << endl << endl;
+  
+  /*--- Finalize MPI parallelization ---*/
+  
+#ifdef HAVE_MPI
+  MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Finalize();
+#endif
   
   return EXIT_SUCCESS;
 }

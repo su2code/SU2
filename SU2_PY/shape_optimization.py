@@ -3,9 +3,9 @@
 ## \file shape_optimization.py
 #  \brief Python script for performing the shape optimization.
 #  \author T. Economon, T. Lukaczyk, F. Palacios
-#  \version 3.2.6 "eagle"
+#  \version 3.2.7 "eagle"
 #
-# Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
+# Copyright (C) 2012-2014 SU2 Core Developers.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -52,14 +52,14 @@ def main():
     
     sys.stdout.write('\n-------------------------------------------------------------------------\n')
     sys.stdout.write('|    _____   _    _   ___                                               |\n')
-    sys.stdout.write('|   / ____| | |  | | |__ \\    Release 3.2.6 \"eagle\"                     |\n')
+    sys.stdout.write('|   / ____| | |  | | |__ \\    Release 3.2.7 \"eagle\"                     |\n')
     sys.stdout.write('|  | (___   | |  | |    ) |                                             |\n')
     sys.stdout.write('|   \\___ \\  | |  | |   / /                                              |\n')
     sys.stdout.write('|   ____) | | |__| |  / /_                                              |\n')
     sys.stdout.write('|  |_____/   \\____/  |____|   Aerodynamic Shape Optimization Script     |\n')
     sys.stdout.write('|                                                                       |\n')
     sys.stdout.write('-------------------------------------------------------------------------\n')
-    sys.stdout.write('| Copyright (C) 2012-2014 SU2 <https://github.com/su2code>              |\n')
+    sys.stdout.write('| Copyright (C) 2012-2014 SU2 Core Developers.                          |\n')
     sys.stdout.write('| SU2 is distributed in the hope that it will be useful,                |\n')
     sys.stdout.write('| but WITHOUT ANY WARRANTY; without even the implied warranty of        |\n')
     sys.stdout.write('| MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU      |\n')
