@@ -2,9 +2,9 @@
  * \file SU2_GEO.cpp
  * \brief Main file of the Geometry Definition Code (SU2_GEO).
  * \author F. Palacios
- * \version 3.2.6 "eagle"
+ * \version 3.2.7 "eagle"
  *
- * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
+ * Copyright (C) 2012-2014 SU2 Core Developers.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,6 +26,7 @@ using namespace std;
 int main(int argc, char *argv[]) {
   
   unsigned short iZone, nZone = SINGLE_ZONE;
+  double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
 	unsigned short iDV, iFFDBox, iPlane, nPlane, iVar;
 	double *ObjectiveFunc, *ObjectiveFunc_New, *Gradient, delta_eps, MinPlane, MaxPlane, MinXCoord, MaxXCoord,
   **Plane_P0, **Plane_Normal, Volume, Volume_New, Volume_Grad;
@@ -122,6 +123,20 @@ int main(int argc, char *argv[]) {
     
   }
   
+  /*--- Set up a timer for performance benchmarking (preprocessing time is included) ---*/
+  
+#ifdef HAVE_MPI
+  MPI_Barrier(MPI_COMM_WORLD);
+  StartTime = MPI_Wtime();
+#else
+  StartTime = double(clock())/double(CLOCKS_PER_SEC);
+#endif
+  
+  /*--- Evaluation of the objective function ---*/
+  
+  if (rank == MASTER_NODE)
+		cout << endl <<"----------------------- Preprocessing computations ----------------------" << endl;
+
   /*--- Set the number of sections, and allocate the memory ---*/
   
   if (geometry_container[ZONE_0]->GetnDim() == 2) nPlane = 1;
@@ -149,11 +164,6 @@ int main(int argc, char *argv[]) {
     Gradient[iVar] = 0.0;
   }
   
-  /*--- Evaluation of the objective function ---*/
-  
-	if (rank == MASTER_NODE)
-		cout << endl <<"----------------------- Preprocessing computations ----------------------" << endl;
-
   
   /*--- Compute elements surrounding points, points surrounding points ---*/
   
@@ -617,11 +627,36 @@ int main(int argc, char *argv[]) {
   delete [] Plane_P0;
   delete [] Plane_Normal;
   
-  /*--- End solver ---*/
+  /*--- Synchronization point after a single solver iteration. Compute the
+   wall clock time required. ---*/
+  
+#ifdef HAVE_MPI
+  MPI_Barrier(MPI_COMM_WORLD);
+  StopTime = MPI_Wtime();
+#else
+  StopTime = double(clock())/double(CLOCKS_PER_SEC);
+#endif
+  
+  /*--- Compute/print the total time for performance benchmarking. ---*/
+  
+  UsedTime = StopTime-StartTime;
+  if (rank == MASTER_NODE) {
+    cout << "\nCompleted in " << fixed << UsedTime << " seconds on "<< size;
+    if (size == 1) cout << " core." << endl; else cout << " cores." << endl;
+  }
+  
+  /*--- Exit the solver cleanly ---*/
   
 	if (rank == MASTER_NODE)
 		cout << endl <<"------------------------- Exit Success (SU2_GEO) ------------------------" << endl << endl;
 
+  
+  /*--- Finalize MPI parallelization ---*/
+  
+#ifdef HAVE_MPI
+  MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Finalize();
+#endif
   
 	return EXIT_SUCCESS;
 	
