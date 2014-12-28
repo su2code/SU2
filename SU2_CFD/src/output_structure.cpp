@@ -6475,9 +6475,11 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
                                       unsigned long iExtIter, unsigned short val_nZone) {
 
   int rank = MASTER_NODE;
-
+  int size = SINGLE_NODE;
+  
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
   
   unsigned short iZone;
@@ -6615,6 +6617,11 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
         if (!config[iZone]->GetAdjoint()) filename = config[iZone]->GetFlow_FileName();
         else filename = config[iZone]->GetAdj_FileName();
 
+        if (size > 1) {
+          sprintf (buffer_char, "_%d", int(rank+1));
+          filename = filename + buffer_char;
+        }
+        
         sprintf (buffer_char, ".dat");
         strcpy(out_file, filename.c_str()); strcat(out_file, buffer_char);
         SetTecplotNode_ASCII(config[iZone], geometry[iZone], solver, out_file, false);
@@ -6628,6 +6635,11 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
         string filename;
         if (!config[iZone]->GetAdjoint()) filename = config[iZone]->GetSurfFlowCoeff_FileName();
         else filename = config[iZone]->GetSurfAdjCoeff_FileName();
+
+        if (size > 1) {
+          sprintf (buffer_char, "_%d", int(rank+1));
+          filename = filename + buffer_char;
+        }
         
         sprintf (buffer_char, ".dat");
         strcpy(out_file, filename.c_str()); strcat(out_file, buffer_char);

@@ -37,13 +37,6 @@ void COutput::SetCGNS_Coordinates(CConfig *config, CGeometry *geometry, unsigned
 	/*--- Create CGNS base file name ---*/
 	base_file = config->GetFlow_FileName();
   
-#ifdef HAVE_MPI
-	int nProcessor;
-  /*--- Remove the domain number from the CGNS filename ---*/
-	MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-	if (nProcessor > 1) base_file.erase (base_file.end()-2, base_file.end());
-#endif
-  
 	/*--- Add CGNS extension. ---*/
 	base_file = base_file.append(".cgns");
   
@@ -52,10 +45,6 @@ void COutput::SetCGNS_Coordinates(CConfig *config, CGeometry *geometry, unsigned
     
 		buffer = config->GetFlow_FileName();
     
-#ifdef HAVE_MPI
-    /*--- Remove the domain number from the CGNS filename ---*/
-    if (nProcessor > 1) buffer.erase (buffer.end()-2, buffer.end());
-#endif
 		results_file.str(string()); results_file << buffer;
 		if (((int)iExtIter >= 0) && ((int)iExtIter < 10))			results_file << "_0000" << iExtIter;
 		if (((int)iExtIter >= 10) && ((int)iExtIter < 100))		results_file << "_000" << iExtIter;
@@ -187,13 +176,6 @@ void COutput::SetCGNS_Connectivity(CConfig *config, CGeometry *geometry, unsigne
 	/*--- Create CGNS base file name ---*/
 	base_file = config->GetFlow_FileName();
   
-#ifdef HAVE_MPI
-  /*--- Remove the domain number from the CGNS filename ---*/
-  int nProcessor;
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-  if (nProcessor > 1) base_file.erase (base_file.end()-2, base_file.end());
-#endif
-  
 	/*--- Add CGNS extension. ---*/
 	base_file = base_file.append(".cgns");
   
@@ -202,10 +184,6 @@ void COutput::SetCGNS_Connectivity(CConfig *config, CGeometry *geometry, unsigne
     
 		buffer = config->GetFlow_FileName();
     
-#ifdef HAVE_MPI
-    /*--- Remove the domain number from the CGNS filename ---*/
-    if (nProcessor > 1) buffer.erase (buffer.end()-2, buffer.end());
-#endif
 		results_file.str(string()); results_file << buffer;
 		if (((int)iExtIter >= 0) && ((int)iExtIter < 10))			results_file << "_0000" << iExtIter;
 		if (((int)iExtIter >= 10) && ((int)iExtIter < 100))		results_file << "_000" << iExtIter;
@@ -347,13 +325,6 @@ void COutput::SetCGNS_Solution(CConfig *config, CGeometry *geometry, unsigned sh
 	/*--- Create CGNS base file name ---*/
 	base_file = config->GetFlow_FileName();
   
-#ifdef HAVE_MPI
-  int nProcessor;
-  /*--- Remove the domain number from the CGNS filename ---*/
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-  if (nProcessor > 1) base_file.erase (base_file.end()-2, base_file.end());
-#endif
-  
 	/*--- Add CGNS extension. ---*/
 	base_file = base_file.append(".cgns");
   
@@ -362,10 +333,6 @@ void COutput::SetCGNS_Solution(CConfig *config, CGeometry *geometry, unsigned sh
     
 		buffer = config->GetFlow_FileName();
     
-#ifdef HAVE_MPI
-    /*--- Remove the domain number from the CGNS filename ---*/
-    if (nProcessor > 1) buffer.erase (buffer.end()-2, buffer.end());
-#endif
 		results_file.str(string()); results_file << buffer;
 		if (((int)iExtIter >= 0) && ((int)iExtIter < 10))			results_file << "_0000" << iExtIter;
 		if (((int)iExtIter >= 10) && ((int)iExtIter < 100))		results_file << "_000" << iExtIter;
