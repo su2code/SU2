@@ -306,7 +306,6 @@ void COutput::SetTecplotNode_ASCII(CConfig *config, CGeometry *geometry, CSolver
       else filename = config->GetAdj_FileName();
     }
     
-    filename.erase(filename.end()-2,filename.end());
     strcpy(mesh_filename, filename.c_str());
     sprintf (buffer_char, ".dat");
     strcat(mesh_filename, buffer_char);
@@ -324,7 +323,6 @@ void COutput::SetTecplotNode_ASCII(CConfig *config, CGeometry *geometry, CSolver
         else filename = config->GetAdj_FileName();
       }
       
-      filename.erase(filename.end()-2,filename.end());
       strcpy(out_file, filename.c_str());
       sprintf (buffer_char, "_%i.dat", iRank+1);
       strcat(out_file, buffer_char);
@@ -364,16 +362,13 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, CSolver **s
   
   /*--- Write file name with extension ---*/
   if (surf_sol) {
-    if (adjoint)
-    filename = config->GetSurfAdjCoeff_FileName();
-    else
-    filename = config->GetSurfFlowCoeff_FileName();
+    if (adjoint) filename = config->GetSurfAdjCoeff_FileName();
+    else filename = config->GetSurfFlowCoeff_FileName();
   }
   else {
     if (adjoint)
     filename = config->GetAdj_FileName();
-    else
-    filename = config->GetFlow_FileName();
+    else filename = config->GetFlow_FileName();
   }
   
   if (Kind_Solver == LINEAR_ELASTICITY) {
@@ -1174,14 +1169,6 @@ void COutput::SetTecplot_MeshBinary(CConfig *config, CGeometry *geometry, unsign
     file.str(string());
     buffer = config->GetFlow_FileName();
 
-#ifdef HAVE_MPI
-	/*--- Remove the domain number from the filename ---*/
-    
-    int nProcessor;
-	MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-    if (nProcessor > 1) buffer.erase(buffer.end()-2, buffer.end());
-#endif
-
     file << buffer << ".mesh.plt";
     FileType = GRID;
     
@@ -1468,13 +1455,6 @@ void COutput::SetTecplot_SurfaceMesh(CConfig *config, CGeometry *geometry, unsig
     
     file.str(string());
     buffer = config->GetSurfFlowCoeff_FileName();
-    
-#ifdef HAVE_MPI
-	/*--- Remove the domain number from the filename ---*/
-    int nProcessor;
-	MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-    if (nProcessor > 1) buffer.erase(buffer.end()-2, buffer.end());
-#endif
     
     file << buffer << ".mesh.plt";
     FileType = GRID;
@@ -1791,13 +1771,6 @@ void COutput::SetTecplot_Solution(CConfig *config, CGeometry *geometry, unsigned
   file.str(string());
   buffer = config->GetFlow_FileName();
 
-#ifdef HAVE_MPI
-	/*--- Remove the domain number from the filename ---*/
-    int nProcessor;
-	MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-    if (nProcessor > 1) buffer.erase(buffer.end()-2, buffer.end());
-#endif
-  
   file << buffer;
   
   if (unsteady) {
@@ -2129,13 +2102,6 @@ void COutput::SetTecplot_SurfaceSolution(CConfig *config, CGeometry *geometry, u
   
   file.str(string());
   buffer = config->GetSurfFlowCoeff_FileName();
-
-#ifdef HAVE_MPI
-	/*--- Remove the domain number from the filename ---*/
-    int nProcessor;
-	MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-    if (nProcessor > 1) buffer.erase(buffer.end()-2, buffer.end());
-#endif
   
   file << buffer;
   
