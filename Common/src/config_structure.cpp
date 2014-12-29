@@ -4,7 +4,14 @@
  * \author F. Palacios, T. Economon, B. Tracey
  * \version 3.2.7 "eagle"
  *
- * Copyright (C) 2012-2014 SU2 Core Developers.
+ * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ *
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -3178,31 +3185,55 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_ActDisk_Inlet,
   iMarker_ActDisk_Outlet;
 
-  cout << endl <<"-------------------------------------------------------------------------" << endl;
-  cout <<"|    _____   _    _   ___                                               |" << endl;
-  cout <<"|   / ____| | |  | | |__ \\    Release 3.2.7 \"eagle\"                     |" << endl;
-  cout <<"|  | (___   | |  | |    ) |                                             |" << endl;
-  cout <<"|   \\___ \\  | |  | |   / /                                              |" << endl;
-  cout <<"|   ____) | | |__| |  / /_                                              |" << endl;
+  
+  
+  
+  
+  
+  
+  
+  cout << endl << "-------------------------------------------------------------------------" << endl;
+  cout << "|    ___ _   _ ___                                                      |" << endl;
+  cout << "|   / __| | | |_  )   Release 3.2.7 \"eagle\"                             |" << endl;
+  cout << "|   \\__ \\ |_| |/ /                                                      |" << endl;
   switch (val_software) {
-    case SU2_CFD: cout << "|  |_____/   \\____/  |____|   Suite (Computational Fluid Dynamics Code) |" << endl; break;
-    case SU2_DEF: cout << "|  |_____/   \\____/  |____|   Suite (Mesh Deformation Code)             |" << endl; break;
-    case SU2_DOT: cout << "|  |_____/   \\____/  |____|   Suite (Gradient Projection Code)          |" << endl; break;
-    case SU2_MSH: cout << "|  |_____/   \\____/  |____|   Suite (Mesh Adaptation Code)              |" << endl; break;
-    case SU2_GEO: cout << "|  |_____/   \\____/  |____|   Suite (Geometry Definition Code)          |" << endl; break;
-    case SU2_SOL: cout << "|  |_____/   \\____/  |____|   Suite (Solution Exporting Code)           |" << endl; break;
+    case SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;
+    case SU2_DEF: cout << "|   |___/\\___//___|   Suite (Mesh Deformation Code)                     |" << endl; break;
+    case SU2_DOT: cout << "|   |___/\\___//___|   Suite (Gradient Projection Code)                  |" << endl; break;
+    case SU2_MSH: cout << "|   |___/\\___//___|   Suite (Mesh Adaptation Code)                      |" << endl; break;
+    case SU2_GEO: cout << "|   |___/\\___//___|   Suite (Geometry Definition Code)                  |" << endl; break;
+    case SU2_SOL: cout << "|   |___/\\___//___|   Suite (Solution Exporting Code)                   |" << endl; break;
   }
 
   cout << "|                                                                       |" << endl;
   cout <<"-------------------------------------------------------------------------" << endl;
-  cout << "| Copyright (C) 2012-2014 SU2 Core Developers.                          |" << endl;
+  cout << "| SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu). |" << endl;
+  cout << "|                      Dr. Thomas D. Economon (economon@stanford.edu).  |" << endl;
+  cout <<"-------------------------------------------------------------------------" << endl;
+  cout << "| SU2 Developers:                                                       |" << endl;
+  cout << "| - Prof. Juan J. Alonso's group at Stanford University.                |" << endl;
+  cout << "| - Prof. Piero Colonna's group at Delft University of Technology.      |" << endl;
+  cout << "| - Prof. Nicolas R. Gauger's group at Kaiserslautern U. of Technology. |" << endl;
+  cout << "| - Prof. Alberto Guardone's group at Polytechnic University of Milan.  |" << endl;
+  cout << "| - Prof. Rafael Palacios' group at Imperial College London.            |" << endl;
+  cout <<"-------------------------------------------------------------------------" << endl;
+  cout << "| Copyright (C) 2012-2014 SU2, the open-source CFD code.                |" << endl;
+  cout << "|                                                                       |" << endl;
+  cout << "| SU2 is free software; you can redistribute it and/or                  |" << endl;
+  cout << "| modify it under the terms of the GNU Lesser General Public            |" << endl;
+  cout << "| License as published by the Free Software Foundation; either          |" << endl;
+  cout << "| version 2.1 of the License, or (at your option) any later version.    |" << endl;
+  cout << "|                                                                       |" << endl;
   cout << "| SU2 is distributed in the hope that it will be useful,                |" << endl;
   cout << "| but WITHOUT ANY WARRANTY; without even the implied warranty of        |" << endl;
   cout << "| MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU      |" << endl;
-  cout << "| Lesser General Public License (version 2.1) for more details.         |" << endl;
+  cout << "| Lesser General Public License for more details.                       |" << endl;
+  cout << "|                                                                       |" << endl;
+  cout << "| You should have received a copy of the GNU Lesser General Public      |" << endl;
+  cout << "| License along with SU2. If not, see <http://www.gnu.org/licenses/>.   |" << endl;
   cout <<"-------------------------------------------------------------------------" << endl;
 
-  cout << endl <<"------------------------ Physical case definition -----------------------" << endl;
+  cout << endl <<"------------------------ Physical Case Definition -----------------------" << endl;
   if (val_software == SU2_CFD) {
     switch (Kind_Solver) {
       case EULER:
@@ -3318,10 +3349,12 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     cout << "The reference length (moment computation) is " << RefLengthMoment << "." << endl;
 
     if ((nRefOriginMoment_X > 1) || (nRefOriginMoment_Y > 1) || (nRefOriginMoment_Z > 1)) {
-      cout << "Surface(s) where the force coefficients are evaluated and their reference origin for moment computation: ";
+      cout << "Surface(s) where the force coefficients are evaluated and \n";
+      cout << "their reference origin for moment computation: \n";
+
       for (iMarker_Monitoring = 0; iMarker_Monitoring < nMarker_Monitoring; iMarker_Monitoring++) {
-        cout << Marker_Monitoring[iMarker_Monitoring] << " (" << RefOriginMoment_X[iMarker_Monitoring] <<", "<<RefOriginMoment_Y[iMarker_Monitoring] <<", "<< RefOriginMoment_Z[iMarker_Monitoring] << ")";
-        if (iMarker_Monitoring < nMarker_Monitoring-1) cout << ", ";
+        cout << "   - " << Marker_Monitoring[iMarker_Monitoring] << " (" << RefOriginMoment_X[iMarker_Monitoring] <<", "<<RefOriginMoment_Y[iMarker_Monitoring] <<", "<< RefOriginMoment_Z[iMarker_Monitoring] << ")";
+        if (iMarker_Monitoring < nMarker_Monitoring-1) cout << ".\n";
         else cout <<"."<< endl;
       }
     }
@@ -3553,7 +3586,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 	}
 
 	if (val_software == SU2_CFD) {
-		cout << endl <<"---------------------- Space numerical integration ----------------------" << endl;
+		cout << endl <<"---------------------- Space Numerical Integration ----------------------" << endl;
 
 		if (SmoothNumGrid) cout << "There are some smoothing iterations on the grid coordinates." << endl;
 
@@ -3828,7 +3861,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       cout << "Artificial compressibility factor: " << ArtComp_Factor << "." << endl;
     }
 
-    cout << endl <<"---------------------- Time numerical integration -----------------------" << endl;
+    cout << endl <<"---------------------- Time Numerical Integration -----------------------" << endl;
     switch (Unsteady_Simulation) {
       case NO:
         cout << "Local time stepping (steady state simulation)." << endl; break;
@@ -4028,7 +4061,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   if (val_software == SU2_CFD) {
 
-    cout << endl <<"------------------------- Convergence criteria --------------------------" << endl;
+    cout << endl <<"------------------------- Convergence Criteria --------------------------" << endl;
 
     cout << "Maximum number of iterations: " << nExtIter <<"."<< endl;
 
@@ -4117,7 +4150,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   }
 
-  cout << endl <<"-------------------------- Output information ---------------------------" << endl;
+  cout << endl <<"-------------------------- Output Information ---------------------------" << endl;
 
   if (val_software == SU2_CFD) {
 
@@ -4218,7 +4251,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
   }
 
-  cout << endl <<"------------------- Config file boundary information --------------------" << endl;
+  cout << endl <<"------------------- Config File Boundary Information --------------------" << endl;
 
   if (nMarker_Euler != 0) {
     cout << "Euler wall boundary marker(s): ";

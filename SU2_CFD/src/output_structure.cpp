@@ -4,7 +4,16 @@
  * \author F. Palacios, T. Economon
  * \version 3.2.7 "eagle"
  *
- * Copyright (C) 2012-2014 SU2 Core Developers.
+ * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ *
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
+ *
+ * Copyright (C) 2012-2014 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -5685,19 +5694,36 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
     Breakdown_file.open(cstr, ios::out);
     
     Breakdown_file << endl <<"-------------------------------------------------------------------------" << endl;
-    Breakdown_file <<"|    _____   _    _   ___                                               |" << endl;
-    Breakdown_file <<"|   / ____| | |  | | |__ \\    Release 3.2.7 \"eagle\"                     |" << endl;
-    Breakdown_file <<"|  | (___   | |  | |    ) |                                             |" << endl;
-    Breakdown_file <<"|   \\___ \\  | |  | |   / /                                              |" << endl;
-    Breakdown_file <<"|   ____) | | |__| |  / /_                                              |" << endl;
-    Breakdown_file <<"|  |_____/   \\____/  |____|   Suite (Computational Fluid Dynamics Code) |" << endl;
+    Breakdown_file <<"|    ___ _   _ ___                                                      |" << endl;
+    Breakdown_file <<"|   / __| | | |_  )   Release 3.2.7 \"eagle\"                             |" << endl;
+    Breakdown_file <<"|   \\__ \\ |_| |/ /                                                      |" << endl;
+    Breakdown_file <<"|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl;
     Breakdown_file << "|                                                                       |" << endl;
     Breakdown_file <<"-------------------------------------------------------------------------" << endl;
-    Breakdown_file << "| Copyright (C) 2012-2014 SU2 Core Developers.                          |" << endl;
+    Breakdown_file << "| SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu). |" << endl;
+    Breakdown_file << "|                      Dr. Thomas D. Economon (economon@stanford.edu).  |" << endl;
+    Breakdown_file <<"-------------------------------------------------------------------------" << endl;
+    Breakdown_file << "| SU2 Developers:                                                       |" << endl;
+    Breakdown_file << "| - Prof. Juan J. Alonso's group at Stanford University.                |" << endl;
+    Breakdown_file << "| - Prof. Piero Colonna's group at Delft University of Technology.      |" << endl;
+    Breakdown_file << "| - Prof. Nicolas R. Gauger's group at Kaiserslautern U. of Technology. |" << endl;
+    Breakdown_file << "| - Prof. Alberto Guardone's group at Polytechnic University of Milan.  |" << endl;
+    Breakdown_file << "| - Prof. Rafael Palacios' group at Imperial College London.            |" << endl;
+    Breakdown_file <<"-------------------------------------------------------------------------" << endl;
+    Breakdown_file << "| Copyright (C) 2012-2014 SU2, the open-source CFD code.                |" << endl;
+    Breakdown_file << "|                                                                       |" << endl;
+    Breakdown_file << "| SU2 is free software; you can redistribute it and/or                  |" << endl;
+    Breakdown_file << "| modify it under the terms of the GNU Lesser General Public            |" << endl;
+    Breakdown_file << "| License as published by the Free Software Foundation; either          |" << endl;
+    Breakdown_file << "| version 2.1 of the License, or (at your option) any later version.    |" << endl;
+    Breakdown_file << "|                                                                       |" << endl;
     Breakdown_file << "| SU2 is distributed in the hope that it will be useful,                |" << endl;
     Breakdown_file << "| but WITHOUT ANY WARRANTY; without even the implied warranty of        |" << endl;
     Breakdown_file << "| MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU      |" << endl;
-    Breakdown_file << "| Lesser General Public License (version 2.1) for more details.         |" << endl;
+    Breakdown_file << "| Lesser General Public License for more details.                       |" << endl;
+    Breakdown_file << "|                                                                       |" << endl;
+    Breakdown_file << "| You should have received a copy of the GNU Lesser General Public      |" << endl;
+    Breakdown_file << "| License along with SU2. If not, see <http://www.gnu.org/licenses/>.   |" << endl;
     Breakdown_file <<"-------------------------------------------------------------------------" << endl;
     
     Breakdown_file.precision(4);
@@ -6351,8 +6377,8 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
     
     if (rank == MASTER_NODE) cout << "Merging coordinates in the Master node." << endl;
     MergeCoordinates(config[iZone], geometry[iZone][MESH_0]);
-    
-    if (rank == MASTER_NODE) {
+
+    if ((rank == MASTER_NODE) && (Wrt_Vol || Wrt_Srf)) {
       if (FileFormat == TECPLOT_BINARY) {
         SetTecplot_MeshBinary(config[iZone], geometry[iZone][MESH_0], iZone);
         SetTecplot_SurfaceMesh(config[iZone], geometry[iZone][MESH_0], iZone);

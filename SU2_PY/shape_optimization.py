@@ -5,7 +5,16 @@
 #  \author T. Economon, T. Lukaczyk, F. Palacios
 #  \version 3.2.7 "eagle"
 #
-# Copyright (C) 2012-2014 SU2 Core Developers.
+# SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
+#                      Dr. Thomas D. Economon (economon@stanford.edu).
+#
+# SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+#                 Prof. Piero Colonna's group at Delft University of Technology.
+#                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+#                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+#                 Prof. Rafael Palacios' group at Imperial College London.
+#
+# Copyright (C) 2012-2014 SU2, the open-source CFD code.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -51,20 +60,37 @@ def main():
     options.gradient    = options.gradient.upper()
     
     sys.stdout.write('\n-------------------------------------------------------------------------\n')
-    sys.stdout.write('|    _____   _    _   ___                                               |\n')
-    sys.stdout.write('|   / ____| | |  | | |__ \\    Release 3.2.7 \"eagle\"                     |\n')
-    sys.stdout.write('|  | (___   | |  | |    ) |                                             |\n')
-    sys.stdout.write('|   \\___ \\  | |  | |   / /                                              |\n')
-    sys.stdout.write('|   ____) | | |__| |  / /_                                              |\n')
-    sys.stdout.write('|  |_____/   \\____/  |____|   Aerodynamic Shape Optimization Script     |\n')
+    sys.stdout.write('|    ___ _   _ ___                                                      |\n')
+    sys.stdout.write('|   / __| | | |_  )   Release 3.2.7 \"eagle\"                             |\n')
+    sys.stdout.write('|   \\__ \\ |_| |/ /                                                      |\n')
+    sys.stdout.write('|   |___/\\___//___|   Aerodynamic Shape Optimization Script             |\n')
     sys.stdout.write('|                                                                       |\n')
     sys.stdout.write('-------------------------------------------------------------------------\n')
-    sys.stdout.write('| Copyright (C) 2012-2014 SU2 Core Developers.                          |\n')
+    sys.stdout.write('| SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu). |\n')
+    sys.stdout.write('|                      Dr. Thomas D. Economon (economon@stanford.edu).  |\n')
+    sys.stdout.write('-------------------------------------------------------------------------\n')
+    sys.stdout.write('| SU2 Developers:                                                       |\n')
+    sys.stdout.write('| - Prof. Juan J. Alonso\'s group at Stanford University.                |\n')
+    sys.stdout.write('| - Prof. Piero Colonna\'s group at Delft University of Technology.      |\n')
+    sys.stdout.write('| - Prof. Nicolas R. Gauger\'s group at Kaiserslautern U. of Technology. |\n')
+    sys.stdout.write('| - Prof. Alberto Guardone\'s group at Polytechnic University of Milan.  |\n')
+    sys.stdout.write('| - Prof. Rafael Palacios\' group at Imperial College London.            |\n')
+    sys.stdout.write('-------------------------------------------------------------------------\n')
+    sys.stdout.write('| Copyright (C) 2012-2014 SU2, the open-source CFD code.                |\n')
+    sys.stdout.write('|                                                                       |\n')
+    sys.stdout.write('| SU2 is free software; you can redistribute it and/or                  |\n')
+    sys.stdout.write('| modify it under the terms of the GNU Lesser General Public            |\n')
+    sys.stdout.write('| License as published by the Free Software Foundation; either          |\n')
+    sys.stdout.write('| version 2.1 of the License, or (at your option) any later version.    |\n')
+    sys.stdout.write('|                                                                       |\n')
     sys.stdout.write('| SU2 is distributed in the hope that it will be useful,                |\n')
     sys.stdout.write('| but WITHOUT ANY WARRANTY; without even the implied warranty of        |\n')
     sys.stdout.write('| MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU      |\n')
-    sys.stdout.write('| Lesser General Public License (version 2.1) for more details.         |\n')
-    sys.stdout.write('-------------------------------------------------------------------------\n\n')
+    sys.stdout.write('| Lesser General Public License for more details.                       |\n')
+    sys.stdout.write('|                                                                       |\n')
+    sys.stdout.write('| You should have received a copy of the GNU Lesser General Public      |\n')
+    sys.stdout.write('| License along with SU2. If not, see <http://www.gnu.org/licenses/>.   |\n')
+    sys.stdout.write('-------------------------------------------------------------------------\n')
 
     shape_optimization( options.filename    ,
                         options.projectname ,
