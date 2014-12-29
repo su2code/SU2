@@ -279,7 +279,6 @@ nobase_dist_mypkg_DATA = \
     SU2/opt/__init__.py \
     SU2/run/adaptation.py \
     SU2/run/adjoint.py \
-    SU2/run/decompose.py \
     SU2/run/deform.py \
     SU2/run/direct.py \
     SU2/run/interface.py \

@@ -1,10 +1,10 @@
 /*!
- * \file solution_direct_turbulent.cpp
+ * \file solution_direct_transition.cpp
  * \brief Main subrotuines for solving direct problems (Euler, Navier-Stokes, etc.).
  * \author A. Aranake
- * \version 3.2.5 "eagle"
+ * \version 3.2.7 "eagle"
  *
- * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
+ * Copyright (C) 2012-2014 SU2 Core Developers.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -27,7 +27,7 @@ CTransLMSolver::CTransLMSolver(void) : CTurbSolver() {}
 CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CTurbSolver() {
 	unsigned short iVar, iDim, nLineLets;
 	unsigned long iPoint, index;
-	double Density_Inf, Viscosity_Inf, tu_Inf, nu_tilde_Inf, Factor_nu_Inf, dull_val, rey, mach;
+	double Density_Inf, Viscosity_Inf, tu_Inf, nu_tilde_Inf, Factor_nu_Inf, dull_val, rey;
 	ifstream restart_file;
 	char *cstr;
 	string text_line;
@@ -125,7 +125,6 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
     REth_Inf = 331.5*pow(tu_Inf-0.5658,-0.671);
   }
   rey = config->GetReynolds();
-  mach = config->GetMach();
 
 //  REth_Inf *= mach/rey;
   cout << "REth_Inf = " << REth_Inf << ", rey: "<< rey << " -AA" << endl;
@@ -133,15 +132,7 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
 	/*--- Factor_nu_Inf in [3.0, 5.0] ---*/
 	Factor_nu_Inf = config->GetNuFactor_FreeStream();
 	nu_tilde_Inf  = Factor_nu_Inf*Viscosity_Inf/Density_Inf;
-	
-	/*--- Eddy viscosity ---*/
-	double Ji, Ji_3, fv1, cv1_3 = 7.1*7.1*7.1;
-	double muT_Inf;
-	Ji = nu_tilde_Inf/Viscosity_Inf*Density_Inf;
-	Ji_3 = Ji*Ji*Ji;
-	fv1 = Ji_3/(Ji_3+cv1_3);
-	muT_Inf = Density_Inf*fv1*nu_tilde_Inf;
-	
+		
 	/*--- Restart the solution from file information ---*/
 	if (!restart) {
     for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
@@ -225,7 +216,7 @@ void CTransLMSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 void CTransLMSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
   
 	unsigned short iVar;
-	unsigned long iPoint, total_index, IterLinSol;
+	unsigned long iPoint, total_index;
 	double Delta, Delta_flow, Vol;
   
   
@@ -272,7 +263,7 @@ void CTransLMSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
   /*--- Solve or smooth the linear system ---*/
   
   CSysSolve system;
-  IterLinSol = system.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+  system.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
   
 	/*--- Update solution (system written in terms of increments) ---*/
   
@@ -381,7 +372,7 @@ void CTransLMSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_cont
 void CTransLMSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
 																			 CConfig *config, unsigned short iMesh) {
   unsigned long iPoint;
-  double gamma_sep;
+  double gamma_sep = 0.0;
 
   //cout << "Setting Trans residual -AA " << endl;
   cout << "\nBeginAA" << endl;
@@ -389,32 +380,41 @@ void CTransLMSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     cout << "\niPoint: " << iPoint << endl;
 		
 		/*--- Conservative variables w/o reconstruction ---*/
+    
 		numerics->SetConservative(solver_container[FLOW_SOL]->node[iPoint]->GetSolution(), NULL);
 		
 		/*--- Gradient of the primitive and conservative variables ---*/
+    
 		numerics->SetPrimVarGradient(solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive(), NULL);
 		
 		/*--- Laminar and eddy viscosity ---*/
+    
 		numerics->SetLaminarViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity(), 0.0);
     numerics->SetEddyViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity(),0.0);
 		
 		/*--- Turbulent variables w/o reconstruction, and its gradient ---*/
+    
 		numerics->SetTransVar(node[iPoint]->GetSolution(), NULL);
 		// numerics->SetTransVarGradient(node[iPoint]->GetGradient(), NULL);  // Is this needed??
 		
 		/*--- Set volume ---*/
+    
 		numerics->SetVolume(geometry->node[iPoint]->GetVolume());
 		
 		/*--- Set distance to the surface ---*/
+    
 		numerics->SetDistance(geometry->node[iPoint]->GetWall_Distance(), 0.0);
 		
 		/*--- Compute the source term ---*/
+    
 		numerics->ComputeResidual_TransLM(Residual, Jacobian_i, NULL, config, gamma_sep);
 		
     /*-- Store gamma_sep in variable class --*/
+    
     node[iPoint]->SetGammaSep(gamma_sep);
 
 		/*--- Subtract residual and the Jacobian ---*/
+    
 		LinSysRes.SubtractBlock(iPoint, Residual);
     Jacobian.SubtractBlock(iPoint,iPoint,Jacobian_i);
 
@@ -426,7 +426,7 @@ void CTransLMSolver::Source_Template(CGeometry *geometry, CSolver **solver_conta
 }
 
 void CTransLMSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
-	unsigned long iPoint, iVertex, Point_Normal;
+	unsigned long iPoint, iVertex;
 	unsigned short iVar, iDim;
   double *U_i;
   double *U_domain = new double[nVar];
@@ -448,7 +448,6 @@ void CTransLMSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 			geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
 			for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
 
-      Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
       /*--- Set both interior and exterior point to current value ---*/
       for (iVar=0; iVar < nVar; iVar++) {
         U_domain[iVar] = node[iPoint]->GetSolution(iVar);

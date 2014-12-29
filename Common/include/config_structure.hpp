@@ -2,10 +2,10 @@
  * \file config_structure.hpp
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>config_structure.cpp</i> file.
- * \author F. Palacios
- * \version 3.2.5 "eagle"
+ * \author F. Palacios, T. Economon, B. Tracey
+ * \version 3.2.7 "eagle"
  *
- * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
+ * Copyright (C) 2012-2014 SU2 Core Developers.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -46,7 +46,7 @@ using namespace std;
  * \brief Main class for defining the problem; basically this class reads the configuration file, and
  *        stores all the information.
  * \author F. Palacios.
- * \version 3.2.5 "eagle"
+ * \version 3.2.7 "eagle"
  */
 class CConfig {
 private:
@@ -68,7 +68,6 @@ private:
 	EquivArea,				/*!< \brief Flag to know if the code is going to compute and plot the equivalent area. */
 	InvDesign_Cp,				/*!< \brief Flag to know if the code is going to compute and plot the inverse design. */
   InvDesign_HeatFlux,				/*!< \brief Flag to know if the code is going to compute and plot the inverse design. */
-	OneShot,				/*!< \brief Flag to know if the code is solving a one shot problem. */
 	Linearized,				/*!< \brief Flag to know if the code is solving a linearized problem. */
 	Grid_Movement,			/*!< \brief Flag to know if there is grid movement. */
     Wind_Gust,              /*!< \brief Flag to know if there is a wind gust. */
@@ -79,7 +78,6 @@ private:
 	GravityForce,			/*!< \brief Flag to know if the gravity force is incuded in the formulation. */
 	SmoothNumGrid,			/*!< \brief Smooth the numerical grid. */
 	AdaptBoundary,			/*!< \brief Adapt the elements on the boundary. */
-	FullMG,					/*!< \brief Full multigrid strategy. */
 	Divide_Element,			/*!< \brief Divide rectables and hexahedrom. */
 	Engine_Intake,			/*!< \brief Engine intake subsonic region. */
 	Frozen_Visc,			/*!< \brief Flag for adjoint problem with/without frozen viscosity. */
@@ -89,10 +87,9 @@ private:
 	DebugMode, /*!< \brief Flag for debug mode */
 	Show_Adj_Sens, /*!< \brief Flag for outputting sensitivities on exit */
   ionization;  /*!< \brief Flag for determining if free electron gas is in the mixture */
-	bool Visualize_Partition;	/*!< \brief Flag to visualize each partition in the DDM. */
   double Damp_Engine_Inflow;	/*!< \brief Damping factor for the engine inlet. */
-    double Damp_Engine_Bleed;	/*!< \brief Damping factor for the engine bleed. */
-    double Damp_Res_Restric,	/*!< \brief Damping factor for the residual restriction. */
+  double Damp_Engine_Bleed;	/*!< \brief Damping factor for the engine bleed. */
+  double Damp_Res_Restric,	/*!< \brief Damping factor for the residual restriction. */
 	Damp_Correc_Prolong; /*!< \brief Damping factor for the correction prolongation. */
 	double Position_Plane; /*!< \brief Position of the Near-Field (y coordinate 2D, and z coordinate 3D). */
 	double WeightCd; /*!< \brief Weight of the drag coefficient. */
@@ -409,9 +406,7 @@ private:
 	Cauchy_Elems;						/*!< \brief Number of elements to evaluate. */
 	unsigned short Residual_Func_Flow;	/*!< \brief Equation to apply residual convergence to. */
 	unsigned long StartConv_Iter;	/*!< \brief Start convergence criteria at iteration. */
-	double Cauchy_Eps,	/*!< \brief Epsilon used for the convergence. */
-	Cauchy_Eps_OneShot,	/*!< \brief Epsilon used for the one shot method convergence. */
-	Cauchy_Eps_FullMG;	/*!< \brief Epsilon used for the full multigrid method convergence. */
+  double Cauchy_Eps;	/*!< \brief Epsilon used for the convergence. */
 	unsigned long Wrt_Sol_Freq,	/*!< \brief Writing solution frequency. */
 	Wrt_Sol_Freq_DualTime,	/*!< \brief Writing solution frequency for Dual Time. */
 	Wrt_Con_Freq,				/*!< \brief Writing convergence history frequency. */
@@ -503,7 +498,6 @@ private:
 	bool Low_MemoryOutput,      /*!< \brief Write a volume solution file */
   Wrt_Vol_Sol,                /*!< \brief Write a volume solution file */
 	Wrt_Srf_Sol,                /*!< \brief Write a surface solution file */
-	Wrt_Restart,                /*!< \brief Write a restart solution file */
 	Wrt_Csv_Sol,                /*!< \brief Write a surface comma-separated values solution file */
 	Wrt_Residuals,              /*!< \brief Write residuals to solution file */
   Wrt_Limiters,              /*!< \brief Write residuals to solution file */
@@ -828,12 +822,11 @@ private:
   }
 
   void addMathProblemOption(const string name, bool & Adjoint, const bool & Adjoint_default,
-                      bool & OneShot, const bool & OneShot_default,
                       bool & Linearized, const bool & Linearized_default,
                             bool & Restart_Flow, const bool & Restart_Flow_default){
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string,bool>(name,true));
-    COptionBase* val = new COptionMathProblem(name, Adjoint, Adjoint_default, OneShot, OneShot_default, Linearized, Linearized_default, Restart_Flow, Restart_Flow_default);
+    COptionBase* val = new COptionMathProblem(name, Adjoint, Adjoint_default, Linearized, Linearized_default, Restart_Flow, Restart_Flow_default);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
@@ -1097,12 +1090,6 @@ public:
 	 * \return Outlet position of the interfase for a free surface problem.
 	 */
 	double GetFreeSurface_Outlet(void);
-
-	/*!
-	 * \brief Creates a tecplot file to visualize the partition made by the DDC software.
-	 * \return <code>TRUE</code> if the partition is going to be plotted; otherwise <code>FALSE</code>.
-	 */
-	bool GetVisualize_Partition(void);
 
   /*!
 	 * \brief Creates a tecplot file to visualize the partition made by the DDC software.
@@ -2170,12 +2157,6 @@ public:
 	bool GetWrt_Csv_Sol(void);
 
 	/*!
-	 * \brief Get information about writing a restart solution file.
-	 * \return <code>TRUE</code> means that a restart solution file will be written.
-	 */
-	bool GetWrt_Restart(void);
-
-	/*!
 	 * \brief Get information about writing residuals to volume solution file.
 	 * \return <code>TRUE</code> means that residuals will be written to the solution file.
 	 */
@@ -2264,7 +2245,7 @@ public:
 	 * \return Value of the marker <i>val_marker</i> that is in the geometry file
 	 *         for the surface that has the tag.
 	 */
-  short GetTagBound_Marker_All(string val_tag);
+  short GetMarker_All_TagBound(string val_tag);
 
 	/*!
 	 * \brief Get the kind of boundary for each marker.
@@ -2726,6 +2707,12 @@ public:
 	 * \return Kind of the SU2 software component.
 	 */
 	unsigned short GetKind_SU2(void);
+  
+  /*!
+	 * \brief Get the kind of SU2 software component.
+	 * \return Kind of the SU2 software component.
+	 */
+	void SetKind_SU2(unsigned short val_kind_su2);
 
 	/*!
 	 * \brief Get the kind of the turbulence model.
@@ -3608,12 +3595,6 @@ public:
   bool GetIonization(void);
 
 	/*!
-	 * \brief Information about doing a full multigrid strategy (start in the coarse level).
-	 * \return <code>TRUE</code> or <code>FALSE</code>  depending if we are performing a full multigrid strategy.
-	 */
-	bool GetFullMG(void);
-
-	/*!
 	 * \brief Information about computing and plotting the equivalent area distribution.
 	 * \return <code>TRUE</code> or <code>FALSE</code>  depending if we are computing the equivalent area.
 	 */
@@ -3871,18 +3852,6 @@ public:
 	 * \return Value of the convergence criteria.
 	 */
 	double GetCauchy_Eps(void);
-
-	/*!
-	 * \brief Get the value of convergence criteria for the one-shot problem.
-	 * \return Value of the convergence criteria.
-	 */
-	double GetCauchy_Eps_OneShot(void);
-
-	/*!
-	 * \brief Get the value of convergence criteria for the full multigrid method.
-	 * \return Value of the convergence criteria.
-	 */
-	double GetCauchy_Eps_FullMG(void);
 
 	/*!
 	 * \brief If we are prforming an unsteady simulation, there is only
@@ -4270,17 +4239,18 @@ public:
 	unsigned short GetConvCriteria(void);
 
 	/*!
-	 * \brief This subroutine adds the domain index to the name of some input-output file names.
-	 * \param[in] val_domain - Index of the domain.
-	 */
-	void SetFileNameDomain(unsigned short val_domain);
-
-	/*!
 	 * \brief Get the index in the config information of the marker <i>val_marker</i>.
 	 * \note When we read the config file, it stores the markers in a particular vector.
 	 * \return Index in the config information of the marker <i>val_marker</i>.
 	 */
 	unsigned short GetMarker_CfgFile_TagBound(string val_marker);
+  
+  /*!
+   * \brief Get the name in the config information of the marker number <i>val_marker</i>.
+   * \note When we read the config file, it stores the markers in a particular vector.
+   * \return Name of the marker in the config information of the marker <i>val_marker</i>.
+   */
+  string GetMarker_CfgFile_TagBound(unsigned short val_marker);
 
 	/*!
 	 * \brief Get the boundary information (kind of boundary) in the config information of the marker <i>val_marker</i>.

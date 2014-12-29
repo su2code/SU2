@@ -26,10 +26,6 @@ if BUILD_CFD
 SUBDIRS +=SU2_CFD/obj
 endif
 
-if BUILD_PRT
-SUBDIRS +=SU2_PRT/obj
-endif
-
 if BUILD_DOT
 SUBDIRS +=SU2_DOT/obj
 endif

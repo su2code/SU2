@@ -2,9 +2,9 @@
  * fluid_model_ppr.cpp
  * \brief Source of the Peng-Robinson model.
  * \author S. Vitale, G. Gori, M. Pini, A. Guardone, P. Colonna
- * \version 3.2.1 "eagle"
+ * \version 3.2.7 "eagle"
  *
- * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
+ * Copyright (C) 2012-2014 SU2 Core Developers.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -28,7 +28,6 @@ CPengRobinson::CPengRobinson() : CIdealGas() {
 	k = 0.0;
 	TstarCrit = 0.0;
 }
-
 
 CPengRobinson::CPengRobinson(double gamma, double R, double Pstar, double Tstar, double w) : CIdealGas(gamma, R) {
 
@@ -121,7 +120,7 @@ void CPengRobinson::SetTDState_rhoe (double rho, double e ) {
 
 void CPengRobinson::SetTDState_PT (double P, double T ) {
 	double toll= 1e-6;
-	double A, B, Z, DZ, F, F1;
+	double A, B, Z, DZ=1.0, F, F1;
 	double rho, fv, e;
 	double sqrt2=sqrt(2);
 	unsigned short nmax = 20, count=0;
@@ -129,21 +128,19 @@ void CPengRobinson::SetTDState_PT (double P, double T ) {
 	A= a*alpha2(T)*P/(T*Gas_Constant)/(T*Gas_Constant);
 	B= b*P/(T*Gas_Constant);
 
-	if(Zed > 0.1)
-			Z=min(Zed, 0.99);
-		else
-			Z=0.99;
-	DZ= 1.0;
-	do{
+  if (Zed > 0.1) Z = min(Zed, 0.99);
+		else Z=0.99;
+  
+	do {
 		F = Z*Z*Z + Z*Z*(B - 1.0) + Z*(A - 2*B - 3*B*B)  + (B*B*B + B*B - A*B);
 		F1 = 3*Z*Z + 2*Z*(B - 1.0) + (A - 2*B - 3*B*B);
 		DZ = F/F1;
 		Z-= DZ;
-	}while(abs(DZ)>toll && count < nmax);
+	} while(abs(DZ)>toll && count < nmax);
 
 	if (count == nmax){
-		cout << "Warning Newton-Raphson exceed number of max iteration in PT"<<endl;
-		cout << "Compressibility factor  "<< Z << " would be substituted with "<< Zed<<endl;
+		cout << "Warning Newton-Raphson exceed number of max iteration in PT"<< endl;
+		cout << "Compressibility factor  "<< Z << " would be substituted with "<< Zed<< endl;
 	}
 	// check if the solution is physical otherwise uses previous point  solution
 	if (Z <= 1.0001 && Z >= 0.05 && count < nmax)
@@ -220,7 +217,7 @@ void CPengRobinson::SetTDState_hs (double h, double s ){
 	f=fx1;
 	fmid=fx2;
 	if (f*fmid >= 0.0){
-		cout<< "Root must be bracketed for bisection in rtbis"<<endl;
+		cout<< "Root must be bracketed for bisection in rtbis"<< endl;
 		SetTDState_rhoT(Density, Temperature);
 	}
 	rtb = f < 0.0 ? (dx=x2-x1,x1) : (dx=x1-x2,x2);
@@ -236,7 +233,7 @@ void CPengRobinson::SetTDState_hs (double h, double s ){
 
 	v = xmid;
 	if(countrtb==ITMAX){
-		cout <<"Too many bisections in rtbis" <<endl;
+		cout <<"Too many bisections in rtbis" << endl;
 //			do{
 //					fv = atanh( b/v* sqrt2/(1 + b/v));
 //					T=T_v_h(v,h);
@@ -250,7 +247,7 @@ void CPengRobinson::SetTDState_hs (double h, double s ){
 //		}else{
 	}
 	if(v!=v){
-		cout <<"not physical solution found, h and s input " << h << " "<< s <<endl;
+		cout <<"not physical solution found, h and s input " << h << " "<< s << endl;
 		SetTDState_rhoT(Density, Temperature);
 	}
 
@@ -262,9 +259,9 @@ void CPengRobinson::SetTDState_hs (double h, double s ){
 	cons_s= abs((Entropy-s)/s);
 
 	if(cons_h >1e-4 or cons_s >1e-4){
-		cout<< "TD consistency not verified in hs call"<<endl;
-			 //cout <<"Before  "<< h <<" "<< s <<endl;
-			 //cout <<"After  "<< StaticEnergy + Pressure/Density <<" "<< Entropy << fmid <<" "<< f<< " "<< countrtb<<" "<< countnw<<endl;
+		cout<< "TD consistency not verified in hs call"<< endl;
+			 //cout <<"Before  "<< h <<" "<< s << endl;
+			 //cout <<"After  "<< StaticEnergy + Pressure/Density <<" "<< Entropy << fmid <<" "<< f<< " "<< countrtb<<" "<< countnw<< endl;
 			 //getchar();
 	}
 }

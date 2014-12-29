@@ -14,7 +14,6 @@ no upstream pointer communication
 
 partitions set once in config initial read
 
-SU2.run.PRT(config)
 SU2.run.CFD(config)
 SU2.run.MSH(config)
 SU2.run.DEF(config)
@@ -33,12 +32,6 @@ update super copy to make useful for next analysis steps
 make temporary super deepcopy if not desired
 returns info dictionary for higher level functions
 all tools assume config['NUMBER_PART'] already set
-
-SU2.run.decomp(config)
-	check for decomposition in config['DECOMPOSED'] = True/False
-	run PRT
-	pointer updated config
-		'DECOMPOSED' = True
 
 SU2.run.deform(config,dv_new=[])
 	optional dv_new sets:

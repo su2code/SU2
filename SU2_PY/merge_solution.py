@@ -3,9 +3,9 @@
 ## \file merge_solution.py
 #  \brief Python script for merging of the solution files.
 #  \author F. Palacios
-#  \version 3.2.5 "eagle"
+#  \version 3.2.7 "eagle"
 #
-# Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
+# Copyright (C) 2012-2014 SU2 Core Developers.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -36,15 +36,9 @@ def main():
                       help="read config from FILE", metavar="FILE")
     parser.add_option("-n", "--partitions", dest="partitions", default=-1,
                       help="number of PARTITIONS", metavar="PARTITIONS")
-    parser.add_option("-p", "--oldpartitions", dest="oldpartitions", default="oldpartitions",
-                      help="old number of PARTITIONS (use -n instead)", metavar="OLDPARTITIONS")
 
     (options, args)=parser.parse_args()
     options.partitions = int(options.partitions)
-    
-    if options.oldpartitions != "oldpartitions":
-        print ("\n IMPORTANT: -p is no longer available in SU2 v3.2.4, use -n flag instead \n")
-        sys.exit()
     
     merge_solution( options.filename   ,
                     options.partitions  )

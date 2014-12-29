@@ -3,9 +3,9 @@
 ## \file change_version_number.py
 #  \brief Python script for doing the continuous adjoint computation using the SU2 suite.
 #  \author A. Aranake
-#  \version 3.2.5 "eagle"
+#  \version 3.2.7 "eagle"
 #
-# Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
+# Copyright (C) 2012-2014 SU2 Core Developers.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public

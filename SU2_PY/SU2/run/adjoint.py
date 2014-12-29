@@ -1,22 +1,22 @@
 ## \file adjoint.py
 #  \brief python package for running adjoint problems 
 #  \author T. Lukaczyk, F. Palacios
-#  \version 3.2.5 "eagle"
+#  \version 3.2.7 "eagle"
 #
-# Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
+# Copyright (C) 2012-2014 SU2 Core Developers.
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# SU2 is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
 #
-# This program is distributed in the hope that it will be useful,
+# SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# Lesser General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU Lesser General Public
+# License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
 # ----------------------------------------------------------------------
 #  Imports
@@ -25,7 +25,6 @@
 import os, sys, shutil, copy
 
 from .. import io  as su2io
-from decompose import decompose as su2decomp
 from merge     import merge     as su2merge
 from interface import CFD       as SU2_CFD
 
@@ -42,7 +41,6 @@ def adjoint( config ):
             SU2.run.merge()
             
         Assumptions:
-            Redundant decomposition if config.DECOMPOSED == True
             Does not run Gradient Projection
             Does not rename restart filename to solution filename
             Adds 'adjoint' suffix to convergence filename
@@ -53,7 +51,6 @@ def adjoint( config ):
                 FILES.ADJOINT_NAME
                 
         Updates:
-            config.DECOMPOSED
             config.MATH_PROBLEM
             
         Executes in:
@@ -62,9 +59,6 @@ def adjoint( config ):
     
     # local copy
     konfig = copy.deepcopy(config)
-
-    # decompose
-    su2decomp(konfig)
     
     # setup problem    
     konfig['MATH_PROBLEM']  = 'ADJOINT'
@@ -87,8 +81,7 @@ def adjoint( config ):
     history = su2io.read_history( history_filename )
     
     # update super config
-    config.update({ 'DECOMPOSED'   : konfig['DECOMPOSED']   ,
-                    'MATH_PROBLEM' : konfig['MATH_PROBLEM'] ,
+    config.update({ 'MATH_PROBLEM' : konfig['MATH_PROBLEM'] ,
                     'OBJECTIVE_FUNCTION'  : konfig['OBJECTIVE_FUNCTION']   })
     
     # files out

@@ -3,7 +3,7 @@
  * CAEP Plugin for Stanford University Unstructured
  *
  * Author - Trent Lukaczyk, Aerospace Design Lab
- *          Contact: susquared-dev@lists.stanford.edu
+ *          Contact: su2code-dev@lists.stanford.edu
  *          March 2012
  *
  ***************************************************************************/
