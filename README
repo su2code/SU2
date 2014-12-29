@@ -45,3 +45,22 @@ $SU2_HOME should point to the root directory of the source code distribution, i.
 Thanks for building, and happy optimizing!
 
 - The SU2 Development Team
+
+----------------------------------------------------------
+  SU2 DEVELOPERS
+----------------------------------------------------------
+
+SU2 is being developed by individuals and organized teams around the world. 
+
+The SU2 Lead Developers are:
+
+   - Dr. Francisco Palacios (fpalacios@stanford.edu)
+   - Dr. Thomas D. Economon (economon@stanford.edu)
+
+and the most active groups developing SU2 are:
+
+   - Prof. Juan J. Alonso's group at Stanford University.
+   - Prof. Piero Colonna's group at Delft University of Technology.
+   - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+   - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+   - Prof. Rafael Palacios' group at Imperial College London.
