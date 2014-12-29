@@ -1,22 +1,22 @@
 ## \file config.py
 #  \brief python package for config 
 #  \author T. Lukaczyk, F. Palacios
-#  \version 3.2.5 "eagle"
+#  \version 3.2.7 "eagle"
 #
-# Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
+# Copyright (C) 2012-2014 SU2 Core Developers.
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# SU2 is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
 #
-# This program is distributed in the hope that it will be useful,
+# SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# Lesser General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU Lesser General Public
+# License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
 # ----------------------------------------------------------------------
 #  Imports
@@ -370,12 +370,6 @@ def read_config(filename):
                 data_dict[this_param] = float(this_value)
                 break   
             
-            # boolean parameters
-            if case("DECOMPOSED")             :
-                this_value = this_value.upper()
-                data_dict[this_param] = this_value == "TRUE" or this_value == "1"
-                break 
-            
             # int parameters
             if case("NUMBER_PART")            : pass
             if case("AVAILABLE_PROC")         : pass
@@ -513,17 +507,19 @@ def read_config(filename):
         #: for case
         
     #: for line
-    
-    # some defaults
-    if not data_dict.has_key('DECOMPOSED'):
-        data_dict['DECOMPOSED'] = False
-    
+
     #hack - twl
     if not data_dict.has_key('DV_VALUE_NEW'):
         data_dict['DV_VALUE_NEW'] = [0]
     if not data_dict.has_key('DV_VALUE_OLD'):
         data_dict['DV_VALUE_OLD'] = [0]
-
+    if not data_dict.has_key('OPT_ITERATIONS'):
+        data_dict['OPT_ITERATIONS'] = 100
+    if not data_dict.has_key('OPT_ACCURACY'):
+        data_dict['OPT_ACCURACY'] = 1e-10
+    if not data_dict.has_key('BOUND_DV'):
+        data_dict['BOUND_DV'] = 1e10
+    
     return data_dict
     
 #: def read_config()
@@ -651,13 +647,7 @@ def write_config(filename,param_dict):
             if case("EXT_ITER")               :
                 output_file.write("%i" % new_value)
                 break
-            
-            # boolean parameters
-            if case("DECOMPOSED")             :
-                new_value = str(new_value).upper()
-                output_file.write(new_value)
-                break             
-            
+                        
             if case("DEFINITION_DV") :
                 n_dv = len(new_value['KIND'])
                 if not n_dv:

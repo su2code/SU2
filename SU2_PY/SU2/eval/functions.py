@@ -1,22 +1,22 @@
 ## \file functions.py
 #  \brief python package for functions
 #  \author T. Lukaczyk, F. Palacios
-#  \version 3.2.5 "eagle"
+#  \version 3.2.7 "eagle"
 #
-# Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
+# Copyright (C) 2012-2014 SU2 Core Developers.
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# SU2 is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
 #
-# This program is distributed in the hope that it will be useful,
+# SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# Lesser General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU Lesser General Public
+# License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
 # ----------------------------------------------------------------------
 #  Imports
@@ -105,8 +105,7 @@ def aerodynamics( config, state=None ):
     """ vals = SU2.eval.aerodynamics(config,state=None)
     
         Evaluates aerodynamics with the following:
-            SU2.run.decompose()
-	    SU2.run.deform()
+	          SU2.run.deform()
             SU2.run.direct()
         
         Assumptions:
@@ -379,7 +378,6 @@ def geometry( func_name, config, state=None ):
     """ val = SU2.eval.geometry(config,state=None)
     
         Evaluates geometry with the following:
-            SU2.run.decompose()
             SU2.run.deform()
             SU2.run.geometry()
         
@@ -480,8 +478,7 @@ def update_mesh(config,state=None):
     """ SU2.eval.update_mesh(config,state=None)
     
         updates mesh with the following:
-            SU2.run.decompose()
-	    SU2.run.deform()
+	          SU2.run.deform()
         
         Assumptions:
             Config is already setup for deformation.
@@ -519,39 +516,8 @@ def update_mesh(config,state=None):
     else:
         log_decomp = None
         log_deform = None
-        
-        
-    # ----------------------------------------------------
-    #  Decomposition    
-    # ----------------------------------------------------
     
-    # redundancy check
-    if not config.get('DECOMPOSED',False):
         
-        # files to pull
-        pull = []
-        link = config['MESH_FILENAME']
-        
-        # output redirection
-        with redirect_folder('DECOMP',pull,link) as push:    
-            with redirect_output(log_decomp):
-            
-                # # RUN DECOMPOSITION # # 
-                info = su2run.decompose(config)
-                state.update(info)
-                              
-                # files to push
-                if info.FILES.has_key('MESH'):
-                    meshname = info.FILES.MESH
-                    names = su2io.expand_part( meshname , config )
-                    push.extend( names )
-                #: if push
-        
-        #: with output redirection
-        
-    #: if not redundant
-    
-    
     # ----------------------------------------------------
     #  Deformation
     # ----------------------------------------------------

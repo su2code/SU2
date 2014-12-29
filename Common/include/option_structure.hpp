@@ -1,14 +1,14 @@
 /*!
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
- * \author F. Palacios
- * \version 3.2.5 "eagle"
+ * \author J. Hicken, B. Tracey
+ * \version 3.2.7 "eagle"
  *
  * Many of the classes in this file are templated, and therefore must
  * be declared and defined here; to keep all elements together, there
  * is no corresponding .cpp file at this time.
  *
- * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
+ * Copyright (C) 2012-2014 SU2 Core Developers.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -94,17 +94,16 @@ enum SU2_COMPONENT {
   SU2_CFD = 1,	/*!< \brief Running the SU2_CFD software. */
   SU2_DEF = 2,	/*!< \brief Running the SU2_DEF software. */
   SU2_DOT = 3,	/*!< \brief Running the SU2_DOT software. */
-  SU2_PRT = 4,	/*!< \brief Running the SU2_PRT software. */
-  SU2_MSH = 5,	/*!< \brief Running the SU2_MSH software. */
-  SU2_GEO = 6,	/*!< \brief Running the SU2_GEO software. */
-  SU2_SOL = 7	/*!< \brief Running the SU2_SOL software. */
+  SU2_MSH = 4,	/*!< \brief Running the SU2_MSH software. */
+  SU2_GEO = 5,	/*!< \brief Running the SU2_GEO software. */
+  SU2_SOL = 6	/*!< \brief Running the SU2_SOL software. */
 };
 
 const unsigned int EXIT_DIVERGENCE = 2;		/*!< \brief Exit code (divergence). */
 
 const unsigned int BUFSIZE = 3000000;		/*!< \brief MPI buffer. */
 const unsigned int MAX_PARAMETERS = 10;		/*!< \brief Maximum number of parameters for a design variable definition. */
-const unsigned int MAX_NUMBER_MARKER = 5000;	/*!< \brief Maximum number of markers. */
+const unsigned int MAX_NUMBER_MARKER = 30000;	/*!< \brief Maximum number of markers. */
 const unsigned int MAX_NUMBER_PERIODIC = 10;	/*!< \brief Maximum number of periodic boundary conditions. */
 const unsigned int MAX_STRING_SIZE = 200;	/*!< \brief Maximum number of domains. */
 const unsigned int MAX_NUMBER_FFD = 10;	/*!< \brief Maximum number of FFDBoxes for the FFD. */
@@ -864,7 +863,6 @@ enum ENUM_ADAPT {
   WAKE = 12,			/*!< \brief Do a grid refinement on the wake. */
   SMOOTHING = 14,		/*!< \brief Do a grid smoothing of the geometry. */
   SUPERSONIC_SHOCK = 15,	/*!< \brief Do a grid smoothing. */
-  TWOPHASE = 16,			/*!< \brief Do a grid refinement on the free surface interphase. */
   PERIODIC = 17			/*!< \brief Add the periodic halo cells. */
 };
 static const map<string, ENUM_ADAPT> Adapt_Map = CCreateMap<string, ENUM_ADAPT>
@@ -883,8 +881,7 @@ static const map<string, ENUM_ADAPT> Adapt_Map = CCreateMap<string, ENUM_ADAPT>
 ("WAKE", WAKE)
 ("SMOOTHING", SMOOTHING)
 ("SUPERSONIC_SHOCK", SUPERSONIC_SHOCK)
-("PERIODIC", PERIODIC)
-("TWOPHASE", TWOPHASE);
+("PERIODIC", PERIODIC);
 
 /*!
  * \brief types of input file formats
@@ -919,6 +916,19 @@ static const map<string, ENUM_OUTPUT> Output_Map = CCreateMap<string, ENUM_OUTPU
 ("TECPLOT_BINARY", TECPLOT_BINARY)
 ("CGNS", CGNS_SOL)
 ("PARAVIEW", PARAVIEW);
+
+/*!
+ * \brief type of multigrid cycle
+ */
+enum MG_CYCLE {
+  V_CYCLE = 0,  		/*!< \brief V cycle. */
+  W_CYCLE = 1,			/*!< \brief W cycle. */
+  FULLMG_CYCLE = 2,			/*!< \brief FullMG cycle. */
+};
+static const map<string, MG_CYCLE> MG_Cycle_Map = CCreateMap<string, MG_CYCLE>
+("V_CYCLE", V_CYCLE)
+("W_CYCLE", W_CYCLE)
+("FULLMG_CYCLE", FULLMG_CYCLE);
 
 /*!
  * \brief type of solution output variables
@@ -1205,6 +1215,7 @@ public:
       str.append(this->name);
       str.append(": invalid option value ");
       str.append(option_value[0]);
+      str.append(". Check current SU2 options in config_template.cfg.");
       return str;
     }
     // If it is there, set the option value
@@ -1459,6 +1470,7 @@ public:
         str.append(this->name);
         str.append(": invalid option value ");
         str.append(option_value[0]);
+        str.append(". Check current SU2 options in config_template.cfg.");
         return str;
       }
       // If it is there, set the option value
@@ -1688,19 +1700,16 @@ public:
 class COptionMathProblem : public COptionBase{
   string name; // identifier for the option
   bool & adjoint;
-  bool & oneshot;
   bool & linearized;
   bool & restart;
   bool adjoint_def;
-  bool oneshot_def;
   bool linearized_def;
   bool restart_def;
 
 public:
-  COptionMathProblem(string option_field_name, bool & adjoint_field, bool adjoint_default, bool & oneshot_field, bool oneshot_default, bool & linearized_field, bool linearized_default, bool & restart_field, bool restart_default) : adjoint(adjoint_field), oneshot(oneshot_field), linearized(linearized_field), restart(restart_field) {
+  COptionMathProblem(string option_field_name, bool & adjoint_field, bool adjoint_default, bool & linearized_field, bool linearized_default, bool & restart_field, bool restart_default) : adjoint(adjoint_field), linearized(linearized_field), restart(restart_field) {
     this->name = option_field_name;
     this->adjoint_def = adjoint_default;
-    this->oneshot_def = oneshot_default;
     this->linearized_def = linearized_default;
     this->restart_def = restart_default;
   }
@@ -1716,7 +1725,6 @@ public:
     }
     if (option_value[0] == "DIRECT") {
       this->adjoint = false;
-      this->oneshot = false;
       this->linearized = false;
       this->restart = false;
       return "";
@@ -1724,7 +1732,6 @@ public:
     if (option_value[0] == "ADJOINT") {
       this->adjoint= true;
       this->restart= true;
-      this->oneshot = false;
       this->linearized = false;
       return "";
     }
@@ -1732,7 +1739,6 @@ public:
       this->linearized = true;
       this->restart = true;
       this->adjoint= false;
-      this->oneshot = false;
       return "";
     }
     return "option in math problem map not considered in constructor";
@@ -1740,7 +1746,6 @@ public:
 
   void SetDefault(){
     this->adjoint = this->adjoint_def;
-    this->oneshot = this->oneshot_def;
     this->linearized = this->linearized_def;
     this->restart = this->restart_def;
   }
@@ -2095,6 +2100,7 @@ public:
       str.append(this->name);
       str.append(": invalid option value ");
       str.append(option_value[0]);
+      str.append(". Check current SU2 options in config_template.cfg.");
       return str;
     }
       Tenum val = this->m[option_value[7*i + 1]];

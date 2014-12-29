@@ -2,9 +2,9 @@
  * \file primal_grid_structure.cpp
  * \brief Main classes for defining the primal grid elements
  * \author F. Palacios
- * \version 3.2.5 "eagle"
+ * \version 3.2.7 "eagle"
  *
- * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
+ * Copyright (C) 2012-2014 SU2 Core Developers.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -131,6 +131,7 @@ CLine::CLine(unsigned long val_point_0, unsigned long val_point_1,
 	unsigned short iDim, iFace;
 
 	/*--- Allocate CG coordinates ---*/
+  
 	nDim = val_nDim;
 	Coord_CG = new double[nDim];
 	for (iDim = 0; iDim < nDim; iDim++)
@@ -143,6 +144,7 @@ CLine::CLine(unsigned long val_point_0, unsigned long val_point_1,
 	}
 	
 	/*--- Allocate and define face structure of the element ---*/
+  
 	Nodes = new unsigned long[nNodes];
 	Nodes[0] = val_point_0;
 	Nodes[1] = val_point_1;

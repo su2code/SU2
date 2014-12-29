@@ -5,9 +5,9 @@
  *        <i>numerics_convective.cpp</i>, <i>numerics_viscous.cpp</i>, and
  *        <i>numerics_source.cpp</i> files.
  * \author B. Tracey
- * \version 3.2.5 "eagle"
+ * \version 3.2.7 "eagle"
  *
- * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
+ * Copyright (C) 2012-2014 SU2 Core Developers.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -99,7 +99,7 @@ class CActivator{
 public:
 	CActivator();
 	~CActivator();
-	virtual double Activate(double combination){cout<< "IN BASE ACTIVATOR THIS IS BAD" <<endl; return 0;};
+	virtual double Activate(double combination){cout<< "IN BASE ACTIVATOR THIS IS BAD" << endl; return 0;};
 };
 
 class CTanhActivator : public CActivator{

@@ -2,9 +2,9 @@
  * \file solver_structure.cpp
  * \brief Main subrotuines for solving direct, adjoint and linearized problems.
  * \author F. Palacios, T. Economon
- * \version 3.2.5 "eagle"
+ * \version 3.2.7 "eagle"
  *
- * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
+ * Copyright (C) 2012-2014 SU2 Core Developers.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -1047,8 +1047,6 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
       
       iPoint     = geometry->edge[iEdge]->GetNode(0);
       jPoint     = geometry->edge[iEdge]->GetNode(1);
-      Solution_i = node[iPoint]->GetSolution();
-      Solution_j = node[jPoint]->GetSolution();
       Gradient_i = node[iPoint]->GetGradient();
       Gradient_j = node[jPoint]->GetGradient();
       Coord_i    = geometry->node[iPoint]->GetCoord();
@@ -1110,7 +1108,7 @@ void CSolver::SetPressureLaplacian(CGeometry *geometry, double *PressureLaplacia
   
   unsigned long Point = 0, iPoint = 0, jPoint = 0, iEdge, iVertex;
   unsigned short iMarker, iVar;
-  double DualArea, Partial_Res, *Normal, Area;
+  double DualArea, Partial_Res, *Normal;
   double **UxVar_Gradient, **UyVar_Gradient;
   
   UxVar_Gradient = new double* [geometry->GetnPoint()];
@@ -1127,11 +1125,11 @@ void CSolver::SetPressureLaplacian(CGeometry *geometry, double *PressureLaplacia
     }
   
   /*---	Loop interior edges ---*/
+  
   for(iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     iPoint = geometry->edge[iEdge]->GetNode(0);
     jPoint = geometry->edge[iEdge]->GetNode(1);
     Normal = geometry->edge[iEdge]->GetNormal();
-    Area = sqrt(Normal[0]*Normal[0]+Normal[1]*Normal[1]);
     
     Partial_Res =  0.5 * ( node[iPoint]->GetSolution(1) + node[jPoint]->GetSolution(1)) * Normal[0];
     UxVar_Gradient[iPoint][0] += Partial_Res;
@@ -1152,11 +1150,11 @@ void CSolver::SetPressureLaplacian(CGeometry *geometry, double *PressureLaplacia
   }
   
   /*---	Loop boundary edges ---*/
+  
   for(iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
     for(iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
       Point = geometry->vertex[iMarker][iVertex]->GetNode();
       Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-      Area = sqrt(Normal[0]*Normal[0]+Normal[1]*Normal[1]);
       
       Partial_Res =  node[Point]->GetSolution(1) * Normal[0];
       UxVar_Gradient[Point][0] -= Partial_Res;
@@ -1171,13 +1169,12 @@ void CSolver::SetPressureLaplacian(CGeometry *geometry, double *PressureLaplacia
       UyVar_Gradient[Point][1] -= Partial_Res;
     }
   
-  
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
     DualArea = geometry->node[iPoint]->GetVolume();
     PressureLaplacian[iPoint] = (UxVar_Gradient[iPoint][0]*UxVar_Gradient[iPoint][0] + UyVar_Gradient[iPoint][1]*UyVar_Gradient[iPoint][1] +
                                  UxVar_Gradient[iPoint][1]*UyVar_Gradient[iPoint][0] + UxVar_Gradient[iPoint][0]*UyVar_Gradient[iPoint][1])/DualArea ;
+    
   }
-  
   
   for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
     delete[] UxVar_Gradient[iPoint];
@@ -1640,11 +1637,11 @@ void CBaselineSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
   unsigned short iVar, iMarker, iPeriodic_Index, MarkerS, MarkerR;
   unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
   double rotMatrix[3][3], *transl, *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi, *Buffer_Receive_U = NULL, *Buffer_Send_U = NULL, *Solution = NULL;
-  int send_to, receive_from;
   
   Solution = new double[nVar];
   
 #ifdef HAVE_MPI
+  int send_to, receive_from;
   MPI_Status status;
 #endif
   
@@ -1655,17 +1652,23 @@ void CBaselineSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
       
       MarkerS = iMarker;  MarkerR = iMarker+1;
       
+#ifdef HAVE_MPI
+
       send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
       receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
       
+#endif
+
       nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
       nBufferS_Vector = nVertexS*nVar;        nBufferR_Vector = nVertexR*nVar;
       
       /*--- Allocate Receive and send buffers  ---*/
+      
       Buffer_Receive_U = new double [nBufferR_Vector];
       Buffer_Send_U = new double[nBufferS_Vector];
       
       /*--- Copy the solution that should be sended ---*/
+      
       for (iVertex = 0; iVertex < nVertexS; iVertex++) {
         iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
         for (iVar = 0; iVar < nVar; iVar++)
@@ -1675,14 +1678,15 @@ void CBaselineSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
 #ifdef HAVE_MPI
       
       /*--- Send/Receive information using Sendrecv ---*/
+      
       MPI_Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
                    Buffer_Receive_U, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
       
 #else
       
       /*--- Receive information without MPI ---*/
+      
       for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
         for (iVar = 0; iVar < nVar; iVar++)
           Buffer_Receive_U[iVar*nVertexR+iVertex] = Buffer_Send_U[iVar*nVertexR+iVertex];
       }
@@ -1690,20 +1694,25 @@ void CBaselineSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
 #endif
       
       /*--- Deallocate send buffer ---*/
+      
       delete [] Buffer_Send_U;
       
       /*--- Do the coordinate transformation ---*/
+      
       for (iVertex = 0; iVertex < nVertexR; iVertex++) {
         
         /*--- Find point and its type of transformation ---*/
+        
         iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
         iPeriodic_Index = geometry->vertex[MarkerR][iVertex]->GetRotation_Type();
         
         /*--- Retrieve the supplied periodic information. ---*/
+        
         transl = config->GetPeriodicTranslate(iPeriodic_Index);
         angles = config->GetPeriodicRotation(iPeriodic_Index);
         
         /*--- Store angles separately for clarity. ---*/
+        
         theta    = angles[0];   phi    = angles[1];     psi    = angles[2];
         cosTheta = cos(theta);  cosPhi = cos(phi);      cosPsi = cos(psi);
         sinTheta = sin(theta);  sinPhi = sin(phi);      sinPsi = sin(psi);
@@ -1712,28 +1721,36 @@ void CBaselineSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
          ordering is rotation about the x-axis, y-axis,
          then z-axis. Note that this is the transpose of the matrix
          used during the preprocessing stage. ---*/
+        
         rotMatrix[0][0] = cosPhi*cosPsi;    rotMatrix[1][0] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;     rotMatrix[2][0] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
         rotMatrix[0][1] = cosPhi*sinPsi;    rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;     rotMatrix[2][1] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
         rotMatrix[0][2] = -sinPhi;          rotMatrix[1][2] = sinTheta*cosPhi;                              rotMatrix[2][2] = cosTheta*cosPhi;
         
         /*--- Copy conserved variables before performing transformation. ---*/
+        
         for (iVar = 0; iVar < nVar; iVar++)
           Solution[iVar] = Buffer_Receive_U[iVar*nVertexR+iVertex];
         
         /*--- Rotate the spatial coordinates & momentum. ---*/
+        
         if (nDim == 2) {
+          
           /*--- Coords ---*/
+          
           Solution[0] = (rotMatrix[0][0]*Buffer_Receive_U[0*nVertexR+iVertex] +
                          rotMatrix[0][1]*Buffer_Receive_U[1*nVertexR+iVertex] - transl[0]);
           Solution[1] = (rotMatrix[1][0]*Buffer_Receive_U[0*nVertexR+iVertex] +
                          rotMatrix[1][1]*Buffer_Receive_U[1*nVertexR+iVertex] - transl[1]);
           /*--- Momentum ---*/
+          
           Solution[nDim+1] = (rotMatrix[0][0]*Buffer_Receive_U[(nDim+1)*nVertexR+iVertex] +
                               rotMatrix[0][1]*Buffer_Receive_U[(nDim+2)*nVertexR+iVertex]);
           Solution[nDim+2] = (rotMatrix[1][0]*Buffer_Receive_U[(nDim+1)*nVertexR+iVertex] +
                               rotMatrix[1][1]*Buffer_Receive_U[(nDim+2)*nVertexR+iVertex]);
         } else {
+          
           /*--- Coords ---*/
+          
           Solution[0] = (rotMatrix[0][0]*Buffer_Receive_U[0*nVertexR+iVertex] +
                          rotMatrix[0][1]*Buffer_Receive_U[1*nVertexR+iVertex] +
                          rotMatrix[0][2]*Buffer_Receive_U[2*nVertexR+iVertex] - transl[0]);
@@ -1743,7 +1760,9 @@ void CBaselineSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
           Solution[2] = (rotMatrix[2][0]*Buffer_Receive_U[0*nVertexR+iVertex] +
                          rotMatrix[2][1]*Buffer_Receive_U[1*nVertexR+iVertex] +
                          rotMatrix[2][2]*Buffer_Receive_U[2*nVertexR+iVertex] - transl[2]);
+          
           /*--- Momentum ---*/
+          
           Solution[nDim+1] = (rotMatrix[0][0]*Buffer_Receive_U[nDim+1*nVertexR+iVertex] +
                               rotMatrix[0][1]*Buffer_Receive_U[nDim+2*nVertexR+iVertex] +
                               rotMatrix[0][2]*Buffer_Receive_U[nDim+3*nVertexR+iVertex]);
@@ -1756,12 +1775,14 @@ void CBaselineSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
         }
         
         /*--- Copy transformed conserved variables back into buffer. ---*/
+        
         for (iVar = 0; iVar < nVar; iVar++)
           node[iPoint]->SetSolution(iVar, Solution[iVar]);
         
       }
       
       /*--- Deallocate receive buffer ---*/
+      
       delete [] Buffer_Receive_U;
       
     }

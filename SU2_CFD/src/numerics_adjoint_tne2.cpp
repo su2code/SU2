@@ -1,10 +1,10 @@
 /*!
  * \file numerics_adjoint_mean.cpp
  * \brief This file contains all the convective term discretization.
- * \author F. Palacios, T. Economon
- * \version 3.2.5 "eagle"
+ * \author S. Copeland
+ * \version 3.2.7 "eagle"
  *
- * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
+ * Copyright (C) 2012-2014 SU2 Core Developers.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -825,7 +825,7 @@ void CAvgGrad_AdjTNE2::ComputeResidual(double *val_residual_i,
   
   unsigned short iDim, jDim, iVar, jVar;
   double mu_i, mu_j, ktr_i, ktr_j, kve_i, kve_j;
-  double rho, rho_i, rho_j, un;
+  double rho_i, rho_j, un;
   double GdotPhi, GPsiEdotVel, GPsiEdotn, GPsiEvedotn;
   double dij, theta, thetax, thetay, thetaz, etax, etay, etaz;
   
@@ -871,7 +871,6 @@ void CAvgGrad_AdjTNE2::ComputeResidual(double *val_residual_i,
   kve_j = Thermal_Conductivity_ve_j;
   rho_i = V_i[RHO_INDEX];
   rho_j = V_j[RHO_INDEX];
-  rho   = 0.5*(rho_i+rho_j);
   for (iDim = 0; iDim < nDim; iDim++) {
     vel_i[iDim] = V_i[VEL_INDEX+iDim];
     vel_j[iDim] = V_j[VEL_INDEX+iDim];

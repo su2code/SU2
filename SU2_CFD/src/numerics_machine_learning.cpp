@@ -2,9 +2,9 @@
  * \file numerics_template.cpp
  * \brief This file contains all the convective term discretization.
  * \author B. Tracey
- * \version 3.2.5 "eagle"
+ * \version 3.2.7 "eagle"
  *
- * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
+ * Copyright (C) 2012-2014 SU2 Core Developers.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -465,7 +465,7 @@ string get_file_contents(string filename){
     in.close();
     return(contents);
   }
-  cout << "Predictor filename " << filename << " not found" <<endl;
+  cout << "Predictor filename " << filename << " not found" << endl;
   exit(EXIT_FAILURE);
 }
 
@@ -484,7 +484,7 @@ CScalePredictor::CScalePredictor(string filename){
   Json::Reader reader;
   bool parsingSuccessful = reader.parse(contents, root);
   if (!parsingSuccessful){
-    std::cout << "Failed to parse \n" << reader.getFormatedErrorMessages()<<endl;
+    std::cout << "Failed to parse \n" << reader.getFormatedErrorMessages()<< endl;
   }
   
   // Get the input scaler
@@ -529,7 +529,7 @@ CScalePredictor::CScalePredictor(string filename){
       }
       cout.precision(16);
       if (mismatch){
-        cout << "Prediction mismatch" <<endl;
+        cout << "Prediction mismatch" << endl;
         for (int j = 0; j < nOutputs; j++){
           cout << "j = " <<  " true: " << output[j] << " pred: " << predOutput[j] << " rel error: " << abs(output[j] - predOutput[j])/(max) <<  endl;
         }

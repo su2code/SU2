@@ -2,9 +2,9 @@
  * \file variable_direct_turbulent.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, A. Bueno
- * \version 3.2.5 "eagle"
+ * \version 3.2.7 "eagle"
  *
- * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
+ * Copyright (C) 2012-2014 SU2 Core Developers.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -61,11 +61,7 @@ CTurbVariable::CTurbVariable(unsigned short val_nDim, unsigned short val_nvar, C
   
 }
 
-CTurbVariable::~CTurbVariable(void) {
-  
-	if (TS_Source != NULL) delete [] TS_Source;
-  
-}
+CTurbVariable::~CTurbVariable(void) { }
 
 double CTurbVariable::GetmuT(){ return muT; }
 
@@ -161,7 +157,11 @@ CTurbSSTVariable::CTurbSSTVariable(double val_kine, double val_omega, double val
     
 }
 
-CTurbSSTVariable::~CTurbSSTVariable(void) { }
+CTurbSSTVariable::~CTurbSSTVariable(void) {
+
+  if (TS_Source != NULL) delete [] TS_Source;
+  
+}
 
 void CTurbSSTVariable::SetBlendingFunc(double val_viscosity, double val_dist, double val_density){
 	unsigned short iDim;

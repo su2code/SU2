@@ -5,9 +5,9 @@
  *        technique definition). The subroutines and functions are in
  *        the <i>grid_movement_structure.cpp</i> file.
  * \author F. Palacios
- * \version 3.2.5 "eagle"
+ * \version 3.2.7 "eagle"
  *
- * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
+ * Copyright (C) 2012-2014 SU2 Core Developers.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -140,13 +140,6 @@ public:
 	 * \param[in] strength - Adaptation Strength.	 
 	 */		
 	void SetWake_Refinement(CGeometry *geometry, unsigned short strength);
-	
-	/*! 
-	 * \brief Do an adaptation of the computational grid on the two phase problem interphase.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] strength - Adaptation Strength.	 
-	 */		
-	void SetTwoPhase_Refinement(CGeometry *geometry, unsigned short strength);
 	
 	/*! 
 	 * \brief Do an adaptation of the computational grid on the supersonic shock region.

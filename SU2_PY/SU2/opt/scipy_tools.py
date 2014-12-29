@@ -3,22 +3,22 @@
 ## \file scipy_tools.py
 #  \brief tools for interfacing with scipy
 #  \author T. Lukaczyk, F. Palacios
-#  \version 3.2.5 "eagle"
+#  \version 3.2.7 "eagle"
 #
-# Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
+# Copyright (C) 2012-2014 SU2 Core Developers.
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# SU2 is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
 #
-# This program is distributed in the hope that it will be useful,
+# SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# Lesser General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU Lesser General Public
+# License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
 # -------------------------------------------------------------------
 #  Imports
@@ -35,8 +35,8 @@ from numpy.linalg import norm
 #  Scipy SLSQP
 # -------------------------------------------------------------------
 
-def scipy_slsqp(project,x0=None,xb=None,its=100,grads=True):
-    """ result = scipy_slsqp(project,x0=[],xb=[],its=100)
+def scipy_slsqp(project,x0=None,xb=None,its=100,accu=1e-10,grads=True):
+    """ result = scipy_slsqp(project,x0=[],xb=[],its=100,accu=1e-10)
     
         Runs the Scipy implementation of SLSQP with 
         an SU2 project
@@ -46,6 +46,7 @@ def scipy_slsqp(project,x0=None,xb=None,its=100,grads=True):
             x0      - optional, initial guess
             xb      - optional, design variable bounds
             its     - max outer iterations, default 100
+            accu    - accuracy, default 1e-10
         
         Outputs:
            result - the outputs from scipy.fmin_slsqp
@@ -83,9 +84,26 @@ def scipy_slsqp(project,x0=None,xb=None,its=100,grads=True):
     # prescale x0
     dv_scales = project.config['DEFINITION_DV']['SCALE']
     x0 = [ x0[i]/dv_scl for i,dv_scl in enumerate(dv_scales) ]    
-        
+    
+    # scale accuracy
+    obj = project.config['OPT_OBJECTIVE']
+    obj_scale = obj[obj.keys()[0]]['SCALE']
+    accu = accu*obj_scale
+
+    # scale accuracy
+    eps = 1.0e-04
+
+    # optimizer summary
+    sys.stdout.write('Sequential Least SQuares Programming (SLSQP) parameters:\n')
+    sys.stdout.write('Number of design variables: ' + str(n_dv) + '\n')
+    sys.stdout.write('Objective function scaling factor: ' + str(obj_scale) + '\n')
+    sys.stdout.write('Maximum number of iterations: ' + str(its) + '\n')
+    sys.stdout.write('Requested accuracy: ' + str(accu) + '\n')
+    sys.stdout.write('Initial guess for the independent variable(s): ' + str(x0) + '\n')
+    sys.stdout.write('Lower and upper bound for each independent variable: ' + str(xb) + '\n\n')
+
     # Run Optimizer
-    outputs = fmin_slsqp( x0             = x0             , 
+    outputs = fmin_slsqp( x0             = x0             ,
                           func           = func           , 
                           f_eqcons       = f_eqcons       , 
                           f_ieqcons      = f_ieqcons      ,
@@ -96,9 +114,9 @@ def scipy_slsqp(project,x0=None,xb=None,its=100,grads=True):
                           bounds         = xb             ,
                           iter           = its            ,
                           iprint         = 2              ,
-                          full_output    = True              ,
-                          acc            = 1e-10          ,
-                          epsilon        = 1.0e-06         )
+                          full_output    = True           ,
+                          acc            = accu           ,
+                          epsilon        = eps            )
     
     # Done
     return outputs

@@ -1,10 +1,10 @@
 /*!
  * \file vector_structure.cpp
  * \brief Main classes required for solving linear systems of equations
- * \author F. Palacios
- * \version 3.2.5 "eagle"
+ * \author F. Palacios, J. Hicken
+ * \version 3.2.7 "eagle"
  *
- * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
+ * Copyright (C) 2012-2014 SU2 Core Developers.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -46,8 +46,6 @@ CSysVector::CSysVector(const unsigned long & size, const double & val) {
     vec_val[i] = val;
   
 #ifdef HAVE_MPI
-  int myrank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
   unsigned long nElmLocal = (unsigned long)nElm;
   MPI_Allreduce(&nElmLocal, &nElmGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
@@ -93,7 +91,6 @@ CSysVector::CSysVector(const CSysVector & u) {
     vec_val[i] = u.vec_val[i];
   
 #ifdef HAVE_MPI
-  myrank = u.myrank;
   nElmGlobal = u.nElmGlobal;
 #endif
   
@@ -144,8 +141,6 @@ CSysVector::CSysVector(const unsigned long & numBlk, const unsigned long & numBl
     vec_val[i] = u_array[i];
 
 #ifdef HAVE_MPI
-  int myrank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
   unsigned long nElmLocal = (unsigned long)nElm;
   MPI_Allreduce(&nElmLocal, &nElmGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
@@ -158,10 +153,6 @@ CSysVector::~CSysVector() {
   nElm = 0; nElmDomain = 0;
   nBlk = 0; nBlkDomain = 0;
   nVar = 0;
-  
-#ifdef HAVE_MPI
-  myrank = 0;
-#endif
   
 }
 
@@ -183,8 +174,6 @@ void CSysVector::Initialize(const unsigned long & numBlk, const unsigned long & 
     vec_val[i] = val;
   
 #ifdef HAVE_MPI
-  int myrank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
   unsigned long nElmLocal = (unsigned long)nElm;
   MPI_Allreduce(&nElmLocal, &nElmGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
@@ -239,7 +228,6 @@ CSysVector & CSysVector::operator=(const CSysVector & u) {
     vec_val[i] = u.vec_val[i];
   
 #ifdef HAVE_MPI
-  myrank = u.myrank;
   nElmGlobal = u.nElmGlobal;
 #endif
   

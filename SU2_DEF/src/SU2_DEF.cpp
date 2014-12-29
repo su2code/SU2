@@ -2,9 +2,9 @@
  * \file SU2_DEF.cpp
  * \brief Main file of Mesh Deformation Code (SU2_DEF).
  * \author F. Palacios
- * \version 3.2.5 "eagle"
+ * \version 3.2.7 "eagle"
  *
- * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
+ * Copyright (C) 2012-2014 SU2 Core Developers.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -25,13 +25,15 @@ using namespace std;
 
 int main(int argc, char *argv[]) {
   
+  unsigned short iZone, nZone = SINGLE_ZONE;
   double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
-  char buffer_char[50], out_file[MAX_STRING_SIZE], in_file[MAX_STRING_SIZE], mesh_file[MAX_STRING_SIZE];
+  char config_file_name[MAX_STRING_SIZE];
   int rank = MASTER_NODE, size = SINGLE_NODE;
   string str;
-  
-#ifdef HAVE_MPI
+
   /*--- MPI initialization ---*/
+
+#ifdef HAVE_MPI
   MPI_Init(&argc,&argv);
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);
   MPI_Comm_size(MPI_COMM_WORLD,&size);
@@ -39,40 +41,85 @@ int main(int argc, char *argv[]) {
   
   /*--- Pointer to different structures that will be used throughout the entire code ---*/
   
-  CConfig **config                   = NULL;
-  CGeometry **geometry               = NULL;
+  CConfig **config_container         = NULL;
+  CGeometry **geometry_container     = NULL;
   CSurfaceMovement *surface_movement = NULL;
   CVolumetricMovement *grid_movement = NULL;
   COutput *output                    = NULL;
 
-  /*--- Definition of the containers by zone (currently only one zone is
-   allowed, but this can be extended if necessary). ---*/
+  /*--- Load in the number of zones and spatial dimensions in the mesh file (if no config
+   file is specified, default.cfg is used) ---*/
   
-  config   = new CConfig*[SINGLE_ZONE];
-  geometry = new CGeometry*[SINGLE_ZONE];
+  if (argc == 2){ strcpy(config_file_name,argv[1]); }
+  else{ strcpy(config_file_name, "default.cfg"); }
+  
+  /*--- Definition of the containers per zones ---*/
+  
+  config_container = new CConfig*[nZone];
+  geometry_container = new CGeometry*[nZone];
   output   = new COutput();
 
-  /*--- Definition of the configuration class, and open the config file ---*/
-  
-  if (argc == 2) config[ZONE_0] = new CConfig(argv[1], SU2_DEF, ZONE_0, SINGLE_ZONE, 0, VERB_HIGH);
-  else {
-    strcpy (mesh_file, "default.cfg");
-    config[ZONE_0] = new CConfig(mesh_file, SU2_DEF, ZONE_0, SINGLE_ZONE, 0, VERB_HIGH);
+  for (iZone = 0; iZone < nZone; iZone++) {
+    config_container[iZone]       = NULL;
+    geometry_container[iZone]     = NULL;
   }
   
+  /*--- Loop over all zones to initialize the various classes. In most
+   cases, nZone is equal to one. This represents the solution of a partial
+   differential equation on a single block, unstructured mesh. ---*/
+  
+  for (iZone = 0; iZone < nZone; iZone++) {
+    
+    /*--- Definition of the configuration option class for all zones. In this
+     constructor, the input configuration file is parsed and all options are
+     read and stored. ---*/
+    
+    config_container[iZone] = new CConfig(config_file_name, SU2_DEF, iZone, nZone, 0, VERB_HIGH);
+        
+    /*--- Definition of the geometry class to store the primal grid in the partitioning process. ---*/
+    
+    CGeometry *geometry_aux = NULL;
+    
+    if (rank == MASTER_NODE) {
+      
+      /*--- Read the grid using the master node ---*/
+      
+      geometry_aux = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
+      
+      /*--- Color the initial grid and set the send-receive domains ---*/
+      
+      geometry_aux->SetColorGrid(config_container[iZone]);
+      
+    }
+    
 #ifdef HAVE_MPI
-  
-  /*--- Change the name of the input-output files for the parallel computation ---*/
-  
-  config[ZONE_0]->SetFileNameDomain(rank+1);
-  
+    MPI_Barrier(MPI_COMM_WORLD);
 #endif
+    
+    /*--- Allocate the memory of the current domain, and
+     divide the grid between the nodes ---*/
+    
+    geometry_container[iZone] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
+    
+    /*--- Deallocate the memory of geometry_aux ---*/
+    
+    delete geometry_aux;
+
+    /*--- Add the Send/Receive boundaries ---*/
+    
+    geometry_container[iZone]->SetSendReceive(config_container[iZone]);
+    
+    /*--- Add the Send/Receive boundaries ---*/
+    
+    geometry_container[iZone]->SetBoundaries(config_container[iZone]);
+    
+#ifdef HAVE_MPI
+    MPI_Barrier(MPI_COMM_WORLD);
+#endif
+    
+  }
   
-  /*--- Definition of the geometry class ---*/
-  
-  geometry[ZONE_0] = new CPhysicalGeometry(config[ZONE_0], ZONE_0, SINGLE_ZONE);
-  
-  /*--- Set up a timer for performance benchmarking (preprocessing time is not included) ---*/
+  /*--- Set up a timer for performance benchmarking (preprocessing time is included) ---*/
   
 #ifdef HAVE_MPI
   MPI_Barrier(MPI_COMM_WORLD);
@@ -88,33 +135,33 @@ int main(int argc, char *argv[]) {
   /*--- Compute elements surrounding points, points surrounding points ---*/
   
   if (rank == MASTER_NODE) cout << "Setting local point connectivity." <<endl;
-  geometry[ZONE_0]->SetPoint_Connectivity();
+  geometry_container[ZONE_0]->SetPoint_Connectivity();
   
   /*--- Check the orientation before computing geometrical quantities ---*/
   
   if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation of the interior elements." <<endl;
-  geometry[ZONE_0]->Check_IntElem_Orientation(config[ZONE_0]);
+  geometry_container[ZONE_0]->Check_IntElem_Orientation(config_container[ZONE_0]);
 
   /*--- Create the edge structure ---*/
   
   if (rank == MASTER_NODE) cout << "Identify edges and vertices." <<endl;
-  geometry[ZONE_0]->SetEdges(); geometry[ZONE_0]->SetVertex(config[ZONE_0]);
+  geometry_container[ZONE_0]->SetEdges(); geometry_container[ZONE_0]->SetVertex(config_container[ZONE_0]);
   
   /*--- Compute center of gravity ---*/
   
   if (rank == MASTER_NODE) cout << "Computing centers of gravity." << endl;
-  geometry[ZONE_0]->SetCG();
+  geometry_container[ZONE_0]->SetCG();
   
   /*--- Create the dual control volume structures ---*/
   
   if (rank == MASTER_NODE) cout << "Setting the bound control volume structure." << endl;
-  geometry[ZONE_0]->SetBoundControlVolume(config[ZONE_0], ALLOCATE);
+  geometry_container[ZONE_0]->SetBoundControlVolume(config_container[ZONE_0], ALLOCATE);
   
   /*--- Output original grid for visualization, if requested (surface and volumetric) ---*/
   
-  if (config[ZONE_0]->GetVisualize_Deformation()) {
+  if (config_container[ZONE_0]->GetVisualize_Deformation()) {
 
-    output->SetMesh_Files(geometry, config, SINGLE_ZONE, true);
+    output->SetMesh_Files(geometry_container, config_container, SINGLE_ZONE, true);
 
 //    if (rank == MASTER_NODE) cout << "Writing an STL file of the surface mesh." << endl;
 //    if (size > 1) sprintf (buffer_char, "_%d.stl", rank+1); else sprintf (buffer_char, ".stl");
@@ -129,31 +176,35 @@ int main(int argc, char *argv[]) {
   /*--- Definition and initialization of the surface deformation class ---*/
   
   surface_movement = new CSurfaceMovement();
-  surface_movement->CopyBoundary(geometry[ZONE_0], config[ZONE_0]);
+  
+  /*--- Copy coordinates to the surface structure ---*/
+
+  surface_movement->CopyBoundary(geometry_container[ZONE_0], config_container[ZONE_0]);
   
   /*--- Surface grid deformation ---*/
   
   if (rank == MASTER_NODE) cout << "Performing the deformation of the surface grid." << endl;
-  surface_movement->SetSurface_Deformation(geometry[ZONE_0], config[ZONE_0]);
-  
-#ifdef HAVE_MPI
+  surface_movement->SetSurface_Deformation(geometry_container[ZONE_0], config_container[ZONE_0]);
+
   /*--- MPI syncronization point ---*/
+
+#ifdef HAVE_MPI
   MPI_Barrier(MPI_COMM_WORLD);
 #endif
   
   /*--- Volumetric grid deformation ---*/
   
-  if (config[ZONE_0]->GetDesign_Variable(0) != FFD_SETTING) {
+  if (config_container[ZONE_0]->GetDesign_Variable(0) != FFD_SETTING) {
     
     if (rank == MASTER_NODE) cout << endl << "----------------------- Volumetric grid deformation ---------------------" << endl;
     
     /*--- Definition of the Class for grid movement ---*/
     
-    grid_movement = new CVolumetricMovement(geometry[ZONE_0]);
+    grid_movement = new CVolumetricMovement(geometry_container[ZONE_0]);
     
     if (rank == MASTER_NODE) cout << "Performing the deformation of the volumetric grid." << endl;
     
-    grid_movement->SetVolume_Deformation(geometry[ZONE_0], config[ZONE_0], false);
+    grid_movement->SetVolume_Deformation(geometry_container[ZONE_0], config_container[ZONE_0], false);
     
   }
   
@@ -164,37 +215,15 @@ int main(int argc, char *argv[]) {
   /*--- Output deformed grid for visualization, if requested (surface and volumetric), in parallel 
    requires to move all the data to the master node---*/
   
-  if (config[ZONE_0]->GetVisualize_Deformation()) {
-    
-    output = new COutput();
-
-    output->SetMesh_Files(geometry, config, SINGLE_ZONE, false);
-    
-//    if (rank == MASTER_NODE) cout << "Writing a STL file of the surface mesh." << endl;
-//    if (size > 1) sprintf (buffer_char, "_%d.stl", rank+1); else sprintf (buffer_char, ".stl");
-//    strcpy (out_file, "Surface_Grid"); strcat(out_file, buffer_char); geometry[ZONE_0]->SetBoundSTL(out_file, false, config[ZONE_0] );
-    
-  }
+  output = new COutput();
   
-  /*--- Write the new SU2 native mesh after deformation (one per MPI rank). ---*/
-  
-  if (rank == MASTER_NODE) cout << "Writing a SU2 file of the volumetric mesh." << endl;
-  
-  if (size > 1) sprintf (buffer_char, "_%d.su2", rank+1); else sprintf (buffer_char, ".su2");
-
-  str = config[ZONE_0]->GetMesh_Out_FileName(); str.erase (str.end()-4, str.end());
-  strcpy (out_file, str.c_str()); strcat(out_file, buffer_char);
-  
-  str = config[ZONE_0]->GetMesh_FileName();
-  strcpy (in_file, str.c_str());
-  
-  geometry[ZONE_0]->SetMeshFile(config[ZONE_0], out_file, in_file);
+  output->SetMesh_Files(geometry_container, config_container, SINGLE_ZONE, false);
   
   /*--- Write the the free-form deformation boxes after deformation. ---*/
-  
-  if (rank == MASTER_NODE) cout << "Adding FFD information to the SU2 file." << endl;
 
-  surface_movement->WriteFFDInfo(geometry[ZONE_0], config[ZONE_0], out_file);
+  if (rank == MASTER_NODE) cout << "Adding FFD information to the SU2 file." << endl;
+    
+  surface_movement->WriteFFDInfo(geometry_container[ZONE_0], config_container[ZONE_0]);
   
   /*--- Synchronization point after a single solver iteration. Compute the
    wall clock time required. ---*/
@@ -218,9 +247,10 @@ int main(int argc, char *argv[]) {
   
   if (rank == MASTER_NODE)
   cout << endl << "------------------------- Exit Success (SU2_DEF) ------------------------" << endl << endl;
-  
-#ifdef HAVE_MPI
+
   /*--- Finalize MPI parallelization ---*/
+
+#ifdef HAVE_MPI
   MPI_Barrier(MPI_COMM_WORLD);
   MPI_Finalize();
 #endif

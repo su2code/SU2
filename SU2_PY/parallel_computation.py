@@ -3,9 +3,9 @@
 ## \file parallel_computation.py
 #  \brief Python script for doing the continuous adjoint computation using the SU2 suite.
 #  \author T. Economon, T. Lukaczyk, F. Palacios
-#  \version 3.2.5 "eagle"
+#  \version 3.2.7 "eagle"
 #
-# Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
+# Copyright (C) 2012-2014 SU2 Core Developers.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -37,29 +37,19 @@ def main():
                       help="read config from FILE", metavar="FILE")
     parser.add_option("-n", "--partitions", dest="partitions", default=2,
                       help="number of PARTITIONS", metavar="PARTITIONS")
-    parser.add_option("-p", "--oldpartitions", dest="oldpartitions", default="oldpartitions",
-                      help="old number of PARTITIONS (use -n instead)", metavar="OLDPARTITIONS")
     parser.add_option("-c", "--compute",    dest="compute",    default="True",
                       help="COMPUTE direct and adjoint problem", metavar="COMPUTE")
-    parser.add_option("-d", "--divide_grid",dest="divide_grid",default="True",
-                      help="DIVIDE_GRID the numerical grid", metavar="DIVIDE_GRID")
                       
     (options, args)=parser.parse_args()
     options.partitions  = int( options.partitions )
     options.compute     = options.compute.upper() == 'TRUE'
-    options.divide_grid = options.divide_grid.upper() == 'TRUE'
 
     if options.filename == None:
         raise Exception("No config file provided. Use -f flag")
     
-    if options.oldpartitions != "oldpartitions":
-        print ("\n IMPORTANT: -p is no longer available in SU2 v3.2.4, use -n flag instead \n")
-        sys.exit()
-
     parallel_computation( options.filename    ,
                           options.partitions  ,
-                          options.compute     ,
-                          options.divide_grid  )
+                          options.compute      )
         
 #: def main()
 
@@ -70,19 +60,14 @@ def main():
 
 def parallel_computation( filename           , 
                           partitions  = 0    , 
-                          compute     = True ,
-                          divide_grid = True  ):
+                          compute     = True  ):
     
     # Config
     config = SU2.io.Config(filename)
     config.NUMBER_PART = partitions
-    config.DECOMPOSED  = not divide_grid
     
     # State
     state = SU2.io.State()
-    
-    # Decomposition
-    info = SU2.run.decompose(config)
     
     # check for existing files
     if not compute:
