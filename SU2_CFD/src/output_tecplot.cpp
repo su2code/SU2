@@ -295,9 +295,7 @@ void COutput::SetTecplotNode_ASCII(CConfig *config, CGeometry *geometry, CSolver
   
   
 #ifdef HAVE_MPI
-  
-  MPI_Barrier(MPI_COMM_WORLD);
-  
+    
   /*--- Add solution files to a single file ---*/
   
   if (rank == MASTER_NODE) {

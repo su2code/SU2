@@ -1668,11 +1668,13 @@ void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   
   /*--- Error message ---*/
   
+  if (config->GetConsole_Output_Verb() == VERB_HIGH) {
 #ifdef HAVE_MPI
-  unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
-  MPI_Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+    unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
+    MPI_Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
-  if (iMesh == MESH_0) config->SetNonphysical_Points(ErrorCounter);
+    if (iMesh == MESH_0) config->SetNonphysical_Points(ErrorCounter);
+  }
   
 }
 
@@ -5085,11 +5087,13 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   
   /*--- Error message ---*/
   
+  if (config->GetConsole_Output_Verb() == VERB_HIGH) {
 #ifdef HAVE_MPI
-  unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
-  MPI_Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+    unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
+    MPI_Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
-  if (iMesh == MESH_0) config->SetNonphysical_Points(ErrorCounter);
+    if (iMesh == MESH_0) config->SetNonphysical_Points(ErrorCounter);
+  }
   
 }
 

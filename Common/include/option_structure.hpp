@@ -166,18 +166,14 @@ enum ANSWER {
  * \brief Verbosity level
  */
 enum VERB_LEVEL {
-  VERB_NONE = 1,   /*!< \brief No verbosity. */
+  VERB_NONE = 0,   /*!< \brief No verbosity. */
   VERB_MEDIUM = 1,   /*!< \brief Medium level of verbosity. */
   VERB_HIGH = 2			/*!< \brief High level of verbosity. */
 };
-
-/*!
- * \brief types of MPI communications
- */
-enum COMM_TYPE {
-  SEND = 1,					/*!< \brief Boolean definition of send (parallelization). */
-  RECEIVE = 2				/*!< \brief Boolean definition of receive (parallelization). */
-};
+static const map<string, VERB_LEVEL> Verb_Map = CCreateMap<string, VERB_LEVEL>
+("NONE", VERB_NONE)
+("MEDIUM", VERB_MEDIUM)
+("HIGH", VERB_HIGH);
 
 /*!
  * \brief different solver types for the CFD component
