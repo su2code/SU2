@@ -5704,8 +5704,10 @@ void CEulerSolver::GetEngine_Properties(CGeometry *geometry, CConfig *config, un
       if (config->GetSystemMeasurements() == SI) cout << "): Mass flow (kg/s): ";
       else if (config->GetSystemMeasurements() == US) cout << "): Mass flow (slug/s): ";
       cout << Inflow_MassFlow_Total[iMarker_EngineInflow] * config->GetDensity_Ref() * config->GetVelocity_Ref()
-      << ", Mach: " << Inflow_Mach_Total[iMarker_EngineInflow]
-      << ", Area: " << Inflow_Area_Total[iMarker_EngineInflow] <<"."<< endl;
+      << ", Mach: " << Inflow_Mach_Total[iMarker_EngineInflow];
+      if (config->GetSystemMeasurements() == SI) cout << ", Area (m^2): ";
+      else if (config->GetSystemMeasurements() == US) cout << ", Area (ft^2): ";
+      cout << Inflow_Area_Total[iMarker_EngineInflow] <<"."<< endl;
     }
     
     for (iMarker_EngineBleed = 0; iMarker_EngineBleed < nMarker_EngineBleed; iMarker_EngineBleed++) {
@@ -5715,8 +5717,10 @@ void CEulerSolver::GetEngine_Properties(CGeometry *geometry, CConfig *config, un
       cout << Bleed_MassFlow_Total[iMarker_EngineBleed] * config->GetDensity_Ref() * config->GetVelocity_Ref();
       if (config->GetSystemMeasurements() == SI) cout << ", Temp (K): ";
       else if (config->GetSystemMeasurements() == US) cout << ", Temp (R): ";
-      cout << Bleed_Temperature_Total[iMarker_EngineBleed] * config->GetTemperature_Ref()
-      << ", Area: " << Bleed_Area_Total[iMarker_EngineBleed] <<"."<< endl;
+      cout << Bleed_Temperature_Total[iMarker_EngineBleed] * config->GetTemperature_Ref();
+      if (config->GetSystemMeasurements() == SI) cout << ", Area (m^2): ";
+      else if (config->GetSystemMeasurements() == US) cout << ", Area (ft^2): ";
+      cout << Bleed_Area_Total[iMarker_EngineBleed] <<"."<< endl;
     }
 
     for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++) {
@@ -5729,8 +5733,10 @@ void CEulerSolver::GetEngine_Properties(CGeometry *geometry, CConfig *config, un
       cout << Exhaust_Temperature_Total[iMarker_EngineExhaust] * config->GetTemperature_Ref();
       if (config->GetSystemMeasurements() == SI) cout << ", Pressure (Pa): ";
       else if (config->GetSystemMeasurements() == US) cout << ", Pressure (psf): ";
-      cout << Exhaust_Pressure_Total[iMarker_EngineExhaust] * config->GetPressure_Ref()
-      << ", Area: " << Exhaust_Area_Total[iMarker_EngineExhaust] <<"."<< endl;
+      cout << Exhaust_Pressure_Total[iMarker_EngineExhaust] * config->GetPressure_Ref();
+      if (config->GetSystemMeasurements() == SI) cout << ", Area (m^2): ";
+      else if (config->GetSystemMeasurements() == US) cout << ", Area (ft^2): ";
+      cout << Exhaust_Area_Total[iMarker_EngineExhaust] <<"."<< endl;
     }
     cout << "-------------------------------------------------------------------------" << endl;
 
