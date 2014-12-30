@@ -2129,37 +2129,44 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     /*--- Re-scale the length based parameters. The US system uses feet,
      but SU2 assumes that the grid is in inches ---*/
     
-    if ((SystemMeasurements == US) && (Kind_SU2 == SU2_CFD)) {
-        
-        for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++) {
-            RefOriginMoment_X[iMarker] = RefOriginMoment_X[iMarker]/12.0;
-            RefOriginMoment_Y[iMarker] = RefOriginMoment_Y[iMarker]/12.0;
-            RefOriginMoment_Z[iMarker] = RefOriginMoment_Z[iMarker]/12.0;
-        }
-        
-        for (iMarker = 0; iMarker < nGridMovement; iMarker++) {
-            Motion_Origin_X[iMarker] = Motion_Origin_X[iMarker]/12.0;
-            Motion_Origin_Y[iMarker] = Motion_Origin_Y[iMarker]/12.0;
-            Motion_Origin_Z[iMarker] = Motion_Origin_Z[iMarker]/12.0;
-        }
-        
-        RefLengthMoment = RefLengthMoment/12.0;
-        if (val_nDim == 2) RefAreaCoeff = RefAreaCoeff/12.0;
-        else RefAreaCoeff = RefAreaCoeff/144.0;
-        Length_Reynolds = Length_Reynolds/12.0;
-        RefElemLength = RefElemLength/12.0;
-        
-        EA_IntLimit[0] = EA_IntLimit[0]/12.0;
-        EA_IntLimit[1] = EA_IntLimit[1]/12.0;
-        EA_IntLimit[2] = EA_IntLimit[2]/12.0;
-        
-        Section_Location[0] = Section_Location[0]/12.0;
-        Section_Location[1] = Section_Location[1]/12.0;
-        
+  if ((SystemMeasurements == US) && (Kind_SU2 == SU2_CFD)) {
+    
+    for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++) {
+      RefOriginMoment_X[iMarker] = RefOriginMoment_X[iMarker]/12.0;
+      RefOriginMoment_Y[iMarker] = RefOriginMoment_Y[iMarker]/12.0;
+      RefOriginMoment_Z[iMarker] = RefOriginMoment_Z[iMarker]/12.0;
     }
     
-    /*--- Reacting flows initialization ---*/
+    for (iMarker = 0; iMarker < nGridMovement; iMarker++) {
+      Motion_Origin_X[iMarker] = Motion_Origin_X[iMarker]/12.0;
+      Motion_Origin_Y[iMarker] = Motion_Origin_Y[iMarker]/12.0;
+      Motion_Origin_Z[iMarker] = Motion_Origin_Z[iMarker]/12.0;
+    }
     
+    RefLengthMoment = RefLengthMoment/12.0;
+    if (val_nDim == 2) RefAreaCoeff = RefAreaCoeff/12.0;
+    else RefAreaCoeff = RefAreaCoeff/144.0;
+    Length_Reynolds = Length_Reynolds/12.0;
+    RefElemLength = RefElemLength/12.0;
+    
+    EA_IntLimit[0] = EA_IntLimit[0]/12.0;
+    EA_IntLimit[1] = EA_IntLimit[1]/12.0;
+    EA_IntLimit[2] = EA_IntLimit[2]/12.0;
+    
+    Section_Location[0] = Section_Location[0]/12.0;
+    Section_Location[1] = Section_Location[1]/12.0;
+    
+    Subsonic_Engine_Box[0] = Subsonic_Engine_Box[0]/12.0;
+    Subsonic_Engine_Box[1] = Subsonic_Engine_Box[1]/12.0;
+    Subsonic_Engine_Box[2] = Subsonic_Engine_Box[2]/12.0;
+    Subsonic_Engine_Box[3] = Subsonic_Engine_Box[3]/12.0;
+    Subsonic_Engine_Box[4] = Subsonic_Engine_Box[4]/12.0;
+    Subsonic_Engine_Box[5] = Subsonic_Engine_Box[5]/12.0;
+    
+  }
+  
+    /*--- Reacting flows initialization ---*/
+  
     if (( Kind_Solver == TNE2_EULER             ) ||
         ( Kind_Solver == TNE2_NAVIER_STOKES     ) ||
         ( Kind_Solver == ADJ_TNE2_EULER         ) ||
