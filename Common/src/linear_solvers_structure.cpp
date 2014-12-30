@@ -94,7 +94,7 @@ void CSysSolve::ModGramSchmidt(int i, vector<vector<double> > & Hsbg, vector<CSy
   
   static const double reorth = 0.98;
   
-  /*--- get the norm of the vector being orthogonalized, and find the
+  /*--- Get the norm of the vector being orthogonalized, and find the
   threshold for re-orthogonalization ---*/
   
   double nrm = dotProd(w[i+1],w[i+1]);
