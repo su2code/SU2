@@ -8000,52 +8000,69 @@ void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_conta
       dd = bb*bb - 4.0*aa*cc;
       dd = sqrt(max(0.0,dd));
       Vel_Mag   = (-bb + dd)/(2.0*aa);
-      Vel_Mag   = max(0.0,Vel_Mag);
-      Velocity2 = Vel_Mag*Vel_Mag;
-
-      /*--- Compute speed of sound from total speed of sound eqn. ---*/
       
-      SoundSpeed2 = SoundSpeed_Exhaust2 - 0.5*Gamma_Minus_One*Velocity2;
-
-      /*--- Mach squared (cut between 0-1), use to adapt velocity ---*/
-      
-      Mach2 = Velocity2/SoundSpeed2;
-      Mach2 = min(1.0,Mach2);
-      Velocity2   = Mach2*SoundSpeed2;
-      Vel_Mag     = sqrt(Velocity2);
-      SoundSpeed2 = SoundSpeed_Exhaust2 - 0.5*Gamma_Minus_One*Velocity2;
-
-      /*--- Compute new velocity vector at the inlet ---*/
-      
-      for (iDim = 0; iDim < nDim; iDim++)
+      if (Vel_Mag >= 0.0) {
+        
+        Velocity2 = Vel_Mag*Vel_Mag;
+        
+        /*--- Compute speed of sound from total speed of sound eqn. ---*/
+        
+        SoundSpeed2 = SoundSpeed_Exhaust2 - 0.5*Gamma_Minus_One*Velocity2;
+        
+        /*--- Mach squared (cut between 0-1), use to adapt velocity ---*/
+        
+        Mach2 = Velocity2/SoundSpeed2;
+        Mach2 = min(1.0,Mach2);
+        Velocity2   = Mach2*SoundSpeed2;
+        Vel_Mag     = sqrt(Velocity2);
+        SoundSpeed2 = SoundSpeed_Exhaust2 - 0.5*Gamma_Minus_One*Velocity2;
+        
+        /*--- Compute new velocity vector at the inlet ---*/
+        
+        for (iDim = 0; iDim < nDim; iDim++)
         Velocity[iDim] = Vel_Mag*Flow_Dir[iDim];
-
-      /*--- Static temperature from the speed of sound relation ---*/
-      
-      Temperature = SoundSpeed2/(Gamma*Gas_Constant);
-
-      /*--- Static pressure using isentropic relation at a point ---*/
-      
-      Pressure = Exhaust_Pressure*pow((Temperature/Exhaust_Temperature),Gamma/Gamma_Minus_One);
-
-      /*--- Density at the inlet from the gas law ---*/
-      
-      Density = Pressure/(Gas_Constant*Temperature);
-
-      /*--- Using pressure, density, & velocity, compute the energy ---*/
-      
-      Energy = Pressure/(Density*Gamma_Minus_One) + 0.5*Velocity2;
-      if (tkeNeeded) Energy += GetTke_Inf();
-
-      /*--- Primitive variables, using the derived quantities ---*/
-      
-      V_exhaust[0] = Temperature;
-      for (iDim = 0; iDim < nDim; iDim++)
+        
+        /*--- Static temperature from the speed of sound relation ---*/
+        
+        Temperature = SoundSpeed2/(Gamma*Gas_Constant);
+        
+        /*--- Static pressure using isentropic relation at a point ---*/
+        
+        Pressure = Exhaust_Pressure*pow((Temperature/Exhaust_Temperature),Gamma/Gamma_Minus_One);
+        
+        /*--- Density at the inlet from the gas law ---*/
+        
+        Density = Pressure/(Gas_Constant*Temperature);
+        
+        /*--- Using pressure, density, & velocity, compute the energy ---*/
+        
+        Energy = Pressure/(Density*Gamma_Minus_One) + 0.5*Velocity2;
+        if (tkeNeeded) Energy += GetTke_Inf();
+        
+        /*--- Primitive variables, using the derived quantities ---*/
+        
+        V_exhaust[0] = Temperature;
+        for (iDim = 0; iDim < nDim; iDim++)
         V_exhaust[iDim+1] = Velocity[iDim];
-      V_exhaust[nDim+1] = Pressure;
-      V_exhaust[nDim+2] = Density;
-      V_exhaust[nDim+3] = Energy + Pressure/Density;
-
+        V_exhaust[nDim+1] = Pressure;
+        V_exhaust[nDim+2] = Density;
+        V_exhaust[nDim+3] = Energy + Pressure/Density;
+        
+      }
+      
+      /*--- The flow goes in the wrong direction ---*/
+      
+      else {
+        
+        V_exhaust[0] = V_domain[0];
+        for (iDim = 0; iDim < nDim; iDim++)
+        V_exhaust[iDim+1] = V_domain[iDim+1];
+        V_exhaust[nDim+1] = V_domain[nDim+1];
+        V_exhaust[nDim+2] = V_domain[nDim+2];
+        V_exhaust[nDim+3] = V_domain[nDim+3];
+        
+      }
+      
       /*--- Set various quantities in the solver class ---*/
       
       conv_numerics->SetNormal(Normal);
@@ -8226,51 +8243,68 @@ void CEulerSolver::BC_Engine_Bleed(CGeometry *geometry, CSolver **solver_contain
       dd = bb*bb - 4.0*aa*cc;
       dd = sqrt(max(0.0,dd));
       Vel_Mag   = (-bb + dd)/(2.0*aa);
-      Vel_Mag   = max(0.0,Vel_Mag);
-      Velocity2 = Vel_Mag*Vel_Mag;
       
-      /*--- Compute speed of sound from total speed of sound eqn. ---*/
-      
-      SoundSpeed2 = SoundSpeed_Bleed2 - 0.5*Gamma_Minus_One*Velocity2;
-      
-      /*--- Mach squared (cut between 0-1), use to adapt velocity ---*/
-      
-      Mach2 = Velocity2/SoundSpeed2;
-      Mach2 = min(1.0,Mach2);
-      Velocity2   = Mach2*SoundSpeed2;
-      Vel_Mag     = sqrt(Velocity2);
-      SoundSpeed2 = SoundSpeed_Bleed2 - 0.5*Gamma_Minus_One*Velocity2;
-      
-      /*--- Compute new velocity vector at the inlet ---*/
-      
-      for (iDim = 0; iDim < nDim; iDim++)
+      if (Vel_Mag >= 0.0) {
+        
+        Velocity2 = Vel_Mag*Vel_Mag;
+        
+        /*--- Compute speed of sound from total speed of sound eqn. ---*/
+        
+        SoundSpeed2 = SoundSpeed_Bleed2 - 0.5*Gamma_Minus_One*Velocity2;
+        
+        /*--- Mach squared (cut between 0-1), use to adapt velocity ---*/
+        
+        Mach2 = Velocity2/SoundSpeed2;
+        Mach2 = min(1.0,Mach2);
+        Velocity2   = Mach2*SoundSpeed2;
+        Vel_Mag     = sqrt(Velocity2);
+        SoundSpeed2 = SoundSpeed_Bleed2 - 0.5*Gamma_Minus_One*Velocity2;
+        
+        /*--- Compute new velocity vector at the inlet ---*/
+        
+        for (iDim = 0; iDim < nDim; iDim++)
         Velocity[iDim] = Vel_Mag*Flow_Dir[iDim];
-      
-      /*--- Static temperature from the speed of sound relation ---*/
-      
-      Temperature = SoundSpeed2/(Gamma*Gas_Constant);
-      
-      /*--- Static pressure using isentropic relation at a point ---*/
-      
-      Pressure = Bleed_Pressure*pow((Temperature/Bleed_Temperature),Gamma/Gamma_Minus_One);
-      
-      /*--- Density at the inlet from the gas law ---*/
-      
-      Density = Pressure/(Gas_Constant*Temperature);
-      
-      /*--- Using pressure, density, & velocity, compute the energy ---*/
-      
-      Energy = Pressure/(Density*Gamma_Minus_One) + 0.5*Velocity2;
-      if (tkeNeeded) Energy += GetTke_Inf();
-      
-      /*--- Primitive variables, using the derived quantities ---*/
-      
-      V_bleed[0] = Temperature;
-      for (iDim = 0; iDim < nDim; iDim++)
+        
+        /*--- Static temperature from the speed of sound relation ---*/
+        
+        Temperature = SoundSpeed2/(Gamma*Gas_Constant);
+        
+        /*--- Static pressure using isentropic relation at a point ---*/
+        
+        Pressure = Bleed_Pressure*pow((Temperature/Bleed_Temperature),Gamma/Gamma_Minus_One);
+        
+        /*--- Density at the inlet from the gas law ---*/
+        
+        Density = Pressure/(Gas_Constant*Temperature);
+        
+        /*--- Using pressure, density, & velocity, compute the energy ---*/
+        
+        Energy = Pressure/(Density*Gamma_Minus_One) + 0.5*Velocity2;
+        if (tkeNeeded) Energy += GetTke_Inf();
+        
+        /*--- Primitive variables, using the derived quantities ---*/
+        
+        V_bleed[0] = Temperature;
+        for (iDim = 0; iDim < nDim; iDim++)
         V_bleed[iDim+1] = Velocity[iDim];
-      V_bleed[nDim+1] = Pressure;
-      V_bleed[nDim+2] = Density;
-      V_bleed[nDim+3] = Energy + Pressure/Density;
+        V_bleed[nDim+1] = Pressure;
+        V_bleed[nDim+2] = Density;
+        V_bleed[nDim+3] = Energy + Pressure/Density;
+        
+      }
+      
+      /*--- The flow goes in the wrong direction ---*/
+      
+      else {
+        
+        V_bleed[0] = V_domain[0];
+        for (iDim = 0; iDim < nDim; iDim++)
+        V_bleed[iDim+1] = V_domain[iDim+1];
+        V_bleed[nDim+1] = V_domain[nDim+1];
+        V_bleed[nDim+2] = V_domain[nDim+2];
+        V_bleed[nDim+3] = V_domain[nDim+3];
+        
+      }
       
       /*--- Set various quantities in the solver class ---*/
       
