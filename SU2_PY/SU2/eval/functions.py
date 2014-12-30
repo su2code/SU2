@@ -159,14 +159,6 @@ def aerodynamics( config, state=None ):
     
     # does decomposition and deformation
     info = update_mesh(config,state)
-
-    # ----------------------------------------------------
-    #  Update Config file
-    # ----------------------------------------------------
-
-    # does config file update
-    print 'Updating config file with the new AoA'
-    time.sleep(10)
     
     # ----------------------------------------------------    
     #  Adaptation (not implemented)
