@@ -269,11 +269,6 @@ void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned
     
   }
   
-#ifdef HAVE_MPI
-  /*--- Synchronization point before the multigrid algorithm ---*/
-  MPI_Barrier(MPI_COMM_WORLD);
-#endif
-  
   /*--- Loop over all the new grid ---*/
   
   for (iMGlevel = 1; iMGlevel <= config[ZONE_0]->GetMGLevels(); iMGlevel++) {

@@ -512,6 +512,7 @@ private:
   Wrt_Halo,                   /*!< \brief Write rind layers in solution files */
   Plot_Section_Forces,       /*!< \brief Write sectional forces for specified markers. */
 	Wrt_1D_Output;                /*!< \brief Write average stagnation pressure specified markers. */
+  unsigned short Console_Output_Verb;  /*!< \brief Level of verbosity for console output */
 	double *ArrheniusCoefficient,					/*!< \brief Arrhenius reaction coefficient */
 	*ArrheniusEta,								/*!< \brief Arrhenius reaction temperature exponent */
 	*ArrheniusTheta,							/*!< \brief Arrhenius reaction characteristic temperature */
@@ -5072,6 +5073,12 @@ public:
 	 * \returns The interpolated value of for x.
 	 */
 	double GetSpline(vector<double> &xa, vector<double> &ya, vector<double> &y2a, unsigned long n, double x);
+  
+  /*!
+   * \brief Get the verbosity level of the console output.
+   * \return Verbosity level for the console output.
+   */
+  unsigned short GetConsole_Output_Verb(void);
 
 };
 

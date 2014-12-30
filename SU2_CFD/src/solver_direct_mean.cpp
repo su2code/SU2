@@ -539,14 +539,19 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
         counter_local++;
       }
     }
+    
+    /*--- Warning message about non-physical points ---*/
+
+    if (config->GetConsole_Output_Verb() == VERB_HIGH) {
 #ifdef HAVE_MPI
-    MPI_Reduce(&counter_local, &counter_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+      MPI_Reduce(&counter_local, &counter_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
 #else
-    counter_global = counter_local;
+      counter_global = counter_local;
 #endif
-    config->SetNonphysical_Points(counter_global);
-    if ((rank == MASTER_NODE) && (counter_global != 0))
+      if ((rank == MASTER_NODE) && (counter_global != 0))
       cout << "Warning. The original solution contains "<< counter_global << " points that are not physical." << endl;
+    }
+    
   }
 
   /*--- Define solver parameters needed for execution of destructor ---*/
@@ -2966,13 +2971,14 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 
   /*--- Error message ---*/
   
+  if (config->GetConsole_Output_Verb() == VERB_HIGH) {
 #ifdef HAVE_MPI
-  unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
-  MPI_Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+    unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
+    MPI_Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
-  if (iMesh == MESH_0) config->SetNonphysical_Points(ErrorCounter);
-
-
+    if (iMesh == MESH_0) config->SetNonphysical_Points(ErrorCounter);
+  }
+  
 }
 
 void CEulerSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
@@ -3146,22 +3152,20 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
 
   
   /*--- Compute the max and the min dt (in parallel) ---*/
-  
+  if (config->GetConsole_Output_Verb() == VERB_HIGH) {
 #ifdef HAVE_MPI
-  double rbuf_time, sbuf_time;
-  sbuf_time = Min_Delta_Time;
-  MPI_Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
-  MPI_Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-  MPI_Barrier(MPI_COMM_WORLD);
-  Min_Delta_Time = rbuf_time;
-  
-  sbuf_time = Max_Delta_Time;
-  MPI_Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MAX, MASTER_NODE, MPI_COMM_WORLD);
-  MPI_Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-  MPI_Barrier(MPI_COMM_WORLD);
-  Max_Delta_Time = rbuf_time;
+    double rbuf_time, sbuf_time;
+    sbuf_time = Min_Delta_Time;
+    MPI_Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
+    MPI_Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    Min_Delta_Time = rbuf_time;
+    
+    sbuf_time = Max_Delta_Time;
+    MPI_Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MAX, MASTER_NODE, MPI_COMM_WORLD);
+    MPI_Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    Max_Delta_Time = rbuf_time;
 #endif
-
+  }
   
   /*--- For exact time solution use the minimum delta time of the whole mesh ---*/
   
@@ -3171,7 +3175,6 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
     sbuf_time = Global_Delta_Time;
     MPI_Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
     MPI_Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-    MPI_Barrier(MPI_COMM_WORLD);
     Global_Delta_Time = rbuf_time;
 #endif
     for(iPoint = 0; iPoint < nPointDomain; iPoint++)
@@ -3189,7 +3192,6 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
     sbuf_time = Global_Delta_UnstTimeND;
     MPI_Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
     MPI_Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-    MPI_Barrier(MPI_COMM_WORLD);
     Global_Delta_UnstTimeND = rbuf_time;
 #endif
     config->SetDelta_UnstTimeND(Global_Delta_UnstTimeND);
@@ -3435,12 +3437,15 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   }
   
   /*--- Warning message about non-physical reconstructions ---*/
+  
+  if (config->GetConsole_Output_Verb() == VERB_HIGH) {
 #ifdef HAVE_MPI
-  MPI_Reduce(&counter_local, &counter_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+    MPI_Reduce(&counter_local, &counter_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
 #else
-  counter_global = counter_local;
+    counter_global = counter_local;
 #endif
-  if (iMesh == MESH_0) config->SetNonphysical_Reconstr(counter_global);
+    if (iMesh == MESH_0) config->SetNonphysical_Reconstr(counter_global);
+  }
   
 }
 
@@ -9995,13 +10000,19 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
         counter_local++;
       }
     }
+    
+    /*--- Warning message about non-physical points ---*/
+
+    if (config->GetConsole_Output_Verb() == VERB_HIGH) {
 #ifdef HAVE_MPI
-    MPI_Reduce(&counter_local, &counter_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+      MPI_Reduce(&counter_local, &counter_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
 #else
-    counter_global = counter_local;
+      counter_global = counter_local;
 #endif
-    if ((rank == MASTER_NODE) && (counter_global != 0))
+      if ((rank == MASTER_NODE) && (counter_global != 0))
       cout << "Warning. The original solution contains "<< counter_global << " points that are not physical." << endl;
+    }
+    
   }
 
   /*--- For incompressible solver set the initial values for the density and viscosity,
@@ -10180,12 +10191,14 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   if (implicit) Jacobian.SetValZero();
 
   /*--- Error message ---*/
-
+  
+  if (config->GetConsole_Output_Verb() == VERB_HIGH) {
 #ifdef HAVE_MPI
-  unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
-  MPI_Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+    unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
+    MPI_Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
-  if (iMesh == MESH_0) config->SetNonphysical_Points(ErrorCounter);
+    if (iMesh == MESH_0) config->SetNonphysical_Points(ErrorCounter);
+  }
 
 }
 
@@ -10370,22 +10383,20 @@ void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CC
 
   
   /*--- Compute the max and the min dt (in parallel) ---*/
-  
+  if (config->GetConsole_Output_Verb() == VERB_HIGH) {
 #ifdef HAVE_MPI
-  double rbuf_time, sbuf_time;
-  sbuf_time = Min_Delta_Time;
-  MPI_Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
-  MPI_Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-  MPI_Barrier(MPI_COMM_WORLD);
-  Min_Delta_Time = rbuf_time;
-  
-  sbuf_time = Max_Delta_Time;
-  MPI_Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MAX, MASTER_NODE, MPI_COMM_WORLD);
-  MPI_Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-  MPI_Barrier(MPI_COMM_WORLD);
-  Max_Delta_Time = rbuf_time;
+    double rbuf_time, sbuf_time;
+    sbuf_time = Min_Delta_Time;
+    MPI_Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
+    MPI_Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    Min_Delta_Time = rbuf_time;
+    
+    sbuf_time = Max_Delta_Time;
+    MPI_Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MAX, MASTER_NODE, MPI_COMM_WORLD);
+    MPI_Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    Max_Delta_Time = rbuf_time;
 #endif
-  
+  }
 
   /*--- For exact time solution use the minimum delta time of the whole mesh ---*/
   if (config->GetUnsteady_Simulation() == TIME_STEPPING) {
@@ -10394,7 +10405,6 @@ void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CC
     sbuf_time = Global_Delta_Time;
     MPI_Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
     MPI_Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-    MPI_Barrier(MPI_COMM_WORLD);
     Global_Delta_Time = rbuf_time;
 #endif
     for(iPoint = 0; iPoint < nPointDomain; iPoint++)
@@ -10411,7 +10421,6 @@ void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CC
     sbuf_time = Global_Delta_UnstTimeND;
     MPI_Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
     MPI_Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-    MPI_Barrier(MPI_COMM_WORLD);
     Global_Delta_UnstTimeND = rbuf_time;
 #endif
     config->SetDelta_UnstTimeND(Global_Delta_UnstTimeND);

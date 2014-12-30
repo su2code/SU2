@@ -696,10 +696,6 @@ void CGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_Normal,
     
   }
   
-#ifdef HAVE_MPI
-  MPI_Barrier(MPI_COMM_WORLD);
-#endif
-  
 }
 
 void CGeometry::ComputeSurf_Curvature(CConfig *config) {
@@ -2347,10 +2343,6 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   
   MPI_Allreduce(&Local_nPoint, &Global_nPoint, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
   MPI_Allreduce(&Local_nPointDomain, &Global_nPointDomain, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  
-  /*--- End of the MPI stuff, each node has the right piece of the grid ---*/
-  
-  MPI_Barrier(MPI_COMM_WORLD);
   
 #else
   
@@ -5880,11 +5872,6 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig *config) {
   
   delete[] InvResult;
   
-  /*--- MPI Synchronization point ---*/
-#ifdef HAVE_MPI
-  MPI_Barrier(MPI_COMM_WORLD);
-#endif
-  
 }
 
 void CPhysicalGeometry::SetElement_Connectivity(void) {
@@ -6232,8 +6219,6 @@ void CPhysicalGeometry::MatchInterface(CConfig *config) {
     
 #else
     
-    MPI_Barrier(MPI_COMM_WORLD);
-    
     unsigned short iMarker, iDim;
     unsigned long iVertex, iPoint, pPoint = 0, jVertex, jPoint;
     double *Coord_i, Coord_j[3], dist = 0.0, mindist, maxdist_local, maxdist_global;
@@ -6364,11 +6349,10 @@ void CPhysicalGeometry::MatchInterface(CConfig *config) {
     delete[] Buffer_Send_nVertex;
     delete[] Buffer_Receive_nVertex;
     
-    MPI_Barrier(MPI_COMM_WORLD);
-    
 #endif
     
   }
+  
 }
 
 void CPhysicalGeometry::MatchNearField(CConfig *config) {
@@ -6419,8 +6403,6 @@ void CPhysicalGeometry::MatchNearField(CConfig *config) {
       }
     
 #else
-    
-    MPI_Barrier(MPI_COMM_WORLD);
     
     unsigned short iMarker, iDim;
     unsigned long iVertex, iPoint, pPoint = 0, jVertex, jPoint;
@@ -6556,8 +6538,6 @@ void CPhysicalGeometry::MatchNearField(CConfig *config) {
     delete[] Buffer_Send_nVertex;
     delete[] Buffer_Receive_nVertex;
     
-    MPI_Barrier(MPI_COMM_WORLD);
-    
 #endif
     
   }
@@ -6587,7 +6567,6 @@ void CPhysicalGeometry::MatchActuator_Disk(CConfig *config) {
       rank = MASTER_NODE;
       nProcessor = SINGLE_NODE;
 #else
-      MPI_Barrier(MPI_COMM_WORLD);
       MPI_Comm_rank(MPI_COMM_WORLD, &rank);
       MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
 #endif
@@ -6742,10 +6721,6 @@ void CPhysicalGeometry::MatchActuator_Disk(CConfig *config) {
       delete[] Buffer_Send_nVertex;
       delete[] Buffer_Receive_nVertex;
       
-#ifdef HAVE_MPI
-      MPI_Barrier(MPI_COMM_WORLD);
-#endif
-      
     }
   }
   
@@ -6785,7 +6760,6 @@ void CPhysicalGeometry::MatchZone(CConfig *config, CGeometry *geometry_donor, CC
   }
   
 #else
-  MPI_Barrier(MPI_COMM_WORLD);
   
   unsigned short iMarker, iDim;
   unsigned long iVertex, iPoint, pPoint = 0, jVertex, jPoint;
@@ -6894,7 +6868,6 @@ void CPhysicalGeometry::MatchZone(CConfig *config, CGeometry *geometry_donor, CC
   delete[] Buffer_Send_nVertex;
   delete[] Buffer_Receive_nVertex;
   
-  MPI_Barrier(MPI_COMM_WORLD);
 #endif
   
 }
@@ -8171,10 +8144,6 @@ void CPhysicalGeometry::Set_MPI_Coord(CConfig *config)  {
   
   delete [] newCoord;
   
-#ifdef HAVE_MPI
-  MPI_Barrier(MPI_COMM_WORLD);
-#endif
-  
 }
 
 void CPhysicalGeometry::Set_MPI_GridVel(CConfig *config)  {
@@ -8303,10 +8272,6 @@ void CPhysicalGeometry::Set_MPI_GridVel(CConfig *config)  {
   }
   
   delete [] newGridVel;
-  
-#ifdef HAVE_MPI
-  MPI_Barrier(MPI_COMM_WORLD);
-#endif
   
 }
 

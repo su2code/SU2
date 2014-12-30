@@ -191,7 +191,6 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
   Buffer_Send_nVertex[0] = nLocalVertex_Surface;
   if (rank == MASTER_NODE) Buffer_Recv_nVertex = new unsigned long [nProcessor];
   
-  MPI_Barrier(MPI_COMM_WORLD);
   MPI_Allreduce(&nLocalVertex_Surface, &MaxLocalVertex_Surface, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
   MPI_Gather(&Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nVertex, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
   
@@ -280,7 +279,6 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
   
   /*--- Send the information to the master node ---*/
   
-  MPI_Barrier(MPI_COMM_WORLD);
   MPI_Gather(Buffer_Send_Coord_x, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_Coord_x, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
   MPI_Gather(Buffer_Send_Coord_y, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_Coord_y, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
   if (nDim == 3) MPI_Gather(Buffer_Send_Coord_z, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_Coord_z, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
@@ -531,7 +529,6 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
   
   Buffer_Send_nVertex[0] = nLocalVertex_Surface;
   
-  MPI_Barrier(MPI_COMM_WORLD);
   MPI_Allreduce(&nLocalVertex_Surface, &MaxLocalVertex_Surface, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
   MPI_Gather(&Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
   
@@ -603,7 +600,6 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
   nBuffer_Scalar = MaxLocalVertex_Surface;
   
   /*--- Send the information to the Master node ---*/
-  MPI_Barrier(MPI_COMM_WORLD);
   MPI_Gather(Buffer_Send_Coord_x, nBuffer_Scalar, MPI_DOUBLE, Buffer_Receive_Coord_x, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
   MPI_Gather(Buffer_Send_Coord_y, nBuffer_Scalar, MPI_DOUBLE, Buffer_Receive_Coord_y, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
   if (nDim == 3) MPI_Gather(Buffer_Send_Coord_z, nBuffer_Scalar, MPI_DOUBLE, Buffer_Receive_Coord_z, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
@@ -935,7 +931,6 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
   
   /*--- Communicate the total number of nodes on this domain. ---*/
   
-  MPI_Barrier(MPI_COMM_WORLD);
   MPI_Gather(&Buffer_Send_nPoin, 1, MPI_UNSIGNED_LONG,
              Buffer_Recv_nPoin, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
   MPI_Allreduce(&nLocalPoint, &MaxLocalPoint, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
@@ -1020,7 +1015,7 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
   }
   
   /*--- Gather the coordinate data on the master node using MPI. ---*/
-  MPI_Barrier(MPI_COMM_WORLD);
+
   MPI_Gather(Buffer_Send_X, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_X, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
   MPI_Gather(Buffer_Send_Y, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Y, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
   if (nDim == 3) {
@@ -1215,7 +1210,6 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
   Buffer_Send_nElem[0] = nLocalElem;
   if (rank == MASTER_NODE) Buffer_Recv_nElem = new unsigned long[nProcessor];
   
-  MPI_Barrier(MPI_COMM_WORLD);
   MPI_Allreduce(&nLocalElem, &MaxLocalElem, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
   MPI_Gather(&Buffer_Send_nElem, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nElem, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
   
@@ -1270,7 +1264,7 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
   
   nAddedPeriodic = Added_Periodic.size();
   Buffer_Send_nAddedPeriodic[0] = nAddedPeriodic;
-  MPI_Barrier(MPI_COMM_WORLD);
+
   MPI_Allreduce(&nAddedPeriodic, &maxAddedPeriodic, 1, MPI_UNSIGNED_LONG,
                 MPI_MAX, MPI_COMM_WORLD);
   MPI_Allgather(&Buffer_Send_nAddedPeriodic, 1, MPI_UNSIGNED_LONG,
@@ -1286,7 +1280,7 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
   
   /*--- Gather the element connectivity information. All processors will now
    have a copy of the global index values for all added periodic points. ---*/
-  MPI_Barrier(MPI_COMM_WORLD);
+
   MPI_Allgather(Buffer_Send_AddedPeriodic, maxAddedPeriodic, MPI_UNSIGNED_LONG,
                 Buffer_Recv_AddedPeriodic, maxAddedPeriodic, MPI_UNSIGNED_LONG,
                 MPI_COMM_WORLD);
@@ -1377,7 +1371,7 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
   }
   
   /*--- Gather the element connectivity information. ---*/
-  MPI_Barrier(MPI_COMM_WORLD);
+
   MPI_Gather(Buffer_Send_Elem, nBuffer_Scalar, MPI_UNSIGNED_LONG, Buffer_Recv_Elem, nBuffer_Scalar, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
   MPI_Gather(Buffer_Send_Halo, MaxLocalElem, MPI_UNSIGNED_SHORT, Buffer_Recv_Halo, MaxLocalElem, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
   
@@ -1640,7 +1634,6 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
   Buffer_Send_nElem[0] = nLocalElem;
   if (rank == MASTER_NODE) Buffer_Recv_nElem = new unsigned long[nProcessor];
   
-  MPI_Barrier(MPI_COMM_WORLD);
   MPI_Allreduce(&nLocalElem, &MaxLocalElem, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
   MPI_Gather(&Buffer_Send_nElem, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nElem, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
   
@@ -1695,7 +1688,7 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
   
   nAddedPeriodic = Added_Periodic.size();
   Buffer_Send_nAddedPeriodic[0] = nAddedPeriodic;
-  MPI_Barrier(MPI_COMM_WORLD);
+
   MPI_Allreduce(&nAddedPeriodic, &maxAddedPeriodic, 1, MPI_UNSIGNED_LONG,
                 MPI_MAX, MPI_COMM_WORLD);
   MPI_Allgather(&Buffer_Send_nAddedPeriodic, 1, MPI_UNSIGNED_LONG,
@@ -1711,7 +1704,7 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
   
   /*--- Gather the element connectivity information. All processors will now
    have a copy of the global index values for all added periodic points. ---*/
-  MPI_Barrier(MPI_COMM_WORLD);
+
   MPI_Allgather(Buffer_Send_AddedPeriodic, maxAddedPeriodic, MPI_UNSIGNED_LONG,
                 Buffer_Recv_AddedPeriodic, maxAddedPeriodic, MPI_UNSIGNED_LONG,
                 MPI_COMM_WORLD);
@@ -1803,7 +1796,7 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
       }
   
   /*--- Gather the element connectivity information. ---*/
-  MPI_Barrier(MPI_COMM_WORLD);
+
   MPI_Gather(Buffer_Send_Elem, nBuffer_Scalar, MPI_UNSIGNED_LONG, Buffer_Recv_Elem, nBuffer_Scalar, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
   MPI_Gather(Buffer_Send_Halo, MaxLocalElem, MPI_UNSIGNED_SHORT, Buffer_Recv_Halo, MaxLocalElem, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
   
@@ -2598,7 +2591,6 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   
   if (rank == MASTER_NODE) Buffer_Recv_nPoint = new unsigned long[nProcessor];
   
-  MPI_Barrier(MPI_COMM_WORLD);
   MPI_Allreduce(&nLocalPoint, &MaxLocalPoint, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
   MPI_Gather(&Buffer_Send_nPoint, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nPoint, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
   
@@ -2709,7 +2701,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     }
     
     /*--- Gather the data on the master node. ---*/
-    MPI_Barrier(MPI_COMM_WORLD);
+
     MPI_Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
     
     if (!config->GetLow_MemoryOutput()) {
@@ -2791,7 +2783,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       }
       
       /*--- Gather the data on the master node. ---*/
-      MPI_Barrier(MPI_COMM_WORLD);
+
       MPI_Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
       MPI_Gather(Buffer_Send_Res, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Res, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
       if (geometry->GetnDim() == 3) {
@@ -2836,7 +2828,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       }
       
       /*--- Gather the data on the master node. ---*/
-      MPI_Barrier(MPI_COMM_WORLD);
+
       MPI_Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
       
       /*--- The master node unpacks and sorts this variable by global index ---*/
@@ -2889,7 +2881,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       }
       
       /*--- Gather the data on the master node. ---*/
-      MPI_Barrier(MPI_COMM_WORLD);
+
       MPI_Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
       MPI_Gather(Buffer_Send_Res, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Res, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
       MPI_Gather(Buffer_Send_Vol, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Vol, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
@@ -2938,7 +2930,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       }
       
       /*--- Gather the data on the master node. ---*/
-      MPI_Barrier(MPI_COMM_WORLD);
+
       MPI_Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
       
       /*--- The master node unpacks and sorts this variable by global index ---*/
@@ -2981,7 +2973,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       }
       
       /*--- Gather the data on the master node. ---*/
-      MPI_Barrier(MPI_COMM_WORLD);
+
       MPI_Gather(Buffer_Send_Res, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Res, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
       
       /*--- The master node unpacks and sorts this variable by global index ---*/
@@ -3048,7 +3040,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       }
       
       /*--- Gather the data on the master node. ---*/
-      MPI_Barrier(MPI_COMM_WORLD);
+
       MPI_Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
       MPI_Gather(Buffer_Send_Res, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Res, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
       MPI_Gather(Buffer_Send_Vol, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Vol, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
@@ -3095,7 +3087,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       }
       
       /*--- Gather the data on the master node. ---*/
-      MPI_Barrier(MPI_COMM_WORLD);
+
       MPI_Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
       
       /*--- The master node unpacks and sorts this variable by global index ---*/
@@ -3135,7 +3127,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         }
         
         /*--- Gather the data on the master node. ---*/
-        MPI_Barrier(MPI_COMM_WORLD);
+
         MPI_Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
         
         /*--- The master node unpacks and sorts this variable by global index ---*/
@@ -3177,7 +3169,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       }
       
       /*--- Gather the data on the master node. ---*/
-      MPI_Barrier(MPI_COMM_WORLD);
+
       MPI_Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
       
       /*--- The master node unpacks and sorts this variable by global index ---*/
@@ -3212,7 +3204,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       }
       
       /*--- Gather the data on the master node. ---*/
-      MPI_Barrier(MPI_COMM_WORLD);
+
       MPI_Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
       
       /*--- The master node unpacks and sorts this variable by global index ---*/
@@ -3247,7 +3239,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       }
       
       /*--- Gather the data on the master node. ---*/
-      MPI_Barrier(MPI_COMM_WORLD);
+
       MPI_Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
       
       /*--- The master node unpacks and sorts this variable by global index ---*/
@@ -3282,7 +3274,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       }
       
       /*--- Gather the data on the master node. ---*/
-      MPI_Barrier(MPI_COMM_WORLD);
+
       MPI_Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
       
       /*--- The master node unpacks and sorts this variable by global index ---*/
@@ -3320,7 +3312,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         }
         
         /*--- Gather the data on the master node. ---*/
-        MPI_Barrier(MPI_COMM_WORLD);
+
         MPI_Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
         
         /*--- The master node unpacks and sorts this variable by global index ---*/
@@ -3356,7 +3348,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       }
       
       /*--- Gather the data on the master node. ---*/
-      MPI_Barrier(MPI_COMM_WORLD);
+
       MPI_Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
       
       /*--- The master node unpacks and sorts this variable by global index ---*/
@@ -3391,7 +3383,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       }
       
       /*--- Gather the data on the master node. ---*/
-      MPI_Barrier(MPI_COMM_WORLD);
+
       MPI_Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
       
       /*--- The master node unpacks and sorts this variable by global index ---*/
@@ -3426,7 +3418,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       }
       
       /*--- Gather the data on the master node. ---*/
-      MPI_Barrier(MPI_COMM_WORLD);
+
       MPI_Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
       
       /*--- The master node unpacks and sorts this variable by global index ---*/
@@ -3494,7 +3486,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       }
       
       /*--- Gather the data on the master node. ---*/
-      MPI_Barrier(MPI_COMM_WORLD);
+
       MPI_Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
       MPI_Gather(Buffer_Send_Res, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Res, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
       
@@ -3535,7 +3527,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       }
       
       /*--- Gather the data on the master node. ---*/
-      MPI_Barrier(MPI_COMM_WORLD);
+
       MPI_Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
       
       /*--- The master node unpacks and sorts this variable by global index ---*/
@@ -3582,7 +3574,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         }
         
         /*--- Gather the data on the master node. ---*/
-        MPI_Barrier(MPI_COMM_WORLD);
+
         MPI_Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
         
         /*--- The master node unpacks and sorts this variable by global index ---*/
@@ -3769,7 +3761,6 @@ void COutput::MergeBaselineSolution(CConfig *config, CGeometry *geometry, CSolve
   
   if (rank == MASTER_NODE) Buffer_Recv_nPoint = new unsigned long[nProcessor];
   
-  MPI_Barrier(MPI_COMM_WORLD);
   MPI_Allreduce(&nLocalPoint, &MaxLocalPoint, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
   MPI_Gather(&Buffer_Send_nPoint, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nPoint, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
   
@@ -3828,7 +3819,7 @@ void COutput::MergeBaselineSolution(CConfig *config, CGeometry *geometry, CSolve
     }
     
     /*--- Gather the data on the master node. ---*/
-    MPI_Barrier(MPI_COMM_WORLD);
+
     MPI_Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
     if (iVar == 0) {
       MPI_Gather(Buffer_Send_GlobalIndex, nBuffer_Scalar, MPI_UNSIGNED_LONG, Buffer_Recv_GlobalIndex, nBuffer_Scalar, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
@@ -6486,12 +6477,10 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
     }
     
     /*--- Final broadcast (informing other procs that the base output
-     file was written) & barrier to sync up after master node writes
-     output files. ---*/
+     file was written). ---*/
     
 #ifdef HAVE_MPI
     MPI_Bcast(&wrote_base_file, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
-    MPI_Barrier(MPI_COMM_WORLD);
 #endif
     
   }
@@ -6675,12 +6664,10 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
     }
     
     /*--- Final broadcast (informing other procs that the base output
-     file was written) & barrier to sync up after master node writes
-     output files. ---*/
+     file was written). ---*/
     
 #ifdef HAVE_MPI
     MPI_Bcast(&wrote_base_file, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
-    MPI_Barrier(MPI_COMM_WORLD);
 #endif
     
   }
@@ -6756,12 +6743,10 @@ void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned sho
     }
     
     /*--- Final broadcast (informing other procs that the base output
-     file was written) & barrier to sync up after master node writes
-     output files. ---*/
+     file was written). ---*/
     
 #ifdef HAVE_MPI
     MPI_Bcast(&wrote_base_file, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
-    MPI_Barrier(MPI_COMM_WORLD);
 #endif
     
   }

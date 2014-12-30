@@ -138,10 +138,6 @@ int main(int argc, char *argv[]) {
       
     }
     
-#ifdef HAVE_MPI
-    MPI_Barrier(MPI_COMM_WORLD);
-#endif
-    
     geometry_container[iZone] = new CGeometry *[config_container[iZone]->GetMGLevels()+1];
     
     /*--- Allocate the memory of the current domain, and
@@ -161,10 +157,6 @@ int main(int argc, char *argv[]) {
     
     geometry_container[iZone][MESH_0]->SetBoundaries(config_container[iZone]);
     
-#ifdef HAVE_MPI
-    MPI_Barrier(MPI_COMM_WORLD);
-#endif
-    
   }
   
   if (rank == MASTER_NODE)
@@ -176,12 +168,6 @@ int main(int argc, char *argv[]) {
    computed, and the multigrid levels are created using an agglomeration procedure. ---*/
   
   Geometrical_Preprocessing(geometry_container, config_container, nZone);
-
-  /*--- Synchronization point after the geometrical definition subroutine ---*/
-
-#ifdef HAVE_MPI
-MPI_Barrier(MPI_COMM_WORLD);
-#endif
   
   if (rank == MASTER_NODE)
     cout << endl <<"------------------------- Solver Preprocessing --------------------------" << endl;
@@ -225,12 +211,6 @@ MPI_Barrier(MPI_COMM_WORLD);
     }
     Solver_Preprocessing(solver_container[iZone], geometry_container[iZone],
                          config_container[iZone], iZone);
-
-    /*--- Synchronization point after the solution preprocessing subroutine ---*/
-
-#ifdef HAVE_MPI
-    MPI_Barrier(MPI_COMM_WORLD);
-#endif
     
     if (rank == MASTER_NODE)
       cout << endl <<"----------------- Integration and Numerics Preprocessing ----------------" << endl;
@@ -246,12 +226,6 @@ MPI_Barrier(MPI_COMM_WORLD);
                               config_container[iZone], iZone);
     
     if (rank == MASTER_NODE) cout << "Integration Preprocessing." << endl;
-
-    /*--- Synchronization point after the integration definition subroutine ---*/
-
-#ifdef HAVE_MPI
-    MPI_Barrier(MPI_COMM_WORLD);
-#endif
     
     /*--- Definition of the numerical method class:
      numerics_container[#ZONES][#MG_GRIDS][#EQ_SYSTEMS][#EQ_TERMS].
@@ -265,12 +239,6 @@ MPI_Barrier(MPI_COMM_WORLD);
                            geometry_container[iZone], config_container[iZone], iZone);
     
     if (rank == MASTER_NODE) cout << "Numerics Preprocessing." << endl;
-
-    /*--- Synchronization point after the solver definition subroutine ---*/
-
-#ifdef HAVE_MPI
-    MPI_Barrier(MPI_COMM_WORLD);
-#endif
     
     /*--- Instantiate the geometry movement classes for the solution of unsteady
      flows on dynamic meshes, including rigid mesh transformations, dynamically
@@ -332,7 +300,6 @@ MPI_Barrier(MPI_COMM_WORLD);
 #ifndef HAVE_MPI
   StartTime = double(clock())/double(CLOCKS_PER_SEC);
 #else
-  MPI_Barrier(MPI_COMM_WORLD);
   StartTime = MPI_Wtime();
 #endif
   
@@ -425,7 +392,6 @@ MPI_Barrier(MPI_COMM_WORLD);
 #ifndef HAVE_MPI
     StopTime = double(clock())/double(CLOCKS_PER_SEC);
 #else
-    MPI_Barrier(MPI_COMM_WORLD);
     StopTime = MPI_Wtime();
 #endif
     
@@ -549,7 +515,6 @@ MPI_Barrier(MPI_COMM_WORLD);
 #ifndef HAVE_MPI
   StopTime = double(clock())/double(CLOCKS_PER_SEC);
 #else
-  MPI_Barrier(MPI_COMM_WORLD);
   StopTime = MPI_Wtime();
 #endif
   
@@ -568,7 +533,6 @@ MPI_Barrier(MPI_COMM_WORLD);
   
 #ifdef HAVE_MPI
   /*--- Finalize MPI parallelization ---*/
-  MPI_Barrier(MPI_COMM_WORLD);
   MPI_Buffer_detach(&bptr,&bl);
   MPI_Finalize();
 #endif

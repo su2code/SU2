@@ -101,10 +101,6 @@ int main(int argc, char *argv[]) {
       
     }
     
-#ifdef HAVE_MPI
-    MPI_Barrier(MPI_COMM_WORLD);
-#endif
-    
     /*--- Allocate the memory of the current domain, and
      divide the grid between the nodes ---*/
     
@@ -122,16 +118,11 @@ int main(int argc, char *argv[]) {
     
     geometry_container[iZone]->SetBoundaries(config_container[iZone]);
     
-#ifdef HAVE_MPI
-    MPI_Barrier(MPI_COMM_WORLD);
-#endif
-    
   }
   
   /*--- Set up a timer for performance benchmarking (preprocessing time is included) ---*/
   
 #ifdef HAVE_MPI
-  MPI_Barrier(MPI_COMM_WORLD);
   StartTime = MPI_Wtime();
 #else
   StartTime = double(clock())/double(CLOCKS_PER_SEC);
@@ -194,12 +185,6 @@ int main(int argc, char *argv[]) {
   
   if (rank == MASTER_NODE) cout << "Performing the deformation of the surface grid." << endl;
   surface_movement->SetSurface_Deformation(geometry_container[ZONE_0], config_container[ZONE_0]);
-
-  /*--- MPI syncronization point ---*/
-
-#ifdef HAVE_MPI
-  MPI_Barrier(MPI_COMM_WORLD);
-#endif
   
   /*--- Volumetric grid deformation ---*/
   
@@ -238,7 +223,6 @@ int main(int argc, char *argv[]) {
    wall clock time required. ---*/
   
 #ifdef HAVE_MPI
-  MPI_Barrier(MPI_COMM_WORLD);
   StopTime = MPI_Wtime();
 #else
   StopTime = double(clock())/double(CLOCKS_PER_SEC);
@@ -260,7 +244,6 @@ int main(int argc, char *argv[]) {
   /*--- Finalize MPI parallelization ---*/
 
 #ifdef HAVE_MPI
-  MPI_Barrier(MPI_COMM_WORLD);
   MPI_Finalize();
 #endif
   

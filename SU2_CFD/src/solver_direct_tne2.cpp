@@ -2265,7 +2265,6 @@ void CTNE2EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solution_cont
 		sbuf_time = Global_Delta_Time;
 		MPI_Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
 		MPI_Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-		MPI_Barrier(MPI_COMM_WORLD);
 		Global_Delta_Time = rbuf_time;
 #endif
 		for(iPoint = 0; iPoint < nPointDomain; iPoint++)
@@ -5698,7 +5697,6 @@ void CTNE2NSSolver::SetTime_Step(CGeometry *geometry,
 		sbuf_time = Global_Delta_Time;
 		MPI_Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
 		MPI_Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-		MPI_Barrier(MPI_COMM_WORLD);
 		Global_Delta_Time = rbuf_time;
 #endif
 		for(iPoint = 0; iPoint < nPointDomain; iPoint++)
@@ -5714,7 +5712,6 @@ void CTNE2NSSolver::SetTime_Step(CGeometry *geometry,
 		sbuf_time = Global_Delta_UnstTimeND;
 		MPI_Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
 		MPI_Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-		MPI_Barrier(MPI_COMM_WORLD);
 		Global_Delta_UnstTimeND = rbuf_time;
 #endif
 		config->SetDelta_UnstTimeND(Global_Delta_UnstTimeND);

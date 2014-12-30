@@ -116,7 +116,6 @@ void CSysSolve::ModGramSchmidt(int i, vector<vector<double> > & Hsbg, vector<CSy
   
   sbuf_conv[0] = Convergence;
   MPI_Reduce(sbuf_conv, rbuf_conv, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
-  MPI_Barrier(MPI_COMM_WORLD);
   
   /*-- Compute global convergence criteria in the master node --*/
   
@@ -142,7 +141,6 @@ void CSysSolve::ModGramSchmidt(int i, vector<vector<double> > & Hsbg, vector<CSy
 #ifndef HAVE_MPI
 		exit(EXIT_DIVERGENCE);
 #else
-    MPI_Barrier(MPI_COMM_WORLD);
     MPI_Abort(MPI_COMM_WORLD,1);
 #endif
   }
