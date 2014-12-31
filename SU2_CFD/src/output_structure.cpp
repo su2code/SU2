@@ -2984,17 +2984,15 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
             
             /*--- Get global index, then loop over each variable and store ---*/
             iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
-            Data[iVar+1][iGlobal_Index] = Buffer_Recv_Res[jPoint];
+            Data[iVar][iGlobal_Index] = Buffer_Recv_Res[jPoint];
             jPoint++;
           }
           /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
           jPoint = (iProcessor+1)*nBuffer_Scalar;
         }
       }
-    }
     
-    /*--- Communicate skin friction, heat transfer, y+ ---*/
-    if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+      /*--- Communicate skin friction, heat transfer, y+ ---*/
       
       /*--- First, loop through the mesh in order to find and store the
        value of the viscous coefficients at any surface nodes. They
@@ -3048,6 +3046,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       /*--- The master node unpacks and sorts this variable by global index ---*/
       if (rank == MASTER_NODE) {
         jPoint = 0; iVar = iVar_ViscCoeffs;
+
         for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
           for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
             
@@ -3065,6 +3064,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     }
     
     /*--- Communicate the Eddy Viscosity ---*/
+    
     if (Kind_Solver == RANS) {
       
       /*--- Loop over this partition to collect the current variable ---*/

@@ -40,7 +40,7 @@ int main(int argc, char *argv[]) {
   dalpha[3], deps[3], dalpha_deps;
 	char config_file_name[MAX_STRING_SIZE], *cstr;
 	ofstream Gradient_file, Jacobian_file;
-	bool *UpdatePoint, Comma;
+	bool *UpdatePoint;
 	int rank = MASTER_NODE;
 	int size = SINGLE_NODE;
 
