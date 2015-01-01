@@ -7674,9 +7674,9 @@ void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_contai
   Inflow_Pressure_old = config->GetInflow_Pressure(Marker_Tag);  // Note that has been computed by the code (non-dimensional).
   Inflow_Mach_old = config->GetInflow_Mach(Marker_Tag);
 
-  /*--- Compute the Pressure increment ---*/
+  /*--- Compute the pressure increment (note that increasing pressure decreases flow speed) ---*/
   
-  Inflow_Pressure_inc = ((Inflow_Mach_old/Target_Inflow_Mach) - 1.0) * config->GetPressure_FreeStreamND();
+  Inflow_Pressure_inc = - (1.0 - (Inflow_Mach_old/Target_Inflow_Mach)) * config->GetPressure_FreeStreamND();
 
   /*--- Estimate the new fan face pressure ---*/
   
@@ -7841,13 +7841,13 @@ void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_conta
   
   /*--- Compute the Pressure increment ---*/
   
-  Exhaust_Pressure_inc = ((Exhaust_Pressure_old/Target_Exhaust_Pressure) - 1.0) * config->GetPressure_FreeStreamND();
+  Exhaust_Pressure_inc = (1.0 - (Exhaust_Pressure_old/Target_Exhaust_Pressure)) * config->GetPressure_FreeStreamND();
   
-  /*--- Estimate the new Bleed pressure ---*/
+  /*--- Estimate the new exhaust pressure ---*/
   
-  Exhaust_Pressure = (1.0 - DampingFactor)*Exhaust_Pressure_old + DampingFactor * (Exhaust_Pressure_old + Exhaust_Pressure_inc);
+  Exhaust_Pressure = (1.0 - DampingFactor) * Exhaust_Pressure_old + DampingFactor * (Exhaust_Pressure_old + Exhaust_Pressure_inc);
   
-  /*--- Retrieve the specified total conditions for this inlet. ---*/
+  /*--- The temperature is given (no iteration is required) ---*/
   
   Exhaust_Temperature  = config->GetExhaust_Temperature_Target(Marker_Tag);
   Exhaust_Temperature /= config->GetTemperature_Ref();
@@ -8072,7 +8072,6 @@ void CEulerSolver::BC_Engine_Bleed(CGeometry *geometry, CSolver **solver_contain
   
   double *Normal = new double[nDim];
   
-  
   /*--- Retrieve the specified target bleed mass flow in the engine (non-dimensional). ---*/
   
   Target_Bleed_MassFlow = config->GetBleed_MassFlow_Target(Marker_Tag) / (config->GetDensity_Ref() * config->GetVelocity_Ref());
@@ -8082,11 +8081,11 @@ void CEulerSolver::BC_Engine_Bleed(CGeometry *geometry, CSolver **solver_contain
   Bleed_Pressure_old = config->GetBleed_Pressure(Marker_Tag);
   Bleed_MassFlow_old = config->GetBleed_MassFlow(Marker_Tag);
   
-  /*--- Compute the Pressure increment ---*/
+  /*--- Compute the Pressure increment (note that increasing pressure also increases mass flow rate) ---*/
   
-  Bleed_Pressure_inc = ((Bleed_MassFlow_old/Target_Bleed_MassFlow) - 1.0) * config->GetPressure_FreeStreamND();
+  Bleed_Pressure_inc = (1.0 - (Bleed_MassFlow_old/Target_Bleed_MassFlow)) * config->GetPressure_FreeStreamND();
   
-  /*--- Estimate the new Bleed pressure ---*/
+  /*--- Estimate the new bleed pressure ---*/
   
   Bleed_Pressure = (1.0 - DampingFactor)*Bleed_Pressure_old + DampingFactor * (Bleed_Pressure_old + Bleed_Pressure_inc);
 
