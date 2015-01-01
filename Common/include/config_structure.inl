@@ -39,6 +39,10 @@ inline void CConfig::SetBleed_MassFlow(unsigned short val_imarker, double val_bl
 
 inline void CConfig::SetBleed_Pressure(unsigned short val_imarker, double val_bleed_pressure) { Bleed_Pressure[val_imarker] = val_bleed_pressure; }
 
+inline void CConfig::SetExhaust_Pressure(unsigned short val_imarker, double val_exhaust_pressure) { Exhaust_Pressure[val_imarker] = val_exhaust_pressure; }
+
+inline void CConfig::SetExhaust_Temperature(unsigned short val_imarker, double val_exhaust_temp) { Exhaust_Temperature[val_imarker] = val_exhaust_temp; }
+
 inline unsigned short CConfig::GetnZone(void) { return nZone; }
 
 inline unsigned short CConfig::GetiZone(void) { return iZone; }
@@ -976,6 +980,8 @@ inline double CConfig::GetMinLogResidual(void) { return MinLogResidual; }
 inline double CConfig::GetDamp_Engine_Inflow(void) { return Damp_Engine_Inflow; }
 
 inline double CConfig::GetDamp_Engine_Bleed(void) { return Damp_Engine_Bleed; }
+
+inline double CConfig::GetDamp_Engine_Exhaust(void) { return Damp_Engine_Exhaust; }
 
 inline double CConfig::GetDamp_Res_Restric(void) { return Damp_Res_Restric; }
 
