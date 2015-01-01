@@ -103,12 +103,12 @@ void CConfig::SetPointersNull(void){
 
   /*--- Boundary Condition settings ---*/
 
-  Dirichlet_Value=NULL;       Nozzle_Ttotal=NULL;
-  Nozzle_Ptotal=NULL;         Inlet_Ttotal=NULL;            Inlet_Ptotal=NULL;
+  Dirichlet_Value=NULL;       Exhaust_Temperature_Target=NULL;
+  Exhaust_Pressure_Target=NULL;         Inlet_Ttotal=NULL;            Inlet_Ptotal=NULL;
   Inlet_FlowDir=NULL;         Inlet_Temperature=NULL;       Inlet_Pressure=NULL;
   Inlet_Velocity=NULL;        Inflow_Mach_Target=NULL;     Inflow_Mach=NULL;
-  Inflow_Pressure=NULL;      Bleed_Temperature_Target=NULL;       Bleed_Temperature=NULL;
-  Bleed_MassFlow_Target=NULL; Bleed_MassFlow=NULL;
+  Inflow_Pressure=NULL;       Bleed_Temperature_Target=NULL;       Bleed_Temperature=NULL;
+  Bleed_MassFlow_Target=NULL; Bleed_MassFlow=NULL;          Exhaust_Pressure=NULL; Exhaust_Temperature=NULL;
   Bleed_Pressure=NULL;        Outlet_Pressure=NULL;         Isothermal_Temperature=NULL;
   Heat_Flux=NULL;             Displ_Value=NULL;             Load_Value=NULL;
   FlowLoad_Value=NULL;        Periodic_RotCenter=NULL;      Periodic_RotAngles=NULL;
@@ -501,7 +501,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleArrayOption("SUBSONIC_ENGINE_BOX", 6, Subsonic_Engine_Box, default_vec_6d);
   /* DESCRIPTION: Engine exhaust boundary marker(s)
    Format: (nacelle exhaust marker, total nozzle temp, total nozzle pressure, ... )*/
-  addExhaustOption("MARKER_ENGINE_EXHAUST", nMarker_EngineExhaust, Marker_EngineExhaust, Nozzle_Ttotal, Nozzle_Ptotal);
+  addExhaustOption("MARKER_ENGINE_EXHAUST", nMarker_EngineExhaust, Marker_EngineExhaust, Exhaust_Temperature_Target, Exhaust_Pressure_Target);
   /* DESCRIPTION: Displacement boundary marker(s) */
   addStringDoubleListOption("MARKER_NORMAL_DISPL", nMarker_Displacement, Marker_Displacement, Displ_Value);
   /* DESCRIPTION: Load boundary marker(s) */
@@ -512,6 +512,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("DAMP_ENGINE_INFLOW", Damp_Engine_Inflow, 0.75);
   /* DESCRIPTION: Damping factor for engine bleed condition */
   addDoubleOption("DAMP_ENGINE_BLEED", Damp_Engine_Bleed, 0.01);
+  /* DESCRIPTION: Damping factor for engine exhaust condition */
+  addDoubleOption("DAMP_ENGINE_EXHAUST", Damp_Engine_Exhaust, 0.75);
   /* DESCRIPTION: Outlet boundary marker(s) over which to calculate 1-D flow properties
    Format: ( outlet marker) */
   addStringListOption("MARKER_OUT_1D", nMarker_Out_1D, Marker_Out_1D);
@@ -3034,7 +3036,7 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
   
   Bleed_MassFlow = new double[nMarker_EngineBleed];
   Bleed_Temperature = new double[nMarker_EngineBleed];
-  Bleed_Pressure = new double[nMarker_EngineInflow];
+  Bleed_Pressure = new double[nMarker_EngineBleed];
 
   for (iMarker_EngineBleed = 0; iMarker_EngineBleed < nMarker_EngineBleed; iMarker_EngineBleed++) {
     Marker_CfgFile_TagBound[iMarker_Config] = Marker_EngineBleed[iMarker_EngineBleed];
@@ -3045,9 +3047,14 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
     iMarker_Config++;
   }
 
+  Exhaust_Pressure = new double[nMarker_EngineExhaust];
+  Exhaust_Temperature = new double[nMarker_EngineExhaust];
+
   for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++) {
     Marker_CfgFile_TagBound[iMarker_Config] = Marker_EngineExhaust[iMarker_EngineExhaust];
     Marker_CfgFile_KindBC[iMarker_Config] = ENGINE_EXHAUST;
+    Exhaust_Pressure[iMarker_EngineExhaust] = 0.0;
+    Exhaust_Temperature[iMarker_EngineExhaust] = 0.0;
     iMarker_Config++;
   }
 
@@ -5048,8 +5055,8 @@ CConfig::~CConfig(void) {
   if (DV_Value!=NULL)    delete[] DV_Value;
   if (Design_Variable!=NULL)    delete[] Design_Variable;
   if (Dirichlet_Value!=NULL)    delete[] Dirichlet_Value;
-  if (Nozzle_Ttotal!=NULL)    delete[]  Nozzle_Ttotal;
-  if (Nozzle_Ptotal!=NULL)    delete[]  Nozzle_Ptotal;
+  if (Exhaust_Temperature_Target!=NULL)    delete[]  Exhaust_Temperature_Target;
+  if (Exhaust_Pressure_Target!=NULL)    delete[]  Exhaust_Pressure_Target;
   if (Inlet_Ttotal!=NULL)    delete[]  Inlet_Ttotal;
   if (Inlet_Ptotal!=NULL)    delete[]  Inlet_Ptotal;
   if (Inlet_FlowDir!=NULL)    delete[] Inlet_FlowDir;
@@ -5064,6 +5071,8 @@ CConfig::~CConfig(void) {
   if (Bleed_Temperature_Target!=NULL)    delete[] Bleed_Temperature_Target;
   if (Bleed_Temperature!=NULL)    delete[]  Bleed_Temperature;
   if (Bleed_Pressure!=NULL)    delete[] Bleed_Pressure;
+  if (Exhaust_Pressure!=NULL)    delete[] Exhaust_Pressure;
+  if (Exhaust_Temperature!=NULL)    delete[] Exhaust_Temperature;
   if (Outlet_Pressure!=NULL)    delete[] Outlet_Pressure;
   if (Isothermal_Temperature!=NULL)    delete[] Isothermal_Temperature;
   if (Heat_Flux!=NULL)    delete[] Heat_Flux;
@@ -5588,18 +5597,18 @@ bool CConfig::GetDirichlet_Boundary(string val_marker) {
   return Dirichlet;
 }
 
-double CConfig::GetNozzle_Ttotal(string val_marker) {
+double CConfig::GetExhaust_Temperature_Target(string val_marker) {
   unsigned short iMarker_EngineExhaust;
   for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++)
     if (Marker_EngineExhaust[iMarker_EngineExhaust] == val_marker) break;
-  return Nozzle_Ttotal[iMarker_EngineExhaust];
+  return Exhaust_Temperature_Target[iMarker_EngineExhaust];
 }
 
-double CConfig::GetNozzle_Ptotal(string val_marker) {
+double CConfig::GetExhaust_Pressure_Target(string val_marker) {
   unsigned short iMarker_EngineExhaust;
   for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++)
     if (Marker_EngineExhaust[iMarker_EngineExhaust] == val_marker) break;
-  return Nozzle_Ptotal[iMarker_EngineExhaust];
+  return Exhaust_Pressure_Target[iMarker_EngineExhaust];
 }
 
 double CConfig::GetInlet_Ttotal(string val_marker) {
@@ -5768,6 +5777,20 @@ double CConfig::GetBleed_Pressure(string val_marker) {
   for (iMarker_EngineBleed = 0; iMarker_EngineBleed < nMarker_EngineBleed; iMarker_EngineBleed++)
     if (Marker_EngineBleed[iMarker_EngineBleed] == val_marker) break;
   return Bleed_Pressure[iMarker_EngineBleed];
+}
+
+double CConfig::GetExhaust_Pressure(string val_marker) {
+  unsigned short iMarker_EngineExhaust;
+  for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++)
+  if (Marker_EngineExhaust[iMarker_EngineExhaust] == val_marker) break;
+  return Exhaust_Pressure[iMarker_EngineExhaust];
+}
+
+double CConfig::GetExhaust_Temperature(string val_marker) {
+  unsigned short iMarker_EngineExhaust;
+  for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++)
+  if (Marker_EngineExhaust[iMarker_EngineExhaust] == val_marker) break;
+  return Exhaust_Temperature[iMarker_EngineExhaust];
 }
 
 double CConfig::GetInflow_Mach(string val_marker) {

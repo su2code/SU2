@@ -3285,7 +3285,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   bool roe_turkel       = (config->GetKind_Upwind_Flow() == TURKEL);
   bool ideal_gas        = (config->GetKind_FluidModel() == STANDARD_AIR || config->GetKind_FluidModel() == IDEAL_GAS );
   
-  
   /*--- Loop over all the edges ---*/
   
   for(iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
@@ -3318,6 +3317,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
      of the hydrostatic pressure constribution ---*/
 
     if (freesurface) {
+      
       YDistance = 0.5*(geometry->node[jPoint]->GetCoord(nDim-1)-geometry->node[iPoint]->GetCoord(nDim-1));
       GradHidrosPress = node[iPoint]->GetDensityInc()/(config->GetFroude()*config->GetFroude());
       Primitive_i[0] = V_i[0] - GradHidrosPress*YDistance;
@@ -3328,6 +3328,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
         Primitive_i[iVar] = V_i[iVar]+EPS;
         Primitive_j[iVar] = V_j[iVar]+EPS;
       }
+      
     }
     
     /*--- High order reconstruction using MUSCL strategy ---*/
@@ -3693,8 +3694,9 @@ void CEulerSolver::Source_Template(CGeometry *geometry, CSolver **solver_contain
 }
 
 void CEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
+  
   double *Normal, Area, Mean_SoundSpeed = 0.0, Mean_ProjVel = 0.0, Mean_BetaInc2, Lambda, Mean_DensityInc,
-  ProjVel, ProjVel_i, ProjVel_j;
+  ProjVel, ProjVel_i, ProjVel_j, *GridVel, *GridVel_i, *GridVel_j;
   unsigned long iEdge, iVertex, iPoint, jPoint;
   unsigned short iDim, iMarker;
 
@@ -3704,14 +3706,17 @@ void CEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
   bool grid_movement = config->GetGrid_Movement();
 
   /*--- Set maximum inviscid eigenvalue to zero, and compute sound speed ---*/
+  
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     node[iPoint]->SetLambda(0.0);
   }
 
   /*--- Loop interior edges ---*/
+  
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
     /*--- Point identification, Normal vector and area ---*/
+    
     iPoint = geometry->edge[iEdge]->GetNode(0);
     jPoint = geometry->edge[iEdge]->GetNode(1);
 
@@ -3719,6 +3724,7 @@ void CEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
     Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
 
     /*--- Mean Values ---*/
+    
     if (compressible) {
       Mean_ProjVel = 0.5 * (node[iPoint]->GetProjVel(Normal) + node[jPoint]->GetProjVel(Normal));
       Mean_SoundSpeed = 0.5 * (node[iPoint]->GetSoundSpeed() + node[jPoint]->GetSoundSpeed()) * Area;
@@ -3731,9 +3737,10 @@ void CEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
     }
 
     /*--- Adjustment for grid movement ---*/
+    
     if (grid_movement) {
-      double *GridVel_i = geometry->node[iPoint]->GetGridVel();
-      double *GridVel_j = geometry->node[jPoint]->GetGridVel();
+      GridVel_i = geometry->node[iPoint]->GetGridVel();
+      GridVel_j = geometry->node[jPoint]->GetGridVel();
       ProjVel_i = 0.0; ProjVel_j =0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
         ProjVel_i += GridVel_i[iDim]*Normal[iDim];
@@ -3743,6 +3750,7 @@ void CEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
     }
 
     /*--- Inviscid contribution ---*/
+    
     Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
     if (geometry->node[iPoint]->GetDomain()) node[iPoint]->AddLambda(Lambda);
     if (geometry->node[jPoint]->GetDomain()) node[jPoint]->AddLambda(Lambda);
@@ -3750,15 +3758,18 @@ void CEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
   }
 
   /*--- Loop boundary edges ---*/
+  
   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
     for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 
       /*--- Point identification, Normal vector and area ---*/
+      
       iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
       Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
       Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
 
       /*--- Mean Values ---*/
+      
       if (compressible) {
         Mean_ProjVel = node[iPoint]->GetProjVel(Normal);
         Mean_SoundSpeed = node[iPoint]->GetSoundSpeed() * Area;
@@ -3771,8 +3782,9 @@ void CEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
       }
 
       /*--- Adjustment for grid movement ---*/
+      
       if (grid_movement) {
-        double *GridVel = geometry->node[iPoint]->GetGridVel();
+        GridVel = geometry->node[iPoint]->GetGridVel();
         ProjVel = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)
           ProjVel += GridVel[iDim]*Normal[iDim];
@@ -3780,6 +3792,7 @@ void CEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
       }
 
       /*--- Inviscid contribution ---*/
+      
       Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
       if (geometry->node[iPoint]->GetDomain()) {
         node[iPoint]->AddLambda(Lambda);
@@ -3789,14 +3802,18 @@ void CEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
   }
 
   /*--- MPI parallelization ---*/
+  
   Set_MPI_MaxEigenvalue(geometry, config);
 
 }
 
 void CEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) {
+  
   unsigned long iPoint, jPoint, iEdge;
   double Pressure_i = 0, Pressure_j = 0, *Diff;
   unsigned short iVar;
+  bool boundary_i, boundary_j;
+  
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
 
   Diff = new double[nVar];
@@ -3810,96 +3827,45 @@ void CEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) 
     jPoint = geometry->edge[iEdge]->GetNode(1);
 
     /*--- Solution differences ---*/
+    
     for (iVar = 0; iVar < nVar; iVar++)
       Diff[iVar] = node[iPoint]->GetSolution(iVar) - node[jPoint]->GetSolution(iVar);
 
     /*--- Correction for compressible flows which use the enthalpy ---*/
+    
     if (compressible) {
       Pressure_i = node[iPoint]->GetPressure();
       Pressure_j = node[jPoint]->GetPressure();
       Diff[nVar-1] = (node[iPoint]->GetSolution(nVar-1) + Pressure_i) - (node[jPoint]->GetSolution(nVar-1) + Pressure_j);
     }
 
-#ifdef STRUCTURED_GRID
-
-    if (geometry->node[iPoint]->GetDomain()) node[iPoint]->SubtractUnd_Lapl(Diff);
-    if (geometry->node[jPoint]->GetDomain()) node[jPoint]->AddUnd_Lapl(Diff);
-
-#else
-
-    bool boundary_i = geometry->node[iPoint]->GetPhysicalBoundary();
-    bool boundary_j = geometry->node[jPoint]->GetPhysicalBoundary();
+    boundary_i = geometry->node[iPoint]->GetPhysicalBoundary();
+    boundary_j = geometry->node[jPoint]->GetPhysicalBoundary();
 
     /*--- Both points inside the domain, or both in the boundary ---*/
+    
     if ((!boundary_i && !boundary_j) || (boundary_i && boundary_j)) {
       if (geometry->node[iPoint]->GetDomain()) node[iPoint]->SubtractUnd_Lapl(Diff);
       if (geometry->node[jPoint]->GetDomain()) node[jPoint]->AddUnd_Lapl(Diff);
     }
 
     /*--- iPoint inside the domain, jPoint on the boundary ---*/
+    
     if (!boundary_i && boundary_j)
       if (geometry->node[iPoint]->GetDomain()) node[iPoint]->SubtractUnd_Lapl(Diff);
 
     /*--- jPoint inside the domain, iPoint on the boundary ---*/
+    
     if (boundary_i && !boundary_j)
       if (geometry->node[jPoint]->GetDomain()) node[jPoint]->AddUnd_Lapl(Diff);
 
-#endif
-
   }
-
-#ifdef STRUCTURED_GRID
-
-  unsigned long Point_Normal = 0, iVertex;
-  double Pressure_mirror = 0, *U_mirror;
-  unsigned short iMarker;
-
-  U_mirror = new double[nVar];
-
-  /*--- Loop over all boundaries and include an extra contribution
-   from a mirror node. Find the nearest normal, interior point
-   for a boundary node and make a linear approximation. ---*/
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-
-    if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
-        config->GetMarker_All_KindBC(iMarker) != INTERFACE_BOUNDARY &&
-        config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY &&
-        config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY) {
-
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-
-        if (geometry->node[iPoint]->GetDomain()) {
-
-          Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
-
-          /*--- Interpolate & compute difference in the conserved variables ---*/
-          for (iVar = 0; iVar < nVar; iVar++) {
-            U_mirror[iVar] = 2.0*node[iPoint]->GetSolution(iVar) - node[Point_Normal]->GetSolution(iVar);
-            Diff[iVar]   = node[iPoint]->GetSolution(iVar) - U_mirror[iVar];
-          }
-
-          /*--- Correction for compressible flows ---*/
-          if (compressible) {
-            Pressure_mirror = 2.0*node[iPoint]->GetPressure() - node[Point_Normal]->GetPressure();
-            Diff[nVar-1] = (node[iPoint]->GetSolution(nVar-1) + node[iPoint]->GetPressure()) - (U_mirror[nVar-1] + Pressure_mirror);
-          }
-
-          /*--- Subtract contribution at the boundary node only ---*/
-          node[iPoint]->SubtractUnd_Lapl(Diff);
-        }
-      }
-    }
-  }
-
-  delete [] U_mirror;
-
-#endif
-
-  delete [] Diff;
 
   /*--- MPI parallelization ---*/
+  
   Set_MPI_Undivided_Laplacian(geometry, config);
+  
+  delete [] Diff;
 
 }
 
@@ -3907,24 +3873,28 @@ void CEulerSolver::SetDissipation_Switch(CGeometry *geometry, CConfig *config) {
 
   unsigned long iEdge, iPoint, jPoint;
   double Pressure_i = 0.0, Pressure_j = 0.0;
+  bool boundary_i, boundary_j;
 
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
 
   /*--- Reset variables to store the undivided pressure ---*/
+  
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     iPoint_UndLapl[iPoint] = 0.0;
     jPoint_UndLapl[iPoint] = 0.0;
   }
 
   /*--- Evaluate the pressure sensor ---*/
+  
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
     iPoint = geometry->edge[iEdge]->GetNode(0);
     jPoint = geometry->edge[iEdge]->GetNode(1);
 
     /*--- Get the pressure, or density for incompressible solvers ---*/
+    
     if (compressible) {
       Pressure_i = node[iPoint]->GetPressure();
       Pressure_j = node[jPoint]->GetPressure();
@@ -3934,92 +3904,35 @@ void CEulerSolver::SetDissipation_Switch(CGeometry *geometry, CConfig *config) {
       Pressure_j = node[jPoint]->GetDensityInc();
     }
 
-#ifdef STRUCTURED_GRID
-
-    /*--- Compute numerator and denominator ---*/
-    if (geometry->node[iPoint]->GetDomain()) {
-      iPoint_UndLapl[iPoint] += (Pressure_j - Pressure_i);
-      jPoint_UndLapl[iPoint] += (Pressure_i + Pressure_j);
-    }
-    if (geometry->node[jPoint]->GetDomain()) {
-      iPoint_UndLapl[jPoint] += (Pressure_i - Pressure_j);
-      jPoint_UndLapl[jPoint] += (Pressure_i + Pressure_j);
-    }
-
-#else
-
-    bool boundary_i = geometry->node[iPoint]->GetPhysicalBoundary();
-    bool boundary_j = geometry->node[jPoint]->GetPhysicalBoundary();
+    boundary_i = geometry->node[iPoint]->GetPhysicalBoundary();
+    boundary_j = geometry->node[jPoint]->GetPhysicalBoundary();
 
     /*--- Both points inside the domain, or both on the boundary ---*/
+    
     if ((!boundary_i && !boundary_j) || (boundary_i && boundary_j)){
       if (geometry->node[iPoint]->GetDomain()) { iPoint_UndLapl[iPoint] += (Pressure_j - Pressure_i); jPoint_UndLapl[iPoint] += (Pressure_i + Pressure_j); }
       if (geometry->node[jPoint]->GetDomain()) { iPoint_UndLapl[jPoint] += (Pressure_i - Pressure_j); jPoint_UndLapl[jPoint] += (Pressure_i + Pressure_j); }
     }
 
     /*--- iPoint inside the domain, jPoint on the boundary ---*/
+    
     if (!boundary_i && boundary_j)
       if (geometry->node[iPoint]->GetDomain()) { iPoint_UndLapl[iPoint] += (Pressure_j - Pressure_i); jPoint_UndLapl[iPoint] += (Pressure_i + Pressure_j); }
 
     /*--- jPoint inside the domain, iPoint on the boundary ---*/
+    
     if (boundary_i && !boundary_j)
       if (geometry->node[jPoint]->GetDomain()) { iPoint_UndLapl[jPoint] += (Pressure_i - Pressure_j); jPoint_UndLapl[jPoint] += (Pressure_i + Pressure_j); }
 
-#endif
-
   }
-
-#ifdef STRUCTURED_GRID
-  unsigned short iMarker;
-  unsigned long iVertex, Point_Normal;
-  double Press_mirror;
-
-  /*--- Loop over all boundaries and include an extra contribution
-   from a mirror node. Find the nearest normal, interior point
-   for a boundary node and make a linear approximation. ---*/
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-
-    if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
-        config->GetMarker_All_KindBC(iMarker) != INTERFACE_BOUNDARY &&
-        config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY &&
-        config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY) {
-
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-
-        if (geometry->node[iPoint]->GetDomain()) {
-
-          Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
-
-          if (compressible) Pressure_i = node[iPoint]->GetPressure();
-          if (incompressible || freesurface) Pressure_i = node[iPoint]->GetDensityInc();
-
-          /*--- Interpolate & compute difference in the conserved variables ---*/
-          if (compressible) {
-            Pressure_i = node[iPoint]->GetPressure();
-            Press_mirror = 2.0*Pressure_i - node[Point_Normal]->GetPressure();
-          }
-          if (incompressible || freesurface) {
-            Pressure_i = node[iPoint]->GetDensityInc();
-            Press_mirror = 2.0*Pressure_i - node[Point_Normal]->GetDensityInc();
-          }
-
-          /*--- Add contribution at the boundary node only ---*/
-          iPoint_UndLapl[iPoint] += (Press_mirror - Pressure_i);
-          jPoint_UndLapl[iPoint] += (Pressure_i + Press_mirror);
-
-        }
-      }
-    }
-  }
-
-#endif
 
   /*--- Set pressure switch for each point ---*/
+  
   for (iPoint = 0; iPoint < nPointDomain; iPoint++)
     node[iPoint]->SetSensor(fabs(iPoint_UndLapl[iPoint]) / jPoint_UndLapl[iPoint]);
 
   /*--- MPI parallelization ---*/
+  
   Set_MPI_Dissipation_Switch(geometry, config);
 
 }
@@ -4070,8 +3983,7 @@ void CEulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
   Total_CMx = 0.0;    Total_CMy = 0.0;      Total_CMz = 0.0;
   Total_CFx = 0.0;    Total_CFy = 0.0;      Total_CFz = 0.0;
   Total_CT = 0.0;     Total_CQ = 0.0;       Total_CMerit = 0.0;
-  Total_CNearFieldOF = 0.0;
-  Total_Heat = 0.0;  Total_MaxHeat = 0.0;
+  Total_CNearFieldOF = 0.0; Total_Heat = 0.0;  Total_MaxHeat = 0.0;
 
   AllBound_CDrag_Inv = 0.0;   AllBound_CLift_Inv = 0.0; AllBound_CSideForce_Inv = 0.0;   AllBound_CEff_Inv = 0.0;
   AllBound_CMx_Inv = 0.0;     AllBound_CMy_Inv = 0.0;   AllBound_CMz_Inv = 0.0;
@@ -5689,6 +5601,12 @@ void CEulerSolver::GetEngine_Properties(CGeometry *geometry, CConfig *config, un
     else Exhaust_Temperature_Total[iMarker_EngineExhaust] = 0.0;
     if (Exhaust_Area_Total[iMarker_EngineExhaust] != 0.0) Exhaust_Pressure_Total[iMarker_EngineExhaust] /= Exhaust_Area_Total[iMarker_EngineExhaust];
     else Exhaust_Pressure_Total[iMarker_EngineExhaust] = 0.0;
+    
+    if (iMesh == MESH_0) {
+      config->SetExhaust_Temperature(iMarker_EngineExhaust, Exhaust_Temperature_Total[iMarker_EngineExhaust]);
+      config->SetExhaust_Pressure(iMarker_EngineExhaust, Exhaust_Pressure_Total[iMarker_EngineExhaust]);
+    }
+    
   }
 
   bool write_heads = (((config->GetExtIter() % (config->GetWrt_Con_Freq()*20)) == 0));
@@ -7902,15 +7820,38 @@ void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_conta
   unsigned short iDim;
   unsigned long iVertex, iPoint;
   double Exhaust_Pressure, Exhaust_Temperature, Velocity[3], Velocity2, H_Exhaust, Temperature, Riemann, Area, UnitNormal[3], Pressure, Density, Energy, Mach2, SoundSpeed2, SoundSpeed_Exhaust2, Vel_Mag, alpha, aa, bb, cc, dd, Flow_Dir[3];
-  double *V_exhaust, *V_domain;
+  double *V_exhaust, *V_domain, Target_Exhaust_Pressure, Exhaust_Pressure_old, Exhaust_Pressure_inc;
+  
   double Gas_Constant = config->GetGas_ConstantND();
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool viscous = config->GetViscous();
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   bool tkeNeeded = ((config->GetKind_Solver() == RANS) && (config->GetKind_Turb_Model() == SST));
+  double DampingFactor = config->GetDamp_Engine_Exhaust();
 
   double *Normal = new double[nDim];
 
+  /*--- Retrieve the specified exhaust pressure in the engine (non-dimensional). ---*/
+  
+  Target_Exhaust_Pressure = config->GetExhaust_Pressure_Target(Marker_Tag) / config->GetPressure_Ref();
+  
+  /*--- Retrieve the old exhaust pressure in the engine exhaust (this has been computed in a preprocessing). ---*/
+  
+  Exhaust_Pressure_old = config->GetExhaust_Pressure(Marker_Tag);
+  
+  /*--- Compute the Pressure increment ---*/
+  
+  Exhaust_Pressure_inc = ((Exhaust_Pressure_old/Target_Exhaust_Pressure) - 1.0) * config->GetPressure_FreeStreamND();
+  
+  /*--- Estimate the new Bleed pressure ---*/
+  
+  Exhaust_Pressure = (1.0 - DampingFactor)*Exhaust_Pressure_old + DampingFactor * (Exhaust_Pressure_old + Exhaust_Pressure_inc);
+  
+  /*--- Retrieve the specified total conditions for this inlet. ---*/
+  
+  Exhaust_Temperature  = config->GetExhaust_Temperature_Target(Marker_Tag);
+  Exhaust_Temperature /= config->GetTemperature_Ref();
+  
   /*--- Loop over all the vertices on this boundary marker ---*/
   
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -7945,16 +7886,6 @@ void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_conta
       /*--- Subsonic inflow: there is one outgoing characteristic (u-c),
        therefore we can specify all but one state variable at the inlet.
        The outgoing Riemann invariant provides the final piece of info. ---*/
-
-      /*--- Retrieve the specified total conditions for this inlet. ---*/
-      
-      Exhaust_Pressure  = config->GetNozzle_Ptotal(Marker_Tag);
-      Exhaust_Temperature  = config->GetNozzle_Ttotal(Marker_Tag);
-
-      /*--- Non-dim. the inputs if necessary. ---*/
-      
-      Exhaust_Pressure /= config->GetPressure_Ref();
-      Exhaust_Temperature /= config->GetTemperature_Ref();
 
       /*--- Store primitives and set some variables for clarity. ---*/
       
@@ -8133,7 +8064,7 @@ void CEulerSolver::BC_Engine_Bleed(CGeometry *geometry, CSolver **solver_contain
   double *V_bleed, *V_domain;
   double Gas_Constant = config->GetGas_ConstantND();
   
-    double DampingFactor = config->GetDamp_Engine_Bleed();
+  double DampingFactor = config->GetDamp_Engine_Bleed();
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool viscous = config->GetViscous();
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
