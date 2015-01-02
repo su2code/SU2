@@ -145,7 +145,8 @@ private:
 	nMarker_Inlet,					/*!< \brief Number of inlet flow markers. */
 	nMarker_Riemann,					/*!< \brief Number of Riemann flow markers. */
 	nMarker_Supersonic_Inlet,					/*!< \brief Number of supersonic inlet flow markers. */
-	nMarker_Outlet,					/*!< \brief Number of outlet flow markers. */
+  nMarker_Supersonic_Outlet,					/*!< \brief Number of supersonic outlet flow markers. */
+  nMarker_Outlet,					/*!< \brief Number of outlet flow markers. */
 	nMarker_Out_1D,         /*!< \brief Number of outlet flow markers over which to calculate 1D outputs */
 	nMarker_Isothermal,     /*!< \brief Number of isothermal wall boundaries. */
   nMarker_IsothermalNonCatalytic, /*!< \brief Number of constant temperature wall boundaries. */
@@ -181,7 +182,8 @@ private:
 	*Marker_Inlet,					/*!< \brief Inlet flow markers. */
 	*Marker_Riemann,					/*!< \brief Riemann markers. */
 	*Marker_Supersonic_Inlet,					/*!< \brief Supersonic inlet flow markers. */
-	*Marker_Outlet,					/*!< \brief Outlet flow markers. */
+  *Marker_Supersonic_Outlet,					/*!< \brief Supersonic outlet flow markers. */
+  *Marker_Outlet,					/*!< \brief Outlet flow markers. */
 	*Marker_Out_1D,         /*!< \brief Outlet flow markers over which to calculate 1D output. */
 	*Marker_Isothermal,     /*!< \brief Isothermal wall markers. */
   *Marker_IsothermalNonCatalytic,     /*!< \brief Isothermal wall markers. */

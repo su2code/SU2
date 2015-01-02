@@ -93,7 +93,7 @@ void CConfig::SetPointersNull(void){
   Marker_Dirichlet=NULL;      Marker_Dirichlet_Elec=NULL;   Marker_Inlet=NULL;
   Marker_Supersonic_Inlet=NULL;    Marker_Outlet=NULL;      Marker_Out_1D=NULL;
   Marker_Isothermal=NULL;     Marker_HeatFlux=NULL;         Marker_EngineInflow=NULL;
-  Marker_EngineBleed=NULL;
+  Marker_EngineBleed=NULL;  Marker_Supersonic_Outlet=NULL;
   Marker_IsothermalCatalytic=NULL; Marker_IsothermalNonCatalytic=NULL;
   Marker_HeatFluxNonCatalytic=NULL; Marker_HeatFluxCatalytic=NULL;
   Marker_EngineExhaust=NULL; Marker_Displacement=NULL;     Marker_Load=NULL;
@@ -459,6 +459,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    *  DESCRIPTION: Supersonic inlet boundary marker(s) \n   Format: (inlet marker, temperature, static pressure, velocity_x,   velocity_y, velocity_z, ... ), i.e. primitive variables specified. \ingroup Config*/
   addInletOption("MARKER_SUPERSONIC_INLET", nMarker_Supersonic_Inlet, Marker_Supersonic_Inlet,
                  Inlet_Temperature, Inlet_Pressure, Inlet_Velocity);
+  /* DESCRIPTION: Supersonic outlet boundary marker(s) */
+  addStringListOption("MARKER_SUPERSONIC_OUTLET", nMarker_Supersonic_Outlet, Marker_Supersonic_Outlet);
   /*!\par MARKER_OUTLET
    *  DESCRIPTION: Outlet boundary marker(s)\n
    Format: ( outlet marker, back pressure (static), ... ) \ingroup Config*/
@@ -2869,7 +2871,7 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
   /*--- Boundary (marker) treatment ---*/
   
   nMarker_All = nMarker_Euler + nMarker_FarField + nMarker_SymWall +
-  nMarker_PerBound + nMarker_NearFieldBound + nMarker_Supersonic_Inlet +
+  nMarker_PerBound + nMarker_NearFieldBound + nMarker_Supersonic_Inlet + nMarker_Supersonic_Outlet +
   nMarker_InterfaceBound + nMarker_Dirichlet + nMarker_Neumann + nMarker_Riemann+ nMarker_Inlet +
   nMarker_Outlet + nMarker_Isothermal + nMarker_IsothermalCatalytic +
   nMarker_IsothermalNonCatalytic + nMarker_HeatFlux + nMarker_HeatFluxCatalytic +
@@ -2898,7 +2900,7 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
   iMarker_HeatFluxCatalytic, iMarker_EngineInflow, iMarker_EngineBleed, iMarker_EngineExhaust,
   iMarker_Displacement, iMarker_Load, iMarker_FlowLoad, iMarker_Neumann,
   iMarker_Monitoring, iMarker_Designing, iMarker_GeoEval, iMarker_Plotting,
-  iMarker_DV, iMarker_Moving, iMarker_Supersonic_Inlet,
+  iMarker_DV, iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet,
   iMarker_ActDisk_Inlet, iMarker_ActDisk_Outlet, iMarker_Out_1D;
 
   for (iMarker_All = 0; iMarker_All < nMarker_All; iMarker_All++) {
@@ -2921,7 +2923,7 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
   nMarker_Outlet + nMarker_Isothermal + nMarker_IsothermalNonCatalytic +
   nMarker_IsothermalCatalytic + nMarker_HeatFlux + nMarker_HeatFluxNonCatalytic +
   nMarker_HeatFluxCatalytic + nMarker_EngineInflow + nMarker_EngineBleed + nMarker_EngineExhaust +
-  nMarker_Supersonic_Inlet + nMarker_Displacement + nMarker_Load +
+  nMarker_Supersonic_Inlet + nMarker_Supersonic_Outlet + nMarker_Displacement + nMarker_Load +
   nMarker_FlowLoad + nMarker_Custom +
   nMarker_ActDisk_Inlet + nMarker_ActDisk_Outlet + nMarker_Out_1D;
 
@@ -3063,6 +3065,12 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
     Marker_CfgFile_KindBC[iMarker_Config] = SUPERSONIC_INLET;
     iMarker_Config++;
   }
+  
+  for (iMarker_Supersonic_Outlet = 0; iMarker_Supersonic_Outlet < nMarker_Supersonic_Outlet; iMarker_Supersonic_Outlet++) {
+    Marker_CfgFile_TagBound[iMarker_Config] = Marker_Supersonic_Outlet[iMarker_Supersonic_Outlet];
+    Marker_CfgFile_KindBC[iMarker_Config] = SUPERSONIC_OUTLET;
+    iMarker_Config++;
+  }
 
   for (iMarker_Neumann = 0; iMarker_Neumann < nMarker_Neumann; iMarker_Neumann++) {
     Marker_CfgFile_TagBound[iMarker_Config] = Marker_Neumann[iMarker_Neumann];
@@ -3198,7 +3206,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   iMarker_EngineInflow, iMarker_EngineBleed, iMarker_EngineExhaust, iMarker_Displacement,
   iMarker_Load, iMarker_FlowLoad,  iMarker_Neumann, iMarker_Monitoring,
   iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_DV,
-  iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_ActDisk_Inlet,
+  iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet, iMarker_ActDisk_Inlet,
   iMarker_ActDisk_Outlet;
 
   
@@ -4412,6 +4420,15 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       else cout <<"."<< endl;
     }
   }
+  
+  if (nMarker_Supersonic_Outlet != 0) {
+    cout << "Supersonic outlet boundary marker(s): ";
+    for (iMarker_Supersonic_Outlet = 0; iMarker_Supersonic_Outlet < nMarker_Supersonic_Outlet; iMarker_Supersonic_Outlet++) {
+      cout << Marker_Supersonic_Outlet[iMarker_Supersonic_Outlet];
+      if (iMarker_Supersonic_Outlet < nMarker_Supersonic_Outlet-1) cout << ", ";
+      else cout <<"."<< endl;
+    }
+  }
 
   if (nMarker_Outlet != 0) {
     cout << "Outlet boundary marker(s): ";
@@ -5114,6 +5131,7 @@ CConfig::~CConfig(void) {
   if (Marker_Dirichlet_Elec!=NULL )     delete[] Marker_Dirichlet_Elec;
   if (Marker_Inlet!=NULL )              delete[] Marker_Inlet;
   if (Marker_Supersonic_Inlet!=NULL )   delete[] Marker_Supersonic_Inlet;
+  if (Marker_Supersonic_Outlet!=NULL )   delete[] Marker_Supersonic_Outlet;
   if (Marker_Outlet!=NULL )             delete[] Marker_Outlet;
   if (Marker_Out_1D!=NULL )             delete[] Marker_Out_1D;
   if (Marker_Isothermal!=NULL )         delete[] Marker_Isothermal;
