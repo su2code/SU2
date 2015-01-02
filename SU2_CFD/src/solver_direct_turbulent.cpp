@@ -997,23 +997,28 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
   Gamma_Minus_One = Gamma - 1.0;
   
   /*--- Dimension of the problem --> dependent of the turbulent model ---*/
+  
   nVar = 1;
   nPoint = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
   
   /*--- Define geometry constants in the solver structure ---*/
+  
   nDim = geometry->GetnDim();
   node = new CVariable*[nPoint];
   
   /*--- Single grid simulation ---*/
+  
   if (iMesh == MESH_0) {
     
     /*--- Define some auxiliar vector related with the residual ---*/
+    
     Residual = new double[nVar]; Residual_RMS = new double[nVar];
     Residual_i = new double[nVar]; Residual_j = new double[nVar];
     Residual_Max = new double[nVar];
     
     /*--- Define some structures for locating max residuals ---*/
+    
     Point_Max = new unsigned long[nVar];
     for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar] = 0;
     Point_Max_Coord = new double*[nVar];
@@ -1023,16 +1028,20 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
     }
     
     /*--- Define some auxiliar vector related with the solution ---*/
+    
     Solution = new double[nVar];
     Solution_i = new double[nVar]; Solution_j = new double[nVar];
     
     /*--- Define some auxiliar vector related with the geometry ---*/
+    
     Vector_i = new double[nDim]; Vector_j = new double[nDim];
     
     /*--- Define some auxiliar vector related with the flow solution ---*/
+    
     FlowPrimVar_i = new double [nDim+7]; FlowPrimVar_j = new double [nDim+7];
     
     /*--- Jacobians and vector structures for implicit computations ---*/
+    
     Jacobian_i = new double* [nVar];
     Jacobian_j = new double* [nVar];
     for (iVar = 0; iVar < nVar; iVar++) {
@@ -1041,6 +1050,7 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
     }
     
     /*--- Initialization of the structure of the whole Jacobian ---*/
+    
     if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (SA model)." << endl;
     Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
     
@@ -1061,12 +1071,15 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
     }
     
     /*--- Computation of gradients by least squares ---*/
+    
     if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
       /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
       Smatrix = new double* [nDim];
       for (iDim = 0; iDim < nDim; iDim++)
         Smatrix[iDim] = new double [nDim];
+      
       /*--- c vector := transpose(WA)*(Wb) ---*/
+      
       cvector = new double* [nVar];
       for (iVar = 0; iVar < nVar; iVar++)
         cvector[iVar] = new double [nDim];
@@ -1074,7 +1087,8 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
     
   }
   
-  /* --- Initialize lower and upper limits--- */
+  /*--- Initialize lower and upper limits--- */
+  
   lowerlimit = new double[nVar];
   upperlimit = new double[nVar];
   
@@ -1082,10 +1096,12 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
   upperlimit[0] = 1.0;
   
   /*--- Read farfield conditions from config ---*/
+  
   Density_Inf   = config->GetDensity_FreeStreamND();
   Viscosity_Inf = config->GetViscosity_FreeStreamND();
   
   /*--- Factor_nu_Inf in [3.0, 5.0] ---*/
+  
   Factor_nu_Inf = config->GetNuFactor_FreeStream();
   nu_tilde_Inf  = Factor_nu_Inf*Viscosity_Inf/Density_Inf;
 
