@@ -85,10 +85,10 @@ class Config(ordered_bunch):
         # read config if it exists
         if filename:
             try:
-                self.read(filename)
+                self.read(filename)	# is really read with IO Exceptions, and process with Asserts
             except IOError:
                 print 'Could not find config file: %s' % filename
-	    except:
+	    except:			# for asserts that test validity of user modified config file
 		print 'Unexpected error: ',sys.exc_info()[0]
 		raise
         
