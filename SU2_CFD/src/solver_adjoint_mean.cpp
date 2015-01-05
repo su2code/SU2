@@ -4402,7 +4402,19 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
             }
             Psi_outlet[nDim+1]=dpterm*(-2*Vn_Exit*(Gamma-1));
           }
+          /*--- Total Pressure term. NOTE: this is AREA averaged
+           * Additional terms are added later (as they are common between subsonic,
+           * supersonic equations) ---*/
+          if (config->GetKind_ObjFunc() == AVG_TOTAL_PRESSURE){
+            Psi_outlet[nDim+1]=-Gamma_Minus_One*(5*Velocity2-4*Vn*Vn*Gamma_Minus_One)/2/(SoundSpeed-Vn)/(SoundSpeed+Vn)/Vn;
+            Psi_outlet[0] = 0.5*Psi_outlet[nDim+1]*Velocity2;
+            for (iDim = 0; iDim < nDim; iDim++) {
+              Psi_outlet[0]   += Psi_outlet[nDim+1]*a1*Velocity[iDim]*UnitNormal[iDim];
+              Psi_outlet[iDim+1] = -Psi_outlet[nDim+1]*(a1*UnitNormal[iDim] + Velocity[iDim]);
+            }
+          }
         } else {
+          /*---Subsonic Case(s) ---*/
           /*--- Compute Riemann constant ---*/
           Entropy = Pressure*pow(1.0/Density,Gamma);
           Riemann = Vn + 2.0*SoundSpeed/Gamma_Minus_One;
@@ -4496,7 +4508,12 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
       if (config->GetKind_ObjFunc() == MASS_FLOW_RATE){
         Psi_outlet[0]+=1;
       }
-
+      /*--- For total pressure objective function. NOTE: this is AREA averaged term---*/
+      if (config->GetKind_ObjFunc() == AVG_TOTAL_PRESSURE){
+        Psi_outlet[0]+=Velocity2*(2*Vn/(SoundSpeed+Vn)-SoundSpeed/2/Vn)+2*SoundSpeed*Vn*Vn*Gamma_Minus_One/(SoundSpeed+Vn);
+        for  (iDim = 0; iDim < nDim; iDim++)
+          Psi_outlet[iDim+1]-=UnitNormal[iDim]*(Velocity2*0.5+2*(Gamma_Minus_One)*(Velocity2+SoundSpeed*Vn))/Vn/(SoundSpeed+Vn)+Velocity[iDim]*(1-2*Gamma)/Vn;
+      }
       
       /*--- Set the flow and adjoint states in the solver ---*/
       
