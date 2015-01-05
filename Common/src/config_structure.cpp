@@ -1,10 +1,17 @@
 /*!
  * \file config_structure.cpp
- * \brief Main file for reading the config file.
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.4 "eagle"
+ * \brief Main file for managing the config file
+ * \author F. Palacios, T. Economon, B. Tracey
+ * \version 3.2.7 "eagle"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ *
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -42,15 +49,15 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
   SetParsing(case_filename);
 
   /*--- Configuration file postprocessing ---*/
-  
+
   SetPostprocessing(val_software, val_iZone, val_nDim);
 
-  /*--- Configuration file boundaries/markers seting ---*/
+  /*--- Configuration file boundaries/markers setting ---*/
   
   SetMarkers(val_software, val_iZone);
 
   /*--- Configuration file output ---*/
-  
+
   if ((rank == MASTER_NODE) && (verb_level == VERB_HIGH) && (val_iZone != 1))
     SetOutput(val_software, val_iZone);
 
@@ -85,21 +92,24 @@ void CConfig::SetPointersNull(void){
   Marker_PerDonor=NULL;       Marker_NearFieldBound=NULL;   Marker_InterfaceBound=NULL;
   Marker_Dirichlet=NULL;      Marker_Dirichlet_Elec=NULL;   Marker_Inlet=NULL;
   Marker_Supersonic_Inlet=NULL;    Marker_Outlet=NULL;      Marker_Out_1D=NULL;
-  Marker_Isothermal=NULL;     Marker_HeatFlux=NULL;         Marker_NacelleInflow=NULL;
+  Marker_Isothermal=NULL;     Marker_HeatFlux=NULL;         Marker_EngineInflow=NULL;
+  Marker_EngineBleed=NULL;  Marker_Supersonic_Outlet=NULL;
   Marker_IsothermalCatalytic=NULL; Marker_IsothermalNonCatalytic=NULL;
   Marker_HeatFluxNonCatalytic=NULL; Marker_HeatFluxCatalytic=NULL;
-  Marker_NacelleExhaust=NULL; Marker_Displacement=NULL;     Marker_Load=NULL;
+  Marker_EngineExhaust=NULL; Marker_Displacement=NULL;     Marker_Load=NULL;
   Marker_FlowLoad=NULL;       Marker_Neumann=NULL;          Marker_Neumann_Elec=NULL;
   Marker_All_TagBound=NULL;        Marker_CfgFile_TagBound=NULL;       Marker_All_KindBC=NULL;
   Marker_CfgFile_KindBC=NULL;    Marker_All_SendRecv=NULL; Marker_All_PerBound=NULL;
 
   /*--- Boundary Condition settings ---*/
 
-  Dirichlet_Value=NULL;       Nozzle_Ttotal=NULL;
-  Nozzle_Ptotal=NULL;         Inlet_Ttotal=NULL;            Inlet_Ptotal=NULL;
+  Dirichlet_Value=NULL;       Exhaust_Temperature_Target=NULL;
+  Exhaust_Pressure_Target=NULL;         Inlet_Ttotal=NULL;            Inlet_Ptotal=NULL;
   Inlet_FlowDir=NULL;         Inlet_Temperature=NULL;       Inlet_Pressure=NULL;
-  Inlet_Velocity=NULL;        FanFace_Mach_Target=NULL;     FanFace_Mach=NULL;
-  FanFace_Pressure=NULL;      Outlet_Pressure=NULL;         Isothermal_Temperature=NULL;
+  Inlet_Velocity=NULL;        Inflow_Mach_Target=NULL;     Inflow_Mach=NULL;
+  Inflow_Pressure=NULL;       Bleed_Temperature_Target=NULL;       Bleed_Temperature=NULL;
+  Bleed_MassFlow_Target=NULL; Bleed_MassFlow=NULL;          Exhaust_Pressure=NULL; Exhaust_Temperature=NULL;
+  Bleed_Pressure=NULL;        Outlet_Pressure=NULL;         Isothermal_Temperature=NULL;
   Heat_Flux=NULL;             Displ_Value=NULL;             Load_Value=NULL;
   FlowLoad_Value=NULL;        Periodic_RotCenter=NULL;      Periodic_RotAngles=NULL;
   Periodic_Translation=NULL;  Periodic_Center=NULL;         Periodic_Rotation=NULL;
@@ -185,7 +195,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("PHYSICAL_PROBLEM", Kind_Solver, Solver_Map, NO_SOLVER);
   /*!\par MATH_PROBLEM
    *  DESCRIPTION: Mathematical problem \n  Options: DIRECT, ADJOINT \ingroup Config*/
-  addMathProblemOption("MATH_PROBLEM" , Adjoint, false , OneShot, false, Linearized, false, Restart_Flow, false);
+  addMathProblemOption("MATH_PROBLEM" , Adjoint, false , Linearized, false, Restart_Flow, false);
   /*!\par KIND_TURB_MODEL
    *  DESCRIPTION: Specify turbulence model \n Options: see \link Turb_Model_Map \endlink \n Default: NO_TURB_MODEL \ingroup Config*/
   addEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, NO_TURB_MODEL);
@@ -203,9 +213,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\par RESTART_SOL
    *  DESCRIPTION: Restart solution from native solution file \n Options: NO, YES \ingroup Config */
   addBoolOption("RESTART_SOL", Restart, false);
-  /*!\par VISUALIZE_PART
-   *  DESCRIPTION: Write a tecplot file for each partition \ingroup Config*/
-  addBoolOption("VISUALIZE_PART", Visualize_Partition, false);
   /*!\par SYSTEM_MEASUREMENTS
    *  DESCRIPTION: System of measurements \n OPTIONS: see \link Measurements_Map \endlink \n Default: SI \ingroup Config*/
   addEnumOption("SYSTEM_MEASUREMENTS", SystemMeasurements, Measurements_Map, SI);
@@ -246,9 +253,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    *  DESCRIPTION: model of the viscosity \n OPTIONS: See \link ViscosityModel_Map \endlink \n Default: SUTHERLAND \ingroup Config*/
   addEnumOption("VISCOSITY_MODEL", Kind_ViscosityModel, ViscosityModel_Map, SUTHERLAND);
 
-  /*--- Options related to Costant Viscosity Model ---*/
+  /*--- Options related to Constant Viscosity Model ---*/
 
-  /* DESCRIPTION: Critical Temperature, default value for AIR */
+  /* DESCRIPTION: default value for AIR */
   addDoubleOption("MU_CONSTANT", Mu_ConstantND , 1.716E-5);
 
   /*--- Options related to Sutherland Viscosity Model ---*/
@@ -259,6 +266,15 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("MU_T_REF", Mu_Temperature_RefND, 273.15);
   /* DESCRIPTION: Sutherland constant, default value for AIR SI */
   addDoubleOption("SUTHERLAND_CONSTANT", Mu_SND, 110.4);
+
+  /*--- Options related to Thermal Conductivity Model ---*/
+
+  addEnumOption("CONDUCTIVITY_MODEL", Kind_ConductivityModel, ConductivityModel_Map, CONSTANT_PRANDTL);
+
+ /*--- Options related to Constant Thermal Conductivity Model ---*/
+
+ /* DESCRIPTION: default value for AIR */
+  addDoubleOption("KT_CONSTANT", Kt_ConstantND , 0.0257);
 
   /* DESCRIPTION: Reynolds number (non-dimensional, based on the free-stream values) */
   addDoubleOption("REYNOLDS_NUMBER", Reynolds, 0.0);
@@ -275,6 +291,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\par MACH_NUMBER
    *  DESCRIPTION:  Mach number (non-dimensional, based on the free-stream values). 0.0 by default \ingroup Config*/
   addDoubleOption("MACH_NUMBER", Mach, 0.0);
+  /* DESCRIPTION: Init option to choose between Reynolds or thermodynamics quantities for initializing the solution */
+  addEnumOption("INIT_OPTION", Kind_InitOption, InitOption_Map, REYNOLDS);
   /* DESCRIPTION: Free-stream option to choose between density and temperature for initializing the solution */
   addEnumOption("FREESTREAM_OPTION", Kind_FreeStreamOption, FreeStreamOption_Map, TEMPERATURE_FS);
   /*!\par FREESTREAM_PRESSURE
@@ -301,6 +319,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("FREESTREAM_TURBULENCEINTENSITY", TurbulenceIntensity_FreeStream, 0.05);
   /* DESCRIPTION:  */
   addDoubleOption("FREESTREAM_NU_FACTOR", NuFactor_FreeStream, 3.0);
+  /* DESCRIPTION:  */
+  addDoubleOption("ENGINE_NU_FACTOR", NuFactor_Engine, 30.0);
   /* DESCRIPTION:  */
   addDoubleOption("FREESTREAM_TURB2LAMVISCRATIO", Turb2LamViscRatio_FreeStream, 10.0);
   /* DESCRIPTION: Side-slip angle (degrees, only for compressible flows) */
@@ -440,6 +460,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    *  DESCRIPTION: Supersonic inlet boundary marker(s) \n   Format: (inlet marker, temperature, static pressure, velocity_x,   velocity_y, velocity_z, ... ), i.e. primitive variables specified. \ingroup Config*/
   addInletOption("MARKER_SUPERSONIC_INLET", nMarker_Supersonic_Inlet, Marker_Supersonic_Inlet,
                  Inlet_Temperature, Inlet_Pressure, Inlet_Velocity);
+  /* DESCRIPTION: Supersonic outlet boundary marker(s) */
+  addStringListOption("MARKER_SUPERSONIC_OUTLET", nMarker_Supersonic_Outlet, Marker_Supersonic_Outlet);
   /*!\par MARKER_OUTLET
    *  DESCRIPTION: Outlet boundary marker(s)\n
    Format: ( outlet marker, back pressure (static), ... ) \ingroup Config*/
@@ -466,19 +488,23 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Specified heat flux wall boundary marker(s)
    Format: ( Heat flux marker, wall heat flux (static), ... ) */
   addStringDoubleListOption("MARKER_HEATFLUX_CATALYTIC", nMarker_HeatFluxCatalytic, Marker_HeatFluxCatalytic, Heat_Flux);
-  /*!\par MARKER_NACELLE_INFLOW
-   *  DESCRIPTION: Nacelle inflow boundary marker(s)
+  /*!\par MARKER_ENGINE_INFLOW
+   *  DESCRIPTION: Engine inflow boundary marker(s)
    Format: ( nacelle inflow marker, fan face Mach, ... ) \ingroup Config*/
-  addStringDoubleListOption("MARKER_NACELLE_INFLOW", nMarker_NacelleInflow, Marker_NacelleInflow, FanFace_Mach_Target);
+  addStringDoubleListOption("MARKER_ENGINE_INFLOW", nMarker_EngineInflow, Marker_EngineInflow, Inflow_Mach_Target);
+  /*!\par MARKER_ENGINE_BLEED
+   *  DESCRIPTION: Engine bleed boundary marker(s)
+   Format: ( nacelle inflow marker, flux, ... ) \ingroup Config*/
+  addBleedOption("MARKER_ENGINE_BLEED", nMarker_EngineBleed, Marker_EngineBleed, Bleed_MassFlow_Target, Bleed_Temperature_Target);
   /* DESCRIPTION: Engine subsonic intake region */
-  addBoolOption("SUBSONIC_NACELLE_INFLOW", Engine_Intake, false);
+  addBoolOption("SUBSONIC_ENGINE", Engine_Intake, false);
   default_vec_6d[0] = -1E15; default_vec_6d[1] = -1E15; default_vec_6d[2] = -1E15;
   default_vec_6d[3] =  1E15; default_vec_6d[4] =  1E15; default_vec_6d[5] =  1E15;
   /* DESCRIPTION: Coordinates of the box to impose a subsonic nacellle (Xmin, Ymin, Zmin, Xmax, Ymax, Zmax) */
-  addDoubleArrayOption("SUBSONIC_NACELLE_BOX", 6, Subsonic_Nacelle_Box, default_vec_6d);
-  /* DESCRIPTION: Nacelle exhaust boundary marker(s)
+  addDoubleArrayOption("SUBSONIC_ENGINE_BOX", 6, Subsonic_Engine_Box, default_vec_6d);
+  /* DESCRIPTION: Engine exhaust boundary marker(s)
    Format: (nacelle exhaust marker, total nozzle temp, total nozzle pressure, ... )*/
-  addExhaustOption("MARKER_NACELLE_EXHAUST", nMarker_NacelleExhaust, Marker_NacelleExhaust, Nozzle_Ttotal, Nozzle_Ptotal);
+  addExhaustOption("MARKER_ENGINE_EXHAUST", nMarker_EngineExhaust, Marker_EngineExhaust, Exhaust_Temperature_Target, Exhaust_Pressure_Target);
   /* DESCRIPTION: Displacement boundary marker(s) */
   addStringDoubleListOption("MARKER_NORMAL_DISPL", nMarker_Displacement, Marker_Displacement, Displ_Value);
   /* DESCRIPTION: Load boundary marker(s) */
@@ -486,9 +512,13 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Flow load boundary marker(s) */
   addStringDoubleListOption("MARKER_FLOWLOAD", nMarker_FlowLoad, Marker_FlowLoad, FlowLoad_Value);
   /* DESCRIPTION: Damping factor for engine inlet condition */
-  addDoubleOption("DAMP_NACELLE_INFLOW", Damp_Nacelle_Inflow, 0.1);
-  /*!\par MARKER_OUT_1D
-   *  DESCRIPTION: Outlet boundary marker(s) over which to calculate 1-D flow properties \n   Format: ( outlet marker) \ingroup Config*/
+  addDoubleOption("DAMP_ENGINE_INFLOW", Damp_Engine_Inflow, 0.75);
+  /* DESCRIPTION: Damping factor for engine bleed condition */
+  addDoubleOption("DAMP_ENGINE_BLEED", Damp_Engine_Bleed, 0.01);
+  /* DESCRIPTION: Damping factor for engine exhaust condition */
+  addDoubleOption("DAMP_ENGINE_EXHAUST", Damp_Engine_Exhaust, 0.75);
+  /* DESCRIPTION: Outlet boundary marker(s) over which to calculate 1-D flow properties
+   Format: ( outlet marker) */
   addStringListOption("MARKER_OUT_1D", nMarker_Out_1D, Marker_Out_1D);
 
 
@@ -613,20 +643,16 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("CAUCHY_FUNC_ADJFLOW", Cauchy_Func_AdjFlow, Sens_Map, SENS_GEOMETRY);
   /* DESCRIPTION: Linearized functional for the Cauchy criteria */
   addEnumOption("CAUCHY_FUNC_LIN", Cauchy_Func_LinFlow, Linear_Obj_Map, DELTA_DRAG_COEFFICIENT);
-  /* DESCRIPTION: Epsilon for a full multigrid method evaluation */
-  addDoubleOption("FULLMG_CAUCHY_EPS", Cauchy_Eps_FullMG, 1E-4);
 
   /* CONFIG_CATEGORY: Multi-grid */
   /*--- Options related to Multi-grid ---*/
 
-  /* DESCRIPTION: Full multi-grid  */
-  addBoolOption("FULLMG", FullMG, false);
   /* DESCRIPTION: Start up iterations using the fine grid only */
   addUnsignedShortOption("START_UP_ITER", nStartUpIter, 0);
   /* DESCRIPTION: Multi-grid Levels */
   addUnsignedShortOption("MGLEVEL", nMultiLevel, 3);
-  /* DESCRIPTION: Multi-grid Cycle (0 = V cycle, 1 = W Cycle) */
-  addUnsignedShortOption("MGCYCLE", MGCycle, 0);
+  /* DESCRIPTION: Multi-grid cycle */
+  addEnumOption("MGCYCLE", MGCycle, MG_Cycle_Map, V_CYCLE);
   /* DESCRIPTION: Multi-grid pre-smoothing level */
   addUShortListOption("MG_PRE_SMOOTH", nMG_PreSmooth, MG_PreSmooth);
   /* DESCRIPTION: Multi-grid post-smoothing level */
@@ -735,6 +761,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /* DESCRIPTION: Limit value for the adjoint variable */
   addDoubleOption("LIMIT_ADJFLOW", AdjointLimit, 1E6);
+  /* DESCRIPTION: Multigrid with the adjoint problem */
+  addBoolOption("MG_ADJFLOW", MG_AdjointFlow, true);
   /*!\par OBJECTIVE_FUNCTION
    *  DESCRIPTION: Adjoint problem boundary condition \n OPTIONS: see \link Objective_Map \endlink \n Default: DRAG_COEFFICIENT \ingroup Config*/
   addEnumOption("OBJECTIVE_FUNCTION", Kind_ObjFunc, Objective_Map, DRAG_COEFFICIENT);
@@ -798,8 +826,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\par CONV_FILENAME
    *  DESCRIPTION: Output file convergence history (w/o extension) \n Default: history \ingroup Config*/
   addStringOption("CONV_FILENAME", Conv_FileName, string("history"));
-  /*!\par SOLUTION_FLOW_FILENAME
-   *  DESCRIPTION: Restart flow input file (the file output under the filename set by RESTART_FLOW_FILENAME) \n Default: solution_flow.dat \ingroup Config */
+  /* DESCRIPTION: Output file forces breakdown */
+  addStringOption("BREAKDOWN_FILENAME", Breakdown_FileName, string("forces_breakdown.dat"));
+    /*!\par SOLUTION_FLOW_FILENAME
+     *  DESCRIPTION: Restart flow input file (the file output under the filename set by RESTART_FLOW_FILENAME) \n Default: solution_flow.dat \ingroup Config */
   addStringOption("SOLUTION_FLOW_FILENAME", Solution_FlowFileName, string("solution_flow.dat"));
   /*!\par SOLUTION_LIN_FILENAME
    *  DESCRIPTION: Restart linear flow input file \ingroup Config*/
@@ -864,8 +894,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("WRT_SRF_SOL", Wrt_Srf_Sol, true);
   /* DESCRIPTION: Write a surface CSV solution file */
   addBoolOption("WRT_CSV_SOL", Wrt_Csv_Sol, true);
-  /* DESCRIPTION: Write a restart solution file */
-  addBoolOption("WRT_RESTART", Wrt_Restart, true);
   /* DESCRIPTION: Output residual info to solution/restart file */
   addBoolOption("WRT_RESIDUALS", Wrt_Residuals, false);
   /* DESCRIPTION: Output residual info to solution/restart file */
@@ -877,9 +905,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\par ONE_D_OUTPUT
    *  DESCRIPTION: Output averaged stagnation pressure on specified exit marker. \n Use with MARKER_OUT_1D. \ingroup Config*/
   addBoolOption("ONE_D_OUTPUT", Wrt_1D_Output, false);
-  if (Kind_ObjFunc== AVG_OUTLET_PRESSURE){
-    Wrt_1D_Output = true;
-  }
+  /* DESCRIPTION: Verbosity level for console output */
+  addEnumOption("CONSOLE_OUTPUT_VERBOSITY", Console_Output_Verb, Verb_Map, VERB_HIGH);
+
   /* CONFIG_CATEGORY: Dynamic mesh definition */
   /*--- Options related to dynamic meshes ---*/
 
@@ -1127,7 +1155,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Evaluate inverse design on the surface  */
   addBoolOption("INV_DESIGN_HEATFLUX", InvDesign_HeatFlux, false);
 
-
   /* CONFIG_CATEGORY: Unsupported options */
   /*--- Options that are experimental and not intended for general use ---*/
 
@@ -1164,6 +1191,15 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Setup for design variables */
   addPythonOption("DEFINITION_DV");
 
+  /* DESCRIPTION: Maximum number of iterations */
+  addPythonOption("OPT_ITERATIONS");
+  
+  /* DESCRIPTION: Requested accuracy */
+  addPythonOption("OPT_ACCURACY");
+  
+  /* DESCRIPTION: Setup for design variables */
+  addPythonOption("BOUND_DV");
+  
   /* DESCRIPTION: Current value of the design variables */
   addPythonOption("DV_VALUE_NEW");
 
@@ -1196,16 +1232,22 @@ void CConfig::SetParsing(char case_filename[MAX_STRING_SIZE]) {
   string text_line, option_name;
   ifstream case_file;
   vector<string> option_value;
-
+  int rank = MASTER_NODE;
+  
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+  
   /*--- Read the configuration file ---*/
   case_file.open(case_filename, ios::in);
 
   if (case_file.fail()) {
-    cout << "There is no configuration file!!" << endl;
+    if (rank == MASTER_NODE) cout << endl << "The configuration file (.cfg) is missing!!" << endl << endl;
     exit(EXIT_FAILURE);
   }
 
   string errorString;
+
   int  err_count = 0;  // How many errors have we found in the config file
   int max_err_count = 30; // Maximum number of errors to print before stopping
 
@@ -1229,6 +1271,7 @@ void CConfig::SetParsing(char case_filename[MAX_STRING_SIZE]) {
           string newString;
           newString.append(option_name);
           newString.append(": invalid option name");
+          newString.append(". Check current SU2 options in config_template.cfg.");
           newString.append("\n");
           errorString.append(newString);
           err_count++;
@@ -1264,7 +1307,7 @@ void CConfig::SetParsing(char case_filename[MAX_STRING_SIZE]) {
   // See if there were any errors parsing the config file
   if (errorString.size() != 0){
 //    SU2MPI::PrintAndFinalize(errorString);
-    cout << errorString << endl;
+    if (rank == MASTER_NODE) cout << errorString << endl;
     exit(EXIT_FAILURE);
   }
 
@@ -1277,801 +1320,864 @@ void CConfig::SetParsing(char case_filename[MAX_STRING_SIZE]) {
 }
 
 void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_izone, unsigned short val_nDim) {
-
-  unsigned short iZone, iCFL;
-
-  int size = SINGLE_NODE;
+    
+    unsigned short iZone, iCFL;
+    bool ideal_gas       = (Kind_FluidModel == STANDARD_AIR || Kind_FluidModel == IDEAL_GAS );
+    bool standard_air       = (Kind_FluidModel == STANDARD_AIR);
+    
+    int size = SINGLE_NODE;
 #ifdef HAVE_MPI
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
-
+    
 #ifndef HAVE_TECIO
-  if (Output_FileFormat == TECPLOT_BINARY) {
-    cout << "Tecplot binary file requested but SU2 was built without TecIO support." << "\n";
-    Output_FileFormat = TECPLOT;
-  }
+    if (Output_FileFormat == TECPLOT_BINARY) {
+        cout << "Tecplot binary file requested but SU2 was built without TecIO support." << "\n";
+        Output_FileFormat = TECPLOT;
+    }
 #endif
-
-  /*--- Store the SU2 module that we are executing. ---*/
-
-  Kind_SU2 = val_software;
-
-  /*--- Only SU2_PRT, and SU2_CFD work with CGNS ---*/
-
-  if ((Kind_SU2 != SU2_PRT) && (Kind_SU2 != SU2_CFD) && (Kind_SU2 != SU2_SOL)) {
-    if (Mesh_FileFormat == CGNS) {
-      cout << "This software is not prepared for CGNS, please switch to SU2" << endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  
-  /*--- Initialize non-physical points/reconstructions to zero ---*/
-  Nonphys_Points   = 0;
-  Nonphys_Reconstr = 0;
-  
-
-  /*--- Don't do any deformation if there is no Design variable information ---*/
-
-  if (Design_Variable == NULL) {
-    Design_Variable = new unsigned short [1];
-    nDV = 1; Design_Variable[0] = NONE;
-  }
-
-  /*--- If multiple processors the grid should be always in native .su2 format ---*/
-
-  if ((size > SINGLE_NODE) && ((Kind_SU2 == SU2_CFD) || (Kind_SU2 == SU2_SOL))) Mesh_FileFormat = SU2;
-
-  /*--- Don't divide the numerical grid unless running SU2_DEF ---*/
-
-  if (Kind_SU2 != SU2_DEF) Divide_Element = false;
-
-  /*--- Identification of free-surface problem, this problems are always unsteady and incompressible. ---*/
-
-  if (Kind_Regime == FREESURFACE) {
-    if (Unsteady_Simulation != DT_STEPPING_2ND) Unsteady_Simulation = DT_STEPPING_1ST;
-  }
-
-  if (Kind_Solver == POISSON_EQUATION) {
-    Unsteady_Simulation = STEADY;
-  }
-
-  /*--- Set the number of external iterations to 1 for the steady state problem ---*/
-
-  if ((Kind_Solver == LINEAR_ELASTICITY) || (Kind_Solver == HEAT_EQUATION) ||
-      (Kind_Solver == WAVE_EQUATION) || (Kind_Solver == POISSON_EQUATION)) {
-    nMultiLevel = 0;
-    if (Unsteady_Simulation == STEADY) nExtIter = 1;
-    else Unst_nIntIter = 2;
-  }
-
-  /*--- Decide whether we should be writing unsteady solution files. ---*/
-
-  if (Unsteady_Simulation == STEADY ||
-      Unsteady_Simulation == TIME_STEPPING ||
-      Unsteady_Simulation == TIME_SPECTRAL  ||
-      Kind_Regime == FREESURFACE) { Wrt_Unsteady = false; }
-  else { Wrt_Unsteady = true; }
-
-  /*--- Set grid movement kind to NO_MOVEMENT if not specified, which means
-   that we also set the Grid_Movement flag to false. We initialize to the
-   number of zones here, because we are guaranteed to at least have one. ---*/
-
-  if (Kind_GridMovement == NULL) {
-    Kind_GridMovement = new unsigned short[nZone];
-    for (unsigned short iZone = 0; iZone < nZone; iZone++ )
-      Kind_GridMovement[iZone] = NO_MOVEMENT;
-    if (Grid_Movement == true) {
-      cout << "GRID_MOVEMENT = YES but no type provided in GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  /*--- If we're solving a purely steady problem with no prescribed grid
-   movement (both rotating frame and moving walls can be steady), make sure that
-   there is no grid motion ---*/
-
-  if ((Kind_SU2 == SU2_CFD || Kind_SU2 == SU2_SOL) &&
-      (Unsteady_Simulation == STEADY) &&
-      ((Kind_GridMovement[ZONE_0] != MOVING_WALL) &&
-       (Kind_GridMovement[ZONE_0] != ROTATING_FRAME)))
-    Grid_Movement = false;
-
-  /*--- If it is not specified, set the mesh motion mach number
-   equal to the freestream value. ---*/
-
-  if (Grid_Movement && Mach_Motion == 0.0)
-    Mach_Motion = Mach;
-
-  /*--- Set the boolean flag if we are in a rotating frame (source term). ---*/
-
-  if (Grid_Movement && Kind_GridMovement[ZONE_0] == ROTATING_FRAME)
-    Rotating_Frame = true;
-  else
-    Rotating_Frame = false;
-
-  /*--- Check the number of moving markers against the number of grid movement
-   types provided (should be equal, except that rigid motion and rotating frame
-   do not depend on surface specification). ---*/
-
-  if (Grid_Movement && (Kind_GridMovement[ZONE_0] != RIGID_MOTION) &&
-      (Kind_GridMovement[ZONE_0] != ROTATING_FRAME) &&
-      (nGridMovement != nMarker_Moving)) {
-    cout << "Number of GRID_MOVEMENT_KIND must match number of MARKER_MOVING!!" << endl;
-    exit(EXIT_FAILURE);
-  }
-
-  /*--- Make sure that there aren't more than one rigid motion or
-   rotating frame specified in GRID_MOVEMENT_KIND. ---*/
-
-  if (Grid_Movement && (Kind_GridMovement[ZONE_0] == RIGID_MOTION) &&
-      (nGridMovement > 1)) {
-    cout << "Can not support more than one type of rigid motion in GRID_MOVEMENT_KIND!!" << endl;
-    exit(EXIT_FAILURE);
-  }
-  if (Grid_Movement && (Kind_GridMovement[ZONE_0] == ROTATING_FRAME) &&
-      (nGridMovement > 1)) {
-    cout << "Can not support more than one rotating frame in GRID_MOVEMENT_KIND!!" << endl;
-    exit(EXIT_FAILURE);
-  }
-
-  /*--- In case the grid movement parameters have not been declared in the
-   config file, set them equal to zero for safety. Also check to make sure
-   that for each option, a value has been declared for each moving marker. ---*/
-
-  unsigned short nMoving;
-  if (nGridMovement > nZone) nMoving = nGridMovement;
-  else nMoving = nZone;
-
-  /*--- Motion Origin: ---*/
-  if (Motion_Origin_X == NULL) {
-    Motion_Origin_X = new double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Motion_Origin_X[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nMotion_Origin_X != nGridMovement)) {
-      cout << "Length of MOTION_ORIGIN_X must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  if (Motion_Origin_Y == NULL) {
-    Motion_Origin_Y = new double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Motion_Origin_Y[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nMotion_Origin_Y != nGridMovement)) {
-      cout << "Length of MOTION_ORIGIN_Y must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  if (Motion_Origin_Z == NULL) {
-    Motion_Origin_Z = new double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Motion_Origin_Z[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nMotion_Origin_Z != nGridMovement)) {
-      cout << "Length of MOTION_ORIGIN_Z must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  if (MoveMotion_Origin == NULL) {
-    MoveMotion_Origin = new unsigned short[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      MoveMotion_Origin[iZone] = 0;
-  } else {
-    if (Grid_Movement && (nMoveMotion_Origin != nGridMovement)) {
-      cout << "Length of MOVE_MOTION_ORIGIN must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  /*--- Translation: ---*/
-
-  if (Translation_Rate_X == NULL) {
-    Translation_Rate_X = new double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Translation_Rate_X[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nTranslation_Rate_X != nGridMovement)) {
-      cout << "Length of TRANSLATION_RATE_X must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  if (Translation_Rate_Y == NULL) {
-    Translation_Rate_Y = new double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Translation_Rate_Y[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nTranslation_Rate_Y != nGridMovement)) {
-      cout << "Length of TRANSLATION_RATE_Y must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  if (Translation_Rate_Z == NULL) {
-    Translation_Rate_Z = new double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Translation_Rate_Z[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nTranslation_Rate_Z != nGridMovement)) {
-      cout << "Length of TRANSLATION_RATE_Z must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  /*--- Rotation: ---*/
-
-  if (Rotation_Rate_X == NULL) {
-    Rotation_Rate_X = new double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Rotation_Rate_X[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nRotation_Rate_X != nGridMovement)) {
-      cout << "Length of ROTATION_RATE_X must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  if (Rotation_Rate_Y == NULL) {
-    Rotation_Rate_Y = new double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Rotation_Rate_Y[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nRotation_Rate_Y != nGridMovement)) {
-      cout << "Length of ROTATION_RATE_Y must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  if (Rotation_Rate_Z == NULL) {
-    Rotation_Rate_Z = new double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Rotation_Rate_Z[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nRotation_Rate_Z != nGridMovement)) {
-      cout << "Length of ROTATION_RATE_Z must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  /*--- Pitching: ---*/
-
-  if (Pitching_Omega_X == NULL) {
-    Pitching_Omega_X = new double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Pitching_Omega_X[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nPitching_Omega_X != nGridMovement)) {
-      cout << "Length of PITCHING_OMEGA_X must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  if (Pitching_Omega_Y == NULL) {
-    Pitching_Omega_Y = new double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Pitching_Omega_Y[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nPitching_Omega_Y != nGridMovement)) {
-      cout << "Length of PITCHING_OMEGA_Y must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  if (Pitching_Omega_Z == NULL) {
-    Pitching_Omega_Z = new double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Pitching_Omega_Z[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nPitching_Omega_Z != nGridMovement)) {
-      cout << "Length of PITCHING_OMEGA_Z must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  /*--- Pitching Amplitude: ---*/
-
-  if (Pitching_Ampl_X == NULL) {
-    Pitching_Ampl_X = new double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Pitching_Ampl_X[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nPitching_Ampl_X != nGridMovement)) {
-      cout << "Length of PITCHING_AMPL_X must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  if (Pitching_Ampl_Y == NULL) {
-    Pitching_Ampl_Y = new double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Pitching_Ampl_Y[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nPitching_Ampl_Y != nGridMovement)) {
-      cout << "Length of PITCHING_AMPL_Y must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  if (Pitching_Ampl_Z == NULL) {
-    Pitching_Ampl_Z = new double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Pitching_Ampl_Z[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nPitching_Ampl_Z != nGridMovement)) {
-      cout << "Length of PITCHING_AMPL_Z must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  /*--- Pitching Phase: ---*/
-
-  if (Pitching_Phase_X == NULL) {
-    Pitching_Phase_X = new double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Pitching_Phase_X[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nPitching_Phase_X != nGridMovement)) {
-      cout << "Length of PITCHING_PHASE_X must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  if (Pitching_Phase_Y == NULL) {
-    Pitching_Phase_Y = new double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Pitching_Phase_Y[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nPitching_Phase_Y != nGridMovement)) {
-      cout << "Length of PITCHING_PHASE_Y must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  if (Pitching_Phase_Z == NULL) {
-    Pitching_Phase_Z = new double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Pitching_Phase_Z[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nPitching_Phase_Z != nGridMovement)) {
-      cout << "Length of PITCHING_PHASE_Z must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  /*--- Plunging: ---*/
-
-  if (Plunging_Omega_X == NULL) {
-    Plunging_Omega_X = new double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Plunging_Omega_X[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nPlunging_Omega_X != nGridMovement)) {
-      cout << "Length of PLUNGING_OMEGA_X must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  if (Plunging_Omega_Y == NULL) {
-    Plunging_Omega_Y = new double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Plunging_Omega_Y[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nPlunging_Omega_Y != nGridMovement)) {
-      cout << "Length of PLUNGING_OMEGA_Y must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  if (Plunging_Omega_Z == NULL) {
-    Plunging_Omega_Z = new double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Plunging_Omega_Z[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nPlunging_Omega_Z != nGridMovement)) {
-      cout << "Length of PLUNGING_OMEGA_Z must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  /*--- Plunging Amplitude: ---*/
-
-  if (Plunging_Ampl_X == NULL) {
-    Plunging_Ampl_X = new double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Plunging_Ampl_X[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nPlunging_Ampl_X != nGridMovement)) {
-      cout << "Length of PLUNGING_AMPL_X must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  if (Plunging_Ampl_Y == NULL) {
-    Plunging_Ampl_Y = new double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Plunging_Ampl_Y[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nPlunging_Ampl_Y != nGridMovement)) {
-      cout << "Length of PLUNGING_AMPL_Y must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  if (Plunging_Ampl_Z == NULL) {
-    Plunging_Ampl_Z = new double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Plunging_Ampl_Z[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nPlunging_Ampl_Z != nGridMovement)) {
-      cout << "Length of PLUNGING_AMPL_Z must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  /*--- Use the various rigid-motion input frequencies to determine the period to be used with time-spectral cases.
-   There are THREE types of motion to consider, namely: rotation, pitching, and plunging.
-   The largest period of motion is the one to be used for time-spectral calculations. ---*/
-
-  if (Unsteady_Simulation == TIME_SPECTRAL) {
-
-    unsigned short N_MOTION_TYPES = 3;
-    double *periods;
-    periods = new double[N_MOTION_TYPES];
-
-    /*--- rotation: ---*/
-
-    double Omega_mag_rot = sqrt(pow(Rotation_Rate_X[ZONE_0],2)+pow(Rotation_Rate_Y[ZONE_0],2)+pow(Rotation_Rate_Z[ZONE_0],2));
-    if (Omega_mag_rot > 0)
-      periods[0] = 2*PI_NUMBER/Omega_mag_rot;
-    else
-      periods[0] = 0.0;
-
-    /*--- pitching: ---*/
-
-    double Omega_mag_pitch = sqrt(pow(Pitching_Omega_X[ZONE_0],2)+pow(Pitching_Omega_Y[ZONE_0],2)+pow(Pitching_Omega_Z[ZONE_0],2));
-    if (Omega_mag_pitch > 0)
-      periods[1] = 2*PI_NUMBER/Omega_mag_pitch;
-    else
-      periods[1] = 0.0;
-
-    /*--- plunging: ---*/
-
-    double Omega_mag_plunge = sqrt(pow(Plunging_Omega_X[ZONE_0],2)+pow(Plunging_Omega_Y[ZONE_0],2)+pow(Plunging_Omega_Z[ZONE_0],2));
-    if (Omega_mag_plunge > 0)
-      periods[2] = 2*PI_NUMBER/Omega_mag_plunge;
-    else
-      periods[2] = 0.0;
-
-    /*--- determine which period is largest ---*/
-
-    unsigned short iVar;
-    TimeSpectral_Period = 0.0;
-    for (iVar = 0; iVar < N_MOTION_TYPES; iVar++) {
-      if (periods[iVar] > TimeSpectral_Period)
-        TimeSpectral_Period = periods[iVar];
-    }
-
-    delete periods;
-
-  }
-
-  /*--- Initialize the RefOriginMoment Pointer ---*/
-
-  RefOriginMoment = NULL;
-  RefOriginMoment = new double[3];
-  RefOriginMoment[0] = 0.0; RefOriginMoment[1] = 0.0; RefOriginMoment[2] = 0.0;
-
-  /*--- In case the moment origin coordinates have not been declared in the
-   config file, set them equal to zero for safety. Also check to make sure
-   that for each marker, a value has been declared for the moment origin.
-   Unless only one value was specified, then set this value for all the markers
-   being monitored. ---*/
-
-  unsigned short iMarker;
-
-  if ((nRefOriginMoment_X != nRefOriginMoment_Y) || (nRefOriginMoment_X != nRefOriginMoment_Z) ) {
-    cout << "ERROR: Length of REF_ORIGIN_MOMENT_X, REF_ORIGIN_MOMENT_Y and REF_ORIGIN_MOMENT_Z must be the same!!" << endl;
-    exit(EXIT_FAILURE);
-  }
-
-  if (RefOriginMoment_X == NULL) {
-    RefOriginMoment_X = new double[nMarker_Monitoring];
-    for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ )
-      RefOriginMoment_X[iMarker] = 0.0;
-  } else {
-    if (nRefOriginMoment_X == 1) {
-
-      double aux_RefOriginMoment_X = RefOriginMoment_X[0];
-      delete [] RefOriginMoment_X;
-      RefOriginMoment_X = new double[nMarker_Monitoring];
-      nRefOriginMoment_X = nMarker_Monitoring;
-
-      for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ )
-        RefOriginMoment_X[iMarker] = aux_RefOriginMoment_X;
-    }
-    else if (nRefOriginMoment_X != nMarker_Monitoring) {
-      cout << "ERROR: Length of REF_ORIGIN_MOMENT_X must match number of Monitoring Markers!!" << endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  if (RefOriginMoment_Y == NULL) {
-    RefOriginMoment_Y = new double[nMarker_Monitoring];
-    for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ )
-      RefOriginMoment_Y[iMarker] = 0.0;
-  } else {
-    if (nRefOriginMoment_Y == 1) {
-
-      double aux_RefOriginMoment_Y = RefOriginMoment_Y[0];
-      delete [] RefOriginMoment_Y;
-      RefOriginMoment_Y = new double[nMarker_Monitoring];
-      nRefOriginMoment_Y = nMarker_Monitoring;
-
-      for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ )
-        RefOriginMoment_Y[iMarker] = aux_RefOriginMoment_Y;
-    }
-    else if (nRefOriginMoment_Y != nMarker_Monitoring) {
-      cout << "ERROR: Length of REF_ORIGIN_MOMENT_Y must match number of Monitoring Markers!!" << endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  if (RefOriginMoment_Z == NULL) {
-    RefOriginMoment_Z = new double[nMarker_Monitoring];
-    for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ )
-      RefOriginMoment_Z[iMarker] = 0.0;
-  } else {
-    if (nRefOriginMoment_Z == 1) {
-
-      double aux_RefOriginMoment_Z = RefOriginMoment_Z[0];
-      delete [] RefOriginMoment_Z;
-      RefOriginMoment_Z = new double[nMarker_Monitoring];
-      nRefOriginMoment_Z = nMarker_Monitoring;
-
-      for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ )
-        RefOriginMoment_Z[iMarker] = aux_RefOriginMoment_Z;
-    }
-    else if (nRefOriginMoment_Z != nMarker_Monitoring) {
-      cout << "ERROR: Length of REF_ORIGIN_MOMENT_Z must match number of Monitoring Markers!!" << endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  /*--- Set the boolean flag if we are carrying out an aeroelastic simulation. ---*/
-
-  if (Grid_Movement && (Kind_GridMovement[ZONE_0] == AEROELASTIC || Kind_GridMovement[ZONE_0] == AEROELASTIC_RIGID_MOTION))
-    Aeroelastic_Simulation = true;
-  else
-    Aeroelastic_Simulation = false;
-
-  /*--- Initializing the size for the solutions of the Aeroelastic problem. ---*/
-
-
-  if (Grid_Movement && Aeroelastic_Simulation) {
-    Aeroelastic_np1.resize(nMarker_Monitoring);
-    Aeroelastic_n.resize(nMarker_Monitoring);
-    Aeroelastic_n1.resize(nMarker_Monitoring);
-    for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++) {
-      Aeroelastic_np1[iMarker].resize(2);
-      Aeroelastic_n[iMarker].resize(2);
-      Aeroelastic_n1[iMarker].resize(2);
-      for (int i =0; i<2; i++) {
-        Aeroelastic_np1[iMarker][i].resize(2);
-        Aeroelastic_n[iMarker][i].resize(2);
-        Aeroelastic_n1[iMarker][i].resize(2);
-        for (int j=0; j<2; j++) {
-          Aeroelastic_np1[iMarker][i][j] = 0.0;
-          Aeroelastic_n[iMarker][i][j] = 0.0;
-          Aeroelastic_n1[iMarker][i][j] = 0.0;
+    
+    /*--- Store the SU2 module that we are executing. ---*/
+    
+    Kind_SU2 = val_software;
+    
+    /*--- Only SU2_CFD work with CGNS ---*/
+    
+    if ((Kind_SU2 != SU2_CFD) && (Kind_SU2 != SU2_SOL)) {
+        if (Mesh_FileFormat == CGNS) {
+            cout << "This software is not prepared for CGNS, please switch to SU2" << endl;
+            exit(EXIT_FAILURE);
         }
-      }
     }
-  }
-
-  /*--- Allocate memory for the plunge and pitch and initialized them to zero ---*/
-
-  if (Grid_Movement && Aeroelastic_Simulation) {
-    Aeroelastic_pitch = new double[nMarker_Monitoring];
-    Aeroelastic_plunge = new double[nMarker_Monitoring];
-    for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ ) {
-      Aeroelastic_pitch[iMarker] = 0.0;
-      Aeroelastic_plunge[iMarker] = 0.0;
-    }
-  }
-
-  /*--- Fluid-Structure problems always have grid movement ---*/
-
-  if (Kind_Solver == FLUID_STRUCTURE_EULER ||
-      Kind_Solver == FLUID_STRUCTURE_NAVIER_STOKES) {
-    if (Kind_Turb_Model != NONE)
-      Kind_Solver = FLUID_STRUCTURE_RANS;
-    Grid_Movement = true;
-  }
-
-  if (FullMG) FinestMesh = nMultiLevel;
-  else FinestMesh = MESH_0;
-
-  if ((Kind_Solver == NAVIER_STOKES) &&
-      (Kind_Turb_Model != NONE))
-    Kind_Solver = RANS;
-
-  if (Kind_Regime == FREESURFACE) GravityForce = true;
-
-  Kappa_1st_Flow = Kappa_Flow[0];
-  Kappa_2nd_Flow = Kappa_Flow[1];
-  Kappa_4th_Flow = Kappa_Flow[2];
-  Kappa_1st_AdjFlow = Kappa_AdjFlow[0];
-  Kappa_2nd_AdjFlow = Kappa_AdjFlow[1];
-  Kappa_4th_AdjFlow = Kappa_AdjFlow[2];
-  Kappa_1st_LinFlow = Kappa_AdjFlow[0];
-  Kappa_4th_LinFlow = Kappa_AdjFlow[1];
-
-  // make the MG_PreSmooth, MG_PostSmooth, and MG_CorrecSmooth arrays consistent with nMultiLevel
-  unsigned short * tmp_smooth = new unsigned short[nMultiLevel+1];
-
-  if ((nMG_PreSmooth != nMultiLevel+1) && (nMG_PreSmooth != 0)) {
-    if (nMG_PreSmooth > nMultiLevel+1) {
-
-      // truncate by removing unnecessary elements at the end
-      for (unsigned int i = 0; i <= nMultiLevel; i++)
-        tmp_smooth[i] = MG_PreSmooth[i];
-      delete [] MG_PreSmooth;
-    } else {
-
-      // add additional elements equal to last element
-      for (unsigned int i = 0; i < nMG_PreSmooth; i++)
-        tmp_smooth[i] = MG_PreSmooth[i];
-      for (unsigned int i = nMG_PreSmooth; i <= nMultiLevel; i++)
-        tmp_smooth[i] = MG_PreSmooth[nMG_PreSmooth-1];
-      delete [] MG_PreSmooth;
-    }
-
-    nMG_PreSmooth = nMultiLevel+1;
-    MG_PreSmooth = new unsigned short[nMG_PreSmooth];
-    for (unsigned int i = 0; i < nMG_PreSmooth; i++)
-      MG_PreSmooth[i] = tmp_smooth[i];
-  }
-  if ((nMultiLevel != 0) && (nMG_PreSmooth == 0)) {
-    delete [] MG_PreSmooth;
-    nMG_PreSmooth = nMultiLevel+1;
-    MG_PreSmooth = new unsigned short[nMG_PreSmooth];
-    for (unsigned int i = 0; i < nMG_PreSmooth; i++)
-      MG_PreSmooth[i] = i+1;
-  }
-
-  if ((nMG_PostSmooth != nMultiLevel+1) && (nMG_PostSmooth != 0)) {
-    if (nMG_PostSmooth > nMultiLevel+1) {
-      // truncate by removing unnecessary elements at the end
-      for (unsigned int i = 0; i <= nMultiLevel; i++)
-        tmp_smooth[i] = MG_PostSmooth[i];
-      delete [] MG_PostSmooth;
-    } else {
-      // add additional elements equal to last element
-      for (unsigned int i = 0; i < nMG_PostSmooth; i++)
-        tmp_smooth[i] = MG_PostSmooth[i];
-      for (unsigned int i = nMG_PostSmooth; i <= nMultiLevel; i++)
-        tmp_smooth[i] = MG_PostSmooth[nMG_PostSmooth-1];
-      delete [] MG_PostSmooth;
-    }
-    nMG_PostSmooth = nMultiLevel+1;
-    MG_PostSmooth = new unsigned short[nMG_PostSmooth];
-    for (unsigned int i = 0; i < nMG_PostSmooth; i++)
-      MG_PostSmooth[i] = tmp_smooth[i];
-  }
-  if ((nMultiLevel != 0) && (nMG_PostSmooth == 0)) {
-    delete [] MG_PostSmooth;
-    nMG_PostSmooth = nMultiLevel+1;
-    MG_PostSmooth = new unsigned short[nMG_PostSmooth];
-    for (unsigned int i = 0; i < nMG_PostSmooth; i++)
-      MG_PostSmooth[i] = 0;
-  }
-
-  if ((nMG_CorrecSmooth != nMultiLevel+1) && (nMG_CorrecSmooth != 0)) {
-    if (nMG_CorrecSmooth > nMultiLevel+1) {
-      // truncate by removing unnecessary elements at the end
-      for (unsigned int i = 0; i <= nMultiLevel; i++)
-        tmp_smooth[i] = MG_CorrecSmooth[i];
-      delete [] MG_CorrecSmooth;
-    } else {
-      // add additional elements equal to last element
-      for (unsigned int i = 0; i < nMG_CorrecSmooth; i++)
-        tmp_smooth[i] = MG_CorrecSmooth[i];
-      for (unsigned int i = nMG_CorrecSmooth; i <= nMultiLevel; i++)
-        tmp_smooth[i] = MG_CorrecSmooth[nMG_CorrecSmooth-1];
-      delete [] MG_CorrecSmooth;
-    }
-    nMG_CorrecSmooth = nMultiLevel+1;
-    MG_CorrecSmooth = new unsigned short[nMG_CorrecSmooth];
-    for (unsigned int i = 0; i < nMG_CorrecSmooth; i++)
-      MG_CorrecSmooth[i] = tmp_smooth[i];
-  }
-  if ((nMultiLevel != 0) && (nMG_CorrecSmooth == 0)) {
-    delete [] MG_CorrecSmooth;
-    nMG_CorrecSmooth = nMultiLevel+1;
-    MG_CorrecSmooth = new unsigned short[nMG_CorrecSmooth];
-    for (unsigned int i = 0; i < nMG_CorrecSmooth; i++)
-      MG_CorrecSmooth[i] = 0;
-  }
-
-  // override MG Smooth parameters
-  if (nMG_PreSmooth != 0)
-    MG_PreSmooth[MESH_0] = 1;
-  if (nMG_PostSmooth != 0) {
-    MG_PostSmooth[MESH_0] = 0;
-    MG_PostSmooth[nMultiLevel] = 0;
-  }
-  if (nMG_CorrecSmooth != 0)
-    MG_CorrecSmooth[nMultiLevel] = 0;
-
-  if (Restart) FullMG = false;
-
-  if (Adjoint) {
-    if (Kind_Solver == EULER) Kind_Solver = ADJ_EULER;
-    if (Kind_Solver == NAVIER_STOKES) Kind_Solver = ADJ_NAVIER_STOKES;
-    if (Kind_Solver == RANS) Kind_Solver = ADJ_RANS;
-    if (Kind_Solver == TNE2_EULER) Kind_Solver = ADJ_TNE2_EULER;
-    if (Kind_Solver == TNE2_NAVIER_STOKES) Kind_Solver = ADJ_TNE2_NAVIER_STOKES;
-  }
-
-  if (Linearized) {
-    if (Kind_Solver == EULER) Kind_Solver = LIN_EULER;
-  }
-
-  if (Unsteady_Simulation == TIME_STEPPING) {
-    nMultiLevel = 0;
-    MGCycle = 0;
-  }
-
-  nCFL = nMultiLevel+1;
-  CFL = new double[nCFL];
-  CFL[0] = CFLFineGrid;
-  if (Adjoint) CFL[0] = CFL[0] * CFLRedCoeff_AdjFlow;
+    
+    /*--- Deactivate the multigrid in the adjoint problem ---*/
   
-  for (iCFL = 1; iCFL < nCFL; iCFL++)
-    CFL[iCFL] = CFL[iCFL-1];
-
-  if (nRKStep == 0) {
-    nRKStep = 1;
-    RK_Alpha_Step = new double[1]; RK_Alpha_Step[0] = 1.0;
-  }
-
-  if ((Kind_SU2 == SU2_CFD) && (Kind_Solver == NO_SOLVER)) {
-    cout << "PHYSICAL_PROBLEM must be set in the configuration file" << endl;
-    exit(EXIT_FAILURE);
-  }
-
-  /*--- Set a flag for viscous simulations ---*/
-
-  Viscous = (( Kind_Solver == NAVIER_STOKES          ) ||
-             ( Kind_Solver == ADJ_NAVIER_STOKES      ) ||
-             ( Kind_Solver == RANS                   ) ||
-             ( Kind_Solver == ADJ_RANS               ) ||
-             ( Kind_Solver == TNE2_NAVIER_STOKES     ) ||
-             ( Kind_Solver == ADJ_TNE2_NAVIER_STOKES )   );
-
-
-  /*--- Re-scale the length based parameters. The US system uses feet, 
-   but SU2 assumes that the grid is in inches ---*/
+    if (Adjoint && !MG_AdjointFlow) { nMultiLevel = 0; }
   
+    /*--- Initialize non-physical points/reconstructions to zero ---*/
+    
+    Nonphys_Points   = 0;
+    Nonphys_Reconstr = 0;
+    
+    /*--- Don't do any deformation if there is no Design variable information ---*/
+    
+    if (Design_Variable == NULL) {
+        Design_Variable = new unsigned short [1];
+        nDV = 1; Design_Variable[0] = NONE;
+    }
+    
+    /*--- If multiple processors the grid should be always in native .su2 format ---*/
+    
+    if ((size > SINGLE_NODE) && ((Kind_SU2 == SU2_CFD) || (Kind_SU2 == SU2_SOL))) Mesh_FileFormat = SU2;
+    
+    /*--- Don't divide the numerical grid unless running SU2_DEF ---*/
+    
+    if (Kind_SU2 != SU2_DEF) Divide_Element = false;
+    
+    /*--- Identification of free-surface problem, this problems are always unsteady and incompressible. ---*/
+    
+    if (Kind_Regime == FREESURFACE) {
+        if (Unsteady_Simulation != DT_STEPPING_2ND) Unsteady_Simulation = DT_STEPPING_1ST;
+    }
+    
+    if (Kind_Solver == POISSON_EQUATION) {
+        Unsteady_Simulation = STEADY;
+    }
+    
+    /*--- Set the number of external iterations to 1 for the steady state problem ---*/
+    
+    if ((Kind_Solver == LINEAR_ELASTICITY) || (Kind_Solver == HEAT_EQUATION) ||
+        (Kind_Solver == WAVE_EQUATION) || (Kind_Solver == POISSON_EQUATION)) {
+        nMultiLevel = 0;
+        if (Unsteady_Simulation == STEADY) nExtIter = 1;
+        else Unst_nIntIter = 2;
+    }
+    
+    /*--- Decide whether we should be writing unsteady solution files. ---*/
+    
+    if (Unsteady_Simulation == STEADY ||
+        Unsteady_Simulation == TIME_STEPPING ||
+        Unsteady_Simulation == TIME_SPECTRAL  ||
+        Kind_Regime == FREESURFACE) { Wrt_Unsteady = false; }
+    else { Wrt_Unsteady = true; }
+    
+    
+    /*--- Check for Measurement System ---*/
+    
+    if (SystemMeasurements == US && !standard_air) {
+        cout << "Only STANDARD_AIR fluid model can be used with US Measurement System" << endl;
+        exit(EXIT_FAILURE);
+    }
+    
+    /*--- Check for Convective scheme available for NICF ---*/
+    
+    if (!ideal_gas) {
+        if (Kind_ConvNumScheme_Flow != SPACE_UPWIND){
+            cout << "Only ROE Upwind scheme can be used for Not Ideal Compressible Fluids" << endl;
+            exit(EXIT_FAILURE);
+        }
+        else {
+            if (Kind_Upwind_Flow != ROE){
+                cout << "Only ROE Upwind scheme can be used for Not Ideal Compressible Fluids" << endl;
+                exit(EXIT_FAILURE);
+            }
+        }
+    }
+    
+    /*--- Check for Boundary condition available for NICF ---*/
+    
+    if (!ideal_gas) {
+        if (nMarker_Inlet != 0) {
+            cout << "Riemann Boundary conditions must be used for inlet and outlet with Not Ideal Compressible Fluids " << endl;
+            exit(EXIT_FAILURE);
+        }
+        if (nMarker_Outlet != 0) {
+            cout << "Riemann Boundary conditions must be used outlet with Not Ideal Compressible Fluids " << endl;
+            exit(EXIT_FAILURE);
+        }
+        
+        if (nMarker_FarField != 0) {
+            cout << "Far Field BC is not generalized for Not Ideal Compressible Fluids " << endl;
+            exit(EXIT_FAILURE);
+        }
+        
+    }
+    
+    /*--- Check for Boundary condition available for NICF ---*/
+    
+    if (ideal_gas) {
+        if (SystemMeasurements == US && standard_air){
+            if (Kind_ViscosityModel != SUTHERLAND){
+                cout << "Only SUTHERLAND viscosity model can be used with US Measurement  " << endl;
+                exit(EXIT_FAILURE);
+            }
+        }
+        if (Kind_ConductivityModel != CONSTANT_PRANDTL ){
+            cout << "Only CONSTANT_PRANDTL thermal conductivity model can be used with STANDARD_AIR and IDEAL_GAS" << endl;
+            exit(EXIT_FAILURE);
+        }
+        
+    }
+    
+    /*--- Set grid movement kind to NO_MOVEMENT if not specified, which means
+     that we also set the Grid_Movement flag to false. We initialize to the
+     number of zones here, because we are guaranteed to at least have one. ---*/
+    
+    if (Kind_GridMovement == NULL) {
+        Kind_GridMovement = new unsigned short[nZone];
+        for (unsigned short iZone = 0; iZone < nZone; iZone++ )
+            Kind_GridMovement[iZone] = NO_MOVEMENT;
+        if (Grid_Movement == true) {
+            cout << "GRID_MOVEMENT = YES but no type provided in GRID_MOVEMENT_KIND!!" << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    /*--- If we're solving a purely steady problem with no prescribed grid
+     movement (both rotating frame and moving walls can be steady), make sure that
+     there is no grid motion ---*/
+    
+    if ((Kind_SU2 == SU2_CFD || Kind_SU2 == SU2_SOL) &&
+        (Unsteady_Simulation == STEADY) &&
+        ((Kind_GridMovement[ZONE_0] != MOVING_WALL) &&
+         (Kind_GridMovement[ZONE_0] != ROTATING_FRAME)))
+        Grid_Movement = false;
+    
+    /*--- If it is not specified, set the mesh motion mach number
+     equal to the freestream value. ---*/
+    
+    if (Grid_Movement && Mach_Motion == 0.0)
+        Mach_Motion = Mach;
+    
+    /*--- Set the boolean flag if we are in a rotating frame (source term). ---*/
+    
+    if (Grid_Movement && Kind_GridMovement[ZONE_0] == ROTATING_FRAME)
+        Rotating_Frame = true;
+    else
+        Rotating_Frame = false;
+    
+    /*--- Check the number of moving markers against the number of grid movement
+     types provided (should be equal, except that rigid motion and rotating frame
+     do not depend on surface specification). ---*/
+    
+    if (Grid_Movement && (Kind_GridMovement[ZONE_0] != RIGID_MOTION) &&
+        (Kind_GridMovement[ZONE_0] != ROTATING_FRAME) &&
+        (nGridMovement != nMarker_Moving)) {
+        cout << "Number of GRID_MOVEMENT_KIND must match number of MARKER_MOVING!!" << endl;
+        exit(EXIT_FAILURE);
+    }
+    
+    /*--- Make sure that there aren't more than one rigid motion or
+     rotating frame specified in GRID_MOVEMENT_KIND. ---*/
+    
+    if (Grid_Movement && (Kind_GridMovement[ZONE_0] == RIGID_MOTION) &&
+        (nGridMovement > 1)) {
+        cout << "Can not support more than one type of rigid motion in GRID_MOVEMENT_KIND!!" << endl;
+        exit(EXIT_FAILURE);
+    }
+    if (Grid_Movement && (Kind_GridMovement[ZONE_0] == ROTATING_FRAME) &&
+        (nGridMovement > 1)) {
+        cout << "Can not support more than one rotating frame in GRID_MOVEMENT_KIND!!" << endl;
+        exit(EXIT_FAILURE);
+    }
+    
+    /*--- In case the grid movement parameters have not been declared in the
+     config file, set them equal to zero for safety. Also check to make sure
+     that for each option, a value has been declared for each moving marker. ---*/
+    
+    unsigned short nMoving;
+    if (nGridMovement > nZone) nMoving = nGridMovement;
+    else nMoving = nZone;
+    
+    /*--- Motion Origin: ---*/
+    if (Motion_Origin_X == NULL) {
+        Motion_Origin_X = new double[nMoving];
+        for (iZone = 0; iZone < nMoving; iZone++ )
+            Motion_Origin_X[iZone] = 0.0;
+    } else {
+        if (Grid_Movement && (nMotion_Origin_X != nGridMovement)) {
+            cout << "Length of MOTION_ORIGIN_X must match GRID_MOVEMENT_KIND!!" << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    if (Motion_Origin_Y == NULL) {
+        Motion_Origin_Y = new double[nMoving];
+        for (iZone = 0; iZone < nMoving; iZone++ )
+            Motion_Origin_Y[iZone] = 0.0;
+    } else {
+        if (Grid_Movement && (nMotion_Origin_Y != nGridMovement)) {
+            cout << "Length of MOTION_ORIGIN_Y must match GRID_MOVEMENT_KIND!!" << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    if (Motion_Origin_Z == NULL) {
+        Motion_Origin_Z = new double[nMoving];
+        for (iZone = 0; iZone < nMoving; iZone++ )
+            Motion_Origin_Z[iZone] = 0.0;
+    } else {
+        if (Grid_Movement && (nMotion_Origin_Z != nGridMovement)) {
+            cout << "Length of MOTION_ORIGIN_Z must match GRID_MOVEMENT_KIND!!" << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    if (MoveMotion_Origin == NULL) {
+        MoveMotion_Origin = new unsigned short[nMoving];
+        for (iZone = 0; iZone < nMoving; iZone++ )
+            MoveMotion_Origin[iZone] = 0;
+    } else {
+        if (Grid_Movement && (nMoveMotion_Origin != nGridMovement)) {
+            cout << "Length of MOVE_MOTION_ORIGIN must match GRID_MOVEMENT_KIND!!" << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    /*--- Translation: ---*/
+    
+    if (Translation_Rate_X == NULL) {
+        Translation_Rate_X = new double[nMoving];
+        for (iZone = 0; iZone < nMoving; iZone++ )
+            Translation_Rate_X[iZone] = 0.0;
+    } else {
+        if (Grid_Movement && (nTranslation_Rate_X != nGridMovement)) {
+            cout << "Length of TRANSLATION_RATE_X must match GRID_MOVEMENT_KIND!!" << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    if (Translation_Rate_Y == NULL) {
+        Translation_Rate_Y = new double[nMoving];
+        for (iZone = 0; iZone < nMoving; iZone++ )
+            Translation_Rate_Y[iZone] = 0.0;
+    } else {
+        if (Grid_Movement && (nTranslation_Rate_Y != nGridMovement)) {
+            cout << "Length of TRANSLATION_RATE_Y must match GRID_MOVEMENT_KIND!!" << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    if (Translation_Rate_Z == NULL) {
+        Translation_Rate_Z = new double[nMoving];
+        for (iZone = 0; iZone < nMoving; iZone++ )
+            Translation_Rate_Z[iZone] = 0.0;
+    } else {
+        if (Grid_Movement && (nTranslation_Rate_Z != nGridMovement)) {
+            cout << "Length of TRANSLATION_RATE_Z must match GRID_MOVEMENT_KIND!!" << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    /*--- Rotation: ---*/
+    
+    if (Rotation_Rate_X == NULL) {
+        Rotation_Rate_X = new double[nMoving];
+        for (iZone = 0; iZone < nMoving; iZone++ )
+            Rotation_Rate_X[iZone] = 0.0;
+    } else {
+        if (Grid_Movement && (nRotation_Rate_X != nGridMovement)) {
+            cout << "Length of ROTATION_RATE_X must match GRID_MOVEMENT_KIND!!" << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    if (Rotation_Rate_Y == NULL) {
+        Rotation_Rate_Y = new double[nMoving];
+        for (iZone = 0; iZone < nMoving; iZone++ )
+            Rotation_Rate_Y[iZone] = 0.0;
+    } else {
+        if (Grid_Movement && (nRotation_Rate_Y != nGridMovement)) {
+            cout << "Length of ROTATION_RATE_Y must match GRID_MOVEMENT_KIND!!" << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    if (Rotation_Rate_Z == NULL) {
+        Rotation_Rate_Z = new double[nMoving];
+        for (iZone = 0; iZone < nMoving; iZone++ )
+            Rotation_Rate_Z[iZone] = 0.0;
+    } else {
+        if (Grid_Movement && (nRotation_Rate_Z != nGridMovement)) {
+            cout << "Length of ROTATION_RATE_Z must match GRID_MOVEMENT_KIND!!" << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    /*--- Pitching: ---*/
+    
+    if (Pitching_Omega_X == NULL) {
+        Pitching_Omega_X = new double[nMoving];
+        for (iZone = 0; iZone < nMoving; iZone++ )
+            Pitching_Omega_X[iZone] = 0.0;
+    } else {
+        if (Grid_Movement && (nPitching_Omega_X != nGridMovement)) {
+            cout << "Length of PITCHING_OMEGA_X must match GRID_MOVEMENT_KIND!!" << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    if (Pitching_Omega_Y == NULL) {
+        Pitching_Omega_Y = new double[nMoving];
+        for (iZone = 0; iZone < nMoving; iZone++ )
+            Pitching_Omega_Y[iZone] = 0.0;
+    } else {
+        if (Grid_Movement && (nPitching_Omega_Y != nGridMovement)) {
+            cout << "Length of PITCHING_OMEGA_Y must match GRID_MOVEMENT_KIND!!" << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    if (Pitching_Omega_Z == NULL) {
+        Pitching_Omega_Z = new double[nMoving];
+        for (iZone = 0; iZone < nMoving; iZone++ )
+            Pitching_Omega_Z[iZone] = 0.0;
+    } else {
+        if (Grid_Movement && (nPitching_Omega_Z != nGridMovement)) {
+            cout << "Length of PITCHING_OMEGA_Z must match GRID_MOVEMENT_KIND!!" << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    /*--- Pitching Amplitude: ---*/
+    
+    if (Pitching_Ampl_X == NULL) {
+        Pitching_Ampl_X = new double[nMoving];
+        for (iZone = 0; iZone < nMoving; iZone++ )
+            Pitching_Ampl_X[iZone] = 0.0;
+    } else {
+        if (Grid_Movement && (nPitching_Ampl_X != nGridMovement)) {
+            cout << "Length of PITCHING_AMPL_X must match GRID_MOVEMENT_KIND!!" << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    if (Pitching_Ampl_Y == NULL) {
+        Pitching_Ampl_Y = new double[nMoving];
+        for (iZone = 0; iZone < nMoving; iZone++ )
+            Pitching_Ampl_Y[iZone] = 0.0;
+    } else {
+        if (Grid_Movement && (nPitching_Ampl_Y != nGridMovement)) {
+            cout << "Length of PITCHING_AMPL_Y must match GRID_MOVEMENT_KIND!!" << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    if (Pitching_Ampl_Z == NULL) {
+        Pitching_Ampl_Z = new double[nMoving];
+        for (iZone = 0; iZone < nMoving; iZone++ )
+            Pitching_Ampl_Z[iZone] = 0.0;
+    } else {
+        if (Grid_Movement && (nPitching_Ampl_Z != nGridMovement)) {
+            cout << "Length of PITCHING_AMPL_Z must match GRID_MOVEMENT_KIND!!" << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    /*--- Pitching Phase: ---*/
+    
+    if (Pitching_Phase_X == NULL) {
+        Pitching_Phase_X = new double[nMoving];
+        for (iZone = 0; iZone < nMoving; iZone++ )
+            Pitching_Phase_X[iZone] = 0.0;
+    } else {
+        if (Grid_Movement && (nPitching_Phase_X != nGridMovement)) {
+            cout << "Length of PITCHING_PHASE_X must match GRID_MOVEMENT_KIND!!" << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    if (Pitching_Phase_Y == NULL) {
+        Pitching_Phase_Y = new double[nMoving];
+        for (iZone = 0; iZone < nMoving; iZone++ )
+            Pitching_Phase_Y[iZone] = 0.0;
+    } else {
+        if (Grid_Movement && (nPitching_Phase_Y != nGridMovement)) {
+            cout << "Length of PITCHING_PHASE_Y must match GRID_MOVEMENT_KIND!!" << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    if (Pitching_Phase_Z == NULL) {
+        Pitching_Phase_Z = new double[nMoving];
+        for (iZone = 0; iZone < nMoving; iZone++ )
+            Pitching_Phase_Z[iZone] = 0.0;
+    } else {
+        if (Grid_Movement && (nPitching_Phase_Z != nGridMovement)) {
+            cout << "Length of PITCHING_PHASE_Z must match GRID_MOVEMENT_KIND!!" << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    /*--- Plunging: ---*/
+    
+    if (Plunging_Omega_X == NULL) {
+        Plunging_Omega_X = new double[nMoving];
+        for (iZone = 0; iZone < nMoving; iZone++ )
+            Plunging_Omega_X[iZone] = 0.0;
+    } else {
+        if (Grid_Movement && (nPlunging_Omega_X != nGridMovement)) {
+            cout << "Length of PLUNGING_OMEGA_X must match GRID_MOVEMENT_KIND!!" << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    if (Plunging_Omega_Y == NULL) {
+        Plunging_Omega_Y = new double[nMoving];
+        for (iZone = 0; iZone < nMoving; iZone++ )
+            Plunging_Omega_Y[iZone] = 0.0;
+    } else {
+        if (Grid_Movement && (nPlunging_Omega_Y != nGridMovement)) {
+            cout << "Length of PLUNGING_OMEGA_Y must match GRID_MOVEMENT_KIND!!" << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    if (Plunging_Omega_Z == NULL) {
+        Plunging_Omega_Z = new double[nMoving];
+        for (iZone = 0; iZone < nMoving; iZone++ )
+            Plunging_Omega_Z[iZone] = 0.0;
+    } else {
+        if (Grid_Movement && (nPlunging_Omega_Z != nGridMovement)) {
+            cout << "Length of PLUNGING_OMEGA_Z must match GRID_MOVEMENT_KIND!!" << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    /*--- Plunging Amplitude: ---*/
+    
+    if (Plunging_Ampl_X == NULL) {
+        Plunging_Ampl_X = new double[nMoving];
+        for (iZone = 0; iZone < nMoving; iZone++ )
+            Plunging_Ampl_X[iZone] = 0.0;
+    } else {
+        if (Grid_Movement && (nPlunging_Ampl_X != nGridMovement)) {
+            cout << "Length of PLUNGING_AMPL_X must match GRID_MOVEMENT_KIND!!" << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    if (Plunging_Ampl_Y == NULL) {
+        Plunging_Ampl_Y = new double[nMoving];
+        for (iZone = 0; iZone < nMoving; iZone++ )
+            Plunging_Ampl_Y[iZone] = 0.0;
+    } else {
+        if (Grid_Movement && (nPlunging_Ampl_Y != nGridMovement)) {
+            cout << "Length of PLUNGING_AMPL_Y must match GRID_MOVEMENT_KIND!!" << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    if (Plunging_Ampl_Z == NULL) {
+        Plunging_Ampl_Z = new double[nMoving];
+        for (iZone = 0; iZone < nMoving; iZone++ )
+            Plunging_Ampl_Z[iZone] = 0.0;
+    } else {
+        if (Grid_Movement && (nPlunging_Ampl_Z != nGridMovement)) {
+            cout << "Length of PLUNGING_AMPL_Z must match GRID_MOVEMENT_KIND!!" << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    /*--- Use the various rigid-motion input frequencies to determine the period to be used with time-spectral cases.
+     There are THREE types of motion to consider, namely: rotation, pitching, and plunging.
+     The largest period of motion is the one to be used for time-spectral calculations. ---*/
+    
+    if (Unsteady_Simulation == TIME_SPECTRAL) {
+        
+        unsigned short N_MOTION_TYPES = 3;
+        double *periods;
+        periods = new double[N_MOTION_TYPES];
+        
+        /*--- rotation: ---*/
+        
+        double Omega_mag_rot = sqrt(pow(Rotation_Rate_X[ZONE_0],2)+pow(Rotation_Rate_Y[ZONE_0],2)+pow(Rotation_Rate_Z[ZONE_0],2));
+        if (Omega_mag_rot > 0)
+            periods[0] = 2*PI_NUMBER/Omega_mag_rot;
+        else
+            periods[0] = 0.0;
+        
+        /*--- pitching: ---*/
+        
+        double Omega_mag_pitch = sqrt(pow(Pitching_Omega_X[ZONE_0],2)+pow(Pitching_Omega_Y[ZONE_0],2)+pow(Pitching_Omega_Z[ZONE_0],2));
+        if (Omega_mag_pitch > 0)
+            periods[1] = 2*PI_NUMBER/Omega_mag_pitch;
+        else
+            periods[1] = 0.0;
+        
+        /*--- plunging: ---*/
+        
+        double Omega_mag_plunge = sqrt(pow(Plunging_Omega_X[ZONE_0],2)+pow(Plunging_Omega_Y[ZONE_0],2)+pow(Plunging_Omega_Z[ZONE_0],2));
+        if (Omega_mag_plunge > 0)
+            periods[2] = 2*PI_NUMBER/Omega_mag_plunge;
+        else
+            periods[2] = 0.0;
+        
+        /*--- determine which period is largest ---*/
+        
+        unsigned short iVar;
+        TimeSpectral_Period = 0.0;
+        for (iVar = 0; iVar < N_MOTION_TYPES; iVar++) {
+            if (periods[iVar] > TimeSpectral_Period)
+                TimeSpectral_Period = periods[iVar];
+        }
+        
+        delete periods;
+        
+    }
+    
+    /*--- Initialize the RefOriginMoment Pointer ---*/
+    
+    RefOriginMoment = NULL;
+    RefOriginMoment = new double[3];
+    RefOriginMoment[0] = 0.0; RefOriginMoment[1] = 0.0; RefOriginMoment[2] = 0.0;
+    
+    /*--- In case the moment origin coordinates have not been declared in the
+     config file, set them equal to zero for safety. Also check to make sure
+     that for each marker, a value has been declared for the moment origin.
+     Unless only one value was specified, then set this value for all the markers
+     being monitored. ---*/
+    
+    unsigned short iMarker;
+    
+    if ((nRefOriginMoment_X != nRefOriginMoment_Y) || (nRefOriginMoment_X != nRefOriginMoment_Z) ) {
+        cout << "ERROR: Length of REF_ORIGIN_MOMENT_X, REF_ORIGIN_MOMENT_Y and REF_ORIGIN_MOMENT_Z must be the same!!" << endl;
+        exit(EXIT_FAILURE);
+    }
+    
+    if (RefOriginMoment_X == NULL) {
+        RefOriginMoment_X = new double[nMarker_Monitoring];
+        for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ )
+            RefOriginMoment_X[iMarker] = 0.0;
+    } else {
+        if (nRefOriginMoment_X == 1) {
+            
+            double aux_RefOriginMoment_X = RefOriginMoment_X[0];
+            delete [] RefOriginMoment_X;
+            RefOriginMoment_X = new double[nMarker_Monitoring];
+            nRefOriginMoment_X = nMarker_Monitoring;
+            
+            for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ )
+                RefOriginMoment_X[iMarker] = aux_RefOriginMoment_X;
+        }
+        else if (nRefOriginMoment_X != nMarker_Monitoring) {
+            cout << "ERROR: Length of REF_ORIGIN_MOMENT_X must match number of Monitoring Markers!!" << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    if (RefOriginMoment_Y == NULL) {
+        RefOriginMoment_Y = new double[nMarker_Monitoring];
+        for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ )
+            RefOriginMoment_Y[iMarker] = 0.0;
+    } else {
+        if (nRefOriginMoment_Y == 1) {
+            
+            double aux_RefOriginMoment_Y = RefOriginMoment_Y[0];
+            delete [] RefOriginMoment_Y;
+            RefOriginMoment_Y = new double[nMarker_Monitoring];
+            nRefOriginMoment_Y = nMarker_Monitoring;
+            
+            for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ )
+                RefOriginMoment_Y[iMarker] = aux_RefOriginMoment_Y;
+        }
+        else if (nRefOriginMoment_Y != nMarker_Monitoring) {
+            cout << "ERROR: Length of REF_ORIGIN_MOMENT_Y must match number of Monitoring Markers!!" << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    if (RefOriginMoment_Z == NULL) {
+        RefOriginMoment_Z = new double[nMarker_Monitoring];
+        for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ )
+            RefOriginMoment_Z[iMarker] = 0.0;
+    } else {
+        if (nRefOriginMoment_Z == 1) {
+            
+            double aux_RefOriginMoment_Z = RefOriginMoment_Z[0];
+            delete [] RefOriginMoment_Z;
+            RefOriginMoment_Z = new double[nMarker_Monitoring];
+            nRefOriginMoment_Z = nMarker_Monitoring;
+            
+            for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ )
+                RefOriginMoment_Z[iMarker] = aux_RefOriginMoment_Z;
+        }
+        else if (nRefOriginMoment_Z != nMarker_Monitoring) {
+            cout << "ERROR: Length of REF_ORIGIN_MOMENT_Z must match number of Monitoring Markers!!" << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    /*--- Set the boolean flag if we are carrying out an aeroelastic simulation. ---*/
+    
+    if (Grid_Movement && (Kind_GridMovement[ZONE_0] == AEROELASTIC || Kind_GridMovement[ZONE_0] == AEROELASTIC_RIGID_MOTION))
+        Aeroelastic_Simulation = true;
+    else
+        Aeroelastic_Simulation = false;
+    
+    /*--- Initializing the size for the solutions of the Aeroelastic problem. ---*/
+    
+    
+    if (Grid_Movement && Aeroelastic_Simulation) {
+        Aeroelastic_np1.resize(nMarker_Monitoring);
+        Aeroelastic_n.resize(nMarker_Monitoring);
+        Aeroelastic_n1.resize(nMarker_Monitoring);
+        for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++) {
+            Aeroelastic_np1[iMarker].resize(2);
+            Aeroelastic_n[iMarker].resize(2);
+            Aeroelastic_n1[iMarker].resize(2);
+            for (int i =0; i<2; i++) {
+                Aeroelastic_np1[iMarker][i].resize(2);
+                Aeroelastic_n[iMarker][i].resize(2);
+                Aeroelastic_n1[iMarker][i].resize(2);
+                for (int j=0; j<2; j++) {
+                    Aeroelastic_np1[iMarker][i][j] = 0.0;
+                    Aeroelastic_n[iMarker][i][j] = 0.0;
+                    Aeroelastic_n1[iMarker][i][j] = 0.0;
+                }
+            }
+        }
+    }
+    
+    /*--- Allocate memory for the plunge and pitch and initialized them to zero ---*/
+    
+    if (Grid_Movement && Aeroelastic_Simulation) {
+        Aeroelastic_pitch = new double[nMarker_Monitoring];
+        Aeroelastic_plunge = new double[nMarker_Monitoring];
+        for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ ) {
+            Aeroelastic_pitch[iMarker] = 0.0;
+            Aeroelastic_plunge[iMarker] = 0.0;
+        }
+    }
+    
+    /*--- Fluid-Structure problems always have grid movement ---*/
+    
+    if (Kind_Solver == FLUID_STRUCTURE_EULER ||
+        Kind_Solver == FLUID_STRUCTURE_NAVIER_STOKES) {
+        if (Kind_Turb_Model != NONE)
+            Kind_Solver = FLUID_STRUCTURE_RANS;
+        Grid_Movement = true;
+    }
+    
+    if (MGCycle == FULLMG_CYCLE) FinestMesh = nMultiLevel;
+    else FinestMesh = MESH_0;
+    
+    if ((Kind_Solver == NAVIER_STOKES) &&
+        (Kind_Turb_Model != NONE))
+        Kind_Solver = RANS;
+    
+    if (Kind_Regime == FREESURFACE) GravityForce = true;
+    
+    Kappa_1st_Flow = Kappa_Flow[0];
+    Kappa_2nd_Flow = Kappa_Flow[1];
+    Kappa_4th_Flow = Kappa_Flow[2];
+    Kappa_1st_AdjFlow = Kappa_AdjFlow[0];
+    Kappa_2nd_AdjFlow = Kappa_AdjFlow[1];
+    Kappa_4th_AdjFlow = Kappa_AdjFlow[2];
+    Kappa_1st_LinFlow = Kappa_AdjFlow[0];
+    Kappa_4th_LinFlow = Kappa_AdjFlow[1];
+    
+    // make the MG_PreSmooth, MG_PostSmooth, and MG_CorrecSmooth arrays consistent with nMultiLevel
+    unsigned short * tmp_smooth = new unsigned short[nMultiLevel+1];
+    
+    if ((nMG_PreSmooth != nMultiLevel+1) && (nMG_PreSmooth != 0)) {
+        if (nMG_PreSmooth > nMultiLevel+1) {
+            
+            // truncate by removing unnecessary elements at the end
+            for (unsigned int i = 0; i <= nMultiLevel; i++)
+                tmp_smooth[i] = MG_PreSmooth[i];
+            delete [] MG_PreSmooth;
+        } else {
+            
+            // add additional elements equal to last element
+            for (unsigned int i = 0; i < nMG_PreSmooth; i++)
+                tmp_smooth[i] = MG_PreSmooth[i];
+            for (unsigned int i = nMG_PreSmooth; i <= nMultiLevel; i++)
+                tmp_smooth[i] = MG_PreSmooth[nMG_PreSmooth-1];
+            delete [] MG_PreSmooth;
+        }
+        
+        nMG_PreSmooth = nMultiLevel+1;
+        MG_PreSmooth = new unsigned short[nMG_PreSmooth];
+        for (unsigned int i = 0; i < nMG_PreSmooth; i++)
+            MG_PreSmooth[i] = tmp_smooth[i];
+    }
+    if ((nMultiLevel != 0) && (nMG_PreSmooth == 0)) {
+        delete [] MG_PreSmooth;
+        nMG_PreSmooth = nMultiLevel+1;
+        MG_PreSmooth = new unsigned short[nMG_PreSmooth];
+        for (unsigned int i = 0; i < nMG_PreSmooth; i++)
+            MG_PreSmooth[i] = i+1;
+    }
+    
+    if ((nMG_PostSmooth != nMultiLevel+1) && (nMG_PostSmooth != 0)) {
+        if (nMG_PostSmooth > nMultiLevel+1) {
+            // truncate by removing unnecessary elements at the end
+            for (unsigned int i = 0; i <= nMultiLevel; i++)
+                tmp_smooth[i] = MG_PostSmooth[i];
+            delete [] MG_PostSmooth;
+        } else {
+            // add additional elements equal to last element
+            for (unsigned int i = 0; i < nMG_PostSmooth; i++)
+                tmp_smooth[i] = MG_PostSmooth[i];
+            for (unsigned int i = nMG_PostSmooth; i <= nMultiLevel; i++)
+                tmp_smooth[i] = MG_PostSmooth[nMG_PostSmooth-1];
+            delete [] MG_PostSmooth;
+        }
+        nMG_PostSmooth = nMultiLevel+1;
+        MG_PostSmooth = new unsigned short[nMG_PostSmooth];
+        for (unsigned int i = 0; i < nMG_PostSmooth; i++)
+            MG_PostSmooth[i] = tmp_smooth[i];
+    }
+    if ((nMultiLevel != 0) && (nMG_PostSmooth == 0)) {
+        delete [] MG_PostSmooth;
+        nMG_PostSmooth = nMultiLevel+1;
+        MG_PostSmooth = new unsigned short[nMG_PostSmooth];
+        for (unsigned int i = 0; i < nMG_PostSmooth; i++)
+            MG_PostSmooth[i] = 0;
+    }
+    
+    if ((nMG_CorrecSmooth != nMultiLevel+1) && (nMG_CorrecSmooth != 0)) {
+        if (nMG_CorrecSmooth > nMultiLevel+1) {
+            // truncate by removing unnecessary elements at the end
+            for (unsigned int i = 0; i <= nMultiLevel; i++)
+                tmp_smooth[i] = MG_CorrecSmooth[i];
+            delete [] MG_CorrecSmooth;
+        } else {
+            // add additional elements equal to last element
+            for (unsigned int i = 0; i < nMG_CorrecSmooth; i++)
+                tmp_smooth[i] = MG_CorrecSmooth[i];
+            for (unsigned int i = nMG_CorrecSmooth; i <= nMultiLevel; i++)
+                tmp_smooth[i] = MG_CorrecSmooth[nMG_CorrecSmooth-1];
+            delete [] MG_CorrecSmooth;
+        }
+        nMG_CorrecSmooth = nMultiLevel+1;
+        MG_CorrecSmooth = new unsigned short[nMG_CorrecSmooth];
+        for (unsigned int i = 0; i < nMG_CorrecSmooth; i++)
+            MG_CorrecSmooth[i] = tmp_smooth[i];
+    }
+    if ((nMultiLevel != 0) && (nMG_CorrecSmooth == 0)) {
+        delete [] MG_CorrecSmooth;
+        nMG_CorrecSmooth = nMultiLevel+1;
+        MG_CorrecSmooth = new unsigned short[nMG_CorrecSmooth];
+        for (unsigned int i = 0; i < nMG_CorrecSmooth; i++)
+            MG_CorrecSmooth[i] = 0;
+    }
+    
+    // override MG Smooth parameters
+    if (nMG_PreSmooth != 0)
+        MG_PreSmooth[MESH_0] = 1;
+    if (nMG_PostSmooth != 0) {
+        MG_PostSmooth[MESH_0] = 0;
+        MG_PostSmooth[nMultiLevel] = 0;
+    }
+    if (nMG_CorrecSmooth != 0)
+        MG_CorrecSmooth[nMultiLevel] = 0;
+    
+    if (Restart) MGCycle = V_CYCLE;
+    
+    if (Adjoint) {
+        if (Kind_Solver == EULER) Kind_Solver = ADJ_EULER;
+        if (Kind_Solver == NAVIER_STOKES) Kind_Solver = ADJ_NAVIER_STOKES;
+        if (Kind_Solver == RANS) Kind_Solver = ADJ_RANS;
+        if (Kind_Solver == TNE2_EULER) Kind_Solver = ADJ_TNE2_EULER;
+        if (Kind_Solver == TNE2_NAVIER_STOKES) Kind_Solver = ADJ_TNE2_NAVIER_STOKES;
+    }
+    
+    if (Linearized) {
+        if (Kind_Solver == EULER) Kind_Solver = LIN_EULER;
+    }
+    
+    if (Unsteady_Simulation == TIME_STEPPING) {
+        nMultiLevel = 0;
+        MGCycle = V_CYCLE;
+    }
+    
+    nCFL = nMultiLevel+1;
+    CFL = new double[nCFL];
+    CFL[0] = CFLFineGrid;
+    if (Adjoint) CFL[0] = CFL[0] * CFLRedCoeff_AdjFlow;
+    
+    for (iCFL = 1; iCFL < nCFL; iCFL++)
+        CFL[iCFL] = CFL[iCFL-1];
+    
+    if (nRKStep == 0) {
+        nRKStep = 1;
+        RK_Alpha_Step = new double[1]; RK_Alpha_Step[0] = 1.0;
+    }
+    
+    if ((Kind_SU2 == SU2_CFD) && (Kind_Solver == NO_SOLVER)) {
+        cout << "PHYSICAL_PROBLEM must be set in the configuration file" << endl;
+        exit(EXIT_FAILURE);
+    }
+    
+    /*--- Set a flag for viscous simulations ---*/
+    
+    Viscous = (( Kind_Solver == NAVIER_STOKES          ) ||
+               ( Kind_Solver == ADJ_NAVIER_STOKES      ) ||
+               ( Kind_Solver == RANS                   ) ||
+               ( Kind_Solver == ADJ_RANS               ) ||
+               ( Kind_Solver == TNE2_NAVIER_STOKES     ) ||
+               ( Kind_Solver == ADJ_TNE2_NAVIER_STOKES )   );
+    
+    
+    /*--- Re-scale the length based parameters. The US system uses feet,
+     but SU2 assumes that the grid is in inches ---*/
+    
   if ((SystemMeasurements == US) && (Kind_SU2 == SU2_CFD)) {
-
+    
     for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++) {
       RefOriginMoment_X[iMarker] = RefOriginMoment_X[iMarker]/12.0;
       RefOriginMoment_Y[iMarker] = RefOriginMoment_Y[iMarker]/12.0;
       RefOriginMoment_Z[iMarker] = RefOriginMoment_Z[iMarker]/12.0;
     }
-
+    
     for (iMarker = 0; iMarker < nGridMovement; iMarker++) {
       Motion_Origin_X[iMarker] = Motion_Origin_X[iMarker]/12.0;
       Motion_Origin_Y[iMarker] = Motion_Origin_Y[iMarker]/12.0;
       Motion_Origin_Z[iMarker] = Motion_Origin_Z[iMarker]/12.0;
     }
-
+    
     RefLengthMoment = RefLengthMoment/12.0;
     if (val_nDim == 2) RefAreaCoeff = RefAreaCoeff/12.0;
     else RefAreaCoeff = RefAreaCoeff/144.0;
@@ -2085,700 +2191,708 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     Section_Location[0] = Section_Location[0]/12.0;
     Section_Location[1] = Section_Location[1]/12.0;
     
+    Subsonic_Engine_Box[0] = Subsonic_Engine_Box[0]/12.0;
+    Subsonic_Engine_Box[1] = Subsonic_Engine_Box[1]/12.0;
+    Subsonic_Engine_Box[2] = Subsonic_Engine_Box[2]/12.0;
+    Subsonic_Engine_Box[3] = Subsonic_Engine_Box[3]/12.0;
+    Subsonic_Engine_Box[4] = Subsonic_Engine_Box[4]/12.0;
+    Subsonic_Engine_Box[5] = Subsonic_Engine_Box[5]/12.0;
+    
   }
-
-  /*--- Reacting flows initialization ---*/
-
-  if (( Kind_Solver == TNE2_EULER             ) ||
-      ( Kind_Solver == TNE2_NAVIER_STOKES     ) ||
-      ( Kind_Solver == ADJ_TNE2_EULER         ) ||
-      ( Kind_Solver == ADJ_TNE2_NAVIER_STOKES )   ) {
-
-    Kappa_1st_TNE2    = Kappa_TNE2[0];
-    Kappa_2nd_TNE2    = Kappa_TNE2[1];
-    Kappa_4th_TNE2    = Kappa_TNE2[2];
-    Kappa_1st_AdjTNE2 = Kappa_AdjTNE2[0];
-    Kappa_2nd_AdjTNE2 = Kappa_AdjTNE2[1];
-    Kappa_4th_AdjTNE2 = Kappa_AdjTNE2[2];
-
-
-    unsigned short maxEl = 0;
-    unsigned short iSpecies, jSpecies, iEl;
-
-    switch (Kind_GasModel) {
-      case ONESPECIES:
-        /*--- Define parameters of the gas model ---*/
-        nSpecies    = 1;
-        ionization  = false;
-
-        /*--- Allocate vectors for gas properties ---*/
-        Molar_Mass         = new double[nSpecies];
-        CharVibTemp        = new double[nSpecies];
-        RotationModes      = new double[nSpecies];
-        Enthalpy_Formation = new double[nSpecies];
-        Wall_Catalycity    = new double[nSpecies];
-        Ref_Temperature    = new double[nSpecies];
-        nElStates          = new unsigned short[nSpecies];
-
-
-
-        MassFrac_FreeStream = new double[nSpecies];
-        MassFrac_FreeStream[0] = 1.0;
-
-        /*--- Assign gas properties ---*/
-        // Rotational modes of energy storage
-        RotationModes[0] = 2.0;
-        // Molar mass [kg/kmol]
-        Molar_Mass[0] = 14.0067+15.9994;
-        // Characteristic vibrational temperatures for calculating e_vib [K]
-        //CharVibTemp[0] = 3395.0;
-        CharVibTemp[0] = 1000.0;
-        // Formation enthalpy: (JANAF values, [KJ/Kmol])
-        Enthalpy_Formation[0] = 0.0;					//N2
-        // Reference temperature (JANAF values, [K])
-        Ref_Temperature[0] = 0.0;
-
-        /*        nElStates[0] = 0;
-         CharElTemp   = new double *[nSpecies];
-         degen        = new double *[nSpecies];
-
-         OSPthetae    = new double[nElStates[0]];
-         OSPthetae[0] = 1.0;
-         OSPg         = new double[nElStates[0]];
-         OSPg[0]      = 1.0;
-
-         CharElTemp[0] = OSPthetae;
-         degen[0] = OSPg;*/
-
-        break;
-
-      case N2:
-
-        /*--- Define parameters of the gas model ---*/
-        nSpecies    = 2;
-        nReactions  = 2;
-        ionization  = false;
-
-        /*--- Allocate vectors for gas properties ---*/
-        Wall_Catalycity      = new double[nSpecies];
-        Molar_Mass           = new double[nSpecies];
-        CharVibTemp          = new double[nSpecies];
-        RotationModes        = new double[nSpecies];
-        Enthalpy_Formation   = new double[nSpecies];
-        Ref_Temperature      = new double[nSpecies];
-        Diss                 = new double[nSpecies];
-        ArrheniusCoefficient = new double[nReactions];
-        ArrheniusEta         = new double[nReactions];
-        ArrheniusTheta       = new double[nReactions];
-        Tcf_a                = new double[nReactions];
-        Tcf_b                = new double[nReactions];
-        Tcb_a                = new double[nReactions];
-        Tcb_b                = new double[nReactions];
-        nElStates            = new unsigned short[nSpecies];
-        Reactions = new int**[nReactions];
-        for (unsigned short iRxn = 0; iRxn < nReactions; iRxn++) {
-          Reactions[iRxn] = new int*[2];
-          for (unsigned short ii = 0; ii < 2; ii++)
-            Reactions[iRxn][ii] = new int[6];
+  
+    /*--- Reacting flows initialization ---*/
+  
+    if (( Kind_Solver == TNE2_EULER             ) ||
+        ( Kind_Solver == TNE2_NAVIER_STOKES     ) ||
+        ( Kind_Solver == ADJ_TNE2_EULER         ) ||
+        ( Kind_Solver == ADJ_TNE2_NAVIER_STOKES )   ) {
+        
+        Kappa_1st_TNE2    = Kappa_TNE2[0];
+        Kappa_2nd_TNE2    = Kappa_TNE2[1];
+        Kappa_4th_TNE2    = Kappa_TNE2[2];
+        Kappa_1st_AdjTNE2 = Kappa_AdjTNE2[0];
+        Kappa_2nd_AdjTNE2 = Kappa_AdjTNE2[1];
+        Kappa_4th_AdjTNE2 = Kappa_AdjTNE2[2];
+        
+        
+        unsigned short maxEl = 0;
+        unsigned short iSpecies, jSpecies, iEl;
+        
+        switch (Kind_GasModel) {
+            case ONESPECIES:
+                /*--- Define parameters of the gas model ---*/
+                nSpecies    = 1;
+                ionization  = false;
+                
+                /*--- Allocate vectors for gas properties ---*/
+                Molar_Mass         = new double[nSpecies];
+                CharVibTemp        = new double[nSpecies];
+                RotationModes      = new double[nSpecies];
+                Enthalpy_Formation = new double[nSpecies];
+                Wall_Catalycity    = new double[nSpecies];
+                Ref_Temperature    = new double[nSpecies];
+                nElStates          = new unsigned short[nSpecies];
+                
+                
+                
+                MassFrac_FreeStream = new double[nSpecies];
+                MassFrac_FreeStream[0] = 1.0;
+                
+                /*--- Assign gas properties ---*/
+                // Rotational modes of energy storage
+                RotationModes[0] = 2.0;
+                // Molar mass [kg/kmol]
+                Molar_Mass[0] = 14.0067+15.9994;
+                // Characteristic vibrational temperatures for calculating e_vib [K]
+                //CharVibTemp[0] = 3395.0;
+                CharVibTemp[0] = 1000.0;
+                // Formation enthalpy: (JANAF values, [KJ/Kmol])
+                Enthalpy_Formation[0] = 0.0;					//N2
+                // Reference temperature (JANAF values, [K])
+                Ref_Temperature[0] = 0.0;
+                
+                /*        nElStates[0] = 0;
+                 CharElTemp   = new double *[nSpecies];
+                 degen        = new double *[nSpecies];
+                 
+                 OSPthetae    = new double[nElStates[0]];
+                 OSPthetae[0] = 1.0;
+                 OSPg         = new double[nElStates[0]];
+                 OSPg[0]      = 1.0;
+                 
+                 CharElTemp[0] = OSPthetae;
+                 degen[0] = OSPg;*/
+                
+                break;
+                
+            case N2:
+                
+                /*--- Define parameters of the gas model ---*/
+                nSpecies    = 2;
+                nReactions  = 2;
+                ionization  = false;
+                
+                /*--- Allocate vectors for gas properties ---*/
+                Wall_Catalycity      = new double[nSpecies];
+                Molar_Mass           = new double[nSpecies];
+                CharVibTemp          = new double[nSpecies];
+                RotationModes        = new double[nSpecies];
+                Enthalpy_Formation   = new double[nSpecies];
+                Ref_Temperature      = new double[nSpecies];
+                Diss                 = new double[nSpecies];
+                ArrheniusCoefficient = new double[nReactions];
+                ArrheniusEta         = new double[nReactions];
+                ArrheniusTheta       = new double[nReactions];
+                Tcf_a                = new double[nReactions];
+                Tcf_b                = new double[nReactions];
+                Tcb_a                = new double[nReactions];
+                Tcb_b                = new double[nReactions];
+                nElStates            = new unsigned short[nSpecies];
+                Reactions = new int**[nReactions];
+                for (unsigned short iRxn = 0; iRxn < nReactions; iRxn++) {
+                    Reactions[iRxn] = new int*[2];
+                    for (unsigned short ii = 0; ii < 2; ii++)
+                        Reactions[iRxn][ii] = new int[6];
+                }
+                
+                // Omega[iSpecies][jSpecies][iCoeff]
+                Omega00 = new double**[nSpecies];
+                Omega11 = new double**[nSpecies];
+                for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+                    Omega00[iSpecies] = new double*[nSpecies];
+                    Omega11[iSpecies] = new double*[nSpecies];
+                    for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+                        Omega00[iSpecies][jSpecies] = new double[4];
+                        Omega11[iSpecies][jSpecies] = new double[4];
+                    }
+                }
+                
+                MassFrac_FreeStream = new double[nSpecies];
+                MassFrac_FreeStream[0] = 0.99;
+                MassFrac_FreeStream[1] = 0.01;
+                
+                /*--- Assign gas properties ---*/
+                
+                // Wall mass fractions for catalytic boundaries
+                Wall_Catalycity[0] = 0.7;
+                Wall_Catalycity[1] = 0.3;
+                
+                // Rotational modes of energy storage
+                RotationModes[0] = 2.0;
+                RotationModes[1] = 0.0;
+                
+                // Molar mass [kg/kmol]
+                Molar_Mass[0] = 2.0*14.0067;
+                Molar_Mass[1] = 14.0067;
+                
+                // Characteristic vibrational temperatures
+                CharVibTemp[0] = 3395.0;
+                CharVibTemp[1] = 0.0;
+                
+                // Formation enthalpy: (JANAF values [KJ/Kmol])
+                Enthalpy_Formation[0] = 0.0;					//N2
+                Enthalpy_Formation[1] = 472.683E3;		//N
+                
+                // Reference temperature (JANAF values, [K])
+                Ref_Temperature[0] = 0.0;
+                Ref_Temperature[1] = 298.15;
+                
+                // Number of electron states
+                nElStates[0] = 15;                    // N2
+                nElStates[1] = 3;                     // N
+                for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+                    maxEl = max(maxEl, nElStates[iSpecies]);
+                
+                /*--- Allocate electron data arrays ---*/
+                CharElTemp = new double*[nSpecies];
+                degen      = new double*[nSpecies];
+                for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+                    CharElTemp[iSpecies] = new double[maxEl];
+                    degen[iSpecies]      = new double[maxEl];
+                }
+                
+                /*--- Initialize the arrays ---*/
+                for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+                    for (iEl = 0; iEl < maxEl; iEl++) {
+                        CharElTemp[iSpecies][iEl] = 0.0;
+                        degen[iSpecies][iEl] = 0.0;
+                    }
+                }
+                
+                /*--- Assign values to data structures ---*/
+                // N2: 15 states
+                CharElTemp[0][0]  = 0.000000000000000E+00;
+                CharElTemp[0][1]  = 7.223156514095200E+04;
+                CharElTemp[0][2]  = 8.577862640384000E+04;
+                CharElTemp[0][3]  = 8.605026716160000E+04;
+                CharElTemp[0][4]  = 9.535118627874400E+04;
+                CharElTemp[0][5]  = 9.805635702203200E+04;
+                CharElTemp[0][6]  = 9.968267656935200E+04;
+                CharElTemp[0][7]  = 1.048976467715200E+05;
+                CharElTemp[0][8]  = 1.116489555200000E+05;
+                CharElTemp[0][9]  = 1.225836470400000E+05;
+                CharElTemp[0][10] = 1.248856873600000E+05;
+                CharElTemp[0][11] = 1.282476158188320E+05;
+                CharElTemp[0][12] = 1.338060936000000E+05;
+                CharElTemp[0][13] = 1.404296391107200E+05;
+                CharElTemp[0][14] = 1.504958859200000E+05;
+                degen[0][0]  = 1;
+                degen[0][1]  = 3;
+                degen[0][2]  = 6;
+                degen[0][3]  = 6;
+                degen[0][4]  = 3;
+                degen[0][5]  = 1;
+                degen[0][6]  = 2;
+                degen[0][7]  = 2;
+                degen[0][8]  = 5;
+                degen[0][9]  = 1;
+                degen[0][10] = 6;
+                degen[0][11] = 6;
+                degen[0][12] = 10;
+                degen[0][13] = 6;
+                degen[0][14] = 6;
+                // N: 3 states
+                CharElTemp[1][0] = 0.000000000000000E+00;
+                CharElTemp[1][1] = 2.766469645581980E+04;
+                CharElTemp[1][2] = 4.149309313560210E+04;
+                degen[1][0] = 4;
+                degen[1][1] = 10;
+                degen[1][2] = 6;
+                
+                /*--- Set Arrhenius coefficients for chemical reactions ---*/
+                // Pre-exponential factor
+                ArrheniusCoefficient[0]  = 7.0E21;
+                ArrheniusCoefficient[1]  = 3.0E22;
+                // Rate-controlling temperature exponent
+                ArrheniusEta[0]  = -1.60;
+                ArrheniusEta[1]  = -1.60;
+                // Characteristic temperature
+                ArrheniusTheta[0] = 113200.0;
+                ArrheniusTheta[1] = 113200.0;
+                
+                /*--- Set reaction maps ---*/
+                // N2 + N2 -> 2N + N2
+                Reactions[0][0][0]=0;		Reactions[0][0][1]=0;		Reactions[0][0][2]=nSpecies;
+                Reactions[0][1][0]=1;		Reactions[0][1][1]=1;		Reactions[0][1][2] =0;
+                // N2 + N -> 2N + N
+                Reactions[1][0][0]=0;		Reactions[1][0][1]=1;		Reactions[1][0][2]=nSpecies;
+                Reactions[1][1][0]=1;		Reactions[1][1][1]=1;		Reactions[1][1][2]=1;
+                
+                /*--- Set rate-controlling temperature exponents ---*/
+                //  -----------  Tc = Ttr^a * Tve^b  -----------
+                //
+                // Forward Reactions
+                //   Dissociation:      a = 0.5, b = 0.5  (OR a = 0.7, b =0.3)
+                //   Exchange:          a = 1,   b = 0
+                //   Impact ionization: a = 0,   b = 1
+                //
+                // Backward Reactions
+                //   Recomb ionization:      a = 0, b = 1
+                //   Impact ionization:      a = 0, b = 1
+                //   N2 impact dissociation: a = 0, b = 1
+                //   Others:                 a = 1, b = 0
+                Tcf_a[0] = 0.5; Tcf_b[0] = 0.5; Tcb_a[0] = 1;  Tcb_b[0] = 0;
+                Tcf_a[1] = 0.5; Tcf_b[1] = 0.5; Tcb_a[1] = 1;  Tcb_b[1] = 0;
+                
+                /*--- Dissociation potential [KJ/kg] ---*/
+                Diss[0] = 3.36E4;
+                Diss[1] = 0.0;
+                
+                /*--- Collision integral data ---*/
+                Omega00[0][0][0] = -6.0614558E-03;  Omega00[0][0][1] = 1.2689102E-01;   Omega00[0][0][2] = -1.0616948E+00;  Omega00[0][0][3] = 8.0955466E+02;
+                Omega00[0][1][0] = -1.0796249E-02;  Omega00[0][1][1] = 2.2656509E-01;   Omega00[0][1][2] = -1.7910602E+00;  Omega00[0][1][3] = 4.0455218E+03;
+                Omega00[1][0][0] = -1.0796249E-02;  Omega00[1][0][1] = 2.2656509E-01;   Omega00[1][0][2] = -1.7910602E+00;  Omega00[1][0][3] = 4.0455218E+03;
+                Omega00[1][1][0] = -9.6083779E-03;  Omega00[1][1][1] = 2.0938971E-01;   Omega00[1][1][2] = -1.7386904E+00;  Omega00[1][1][3] = 3.3587983E+03;
+                
+                Omega11[0][0][0] = -7.6303990E-03;  Omega11[0][0][1] = 1.6878089E-01;   Omega11[0][0][2] = -1.4004234E+00;  Omega11[0][0][3] = 2.1427708E+03;
+                Omega11[0][1][0] = -8.3493693E-03;  Omega11[0][1][1] = 1.7808911E-01;   Omega11[0][1][2] = -1.4466155E+00;  Omega11[0][1][3] = 1.9324210E+03;
+                Omega11[1][0][0] = -8.3493693E-03;  Omega11[1][0][1] = 1.7808911E-01;   Omega11[1][0][2] = -1.4466155E+00;  Omega11[1][0][3] = 1.9324210E+03;
+                Omega11[1][1][0] = -7.7439615E-03;  Omega11[1][1][1] = 1.7129007E-01;   Omega11[1][1][2] = -1.4809088E+00;  Omega11[1][1][3] = 2.1284951E+03;
+                
+                break;
+                
+            case AIR5:
+                /*--- Define parameters of the gas model ---*/
+                nSpecies    = 5;
+                nReactions  = 17;
+                ionization  = false;
+                
+                /*--- Allocate vectors for gas properties ---*/
+                Wall_Catalycity      = new double[nSpecies];
+                Molar_Mass           = new double[nSpecies];
+                CharVibTemp          = new double[nSpecies];
+                RotationModes        = new double[nSpecies];
+                Enthalpy_Formation   = new double[nSpecies];
+                Ref_Temperature      = new double[nSpecies];
+                ArrheniusCoefficient = new double[nReactions];
+                ArrheniusEta         = new double[nReactions];
+                ArrheniusTheta       = new double[nReactions];
+                Tcf_a                = new double[nReactions];
+                Tcf_b                = new double[nReactions];
+                Tcb_a                = new double[nReactions];
+                Tcb_b                = new double[nReactions];
+                nElStates            = new unsigned short[nSpecies];
+                Reactions            = new int**[nReactions];
+                for (unsigned short iRxn = 0; iRxn < nReactions; iRxn++) {
+                    Reactions[iRxn] = new int*[2];
+                    for (unsigned short ii = 0; ii < 2; ii++)
+                        Reactions[iRxn][ii] = new int[6];
+                }
+                
+                // Omega[iSpecies][jSpecies][iCoeff]
+                Omega00 = new double**[nSpecies];
+                Omega11 = new double**[nSpecies];
+                for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+                    Omega00[iSpecies] = new double*[nSpecies];
+                    Omega11[iSpecies] = new double*[nSpecies];
+                    for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+                        Omega00[iSpecies][jSpecies] = new double[4];
+                        Omega11[iSpecies][jSpecies] = new double[4];
+                    }
+                }
+                
+                // Wall mass fractions for catalytic boundaries
+                Wall_Catalycity[0] = 0.4;
+                Wall_Catalycity[1] = 0.4;
+                Wall_Catalycity[2] = 0.1;
+                Wall_Catalycity[3] = 0.05;
+                Wall_Catalycity[4] = 0.05;
+                
+                // Free stream mass fractions
+                MassFrac_FreeStream = new double[nSpecies];
+                MassFrac_FreeStream[0] = 0.78;
+                MassFrac_FreeStream[1] = 0.19;
+                MassFrac_FreeStream[2] = 0.01;
+                MassFrac_FreeStream[3] = 0.01;
+                MassFrac_FreeStream[4] = 0.01;
+                
+                /*--- Assign gas properties ---*/
+                // Rotational modes of energy storage
+                RotationModes[0] = 2.0;
+                RotationModes[1] = 2.0;
+                RotationModes[2] = 2.0;
+                RotationModes[3] = 0.0;
+                RotationModes[4] = 0.0;
+                
+                // Molar mass [kg/kmol]
+                Molar_Mass[0] = 2.0*14.0067;
+                Molar_Mass[1] = 2.0*15.9994;
+                Molar_Mass[2] = 14.0067+15.9994;
+                Molar_Mass[3] = 14.0067;
+                Molar_Mass[4] = 15.9994;
+                
+                //Characteristic vibrational temperatures
+                CharVibTemp[0] = 3395.0;
+                CharVibTemp[1] = 2239.0;
+                CharVibTemp[2] = 2817.0;
+                CharVibTemp[3] = 0.0;
+                CharVibTemp[4] = 0.0;
+                
+                // Formation enthalpy: (JANAF values [KJ/Kmol])
+                Enthalpy_Formation[0] = 0.0;					//N2
+                Enthalpy_Formation[1] = 0.0;					//O2
+                Enthalpy_Formation[2] = 90.291E3;			//NO
+                Enthalpy_Formation[3] = 472.683E3;		//N
+                Enthalpy_Formation[4] = 249.173E3;		//O
+                
+                // Reference temperature (JANAF values, [K])
+                Ref_Temperature[0] = 0.0;
+                Ref_Temperature[1] = 0.0;
+                Ref_Temperature[2] = 298.15;
+                Ref_Temperature[3] = 298.15;
+                Ref_Temperature[4] = 298.15;
+                
+                // Number of electron states
+                nElStates[0] = 15;                    // N2
+                nElStates[1] = 7;                     // O2
+                nElStates[2] = 16;                    // NO
+                nElStates[3] = 3;                     // N
+                nElStates[4] = 5;                     // O
+                /////
+                
+                for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+                    maxEl = max(maxEl, nElStates[iSpecies]);
+                
+                /*--- Allocate electron data arrays ---*/
+                CharElTemp = new double*[nSpecies];
+                degen      = new double*[nSpecies];
+                for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+                    CharElTemp[iSpecies] = new double[maxEl];
+                    degen[iSpecies]      = new double[maxEl];
+                }
+                
+                /*--- Initialize the arrays ---*/
+                for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+                    for (iEl = 0; iEl < maxEl; iEl++) {
+                        CharElTemp[iSpecies][iEl] = 0.0;
+                        degen[iSpecies][iEl] = 0.0;
+                    }
+                }
+                
+                //N2: 15 states
+                CharElTemp[0][0]  = 0.000000000000000E+00;
+                CharElTemp[0][1]  = 7.223156514095200E+04;
+                CharElTemp[0][2]  = 8.577862640384000E+04;
+                CharElTemp[0][3]  = 8.605026716160000E+04;
+                CharElTemp[0][4]  = 9.535118627874400E+04;
+                CharElTemp[0][5]  = 9.805635702203200E+04;
+                CharElTemp[0][6]  = 9.968267656935200E+04;
+                CharElTemp[0][7]  = 1.048976467715200E+05;
+                CharElTemp[0][8]  = 1.116489555200000E+05;
+                CharElTemp[0][9]  = 1.225836470400000E+05;
+                CharElTemp[0][10] = 1.248856873600000E+05;
+                CharElTemp[0][11] = 1.282476158188320E+05;
+                CharElTemp[0][12] = 1.338060936000000E+05;
+                CharElTemp[0][13] = 1.404296391107200E+05;
+                CharElTemp[0][14] = 1.504958859200000E+05;
+                degen[0][0]  = 1;
+                degen[0][1]  = 3;
+                degen[0][2]  = 6;
+                degen[0][3]  = 6;
+                degen[0][4]  = 3;
+                degen[0][5]  = 1;
+                degen[0][6]  = 2;
+                degen[0][7]  = 2;
+                degen[0][8]  = 5;
+                degen[0][9]  = 1;
+                degen[0][10] = 6;
+                degen[0][11] = 6;
+                degen[0][12] = 10;
+                degen[0][13] = 6;
+                degen[0][14] = 6;
+                
+                // O2: 7 states
+                CharElTemp[1][0] = 0.000000000000000E+00;
+                CharElTemp[1][1] = 1.139156019700800E+04;
+                CharElTemp[1][2] = 1.898473947826400E+04;
+                CharElTemp[1][3] = 4.755973576639200E+04;
+                CharElTemp[1][4] = 4.991242097343200E+04;
+                CharElTemp[1][5] = 5.092268575561600E+04;
+                CharElTemp[1][6] = 7.189863255967200E+04;
+                degen[1][0] = 3;
+                degen[1][1] = 2;
+                degen[1][2] = 1;
+                degen[1][3] = 1;
+                degen[1][4] = 6;
+                degen[1][5] = 3;
+                degen[1][6] = 3;
+                
+                // NO: 16 states
+                CharElTemp[2][0]  = 0.000000000000000E+00;
+                CharElTemp[2][1]  = 5.467345760000000E+04;
+                CharElTemp[2][2]  = 6.317139627802400E+04;
+                CharElTemp[2][3]  = 6.599450342445600E+04;
+                CharElTemp[2][4]  = 6.906120960000000E+04;
+                CharElTemp[2][5]  = 7.049998480000000E+04;
+                CharElTemp[2][6]  = 7.491055017560000E+04;
+                CharElTemp[2][7]  = 7.628875293968000E+04;
+                CharElTemp[2][8]  = 8.676188537552000E+04;
+                CharElTemp[2][9]  = 8.714431182368000E+04;
+                CharElTemp[2][10] = 8.886077063728000E+04;
+                CharElTemp[2][11] = 8.981755614528000E+04;
+                CharElTemp[2][12] = 8.988445919208000E+04;
+                CharElTemp[2][13] = 9.042702132000000E+04;
+                CharElTemp[2][14] = 9.064283760000000E+04;
+                CharElTemp[2][15] = 9.111763341600000E+04;
+                degen[2][0]  = 4;
+                degen[2][1]  = 8;
+                degen[2][2]  = 2;
+                degen[2][3]  = 4;
+                degen[2][4]  = 4;
+                degen[2][5]  = 4;
+                degen[2][6]  = 4;
+                degen[2][7]  = 2;
+                degen[2][8]  = 4;
+                degen[2][9]  = 2;
+                degen[2][10] = 4;
+                degen[2][11] = 4;
+                degen[2][12] = 2;
+                degen[2][13] = 2;
+                degen[2][14] = 2;
+                degen[2][15] = 4;
+                
+                // N: 3 states
+                CharElTemp[3][0] = 0.000000000000000E+00;
+                CharElTemp[3][1] = 2.766469645581980E+04;
+                CharElTemp[3][2] = 4.149309313560210E+04;
+                degen[3][0] = 4;
+                degen[3][1] = 10;
+                degen[3][2] = 6;
+                
+                // O: 5 states
+                CharElTemp[4][0] = 0.000000000000000E+00;
+                CharElTemp[4][1] = 2.277077570280000E+02;
+                CharElTemp[4][2] = 3.265688785704000E+02;
+                CharElTemp[4][3] = 2.283028632262240E+04;
+                CharElTemp[4][4] = 4.861993036434160E+04;
+                degen[4][0] = 5;
+                degen[4][1] = 3;
+                degen[4][2] = 1;
+                degen[4][3] = 5;
+                degen[4][4] = 1;
+                
+                /*--- Set reaction maps ---*/
+                // N2 dissociation
+                Reactions[0][0][0]=0;		Reactions[0][0][1]=0;		Reactions[0][0][2]=nSpecies;		Reactions[0][1][0]=3;		Reactions[0][1][1]=3;		Reactions[0][1][2] =0;
+                Reactions[1][0][0]=0;		Reactions[1][0][1]=1;		Reactions[1][0][2]=nSpecies;		Reactions[1][1][0]=3;		Reactions[1][1][1]=3;		Reactions[1][1][2] =1;
+                Reactions[2][0][0]=0;		Reactions[2][0][1]=2;		Reactions[2][0][2]=nSpecies;		Reactions[2][1][0]=3;		Reactions[2][1][1]=3;		Reactions[2][1][2] =2;
+                Reactions[3][0][0]=0;		Reactions[3][0][1]=3;		Reactions[3][0][2]=nSpecies;		Reactions[3][1][0]=3;		Reactions[3][1][1]=3;		Reactions[3][1][2] =3;
+                Reactions[4][0][0]=0;		Reactions[4][0][1]=4;		Reactions[4][0][2]=nSpecies;		Reactions[4][1][0]=3;		Reactions[4][1][1]=3;		Reactions[4][1][2] =4;
+                // O2 dissociation
+                Reactions[5][0][0]=1;		Reactions[5][0][1]=0;		Reactions[5][0][2]=nSpecies;		Reactions[5][1][0]=4;		Reactions[5][1][1]=4;		Reactions[5][1][2] =0;
+                Reactions[6][0][0]=1;		Reactions[6][0][1]=1;		Reactions[6][0][2]=nSpecies;		Reactions[6][1][0]=4;		Reactions[6][1][1]=4;		Reactions[6][1][2] =1;
+                Reactions[7][0][0]=1;		Reactions[7][0][1]=2;		Reactions[7][0][2]=nSpecies;		Reactions[7][1][0]=4;		Reactions[7][1][1]=4;		Reactions[7][1][2] =2;
+                Reactions[8][0][0]=1;		Reactions[8][0][1]=3;		Reactions[8][0][2]=nSpecies;		Reactions[8][1][0]=4;		Reactions[8][1][1]=4;		Reactions[8][1][2] =3;
+                Reactions[9][0][0]=1;		Reactions[9][0][1]=4;		Reactions[9][0][2]=nSpecies;		Reactions[9][1][0]=4;		Reactions[9][1][1]=4;		Reactions[9][1][2] =4;
+                // NO dissociation
+                Reactions[10][0][0]=2;		Reactions[10][0][1]=0;		Reactions[10][0][2]=nSpecies;		Reactions[10][1][0]=3;		Reactions[10][1][1]=4;		Reactions[10][1][2] =0;
+                Reactions[11][0][0]=2;		Reactions[11][0][1]=1;		Reactions[11][0][2]=nSpecies;		Reactions[11][1][0]=3;		Reactions[11][1][1]=4;		Reactions[11][1][2] =1;
+                Reactions[12][0][0]=2;		Reactions[12][0][1]=2;		Reactions[12][0][2]=nSpecies;		Reactions[12][1][0]=3;		Reactions[12][1][1]=4;		Reactions[12][1][2] =2;
+                Reactions[13][0][0]=2;		Reactions[13][0][1]=3;		Reactions[13][0][2]=nSpecies;		Reactions[13][1][0]=3;		Reactions[13][1][1]=4;		Reactions[13][1][2] =3;
+                Reactions[14][0][0]=2;		Reactions[14][0][1]=4;		Reactions[14][0][2]=nSpecies;		Reactions[14][1][0]=3;		Reactions[14][1][1]=4;		Reactions[14][1][2] =4;
+                // N2 + O -> NO + N
+                Reactions[15][0][0]=0;		Reactions[15][0][1]=4;		Reactions[15][0][2]=nSpecies;		Reactions[15][1][0]=2;		Reactions[15][1][1]=3;		Reactions[15][1][2]= nSpecies;
+                // NO + O -> O2 + N
+                Reactions[16][0][0]=2;		Reactions[16][0][1]=4;		Reactions[16][0][2]=nSpecies;		Reactions[16][1][0]=1;		Reactions[16][1][1]=3;		Reactions[16][1][2]= nSpecies;
+                
+                /*--- Set Arrhenius coefficients for reactions ---*/
+                // Pre-exponential factor
+                ArrheniusCoefficient[0]  = 7.0E21;
+                ArrheniusCoefficient[1]  = 7.0E21;
+                ArrheniusCoefficient[2]  = 7.0E21;
+                ArrheniusCoefficient[3]  = 3.0E22;
+                ArrheniusCoefficient[4]  = 3.0E22;
+                ArrheniusCoefficient[5]  = 2.0E21;
+                ArrheniusCoefficient[6]  = 2.0E21;
+                ArrheniusCoefficient[7]  = 2.0E21;
+                ArrheniusCoefficient[8]  = 1.0E22;
+                ArrheniusCoefficient[9]  = 1.0E22;
+                ArrheniusCoefficient[10] = 5.0E15;
+                ArrheniusCoefficient[11] = 5.0E15;
+                ArrheniusCoefficient[12] = 5.0E15;
+                ArrheniusCoefficient[13] = 1.1E17;
+                ArrheniusCoefficient[14] = 1.1E17;
+                ArrheniusCoefficient[15] = 6.4E17;
+                ArrheniusCoefficient[16] = 8.4E12;
+                
+                // Rate-controlling temperature exponent
+                ArrheniusEta[0]  = -1.60;
+                ArrheniusEta[1]  = -1.60;
+                ArrheniusEta[2]  = -1.60;
+                ArrheniusEta[3]  = -1.60;
+                ArrheniusEta[4]  = -1.60;
+                ArrheniusEta[5]  = -1.50;
+                ArrheniusEta[6]  = -1.50;
+                ArrheniusEta[7]  = -1.50;
+                ArrheniusEta[8]  = -1.50;
+                ArrheniusEta[9]  = -1.50;
+                ArrheniusEta[10] = 0.0;
+                ArrheniusEta[11] = 0.0;
+                ArrheniusEta[12] = 0.0;
+                ArrheniusEta[13] = 0.0;
+                ArrheniusEta[14] = 0.0;
+                ArrheniusEta[15] = -1.0;
+                ArrheniusEta[16] = 0.0;
+                
+                // Characteristic temperature
+                ArrheniusTheta[0]  = 113200.0;
+                ArrheniusTheta[1]  = 113200.0;
+                ArrheniusTheta[2]  = 113200.0;
+                ArrheniusTheta[3]  = 113200.0;
+                ArrheniusTheta[4]  = 113200.0;
+                ArrheniusTheta[5]  = 59500.0;
+                ArrheniusTheta[6]  = 59500.0;
+                ArrheniusTheta[7]  = 59500.0;
+                ArrheniusTheta[8]  = 59500.0;
+                ArrheniusTheta[9]  = 59500.0;
+                ArrheniusTheta[10] = 75500.0;
+                ArrheniusTheta[11] = 75500.0;
+                ArrheniusTheta[12] = 75500.0;
+                ArrheniusTheta[13] = 75500.0;
+                ArrheniusTheta[14] = 75500.0;
+                ArrheniusTheta[15] = 38400.0;
+                ArrheniusTheta[16] = 19450.0;
+                
+                /*--- Set rate-controlling temperature exponents ---*/
+                //  -----------  Tc = Ttr^a * Tve^b  -----------
+                //
+                // Forward Reactions
+                //   Dissociation:      a = 0.5, b = 0.5  (OR a = 0.7, b =0.3)
+                //   Exchange:          a = 1,   b = 0
+                //   Impact ionization: a = 0,   b = 1
+                //
+                // Backward Reactions
+                //   Recomb ionization:      a = 0, b = 1
+                //   Impact ionization:      a = 0, b = 1
+                //   N2 impact dissociation: a = 0, b = 1
+                //   Others:                 a = 1, b = 0
+                Tcf_a[0]  = 0.5; Tcf_b[0]  = 0.5; Tcb_a[0]  = 1;  Tcb_b[0] = 0;
+                Tcf_a[1]  = 0.5; Tcf_b[1]  = 0.5; Tcb_a[1]  = 1;  Tcb_b[1] = 0;
+                Tcf_a[2]  = 0.5; Tcf_b[2]  = 0.5; Tcb_a[2]  = 1;  Tcb_b[2] = 0;
+                Tcf_a[3]  = 0.5; Tcf_b[3]  = 0.5; Tcb_a[3]  = 1;  Tcb_b[3] = 0;
+                Tcf_a[4]  = 0.5; Tcf_b[4]  = 0.5; Tcb_a[4]  = 1;  Tcb_b[4] = 0;
+                
+                Tcf_a[5]  = 0.5; Tcf_b[5]  = 0.5; Tcb_a[5]  = 1;  Tcb_b[5] = 0;
+                Tcf_a[6]  = 0.5; Tcf_b[6]  = 0.5; Tcb_a[6]  = 1;  Tcb_b[6] = 0;
+                Tcf_a[7]  = 0.5; Tcf_b[7]  = 0.5; Tcb_a[7]  = 1;  Tcb_b[7] = 0;
+                Tcf_a[8]  = 0.5; Tcf_b[8]  = 0.5; Tcb_a[8]  = 1;  Tcb_b[8] = 0;
+                Tcf_a[9]  = 0.5; Tcf_b[9]  = 0.5; Tcb_a[9]  = 1;  Tcb_b[9] = 0;
+                
+                Tcf_a[10] = 0.5; Tcf_b[10] = 0.5; Tcb_a[10] = 1;  Tcb_b[10] = 0;
+                Tcf_a[11] = 0.5; Tcf_b[11] = 0.5; Tcb_a[11] = 1;  Tcb_b[11] = 0;
+                Tcf_a[12] = 0.5; Tcf_b[12] = 0.5; Tcb_a[12] = 1;  Tcb_b[12] = 0;
+                Tcf_a[13] = 0.5; Tcf_b[13] = 0.5; Tcb_a[13] = 1;  Tcb_b[13] = 0;
+                Tcf_a[14] = 0.5; Tcf_b[14] = 0.5; Tcb_a[14] = 1;  Tcb_b[14] = 0;
+                
+                Tcf_a[15] = 1.0; Tcf_b[15] = 0.0; Tcb_a[15] = 1;  Tcb_b[15] = 0;
+                Tcf_a[16] = 1.0; Tcf_b[16] = 0.0; Tcb_a[16] = 1;  Tcb_b[16] = 0;
+                
+                /*--- Collision integral data ---*/
+                // Omega(0,0) ----------------------
+                //N2
+                Omega00[0][0][0] = -6.0614558E-03;  Omega00[0][0][1] = 1.2689102E-01;   Omega00[0][0][2] = -1.0616948E+00;  Omega00[0][0][3] = 8.0955466E+02;
+                Omega00[0][1][0] = -3.7959091E-03;  Omega00[0][1][1] = 9.5708295E-02;   Omega00[0][1][2] = -1.0070611E+00;  Omega00[0][1][3] = 8.9392313E+02;
+                Omega00[0][2][0] = -1.9295666E-03;  Omega00[0][2][1] = 2.7995735E-02;   Omega00[0][2][2] = -3.1588514E-01;  Omega00[0][2][3] = 1.2880734E+02;
+                Omega00[0][3][0] = -1.0796249E-02;  Omega00[0][3][1] = 2.2656509E-01;   Omega00[0][3][2] = -1.7910602E+00;  Omega00[0][3][3] = 4.0455218E+03;
+                Omega00[0][4][0] = -2.7244269E-03;  Omega00[0][4][1] = 6.9587171E-02;   Omega00[0][4][2] = -7.9538667E-01;  Omega00[0][4][3] = 4.0673730E+02;
+                //O2
+                Omega00[1][0][0] = -3.7959091E-03;  Omega00[1][0][1] = 9.5708295E-02;   Omega00[1][0][2] = -1.0070611E+00;  Omega00[1][0][3] = 8.9392313E+02;
+                Omega00[1][1][0] = -8.0682650E-04;  Omega00[1][1][1] = 1.6602480E-02;   Omega00[1][1][2] = -3.1472774E-01;  Omega00[1][1][3] = 1.4116458E+02;
+                Omega00[1][2][0] = -6.4433840E-04;  Omega00[1][2][1] = 8.5378580E-03;   Omega00[1][2][2] = -2.3225102E-01;  Omega00[1][2][3] = 1.1371608E+02;
+                Omega00[1][3][0] = -1.1453028E-03;  Omega00[1][3][1] = 1.2654140E-02;   Omega00[1][3][2] = -2.2435218E-01;  Omega00[1][3][3] = 7.7201588E+01;
+                Omega00[1][4][0] = -4.8405803E-03;  Omega00[1][4][1] = 1.0297688E-01;   Omega00[1][4][2] = -9.6876576E-01;  Omega00[1][4][3] = 6.1629812E+02;
+                //NO
+                Omega00[2][0][0] = -1.9295666E-03;  Omega00[2][0][1] = 2.7995735E-02;   Omega00[2][0][2] = -3.1588514E-01;  Omega00[2][0][3] = 1.2880734E+02;
+                Omega00[2][1][0] = -6.4433840E-04;  Omega00[2][1][1] = 8.5378580E-03;   Omega00[2][1][2] = -2.3225102E-01;  Omega00[2][1][3] = 1.1371608E+02;
+                Omega00[2][2][0] = -0.0000000E+00;  Omega00[2][2][1] = -1.1056066E-02;  Omega00[2][2][2] = -5.9216250E-02;  Omega00[2][2][3] = 7.2542367E+01;
+                Omega00[2][3][0] = -1.5770918E-03;  Omega00[2][3][1] = 1.9578381E-02;   Omega00[2][3][2] = -2.7873624E-01;  Omega00[2][3][3] = 9.9547944E+01;
+                Omega00[2][4][0] = -1.0885815E-03;  Omega00[2][4][1] = 1.1883688E-02;   Omega00[2][4][2] = -2.1844909E-01;  Omega00[2][4][3] = 7.5512560E+01;
+                //N
+                Omega00[3][0][0] = -1.0796249E-02;  Omega00[3][0][1] = 2.2656509E-01;   Omega00[3][0][2] = -1.7910602E+00;  Omega00[3][0][3] = 4.0455218E+03;
+                Omega00[3][1][0] = -1.1453028E-03;  Omega00[3][1][1] = 1.2654140E-02;   Omega00[3][1][2] = -2.2435218E-01;  Omega00[3][1][3] = 7.7201588E+01;
+                Omega00[3][2][0] = -1.5770918E-03;  Omega00[3][2][1] = 1.9578381E-02;   Omega00[3][2][2] = -2.7873624E-01;  Omega00[3][2][3] = 9.9547944E+01;
+                Omega00[3][3][0] = -9.6083779E-03;  Omega00[3][3][1] = 2.0938971E-01;   Omega00[3][3][2] = -1.7386904E+00;  Omega00[3][3][3] = 3.3587983E+03;
+                Omega00[3][4][0] = -7.8147689E-03;  Omega00[3][4][1] = 1.6792705E-01;   Omega00[3][4][2] = -1.4308628E+00;  Omega00[3][4][3] = 1.6628859E+03;
+                //O
+                Omega00[4][0][0] = -2.7244269E-03;  Omega00[4][0][1] = 6.9587171E-02;   Omega00[4][0][2] = -7.9538667E-01;  Omega00[4][0][3] = 4.0673730E+02;
+                Omega00[4][1][0] = -4.8405803E-03;  Omega00[4][1][1] = 1.0297688E-01;   Omega00[4][1][2] = -9.6876576E-01;  Omega00[4][1][3] = 6.1629812E+02;
+                Omega00[4][2][0] = -1.0885815E-03;  Omega00[4][2][1] = 1.1883688E-02;   Omega00[4][2][2] = -2.1844909E-01;  Omega00[4][2][3] = 7.5512560E+01;
+                Omega00[4][3][0] = -7.8147689E-03;  Omega00[4][3][1] = 1.6792705E-01;   Omega00[4][3][2] = -1.4308628E+00;  Omega00[4][3][3] = 1.6628859E+03;
+                Omega00[4][4][0] = -6.4040535E-03;  Omega00[4][4][1] = 1.4629949E-01;   Omega00[4][4][2] = -1.3892121E+00;  Omega00[4][4][3] = 2.0903441E+03;
+                
+                // Omega(1,1) ----------------------
+                //N2
+                Omega11[0][0][0] = -7.6303990E-03;  Omega11[0][0][1] = 1.6878089E-01;   Omega11[0][0][2] = -1.4004234E+00;  Omega11[0][0][3] = 2.1427708E+03;
+                Omega11[0][1][0] = -8.0457321E-03;  Omega11[0][1][1] = 1.9228905E-01;   Omega11[0][1][2] = -1.7102854E+00;  Omega11[0][1][3] = 5.2213857E+03;
+                Omega11[0][2][0] = -6.8237776E-03;  Omega11[0][2][1] = 1.4360616E-01;   Omega11[0][2][2] = -1.1922240E+00;  Omega11[0][2][3] = 1.2433086E+03;
+                Omega11[0][3][0] = -8.3493693E-03;  Omega11[0][3][1] = 1.7808911E-01;   Omega11[0][3][2] = -1.4466155E+00;  Omega11[0][3][3] = 1.9324210E+03;
+                Omega11[0][4][0] = -8.3110691E-03;  Omega11[0][4][1] = 1.9617877E-01;   Omega11[0][4][2] = -1.7205427E+00;  Omega11[0][4][3] = 4.0812829E+03;
+                //O2
+                Omega11[1][0][0] = -8.0457321E-03;  Omega11[1][0][1] = 1.9228905E-01;   Omega11[1][0][2] = -1.7102854E+00;  Omega11[1][0][3] = 5.2213857E+03;
+                Omega11[1][1][0] = -6.2931612E-03;  Omega11[1][1][1] = 1.4624645E-01;   Omega11[1][1][2] = -1.3006927E+00;  Omega11[1][1][3] = 1.8066892E+03;
+                Omega11[1][2][0] = -6.8508672E-03;  Omega11[1][2][1] = 1.5524564E-01;   Omega11[1][2][2] = -1.3479583E+00;  Omega11[1][2][3] = 2.0037890E+03;
+                Omega11[1][3][0] = -1.0608832E-03;  Omega11[1][3][1] = 1.1782595E-02;   Omega11[1][3][2] = -2.1246301E-01;  Omega11[1][3][3] = 8.4561598E+01;
+                Omega11[1][4][0] = -3.7969686E-03;  Omega11[1][4][1] = 7.6789981E-02;   Omega11[1][4][2] = -7.3056809E-01;  Omega11[1][4][3] = 3.3958171E+02;
+                //NO
+                Omega11[2][0][0] = -6.8237776E-03;  Omega11[2][0][1] = 1.4360616E-01;   Omega11[2][0][2] = -1.1922240E+00;  Omega11[2][0][3] = 1.2433086E+03;
+                Omega11[2][1][0] = -6.8508672E-03;  Omega11[2][1][1] = 1.5524564E-01;   Omega11[2][1][2] = -1.3479583E+00;  Omega11[2][1][3] = 2.0037890E+03;
+                Omega11[2][2][0] = -7.4942466E-03;  Omega11[2][2][1] = 1.6626193E-01;   Omega11[2][2][2] = -1.4107027E+00;  Omega11[2][2][3] = 2.3097604E+03;
+                Omega11[2][3][0] = -1.4719259E-03;  Omega11[2][3][1] = 1.8446968E-02;   Omega11[2][3][2] = -2.6460411E-01;  Omega11[2][3][3] = 1.0911124E+02;
+                Omega11[2][4][0] = -1.0066279E-03;  Omega11[2][4][1] = 1.1029264E-02;   Omega11[2][4][2] = -2.0671266E-01;  Omega11[2][4][3] = 8.2644384E+01;
+                //N
+                Omega11[3][0][0] = -8.3493693E-03;  Omega11[3][0][1] = 1.7808911E-01;   Omega11[3][0][2] = -1.4466155E+00;  Omega11[3][0][3] = 1.9324210E+03;
+                Omega11[3][1][0] = -1.0608832E-03;  Omega11[3][1][1] = 1.1782595E-02;   Omega11[3][1][2] = -2.1246301E-01;  Omega11[3][1][3] = 8.4561598E+01;
+                Omega11[3][2][0] = -1.4719259E-03;  Omega11[3][2][1] = 1.8446968E-02;   Omega11[3][2][2] = -2.6460411E-01;  Omega11[3][2][3] = 1.0911124E+02;
+                Omega11[3][3][0] = -7.7439615E-03;  Omega11[3][3][1] = 1.7129007E-01;   Omega11[3][3][2] = -1.4809088E+00;  Omega11[3][3][3] = 2.1284951E+03;
+                Omega11[3][4][0] = -5.0478143E-03;  Omega11[3][4][1] = 1.0236186E-01;   Omega11[3][4][2] = -9.0058935E-01;  Omega11[3][4][3] = 4.4472565E+02;
+                //O
+                Omega11[4][0][0] = -8.3110691E-03;  Omega11[4][0][1] = 1.9617877E-01;   Omega11[4][0][2] = -1.7205427E+00;  Omega11[4][0][3] = 4.0812829E+03;
+                Omega11[4][1][0] = -3.7969686E-03;  Omega11[4][1][1] = 7.6789981E-02;   Omega11[4][1][2] = -7.3056809E-01;  Omega11[4][1][3] = 3.3958171E+02;
+                Omega11[4][2][0] = -1.0066279E-03;  Omega11[4][2][1] = 1.1029264E-02;   Omega11[4][2][2] = -2.0671266E-01;  Omega11[4][2][3] = 8.2644384E+01;
+                Omega11[4][3][0] = -5.0478143E-03;  Omega11[4][3][1] = 1.0236186E-01;   Omega11[4][3][2] = -9.0058935E-01;  Omega11[4][3][3] = 4.4472565E+02;
+                Omega11[4][4][0] = -4.2451096E-03;  Omega11[4][4][1] = 9.6820337E-02;   Omega11[4][4][2] = -9.9770795E-01;  Omega11[4][4][3] = 8.3320644E+02;
+                
+                break;
         }
-
-        // Omega[iSpecies][jSpecies][iCoeff]
-        Omega00 = new double**[nSpecies];
-        Omega11 = new double**[nSpecies];
-        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-          Omega00[iSpecies] = new double*[nSpecies];
-          Omega11[iSpecies] = new double*[nSpecies];
-          for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
-            Omega00[iSpecies][jSpecies] = new double[4];
-            Omega11[iSpecies][jSpecies] = new double[4];
-          }
-        }
-
-        MassFrac_FreeStream = new double[nSpecies];
-        MassFrac_FreeStream[0] = 0.99;
-        MassFrac_FreeStream[1] = 0.01;
-
-        /*--- Assign gas properties ---*/
-
-        // Wall mass fractions for catalytic boundaries
-        Wall_Catalycity[0] = 0.7;
-        Wall_Catalycity[1] = 0.3;
-
-        // Rotational modes of energy storage
-        RotationModes[0] = 2.0;
-        RotationModes[1] = 0.0;
-
-        // Molar mass [kg/kmol]
-        Molar_Mass[0] = 2.0*14.0067;
-        Molar_Mass[1] = 14.0067;
-
-        // Characteristic vibrational temperatures
-        CharVibTemp[0] = 3395.0;
-        CharVibTemp[1] = 0.0;
-
-        // Formation enthalpy: (JANAF values [KJ/Kmol])
-        Enthalpy_Formation[0] = 0.0;					//N2
-        Enthalpy_Formation[1] = 472.683E3;		//N
-
-        // Reference temperature (JANAF values, [K])
-        Ref_Temperature[0] = 0.0;
-        Ref_Temperature[1] = 298.15;
-
-        // Number of electron states
-        nElStates[0] = 15;                    // N2
-        nElStates[1] = 3;                     // N
-        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-          maxEl = max(maxEl, nElStates[iSpecies]);
-
-        /*--- Allocate electron data arrays ---*/
-        CharElTemp = new double*[nSpecies];
-        degen      = new double*[nSpecies];
-        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-          CharElTemp[iSpecies] = new double[maxEl];
-          degen[iSpecies]      = new double[maxEl];
-        }
-
-        /*--- Initialize the arrays ---*/
-        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-          for (iEl = 0; iEl < maxEl; iEl++) {
-            CharElTemp[iSpecies][iEl] = 0.0;
-            degen[iSpecies][iEl] = 0.0;
-          }
-        }
-
-        /*--- Assign values to data structures ---*/
-        // N2: 15 states
-        CharElTemp[0][0]  = 0.000000000000000E+00;
-        CharElTemp[0][1]  = 7.223156514095200E+04;
-        CharElTemp[0][2]  = 8.577862640384000E+04;
-        CharElTemp[0][3]  = 8.605026716160000E+04;
-        CharElTemp[0][4]  = 9.535118627874400E+04;
-        CharElTemp[0][5]  = 9.805635702203200E+04;
-        CharElTemp[0][6]  = 9.968267656935200E+04;
-        CharElTemp[0][7]  = 1.048976467715200E+05;
-        CharElTemp[0][8]  = 1.116489555200000E+05;
-        CharElTemp[0][9]  = 1.225836470400000E+05;
-        CharElTemp[0][10] = 1.248856873600000E+05;
-        CharElTemp[0][11] = 1.282476158188320E+05;
-        CharElTemp[0][12] = 1.338060936000000E+05;
-        CharElTemp[0][13] = 1.404296391107200E+05;
-        CharElTemp[0][14] = 1.504958859200000E+05;
-        degen[0][0]  = 1;
-        degen[0][1]  = 3;
-        degen[0][2]  = 6;
-        degen[0][3]  = 6;
-        degen[0][4]  = 3;
-        degen[0][5]  = 1;
-        degen[0][6]  = 2;
-        degen[0][7]  = 2;
-        degen[0][8]  = 5;
-        degen[0][9]  = 1;
-        degen[0][10] = 6;
-        degen[0][11] = 6;
-        degen[0][12] = 10;
-        degen[0][13] = 6;
-        degen[0][14] = 6;
-        // N: 3 states
-        CharElTemp[1][0] = 0.000000000000000E+00;
-        CharElTemp[1][1] = 2.766469645581980E+04;
-        CharElTemp[1][2] = 4.149309313560210E+04;
-        degen[1][0] = 4;
-        degen[1][1] = 10;
-        degen[1][2] = 6;
-
-        /*--- Set Arrhenius coefficients for chemical reactions ---*/
-        // Pre-exponential factor
-        ArrheniusCoefficient[0]  = 7.0E21;
-        ArrheniusCoefficient[1]  = 3.0E22;
-        // Rate-controlling temperature exponent
-        ArrheniusEta[0]  = -1.60;
-        ArrheniusEta[1]  = -1.60;
-        // Characteristic temperature
-        ArrheniusTheta[0] = 113200.0;
-        ArrheniusTheta[1] = 113200.0;
-
-        /*--- Set reaction maps ---*/
-        // N2 + N2 -> 2N + N2
-        Reactions[0][0][0]=0;		Reactions[0][0][1]=0;		Reactions[0][0][2]=nSpecies;
-        Reactions[0][1][0]=1;		Reactions[0][1][1]=1;		Reactions[0][1][2] =0;
-        // N2 + N -> 2N + N
-        Reactions[1][0][0]=0;		Reactions[1][0][1]=1;		Reactions[1][0][2]=nSpecies;
-        Reactions[1][1][0]=1;		Reactions[1][1][1]=1;		Reactions[1][1][2]=1;
-
-        /*--- Set rate-controlling temperature exponents ---*/
-        //  -----------  Tc = Ttr^a * Tve^b  -----------
-        //
-        // Forward Reactions
-        //   Dissociation:      a = 0.5, b = 0.5  (OR a = 0.7, b =0.3)
-        //   Exchange:          a = 1,   b = 0
-        //   Impact ionization: a = 0,   b = 1
-        //
-        // Backward Reactions
-        //   Recomb ionization:      a = 0, b = 1
-        //   Impact ionization:      a = 0, b = 1
-        //   N2 impact dissociation: a = 0, b = 1
-        //   Others:                 a = 1, b = 0
-        Tcf_a[0] = 0.5; Tcf_b[0] = 0.5; Tcb_a[0] = 1;  Tcb_b[0] = 0;
-        Tcf_a[1] = 0.5; Tcf_b[1] = 0.5; Tcb_a[1] = 1;  Tcb_b[1] = 0;
-
-        /*--- Dissociation potential [KJ/kg] ---*/
-        Diss[0] = 3.36E4;
-        Diss[1] = 0.0;
-
-        /*--- Collision integral data ---*/
-        Omega00[0][0][0] = -6.0614558E-03;  Omega00[0][0][1] = 1.2689102E-01;   Omega00[0][0][2] = -1.0616948E+00;  Omega00[0][0][3] = 8.0955466E+02;
-        Omega00[0][1][0] = -1.0796249E-02;  Omega00[0][1][1] = 2.2656509E-01;   Omega00[0][1][2] = -1.7910602E+00;  Omega00[0][1][3] = 4.0455218E+03;
-        Omega00[1][0][0] = -1.0796249E-02;  Omega00[1][0][1] = 2.2656509E-01;   Omega00[1][0][2] = -1.7910602E+00;  Omega00[1][0][3] = 4.0455218E+03;
-        Omega00[1][1][0] = -9.6083779E-03;  Omega00[1][1][1] = 2.0938971E-01;   Omega00[1][1][2] = -1.7386904E+00;  Omega00[1][1][3] = 3.3587983E+03;
-
-        Omega11[0][0][0] = -7.6303990E-03;  Omega11[0][0][1] = 1.6878089E-01;   Omega11[0][0][2] = -1.4004234E+00;  Omega11[0][0][3] = 2.1427708E+03;
-        Omega11[0][1][0] = -8.3493693E-03;  Omega11[0][1][1] = 1.7808911E-01;   Omega11[0][1][2] = -1.4466155E+00;  Omega11[0][1][3] = 1.9324210E+03;
-        Omega11[1][0][0] = -8.3493693E-03;  Omega11[1][0][1] = 1.7808911E-01;   Omega11[1][0][2] = -1.4466155E+00;  Omega11[1][0][3] = 1.9324210E+03;
-        Omega11[1][1][0] = -7.7439615E-03;  Omega11[1][1][1] = 1.7129007E-01;   Omega11[1][1][2] = -1.4809088E+00;  Omega11[1][1][3] = 2.1284951E+03;
-
-        break;
-
-      case AIR5:
-        /*--- Define parameters of the gas model ---*/
-        nSpecies    = 5;
-        nReactions  = 17;
-        ionization  = false;
-
-        /*--- Allocate vectors for gas properties ---*/
-        Wall_Catalycity      = new double[nSpecies];
-        Molar_Mass           = new double[nSpecies];
-        CharVibTemp          = new double[nSpecies];
-        RotationModes        = new double[nSpecies];
-        Enthalpy_Formation   = new double[nSpecies];
-        Ref_Temperature      = new double[nSpecies];
-        ArrheniusCoefficient = new double[nReactions];
-        ArrheniusEta         = new double[nReactions];
-        ArrheniusTheta       = new double[nReactions];
-        Tcf_a                = new double[nReactions];
-        Tcf_b                = new double[nReactions];
-        Tcb_a                = new double[nReactions];
-        Tcb_b                = new double[nReactions];
-        nElStates            = new unsigned short[nSpecies];
-        Reactions            = new int**[nReactions];
-        for (unsigned short iRxn = 0; iRxn < nReactions; iRxn++) {
-          Reactions[iRxn] = new int*[2];
-          for (unsigned short ii = 0; ii < 2; ii++)
-            Reactions[iRxn][ii] = new int[6];
-        }
-
-        // Omega[iSpecies][jSpecies][iCoeff]
-        Omega00 = new double**[nSpecies];
-        Omega11 = new double**[nSpecies];
-        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-          Omega00[iSpecies] = new double*[nSpecies];
-          Omega11[iSpecies] = new double*[nSpecies];
-          for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
-            Omega00[iSpecies][jSpecies] = new double[4];
-            Omega11[iSpecies][jSpecies] = new double[4];
-          }
-        }
-
-        // Wall mass fractions for catalytic boundaries
-        Wall_Catalycity[0] = 0.4;
-        Wall_Catalycity[1] = 0.4;
-        Wall_Catalycity[2] = 0.1;
-        Wall_Catalycity[3] = 0.05;
-        Wall_Catalycity[4] = 0.05;
-
-        // Free stream mass fractions
-        MassFrac_FreeStream = new double[nSpecies];
-        MassFrac_FreeStream[0] = 0.78;
-        MassFrac_FreeStream[1] = 0.19;
-        MassFrac_FreeStream[2] = 0.01;
-        MassFrac_FreeStream[3] = 0.01;
-        MassFrac_FreeStream[4] = 0.01;
-
-        /*--- Assign gas properties ---*/
-        // Rotational modes of energy storage
-        RotationModes[0] = 2.0;
-        RotationModes[1] = 2.0;
-        RotationModes[2] = 2.0;
-        RotationModes[3] = 0.0;
-        RotationModes[4] = 0.0;
-
-        // Molar mass [kg/kmol]
-        Molar_Mass[0] = 2.0*14.0067;
-        Molar_Mass[1] = 2.0*15.9994;
-        Molar_Mass[2] = 14.0067+15.9994;
-        Molar_Mass[3] = 14.0067;
-        Molar_Mass[4] = 15.9994;
-
-        //Characteristic vibrational temperatures
-        CharVibTemp[0] = 3395.0;
-        CharVibTemp[1] = 2239.0;
-        CharVibTemp[2] = 2817.0;
-        CharVibTemp[3] = 0.0;
-        CharVibTemp[4] = 0.0;
-
-        // Formation enthalpy: (JANAF values [KJ/Kmol])
-        Enthalpy_Formation[0] = 0.0;					//N2
-        Enthalpy_Formation[1] = 0.0;					//O2
-        Enthalpy_Formation[2] = 90.291E3;			//NO
-        Enthalpy_Formation[3] = 472.683E3;		//N
-        Enthalpy_Formation[4] = 249.173E3;		//O
-
-        // Reference temperature (JANAF values, [K])
-        Ref_Temperature[0] = 0.0;
-        Ref_Temperature[1] = 0.0;
-        Ref_Temperature[2] = 298.15;
-        Ref_Temperature[3] = 298.15;
-        Ref_Temperature[4] = 298.15;
-
-        // Number of electron states
-        nElStates[0] = 15;                    // N2
-        nElStates[1] = 7;                     // O2
-        nElStates[2] = 16;                    // NO
-        nElStates[3] = 3;                     // N
-        nElStates[4] = 5;                     // O
-        /////
-
-        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-          maxEl = max(maxEl, nElStates[iSpecies]);
-
-        /*--- Allocate electron data arrays ---*/
-        CharElTemp = new double*[nSpecies];
-        degen      = new double*[nSpecies];
-        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-          CharElTemp[iSpecies] = new double[maxEl];
-          degen[iSpecies]      = new double[maxEl];
-        }
-
-        /*--- Initialize the arrays ---*/
-        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-          for (iEl = 0; iEl < maxEl; iEl++) {
-            CharElTemp[iSpecies][iEl] = 0.0;
-            degen[iSpecies][iEl] = 0.0;
-          }
-        }
-
-        //N2: 15 states
-        CharElTemp[0][0]  = 0.000000000000000E+00;
-        CharElTemp[0][1]  = 7.223156514095200E+04;
-        CharElTemp[0][2]  = 8.577862640384000E+04;
-        CharElTemp[0][3]  = 8.605026716160000E+04;
-        CharElTemp[0][4]  = 9.535118627874400E+04;
-        CharElTemp[0][5]  = 9.805635702203200E+04;
-        CharElTemp[0][6]  = 9.968267656935200E+04;
-        CharElTemp[0][7]  = 1.048976467715200E+05;
-        CharElTemp[0][8]  = 1.116489555200000E+05;
-        CharElTemp[0][9]  = 1.225836470400000E+05;
-        CharElTemp[0][10] = 1.248856873600000E+05;
-        CharElTemp[0][11] = 1.282476158188320E+05;
-        CharElTemp[0][12] = 1.338060936000000E+05;
-        CharElTemp[0][13] = 1.404296391107200E+05;
-        CharElTemp[0][14] = 1.504958859200000E+05;
-        degen[0][0]  = 1;
-        degen[0][1]  = 3;
-        degen[0][2]  = 6;
-        degen[0][3]  = 6;
-        degen[0][4]  = 3;
-        degen[0][5]  = 1;
-        degen[0][6]  = 2;
-        degen[0][7]  = 2;
-        degen[0][8]  = 5;
-        degen[0][9]  = 1;
-        degen[0][10] = 6;
-        degen[0][11] = 6;
-        degen[0][12] = 10;
-        degen[0][13] = 6;
-        degen[0][14] = 6;
-
-        // O2: 7 states
-        CharElTemp[1][0] = 0.000000000000000E+00;
-        CharElTemp[1][1] = 1.139156019700800E+04;
-        CharElTemp[1][2] = 1.898473947826400E+04;
-        CharElTemp[1][3] = 4.755973576639200E+04;
-        CharElTemp[1][4] = 4.991242097343200E+04;
-        CharElTemp[1][5] = 5.092268575561600E+04;
-        CharElTemp[1][6] = 7.189863255967200E+04;
-        degen[1][0] = 3;
-        degen[1][1] = 2;
-        degen[1][2] = 1;
-        degen[1][3] = 1;
-        degen[1][4] = 6;
-        degen[1][5] = 3;
-        degen[1][6] = 3;
-
-        // NO: 16 states
-        CharElTemp[2][0]  = 0.000000000000000E+00;
-        CharElTemp[2][1]  = 5.467345760000000E+04;
-        CharElTemp[2][2]  = 6.317139627802400E+04;
-        CharElTemp[2][3]  = 6.599450342445600E+04;
-        CharElTemp[2][4]  = 6.906120960000000E+04;
-        CharElTemp[2][5]  = 7.049998480000000E+04;
-        CharElTemp[2][6]  = 7.491055017560000E+04;
-        CharElTemp[2][7]  = 7.628875293968000E+04;
-        CharElTemp[2][8]  = 8.676188537552000E+04;
-        CharElTemp[2][9]  = 8.714431182368000E+04;
-        CharElTemp[2][10] = 8.886077063728000E+04;
-        CharElTemp[2][11] = 8.981755614528000E+04;
-        CharElTemp[2][12] = 8.988445919208000E+04;
-        CharElTemp[2][13] = 9.042702132000000E+04;
-        CharElTemp[2][14] = 9.064283760000000E+04;
-        CharElTemp[2][15] = 9.111763341600000E+04;
-        degen[2][0]  = 4;
-        degen[2][1]  = 8;
-        degen[2][2]  = 2;
-        degen[2][3]  = 4;
-        degen[2][4]  = 4;
-        degen[2][5]  = 4;
-        degen[2][6]  = 4;
-        degen[2][7]  = 2;
-        degen[2][8]  = 4;
-        degen[2][9]  = 2;
-        degen[2][10] = 4;
-        degen[2][11] = 4;
-        degen[2][12] = 2;
-        degen[2][13] = 2;
-        degen[2][14] = 2;
-        degen[2][15] = 4;
-
-        // N: 3 states
-        CharElTemp[3][0] = 0.000000000000000E+00;
-        CharElTemp[3][1] = 2.766469645581980E+04;
-        CharElTemp[3][2] = 4.149309313560210E+04;
-        degen[3][0] = 4;
-        degen[3][1] = 10;
-        degen[3][2] = 6;
-
-        // O: 5 states
-        CharElTemp[4][0] = 0.000000000000000E+00;
-        CharElTemp[4][1] = 2.277077570280000E+02;
-        CharElTemp[4][2] = 3.265688785704000E+02;
-        CharElTemp[4][3] = 2.283028632262240E+04;
-        CharElTemp[4][4] = 4.861993036434160E+04;
-        degen[4][0] = 5;
-        degen[4][1] = 3;
-        degen[4][2] = 1;
-        degen[4][3] = 5;
-        degen[4][4] = 1;
-
-        /*--- Set reaction maps ---*/
-        // N2 dissociation
-        Reactions[0][0][0]=0;		Reactions[0][0][1]=0;		Reactions[0][0][2]=nSpecies;		Reactions[0][1][0]=3;		Reactions[0][1][1]=3;		Reactions[0][1][2] =0;
-        Reactions[1][0][0]=0;		Reactions[1][0][1]=1;		Reactions[1][0][2]=nSpecies;		Reactions[1][1][0]=3;		Reactions[1][1][1]=3;		Reactions[1][1][2] =1;
-        Reactions[2][0][0]=0;		Reactions[2][0][1]=2;		Reactions[2][0][2]=nSpecies;		Reactions[2][1][0]=3;		Reactions[2][1][1]=3;		Reactions[2][1][2] =2;
-        Reactions[3][0][0]=0;		Reactions[3][0][1]=3;		Reactions[3][0][2]=nSpecies;		Reactions[3][1][0]=3;		Reactions[3][1][1]=3;		Reactions[3][1][2] =3;
-        Reactions[4][0][0]=0;		Reactions[4][0][1]=4;		Reactions[4][0][2]=nSpecies;		Reactions[4][1][0]=3;		Reactions[4][1][1]=3;		Reactions[4][1][2] =4;
-        // O2 dissociation
-        Reactions[5][0][0]=1;		Reactions[5][0][1]=0;		Reactions[5][0][2]=nSpecies;		Reactions[5][1][0]=4;		Reactions[5][1][1]=4;		Reactions[5][1][2] =0;
-        Reactions[6][0][0]=1;		Reactions[6][0][1]=1;		Reactions[6][0][2]=nSpecies;		Reactions[6][1][0]=4;		Reactions[6][1][1]=4;		Reactions[6][1][2] =1;
-        Reactions[7][0][0]=1;		Reactions[7][0][1]=2;		Reactions[7][0][2]=nSpecies;		Reactions[7][1][0]=4;		Reactions[7][1][1]=4;		Reactions[7][1][2] =2;
-        Reactions[8][0][0]=1;		Reactions[8][0][1]=3;		Reactions[8][0][2]=nSpecies;		Reactions[8][1][0]=4;		Reactions[8][1][1]=4;		Reactions[8][1][2] =3;
-        Reactions[9][0][0]=1;		Reactions[9][0][1]=4;		Reactions[9][0][2]=nSpecies;		Reactions[9][1][0]=4;		Reactions[9][1][1]=4;		Reactions[9][1][2] =4;
-        // NO dissociation
-        Reactions[10][0][0]=2;		Reactions[10][0][1]=0;		Reactions[10][0][2]=nSpecies;		Reactions[10][1][0]=3;		Reactions[10][1][1]=4;		Reactions[10][1][2] =0;
-        Reactions[11][0][0]=2;		Reactions[11][0][1]=1;		Reactions[11][0][2]=nSpecies;		Reactions[11][1][0]=3;		Reactions[11][1][1]=4;		Reactions[11][1][2] =1;
-        Reactions[12][0][0]=2;		Reactions[12][0][1]=2;		Reactions[12][0][2]=nSpecies;		Reactions[12][1][0]=3;		Reactions[12][1][1]=4;		Reactions[12][1][2] =2;
-        Reactions[13][0][0]=2;		Reactions[13][0][1]=3;		Reactions[13][0][2]=nSpecies;		Reactions[13][1][0]=3;		Reactions[13][1][1]=4;		Reactions[13][1][2] =3;
-        Reactions[14][0][0]=2;		Reactions[14][0][1]=4;		Reactions[14][0][2]=nSpecies;		Reactions[14][1][0]=3;		Reactions[14][1][1]=4;		Reactions[14][1][2] =4;
-        // N2 + O -> NO + N
-        Reactions[15][0][0]=0;		Reactions[15][0][1]=4;		Reactions[15][0][2]=nSpecies;		Reactions[15][1][0]=2;		Reactions[15][1][1]=3;		Reactions[15][1][2]= nSpecies;
-        // NO + O -> O2 + N
-        Reactions[16][0][0]=2;		Reactions[16][0][1]=4;		Reactions[16][0][2]=nSpecies;		Reactions[16][1][0]=1;		Reactions[16][1][1]=3;		Reactions[16][1][2]= nSpecies;
-
-        /*--- Set Arrhenius coefficients for reactions ---*/
-        // Pre-exponential factor
-        ArrheniusCoefficient[0]  = 7.0E21;
-        ArrheniusCoefficient[1]  = 7.0E21;
-        ArrheniusCoefficient[2]  = 7.0E21;
-        ArrheniusCoefficient[3]  = 3.0E22;
-        ArrheniusCoefficient[4]  = 3.0E22;
-        ArrheniusCoefficient[5]  = 2.0E21;
-        ArrheniusCoefficient[6]  = 2.0E21;
-        ArrheniusCoefficient[7]  = 2.0E21;
-        ArrheniusCoefficient[8]  = 1.0E22;
-        ArrheniusCoefficient[9]  = 1.0E22;
-        ArrheniusCoefficient[10] = 5.0E15;
-        ArrheniusCoefficient[11] = 5.0E15;
-        ArrheniusCoefficient[12] = 5.0E15;
-        ArrheniusCoefficient[13] = 1.1E17;
-        ArrheniusCoefficient[14] = 1.1E17;
-        ArrheniusCoefficient[15] = 6.4E17;
-        ArrheniusCoefficient[16] = 8.4E12;
-
-        // Rate-controlling temperature exponent
-        ArrheniusEta[0]  = -1.60;
-        ArrheniusEta[1]  = -1.60;
-        ArrheniusEta[2]  = -1.60;
-        ArrheniusEta[3]  = -1.60;
-        ArrheniusEta[4]  = -1.60;
-        ArrheniusEta[5]  = -1.50;
-        ArrheniusEta[6]  = -1.50;
-        ArrheniusEta[7]  = -1.50;
-        ArrheniusEta[8]  = -1.50;
-        ArrheniusEta[9]  = -1.50;
-        ArrheniusEta[10] = 0.0;
-        ArrheniusEta[11] = 0.0;
-        ArrheniusEta[12] = 0.0;
-        ArrheniusEta[13] = 0.0;
-        ArrheniusEta[14] = 0.0;
-        ArrheniusEta[15] = -1.0;
-        ArrheniusEta[16] = 0.0;
-
-        // Characteristic temperature
-        ArrheniusTheta[0]  = 113200.0;
-        ArrheniusTheta[1]  = 113200.0;
-        ArrheniusTheta[2]  = 113200.0;
-        ArrheniusTheta[3]  = 113200.0;
-        ArrheniusTheta[4]  = 113200.0;
-        ArrheniusTheta[5]  = 59500.0;
-        ArrheniusTheta[6]  = 59500.0;
-        ArrheniusTheta[7]  = 59500.0;
-        ArrheniusTheta[8]  = 59500.0;
-        ArrheniusTheta[9]  = 59500.0;
-        ArrheniusTheta[10] = 75500.0;
-        ArrheniusTheta[11] = 75500.0;
-        ArrheniusTheta[12] = 75500.0;
-        ArrheniusTheta[13] = 75500.0;
-        ArrheniusTheta[14] = 75500.0;
-        ArrheniusTheta[15] = 38400.0;
-        ArrheniusTheta[16] = 19450.0;
-
-        /*--- Set rate-controlling temperature exponents ---*/
-        //  -----------  Tc = Ttr^a * Tve^b  -----------
-        //
-        // Forward Reactions
-        //   Dissociation:      a = 0.5, b = 0.5  (OR a = 0.7, b =0.3)
-        //   Exchange:          a = 1,   b = 0
-        //   Impact ionization: a = 0,   b = 1
-        //
-        // Backward Reactions
-        //   Recomb ionization:      a = 0, b = 1
-        //   Impact ionization:      a = 0, b = 1
-        //   N2 impact dissociation: a = 0, b = 1
-        //   Others:                 a = 1, b = 0
-        Tcf_a[0]  = 0.5; Tcf_b[0]  = 0.5; Tcb_a[0]  = 1;  Tcb_b[0] = 0;
-        Tcf_a[1]  = 0.5; Tcf_b[1]  = 0.5; Tcb_a[1]  = 1;  Tcb_b[1] = 0;
-        Tcf_a[2]  = 0.5; Tcf_b[2]  = 0.5; Tcb_a[2]  = 1;  Tcb_b[2] = 0;
-        Tcf_a[3]  = 0.5; Tcf_b[3]  = 0.5; Tcb_a[3]  = 1;  Tcb_b[3] = 0;
-        Tcf_a[4]  = 0.5; Tcf_b[4]  = 0.5; Tcb_a[4]  = 1;  Tcb_b[4] = 0;
-
-        Tcf_a[5]  = 0.5; Tcf_b[5]  = 0.5; Tcb_a[5]  = 1;  Tcb_b[5] = 0;
-        Tcf_a[6]  = 0.5; Tcf_b[6]  = 0.5; Tcb_a[6]  = 1;  Tcb_b[6] = 0;
-        Tcf_a[7]  = 0.5; Tcf_b[7]  = 0.5; Tcb_a[7]  = 1;  Tcb_b[7] = 0;
-        Tcf_a[8]  = 0.5; Tcf_b[8]  = 0.5; Tcb_a[8]  = 1;  Tcb_b[8] = 0;
-        Tcf_a[9]  = 0.5; Tcf_b[9]  = 0.5; Tcb_a[9]  = 1;  Tcb_b[9] = 0;
-
-        Tcf_a[10] = 0.5; Tcf_b[10] = 0.5; Tcb_a[10] = 1;  Tcb_b[10] = 0;
-        Tcf_a[11] = 0.5; Tcf_b[11] = 0.5; Tcb_a[11] = 1;  Tcb_b[11] = 0;
-        Tcf_a[12] = 0.5; Tcf_b[12] = 0.5; Tcb_a[12] = 1;  Tcb_b[12] = 0;
-        Tcf_a[13] = 0.5; Tcf_b[13] = 0.5; Tcb_a[13] = 1;  Tcb_b[13] = 0;
-        Tcf_a[14] = 0.5; Tcf_b[14] = 0.5; Tcb_a[14] = 1;  Tcb_b[14] = 0;
-
-        Tcf_a[15] = 1.0; Tcf_b[15] = 0.0; Tcb_a[15] = 1;  Tcb_b[15] = 0;
-        Tcf_a[16] = 1.0; Tcf_b[16] = 0.0; Tcb_a[16] = 1;  Tcb_b[16] = 0;
-
-        /*--- Collision integral data ---*/
-        // Omega(0,0) ----------------------
-        //N2
-        Omega00[0][0][0] = -6.0614558E-03;  Omega00[0][0][1] = 1.2689102E-01;   Omega00[0][0][2] = -1.0616948E+00;  Omega00[0][0][3] = 8.0955466E+02;
-        Omega00[0][1][0] = -3.7959091E-03;  Omega00[0][1][1] = 9.5708295E-02;   Omega00[0][1][2] = -1.0070611E+00;  Omega00[0][1][3] = 8.9392313E+02;
-        Omega00[0][2][0] = -1.9295666E-03;  Omega00[0][2][1] = 2.7995735E-02;   Omega00[0][2][2] = -3.1588514E-01;  Omega00[0][2][3] = 1.2880734E+02;
-        Omega00[0][3][0] = -1.0796249E-02;  Omega00[0][3][1] = 2.2656509E-01;   Omega00[0][3][2] = -1.7910602E+00;  Omega00[0][3][3] = 4.0455218E+03;
-        Omega00[0][4][0] = -2.7244269E-03;  Omega00[0][4][1] = 6.9587171E-02;   Omega00[0][4][2] = -7.9538667E-01;  Omega00[0][4][3] = 4.0673730E+02;
-        //O2
-        Omega00[1][0][0] = -3.7959091E-03;  Omega00[1][0][1] = 9.5708295E-02;   Omega00[1][0][2] = -1.0070611E+00;  Omega00[1][0][3] = 8.9392313E+02;
-        Omega00[1][1][0] = -8.0682650E-04;  Omega00[1][1][1] = 1.6602480E-02;   Omega00[1][1][2] = -3.1472774E-01;  Omega00[1][1][3] = 1.4116458E+02;
-        Omega00[1][2][0] = -6.4433840E-04;  Omega00[1][2][1] = 8.5378580E-03;   Omega00[1][2][2] = -2.3225102E-01;  Omega00[1][2][3] = 1.1371608E+02;
-        Omega00[1][3][0] = -1.1453028E-03;  Omega00[1][3][1] = 1.2654140E-02;   Omega00[1][3][2] = -2.2435218E-01;  Omega00[1][3][3] = 7.7201588E+01;
-        Omega00[1][4][0] = -4.8405803E-03;  Omega00[1][4][1] = 1.0297688E-01;   Omega00[1][4][2] = -9.6876576E-01;  Omega00[1][4][3] = 6.1629812E+02;
-        //NO
-        Omega00[2][0][0] = -1.9295666E-03;  Omega00[2][0][1] = 2.7995735E-02;   Omega00[2][0][2] = -3.1588514E-01;  Omega00[2][0][3] = 1.2880734E+02;
-        Omega00[2][1][0] = -6.4433840E-04;  Omega00[2][1][1] = 8.5378580E-03;   Omega00[2][1][2] = -2.3225102E-01;  Omega00[2][1][3] = 1.1371608E+02;
-        Omega00[2][2][0] = -0.0000000E+00;  Omega00[2][2][1] = -1.1056066E-02;  Omega00[2][2][2] = -5.9216250E-02;  Omega00[2][2][3] = 7.2542367E+01;
-        Omega00[2][3][0] = -1.5770918E-03;  Omega00[2][3][1] = 1.9578381E-02;   Omega00[2][3][2] = -2.7873624E-01;  Omega00[2][3][3] = 9.9547944E+01;
-        Omega00[2][4][0] = -1.0885815E-03;  Omega00[2][4][1] = 1.1883688E-02;   Omega00[2][4][2] = -2.1844909E-01;  Omega00[2][4][3] = 7.5512560E+01;
-        //N
-        Omega00[3][0][0] = -1.0796249E-02;  Omega00[3][0][1] = 2.2656509E-01;   Omega00[3][0][2] = -1.7910602E+00;  Omega00[3][0][3] = 4.0455218E+03;
-        Omega00[3][1][0] = -1.1453028E-03;  Omega00[3][1][1] = 1.2654140E-02;   Omega00[3][1][2] = -2.2435218E-01;  Omega00[3][1][3] = 7.7201588E+01;
-        Omega00[3][2][0] = -1.5770918E-03;  Omega00[3][2][1] = 1.9578381E-02;   Omega00[3][2][2] = -2.7873624E-01;  Omega00[3][2][3] = 9.9547944E+01;
-        Omega00[3][3][0] = -9.6083779E-03;  Omega00[3][3][1] = 2.0938971E-01;   Omega00[3][3][2] = -1.7386904E+00;  Omega00[3][3][3] = 3.3587983E+03;
-        Omega00[3][4][0] = -7.8147689E-03;  Omega00[3][4][1] = 1.6792705E-01;   Omega00[3][4][2] = -1.4308628E+00;  Omega00[3][4][3] = 1.6628859E+03;
-        //O
-        Omega00[4][0][0] = -2.7244269E-03;  Omega00[4][0][1] = 6.9587171E-02;   Omega00[4][0][2] = -7.9538667E-01;  Omega00[4][0][3] = 4.0673730E+02;
-        Omega00[4][1][0] = -4.8405803E-03;  Omega00[4][1][1] = 1.0297688E-01;   Omega00[4][1][2] = -9.6876576E-01;  Omega00[4][1][3] = 6.1629812E+02;
-        Omega00[4][2][0] = -1.0885815E-03;  Omega00[4][2][1] = 1.1883688E-02;   Omega00[4][2][2] = -2.1844909E-01;  Omega00[4][2][3] = 7.5512560E+01;
-        Omega00[4][3][0] = -7.8147689E-03;  Omega00[4][3][1] = 1.6792705E-01;   Omega00[4][3][2] = -1.4308628E+00;  Omega00[4][3][3] = 1.6628859E+03;
-        Omega00[4][4][0] = -6.4040535E-03;  Omega00[4][4][1] = 1.4629949E-01;   Omega00[4][4][2] = -1.3892121E+00;  Omega00[4][4][3] = 2.0903441E+03;
-
-        // Omega(1,1) ----------------------
-        //N2
-        Omega11[0][0][0] = -7.6303990E-03;  Omega11[0][0][1] = 1.6878089E-01;   Omega11[0][0][2] = -1.4004234E+00;  Omega11[0][0][3] = 2.1427708E+03;
-        Omega11[0][1][0] = -8.0457321E-03;  Omega11[0][1][1] = 1.9228905E-01;   Omega11[0][1][2] = -1.7102854E+00;  Omega11[0][1][3] = 5.2213857E+03;
-        Omega11[0][2][0] = -6.8237776E-03;  Omega11[0][2][1] = 1.4360616E-01;   Omega11[0][2][2] = -1.1922240E+00;  Omega11[0][2][3] = 1.2433086E+03;
-        Omega11[0][3][0] = -8.3493693E-03;  Omega11[0][3][1] = 1.7808911E-01;   Omega11[0][3][2] = -1.4466155E+00;  Omega11[0][3][3] = 1.9324210E+03;
-        Omega11[0][4][0] = -8.3110691E-03;  Omega11[0][4][1] = 1.9617877E-01;   Omega11[0][4][2] = -1.7205427E+00;  Omega11[0][4][3] = 4.0812829E+03;
-        //O2
-        Omega11[1][0][0] = -8.0457321E-03;  Omega11[1][0][1] = 1.9228905E-01;   Omega11[1][0][2] = -1.7102854E+00;  Omega11[1][0][3] = 5.2213857E+03;
-        Omega11[1][1][0] = -6.2931612E-03;  Omega11[1][1][1] = 1.4624645E-01;   Omega11[1][1][2] = -1.3006927E+00;  Omega11[1][1][3] = 1.8066892E+03;
-        Omega11[1][2][0] = -6.8508672E-03;  Omega11[1][2][1] = 1.5524564E-01;   Omega11[1][2][2] = -1.3479583E+00;  Omega11[1][2][3] = 2.0037890E+03;
-        Omega11[1][3][0] = -1.0608832E-03;  Omega11[1][3][1] = 1.1782595E-02;   Omega11[1][3][2] = -2.1246301E-01;  Omega11[1][3][3] = 8.4561598E+01;
-        Omega11[1][4][0] = -3.7969686E-03;  Omega11[1][4][1] = 7.6789981E-02;   Omega11[1][4][2] = -7.3056809E-01;  Omega11[1][4][3] = 3.3958171E+02;
-        //NO
-        Omega11[2][0][0] = -6.8237776E-03;  Omega11[2][0][1] = 1.4360616E-01;   Omega11[2][0][2] = -1.1922240E+00;  Omega11[2][0][3] = 1.2433086E+03;
-        Omega11[2][1][0] = -6.8508672E-03;  Omega11[2][1][1] = 1.5524564E-01;   Omega11[2][1][2] = -1.3479583E+00;  Omega11[2][1][3] = 2.0037890E+03;
-        Omega11[2][2][0] = -7.4942466E-03;  Omega11[2][2][1] = 1.6626193E-01;   Omega11[2][2][2] = -1.4107027E+00;  Omega11[2][2][3] = 2.3097604E+03;
-        Omega11[2][3][0] = -1.4719259E-03;  Omega11[2][3][1] = 1.8446968E-02;   Omega11[2][3][2] = -2.6460411E-01;  Omega11[2][3][3] = 1.0911124E+02;
-        Omega11[2][4][0] = -1.0066279E-03;  Omega11[2][4][1] = 1.1029264E-02;   Omega11[2][4][2] = -2.0671266E-01;  Omega11[2][4][3] = 8.2644384E+01;
-        //N
-        Omega11[3][0][0] = -8.3493693E-03;  Omega11[3][0][1] = 1.7808911E-01;   Omega11[3][0][2] = -1.4466155E+00;  Omega11[3][0][3] = 1.9324210E+03;
-        Omega11[3][1][0] = -1.0608832E-03;  Omega11[3][1][1] = 1.1782595E-02;   Omega11[3][1][2] = -2.1246301E-01;  Omega11[3][1][3] = 8.4561598E+01;
-        Omega11[3][2][0] = -1.4719259E-03;  Omega11[3][2][1] = 1.8446968E-02;   Omega11[3][2][2] = -2.6460411E-01;  Omega11[3][2][3] = 1.0911124E+02;
-        Omega11[3][3][0] = -7.7439615E-03;  Omega11[3][3][1] = 1.7129007E-01;   Omega11[3][3][2] = -1.4809088E+00;  Omega11[3][3][3] = 2.1284951E+03;
-        Omega11[3][4][0] = -5.0478143E-03;  Omega11[3][4][1] = 1.0236186E-01;   Omega11[3][4][2] = -9.0058935E-01;  Omega11[3][4][3] = 4.4472565E+02;
-        //O
-        Omega11[4][0][0] = -8.3110691E-03;  Omega11[4][0][1] = 1.9617877E-01;   Omega11[4][0][2] = -1.7205427E+00;  Omega11[4][0][3] = 4.0812829E+03;
-        Omega11[4][1][0] = -3.7969686E-03;  Omega11[4][1][1] = 7.6789981E-02;   Omega11[4][1][2] = -7.3056809E-01;  Omega11[4][1][3] = 3.3958171E+02;
-        Omega11[4][2][0] = -1.0066279E-03;  Omega11[4][2][1] = 1.1029264E-02;   Omega11[4][2][2] = -2.0671266E-01;  Omega11[4][2][3] = 8.2644384E+01;
-        Omega11[4][3][0] = -5.0478143E-03;  Omega11[4][3][1] = 1.0236186E-01;   Omega11[4][3][2] = -9.0058935E-01;  Omega11[4][3][3] = 4.4472565E+02;
-        Omega11[4][4][0] = -4.2451096E-03;  Omega11[4][4][1] = 9.6820337E-02;   Omega11[4][4][2] = -9.9770795E-01;  Omega11[4][4][3] = 8.3320644E+02;
-
-        break;
     }
-  }
-
-  /*--- Check for constant lift mode  ---*/
-  if (Fixed_CL_Mode) {
-
-    /*--- The initial AoA will be taken as the value input in the 
-     config file (the default is zero). ---*/
-
-    /*--- We will force the use of the cauchy convergence criteria for
-     constant lift mode. ---*/
-
-    ConvCriteria = CAUCHY;
-    Cauchy_Func_Flow = LIFT_COEFFICIENT;
-
-    /*--- Initialize the update flag for the AoA with each iteration to false ---*/
-
-    Update_AoA = false;
-
-  }
-
-  /*--- Check for 2nd order w/ limiting for JST and correct ---*/
-  
-  if ((Kind_ConvNumScheme_Flow == SPACE_CENTERED) && (Kind_Centered_Flow == JST) && (SpatialOrder_Flow == SECOND_ORDER_LIMITER))
-    SpatialOrder_Flow = SECOND_ORDER;
-  
-  if ((Kind_ConvNumScheme_AdjFlow == SPACE_CENTERED) && (Kind_Centered_AdjFlow == JST) && (SpatialOrder_AdjFlow == SECOND_ORDER_LIMITER))
-    SpatialOrder_AdjFlow = SECOND_ORDER;
-
-  delete [] tmp_smooth;
-
+    
+    /*--- Check for constant lift mode  ---*/
+    if (Fixed_CL_Mode) {
+        
+        /*--- The initial AoA will be taken as the value input in the 
+         config file (the default is zero). ---*/
+        
+        /*--- We will force the use of the cauchy convergence criteria for
+         constant lift mode. ---*/
+        
+        ConvCriteria = CAUCHY;
+        Cauchy_Func_Flow = LIFT_COEFFICIENT;
+        
+        /*--- Initialize the update flag for the AoA with each iteration to false ---*/
+        
+        Update_AoA = false;
+        
+    }
+    
+    /*--- Check for 2nd order w/ limiting for JST and correct ---*/
+    
+    if ((Kind_ConvNumScheme_Flow == SPACE_CENTERED) && (Kind_Centered_Flow == JST) && (SpatialOrder_Flow == SECOND_ORDER_LIMITER))
+        SpatialOrder_Flow = SECOND_ORDER;
+    
+    if ((Kind_ConvNumScheme_AdjFlow == SPACE_CENTERED) && (Kind_Centered_AdjFlow == JST) && (SpatialOrder_AdjFlow == SECOND_ORDER_LIMITER))
+        SpatialOrder_AdjFlow = SECOND_ORDER;
+    
+    delete [] tmp_smooth;
+    
 }
 
 void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) {
 
+  /*--- Identify the solvers that work in serial ---*/
+
 #ifndef HAVE_MPI
   nDomain = SINGLE_NODE;
 #else
-  /*--- Identify the solvers that work in serial ---*/
   if (val_software != SU2_MSH)
     MPI_Comm_size(MPI_COMM_WORLD, (int*)&nDomain);   // any issue with type conversion here? MC
   else
@@ -2786,12 +2900,13 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 #endif
 
   /*--- Boundary (marker) treatment ---*/
+  
   nMarker_All = nMarker_Euler + nMarker_FarField + nMarker_SymWall +
-  nMarker_PerBound + nMarker_NearFieldBound + nMarker_Supersonic_Inlet +
+  nMarker_PerBound + nMarker_NearFieldBound + nMarker_Supersonic_Inlet + nMarker_Supersonic_Outlet +
   nMarker_InterfaceBound + nMarker_Dirichlet + nMarker_Neumann + nMarker_Riemann+ nMarker_Inlet +
   nMarker_Outlet + nMarker_Isothermal + nMarker_IsothermalCatalytic +
   nMarker_IsothermalNonCatalytic + nMarker_HeatFlux + nMarker_HeatFluxCatalytic +
-  nMarker_HeatFluxNonCatalytic + nMarker_NacelleInflow + nMarker_NacelleExhaust +
+  nMarker_HeatFluxNonCatalytic + nMarker_EngineInflow + nMarker_EngineBleed + nMarker_EngineExhaust +
   nMarker_Dirichlet_Elec + nMarker_Displacement + nMarker_Load +
   nMarker_FlowLoad + nMarker_Pressure + nMarker_Custom +
   nMarker_ActDisk_Inlet + nMarker_ActDisk_Outlet + nMarker_Out_1D + 2*nDomain;
@@ -2813,16 +2928,16 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
   iMarker_NearFieldBound, iMarker_InterfaceBound, iMarker_Dirichlet,
   iMarker_Inlet, iMarker_Riemann, iMarker_Outlet, iMarker_Isothermal, iMarker_IsothermalCatalytic,
   iMarker_IsothermalNonCatalytic, iMarker_HeatFlux, iMarker_HeatFluxNoncatalytic,
-  iMarker_HeatFluxCatalytic, iMarker_NacelleInflow, iMarker_NacelleExhaust,
+  iMarker_HeatFluxCatalytic, iMarker_EngineInflow, iMarker_EngineBleed, iMarker_EngineExhaust,
   iMarker_Displacement, iMarker_Load, iMarker_FlowLoad, iMarker_Neumann,
   iMarker_Monitoring, iMarker_Designing, iMarker_GeoEval, iMarker_Plotting,
-  iMarker_DV, iMarker_Moving, iMarker_Supersonic_Inlet,
+  iMarker_DV, iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet,
   iMarker_ActDisk_Inlet, iMarker_ActDisk_Outlet, iMarker_Out_1D;
 
   for (iMarker_All = 0; iMarker_All < nMarker_All; iMarker_All++) {
-    Marker_All_TagBound[iMarker_All] = "SEND_RECEIVE";
+    Marker_All_TagBound[iMarker_All]   = "SEND_RECEIVE";
     Marker_All_SendRecv[iMarker_All]   = 0;
-    Marker_All_KindBC[iMarker_All]   = 0;
+    Marker_All_KindBC[iMarker_All]     = 0;
     Marker_All_Monitoring[iMarker_All] = 0;
     Marker_All_GeoEval[iMarker_All]    = 0;
     Marker_All_Designing[iMarker_All]  = 0;
@@ -2830,7 +2945,7 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
     Marker_All_DV[iMarker_All]         = 0;
     Marker_All_Moving[iMarker_All]     = 0;
     Marker_All_PerBound[iMarker_All]   = 0;
-    Marker_All_Out_1D[iMarker_All]   = 0;
+    Marker_All_Out_1D[iMarker_All]     = 0;
   }
 
   nMarker_Config = nMarker_Euler + nMarker_FarField + nMarker_SymWall +
@@ -2838,8 +2953,8 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
   nMarker_InterfaceBound + nMarker_Dirichlet + nMarker_Neumann + nMarker_Inlet + nMarker_Riemann +
   nMarker_Outlet + nMarker_Isothermal + nMarker_IsothermalNonCatalytic +
   nMarker_IsothermalCatalytic + nMarker_HeatFlux + nMarker_HeatFluxNonCatalytic +
-  nMarker_HeatFluxCatalytic + nMarker_NacelleInflow + nMarker_NacelleExhaust +
-  nMarker_Supersonic_Inlet + nMarker_Displacement + nMarker_Load +
+  nMarker_HeatFluxCatalytic + nMarker_EngineInflow + nMarker_EngineBleed + nMarker_EngineExhaust +
+  nMarker_Supersonic_Inlet + nMarker_Supersonic_Outlet + nMarker_Displacement + nMarker_Load +
   nMarker_FlowLoad + nMarker_Custom +
   nMarker_ActDisk_Inlet + nMarker_ActDisk_Outlet + nMarker_Out_1D;
 
@@ -2941,26 +3056,50 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
     iMarker_Config++;
   }
 
-  FanFace_Mach = new double[nMarker_NacelleInflow];
-  FanFace_Pressure = new double[nMarker_NacelleInflow];
+  Inflow_Mach = new double[nMarker_EngineInflow];
+  Inflow_Pressure = new double[nMarker_EngineInflow];
 
-  for (iMarker_NacelleInflow = 0; iMarker_NacelleInflow < nMarker_NacelleInflow; iMarker_NacelleInflow++) {
-    Marker_CfgFile_TagBound[iMarker_Config] = Marker_NacelleInflow[iMarker_NacelleInflow];
-    Marker_CfgFile_KindBC[iMarker_Config] = NACELLE_INFLOW;
-    FanFace_Mach[iMarker_NacelleInflow] = 0.0;
-    FanFace_Pressure[iMarker_NacelleInflow] = 0.0;
+  for (iMarker_EngineInflow = 0; iMarker_EngineInflow < nMarker_EngineInflow; iMarker_EngineInflow++) {
+    Marker_CfgFile_TagBound[iMarker_Config] = Marker_EngineInflow[iMarker_EngineInflow];
+    Marker_CfgFile_KindBC[iMarker_Config] = ENGINE_INFLOW;
+    Inflow_Mach[iMarker_EngineInflow] = 0.0;
+    Inflow_Pressure[iMarker_EngineInflow] = 0.0;
+    iMarker_Config++;
+  }
+  
+  Bleed_MassFlow = new double[nMarker_EngineBleed];
+  Bleed_Temperature = new double[nMarker_EngineBleed];
+  Bleed_Pressure = new double[nMarker_EngineBleed];
+
+  for (iMarker_EngineBleed = 0; iMarker_EngineBleed < nMarker_EngineBleed; iMarker_EngineBleed++) {
+    Marker_CfgFile_TagBound[iMarker_Config] = Marker_EngineBleed[iMarker_EngineBleed];
+    Marker_CfgFile_KindBC[iMarker_Config] = ENGINE_BLEED;
+    Bleed_MassFlow[iMarker_EngineBleed] = 0.0;
+    Bleed_Temperature[iMarker_EngineBleed] = 0.0;
+    Bleed_Pressure[iMarker_EngineBleed] = 0.0;
     iMarker_Config++;
   }
 
-  for (iMarker_NacelleExhaust = 0; iMarker_NacelleExhaust < nMarker_NacelleExhaust; iMarker_NacelleExhaust++) {
-    Marker_CfgFile_TagBound[iMarker_Config] = Marker_NacelleExhaust[iMarker_NacelleExhaust];
-    Marker_CfgFile_KindBC[iMarker_Config] = NACELLE_EXHAUST;
+  Exhaust_Pressure = new double[nMarker_EngineExhaust];
+  Exhaust_Temperature = new double[nMarker_EngineExhaust];
+
+  for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++) {
+    Marker_CfgFile_TagBound[iMarker_Config] = Marker_EngineExhaust[iMarker_EngineExhaust];
+    Marker_CfgFile_KindBC[iMarker_Config] = ENGINE_EXHAUST;
+    Exhaust_Pressure[iMarker_EngineExhaust] = 0.0;
+    Exhaust_Temperature[iMarker_EngineExhaust] = 0.0;
     iMarker_Config++;
   }
 
   for (iMarker_Supersonic_Inlet = 0; iMarker_Supersonic_Inlet < nMarker_Supersonic_Inlet; iMarker_Supersonic_Inlet++) {
     Marker_CfgFile_TagBound[iMarker_Config] = Marker_Supersonic_Inlet[iMarker_Supersonic_Inlet];
     Marker_CfgFile_KindBC[iMarker_Config] = SUPERSONIC_INLET;
+    iMarker_Config++;
+  }
+  
+  for (iMarker_Supersonic_Outlet = 0; iMarker_Supersonic_Outlet < nMarker_Supersonic_Outlet; iMarker_Supersonic_Outlet++) {
+    Marker_CfgFile_TagBound[iMarker_Config] = Marker_Supersonic_Outlet[iMarker_Supersonic_Outlet];
+    Marker_CfgFile_KindBC[iMarker_Config] = SUPERSONIC_OUTLET;
     iMarker_Config++;
   }
 
@@ -3092,41 +3231,64 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   unsigned short iMarker_Euler, iMarker_Custom, iMarker_FarField,
   iMarker_SymWall, iMarker_PerBound, iMarker_Pressure, iMarker_NearFieldBound,
-  iMarker_InterfaceBound, iMarker_Dirichlet, iMarker_Inlet, iMarker_Outlet,
+  iMarker_InterfaceBound, iMarker_Dirichlet, iMarker_Inlet,iMarker_Riemann, iMarker_Outlet,
   iMarker_Isothermal, iMarker_IsothermalNonCatalytic, iMarker_IsothermalCatalytic,
   iMarker_HeatFlux, iMarker_HeatFluxNonCatalytic, iMarker_HeatFluxCatalytic,
-  iMarker_NacelleInflow, iMarker_NacelleExhaust, iMarker_Displacement,
+  iMarker_EngineInflow, iMarker_EngineBleed, iMarker_EngineExhaust, iMarker_Displacement,
   iMarker_Load, iMarker_FlowLoad,  iMarker_Neumann, iMarker_Monitoring,
   iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_DV,
-  iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_ActDisk_Inlet,
+  iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet, iMarker_ActDisk_Inlet,
   iMarker_ActDisk_Outlet;
 
-  cout << endl <<"-------------------------------------------------------------------------" << endl;
-  cout <<"|    _____   _    _   ___                                               |" << endl;
-  cout <<"|   / ____| | |  | | |__ \\    Web: su2.stanford.edu                     |" << endl;
-  cout <<"|  | (___   | |  | |    ) |   Twitter: @su2code                         |" << endl;
-  cout <<"|   \\___ \\  | |  | |   / /    Forum: www.cfd-online.com/Forums/su2/     |" << endl;
-  cout <<"|   ____) | | |__| |  / /_                                              |" << endl;
+  
+  
+  
+  
+  
+  
+  
+  cout << endl << "-------------------------------------------------------------------------" << endl;
+  cout << "|    ___ _   _ ___                                                      |" << endl;
+  cout << "|   / __| | | |_  )   Release 3.2.7 \"eagle\"                             |" << endl;
+  cout << "|   \\__ \\ |_| |/ /                                                      |" << endl;
   switch (val_software) {
-    case SU2_CFD: cout << "|  |_____/   \\____/  |____|   Suite (Computational Fluid Dynamics Code) |" << endl; break;
-    case SU2_DEF: cout << "|  |_____/   \\____/  |____|   Suite (Mesh Deformation Code)             |" << endl; break;
-    case SU2_DOT: cout << "|  |_____/   \\____/  |____|   Suite (Gradient Projection Code)          |" << endl; break;
-    case SU2_PRT: cout << "|  |_____/   \\____/  |____|   Suite (Grid Partitioning Code)            |" << endl; break;
-    case SU2_MSH: cout << "|  |_____/   \\____/  |____|   Suite (Mesh Adaptation Code)              |" << endl; break;
-    case SU2_GEO: cout << "|  |_____/   \\____/  |____|   Suite (Geometry Definition Code)          |" << endl; break;
-    case SU2_SOL: cout << "|  |_____/   \\____/  |____|   Suite (Solution Exporting Code)           |" << endl; break;
+    case SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;
+    case SU2_DEF: cout << "|   |___/\\___//___|   Suite (Mesh Deformation Code)                     |" << endl; break;
+    case SU2_DOT: cout << "|   |___/\\___//___|   Suite (Gradient Projection Code)                  |" << endl; break;
+    case SU2_MSH: cout << "|   |___/\\___//___|   Suite (Mesh Adaptation Code)                      |" << endl; break;
+    case SU2_GEO: cout << "|   |___/\\___//___|   Suite (Geometry Definition Code)                  |" << endl; break;
+    case SU2_SOL: cout << "|   |___/\\___//___|   Suite (Solution Exporting Code)                   |" << endl; break;
   }
 
-  cout << "|                             Release 3.2.4 \"eagle\"                     |" << endl;
+  cout << "|                                                                       |" << endl;
   cout <<"-------------------------------------------------------------------------" << endl;
-  cout << "| SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).       |" << endl;
+  cout << "| SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu). |" << endl;
+  cout << "|                      Dr. Thomas D. Economon (economon@stanford.edu).  |" << endl;
+  cout <<"-------------------------------------------------------------------------" << endl;
+  cout << "| SU2 Developers:                                                       |" << endl;
+  cout << "| - Prof. Juan J. Alonso's group at Stanford University.                |" << endl;
+  cout << "| - Prof. Piero Colonna's group at Delft University of Technology.      |" << endl;
+  cout << "| - Prof. Nicolas R. Gauger's group at Kaiserslautern U. of Technology. |" << endl;
+  cout << "| - Prof. Alberto Guardone's group at Polytechnic University of Milan.  |" << endl;
+  cout << "| - Prof. Rafael Palacios' group at Imperial College London.            |" << endl;
+  cout <<"-------------------------------------------------------------------------" << endl;
+  cout << "| Copyright (C) 2012-2014 SU2, the open-source CFD code.                |" << endl;
+  cout << "|                                                                       |" << endl;
+  cout << "| SU2 is free software; you can redistribute it and/or                  |" << endl;
+  cout << "| modify it under the terms of the GNU Lesser General Public            |" << endl;
+  cout << "| License as published by the Free Software Foundation; either          |" << endl;
+  cout << "| version 2.1 of the License, or (at your option) any later version.    |" << endl;
+  cout << "|                                                                       |" << endl;
   cout << "| SU2 is distributed in the hope that it will be useful,                |" << endl;
   cout << "| but WITHOUT ANY WARRANTY; without even the implied warranty of        |" << endl;
   cout << "| MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU      |" << endl;
-  cout << "| Lesser General Public License (version 2.1) for more details.         |" << endl;
+  cout << "| Lesser General Public License for more details.                       |" << endl;
+  cout << "|                                                                       |" << endl;
+  cout << "| You should have received a copy of the GNU Lesser General Public      |" << endl;
+  cout << "| License along with SU2. If not, see <http://www.gnu.org/licenses/>.   |" << endl;
   cout <<"-------------------------------------------------------------------------" << endl;
 
-  cout << endl <<"------------------------ Physical case definition -----------------------" << endl;
+  cout << endl <<"------------------------ Physical Case Definition -----------------------" << endl;
   if (val_software == SU2_CFD) {
     switch (Kind_Solver) {
       case EULER:
@@ -3159,7 +3321,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         switch (Kind_Turb_Model) {
           case SA:  cout << "Spalart Allmaras" << endl; break;
           case SST: cout << "Menter's SST"     << endl; break;
-          case ML: cout << "Machine Learning" <<endl;break;
+          case ML: cout << "Machine Learning" << endl;break;
         }
         break;
       case TNE2_EULER:
@@ -3206,8 +3368,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     if (EquivArea) {
       cout <<"The equivalent area is going to be evaluated on the near-field."<< endl;
-      cout <<"The lower integration limit is "<<EA_IntLimit[0]<<", and the upper is "<<EA_IntLimit[1]<<"."<<endl;
-      cout <<"The near-field is situated at "<<EA_IntLimit[2]<<"."<<endl;
+      cout <<"The lower integration limit is "<<EA_IntLimit[0]<<", and the upper is "<<EA_IntLimit[1]<<"."<< endl;
+      cout <<"The near-field is situated at "<<EA_IntLimit[2]<<"."<< endl;
     }
 
     if (Grid_Movement) {
@@ -3237,16 +3399,18 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     if (Adjoint || Linearized)
       cout << "Read flow solution from: " << Solution_FlowFileName << "." << endl;
 
-    if (RefAreaCoeff == 0) cout << "The reference length/area will be computed using y(2D) or z(3D) projection." <<endl;
-    else cout << "The reference length/area (force coefficient) is " << RefAreaCoeff << "." <<endl;
-    cout << "The reference length (moment computation) is " << RefLengthMoment << "." <<endl;
+    if (RefAreaCoeff == 0) cout << "The reference length/area will be computed using y(2D) or z(3D) projection." << endl;
+    else cout << "The reference length/area (force coefficient) is " << RefAreaCoeff << "." << endl;
+    cout << "The reference length (moment computation) is " << RefLengthMoment << "." << endl;
 
     if ((nRefOriginMoment_X > 1) || (nRefOriginMoment_Y > 1) || (nRefOriginMoment_Z > 1)) {
-      cout << "Surface(s) where the force coefficients are evaluated and their reference origin for moment computation: ";
+      cout << "Surface(s) where the force coefficients are evaluated and \n";
+      cout << "their reference origin for moment computation: \n";
+
       for (iMarker_Monitoring = 0; iMarker_Monitoring < nMarker_Monitoring; iMarker_Monitoring++) {
-        cout << Marker_Monitoring[iMarker_Monitoring] << " (" << RefOriginMoment_X[iMarker_Monitoring] <<", "<<RefOriginMoment_Y[iMarker_Monitoring] <<", "<< RefOriginMoment_Z[iMarker_Monitoring] << ")";
-        if (iMarker_Monitoring < nMarker_Monitoring-1) cout << ", ";
-        else cout <<"."<<endl;
+        cout << "   - " << Marker_Monitoring[iMarker_Monitoring] << " (" << RefOriginMoment_X[iMarker_Monitoring] <<", "<<RefOriginMoment_Y[iMarker_Monitoring] <<", "<< RefOriginMoment_Z[iMarker_Monitoring] << ")";
+        if (iMarker_Monitoring < nMarker_Monitoring-1) cout << ".\n";
+        else cout <<"."<< endl;
       }
     }
     else {
@@ -3255,7 +3419,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       for (iMarker_Monitoring = 0; iMarker_Monitoring < nMarker_Monitoring; iMarker_Monitoring++) {
         cout << Marker_Monitoring[iMarker_Monitoring];
         if (iMarker_Monitoring < nMarker_Monitoring-1) cout << ", ";
-        else cout <<"."<<endl;
+        else cout <<"."<< endl;
       }
     }
 
@@ -3266,7 +3430,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         if (iMarker_Designing < nMarker_Designing-1) cout << ", ";
         else cout <<".";
       }
-      cout<<endl;
+      cout<< endl;
     }
 
     cout << "Surface(s) plotted in the output file: ";
@@ -3275,7 +3439,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       if (iMarker_Plotting < nMarker_Plotting-1) cout << ", ";
       else cout <<".";
     }
-    cout<<endl;
+    cout<< endl;
 
     if (nMarker_DV != 0) {
       cout << "Surface(s) affected by the design variables: ";
@@ -3284,7 +3448,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         if (iMarker_DV < nMarker_DV-1) cout << ", ";
         else cout <<".";
       }
-      cout<<endl;
+      cout<< endl;
     }
 
     if ((Kind_GridMovement[ZONE_0] == DEFORMING) || (Kind_GridMovement[ZONE_0] == MOVING_WALL)) {
@@ -3294,7 +3458,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         if (iMarker_Moving < nMarker_Moving-1) cout << ", ";
         else cout <<".";
       }
-      cout<<endl;
+      cout<< endl;
     }
 
   }
@@ -3307,7 +3471,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         if (iMarker_GeoEval < nMarker_GeoEval-1) cout << ", ";
         else cout <<".";
       }
-      cout<<endl;
+      cout<< endl;
     }
   }
 
@@ -3319,7 +3483,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
 	if (val_software == SU2_MSH) {
 		switch (Kind_Adaptation) {
-		case FULL: case WAKE: case TWOPHASE: case FULL_FLOW: case FULL_ADJOINT: case FULL_LINEAR: case SMOOTHING: case SUPERSONIC_SHOCK:
+		case FULL: case WAKE: case FULL_FLOW: case FULL_ADJOINT: case FULL_LINEAR: case SMOOTHING: case SUPERSONIC_SHOCK:
 			break;
 		case GRAD_FLOW:
 			cout << "Read flow solution from: " << Solution_FlowFileName << "." << endl;
@@ -3338,7 +3502,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		cout << endl <<"---------------------- Grid deformation parameters ----------------------" << endl;
 		cout << "Grid deformation using a linear elasticity method." << endl;
 
-    if (Hold_GridFixed == YES) cout << "Hold some regions of the mesh fixed (hardcode implementation)." <<endl;
+    if (Hold_GridFixed == YES) cout << "Hold some regions of the mesh fixed (hardcode implementation)." << endl;
   }
 
   if (val_software == SU2_DOT) {
@@ -3347,7 +3511,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   if ((val_software == SU2_DEF) || (val_software == SU2_DOT)) {
 
-    cout << "Design variables definition (markers <-> value <-> param):" <<endl;
+    cout << "Design variables definition (markers <-> value <-> param):" << endl;
 
     for (unsigned short iDV = 0; iDV < nDV; iDV++) {
 
@@ -3441,7 +3605,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		}
 	}
 
-	if (((val_software == SU2_CFD) && ( Adjoint || OneShot )) || (val_software == SU2_DOT)) {
+	if (((val_software == SU2_CFD) && ( Adjoint )) || (val_software == SU2_DOT)) {
 
 		cout << endl <<"----------------------- Design problem definition -----------------------" << endl;
 		switch (Kind_ObjFunc) {
@@ -3471,16 +3635,15 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       case FIGURE_OF_MERIT: cout << "Rotor Figure of Merit objective function." << endl; break;
       case FREE_SURFACE: cout << "Free-Surface objective function." << endl; break;
       case AVG_TOTAL_PRESSURE: cout << "Average total objective pressure." << endl; break;
-      case AVG_OUTLET_PRESSURE: cout << "Average static objective pressure." << endl; break;
       case MASS_FLOW_RATE: cout << "Mass flow rate objective function." << endl; break;
 		}
 
 	}
 
 	if (val_software == SU2_CFD) {
-		cout << endl <<"---------------------- Space numerical integration ----------------------" << endl;
+		cout << endl <<"---------------------- Space Numerical Integration ----------------------" << endl;
 
-		if (SmoothNumGrid) cout << "There are some smoothing iterations on the grid coordinates." <<endl;
+		if (SmoothNumGrid) cout << "There are some smoothing iterations on the grid coordinates." << endl;
 
 		if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
 
@@ -3727,19 +3890,12 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         cout << "Average of gradients with correction (viscous flow terms)." << endl;
     }
 
-    if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS))
-      cout << "Piecewise constant integration of the flow source terms." << endl;
-
-    if (Kind_Solver == ADJ_EULER)
-      cout << "Piecewise constant integration of the adjoint source terms." << endl;
-
     if ((Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS)) {
       cout << "Average of gradients with correction (viscous adjoint terms)." << endl;
     }
 
     if (Kind_Solver == RANS) {
       cout << "Average of gradients with correction (viscous turbulence terms)." << endl;
-      cout << "Piecewise constant integration of the turbulence model source terms." << endl;
     }
 
     if (Kind_Solver == POISSON_EQUATION) {
@@ -3748,20 +3904,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     if ((Kind_Solver == ADJ_RANS) && (!Frozen_Visc)) {
       cout << "Average of gradients with correction (2nd order) for computation of adjoint viscous turbulence terms." << endl;
-      cout << "Piecewise constant integration of the turbulence adjoint model source terms." << endl;
       if (Kind_TimeIntScheme_AdjTurb == EULER_IMPLICIT) cout << "Euler implicit method for the turbulent adjoint equation." << endl;
-    }
-
-    if ((Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS)) {
-      cout << "Piecewise constant integration of the Navier-Stokes eq. source terms." << endl;
-    }
-
-    if (Kind_Solver == POISSON_EQUATION) {
-      cout << "Piecewise constant integration of the poisson potential source terms." << endl;
-    }
-
-    if (Kind_Solver == HEAT_EQUATION) {
-      cout << "Piecewise constant integration of the heat equation source terms." << endl;
     }
 
     switch (Kind_Gradient_Method) {
@@ -3770,22 +3913,22 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
 
     if ((Kind_Regime == INCOMPRESSIBLE) || (Kind_Regime == FREESURFACE)) {
-      cout << "Artificial compressibility factor: " << ArtComp_Factor << "." <<endl;
+      cout << "Artificial compressibility factor: " << ArtComp_Factor << "." << endl;
     }
 
-    cout << endl <<"---------------------- Time numerical integration -----------------------" << endl;
+    cout << endl <<"---------------------- Time Numerical Integration -----------------------" << endl;
     switch (Unsteady_Simulation) {
       case NO:
         cout << "Local time stepping (steady state simulation)." << endl; break;
       case TIME_STEPPING:
         cout << "Unsteady simulation using a time stepping strategy."<< endl;
-        if (Unst_CFL != 0.0) cout << "Time step computed by the code. Unsteady CFL number: " << Unst_CFL <<"."<<endl;
+        if (Unst_CFL != 0.0) cout << "Time step computed by the code. Unsteady CFL number: " << Unst_CFL <<"."<< endl;
         else cout << "Unsteady time step provided by the user (s): "<< Delta_UnstTime << "." << endl;
         break;
       case DT_STEPPING_1ST: case DT_STEPPING_2ND:
         if (Unsteady_Simulation == DT_STEPPING_1ST) cout << "Unsteady simulation, dual time stepping strategy (first order in time)."<< endl;
         if (Unsteady_Simulation == DT_STEPPING_2ND) cout << "Unsteady simulation, dual time stepping strategy (second order in time)."<< endl;
-        if (Unst_CFL != 0.0) cout << "Time step computed by the code. Unsteady CFL number: " << Unst_CFL <<"."<<endl;
+        if (Unst_CFL != 0.0) cout << "Time step computed by the code. Unsteady CFL number: " << Unst_CFL <<"."<< endl;
         else cout << "Unsteady time step provided by the user (s): "<< Delta_UnstTime << "." << endl;
         cout << "Total number of internal Dual Time iterations: "<< Unst_nIntIter <<"." << endl;
         break;
@@ -3808,31 +3951,31 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           switch (Kind_Linear_Solver) {
             case BCGSTAB:
               cout << "BCGSTAB is used for solving the linear system." << endl;
-              cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<<endl;
-              cout << "Max number of iterations: "<< Linear_Solver_Iter <<"."<<endl;
-              cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<<endl;
+              cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<< endl;
+              cout << "Max number of iterations: "<< Linear_Solver_Iter <<"."<< endl;
+              cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<< endl;
               break;
             case FGMRES || RFGMRES:
               cout << "FGMRES is used for solving the linear system." << endl;
-              cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<<endl;
-              cout << "Max number of iterations: "<< Linear_Solver_Iter <<"."<<endl;
-              cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<<endl;
+              cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<< endl;
+              cout << "Max number of iterations: "<< Linear_Solver_Iter <<"."<< endl;
+              cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<< endl;
               break;
             case SMOOTHER_JACOBI:
               cout << "A Jacobi method is used for smoothing the linear system." << endl;
-              cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<<endl;
+              cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<< endl;
               break;
             case SMOOTHER_ILU:
               cout << "A ILU0 method is used for smoothing the linear system." << endl;
-              cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<<endl;
+              cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<< endl;
               break;
             case SMOOTHER_LUSGS:
               cout << "A LU-SGS method is used for smoothing the linear system." << endl;
-              cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<<endl;
+              cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<< endl;
               break;
             case SMOOTHER_LINELET:
               cout << "A Linelet method is used for smoothing the linear system." << endl;
-              cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<<endl;
+              cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<< endl;
               break;
           }
           break;
@@ -3846,15 +3989,15 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           switch (Kind_Linear_Solver) {
             case BCGSTAB:
               cout << "BCGSTAB is used for solving the linear system." << endl;
-              cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<<endl;
-              cout << "Max number of iterations: "<< Linear_Solver_Iter <<"."<<endl;
-              cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<<endl;
+              cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<< endl;
+              cout << "Max number of iterations: "<< Linear_Solver_Iter <<"."<< endl;
+              cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<< endl;
               break;
             case FGMRES || RFGMRES:
               cout << "FGMRES is used for solving the linear system." << endl;
-              cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<<endl;
-              cout << "Max number of iterations: "<< Linear_Solver_Iter <<"."<<endl;
-              cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<<endl;
+              cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<< endl;
+              cout << "Max number of iterations: "<< Linear_Solver_Iter <<"."<< endl;
+              cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<< endl;
               break;
           }
           break;
@@ -3908,17 +4051,15 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       }
     }
 
-    if (FullMG) {
-      cout << "Full Multigrid." << endl;
-    }
-
     if (nMultiLevel !=0) {
+      
       if (nStartUpIter != 0) cout << "A total of " << nStartUpIter << " start up iterations on the fine grid."<< endl;
-      if (MGCycle == 0) cout << "V Multigrid Cycle, with " << nMultiLevel << " multigrid levels."<< endl;
-      if (MGCycle == 1) cout << "W Multigrid Cycle, with " << nMultiLevel << " multigrid levels."<< endl;
+      if (MGCycle == V_CYCLE) cout << "V Multigrid Cycle, with " << nMultiLevel << " multigrid levels."<< endl;
+      if (MGCycle == W_CYCLE) cout << "W Multigrid Cycle, with " << nMultiLevel << " multigrid levels."<< endl;
+      if (MGCycle == FULLMG_CYCLE) cout << "Full Multigrid Cycle, with " << nMultiLevel << " multigrid levels."<< endl;
 
-      cout << "Damping factor for the residual restriction: " << Damp_Res_Restric <<"."<<endl;
-      cout << "Damping factor for the correction prolongation: " << Damp_Correc_Prolong <<"."<<endl;
+      cout << "Damping factor for the residual restriction: " << Damp_Res_Restric <<"."<< endl;
+      cout << "Damping factor for the correction prolongation: " << Damp_Correc_Prolong <<"."<< endl;
     }
 
     if ((Kind_Solver != LINEAR_ELASTICITY) && (Kind_Solver != HEAT_EQUATION) && (Kind_Solver != WAVE_EQUATION)) {
@@ -3975,9 +4116,9 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   if (val_software == SU2_CFD) {
 
-    cout << endl <<"------------------------- Convergence criteria --------------------------" << endl;
+    cout << endl <<"------------------------- Convergence Criteria --------------------------" << endl;
 
-    cout << "Maximum number of iterations: " << nExtIter <<"."<<endl;
+    cout << "Maximum number of iterations: " << nExtIter <<"."<< endl;
 
     if (ConvCriteria == CAUCHY) {
       if (!Adjoint && !Linearized)
@@ -4005,8 +4146,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         }
 
       cout << "Start convergence criteria at iteration " << StartConv_Iter<< "."<< endl;
-      if (OneShot) cout << "Cauchy criteria for one shot method " << Cauchy_Eps_OneShot<< "."<< endl;
-      if (FullMG) cout << "Cauchy criteria for full multigrid " << Cauchy_Eps_FullMG<< "."<< endl;
+      
     }
 
 
@@ -4039,7 +4179,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       case PERIODIC: cout << "Grid modification to run periodic bc problems." << endl; break;
       case FULL: cout << "Grid adaptation using a complete refinement." << endl; break;
       case WAKE: cout << "Grid adaptation of the wake." << endl; break;
-      case TWOPHASE: cout << "Grid adaptation of the interphase of a free surface flow." << endl; break;
       case FULL_FLOW: cout << "Flow grid adaptation using a complete refinement." << endl; break;
       case FULL_ADJOINT: cout << "Adjoint grid adaptation using a complete refinement." << endl; break;
       case FULL_LINEAR: cout << "Linear grid adaptation using a complete refinement." << endl; break;
@@ -4056,25 +4195,26 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     switch (Kind_Adaptation) {
       case GRAD_FLOW: case GRAD_ADJOINT: case GRAD_FLOW_ADJ: case ROBUST: case COMPUTABLE: case COMPUTABLE_ROBUST: case REMAINING:
-        cout << "Power of the dual volume in the adaptation sensor: " << DualVol_Power <<endl;
-        cout << "Percentage of new elements in the adaptation process: " << New_Elem_Adapt << "."<<endl;
+        cout << "Power of the dual volume in the adaptation sensor: " << DualVol_Power << endl;
+        cout << "Percentage of new elements in the adaptation process: " << New_Elem_Adapt << "."<< endl;
         break;
     }
 
     if (Analytical_Surface != NONE)
-      cout << "Use analytical definition for including points in the surfaces." <<endl;
+      cout << "Use analytical definition for including points in the surfaces." << endl;
 
   }
 
-  cout << endl <<"-------------------------- Output information ---------------------------" << endl;
+  cout << endl <<"-------------------------- Output Information ---------------------------" << endl;
 
   if (val_software == SU2_CFD) {
 
-    cout << "Writing a flow solution every " << Wrt_Sol_Freq <<" iterations."<<endl;
-    cout << "Writing the convergence history every " << Wrt_Con_Freq <<" iterations."<<endl;
+    if (Low_MemoryOutput) cout << "Writing output files with low memory RAM requirements."<< endl;
+    cout << "Writing a flow solution every " << Wrt_Sol_Freq <<" iterations."<< endl;
+    cout << "Writing the convergence history every " << Wrt_Con_Freq <<" iterations."<< endl;
     if ((Unsteady_Simulation == DT_STEPPING_1ST) || (Unsteady_Simulation == DT_STEPPING_2ND))  {
-      cout << "Writing the dual time flow solution every " << Wrt_Sol_Freq_DualTime <<" iterations."<<endl;
-      cout << "Writing the dual time convergence history every " << Wrt_Con_Freq_DualTime <<" iterations."<<endl;
+      cout << "Writing the dual time flow solution every " << Wrt_Sol_Freq_DualTime <<" iterations."<< endl;
+      cout << "Writing the dual time convergence history every " << Wrt_Con_Freq_DualTime <<" iterations."<< endl;
     }
 
     switch (Output_FileFormat) {
@@ -4085,6 +4225,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
 
     cout << "Convergence history file name: " << Conv_FileName << "." << endl;
+
+    cout << "Forces breakdown file name: " << Breakdown_FileName << "." << endl;
 
     if ((Kind_Solver != LINEAR_ELASTICITY) && (Kind_Solver != HEAT_EQUATION) && (Kind_Solver != WAVE_EQUATION)) {
       if (!Linearized && !Adjoint) {
@@ -4100,7 +4242,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         cout << "Surface linearized coefficients file name: " << SurfLinCoeff_FileName << "." << endl;
       }
 
-      if (Adjoint || OneShot) {
+      if (Adjoint) {
         cout << "Adjoint solution file name: " << Solution_AdjFileName << "." << endl;
         cout << "Restart adjoint file name: " << Restart_AdjFileName << "." << endl;
         cout << "Adjoint variables file name: " << Adj_FileName << "." << endl;
@@ -4116,6 +4258,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   }
 
   if (val_software == SU2_SOL) {
+    if (Low_MemoryOutput) cout << "Writing output files with low memory RAM requirements."<< endl;
     switch (Output_FileFormat) {
       case PARAVIEW: cout << "The output file format is Paraview ASCII (.dat)." << endl; break;
       case TECPLOT: cout << "The output file format is Tecplot ASCII (.dat)." << endl; break;
@@ -4163,19 +4306,14 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
   }
 
-  if (val_software == SU2_PRT) {
-    if (Visualize_Partition) cout << "Visualize the partitions. " << endl;
-    else cout << "Don't visualize the partitions. " << endl;
-  }
-
-  cout << endl <<"------------------- Config file boundary information --------------------" << endl;
+  cout << endl <<"------------------- Config File Boundary Information --------------------" << endl;
 
   if (nMarker_Euler != 0) {
     cout << "Euler wall boundary marker(s): ";
     for (iMarker_Euler = 0; iMarker_Euler < nMarker_Euler; iMarker_Euler++) {
       cout << Marker_Euler[iMarker_Euler];
       if (iMarker_Euler < nMarker_Euler-1) cout << ", ";
-      else cout <<"."<<endl;
+      else cout <<"."<< endl;
     }
   }
 
@@ -4184,7 +4322,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     for (iMarker_FarField = 0; iMarker_FarField < nMarker_FarField; iMarker_FarField++) {
       cout << Marker_FarField[iMarker_FarField];
       if (iMarker_FarField < nMarker_FarField-1) cout << ", ";
-      else cout <<"."<<endl;
+      else cout <<"."<< endl;
     }
   }
 
@@ -4193,7 +4331,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     for (iMarker_SymWall = 0; iMarker_SymWall < nMarker_SymWall; iMarker_SymWall++) {
       cout << Marker_SymWall[iMarker_SymWall];
       if (iMarker_SymWall < nMarker_SymWall-1) cout << ", ";
-      else cout <<"."<<endl;
+      else cout <<"."<< endl;
     }
   }
 
@@ -4202,7 +4340,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     for (iMarker_Pressure = 0; iMarker_Pressure < nMarker_Pressure; iMarker_Pressure++) {
       cout << Marker_Pressure[iMarker_Pressure];
       if (iMarker_Pressure < nMarker_Pressure-1) cout << ", ";
-      else cout <<"."<<endl;
+      else cout <<"."<< endl;
     }
   }
 
@@ -4211,7 +4349,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     for (iMarker_PerBound = 0; iMarker_PerBound < nMarker_PerBound; iMarker_PerBound++) {
       cout << Marker_PerBound[iMarker_PerBound];
       if (iMarker_PerBound < nMarker_PerBound-1) cout << ", ";
-      else cout <<"."<<endl;
+      else cout <<"."<< endl;
     }
   }
 
@@ -4220,7 +4358,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     for (iMarker_NearFieldBound = 0; iMarker_NearFieldBound < nMarker_NearFieldBound; iMarker_NearFieldBound++) {
       cout << Marker_NearFieldBound[iMarker_NearFieldBound];
       if (iMarker_NearFieldBound < nMarker_NearFieldBound-1) cout << ", ";
-      else cout <<"."<<endl;
+      else cout <<"."<< endl;
     }
   }
 
@@ -4229,7 +4367,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     for (iMarker_InterfaceBound = 0; iMarker_InterfaceBound < nMarker_InterfaceBound; iMarker_InterfaceBound++) {
       cout << Marker_InterfaceBound[iMarker_InterfaceBound];
       if (iMarker_InterfaceBound < nMarker_InterfaceBound-1) cout << ", ";
-      else cout <<"."<<endl;
+      else cout <<"."<< endl;
     }
   }
 
@@ -4238,7 +4376,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     for (iMarker_Dirichlet = 0; iMarker_Dirichlet < nMarker_Dirichlet; iMarker_Dirichlet++) {
       cout << Marker_Dirichlet[iMarker_Dirichlet];
       if (iMarker_Dirichlet < nMarker_Dirichlet-1) cout << ", ";
-      else cout <<"."<<endl;
+      else cout <<"."<< endl;
     }
   }
 
@@ -4247,7 +4385,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     for (iMarker_FlowLoad = 0; iMarker_FlowLoad < nMarker_FlowLoad; iMarker_FlowLoad++) {
       cout << Marker_FlowLoad[iMarker_FlowLoad];
       if (iMarker_FlowLoad < nMarker_FlowLoad-1) cout << ", ";
-      else cout <<"."<<endl;
+      else cout <<"."<< endl;
     }
   }
 
@@ -4256,7 +4394,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     for (iMarker_Neumann = 0; iMarker_Neumann < nMarker_Neumann; iMarker_Neumann++) {
       cout << Marker_Neumann[iMarker_Neumann];
       if (iMarker_Neumann < nMarker_Neumann-1) cout << ", ";
-      else cout <<"."<<endl;
+      else cout <<"."<< endl;
     }
   }
 
@@ -4265,25 +4403,43 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_Inlet; iMarker_Inlet++) {
       cout << Marker_Inlet[iMarker_Inlet];
       if (iMarker_Inlet < nMarker_Inlet-1) cout << ", ";
-      else cout <<"."<<endl;
+      else cout <<"."<< endl;
     }
   }
 
-  if (nMarker_NacelleInflow != 0) {
-    cout << "Nacelle inflow boundary marker(s): ";
-    for (iMarker_NacelleInflow = 0; iMarker_NacelleInflow < nMarker_NacelleInflow; iMarker_NacelleInflow++) {
-      cout << Marker_NacelleInflow[iMarker_NacelleInflow];
-      if (iMarker_NacelleInflow < nMarker_NacelleInflow-1) cout << ", ";
-      else cout <<"."<<endl;
+  if (nMarker_Riemann != 0) {
+      cout << "Riemann boundary marker(s): ";
+      for (iMarker_Riemann = 0; iMarker_Riemann < nMarker_Riemann; iMarker_Riemann++) {
+        cout << Marker_Riemann[iMarker_Riemann];
+        if (iMarker_Riemann < nMarker_Riemann-1) cout << ", ";
+        else cout <<"."<< endl;
+    }
+  }
+  
+  if (nMarker_EngineInflow != 0) {
+    cout << "Engine inflow boundary marker(s): ";
+    for (iMarker_EngineInflow = 0; iMarker_EngineInflow < nMarker_EngineInflow; iMarker_EngineInflow++) {
+      cout << Marker_EngineInflow[iMarker_EngineInflow];
+      if (iMarker_EngineInflow < nMarker_EngineInflow-1) cout << ", ";
+      else cout <<"."<< endl;
+    }
+  }
+  
+  if (nMarker_EngineBleed != 0) {
+    cout << "Engine bleed boundary marker(s): ";
+    for (iMarker_EngineBleed = 0; iMarker_EngineBleed < nMarker_EngineBleed; iMarker_EngineBleed++) {
+      cout << Marker_EngineBleed[iMarker_EngineBleed];
+      if (iMarker_EngineBleed < nMarker_EngineBleed-1) cout << ", ";
+      else cout <<"."<< endl;
     }
   }
 
-  if (nMarker_NacelleExhaust != 0) {
-    cout << "Nacelle exhaust boundary marker(s): ";
-    for (iMarker_NacelleExhaust = 0; iMarker_NacelleExhaust < nMarker_NacelleExhaust; iMarker_NacelleExhaust++) {
-      cout << Marker_NacelleExhaust[iMarker_NacelleExhaust];
-      if (iMarker_NacelleExhaust < nMarker_NacelleExhaust-1) cout << ", ";
-      else cout <<"."<<endl;
+  if (nMarker_EngineExhaust != 0) {
+    cout << "Engine exhaust boundary marker(s): ";
+    for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++) {
+      cout << Marker_EngineExhaust[iMarker_EngineExhaust];
+      if (iMarker_EngineExhaust < nMarker_EngineExhaust-1) cout << ", ";
+      else cout <<"."<< endl;
     }
   }
 
@@ -4292,7 +4448,16 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     for (iMarker_Supersonic_Inlet = 0; iMarker_Supersonic_Inlet < nMarker_Supersonic_Inlet; iMarker_Supersonic_Inlet++) {
       cout << Marker_Supersonic_Inlet[iMarker_Supersonic_Inlet];
       if (iMarker_Supersonic_Inlet < nMarker_Supersonic_Inlet-1) cout << ", ";
-      else cout <<"."<<endl;
+      else cout <<"."<< endl;
+    }
+  }
+  
+  if (nMarker_Supersonic_Outlet != 0) {
+    cout << "Supersonic outlet boundary marker(s): ";
+    for (iMarker_Supersonic_Outlet = 0; iMarker_Supersonic_Outlet < nMarker_Supersonic_Outlet; iMarker_Supersonic_Outlet++) {
+      cout << Marker_Supersonic_Outlet[iMarker_Supersonic_Outlet];
+      if (iMarker_Supersonic_Outlet < nMarker_Supersonic_Outlet-1) cout << ", ";
+      else cout <<"."<< endl;
     }
   }
 
@@ -4301,7 +4466,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
       cout << Marker_Outlet[iMarker_Outlet];
       if (iMarker_Outlet < nMarker_Outlet-1) cout << ", ";
-      else cout <<"."<<endl;
+      else cout <<"."<< endl;
     }
   }
 
@@ -4310,7 +4475,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     for (iMarker_Isothermal = 0; iMarker_Isothermal < nMarker_Isothermal; iMarker_Isothermal++) {
       cout << Marker_Isothermal[iMarker_Isothermal];
       if (iMarker_Isothermal < nMarker_Isothermal-1) cout << ", ";
-      else cout <<"."<<endl;
+      else cout <<"."<< endl;
     }
   }
 
@@ -4319,7 +4484,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     for (iMarker_IsothermalNonCatalytic = 0; iMarker_IsothermalNonCatalytic < nMarker_IsothermalNonCatalytic; iMarker_IsothermalNonCatalytic++) {
       cout << Marker_IsothermalNonCatalytic[iMarker_IsothermalNonCatalytic];
       if (iMarker_IsothermalNonCatalytic < nMarker_IsothermalNonCatalytic-1) cout << ", ";
-      else cout <<"."<<endl;
+      else cout <<"."<< endl;
     }
   }
 
@@ -4328,7 +4493,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     for (iMarker_IsothermalCatalytic = 0; iMarker_IsothermalCatalytic < nMarker_IsothermalCatalytic; iMarker_IsothermalCatalytic++) {
       cout << Marker_IsothermalCatalytic[iMarker_IsothermalCatalytic];
       if (iMarker_IsothermalCatalytic < nMarker_IsothermalCatalytic-1) cout << ", ";
-      else cout <<"."<<endl;
+      else cout <<"."<< endl;
     }
   }
 
@@ -4337,7 +4502,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     for (iMarker_HeatFlux = 0; iMarker_HeatFlux < nMarker_HeatFlux; iMarker_HeatFlux++) {
       cout << Marker_HeatFlux[iMarker_HeatFlux];
       if (iMarker_HeatFlux < nMarker_HeatFlux-1) cout << ", ";
-      else cout <<"."<<endl;
+      else cout <<"."<< endl;
     }
   }
 
@@ -4346,7 +4511,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     for (iMarker_HeatFluxNonCatalytic = 0; iMarker_HeatFluxNonCatalytic < nMarker_HeatFluxNonCatalytic; iMarker_HeatFluxNonCatalytic++) {
       cout << Marker_HeatFluxNonCatalytic[iMarker_HeatFluxNonCatalytic];
       if (iMarker_HeatFluxNonCatalytic < nMarker_HeatFluxNonCatalytic-1) cout << ", ";
-      else cout <<"."<<endl;
+      else cout <<"."<< endl;
     }
   }
 
@@ -4355,7 +4520,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     for (iMarker_HeatFluxCatalytic = 0; iMarker_HeatFluxCatalytic < nMarker_HeatFluxCatalytic; iMarker_HeatFluxCatalytic++) {
       cout << Marker_HeatFluxCatalytic[iMarker_HeatFluxCatalytic];
       if (iMarker_HeatFluxCatalytic < nMarker_HeatFluxCatalytic-1) cout << ", ";
-      else cout <<"."<<endl;
+      else cout <<"."<< endl;
     }
   }
 
@@ -4364,7 +4529,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     for (iMarker_Displacement = 0; iMarker_Displacement < nMarker_Displacement; iMarker_Displacement++) {
       cout << Marker_Displacement[iMarker_Displacement];
       if (iMarker_Displacement < nMarker_Displacement-1) cout << ", ";
-      else cout <<"."<<endl;
+      else cout <<"."<< endl;
     }
   }
 
@@ -4373,7 +4538,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     for (iMarker_Load = 0; iMarker_Load < nMarker_Load; iMarker_Load++) {
       cout << Marker_Load[iMarker_Load];
       if (iMarker_Load < nMarker_Load-1) cout << ", ";
-      else cout <<"."<<endl;
+      else cout <<"."<< endl;
     }
   }
 
@@ -4382,7 +4547,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     for (iMarker_Neumann = 0; iMarker_Neumann < nMarker_Neumann; iMarker_Neumann++) {
       cout << Marker_Neumann[iMarker_Neumann];
       if (iMarker_Neumann < nMarker_Neumann-1) cout << ", ";
-      else cout <<"."<<endl;
+      else cout <<"."<< endl;
     }
   }
 
@@ -4391,7 +4556,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     for (iMarker_Custom = 0; iMarker_Custom < nMarker_Custom; iMarker_Custom++) {
       cout << Marker_Custom[iMarker_Custom];
       if (iMarker_Custom < nMarker_Custom-1) cout << ", ";
-      else cout <<"."<<endl;
+      else cout <<"."<< endl;
     }
   }
 
@@ -4400,7 +4565,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		for (iMarker_ActDisk_Inlet = 0; iMarker_ActDisk_Inlet < nMarker_ActDisk_Inlet; iMarker_ActDisk_Inlet++) {
 			cout << Marker_ActDisk_Inlet[iMarker_ActDisk_Inlet];
 			if (iMarker_ActDisk_Inlet < nMarker_ActDisk_Inlet-1) cout << ", ";
-			else cout <<"."<<endl;
+			else cout <<"."<< endl;
 		}
 	}
 
@@ -4409,7 +4574,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		for (iMarker_ActDisk_Outlet = 0; iMarker_ActDisk_Outlet < nMarker_ActDisk_Outlet; iMarker_ActDisk_Outlet++) {
 			cout << Marker_ActDisk_Outlet[iMarker_ActDisk_Outlet];
 			if (iMarker_ActDisk_Outlet < nMarker_ActDisk_Outlet-1) cout << ", ";
-			else cout <<"."<<endl;
+			else cout <<"."<< endl;
 		}
 	}
 
@@ -4697,42 +4862,6 @@ bool CConfig::TokenizeString(string & str, string & option_name,
   return true;
 }
 
-/*
-bool CConfig::GetPython_Option(string & option_name) {
-
-  bool isPython_Option = false;
-
---- Check option name against all known Python options
-   for a match. These are the design options that are
-   never read by the SU2 C++ codes, and we would like
-   to ignore them while processing the config file. ---
-  if (option_name == "OBJFUNC")       isPython_Option = true;
-  if (option_name == "OBJFUNC_SCALE")    isPython_Option = true;
-  if (option_name == "CONST_IEQ")      isPython_Option = true;
-  if (option_name == "CONST_IEQ_SCALE")      isPython_Option = true;
-  if (option_name == "CONST_IEQ_SIGN")     isPython_Option = true;
-  if (option_name == "CONST_IEQ_VALUE") isPython_Option = true;
-  if (option_name == "CONST_EQ")      isPython_Option = true;
-  if (option_name == "CONST_EQ_SCALE")      isPython_Option = true;
-  if (option_name == "CONST_EQ_SIGN")     isPython_Option = true;
-  if (option_name == "CONST_EQ_VALUE") isPython_Option = true;
-  if (option_name == "DEFINITION_DV") isPython_Option = true;
-  if (option_name == "DV_VALUE_NEW") isPython_Option = true;
-  if (option_name == "DV_VALUE_OLD") isPython_Option = true;
-  if (option_name == "NUMBER_PART") isPython_Option = true;
-  if (option_name == "TASKS") isPython_Option = true;
-  if (option_name == "OPT_OBJECTIVE") isPython_Option = true;
-  if (option_name == "OPT_CONSTRAINT") isPython_Option = true;
-  if (option_name == "GRADIENTS") isPython_Option = true;
-  if (option_name == "FIN_DIFF_STEP") isPython_Option = true;
-  if (option_name == "ADAPT_CYCLES") isPython_Option = true;
-  if (option_name == "CONSOLE") isPython_Option = true;
-  if (option_name == "DECOMPOSED") isPython_Option = true;
-
-  return isPython_Option;
-}
- */
-
 unsigned short CConfig::GetMarker_CfgFile_TagBound(string val_marker) {
 
   unsigned short iMarker_Config;
@@ -4743,6 +4872,11 @@ unsigned short CConfig::GetMarker_CfgFile_TagBound(string val_marker) {
 
   cout <<"The configuration file doesn't have any definition for marker "<< val_marker <<"!!" << endl;
   exit(EXIT_FAILURE);
+  
+}
+
+string CConfig::GetMarker_CfgFile_TagBound(unsigned short val_marker) {
+  return Marker_CfgFile_TagBound[val_marker];
 }
 
 unsigned short CConfig::GetMarker_CfgFile_KindBC(string val_marker) {
@@ -4808,14 +4942,15 @@ unsigned short CConfig::GetMarker_CfgFile_PerBound(string val_marker) {
   return Marker_CfgFile_PerBound[iMarker_Config];
 }
 
-CConfig::~CConfig(void)
-{
+CConfig::~CConfig(void) {
+  
   if (RK_Alpha_Step!=NULL) delete [] RK_Alpha_Step;
   if (MG_PreSmooth!=NULL) delete [] MG_PreSmooth;
   if (MG_PostSmooth!=NULL) delete [] MG_PostSmooth;
   if (U_FreeStreamND!=NULL) delete [] U_FreeStreamND;
 
   /*--- If allocated, delete arrays for Plasma solver ---*/
+  
   if (Molar_Mass           != NULL) delete [] Molar_Mass;
   if (Gas_Composition      != NULL) delete [] Gas_Composition;
   if (Enthalpy_Formation   != NULL) delete [] Enthalpy_Formation;
@@ -4828,13 +4963,13 @@ CConfig::~CConfig(void)
       delete[] CharElTemp[iSpecies];
     delete [] CharElTemp;
   }
-  if (degen                != NULL) {
+  if (degen != NULL) {
     for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++)
       delete[] degen[iSpecies];
     delete [] degen;
   }
   unsigned short ii, iReaction;
-  if (Reactions            != NULL) {
+  if (Reactions != NULL) {
     for (iReaction = 0; iReaction < nReactions; iReaction++) {
       for (ii = 0; ii < 2; ii++) {
         delete [] Reactions[iReaction][ii];
@@ -4845,6 +4980,7 @@ CConfig::~CConfig(void)
   }
 
   /*--- Free memory for Aeroelastic problems. ---*/
+  
   if (Grid_Movement && Aeroelastic_Simulation) {
 
     delete[] Aeroelastic_pitch;
@@ -4857,6 +4993,7 @@ CConfig::~CConfig(void)
     delete [] Kind_GridMovement;
 
   /*--- motion origin: ---*/
+  
   if (Motion_Origin_X != NULL)
     delete [] Motion_Origin_X;
   if (Motion_Origin_Y != NULL)
@@ -4867,6 +5004,7 @@ CConfig::~CConfig(void)
     delete [] MoveMotion_Origin;
 
   /*--- rotation: ---*/
+  
   if (Rotation_Rate_X != NULL)
     delete [] Rotation_Rate_X;
   if (Rotation_Rate_Y != NULL)
@@ -4875,6 +5013,7 @@ CConfig::~CConfig(void)
     delete [] Rotation_Rate_Z;
 
   /*--- pitching: ---*/
+  
   if (Pitching_Omega_X != NULL)
     delete [] Pitching_Omega_X;
   if (Pitching_Omega_Y != NULL)
@@ -4883,6 +5022,7 @@ CConfig::~CConfig(void)
     delete [] Pitching_Omega_Z;
 
   /*--- pitching amplitude: ---*/
+  
   if (Pitching_Ampl_X != NULL)
     delete [] Pitching_Ampl_X;
   if (Pitching_Ampl_Y != NULL)
@@ -4891,6 +5031,7 @@ CConfig::~CConfig(void)
     delete [] Pitching_Ampl_Z;
 
   /*--- pitching phase: ---*/
+  
   if (Pitching_Phase_X != NULL)
     delete [] Pitching_Phase_X;
   if (Pitching_Phase_Y != NULL)
@@ -4899,6 +5040,7 @@ CConfig::~CConfig(void)
     delete [] Pitching_Phase_Z;
 
   /*--- plunging: ---*/
+  
   if (Plunging_Omega_X != NULL)
     delete [] Plunging_Omega_X;
   if (Plunging_Omega_Y != NULL)
@@ -4907,6 +5049,7 @@ CConfig::~CConfig(void)
     delete [] Plunging_Omega_Z;
 
   /*--- plunging amplitude: ---*/
+  
   if (Plunging_Ampl_X != NULL)
     delete [] Plunging_Ampl_X;
   if (Plunging_Ampl_Y != NULL)
@@ -4923,7 +5066,8 @@ CConfig::~CConfig(void)
   if (RefOriginMoment_Z != NULL)
     delete [] RefOriginMoment_Z;
 
-  /*Marker pointers*/
+  /*--- Marker pointers ---*/
+  
   if (Marker_CfgFile_Out_1D!=NULL)   delete[] Marker_CfgFile_Out_1D;
   if (Marker_All_Out_1D!=NULL)      delete[] Marker_All_Out_1D;
   if (Marker_CfgFile_GeoEval!=NULL)  delete[] Marker_CfgFile_GeoEval;
@@ -4940,35 +5084,43 @@ CConfig::~CConfig(void)
   if (Marker_All_Plotting!=NULL)     delete[] Marker_All_Plotting;
   if (Marker_CfgFile_DV!=NULL)        delete[] Marker_CfgFile_DV;
   if (Marker_All_DV!=NULL)           delete[] Marker_All_DV;
+  if (Marker_CfgFile_Moving!=NULL)   delete[] Marker_CfgFile_Moving;
+  if (Marker_All_Moving!=NULL)      delete[] Marker_All_Moving;
+  if (Marker_CfgFile_PerBound!=NULL) delete[] Marker_CfgFile_PerBound;
+  if (Marker_All_PerBound!=NULL)    delete[] Marker_All_PerBound;
+
   if (Marker_DV!=NULL)               delete[] Marker_DV;
   if (Marker_Moving!=NULL)           delete[] Marker_Moving;
-  if (Marker_All_Moving!=NULL)      delete[] Marker_All_Moving;
-  if (Marker_CfgFile_Moving!=NULL)   delete[] Marker_CfgFile_Moving;
   if (Marker_Monitoring!=NULL)      delete[] Marker_Monitoring;
   if (Marker_Designing!=NULL)       delete[] Marker_Designing;
   if (Marker_GeoEval!=NULL)         delete[] Marker_GeoEval;
   if (Marker_Plotting!=NULL)        delete[] Marker_Plotting;
-  if (Marker_CfgFile_PerBound!=NULL) delete[] Marker_CfgFile_PerBound;
   if (Marker_All_SendRecv!=NULL)    delete[] Marker_All_SendRecv;
-  if (Marker_All_PerBound!=NULL)    delete[] Marker_All_PerBound;
 
   if (EA_IntLimit!=NULL)    delete[] EA_IntLimit;
   if (Hold_GridFixed_Coord!=NULL)    delete[] Hold_GridFixed_Coord ;
-  if (Subsonic_Nacelle_Box!=NULL)    delete[] Subsonic_Nacelle_Box ;
+  if (Subsonic_Engine_Box!=NULL)    delete[] Subsonic_Engine_Box ;
   if (DV_Value!=NULL)    delete[] DV_Value;
   if (Design_Variable!=NULL)    delete[] Design_Variable;
   if (Dirichlet_Value!=NULL)    delete[] Dirichlet_Value;
-  if (Nozzle_Ttotal!=NULL)    delete[]  Nozzle_Ttotal;
-  if (Nozzle_Ptotal!=NULL)    delete[]  Nozzle_Ptotal;
+  if (Exhaust_Temperature_Target!=NULL)    delete[]  Exhaust_Temperature_Target;
+  if (Exhaust_Pressure_Target!=NULL)    delete[]  Exhaust_Pressure_Target;
   if (Inlet_Ttotal!=NULL)    delete[]  Inlet_Ttotal;
   if (Inlet_Ptotal!=NULL)    delete[]  Inlet_Ptotal;
   if (Inlet_FlowDir!=NULL)    delete[] Inlet_FlowDir;
   if (Inlet_Temperature!=NULL)    delete[] Inlet_Temperature;
   if (Inlet_Pressure!=NULL)    delete[] Inlet_Pressure;
   if (Inlet_Velocity!=NULL)    delete[] Inlet_Velocity ;
-  if (FanFace_Mach_Target!=NULL)    delete[] FanFace_Mach_Target;
-  if (FanFace_Mach!=NULL)    delete[]  FanFace_Mach;
-  if (FanFace_Pressure!=NULL)    delete[] FanFace_Pressure;
+  if (Inflow_Mach_Target!=NULL)    delete[] Inflow_Mach_Target;
+  if (Inflow_Mach!=NULL)    delete[]  Inflow_Mach;
+  if (Inflow_Pressure!=NULL)    delete[] Inflow_Pressure;
+  if (Bleed_MassFlow_Target!=NULL)    delete[] Bleed_MassFlow_Target;
+  if (Bleed_MassFlow!=NULL)    delete[]  Bleed_MassFlow;
+  if (Bleed_Temperature_Target!=NULL)    delete[] Bleed_Temperature_Target;
+  if (Bleed_Temperature!=NULL)    delete[]  Bleed_Temperature;
+  if (Bleed_Pressure!=NULL)    delete[] Bleed_Pressure;
+  if (Exhaust_Pressure!=NULL)    delete[] Exhaust_Pressure;
+  if (Exhaust_Temperature!=NULL)    delete[] Exhaust_Temperature;
   if (Outlet_Pressure!=NULL)    delete[] Outlet_Pressure;
   if (Isothermal_Temperature!=NULL)    delete[] Isothermal_Temperature;
   if (Heat_Flux!=NULL)    delete[] Heat_Flux;
@@ -4995,7 +5147,8 @@ CConfig::~CConfig(void)
   if (PlaneTag!=NULL)    delete[] PlaneTag;
   if (CFLRamp!=NULL)    delete[] CFLRamp;
   if (CFL!=NULL)    delete[] CFL;
-  /*String markers*/
+  
+  /*--- String markers ---*/
   if (Marker_Euler!=NULL )              delete[] Marker_Euler;
   if (Marker_FarField!=NULL )           delete[] Marker_FarField;
   if (Marker_Custom!=NULL )             delete[] Marker_Custom;
@@ -5009,11 +5162,13 @@ CConfig::~CConfig(void)
   if (Marker_Dirichlet_Elec!=NULL )     delete[] Marker_Dirichlet_Elec;
   if (Marker_Inlet!=NULL )              delete[] Marker_Inlet;
   if (Marker_Supersonic_Inlet!=NULL )   delete[] Marker_Supersonic_Inlet;
+  if (Marker_Supersonic_Outlet!=NULL )   delete[] Marker_Supersonic_Outlet;
   if (Marker_Outlet!=NULL )             delete[] Marker_Outlet;
   if (Marker_Out_1D!=NULL )             delete[] Marker_Out_1D;
   if (Marker_Isothermal!=NULL )         delete[] Marker_Isothermal;
-  if (Marker_NacelleInflow!=NULL )      delete[] Marker_NacelleInflow;
-  if (Marker_NacelleExhaust!=NULL )     delete[] Marker_NacelleExhaust;
+  if (Marker_EngineInflow!=NULL )      delete[] Marker_EngineInflow;
+  if (Marker_EngineBleed!=NULL )      delete[] Marker_EngineBleed;
+  if (Marker_EngineExhaust!=NULL )     delete[] Marker_EngineExhaust;
   if (Marker_Displacement!=NULL )       delete[] Marker_Displacement;
   if (Marker_Load!=NULL )               delete[] Marker_Load;
   if (Marker_FlowLoad!=NULL )           delete[] Marker_FlowLoad;
@@ -5025,73 +5180,6 @@ CConfig::~CConfig(void)
   if (Marker_HeatFluxNonCatalytic!=NULL )   delete[] Marker_HeatFluxNonCatalytic;
   if (Marker_HeatFluxCatalytic!=NULL )      delete[] Marker_HeatFluxCatalytic;
 
-}
-
-void CConfig::SetFileNameDomain(unsigned short val_domain) {
-
-#ifdef HAVE_MPI
-
-  int size;
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-
-  string old_name;
-  char buffer[10];
-
-  /*--- Standard surface output ---*/
-  old_name = SurfFlowCoeff_FileName;
-  if (size > 1) {
-    sprintf (buffer, "_%d", int(val_domain));
-    SurfFlowCoeff_FileName = old_name + buffer;
-  }
-
-  old_name = SurfAdjCoeff_FileName;
-  if (size > 1) {
-    sprintf (buffer, "_%d", int(val_domain));
-    SurfAdjCoeff_FileName = old_name + buffer;
-  }
-
-  old_name = SurfStructure_FileName;
-  if (size > 1) {
-    sprintf (buffer, "_%d", int(val_domain));
-    SurfStructure_FileName = old_name + buffer;
-  }
-
-  old_name = SurfWave_FileName;
-  if (size > 1) {
-    sprintf (buffer, "_%d", int(val_domain));
-    SurfWave_FileName = old_name + buffer;
-  }
-
-  old_name = SurfHeat_FileName;
-  if (size > 1) {
-    sprintf (buffer, "_%d", int(val_domain));
-    SurfHeat_FileName = old_name + buffer;
-  }
-
-  if (size > 1) {
-
-    /*--- Standard flow and adjoint output ---*/
-    sprintf (buffer, "_%d", int(val_domain));
-    old_name = Flow_FileName;
-    Flow_FileName = old_name + buffer;
-
-    sprintf (buffer, "_%d", int(val_domain));
-    old_name = Structure_FileName;
-    Structure_FileName = old_name + buffer;
-
-    sprintf (buffer, "_%d", int(val_domain));
-    old_name = Adj_FileName;
-    Adj_FileName = old_name + buffer;
-
-    /*--- Mesh files ---*/
-    sprintf (buffer, "_%d.su2", int(val_domain));
-    old_name = Mesh_FileName;
-    unsigned short lastindex = old_name.find_last_of(".");
-    old_name = old_name.substr(0, lastindex);
-    Mesh_FileName = old_name + buffer;
-
-  }
-#endif
 }
 
 string CConfig::GetUnsteady_FileName(string val_filename, int val_iter) {
@@ -5153,7 +5241,6 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
       case FIGURE_OF_MERIT:         AdjExt = "_merit";    break;
       case FREE_SURFACE:            AdjExt = "_fs";       break;
       case AVG_TOTAL_PRESSURE:      AdjExt = "_pt";       break;
-      case AVG_OUTLET_PRESSURE:      AdjExt = "_pe";       break;
       case MASS_FLOW_RATE:          AdjExt = "_mfr";       break;
     }
     Filename.append(AdjExt);
@@ -5559,18 +5646,18 @@ bool CConfig::GetDirichlet_Boundary(string val_marker) {
   return Dirichlet;
 }
 
-double CConfig::GetNozzle_Ttotal(string val_marker) {
-  unsigned short iMarker_NacelleExhaust;
-  for (iMarker_NacelleExhaust = 0; iMarker_NacelleExhaust < nMarker_NacelleExhaust; iMarker_NacelleExhaust++)
-    if (Marker_NacelleExhaust[iMarker_NacelleExhaust] == val_marker) break;
-  return Nozzle_Ttotal[iMarker_NacelleExhaust];
+double CConfig::GetExhaust_Temperature_Target(string val_marker) {
+  unsigned short iMarker_EngineExhaust;
+  for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++)
+    if (Marker_EngineExhaust[iMarker_EngineExhaust] == val_marker) break;
+  return Exhaust_Temperature_Target[iMarker_EngineExhaust];
 }
 
-double CConfig::GetNozzle_Ptotal(string val_marker) {
-  unsigned short iMarker_NacelleExhaust;
-  for (iMarker_NacelleExhaust = 0; iMarker_NacelleExhaust < nMarker_NacelleExhaust; iMarker_NacelleExhaust++)
-    if (Marker_NacelleExhaust[iMarker_NacelleExhaust] == val_marker) break;
-  return Nozzle_Ptotal[iMarker_NacelleExhaust];
+double CConfig::GetExhaust_Pressure_Target(string val_marker) {
+  unsigned short iMarker_EngineExhaust;
+  for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++)
+    if (Marker_EngineExhaust[iMarker_EngineExhaust] == val_marker) break;
+  return Exhaust_Pressure_Target[iMarker_EngineExhaust];
 }
 
 double CConfig::GetInlet_Ttotal(string val_marker) {
@@ -5706,25 +5793,74 @@ double CConfig::GetWall_HeatFlux(string val_marker) {
   return Heat_Flux[iMarker_HeatFlux];
 }
 
-double CConfig::GetFanFace_Mach_Target(string val_marker) {
-  unsigned short iMarker_NacelleInflow;
-  for (iMarker_NacelleInflow = 0; iMarker_NacelleInflow < nMarker_NacelleInflow; iMarker_NacelleInflow++)
-    if (Marker_NacelleInflow[iMarker_NacelleInflow] == val_marker) break;
-  return FanFace_Mach_Target[iMarker_NacelleInflow];
+double CConfig::GetInflow_Mach_Target(string val_marker) {
+  unsigned short iMarker_EngineInflow;
+  for (iMarker_EngineInflow = 0; iMarker_EngineInflow < nMarker_EngineInflow; iMarker_EngineInflow++)
+    if (Marker_EngineInflow[iMarker_EngineInflow] == val_marker) break;
+  return Inflow_Mach_Target[iMarker_EngineInflow];
 }
 
-double CConfig::GetFanFace_Pressure(string val_marker) {
-  unsigned short iMarker_NacelleInflow;
-  for (iMarker_NacelleInflow = 0; iMarker_NacelleInflow < nMarker_NacelleInflow; iMarker_NacelleInflow++)
-    if (Marker_NacelleInflow[iMarker_NacelleInflow] == val_marker) break;
-  return FanFace_Pressure[iMarker_NacelleInflow];
+double CConfig::GetBleed_MassFlow_Target(string val_marker) {
+  unsigned short iMarker_EngineBleed;
+  for (iMarker_EngineBleed = 0; iMarker_EngineBleed < nMarker_EngineBleed; iMarker_EngineBleed++)
+    if (Marker_EngineBleed[iMarker_EngineBleed] == val_marker) break;
+  return Bleed_MassFlow_Target[iMarker_EngineBleed];
 }
 
-double CConfig::GetFanFace_Mach(string val_marker) {
-  unsigned short iMarker_NacelleInflow;
-  for (iMarker_NacelleInflow = 0; iMarker_NacelleInflow < nMarker_NacelleInflow; iMarker_NacelleInflow++)
-    if (Marker_NacelleInflow[iMarker_NacelleInflow] == val_marker) break;
-  return FanFace_Mach[iMarker_NacelleInflow];
+double CConfig::GetBleed_Temperature_Target(string val_marker) {
+  unsigned short iMarker_EngineBleed;
+  for (iMarker_EngineBleed = 0; iMarker_EngineBleed < nMarker_EngineBleed; iMarker_EngineBleed++)
+    if (Marker_EngineBleed[iMarker_EngineBleed] == val_marker) break;
+  return Bleed_Temperature_Target[iMarker_EngineBleed];
+}
+
+double CConfig::GetInflow_Pressure(string val_marker) {
+  unsigned short iMarker_EngineInflow;
+  for (iMarker_EngineInflow = 0; iMarker_EngineInflow < nMarker_EngineInflow; iMarker_EngineInflow++)
+    if (Marker_EngineInflow[iMarker_EngineInflow] == val_marker) break;
+  return Inflow_Pressure[iMarker_EngineInflow];
+}
+
+double CConfig::GetBleed_Pressure(string val_marker) {
+  unsigned short iMarker_EngineBleed;
+  for (iMarker_EngineBleed = 0; iMarker_EngineBleed < nMarker_EngineBleed; iMarker_EngineBleed++)
+    if (Marker_EngineBleed[iMarker_EngineBleed] == val_marker) break;
+  return Bleed_Pressure[iMarker_EngineBleed];
+}
+
+double CConfig::GetExhaust_Pressure(string val_marker) {
+  unsigned short iMarker_EngineExhaust;
+  for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++)
+  if (Marker_EngineExhaust[iMarker_EngineExhaust] == val_marker) break;
+  return Exhaust_Pressure[iMarker_EngineExhaust];
+}
+
+double CConfig::GetExhaust_Temperature(string val_marker) {
+  unsigned short iMarker_EngineExhaust;
+  for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++)
+  if (Marker_EngineExhaust[iMarker_EngineExhaust] == val_marker) break;
+  return Exhaust_Temperature[iMarker_EngineExhaust];
+}
+
+double CConfig::GetInflow_Mach(string val_marker) {
+  unsigned short iMarker_EngineInflow;
+  for (iMarker_EngineInflow = 0; iMarker_EngineInflow < nMarker_EngineInflow; iMarker_EngineInflow++)
+    if (Marker_EngineInflow[iMarker_EngineInflow] == val_marker) break;
+  return Inflow_Mach[iMarker_EngineInflow];
+}
+
+double CConfig::GetBleed_MassFlow(string val_marker) {
+  unsigned short iMarker_EngineBleed;
+  for (iMarker_EngineBleed = 0; iMarker_EngineBleed < nMarker_EngineBleed; iMarker_EngineBleed++)
+    if (Marker_EngineBleed[iMarker_EngineBleed] == val_marker) break;
+  return Bleed_MassFlow[iMarker_EngineBleed];
+}
+
+double CConfig::GetBleed_Temperature(string val_marker) {
+  unsigned short iMarker_EngineBleed;
+  for (iMarker_EngineBleed = 0; iMarker_EngineBleed < nMarker_EngineBleed; iMarker_EngineBleed++)
+    if (Marker_EngineBleed[iMarker_EngineBleed] == val_marker) break;
+  return Bleed_Temperature[iMarker_EngineBleed];
 }
 
 double CConfig::GetDispl_Value(string val_marker) {
