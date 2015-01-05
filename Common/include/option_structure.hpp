@@ -1,23 +1,14 @@
 /*!
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
- * \author J. Hicken, B. Tracey
- * \version 3.2.7 "eagle"
+ * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
+ * \version 3.2.4 "eagle"
  *
  * Many of the classes in this file are templated, and therefore must
  * be declared and defined here; to keep all elements together, there
  * is no corresponding .cpp file at this time.
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
- *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *
- * Copyright (C) 2012-2014 SU2, the open-source CFD code.
+ * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -103,16 +94,15 @@ enum SU2_COMPONENT {
   SU2_CFD = 1,	/*!< \brief Running the SU2_CFD software. */
   SU2_DEF = 2,	/*!< \brief Running the SU2_DEF software. */
   SU2_DOT = 3,	/*!< \brief Running the SU2_DOT software. */
-  SU2_MSH = 4,	/*!< \brief Running the SU2_MSH software. */
-  SU2_GEO = 5,	/*!< \brief Running the SU2_GEO software. */
-  SU2_SOL = 6	/*!< \brief Running the SU2_SOL software. */
+  SU2_PRT = 4,	/*!< \brief Running the SU2_PRT software. */
+  SU2_MSH = 5,	/*!< \brief Running the SU2_MSH software. */
+  SU2_GEO = 6,	/*!< \brief Running the SU2_GEO software. */
+  SU2_SOL = 7	/*!< \brief Running the SU2_SOL software. */
 };
-
-const unsigned int EXIT_DIVERGENCE = 2;		/*!< \brief Exit code (divergence). */
 
 const unsigned int BUFSIZE = 3000000;		/*!< \brief MPI buffer. */
 const unsigned int MAX_PARAMETERS = 10;		/*!< \brief Maximum number of parameters for a design variable definition. */
-const unsigned int MAX_NUMBER_MARKER = 30000;	/*!< \brief Maximum number of markers. */
+const unsigned int MAX_NUMBER_MARKER = 5000;	/*!< \brief Maximum number of markers. */
 const unsigned int MAX_NUMBER_PERIODIC = 10;	/*!< \brief Maximum number of periodic boundary conditions. */
 const unsigned int MAX_STRING_SIZE = 200;	/*!< \brief Maximum number of domains. */
 const unsigned int MAX_NUMBER_FFD = 10;	/*!< \brief Maximum number of FFDBoxes for the FFD. */
@@ -166,14 +156,18 @@ enum ANSWER {
  * \brief Verbosity level
  */
 enum VERB_LEVEL {
-  VERB_NONE = 0,   /*!< \brief No verbosity. */
+  VERB_NONE = 1,   /*!< \brief No verbosity. */
   VERB_MEDIUM = 1,   /*!< \brief Medium level of verbosity. */
   VERB_HIGH = 2			/*!< \brief High level of verbosity. */
 };
-static const map<string, VERB_LEVEL> Verb_Map = CCreateMap<string, VERB_LEVEL>
-("NONE", VERB_NONE)
-("MEDIUM", VERB_MEDIUM)
-("HIGH", VERB_HIGH);
+
+/*!
+ * \brief types of MPI communications
+ */
+enum COMM_TYPE {
+  SEND = 1,					/*!< \brief Boolean definition of send (parallelization). */
+  RECEIVE = 2				/*!< \brief Boolean definition of receive (parallelization). */
+};
 
 /*!
  * \brief different solver types for the CFD component
@@ -340,23 +334,6 @@ static const map<string, ENUM_FLUIDMODEL> FluidModel_Map = CCreateMap<string, EN
 ("VW_GAS", VW_GAS)
 ("PR_GAS", PR_GAS);
 
-
-/*!
- * \brief types of initialization option
- */
-
-enum ENUM_INIT_OPTION {
-	REYNOLDS = 0, /*!< \brief _____. */
-	TD_CONDITIONS = 1
-
-};
-
-static const map<string, ENUM_INIT_OPTION> InitOption_Map = CCreateMap<string, ENUM_INIT_OPTION>
-("REYNOLDS", REYNOLDS)
-("TD_CONDITIONS", TD_CONDITIONS);
-
-
-
 /*!
  * \brief types of initialization option
  */
@@ -373,7 +350,7 @@ static const map<string, ENUM_FREESTREAM_OPTION> FreeStreamOption_Map = CCreateM
 
 
 /*!
- * \brief types of viscosity model
+ * \brief types of fluid model
  */
 enum ENUM_VISCOSITYMODEL {
 	CONSTANT_VISCOSITY = 0, /*!< \brief _____. */
@@ -381,20 +358,8 @@ enum ENUM_VISCOSITYMODEL {
 };
 
 static const map<string, ENUM_VISCOSITYMODEL> ViscosityModel_Map = CCreateMap<string, ENUM_VISCOSITYMODEL>
-("CONSTANT_VISCOSITY", CONSTANT_VISCOSITY)
+("COSTANT_VISCOSITY", CONSTANT_VISCOSITY)
 ("SUTHERLAND", SUTHERLAND);
-
-/*!
- * \brief types of thermal conductivity model
- */
-enum ENUM_CONDUCTIVITYMODEL {
-	CONSTANT_CONDUCTIVITY = 0, /*!< \brief _____. */
-	CONSTANT_PRANDTL = 1
-};
-
-static const map<string, ENUM_CONDUCTIVITYMODEL> ConductivityModel_Map = CCreateMap<string, ENUM_CONDUCTIVITYMODEL>
-("CONSTANT_CONDUCTIVITY", CONSTANT_CONDUCTIVITY)
-("CONSTANT_PRANDTL", CONSTANT_PRANDTL);
 
 /*!
  * \brief types of spatial discretizations
@@ -644,37 +609,35 @@ enum BC_TYPE {
   EULER_WALL = 1,		/*!< \brief Boundary Euler wall definition. */
   FAR_FIELD = 2,		/*!< \brief Boundary far-field definition. */
   SYMMETRY_PLANE = 3,   	/*!< \brief Boundary symmetry plane definition. */
-  INLET_FLOW = 4,		/*!< \brief Boundary inlet flow definition. */
-  OUTLET_FLOW = 5,		/*!< \brief Boundary outlet flow definition. */
-  PERIODIC_BOUNDARY = 6,	/*!< \brief Periodic boundary definition. */
-  NEARFIELD_BOUNDARY = 7,	/*!< \brief Near-Field boundary definition. */
-  ELECTRODE_BOUNDARY = 8,	/*!< \brief Electrode boundary definition. */
-  DIELEC_BOUNDARY = 9,	/*!< \brief Dipoisson boundary definition. */
-  CUSTOM_BOUNDARY = 10,         /*!< \brief custom boundary definition. */
-  INTERFACE_BOUNDARY = 11,	/*!< \brief Domain interface boundary definition. */
-  DIRICHLET = 12,		/*!< \brief Boundary Euler wall definition. */
-  NEUMANN = 13,		/*!< \brief Boundary Neumann definition. */
-  DISPLACEMENT_BOUNDARY = 14,		/*!< \brief Boundary displacement definition. */
-  LOAD_BOUNDARY = 15,		/*!< \brief Boundary Load definition. */
-  FLOWLOAD_BOUNDARY = 16,		/*!< \brief Boundary Load definition. */
-  ELEC_DIELEC_BOUNDARY = 17,	/*!< \brief Dipoisson boundary definition for the poissonal potential. */
-  ELEC_NEUMANN = 18,		/*!< \brief Boundary Neumann definition. */
-  SUPERSONIC_INLET = 19,		/*!< \brief Boundary supersonic inlet definition. */
-  SUPERSONIC_OUTLET = 20,		/*!< \brief Boundary supersonic inlet definition. */
-  ENGINE_INFLOW = 21,		/*!< \brief Boundary nacelle inflow. */
-  ENGINE_EXHAUST = 22,		/*!< \brief Boundary nacelle exhaust. */
-  ENGINE_BLEED = 23,		/*!< \brief Boundary engine bleed. */
-  RIEMANN_BOUNDARY= 24,   /*!< \brief Riemann Boundary definition. */
-  ISOTHERMAL = 25,      /*!< \brief No slip isothermal wall boundary condition. */
-  HEAT_FLUX  = 26,      /*!< \brief No slip constant heat flux wall boundary condition. */
-  PRESSURE_BOUNDARY = 27,   	/*!< \brief Pressure boundary condition. */
-  HEAT_FLUX_NONCATALYTIC = 28, /*!< \brief No-slip, constant heat flux, noncatalytic bc. */
-  HEAT_FLUX_CATALYTIC= 29, /*!< \brief No-slip, constant heat flux, catalytic bc. */
-  ISOTHERMAL_NONCATALYTIC = 30, /*!< \brief No-slip, constant temperature, noncatalytic bc. */
-  ISOTHERMAL_CATALYTIC = 31, /*!< \brief No-slip, constant temperature, catalytic bc. */
-  ACTDISK_INLET = 32,	/*!< \brief Actuator disk inlet boundary definition. */
-  ACTDISK_OUTLET = 33,	/*!< \brief Actuator disk outlet boundary definition. */
+  INLET_FLOW = 5,		/*!< \brief Boundary inlet flow definition. */
+  OUTLET_FLOW = 6,		/*!< \brief Boundary outlet flow definition. */
+  PERIODIC_BOUNDARY = 7,	/*!< \brief Periodic boundary definition. */
+  NEARFIELD_BOUNDARY = 8,	/*!< \brief Near-Field boundary definition. */
+  ELECTRODE_BOUNDARY = 9,	/*!< \brief Electrode boundary definition. */
+  DIELEC_BOUNDARY = 10,	/*!< \brief Dipoisson boundary definition. */
+  CUSTOM_BOUNDARY = 11,         /*!< \brief custom boundary definition. */
+  INTERFACE_BOUNDARY = 12,	/*!< \brief Domain interface boundary definition. */
+  DIRICHLET = 13,		/*!< \brief Boundary Euler wall definition. */
+  NEUMANN = 14,		/*!< \brief Boundary Neumann definition. */
+  DISPLACEMENT_BOUNDARY = 15,		/*!< \brief Boundary displacement definition. */
+  LOAD_BOUNDARY = 16,		/*!< \brief Boundary Load definition. */
+  FLOWLOAD_BOUNDARY = 17,		/*!< \brief Boundary Load definition. */
+  ELEC_DIELEC_BOUNDARY = 22,	/*!< \brief Dipoisson boundary definition for the poissonal potential. */
+  ELEC_NEUMANN = 23,		/*!< \brief Boundary Neumann definition. */
+  SUPERSONIC_INLET = 24,		/*!< \brief Boundary supersonic inlet definition. */
+  NACELLE_INFLOW = 25,		/*!< \brief Boundary nacelle inflow. */
+  NACELLE_EXHAUST = 26,		/*!< \brief Boundary nacelle exhaust. */
+  ISOTHERMAL = 28,      /*!< \brief No slip isothermal wall boundary condition. */
+  HEAT_FLUX  = 29,      /*!< \brief No slip constant heat flux wall boundary condition. */
+  PRESSURE_BOUNDARY = 30,   	/*!< \brief Pressure boundary condition. */
+  HEAT_FLUX_NONCATALYTIC = 31, /*!< \brief No-slip, constant heat flux, noncatalytic bc. */
+  HEAT_FLUX_CATALYTIC= 32, /*!< \brief No-slip, constant heat flux, catalytic bc. */
+  ISOTHERMAL_NONCATALYTIC = 33, /*!< \brief No-slip, constant temperature, noncatalytic bc. */
+  ISOTHERMAL_CATALYTIC = 34, /*!< \brief No-slip, constant temperature, catalytic bc. */
+  ACTDISK_INLET = 35,	/*!< \brief Actuator disk inlet boundary definition. */
+  ACTDISK_OUTLET = 36,	/*!< \brief Actuator disk outlet boundary definition. */
   SEND_RECEIVE = 99,		/*!< \brief Boundary send-receive definition. */
+  RIEMANN_BOUNDARY= 100   /*!< \brief Riemann Boundary definition. */
 };
 
 /*!
@@ -754,7 +717,9 @@ enum ENUM_OBJECTIVE {
   MAX_THICK_SEC4 = 26,          /*!< \brief Maximum thickness in section 4. */
   MAX_THICK_SEC5 = 27,           /*!< \brief Maximum thickness in section 5. */
   AVG_TOTAL_PRESSURE = 28, 	    /*!< \brief Total Pressure objective function definition. */
-  MASS_FLOW_RATE = 29 	        /*!< \brief Mass Flow Rate objective function definition. */
+  AVG_OUTLET_PRESSURE = 29,      /*!< \brief Static Pressure objective function definition. */
+  MASS_FLOW_RATE = 30 	        /*!< \brief Mass Flow Rate objective function definition. */
+
 };
 static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM_OBJECTIVE>
 ("DRAG", DRAG_COEFFICIENT)
@@ -785,6 +750,7 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("MAX_THICK_SEC4", MAX_THICK_SEC4)
 ("MAX_THICK_SEC5", MAX_THICK_SEC5)
 ("AVG_TOTAL_PRESSURE", AVG_TOTAL_PRESSURE)
+("AVG_OUTLET_PRESSURE",AVG_OUTLET_PRESSURE)
 ("MASS_FLOW_RATE", MASS_FLOW_RATE);
 
 /*!
@@ -869,6 +835,7 @@ enum ENUM_ADAPT {
   WAKE = 12,			/*!< \brief Do a grid refinement on the wake. */
   SMOOTHING = 14,		/*!< \brief Do a grid smoothing of the geometry. */
   SUPERSONIC_SHOCK = 15,	/*!< \brief Do a grid smoothing. */
+  TWOPHASE = 16,			/*!< \brief Do a grid refinement on the free surface interphase. */
   PERIODIC = 17			/*!< \brief Add the periodic halo cells. */
 };
 static const map<string, ENUM_ADAPT> Adapt_Map = CCreateMap<string, ENUM_ADAPT>
@@ -887,7 +854,8 @@ static const map<string, ENUM_ADAPT> Adapt_Map = CCreateMap<string, ENUM_ADAPT>
 ("WAKE", WAKE)
 ("SMOOTHING", SMOOTHING)
 ("SUPERSONIC_SHOCK", SUPERSONIC_SHOCK)
-("PERIODIC", PERIODIC);
+("PERIODIC", PERIODIC)
+("TWOPHASE", TWOPHASE);
 
 /*!
  * \brief types of input file formats
@@ -922,19 +890,6 @@ static const map<string, ENUM_OUTPUT> Output_Map = CCreateMap<string, ENUM_OUTPU
 ("TECPLOT_BINARY", TECPLOT_BINARY)
 ("CGNS", CGNS_SOL)
 ("PARAVIEW", PARAVIEW);
-
-/*!
- * \brief type of multigrid cycle
- */
-enum MG_CYCLE {
-  V_CYCLE = 0,  		/*!< \brief V cycle. */
-  W_CYCLE = 1,			/*!< \brief W cycle. */
-  FULLMG_CYCLE = 2,			/*!< \brief FullMG cycle. */
-};
-static const map<string, MG_CYCLE> MG_Cycle_Map = CCreateMap<string, MG_CYCLE>
-("V_CYCLE", V_CYCLE)
-("W_CYCLE", W_CYCLE)
-("FULLMG_CYCLE", FULLMG_CYCLE);
 
 /*!
  * \brief type of solution output variables
@@ -1221,7 +1176,6 @@ public:
       str.append(this->name);
       str.append(": invalid option value ");
       str.append(option_value[0]);
-      str.append(". Check current SU2 options in config_template.cfg.");
       return str;
     }
     // If it is there, set the option value
@@ -1476,7 +1430,6 @@ public:
         str.append(this->name);
         str.append(": invalid option value ");
         str.append(option_value[0]);
-        str.append(". Check current SU2 options in config_template.cfg.");
         return str;
       }
       // If it is there, set the option value
@@ -1706,16 +1659,19 @@ public:
 class COptionMathProblem : public COptionBase{
   string name; // identifier for the option
   bool & adjoint;
+  bool & oneshot;
   bool & linearized;
   bool & restart;
   bool adjoint_def;
+  bool oneshot_def;
   bool linearized_def;
   bool restart_def;
 
 public:
-  COptionMathProblem(string option_field_name, bool & adjoint_field, bool adjoint_default, bool & linearized_field, bool linearized_default, bool & restart_field, bool restart_default) : adjoint(adjoint_field), linearized(linearized_field), restart(restart_field) {
+  COptionMathProblem(string option_field_name, bool & adjoint_field, bool adjoint_default, bool & oneshot_field, bool oneshot_default, bool & linearized_field, bool linearized_default, bool & restart_field, bool restart_default) : adjoint(adjoint_field), oneshot(oneshot_field), linearized(linearized_field), restart(restart_field) {
     this->name = option_field_name;
     this->adjoint_def = adjoint_default;
+    this->oneshot_def = oneshot_default;
     this->linearized_def = linearized_default;
     this->restart_def = restart_default;
   }
@@ -1731,6 +1687,7 @@ public:
     }
     if (option_value[0] == "DIRECT") {
       this->adjoint = false;
+      this->oneshot = false;
       this->linearized = false;
       this->restart = false;
       return "";
@@ -1738,6 +1695,7 @@ public:
     if (option_value[0] == "ADJOINT") {
       this->adjoint= true;
       this->restart= true;
+      this->oneshot = false;
       this->linearized = false;
       return "";
     }
@@ -1745,6 +1703,7 @@ public:
       this->linearized = true;
       this->restart = true;
       this->adjoint= false;
+      this->oneshot = false;
       return "";
     }
     return "option in math problem map not considered in constructor";
@@ -1752,6 +1711,7 @@ public:
 
   void SetDefault(){
     this->adjoint = this->adjoint_def;
+    this->oneshot = this->oneshot_def;
     this->linearized = this->linearized_def;
     this->restart = this->restart_def;
   }
@@ -2106,7 +2066,6 @@ public:
       str.append(this->name);
       str.append(": invalid option value ");
       str.append(option_value[0]);
-      str.append(". Check current SU2 options in config_template.cfg.");
       return str;
     }
       Tenum val = this->m[option_value[7*i + 1]];
@@ -2206,71 +2165,6 @@ public:
     this->marker = NULL;
     this->ttotal = NULL;
     this->ptotal = NULL;
-    this->size = 0; // There is no default value for list
-  }
-  
-};
-
-//Inlet condition where the input direction is assumed
-class COptionBleed : public COptionBase{
-  string name; // identifier for the option
-  unsigned short & size;
-  string * & marker;
-  double * & massflow_target;
-  double * & temp_target;
-  
-public:
-  COptionBleed(string option_field_name, unsigned short & nMarker_Bleed, string* & Marker_Bleed, double* & MassFlow_Target, double* & Temp_Target) : size(nMarker_Bleed), marker(Marker_Bleed), massflow_target(MassFlow_Target), temp_target(Temp_Target){
-    this->name = option_field_name;
-  }
-  
-  ~COptionBleed(){};
-  
-  string SetValue(vector<string> option_value){
-    
-    unsigned long totalVals = option_value.size();
-    if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)){
-      this->size = 0;
-      this->marker = NULL;
-      this->massflow_target = NULL;
-      this->temp_target = NULL;
-      return "";
-    }
-    
-    if (totalVals % 3 != 0){
-      string newstring;
-      newstring.append(this->name);
-      newstring.append(": must have a number of entries divisible by 3");
-      this->size = 0;
-      this->marker = NULL;
-      this->massflow_target = NULL;
-      this->temp_target = NULL;
-      return newstring;
-    }
-    
-    unsigned long nVals = totalVals / 3;
-    this->size = nVals;
-    this->marker = new string[nVals];
-    this->massflow_target = new double[nVals];
-    this->temp_target = new double[nVals];
-    
-    for (int i = 0; i < nVals; i++){
-      this->marker[i].assign(option_value[3*i]);
-      istringstream ss_1st(option_value[3*i + 1]);
-      if (!(ss_1st >> this->massflow_target[i]))
-        return badValue(option_value, "bleed fixed", this->name);
-      istringstream ss_2nd(option_value[3*i + 2]);
-      if (!(ss_2nd >> this->temp_target[i]))
-        return badValue(option_value, "bleed fixed", this->name);
-    }
-    
-    return "";
-  }
-  
-  void SetDefault(){
-    this->marker = NULL;
-    this->massflow_target = NULL;
-    this->temp_target = NULL;
     this->size = 0; // There is no default value for list
   }
   

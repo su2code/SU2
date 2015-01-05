@@ -4,19 +4,10 @@
  *        movement (including volumetric movement, surface movement and Free From 
  *        technique definition). The subroutines and functions are in 
  *        the <i>grid_movement_structure.cpp</i> file.
- * \author F. Palacios, T. Economon, S. Padron
- * \version 3.2.7 "eagle"
+ * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
+ * \version 3.2.4 "eagle"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
- *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *
- * Copyright (C) 2012-2014 SU2, the open-source CFD code.
+ * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -56,7 +47,7 @@ using namespace std;
  * \brief Class for moving the surface and volumetric 
  *        numerical grid (2D and 3D problems).
  * \author F. Palacios.
- * \version 3.2.7 "eagle"
+ * \version 3.2.4 "eagle"
  */
 class CGridMovement {
 public:
@@ -85,7 +76,7 @@ public:
  * \class CFreeFormDefBox
  * \brief Class for defining the free form FFDBox structure.
  * \author F. Palacios & A. Galdran.
- * \version 3.2.7 "eagle"
+ * \version 3.2.4 "eagle"
  */
 class CFreeFormDefBox : public CGridMovement {
 public:
@@ -431,7 +422,7 @@ public:
 	 * \param[in] it_max - Maximal number of iterations.
 	 * \return Parametric coordinates of the point.
 	 */
-	double *GetParametricCoord_Iterative(unsigned long iPoint, double *xyz, double *guess, CConfig *config);
+	double *GetParametricCoord_Iterative(double *xyz, double *guess, CConfig *config);
 	
 	/*! 
 	 * \brief Compute the cross product.
@@ -538,6 +529,14 @@ public:
 	 * \return Value of the Derivative of the Bernstein polynomial.
 	 */		
 	double GetBernsteinDerivative(short val_n, short val_i, double val_t, short val_order);
+	
+  /*!
+	 * \brief The routine computes F(u,v,w)=||X(u,v,w)-(x,y,z)||^2  evaluated at (u,v,w).
+	 * \param[in] val_coord - Parametric coordiates of the target point.
+	 * \param[in] xyz - Cartesians coordinates of the point.
+	 * \return Value of the analytical objective function.
+	 */
+	double GetFFDObjFunc(double *val_coord, double *xyz);
   
 	/*! 
 	 * \brief The routine computes the gradient of F(u,v,w)=||X(u,v,w)-(x,y,z)||^2  evaluated at (u,v,w).
@@ -682,7 +681,7 @@ public:
  * \class CVolumetricMovement
  * \brief Class for moving the volumetric numerical grid.
  * \author F. Palacios, A. Bueno, T. Economon, S. Padron.
- * \version 3.2.7 "eagle"
+ * \version 3.2.4 "eagle"
  */
 class CVolumetricMovement : public CGridMovement {
 protected:
@@ -732,7 +731,8 @@ public:
   
   /*!
 	 * \brief Compute the stiffness matrix for grid deformation using spring analogy.
-	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] geometry - Geometrical definition of the problem
+	 * \param[in] config - Definition of the particular problem.
 	 * \return Value of the length of the smallest edge of the grid.
 	 */
 	double SetFEAMethodContributions_Elem(CGeometry *geometry, CConfig *config);
@@ -741,7 +741,10 @@ public:
 	 * \brief Build the stiffness matrix for a 3-D hexahedron element. The result will be placed in StiffMatrix_Elem.
 	 * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] StiffMatrix_Elem - Element stiffness matrix to be filled.
+   * \param[in] PointCorners - Corners of the element
 	 * \param[in] CoordCorners - Index value for Node 1 of the current hexahedron.
+	 * \param[in] nNodes - Number of nodes per element
+	 * \param[in] scale - Minimum volume used in computing inverse volume stiffness
 	 */
   void SetFEA_StiffMatrix3D(CGeometry *geometry, CConfig *config, double **StiffMatrix_Elem, unsigned long PointCorners[8], double CoordCorners[8][3], unsigned short nNodes, double scale);
 	
@@ -949,7 +952,7 @@ public:
  * \class CSurfaceMovement
  * \brief Class for moving the surface numerical grid.
  * \author F. Palacios, T. Economon.
- * \version 3.2.7 "eagle"
+ * \version 3.2.4 "eagle"
  */
 class CSurfaceMovement : public CGridMovement {
 protected:
@@ -957,11 +960,6 @@ protected:
 	unsigned short nFFDBox;	/*!< \brief Number of FFD FFDBoxes. */
 	unsigned short nLevel;	/*!< \brief Level of the FFD FFDBoxes (parent/child). */
 	bool FFDBoxDefinition;	/*!< \brief If the FFD FFDBox has been defined in the input file. */
-  vector<double> GlobalCoordX[MAX_NUMBER_FFD];
-  vector<double> GlobalCoordY[MAX_NUMBER_FFD];
-  vector<double> GlobalCoordZ[MAX_NUMBER_FFD];
-  vector<string> GlobalTag[MAX_NUMBER_FFD];
-  vector<unsigned long> GlobalPoint[MAX_NUMBER_FFD];
 
 public:
 	
@@ -1325,21 +1323,22 @@ public:
 	 */		
 	void ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFormDefBox **FFDBox, string val_mesh_filename, bool val_fullmesh);
 	
-  /*!
-   * \brief Merge the Free Form information in the SU2 file.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] val_mesh_filename - Name of the grid output file.
-   */
-  void MergeFFDInfo(CGeometry *geometry, CConfig *config);
-  
 	/*! 
 	 * \brief Write the Free Form information in the SU2 file.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] val_mesh_filename - Name of the grid output file.
 	 */		
-	void WriteFFDInfo(CGeometry *geometry, CConfig *config);
+	void WriteFFDInfo(CGeometry *geometry, CConfig *config, string val_mesh_filename);
+  
+  /*!
+	 * \brief Write the Free Form information in the SU2 file.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
+	 * \param[in] val_mesh_filename - Name of the grid output file.
+	 */
+	void WriteFFDInfo(CGeometry *geometry, CConfig *config, CFreeFormDefBox **FFDBox, string val_mesh_filename);
 	
 	/*! 
 	 * \brief Get information about if there is a complete FFDBox definition, or it is necessary to 
