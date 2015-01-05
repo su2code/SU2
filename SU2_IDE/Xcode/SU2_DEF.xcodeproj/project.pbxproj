@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		05755F0E1A54B52400600019 /* output_su2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05755F0D1A54B52400600019 /* output_su2.cpp */; };
 		05AF5D021A0D5A16004E14F6 /* output_cgns.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05AF5CFF1A0D5A16004E14F6 /* output_cgns.cpp */; };
 		05AF5D031A0D5A16004E14F6 /* output_paraview.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05AF5D001A0D5A16004E14F6 /* output_paraview.cpp */; };
 		05AF5D041A0D5A16004E14F6 /* output_tecplot.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05AF5D011A0D5A16004E14F6 /* output_tecplot.cpp */; };
@@ -36,6 +37,7 @@
 
 /* Begin PBXFileReference section */
 		050BACD21374A60900564A35 /* SU2_DEF */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = SU2_DEF; sourceTree = BUILT_PRODUCTS_DIR; };
+		05755F0D1A54B52400600019 /* output_su2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = output_su2.cpp; path = ../../SU2_CFD/src/output_su2.cpp; sourceTree = "<group>"; };
 		05A9E2DD180DCD5200BFCFD2 /* config_template.cfg */ = {isa = PBXFileReference; lastKnownFileType = text; name = config_template.cfg; path = ../../config_template.cfg; sourceTree = "<group>"; };
 		05AF5CFF1A0D5A16004E14F6 /* output_cgns.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = output_cgns.cpp; path = ../../SU2_CFD/src/output_cgns.cpp; sourceTree = "<group>"; };
 		05AF5D001A0D5A16004E14F6 /* output_paraview.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = output_paraview.cpp; path = ../../SU2_CFD/src/output_paraview.cpp; sourceTree = "<group>"; };
@@ -135,6 +137,7 @@
 				05AF5CFF1A0D5A16004E14F6 /* output_cgns.cpp */,
 				05AF5D001A0D5A16004E14F6 /* output_paraview.cpp */,
 				05AF5D011A0D5A16004E14F6 /* output_tecplot.cpp */,
+				05755F0D1A54B52400600019 /* output_su2.cpp */,
 				05E6DB5317EB61D100FA1F7E /* config_structure.cpp */,
 				05E6DB5417EB61D100FA1F7E /* dual_grid_structure.cpp */,
 				05E6DB5517EB61D100FA1F7E /* geometry_structure.cpp */,
@@ -221,6 +224,7 @@
 				05E6DB6417EB61D100FA1F7E /* vector_structure.cpp in Sources */,
 				05E6DC4E17EB635D00FA1F7E /* SU2_DEF.cpp in Sources */,
 				05AF5D041A0D5A16004E14F6 /* output_tecplot.cpp in Sources */,
+				05755F0E1A54B52400600019 /* output_su2.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -2,9 +2,18 @@
  * \file dual_grid_structure.cpp
  * \brief Main classes for defining the dual grid
  * \author F. Palacios
- * \version 3.2.6 "eagle"
+ * \version 3.2.7 "eagle"
  *
- * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
+ * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ *
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
+ *
+ * Copyright (C) 2012-2014 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -453,7 +462,7 @@ CVertex::~CVertex() {
 }
 
 void CVertex::SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG, double *val_coord_Elem_CG) {
-	double vec_a[3], vec_b[3], Dim_Normal[3];
+  double vec_a[3] = {0.0,0.0,0.0}, vec_b[3] = {0.0,0.0,0.0}, Dim_Normal[3] = {0.0,0.0,0.0};
 	unsigned short iDim;
 
 	for (iDim = 0; iDim < nDim; iDim++) {

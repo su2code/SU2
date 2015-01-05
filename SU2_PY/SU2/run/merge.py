@@ -1,11 +1,11 @@
 ## \file merge.py
 #  \brief python package for merging meshes
 #  \author T. Economon, T. Lukaczyk, F. Palacios
-#  \version 3.2.6 "eagle"
+#  \version 3.2.7 "eagle"
 #
-# Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
+# Copyright (C) 2012-2014 SU2 Developers.
 #
-# This program is free software: you can redistribute it and/or modify
+# SU2 is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.

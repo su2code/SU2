@@ -2,9 +2,18 @@
  * \file SU2_DEF.cpp
  * \brief Main file of Mesh Deformation Code (SU2_DEF).
  * \author F. Palacios
- * \version 3.2.6 "eagle"
+ * \version 3.2.7 "eagle"
  *
- * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
+ * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ *
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
+ *
+ * Copyright (C) 2012-2014 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -92,10 +101,6 @@ int main(int argc, char *argv[]) {
       
     }
     
-#ifdef HAVE_MPI
-    MPI_Barrier(MPI_COMM_WORLD);
-#endif
-    
     /*--- Allocate the memory of the current domain, and
      divide the grid between the nodes ---*/
     
@@ -113,16 +118,11 @@ int main(int argc, char *argv[]) {
     
     geometry_container[iZone]->SetBoundaries(config_container[iZone]);
     
-#ifdef HAVE_MPI
-    MPI_Barrier(MPI_COMM_WORLD);
-#endif
-    
   }
   
-  /*--- Set up a timer for performance benchmarking (preprocessing time is not included) ---*/
+  /*--- Set up a timer for performance benchmarking (preprocessing time is included) ---*/
   
 #ifdef HAVE_MPI
-  MPI_Barrier(MPI_COMM_WORLD);
   StartTime = MPI_Wtime();
 #else
   StartTime = double(clock())/double(CLOCKS_PER_SEC);
@@ -176,18 +176,15 @@ int main(int argc, char *argv[]) {
   /*--- Definition and initialization of the surface deformation class ---*/
   
   surface_movement = new CSurfaceMovement();
+  
+  /*--- Copy coordinates to the surface structure ---*/
+
   surface_movement->CopyBoundary(geometry_container[ZONE_0], config_container[ZONE_0]);
   
   /*--- Surface grid deformation ---*/
   
   if (rank == MASTER_NODE) cout << "Performing the deformation of the surface grid." << endl;
   surface_movement->SetSurface_Deformation(geometry_container[ZONE_0], config_container[ZONE_0]);
-
-  /*--- MPI syncronization point ---*/
-
-#ifdef HAVE_MPI
-  MPI_Barrier(MPI_COMM_WORLD);
-#endif
   
   /*--- Volumetric grid deformation ---*/
   
@@ -226,7 +223,6 @@ int main(int argc, char *argv[]) {
    wall clock time required. ---*/
   
 #ifdef HAVE_MPI
-  MPI_Barrier(MPI_COMM_WORLD);
   StopTime = MPI_Wtime();
 #else
   StopTime = double(clock())/double(CLOCKS_PER_SEC);
@@ -248,7 +244,6 @@ int main(int argc, char *argv[]) {
   /*--- Finalize MPI parallelization ---*/
 
 #ifdef HAVE_MPI
-  MPI_Barrier(MPI_COMM_WORLD);
   MPI_Finalize();
 #endif
   

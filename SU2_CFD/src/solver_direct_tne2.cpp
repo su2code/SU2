@@ -2,9 +2,18 @@
  * \file solution_direct_tne2.cpp
  * \brief Main subrotuines for solving flows in thermochemical nonequilibrium.
  * \author S. Copeland
- * \version 3.2.6 "eagle"
+ * \version 3.2.7 "eagle"
  *
- * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
+ * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ *
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
+ *
+ * Copyright (C) 2012-2014 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -2256,7 +2265,6 @@ void CTNE2EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solution_cont
 		sbuf_time = Global_Delta_Time;
 		MPI_Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
 		MPI_Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-		MPI_Barrier(MPI_COMM_WORLD);
 		Global_Delta_Time = rbuf_time;
 #endif
 		for(iPoint = 0; iPoint < nPointDomain; iPoint++)
@@ -5689,7 +5697,6 @@ void CTNE2NSSolver::SetTime_Step(CGeometry *geometry,
 		sbuf_time = Global_Delta_Time;
 		MPI_Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
 		MPI_Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-		MPI_Barrier(MPI_COMM_WORLD);
 		Global_Delta_Time = rbuf_time;
 #endif
 		for(iPoint = 0; iPoint < nPointDomain; iPoint++)
@@ -5705,7 +5712,6 @@ void CTNE2NSSolver::SetTime_Step(CGeometry *geometry,
 		sbuf_time = Global_Delta_UnstTimeND;
 		MPI_Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
 		MPI_Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-		MPI_Barrier(MPI_COMM_WORLD);
 		Global_Delta_UnstTimeND = rbuf_time;
 #endif
 		config->SetDelta_UnstTimeND(Global_Delta_UnstTimeND);

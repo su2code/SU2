@@ -2,9 +2,18 @@
  * \file solution_direct_heat.cpp
  * \brief Main subrotuines for solving the heat equation
  * \author F. Palacios, T. Economon
- * \version 3.2.6 "eagle"
+ * \version 3.2.7 "eagle"
  *
- * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
+ * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ *
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
+ *
+ * Copyright (C) 2012-2014 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,7 +35,7 @@ CHeatSolver::CHeatSolver(void) : CSolver() { }
 
 CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config) : CSolver() {
   
-	unsigned short nMarker, iDim, iVar, nLineLets;
+	unsigned short iDim, iVar, nLineLets;
   unsigned long iPoint;
   
   int rank = MASTER_NODE;
@@ -37,7 +46,6 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config) : CSolver() {
   nPoint =        geometry->GetnPoint();
   nPointDomain =  geometry->GetnPointDomain();
 	nDim    =       geometry->GetnDim();
-	nMarker =       config->GetnMarker_All();
 	node    =       new CVariable*[nPoint];
 	nVar    =       1;
   
@@ -193,7 +201,7 @@ void CHeatSolver::Source_Residual(CGeometry *geometry,
   if (config->GetUnsteady_Simulation() != STEADY) {
 
     unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0, Point_3 = 0;
-    double a[3], b[3], c[3], d[3], Area_Local = 0.0, Volume_Local = 0.0, Time_Num;
+    double a[3] = {0.0,0.0,0.0}, b[3] = {0.0,0.0,0.0}, c[3] = {0.0,0.0,0.0}, d[3] = {0.0,0.0,0.0}, Area_Local = 0.0, Volume_Local = 0.0, Time_Num;
     double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL, *Coord_3= NULL;
     unsigned short iDim;
 
@@ -212,7 +220,6 @@ void CHeatSolver::Source_Residual(CGeometry *geometry,
       Point_0 = geometry->elem[iElem]->GetNode(0);	Coord_0 = geometry->node[Point_0]->GetCoord();
       Point_1 = geometry->elem[iElem]->GetNode(1);	Coord_1 = geometry->node[Point_1]->GetCoord();
       Point_2 = geometry->elem[iElem]->GetNode(2);	Coord_2 = geometry->node[Point_2]->GetCoord();
-      if (nDim == 3) { Point_3 = geometry->elem[iElem]->GetNode(3);	Coord_3 = geometry->node[Point_3]->GetCoord(); }
       
       /*--- Compute area and volume ---*/
       
@@ -224,6 +231,8 @@ void CHeatSolver::Source_Residual(CGeometry *geometry,
         Area_Local = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
       }
       else {
+        Point_3 = geometry->elem[iElem]->GetNode(3);
+        Coord_3 = geometry->node[Point_3]->GetCoord();
         for (iDim = 0; iDim < nDim; iDim++) {
           a[iDim] = Coord_0[iDim]-Coord_2[iDim];
           b[iDim] = Coord_1[iDim]-Coord_2[iDim];
@@ -272,10 +281,8 @@ void CHeatSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
                                   CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
   
 	unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0, Point_3 = 0, total_index, iPoint;
-	double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL, *Coord_3 = NULL, Thermal_Diffusivity;
+	double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL, *Coord_3 = NULL;
   
-  Thermal_Diffusivity  = -config->GetThermalDiffusivity();
-
 	if (nDim == 2 ) {
     
 		for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
@@ -311,8 +318,6 @@ void CHeatSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
       
       numerics->SetCoord(Coord_0, Coord_1, Coord_2, Coord_3);
       numerics->ComputeResidual(StiffMatrix_Elem, config);
-      
-      Thermal_Diffusivity  = config->GetThermalDiffusivity();
       
       StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][0]; StiffMatrixSpace.AddBlock(Point_0, Point_0, StiffMatrix_Node); Jacobian.AddBlock(Point_0, Point_0, StiffMatrix_Node);
       StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][1]; StiffMatrixSpace.AddBlock(Point_0, Point_1, StiffMatrix_Node); Jacobian.AddBlock(Point_0, Point_1, StiffMatrix_Node);
@@ -396,7 +401,7 @@ void CHeatSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
                                        unsigned short iMesh, unsigned short RunTime_EqSystem) {
 	
 	unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0, Point_3 = 0;
-	double a[3], b[3], c[3], d[3], Area_Local = 0.0, Volume_Local = 0.0, Time_Num;
+  double a[3] = {0.0,0.0,0.0}, b[3] = {0.0,0.0,0.0}, c[3] = {0.0,0.0,0.0}, d[3] = {0.0,0.0,0.0}, Area_Local = 0.0, Volume_Local = 0.0, Time_Num;
 	double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL, *Coord_3= NULL;
 	unsigned short iDim, iVar;
 	double TimeJac = 0.0;
@@ -415,7 +420,6 @@ void CHeatSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
 		Point_0 = geometry->elem[iElem]->GetNode(0);	Coord_0 = geometry->node[Point_0]->GetCoord();
 		Point_1 = geometry->elem[iElem]->GetNode(1);	Coord_1 = geometry->node[Point_1]->GetCoord();
 		Point_2 = geometry->elem[iElem]->GetNode(2);	Coord_2 = geometry->node[Point_2]->GetCoord();
-		if (nDim == 3) { Point_3 = geometry->elem[iElem]->GetNode(3);	Coord_3 = geometry->node[Point_3]->GetCoord(); }
 		
     /*--- Compute area and volume ---*/
 
@@ -427,6 +431,8 @@ void CHeatSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
 			Area_Local = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
 		}
 		else {
+      Point_3 = geometry->elem[iElem]->GetNode(3);
+      Coord_3 = geometry->node[Point_3]->GetCoord();
 			for (iDim = 0; iDim < nDim; iDim++) {
 				a[iDim] = Coord_0[iDim]-Coord_2[iDim];
 				b[iDim] = Coord_1[iDim]-Coord_2[iDim];
@@ -508,7 +514,7 @@ void CHeatSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
 void CHeatSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 
   unsigned short iVar;
-	unsigned long iPoint, total_index, IterLinSol;
+	unsigned long iPoint, total_index;
 	
 	/*--- Build implicit system ---*/
   
@@ -536,7 +542,7 @@ void CHeatSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
   /*--- Solve or smooth the linear system ---*/
   
   CSysSolve system;
-  IterLinSol = system.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+  system.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
   
 	/*--- Update solution (system written in terms of increments) ---*/
   
