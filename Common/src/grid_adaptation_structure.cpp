@@ -2,9 +2,18 @@
  * \file grid_adaptation_structure.cpp
  * \brief Main subroutines for grid adaptation
  * \author F. Palacios
- * \version 3.2.6 "eagle"
+ * \version 3.2.7 "eagle"
  *
- * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
+ * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ *
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
+ *
+ * Copyright (C) 2012-2014 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -401,22 +410,6 @@ void CGridAdaptation::SetWake_Refinement(CGeometry *geometry, unsigned short str
 				geometry->elem[iElem]->SetDivide (true);
 			}
 			if ((Coordx > 0) && ((Coordy > -wake) && (Coordy < wake))) {
-				geometry->elem[iElem]->SetDivide (true);
-			}
-		}
-}
-
-void CGridAdaptation::SetTwoPhase_Refinement(CGeometry *geometry, unsigned short strength) {
-	unsigned long iElem, iPoint;
-	unsigned short iNode;
-	double Coordx, Coordy, wake = 0.1, offset = 1.0;
-	
-	for (iElem = 0; iElem < geometry->GetnElem(); iElem ++)
-		for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++) {
-			iPoint = geometry->elem[iElem]->GetNode(iNode);
-			Coordx = geometry->node[iPoint]->GetCoord(0);
-			Coordy = geometry->node[iPoint]->GetCoord(1);
-			if ((Coordy - offset > -wake) && (Coordy - offset < wake)) {
 				geometry->elem[iElem]->SetDivide (true);
 			}
 		}
@@ -3304,14 +3297,14 @@ void CGridAdaptation::SetHomothetic_Adaptation3D(CGeometry *geometry, CPhysicalG
 }
 
 void CGridAdaptation::SetIndicator_Flow(CGeometry *geometry, CConfig *config, unsigned short strength){
-	unsigned long Point = 0, Point_0 = 0, Point_1 = 0, iEdge, iVertex, iPoint, iElem, nElem_real, max_elem_new;
+	unsigned long Point = 0, Point_0 = 0, Point_1 = 0, iEdge, iVertex, iPoint, iElem, max_elem_new;
 	unsigned short iDim, iMarker;
 	double Dual_Area, norm, Solution_Vertex, Solution_0, Solution_1, Solution_Average, 
 			DualArea, Partial_Res, Grad_Val, *Normal;
 	double scale_area = config->GetDualVol_Power();
 
 	/*--- Initialization ---*/
-	nElem_new = 0; nElem_real = 0;
+	nElem_new = 0;
 	max_elem_new = int(0.01*config->GetNew_Elem_Adapt()*double(geometry->GetnElem()));	
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem ++) {
 		geometry->elem[iElem]->SetDivide(false);
@@ -3368,14 +3361,14 @@ void CGridAdaptation::SetIndicator_Flow(CGeometry *geometry, CConfig *config, un
 
 void CGridAdaptation::SetIndicator_Adj(CGeometry *geometry, CConfig *config, unsigned short strength){
 	double Dual_Area;
-	unsigned long Point = 0, Point_0 = 0, Point_1 = 0, iEdge, iVertex, iPoint, iElem, nElem_real, max_elem_new;
+	unsigned long Point = 0, Point_0 = 0, Point_1 = 0, iEdge, iVertex, iPoint, iElem, max_elem_new;
 	unsigned short iDim, iMarker;
 	double norm, Solution_Vertex, Solution_0, Solution_1, Solution_Average, 
 	DualArea, Partial_Res, Grad_Val, *Normal;
 	double scale_area = config->GetDualVol_Power();
 	
 	// Initialization
-	nElem_new = 0; nElem_real = 0; 
+	nElem_new = 0;
 	max_elem_new = int(0.01*config->GetNew_Elem_Adapt()*double(geometry->GetnElem()));	
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem ++) {
 		geometry->elem[iElem]->SetDivide(false);
@@ -3553,7 +3546,7 @@ void CGridAdaptation::SetIndicator_Robust(CGeometry *geometry, CConfig *config){
 void CGridAdaptation::SetIndicator_Computable(CGeometry *geometry, CConfig *config){
 	unsigned long iPoint, iElem, max_elem_new;
 	unsigned short iVar;
-	double max_indicator = 0.0, Dual_Area; 
+	double Dual_Area;
 	double scale_area = config->GetDualVol_Power();
 	
 	max_elem_new = int(0.01*config->GetNew_Elem_Adapt()*double(geometry->GetnElem()));	
@@ -3561,7 +3554,6 @@ void CGridAdaptation::SetIndicator_Computable(CGeometry *geometry, CConfig *conf
 		geometry->elem[iElem]->SetDivide (false);
 	}
 		
-	max_indicator = 0.0; 		
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
 		Dual_Area = geometry->node[iPoint]->GetVolume();
 		Index[iPoint] = 0.0;
@@ -3578,7 +3570,7 @@ void CGridAdaptation::SetIndicator_Computable(CGeometry *geometry, CConfig *conf
 void CGridAdaptation::SetIndicator_Computable_Robust(CGeometry *geometry, CConfig *config){
 	unsigned long iPoint, iElem, max_elem_new;
 	unsigned short iVar;
-	double max_indicator, Dual_Area ;
+	double Dual_Area ;
 	double scale_area = config->GetDualVol_Power();
 
 	/*--- Initializate the numerical grid for the adaptation ---*/
@@ -3587,8 +3579,6 @@ void CGridAdaptation::SetIndicator_Computable_Robust(CGeometry *geometry, CConfi
 		geometry->elem[iElem]->SetDivide (false);
 	}
 	
-	
-	max_indicator = 0.0; 		
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
 		Dual_Area = geometry->node[iPoint]->GetVolume();
 		Index[iPoint] = 0.0;

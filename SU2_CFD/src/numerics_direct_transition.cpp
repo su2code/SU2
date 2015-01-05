@@ -2,9 +2,16 @@
  * \file numerics_direct_transition.cpp
  * \brief This file contains all the convective term discretization.
  * \author A. Aranake
- * \version 3.2.6 "eagle"
+ * \version 3.2.7 "eagle"
  *
- * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
+ * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ *
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -351,7 +358,7 @@ void CSourcePieceWise_TransLM::ComputeResidual_TransLM(double *val_residual, dou
 	double rey_tc, flen, re_v, strain, f_onset1,f_onset2,f_onset3,f_onset,f_turb,tu;
   
 	double prod, des;
-	double f_lambda, re_theta = 0.0, rey, re_theta_lim, r_t, mach;
+	double f_lambda, re_theta = 0.0, re_theta_lim, r_t;
 	double Velocity_Mag = 0.0, du_ds, theta, lambda, time_scale, var1, f_theta;
 	double f_reattach;
 	double dU_dx, dU_dy, dU_dz = 0.0;
@@ -375,13 +382,13 @@ void CSourcePieceWise_TransLM::ComputeResidual_TransLM(double *val_residual, dou
 	//SU2_CPP2C COMMENT END
   
   /* -- These lines included just so Tapenade doesn't complain --*/
-  rey  = 0.0;
-  mach = 0.0;
-  tu   = 0.0;
+//  rey  = 0.0;
+//  mach = 0.0;
+//  tu   = 0.0;
 	//SU2_CPP2C COMMENT START
   /* -- These lines must be manually reinserted into the differentiated routine! --*/
-  rey  = config->GetReynolds();
-  mach = config->GetMach();
+//  rey  = config->GetReynolds();
+//  mach = config->GetMach();
 	tu   = config->GetTurbulenceIntensity_FreeStream();
 	//SU2_CPP2C COMMENT END
   
@@ -544,7 +551,7 @@ void CSourcePieceWise_TransLM::CSourcePieceWise_TransLM__ComputeResidual_TransLM
   double rey_tcd, f_onset1d, f_onset2d, f_onsetd;
   double prod, des;
   double prodd, desd;
-  double f_lambda, re_theta = 0.0, rey, re_theta_lim, r_t, mach;
+  double f_lambda, re_theta = 0.0, re_theta_lim, r_t;
   double Velocity_Mag = 0.0, du_ds, theta, lambda, time_scale,
   var1, f_theta;
   double var1d, f_thetad;
@@ -564,11 +571,11 @@ void CSourcePieceWise_TransLM::CSourcePieceWise_TransLM__ComputeResidual_TransLM
   val_residuald[1] = 0.0;
   val_residual[1] = 0.0;
   /* -- These lines included just so Tapenade doesn't complain --*/
-  rey = 0.0;
-  mach = 0.0;
-  tu = 0.0;
-  rey  = config->GetReynolds();
-  mach = config->GetMach();
+//  rey = 0.0;
+//  mach = 0.0;
+//  tu = 0.0;
+//  rey  = config->GetReynolds();
+//  mach = config->GetMach();
   tu   = config->GetTurbulenceIntensity_FreeStream();
   /*--- Compute vorticity and strain (TODO: Update for 3D) ---*/
   Vorticity = fabs(PrimVar_Grad_i[1][1] - PrimVar_Grad_i[2][0]);

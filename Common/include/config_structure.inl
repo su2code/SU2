@@ -2,9 +2,16 @@
  * \file config_structure.inl
  * \brief In-Line subroutines of the <i>config_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 3.2.6 "eagle"
+ * \version 3.2.7 "eagle"
  *
- * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
+ * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ *
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -31,6 +38,10 @@ inline void CConfig::SetBleed_Temperature(unsigned short val_imarker, double val
 inline void CConfig::SetBleed_MassFlow(unsigned short val_imarker, double val_bleed_massflow) { Bleed_MassFlow[val_imarker] = val_bleed_massflow; }
 
 inline void CConfig::SetBleed_Pressure(unsigned short val_imarker, double val_bleed_pressure) { Bleed_Pressure[val_imarker] = val_bleed_pressure; }
+
+inline void CConfig::SetExhaust_Pressure(unsigned short val_imarker, double val_exhaust_pressure) { Exhaust_Pressure[val_imarker] = val_exhaust_pressure; }
+
+inline void CConfig::SetExhaust_Temperature(unsigned short val_imarker, double val_exhaust_temp) { Exhaust_Temperature[val_imarker] = val_exhaust_temp; }
 
 inline unsigned short CConfig::GetnZone(void) { return nZone; }
 
@@ -970,6 +981,8 @@ inline double CConfig::GetDamp_Engine_Inflow(void) { return Damp_Engine_Inflow; 
 
 inline double CConfig::GetDamp_Engine_Bleed(void) { return Damp_Engine_Bleed; }
 
+inline double CConfig::GetDamp_Engine_Exhaust(void) { return Damp_Engine_Exhaust; }
+
 inline double CConfig::GetDamp_Res_Restric(void) { return Damp_Res_Restric; }
 
 inline double CConfig::GetDamp_Correc_Prolong(void) { return Damp_Correc_Prolong; }
@@ -1135,3 +1148,5 @@ inline unsigned long CConfig::GetNonphysical_Points(void) { return Nonphys_Point
 inline void CConfig::SetNonphysical_Reconstr(unsigned long val_nonphys_reconstr) { Nonphys_Reconstr = val_nonphys_reconstr; }
 
 inline unsigned long CConfig::GetNonphysical_Reconstr(void) { return Nonphys_Reconstr; }
+
+inline unsigned short CConfig::GetConsole_Output_Verb(void) { return Console_Output_Verb; }

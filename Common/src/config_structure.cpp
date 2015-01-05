@@ -2,9 +2,16 @@
  * \file config_structure.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 3.2.6 "eagle"
+ * \version 3.2.7 "eagle"
  *
- * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
+ * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ *
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -86,7 +93,7 @@ void CConfig::SetPointersNull(void){
   Marker_Dirichlet=NULL;      Marker_Dirichlet_Elec=NULL;   Marker_Inlet=NULL;
   Marker_Supersonic_Inlet=NULL;    Marker_Outlet=NULL;      Marker_Out_1D=NULL;
   Marker_Isothermal=NULL;     Marker_HeatFlux=NULL;         Marker_EngineInflow=NULL;
-  Marker_EngineBleed=NULL;
+  Marker_EngineBleed=NULL;  Marker_Supersonic_Outlet=NULL;
   Marker_IsothermalCatalytic=NULL; Marker_IsothermalNonCatalytic=NULL;
   Marker_HeatFluxNonCatalytic=NULL; Marker_HeatFluxCatalytic=NULL;
   Marker_EngineExhaust=NULL; Marker_Displacement=NULL;     Marker_Load=NULL;
@@ -96,12 +103,12 @@ void CConfig::SetPointersNull(void){
 
   /*--- Boundary Condition settings ---*/
 
-  Dirichlet_Value=NULL;       Nozzle_Ttotal=NULL;
-  Nozzle_Ptotal=NULL;         Inlet_Ttotal=NULL;            Inlet_Ptotal=NULL;
+  Dirichlet_Value=NULL;       Exhaust_Temperature_Target=NULL;
+  Exhaust_Pressure_Target=NULL;         Inlet_Ttotal=NULL;            Inlet_Ptotal=NULL;
   Inlet_FlowDir=NULL;         Inlet_Temperature=NULL;       Inlet_Pressure=NULL;
   Inlet_Velocity=NULL;        Inflow_Mach_Target=NULL;     Inflow_Mach=NULL;
-  Inflow_Pressure=NULL;      Bleed_Temperature_Target=NULL;       Bleed_Temperature=NULL;
-  Bleed_MassFlow_Target=NULL; Bleed_MassFlow=NULL;
+  Inflow_Pressure=NULL;       Bleed_Temperature_Target=NULL;       Bleed_Temperature=NULL;
+  Bleed_MassFlow_Target=NULL; Bleed_MassFlow=NULL;          Exhaust_Pressure=NULL; Exhaust_Temperature=NULL;
   Bleed_Pressure=NULL;        Outlet_Pressure=NULL;         Isothermal_Temperature=NULL;
   Heat_Flux=NULL;             Displ_Value=NULL;             Load_Value=NULL;
   FlowLoad_Value=NULL;        Periodic_RotCenter=NULL;      Periodic_RotAngles=NULL;
@@ -453,6 +460,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    *  DESCRIPTION: Supersonic inlet boundary marker(s) \n   Format: (inlet marker, temperature, static pressure, velocity_x,   velocity_y, velocity_z, ... ), i.e. primitive variables specified. \ingroup Config*/
   addInletOption("MARKER_SUPERSONIC_INLET", nMarker_Supersonic_Inlet, Marker_Supersonic_Inlet,
                  Inlet_Temperature, Inlet_Pressure, Inlet_Velocity);
+  /* DESCRIPTION: Supersonic outlet boundary marker(s) */
+  addStringListOption("MARKER_SUPERSONIC_OUTLET", nMarker_Supersonic_Outlet, Marker_Supersonic_Outlet);
   /*!\par MARKER_OUTLET
    *  DESCRIPTION: Outlet boundary marker(s)\n
    Format: ( outlet marker, back pressure (static), ... ) \ingroup Config*/
@@ -495,7 +504,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleArrayOption("SUBSONIC_ENGINE_BOX", 6, Subsonic_Engine_Box, default_vec_6d);
   /* DESCRIPTION: Engine exhaust boundary marker(s)
    Format: (nacelle exhaust marker, total nozzle temp, total nozzle pressure, ... )*/
-  addExhaustOption("MARKER_ENGINE_EXHAUST", nMarker_EngineExhaust, Marker_EngineExhaust, Nozzle_Ttotal, Nozzle_Ptotal);
+  addExhaustOption("MARKER_ENGINE_EXHAUST", nMarker_EngineExhaust, Marker_EngineExhaust, Exhaust_Temperature_Target, Exhaust_Pressure_Target);
   /* DESCRIPTION: Displacement boundary marker(s) */
   addStringDoubleListOption("MARKER_NORMAL_DISPL", nMarker_Displacement, Marker_Displacement, Displ_Value);
   /* DESCRIPTION: Load boundary marker(s) */
@@ -506,6 +515,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("DAMP_ENGINE_INFLOW", Damp_Engine_Inflow, 0.75);
   /* DESCRIPTION: Damping factor for engine bleed condition */
   addDoubleOption("DAMP_ENGINE_BLEED", Damp_Engine_Bleed, 0.01);
+  /* DESCRIPTION: Damping factor for engine exhaust condition */
+  addDoubleOption("DAMP_ENGINE_EXHAUST", Damp_Engine_Exhaust, 0.75);
   /* DESCRIPTION: Outlet boundary marker(s) over which to calculate 1-D flow properties
    Format: ( outlet marker) */
   addStringListOption("MARKER_OUT_1D", nMarker_Out_1D, Marker_Out_1D);
@@ -894,6 +905,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\par ONE_D_OUTPUT
    *  DESCRIPTION: Output averaged stagnation pressure on specified exit marker. \n Use with MARKER_OUT_1D. \ingroup Config*/
   addBoolOption("ONE_D_OUTPUT", Wrt_1D_Output, false);
+  /* DESCRIPTION: Verbosity level for console output */
+  addEnumOption("CONSOLE_OUTPUT_VERBOSITY", Console_Output_Verb, Verb_Map, VERB_HIGH);
 
   /* CONFIG_CATEGORY: Dynamic mesh definition */
   /*--- Options related to dynamic meshes ---*/
@@ -1142,7 +1155,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Evaluate inverse design on the surface  */
   addBoolOption("INV_DESIGN_HEATFLUX", InvDesign_HeatFlux, false);
 
-
   /* CONFIG_CATEGORY: Unsupported options */
   /*--- Options that are experimental and not intended for general use ---*/
 
@@ -1179,6 +1191,15 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Setup for design variables */
   addPythonOption("DEFINITION_DV");
 
+  /* DESCRIPTION: Maximum number of iterations */
+  addPythonOption("OPT_ITERATIONS");
+  
+  /* DESCRIPTION: Requested accuracy */
+  addPythonOption("OPT_ACCURACY");
+  
+  /* DESCRIPTION: Setup for design variables */
+  addPythonOption("BOUND_DV");
+  
   /* DESCRIPTION: Current value of the design variables */
   addPythonOption("DV_VALUE_NEW");
 
@@ -2143,37 +2164,44 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     /*--- Re-scale the length based parameters. The US system uses feet,
      but SU2 assumes that the grid is in inches ---*/
     
-    if ((SystemMeasurements == US) && (Kind_SU2 == SU2_CFD)) {
-        
-        for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++) {
-            RefOriginMoment_X[iMarker] = RefOriginMoment_X[iMarker]/12.0;
-            RefOriginMoment_Y[iMarker] = RefOriginMoment_Y[iMarker]/12.0;
-            RefOriginMoment_Z[iMarker] = RefOriginMoment_Z[iMarker]/12.0;
-        }
-        
-        for (iMarker = 0; iMarker < nGridMovement; iMarker++) {
-            Motion_Origin_X[iMarker] = Motion_Origin_X[iMarker]/12.0;
-            Motion_Origin_Y[iMarker] = Motion_Origin_Y[iMarker]/12.0;
-            Motion_Origin_Z[iMarker] = Motion_Origin_Z[iMarker]/12.0;
-        }
-        
-        RefLengthMoment = RefLengthMoment/12.0;
-        if (val_nDim == 2) RefAreaCoeff = RefAreaCoeff/12.0;
-        else RefAreaCoeff = RefAreaCoeff/144.0;
-        Length_Reynolds = Length_Reynolds/12.0;
-        RefElemLength = RefElemLength/12.0;
-        
-        EA_IntLimit[0] = EA_IntLimit[0]/12.0;
-        EA_IntLimit[1] = EA_IntLimit[1]/12.0;
-        EA_IntLimit[2] = EA_IntLimit[2]/12.0;
-        
-        Section_Location[0] = Section_Location[0]/12.0;
-        Section_Location[1] = Section_Location[1]/12.0;
-        
+  if ((SystemMeasurements == US) && (Kind_SU2 == SU2_CFD)) {
+    
+    for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++) {
+      RefOriginMoment_X[iMarker] = RefOriginMoment_X[iMarker]/12.0;
+      RefOriginMoment_Y[iMarker] = RefOriginMoment_Y[iMarker]/12.0;
+      RefOriginMoment_Z[iMarker] = RefOriginMoment_Z[iMarker]/12.0;
     }
     
-    /*--- Reacting flows initialization ---*/
+    for (iMarker = 0; iMarker < nGridMovement; iMarker++) {
+      Motion_Origin_X[iMarker] = Motion_Origin_X[iMarker]/12.0;
+      Motion_Origin_Y[iMarker] = Motion_Origin_Y[iMarker]/12.0;
+      Motion_Origin_Z[iMarker] = Motion_Origin_Z[iMarker]/12.0;
+    }
     
+    RefLengthMoment = RefLengthMoment/12.0;
+    if (val_nDim == 2) RefAreaCoeff = RefAreaCoeff/12.0;
+    else RefAreaCoeff = RefAreaCoeff/144.0;
+    Length_Reynolds = Length_Reynolds/12.0;
+    RefElemLength = RefElemLength/12.0;
+    
+    EA_IntLimit[0] = EA_IntLimit[0]/12.0;
+    EA_IntLimit[1] = EA_IntLimit[1]/12.0;
+    EA_IntLimit[2] = EA_IntLimit[2]/12.0;
+    
+    Section_Location[0] = Section_Location[0]/12.0;
+    Section_Location[1] = Section_Location[1]/12.0;
+    
+    Subsonic_Engine_Box[0] = Subsonic_Engine_Box[0]/12.0;
+    Subsonic_Engine_Box[1] = Subsonic_Engine_Box[1]/12.0;
+    Subsonic_Engine_Box[2] = Subsonic_Engine_Box[2]/12.0;
+    Subsonic_Engine_Box[3] = Subsonic_Engine_Box[3]/12.0;
+    Subsonic_Engine_Box[4] = Subsonic_Engine_Box[4]/12.0;
+    Subsonic_Engine_Box[5] = Subsonic_Engine_Box[5]/12.0;
+    
+  }
+  
+    /*--- Reacting flows initialization ---*/
+  
     if (( Kind_Solver == TNE2_EULER             ) ||
         ( Kind_Solver == TNE2_NAVIER_STOKES     ) ||
         ( Kind_Solver == ADJ_TNE2_EULER         ) ||
@@ -2874,7 +2902,7 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
   /*--- Boundary (marker) treatment ---*/
   
   nMarker_All = nMarker_Euler + nMarker_FarField + nMarker_SymWall +
-  nMarker_PerBound + nMarker_NearFieldBound + nMarker_Supersonic_Inlet +
+  nMarker_PerBound + nMarker_NearFieldBound + nMarker_Supersonic_Inlet + nMarker_Supersonic_Outlet +
   nMarker_InterfaceBound + nMarker_Dirichlet + nMarker_Neumann + nMarker_Riemann+ nMarker_Inlet +
   nMarker_Outlet + nMarker_Isothermal + nMarker_IsothermalCatalytic +
   nMarker_IsothermalNonCatalytic + nMarker_HeatFlux + nMarker_HeatFluxCatalytic +
@@ -2903,7 +2931,7 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
   iMarker_HeatFluxCatalytic, iMarker_EngineInflow, iMarker_EngineBleed, iMarker_EngineExhaust,
   iMarker_Displacement, iMarker_Load, iMarker_FlowLoad, iMarker_Neumann,
   iMarker_Monitoring, iMarker_Designing, iMarker_GeoEval, iMarker_Plotting,
-  iMarker_DV, iMarker_Moving, iMarker_Supersonic_Inlet,
+  iMarker_DV, iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet,
   iMarker_ActDisk_Inlet, iMarker_ActDisk_Outlet, iMarker_Out_1D;
 
   for (iMarker_All = 0; iMarker_All < nMarker_All; iMarker_All++) {
@@ -2926,7 +2954,7 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
   nMarker_Outlet + nMarker_Isothermal + nMarker_IsothermalNonCatalytic +
   nMarker_IsothermalCatalytic + nMarker_HeatFlux + nMarker_HeatFluxNonCatalytic +
   nMarker_HeatFluxCatalytic + nMarker_EngineInflow + nMarker_EngineBleed + nMarker_EngineExhaust +
-  nMarker_Supersonic_Inlet + nMarker_Displacement + nMarker_Load +
+  nMarker_Supersonic_Inlet + nMarker_Supersonic_Outlet + nMarker_Displacement + nMarker_Load +
   nMarker_FlowLoad + nMarker_Custom +
   nMarker_ActDisk_Inlet + nMarker_ActDisk_Outlet + nMarker_Out_1D;
 
@@ -3041,7 +3069,7 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
   
   Bleed_MassFlow = new double[nMarker_EngineBleed];
   Bleed_Temperature = new double[nMarker_EngineBleed];
-  Bleed_Pressure = new double[nMarker_EngineInflow];
+  Bleed_Pressure = new double[nMarker_EngineBleed];
 
   for (iMarker_EngineBleed = 0; iMarker_EngineBleed < nMarker_EngineBleed; iMarker_EngineBleed++) {
     Marker_CfgFile_TagBound[iMarker_Config] = Marker_EngineBleed[iMarker_EngineBleed];
@@ -3052,15 +3080,26 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
     iMarker_Config++;
   }
 
+  Exhaust_Pressure = new double[nMarker_EngineExhaust];
+  Exhaust_Temperature = new double[nMarker_EngineExhaust];
+
   for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++) {
     Marker_CfgFile_TagBound[iMarker_Config] = Marker_EngineExhaust[iMarker_EngineExhaust];
     Marker_CfgFile_KindBC[iMarker_Config] = ENGINE_EXHAUST;
+    Exhaust_Pressure[iMarker_EngineExhaust] = 0.0;
+    Exhaust_Temperature[iMarker_EngineExhaust] = 0.0;
     iMarker_Config++;
   }
 
   for (iMarker_Supersonic_Inlet = 0; iMarker_Supersonic_Inlet < nMarker_Supersonic_Inlet; iMarker_Supersonic_Inlet++) {
     Marker_CfgFile_TagBound[iMarker_Config] = Marker_Supersonic_Inlet[iMarker_Supersonic_Inlet];
     Marker_CfgFile_KindBC[iMarker_Config] = SUPERSONIC_INLET;
+    iMarker_Config++;
+  }
+  
+  for (iMarker_Supersonic_Outlet = 0; iMarker_Supersonic_Outlet < nMarker_Supersonic_Outlet; iMarker_Supersonic_Outlet++) {
+    Marker_CfgFile_TagBound[iMarker_Config] = Marker_Supersonic_Outlet[iMarker_Supersonic_Outlet];
+    Marker_CfgFile_KindBC[iMarker_Config] = SUPERSONIC_OUTLET;
     iMarker_Config++;
   }
 
@@ -3198,34 +3237,58 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   iMarker_EngineInflow, iMarker_EngineBleed, iMarker_EngineExhaust, iMarker_Displacement,
   iMarker_Load, iMarker_FlowLoad,  iMarker_Neumann, iMarker_Monitoring,
   iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_DV,
-  iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_ActDisk_Inlet,
+  iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet, iMarker_ActDisk_Inlet,
   iMarker_ActDisk_Outlet;
 
-  cout << endl <<"-------------------------------------------------------------------------" << endl;
-  cout <<"|    _____   _    _   ___                                               |" << endl;
-  cout <<"|   / ____| | |  | | |__ \\    Release 3.2.6 \"eagle\"                     |" << endl;
-  cout <<"|  | (___   | |  | |    ) |                                             |" << endl;
-  cout <<"|   \\___ \\  | |  | |   / /                                              |" << endl;
-  cout <<"|   ____) | | |__| |  / /_                                              |" << endl;
+  
+  
+  
+  
+  
+  
+  
+  cout << endl << "-------------------------------------------------------------------------" << endl;
+  cout << "|    ___ _   _ ___                                                      |" << endl;
+  cout << "|   / __| | | |_  )   Release 3.2.7 \"eagle\"                             |" << endl;
+  cout << "|   \\__ \\ |_| |/ /                                                      |" << endl;
   switch (val_software) {
-    case SU2_CFD: cout << "|  |_____/   \\____/  |____|   Suite (Computational Fluid Dynamics Code) |" << endl; break;
-    case SU2_DEF: cout << "|  |_____/   \\____/  |____|   Suite (Mesh Deformation Code)             |" << endl; break;
-    case SU2_DOT: cout << "|  |_____/   \\____/  |____|   Suite (Gradient Projection Code)          |" << endl; break;
-    case SU2_MSH: cout << "|  |_____/   \\____/  |____|   Suite (Mesh Adaptation Code)              |" << endl; break;
-    case SU2_GEO: cout << "|  |_____/   \\____/  |____|   Suite (Geometry Definition Code)          |" << endl; break;
-    case SU2_SOL: cout << "|  |_____/   \\____/  |____|   Suite (Solution Exporting Code)           |" << endl; break;
+    case SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;
+    case SU2_DEF: cout << "|   |___/\\___//___|   Suite (Mesh Deformation Code)                     |" << endl; break;
+    case SU2_DOT: cout << "|   |___/\\___//___|   Suite (Gradient Projection Code)                  |" << endl; break;
+    case SU2_MSH: cout << "|   |___/\\___//___|   Suite (Mesh Adaptation Code)                      |" << endl; break;
+    case SU2_GEO: cout << "|   |___/\\___//___|   Suite (Geometry Definition Code)                  |" << endl; break;
+    case SU2_SOL: cout << "|   |___/\\___//___|   Suite (Solution Exporting Code)                   |" << endl; break;
   }
 
   cout << "|                                                                       |" << endl;
   cout <<"-------------------------------------------------------------------------" << endl;
-  cout << "| Copyright (C) 2012-2014 SU2 <https://github.com/su2code>              |" << endl;
+  cout << "| SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu). |" << endl;
+  cout << "|                      Dr. Thomas D. Economon (economon@stanford.edu).  |" << endl;
+  cout <<"-------------------------------------------------------------------------" << endl;
+  cout << "| SU2 Developers:                                                       |" << endl;
+  cout << "| - Prof. Juan J. Alonso's group at Stanford University.                |" << endl;
+  cout << "| - Prof. Piero Colonna's group at Delft University of Technology.      |" << endl;
+  cout << "| - Prof. Nicolas R. Gauger's group at Kaiserslautern U. of Technology. |" << endl;
+  cout << "| - Prof. Alberto Guardone's group at Polytechnic University of Milan.  |" << endl;
+  cout << "| - Prof. Rafael Palacios' group at Imperial College London.            |" << endl;
+  cout <<"-------------------------------------------------------------------------" << endl;
+  cout << "| Copyright (C) 2012-2014 SU2, the open-source CFD code.                |" << endl;
+  cout << "|                                                                       |" << endl;
+  cout << "| SU2 is free software; you can redistribute it and/or                  |" << endl;
+  cout << "| modify it under the terms of the GNU Lesser General Public            |" << endl;
+  cout << "| License as published by the Free Software Foundation; either          |" << endl;
+  cout << "| version 2.1 of the License, or (at your option) any later version.    |" << endl;
+  cout << "|                                                                       |" << endl;
   cout << "| SU2 is distributed in the hope that it will be useful,                |" << endl;
   cout << "| but WITHOUT ANY WARRANTY; without even the implied warranty of        |" << endl;
   cout << "| MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU      |" << endl;
-  cout << "| Lesser General Public License (version 2.1) for more details.         |" << endl;
+  cout << "| Lesser General Public License for more details.                       |" << endl;
+  cout << "|                                                                       |" << endl;
+  cout << "| You should have received a copy of the GNU Lesser General Public      |" << endl;
+  cout << "| License along with SU2. If not, see <http://www.gnu.org/licenses/>.   |" << endl;
   cout <<"-------------------------------------------------------------------------" << endl;
 
-  cout << endl <<"------------------------ Physical case definition -----------------------" << endl;
+  cout << endl <<"------------------------ Physical Case Definition -----------------------" << endl;
   if (val_software == SU2_CFD) {
     switch (Kind_Solver) {
       case EULER:
@@ -3341,10 +3404,12 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     cout << "The reference length (moment computation) is " << RefLengthMoment << "." << endl;
 
     if ((nRefOriginMoment_X > 1) || (nRefOriginMoment_Y > 1) || (nRefOriginMoment_Z > 1)) {
-      cout << "Surface(s) where the force coefficients are evaluated and their reference origin for moment computation: ";
+      cout << "Surface(s) where the force coefficients are evaluated and \n";
+      cout << "their reference origin for moment computation: \n";
+
       for (iMarker_Monitoring = 0; iMarker_Monitoring < nMarker_Monitoring; iMarker_Monitoring++) {
-        cout << Marker_Monitoring[iMarker_Monitoring] << " (" << RefOriginMoment_X[iMarker_Monitoring] <<", "<<RefOriginMoment_Y[iMarker_Monitoring] <<", "<< RefOriginMoment_Z[iMarker_Monitoring] << ")";
-        if (iMarker_Monitoring < nMarker_Monitoring-1) cout << ", ";
+        cout << "   - " << Marker_Monitoring[iMarker_Monitoring] << " (" << RefOriginMoment_X[iMarker_Monitoring] <<", "<<RefOriginMoment_Y[iMarker_Monitoring] <<", "<< RefOriginMoment_Z[iMarker_Monitoring] << ")";
+        if (iMarker_Monitoring < nMarker_Monitoring-1) cout << ".\n";
         else cout <<"."<< endl;
       }
     }
@@ -3418,7 +3483,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
 	if (val_software == SU2_MSH) {
 		switch (Kind_Adaptation) {
-		case FULL: case WAKE: case TWOPHASE: case FULL_FLOW: case FULL_ADJOINT: case FULL_LINEAR: case SMOOTHING: case SUPERSONIC_SHOCK:
+		case FULL: case WAKE: case FULL_FLOW: case FULL_ADJOINT: case FULL_LINEAR: case SMOOTHING: case SUPERSONIC_SHOCK:
 			break;
 		case GRAD_FLOW:
 			cout << "Read flow solution from: " << Solution_FlowFileName << "." << endl;
@@ -3576,7 +3641,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 	}
 
 	if (val_software == SU2_CFD) {
-		cout << endl <<"---------------------- Space numerical integration ----------------------" << endl;
+		cout << endl <<"---------------------- Space Numerical Integration ----------------------" << endl;
 
 		if (SmoothNumGrid) cout << "There are some smoothing iterations on the grid coordinates." << endl;
 
@@ -3851,7 +3916,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       cout << "Artificial compressibility factor: " << ArtComp_Factor << "." << endl;
     }
 
-    cout << endl <<"---------------------- Time numerical integration -----------------------" << endl;
+    cout << endl <<"---------------------- Time Numerical Integration -----------------------" << endl;
     switch (Unsteady_Simulation) {
       case NO:
         cout << "Local time stepping (steady state simulation)." << endl; break;
@@ -4051,7 +4116,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   if (val_software == SU2_CFD) {
 
-    cout << endl <<"------------------------- Convergence criteria --------------------------" << endl;
+    cout << endl <<"------------------------- Convergence Criteria --------------------------" << endl;
 
     cout << "Maximum number of iterations: " << nExtIter <<"."<< endl;
 
@@ -4114,7 +4179,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       case PERIODIC: cout << "Grid modification to run periodic bc problems." << endl; break;
       case FULL: cout << "Grid adaptation using a complete refinement." << endl; break;
       case WAKE: cout << "Grid adaptation of the wake." << endl; break;
-      case TWOPHASE: cout << "Grid adaptation of the interphase of a free surface flow." << endl; break;
       case FULL_FLOW: cout << "Flow grid adaptation using a complete refinement." << endl; break;
       case FULL_ADJOINT: cout << "Adjoint grid adaptation using a complete refinement." << endl; break;
       case FULL_LINEAR: cout << "Linear grid adaptation using a complete refinement." << endl; break;
@@ -4141,7 +4205,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   }
 
-  cout << endl <<"-------------------------- Output information ---------------------------" << endl;
+  cout << endl <<"-------------------------- Output Information ---------------------------" << endl;
 
   if (val_software == SU2_CFD) {
 
@@ -4242,7 +4306,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
   }
 
-  cout << endl <<"------------------- Config file boundary information --------------------" << endl;
+  cout << endl <<"------------------- Config File Boundary Information --------------------" << endl;
 
   if (nMarker_Euler != 0) {
     cout << "Euler wall boundary marker(s): ";
@@ -4384,6 +4448,15 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     for (iMarker_Supersonic_Inlet = 0; iMarker_Supersonic_Inlet < nMarker_Supersonic_Inlet; iMarker_Supersonic_Inlet++) {
       cout << Marker_Supersonic_Inlet[iMarker_Supersonic_Inlet];
       if (iMarker_Supersonic_Inlet < nMarker_Supersonic_Inlet-1) cout << ", ";
+      else cout <<"."<< endl;
+    }
+  }
+  
+  if (nMarker_Supersonic_Outlet != 0) {
+    cout << "Supersonic outlet boundary marker(s): ";
+    for (iMarker_Supersonic_Outlet = 0; iMarker_Supersonic_Outlet < nMarker_Supersonic_Outlet; iMarker_Supersonic_Outlet++) {
+      cout << Marker_Supersonic_Outlet[iMarker_Supersonic_Outlet];
+      if (iMarker_Supersonic_Outlet < nMarker_Supersonic_Outlet-1) cout << ", ";
       else cout <<"."<< endl;
     }
   }
@@ -5030,8 +5103,8 @@ CConfig::~CConfig(void) {
   if (DV_Value!=NULL)    delete[] DV_Value;
   if (Design_Variable!=NULL)    delete[] Design_Variable;
   if (Dirichlet_Value!=NULL)    delete[] Dirichlet_Value;
-  if (Nozzle_Ttotal!=NULL)    delete[]  Nozzle_Ttotal;
-  if (Nozzle_Ptotal!=NULL)    delete[]  Nozzle_Ptotal;
+  if (Exhaust_Temperature_Target!=NULL)    delete[]  Exhaust_Temperature_Target;
+  if (Exhaust_Pressure_Target!=NULL)    delete[]  Exhaust_Pressure_Target;
   if (Inlet_Ttotal!=NULL)    delete[]  Inlet_Ttotal;
   if (Inlet_Ptotal!=NULL)    delete[]  Inlet_Ptotal;
   if (Inlet_FlowDir!=NULL)    delete[] Inlet_FlowDir;
@@ -5046,6 +5119,8 @@ CConfig::~CConfig(void) {
   if (Bleed_Temperature_Target!=NULL)    delete[] Bleed_Temperature_Target;
   if (Bleed_Temperature!=NULL)    delete[]  Bleed_Temperature;
   if (Bleed_Pressure!=NULL)    delete[] Bleed_Pressure;
+  if (Exhaust_Pressure!=NULL)    delete[] Exhaust_Pressure;
+  if (Exhaust_Temperature!=NULL)    delete[] Exhaust_Temperature;
   if (Outlet_Pressure!=NULL)    delete[] Outlet_Pressure;
   if (Isothermal_Temperature!=NULL)    delete[] Isothermal_Temperature;
   if (Heat_Flux!=NULL)    delete[] Heat_Flux;
@@ -5087,6 +5162,7 @@ CConfig::~CConfig(void) {
   if (Marker_Dirichlet_Elec!=NULL )     delete[] Marker_Dirichlet_Elec;
   if (Marker_Inlet!=NULL )              delete[] Marker_Inlet;
   if (Marker_Supersonic_Inlet!=NULL )   delete[] Marker_Supersonic_Inlet;
+  if (Marker_Supersonic_Outlet!=NULL )   delete[] Marker_Supersonic_Outlet;
   if (Marker_Outlet!=NULL )             delete[] Marker_Outlet;
   if (Marker_Out_1D!=NULL )             delete[] Marker_Out_1D;
   if (Marker_Isothermal!=NULL )         delete[] Marker_Isothermal;
@@ -5570,18 +5646,18 @@ bool CConfig::GetDirichlet_Boundary(string val_marker) {
   return Dirichlet;
 }
 
-double CConfig::GetNozzle_Ttotal(string val_marker) {
+double CConfig::GetExhaust_Temperature_Target(string val_marker) {
   unsigned short iMarker_EngineExhaust;
   for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++)
     if (Marker_EngineExhaust[iMarker_EngineExhaust] == val_marker) break;
-  return Nozzle_Ttotal[iMarker_EngineExhaust];
+  return Exhaust_Temperature_Target[iMarker_EngineExhaust];
 }
 
-double CConfig::GetNozzle_Ptotal(string val_marker) {
+double CConfig::GetExhaust_Pressure_Target(string val_marker) {
   unsigned short iMarker_EngineExhaust;
   for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++)
     if (Marker_EngineExhaust[iMarker_EngineExhaust] == val_marker) break;
-  return Nozzle_Ptotal[iMarker_EngineExhaust];
+  return Exhaust_Pressure_Target[iMarker_EngineExhaust];
 }
 
 double CConfig::GetInlet_Ttotal(string val_marker) {
@@ -5750,6 +5826,20 @@ double CConfig::GetBleed_Pressure(string val_marker) {
   for (iMarker_EngineBleed = 0; iMarker_EngineBleed < nMarker_EngineBleed; iMarker_EngineBleed++)
     if (Marker_EngineBleed[iMarker_EngineBleed] == val_marker) break;
   return Bleed_Pressure[iMarker_EngineBleed];
+}
+
+double CConfig::GetExhaust_Pressure(string val_marker) {
+  unsigned short iMarker_EngineExhaust;
+  for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++)
+  if (Marker_EngineExhaust[iMarker_EngineExhaust] == val_marker) break;
+  return Exhaust_Pressure[iMarker_EngineExhaust];
+}
+
+double CConfig::GetExhaust_Temperature(string val_marker) {
+  unsigned short iMarker_EngineExhaust;
+  for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++)
+  if (Marker_EngineExhaust[iMarker_EngineExhaust] == val_marker) break;
+  return Exhaust_Temperature[iMarker_EngineExhaust];
 }
 
 double CConfig::GetInflow_Mach(string val_marker) {

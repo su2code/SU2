@@ -2,9 +2,16 @@
  * \file linear_solvers_structure.cpp
  * \brief Main classes required for solving linear systems of equations
  * \author J. Hicken, F. Palacios
- * \version 3.2.6 "eagle"
+ * \version 3.2.7 "eagle"
  *
- * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
+ * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ *
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -87,7 +94,7 @@ void CSysSolve::ModGramSchmidt(int i, vector<vector<double> > & Hsbg, vector<CSy
   
   static const double reorth = 0.98;
   
-  /*--- get the norm of the vector being orthogonalized, and find the
+  /*--- Get the norm of the vector being orthogonalized, and find the
   threshold for re-orthogonalization ---*/
   
   double nrm = dotProd(w[i+1],w[i+1]);
@@ -109,7 +116,6 @@ void CSysSolve::ModGramSchmidt(int i, vector<vector<double> > & Hsbg, vector<CSy
   
   sbuf_conv[0] = Convergence;
   MPI_Reduce(sbuf_conv, rbuf_conv, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
-  MPI_Barrier(MPI_COMM_WORLD);
   
   /*-- Compute global convergence criteria in the master node --*/
   
@@ -135,7 +141,6 @@ void CSysSolve::ModGramSchmidt(int i, vector<vector<double> > & Hsbg, vector<CSy
 #ifndef HAVE_MPI
 		exit(EXIT_DIVERGENCE);
 #else
-    MPI_Barrier(MPI_COMM_WORLD);
     MPI_Abort(MPI_COMM_WORLD,1);
 #endif
   }
@@ -607,6 +612,7 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
     CMatrixVectorProduct* mat_vec = new CSysMatrixVectorProduct(Jacobian, geometry, config);
     
     CPreconditioner* precond = NULL;
+    
     switch (config->GetKind_Linear_Solver_Prec()) {
       case JACOBI:
         Jacobian.BuildJacobiPreconditioner();
@@ -622,6 +628,10 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
       case LINELET:
         Jacobian.BuildJacobiPreconditioner();
         precond = new CLineletPreconditioner(Jacobian, geometry, config);
+        break;
+      default:
+        Jacobian.BuildJacobiPreconditioner();
+        precond = new CJacobiPreconditioner(Jacobian, geometry, config);
         break;
     }
     

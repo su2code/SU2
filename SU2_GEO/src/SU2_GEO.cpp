@@ -2,9 +2,18 @@
  * \file SU2_GEO.cpp
  * \brief Main file of the Geometry Definition Code (SU2_GEO).
  * \author F. Palacios
- * \version 3.2.6 "eagle"
+ * \version 3.2.7 "eagle"
  *
- * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
+ * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ *
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
+ *
+ * Copyright (C) 2012-2014 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,11 +35,13 @@ using namespace std;
 int main(int argc, char *argv[]) {
   
   unsigned short iZone, nZone = SINGLE_ZONE;
+  double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
 	unsigned short iDV, iFFDBox, iPlane, nPlane, iVar;
 	double *ObjectiveFunc, *ObjectiveFunc_New, *Gradient, delta_eps, MinPlane, MaxPlane, MinXCoord, MaxXCoord,
   **Plane_P0, **Plane_Normal, Volume, Volume_New, Volume_Grad;
   vector<double> *Xcoord_Airfoil, *Ycoord_Airfoil, *Zcoord_Airfoil, *Variable_Airfoil;
-  char config_file_name[MAX_STRING_SIZE], buffer_char[MAX_STRING_SIZE], out_file[MAX_STRING_SIZE];
+  char config_file_name[MAX_STRING_SIZE];
+//  char buffer_char[MAX_STRING_SIZE], out_file[MAX_STRING_SIZE];
  	char *cstr;
 	ofstream Gradient_file, ObjFunc_file;
 	int rank = MASTER_NODE;
@@ -95,10 +106,6 @@ int main(int argc, char *argv[]) {
       
     }
     
-#ifdef HAVE_MPI
-    MPI_Barrier(MPI_COMM_WORLD);
-#endif
-    
     /*--- Allocate the memory of the current domain, and
      divide the grid between the nodes ---*/
     
@@ -116,12 +123,21 @@ int main(int argc, char *argv[]) {
     
     geometry_container[iZone]->SetBoundaries(config_container[iZone]);
     
-#ifdef HAVE_MPI
-    MPI_Barrier(MPI_COMM_WORLD);
-#endif
-    
   }
   
+  /*--- Set up a timer for performance benchmarking (preprocessing time is included) ---*/
+  
+#ifdef HAVE_MPI
+  StartTime = MPI_Wtime();
+#else
+  StartTime = double(clock())/double(CLOCKS_PER_SEC);
+#endif
+  
+  /*--- Evaluation of the objective function ---*/
+  
+  if (rank == MASTER_NODE)
+		cout << endl <<"----------------------- Preprocessing computations ----------------------" << endl;
+
   /*--- Set the number of sections, and allocate the memory ---*/
   
   if (geometry_container[ZONE_0]->GetnDim() == 2) nPlane = 1;
@@ -149,11 +165,6 @@ int main(int argc, char *argv[]) {
     Gradient[iVar] = 0.0;
   }
   
-  /*--- Evaluation of the objective function ---*/
-  
-	if (rank == MASTER_NODE)
-		cout << endl <<"----------------------- Preprocessing computations ----------------------" << endl;
-
   
   /*--- Compute elements surrounding points, points surrounding points ---*/
   
@@ -214,7 +225,7 @@ int main(int argc, char *argv[]) {
   
   if (rank == MASTER_NODE) cout << "Set airfoil section structure." << endl;
   for (iPlane = 0; iPlane < nPlane; iPlane++) {
-    geometry_container[ZONE_0]->ComputeAirfoil_Section(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, MinXCoord, MaxXCoord, NULL,
+    geometry_container[ZONE_0]->ComputeAirfoil_Section(Plane_P0[iPlane], Plane_Normal[iPlane], MinXCoord, MaxXCoord, NULL,
                                      Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], Variable_Airfoil[iPlane], true, config_container[ZONE_0]);
   }
   
@@ -302,6 +313,9 @@ int main(int argc, char *argv[]) {
 		
 		/*--- Definition of the Class for surface deformation ---*/
 		surface_movement = new CSurfaceMovement();
+    
+    /*--- Copy coordinates to the surface structure ---*/
+    surface_movement->CopyBoundary(geometry_container[ZONE_0], config_container[ZONE_0]);
 		
 		/*--- Definition of the FFD deformation class ---*/
 		FFDBox = new CFreeFormDefBox*[MAX_NUMBER_FFD];
@@ -471,7 +485,7 @@ int main(int argc, char *argv[]) {
       
       /*--- Create airfoil structure ---*/
       for (iPlane = 0; iPlane < nPlane; iPlane++) {
-        geometry_container[ZONE_0]->ComputeAirfoil_Section(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, MinXCoord, MaxXCoord, NULL,
+        geometry_container[ZONE_0]->ComputeAirfoil_Section(Plane_P0[iPlane], Plane_Normal[iPlane], MinXCoord, MaxXCoord, NULL,
                                          Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], Variable_Airfoil[iPlane], false, config_container[ZONE_0]);
       }
       
@@ -614,11 +628,34 @@ int main(int argc, char *argv[]) {
   delete [] Plane_P0;
   delete [] Plane_Normal;
   
-  /*--- End solver ---*/
+  /*--- Synchronization point after a single solver iteration. Compute the
+   wall clock time required. ---*/
+  
+#ifdef HAVE_MPI
+  StopTime = MPI_Wtime();
+#else
+  StopTime = double(clock())/double(CLOCKS_PER_SEC);
+#endif
+  
+  /*--- Compute/print the total time for performance benchmarking. ---*/
+  
+  UsedTime = StopTime-StartTime;
+  if (rank == MASTER_NODE) {
+    cout << "\nCompleted in " << fixed << UsedTime << " seconds on "<< size;
+    if (size == 1) cout << " core." << endl; else cout << " cores." << endl;
+  }
+  
+  /*--- Exit the solver cleanly ---*/
   
 	if (rank == MASTER_NODE)
 		cout << endl <<"------------------------- Exit Success (SU2_GEO) ------------------------" << endl << endl;
 
+  
+  /*--- Finalize MPI parallelization ---*/
+  
+#ifdef HAVE_MPI
+  MPI_Finalize();
+#endif
   
 	return EXIT_SUCCESS;
 	

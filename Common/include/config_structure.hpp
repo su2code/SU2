@@ -3,9 +3,16 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>config_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 3.2.6 "eagle"
+ * \version 3.2.7 "eagle"
  *
- * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
+ * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ *
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -46,7 +53,7 @@ using namespace std;
  * \brief Main class for defining the problem; basically this class reads the configuration file, and
  *        stores all the information.
  * \author F. Palacios.
- * \version 3.2.6 "eagle"
+ * \version 3.2.7 "eagle"
  */
 
 class CConfig {
@@ -90,6 +97,7 @@ private:
   ionization;  /*!< \brief Flag for determining if free electron gas is in the mixture */
   double Damp_Engine_Inflow;	/*!< \brief Damping factor for the engine inlet. */
   double Damp_Engine_Bleed;	/*!< \brief Damping factor for the engine bleed. */
+  double Damp_Engine_Exhaust;	/*!< \brief Damping factor for the engine exhaust. */
   double Damp_Res_Restric,	/*!< \brief Damping factor for the residual restriction. */
 	Damp_Correc_Prolong; /*!< \brief Damping factor for the correction prolongation. */
 	double Position_Plane; /*!< \brief Position of the Near-Field (y coordinate 2D, and z coordinate 3D). */
@@ -138,7 +146,8 @@ private:
 	nMarker_Inlet,					/*!< \brief Number of inlet flow markers. */
 	nMarker_Riemann,					/*!< \brief Number of Riemann flow markers. */
 	nMarker_Supersonic_Inlet,					/*!< \brief Number of supersonic inlet flow markers. */
-	nMarker_Outlet,					/*!< \brief Number of outlet flow markers. */
+  nMarker_Supersonic_Outlet,					/*!< \brief Number of supersonic outlet flow markers. */
+  nMarker_Outlet,					/*!< \brief Number of outlet flow markers. */
 	nMarker_Out_1D,         /*!< \brief Number of outlet flow markers over which to calculate 1D outputs */
 	nMarker_Isothermal,     /*!< \brief Number of isothermal wall boundaries. */
   nMarker_IsothermalNonCatalytic, /*!< \brief Number of constant temperature wall boundaries. */
@@ -174,7 +183,8 @@ private:
 	*Marker_Inlet,					/*!< \brief Inlet flow markers. */
 	*Marker_Riemann,					/*!< \brief Riemann markers. */
 	*Marker_Supersonic_Inlet,					/*!< \brief Supersonic inlet flow markers. */
-	*Marker_Outlet,					/*!< \brief Outlet flow markers. */
+  *Marker_Supersonic_Outlet,					/*!< \brief Supersonic outlet flow markers. */
+  *Marker_Outlet,					/*!< \brief Outlet flow markers. */
 	*Marker_Out_1D,         /*!< \brief Outlet flow markers over which to calculate 1D output. */
 	*Marker_Isothermal,     /*!< \brief Isothermal wall markers. */
   *Marker_IsothermalNonCatalytic,     /*!< \brief Isothermal wall markers. */
@@ -192,8 +202,8 @@ private:
 	*Marker_Neumann_Elec,					/*!< \brief Neumann flow markers. */
 	*Marker_All_TagBound;				/*!< \brief Global index for markers using grid information. */
 	double *Dirichlet_Value;    /*!< \brief Specified Dirichlet value at the boundaries. */
-	double *Nozzle_Ttotal;    /*!< \brief Specified total temperatures for nacelle boundaries. */
-	double *Nozzle_Ptotal;    /*!< \brief Specified total pressures for nacelle boundaries. */
+	double *Exhaust_Temperature_Target;    /*!< \brief Specified total temperatures for nacelle boundaries. */
+	double *Exhaust_Pressure_Target;    /*!< \brief Specified total pressures for nacelle boundaries. */
 	double *Inlet_Ttotal;    /*!< \brief Specified total temperatures for inlet boundaries. */
 	double *Riemann_Var1, *Riemann_Var2;    /*!< \brief Specified values for Riemann boundary. */
 	double **Riemann_FlowDir;  /*!< \brief Specified flow direction vector (unit vector) for Riemann boundaries. */
@@ -210,6 +220,8 @@ private:
   double *Bleed_Temperature_Target;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   double *Bleed_Temperature;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   double *Bleed_Pressure;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  double *Exhaust_Pressure;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  double *Exhaust_Temperature;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   double *Outlet_Pressure;    /*!< \brief Specified back pressures (static) for outlet boundaries. */
 	double *Isothermal_Temperature; /*!< \brief Specified isothermal wall temperatures (static). */
   double *Wall_Catalycity; /*!< \brief Specified wall species mass-fractions for catalytic boundaries. */
@@ -506,6 +518,7 @@ private:
   Wrt_Halo,                   /*!< \brief Write rind layers in solution files */
   Plot_Section_Forces,       /*!< \brief Write sectional forces for specified markers. */
 	Wrt_1D_Output;                /*!< \brief Write average stagnation pressure specified markers. */
+  unsigned short Console_Output_Verb;  /*!< \brief Level of verbosity for console output */
 	double *ArrheniusCoefficient,					/*!< \brief Arrhenius reaction coefficient */
 	*ArrheniusEta,								/*!< \brief Arrhenius reaction temperature exponent */
 	*ArrheniusTheta,							/*!< \brief Arrhenius reaction characteristic temperature */
@@ -4337,19 +4350,25 @@ public:
 	 * \return Value of the minimum residual value (log10 scale).
 	 */
 	double GetMinLogResidual(void);
-
-    /*!
-	 * \brief Value of the damping factor for the engine inlet bc.
-	 * \return Value of the damping factor.
-	 */
-	double GetDamp_Engine_Inflow(void);
-    
-    /*!
-     * \brief Value of the damping factor for the engine bleed inlet bc.
-     * \return Value of the damping factor.
-     */
-    double GetDamp_Engine_Bleed(void);
-
+  
+  /*!
+   * \brief Value of the damping factor for the engine inlet bc.
+   * \return Value of the damping factor.
+   */
+  double GetDamp_Engine_Inflow(void);
+  
+  /*!
+   * \brief Value of the damping factor for the engine bleed inlet bc.
+   * \return Value of the damping factor.
+   */
+  double GetDamp_Engine_Bleed(void);
+  
+  /*!
+   * \brief Value of the damping factor for the engine exhaust inlet bc.
+   * \return Value of the damping factor.
+   */
+  double GetDamp_Engine_Exhaust(void);
+  
 	/*!
 	 * \brief Value of the damping factor for the residual restriction.
 	 * \return Value of the damping factor.
@@ -4530,7 +4549,7 @@ public:
 	 * \param[in] val_index - Index corresponding to the inlet boundary.
 	 * \return The total temperature.
 	 */
-	double GetNozzle_Ttotal(string val_index);
+	double GetExhaust_Temperature_Target(string val_index);
 
 	/*!
 	 * \brief Get the total temperature at an inlet boundary.
@@ -4586,7 +4605,7 @@ public:
 	 * \param[in] val_index - Index corresponding to the inlet boundary.
 	 * \return The total pressure.
 	 */
-	double GetNozzle_Ptotal(string val_index);
+	double GetExhaust_Pressure_Target(string val_index);
 
 	/*!
 	 * \brief If inlet and outlet conditions are defined for multi species
@@ -4766,6 +4785,20 @@ public:
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
+  void SetExhaust_Temperature(unsigned short val_imarker, double val_exhaust_temp);
+  
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The outlet pressure.
+   */
+  double GetExhaust_Temperature(string val_marker);
+  
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The outlet pressure.
+   */
   double GetBleed_MassFlow_Target(string val_marker);
   
   /*!
@@ -4788,13 +4821,27 @@ public:
    * \return The outlet pressure.
    */
   double GetBleed_Pressure(string val_marker);
+
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The outlet pressure.
+   */
+  double GetExhaust_Pressure(string val_marker);
+
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The outlet pressure.
+   */
+  void SetBleed_Pressure(unsigned short val_imarker, double val_bleed_pressure);
   
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  void SetBleed_Pressure(unsigned short val_imarker, double val_fanface_pressure);
+  void SetExhaust_Pressure(unsigned short val_imarker, double val_exhaust_pressure);
   
 	/*!
 	 * \brief Get the displacement value at an displacement boundary.
@@ -5066,6 +5113,12 @@ public:
 	 * \returns The interpolated value of for x.
 	 */
 	double GetSpline(vector<double> &xa, vector<double> &ya, vector<double> &y2a, unsigned long n, double x);
+  
+  /*!
+   * \brief Get the verbosity level of the console output.
+   * \return Verbosity level for the console output.
+   */
+  unsigned short GetConsole_Output_Verb(void);
 
 };
 

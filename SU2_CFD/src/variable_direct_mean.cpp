@@ -2,9 +2,18 @@
  * \file variable_direct_mean.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, T. Economon
- * \version 3.2.6 "eagle"
+ * \version 3.2.7 "eagle"
  *
- * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
+ * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ *
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
+ *
+ * Copyright (C) 2012-2014 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -400,10 +409,10 @@ bool CEulerVariable::SetPrimVar_Compressible(CFluidModel *FluidModel) {
     /* check will be moved inside fluid model plus error description strings*/
     FluidModel->SetTDState_rhoe(density, staticEnergy);
 
-    check_dens = SetDensity();
-    check_press = SetPressure(FluidModel->GetPressure());
-    check_sos = SetSoundSpeed(FluidModel->GetSoundSpeed2());
-    check_temp = SetTemperature(FluidModel->GetTemperature());
+    SetDensity();
+    SetPressure(FluidModel->GetPressure());
+    SetSoundSpeed(FluidModel->GetSoundSpeed2());
+    SetTemperature(FluidModel->GetTemperature());
     
     RightVol = false;
     
@@ -452,7 +461,7 @@ bool CEulerVariable::SetPrimVar_Incompressible(double Density_Inf, CConfig *conf
 
 bool CEulerVariable::SetPrimVar_FreeSurface(CConfig *config) {
   
-  double Heaviside, lambda, DensityInc, LevelSet, Distance;
+  double Heaviside, lambda, DensityInc, LevelSet;
 
   double ArtComp_Factor = config->GetArtComp_Factor();
   double epsilon = config->GetFreeSurface_Thickness();
@@ -460,10 +469,6 @@ bool CEulerVariable::SetPrimVar_FreeSurface(CConfig *config) {
   /*--- Set the value of the Level Set (already set in SetFreeSurface_Distance(geometry, config)) ---*/
   
   LevelSet = Primitive[nDim+5];
-
-  /*--- Set the value of the Distance (already set in SetFreeSurface_Distance(geometry, config)) ---*/
-  
-  Distance = Primitive[nDim+6];
 
   /*--- Set the value of the Heaviside function ---*/
 
@@ -588,7 +593,8 @@ bool CNSVariable::SetPrimVar_Compressible(double eddy_visc, double turb_ke, CFlu
   double density = GetDensity();
   double staticEnergy = GetEnergy()-0.5*Velocity2 - turb_ke;
 
-  /* check will be moved inside fluid model plus error description strings*/
+  /*--- Check will be moved inside fluid model plus error description strings ---*/
+  
   FluidModel->SetTDState_rhoe(density, staticEnergy);
   double temperature = FluidModel->GetTemperature();
 
@@ -609,16 +615,18 @@ bool CNSVariable::SetPrimVar_Compressible(double eddy_visc, double turb_ke, CFlu
     /*--- Recompute the primitive variables ---*/
     
     SetVelocity();   // Computes velocity and velocity^2
-	double density = GetDensity();
-	double staticEnergy = GetEnergy()-0.5*Velocity2 - turb_ke;
-	/* check will be moved inside fluid model plus error description strings*/
-	FluidModel->SetTDState_rhoe(density, staticEnergy);
+    double density = GetDensity();
+    double staticEnergy = GetEnergy()-0.5*Velocity2 - turb_ke;
+    
+    /*--- Check will be moved inside fluid model plus error description strings ---*/
+    
+    FluidModel->SetTDState_rhoe(density, staticEnergy);
     double temperature = FluidModel->GetTemperature();
-
-	check_dens = SetDensity();
-	check_press = SetPressure(FluidModel->GetPressure());
-	check_sos = SetSoundSpeed(FluidModel->GetSoundSpeed2());
-	check_temp = SetTemperature(temperature);
+    
+    SetDensity();
+    SetPressure(FluidModel->GetPressure());
+    SetSoundSpeed(FluidModel->GetSoundSpeed2());
+    SetTemperature(temperature);
     
     RightVol = false;
     
@@ -637,6 +645,7 @@ bool CNSVariable::SetPrimVar_Compressible(double eddy_visc, double turb_ke, CFlu
   SetEddyViscosity(eddy_visc);
 
   /*--- Set thermal conductivity ---*/
+  
   SetThermalConductivity(FluidModel->GetThermalConductivity());
 
   SetSpecificHeatCp(FluidModel->GetCp());
@@ -696,7 +705,7 @@ bool CNSVariable::SetPrimVar_Incompressible(double Density_Inf, double Viscosity
 
 bool CNSVariable::SetPrimVar_FreeSurface(double eddy_visc, double turb_ke, CConfig *config) {
 
-  double Heaviside, lambda, DensityInc, ViscosityInc, LevelSet, Distance;
+  double Heaviside, lambda, DensityInc, ViscosityInc, LevelSet;
   
 	double ArtComp_Factor = config->GetArtComp_Factor();
   double epsilon = config->GetFreeSurface_Thickness();
@@ -704,10 +713,6 @@ bool CNSVariable::SetPrimVar_FreeSurface(double eddy_visc, double turb_ke, CConf
   /*--- Set the value of the Level Set (already set in SetFreeSurface_Distance(geometry, config)) ---*/
   
   LevelSet = Primitive[nDim+5];
-  
-  /*--- Set the value of the Distance (already set in SetFreeSurface_Distance(geometry, config)) ---*/
-  
-  Distance = Primitive[nDim+6];
   
   /*--- Set the value of the Heaviside function ---*/
 

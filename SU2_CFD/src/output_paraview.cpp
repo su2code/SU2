@@ -2,9 +2,18 @@
  * \file output_paraview.cpp
  * \brief Main subroutines for output solver information
  * \author F. Palacios
- * \version 3.2.6 "eagle"
+ * \version 3.2.7 "eagle"
  *
- * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
+ * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ *
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
+ *
+ * Copyright (C) 2012-2014 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -200,7 +209,6 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
   
   if (surf_sol) {
     
-    iNode = 0;
     for(iElem = 0; iElem < nGlobal_Line; iElem++) {
       iNode = iElem*N_POINTS_LINE;
       Paraview_File << N_POINTS_LINE << "\t";
@@ -208,7 +216,6 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
       Paraview_File << LocalIndex[Conn_Line[iNode+1]]-1 << "\t";
     }
     
-    iNode = 0;
     for(iElem = 0; iElem < nGlobal_BoundTria; iElem++) {
       iNode = iElem*N_POINTS_TRIANGLE;
       Paraview_File << N_POINTS_TRIANGLE << "\t";
@@ -217,7 +224,6 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
       Paraview_File << LocalIndex[Conn_BoundTria[iNode+2]]-1 << "\t";
     }
     
-    iNode = 0;
     for(iElem = 0; iElem < nGlobal_BoundQuad; iElem++) {
       iNode = iElem*N_POINTS_QUADRILATERAL;
       Paraview_File << N_POINTS_QUADRILATERAL << "\t";
@@ -230,7 +236,6 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
   }
   else {
     
-    iNode = 0;
     for(iElem = 0; iElem < nGlobal_Tria; iElem++) {
       iNode = iElem*N_POINTS_TRIANGLE;
       Paraview_File << N_POINTS_TRIANGLE << "\t";
@@ -239,7 +244,6 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
       Paraview_File << Conn_Tria[iNode+2]-1 << "\t";
     }
     
-    iNode = 0;
     for(iElem = 0; iElem < nGlobal_Quad; iElem++) {
       iNode = iElem*N_POINTS_QUADRILATERAL;
       Paraview_File << N_POINTS_QUADRILATERAL << "\t";
@@ -249,7 +253,6 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
       Paraview_File << Conn_Quad[iNode+3]-1 << "\t";
     }
     
-    iNode = 0;
     for(iElem = 0; iElem < nGlobal_Tetr; iElem++) {
       iNode = iElem*N_POINTS_TETRAHEDRON;
       Paraview_File << N_POINTS_TETRAHEDRON << "\t";
@@ -257,7 +260,6 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
       Paraview_File << Conn_Tetr[iNode+2]-1 << "\t" << Conn_Tetr[iNode+3]-1 << "\t";
     }
     
-    iNode = 0;
     for(iElem = 0; iElem < nGlobal_Hexa; iElem++) {
       iNode = iElem*N_POINTS_HEXAHEDRON;
       Paraview_File << N_POINTS_HEXAHEDRON << "\t";
@@ -267,7 +269,6 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
       Paraview_File << Conn_Hexa[iNode+6]-1 << "\t" << Conn_Hexa[iNode+7]-1 << "\t";
     }
     
-    iNode = 0;
     for(iElem = 0; iElem < nGlobal_Wedg; iElem++) {
       iNode = iElem*N_POINTS_WEDGE;
       Paraview_File << N_POINTS_WEDGE << "\t";
@@ -276,7 +277,6 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
       Paraview_File << Conn_Wedg[iNode+4]-1 << "\t" << Conn_Wedg[iNode+5]-1 << "\t";
     }
     
-    iNode = 0;
     for(iElem = 0; iElem < nGlobal_Pyra; iElem++) {
       iNode = iElem*N_POINTS_PYRAMID;
       Paraview_File << N_POINTS_PYRAMID << "\t";
@@ -854,7 +854,6 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
   
   if (surf_sol) {
     
-    iNode = 0;
     for(iElem = 0; iElem < nGlobal_Line; iElem++) {
       iNode = iElem*N_POINTS_LINE;
       Paraview_File << N_POINTS_LINE << "\t";
@@ -862,7 +861,6 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
       Paraview_File << LocalIndex[Conn_Line[iNode+1]]-1 << "\t";
     }
     
-    iNode = 0;
     for(iElem = 0; iElem < nGlobal_BoundTria; iElem++) {
       iNode = iElem*N_POINTS_TRIANGLE;
       Paraview_File << N_POINTS_TRIANGLE << "\t";
@@ -871,7 +869,6 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
       Paraview_File << LocalIndex[Conn_BoundTria[iNode+2]]-1 << "\t";
     }
     
-    iNode = 0;
     for(iElem = 0; iElem < nGlobal_BoundQuad; iElem++) {
       iNode = iElem*N_POINTS_QUADRILATERAL;
       Paraview_File << N_POINTS_QUADRILATERAL << "\t";
@@ -884,7 +881,6 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
   }
   else {
     
-    iNode = 0;
     for(iElem = 0; iElem < nGlobal_Tria; iElem++) {
       iNode = iElem*N_POINTS_TRIANGLE;
       Paraview_File << N_POINTS_TRIANGLE << "\t";
@@ -893,7 +889,6 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
       Paraview_File << Conn_Tria[iNode+2]-1 << "\t";
     }
     
-    iNode = 0;
     for(iElem = 0; iElem < nGlobal_Quad; iElem++) {
       iNode = iElem*N_POINTS_QUADRILATERAL;
       Paraview_File << N_POINTS_QUADRILATERAL << "\t";
@@ -903,7 +898,6 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
       Paraview_File << Conn_Quad[iNode+3]-1 << "\t";
     }
     
-    iNode = 0;
     for(iElem = 0; iElem < nGlobal_Tetr; iElem++) {
       iNode = iElem*N_POINTS_TETRAHEDRON;
       Paraview_File << N_POINTS_TETRAHEDRON << "\t";
@@ -911,7 +905,6 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
       Paraview_File << Conn_Tetr[iNode+2]-1 << "\t" << Conn_Tetr[iNode+3]-1 << "\t";
     }
     
-    iNode = 0;
     for(iElem = 0; iElem < nGlobal_Hexa; iElem++) {
       iNode = iElem*N_POINTS_HEXAHEDRON;
       Paraview_File << N_POINTS_HEXAHEDRON << "\t";
@@ -921,7 +914,6 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
       Paraview_File << Conn_Hexa[iNode+6]-1 << "\t" << Conn_Hexa[iNode+7]-1 << "\t";
     }
     
-    iNode = 0;
     for(iElem = 0; iElem < nGlobal_Wedg; iElem++) {
       iNode = iElem*N_POINTS_WEDGE;
       Paraview_File << N_POINTS_WEDGE << "\t";
@@ -930,7 +922,6 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
       Paraview_File << Conn_Wedg[iNode+4]-1 << "\t" << Conn_Wedg[iNode+5]-1 << "\t";
     }
     
-    iNode = 0;
     for(iElem = 0; iElem < nGlobal_Pyra; iElem++) {
       iNode = iElem*N_POINTS_PYRAMID;
       Paraview_File << N_POINTS_PYRAMID << "\t";

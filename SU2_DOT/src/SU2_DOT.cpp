@@ -2,11 +2,18 @@
  * \file SU2_DOT.cpp
  * \brief Main file of the Gradient Projection Code (SU2_DOT).
  * \author F. Palacios
- * \version 3.2.6 "eagle"
+ * \version 3.2.7 "eagle"
  *
- * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
+ * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
  *
- * SU2 is free software; you can redistribute it and/or
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
+ *
+  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
@@ -26,13 +33,14 @@ using namespace std;
 int main(int argc, char *argv[]) {	
   
   unsigned short iZone, nZone = SINGLE_ZONE;
+  double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
 	unsigned short iMarker, iDim, iDV, iFFDBox;
 	unsigned long iVertex, iPoint;
 	double delta_eps, my_Gradient, Gradient, *Normal, dS, *VarCoord, Sensitivity,
   dalpha[3], deps[3], dalpha_deps;
 	char config_file_name[MAX_STRING_SIZE], *cstr;
 	ofstream Gradient_file, Jacobian_file;
-	bool *UpdatePoint, Comma;
+	bool *UpdatePoint;
 	int rank = MASTER_NODE;
 	int size = SINGLE_NODE;
 
@@ -95,10 +103,6 @@ int main(int argc, char *argv[]) {
       
     }
     
-#ifdef HAVE_MPI
-    MPI_Barrier(MPI_COMM_WORLD);
-#endif
-    
     /*--- Allocate the memory of the current domain, and
      divide the grid between the nodes ---*/
     
@@ -116,12 +120,16 @@ int main(int argc, char *argv[]) {
     
     geometry_container[iZone]->SetBoundaries(config_container[iZone]);
     
-#ifdef HAVE_MPI
-    MPI_Barrier(MPI_COMM_WORLD);
-#endif
-    
   }
-    
+  
+  /*--- Set up a timer for performance benchmarking (preprocessing time is included) ---*/
+  
+#ifdef HAVE_MPI
+  StartTime = MPI_Wtime();
+#else
+  StartTime = double(clock())/double(CLOCKS_PER_SEC);
+#endif
+  
 	if (rank == MASTER_NODE)
 		cout << endl <<"----------------------- Preprocessing computations ----------------------" << endl;
 	
@@ -158,12 +166,19 @@ int main(int argc, char *argv[]) {
   geometry_container[ZONE_0]->SetBoundSensitivity(config_container[ZONE_0]);
   
   /*--- Boolean controlling points to be updated ---*/
+  
 	UpdatePoint = new bool[geometry_container[ZONE_0]->GetnPoint()];
 	
 	/*--- Definition of the Class for surface deformation ---*/
+  
 	surface_movement = new CSurfaceMovement();
-	
+  
+  /*--- Copy coordinates to the surface structure ---*/
+  
+  surface_movement->CopyBoundary(geometry_container[ZONE_0], config_container[ZONE_0]);
+
 	/*--- Definition of the FFD deformation class ---*/
+  
 	unsigned short nFFDBox = MAX_NUMBER_FFD;
 	FFDBox = new CFreeFormDefBox*[nFFDBox];
 	
@@ -171,30 +186,33 @@ int main(int argc, char *argv[]) {
 		cout << endl <<"---------- Start gradient evaluation using surface sensitivity ----------" << endl;
 	
 	/*--- Write the gradient in a external file ---*/
+
 	if (rank == MASTER_NODE) {
 		cstr = new char [config_container[ZONE_0]->GetObjFunc_Grad_FileName().size()+1];
 		strcpy (cstr, config_container[ZONE_0]->GetObjFunc_Grad_FileName().c_str());
 		Gradient_file.open(cstr, ios::out);
     
-    /*--- Write an additional file with the geometric Jacobian ---*/
-    /*--- WARNING: This is only for serial calculations!!! ---*/
-    if (size == SINGLE_NODE) {
-      Jacobian_file.open("geo_jacobian.csv", ios::out);
-      Jacobian_file.precision(15);
-      
-      /*--- Write the CSV file header ---*/
-      Comma = false;
-      for (iMarker = 0; iMarker < config_container[ZONE_0]->GetnMarker_All(); iMarker++) {
-        if (config_container[ZONE_0]->GetMarker_All_DV(iMarker) == YES) {
-          for (iVertex = 0; iVertex < geometry_container[ZONE_0]->nVertex[iMarker]; iVertex++) {
-            iPoint = geometry_container[ZONE_0]->vertex[iMarker][iVertex]->GetNode();
-            if (!Comma) { Jacobian_file << "\t\"DesignVariable\""; Comma = true;}
-            Jacobian_file  << ", " << "\t\"" << iPoint << "\"";
-          }
-        }
-      }
-      Jacobian_file << endl;
-    }
+//    /*--- Write an additional file with the geometric Jacobian ---*/
+//    /*--- WARNING: This is only for serial calculations!!! ---*/
+//    /*--- WARNING: We should generalize this... ---*/
+//    if (size == SINGLE_NODE) {
+//      Jacobian_file.open("geo_jacobian.csv", ios::out);
+//      Jacobian_file.precision(15);
+//      
+//      /*--- Write the CSV file header ---*/
+//      Comma = false;
+//      for (iMarker = 0; iMarker < config_container[ZONE_0]->GetnMarker_All(); iMarker++) {
+//        if (config_container[ZONE_0]->GetMarker_All_DV(iMarker) == YES) {
+//          for (iVertex = 0; iVertex < geometry_container[ZONE_0]->nVertex[iMarker]; iVertex++) {
+//            iPoint = geometry_container[ZONE_0]->vertex[iMarker][iVertex]->GetNode();
+//            if (!Comma) { Jacobian_file << "\t\"DesignVariable\""; Comma = true;}
+//            Jacobian_file  << ", " << "\t\"" << iPoint << "\"";
+//          }
+//        }
+//      }
+//      Jacobian_file << endl;
+//    }
+
 	}
   
 	for (iDV = 0; iDV < config_container[ZONE_0]->GetnDV(); iDV++) {
@@ -379,8 +397,8 @@ int main(int argc, char *argv[]) {
 							Normal = geometry_container[ZONE_0]->vertex[iMarker][iVertex]->GetNormal();
 							VarCoord = geometry_container[ZONE_0]->vertex[iMarker][iVertex]->GetVarCoord();
 							Sensitivity = geometry_container[ZONE_0]->vertex[iMarker][iVertex]->GetAuxVar();
-              
-							dS = 0.0; 
+
+              dS = 0.0;
 							for (iDim = 0; iDim < geometry_container[ZONE_0]->GetnDim(); iDim++) {
 								dS += Normal[iDim]*Normal[iDim];
 								deps[iDim] = VarCoord[iDim] / delta_eps;
@@ -392,7 +410,7 @@ int main(int argc, char *argv[]) {
 								dalpha[iDim] = Normal[iDim] / dS;
 								dalpha_deps -= dalpha[iDim]*deps[iDim];
 							}
-							
+
               /*--- Store the geometric sensitivity for this DV (rows) & this node (column) ---*/
               
               if (size == SINGLE_NODE) {
@@ -498,17 +516,34 @@ int main(int argc, char *argv[]) {
 	
 	delete [] UpdatePoint;
 	
+    /*--- Synchronization point after a single solver iteration. Compute the
+     wall clock time required. ---*/
+    
 #ifdef HAVE_MPI
-	/*--- Finalize MPI parallelization ---*/
-  
-	MPI_Finalize();
+    StopTime = MPI_Wtime();
+#else
+    StopTime = double(clock())/double(CLOCKS_PER_SEC);
 #endif
+    
+    /*--- Compute/print the total time for performance benchmarking. ---*/
+    
+    UsedTime = StopTime-StartTime;
+    if (rank == MASTER_NODE) {
+      cout << "\nCompleted in " << fixed << UsedTime << " seconds on "<< size;
+      if (size == 1) cout << " core." << endl; else cout << " cores." << endl;
+    }
+    
+    /*--- Exit the solver cleanly ---*/
+    
+    if (rank == MASTER_NODE)
+    cout << endl <<"------------------------- Exit Success (SU2_DOT) ------------------------" << endl << endl;
 	
-	/*--- End solver ---*/
-  
-	if (rank == MASTER_NODE) 
-	  cout << endl <<"------------------------- Exit Success (SU2_DOT) ------------------------" << endl << endl;
-	
+    /*--- Finalize MPI parallelization ---*/
+    
+#ifdef HAVE_MPI
+    MPI_Finalize();
+#endif
+    
 	return EXIT_SUCCESS;
 	
 }

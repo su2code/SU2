@@ -13,6 +13,7 @@
 		0530E56E17FDF7C600733CE8 /* variable_direct_elasticity.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530E56D17FDF7C600733CE8 /* variable_direct_elasticity.cpp */; };
 		0530E57017FDF7D300733CE8 /* numerics_direct_elasticity.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530E56F17FDF7D300733CE8 /* numerics_direct_elasticity.cpp */; };
 		0530E57217FDF7D800733CE8 /* numerics_direct_poisson.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530E57117FDF7D800733CE8 /* numerics_direct_poisson.cpp */; };
+		05755F0A1A54AC4500600019 /* output_su2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05755F091A54AC4500600019 /* output_su2.cpp */; };
 		05DF0B1018CFB2C100DC3CFE /* numerics_machine_learning_turbulent.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05DF0B0E18CFB2C100DC3CFE /* numerics_machine_learning_turbulent.cpp */; };
 		05DF0B1118CFB2C100DC3CFE /* numerics_machine_learning.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05DF0B0F18CFB2C100DC3CFE /* numerics_machine_learning.cpp */; };
 		05E6DB9217EB61E600FA1F7E /* config_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05E6DB8917EB61E600FA1F7E /* config_structure.cpp */; };
@@ -103,6 +104,7 @@
 		0530E56F17FDF7D300733CE8 /* numerics_direct_elasticity.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = numerics_direct_elasticity.cpp; path = ../../SU2_CFD/src/numerics_direct_elasticity.cpp; sourceTree = "<group>"; };
 		0530E57117FDF7D800733CE8 /* numerics_direct_poisson.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = numerics_direct_poisson.cpp; path = ../../SU2_CFD/src/numerics_direct_poisson.cpp; sourceTree = "<group>"; };
 		0541ABEE1370F5A6002D668B /* SU2_CFD */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = SU2_CFD; sourceTree = BUILT_PRODUCTS_DIR; };
+		05755F091A54AC4500600019 /* output_su2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = output_su2.cpp; path = ../../SU2_CFD/src/output_su2.cpp; sourceTree = "<group>"; };
 		05DF0B0C18CFB29800DC3CFE /* numerics_machine_learning_turbulent.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = numerics_machine_learning_turbulent.hpp; path = ../../SU2_CFD/include/numerics_machine_learning_turbulent.hpp; sourceTree = "<group>"; };
 		05DF0B0D18CFB29E00DC3CFE /* numerics_machine_learning.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = numerics_machine_learning.hpp; path = ../../SU2_CFD/include/numerics_machine_learning.hpp; sourceTree = "<group>"; };
 		05DF0B0E18CFB2C100DC3CFE /* numerics_machine_learning_turbulent.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = numerics_machine_learning_turbulent.cpp; path = ../../SU2_CFD/src/numerics_machine_learning_turbulent.cpp; sourceTree = "<group>"; };
@@ -286,6 +288,7 @@
 				05E6DBD617EB62A100FA1F7E /* output_paraview.cpp */,
 				05E6DBD717EB62A100FA1F7E /* output_structure.cpp */,
 				05E6DBD817EB62A100FA1F7E /* output_tecplot.cpp */,
+				05755F091A54AC4500600019 /* output_su2.cpp */,
 			);
 			name = Output;
 			sourceTree = "<group>";
@@ -504,6 +507,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				05E6DB9217EB61E600FA1F7E /* config_structure.cpp in Sources */,
+				05755F0A1A54AC4500600019 /* output_su2.cpp in Sources */,
 				05E6DB9317EB61E600FA1F7E /* dual_grid_structure.cpp in Sources */,
 				05E6DB9417EB61E600FA1F7E /* geometry_structure.cpp in Sources */,
 				05E6DB9517EB61E600FA1F7E /* grid_adaptation_structure.cpp in Sources */,
@@ -601,6 +605,7 @@
 				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = NO;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 3.2.7;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 0;
@@ -664,6 +669,7 @@
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = NO;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CURRENT_PROJECT_VERSION = 3.2.7;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 0;

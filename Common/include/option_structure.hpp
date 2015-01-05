@@ -2,13 +2,22 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
- * \version 3.2.6 "eagle"
+ * \version 3.2.7 "eagle"
  *
  * Many of the classes in this file are templated, and therefore must
  * be declared and defined here; to keep all elements together, there
  * is no corresponding .cpp file at this time.
  *
- * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
+ * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ *
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
+ *
+ * Copyright (C) 2012-2014 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -157,18 +166,14 @@ enum ANSWER {
  * \brief Verbosity level
  */
 enum VERB_LEVEL {
-  VERB_NONE = 1,   /*!< \brief No verbosity. */
+  VERB_NONE = 0,   /*!< \brief No verbosity. */
   VERB_MEDIUM = 1,   /*!< \brief Medium level of verbosity. */
   VERB_HIGH = 2			/*!< \brief High level of verbosity. */
 };
-
-/*!
- * \brief types of MPI communications
- */
-enum COMM_TYPE {
-  SEND = 1,					/*!< \brief Boolean definition of send (parallelization). */
-  RECEIVE = 2				/*!< \brief Boolean definition of receive (parallelization). */
-};
+static const map<string, VERB_LEVEL> Verb_Map = CCreateMap<string, VERB_LEVEL>
+("NONE", VERB_NONE)
+("MEDIUM", VERB_MEDIUM)
+("HIGH", VERB_HIGH);
 
 /*!
  * \brief different solver types for the CFD component
@@ -639,36 +644,37 @@ enum BC_TYPE {
   EULER_WALL = 1,		/*!< \brief Boundary Euler wall definition. */
   FAR_FIELD = 2,		/*!< \brief Boundary far-field definition. */
   SYMMETRY_PLANE = 3,   	/*!< \brief Boundary symmetry plane definition. */
-  INLET_FLOW = 5,		/*!< \brief Boundary inlet flow definition. */
-  OUTLET_FLOW = 6,		/*!< \brief Boundary outlet flow definition. */
-  PERIODIC_BOUNDARY = 7,	/*!< \brief Periodic boundary definition. */
-  NEARFIELD_BOUNDARY = 8,	/*!< \brief Near-Field boundary definition. */
-  ELECTRODE_BOUNDARY = 9,	/*!< \brief Electrode boundary definition. */
-  DIELEC_BOUNDARY = 10,	/*!< \brief Dipoisson boundary definition. */
-  CUSTOM_BOUNDARY = 11,         /*!< \brief custom boundary definition. */
-  INTERFACE_BOUNDARY = 12,	/*!< \brief Domain interface boundary definition. */
-  DIRICHLET = 13,		/*!< \brief Boundary Euler wall definition. */
-  NEUMANN = 14,		/*!< \brief Boundary Neumann definition. */
-  DISPLACEMENT_BOUNDARY = 15,		/*!< \brief Boundary displacement definition. */
-  LOAD_BOUNDARY = 16,		/*!< \brief Boundary Load definition. */
-  FLOWLOAD_BOUNDARY = 17,		/*!< \brief Boundary Load definition. */
-  ELEC_DIELEC_BOUNDARY = 22,	/*!< \brief Dipoisson boundary definition for the poissonal potential. */
-  ELEC_NEUMANN = 23,		/*!< \brief Boundary Neumann definition. */
-  SUPERSONIC_INLET = 24,		/*!< \brief Boundary supersonic inlet definition. */
-  ENGINE_INFLOW = 25,		/*!< \brief Boundary nacelle inflow. */
-  ENGINE_EXHAUST = 26,		/*!< \brief Boundary nacelle exhaust. */
-  ISOTHERMAL = 28,      /*!< \brief No slip isothermal wall boundary condition. */
-  HEAT_FLUX  = 29,      /*!< \brief No slip constant heat flux wall boundary condition. */
-  PRESSURE_BOUNDARY = 30,   	/*!< \brief Pressure boundary condition. */
-  HEAT_FLUX_NONCATALYTIC = 31, /*!< \brief No-slip, constant heat flux, noncatalytic bc. */
-  HEAT_FLUX_CATALYTIC= 32, /*!< \brief No-slip, constant heat flux, catalytic bc. */
-  ISOTHERMAL_NONCATALYTIC = 33, /*!< \brief No-slip, constant temperature, noncatalytic bc. */
-  ISOTHERMAL_CATALYTIC = 34, /*!< \brief No-slip, constant temperature, catalytic bc. */
-  ACTDISK_INLET = 35,	/*!< \brief Actuator disk inlet boundary definition. */
-  ACTDISK_OUTLET = 36,	/*!< \brief Actuator disk outlet boundary definition. */
-  ENGINE_BLEED = 37,		/*!< \brief Boundary engine bleed. */
+  INLET_FLOW = 4,		/*!< \brief Boundary inlet flow definition. */
+  OUTLET_FLOW = 5,		/*!< \brief Boundary outlet flow definition. */
+  PERIODIC_BOUNDARY = 6,	/*!< \brief Periodic boundary definition. */
+  NEARFIELD_BOUNDARY = 7,	/*!< \brief Near-Field boundary definition. */
+  ELECTRODE_BOUNDARY = 8,	/*!< \brief Electrode boundary definition. */
+  DIELEC_BOUNDARY = 9,	/*!< \brief Dipoisson boundary definition. */
+  CUSTOM_BOUNDARY = 10,         /*!< \brief custom boundary definition. */
+  INTERFACE_BOUNDARY = 11,	/*!< \brief Domain interface boundary definition. */
+  DIRICHLET = 12,		/*!< \brief Boundary Euler wall definition. */
+  NEUMANN = 13,		/*!< \brief Boundary Neumann definition. */
+  DISPLACEMENT_BOUNDARY = 14,		/*!< \brief Boundary displacement definition. */
+  LOAD_BOUNDARY = 15,		/*!< \brief Boundary Load definition. */
+  FLOWLOAD_BOUNDARY = 16,		/*!< \brief Boundary Load definition. */
+  ELEC_DIELEC_BOUNDARY = 17,	/*!< \brief Dipoisson boundary definition for the poissonal potential. */
+  ELEC_NEUMANN = 18,		/*!< \brief Boundary Neumann definition. */
+  SUPERSONIC_INLET = 19,		/*!< \brief Boundary supersonic inlet definition. */
+  SUPERSONIC_OUTLET = 20,		/*!< \brief Boundary supersonic inlet definition. */
+  ENGINE_INFLOW = 21,		/*!< \brief Boundary nacelle inflow. */
+  ENGINE_EXHAUST = 22,		/*!< \brief Boundary nacelle exhaust. */
+  ENGINE_BLEED = 23,		/*!< \brief Boundary engine bleed. */
+  RIEMANN_BOUNDARY= 24,   /*!< \brief Riemann Boundary definition. */
+  ISOTHERMAL = 25,      /*!< \brief No slip isothermal wall boundary condition. */
+  HEAT_FLUX  = 26,      /*!< \brief No slip constant heat flux wall boundary condition. */
+  PRESSURE_BOUNDARY = 27,   	/*!< \brief Pressure boundary condition. */
+  HEAT_FLUX_NONCATALYTIC = 28, /*!< \brief No-slip, constant heat flux, noncatalytic bc. */
+  HEAT_FLUX_CATALYTIC= 29, /*!< \brief No-slip, constant heat flux, catalytic bc. */
+  ISOTHERMAL_NONCATALYTIC = 30, /*!< \brief No-slip, constant temperature, noncatalytic bc. */
+  ISOTHERMAL_CATALYTIC = 31, /*!< \brief No-slip, constant temperature, catalytic bc. */
+  ACTDISK_INLET = 32,	/*!< \brief Actuator disk inlet boundary definition. */
+  ACTDISK_OUTLET = 33,	/*!< \brief Actuator disk outlet boundary definition. */
   SEND_RECEIVE = 99,		/*!< \brief Boundary send-receive definition. */
-  RIEMANN_BOUNDARY= 100   /*!< \brief Riemann Boundary definition. */
 };
 
 /*!
@@ -863,7 +869,6 @@ enum ENUM_ADAPT {
   WAKE = 12,			/*!< \brief Do a grid refinement on the wake. */
   SMOOTHING = 14,		/*!< \brief Do a grid smoothing of the geometry. */
   SUPERSONIC_SHOCK = 15,	/*!< \brief Do a grid smoothing. */
-  TWOPHASE = 16,			/*!< \brief Do a grid refinement on the free surface interphase. */
   PERIODIC = 17			/*!< \brief Add the periodic halo cells. */
 };
 static const map<string, ENUM_ADAPT> Adapt_Map = CCreateMap<string, ENUM_ADAPT>
@@ -882,8 +887,7 @@ static const map<string, ENUM_ADAPT> Adapt_Map = CCreateMap<string, ENUM_ADAPT>
 ("WAKE", WAKE)
 ("SMOOTHING", SMOOTHING)
 ("SUPERSONIC_SHOCK", SUPERSONIC_SHOCK)
-("PERIODIC", PERIODIC)
-("TWOPHASE", TWOPHASE);
+("PERIODIC", PERIODIC);
 
 /*!
  * \brief types of input file formats

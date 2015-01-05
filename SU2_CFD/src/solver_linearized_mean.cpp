@@ -2,9 +2,18 @@
  * \file solution_linearized_mean.cpp
  * \brief Main subrotuines for solving linearized problems (Euler, Navier-Stokes, etc.).
  * \author F. Palacios
- * \version 3.2.6 "eagle"
+ * \version 3.2.7 "eagle"
  *
- * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
+ * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ *
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
+ *
+ * Copyright (C) 2012-2014 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -325,7 +334,7 @@ void CLinEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
 void CLinEulerSolver::Inviscid_DeltaForces(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 	unsigned long iVertex, Point;
 	unsigned short iDim, iMarker, Boundary, Monitoring;
-	double  *Face_Normal, dS, DeltaPressure, *Velocity;
+	double  *Face_Normal, DeltaPressure, *Velocity;
 	double Alpha = config->GetAoA()*PI_NUMBER / 180.0;
 	double Beta  = config->GetAoS()*PI_NUMBER / 180.0;
 	double RefAreaCoeff = config->GetRefAreaCoeff();
@@ -365,7 +374,6 @@ void CLinEulerSolver::Inviscid_DeltaForces(CGeometry *geometry, CSolver **solver
 					
 					if (Monitoring == YES) {
 						Face_Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-						dS = 0.0; for (iDim = 0; iDim < nDim; iDim++) dS += Face_Normal[iDim]*Face_Normal[iDim]; dS = sqrt(dS);
 						for (iDim = 0; iDim < nDim; iDim++)
 							DeltaForceInviscid[iDim] -= C_p*DeltaPressure*Face_Normal[iDim];
 					}

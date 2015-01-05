@@ -2,9 +2,18 @@
  * \file numerics_structure.cpp
  * \brief This file contains all the numerical methods.
  * \author F. Palacios, T. Economon
- * \version 3.2.6 "eagle"
+ * \version 3.2.7 "eagle"
  *
- * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
+ * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ *
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
+ *
+ * Copyright (C) 2012-2014 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -133,7 +142,6 @@ CNumerics::~CNumerics(void) {
 	}
 	delete [] tau;
 	delete [] delta;
-	delete [] Normal;
 	delete [] Enthalpy_formation;
 	delete [] Theta_v;
   if (Ys != NULL) delete [] Ys;
@@ -655,7 +663,7 @@ void CNumerics::GetInviscidArtCompProjJac(double *val_density, double *val_veloc
 void CNumerics::GetInviscidArtComp_FreeSurf_ProjJac(double *val_density, double *val_ddensity, double *val_velocity, double *val_betainc2, double *val_levelset, double *val_normal,
                                                     double val_scale, double **val_Proj_Jac_Tensor) {
   
-	double a = 0.0, b = 0.0, c = 0.0, d = 0.0, area2 = 0.0, nx = 0.0, ny = 0.0, nz = 0.0, u = 0.0, v = 0.0, w = 0.0;
+	double a = 0.0, b = 0.0, c = 0.0, d = 0.0, nx = 0.0, ny = 0.0, nz = 0.0, u = 0.0, v = 0.0, w = 0.0;
   
   a = (*val_betainc2)/(*val_density);
   b = (*val_levelset)/(*val_density);
@@ -663,7 +671,7 @@ void CNumerics::GetInviscidArtComp_FreeSurf_ProjJac(double *val_density, double 
   
   if (nDim == 2) {
     
-    nx = val_normal[0];   ny = val_normal[1];   area2 = nx*nx + ny*ny;
+    nx = val_normal[0];   ny = val_normal[1];
     u = val_velocity[0];  v = val_velocity[1];  d = u*nx + v*ny;
     
     val_Proj_Jac_Tensor[0][0] = 0.0;
@@ -692,7 +700,7 @@ void CNumerics::GetInviscidArtComp_FreeSurf_ProjJac(double *val_density, double 
   }
 	else {
   
-    nx = val_normal[0];   ny = val_normal[1];   nz = val_normal[2];   area2 = nx*nx + ny*ny + nz*nz;
+    nx = val_normal[0];   ny = val_normal[1];   nz = val_normal[2];
     u = val_velocity[0];  v = val_velocity[1];  w = val_velocity[2];  d = u*nx + v*ny + w*nz;
   
     val_Proj_Jac_Tensor[0][0] = 0.0;
@@ -1883,10 +1891,9 @@ void CNumerics::GetViscousProjFlux(double *val_primvar,
                                    CConfig *config) {
   
   bool ionization;
-	unsigned short iSpecies, iVar, iDim, jDim, nHeavy, nEl;
+	unsigned short iSpecies, iVar, iDim, jDim, nHeavy;
 	double *Ds, *V, **GY, **GV, mu, ktr, kve, div_vel;
-  double Ru;
-  double Ys, rho, T, Tve, eve, hs;
+  double Ys, rho, eve, hs;
   
   /*--- Allocate ---*/
   GY = new double*[nSpecies];
@@ -1903,8 +1910,8 @@ void CNumerics::GetViscousProjFlux(double *val_primvar,
   
   /*--- Read from CConfig ---*/
   ionization = config->GetIonization();
-  if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
-  else            { nHeavy = nSpecies;   nEl = 0; }
+  if (ionization) { nHeavy = nSpecies-1; }
+  else            { nHeavy = nSpecies;   }
   
   /*--- Rename for convenience ---*/
   Ds  = val_diffusioncoeff;
@@ -1912,9 +1919,6 @@ void CNumerics::GetViscousProjFlux(double *val_primvar,
   ktr = val_therm_conductivity;
   kve = val_therm_conductivity_ve;
   rho = val_primvar[RHO_INDEX];
-  T   = val_primvar[T_INDEX];
-  Tve = val_primvar[TVE_INDEX];
-  Ru  = UNIVERSAL_GAS_CONSTANT;
   V   = val_primvar;
   GV  = val_gradprimvar;
   
@@ -2673,8 +2677,8 @@ void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar,
                                    double **val_Jac_j, CConfig *config) {
   
   bool ionization;
-  unsigned short iDim, iSpecies, jSpecies, iVar, jVar, kVar, nHeavy, nEl;
-  double rho, u, v, w, T, Tve, *xi, *Ms;
+  unsigned short iDim, iSpecies, jSpecies, iVar, jVar, kVar, nHeavy;
+  double rho, u, v, w, Tve, *xi, *Ms;
   double rho_i, rho_j, u_i, u_j, v_i, v_j, w_i, w_j;
   double mu, ktr, kve, *Ds, dij, Ru, eve, hs;
   double theta, thetax, thetay, thetaz;
@@ -2708,14 +2712,13 @@ void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar,
   
   /*--- Assign booleans from CConfig ---*/
   ionization = config->GetIonization();
-  if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
-  else            { nHeavy = nSpecies;   nEl = 0; }
+  if (ionization) { nHeavy = nSpecies-1; }
+  else            { nHeavy = nSpecies;   }
 
   /*--- Calculate mean quantities ---*/
   
   // Scalars
   rho = val_Mean_PrimVar[RHO_INDEX];
-  T   = val_Mean_PrimVar[T_INDEX];
   Tve = val_Mean_PrimVar[TVE_INDEX];
   Ds  = val_diffusion_coeff;
   mu  = val_laminar_viscosity;

@@ -2,9 +2,18 @@
  * \file matrix_structure.cpp
  * \brief Main subroutines for doing the sparse structures
  * \author F. Palacios, A. Bueno
- * \version 3.2.6 "eagle"
+ * \version 3.2.7 "eagle"
  *
- * Copyright (C) 2012-2014 SU2 <https://github.com/su2code>.
+ * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ *
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
+ *
+ * Copyright (C) 2012-2014 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -651,9 +660,9 @@ void CSysMatrix::SendReceive_Solution(CSysVector & x, CGeometry *geometry, CConf
   unsigned short iVar, iMarker, MarkerS, MarkerR;
   unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
   double *Buffer_Receive = NULL, *Buffer_Send = NULL;
-  int send_to, receive_from;
   
 #ifdef HAVE_MPI
+  int send_to, receive_from;
   MPI_Status status;
 #endif
   
@@ -664,9 +673,13 @@ void CSysMatrix::SendReceive_Solution(CSysVector & x, CGeometry *geometry, CConf
       
       MarkerS = iMarker;  MarkerR = iMarker+1;
       
+#ifdef HAVE_MPI
+
       send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
       receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
       
+#endif
+
       nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
       nBufferS_Vector = nVertexS*nVar;        nBufferR_Vector = nVertexR*nVar;
       
@@ -686,15 +699,15 @@ void CSysMatrix::SendReceive_Solution(CSysVector & x, CGeometry *geometry, CConf
 #ifdef HAVE_MPI
       
       /*--- Send/Receive information using Sendrecv ---*/
-	  MPI_Sendrecv(Buffer_Send, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
+      
+      MPI_Sendrecv(Buffer_Send, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
                    Buffer_Receive, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
-
+      
 #else
       
       /*--- Receive information without MPI ---*/
       
       for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
         for (iVar = 0; iVar < nVar; iVar++)
           Buffer_Receive[iVar*nVertexR+iVertex] = Buffer_Send[iVar*nVertexR+iVertex];
       }
@@ -978,9 +991,11 @@ unsigned short CSysMatrix::BuildLineletPreconditioner(CGeometry *geometry, CConf
     /*--- Create the linelet structure ---*/
     
     iLinelet = 0;
+    
     do {
-      add_point = true;
+      
       index_Point = 0;
+      
       do {
         
         /*--- Compute the value of the max weight ---*/
@@ -1329,7 +1344,6 @@ void CSysMatrix::ComputeLineletPreconditioner(const CSysVector & vec, CSysVector
       
       /*--- Backward substituton ---*/
       
-      im1Point = LineletPoint[iLinelet][nElem-1];
       InverseBlock(UBlock[nElem-1], invUBlock[nElem-1]);
       GetMultBlockVector(zVector[nElem-1], invUBlock[nElem-1], yVector[nElem-1]);
       
@@ -1363,7 +1377,6 @@ void CSysMatrix::ComputeLineletPreconditioner(const CSysVector & vec, CSysVector
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
 #else
-    MPI_Barrier(MPI_COMM_WORLD);
     MPI_Abort(MPI_COMM_WORLD,1);
     MPI_Finalize();
 #endif
