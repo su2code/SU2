@@ -1349,6 +1349,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
             exit(EXIT_FAILURE);
         }
     }
+
+    /*--- Make sure that 1D outputs are written when objective function requires ---*/
+    if (Kind_ObjFunc== AVG_OUTLET_PRESSURE || Kind_ObjFunc == AVG_TOTAL_PRESSURE){
+      Wrt_1D_Output = YES;
+      Marker_Out_1D = Marker_Monitoring;
+      nMarker_Out_1D = nMarker_Monitoring;
+    }
     
     /*--- Deactivate the multigrid in the adjoint problem ---*/
   
@@ -3635,6 +3642,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       case FIGURE_OF_MERIT: cout << "Rotor Figure of Merit objective function." << endl; break;
       case FREE_SURFACE: cout << "Free-Surface objective function." << endl; break;
       case AVG_TOTAL_PRESSURE: cout << "Average total objective pressure." << endl; break;
+      case AVG_OUTLET_PRESSURE: cout << "Average static objective pressure." << endl; break;
       case MASS_FLOW_RATE: cout << "Mass flow rate objective function." << endl; break;
 		}
 
@@ -5241,6 +5249,7 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
       case FIGURE_OF_MERIT:         AdjExt = "_merit";    break;
       case FREE_SURFACE:            AdjExt = "_fs";       break;
       case AVG_TOTAL_PRESSURE:      AdjExt = "_pt";       break;
+      case AVG_OUTLET_PRESSURE:      AdjExt = "_pe";       break;
       case MASS_FLOW_RATE:          AdjExt = "_mfr";       break;
     }
     Filename.append(AdjExt);
