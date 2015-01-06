@@ -1180,7 +1180,20 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
               ForceProj_Vector[1] = 0.0;
               ForceProj_Vector[2] = 0.0; }
             break;
-          case AVG_TOTAL_PRESSURE : break;
+          case AVG_TOTAL_PRESSURE :
+            if (nDim == 2) { ForceProj_Vector[0] = 0.0;
+              ForceProj_Vector[1] = 0.0; }
+            if (nDim == 3) { ForceProj_Vector[0] = 0.0;
+              ForceProj_Vector[1] = 0.0;
+              ForceProj_Vector[2] = 0.0; }
+            break;
+          case AVG_OUTLET_PRESSURE:
+            if (nDim == 2) { ForceProj_Vector[0] = 0.0;
+              ForceProj_Vector[1] = 0.0; }
+            if (nDim == 3) { ForceProj_Vector[0] = 0.0;
+              ForceProj_Vector[1] = 0.0;
+              ForceProj_Vector[2] = 0.0; }
+            break;
           case MASS_FLOW_RATE :
             if (nDim == 2) { ForceProj_Vector[0] = 0.0;
               ForceProj_Vector[1] = 0.0; }
@@ -4267,6 +4280,7 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   double Vn, SoundSpeed, Mach_Exit, a1, LevelSet, Vn_Exit,Riemann,Entropy,Density_Outlet = 0.0;
   double Area, UnitNormal[3];
   double *V_outlet, *V_domain, *Psi_domain, *Psi_outlet, *Normal;
+  double dpterm;
   
   bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
@@ -4351,8 +4365,56 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
           for (iVar = 0; iVar < nVar; iVar++) {
             Psi_outlet[iVar] = 0.0;
           }
-          
+          if (config->GetKind_ObjFunc() == AVG_OUTLET_PRESSURE){
+            /*--- Compute Riemann constant ---*/
+            Entropy = Pressure*pow(1.0/Density,Gamma);
+            Riemann = Vn + 2.0*SoundSpeed/Gamma_Minus_One;
+            /*--- Compute (Vn - Ubn).n term for use in the BC. ---*/
+
+            /*--- Compute the new fictious state at the outlet ---*/
+            Density    = pow(P_Exit/Entropy,1.0/Gamma);
+            Pressure   = P_Exit;
+            SoundSpeed = sqrt(Gamma*P_Exit/Density);
+            Vn_Exit    = Riemann - 2.0*SoundSpeed/Gamma_Minus_One;
+            Velocity2  = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++) {
+              Velocity[iDim] = Velocity[iDim] + (Vn_Exit-Vn)*UnitNormal[iDim];
+              Velocity2 += Velocity[iDim]*Velocity[iDim];
+            }
+
+            /*--- Extra boundary term for grid movement ---*/
+
+            if (grid_movement) {
+              double ProjGridVel = 0.0;
+              double *GridVel = geometry->node[iPoint]->GetGridVel();
+              for (iDim = 0; iDim < nDim; iDim++)
+                ProjGridVel += GridVel[iDim]*UnitNormal[iDim];
+              //Ubn = ProjGridVel;
+            }
+            /*Repeated term*/
+            dpterm = 1./((SoundSpeed-Vn_Exit)*(SoundSpeed+Vn_Exit))/2.;
+            // Need a different term if v = c
+            if (Vn_Exit==SoundSpeed)
+                dpterm = 0;
+            Psi_outlet[0] = dpterm*(-Vn_Exit*(2*SoundSpeed*SoundSpeed+Velocity2*(Gamma-1)));
+            for (iDim = 0; iDim < nDim; iDim++) {
+              Psi_outlet[iDim+1] = dpterm*(UnitNormal[iDim]*2*SoundSpeed+Velocity[iDim]*Vn_Exit*(Gamma-1));
+            }
+            Psi_outlet[nDim+1]=dpterm*(-2*Vn_Exit*(Gamma-1));
+          }
+          /*--- Total Pressure term. NOTE: this is AREA averaged
+           * Additional terms are added later (as they are common between subsonic,
+           * supersonic equations) ---*/
+          if (config->GetKind_ObjFunc() == AVG_TOTAL_PRESSURE){
+            Psi_outlet[nDim+1]=-Gamma_Minus_One*(5*Velocity2-4*Vn*Vn*Gamma_Minus_One)/2/(SoundSpeed-Vn)/(SoundSpeed+Vn)/Vn;
+            Psi_outlet[0] = 0.5*Psi_outlet[nDim+1]*Velocity2;
+            for (iDim = 0; iDim < nDim; iDim++) {
+              Psi_outlet[0]   += Psi_outlet[nDim+1]*a1*Velocity[iDim]*UnitNormal[iDim];
+              Psi_outlet[iDim+1] = -Psi_outlet[nDim+1]*(a1*UnitNormal[iDim] + Velocity[iDim]);
+            }
+          }
         } else {
+          /*---Subsonic Case(s) ---*/
           /*--- Compute Riemann constant ---*/
           Entropy = Pressure*pow(1.0/Density,Gamma);
           Riemann = Vn + 2.0*SoundSpeed/Gamma_Minus_One;
@@ -4381,7 +4443,6 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
           /*--- Shorthand for repeated term in the boundary conditions ---*/
           
           //a1 = Gamma*(P_Exit/(Density*Gamma_Minus_One))/(Vn-Ubn);
-
           a1 = sqrt(Gamma*P_Exit/Density)/(Gamma_Minus_One);
           
           /*--- Impose values for PsiRho & Phi using PsiE from domain. ---*/
@@ -4447,7 +4508,12 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
       if (config->GetKind_ObjFunc() == MASS_FLOW_RATE){
         Psi_outlet[0]+=1;
       }
-
+      /*--- For total pressure objective function. NOTE: this is AREA averaged term---*/
+      if (config->GetKind_ObjFunc() == AVG_TOTAL_PRESSURE){
+        Psi_outlet[0]+=Velocity2*(2*Vn/(SoundSpeed+Vn)-SoundSpeed/2/Vn)+2*SoundSpeed*Vn*Vn*Gamma_Minus_One/(SoundSpeed+Vn);
+        for  (iDim = 0; iDim < nDim; iDim++)
+          Psi_outlet[iDim+1]-=UnitNormal[iDim]*(Velocity2*0.5+2*(Gamma_Minus_One)*(Velocity2+SoundSpeed*Vn))/Vn/(SoundSpeed+Vn)+Velocity[iDim]*(1-2*Gamma)/Vn;
+      }
       
       /*--- Set the flow and adjoint states in the solver ---*/
       

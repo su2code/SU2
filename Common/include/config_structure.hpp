@@ -55,9 +55,10 @@ using namespace std;
  * \author F. Palacios.
  * \version 3.2.7 "eagle"
  */
+
 class CConfig {
 private:
-	unsigned short Kind_SU2; /*!< \brief Kind of SU2 software component. */
+	unsigned short Kind_SU2; /*!< \brief Kind of SU2 software component.*/
 	unsigned short iZone, nZone; /*!< \brief Number of zones in the mesh. */
 	double OrderMagResidual; /*!< \brief Order of magnitude reduction. */
 	double MinLogResidual; /*!< \brief Minimum value of the log residual. */
@@ -66,8 +67,8 @@ private:
   double AdjointLimit; /*!< \brief Adjoint variable limit */
   bool MG_AdjointFlow; /*!< \brief MG with the adjoint flow problem */
   double* Subsonic_Engine_Box; /*!< \brief Coordinates of the box subsonic region */
-	double* Hold_GridFixed_Coord; /*!< \brief Coordinates of the box to hold fixed the nbumerical grid */
-	unsigned short ConvCriteria;	/*!< \brief Kind of convergence criteria. */
+  double* Hold_GridFixed_Coord; /*!< \brief Coordinates of the box to hold fixed the nbumerical grid */
+  unsigned short ConvCriteria;	/*!< \brief Kind of convergence criteria. */
   unsigned short nFFD_Iter; 	/*!< \brief Iteration for the point inversion problem. */
   double FFD_Tol;  	/*!< \brief Tolerance in the point inversion problem. */
 	bool Adjoint,			/*!< \brief Flag to know if the code is solving an adjoint problem. */
