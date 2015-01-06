@@ -202,6 +202,7 @@ def get_headerMap():
                  "CEquivArea"      : "EQUIVALENT_AREA"         ,
                  "CNearFieldOF"    : "NEARFIELD_PRESSURE"      ,
                  "Avg_TotalPress"  : "AVG_TOTAL_PRESSURE"      ,
+                 "FluxAvg_Pressure": "AVG_OUTLET_PRESSURE"     ,
                  "MassFlowRate"    : "MASS_FLOW_RATE"          ,
                  "Time(min)"       : "TIME"         }
     
@@ -230,6 +231,7 @@ optnames_aero = [ "LIFT"                    ,
                   "TORQUE"                  ,
                   "THRUST"                  ,
                   "AVG_TOTAL_PRESSURE"      ,
+                  "AVG_OUTLET_PRESSURE"     ,
                   "MASS_FLOW_RATE"          ,
                   "EQUIVALENT_AREA"         ,
                   "NEARFIELD_PRESSURE"      ,
@@ -425,6 +427,7 @@ def get_adjointSuffix(objective_function=None):
                  "TORQUE"                  : "cq"        ,
                  "FIGURE_OF_MERIT"         : "merit"     ,
                  "AVG_TOTAL_PRESSURE"      : "pt"        ,
+                 "AVG_OUTLET_PRESSURE"     : "pe"        ,
                  "MASS_FLOW_RATE"          : "mfw"       ,
                  "FREE_SURFACE"            : "fs"        }
     

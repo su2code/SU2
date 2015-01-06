@@ -47,7 +47,6 @@
  */
 
 /*!
-
  * \defgroup ConvDiscr Discretization of the convective terms.
  * \brief Group of classes which define the numerical methods for 
  *		  discretizing the convective terms of a Partial Differential Equation. 

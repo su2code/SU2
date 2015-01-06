@@ -495,6 +495,13 @@ int main(int argc, char *argv[]) {
         case MASS_FLOW_RATE :
           if (iDV == 0) Gradient_file << "Mass flow rate grad. using cont. adj."<< endl;
           cout << "Mass flow rate gradient: "<< Gradient << "." << endl; break;
+        case AVG_OUTLET_PRESSURE :
+          if (iDV == 0) Gradient_file << "Average outlet presure grad. using cont. adj."<< endl;
+          cout << "Average outlet pressure gradient: "<< Gradient << "." << endl; break;
+        case AVG_TOTAL_PRESSURE :
+          if (iDV == 0) Gradient_file << "Average total presure grad. using cont. adj."<< endl;
+          cout << "Average total pressure gradient: "<< Gradient << "." << endl; break;
+
 			}
 			
 			Gradient_file << Gradient << endl;
