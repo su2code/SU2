@@ -4275,9 +4275,9 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   
   unsigned short iVar, iDim;
   unsigned long iVertex, iPoint, Point_Normal;
-  double Pressure, P_Exit, Velocity[3], Velocity2;
+  double Pressure, P_Exit, Velocity[3], Velocity2 = 0.0;
   double Density, Height;
-  double Vn, SoundSpeed, Mach_Exit, a1, LevelSet, Vn_Exit,Riemann,Entropy,Density_Outlet = 0.0;
+  double Vn = 0.0, SoundSpeed = 0.0, Mach_Exit, a1 = 0.0, LevelSet, Vn_Exit, Riemann, Entropy, Density_Outlet = 0.0;
   double Area, UnitNormal[3];
   double *V_outlet, *V_domain, *Psi_domain, *Psi_outlet, *Normal;
   double dpterm;
