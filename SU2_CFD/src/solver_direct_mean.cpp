@@ -8006,14 +8006,19 @@ void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_conta
   Exhaust_Temperature  = config->GetExhaust_Temperature_Target(Marker_Tag);
   Exhaust_Temperature /= config->GetTemperature_Ref();
   
+//  /*--- The pressure is given (no iteration is required) ---*/
+//  
+//  Exhaust_Pressure  = config->GetExhaust_Pressure_Target(Marker_Tag);
+//  Exhaust_Pressure /= config->GetPressure_Ref();
+  
   /*--- Loop over all the vertices on this boundary marker ---*/
   
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-
+    
     /*--- Allocate the value at the exhaust ---*/
     
     V_exhaust = GetCharacPrimVar(val_marker, iVertex);
-
+    
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
@@ -8053,9 +8058,9 @@ void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_conta
         Velocity[iDim] = V_domain[iDim+1];
         Velocity2 += Velocity[iDim]*Velocity[iDim];
       }
-      Energy = V_domain[nDim+3] - V_domain[nDim+1]/V_domain[nDim+2];
-      Pressure = V_domain[nDim+1];
-      H_Exhaust     = (Gamma*Gas_Constant/Gamma_Minus_One)*Exhaust_Temperature;
+      Energy      = V_domain[nDim+3] - V_domain[nDim+1]/V_domain[nDim+2];
+      Pressure    = V_domain[nDim+1];
+      H_Exhaust   = (Gamma*Gas_Constant/Gamma_Minus_One)*Exhaust_Temperature;
       SoundSpeed2 = Gamma*Pressure/Density;
 
       /*--- Compute the acoustic Riemann invariant that is extrapolated
@@ -8090,9 +8095,9 @@ void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_conta
       /*--- Solve quadratic equation for velocity magnitude. Value must
        be positive, so the choice of root is clear. ---*/
       
-      dd = bb*bb - 4.0*aa*cc;
-      dd = sqrt(max(0.0,dd));
-      Vel_Mag   = (-bb + dd)/(2.0*aa);
+      dd      = bb*bb - 4.0*aa*cc;
+      dd      = sqrt(max(0.0,dd));
+      Vel_Mag = (-bb + dd)/(2.0*aa);
       
       if (Vel_Mag >= 0.0) {
         
@@ -8101,11 +8106,7 @@ void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_conta
         /*--- Compute speed of sound from total speed of sound eqn. ---*/
         
         SoundSpeed2 = SoundSpeed_Exhaust2 - 0.5*Gamma_Minus_One*Velocity2;
-        
-        /*--- Mach squared (cut between 0-1), use to adapt velocity ---*/
-        
-        Mach2 = Velocity2/SoundSpeed2;
-        Mach2 = min(1.0,Mach2);
+        Mach2       = Velocity2/SoundSpeed2;
         Velocity2   = Mach2*SoundSpeed2;
         Vel_Mag     = sqrt(Velocity2);
         SoundSpeed2 = SoundSpeed_Exhaust2 - 0.5*Gamma_Minus_One*Velocity2;
@@ -8123,7 +8124,7 @@ void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_conta
         
         Pressure = Exhaust_Pressure*pow((Temperature/Exhaust_Temperature),Gamma/Gamma_Minus_One);
         
-        /*--- Density at the inlet from the gas law ---*/
+        /*--- Density at the exhaust from the gas law ---*/
         
         Density = Pressure/(Gas_Constant*Temperature);
         

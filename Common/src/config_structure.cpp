@@ -512,11 +512,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Flow load boundary marker(s) */
   addStringDoubleListOption("MARKER_FLOWLOAD", nMarker_FlowLoad, Marker_FlowLoad, FlowLoad_Value);
   /* DESCRIPTION: Damping factor for engine inlet condition */
-  addDoubleOption("DAMP_ENGINE_INFLOW", Damp_Engine_Inflow, 0.75);
+  addDoubleOption("DAMP_ENGINE_INFLOW", Damp_Engine_Inflow, 0.95);
   /* DESCRIPTION: Damping factor for engine bleed condition */
-  addDoubleOption("DAMP_ENGINE_BLEED", Damp_Engine_Bleed, 0.01);
+  addDoubleOption("DAMP_ENGINE_BLEED", Damp_Engine_Bleed, 0.95);
   /* DESCRIPTION: Damping factor for engine exhaust condition */
-  addDoubleOption("DAMP_ENGINE_EXHAUST", Damp_Engine_Exhaust, 0.75);
+  addDoubleOption("DAMP_ENGINE_EXHAUST", Damp_Engine_Exhaust, 0.95);
   /* DESCRIPTION: Outlet boundary marker(s) over which to calculate 1-D flow properties
    Format: ( outlet marker) */
   addStringListOption("MARKER_OUT_1D", nMarker_Out_1D, Marker_Out_1D);
@@ -616,7 +616,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Maximum number of iterations of the turbulent adjoint linear solver for the implicit formulation */
   addUnsignedShortOption("ADJTURB_LIN_ITER", AdjTurb_Linear_Iter, 10);
   /* DESCRIPTION: Entropy fix factor */
-  addDoubleOption("ENTROPY_FIX_COEFF", EntropyFix_Coeff, 0.0);
+  addDoubleOption("ENTROPY_FIX_COEFF", EntropyFix_Coeff, 0.1);
   
   /* CONFIG_CATEGORY: Convergence*/
   /*--- Options related to convergence ---*/
