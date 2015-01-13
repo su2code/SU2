@@ -8006,10 +8006,10 @@ void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_conta
   Exhaust_Temperature  = config->GetExhaust_Temperature_Target(Marker_Tag);
   Exhaust_Temperature /= config->GetTemperature_Ref();
   
-//  /*--- The pressure is given (no iteration is required) ---*/
-//  
-//  Exhaust_Pressure  = config->GetExhaust_Pressure_Target(Marker_Tag);
-//  Exhaust_Pressure /= config->GetPressure_Ref();
+  /*--- The pressure is given (no iteration is required) ---*/
+  
+  Exhaust_Pressure  = config->GetExhaust_Pressure_Target(Marker_Tag);
+  Exhaust_Pressure /= config->GetPressure_Ref();
   
   /*--- Loop over all the vertices on this boundary marker ---*/
   
