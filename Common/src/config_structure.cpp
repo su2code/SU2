@@ -1340,15 +1340,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     /*--- Store the SU2 module that we are executing. ---*/
     
     Kind_SU2 = val_software;
-    
-    /*--- Only SU2_CFD work with CGNS ---*/
-    
-    if ((Kind_SU2 != SU2_CFD) && (Kind_SU2 != SU2_SOL)) {
-        if (Mesh_FileFormat == CGNS) {
-            cout << "This software is not prepared for CGNS, please switch to SU2" << endl;
-            exit(EXIT_FAILURE);
-        }
-    }
 
     /*--- Make sure that 1D outputs are written when objective function requires ---*/
     if (Kind_ObjFunc== AVG_OUTLET_PRESSURE || Kind_ObjFunc == AVG_TOTAL_PRESSURE){
@@ -1372,11 +1363,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         Design_Variable = new unsigned short [1];
         nDV = 1; Design_Variable[0] = NONE;
     }
-    
-    /*--- If multiple processors the grid should be always in native .su2 format ---*/
-    
-    if ((size > SINGLE_NODE) && ((Kind_SU2 == SU2_CFD) || (Kind_SU2 == SU2_SOL))) Mesh_FileFormat = SU2;
-    
+  
     /*--- Don't divide the numerical grid unless running SU2_DEF ---*/
     
     if (Kind_SU2 != SU2_DEF) Divide_Element = false;
