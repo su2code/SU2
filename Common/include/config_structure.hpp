@@ -932,6 +932,11 @@ public:
 	 * \brief Constructor of the class which reads the input file.
 	 */
 	CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software);
+  
+  /*!
+   * \brief Constructor of the class which reads the input file.
+   */
+  CConfig(char case_filename[MAX_STRING_SIZE], CConfig *config);
 
 	/*!
 	 * \brief Destructor of the class.
@@ -952,12 +957,6 @@ public:
 	 */
 	bool TokenizeString(string & str, string & option_name,
 			vector<string> & option_value);
-
-	/*!
-	 * \brief Get information about whether this is a Python config option for design.
-	 * \return <code>TRUE</code> if this is a Python config option for design; otherwise <code>FALSE</code>.
-	 */
-//	bool GetPython_Option(string & option_name);
 
 	/*!
 	 * \brief Get reference origin for moment computation.
@@ -4888,10 +4887,20 @@ public:
 	void SetConfig_Options(unsigned short val_iZone, unsigned short val_nZone);
 
   /*!
+   * \brief Set the config options.
+   */
+  void SetRunTime_Options(void);
+
+  /*!
 	 * \brief Set the config file parsing.
 	 */
-  void SetParsing(char case_filename[MAX_STRING_SIZE]);
+  void SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]);
 
+  /*!
+   * \brief Set the config file parsing.
+   */
+  bool SetRunTime_Parsing(char case_filename[MAX_STRING_SIZE]);
+  
 	/*!
 	 * \brief Config file postprocessing.
 	 */

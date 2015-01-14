@@ -40,6 +40,7 @@ int main(int argc, char *argv[]) {
   unsigned long ExtIter = 0;
   unsigned short iMesh, iZone, iSol, nZone, nDim;
   char config_file_name[MAX_STRING_SIZE];
+  char runtime_file_name[MAX_STRING_SIZE];
   ofstream ConvHist_file;
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
@@ -404,8 +405,14 @@ int main(int argc, char *argv[]) {
                                 geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
     }
     
-    /*--- Update the convergence history file (serial and parallel computations). ---*/
+    /*--- Check if there is any change in the runtime parameters ---*/
     
+    CConfig *runtime = NULL;
+    strcpy(runtime_file_name, "runtime.dat");
+    runtime = new CConfig(runtime_file_name, config_container[ZONE_0]);
+    
+    /*--- Update the convergence history file (serial and parallel computations). ---*/
+
     output->SetConvergence_History(&ConvHist_file, geometry_container, solver_container,
                                    config_container, integration_container, false, UsedTime, ZONE_0);
     
@@ -433,7 +440,7 @@ int main(int argc, char *argv[]) {
      after the current iteration, and if so, execute the output file writing
      routines. ---*/
     
-    if ((ExtIter+1 == config_container[ZONE_0]->GetnExtIter()) ||
+    if ((ExtIter+1 >= config_container[ZONE_0]->GetnExtIter()) ||
         ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq() == 0) && (ExtIter != 0) &&
          !((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
            (config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND))) ||
