@@ -604,13 +604,7 @@ int main(int argc, char *argv[]) {
 			Gradient_file.close();
     
 	}
-	
-  /*--- Finalize MPI parallelization ---*/
-	
-#ifdef HAVE_MPI
-	MPI_Finalize();
-#endif
-	
+		
   /*--- Deallocate memory ---*/
   
   delete [] Xcoord_Airfoil;
