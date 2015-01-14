@@ -91,16 +91,6 @@ unsigned short GetnDim(string val_mesh_filename, unsigned short val_format) {
   char cstr[200];
   string::size_type position;
   
-#ifdef HAVE_MPI
-  int size;
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-  if (size != 1) {
-    unsigned short lastindex = val_mesh_filename.find_last_of(".");
-    val_mesh_filename = val_mesh_filename.substr(0, lastindex);
-    val_mesh_filename = val_mesh_filename + "_1.su2";
-  }
-#endif
-  
   /*--- Open grid file ---*/
   
   strcpy (cstr, val_mesh_filename.c_str());
