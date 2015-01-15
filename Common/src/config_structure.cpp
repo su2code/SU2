@@ -3369,7 +3369,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   
   cout << endl << "-------------------------------------------------------------------------" << endl;
   cout << "|    ___ _   _ ___                                                      |" << endl;
-  cout << "|   / __| | | |_  )   Release 3.2.7.1 \"eagle\"                             |" << endl;
+  cout << "|   / __| | | |_  )   Release 3.2.7.1 \"eagle\"                           |" << endl;
   cout << "|   \\__ \\ |_| |/ /                                                      |" << endl;
   switch (val_software) {
     case SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;
