@@ -1,5 +1,5 @@
 # SU2 autoconf file
-# SU2 v3.2.7 "eagle"
+# SU2 v3.2.7.1 "eagle"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -10,7 +10,7 @@
 #                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
 #                 Prof. Rafael Palacios' group at Imperial College London.
 #
-# Copyright (C) 2012-2014 SU2, the open-source CFD code.
+# Copyright (C) 2012-2015 SU2, the open-source CFD code.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -37,7 +37,7 @@
 #
 ######################################################################################
 
-AC_INIT([SU2], [3.2.7], [su2code-dev@lists.stanford.edu],
+AC_INIT([SU2], [3.2.7.1], [su2code-dev@lists.stanford.edu],
         [SU2], [https://github.com/su2code])
 AC_PREREQ([2.59])
 AC_CONFIG_MACRO_DIR([m4])
@@ -361,7 +361,7 @@ AC_MSG_RESULT([
 
 -------------------------------------------------------------------------
 |    ___ _   _ ___                                                      |
-|   / __| | | |_  )   Release 3.2.7 'eagle'                             |
+|   / __| | | |_  )   Release 3.2.7.1 'eagle'                             |
 |   \\__ \\ |_| |/ /                                                      |
 |   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |
 |                                                                       |
@@ -376,7 +376,7 @@ AC_MSG_RESULT([
 | - Prof. Alberto Guardone's group at Polytechnic University of Milan.  |
 | - Prof. Rafael Palacios' group at Imperial College London.            |
 -------------------------------------------------------------------------
-| Copyright (C) 2012-2014 SU2, the open-source CFD code.                |
+| Copyright (C) 2012-2015 SU2, the open-source CFD code.                |
 |                                                                       |
 | SU2 is free software; you can redistribute it and/or                  |
 | modify it under the terms of the GNU Lesser General Public            |

@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines used by SU2_CFD.
  *        The subroutines and functions are in the <i>definition_structure.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 3.2.7 "eagle"
+ * \version 3.2.7.1 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
