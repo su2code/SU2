@@ -2507,7 +2507,9 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   
   unsigned short *nDim_s = new unsigned short[size];
   unsigned short *nDim_r = new unsigned short[size];
-  
+  unsigned short *nZone_s = new unsigned short[size];
+  unsigned short *nZone_r = new unsigned short[size];
+
   unsigned long *nPointTotal_s       = new unsigned long[size];
   unsigned long *nPointDomainTotal_s = new unsigned long[size];
   unsigned long *nPointGhost_s       = new unsigned long[size];
@@ -2519,7 +2521,6 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   unsigned long *nElemHexahedron_s   = new unsigned long[size];
   unsigned long *nElemWedge_s        = new unsigned long[size];
   unsigned long *nElemPyramid_s      = new unsigned long[size];
-  unsigned long *nZone_s             = new unsigned long[size];
 
   unsigned long *nPointTotal_r       = new unsigned long[size];
   unsigned long *nPointDomainTotal_r = new unsigned long[size];
@@ -2532,7 +2533,6 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   unsigned long *nElemHexahedron_r   = new unsigned long[size];
   unsigned long *nElemWedge_r        = new unsigned long[size];
   unsigned long *nElemPyramid_r      = new unsigned long[size];
-  unsigned long *nZone_r             = new unsigned long[size];
   
   unsigned long nPointTotal_r_tot=0;
   unsigned long nPointDomainTotal_r_tot=0;
@@ -2750,7 +2750,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
 #ifdef HAVE_MPI
   MPI_Barrier(MPI_COMM_WORLD);
 #endif
-  cout << " ==== Rank " << rank << " starting first send " << endl;
+//  cout << " ==== Rank " << rank << " starting first send " << endl;
   
   /*--- This loop gets the array sizes of points, elements, etc. for each
    rank to send to each other rank. ---*/
@@ -3029,11 +3029,11 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
            first and then receiving the values from it. ---*/
           
           MPI_Probe(jDomain, 13*rank+0, MPI_COMM_WORLD, &status2);
-          MPI_Recv(&nDim_r[jDomain], 1, MPI_UNSIGNED_LONG, jDomain,
+          MPI_Recv(&nDim_r[jDomain], 1, MPI_UNSIGNED_SHORT, jDomain,
                    rank*13+0, MPI_COMM_WORLD, &status2);
           
           MPI_Probe(jDomain, 13*rank+1, MPI_COMM_WORLD, &status2);
-          MPI_Recv(&nZone_r[jDomain], 1, MPI_UNSIGNED_LONG, jDomain,
+          MPI_Recv(&nZone_r[jDomain], 1, MPI_UNSIGNED_SHORT, jDomain,
                    rank*13+1, MPI_COMM_WORLD, &status2);
           
           MPI_Probe(jDomain, 13*rank+2, MPI_COMM_WORLD, &status2);
@@ -3100,17 +3100,23 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
       }
       
     }
-    
+  }
+  
+    for (iDomain = 0; iDomain < nDomain; iDomain++) {
+
     /*--- Wait for the non-blocking sends to complete. ---*/
     
 #ifdef HAVE_MPI
     if (rank != iDomain) MPI_Waitall(13, send_req, send_stat);
-#endif
-    
-#ifdef HAVE_MPI
     MPI_Barrier(MPI_COMM_WORLD);
 #endif
-    cout << " ==== Rank " << rank << " finished sending counts " << endl;
+//    cout << " ==== Rank " << rank << " finished sending counts " << endl;
+    
+    
+    }
+    
+  for (iDomain = 0; iDomain < nDomain; iDomain++) {
+
     
     /*--- Above was number of elements to send and receive, and here is where
      we send/recv the actual elements. Here you're sending global index values,
@@ -3447,7 +3453,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
 #ifdef HAVE_MPI
   MPI_Barrier(MPI_COMM_WORLD);
 #endif
-  cout << " ==== Rank " << rank << " sent all point elem data " << endl;
+//  cout << " ==== Rank " << rank << " sent all point elem data " << endl;
   
   /*--- The next section begins the recv of all data for the interior 
    points/elements in the mesh. First, create the domain structures for 
@@ -3623,7 +3629,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   }
   
 
-  cout << " ==== Rank " << rank << " recv of point data finished" << endl;
+//  cout << " ==== Rank " << rank << " recv of point data finished" << endl;
 #ifdef HAVE_MPI
   MPI_Barrier(MPI_COMM_WORLD);
 #endif
@@ -3791,7 +3797,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
 #ifdef HAVE_MPI
   MPI_Barrier(MPI_COMM_WORLD);
 #endif
-  cout << " ==== Rank " << rank << " about to recv all elem data " << endl;
+//  cout << " ==== Rank " << rank << " about to recv all elem data " << endl;
   
   /*--- iElem now contains the number of elements that this processor needs in
    total. Now we can complete the recv of the element connectivity and only 
@@ -3884,7 +3890,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
       /*--- Wait to complete the above sends ---*/
       
       //if  (rank!=iDomain)  MPI_Waitall(7, &send_req[3], &send_stat[3]);
-      cout << " ==== Rank " << rank << " recv from " << iDomain << " would be waiting here... " << endl;
+ //     cout << " ==== Rank " << rank << " recv from " << iDomain << " would be waiting here... " << endl;
 
       /*--- Allocating the elements after the recv. Note that here we are 
        reusing the presence arrays to make sure that we find the exact same
@@ -4075,6 +4081,15 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
     }
   }
   
+
+  
+#ifdef HAVE_MPI
+  for (iDomain = 0; iDomain < size; iDomain++) {
+    if (rank != iDomain) MPI_Waitall(16, send_req, send_stat);
+  }
+  MPI_Barrier(MPI_COMM_WORLD);
+#endif
+  
   /*--- Free all of the memory used for communicating points and elements ---*/
   
   delete[] Buffer_Send_Coord;
@@ -4105,6 +4120,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   delete[] Local_to_global_Wedge;
   delete[] Local_to_global_Pyramid;
 
+  
   /*--- Communicate the number of each element type to all processors. These
    values are important for merging and writing output later. ---*/
   
@@ -4208,7 +4224,11 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   delete [] Wedge_presence;
   delete [] Pyramid_presence;
   
-  cout << " Rank " << rank << " about to start markers " << endl;
+  
+  
+  
+//  cout << " Rank " << rank << " about to start markers " << endl;
+
   /*--- Now partition the boundary elements on the markers. Note that, for
    now, we are still performing the boundary partitioning using the master
    node alone. The boundaries should make up a much smaller portion of the
@@ -4248,10 +4268,12 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
     
   }
   
-  cout << " Rank " << rank << " 1 " << endl;
+//  cout << " Rank " << rank << " 1 " << endl;
 
   
   for (iDomain = 0; iDomain < nDomain; iDomain++) {
+    
+
     
     if (rank == MASTER_NODE) {
       
@@ -4410,8 +4432,8 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
       
       if (iDomain != MASTER_NODE) {
         
-        cout << " Rank " << rank << " iDomain " << iDomain << endl;
-
+ //       cout << " Rank " << rank << " iDomain " << iDomain << endl;
+        
 #ifdef HAVE_MPI
         
         MPI_Isend(&Buffer_Send_nBoundLineTotal, 1,
@@ -4515,7 +4537,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
           nBoundRectangle[iMarker] = Buffer_Send_nBoundRectangle[iMarker];
           Marker_All_SendRecv[iMarker] = Buffer_Send_Marker_All_SendRecv[iMarker];
           for (iter = 0; iter < MAX_STRING_SIZE; iter++)
-          Marker_All_TagBound[iMarker*MAX_STRING_SIZE+iter] = Buffer_Send_Marker_All_TagBound[iMarker*MAX_STRING_SIZE+iter];
+            Marker_All_TagBound[iMarker*MAX_STRING_SIZE+iter] = Buffer_Send_Marker_All_TagBound[iMarker*MAX_STRING_SIZE+iter];
         }
         
         Buffer_Receive_Center    = new double[nPeriodic*3];
@@ -4541,8 +4563,13 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
     
     /*--- Each rank now begins to receive information from the master ---*/
     
-    cout << " Rank " << rank << " send complete " << endl;
+    
+  
+//  cout << " Rank " << rank << " send complete " << endl;
 
+
+
+    
     if (rank == iDomain) {
       
       /*--- First, receive the size of buffers before receiving the data ---*/
@@ -4595,7 +4622,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
         MPI_Get_count(&status, MPI_SHORT, &recv_count);
         MPI_Recv(Marker_All_SendRecv, recv_count, MPI_SHORT,
                  MASTER_NODE, 8, MPI_COMM_WORLD, &status);
-
+        
         MPI_Probe(MASTER_NODE, 9, MPI_COMM_WORLD, &status);
         MPI_Get_count(&status, MPI_CHAR, &recv_count);
         MPI_Recv(Marker_All_TagBound, recv_count, MPI_CHAR,
@@ -4610,13 +4637,13 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
         
         /*--- Marker_All_TagBound and Marker_All_SendRecv, set the same
          values in the config files of all the files ---*/
-
+        
         for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
           config->SetMarker_All_SendRecv(iMarker,
                                          Marker_All_SendRecv[iMarker]);
           config->SetMarker_All_TagBound(iMarker,
                                          string(&Marker_All_TagBound[iMarker*MAX_STRING_SIZE]));
-          cout << " **** Rank " << rank << " markers: " << string(&Marker_All_TagBound[iMarker*MAX_STRING_SIZE]) << endl;
+//          cout << " **** Rank " << rank << " markers: " << string(&Marker_All_TagBound[iMarker*MAX_STRING_SIZE]) << endl;
         }
         
         
@@ -4704,9 +4731,10 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
       Buffer_Receive_ReceivedDomain_PeriodicDonor = new unsigned long[nTotalReceivedDomain_Periodic];
       
     }
+    
 
-    cout << " &&&& Rank " << rank << " about to start bound elems " << endl;
-           
+//    cout << " &&&& Rank " << rank << " about to start bound elems " << endl;
+    
     /*--- Set the value of the Send buffers ---*/
     
     if (rank == MASTER_NODE) {
@@ -4883,16 +4911,16 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
         /*--- Copy the data directly from our own rank ---*/
         
         for (iter = 0; iter < Buffer_Send_nBoundLineTotal*N_POINTS_LINE; iter++)
-        Buffer_Receive_BoundLine[iter] =  Buffer_Send_BoundLine[iter];
+          Buffer_Receive_BoundLine[iter] =  Buffer_Send_BoundLine[iter];
         
         for (iter = 0; iter < Buffer_Send_nBoundTriangleTotal*N_POINTS_TRIANGLE; iter++)
-        Buffer_Receive_BoundTriangle[iter] =  Buffer_Send_BoundTriangle[iter];
+          Buffer_Receive_BoundTriangle[iter] =  Buffer_Send_BoundTriangle[iter];
         
         for (iter = 0; iter < Buffer_Send_nBoundRectangleTotal*N_POINTS_QUADRILATERAL; iter++)
-        Buffer_Receive_BoundRectangle[iter] =  Buffer_Send_BoundRectangle[iter];
+          Buffer_Receive_BoundRectangle[iter] =  Buffer_Send_BoundRectangle[iter];
         
         for (iter = 0; iter < Buffer_Send_nMarkerDomain; iter++)
-        Buffer_Receive_Local2Global_Marker[iter] =  Buffer_Send_Local2Global_Marker[iter];
+          Buffer_Receive_Local2Global_Marker[iter] =  Buffer_Send_Local2Global_Marker[iter];
         
         for (iter = 0; iter < Buffer_Send_nTotalSendDomain_Periodic; iter++) {
           Buffer_Receive_SendDomain_Periodic[iter] = Buffer_Send_SendDomain_Periodic[iter];
@@ -4922,7 +4950,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
       
     }
     
-    cout << " Rank " << rank << " about to recv of bound elems " << endl;
+//    cout << " Rank " << rank << " about to recv of bound elems " << endl;
     
     if (rank == iDomain) {
       
@@ -4996,11 +5024,11 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
       short *SendRecv_Copy   = new short[MAX_NUMBER_MARKER];
       
       for (iMarker = 0; iMarker < nMarker; iMarker++)
-      nElem_Bound[iMarker] = nVertexDomain[iMarker];
+        nElem_Bound[iMarker] = nVertexDomain[iMarker];
       
       bound = new CPrimalGrid**[nMarker+(overhead*nDomain)];
       for (iMarker = 0; iMarker < nMarker; iMarker++)
-      bound[iMarker] = new CPrimalGrid*[nElem_Bound[iMarker]];
+        bound[iMarker] = new CPrimalGrid*[nElem_Bound[iMarker]];
       
       /*--- Initialize boundary element counters ---*/
       iBoundLineTotal      = 0;
@@ -5117,15 +5145,18 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
       delete[] Buffer_Receive_ReceivedDomain_PeriodicDonor;
       
     }
+    
+    
   }
-
+  
   /*--- The MASTER should wait for the sends above to complete ---*/
-
+  
 #ifdef HAVE_MPI
+//  cout << " ==== Rank " << rank << " cleaning up... " << endl;
+
   MPI_Barrier(MPI_COMM_WORLD);
 #endif
-  cout << " ==== Rank " << rank << " cleaning up... " << endl;
-
+  
   /*--- Set the value of Marker_All_SendRecv and Marker_All_TagBound in the config structure ---*/
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -5187,7 +5218,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
     delete [] Marker_All_TagBound_Copy;
     delete [] Global_to_Local_Point;
     for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
-    delete VertexIn[iMarker];
+      delete VertexIn[iMarker];
     delete[] VertexIn;
   }
   
@@ -5206,7 +5237,14 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   delete [] Buffer_Send_nBoundRectangle;
   delete [] Buffer_Send_Marker_All_SendRecv;
   
+  
+//  MPI_Abort(MPI_COMM_WORLD,1);
+//  MPI_Finalize();
+
 }
+
+
+
 
 CPhysicalGeometry::~CPhysicalGeometry(void) {
   
