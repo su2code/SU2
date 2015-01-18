@@ -2449,14 +2449,20 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   
   /*--- MPI initialization ---*/
   
-  MPI_Status status;
   MPI_Comm_size(MPI_COMM_WORLD,&size);
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);
   
   /*--- MPI status and request arrays for non-blocking communications ---*/
   
-  MPI_Status send_stat[31], recv_stat[31];
-  MPI_Request send_req[31], recv_req[31];
+  MPI_Status status, status2;
+  unsigned long source;
+  int recv_count=0;
+
+  MPI_Status *send_stat = new MPI_Status[size];
+  MPI_Status *recv_stat = new MPI_Status[size];
+  
+  MPI_Request *send_req = new MPI_Request[size];
+  MPI_Request *recv_req = new MPI_Request[size];
   
 #endif
   
@@ -2708,7 +2714,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
     local_colour_temp[i]=geometry->node[i]->GetColor();
     local_colour_values[geometry->starting_node[rank]+i]=local_colour_temp[i];
   }
-  
+
   /*--- Communicate the grid coloring to all partitions. This information
    will be repeatedly used throughout the organization of the partitions
    and sorting out their ghost points/elements. ---*/
@@ -2723,22 +2729,19 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
       comm_counter++;
     }
   }
-  
-  MPI_Status status2;
-  unsigned long source;
+
   unsigned long*recv_buffer;
-  int recv_count=0;
   for(iDomain=0;iDomain<size-1;iDomain++) {
     MPI_Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status2);
     source = status2.MPI_SOURCE;
     MPI_Get_count(&status2, MPI_UNSIGNED_LONG, &recv_count);
     MPI_Recv(&local_colour_values[geometry->starting_node[source]], recv_count,
-             MPI_UNSIGNED_LONG, source, rank,MPI_COMM_WORLD, &status2);
+             MPI_UNSIGNED_LONG, source, rank, MPI_COMM_WORLD, &status2);
   }
   
   /*--- Wait for the sends to complete (will be true since we're using 
    blocking recv's above. ---*/
-  
+
   MPI_Waitall(size-1, send_req, send_stat);
 
 #endif
@@ -2750,7 +2753,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
 #ifdef HAVE_MPI
   MPI_Barrier(MPI_COMM_WORLD);
 #endif
-//  cout << " ==== Rank " << rank << " starting first send " << endl;
+  //cout << " ==== Rank " << rank << " starting first send " << endl;
   
   /*--- This loop gets the array sizes of points, elements, etc. for each
    rank to send to each other rank. ---*/
@@ -3110,7 +3113,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
     if (rank != iDomain) MPI_Waitall(13, send_req, send_stat);
     MPI_Barrier(MPI_COMM_WORLD);
 #endif
-//    cout << " ==== Rank " << rank << " finished sending counts " << endl;
+      //cout << " ==== Rank " << rank << " finished sending counts " << endl;
     
     
     }
@@ -3453,7 +3456,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
 #ifdef HAVE_MPI
   MPI_Barrier(MPI_COMM_WORLD);
 #endif
-//  cout << " ==== Rank " << rank << " sent all point elem data " << endl;
+  //cout << " ==== Rank " << rank << " sent all point elem data " << endl;
   
   /*--- The next section begins the recv of all data for the interior 
    points/elements in the mesh. First, create the domain structures for 
@@ -3629,7 +3632,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   }
   
 
-//  cout << " ==== Rank " << rank << " recv of point data finished" << endl;
+  //cout << " ==== Rank " << rank << " recv of point data finished" << endl;
 #ifdef HAVE_MPI
   MPI_Barrier(MPI_COMM_WORLD);
 #endif
@@ -3797,7 +3800,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
 #ifdef HAVE_MPI
   MPI_Barrier(MPI_COMM_WORLD);
 #endif
-//  cout << " ==== Rank " << rank << " about to recv all elem data " << endl;
+  //cout << " ==== Rank " << rank << " about to recv all elem data " << endl;
   
   /*--- iElem now contains the number of elements that this processor needs in
    total. Now we can complete the recv of the element connectivity and only 
@@ -3890,7 +3893,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
       /*--- Wait to complete the above sends ---*/
       
       //if  (rank!=iDomain)  MPI_Waitall(7, &send_req[3], &send_stat[3]);
- //     cout << " ==== Rank " << rank << " recv from " << iDomain << " would be waiting here... " << endl;
+      //cout << " ==== Rank " << rank << " recv from " << iDomain << " would be waiting here... " << endl;
 
       /*--- Allocating the elements after the recv. Note that here we are 
        reusing the presence arrays to make sure that we find the exact same
@@ -4081,8 +4084,6 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
     }
   }
   
-
-  
 #ifdef HAVE_MPI
   for (iDomain = 0; iDomain < size; iDomain++) {
     if (rank != iDomain) MPI_Waitall(16, send_req, send_stat);
@@ -4132,7 +4133,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
 #endif
 
   if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
-  cout << Global_nElem << " interior elements including halo cells. " << endl;
+    cout << Global_nElem << " interior elements including halo cells. " << endl;
   
   /*--- Store total number of each element type after incrementing the
    counters in the recv loop above (to make sure there aren't repeats). ---*/
@@ -4175,12 +4176,12 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   /*--- Print information about the elements to the console ---*/
   
   if (rank == MASTER_NODE) {
-    if (Global_nelem_triangle > 0)  cout << Global_nelem_triangle << " triangles." << endl;
-    if (Global_nelem_quad > 0)      cout << Global_nelem_quad << " quadrilaterals." << endl;
-    if (Global_nelem_tetra > 0)     cout << Global_nelem_tetra << " tetrahedra." << endl;
-    if (Global_nelem_hexa > 0)      cout << Global_nelem_hexa << " hexahedra." << endl;
-    if (Global_nelem_wedge > 0)     cout << Global_nelem_wedge << " prisms." << endl;
-    if (Global_nelem_pyramid > 0)   cout << Global_nelem_pyramid << " pyramids." << endl;
+    if (Global_nelem_triangle > 0)  cout << Global_nelem_triangle << " triangles."      << endl;
+    if (Global_nelem_quad > 0)      cout << Global_nelem_quad     << " quadrilaterals." << endl;
+    if (Global_nelem_tetra > 0)     cout << Global_nelem_tetra    << " tetrahedra."     << endl;
+    if (Global_nelem_hexa > 0)      cout << Global_nelem_hexa     << " hexahedra."      << endl;
+    if (Global_nelem_wedge > 0)     cout << Global_nelem_wedge    << " prisms."         << endl;
+    if (Global_nelem_pyramid > 0)   cout << Global_nelem_pyramid  << " pyramids."       << endl;
   }
   
   /*--- Recompute the number of points that this rank owns, as well
@@ -4223,11 +4224,8 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   delete [] Hexahedron_presence;
   delete [] Wedge_presence;
   delete [] Pyramid_presence;
-  
-  
-  
-  
-//  cout << " Rank " << rank << " about to start markers " << endl;
+
+  //cout << " Rank " << rank << " about to start markers " << endl;
 
   /*--- Now partition the boundary elements on the markers. Note that, for
    now, we are still performing the boundary partitioning using the master
@@ -4243,7 +4241,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
     VertexIn = new bool*[geometry->GetnMarker()];
     
     for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
-      VertexIn[iMarker] = new bool [geometry->GetnElem_Bound(iMarker)];
+      VertexIn[iMarker] = new bool[geometry->GetnElem_Bound(iMarker)];
     
     Buffer_Send_nDim      = geometry->GetnDim();
     Buffer_Send_nZone     = geometry->GetnZone();
@@ -4268,12 +4266,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
     
   }
   
-//  cout << " Rank " << rank << " 1 " << endl;
-
-  
   for (iDomain = 0; iDomain < nDomain; iDomain++) {
-    
-
     
     if (rank == MASTER_NODE) {
       
@@ -4432,7 +4425,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
       
       if (iDomain != MASTER_NODE) {
         
- //       cout << " Rank " << rank << " iDomain " << iDomain << endl;
+        //cout << " Rank " << rank << " iDomain " << iDomain << endl;
         
 #ifdef HAVE_MPI
         
@@ -4510,7 +4503,9 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
         
         /*--- Wait for this set of non-blocking comm. to complete ---*/
         
+        
         MPI_Waitall(18, send_req, send_stat);
+        //cout << " Rank " << rank << " iDomain " << iDomain << " just waited for first sends" << endl;
         
 #endif
         
@@ -4565,7 +4560,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
     
     
   
-//  cout << " Rank " << rank << " send complete " << endl;
+    //cout << " Rank " << rank << " send complete " << endl;
 
 
 
@@ -4643,7 +4638,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
                                          Marker_All_SendRecv[iMarker]);
           config->SetMarker_All_TagBound(iMarker,
                                          string(&Marker_All_TagBound[iMarker*MAX_STRING_SIZE]));
-//          cout << " **** Rank " << rank << " markers: " << string(&Marker_All_TagBound[iMarker*MAX_STRING_SIZE]) << endl;
+          //cout << " **** Rank " << rank << " markers: " << string(&Marker_All_TagBound[iMarker*MAX_STRING_SIZE]) << endl;
         }
         
         
@@ -4733,7 +4728,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
     }
     
 
-//    cout << " &&&& Rank " << rank << " about to start bound elems " << endl;
+    //cout << " &&&& Rank " << rank << " about to start bound elems " << endl;
     
     /*--- Set the value of the Send buffers ---*/
     
@@ -4950,7 +4945,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
       
     }
     
-//    cout << " Rank " << rank << " about to recv of bound elems " << endl;
+    //cout << " Rank " << rank << " about to recv of bound elems " << endl;
     
     if (rank == iDomain) {
       
@@ -5152,7 +5147,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   /*--- The MASTER should wait for the sends above to complete ---*/
   
 #ifdef HAVE_MPI
-//  cout << " ==== Rank " << rank << " cleaning up... " << endl;
+  //cout << " ==== Rank " << rank << " cleaning up... " << endl;
 
   MPI_Barrier(MPI_COMM_WORLD);
 #endif
@@ -5237,9 +5232,12 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   delete [] Buffer_Send_nBoundRectangle;
   delete [] Buffer_Send_Marker_All_SendRecv;
   
-  
-//  MPI_Abort(MPI_COMM_WORLD,1);
-//  MPI_Finalize();
+#ifdef HAVE_MPI
+  delete [] send_stat;
+  delete [] recv_stat;
+  delete [] send_req;
+  delete [] recv_req;
+#endif
 
 }
 
