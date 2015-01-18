@@ -2458,11 +2458,12 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   unsigned long source;
   int recv_count=0;
 
-  MPI_Status *send_stat = new MPI_Status[size];
-  MPI_Status *recv_stat = new MPI_Status[size];
+  int offset = 17;
+  MPI_Status *send_stat = new MPI_Status[offset+size];
+  MPI_Status *recv_stat = new MPI_Status[offset+size];
   
-  MPI_Request *send_req = new MPI_Request[size];
-  MPI_Request *recv_req = new MPI_Request[size];
+  MPI_Request *send_req = new MPI_Request[offset+size];
+  MPI_Request *recv_req = new MPI_Request[offset+size];
   
 #endif
   
