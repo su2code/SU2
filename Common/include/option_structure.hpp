@@ -2473,11 +2473,11 @@ class COptionActuatorDisk : public COptionBase{
   double ** & origin;
   double * & root_radius;
   double * & tip_radius;
-  double * & ct;
+  double * & press_jump;
   double * & omega;
 
 public:
-  COptionActuatorDisk(const string name, unsigned short & nMarker_ActDisk_Inlet, unsigned short & nMarker_ActDisk_Outlet, string * & Marker_ActDisk_Inlet, string * & Marker_ActDisk_Outlet, double ** & ActDisk_Origin, double * & ActDisk_RootRadius, double * & ActDisk_TipRadius, double * & ActDisk_CT, double * & ActDisk_Omega) : inlet_size(nMarker_ActDisk_Inlet),outlet_size(nMarker_ActDisk_Outlet), marker_inlet(Marker_ActDisk_Inlet), marker_outlet(Marker_ActDisk_Outlet), origin(ActDisk_Origin), root_radius(ActDisk_RootRadius), tip_radius(ActDisk_TipRadius), ct(ActDisk_CT), omega(ActDisk_Omega) {
+  COptionActuatorDisk(const string name, unsigned short & nMarker_ActDisk_Inlet, unsigned short & nMarker_ActDisk_Outlet, string * & Marker_ActDisk_Inlet, string * & Marker_ActDisk_Outlet, double ** & ActDisk_Origin, double * & ActDisk_RootRadius, double * & ActDisk_TipRadius, double * & ActDisk_PressJump, double * & ActDisk_Omega) : inlet_size(nMarker_ActDisk_Inlet),outlet_size(nMarker_ActDisk_Outlet), marker_inlet(Marker_ActDisk_Inlet), marker_outlet(Marker_ActDisk_Outlet), origin(ActDisk_Origin), root_radius(ActDisk_RootRadius), tip_radius(ActDisk_TipRadius), press_jump(ActDisk_PressJump), omega(ActDisk_Omega) {
     this->name = name;
   }
 
@@ -2505,7 +2505,7 @@ public:
     this->marker_outlet = new string[this->outlet_size];
     this->root_radius = new double[this->inlet_size];
     this->tip_radius = new double[this->inlet_size];
-    this->ct = new double[this->outlet_size];
+    this->press_jump = new double[this->outlet_size];
     this->omega = new double[this->inlet_size];
 
     this->origin = new double*[this->inlet_size];
@@ -2539,7 +2539,7 @@ public:
         return badValue(option_value, tname, this->name);
       }
       istringstream ss_6th(option_value[mod_num*i + 7]);
-      if (!(ss_6th >> this->ct[i])){
+      if (!(ss_6th >> this->press_jump[i])){
         return badValue(option_value, tname, this->name);
       }
       istringstream ss_7th(option_value[mod_num*i + 8]);
@@ -2557,7 +2557,7 @@ public:
     this->origin = NULL;
     this->root_radius = NULL;
     this->tip_radius = NULL;
-    this->ct = NULL;
+    this->press_jump = NULL;
     this->omega = NULL;
   }
 };

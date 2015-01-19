@@ -2890,11 +2890,16 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   bool incompressible   = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface      = (config->GetKind_Regime() == FREESURFACE);
   bool engine           = ((config->GetnMarker_EngineInflow() != 0) || (config->GetnMarker_EngineBleed() != 0) || (config->GetnMarker_EngineExhaust() != 0));
+  bool actuator_disk    = ((config->GetnMarker_ActDisk_Inlet() != 0) || (config->GetnMarker_ActDisk_Outlet() != 0));
   bool fixed_cl         = config->GetFixed_CL_Mode();
 
-  /*--- Compute nacelle inflow and exhaust properties ---*/
+  /*--- Compute the engine properties ---*/
 
   if (engine) { GetEngine_Properties(geometry, config, iMesh, Output); }
+
+  /*--- Compute the actuator disk properties ---*/
+  
+  if (actuator_disk) { GetActuatorDisk_Properties(geometry, config, iMesh, Output); }
 
   /*--- Update the angle of attack at the far-field for fixed CL calculations. ---*/
 
@@ -5795,6 +5800,333 @@ void CEulerSolver::GetEngine_Properties(CGeometry *geometry, CConfig *config, un
 
 }
 
+void CEulerSolver::GetActuatorDisk_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) {
+  
+  unsigned short iDim, iMarker;
+  unsigned long iVertex, iPoint;
+  double Pressure, Temperature, Velocity[3], Velocity2, MassFlow, Density, Energy, Area;
+  unsigned short iMarker_ActDiskInlet, iMarker_ActDiskOutlet;
+  
+  double Gas_Constant = config->GetGas_ConstantND();
+  
+  unsigned short nMarker_ActDiskInlet = config->GetnMarker_ActDisk_Inlet();
+  unsigned short nMarker_ActDiskOutlet = config->GetnMarker_ActDisk_Outlet();
+  
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+  
+  double *Inlet_MassFlow = new double [config->GetnMarker_All()];
+  double *Inlet_Pressure = new double [config->GetnMarker_All()];
+  double *Inlet_Temperature = new double [config->GetnMarker_All()];
+  double *Inlet_Area = new double [config->GetnMarker_All()];
+
+  double *Outlet_MassFlow = new double [config->GetnMarker_All()];
+  double *Outlet_Pressure = new double [config->GetnMarker_All()];
+  double *Outlet_Temperature = new double [config->GetnMarker_All()];
+  double *Outlet_Area = new double [config->GetnMarker_All()];
+  
+  /*--- Compute the numerical fan face Mach number, and the total area of the inflow ---*/
+  
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    
+    Inlet_MassFlow[iMarker] = 0.0;
+    Inlet_Pressure[iMarker] = 0.0;
+    Inlet_Temperature[iMarker] = 0.0;
+    Inlet_Area[iMarker] = 0.0;
+    
+    Outlet_MassFlow[iMarker] = 0.0;
+    Outlet_Pressure[iMarker] = 0.0;
+    Outlet_Temperature[iMarker] = 0.0;
+    Outlet_Area[iMarker] = 0.0;
+    
+    if (config->GetMarker_All_KindBC(iMarker) == ACTDISK_INLET) {
+      
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        
+        if (geometry->node[iPoint]->GetDomain()) {
+          
+          geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
+          
+          Density = node[iPoint]->GetSolution(0);
+          Velocity2 = 0.0; Area = 0.0; MassFlow = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) {
+            Area += Vector[iDim]*Vector[iDim];
+            Velocity[iDim] = node[iPoint]->GetSolution(iDim+1)/Density;
+            Velocity2 += Velocity[iDim]*Velocity[iDim];
+            MassFlow += Vector[iDim]*node[iPoint]->GetSolution(iDim+1);
+          }
+          
+          Area       = sqrt (Area);
+          Energy     = node[iPoint]->GetSolution(nVar-1)/Density;
+          Pressure   = Gamma_Minus_One*Density*(Energy-0.5*Velocity2);
+          Temperature = Pressure / (Gas_Constant * Density);
+          
+          /*--- Compute the Inlet_MassFlow, Inlet_Pressure, Inlet_Temperature, and Inlet_Area ---*/
+          
+          Inlet_MassFlow[iMarker] += MassFlow;
+          Inlet_Pressure[iMarker] += Pressure*Area;
+          Inlet_Temperature[iMarker] += Temperature*Area;
+          Inlet_Area[iMarker] += Area;
+          
+        }
+      }
+      
+    }
+    
+    if (config->GetMarker_All_KindBC(iMarker) == ACTDISK_OUTLET) {
+      
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        
+        if (geometry->node[iPoint]->GetDomain()) {
+          
+          geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
+          
+          Density = node[iPoint]->GetSolution(0);
+          Velocity2 = 0.0; Area = 0.0; MassFlow = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) {
+            Area += Vector[iDim]*Vector[iDim];
+            Velocity[iDim] = node[iPoint]->GetSolution(iDim+1)/Density;
+            Velocity2 += Velocity[iDim]*Velocity[iDim];
+            MassFlow += Vector[iDim]*node[iPoint]->GetSolution(iDim+1);
+          }
+          
+          Area       = sqrt (Area);
+          Energy     = node[iPoint]->GetSolution(nVar-1)/Density;
+          Pressure   = Gamma_Minus_One*Density*(Energy-0.5*Velocity2);
+          Temperature = Pressure / (Gas_Constant * Density);
+          
+          /*--- Compute the mass Outlet_MassFlow ---*/
+          
+          Outlet_MassFlow[iMarker] += MassFlow;
+          Outlet_Pressure[iMarker] += Pressure*Area;
+          Outlet_Temperature[iMarker] += Temperature*Area;
+          Outlet_Area[iMarker] += Area;
+          
+        }
+      }
+      
+    }
+    
+  }
+  
+  /*--- Copy to the appropriate structure ---*/
+  
+  double *Inlet_MassFlow_Local = new double [nMarker_ActDiskInlet];
+  double *Inlet_Temperature_Local = new double [nMarker_ActDiskInlet];
+  double *Inlet_Pressure_Local = new double [nMarker_ActDiskInlet];
+  double *Inlet_Area_Local = new double [nMarker_ActDiskInlet];
+  
+  double *Inlet_MassFlow_Total = new double [nMarker_ActDiskInlet];
+  double *Inlet_Temperature_Total = new double [nMarker_ActDiskInlet];
+  double *Inlet_Pressure_Total = new double [nMarker_ActDiskInlet];
+  double *Inlet_Area_Total = new double [nMarker_ActDiskInlet];
+  
+  for (iMarker_ActDiskInlet = 0; iMarker_ActDiskInlet < nMarker_ActDiskInlet; iMarker_ActDiskInlet++) {
+    Inlet_MassFlow_Local[iMarker_ActDiskInlet] = 0.0;
+    Inlet_Temperature_Local[iMarker_ActDiskInlet] = 0.0;
+    Inlet_Pressure_Local[iMarker_ActDiskInlet] = 0.0;
+    Inlet_Area_Local[iMarker_ActDiskInlet] = 0.0;
+    
+    Inlet_MassFlow_Total[iMarker_ActDiskInlet] = 0.0;
+    Inlet_Temperature_Total[iMarker_ActDiskInlet] = 0.0;
+    Inlet_Pressure_Total[iMarker_ActDiskInlet] = 0.0;
+    Inlet_Area_Total[iMarker_ActDiskInlet] = 0.0;
+  }
+  
+  double *Outlet_MassFlow_Local = new double [nMarker_ActDiskOutlet];
+  double *Outlet_Temperature_Local = new double [nMarker_ActDiskOutlet];
+  double *Outlet_Pressure_Local = new double [nMarker_ActDiskOutlet];
+  double *Outlet_Area_Local = new double [nMarker_ActDiskOutlet];
+  
+  double *Outlet_MassFlow_Total = new double [nMarker_ActDiskOutlet];
+  double *Outlet_Temperature_Total = new double [nMarker_ActDiskOutlet];
+  double *Outlet_Pressure_Total = new double [nMarker_ActDiskOutlet];
+  double *Outlet_Area_Total = new double [nMarker_ActDiskOutlet];
+  
+  for (iMarker_ActDiskOutlet = 0; iMarker_ActDiskOutlet < nMarker_ActDiskOutlet; iMarker_ActDiskOutlet++) {
+    Outlet_MassFlow_Local[iMarker_ActDiskOutlet] = 0.0;
+    Outlet_Temperature_Local[iMarker_ActDiskOutlet] = 0.0;
+    Outlet_Pressure_Local[iMarker_ActDiskOutlet] = 0.0;
+    Outlet_Area_Local[iMarker_ActDiskOutlet] = 0.0;
+    
+    Outlet_MassFlow_Total[iMarker_ActDiskOutlet] = 0.0;
+    Outlet_Temperature_Total[iMarker_ActDiskOutlet] = 0.0;
+    Outlet_Pressure_Total[iMarker_ActDiskOutlet] = 0.0;
+    Outlet_Area_Total[iMarker_ActDiskOutlet] = 0.0;
+  }
+  
+  /*--- Compute the numerical fan face Mach number, mach number, temperature and the total area ---*/
+  
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    
+    if (config->GetMarker_All_KindBC(iMarker) == ACTDISK_INLET) {
+      
+      for (iMarker_ActDiskInlet = 0; iMarker_ActDiskInlet < nMarker_ActDiskInlet; iMarker_ActDiskInlet++) {
+        
+        /*--- Add the Inlet_MassFlow, Inlet_Temperature, Inlet_Pressure and Inlet_Area to the particular boundary ---*/
+        
+        if (config->GetMarker_All_TagBound(iMarker) == config->GetMarker_ActDisk_Inlet(iMarker_ActDiskInlet)) {
+          Inlet_MassFlow_Local[iMarker_ActDiskInlet] += Inlet_MassFlow[iMarker];
+          Inlet_Temperature_Local[iMarker_ActDiskInlet] += Inlet_Temperature[iMarker];
+          Inlet_Pressure_Local[iMarker_ActDiskInlet] += Inlet_Pressure[iMarker];
+          Inlet_Area_Local[iMarker_ActDiskInlet] += Inlet_Area[iMarker];
+        }
+        
+      }
+      
+    }
+    
+    if (config->GetMarker_All_KindBC(iMarker) == ACTDISK_OUTLET) {
+      
+      for (iMarker_ActDiskOutlet= 0; iMarker_ActDiskOutlet < nMarker_ActDiskOutlet; iMarker_ActDiskOutlet++) {
+        
+        /*--- Add the Outlet_MassFlow, and Outlet_Area to the particular boundary ---*/
+        
+        if (config->GetMarker_All_TagBound(iMarker) == config->GetMarker_ActDisk_Outlet(iMarker_ActDiskOutlet)) {
+          Outlet_MassFlow_Local[iMarker_ActDiskOutlet] += Outlet_MassFlow[iMarker];
+          Outlet_Temperature_Local[iMarker_ActDiskOutlet] += Outlet_Temperature[iMarker];
+          Outlet_Pressure_Local[iMarker_ActDiskOutlet] += Outlet_Pressure[iMarker];
+          Outlet_Area_Local[iMarker_ActDiskOutlet] += Outlet_Area[iMarker];
+        }
+        
+      }
+      
+    }
+    
+  }
+  
+#ifdef HAVE_MPI
+  
+  MPI_Allreduce(Inlet_MassFlow_Local, Inlet_MassFlow_Total, nMarker_ActDiskInlet, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(Inlet_Temperature_Local, Inlet_Temperature_Total, nMarker_ActDiskInlet, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(Inlet_Pressure_Local, Inlet_Pressure_Total, nMarker_ActDiskInlet, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(Inlet_Area_Local, Inlet_Area_Total, nMarker_ActDiskInlet, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  
+  MPI_Allreduce(Outlet_MassFlow_Local, Outlet_MassFlow_Total, nMarker_ActDiskOutlet, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(Outlet_Temperature_Local, Outlet_Temperature_Total, nMarker_ActDiskOutlet, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(Outlet_Pressure_Local, Outlet_Pressure_Total, nMarker_ActDiskOutlet, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(Outlet_Area_Local, Outlet_Area_Total, nMarker_ActDiskOutlet, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  
+#else
+  
+  for (iMarker_ActDiskInlet = 0; iMarker_ActDiskInlet < nMarker_ActDiskInlet; iMarker_ActDiskInlet++) {
+    Inlet_MassFlow_Total[iMarker_ActDiskInlet]    = Inlet_MassFlow_Local[iMarker_ActDiskInlet];
+    Inlet_Temperature_Total[iMarker_ActDiskInlet] = Inlet_Temperature_Local[iMarker_ActDiskInlet];
+    Inlet_Pressure_Total[iMarker_ActDiskInlet]    = Inlet_Pressure_Local[iMarker_ActDiskInlet];
+    Inlet_Area_Total[iMarker_ActDiskInlet]        = Inlet_Area_Local[iMarker_ActDiskInlet];
+  }
+  
+  for (iMarker_ActDiskOutlet = 0; iMarker_ActDiskOutlet < nMarker_ActDiskOutlet; iMarker_ActDiskOutlet++) {
+    Outlet_MassFlow_Total[iMarker_ActDiskOutlet]  = Outlet_MassFlow_Local[iMarker_ActDiskOutlet];
+    Outlet_Temperature_Total[iMarker_ActDiskOutlet] = Outlet_Temperature_Local[iMarker_ActDiskOutlet];
+    Outlet_Pressure_Total[iMarker_ActDiskOutlet]   = Outlet_Pressure_Local[iMarker_ActDiskOutlet];
+    Outlet_Area_Total[iMarker_ActDiskOutlet]      = Outlet_Area_Local[iMarker_ActDiskOutlet];
+  }
+  
+#endif
+  
+  /*--- Compute the value of Inlet_Area_Total, and Inlet_Pressure_Total, and
+   set the value in the config structure for future use ---*/
+  
+  for (iMarker_ActDiskInlet = 0; iMarker_ActDiskInlet < nMarker_ActDiskInlet; iMarker_ActDiskInlet++) {
+    if (Inlet_Area_Total[iMarker_ActDiskInlet] != 0.0) Inlet_Temperature_Total[iMarker_ActDiskInlet] /= Inlet_Area_Total[iMarker_ActDiskInlet];
+    else Inlet_Temperature_Total[iMarker_ActDiskInlet] = 0.0;
+    if (Inlet_Area_Total[iMarker_ActDiskInlet] != 0.0) Inlet_Pressure_Total[iMarker_ActDiskInlet] /= Inlet_Area_Total[iMarker_ActDiskInlet];
+    else Inlet_Pressure_Total[iMarker_ActDiskInlet] = 0.0;
+  }
+  
+  /*--- Compute the value of Outlet_Area_Total, and Outlet_Pressure_Total, and
+   set the value in the config structure for future use ---*/
+  
+  for (iMarker_ActDiskOutlet = 0; iMarker_ActDiskOutlet < nMarker_ActDiskOutlet; iMarker_ActDiskOutlet++) {
+    if (Outlet_Area_Total[iMarker_ActDiskOutlet] != 0.0) Outlet_Temperature_Total[iMarker_ActDiskOutlet] /= Outlet_Area_Total[iMarker_ActDiskOutlet];
+    else Outlet_Temperature_Total[iMarker_ActDiskOutlet] = 0.0;
+    if (Outlet_Area_Total[iMarker_ActDiskOutlet] != 0.0) Outlet_Pressure_Total[iMarker_ActDiskOutlet] /= Outlet_Area_Total[iMarker_ActDiskOutlet];
+    else Outlet_Pressure_Total[iMarker_ActDiskOutlet] = 0.0;
+  }
+  
+  bool write_heads = (((config->GetExtIter() % (config->GetWrt_Con_Freq()*20)) == 0));
+  
+  if ((rank == MASTER_NODE) && (iMesh == MESH_0) && write_heads && Output) {
+    
+    cout.precision(4);
+    cout.setf(ios::fixed,ios::floatfield);
+    
+    cout << endl << "------------------------ Actuator Disk properties -----------------------" << endl;
+    
+    for (iMarker_ActDiskInlet = 0; iMarker_ActDiskInlet < nMarker_ActDiskInlet; iMarker_ActDiskInlet++) {
+      cout << "Actuator Disk Inlet ("<< config->GetMarker_ActDisk_Inlet(iMarker_ActDiskInlet);
+      if (config->GetSystemMeasurements() == SI) cout << "): Mass flow (kg/s): ";
+      else if (config->GetSystemMeasurements() == US) cout << "): Mass flow (slug/s): ";
+      cout << Inlet_MassFlow_Total[iMarker_ActDiskInlet] * config->GetDensity_Ref() * config->GetVelocity_Ref();
+      if (config->GetSystemMeasurements() == SI) cout << ", Temp (K): ";
+      else if (config->GetSystemMeasurements() == US) cout << ", Temp (R): ";
+      cout << Inlet_Temperature_Total[iMarker_ActDiskInlet] * config->GetTemperature_Ref();
+      if (config->GetSystemMeasurements() == SI) cout << ", Pressure (Pa): ";
+      else if (config->GetSystemMeasurements() == US) cout << ", Pressure (psf): ";
+      cout << Inlet_Pressure_Total[iMarker_ActDiskInlet] * config->GetPressure_Ref();
+      if (config->GetSystemMeasurements() == SI) cout << ", Area (m^2): ";
+      else if (config->GetSystemMeasurements() == US) cout << ", Area (ft^2): ";
+      cout << Inlet_Area_Total[iMarker_ActDiskInlet] <<"."<< endl;
+    }
+    
+    for (iMarker_ActDiskOutlet = 0; iMarker_ActDiskOutlet < nMarker_ActDiskOutlet; iMarker_ActDiskOutlet++) {
+      cout << "Actuator Disk Outlet ("<< config->GetMarker_ActDisk_Outlet(iMarker_ActDiskOutlet);
+      if (config->GetSystemMeasurements() == SI) cout << "): Mass flow (kg/s): ";
+      else if (config->GetSystemMeasurements() == US) cout << "): Mass flow (slug/s): ";
+      cout << Outlet_MassFlow_Total[iMarker_ActDiskOutlet] * config->GetDensity_Ref() * config->GetVelocity_Ref();
+      if (config->GetSystemMeasurements() == SI) cout << ", Temp (K): ";
+      else if (config->GetSystemMeasurements() == US) cout << ", Temp (R): ";
+      cout << Outlet_Temperature_Total[iMarker_ActDiskOutlet] * config->GetTemperature_Ref();
+      if (config->GetSystemMeasurements() == SI) cout << ", Pressure (Pa): ";
+      else if (config->GetSystemMeasurements() == US) cout << ", Pressure (psf): ";
+      cout << Outlet_Pressure_Total[iMarker_ActDiskOutlet] * config->GetPressure_Ref();
+      if (config->GetSystemMeasurements() == SI) cout << ", Area (m^2): ";
+      else if (config->GetSystemMeasurements() == US) cout << ", Area (ft^2): ";
+      cout << Outlet_Area_Total[iMarker_ActDiskOutlet] <<"."<< endl;
+    }
+    cout << "-------------------------------------------------------------------------" << endl;
+    
+  }
+  
+  delete [] Outlet_MassFlow_Local;
+  delete [] Outlet_Temperature_Local;
+  delete [] Outlet_Pressure_Local;
+  delete [] Outlet_Area_Local;
+  
+  delete [] Outlet_MassFlow_Total;
+  delete [] Outlet_Temperature_Total;
+  delete [] Outlet_Pressure_Total;
+  delete [] Outlet_Area_Total;
+  
+  delete [] Inlet_MassFlow_Local;
+  delete [] Inlet_Temperature_Local;
+  delete [] Inlet_Pressure_Local;
+  delete [] Inlet_Area_Local;
+  
+  delete [] Inlet_MassFlow_Total;
+  delete [] Inlet_Temperature_Total;
+  delete [] Inlet_Pressure_Total;
+  delete [] Inlet_Area_Total;
+  
+  
+  delete [] Inlet_MassFlow;
+  delete [] Inlet_Pressure;
+  delete [] Inlet_Temperature;
+  delete [] Inlet_Area;
+  
+  delete [] Outlet_MassFlow;
+  delete [] Outlet_Pressure;
+  delete [] Outlet_Temperature;
+  delete [] Outlet_Area;
+  
+}
+
 void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_container,
                                    CConfig *config, unsigned short iMesh, bool Output) {
 
@@ -8673,10 +9005,12 @@ void CEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_c
 void CEulerSolver::BC_ActDisk_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                        CConfig *config) {
 
-  unsigned long iVertex, iPoint, jPoint, Pin = 0, Pout = 0, jProcessor;
+  unsigned long iVertex, iPoint, jPoint, Pin = 0, Pout = 0, jProcessor, Point_0, Point_1, Point_2;
   unsigned short iDim, iVar, iMarker;
   int iProcessor;
-  double *Coord, radius, R, V_tip, DeltaP_avg, DeltaP_tip;
+  double *Coord, radius, DeltaP_avg, DeltaP_tip, V_swirl, Density, NormalVector[3] = {0.0,0.0,0.0},
+  Radial[3] = {0.0,0.0,0.0}, TangentialVector[3] = {0.0,0.0,0.0}, Modulus, vec_a[3] = {0.0,0.0,0.0},
+  vec_b[3] = {0.0,0.0,0.0}, *Coord_0, *Coord_1, *Coord_2;
 
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   unsigned short nMarker_ActDisk_Inlet = config->GetnMarker_ActDisk_Inlet();
@@ -8753,11 +9087,11 @@ void CEulerSolver::BC_ActDisk_Boundary(CGeometry *geometry, CSolver **solver_con
           (config->GetMarker_All_KindBC(iMarker) == ACTDISK_OUTLET)) {
 
         unsigned short boundary = config->GetMarker_All_KindBC(iMarker);
-        double *origin = config->GetActDisk_Origin(config->GetMarker_All_TagBound(iMarker));     // Center of the rotor
+        double *Origin = config->GetActDisk_Origin(config->GetMarker_All_TagBound(iMarker));
         double R_root = config->GetActDisk_RootRadius(config->GetMarker_All_TagBound(iMarker));
         double R_tip = config->GetActDisk_TipRadius(config->GetMarker_All_TagBound(iMarker));
-        double C_T = config->GetActDisk_CT(config->GetMarker_All_TagBound(iMarker));             // Rotor thrust coefficient
-        double Omega = config->GetActDisk_Omega(config->GetMarker_All_TagBound(iMarker));        // Revolution per minute
+        double Press_Jump = config->GetActDisk_PressJump(config->GetMarker_All_TagBound(iMarker));
+        double Omega = config->GetActDisk_Omega(config->GetMarker_All_TagBound(iMarker))*(PI_NUMBER/30.0);
 
         for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 
@@ -8827,22 +9161,84 @@ void CEulerSolver::BC_ActDisk_Boundary(CGeometry *geometry, CSolver **solver_con
             Coord = geometry->node[iPoint]->GetCoord();
             radius = 0.0;
             for (iDim = 0; iDim < nDim; iDim++)
-              radius += (Coord[iDim]-origin[iDim])*(Coord[iDim]-origin[iDim]);
+              radius += (Coord[iDim]-Origin[iDim])*(Coord[iDim]-Origin[iDim]);
             radius = sqrt(radius);
 
-            /*--- Compute the pressure increment and the jump ---*/
+            /*--- Compute the pressure jump ---*/
 
-            R = R_tip;
-            V_tip = R_tip*Omega*(PI_NUMBER/30.0);
-            DeltaP_avg = R*R*V_tip*V_tip*C_T/(R*R-R_root*R_root);
-            DeltaP_tip = 3.0*DeltaP_avg*R*(R*R-R_root*R_root)/(2.0*(R*R*R-R_root*R_root*R_root));
-            ActDisk_Jump[nDim+1] = -DeltaP_tip*radius/R;
+            DeltaP_avg = Press_Jump / config->GetPressure_Ref(); /// Non-dimensionalization
+            DeltaP_tip = (3.0/2.0)*DeltaP_avg*R_tip*(R_tip*R_tip-R_root*R_root)/(R_tip*R_tip*R_tip-R_root*R_root*R_root);
+            ActDisk_Jump[nDim+1] = DeltaP_tip*radius/R_tip;
+            
+            
+            /*--- Compute the jump in tangential velocity (requires V&V) ---*/
+            
+            if ((nDim == 3) && (Omega > 1.0) && (false)) {
+              
+              /*--- Compute a vector normal to the actuator disk using the first 3 points of the marker ---*/
+              
+              Point_0 = geometry->vertex[iMarker][0]->GetNode(); Coord_0 = geometry->node[Point_0]->GetCoord();
+              Point_1 = geometry->vertex[iMarker][1]->GetNode(); Coord_1 = geometry->node[Point_1]->GetCoord();
+              Point_2 = geometry->vertex[iMarker][2]->GetNode(); Coord_2 = geometry->node[Point_2]->GetCoord();
 
+              for (iDim = 0; iDim < nDim; iDim++) {
+                vec_a[iDim] = (Coord_1[iDim]-Coord_0[iDim]);
+                vec_b[iDim] = (Coord_2[iDim]-Coord_0[iDim]);
+              }
+
+              if (boundary == ACTDISK_INLET) {
+                NormalVector[0] = vec_b[1]*vec_a[2] - vec_b[2]*vec_a[1];
+                NormalVector[1] = vec_b[2]*vec_a[0] - vec_b[0]*vec_a[2];
+                NormalVector[2] = vec_b[0]*vec_a[1] - vec_b[1]*vec_a[0];
+              }
+              
+              if (boundary == ACTDISK_OUTLET) {
+                NormalVector[0] = vec_a[1]*vec_b[2] - vec_a[2]*vec_b[1];
+                NormalVector[1] = vec_a[2]*vec_b[0] - vec_a[0]*vec_b[2];
+                NormalVector[2] = vec_a[0]*vec_b[1] - vec_a[1]*vec_b[0];
+              }
+
+              Modulus = 0.0;
+              for (iDim = 0; iDim < nDim; iDim++)
+                Modulus += NormalVector[iDim]*NormalVector[iDim];
+              Modulus = sqrt(Modulus);
+              
+              for (iDim = 0; iDim < nDim; iDim++)
+                NormalVector[iDim] = NormalVector[iDim]/Modulus;
+              
+              /*--- Compute a vector tangent to the actuator disk ---*/
+              
+              for (iDim = 0; iDim < nDim; iDim++)
+                Radial[iDim] = (Coord[iDim]-Origin[iDim])*(Coord[iDim]-Origin[iDim]);
+              
+              TangentialVector[0] = NormalVector[1]*Radial[2] - NormalVector[2]*Radial[1];
+              TangentialVector[1] = NormalVector[2]*Radial[0] - NormalVector[0]*Radial[2];
+              TangentialVector[2] = NormalVector[0]*Radial[1] - NormalVector[1]*Radial[0];
+              
+              Modulus = 0.0;
+              for (iDim = 0; iDim < nDim; iDim++)
+                Modulus += TangentialVector[iDim]*TangentialVector[iDim];
+              Modulus = sqrt(Modulus);
+              
+              for (iDim = 0; iDim < nDim; iDim++)
+                TangentialVector[iDim] = TangentialVector[iDim]/Modulus;
+              
+              /*--- Evaluate the jump in tangential velocity ---*/
+              
+              Density = MeanPrimVar[nDim+2];
+              V_swirl = Omega*radius*(1.0-(1.0-sqrt(2.0*ActDisk_Jump[nDim+1]/(Density*pow(Omega*radius, 2.0)))));
+              
+              for (iDim = 0; iDim < nDim; iDim++) {
+                ActDisk_Jump[iDim+1] = TangentialVector[iDim]*V_swirl;
+              }
+
+            }
+            
             /*--- Inner point ---*/
 
             if (iPoint == Pin) {
               for (iVar = 0; iVar < nPrimVar; iVar++)
-                PrimVar_in_ghost[iVar] = 2.0*MeanPrimVar[iVar] - PrimVar_in[iVar] - ActDisk_Jump[iVar];
+                PrimVar_in_ghost[iVar] = 2.0*MeanPrimVar[iVar] - PrimVar_in[iVar] - 2.0*ActDisk_Jump[iVar];
               numerics->SetPrimitive(PrimVar_in, PrimVar_in_ghost);
             }
 
@@ -8850,7 +9246,7 @@ void CEulerSolver::BC_ActDisk_Boundary(CGeometry *geometry, CSolver **solver_con
 
             if (iPoint == Pout) {
               for (iVar = 0; iVar < nPrimVar; iVar++)
-                PrimVar_out_ghost[iVar] = 2.0*MeanPrimVar[iVar] - PrimVar_out[iVar] + ActDisk_Jump[iVar];
+                PrimVar_out_ghost[iVar] = 2.0*MeanPrimVar[iVar] - PrimVar_out[iVar] + 2.0*ActDisk_Jump[iVar];
               numerics->SetPrimitive(PrimVar_out, PrimVar_out_ghost);
             }
 
@@ -10242,12 +10638,16 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   bool freesurface          = (config->GetKind_Regime() == FREESURFACE);
   bool tkeNeeded            = (turb_model == SST);
   bool fixed_cl             = config->GetFixed_CL_Mode();
-  bool engine               = ((config->GetnMarker_EngineInflow() != 0) || (config->GetnMarker_EngineBleed() != 0) ||
-                               (config->GetnMarker_EngineExhaust() != 0));
+  bool engine               = ((config->GetnMarker_EngineInflow() != 0) || (config->GetnMarker_EngineBleed() != 0) || (config->GetnMarker_EngineExhaust() != 0));
+  bool actuator_disk        = ((config->GetnMarker_ActDisk_Inlet() != 0) || (config->GetnMarker_ActDisk_Outlet() != 0));
 
-  /*--- Compute nacelle inflow and exhaust properties ---*/
-
-  if (engine) GetEngine_Properties(geometry, config, iMesh, Output);
+  /*--- Compute the engine properties ---*/
+  
+  if (engine) { GetEngine_Properties(geometry, config, iMesh, Output); }
+  
+  /*--- Compute the actuator disk properties ---*/
+  
+  if (actuator_disk) { GetActuatorDisk_Properties(geometry, config, iMesh, Output); }
 
   /*--- Update the angle of attack at the far-field for fixed CL calculations. ---*/
 
