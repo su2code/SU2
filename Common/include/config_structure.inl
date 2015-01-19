@@ -801,6 +801,10 @@ inline void CConfig::SetnMarker_All(unsigned short val_nmarker) { nMarker_All = 
 
 inline string CConfig::GetMarker_All_TagBound(unsigned short val_marker) { return Marker_All_TagBound[val_marker]; }
 
+inline string CConfig::GetMarker_ActDisk_Inlet(unsigned short val_marker) { return Marker_ActDisk_Inlet[val_marker]; }
+
+inline string CConfig::GetMarker_ActDisk_Outlet(unsigned short val_marker) { return Marker_ActDisk_Outlet[val_marker]; }
+
 inline string CConfig::GetMarker_EngineInflow(unsigned short val_marker) { return Marker_EngineInflow[val_marker]; }
 
 inline string CConfig::GetMarker_EngineBleed(unsigned short val_marker) { return Marker_EngineBleed[val_marker]; }

@@ -234,7 +234,7 @@ private:
   double **ActDisk_Origin;
   double *ActDisk_RootRadius;
   double *ActDisk_TipRadius;
-  double *ActDisk_CT;
+  double *ActDisk_PressJump;
   double *ActDisk_Omega;
   double **Periodic_RotCenter;  /*!< \brief Rotational center for each periodic boundary. */
 	double **Periodic_RotAngles;      /*!< \brief Rotation angles for each periodic boundary. */
@@ -905,10 +905,10 @@ private:
   void addActuatorDiskOption(const string & name, unsigned short & nMarker_ActDisk_Inlet, unsigned short & nMarker_ActDisk_Outlet,
                                       string* & Marker_ActDisk_Inlet, string* & Marker_ActDisk_Outlet,
                                       double** & ActDisk_Origin, double* & ActDisk_RootRadius, double* & ActDisk_TipRadius,
-                                      double* & ActDisk_CT, double* & ActDisk_Omega) {
+                                      double* & ActDisk_PressJump, double* & ActDisk_Omega) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string,bool>(name,true));
-    COptionBase* val = new COptionActuatorDisk(name, nMarker_ActDisk_Inlet, nMarker_ActDisk_Outlet, Marker_ActDisk_Inlet, Marker_ActDisk_Outlet, ActDisk_Origin, ActDisk_RootRadius, ActDisk_TipRadius, ActDisk_CT, ActDisk_Omega);
+    COptionBase* val = new COptionActuatorDisk(name, nMarker_ActDisk_Inlet, nMarker_ActDisk_Outlet, Marker_ActDisk_Inlet, Marker_ActDisk_Outlet, ActDisk_Origin, ActDisk_RootRadius, ActDisk_TipRadius, ActDisk_PressJump, ActDisk_Omega);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
@@ -2220,6 +2220,22 @@ public:
 	 */
 	string GetMarker_All_TagBound(unsigned short val_marker);
 
+  /*!
+   * \brief Get the index of the surface defined in the geometry file.
+   * \param[in] val_marker - Value of the marker in which we are interested.
+   * \return Value of the index that is in the geometry file for the surface that
+   *         has the marker <i>val_marker</i>.
+   */
+  string GetMarker_ActDisk_Inlet(unsigned short val_marker);
+
+  /*!
+   * \brief Get the index of the surface defined in the geometry file.
+   * \param[in] val_marker - Value of the marker in which we are interested.
+   * \return Value of the index that is in the geometry file for the surface that
+   *         has the marker <i>val_marker</i>.
+   */
+  string GetMarker_ActDisk_Outlet(unsigned short val_marker);
+  
 	/*!
 	 * \brief Get the index of the surface defined in the geometry file.
 	 * \param[in] val_marker - Value of the marker in which we are interested.
@@ -4450,7 +4466,7 @@ public:
   /*!
 	 * \brief Get the thurst corffient of the actuator disk.
 	 */
-  double GetActDisk_CT(string val_marker);
+  double GetActDisk_PressJump(string val_marker);
 
   /*!
 	 * \brief Get the rev / min of the actuator disk.

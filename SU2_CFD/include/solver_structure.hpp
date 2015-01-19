@@ -2053,6 +2053,13 @@ public:
   
   /*!
    * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solution - Container vector with all the solutions.
+   */
+  virtual void GetActuatorDisk_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
+
+  /*!
+   * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
 	 * \param[in] config - Definition of the particular problem.
@@ -2818,6 +2825,13 @@ public:
 	 * \param[in] solution - Container vector with all the solutions.
 	 */
 	void GetEngine_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
+  
+  /*!
+   * \brief Compute the Fan face Mach number.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solution - Container vector with all the solutions.
+   */
+  void GetActuatorDisk_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
   
   /*!
 	 * \brief Update the AoA and freestream velocity at the farfield.

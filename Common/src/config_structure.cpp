@@ -466,7 +466,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addActuatorDiskOption("MARKER_ACTDISK", nMarker_ActDisk_Inlet, nMarker_ActDisk_Outlet,
                         Marker_ActDisk_Inlet, Marker_ActDisk_Outlet,
                         ActDisk_Origin, ActDisk_RootRadius, ActDisk_TipRadius,
-                        ActDisk_CT, ActDisk_Omega);
+                        ActDisk_PressJump, ActDisk_Omega);
 
   /*!\par INLET_TYPE
    *  DESCRIPTION: Inlet boundary type \n OPTIONS: see \link Inlet_Map \endlink \n Default: TOTAL_CONDITIONS \ingroup Config*/
@@ -1447,7 +1447,7 @@ bool CConfig::SetRunTime_Parsing(char case_filename[MAX_STRING_SIZE]) {
 
 void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_izone, unsigned short val_nDim) {
   
-  unsigned short iZone, iCFL;
+  unsigned short iZone, iCFL, iDim;
   bool ideal_gas       = (Kind_FluidModel == STANDARD_AIR || Kind_FluidModel == IDEAL_GAS );
   bool standard_air       = (Kind_FluidModel == STANDARD_AIR);
   
@@ -2317,6 +2317,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     Subsonic_Engine_Box[3] = Subsonic_Engine_Box[3]/12.0;
     Subsonic_Engine_Box[4] = Subsonic_Engine_Box[4]/12.0;
     Subsonic_Engine_Box[5] = Subsonic_Engine_Box[5]/12.0;
+    
+    for (iMarker = 0; iMarker < nMarker_ActDisk_Inlet; iMarker++) {
+      for (iDim = 0; iDim < val_nDim; iDim++)
+        ActDisk_Origin[iMarker][iDim] = ActDisk_Origin[iMarker][iDim]/12.0;
+      ActDisk_RootRadius[iMarker] = ActDisk_RootRadius[iMarker]/12.0;
+      ActDisk_TipRadius[iMarker] = ActDisk_TipRadius[iMarker]/12.0;
+    }
     
   }
   
@@ -5696,12 +5703,12 @@ double CConfig::GetActDisk_TipRadius(string val_marker) {
   return ActDisk_TipRadius[iMarker_ActDisk];
 }
 
-double CConfig::GetActDisk_CT(string val_marker) {
+double CConfig::GetActDisk_PressJump(string val_marker) {
   unsigned short iMarker_ActDisk;
   for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDisk_Inlet; iMarker_ActDisk++)
     if ((Marker_ActDisk_Inlet[iMarker_ActDisk] == val_marker) ||
         (Marker_ActDisk_Outlet[iMarker_ActDisk] == val_marker)) break;
-  return ActDisk_CT[iMarker_ActDisk];
+  return ActDisk_PressJump[iMarker_ActDisk];
 }
 
 double CConfig::GetActDisk_Omega(string val_marker) {

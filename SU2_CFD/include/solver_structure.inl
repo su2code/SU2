@@ -467,6 +467,8 @@ inline void CSolver::BC_Electrode(CGeometry *geometry, CSolver **solver_containe
             
 inline void CSolver::GetEngine_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) { }
 
+inline void CSolver::GetActuatorDisk_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) { }
+
 inline void CSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_container,
                                      CConfig *config, unsigned short iMesh, bool Output) { }
 
