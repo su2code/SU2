@@ -9008,7 +9008,7 @@ void CEulerSolver::BC_ActDisk_Boundary(CGeometry *geometry, CSolver **solver_con
   unsigned long iVertex, iPoint, jPoint, Pin = 0, Pout = 0, jProcessor, Point_0, Point_1, Point_2;
   unsigned short iDim, iVar, iMarker;
   int iProcessor;
-  double *Coord, radius, DeltaP_avg, DeltaP_tip, V_swirl, Density, NormalVector[3] = {0.0,0.0,0.0},
+  double *Coord, radius, DeltaP_avg, DeltaP_tip, V_swirl, Density = 0.0, NormalVector[3] = {0.0,0.0,0.0},
   Radial[3] = {0.0,0.0,0.0}, TangentialVector[3] = {0.0,0.0,0.0}, Modulus, vec_a[3] = {0.0,0.0,0.0},
   vec_b[3] = {0.0,0.0,0.0}, *Coord_0, *Coord_1, *Coord_2;
 
@@ -9225,7 +9225,9 @@ void CEulerSolver::BC_ActDisk_Boundary(CGeometry *geometry, CSolver **solver_con
               
               /*--- Evaluate the jump in tangential velocity ---*/
               
-              Density = MeanPrimVar[nDim+2];
+              if (iPoint == Pin) { Density = PrimVar_in[nDim+2]; }
+              if (iPoint == Pout) { Density = PrimVar_out[nDim+2]; }
+
               V_swirl = Omega*radius*(1.0-(1.0-sqrt(2.0*ActDisk_Jump[nDim+1]/(Density*pow(Omega*radius, 2.0)))));
               
               for (iDim = 0; iDim < nDim; iDim++) {
@@ -9238,7 +9240,7 @@ void CEulerSolver::BC_ActDisk_Boundary(CGeometry *geometry, CSolver **solver_con
 
             if (iPoint == Pin) {
               for (iVar = 0; iVar < nPrimVar; iVar++)
-                PrimVar_in_ghost[iVar] = 2.0*MeanPrimVar[iVar] - PrimVar_in[iVar] - 2.0*ActDisk_Jump[iVar];
+                PrimVar_in_ghost[iVar] = PrimVar_out[iVar] - 2.0*ActDisk_Jump[iVar];
               numerics->SetPrimitive(PrimVar_in, PrimVar_in_ghost);
             }
 
@@ -9246,7 +9248,7 @@ void CEulerSolver::BC_ActDisk_Boundary(CGeometry *geometry, CSolver **solver_con
 
             if (iPoint == Pout) {
               for (iVar = 0; iVar < nPrimVar; iVar++)
-                PrimVar_out_ghost[iVar] = 2.0*MeanPrimVar[iVar] - PrimVar_out[iVar] + 2.0*ActDisk_Jump[iVar];
+                PrimVar_out_ghost[iVar] = PrimVar_in[iVar] + 2.0*ActDisk_Jump[iVar];
               numerics->SetPrimitive(PrimVar_out, PrimVar_out_ghost);
             }
 
