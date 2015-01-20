@@ -164,7 +164,8 @@ private:
 	nMarker_Neumann,				/*!< \brief Number of Neumann flow markers. */
 	nMarker_Neumann_Elec,				/*!< \brief Number of Neumann flow markers. */
 	nMarker_All,					/*!< \brief Total number of markers using the grid information. */
-	nMarker_Config;					/*!< \brief Total number of markers using the config file
+  nMarker_Max,					/*!< \brief Max number of number of markers using the grid information. */
+  nMarker_Config;					/*!< \brief Total number of markers using the config file
 									(note that using parallel computation this number can be different
 									from nMarker_All). */
 	string *Marker_Euler,			/*!< \brief Euler wall markers. */
@@ -456,7 +457,6 @@ private:
   *Marker_CfgFile_DV,       /*!< \brief Global index for design variable markers using the config information. */
   *Marker_CfgFile_PerBound;     /*!< \brief Global index for periodic boundaries using the config information. */
   string *PlaneTag;      /*!< \brief Global index for the plane adaptation (upper, lower). */
-	unsigned short nDomain;			/*!< \brief Number of domains in the MPI parallelization. */
 	double DualVol_Power;			/*!< \brief Power for the dual volume in the grid adaptation sensor. */
 	unsigned short Analytical_Surface;	/*!< \brief Information about the analytical definition of the surface for grid adaptation. */
 	unsigned short Axis_Orientation;	/*!< \brief Axis orientation. */
@@ -1566,20 +1566,6 @@ public:
 	void SetDomainVolume(double val_volume);
 
 	/*!
-	 * \brief Get number of domains in a parallel computation.
-	 * \note The number of domains is read from the configuration file or from mpirun -np option.
-	 * \return Number of domains in the parallel computation.
-	 */
-	unsigned short GetnDomain(void);
-
-	/*!
-	 * \brief In case we are running the CFD software, the number of domains is read
-	 *        from <i>MPI::COMM_WORLD.Get_size()</i>.
-	 * \param[in] val_ndomain - Number of domains for the MPI parallelization.
-	 */
-	void SetnDomain(unsigned short val_ndomain);
-
-	/*!
 	 * \brief Set the finest mesh in a multigrid strategy.
 	 * \note If we are using a Full Multigrid Strategy or a start up with finest grid, it is necessary
 	 *       to change several times the finest grid.
@@ -1973,6 +1959,12 @@ public:
 	 * \return Total number of boundary markers.
 	 */
 	unsigned short GetnMarker_All(void);
+  
+  /*!
+   * \brief Get the total number of boundary markers.
+   * \return Total number of boundary markers.
+   */
+  unsigned short GetnMarker_Max(void);
 
     /*!
 	 * \brief Get the total number of boundary markers.
@@ -4925,7 +4917,7 @@ public:
 	/*!
 	 * \brief Config file markers processing.
 	 */
-	void SetMarkers(unsigned short val_software, unsigned short val_izone);
+	void SetMarkers(unsigned short val_software);
 
 	/*!
 	 * \brief Config file output.

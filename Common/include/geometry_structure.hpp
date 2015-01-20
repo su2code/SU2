@@ -115,7 +115,6 @@ public:
 																			 must be sent [0], and the image point in the periodic bc[1]. */
 	vector<unsigned long> PeriodicElem[MAX_NUMBER_PERIODIC];				/*!< \brief PeriodicElem[Periodic bc] and return the elements that 
 																			 must be sent. */
-	vector<unsigned long> OldBoundaryElems[MAX_NUMBER_MARKER];  /*!< \brief Vector of old boundary elements. */
   
   short *Marker_All_SendRecv;
   
