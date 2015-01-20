@@ -1092,10 +1092,22 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
   
 }
 
-CPhysicalGeometry::CPhysicalGeometry() : CGeometry() {}
+CPhysicalGeometry::CPhysicalGeometry() : CGeometry() {
+
+  Global_to_Local_Point = NULL;
+  Local_to_Global_Point = NULL;
+  Local_to_Global_Marker = NULL;
+  Global_to_Local_Marker = NULL;
+
+}
 
 CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, unsigned short val_nZone) : CGeometry() {
   
+  Global_to_Local_Point = NULL;
+  Local_to_Global_Point = NULL;
+  Local_to_Global_Marker = NULL;
+  Global_to_Local_Marker = NULL;
+
   string text_line, Marker_Tag;
   ifstream mesh_file;
   unsigned short iNode_Surface, iMarker, iDim;
@@ -1204,6 +1216,11 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
 
 CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   
+  Global_to_Local_Point = NULL;
+  Local_to_Global_Point = NULL;
+  Local_to_Global_Marker = NULL;
+  Global_to_Local_Marker = NULL;
+
   unsigned long iter,  iPoint, jPoint, iElem, jElem, iVertex;
   unsigned long nElemTotal = 0, nPointTotal = 0, nPointDomainTotal = 0, nPointGhost = 0, nPointPeriodic = 0, nElemTriangle = 0, nElemRectangle = 0, nElemTetrahedron = 0, nElemHexahedron = 0, nElemWedge = 0, nElemPyramid = 0;
   unsigned long iElemTotal, iPointTotal, iPointGhost, iPointDomain, iPointPeriodic, iElemTriangle, iElemRectangle, iElemTetrahedron, iElemHexahedron, iElemWedge, iElemPyramid;
