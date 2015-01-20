@@ -1631,6 +1631,7 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 	unsigned long iPoint, iElem, iEdge, ip_0, ip_1, ip_2, ip_3, iVertex;
 	unsigned short iDim, iMarker, iVar;
 	long no_0 = 0, no_1 = 0, no_2 = 0, no_3 = 0;
+  unsigned short nMarker_Max = config->GetnMarker_Max();
 
 	long *TriangleAdaptCode;
 	long **TriangleEdgeIndex; bool **TriangleEdgeCode; long **TriangleEdgeNode;
@@ -2249,7 +2250,7 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
   
 	geo_adapt->SetnMarker(geometry->GetnMarker());
 	geo_adapt->nElem_Bound = new unsigned long [geometry->GetnMarker()];
-	geo_adapt->Tag_to_Marker = new string [MAX_NUMBER_MARKER];		
+	geo_adapt->Tag_to_Marker = new string [nMarker_Max];
 	geo_adapt->bound = new CPrimalGrid**[geometry->GetnMarker()];
 	for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
 		long nNewBCcv = 0;
@@ -2332,6 +2333,7 @@ void CGridAdaptation::SetHomothetic_Adaptation3D(CGeometry *geometry, CPhysicalG
 	unsigned short iDim, iMarker, iVar;
 	long no_0 = 0, no_1 = 0, no_2 = 0, no_3 = 0, no_4 = 0, no_5 = 0, no_6 = 0, no_7 = 0;
 	unsigned short counter;
+  unsigned short nMarker_Max = config->GetnMarker_Max();
 
 	long *TetraAdaptCode; 
 	long **TetraEdgeIndex; bool **TetraEdgeCode; long **TetraEdgeNode;
@@ -3231,7 +3233,7 @@ void CGridAdaptation::SetHomothetic_Adaptation3D(CGeometry *geometry, CPhysicalG
 	//  Create boundary structure
 	geo_adapt->SetnMarker(geometry->GetnMarker());
 	geo_adapt->nElem_Bound = new unsigned long [geometry->GetnMarker()];
-	geo_adapt->Tag_to_Marker = new string [MAX_NUMBER_MARKER];		
+	geo_adapt->Tag_to_Marker = new string [nMarker_Max];
 	geo_adapt->bound = new CPrimalGrid**[geometry->GetnMarker()];
 
 	// Conservative estimation of the number of boundary elements.
