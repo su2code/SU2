@@ -112,7 +112,6 @@ const unsigned int EXIT_DIVERGENCE = 2;		/*!< \brief Exit code (divergence). */
 
 const unsigned int BUFSIZE = 3000000;		/*!< \brief MPI buffer. */
 const unsigned int MAX_PARAMETERS = 10;		/*!< \brief Maximum number of parameters for a design variable definition. */
-const unsigned int MAX_NUMBER_MARKER = 30000;	/*!< \brief Maximum number of markers. */
 const unsigned int MAX_NUMBER_PERIODIC = 10;	/*!< \brief Maximum number of periodic boundary conditions. */
 const unsigned int MAX_STRING_SIZE = 200;	/*!< \brief Maximum number of domains. */
 const unsigned int MAX_NUMBER_FFD = 10;	/*!< \brief Maximum number of FFDBoxes for the FFD. */

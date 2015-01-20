@@ -352,10 +352,6 @@ inline void CConfig::SetAoA(double val_AoA) { AoA = val_AoA; }
 
 inline void CConfig::SetAoS(double val_AoS) { AoS = val_AoS; }
 
-inline unsigned short CConfig::GetnDomain(void) { return nDomain; }
-
-inline void CConfig::SetnDomain(unsigned short val_ndomain) { nDomain = val_ndomain; }
-
 inline double CConfig::GetAoS(void) { return AoS; }
 
 inline unsigned short CConfig::GetMGLevels(void) { return nMultiLevel; }
@@ -866,6 +862,8 @@ inline unsigned short CConfig::GetMarker_All_DV(unsigned short val_marker) { ret
 inline unsigned short CConfig::GetMarker_All_Moving(unsigned short val_marker) { return Marker_All_Moving[val_marker]; }
 
 inline unsigned short CConfig::GetnMarker_All(void) { return nMarker_All; }
+
+inline unsigned short CConfig::GetnMarker_Max(void) { return nMarker_Max; }
 
 inline unsigned short CConfig::GetnMarker_EngineInflow(void) {	return nMarker_EngineInflow; }
 
