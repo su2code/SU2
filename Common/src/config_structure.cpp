@@ -54,7 +54,7 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
 
   /*--- Configuration file boundaries/markers setting ---*/
   
-  SetMarkers(val_software, val_iZone);
+  SetMarkers(val_software);
 
   /*--- Configuration file output ---*/
 
@@ -3013,42 +3013,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
 }
 
-void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) {
-
-  /*--- Identify the solvers that work in serial ---*/
-
-#ifndef HAVE_MPI
-  nDomain = SINGLE_NODE;
-#else
-  if (val_software != SU2_MSH)
-    MPI_Comm_size(MPI_COMM_WORLD, (int*)&nDomain);   // any issue with type conversion here? MC
-  else
-    nDomain = SINGLE_NODE;
-#endif
-
-  /*--- Boundary (marker) treatment ---*/
-  
-  nMarker_All = nMarker_Euler + nMarker_FarField + nMarker_SymWall +
-  nMarker_PerBound + nMarker_NearFieldBound + nMarker_Supersonic_Inlet + nMarker_Supersonic_Outlet +
-  nMarker_InterfaceBound + nMarker_Dirichlet + nMarker_Neumann + nMarker_Riemann+ nMarker_Inlet +
-  nMarker_Outlet + nMarker_Isothermal + nMarker_IsothermalCatalytic +
-  nMarker_IsothermalNonCatalytic + nMarker_HeatFlux + nMarker_HeatFluxCatalytic +
-  nMarker_HeatFluxNonCatalytic + nMarker_EngineInflow + nMarker_EngineBleed + nMarker_EngineExhaust +
-  nMarker_Dirichlet_Elec + nMarker_Displacement + nMarker_Load +
-  nMarker_FlowLoad + nMarker_Pressure + nMarker_Custom +
-  nMarker_ActDisk_Inlet + nMarker_ActDisk_Outlet + nMarker_Out_1D + 2*nDomain;
-
-  Marker_All_TagBound   = new string[nMarker_All+2];			    // Store the tag that correspond with each marker.
-  Marker_All_SendRecv   = new short[nMarker_All+2];						// +#domain (send), -#domain (receive) or 0 (neither send nor receive).
-  Marker_All_KindBC     = new unsigned short[nMarker_All+2];	// Store the kind of boundary condition.
-  Marker_All_Monitoring = new unsigned short[nMarker_All+2];	// Store whether the boundary should be monitored.
-  Marker_All_Designing  = new unsigned short[nMarker_All+2];  // Store whether the boundary should be designed.
-  Marker_All_Plotting   = new unsigned short[nMarker_All+2];	// Store whether the boundary should be plotted.
-  Marker_All_GeoEval    = new unsigned short[nMarker_All+2];	// Store whether the boundary should be geometry evaluation.
-  Marker_All_DV         = new unsigned short[nMarker_All+2];	// Store whether the boundary should be affected by design variables.
-  Marker_All_Moving     = new unsigned short[nMarker_All+2];	// Store whether the boundary should be in motion.
-  Marker_All_PerBound   = new short[nMarker_All+2];						// Store whether the boundary belongs to a periodic boundary.
-  Marker_All_Out_1D     = new unsigned short[nMarker_All+2];           // Store whether the boundary belongs to a 1-d output boundary.
+void CConfig::SetMarkers(unsigned short val_software) {
 
   unsigned short iMarker_All, iMarker_Config, iMarker_Euler, iMarker_Custom,
   iMarker_FarField, iMarker_SymWall, iMarker_Pressure, iMarker_PerBound,
@@ -3060,6 +3025,47 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
   iMarker_Monitoring, iMarker_Designing, iMarker_GeoEval, iMarker_Plotting,
   iMarker_DV, iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet,
   iMarker_ActDisk_Inlet, iMarker_ActDisk_Outlet, iMarker_Out_1D;
+
+  int size = SINGLE_NODE;
+  
+#ifdef HAVE_MPI
+  if (val_software != SU2_MSH)
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+#endif
+
+  /*--- Compute the total number of markers in the config file ---*/
+  
+  nMarker_Config = nMarker_Euler + nMarker_FarField + nMarker_SymWall +
+  nMarker_Pressure + nMarker_PerBound + nMarker_NearFieldBound +
+  nMarker_InterfaceBound + nMarker_Dirichlet + nMarker_Neumann + nMarker_Inlet + nMarker_Riemann +
+  nMarker_Outlet + nMarker_Isothermal + nMarker_IsothermalNonCatalytic +
+  nMarker_IsothermalCatalytic + nMarker_HeatFlux + nMarker_HeatFluxNonCatalytic +
+  nMarker_HeatFluxCatalytic + nMarker_EngineInflow + nMarker_EngineBleed + nMarker_EngineExhaust +
+  nMarker_Supersonic_Inlet + nMarker_Supersonic_Outlet + nMarker_Displacement + nMarker_Load +
+  nMarker_FlowLoad + nMarker_Custom +
+  nMarker_ActDisk_Inlet + nMarker_ActDisk_Outlet + nMarker_Out_1D;
+  
+  /*--- Add the possible send/receive domains ---*/
+
+  nMarker_Max = nMarker_Config + 2*size;
+  
+  /*--- Basic dimensionalization of the markers (worst scenario) ---*/
+
+  nMarker_All = nMarker_Max;
+
+  /*--- Allocate the memory (markers in each domain) ---*/
+  
+  Marker_All_TagBound   = new string[nMarker_All];			    // Store the tag that correspond with each marker.
+  Marker_All_SendRecv   = new short[nMarker_All];						// +#domain (send), -#domain (receive).
+  Marker_All_KindBC     = new unsigned short[nMarker_All];	// Store the kind of boundary condition.
+  Marker_All_Monitoring = new unsigned short[nMarker_All];	// Store whether the boundary should be monitored.
+  Marker_All_Designing  = new unsigned short[nMarker_All];  // Store whether the boundary should be designed.
+  Marker_All_Plotting   = new unsigned short[nMarker_All];	// Store whether the boundary should be plotted.
+  Marker_All_GeoEval    = new unsigned short[nMarker_All];	// Store whether the boundary should be geometry evaluation.
+  Marker_All_DV         = new unsigned short[nMarker_All];	// Store whether the boundary should be affected by design variables.
+  Marker_All_Moving     = new unsigned short[nMarker_All];	// Store whether the boundary should be in motion.
+  Marker_All_PerBound   = new short[nMarker_All];						// Store whether the boundary belongs to a periodic boundary.
+  Marker_All_Out_1D     = new unsigned short[nMarker_All];  // Store whether the boundary belongs to a 1-d output boundary.
 
   for (iMarker_All = 0; iMarker_All < nMarker_All; iMarker_All++) {
     Marker_All_TagBound[iMarker_All]   = "SEND_RECEIVE";
@@ -3075,30 +3081,22 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
     Marker_All_Out_1D[iMarker_All]     = 0;
   }
 
-  nMarker_Config = nMarker_Euler + nMarker_FarField + nMarker_SymWall +
-  nMarker_Pressure + nMarker_PerBound + nMarker_NearFieldBound +
-  nMarker_InterfaceBound + nMarker_Dirichlet + nMarker_Neumann + nMarker_Inlet + nMarker_Riemann +
-  nMarker_Outlet + nMarker_Isothermal + nMarker_IsothermalNonCatalytic +
-  nMarker_IsothermalCatalytic + nMarker_HeatFlux + nMarker_HeatFluxNonCatalytic +
-  nMarker_HeatFluxCatalytic + nMarker_EngineInflow + nMarker_EngineBleed + nMarker_EngineExhaust +
-  nMarker_Supersonic_Inlet + nMarker_Supersonic_Outlet + nMarker_Displacement + nMarker_Load +
-  nMarker_FlowLoad + nMarker_Custom +
-  nMarker_ActDisk_Inlet + nMarker_ActDisk_Outlet + nMarker_Out_1D;
+  /*--- Allocate the memory (markers in the config file) ---*/
 
-  Marker_CfgFile_TagBound        = new string[nMarker_Config];
-  Marker_CfgFile_KindBC   = new unsigned short[nMarker_Config];
+  Marker_CfgFile_TagBound   = new string[nMarker_Config];
+  Marker_CfgFile_KindBC     = new unsigned short[nMarker_Config];
   Marker_CfgFile_Monitoring = new unsigned short[nMarker_Config];
-  Marker_CfgFile_GeoEval    = new unsigned short[nMarker_Config];
+  Marker_CfgFile_Designing  = new unsigned short[nMarker_Config];
   Marker_CfgFile_Plotting   = new unsigned short[nMarker_Config];
+  Marker_CfgFile_GeoEval    = new unsigned short[nMarker_Config];
   Marker_CfgFile_DV         = new unsigned short[nMarker_Config];
   Marker_CfgFile_Moving     = new unsigned short[nMarker_Config];
-  Marker_CfgFile_Designing  = new unsigned short[nMarker_Config];
   Marker_CfgFile_PerBound   = new unsigned short[nMarker_Config];
-  Marker_CfgFile_Out_1D   = new unsigned short[nMarker_Config];
+  Marker_CfgFile_Out_1D     = new unsigned short[nMarker_Config];
 
   for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++) {
-    Marker_CfgFile_TagBound[iMarker_Config] = "SEND_RECEIVE";
-    Marker_CfgFile_KindBC[iMarker_Config]   = 0;
+    Marker_CfgFile_TagBound[iMarker_Config]   = "SEND_RECEIVE";
+    Marker_CfgFile_KindBC[iMarker_Config]     = 0;
     Marker_CfgFile_Monitoring[iMarker_Config] = 0;
     Marker_CfgFile_GeoEval[iMarker_Config]    = 0;
     Marker_CfgFile_Designing[iMarker_Config]  = 0;
@@ -3106,8 +3104,10 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
     Marker_CfgFile_DV[iMarker_Config]         = 0;
     Marker_CfgFile_Moving[iMarker_Config]     = 0;
     Marker_CfgFile_PerBound[iMarker_Config]   = 0;
-    Marker_CfgFile_Out_1D[iMarker_Config]   = 0;
+    Marker_CfgFile_Out_1D[iMarker_Config]     = 0;
   }
+
+  /*--- Populate the marker information in the config file (all domains) ---*/
 
   iMarker_Config = 0;
   for (iMarker_Euler = 0; iMarker_Euler < nMarker_Euler; iMarker_Euler++) {
@@ -3351,7 +3351,6 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
         Marker_CfgFile_Out_1D[iMarker_Config] = YES;
   }
 
-
 }
 
 void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
@@ -3366,13 +3365,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_DV,
   iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet, iMarker_ActDisk_Inlet,
   iMarker_ActDisk_Outlet;
-
-  
-  
-  
-  
-  
-  
   
   cout << endl << "-------------------------------------------------------------------------" << endl;
   cout << "|    ___ _   _ ___                                                      |" << endl;

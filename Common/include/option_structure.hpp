@@ -105,53 +105,56 @@ enum SU2_COMPONENT {
   SU2_DOT = 3,	/*!< \brief Running the SU2_DOT software. */
   SU2_MSH = 4,	/*!< \brief Running the SU2_MSH software. */
   SU2_GEO = 5,	/*!< \brief Running the SU2_GEO software. */
-  SU2_SOL = 6	/*!< \brief Running the SU2_SOL software. */
+  SU2_SOL = 6 	/*!< \brief Running the SU2_SOL software. */
 };
 
-const unsigned int EXIT_DIVERGENCE = 2;		/*!< \brief Exit code (divergence). */
+const unsigned int EXIT_DIVERGENCE = 2; /*!< \brief Exit code (divergence). */
 
-const unsigned int BUFSIZE = 3000000;		/*!< \brief MPI buffer. */
-const unsigned int MAX_PARAMETERS = 10;		/*!< \brief Maximum number of parameters for a design variable definition. */
-const unsigned int MAX_NUMBER_MARKER = 30000;	/*!< \brief Maximum number of markers. */
-const unsigned int MAX_NUMBER_PERIODIC = 10;	/*!< \brief Maximum number of periodic boundary conditions. */
-const unsigned int MAX_STRING_SIZE = 200;	/*!< \brief Maximum number of domains. */
-const unsigned int MAX_NUMBER_FFD = 10;	/*!< \brief Maximum number of FFDBoxes for the FFD. */
-const unsigned int MAX_SOLS = 6;		/*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
-const unsigned int MAX_TERMS = 6;		/*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
-const unsigned int MAX_ZONES = 3; /*!< \brief Maximum number of zones. */
-const unsigned int NO_RK_ITER = 0;		/*!< \brief No Runge-Kutta iteration. */
-const unsigned int MESH_0 = 0;			/*!< \brief Definition of the finest grid level. */
-const unsigned int MESH_1 = 1;			/*!< \brief Definition of the finest grid level. */
-const unsigned int ZONE_0 = 0;			/*!< \brief Definition of the first grid domain. */
-const unsigned int ZONE_1 = 1;			/*!< \brief Definition of the first grid domain. */
+const unsigned int BUFSIZE = 3000000;		     /*!< \brief MPI buffer. */
+const unsigned int MAX_PARAMETERS = 10;		   /*!< \brief Maximum number of parameters for a design variable definition. */
+const unsigned int MAX_NUMBER_PERIODIC = 10; /*!< \brief Maximum number of periodic boundary conditions. */
+const unsigned int MAX_STRING_SIZE = 200;    /*!< \brief Maximum number of domains. */
+const unsigned int MAX_NUMBER_FFD = 10;	     /*!< \brief Maximum number of FFDBoxes for the FFD. */
+const unsigned int MAX_SOLS = 6;		         /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
+const unsigned int MAX_TERMS = 6;		         /*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
+const unsigned int MAX_ZONES = 3;            /*!< \brief Maximum number of zones. */
+const unsigned int NO_RK_ITER = 0;		       /*!< \brief No Runge-Kutta iteration. */
 
-const double AVOGAD_CONSTANT = 6.0221415E26;	/*!< \brief Avogardro's constant, number of particles in one kmole. */
-const double BOLTZMANN_CONSTANT = 1.3806503E-23; /*! \brief Boltzmann's constant [J K^-1] */
+const unsigned int MESH_0 = 0; /*!< \brief Definition of the finest grid level. */
+const unsigned int MESH_1 = 1; /*!< \brief Definition of the finest grid level. */
+const unsigned int ZONE_0 = 0; /*!< \brief Definition of the first grid domain. */
+const unsigned int ZONE_1 = 1; /*!< \brief Definition of the first grid domain. */
+
+const double AVOGAD_CONSTANT = 6.0221415E26;	     /*!< \brief Avogardro's constant, number of particles in one kmole. */
+const double BOLTZMANN_CONSTANT = 1.3806503E-23;   /*! \brief Boltzmann's constant [J K^-1] */
 const double UNIVERSAL_GAS_CONSTANT = 8314.462175; /*! \brief Universal gas constant [J kmol^-1 K^-1] */
-const double ELECTRON_CHARGE = 1.60217646E-19;	/*!< \brief Electronic charge constant. */
-const double ELECTRON_MASS = 9.10938188E-31;	/*!< \brief Mass of an electron. */
+const double ELECTRON_CHARGE = 1.60217646E-19;	   /*!< \brief Electronic charge constant. */
+const double ELECTRON_MASS = 9.10938188E-31;	     /*!< \brief Mass of an electron. */
 const double FREE_PERMITTIVITY = 8.8541878176E-12; /*!< \brief Premittivity of free space. */
-const double MAGNETIC_CONSTANT = 1.25663706E-6;  /*!< \brief magnetic permeability of free space. */
-const double STANDART_GRAVITY = 9.80665;        /*!< \brief Acceleration due to gravity at surface of earth. */
-const double EPS = 1.0E-16;			/*!< \brief Error scale. */
-const double TURB_EPS = 1.0E-16;		/*!< \brief Turbulent Error scale. */
-const double ONE2 = 0.5;			/*!< \brief One divided by two. */
-const double TWO3 = 2.0 / 3.0;			/*!< \brief Two divided by three. */
-const double FOUR3 = 4.0 / 3.0;			/*!< \brief Four divided by three. */
+const double MAGNETIC_CONSTANT = 1.25663706E-6;    /*!< \brief magnetic permeability of free space. */
+const double STANDART_GRAVITY = 9.80665;           /*!< \brief Acceleration due to gravity at surface of earth. */
+
+const double EPS = 1.0E-16;		   /*!< \brief Error scale. */
+const double TURB_EPS = 1.0E-16; /*!< \brief Turbulent Error scale. */
+
+const double ONE2 = 0.5;			   /*!< \brief One divided by two. */
+const double TWO3 = 2.0 / 3.0;	 /*!< \brief Two divided by three. */
+const double FOUR3 = 4.0 / 3.0;  /*!< \brief Four divided by three. */
+
 const double PI_NUMBER = 4.0 * atan(1.0);	/*!< \brief Pi number. */
+
 const int MASTER_NODE = 0;			/*!< \brief Master node for MPI parallelization. */
 const int SINGLE_NODE = 1;			/*!< \brief There is only a node in the MPI parallelization. */
 const int SINGLE_ZONE = 1;			/*!< \brief There is only a zone. */
 
-/** General output & CGNS defines **/
-const unsigned int N_ELEM_TYPES = 7;
-const unsigned int N_POINTS_LINE = 2;
-const unsigned int N_POINTS_TRIANGLE = 3;
-const unsigned int N_POINTS_QUADRILATERAL = 4;
-const unsigned int N_POINTS_TETRAHEDRON = 4;
-const unsigned int N_POINTS_HEXAHEDRON = 8;
-const unsigned int N_POINTS_PYRAMID = 5;
-const unsigned int N_POINTS_WEDGE = 6;
+const unsigned int N_ELEM_TYPES = 7;           /*!< \brief General output & CGNS defines. */
+const unsigned int N_POINTS_LINE = 2;          /*!< \brief General output & CGNS defines. */
+const unsigned int N_POINTS_TRIANGLE = 3;      /*!< \brief General output & CGNS defines. */
+const unsigned int N_POINTS_QUADRILATERAL = 4; /*!< \brief General output & CGNS defines. */
+const unsigned int N_POINTS_TETRAHEDRON = 4;   /*!< \brief General output & CGNS defines. */
+const unsigned int N_POINTS_HEXAHEDRON = 8;    /*!< \brief General output & CGNS defines. */
+const unsigned int N_POINTS_PYRAMID = 5;       /*!< \brief General output & CGNS defines. */
+const unsigned int N_POINTS_WEDGE = 6;         /*!< \brief General output & CGNS defines. */
 
 /*!
  * \brief Boolean answers

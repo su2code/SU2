@@ -52,7 +52,6 @@ CGeometry::CGeometry(void) {
   
   //	PeriodicPoint[MAX_NUMBER_PERIODIC][2].clear();
   //	PeriodicElem[MAX_NUMBER_PERIODIC].clear();
-  //	OldBoundaryElems[MAX_NUMBER_MARKER].clear();
   //	XCoordList.clear();
   
   //	Xcoord_plane.clear();
@@ -126,7 +125,6 @@ CGeometry::~CGeometry(void) {
   
   //	PeriodicPoint[MAX_NUMBER_PERIODIC][2].~vector();
   //	PeriodicElem[MAX_NUMBER_PERIODIC].~vector();
-  //	OldBoundaryElems[MAX_NUMBER_MARKER].~vector();
   //	XCoordList.~vector();
   
   //	Xcoord_plane.~vector()
@@ -1094,10 +1092,22 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
   
 }
 
-CPhysicalGeometry::CPhysicalGeometry() : CGeometry() {}
+CPhysicalGeometry::CPhysicalGeometry() : CGeometry() {
+
+  Global_to_Local_Point = NULL;
+  Local_to_Global_Point = NULL;
+  Local_to_Global_Marker = NULL;
+  Global_to_Local_Marker = NULL;
+
+}
 
 CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, unsigned short val_nZone) : CGeometry() {
   
+  Global_to_Local_Point = NULL;
+  Local_to_Global_Point = NULL;
+  Local_to_Global_Marker = NULL;
+  Global_to_Local_Marker = NULL;
+
   string text_line, Marker_Tag;
   ifstream mesh_file;
   unsigned short iNode_Surface, iMarker, iDim;
@@ -1206,6 +1216,11 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
 
 CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   
+  Global_to_Local_Point = NULL;
+  Local_to_Global_Point = NULL;
+  Local_to_Global_Marker = NULL;
+  Global_to_Local_Marker = NULL;
+
   unsigned long iter,  iPoint, jPoint, iElem, jElem, iVertex;
   unsigned long nElemTotal = 0, nPointTotal = 0, nPointDomainTotal = 0, nPointGhost = 0, nPointPeriodic = 0, nElemTriangle = 0, nElemRectangle = 0, nElemTetrahedron = 0, nElemHexahedron = 0, nElemWedge = 0, nElemPyramid = 0;
   unsigned long iElemTotal, iPointTotal, iPointGhost, iPointDomain, iPointPeriodic, iElemTriangle, iElemRectangle, iElemTetrahedron, iElemHexahedron, iElemWedge, iElemPyramid;
@@ -1230,22 +1245,24 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   vector<long> DomainList;
   short *Marker_All_SendRecv_Copy = NULL;
   string *Marker_All_TagBound_Copy = NULL;
-  
+  unsigned short nMarker_Max = config->GetnMarker_Max();
+
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
   
   /*--- Some dynamic arrays so we're not allocating too much on the stack ---*/
-  unsigned long *nVertexDomain = new unsigned long[MAX_NUMBER_MARKER];
-  unsigned long *nBoundLine = new unsigned long[MAX_NUMBER_MARKER];
-  unsigned long *nBoundTriangle = new unsigned long[MAX_NUMBER_MARKER];
-  unsigned long *nBoundRectangle = new unsigned long[MAX_NUMBER_MARKER];
-  unsigned long *Buffer_Send_nVertexDomain = new unsigned long[MAX_NUMBER_MARKER];
-  unsigned long *Buffer_Send_nBoundLine = new unsigned long[MAX_NUMBER_MARKER];
-  unsigned long *Buffer_Send_nBoundTriangle = new unsigned long[MAX_NUMBER_MARKER];
-  unsigned long *Buffer_Send_nBoundRectangle = new unsigned long[MAX_NUMBER_MARKER];
-  short *Buffer_Send_Marker_All_SendRecv = new short[MAX_NUMBER_MARKER];
-  char *Marker_All_TagBound = new char[MAX_NUMBER_MARKER*MAX_STRING_SIZE];
-  char *Buffer_Send_Marker_All_TagBound = new char[MAX_NUMBER_MARKER*MAX_STRING_SIZE];
+  
+  unsigned long *nVertexDomain = new unsigned long[nMarker_Max];
+  unsigned long *nBoundLine = new unsigned long[nMarker_Max];
+  unsigned long *nBoundTriangle = new unsigned long[nMarker_Max];
+  unsigned long *nBoundRectangle = new unsigned long[nMarker_Max];
+  unsigned long *Buffer_Send_nVertexDomain = new unsigned long[nMarker_Max];
+  unsigned long *Buffer_Send_nBoundLine = new unsigned long[nMarker_Max];
+  unsigned long *Buffer_Send_nBoundTriangle = new unsigned long[nMarker_Max];
+  unsigned long *Buffer_Send_nBoundRectangle = new unsigned long[nMarker_Max];
+  short *Buffer_Send_Marker_All_SendRecv = new short[nMarker_Max];
+  char *Marker_All_TagBound = new char[nMarker_Max*MAX_STRING_SIZE];
+  char *Buffer_Send_Marker_All_TagBound = new char[nMarker_Max*MAX_STRING_SIZE];
 
   
 #ifdef HAVE_MPI
@@ -1301,7 +1318,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   /*--- Basic dimensionalization ---*/
   
   nDomain = size;
-  Marker_All_SendRecv = new short[MAX_NUMBER_MARKER];
+  Marker_All_SendRecv = new short[nMarker_Max];
   nSendDomain_Periodic = new unsigned long [nDomain];
   nReceivedDomain_Periodic = new unsigned long [nDomain];
   
@@ -1601,12 +1618,12 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
         MPI_Isend(&Buffer_Send_nBoundTriangleTotal,                1, MPI_UNSIGNED_LONG,  iDomain, 14, MPI_COMM_WORLD, &send_req[14]);
         MPI_Isend(&Buffer_Send_nBoundRectangleTotal,               1, MPI_UNSIGNED_LONG,  iDomain, 15, MPI_COMM_WORLD, &send_req[15]);
         MPI_Isend(&Buffer_Send_nMarkerDomain,                      1, MPI_UNSIGNED_SHORT, iDomain, 16, MPI_COMM_WORLD, &send_req[16]);
-        MPI_Isend(Buffer_Send_nVertexDomain,       MAX_NUMBER_MARKER, MPI_UNSIGNED_LONG,  iDomain, 17, MPI_COMM_WORLD, &send_req[17]);
-        MPI_Isend(Buffer_Send_nBoundLine,          MAX_NUMBER_MARKER, MPI_UNSIGNED_LONG,  iDomain, 18, MPI_COMM_WORLD, &send_req[18]);
-        MPI_Isend(Buffer_Send_nBoundTriangle,      MAX_NUMBER_MARKER, MPI_UNSIGNED_LONG,  iDomain, 19, MPI_COMM_WORLD, &send_req[19]);
-        MPI_Isend(Buffer_Send_nBoundRectangle,     MAX_NUMBER_MARKER, MPI_UNSIGNED_LONG,  iDomain, 20, MPI_COMM_WORLD, &send_req[20]);
-        MPI_Isend(Buffer_Send_Marker_All_SendRecv, MAX_NUMBER_MARKER, MPI_SHORT,          iDomain, 21, MPI_COMM_WORLD, &send_req[21]);
-        MPI_Isend(Buffer_Send_Marker_All_TagBound,  MAX_NUMBER_MARKER*MAX_STRING_SIZE, MPI_CHAR,           iDomain, 22, MPI_COMM_WORLD, &send_req[22]);
+        MPI_Isend(Buffer_Send_nVertexDomain,       nMarker_Max, MPI_UNSIGNED_LONG,  iDomain, 17, MPI_COMM_WORLD, &send_req[17]);
+        MPI_Isend(Buffer_Send_nBoundLine,          nMarker_Max, MPI_UNSIGNED_LONG,  iDomain, 18, MPI_COMM_WORLD, &send_req[18]);
+        MPI_Isend(Buffer_Send_nBoundTriangle,      nMarker_Max, MPI_UNSIGNED_LONG,  iDomain, 19, MPI_COMM_WORLD, &send_req[19]);
+        MPI_Isend(Buffer_Send_nBoundRectangle,     nMarker_Max, MPI_UNSIGNED_LONG,  iDomain, 20, MPI_COMM_WORLD, &send_req[20]);
+        MPI_Isend(Buffer_Send_Marker_All_SendRecv, nMarker_Max, MPI_SHORT,          iDomain, 21, MPI_COMM_WORLD, &send_req[21]);
+        MPI_Isend(Buffer_Send_Marker_All_TagBound,  nMarker_Max*MAX_STRING_SIZE, MPI_CHAR,           iDomain, 22, MPI_COMM_WORLD, &send_req[22]);
 
         MPI_Isend(&Buffer_Send_nPeriodic,              1, MPI_UNSIGNED_SHORT, iDomain, 23, MPI_COMM_WORLD, &send_req[23]);
         MPI_Isend(Buffer_Send_Center,    nPeriodic*3, MPI_DOUBLE, iDomain, 24, MPI_COMM_WORLD, &send_req[24]);
@@ -1659,7 +1676,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
         nBoundRectangleTotal = Buffer_Send_nBoundRectangleTotal;
         nMarkerDomain        = Buffer_Send_nMarkerDomain;
         
-        for (iMarker = 0; iMarker < MAX_NUMBER_MARKER; iMarker++) {
+        for (iMarker = 0; iMarker < nMarker_Max; iMarker++) {
           nVertexDomain[iMarker] = Buffer_Send_nVertexDomain[iMarker];
           nBoundLine[iMarker] = Buffer_Send_nBoundLine[iMarker];
           nBoundTriangle[iMarker] = Buffer_Send_nBoundTriangle[iMarker];
@@ -1718,12 +1735,12 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
         MPI_Irecv(&nBoundTriangleTotal,                1,  MPI_UNSIGNED_LONG, MASTER_NODE, 14, MPI_COMM_WORLD, &recv_req[14]);
         MPI_Irecv(&nBoundRectangleTotal,               1,  MPI_UNSIGNED_LONG, MASTER_NODE, 15, MPI_COMM_WORLD, &recv_req[15]);
         MPI_Irecv(&nMarkerDomain,                      1, MPI_UNSIGNED_SHORT, MASTER_NODE, 16, MPI_COMM_WORLD, &recv_req[16]);
-        MPI_Irecv(nVertexDomain,       MAX_NUMBER_MARKER,  MPI_UNSIGNED_LONG, MASTER_NODE, 17, MPI_COMM_WORLD, &recv_req[17]);
-        MPI_Irecv(nBoundLine,          MAX_NUMBER_MARKER,  MPI_UNSIGNED_LONG, MASTER_NODE, 18, MPI_COMM_WORLD, &recv_req[18]);
-        MPI_Irecv(nBoundTriangle,      MAX_NUMBER_MARKER,  MPI_UNSIGNED_LONG, MASTER_NODE, 19, MPI_COMM_WORLD, &recv_req[19]);
-        MPI_Irecv(nBoundRectangle,     MAX_NUMBER_MARKER,  MPI_UNSIGNED_LONG, MASTER_NODE, 20, MPI_COMM_WORLD, &recv_req[20]);
-        MPI_Irecv(Marker_All_SendRecv, MAX_NUMBER_MARKER,          MPI_SHORT, MASTER_NODE, 21, MPI_COMM_WORLD, &recv_req[21]);
-        MPI_Irecv(Marker_All_TagBound,      MAX_NUMBER_MARKER*MAX_STRING_SIZE,       MPI_CHAR, MASTER_NODE, 22, MPI_COMM_WORLD, &recv_req[22]);
+        MPI_Irecv(nVertexDomain,       nMarker_Max,  MPI_UNSIGNED_LONG, MASTER_NODE, 17, MPI_COMM_WORLD, &recv_req[17]);
+        MPI_Irecv(nBoundLine,          nMarker_Max,  MPI_UNSIGNED_LONG, MASTER_NODE, 18, MPI_COMM_WORLD, &recv_req[18]);
+        MPI_Irecv(nBoundTriangle,      nMarker_Max,  MPI_UNSIGNED_LONG, MASTER_NODE, 19, MPI_COMM_WORLD, &recv_req[19]);
+        MPI_Irecv(nBoundRectangle,     nMarker_Max,  MPI_UNSIGNED_LONG, MASTER_NODE, 20, MPI_COMM_WORLD, &recv_req[20]);
+        MPI_Irecv(Marker_All_SendRecv, nMarker_Max,          MPI_SHORT, MASTER_NODE, 21, MPI_COMM_WORLD, &recv_req[21]);
+        MPI_Irecv(Marker_All_TagBound,      nMarker_Max*MAX_STRING_SIZE,       MPI_CHAR, MASTER_NODE, 22, MPI_COMM_WORLD, &recv_req[22]);
         MPI_Irecv(&nPeriodic, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, 23, MPI_COMM_WORLD, &recv_req[23]);
         
         /*--- Wait for the this set of non-blocking recv's to complete ---*/
@@ -2210,11 +2227,11 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
       
       nMarker = nMarkerDomain;
       
-      nElem_Bound = new unsigned long [MAX_NUMBER_MARKER];
-      Local_to_Global_Marker = new unsigned short [MAX_NUMBER_MARKER];
-      Tag_to_Marker = new string [MAX_NUMBER_MARKER];
-      string *TagBound_Copy = new string [MAX_NUMBER_MARKER];
-      short *SendRecv_Copy = new short [MAX_NUMBER_MARKER];
+      nElem_Bound = new unsigned long [nMarker_Max];
+      Local_to_Global_Marker = new unsigned short [nMarker_Max];
+      Tag_to_Marker = new string [nMarker_Max];
+      string *TagBound_Copy = new string [nMarker_Max];
+      short *SendRecv_Copy = new short [nMarker_Max];
       
       for (iMarker = 0; iMarker < nMarker; iMarker++) nElem_Bound[iMarker] = nVertexDomain[iMarker];
       
@@ -2418,8 +2435,9 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
   vector<vector<unsigned long> > ReceivedTransfLocal;	/*!< \brief Vector to store the type of transformation for this received point. */
 	vector<vector<unsigned long> > SendDomainLocal; /*!< \brief SendDomain[from domain][to domain] and return the point index of the node that must me sended. */
 	vector<vector<unsigned long> > ReceivedDomainLocal; /*!< \brief SendDomain[from domain][to domain] and return the point index of the node that must me sended. */
-  
-  unsigned long *nVertexDomain = new unsigned long[MAX_NUMBER_MARKER];
+
+  unsigned short nMarker_Max = config->GetnMarker_Max();
+  unsigned long *nVertexDomain = new unsigned long[nMarker_Max];
 
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
@@ -2887,7 +2905,8 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
   bool domain_flag = false;
   bool found_transform = false;
   nZone = val_nZone;
-  
+  unsigned short nMarker_Max = config->GetnMarker_Max();
+
   /*--- Initialize counters for local/global points & elements ---*/
 #ifdef HAVE_MPI
   unsigned long LocalIndex;
@@ -3466,7 +3485,7 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
       config->SetnMarker_All(nMarker);
       bound = new CPrimalGrid**[nMarker];
       nElem_Bound = new unsigned long [nMarker];
-      Tag_to_Marker = new string [MAX_NUMBER_MARKER];
+      Tag_to_Marker = new string [nMarker_Max];
       
       for (iMarker = 0 ; iMarker < nMarker; iMarker++) {
         getline (mesh_file,text_line);
@@ -3702,7 +3721,8 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
   unsigned long iPoint = 0, ielem_div = 0, ielem = 0, GlobalIndex;
   int rank = MASTER_NODE, size = SINGLE_NODE;
   nZone = val_nZone;
-  
+  unsigned short nMarker_Max = config->GetnMarker_Max();
+
   /*--- Local variables which are needed when calling the CGNS mid-level API. ---*/
   unsigned long vnodes_cgns[8];
   double Coord_cgns[3];
@@ -4507,7 +4527,7 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
   config->SetnMarker_All(nMarker);
   bound = new CPrimalGrid**[nMarker];
   nElem_Bound = new unsigned long [nMarker];
-  Tag_to_Marker = new string [MAX_NUMBER_MARKER];
+  Tag_to_Marker = new string [nMarker_Max];
   
   iMarker = 0;
   for ( int k = 0; k < nzones; k ++ ) {
@@ -4680,7 +4700,8 @@ void CPhysicalGeometry::Read_NETCDF_Format(CConfig *config, string val_mesh_file
   char cstr[MAX_STRING_SIZE];
   string::size_type position;
   nZone = val_nZone;
-  
+  unsigned short nMarker_Max = config->GetnMarker_Max();
+
   /*--- Initialize counters for local/global points & elements ---*/
   
   FinestMGLevel = true;
@@ -4937,7 +4958,7 @@ void CPhysicalGeometry::Read_NETCDF_Format(CConfig *config, string val_mesh_file
   
   
   /*--- Create a list with all the markers ---*/
-  marker_list = new unsigned long [MAX_NUMBER_MARKER];
+  marker_list = new unsigned long [nMarker_Max];
   marker_list[0] = surf_marker[0]; nMarker = 1;
   for (iSurfElem = 0; iSurfElem < nSurfElem; iSurfElem++) {
     add = true;
@@ -4963,7 +4984,7 @@ void CPhysicalGeometry::Read_NETCDF_Format(CConfig *config, string val_mesh_file
   
   /*--- Realate the marker index with the position in the array of markers ---*/
   unsigned short *Index_to_Marker;
-  Index_to_Marker = new unsigned short [MAX_NUMBER_MARKER];
+  Index_to_Marker = new unsigned short [nMarker_Max];
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     Marker_Index = marker_list[iMarker];
     Index_to_Marker[Marker_Index] = iMarker;
@@ -4999,7 +5020,7 @@ void CPhysicalGeometry::Read_NETCDF_Format(CConfig *config, string val_mesh_file
     out << marker_list[iMarker];
     Marker_Tag = out.str();
     
-    Tag_to_Marker = new string [MAX_NUMBER_MARKER];
+    Tag_to_Marker = new string [nMarker_Max];
     Tag_to_Marker[config->GetMarker_CfgFile_TagBound(Marker_Tag)] = Marker_Tag;
     config->SetMarker_All_TagBound(iMarker, Marker_Tag);
     config->SetMarker_All_KindBC(iMarker, config->GetMarker_CfgFile_KindBC(Marker_Tag));
@@ -8280,12 +8301,17 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
   unsigned short iMarker, jMarker, kMarker = 0, iPeriodic, iDim, nPeriodic = 0, VTK_Type;
   unsigned long iNode, iIndex, iVertex, iPoint, iElem, kElem;
   unsigned long jElem, kPoint = 0, jVertex = 0, jPoint = 0, pPoint = 0, nPointPeriodic, newNodes[4] = {0,0,0,0};
-  vector<unsigned long>::iterator IterElem, IterPoint[MAX_NUMBER_PERIODIC][2], IterNewElem[MAX_NUMBER_MARKER];
+  vector<unsigned long>::iterator IterElem, IterPoint[MAX_NUMBER_PERIODIC][2];
   double *center, *angles, rotMatrix[3][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}},
   translation[3], *trans, theta, phi, psi, cosTheta, sinTheta, cosPhi, sinPhi, cosPsi, sinPsi,
   dx, dy, dz, rotCoord[3], epsilon = 1e-10, mindist = 1e6, *Coord_i, *Coord_j, dist = 0.0;
   bool isBadMatch = false;
-  
+
+  /*--- Check this dimensionalization ---*/
+
+  vector<unsigned long> OldBoundaryElems[100];
+  vector<unsigned long>::iterator IterNewElem[100];
+
   /*--- It only create the mirror structure for the second boundary ---*/
   bool CreateMirror[10];
   CreateMirror[1] = false;
@@ -9411,11 +9437,15 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry ***geometry, CConfig **config_c
   unsigned long iPoint, Index_CoarseCV, CVPoint, iElem, iVertex, jPoint, iteration, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector, iParent, jVertex, *Buffer_Receive_Parent = NULL, *Buffer_Send_Parent = NULL, *Buffer_Receive_Children = NULL, *Buffer_Send_Children = NULL, *Parent_Remote = NULL, *Children_Remote = NULL, *Parent_Local = NULL, *Children_Local = NULL, Local_nPointCoarse, Local_nPointFine, Global_nPointCoarse, Global_nPointFine;;
   short marker_seed;
   bool agglomerate_seed = true;
-  unsigned short nChildren, iNode, counter, iMarker, jMarker, priority, copy_marker[MAX_NUMBER_MARKER], MarkerS, MarkerR, *nChildren_MPI;
+  unsigned short nChildren, iNode, counter, iMarker, jMarker, priority, MarkerS, MarkerR, *nChildren_MPI;
   vector<unsigned long> Suitable_Indirect_Neighbors, Aux_Parent;
   vector<unsigned long>::iterator it;
   int rank;
 
+  unsigned short nMarker_Max = config->GetnMarker_Max();
+
+  unsigned short *copy_marker = new unsigned short [nMarker_Max];
+  
 #ifndef HAVE_MPI
   rank = MASTER_NODE;
 #else
@@ -10018,6 +10048,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry ***geometry, CConfig **config_c
       cout <<"MG level: "<< iMesh <<"-> CVs: " << Global_nPointCoarse << ". Agglomeration rate 1/" << ratio <<". CFL "<< CFL <<"." << endl;
     }
   }
+ 
+  delete [] copy_marker;
   
 }
 
@@ -10030,7 +10062,10 @@ bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, short mark
   
   bool agglomerate_CV = false;
   unsigned short counter, jMarker;
-  unsigned short copy_marker[MAX_NUMBER_MARKER];
+  
+  unsigned short nMarker_Max = config->GetnMarker_Max();
+  
+  unsigned short *copy_marker = new unsigned short [nMarker_Max];
 
   /*--- Basic condition, the element has not being previously agglomerated, it belongs to the domain, 
    and has passed some basic geometrical check ---*/
@@ -10097,6 +10132,9 @@ bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, short mark
   }
   
   return agglomerate_CV;
+  
+  delete [] copy_marker;
+
 }
 
 
@@ -10302,7 +10340,8 @@ void CMultiGridGeometry::SetVertex(CGeometry *fine_grid, CConfig *config) {
   unsigned short iMarker, iMarker_Tag, iChildren;
   
   nMarker = fine_grid->GetnMarker();
-  
+  unsigned short nMarker_Max = config->GetnMarker_Max();
+
   /*--- If any children node belong to the boundary then the entire control
    volume will belong to the boundary ---*/
   for (iCoarsePoint = 0; iCoarsePoint < nPoint; iCoarsePoint ++)
@@ -10317,8 +10356,8 @@ void CMultiGridGeometry::SetVertex(CGeometry *fine_grid, CConfig *config) {
   vertex = new CVertex**[nMarker];
   nVertex = new unsigned long [nMarker];
   
-  Tag_to_Marker = new string [MAX_NUMBER_MARKER];
-  for (iMarker_Tag = 0; iMarker_Tag < MAX_NUMBER_MARKER; iMarker_Tag++)
+  Tag_to_Marker = new string [nMarker_Max];
+  for (iMarker_Tag = 0; iMarker_Tag < nMarker_Max; iMarker_Tag++)
     Tag_to_Marker[iMarker_Tag] = fine_grid->GetMarker_Tag(iMarker_Tag);
   
   /*--- Compute the number of vertices to do the dimensionalization ---*/
@@ -10885,7 +10924,8 @@ CPeriodicGeometry::CPeriodicGeometry(CGeometry *geometry, CConfig *config) {
   double *center, *angles, rotMatrix[3][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}},
   translation[3], *trans, theta, phi, psi, cosTheta, sinTheta, cosPhi, sinPhi, cosPsi, sinPsi,
   dx, dy, dz, rotCoord[3], *Coord_i;
-  
+  unsigned short nMarker_Max = config->GetnMarker_Max();
+
   /*--- It only create the mirror structure for the second boundary ---*/
   bool CreateMirror[10];
   CreateMirror[1] = false;
@@ -11163,7 +11203,7 @@ CPeriodicGeometry::CPeriodicGeometry(CGeometry *geometry, CConfig *config) {
   nMarker = geometry->GetnMarker() + 2;
   nElem_Bound = new unsigned long [nMarker];
   bound = new CPrimalGrid**[nMarker];
-  Tag_to_Marker = new string [MAX_NUMBER_MARKER];
+  Tag_to_Marker = new string [nMarker_Max];
   config->SetnMarker_All(nMarker);
   
   /*--- Copy the olf boundary ---*/
