@@ -2670,21 +2670,22 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   ElemIn = new bool [geometry->no_of_local_elements];
   Global_to_Local_Point =  new long[geometry->GetnPoint()];
 
-  // DOUBLE CHECK THESE, SINCE WE DO THIS AGAIN AT BOTTOM WITH THE MASTER ---*/
-
-  MarkerIn = new bool [geometry->GetnMarker()];
-  VertexIn = new bool* [geometry->GetnMarker()];
-  for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
-  VertexIn[iMarker] = new bool [geometry->GetnElem_Bound(iMarker)];
   
   Buffer_Send_nDim  = geometry->GetnDim();
   Buffer_Send_nZone = geometry->GetnZone();
   
-  Buffer_Send_nPeriodic = config->GetnPeriodicIndex();
-  Buffer_Send_Center    = new double[Buffer_Send_nPeriodic*3];
-  Buffer_Send_Rotation  = new double[Buffer_Send_nPeriodic*3];
-  Buffer_Send_Translate = new double[Buffer_Send_nPeriodic*3];
-  
+  // DOUBLE CHECK THESE, SINCE WE DO THIS AGAIN AT BOTTOM WITH THE MASTER
+//  MarkerIn = new bool [geometry->GetnMarker()];
+//  VertexIn = new bool* [geometry->GetnMarker()];
+//  for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
+//    VertexIn[iMarker] = new bool [geometry->GetnElem_Bound(iMarker)];
+//
+//  
+//  Buffer_Send_nPeriodic = config->GetnPeriodicIndex();
+//  Buffer_Send_Center    = new double[Buffer_Send_nPeriodic*3];
+//  Buffer_Send_Rotation  = new double[Buffer_Send_nPeriodic*3];
+//  Buffer_Send_Translate = new double[Buffer_Send_nPeriodic*3];
+//  
 //  Buffer_Send_nSendDomain_Periodic = new unsigned long [nDomain];
 //  Buffer_Send_nReceivedDomain_Periodic = new unsigned long [nDomain];
   
@@ -6584,7 +6585,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   /*--- Check the grid ---*/
   
   if (mesh_file.fail()) {
-    cout << "There is no geometry file (CPhysicalGeometry)!! " << cstr << endl;
+    cout << "There is no mesh file (CPhysicalGeometry)!! " << cstr << endl;
 #ifndef HAVE_MPI
     exit(1);
 #else
@@ -6995,6 +6996,9 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   /*--- Post process the adjacency information in order to get it into the
    proper format before sending the data to ParMETIS. We need to remove
    repeats and adjust the size of the array for each local node. ---*/
+
+  if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
+    cout << "Building the graph adjacency structure." << endl;
   
   unsigned long loc_adjc_size=0;
   vector<unsigned long> adjac_vec;
@@ -7045,9 +7049,6 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
     delete[] adjacent_elem[iPoint];
   }
   delete [] adjacent_elem;
-  
-  if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
-    cout << "Finished building the adjacency structure." << endl;
   
   /*--- For now, the boundary marker information is still read by the
    master node alone (and eventually distributed by the master as well).
@@ -11547,7 +11548,7 @@ void CPhysicalGeometry::SetColorGrid_Parallel(CConfig *config) {
   nparts  = (idx_t)size;
   idx_t options[METIS_NOPTIONS];
   METIS_SetDefaultOptions(options);
-  options[1] = 1;
+  options[1] = 0;
   
   /*--- Initialize the color vector ---*/
   
