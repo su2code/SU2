@@ -54,8 +54,8 @@ COutput::COutput(void) {
   /*--- Initialize CGNS write flag ---*/
   wrote_CGNS_base = false;
   
-  /*--- Initialize Tecplot write flag ---*/
-  wrote_Tecplot_base = false;
+  /*--- Initialize Tecplot surface flag ---*/
+  wrote_surf_file = false;
   
   /*--- Initialize Paraview write flag ---*/
   wrote_Paraview_base = false;
@@ -6321,7 +6321,7 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
     
     bool Wrt_Csv = config[iZone]->GetWrt_Csv_Sol();
     
-    if (rank == MASTER_NODE) cout << endl << "Writing Comma-Separated Values surface files." << endl;
+    if (rank == MASTER_NODE) cout << endl << "Writing comma-separated values (CSV) surface files." << endl;
 
     switch (config[iZone]->GetKind_Solver()) {
         
@@ -6371,6 +6371,7 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
 
     if ((rank == MASTER_NODE) && (Wrt_Vol || Wrt_Srf)) {
       if (FileFormat == TECPLOT_BINARY) {
+        if (rank == MASTER_NODE) cout << "Writing Tecplot binary volume and surface mesh files." << endl;
         SetTecplot_MeshBinary(config[iZone], geometry[iZone][MESH_0], iZone);
         SetTecplot_SurfaceMesh(config[iZone], geometry[iZone][MESH_0], iZone);
         if (!wrote_base_file)
@@ -6404,7 +6405,7 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
             
             /*--- Write a Tecplot ASCII file ---*/
             
-            if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file (volume grid)." << endl;
+            if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file volume solution file." << endl;
             SetTecplot_ASCII(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0],iZone, val_nZone, false);
             DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], false);
             break;
@@ -6413,7 +6414,7 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
             
             /*--- Write a Tecplot binary solution file ---*/
             
-            if (rank == MASTER_NODE) cout << "Writing Tecplot Binary file (volume grid)." << endl;
+            if (rank == MASTER_NODE) cout << "Writing Tecplot binary volume solution file." << endl;
             SetTecplot_Solution(config[iZone], geometry[iZone][MESH_0], iZone);
             break;
             
@@ -6422,7 +6423,7 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
             
             /*--- Write a Paraview ASCII file ---*/
             
-            if (rank == MASTER_NODE) cout << "Writing Paraview ASCII file (volume grid)." << endl;
+            if (rank == MASTER_NODE) cout << "Writing Paraview ASCII volume solution file." << endl;
             SetParaview_ASCII(config[iZone], geometry[iZone][MESH_0], iZone, val_nZone, false);
             DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], false);
             break;
@@ -6441,7 +6442,7 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
             
             /*--- Write a Tecplot ASCII file ---*/
             
-            if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file (surface grid)." << endl;
+            if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII surface solution file." << endl;
             SetTecplot_ASCII(config[iZone], geometry[iZone][MESH_0],solver_container[iZone][MESH_0] ,iZone, val_nZone, true);
             DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], true);
             break;
@@ -6450,7 +6451,7 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
             
             /*--- Write a Tecplot binary solution file ---*/
             
-            if (rank == MASTER_NODE) cout << "Writing Tecplot Binary file (surface grid)." << endl;
+            if (rank == MASTER_NODE) cout << "Writing Tecplot binary surface solution file." << endl;
             SetTecplot_SurfaceSolution(config[iZone], geometry[iZone][MESH_0], iZone);
             break;
             
@@ -6458,7 +6459,7 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
             
             /*--- Write a Paraview ASCII file ---*/
             
-            if (rank == MASTER_NODE) cout << "Writing Paraview ASCII file (surface grid)." << endl;
+            if (rank == MASTER_NODE) cout << "Writing Paraview ASCII surface solution file." << endl;
             SetParaview_ASCII(config[iZone], geometry[iZone][MESH_0], iZone, val_nZone, true);
             DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], true);
             break;
@@ -6481,6 +6482,7 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
     
 #ifdef HAVE_MPI
     MPI_Bcast(&wrote_base_file, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
+    MPI_Bcast(&wrote_surf_file, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
 #endif
     
   }
