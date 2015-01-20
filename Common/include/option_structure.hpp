@@ -110,10 +110,10 @@ enum SU2_COMPONENT {
 
 const unsigned int EXIT_DIVERGENCE = 2;		/*!< \brief Exit code (divergence). */
 
-const unsigned int BUFSIZE = 3000000;		/*!< \brief MPI buffer. */
-const unsigned int MAX_PARAMETERS = 10;		/*!< \brief Maximum number of parameters for a design variable definition. */
-const unsigned int MAX_NUMBER_PERIODIC = 10;	/*!< \brief Maximum number of periodic boundary conditions. */
-const unsigned int MAX_STRING_SIZE = 200;	/*!< \brief Maximum number of domains. */
+const unsigned int BUFSIZE = 3000000;		     /*!< \brief MPI buffer. */
+const unsigned int MAX_PARAMETERS = 10;		   /*!< \brief Maximum number of parameters for a design variable definition. */
+const unsigned int MAX_NUMBER_PERIODIC = 10; /*!< \brief Maximum number of periodic boundary conditions. */
+const unsigned int MAX_STRING_SIZE = 200;  	/*!< \brief Maximum number of domains. */
 const unsigned int MAX_NUMBER_FFD = 10;	/*!< \brief Maximum number of FFDBoxes for the FFD. */
 const unsigned int MAX_SOLS = 6;		/*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
 const unsigned int MAX_TERMS = 6;		/*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
@@ -138,14 +138,14 @@ const double ONE2 = 0.5;			/*!< \brief One divided by two. */
 const double TWO3 = 2.0 / 3.0;			/*!< \brief Two divided by three. */
 const double FOUR3 = 4.0 / 3.0;			/*!< \brief Four divided by three. */
 const double PI_NUMBER = 4.0 * atan(1.0);	/*!< \brief Pi number. */
+
 const int MASTER_NODE = 0;			/*!< \brief Master node for MPI parallelization. */
 const int SINGLE_NODE = 1;			/*!< \brief There is only a node in the MPI parallelization. */
 const int SINGLE_ZONE = 1;			/*!< \brief There is only a zone. */
 
-/** General output & CGNS defines **/
-const unsigned int N_ELEM_TYPES = 7;
-const unsigned int N_POINTS_LINE = 2;
-const unsigned int N_POINTS_TRIANGLE = 3;
+const unsigned int N_ELEM_TYPES = 7; /*!< \brief General output & CGNS defines. */
+const unsigned int N_POINTS_LINE = 2;            /*!< \brief General output & CGNS defines. */
+const unsigned int N_POINTS_TRIANGLE = 3;      /*!< \brief General output & CGNS defines. */
 const unsigned int N_POINTS_QUADRILATERAL = 4;
 const unsigned int N_POINTS_TETRAHEDRON = 4;
 const unsigned int N_POINTS_HEXAHEDRON = 8;

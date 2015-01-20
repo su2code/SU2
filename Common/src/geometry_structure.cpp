@@ -8290,10 +8290,10 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
   dx, dy, dz, rotCoord[3], epsilon = 1e-10, mindist = 1e6, *Coord_i, *Coord_j, dist = 0.0;
   bool isBadMatch = false;
 
-  unsigned short nMarker_Max = config->GetnMarker_Max();
+  /*--- Check this dimensionalization ---*/
 
-  vector<unsigned long> OldBoundaryElems[nMarker_Max];  /*!< \brief Vector of old boundary elements. */
-  vector<unsigned long>::iterator IterNewElem[nMarker_Max];
+  vector<unsigned long> OldBoundaryElems[100];
+  vector<unsigned long>::iterator IterNewElem[100];
 
   /*--- It only create the mirror structure for the second boundary ---*/
   bool CreateMirror[10];
