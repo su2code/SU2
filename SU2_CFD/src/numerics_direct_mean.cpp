@@ -1184,117 +1184,111 @@ CUpwRoe_Flow::~CUpwRoe_Flow(void) {
 }
 
 void CUpwRoe_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
-    
-    double U_i[5] = {0.0,0.0,0.0,0.0,0.0}, U_j[5] = {0.0,0.0,0.0,0.0,0.0};
-    double ProjGridVel = 0.0;
-
-    /*--- Face area (norm or the normal vector) ---*/
-    
-    Area = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++)
-        Area += Normal[iDim]*Normal[iDim];
-    Area = sqrt(Area);
-    
-    /*-- Unit Normal ---*/
-    
-    for (iDim = 0; iDim < nDim; iDim++)
-        UnitNormal[iDim] = Normal[iDim]/Area;
-    
-    /*--- Primitive variables at point i ---*/
-    
-    for (iDim = 0; iDim < nDim; iDim++)
-        Velocity_i[iDim] = V_i[iDim+1];
-    Pressure_i = V_i[nDim+1];
-    Density_i = V_i[nDim+2];
-    Enthalpy_i = V_i[nDim+3];
-    Energy_i = Enthalpy_i - Pressure_i/Density_i;
-    SoundSpeed_i = sqrt(Pressure_i*Gamma/Density_i);
-    
-    /*--- Primitive variables at point j ---*/
-    
-    for (iDim = 0; iDim < nDim; iDim++)
-        Velocity_j[iDim] = V_j[iDim+1];
-    Pressure_j = V_j[nDim+1];
-    Density_j = V_j[nDim+2];
-    Enthalpy_j = V_j[nDim+3];
-    Energy_j = Enthalpy_j - Pressure_j/Density_j;
-    SoundSpeed_j = sqrt(Pressure_j*Gamma/Density_j);
-    
-    /*--- Recompute conservative variables ---*/
-    
-    U_i[0] = Density_i; U_j[0] = Density_j;
-    for (iDim = 0; iDim < nDim; iDim++) {
-        U_i[iDim+1] = Density_i*Velocity_i[iDim]; U_j[iDim+1] = Density_j*Velocity_j[iDim];
-    }
-    U_i[nDim+1] = Density_i*Energy_i; U_j[nDim+1] = Density_j*Energy_j;
-    
-    /*--- Roe-averaged variables at interface between i & j ---*/
-    
-    R = sqrt(fabs(Density_j/Density_i));
-    RoeDensity = R*Density_i;
-    sq_vel = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++) {
-        RoeVelocity[iDim] = (R*Velocity_j[iDim]+Velocity_i[iDim])/(R+1);
-        sq_vel += RoeVelocity[iDim]*RoeVelocity[iDim];
-    }
-    RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/(R+1);
-    RoeSoundSpeed = sqrt((Gamma-1)*(RoeEnthalpy-0.5*sq_vel));
-    
-    
-    /*--- Compute ProjFlux_i ---*/
-    
-    GetInviscidProjFlux(&Density_i, Velocity_i, &Pressure_i, &Enthalpy_i, Normal, ProjFlux_i);
-    
-    /*--- Compute ProjFlux_j ---*/
-    
-    GetInviscidProjFlux(&Density_j, Velocity_j, &Pressure_j, &Enthalpy_j, Normal, ProjFlux_j);
-    
-    /*--- Compute P and Lambda (do it with the Normal) ---*/
-    
-    GetPMatrix(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitNormal, P_Tensor);
-    
-    ProjVelocity = 0.0; ProjVelocity_i = 0.0; ProjVelocity_j = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++) {
-        ProjVelocity   += RoeVelocity[iDim]*UnitNormal[iDim];
-        ProjVelocity_i += Velocity_i[iDim]*UnitNormal[iDim];
-        ProjVelocity_j += Velocity_j[iDim]*UnitNormal[iDim];
-    }
-    
-    /*--- Projected velocity adjustment due to mesh motion ---*/
-    
-    if (grid_movement) {
-        ProjGridVel = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) {
-            ProjGridVel   += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*UnitNormal[iDim];
-        }
-        ProjVelocity   -= ProjGridVel;
-        ProjVelocity_i -= ProjGridVel;
-        ProjVelocity_j -= ProjGridVel;
-    }
-    
-    /*--- Flow eigenvalues and entropy correctors ---*/
-    
-    for (iDim = 0; iDim < nDim; iDim++)
-        Lambda[iDim] = ProjVelocity;
-    
-    Lambda[nVar-2] = ProjVelocity + RoeSoundSpeed;
-    Lambda[nVar-1] = ProjVelocity - RoeSoundSpeed;
-    
-    /*--- Mavriplis' entropy correction ---*/
-    
-    MaxLambda = fabs(ProjVelocity) + RoeSoundSpeed;
-    Delta = config->GetEntropyFix_Coeff();
-    
-    for (iVar = 0; iVar < nVar; iVar++) {
-        sign = 1.0; if (Lambda[iVar] < 0.0) sign = -1.0;
-        Lambda[iVar] = sign*max(fabs(Lambda[iVar]), Delta*MaxLambda);
-    }
   
-    /*--- Compute absolute value ---*/
-
-    for (iVar = 0; iVar < nVar; iVar++)
-        Lambda[iVar] = fabs(Lambda[iVar]);
-    
+  double U_i[5] = {0.0,0.0,0.0,0.0,0.0}, U_j[5] = {0.0,0.0,0.0,0.0,0.0};
+  double ProjGridVel = 0.0;
+  
+  /*--- Face area (norm or the normal vector) ---*/
+  
+  Area = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++)
+    Area += Normal[iDim]*Normal[iDim];
+  Area = sqrt(Area);
+  
+  /*-- Unit Normal ---*/
+  
+  for (iDim = 0; iDim < nDim; iDim++)
+    UnitNormal[iDim] = Normal[iDim]/Area;
+  
+  /*--- Primitive variables at point i ---*/
+  
+  for (iDim = 0; iDim < nDim; iDim++)
+    Velocity_i[iDim] = V_i[iDim+1];
+  Pressure_i = V_i[nDim+1];
+  Density_i = V_i[nDim+2];
+  Enthalpy_i = V_i[nDim+3];
+  Energy_i = Enthalpy_i - Pressure_i/Density_i;
+  SoundSpeed_i = sqrt(Pressure_i*Gamma/Density_i);
+  
+  /*--- Primitive variables at point j ---*/
+  
+  for (iDim = 0; iDim < nDim; iDim++)
+    Velocity_j[iDim] = V_j[iDim+1];
+  Pressure_j = V_j[nDim+1];
+  Density_j = V_j[nDim+2];
+  Enthalpy_j = V_j[nDim+3];
+  Energy_j = Enthalpy_j - Pressure_j/Density_j;
+  SoundSpeed_j = sqrt(Pressure_j*Gamma/Density_j);
+  
+  /*--- Recompute conservative variables ---*/
+  
+  U_i[0] = Density_i; U_j[0] = Density_j;
+  for (iDim = 0; iDim < nDim; iDim++) {
+    U_i[iDim+1] = Density_i*Velocity_i[iDim]; U_j[iDim+1] = Density_j*Velocity_j[iDim];
+  }
+  U_i[nDim+1] = Density_i*Energy_i; U_j[nDim+1] = Density_j*Energy_j;
+  
+  /*--- Roe-averaged variables at interface between i & j ---*/
+  
+  R = sqrt(fabs(Density_j/Density_i));
+  RoeDensity = R*Density_i;
+  sq_vel = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++) {
+    RoeVelocity[iDim] = (R*Velocity_j[iDim]+Velocity_i[iDim])/(R+1);
+    sq_vel += RoeVelocity[iDim]*RoeVelocity[iDim];
+  }
+  RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/(R+1);
+  RoeSoundSpeed = sqrt((Gamma-1)*(RoeEnthalpy-0.5*sq_vel));
+  
+  
+  /*--- Compute ProjFlux_i ---*/
+  
+  GetInviscidProjFlux(&Density_i, Velocity_i, &Pressure_i, &Enthalpy_i, Normal, ProjFlux_i);
+  
+  /*--- Compute ProjFlux_j ---*/
+  
+  GetInviscidProjFlux(&Density_j, Velocity_j, &Pressure_j, &Enthalpy_j, Normal, ProjFlux_j);
+  
+  /*--- Compute P and Lambda (do it with the Normal) ---*/
+  
+  GetPMatrix(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitNormal, P_Tensor);
+  
+  ProjVelocity = 0.0; ProjVelocity_i = 0.0; ProjVelocity_j = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++) {
+    ProjVelocity   += RoeVelocity[iDim]*UnitNormal[iDim];
+    ProjVelocity_i += Velocity_i[iDim]*UnitNormal[iDim];
+    ProjVelocity_j += Velocity_j[iDim]*UnitNormal[iDim];
+  }
+  
+  /*--- Projected velocity adjustment due to mesh motion ---*/
+  
+  if (grid_movement) {
+    ProjGridVel = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++) {
+      ProjGridVel   += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*UnitNormal[iDim];
+    }
+    ProjVelocity   -= ProjGridVel;
+    ProjVelocity_i -= ProjGridVel;
+    ProjVelocity_j -= ProjGridVel;
+  }
+  
+  /*--- Flow eigenvalues and entropy correctors ---*/
+  
+  for (iDim = 0; iDim < nDim; iDim++)
+    Lambda[iDim] = ProjVelocity;
+  
+  Lambda[nVar-2] = ProjVelocity + RoeSoundSpeed;
+  Lambda[nVar-1] = ProjVelocity - RoeSoundSpeed;
+  
+  /*--- Compute absolute value with Mavriplis' entropy correction ---*/
+  
+  MaxLambda = fabs(ProjVelocity) + RoeSoundSpeed;
+  Delta = config->GetEntropyFix_Coeff();
+  
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Lambda[iVar] = max(fabs(Lambda[iVar]), Delta*MaxLambda);
+  }
+  
   if (!implicit) {
     
     /*--- Compute wave amplitudes (characteristics) ---*/
