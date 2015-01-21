@@ -3,7 +3,7 @@
 ## \file change_version_number.py
 #  \brief Python script for doing the continuous adjoint computation using the SU2 suite.
 #  \author A. Aranake
-#  \version 3.2.7.1 "eagle"
+#  \version 3.2.7.2 "eagle"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).

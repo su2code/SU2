@@ -5,7 +5,7 @@
  *        <i>solution_direct.cpp</i>, <i>solution_adjoint.cpp</i>, and
  *        <i>solution_linearized.cpp</i> files.
  * \author F. Palacios, T. Economon
- * \version 3.2.7.1 "eagle"
+ * \version 3.2.7.2 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -62,7 +62,7 @@ using namespace std;
  * \brief Main class for defining the PDE solution, it requires
  * a child class for each particular solver (Euler, Navier-Stokes, etc.)
  * \author F. Palacios.
- * \version 3.2.7.1 "eagle"
+ * \version 3.2.7.2 "eagle"
  */
 class CSolver {
 protected:
@@ -2104,7 +2104,7 @@ public:
  * \class CBaselineSolver
  * \brief Main class for defining a baseline solution from a restart file (for output).
  * \author F. Palacios, T. Economon.
- * \version 3.2.7.1 "eagle"
+ * \version 3.2.7.2 "eagle"
  */
 class CBaselineSolver : public CSolver {
 public:
@@ -2149,7 +2149,7 @@ public:
  * \brief Main class for defining the Euler's flow solver.
  * \ingroup Euler_Equations
  * \author F. Palacios.
- * \version 3.2.7.1 "eagle"
+ * \version 3.2.7.2 "eagle"
  */
 class CEulerSolver : public CSolver {
 protected:
@@ -3483,7 +3483,7 @@ public:
  * \brief Main class for defining the Navier-Stokes flow solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios.
- * \version 3.2.7.1 "eagle"
+ * \version 3.2.7.2 "eagle"
  */
 class CNSSolver : public CEulerSolver {
 private:
@@ -3721,7 +3721,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 3.2.7.1 "eagle"
+ * \version 3.2.7.2 "eagle"
  */
 class CTurbSolver : public CSolver {
 protected:
@@ -3850,7 +3850,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 3.2.7.1 "eagle"
+ * \version 3.2.7.2 "eagle"
  */
 
 class CTurbSASolver: public CTurbSolver {
@@ -4053,7 +4053,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author B. Tracey.
- * \version 3.2.7.1 "eagle"
+ * \version 3.2.7.2 "eagle"
  */
 
 class CTurbMLSolver: public CTurbSolver {
@@ -4200,7 +4200,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Aranake.
- * \version 3.2.7.1 "eagle"
+ * \version 3.2.7.2 "eagle"
  */
 
 class CTransLMSolver: public CTurbSolver {
@@ -4380,7 +4380,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Campos, F. Palacios, T. Economon
- * \version 3.2.7.1 "eagle"
+ * \version 3.2.7.2 "eagle"
  */
 
 class CTurbSSTSolver: public CTurbSolver {
@@ -4523,7 +4523,7 @@ public:
  * \brief Main class for defining the Euler's adjoint flow solver.
  * \ingroup Euler_Equations
  * \author F. Palacios.
- * \version 3.2.7.1 "eagle"
+ * \version 3.2.7.2 "eagle"
  */
 class CAdjEulerSolver : public CSolver {
 protected:
@@ -5003,7 +5003,7 @@ public:
  * \brief Main class for defining the Navier-Stokes' adjoint flow solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios.
- * \version 3.2.7.1 "eagle"
+ * \version 3.2.7.2 "eagle"
  */
 class CAdjNSSolver : public CAdjEulerSolver {
 public:
@@ -5110,7 +5110,7 @@ public:
  * \brief Main class for defining the adjoint turbulence model solver.
  * \ingroup Turbulence_Model
  * \author F. Palacios, A. Bueno.
- * \version 3.2.7.1 "eagle"
+ * \version 3.2.7.2 "eagle"
  */
 class CAdjTurbSolver : public CSolver {
 private:
@@ -5256,7 +5256,7 @@ public:
  * \brief Main class for defining the linearized Euler solver.
  * \ingroup Euler_Equations
  * \author F. Palacios.
- * \version 3.2.7.1 "eagle"
+ * \version 3.2.7.2 "eagle"
  */
 class CLinEulerSolver : public CSolver {
 private:
@@ -5380,7 +5380,7 @@ public:
 /*! \class CPoissonSolver
  *  \brief Main class for defining the poisson potential solver.
  *  \author F. Palacios.
- *  \version 3.2.7.1 "eagle"
+ *  \version 3.2.7.2 "eagle"
  *  \date May 3, 2010.
  */
 class CPoissonSolver : public CSolver {
@@ -5516,7 +5516,7 @@ public:
 /*! \class CWaveSolver
  *  \brief Main class for defining the wave solver.
  *  \author F. Palacios.
- *  \version 3.2.7.1 "eagle"
+ *  \version 3.2.7.2 "eagle"
  *  \date May 3, 2010.
  */
 class CWaveSolver : public CSolver {
@@ -5671,7 +5671,7 @@ public:
 /*! \class CHeatSolver
  *  \brief Main class for defining the heat solver.
  *  \author F. Palacios.
- *  \version 3.2.7.1 "eagle"
+ *  \version 3.2.7.2 "eagle"
  *  \date May 3, 2010.
  */
 class CHeatSolver : public CSolver {
@@ -5791,7 +5791,7 @@ public:
 /*! \class CFEASolver
  *  \brief Main class for defining the FEA solver.
  *  \author F. Palacios.
- *  \version 3.2.7.1 "eagle"
+ *  \version 3.2.7.2 "eagle"
  *  \date May 3, 2010.
  */
 class CFEASolver : public CSolver {
@@ -5971,7 +5971,7 @@ public:
  * \brief Main class for defining the level set solver.
  * \ingroup LevelSet_Model
  * \author F. Palacios.
- * \version 3.2.7.1 "eagle"
+ * \version 3.2.7.2 "eagle"
  */
 class CAdjLevelSetSolver : public CSolver {
 protected:
@@ -6155,7 +6155,7 @@ public:
  * \brief Main class for defining the template model solver.
  * \ingroup Template_Flow_Equation
  * \author F. Palacios.
- * \version 3.2.7.1 "eagle"
+ * \version 3.2.7.2 "eagle"
  */
 class CTemplateSolver : public CSolver {
 private:

@@ -2,7 +2,7 @@
  * \file solution_direct_mean.cpp
  * \brief Main subrotuines for solving direct problems (Euler, Navier-Stokes, etc.).
  * \author F. Palacios, T. Economon
- * \version 3.2.7.1 "eagle"
+ * \version 3.2.7.2 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -2265,21 +2265,21 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
           cout << "Specific gas constant: " << config->GetGas_Constant();
           if (config->GetSystemMeasurements() == SI) cout << " N.m/kg.K." << endl;
           else if (config->GetSystemMeasurements() == US) cout << " lbf.ft/slug.R." << endl;
-          cout << "Specific gas constant(non-dim): " << config->GetGas_ConstantND()<< endl;
+          cout << "Specific gas constant (non-dim): " << config->GetGas_ConstantND()<< endl;
           cout << "Specific Heat Ratio: 1.4000 "<< endl;
           break;
           
         case IDEAL_GAS:
           cout << "Fluid Model: IDEAL_GAS "<< endl;
           cout << "Specific gas constant: " << config->GetGas_Constant() << " N.m/kg.K." << endl;
-          cout << "Specific gas constant(non-dim): " << config->GetGas_ConstantND()<< endl;
+          cout << "Specific gas constant (non-dim): " << config->GetGas_ConstantND()<< endl;
           cout << "Specific Heat Ratio: "<< Gamma << endl;
           break;
           
         case VW_GAS:
     	    	cout << "Fluid Model: Van der Waals "<< endl;
           cout << "Specific gas constant: " << config->GetGas_Constant() << " N.m/kg.K." << endl;
-          cout << "Specific gas constant(non-dim): " << config->GetGas_ConstantND()<< endl;
+          cout << "Specific gas constant (non-dim): " << config->GetGas_ConstantND()<< endl;
           cout << "Specific Heat Ratio: "<< Gamma << endl;
           cout << "Critical Pressure:   " << config->GetPressure_Critical()  << " Pa." << endl;
           cout << "Critical Temperature:  " << config->GetTemperature_Critical() << " K." << endl;
@@ -2290,7 +2290,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
         case PR_GAS:
     	    	cout << "Fluid Model: Peng-Robinson "<< endl;
           cout << "Specific gas constant: " << config->GetGas_Constant() << " N.m/kg.K." << endl;
-          cout << "Specific gas constant(non-dim): " << config->GetGas_ConstantND()<< endl;
+          cout << "Specific gas constant (non-dim): " << config->GetGas_ConstantND()<< endl;
           cout << "Specific Heat Ratio: "<< Gamma << endl;
           cout << "Critical Pressure:   " << config->GetPressure_Critical()  << " Pa." << endl;
           cout << "Critical Temperature:  " << config->GetTemperature_Critical() << " K." << endl;

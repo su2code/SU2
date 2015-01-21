@@ -2,7 +2,7 @@
  * \file grid_adaptation_structure.cpp
  * \brief Main subroutines for grid adaptation
  * \author F. Palacios
- * \version 3.2.7.1 "eagle"
+ * \version 3.2.7.2 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).

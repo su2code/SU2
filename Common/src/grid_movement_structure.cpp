@@ -2,7 +2,7 @@
  * \file grid_movement_structure.cpp
  * \brief Subroutines for doing the grid movement using different strategies
  * \author F. Palacios, T. Economon, S. Padron
- * \version 3.2.7.1 "eagle"
+ * \version 3.2.7.2 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).

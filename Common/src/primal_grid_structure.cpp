@@ -2,7 +2,7 @@
  * \file primal_grid_structure.cpp
  * \brief Main classes for defining the primal grid elements
  * \author F. Palacios
- * \version 3.2.7.1 "eagle"
+ * \version 3.2.7.2 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).

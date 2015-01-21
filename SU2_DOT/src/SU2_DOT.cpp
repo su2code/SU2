@@ -2,7 +2,7 @@
  * \file SU2_DOT.cpp
  * \brief Main file of the Gradient Projection Code (SU2_DOT).
  * \author F. Palacios
- * \version 3.2.7.1 "eagle"
+ * \version 3.2.7.2 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
