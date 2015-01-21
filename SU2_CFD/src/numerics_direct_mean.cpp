@@ -1230,7 +1230,7 @@ void CUpwRoe_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i
   
   /*--- Roe-averaged variables at interface between i & j ---*/
   
-  R = sqrt(fabs(Density_j/Density_i));
+  R = sqrt(Density_j/Density_i);
   RoeDensity = R*Density_i;
   sq_vel = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
@@ -1239,7 +1239,6 @@ void CUpwRoe_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i
   }
   RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/(R+1);
   RoeSoundSpeed = sqrt((Gamma-1)*(RoeEnthalpy-0.5*sq_vel));
-  
   
   /*--- Compute ProjFlux_i ---*/
   
@@ -1292,6 +1291,7 @@ void CUpwRoe_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i
   if (!implicit) {
     
     /*--- Compute wave amplitudes (characteristics) ---*/
+    
     proj_delta_vel = 0.0;
     for (iDim = 0; iDim < nDim; iDim++) {
       delta_vel[iDim] = Velocity_j[iDim] - Velocity_i[iDim];
@@ -1315,6 +1315,7 @@ void CUpwRoe_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i
     }
     
     /*--- Roe's Flux approximation ---*/
+    
     for (iVar = 0; iVar < nVar; iVar++) {
       val_residual[iVar] = 0.5*(ProjFlux_i[iVar]+ProjFlux_j[iVar]);
       for (jVar = 0; jVar < nVar; jVar++)
@@ -1322,6 +1323,7 @@ void CUpwRoe_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i
     }
     
     /*--- Flux contribution due to grid motion ---*/
+    
     if (grid_movement) {
       ProjVelocity = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
@@ -1331,13 +1333,16 @@ void CUpwRoe_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i
       }
     }
   }
+  
   else {
     
     /*--- Compute inverse P ---*/
+    
     GetPMatrix_inv(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitNormal, invP_Tensor);
     
     /*--- Jacobians of the inviscid flux, scaled by
      0.5 because val_resconv ~ 0.5*(fc_i+fc_j)*Normal ---*/
+    
     GetInviscidProjJac(Velocity_i, &Energy_i, Normal, 0.5, val_Jacobian_i);
     GetInviscidProjJac(Velocity_j, &Energy_j, Normal, 0.5, val_Jacobian_j);
     
@@ -1346,27 +1351,35 @@ void CUpwRoe_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i
       Diff_U[iVar] = U_j[iVar]-U_i[iVar];
     
     /*--- Roe's Flux approximation ---*/
+    
     for (iVar = 0; iVar < nVar; iVar++) {
+      
       val_residual[iVar] = 0.5*(ProjFlux_i[iVar]+ProjFlux_j[iVar]);
       for (jVar = 0; jVar < nVar; jVar++) {
         Proj_ModJac_Tensor_ij = 0.0;
+        
         /*--- Compute |Proj_ModJac_Tensor| = P x |Lambda| x inverse P ---*/
+        
         for (kVar = 0; kVar < nVar; kVar++)
           Proj_ModJac_Tensor_ij += P_Tensor[iVar][kVar]*Lambda[kVar]*invP_Tensor[kVar][jVar];
         val_residual[iVar] -= 0.5*Proj_ModJac_Tensor_ij*Diff_U[jVar]*Area;
         val_Jacobian_i[iVar][jVar] += 0.5*Proj_ModJac_Tensor_ij*Area;
         val_Jacobian_j[iVar][jVar] -= 0.5*Proj_ModJac_Tensor_ij*Area;
       }
+      
     }
     
     /*--- Jacobian contributions due to grid motion ---*/
+    
     if (grid_movement) {
       ProjVelocity = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
         ProjVelocity += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
       for (iVar = 0; iVar < nVar; iVar++) {
         val_residual[iVar] -= ProjVelocity * 0.5*(U_i[iVar]+U_j[iVar]);
+        
         /*--- Implicit terms ---*/
+        
         val_Jacobian_i[iVar][iVar] -= 0.5*ProjVelocity;
         val_Jacobian_j[iVar][iVar] -= 0.5*ProjVelocity;
       }

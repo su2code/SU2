@@ -3274,11 +3274,12 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
 void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                    CConfig *config, unsigned short iMesh) {
   
-  double **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j,
+  double **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j, RoeVelocity[3] = {0.0,0.0,0.0}, R, sq_vel, RoeEnthalpy,
   *V_i, *V_j, *S_i, *S_j, *Limiter_i = NULL, *Limiter_j = NULL, YDistance, GradHidrosPress, sqvel, Non_Physical = 1.0;
   unsigned long iEdge, iPoint, jPoint, counter_local = 0, counter_global = 0;
   unsigned short iDim, iVar;
-  bool neg_density_i = false, neg_density_j = false, neg_pressure_i = false, neg_pressure_j = false;
+  bool neg_density_i = false, neg_density_j = false, neg_pressure_i = false, neg_pressure_j = false, neg_sound_speed = false;
+  
   
   bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool low_fidelity     = (config->GetLowFidelitySim() && (iMesh == MESH_1));
@@ -3317,7 +3318,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
     
     V_i = node[iPoint]->GetPrimitive(); V_j = node[jPoint]->GetPrimitive();
     S_i = node[iPoint]->GetSecondary(); S_j = node[jPoint]->GetSecondary();
-    
+
     /*--- The zero order reconstruction includes the gradient
      of the hydrostatic pressure constribution ---*/
 
@@ -3369,7 +3370,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
         }
       }
       
-      /*--- Recompute the extrapolated quantities in a more
+      /*--- Recompute the extrapolated quantities in a
        thermodynamic consistent way  ---*/
       
       if (!ideal_gas) { ComputeConsExtrapolation(config); }
@@ -3381,17 +3382,34 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
        cell-averaged state. ---*/
       
       if (compressible) {
+        
         neg_pressure_i = (Primitive_i[nDim+1] < 0.0); neg_pressure_j = (Primitive_j[nDim+1] < 0.0);
         neg_density_i  = (Primitive_i[nDim+2] < 0.0); neg_density_j  = (Primitive_j[nDim+2] < 0.0);
+        
+        R = sqrt(fabs(Primitive_j[nDim+2]/Primitive_i[nDim+2]));
+        sq_vel = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) {
+          RoeVelocity[iDim] = (R*Primitive_j[iDim+1]+Primitive_i[iDim+1])/(R+1);
+          sq_vel += RoeVelocity[iDim]*RoeVelocity[iDim];
+        }
+        RoeEnthalpy = (R*Primitive_j[nDim+3]+Primitive_i[nDim+3])/(R+1);
+        neg_sound_speed = ((Gamma-1)*(RoeEnthalpy-0.5*sq_vel) < 0.0);
+        
+      }
+      
+      if (neg_sound_speed) {
+        for (iVar = 0; iVar < nPrimVar; iVar++) { Primitive_i[iVar] = V_i[iVar]; Primitive_j[iVar] = V_j[iVar]; }
+        if (compressible) { Secondary_i[0] = S_i[0]; Secondary_i[1] = S_i[1]; }
+        counter_local++;
       }
       
       if (neg_density_i || neg_pressure_i) {
-        for (iVar = 0; iVar < nVar; iVar++) Primitive_i[iVar] = V_i[iVar];
+        for (iVar = 0; iVar < nPrimVar; iVar++) Primitive_i[iVar] = V_i[iVar];
         if (compressible) { Secondary_i[0] = S_i[0]; Secondary_i[1] = S_i[1]; }
         counter_local++;
       }
       if (neg_density_j || neg_pressure_j) {
-        for (iVar = 0; iVar < nVar; iVar++) Primitive_j[iVar] = V_j[iVar];
+        for (iVar = 0; iVar < nPrimVar; iVar++) Primitive_j[iVar] = V_j[iVar];
         if (compressible) { Secondary_j[0] = S_j[0]; Secondary_j[1] = S_j[1]; }
         counter_local++;
       }
@@ -3454,12 +3472,13 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 }
 
 void CEulerSolver::ComputeConsExtrapolation(CConfig *config){
-
+  
+  unsigned short iDim;
 
 	double density_i = Primitive_i[nDim+2];
-	double pressure_i = Primitive_i[nDim +1];
+	double pressure_i = Primitive_i[nDim+1];
 	double velocity2_i = 0.0;
-	for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+	for (iDim = 0; iDim < nDim; iDim++) {
 		velocity2_i += Primitive_i[iDim+1]*Primitive_i[iDim+1];
 	}
 
@@ -3472,11 +3491,10 @@ void CEulerSolver::ComputeConsExtrapolation(CConfig *config){
 	Secondary_i[1]=FluidModel->GetdPde_rho();
 
 
-
 	double density_j = Primitive_j[nDim+2];
 	double pressure_j = Primitive_j[nDim+1];
 	double velocity2_j = 0.0;
-	for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+	for (iDim = 0; iDim < nDim; iDim++) {
 		velocity2_j += Primitive_j[iDim+1]*Primitive_j[iDim+1];
 	}
 
@@ -3488,8 +3506,8 @@ void CEulerSolver::ComputeConsExtrapolation(CConfig *config){
 	Secondary_j[0]=FluidModel->GetdPdrho_e();
 	Secondary_j[1]=FluidModel->GetdPde_rho();
 
-
 }
+
 void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
                                    CConfig *config, unsigned short iMesh) {
 
