@@ -3366,6 +3366,9 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet, iMarker_ActDisk_Inlet,
   iMarker_ActDisk_Outlet;
   
+  time_t now = time(0);
+  string dt = ctime(&now); dt[24] = '.';
+
   cout << endl << "-------------------------------------------------------------------------" << endl;
   cout << "|    ___ _   _ ___                                                      |" << endl;
   cout << "|   / __| | | |_  )   Release 3.2.7.1 \"eagle\"                           |" << endl;
