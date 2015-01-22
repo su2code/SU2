@@ -1716,7 +1716,7 @@ void COutput::SetTecplot_Solution(CConfig *config, CGeometry *geometry, unsigned
   Debug						= 0;
   IsDouble					= 1;
   NPts						= (INTEGER4)nGlobal_Poin;
-  t							= iExtIter*config->GetDelta_UnstTimeND();
+  t							= iExtIter*config->GetDelta_UnstTime();
   KMax						= 0;
   ICellMax					= 0;
   JCellMax					= 0;
@@ -2295,7 +2295,7 @@ void COutput::SetTecplot_SurfaceSolution(CConfig *config, CGeometry *geometry, u
       for (iVar = 0; iVar < nVar_Total; iVar++) {
         if (config->GetKind_SU2() == SU2_SOL) {
           if (Wrt_Unsteady && GridMovement)
-          Surf_Data[iVar][iSurf_Poin] = Data[iVar+dims][iPoint-1];
+          Surf_Data[iVar][iSurf_Poin] = Data[iVar][iPoint-1];
           else
           Surf_Data[iVar][iSurf_Poin] = Data[iVar][iPoint-1];
         } else
@@ -2309,7 +2309,7 @@ void COutput::SetTecplot_SurfaceSolution(CConfig *config, CGeometry *geometry, u
   Debug						= 0;
   IsDouble					= 1;
   NPts						= (INTEGER4)nSurf_Poin;
-  t							= iExtIter*config->GetDelta_UnstTimeND();
+  t							= iExtIter*config->GetDelta_UnstTime();
   KMax						= 0;
   ICellMax					= 0;
   JCellMax					= 0;
