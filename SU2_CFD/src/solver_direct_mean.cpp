@@ -11044,7 +11044,7 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
   *Coord, *Coord_Normal, Area, WallShearStress, TauNormal, factor, RefVel2,
   RefDensity, GradTemperature, Density = 0.0, Vel[3] = {0.0, 0.0, 0.0}, WallDistMod, FrictionVel,
   Mach2Vel, Mach_Motion, *Velocity_Inf, UnitNormal[3] = {0.0, 0.0, 0.0}, TauElem[3] = {0.0, 0.0, 0.0}, TauTangent[3] = {0.0, 0.0, 0.0},
-  Tau[3][3], Force[3] = {0.0, 0.0, 0.0}, Cp, thermal_conductivity, MaxNorm = 8.0;
+  Tau[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}}, Force[3] = {0.0, 0.0, 0.0}, Cp, thermal_conductivity, MaxNorm = 8.0;
   double *Origin = config->GetRefOriginMoment(0);
   string Marker_Tag, Monitoring_Tag;
 
@@ -11155,15 +11155,22 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 
         div_vel = 0.0; for (iDim = 0; iDim < nDim; iDim++) div_vel += Grad_PrimVar[iDim+1][iDim];
 
+        /*--- Evaluate Tau ---*/
+
         for (iDim = 0; iDim < nDim; iDim++) {
           for (jDim = 0 ; jDim < nDim; jDim++) {
             Delta = 0.0; if (iDim == jDim) Delta = 1.0;
-            Tau[iDim][jDim] = Viscosity*(Grad_PrimVar[jDim+1][iDim] + Grad_PrimVar[iDim+1][jDim]) -
-            TWO3*Viscosity*div_vel*Delta;
+            Tau[iDim][jDim] = Viscosity*(Grad_PrimVar[jDim+1][iDim] + Grad_PrimVar[iDim+1][jDim]) - TWO3*Viscosity*div_vel*Delta;
           }
+        }
+        
+        /*--- Project Tau in each surface element ---*/
+        
+        for (iDim = 0; iDim < nDim; iDim++) {
           TauElem[iDim] = 0.0;
-          for (jDim = 0; jDim < nDim; jDim++)
+          for (jDim = 0; jDim < nDim; jDim++) {
             TauElem[iDim] += Tau[iDim][jDim]*UnitNormal[jDim];
+          }
         }
 
         /*--- Compute wall shear stress (using the stress tensor) ---*/
