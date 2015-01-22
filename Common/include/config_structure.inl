@@ -440,6 +440,8 @@ inline double* CConfig::GetMoleFracs(void) { return MoleFracs; }
 
 inline bool CConfig::HasSinglePhaseOnly(void) { return SinglePhaseOnly; }
 
+inline string CConfig::GetLookupTableName(void) { return LookupTable; }
+
 inline unsigned short CConfig::GetKind_ViscosityModel(void) { return Kind_ViscosityModel; }
 
 inline unsigned short CConfig::GetKind_ConductivityModel(void) { return Kind_ConductivityModel; }

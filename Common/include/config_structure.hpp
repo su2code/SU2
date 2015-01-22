@@ -679,6 +679,7 @@ private:
   string* CompNames;           /*!< \brief Names of fluid components.  */
   double *MoleFracs;            /*!< \brief Mole fractions of fluid components.  */
   bool SinglePhaseOnly;       /*!< \brief Single phase only: no phase equilibria are considered.  */
+  string LookupTable;         /*!< \brief Name of fluid thermodynamic look-up table.  */
 
   /*!< \brief param is a map from the option name (config file string) to a pointer to an option child class */
 //	map<string, CAnyOptionRef*> param;
@@ -2540,6 +2541,12 @@ public:
 	 */
 	bool HasSinglePhaseOnly(void);
 
+	/*!
+	 * \brief Get the name of the look-up table for fluid thermodynamic sub-library.
+	 * \return Look-up table name for fluid thermodynamic sub-library.
+	 */
+	string GetLookupTableName(void);
+	
 	/*!
 	 * \brief Get the value of the critical temperature.
 	 * \return Critical temperature.

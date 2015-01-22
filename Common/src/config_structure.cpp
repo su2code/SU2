@@ -219,13 +219,14 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Fluid model */
   addEnumOption("FLUID_MODEL", Kind_FluidModel, FluidModel_Map, STANDARD_AIR);
 
-  //Teus, 5-11-2014, Inout for FluidProp
+  //Teus, 5-11-2014, Input for FluidProp
   addStringOption("FLUID_SUBLIBRARY", FluidSubLib, string("xxxxxxxx"));
   addUnsignedShortOption("FLUID_N_COMPONENTS", nComp, 1);
   addStringListOption("FLUID_COMPONENTS", nComp, CompNames);
   addDoubleListOption("FLUID_MOLE_FRACS", nComp, MoleFracs);
   addBoolOption("FLUID_SINGLE_PHASE_ONLY", SinglePhaseOnly, false);
-
+  addStringOption("FLUID_LOOKUP_TABLE", LookupTable, string("xxxxxxxx"));
+  
   /* CONFIG_CATEGORY: Freestream Conditions */
   /*--- Options related to freestream specification ---*/
 

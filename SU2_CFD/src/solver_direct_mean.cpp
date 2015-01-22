@@ -510,6 +510,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
       for (iDim = 0; iDim < nDim; iDim++)
         Velocity2 += (node[iPoint]->GetSolution(iDim+1)/Density)*(node[iPoint]->GetSolution(iDim+1)/Density);
       double StaticEnergy= node[iPoint]->GetSolution(nDim+1)/Density-0.5*Velocity2;
+	   printf( "1. rho = %f, u = %f\n",Density, StaticEnergy);
       FluidModel->SetTDState_rhoe(Density, StaticEnergy);
       Pressure= FluidModel->GetPressure();
       Temperature= FluidModel->GetTemperature();
@@ -1946,18 +1947,19 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
 
 #ifdef HAVE_FluidProp
       case FLUIDPROP:
-        printf("Creation of new CFluidProp 1 ...\n");
         FluidModel = new CFluidProp(config->GetFluidSubLib(), config->GetnComp(), config->GetCompNames(), config->GetMoleFracs(),
-                                    config->HasSinglePhaseOnly(), config->GetTemperature_Ref(), config->GetPressure_Ref(), config->GetDensity_Ref());
+                                    config->HasSinglePhaseOnly(), config->GetLookupTableName(), 1., 1., 1.);
         if(fs_temperature) {
           FluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
           Density_FreeStream = FluidModel->GetDensity();
           config->SetDensity_FreeStream(Density_FreeStream);
+          printf("Density_FreeStream = %f\n",Density_FreeStream);
         }
         else {
           FluidModel->SetTDState_Prho(Pressure_FreeStream, Density_FreeStream );
           Temperature_FreeStream = FluidModel->GetTemperature();
           config->SetTemperature_FreeStream(Temperature_FreeStream);
+          printf("Temperature_FreeStream = %f\n",Temperature_FreeStream);
         }
         break;
 #endif
@@ -2180,7 +2182,6 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
       break;
 
     case PR_GAS:
-
       FluidModel = new CPengRobinson(Gamma, Gas_ConstantND, config->GetPressure_Critical() /config->GetPressure_Ref(),
                                      config->GetTemperature_Critical()/config->GetTemperature_Ref(), config->GetAcentric_Factor());
       FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
@@ -2188,10 +2189,9 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
 
 #ifdef HAVE_FluidProp
    case FLUIDPROP:
-      //TODO here adding call to nn dim FP
-      printf("Creation of new CFluidProp 2 ...\n");
       FluidModel = new CFluidProp(config->GetFluidSubLib(), config->GetnComp(), config->GetCompNames(), config->GetMoleFracs(),
-                                  config->HasSinglePhaseOnly(), config->GetTemperature_Ref(), config->GetPressure_Ref(), config->GetDensity_Ref());
+                                  config->HasSinglePhaseOnly(), config->GetLookupTableName(), config->GetTemperature_Ref(), 
+                                  config->GetPressure_Ref(), config->GetDensity_Ref());
       FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
       break;
 #endif
@@ -6253,7 +6253,8 @@ void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container
         Density_b = Density_i;
         StaticEnergy_b = Energy_i - 0.5 * VelMagnitude2_i - turb_ke;
         Energy_b = StaticEnergy_b + 0.5 * VelMagnitude2_b;
-        FluidModel->SetTDState_rhoe(Density_b, StaticEnergy_b);
+ 	   printf( "2. rho = %f, u = %f\n",Density_b, StaticEnergy_b);
+       FluidModel->SetTDState_rhoe(Density_b, StaticEnergy_b);
         Kappa_b = FluidModel->GetdPde_rho() / Density_b;
         Chi_b = FluidModel->GetdPdrho_e() - Kappa_b * StaticEnergy_b;
         Pressure_b = FluidModel->GetPressure();
@@ -6752,7 +6753,8 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
         Energy_i = node[iPoint]->GetEnergy();
         StaticEnergy_i = Energy_i - 0.5*Velocity2_i;
 
-        FluidModel->SetTDState_rhoe(Density_i, StaticEnergy_i);
+ 	   printf( "3. rho = %f, u = %f\n",Density_i, StaticEnergy_i);
+       FluidModel->SetTDState_rhoe(Density_i, StaticEnergy_i);
 
         Pressure_i = FluidModel->GetPressure();
         Enthalpy_i = Energy_i + Pressure_i/Density_i;
@@ -6840,6 +6842,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
                 Energy_e = Energy_i;
 
+	   printf( "4. rho = %f, u = %f\n",Density_e, StaticEnergy_e);
                 FluidModel->SetTDState_rhoe(Density_e, Energy_e);
 
                 Pressure_e = FluidModel->GetPressure();
@@ -7010,6 +7013,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
         Energy_b = u_b[nVar-1]/Density_b;
         StaticEnergy_b = Energy_b - 0.5*Velocity2_b;
 
+	   printf( "5. rho = %f, u = %f\n",Density_b, StaticEnergy_b);
         FluidModel->SetTDState_rhoe(Density_b, StaticEnergy_b);
 
         Pressure_b = FluidModel->GetPressure();
@@ -10100,6 +10104,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
       for (iDim = 0; iDim < nDim; iDim++)
         Velocity2 += (node[iPoint]->GetSolution(iDim+1)/Density)*(node[iPoint]->GetSolution(iDim+1)/Density);
       double StaticEnergy= node[iPoint]->GetSolution(nDim+1)/Density-0.5*Velocity2;
+	   printf( "6. rho = %f, u = %f\n",Density, StaticEnergy);
       FluidModel->SetTDState_rhoe(Density, StaticEnergy);
       Pressure= FluidModel->GetPressure();
       Temperature= FluidModel->GetTemperature();
