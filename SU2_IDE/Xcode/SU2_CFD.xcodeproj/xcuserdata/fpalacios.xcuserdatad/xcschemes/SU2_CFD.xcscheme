@@ -60,7 +60,7 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "turb_NACA0012_sa.cfg"
+            argument = "turb_NACA0012_sst.cfg"
             isEnabled = "YES">
          </CommandLineArgument>
       </CommandLineArguments>
