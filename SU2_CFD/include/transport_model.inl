@@ -2,7 +2,7 @@
  * \file transport_model.inl
  * \brief In-Line subroutines of the <i>solver_structure.hpp</i> file.
  * \author S. Vitale, M. Pini, G. Gori, A. Guardone, P. Colonna
- * \version 3.2.7.2 "eagle"
+ * \version 3.2.7.3 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
