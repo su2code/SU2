@@ -819,7 +819,7 @@ void CUpwAUSM_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_
   Density_i = V_i[nDim+2];
   Enthalpy_i = V_i[nDim+3];
   Energy_i = Enthalpy_i - Pressure_i/Density_i;
-  SoundSpeed_i = sqrt(Gamma*Gamma_Minus_One*(Energy_i-0.5*sq_vel));
+  SoundSpeed_i = sqrt(fabs(Gamma*Gamma_Minus_One*(Energy_i-0.5*sq_vel)));
   
   /*--- Primitive variables at point j ---*/
   sq_vel = 0.0;
@@ -831,7 +831,7 @@ void CUpwAUSM_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_
   Density_j = V_j[nDim+2];
   Enthalpy_j = V_j[nDim+3];
   Energy_j = Enthalpy_j - Pressure_j/Density_j;
-  SoundSpeed_j = sqrt(Gamma*Gamma_Minus_One*(Energy_j-0.5*sq_vel));
+  SoundSpeed_j = sqrt(fabs(Gamma*Gamma_Minus_One*(Energy_j-0.5*sq_vel)));
   
   /*--- Projected velocities ---*/
   ProjVelocity_i = 0.0; ProjVelocity_j = 0.0;
@@ -872,8 +872,8 @@ void CUpwAUSM_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_
   /*--- Roe's Jacobian for AUSM (this must be fixed) ---*/
   if (implicit) {
     
-    /*--- Promediate Roe variables iPoint and jPoint ---*/
-    R = sqrt(Density_j/Density_i);
+    /*--- Mean Roe variables iPoint and jPoint ---*/
+    R = sqrt(fabs(Density_j/Density_i));
     RoeDensity = R*Density_i;
     sq_vel = 0.0;
     for (iDim = 0; iDim < nDim; iDim++) {
@@ -881,7 +881,7 @@ void CUpwAUSM_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_
       sq_vel += RoeVelocity[iDim]*RoeVelocity[iDim];
     }
     RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/(R+1);
-    RoeSoundSpeed = sqrt((Gamma-1)*(RoeEnthalpy-0.5*sq_vel));
+    RoeSoundSpeed = sqrt(fabs((Gamma-1)*(RoeEnthalpy-0.5*sq_vel)));
     
     /*--- Compute P and Lambda (do it with the Normal) ---*/
     GetPMatrix(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitNormal, P_Tensor);
@@ -988,7 +988,7 @@ void CUpwHLLC_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_
   Density_i = V_i[nDim+2];
   Enthalpy_i = V_i[nDim+3];
   Energy_i = Enthalpy_i - Pressure_i/Density_i;
-  SoundSpeed_i = sqrt(Gamma*Gamma_Minus_One*(Energy_i-0.5*sq_vel_i));
+  SoundSpeed_i = sqrt(fabs(Gamma*Gamma_Minus_One*(Energy_i-0.5*sq_vel_i)));
   
   /*--- Primitive variables at point j ---*/
   sq_vel_j = 0.0;
@@ -1000,7 +1000,7 @@ void CUpwHLLC_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_
   Density_j = V_j[nDim+2];
   Enthalpy_j = V_j[nDim+3];
   Energy_j = Enthalpy_j - Pressure_j/Density_j;
-  SoundSpeed_j = sqrt(Gamma*Gamma_Minus_One*(Energy_j-0.5*sq_vel_j));
+  SoundSpeed_j = sqrt(fabs(Gamma*Gamma_Minus_One*(Energy_j-0.5*sq_vel_j)));
   
   /*--- Projected velocities ---*/
   ProjVelocity_i = 0.0; ProjVelocity_j = 0.0;
@@ -1010,7 +1010,7 @@ void CUpwHLLC_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_
   }
   
   /*--- Roe's aveaging ---*/
-  Rrho = sqrt(Density_j/Density_i);
+  Rrho = sqrt(fabs(Density_j/Density_i));
   tmp = 1.0/(1.0+Rrho);
   for (iDim = 0; iDim < nDim; iDim++)
     velRoe[iDim] = tmp*(Velocity_i[iDim] + Velocity_j[iDim]*Rrho);
@@ -1024,7 +1024,7 @@ void CUpwHLLC_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_
   for (iDim = 0; iDim < nDim; iDim++)
     sq_velRoe += velRoe[iDim]*velRoe[iDim];
   
-  cRoe  = sqrt(gamPdivRho - ((Gamma+Gamma)*0.5-1.0)*0.5*sq_velRoe);
+  cRoe  = sqrt(fabs(gamPdivRho - ((Gamma+Gamma)*0.5-1.0)*0.5*sq_velRoe));
   
   /*--- Speed of sound at L and R ---*/
   sL = min(uRoe-cRoe, ProjVelocity_i-SoundSpeed_i);
@@ -1087,8 +1087,8 @@ void CUpwHLLC_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_
   
   if (implicit) {
     
-    /*--- Promediate Roe variables iPoint and jPoint ---*/
-    R = sqrt(Density_j/Density_i);
+    /*--- Mean Roe variables iPoint and jPoint ---*/
+    R = sqrt(fabs(Density_j/Density_i));
     RoeDensity = R*Density_i;
     sq_vel = 0.0;
     for (iDim = 0; iDim < nDim; iDim++) {
@@ -1096,7 +1096,7 @@ void CUpwHLLC_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_
       sq_vel += RoeVelocity[iDim]*RoeVelocity[iDim];
     }
     RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/(R+1);
-    RoeSoundSpeed = sqrt((Gamma-1)*(RoeEnthalpy-0.5*sq_vel));
+    RoeSoundSpeed = sqrt(fabs((Gamma-1)*(RoeEnthalpy-0.5*sq_vel)));
     
     /*--- Compute P and Lambda (do it with the Normal) ---*/
     GetPMatrix(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitNormal, P_Tensor);
@@ -1208,7 +1208,7 @@ void CUpwRoe_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i
   Density_i = V_i[nDim+2];
   Enthalpy_i = V_i[nDim+3];
   Energy_i = Enthalpy_i - Pressure_i/Density_i;
-  SoundSpeed_i = sqrt(Pressure_i*Gamma/Density_i);
+  SoundSpeed_i = sqrt(fabs(Pressure_i*Gamma/Density_i));
   
   /*--- Primitive variables at point j ---*/
   
@@ -1218,7 +1218,7 @@ void CUpwRoe_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i
   Density_j = V_j[nDim+2];
   Enthalpy_j = V_j[nDim+3];
   Energy_j = Enthalpy_j - Pressure_j/Density_j;
-  SoundSpeed_j = sqrt(Pressure_j*Gamma/Density_j);
+  SoundSpeed_j = sqrt(fabs(Pressure_j*Gamma/Density_j));
   
   /*--- Recompute conservative variables ---*/
   
@@ -1230,7 +1230,7 @@ void CUpwRoe_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i
   
   /*--- Roe-averaged variables at interface between i & j ---*/
   
-  R = sqrt(Density_j/Density_i);
+  R = sqrt(fabs(Density_j/Density_i));
   RoeDensity = R*Density_i;
   sq_vel = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
@@ -1238,7 +1238,7 @@ void CUpwRoe_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i
     sq_vel += RoeVelocity[iDim]*RoeVelocity[iDim];
   }
   RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/(R+1);
-  RoeSoundSpeed = sqrt((Gamma-1)*(RoeEnthalpy-0.5*sq_vel));
+  RoeSoundSpeed = sqrt(fabs((Gamma-1)*(RoeEnthalpy-0.5*sq_vel)));
   
   /*--- Compute ProjFlux_i ---*/
   
@@ -1982,7 +1982,7 @@ void CUpwTurkel_Flow::ComputeResidual(double *val_residual, double **val_Jacobia
   Density_i = V_i[nDim+2];
   Enthalpy_i = V_i[nDim+3];
   Energy_i = Enthalpy_i - Pressure_i/Density_i;
-  SoundSpeed_i = sqrt(Pressure_i*Gamma/Density_i);
+  SoundSpeed_i = sqrt(fabs(Pressure_i*Gamma/Density_i));
 
   /*--- Primitive variables at point j ---*/
   
@@ -1992,7 +1992,7 @@ void CUpwTurkel_Flow::ComputeResidual(double *val_residual, double **val_Jacobia
   Density_j = V_j[nDim+2];
   Enthalpy_j = V_j[nDim+3];
   Energy_j = Enthalpy_j - Pressure_j/Density_j;
-  SoundSpeed_j = sqrt(Pressure_j*Gamma/Density_j);
+  SoundSpeed_j = sqrt(fabs(Pressure_j*Gamma/Density_j));
 
   /*--- Recompute conservative variables ---*/
   
@@ -2004,7 +2004,7 @@ void CUpwTurkel_Flow::ComputeResidual(double *val_residual, double **val_Jacobia
   
   /*--- Roe-averaged variables at interface between i & j ---*/
   
-  R = sqrt(Density_j/Density_i);
+  R = sqrt(fabs(Density_j/Density_i));
   RoeDensity = R*Density_i;
   sq_vel = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
@@ -2012,7 +2012,7 @@ void CUpwTurkel_Flow::ComputeResidual(double *val_residual, double **val_Jacobia
     sq_vel += RoeVelocity[iDim]*RoeVelocity[iDim];
   }
   RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/(R+1);
-  RoeSoundSpeed = sqrt((Gamma-1)*(RoeEnthalpy-0.5*sq_vel));
+  RoeSoundSpeed = sqrt(fabs((Gamma-1)*(RoeEnthalpy-0.5*sq_vel)));
   RoePressure = RoeDensity/Gamma*RoeSoundSpeed*RoeSoundSpeed;
   
   /*--- Compute ProjFlux_i ---*/
