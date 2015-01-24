@@ -2,7 +2,7 @@
  * \file SU2_DEF.cpp
  * \brief Main file of Mesh Deformation Code (SU2_DEF).
  * \author F. Palacios
- * \version 3.2.7.2 "eagle"
+ * \version 3.2.7.3 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
