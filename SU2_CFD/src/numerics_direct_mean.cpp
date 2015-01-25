@@ -1238,7 +1238,25 @@ void CUpwRoe_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i
     sq_vel += RoeVelocity[iDim]*RoeVelocity[iDim];
   }
   RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/(R+1);
-  RoeSoundSpeed = sqrt(fabs((Gamma-1)*(RoeEnthalpy-0.5*sq_vel)));
+  
+  RoeSoundSpeed2 = (Gamma-1)*(RoeEnthalpy-0.5*sq_vel);
+  
+  /*--- Negative RoeSoundSpeed2, the jump 
+   variables is too large, exit the subrotuine 
+   without computing the fluxes ---*/
+  
+  if (RoeSoundSpeed2 <= 0.0) {
+    for (iVar = 0; iVar < nVar; iVar++) {
+      val_residual[iVar] = 0.0;
+      for (jVar = 0; jVar < nVar; jVar++) {
+        val_Jacobian_i[iVar][iVar] = 0.0;
+        val_Jacobian_j[iVar][iVar] = 0.0;
+      }
+    }
+    return;
+  }
+
+  RoeSoundSpeed = sqrt(RoeSoundSpeed2);
   
   /*--- Compute ProjFlux_i ---*/
   

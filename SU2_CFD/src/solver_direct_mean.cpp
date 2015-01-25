@@ -3398,8 +3398,12 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       }
       
       if (neg_sound_speed) {
-        for (iVar = 0; iVar < nPrimVar; iVar++) { Primitive_i[iVar] = V_i[iVar]; Primitive_j[iVar] = V_j[iVar]; }
-        if (compressible) { Secondary_i[0] = S_i[0]; Secondary_i[1] = S_i[1]; }
+        for (iVar = 0; iVar < nPrimVar; iVar++) {
+          Primitive_i[iVar] = V_i[iVar];
+          Primitive_j[iVar] = V_j[iVar]; }
+        if (compressible) {
+          Secondary_i[0] = S_i[0]; Secondary_i[1] = S_i[1];
+          Secondary_j[0] = S_i[0]; Secondary_j[1] = S_i[1]; }
         counter_local++;
       }
       
@@ -3408,6 +3412,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
         if (compressible) { Secondary_i[0] = S_i[0]; Secondary_i[1] = S_i[1]; }
         counter_local++;
       }
+      
       if (neg_density_j || neg_pressure_j) {
         for (iVar = 0; iVar < nPrimVar; iVar++) Primitive_j[iVar] = V_j[iVar];
         if (compressible) { Secondary_j[0] = S_j[0]; Secondary_j[1] = S_j[1]; }
