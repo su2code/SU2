@@ -388,16 +388,13 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
     /*--- Stop the simulation in case a nan appears, do not save the solution ---*/
     
     if (monitor != monitor) {
-      
       if (rank == MASTER_NODE)
-      cout << "\n !!! Error: NaNs detected in solution. Now exiting... !!! \n" << endl;
-      
+      cout << "\n !!! Error: SU2 has diverged. Now exiting... !!! \n" << endl;
 #ifndef HAVE_MPI
       exit(EXIT_DIVERGENCE);
 #else
       MPI_Abort(MPI_COMM_WORLD,1);
 #endif
-      
     }
     
     if (config->GetFinestMesh() != MESH_0 ) Convergence = false;

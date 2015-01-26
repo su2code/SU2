@@ -629,6 +629,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addUnsignedLongOption("LINEAR_SOLVER_RESTART_FREQUENCY", Linear_Solver_Restart_Frequency, 10);
   /* DESCRIPTION: Relaxation of the linear solver for the implicit formulation */
   addDoubleOption("LINEAR_SOLVER_RELAX", Linear_Solver_Relax, 1.0);
+  /* DESCRIPTION: Roe coefficient */
+  addDoubleOption("ROE_KAPPA", Roe_Kappa, 0.5);
   /* DESCRIPTION: Roe-Turkel preconditioning for low Mach number flows */
   addBoolOption("ROE_TURKEL_PREC", Low_Mach_Precon, false);
   /* DESCRIPTION: Time Step for dual time stepping simulations (s) */

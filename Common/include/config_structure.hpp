@@ -366,7 +366,8 @@ private:
 	double Linear_Solver_Error;		/*!< \brief Min error of the linear solver for the implicit formulation. */
 	unsigned long Linear_Solver_Iter;		/*!< \brief Max iterations of the linear solver for the implicit formulation. */
 	unsigned long Linear_Solver_Restart_Frequency;   /*!< \brief Restart frequency of the linear solver for the implicit formulation. */
-	double Linear_Solver_Relax;		/*!< \brief Relaxation coefficient of the linear solver. */
+  double Roe_Kappa;		/*!< \brief Relaxation of the Roe scheme. */
+  double Linear_Solver_Relax;		/*!< \brief Relaxation coefficient of the linear solver. */
 	double AdjTurb_Linear_Error;		/*!< \brief Min error of the turbulent adjoint linear solver for the implicit formulation. */
   double EntropyFix_Coeff;              /*!< \brief Entropy fix coefficient. */
 	unsigned short AdjTurb_Linear_Iter;		/*!< \brief Min error of the turbulent adjoint linear solver for the implicit formulation. */
@@ -2633,6 +2634,12 @@ public:
 	 * \return relaxation coefficient of the linear solver for the implicit formulation.
 	 */
 	double GetLinear_Solver_Relax(void);
+  
+  /*!
+   * \brief Get the relaxation coefficient of the linear solver for the implicit formulation.
+   * \return relaxation coefficient of the linear solver for the implicit formulation.
+   */
+  double GetRoe_Kappa(void);
 
 	/*!
 	 * \brief Get the kind of solver for the implicit solver.
