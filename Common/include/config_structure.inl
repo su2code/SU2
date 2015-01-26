@@ -591,6 +591,8 @@ inline unsigned long CConfig::GetLinear_Solver_Restart_Frequency(void) { return 
 
 inline double CConfig::GetLinear_Solver_Relax(void) { return Linear_Solver_Relax; }
 
+inline double CConfig::GetRoe_Kappa(void) { return Roe_Kappa; }
+
 inline unsigned short CConfig::GetKind_AdjTurb_Linear_Solver(void) { return Kind_AdjTurb_Linear_Solver; }
 
 inline unsigned short CConfig::GetKind_AdjTurb_Linear_Prec(void) { return Kind_AdjTurb_Linear_Prec; }

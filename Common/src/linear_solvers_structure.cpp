@@ -137,7 +137,7 @@ void CSysSolve::ModGramSchmidt(int i, vector<vector<double> > & Hsbg, vector<CSy
   
   if (!Convergence) {
     if (rank == MASTER_NODE)
-      cout << "\n !!! Error: The FGMRES solver has diverged. Now exiting... !!! \n" << endl;
+      cout << "\n !!! Error: SU2 has diverged. Now exiting... !!! \n" << endl;
 #ifndef HAVE_MPI
 		exit(EXIT_DIVERGENCE);
 #else

@@ -1140,7 +1140,8 @@ CUpwRoe_Flow::CUpwRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, CCo
   
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   grid_movement = config->GetGrid_Movement();
-  
+  kappa = config->GetRoe_Kappa(); // 1 is unstable
+
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
   
@@ -1359,12 +1360,13 @@ void CUpwRoe_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i
     GetPMatrix_inv(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitNormal, invP_Tensor);
     
     /*--- Jacobians of the inviscid flux, scaled by
-     0.5 because val_resconv ~ 0.5*(fc_i+fc_j)*Normal ---*/
+     kappa because val_resconv ~ kappa*(fc_i+fc_j)*Normal ---*/
     
-    GetInviscidProjJac(Velocity_i, &Energy_i, Normal, 0.5, val_Jacobian_i);
-    GetInviscidProjJac(Velocity_j, &Energy_j, Normal, 0.5, val_Jacobian_j);
+    GetInviscidProjJac(Velocity_i, &Energy_i, Normal, kappa, val_Jacobian_i);
+    GetInviscidProjJac(Velocity_j, &Energy_j, Normal, kappa, val_Jacobian_j);
     
     /*--- Diference variables iPoint and jPoint ---*/
+    
     for (iVar = 0; iVar < nVar; iVar++)
       Diff_U[iVar] = U_j[iVar]-U_i[iVar];
     
@@ -1372,7 +1374,7 @@ void CUpwRoe_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i
     
     for (iVar = 0; iVar < nVar; iVar++) {
       
-      val_residual[iVar] = 0.5*(ProjFlux_i[iVar]+ProjFlux_j[iVar]);
+      val_residual[iVar] = kappa*(ProjFlux_i[iVar]+ProjFlux_j[iVar]);
       for (jVar = 0; jVar < nVar; jVar++) {
         Proj_ModJac_Tensor_ij = 0.0;
         
@@ -1380,9 +1382,11 @@ void CUpwRoe_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i
         
         for (kVar = 0; kVar < nVar; kVar++)
           Proj_ModJac_Tensor_ij += P_Tensor[iVar][kVar]*Lambda[kVar]*invP_Tensor[kVar][jVar];
-        val_residual[iVar] -= 0.5*Proj_ModJac_Tensor_ij*Diff_U[jVar]*Area;
-        val_Jacobian_i[iVar][jVar] += 0.5*Proj_ModJac_Tensor_ij*Area;
-        val_Jacobian_j[iVar][jVar] -= 0.5*Proj_ModJac_Tensor_ij*Area;
+        
+        val_residual[iVar] -= (1.0-kappa)*Proj_ModJac_Tensor_ij*Diff_U[jVar]*Area;
+        val_Jacobian_i[iVar][jVar] += (1.0-kappa)*Proj_ModJac_Tensor_ij*Area;
+        val_Jacobian_j[iVar][jVar] -= (1.0-kappa)*Proj_ModJac_Tensor_ij*Area;
+        
       }
       
     }
