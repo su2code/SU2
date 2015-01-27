@@ -466,7 +466,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addActuatorDiskOption("MARKER_ACTDISK", nMarker_ActDisk_Inlet, nMarker_ActDisk_Outlet,
                         Marker_ActDisk_Inlet, Marker_ActDisk_Outlet,
                         ActDisk_Origin, ActDisk_RootRadius, ActDisk_TipRadius,
-                        ActDisk_PressJump, ActDisk_Omega);
+                        ActDisk_PressJump, ActDisk_TempJump, ActDisk_Omega);
 
   /*!\par INLET_TYPE
    *  DESCRIPTION: Inlet boundary type \n OPTIONS: see \link Inlet_Map \endlink \n Default: TOTAL_CONDITIONS \ingroup Config*/
@@ -5705,6 +5705,14 @@ double CConfig::GetActDisk_PressJump(string val_marker) {
     if ((Marker_ActDisk_Inlet[iMarker_ActDisk] == val_marker) ||
         (Marker_ActDisk_Outlet[iMarker_ActDisk] == val_marker)) break;
   return ActDisk_PressJump[iMarker_ActDisk];
+}
+
+double CConfig::GetActDisk_TempJump(string val_marker) {
+  unsigned short iMarker_ActDisk;
+  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDisk_Inlet; iMarker_ActDisk++)
+    if ((Marker_ActDisk_Inlet[iMarker_ActDisk] == val_marker) ||
+        (Marker_ActDisk_Outlet[iMarker_ActDisk] == val_marker)) break;
+  return ActDisk_TempJump[iMarker_ActDisk];
 }
 
 double CConfig::GetActDisk_Omega(string val_marker) {
