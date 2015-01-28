@@ -915,7 +915,7 @@ void CSingleGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSys
   sol_coarse->Set_MPI_Solution(geo_coarse, config);
   
   /*--- Update solution at the no slip wall boundary, only the first 
-   variable (nu_tilde -in SA- and k -in SST-), to guarantee that the eddy viscoisty 
+   variable (nu_tilde -in SA and SA_NEG- and k -in SST-), to guarantee that the eddy viscoisty 
    is zero on the surface ---*/
   
   if (RunTime_EqSystem == RUNTIME_TURB_SYS) {

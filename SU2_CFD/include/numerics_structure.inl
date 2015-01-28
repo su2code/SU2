@@ -417,7 +417,19 @@ inline double CSourcePieceWise_TurbSA::GetDestruction(void) { return Destruction
 
 inline double CSourcePieceWise_TurbSA::GetCrossProduction(void) { return CrossProduction; }
 
+inline void CSourcePieceWise_TurbSA_Neg::SetIntermittency(double intermittency_in) { intermittency = intermittency_in; }
 
+inline void CSourcePieceWise_TurbSA_Neg::SetProduction(double val_production) { Production = val_production; }
+
+inline void CSourcePieceWise_TurbSA_Neg::SetDestruction(double val_destruction) { Destruction = val_destruction; }
+
+inline void CSourcePieceWise_TurbSA_Neg::SetCrossProduction(double val_crossproduction) { CrossProduction = val_crossproduction; }
+
+inline double CSourcePieceWise_TurbSA_Neg::GetProduction(void) { return Production; }
+
+inline double CSourcePieceWise_TurbSA_Neg::GetDestruction(void) { return Destruction; }
+
+inline double CSourcePieceWise_TurbSA_Neg::GetCrossProduction(void) { return CrossProduction; }
 
 inline void CSourcePieceWise_TurbML::SetIntermittency(double intermittency_in) { intermittency = intermittency_in; }
 
