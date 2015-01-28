@@ -735,7 +735,7 @@ void CSourcePieceWise_TurbSA_Neg::ComputeResidual(double *val_residual, double *
       
       CrossProduction = cb2_sigma*norm2_Grad*Volume;
       
-      val_residual[0] = Production - Destruction + CrossProduction;
+      val_residual[0] = Production + Destruction + CrossProduction;
       
       /*--- Implicit part, production term ---*/
       
@@ -743,7 +743,7 @@ void CSourcePieceWise_TurbSA_Neg::ComputeResidual(double *val_residual, double *
       
       /*--- Implicit part, destruction term ---*/
       
-      val_Jacobian_i[0][0] -= 2.0*cw1*TurbVar_i[0]/dist_i_2*Volume;
+      val_Jacobian_i[0][0] += 2.0*cw1*TurbVar_i[0]/dist_i_2*Volume;
       
     }
     
