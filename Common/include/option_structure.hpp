@@ -2477,16 +2477,17 @@ class COptionActuatorDisk : public COptionBase{
   double * & root_radius;
   double * & tip_radius;
   double * & press_jump;
+  double * & temp_jump;
   double * & omega;
 
 public:
-  COptionActuatorDisk(const string name, unsigned short & nMarker_ActDisk_Inlet, unsigned short & nMarker_ActDisk_Outlet, string * & Marker_ActDisk_Inlet, string * & Marker_ActDisk_Outlet, double ** & ActDisk_Origin, double * & ActDisk_RootRadius, double * & ActDisk_TipRadius, double * & ActDisk_PressJump, double * & ActDisk_Omega) : inlet_size(nMarker_ActDisk_Inlet),outlet_size(nMarker_ActDisk_Outlet), marker_inlet(Marker_ActDisk_Inlet), marker_outlet(Marker_ActDisk_Outlet), origin(ActDisk_Origin), root_radius(ActDisk_RootRadius), tip_radius(ActDisk_TipRadius), press_jump(ActDisk_PressJump), omega(ActDisk_Omega) {
+  COptionActuatorDisk(const string name, unsigned short & nMarker_ActDisk_Inlet, unsigned short & nMarker_ActDisk_Outlet, string * & Marker_ActDisk_Inlet, string * & Marker_ActDisk_Outlet, double ** & ActDisk_Origin, double * & ActDisk_RootRadius, double * & ActDisk_TipRadius, double * & ActDisk_PressJump, double * & ActDisk_TempJump, double * & ActDisk_Omega) : inlet_size(nMarker_ActDisk_Inlet),outlet_size(nMarker_ActDisk_Outlet), marker_inlet(Marker_ActDisk_Inlet), marker_outlet(Marker_ActDisk_Outlet), origin(ActDisk_Origin), root_radius(ActDisk_RootRadius), tip_radius(ActDisk_TipRadius), press_jump(ActDisk_PressJump), temp_jump(ActDisk_TempJump), omega(ActDisk_Omega) {
     this->name = name;
   }
 
   ~COptionActuatorDisk(){};
   string SetValue(vector<string> option_value){
-    const int mod_num = 9;
+    const int mod_num = 10;
     unsigned long totalVals = option_value.size();
     if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)){
       this->SetDefault();
@@ -2496,7 +2497,7 @@ public:
     if (totalVals % mod_num != 0){
       string newstring;
       newstring.append(this->name);
-      newstring.append(": must have a number of entries divisible by 9");
+      newstring.append(": must have a number of entries divisible by 10");
       this->SetDefault();
       return newstring;
     }
@@ -2509,6 +2510,7 @@ public:
     this->root_radius = new double[this->inlet_size];
     this->tip_radius = new double[this->inlet_size];
     this->press_jump = new double[this->outlet_size];
+    this->temp_jump = new double[this->outlet_size];
     this->omega = new double[this->inlet_size];
 
     this->origin = new double*[this->inlet_size];
@@ -2546,7 +2548,11 @@ public:
         return badValue(option_value, tname, this->name);
       }
       istringstream ss_7th(option_value[mod_num*i + 8]);
-      if (!(ss_7th >> this->omega[i])){
+      if (!(ss_7th >> this->temp_jump[i])){
+        return badValue(option_value, tname, this->name);
+      }
+      istringstream ss_8th(option_value[mod_num*i + 9]);
+      if (!(ss_8th >> this->omega[i])){
         return badValue(option_value, tname, this->name);
       }
     }
@@ -2561,6 +2567,7 @@ public:
     this->root_radius = NULL;
     this->tip_radius = NULL;
     this->press_jump = NULL;
+    this->temp_jump = NULL;
     this->omega = NULL;
   }
 };

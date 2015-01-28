@@ -9009,7 +9009,7 @@ void CEulerSolver::BC_ActDisk_Boundary(CGeometry *geometry, CSolver **solver_con
   unsigned long iVertex, iPoint, jPoint, Pin = 0, Pout = 0, jProcessor, Point_0, Point_1, Point_2;
   unsigned short iDim, iVar, iMarker;
   int iProcessor;
-  double *Coord, radius, DeltaP_avg, DeltaP_tip, V_swirl, Density = 0.0, NormalVector[3] = {0.0,0.0,0.0},
+  double *Coord, radius, DeltaP_avg, DeltaP_tip, DeltaT_avg, DeltaT_tip, V_swirl, Density = 0.0, NormalVector[3] = {0.0,0.0,0.0},
   Radial[3] = {0.0,0.0,0.0}, TangentialVector[3] = {0.0,0.0,0.0}, Modulus, vec_a[3] = {0.0,0.0,0.0},
   vec_b[3] = {0.0,0.0,0.0}, *Coord_0, *Coord_1, *Coord_2;
 
@@ -9092,6 +9092,7 @@ void CEulerSolver::BC_ActDisk_Boundary(CGeometry *geometry, CSolver **solver_con
         double R_root = config->GetActDisk_RootRadius(config->GetMarker_All_TagBound(iMarker));
         double R_tip = config->GetActDisk_TipRadius(config->GetMarker_All_TagBound(iMarker));
         double Press_Jump = config->GetActDisk_PressJump(config->GetMarker_All_TagBound(iMarker));
+        double Temp_Jump = config->GetActDisk_TempJump(config->GetMarker_All_TagBound(iMarker));
         double Omega = config->GetActDisk_Omega(config->GetMarker_All_TagBound(iMarker))*(PI_NUMBER/30.0);
 
         for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
@@ -9171,6 +9172,11 @@ void CEulerSolver::BC_ActDisk_Boundary(CGeometry *geometry, CSolver **solver_con
             DeltaP_tip = (3.0/2.0)*DeltaP_avg*R_tip*(R_tip*R_tip-R_root*R_root)/(R_tip*R_tip*R_tip-R_root*R_root*R_root);
             ActDisk_Jump[nDim+1] = DeltaP_tip*radius/R_tip;
             
+            /*--- Compute the temperature jump ---*/
+            
+            DeltaT_avg = Temp_Jump / config->GetTemperature_Ref(); /// Non-dimensionalization
+            DeltaT_tip = (3.0/2.0)*DeltaT_avg*R_tip*(R_tip*R_tip-R_root*R_root)/(R_tip*R_tip*R_tip-R_root*R_root*R_root);
+            ActDisk_Jump[0] = DeltaT_tip*radius/R_tip;
             
             /*--- Compute the jump in tangential velocity (requires V&V) ---*/
             
@@ -9239,18 +9245,125 @@ void CEulerSolver::BC_ActDisk_Boundary(CGeometry *geometry, CSolver **solver_con
             
             /*--- Inner point ---*/
 
-            if (iPoint == Pin) {
+            if (boundary == ACTDISK_INLET) {
+              
               for (iVar = 0; iVar < nPrimVar; iVar++)
-                PrimVar_in_ghost[iVar] = PrimVar_out[iVar] - 2.0*ActDisk_Jump[iVar];
+                PrimVar_in_ghost[iVar] = PrimVar_out[iVar] - ActDisk_Jump[iVar];
+              
+              /*--- Check that this is a meaningful state ---*/
+              
+              double P_out = PrimVar_in_ghost[nDim+1];
+              double T_out = PrimVar_in_ghost[0];
+              
+              FluidModel->SetTDState_PT(P_out, T_out);
+              
+              double Rho_out = FluidModel->GetDensity();
+              
+              /*--- Find unit normal to the actuator disk ---*/
+              
+              geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
+              
+              double Area = 0.0, UnitNormal[3];
+              for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
+              Area = sqrt(Area);
+              for (iDim = 0; iDim < nDim; iDim++) {
+                UnitNormal[iDim] = -Normal[iDim]/Area;
+              }
+
+              /*--- Normal velocity to the disk ---*/
+              
+              double Vel_Normal_in = 0.0;
+              for (iDim = 0; iDim < nDim; iDim++) {
+                Vel_Normal_in += PrimVar_in[iDim+1]*UnitNormal[iDim];
+              }
+              
+//              double Vel_Normal_in = 0.0;
+//              for (iDim = 0; iDim < nDim; iDim++) {
+//                Vel_Normal_in += PrimVar_in[iDim+1]*PrimVar_in[iDim+1];
+//              }
+//              Vel_Normal_in = sqrt(Vel_Normal_in);
+              
+              /*--- Conservation of mass across the faces (only normal velocity) ---*/
+              
+              double Rho_in = PrimVar_in[nDim+2];
+              double Vel_Normal_out = (Rho_in*Vel_Normal_in)/Rho_out;
+              
+              double H_out = FluidModel->GetStaticEnergy() + 0.5*Vel_Normal_out*Vel_Normal_out + P_out/Rho_out;
+              double sos_out = FluidModel->GetSoundSpeed();
+              
+              PrimVar_in_ghost[0] = T_out;
+              PrimVar_in_ghost[1] = Vel_Normal_out*UnitNormal[0];
+              PrimVar_in_ghost[2] = Vel_Normal_out*UnitNormal[1];
+              PrimVar_in_ghost[3] = Vel_Normal_out*UnitNormal[2];
+              PrimVar_in_ghost[nDim+1]= P_out;
+              PrimVar_in_ghost[nDim+2]= Rho_out;
+              PrimVar_in_ghost[nDim+3]= H_out;
+              PrimVar_in_ghost[nDim+4]= sos_out;
+              
               numerics->SetPrimitive(PrimVar_in, PrimVar_in_ghost);
+              
             }
 
             /*--- Outer point ---*/
 
-            if (iPoint == Pout) {
+            if (boundary == ACTDISK_OUTLET) {
+              
+              
               for (iVar = 0; iVar < nPrimVar; iVar++)
-                PrimVar_out_ghost[iVar] = PrimVar_in[iVar] + 2.0*ActDisk_Jump[iVar];
+                PrimVar_out_ghost[iVar] = PrimVar_in[iVar] + ActDisk_Jump[iVar];
+              
+              /*--- Check that this is a meaningful state ---*/
+              
+              double P_out = PrimVar_out_ghost[nDim+1];
+              double T_out = PrimVar_out_ghost[0];
+              
+              FluidModel->SetTDState_PT(P_out, T_out);
+              
+              double Rho_out = FluidModel->GetDensity();
+              
+              /*--- Find unit normal to the actuator disk ---*/
+              
+              geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
+              
+              double Area = 0.0, UnitNormal[3];
+              for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
+              Area = sqrt(Area);
+              for (iDim = 0; iDim < nDim; iDim++) {
+                UnitNormal[iDim] = -Normal[iDim]/Area;
+              }
+              
+              /*--- Normal velocity to the disk ---*/
+              
+              double Vel_Normal_in = 0.0;
+              for (iDim = 0; iDim < nDim; iDim++) {
+                Vel_Normal_in += PrimVar_in[iDim+1]*UnitNormal[iDim];
+              }
+              
+//              double Vel_Normal_in = 0.0;
+//              for (iDim = 0; iDim < nDim; iDim++) {
+//                Vel_Normal_in += PrimVar_in[iDim+1]*PrimVar_in[iDim+1];
+//              }
+//              Vel_Normal_in = sqrt(Vel_Normal_in);
+              
+              /*--- Conservation of mass ---*/
+              
+              double Rho_in = PrimVar_in[nDim+2];
+              double Vel_Normal_out = (Rho_in*Vel_Normal_in)/Rho_out;
+              
+              double H_out = FluidModel->GetStaticEnergy() + 0.5*Vel_Normal_out*Vel_Normal_out + P_out/Rho_out;
+              double sos_out = FluidModel->GetSoundSpeed();
+              
+              PrimVar_out_ghost[0] = T_out;
+              PrimVar_out_ghost[1] = Vel_Normal_out*UnitNormal[0];
+              PrimVar_out_ghost[2] = Vel_Normal_out*UnitNormal[1];
+              PrimVar_out_ghost[3] = Vel_Normal_out*UnitNormal[2];
+              PrimVar_out_ghost[nDim+1]= P_out;
+              PrimVar_out_ghost[nDim+2]= Rho_out;
+              PrimVar_out_ghost[nDim+3]= H_out;
+              PrimVar_out_ghost[nDim+4]= sos_out;
+              
               numerics->SetPrimitive(PrimVar_out, PrimVar_out_ghost);
+              
             }
 
             /*--- Set the normal vector ---*/

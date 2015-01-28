@@ -236,6 +236,7 @@ private:
   double *ActDisk_RootRadius;
   double *ActDisk_TipRadius;
   double *ActDisk_PressJump;
+  double *ActDisk_TempJump;
   double *ActDisk_Omega;
   double **Periodic_RotCenter;  /*!< \brief Rotational center for each periodic boundary. */
 	double **Periodic_RotAngles;      /*!< \brief Rotation angles for each periodic boundary. */
@@ -906,10 +907,10 @@ private:
   void addActuatorDiskOption(const string & name, unsigned short & nMarker_ActDisk_Inlet, unsigned short & nMarker_ActDisk_Outlet,
                                       string* & Marker_ActDisk_Inlet, string* & Marker_ActDisk_Outlet,
                                       double** & ActDisk_Origin, double* & ActDisk_RootRadius, double* & ActDisk_TipRadius,
-                                      double* & ActDisk_PressJump, double* & ActDisk_Omega) {
+                                      double* & ActDisk_PressJump, double* & ActDisk_TempJump, double* & ActDisk_Omega) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string,bool>(name,true));
-    COptionBase* val = new COptionActuatorDisk(name, nMarker_ActDisk_Inlet, nMarker_ActDisk_Outlet, Marker_ActDisk_Inlet, Marker_ActDisk_Outlet, ActDisk_Origin, ActDisk_RootRadius, ActDisk_TipRadius, ActDisk_PressJump, ActDisk_Omega);
+    COptionBase* val = new COptionActuatorDisk(name, nMarker_ActDisk_Inlet, nMarker_ActDisk_Outlet, Marker_ActDisk_Inlet, Marker_ActDisk_Outlet, ActDisk_Origin, ActDisk_RootRadius, ActDisk_TipRadius, ActDisk_PressJump, ActDisk_TempJump, ActDisk_Omega);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
@@ -4466,6 +4467,11 @@ public:
 	 * \brief Get the thurst corffient of the actuator disk.
 	 */
   double GetActDisk_PressJump(string val_marker);
+  
+  /*!
+   * \brief Get the thurst corffient of the actuator disk.
+   */
+  double GetActDisk_TempJump(string val_marker);
 
   /*!
 	 * \brief Get the rev / min of the actuator disk.
