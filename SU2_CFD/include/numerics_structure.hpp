@@ -3204,6 +3204,7 @@ public:
  */
 class CAvgGrad_TurbSA : public CNumerics {
 private:
+  
 	double **Mean_GradTurbVar;
 	double *Proj_Mean_GradTurbVar_Kappa, *Proj_Mean_GradTurbVar_Edge;
 	double *Edge_Vector;
@@ -3239,6 +3240,54 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void ComputeResidual(double *val_residual, double **Jacobian_i, double **Jacobian_j, CConfig *config);
+};
+
+/*!
+ * \class CAvgGrad_TurbSA_Neg
+ * \brief Class for computing viscous term using average of gradients (Spalart-Allmaras Turbulence model).
+ * \ingroup ViscDiscr
+ * \author F. Palacios.
+ * \version 3.2.7.3 "eagle"
+ */
+class CAvgGrad_TurbSA_Neg : public CNumerics {
+private:
+  
+  double **Mean_GradTurbVar;
+  double *Proj_Mean_GradTurbVar_Kappa, *Proj_Mean_GradTurbVar_Edge;
+  double *Edge_Vector;
+  bool implicit, incompressible;
+  double sigma;
+  double cn1, fn, Xi;
+  double nu_i, nu_j, nu_ij, nu_tilde_ij, nu_e;
+  double dist_ij_2;
+  double proj_vector_ij;
+  unsigned short iVar, iDim;
+  double nu_hat_i;
+  double nu_hat_j;
+  
+public:
+  
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CAvgGrad_TurbSA_Neg(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CAvgGrad_TurbSA_Neg(void);
+  
+  /*!
+   * \brief Compute the viscous turbulence terms residual using an average of gradients.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(double *val_residual, double **Jacobian_i, double **Jacobian_j, CConfig *config);
 };
 
 /*!
@@ -3596,6 +3645,51 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void ComputeResidual(double *val_residual, double **Jacobian_i, double **Jacobian_j, CConfig *config);
+};
+
+/*!
+ * \class CAvgGradCorrected_TurbSA_Neg
+ * \brief Class for computing viscous term using average of gradients with correction (Spalart-Allmaras turbulence model).
+ * \ingroup ViscDiscr
+ * \author F. Palacios
+ * \version 3.2.7.3 "eagle"
+ */
+class CAvgGradCorrected_TurbSA_Neg : public CNumerics {
+private:
+  
+  double **Mean_GradTurbVar;
+  double *Proj_Mean_GradTurbVar_Kappa, *Proj_Mean_GradTurbVar_Edge, *Proj_Mean_GradTurbVar_Corrected;
+  double *Edge_Vector;
+  double sigma;
+  double cn1, fn, Xi;
+  double nu_ij, nu_tilde_ij;
+  bool implicit, incompressible;
+  double nu_i, nu_j, nu_e, dist_ij_2, proj_vector_ij, nu_hat_i, nu_hat_j;
+  unsigned short iVar, iDim;
+  
+public:
+  
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CAvgGradCorrected_TurbSA_Neg(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CAvgGradCorrected_TurbSA_Neg(void);
+  
+  /*!
+   * \brief Compute the viscous turbulent residual using an average of gradients with correction.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(double *val_residual, double **Jacobian_i, double **Jacobian_j, CConfig *config);
 };
 
 /*!

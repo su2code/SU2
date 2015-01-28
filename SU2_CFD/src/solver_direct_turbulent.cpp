@@ -1285,6 +1285,8 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
+  bool neg_spalart_allmaras = (config->GetKind_Turb_Model() == SA_NEG);
+  
   
   /*--- Compute eddy viscosity ---*/
   
@@ -1307,6 +1309,8 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
     fv1  = Ji_3/(Ji_3+cv1_3);
     
     muT = rho*fv1*nu_hat[0];
+    
+    if (neg_spalart_allmaras && (muT < 0.0)) muT = 0.0;
     node[iPoint]->SetmuT(muT);
     
   }
