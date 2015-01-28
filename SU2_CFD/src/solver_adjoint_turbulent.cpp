@@ -46,10 +46,11 @@ CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config) : CSolver()
 	Gamma = config->GetGamma();
 	Gamma_Minus_One = Gamma - 1.0;
   
-	/*--- Dimension of the problem --> dependent of the turbulent model, only SA implemented ---*/
+	/*--- Dimension of the problem  ---*/
 	switch (config->GetKind_Turb_Model()) {
-		case SA : nVar = 1; break;
-		case SST : nVar = 2; break;
+		case SA :     nVar = 1; break;
+    case SA_NEG : nVar = 1; break;
+		case SST :    nVar = 2; break;
 	}
   
   nPoint = geometry->GetnPoint();

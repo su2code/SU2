@@ -9817,7 +9817,7 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
         /*--- First, remove any variables for the turbulence model that
          appear in the restart file before the grid velocities. ---*/
         
-        if (turb_model == SA || turb_model == ML) {
+        if (turb_model == SA || turb_model == SA_NEG || turb_model == ML) {
           point_line >> dull_val;
         } else if (turb_model == SST) {
           point_line >> dull_val >> dull_val;

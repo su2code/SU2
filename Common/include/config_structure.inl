@@ -779,10 +779,6 @@ inline unsigned short CConfig::GetKind_ObjFunc(void) {return Kind_ObjFunc; }
 
 inline unsigned short CConfig::GetKind_SensSmooth(void) {return Kind_SensSmooth; }
 
-inline unsigned short CConfig::GetContinuous_Eqns(void) {return Continuous_Eqns; }
-
-inline unsigned short CConfig::GetDiscrete_Eqns(void) {return Discrete_Eqns; }
-
 inline unsigned short CConfig::GetUnsteady_Simulation(void) { return Unsteady_Simulation; }
 
 inline bool CConfig::GetRestart(void) {	return Restart; }

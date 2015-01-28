@@ -328,18 +328,18 @@ void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry,
   tne2_euler, tne2_ns,
   adj_tne2_euler, adj_tne2_ns,
   poisson, wave, fea, heat,
-  spalart_allmaras, menter_sst, machine_learning, transition,
+  spalart_allmaras, neg_spalart_allmaras, menter_sst, machine_learning, transition,
   template_solver;
   
-  
   /*--- Initialize some useful booleans ---*/
+  
   euler            = false;  ns              = false;  turbulent = false;
   adj_euler        = false;	 adj_ns          = false;	 adj_turb  = false;
   lin_euler        = false;	 lin_ns          = false;
   tne2_euler       = false;  tne2_ns         = false;
   adj_tne2_euler   = false;  adj_tne2_ns     = false;
   spalart_allmaras = false;  menter_sst      = false;   machine_learning = false;
-  poisson          = false;
+  poisson          = false;  neg_spalart_allmaras = false;
   wave             = false;
   fea              = false;
   heat             = false;
@@ -347,6 +347,7 @@ void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry,
   template_solver  = false;
   
   /*--- Assign booleans ---*/
+  
   switch (config->GetKind_Solver()) {
     case TEMPLATE_SOLVER: template_solver = true; break;
     case EULER : euler = true; break;
@@ -368,12 +369,15 @@ void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry,
     case ADJ_TNE2_NAVIER_STOKES : tne2_ns = true; adj_tne2_ns = true; break;
     case LIN_EULER: euler = true; lin_euler = true; break;
   }
+  
   /*--- Assign turbulence model booleans --- */
+  
   if (turbulent)
     switch (config->GetKind_Turb_Model()){
-      case SA: spalart_allmaras = true; break;
-      case SST: menter_sst = true; break;
-      case ML: machine_learning = true;break;
+      case SA:     spalart_allmaras = true;     break;
+      case SA_NEG: neg_spalart_allmaras = true; break;
+      case SST:    menter_sst = true;           break;
+      case ML:     machine_learning = true;     break;
         
       default: cout << "Specified turbulence model unavailable or none selected" << endl; exit(EXIT_FAILURE); break;
     }
@@ -404,6 +408,11 @@ void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry,
     }
     if (turbulent) {
       if (spalart_allmaras) {
+        solver_container[iMGlevel][TURB_SOL] = new CTurbSASolver(geometry[iMGlevel], config, iMGlevel, solver_container[iMGlevel][FLOW_SOL]->GetFluidModel() );
+        solver_container[iMGlevel][FLOW_SOL]->Preprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+        solver_container[iMGlevel][TURB_SOL]->Postprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel);
+      }
+      else if (neg_spalart_allmaras) {
         solver_container[iMGlevel][TURB_SOL] = new CTurbSASolver(geometry[iMGlevel], config, iMGlevel, solver_container[iMGlevel][FLOW_SOL]->GetFluidModel() );
         solver_container[iMGlevel][FLOW_SOL]->Preprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
         solver_container[iMGlevel][TURB_SOL]->Postprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel);
@@ -571,7 +580,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
   turbulent, adj_turb,
   tne2_euler, adj_tne2_euler,
   tne2_ns, adj_tne2_ns,
-  spalart_allmaras, menter_sst, machine_learning,
+  spalart_allmaras, neg_spalart_allmaras, menter_sst, machine_learning,
   poisson,
   wave,
   fea,
@@ -588,7 +597,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
   euler            = false;   ns               = false;   turbulent        = false;
   poisson          = false;
   adj_euler        = false;	  adj_ns           = false;	 adj_turb         = false;
-  wave             = false;   heat             = false;   fea              = false;   spalart_allmaras = false;
+  wave             = false;   heat             = false;   fea              = false;   spalart_allmaras = false; neg_spalart_allmaras = false;
   tne2_euler       = false;   tne2_ns          = false;
   adj_tne2_euler   = false;	  adj_tne2_ns      = false;
   lin_euler        = false;   menter_sst       = false;    machine_learning = false;
@@ -619,18 +628,22 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
   }
   
   /*--- Assign turbulence model booleans --- */
+  
   if (turbulent)
-    switch (config->GetKind_Turb_Model()){
-      case SA: spalart_allmaras = true; break;
-      case ML: machine_learning = true; break;
-      case SST: menter_sst = true; constants = solver_container[MESH_0][TURB_SOL]->GetConstants(); break;
+    switch (config->GetKind_Turb_Model()) {
+      case SA:     spalart_allmaras = true;     break;
+      case SA_NEG: neg_spalart_allmaras = true; break;
+      case ML:     machine_learning = true;     break;
+      case SST:    menter_sst = true; constants = solver_container[MESH_0][TURB_SOL]->GetConstants(); break;
       default: cout << "Specified turbulence model unavailable or none selected" << endl; exit(EXIT_FAILURE); break;
     }
   
   /*--- Number of variables for the template ---*/
+  
   if (template_solver) nVar_Flow = solver_container[MESH_0][FLOW_SOL]->GetnVar();
   
   /*--- Number of variables for direct problem ---*/
+  
   if (euler)				nVar_Flow = solver_container[MESH_0][FLOW_SOL]->GetnVar();
   if (ns)	          nVar_Flow = solver_container[MESH_0][FLOW_SOL]->GetnVar();
   if (turbulent)		nVar_Turb = solver_container[MESH_0][TURB_SOL]->GetnVar();
@@ -646,6 +659,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
   if (heat)				nVar_Heat = solver_container[MESH_0][HEAT_SOL]->GetnVar();
   
   /*--- Number of variables for adjoint problem ---*/
+  
   if (adj_euler)    	  nVar_Adj_Flow = solver_container[MESH_0][ADJFLOW_SOL]->GetnVar();
   if (adj_ns)			      nVar_Adj_Flow = solver_container[MESH_0][ADJFLOW_SOL]->GetnVar();
   if (adj_turb)		      nVar_Adj_Turb = solver_container[MESH_0][ADJTURB_SOL]->GetnVar();
@@ -656,12 +670,15 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
   }
   
   /*--- Number of variables for the linear problem ---*/
+  
   if (lin_euler)	nVar_Lin_Flow = solver_container[MESH_0][LINFLOW_SOL]->GetnVar();
   
   /*--- Number of dimensions ---*/
+  
   nDim = geometry[MESH_0]->GetnDim();
   
   /*--- Definition of the Class for the numerical method: numerics_container[MESH_LEVEL][EQUATION][EQ_TERM] ---*/
+  
   for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
     numerics_container[iMGlevel] = new CNumerics** [MAX_SOLS];
     for (iSol = 0; iSol < MAX_SOLS; iSol++)
@@ -712,7 +729,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
             case LAX : numerics_container[MESH_0][FLOW_SOL][CONV_TERM] = new CCentLax_Flow(nDim,nVar_Flow, config); break;
             case JST : numerics_container[MESH_0][FLOW_SOL][CONV_TERM] = new CCentJST_Flow(nDim,nVar_Flow, config); break;
             case JST_KE : numerics_container[MESH_0][FLOW_SOL][CONV_TERM] = new CCentJST_KE_Flow(nDim,nVar_Flow, config); break;
-          default : cout << "Centered scheme not implemented." << endl; exit(EXIT_FAILURE); break;
+            default : cout << "Centered scheme not implemented." << endl; exit(EXIT_FAILURE); break;
           }
           
           if (!config->GetLowFidelitySim()) {
@@ -758,17 +775,17 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
             case NO_UPWIND : cout << "No upwind scheme." << endl; break;
             case ROE:
               if(ideal_gas){
-
-            	  for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-            		  numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwRoe_Flow(nDim, nVar_Flow, config);
-            		  numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwRoe_Flow(nDim, nVar_Flow, config);
-            	  }
+                
+                for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
+                  numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwRoe_Flow(nDim, nVar_Flow, config);
+                  numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwRoe_Flow(nDim, nVar_Flow, config);
+                }
               } else {
-
-				  for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-					  numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwGeneralRoe_Flow(nDim, nVar_Flow, config);
-					  numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwGeneralRoe_Flow(nDim, nVar_Flow, config);
-            	  }
+                
+                for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
+                  numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwGeneralRoe_Flow(nDim, nVar_Flow, config);
+                  numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwGeneralRoe_Flow(nDim, nVar_Flow, config);
+                }
               }
               break;
               
@@ -847,30 +864,30 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
     
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
     if (compressible) {
-    	if(ideal_gas){
-
-			/*--- Compressible flow Ideal gas ---*/
-		  numerics_container[MESH_0][FLOW_SOL][VISC_TERM] = new CAvgGradCorrected_Flow(nDim, nVar_Flow, config);
-		  for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-			numerics_container[iMGlevel][FLOW_SOL][VISC_TERM] = new CAvgGrad_Flow(nDim, nVar_Flow, config);
-
-		  /*--- Definition of the boundary condition method ---*/
-		  for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-			numerics_container[iMGlevel][FLOW_SOL][VISC_BOUND_TERM] = new CAvgGrad_Flow(nDim, nVar_Flow, config);
-
-    	}else{
-
-    	/*--- Compressible flow Realgas ---*/
-		  numerics_container[MESH_0][FLOW_SOL][VISC_TERM] = new CGeneralAvgGradCorrected_Flow(nDim, nVar_Flow, config);
-		  for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-			numerics_container[iMGlevel][FLOW_SOL][VISC_TERM] = new CGeneralAvgGrad_Flow(nDim, nVar_Flow, config);
-
-		  /*--- Definition of the boundary condition method ---*/
-		  for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-			numerics_container[iMGlevel][FLOW_SOL][VISC_BOUND_TERM] = new CGeneralAvgGrad_Flow(nDim, nVar_Flow, config);
-
-    	}
-	}
+      if(ideal_gas){
+        
+        /*--- Compressible flow Ideal gas ---*/
+        numerics_container[MESH_0][FLOW_SOL][VISC_TERM] = new CAvgGradCorrected_Flow(nDim, nVar_Flow, config);
+        for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
+          numerics_container[iMGlevel][FLOW_SOL][VISC_TERM] = new CAvgGrad_Flow(nDim, nVar_Flow, config);
+        
+        /*--- Definition of the boundary condition method ---*/
+        for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
+          numerics_container[iMGlevel][FLOW_SOL][VISC_BOUND_TERM] = new CAvgGrad_Flow(nDim, nVar_Flow, config);
+        
+      }else{
+        
+        /*--- Compressible flow Realgas ---*/
+        numerics_container[MESH_0][FLOW_SOL][VISC_TERM] = new CGeneralAvgGradCorrected_Flow(nDim, nVar_Flow, config);
+        for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
+          numerics_container[iMGlevel][FLOW_SOL][VISC_TERM] = new CGeneralAvgGrad_Flow(nDim, nVar_Flow, config);
+        
+        /*--- Definition of the boundary condition method ---*/
+        for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
+          numerics_container[iMGlevel][FLOW_SOL][VISC_BOUND_TERM] = new CGeneralAvgGrad_Flow(nDim, nVar_Flow, config);
+        
+      }
+    }
     if (incompressible) {
       /*--- Incompressible flow, use artificial compressibility method ---*/
       numerics_container[MESH_0][FLOW_SOL][VISC_TERM] = new CAvgGradCorrectedArtComp_Flow(nDim, nVar_Flow, config);
@@ -1017,6 +1034,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
       case SPACE_UPWIND :
         for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++){
           if (spalart_allmaras) numerics_container[iMGlevel][TURB_SOL][CONV_TERM] = new CUpwSca_TurbSA(nDim, nVar_Turb, config);
+          else if (neg_spalart_allmaras) numerics_container[iMGlevel][TURB_SOL][CONV_TERM] = new CUpwSca_TurbSA(nDim, nVar_Turb, config);
           else if (machine_learning) numerics_container[iMGlevel][TURB_SOL][CONV_TERM] = new CUpwSca_TurbML(nDim, nVar_Turb, config);
           else if (menter_sst) numerics_container[iMGlevel][TURB_SOL][CONV_TERM] = new CUpwSca_TurbSST(nDim, nVar_Turb, config);
         }
@@ -1029,6 +1047,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
     for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++){
       if (spalart_allmaras) numerics_container[iMGlevel][TURB_SOL][VISC_TERM] = new CAvgGradCorrected_TurbSA(nDim, nVar_Turb, config);
+      else if (neg_spalart_allmaras) numerics_container[iMGlevel][TURB_SOL][VISC_TERM] = new CAvgGradCorrected_TurbSA(nDim, nVar_Turb, config);
       else if (machine_learning) numerics_container[iMGlevel][TURB_SOL][VISC_TERM] = new CAvgGradCorrected_TurbML(nDim, nVar_Turb, config);
       else if (menter_sst) numerics_container[iMGlevel][TURB_SOL][VISC_TERM] = new CAvgGradCorrected_TurbSST(nDim, nVar_Turb, constants, config);
     }
@@ -1036,6 +1055,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
     for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
       if (spalart_allmaras) numerics_container[iMGlevel][TURB_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_TurbSA(nDim, nVar_Turb, config);
+      else if (neg_spalart_allmaras) numerics_container[iMGlevel][TURB_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_TurbSA_Neg(nDim, nVar_Turb, config);
       else if (machine_learning) numerics_container[iMGlevel][TURB_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_TurbML(nDim, nVar_Turb, config);
       else if (menter_sst) numerics_container[iMGlevel][TURB_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_TurbSST(nDim, nVar_Turb, constants, config);
       numerics_container[iMGlevel][TURB_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Turb, config);
@@ -1044,6 +1064,10 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
     /*--- Definition of the boundary condition method ---*/
     for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++){
       if (spalart_allmaras) {
+        numerics_container[iMGlevel][TURB_SOL][CONV_BOUND_TERM] = new CUpwSca_TurbSA(nDim, nVar_Turb, config);
+        numerics_container[iMGlevel][TURB_SOL][VISC_BOUND_TERM] = new CAvgGrad_TurbSA(nDim, nVar_Turb, config);
+      }
+      else if (neg_spalart_allmaras) {
         numerics_container[iMGlevel][TURB_SOL][CONV_BOUND_TERM] = new CUpwSca_TurbSA(nDim, nVar_Turb, config);
         numerics_container[iMGlevel][TURB_SOL][VISC_BOUND_TERM] = new CAvgGrad_TurbSA(nDim, nVar_Turb, config);
       }
@@ -1101,7 +1125,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
     numerics_container[MESH_0][POISSON_SOL][SOURCE_FIRST_TERM] = new CSourceNothing(nDim, nVar_Poisson, config);
     numerics_container[MESH_0][POISSON_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Poisson, config);
-
+    
   }
   
   /*--- Solver definition for the poisson potential problem ---*/
@@ -1168,7 +1192,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
         }
         
         break;
-
+        
       case SPACE_UPWIND :
         
         if (compressible) {
@@ -1202,7 +1226,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
             default : cout << "Upwind scheme not implemented." << endl; exit(EXIT_FAILURE); break;
           }
         }
-
+        
         break;
         
       default :
@@ -1232,7 +1256,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
       
       numerics_container[MESH_0][ADJFLOW_SOL][VISC_TERM] = new CAvgGradCorrectedArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
       numerics_container[MESH_0][ADJFLOW_SOL][VISC_BOUND_TERM] = new CAvgGradArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
-
+      
       for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
         numerics_container[iMGlevel][ADJFLOW_SOL][VISC_TERM] = new CAvgGradArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
         numerics_container[iMGlevel][ADJFLOW_SOL][VISC_BOUND_TERM] = new CAvgGradArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
@@ -1275,10 +1299,10 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
       }
       
       if (incompressible || freesurface) {
-
+        
         numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_FIRST_TERM] = new CSourceNothing(nDim, nVar_Adj_Flow, config);
         numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Adj_Flow, config);
-
+        
       }
       
     }
@@ -1383,6 +1407,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
           if (spalart_allmaras) {
             numerics_container[iMGlevel][ADJTURB_SOL][CONV_TERM] = new CUpwSca_AdjTurb(nDim, nVar_Adj_Turb, config);
           }
+          else if (neg_spalart_allmaras) {cout << "Adjoint Neg SA turbulence model not implemented." << endl; exit(EXIT_FAILURE);}
           else if (menter_sst) {cout << "Adjoint SST turbulence model not implemented." << endl; exit(EXIT_FAILURE);}
         break;
       default :
@@ -1395,6 +1420,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
       if (spalart_allmaras){
         numerics_container[iMGlevel][ADJTURB_SOL][VISC_TERM] = new CAvgGradCorrected_AdjTurb(nDim, nVar_Adj_Turb, config);
       }
+      else if (neg_spalart_allmaras) {cout << "Adjoint Neg SA turbulence model not implemented." << endl; exit(EXIT_FAILURE);}
       else if (menter_sst) {cout << "Adjoint SST turbulence model not implemented." << endl; exit(EXIT_FAILURE);}
     }
     
@@ -1404,12 +1430,14 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
         numerics_container[iMGlevel][ADJTURB_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_AdjTurb(nDim, nVar_Adj_Turb, config);
         numerics_container[iMGlevel][ADJTURB_SOL][SOURCE_SECOND_TERM] = new CSourceConservative_AdjTurb(nDim, nVar_Adj_Turb, config);
       }
+      else if (neg_spalart_allmaras) {cout << "Adjoint Neg SA turbulence model not implemented." << endl; exit(EXIT_FAILURE);}
       else if (menter_sst) {cout << "Adjoint SST turbulence model not implemented." << endl; exit(EXIT_FAILURE);}
     }
     
     /*--- Definition of the boundary condition method ---*/
     for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
       if (spalart_allmaras) numerics_container[iMGlevel][ADJTURB_SOL][CONV_BOUND_TERM] = new CUpwLin_AdjTurb(nDim, nVar_Adj_Turb, config);
+      else if (neg_spalart_allmaras) {cout << "Adjoint Neg SA turbulence model not implemented." << endl; exit(EXIT_FAILURE);}
       else if (menter_sst) {cout << "Adjoint SST turbulence model not implemented." << endl; exit(EXIT_FAILURE);}
     }
     
@@ -1420,7 +1448,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
     
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
     numerics_container[MESH_0][WAVE_SOL][VISC_TERM] = new CGalerkin_Flow(nDim, nVar_Wave, config);
-
+    
   }
   
   /*--- Solver definition for the FEA problem ---*/

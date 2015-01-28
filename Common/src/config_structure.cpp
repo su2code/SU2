@@ -815,10 +815,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("DRAG_IN_SONICBOOM", WeightCd, 0.0);
   /* DESCRIPTION: Sensitivity smoothing  */
   addEnumOption("SENS_SMOOTHING", Kind_SensSmooth, Sens_Smoothing_Map, NO_SMOOTH);
-  /* DESCRIPTION: Continuous governing equation set  */
-  addEnumOption("CONTINUOUS_EQNS", Continuous_Eqns, ContinuousEqns_Map, EULER_EQNS);
-  /* DESCRIPTION: Discrete governing equation set */
-  addEnumOption("DISCRETE_EQNS", Discrete_Eqns, DiscreteEqns_Map, NONE_EQNS);
   /* DESCRIPTION: Adjoint frozen viscosity */
   addBoolOption("FROZEN_VISC", Frozen_Visc, true);
    /* DESCRIPTION:  */
@@ -3444,9 +3440,10 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         }
         cout << "Turbulence model: ";
         switch (Kind_Turb_Model) {
-          case SA:  cout << "Spalart Allmaras" << endl; break;
-          case SST: cout << "Menter's SST"     << endl; break;
-          case ML: cout << "Machine Learning" << endl;break;
+          case SA:     cout << "Spalart Allmaras" << endl; break;
+          case SA_NEG: cout << "Negative Spalart Allmaras" << endl; break;
+          case SST:    cout << "Menter's SST"     << endl; break;
+          case ML:     cout << "Machine Learning" << endl;break;
         }
         break;
       case TNE2_EULER:

@@ -4191,6 +4191,7 @@ public:
 	void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter);
   
   double SAProduction, SADestruction, SACrossProduction, SASource, MLProduction, MLDestruction, MLCrossProduction, MLSource, SourceDiff;
+  
 };
 
 

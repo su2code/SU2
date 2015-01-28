@@ -575,14 +575,16 @@ static const map<string, ENUM_SOURCEJAC> SourceJac_Map = CCreateMap<string, ENUM
  * \brief types of turbulent models
  */
 enum ENUM_TURB_MODEL {
-  NO_TURB_MODEL = 0,            /*!< \brief No turbulence model. */
-  SA = 1,                       /*!< \brief Kind of Turbulent model (Spalart-Allmaras). */
-  SST = 2,       		/*!< \brief Kind of Turbulence model (Menter SST). */
-  ML  = 3       		/*!< \brief Kind of Turbulence model (Machine Learning). */
+  NO_TURB_MODEL = 0, /*!< \brief No turbulence model. */
+  SA      = 1, /*!< \brief Kind of Turbulent model (Spalart-Allmaras). */
+  SA_NEG  = 2, /*!< \brief Kind of Turbulent model (Spalart-Allmaras). */
+  SST     = 3, /*!< \brief Kind of Turbulence model (Menter SST). */
+  ML      = 4  /*!< \brief Kind of Turbulence model (Machine Learning). */
 };
 static const map<string, ENUM_TURB_MODEL> Turb_Model_Map = CCreateMap<string, ENUM_TURB_MODEL>
 ("NONE", NO_TURB_MODEL)
 ("SA", SA)
+("SA_NEG", SA_NEG)
 ("SST", SST)
 ("ML", ML);
 
@@ -804,30 +806,6 @@ enum ENUM_RESIDUAL {
 static const map<string, ENUM_RESIDUAL> Residual_Map = CCreateMap<string, ENUM_RESIDUAL>
 ("RHO", RHO_RESIDUAL)
 ("RHO_ENERGY", RHO_ENERGY_RESIDUAL);
-
-/*!
- * \brief types of Continuous equations
- */
-enum ENUM_CONTINUOUS_EQNS {
-  EULER_EQNS= 1, 	/*!< \brief Euler equations. */
-  NAVIER_STOKES_EQNS = 2 	/*!< \brief Navier Stokes equations. */
-};
-static const map<string, ENUM_CONTINUOUS_EQNS> ContinuousEqns_Map = CCreateMap<string, ENUM_CONTINUOUS_EQNS>
-("EULER", EULER_EQNS)
-("NAVIER_STOKES", NAVIER_STOKES_EQNS);
-
-/*!
- * \brief types of Discrete equations
- */
-enum ENUM_DISCRETE_EQNS {
-  NONE_EQNS= 1, 	/*!< \brief No equations. */
-  SA_EQNS = 2, 	/*!< \brief Spallart-Almaras equations. */
-  SST_EQNS = 2 	/*!< \brief SST equations. */
-};
-static const map<string, ENUM_DISCRETE_EQNS> DiscreteEqns_Map = CCreateMap<string, ENUM_DISCRETE_EQNS>
-("NONE", NONE_EQNS)
-("SA", SA_EQNS)
-("SST", SST_EQNS);
 
 /*!
  * \brief types of sensitivities to compute

@@ -2329,7 +2329,6 @@ public:
 	void ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config);
 };
 
-
 /*!
  * \class CUpwSca_TurbML
  * \brief Class for doing a scalar upwind solver for the Spalar-Allmaral turbulence model equations.
@@ -3242,7 +3241,6 @@ public:
 	void ComputeResidual(double *val_residual, double **Jacobian_i, double **Jacobian_j, CConfig *config);
 };
 
-
 /*!
  * \class CAvgGrad_TurbML
  * \brief Class for computing viscous term using average of gradients (Spalart-Allmaras Turbulence model).
@@ -3599,7 +3597,6 @@ public:
 	 */
 	void ComputeResidual(double *val_residual, double **Jacobian_i, double **Jacobian_j, CConfig *config);
 };
-
 
 /*!
  * \class CAvgGradCorrected_TurbML
@@ -4276,6 +4273,117 @@ public:
 };
 
 /*!
+ * \class CSourcePieceWise_TurbSA_Neg
+ * \brief Class for integrating the source terms of the Spalart-Allmaras turbulence model equation.
+ * \ingroup SourceDiscr
+ * \author F. Palacios.
+ * \version 3.2.7.3 "eagle"
+ */
+class CSourcePieceWise_TurbSA_Neg : public CNumerics {
+private:
+  double cv1_3;
+  double k2;
+  double cb1;
+  double cw2;
+  double ct3;
+  double ct4;
+  double cw3_6;
+  double cb2_sigma;
+  double sigma;
+  double cb2;
+  double cw1;
+  double DivVelocity, Vorticity;
+  unsigned short iDim;
+  double nu, Ji, fv1, fv2, ft2, Omega, S, Shat, inv_Shat, dist_i_2, Ji_2, Ji_3, inv_k2_d2;
+  double r, g, g_6, glim, fw;
+  double norm2_Grad;
+  double dfv1, dfv2, dShat;
+  double dr, dg, dfw;;
+  double nu_hat_i;
+  double grad_nu_hat;
+  double prod_grads;
+  bool incompressible;
+  bool transition;
+  bool rotating_frame;
+  double div, StrainMag;
+  double beta, gamma_sep, gamma_eff, intermittency;
+  double Freattach, r_t, s1;
+  double Production, Destruction, CrossProduction;
+  
+  SpalartAllmarasInputs* SAInputs;
+  SpalartAllmarasConstants* SAConstants;
+  int nResidual;
+  int nJacobian;
+  double* testResidual;
+  double* testJacobian;
+  double** DUiDXj;
+  double* DNuhatDXj;
+  
+public:
+  
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CSourcePieceWise_TurbSA_Neg(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CSourcePieceWise_TurbSA_Neg(void);
+  
+  /*!
+   * \brief Residual for source term integration.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config);
+  
+  /*!
+   * \brief Residual for source term integration.
+   * \param[in] intermittency_in - Value of the intermittency.
+   */
+  void SetIntermittency(double intermittency_in);
+  
+  /*!
+   * \brief Residual for source term integration.
+   * \param[in] val_production - Value of the Production.
+   */
+  void SetProduction(double val_production);
+  
+  /*!
+   * \brief Residual for source term integration.
+   * \param[in] val_destruction - Value of the Destruction.
+   */
+  void SetDestruction(double val_destruction);
+  
+  /*!
+   * \brief Residual for source term integration.
+   * \param[in] val_crossproduction - Value of the CrossProduction.
+   */
+  void SetCrossProduction(double val_crossproduction);
+  
+  /*!
+   * \brief ______________.
+   */
+  double GetProduction(void);
+  
+  /*!
+   * \brief  ______________.
+   */
+  double GetDestruction(void);
+  
+  /*!
+   * \brief  ______________.
+   */
+  double GetCrossProduction(void);
+};
+
+/*!
  * \class CSourcePieceWise_TurbML
  * \brief Class for integrating the source terms of the Spalart-Allmaras turbulence model equation.
  * \ingroup SourceDiscr
@@ -4327,7 +4435,9 @@ private:
   //double* testJacobian;
   double** DUiDXj;
   double* DNuhatDXj;
+  
 public:
+  
   bool isInBL;
   double fw;
   double fWake;
@@ -4412,10 +4522,8 @@ public:
   int NumResidual();
 };
 
-
-
 /*!
- * \class CSourcePieceWise_TurbSA
+ * \class CSourcePieceWise_TransLM
  * \brief Class for integrating the source terms of the Spalart-Allmaras turbulence model equation.
  * \ingroup SourceDiscr
  * \author A. Bueno.
@@ -4423,67 +4531,69 @@ public:
  */
 class CSourcePieceWise_TransLM : public CNumerics {
 private:
-	/*-- SA model constants --*/
-	double cv1_3;
-	double k2;
-	double cb1;
-	double cw2;
-	double cw3_6;
-	double sigma;
-	double cb2;
-	double cw1;
-    /*-- gamma-theta model constants --*/
-    double c_e1;
-    double c_a1;
-    double c_e2;
-    double c_a2;
-    double sigmaf;
-    double s1;
-    double c_theta;
-    double sigmat;
-    double REth_Inf;
-    /*-- Correlation constants --*/
-    double flen_global;
-    double alpha_global;
-    
-	double DivVelocity, Vorticity;
-	unsigned short iDim;
-	double nu, Ji, fv1, fv2, Omega, Shat, dist_0_2, Ji_2, Ji_3;
-	double r, g, g_6, glim, fw;
-	double norm2_Grad;
-	double dfv1, dfv2, dShat;
-	double dr, dg, dfw;;
-	double nu_hat_i;
-	double grad_nu_hat;
-	double prod_grads;
-	bool implicit;
-    
+  
+  /*-- SA model constants --*/
+  double cv1_3;
+  double k2;
+  double cb1;
+  double cw2;
+  double cw3_6;
+  double sigma;
+  double cb2;
+  double cw1;
+  
+  /*-- gamma-theta model constants --*/
+  double c_e1;
+  double c_a1;
+  double c_e2;
+  double c_a2;
+  double sigmaf;
+  double s1;
+  double c_theta;
+  double sigmat;
+  double REth_Inf;
+  
+  /*-- Correlation constants --*/
+  double flen_global;
+  double alpha_global;
+  double DivVelocity, Vorticity;
+  unsigned short iDim;
+  double nu, Ji, fv1, fv2, Omega, Shat, dist_0_2, Ji_2, Ji_3;
+  double r, g, g_6, glim, fw;
+  double norm2_Grad;
+  double dfv1, dfv2, dShat;
+  double dr, dg, dfw;;
+  double nu_hat_i;
+  double grad_nu_hat;
+  double prod_grads;
+  bool implicit;
+  
 public:
-    bool debugme; // For debugging only, remove this. -AA
-    
-	/*!
-	 * \brief Constructor of the class.
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_nVar - Number of variables of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CSourcePieceWise_TransLM(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-    
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CSourcePieceWise_TransLM(void);
-    
-	/*!
-	 * \brief Residual for source term integration.
-	 * \param[out] val_residual - Pointer to the total residual.
-	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-	 * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-	 * \param[in] config - Definition of the particular problem.
-	 */
-    void ComputeResidual_TransLM(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config, double &gamma_sep);
-    
-    void CSourcePieceWise_TransLM__ComputeResidual_TransLM_d(double *TransVar_i, double *TransVar_id, double *val_residual, double *val_residuald, CConfig *config);
+  bool debugme; // For debugging only, remove this. -AA
+  
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CSourcePieceWise_TransLM(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CSourcePieceWise_TransLM(void);
+  
+  /*!
+   * \brief Residual for source term integration.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual_TransLM(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config, double &gamma_sep);
+  
+  void CSourcePieceWise_TransLM__ComputeResidual_TransLM_d(double *TransVar_i, double *TransVar_id, double *val_residual, double *val_residuald, CConfig *config);
 };
 
 /*!

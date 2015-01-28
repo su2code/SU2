@@ -4180,9 +4180,10 @@ void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   char flow_resid[]= ",\"Res_Flow[0]\",\"Res_Flow[1]\",\"Res_Flow[2]\",\"Res_Flow[3]\",\"Res_Flow[4]\"";
   char adj_flow_resid[]= ",\"Res_AdjFlow[0]\",\"Res_AdjFlow[1]\",\"Res_AdjFlow[2]\",\"Res_AdjFlow[3]\",\"Res_AdjFlow[4]\"";
   switch (config->GetKind_Turb_Model()) {
-    case SA:	sprintf (turb_resid, ",\"Res_Turb[0]\""); break;
-    case ML:	sprintf (turb_resid, ",\"Res_Turb[0]\""); break;
-    case SST:	sprintf (turb_resid, ",\"Res_Turb[0]\",\"Res_Turb[1]\""); break;
+    case SA:	   sprintf (turb_resid, ",\"Res_Turb[0]\""); break;
+    case SA_NEG: sprintf (turb_resid, ",\"Res_Turb[0]\""); break;
+    case ML:	   sprintf (turb_resid, ",\"Res_Turb[0]\""); break;
+    case SST:   	sprintf (turb_resid, ",\"Res_Turb[0]\",\"Res_Turb[1]\""); break;
   }
   char adj_turb_resid[]= ",\"Res_AdjTurb[0]\"";
   char levelset_resid[]= ",\"Res_LevelSet\"";
@@ -4418,9 +4419,10 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
     if (compressible) nVar_Flow = nDim+2; else nVar_Flow = nDim+1;
     if (turbulent) {
       switch (config[val_iZone]->GetKind_Turb_Model()){
-        case SA:	nVar_Turb = 1; break;
-        case ML:	nVar_Turb = 1; break;
-        case SST: nVar_Turb = 2; break;
+        case SA:	   nVar_Turb = 1; break;
+        case SA_NEG: nVar_Turb = 1; break;
+        case ML:	   nVar_Turb = 1; break;
+        case SST:    nVar_Turb = 2; break;
       }
     }
     if (transition) nVar_Trans = 2;
@@ -4434,9 +4436,10 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
     if (compressible) nVar_AdjFlow = nDim+2; else nVar_AdjFlow = nDim+1;
     if (turbulent) {
       switch (config[val_iZone]->GetKind_Turb_Model()){
-        case SA:	nVar_AdjTurb = 1; break;
-        case ML:	nVar_AdjTurb = 1; break;
-        case SST: nVar_AdjTurb = 2; break;
+        case SA:	   nVar_AdjTurb = 1; break;
+        case SA_NEG: nVar_AdjTurb = 1; break;
+        case ML:     nVar_AdjTurb = 1; break;
+        case SST:    nVar_AdjTurb = 2; break;
       }
     }
     if (TNE2) nVar_AdjTNE2 = config[val_iZone]->GetnSpecies()+nDim+2;
@@ -5089,9 +5092,10 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
             else cout << "      Res[Rho]";//,cout << "     Res[RhoE]";
             
             switch (config[val_iZone]->GetKind_Turb_Model()){
-              case SA:	cout << "       Res[nu]"; break;
-              case ML:	cout << "       Res[nu]"; break;
-              case SST:	cout << "     Res[kine]" << "     Res[omega]"; break;
+              case SA:	   cout << "       Res[nu]"; break;
+              case SA_NEG: cout << "       Res[nu]"; break;
+              case ML:	   cout << "       Res[nu]"; break;
+              case SST:	   cout << "     Res[kine]" << "     Res[omega]"; break;
             }
             
             if (transition) { cout << "      Res[Int]" << "       Res[Re]"; }

@@ -3410,18 +3410,6 @@ public:
 	unsigned short GetKind_SensSmooth(void);
 
 	/*!
-	 * \brief Get equations to be treated continuously. There are several options: Euler, Navier Stokes
-	 * \return Continuous equations.
-	 */
-	unsigned short GetContinuous_Eqns(void);
-
-	/*!
-	 * \brief Get equations to be treated discretely. There are several options: None, SA, SST
-	 * \return Discrete equations.
-	 */
-	unsigned short GetDiscrete_Eqns(void);
-
-	/*!
 	 * \brief Provides information about the time integration, and change the write in the output
 	 *        files information about the iteration.
 	 * \return The kind of time integration: Steady state, time stepping method (unsteady) or
