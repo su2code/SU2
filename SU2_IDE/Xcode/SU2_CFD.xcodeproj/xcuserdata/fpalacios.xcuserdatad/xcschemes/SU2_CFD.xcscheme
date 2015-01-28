@@ -44,7 +44,7 @@
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       launchStyle = "0"
       useCustomWorkingDirectory = "YES"
-      customWorkingDirectory = "/Users/fpalacios/SU2/TestCases/moving_wall/cavity"
+      customWorkingDirectory = "/Users/fpalacios/SU2/TestCases/rans/naca0012"
       buildConfiguration = "Debug"
       ignoresPersistentStateOnLaunch = "NO"
       debugDocumentVersioning = "YES"
@@ -60,7 +60,7 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "lam_cavity.cfg"
+            argument = "turb_NACA0012_sa_neg.cfg"
             isEnabled = "YES">
          </CommandLineArgument>
       </CommandLineArguments>

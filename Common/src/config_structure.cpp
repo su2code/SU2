@@ -3792,7 +3792,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       }
 
 			if (Kind_ConvNumScheme_Flow == SPACE_UPWIND) {
-				if (Kind_Upwind_Flow == ROE) cout << "Roe solver for the flow inviscid terms."<< endl;
+				if (Kind_Upwind_Flow == ROE) cout << "Roe (with entropy fix) solver for the flow inviscid terms."<< endl;
 				if (Kind_Upwind_Flow == TURKEL) cout << "Roe-Turkel solver for the flow inviscid terms."<< endl;
 				if (Kind_Upwind_Flow == AUSM)	cout << "AUSM solver for the flow inviscid terms."<< endl;
 				if (Kind_Upwind_Flow == HLLC)	cout << "HLLC solver for the flow inviscid terms."<< endl;
@@ -3848,7 +3848,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         }
       }
       if (Kind_ConvNumScheme_TNE2 == SPACE_UPWIND) {
-        if (Kind_Upwind_TNE2 == ROE) cout << "Roe solver for the inviscid terms of the two-temperature model."<< endl;
+        if (Kind_Upwind_TNE2 == ROE) cout << "Roe (with entropy fix) solver for the inviscid terms of the two-temperature model."<< endl;
         if (Kind_Upwind_TNE2 == TURKEL) cout << "Roe-Turkel solver for the inviscid terms of the two-temperature model."<< endl;
         if (Kind_Upwind_TNE2 == AUSM)	cout << "AUSM solver for the inviscid terms of the two-temperature model."<< endl;
         if (Kind_Upwind_TNE2 == HLLC)	cout << "HLLC solver for the inviscid terms of the two-temperature model."<< endl;
@@ -3890,7 +3890,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       }
 
       if (Kind_ConvNumScheme_AdjFlow == SPACE_UPWIND) {
-        if (Kind_Upwind_AdjFlow == ROE) cout << "Roe solver for the adjoint inviscid terms."<< endl;
+        if (Kind_Upwind_AdjFlow == ROE) cout << "Roe (with entropy fix) solver for the adjoint inviscid terms."<< endl;
         switch (SpatialOrder_AdjFlow) {
           case FIRST_ORDER: cout << "First order integration." << endl; break;
           case SECOND_ORDER: cout << "Second order integration." << endl; break;
@@ -3961,7 +3961,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       }
 
       if (Kind_ConvNumScheme_AdjTNE2 == SPACE_UPWIND) {
-        if (Kind_Upwind_AdjTNE2 == ROE) cout << "Roe solver for the adjoint inviscid terms."<< endl;
+        if (Kind_Upwind_AdjTNE2 == ROE) cout << "Roe (with entropy fix) solver for the adjoint inviscid terms."<< endl;
 
         switch (SpatialOrder_AdjTNE2) {
           case FIRST_ORDER: cout << "First order integration." << endl; break;

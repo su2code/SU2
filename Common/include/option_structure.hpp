@@ -313,7 +313,6 @@ static const map<string, ENUM_MATH_PROBLEM> Math_Problem_Map = CCreateMap<string
 ("ADJOINT", ADJOINT_PROBLEM)
 ("LINEARIZED", LINEARIZED_PROBLEM);
 
-
 /*!
  * \brief types of spatial discretizations
  */
@@ -343,7 +342,6 @@ static const map<string, ENUM_FLUIDMODEL> FluidModel_Map = CCreateMap<string, EN
 ("VW_GAS", VW_GAS)
 ("PR_GAS", PR_GAS);
 
-
 /*!
  * \brief types of initialization option
  */
@@ -358,8 +356,6 @@ static const map<string, ENUM_INIT_OPTION> InitOption_Map = CCreateMap<string, E
 ("REYNOLDS", REYNOLDS)
 ("TD_CONDITIONS", TD_CONDITIONS);
 
-
-
 /*!
  * \brief types of initialization option
  */
@@ -373,7 +369,6 @@ enum ENUM_FREESTREAM_OPTION {
 static const map<string, ENUM_FREESTREAM_OPTION> FreeStreamOption_Map = CCreateMap<string, ENUM_FREESTREAM_OPTION>
 ("TEMPERATURE_FS", TEMPERATURE_FS)
 ("DENSITY_FS", DENSITY_FS);
-
 
 /*!
  * \brief types of viscosity model
@@ -557,19 +552,6 @@ static const map<string, ENUM_LIMITER> Limiter_Map = CCreateMap<string, ENUM_LIM
 ("VENKATAKRISHNAN", VENKATAKRISHNAN)
 ("BARTH_JESPERSEN", BARTH_JESPERSEN)
 ("SHARP_EDGES", SHARP_EDGES);
-
-/*!
- * \brief types of methods used to calculate source term Jacobians
- */
-enum ENUM_SOURCEJAC {
-  NO_JACOBIAN = 0,             /*!< \brief No source term Jacobian. */
-  FINITE_DIFF = 1,	/*!< \brief Numerical method for source term in flow equations. */
-  AUTO_DIFF = 2		/*!< \brief Numerical method for source term in charge distribution. */
-};
-static const map<string, ENUM_SOURCEJAC> SourceJac_Map = CCreateMap<string, ENUM_SOURCEJAC>
-("NO_JACOBIAN", NO_JACOBIAN)
-("FINITE_DIFF", FINITE_DIFF)
-("AUTO_DIFF", AUTO_DIFF);
 
 /*!
  * \brief types of turbulent models
