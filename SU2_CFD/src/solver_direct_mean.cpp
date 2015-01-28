@@ -10520,14 +10520,21 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   Prandtl_Turb    = config->GetPrandtl_Turb();
   Tke_Inf         = config->GetTke_FreeStreamND();
   
-  /*--- Initializate Fan Face Pressure ---*/
+  /*--- Initializate fan face pressure, fan face mach number, and mass flow rate ---*/
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     Inflow_MassFlow[iMarker] = 0.0;
+    Bleed_MassFlow[iMarker] = 0.0;
     Exhaust_MassFlow[iMarker] = 0.0;
-    Exhaust_Area[iMarker] = 0.0;
-    Inflow_Pressure[iMarker] = Pressure_Inf;
+    Exhaust_Temperature[iMarker] = Temperature_Inf;
+    Exhaust_Pressure[iMarker] = Pressure_Inf;
     Inflow_Mach[iMarker] = Mach_Inf;
+    Inflow_Pressure[iMarker] = Pressure_Inf;
+    Inflow_Area[iMarker] = 0.0;
+    Bleed_Temperature[iMarker] = Temperature_Inf;
+    Bleed_Pressure[iMarker] = Pressure_Inf;
+    Bleed_Area[iMarker] = 0.0;
+    Exhaust_Area[iMarker] = 0.0;
   }
   
   /*--- Initialize the cauchy critera array for fixed CL mode ---*/
