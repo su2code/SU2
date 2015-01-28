@@ -1025,9 +1025,11 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
   }
   
   /*--- Solver definition for the turbulent model problem ---*/
+  
   if (turbulent) {
     
     /*--- Definition of the convective scheme for each equation and mesh level ---*/
+    
     switch (config->GetKind_ConvNumScheme_Turb()) {
       case NONE :
         break;
@@ -1045,14 +1047,16 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
     }
     
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
+    
     for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++){
       if (spalart_allmaras) numerics_container[iMGlevel][TURB_SOL][VISC_TERM] = new CAvgGradCorrected_TurbSA(nDim, nVar_Turb, config);
-      else if (neg_spalart_allmaras) numerics_container[iMGlevel][TURB_SOL][VISC_TERM] = new CAvgGradCorrected_TurbSA(nDim, nVar_Turb, config);
+      else if (neg_spalart_allmaras) numerics_container[iMGlevel][TURB_SOL][VISC_TERM] = new CAvgGradCorrected_TurbSA_Neg(nDim, nVar_Turb, config);
       else if (machine_learning) numerics_container[iMGlevel][TURB_SOL][VISC_TERM] = new CAvgGradCorrected_TurbML(nDim, nVar_Turb, config);
       else if (menter_sst) numerics_container[iMGlevel][TURB_SOL][VISC_TERM] = new CAvgGradCorrected_TurbSST(nDim, nVar_Turb, constants, config);
     }
     
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
+    
     for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
       if (spalart_allmaras) numerics_container[iMGlevel][TURB_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_TurbSA(nDim, nVar_Turb, config);
       else if (neg_spalart_allmaras) numerics_container[iMGlevel][TURB_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_TurbSA_Neg(nDim, nVar_Turb, config);
@@ -1062,6 +1066,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
     }
     
     /*--- Definition of the boundary condition method ---*/
+    
     for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++){
       if (spalart_allmaras) {
         numerics_container[iMGlevel][TURB_SOL][CONV_BOUND_TERM] = new CUpwSca_TurbSA(nDim, nVar_Turb, config);
@@ -1069,7 +1074,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
       }
       else if (neg_spalart_allmaras) {
         numerics_container[iMGlevel][TURB_SOL][CONV_BOUND_TERM] = new CUpwSca_TurbSA(nDim, nVar_Turb, config);
-        numerics_container[iMGlevel][TURB_SOL][VISC_BOUND_TERM] = new CAvgGrad_TurbSA(nDim, nVar_Turb, config);
+        numerics_container[iMGlevel][TURB_SOL][VISC_BOUND_TERM] = new CAvgGrad_TurbSA_Neg(nDim, nVar_Turb, config);
       }
       else if (machine_learning) {
         numerics_container[iMGlevel][TURB_SOL][CONV_BOUND_TERM] = new CUpwSca_TurbML(nDim, nVar_Turb, config);
