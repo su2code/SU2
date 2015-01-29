@@ -52,7 +52,7 @@ using namespace std;
 /*!
  * \class CNumerics
  * \brief Class for defining the numerical methods.
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CNumerics {
@@ -204,6 +204,8 @@ public:
 	*WindGust_j;			/*!< \brief Wind gust at point j. */
     double *WindGustDer_i,	/*!< \brief Wind gust derivatives at point i. */
 	*WindGustDer_j;			/*!< \brief Wind gust derivatives at point j. */
+  double *Vorticity_i, *Vorticity_j;  /*!< \brief Vorticity. */
+  double StrainMag_i, StrainMag_j;   /*!< \brief Strain rate magnitude. */
   
   double *l, *m;
   double *dPdU_i, *dPdU_j;
@@ -274,7 +276,20 @@ public:
 	 * \param[in] SetVelocity2_Inf - Value of the square of the freestream velocity.
 	 */
 	void SetVelocity2_Inf(double val_velocity2);
-    
+  
+  /*!
+   * \brief Set the value of the vorticity
+   * \param[in] val_vorticity - Value of the vorticity.
+   */
+  void SetVorticity(double *val_vorticity_i, double *val_vorticity_j);
+  
+  /*!
+   * \brief Set the value of the rate of strain magnitude.
+   * \param[in] val_StrainMag_i - Value of the magnitude of rate of strain at point i.
+   * \param[in] val_StrainMag_j - Value of the magnitude of rate of strain at point j.
+   */
+  void SetStrainMag(double val_strainmag_i, double val_strainmag_j);
+  
 	/*!
 	 * \brief Set the value of the conservative variables.
 	 * \param[in] val_u_i - Value of the conservative variable at point i.
@@ -319,24 +334,7 @@ public:
 	 * \param[in] val_u_3 - Value of the conservative variable at point 3.
 	 */
 	void SetConservative(double *val_u_0, double *val_u_1, double *val_u_2, double *val_u_3);
-    
-	/*!
-	 * \brief Set the value of the poissonal conductivity
-	 */
-	virtual void SetElec_Cond();
-    
-	/*!
-	 * \brief Get the integral in poissonal conductivity calculation
-	 * \param[out] value of the integral
-	 */
-	virtual double GetElec_CondIntegral();
-    
-	/*!
-	 * \brief Set the square integral in poissonal conductivity calculation
-	 * \param[in] value of the square of the integral
-	 */
-	virtual void SetElec_CondIntegralsqr(double val_var);
-    
+  
 	/*!
 	 * \brief Set the gradient of the conservative variables.
 	 * \param[in] val_consvar_grad_i - Gradient of the conservative variable at point i.
@@ -477,14 +475,7 @@ public:
 	 * \param[in] val_F1_j - Value of the second Menter blending function at point j.
 	 */
 	virtual void SetF2blending(double val_F1_i, double val_F1_j){/* empty */};
-    
-	/*!
-	 * \brief Set the value of the rate of strain magnitude.
-	 * \param[in] val_StrainMag_i - Value of the magnitude of rate of strain at point i.
-	 * \param[in] val_StrainMag_j - Value of the magnitude of rate of strain at point j.
-	 */
-	virtual void SetStrainMag(double val_StrainMag_i, double val_StrainMag_j){/* empty */};
-    
+  
 	/*!
 	 * \brief Set the value of the cross diffusion for the SST model.
 	 * \param[in] val_CDkw_i - Value of the cross diffusion at point i.
@@ -1591,7 +1582,7 @@ void GetViscousProjFlux(double *val_primvar, double **val_gradprimvar,
  * \class CUpwCUSP_Flow
  * \brief Class for centered scheme - CUSP.
  * \ingroup ConvDiscr
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CUpwCUSP_Flow : public CNumerics {
@@ -1851,7 +1842,7 @@ public:
  * \class CUpwArtComp_Flow
  * \brief Class for solving an approximate Riemann solver of Roe for the incompressible flow equations.
  * \ingroup ConvDiscr
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CUpwArtComp_Flow : public CNumerics {
@@ -1898,7 +1889,7 @@ public:
  * \class CUpwArtComp_FreeSurf_Flow
  * \brief Class for solving an approximate Riemann solver of Roe for the incompressible flow equations.
  * \ingroup ConvDiscr
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CUpwArtComp_FreeSurf_Flow : public CNumerics {
@@ -1946,7 +1937,7 @@ public:
  * \brief Class for solving an approximate Riemann solver of Roe
  *        for the adjoint flow equations.
  * \ingroup ConvDiscr
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CUpwRoe_AdjFlow : public CNumerics {
@@ -1997,7 +1988,7 @@ public:
  * \brief Class for solving an approximate Riemann solver of Roe
  *        for the adjoint flow equations.
  * \ingroup ConvDiscr
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CUpwRoeArtComp_AdjFlow : public CNumerics {
@@ -2176,7 +2167,7 @@ public:
  * \class CUpwLin_LevelSet
  * \brief Class for performing a linear upwind solver for the Level Set equations.
  * \ingroup ConvDiscr
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CUpwLin_LevelSet : public CNumerics {
@@ -2216,7 +2207,7 @@ public:
  * \class CUpwLin_AdjLevelSet
  * \brief Class for performing a linear upwind solver for the adjoint Level Set equations.
  * \ingroup ConvDiscr
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CUpwLin_AdjLevelSet : public CNumerics {
@@ -2494,7 +2485,7 @@ public:
  * \class CCentJST_Flow
  * \brief Class for centered shceme - JST.
  * \ingroup ConvDiscr
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CCentJST_KE_Flow : public CNumerics {
@@ -2549,7 +2540,7 @@ public:
  * \class CCentJST_Flow
  * \brief Class for centered scheme - JST.
  * \ingroup ConvDiscr
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CCentJST_Flow : public CNumerics {
@@ -2604,7 +2595,7 @@ public:
  * \class CCentJSTArtComp_Flow
  * \brief Class for centered scheme - JST (artificial compressibility).
  * \ingroup ConvDiscr
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CCentJSTArtComp_Flow : public CNumerics {
@@ -2658,7 +2649,7 @@ public:
  * \class CCentJST_AdjFlow
  * \brief Class for and adjoint centered scheme - JST.
  * \ingroup ConvDiscr
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CCentJST_AdjFlow : public CNumerics {
@@ -2708,7 +2699,7 @@ public:
  * \class CCentJSTArtComp_AdjFlow
  * \brief Class for and adjoint centered scheme - JST.
  * \ingroup ConvDiscr
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CCentJSTArtComp_AdjFlow : public CNumerics {
@@ -2758,7 +2749,7 @@ public:
  * \class CCentJST_LinFlow
  * \brief Class for linearized centered scheme - JST.
  * \ingroup ConvDiscr
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CCentJST_LinFlow : public CNumerics {
@@ -2807,7 +2798,7 @@ public:
  * \class CCentLax_Flow
  * \brief Class for computing the Lax-Friedrich centered scheme.
  * \ingroup ConvDiscr
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CCentLax_Flow : public CNumerics {
@@ -2859,7 +2850,7 @@ public:
  * \class CCentLaxArtComp_Flow
  * \brief Class for computing the Lax-Friedrich centered scheme (artificial compressibility).
  * \ingroup ConvDiscr
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CCentLaxArtComp_Flow : public CNumerics {
@@ -2912,7 +2903,7 @@ public:
  * \class CCentLax_AdjFlow
  * \brief Class for computing the Lax-Friedrich adjoint centered scheme.
  * \ingroup ConvDiscr
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CCentLax_AdjFlow : public CNumerics {
@@ -2962,7 +2953,7 @@ public:
  * \class CCentLaxArtComp_AdjFlow
  * \brief Class for computing the Lax-Friedrich adjoint centered scheme.
  * \ingroup ConvDiscr
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CCentLaxArtComp_AdjFlow : public CNumerics {
@@ -3012,7 +3003,7 @@ public:
  * \class CCentLax_LinFlow
  * \brief Class for computing the Lax-Friedrich linearized centered scheme.
  * \ingroup ConvDiscr
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CCentLax_LinFlow : public CNumerics {
@@ -3063,7 +3054,7 @@ public:
  * \class CAvgGrad_Flow
  * \brief Class for computing viscous term using the average of gradients.
  * \ingroup ViscDiscr
- * \author A. Bueno, and F. Palacios.
+ * \author A. Bueno, and F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CAvgGrad_Flow : public CNumerics {
@@ -3159,7 +3150,7 @@ public:
  * \class CAvgGradArtComp_Flow
  * \brief Class for computing viscous term using an average of gradients.
  * \ingroup ViscDiscr
- * \author A. Bueno, and F. Palacios.
+ * \author A. Bueno, and F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CAvgGradArtComp_Flow : public CNumerics {
@@ -3246,7 +3237,7 @@ public:
  * \class CAvgGrad_TurbSA_Neg
  * \brief Class for computing viscous term using average of gradients (Spalart-Allmaras Turbulence model).
  * \ingroup ViscDiscr
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CAvgGrad_TurbSA_Neg : public CNumerics {
@@ -3386,7 +3377,7 @@ public:
  * \class CAvgGrad_AdjFlow
  * \brief Class for computing the adjoint viscous terms.
  * \ingroup ViscDiscr
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CAvgGrad_AdjFlow : public CNumerics {
@@ -3428,7 +3419,7 @@ public:
  * \class CAvgGradArtComp_AdjFlow
  * \brief Class for computing the adjoint viscous terms.
  * \ingroup ViscDiscr
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CAvgGradArtComp_AdjFlow : public CNumerics {
@@ -3469,7 +3460,7 @@ public:
  * \class CAvgGradCorrected_Flow
  * \brief Class for computing viscous term using the average of gradients with a correction.
  * \ingroup ViscDiscr
- * \author A. Bueno, and F. Palacios.
+ * \author A. Bueno, and F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CAvgGradCorrected_Flow : public CNumerics {
@@ -3567,7 +3558,7 @@ public:
  * \class CAvgGradCorrectedArtComp_Flow
  * \brief Class for computing viscous term using an average of gradients with correction (artificial compresibility).
  * \ingroup ViscDiscr
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CAvgGradCorrectedArtComp_Flow : public CNumerics {
@@ -4049,7 +4040,7 @@ public:
  * \class CAvgGrad_AdjTurb
  * \brief Class for adjoint turbulent using average of gradients with a correction.
  * \ingroup ViscDiscr
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CAvgGrad_AdjTurb : public CNumerics {
@@ -4101,7 +4092,7 @@ public:
  * \class CGalerkin_Flow
  * \brief Class for computing the stiffness matrix of the Galerkin method.
  * \ingroup ViscDiscr
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CGalerkin_Flow : public CNumerics {
@@ -4132,7 +4123,7 @@ public:
  * \class CGalerkin_FEA
  * \brief Class for computing the stiffness matrix of the Galerkin method.
  * \ingroup ViscDiscr
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CGalerkin_FEA : public CNumerics {
@@ -4236,7 +4227,7 @@ public:
  * \class CSourceNothing
  * \brief Dummy class.
  * \ingroup SourceDiscr
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CSourceNothing : public CNumerics {
@@ -4276,7 +4267,7 @@ private:
 	double sigma;
 	double cb2;
 	double cw1;
-	double DivVelocity, Vorticity;
+	double DivVelocity;
 	unsigned short iDim;
 	double nu, Ji, fv1, fv2, ft2, Omega, S, Shat, inv_Shat, dist_i_2, Ji_2, Ji_3, inv_k2_d2;
 	double r, g, g_6, glim, fw;
@@ -4289,7 +4280,7 @@ private:
 	bool incompressible;
   bool transition;
   bool rotating_frame;
-  double div, StrainMag;
+  double div;
   double beta, gamma_sep, gamma_eff, intermittency;
   double Freattach, r_t, s1;
   double Production, Destruction, CrossProduction;
@@ -4370,7 +4361,7 @@ public:
  * \class CSourcePieceWise_TurbSA_Neg
  * \brief Class for integrating the source terms of the Spalart-Allmaras turbulence model equation.
  * \ingroup SourceDiscr
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CSourcePieceWise_TurbSA_Neg : public CNumerics {
@@ -4386,7 +4377,7 @@ private:
   double sigma;
   double cb2;
   double cw1;
-  double DivVelocity, Vorticity;
+  double DivVelocity;
   unsigned short iDim;
   double nu, Ji, fv1, fv2, ft2, Omega, S, Shat, inv_Shat, dist_i_2, Ji_2, Ji_3, inv_k2_d2;
   double r, g, g_6, glim, fw;
@@ -4399,7 +4390,7 @@ private:
   bool incompressible;
   bool transition;
   bool rotating_frame;
-  double div, StrainMag;
+  double div;
   double beta, gamma_sep, gamma_eff, intermittency;
   double Freattach, r_t, s1;
   double Production, Destruction, CrossProduction;
@@ -4713,8 +4704,7 @@ private:
 	beta_star,
 	a1;
     
-	double StrainMag,
-	CDkw,
+	double CDkw_i, CDkw_j,
 	norm2_Grad;
     
 	bool incompressible;
@@ -4747,14 +4737,7 @@ public:
 	 * \param[in] val_F2_j - Value of the second blending function at point j.
 	 */
 	void SetF2blending(double val_F2_i, double val_F2_j);
-    
-	/*!
-	 * \brief Set the value of the rate of strain magnitude.
-	 * \param[in] val_StrainMag_i - Value of the magnitude of rate of strain at point i.
-	 * \param[in] val_StrainMag_j - Value of the magnitude of rate of strain at point j.
-	 */
-	virtual void SetStrainMag(double val_StrainMag_i, double val_StrainMag_j);
-    
+  
 	/*!
 	 * \brief Set the value of the cross diffusion for the SST model.
 	 * \param[in] val_CDkw_i - Value of the cross diffusion at point i.
@@ -4770,6 +4753,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config);
+  
 };
 
 /*!
@@ -4844,7 +4828,7 @@ public:
  * \class CSourceViscous_AdjFlow
  * \brief Class for source term integration in adjoint problem.
  * \ingroup SourceDiscr
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CSourceViscous_AdjFlow : public CNumerics {
@@ -4922,7 +4906,7 @@ public:
  * \class CSourcePieceWise_AdjElec
  * \brief Class for source term integration of the adjoint poisson potential equation.
  * \ingroup SourceDiscr
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CSourcePieceWise_AdjElec : public CNumerics {
@@ -4953,7 +4937,7 @@ public:
  * \class CSourcePieceWise_LevelSet
  * \brief Class for source term integration of the adjoint level set equation.
  * \ingroup SourceDiscr
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CSourcePieceWise_LevelSet : public CNumerics {
@@ -4984,7 +4968,7 @@ public:
  * \class CSourcePieceWise_AdjLevelSet
  * \brief Class for source term integration of the adjoint level set equation.
  * \ingroup SourceDiscr
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CSourcePieceWise_AdjLevelSet : public CNumerics {
@@ -5015,7 +4999,7 @@ public:
  * \class CSourcePieceWise_LinElec
  * \brief Class for source term integration of the linearized poisson potential equation.
  * \ingroup SourceDiscr
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CSourcePieceWise_LinElec : public CNumerics {
@@ -5046,7 +5030,7 @@ public:
  * \class CSourceConservative_AdjFlow
  * \brief Class for source term integration in adjoint problem using a conservative scheme.
  * \ingroup SourceDiscr
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CSourceConservative_AdjFlow : public CNumerics {
@@ -5178,7 +5162,7 @@ public:
  * \class CSourceAxisymmetric_Flow
  * \brief Class for source term for solving axisymmetric problems.
  * \ingroup SourceDiscr
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CSourceAxisymmetric_Flow : public CNumerics {
@@ -5213,7 +5197,7 @@ public:
  * \class CSourceAxisymmetric_AdjFlow
  * \brief Class for source term for solving axisymmetric problems.
  * \ingroup SourceDiscr
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CSourceAxisymmetric_AdjFlow : public CNumerics {
@@ -5593,7 +5577,7 @@ public:
  * \class CCentLax_TNE2
  * \brief Class for computing the Lax-Friedrich centered scheme.
  * \ingroup ConvDiscr
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 2.0.6
  */
 class CCentLax_TNE2 : public CNumerics {
@@ -5828,7 +5812,7 @@ public:
  * \brief Class for solving an approximate Riemann solver of Roe
  *        for the adjoint flow equations.
  * \ingroup ConvDiscr
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 2.0.6
  */
 class CUpwRoe_AdjTNE2 : public CNumerics {
@@ -5882,7 +5866,7 @@ public:
  * \brief Class for solving an approximate Riemann solver of Roe
  *        for the adjoint flow equations.
  * \ingroup ConvDiscr
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 2.0.6
  */
 class CUpwSW_AdjTNE2 : public CNumerics {
@@ -5935,7 +5919,7 @@ public:
  * \class CCentJST_AdjTNE2
  * \brief Class for and adjoint centered scheme - JST.
  * \ingroup ConvDiscr
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 2.0.6
  */
 class CCentJST_AdjTNE2 : public CNumerics {
@@ -5986,7 +5970,7 @@ public:
  * \class CCentLax_AdjTNE2
  * \brief Class for computing the Lax-Friedrich adjoint centered scheme.
  * \ingroup ConvDiscr
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 2.0.6
  */
 class CCentLax_AdjTNE2 : public CNumerics {
@@ -6037,7 +6021,7 @@ public:
  * \class CAvgGrad_AdjTNE2
  * \brief Class for computing the adjoint viscous terms.
  * \ingroup ViscDiscr
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CAvgGrad_AdjTNE2 : public CNumerics {

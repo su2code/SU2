@@ -480,31 +480,13 @@ void CSourcePieceWise_TurbSA::ComputeResidual(double *val_residual, double **val
   CrossProduction = 0.0;
   val_Jacobian_i[0][0] = 0.0;
   
-  /*--- Computation of vorticity ---*/
+  /*--- Evaluate Omega ---*/
   
-  Vorticity = (PrimVar_Grad_i[2][0]-PrimVar_Grad_i[1][1])*(PrimVar_Grad_i[2][0]-PrimVar_Grad_i[1][1]);
-  if (nDim == 3) Vorticity += ( (PrimVar_Grad_i[3][1]-PrimVar_Grad_i[2][2])*(PrimVar_Grad_i[3][1]-PrimVar_Grad_i[2][2]) + (PrimVar_Grad_i[1][2]-PrimVar_Grad_i[3][0])*(PrimVar_Grad_i[1][2]-PrimVar_Grad_i[3][0]) );
-  Omega = sqrt(Vorticity);
+  Omega = sqrt(Vorticity_i[0]*Vorticity_i[0] + Vorticity_i[1]*Vorticity_i[1] + Vorticity_i[2]*Vorticity_i[2]);
   
   /*--- Rotational correction term ---*/
   
-  if (rotating_frame) {
-    
-    div = PrimVar_Grad_i[1][0] + PrimVar_Grad_i[2][1];
-    if (nDim == 3) div += PrimVar_Grad_i[3][2];
-    StrainMag = 0.0;
-    StrainMag += pow(PrimVar_Grad_i[1][0] - 1.0/3.0*div,2.0);
-    StrainMag += pow(PrimVar_Grad_i[2][1] - 1.0/3.0*div,2.0);
-    if (nDim == 3) StrainMag += pow(PrimVar_Grad_i[3][2] - 1.0/3.0*div,2.0);
-    StrainMag += 2.0*pow(0.5*(PrimVar_Grad_i[1][1]+PrimVar_Grad_i[2][0]),2.0);
-    if (nDim == 3) {
-      StrainMag += 2.0*pow(0.5*(PrimVar_Grad_i[1][2]+PrimVar_Grad_i[3][0]),2.0);
-      StrainMag += 2.0*pow(0.5*(PrimVar_Grad_i[2][2]+PrimVar_Grad_i[3][1]),2.0);
-    }
-    StrainMag = sqrt(2.0*StrainMag);
-    Omega += 2.0*min(0.0, StrainMag-Omega);
-    
-  }
+  if (rotating_frame) { Omega += 2.0*min(0.0, StrainMag_i-Omega); }
   
   if (dist_i > 1e-10) {
     
@@ -618,31 +600,13 @@ void CSourcePieceWise_TurbSA_Neg::ComputeResidual(double *val_residual, double *
   CrossProduction = 0.0;
   val_Jacobian_i[0][0] = 0.0;
   
-  /*--- Computation of vorticity ---*/
+  /*--- Evaluate Omega ---*/
   
-  Vorticity = (PrimVar_Grad_i[2][0]-PrimVar_Grad_i[1][1])*(PrimVar_Grad_i[2][0]-PrimVar_Grad_i[1][1]);
-  if (nDim == 3) Vorticity += ( (PrimVar_Grad_i[3][1]-PrimVar_Grad_i[2][2])*(PrimVar_Grad_i[3][1]-PrimVar_Grad_i[2][2]) + (PrimVar_Grad_i[1][2]-PrimVar_Grad_i[3][0])*(PrimVar_Grad_i[1][2]-PrimVar_Grad_i[3][0]) );
-  Omega = sqrt(Vorticity);
-  
+  Omega = sqrt(Vorticity_i[0]*Vorticity_i[0] + Vorticity_i[1]*Vorticity_i[1] + Vorticity_i[2]*Vorticity_i[2]);
+
   /*--- Rotational correction term ---*/
   
-  if (rotating_frame) {
-    
-    div = PrimVar_Grad_i[1][0] + PrimVar_Grad_i[2][1];
-    if (nDim == 3) div += PrimVar_Grad_i[3][2];
-    StrainMag = 0.0;
-    StrainMag += pow(PrimVar_Grad_i[1][0] - 1.0/3.0*div,2.0);
-    StrainMag += pow(PrimVar_Grad_i[2][1] - 1.0/3.0*div,2.0);
-    if (nDim == 3) StrainMag += pow(PrimVar_Grad_i[3][2] - 1.0/3.0*div,2.0);
-    StrainMag += 2.0*pow(0.5*(PrimVar_Grad_i[1][1]+PrimVar_Grad_i[2][0]),2.0);
-    if (nDim == 3) {
-      StrainMag += 2.0*pow(0.5*(PrimVar_Grad_i[1][2]+PrimVar_Grad_i[3][0]),2.0);
-      StrainMag += 2.0*pow(0.5*(PrimVar_Grad_i[2][2]+PrimVar_Grad_i[3][1]),2.0);
-    }
-    StrainMag = sqrt(2.0*StrainMag);
-    Omega += 2.0*min(0.0, StrainMag-Omega);
-    
-  }
+  if (rotating_frame) { Omega += 2.0*min(0.0, StrainMag_i-Omega); }
   
   if (dist_i > 1e-10) {
     
@@ -1073,12 +1037,12 @@ void CSourcePieceWise_TurbSST::ComputeResidual(double *val_residual, double **va
     for (iDim = 0; iDim < nDim; iDim++)
       diverg += PrimVar_Grad_i[iDim+1][iDim];
     
-    pk = Eddy_Viscosity_i*StrainMag*StrainMag - 2.0/3.0*Density_i*TurbVar_i[0]*diverg;
+    pk = Eddy_Viscosity_i*StrainMag_i*StrainMag_i - 2.0/3.0*Density_i*TurbVar_i[0]*diverg;
     pk = min(pk,20.0*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]);
     pk = max(pk,0.0);
     
-    zeta = max(TurbVar_i[1],StrainMag*F2_i/a1);
-    pw = StrainMag*StrainMag - 2.0/3.0*zeta*diverg;
+    zeta = max(TurbVar_i[1],StrainMag_i*F2_i/a1);
+    pw = StrainMag_i*StrainMag_i - 2.0/3.0*zeta*diverg;
     pw = max(pw,0.0);
     
     val_residual[0] += pk*Volume;
@@ -1091,7 +1055,7 @@ void CSourcePieceWise_TurbSST::ComputeResidual(double *val_residual, double **va
     
     /*--- Cross diffusion ---*/
     
-    val_residual[1] += (1.0 - F1_i)*CDkw*Volume;
+    val_residual[1] += (1.0 - F1_i)*CDkw_i*Volume;
     
     /*--- Implicit part ---*/
     

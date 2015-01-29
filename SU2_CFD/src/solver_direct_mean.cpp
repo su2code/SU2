@@ -10768,7 +10768,7 @@ CNSSolver::~CNSSolver(void) {
 void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 
   unsigned long iPoint, ErrorCounter = 0;
-  double eddy_visc = 0.0, turb_ke = 0.0;
+  double eddy_visc = 0.0, turb_ke = 0.0, StrainMag = 0.0, Omega = 0.0, *Vorticity;
   bool RightSol = true;
 
 #ifdef HAVE_MPI
@@ -10861,12 +10861,29 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
 	  SetPrimitive_Gradient_LS(geometry, config);
 //	  if (compressible && !ideal_gas) SetSecondary_Gradient_LS(geometry, config);
   }
-
+  
   /*--- Compute the limiter in case we need it in the turbulence model
    or to limit the viscous terms (check this logic with JST and 2nd order turbulence model) ---*/
 
   if ((iMesh == MESH_0) && (limiter_flow || limiter_turb || limiter_adjflow)) { SetPrimitive_Limiter(geometry, config);
 //  if (compressible && !ideal_gas) SetSecondary_Limiter(geometry, config);
+  }
+  
+  /*--- Evaluate the vorticity and strain rate magnitude ---*/
+  
+  StrainMag_Max = 0.0, Omega_Max = 0.0;
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    
+    solver_container[FLOW_SOL]->node[iPoint]->SetVorticity();
+    solver_container[FLOW_SOL]->node[iPoint]->SetStrainMag();
+    
+    StrainMag = solver_container[FLOW_SOL]->node[iPoint]->GetStrainMag();
+    Vorticity = solver_container[FLOW_SOL]->node[iPoint]->GetVorticity();
+    Omega = sqrt(Vorticity[0]*Vorticity[0]+ Vorticity[1]*Vorticity[1]+ Vorticity[2]*Vorticity[2]);
+
+    StrainMag_Max = max(StrainMag_Max, StrainMag);
+    Omega_Max = max(Omega_Max, Omega);
+    
   }
   
   /*--- Initialize the Jacobian matrices ---*/
@@ -10876,11 +10893,23 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   /*--- Error message ---*/
   
   if (config->GetConsole_Output_Verb() == VERB_HIGH) {
+    
 #ifdef HAVE_MPI
     unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
+    double MyOmega_Max = Omega_Max; Omega_Max = 0.0;
+    double MyStrainMag_Max = StrainMag_Max; StrainMag_Max = 0.0;
+
     MPI_Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(&MyStrainMag_Max, &StrainMag_Max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+    MPI_Allreduce(&MyOmega_Max, &Omega_Max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 #endif
-    if (iMesh == MESH_0) config->SetNonphysical_Points(ErrorCounter);
+    
+    if (iMesh == MESH_0) {
+      config->SetNonphysical_Points(ErrorCounter);
+      solver_container[FLOW_SOL]->SetStrainMag_Max(StrainMag_Max);
+      solver_container[FLOW_SOL]->SetOmega_Max(Omega_Max);
+    }
+    
   }
 
 }

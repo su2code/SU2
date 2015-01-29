@@ -50,7 +50,7 @@ using namespace std;
  * \class CIntegration
  * \brief Main class for doing the space integration, time integration, and monitoring 
  *        of a system of Partial Differential Equations (PDE).
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CIntegration {
@@ -313,7 +313,7 @@ public:
 /*!
  * \class CMultiGridIntegration
  * \brief Class for doing the numerical integration using a multigrid method.
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CMultiGridIntegration : public CIntegration {

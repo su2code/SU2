@@ -525,7 +525,7 @@ CNSVariable::CNSVariable(double *val_solution, unsigned short val_nDim,
 
 CNSVariable::~CNSVariable(void) { }
 
-void CNSVariable::SetVorticity(void) {
+bool CNSVariable::SetVorticity(void) {
   
 	double u_y = Gradient_Primitive[1][1];
 	double v_x = Gradient_Primitive[2][0];
@@ -545,67 +545,79 @@ void CNSVariable::SetVorticity(void) {
 	Vorticity[1] = -(w_x-u_z);
 	Vorticity[2] = v_x-u_y;
   
+  return false;
+  
 }
 
-void CNSVariable::SetStrainMag(void) {
+bool CNSVariable::SetStrainMag(void) {
   
   double div;
   
   if (nDim == 2) {
+    
     div = Gradient_Primitive[1][0] + Gradient_Primitive[2][1];
     StrainMag = 0.0;
     
-    // add diagonals
+    /*--- Add diagonals ---*/
+    
     StrainMag += pow(Gradient_Primitive[1][0] - 1.0/3.0*div, 2.0);
     StrainMag += pow(Gradient_Primitive[2][1] - 1.0/3.0*div, 2.0);
     
-    // add off diagonals
+    /*--- Add off diagonals ---*/
+    
     StrainMag += 2.0*pow(0.5*(Gradient_Primitive[1][1] + Gradient_Primitive[2][0]), 2.0);
     
     StrainMag = sqrt(2.0*StrainMag);
-    
+        
   }
   else {
+    
     div = Gradient_Primitive[1][0] + Gradient_Primitive[2][1] + Gradient_Primitive[3][2];
     StrainMag = 0.0;
     
-    // add diagonals
+    /*--- Add diagonals ---*/
+    
     StrainMag += pow(Gradient_Primitive[1][0] - 1.0/3.0*div,2.0);
     StrainMag += pow(Gradient_Primitive[2][1] - 1.0/3.0*div,2.0);
     StrainMag += pow(Gradient_Primitive[3][2] - 1.0/3.0*div,2.0);
     
-    // add off diagonals
+    /*--- Add off diagonals ---*/
+    
     StrainMag += 2.0*pow(0.5*(Gradient_Primitive[1][1] + Gradient_Primitive[2][0]), 2.0);
     StrainMag += 2.0*pow(0.5*(Gradient_Primitive[1][2] + Gradient_Primitive[3][0]), 2.0);
     StrainMag += 2.0*pow(0.5*(Gradient_Primitive[2][2] + Gradient_Primitive[3][1]), 2.0);
     
     StrainMag = sqrt(2.0*StrainMag);
+    
   }
+  
+  return false;
   
 }
 
 bool CNSVariable::SetPrimVar_Compressible(double eddy_visc, double turb_ke, CFluidModel *FluidModel) {
 	unsigned short iVar;
-  bool check_dens = false, check_press = false, check_sos = false, check_temp = false, RightVol = true;
+  double density, staticEnergy;
+  bool check_dens = false, check_press = false, check_sos = false,
+  check_temp = false, RightVol = true;
   
   
-  SetVelocity();   // Computes velocity and velocity^2
-  double density = GetDensity();
-  double staticEnergy = GetEnergy()-0.5*Velocity2 - turb_ke;
+  SetVelocity(); // Computes velocity and velocity^2
+  density = GetDensity();
+  staticEnergy = GetEnergy()-0.5*Velocity2 - turb_ke;
 
   /*--- Check will be moved inside fluid model plus error description strings ---*/
   
   FluidModel->SetTDState_rhoe(density, staticEnergy);
-  double temperature = FluidModel->GetTemperature();
 
-  check_dens = SetDensity();
+  check_dens  = SetDensity();
   check_press = SetPressure(FluidModel->GetPressure());
-  check_sos = SetSoundSpeed(FluidModel->GetSoundSpeed2());
-  check_temp = SetTemperature(temperature);
+  check_sos   = SetSoundSpeed(FluidModel->GetSoundSpeed2());
+  check_temp  = SetTemperature(FluidModel->GetTemperature());
   
   /*--- Check that the solution has a physical meaning ---*/
   
-  if (check_dens || check_press || check_sos || check_temp) {
+  if (check_dens || check_press || check_sos  || check_temp) {
     
     /*--- Copy the old solution ---*/
     
@@ -614,19 +626,18 @@ bool CNSVariable::SetPrimVar_Compressible(double eddy_visc, double turb_ke, CFlu
     
     /*--- Recompute the primitive variables ---*/
     
-    SetVelocity();   // Computes velocity and velocity^2
-    double density = GetDensity();
-    double staticEnergy = GetEnergy()-0.5*Velocity2 - turb_ke;
+    SetVelocity(); // Computes velocity and velocity^2
+    density = GetDensity();
+    staticEnergy = GetEnergy()-0.5*Velocity2 - turb_ke;
     
     /*--- Check will be moved inside fluid model plus error description strings ---*/
     
     FluidModel->SetTDState_rhoe(density, staticEnergy);
-    double temperature = FluidModel->GetTemperature();
     
     SetDensity();
     SetPressure(FluidModel->GetPressure());
     SetSoundSpeed(FluidModel->GetSoundSpeed2());
-    SetTemperature(temperature);
+    SetTemperature(FluidModel->GetTemperature());
     
     RightVol = false;
     
@@ -647,6 +658,8 @@ bool CNSVariable::SetPrimVar_Compressible(double eddy_visc, double turb_ke, CFlu
   /*--- Set thermal conductivity ---*/
   
   SetThermalConductivity(FluidModel->GetThermalConductivity());
+
+  /*--- Set specific heat ---*/
 
   SetSpecificHeatCp(FluidModel->GetCp());
   
