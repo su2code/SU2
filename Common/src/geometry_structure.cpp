@@ -6525,7 +6525,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   
   string text_line, Marker_Tag;
   ifstream mesh_file;
-  unsigned short VTK_Type, iMarker, iChar;
+  unsigned long VTK_Type, iMarker, iChar;
   unsigned long iCount = 0;
   unsigned long iElem_Bound = 0, iPoint = 0, ielem_div = 0, ielem = 0;
   unsigned long *Local2Global = NULL;
@@ -6793,10 +6793,10 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   
   /*--- Initialize some arrays for the adjacency information (ParMETIS). ---*/
   
-  unsigned short *adj_counter = new unsigned short[local_node];
+  unsigned long *adj_counter = new unsigned long[local_node];
   unsigned long **adjacent_elem = new unsigned long*[local_node];
   for(iPoint = 0; iPoint < local_node; iPoint++) {
-    adjacent_elem[iPoint] = new unsigned long[200];
+    adjacent_elem[iPoint] = new unsigned long[2000];
     adj_counter[iPoint] = 0;
   }
   
