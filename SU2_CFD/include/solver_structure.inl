@@ -304,6 +304,14 @@ inline double CSolver::GetHeatFluxTarget(unsigned short val_marker, unsigned sho
 
 inline double CSolver::GetYPlus(unsigned short val_marker, unsigned short val_vertex) { return 0; }
 
+inline double CSolver::GetStrainMag_Max(void) { return 0; }
+
+inline double CSolver::GetOmega_Max(void) { return 0; }
+
+inline void CSolver::SetStrainMag_Max(double val_strainmag_max) { }
+
+inline void CSolver::SetOmega_Max(double val_omega_max) { }
+
 inline void CSolver::Viscous_Residual(CGeometry *geometry,
                                       CSolver **solver_container,
                                       CNumerics *numerics, CConfig
@@ -801,6 +809,14 @@ inline double CNSSolver::GetHeatFluxTarget(unsigned short val_marker, unsigned s
 inline void CNSSolver::SetHeatFluxTarget(unsigned short val_marker, unsigned short val_vertex, double val_heat) { HeatFluxTarget[val_marker][val_vertex] = val_heat; }
 
 inline double CNSSolver::GetYPlus(unsigned short val_marker, unsigned short val_vertex) { return YPlus[val_marker][val_vertex]; }
+
+inline double CNSSolver::GetStrainMag_Max(void) { return StrainMag_Max; }
+
+inline double CNSSolver::GetOmega_Max(void) { return Omega_Max; }
+
+inline void CNSSolver::SetStrainMag_Max(double val_strainmag_max) { StrainMag_Max = val_strainmag_max; }
+
+inline void CNSSolver::SetOmega_Max(double val_omega_max) { Omega_Max = val_omega_max; }
 
 inline double CAdjEulerSolver::GetCSensitivity(unsigned short val_marker, unsigned short val_vertex) { return CSensitivity[val_marker][val_vertex]; }
 

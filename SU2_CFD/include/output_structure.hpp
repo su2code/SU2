@@ -428,7 +428,7 @@ public:
 	 * \param[in] ConvHist_file - Pointer to the convergence history file (which is defined in the main subroutine).
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void SetHistory_Header(ofstream *ConvHist_file, CConfig *config);
+	void SetConvHistory_Body(ofstream *ConvHist_file, CConfig *config);
 
 	/*! 
 	 * \brief Write the history file and the convergence on the screen for serial computations.
@@ -441,7 +441,7 @@ public:
 	 * \param[in] timeused - Current number of clock tick in the computation (related with total time).
 	 * \param[in] val_nZone - iZone index.
 	 */
-	void SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geometry, CSolver ****solver_container, CConfig **config,
+	void SetConvHistory_Body(ofstream *ConvHist_file, CGeometry ***geometry, CSolver ****solver_container, CConfig **config,
                               CIntegration ***integration, bool DualTime, double timeused, unsigned short val_iZone);
   
   /*!

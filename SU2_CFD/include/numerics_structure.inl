@@ -161,9 +161,17 @@ inline void CNumerics::SetVelocity2_Inf(double velocity2) {
 	vel2_inf = velocity2;
 }
 
-inline void CNumerics::SetTimeStep(double val_timestep) {TimeStep = val_timestep;}
+inline void CNumerics::SetVorticity(double *val_vorticity_i, double *val_vorticity_j) {
+  Vorticity_i = val_vorticity_i;
+  Vorticity_j = val_vorticity_j;
+}
 
-inline void CNumerics::SetElec_Cond() {}
+inline void CNumerics::SetStrainMag(double val_strainmag_i, double val_strainmag_j) {
+  StrainMag_i = val_strainmag_i;
+  StrainMag_j = val_strainmag_j;
+}
+
+inline void CNumerics::SetTimeStep(double val_timestep) {TimeStep = val_timestep;}
 
 inline void CNumerics::SetLaminarViscosity(double val_lam_viscosity_i, double val_lam_viscosity_j) {
 	Laminar_Viscosity_i = val_lam_viscosity_i;
@@ -186,8 +194,8 @@ inline void CNumerics::SetDiffusionCoeff(double* val_diffusioncoeff_i, double* v
 }
 
 inline void CNumerics::SetEddyViscosity(double val_eddy_viscosity_i, double val_eddy_viscosity_j) {
-	Eddy_Viscosity_i=val_eddy_viscosity_i;
-	Eddy_Viscosity_j=val_eddy_viscosity_j;
+	Eddy_Viscosity_i = val_eddy_viscosity_i;
+	Eddy_Viscosity_j = val_eddy_viscosity_j;
 }
 
 inline void CNumerics::SetIntermittency(double intermittency_in) { }
@@ -395,12 +403,9 @@ inline void CSourcePieceWise_TurbSST::SetF2blending(double val_F2_i, double val_
 	F2_j = val_F2_j;
 }
 
-inline void CSourcePieceWise_TurbSST::SetStrainMag(double val_StrainMag_i, double val_StrainMag_j){
-	StrainMag = val_StrainMag_i;
-}
-
 inline void CSourcePieceWise_TurbSST::SetCrossDiff(double val_CDkw_i, double val_CDkw_j){
-	CDkw = val_CDkw_i;
+	CDkw_i = val_CDkw_i;
+  CDkw_j = val_CDkw_j;
 }			
 
 inline void CSourcePieceWise_TurbSA::SetIntermittency(double intermittency_in) { intermittency = intermittency_in; }
@@ -446,10 +451,6 @@ inline double CSourcePieceWise_TurbML::GetDestruction(void) { return Destruction
 inline double CSourcePieceWise_TurbML::GetCrossProduction(void) { return CrossProduction; }
 
 inline double CUpwTurkel_Flow::GetPrecond_Beta() { return Beta; }
-
-inline double CNumerics::GetElec_CondIntegral() {return 0;}
-
-inline void CNumerics::SetElec_CondIntegralsqr(double val_var) {}
 
 inline void CNumerics::ComputeResidual(double **val_Jacobian_i, double *val_Jacobian_mui, double ***val_Jacobian_gradi, CConfig *config) { }
 

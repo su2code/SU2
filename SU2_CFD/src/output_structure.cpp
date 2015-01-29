@@ -4091,7 +4091,7 @@ void COutput::DeallocateSolution(CConfig *config, CGeometry *geometry) {
   }
 }
 
-void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
+void COutput::SetConvHistory_Body(ofstream *ConvHist_file, CConfig *config) {
   char cstr[200], buffer[50], turb_resid[1000];
   unsigned short iMarker, iMarker_Monitoring, iSpecies;
   string Monitoring_Tag, monitoring_coeff, aeroelastic_coeff;
@@ -4273,7 +4273,7 @@ void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
 }
 
 
-void COutput::SetConvergence_History(ofstream *ConvHist_file,
+void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                                      CGeometry ***geometry,
                                      CSolver ****solver_container,
                                      CConfig **config,
@@ -5101,6 +5101,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
               if (nDim == 3) cout << ", " << Coord[2]*12.0;
               cout <<   ")." << endl;
             }
+            cout <<"Maximum Omega " << solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetOmega_Max() << ", maximum Strain Rate " << solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetStrainMag_Max() << "." << endl;
             
             /*--- Print out the number of non-physical points and reconstructions ---*/
             if (config[val_iZone]->GetNonphysical_Points() > 0)

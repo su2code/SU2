@@ -285,7 +285,7 @@ int main(int argc, char *argv[]) {
   /*--- Open the convergence history file ---*/
   
   if (rank == MASTER_NODE)
-    output->SetHistory_Header(&ConvHist_file, config_container[ZONE_0]);
+    output->SetConvHistory_Body(&ConvHist_file, config_container[ZONE_0]);
   
   /*--- Check for an unsteady restart. Update ExtIter if necessary. ---*/
   if (config_container[ZONE_0]->GetWrt_Unsteady() && config_container[ZONE_0]->GetRestart())
@@ -413,7 +413,7 @@ int main(int argc, char *argv[]) {
     
     /*--- Update the convergence history file (serial and parallel computations). ---*/
 
-    output->SetConvergence_History(&ConvHist_file, geometry_container, solver_container,
+    output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container,
                                    config_container, integration_container, false, UsedTime, ZONE_0);
     
     /*--- Check whether the current simulation has reached the specified

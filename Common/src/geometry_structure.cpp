@@ -3709,7 +3709,7 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
 void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone){
   
   /*--- Original CGNS reader implementation by Thomas D. Economon,
-   Francisco Palacios. Improvements for mixed-element meshes generated
+   Francisco Palacios Improvements for mixed-element meshes generated
    by ICEM added by Martin Spel (3D) & Shlomy Shitrit (2D), April 2014. ---*/
   
 #ifdef HAVE_CGNS

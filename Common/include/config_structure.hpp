@@ -52,7 +52,7 @@ using namespace std;
  * \class CConfig
  * \brief Main class for defining the problem; basically this class reads the configuration file, and
  *        stores all the information.
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 

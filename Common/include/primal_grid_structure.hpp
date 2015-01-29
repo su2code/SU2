@@ -47,7 +47,7 @@ using namespace std;
 /*!
  * \class CPrimalGrid
  * \brief Class to define the numerical primal grid.
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CPrimalGrid {
@@ -247,7 +247,7 @@ public:
  * \class CVertexMPI
  * \brief Class for vertex element definition. This kind
  *        of element is used in the parallelization stuff.
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CVertexMPI : public CPrimalGrid {
@@ -364,7 +364,7 @@ public:
 /*!
  * \class CLine
  * \brief Class for line element definition.
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CLine : public CPrimalGrid {
@@ -490,7 +490,7 @@ public:
 /*!
  * \class CTriangle
  * \brief Class for triangle element definition.
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CTriangle : public CPrimalGrid {
@@ -618,7 +618,7 @@ public:
 /*!
  * \class CRectangle
  * \brief Class for rectangle element definition.
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CRectangle : public CPrimalGrid {
@@ -746,7 +746,7 @@ public:
 /*!
  * \class CTetrahedron
  * \brief Class for tetrahedron element definition.
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CTetrahedron : public CPrimalGrid {
@@ -861,7 +861,7 @@ public:
 /*!
  * \class CHexahedron
  * \brief Class for hexahedron element definition.
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CHexahedron : public CPrimalGrid {
@@ -983,7 +983,7 @@ public:
 /*!
  * \class CWedge
  * \brief Class for wedge element definition.
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CWedge : public CPrimalGrid {
@@ -1101,7 +1101,7 @@ public:
 /*!
  * \class CPyramid
  * \brief Class for pyramid element definition.
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CPyramid : public CPrimalGrid {

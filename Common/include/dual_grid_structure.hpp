@@ -48,7 +48,7 @@ using namespace std;
  * \class CDualGrid
  * \brief Class for controlling the dual volume definition. The dual volume is compose by 
  *        three main elements: points, edges, and vertices.
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CDualGrid{
@@ -133,7 +133,7 @@ public:
 /*! 
  * \class CPoint
  * \brief Class for point definition (including control volume definition).
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CPoint : public CDualGrid {
@@ -728,7 +728,7 @@ public:
 /*! 
  * \class CEdge
  * \brief Class for defining an edge.
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CEdge : public CDualGrid {
@@ -865,7 +865,7 @@ public:
 /*! 
  * \class CVertex
  * \brief Class for vertex definition (equivalent to edges, but for the boundaries).
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CVertex : public CDualGrid {

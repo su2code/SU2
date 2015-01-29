@@ -1311,6 +1311,7 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
     muT = rho*fv1*nu_hat[0];
     
     if (neg_spalart_allmaras && (muT < 0.0)) muT = 0.0;
+    
     node[iPoint]->SetmuT(muT);
     
   }
@@ -1321,14 +1322,12 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
                                     CConfig *config, unsigned short iMesh) {
   unsigned long iPoint;
   double LevelSet;
-  unsigned short iVar;
-  unsigned short iDim;
-  unsigned short jDim;
+  unsigned short iVar, iDim, jDim;
   
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
+  bool freesurface   = (config->GetKind_Regime() == FREESURFACE);
   bool time_spectral = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
-  bool transition = (config->GetKind_Trans_Model() == LM);
-  double epsilon          = config->GetFreeSurface_Thickness();
+  bool transition    = (config->GetKind_Trans_Model() == LM);
+  double epsilon     = config->GetFreeSurface_Thickness();
   
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     
@@ -1340,6 +1339,12 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
     
     numerics->SetPrimVarGradient(solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive(), NULL);
     
+    /*--- Set vorticity and strain rate magnitude ---*/
+    
+    numerics->SetVorticity(solver_container[FLOW_SOL]->node[iPoint]->GetVorticity(), NULL);
+
+    numerics->SetStrainMag(solver_container[FLOW_SOL]->node[iPoint]->GetStrainMag(), 0.0);
+    
     /*--- Set intermittency ---*/
     
     if (transition) {
@@ -1347,21 +1352,41 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
     }
     
     /*--- Turbulent variables w/o reconstruction, and its gradient ---*/
+    
     numerics->SetTurbVar(node[iPoint]->GetSolution(), NULL);
     numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), NULL);
     
     /*--- Set volume ---*/
+    
     numerics->SetVolume(geometry->node[iPoint]->GetVolume());
     
     /*--- Set distance to the surface ---*/
+    
     numerics->SetDistance(geometry->node[iPoint]->GetWall_Distance(), 0.0);
     
     /*--- Compute the source term ---*/
+    
     numerics->ComputeResidual(Residual, Jacobian_i, NULL, config);
     
-    unsigned long idx = 0;
-    unsigned long base = 0;
+    /*--- Don't add source term in the interface or air ---*/
+    
+    if (freesurface) {
+      LevelSet = solver_container[FLOW_SOL]->node[iPoint]->GetSolution(nDim+1);
+      if (LevelSet > -epsilon) for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
+    }
+    
+    /*--- Subtract residual and the Jacobian ---*/
+    
+    LinSysRes.SubtractBlock(iPoint, Residual);
+    
+    Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+
+    /*--- Extra output ---*/
+    
     if (config->GetExtraOutput()) {
+      
+      unsigned long idx = 0, base = 0;
+
       base = iPoint* (unsigned long) nOutputVariables;
       OutputVariables[base + idx] = numerics->GetProduction()/numerics->Volume;
       OutputHeadingNames[idx] = "Production";
@@ -1402,17 +1427,6 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
       idx++;
     }
     
-    /*--- Don't add source term in the interface or air ---*/
-    if (freesurface) {
-      LevelSet = solver_container[FLOW_SOL]->node[iPoint]->GetSolution(nDim+1);
-      if (LevelSet > -epsilon) for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
-    }
-    
-    /*--- Subtract residual and the Jacobian ---*/
-    LinSysRes.SubtractBlock(iPoint, Residual);
-    
-    Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-    
   }
   
   if (time_spectral) {
@@ -1421,18 +1435,22 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
     unsigned short nVar_Turb = solver_container[TURB_SOL]->GetnVar();
     
     /*--- Loop over points ---*/
+    
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
       
       /*--- Get control volume ---*/
+      
       Volume = geometry->node[iPoint]->GetVolume();
       
       /*--- Access stored time spectral source term ---*/
+      
       for (unsigned short iVar = 0; iVar < nVar_Turb; iVar++) {
         Source = node[iPoint]->GetTimeSpectral_Source(iVar);
         Residual[iVar] = Source*Volume;
       }
       
       /*--- Add Residual ---*/
+      
       LinSysRes.AddBlock(iPoint, Residual);
       
     }
@@ -2699,7 +2717,7 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 }
 
 void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
-  double rho = 0.0, mu = 0.0, dist, omega, kine, vorticity[3], strMag, F2, muT, zeta;
+  double rho = 0.0, mu = 0.0, dist, omega, kine, strMag, F2, muT, zeta;
   double a1 = constants[7];
   unsigned long iPoint;
   
@@ -2720,15 +2738,6 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
   
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
     
-    /*--- Compute vorticity and rate of strain magnitude ---*/
-    
-    solver_container[FLOW_SOL]->node[iPoint]->SetVorticity();
-    vorticity[0] = solver_container[FLOW_SOL]->node[iPoint]->GetVorticity(0);
-    vorticity[1] = solver_container[FLOW_SOL]->node[iPoint]->GetVorticity(1);
-    vorticity[2] = solver_container[FLOW_SOL]->node[iPoint]->GetVorticity(2);
-    solver_container[FLOW_SOL]->node[iPoint]->SetStrainMag();
-    strMag = solver_container[FLOW_SOL]->node[iPoint]->GetStrainMag();
-    
     /*--- Compute blending functions and cross diffusion ---*/
     
     if (compressible) {
@@ -2742,7 +2751,10 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     
     dist = geometry->node[iPoint]->GetWall_Distance();
     
+    strMag = solver_container[FLOW_SOL]->node[iPoint]->GetStrainMag();
+
     node[iPoint]->SetBlendingFunc(mu, dist, rho);
+    
     F2 = node[iPoint]->GetF2blending();
     
     /*--- Compute the eddy viscosity ---*/
@@ -2792,9 +2804,11 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     
     numerics->SetF2blending(node[iPoint]->GetF2blending(),0.0);
     
-    /*--- Rate of strain magnitude ---*/
+    /*--- Set vorticity and strain rate magnitude ---*/
     
-    numerics->SetStrainMag(solver_container[FLOW_SOL]->node[iPoint]->GetStrainMag(),0.0);
+    numerics->SetVorticity(solver_container[FLOW_SOL]->node[iPoint]->GetVorticity(), NULL);
+    
+    numerics->SetStrainMag(solver_container[FLOW_SOL]->node[iPoint]->GetStrainMag(), 0.0);
     
     /*--- Cross diffusion ---*/
     

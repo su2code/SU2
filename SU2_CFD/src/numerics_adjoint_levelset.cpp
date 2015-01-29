@@ -77,4 +77,3 @@ CSourcePieceWise_AdjLevelSet::CSourcePieceWise_AdjLevelSet(unsigned short val_nD
 CSourcePieceWise_AdjLevelSet::~CSourcePieceWise_AdjLevelSet(void) { }
 
 void CSourcePieceWise_AdjLevelSet::ComputeResidual(double *val_residual, CConfig *config) {}
-

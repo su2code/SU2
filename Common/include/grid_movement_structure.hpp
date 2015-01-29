@@ -55,7 +55,7 @@ using namespace std;
  * \class CGridMovement
  * \brief Class for moving the surface and volumetric 
  *        numerical grid (2D and 3D problems).
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CGridMovement {

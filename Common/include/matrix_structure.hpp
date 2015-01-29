@@ -49,7 +49,7 @@ using namespace std;
  * \class CSysMatrix
  * \brief Main class for defining sparse matrices-by-blocks
  with compressed row format.
- * \author A. Bueno, F. Palacios.
+ * \author A. Bueno, F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CSysMatrix {

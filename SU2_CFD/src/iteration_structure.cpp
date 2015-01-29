@@ -132,7 +132,7 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
       
       /*--- Write the convergence history (only screen output) ---*/
       
-      output->SetConvergence_History(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_0);
+      output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_0);
       
       /*--- Set the value of the internal iteration ---*/
       
@@ -373,7 +373,7 @@ void AdjMeanFlowIteration(COutput *output, CIntegration ***integration_container
       
       /*--- Write the convergence history (only screen output) ---*/
       
-      output->SetConvergence_History(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_0);
+      output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_0);
       
       /*--- Set the value of the internal iteration ---*/
       
@@ -576,7 +576,7 @@ void WaveIteration(COutput *output, CIntegration ***integration_container, CGeom
 		if ((config_container[iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config_container[iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) {
       
 			for(IntIter = 1; IntIter < config_container[iZone]->GetUnst_nIntIter(); IntIter++) {
-        output->SetConvergence_History(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, iZone);
+        output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, iZone);
         config_container[iZone]->SetIntIter(IntIter);
 				integration_container[iZone][WAVE_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
                                                                      config_container, RUNTIME_WAVE_SYS, IntIter, iZone);
@@ -623,7 +623,7 @@ void HeatIteration(COutput *output, CIntegration ***integration_container, CGeom
 		if ((config_container[iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config_container[iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) {
       
 			for(IntIter = 1; IntIter < config_container[iZone]->GetUnst_nIntIter(); IntIter++) {
-        output->SetConvergence_History(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, iZone);
+        output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, iZone);
         config_container[iZone]->SetIntIter(IntIter);
 				integration_container[iZone][HEAT_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
                                                                      config_container, RUNTIME_HEAT_SYS, IntIter, iZone);
@@ -705,7 +705,7 @@ void FEAIteration(COutput *output, CIntegration ***integration_container, CGeome
 				(config_container[iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) {
       
 			for(IntIter = 1; IntIter < config_container[iZone]->GetUnst_nIntIter(); IntIter++) {
-        output->SetConvergence_History(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, iZone);
+        output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, iZone);
         config_container[iZone]->SetIntIter(IntIter);
 				integration_container[iZone][FEA_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
                                                                     config_container, RUNTIME_FEA_SYS, IntIter, iZone);
@@ -763,7 +763,7 @@ void FluidStructureIteration(COutput *output, CIntegration ***integration_contai
 		for(IntIter = 1; IntIter < config_container[ZONE_0]->GetUnst_nIntIter(); IntIter++) {
       
       /*--- Write the convergence history (only screen output) ---*/
-			output->SetConvergence_History(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_0);
+			output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_0);
       
       /*--- Set the value of the internal iteration ---*/
       config_container[ZONE_0]->SetIntIter(IntIter);

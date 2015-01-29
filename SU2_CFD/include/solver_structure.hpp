@@ -61,7 +61,7 @@ using namespace std;
  * \class CSolver
  * \brief Main class for defining the PDE solution, it requires
  * a child class for each particular solver (Euler, Navier-Stokes, etc.)
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CSolver {
@@ -1718,7 +1718,31 @@ public:
 	 * \return Value of the y plus.
 	 */
 	virtual double GetYPlus(unsigned short val_marker, unsigned short val_vertex);
-    
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of the StrainMag_Max
+   */
+  virtual double GetStrainMag_Max(void);
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of the Omega_Max
+   */
+  virtual double GetOmega_Max(void);
+  
+  /*!
+   * \brief A virtual member.
+   * \return Value of the StrainMag_Max
+   */
+  virtual void SetStrainMag_Max(double val_strainmag_max);
+  
+  /*!
+   * \brief A virtual member.
+   * \return Value of the Omega_Max
+   */
+  virtual void SetOmega_Max(double val_omega_max);
+  
 	/*!
 	 * \brief A virtual member.
 	 * \return Value of the adjoint density at the infinity.
@@ -2148,7 +2172,7 @@ public:
  * \class CEulerSolver
  * \brief Main class for defining the Euler's flow solver.
  * \ingroup Euler_Equations
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CEulerSolver : public CSolver {
@@ -3482,7 +3506,7 @@ public:
  * \class CNSSolver
  * \brief Main class for defining the Navier-Stokes flow solver.
  * \ingroup Navier_Stokes_Equations
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CNSSolver : public CEulerSolver {
@@ -3534,6 +3558,7 @@ private:
 	AllBound_CQ_Visc,		/*!< \brief Torque coefficient (viscous contribution) for all the boundaries. */
   AllBound_HeatFlux_Visc,		/*!< \brief Heat load (viscous contribution) for all the boundaries. */
   AllBound_MaxHeatFlux_Visc; /*!< \brief Maximum heat flux (viscous contribution) for all boundaries. */
+  double StrainMag_Max, Omega_Max; /*!< \brief Maximum Strain Rate magnitude and Omega. */
   
 public:
   
@@ -3714,6 +3739,31 @@ public:
 	 * \return Value of the y plus.
 	 */
 	double GetYPlus(unsigned short val_marker, unsigned short val_vertex);
+  
+  /*!
+   * \brief Get the max Omega.
+   * \return Value of the max Omega.
+   */
+  double GetOmega_Max(void);
+  
+  /*!
+   * \brief Get the max Strain rate magnitude.
+   * \return Value of the max Strain rate magnitude.
+   */
+  double GetStrainMag_Max(void);
+  
+  /*!
+   * \brief A virtual member.
+   * \return Value of the StrainMag_Max
+   */
+  void SetStrainMag_Max(double val_strainmag_max);
+  
+  /*!
+   * \brief A virtual member.
+   * \return Value of the Omega_Max
+   */
+  void SetOmega_Max(double val_omega_max);
+  
 };
 
 /*!
@@ -4194,8 +4244,6 @@ public:
   
 };
 
-
-
 /*!
  * \class CTransLMSolver
  * \brief Main class for defining the turbulence model solver.
@@ -4523,7 +4571,7 @@ public:
  * \class CAdjEulerSolver
  * \brief Main class for defining the Euler's adjoint flow solver.
  * \ingroup Euler_Equations
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CAdjEulerSolver : public CSolver {
@@ -5003,7 +5051,7 @@ public:
  * \class CAdjNSSolver
  * \brief Main class for defining the Navier-Stokes' adjoint flow solver.
  * \ingroup Navier_Stokes_Equations
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CAdjNSSolver : public CAdjEulerSolver {
@@ -5256,7 +5304,7 @@ public:
  * \class CLinEulerSolver
  * \brief Main class for defining the linearized Euler solver.
  * \ingroup Euler_Equations
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CLinEulerSolver : public CSolver {
@@ -5380,7 +5428,7 @@ public:
 
 /*! \class CPoissonSolver
  *  \brief Main class for defining the poisson potential solver.
- *  \author F. Palacios.
+ *  \author F. Palacios
  *  \version 3.2.7.3 "eagle"
  *  \date May 3, 2010.
  */
@@ -5516,7 +5564,7 @@ public:
 
 /*! \class CWaveSolver
  *  \brief Main class for defining the wave solver.
- *  \author F. Palacios.
+ *  \author F. Palacios
  *  \version 3.2.7.3 "eagle"
  *  \date May 3, 2010.
  */
@@ -5671,7 +5719,7 @@ public:
 
 /*! \class CHeatSolver
  *  \brief Main class for defining the heat solver.
- *  \author F. Palacios.
+ *  \author F. Palacios
  *  \version 3.2.7.3 "eagle"
  *  \date May 3, 2010.
  */
@@ -5791,7 +5839,7 @@ public:
 
 /*! \class CFEASolver
  *  \brief Main class for defining the FEA solver.
- *  \author F. Palacios.
+ *  \author F. Palacios
  *  \version 3.2.7.3 "eagle"
  *  \date May 3, 2010.
  */
@@ -5971,7 +6019,7 @@ public:
  * \class CAdjLevelSetSolver
  * \brief Main class for defining the level set solver.
  * \ingroup LevelSet_Model
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CAdjLevelSetSolver : public CSolver {
@@ -6155,7 +6203,7 @@ public:
  * \class CTemplateSolver
  * \brief Main class for defining the template model solver.
  * \ingroup Template_Flow_Equation
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 3.2.7.3 "eagle"
  */
 class CTemplateSolver : public CSolver {
@@ -6360,7 +6408,7 @@ public:
  * \class CTNE2EulerSolver
  * \brief Main class for defining the TNE2 Euler's flow solver.
  * \ingroup Euler_Equations
- * \author S. R. Copeland, F. Palacios.
+ * \author S. R. Copeland, F. Palacios
  * \version 2.0.6
  */
 class CTNE2EulerSolver : public CSolver {
@@ -7004,7 +7052,7 @@ public:
  * \class CTNE2NSSolver
  * \brief Main class for defining the TNE2 Navier-Stokes flow solver.
  * \ingroup Navier_Stokes_Equations
- * \author S. R. Copeland, F. Palacios.
+ * \author S. R. Copeland, F. Palacios
  * \version 2.0.6
  */
 class CTNE2NSSolver : public CTNE2EulerSolver {
@@ -7250,7 +7298,7 @@ public:
  * \class CAdjEulerSolver
  * \brief Main class for defining the Euler's adjoint flow solver.
  * \ingroup Euler_Equations
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 2.0.6
  */
 class CAdjTNE2EulerSolver : public CSolver {
@@ -7541,7 +7589,7 @@ public:
  * \class CAdjNSSolver
  * \brief Main class for defining the Navier-Stokes' adjoint flow solver.
  * \ingroup Navier_Stokes_Equations
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 2.0.6
  */
 class CAdjTNE2NSSolver : public CAdjTNE2EulerSolver {
