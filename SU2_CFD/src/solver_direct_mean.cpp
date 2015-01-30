@@ -10785,6 +10785,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   bool limiter_flow         = ((config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER) && (ExtIter <= config->GetLimiterIter()));
   bool limiter_turb         = ((config->GetSpatialOrder_Turb() == SECOND_ORDER_LIMITER) && (ExtIter <= config->GetLimiterIter()));
   bool limiter_adjflow      = ((config->GetSpatialOrder_AdjFlow() == SECOND_ORDER_LIMITER) && (ExtIter <= config->GetLimiterIter()));
+  bool limiter_visc         = config->GetViscous_Limiter_Flow();
   bool compressible         = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible       = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface          = (config->GetKind_Regime() == FREESURFACE);
@@ -10865,7 +10866,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   /*--- Compute the limiter in case we need it in the turbulence model
    or to limit the viscous terms (check this logic with JST and 2nd order turbulence model) ---*/
 
-  if ((iMesh == MESH_0) && (limiter_flow || limiter_turb || limiter_adjflow)) { SetPrimitive_Limiter(geometry, config);
+  if ((iMesh == MESH_0) && (limiter_flow || limiter_turb || limiter_adjflow || limiter_visc)) { SetPrimitive_Limiter(geometry, config);
 //  if (compressible && !ideal_gas) SetSecondary_Limiter(geometry, config);
   }
   
@@ -10874,8 +10875,8 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   StrainMag_Max = 0.0, Omega_Max = 0.0;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     
-    solver_container[FLOW_SOL]->node[iPoint]->SetVorticity();
-    solver_container[FLOW_SOL]->node[iPoint]->SetStrainMag();
+    solver_container[FLOW_SOL]->node[iPoint]->SetVorticity(limiter_visc);
+    solver_container[FLOW_SOL]->node[iPoint]->SetStrainMag(limiter_visc);
     
     StrainMag = solver_container[FLOW_SOL]->node[iPoint]->GetStrainMag();
     Vorticity = solver_container[FLOW_SOL]->node[iPoint]->GetVorticity();
@@ -11165,11 +11166,15 @@ void CNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container
     numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[jPoint]->GetCoord());
     numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
 
-    /*--- Primitive variables, and gradient ---*/
+    /*--- Primitive and secondary variables ---*/
 
     numerics->SetPrimitive(node[iPoint]->GetPrimitive(), node[jPoint]->GetPrimitive());
     numerics->SetSecondary(node[iPoint]->GetSecondary(), node[jPoint]->GetSecondary());
+    
+    /*--- Gradient and limiters ---*/
+
     numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[jPoint]->GetGradient_Primitive());
+    numerics->SetPrimVarLimiter(node[iPoint]->GetLimiter_Primitive(), node[jPoint]->GetLimiter_Primitive());
 
     /*--- Turbulent kinetic energy ---*/
 

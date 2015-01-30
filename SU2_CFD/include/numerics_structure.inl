@@ -277,6 +277,11 @@ inline void CNumerics::SetPrimVarGradient(double **val_primvar_grad_i, double **
 	PrimVar_Grad_j = val_primvar_grad_j;
 }
 
+inline void CNumerics::SetPrimVarLimiter(double *val_primvar_lim_i, double *val_primvar_lim_j) {
+  PrimVar_Lim_i = val_primvar_lim_i;
+  PrimVar_Lim_j = val_primvar_lim_j;
+}
+
 inline void CNumerics::SetConsVarGradient(double **val_consvar_grad_i, double **val_consvar_grad_j) {
 	ConsVar_Grad_i = val_consvar_grad_i;
 	ConsVar_Grad_j = val_consvar_grad_j;

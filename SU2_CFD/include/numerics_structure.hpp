@@ -165,6 +165,8 @@ public:
 	**ConsVar_Grad;				/*!< \brief Gradient of conservative variables which is a scalar. */
 	double **PrimVar_Grad_i,	/*!< \brief Gradient of primitive variables at point i. */
 	**PrimVar_Grad_j;			/*!< \brief Gradient of primitive variables at point j. */
+  double *PrimVar_Lim_i,	/*!< \brief Limiter of primitive variables at point i. */
+  *PrimVar_Lim_j;			/*!< \brief Limiter of primitive variables at point j. */
   double *PsiVar_Lim_i,		/*!< \brief Limiter of adjoint variables at point i. */
 	*PsiVar_Lim_j;			/*!< \brief Limiter of adjoint variables at point j. */
 	double **PsiVar_Grad_i,		/*!< \brief Gradient of adjoint variables at point i. */
@@ -377,7 +379,15 @@ public:
 	 */
 	void SetPrimVarGradient(double **val_primvar_grad_i,
                           double **val_primvar_grad_j);
-    
+  
+  /*!
+   * \brief Set the Limiter of the primitive variables.
+   * \param[in] val_primvar_lim_i - Limiter of the primitive variable at point i.
+   * \param[in] val_primvar_lim_j - Limiter of the primitive variable at point j.
+   */
+  void SetPrimVarLimiter(double *val_primvar_lim_i,
+                          double *val_primvar_lim_j);
+  
 	/*!
 	 * \brief Set the value of the adjoint variable.
 	 * \param[in] val_psi_i - Value of the adjoint variable at point i.
@@ -3071,7 +3081,7 @@ private:
 	*ProjFlux,	/*!< \brief Projection of the viscous fluxes. */
 	dist_ij;						/*!< \brief Length of the edge and face. */
 	bool implicit; /*!< \brief Implicit calculus. */
-    
+
 public:
     
 	/*!
@@ -3478,7 +3488,8 @@ private:
 	dist_ij_2,					 /*!< \brief Length of the edge and face. */
 	*ProjFlux;	/*!< \brief Projection of the viscous fluxes. */
 	bool implicit;			/*!< \brief Implicit calculus. */
-    
+  bool limiter;			/*!< \brief Viscous limiter. */
+
 public:
     
 	/*!

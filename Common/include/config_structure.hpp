@@ -71,6 +71,7 @@ private:
   unsigned short ConvCriteria;	/*!< \brief Kind of convergence criteria. */
   unsigned short nFFD_Iter; 	/*!< \brief Iteration for the point inversion problem. */
   double FFD_Tol;  	/*!< \brief Tolerance in the point inversion problem. */
+  bool Viscous_Limiter_Flow, Viscous_Limiter_Turb;			/*!< \brief Viscous limiters. */
 	bool Adjoint,			/*!< \brief Flag to know if the code is solving an adjoint problem. */
     Viscous,                /*!< \brief Flag to know if the code is solving a viscous problem. */
 	EquivArea,				/*!< \brief Flag to know if the code is going to compute and plot the equivalent area. */
@@ -3364,6 +3365,18 @@ public:
 	 */
 	bool GetFrozen_Visc(void);
 
+  /*!
+   * \brief Viscous limiter mean flow.
+   * \return <code>FALSE</code> means no viscous limiter turb equations.
+   */
+  bool GetViscous_Limiter_Flow(void);
+  
+  /*!
+   * \brief Viscous limiter turb equations.
+   * \return <code>FALSE</code> means no viscous limiter turb equations.
+   */
+  bool GetViscous_Limiter_Turb(void);
+  
   /*!
 	 * \brief Provides information about if the sharp edges are going to be removed from the sensitivity.
 	 * \return <code>FALSE</code> means that the sharp edges will be removed from the sensitivity.

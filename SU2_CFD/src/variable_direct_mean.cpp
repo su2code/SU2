@@ -57,6 +57,7 @@ CEulerVariable::CEulerVariable(double val_density, double *val_velocity, double 
   bool windgust = config->GetWind_Gust();
   
   /*--- Array initialization ---*/
+  
 	TS_Source = NULL;
 	Primitive = NULL;
 	Gradient_Primitive = NULL;
@@ -65,6 +66,7 @@ CEulerVariable::CEulerVariable(double val_density, double *val_velocity, double 
   WindGustDer = NULL;
 
   /*--- Allocate and initialize the primitive variables and gradients ---*/
+  
   if (incompressible) { nPrimVar = nDim+5; nPrimVarGrad = nDim+3; }
   if (freesurface)    { nPrimVar = nDim+7; nPrimVarGrad = nDim+6; }
   if (compressible)   { nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
@@ -73,6 +75,7 @@ CEulerVariable::CEulerVariable(double val_density, double *val_velocity, double 
   }
 
 	/*--- Allocate residual structures ---*/
+  
 	Res_TruncError = new double [nVar];
   
 	for (iVar = 0; iVar < nVar; iVar++) {
@@ -80,6 +83,7 @@ CEulerVariable::CEulerVariable(double val_density, double *val_velocity, double 
 	}
   
 	/*--- Only for residual smoothing (multigrid) ---*/
+  
 	for (iMesh = 0; iMesh <= config->GetMGLevels(); iMesh++)
 		nMGSmooth += config->GetMG_CorrecSmooth(iMesh);
   
@@ -89,12 +93,14 @@ CEulerVariable::CEulerVariable(double val_density, double *val_velocity, double 
 	}
   
 	/*--- Allocate undivided laplacian (centered) and limiter (upwind)---*/
+  
 	if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) {
 		Undivided_Laplacian = new double [nVar];
   }
   
   /*--- Always allocate the slope limiter,
    and the auxiliar variables (check the logic - JST with 2nd order Turb model - ) ---*/
+  
   Limiter_Primitive = new double [nPrimVarGrad];
   for (iVar = 0; iVar < nPrimVarGrad; iVar++)
     Limiter_Primitive[iVar] = 0.0;
@@ -115,6 +121,7 @@ CEulerVariable::CEulerVariable(double val_density, double *val_velocity, double 
   }
   
 	/*--- Solution and old solution initialization ---*/
+  
 	if (compressible) {
 		Solution[0] = val_density;
 		Solution_Old[0] = val_density;
@@ -135,6 +142,7 @@ CEulerVariable::CEulerVariable(double val_density, double *val_velocity, double 
 	}
   
 	/*--- Allocate and initialize solution for dual time strategy ---*/
+  
 	if (dual_time) {
     if (compressible) {
 			Solution_time_n[0] = val_density;
@@ -157,23 +165,27 @@ CEulerVariable::CEulerVariable(double val_density, double *val_velocity, double 
 	}
   
 	/*--- Allocate space for the time spectral source terms ---*/
+  
 	if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
 		TS_Source = new double[nVar];
 		for (iVar = 0; iVar < nVar; iVar++) TS_Source[iVar] = 0.0;
 	}
     
   /*--- Allocate vector for wind gust and wind gust derivative field ---*/
+  
 	if (windgust) {
     WindGust = new double [nDim];
     WindGustDer = new double [nDim+1];
   }
   
 	/*--- Allocate auxiliar vector for free surface source term ---*/
+  
 	if (freesurface) Grad_AuxVar = new double [nDim];
   
   /*--- Incompressible flow, primitive variables nDim+3, (P,vx,vy,vz,rho,beta),
         FreeSurface Incompressible flow, primitive variables nDim+4, (P,vx,vy,vz,rho,beta,dist),
         Compressible flow, primitive variables nDim+5, (T,vx,vy,vz,P,rho,h,c) ---*/
+  
   Primitive = new double [nPrimVar];
   for (iVar = 0; iVar < nPrimVar; iVar++) Primitive[iVar] = 0.0;
   
@@ -184,6 +196,7 @@ CEulerVariable::CEulerVariable(double val_density, double *val_velocity, double 
         FreeSurface Incompressible flow, primitive variables nDim+3, (P,vx,vy,vz,rho,beta,dist),
         Compressible flow, gradients primitive variables nDim+4, (T,vx,vy,vz,P,rho,h)
         We need P, and rho for running the adjoint problem ---*/
+  
   Gradient_Primitive = new double* [nPrimVarGrad];
   for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
     Gradient_Primitive[iVar] = new double [nDim];
@@ -525,77 +538,56 @@ CNSVariable::CNSVariable(double *val_solution, unsigned short val_nDim,
 
 CNSVariable::~CNSVariable(void) { }
 
-bool CNSVariable::SetVorticity(void) {
+bool CNSVariable::SetVorticity(bool val_limiter) {
   
-	double u_y = Gradient_Primitive[1][1];
-	double v_x = Gradient_Primitive[2][0];
-	double u_z = 0.0;
-	double v_z = 0.0;
-	double w_x = 0.0;
-	double w_y = 0.0;
+  Vorticity[0] = 0.0; Vorticity[1] = 0.0;
   
-	if (nDim == 3) {
-		u_z = Gradient_Primitive[1][2];
-		v_z = Gradient_Primitive[2][2];
-		w_x = Gradient_Primitive[3][0];
-		w_y = Gradient_Primitive[3][1];
-	}
+  Vorticity[2] = Gradient_Primitive[2][0]-Gradient_Primitive[1][1];
   
-	Vorticity[0] = w_y-v_z;
-	Vorticity[1] = -(w_x-u_z);
-	Vorticity[2] = v_x-u_y;
+  if (nDim == 3) {
+    Vorticity[0] = Gradient_Primitive[3][1]-Gradient_Primitive[2][2];
+    Vorticity[1] = -(Gradient_Primitive[3][0]-Gradient_Primitive[1][2]);
+  }
   
   return false;
   
 }
 
-bool CNSVariable::SetStrainMag(void) {
+bool CNSVariable::SetStrainMag(bool val_limiter) {
   
-  double div;
+  double Div;
+  unsigned short iDim;
   
-  if (nDim == 2) {
-    
-    div = Gradient_Primitive[1][0] + Gradient_Primitive[2][1];
-    StrainMag = 0.0;
-    
-    /*--- Add diagonals ---*/
-    
-    StrainMag += pow(Gradient_Primitive[1][0] - 1.0/3.0*div, 2.0);
-    StrainMag += pow(Gradient_Primitive[2][1] - 1.0/3.0*div, 2.0);
-    
-    /*--- Add off diagonals ---*/
-    
-    StrainMag += 2.0*pow(0.5*(Gradient_Primitive[1][1] + Gradient_Primitive[2][0]), 2.0);
-    
-    StrainMag = sqrt(2.0*StrainMag);
-        
+  Div = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++) {
+    Div += Gradient_Primitive[iDim+1][iDim];
   }
-  else {
-    
-    div = Gradient_Primitive[1][0] + Gradient_Primitive[2][1] + Gradient_Primitive[3][2];
-    StrainMag = 0.0;
-    
-    /*--- Add diagonals ---*/
-    
-    StrainMag += pow(Gradient_Primitive[1][0] - 1.0/3.0*div,2.0);
-    StrainMag += pow(Gradient_Primitive[2][1] - 1.0/3.0*div,2.0);
-    StrainMag += pow(Gradient_Primitive[3][2] - 1.0/3.0*div,2.0);
-    
-    /*--- Add off diagonals ---*/
-    
-    StrainMag += 2.0*pow(0.5*(Gradient_Primitive[1][1] + Gradient_Primitive[2][0]), 2.0);
+  
+  StrainMag = 0.0;
+  
+  /*--- Add diagonal part ---*/
+  
+  for (iDim = 0; iDim < nDim; iDim++) {
+    StrainMag += pow(Gradient_Primitive[iDim+1][iDim] - 1.0/3.0*Div, 2.0);
+  }
+  
+  /*--- Add off diagonals ---*/
+
+  StrainMag += 2.0*pow(0.5*(Gradient_Primitive[1][1] + Gradient_Primitive[2][0]), 2.0);
+
+  if (nDim == 3) {
     StrainMag += 2.0*pow(0.5*(Gradient_Primitive[1][2] + Gradient_Primitive[3][0]), 2.0);
     StrainMag += 2.0*pow(0.5*(Gradient_Primitive[2][2] + Gradient_Primitive[3][1]), 2.0);
-    
-    StrainMag = sqrt(2.0*StrainMag);
-    
   }
   
+  StrainMag = sqrt(2.0*StrainMag);
+
   return false;
   
 }
 
 bool CNSVariable::SetPrimVar_Compressible(double eddy_visc, double turb_ke, CFluidModel *FluidModel) {
+  
 	unsigned short iVar;
   double density, staticEnergy;
   bool check_dens = false, check_press = false, check_sos = false,

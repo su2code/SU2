@@ -1453,12 +1453,12 @@ public:
 	/*!
 	 * \brief A virtual member.
 	 */		
-	virtual bool SetVorticity(void);
+	virtual bool SetVorticity(bool val_limiter);
 
 	/*!
 	 * \brief A virtual member.
 	 */
-	virtual bool SetStrainMag(void);
+	virtual bool SetStrainMag(bool val_limiter);
 
 	/*!
 	 * \brief A virtual member.
@@ -2551,12 +2551,12 @@ public:
 	/*!
 	 * \brief Set the vorticity value.
 	 */
-	bool SetVorticity(void);
+	bool SetVorticity(bool val_limiter);
 
 	/*!
 	 * \brief Set the rate of strain magnitude.
 	 */
-	bool SetStrainMag(void);
+	bool SetStrainMag(bool val_limiter);
 
 	/*!
 	 * \overload
@@ -3888,7 +3888,7 @@ public:
 	/*!
 	 * \brief Set the vorticity value.
 	 */
-	bool SetVorticity(void);
+	bool SetVorticity(bool val_limiter);
   
   /*!
 	 * \brief Get the species diffusion coefficient.

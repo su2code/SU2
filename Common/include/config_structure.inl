@@ -1033,6 +1033,10 @@ inline bool CConfig::GetFrozen_Visc(void) { return Frozen_Visc; }
 
 inline bool CConfig::GetSens_Remove_Sharp(void) { return Sens_Remove_Sharp; }
 
+inline bool CConfig::GetViscous_Limiter_Flow(void) { return Viscous_Limiter_Flow; }
+
+inline bool CConfig::GetViscous_Limiter_Turb(void) { return Viscous_Limiter_Turb; }
+
 inline bool CConfig::GetHold_GridFixed(void) { return Hold_GridFixed; }
 
 inline bool CConfig::GetCGNS_To_SU2(void) {return CGNS_To_SU2; }
