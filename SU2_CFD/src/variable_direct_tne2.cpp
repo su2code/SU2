@@ -1857,7 +1857,7 @@ void CTNE2NSVariable ::SetThermalConductivity(CConfig *config) {
 }
 
 
-bool CTNE2NSVariable::SetVorticity(void) {
+bool CTNE2NSVariable::SetVorticity(bool val_limiter) {
 	double u_y = Gradient_Primitive[VEL_INDEX][1];
 	double v_x = Gradient_Primitive[VEL_INDEX+1][0];
 	double u_z = 0.0;

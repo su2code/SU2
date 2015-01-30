@@ -786,6 +786,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients */
   addDoubleArrayOption("AD_COEFF_ADJTNE2", 3, Kappa_AdjTNE2, default_vec_3d);
 
+  /* DESCRIPTION: Viscous limiter mean flow equations */
+  addBoolOption("VISCOUS_LIMITER_FLOW", Viscous_Limiter_Flow, false);
+  /* DESCRIPTION: Viscous limiter turbulent equations */
+  addBoolOption("VISCOUS_LIMITER_TURB", Viscous_Limiter_Turb, false);
+  
   /* CONFIG_CATEGORY: Adjoint and Gradient */
   /*--- Options related to the adjoint and gradient ---*/
 
