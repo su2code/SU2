@@ -1040,7 +1040,7 @@ void CAdjLevelSetSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **
 	 scalar equations which includes the density ---*/
   
 	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++)
-		node[iPoint]->AddSolution(0, config->GetLinear_Solver_Relax()*LinSysSol[iPoint]);
+		node[iPoint]->AddSolution(0, LinSysSol[iPoint]);
     
     /*--- MPI solution ---*/
   

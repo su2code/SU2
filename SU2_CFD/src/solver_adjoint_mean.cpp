@@ -2317,7 +2317,7 @@ void CAdjEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
   
   for (iPoint = 0; iPoint < nPointDomain; iPoint++)
     for (iVar = 0; iVar < nVar; iVar++) {
-      node[iPoint]->AddSolution(iVar, config->GetLinear_Solver_Relax()*LinSysSol[iPoint*nVar+iVar]);
+      node[iPoint]->AddSolution(iVar, config->GetRelaxation_Factor_AdjFlow()*LinSysSol[iPoint*nVar+iVar]);
     }
   
   /*--- MPI solution ---*/

@@ -627,8 +627,14 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addUnsignedLongOption("LINEAR_SOLVER_ITER", Linear_Solver_Iter, 10);
   /* DESCRIPTION: Maximum number of iterations of the linear solver for the implicit formulation */
   addUnsignedLongOption("LINEAR_SOLVER_RESTART_FREQUENCY", Linear_Solver_Restart_Frequency, 10);
-  /* DESCRIPTION: Relaxation of the linear solver for the implicit formulation */
-  addDoubleOption("LINEAR_SOLVER_RELAX", Linear_Solver_Relax, 1.0);
+  
+  /* DESCRIPTION: Relaxation of the flow equations solver for the implicit formulation */
+  addDoubleOption("RELAXATION_FACTOR_FLOW", Relaxation_Factor_Flow, 1.0);
+  /* DESCRIPTION: Relaxation of the turb equations solver for the implicit formulation */
+  addDoubleOption("RELAXATION_FACTOR_TURB", Relaxation_Factor_Turb, 1.0);
+  /* DESCRIPTION: Relaxation of the adjoint flow equations solver for the implicit formulation */
+  addDoubleOption("RELAXATION_FACTOR_ADJFLOW", Relaxation_Factor_AdjFlow, 1.0);
+  
   /* DESCRIPTION: Roe coefficient */
   addDoubleOption("ROE_KAPPA", Roe_Kappa, 0.5);
   /* DESCRIPTION: Roe-Turkel preconditioning for low Mach number flows */
@@ -4081,29 +4087,23 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
               cout << "BCGSTAB is used for solving the linear system." << endl;
               cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<< endl;
               cout << "Max number of iterations: "<< Linear_Solver_Iter <<"."<< endl;
-              cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<< endl;
               break;
             case FGMRES || RFGMRES:
               cout << "FGMRES is used for solving the linear system." << endl;
               cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<< endl;
               cout << "Max number of iterations: "<< Linear_Solver_Iter <<"."<< endl;
-              cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<< endl;
               break;
             case SMOOTHER_JACOBI:
               cout << "A Jacobi method is used for smoothing the linear system." << endl;
-              cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<< endl;
               break;
             case SMOOTHER_ILU:
               cout << "A ILU0 method is used for smoothing the linear system." << endl;
-              cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<< endl;
               break;
             case SMOOTHER_LUSGS:
               cout << "A LU-SGS method is used for smoothing the linear system." << endl;
-              cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<< endl;
               break;
             case SMOOTHER_LINELET:
               cout << "A Linelet method is used for smoothing the linear system." << endl;
-              cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<< endl;
               break;
           }
           break;
@@ -4119,13 +4119,11 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
               cout << "BCGSTAB is used for solving the linear system." << endl;
               cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<< endl;
               cout << "Max number of iterations: "<< Linear_Solver_Iter <<"."<< endl;
-              cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<< endl;
               break;
             case FGMRES || RFGMRES:
               cout << "FGMRES is used for solving the linear system." << endl;
               cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<< endl;
               cout << "Max number of iterations: "<< Linear_Solver_Iter <<"."<< endl;
-              cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<< endl;
               break;
           }
           break;

@@ -3775,12 +3775,12 @@ public:
  */
 class CTurbSolver : public CSolver {
 protected:
-	double *FlowPrimVar_i,	/*!< \brief Store the flow solution at point i. */
-	*FlowPrimVar_j,        /*!< \brief Store the flow solution at point j. */
+	double *FlowPrimVar_i,  /*!< \brief Store the flow solution at point i. */
+	*FlowPrimVar_j,         /*!< \brief Store the flow solution at point j. */
 	*lowerlimit,            /*!< \brief contains lower limits for turbulence variables. */
 	*upperlimit;            /*!< \brief contains upper limits for turbulence variables. */
-	double Gamma;									/*!< \brief Fluid's Gamma constant (ratio of specific heats). */
-	double Gamma_Minus_One;				/*!< \brief Fluids's Gamma - 1.0  . */
+	double Gamma;           /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
+	double Gamma_Minus_One; /*!< \brief Fluids's Gamma - 1.0  . */
     
 public:
     
