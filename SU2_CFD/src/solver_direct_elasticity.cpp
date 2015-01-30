@@ -1284,7 +1284,7 @@ void CFEASolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_c
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
 		for (iVar = 0; iVar < nVar; iVar++) {
 			if (config->GetUnsteady_Simulation() == STEADY) node[iPoint]->SetSolution(iVar, LinSysSol[iPoint*nVar+iVar]);
-      else node[iPoint]->AddSolution(iVar, config->GetLinear_Solver_Relax()*LinSysSol[iPoint*nVar+iVar]);
+      else node[iPoint]->AddSolution(iVar, LinSysSol[iPoint*nVar+iVar]);
 		}
 	}
 	

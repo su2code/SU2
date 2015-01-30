@@ -589,7 +589,11 @@ inline unsigned long CConfig::GetLinear_Solver_Iter(void) { return Linear_Solver
 
 inline unsigned long CConfig::GetLinear_Solver_Restart_Frequency(void) { return Linear_Solver_Restart_Frequency; }
 
-inline double CConfig::GetLinear_Solver_Relax(void) { return Linear_Solver_Relax; }
+inline double CConfig::GetRelaxation_Factor_Flow(void) { return Relaxation_Factor_Flow; }
+
+inline double CConfig::GetRelaxation_Factor_AdjFlow(void) { return Relaxation_Factor_AdjFlow; }
+
+inline double CConfig::GetRelaxation_Factor_Turb(void) { return Relaxation_Factor_Turb; }
 
 inline double CConfig::GetRoe_Kappa(void) { return Roe_Kappa; }
 

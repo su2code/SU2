@@ -369,7 +369,9 @@ private:
 	unsigned long Linear_Solver_Iter;		/*!< \brief Max iterations of the linear solver for the implicit formulation. */
 	unsigned long Linear_Solver_Restart_Frequency;   /*!< \brief Restart frequency of the linear solver for the implicit formulation. */
   double Roe_Kappa;		/*!< \brief Relaxation of the Roe scheme. */
-  double Linear_Solver_Relax;		/*!< \brief Relaxation coefficient of the linear solver. */
+  double Relaxation_Factor_Flow;		/*!< \brief Relaxation coefficient of the linear solver mean flow. */
+  double Relaxation_Factor_Turb;		/*!< \brief Relaxation coefficient of the linear solver turbulence. */
+  double Relaxation_Factor_AdjFlow;		/*!< \brief Relaxation coefficient of the linear solver adjoint mean flow. */
 	double AdjTurb_Linear_Error;		/*!< \brief Min error of the turbulent adjoint linear solver for the implicit formulation. */
   double EntropyFix_Coeff;              /*!< \brief Entropy fix coefficient. */
 	unsigned short AdjTurb_Linear_Iter;		/*!< \brief Min error of the turbulent adjoint linear solver for the implicit formulation. */
@@ -2635,7 +2637,19 @@ public:
 	 * \brief Get the relaxation coefficient of the linear solver for the implicit formulation.
 	 * \return relaxation coefficient of the linear solver for the implicit formulation.
 	 */
-	double GetLinear_Solver_Relax(void);
+	double GetRelaxation_Factor_Flow(void);
+  
+  /*!
+   * \brief Get the relaxation coefficient of the linear solver for the implicit formulation.
+   * \return relaxation coefficient of the linear solver for the implicit formulation.
+   */
+  double GetRelaxation_Factor_AdjFlow(void);
+  
+  /*!
+   * \brief Get the relaxation coefficient of the linear solver for the implicit formulation.
+   * \return relaxation coefficient of the linear solver for the implicit formulation.
+   */
+  double GetRelaxation_Factor_Turb(void);
   
   /*!
    * \brief Get the relaxation coefficient of the linear solver for the implicit formulation.

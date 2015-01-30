@@ -672,8 +672,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
       case SA: case SA_NEG: case ML:
         
         for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-          node[iPoint]->AddClippedSolution(0, config->GetLinear_Solver_Relax()*LinSysSol[iPoint],
-                                           lowerlimit[0], upperlimit[0]);
+          node[iPoint]->AddClippedSolution(0, config->GetRelaxation_Factor_Turb()*LinSysSol[iPoint], lowerlimit[0], upperlimit[0]);
         }
         
         break;
@@ -692,7 +691,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
           }
           
           for (iVar = 0; iVar < nVar; iVar++) {
-            node[iPoint]->AddConservativeSolution(iVar, config->GetLinear_Solver_Relax()*LinSysSol[iPoint*nVar+iVar], density, density_old, lowerlimit[iVar], upperlimit[iVar]);
+            node[iPoint]->AddConservativeSolution(iVar, config->GetRelaxation_Factor_Turb()*LinSysSol[iPoint*nVar+iVar], density, density_old, lowerlimit[iVar], upperlimit[iVar]);
           }
           
         }
@@ -1093,7 +1092,7 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
   upperlimit = new double[nVar];
   
   lowerlimit[0] = 1.0e-10;
-  upperlimit[0] = 1.0;
+  upperlimit[0] = 1.0e+10;
   
   /*--- Read farfield conditions from config ---*/
   
