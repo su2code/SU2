@@ -1063,20 +1063,34 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
 
 void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type) {
   
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-  
-  /*--- Local variables needed on all processors ---*/
-  
+  int iProcessor;
   unsigned short NODES_PER_ELEMENT;
-  
   unsigned long iPoint, iNode, jNode;
   unsigned long iElem = 0;
   unsigned long nLocalElem = 0, nElem_Total = 0;
   
-  int *Conn_Elem;
+  unsigned long iVertex, iMarker;
+  unsigned long jElem;
+  int SendRecv, RecvFrom;
+  
+  unsigned long Buffer_Send_nElem[1], *Buffer_Recv_nElem = NULL;
+  unsigned long nBuffer_Scalar = 0;
+  unsigned long kNode = 0, kElem = 0;
+  unsigned long MaxLocalElem = 0, iGlobal_Index, jPoint, kPoint;
+  
+  bool Wrt_Halo = config->GetWrt_Halo();
+  bool *Write_Elem = NULL, notPeriodic, notHalo, addedPeriodic;
+
+  int *Conn_Elem = NULL;
+
+  int rank = MASTER_NODE;
+  int size = SINGLE_NODE;
+
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+#endif
+  
   
   /*--- Store the local number of this element type and the number of nodes
    per this element type. In serial, this will be the total number of this
@@ -1113,105 +1127,19 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
       exit(EXIT_FAILURE); break;
   }
   
-  /*--- Merge the connectivity in serial or parallel. ---*/
-  
-#ifndef HAVE_MPI
-  
-  /*--- In serial, the single process has access to all connectivity,
-   so simply load it into the data structure. ---*/
-  
-  unsigned short iMarker;
-  unsigned long iVertex;
-  int SendRecv;
-  
-  /*--- First, create a structure to locate any periodic halo nodes ---*/
-  int *Local_Halo = new int[geometry->GetnPoint()];
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-    Local_Halo[iPoint] = !geometry->node[iPoint]->GetDomain();
-  
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
-      SendRecv = config->GetMarker_All_SendRecv(iMarker);
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        if ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0) &&
-            (geometry->vertex[iMarker][iVertex]->GetRotation_Type() % 2 == 1) &&
-            (SendRecv < 0)) {
-          Local_Halo[iPoint] = false;
-        }
-      }
-    }
-  }
-  
-  /*--- Allocate a temporary array for the connectivity ---*/
-
-  Conn_Elem = new int[nLocalElem*NODES_PER_ELEMENT];
-
-  /*--- Load all elements of the current type into the buffer
-   to be sent to the master node. ---*/
-  
-  jNode = 0; nElem_Total = 0; bool isHalo;
-  for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
-    if(geometry->elem[iElem]->GetVTK_Type() == Elem_Type) {
-      
-      /*--- Check if this is a halo node. ---*/
-      
-      isHalo = false;
-      for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
-        iPoint = geometry->elem[iElem]->GetNode(iNode);
-        if (Local_Halo[iPoint])
-          isHalo = true;
-      }
-      
-      /*--- Loop over all nodes in this element and load the
-       connectivity into the temporary array. Do not merge the
-       halo cells (periodic BC). Note that we are adding one to
-       the index value because CGNS/Tecplot use 1-based indexing. ---*/
-      
-      if (!isHalo) {
-        nElem_Total++;
-        for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
-          Conn_Elem[jNode] = (int)geometry->node[geometry->elem[iElem]->GetNode(iNode)]->GetGlobalIndex() + 1;
-          
-          /*--- Increment jNode as the counter. ---*/
-          
-          jNode++;
-        }
-      }
-    }
-  }
-  
-  delete [] Local_Halo;
-  
-#else
-  
-  /*--- MPI preprocessing ---*/
-  
-  int iProcessor, jProcessor, nProcessor;
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-  
-  /*--- Local variables needed for merging the geometry with MPI. ---*/
-  
-  unsigned long iVertex, iMarker;
-  unsigned long jElem;
-  int SendRecv, RecvFrom;
-  
-  unsigned long Buffer_Send_nElem[1], *Buffer_Recv_nElem = NULL;
-  unsigned long nBuffer_Scalar = 0;
-  unsigned long kNode = 0, kElem = 0, pElem = 0;
-  unsigned long MaxLocalElem = 0, iGlobal_Index, jPoint, kPoint;
-  
-  bool Wrt_Halo = config->GetWrt_Halo();
-  bool *Write_Elem, notPeriodic, notHalo, addedPeriodic;
-  
   /*--- Find the max number of this element type among all
    partitions and set up buffers. ---*/
   
   Buffer_Send_nElem[0] = nLocalElem;
-  if (rank == MASTER_NODE) Buffer_Recv_nElem = new unsigned long[nProcessor];
+  if (rank == MASTER_NODE) Buffer_Recv_nElem = new unsigned long[size];
   
+#ifdef HAVE_MPI
   MPI_Allreduce(&nLocalElem, &MaxLocalElem, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
   MPI_Gather(&Buffer_Send_nElem, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nElem, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+#else
+  MaxLocalElem = nLocalElem;
+  Buffer_Recv_nElem[0] = Buffer_Send_nElem[0];
+#endif
   
   nBuffer_Scalar = MaxLocalElem*NODES_PER_ELEMENT;
   
@@ -1226,9 +1154,9 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
   /*--- Prepare the receive buffers on the master node only. ---*/
   
   if (rank == MASTER_NODE) {
-    Buffer_Recv_Elem = new unsigned long[nProcessor*nBuffer_Scalar];
-    Buffer_Recv_Halo = new unsigned short[nProcessor*MaxLocalElem];
-    Conn_Elem = new int[nProcessor*MaxLocalElem*NODES_PER_ELEMENT];
+    Buffer_Recv_Elem = new unsigned long[size*nBuffer_Scalar];
+    Buffer_Recv_Halo = new unsigned short[size*MaxLocalElem];
+    Conn_Elem = new int[size*MaxLocalElem*NODES_PER_ELEMENT];
   }
   
   /*--- Force the removal of all added periodic elements (use global index).
@@ -1260,19 +1188,24 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
   /*--- First communicate the number of points that each rank has found ---*/
   unsigned long nAddedPeriodic = 0, maxAddedPeriodic = 0;
   unsigned long Buffer_Send_nAddedPeriodic[1], *Buffer_Recv_nAddedPeriodic = NULL;
-  Buffer_Recv_nAddedPeriodic = new unsigned long[nProcessor];
+  Buffer_Recv_nAddedPeriodic = new unsigned long[size];
   
   nAddedPeriodic = Added_Periodic.size();
   Buffer_Send_nAddedPeriodic[0] = nAddedPeriodic;
 
+#ifdef HAVE_MPI
   MPI_Allreduce(&nAddedPeriodic, &maxAddedPeriodic, 1, MPI_UNSIGNED_LONG,
                 MPI_MAX, MPI_COMM_WORLD);
   MPI_Allgather(&Buffer_Send_nAddedPeriodic, 1, MPI_UNSIGNED_LONG,
                 Buffer_Recv_nAddedPeriodic,  1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+#else
+  maxAddedPeriodic = nAddedPeriodic;
+  Buffer_Recv_nAddedPeriodic[0] = Buffer_Send_nAddedPeriodic[0];
+#endif
   
   /*--- Communicate the global index values of all added periodic nodes. ---*/
   unsigned long *Buffer_Send_AddedPeriodic = new unsigned long[maxAddedPeriodic];
-  unsigned long *Buffer_Recv_AddedPeriodic = new unsigned long[nProcessor*maxAddedPeriodic];
+  unsigned long *Buffer_Recv_AddedPeriodic = new unsigned long[size*maxAddedPeriodic];
   
   for(iPoint = 0; iPoint < Added_Periodic.size(); iPoint++) {
     Buffer_Send_AddedPeriodic[iPoint] = Added_Periodic[iPoint];
@@ -1281,9 +1214,13 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
   /*--- Gather the element connectivity information. All processors will now
    have a copy of the global index values for all added periodic points. ---*/
 
+#ifdef HAVE_MPI
   MPI_Allgather(Buffer_Send_AddedPeriodic, maxAddedPeriodic, MPI_UNSIGNED_LONG,
                 Buffer_Recv_AddedPeriodic, maxAddedPeriodic, MPI_UNSIGNED_LONG,
                 MPI_COMM_WORLD);
+#else
+  for(iPoint = 0; iPoint < maxAddedPeriodic; iPoint++) Buffer_Recv_AddedPeriodic[iPoint] = Buffer_Send_AddedPeriodic[iPoint];
+#endif
   
   /*--- Search all send/recv boundaries on this partition for halo cells. In
    particular, consider only the recv conditions (these are the true halo
@@ -1317,7 +1254,7 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
         /*--- Lastly, check that this isn't an added periodic point that
          we will forcibly remove. Use the communicated list of these points. ---*/
         addedPeriodic = false; kPoint = 0;
-        for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+        for (iProcessor = 0; iProcessor < size; iProcessor++) {
           for (jPoint = 0; jPoint < Buffer_Recv_nAddedPeriodic[iProcessor]; jPoint++) {
             if (iGlobal_Index == Buffer_Recv_AddedPeriodic[kPoint+jPoint])
               addedPeriodic = true;
@@ -1372,8 +1309,13 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
   
   /*--- Gather the element connectivity information. ---*/
 
+#ifdef HAVE_MPI
   MPI_Gather(Buffer_Send_Elem, nBuffer_Scalar, MPI_UNSIGNED_LONG, Buffer_Recv_Elem, nBuffer_Scalar, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
   MPI_Gather(Buffer_Send_Halo, MaxLocalElem, MPI_UNSIGNED_SHORT, Buffer_Recv_Halo, MaxLocalElem, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
+#else
+  for(iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Elem[iPoint] = Buffer_Send_Elem[iPoint];
+  for(iPoint = 0; iPoint < MaxLocalElem; iPoint++) Buffer_Recv_Halo[iPoint] = Buffer_Send_Halo[iPoint];
+#endif
   
   /*--- The master node unpacks and sorts the connectivity. ---*/
   
@@ -1383,8 +1325,8 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
      exist on multiple partitions. Start by initializing all elements
      to the "write" state by using a boolean array. ---*/
     
-    Write_Elem = new bool[nProcessor*MaxLocalElem];
-    for (iElem = 0; iElem < nProcessor*MaxLocalElem; iElem++) {
+    Write_Elem = new bool[size*MaxLocalElem];
+    for (iElem = 0; iElem < size*MaxLocalElem; iElem++) {
       Write_Elem[iElem] = true;
     }
     
@@ -1396,7 +1338,7 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
        included in the final connectivity list. ---*/
       
       kElem = 0;
-      for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+      for (iProcessor = 0; iProcessor < size; iProcessor++) {
         for (iElem = 0; iElem < Buffer_Recv_nElem[iProcessor]; iElem++) {
           
           /*--- Check if this element was marked as a halo. ---*/
@@ -1411,7 +1353,7 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
     /*--- Store the unique connectivity list for this element type. ---*/
     
     jNode = 0; kNode = 0; jElem = 0; nElem_Total = 0;
-    for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+    for (iProcessor = 0; iProcessor < size; iProcessor++) {
       for (iElem = 0; iElem < Buffer_Recv_nElem[iProcessor]; iElem++) {
         
         /*--- Only write the elements that were flagged for it. ---*/
@@ -1449,8 +1391,6 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
     delete [] Buffer_Recv_Halo;
     delete [] Write_Elem;
   }
-  
-#endif
   
   /*--- Store the particular global element count in the class data,
    and set the class data pointer to the connectivity array. ---*/
@@ -1491,13 +1431,6 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
 
 void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type) {
   
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-  
-  /*--- Local variables needed on all processors ---*/
-  
   unsigned short NODES_PER_ELEMENT;
   
   unsigned short iMarker;
@@ -1505,7 +1438,31 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
   unsigned long iElem = 0;
   unsigned long nLocalElem = 0, nElem_Total = 0;
   
-  int *Conn_Elem;
+  int iProcessor;
+  unsigned long jElem;
+  
+  unsigned long iVertex;
+  
+  int SendRecv, RecvFrom;
+  
+  unsigned long Buffer_Send_nElem[1], *Buffer_Recv_nElem = NULL;
+  unsigned long nBuffer_Scalar = 0;
+  unsigned long kNode = 0, kElem = 0;
+  unsigned long MaxLocalElem = 0, iGlobal_Index, jPoint, kPoint;
+  
+  bool Wrt_Halo = config->GetWrt_Halo();
+  bool *Write_Elem = NULL, notPeriodic, notHalo, addedPeriodic;
+
+  
+  int *Conn_Elem = NULL;
+
+  int rank = MASTER_NODE;
+  int size = SINGLE_NODE;
+  
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+#endif
   
   /*--- Store the local number of this element type and the number of nodes
    per this element type. In serial, this will be the total number of this
@@ -1539,103 +1496,19 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
       exit(EXIT_FAILURE); break;
   }
   
-  /*--- Merge the connectivity in serial or parallel. ---*/
-  
-#ifndef HAVE_MPI
-  
-  /*--- In serial, the single process has access to all connectivity,
-   so simply load it into the data structure. ---*/
-  
-  unsigned long iVertex;
-  int SendRecv;
-  
-  /*--- First, create a structure to locate any periodic halo nodes ---*/
-  int *Local_Halo = new int[geometry->GetnPoint()];
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-    Local_Halo[iPoint] = !geometry->node[iPoint]->GetDomain();
-  
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
-      SendRecv = config->GetMarker_All_SendRecv(iMarker);
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        if ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0) &&
-            (geometry->vertex[iMarker][iVertex]->GetRotation_Type() % 2 == 1) &&
-            (SendRecv < 0)) {
-          Local_Halo[iPoint] = false;
-        }
-      }
-    }
-  }
-  
-  /*--- Allocate a temporary array for the connectivity ---*/
-  Conn_Elem = new int[nLocalElem*NODES_PER_ELEMENT];
-  
-  /*--- Load all elements of the current type into the buffer
-   to be sent to the master node. ---*/
-  jNode = 0; nElem_Total = 0; bool isHalo;
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if (config->GetMarker_All_Plotting(iMarker) == YES)
-      for (iElem = 0; iElem < geometry->GetnElem_Bound(iMarker); iElem++) {
-        
-        if (geometry->bound[iMarker][iElem]->GetVTK_Type() == Elem_Type) {
-          
-          /*--- Check if this is a halo node. ---*/
-          isHalo = false;
-          for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
-            iPoint = geometry->bound[iMarker][iElem]->GetNode(iNode);
-            if (Local_Halo[iPoint])
-              isHalo = true;
-          }
-          
-          /*--- Loop over all nodes in this element and load the
-           connectivity into the temporary array. Do not merge any
-           halo cells (periodic BC). Note that we are adding one to
-           the index value because CGNS/Tecplot use 1-based indexing. ---*/
-          if (!isHalo) {
-            nElem_Total++;
-            for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
-              Conn_Elem[jNode] = (int)geometry->bound[iMarker][iElem]->GetNode(iNode) + 1;
-              
-              /*--- Increment jNode as the counter. ---*/
-              jNode++;
-            }
-          }
-        }
-      }
-  
-  delete [] Local_Halo;
-  
-#else
-  
-  /*--- MPI preprocessing ---*/
-  
-  int iProcessor, jProcessor, nProcessor;
-  unsigned long jElem;
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-  
-  /*--- Local variables needed for merging the geometry with MPI. ---*/
-  
-  unsigned long iVertex;
-  
-  int SendRecv, RecvFrom;
-  
-  unsigned long Buffer_Send_nElem[1], *Buffer_Recv_nElem = NULL;
-  unsigned long nBuffer_Scalar = 0;
-  unsigned long kNode = 0, kElem = 0, pElem = 0;
-  unsigned long MaxLocalElem = 0, iGlobal_Index, jPoint, kPoint;
-  
-  bool Wrt_Halo = config->GetWrt_Halo();
-  bool *Write_Elem, notPeriodic, notHalo, addedPeriodic;
-  
   /*--- Find the max number of this element type among all
    partitions and set up buffers. ---*/
   
   Buffer_Send_nElem[0] = nLocalElem;
-  if (rank == MASTER_NODE) Buffer_Recv_nElem = new unsigned long[nProcessor];
+  if (rank == MASTER_NODE) Buffer_Recv_nElem = new unsigned long[size];
   
+#ifdef HAVE_MPI
   MPI_Allreduce(&nLocalElem, &MaxLocalElem, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
   MPI_Gather(&Buffer_Send_nElem, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nElem, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+#else
+  MaxLocalElem = nLocalElem;
+  Buffer_Recv_nElem[0] = Buffer_Send_nElem[0];
+#endif
   
   nBuffer_Scalar = MaxLocalElem*NODES_PER_ELEMENT;
   
@@ -1650,9 +1523,9 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
   /*--- Prepare the receive buffers on the master node only. ---*/
   
   if (rank == MASTER_NODE) {
-    Buffer_Recv_Elem = new unsigned long[nProcessor*nBuffer_Scalar];
-    Buffer_Recv_Halo = new unsigned short[nProcessor*MaxLocalElem];
-    Conn_Elem = new int[nProcessor*MaxLocalElem*NODES_PER_ELEMENT];
+    Buffer_Recv_Elem = new unsigned long[size*nBuffer_Scalar];
+    Buffer_Recv_Halo = new unsigned short[size*MaxLocalElem];
+    Conn_Elem = new int[size*MaxLocalElem*NODES_PER_ELEMENT];
   }
   
   /*--- Force the removal of all added periodic elements (use global index).
@@ -1684,19 +1557,24 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
   /*--- First communicate the number of points that each rank has found ---*/
   unsigned long nAddedPeriodic = 0, maxAddedPeriodic = 0;
   unsigned long Buffer_Send_nAddedPeriodic[1], *Buffer_Recv_nAddedPeriodic = NULL;
-  Buffer_Recv_nAddedPeriodic = new unsigned long[nProcessor];
+  Buffer_Recv_nAddedPeriodic = new unsigned long[size];
   
   nAddedPeriodic = Added_Periodic.size();
   Buffer_Send_nAddedPeriodic[0] = nAddedPeriodic;
 
+#ifdef HAVE_MPI
   MPI_Allreduce(&nAddedPeriodic, &maxAddedPeriodic, 1, MPI_UNSIGNED_LONG,
                 MPI_MAX, MPI_COMM_WORLD);
   MPI_Allgather(&Buffer_Send_nAddedPeriodic, 1, MPI_UNSIGNED_LONG,
                 Buffer_Recv_nAddedPeriodic,  1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+#else
+  maxAddedPeriodic = nAddedPeriodic;
+  Buffer_Recv_nAddedPeriodic[0] = Buffer_Send_nAddedPeriodic[0];
+#endif
   
   /*--- Communicate the global index values of all added periodic nodes. ---*/
   unsigned long *Buffer_Send_AddedPeriodic = new unsigned long[maxAddedPeriodic];
-  unsigned long *Buffer_Recv_AddedPeriodic = new unsigned long[nProcessor*maxAddedPeriodic];
+  unsigned long *Buffer_Recv_AddedPeriodic = new unsigned long[size*maxAddedPeriodic];
   
   for(iPoint = 0; iPoint < Added_Periodic.size(); iPoint++) {
     Buffer_Send_AddedPeriodic[iPoint] = Added_Periodic[iPoint];
@@ -1705,9 +1583,13 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
   /*--- Gather the element connectivity information. All processors will now
    have a copy of the global index values for all added periodic points. ---*/
 
+#ifdef HAVE_MPI
   MPI_Allgather(Buffer_Send_AddedPeriodic, maxAddedPeriodic, MPI_UNSIGNED_LONG,
                 Buffer_Recv_AddedPeriodic, maxAddedPeriodic, MPI_UNSIGNED_LONG,
                 MPI_COMM_WORLD);
+#else
+  for(iPoint = 0; iPoint < maxAddedPeriodic; iPoint++) Buffer_Recv_AddedPeriodic[iPoint] = Buffer_Send_AddedPeriodic[iPoint];
+#endif
   
   /*--- Search all send/recv boundaries on this partition for halo cells. In
    particular, consider only the recv conditions (these are the true halo
@@ -1741,7 +1623,7 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
         /*--- Lastly, check that this isn't an added periodic point that
          we will forcibly remove. Use the communicated list of these points. ---*/
         addedPeriodic = false; kPoint = 0;
-        for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+        for (iProcessor = 0; iProcessor < size; iProcessor++) {
           for (jPoint = 0; jPoint < Buffer_Recv_nAddedPeriodic[iProcessor]; jPoint++) {
             if (iGlobal_Index == Buffer_Recv_AddedPeriodic[kPoint+jPoint])
               addedPeriodic = true;
@@ -1797,8 +1679,13 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
   
   /*--- Gather the element connectivity information. ---*/
 
+#ifdef HAVE_MPI
   MPI_Gather(Buffer_Send_Elem, nBuffer_Scalar, MPI_UNSIGNED_LONG, Buffer_Recv_Elem, nBuffer_Scalar, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
   MPI_Gather(Buffer_Send_Halo, MaxLocalElem, MPI_UNSIGNED_SHORT, Buffer_Recv_Halo, MaxLocalElem, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
+#else
+  for(iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Elem[iPoint] = Buffer_Send_Elem[iPoint];
+  for(iPoint = 0; iPoint < MaxLocalElem; iPoint++) Buffer_Recv_Halo[iPoint] = Buffer_Send_Halo[iPoint];
+#endif
   
   /*--- The master node unpacks and sorts the connectivity. ---*/
   
@@ -1808,8 +1695,8 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
      exist on multiple partitions. Start by initializing all elements
      to the "write" state by using a boolean array. ---*/
     
-    Write_Elem = new bool[nProcessor*MaxLocalElem];
-    for (iElem = 0; iElem < nProcessor*MaxLocalElem; iElem++) {
+    Write_Elem = new bool[size*MaxLocalElem];
+    for (iElem = 0; iElem < size*MaxLocalElem; iElem++) {
       Write_Elem[iElem] = true;
     }
     
@@ -1821,7 +1708,7 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
        included in the final connectivity list. ---*/
       
       kElem = 0;
-      for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+      for (iProcessor = 0; iProcessor < size; iProcessor++) {
         for (iElem = 0; iElem < Buffer_Recv_nElem[iProcessor]; iElem++) {
           
           /*--- Check if this element was marked as a halo. ---*/
@@ -1836,7 +1723,7 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
     /*--- Store the unique connectivity list for this element type. ---*/
     
     jNode = 0; kNode = 0; jElem = 0; nElem_Total = 0;
-    for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+    for (iProcessor = 0; iProcessor < size; iProcessor++) {
       for (iElem = 0; iElem < Buffer_Recv_nElem[iProcessor]; iElem++) {
         
         /*--- Only write the elements that were flagged for it. ---*/
@@ -1875,8 +1762,6 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
     delete [] Write_Elem;
   }
   
-#endif
-  
   /*--- Store the particular global element count in the class data,
    and set the class data pointer to the connectivity array. ---*/
   
@@ -1904,22 +1789,33 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
 
 void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone) {
   
-  /*--- Local variables needed on all processors ---*/
-  
   unsigned short Kind_Solver  = config->GetKind_Solver();
-  unsigned short iVar = 0, jVar = 0, iSpecies, FirstIndex = NONE, SecondIndex = NONE, ThirdIndex = NONE;
+  unsigned short iVar = 0, jVar = 0, FirstIndex = NONE, SecondIndex = NONE, ThirdIndex = NONE;
   unsigned short nVar_First = 0, nVar_Second = 0, nVar_Third = 0;
-  
-#ifdef HAVE_MPI
   unsigned short iVar_GridVel = 0, iVar_PressCp = 0, iVar_Density = 0, iVar_Lam = 0, iVar_MachMean = 0,
   iVar_Tempv = 0, iVar_EF =0, iVar_Temp = 0, iVar_Mach = 0, iVar_Press = 0, iVar_TempLam = 0,
   iVar_ViscCoeffs = 0, iVar_Sens = 0, iVar_FEA = 0, iVar_Extra = 0, iVar_Eddy = 0, iVar_Sharp = 0;
-#endif
   
   unsigned long iPoint = 0, jPoint = 0, iVertex = 0, iMarker = 0;
   double Gas_Constant, Mach2Vel, Mach_Motion, RefDensity, RefPressure = 0.0, factor = 0.0;
   
   double *Aux_Frict = NULL, *Aux_Heat = NULL, *Aux_yPlus = NULL, *Aux_Sens = NULL;
+  
+  unsigned short CurrentIndex;
+  int SendRecv, RecvFrom, *Local_Halo;
+  unsigned long Buffer_Send_nPoint[1], *Buffer_Recv_nPoint = NULL;
+  unsigned long nLocalPoint = 0, MaxLocalPoint = 0;
+  unsigned long iGlobal_Index = 0, nBuffer_Scalar = 0;
+  bool Wrt_Halo = config->GetWrt_Halo(), isPeriodic;
+
+  int iProcessor;
+  int rank = MASTER_NODE;
+  int size = SINGLE_NODE;
+  
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+#endif
   
   bool grid_movement  = (config->GetGrid_Movement());
   bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
@@ -1960,48 +1856,22 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   /*--- Prepare send buffers for the conservative variables. Need to
    find the total number of conservative variables and also the
    index for their particular solution container. ---*/
+  
   switch (Kind_Solver) {
-    case EULER : case NAVIER_STOKES:
-      FirstIndex = FLOW_SOL; SecondIndex = NONE; ThirdIndex = NONE;
-      break;
-    case RANS :
-      FirstIndex = FLOW_SOL; SecondIndex = TURB_SOL;
-      if (transition) ThirdIndex=TRANS_SOL;
-      else ThirdIndex = NONE;
-      break;
-    case TNE2_EULER : case TNE2_NAVIER_STOKES:
-      FirstIndex = TNE2_SOL; SecondIndex = NONE; ThirdIndex = NONE;
-      break;
-    case POISSON_EQUATION:
-      FirstIndex = POISSON_SOL; SecondIndex = NONE; ThirdIndex = NONE;
-      break;
-    case WAVE_EQUATION:
-      FirstIndex = WAVE_SOL; SecondIndex = NONE; ThirdIndex = NONE;
-      break;
-    case HEAT_EQUATION:
-      FirstIndex = HEAT_SOL; SecondIndex = NONE; ThirdIndex = NONE;
-      break;
-    case LINEAR_ELASTICITY:
-      FirstIndex = FEA_SOL; SecondIndex = NONE; ThirdIndex = NONE;
-      break;
-    case ADJ_EULER : case ADJ_NAVIER_STOKES :
-      FirstIndex = ADJFLOW_SOL; SecondIndex = NONE; ThirdIndex = NONE;
-      break;
-    case ADJ_TNE2_EULER : case ADJ_TNE2_NAVIER_STOKES :
-      FirstIndex = ADJTNE2_SOL; SecondIndex = NONE; ThirdIndex = NONE;
-      break;
-    case ADJ_RANS :
-      FirstIndex = ADJFLOW_SOL;
-      if (config->GetFrozen_Visc()) SecondIndex = NONE;
-      else SecondIndex = ADJTURB_SOL;
-      ThirdIndex = NONE;
-      break;
-    case LIN_EULER : case LIN_NAVIER_STOKES : ThirdIndex = NONE;
-      FirstIndex = LINFLOW_SOL; SecondIndex = NONE;
-      break;
-    default: SecondIndex = NONE; ThirdIndex = NONE;
-      break;
+    case EULER : case NAVIER_STOKES: FirstIndex = FLOW_SOL; SecondIndex = NONE; ThirdIndex = NONE; break;
+    case RANS : FirstIndex = FLOW_SOL; SecondIndex = TURB_SOL; if (transition) ThirdIndex=TRANS_SOL; else ThirdIndex = NONE; break;
+    case TNE2_EULER : case TNE2_NAVIER_STOKES: FirstIndex = TNE2_SOL; SecondIndex = NONE; ThirdIndex = NONE; break;
+    case POISSON_EQUATION: FirstIndex = POISSON_SOL; SecondIndex = NONE; ThirdIndex = NONE; break;
+    case WAVE_EQUATION: FirstIndex = WAVE_SOL; SecondIndex = NONE; ThirdIndex = NONE; break;
+    case HEAT_EQUATION: FirstIndex = HEAT_SOL; SecondIndex = NONE; ThirdIndex = NONE; break;
+    case LINEAR_ELASTICITY: FirstIndex = FEA_SOL; SecondIndex = NONE; ThirdIndex = NONE; break;
+    case ADJ_EULER : case ADJ_NAVIER_STOKES : FirstIndex = ADJFLOW_SOL; SecondIndex = NONE; ThirdIndex = NONE; break;
+    case ADJ_TNE2_EULER : case ADJ_TNE2_NAVIER_STOKES : FirstIndex = ADJTNE2_SOL; SecondIndex = NONE; ThirdIndex = NONE; break;
+    case ADJ_RANS : FirstIndex = ADJFLOW_SOL; if (config->GetFrozen_Visc()) SecondIndex = NONE; else SecondIndex = ADJTURB_SOL; ThirdIndex = NONE; break;
+    case LIN_EULER : case LIN_NAVIER_STOKES : ThirdIndex = NONE; FirstIndex = LINFLOW_SOL; SecondIndex = NONE; break;
+    default: SecondIndex = NONE; ThirdIndex = NONE; break;
   }
+  
   nVar_First = solver[FirstIndex]->GetnVar();
   if (SecondIndex != NONE) nVar_Second = solver[SecondIndex]->GetnVar();
   if (ThirdIndex != NONE) nVar_Third = solver[ThirdIndex]->GetnVar();
@@ -2011,551 +1881,94 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   if (!config->GetLow_MemoryOutput()) {
     
     /*--- Add the limiters ---*/
+    
     if (config->GetWrt_Limiters()) nVar_Total += nVar_Consv;
     
     /*--- Add the residuals ---*/
+    
     if (config->GetWrt_Residuals()) nVar_Total += nVar_Consv;
     
     /*--- Add the grid velocity to the restart file for the unsteady adjoint ---*/
+    
     if (grid_movement) {
-#ifdef HAVE_MPI
       iVar_GridVel = nVar_Total;
-#endif
       if (geometry->GetnDim() == 2) nVar_Total += 2;
       else if (geometry->GetnDim() == 3) nVar_Total += 3;
     }
     
+    /*--- Add density to the restart file ---*/
+
     if ((config->GetKind_Regime() == FREESURFACE)) {
-      /*--- Density ---*/
-#ifdef HAVE_MPI
-      iVar_Density = nVar_Total;
-#endif
-      nVar_Total += 1;
+      iVar_Density = nVar_Total; nVar_Total += 1;
     }
     
+    /*--- Add Pressure, Temperature, Cp, Mach to the restart file ---*/
+
     if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-      /*--- Pressure, Temperature, Cp, Mach ---*/
-#ifdef HAVE_MPI
-      iVar_PressCp = nVar_Total;
-#endif
-      nVar_Total += 3;
-#ifdef HAVE_MPI
-      iVar_MachMean = nVar_Total;
-#endif
-      nVar_Total += 1;
+      iVar_PressCp = nVar_Total; nVar_Total += 3;
+      iVar_MachMean = nVar_Total; nVar_Total += 1;
     }
     
+    /*--- Add Laminar Viscosity, Skin Friction, Heat Flux, & yPlus to the restart file ---*/
+
     if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-      /*--- Laminar Viscosity ---*/
-#ifdef HAVE_MPI
-      iVar_Lam = nVar_Total;
-#endif
-      nVar_Total += 1;
-      /*--- Skin Friction, Heat Flux, & yPlus ---*/
-#ifdef HAVE_MPI
-      iVar_ViscCoeffs = nVar_Total;
-#endif
-      nVar_Total += 3;
+      iVar_Lam = nVar_Total; nVar_Total += 1;
+      iVar_ViscCoeffs = nVar_Total; nVar_Total += 3;
     }
     
+    /*--- Add Eddy Viscosity to the restart file ---*/
+
     if (Kind_Solver == RANS) {
-      /*--- Eddy Viscosity ---*/
-#ifdef HAVE_MPI
-      iVar_Eddy = nVar_Total;
-#endif
-      nVar_Total += 1;
+      iVar_Eddy = nVar_Total; nVar_Total += 1;
     }
     
+    /*--- Add Sharp edges to the restart file ---*/
+
     if (config->GetWrt_SharpEdges()) {
       if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-        /*--- Sharp edges ---*/
-#ifdef HAVE_MPI
-        iVar_Sharp = nVar_Total;
-#endif
-        nVar_Total += 1;
+        iVar_Sharp = nVar_Total; nVar_Total += 1;
       }
     }
     
-    if ((Kind_Solver == TNE2_EULER)         ||
-        (Kind_Solver == TNE2_NAVIER_STOKES)   ) {
-      /*--- Mach ---*/
-#ifdef HAVE_MPI
-      iVar_Mach = nVar_Total;
-#endif
-      nVar_Total++;
-      /*--- Pressure ---*/
-#ifdef HAVE_MPI
-      iVar_Press = nVar_Total;
-#endif
-      nVar_Total++;
-      /*--- Temperature ---*/
-#ifdef HAVE_MPI
-      iVar_Temp = nVar_Total;
-#endif
-      nVar_Total++;
-      /*--- Vib-El. Temperature ---*/
-#ifdef HAVE_MPI
-      iVar_Tempv = nVar_Total;
-#endif
-      nVar_Total++;
+    if ((Kind_Solver == TNE2_EULER)         || (Kind_Solver == TNE2_NAVIER_STOKES)   ) {
+      iVar_Mach = nVar_Total; nVar_Total++;
+      iVar_Press = nVar_Total; nVar_Total++;
+      iVar_Temp = nVar_Total; nVar_Total++;
+      iVar_Tempv = nVar_Total; nVar_Total++;
     }
     
     if (Kind_Solver == TNE2_NAVIER_STOKES) {
-      /*--- Diffusivity, viscosity, & thermal conductivity ---*/
-#ifdef HAVE_MPI
-      iVar_TempLam = nVar_Total;
-#endif
-      nVar_Total += config->GetnSpecies()+3;
+      iVar_TempLam = nVar_Total; nVar_Total += config->GetnSpecies()+3;
     }
     
     if (Kind_Solver == POISSON_EQUATION) {
-#ifdef HAVE_MPI
-      iVar_EF = nVar_Total;
-#endif
-      nVar_Total += geometry->GetnDim();
+      iVar_EF = nVar_Total; nVar_Total += geometry->GetnDim();
     }
     
-    if (( Kind_Solver == ADJ_EULER              ) ||
-        ( Kind_Solver == ADJ_NAVIER_STOKES      ) ||
-        ( Kind_Solver == ADJ_RANS               ) ||
-        ( Kind_Solver == ADJ_TNE2_EULER         ) ||
-        ( Kind_Solver == ADJ_TNE2_NAVIER_STOKES )   ) {
-#ifdef HAVE_MPI
-      iVar_Sens   = nVar_Total;
-#endif
-      nVar_Total += 2;
+    if (( Kind_Solver == ADJ_EULER              ) || ( Kind_Solver == ADJ_NAVIER_STOKES      ) ||
+        ( Kind_Solver == ADJ_RANS               ) || ( Kind_Solver == ADJ_TNE2_EULER         ) ||
+        ( Kind_Solver == ADJ_TNE2_NAVIER_STOKES )) {
+      iVar_Sens   = nVar_Total; nVar_Total += 2;
     }
     
     if (Kind_Solver == LINEAR_ELASTICITY) {
-#ifdef HAVE_MPI
-      iVar_FEA   = nVar_Total;
-#endif
-      nVar_Total += 2;
+      iVar_FEA   = nVar_Total; nVar_Total += 2;
     }
     
     if (config->GetExtraOutput()) {
       if (Kind_Solver == RANS) {
-#ifdef HAVE_MPI
-        iVar_Extra  = nVar_Total;
-#endif
-        nVar_Extra  = solver[TURB_SOL]->GetnOutputVariables();
-        nVar_Total += nVar_Extra;
+        iVar_Extra  = nVar_Total; nVar_Extra  = solver[TURB_SOL]->GetnOutputVariables(); nVar_Total += nVar_Extra;
       }
-      if ((Kind_Solver == TNE2_EULER)         ||
-          (Kind_Solver == TNE2_NAVIER_STOKES)) {
-#ifdef HAVE_MPI
-        iVar_Extra  = nVar_Total;
-#endif
-        nVar_Extra  = solver[TNE2_SOL]->GetnVar();
-        nVar_Total += nVar_Extra;
+      if ((Kind_Solver == TNE2_EULER) || (Kind_Solver == TNE2_NAVIER_STOKES)) {
+        iVar_Extra  = nVar_Total; nVar_Extra  = solver[TNE2_SOL]->GetnVar(); nVar_Total += nVar_Extra;
       }
     }
     
   }
   
-  /*--- Merge the solution either in serial or parallel. ---*/
-  
-#ifndef HAVE_MPI
-  
-  /*--- In serial, the single process has access to all solution data,
-   so it is simple to retrieve and store inside Solution_Data. ---*/
-  
-  unsigned long nTotalPoints = 0;
-  int SendRecv;
-  
-  /*--- First, create a structure to locate any periodic halo nodes ---*/
-  int *Local_Halo = new int[geometry->GetnPoint()];
+  Local_Halo = new int[geometry->GetnPoint()];
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
     Local_Halo[iPoint] = !geometry->node[iPoint]->GetDomain();
-  
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
-      SendRecv = config->GetMarker_All_SendRecv(iMarker);
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        if ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0) &&
-            (geometry->vertex[iMarker][iVertex]->GetRotation_Type() % 2 == 1) &&
-            (SendRecv < 0)) {
-          Local_Halo[iPoint] = false;
-        }
-      }
-      
-    }
-  }
-  
-  /*--- Total number of points in the mesh (this might include periodic points). ---*/
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-    if (!Local_Halo[iPoint]) nTotalPoints++;
-  
-  nGlobal_Poin = nTotalPoints;
-  Data = new double*[nVar_Total];
-  for (iVar = 0; iVar < nVar_Total; iVar++) {
-    Data[iVar] = new double[nGlobal_Poin];
-  }
-  
-  /*--- In case there is grid movement ---*/
-  double *Grid_Vel;
-  
-  /*--- First, loop through the mesh in order to find and store the
-   value of some coefficients at any surface nodes. They
-   will be placed in an auxiliary vector and then communicated like
-   all other volumetric variables. ---*/
-  if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-    
-    Aux_Frict = new double [geometry->GetnPoint()];
-    Aux_Heat  = new double [geometry->GetnPoint()];
-    Aux_yPlus = new double [geometry->GetnPoint()];
-    
-    for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-      Aux_Frict[iPoint] = 0.0;
-      Aux_Heat[iPoint]  = 0.0;
-      Aux_yPlus[iPoint] = 0.0;
-    }
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-      if (config->GetMarker_All_Plotting(iMarker) == YES) {
-        for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          Aux_Frict[iPoint] = solver[FLOW_SOL]->GetCSkinFriction(iMarker,iVertex);
-          Aux_Heat[iPoint]  = solver[FLOW_SOL]->GetHeatFlux(iMarker,iVertex);
-          Aux_yPlus[iPoint] = solver[FLOW_SOL]->GetYPlus(iMarker,iVertex);
-        }
-      }
-  }
-  
-  if ((Kind_Solver == ADJ_EULER)         ||
-      (Kind_Solver == ADJ_NAVIER_STOKES) ||
-      (Kind_Solver == ADJ_RANS)            ) {
-    
-    Aux_Sens = new double [geometry->GetnPoint()];
-    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) Aux_Sens[iPoint] = 0.0;
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-      if (config->GetMarker_All_Plotting(iMarker) == YES) {
-        for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-          Area = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-          Area = sqrt (Area);
-          Aux_Sens[iPoint] = solver[ADJFLOW_SOL]->GetCSensitivity(iMarker,iVertex)/Area;
-        }
-      }
-  }
-  
-  if ((Kind_Solver == ADJ_TNE2_EULER)         ||
-      (Kind_Solver == ADJ_TNE2_NAVIER_STOKES)   ) {
-    
-    Aux_Sens = new double [geometry->GetnPoint()];
-    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) Aux_Sens[iPoint] = 0.0;
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-      if (config->GetMarker_All_Plotting(iMarker) == YES) {
-        for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-          Area = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-          Area = sqrt (Area);
-          Aux_Sens[iPoint] = solver[ADJTNE2_SOL]->GetCSensitivity(iMarker,iVertex)/Area;
-        }
-      }
-  }
-  
-  /*--- Loop over all points in the mesh, but only write data
-   for nodes in the domain (includes original periodic nodes). ---*/
-  unsigned long jPoint_ = 0;
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    
-    jPoint = geometry->node[jPoint_]->GetGlobalIndex();
-
-    /*--- Check for halo nodes & only write if requested ---*/
-    
-    if (!Local_Halo[iPoint]) {
-      
-      /*--- Solution (first, second and third system of equations) ---*/
-      jVar = 0;
-      for (iVar = 0; iVar < nVar_First; iVar++) {
-        Data[jVar][jPoint] = solver[FirstIndex]->node[iPoint]->GetSolution(iVar);
-        jVar++;
-      }
-      
-      for (iVar = 0; iVar < nVar_Second; iVar++) {
-        Data[jVar][jPoint] = solver[SecondIndex]->node[iPoint]->GetSolution(iVar);
-        jVar++;
-      }
-      
-      for (iVar = 0; iVar < nVar_Third; iVar++) {
-        Data[jVar][jPoint] = solver[ThirdIndex]->node[iPoint]->GetSolution(iVar);
-        jVar++;
-      }
-      
-      if (!config->GetLow_MemoryOutput()) {
-        
-        /*--- Limiters (first, second and third system of equations) ---*/
-        if (config->GetWrt_Limiters()) {
-          
-          if (solver[FirstIndex]->node[iPoint]->GetLimiter_Primitive() != NULL) {
-            for (iVar = 0; iVar < nVar_First; iVar++) {
-              Data[jVar][jPoint] = solver[FirstIndex]->node[iPoint]->GetLimiter_Primitive(iVar);
-              jVar++;
-            }
-          }
-          else { for (iVar = 0; iVar < nVar_First; iVar++) { Data[jVar][jPoint] = 0.0; jVar++; } }
-          
-          if (solver[SecondIndex]->node[iPoint]->GetLimiter() != NULL) {
-            for (iVar = 0; iVar < nVar_Second; iVar++) {
-              Data[jVar][jPoint] = solver[SecondIndex]->node[iPoint]->GetLimiter(iVar);
-              jVar++;
-            }
-          }
-          else { for (iVar = 0; iVar < nVar_Second; iVar++) { Data[jVar][jPoint] = 0.0; jVar++; } }
-          
-          if (solver[ThirdIndex]->node[iPoint]->GetLimiter() != NULL) {
-            for (iVar = 0; iVar < nVar_Third; iVar++) {
-              Data[jVar][jPoint] = solver[ThirdIndex]->node[iPoint]->GetLimiter(iVar);
-              jVar++;
-            }
-          }
-          else { for (iVar = 0; iVar < nVar_Third; iVar++) { Data[jVar][jPoint] = 0.0; jVar++; } }
-          
-        }
-        
-        /*--- Residual (first, second and third system of equations) ---*/
-        if (config->GetWrt_Residuals()) {
-          for (iVar = 0; iVar < nVar_First; iVar++) {
-            Data[jVar][jPoint] = solver[FirstIndex]->LinSysRes.GetBlock(iPoint, iVar);
-            jVar++;
-          }
-          
-          for (iVar = 0; iVar < nVar_Second; iVar++) {
-            Data[jVar][jPoint] = solver[SecondIndex]->LinSysRes.GetBlock(iPoint, iVar);
-            jVar++;
-          }
-          
-          for (iVar = 0; iVar < nVar_Third; iVar++) {
-            Data[jVar][jPoint] = solver[ThirdIndex]->LinSysRes.GetBlock(iPoint, iVar);
-            jVar++;
-          }
-        }
-        
-        /*--- For unsteady problems with grid movement, write the mesh velocities ---*/
-        if (grid_movement) {
-          Grid_Vel = geometry->node[iPoint]->GetGridVel();
-          for (unsigned short iDim = 0; iDim < geometry->GetnDim(); iDim++) {
-            Data[jVar][jPoint] = Grid_Vel[iDim];
-            jVar++;
-          }
-        }
-        
-        /*--- Any extra data for output files ---*/
-        
-        switch (Kind_Solver) {
-          case EULER:
-            
-            /*--- Load buffers with the pressure, Cp, and mach variables. ---*/
-            if (compressible) {
-              Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetPressure(); jVar++;
-              Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetTemperature(); jVar++;
-              Data[jVar][jPoint] = (solver[FLOW_SOL]->node[iPoint]->GetPressure() - RefPressure)*factor*RefAreaCoeff; jVar++;
-              Data[jVar][jPoint] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())/solver[FLOW_SOL]->node[iPoint]->GetSoundSpeed(); jVar++;
-            }
-            if (incompressible || freesurface) {
-              if (freesurface) {
-                Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetDensityInc(); jVar++;
-              }
-              Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetPressureInc(); jVar++;
-              Data[jVar][jPoint] = 0.0; jVar++;
-              Data[jVar][jPoint] = (solver[FLOW_SOL]->node[iPoint]->GetPressureInc() - RefPressure)*factor*RefAreaCoeff; jVar++;
-              Data[jVar][jPoint] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())*config->GetVelocity_Ref()/sqrt(config->GetBulk_Modulus()/(solver[FLOW_SOL]->node[iPoint]->GetDensityInc()*config->GetDensity_Ref())); jVar++;
-            }
-            if (config->GetWrt_SharpEdges()) {
-              Data[jVar][jPoint] = geometry->node[iPoint]->GetSharpEdge_Distance(); jVar++;
-            }
-            break;
-            /*--- Write pressure, Cp, mach, temperature, laminar viscosity, skin friction, heat transfer, yplus ---*/
-          case NAVIER_STOKES:
-            if (compressible) {
-              Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetPressure(); jVar++;
-              Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetTemperature(); jVar++;
-              Data[jVar][jPoint] = (solver[FLOW_SOL]->node[iPoint]->GetPressure() - RefPressure)*factor*RefAreaCoeff; jVar++;
-              Data[jVar][jPoint] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())/
-              solver[FLOW_SOL]->node[iPoint]->GetSoundSpeed(); jVar++;
-              Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetLaminarViscosity(); jVar++;
-              Data[jVar][jPoint] = Aux_Frict[iPoint]; jVar++;
-              Data[jVar][jPoint] = Aux_Heat[iPoint];  jVar++;
-              Data[jVar][jPoint] = Aux_yPlus[iPoint]; jVar++;
-            }
-            if (incompressible || freesurface) {
-              if (freesurface) {
-                Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetDensityInc(); jVar++;
-              }
-              Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetPressureInc(); jVar++;
-              Data[jVar][jPoint] = 0.0; jVar++;
-              Data[jVar][jPoint] = (solver[FLOW_SOL]->node[iPoint]->GetPressureInc() - RefPressure)*factor*RefAreaCoeff; jVar++;
-              Data[jVar][jPoint] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())*config->GetVelocity_Ref()/sqrt(config->GetBulk_Modulus()/(solver[FLOW_SOL]->node[iPoint]->GetDensityInc()*config->GetDensity_Ref())); jVar++;
-              Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc(); jVar++;
-              Data[jVar][jPoint] = Aux_Frict[iPoint]; jVar++;
-              Data[jVar][jPoint] = Aux_Heat[iPoint];  jVar++;
-              Data[jVar][jPoint] = Aux_yPlus[iPoint]; jVar++;
-            }
-            if (config->GetWrt_SharpEdges()) {
-              Data[jVar][jPoint] = geometry->node[iPoint]->GetSharpEdge_Distance(); jVar++;
-            }
-            break;
-            /*--- Write pressure, Cp, mach, temperature, laminar viscosity, skin friction, heat transfer, yplus, eddy viscosity ---*/
-          case RANS:
-            if (compressible) {
-              Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetPressure(); jVar++;
-              Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetTemperature(); jVar++;
-              Data[jVar][jPoint] = (solver[FLOW_SOL]->node[iPoint]->GetPressure() - RefPressure)*factor*RefAreaCoeff; jVar++;
-              Data[jVar][jPoint] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())/
-              solver[FLOW_SOL]->node[iPoint]->GetSoundSpeed(); jVar++;
-              Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetLaminarViscosity(); jVar++;
-              Data[jVar][jPoint] = Aux_Frict[iPoint]; jVar++;
-              Data[jVar][jPoint] = Aux_Heat[iPoint];  jVar++;
-              Data[jVar][jPoint] = Aux_yPlus[iPoint]; jVar++;
-              Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetEddyViscosity(); jVar++;
-            }
-            if (incompressible || freesurface) {
-              if (freesurface) {
-                Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetDensityInc(); jVar++;
-              }
-              Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetPressureInc(); jVar++;
-              Data[jVar][jPoint] = 0.0; jVar++;
-              Data[jVar][jPoint] = (solver[FLOW_SOL]->node[iPoint]->GetPressureInc() - RefPressure)*factor*RefAreaCoeff; jVar++;
-              Data[jVar][jPoint] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())*config->GetVelocity_Ref()/sqrt(config->GetBulk_Modulus()/(solver[FLOW_SOL]->node[iPoint]->GetDensityInc()*config->GetDensity_Ref())); jVar++;
-              Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc(); jVar++;
-              Data[jVar][jPoint] = Aux_Frict[iPoint]; jVar++;
-              Data[jVar][jPoint] = Aux_Heat[iPoint];  jVar++;
-              Data[jVar][jPoint] = Aux_yPlus[iPoint]; jVar++;
-              Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetEddyViscosityInc(); jVar++;
-            }
-            if (config->GetWrt_SharpEdges()) {
-              Data[jVar][jPoint] = geometry->node[iPoint]->GetSharpEdge_Distance(); jVar++;
-            }
-            break;
-            /*--- Write poisson field. ---*/
-          case POISSON_EQUATION:
-            for (unsigned short iDim = 0; iDim < geometry->GetnDim(); iDim++) {
-              Data[jVar][jPoint] = -1.0*solver[POISSON_SOL]->node[iPoint]->GetGradient(0,iDim);
-              jVar++;
-            }
-            break;
-            
-          case TNE2_EULER:
-            /*--- Write Mach number ---*/
-            Data[jVar][jPoint] = sqrt(solver[TNE2_SOL]->node[iPoint]->GetVelocity2())
-            / solver[TNE2_SOL]->node[iPoint]->GetSoundSpeed();
-            jVar++;
-            /*--- Write Pressure ---*/
-            Data[jVar][jPoint] = solver[TNE2_SOL]->node[iPoint]->GetPressure();
-            jVar++;
-            /*--- Write Temperature ---*/
-            Data[jVar][jPoint] = solver[TNE2_SOL]->node[iPoint]->GetTemperature();
-            jVar++;
-            /*--- Write Vib.-El. Temperature ---*/
-            Data[jVar][jPoint] = solver[TNE2_SOL]->node[iPoint]->GetTemperature_ve();
-            jVar++;
-            break;
-            
-          case TNE2_NAVIER_STOKES:
-            /*--- Write Mach number ---*/
-            Data[jVar][jPoint] = sqrt(solver[TNE2_SOL]->node[iPoint]->GetVelocity2())
-            / solver[TNE2_SOL]->node[iPoint]->GetSoundSpeed();
-            jVar++;
-            /*--- Write Pressure ---*/
-            Data[jVar][jPoint] = solver[TNE2_SOL]->node[iPoint]->GetPressure();
-            jVar++;
-            /*--- Write Temperature ---*/
-            Data[jVar][jPoint] = solver[TNE2_SOL]->node[iPoint]->GetTemperature();
-            jVar++;
-            /*--- Write Vib.-El. Temperature ---*/
-            Data[jVar][jPoint] = solver[TNE2_SOL]->node[iPoint]->GetTemperature_ve();
-            jVar++;
-            /*--- Write species diffusion coefficients ---*/
-            for (iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++) {
-              Data[jVar][jPoint] = solver[TNE2_SOL]->node[iPoint]->GetDiffusionCoeff()[iSpecies];
-              jVar++;
-            }
-            /*--- Write viscosity ---*/
-            Data[jVar][jPoint] = solver[TNE2_SOL]->node[iPoint]->GetLaminarViscosity();
-            jVar++;
-            /*--- Write thermal conductivity ---*/
-            Data[jVar][jPoint] = solver[TNE2_SOL]->node[iPoint]->GetThermalConductivity();
-            jVar++;
-            Data[jVar][jPoint] = solver[TNE2_SOL]->node[iPoint]->GetThermalConductivity_ve();
-            break;
-            
-          case ADJ_EULER:      case ADJ_NAVIER_STOKES:     case ADJ_RANS:
-            
-            Data[jVar][jPoint] = Aux_Sens[iPoint]; jVar++;
-            if (config->GetKind_ConvNumScheme() == SPACE_CENTERED)
-            { Data[jVar][jPoint] = solver[ADJFLOW_SOL]->node[iPoint]->GetSensor(); jVar++; }
-            if (config->GetKind_ConvNumScheme() == SPACE_UPWIND)
-            { Data[jVar][jPoint] = solver[ADJFLOW_SOL]->node[iPoint]->GetLimiter(0); jVar++; }
-            break;
-            
-          case ADJ_TNE2_EULER: case ADJ_TNE2_NAVIER_STOKES:
-            Data[jVar][jPoint] = Aux_Sens[iPoint]; jVar++;
-            if (config->GetKind_ConvNumScheme() == SPACE_CENTERED)
-            { Data[jVar][jPoint] = solver[ADJTNE2_SOL]->node[iPoint]->GetSensor(); jVar++; }
-            if (config->GetKind_ConvNumScheme() == SPACE_UPWIND)
-            { Data[jVar][jPoint] = solver[ADJTNE2_SOL]->node[iPoint]->GetLimiter(0); jVar++; }
-            break;
-            
-          case LINEAR_ELASTICITY:
-            Data[jVar][jPoint] = solver[FEA_SOL]->node[iPoint]->GetVonMises_Stress();
-            jVar++;
-            Data[jVar][jPoint] = solver[FEA_SOL]->node[iPoint]->GetFlow_Pressure();
-            jVar++;
-            break;
-            
-        }
-        
-        if (config->GetExtraOutput()) {
-          if (Kind_Solver == RANS) {
-            for (unsigned short iVar = 0; iVar < nVar_Extra; iVar++) {
-              Data[jVar][jPoint] =  solver[TURB_SOL]->OutputVariables[iPoint*nVar_Extra+iVar];
-              jVar++;
-            }
-          }
-          if ((Kind_Solver == TNE2_EULER) || (Kind_Solver == TNE2_NAVIER_STOKES)) {
-            for (unsigned short iVar = 0; iVar < nVar_Extra; iVar++) {
-              Data[jVar][jPoint] =  solver[TNE2_SOL]->OutputVariables[iPoint*nVar_Extra+iVar];
-              jVar++;
-            }
-          }
-        }
-      }
-      
-    }
-
-    
-    /*--- Increment jPoint as the counter. We need this because iPoint
-     may include halo nodes that we skip over during this loop. ---*/
-    jPoint_++;
-    
-  }
-  
-#else
-  
-  /*--- MPI preprocessing ---*/
-  int rank, iProcessor, nProcessor;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-  
-  /*--- Local variables needed for merging with MPI ---*/
-  unsigned short CurrentIndex;
-  
-  int SendRecv, RecvFrom;
-  
-  unsigned long Buffer_Send_nPoint[1], *Buffer_Recv_nPoint = NULL;
-  unsigned long nLocalPoint = 0, MaxLocalPoint = 0;
-  unsigned long iGlobal_Index = 0, nBuffer_Scalar = 0;
-  
-  int *Local_Halo = new int[geometry->GetnPoint()];
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-    Local_Halo[iPoint] = !geometry->node[iPoint]->GetDomain();
-  
-  bool Wrt_Halo = config->GetWrt_Halo(), isPeriodic;
   
   /*--- Search all send/recv boundaries on this partition for any periodic
    nodes that were part of the original domain. We want to recover these
@@ -2571,6 +1984,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         
         /*--- Checking for less than or equal to the rank, because there may
          be some periodic halo nodes that send info to the same rank. ---*/
+        
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           isPeriodic = ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0) &&
@@ -2591,10 +2005,15 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   
   /*--- Each processor sends its local number of nodes to the master. ---*/
   
-  if (rank == MASTER_NODE) Buffer_Recv_nPoint = new unsigned long[nProcessor];
+  if (rank == MASTER_NODE) Buffer_Recv_nPoint = new unsigned long[size];
   
+#ifdef HAVE_MPI
   MPI_Allreduce(&nLocalPoint, &MaxLocalPoint, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
   MPI_Gather(&Buffer_Send_nPoint, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nPoint, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+#else
+  MaxLocalPoint = nLocalPoint;
+  Buffer_Recv_nPoint[0] = Buffer_Send_nPoint[0];
+#endif
   
   nBuffer_Scalar = MaxLocalPoint;
   
@@ -2630,14 +2049,14 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   
   if (rank == MASTER_NODE) {
     
-    Buffer_Recv_Var = new double[nProcessor*MaxLocalPoint];
-    Buffer_Recv_Res = new double[nProcessor*MaxLocalPoint];
-    Buffer_Recv_Vol = new double[nProcessor*MaxLocalPoint];
-    Buffer_Recv_GlobalIndex = new unsigned long[nProcessor*MaxLocalPoint];
+    Buffer_Recv_Var = new double[size*MaxLocalPoint];
+    Buffer_Recv_Res = new double[size*MaxLocalPoint];
+    Buffer_Recv_Vol = new double[size*MaxLocalPoint];
+    Buffer_Recv_GlobalIndex = new unsigned long[size*MaxLocalPoint];
     
     /*--- Sum total number of nodes to be written and allocate arrays ---*/
     nGlobal_Poin = 0;
-    for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+    for (iProcessor = 0; iProcessor < size; iProcessor++) {
       nGlobal_Poin += Buffer_Recv_nPoint[iProcessor];
     }
     Data = new double*[nVar_Total];
@@ -2693,6 +2112,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         }
         
         /*--- Only send/recv the volumes & global indices during the first loop ---*/
+        
         if (iVar == 0) {
           Buffer_Send_GlobalIndex[jPoint] = geometry->node[iPoint]->GetGlobalIndex();
         }
@@ -2703,29 +2123,45 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     }
     
     /*--- Gather the data on the master node. ---*/
-
-    MPI_Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
     
+#ifdef HAVE_MPI
+    MPI_Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+#else
+    for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Var[iPoint] = Buffer_Send_Var[iPoint];
+#endif
     if (!config->GetLow_MemoryOutput()) {
       
       if (config->GetWrt_Limiters()) {
+#ifdef HAVE_MPI
         MPI_Gather(Buffer_Send_Vol, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Vol, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+#else
+        for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Vol[iPoint] = Buffer_Send_Vol[iPoint];
+#endif
       }
       
       if (config->GetWrt_Residuals()) {
+#ifdef HAVE_MPI
         MPI_Gather(Buffer_Send_Res, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Res, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+#else
+        for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Res[iPoint] = Buffer_Send_Res[iPoint];
+#endif
       }
       
     }
     
     if (iVar == 0) {
+#ifdef HAVE_MPI
       MPI_Gather(Buffer_Send_GlobalIndex, nBuffer_Scalar, MPI_UNSIGNED_LONG, Buffer_Recv_GlobalIndex, nBuffer_Scalar, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+#else
+      for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_GlobalIndex[iPoint] = Buffer_Send_GlobalIndex[iPoint];
+#endif
     }
     
     /*--- The master node unpacks and sorts this variable by global index ---*/
+    
     if (rank == MASTER_NODE) {
       jPoint = 0;
-      for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+      for (iProcessor = 0; iProcessor < size; iProcessor++) {
         for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
           
           /*--- Get global index, then loop over each variable and store ---*/
@@ -2768,6 +2204,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     if (grid_movement) {
       
       /*--- Loop over this partition to collect the current variable ---*/
+      
       jPoint = 0; double *Grid_Vel;
       for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
         
@@ -2776,6 +2213,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         if (!Local_Halo[iPoint] || Wrt_Halo) {
           
           /*--- Load buffers with the three grid velocity components. ---*/
+          
           Grid_Vel = geometry->node[iPoint]->GetGridVel();
           Buffer_Send_Var[jPoint] = Grid_Vel[0];
           Buffer_Send_Res[jPoint] = Grid_Vel[1];
@@ -2785,20 +2223,30 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       }
       
       /*--- Gather the data on the master node. ---*/
-
+      
+#ifdef HAVE_MPI
       MPI_Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
       MPI_Gather(Buffer_Send_Res, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Res, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
       if (geometry->GetnDim() == 3) {
         MPI_Gather(Buffer_Send_Vol, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Vol, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
       }
+#else
+      for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Var[iPoint] = Buffer_Send_Var[iPoint];
+      for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Res[iPoint] = Buffer_Send_Res[iPoint];
+      if (geometry->GetnDim() == 3) {
+        for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Vol[iPoint] = Buffer_Send_Vol[iPoint];
+      }
+#endif
       
       /*--- The master node unpacks and sorts this variable by global index ---*/
+      
       if (rank == MASTER_NODE) {
         jPoint = 0; iVar = iVar_GridVel;
-        for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+        for (iProcessor = 0; iProcessor < size; iProcessor++) {
           for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
             
             /*--- Get global index, then loop over each variable and store ---*/
+            
             iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
             Data[iVar][iGlobal_Index]   = Buffer_Recv_Var[jPoint];
             Data[iVar+1][iGlobal_Index] = Buffer_Recv_Res[jPoint];
@@ -2806,16 +2254,20 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
               Data[iVar+2][iGlobal_Index] = Buffer_Recv_Vol[jPoint];
             jPoint++;
           }
+          
           /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
+          
           jPoint = (iProcessor+1)*nBuffer_Scalar;
         }
       }
     }
     
     /*--- Communicate the Density in Free-surface problems ---*/
+    
     if (config->GetKind_Regime() == FREESURFACE) {
       
       /*--- Loop over this partition to collect the current variable ---*/
+      
       jPoint = 0;
       for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
         
@@ -2830,21 +2282,28 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       }
       
       /*--- Gather the data on the master node. ---*/
-
+      
+#ifdef HAVE_MPI
       MPI_Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+#else
+      for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Var[iPoint] = Buffer_Send_Var[iPoint];
+#endif
       
       /*--- The master node unpacks and sorts this variable by global index ---*/
+      
       if (rank == MASTER_NODE) {
         jPoint = 0; iVar = iVar_Density;
-        for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+        for (iProcessor = 0; iProcessor < size; iProcessor++) {
           for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
             
             /*--- Get global index, then loop over each variable and store ---*/
+            
             iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
             Data[iVar][iGlobal_Index] = Buffer_Recv_Var[jPoint];
             jPoint++;
           }
           /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
+          
           jPoint = (iProcessor+1)*nBuffer_Scalar;
         }
       }
@@ -2852,6 +2311,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     }
     
     /*--- Communicate Pressure, Cp, and Mach ---*/
+    
     if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
       
       /*--- First, loop through the mesh in order to find and store the
@@ -2860,6 +2320,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
        all other volumetric variables. ---*/
       
       /*--- Loop over this partition to collect the current variable ---*/
+      
       jPoint = 0;
       for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
         
@@ -2868,6 +2329,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         if (!Local_Halo[iPoint] || Wrt_Halo) {
           
           /*--- Load buffers with the pressure, Cp, and mach variables. ---*/
+          
           if (compressible) {
             Buffer_Send_Var[jPoint] = solver[FLOW_SOL]->node[iPoint]->GetPressure();
             Buffer_Send_Res[jPoint] = solver[FLOW_SOL]->node[iPoint]->GetTemperature();
@@ -2883,34 +2345,46 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       }
       
       /*--- Gather the data on the master node. ---*/
-
+      
+#ifdef HAVE_MPI
       MPI_Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
       MPI_Gather(Buffer_Send_Res, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Res, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
       MPI_Gather(Buffer_Send_Vol, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Vol, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+#else
+      for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Var[iPoint] = Buffer_Send_Var[iPoint];
+      for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Res[iPoint] = Buffer_Send_Res[iPoint];
+      for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Vol[iPoint] = Buffer_Send_Vol[iPoint];
+#endif
       
       /*--- The master node unpacks and sorts this variable by global index ---*/
+      
       if (rank == MASTER_NODE) {
         jPoint = 0; iVar = iVar_PressCp;
-        for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+        for (iProcessor = 0; iProcessor < size; iProcessor++) {
           for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
             
             /*--- Get global index, then loop over each variable and store ---*/
+            
             iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
             Data[iVar][iGlobal_Index]   = Buffer_Recv_Var[jPoint];
             Data[iVar+1][iGlobal_Index] = Buffer_Recv_Res[jPoint];
             Data[iVar+2][iGlobal_Index] = Buffer_Recv_Vol[jPoint];
             jPoint++;
           }
+          
           /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
+          
           jPoint = (iProcessor+1)*nBuffer_Scalar;
         }
       }
     }
     
     /*--- Communicate Mach---*/
+    
     if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
       
       /*--- Loop over this partition to collect the current variable ---*/
+      
       jPoint = 0;
       for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
         
@@ -2919,6 +2393,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         if (!Local_Halo[iPoint] || Wrt_Halo) {
           
           /*--- Load buffers with the temperature and laminar viscosity variables. ---*/
+          
           if (compressible) {
             Buffer_Send_Var[jPoint] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())/
             solver[FLOW_SOL]->node[iPoint]->GetSoundSpeed();
@@ -2932,30 +2407,40 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       }
       
       /*--- Gather the data on the master node. ---*/
-
+      
+#ifdef HAVE_MPI
       MPI_Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+#else
+      for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Var[iPoint] = Buffer_Send_Var[iPoint];
+#endif
       
       /*--- The master node unpacks and sorts this variable by global index ---*/
+      
       if (rank == MASTER_NODE) {
         jPoint = 0; iVar = iVar_MachMean;
-        for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+        for (iProcessor = 0; iProcessor < size; iProcessor++) {
           for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
             
             /*--- Get global index, then loop over each variable and store ---*/
+            
             iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
             Data[iVar][iGlobal_Index]   = Buffer_Recv_Var[jPoint];
             jPoint++;
           }
+          
           /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
+          
           jPoint = (iProcessor+1)*nBuffer_Scalar;
         }
       }
     }
     
     /*--- Laminar Viscosity ---*/
+    
     if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
       
       /*--- Loop over this partition to collect the current variable ---*/
+      
       jPoint = 0;
       for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
         
@@ -2964,6 +2449,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         if (!Local_Halo[iPoint] || Wrt_Halo) {
           
           /*--- Load buffers with the temperature and laminar viscosity variables. ---*/
+          
           if (compressible) {
             Buffer_Send_Res[jPoint] = solver[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
           }
@@ -2975,21 +2461,29 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       }
       
       /*--- Gather the data on the master node. ---*/
-
+      
+#ifdef HAVE_MPI
       MPI_Gather(Buffer_Send_Res, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Res, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+#else
+      for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Res[iPoint] = Buffer_Send_Res[iPoint];
+#endif
       
       /*--- The master node unpacks and sorts this variable by global index ---*/
+      
       if (rank == MASTER_NODE) {
         jPoint = 0; iVar = iVar_Lam;
-        for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+        for (iProcessor = 0; iProcessor < size; iProcessor++) {
           for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
             
             /*--- Get global index, then loop over each variable and store ---*/
+            
             iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
             Data[iVar][iGlobal_Index] = Buffer_Recv_Res[jPoint];
             jPoint++;
           }
+          
           /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
+          
           jPoint = (iProcessor+1)*nBuffer_Scalar;
         }
       }
@@ -3017,14 +2511,17 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         }
       
       /*--- Loop over this partition to collect the current variable ---*/
+      
       jPoint = 0;
       for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
         
         /*--- Check for halos & write only if requested ---*/
         
+        
         if (!Local_Halo[iPoint] || Wrt_Halo) {
           
           /*--- Load buffers with the skin friction, heat transfer, y+ variables. ---*/
+          
           if (compressible) {
             Buffer_Send_Var[jPoint] = Aux_Frict[iPoint];
             Buffer_Send_Res[jPoint] = Aux_Heat[iPoint];
@@ -3040,26 +2537,36 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       }
       
       /*--- Gather the data on the master node. ---*/
-
+      
+#ifdef HAVE_MPI
       MPI_Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
       MPI_Gather(Buffer_Send_Res, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Res, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
       MPI_Gather(Buffer_Send_Vol, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Vol, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+#else
+      for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Var[iPoint] = Buffer_Send_Var[iPoint];
+      for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Res[iPoint] = Buffer_Send_Res[iPoint];
+      for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Vol[iPoint] = Buffer_Send_Vol[iPoint];
+#endif
       
       /*--- The master node unpacks and sorts this variable by global index ---*/
+      
       if (rank == MASTER_NODE) {
         jPoint = 0; iVar = iVar_ViscCoeffs;
 
-        for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+        for (iProcessor = 0; iProcessor < size; iProcessor++) {
           for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
             
             /*--- Get global index, then loop over each variable and store ---*/
+            
             iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
             Data[iVar+0][iGlobal_Index] = Buffer_Recv_Var[jPoint];
             Data[iVar+1][iGlobal_Index] = Buffer_Recv_Res[jPoint];
             Data[iVar+2][iGlobal_Index] = Buffer_Recv_Vol[jPoint];
             jPoint++;
           }
+          
           /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
+          
           jPoint = (iProcessor+1)*nBuffer_Scalar;
         }
       }
@@ -3070,6 +2577,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     if (Kind_Solver == RANS) {
       
       /*--- Loop over this partition to collect the current variable ---*/
+      
       jPoint = 0;
       for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
         
@@ -3078,6 +2586,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         if (!Local_Halo[iPoint] || Wrt_Halo) {
           
           /*--- Load buffers with the pressure and mach variables. ---*/
+          
           if (compressible) {
             Buffer_Send_Var[jPoint] = solver[FLOW_SOL]->node[iPoint]->GetEddyViscosity();
           }
@@ -3089,21 +2598,29 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       }
       
       /*--- Gather the data on the master node. ---*/
-
+      
+#ifdef HAVE_MPI
       MPI_Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+#else
+      for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Var[iPoint] = Buffer_Send_Var[iPoint];
+#endif
       
       /*--- The master node unpacks and sorts this variable by global index ---*/
+      
       if (rank == MASTER_NODE) {
         jPoint = 0; iVar = iVar_Eddy;
-        for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+        for (iProcessor = 0; iProcessor < size; iProcessor++) {
           for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
             
             /*--- Get global index, then loop over each variable and store ---*/
+            
             iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
             Data[iVar][iGlobal_Index] = Buffer_Recv_Var[jPoint];
             jPoint++;
           }
+          
           /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
+          
           jPoint = (iProcessor+1)*nBuffer_Scalar;
         }
       }
@@ -3111,6 +2628,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     }
     
     /*--- Communicate the Sharp Edges ---*/
+    
     if (config->GetWrt_SharpEdges()) {
       
       if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
@@ -3120,30 +2638,40 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
           
           /*--- Check for halos & write only if requested ---*/
+          
           if (!Local_Halo[iPoint] || Wrt_Halo) {
             
             /*--- Load buffers with the pressure and mach variables. ---*/
+            
             Buffer_Send_Var[jPoint] = geometry->node[iPoint]->GetSharpEdge_Distance();
             jPoint++;
           }
         }
         
         /*--- Gather the data on the master node. ---*/
-
+        
+#ifdef HAVE_MPI
         MPI_Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+#else
+        for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Var[iPoint] = Buffer_Send_Var[iPoint];
+#endif
         
         /*--- The master node unpacks and sorts this variable by global index ---*/
+        
         if (rank == MASTER_NODE) {
           jPoint = 0; iVar = iVar_Sharp;
-          for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+          for (iProcessor = 0; iProcessor < size; iProcessor++) {
             for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
               
               /*--- Get global index, then loop over each variable and store ---*/
+              
               iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
               Data[iVar][iGlobal_Index] = Buffer_Recv_Var[jPoint];
               jPoint++;
             }
+            
             /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
+            
             jPoint = (iProcessor+1)*nBuffer_Scalar;
           }
         }
@@ -3151,10 +2679,11 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     }
     
     /*--- Communicate additional variables for the two-temperature solvers ---*/
+    
     if ((Kind_Solver == TNE2_EULER) || (Kind_Solver == TNE2_NAVIER_STOKES)) {
       
       /*--- Mach number ---*/
-      // Loop over this partition to collect the current variable
+      
       jPoint = 0;
       for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
         
@@ -3163,6 +2692,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         if (!Local_Halo[iPoint] || Wrt_Halo) {
           
           /*--- Load buffers with the Mach number variables. ---*/
+          
           Buffer_Send_Var[jPoint] =
           sqrt(solver[TNE2_SOL]->node[iPoint]->GetVelocity2())
           /solver[TNE2_SOL]->node[iPoint]->GetSoundSpeed();
@@ -3171,271 +2701,349 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       }
       
       /*--- Gather the data on the master node. ---*/
-
+      
+#ifdef HAVE_MPI
       MPI_Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+#else
+      for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Var[iPoint] = Buffer_Send_Var[iPoint];
+#endif
       
       /*--- The master node unpacks and sorts this variable by global index ---*/
+      
       if (rank == MASTER_NODE) {
         jPoint = 0;
         iVar = iVar_Mach;
-        for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+        for (iProcessor = 0; iProcessor < size; iProcessor++) {
           for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
             
             /*--- Get global index, then loop over each variable and store ---*/
+            
             iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
             Data[iVar][iGlobal_Index]   = Buffer_Recv_Var[jPoint];
             jPoint++;
           }
+          
           /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
+          
           jPoint = (iProcessor+1)*nBuffer_Scalar;
         }
       }
       
       /*--- Pressure ---*/
-      // Loop over this partition to collect the current variable
+      
       jPoint = 0;
       for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
         
         /*--- Check for halos & write only if requested ---*/
+        
         if (!Local_Halo[iPoint] || Wrt_Halo) {
           
           /*--- Load buffers with the Mach number variables. ---*/
+          
           Buffer_Send_Var[jPoint] = solver[TNE2_SOL]->node[iPoint]->GetPressure();
           jPoint++;
         }
       }
       
       /*--- Gather the data on the master node. ---*/
-
+      
+#ifdef HAVE_MPI
       MPI_Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+#else
+      for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Var[iPoint] = Buffer_Send_Var[iPoint];
+#endif
       
       /*--- The master node unpacks and sorts this variable by global index ---*/
+      
       if (rank == MASTER_NODE) {
         jPoint = 0;
         iVar = iVar_Press;
-        for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+        for (iProcessor = 0; iProcessor < size; iProcessor++) {
           for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
             
             /*--- Get global index, then loop over each variable and store ---*/
+            
             iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
             Data[iVar][iGlobal_Index]   = Buffer_Recv_Var[jPoint];
             jPoint++;
           }
+          
           /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
+          
           jPoint = (iProcessor+1)*nBuffer_Scalar;
         }
       }
       
       /*--- Temperature ---*/
-      // Loop over this partition to collect the current variable
+      
       jPoint = 0;
       for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
         
         /*--- Check for halos & write only if requested ---*/
+        
         if (!Local_Halo[iPoint] || Wrt_Halo) {
           
           /*--- Load buffers with the Mach number variables. ---*/
+          
           Buffer_Send_Var[jPoint] = solver[TNE2_SOL]->node[iPoint]->GetTemperature();
           jPoint++;
         }
       }
       
       /*--- Gather the data on the master node. ---*/
-
+      
+#ifdef HAVE_MPI
       MPI_Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+#else
+      for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Var[iPoint] = Buffer_Send_Var[iPoint];
+#endif
       
       /*--- The master node unpacks and sorts this variable by global index ---*/
+      
       if (rank == MASTER_NODE) {
         jPoint = 0;
         iVar = iVar_Temp;
-        for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+        for (iProcessor = 0; iProcessor < size; iProcessor++) {
           for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
             
             /*--- Get global index, then loop over each variable and store ---*/
+            
             iGlobal_Index             = Buffer_Recv_GlobalIndex[jPoint];
             Data[iVar][iGlobal_Index] = Buffer_Recv_Var[jPoint];
             jPoint++;
           }
+          
           /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
+          
           jPoint = (iProcessor+1)*nBuffer_Scalar;
         }
       }
       
       /*--- Vib-el Temperature ---*/
-      // Loop over this partition to collect the current variable
+      
       jPoint = 0;
       for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
         
         /*--- Check for halos & write only if requested ---*/
+        
         if (!Local_Halo[iPoint] || Wrt_Halo) {
           
           /*--- Load buffers with the Mach number variables. ---*/
+          
           Buffer_Send_Var[jPoint] = solver[TNE2_SOL]->node[iPoint]->GetTemperature_ve();
           jPoint++;
         }
       }
       
       /*--- Gather the data on the master node. ---*/
-
+      
+#ifdef HAVE_MPI
       MPI_Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+#else
+      for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Var[iPoint] = Buffer_Send_Var[iPoint];
+#endif
       
       /*--- The master node unpacks and sorts this variable by global index ---*/
+      
       if (rank == MASTER_NODE) {
         jPoint = 0;
         iVar = iVar_Tempv;
-        for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+        for (iProcessor = 0; iProcessor < size; iProcessor++) {
           for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
             
             /*--- Get global index, then loop over each variable and store ---*/
+            
             iGlobal_Index             = Buffer_Recv_GlobalIndex[jPoint];
             Data[iVar][iGlobal_Index] = Buffer_Recv_Var[jPoint];
             jPoint++;
           }
+          
           /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
+          
           jPoint = (iProcessor+1)*nBuffer_Scalar;
         }
       }
     }
     
     if (Kind_Solver == TNE2_NAVIER_STOKES) {
+      
       /*--- Species diffusion coefficients ---*/
-      // Loop over this partition to collect the current variable
+
       for (unsigned short iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++) {
         jPoint = 0;
         for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
           
           /*--- Check for halos & write only if requested ---*/
+          
           if (!Local_Halo[iPoint] || Wrt_Halo) {
             
             /*--- Load buffers with the Mach number variables. ---*/
+            
             Buffer_Send_Var[jPoint] = solver[TNE2_SOL]->node[iPoint]->GetDiffusionCoeff()[iSpecies];
             jPoint++;
           }
         }
         
         /*--- Gather the data on the master node. ---*/
-
+        
+#ifdef HAVE_MPI
         MPI_Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+#else
+        for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Var[iPoint] = Buffer_Send_Var[iPoint];
+#endif
         
         /*--- The master node unpacks and sorts this variable by global index ---*/
+        
         if (rank == MASTER_NODE) {
           jPoint = 0;
           iVar = iVar_TempLam+iSpecies;
-          for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+          for (iProcessor = 0; iProcessor < size; iProcessor++) {
             for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
               
               /*--- Get global index, then loop over each variable and store ---*/
+              
               iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
               Data[iVar][iGlobal_Index]   = Buffer_Recv_Var[jPoint];
               jPoint++;
             }
+            
             /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
+            
             jPoint = (iProcessor+1)*nBuffer_Scalar;
           }
         }
       }
       
       /*--- Laminar viscosity ---*/
-      // Loop over this partition to collect the current variable
+      
       jPoint = 0;
       for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
         
         /*--- Check for halos & write only if requested ---*/
+        
         if (!Local_Halo[iPoint] || Wrt_Halo) {
           
           /*--- Load buffers with the Mach number variables. ---*/
+          
           Buffer_Send_Var[jPoint] = solver[TNE2_SOL]->node[iPoint]->GetLaminarViscosity();
           jPoint++;
         }
       }
       
       /*--- Gather the data on the master node. ---*/
-
+      
+#ifdef HAVE_MPI
       MPI_Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+#else
+      for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Var[iPoint] = Buffer_Send_Var[iPoint];
+#endif
       
       /*--- The master node unpacks and sorts this variable by global index ---*/
+      
       if (rank == MASTER_NODE) {
         jPoint = 0;
         iVar = iVar_TempLam+config->GetnSpecies();
-        for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+        for (iProcessor = 0; iProcessor < size; iProcessor++) {
           for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
             
             /*--- Get global index, then loop over each variable and store ---*/
+            
             iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
             Data[iVar][iGlobal_Index]   = Buffer_Recv_Var[jPoint];
             jPoint++;
           }
           /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
+          
           jPoint = (iProcessor+1)*nBuffer_Scalar;
         }
       }
       
       /*--- Thermal conductivity ---*/
-      // Loop over this partition to collect the current variable
+
       jPoint = 0;
       for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
         
         /*--- Check for halos & write only if requested ---*/
+        
         if (!Local_Halo[iPoint] || Wrt_Halo) {
           
           /*--- Load buffers with the Mach number variables. ---*/
+          
           Buffer_Send_Var[jPoint] = solver[TNE2_SOL]->node[iPoint]->GetThermalConductivity();
           jPoint++;
         }
       }
       
       /*--- Gather the data on the master node. ---*/
-
+      
+#ifdef HAVE_MPI
       MPI_Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+#else
+      for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Var[iPoint] = Buffer_Send_Var[iPoint];
+#endif
       
       /*--- The master node unpacks and sorts this variable by global index ---*/
+      
       if (rank == MASTER_NODE) {
         jPoint = 0;
         iVar = iVar_TempLam+config->GetnSpecies()+1;
-        for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+        for (iProcessor = 0; iProcessor < size; iProcessor++) {
           for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
             
             /*--- Get global index, then loop over each variable and store ---*/
+            
             iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
             Data[iVar][iGlobal_Index]   = Buffer_Recv_Var[jPoint];
             jPoint++;
           }
+          
           /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
+          
           jPoint = (iProcessor+1)*nBuffer_Scalar;
         }
       }
       
       /*--- Vib-el Thermal conductivity ---*/
-      // Loop over this partition to collect the current variable
+      
       jPoint = 0;
       for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
         
         /*--- Check for halos & write only if requested ---*/
+        
         if (!Local_Halo[iPoint] || Wrt_Halo) {
           
           /*--- Load buffers with the Mach number variables. ---*/
+          
           Buffer_Send_Var[jPoint] = solver[TNE2_SOL]->node[iPoint]->GetThermalConductivity_ve();
           jPoint++;
         }
       }
       
       /*--- Gather the data on the master node. ---*/
-
+      
+#ifdef HAVE_MPI
       MPI_Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+#else
+      for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Var[iPoint] = Buffer_Send_Var[iPoint];
+#endif
       
       /*--- The master node unpacks and sorts this variable by global index ---*/
+      
       if (rank == MASTER_NODE) {
         jPoint = 0;
         iVar = iVar_TempLam+config->GetnSpecies()+2;
-        for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+        for (iProcessor = 0; iProcessor < size; iProcessor++) {
           for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
             
             /*--- Get global index, then loop over each variable and store ---*/
+            
             iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
             Data[iVar][iGlobal_Index]   = Buffer_Recv_Var[jPoint];
             jPoint++;
           }
+          
           /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
+          
           jPoint = (iProcessor+1)*nBuffer_Scalar;
         }
       }
@@ -3468,6 +3076,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         }
       
       /*--- Loop over this partition to collect the current variable ---*/
+      
       jPoint = 0;
       for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
         
@@ -3488,29 +3097,39 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       }
       
       /*--- Gather the data on the master node. ---*/
-
+      
+#ifdef HAVE_MPI
       MPI_Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
       MPI_Gather(Buffer_Send_Res, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Res, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+#else
+      for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Var[iPoint] = Buffer_Send_Var[iPoint];
+      for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Res[iPoint] = Buffer_Send_Res[iPoint];
+#endif
       
       /*--- The master node unpacks and sorts this variable by global index ---*/
+      
       if (rank == MASTER_NODE) {
         jPoint = 0; iVar = iVar_Sens;
-        for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+        for (iProcessor = 0; iProcessor < size; iProcessor++) {
           for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
             
             /*--- Get global index, then loop over each variable and store ---*/
+            
             iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
             Data[iVar+0][iGlobal_Index] = Buffer_Recv_Var[jPoint];
             Data[iVar+1][iGlobal_Index] = Buffer_Recv_Res[jPoint];
             jPoint++;
           }
+          
           /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
+          
           jPoint = (iProcessor+1)*nBuffer_Scalar;
         }
       }
     }
     
     /*--- Communicate the Linear elasticity ---*/
+    
     if ( Kind_Solver == LINEAR_ELASTICITY ) {
       
       /*--- Loop over this partition to collect the current variable ---*/
@@ -3522,6 +3141,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         if (!Local_Halo[iPoint] || Wrt_Halo) {
           
           /*--- Load buffers with the temperature and laminar viscosity variables. ---*/
+          
           Buffer_Send_Var[jPoint] = solver[FEA_SOL]->node[iPoint]->GetVonMises_Stress();
           Buffer_Send_Res[jPoint] = solver[FEA_SOL]->node[iPoint]->GetFlow_Pressure();
           jPoint++;
@@ -3529,22 +3149,30 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       }
       
       /*--- Gather the data on the master node. ---*/
-
+      
+#ifdef HAVE_MPI
       MPI_Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+#else
+      for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Var[iPoint] = Buffer_Send_Var[iPoint];
+#endif
       
       /*--- The master node unpacks and sorts this variable by global index ---*/
+      
       if (rank == MASTER_NODE) {
         jPoint = 0; iVar = iVar_FEA;
-        for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+        for (iProcessor = 0; iProcessor < size; iProcessor++) {
           for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
             
             /*--- Get global index, then loop over each variable and store ---*/
+            
             iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
             Data[iVar][iGlobal_Index] = Buffer_Recv_Var[jPoint];
             Data[iVar+1][iGlobal_Index] = Buffer_Recv_Res[jPoint];
             jPoint++;
           }
+          
           /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
+          
           jPoint = (iProcessor+1)*nBuffer_Scalar;
         }
       }
@@ -3564,6 +3192,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
           if (!Local_Halo[iPoint] || Wrt_Halo) {
             
             /*--- Get this variable into the temporary send buffer. ---*/
+            
             if (Kind_Solver == RANS) {
               Buffer_Send_Var[jPoint] = solver[TURB_SOL]->OutputVariables[iPoint*nVar_Extra+jVar];
             }
@@ -3576,21 +3205,29 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         }
         
         /*--- Gather the data on the master node. ---*/
-
+        
+#ifdef HAVE_MPI
         MPI_Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+#else
+        for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Var[iPoint] = Buffer_Send_Var[iPoint];
+#endif
         
         /*--- The master node unpacks and sorts this variable by global index ---*/
+        
         if (rank == MASTER_NODE) {
           jPoint = 0; iVar = iVar_Extra;
-          for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+          for (iProcessor = 0; iProcessor < size; iProcessor++) {
             for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
               
               /*--- Get global index, then loop over each variable and store ---*/
+              
               iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
               Data[iVar+jVar][iGlobal_Index] = Buffer_Recv_Var[jPoint];
               jPoint++;
             }
+            
             /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
+            
             jPoint = (iProcessor+1)*nBuffer_Scalar;
           }
         }
@@ -3611,8 +3248,6 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     delete [] Buffer_Recv_Vol;
     delete [] Buffer_Recv_GlobalIndex;
   }
-  
-#endif
   
   /*--- Release memory needed for surface coefficients ---*/
   
