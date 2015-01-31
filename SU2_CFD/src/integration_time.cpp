@@ -871,19 +871,19 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ***geometry, CSolver
   
   Convergence_Monitoring(geometry[iZone][MESH_0], config[iZone], Iteration, monitor);
   
-  /*--- Copy the solution to the coarse levels, and run the post-processing ---*/
+  /*--- If turbulence model, copy the eddy viscosity to the coarse levels ---*/
   
-  for (iMesh = 0; iMesh < config[iZone]->GetMGLevels(); iMesh++) {
-    SetRestricted_Solution(RunTime_EqSystem, solver_container[iZone][iMesh][SolContainer_Position], solver_container[iZone][iMesh+1][SolContainer_Position], geometry[iZone][iMesh], geometry[iZone][iMesh+1], config[iZone]);
-    solver_container[iZone][iMesh+1][SolContainer_Position]->Postprocessing(geometry[iZone][iMesh+1],
-                                                                            solver_container[iZone][iMesh+1], config[iZone], iMesh+1);
+  if (RunTime_EqSystem == RUNTIME_TURB_SYS) {
+    for (iMesh = 0; iMesh < config[iZone]->GetMGLevels(); iMesh++) {
+      SetRestricted_EddyVisc(RunTime_EqSystem, solver_container[iZone][iMesh][SolContainer_Position], solver_container[iZone][iMesh+1][SolContainer_Position], geometry[iZone][iMesh], geometry[iZone][iMesh+1], config[iZone]);
+    }
   }
   
 }
 
 void CSingleGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) {
-  unsigned long iVertex, Point_Fine, Point_Coarse;
-  unsigned short iMarker, iVar, iChildren;
+  unsigned long Point_Fine, Point_Coarse;
+  unsigned short iVar, iChildren;
   double Area_Parent, Area_Children, *Solution_Fine, *Solution;
   
   unsigned short nVar = sol_coarse->GetnVar();
@@ -914,26 +914,54 @@ void CSingleGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSys
   
   sol_coarse->Set_MPI_Solution(geo_coarse, config);
   
-  /*--- Update solution at the no slip wall boundary, only the first 
-   variable (nu_tilde -in SA and SA_NEG- and k -in SST-), to guarantee that the eddy viscoisty 
+  delete [] Solution;
+  
+}
+
+void CSingleGridIntegration::SetRestricted_EddyVisc(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) {
+  
+  unsigned long iVertex, Point_Fine, Point_Coarse;
+  unsigned short iMarker, iChildren;
+  double Area_Parent, Area_Children, EddyVisc_Fine, EddyVisc;
+  
+  /*--- Compute coarse Eddy Viscosity from fine solution ---*/
+  
+  for (Point_Coarse = 0; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
+    Area_Parent = geo_coarse->node[Point_Coarse]->GetVolume();
+    
+    EddyVisc = 0.0;
+    
+    for (iChildren = 0; iChildren < geo_coarse->node[Point_Coarse]->GetnChildren_CV(); iChildren++) {
+      Point_Fine = geo_coarse->node[Point_Coarse]->GetChildren_CV(iChildren);
+      Area_Children = geo_fine->node[Point_Fine]->GetVolume();
+      EddyVisc_Fine = sol_fine->node[Point_Fine]->GetmuT();
+      EddyVisc += EddyVisc_Fine*Area_Children/Area_Parent;
+    }
+    
+    sol_coarse->node[Point_Coarse]->SetmuT(EddyVisc);
+    
+  }
+  
+  /*--- Update solution at the no slip wall boundary, only the first
+   variable (nu_tilde -in SA and SA_NEG- and k -in SST-), to guarantee that the eddy viscoisty
    is zero on the surface ---*/
   
-  if (RunTime_EqSystem == RUNTIME_TURB_SYS) {
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX              ) ||
-          (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_CATALYTIC    ) ||
-          (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_NONCATALYTIC ) ||
-          (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             ) ||
-          (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_CATALYTIC   ) ||
-          (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_NONCATALYTIC)) {
-        for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
-          Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
-          sol_coarse->node[Point_Coarse]->SetSolutionZero(0);
-        }
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX              ) ||
+        (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_CATALYTIC    ) ||
+        (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_NONCATALYTIC ) ||
+        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             ) ||
+        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_CATALYTIC   ) ||
+        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_NONCATALYTIC)) {
+      for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
+        Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
+        sol_coarse->node[Point_Coarse]->SetmuT(0);
       }
     }
   }
+
+  /*--- MPI the new interpolated solution (this also includes the eddy viscosity) ---*/
   
-  delete [] Solution;
+  sol_coarse->Set_MPI_Solution(geo_coarse, config);
   
 }

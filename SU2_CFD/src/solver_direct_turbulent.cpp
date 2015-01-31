@@ -33,11 +33,10 @@
 
 CTurbSolver::CTurbSolver(void) : CSolver() {
   
-  /*--- Array initialization ---*/
   FlowPrimVar_i = NULL;
   FlowPrimVar_j = NULL;
-  lowerlimit = NULL;
-  upperlimit = NULL;
+  lowerlimit    = NULL;
+  upperlimit    = NULL;
   
 }
 
@@ -46,11 +45,10 @@ CTurbSolver::CTurbSolver(CConfig *config) : CSolver() {
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
   
-  /*--- Array initialization ---*/
   FlowPrimVar_i = NULL;
   FlowPrimVar_j = NULL;
-  lowerlimit = NULL;
-  upperlimit = NULL;
+  lowerlimit    = NULL;
+  upperlimit    = NULL;
   
 }
 
@@ -672,7 +670,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
       case SA: case SA_NEG: case ML:
         
         for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-          node[iPoint]->AddClippedSolution(0, config->GetRelaxation_Factor_Turb()*LinSysSol[iPoint], lowerlimit[0], upperlimit[0]);
+          node[iPoint]->AddSolution(0, config->GetRelaxation_Factor_Turb()*LinSysSol[iPoint]);
         }
         
         break;
@@ -1085,14 +1083,6 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
     }
     
   }
-  
-  /*--- Initialize lower and upper limits--- */
-  
-  lowerlimit = new double[nVar];
-  upperlimit = new double[nVar];
-  
-  lowerlimit[0] = 1.0e-10;
-  upperlimit[0] = 1.0e+10;
   
   /*--- Read farfield conditions from config ---*/
   
