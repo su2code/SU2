@@ -1171,7 +1171,7 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
       if (!isHalo) {
         nElem_Total++;
         for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
-          Conn_Elem[jNode] = (int)geometry->elem[iElem]->GetNode(iNode) + 1;
+          Conn_Elem[jNode] = (int)geometry->node[geometry->elem[iElem]->GetNode(iNode)]->GetGlobalIndex() + 1;
           
           /*--- Increment jNode as the counter. ---*/
           
@@ -2261,9 +2261,11 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   
   /*--- Loop over all points in the mesh, but only write data
    for nodes in the domain (includes original periodic nodes). ---*/
-  jPoint = 0;
+  unsigned long jPoint_ = 0;
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
     
+    jPoint = geometry->node[jPoint_]->GetGlobalIndex();
+
     /*--- Check for halo nodes & only write if requested ---*/
     
     if (!Local_Halo[iPoint]) {
@@ -2529,7 +2531,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     
     /*--- Increment jPoint as the counter. We need this because iPoint
      may include halo nodes that we skip over during this loop. ---*/
-    jPoint++;
+    jPoint_++;
     
   }
   
