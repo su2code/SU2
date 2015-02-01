@@ -467,6 +467,7 @@ private:
 	unsigned short Axis_Orientation;	/*!< \brief Axis orientation. */
 	unsigned short Mesh_FileFormat;	/*!< \brief Mesh input format. */
 	unsigned short Output_FileFormat;	/*!< \brief Format of the output files. */
+  bool CFL_Adapt;      /*!< \brief Adaptive CFL number. */
 	double RefAreaCoeff,		/*!< \brief Reference area for coefficient computation. */
 	RefElemLength,				/*!< \brief Reference element length for computing the slope limiting epsilon. */
 	RefSharpEdges,				/*!< \brief Reference coefficient for detecting sharp edges. */
@@ -475,7 +476,7 @@ private:
   *RefOriginMoment_X,      /*!< \brief X Origin for moment computation. */
   *RefOriginMoment_Y,      /*!< \brief Y Origin for moment computation. */
   *RefOriginMoment_Z,      /*!< \brief Z Origin for moment computation. */
-  *CFLAdapt,      /*!< \brief Information about the CFL ramp. */
+  *CFL_AdaptParam,      /*!< \brief Information about the CFL ramp. */
   *CFL,
 	DomainVolume;		/*!< \brief Volume of the computational grid. */
   unsigned short nRefOriginMoment_X,    /*!< \brief Number of X-coordinate moment computation origins. */
@@ -1145,8 +1146,14 @@ public:
    * \brief Get the values of the CFL adapation.
    * \return Value of CFL adapation
    */
-  double GetCFLAdapt(unsigned short val_index);
-
+  double GetCFL_AdaptParam(unsigned short val_index);
+  
+  /*!
+   * \brief Get the values of the CFL adapation.
+   * \return Value of CFL adapation
+   */
+  bool GetCFL_Adapt(void);
+  
   /*!
 	 * \brief Get the value of the limits for the sections.
 	 * \return Value of the limits for the sections.

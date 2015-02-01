@@ -306,13 +306,9 @@ int main(int argc, char *argv[]) {
   
   while (ExtIter < config_container[ZONE_0]->GetnExtIter()) {
     
-    /*--- Set a timer for each iteration. Store the current iteration and
-     update  the value of the CFL number (if there is CFL ramping specified)
-     in the config class. ---*/
+    /*--- Set the value of the external iteration. ---*/
     
-    for (iZone = 0; iZone < nZone; iZone++) {
-      config_container[iZone]->SetExtIter(ExtIter);
-    }
+    config_container[ZONE_0]->SetExtIter(ExtIter);
     
     /*--- Read the target pressure ---*/
     
@@ -327,6 +323,7 @@ int main(int argc, char *argv[]) {
                                     geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
     
     /*--- Perform a single iteration of the chosen PDE solver. ---*/
+    
     switch (config_container[ZONE_0]->GetKind_Solver()) {
         
       case EULER: case NAVIER_STOKES: case RANS:
@@ -417,7 +414,9 @@ int main(int argc, char *argv[]) {
     
     /*--- Evaluate the new CFL number (adaptive). ---*/
     
-    output->SetCFL_Number(solver_container, config_container, ZONE_0);
+    if (config_container[ZONE_0]->GetCFL_Adapt() == YES) {
+      output->SetCFL_Number(solver_container, config_container, ZONE_0);
+    }
     
     /*--- Check whether the current simulation has reached the specified
      convergence criteria, and set StopCalc to true, if so. ---*/
