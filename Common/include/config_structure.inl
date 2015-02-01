@@ -29,6 +29,8 @@
 
 #pragma once
 
+inline double CConfig::GetCFLAdapt(unsigned short val_index) { return CFLAdapt[val_index]; }
+
 inline void CConfig::SetInflow_Mach(unsigned short val_imarker, double val_fanface_mach) { Inflow_Mach[val_imarker] = val_fanface_mach; }
 
 inline void CConfig::SetInflow_Pressure(unsigned short val_imarker, double val_fanface_pressure) { Inflow_Pressure[val_imarker] = val_fanface_pressure; }
@@ -354,9 +356,9 @@ inline void CConfig::SetAoS(double val_AoS) { AoS = val_AoS; }
 
 inline double CConfig::GetAoS(void) { return AoS; }
 
-inline unsigned short CConfig::GetMGLevels(void) { return nMultiLevel; }
+inline unsigned short CConfig::GetnMGLevels(void) { return nMGLevels; }
 
-inline void CConfig::SetMGLevels(unsigned short val_nMultiLevel) { nMultiLevel = val_nMultiLevel; }
+inline void CConfig::SetMGLevels(unsigned short val_nMGLevels) { nMGLevels = val_nMGLevels; }
 
 inline unsigned short CConfig::GetFinestMesh(void) { return FinestMesh; }
 

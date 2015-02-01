@@ -190,7 +190,7 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
       
 			/*--- Update dual time solver on all mesh levels ---*/
       
-			for (iMesh = 0; iMesh <= config_container[iZone]->GetMGLevels(); iMesh++) {
+			for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++) {
 				integration_container[iZone][FLOW_SOL]->SetDualTime_Solver(geometry_container[iZone][iMesh], solver_container[iZone][iMesh][FLOW_SOL], config_container[iZone]);
 				integration_container[iZone][FLOW_SOL]->SetConvergence(false);
 			}
@@ -307,7 +307,7 @@ void AdjMeanFlowIteration(COutput *output, CIntegration ***integration_container
       
 			/*--- Set contribution from cost function for boundary conditions ---*/
       
-      for (iMesh = 0; iMesh <= config_container[iZone]->GetMGLevels(); iMesh++) {
+      for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++) {
         
         /*--- Set the value of the non-dimensional coefficients in the coarse levels, using the fine level solution ---*/
         
@@ -394,7 +394,7 @@ void AdjMeanFlowIteration(COutput *output, CIntegration ***integration_container
       
 			/*--- Update dual time solver ---*/
       
-			for (iMesh = 0; iMesh <= config_container[iZone]->GetMGLevels(); iMesh++) {
+			for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++) {
 				integration_container[iZone][ADJFLOW_SOL]->SetDualTime_Solver(geometry_container[iZone][iMesh], solver_container[iZone][iMesh][ADJFLOW_SOL], config_container[iZone]);
 				integration_container[iZone][ADJFLOW_SOL]->SetConvergence(false);
 			}
@@ -514,7 +514,7 @@ void AdjTNE2Iteration(COutput *output, CIntegration ***integration_container,
                                                                           config_container[iZone]);
       
 			/*--- Set contribution from cost function for boundary conditions ---*/
-      for (iMesh = 0; iMesh <= config_container[iZone]->GetMGLevels(); iMesh++) {
+      for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++) {
         
         /*--- Set the value of the non-dimensional coefficients in the coarse
          levels, using the fine level solution ---*/
@@ -584,7 +584,7 @@ void WaveIteration(COutput *output, CIntegration ***integration_container, CGeom
 			}
       
 			/*--- Update dual time solver ---*/
-			for (iMesh = 0; iMesh <= config_container[iZone]->GetMGLevels(); iMesh++) {
+			for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++) {
 				integration_container[iZone][WAVE_SOL]->SetDualTime_Solver(geometry_container[iZone][iMesh], solver_container[iZone][iMesh][WAVE_SOL], config_container[iZone]);
 				integration_container[iZone][WAVE_SOL]->SetConvergence(false);
 			}
@@ -631,7 +631,7 @@ void HeatIteration(COutput *output, CIntegration ***integration_container, CGeom
 			}
       
 			/*--- Update dual time solver ---*/
-			for (iMesh = 0; iMesh <= config_container[iZone]->GetMGLevels(); iMesh++) {
+			for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++) {
 				integration_container[iZone][HEAT_SOL]->SetDualTime_Solver(geometry_container[iZone][iMesh], solver_container[iZone][iMesh][HEAT_SOL], config_container[iZone]);
 				integration_container[iZone][HEAT_SOL]->SetConvergence(false);
 			}
@@ -713,7 +713,7 @@ void FEAIteration(COutput *output, CIntegration ***integration_container, CGeome
 			}
       
 			/*--- Update dual time solver ---*/
-			for (iMesh = 0; iMesh <= config_container[iZone]->GetMGLevels(); iMesh++) {
+			for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++) {
 				integration_container[iZone][FEA_SOL]->SetDualTime_Solver(geometry_container[iZone][iMesh], solver_container[iZone][iMesh][FEA_SOL], config_container[iZone]);
 				integration_container[iZone][FEA_SOL]->SetConvergence(false);
 			}
@@ -790,7 +790,7 @@ void FluidStructureIteration(COutput *output, CIntegration ***integration_contai
 		}
     
 		/*--- Set convergence the global convergence criteria to false, and dual time solution ---*/
-		for (iMesh = 0; iMesh <= config_container[ZONE_0]->GetMGLevels(); iMesh++) {
+		for (iMesh = 0; iMesh <= config_container[ZONE_0]->GetnMGLevels(); iMesh++) {
 			integration_container[ZONE_0][FLOW_SOL]->SetDualTime_Solver(geometry_container[ZONE_0][iMesh], solver_container[ZONE_0][iMesh][FLOW_SOL], config_container[ZONE_0]);
 			integration_container[ZONE_0][FLOW_SOL]->SetConvergence(false);
 		}
@@ -834,7 +834,7 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
   unsigned short iDim;
   unsigned short nDim = geometry_container[MESH_0]->GetnDim();
   unsigned long iPoint;
-  unsigned short iMGlevel, nMGlevel = config_container->GetMGLevels();
+  unsigned short iMGlevel, nMGlevel = config_container->GetnMGLevels();
 
   double x, y, x_gust, dgust_dx, dgust_dy, dgust_dt;
   double *Gust, *GridVel;
@@ -1032,7 +1032,7 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
                       CVolumetricMovement *grid_movement, CFreeFormDefBox **FFDBox,
                       CSolver ***solver_container, CConfig *config_container, unsigned short iZone, unsigned long IntIter, unsigned long ExtIter)   {
   
-  unsigned short iDim, iMGlevel, nMGlevels = config_container->GetMGLevels();
+  unsigned short iDim, iMGlevel, nMGlevels = config_container->GetnMGLevels();
 	unsigned short Kind_Grid_Movement = config_container->GetKind_GridMovement(iZone);
   unsigned long iPoint;
   bool adjoint = config_container->GetAdjoint();
@@ -1398,7 +1398,7 @@ void SetTimeSpectral(CGeometry ***geometry_container, CSolver ****solver_contain
   
   /*--- Compute various source terms for explicit direct, implicit direct, and adjoint problems ---*/
   /*--- Loop over all grid levels ---*/
-  for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetMGLevels(); iMGlevel++) {
+  for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetnMGLevels(); iMGlevel++) {
     
     /*--- Loop over each node in the volume mesh ---*/
     for (iPoint = 0; iPoint < geometry_container[ZONE_0][iMGlevel]->GetnPoint(); iPoint++) {
@@ -1452,7 +1452,7 @@ void SetTimeSpectral(CGeometry ***geometry_container, CSolver ****solver_contain
   }
   
 	//	/*--- Loop over all grid levels ---*/
-	//	for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetMGLevels(); iMGlevel++) {
+	//	for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetnMGLevels(); iMGlevel++) {
 	//
 	//		/*--- Loop over each node in the volume mesh ---*/
 	//		for (iPoint = 0; iPoint < geometry_container[ZONE_0][iMGlevel]->GetnPoint(); iPoint++) {
@@ -1681,7 +1681,7 @@ void SetTimeSpectral_Velocities(CGeometry ***geometry_container,
 	double *fitted_velocities = new double [nZone];
   
 	/*--- Loop over all grid levels ---*/
-	for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetMGLevels(); iMGlevel++) {
+	for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetnMGLevels(); iMGlevel++) {
     
 		/*--- Loop over each node in the volume mesh ---*/
 		for (iPoint = 0; iPoint < geometry_container[ZONE_0][iMGlevel]->GetnPoint(); iPoint++) {

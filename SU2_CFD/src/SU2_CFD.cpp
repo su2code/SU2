@@ -139,7 +139,7 @@ int main(int argc, char *argv[]) {
       
     }
     
-    geometry_container[iZone] = new CGeometry *[config_container[iZone]->GetMGLevels()+1];
+    geometry_container[iZone] = new CGeometry *[config_container[iZone]->GetnMGLevels()+1];
     
     /*--- Allocate the memory of the current domain, and
      divide the grid between the nodes ---*/
@@ -188,7 +188,7 @@ int main(int argc, char *argv[]) {
     
     /*--- Set the near-field, interface and actuator disk boundary conditions, if necessary. ---*/
     
-    for (iMesh = 0; iMesh <= config_container[iZone]->GetMGLevels(); iMesh++) {
+    for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++) {
       geometry_container[iZone][iMesh]->MatchNearField(config_container[iZone]);
       geometry_container[iZone][iMesh]->MatchInterface(config_container[iZone]);
       geometry_container[iZone][iMesh]->MatchActuator_Disk(config_container[iZone]);
@@ -201,11 +201,11 @@ int main(int argc, char *argv[]) {
      fluxes, loops over the nodes to compute source terms, and routines for
      imposing various boundary condition type for the PDE. ---*/
     
-    solver_container[iZone] = new CSolver** [config_container[iZone]->GetMGLevels()+1];
-    for (iMesh = 0; iMesh <= config_container[iZone]->GetMGLevels(); iMesh++)
+    solver_container[iZone] = new CSolver** [config_container[iZone]->GetnMGLevels()+1];
+    for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++)
       solver_container[iZone][iMesh] = NULL;
     
-    for (iMesh = 0; iMesh <= config_container[iZone]->GetMGLevels(); iMesh++) {
+    for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++) {
       solver_container[iZone][iMesh] = new CSolver* [MAX_SOLS];
       for (iSol = 0; iSol < MAX_SOLS; iSol++)
         solver_container[iZone][iMesh][iSol] = NULL;
@@ -235,7 +235,7 @@ int main(int argc, char *argv[]) {
      data structure (centered, upwind, galerkin), as well as any source terms
      (piecewise constant reconstruction) evaluated in each dual mesh volume. ---*/
     
-    numerics_container[iZone] = new CNumerics***[config_container[iZone]->GetMGLevels()+1];
+    numerics_container[iZone] = new CNumerics***[config_container[iZone]->GetnMGLevels()+1];
     Numerics_Preprocessing(numerics_container[iZone], solver_container[iZone],
                            geometry_container[iZone], config_container[iZone], iZone);
     
@@ -312,7 +312,6 @@ int main(int argc, char *argv[]) {
     
     for (iZone = 0; iZone < nZone; iZone++) {
       config_container[iZone]->SetExtIter(ExtIter);
-      config_container[iZone]->UpdateCFL(ExtIter);
     }
     
     /*--- Read the target pressure ---*/
@@ -415,6 +414,10 @@ int main(int argc, char *argv[]) {
 
     output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container,
                                    config_container, integration_container, false, UsedTime, ZONE_0);
+    
+    /*--- Evaluate the new CFL number (adaptive). ---*/
+    
+    output->SetCFL_Number(solver_container, config_container, ZONE_0);
     
     /*--- Check whether the current simulation has reached the specified
      convergence criteria, and set StopCalc to true, if so. ---*/

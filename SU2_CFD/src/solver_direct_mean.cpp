@@ -2535,7 +2535,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
 
   if (freesurface) {
 
-    for (iMesh = 0; iMesh <= config->GetMGLevels(); iMesh++) {
+    for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
 
       for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
 
@@ -2629,7 +2629,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
   if (incompressible && gravity ) {
     
 
-	 for (iMesh = 0; iMesh <= config->GetMGLevels(); iMesh++) {
+	 for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
 
       for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
 
@@ -2683,7 +2683,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
       double Temperature_Box = config->GetTemperature_FreeStream();
       double Mach2Vel_Box = sqrt(Gamma*Gas_Constant*Temperature_Box);
 
-      for (iMesh = 0; iMesh <= config->GetMGLevels(); iMesh++) {
+      for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
 
         for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
 
@@ -2766,7 +2766,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
   if (restart && (ExtIter == 0)) {
     
     Solution = new double[nVar];
-    for (iMesh = 1; iMesh <= config->GetMGLevels(); iMesh++) {
+    for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
       for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
         Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
         for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
@@ -2790,7 +2790,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
       
       unsigned short nVar_Turb = solver_container[MESH_0][TURB_SOL]->GetnVar();
       Solution = new double[nVar_Turb];
-      for (iMesh = 1; iMesh <= config->GetMGLevels(); iMesh++) {
+      for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
         for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
           Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
           for (iVar = 0; iVar < nVar_Turb; iVar++) Solution[iVar] = 0.0;
@@ -2819,7 +2819,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
     /*--- Push back the initial condition to previous solution containers
      for a 1st-order restart or when simply intitializing to freestream. ---*/
     
-    for (iMesh = 0; iMesh <= config->GetMGLevels(); iMesh++) {
+    for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
       for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
         solver_container[iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n();
         solver_container[iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n1();
@@ -2843,7 +2843,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
 
       /*--- Push back this new solution to time level N. ---*/
       
-      for (iMesh = 0; iMesh <= config->GetMGLevels(); iMesh++) {
+      for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
         for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
           solver_container[iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n();
           if (rans) {
@@ -9854,7 +9854,7 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
 
   /*--- Interpolate the solution down to the coarse multigrid levels ---*/
   
-  for (iMesh = 1; iMesh <= config->GetMGLevels(); iMesh++) {
+  for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
     for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
       Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
       for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
@@ -9890,7 +9890,7 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
     /*--- Update the multigrid structure after setting up the finest grid,
      including computing the grid velocities on the coarser levels. ---*/
 
-    for (iMesh = 1; iMesh <= config->GetMGLevels(); iMesh++) {
+    for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
       iMeshFine = iMesh-1;
       geometry[iMesh]->SetControlVolume(config,geometry[iMeshFine], UPDATE);
       geometry[iMesh]->SetBoundControlVolume(config,geometry[iMeshFine],UPDATE);

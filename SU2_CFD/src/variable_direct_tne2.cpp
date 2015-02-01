@@ -151,7 +151,7 @@ CTNE2EulerVariable::CTNE2EulerVariable(double val_pressure,
 	}
   
 	/*--- If using multigrid, allocate residual-smoothing vectors ---*/
-	for (iMesh = 0; iMesh <= config->GetMGLevels(); iMesh++)
+	for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
 		nMGSmooth += config->GetMG_CorrecSmooth(iMesh);
 	if (nMGSmooth > 0) {
 		Residual_Sum = new double [nVar];
@@ -332,7 +332,7 @@ CTNE2EulerVariable::CTNE2EulerVariable(double *val_solution,
 	}
   
 	/*--- If using multigrid, allocate residual-smoothing vectors ---*/
-	for (iMesh = 0; iMesh <= config->GetMGLevels(); iMesh++)
+	for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
 		nMGSmooth += config->GetMG_CorrecSmooth(iMesh);
 	if (nMGSmooth > 0) {
 		Residual_Sum = new double [nVar];

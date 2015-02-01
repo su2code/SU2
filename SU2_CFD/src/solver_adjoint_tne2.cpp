@@ -1155,7 +1155,7 @@ void CAdjTNE2EulerSolver::SetInitialCondition(CGeometry **geometry,
    all the multigrid levels, this is important with the dual time strategy ---*/
   if (restart) {
     Solution = new double[nVar];
-    for (iMesh = 1; iMesh <= config->GetMGLevels(); iMesh++) {
+    for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
       for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
         Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
         for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;

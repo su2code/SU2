@@ -66,7 +66,7 @@ CAdjTNE2EulerVariable::CAdjTNE2EulerVariable(double *val_psirho,
 	}
   
   /*--- Only for residual smoothing (multigrid) ---*/
-	for (iMesh = 0; iMesh <= config->GetMGLevels(); iMesh++)
+	for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
 		nMGSmooth += config->GetMG_CorrecSmooth(iMesh);
   
   if (nMGSmooth > 0) {
@@ -134,7 +134,7 @@ CAdjTNE2EulerVariable::CAdjTNE2EulerVariable(double *val_solution,
 	}
   
   /*--- Only for residual smoothing (multigrid) ---*/
-	for (iMesh = 0; iMesh <= config->GetMGLevels(); iMesh++)
+	for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
 		nMGSmooth += config->GetMG_CorrecSmooth(iMesh);
   
   if (nMGSmooth > 0) {
