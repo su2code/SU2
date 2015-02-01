@@ -3,7 +3,7 @@
 ## \file projection.py
 #  \brief python package for running gradient projection
 #  \author T. Lukaczyk, F. Palacios
-#  \version 3.2.7.3 "eagle"
+#  \version 3.2.8 "eagle"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
