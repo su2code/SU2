@@ -2,7 +2,7 @@
  * \file output_structure.cpp
  * \brief Main subroutines for output solver information
  * \author F. Palacios, T. Economon
- * \version 3.2.7.3 "eagle"
+ * \version 3.2.8 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -4635,7 +4635,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               for (unsigned short iMesh = FinestMesh; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++)
                 cout << "MG level: "<< iMesh << "-> Min. DT: " << solver_container[val_iZone][iMesh][FLOW_SOL]->GetMin_Delta_Time()<<
                 ". Max. DT: " << solver_container[val_iZone][iMesh][FLOW_SOL]->GetMax_Delta_Time() <<
-                ". Limit DT: " << config[val_iZone]->GetMax_DeltaTime() << "." << endl;
+                ". CFL number: " << config[val_iZone]->GetCFL(iMesh)  << "." << endl;
               break;
               
             case TNE2_EULER: case TNE2_NAVIER_STOKES:
@@ -4654,11 +4654,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             cout << endl << "Dual Time step: " << config[val_iZone]->GetDelta_UnstTimeND() << ".";
           }
         }
-        
-        cout <<"Current CFL number: ";
-        for (unsigned short iMesh = 0; iMesh < config[val_iZone]->GetnMGLevels(); iMesh++)
-          cout << config[val_iZone]->GetCFL(iMesh) <<", ";
-        cout << config[val_iZone]->GetCFL(config[val_iZone]->GetnMGLevels()) <<"."<< endl;
         
         switch (config[val_iZone]->GetKind_Solver()) {
           case EULER :                  case NAVIER_STOKES:
@@ -5432,7 +5427,7 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
     
     Breakdown_file << endl <<"-------------------------------------------------------------------------" << endl;
     Breakdown_file <<"|    ___ _   _ ___                                                      |" << endl;
-    Breakdown_file <<"|   / __| | | |_  )   Release 3.2.7.3 \"eagle\"                           |" << endl;
+    Breakdown_file <<"|   / __| | | |_  )   Release 3.2.8 \"eagle\"                             |" << endl;
     Breakdown_file <<"|   \\__ \\ |_| |/ /                                                      |" << endl;
     Breakdown_file <<"|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl;
     Breakdown_file << "|                                                                       |" << endl;

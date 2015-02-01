@@ -2,7 +2,7 @@
  * \file SU2_GEO.cpp
  * \brief Main file of the Geometry Definition Code (SU2_GEO).
  * \author F. Palacios
- * \version 3.2.7.3 "eagle"
+ * \version 3.2.8 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).

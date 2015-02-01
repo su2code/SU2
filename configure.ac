@@ -1,5 +1,5 @@
 # SU2 autoconf file
-# SU2 v3.2.7.3 "eagle"
+# SU2 v3.2.8 "eagle"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -37,7 +37,7 @@
 #
 ######################################################################################
 
-AC_INIT([SU2], [3.2.7.3], [su2code-dev@lists.stanford.edu],
+AC_INIT([SU2], [3.2.8], [su2code-dev@lists.stanford.edu],
         [SU2], [https://github.com/su2code])
 AC_PREREQ([2.59])
 AC_CONFIG_MACRO_DIR([m4])
@@ -361,7 +361,7 @@ AC_MSG_RESULT([
 
 -------------------------------------------------------------------------
 |    ___ _   _ ___                                                      |
-|   / __| | | |_  )   Release 3.2.7.3 'eagle'                             |
+|   / __| | | |_  )   Release 3.2.8 'eagle'                             |
 |   \\__ \\ |_| |/ /                                                      |
 |   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |
 |                                                                       |

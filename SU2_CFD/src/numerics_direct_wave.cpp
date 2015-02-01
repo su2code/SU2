@@ -2,7 +2,7 @@
  * \file numerics_direct_wave.cpp
  * \brief This file contains all the convective term discretization.
  * \author T. Economon
- * \version 3.2.7.3 "eagle"
+ * \version 3.2.8 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
