@@ -84,7 +84,7 @@ CEulerVariable::CEulerVariable(double val_density, double *val_velocity, double 
   
 	/*--- Only for residual smoothing (multigrid) ---*/
   
-	for (iMesh = 0; iMesh <= config->GetMGLevels(); iMesh++)
+	for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
 		nMGSmooth += config->GetMG_CorrecSmooth(iMesh);
   
 	if ((nMGSmooth > 0) || low_fidelity || freesurface) {
@@ -249,7 +249,7 @@ CEulerVariable::CEulerVariable(double *val_solution, unsigned short val_nDim, un
 	}
   
 	/*--- Only for residual smoothing (multigrid) ---*/
-	for (iMesh = 0; iMesh <= config->GetMGLevels(); iMesh++)
+	for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
 		nMGSmooth += config->GetMG_CorrecSmooth(iMesh);
   
 	if ((nMGSmooth > 0) || low_fidelity || freesurface) {

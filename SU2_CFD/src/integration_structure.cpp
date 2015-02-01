@@ -198,7 +198,7 @@ void CIntegration::Adjoint_Setup(CGeometry ***geometry, CSolver ****solver_conta
   
 	if ( ( ((RunTime_EqSystem == RUNTIME_ADJFLOW_SYS) ||
           (RunTime_EqSystem == RUNTIME_LINFLOW_SYS)) && (Iteration == 0) ) ){
-		for (iMGLevel = 0; iMGLevel <= config[iZone]->GetMGLevels(); iMGLevel++) {
+		for (iMGLevel = 0; iMGLevel <= config[iZone]->GetnMGLevels(); iMGLevel++) {
       
 			/*--- Set the time step in all the MG levels ---*/
 			solver_container[iZone][iMGLevel][FLOW_SOL]->SetTime_Step(geometry[iZone][iMGLevel], solver_container[iZone][iMGLevel], config[iZone], iMGLevel, Iteration);
@@ -210,7 +210,7 @@ void CIntegration::Adjoint_Setup(CGeometry ***geometry, CSolver ****solver_conta
 			solver_container[iZone][iMGLevel][FLOW_SOL]->SetTotal_CQ(solver_container[iZone][MESH_0][FLOW_SOL]->GetTotal_CQ());
       
 			/*--- Restrict solution and gradients to the coarse levels ---*/
-			if (iMGLevel != config[iZone]->GetMGLevels()) {
+			if (iMGLevel != config[iZone]->GetnMGLevels()) {
 				SetRestricted_Solution(RUNTIME_FLOW_SYS, solver_container[iZone][iMGLevel][FLOW_SOL], solver_container[iZone][iMGLevel+1][FLOW_SOL],
                                geometry[iZone][iMGLevel], geometry[iZone][iMGLevel+1], config[iZone]);
 				SetRestricted_Gradient(RUNTIME_FLOW_SYS, solver_container[iZone][iMGLevel][FLOW_SOL], solver_container[iZone][iMGLevel+1][FLOW_SOL],
@@ -219,7 +219,7 @@ void CIntegration::Adjoint_Setup(CGeometry ***geometry, CSolver ****solver_conta
       
 		}
   } else if ((RunTime_EqSystem == RUNTIME_ADJTNE2_SYS) && (Iteration == 0)) {
-    for (iMGLevel = 0; iMGLevel <= config[iZone]->GetMGLevels(); iMGLevel++) {
+    for (iMGLevel = 0; iMGLevel <= config[iZone]->GetnMGLevels(); iMGLevel++) {
       
 			/*--- Set the time step in all the MG levels ---*/
 			solver_container[iZone][iMGLevel][TNE2_SOL]->SetTime_Step(geometry[iZone][iMGLevel],
@@ -233,7 +233,7 @@ void CIntegration::Adjoint_Setup(CGeometry ***geometry, CSolver ****solver_conta
 			solver_container[iZone][iMGLevel][TNE2_SOL]->SetTotal_CQ(solver_container[iZone][MESH_0][TNE2_SOL]->GetTotal_CQ());
       
 			/*--- Restrict solution and gradients to the coarse levels ---*/
-			if (iMGLevel != config[iZone]->GetMGLevels()) {
+			if (iMGLevel != config[iZone]->GetnMGLevels()) {
 				SetRestricted_Solution(RUNTIME_TNE2_SYS, solver_container[iZone][iMGLevel][TNE2_SOL], solver_container[iZone][iMGLevel+1][TNE2_SOL],
                                geometry[iZone][iMGLevel], geometry[iZone][iMGLevel+1], config[iZone]);
 				SetRestricted_Gradient(RUNTIME_TNE2_SYS, solver_container[iZone][iMGLevel][TNE2_SOL], solver_container[iZone][iMGLevel+1][TNE2_SOL],

@@ -667,14 +667,22 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
     
     switch (config->GetKind_Turb_Model()) {
         
-      case SA: case SA_NEG: case ML:
+      case SA: case ML:
+        
+        for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+          node[iPoint]->AddClippedSolution(0, config->GetRelaxation_Factor_Turb()*LinSysSol[iPoint], lowerlimit[0], upperlimit[0]);
+        }
+        
+        break;
+        
+      case SA_NEG:
         
         for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
           node[iPoint]->AddSolution(0, config->GetRelaxation_Factor_Turb()*LinSysSol[iPoint]);
         }
         
         break;
-        
+
       case SST:
         
         for (iPoint = 0; iPoint < nPointDomain; iPoint++){
@@ -1084,6 +1092,15 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
     
   }
   
+  /*--- Initialize lower and upper limits--- */
+  
+  lowerlimit = new double[nVar];
+  upperlimit = new double[nVar];
+  
+  lowerlimit[0] = 1.0e-10;
+  upperlimit[0] = 1.0;
+  
+
   /*--- Read farfield conditions from config ---*/
   
   Density_Inf   = config->GetDensity_FreeStreamND();
@@ -2411,7 +2428,7 @@ void CTurbSASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig
   solver[MESH_0][TURB_SOL]->Postprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0);
   
   /*--- Interpolate the solution down to the coarse multigrid levels ---*/
-  for (iMesh = 1; iMesh <= config->GetMGLevels(); iMesh++) {
+  for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
     for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
       Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
       for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
@@ -4048,7 +4065,7 @@ void CTurbMLSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig
   solver[MESH_0][TURB_SOL]->Postprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0);
   
   /*--- Interpolate the solution down to the coarse multigrid levels ---*/
-  for (iMesh = 1; iMesh <= config->GetMGLevels(); iMesh++) {
+  for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
     for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
       Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
       for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;

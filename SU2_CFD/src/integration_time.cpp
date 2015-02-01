@@ -74,7 +74,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ***geometry,
   /*--- If restart, update multigrid levels at the first multigrid iteration ---*/
   
   if ((restart && (Iteration == config[iZone]->GetnStartUpIter())) || startup_multigrid) {
-    for (iMGLevel = 0; iMGLevel < config[iZone]->GetMGLevels(); iMGLevel++) {
+    for (iMGLevel = 0; iMGLevel < config[iZone]->GetnMGLevels(); iMGLevel++) {
       SetRestricted_Solution(RunTime_EqSystem, solver_container[iZone][iMGLevel][SolContainer_Position],
                              solver_container[iZone][iMGLevel+1][SolContainer_Position],
                              geometry[iZone][iMGLevel], geometry[iZone][iMGLevel+1], config[iZone]);
@@ -184,7 +184,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ***geometry,
   
   /*--- Compute Forcing Term $P_(k+1) = I^(k+1)_k(P_k+F_k(u_k))-F_(k+1)(I^(k+1)_k u_k)$ and update solution for multigrid ---*/
   
-  if ( (iMesh < config[iZone]->GetMGLevels() && ((Iteration >= config[iZone]->GetnStartUpIter()) || startup_multigrid)) ) {
+  if ( (iMesh < config[iZone]->GetnMGLevels() && ((Iteration >= config[iZone]->GetnStartUpIter()) || startup_multigrid)) ) {
     
     /*--- Compute $r_k = P_k + F_k(u_k)$ ---*/
     
@@ -205,7 +205,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ***geometry,
     /*--- Recursive call to MultiGrid_Cycle ---*/
     
     for (unsigned short imu = 0; imu <= RecursiveParam; imu++) {
-      if (iMesh == config[iZone]->GetMGLevels()-2) MultiGrid_Cycle(geometry, solver_container, numerics_container, config, iMesh+1, 0, RunTime_EqSystem, Iteration, iZone);
+      if (iMesh == config[iZone]->GetnMGLevels()-2) MultiGrid_Cycle(geometry, solver_container, numerics_container, config, iMesh+1, 0, RunTime_EqSystem, Iteration, iZone);
       else MultiGrid_Cycle(geometry, solver_container, numerics_container, config, iMesh+1, RecursiveParam, RunTime_EqSystem, Iteration, iZone);
     }
     
@@ -874,7 +874,7 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ***geometry, CSolver
   /*--- If turbulence model, copy the eddy viscosity to the coarse levels ---*/
   
   if (RunTime_EqSystem == RUNTIME_TURB_SYS) {
-    for (iMesh = 0; iMesh < config[iZone]->GetMGLevels(); iMesh++) {
+    for (iMesh = 0; iMesh < config[iZone]->GetnMGLevels(); iMesh++) {
       SetRestricted_EddyVisc(RunTime_EqSystem, solver_container[iZone][iMesh][SolContainer_Position], solver_container[iZone][iMesh+1][SolContainer_Position], geometry[iZone][iMesh], geometry[iZone][iMesh+1], config[iZone]);
     }
   }

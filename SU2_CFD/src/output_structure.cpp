@@ -3831,7 +3831,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file, CConfig *config) {
   
   /*--- End of the header ---*/
   
-  char end[]= ",\"Linear_Solver_Iterations\",\"Time(min)\"\n";
+  char end[]= ",\"Linear_Solver_Iterations\",\"CFL_Number\",\"Time(min)\"\n";
   
   if ((config->GetOutput_FileFormat() == TECPLOT) ||
       (config->GetOutput_FileFormat() == TECPLOT_BINARY)) {
@@ -4404,7 +4404,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         sprintf (begin, "%12d", int(iExtIter));
         
         /*--- Write the end of the history file ---*/
-        sprintf (end, ", %12.10f, %12.10f\n", double(LinSolvIter), timeused/60.0);
+        sprintf (end, ", %12.10f, %12.10f, %12.10f\n", double(LinSolvIter), config[val_iZone]->GetCFL(MESH_0), timeused/60.0);
         
         /*--- Write the solution and residual of the history file ---*/
         switch (config[val_iZone]->GetKind_Solver()) {
@@ -4632,7 +4632,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             case EULER :                  case NAVIER_STOKES: case RANS:
             case FLUID_STRUCTURE_EULER :  case FLUID_STRUCTURE_NAVIER_STOKES: case FLUID_STRUCTURE_RANS:
               cout << endl << "Local time stepping summary:" << endl;
-              for (unsigned short iMesh = FinestMesh; iMesh <= config[val_iZone]->GetMGLevels(); iMesh++)
+              for (unsigned short iMesh = FinestMesh; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++)
                 cout << "MG level: "<< iMesh << "-> Min. DT: " << solver_container[val_iZone][iMesh][FLOW_SOL]->GetMin_Delta_Time()<<
                 ". Max. DT: " << solver_container[val_iZone][iMesh][FLOW_SOL]->GetMax_Delta_Time() <<
                 ". Limit DT: " << config[val_iZone]->GetMax_DeltaTime() << "." << endl;
@@ -4654,6 +4654,11 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             cout << endl << "Dual Time step: " << config[val_iZone]->GetDelta_UnstTimeND() << ".";
           }
         }
+        
+        cout <<"Current CFL number: ";
+        for (unsigned short iMesh = 0; iMesh < config[val_iZone]->GetnMGLevels(); iMesh++)
+          cout << config[val_iZone]->GetCFL(iMesh) <<", ";
+        cout << config[val_iZone]->GetCFL(config[val_iZone]->GetnMGLevels()) <<"."<< endl;
         
         switch (config[val_iZone]->GetKind_Solver()) {
           case EULER :                  case NAVIER_STOKES:
@@ -5244,6 +5249,56 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
   }
 }
 
+void COutput::SetCFL_Number(CSolver ****solver_container, CConfig **config, unsigned short val_iZone) {
+  
+  double CFLFactor, power, CFL, CFLMax, Div;
+  unsigned short iMesh;
+
+  int rank = MASTER_NODE;
+  
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+  
+  unsigned short FinestMesh = config[val_iZone]->GetFinestMesh();
+  bool flow = ((config[val_iZone]->GetKind_Solver() == EULER) || (config[val_iZone]->GetKind_Solver() == NAVIER_STOKES) ||
+               (config[val_iZone]->GetKind_Solver() == RANS));
+  
+  /*--- Output the mean flow solution using only the master node ---*/
+  
+  if ((rank == MASTER_NODE) && (flow)) {
+
+    RhoRes_New = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_RMS(0);
+    if (RhoRes_Old < EPS) RhoRes_Old = RhoRes_New;
+    
+    Div = RhoRes_Old/RhoRes_New;
+    
+    if (Div < 1.0) power = config[val_iZone]->GetCFLAdapt(0);
+    else power = config[val_iZone]->GetCFLAdapt(1);
+    
+    /*--- Detect a stall in the residual ---*/
+
+    if (fabs(Div-1.0) <= 1E-5) { Div = 0.1; power = config[val_iZone]->GetCFLAdapt(1); }
+      
+    CFLMax = config[val_iZone]->GetCFLAdapt(2);
+    
+    CFLFactor = pow(Div, power);
+    
+    for (iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
+      CFL = config[val_iZone]->GetCFL(iMesh);
+      CFL *= CFLFactor;
+      if (CFL > CFLMax) break;
+      config[val_iZone]->SetCFL(iMesh, CFL);
+    }
+    
+    RhoRes_Old = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_RMS(0);
+
+  }
+  
+  
+}
+
+  
 void COutput::SetForces_Breakdown(CGeometry ***geometry,
                                   CSolver ****solver_container,
                                   CConfig **config,

@@ -1526,7 +1526,7 @@ void CAdjEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solve
   
   if (freesurface) {
     
-    for (iMesh = 0; iMesh <= config->GetMGLevels(); iMesh++) {
+    for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
       
       for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
         
@@ -1567,7 +1567,7 @@ void CAdjEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solve
    all the multigrid levels, this is important with the dual time strategy ---*/
   if (restart) {
     Solution = new double[nVar];
-    for (iMesh = 1; iMesh <= config->GetMGLevels(); iMesh++) {
+    for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
       for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
         Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
         for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
@@ -1588,7 +1588,7 @@ void CAdjEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solve
   }
   
   /*--- The value of the solution for the first iteration of the dual time ---*/
-  for (iMesh = 0; iMesh <= config->GetMGLevels(); iMesh++) {
+  for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
     for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
       if ((ExtIter == 0) && (dual_time)) {
         solver_container[iMesh][ADJFLOW_SOL]->node[iPoint]->Set_Solution_time_n();

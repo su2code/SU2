@@ -259,7 +259,7 @@ private:
   long Unst_AdjointIter;			/*!< \brief Iteration number to begin the reverse time integration in the direct solver for the unsteady adjoint. */
 	unsigned short nRKStep;			/*!< \brief Number of steps of the explicit Runge-Kutta method. */
 	double *RK_Alpha_Step;			/*!< \brief Runge-Kutta beta coefficients. */
-	unsigned short nMultiLevel;		/*!< \brief Number of multigrid levels (coarse levels). */
+	unsigned short nMGLevels;		/*!< \brief Number of multigrid levels (coarse levels). */
 	unsigned short nCFL;			/*!< \brief Number of CFL, one for each multigrid level. */
 	double
 	CFLRedCoeff_Turb,		/*!< \brief CFL reduction coefficient on the LevelSet problem. */
@@ -475,7 +475,7 @@ private:
   *RefOriginMoment_X,      /*!< \brief X Origin for moment computation. */
   *RefOriginMoment_Y,      /*!< \brief Y Origin for moment computation. */
   *RefOriginMoment_Z,      /*!< \brief Z Origin for moment computation. */
-  *CFLRamp,      /*!< \brief Information about the CFL ramp. */
+  *CFLAdapt,      /*!< \brief Information about the CFL ramp. */
   *CFL,
 	DomainVolume;		/*!< \brief Volume of the computational grid. */
   unsigned short nRefOriginMoment_X,    /*!< \brief Number of X-coordinate moment computation origins. */
@@ -1140,6 +1140,12 @@ public:
 	 * \return Value of the constant: Charge_Number[val_Species]
 	 */
 	int GetCharge_Number(unsigned short val_Species);
+  
+  /*!
+   * \brief Get the values of the CFL adapation.
+   * \return Value of CFL adapation
+   */
+  double GetCFLAdapt(unsigned short val_index);
 
   /*!
 	 * \brief Get the value of the limits for the sections.
@@ -1870,13 +1876,13 @@ public:
 	 * \brief Get the number of multigrid levels.
 	 * \return Number of multigrid levels (without including the original grid).
 	 */
-	unsigned short GetMGLevels(void);
+	unsigned short GetnMGLevels(void);
 
 	/*!
 	 * \brief Set the number of multigrid levels.
-	 * \param[in] val_nMultiLevel - Index of the mesh were the CFL is applied
+	 * \param[in] val_nMGLevels - Index of the mesh were the CFL is applied
 	 */
-	void SetMGLevels(unsigned short val_nMultiLevel);
+	void SetMGLevels(unsigned short val_nMGLevels);
 
 	/*!
 	 * \brief Get the index of the finest grid.
@@ -4428,12 +4434,6 @@ public:
 	 * \return Azimuthal line to fix due to a misalignments of the nearfield.
 	 */
 	double GetFixAzimuthalLine(void);
-
-	/*!
-	 * \brief Update the CFL number using the ramp information.
-	 * \param[in] val_iter - Current solver iteration.
-	 */
-	void UpdateCFL(unsigned long val_iter);
 
 	/*!
 	 * \brief Set the global parameters of each simulation for each runtime system.

@@ -81,7 +81,7 @@ void CVolumetricMovement::UpdateDualGrid(CGeometry *geometry, CConfig *config) {
 
 void CVolumetricMovement::UpdateMultiGrid(CGeometry **geometry, CConfig *config) {
   
-  unsigned short iMGfine, iMGlevel, nMGlevel = config->GetMGLevels();
+  unsigned short iMGfine, iMGlevel, nMGlevel = config->GetnMGLevels();
   
   /*--- Update the multigrid structure after moving the finest grid,
    including computing the grid velocities on the coarser levels. ---*/

@@ -67,7 +67,7 @@ CAdjEulerVariable::CAdjEulerVariable(double val_psirho, double *val_phi, double 
 	}
   
   /*--- Only for residual smoothing (multigrid) ---*/
-	for (iMesh = 0; iMesh <= config->GetMGLevels(); iMesh++)
+	for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
 		nMGSmooth += config->GetMG_CorrecSmooth(iMesh);
   
   if (nMGSmooth > 0) {
@@ -174,7 +174,7 @@ CAdjEulerVariable::CAdjEulerVariable(double *val_solution, unsigned short val_nD
 	}
   
   /*--- Only for residual smoothing (multigrid) ---*/
-	for (iMesh = 0; iMesh <= config->GetMGLevels(); iMesh++)
+	for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
 		nMGSmooth += config->GetMG_CorrecSmooth(iMesh);
   
   if (nMGSmooth > 0) {

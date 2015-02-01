@@ -141,7 +141,7 @@ void CConfig::SetPointersNull(void){
   MassFrac_FreeStream=NULL;
   Velocity_FreeStream=NULL;
   RefOriginMoment=NULL;     RefOriginMoment_X=NULL;  RefOriginMoment_Y=NULL;
-  RefOriginMoment_Z=NULL;   CFLRamp=NULL;            CFL=NULL;
+  RefOriginMoment_Z=NULL;   CFLAdapt=NULL;            CFL=NULL;
   PlaneTag=NULL;
   Kappa_Flow=NULL;    Kappa_AdjFlow=NULL;  Kappa_TNE2=NULL;
   Kappa_AdjTNE2=NULL;  Kappa_LinFlow=NULL;
@@ -559,9 +559,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("CFL_NUMBER", CFLFineGrid, 1.25);
   /* DESCRIPTION:  Max time step in local time stepping simulations */
   addDoubleOption("MAX_DELTA_TIME", Max_DeltaTime, 1000000);
-  default_vec_3d[0] = 1.0; default_vec_3d[1] = 100.0; default_vec_3d[2] = 1.0;
+  default_vec_3d[0] = 0.0; default_vec_3d[1] = 0.0; default_vec_3d[2] = 100.0;
   /* DESCRIPTION: CFL ramp (factor, number of iterations, CFL limit) */
-  addDoubleArrayOption("CFL_RAMP", 3, CFLRamp, default_vec_3d);
+  addDoubleArrayOption("CFL_ADAPT", 3, CFLAdapt, default_vec_3d);
   /* DESCRIPTION: Reduction factor of the CFL coefficient in the adjoint problem */
   addDoubleOption("CFL_REDUCTION_ADJFLOW", CFLRedCoeff_AdjFlow, 0.8);
   /* DESCRIPTION: Reduction factor of the CFL coefficient in the level set problem */
@@ -686,7 +686,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Start up iterations using the fine grid only */
   addUnsignedShortOption("START_UP_ITER", nStartUpIter, 0);
   /* DESCRIPTION: Multi-grid Levels */
-  addUnsignedShortOption("MGLEVEL", nMultiLevel, 3);
+  addUnsignedShortOption("MGLEVEL", nMGLevels, 3);
   /* DESCRIPTION: Multi-grid cycle */
   addEnumOption("MGCYCLE", MGCycle, MG_Cycle_Map, V_CYCLE);
   /* DESCRIPTION: Multi-grid pre-smoothing level */
@@ -1485,7 +1485,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   /*--- Deactivate the multigrid in the adjoint problem ---*/
   
-  if (Adjoint && !MG_AdjointFlow) { nMultiLevel = 0; }
+  if (Adjoint && !MG_AdjointFlow) { nMGLevels = 0; }
   
   /*--- Initialize non-physical points/reconstructions to zero ---*/
   
@@ -1517,7 +1517,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   if ((Kind_Solver == LINEAR_ELASTICITY) || (Kind_Solver == HEAT_EQUATION) ||
       (Kind_Solver == WAVE_EQUATION) || (Kind_Solver == POISSON_EQUATION)) {
-    nMultiLevel = 0;
+    nMGLevels = 0;
     if (Unsteady_Simulation == STEADY) nExtIter = 1;
     else Unst_nIntIter = 2;
   }
@@ -2128,7 +2128,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     Grid_Movement = true;
   }
   
-  if (MGCycle == FULLMG_CYCLE) FinestMesh = nMultiLevel;
+  if (MGCycle == FULLMG_CYCLE) FinestMesh = nMGLevels;
   else FinestMesh = MESH_0;
   
   if ((Kind_Solver == NAVIER_STOKES) &&
@@ -2146,14 +2146,14 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   Kappa_1st_LinFlow = Kappa_AdjFlow[0];
   Kappa_4th_LinFlow = Kappa_AdjFlow[1];
   
-  // make the MG_PreSmooth, MG_PostSmooth, and MG_CorrecSmooth arrays consistent with nMultiLevel
-  unsigned short * tmp_smooth = new unsigned short[nMultiLevel+1];
+  // make the MG_PreSmooth, MG_PostSmooth, and MG_CorrecSmooth arrays consistent with nMGLevels
+  unsigned short * tmp_smooth = new unsigned short[nMGLevels+1];
   
-  if ((nMG_PreSmooth != nMultiLevel+1) && (nMG_PreSmooth != 0)) {
-    if (nMG_PreSmooth > nMultiLevel+1) {
+  if ((nMG_PreSmooth != nMGLevels+1) && (nMG_PreSmooth != 0)) {
+    if (nMG_PreSmooth > nMGLevels+1) {
       
       // truncate by removing unnecessary elements at the end
-      for (unsigned int i = 0; i <= nMultiLevel; i++)
+      for (unsigned int i = 0; i <= nMGLevels; i++)
         tmp_smooth[i] = MG_PreSmooth[i];
       delete [] MG_PreSmooth;
     } else {
@@ -2161,73 +2161,73 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       // add additional elements equal to last element
       for (unsigned int i = 0; i < nMG_PreSmooth; i++)
         tmp_smooth[i] = MG_PreSmooth[i];
-      for (unsigned int i = nMG_PreSmooth; i <= nMultiLevel; i++)
+      for (unsigned int i = nMG_PreSmooth; i <= nMGLevels; i++)
         tmp_smooth[i] = MG_PreSmooth[nMG_PreSmooth-1];
       delete [] MG_PreSmooth;
     }
     
-    nMG_PreSmooth = nMultiLevel+1;
+    nMG_PreSmooth = nMGLevels+1;
     MG_PreSmooth = new unsigned short[nMG_PreSmooth];
     for (unsigned int i = 0; i < nMG_PreSmooth; i++)
       MG_PreSmooth[i] = tmp_smooth[i];
   }
-  if ((nMultiLevel != 0) && (nMG_PreSmooth == 0)) {
+  if ((nMGLevels != 0) && (nMG_PreSmooth == 0)) {
     delete [] MG_PreSmooth;
-    nMG_PreSmooth = nMultiLevel+1;
+    nMG_PreSmooth = nMGLevels+1;
     MG_PreSmooth = new unsigned short[nMG_PreSmooth];
     for (unsigned int i = 0; i < nMG_PreSmooth; i++)
       MG_PreSmooth[i] = i+1;
   }
   
-  if ((nMG_PostSmooth != nMultiLevel+1) && (nMG_PostSmooth != 0)) {
-    if (nMG_PostSmooth > nMultiLevel+1) {
+  if ((nMG_PostSmooth != nMGLevels+1) && (nMG_PostSmooth != 0)) {
+    if (nMG_PostSmooth > nMGLevels+1) {
       // truncate by removing unnecessary elements at the end
-      for (unsigned int i = 0; i <= nMultiLevel; i++)
+      for (unsigned int i = 0; i <= nMGLevels; i++)
         tmp_smooth[i] = MG_PostSmooth[i];
       delete [] MG_PostSmooth;
     } else {
       // add additional elements equal to last element
       for (unsigned int i = 0; i < nMG_PostSmooth; i++)
         tmp_smooth[i] = MG_PostSmooth[i];
-      for (unsigned int i = nMG_PostSmooth; i <= nMultiLevel; i++)
+      for (unsigned int i = nMG_PostSmooth; i <= nMGLevels; i++)
         tmp_smooth[i] = MG_PostSmooth[nMG_PostSmooth-1];
       delete [] MG_PostSmooth;
     }
-    nMG_PostSmooth = nMultiLevel+1;
+    nMG_PostSmooth = nMGLevels+1;
     MG_PostSmooth = new unsigned short[nMG_PostSmooth];
     for (unsigned int i = 0; i < nMG_PostSmooth; i++)
       MG_PostSmooth[i] = tmp_smooth[i];
   }
-  if ((nMultiLevel != 0) && (nMG_PostSmooth == 0)) {
+  if ((nMGLevels != 0) && (nMG_PostSmooth == 0)) {
     delete [] MG_PostSmooth;
-    nMG_PostSmooth = nMultiLevel+1;
+    nMG_PostSmooth = nMGLevels+1;
     MG_PostSmooth = new unsigned short[nMG_PostSmooth];
     for (unsigned int i = 0; i < nMG_PostSmooth; i++)
       MG_PostSmooth[i] = 0;
   }
   
-  if ((nMG_CorrecSmooth != nMultiLevel+1) && (nMG_CorrecSmooth != 0)) {
-    if (nMG_CorrecSmooth > nMultiLevel+1) {
+  if ((nMG_CorrecSmooth != nMGLevels+1) && (nMG_CorrecSmooth != 0)) {
+    if (nMG_CorrecSmooth > nMGLevels+1) {
       // truncate by removing unnecessary elements at the end
-      for (unsigned int i = 0; i <= nMultiLevel; i++)
+      for (unsigned int i = 0; i <= nMGLevels; i++)
         tmp_smooth[i] = MG_CorrecSmooth[i];
       delete [] MG_CorrecSmooth;
     } else {
       // add additional elements equal to last element
       for (unsigned int i = 0; i < nMG_CorrecSmooth; i++)
         tmp_smooth[i] = MG_CorrecSmooth[i];
-      for (unsigned int i = nMG_CorrecSmooth; i <= nMultiLevel; i++)
+      for (unsigned int i = nMG_CorrecSmooth; i <= nMGLevels; i++)
         tmp_smooth[i] = MG_CorrecSmooth[nMG_CorrecSmooth-1];
       delete [] MG_CorrecSmooth;
     }
-    nMG_CorrecSmooth = nMultiLevel+1;
+    nMG_CorrecSmooth = nMGLevels+1;
     MG_CorrecSmooth = new unsigned short[nMG_CorrecSmooth];
     for (unsigned int i = 0; i < nMG_CorrecSmooth; i++)
       MG_CorrecSmooth[i] = tmp_smooth[i];
   }
-  if ((nMultiLevel != 0) && (nMG_CorrecSmooth == 0)) {
+  if ((nMGLevels != 0) && (nMG_CorrecSmooth == 0)) {
     delete [] MG_CorrecSmooth;
-    nMG_CorrecSmooth = nMultiLevel+1;
+    nMG_CorrecSmooth = nMGLevels+1;
     MG_CorrecSmooth = new unsigned short[nMG_CorrecSmooth];
     for (unsigned int i = 0; i < nMG_CorrecSmooth; i++)
       MG_CorrecSmooth[i] = 0;
@@ -2238,10 +2238,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     MG_PreSmooth[MESH_0] = 1;
   if (nMG_PostSmooth != 0) {
     MG_PostSmooth[MESH_0] = 0;
-    MG_PostSmooth[nMultiLevel] = 0;
+    MG_PostSmooth[nMGLevels] = 0;
   }
   if (nMG_CorrecSmooth != 0)
-    MG_CorrecSmooth[nMultiLevel] = 0;
+    MG_CorrecSmooth[nMGLevels] = 0;
   
   if (Restart) MGCycle = V_CYCLE;
   
@@ -2258,11 +2258,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
   
   if (Unsteady_Simulation == TIME_STEPPING) {
-    nMultiLevel = 0;
+    nMGLevels = 0;
     MGCycle = V_CYCLE;
   }
   
-  nCFL = nMultiLevel+1;
+  nCFL = nMGLevels+1;
   CFL = new double[nCFL];
   CFL[0] = CFLFineGrid;
   if (Adjoint) CFL[0] = CFL[0] * CFLRedCoeff_AdjFlow;
@@ -4177,12 +4177,12 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       }
     }
 
-    if (nMultiLevel !=0) {
+    if (nMGLevels !=0) {
       
       if (nStartUpIter != 0) cout << "A total of " << nStartUpIter << " start up iterations on the fine grid."<< endl;
-      if (MGCycle == V_CYCLE) cout << "V Multigrid Cycle, with " << nMultiLevel << " multigrid levels."<< endl;
-      if (MGCycle == W_CYCLE) cout << "W Multigrid Cycle, with " << nMultiLevel << " multigrid levels."<< endl;
-      if (MGCycle == FULLMG_CYCLE) cout << "Full Multigrid Cycle, with " << nMultiLevel << " multigrid levels."<< endl;
+      if (MGCycle == V_CYCLE) cout << "V Multigrid Cycle, with " << nMGLevels << " multigrid levels."<< endl;
+      if (MGCycle == W_CYCLE) cout << "W Multigrid Cycle, with " << nMGLevels << " multigrid levels."<< endl;
+      if (MGCycle == FULLMG_CYCLE) cout << "Full Multigrid Cycle, with " << nMGLevels << " multigrid levels."<< endl;
 
       cout << "Damping factor for the residual restriction: " << Damp_Res_Restric <<"."<< endl;
       cout << "Damping factor for the correction prolongation: " << Damp_Correc_Prolong <<"."<< endl;
@@ -4190,12 +4190,12 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     if ((Kind_Solver != LINEAR_ELASTICITY) && (Kind_Solver != HEAT_EQUATION) && (Kind_Solver != WAVE_EQUATION)) {
 
-      if (CFLRamp[0] == 1.0) cout << "No CFL ramp." << endl;
-      else cout << "CFL ramp definition. factor: "<< CFLRamp[0] <<", every "<< int(CFLRamp[1]) <<" iterations, with a limit of "<< CFLRamp[2] <<"." << endl;
+      if (CFLAdapt[0] == 1.0) cout << "No CFL adaptation." << endl;
+      else cout << "CFL adaptation definition. factor down: "<< CFLAdapt[0] <<", factor up:"<< CFLAdapt[1] <<", with a limit of "<< CFLAdapt[2] <<"." << endl;
 
-      if (nMultiLevel !=0) {
+      if (nMGLevels !=0) {
         cout << "Multigrid Level:                  ";
-        for (unsigned short iLevel = 0; iLevel < nMultiLevel+1; iLevel++) {
+        for (unsigned short iLevel = 0; iLevel < nMGLevels+1; iLevel++) {
           cout.width(6); cout << iLevel;
         }
         cout << endl;
@@ -4206,28 +4206,28 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       cout.width(6); cout << CFL[0];
       cout << endl;
 
-      if (nMultiLevel !=0) {
+      if (nMGLevels !=0) {
         cout.precision(3);
         cout << "MG PreSmooth coefficients:        ";
-        for (unsigned short iMG_PreSmooth = 0; iMG_PreSmooth < nMultiLevel+1; iMG_PreSmooth++) {
+        for (unsigned short iMG_PreSmooth = 0; iMG_PreSmooth < nMGLevels+1; iMG_PreSmooth++) {
           cout.width(6); cout << MG_PreSmooth[iMG_PreSmooth];
         }
         cout << endl;
       }
 
-      if (nMultiLevel !=0) {
+      if (nMGLevels !=0) {
         cout.precision(3);
         cout << "MG PostSmooth coefficients:       ";
-        for (unsigned short iMG_PostSmooth = 0; iMG_PostSmooth < nMultiLevel+1; iMG_PostSmooth++) {
+        for (unsigned short iMG_PostSmooth = 0; iMG_PostSmooth < nMGLevels+1; iMG_PostSmooth++) {
           cout.width(6); cout << MG_PostSmooth[iMG_PostSmooth];
         }
         cout << endl;
       }
 
-      if (nMultiLevel !=0) {
+      if (nMGLevels !=0) {
         cout.precision(3);
         cout << "MG CorrecSmooth coefficients:     ";
-        for (unsigned short iMG_CorrecSmooth = 0; iMG_CorrecSmooth < nMultiLevel+1; iMG_CorrecSmooth++) {
+        for (unsigned short iMG_CorrecSmooth = 0; iMG_CorrecSmooth < nMGLevels+1; iMG_CorrecSmooth++) {
           cout.width(6); cout << MG_CorrecSmooth[iMG_CorrecSmooth];
         }
         cout << endl;
@@ -5271,7 +5271,7 @@ CConfig::~CConfig(void) {
   if (Kappa_AdjTNE2!=NULL        )    delete[] Kappa_AdjTNE2;
   if (Kappa_LinFlow!=NULL  )    delete[] Kappa_LinFlow;
   if (PlaneTag!=NULL)    delete[] PlaneTag;
-  if (CFLRamp!=NULL)    delete[] CFLRamp;
+  if (CFLAdapt!=NULL)    delete[] CFLAdapt;
   if (CFL!=NULL)    delete[] CFL;
   
   /*--- String markers ---*/
@@ -5412,34 +5412,6 @@ void CConfig::SetKind_ConvNumScheme(unsigned short val_kind_convnumscheme,
   Kind_SlopeLimit = val_kind_slopelimit;
   SpatialOrder = val_order_spatial_int;
 
-}
-
-void CConfig::UpdateCFL(unsigned long val_iter) {
-  double coeff;
-  unsigned short iCFL;
-
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-  
-  if (Adjoint) coeff = CFLRedCoeff_AdjFlow;
-  else coeff = 1.0;
-
-  if ((CFLRamp[0] != 1.0) && (val_iter % int(CFLRamp[1]) == 0 ) && (val_iter != 0) && (CFL[0] < CFLRamp[2]*coeff)) {
-
-    for (iCFL = 0; iCFL <= nMultiLevel; iCFL++)
-        CFL[iCFL] *= CFLRamp[0];
-
-    if (rank == MASTER_NODE) {
-      cout <<"\n New value of the CFL number: ";
-      for (iCFL = 0; iCFL < nMultiLevel; iCFL++)
-        cout << CFL[iCFL] <<", ";
-      cout << CFL[nMultiLevel] <<".\n"<< endl;
-    }
-
-  }
-  
 }
 
 void CConfig::SetGlobalParam(unsigned short val_solver,
