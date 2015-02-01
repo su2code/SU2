@@ -5251,7 +5251,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
 void COutput::SetCFL_Number(CSolver ****solver_container, CConfig **config, unsigned short val_iZone) {
   
-  double CFLFactor, power, CFL, CFLMax, Div;
+  double CFLFactor, power, CFL, CFLMin, CFLMax, Div;
   unsigned short iMesh;
 
   int rank = MASTER_NODE;
@@ -5273,21 +5273,25 @@ void COutput::SetCFL_Number(CSolver ****solver_container, CConfig **config, unsi
     
     Div = RhoRes_Old/RhoRes_New;
     
-    if (Div < 1.0) power = config[val_iZone]->GetCFLAdapt(0);
-    else power = config[val_iZone]->GetCFLAdapt(1);
+    if (Div < 1.0) power = config[val_iZone]->GetCFL_AdaptParam(0);
+    else power = config[val_iZone]->GetCFL_AdaptParam(1);
     
     /*--- Detect a stall in the residual ---*/
 
-    if (fabs(Div-1.0) <= 1E-5) { Div = 0.1; power = config[val_iZone]->GetCFLAdapt(1); }
-      
-    CFLMax = config[val_iZone]->GetCFLAdapt(2);
+    if (fabs(Div-1.0) <= 1E-5) { Div = 0.1; power = config[val_iZone]->GetCFL_AdaptParam(1); }
+
+    CFLMin = config[val_iZone]->GetCFL_AdaptParam(2);
+    CFLMax = config[val_iZone]->GetCFL_AdaptParam(3);
     
     CFLFactor = pow(Div, power);
     
     for (iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
       CFL = config[val_iZone]->GetCFL(iMesh);
       CFL *= CFLFactor;
-      if (CFL > CFLMax) break;
+      
+      if (CFL <= CFLMin) { config[val_iZone]->SetCFL(iMesh, CFLMin); break; }
+      if (CFL >= CFLMax) { config[val_iZone]->SetCFL(iMesh, CFLMax); break; }
+
       config[val_iZone]->SetCFL(iMesh, CFL);
     }
     

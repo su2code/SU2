@@ -141,7 +141,7 @@ void CConfig::SetPointersNull(void){
   MassFrac_FreeStream=NULL;
   Velocity_FreeStream=NULL;
   RefOriginMoment=NULL;     RefOriginMoment_X=NULL;  RefOriginMoment_Y=NULL;
-  RefOriginMoment_Z=NULL;   CFLAdapt=NULL;            CFL=NULL;
+  RefOriginMoment_Z=NULL;   CFL_AdaptParam=NULL;            CFL=NULL;
   PlaneTag=NULL;
   Kappa_Flow=NULL;    Kappa_AdjFlow=NULL;  Kappa_TNE2=NULL;
   Kappa_AdjTNE2=NULL;  Kappa_LinFlow=NULL;
@@ -192,6 +192,7 @@ void CConfig::SetRunTime_Options(void) {
 void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZone) {
   
   double default_vec_3d[3];
+  double default_vec_4d[4];
   double default_vec_2d[2];
   double default_vec_6d[6];
   
@@ -559,9 +560,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("CFL_NUMBER", CFLFineGrid, 1.25);
   /* DESCRIPTION:  Max time step in local time stepping simulations */
   addDoubleOption("MAX_DELTA_TIME", Max_DeltaTime, 1000000);
-  default_vec_3d[0] = 0.0; default_vec_3d[1] = 0.0; default_vec_3d[2] = 100.0;
-  /* DESCRIPTION: CFL ramp (factor, number of iterations, CFL limit) */
-  addDoubleArrayOption("CFL_ADAPT", 3, CFLAdapt, default_vec_3d);
+  /* DESCRIPTION: Activate The adaptive CFL number. */
+  addBoolOption("CFL_ADAPT", CFL_Adapt, false);
+  /* DESCRIPTION: Parameters of the adaptive CFL number (factor down, factor up, CFL limit) */
+  default_vec_4d[0] = 0.0; default_vec_4d[1] = 0.0; default_vec_4d[2] = 1.0; default_vec_4d[3] = 100.0;
+  addDoubleArrayOption("CFL_ADAPT_PARAM", 4, CFL_AdaptParam, default_vec_4d);
   /* DESCRIPTION: Reduction factor of the CFL coefficient in the adjoint problem */
   addDoubleOption("CFL_REDUCTION_ADJFLOW", CFLRedCoeff_AdjFlow, 0.8);
   /* DESCRIPTION: Reduction factor of the CFL coefficient in the level set problem */
@@ -4190,8 +4193,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     if ((Kind_Solver != LINEAR_ELASTICITY) && (Kind_Solver != HEAT_EQUATION) && (Kind_Solver != WAVE_EQUATION)) {
 
-      if (CFLAdapt[0] == 1.0) cout << "No CFL adaptation." << endl;
-      else cout << "CFL adaptation definition. factor down: "<< CFLAdapt[0] <<", factor up:"<< CFLAdapt[1] <<", with a limit of "<< CFLAdapt[2] <<"." << endl;
+      if (CFL_AdaptParam[0] == 1.0) cout << "No CFL adaptation." << endl;
+      else cout << "CFL adaptation definition. factor down: "<< CFL_AdaptParam[0] <<", factor up:"<< CFL_AdaptParam[1] <<", with a limit of "<< CFL_AdaptParam[2] <<"." << endl;
 
       if (nMGLevels !=0) {
         cout << "Multigrid Level:                  ";
@@ -5271,7 +5274,7 @@ CConfig::~CConfig(void) {
   if (Kappa_AdjTNE2!=NULL        )    delete[] Kappa_AdjTNE2;
   if (Kappa_LinFlow!=NULL  )    delete[] Kappa_LinFlow;
   if (PlaneTag!=NULL)    delete[] PlaneTag;
-  if (CFLAdapt!=NULL)    delete[] CFLAdapt;
+  if (CFL_AdaptParam!=NULL)    delete[] CFL_AdaptParam;
   if (CFL!=NULL)    delete[] CFL;
   
   /*--- String markers ---*/

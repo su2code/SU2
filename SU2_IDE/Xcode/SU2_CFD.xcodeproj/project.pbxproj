@@ -104,6 +104,7 @@
 		0530E56F17FDF7D300733CE8 /* numerics_direct_elasticity.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = numerics_direct_elasticity.cpp; path = ../../SU2_CFD/src/numerics_direct_elasticity.cpp; sourceTree = "<group>"; };
 		0530E57117FDF7D800733CE8 /* numerics_direct_poisson.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = numerics_direct_poisson.cpp; path = ../../SU2_CFD/src/numerics_direct_poisson.cpp; sourceTree = "<group>"; };
 		0541ABEE1370F5A6002D668B /* SU2_CFD */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = SU2_CFD; sourceTree = BUILT_PRODUCTS_DIR; };
+		0541C14E1A7EA6970095A680 /* config_template_basic.cfg */ = {isa = PBXFileReference; lastKnownFileType = text; name = config_template_basic.cfg; path = ../../config_template_basic.cfg; sourceTree = "<group>"; };
 		05755F091A54AC4500600019 /* output_su2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = output_su2.cpp; path = ../../SU2_CFD/src/output_su2.cpp; sourceTree = "<group>"; };
 		05DF0B0C18CFB29800DC3CFE /* numerics_machine_learning_turbulent.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = numerics_machine_learning_turbulent.hpp; path = ../../SU2_CFD/include/numerics_machine_learning_turbulent.hpp; sourceTree = "<group>"; };
 		05DF0B0D18CFB29E00DC3CFE /* numerics_machine_learning.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = numerics_machine_learning.hpp; path = ../../SU2_CFD/include/numerics_machine_learning.hpp; sourceTree = "<group>"; };
@@ -416,6 +417,7 @@
 			isa = PBXGroup;
 			children = (
 				E97B6C8117F941800008255B /* config_template.cfg */,
+				0541C14E1A7EA6970095A680 /* config_template_basic.cfg */,
 				08FB7795FE84155DC02AAC07 /* Source */,
 				0541ABE41370DC56002D668B /* InLine */,
 				0541ABE51370DC5E002D668B /* Include */,

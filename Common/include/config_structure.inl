@@ -29,7 +29,9 @@
 
 #pragma once
 
-inline double CConfig::GetCFLAdapt(unsigned short val_index) { return CFLAdapt[val_index]; }
+inline double CConfig::GetCFL_AdaptParam(unsigned short val_index) { return CFL_AdaptParam[val_index]; }
+
+inline bool CConfig::GetCFL_Adapt(void) { return CFL_Adapt; }
 
 inline void CConfig::SetInflow_Mach(unsigned short val_imarker, double val_fanface_mach) { Inflow_Mach[val_imarker] = val_fanface_mach; }
 
