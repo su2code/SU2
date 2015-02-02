@@ -5282,7 +5282,7 @@ void COutput::SetCFL_Number(CSolver ****solver_container, CConfig **config, unsi
     
     /*--- Detect a stall in the residual ---*/
 
-    if ((fabs(Diff) <= RhoRes_New*1E-5) && (ExtIter != 0)) { Div = 0.1; power = config[val_iZone]->GetCFL_AdaptParam(1); }
+    if ((fabs(Diff) <= RhoRes_New*1E-8) && (ExtIter != 0)) { Div = 0.1; power = config[val_iZone]->GetCFL_AdaptParam(1); }
 
     CFLMin = config[val_iZone]->GetCFL_AdaptParam(2);
     CFLMax = config[val_iZone]->GetCFL_AdaptParam(3);
