@@ -3728,7 +3728,7 @@ void COutput::DeallocateSolution(CConfig *config, CGeometry *geometry) {
   }
 }
 
-void COutput::SetConvHistory_Body(ofstream *ConvHist_file, CConfig *config) {
+void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   char cstr[200], buffer[50], turb_resid[1000];
   unsigned short iMarker, iMarker_Monitoring, iSpecies;
   string Monitoring_Tag, monitoring_coeff, aeroelastic_coeff;

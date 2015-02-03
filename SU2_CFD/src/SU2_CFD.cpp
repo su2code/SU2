@@ -285,7 +285,7 @@ int main(int argc, char *argv[]) {
   /*--- Open the convergence history file ---*/
   
   if (rank == MASTER_NODE)
-    output->SetConvHistory_Body(&ConvHist_file, config_container[ZONE_0]);
+    output->SetConvHistory_Header(&ConvHist_file, config_container[ZONE_0]);
   
   /*--- Check for an unsteady restart. Update ExtIter if necessary. ---*/
   if (config_container[ZONE_0]->GetWrt_Unsteady() && config_container[ZONE_0]->GetRestart())
