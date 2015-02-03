@@ -689,6 +689,7 @@ private:
   bool ExtraOutput;
   unsigned long Nonphys_Points, /*!< \brief Current number of non-physical points in the solution. */
   Nonphys_Reconstr;      /*!< \brief Current number of non-physical reconstructions for 2nd-order upwinding. */
+  bool ParMETIS;      /*!< \brief Boolean for activating ParMETIS mode (while testing). */
   
   /*!< \brief param is a map from the option name (config file string) to a pointer to an option child class */
 //	map<string, CAnyOptionRef*> param;
@@ -1115,6 +1116,12 @@ public:
 	 * \return <code>TRUE</code> if the partition is going to be plotted; otherwise <code>FALSE</code>.
 	 */
   bool GetExtraOutput(void);
+  
+  /*!
+   * \brief Boolean for controlling ParMETIS mode during testing.
+   * \return <code>TRUE</code> if ParMETIS will be used; otherwise <code>FALSE</code>.
+   */
+  bool GetParMETIS(void);
 
 	/*!
 	 * \brief Get the value of the Mach number (velocity divided by speed of sound).
