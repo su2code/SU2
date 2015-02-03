@@ -7,18 +7,18 @@ AC_DEFUN([SU2_SET_COMPILERS],
   CXX_TRY_LIST="g++ icpc icc pgCC c++"
 
      # -------------------------------------------------------------------
-     # MPI -- enabled by default.  Check for it now so we can be somewhat
+     # MPI -- disabled by default.  Check for it now so we can be somewhat
      #                             smart about which compilers to look for
      # -------------------------------------------------------------------
      AC_ARG_ENABLE(mpi,
-                   AS_HELP_STRING([--disable-mpi],
-                                  [build without MPI message passing support]),
+                   AS_HELP_STRING([--enable-mpi],
+                                  [build with MPI message passing support]),
    		   [case "${enableval}" in
    		     yes)  enablempi=yes ;;
    		      no)  enablempi=no ;;
     		       *)  AC_MSG_ERROR(bad value ${enableval} for --enable-mpi) ;;
    		    esac],
-   		    [enablempi=yes])
+   		    [enablempi=no])
 
   have_MPI="no"
 
@@ -27,7 +27,7 @@ AC_DEFUN([SU2_SET_COMPILERS],
     CPPFLAGS="-DHAVE_MPI $CPPFLAGS"
     CXX_TRY_LIST="mpicxx mpiCC mpicc $CXX_TRY_LIST"
   else
-    AC_MSG_RESULT(>>> Disabling MPI per user request <<<)
+    AC_MSG_RESULT(>>> MPI support disabled by default <<<)
   fi
 
   AC_ARG_WITH([cxx],

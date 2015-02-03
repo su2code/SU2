@@ -10,18 +10,16 @@
 # Major Changes/Contributions:
 # METIS & TECIO integration added by Ben Kirk, 3/24/2014
 # LAPACK connection added by Teus van der Stelt, 11/13/2014
-#
+# ParMETIS integration added by Ben Kirk & Thomas D. Economon, 2/3/2015
 ##########################
 
-AC_INIT([SU2], [3.2.5], [susquared-dev@lists.stanford.edu],
+AC_INIT([SU2], [3.2.5], [su2code-dev@lists.stanford.edu],
         [SU2], [https://github.com/su2code])
 AC_PREREQ([2.59])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CANONICAL_TARGET
 AM_INIT_AUTOMAKE([subdir-objects foreign])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES(yes)])
-
-
 
 # AC_CONFIG_HEADERS([config.h])
 SU2_SET_COMPILERS
