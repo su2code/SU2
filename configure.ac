@@ -34,8 +34,8 @@
 # Major Changes/Contributions:
 # METIS & TECIO integration added by Ben Kirk, 3/24/2014
 # LAPACK connection added by Teus van der Stelt, 11/13/2014
-#
-######################################################################################
+# ParMETIS integration added by Ben Kirk & Thomas D. Economon, 2/3/2015
+##########################
 
 AC_INIT([SU2], [3.2.8], [su2code-dev@lists.stanford.edu],
         [SU2], [https://github.com/su2code])
@@ -45,10 +45,8 @@ AC_CANONICAL_TARGET
 AM_INIT_AUTOMAKE([subdir-objects foreign])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES(yes)])
 
-
 # AC_CONFIG_HEADERS([config.h])
-AC_PROG_CXX
-AC_PROG_CC
+SU2_SET_COMPILERS
 AM_PROG_CC_C_O
 AC_PROG_RANLIB
 AC_PROG_MKDIR_P
@@ -64,44 +62,7 @@ AC_CHECK_SIZEOF(float)
 AC_CHECK_SIZEOF(double)
 AC_CHECK_SIZEOF(void *)
 
-
-
-# --------------------------------------------------------------
-# Build up contributed packages that we will build from source
-# --------------------------------------------------------------
-su2_externals_INCLUDES=""
-su2_externals_LIBS=""
-
-# Tecplot
-CONFIGURE_TECIO
-if (test $enabletecio = yes); then
-  su2_externals_INCLUDES="-DHAVE_TECIO $TECIO_INCLUDE $su2_externals_INCLUDES"
-  su2_externals_LIBS="$TECIO_LIB $su2_externals_LIBS"
-else
-  su2_externals_INCLUDES="$su2_externals_INCLUDES"
-fi
-AM_CONDITIONAL(BUILD_TECIO, test x$enabletecio = xyes)
-AC_CONFIG_FILES([externals/tecio/Makefile])
-
-# Metis
-CONFIGURE_METIS
-if (test $enablemetis = yes); then
-su2_externals_INCLUDES="-DHAVE_METIS $METIS_INCLUDE $su2_externals_INCLUDES"
-su2_externals_LIBS="$METIS_LIB $su2_externals_LIBS"
-else
-su2_externals_INCLUDES="$su2_externals_INCLUDES"
-fi
-AM_CONDITIONAL(BUILD_METIS, test x$enablemetis = xyes)
-AC_CONFIG_FILES([externals/metis/Makefile])
-
-AC_SUBST([su2_externals_INCLUDES])
-AC_SUBST([su2_externals_LIBS])
-
-
 # optional bindings
-AC_ARG_WITH(MPI,
-    	AS_HELP_STRING([--with-MPI[=ARG]], [Build parallel version with MPI tools, ARG = MPI C++ compiler]),
-	[with_MPI=$withval], [with_MPI="no"])
 AC_ARG_WITH(CGNS-lib,
     	AS_HELP_STRING([--with-CGNS-lib[=ARG]], [CGNS library directory, ARG = path to libcgns.a]),
 	[with_CGNS_lib=$withval], [with_CGNS_lib="no"])
@@ -144,6 +105,58 @@ AC_ARG_ENABLE(SOL,
 AC_ARG_ENABLE(GEO,
    	AS_HELP_STRING([--disable-GEO], [build the SU2_GEO executable (default = yes)]),
 	[build_GEO=$enableval], [build_GEO="yes"])
+
+# Check for the old  MPI option so that we can throw an error
+AC_ARG_WITH(MPI,
+AS_HELP_STRING(),
+        [with_MPI=$withval], [with_MPI="no"])
+if test "$with_MPI" != "no"
+then
+    AC_MSG_ERROR([unsupported option --with-MPI. For MPI support, use --enable-mpi and specify your MPI implementations with --with-cc=`which mpicc` and --with-cxx=`which mpicxx` in your configure call.])
+fi
+
+# --------------------------------------------------------------
+# Build up contributed packages that we will build from source
+# --------------------------------------------------------------
+su2_externals_INCLUDES=""
+su2_externals_LIBS=""
+
+# Tecplot
+CONFIGURE_TECIO
+if (test $enabletecio = yes); then
+  su2_externals_INCLUDES="-DHAVE_TECIO $TECIO_INCLUDE $su2_externals_INCLUDES"
+  su2_externals_LIBS="$TECIO_LIB $su2_externals_LIBS"
+else
+  su2_externals_INCLUDES="$su2_externals_INCLUDES"
+fi
+AM_CONDITIONAL(BUILD_TECIO, test x$enabletecio = xyes)
+AC_CONFIG_FILES([externals/tecio/Makefile])
+
+# Metis
+CONFIGURE_METIS
+if (test $enablemetis = yes); then
+  su2_externals_INCLUDES="-DHAVE_METIS $METIS_INCLUDE $su2_externals_INCLUDES"
+  su2_externals_LIBS="$METIS_LIB $su2_externals_LIBS"
+else
+  su2_externals_INCLUDES="$su2_externals_INCLUDES"
+fi
+AM_CONDITIONAL(BUILD_METIS, test x$enablemetis = xyes)
+AC_CONFIG_FILES([externals/metis/Makefile])
+
+# Parmetis
+CONFIGURE_PARMETIS
+if (test $enableparmetis = yes); then
+  su2_externals_INCLUDES="-DHAVE_PARMETIS $PARMETIS_INCLUDE $su2_externals_INCLUDES"
+  su2_externals_LIBS="$PARMETIS_LIB $su2_externals_LIBS"
+else
+  su2_externals_INCLUDES="$su2_externals_INCLUDES"
+fi
+AM_CONDITIONAL(BUILD_PARMETIS, test x$enableparmetis = xyes)
+AC_CONFIG_FILES([externals/parmetis/Makefile])
+
+
+AC_SUBST([su2_externals_INCLUDES])
+AC_SUBST([su2_externals_LIBS])
 
 ##########################
 
@@ -321,16 +334,6 @@ fi
 AC_SUBST([LAPACK_CXX])
 AC_SUBST([LAPACK_LD])
 
-########################### MPI
-
-have_MPI="no"
-if test "$with_MPI" != "no"
-then
-	CXX="$with_MPI"
-	CXXFLAGS="-DHAVE_MPI "$CXXFLAGS""
-	have_MPI="yes"
-fi
-
 ###########################
 
 AM_CONDITIONAL([BUILD_CFD],[test $build_CFD != "no"])
@@ -397,13 +400,15 @@ Build Configuration Summary:
     Source code location: ${abs_srcdir}
     Install location: 	  ${abs_prefix}
     Version:              ${VERSION}
-    Compiler:             ${CXX}
+    C++ Compiler:         ${CXX}
+    C Compiler:           ${CC}
     Preprocessor flags:   ${CPPFLAGS}
     Compiler flags:       ${CXXFLAGS}
     Linker flags:         ${LDFLAGS}
     CGNS support:         $have_CGNS
     MPI support:          $have_MPI
     Metis support:        $enablemetis
+    Parmetis support:     $enableparmetis
     TecIO support:        $enabletecio
     Mutation++ support:   $have_Mutationpp
     Jsoncpp support: 	  $have_Jsoncpp
