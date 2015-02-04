@@ -154,9 +154,13 @@ int main(int argc, char *argv[]) {
      divide the grid between the nodes ---*/
     
     if (config_container[iZone]->GetMesh_FileFormat() == SU2) {
+      
       geometry_container[iZone][MESH_0] = new CPhysicalGeometry(geometry_aux, config_container[iZone], 1);
+      
     } else {
+      
       geometry_container[iZone][MESH_0] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
+      
     }
     
     /*--- Deallocate the memory of geometry_aux ---*/

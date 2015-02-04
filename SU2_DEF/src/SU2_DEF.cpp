@@ -89,13 +89,23 @@ int main(int argc, char *argv[]) {
     
     CGeometry *geometry_aux = NULL;
     
-    if (rank == MASTER_NODE) {
+    if (config_container[iZone]->GetMesh_FileFormat() == SU2) {
       
-      /*--- Read the grid using the master node ---*/
+      /*--- All ranks process the grid and call ParMETIS for partitioning ---*/
       
       geometry_aux = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
       
-      /*--- Color the initial grid and set the send-receive domains ---*/
+      /*--- Color the initial grid and set the send-receive domains (ParMETIS) ---*/
+      
+      geometry_aux->SetColorGrid_Parallel(config_container[iZone]);
+      
+    } else if (rank == MASTER_NODE) {
+      
+      /*--- Read the grid using the master node only ---*/
+      
+      geometry_aux = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
+      
+      /*--- Color the initial grid and set the send-receive domains (METIS) ---*/
       
       geometry_aux->SetColorGrid(config_container[iZone]);
       
@@ -104,7 +114,15 @@ int main(int argc, char *argv[]) {
     /*--- Allocate the memory of the current domain, and
      divide the grid between the nodes ---*/
     
-    geometry_container[iZone] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
+    if (config_container[iZone]->GetMesh_FileFormat() == SU2) {
+      
+      geometry_container[iZone] = new CPhysicalGeometry(geometry_aux, config_container[iZone], 1);
+      
+    } else {
+      
+      geometry_container[iZone] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
+      
+    }
     
     /*--- Deallocate the memory of geometry_aux ---*/
     

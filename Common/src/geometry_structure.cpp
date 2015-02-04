@@ -1246,7 +1246,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   unsigned short nDomain = 0, iDomain, jDomain, nPeriodic = 0, iPeriodic, overhead = 4, Buffer_Send_nMarkerDomain = 0, Buffer_Send_nDim = 0, Buffer_Send_nZone = 0, Buffer_Send_nPeriodic = 0;
   
   bool *MarkerIn = NULL, **VertexIn = NULL, CheckDomain;
-  long vnodes_local[8], *Global_to_Local_Point = NULL;
+  long vnodes_local[8], *Global2Local_Point = NULL;
   vector<long> DomainList;
   short *Marker_All_SendRecv_Copy = NULL;
   string *Marker_All_TagBound_Copy = NULL;
@@ -1337,7 +1337,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
     for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
       VertexIn[iMarker] = new bool [geometry->GetnElem_Bound(iMarker)];
     
-    Global_to_Local_Point =  new long[geometry->GetnPoint()];
+    Global2Local_Point =  new long[geometry->GetnPoint()];
     
     Buffer_Send_nDim = geometry->GetnDim();
     Buffer_Send_nZone = geometry->GetnZone();
@@ -1440,7 +1440,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
       Buffer_Send_nElemTotal = 0; Buffer_Send_nPointTotal = 0; Buffer_Send_nPointGhost = 0; Buffer_Send_nPointDomainTotal = 0; Buffer_Send_nPointPeriodic = 0;
       Buffer_Send_nElemTriangle = 0; Buffer_Send_nElemRectangle = 0; Buffer_Send_nElemTetrahedron = 0; Buffer_Send_nElemHexahedron = 0; Buffer_Send_nElemWedge = 0; Buffer_Send_nElemPyramid = 0;
       
-      for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) Global_to_Local_Point[iPoint] = -1;
+      for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) Global2Local_Point[iPoint] = -1;
       
       for (jElem = 0; jElem < nElem_Color[iDomain]; jElem++) {
         
@@ -1448,8 +1448,8 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
         
         for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++) {
           iPoint = geometry->elem[iElem]->GetNode(iNode);
-          if (Global_to_Local_Point[iPoint] == -1) {
-            Global_to_Local_Point[iPoint] = 1;
+          if (Global2Local_Point[iPoint] == -1) {
+            Global2Local_Point[iPoint] = 1;
             Buffer_Send_nPointTotal++;
             if ( geometry->node[iPoint]->GetColor() != iDomain ) Buffer_Send_nPointGhost++;
             else {
@@ -1851,7 +1851,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
       iElemTotal = 0; iPointDomain = 0; iPointPeriodic = Buffer_Send_nPointDomainTotal; iPointGhost = Buffer_Send_nPointDomainTotal + Buffer_Send_nPointPeriodic;
       iElemTriangle = 0; iElemRectangle = 0; iElemTetrahedron = 0; iElemHexahedron = 0; iElemWedge = 0; iElemPyramid = 0;
       
-      for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) Global_to_Local_Point[iPoint] = -1;
+      for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) Global2Local_Point[iPoint] = -1;
       
       for (jElem = 0; jElem < nElem_Color[iDomain]; jElem++) {
         
@@ -1859,7 +1859,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
         
         for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++) {
           iPoint = geometry->elem[iElem]->GetNode(iNode);
-          if (Global_to_Local_Point[iPoint] == -1) {
+          if (Global2Local_Point[iPoint] == -1) {
             
             if ( geometry->node[iPoint]->GetColor() == iDomain ) {
               if ( iPoint > geometry->GetnPointDomain() - 1) iPointTotal = iPointPeriodic;
@@ -1867,7 +1867,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
             }
             else iPointTotal = iPointGhost;
             
-            Global_to_Local_Point[iPoint] = iPointTotal;
+            Global2Local_Point[iPoint] = iPointTotal;
             Buffer_Send_Color[iPointTotal] = geometry->node[iPoint]->GetColor();
             Buffer_Send_GlobalPointIndex[iPointTotal] = iPoint;
             for (iDim = 0; iDim < Buffer_Send_nDim; iDim++)
@@ -1881,7 +1881,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
             
           }
           
-          vnodes_local[iNode] = Global_to_Local_Point[iPoint];
+          vnodes_local[iNode] = Global2Local_Point[iPoint];
           
         }
         
@@ -1928,7 +1928,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
             if (VertexIn[iMarker][iVertex]) {
               
               for (iNode = 0; iNode < geometry->bound[iMarker][iVertex]->GetnNodes(); iNode++) {
-                vnodes_local[iNode] = Global_to_Local_Point[geometry->bound[iMarker][iVertex]->GetNode(iNode)];
+                vnodes_local[iNode] = Global2Local_Point[geometry->bound[iMarker][iVertex]->GetNode(iNode)];
               }
               
               switch(geometry->bound[iMarker][iVertex]->GetVTK_Type()) {
@@ -1990,7 +1990,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
                 
                 /*--- For each color of the receptor we will han an extra marker (+) ---*/
                 
-                Buffer_Send_SendDomain_Periodic[iTotalSendDomain_Periodic] = Global_to_Local_Point[iPoint];
+                Buffer_Send_SendDomain_Periodic[iTotalSendDomain_Periodic] = Global2Local_Point[iPoint];
                 Buffer_Send_SendDomain_PeriodicTrans[iTotalSendDomain_Periodic] = Transformation;
                 Buffer_Send_SendDomain_PeriodicReceptor[iTotalSendDomain_Periodic] = ReceptorColor;
                 
@@ -2014,7 +2014,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
                 
                 /*--- For each color of the donor we will han an extra marker (-) ---*/
                 
-                Buffer_Send_ReceivedDomain_Periodic[iTotalReceivedDomain_Periodic] = Global_to_Local_Point[iPoint];
+                Buffer_Send_ReceivedDomain_Periodic[iTotalReceivedDomain_Periodic] = Global2Local_Point[iPoint];
                 Buffer_Send_ReceivedDomain_PeriodicTrans[iTotalReceivedDomain_Periodic] = Transformation;
                 Buffer_Send_ReceivedDomain_PeriodicDonor[iTotalReceivedDomain_Periodic] = DonorColor;
                 
@@ -2392,7 +2392,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
       delete[] Elem_Color[iDomain];
     }
     delete[] Elem_Color;
-    delete[] Global_to_Local_Point;
+    delete[] Global2Local_Point;
     
     for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
       delete VertexIn[iMarker];
@@ -2443,7 +2443,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   unsigned long nDomain = 0, iDomain, jDomain, nPeriodic = 0, iPeriodic, overhead = 4, Buffer_Send_nMarkerDomain = 0, Buffer_Send_nDim = 0, Buffer_Send_nZone = 0, Buffer_Send_nPeriodic = 0;
   
   bool *MarkerIn = NULL, **VertexIn = NULL;
-  long vnodes_local[8], *Global_to_Local_Point = NULL;
+  long vnodes_local[8], *Global2Local_Point = NULL;
   
   vector<long> DomainList;
   short *Marker_All_SendRecv_Copy = NULL;
@@ -2694,7 +2694,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   /*--- Auxiliar vector based on the original geometry ---*/
 
   ElemIn = new bool [geometry->no_of_local_elements];
-  Global_to_Local_Point =  new long[geometry->GetnPoint()];
+  Global2Local_Point =  new long[geometry->GetnPoint()];
 
   
   Buffer_Send_nDim  = geometry->GetnDim();
@@ -2806,7 +2806,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
     /*--- Initialize the global to local mapping ---*/
     
     for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-      Global_to_Local_Point[iPoint] = -1;
+      Global2Local_Point[iPoint] = -1;
     }
     
     /*--- Loop over all of the local elements and count the number of each
@@ -2834,11 +2834,11 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
           
           /*--- If we haven't already found this point... ---*/
           
-          if (Global_to_Local_Point[iPoint] == -1) {
+          if (Global2Local_Point[iPoint] == -1) {
             
             /*--- Mark point as found and collect information ---*/
             
-            Global_to_Local_Point[iPoint] = 1;
+            Global2Local_Point[iPoint] = 1;
             
             if((iPoint >= geometry->starting_node[rank]) &&
                (iPoint < geometry->ending_node[rank])) {
@@ -3169,7 +3169,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
     
     /*--- Initialize the global to local mapping ---*/
     
-    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) Global_to_Local_Point[iPoint] = -1;
+    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) Global2Local_Point[iPoint] = -1;
     
     /*--- Load up the actual elements into the buffers for sending. ---*/
     
@@ -3206,7 +3206,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
           
           /*--- Check if this point has been found previously ---*/
           
-          if (Global_to_Local_Point[iPoint] == -1) {
+          if (Global2Local_Point[iPoint] == -1) {
             
             /*--- Check if this node lives on the current rank based on the
              initial linear partitioning. We are only ever sending nodes that
@@ -3236,7 +3236,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
               
               /*--- Setting global to local, the color, and index. ---*/
               
-              Global_to_Local_Point[iPoint] = iPointCurrent;
+              Global2Local_Point[iPoint] = iPointCurrent;
               
               Buffer_Send_Color[PointTotal_Counter+iPointTotal] = local_colour_values[iPoint];
               Buffer_Send_GlobalPointIndex[PointTotal_Counter+iPointTotal] = iPoint;
@@ -5235,7 +5235,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
     delete [] Buffer_Send_nReceivedDomain_Periodic;
     delete [] Marker_All_SendRecv_Copy;
     delete [] Marker_All_TagBound_Copy;
-    delete [] Global_to_Local_Point;
+    delete [] Global2Local_Point;
     for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
       delete VertexIn[iMarker];
     delete[] VertexIn;
