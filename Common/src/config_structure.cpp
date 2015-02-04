@@ -4193,7 +4193,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
       if (CFL_AdaptParam[0] == 1.0) cout << "No CFL adaptation." << endl;
       else cout << "CFL adaptation. Factor down: "<< CFL_AdaptParam[0] <<", factor up: "<< CFL_AdaptParam[1]
-        <<", lower limit:"<< CFL_AdaptParam[2] <<", upper limit:" << CFL_AdaptParam[3] << endl;
+        <<", lower limit: "<< CFL_AdaptParam[2] <<", upper limit: " << CFL_AdaptParam[3] <<"."<< endl;
 
       if (nMGLevels !=0) {
         cout << "Multigrid Level:                  ";
