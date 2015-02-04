@@ -1116,12 +1116,6 @@ public:
 	 * \return <code>TRUE</code> if the partition is going to be plotted; otherwise <code>FALSE</code>.
 	 */
   bool GetExtraOutput(void);
-  
-  /*!
-   * \brief Boolean for controlling ParMETIS mode during testing.
-   * \return <code>TRUE</code> if ParMETIS will be used; otherwise <code>FALSE</code>.
-   */
-  bool GetParMETIS(void);
 
 	/*!
 	 * \brief Get the value of the Mach number (velocity divided by speed of sound).

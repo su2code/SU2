@@ -1136,6 +1136,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
       break;
     case CGNS:
       Read_CGNS_Format(config, val_mesh_filename, val_iZone, val_nZone);
+      //Read_CGNS_Format_Parallel(config, val_mesh_filename, val_iZone, val_nZone);
       break;
     case NETCDF_ASCII:
       Read_NETCDF_Format(config, val_mesh_filename, val_iZone, val_nZone);
@@ -8223,6 +8224,889 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
           config->SetMarker_All_Out_1D(iMarker, config->GetMarker_CfgFile_Out_1D(Marker_Tag));
           config->SetMarker_All_SendRecv(iMarker, NONE);
 
+        }
+        iMarker++;
+      }
+    }
+  }
+  
+  /*--- Periodic transormations is not implement, store default zeros ---*/
+  unsigned short nPeriodic = 1, iPeriodic = 0;
+  config->SetnPeriodicIndex(nPeriodic);
+  double* center    = new double[3];
+  double* rotation  = new double[3];
+  double* translate = new double[3];
+  for (unsigned short iDim = 0; iDim < 3; iDim++) {
+    center[iDim] = 0.0; rotation[iDim] = 0.0; translate[iDim] = 0.0;
+  }
+  config->SetPeriodicCenter(iPeriodic, center);
+  config->SetPeriodicRotation(iPeriodic, rotation);
+  config->SetPeriodicTranslate(iPeriodic, translate);
+  
+  /*--- Deallocate temporary memory. ---*/
+  delete[] vertices;
+  delete[] cells;
+  delete[] boundVerts;
+  
+  for ( int j = 0; j < nzones; j++) {
+    delete[] coordArray[j];
+    delete[] elemTypeVTK[j];
+    delete[] elemIndex[j];
+    delete[] nElems[j];
+    delete[] dataSize[j];
+    delete[] isInternal[j];
+    delete[] sectionNames[j];
+  }
+  delete[] coordArray;
+  delete[] elemTypeVTK;
+  delete[] elemIndex;
+  delete[] nElems;
+  delete[] dataSize;
+  delete[] isInternal;
+  delete[] sectionNames;
+  
+  for ( int j = 0; j < nzones; j++) {
+    for( int i = 0; i < ncoords; i++ ) {
+      delete[] gridCoords[j][i];
+    }
+    delete[] gridCoords[j];
+  }
+  delete[] gridCoords;
+  
+  for ( int kk = 0; kk < nzones; kk++) {
+    for (int ii = 0; ii < nsections; ii++) {
+      for (int jj = 0; jj < indexMax; jj++) {
+        delete[] connElems[kk][ii][jj];
+      }
+      delete connElems[kk][ii];
+    }
+    delete connElems[kk];
+  }
+  delete[] connElems;
+  
+#else
+  cout << "SU2 built without CGNS support!!" << endl;
+  cout << "To use CGNS, remove the -DNO_CGNS directive ";
+  cout << "from the makefile and supply the correct path";
+  cout << " to the CGNS library." << endl;
+  exit(EXIT_FAILURE);
+#endif
+  
+}
+
+void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone){
+  
+  /*--- Original CGNS reader implementation by Thomas D. Economon,
+   Francisco Palacios. Improvements for mixed-element meshes generated
+   by ICEM added by Martin Spel (3D) & Shlomy Shitrit (2D), April 2014.
+   Parallel version by Thomas D. Economon, February 2015. ---*/
+  
+#ifdef HAVE_CGNS
+  
+  /*--- Local variables and initialization ---*/
+  string text_line, Marker_Tag;
+  ifstream mesh_file;
+  unsigned short VTK_Type, iMarker;
+  unsigned short nMarker_Max = config->GetnMarker_Max();
+  unsigned long iPoint = 0, ielem_div = 0, ielem = 0, GlobalIndex;
+  int rank = MASTER_NODE, size = SINGLE_NODE;
+  nZone = val_nZone;
+  
+  /*--- Local variables which are needed when calling the CGNS mid-level API. ---*/
+  unsigned long vnodes_cgns[8];
+  double Coord_cgns[3];
+  int fn, nbases = 0, nzones = 0, ngrids = 0, ncoords = 0, nsections = 0, file_type;
+  int *vertices = NULL, *cells = NULL, nMarkers = 0, *boundVerts = NULL, npe;
+  int interiorElems = 0, boundaryElems = 0, totalVerts = 0, prevVerts = 0;
+  int cell_dim = 0, phys_dim = 0, nbndry, parent_flag;
+  char basename[CGNS_STRING_SIZE], zonename[CGNS_STRING_SIZE];
+  char coordname[CGNS_STRING_SIZE];
+  cgsize_t* cgsize; cgsize = new cgsize_t[3];
+  ZoneType_t zonetype;
+  DataType_t datatype;
+  double** coordArray = NULL;
+  double*** gridCoords = NULL;
+  ElementType_t elemType;
+  cgsize_t range_min, range_max, startE, endE;
+  range_min = 1;
+  string currentElem;
+  int** elemTypeVTK = NULL;
+  int** elemIndex = NULL;
+  int** nElems = NULL;
+  int indexMax, elemMax; indexMax = elemMax = 0;
+  cgsize_t**** connElems = NULL;
+  cgsize_t* connElemTemp = NULL;
+  cgsize_t ElementDataSize = 0;
+  cgsize_t* parentData = NULL;
+  int** dataSize = NULL;
+  bool** isInternal = NULL;
+  char*** sectionNames = NULL;
+  
+  /*--- Initialize counters for local/global points & elements ---*/
+#ifdef HAVE_MPI
+  unsigned long LocalIndex;
+  unsigned long Local_nPoint, Local_nPointDomain;
+  unsigned long Local_nElem;
+  unsigned long Local_nElemTri, Local_nElemQuad, Local_nElemTet;
+  unsigned long Local_nElemHex, Local_nElemWedge, Local_nElemPyramid;
+  
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+#endif
+  
+  /*--- Initialize counters for local/global points & elements ---*/
+  FinestMGLevel = true;
+  Global_nPoint  = 0; Global_nPointDomain = 0; Global_nElem = 0;
+  nelem_edge     = 0; Global_nelem_edge     = 0;
+  nelem_triangle = 0; Global_nelem_triangle = 0;
+  nelem_quad     = 0; Global_nelem_quad     = 0;
+  nelem_tetra    = 0; Global_nelem_tetra    = 0;
+  nelem_hexa     = 0; Global_nelem_hexa     = 0;
+  nelem_wedge    = 0; Global_nelem_wedge    = 0;
+  nelem_pyramid  = 0; Global_nelem_pyramid  = 0;
+  
+  /*--- Initialize some additional counters for the parallel partitioning ---*/
+  
+  unsigned long total_pt_accounted = 0;
+  unsigned long rem_points = 0;
+  unsigned long element_count = 0;
+  unsigned long node_count = 0;
+  unsigned long loc_element_count = 0;
+  bool elem_reqd = false;
+  
+  /*--- Allocate memory for the linear partition of the mesh. These
+   arrays are the size of the number of ranks. ---*/
+  
+  starting_node = new unsigned long[size];
+  ending_node   = new unsigned long[size];
+  npoint_procs  = new unsigned long[size];
+  
+  /*--- Check whether the supplied file is truly a CGNS file. ---*/
+  if (cg_is_cgns(val_mesh_filename.c_str(),&file_type) != CG_OK) {
+    printf( "\n\n   !!! Error !!!\n" );
+    printf( " %s is not a CGNS file.\n", val_mesh_filename.c_str());
+    printf( " Now exiting...\n\n");
+    exit(EXIT_FAILURE);
+  }
+  
+  /*--- Open the CGNS file for reading. The value of fn returned
+   is the specific index number for this file and will be
+   repeatedly used in the function calls. ---*/
+  
+  if (cg_open(val_mesh_filename.c_str(),CG_MODE_READ,&fn)) cg_error_exit();
+  cout << "Reading the CGNS file: " << val_mesh_filename.c_str() << "." << endl;
+  
+  /*--- Get the number of databases. This is the highest node
+   in the CGNS heirarchy. ---*/
+  
+  if ( cg_nbases(fn, &nbases) ) cg_error_exit();
+  cout << "CGNS file contains " << nbases << " database(s)." << endl;
+  
+  /*--- Check if there is more than one database. Throw an
+   error if there is because this reader can currently
+   only handle one database. ---*/
+  
+  if ( nbases > 1 ) {
+    printf("\n\n   !!! Error !!!\n" );
+    printf("CGNS reader currently incapable of handling more than 1 database.");
+    printf("Now exiting...\n\n");
+    exit(EXIT_FAILURE);
+  }
+  
+  /*--- Read the databases. Note that the CGNS indexing starts at 1. ---*/
+  
+  for (int i = 1; i <= nbases; i++) {
+    
+    if (cg_base_read(fn, i, basename, &cell_dim, &phys_dim)) cg_error_exit();
+    
+    /*--- Get the number of zones for this base. ---*/
+    
+    if ( cg_nzones(fn, i, &nzones) ) cg_error_exit();
+    cout << "Database " << i << ", " << basename << ": " << nzones;
+    cout << " zone(s), cell dimension of " << cell_dim << ", physical ";
+    cout << "dimension of " << phys_dim << "." << endl;
+    
+    /*--- Check if there is more than one zone. Throw an
+     error if there is, because this reader can currently
+     only handle one zone. This could be extended in the future. ---*/
+    
+    if ( nzones > 1 ) {
+      printf("\n\n   !!! Error !!!\n" );
+      printf("CGNS reader currently incapable of handling more than 1 zone.");
+      printf("Now exiting...\n\n");
+      exit(EXIT_FAILURE);
+    }
+    
+    /*--- Initialize some data structures for  all zones. ---*/
+    vertices     = new int[nzones];
+    cells        = new int[nzones];
+    boundVerts   = new int[nzones];
+    coordArray   = new double*[nzones];
+    gridCoords   = new double**[nzones];
+    elemTypeVTK  = new int*[nzones];
+    elemIndex    = new int*[nzones];
+    nElems       = new int*[nzones];
+    dataSize     = new int*[nzones];
+    isInternal   = new bool*[nzones];
+    nMarkers     = 0;
+    sectionNames = new char**[nzones];
+    connElems    = new cgsize_t***[nzones];
+    
+    /*--- Loop over all zones in this base. Again, indexing starts at 1. ---*/
+    
+    for (int j = 1; j <= nzones; j++) {
+      
+      /*--- Read the basic information for this zone, including
+       the name and the number of vertices, cells, and
+       boundary cells which are stored in the cgsize variable. ---*/
+      
+      if (cg_zone_read(fn, i, j, zonename, cgsize)) cg_error_exit();
+      
+      /*--- Rename the zone size information for clarity.
+       NOTE: The number of cells here may be only the number of
+       interior elements or it may be the total. This needs to
+       be counted explicitly later. ---*/
+      
+      vertices[j-1]   = cgsize[0];
+      cells[j-1]      = cgsize[1];
+      boundVerts[j-1] = cgsize[2];
+      
+      /*--- Increment the total number of vertices from all zones. ---*/
+      
+      totalVerts += vertices[j-1];
+      
+      /*--- Print some information about the current zone. ---*/
+      
+      if (cg_zone_type(fn, i, j, &zonetype)) cg_error_exit();
+      cout << "Zone " << j << ", " << zonename << ": " << vertices[j-1];
+      cout << " vertices, " << cells[j-1] << " cells, " << boundVerts[j-1];
+      cout << " boundary vertices." << endl;
+      
+      /*--- Retrieve the number of grids in this zone. For now, we know 
+       this is one, but to be more general, this will need to check and 
+       allow for a loop over all grids. ---*/
+      
+      if (cg_ngrids(fn, i, j, &ngrids)) cg_error_exit();
+      if (ngrids > 1) {
+        printf("\n\n   !!! Error !!!\n" );
+        printf("CGNS reader currently handles only 1 grid per zone.");
+        printf("Now exiting...\n\n");
+        exit(EXIT_FAILURE);
+      }
+      
+      /*--- Check the number of coordinate arrays stored in this zone.
+       Should be 2 for 2-D grids and 3 for 3-D grids. ---*/
+
+      if (cg_ncoords( fn, i, j, &ncoords)) cg_error_exit();
+      cout << "Reading grid coordinates..." << endl;
+      cout << "Number of coordinate dimensions is " << ncoords << "." << endl;
+      
+      /*--- Compute the number of points that will be on each processor.
+       This is a linear partitioning with the addition of a simple load
+       balancing for any remainder points. ---*/
+      
+      total_pt_accounted = 0;
+      for (unsigned long i=0; i<size; i++) {
+        npoint_procs[i] = cgsize[0]/size;
+        total_pt_accounted = total_pt_accounted + npoint_procs[i];
+      }
+      
+      /*--- Get the number of remainder points after the even division ---*/
+      rem_points = nPoint-total_pt_accounted;
+      for (unsigned long i=0; i<rem_points; i++) {
+        npoint_procs[i]++;
+      }
+      
+      /*--- Store the local number of nodes and the beginning/end index ---*/
+      local_node = npoint_procs[rank];
+      starting_node[0] = 0;
+      ending_node[0]   = starting_node[0] + npoint_procs[0];
+      for(unsigned long i = 1; i < size; i++) {
+        starting_node[i] = ending_node[i-1];
+        ending_node[i]   = starting_node[i] + npoint_procs[i] ;
+      }
+      
+      /*--- Set the value of range_max to the total number
+       of nodes in the unstructured mesh. Also allocate
+       memory for the temporary array that will hold
+       the grid coordinates as they are extracted. ---*/
+      
+      // CHECK THE +1 ON THE NODE INDEX
+      range_min = starting_node[rank]+1;
+      range_max = ending_node[rank]+1;
+      coordArray[j-1] = new double[local_node];
+      
+      /*--- Allocate memory for the 2-D array which will
+       store the x, y, & z (if required) coordinates
+       for writing into the SU2 mesh. ---*/
+      
+      gridCoords[j-1] = new double*[ncoords];
+      for (int ii = 0; ii < ncoords; ii++) {
+        *(gridCoords[j-1]+ii) = new double[local_node];
+      }
+      
+      /*--- Loop over each set of coordinates. Note again
+       that the indexing starts at 1. ---*/
+      
+      for (int k = 1; k <= ncoords; k++) {
+        
+        /*--- Read the coordinate info. This will retrieve the
+         data type (either RealSingle or RealDouble) as
+         well as the coordname which will specifiy the
+         type of data that it is based in the SIDS convention.
+         This might be "CoordinateX," for instance. ---*/
+        
+        if (cg_coord_info(fn, i, j, k, &datatype, coordname)) cg_error_exit();
+        cout << "Reading " << coordname << " values from file." << endl;
+        
+        /*--- Always retrieve the grid coords in double precision. ---*/
+        
+        datatype = RealDouble;
+        if ( cg_coord_read(fn, i, j, coordname, datatype, &range_min,
+                           &range_max, coordArray[j-1]) ) cg_error_exit();
+        
+        /*--- Copy these coords into the 2-D array for storage until
+         writing the SU2 mesh. ---*/
+        
+        for (int m = 0; m < range_max; m++ ) {
+          gridCoords[j-1][k-1][m] = coordArray[j-1][m];
+        }
+        
+      }
+      
+      /*--- Begin section for retrieving the connectivity info. ---*/
+      
+      cout << "Reading connectivity information..." << endl;
+      
+      /*--- First check the number of sections. ---*/
+      
+      if ( cg_nsections(fn, i, j, &nsections) ) cg_error_exit();
+      cout << "Number of connectivity sections is " << nsections << "." << endl;
+      
+      /*--- Allocate several data structures to hold the various
+       pieces of information describing each section. It is
+       stored in this manner so that it can be written to
+       SU2 memory later. ---*/
+      
+      elemTypeVTK[j-1] = new int[nsections];
+      elemIndex[j-1]   = new int[nsections];
+      nElems[j-1]      = new int[nsections];
+      dataSize[j-1]    = new int[nsections];
+      isInternal[j-1]  = new bool[nsections];
+      
+      sectionNames[j-1] = new char*[nsections];
+      for (int ii = 0; ii < nsections; ii++) {
+        sectionNames[j-1][ii]= new char[CGNS_STRING_SIZE];
+      }
+      
+      /*--- Loop over each section. This will include the main
+       connectivity information for the grid cells, as well
+       as any boundaries which were labeled before export. ---*/
+      
+      for ( int s = 1; s <= nsections; s++ ) {
+        
+        /*--- Read the connectivity details for this section.
+         Store the total number of elements in this section
+         to be used later for memory allocation. ---*/
+        
+        if ( cg_section_read(fn, i, j, s, sectionNames[j-1][s-1], &elemType, &startE,
+                             &endE, &nbndry, &parent_flag) ) cg_error_exit();
+        nElems[j-1][s-1] = (int) (endE-startE+1);
+        
+        /*--- Read the total number of nodes that will be
+         listed when reading this section. ---*/
+        
+        if ( cg_ElementDataSize(fn, i, j, s, &ElementDataSize) )
+          cg_error_exit();
+        dataSize[j-1][s-1] = ElementDataSize;
+        
+        /*--- Find the number of nodes required to represent
+         this type of element. ---*/
+        
+        if ( cg_npe(elemType, &npe) ) cg_error_exit();
+        elemIndex[j-1][s-1] = npe;
+        
+        /*--- Need to check the element type and correctly
+         specify the VTK identifier for that element.
+         SU2 recognizes elements by their VTK number. ---*/
+        
+        switch (elemType) {
+          case NODE:
+            currentElem      = "Vertex";
+            elemTypeVTK[j-1][s-1] = 1;
+            break;
+          case BAR_2:
+            currentElem      = "Line";
+            elemTypeVTK[j-1][s-1] = 3;
+            break;
+          case BAR_3:
+            currentElem      = "Line";
+            elemTypeVTK[j-1][s-1] = 3;
+            break;
+          case TRI_3:
+            currentElem      = "Triangle";
+            elemTypeVTK[j-1][s-1] = 5;
+            break;
+          case QUAD_4:
+            currentElem      = "Quadrilateral";
+            elemTypeVTK[j-1][s-1] = 9;
+            break;
+          case TETRA_4:
+            currentElem      = "Tetrahedron";
+            elemTypeVTK[j-1][s-1] = 10;
+            break;
+          case HEXA_8:
+            currentElem      = "Hexahedron";
+            elemTypeVTK[j-1][s-1] = 12;
+            break;
+          case PENTA_6:
+            currentElem      = "Prism";
+            elemTypeVTK[j-1][s-1] = 13;
+            break;
+          case PYRA_5:
+            currentElem      = "Pyramid";
+            elemTypeVTK[j-1][s-1] = 14;
+            break;
+          case HEXA_20:
+            printf( "\n\n   !!! Error !!!\n" );
+            printf( " HEXA-20 element type not supported\n");
+            printf(" Section %d, npe=%d\n", s, npe);
+            printf(" startE %d, endE %d\n", startE, endE);
+            printf( " Now exiting...\n\n");
+            exit(EXIT_FAILURE);
+            break;
+          case MIXED:
+            currentElem      = "Mixed";
+            elemTypeVTK[j-1][s-1] = -1;
+            break;
+          default:
+            printf( "\n\n   !!! Error !!!\n" );
+            printf( " Unrecognized element type: (type %d, npe=%d)\n", elemType, npe);
+            printf(" Section %d\n", s);
+            printf(" startE %d, endE %d\n", startE, endE);
+            printf( " Now exiting...\n\n");
+            exit(EXIT_FAILURE);
+            break;
+        }
+        
+        /*--- Check if the elements in this section are part
+         of the internal domain or are part of the boundary
+         surfaces. This will be used later to separate the
+         internal connectivity from the boundary connectivity.
+         We will check for quad and tri elements for 3-D meshes
+         because these will be the boundaries. Similarly, line
+         elements will be boundaries to 2-D problems. ---*/
+        
+        if ( cell_dim == 2 ) {
+          /*--- In 2-D check for line elements, VTK type 3. ---*/
+          if (elemTypeVTK[j-1][s-1] == 3) {
+            isInternal[j-1][s-1] = false;
+            nMarkers++;
+            boundaryElems += nElems[j-1][s-1];
+          } else {
+            isInternal[j-1][s-1] = true;
+            interiorElems += nElems[j-1][s-1];
+          }
+        } else {
+          /*--- In 3-D check for tri or quad elements, VTK types 5 or 9. ---*/
+          switch (elemTypeVTK[j-1][s-1]) {
+            case 5:
+            case 9:
+              isInternal[j-1][s-1] = false;
+              nMarkers++;
+              boundaryElems += nElems[j-1][s-1];
+              break;
+            case -1:
+              /*--- MIXED element support (treated later). ---*/
+              break;
+            default:
+              isInternal[j-1][s-1] = true;
+              interiorElems += nElems[j-1][s-1];
+              break;
+          }
+        }
+        
+        if (elemTypeVTK[j-1][s-1] == -1) {
+          /*--- In case of mixed data type, allocate place for 8 nodes maximum
+           (hex), plus element type. ---*/
+          elemIndex[j-1][s-1] = 9;
+        }
+        
+        /*--- Keep track of the sections with the largest
+         number of elements and the number of nodes
+         required to specify an element of a specific
+         type. These max values will be used to allocate
+         one large array. ---*/
+        
+        if ( elemIndex[j-1][s-1] > indexMax || s == 1 ) indexMax = elemIndex[j-1][s-1];
+        if ( nElems[j-1][s-1] > elemMax || s == 1 )     elemMax  = nElems[j-1][s-1];
+        
+        /*--- Print some information to the console. ---*/
+        
+        cout << "Reading section " << sectionNames[j-1][s-1];
+        cout << " of element type " << currentElem << "\n   starting at ";
+        cout << startE << " and ending at " << endE << "." << endl;
+        
+      }
+      
+      /*--- Allocate memory to store all of the connectivity
+       information in one large array. ---*/
+      
+      connElems[j-1] = new cgsize_t**[nsections];
+      for (int ii = 0; ii < nsections; ii++) {
+        connElems[j-1][ii] = new cgsize_t*[indexMax];
+        for (int jj = 0; jj < indexMax; jj++) {
+          connElems[j-1][ii][jj] = new cgsize_t[elemMax];
+        }
+      }
+      
+      for ( int s = 1; s <= nsections; s++ ) {
+        
+        connElemTemp = new cgsize_t[dataSize[j-1][s-1]];
+        
+        /*--- Retrieve the connectivity information and store. ---*/
+        
+        if ( cg_elements_read(fn, i, j, s, connElemTemp, parentData) )
+          cg_error_exit();
+        
+        /*--- Copy these values into the larger array for
+         storage until writing the SU2 file. ---*/
+        
+        if (elemTypeVTK[j-1][s-1] == -1) {
+          
+          /*--- In the zone, we assume we don't mix volumetric and surface
+           elements, so if at least one surface element is found (TRIA, QUAD),
+           all elements are assumed to be surface elements. Mixed-element
+           support initially added here by Martin Spel. ---*/
+          
+          bool isBoundary = false;
+          int counter = 0;
+          
+          for ( int ii = 0; ii < nElems[j-1][s-1]; ii++ ) {
+            ElementType_t elmt_type = ElementType_t (connElemTemp[counter]);
+            cg_npe( elmt_type, &npe);
+            
+            /*--- Mixed element support for 2D added here by Shlomy Shitrit ---*/
+            if (elmt_type == 5 || elmt_type == 9){
+              if (cell_dim == 2) { isBoundary = false; }
+              if (cell_dim == 3) { isBoundary = true;  }
+            }
+            
+            counter++;
+            connElems[j-1][s-1][0][ii] = elmt_type;
+            for ( int jj = 0; jj < npe; jj++ ) {
+              connElems[j-1][s-1][jj+1][ii] = connElemTemp[counter] + prevVerts;
+              counter++;
+            }
+          }
+          if (isBoundary) {
+            isInternal[j-1][s-1] = false;
+            nMarkers++;
+            boundaryElems += nElems[j-1][s-1];
+          } else if ( cell_dim == 3 ) {
+            isInternal[j-1][s-1] = true;
+            interiorElems += nElems[j-1][s-1];
+          }
+          
+          
+        } else {
+          int counter = 0;
+          for ( int ii = 0; ii < nElems[j-1][s-1]; ii++ ) {
+            for ( int jj = 0; jj < elemIndex[j-1][s-1]; jj++ ) {
+              connElems[j-1][s-1][jj][ii] = connElemTemp[counter] + prevVerts;
+              counter++;
+            }
+          }
+        }
+        delete[] connElemTemp;
+      }
+      prevVerts += vertices[j-1];
+      
+    }
+  }
+  
+  /*--- Close the CGNS file. ---*/
+  
+  if ( cg_close(fn) ) cg_error_exit();
+  cout << "Successfully closed the CGNS file." << endl;
+  
+  /*--- Write a SU2 mesh if requested in the config file. ---*/
+  if (config->GetCGNS_To_SU2()) {
+    cout << "CGNS to SU2 format conversion not yet supported in parallel!" << endl;
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+  }
+  
+  /*--- Load the data from the CGNS file into SU2 memory. ---*/
+  
+  if (rank == MASTER_NODE)
+    cout << endl << "Loading CGNS data into SU2 data structures." << endl;
+  
+  /*--- Read the dimension of the problem ---*/
+  
+  nDim = cell_dim;
+  if (rank == MASTER_NODE) {
+    if (nDim == 2) cout << "Two dimensional problem." << endl;
+    if (nDim == 3) cout << "Three dimensional problem." << endl;
+  }
+  
+  /*--- Read the information about inner elements ---*/
+  
+  nElem = interiorElems;
+  cout << nElem << " interior elements." << endl;
+  Global_nElem = nElem;
+  
+  /*--- Allocate space for elements ---*/
+  
+  elem = new CPrimalGrid*[nElem];
+  
+  /*--- Loop over all the volumetric elements ---*/
+  for ( int k = 0; k < nzones; k ++ ) {
+    for ( int s = 0; s < nsections; s++ ) {
+      if ( isInternal[k][s] ) {
+        for ( int i = 0; i < nElems[k][s]; i++ ) {
+          
+          /*--- Get the VTK type for this element. Check for mixed
+           elements. ---*/
+          
+          if (elemTypeVTK[k][s] == -1 ) {
+            
+            /*--- Mixed-element support. ---*/
+            ElementType_t elmt_type = ElementType_t (connElems[k][s][0][i]);
+            cg_npe( elmt_type, &npe);
+            switch (elmt_type) {
+              case NODE:
+                VTK_Type = 1;
+                break;
+              case BAR_2:
+                VTK_Type = 3;
+                break;
+              case BAR_3:
+                VTK_Type = 3;
+                break;
+              case TRI_3:
+                VTK_Type = 5;
+                break;
+              case QUAD_4:
+                VTK_Type = 9;
+                break;
+              case TETRA_4:
+                VTK_Type = 10;
+                break;
+              case HEXA_8:
+                VTK_Type = 12;
+                break;
+              case PENTA_6:
+                VTK_Type = 13;
+                break;
+              case PYRA_5:
+                VTK_Type = 14;
+                break;
+              default: // error
+                cout << "Kind of element not suppported!" << endl;
+                break;
+            }
+            
+            /*--- Transfer the nodes for this element. ---*/
+            for ( int j = 1; j < npe+1; j++ ) {
+              vnodes_cgns[j-1] = connElems[k][s][j][i] - 1;
+            }
+            
+          } else {
+            VTK_Type = elemTypeVTK[k][s];
+            
+            /*--- Transfer the nodes for this element. ---*/
+            for ( int j = 0; j < elemIndex[k][s]; j++ ) {
+              vnodes_cgns[j] = connElems[k][s][j][i] - 1;
+            }
+          }
+          
+          /* Instantiate this element. */
+          switch(VTK_Type) {
+            case TRIANGLE:
+              elem[ielem] = new CTriangle(vnodes_cgns[0],vnodes_cgns[1],vnodes_cgns[2],nDim);
+              ielem_div++; ielem++; nelem_triangle++; break;
+            case RECTANGLE:
+              elem[ielem] = new CRectangle(vnodes_cgns[0],vnodes_cgns[1],vnodes_cgns[2],vnodes_cgns[3],nDim);
+              ielem++; nelem_quad++;
+              ielem_div++;
+              break;
+            case TETRAHEDRON:
+              elem[ielem] = new CTetrahedron(vnodes_cgns[0],vnodes_cgns[1],vnodes_cgns[2],vnodes_cgns[3]);
+              ielem_div++; ielem++; nelem_tetra++; break;
+            case HEXAHEDRON:
+              elem[ielem] = new CHexahedron(vnodes_cgns[0],vnodes_cgns[1],vnodes_cgns[2],vnodes_cgns[3],vnodes_cgns[4],vnodes_cgns[5],vnodes_cgns[6],vnodes_cgns[7]);
+              ielem++; nelem_hexa++; ielem_div++;
+              break;
+            case WEDGE:
+              elem[ielem] = new CWedge(vnodes_cgns[0],vnodes_cgns[1],vnodes_cgns[2],vnodes_cgns[3],vnodes_cgns[4],vnodes_cgns[5]);
+              ielem++; nelem_wedge++; ielem_div++;
+              break;
+            case PYRAMID:
+              elem[ielem] = new CPyramid(vnodes_cgns[0],vnodes_cgns[1],vnodes_cgns[2],vnodes_cgns[3],vnodes_cgns[4]);
+              ielem++; nelem_pyramid++; ielem_div++;
+              break;
+          }
+        }
+      }
+    }
+  }
+  
+  if (config->GetDivide_Element()) nElem = nelem_triangle + nelem_quad + nelem_tetra + nelem_hexa + nelem_wedge + nelem_pyramid;
+  
+  Global_nelem_triangle = nelem_triangle;
+  Global_nelem_quad     = nelem_quad;
+  Global_nelem_tetra    = nelem_tetra;
+  Global_nelem_hexa     = nelem_hexa;
+  Global_nelem_wedge    = nelem_wedge;
+  Global_nelem_pyramid  = nelem_pyramid;
+  
+  /*--- Print information about the elements to the console ---*/
+  if (size == 1) {
+    if (Global_nelem_triangle > 0)
+      cout << Global_nelem_triangle << " triangles." << endl;
+    if (Global_nelem_quad > 0)
+      cout << Global_nelem_quad << " quadrilaterals." << endl;
+    if (Global_nelem_tetra > 0)
+      cout << Global_nelem_tetra << " tetrahedra." << endl;
+    if (Global_nelem_hexa > 0)
+      cout << Global_nelem_hexa << " hexahedra." << endl;
+    if (Global_nelem_wedge > 0)
+      cout << Global_nelem_wedge << " prisms." << endl;
+    if (Global_nelem_pyramid > 0)
+      cout << Global_nelem_pyramid << " pyramids." << endl;
+  }
+  
+  /*--- Read node coordinates. Note this assumes serial mode. ---*/
+  nPoint = totalVerts;
+  nPointDomain = nPoint;
+  cout << nPoint << " points." << endl;
+  node = new CPoint*[nPoint];
+  for ( int k = 0; k < nzones; k++ ) {
+    for ( int i = 0; i < vertices[k]; i++ ) {
+      for ( int j = 0; j < cell_dim; j++ ) {
+        Coord_cgns[j] = gridCoords[k][j][i];
+      }
+      switch(nDim) {
+        case 2:
+          GlobalIndex = i;
+          node[iPoint] = new CPoint(Coord_cgns[0], Coord_cgns[1], GlobalIndex, config);
+          iPoint++; break;
+        case 3:
+          GlobalIndex = i;
+          node[iPoint] = new CPoint(Coord_cgns[0], Coord_cgns[1], Coord_cgns[2], GlobalIndex, config);
+          iPoint++; break;
+      }
+    }
+  }
+  
+  /*--- Set some important point information for parallel simulations. ---*/
+  Global_nPoint = nPoint;
+  Global_nPointDomain = nPointDomain;
+  
+  /*--- Read number of markers ---*/
+  nMarker = nMarkers;
+  cout << nMarker << " surface markers." << endl;
+  config->SetnMarker_All(nMarker);
+  bound = new CPrimalGrid**[nMarker];
+  nElem_Bound = new unsigned long [nMarker];
+  Tag_to_Marker = new string [nMarker_Max];
+  
+  iMarker = 0;
+  for ( int k = 0; k < nzones; k ++ ) {
+    for ( int s = 0; s < nsections; s++ ) {
+      if ( !isInternal[k][s] ) {
+        nelem_edge_bound = 0; nelem_triangle_bound = 0; nelem_quad_bound = 0; ielem = 0;
+        Marker_Tag = sectionNames[k][s];
+        
+        /*--- Remove whitespaces from the marker names ---*/
+        Marker_Tag.erase(remove(Marker_Tag.begin(),Marker_Tag.end(),' '),Marker_Tag.end());
+        
+        if (Marker_Tag != "SEND_RECEIVE") {
+          nElem_Bound[iMarker] = nElems[k][s];
+          if (rank == MASTER_NODE)
+            cout << nElem_Bound[iMarker]  << " boundary elements in index "<< iMarker <<" (Marker = " <<Marker_Tag<< ")." << endl;
+          bound[iMarker] = new CPrimalGrid* [nElem_Bound[iMarker]];
+          
+          for ( int i = 0; i < nElems[k][s]; i++ ) {
+            
+            /*--- Get the VTK type for this element. Check for mixed
+             elements. ---*/
+            
+            if (elemTypeVTK[k][s] == -1 ) {
+              
+              /*--- Mixed-element support. ---*/
+              ElementType_t elmt_type = ElementType_t (connElems[k][s][0][i]);
+              cg_npe( elmt_type, &npe);
+              switch (elmt_type) {
+                case NODE: VTK_Type = 1; break;
+                case BAR_2: VTK_Type = 3; break;
+                case BAR_3: VTK_Type = 3; break;
+                case TRI_3: VTK_Type = 5; break;
+                case QUAD_4: VTK_Type = 9; break;
+                case TETRA_4: VTK_Type = 10; break;
+                case HEXA_8: VTK_Type = 12; break;
+                case PENTA_6: VTK_Type = 13; break;
+                case PYRA_5: VTK_Type = 14; break;
+                default: cout << "Kind of element not suppported!" << endl; break;  // error
+              }
+              /*--- Transfer the nodes for this element. ---*/
+              for ( int j = 1; j < npe+1; j++ ) {
+                vnodes_cgns[j-1] = connElems[k][s][j][i] - 1;
+              }
+              
+            }else {
+              VTK_Type = elemTypeVTK[k][s];
+              
+              /* Transfer the nodes for this element. */
+              for ( int j = 0; j < elemIndex[k][s]; j++ ) {
+                vnodes_cgns[j] = connElems[k][s][j][i] - 1;
+              }
+            }
+            
+            
+            switch(VTK_Type) {
+              case LINE:
+                
+                if (nDim == 3) {
+                  cout << "Please remove line boundary conditions from the mesh file!" << endl;
+#ifndef HAVE_MPI
+                  exit(EXIT_FAILURE);
+#else
+                  MPI_Abort(MPI_COMM_WORLD,1);
+                  MPI_Finalize();
+#endif
+                }
+                
+                bound[iMarker][ielem] = new CLine(vnodes_cgns[0],vnodes_cgns[1],2);
+                ielem++; nelem_edge_bound++; break;
+              case TRIANGLE:
+                bound[iMarker][ielem] = new CTriangle(vnodes_cgns[0],vnodes_cgns[1],vnodes_cgns[2],3);
+                ielem++; nelem_triangle_bound++; break;
+              case RECTANGLE:
+                bound[iMarker][ielem] = new CRectangle(vnodes_cgns[0],vnodes_cgns[1],vnodes_cgns[2],vnodes_cgns[3],3);
+                ielem++; nelem_quad_bound++; break;
+            }
+          }
+          
+          /*--- Update config information storing the boundary information in the right place ---*/
+          Tag_to_Marker[config->GetMarker_CfgFile_TagBound(Marker_Tag)] = Marker_Tag;
+          config->SetMarker_All_TagBound(iMarker, Marker_Tag);
+          config->SetMarker_All_KindBC(iMarker, config->GetMarker_CfgFile_KindBC(Marker_Tag));
+          config->SetMarker_All_Monitoring(iMarker, config->GetMarker_CfgFile_Monitoring(Marker_Tag));
+          config->SetMarker_All_GeoEval(iMarker, config->GetMarker_CfgFile_GeoEval(Marker_Tag));
+          config->SetMarker_All_Designing(iMarker, config->GetMarker_CfgFile_Designing(Marker_Tag));
+          config->SetMarker_All_Plotting(iMarker, config->GetMarker_CfgFile_Plotting(Marker_Tag));
+          config->SetMarker_All_DV(iMarker, config->GetMarker_CfgFile_DV(Marker_Tag));
+          config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
+          config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
+          config->SetMarker_All_Out_1D(iMarker, config->GetMarker_CfgFile_Out_1D(Marker_Tag));
+          config->SetMarker_All_SendRecv(iMarker, NONE);
+          
         }
         iMarker++;
       }
