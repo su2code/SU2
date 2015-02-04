@@ -87,11 +87,11 @@ CGeometry::~CGeometry(void) {
     delete[] face;
   }
   
-  if (node != NULL) {
-    for (iPoint = 0; iPoint < nPoint; iPoint ++)
-      if (node[iPoint] != NULL) delete node[iPoint];
-    delete[] node;
-  }
+//  if (node != NULL) {
+//    for (iPoint = 0; iPoint < nPoint; iPoint ++)
+//      if (node[iPoint] != NULL) delete node[iPoint];
+//    delete[] node;
+//  }
   
   if (edge != NULL) {
     for (iEdge = 0; iEdge < nEdge; iEdge ++)

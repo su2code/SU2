@@ -161,7 +161,7 @@ int main(int argc, char *argv[]) {
     
     /*--- Deallocate the memory of geometry_aux ---*/
 
-    //delete geometry_aux;
+    delete geometry_aux;
     
     /*--- Add the Send/Receive boundaries ---*/
     
