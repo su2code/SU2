@@ -46,7 +46,7 @@ int main(int argc, char *argv[]) {
   int size = SINGLE_NODE;
   
   /*--- MPI initialization, and buffer setting ---*/
-
+  
 #ifdef HAVE_MPI
   int *bptr, bl;
   MPI_Init(&argc,&argv);
@@ -114,7 +114,7 @@ int main(int argc, char *argv[]) {
   
   for (iZone = 0; iZone < nZone; iZone++) {
     
-      /*--- Definition of the configuration option class for all zones. In this
+    /*--- Definition of the configuration option class for all zones. In this
      constructor, the input configuration file is parsed and all options are
      read and stored. ---*/
     
@@ -126,14 +126,23 @@ int main(int argc, char *argv[]) {
     
     CGeometry *geometry_aux = NULL;
     
-
-    if (rank == MASTER_NODE) {
+    if (config_container[iZone]->GetMesh_FileFormat() == SU2) {
       
-      /*--- Read the grid using the master node ---*/
+      /*--- All ranks process the grid and call ParMETIS for partitioning ---*/
       
       geometry_aux = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
       
-      /*--- Color the initial grid and set the send-receive domains ---*/
+      /*--- Color the initial grid and set the send-receive domains (ParMETIS) ---*/
+      
+      geometry_aux->SetColorGrid_Parallel(config_container[iZone]);
+      
+    } else if (rank == MASTER_NODE) {
+      
+      /*--- Read the grid using the master node only ---*/
+
+      geometry_aux = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
+      
+      /*--- Color the initial grid and set the send-receive domains (METIS) ---*/
       
       geometry_aux->SetColorGrid(config_container[iZone]);
       
@@ -144,7 +153,11 @@ int main(int argc, char *argv[]) {
     /*--- Allocate the memory of the current domain, and
      divide the grid between the nodes ---*/
     
-    geometry_container[iZone][MESH_0] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
+    if (config_container[iZone]->GetMesh_FileFormat() == SU2) {
+      geometry_container[iZone][MESH_0] = new CPhysicalGeometry(geometry_aux, config_container[iZone], 1);
+    } else {
+      geometry_container[iZone][MESH_0] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
+    }
     
     /*--- Deallocate the memory of geometry_aux ---*/
 
@@ -157,11 +170,11 @@ int main(int argc, char *argv[]) {
     /*--- Add the Send/Receive boundaries ---*/
     
     geometry_container[iZone][MESH_0]->SetBoundaries(config_container[iZone]);
-    
+
   }
   
   if (rank == MASTER_NODE)
-    cout << endl <<"------------------------- Geometry Preprocessing ------------------------" << endl;
+  cout << endl <<"------------------------- Geometry Preprocessing ------------------------" << endl;
   
   /*--- Preprocessing of the geometry for all zones. In this routine, the edge-
    based data structure is constructed, i.e. node and cell neighbors are
@@ -171,7 +184,7 @@ int main(int argc, char *argv[]) {
   Geometrical_Preprocessing(geometry_container, config_container, nZone);
   
   if (rank == MASTER_NODE)
-    cout << endl <<"------------------------- Solver Preprocessing --------------------------" << endl;
+  cout << endl <<"------------------------- Solver Preprocessing --------------------------" << endl;
   
   for (iZone = 0; iZone < nZone; iZone++) {
     
@@ -179,7 +192,7 @@ int main(int argc, char *argv[]) {
     
     if ( (config_container[iZone]->GetKind_Solver() == RANS) ||
         (config_container[iZone]->GetKind_Solver() == ADJ_RANS) )
-      geometry_container[iZone][MESH_0]->ComputeWall_Distance(config_container[iZone]);
+    geometry_container[iZone][MESH_0]->ComputeWall_Distance(config_container[iZone]);
     
     /*--- Computation of positive surface area in the z-plane which is used for
      the calculation of force coefficient (non-dimensionalization). ---*/
@@ -208,13 +221,13 @@ int main(int argc, char *argv[]) {
     for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++) {
       solver_container[iZone][iMesh] = new CSolver* [MAX_SOLS];
       for (iSol = 0; iSol < MAX_SOLS; iSol++)
-        solver_container[iZone][iMesh][iSol] = NULL;
+      solver_container[iZone][iMesh][iSol] = NULL;
     }
     Solver_Preprocessing(solver_container[iZone], geometry_container[iZone],
                          config_container[iZone], iZone);
     
     if (rank == MASTER_NODE)
-      cout << endl <<"----------------- Integration and Numerics Preprocessing ----------------" << endl;
+    cout << endl <<"----------------- Integration and Numerics Preprocessing ----------------" << endl;
     
     /*--- Definition of the integration class: integration_container[#ZONES][#EQ_SYSTEMS].
      The integration class orchestrates the execution of the spatial integration
@@ -247,14 +260,14 @@ int main(int argc, char *argv[]) {
     
     if (config_container[iZone]->GetGrid_Movement()) {
       if (rank == MASTER_NODE)
-        cout << "Setting dynamic mesh structure." << endl;
+      cout << "Setting dynamic mesh structure." << endl;
       grid_movement[iZone] = new CVolumetricMovement(geometry_container[iZone][MESH_0]);
       FFDBox[iZone] = new CFreeFormDefBox*[MAX_NUMBER_FFD];
       surface_movement[iZone] = new CSurfaceMovement();
       surface_movement[iZone]->CopyBoundary(geometry_container[iZone][MESH_0], config_container[iZone]);
       if (config_container[iZone]->GetUnsteady_Simulation() == TIME_SPECTRAL)
-        SetGrid_Movement(geometry_container[iZone], surface_movement[iZone], grid_movement[iZone],
-                         FFDBox[iZone], solver_container[iZone], config_container[iZone], iZone, 0, 0);
+      SetGrid_Movement(geometry_container[iZone], surface_movement[iZone], grid_movement[iZone],
+                       FFDBox[iZone], solver_container[iZone], config_container[iZone], iZone, 0, 0);
     }
     
   }
@@ -262,13 +275,13 @@ int main(int argc, char *argv[]) {
   /*--- For the time-spectral solver, set the grid node velocities. ---*/
   
   if (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_SPECTRAL)
-    SetTimeSpectral_Velocities(geometry_container, config_container, nZone);
+  SetTimeSpectral_Velocities(geometry_container, config_container, nZone);
   
   /*--- Coupling between zones (limited to two zones at the moment) ---*/
   
   if (nZone == 2) {
     if (rank == MASTER_NODE)
-      cout << endl <<"--------------------- Setting Coupling Between Zones --------------------" << endl;
+    cout << endl <<"--------------------- Setting Coupling Between Zones --------------------" << endl;
     geometry_container[ZONE_0][MESH_0]->MatchZone(config_container[ZONE_0], geometry_container[ZONE_1][MESH_0],
                                                   config_container[ZONE_1], ZONE_0, nZone);
     geometry_container[ZONE_1][MESH_0]->MatchZone(config_container[ZONE_1], geometry_container[ZONE_0][MESH_0],
@@ -289,12 +302,12 @@ int main(int argc, char *argv[]) {
   
   /*--- Check for an unsteady restart. Update ExtIter if necessary. ---*/
   if (config_container[ZONE_0]->GetWrt_Unsteady() && config_container[ZONE_0]->GetRestart())
-    ExtIter = config_container[ZONE_0]->GetUnst_RestartIter();
+  ExtIter = config_container[ZONE_0]->GetUnst_RestartIter();
   
   /*--- Main external loop of the solver. Within this loop, each iteration ---*/
   
   if (rank == MASTER_NODE)
-    cout << endl <<"------------------------------ Begin Solver -----------------------------" << endl;
+  cout << endl <<"------------------------------ Begin Solver -----------------------------" << endl;
   
   /*--- Set up a timer for performance benchmarking (preprocessing time is not included) ---*/
   
@@ -313,14 +326,14 @@ int main(int argc, char *argv[]) {
     /*--- Read the target pressure ---*/
     
     if (config_container[ZONE_0]->GetInvDesign_Cp() == YES)
-      output->SetCp_InverseDesign(solver_container[ZONE_0][MESH_0][FLOW_SOL],
-                                  geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
+    output->SetCp_InverseDesign(solver_container[ZONE_0][MESH_0][FLOW_SOL],
+                                geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
     
     /*--- Read the target heat flux ---*/
-
+    
     if (config_container[ZONE_0]->GetInvDesign_HeatFlux() == YES)
-      output->SetHeat_InverseDesign(solver_container[ZONE_0][MESH_0][FLOW_SOL],
-                                    geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
+    output->SetHeat_InverseDesign(solver_container[ZONE_0][MESH_0][FLOW_SOL],
+                                  geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
     
     /*--- Perform a single iteration of the chosen PDE solver. ---*/
     
@@ -466,12 +479,12 @@ int main(int argc, char *argv[]) {
            surface solution, and surface comma-separated value files. ---*/
           
           output->SetResult_Files(solver_container, geometry_container, config_container, ExtIter, nZone);
-
+          
           /*--- Output a file with the forces breakdown. ---*/
           
           output->SetForces_Breakdown(geometry_container, solver_container,
                                       config_container, integration_container, ZONE_0);
-
+          
           /*--- Compute the forces at different sections. ---*/
           
           if (config_container[ZONE_0]->GetPlot_Section_Forces()) {
@@ -495,29 +508,29 @@ int main(int argc, char *argv[]) {
   
   if (rank == MASTER_NODE) {
     
-  /*--- Print out the number of non-physical points and reconstructions ---*/
+    /*--- Print out the number of non-physical points and reconstructions ---*/
     
-  if (config_container[ZONE_0]->GetNonphysical_Points() > 0)
+    if (config_container[ZONE_0]->GetNonphysical_Points() > 0)
     cout << "Warning: there are " << config_container[ZONE_0]->GetNonphysical_Points() << " non-physical points in the solution." << endl;
-  if (config_container[ZONE_0]->GetNonphysical_Reconstr() > 0)
+    if (config_container[ZONE_0]->GetNonphysical_Reconstr() > 0)
     cout << "Warning: " << config_container[ZONE_0]->GetNonphysical_Reconstr() << " reconstructed states for upwinding are non-physical." << endl;
-  
-  /*--- Close the convergence history file. ---*/
+    
+    /*--- Close the convergence history file. ---*/
     
     ConvHist_file.close();
     cout << "History file, closed." << endl;
   }
   
-//  /*--- Deallocate config container ---*/
-//  
-//  for (iZone = 0; iZone < nZone; iZone++) {
-//    if (config_container[iZone] != NULL) {
-//      delete config_container[iZone];
-//    }
-//  }
-//  if (config_container != NULL) delete[] config_container;
-
-
+  //  /*--- Deallocate config container ---*/
+  //
+  //  for (iZone = 0; iZone < nZone; iZone++) {
+  //    if (config_container[iZone] != NULL) {
+  //      delete config_container[iZone];
+  //    }
+  //  }
+  //  if (config_container != NULL) delete[] config_container;
+  
+  
   /*--- Synchronization point after a single solver iteration. Compute the
    wall clock time required. ---*/
   
@@ -538,7 +551,7 @@ int main(int argc, char *argv[]) {
   /*--- Exit the solver cleanly ---*/
   
   if (rank == MASTER_NODE)
-    cout << endl <<"------------------------- Exit Success (SU2_CFD) ------------------------" << endl << endl;
+  cout << endl <<"------------------------- Exit Success (SU2_CFD) ------------------------" << endl << endl;
   
 #ifdef HAVE_MPI
   /*--- Finalize MPI parallelization ---*/

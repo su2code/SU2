@@ -909,6 +909,7 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
       if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
         SendRecv = config->GetMarker_All_SendRecv(iMarker);
         RecvFrom = abs(SendRecv)-1;
+        
         /*--- Checking for less than or equal to the rank, because there may
          be some periodic halo nodes that send info to the same rank. ---*/
         
@@ -1013,7 +1014,7 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
       jPoint++;
     }
   }
-  
+
   /*--- Gather the coordinate data on the master node using MPI. ---*/
 
   MPI_Gather(Buffer_Send_X, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_X, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
@@ -1022,14 +1023,13 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
     MPI_Gather(Buffer_Send_Z, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Z, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
   }
   MPI_Gather(Buffer_Send_GlobalIndex, nBuffer_Scalar, MPI_UNSIGNED_LONG, Buffer_Recv_GlobalIndex, nBuffer_Scalar, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
-  
+
   /*--- The master node unpacks and sorts this variable by global index ---*/
   
   if (rank == MASTER_NODE) {
     jPoint = 0;
     for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
       for (iPoint = 0; iPoint < Buffer_Recv_nPoin[iProcessor]; iPoint++) {
-        
         /*--- Get global index, then loop over each variable and store ---*/
         iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
         Coords[0][iGlobal_Index] = Buffer_Recv_X[jPoint];
@@ -1041,7 +1041,7 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
       jPoint = (iProcessor+1)*nBuffer_Scalar;
     }
   }
-  
+
   /*--- Immediately release the temporary data buffers. ---*/
   
   delete [] Local_Halo;
