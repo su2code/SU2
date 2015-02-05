@@ -5267,7 +5267,7 @@ fi
 
 if test "$with_MPI" != "no"
 then
-    as_fn_error $? "unsupported option --with-MPI. For MPI support, use --enable-mpi and specify your MPI implementations with --with-cc=\`which mpicc\` and --with-cxx=\`which mpicxx\` in your configure call." "$LINENO" 5
+    as_fn_error $? "unsupported option --with-MPI. For MPI support, use --enable-mpi and specify your MPI implementations with --with-cc=/path/to/mpicc and --with-cxx=/path/to/mpicxx in your configure call." "$LINENO" 5
 fi
 
 # --------------------------------------------------------------
