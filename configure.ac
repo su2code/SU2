@@ -112,7 +112,7 @@ AS_HELP_STRING(),
         [with_MPI=$withval], [with_MPI="no"])
 if test "$with_MPI" != "no"
 then
-    AC_MSG_ERROR([unsupported option --with-MPI. For MPI support, use --enable-mpi and specify your MPI implementations with --with-cc=`which mpicc` and --with-cxx=`which mpicxx` in your configure call.])
+    AC_MSG_ERROR([unsupported option --with-MPI. For MPI support, use --enable-mpi and specify your MPI implementations with --with-cc=/path/to/mpicc and --with-cxx=/path/to/mpicxx in your configure call.])
 fi
 
 # --------------------------------------------------------------
