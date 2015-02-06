@@ -312,7 +312,7 @@ int rank = 0;
 }
 
 unsigned long CSysSolve::FGMRES_LinSolver(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
-                               CPreconditioner & precond, double tol, unsigned long m, bool monitoring) {
+                               CPreconditioner & precond, double tol, unsigned long m, double *residual, bool monitoring) {
 	
 int rank = 0;
 
@@ -432,7 +432,8 @@ int rank = 0;
     
     /*---  Output the relative residual if necessary ---*/
     
-    if ((((monitoring) && (rank == MASTER_NODE)) && ((i+1) % 100 == 0)) && (rank == MASTER_NODE)) WriteHistory(i+1, beta, norm0);
+    if ((((monitoring) && (rank == MASTER_NODE)) && ((i+1) % 50 == 0)) && (rank == MASTER_NODE)) WriteHistory(i+1, beta, norm0);
+    
   }
 
   /*---  Solve the least-squares system and update solution ---*/
@@ -448,10 +449,11 @@ int rank = 0;
   }
   
 //  /*---  Recalculate final (neg.) residual (this should be optional) ---*/
+//  
 //  mat_vec(x, w[0]);
 //  w[0] -= b;
 //  double res = w[0].norm();
-//  
+//
 //  if (fabs(res - beta) > tol*10) {
 //    if (rank == MASTER_NODE) {
 //      cout << "# WARNING in CSysSolve::FGMRES(): " << endl;
@@ -460,12 +462,13 @@ int rank = 0;
 //    }
 //  }
 	
+  (*residual) = beta;
 	return i;
   
 }
 
 unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
-                                 CPreconditioner & precond, double tol, unsigned long m, bool monitoring) {
+                                 CPreconditioner & precond, double tol, unsigned long m, double *residual, bool monitoring) {
 	
   int rank = 0;
 #ifdef HAVE_MPI
@@ -575,7 +578,7 @@ unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x,
     
     norm_r = r.norm();
     if (norm_r < tol*norm0) break;
-    if (((monitoring) && (rank == MASTER_NODE)) && ((i+1) % 5 == 0) && (rank == MASTER_NODE)) WriteHistory(i+1, norm_r, norm0);
+    if (((monitoring) && (rank == MASTER_NODE)) && ((i+1) % 50 == 0) && (rank == MASTER_NODE)) WriteHistory(i+1, norm_r, norm0);
     
   }
 	  
@@ -595,19 +598,20 @@ unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x,
 //    cout << "# true_res - calc_res = " << true_res <<" "<< norm_r << endl;
 //  }
 	
+  (*residual) = norm_r;
 	return i;
 }
 
 unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CSysVector & LinSysSol, CGeometry *geometry, CConfig *config) {
   
-  double SolverTol = config->GetLinear_Solver_Error();
+  double SolverTol = config->GetLinear_Solver_Error(), Residual;
   unsigned long MaxIter = config->GetLinear_Solver_Iter();
   unsigned long IterLinSol = 0;
   
   /*--- Solve the linear system using a Krylov subspace method ---*/
   
   if (config->GetKind_Linear_Solver() == BCGSTAB || config->GetKind_Linear_Solver() == FGMRES
-      || config->GetKind_Linear_Solver() == RFGMRES) {
+      || config->GetKind_Linear_Solver() == RESTARTED_FGMRES) {
     
     CMatrixVectorProduct* mat_vec = new CSysMatrixVectorProduct(Jacobian, geometry, config);
     
@@ -637,17 +641,17 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
     
     switch (config->GetKind_Linear_Solver()) {
       case BCGSTAB:
-        IterLinSol = BCGSTAB_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, false);
+        IterLinSol = BCGSTAB_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &Residual, false);
         break;
       case FGMRES:
-        IterLinSol = FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, false);
+        IterLinSol = FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &Residual, false);
         break;
-      case RFGMRES:
+      case RESTARTED_FGMRES:
         IterLinSol = 0;
         while (IterLinSol < config->GetLinear_Solver_Iter()) {
           if (IterLinSol + config->GetLinear_Solver_Restart_Frequency() > config->GetLinear_Solver_Iter())
             MaxIter = config->GetLinear_Solver_Iter() - IterLinSol;
-          IterLinSol += FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, false);
+          IterLinSol += FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &Residual, false);
           if (LinSysRes.norm() < SolverTol) break;
           SolverTol = SolverTol*(1.0/LinSysRes.norm());
         }

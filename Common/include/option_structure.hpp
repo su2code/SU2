@@ -991,7 +991,7 @@ enum ENUM_LINEAR_SOLVER {
   CONJUGATE_GRADIENT = 4,	/*!< \brief Preconditionated conjugate gradient method for grid deformation. */
   FGMRES = 5,    	/*!< \brief Flexible Generalized Minimal Residual method. */
   BCGSTAB = 6,	/*!< \brief BCGSTAB - Biconjugate Gradient Stabilized Method (main solver). */
-  RFGMRES = 7,  /*!< \brief Flexible Generalized Minimal Residual method with restart. */
+  RESTARTED_FGMRES = 7,  /*!< \brief Flexible Generalized Minimal Residual method with restart. */
   SMOOTHER_LUSGS = 8,  /*!< \brief LU_SGS smoother. */
   SMOOTHER_JACOBI = 9,  /*!< \brief Jacobi smoother. */
   SMOOTHER_ILU = 10,  /*!< \brief ILU smoother. */
@@ -1004,7 +1004,7 @@ static const map<string, ENUM_LINEAR_SOLVER> Linear_Solver_Map = CCreateMap<stri
 ("CONJUGATE_GRADIENT", CONJUGATE_GRADIENT)
 ("BCGSTAB", BCGSTAB)
 ("FGMRES", FGMRES)
-("RFGMRES", RFGMRES)
+("RESTARTED_FGMRES", RESTARTED_FGMRES)
 ("SMOOTHER_LUSGS", SMOOTHER_LUSGS)
 ("SMOOTHER_JACOBI", SMOOTHER_JACOBI)
 ("SMOOTHER_LINELET", SMOOTHER_LINELET)
