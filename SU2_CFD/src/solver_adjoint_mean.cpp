@@ -221,7 +221,7 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   Phi_Inf[0] = 0.0; Phi_Inf[1] = 0.0;
   if (nDim == 3) Phi_Inf[2] = 0.0;
   
-  if (!restart || geometry->GetFinestMGLevel() == false) {
+  if (!restart || (iMesh != MESH_0)) {
     /*--- Restart the solution from infinity ---*/
     for (iPoint = 0; iPoint < nPoint; iPoint++)
       node[iPoint] = new CAdjEulerVariable(PsiRho_Inf, Phi_Inf, PsiE_Inf, nDim, nVar, config);
@@ -5068,7 +5068,7 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   Phi_Inf[0] = 0.0; Phi_Inf[1] = 0.0;
   if (nDim == 3) Phi_Inf[2] = 0.0;
   
-  if (!restart || geometry->GetFinestMGLevel() == false) {
+  if (!restart || (iMesh != MESH_0)) {
     /*--- Restart the solution from infinity ---*/
     for (iPoint = 0; iPoint < nPoint; iPoint++)
       node[iPoint] = new CAdjNSVariable(PsiRho_Inf, Phi_Inf, PsiE_Inf, nDim, nVar, config);

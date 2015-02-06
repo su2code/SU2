@@ -458,12 +458,12 @@ void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry,
       solver_container[iMGlevel][ADJTNE2_SOL] = new CAdjTNE2NSSolver(geometry[iMGlevel], config, iMGlevel);
     }
     if (adj_turb) {
-      solver_container[iMGlevel][ADJTURB_SOL] = new CAdjTurbSolver(geometry[iMGlevel], config);
+      solver_container[iMGlevel][ADJTURB_SOL] = new CAdjTurbSolver(geometry[iMGlevel], config, iMGlevel);
     }
     
     /*--- Allocate solution for linear problem (at the moment we use the same scheme as the adjoint problem) ---*/
     if (lin_euler) {
-      solver_container[iMGlevel][LINFLOW_SOL] = new CLinEulerSolver(geometry[iMGlevel], config);
+      solver_container[iMGlevel][LINFLOW_SOL] = new CLinEulerSolver(geometry[iMGlevel], config, iMGlevel);
     }
     if (lin_ns) {
       cout <<"Equation not implemented." << endl; exit(EXIT_FAILURE); break;

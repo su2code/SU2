@@ -191,21 +191,21 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
 			/*--- Update dual time solver on all mesh levels ---*/
       
 			for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++) {
-				integration_container[iZone][FLOW_SOL]->SetDualTime_Solver(geometry_container[iZone][iMesh], solver_container[iZone][iMesh][FLOW_SOL], config_container[iZone]);
+				integration_container[iZone][FLOW_SOL]->SetDualTime_Solver(geometry_container[iZone][iMesh], solver_container[iZone][iMesh][FLOW_SOL], config_container[iZone], iMesh);
 				integration_container[iZone][FLOW_SOL]->SetConvergence(false);
 			}
       
 			/*--- Update dual time solver for the turbulence model ---*/
       
 			if (config_container[iZone]->GetKind_Solver() == RANS) {
-				integration_container[iZone][TURB_SOL]->SetDualTime_Solver(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0][TURB_SOL], config_container[iZone]);
+				integration_container[iZone][TURB_SOL]->SetDualTime_Solver(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0][TURB_SOL], config_container[iZone], MESH_0);
 				integration_container[iZone][TURB_SOL]->SetConvergence(false);
 			}
       
       /*--- Update dual time solver for the transition model ---*/
       
 			if (config_container[iZone]->GetKind_Trans_Model() == LM) {
-				integration_container[iZone][TRANS_SOL]->SetDualTime_Solver(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0][TRANS_SOL], config_container[iZone]);
+				integration_container[iZone][TRANS_SOL]->SetDualTime_Solver(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0][TRANS_SOL], config_container[iZone], MESH_0);
 				integration_container[iZone][TRANS_SOL]->SetConvergence(false);
 			}
       
@@ -395,7 +395,7 @@ void AdjMeanFlowIteration(COutput *output, CIntegration ***integration_container
 			/*--- Update dual time solver ---*/
       
 			for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++) {
-				integration_container[iZone][ADJFLOW_SOL]->SetDualTime_Solver(geometry_container[iZone][iMesh], solver_container[iZone][iMesh][ADJFLOW_SOL], config_container[iZone]);
+				integration_container[iZone][ADJFLOW_SOL]->SetDualTime_Solver(geometry_container[iZone][iMesh], solver_container[iZone][iMesh][ADJFLOW_SOL], config_container[iZone], iMesh);
 				integration_container[iZone][ADJFLOW_SOL]->SetConvergence(false);
 			}
       
@@ -585,7 +585,7 @@ void WaveIteration(COutput *output, CIntegration ***integration_container, CGeom
       
 			/*--- Update dual time solver ---*/
 			for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++) {
-				integration_container[iZone][WAVE_SOL]->SetDualTime_Solver(geometry_container[iZone][iMesh], solver_container[iZone][iMesh][WAVE_SOL], config_container[iZone]);
+				integration_container[iZone][WAVE_SOL]->SetDualTime_Solver(geometry_container[iZone][iMesh], solver_container[iZone][iMesh][WAVE_SOL], config_container[iZone], iMesh);
 				integration_container[iZone][WAVE_SOL]->SetConvergence(false);
 			}
       
@@ -632,7 +632,7 @@ void HeatIteration(COutput *output, CIntegration ***integration_container, CGeom
       
 			/*--- Update dual time solver ---*/
 			for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++) {
-				integration_container[iZone][HEAT_SOL]->SetDualTime_Solver(geometry_container[iZone][iMesh], solver_container[iZone][iMesh][HEAT_SOL], config_container[iZone]);
+				integration_container[iZone][HEAT_SOL]->SetDualTime_Solver(geometry_container[iZone][iMesh], solver_container[iZone][iMesh][HEAT_SOL], config_container[iZone], iMesh);
 				integration_container[iZone][HEAT_SOL]->SetConvergence(false);
 			}
       
@@ -714,7 +714,7 @@ void FEAIteration(COutput *output, CIntegration ***integration_container, CGeome
       
 			/*--- Update dual time solver ---*/
 			for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++) {
-				integration_container[iZone][FEA_SOL]->SetDualTime_Solver(geometry_container[iZone][iMesh], solver_container[iZone][iMesh][FEA_SOL], config_container[iZone]);
+				integration_container[iZone][FEA_SOL]->SetDualTime_Solver(geometry_container[iZone][iMesh], solver_container[iZone][iMesh][FEA_SOL], config_container[iZone], iMesh);
 				integration_container[iZone][FEA_SOL]->SetConvergence(false);
 			}
       
@@ -791,11 +791,11 @@ void FluidStructureIteration(COutput *output, CIntegration ***integration_contai
     
 		/*--- Set convergence the global convergence criteria to false, and dual time solution ---*/
 		for (iMesh = 0; iMesh <= config_container[ZONE_0]->GetnMGLevels(); iMesh++) {
-			integration_container[ZONE_0][FLOW_SOL]->SetDualTime_Solver(geometry_container[ZONE_0][iMesh], solver_container[ZONE_0][iMesh][FLOW_SOL], config_container[ZONE_0]);
+			integration_container[ZONE_0][FLOW_SOL]->SetDualTime_Solver(geometry_container[ZONE_0][iMesh], solver_container[ZONE_0][iMesh][FLOW_SOL], config_container[ZONE_0], iMesh);
 			integration_container[ZONE_0][FLOW_SOL]->SetConvergence(false);
 		}
     
-		integration_container[ZONE_1][FEA_SOL]->SetDualTime_Solver(geometry_container[ZONE_1][MESH_0], solver_container[ZONE_1][MESH_0][FEA_SOL], config_container[ZONE_1]);
+		integration_container[ZONE_1][FEA_SOL]->SetDualTime_Solver(geometry_container[ZONE_1][MESH_0], solver_container[ZONE_1][MESH_0][FEA_SOL], config_container[ZONE_1], MESH_0);
 		integration_container[ZONE_1][FEA_SOL]->SetConvergence(false);
     
 		/*--- Set the value of the global convergence criteria ---*/

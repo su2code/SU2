@@ -63,7 +63,8 @@ CGeometry::CGeometry(void) {
 }
 
 CGeometry::~CGeometry(void) {
-  unsigned long iElem, iElem_Bound, iPoint, iFace, iVertex, iEdge;
+  
+  unsigned long iElem, iElem_Bound, iFace, iVertex, iEdge;
   unsigned short iMarker;
   
   if (elem != NULL) {
@@ -2177,7 +2178,6 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
       
       nPoint = nPointTotal;
       nPointDomain = nPointDomainTotal;
-      FinestMGLevel = true;
       node = new CPoint*[nPoint];
       Local_to_Global_Point =  new unsigned long[nPoint];
       for (iPoint = 0; iPoint < nPoint; iPoint++) {
@@ -3004,7 +3004,6 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
       nDim              = nDim_s[iDomain];
       nZone             = nZone_s[iDomain];
       nPointTotal       = nPointTotal_s[iDomain];
-      FinestMGLevel     = true;
       nPointDomainTotal = nPointDomainTotal_s[iDomain];
       nPointGhost       = nPointGhost_s[iDomain];
       nPointPeriodic    = nPointPeriodic_s[iDomain];
@@ -3493,7 +3492,6 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   
   nPoint = nPointTotal_r_tot; iPoint = 0;
   nPointDomain = nPointDomainTotal_r_tot;
-  FinestMGLevel = true;
   node = new CPoint*[nPoint];
   Local_to_Global_Point = new unsigned long[nPoint];
   
@@ -5755,7 +5753,6 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
-  FinestMGLevel = true;
   Global_nPoint = 0; Global_nPointDomain = 0; Global_nElem = 0;
   nelem_edge     = 0; Global_nelem_edge     = 0;
   nelem_triangle = 0; Global_nelem_triangle = 0;
@@ -6584,7 +6581,6 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
-  FinestMGLevel = true;
   Global_nPoint  = 0; Global_nPointDomain   = 0; Global_nElem = 0;
   nelem_edge     = 0; Global_nelem_edge     = 0;
   nelem_triangle = 0; Global_nelem_triangle = 0;
@@ -7360,7 +7356,6 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
   char*** sectionNames = NULL;
   
   /*--- Initialize counters for local/global points & elements ---*/
-  FinestMGLevel = true;
   Global_nPoint  = 0; Global_nPointDomain = 0; Global_nElem = 0;
   nelem_edge     = 0; Global_nelem_edge     = 0;
   nelem_triangle = 0; Global_nelem_triangle = 0;
@@ -8357,7 +8352,6 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
 #endif
   
   /*--- Initialize counters for local/global points & elements ---*/
-  FinestMGLevel = true;
   Global_nPoint  = 0; Global_nPointDomain = 0; Global_nElem = 0;
   nelem_edge     = 0; Global_nelem_edge     = 0;
   nelem_triangle = 0; Global_nelem_triangle = 0;
@@ -9193,7 +9187,6 @@ void CPhysicalGeometry::Read_NETCDF_Format(CConfig *config, string val_mesh_file
 
   /*--- Initialize counters for local/global points & elements ---*/
   
-  FinestMGLevel = true;
   Global_nPoint = 0; Global_nPointDomain = 0; Global_nElem = 0;
   nelem_edge     = 0; Global_nelem_edge     = 0;
   nelem_triangle = 0; Global_nelem_triangle = 0;
@@ -14047,7 +14040,6 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry ***geometry, CConfig **config_c
   MPI_Status status;
 #endif
   
-  FinestMGLevel = false; // Set the boolean to indicate that this is a coarse multigrid level.
   nDim = fine_grid->GetnDim(); // Write the number of dimensions of the coarse grid.
   
   /*--- Create a queue system to deo the agglomeration

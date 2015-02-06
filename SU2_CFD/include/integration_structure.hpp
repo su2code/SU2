@@ -121,7 +121,7 @@ public:
 	 * \param[in] monitor - Objective function that is use to study its convergence.
 	 */
 	void Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
-								unsigned long Iteration, double monitor);
+								unsigned long Iteration, double monitor, unsigned short iMesh);
 	
 	/*! 
 	 * \brief Get the value of the convergence.
@@ -156,7 +156,7 @@ public:
 	 * \param[in] solution - Flow solution.
    * \param[in] config - Definition of the particular problem.
 	 */
-	void SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CConfig *config);
+	void SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CConfig *config, unsigned short iMesh);
 	
 	/*! 
 	 * \brief A virtual member.
