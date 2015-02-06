@@ -125,8 +125,6 @@ inline unsigned short CGeometry::GetnZone(void) { return nZone; }
 
 inline unsigned short CGeometry::GetnMarker(void) { return nMarker; }
 
-inline bool CGeometry::GetFinestMGLevel(void) { return FinestMGLevel; }
-
 inline string CGeometry::GetMarker_Tag(unsigned short val_marker) { return Tag_to_Marker[val_marker]; }
 
 inline unsigned long CGeometry::GetMax_GlobalPoint(void) { return Max_GlobalPoint; }

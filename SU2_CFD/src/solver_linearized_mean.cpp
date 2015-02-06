@@ -33,7 +33,7 @@
 
 CLinEulerSolver::CLinEulerSolver(void) : CSolver() { }
 
-CLinEulerSolver::CLinEulerSolver(CGeometry *geometry, CConfig *config) : CSolver() {
+CLinEulerSolver::CLinEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
 	unsigned long iPoint, index;
 	string text_line, mesh_filename;
 	unsigned short iDim, iVar, nLineLets;
@@ -130,7 +130,7 @@ CLinEulerSolver::CLinEulerSolver(CGeometry *geometry, CConfig *config) : CSolver
 	}
 	
 	/*--- Restart the solution from file information ---*/
-	if (!restart || geometry->GetFinestMGLevel() == false) {
+	if (!restart || (iMesh != MESH_0)) {
 		for (iPoint=0; iPoint < geometry->GetnPoint(); iPoint++)
 			node[iPoint] = new CLinEulerVariable(DeltaRho_Inf, DeltaVel_Inf, DeltaE_Inf, nDim, nVar, config);
 	}

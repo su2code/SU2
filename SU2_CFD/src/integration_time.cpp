@@ -115,7 +115,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ***geometry,
   
   /*--- Convergence strategy ---*/
   
-  Convergence_Monitoring(geometry[iZone][FinestMesh], config[iZone], Iteration, monitor);
+  Convergence_Monitoring(geometry[iZone][FinestMesh], config[iZone], Iteration, monitor, FinestMesh);
   
 }
 
@@ -869,7 +869,7 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ***geometry, CSolver
   
   /*--- Convergence strategy ---*/
   
-  Convergence_Monitoring(geometry[iZone][MESH_0], config[iZone], Iteration, monitor);
+  Convergence_Monitoring(geometry[iZone][MESH_0], config[iZone], Iteration, monitor, MESH_0);
   
   /*--- If turbulence model, copy the eddy viscosity to the coarse levels ---*/
   

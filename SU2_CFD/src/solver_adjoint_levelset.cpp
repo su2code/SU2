@@ -135,7 +135,7 @@ CAdjLevelSetSolver::CAdjLevelSetSolver(CGeometry *geometry, CConfig *config, uns
   }
 	
 	/*--- Restart the solution from file information ---*/
-	if (!restart || geometry->GetFinestMGLevel() == false) {
+	if (!restart || (iMesh != MESH_0)) {
     
 		for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
 			node[iPoint] = new CAdjLevelSetVariable(0.0, nDim, nVar, config);

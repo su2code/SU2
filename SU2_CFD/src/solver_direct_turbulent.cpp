@@ -1124,7 +1124,7 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
   muT_Inf = Density_Inf*fv1*nu_tilde_Inf;
   
   /*--- Restart the solution from file information ---*/
-  if (!restart || geometry->GetFinestMGLevel() == false) {
+  if (!restart || (iMesh != MESH_0)) {
     for (iPoint = 0; iPoint < nPoint; iPoint++)
       node[iPoint] = new CTurbSAVariable(nu_tilde_Inf, muT_Inf, nDim, nVar, config);
   }
@@ -2595,7 +2595,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   muT_Inf = rhoInf*kine_Inf/omega_Inf;
   
   /*--- Restart the solution from file information ---*/
-  if (!restart || geometry->GetFinestMGLevel() == false) {
+  if (!restart || (iMesh != MESH_0)) {
     for (iPoint = 0; iPoint < nPoint; iPoint++)
     node[iPoint] = new CTurbSSTVariable(kine_Inf, omega_Inf, muT_Inf, nDim, nVar, constants, config);
   }
@@ -3322,7 +3322,7 @@ CTurbMLSolver::CTurbMLSolver(CGeometry *geometry, CConfig *config, unsigned shor
   muT_Inf = Density_Inf*fv1*nu_tilde_Inf;
   
   /*--- Restart the solution from file information ---*/
-  if (!restart || geometry->GetFinestMGLevel() == false) {
+  if (!restart || (iMesh != MESH_0)) {
     for (iPoint = 0; iPoint < nPoint; iPoint++)
       node[iPoint] = new CTurbMLVariable(nu_tilde_Inf, muT_Inf, nDim, nVar, config);
   }

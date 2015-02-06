@@ -264,7 +264,8 @@ void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_contai
   
 }
 
-void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, unsigned long Iteration, double monitor) {
+void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, unsigned long Iteration,
+                                          double monitor, unsigned short iMesh) {
   
   unsigned short iCounter;
   int rank = MASTER_NODE;
@@ -403,7 +404,7 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
   
 }
 
-void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CConfig *config) {
+void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CConfig *config, unsigned short iMesh) {
 	unsigned long iPoint;
   
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
@@ -421,7 +422,7 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
 	}
   
   /*--- Store old aeroelastic solutions ---*/
-  if (config->GetGrid_Movement() && config->GetAeroelastic_Simulation() && geometry->GetFinestMGLevel()) {
+  if (config->GetGrid_Movement() && config->GetAeroelastic_Simulation() && (iMesh == MESH_0)) {
     config->SetAeroelastic_n1();
     config->SetAeroelastic_n();
     

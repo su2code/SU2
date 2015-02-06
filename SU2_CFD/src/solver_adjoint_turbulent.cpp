@@ -33,7 +33,7 @@
 
 CAdjTurbSolver::CAdjTurbSolver(void) : CSolver() {}
 
-CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config) : CSolver() {
+CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
 	unsigned long iPoint;
 	unsigned short iDim, iVar, nLineLets;
   
@@ -116,7 +116,7 @@ CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config) : CSolver()
 	node = new CVariable* [nPoint];
 	bool restart = config->GetRestart();
   
-	if (!restart || geometry->GetFinestMGLevel() == false) {
+	if (!restart || (iMesh != MESH_0)) {
 		PsiNu_Inf = 0.0;
 		for (iPoint = 0; iPoint < nPoint; iPoint++) {
 			node[iPoint] = new CAdjTurbVariable(PsiNu_Inf, nDim, nVar, config);

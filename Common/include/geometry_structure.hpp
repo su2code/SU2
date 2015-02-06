@@ -100,7 +100,6 @@ protected:
 	unsigned short nDim,	/*!< \brief Number of dimension of the problem. */
 	nZone,								/*!< \brief Number of zones in the problem. */
 	nMarker;				/*!< \brief Number of different markers of the mesh. */
-	bool FinestMGLevel; /*!< \brief Indicates whether the geometry class contains the finest (original) multigrid mesh. */
   unsigned long Max_GlobalPoint;  /*!< \brief Greater global point in the domain local structure. */
 
 public:
@@ -304,12 +303,6 @@ public:
 	 * \brief Get the number of elements in vtk fortmat.
 	 */
 	unsigned long GetMax_GlobalPoint(void);
-  
-	/*!
-	 * \brief Get boolean for whether this is the finest (original) multigrid mesh level.
-	 * \return <code>TRUE</code> if this is the finest multigrid mesh level; otherwise <code>FALSE</code>.
-	 */
-	bool GetFinestMGLevel(void);
 
 	/*! 
 	 * \brief A virtual function.

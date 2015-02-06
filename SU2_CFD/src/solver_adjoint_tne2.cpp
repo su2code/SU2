@@ -216,7 +216,7 @@ CAdjTNE2EulerSolver::CAdjTNE2EulerSolver(CGeometry *geometry, CConfig *config, u
   PsiE_Inf   = 0.0;
   PsiEve_Inf = 0.0;
   
-	if (!restart || geometry->GetFinestMGLevel() == false) {
+	if (!restart || (iMesh != MESH_0)) {
 		/*--- Restart the solution from infinity ---*/
 		for (iPoint = 0; iPoint < nPoint; iPoint++)
 			node[iPoint] = new CAdjTNE2EulerVariable(PsiRho_Inf, Phi_Inf, PsiE_Inf, PsiEve_Inf, nDim, nVar, config);
@@ -2580,7 +2580,7 @@ CAdjTNE2NSSolver::CAdjTNE2NSSolver(CGeometry *geometry,
     PsiEve_Inf = 0.0;
   }
   
-	if (!restart || geometry->GetFinestMGLevel() == false) {
+	if (!restart || (iMesh != MESH_0)) {
 		/*--- Restart the solution from infinity ---*/
 		for (iPoint = 0; iPoint < nPoint; iPoint++)
 			node[iPoint] = new CAdjTNE2NSVariable(PsiRho_Inf, Phi_Inf,

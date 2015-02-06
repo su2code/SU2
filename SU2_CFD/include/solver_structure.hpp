@@ -5182,7 +5182,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CAdjTurbSolver(CGeometry *geometry, CConfig *config);
+	CAdjTurbSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh);
     
     /*!
 	 * \brief Impose the send-receive boundary condition.
@@ -5336,7 +5336,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CLinEulerSolver(CGeometry *geometry, CConfig *config);
+	CLinEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh);
     
 	/*!
 	 * \brief Destructor of the class.

@@ -295,7 +295,7 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
    the farfield values bc the solver will immediately interpolate
    the solution from the finest mesh to the coarser levels. ---*/
   
-	if (!restart || geometry->GetFinestMGLevel() == false || nZone > 1) {
+	if (!restart || (iMesh != MESH_0) || nZone > 1) {
 
 		/*--- Initialize using freestream values ---*/
 		for (iPoint = 0; iPoint < nPoint; iPoint++) {
@@ -5239,7 +5239,7 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
    appropriately. Coarse multigrid levels will be intitially set to
    the farfield values bc the solver will immediately interpolate
    the solution from the finest mesh to the coarser levels. ---*/
-	if (!restart || geometry->GetFinestMGLevel() == false || nZone > 1) {
+	if (!restart || (iMesh != MESH_0) || nZone > 1) {
     
 		/*--- Initialize using freestream values ---*/
 		for (iPoint = 0; iPoint < nPoint; iPoint++)
