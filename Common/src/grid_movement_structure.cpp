@@ -99,8 +99,8 @@ void CVolumetricMovement::UpdateMultiGrid(CGeometry **geometry, CConfig *config)
 
 void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *config, bool UpdateGeo) {
   
-	unsigned long IterLinSol = 0, Smoothing_Iter, iNonlinear_Iter;
-  double MinVolume, NumError, Tol_Factor;
+	unsigned long IterLinSol = 0, Smoothing_Iter, iNonlinear_Iter, MaxIter = 0, RestartIter = 50, Tot_Iter = 0;
+  double MinVolume, NumError, Tol_Factor, Residual, Residual_Init;
   bool Screen_Output;
   
   int rank = MASTER_NODE;
@@ -178,10 +178,63 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     CPreconditioner* precond      = new CLU_SGSPreconditioner(StiffMatrix, geometry, config);
     CSysSolve *system             = new CSysSolve();
     
-    /*--- Solve the linear system ---*/
+    switch (config->GetDeform_Linear_Solver()) {
+        
+        /*--- Solve the linear system (GMRES with restart) ---*/
+        
+      case RESTARTED_FGMRES:
+        
+        Tot_Iter = 0; MaxIter = RestartIter;
+        
+        system->FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 1, &Residual_Init, false);
+        
+        if ((rank == MASTER_NODE) && Screen_Output) {
+          cout << "# FGMRES (with restart) residual history" << endl;
+          cout << "# Residual tolerance target = " << NumError << endl;
+          cout << "# Initial residual norm     = " << Residual_Init << endl;
+        }
+        
+        if (rank == MASTER_NODE) { cout << "     " << Tot_Iter << "     " << Residual_Init/Residual_Init << endl; }
+        
+        while (Tot_Iter < Smoothing_Iter) {
+          
+          if (IterLinSol + RestartIter > Smoothing_Iter)
+            MaxIter = Smoothing_Iter - IterLinSol;
+          
+          IterLinSol = system->FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, MaxIter, &Residual, false);
+          Tot_Iter += IterLinSol;
+          
+          if ((rank == MASTER_NODE) && Screen_Output) { cout << "     " << Tot_Iter << "     " << Residual/Residual_Init << endl; }
+          
+          if (Residual < Residual_Init*NumError) { break; }
+          
+        }
+        
+        if ((rank == MASTER_NODE) && Screen_Output) {
+          cout << "# FGMRES (with restart) final (true) residual:" << endl;
+          cout << "# Iteration = " << Tot_Iter << ": |res|/|res0| = " << Residual/Residual_Init << endl;
+        }
+        
+        break;
+        
+        /*--- Solve the linear system (GMRES) ---*/
+        
+      case FGMRES:
+        
+        Tot_Iter = system->FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, &Residual, Screen_Output);
+        
+        break;
+        
+        /*--- Solve the linear system (BCGSTAB) ---*/
+        
+      case BCGSTAB:
+        
+        Tot_Iter = system->BCGSTAB_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, &Residual, Screen_Output);
+        
+        break;
+        
+    }
     
-    IterLinSol = system->FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, Screen_Output);
-
     /*--- Deallocate memory needed by the Krylov linear solver ---*/
     
     delete system;
@@ -201,9 +254,9 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     
     if (rank == MASTER_NODE) {
       cout << "Non-linear iter.: " << iNonlinear_Iter+1 << "/" << config->GetGridDef_Nonlinear_Iter()
-      << ". Linear iter.: " << IterLinSol << ". ";
-      if (nDim == 2) cout << "Min. area: " << MinVolume << ". Error: " << NumError << "." << endl;
-      else cout << "Min. volume: " << MinVolume << ". Error: " << NumError << "." << endl;
+      << ". Linear iter.: " << Tot_Iter << ". ";
+      if (nDim == 2) cout << "Min. area: " << MinVolume << ". Error: " << Residual << "." << endl;
+      else cout << "Min. volume: " << MinVolume << ". Error: " << Residual << "." << endl;
     }
     
   }
@@ -263,6 +316,7 @@ double CVolumetricMovement::Check_Grid(CGeometry *geometry) {
     }
     
     /*--- Tetrahedra ---*/
+    
     if (nDim == 3) {
       
       if (nNodes == 4) Volume = GetTetra_Volume(CoordCorners);
@@ -479,11 +533,13 @@ double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometry, 
 	for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     
 		/*--- Points in edge and coordinates ---*/
+    
 		Point_0 = geometry->edge[iEdge]->GetNode(0);  Coord_0 = geometry->node[Point_0]->GetCoord();
 		Point_1 = geometry->edge[iEdge]->GetNode(1);  Coord_1 = geometry->node[Point_1]->GetCoord();
     
 		/*--- Compute Edge_Vector ---*/
-		Length = 0;
+    
+		Length = 0.0;
 		for (iDim = 0; iDim < nDim; iDim++) {
 			Edge_Vector[iDim] = Coord_1[iDim] - Coord_0[iDim];
 			Length += Edge_Vector[iDim]*Edge_Vector[iDim];
@@ -1391,7 +1447,8 @@ void CVolumetricMovement::SetFEA_StiffMatrix2D(CGeometry *geometry, CConfig *con
 
 void CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, CConfig *config, double **StiffMatrix_Elem, unsigned long PointCorners[8], double CoordCorners[8][3], unsigned short nNodes, double scale) {
   
-  double B_Matrix[6][24], D_Matrix[6][6], Aux_Matrix[24][6];
+  double B_Matrix[6][24], D_Matrix[6][6] = {{0.0, 0.0, 0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+    {0.0, 0.0, 0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0, 0.0, 0.0}}, Aux_Matrix[24][6];
   double Xi = 0.0, Eta = 0.0, Mu = 0.0, Det = 0.0, E, Lambda = 0.0, Nu, Avg_Wall_Dist;
   unsigned short iNode, jNode, iVar, jVar, kVar, iGauss, nGauss = 0;
   double DShapeFunction[8][4] = {{0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0},
@@ -1519,12 +1576,12 @@ void CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, CConfig *con
     
     /*--- Compute the D Matrix (for plane strain and 3-D)---*/
     
-    D_Matrix[0][0] = Lambda + 2.0*Mu;	D_Matrix[0][1] = Lambda;					D_Matrix[0][2] = Lambda;					D_Matrix[0][3] = 0.0;	D_Matrix[0][4] = 0.0;	D_Matrix[0][5] = 0.0;
-    D_Matrix[1][0] = Lambda;					D_Matrix[1][1] = Lambda + 2.0*Mu;	D_Matrix[1][2] = Lambda;					D_Matrix[1][3] = 0.0;	D_Matrix[1][4] = 0.0;	D_Matrix[1][5] = 0.0;
-    D_Matrix[2][0] = Lambda;					D_Matrix[2][1] = Lambda;					D_Matrix[2][2] = Lambda + 2.0*Mu;	D_Matrix[2][3] = 0.0;	D_Matrix[2][4] = 0.0;	D_Matrix[2][5] = 0.0;
-    D_Matrix[3][0] = 0.0;							D_Matrix[3][1] = 0.0;							D_Matrix[3][2] = 0.0;							D_Matrix[3][3] = Mu;	D_Matrix[3][4] = 0.0;	D_Matrix[3][5] = 0.0;
-    D_Matrix[4][0] = 0.0;							D_Matrix[4][1] = 0.0;							D_Matrix[4][2] = 0.0;							D_Matrix[4][3] = 0.0;	D_Matrix[4][4] = Mu;	D_Matrix[4][5] = 0.0;
-    D_Matrix[5][0] = 0.0;							D_Matrix[5][1] = 0.0;							D_Matrix[5][2] = 0.0;							D_Matrix[5][3] = 0.0;	D_Matrix[5][4] = 0.0;	D_Matrix[5][5] = Mu;
+    D_Matrix[0][0] = Lambda + 2.0*Mu;	D_Matrix[0][1] = Lambda;					D_Matrix[0][2] = Lambda;
+    D_Matrix[1][0] = Lambda;					D_Matrix[1][1] = Lambda + 2.0*Mu;	D_Matrix[1][2] = Lambda;
+    D_Matrix[2][0] = Lambda;					D_Matrix[2][1] = Lambda;					D_Matrix[2][2] = Lambda + 2.0*Mu;
+    D_Matrix[3][3] = Mu;
+    D_Matrix[4][4] = Mu;
+    D_Matrix[5][5] = Mu;
     
     
     /*--- Compute the BT.D Matrix ---*/
@@ -2669,12 +2726,13 @@ void CSurfaceMovement::CopyBoundary(CGeometry *geometry, CConfig *config) {
 	unsigned long iVertex, iPoint;
 	double *Coord;
 
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 		for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 			iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 			Coord = geometry->node[iPoint]->GetCoord();
 			geometry->vertex[iMarker][iVertex]->SetCoord(Coord);
 		}
+  }
   
 }
 

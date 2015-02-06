@@ -405,6 +405,7 @@ private:
   unsigned short Deform_Stiffness_Type; /*!< \brief Type of element stiffness imposed for FEA mesh deformation. */
   bool Deform_Output;  /*!< \brief Print the residuals during mesh deformation to the console. */
   double Deform_Tol_Factor; /*!< Factor to multiply smallest volume for deform tolerance (0.001 default) */
+  unsigned short Deform_Linear_Solver; /*!< Numerical method to deform the grid */
   double Deform_ElasticityMod, Deform_PoissonRatio; /*!< young's modulus and poisson ratio for volume deformation stiffness model */
   bool Visualize_Deformation;	/*!< \brief Flag to visualize the deformation in MDC. */
 	double Mach;		/*!< \brief Mach number. */
@@ -2616,6 +2617,12 @@ public:
 	 * \return Numerical solver for implicit formulation (solving the linear system).
 	 */
 	unsigned short GetKind_Linear_Solver(void);
+  
+  /*!
+   * \brief Get the kind of solver for the implicit solver.
+   * \return Numerical solver for implicit formulation (solving the linear system).
+   */
+  unsigned short GetDeform_Linear_Solver(void);
 
 	/*!
 	 * \brief Get the kind of preconditioner for the implicit solver.

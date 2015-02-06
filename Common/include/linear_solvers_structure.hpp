@@ -179,7 +179,7 @@ public:
    */
   unsigned long FGMRES_LinSolver(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
                       CPreconditioner & precond, double tol,
-                      unsigned long m, bool monitoring);
+                      unsigned long m, double *residual, bool monitoring);
 	
 	/*!
    * \brief Biconjugate Gradient Stabilized Method (BCGSTAB)
@@ -193,7 +193,7 @@ public:
    */
   unsigned long BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
                         CPreconditioner & precond, double tol,
-                        unsigned long m, bool monitoring);
+                        unsigned long m, double *residual, bool monitoring);
   
   /*!
    * \brief Solve the linear system using a Krylov subspace method
