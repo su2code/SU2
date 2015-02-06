@@ -93,6 +93,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   unsigned long iPoint, index, counter_local = 0, counter_global = 0, iVertex;
   unsigned short iVar, iDim, iMarker, nLineLets;
   double Density, Velocity2, Pressure, Temperature, dull_val;
+  int Unst_RestartIter;
 
   unsigned short nZone = geometry->GetnZone();
   bool restart = (config->GetRestart() || config->GetRestart_Flow());
@@ -110,35 +111,34 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   /*--- Array initialization ---*/
 
-  CDrag_Inv = NULL; CLift_Inv = NULL; CSideForce_Inv = NULL;  CEff_Inv = NULL;
-  CMx_Inv = NULL; CMy_Inv = NULL; CMz_Inv = NULL;
-  CFx_Inv = NULL; CFy_Inv = NULL; CFz_Inv = NULL;
+  CDrag_Inv = NULL; CLift_Inv = NULL; CSideForce_Inv = NULL; CEff_Inv = NULL;
+  CMx_Inv = NULL;   CMy_Inv = NULL;   CMz_Inv = NULL;
+  CFx_Inv = NULL;   CFy_Inv = NULL;   CFz_Inv = NULL;
   
   Surface_CLift_Inv = NULL; Surface_CDrag_Inv = NULL; Surface_CSideForce_Inv = NULL; Surface_CEff_Inv = NULL;
-  Surface_CFx_Inv = NULL; Surface_CFy_Inv = NULL; Surface_CFz_Inv = NULL;
-  Surface_CMx_Inv = NULL; Surface_CMy_Inv = NULL; Surface_CMz_Inv = NULL;
+  Surface_CFx_Inv = NULL;   Surface_CFy_Inv = NULL;   Surface_CFz_Inv = NULL;
+  Surface_CMx_Inv = NULL;   Surface_CMy_Inv = NULL;   Surface_CMz_Inv = NULL;
   
   Surface_CLift = NULL; Surface_CDrag = NULL; Surface_CSideForce = NULL; Surface_CEff = NULL;
-  Surface_CFx = NULL; Surface_CFy = NULL; Surface_CFz = NULL;
-  Surface_CMx = NULL; Surface_CMy = NULL; Surface_CMz = NULL;
+  Surface_CFx = NULL;   Surface_CFy = NULL;   Surface_CFz = NULL;
+  Surface_CMx = NULL;   Surface_CMy = NULL;   Surface_CMz = NULL;
 
-  ForceInviscid = NULL; MomentInviscid = NULL;
-  CPressure = NULL; CPressureTarget = NULL; HeatFlux = NULL; HeatFluxTarget = NULL; YPlus = NULL;
+  ForceInviscid = NULL;  MomentInviscid = NULL;
+  CPressure = NULL;      CPressureTarget = NULL; HeatFlux = NULL;
+  HeatFluxTarget = NULL; YPlus = NULL;
 
-  CMerit_Inv = NULL;  CT_Inv = NULL;  CQ_Inv = NULL;
+  CMerit_Inv = NULL; CT_Inv = NULL; CQ_Inv = NULL;
 
-  CEquivArea_Inv = NULL;  CNearFieldOF_Inv = NULL;
+  CEquivArea_Inv = NULL; CNearFieldOF_Inv = NULL;
 
-  Inflow_MassFlow = NULL;  Exhaust_MassFlow = NULL;  Exhaust_Area = NULL; Exhaust_Pressure = NULL;  Exhaust_Temperature = NULL;
-  Inflow_Pressure = NULL;  Inflow_Mach = NULL;  Inflow_Area = NULL;
-  Bleed_MassFlow = NULL;    Bleed_Pressure = NULL;  Bleed_Temperature = NULL;
-  Bleed_Area = NULL;
+  Inflow_MassFlow = NULL; Exhaust_MassFlow = NULL; Exhaust_Area = NULL;      Exhaust_Pressure = NULL;
+  Inflow_Pressure = NULL; Inflow_Mach = NULL;      Inflow_Area = NULL;       Exhaust_Temperature = NULL;
+  Bleed_MassFlow = NULL;  Bleed_Pressure = NULL;   Bleed_Temperature = NULL; Bleed_Area = NULL;
 
   iPoint_UndLapl = NULL;  jPoint_UndLapl = NULL;
   LowMach_Precontioner = NULL;
   Primitive = NULL; Primitive_i = NULL; Primitive_j = NULL;
-//  Secondary = NULL;
-  Secondary_i = NULL; Secondary_j = NULL;
+  Secondary = NULL; Secondary_i = NULL; Secondary_j = NULL;
   CharacPrimVar = NULL;
   Cauchy_Serie = NULL;
 
@@ -154,6 +154,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
    ---*/
 
   nDim = geometry->GetnDim();
+  
   if (incompressible) { nVar = nDim+1; nPrimVar = nDim+5; nPrimVarGrad = nDim+3; }
   if (freesurface)    { nVar = nDim+2; nPrimVar = nDim+7; nPrimVarGrad = nDim+6; }
   if (compressible)   { nVar = nDim+2;
@@ -214,7 +215,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   /*--- Define some auxiliary vectors related to the Secondary solution ---*/
 
-//  Secondary   = new double[nSecondaryVar]; for (iVar = 0; iVar < nSecondaryVar; iVar++) Secondary[iVar]   = 0.0;
+  Secondary   = new double[nSecondaryVar]; for (iVar = 0; iVar < nSecondaryVar; iVar++) Secondary[iVar]   = 0.0;
   Secondary_i = new double[nSecondaryVar]; for (iVar = 0; iVar < nSecondaryVar; iVar++) Secondary_i[iVar] = 0.0;
   Secondary_j = new double[nSecondaryVar]; for (iVar = 0; iVar < nSecondaryVar; iVar++) Secondary_j[iVar] = 0.0;
 
@@ -251,31 +252,31 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
       Jacobian_i[iVar] = new double [nVar];
       Jacobian_j[iVar] = new double [nVar];
     }
-
+    
     if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (Euler). MG level: " << iMesh <<"." << endl;
     Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
-
+    
     if ((config->GetKind_Linear_Solver_Prec() == LINELET) ||
         (config->GetKind_Linear_Solver() == SMOOTHER_LINELET)) {
       nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
       if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
     }
-
-  } else {
+    
+  }
+  
+  else {
     if (rank == MASTER_NODE) cout << "Explicit scheme. No Jacobian structure (Euler). MG level: " << iMesh <<"." << endl;
   }
-
-  /*--- Define some auxiliary vectors for computing flow variable gradients by least squares ---*/
+  
+  /*--- Define some auxiliary vectors for computing flow variable 
+   gradients by least squares, S matrix := inv(R)*traspose(inv(R)), 
+   c vector := transpose(WA)*(Wb) ---*/
 
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
-
-    /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
 
     Smatrix = new double* [nDim];
     for (iDim = 0; iDim < nDim; iDim++)
       Smatrix[iDim] = new double [nDim];
-
-    /*--- c vector := transpose(WA)*(Wb) ---*/
 
     cvector = new double* [nPrimVarGrad];
     for (iVar = 0; iVar < nPrimVarGrad; iVar++)
@@ -400,55 +401,64 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   /*--- Initializate fan face pressure, fan face mach number, and mass flow rate ---*/
 
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    Inflow_MassFlow[iMarker] = 0.0;
-    Bleed_MassFlow[iMarker] = 0.0;
-    Exhaust_MassFlow[iMarker] = 0.0;
+    Inflow_MassFlow[iMarker]     = 0.0;
+    Inflow_Mach[iMarker]         = Mach_Inf;
+    Inflow_Pressure[iMarker]     = Pressure_Inf;
+    Inflow_Area[iMarker]         = 0.0;
+
+    Exhaust_MassFlow[iMarker]    = 0.0;
     Exhaust_Temperature[iMarker] = Temperature_Inf;
-    Exhaust_Pressure[iMarker] = Pressure_Inf;
-    Inflow_Mach[iMarker] = Mach_Inf;
-    Inflow_Pressure[iMarker] = Pressure_Inf;
-    Inflow_Area[iMarker] = 0.0;
-    Bleed_Temperature[iMarker] = Temperature_Inf;
-    Bleed_Pressure[iMarker] = Pressure_Inf;
-    Bleed_Area[iMarker] = 0.0;
-    Exhaust_Area[iMarker] = 0.0;
+    Exhaust_Pressure[iMarker]    = Pressure_Inf;
+    Exhaust_Area[iMarker]        = 0.0;
+
+    Bleed_MassFlow[iMarker]      = 0.0;
+    Bleed_Temperature[iMarker]   = Temperature_Inf;
+    Bleed_Pressure[iMarker]      = Pressure_Inf;
+    Bleed_Area[iMarker]          = 0.0;
   }
 
   /*--- Initialize the cauchy critera array for fixed CL mode ---*/
 
   if (config->GetFixed_CL_Mode())
+    
     Cauchy_Serie = new double [config->GetCauchy_Elems()+1];
 
   /*--- Check for a restart and set up the variables at each node
    appropriately. Coarse multigrid levels will be intitially set to
    the farfield values bc the solver will immediately interpolate
    the solution from the finest mesh to the coarser levels. ---*/
+  
   if (!restart || geometry->GetFinestMGLevel() == false || nZone > 1) {
 
     /*--- Restart the solution from the free-stream state ---*/
+    
     for (iPoint = 0; iPoint < nPoint; iPoint++)
       node[iPoint] = new CEulerVariable(Density_Inf, Velocity_Inf, Energy_Inf, nDim, nVar, config);
+    
   }
 
   else {
 
     /*--- Initialize the solution from the restart file information ---*/
+    
     ifstream restart_file;
     string filename = config->GetSolution_FlowFileName();
 
     /*--- Modify file name for an unsteady restart ---*/
+    
     if (dual_time) {
-      int Unst_RestartIter;
-      if (adjoint) {
-        Unst_RestartIter = int(config->GetUnst_AdjointIter()) - 1;
-      } else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+      
+      if (adjoint) { Unst_RestartIter = int(config->GetUnst_AdjointIter()) - 1; }
+      else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
         Unst_RestartIter = int(config->GetUnst_RestartIter())-1;
       else
         Unst_RestartIter = int(config->GetUnst_RestartIter())-2;
+      
       filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
     }
 
     /*--- Open the restart file, throw an error if this fails. ---*/
+    
     restart_file.open(filename.data(), ios::in);
     if (restart_file.fail()) {
       if (rank == MASTER_NODE)
@@ -458,20 +468,26 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
     /*--- In case this is a parallel simulation, we need to perform the
      Global2Local index transformation first. ---*/
+    
     long *Global2Local = new long[geometry->GetGlobal_nPointDomain()];
 
     /*--- First, set all indices to a negative value by default ---*/
+    
     for(iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++)
       Global2Local[iPoint] = -1;
 
     /*--- Now fill array with the transform values only for local points ---*/
-    for(iPoint = 0; iPoint < nPointDomain; iPoint++)
+
+    for(iPoint = 0; iPoint < nPointDomain; iPoint++) {
       Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
+    }
 
     /*--- Read all lines in the restart file ---*/
+    
     long iPoint_Local; unsigned long iPoint_Global = 0; string text_line;
 
     /*--- The first line is the header ---*/
+    
     getline (restart_file, text_line);
 
     while (getline (restart_file, text_line)) {
@@ -481,11 +497,13 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
        on a different processor, the value of iPoint_Local will be -1.
        Otherwise, the local index for this node on the current processor
        will be returned and used to instantiate the vars. ---*/
+      
       iPoint_Local = Global2Local[iPoint_Global];
 
       /*--- Load the solution for this node. Note that the first entry
        on the restart file line is the global index, followed by the
        node coordinates, and then the conservative variables. ---*/
+      
       if (iPoint_Local >= 0) {
         if (compressible) {
           if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
@@ -507,17 +525,21 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
     /*--- Instantiate the variable class with an arbitrary solution
      at any halo/periodic nodes. The initial solution can be arbitrary,
      because a send/recv is performed immediately in the solver. ---*/
+    
     for(iPoint = nPointDomain; iPoint < nPoint; iPoint++)
       node[iPoint] = new CEulerVariable(Solution, nDim, nVar, config);
 
     /*--- Close the restart file ---*/
+    
     restart_file.close();
 
     /*--- Free memory needed for the transformation ---*/
+    
     delete [] Global2Local;
   }
 
   /*--- Check that the initial solution is physical, report any non-physical nodes ---*/
+  
   if (compressible) {
     counter_local = 0;
     for (iPoint = 0; iPoint < nPoint; iPoint++) {
@@ -555,6 +577,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   }
 
   /*--- Define solver parameters needed for execution of destructor ---*/
+  
   if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED ) space_centered = true;
   else space_centered = false;
 
@@ -565,6 +588,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   else least_squares = false;
 
   /*--- Perform the MPI communication of the solution ---*/
+  
   Set_MPI_Solution(geometry, config);
 
 }
