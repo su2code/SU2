@@ -3004,6 +3004,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
       nDim              = nDim_s[iDomain];
       nZone             = nZone_s[iDomain];
       nPointTotal       = nPointTotal_s[iDomain];
+      FinestMGLevel     = true;
       nPointDomainTotal = nPointDomainTotal_s[iDomain];
       nPointGhost       = nPointGhost_s[iDomain];
       nPointPeriodic    = nPointPeriodic_s[iDomain];
@@ -3492,6 +3493,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   
   nPoint = nPointTotal_r_tot; iPoint = 0;
   nPointDomain = nPointDomainTotal_r_tot;
+  FinestMGLevel = true;
   node = new CPoint*[nPoint];
   Local_to_Global_Point = new unsigned long[nPoint];
   

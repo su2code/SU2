@@ -2316,8 +2316,8 @@ protected:
 	*Primitive_i,				/*!< \brief Auxiliary nPrimVar vector for storing the primitive at point i. */
 	*Primitive_j;				/*!< \brief Auxiliary nPrimVar vector for storing the primitive at point j. */
   
-//  double *Secondary,		/*!< \brief Auxiliary nPrimVar vector. */
-	double *Secondary_i,				/*!< \brief Auxiliary nPrimVar vector for storing the primitive at point i. */
+  double *Secondary,		/*!< \brief Auxiliary nPrimVar vector. */
+	*Secondary_i,				/*!< \brief Auxiliary nPrimVar vector for storing the primitive at point i. */
 	*Secondary_j;				/*!< \brief Auxiliary nPrimVar vector for storing the primitive at point j. */
 
   double Cauchy_Value,	/*!< \brief Summed value of the convergence indicator. */
