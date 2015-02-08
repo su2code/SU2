@@ -100,7 +100,7 @@ void CVolumetricMovement::UpdateMultiGrid(CGeometry **geometry, CConfig *config)
 void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *config, bool UpdateGeo) {
   
 	unsigned long IterLinSol = 0, Smoothing_Iter, iNonlinear_Iter, MaxIter = 0, RestartIter = 50, Tot_Iter = 0;
-  double MinVolume, NumError, Tol_Factor, Residual, Residual_Init;
+  double MinVolume, NumError, Tol_Factor, Residual = 0.0, Residual_Init = 0.0;
   bool Screen_Output;
   
   int rank = MASTER_NODE;
@@ -189,7 +189,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
         system->FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 1, &Residual_Init, false);
         
         if ((rank == MASTER_NODE) && Screen_Output) {
-          cout << "# FGMRES (with restart) residual history" << endl;
+          cout << "\n# FGMRES (with restart) residual history" << endl;
           cout << "# Residual tolerance target = " << NumError << endl;
           cout << "# Initial residual norm     = " << Residual_Init << endl;
         }
@@ -212,7 +212,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
         
         if ((rank == MASTER_NODE) && Screen_Output) {
           cout << "# FGMRES (with restart) final (true) residual:" << endl;
-          cout << "# Iteration = " << Tot_Iter << ": |res|/|res0| = " << Residual/Residual_Init << endl;
+          cout << "# Iteration = " << Tot_Iter << ": |res|/|res0| = " << Residual/Residual_Init << ".\n" << endl;
         }
         
         break;
@@ -619,15 +619,15 @@ double CVolumetricMovement::ShapeFunc_Triangle(double Xi, double Eta, double Coo
   
   /*--- Shape functions ---*/
   
-  DShapeFunction[0][3] = 1-Xi-Eta;
-  DShapeFunction[1][3] = Xi;
-  DShapeFunction[2][3] = Eta;
+  DShapeFunction[0][3] = Xi;
+  DShapeFunction[1][3] = Eta;
+  DShapeFunction[2][3] = 1-Xi-Eta;
   
-  /*--- dN/d xi, dN/d eta, dN/d mu ---*/
+  /*--- dN/d xi, dN/d eta ---*/
   
-  DShapeFunction[0][0] = -1.0;  DShapeFunction[0][1] = -1.0;
-  DShapeFunction[1][0] = 1;     DShapeFunction[1][1] = 0.0;
-  DShapeFunction[2][0] = 0;     DShapeFunction[2][1] = 1;
+  DShapeFunction[0][0] = 1.0;  DShapeFunction[0][1] = 0.0;
+  DShapeFunction[1][0] = 0.0;  DShapeFunction[1][1] = 1.0;
+  DShapeFunction[2][0] = -1.0; DShapeFunction[2][1] = -1.0;
   
   /*--- Jacobian transformation ---*/
   
@@ -685,7 +685,7 @@ double CVolumetricMovement::ShapeFunc_Rectangle(double Xi, double Eta, double Co
   DShapeFunction[2][3] = 0.25*(1.0+Xi)*(1.0+Eta);
   DShapeFunction[3][3] = 0.25*(1.0-Xi)*(1.0+Eta);
   
-  /*--- dN/d xi, dN/d eta, dN/d mu ---*/
+  /*--- dN/d xi, dN/d eta ---*/
   
   DShapeFunction[0][0] = -0.25*(1.0-Eta); DShapeFunction[0][1] = -0.25*(1.0-Xi);
   DShapeFunction[1][0] =  0.25*(1.0-Eta); DShapeFunction[1][1] = -0.25*(1.0+Xi);
@@ -735,7 +735,7 @@ double CVolumetricMovement::ShapeFunc_Rectangle(double Xi, double Eta, double Co
   
 }
 
-double CVolumetricMovement::ShapeFunc_Tetra(double Xi, double Eta, double Mu, double CoordCorners[8][3], double DShapeFunction[8][4]) {
+double CVolumetricMovement::ShapeFunc_Tetra(double Xi, double Eta, double Zeta, double CoordCorners[8][3], double DShapeFunction[8][4]) {
   
   int i, j, k;
   double c0, c1, c2, xsj;
@@ -744,16 +744,16 @@ double CVolumetricMovement::ShapeFunc_Tetra(double Xi, double Eta, double Mu, do
   /*--- Shape functions ---*/
   
   DShapeFunction[0][3] = Xi;
-  DShapeFunction[1][3] = Eta;
-  DShapeFunction[2][3] = Mu;
-  DShapeFunction[3][3] = 1.0 - Xi - Eta - Mu;
-
-  /*--- dN/d xi, dN/d eta, dN/d mu ---*/
-
-  DShapeFunction[0][0] = 1.0;   DShapeFunction[0][1] = 0.0;   DShapeFunction[0][2] = 0.0;
-  DShapeFunction[1][0] = 0.0;   DShapeFunction[1][1] = 1.0;   DShapeFunction[1][2] = 0.0;
-  DShapeFunction[2][0] = 0.0;   DShapeFunction[2][1] = 0.0;   DShapeFunction[2][2] = 1.0;
-  DShapeFunction[3][0] = -1.0;  DShapeFunction[3][1] = -1.0;  DShapeFunction[3][2] = -1.0;
+  DShapeFunction[1][3] = Zeta;
+  DShapeFunction[2][3] = 1.0 - Xi - Eta - Zeta;
+  DShapeFunction[3][3] = Eta;
+  
+  /*--- dN/d xi, dN/d eta, dN/d zeta ---*/
+  
+  DShapeFunction[0][0] = 1.0;  DShapeFunction[0][1] = 0.0;  DShapeFunction[0][2] = 0.0;
+  DShapeFunction[1][0] = 0.0;  DShapeFunction[1][1] = 0.0;  DShapeFunction[1][2] = 1.0;
+  DShapeFunction[2][0] = -1.0; DShapeFunction[2][1] = -1.0; DShapeFunction[2][2] = -1.0;
+  DShapeFunction[3][0] = 0.0;  DShapeFunction[3][1] = 1.0;  DShapeFunction[3][2] = 0.0;
   
   /*--- Jacobian transformation ---*/
   
@@ -798,14 +798,14 @@ double CVolumetricMovement::ShapeFunc_Tetra(double Xi, double Eta, double Mu, do
     c2 = xs[2][0]*DShapeFunction[k][0]+xs[2][1]*DShapeFunction[k][1]+xs[2][2]*DShapeFunction[k][2]; // dN/dz
     DShapeFunction[k][0] = c0; // store dN/dx instead of dN/d xi
     DShapeFunction[k][1] = c1; // store dN/dy instead of dN/d eta
-    DShapeFunction[k][2] = c2; // store dN/dz instead of dN/d mu
+    DShapeFunction[k][2] = c2; // store dN/dz instead of dN/d zeta
   }
   
   return xsj;
   
 }
 
-double CVolumetricMovement::ShapeFunc_Pyram(double Xi, double Eta, double Mu, double CoordCorners[8][3], double DShapeFunction[8][4]) {
+double CVolumetricMovement::ShapeFunc_Pyram(double Xi, double Eta, double Zeta, double CoordCorners[8][3], double DShapeFunction[8][4]) {
   
   int i, j, k;
   double c0, c1, c2, xsj;
@@ -813,35 +813,35 @@ double CVolumetricMovement::ShapeFunc_Pyram(double Xi, double Eta, double Mu, do
   
   /*--- Shape functions ---*/
   
-  double Den = 4.0*(1.0 - Mu);
+  DShapeFunction[0][3] = 0.125*(1.0-Xi)*(1.0-Eta)*(1.0-Zeta);
+  DShapeFunction[1][3] = 0.125*(1.0+Xi)*(1.0-Eta)*(1.0-Zeta);
+  DShapeFunction[2][3] = 0.125*(1.0+Xi)*(1.0+Eta)*(1.0-Zeta);
+  DShapeFunction[3][3] = 0.125*(1.0-Xi)*(1.0+Eta)*(1.0-Zeta);
+  DShapeFunction[4][3] = 0.5*(1.0+Zeta);
   
-  DShapeFunction[0][3] = (-Xi+Eta+Mu-1.0)*(-Xi-Eta+Mu-1.0)/Den;
-  DShapeFunction[1][3] = (-Xi-Eta+Mu-1.0)*(Xi-Eta+Mu-1.0)/Den;
-  DShapeFunction[2][3] = (Xi+Eta+Mu-1.0)*(Xi-Eta+Mu-1.0)/Den;
-  DShapeFunction[3][3] = (Xi+Eta+Mu-1.0)*(-Xi+Eta+Mu-1.0)/Den;
-  DShapeFunction[4][3] = Mu;
+  /*--- dN/d xi ---*/
   
-  /*--- dN/d xi, dN/d eta, dN/d mu ---*/
-  
-  DShapeFunction[0][0] = 0.5 + (0.5*Xi)/(1.0 - Mu);
-  DShapeFunction[0][1] = (0.5*Eta)/(-1.0 + Mu);
-  DShapeFunction[0][2] = (-0.25 - 0.25*Eta*Eta + (0.5 - 0.25*Mu)*Mu + 0.25*Xi*Xi)/((-1.0 + Mu)*(-1.0 + Mu));
-  
-  DShapeFunction[1][0] = (0.5*Xi)/(-1.0 + Mu);
-  DShapeFunction[1][1] = (-0.5 - 0.5*Eta + 0.5*Mu)/(-1.0 + Mu);
-  DShapeFunction[1][2] = (-0.25 + 0.25*Eta*Eta + (0.5 - 0.25*Mu)*Mu - 0.25*Xi*Xi)/((-1.0 + Mu)*(-1.0 + Mu));
-  
-  DShapeFunction[2][0] = -0.5 + (0.5*Xi)/(1.0 - 1.0*Mu);
-  DShapeFunction[2][1] = (0.5*Eta)/(-1.0 + Mu);
-  DShapeFunction[2][2] = (-0.25 - 0.25*Eta*Eta + (0.5 - 0.25*Mu)*Mu + 0.25*Xi*Xi)/((-1.0 + Mu)*(-1.0 + Mu));
-  
-  DShapeFunction[3][0] = (0.5*Xi)/(-1.0 + Mu);
-  DShapeFunction[3][1] = (0.5 - 0.5*Eta - 0.5*Mu)/(-1.0 + Mu);
-  DShapeFunction[3][2] = (-0.25 + 0.25*Eta*Eta + (0.5 - 0.25*Mu)*Mu - 0.25*Xi*Xi)/((-1.0 + Mu)*(-1.0 + Mu));
-  
+  DShapeFunction[0][0] = -0.125*(1.0-Eta)*(1.0-Zeta);
+  DShapeFunction[1][0] = 0.125*(1.0-Eta)*(1.0-Zeta);
+  DShapeFunction[2][0] = 0.125*(1.0+Eta)*(1.0-Zeta);
+  DShapeFunction[3][0] = -0.125*(1.0+Eta)*(1.0-Zeta);
   DShapeFunction[4][0] = 0.0;
+  
+  /*--- dN/d eta ---*/
+  
+  DShapeFunction[0][1] = -0.125*(1.0-Xi)*(1.0-Zeta);
+  DShapeFunction[1][1] = -0.125*(1.0+Xi)*(1.0-Zeta);
+  DShapeFunction[2][1] = 0.125*(1.0+Xi)*(1.0-Zeta);
+  DShapeFunction[3][1] = 0.125*(1.0-Xi)*(1.0-Zeta);
   DShapeFunction[4][1] = 0.0;
-  DShapeFunction[4][2] = 1.0;
+  
+  /*--- dN/d zeta ---*/
+  
+  DShapeFunction[0][2] = -0.125*(1.0-Xi)*(1.0-Eta);
+  DShapeFunction[1][2] = -0.125*(1.0+Xi)*(1.0-Eta);
+  DShapeFunction[2][2] = -0.125*(1.0+Xi)*(1.0+Eta);
+  DShapeFunction[3][2] = -0.125*(1.0-Xi)*(1.0+Eta);
+  DShapeFunction[4][2] = 0.5;
   
   /*--- Jacobian transformation ---*/
   
@@ -886,14 +886,14 @@ double CVolumetricMovement::ShapeFunc_Pyram(double Xi, double Eta, double Mu, do
     c2 = xs[2][0]*DShapeFunction[k][0]+xs[2][1]*DShapeFunction[k][1]+xs[2][2]*DShapeFunction[k][2]; // dN/dz
     DShapeFunction[k][0] = c0; // store dN/dx instead of dN/d xi
     DShapeFunction[k][1] = c1; // store dN/dy instead of dN/d eta
-    DShapeFunction[k][2] = c2; // store dN/dz instead of dN/d mu
+    DShapeFunction[k][2] = c2; // store dN/dz instead of dN/d zeta
   }
   
   return xsj;
   
 }
 
-double CVolumetricMovement::ShapeFunc_Wedge(double Xi, double Eta, double Mu, double CoordCorners[8][3], double DShapeFunction[8][4]) {
+double CVolumetricMovement::ShapeFunc_Wedge(double Xi, double Eta, double Zeta, double CoordCorners[8][3], double DShapeFunction[8][4]) {
   
   int i, j, k;
   double c0, c1, c2, xsj;
@@ -902,20 +902,20 @@ double CVolumetricMovement::ShapeFunc_Wedge(double Xi, double Eta, double Mu, do
   /*--- Shape functions ---*/
   
   DShapeFunction[0][3] = 0.5*Eta*(1.0-Xi);
-  DShapeFunction[1][3] = 0.5*Mu*(1.0-Xi);;
-  DShapeFunction[2][3] = 0.5*(1.0-Eta-Mu)*(1.0-Xi);
+  DShapeFunction[1][3] = 0.5*Zeta*(1.0-Xi);
+  DShapeFunction[2][3] = 0.5*(1.0-Eta-Zeta)*(1.0-Xi);
   DShapeFunction[3][3] = 0.5*Eta*(Xi+1.0);
-  DShapeFunction[4][3] = 0.5*Mu*(Xi+1.0);
-  DShapeFunction[5][3] = 0.5*(1.0-Eta-Mu)*(Xi+1.0);
+  DShapeFunction[4][3] = 0.5*Zeta*(Xi+1.0);
+  DShapeFunction[5][3] = 0.5*(1.0-Eta-Zeta)*(Xi+1.0);
   
-  /*--- dN/d Xi, dN/d Eta, dN/d Mu ---*/
+  /*--- dN/d Xi, dN/d Eta, dN/d Zeta ---*/
   
   DShapeFunction[0][0] = -0.5*Eta;            DShapeFunction[0][1] = 0.5*(1.0-Xi);      DShapeFunction[0][2] = 0.0;
-  DShapeFunction[1][0] = -0.5*Mu;             DShapeFunction[1][1] = 0.0;               DShapeFunction[1][2] = 0.5*(1.0-Xi);
-  DShapeFunction[2][0] = -0.5*(1.0-Eta-Mu);   DShapeFunction[2][1] = -0.5*(1.0-Xi);     DShapeFunction[2][2] = -0.5*(1.0-Xi);
+  DShapeFunction[1][0] = -0.5*Zeta;           DShapeFunction[1][1] = 0.0;               DShapeFunction[1][2] = 0.5*(1.0-Xi);
+  DShapeFunction[2][0] = -0.5*(1.0-Eta-Zeta); DShapeFunction[2][1] = -0.5*(1.0-Xi);     DShapeFunction[2][2] = -0.5*(1.0-Xi);
   DShapeFunction[3][0] = 0.5*Eta;             DShapeFunction[3][1] = 0.5*(Xi+1.0);      DShapeFunction[3][2] = 0.0;
-  DShapeFunction[4][0] = 0.5*Mu;              DShapeFunction[4][1] = 0.0;               DShapeFunction[4][2] = 0.5*(Xi+1.0);
-  DShapeFunction[5][0] = 0.5*(1.0-Eta-Mu);    DShapeFunction[5][1] = -0.5*(Xi+1.0);     DShapeFunction[5][2] = -0.5*(Xi+1.0);
+  DShapeFunction[4][0] = 0.5*Zeta;            DShapeFunction[4][1] = 0.0;               DShapeFunction[4][2] = 0.5*(Xi+1.0);
+  DShapeFunction[5][0] = 0.5*(1.0-Eta-Zeta);  DShapeFunction[5][1] = -0.5*(Xi+1.0);     DShapeFunction[5][2] = -0.5*(Xi+1.0);
   
   /*--- Jacobian transformation ---*/
   
@@ -960,37 +960,63 @@ double CVolumetricMovement::ShapeFunc_Wedge(double Xi, double Eta, double Mu, do
     c2 = xs[2][0]*DShapeFunction[k][0]+xs[2][1]*DShapeFunction[k][1]+xs[2][2]*DShapeFunction[k][2]; // dN/dz
     DShapeFunction[k][0] = c0; // store dN/dx instead of dN/d xi
     DShapeFunction[k][1] = c1; // store dN/dy instead of dN/d eta
-    DShapeFunction[k][2] = c2; // store dN/dz instead of dN/d mu
+    DShapeFunction[k][2] = c2; // store dN/dz instead of dN/d zeta
   }
   
   return xsj;
   
 }
 
-double CVolumetricMovement::ShapeFunc_Hexa(double Xi, double Eta, double Mu, double CoordCorners[8][3], double DShapeFunction[8][4]) {
+double CVolumetricMovement::ShapeFunc_Hexa(double Xi, double Eta, double Zeta, double CoordCorners[8][3], double DShapeFunction[8][4]) {
   
   int i, j, k;
-  double a0, a1, a2, c0, c1, c2, xsj;
-  double ss[3], xs[3][3], ad[3][3];
-  double s0[8] = {-0.5, 0.5, 0.5,-0.5,-0.5, 0.5,0.5,-0.5};
-  double s1[8] = {-0.5,-0.5, 0.5, 0.5,-0.5,-0.5,0.5, 0.5};
-  double s2[8] = {-0.5,-0.5,-0.5,-0.5, 0.5, 0.5,0.5, 0.5};
+  double c0, c1, c2, xsj;
+  double xs[3][3], ad[3][3];
   
-  ss[0] = Xi;
-  ss[1] = Eta;
-  ss[2] = Mu;
   
   /*--- Shape functions ---*/
   
-  for (i = 0; i < 8; i++) {
-    a0 = 0.5+s0[i]*ss[0]; // shape function in xi-direction
-    a1 = 0.5+s1[i]*ss[1]; // shape function in eta-direction
-    a2 = 0.5+s2[i]*ss[2]; // shape function in mu-direction
-    DShapeFunction[i][0] = s0[i]*a1*a2; // dN/d xi
-    DShapeFunction[i][1] = s1[i]*a0*a2; // dN/d eta
-    DShapeFunction[i][2] = s2[i]*a0*a1; // dN/d mu
-    DShapeFunction[i][3] = a0*a1*a2; // actual shape function N
-  }
+  DShapeFunction[0][3] = 0.125*(1.0-Xi)*(1.0-Eta)*(1.0-Zeta);
+  DShapeFunction[1][3] = 0.125*(1.0+Xi)*(1.0-Eta)*(1.0-Zeta);
+  DShapeFunction[2][3] = 0.125*(1.0+Xi)*(1.0+Eta)*(1.0-Zeta);
+  DShapeFunction[3][3] = 0.125*(1.0-Xi)*(1.0+Eta)*(1.0-Zeta);
+  DShapeFunction[4][3] = 0.125*(1.0-Xi)*(1.0-Eta)*(1.0+Zeta);
+  DShapeFunction[5][3] = 0.125*(1.0+Xi)*(1.0-Eta)*(1.0+Zeta);
+  DShapeFunction[6][3] = 0.125*(1.0+Xi)*(1.0+Eta)*(1.0+Zeta);
+  DShapeFunction[7][3] = 0.125*(1.0-Xi)*(1.0+Eta)*(1.0+Zeta);
+  
+  /*--- dN/d xi ---*/
+  
+  DShapeFunction[0][0] = -0.125*(1.0-Eta)*(1.0-Zeta);
+  DShapeFunction[1][0] = 0.125*(1.0-Eta)*(1.0-Zeta);
+  DShapeFunction[2][0] = 0.125*(1.0+Eta)*(1.0-Zeta);
+  DShapeFunction[3][0] = -0.125*(1.0+Eta)*(1.0-Zeta);
+  DShapeFunction[4][0] = -0.125*(1.0-Eta)*(1.0+Zeta);
+  DShapeFunction[5][0] = 0.125*(1.0-Eta)*(1.0+Zeta);
+  DShapeFunction[6][0] = 0.125*(1.0+Eta)*(1.0+Zeta);
+  DShapeFunction[7][0] = -0.125*(1.0+Eta)*(1.0+Zeta);
+  
+  /*--- dN/d eta ---*/
+  
+  DShapeFunction[0][1] = -0.125*(1.0-Xi)*(1.0-Zeta);
+  DShapeFunction[1][1] = -0.125*(1.0+Xi)*(1.0-Zeta);
+  DShapeFunction[2][1] = 0.125*(1.0+Xi)*(1.0-Zeta);
+  DShapeFunction[3][1] = 0.125*(1.0-Xi)*(1.0-Zeta);
+  DShapeFunction[4][1] = -0.125*(1.0-Xi)*(1.0+Zeta);
+  DShapeFunction[5][1] = -0.125*(1.0+Xi)*(1.0+Zeta);
+  DShapeFunction[6][1] = 0.125*(1.0+Xi)*(1.0+Zeta);
+  DShapeFunction[7][1] = 0.125*(1.0-Xi)*(1.0+Zeta);
+  
+  /*--- dN/d zeta ---*/
+  
+  DShapeFunction[0][2] = -0.125*(1.0-Xi)*(1.0-Eta);
+  DShapeFunction[1][2] = -0.125*(1.0+Xi)*(1.0-Eta);
+  DShapeFunction[2][2] = -0.125*(1.0+Xi)*(1.0+Eta);
+  DShapeFunction[3][2] = -0.125*(1.0-Xi)*(1.0+Eta);
+  DShapeFunction[4][2] = 0.125*(1.0-Xi)*(1.0-Eta);
+  DShapeFunction[5][2] = 0.125*(1.0+Xi)*(1.0-Eta);
+  DShapeFunction[6][2] = 0.125*(1.0+Xi)*(1.0+Eta);
+  DShapeFunction[7][2] = 0.125*(1.0-Xi)*(1.0+Eta);
   
   /*--- Jacobian transformation ---*/
   
@@ -1034,7 +1060,7 @@ double CVolumetricMovement::ShapeFunc_Hexa(double Xi, double Eta, double Mu, dou
     c2 = xs[2][0]*DShapeFunction[k][0]+xs[2][1]*DShapeFunction[k][1]+xs[2][2]*DShapeFunction[k][2]; // dN/dz
     DShapeFunction[k][0] = c0; // store dN/dx instead of dN/d xi
     DShapeFunction[k][1] = c1; // store dN/dy instead of dN/d eta
-    DShapeFunction[k][2] = c2; // store dN/dz instead of dN/d mu
+    DShapeFunction[k][2] = c2; // store dN/dz instead of dN/d zeta
   }
   
   return xsj;
@@ -1449,7 +1475,7 @@ void CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, CConfig *con
   
   double B_Matrix[6][24], D_Matrix[6][6] = {{0.0, 0.0, 0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
     {0.0, 0.0, 0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0, 0.0, 0.0}}, Aux_Matrix[24][6];
-  double Xi = 0.0, Eta = 0.0, Mu = 0.0, Det = 0.0, E, Lambda = 0.0, Nu, Avg_Wall_Dist;
+  double Xi = 0.0, Eta = 0.0, Zeta = 0.0, Det = 0.0, Mu = 0.0, E = 0.0, Lambda = 0.0, Nu = 0.0, Avg_Wall_Dist;
   unsigned short iNode, jNode, iVar, jVar, kVar, iGauss, nGauss = 0;
   double DShapeFunction[8][4] = {{0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0},
     {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}};
@@ -1517,12 +1543,12 @@ void CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, CConfig *con
   
   for (iGauss = 0; iGauss < nGauss; iGauss++) {
     
-    Xi = Location[iGauss][0]; Eta = Location[iGauss][1];  Mu = Location[iGauss][2];
+    Xi = Location[iGauss][0]; Eta = Location[iGauss][1];  Zeta = Location[iGauss][2];
     
-    if (nNodes == 4) Det = ShapeFunc_Tetra(Xi, Eta, Mu, CoordCorners, DShapeFunction);
-    if (nNodes == 5) Det = ShapeFunc_Pyram(Xi, Eta, Mu, CoordCorners, DShapeFunction);
-    if (nNodes == 6) Det = ShapeFunc_Wedge(Xi, Eta, Mu, CoordCorners, DShapeFunction);
-    if (nNodes == 8) Det = ShapeFunc_Hexa(Xi, Eta, Mu, CoordCorners, DShapeFunction);
+    if (nNodes == 4) Det = ShapeFunc_Tetra(Xi, Eta, Zeta, CoordCorners, DShapeFunction);
+    if (nNodes == 5) Det = ShapeFunc_Pyram(Xi, Eta, Zeta, CoordCorners, DShapeFunction);
+    if (nNodes == 6) Det = ShapeFunc_Wedge(Xi, Eta, Zeta, CoordCorners, DShapeFunction);
+    if (nNodes == 8) Det = ShapeFunc_Hexa(Xi, Eta, Zeta, CoordCorners, DShapeFunction);
     
     /*--- Compute the B Matrix ---*/
     

@@ -977,8 +977,6 @@ inline void CConfig::SetDelta_UnstTimeND(double val_delta_unsttimend) { Delta_Un
 
 inline double CConfig::GetTotal_UnstTime(void) { return Total_UnstTime; }
 
-inline bool CConfig::GetDivide_Element(void) { return Divide_Element; }
-
 inline bool CConfig::GetEngine_Intake(void) { return Engine_Intake; }
 
 inline double CConfig::GetDV_Value(unsigned short val_dv) { return DV_Value[val_dv]; }
