@@ -420,12 +420,6 @@ public:
 	 * \param[in] action - Allocate or not the new elements.		 
 	 */
 	virtual void SetBoundControlVolume(CConfig *config, unsigned short action);
-
-	/*! 
-	 * \brief A virtual member.
-	 * \param[in] config_filename - Name of the file where the tecplot information is going to be stored.
-	 */
-	virtual void SetTecPlot(char config_filename[MAX_STRING_SIZE]);
   
   /*!
 	 * \brief A virtual member.
@@ -1594,7 +1588,7 @@ public:
 	 * \param[in] config_filename - Name of the file where the Tecplot 
 	 *            information is going to be stored.
 	 */
-	void SetTecPlot(char config_filename[MAX_STRING_SIZE]);
+	void SetTecPlot(char config_filename[MAX_STRING_SIZE], bool new_file);
 
 	/*! 
 	 * \brief Write the .su2 file.
