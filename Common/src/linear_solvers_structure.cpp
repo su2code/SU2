@@ -193,7 +193,7 @@ void CSysSolve::ModGramSchmidt(int i, vector<vector<double> > & Hsbg, vector<CSy
 
 void CSysSolve::WriteHeader(const string & solver, const double & restol, const double & resinit) {
   
-  cout << "# " << solver << " residual history" << endl;
+  cout << "\n# " << solver << " residual history" << endl;
   cout << "# Residual tolerance target = " << restol << endl;
   cout << "# Initial residual norm     = " << resinit << endl;
   
@@ -290,7 +290,7 @@ int rank = 0;
   
   if ((monitoring) && (rank == MASTER_NODE))  {
     cout << "# Conjugate Gradient final (true) residual:" << endl;
-    cout << "# Iteration = " << i << ": |res|/|res0| = "  << norm_r/norm0 << endl;
+    cout << "# Iteration = " << i << ": |res|/|res0| = "  << norm_r/norm0 << ".\n" << endl;
   }
   
 //  /*--- Recalculate final residual (this should be optional) ---*/
@@ -445,11 +445,10 @@ int rank = 0;
   
   if ((monitoring) && (rank == MASTER_NODE)) {
     cout << "# FGMRES final (true) residual:" << endl;
-    cout << "# Iteration = " << i << ": |res|/|res0| = " << beta/norm0 << endl;
+    cout << "# Iteration = " << i << ": |res|/|res0| = " << beta/norm0 << ".\n" << endl;
   }
   
 //  /*---  Recalculate final (neg.) residual (this should be optional) ---*/
-//  
 //  mat_vec(x, w[0]);
 //  w[0] -= b;
 //  double res = w[0].norm();
@@ -584,7 +583,7 @@ unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x,
 	  
   if ((monitoring) && (rank == MASTER_NODE)) {
     cout << "# BCGSTAB final (true) residual:" << endl;
-    cout << "# Iteration = " << i << ": |res|/|res0| = "  << norm_r/norm0 << endl;
+    cout << "# Iteration = " << i << ": |res|/|res0| = "  << norm_r/norm0 << ".\n" << endl;
   }
 	
 //  /*--- Recalculate final residual (this should be optional) ---*/

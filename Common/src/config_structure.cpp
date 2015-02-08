@@ -1029,8 +1029,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("SMOOTH_GEOMETRY", SmoothNumGrid, false);
   /* DESCRIPTION: Adapt the boundary elements */
   addBoolOption("ADAPT_BOUNDARY", AdaptBoundary, true);
-  /* DESCRIPTION: Divide rectangles into triangles */
-  addBoolOption("DIVIDE_ELEMENTS", Divide_Element, false);
 
   /* CONFIG_CATEGORY: Wind Gust */
   /*--- Options related to wind gust simulations ---*/
@@ -1504,10 +1502,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     Design_Variable = new unsigned short [1];
     nDV = 1; Design_Variable[0] = NONE;
   }
-  
-  /*--- Don't divide the numerical grid unless running SU2_DEF ---*/
-  
-  if (Kind_SU2 != SU2_DEF) Divide_Element = false;
   
   /*--- Identification of free-surface problem, this problems are always unsteady and incompressible. ---*/
   

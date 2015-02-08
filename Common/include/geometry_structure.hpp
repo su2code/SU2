@@ -941,17 +941,6 @@ public:
 	unsigned short GetGlobal_to_Local_Marker(unsigned short val_imarker);
   
   /*!
-	 * \brief Reads the geometry of the grid and adjust the boundary
-	 *        conditions with the configuration file.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_mesh_filename - Name of the file with the grid information.
-	 * \param[in] val_format - Format of the file with the grid information.
-	 * \param[in] val_iZone - Domain to be read from the grid file.
-	 * \param[in] val_nZone - Total number of domains in the grid file.
-	 */
-	void Read_SU2_Format(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone);
-  
-  /*!
    * \brief Reads the geometry of the grid and adjust the boundary
    *        conditions with the configuration file in parallel (for parmetis).
    * \param[in] config - Definition of the particular problem.
