@@ -5734,12 +5734,11 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   unsigned long VTK_Type, iMarker, iChar;
   unsigned long iCount = 0;
   unsigned long iElem_Bound = 0, iPoint = 0, ielem_div = 0, ielem = 0;
-  unsigned long *Local2Global = NULL;
   unsigned long vnodes_edge[2], vnodes_triangle[3], vnodes_quad[4];
   unsigned long vnodes_tetra[4], vnodes_hexa[8], vnodes_wedge[6],
-  vnodes_pyramid[5], dummyLong, GlobalIndex, iElem;
+  vnodes_pyramid[5], dummyLong, GlobalIndex;
   char cstr[200];
-  double Coord_2D[2], Coord_3D[3], dummyDouble;
+  double Coord_2D[2], Coord_3D[3];
   string::size_type position;
   int rank = MASTER_NODE, size = SINGLE_NODE;
   bool domain_flag = false;
@@ -15112,7 +15111,8 @@ void CPeriodicGeometry::SetMeshFile(CGeometry *geometry, CConfig *config, string
   
 }
 
-void CPeriodicGeometry::SetTecPlot(char mesh_filename[MAX_STRING_SIZE]) {
+void CPeriodicGeometry::SetTecPlot(char mesh_filename[MAX_STRING_SIZE], bool new_file) {
+  
   unsigned long iElem, iPoint;
   unsigned short iDim;
   ofstream Tecplot_File;

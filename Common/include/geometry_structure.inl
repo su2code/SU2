@@ -179,8 +179,6 @@ inline void CGeometry::SetBoundControlVolume(CConfig *config, unsigned short act
 
 inline void CGeometry::SetBoundControlVolume(CConfig *config, CGeometry *geometry, unsigned short action) { }
 
-inline void CGeometry::SetTecPlot(char config_filename[MAX_STRING_SIZE]) { }
-
 inline void CGeometry::SetTecPlot(char config_filename[MAX_STRING_SIZE], bool new_file) { }
 
 inline void CGeometry::SetMeshFile(CConfig *config, string val_mesh_out_filename) { }
