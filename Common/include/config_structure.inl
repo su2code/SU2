@@ -2,7 +2,7 @@
  * \file config_structure.inl
  * \brief In-Line subroutines of the <i>config_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -976,8 +976,6 @@ inline double CConfig::GetCurrent_UnstTime(void) { return Current_UnstTime; }
 inline void CConfig::SetDelta_UnstTimeND(double val_delta_unsttimend) { Delta_UnstTimeND = val_delta_unsttimend; }
 
 inline double CConfig::GetTotal_UnstTime(void) { return Total_UnstTime; }
-
-inline bool CConfig::GetDivide_Element(void) { return Divide_Element; }
 
 inline bool CConfig::GetEngine_Intake(void) { return Engine_Intake; }
 

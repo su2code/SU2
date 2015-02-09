@@ -5,7 +5,7 @@
  *        technique definition). The subroutines and functions are in 
  *        the <i>grid_movement_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, S. Padron
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -56,7 +56,7 @@ using namespace std;
  * \brief Class for moving the surface and volumetric 
  *        numerical grid (2D and 3D problems).
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CGridMovement {
 public:
@@ -85,7 +85,7 @@ public:
  * \class CFreeFormDefBox
  * \brief Class for defining the free form FFDBox structure.
  * \author F. Palacios & A. Galdran.
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CFreeFormDefBox : public CGridMovement {
 public:
@@ -682,7 +682,7 @@ public:
  * \class CVolumetricMovement
  * \brief Class for moving the volumetric numerical grid.
  * \author F. Palacios, A. Bueno, T. Economon, S. Padron.
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CVolumetricMovement : public CGridMovement {
 protected:
@@ -761,7 +761,7 @@ public:
 	 * \param[in] CoordCorners - Coordiantes of the corners.
    * \param[in] DShapeFunction - Shape function information
 	 */
-  double ShapeFunc_Hexa(double Xi, double Eta, double Mu, double CoordCorners[8][3], double DShapeFunction[8][4]);
+  double ShapeFunc_Hexa(double Xi, double Eta, double Zeta, double CoordCorners[8][3], double DShapeFunction[8][4]);
   
   /*!
 	 * \brief Shape functions and derivative of the shape functions
@@ -771,7 +771,7 @@ public:
 	 * \param[in] CoordCorners - Coordiantes of the corners.
    * \param[in] DShapeFunction - Shape function information
 	 */
-  double ShapeFunc_Tetra(double Xi, double Eta, double Mu, double CoordCorners[8][3], double DShapeFunction[8][4]);
+  double ShapeFunc_Tetra(double Xi, double Eta, double Zeta, double CoordCorners[8][3], double DShapeFunction[8][4]);
   
   /*!
 	 * \brief Shape functions and derivative of the shape functions
@@ -781,7 +781,7 @@ public:
 	 * \param[in] CoordCorners - Coordiantes of the corners.
    * \param[in] DShapeFunction - Shape function information
 	 */
-  double ShapeFunc_Pyram(double Xi, double Eta, double Mu, double CoordCorners[8][3], double DShapeFunction[8][4]);
+  double ShapeFunc_Pyram(double Xi, double Eta, double Zeta, double CoordCorners[8][3], double DShapeFunction[8][4]);
   
   /*!
 	 * \brief Shape functions and derivative of the shape functions
@@ -791,7 +791,7 @@ public:
 	 * \param[in] CoordCorners - Coordiantes of the corners.
    * \param[in] DShapeFunction - Shape function information
 	 */
-  double ShapeFunc_Wedge(double Xi, double Eta, double Mu, double CoordCorners[8][3], double DShapeFunction[8][4]);
+  double ShapeFunc_Wedge(double Xi, double Eta, double Zeta, double CoordCorners[8][3], double DShapeFunction[8][4]);
   
   /*!
 	 * \brief Shape functions and derivative of the shape functions
@@ -949,7 +949,7 @@ public:
  * \class CSurfaceMovement
  * \brief Class for moving the surface numerical grid.
  * \author F. Palacios, T. Economon.
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CSurfaceMovement : public CGridMovement {
 protected:

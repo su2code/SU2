@@ -2,7 +2,7 @@
  * \file config_structure.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -1029,8 +1029,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("SMOOTH_GEOMETRY", SmoothNumGrid, false);
   /* DESCRIPTION: Adapt the boundary elements */
   addBoolOption("ADAPT_BOUNDARY", AdaptBoundary, true);
-  /* DESCRIPTION: Divide rectangles into triangles */
-  addBoolOption("DIVIDE_ELEMENTS", Divide_Element, false);
 
   /* CONFIG_CATEGORY: Wind Gust */
   /*--- Options related to wind gust simulations ---*/
@@ -1504,10 +1502,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     Design_Variable = new unsigned short [1];
     nDV = 1; Design_Variable[0] = NONE;
   }
-  
-  /*--- Don't divide the numerical grid unless running SU2_DEF ---*/
-  
-  if (Kind_SU2 != SU2_DEF) Divide_Element = false;
   
   /*--- Identification of free-surface problem, this problems are always unsteady and incompressible. ---*/
   
@@ -3386,7 +3380,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   cout << endl << "-------------------------------------------------------------------------" << endl;
   cout << "|    ___ _   _ ___                                                      |" << endl;
-  cout << "|   / __| | | |_  )   Release 3.2.8 \"eagle\"                             |" << endl;
+  cout << "|   / __| | | |_  )   Release 3.2.8.1 \"eagle\"                           |" << endl;
   cout << "|   \\__ \\ |_| |/ /                                                      |" << endl;
   switch (val_software) {
     case SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;
