@@ -3,7 +3,7 @@
 ## \file scipy_tools.py
 #  \brief tools for interfacing with scipy
 #  \author T. Lukaczyk, F. Palacios
-#  \version 3.2.8 "eagle"
+#  \version 3.2.8.1 "eagle"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
