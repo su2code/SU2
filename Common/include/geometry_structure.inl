@@ -2,7 +2,7 @@
  * \file geometry_structure.inl
  * \brief In-Line subroutines of the <i>geometry_structure.hpp</i> file.
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -178,8 +178,6 @@ inline void CGeometry::MatchZone(CConfig *config, CGeometry *geometry_donor, CCo
 inline void CGeometry::SetBoundControlVolume(CConfig *config, unsigned short action) { }
 
 inline void CGeometry::SetBoundControlVolume(CConfig *config, CGeometry *geometry, unsigned short action) { }
-
-inline void CGeometry::SetTecPlot(char config_filename[MAX_STRING_SIZE]) { }
 
 inline void CGeometry::SetTecPlot(char config_filename[MAX_STRING_SIZE], bool new_file) { }
 

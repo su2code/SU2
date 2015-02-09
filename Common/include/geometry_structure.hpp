@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for creating the geometrical structure.
  *        The subroutines and functions are in the <i>geometry_structure.cpp</i> file.
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -64,7 +64,7 @@ using namespace std;
  * \brief Parent class for defining the geometry of the problem (complete geometry, 
  *        multigrid agglomerated geometry, only boundary geometry, etc..)
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CGeometry {
 protected:
@@ -420,12 +420,6 @@ public:
 	 * \param[in] action - Allocate or not the new elements.		 
 	 */
 	virtual void SetBoundControlVolume(CConfig *config, unsigned short action);
-
-	/*! 
-	 * \brief A virtual member.
-	 * \param[in] config_filename - Name of the file where the tecplot information is going to be stored.
-	 */
-	virtual void SetTecPlot(char config_filename[MAX_STRING_SIZE]);
   
   /*!
 	 * \brief A virtual member.
@@ -853,7 +847,7 @@ public:
  * \brief Class for reading a defining the primal grid which is read from the 
  *        grid file in .su2 format.
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CPhysicalGeometry : public CGeometry {
 
@@ -941,17 +935,6 @@ public:
 	unsigned short GetGlobal_to_Local_Marker(unsigned short val_imarker);
   
   /*!
-	 * \brief Reads the geometry of the grid and adjust the boundary
-	 *        conditions with the configuration file.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_mesh_filename - Name of the file with the grid information.
-	 * \param[in] val_format - Format of the file with the grid information.
-	 * \param[in] val_iZone - Domain to be read from the grid file.
-	 * \param[in] val_nZone - Total number of domains in the grid file.
-	 */
-	void Read_SU2_Format(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone);
-  
-  /*!
    * \brief Reads the geometry of the grid and adjust the boundary
    *        conditions with the configuration file in parallel (for parmetis).
    * \param[in] config - Definition of the particular problem.
@@ -983,17 +966,6 @@ public:
    * \param[in] val_nZone - Total number of domains in the grid file.
    */
   void Read_CGNS_Format_Parallel(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone);
-  
-  /*!
-	 * \brief Reads the geometry of the grid and adjust the boundary
-	 *        conditions with the configuration file.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_mesh_filename - Name of the file with the grid information.
-	 * \param[in] val_format - Format of the file with the grid information.
-	 * \param[in] val_iZone - Domain to be read from the grid file.
-	 * \param[in] val_nZone - Total number of domains in the grid file.
-	 */
-	void Read_NETCDF_Format(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone);
 
 	/*! 
 	 * \brief Find repeated nodes between two elements to identify the common face.
@@ -1404,7 +1376,7 @@ public:
  * \brief Class for defining the multigrid geometry, the main delicated part is the 
  *        agglomeration stage, which is done in the declaration.
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CMultiGridGeometry : public CGeometry {
 
@@ -1573,7 +1545,7 @@ public:
  * \class CPeriodicGeometry
  * \brief Class for defining a periodic boundary condition.
  * \author T. Economon, F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CPeriodicGeometry : public CGeometry {
 	CPrimalGrid*** newBoundPer;            /*!< \brief Boundary vector for new periodic elements (primal grid information). */
@@ -1605,7 +1577,7 @@ public:
 	 * \param[in] config_filename - Name of the file where the Tecplot 
 	 *            information is going to be stored.
 	 */
-	void SetTecPlot(char config_filename[MAX_STRING_SIZE]);
+	void SetTecPlot(char config_filename[MAX_STRING_SIZE], bool new_file);
 
 	/*! 
 	 * \brief Write the .su2 file.
@@ -1619,7 +1591,7 @@ public:
  * \struct CMultiGridQueue
  * \brief Class for a multigrid queue system
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  * \date Aug 12, 2012
  */
 class CMultiGridQueue {

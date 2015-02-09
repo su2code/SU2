@@ -5,7 +5,7 @@
  *        <i>numerics_convective.cpp</i>, <i>numerics_viscous.cpp</i>, and
  *        <i>numerics_source.cpp</i> files.
  * \author F. Palacios, T. Economon
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -53,7 +53,7 @@ using namespace std;
  * \class CNumerics
  * \brief Class for defining the numerical methods.
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CNumerics {
 protected:
@@ -1593,7 +1593,7 @@ void GetViscousProjFlux(double *val_primvar, double **val_gradprimvar,
  * \brief Class for centered scheme - CUSP.
  * \ingroup ConvDiscr
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CUpwCUSP_Flow : public CNumerics {
   
@@ -1648,7 +1648,7 @@ public:
  * \brief Class for solving an approximate Riemann solver of Roe for the flow equations.
  * \ingroup ConvDiscr
  * \author A. Bueno, F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CUpwRoe_Flow : public CNumerics {
 private:
@@ -1695,7 +1695,7 @@ public:
  * \brief Class for solving an approximate Riemann solver of Roe for the flow equations for a general fluid model.
  * \ingroup ConvDiscr
  * \author S.Vitale, G.Gori, M.Pini
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CUpwGeneralRoe_Flow : public CNumerics {
 private:
@@ -1753,7 +1753,7 @@ public:
  * \brief Class for solving a flux-vector splitting method by Steger & Warming, modified version.
  * \ingroup ConvDiscr
  * \author S. Copeland
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CUpwMSW_Flow : public CNumerics {
 private:
@@ -1798,7 +1798,7 @@ public:
  * \brief Class for solving an approximate Riemann solver of Roe with Turkel Preconditioning for the flow equations.
  * \ingroup ConvDiscr
  * \author A. K. Lonkar
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CUpwTurkel_Flow : public CNumerics {
 private:
@@ -1853,7 +1853,7 @@ public:
  * \brief Class for solving an approximate Riemann solver of Roe for the incompressible flow equations.
  * \ingroup ConvDiscr
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CUpwArtComp_Flow : public CNumerics {
 private:
@@ -1900,7 +1900,7 @@ public:
  * \brief Class for solving an approximate Riemann solver of Roe for the incompressible flow equations.
  * \ingroup ConvDiscr
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CUpwArtComp_FreeSurf_Flow : public CNumerics {
 private:
@@ -1948,7 +1948,7 @@ public:
  *        for the adjoint flow equations.
  * \ingroup ConvDiscr
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CUpwRoe_AdjFlow : public CNumerics {
 private:
@@ -1999,7 +1999,7 @@ public:
  *        for the adjoint flow equations.
  * \ingroup ConvDiscr
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CUpwRoeArtComp_AdjFlow : public CNumerics {
 private:
@@ -2043,7 +2043,7 @@ public:
  * \brief Class for solving an approximate Riemann AUSM.
  * \ingroup ConvDiscr
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CUpwAUSM_Flow : public CNumerics {
 private:
@@ -2090,7 +2090,7 @@ public:
  * \brief Class for solving an approximate Riemann AUSM.
  * \ingroup ConvDiscr
  * \author F. Palacios, based on the Joe code implementation
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CUpwHLLC_Flow : public CNumerics {
 private:
@@ -2138,7 +2138,7 @@ public:
  * \brief Class for performing a linear upwind solver for the Spalart-Allmaras turbulence model equations with transition
  * \ingroup ConvDiscr
  * \author A. Aranake
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CUpwLin_TransLM : public CNumerics {
 private:
@@ -2178,7 +2178,7 @@ public:
  * \brief Class for performing a linear upwind solver for the Level Set equations.
  * \ingroup ConvDiscr
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CUpwLin_LevelSet : public CNumerics {
 private:
@@ -2218,7 +2218,7 @@ public:
  * \brief Class for performing a linear upwind solver for the adjoint Level Set equations.
  * \ingroup ConvDiscr
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CUpwLin_AdjLevelSet : public CNumerics {
 private:
@@ -2260,7 +2260,7 @@ public:
  * \brief Class for performing a linear upwind solver for the adjoint turbulence equations.
  * \ingroup ConvDiscr
  * \author A. Bueno.
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CUpwLin_AdjTurb : public CNumerics {
 private:
@@ -2296,7 +2296,7 @@ public:
  * \brief Class for doing a scalar upwind solver for the Spalar-Allmaral turbulence model equations.
  * \ingroup ConvDiscr
  * \author A. Bueno.
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CUpwSca_TurbSA : public CNumerics {
 private:
@@ -2335,7 +2335,7 @@ public:
  * \brief Class for doing a scalar upwind solver for the Spalar-Allmaral turbulence model equations.
  * \ingroup ConvDiscr
  * \author A. Bueno.
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CUpwSca_TurbML : public CNumerics {
 private:
@@ -2374,7 +2374,7 @@ public:
  * \brief Class for doing a scalar upwind solver for the Menter SST turbulence model equations.
  * \ingroup ConvDiscr
  * \author A. Campos.
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CUpwSca_TurbSST : public CNumerics {
 private:
@@ -2415,7 +2415,7 @@ public:
  * \brief Class for doing a scalar upwind solver for the Spalart-Allmaras turbulence model equations with transition.
  * \ingroup ConvDiscr
  * \author A. Aranake.
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CUpwSca_TransLM : public CNumerics {
 private:
@@ -2456,7 +2456,7 @@ public:
  * \brief Class for doing a scalar upwind solver for the adjoint turbulence equations.
  * \ingroup ConvDiscr
  * \author A. Bueno.
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CUpwSca_AdjTurb : public CNumerics {
 private:
@@ -2496,7 +2496,7 @@ public:
  * \brief Class for centered shceme - JST.
  * \ingroup ConvDiscr
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CCentJST_KE_Flow : public CNumerics {
 
@@ -2551,7 +2551,7 @@ public:
  * \brief Class for centered scheme - JST.
  * \ingroup ConvDiscr
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CCentJST_Flow : public CNumerics {
     
@@ -2606,7 +2606,7 @@ public:
  * \brief Class for centered scheme - JST (artificial compressibility).
  * \ingroup ConvDiscr
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CCentJSTArtComp_Flow : public CNumerics {
     
@@ -2660,7 +2660,7 @@ public:
  * \brief Class for and adjoint centered scheme - JST.
  * \ingroup ConvDiscr
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CCentJST_AdjFlow : public CNumerics {
 private:
@@ -2710,7 +2710,7 @@ public:
  * \brief Class for and adjoint centered scheme - JST.
  * \ingroup ConvDiscr
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CCentJSTArtComp_AdjFlow : public CNumerics {
 private:
@@ -2760,7 +2760,7 @@ public:
  * \brief Class for linearized centered scheme - JST.
  * \ingroup ConvDiscr
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CCentJST_LinFlow : public CNumerics {
 private:
@@ -2809,7 +2809,7 @@ public:
  * \brief Class for computing the Lax-Friedrich centered scheme.
  * \ingroup ConvDiscr
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CCentLax_Flow : public CNumerics {
 private:
@@ -2861,7 +2861,7 @@ public:
  * \brief Class for computing the Lax-Friedrich centered scheme (artificial compressibility).
  * \ingroup ConvDiscr
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CCentLaxArtComp_Flow : public CNumerics {
 private:
@@ -2914,7 +2914,7 @@ public:
  * \brief Class for computing the Lax-Friedrich adjoint centered scheme.
  * \ingroup ConvDiscr
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CCentLax_AdjFlow : public CNumerics {
 private:
@@ -2964,7 +2964,7 @@ public:
  * \brief Class for computing the Lax-Friedrich adjoint centered scheme.
  * \ingroup ConvDiscr
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CCentLaxArtComp_AdjFlow : public CNumerics {
 private:
@@ -3014,7 +3014,7 @@ public:
  * \brief Class for computing the Lax-Friedrich linearized centered scheme.
  * \ingroup ConvDiscr
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CCentLax_LinFlow : public CNumerics {
 private:
@@ -3065,7 +3065,7 @@ public:
  * \brief Class for computing viscous term using the average of gradients.
  * \ingroup ViscDiscr
  * \author A. Bueno, and F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CAvgGrad_Flow : public CNumerics {
 private:
@@ -3161,7 +3161,7 @@ public:
  * \brief Class for computing viscous term using an average of gradients.
  * \ingroup ViscDiscr
  * \author A. Bueno, and F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CAvgGradArtComp_Flow : public CNumerics {
 private:
@@ -3201,7 +3201,7 @@ public:
  * \brief Class for computing viscous term using average of gradients (Spalart-Allmaras Turbulence model).
  * \ingroup ViscDiscr
  * \author A. Bueno.
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CAvgGrad_TurbSA : public CNumerics {
 private:
@@ -3248,7 +3248,7 @@ public:
  * \brief Class for computing viscous term using average of gradients (Spalart-Allmaras Turbulence model).
  * \ingroup ViscDiscr
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CAvgGrad_TurbSA_Neg : public CNumerics {
 private:
@@ -3296,7 +3296,7 @@ public:
  * \brief Class for computing viscous term using average of gradients (Spalart-Allmaras Turbulence model).
  * \ingroup ViscDiscr
  * \author A. Bueno.
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CAvgGrad_TurbML : public CNumerics {
 private:
@@ -3342,7 +3342,7 @@ public:
  * \brief Class for computing viscous term using average of gradients (Spalart-Allmaras Turbulence model).
  * \ingroup ViscDiscr
  * \author A. Bueno.
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CAvgGrad_TransLM : public CNumerics {
 private:
@@ -3388,7 +3388,7 @@ public:
  * \brief Class for computing the adjoint viscous terms.
  * \ingroup ViscDiscr
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CAvgGrad_AdjFlow : public CNumerics {
 private:
@@ -3430,7 +3430,7 @@ public:
  * \brief Class for computing the adjoint viscous terms.
  * \ingroup ViscDiscr
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CAvgGradArtComp_AdjFlow : public CNumerics {
 private:
@@ -3471,7 +3471,7 @@ public:
  * \brief Class for computing viscous term using the average of gradients with a correction.
  * \ingroup ViscDiscr
  * \author A. Bueno, and F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CAvgGradCorrected_Flow : public CNumerics {
 private:
@@ -3570,7 +3570,7 @@ public:
  * \brief Class for computing viscous term using an average of gradients with correction (artificial compresibility).
  * \ingroup ViscDiscr
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CAvgGradCorrectedArtComp_Flow : public CNumerics {
 private:
@@ -3613,7 +3613,7 @@ public:
  * \brief Class for computing viscous term using average of gradients with correction (Spalart-Allmaras turbulence model).
  * \ingroup ViscDiscr
  * \author A. Bueno.
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CAvgGradCorrected_TurbSA : public CNumerics {
 private:
@@ -3654,7 +3654,7 @@ public:
  * \brief Class for computing viscous term using average of gradients with correction (Spalart-Allmaras turbulence model).
  * \ingroup ViscDiscr
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CAvgGradCorrected_TurbSA_Neg : public CNumerics {
 private:
@@ -3699,7 +3699,7 @@ public:
  * \brief Class for computing viscous term using average of gradients with correction (Spalart-Allmaras turbulence model).
  * \ingroup ViscDiscr
  * \author A. Bueno.
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CAvgGradCorrected_TurbML : public CNumerics {
 private:
@@ -3740,7 +3740,7 @@ public:
  * \brief Class for computing viscous term using average of gradients with correction (Spalart-Allmaras turbulence model).
  * \ingroup ViscDiscr
  * \author A. Bueno.
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CAvgGradCorrected_TransLM : public CNumerics {
 private:
@@ -3781,7 +3781,7 @@ public:
  * \brief Class for computing viscous term using average of gradient with correction (Menter SST turbulence model).
  * \ingroup ViscDiscr
  * \author A. Bueno.
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CAvgGrad_TurbSST : public CNumerics {
 private:
@@ -3843,7 +3843,7 @@ public:
  * \brief Class for computing viscous term using average of gradient with correction (Menter SST turbulence model).
  * \ingroup ViscDiscr
  * \author A. Bueno.
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CAvgGradCorrected_TurbSST : public CNumerics {
 private:
@@ -3905,7 +3905,7 @@ public:
  * \brief Class for computing the adjoint viscous terms, including correction.
  * \ingroup ViscDiscr
  * \author A. Bueno.
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CAvgGradCorrected_AdjFlow : public CNumerics {
 private:
@@ -3953,7 +3953,7 @@ public:
  * \brief Class for computing the adjoint viscous terms, including correction.
  * \ingroup ViscDiscr
  * \author F.Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CAvgGradCorrectedArtComp_AdjFlow : public CNumerics {
 private:
@@ -4000,7 +4000,7 @@ public:
  * \brief Class for adjoint turbulent using average of gradients with a correction.
  * \ingroup ViscDiscr
  * \author A. Bueno.
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CAvgGradCorrected_AdjTurb : public CNumerics {
 private:
@@ -4052,7 +4052,7 @@ public:
  * \brief Class for adjoint turbulent using average of gradients with a correction.
  * \ingroup ViscDiscr
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CAvgGrad_AdjTurb : public CNumerics {
 private:
@@ -4104,7 +4104,7 @@ public:
  * \brief Class for computing the stiffness matrix of the Galerkin method.
  * \ingroup ViscDiscr
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CGalerkin_Flow : public CNumerics {
 public:
@@ -4135,7 +4135,7 @@ public:
  * \brief Class for computing the stiffness matrix of the Galerkin method.
  * \ingroup ViscDiscr
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CGalerkin_FEA : public CNumerics {
 	double E;				/*!< \brief Young's modulus of elasticity. */
@@ -4239,7 +4239,7 @@ public:
  * \brief Dummy class.
  * \ingroup SourceDiscr
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CSourceNothing : public CNumerics {
 public:
@@ -4263,7 +4263,7 @@ public:
  * \brief Class for integrating the source terms of the Spalart-Allmaras turbulence model equation.
  * \ingroup SourceDiscr
  * \author A. Bueno.
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CSourcePieceWise_TurbSA : public CNumerics {
 private:
@@ -4373,7 +4373,7 @@ public:
  * \brief Class for integrating the source terms of the Spalart-Allmaras turbulence model equation.
  * \ingroup SourceDiscr
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CSourcePieceWise_TurbSA_Neg : public CNumerics {
 private:
@@ -4484,7 +4484,7 @@ public:
  * \brief Class for integrating the source terms of the Spalart-Allmaras turbulence model equation.
  * \ingroup SourceDiscr
  * \author A. Bueno.
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CSourcePieceWise_TurbML : public CNumerics {
 private:
@@ -4623,7 +4623,7 @@ public:
  * \brief Class for integrating the source terms of the Spalart-Allmaras turbulence model equation.
  * \ingroup SourceDiscr
  * \author A. Bueno.
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CSourcePieceWise_TransLM : public CNumerics {
 private:
@@ -4697,7 +4697,7 @@ public:
  * \brief Class for integrating the source terms of the Menter SST turbulence model equations.
  * \ingroup SourceDiscr
  * \author A. Campos.
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CSourcePieceWise_TurbSST : public CNumerics {
 private:
@@ -4772,7 +4772,7 @@ public:
  * \brief Class for the source term integration of the gravity force.
  * \ingroup SourceDiscr
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CSourcePieceWise_FreeSurface : public CNumerics {
 	double U_ref, L_ref, Froude;
@@ -4807,7 +4807,7 @@ public:
  * \brief Class for the source term integration of the gravity force.
  * \ingroup SourceDiscr
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CSourceGravity : public CNumerics {
 	double Froude;
@@ -4840,7 +4840,7 @@ public:
  * \brief Class for source term integration in adjoint problem.
  * \ingroup SourceDiscr
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CSourceViscous_AdjFlow : public CNumerics {
 private:
@@ -4882,7 +4882,7 @@ public:
  * \brief Class for source term integration of the adjoint turbulent equation.
  * \ingroup SourceDiscr
  * \author A. Bueno.
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CSourcePieceWise_AdjTurb : public CNumerics {
 private:
@@ -4918,7 +4918,7 @@ public:
  * \brief Class for source term integration of the adjoint poisson potential equation.
  * \ingroup SourceDiscr
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CSourcePieceWise_AdjElec : public CNumerics {
 public:
@@ -4949,7 +4949,7 @@ public:
  * \brief Class for source term integration of the adjoint level set equation.
  * \ingroup SourceDiscr
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CSourcePieceWise_LevelSet : public CNumerics {
 public:
@@ -4980,7 +4980,7 @@ public:
  * \brief Class for source term integration of the adjoint level set equation.
  * \ingroup SourceDiscr
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CSourcePieceWise_AdjLevelSet : public CNumerics {
 public:
@@ -5011,7 +5011,7 @@ public:
  * \brief Class for source term integration of the linearized poisson potential equation.
  * \ingroup SourceDiscr
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CSourcePieceWise_LinElec : public CNumerics {
 public:
@@ -5042,7 +5042,7 @@ public:
  * \brief Class for source term integration in adjoint problem using a conservative scheme.
  * \ingroup SourceDiscr
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CSourceConservative_AdjFlow : public CNumerics {
 private:
@@ -5077,7 +5077,7 @@ public:
  * \brief Class for source term integration in adjoint turbulent problem using a conservative scheme.
  * \ingroup SourceDiscr
  * \author A. Bueno.
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CSourceConservative_AdjTurb : public CNumerics {
 public:
@@ -5110,7 +5110,7 @@ public:
  * \brief Class for a rotating frame source term.
  * \ingroup SourceDiscr
  * \author F. Palacios, T. Economon.
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CSourceRotatingFrame_Flow : public CNumerics {
 public:
@@ -5142,7 +5142,7 @@ public:
  * \brief Source term class for rotating frame adjoint.
  * \ingroup SourceDiscr
  * \author T. Economon.
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CSourceRotatingFrame_AdjFlow : public CNumerics {
 public:
@@ -5174,7 +5174,7 @@ public:
  * \brief Class for source term for solving axisymmetric problems.
  * \ingroup SourceDiscr
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CSourceAxisymmetric_Flow : public CNumerics {
 private:
@@ -5209,7 +5209,7 @@ public:
  * \brief Class for source term for solving axisymmetric problems.
  * \ingroup SourceDiscr
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CSourceAxisymmetric_AdjFlow : public CNumerics {
 public:
@@ -5244,7 +5244,7 @@ private:
  * \brief Class for a source term due to a wind gust.
  * \ingroup SourceDiscr
  * \author S. Padrón
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CSourceWindGust : public CNumerics {
 public:
@@ -5276,7 +5276,7 @@ public:
  * \brief Dummy class.
  * \ingroup SourceDiscr
  * \author A. Lonkar.
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CSource_Template : public CNumerics {
 public:
@@ -5310,7 +5310,7 @@ public:
  * \brief Class for setting up new method for spatial discretization of convective terms in flow Equations
  * \ingroup ConvDiscr
  * \author A. Lonkar
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CConvective_Template : public CNumerics {
 private:
@@ -5358,7 +5358,7 @@ public:
  * \brief Class for computing viscous term using average of gradients.
  * \ingroup ViscDiscr
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CViscous_Template : public CNumerics {
 private:
@@ -5444,7 +5444,7 @@ public:
  * \brief Class for solving a flux-vector splitting method by Steger & Warming, modified version.
  * \ingroup ConvDiscr
  * \author S. Copeland
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CUpwMSW_TNE2 : public CNumerics {
 private:
@@ -5644,7 +5644,7 @@ public:
  * \brief Class for computing viscous term using the average of gradients.
  * \ingroup ViscDiscr
  * \author S. R. Copeland
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CAvgGrad_TNE2 : public CNumerics {
 private:
@@ -5701,7 +5701,7 @@ public:
  * \brief Class for computing viscous term using the average of gradients.
  * \ingroup ViscDiscr
  * \author S. R. Copeland
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CAvgGradCorrected_TNE2 : public CNumerics {
 private:
@@ -6033,7 +6033,7 @@ public:
  * \brief Class for computing the adjoint viscous terms.
  * \ingroup ViscDiscr
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 class CAvgGrad_AdjTNE2 : public CNumerics {
 private:

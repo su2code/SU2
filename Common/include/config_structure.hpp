@@ -3,7 +3,7 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>config_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -53,7 +53,7 @@ using namespace std;
  * \brief Main class for defining the problem; basically this class reads the configuration file, and
  *        stores all the information.
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  */
 
 class CConfig {
@@ -87,7 +87,6 @@ private:
 	GravityForce,			/*!< \brief Flag to know if the gravity force is incuded in the formulation. */
 	SmoothNumGrid,			/*!< \brief Smooth the numerical grid. */
 	AdaptBoundary,			/*!< \brief Adapt the elements on the boundary. */
-	Divide_Element,			/*!< \brief Divide rectables and hexahedrom. */
 	Engine_Intake,			/*!< \brief Engine intake subsonic region. */
 	Frozen_Visc,			/*!< \brief Flag for adjoint problem with/without frozen viscosity. */
 	Sens_Remove_Sharp,			/*!< \brief Flag for removing or not the sharp edges from the sensitivity computation. */
@@ -3958,12 +3957,6 @@ public:
 	 * \return Value of the physical time in an unsteady simulation.
 	 */
 	double GetCurrent_UnstTime(void);
-
-	/*!
-	 * \brief Divide the rectbles and hexahedron.
-	 * \return <code>TRUE</code> if the elements must be divided; otherwise <code>FALSE</code>.
-	 */
-	bool GetDivide_Element(void);
 
   /*!
 	 * \brief Divide the rectbles and hexahedron.

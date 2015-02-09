@@ -2,7 +2,7 @@
  * \file geometry_structure.cpp
  * \brief Main subroutines for creating the primal grid and multigrid structure.
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.1 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -1108,25 +1108,24 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
   Local_to_Global_Point = NULL;
   Local_to_Global_Marker = NULL;
   Global_to_Local_Marker = NULL;
-
+  
   string text_line, Marker_Tag;
   ifstream mesh_file;
   unsigned short iNode_Surface, iMarker, iDim;
-  unsigned long Point_Surface, iElem_Surface, iPoint;
-  double Mesh_Scale_Change = 1.0, *NewCoord;
-  int rank = MASTER_NODE;
+  unsigned long Point_Surface, iElem_Surface, iPoint, LocaNodes;
+  double *NewCoord;
   nZone = val_nZone;
   
-  string val_mesh_filename = config->GetMesh_FileName();
-  unsigned short val_format = config->GetMesh_FileFormat();
-
-  NewCoord = new double [nDim];
-
-  /*--- Initialize counters for local/global points & elements ---*/
-  
+  int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
+  
+  string val_mesh_filename  = config->GetMesh_FileName();
+  unsigned short val_format = config->GetMesh_FileFormat();
+  double Mesh_Scale_Change  = config->GetMesh_Scale_Change();
+
+  /*--- Initialize counters for local/global points & elements ---*/
   
   if (rank == MASTER_NODE)
     cout << endl <<"---------------------- Read Grid File Information -----------------------" << endl;
@@ -1134,16 +1133,15 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
   switch (val_format) {
     case SU2:
       Read_SU2_Format_Parallel(config, val_mesh_filename, val_iZone, val_nZone);
+      LocaNodes = local_node;
       break;
     case CGNS:
       Read_CGNS_Format(config, val_mesh_filename, val_iZone, val_nZone);
-      //Read_CGNS_Format_Parallel(config, val_mesh_filename, val_iZone, val_nZone);
-      break;
-    case NETCDF_ASCII:
-      Read_NETCDF_Format(config, val_mesh_filename, val_iZone, val_nZone);
+//    Read_CGNS_Format_Parallel(config, val_mesh_filename, val_iZone, val_nZone);
+      LocaNodes = nPoint;
       break;
     default:
-      cout << "Unrecognized mesh format specified!!" << endl;
+      if (rank == MASTER_NODE) cout << "Unrecognized mesh format specified!" << endl;
 #ifndef HAVE_MPI
       exit(EXIT_FAILURE);
 #else
@@ -1156,38 +1154,39 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
   /*--- Loop over the surface element to set the boundaries. Only the master
    node has the boundaries after the parallel partitioning. ---*/
 
-  // WARNING: THIS IS COMMENTED OUT!!!
-  
-  if (false) {
-  for (iMarker = 0; iMarker < nMarker; iMarker++)
-    for (iElem_Surface = 0; iElem_Surface < nElem_Bound[iMarker]; iElem_Surface++)
-      for (iNode_Surface = 0; iNode_Surface < bound[iMarker][iElem_Surface]->GetnNodes(); iNode_Surface++) {
-        Point_Surface = bound[iMarker][iElem_Surface]->GetNode(iNode_Surface);
-        node[Point_Surface]->SetBoundary(nMarker);
-        if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
-            config->GetMarker_All_KindBC(iMarker) != INTERFACE_BOUNDARY &&
-            config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY &&
-            config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)
-          node[Point_Surface]->SetPhysicalBoundary(true);
-        
-        if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL ||
-            config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX ||
-            config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)
-          node[Point_Surface]->SetSolidBoundary(true);
+  if (val_format != SU2) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      for (iElem_Surface = 0; iElem_Surface < nElem_Bound[iMarker]; iElem_Surface++) {
+        for (iNode_Surface = 0; iNode_Surface < bound[iMarker][iElem_Surface]->GetnNodes(); iNode_Surface++) {
+          Point_Surface = bound[iMarker][iElem_Surface]->GetNode(iNode_Surface);
+          node[Point_Surface]->SetBoundary(nMarker);
+          
+          if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
+              config->GetMarker_All_KindBC(iMarker) != INTERFACE_BOUNDARY &&
+              config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY &&
+              config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)
+            node[Point_Surface]->SetPhysicalBoundary(true);
+          
+          if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL ||
+              config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX ||
+              config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)
+            node[Point_Surface]->SetSolidBoundary(true);
+          
+        }
       }
+    }
   }
 
-  /*--- Loop over the points element to re-scale the mesh, 
-   and plot it (only CFD) ---*/
+  /*--- Loop over the points element to re-scale the mesh, and plot it (only SU2_CFD) ---*/
   
   if (config->GetKind_SU2() == SU2_CFD) {
     
-    Mesh_Scale_Change = config->GetMesh_Scale_Change();
+    NewCoord = new double [nDim];
     
     /*--- Change the scale of the mesh ---*/
     
     if (Mesh_Scale_Change != 1.0) {
-      for (iPoint = 0; iPoint < nPoint; iPoint++) {
+      for (iPoint = 0; iPoint < LocaNodes; iPoint++) {
         for (iDim = 0; iDim < nDim; iDim++) {
           NewCoord[iDim] = Mesh_Scale_Change*node[iPoint]->GetCoord(iDim);
         }
@@ -1196,7 +1195,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
     }
     
     /*--- Output the grid using SU2 format ---*/
-
+    
     if (config->GetMesh_Output()) {
       SetMeshFile(config, config->GetMesh_Out_FileName());
       cout.precision(4);
@@ -1207,7 +1206,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
     /*--- The US system uses feet, but SU2 assumes that the grid is in inches ---*/
     
     if (config->GetSystemMeasurements() == US) {
-      for (iPoint = 0; iPoint < nPoint; iPoint++) {
+      for (iPoint = 0; iPoint < LocaNodes; iPoint++) {
         for (iDim = 0; iDim < nDim; iDim++) {
           NewCoord[iDim] = node[iPoint]->GetCoord(iDim)/12.0;
         }
@@ -1215,9 +1214,10 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
       }
     }
     
+    delete [] NewCoord;
+    
   }
   
-  delete [] NewCoord;
 }
 
 
@@ -5728,821 +5728,6 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
   
 }
 
-void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone) {
-  
-  string text_line, Marker_Tag;
-  ifstream mesh_file;
-  unsigned short VTK_Type, iMarker, iChar, iCount = 0;
-  unsigned short nMarker_Max = config->GetnMarker_Max();
-  unsigned long iElem_Bound = 0, iPoint = 0, ielem_div = 0, ielem = 0, *Local2Global = NULL, vnodes_edge[2], vnodes_triangle[3], vnodes_quad[4], vnodes_tetra[4], vnodes_hexa[8],
-  vnodes_wedge[6], vnodes_pyramid[5], dummyLong, GlobalIndex, iElem;
-  char cstr[MAX_STRING_SIZE];
-  double Coord_2D[2], Coord_3D[3], dummyDouble;
-  string::size_type position;
-  bool time_spectral = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
-  int rank = MASTER_NODE, size = SINGLE_NODE;
-  bool domain_flag = false;
-  bool found_transform = false;
-  nZone = val_nZone;
-  
-  /*--- Initialize counters for local/global points & elements ---*/
-#ifdef HAVE_MPI
-  unsigned long LocalIndex;
-  unsigned long Local_nPoint, Local_nPointDomain;
-  unsigned long Local_nElem;
-  unsigned long Local_nElemTri, Local_nElemQuad, Local_nElemTet;
-  unsigned long Local_nElemHex, Local_nElemWedge, Local_nElemPyramid;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
-  Global_nPoint = 0; Global_nPointDomain = 0; Global_nElem = 0;
-  nelem_edge     = 0; Global_nelem_edge     = 0;
-  nelem_triangle = 0; Global_nelem_triangle = 0;
-  nelem_quad     = 0; Global_nelem_quad     = 0;
-  nelem_tetra    = 0; Global_nelem_tetra    = 0;
-  nelem_hexa     = 0; Global_nelem_hexa     = 0;
-  nelem_wedge    = 0; Global_nelem_wedge    = 0;
-  nelem_pyramid  = 0; Global_nelem_pyramid  = 0;
-  
-  /*--- Open grid file ---*/
-  
-  strcpy (cstr, val_mesh_filename.c_str());
-  mesh_file.open(cstr, ios::in);
-  
-  /*--- Check the grid ---*/
-  
-  if (mesh_file.fail()) {
-    cout << "There is no geometry file (CPhysicalGeometry)!! " << cstr << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
-  
-  /*--- If divided grid, we need the global index to
-   perform the right element division, this is just a hack in the future we
-   should read first the coordinates ---*/
-  
-  if (config->GetDivide_Element()) {
-    
-    unsigned long nDim_ = 0, nElem_ = 0, nPoint_ = 0;
-    
-    while (getline (mesh_file, text_line)) {
-      
-      position = text_line.find ("NDIME=",0);
-      if (position != string::npos) {
-        text_line.erase (0,6); nDim_ = atoi(text_line.c_str());
-      }
-      
-      position = text_line.find ("NELEM=",0);
-      if (position != string::npos) {
-        text_line.erase (0,6); nElem_ = atoi(text_line.c_str());
-        for (iElem = 0; iElem < nElem_; iElem ++)
-          getline(mesh_file, text_line);
-      }
-      
-      position = text_line.find ("NPOIN=",0);
-      if (position != string::npos) {
-        text_line.erase (0,6);
-        
-        /*--- Now read the number of points and ghost points. ---*/
-        
-        stringstream  stream_line(text_line);
-        stream_line >> nPoint_;
-        
-        Local2Global = new unsigned long [nPoint_];
-        
-        for (iPoint = 0; iPoint < nPoint_; iPoint ++) {
-          getline(mesh_file, text_line);
-          istringstream point_line(text_line);
-          if (size == 1) { Local2Global[iPoint] = iPoint; }
-          else {
-            point_line >> dummyDouble; point_line >> dummyDouble; if (nDim_ == 3) point_line >> dummyDouble;
-            point_line >> dummyLong; point_line >> Local2Global[iPoint];
-          }
-        }
-        
-      }
-    }
-    
-    /*--- Close and open again the grid file ---*/
-    
-    mesh_file.close();
-    strcpy (cstr, val_mesh_filename.c_str());
-    mesh_file.open(cstr, ios::in);
-    
-  }
-  
-  /*--- If more than one, find the zone in the mesh file ---*/
-  
-  if (val_nZone > 1 || time_spectral) {
-    if (time_spectral) {
-      if (rank == MASTER_NODE) cout << "Reading time spectral instance " << val_iZone+1 << ":" << endl;
-    } else {
-      while (getline (mesh_file,text_line)) {
-        /*--- Search for the current domain ---*/
-        position = text_line.find ("IZONE=",0);
-        if (position != string::npos) {
-          text_line.erase (0,6);
-          unsigned short jDomain = atoi(text_line.c_str());
-          if (jDomain == val_iZone+1) {
-            if (rank == MASTER_NODE) cout << "Reading zone " << val_iZone+1 << ":" << endl;
-            break;
-          }
-        }
-      }
-    }
-  }
-  
-  /*--- Read grid file with format SU2 ---*/
-  
-  while (getline (mesh_file,text_line)) {
-    
-    /*--- Read the dimension of the problem ---*/
-    
-    position = text_line.find ("NDIME=",0);
-    if (position != string::npos) {
-      if (domain_flag == false) {
-        text_line.erase (0,6); nDim = atoi(text_line.c_str());
-        if (rank == MASTER_NODE) {
-          if (nDim == 2) cout << "Two dimensional problem." << endl;
-          if (nDim == 3) cout << "Three dimensional problem." << endl;
-        }
-        domain_flag = true;
-      } else { break; }
-    }
-    
-    /*--- Read the information about inner elements ---*/
-    
-    position = text_line.find ("NELEM=",0);
-    if (position != string::npos) {
-      text_line.erase (0,6); nElem = atoi(text_line.c_str());
-      
-#ifdef HAVE_MPI
-      Local_nElem = nElem;
-      Global_nElem = Local_nElem;
-#else
-      Global_nElem = nElem;
-#endif
-      
-      if (rank == MASTER_NODE) {
-        cout << Global_nElem << " interior elements. " << endl;
-      }
-      
-      /*--- Allocate space for elements ---*/
-      
-      if (!config->GetDivide_Element()) elem = new CPrimalGrid*[nElem];
-      else {
-        if (nDim == 2) elem = new CPrimalGrid*[2*nElem];
-        if (nDim == 3) elem = new CPrimalGrid*[6*nElem];
-      }
-      
-      unsigned short IndirectionPrism[6][6], CT_FromVTK_Prism[6], IndirectionHexa[9][9];
-      unsigned short temp, zero, one, two, three, four, five, six, seven, eight, iNode, smallestNode = 0, lookupindex;
-      unsigned long smallest;
-      
-      /*--- Indirection matrix for dividing prisms into tets, using vtk format, and conversion table for local numbering of prisms in vtk format ---*/
-      
-      CT_FromVTK_Prism[0] = 1;  CT_FromVTK_Prism[1] = 3;  CT_FromVTK_Prism[2] = 2;  CT_FromVTK_Prism[3] = 4;  CT_FromVTK_Prism[4] = 6;  CT_FromVTK_Prism[5] = 5;
-      
-      IndirectionPrism[0][0] = 0; IndirectionPrism[0][1] = 2; IndirectionPrism[0][2] = 1; IndirectionPrism[0][3] = 3; IndirectionPrism[0][4] = 5; IndirectionPrism[0][5] = 4;
-      IndirectionPrism[1][0] = 2; IndirectionPrism[1][1] = 1; IndirectionPrism[1][2] = 0; IndirectionPrism[1][3] = 5; IndirectionPrism[1][4] = 4; IndirectionPrism[1][5] = 3;
-      IndirectionPrism[2][0] = 1; IndirectionPrism[2][1] = 0; IndirectionPrism[2][2] = 2; IndirectionPrism[2][3] = 4; IndirectionPrism[2][4] = 3; IndirectionPrism[2][5] = 5;
-      IndirectionPrism[3][0] = 3; IndirectionPrism[3][1] = 4; IndirectionPrism[3][2] = 5; IndirectionPrism[3][3] = 0; IndirectionPrism[3][4] = 1; IndirectionPrism[3][5] = 2;
-      IndirectionPrism[4][0] = 5; IndirectionPrism[4][1] = 3; IndirectionPrism[4][2] = 4; IndirectionPrism[4][3] = 2; IndirectionPrism[4][4] = 0; IndirectionPrism[4][5] = 1;
-      IndirectionPrism[5][0] = 4; IndirectionPrism[5][1] = 5; IndirectionPrism[5][2] = 3; IndirectionPrism[5][3] = 1; IndirectionPrism[5][4] = 2; IndirectionPrism[5][5] = 0;
-      
-      /*--- Indirection matrix for dividing hexahedron into tets ---*/
-      
-      IndirectionHexa[1][1] = 1; IndirectionHexa[1][2] = 2; IndirectionHexa[1][3] = 3; IndirectionHexa[1][4] = 4; IndirectionHexa[1][5] = 5; IndirectionHexa[1][6] = 6; IndirectionHexa[1][7] = 7; IndirectionHexa[1][8] = 8;
-      IndirectionHexa[2][1] = 2; IndirectionHexa[2][2] = 1; IndirectionHexa[2][3] = 5; IndirectionHexa[2][4] = 6; IndirectionHexa[2][5] = 3; IndirectionHexa[2][6] = 4; IndirectionHexa[2][7] = 8; IndirectionHexa[2][8] = 7;
-      IndirectionHexa[3][1] = 3; IndirectionHexa[3][2] = 2; IndirectionHexa[3][3] = 6; IndirectionHexa[3][4] = 7; IndirectionHexa[3][5] = 4; IndirectionHexa[3][6] = 1; IndirectionHexa[3][7] = 5; IndirectionHexa[3][8] = 8;
-      IndirectionHexa[4][1] = 4; IndirectionHexa[4][2] = 1; IndirectionHexa[4][3] = 2; IndirectionHexa[4][4] = 3; IndirectionHexa[4][5] = 8; IndirectionHexa[4][6] = 5; IndirectionHexa[4][7] = 6; IndirectionHexa[4][8] = 7;
-      IndirectionHexa[5][1] = 5; IndirectionHexa[5][2] = 1; IndirectionHexa[5][3] = 4; IndirectionHexa[5][4] = 8; IndirectionHexa[5][5] = 6; IndirectionHexa[5][6] = 2; IndirectionHexa[5][7] = 3; IndirectionHexa[5][8] = 7;
-      IndirectionHexa[6][1] = 6; IndirectionHexa[6][2] = 2; IndirectionHexa[6][3] = 1; IndirectionHexa[6][4] = 5; IndirectionHexa[6][5] = 7; IndirectionHexa[6][6] = 3; IndirectionHexa[6][7] = 4; IndirectionHexa[6][8] = 8;
-      IndirectionHexa[7][1] = 7; IndirectionHexa[7][2] = 3; IndirectionHexa[7][3] = 2; IndirectionHexa[7][4] = 6; IndirectionHexa[7][5] = 8; IndirectionHexa[7][6] = 4; IndirectionHexa[7][7] = 1; IndirectionHexa[7][8] = 5;
-      IndirectionHexa[8][1] = 8; IndirectionHexa[8][2] = 4; IndirectionHexa[8][3] = 3; IndirectionHexa[8][4] = 7; IndirectionHexa[8][5] = 5; IndirectionHexa[8][6] = 1; IndirectionHexa[8][7] = 2; IndirectionHexa[8][8] = 6;
-      
-      
-      /*--- Loop over all the volumetric elements ---*/
-      
-      while (ielem_div < nElem) {
-        getline(mesh_file,text_line);
-        istringstream elem_line(text_line);
-        
-        elem_line >> VTK_Type;
-        
-        switch(VTK_Type) {
-          case TRIANGLE:
-            
-            elem_line >> vnodes_triangle[0]; elem_line >> vnodes_triangle[1]; elem_line >> vnodes_triangle[2];
-            elem[ielem] = new CTriangle(vnodes_triangle[0], vnodes_triangle[1], vnodes_triangle[2], 2);
-            ielem_div++; ielem++; nelem_triangle++;
-            break;
-            
-          case RECTANGLE:
-            
-            elem_line >> vnodes_quad[0]; elem_line >> vnodes_quad[1]; elem_line >> vnodes_quad[2]; elem_line >> vnodes_quad[3];
-            if (!config->GetDivide_Element()) {
-              elem[ielem] = new CRectangle(vnodes_quad[0], vnodes_quad[1], vnodes_quad[2], vnodes_quad[3], 2);
-              ielem++; nelem_quad++; }
-            else {
-              
-              unsigned long index1, index2;
-              bool division1 = false;
-              index1 = min(Local2Global[vnodes_quad[0]], Local2Global[vnodes_quad[2]]);
-              index2 = min(Local2Global[vnodes_quad[1]], Local2Global[vnodes_quad[3]]);
-              if (index1 < index2) division1 = true;
-              
-              if (division1) {
-                elem[ielem] = new CTriangle(vnodes_quad[0], vnodes_quad[2], vnodes_quad[1], 2);
-                ielem++; nelem_triangle++;
-                elem[ielem] = new CTriangle(vnodes_quad[3], vnodes_quad[2], vnodes_quad[0], 2);
-                ielem++; nelem_triangle++;
-              }
-              else {
-                elem[ielem] = new CTriangle(vnodes_quad[2], vnodes_quad[1], vnodes_quad[3], 2);
-                ielem++; nelem_triangle++;
-                elem[ielem] = new CTriangle(vnodes_quad[1], vnodes_quad[0], vnodes_quad[3], 2);
-                ielem++; nelem_triangle++;
-              }
-              
-            }
-            
-            ielem_div++;
-            break;
-            
-          case TETRAHEDRON:
-            
-            elem_line >> vnodes_tetra[0]; elem_line >> vnodes_tetra[1]; elem_line >> vnodes_tetra[2]; elem_line >> vnodes_tetra[3];
-            elem[ielem] = new CTetrahedron(vnodes_tetra[0], vnodes_tetra[1], vnodes_tetra[2], vnodes_tetra[3]);
-            ielem_div++; ielem++; nelem_tetra++;
-            break;
-            
-          case HEXAHEDRON:
-            
-            elem_line >> vnodes_hexa[0]; elem_line >> vnodes_hexa[1]; elem_line >> vnodes_hexa[2];
-            elem_line >> vnodes_hexa[3]; elem_line >> vnodes_hexa[4]; elem_line >> vnodes_hexa[5];
-            elem_line >> vnodes_hexa[6]; elem_line >> vnodes_hexa[7];
-            
-            if (!config->GetDivide_Element()) {
-              elem[ielem] = new CHexahedron(vnodes_hexa[0], vnodes_hexa[1], vnodes_hexa[2], vnodes_hexa[3],
-                                            vnodes_hexa[4], vnodes_hexa[5], vnodes_hexa[6], vnodes_hexa[7]);
-              ielem++; nelem_hexa++;
-            }
-            else {
-              
-              smallest = Local2Global[vnodes_hexa[0]]; smallestNode = 0;
-              for (iNode = 1; iNode < 8; iNode ++) {
-                if ( smallest > Local2Global[vnodes_hexa[iNode]]) {
-                  smallest = Local2Global[vnodes_hexa[iNode]];
-                  smallestNode = iNode;
-                }
-              }
-              
-              one  = IndirectionHexa[smallestNode+1][1] - 1;
-              two  = IndirectionHexa[smallestNode+1][2] - 1;
-              three  = IndirectionHexa[smallestNode+1][3] - 1;
-              four = IndirectionHexa[smallestNode+1][4] - 1;
-              five = IndirectionHexa[smallestNode+1][5] - 1;
-              six = IndirectionHexa[smallestNode+1][6] - 1;
-              seven = IndirectionHexa[smallestNode+1][7] - 1;
-              eight = IndirectionHexa[smallestNode+1][8] - 1;
-              
-              unsigned long index1, index2;
-              unsigned short code1 = 0, code2 = 0, code3 = 0;
-              
-              index1 = min(Local2Global[vnodes_hexa[two]], Local2Global[vnodes_hexa[seven]]);
-              index2 = min(Local2Global[vnodes_hexa[three]], Local2Global[vnodes_hexa[six]]);
-              if (index1 < index2) code1 = 1;
-              
-              index1 = min(Local2Global[vnodes_hexa[four]], Local2Global[vnodes_hexa[seven]]);
-              index2 = min(Local2Global[vnodes_hexa[three]], Local2Global[vnodes_hexa[eight]]);
-              if (index1 < index2) code2 = 1;
-              
-              index1 = min(Local2Global[vnodes_hexa[five]], Local2Global[vnodes_hexa[seven]]);
-              index2 = min(Local2Global[vnodes_hexa[six]], Local2Global[vnodes_hexa[eight]]);
-              if (index1 < index2) code3 = 1;
-              
-              /*--- Rotation of 120 degrees ---*/
-              
-              if ((!code1 && !code2 && code3) || (code1 && code2 && !code3)) {
-                temp = two; two = five; five = four; four = temp;
-                temp = six; six = eight; eight = three; three = temp;
-              }
-              
-              /*--- Rotation of 240 degrees ---*/
-              
-              if ((!code1 && code2 && !code3) || (code1 && !code2 && code3)) {
-                temp = two; two = four; four = five; five = temp;
-                temp = six; six = three; three = eight; eight = temp;
-              }
-              
-              if ((code1 + code2 + code3) == 0) {
-                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[two], vnodes_hexa[three], vnodes_hexa[six]);
-                ielem++; nelem_tetra++;
-                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[three], vnodes_hexa[eight], vnodes_hexa[six]);
-                ielem++; nelem_tetra++;
-                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[three], vnodes_hexa[four], vnodes_hexa[eight]);
-                ielem++; nelem_tetra++;
-                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[six], vnodes_hexa[eight], vnodes_hexa[five]);
-                ielem++; nelem_tetra++;
-                elem[ielem] = new CTetrahedron(vnodes_hexa[three], vnodes_hexa[eight], vnodes_hexa[six], vnodes_hexa[seven]);
-                ielem++; nelem_tetra++;
-              }
-              if ((code1 + code2 + code3) == 1) {
-                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[six], vnodes_hexa[eight], vnodes_hexa[five]);
-                ielem++; nelem_tetra++;
-                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[two], vnodes_hexa[eight], vnodes_hexa[six]);
-                ielem++; nelem_tetra++;
-                elem[ielem] = new CTetrahedron(vnodes_hexa[two], vnodes_hexa[seven], vnodes_hexa[eight], vnodes_hexa[six]);
-                ielem++; nelem_tetra++;
-                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[eight], vnodes_hexa[three], vnodes_hexa[four]);
-                ielem++; nelem_tetra++;
-                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[eight], vnodes_hexa[two], vnodes_hexa[three]);
-                ielem++; nelem_tetra++;
-                elem[ielem] = new CTetrahedron(vnodes_hexa[two], vnodes_hexa[eight], vnodes_hexa[seven], vnodes_hexa[three]);
-                ielem++; nelem_tetra++;
-                
-              }
-              if ((code1 + code2 + code3) == 2) {
-                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[three], vnodes_hexa[four], vnodes_hexa[seven]);
-                ielem++; nelem_tetra++;
-                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[five], vnodes_hexa[seven], vnodes_hexa[eight]);
-                ielem++; nelem_tetra++;
-                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[seven], vnodes_hexa[four], vnodes_hexa[eight]);
-                ielem++; nelem_tetra++;
-                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[two], vnodes_hexa[three], vnodes_hexa[six]);
-                ielem++; nelem_tetra++;
-                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[seven], vnodes_hexa[five], vnodes_hexa[six]);
-                ielem++; nelem_tetra++;
-                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[three], vnodes_hexa[seven], vnodes_hexa[six]);
-                ielem++; nelem_tetra++;
-              }
-              if ((code1 + code2 + code3) == 3) {
-                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[three], vnodes_hexa[four], vnodes_hexa[seven]);
-                ielem++; nelem_tetra++;
-                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[four], vnodes_hexa[eight], vnodes_hexa[seven]);
-                ielem++; nelem_tetra++;
-                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[eight], vnodes_hexa[five], vnodes_hexa[seven]);
-                ielem++; nelem_tetra++;
-                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[six], vnodes_hexa[seven], vnodes_hexa[five]);
-                ielem++; nelem_tetra++;
-                elem[ielem] = new CTetrahedron(vnodes_hexa[two], vnodes_hexa[six], vnodes_hexa[seven], vnodes_hexa[one]);
-                ielem++; nelem_tetra++;
-                elem[ielem] = new CTetrahedron(vnodes_hexa[two], vnodes_hexa[seven], vnodes_hexa[three], vnodes_hexa[one]);
-                ielem++; nelem_tetra++;
-              }
-              
-            }
-            ielem_div++;
-            break;
-            
-          case WEDGE:
-            
-            elem_line >> vnodes_wedge[0]; elem_line >> vnodes_wedge[1]; elem_line >> vnodes_wedge[2];
-            elem_line >> vnodes_wedge[3]; elem_line >> vnodes_wedge[4]; elem_line >> vnodes_wedge[5];
-            
-            if (!config->GetDivide_Element()) {
-              
-              elem[ielem] = new CWedge(vnodes_wedge[0],vnodes_wedge[1],vnodes_wedge[2],vnodes_wedge[3],vnodes_wedge[4],vnodes_wedge[5]);
-              ielem++; nelem_wedge++;
-              
-            }
-            else {
-              
-              smallest = Local2Global[vnodes_wedge[0]]; smallestNode = 0;
-              for (iNode = 1; iNode < 6; iNode ++) {
-                if ( smallest > Local2Global[vnodes_wedge[iNode]]) {
-                  smallest = Local2Global[vnodes_wedge[iNode]];
-                  smallestNode = iNode;
-                }
-              }
-              
-              lookupindex = (CT_FromVTK_Prism[smallestNode] - 1);
-              zero  = IndirectionPrism[lookupindex][0];
-              one  = IndirectionPrism[lookupindex][1];
-              two  = IndirectionPrism[lookupindex][2];
-              three = IndirectionPrism[lookupindex][3];
-              four = IndirectionPrism[lookupindex][4];
-              five = IndirectionPrism[lookupindex][5];
-              
-              unsigned long index1, index2;
-              bool division = false;
-              index1 = min(Local2Global[vnodes_wedge[one]], Local2Global[vnodes_wedge[five]]);
-              index2 = min(Local2Global[vnodes_wedge[two]], Local2Global[vnodes_wedge[four]]);
-              if (index1 < index2) division = true;
-              
-              if (division) {
-                elem[ielem] = new CTetrahedron(vnodes_wedge[zero], vnodes_wedge[one], vnodes_wedge[two], vnodes_wedge[five]);
-                ielem++; nelem_tetra++;
-                elem[ielem] = new CTetrahedron(vnodes_wedge[zero], vnodes_wedge[one], vnodes_wedge[five], vnodes_wedge[four]);
-                ielem++; nelem_tetra++;
-                elem[ielem] = new CTetrahedron(vnodes_wedge[zero], vnodes_wedge[four], vnodes_wedge[five], vnodes_wedge[three]);
-                ielem++; nelem_tetra++;
-              }
-              else {
-                elem[ielem] = new CTetrahedron(vnodes_wedge[zero], vnodes_wedge[one], vnodes_wedge[two], vnodes_wedge[four]);
-                ielem++; nelem_tetra++;
-                elem[ielem] = new CTetrahedron(vnodes_wedge[zero], vnodes_wedge[four], vnodes_wedge[two], vnodes_wedge[five]);
-                ielem++; nelem_tetra++;
-                elem[ielem] = new CTetrahedron(vnodes_wedge[zero], vnodes_wedge[four], vnodes_wedge[five], vnodes_wedge[three]);
-                ielem++; nelem_tetra++;
-              }
-            }
-            
-            ielem_div++;
-            break;
-          case PYRAMID:
-            
-            elem_line >> vnodes_pyramid[0]; elem_line >> vnodes_pyramid[1]; elem_line >> vnodes_pyramid[2];
-            elem_line >> vnodes_pyramid[3]; elem_line >> vnodes_pyramid[4];
-            
-            if (!config->GetDivide_Element()) {
-              
-              elem[ielem] = new CPyramid(vnodes_pyramid[0],vnodes_pyramid[1],vnodes_pyramid[2],vnodes_pyramid[3],vnodes_pyramid[4]);
-              ielem++; nelem_pyramid++;
-              
-            }
-            else {
-              
-              unsigned long index1, index2;
-              bool division = false;
-              index1 = min(Local2Global[vnodes_pyramid[0]], Local2Global[vnodes_pyramid[2]]);
-              index2 = min(Local2Global[vnodes_pyramid[1]], Local2Global[vnodes_pyramid[3]]);
-              if (index1 < index2) division = true;
-              
-              if (division) {
-                elem[ielem] = new CTetrahedron(vnodes_pyramid[0], vnodes_pyramid[1], vnodes_pyramid[2], vnodes_pyramid[4]);
-                ielem++; nelem_tetra++;
-                elem[ielem] = new CTetrahedron(vnodes_pyramid[0], vnodes_pyramid[2], vnodes_pyramid[3], vnodes_pyramid[4]);
-                ielem++; nelem_tetra++;
-              }
-              else {
-                elem[ielem] = new CTetrahedron(vnodes_pyramid[1], vnodes_pyramid[2], vnodes_pyramid[3], vnodes_pyramid[4]);
-                ielem++; nelem_tetra++;
-                elem[ielem] = new CTetrahedron(vnodes_pyramid[1], vnodes_pyramid[3], vnodes_pyramid[0], vnodes_pyramid[4]);
-                ielem++; nelem_tetra++;
-              }
-              
-            }
-            
-            ielem_div++;
-            break;
-        }
-      }
-      
-      if (config->GetDivide_Element()) nElem = nelem_triangle + nelem_quad + nelem_tetra + nelem_hexa + nelem_wedge + nelem_pyramid;
-      
-      /*--- Communicate the number of each element type to all processors. ---*/
-      
-#ifdef HAVE_MPI
-      Local_nElemTri = nelem_triangle;
-      Global_nelem_triangle = Local_nElemTri;
-      Local_nElemQuad = nelem_quad;
-      Global_nelem_quad = Local_nElemQuad;
-      Local_nElemTet = nelem_tetra;
-      Global_nelem_tetra = Local_nElemTet;
-      Local_nElemHex = nelem_hexa;
-      Global_nelem_hexa = Local_nElemHex;
-      Local_nElemWedge = nelem_wedge;
-      Global_nelem_wedge = Local_nElemWedge;
-      Local_nElemPyramid = nelem_pyramid;
-      Global_nelem_pyramid = Local_nElemPyramid;
-#else
-      Global_nelem_triangle = nelem_triangle;
-      Global_nelem_quad     = nelem_quad;
-      Global_nelem_tetra    = nelem_tetra;
-      Global_nelem_hexa     = nelem_hexa;
-      Global_nelem_wedge    = nelem_wedge;
-      Global_nelem_pyramid  = nelem_pyramid;
-#endif
-      
-      /*--- Print information about the elements to the console ---*/
-      
-      if (rank == MASTER_NODE) {
-        if (Global_nelem_triangle > 0)  cout << Global_nelem_triangle << " triangles." << endl;
-        if (Global_nelem_quad > 0)      cout << Global_nelem_quad << " quadrilaterals." << endl;
-        if (Global_nelem_tetra > 0)     cout << Global_nelem_tetra << " tetrahedra." << endl;
-        if (Global_nelem_hexa > 0)      cout << Global_nelem_hexa << " hexahedra." << endl;
-        if (Global_nelem_wedge > 0)     cout << Global_nelem_wedge << " prisms." << endl;
-        if (Global_nelem_pyramid > 0)   cout << Global_nelem_pyramid << " pyramids." << endl;
-      }
-    }
-    
-    /*--- Read number of points ---*/
-    
-    position = text_line.find ("NPOIN=",0);
-    if (position != string::npos) {
-      text_line.erase (0,6);
-      
-      /*--- Check for ghost points. ---*/
-      stringstream test_line(text_line);
-      while (test_line >> dummyLong)
-        iCount++;
-      
-      /*--- Now read and store the number of points and possible ghost points. ---*/
-      
-      stringstream  stream_line(text_line);
-      if (iCount == 2) {
-        stream_line >> nPoint;
-        stream_line >> nPointDomain;
-        
-        /*--- Set some important point information for parallel simulations. ---*/
-        
-#ifdef HAVE_MPI
-        Local_nPoint = nPoint;
-        Local_nPointDomain = nPointDomain;
-        Global_nPoint = Local_nPoint;
-        Global_nPointDomain = Local_nPointDomain;
-#else
-        Global_nPoint = nPoint;
-        Global_nPointDomain = nPointDomain;
-#endif
-        
-        if (rank == MASTER_NODE)
-          cout << Global_nPointDomain << " points, and " << Global_nPoint-Global_nPointDomain << " ghost points." << endl;
-        
-      }
-      else if (iCount == 1) {
-        stream_line >> nPoint;
-        nPointDomain = nPoint;
-        Global_nPointDomain = nPoint;
-        Global_nPoint = nPoint;
-        if (rank == MASTER_NODE) cout << nPoint << " points." << endl;
-      }
-      else {
-        cout << "NPOIN improperly specified!!" << endl;
-#ifndef HAVE_MPI
-        exit(EXIT_FAILURE);
-#else
-        MPI_Abort(MPI_COMM_WORLD,1);
-        MPI_Finalize();
-#endif
-      }
-      
-      node = new CPoint*[nPoint];
-      iPoint = 0;
-      while (iPoint < nPoint) {
-        getline(mesh_file,text_line);
-        istringstream point_line(text_line);
-        switch(nDim) {
-          case 2:
-            GlobalIndex = iPoint;
-#ifndef HAVE_MPI
-            point_line >> Coord_2D[0]; point_line >> Coord_2D[1];
-#else
-            if (size > SINGLE_NODE) { point_line >> Coord_2D[0]; point_line >> Coord_2D[1]; point_line >> LocalIndex; point_line >> GlobalIndex; }
-            else { point_line >> Coord_2D[0]; point_line >> Coord_2D[1]; LocalIndex = iPoint; GlobalIndex = iPoint; }
-#endif
-            node[iPoint] = new CPoint(Coord_2D[0], Coord_2D[1], GlobalIndex, config);
-            iPoint++; break;
-          case 3:
-            GlobalIndex = iPoint;
-#ifndef HAVE_MPI
-            point_line >> Coord_3D[0]; point_line >> Coord_3D[1]; point_line >> Coord_3D[2];
-#else
-            if (size > SINGLE_NODE) { point_line >> Coord_3D[0]; point_line >> Coord_3D[1]; point_line >> Coord_3D[2]; point_line >> LocalIndex; point_line >> GlobalIndex; }
-            else { point_line >> Coord_3D[0]; point_line >> Coord_3D[1]; point_line >> Coord_3D[2]; LocalIndex = iPoint; GlobalIndex = iPoint; }
-#endif
-            node[iPoint] = new CPoint(Coord_3D[0], Coord_3D[1], Coord_3D[2], GlobalIndex, config);
-            iPoint++; break;
-        }
-      }
-    }
-    
-    
-    /*--- Read number of markers ---*/
-    position = text_line.find ("NMARK=",0);
-    if (position != string::npos) {
-      text_line.erase (0,6); nMarker = atoi(text_line.c_str());
-      if (size == 1) cout << nMarker << " surface markers." << endl;
-      config->SetnMarker_All(nMarker);
-      bound = new CPrimalGrid**[nMarker];
-      nElem_Bound = new unsigned long [nMarker];
-      Tag_to_Marker = new string [nMarker_Max];
-      
-      for (iMarker = 0 ; iMarker < nMarker; iMarker++) {
-        getline (mesh_file,text_line);
-        text_line.erase (0,11);
-        string::size_type position;
-        for (iChar = 0; iChar < 20; iChar++) {
-          position = text_line.find( " ", 0 );
-          if(position != string::npos) text_line.erase (position,1);
-          position = text_line.find( "\r", 0 );
-          if(position != string::npos) text_line.erase (position,1);
-          position = text_line.find( "\n", 0 );
-          if(position != string::npos) text_line.erase (position,1);
-        }
-        Marker_Tag = text_line.c_str();
-        
-        /*--- Physical boundaries definition ---*/
-        if (Marker_Tag != "SEND_RECEIVE") {
-          getline (mesh_file,text_line);
-          text_line.erase (0,13); nElem_Bound[iMarker] = atoi(text_line.c_str());
-          if (size == 1)
-            cout << nElem_Bound[iMarker]  << " boundary elements in index "<< iMarker <<" (Marker = " <<Marker_Tag<< ")." << endl;
-          
-          
-          /*--- Allocate space for elements ---*/
-          if (!config->GetDivide_Element()) bound[iMarker] = new CPrimalGrid* [nElem_Bound[iMarker]];
-          else {
-            if (nDim == 2) bound[iMarker] = new CPrimalGrid* [2*nElem_Bound[iMarker]];;
-            if (nDim == 3) bound[iMarker] = new CPrimalGrid* [2*nElem_Bound[iMarker]];;
-          }
-          
-          nelem_edge_bound = 0; nelem_triangle_bound = 0; nelem_quad_bound = 0; ielem = 0;
-          for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
-            getline(mesh_file,text_line);
-            istringstream bound_line(text_line);
-            bound_line >> VTK_Type;
-            switch(VTK_Type) {
-              case LINE:
-                
-                if (nDim == 3) {
-                  cout << "Please remove line boundary conditions from the mesh file!" << endl;
-#ifndef HAVE_MPI
-                  exit(EXIT_FAILURE);
-#else
-                  MPI_Abort(MPI_COMM_WORLD,1);
-                  MPI_Finalize();
-#endif
-                }
-                
-                bound_line >> vnodes_edge[0]; bound_line >> vnodes_edge[1];
-                bound[iMarker][ielem] = new CLine(vnodes_edge[0],vnodes_edge[1],2);
-                ielem++; nelem_edge_bound++; break;
-                
-              case TRIANGLE:
-                bound_line >> vnodes_triangle[0]; bound_line >> vnodes_triangle[1]; bound_line >> vnodes_triangle[2];
-                bound[iMarker][ielem] = new CTriangle(vnodes_triangle[0],vnodes_triangle[1],vnodes_triangle[2],3);
-                ielem++; nelem_triangle_bound++; break;
-                
-              case RECTANGLE:
-                
-                bound_line >> vnodes_quad[0]; bound_line >> vnodes_quad[1]; bound_line >> vnodes_quad[2]; bound_line >> vnodes_quad[3];
-                
-                if (!config->GetDivide_Element()) {
-                  
-                  bound[iMarker][ielem] = new CRectangle(vnodes_quad[0],vnodes_quad[1],vnodes_quad[2],vnodes_quad[3],3);
-                  ielem++; nelem_quad_bound++;
-                  
-                }
-                else {
-                  
-                  unsigned long index1, index2;
-                  bool division1 = false;
-                  index1 = min(Local2Global[vnodes_quad[0]], Local2Global[vnodes_quad[2]]);
-                  index2 = min(Local2Global[vnodes_quad[1]], Local2Global[vnodes_quad[3]]);
-                  if (index1 < index2) division1 = true;
-                  
-                  if (division1) {
-                    bound[iMarker][ielem] = new CTriangle(vnodes_quad[0], vnodes_quad[2], vnodes_quad[1], 3);
-                    ielem++; nelem_triangle_bound++;
-                    bound[iMarker][ielem] = new CTriangle(vnodes_quad[3], vnodes_quad[2], vnodes_quad[0], 3);
-                    ielem++; nelem_triangle_bound++;
-                  }
-                  else {
-                    bound[iMarker][ielem] = new CTriangle(vnodes_quad[2], vnodes_quad[1], vnodes_quad[3], 3);
-                    ielem++; nelem_triangle_bound++;
-                    bound[iMarker][ielem] = new CTriangle(vnodes_quad[1], vnodes_quad[0], vnodes_quad[3], 3);
-                    ielem++; nelem_triangle_bound++;
-                  }
-                  
-                }
-                
-                break;
-                
-                
-            }
-          }
-          if (config->GetDivide_Element()) nElem_Bound[iMarker] = nelem_edge_bound + nelem_triangle_bound + nelem_quad_bound;
-          
-          /*--- Update config information storing the boundary information in the right place ---*/
-          Tag_to_Marker[config->GetMarker_CfgFile_TagBound(Marker_Tag)] = Marker_Tag;
-          config->SetMarker_All_TagBound(iMarker, Marker_Tag);
-          config->SetMarker_All_KindBC(iMarker, config->GetMarker_CfgFile_KindBC(Marker_Tag));
-          config->SetMarker_All_Monitoring(iMarker, config->GetMarker_CfgFile_Monitoring(Marker_Tag));
-          config->SetMarker_All_GeoEval(iMarker, config->GetMarker_CfgFile_GeoEval(Marker_Tag));
-          config->SetMarker_All_Designing(iMarker, config->GetMarker_CfgFile_Designing(Marker_Tag));
-          config->SetMarker_All_Plotting(iMarker, config->GetMarker_CfgFile_Plotting(Marker_Tag));
-          config->SetMarker_All_DV(iMarker, config->GetMarker_CfgFile_DV(Marker_Tag));
-          config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
-          config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
-          config->SetMarker_All_Out_1D(iMarker, config->GetMarker_CfgFile_Out_1D(Marker_Tag));
-          config->SetMarker_All_SendRecv(iMarker, NONE);
-          
-        }
-        
-        /*--- Send-Receive boundaries definition ---*/
-        else {
-          unsigned long nelem_vertex = 0, vnodes_vertex;
-          unsigned short transform;
-          getline (mesh_file,text_line);
-          text_line.erase (0,13); nElem_Bound[iMarker] = atoi(text_line.c_str());
-          bound[iMarker] = new CPrimalGrid* [nElem_Bound[iMarker]];
-          
-          nelem_vertex = 0; ielem = 0;
-          getline (mesh_file,text_line); text_line.erase (0,8);
-          config->SetMarker_All_KindBC(iMarker, SEND_RECEIVE);
-          config->SetMarker_All_SendRecv(iMarker, atoi(text_line.c_str()));
-          
-          for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
-            getline(mesh_file,text_line);
-            istringstream bound_line(text_line);
-            bound_line >> VTK_Type; bound_line >> vnodes_vertex; bound_line >> transform;
-            
-            bound[iMarker][ielem] = new CVertexMPI(vnodes_vertex, nDim);
-            bound[iMarker][ielem]->SetRotation_Type(transform);
-            ielem++; nelem_vertex++;
-            if (config->GetMarker_All_SendRecv(iMarker) < 0)
-              node[vnodes_vertex]->SetDomain(false);
-          }
-          
-        }
-        
-      }
-    }
-    /*--- Read periodic transformation info (center, rotation, translation) ---*/
-    position = text_line.find ("NPERIODIC=",0);
-    if (position != string::npos) {
-      unsigned short nPeriodic, iPeriodic, iIndex;
-      
-      /*--- Set bool signifying that periodic transormations were found ---*/
-      found_transform = true;
-      
-      /*--- Read and store the number of transformations. ---*/
-      text_line.erase (0,10); nPeriodic = atoi(text_line.c_str());
-      if (rank == MASTER_NODE) {
-        if (nPeriodic - 1 != 0)
-          cout << nPeriodic - 1 << " periodic transformations." << endl;
-      }
-      config->SetnPeriodicIndex(nPeriodic);
-      
-      /*--- Store center, rotation, & translation in that order for each. ---*/
-      for (iPeriodic = 0; iPeriodic < nPeriodic; iPeriodic++) {
-        getline (mesh_file,text_line);
-        position = text_line.find ("PERIODIC_INDEX=",0);
-        if (position != string::npos) {
-          text_line.erase (0,15); iIndex = atoi(text_line.c_str());
-          if (iIndex != iPeriodic) {
-            cout << "PERIODIC_INDEX out of order in SU2 file!!" << endl;
-#ifndef HAVE_MPI
-            exit(EXIT_FAILURE);
-#else
-            MPI_Abort(MPI_COMM_WORLD,1);
-            MPI_Finalize();
-#endif
-          }
-        }
-        double* center    = new double[3];
-        double* rotation  = new double[3];
-        double* translate = new double[3];
-        getline (mesh_file,text_line);
-        istringstream cent(text_line);
-        cent >> center[0]; cent >> center[1]; cent >> center[2];
-        config->SetPeriodicCenter(iPeriodic, center);
-        getline (mesh_file,text_line);
-        istringstream rot(text_line);
-        rot >> rotation[0]; rot >> rotation[1]; rot >> rotation[2];
-        config->SetPeriodicRotation(iPeriodic, rotation);
-        getline (mesh_file,text_line);
-        istringstream tran(text_line);
-        tran >> translate[0]; tran >> translate[1]; tran >> translate[2];
-        config->SetPeriodicTranslate(iPeriodic, translate);
-        
-      }
-      
-    }
-    
-  }
-  
-  /*--- If no periodic transormations were found, store default zeros ---*/
-  if (!found_transform) {
-    unsigned short nPeriodic = 1, iPeriodic = 0;
-    config->SetnPeriodicIndex(nPeriodic);
-    double* center    = new double[3];
-    double* rotation  = new double[3];
-    double* translate = new double[3];
-    for (unsigned short iDim = 0; iDim < 3; iDim++) {
-      center[iDim] = 0.0; rotation[iDim] = 0.0; translate[iDim] = 0.0;
-    }
-    config->SetPeriodicCenter(iPeriodic, center);
-    config->SetPeriodicRotation(iPeriodic, rotation);
-    config->SetPeriodicTranslate(iPeriodic, translate);
-  }
-  
-  /*--- Close the input file ---*/
-  mesh_file.close();
-  
-  if (config->GetDivide_Element()) {
-    if (Local2Global != NULL) delete [] Local2Global;
-  }
-  
-}
-
 void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone) {
   
   string text_line, Marker_Tag;
@@ -6551,12 +5736,11 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   unsigned long VTK_Type, iMarker, iChar;
   unsigned long iCount = 0;
   unsigned long iElem_Bound = 0, iPoint = 0, ielem_div = 0, ielem = 0;
-  unsigned long *Local2Global = NULL;
   unsigned long vnodes_edge[2], vnodes_triangle[3], vnodes_quad[4];
   unsigned long vnodes_tetra[4], vnodes_hexa[8], vnodes_wedge[6],
-  vnodes_pyramid[5], dummyLong, GlobalIndex, iElem;
+  vnodes_pyramid[5], dummyLong, GlobalIndex;
   char cstr[200];
-  double Coord_2D[2], Coord_3D[3], dummyDouble;
+  double Coord_2D[2], Coord_3D[3];
   string::size_type position;
   int rank = MASTER_NODE, size = SINGLE_NODE;
   bool domain_flag = false;
@@ -6614,60 +5798,6 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
     MPI_Abort(MPI_COMM_WORLD,1);
     MPI_Finalize();
 #endif
-  }
-  
-  /*--- If divided grid, we need the global index to
-   perform the right element division, this is just a hack in the future we
-   should read first the coordinates ---*/
-  
-  if (config->GetDivide_Element()) {
-    
-    unsigned long nDim_ = 0, nElem_ = 0, nPoint_ = 0;
-    
-    while (getline (mesh_file, text_line)) {
-      
-      position = text_line.find ("NDIME=",0);
-      if (position != string::npos) {
-        text_line.erase (0,6); nDim_ = atoi(text_line.c_str());
-      }
-      
-      position = text_line.find ("NELEM=",0);
-      if (position != string::npos) {
-        text_line.erase (0,6); nElem_ = atoi(text_line.c_str());
-        for (iElem = 0; iElem < nElem_; iElem ++)
-        getline(mesh_file, text_line);
-      }
-      
-      position = text_line.find ("NPOIN=",0);
-      if (position != string::npos) {
-        text_line.erase (0,6);
-        
-        /*--- Now read the number of points and ghost points. ---*/
-        
-        stringstream  stream_line(text_line);
-        stream_line >> nPoint_;
-        
-        Local2Global = new unsigned long [nPoint_];
-        
-        for (iPoint = 0; iPoint < nPoint_; iPoint ++) {
-          getline(mesh_file, text_line);
-          istringstream point_line(text_line);
-          if (size == 1) { Local2Global[iPoint] = iPoint; }
-          else {
-            point_line >> dummyDouble; point_line >> dummyDouble; if (nDim_ == 3) point_line >> dummyDouble;
-            point_line >> dummyLong; point_line >> Local2Global[iPoint];
-          }
-        }
-        
-      }
-    }
-    
-    /*--- Close and open again the grid file ---*/
-    
-    mesh_file.close();
-    strcpy (cstr, val_mesh_filename.c_str());
-    mesh_file.open(cstr, ios::in);
-    
   }
   
   /*--- Read grid file with format SU2 ---*/
@@ -6838,11 +5968,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
       
       /*--- Allocate space for elements ---*/
       
-      if (!config->GetDivide_Element()) elem = new CPrimalGrid*[nElem];
-      else {
-        if (nDim == 2) elem = new CPrimalGrid*[2*nElem];
-        if (nDim == 3) elem = new CPrimalGrid*[6*nElem];
-      }
+      elem = new CPrimalGrid*[nElem];
       
       /*--- Set up the global to local element mapping. ---*/
       Global_to_local_elem  = new unsigned long[nElem];
@@ -7113,11 +6239,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             
             
             /*--- Allocate space for elements ---*/
-            if (!config->GetDivide_Element()) bound[iMarker] = new CPrimalGrid* [nElem_Bound[iMarker]];
-            else {
-              if (nDim == 2) bound[iMarker] = new CPrimalGrid* [2*nElem_Bound[iMarker]];;
-              if (nDim == 3) bound[iMarker] = new CPrimalGrid* [2*nElem_Bound[iMarker]];;
-            }
+            bound[iMarker] = new CPrimalGrid* [nElem_Bound[iMarker]];
             
             nelem_edge_bound = 0; nelem_triangle_bound = 0; nelem_quad_bound = 0; ielem = 0;
             for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
@@ -7150,41 +6272,14 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
                   
                   bound_line >> vnodes_quad[0]; bound_line >> vnodes_quad[1]; bound_line >> vnodes_quad[2]; bound_line >> vnodes_quad[3];
                   
-                  if (!config->GetDivide_Element()) {
-                    
-                    bound[iMarker][ielem] = new CRectangle(vnodes_quad[0],vnodes_quad[1],vnodes_quad[2],vnodes_quad[3],3);
-                    ielem++; nelem_quad_bound++;
-                    
-                  }
-                  else {
-                    
-                    unsigned long index1, index2;
-                    bool division1 = false;
-                    index1 = min(Local2Global[vnodes_quad[0]], Local2Global[vnodes_quad[2]]);
-                    index2 = min(Local2Global[vnodes_quad[1]], Local2Global[vnodes_quad[3]]);
-                    if (index1 < index2) division1 = true;
-                    
-                    if (division1) {
-                      bound[iMarker][ielem] = new CTriangle(vnodes_quad[0], vnodes_quad[2], vnodes_quad[1], 3);
-                      ielem++; nelem_triangle_bound++;
-                      bound[iMarker][ielem] = new CTriangle(vnodes_quad[3], vnodes_quad[2], vnodes_quad[0], 3);
-                      ielem++; nelem_triangle_bound++;
-                    }
-                    else {
-                      bound[iMarker][ielem] = new CTriangle(vnodes_quad[2], vnodes_quad[1], vnodes_quad[3], 3);
-                      ielem++; nelem_triangle_bound++;
-                      bound[iMarker][ielem] = new CTriangle(vnodes_quad[1], vnodes_quad[0], vnodes_quad[3], 3);
-                      ielem++; nelem_triangle_bound++;
-                    }
-                    
-                  }
+                  bound[iMarker][ielem] = new CRectangle(vnodes_quad[0],vnodes_quad[1],vnodes_quad[2],vnodes_quad[3],3);
+                  ielem++; nelem_quad_bound++;
                   
                   break;
                   
                   
               }
             }
-            if (config->GetDivide_Element()) nElem_Bound[iMarker] = nelem_edge_bound + nelem_triangle_bound + nelem_quad_bound;
             
             /*--- Update config information storing the boundary information in the right place ---*/
             Tag_to_Marker[config->GetMarker_CfgFile_TagBound(Marker_Tag)] = Marker_Tag;
@@ -7304,9 +6399,6 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   /*--- Close the input file ---*/
   mesh_file.close();
   
-  if (config->GetDivide_Element()) {
-    if (Local2Global != NULL) delete [] Local2Global;
-  }
   
 }
 
@@ -8071,8 +7163,6 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
       }
     }
   }
-  
-  if (config->GetDivide_Element()) nElem = nelem_triangle + nelem_quad + nelem_tetra + nelem_hexa + nelem_wedge + nelem_pyramid;
   
   Global_nelem_triangle = nelem_triangle;
   Global_nelem_quad     = nelem_quad;
@@ -9313,7 +8403,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
       }
     }
   }
-  
+
   Global_nelem_triangle = nelem_triangle;
   Global_nelem_quad     = nelem_quad;
   Global_nelem_tetra    = nelem_tetra;
@@ -9592,352 +8682,6 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   cout << " to the CGNS library." << endl;
   exit(EXIT_FAILURE);
 #endif
-  
-}
-
-void CPhysicalGeometry::Read_NETCDF_Format(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone) {
-  
-  string text_line, Marker_Tag;
-  ifstream mesh_file;
-  unsigned short iMarker;
-  unsigned long ielem = 0,
-  vnodes_triangle[3], vnodes_quad[4], vnodes_tetra[4], vnodes_hexa[8], vnodes_wedge[6];
-  char cstr[MAX_STRING_SIZE];
-  string::size_type position;
-  nZone = val_nZone;
-  unsigned short nMarker_Max = config->GetnMarker_Max();
-
-  /*--- Initialize counters for local/global points & elements ---*/
-  
-  Global_nPoint = 0; Global_nPointDomain = 0; Global_nElem = 0;
-  nelem_edge     = 0; Global_nelem_edge     = 0;
-  nelem_triangle = 0; Global_nelem_triangle = 0;
-  nelem_quad     = 0; Global_nelem_quad     = 0;
-  nelem_tetra    = 0; Global_nelem_tetra    = 0;
-  nelem_hexa     = 0; Global_nelem_hexa     = 0;
-  nelem_wedge    = 0; Global_nelem_wedge    = 0;
-  nelem_pyramid  = 0; Global_nelem_pyramid  = 0;
-  
-  /*--- Throw error if not in serial mode. ---*/
-#ifdef HAVE_MPI
-  cout << "Parallel support with NETCDF format not yet implemented!!" << endl;
-  MPI_Abort(MPI_COMM_WORLD,1);
-  MPI_Finalize();
-#endif
-  
-  unsigned short Marker_Index, marker, icommas, iDim;
-  unsigned long nmarker, ielem_triangle, ielem_hexa, ncoord, iSurfElem, ielem_wedge,
-  ielem_quad, *marker_list, **surf_elem, ielem_surface, *surf_marker, nSurfElem;
-  double coord;
-  string::size_type position_;
-  bool stop, add;
-  
-  ielem_surface = 0; nSurfElem = 0;
-  surf_marker = NULL;
-  surf_elem = NULL;
-  
-  
-  nDim = 3; cout << "Three dimensional problem." << endl;
-  
-  /*--- Open grid file ---*/
-  strcpy (cstr, val_mesh_filename.c_str());
-  mesh_file.open(cstr, ios::in);
-  if (mesh_file.fail()) {
-    cout << "There is no geometry file (CPhysicalGeometry)!!" << endl;
-    exit(EXIT_FAILURE);
-  }
-  
-  while (getline (mesh_file, text_line)) {
-    
-    position = text_line.find ("no_of_elements = ",0);
-    if (position != string::npos) {
-      text_line.erase (0,17); nElem = atoi(text_line.c_str());
-      cout << nElem << " inner elements to store." << endl;
-      elem = new CPrimalGrid*[nElem]; }
-    
-    position = text_line.find ("no_of_surfaceelements = ",0);
-    if (position != string::npos) {
-      text_line.erase (0,24); nSurfElem = atoi(text_line.c_str());
-      cout << nSurfElem << " surface elements to store." << endl;
-      surf_elem = new unsigned long* [nSurfElem];
-      for (ielem_surface = 0; ielem_surface < nSurfElem; ielem_surface++)
-        surf_elem[ielem_surface] = new unsigned long [5];
-      ielem_surface = 0;
-    }
-    
-    position = text_line.find ("no_of_points = ",0);
-    if (position != string::npos) {
-      text_line.erase (0,15); nPoint = atoi(text_line.c_str()); nPointDomain = nPoint;
-      cout << nPoint << " points to store." << endl;
-      node = new CPoint*[nPoint]; }
-    
-    position = text_line.find ("no_of_tetraeders = ",0);
-    if (position != string::npos) {
-      text_line.erase (0,19); nelem_tetra = atoi(text_line.c_str());
-      cout << nelem_tetra << " tetraeders elements to store." << endl; }
-    
-    position = text_line.find ("no_of_prisms = ",0);
-    if (position != string::npos) {
-      text_line.erase (0,15); nelem_wedge = atoi(text_line.c_str());
-      cout << nelem_wedge << " prims elements to store." << endl; }
-    
-    position = text_line.find ("no_of_hexaeders = ",0);
-    if (position != string::npos) {
-      text_line.erase (0,18); nelem_hexa = atoi(text_line.c_str());
-      cout << nelem_hexa << " hexaeders elements to store." << endl; }
-    
-    position = text_line.find ("no_of_surfacetriangles = ",0);
-    if (position != string::npos) {
-      text_line.erase (0,25); nelem_triangle = atoi(text_line.c_str());
-      cout << nelem_triangle << " surface triangle elements to store." << endl; }
-    
-    position = text_line.find ("no_of_surfacequadrilaterals = ",0);
-    if (position != string::npos) {
-      text_line.erase (0,30); nelem_quad = atoi(text_line.c_str());
-      cout << nelem_quad << " surface quadrilaterals elements to store." << endl; }
-    
-    position = text_line.find ("points_of_tetraeders =",0);
-    if (position != string::npos) {
-      for (unsigned long ielem_tetra = 0; ielem_tetra < nelem_tetra; ielem_tetra++) {
-        getline(mesh_file,text_line);
-        for (unsigned short icommas = 0; icommas < 15; icommas++) {
-          position_ = text_line.find( ",", 0 ); if(position_!=string::npos) text_line.erase (position_,1);
-          position_ = text_line.find( ";", 0 ); if(position_!=string::npos) text_line.erase (position_,1);
-        }
-        istringstream elem_line(text_line);
-        elem_line >> vnodes_tetra[0]; elem_line >> vnodes_tetra[1]; elem_line >> vnodes_tetra[2]; elem_line >> vnodes_tetra[3];
-        elem[ielem] = new CTetrahedron(vnodes_tetra[0],vnodes_tetra[1],vnodes_tetra[2],vnodes_tetra[3]);
-        ielem++;
-      }
-      cout << "finish tetrahedron element reading" << endl;
-    }
-    
-    position = text_line.find ("points_of_prisms =",0);
-    if (position != string::npos) {
-      for (ielem_wedge = 0; ielem_wedge < nelem_wedge; ielem_wedge++) {
-        getline(mesh_file,text_line);
-        for (icommas = 0; icommas < 15; icommas++) {
-          position_ = text_line.find( ",", 0 ); if(position_!=string::npos) text_line.erase (position_,1);
-          position_ = text_line.find( ";", 0 ); if(position_!=string::npos) text_line.erase (position_,1);
-        }
-        istringstream elem_line(text_line);
-        elem_line >> vnodes_wedge[0]; elem_line >> vnodes_wedge[1]; elem_line >> vnodes_wedge[2]; elem_line >> vnodes_wedge[3]; elem_line >> vnodes_wedge[4]; elem_line >> vnodes_wedge[5];
-        elem[ielem] = new CWedge(vnodes_wedge[0],vnodes_wedge[1],vnodes_wedge[2],vnodes_wedge[3],vnodes_wedge[4],vnodes_wedge[5]);
-        ielem++;
-      }
-      cout << "finish prims element reading" << endl;
-    }
-    
-    position = text_line.find ("points_of_hexaeders =",0);
-    if (position != string::npos) {
-      for (ielem_hexa = 0; ielem_hexa < nelem_hexa; ielem_hexa++) {
-        getline(mesh_file,text_line);
-        for (icommas = 0; icommas < 15; icommas++) {
-          position_ = text_line.find( ",", 0 ); if(position_!=string::npos) text_line.erase (position_,1);
-          position_ = text_line.find( ";", 0 ); if(position_!=string::npos) text_line.erase (position_,1);
-        }
-        istringstream elem_line(text_line);
-        elem_line >> vnodes_hexa[0]; elem_line >> vnodes_hexa[1]; elem_line >> vnodes_hexa[2]; elem_line >> vnodes_hexa[3];
-        elem_line >> vnodes_hexa[4]; elem_line >> vnodes_hexa[5]; elem_line >> vnodes_hexa[6]; elem_line >> vnodes_hexa[7];
-        elem[ielem] = new CHexahedron(vnodes_hexa[0],vnodes_hexa[1],vnodes_hexa[2],vnodes_hexa[3],vnodes_hexa[4],vnodes_hexa[5],vnodes_hexa[6],vnodes_hexa[7]);
-        ielem++;
-      }
-      cout << "finish hexaeders element reading" << endl;
-    }
-    
-    position = text_line.find ("points_of_surfacetriangles =",0);
-    if (position != string::npos) {
-      for (ielem_triangle = 0; ielem_triangle < nelem_triangle; ielem_triangle++) {
-        getline(mesh_file,text_line);
-        for (icommas = 0; icommas < 15; icommas++) {
-          position_ = text_line.find( ",", 0 ); if(position_!=string::npos) text_line.erase (position_,1);
-          position_ = text_line.find( ";", 0 ); if(position_!=string::npos) text_line.erase (position_,1);
-        }
-        istringstream elem_line(text_line);
-        elem_line >> vnodes_triangle[0]; elem_line >> vnodes_triangle[1]; elem_line >> vnodes_triangle[2];
-        surf_elem[ielem_surface][0]= 3;
-        surf_elem[ielem_surface][1]= vnodes_triangle[0];
-        surf_elem[ielem_surface][2]= vnodes_triangle[1];
-        surf_elem[ielem_surface][3]= vnodes_triangle[2];
-        ielem_surface++;
-      }
-      cout << "finish surface triangles element reading" << endl;
-    }
-    
-    position = text_line.find ("points_of_surfacequadrilaterals =",0);
-    if (position != string::npos) {
-      for (ielem_quad = 0; ielem_quad < nelem_quad; ielem_quad++) {
-        getline(mesh_file,text_line);
-        for (icommas = 0; icommas < 15; icommas++) {
-          position_ = text_line.find( ",", 0 ); if(position_!=string::npos) text_line.erase (position_,1);
-          position_ = text_line.find( ";", 0 ); if(position_!=string::npos) text_line.erase (position_,1);
-        }
-        istringstream elem_line(text_line);
-        elem_line >> vnodes_quad[0]; elem_line >> vnodes_quad[1]; elem_line >> vnodes_quad[2]; elem_line >> vnodes_quad[3];
-        surf_elem[ielem_surface][0]= 4;
-        surf_elem[ielem_surface][1]= vnodes_quad[0];
-        surf_elem[ielem_surface][2]= vnodes_quad[1];
-        surf_elem[ielem_surface][3]= vnodes_quad[2];
-        surf_elem[ielem_surface][4]= vnodes_quad[3];
-        ielem_surface++;
-      }
-      cout << "finish surface quadrilaterals element reading" << endl;
-    }
-    
-    position = text_line.find ("boundarymarker_of_surfaces =",0);
-    if (position != string::npos) {
-      nmarker=0;
-      stop = false;
-      surf_marker = new unsigned long [nelem_triangle + nelem_quad];
-      
-      text_line.erase (0,29);
-      for (icommas = 0; icommas < 50; icommas++) {
-        position_ = text_line.find( ",", 0 );
-        if(position_!=string::npos) text_line.erase (position_,1);
-      }
-      
-      stringstream  point_line(text_line);
-      while (point_line >> marker,!point_line.eof()) {
-        surf_marker[nmarker] = marker;
-        nmarker++; }
-      
-      while (!stop) {
-        getline(mesh_file,text_line);
-        for (icommas = 0; icommas < 50; icommas++) {
-          position_ = text_line.find( ",", 0 );
-          if(position_!=string::npos) text_line.erase (position_,1);
-          position_ = text_line.find( ";", 0 );
-          if(position_!=string::npos) text_line.erase (position_,1);
-        }
-        stringstream  point_line(text_line);
-        while (point_line>> marker,!point_line.eof()) {
-          surf_marker[nmarker] = marker;
-          if (nmarker == nSurfElem-1) {stop = true; break;}
-          nmarker++;
-        }
-      }
-    }
-    
-    for (iDim = 0; iDim < nDim; iDim++) {
-      ncoord = 0; stop = false;
-      if (iDim == 0) position = text_line.find ("points_xc = ",0);
-      if (iDim == 1) position = text_line.find ("points_yc = ",0);
-      if (iDim == 2) position = text_line.find ("points_zc = ",0);
-      
-      if (position != string::npos) {
-        text_line.erase (0,12);
-        for (icommas = 0; icommas < 50; icommas++) {
-          position_ = text_line.find( ",", 0 );
-          if(position_!=string::npos) text_line.erase (position_,1);
-        }
-        stringstream  point_line(text_line);
-        while (point_line>> coord,!point_line.eof()) {
-          if (iDim==0) node[ncoord] = new CPoint(coord, 0.0, 0.0, ncoord, config);
-          if (iDim==1) node[ncoord]->SetCoord(1, coord);
-          if (iDim==2) node[ncoord]->SetCoord(2, coord);
-          ncoord++; }
-        while (!stop) {
-          getline(mesh_file,text_line);
-          for (icommas = 0; icommas < 50; icommas++) {
-            position_ = text_line.find( ",", 0 );
-            if(position_!=string::npos) text_line.erase (position_,1);
-            position_ = text_line.find( ";", 0 );
-            if(position_!=string::npos) text_line.erase (position_,1);
-          }
-          stringstream  point_line(text_line);
-          while (point_line>> coord,!point_line.eof()) {
-            if (iDim==0) node[ncoord] = new CPoint(coord, 0.0, 0.0, ncoord, config);
-            if (iDim==1) node[ncoord]->SetCoord(1, coord);
-            if (iDim==2) node[ncoord]->SetCoord(2, coord);
-            if (ncoord == nPoint-1) {stop = true; break;}
-            ncoord++;
-          }
-        }
-        if (iDim==0) cout << "finish point xc reading" << endl;
-        if (iDim==1) cout << "finish point yc reading" << endl;
-        if (iDim==2) cout << "finish point zc reading" << endl;
-      }
-    }
-  }
-  
-  
-  /*--- Create a list with all the markers ---*/
-  marker_list = new unsigned long [nMarker_Max];
-  marker_list[0] = surf_marker[0]; nMarker = 1;
-  for (iSurfElem = 0; iSurfElem < nSurfElem; iSurfElem++) {
-    add = true;
-    for (iMarker = 0; iMarker < nMarker; iMarker++)
-      if (marker_list[iMarker] == surf_marker[iSurfElem]) {
-        add = false; break; }
-    if (add) {
-      marker_list[nMarker] = surf_marker[iSurfElem];
-      nMarker++;
-    }
-  }
-  
-  nElem_Bound = new unsigned long [nMarker];
-  
-  /*--- Compute the number of element per marker ---*/
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    nElem_Bound[iMarker] = 0;
-    for (iSurfElem = 0; iSurfElem < nSurfElem; iSurfElem++)
-      if (surf_marker[iSurfElem] == marker_list[iMarker])
-        nElem_Bound[iMarker]++;
-  }
-  
-  
-  /*--- Realate the marker index with the position in the array of markers ---*/
-  unsigned short *Index_to_Marker;
-  Index_to_Marker = new unsigned short [nMarker_Max];
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    Marker_Index = marker_list[iMarker];
-    Index_to_Marker[Marker_Index] = iMarker;
-  }
-  
-  bound = new CPrimalGrid**[nMarker];
-  
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    Marker_Index = marker_list[iMarker];
-    bound[iMarker] = new CPrimalGrid* [nElem_Bound[iMarker]];
-    ielem_triangle = 0; ielem_quad = 0;
-    for (iSurfElem = 0; iSurfElem < nSurfElem; iSurfElem++)
-      if (surf_marker[iSurfElem] == Marker_Index) {
-        if (surf_elem[iSurfElem][0] == 3) {
-          vnodes_triangle[0] = surf_elem[iSurfElem][1]; vnodes_triangle[1] = surf_elem[iSurfElem][2]; vnodes_triangle[2] = surf_elem[iSurfElem][3];
-          bound[iMarker][ielem_triangle+ielem_quad] = new CTriangle(vnodes_triangle[0],vnodes_triangle[1],vnodes_triangle[2],3);
-          ielem_triangle ++;
-        }
-        if (surf_elem[iSurfElem][0] == 4) {
-          vnodes_quad[0] = surf_elem[iSurfElem][1]; vnodes_quad[1] = surf_elem[iSurfElem][2]; vnodes_quad[2] = surf_elem[iSurfElem][3]; vnodes_quad[3] = surf_elem[iSurfElem][4];
-          bound[iMarker][ielem_triangle+ielem_quad] = new CRectangle(vnodes_quad[0],vnodes_quad[1],vnodes_quad[2],vnodes_quad[3],3);
-          ielem_quad ++;
-        }
-      }
-  }
-  
-  
-  
-  /*--- Update config information storing the boundary information in the right place ---*/
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    
-    stringstream out;
-    out << marker_list[iMarker];
-    Marker_Tag = out.str();
-    
-    Tag_to_Marker = new string [nMarker_Max];
-    Tag_to_Marker[config->GetMarker_CfgFile_TagBound(Marker_Tag)] = Marker_Tag;
-    config->SetMarker_All_TagBound(iMarker, Marker_Tag);
-    config->SetMarker_All_KindBC(iMarker, config->GetMarker_CfgFile_KindBC(Marker_Tag));
-    config->SetMarker_All_Monitoring(iMarker, config->GetMarker_CfgFile_Monitoring(Marker_Tag));
-    config->SetMarker_All_GeoEval(iMarker, config->GetMarker_CfgFile_GeoEval(Marker_Tag));
-    config->SetMarker_All_Designing(iMarker, config->GetMarker_CfgFile_Designing(Marker_Tag));
-    config->SetMarker_All_Plotting(iMarker, config->GetMarker_CfgFile_Plotting(Marker_Tag));
-    config->SetMarker_All_DV(iMarker, config->GetMarker_CfgFile_DV(Marker_Tag));
-    config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
-    config->SetMarker_All_Out_1D(iMarker, config->GetMarker_CfgFile_Out_1D(Marker_Tag));
-    config->SetMarker_All_SendRecv(iMarker, NONE);
-
-  }
   
 }
 
@@ -16445,7 +15189,8 @@ void CPeriodicGeometry::SetMeshFile(CGeometry *geometry, CConfig *config, string
   
 }
 
-void CPeriodicGeometry::SetTecPlot(char mesh_filename[MAX_STRING_SIZE]) {
+void CPeriodicGeometry::SetTecPlot(char mesh_filename[MAX_STRING_SIZE], bool new_file) {
+  
   unsigned long iElem, iPoint;
   unsigned short iDim;
   ofstream Tecplot_File;
