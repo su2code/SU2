@@ -2444,8 +2444,8 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   unsigned long iNode, iDim, iMarker, jMarker, nMarkerDomain = 0, iMarkerDomain;
   unsigned long nDomain = 0, iDomain, jDomain, nPeriodic = 0, iPeriodic, overhead = 4, Buffer_Send_nMarkerDomain = 0, Buffer_Send_nDim = 0, Buffer_Send_nZone = 0, Buffer_Send_nPeriodic = 0;
   
-  bool *MarkerIn = NULL, **VertexIn = NULL;
-  long vnodes_local[8], *Global2Local_Point = NULL;
+  bool *MarkerIn = NULL, **VertexIn = NULL, *PointIn = NULL, *ElemIn = NULL;
+  long vnodes_local[8];
   
   vector<long> DomainList;
   short *Marker_All_SendRecv_Copy = NULL;
@@ -2620,7 +2620,6 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   bool *Wedge_presence;
   bool *Pyramid_presence;
   bool *Element_presence;
-  bool *ElemIn;
   
   Element_presence     = new bool[geometry->GetnElem()];
   Triangle_presence    = new bool[geometry->GetnElem()];
@@ -2695,8 +2694,8 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   
   /*--- Auxiliar vector based on the original geometry ---*/
 
-  ElemIn = new bool [geometry->no_of_local_elements];
-  Global2Local_Point =  new long[geometry->GetnPoint()];
+  ElemIn = new bool[geometry->no_of_local_elements];
+  PointIn = new bool[geometry->GetnPoint()];
 
   
   Buffer_Send_nDim  = geometry->GetnDim();
@@ -2808,7 +2807,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
     /*--- Initialize the global to local mapping ---*/
     
     for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-      Global2Local_Point[iPoint] = -1;
+      PointIn[iPoint] = false;
     }
     
     /*--- Loop over all of the local elements and count the number of each
@@ -2836,11 +2835,11 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
           
           /*--- If we haven't already found this point... ---*/
           
-          if (Global2Local_Point[iPoint] == -1) {
+          if (PointIn[iPoint] == false) {
             
             /*--- Mark point as found and collect information ---*/
             
-            Global2Local_Point[iPoint] = 1;
+            PointIn[iPoint] = true;
             
             if((iPoint >= geometry->starting_node[rank]) &&
                (iPoint < geometry->ending_node[rank])) {
@@ -3171,7 +3170,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
     
     /*--- Initialize the global to local mapping ---*/
     
-    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) Global2Local_Point[iPoint] = -1;
+    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) PointIn[iPoint] = false;
     
     /*--- Load up the actual elements into the buffers for sending. ---*/
     
@@ -3208,7 +3207,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
           
           /*--- Check if this point has been found previously ---*/
           
-          if (Global2Local_Point[iPoint] == -1) {
+          if (PointIn[iPoint] == false) {
             
             /*--- Check if this node lives on the current rank based on the
              initial linear partitioning. We are only ever sending nodes that
@@ -3238,10 +3237,10 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
               
               /*--- Setting global to local, the color, and index. ---*/
               
-              Global2Local_Point[iPoint] = iPointCurrent;
+              PointIn[iPoint] = true;
               
-              Buffer_Send_Color[PointTotal_Counter+iPointTotal] = local_colour_values[iPoint];
-              Buffer_Send_GlobalPointIndex[PointTotal_Counter+iPointTotal] = iPoint;
+              Buffer_Send_Color[PointTotal_Counter+iPointCurrent] = local_colour_values[iPoint];
+              Buffer_Send_GlobalPointIndex[PointTotal_Counter+iPointCurrent] = iPoint;
               
               /*--- Get the coordinates for this point ---*/
               
@@ -3250,7 +3249,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
                 /*--- iPoint is the global index, but we store everything local
                  to this rank. So we need to subtract the starting index. All
                  ranks re-index their points from zero. ---*/
-                Buffer_Send_Coord[nDim_s[iDomain]*(PointTotal_Counter+iPointTotal)+iDim] = geometry->node[iPoint-geometry->starting_node[rank]]->GetCoord(iDim);
+                Buffer_Send_Coord[nDim_s[iDomain]*(PointTotal_Counter+iPointCurrent)+iDim] = geometry->node[iPoint-geometry->starting_node[rank]]->GetCoord(iDim);
               }
               
               /*--- Increment our counters ---*/
@@ -5237,7 +5236,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
     delete [] Buffer_Send_nReceivedDomain_Periodic;
     delete [] Marker_All_SendRecv_Copy;
     delete [] Marker_All_TagBound_Copy;
-    delete [] Global2Local_Point;
+    delete [] PointIn;
     for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
       delete VertexIn[iMarker];
     delete[] VertexIn;

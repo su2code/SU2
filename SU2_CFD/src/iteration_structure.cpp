@@ -1225,7 +1225,7 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
       
       if (!adjoint) {
         if (rank == MASTER_NODE)
-          cout << "Computing grid velocities by finite differencing." << endl;
+          cout << " Computing grid velocities by finite differencing." << endl;
         geometry_container[MESH_0]->SetGridVelocity(config_container, ExtIter);
       }
       
