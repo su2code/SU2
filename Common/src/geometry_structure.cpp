@@ -4586,10 +4586,6 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
     
     /*--- Each rank now begins to receive information from the master ---*/
     
-    
-  
-    //cout << " Rank " << rank << " send complete " << endl;
-    
     if (rank == iDomain) {
       
       /*--- First, receive the size of buffers before receiving the data ---*/
@@ -4663,7 +4659,6 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
                                          Marker_All_SendRecv[iMarker]);
           config->SetMarker_All_TagBound(iMarker,
                                          string(&Marker_All_TagBound[iMarker*MAX_STRING_SIZE]));
-          //cout << " **** Rank " << rank << " markers: " << string(&Marker_All_TagBound[iMarker*MAX_STRING_SIZE]) << endl;
         }
         
         
@@ -4819,7 +4814,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
             iPoint = geometry->bound[iMarker][iVertex]->GetNode(0);
             Transformation = geometry->bound[iMarker][iVertex]->GetRotation_Type();
             
-            if (iDomain == geometry->node[iPoint]->GetColor()) {
+            if (iDomain == local_colour_values[iPoint]) {
               
               /*--- If the information is going to be sended, find the
                domain of the receptor ---*/
@@ -4832,7 +4827,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
                   if ((config->GetMarker_All_KindBC(jMarker) == SEND_RECEIVE) &&
                       (config->GetMarker_All_SendRecv(jMarker) == -config->GetMarker_All_SendRecv(iMarker))) {
                     jPoint = geometry->bound[jMarker][iVertex]->GetNode(0);
-                    ReceptorColor = geometry->node[jPoint]->GetColor();
+                    ReceptorColor = local_colour_values[jPoint];
                   }
                 }
                 
@@ -4856,7 +4851,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
                   if ((config->GetMarker_All_KindBC(jMarker) == SEND_RECEIVE) &&
                       (config->GetMarker_All_SendRecv(jMarker) == -config->GetMarker_All_SendRecv(iMarker) )) {
                     jPoint = geometry->bound[jMarker][iVertex]->GetNode(0);
-                    DonorColor = geometry->node[jPoint]->GetColor();
+                    DonorColor = local_colour_values[jPoint];
                   }
                 }
                 
@@ -4873,7 +4868,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
           }
         }
       }
-      
+
       /*--- Send the buffers with the geometrical information ---*/
       
       if (iDomain != MASTER_NODE) {
@@ -5172,8 +5167,6 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   /*--- The MASTER should wait for the sends above to complete ---*/
   
 #ifdef HAVE_MPI
-  //cout << " ==== Rank " << rank << " cleaning up... " << endl;
-
   MPI_Barrier(MPI_COMM_WORLD);
 #endif
   
@@ -6308,17 +6301,15 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             getline (mesh_file,text_line); text_line.erase (0,8);
             config->SetMarker_All_KindBC(iMarker, SEND_RECEIVE);
             config->SetMarker_All_SendRecv(iMarker, atoi(text_line.c_str()));
-            
+
             for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
               getline(mesh_file,text_line);
               istringstream bound_line(text_line);
               bound_line >> VTK_Type; bound_line >> vnodes_vertex; bound_line >> transform;
-              
+
               bound[iMarker][ielem] = new CVertexMPI(vnodes_vertex, nDim);
               bound[iMarker][ielem]->SetRotation_Type(transform);
               ielem++; nelem_vertex++;
-              if (config->GetMarker_All_SendRecv(iMarker) < 0)
-              node[vnodes_vertex]->SetDomain(false);
             }
             
           }
