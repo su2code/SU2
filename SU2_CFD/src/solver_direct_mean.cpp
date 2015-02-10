@@ -7355,20 +7355,25 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   double *Normal = new double[nDim];
 
   /*--- Loop over all the vertices on this boundary marker ---*/
+  
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
     /*--- Allocate the value at the inlet ---*/
+    
     V_inlet = GetCharacPrimVar(val_marker, iVertex);
 
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
+    
     if (geometry->node[iPoint]->GetDomain()) {
 
       /*--- Index of the closest interior node ---*/
+      
       Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
+      
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
       for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
       conv_numerics->SetNormal(Normal);
@@ -7381,9 +7386,11 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         UnitNormal[iDim] = Normal[iDim]/Area;
 
       /*--- Retrieve solution at this boundary node ---*/
+      
       V_domain = node[iPoint]->GetPrimitive();
 
       /*--- Build the fictitious intlet state based on characteristics ---*/
+      
       if (compressible) {
 
         /*--- Subsonic inflow: there is one outgoing characteristic (u-c),
@@ -7396,19 +7403,23 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         switch (Kind_Inlet) {
 
             /*--- Total properties have been specified at the inlet. ---*/
+            
           case TOTAL_CONDITIONS:
 
             /*--- Retrieve the specified total conditions for this inlet. ---*/
+            
             if (gravity) P_Total = config->GetInlet_Ptotal(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDART_GRAVITY;
             else P_Total  = config->GetInlet_Ptotal(Marker_Tag);
             T_Total  = config->GetInlet_Ttotal(Marker_Tag);
             Flow_Dir = config->GetInlet_FlowDir(Marker_Tag);
 
             /*--- Non-dim. the inputs if necessary. ---*/
+            
             P_Total /= config->GetPressure_Ref();
             T_Total /= config->GetTemperature_Ref();
 
             /*--- Store primitives and set some variables for clarity. ---*/
+            
             Density = V_domain[nDim+2];
             Velocity2 = 0.0;
             for (iDim = 0; iDim < nDim; iDim++) {
@@ -7422,20 +7433,24 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
             /*--- Compute the acoustic Riemann invariant that is extrapolated
              from the domain interior. ---*/
+            
             Riemann   = 2.0*sqrt(SoundSpeed2)/Gamma_Minus_One;
             for (iDim = 0; iDim < nDim; iDim++)
               Riemann += Velocity[iDim]*UnitNormal[iDim];
 
             /*--- Total speed of sound ---*/
+            
             SoundSpeed_Total2 = Gamma_Minus_One*(H_Total - (Energy + Pressure/Density)+0.5*Velocity2) + SoundSpeed2;
 
             /*--- Dot product of normal and flow direction. This should
              be negative due to outward facing boundary normal convention. ---*/
+            
             alpha = 0.0;
             for (iDim = 0; iDim < nDim; iDim++)
               alpha += UnitNormal[iDim]*Flow_Dir[iDim];
 
             /*--- Coefficients in the quadratic equation for the velocity ---*/
+            
             aa =  1.0 + 0.5*Gamma_Minus_One*alpha*alpha;
             bb = -1.0*Gamma_Minus_One*alpha*Riemann;
             cc =  0.5*Gamma_Minus_One*Riemann*Riemann
@@ -7443,6 +7458,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
             /*--- Solve quadratic equation for velocity magnitude. Value must
              be positive, so the choice of root is clear. ---*/
+            
             dd = bb*bb - 4.0*aa*cc;
             dd = sqrt(max(0.0,dd));
             Vel_Mag   = (-bb + dd)/(2.0*aa);
@@ -7450,9 +7466,11 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
             Velocity2 = Vel_Mag*Vel_Mag;
 
             /*--- Compute speed of sound from total speed of sound eqn. ---*/
+            
             SoundSpeed2 = SoundSpeed_Total2 - 0.5*Gamma_Minus_One*Velocity2;
 
             /*--- Mach squared (cut between 0-1), use to adapt velocity ---*/
+            
             Mach2 = Velocity2/SoundSpeed2;
             Mach2 = min(1.0,Mach2);
             Velocity2   = Mach2*SoundSpeed2;
@@ -7460,23 +7478,29 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
             SoundSpeed2 = SoundSpeed_Total2 - 0.5*Gamma_Minus_One*Velocity2;
 
             /*--- Compute new velocity vector at the inlet ---*/
+            
             for (iDim = 0; iDim < nDim; iDim++)
               Velocity[iDim] = Vel_Mag*Flow_Dir[iDim];
 
             /*--- Static temperature from the speed of sound relation ---*/
+            
             Temperature = SoundSpeed2/(Gamma*Gas_Constant);
 
             /*--- Static pressure using isentropic relation at a point ---*/
+            
             Pressure = P_Total*pow((Temperature/T_Total),Gamma/Gamma_Minus_One);
-
+            
             /*--- Density at the inlet from the gas law ---*/
+            
             Density = Pressure/(Gas_Constant*Temperature);
 
             /*--- Using pressure, density, & velocity, compute the energy ---*/
+            
             Energy = Pressure/(Density*Gamma_Minus_One) + 0.5*Velocity2;
             if (tkeNeeded) Energy += GetTke_Inf();
 
             /*--- Primitive variables, using the derived quantities ---*/
+            
             V_inlet[0] = Temperature;
             for (iDim = 0; iDim < nDim; iDim++)
               V_inlet[iDim+1] = Velocity[iDim];
@@ -7487,18 +7511,22 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
             break;
 
             /*--- Mass flow has been specified at the inlet. ---*/
+            
           case MASS_FLOW:
 
             /*--- Retrieve the specified mass flow for the inlet. ---*/
+            
             Density  = config->GetInlet_Ttotal(Marker_Tag);
             Vel_Mag  = config->GetInlet_Ptotal(Marker_Tag);
             Flow_Dir = config->GetInlet_FlowDir(Marker_Tag);
 
             /*--- Non-dim. the inputs if necessary. ---*/
+            
             Density /= config->GetDensity_Ref();
             Vel_Mag /= config->GetVelocity_Ref();
 
             /*--- Get primitives from current inlet state. ---*/
+            
             for (iDim = 0; iDim < nDim; iDim++)
               Velocity[iDim] = node[iPoint]->GetVelocity(iDim);
             Pressure    = node[iPoint]->GetPressure();
@@ -7506,11 +7534,13 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
             /*--- Compute the acoustic Riemann invariant that is extrapolated
              from the domain interior. ---*/
+            
             Riemann = Two_Gamma_M1*sqrt(SoundSpeed2);
             for (iDim = 0; iDim < nDim; iDim++)
               Riemann += Velocity[iDim]*UnitNormal[iDim];
 
             /*--- Speed of sound squared for fictitious inlet state ---*/
+            
             SoundSpeed2 = Riemann;
             for (iDim = 0; iDim < nDim; iDim++)
               SoundSpeed2 -= Vel_Mag*Flow_Dir[iDim]*UnitNormal[iDim];
@@ -7519,13 +7549,16 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
             SoundSpeed2 = SoundSpeed2*SoundSpeed2;
 
             /*--- Pressure for the fictitious inlet state ---*/
+            
             Pressure = SoundSpeed2*Density/Gamma;
 
             /*--- Energy for the fictitious inlet state ---*/
+            
             Energy = Pressure/(Density*Gamma_Minus_One) + 0.5*Vel_Mag*Vel_Mag;
             if (tkeNeeded) Energy += GetTke_Inf();
 
             /*--- Primitive variables, using the derived quantities ---*/
+            
             V_inlet[0] = Pressure / ( Gas_Constant * Density);
             for (iDim = 0; iDim < nDim; iDim++)
               V_inlet[iDim+1] = Vel_Mag*Flow_Dir[iDim];
@@ -7539,65 +7572,80 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
       if (incompressible) {
 
         /*--- The velocity is computed from the infinity values ---*/
+        
         for (iDim = 0; iDim < nDim; iDim++)
           V_inlet[iDim+1] = GetVelocity_Inf(iDim);
 
         /*--- Neumann condition for pressure ---*/
+        
         V_inlet[0] = node[iPoint]->GetPressureInc();
 
         /*--- Constant value of density ---*/
+        
         V_inlet[nDim+1] = GetDensity_Inf();
 
         /*--- Beta coefficient from the config file ---*/
+        
         V_inlet[nDim+2] = config->GetArtComp_Factor();
 
       }
       if (freesurface) {
 
         /*--- Neumann condition for pressure, density, level set, and distance ---*/
+        
         V_inlet[0] = node[iPoint]->GetPressureInc();
         V_inlet[nDim+1] = node[iPoint]->GetDensityInc();
         V_inlet[nDim+5] = node[iPoint]->GetLevelSet();
         V_inlet[nDim+6] = node[iPoint]->GetDistance();
 
         /*--- The velocity is computed from the infinity values ---*/
+        
         for (iDim = 0; iDim < nDim; iDim++) {
           V_inlet[iDim+1] = GetVelocity_Inf(iDim);
         }
 
         /*--- The y/z velocity is interpolated due to the
          free surface effect on the pressure ---*/
+        
         V_inlet[nDim] = node[iPoint]->GetPrimitive(nDim);
 
         /*--- Neumann condition for artifical compresibility factor ---*/
+        
         V_inlet[nDim+2] = config->GetArtComp_Factor();
 
       }
 
       /*--- Set various quantities in the solver class ---*/
+      
       conv_numerics->SetPrimitive(V_domain, V_inlet);
 
       if (grid_movement)
         conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
 
       /*--- Compute the residual using an upwind scheme ---*/
+      
       conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
 
       /*--- Update residual value ---*/
+      
       LinSysRes.AddBlock(iPoint, Residual);
 
       /*--- Jacobian contribution for implicit integration ---*/
+      
       if (implicit)
         Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
 
       /*--- Roe Turkel preconditioning, set the value of beta ---*/
+      
       if (config->GetKind_Upwind() == TURKEL)
         node[iPoint]->SetPreconditioner_Beta(conv_numerics->GetPrecond_Beta());
 
       /*--- Viscous contribution ---*/
+      
       if (viscous) {
 
         /*--- Set laminar and eddy viscosity at the infinity ---*/
+        
         if (compressible) {
           V_inlet[nDim+5] = node[iPoint]->GetLaminarViscosity();
           V_inlet[nDim+6] = node[iPoint]->GetEddyViscosity();
@@ -7608,22 +7656,27 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         }
 
         /*--- Set the normal vector and the coordinates ---*/
+        
         visc_numerics->SetNormal(Normal);
         visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
 
         /*--- Primitive variables, and gradient ---*/
+        
         visc_numerics->SetPrimitive(V_domain, V_inlet);
         visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
 
         /*--- Turbulent kinetic energy ---*/
+        
         if (config->GetKind_Turb_Model() == SST)
           visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
 
         /*--- Compute and update residual ---*/
+        
         visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
         LinSysRes.SubtractBlock(iPoint, Residual);
-
+        
         /*--- Jacobian contribution for implicit integration ---*/
+        
         if (implicit)
           Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
 
@@ -7631,9 +7684,11 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
     }
   }
+  
   /*--- Free locally allocated memory ---*/
+  
   delete [] Normal;
-
+  
 }
 
 void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
