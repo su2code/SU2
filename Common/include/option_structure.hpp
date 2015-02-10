@@ -1440,12 +1440,12 @@ public:
         string str;
         str.append(this->name);
         str.append(": invalid option value ");
-        str.append(option_value[0]);
+        str.append(option_value[i]);
         str.append(". Check current SU2 options in config_template.cfg.");
         return str;
       }
       // If it is there, set the option value
-      enums[i] = this->m[option_value[0]];
+      enums[i] = this->m[option_value[i]];
     }
     this->field = enums;
     return "";
