@@ -7788,7 +7788,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
         /*--- Copy these coords into the array for storage until
          writing the SU2 mesh. ---*/
         
-        for (int m = 0; m < range_max; m++ ) {
+        for (int m = 0; m < local_node; m++ ) {
           gridCoords[j-1][k-1][m] = coordArray[j-1][m];
         }
         
@@ -8789,7 +8789,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   node = new CPoint*[local_node];
   GlobalIndex = starting_node[rank];
   for ( int k = 0; k < nzones; k++ ) {
-    for ( int i = 0; i < npoint_procs[rank]; i++ ) {
+    for ( int i = 0; i < local_node; i++ ) {
       for ( int j = 0; j < cell_dim; j++ ) Coord_cgns[j] = gridCoords[k][j][i];
       switch(nDim) {
         case 2:
