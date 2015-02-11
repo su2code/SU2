@@ -3734,11 +3734,11 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
   char basename[CGNS_STRING_SIZE], zonename[CGNS_STRING_SIZE];
   char coordname[CGNS_STRING_SIZE];
   cgsize_t* cgsize; cgsize = new cgsize_t[3];
-  ZoneType_t zonetype;
-  DataType_t datatype;
+  CGNS_ENUMT(ZoneType_t) zonetype;
+  CGNS_ENUMT(DataType_t) datatype;
   double** coordArray = NULL;
   double*** gridCoords = NULL;
-  ElementType_t elemType;
+  CGNS_ENUMT(ElementType_t) elemType;
   cgsize_t range_min, range_max, startE, endE;
   range_min = 1;
   string currentElem;
@@ -3909,7 +3909,7 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
         cout << "Reading " << coordname << " values from file." << endl;
         
         /*--- Always retrieve the grid coords in double precision. ---*/
-        datatype = RealDouble;
+        datatype = CGNS_ENUMT(RealDouble);
         if ( cg_coord_read(fn, i, j, coordname, datatype, &range_min,
                            &range_max, coordArray[j-1]) ) cg_error_exit();
         
@@ -3979,43 +3979,43 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
          SU2 recognizes elements by their VTK number. ---*/
         
         switch (elemType) {
-          case NODE:
+          case CGNS_ENUMV(NODE):
             currentElem      = "Vertex";
             elemTypeVTK[j-1][s-1] = 1;
             break;
-          case BAR_2:
+          case CGNS_ENUMV(BAR_2):
             currentElem      = "Line";
             elemTypeVTK[j-1][s-1] = 3;
             break;
-          case BAR_3:
+          case CGNS_ENUMV(BAR_3):
             currentElem      = "Line";
             elemTypeVTK[j-1][s-1] = 3;
             break;
-          case TRI_3:
+          case CGNS_ENUMV(TRI_3):
             currentElem      = "Triangle";
             elemTypeVTK[j-1][s-1] = 5;
             break;
-          case QUAD_4:
+          case CGNS_ENUMV(QUAD_4):
             currentElem      = "Quadrilateral";
             elemTypeVTK[j-1][s-1] = 9;
             break;
-          case TETRA_4:
+          case CGNS_ENUMV(TETRA_4):
             currentElem      = "Tetrahedron";
             elemTypeVTK[j-1][s-1] = 10;
             break;
-          case HEXA_8:
+          case CGNS_ENUMV(HEXA_8):
             currentElem      = "Hexahedron";
             elemTypeVTK[j-1][s-1] = 12;
             break;
-          case PENTA_6:
+          case CGNS_ENUMV(PENTA_6):
             currentElem      = "Prism";
             elemTypeVTK[j-1][s-1] = 13;
             break;
-          case PYRA_5:
+          case CGNS_ENUMV(PYRA_5):
             currentElem      = "Pyramid";
             elemTypeVTK[j-1][s-1] = 14;
             break;
-          case HEXA_20:
+          case CGNS_ENUMV(HEXA_20):
             printf( "\n\n   !!! Error !!!\n" );
             printf( " HEXA-20 element type not supported\n");
             printf(" Section %d, npe=%d\n", s, npe);
@@ -4023,7 +4023,7 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
             printf( " Now exiting...\n\n");
             exit(EXIT_FAILURE);
             break;
-          case MIXED:
+          case CGNS_ENUMV(MIXED):
             currentElem      = "Mixed";
             elemTypeVTK[j-1][s-1] = -1;
             break;
@@ -4131,7 +4131,7 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
           int counter = 0;
           
           for ( int ii = 0; ii < nElems[j-1][s-1]; ii++ ) {
-            ElementType_t elmt_type = ElementType_t (connElemTemp[counter]);
+            CGNS_ENUMT(ElementType_t) elmt_type = CGNS_ENUMT(ElementType_t) (connElemTemp[counter]);
             cg_npe( elmt_type, &npe);
             
             /*--- Mixed element support for 2D added here by Shlomy Shitrit ---*/
@@ -4206,34 +4206,34 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
               if (elemTypeVTK[k][s] == -1 ) {
                 
                 /*--- Mixed-element support. ---*/
-                ElementType_t elmt_type = ElementType_t (connElems[k][s][0][i]);
+                CGNS_ENUMT(ElementType_t) elmt_type = CGNS_ENUMT(ElementType_t) (connElems[k][s][0][i]);
                 cg_npe( elmt_type, &npe);
                 switch (elmt_type) {
-                  case NODE:
+                  case CGNS_ENUMV(NODE):
                     fprintf( SU2File, "%2i\t", 1);
                     break;
-                  case BAR_2:
+                  case CGNS_ENUMV(BAR_2):
                     fprintf( SU2File, "%2i\t", 3);
                     break;
-                  case BAR_3:
+                  case CGNS_ENUMV(BAR_3):
                     fprintf( SU2File, "%2i\t", 3);
                     break;
-                  case TRI_3:
+                  case CGNS_ENUMV(TRI_3):
                     fprintf( SU2File, "%2i\t", 5);
                     break;
-                  case QUAD_4:
+                  case CGNS_ENUMV(QUAD_4):
                     fprintf( SU2File, "%2i\t", 9);
                     break;
-                  case TETRA_4:
+                  case CGNS_ENUMV(TETRA_4):
                     fprintf( SU2File, "%2i\t", 10);
                     break;
-                  case HEXA_8:
+                  case CGNS_ENUMV(HEXA_8):
                     fprintf( SU2File, "%2i\t", 12);
                     break;
-                  case PENTA_6:
+                  case CGNS_ENUMV(PENTA_6):
                     fprintf( SU2File, "%2i\t", 13);
                     break;
-                  case PYRA_5:
+                  case CGNS_ENUMV(PYRA_5):
                     fprintf( SU2File, "%2i\t", 14);
                     break;
                   default:
@@ -4294,34 +4294,34 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
               /*--- Mixed-element support. ---*/
               
               for ( int i = 0; i < nElems[k][s]; i++ ) {
-                ElementType_t elmt_type = ElementType_t (connElems[k][s][0][i]);
+                CGNS_ENUMT(ElementType_t) elmt_type = CGNS_ENUMT(ElementType_t) (connElems[k][s][0][i]);
                 cg_npe( elmt_type, &npe);
                 switch (elmt_type) {
-                  case NODE:
+                  case CGNS_ENUMV(NODE):
                     fprintf( SU2File, "%2i\t", 1);
                     break;
-                  case BAR_2:
+                  case CGNS_ENUMV(BAR_2):
                     fprintf( SU2File, "%2i\t", 3);
                     break;
-                  case BAR_3:
+                  case CGNS_ENUMV(BAR_3):
                     fprintf( SU2File, "%2i\t", 3);
                     break;
-                  case TRI_3:
+                  case CGNS_ENUMV(TRI_3):
                     fprintf( SU2File, "%2i\t", 5);
                     break;
-                  case QUAD_4:
+                  case CGNS_ENUMV(QUAD_4):
                     fprintf( SU2File, "%2i\t", 9);
                     break;
-                  case TETRA_4:
+                  case CGNS_ENUMV(TETRA_4):
                     fprintf( SU2File, "%2i\t", 10);
                     break;
-                  case HEXA_8:
+                  case CGNS_ENUMV(HEXA_8):
                     fprintf( SU2File, "%2i\t", 12);
                     break;
-                  case PENTA_6:
+                  case CGNS_ENUMV(PENTA_6):
                     fprintf( SU2File, "%2i\t", 13);
                     break;
-                  case PYRA_5:
+                  case CGNS_ENUMV(PYRA_5):
                     fprintf( SU2File, "%2i\t", 14);
                     break;
                   default: // error
@@ -4390,34 +4390,34 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
           if (elemTypeVTK[k][s] == -1 ) {
             
             /*--- Mixed-element support. ---*/
-            ElementType_t elmt_type = ElementType_t (connElems[k][s][0][i]);
+            CGNS_ENUMT(ElementType_t) elmt_type = CGNS_ENUMT(ElementType_t) (connElems[k][s][0][i]);
             cg_npe( elmt_type, &npe);
             switch (elmt_type) {
-              case NODE:
+              case CGNS_ENUMV(NODE):
                 VTK_Type = 1;
                 break;
-              case BAR_2:
+              case CGNS_ENUMV(BAR_2):
                 VTK_Type = 3;
                 break;
-              case BAR_3:
+              case CGNS_ENUMV(BAR_3):
                 VTK_Type = 3;
                 break;
-              case TRI_3:
+              case CGNS_ENUMV(TRI_3):
                 VTK_Type = 5;
                 break;
-              case QUAD_4:
+              case CGNS_ENUMV(QUAD_4):
                 VTK_Type = 9;
                 break;
-              case TETRA_4:
+              case CGNS_ENUMV(TETRA_4):
                 VTK_Type = 10;
                 break;
-              case HEXA_8:
+              case CGNS_ENUMV(HEXA_8):
                 VTK_Type = 12;
                 break;
-              case PENTA_6:
+              case CGNS_ENUMV(PENTA_6):
                 VTK_Type = 13;
                 break;
-              case PYRA_5:
+              case CGNS_ENUMV(PYRA_5):
                 VTK_Type = 14;
                 break;
               default: // error
@@ -4554,18 +4554,18 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
             if (elemTypeVTK[k][s] == -1 ) {
               
               /*--- Mixed-element support. ---*/
-              ElementType_t elmt_type = ElementType_t (connElems[k][s][0][i]);
+              CGNS_ENUMT(ElementType_t) elmt_type = CGNS_ENUMT(ElementType_t) (connElems[k][s][0][i]);
               cg_npe( elmt_type, &npe);
               switch (elmt_type) {
-                case NODE: VTK_Type = 1; break;
-                case BAR_2: VTK_Type = 3; break;
-                case BAR_3: VTK_Type = 3; break;
-                case TRI_3: VTK_Type = 5; break;
-                case QUAD_4: VTK_Type = 9; break;
-                case TETRA_4: VTK_Type = 10; break;
-                case HEXA_8: VTK_Type = 12; break;
-                case PENTA_6: VTK_Type = 13; break;
-                case PYRA_5: VTK_Type = 14; break;
+                case CGNS_ENUMV(NODE): VTK_Type = 1; break;
+                case CGNS_ENUMV(BAR_2): VTK_Type = 3; break;
+                case CGNS_ENUMV(BAR_3): VTK_Type = 3; break;
+                case CGNS_ENUMV(TRI_3): VTK_Type = 5; break;
+                case CGNS_ENUMV(QUAD_4): VTK_Type = 9; break;
+                case CGNS_ENUMV(TETRA_4): VTK_Type = 10; break;
+                case CGNS_ENUMV(HEXA_8): VTK_Type = 12; break;
+                case CGNS_ENUMV(PENTA_6): VTK_Type = 13; break;
+                case CGNS_ENUMV(PYRA_5): VTK_Type = 14; break;
                 default: cout << "Kind of element not suppported!" << endl; break;  // error
               }
               /*--- Transfer the nodes for this element. ---*/
