@@ -3944,7 +3944,7 @@ void CAdjEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
         /*--- Conservative variables w/o reconstruction and adjoint variables w/o reconstruction---*/
         
         visc_numerics->SetPrimitive(V_domain, V_infty);
-        visc_numerics->SetAdjointVar(Psi_domain, Psi_infty);
+        visc_numerics->SetAdjointVar(Psi_domain, Psi_domain);
         
         /*--- Gradient and limiter of Adjoint Variables ---*/
         
