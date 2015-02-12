@@ -1293,15 +1293,15 @@ void GetViscousProjFlux(double *val_primvar, double **val_gradprimvar,
                              double *val_betainv2, double *val_normal,
                              double **val_invp_tensor);
     
-    /*!
-	 * \brief Computation of the matrix P^{-1} (artificial compresibility), this matrix diagonalize the conservative Jacobians
-	 *        in the form $P^{-1}(A.Normal)P=Lambda$.
-	 * \param[in] val_density - Value of the density.
-	 * \param[in] val_velocity - Value of the velocity.
-	 * \param[in] val_betainv2 - Value of the compresibility factor.
-	 * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-	 * \param[out] val_invp_tensor - Pointer to inverse of the P matrix.
-	 */
+  /*!
+   * \brief Computation of the matrix P^{-1} (artificial compresibility), this matrix diagonalize the conservative Jacobians
+   *        in the form $P^{-1}(A.Normal)P=Lambda$.
+   * \param[in] val_density - Value of the density.
+   * \param[in] val_velocity - Value of the velocity.
+   * \param[in] val_betainv2 - Value of the compresibility factor.
+   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
+   * \param[out] val_invp_tensor - Pointer to inverse of the P matrix.
+   */
 	void GetPArtComp_FreeSurf_Matrix_inv(double *val_density,
                                        double *val_ddensity,
                                        double *val_velocity,
@@ -1309,7 +1309,19 @@ void GetViscousProjFlux(double *val_primvar, double **val_gradprimvar,
                                        double *val_levelset,
                                        double *val_normal,
                                        double **val_invp_tensor);
-    
+  
+  /*!
+   * \brief Compute viscous residual and jacobian.
+   */
+  void GetAdjViscousFlux_Jac(double Pressure_i, double Pressure_j, double Density_i, double Density_j,
+                             double ViscDens_i, double ViscDens_j, double *Velocity_i, double *Velocity_j,
+                             double sq_vel_i, double sq_vel_j,
+                             double XiDens_i, double XiDens_j, double **Mean_GradPhi, double *Mean_GradPsiE,
+                             double dPhiE_dn, double *Normal, double *Edge_Vector, double dist_ij_2, double *val_residual_i,
+                             double *val_residual_j,
+                             double **val_Jacobian_ii, double **val_Jacobian_ij, double **val_Jacobian_ji,
+                             double **val_Jacobian_jj, bool implicit);
+  
 	/*!
 	 * \brief Computation of the projected inviscid lambda (eingenvalues).
 	 * \param[in] val_velocity - Value of the velocity.
