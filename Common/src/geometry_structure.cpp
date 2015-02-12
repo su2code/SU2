@@ -6015,7 +6015,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
       elem = new CPrimalGrid*[nElem];
       
       /*--- Set up the global to local element mapping. ---*/
-      Global_to_local_elem  = new unsigned long[nElem];
+      Global_to_local_elem  = new long[nElem];
       for(unsigned long i=0;i<nElem;i++){
         Global_to_local_elem[i]=-1;
       }
@@ -7482,8 +7482,6 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   
   /*--- Initialize counters for local/global points & elements ---*/
 #ifdef HAVE_MPI
-  unsigned long LocalIndex;
-  unsigned long Local_nPoint, Local_nPointDomain;
   unsigned long Local_nElem;
   unsigned long Local_nElemTri, Local_nElemQuad, Local_nElemTet;
   unsigned long Local_nElemHex, Local_nElemWedge, Local_nElemPyramid;
@@ -8542,9 +8540,9 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   
   /*--- Set up the global to local element mapping. ---*/
   
-  Global_to_local_elem  = new unsigned long[nElem];
+  Global_to_local_elem  = new long[nElem];
   for(unsigned long i = 0; i < nElem; i++){
-    Global_to_local_elem[i] = 0;
+    Global_to_local_elem[i] = -1;
   }
   
   /*--- Allocate space for elements. We allocate enough for all interior
@@ -8816,7 +8814,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   if (rank == MASTER_NODE) {
     
     /*--- Read number of markers ---*/
-    
+
     nMarker = nMarkers;
     cout << nMarker << " surface markers." << endl;
     config->SetnMarker_All(nMarker);
@@ -8916,7 +8914,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
                     MPI_Finalize();
 #endif
                   }
-                  cout << ielem << "  " << vnodes_cgns[0] << "  " << vnodes_cgns[1] << endl;
+//                  cout << ielem << "  " << vnodes_cgns[0] << "  " << vnodes_cgns[1] << endl;
                   bound[iMarker][ielem] = new CLine(vnodes_cgns[0],vnodes_cgns[1],2);
                   ielem++; nelem_edge_bound++; break;
                 case TRIANGLE:
