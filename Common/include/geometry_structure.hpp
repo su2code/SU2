@@ -143,8 +143,8 @@ public:
   unsigned long *starting_node;
   unsigned long *ending_node;
   unsigned long *npoint_procs;
-  unsigned long *Global_to_local_elem;
   unsigned long no_of_local_elements;
+  long *Global_to_local_elem;
   
 	/*!
 	 * \brief Constructor of the class.
