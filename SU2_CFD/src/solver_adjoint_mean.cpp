@@ -3866,13 +3866,13 @@ void CAdjEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solve
 
 void CAdjEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   
-  unsigned long iVertex, iPoint;
+  unsigned long iVertex, iPoint, Point_Normal;
   unsigned short iVar, iDim;
   double *Normal, *V_domain, *V_infty, *Psi_domain, *Psi_infty;
   
-  bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
-  bool grid_movement = config->GetGrid_Movement();
-  
+  bool implicit       = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
+  bool grid_movement  = config->GetGrid_Movement();
+
   Normal = new double[nDim];
   Psi_domain = new double[nVar]; Psi_infty = new double[nVar];
   
@@ -3885,6 +3885,10 @@ void CAdjEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
     
     if (geometry->node[iPoint]->GetDomain()) {
       
+      /*--- Index of the closest interior node ---*/
+      
+      Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+
       /*--- Set the normal vector ---*/
       
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
@@ -3926,6 +3930,37 @@ void CAdjEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
       
       if (implicit)
         Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
+      
+      /*--- Viscous residual contribution, it doesn't work ---*/
+      
+//      if (config->GetViscous()) {
+//        
+//        /*--- Points in edge, coordinates and normal vector---*/
+//        
+//        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+//        visc_numerics->SetNormal(Normal);
+//        
+//        /*--- Conservative variables w/o reconstruction and adjoint variables w/o reconstruction---*/
+//        
+//        visc_numerics->SetPrimitive(V_domain, V_infty);
+//        visc_numerics->SetAdjointVar(Psi_domain, Psi_infty);
+//        
+//        /*--- Gradient and limiter of Adjoint Variables ---*/
+//        
+//        visc_numerics->SetAdjointVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
+//        
+//        /*--- Compute residual ---*/
+//        
+//        visc_numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
+//        
+//        /*--- Update adjoint viscous residual ---*/
+//        
+//        LinSysRes.SubtractBlock(iPoint, Residual_i);
+//        
+//        if (implicit)
+//          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
+//        
+//      }
       
     }
   }
@@ -5261,9 +5296,6 @@ void CAdjNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contai
   unsigned long iPoint, jPoint, iEdge;
   
   bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     
@@ -5271,38 +5303,20 @@ void CAdjNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contai
     
     iPoint = geometry->edge[iEdge]->GetNode(0);
     jPoint = geometry->edge[iEdge]->GetNode(1);
+    
     numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[jPoint]->GetCoord());
     numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
     
-    /*--- Conservative variables w/o reconstruction and adjoint variables w/o reconstruction---*/
+    /*--- Primitive variables w/o reconstruction and adjoint variables w/o reconstruction---*/
     
-    numerics->SetConservative(solver_container[FLOW_SOL]->node[iPoint]->GetSolution(),
-                              solver_container[FLOW_SOL]->node[jPoint]->GetSolution());
+    numerics->SetPrimitive(solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive(),
+                           solver_container[FLOW_SOL]->node[jPoint]->GetPrimitive());
+    
     numerics->SetAdjointVar(node[iPoint]->GetSolution(), node[jPoint]->GetSolution());
     
     /*--- Gradient and limiter of Adjoint Variables ---*/
     
     numerics->SetAdjointVarGradient(node[iPoint]->GetGradient(), node[jPoint]->GetGradient());
-
-    /*--- Viscosity and eddy viscosity---*/
-    
-    if (compressible) {
-      numerics->SetLaminarViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity(),
-                                    solver_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosity());
-      numerics->SetEddyViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity(),
-                                 solver_container[FLOW_SOL]->node[jPoint]->GetEddyViscosity());
-      
-    }
-    
-    /*--- Note that the viscous term is self-adjoint... we will reuse the direct solution
-     subroutines changing the value of the gradients. ---*/
-
-    if (incompressible || freesurface) {
-
-      numerics->SetPrimitive(solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive(),
-                             solver_container[FLOW_SOL]->node[jPoint]->GetPrimitive());
-
-    }
     
     /*--- Compute residual ---*/
     
