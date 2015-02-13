@@ -3916,6 +3916,11 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
                 cout << "The reference element size is: " << RefElemLength <<". "<< endl;
                 cout << "The reference sharp edge distance is: " << SharpEdgesCoeff*RefElemLength*LimiterCoeff <<". "<< endl;
                 break;
+              case SOLID_WALL_DISTANCE:
+                cout << "Wall distance slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
+                cout << "The reference element size is: " << RefElemLength <<". "<< endl;
+                cout << "The reference wall distance is: " << SharpEdgesCoeff*RefElemLength*LimiterCoeff <<". "<< endl;
+                break;
               case BARTH_JESPERSEN:
                 cout << "Barth-Jespersen slope-limiting method." << endl;
                 break;
@@ -3944,6 +3949,11 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
                 cout << "Sharp edges slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
                 cout << "The reference element size is: " << RefElemLength <<". "<< endl;
                 cout << "The reference sharp edge distance is: " << SharpEdgesCoeff*RefElemLength*LimiterCoeff <<". "<< endl;
+                break;
+              case SOLID_WALL_DISTANCE:
+                cout << "Wall distance slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
+                cout << "The reference element size is: " << RefElemLength <<". "<< endl;
+                cout << "The reference wall distance is: " << SharpEdgesCoeff*RefElemLength*LimiterCoeff <<". "<< endl;
                 break;
               case BARTH_JESPERSEN:
                 cout << "Barth-Jespersen slope-limiting method." << endl;
@@ -3987,6 +3997,11 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
                 cout << "Sharp edges slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
                 cout << "The reference element size is: " << RefElemLength <<". "<< endl;
                 cout << "The reference sharp edge distance is: " << SharpEdgesCoeff*RefElemLength*LimiterCoeff <<". "<< endl;
+                break;
+              case SOLID_WALL_DISTANCE:
+                cout << "Wall distance slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
+                cout << "The reference element size is: " << RefElemLength <<". "<< endl;
+                cout << "The reference wall distance is: " << SharpEdgesCoeff*RefElemLength*LimiterCoeff <<". "<< endl;
                 break;
               case BARTH_JESPERSEN:
                 cout << "Barth-Jespersen slope-limiting method." << endl;
