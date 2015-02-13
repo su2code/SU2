@@ -1652,9 +1652,11 @@ void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
     
   }
   
-  /*--- Compute gradients for upwind second-order reconstruction ---*/
   
   if ((second_order) && (iMesh == MESH_0)) {
+    
+    /*--- Compute gradients for upwind second-order reconstruction ---*/
+
     if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
     if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
     
@@ -1838,7 +1840,6 @@ void CAdjEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
         else {
           Solution_i[iVar] = Psi_i[iVar] + Project_Grad_i;
           Solution_j[iVar] = Psi_j[iVar] + Project_Grad_j;
-          
         }
       }
       
