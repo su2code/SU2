@@ -1005,63 +1005,42 @@ void CAdjEulerSolver::Set_MPI_Dissipation_Switch(CGeometry *geometry, CConfig *c
 
 void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
   
-  double *ForceProj_Vector, x = 0.0, y = 0.0, z = 0.0, *Normal, C_d, C_l, Factor, Cp, CpTarget,
-  C_t, C_q, x_origin, y_origin, z_origin, WDrag, Area, RefVel2, RefDensity, Gas_Constant, Mach2Vel,
-  Mach_Motion, *Velocity_Inf, invCD, CLCD2, invCQ, CTRCQ2;
-  unsigned short iMarker, iDim;
+  double *ForceProj_Vector, x = 0.0, y = 0.0, z = 0.0, *Normal, CD, CL, Cp, CpTarget,
+  CT, CQ, x_origin, y_origin, z_origin, WDrag, Area, invCD, CLCD2, invCQ, CTRCQ2;
+  unsigned short iMarker;
   unsigned long iVertex, iPoint;
+  
   int rank = MASTER_NODE;
-  
-  double Alpha            = (config->GetAoA()*PI_NUMBER)/180.0;
-  double Beta             = (config->GetAoS()*PI_NUMBER)/180.0;
-  double RefAreaCoeff     = config->GetRefAreaCoeff();
-  double RefLengthMoment  = config->GetRefLengthMoment();
-  double *RefOriginMoment = config->GetRefOriginMoment(0);
-  bool grid_movement      = config->GetGrid_Movement();
-  
-  
+
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
+  double Alpha            = (config->GetAoA()*PI_NUMBER)/180.0;
+  double Beta             = (config->GetAoS()*PI_NUMBER)/180.0;
+  double RefLengthMoment  = config->GetRefLengthMoment();
+  double *RefOriginMoment = config->GetRefOriginMoment(0);
+
   ForceProj_Vector = new double[nDim];
-  
-  /*--- For dynamic meshes, use the motion Mach number as a reference value
-   for computing the force coefficients. Otherwise, use the freestream values,
-   which is the standard convention. ---*/
-  
-  if (grid_movement) {
-    Gas_Constant = config->GetGas_ConstantND();
-    Mach2Vel = sqrt(Gamma*Gas_Constant*config->GetTemperature_FreeStreamND());
-    Mach_Motion = config->GetMach_Motion();
-    RefVel2 = (Mach_Motion*Mach2Vel)*(Mach_Motion*Mach2Vel);
-  }
-  else {
-    Velocity_Inf = config->GetVelocity_FreeStreamND();
-    RefVel2 = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++)
-      RefVel2  += Velocity_Inf[iDim]*Velocity_Inf[iDim];
-  }
-  
-  RefDensity  = config->GetDensity_FreeStreamND();
   
   /*--- Compute coefficients needed for objective function evaluation. ---*/
   
-  Factor = 1.0/(0.5*RefDensity*RefAreaCoeff*RefVel2);
-  C_d = solver_container[FLOW_SOL]->GetTotal_CDrag();
-  C_l = solver_container[FLOW_SOL]->GetTotal_CLift();
-  C_t = solver_container[FLOW_SOL]->GetTotal_CT();
-  C_q = solver_container[FLOW_SOL]->GetTotal_CQ();
-  invCD  = 1.0 / C_d; CLCD2  = C_l / (C_d*C_d);
-  invCQ  = 1.0/C_q; CTRCQ2 = C_t/(RefLengthMoment*C_q*C_q);
+  CD = solver_container[FLOW_SOL]->GetTotal_CDrag();
+  CL = solver_container[FLOW_SOL]->GetTotal_CLift();
+  CT = solver_container[FLOW_SOL]->GetTotal_CT();
+  CQ = solver_container[FLOW_SOL]->GetTotal_CQ();
+  invCD  = 1.0/CD; CLCD2  = CL/(CD*CD);
+  invCQ  = 1.0/CQ; CTRCQ2 = CT/(RefLengthMoment*CQ*CQ);
   
   x_origin = RefOriginMoment[0]; y_origin = RefOriginMoment[1]; z_origin = RefOriginMoment[2];
   
   /*--- Evaluate the boundary condition coefficients. ---*/
   
   for (iMarker = 0; iMarker < nMarker; iMarker++)
+    
     if ((config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) &&
         (config->GetMarker_All_Monitoring(iMarker) == YES))
+      
       for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
@@ -1073,142 +1052,101 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
         Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
         switch (config->GetKind_ObjFunc()) {
           case DRAG_COEFFICIENT :
-            if (nDim == 2) { ForceProj_Vector[0] = Factor*cos(Alpha); ForceProj_Vector[1] = Factor*sin(Alpha); }
-            if (nDim == 3) { ForceProj_Vector[0] = Factor*cos(Alpha)*cos(Beta); ForceProj_Vector[1] = Factor*sin(Beta); ForceProj_Vector[2] = Factor*sin(Alpha)*cos(Beta); }
+            if (nDim == 2) { ForceProj_Vector[0] = cos(Alpha); ForceProj_Vector[1] = sin(Alpha); }
+            if (nDim == 3) { ForceProj_Vector[0] = cos(Alpha)*cos(Beta); ForceProj_Vector[1] = sin(Beta); ForceProj_Vector[2] = sin(Alpha)*cos(Beta); }
             break;
           case LIFT_COEFFICIENT :
-            if (nDim == 2) { ForceProj_Vector[0] = -Factor*sin(Alpha); ForceProj_Vector[1] = Factor*cos(Alpha); }
-            if (nDim == 3) { ForceProj_Vector[0] = -Factor*sin(Alpha); ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = Factor*cos(Alpha); }
+            if (nDim == 2) { ForceProj_Vector[0] = -sin(Alpha); ForceProj_Vector[1] = cos(Alpha); }
+            if (nDim == 3) { ForceProj_Vector[0] = -sin(Alpha); ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = cos(Alpha); }
             break;
           case SIDEFORCE_COEFFICIENT :
             if ((nDim == 2) && (rank == MASTER_NODE)) { cout << "This functional is not possible in 2D!!" << endl;
               exit(EXIT_FAILURE);
             }
-            if (nDim == 3) { ForceProj_Vector[0] = -Factor*sin(Beta) * cos(Alpha); ForceProj_Vector[1] = Factor*cos(Beta); ForceProj_Vector[2] = -Factor*sin(Beta) * sin(Alpha); }
+            if (nDim == 3) { ForceProj_Vector[0] = -sin(Beta) * cos(Alpha); ForceProj_Vector[1] = cos(Beta); ForceProj_Vector[2] = -sin(Beta) * sin(Alpha); }
             break;
           case INVERSE_DESIGN_PRESSURE :
             Cp = solver_container[FLOW_SOL]->GetCPressure(iMarker,iVertex);
             CpTarget = solver_container[FLOW_SOL]->GetCPressureTarget(iMarker,iVertex);
             Area = sqrt(Normal[0]*Normal[0] + Normal[1]*Normal[1]);
-            if (nDim == 3) Area += Area;
-            ForceProj_Vector[0] = -2.0*Factor*(Cp-CpTarget)*Normal[0]/Area;
-            ForceProj_Vector[1] = -2.0*Factor*(Cp-CpTarget)*Normal[1]/Area;
-            if (nDim == 3) ForceProj_Vector[2] = -2.0*Factor*(Cp-CpTarget)*Normal[2]/Area;
-            break;
-          case INVERSE_DESIGN_HEATFLUX:
-            if (nDim == 2) { ForceProj_Vector[0] = 0.0;
-              ForceProj_Vector[1] = 0.0; }
-            if (nDim == 3) { ForceProj_Vector[0] = 0.0;
-              ForceProj_Vector[1] = 0.0;
-              ForceProj_Vector[2] = 0.0; }
+            if (nDim == 3) Area = sqrt(Normal[0]*Normal[0] + Normal[1]*Normal[1] + Normal[2]*Normal[2]);
+            ForceProj_Vector[0] = -2.0*(Cp-CpTarget)*Normal[0]/Area; ForceProj_Vector[1] = -2.0*(Cp-CpTarget)*Normal[1]/Area;
+            if (nDim == 3) ForceProj_Vector[2] = -2.0*(Cp-CpTarget)*Normal[2]/Area;
             break;
           case MOMENT_X_COEFFICIENT :
             if ((nDim == 2) && (rank == MASTER_NODE)) { cout << "This functional is not possible in 2D!!" << endl; exit(EXIT_FAILURE); }
-            if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = -Factor*(z - z_origin)/RefLengthMoment; ForceProj_Vector[2] = Factor*(y - y_origin)/RefLengthMoment; }
+            if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = -(z - z_origin)/RefLengthMoment; ForceProj_Vector[2] = (y - y_origin)/RefLengthMoment; }
             break;
           case MOMENT_Y_COEFFICIENT :
             if ((nDim == 2) && (rank == MASTER_NODE)) { cout << "This functional is not possible in 2D!!" << endl; exit(EXIT_FAILURE); }
-            if (nDim == 3) { ForceProj_Vector[0] = Factor*(z - z_origin)/RefLengthMoment; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = -Factor*(x - x_origin)/RefLengthMoment; }
+            if (nDim == 3) { ForceProj_Vector[0] = (z - z_origin)/RefLengthMoment; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = -(x - x_origin)/RefLengthMoment; }
             break;
           case MOMENT_Z_COEFFICIENT :
-            if (nDim == 2) { ForceProj_Vector[0] = -Factor*(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] = Factor*(x - x_origin)/RefLengthMoment; }
-            if (nDim == 3) { ForceProj_Vector[0] = -Factor*(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] = Factor*(x - x_origin)/RefLengthMoment; ForceProj_Vector[2] = 0; }
+            if (nDim == 2) { ForceProj_Vector[0] = -(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] = (x - x_origin)/RefLengthMoment; }
+            if (nDim == 3) { ForceProj_Vector[0] = -(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] = (x - x_origin)/RefLengthMoment; ForceProj_Vector[2] = 0; }
             break;
           case EFFICIENCY :
-            if (nDim == 2) { ForceProj_Vector[0] = -Factor*(invCD*sin(Alpha)+CLCD2*cos(Alpha)); ForceProj_Vector[1] = Factor*(invCD*cos(Alpha)-CLCD2*sin(Alpha)); }
-            if (nDim == 3) { ForceProj_Vector[0] = -Factor*(invCD*sin(Alpha)+CLCD2*cos(Alpha)*cos(Beta)); ForceProj_Vector[1] = -Factor*CLCD2*sin(Beta); ForceProj_Vector[2] = Factor*(invCD*cos(Alpha)-CLCD2*sin(Alpha)*cos(Beta)); }
+            if (nDim == 2) { ForceProj_Vector[0] = -(invCD*sin(Alpha)+CLCD2*cos(Alpha)); ForceProj_Vector[1] = (invCD*cos(Alpha)-CLCD2*sin(Alpha)); }
+            if (nDim == 3) { ForceProj_Vector[0] = -(invCD*sin(Alpha)+CLCD2*cos(Alpha)*cos(Beta)); ForceProj_Vector[1] = -CLCD2*sin(Beta); ForceProj_Vector[2] = (invCD*cos(Alpha)-CLCD2*sin(Alpha)*cos(Beta)); }
             break;
           case EQUIVALENT_AREA :
             WDrag = config->GetWeightCd();
-            if (nDim == 2) { ForceProj_Vector[0] = Factor*cos(Alpha)*WDrag; ForceProj_Vector[1] = Factor*sin(Alpha)*WDrag; }
-            if (nDim == 3) { ForceProj_Vector[0] = Factor*cos(Alpha)*cos(Beta)*WDrag; ForceProj_Vector[1] = Factor*sin(Beta)*WDrag; ForceProj_Vector[2] = Factor*sin(Alpha)*cos(Beta)*WDrag; }
+            if (nDim == 2) { ForceProj_Vector[0] = cos(Alpha)*WDrag; ForceProj_Vector[1] = sin(Alpha)*WDrag; }
+            if (nDim == 3) { ForceProj_Vector[0] = cos(Alpha)*cos(Beta)*WDrag; ForceProj_Vector[1] = sin(Beta)*WDrag; ForceProj_Vector[2] = sin(Alpha)*cos(Beta)*WDrag; }
             break;
           case NEARFIELD_PRESSURE :
             WDrag = config->GetWeightCd();
-            if (nDim == 2) { ForceProj_Vector[0] = Factor*cos(Alpha)*WDrag; ForceProj_Vector[1] = Factor*sin(Alpha)*WDrag; }
-            if (nDim == 3) { ForceProj_Vector[0] = Factor*cos(Alpha)*cos(Beta)*WDrag; ForceProj_Vector[1] = Factor*sin(Beta)*WDrag; ForceProj_Vector[2] = Factor*sin(Alpha)*cos(Beta)*WDrag; }
+            if (nDim == 2) { ForceProj_Vector[0] = cos(Alpha)*WDrag; ForceProj_Vector[1] = sin(Alpha)*WDrag; }
+            if (nDim == 3) { ForceProj_Vector[0] = cos(Alpha)*cos(Beta)*WDrag; ForceProj_Vector[1] = sin(Beta)*WDrag; ForceProj_Vector[2] = sin(Alpha)*cos(Beta)*WDrag; }
             break;
           case FORCE_X_COEFFICIENT :
-            if (nDim == 2) { ForceProj_Vector[0] = Factor; ForceProj_Vector[1] = 0.0; }
-            if (nDim == 3) { ForceProj_Vector[0] = Factor; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = 0.0; }
+            if (nDim == 2) { ForceProj_Vector[0] = 1.0; ForceProj_Vector[1] = 0.0; }
+            if (nDim == 3) { ForceProj_Vector[0] = 1.0; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = 0.0; }
             break;
           case FORCE_Y_COEFFICIENT :
-            if (nDim == 2) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = Factor; }
-            if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = Factor; ForceProj_Vector[2] = 0.0; }
+            if (nDim == 2) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 1.0; }
+            if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 1.0; ForceProj_Vector[2] = 0.0; }
             break;
           case FORCE_Z_COEFFICIENT :
             if ((nDim == 2) && (rank == MASTER_NODE)) {cout << "This functional is not possible in 2D!!" << endl;
               exit(EXIT_FAILURE);
             }
-            if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = Factor; }
+            if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = 1.0; }
             break;
           case THRUST_COEFFICIENT :
             if ((nDim == 2) && (rank == MASTER_NODE)) {cout << "This functional is not possible in 2D!!" << endl;
               exit(EXIT_FAILURE);
             }
-            if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = Factor; }
+            if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = 1.0; }
             break;
           case TORQUE_COEFFICIENT :
-            if (nDim == 2) { ForceProj_Vector[0] = Factor*(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] = -Factor*(x - x_origin)/RefLengthMoment; }
-            if (nDim == 3) { ForceProj_Vector[0] = Factor*(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] = -Factor*(x - x_origin)/RefLengthMoment; ForceProj_Vector[2] = 0; }
+            if (nDim == 2) { ForceProj_Vector[0] = (y - y_origin)/RefLengthMoment; ForceProj_Vector[1] = -(x - x_origin)/RefLengthMoment; }
+            if (nDim == 3) { ForceProj_Vector[0] = (y - y_origin)/RefLengthMoment; ForceProj_Vector[1] = -(x - x_origin)/RefLengthMoment; ForceProj_Vector[2] = 0; }
             break;
           case FIGURE_OF_MERIT :
             if ((nDim == 2) && (rank == MASTER_NODE)) {cout << "This functional is not possible in 2D!!" << endl;
               exit(EXIT_FAILURE);
             }
             if (nDim == 3) {
-              ForceProj_Vector[0] = -Factor*invCQ;
-              ForceProj_Vector[1] = -Factor*CTRCQ2*(z - z_origin);
-              ForceProj_Vector[2] =  Factor*CTRCQ2*(y - y_origin);
+              ForceProj_Vector[0] = -invCQ;
+              ForceProj_Vector[1] = -CTRCQ2*(z - z_origin);
+              ForceProj_Vector[2] =  CTRCQ2*(y - y_origin);
             }
             break;
-          case FREE_SURFACE :
+          case INVERSE_DESIGN_HEATFLUX: case TOTAL_HEATFLUX : case MAXIMUM_HEATFLUX: case AVG_TOTAL_PRESSURE : case AVG_OUTLET_PRESSURE: case MASS_FLOW_RATE : case FREE_SURFACE :
             if (nDim == 2) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; }
             if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = 0.0; }
-            break;
-          case TOTAL_HEATFLUX:
-            if (nDim == 2) { ForceProj_Vector[0] = 0.0;
-              ForceProj_Vector[1] = 0.0; }
-            if (nDim == 3) { ForceProj_Vector[0] = 0.0;
-              ForceProj_Vector[1] = 0.0;
-              ForceProj_Vector[2] = 0.0; }
-            break;
-          case MAXIMUM_HEATFLUX:
-            if (nDim == 2) { ForceProj_Vector[0] = 0.0;
-              ForceProj_Vector[1] = 0.0; }
-            if (nDim == 3) { ForceProj_Vector[0] = 0.0;
-              ForceProj_Vector[1] = 0.0;
-              ForceProj_Vector[2] = 0.0; }
-            break;
-          case AVG_TOTAL_PRESSURE :
-            if (nDim == 2) { ForceProj_Vector[0] = 0.0;
-              ForceProj_Vector[1] = 0.0; }
-            if (nDim == 3) { ForceProj_Vector[0] = 0.0;
-              ForceProj_Vector[1] = 0.0;
-              ForceProj_Vector[2] = 0.0; }
-            break;
-          case AVG_OUTLET_PRESSURE:
-            if (nDim == 2) { ForceProj_Vector[0] = 0.0;
-              ForceProj_Vector[1] = 0.0; }
-            if (nDim == 3) { ForceProj_Vector[0] = 0.0;
-              ForceProj_Vector[1] = 0.0;
-              ForceProj_Vector[2] = 0.0; }
-            break;
-          case MASS_FLOW_RATE :
-            if (nDim == 2) { ForceProj_Vector[0] = 0.0;
-              ForceProj_Vector[1] = 0.0; }
-            if (nDim == 3) { ForceProj_Vector[0] = 0.0;
-              ForceProj_Vector[1] = 0.0;
-              ForceProj_Vector[2] = 0.0; }
             break;
         }
         
         /*--- Store the force projection vector at this node ---*/
+        
         node[iPoint]->SetForceProj_Vector(ForceProj_Vector);
         
       }
   
   delete [] ForceProj_Vector;
+  
 }
 
 void CAdjEulerSolver::SetIntBoundary_Jump(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
@@ -2332,6 +2270,7 @@ void CAdjEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
 }
 
 void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config) {
+  
   unsigned long iVertex, iPoint, Neigh;
   unsigned short iPos, jPos;
   unsigned short iDim, iMarker, iNeigh;
@@ -2340,17 +2279,46 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
   ConsPsi, d_press, grad_v, Beta2, v_gradconspsi, UnitNormal[3], *GridVel = NULL,
   LevelSet, Target_LevelSet, eps, r, ru, rv, rw, rE, p, T, dp_dr, dp_dru, dp_drv,
   dp_drw, dp_drE, dH_dr, dH_dru, dH_drv, dH_drw, dH_drE, H, *USens, D[3][3], Dd[3], scale = 1.0;
+  double RefVel2, RefDensity, Mach2Vel, *Velocity_Inf, factor;
   
   USens = new double[nVar];
   
-  double Gas_Constant = config->GetGas_ConstantND();
-  bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface    = (config->GetKind_Regime() == FREESURFACE);
-  bool grid_movement  = config->GetGrid_Movement();
-  
+  double Gas_Constant    = config->GetGas_ConstantND();
+  bool compressible      = (config->GetKind_Regime() == COMPRESSIBLE);
+  bool incompressible    = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool freesurface       = (config->GetKind_Regime() == FREESURFACE);
+  bool grid_movement     = config->GetGrid_Movement();
+  double RefAreaCoeff    = config->GetRefAreaCoeff();
+  double Mach_Motion     = config->GetMach_Motion();
+  unsigned short ObjFunc = config->GetKind_ObjFunc();
+
   if (config->GetSystemMeasurements() == US) scale = 1.0/12.0;
   else scale = 1.0;
+  
+  /*--- Compute non-dimensional factor. For dynamic meshes, use the motion Mach 
+   number as a reference value for computing the force coefficients. 
+   Otherwise, use the freestream values,
+   which is the standard convention. ---*/
+  
+  if (grid_movement) {
+    Mach2Vel = sqrt(Gamma*Gas_Constant*config->GetTemperature_FreeStreamND());
+    RefVel2 = (Mach_Motion*Mach2Vel)*(Mach_Motion*Mach2Vel);
+  }
+  else {
+    Velocity_Inf = config->GetVelocity_FreeStreamND();
+    RefVel2 = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++)
+      RefVel2  += Velocity_Inf[iDim]*Velocity_Inf[iDim];
+  }
+  
+  RefDensity  = config->GetDensity_FreeStreamND();
+
+  factor = 1.0/(0.5*RefDensity*RefAreaCoeff*RefVel2);
+  
+  if ((ObjFunc == INVERSE_DESIGN_HEATFLUX) || (ObjFunc == FREE_SURFACE) ||
+      (ObjFunc == TOTAL_HEATFLUX) || (ObjFunc == MAXIMUM_HEATFLUX) ||
+      (ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE) ||
+      (ObjFunc == MASS_FLOW_RATE)) factor = 1.0;
   
   /*--- Initialize sensitivities to zero ---*/
   
@@ -2466,7 +2434,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
           
           /*--- Compute sensitivity for each surface point ---*/
           
-          CSensitivity[iMarker][iVertex] = (d_press + grad_v + v_gradconspsi) * Area * scale;
+          CSensitivity[iMarker][iVertex] = (d_press + grad_v + v_gradconspsi) * Area * scale * factor;
           
           /*--- Change the sign of the sensitivity if the normal has been flipped --*/
           
@@ -2638,10 +2606,12 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
             }
           }
         }
-        Total_Sens_Mach -= Sens_Mach[iMarker];
-        Total_Sens_AoA -= Sens_AoA[iMarker];
-        Total_Sens_Press -= Sens_Press[iMarker];
-        Total_Sens_Temp -= Sens_Temp[iMarker];
+        
+        Total_Sens_Mach  -= Sens_Mach[iMarker] * scale * factor;
+        Total_Sens_AoA   -= Sens_AoA[iMarker] * scale * factor;
+        Total_Sens_Press -= Sens_Press[iMarker] * scale * factor;
+        Total_Sens_Temp  -= Sens_Temp[iMarker] * scale * factor;
+        
       }
     }
     
@@ -2673,35 +2643,50 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
             for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = -Normal[iDim]/Area;
             
             /*--- Mach number sensitivity ---*/
-            for (iPos = 0; iPos < nDim; iPos++) Dd[iPos] = -(2/Mach_Inf)*d[iPos];
+            
+            for (iPos = 0; iPos < nDim; iPos++) Dd[iPos] = -(2.0/Mach_Inf)*d[iPos];
             for (iPos = 0; iPos < nDim; iPos++) Sens_Mach[iMarker] += p*Dd[iPos]*Area*UnitNormal[iPos];
             
             /*--- AoA sensitivity ---*/
-            if (nDim == 2) {
-              D[0][0] = 0.0; D[0][1] = -1.0;
-              D[1][0] = 1.0; D[1][1] = 0.0;
-            }
-            else {
-              D[0][0] = 0.0; D[0][1] = 0.0; D[0][2] = -1.0;
-              D[1][0] = 0.0; D[1][1] = 0.0; D[1][2] = 0.0;
-              D[2][0] = 1.0; D[2][1] = 0.0; D[2][2] = 0.0;
+            
+            if (config->GetKind_ObjFunc() == DRAG_COEFFICIENT ||
+                config->GetKind_ObjFunc() == LIFT_COEFFICIENT ||
+                config->GetKind_ObjFunc() == SIDEFORCE_COEFFICIENT ||
+                config->GetKind_ObjFunc() == EQUIVALENT_AREA ||
+                config->GetKind_ObjFunc() == NEARFIELD_PRESSURE) {
+              if (nDim == 2) {
+                D[0][0] = 0.0; D[0][1] = -1.0;
+                D[1][0] = 1.0; D[1][1] = 0.0;
+              }
+              else {
+                D[0][0] = 0.0; D[0][1] = 0.0; D[0][2] = -1.0;
+                D[1][0] = 0.0; D[1][1] = 0.0; D[1][2] = 0.0;
+                D[2][0] = 1.0; D[2][1] = 0.0; D[2][2] = 0.0;
+              }
+              for (iPos = 0; iPos < nDim; iPos++) Dd[iPos] = 0.0;
+              for (iPos = 0; iPos < nDim; iPos++) {
+                for (jPos = 0; jPos < nDim; jPos++)
+                  Dd[iPos] += D[iPos][jPos]*d[jPos];
+              }
             }
             
-            for (iPos = 0; iPos < nDim; iPos++) Dd[iPos] = 0.0;
-            for (iPos = 0; iPos < nDim; iPos++) {
-              for (jPos = 0; jPos < nDim; jPos++)
-                Dd[iPos] += D[iPos][jPos]*d[jPos];
+            /*--- Coefficients with no explicit AoA dependece ---*/
+            
+            else {
+              for (iPos = 0; iPos<nDim; iPos++) Dd[iPos] = 0.0;
             }
             
             for (iPos = 0; iPos < nDim; iPos++)
               Sens_AoA[iMarker] += p*Dd[iPos]*Area*UnitNormal[iPos];
             
             /*--- Pressure sensitivity ---*/
+            
             for (iPos = 0; iPos<nDim; iPos++) Dd[iPos] = -(1/p)*d[iPos];
             for (iPos = 0; iPos<nDim; iPos++)
               Sens_Press[iMarker] += p*Dd[iPos]*Area*UnitNormal[iPos];
             
             /*--- Temperature sensitivity ---*/
+            
             for (iPos = 0; iPos<nDim; iPos++) Dd[iPos] = 0.0;
             for (iPos = 0; iPos<nDim; iPos++)
               Sens_Temp[iMarker] += p*Dd[iPos]*Area*UnitNormal[iPos];
@@ -2709,10 +2694,10 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
           }
         }
         
-        Total_Sens_Mach   += Sens_Mach[iMarker];
-        Total_Sens_AoA    += Sens_AoA[iMarker];
-        Total_Sens_Press  += Sens_Press[iMarker];
-        Total_Sens_Temp   += Sens_Temp[iMarker];
+        Total_Sens_Mach  += Sens_Mach[iMarker] * scale * factor;
+        Total_Sens_AoA   += Sens_AoA[iMarker] * scale * factor;
+        Total_Sens_Press += Sens_Press[iMarker] * scale * factor;
+        Total_Sens_Temp  += Sens_Temp[iMarker] * scale * factor;
         
       }
     }
@@ -5504,7 +5489,8 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
   unsigned short iDim, jDim, iMarker, iPos, jPos;
   double *d = NULL, **PsiVar_Grad = NULL, **PrimVar_Grad = NULL, div_phi, *Normal = NULL, Area,
   normal_grad_psi5, normal_grad_T, sigma_partial, Laminar_Viscosity = 0.0, heat_flux_factor, LevelSet, Target_LevelSet, temp_sens = 0.0, *Psi = NULL, *U = NULL, Enthalpy, **GridVel_Grad, gradPsi5_v, psi5_tau_partial, psi5_tau_grad_vel, source_v_1, Density, Pressure = 0.0, div_vel, val_turb_ke, vartheta, vartheta_partial, psi5_p_div_vel, Omega[3], rho_v[3], CrossProduct[3], delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}}, r, ru, rv, rw, rE, p, T, dp_dr, dp_dru,dp_drv, dp_drw, dp_drE, dH_dr, dH_dru, dH_drv, dH_drw, dH_drE, H, D[3][3], Dd[3], Mach_Inf, eps, scale = 1.0;
-  
+  double RefVel2, RefDensity, Mach2Vel, *Velocity_Inf, factor;
+
   double *USens = new double[nVar];
   double *UnitNormal = new double[nDim];
   double *normal_grad_vel = new double[nDim];
@@ -5525,19 +5511,46 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
     tau[iDim] = new double [nDim];
   double *Velocity = new double[nDim];
   
-  bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface    = (config->GetKind_Regime() == FREESURFACE);
-  bool rotating_frame = config->GetRotating_Frame();
-  bool grid_movement  = config->GetGrid_Movement();
-  
-  double Gas_Constant = config->GetGas_ConstantND();
-  double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
-  double Prandtl_Lam  = config->GetPrandtl_Lam();
+  bool compressible      = (config->GetKind_Regime() == COMPRESSIBLE);
+  bool incompressible    = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool freesurface       = (config->GetKind_Regime() == FREESURFACE);
+  bool rotating_frame    = config->GetRotating_Frame();
+  bool grid_movement     = config->GetGrid_Movement();
+  double RefAreaCoeff    = config->GetRefAreaCoeff();
+  double Mach_Motion     = config->GetMach_Motion();
+  unsigned short ObjFunc = config->GetKind_ObjFunc();
+  double Gas_Constant    = config->GetGas_ConstantND();
+  double Cp              = (Gamma / Gamma_Minus_One) * Gas_Constant;
+  double Prandtl_Lam     = config->GetPrandtl_Lam();
   
   if (config->GetSystemMeasurements() == US) scale = 1.0/12.0;
   else scale = 1.0;
   
+  /*--- Compute non-dimensional factor. For dynamic meshes, use the motion Mach
+   number as a reference value for computing the force coefficients.
+   Otherwise, use the freestream values,
+   which is the standard convention. ---*/
+  
+  if (grid_movement) {
+    Mach2Vel = sqrt(Gamma*Gas_Constant*config->GetTemperature_FreeStreamND());
+    RefVel2 = (Mach_Motion*Mach2Vel)*(Mach_Motion*Mach2Vel);
+  }
+  else {
+    Velocity_Inf = config->GetVelocity_FreeStreamND();
+    RefVel2 = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++)
+      RefVel2  += Velocity_Inf[iDim]*Velocity_Inf[iDim];
+  }
+  
+  RefDensity  = config->GetDensity_FreeStreamND();
+  
+  factor = 1.0/(0.5*RefDensity*RefAreaCoeff*RefVel2);
+  
+  if ((ObjFunc == INVERSE_DESIGN_HEATFLUX) || (ObjFunc == FREE_SURFACE) ||
+      (ObjFunc == TOTAL_HEATFLUX) || (ObjFunc == MAXIMUM_HEATFLUX) ||
+      (ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE) ||
+      (ObjFunc == MASS_FLOW_RATE)) factor = 1.0;
+
   /*--- Compute gradient of the grid velocity, if applicable ---*/
   
   if (grid_movement)
@@ -5778,7 +5791,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
           
           /*--- Compute sensitivity for each surface point ---*/
           
-          CSensitivity[iMarker][iVertex] = (sigma_partial - temp_sens) * Area * scale;
+          CSensitivity[iMarker][iVertex] = (sigma_partial - temp_sens) * Area * scale * factor;
             
           /*--- Change the sign of the sensitivity if the normal has been flipped --*/
 
@@ -5949,10 +5962,12 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
             }
           }
         }
-        Total_Sens_Mach -= Sens_Mach[iMarker];
-        Total_Sens_AoA -= Sens_AoA[iMarker];
-        Total_Sens_Press -= Sens_Press[iMarker];
-        Total_Sens_Temp -= Sens_Temp[iMarker];
+        
+        Total_Sens_Mach  -= Sens_Mach[iMarker] * scale * factor;
+        Total_Sens_AoA   -= Sens_AoA[iMarker] * scale * factor;
+        Total_Sens_Press -= Sens_Press[iMarker] * scale * factor;
+        Total_Sens_Temp  -= Sens_Temp[iMarker] * scale * factor;
+        
       }
       
     }
@@ -5961,7 +5976,8 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
     
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       
-      if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL) {
+      if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) ||
+          (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)) {
         
         Sens_Mach[iMarker]  = 0.0;
         Sens_AoA[iMarker]   = 0.0;
@@ -5986,7 +6002,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
             
             /*--- Mach number sensitivity ---*/
             
-            for (iPos = 0; iPos < nDim; iPos++) Dd[iPos] = -(2/Mach_Inf)*d[iPos];
+            for (iPos = 0; iPos < nDim; iPos++) Dd[iPos] = -(2.0/Mach_Inf)*d[iPos];
             for (iPos = 0; iPos < nDim; iPos++) Sens_Mach[iMarker] += p*Dd[iPos]*Area*UnitNormal[iPos];
             
             /*--- AoA sensitivity ---*/
@@ -6036,10 +6052,10 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
           }
         }
         
-        Total_Sens_Mach   += Sens_Mach[iMarker];
-        Total_Sens_AoA    += Sens_AoA[iMarker];
-        Total_Sens_Press  += Sens_Press[iMarker];
-        Total_Sens_Temp   += Sens_Temp[iMarker];
+        Total_Sens_Mach  += Sens_Mach[iMarker] * scale * factor;
+        Total_Sens_AoA   += Sens_AoA[iMarker] * scale * factor;
+        Total_Sens_Press += Sens_Press[iMarker] * scale * factor;
+        Total_Sens_Temp  += Sens_Temp[iMarker] * scale * factor;
         
       }
     }
