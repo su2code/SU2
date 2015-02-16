@@ -6013,6 +6013,8 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
       /*--- Allocate space for elements ---*/
       
       elem = new CPrimalGrid*[nElem];
+      for (int iElem = 0; iElem < nElem; iElem++) elem[iElem] = NULL;
+
       
       /*--- Set up the global to local element mapping. ---*/
       Global_to_local_elem  = new long[nElem];
@@ -8545,6 +8547,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
    elements globally, but we will only instantiate our local set. ---*/
   
   elem = new CPrimalGrid*[nElem];
+  for (int iElem = 0; iElem < nElem; iElem++) elem[iElem] = NULL;
   loc_element_count=0; ielem = 0;
   unsigned long global_id = 0;
   
