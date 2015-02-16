@@ -7728,7 +7728,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
       for(int ii = 1; ii < size; ii++) {
         starting_node[ii] = ending_node[ii-1];
         ending_node[ii]   = starting_node[ii] + npoint_procs[ii];
-        nPoint_Linear[ii] = nPoint_Linear[ii-1] + npoint_procs[ii];
+        nPoint_Linear[ii] = nPoint_Linear[ii-1] + npoint_procs[ii-1];
       }
       nPoint_Linear[size] = vertices[j-1];
       
@@ -7873,12 +7873,6 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
           elemB[ii] = elemE[ii-1]+1;
           elemE[ii] = elemB[ii] + nElem_Linear[ii] - 1;
         }
-        
-//        if (rank ==MASTER_NODE) {
-//          cout << " %%%%%%%%%%%%% ";
-//        for(unsigned long ii = 0; ii < size; ii++) cout << elemB[ii] << "  "<< elemE[ii] << "  ";
-//        cout << endl;
-//        }
         
         /*--- Allocate some memory for the handling the connectivity
          and auxiliary data that we are need to communicate. ---*/
@@ -8798,7 +8792,6 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
       for ( int j = 0; j < cell_dim; j++ ) Coord_cgns[j] = gridCoords[k][j][i];
       switch(nDim) {
         case 2:
-          //cout << "  " << Coord_cgns[0] << "   " << Coord_cgns[1] << "  " << GlobalIndex << endl;
           node[iPoint] = new CPoint(Coord_cgns[0], Coord_cgns[1], GlobalIndex, config);
           iPoint++; break;
         case 3:
@@ -8914,7 +8907,6 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
                     MPI_Finalize();
 #endif
                   }
-//                  cout << ielem << "  " << vnodes_cgns[0] << "  " << vnodes_cgns[1] << endl;
                   bound[iMarker][ielem] = new CLine(vnodes_cgns[0],vnodes_cgns[1],2);
                   ielem++; nelem_edge_bound++; break;
                 case TRIANGLE:
