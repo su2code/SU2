@@ -1205,8 +1205,8 @@ void CAvgGrad_AdjFlow::ComputeResidual(double *val_residual_i, double *val_resid
   
   /*--- Laminar and Eddy viscosity ---*/
   
-  Laminar_Viscosity_i = V_i[nDim+3];
-  Eddy_Viscosity_i = V_i[nDim+4];
+  Laminar_Viscosity_i = V_i[nDim+5];
+  Eddy_Viscosity_i = V_i[nDim+6];
   
   ViscDens_i = (Laminar_Viscosity_i + Eddy_Viscosity_i) / Density_i;
   XiDens_i = Gamma*(Laminar_Viscosity_i/Prandtl_Lam + Eddy_Viscosity_i/Prandtl_Turb) / Density_i;
@@ -1226,8 +1226,8 @@ void CAvgGrad_AdjFlow::ComputeResidual(double *val_residual_i, double *val_resid
   
   /*--- Laminar and Eddy viscosity ---*/
   
-  Laminar_Viscosity_j = V_j[nDim+3];
-  Eddy_Viscosity_j = V_j[nDim+4];
+  Laminar_Viscosity_j = V_j[nDim+5];
+  Eddy_Viscosity_j = V_j[nDim+6];
   
   ViscDens_j = (Laminar_Viscosity_j + Eddy_Viscosity_j) / Density_j;
   XiDens_j = Gamma*(Laminar_Viscosity_j/Prandtl_Lam + Eddy_Viscosity_j/Prandtl_Turb) / Density_j;
