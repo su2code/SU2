@@ -7889,9 +7889,15 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
          we are only accessing our rank's piece of the data here in the
          partial read function in the CGNS API. ---*/
         
-        if(cg_elements_partial_read(fn, i, j, s, (cgsize_t)elemB[rank],
+        if (cg_elements_partial_read(fn, i, j, s, (cgsize_t)elemB[rank],
                                     (cgsize_t)elemE[rank], connElemCGNS,
                                     parentData) != CG_OK) cg_error_exit();
+        
+        /*--- Find the number of nodes required to represent
+         this type of element. ---*/
+        
+        ElementType_t elmt_type;
+        if (cg_npe(elemType, &npe)) cg_error_exit();
         
         /*--- Loop through all of the elements in this section to get more
          information and to decide whether it has internal elements. ---*/
@@ -7899,20 +7905,16 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
         int counter = 0;
         for ( int ii = 0; ii < nElems[j-1][s-1]; ii++ ) {
           
-          /*--- Find the number of nodes required to represent
-           this type of element. ---*/
-          
-          if (cg_npe(elemType, &npe)) cg_error_exit();
-          
           /*--- If we have a mixed element section, we need to check the elem
            type one by one. Set the flag to true if mixed. ---*/
           
           if (elemType == MIXED) {
-            ElementType_t elmt_type = ElementType_t(connElemCGNS[counter]);
-            cg_npe( elmt_type, &npe);
-            elemType = elmt_type;
+            elmt_type = ElementType_t(connElemCGNS[counter]);
+            cg_npe(elmt_type, &npe);
             counter++; for ( int jj = 0; jj < npe; jj++ ) counter++;
             isMixed[ii] = true;
+          } else {
+            elmt_type = elemType;
           }
           
           /*--- Store the number of verts per elem for the current elem. ---*/
@@ -7928,7 +7930,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
            VTK identifier for that element. SU2 recognizes elements by 
            their VTK number. ---*/
           
-          switch (elemType) {
+          switch (elmt_type) {
             case NODE:
               currentElem   = "Vertex";
               elemTypes[ii] = 1;
