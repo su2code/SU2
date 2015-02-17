@@ -126,42 +126,19 @@ int main(int argc, char *argv[]) {
     
     CGeometry *geometry_aux = NULL;
     
-    if (config_container[iZone]->GetMesh_FileFormat() == SU2) {
-      
-      /*--- All ranks process the grid and call ParMETIS for partitioning ---*/
-      
-      geometry_aux = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
-      
-      /*--- Color the initial grid and set the send-receive domains (ParMETIS) ---*/
-      
-      geometry_aux->SetColorGrid_Parallel(config_container[iZone]);
-      
-    } else if (rank == MASTER_NODE) {
-      
-      /*--- Read the grid using the master node only ---*/
-      
-      geometry_aux = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
-      
-      /*--- Color the initial grid and set the send-receive domains (METIS) ---*/
-      
-      geometry_aux->SetColorGrid(config_container[iZone]);
-      
-    }
+    /*--- All ranks process the grid and call ParMETIS for partitioning ---*/
+    
+    geometry_aux = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
+    
+    /*--- Color the initial grid and set the send-receive domains (ParMETIS) ---*/
+    
+    geometry_aux->SetColorGrid_Parallel(config_container[iZone]);
+    
+    /*--- Allocate the memory of the current domain, and divide the grid 
+     between the ranks. ---*/
     
     geometry_container[iZone] = new CGeometry *[config_container[iZone]->GetnMGLevels()+1];
-    
-    /*--- Allocate the memory of the current domain, and
-     divide the grid between the nodes ---*/
-    
-    if (config_container[iZone]->GetMesh_FileFormat() == SU2) {
-      
-      geometry_container[iZone][MESH_0] = new CPhysicalGeometry(geometry_aux, config_container[iZone], 1);
-      
-    } else {
-      
-      geometry_container[iZone][MESH_0] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
-      
-    }
+    geometry_container[iZone][MESH_0] = new CPhysicalGeometry(geometry_aux, config_container[iZone], 1);
     
     /*--- Deallocate the memory of geometry_aux ---*/
     
@@ -525,14 +502,14 @@ int main(int argc, char *argv[]) {
     cout << "History file, closed." << endl;
   }
   
-//  /*--- Deallocate config container ---*/
-//
-//  for (iZone = 0; iZone < nZone; iZone++) {
-//    if (config_container[iZone] != NULL) {
-//      delete config_container[iZone];
-//    }
-//  }
-//  if (config_container != NULL) delete[] config_container;
+  //  /*--- Deallocate config container ---*/
+  //
+  //  for (iZone = 0; iZone < nZone; iZone++) {
+  //    if (config_container[iZone] != NULL) {
+  //      delete config_container[iZone];
+  //    }
+  //  }
+  //  if (config_container != NULL) delete[] config_container;
   
   
   /*--- Synchronization point after a single solver iteration. Compute the

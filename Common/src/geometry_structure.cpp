@@ -1136,8 +1136,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
       LocaNodes = local_node;
       break;
     case CGNS:
-      Read_CGNS_Format(config, val_mesh_filename, val_iZone, val_nZone);
-//      Read_CGNS_Format_Parallel(config, val_mesh_filename, val_iZone, val_nZone);
+      Read_CGNS_Format_Parallel(config, val_mesh_filename, val_iZone, val_nZone);
       LocaNodes = local_node;
       break;
     default:
@@ -3881,7 +3880,6 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
 #ifdef HAVE_MPI
   MPI_Barrier(MPI_COMM_WORLD);
 #endif
-  //cout << " ==== Rank " << rank << " about to recv all elem data " << endl;
   
   /*--- iElem now contains the number of elements that this processor needs in
    total. Now we can complete the recv of the element connectivity and only 
@@ -4265,47 +4263,12 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
     if (Global_nelem_pyramid > 0)   cout << Global_nelem_pyramid  << " pyramids."       << endl;
   }
   
-  /*--- Recompute the number of points that this rank owns, as well
-   as the total number of points including ghosts, just to make sure that
-   the counts are correct in the class data. ---*/
-  
-  // DOUBLE CHECK THAT THIS SECTION IS NECESSARY!!!
-  // Note that the periodic BC (receive) are also ghost cell
-  
-//  unsigned long nPointGhost_loc       = 0;
-//  unsigned long nPointDomainTotal_loc = 0;
-//  unsigned long nPointTotal_loc       = 0;
-//  
-//  for (iElem = 0; iElem < nElem; iElem++) {
-//    
-//    /*--- If an element belong to the domain (at least one point belong has the
-//     same color as the domain)---*/
-//    
-//    for (iNode = 0; iNode < elem[iElem]->GetnNodes(); iNode++) {
-//      iPoint = elem[iElem]->GetNode(iNode);
-//      if (Global_to_Local_Point_loc[iPoint] == -1) {
-//        Global_to_Local_Point_loc[iPoint] = 1;
-//        nPointTotal_loc++;
-//        if ( node[iPoint]->GetColor() != rank ) nPointGhost_loc++;
-//        else {
-//          nPointDomainTotal_loc++;
-//        }
-//      }
-//    }
-//  }
-//  
-//  //nPoint = nPointTotal_loc;
-//  nPointDomain = nPointDomainTotal_loc;
-// delete [] Global_to_Local_Point_loc;
-  
   delete [] Triangle_presence;
   delete [] Rectangle_presence;
   delete [] Tetrahedron_presence;
   delete [] Hexahedron_presence;
   delete [] Wedge_presence;
   delete [] Pyramid_presence;
-
-  //cout << " Rank " << rank << " about to start markers " << endl;
 
   /*--- Now partition the boundary elements on the markers. Note that, for
    now, we are still performing the boundary partitioning using the master
@@ -5240,6 +5203,9 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   Global_nPoint = Local_nPoint;
   Global_nPointDomain = Local_nPointDomain;
 #endif
+  
+  if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
+    cout << Global_nPoint << " vertices including ghost points. " << endl;
   
   /*--- Release all of the temporary memory ---*/
   
@@ -8041,6 +8007,8 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
         /*--- Print some information to the console. ---*/
         
         if (rank == MASTER_NODE) {
+          for ( int ii = 0; ii < nElems[j-1][s-1]; ii++ )
+            if (isMixed[ii]) {currentElem = "Mixed"; break;}
           cout << "Loading section " << sectionNames[j-1][s-1];
           cout << " of element type " << currentElem << "." << endl;
         }
@@ -8533,8 +8501,11 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   nElem = Global_nElem;
 #endif
   
-  if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
+  if ((rank == MASTER_NODE) && (size > SINGLE_NODE)) {
     cout << nElem << " interior elements before linear partitioning." << endl;
+  } else if (rank == MASTER_NODE) {
+    cout << nElem << " interior elements." << endl;
+  }
   
   /*--- Set up the global to local element mapping. ---*/
   
@@ -8786,8 +8757,11 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   
   /*--- Store the nodal coordinates from the linear partitioning. ---*/
 
-  if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
+  if ((rank == MASTER_NODE) && (size > SINGLE_NODE)) {
     cout << nPoint << " grid points before linear partitioning." << endl;
+  } else if (rank == MASTER_NODE) {
+    cout << nPoint << " grid points." << endl;
+  }
   
   iPoint = 0;
   node = new CPoint*[local_node];
