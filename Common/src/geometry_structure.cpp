@@ -5803,7 +5803,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   if (mesh_file.fail()) {
     cout << "There is no mesh file (CPhysicalGeometry)!! " << cstr << endl;
 #ifndef HAVE_MPI
-    exit(1);
+    exit(EXIT_FAILURE);
 #else
     MPI_Abort(MPI_COMM_WORLD,1);
     MPI_Finalize();
@@ -5872,7 +5872,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
       else {
         cout << "NPOIN improperly specified!!" << endl;
 #ifndef HAVE_MPI
-        exit(1);
+        exit(EXIT_FAILURE);
 #else
         MPI_Abort(MPI_COMM_WORLD,1);
         MPI_Finalize();
@@ -6264,7 +6264,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
                   if (nDim == 3) {
                     cout << "Please remove line boundary conditions from the mesh file!" << endl;
 #ifndef HAVE_MPI
-                    exit(1);
+                    exit(EXIT_FAILURE);
 #else
                     MPI_Abort(MPI_COMM_WORLD,1);
                     MPI_Finalize();
@@ -6363,7 +6363,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             if (iIndex != iPeriodic) {
               cout << "PERIODIC_INDEX out of order in SU2 file!!" << endl;
 #ifndef HAVE_MPI
-              exit(1);
+              exit(EXIT_FAILURE);
 #else
               MPI_Abort(MPI_COMM_WORLD,1);
               MPI_Finalize();

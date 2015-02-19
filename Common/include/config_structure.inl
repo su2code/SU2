@@ -386,9 +386,17 @@ inline double CConfig::GetMax_DeltaTime(void) {	return Max_DeltaTime; }
 
 inline double CConfig::GetParamDV(unsigned short val_dv, unsigned short val_param) {	return ParamDV[val_dv][val_param]; }
 
+inline double CConfig::GetCoordFFDBox(unsigned short val_ffd, unsigned short val_coord) {	return CoordFFDBox[val_ffd][val_coord]; }
+
+inline unsigned short CConfig::GetDegreeFFDBox(unsigned short val_ffd, unsigned short val_degree) {	return DegreeFFDBox[val_ffd][val_degree]; }
+
 inline string CConfig::GetFFDTag(unsigned short val_dv) {	return FFDTag[val_dv]; }
 
+inline string CConfig::GetTagFFDBox(unsigned short val_ffd) {	return TagFFDBox[val_ffd]; }
+
 inline unsigned short CConfig::GetnDV(void) {	return nDV; }
+
+inline unsigned short CConfig::GetnFFDBox(void) {	return nFFDBox; }
 
 inline unsigned short CConfig::GetnRKStep(void) { return nRKStep; }
 

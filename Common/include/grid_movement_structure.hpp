@@ -1321,10 +1321,19 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
 	 * \param[in] val_mesh_filename - Name of the grid input file.
-   * \param[in] val_fullmesh - ______________________.
-	 */		
-	void ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFormDefBox **FFDBox, string val_mesh_filename, bool val_fullmesh);
+	 */
+	void ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFormDefBox **FFDBox, string val_mesh_filename);
 	
+  /*!
+   * \brief Read the free form information from the grid input file.
+   * \note If there is no control point information, and no parametric
+   *       coordinates information, the code will compute that information.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
+   */
+  void ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFormDefBox **FFDBox);
+  
   /*!
    * \brief Merge the Free Form information in the SU2 file.
    * \param[in] config - Definition of the particular problem.
