@@ -269,10 +269,14 @@ private:
 	Unst_CFL;		/*!< \brief Unsteady CFL number. */
 	bool AddIndNeighbor;			/*!< \brief Include indirect neighbor in the agglomeration process. */
 	unsigned short nDV;		/*!< \brief Number of design variables. */
+  unsigned short nFFDBox;		/*!< \brief Number of ffd boxes. */
   unsigned short nGridMovement;		/*!< \brief Number of grid movement types specified. */
 	unsigned short nParamDV;		/*!< \brief Number of parameters of the design variable. */
 	double **ParamDV;				/*!< \brief Parameters of the design variable. */
+  double **CoordFFDBox;				/*!< \brief Coordinates of the FFD boxes. */
+  unsigned short **DegreeFFDBox;	/*!< \brief Degree of the FFD boxes. */
   string *FFDTag;				/*!< \brief Parameters of the design variable. */
+  string *TagFFDBox;				/*!< \brief Tag of the FFD box. */
 	unsigned short GeometryMode;			/*!< \brief Gemoetry mode (analysis or gradient computation). */
 	unsigned short MGCycle;			/*!< \brief Kind of multigrid cycle. */
 	unsigned short FinestMesh;		/*!< \brief Finest mesh for the full multigrid approach. */
@@ -856,6 +860,20 @@ private:
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string,bool>(name,true));
     COptionBase* val = new COptionDVParam(name, nDV_field, paramDV, FFDTag, design_variable);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+  
+  void addFFDDefOption(const string name, unsigned short & nFFD_field, double** & coordFFD, string* & FFDTag){
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionFFDDef(name, nFFD_field, coordFFD, FFDTag);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+  
+  void addFFDDegreeOption(const string name, unsigned short & nFFD_field, unsigned short** & degreeFFD){
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionFFDDegree(name, nFFD_field, degreeFFD);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
@@ -1955,17 +1973,46 @@ public:
 	double GetParamDV(unsigned short val_dv, unsigned short val_param);
 
   /*!
+   * \brief Get a parameter of the particular design variable.
+   * \param[in] val_ffd - Number of the ffd that we want to read.
+   * \param[in] val_coord - Index of the coordinate that we want to read.
+   * \return FFD parameter.
+   */
+  double GetCoordFFDBox(unsigned short val_ffd, unsigned short val_coord);
+
+  /*!
+   * \brief Get a parameter of the particular design variable.
+   * \param[in] val_ffd - Number of the ffd that we want to read.
+   * \param[in] val_coord - Index of the coordinate that we want to read.
+   * \return FFD parameter.
+   */
+  unsigned short GetDegreeFFDBox(unsigned short val_ffd, unsigned short val_degree);
+
+  /*!
 	 * \brief Get the FFD Tag of a particular design variable.
 	 * \param[in] val_dv - Number of the design variable that we want to read.
 	 * \return Design variable parameter.
 	 */
 	string GetFFDTag(unsigned short val_dv);
+  
+  /*!
+   * \brief Get the FFD Tag of a particular design variable.
+   * \param[in] val_dv - Number of the design variable that we want to read.
+   * \return Design variable parameter.
+   */
+  string GetTagFFDBox(unsigned short val_ffd);
 
 	/*!
 	 * \brief Get the number of design variables.
 	 * \return Number of the design variables.
 	 */
 	unsigned short GetnDV(void);
+  
+  /*!
+   * \brief Get the number of design variables.
+   * \return Number of the design variables.
+   */
+  unsigned short GetnFFDBox(void);
 
 	/*!
 	 * \brief Get the number of Runge-Kutta steps.

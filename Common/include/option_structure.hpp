@@ -1116,17 +1116,6 @@ static const map<string, ENUM_DEFORM_STIFFNESS> Deform_Stiffness_Map = CCreateMa
 
 /* END_CONFIG_ENUMS */
 
-
-
-
-
-
-
-
-
-
-
-
 class COptionBase{
 private:
 public:
@@ -1737,6 +1726,7 @@ public:
   }
 
   ~COptionDVParam(){};
+  
   string SetValue(vector<string> option_value){
     if ((option_value.size() == 1) && (option_value[0].compare("NONE") == 0)){
       this->nDV = 0;
@@ -1871,6 +1861,187 @@ public:
   }
 };
 
+class COptionFFDDef : public COptionBase{
+  string name;
+  unsigned short & nFFD;
+  double ** & CoordFFD;
+  string * & FFDTag;
+  
+public:
+  COptionFFDDef(string option_field_name, unsigned short & nFFD_field, double** & coordFFD_field, string* & FFDTag_field) : nFFD(nFFD_field), CoordFFD(coordFFD_field), FFDTag(FFDTag_field){
+    this->name = option_field_name;
+  }
+  
+  ~COptionFFDDef(){};
+  
+  string SetValue(vector<string> option_value){
+    if ((option_value.size() == 1) && (option_value[0].compare("NONE") == 0)){
+      this->nFFD = 0;
+      return "";
+    }
+    
+    // Cannot have ; at the beginning or the end
+    if (option_value[0].compare(";") == 0){
+      string newstring;
+      newstring.append(this->name);
+      newstring.append(": may not have beginning semicolon");
+      return newstring;
+    }
+    if (option_value[option_value.size()-1].compare(";") == 0){
+      string newstring;
+      newstring.append(this->name);
+      newstring.append(": may not have ending semicolon");
+      return newstring;
+    }
+    
+    
+    // use the ";" token to determine the number of design variables
+    // This works because semicolon is not one of the delimiters in tokenize string
+    this->nFFD = 0;
+    for (unsigned int i = 0; i < static_cast<unsigned int>(option_value.size()); i++) {
+      if (option_value[i].compare(";") == 0) {
+        this->nFFD++;
+      }
+    }
+    
+    // One more design variable than semicolon
+    this->nFFD++;
+    
+    this->CoordFFD = new double*[this->nFFD];
+    for (unsigned short iFFD = 0; iFFD < this->nFFD; iFFD++){
+      this->CoordFFD[iFFD] = new double[25];
+    }
+    
+    this->FFDTag = new string[this->nFFD];
+    
+    unsigned short nCoordFFD = 0;
+    stringstream ss;
+    unsigned int i = 0;
+    
+    for (unsigned short iFFD = 0; iFFD < this->nFFD; iFFD++) {
+      
+      nCoordFFD = 25;
+      
+      for (unsigned short iCoordFFD = 0; iCoordFFD < nCoordFFD; iCoordFFD++) {
+        
+        ss << option_value[i] << " ";
+        
+        if (iCoordFFD == 0) ss >> this->FFDTag[iFFD];
+        else ss >> this->CoordFFD[iFFD][iCoordFFD-1];
+        
+        i++;
+      }
+      
+      if (iFFD < (this->nFFD-1)) {
+        if (option_value[i].compare(";") != 0) {
+          string newstring;
+          newstring.append(this->name);
+          newstring.append(": a FFD box in the configuration file has the wrong number of parameters");
+          return newstring;
+        }
+        i++;
+      }
+      
+    }
+    
+    // Need to return something...
+    return "";
+  }
+  
+  void SetDefault(){
+    this->nFFD = 0;
+    this->CoordFFD = NULL;
+    this->FFDTag = NULL;
+  }
+  
+};
+
+class COptionFFDDegree : public COptionBase{
+  string name;
+  unsigned short & nFFD;
+  unsigned short ** & DegreeFFD;
+  
+public:
+  COptionFFDDegree(string option_field_name, unsigned short & nFFD_field, unsigned short** & degreeFFD_field) : nFFD(nFFD_field), DegreeFFD(degreeFFD_field){
+    this->name = option_field_name;
+  }
+  
+  ~COptionFFDDegree(){};
+  
+  string SetValue(vector<string> option_value){
+    if ((option_value.size() == 1) && (option_value[0].compare("NONE") == 0)){
+      this->nFFD = 0;
+      return "";
+    }
+    
+    // Cannot have ; at the beginning or the end
+    if (option_value[0].compare(";") == 0){
+      string newstring;
+      newstring.append(this->name);
+      newstring.append(": may not have beginning semicolon");
+      return newstring;
+    }
+    if (option_value[option_value.size()-1].compare(";") == 0){
+      string newstring;
+      newstring.append(this->name);
+      newstring.append(": may not have ending semicolon");
+      return newstring;
+    }
+    
+    
+    // use the ";" token to determine the number of design variables
+    // This works because semicolon is not one of the delimiters in tokenize string
+    this->nFFD = 0;
+    for (unsigned int i = 0; i < static_cast<unsigned int>(option_value.size()); i++) {
+      if (option_value[i].compare(";") == 0) {
+        this->nFFD++;
+      }
+    }
+    
+    // One more design variable than semicolon
+    this->nFFD++;
+    
+    this->DegreeFFD = new unsigned short*[this->nFFD];
+    for (unsigned short iFFD = 0; iFFD < this->nFFD; iFFD++){
+      this->DegreeFFD[iFFD] = new unsigned short[3];
+    }
+    
+    unsigned short nDegreeFFD = 0;
+    stringstream ss;
+    unsigned int i = 0;
+    
+    for (unsigned short iFFD = 0; iFFD < this->nFFD; iFFD++) {
+      
+      nDegreeFFD = 3;
+      
+      for (unsigned short iDegreeFFD = 0; iDegreeFFD < nDegreeFFD; iDegreeFFD++) {
+        ss << option_value[i] << " ";
+        ss >> this->DegreeFFD[iFFD][iDegreeFFD];
+        i++;
+      }
+      
+      if (iFFD < (this->nFFD-1)) {
+        if (option_value[i].compare(";") != 0) {
+          string newstring;
+          newstring.append(this->name);
+          newstring.append(": a FFD degree in the configuration file has the wrong number of parameters");
+          return newstring;
+        }
+        i++;
+      }
+      
+    }
+    
+    // Need to return something...
+    return "";
+  }
+  
+  void SetDefault(){
+    this->nFFD = 0;
+    this->DegreeFFD = NULL;
+  }
+  
+};
 
 // Class where the option is represented by (String, double, string, double, ...)
 class COptionStringDoubleList : public COptionBase{

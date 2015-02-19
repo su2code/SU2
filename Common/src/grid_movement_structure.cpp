@@ -2438,9 +2438,9 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
     
     FFDBox = new CFreeFormDefBox*[MAX_NUMBER_FFD];
     
-    /*--- Read the FFD information fron the grid file ---*/
+    /*--- Read the FFD information from the config file ---*/
     
-    ReadFFDInfo(geometry, config, FFDBox, config->GetMesh_FileName(), true);
+    ReadFFDInfo(geometry, config, FFDBox);
     
     /*--- If there is a FFDBox in the input file ---*/
     
@@ -2513,9 +2513,9 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
     
     FFDBox = new CFreeFormDefBox*[MAX_NUMBER_FFD];
     
-    /*--- Read the FFD information fron the grid file ---*/
+    /*--- Read the FFD information from the grid file ---*/
     
-    ReadFFDInfo(geometry, config, FFDBox, config->GetMesh_FileName(), true);
+    ReadFFDInfo(geometry, config, FFDBox, config->GetMesh_FileName());
     
     /*--- If there is a FFDBox in the input file ---*/
     
@@ -5810,7 +5810,7 @@ void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
   
 }
 
-void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFormDefBox **FFDBox, string val_mesh_filename, bool val_fullmesh) {
+void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFormDefBox **FFDBox, string val_mesh_filename) {
 	
   string text_line, iTag;
 	ifstream mesh_file;
@@ -6107,6 +6107,135 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
 		if (rank == MASTER_NODE) cout <<"There is no FFD box definition. Just in case, check the .su2 file" << endl;
 	}
 
+}
+
+void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFormDefBox **FFDBox) {
+  
+  string text_line, iTag;
+  ifstream mesh_file;
+  double coord[3];
+  unsigned short degree[3], iFFDBox, iCornerPoints, LevelFFDBox, nParentFFDBox,
+  iParentFFDBox, nChildFFDBox, iChildFFDBox, *nCornerPoints;
+  
+  unsigned short nDim = geometry->GetnDim();
+  int rank = MASTER_NODE;
+  
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+  
+  
+  /*--- Read the FFDBox information from the config file ---*/
+  
+  nFFDBox = config->GetnFFDBox();
+  
+  if (rank == MASTER_NODE) cout << nFFDBox << " Free Form Deformation boxes." << endl;
+  
+  nCornerPoints = new unsigned short[nFFDBox];
+  
+  nLevel = 1; // Nested FFD is not active
+  
+  if (rank == MASTER_NODE) cout << nLevel << " Free Form Deformation nested levels." << endl;
+  
+  for (iFFDBox = 0 ; iFFDBox < nFFDBox; iFFDBox++) {
+    
+    /*--- Read the name of the FFD box ---*/
+    
+    string TagFFDBox = config->GetTagFFDBox(iFFDBox);
+    
+    if (rank == MASTER_NODE) cout << "FFD box tag: " << TagFFDBox <<". ";
+    
+    /*--- Read the level of the FFD box ---*/
+    
+    LevelFFDBox = 0; // Nested FFD is not active
+    
+    if (rank == MASTER_NODE) cout << "FFD box level: " << LevelFFDBox <<". ";
+    
+    /*--- Read the degree of the FFD box ---*/
+    
+    degree[0] = config->GetDegreeFFDBox(iFFDBox, 0);
+    degree[1] = config->GetDegreeFFDBox(iFFDBox, 1);
+    
+    if (nDim == 2) { degree[2] = 1; }
+    else { degree[2] = config->GetDegreeFFDBox(iFFDBox, 2); }
+    
+    if (rank == MASTER_NODE) {
+      cout << "Degrees: " << degree[0] << ", " << degree[1];
+      if (nDim == 3) cout << ", " << degree[2];
+      cout << ". " << endl;
+    }
+    
+    FFDBox[iFFDBox] = new CFreeFormDefBox(int(degree[0]), int(degree[1]), int(degree[2]));
+    FFDBox[iFFDBox]->SetTag(TagFFDBox); FFDBox[iFFDBox]->SetLevel(LevelFFDBox);
+    
+    /*--- Read the number of parents boxes ---*/
+    
+    nParentFFDBox = 0; // Nested FFD is not active
+    if (rank == MASTER_NODE) cout << "Number of parent boxes: " << nParentFFDBox <<". ";
+    
+    for (iParentFFDBox = 0; iParentFFDBox < nParentFFDBox; iParentFFDBox++) {
+      string ParentFFDBox = "NONE"; // Nested FFD is not active
+      FFDBox[iFFDBox]->SetParentFFDBox(ParentFFDBox);
+    }
+    
+    /*--- Read the number of children boxes ---*/
+    
+    nChildFFDBox = 0; // Nested FFD is not active
+    if (rank == MASTER_NODE) cout << "Number of child boxes: " << nChildFFDBox <<"." << endl;
+    
+    for (iChildFFDBox = 0; iChildFFDBox < nChildFFDBox; iChildFFDBox++) {
+      string ChildFFDBox = "NONE"; // Nested FFD is not active
+      FFDBox[iFFDBox]->SetChildFFDBox(ChildFFDBox);
+    }
+    
+    /*--- Read the number of the corner points ---*/
+    
+    nCornerPoints[iFFDBox] = 8;
+    
+    /*--- Read the coordinates of the corner points ---*/
+    
+    for (iCornerPoints = 0; iCornerPoints < nCornerPoints[iFFDBox]; iCornerPoints++) {
+      
+      if (nDim == 2) {
+        if (iCornerPoints < nCornerPoints[iFFDBox]/int(2)) {
+          coord[0] = config->GetCoordFFDBox(iFFDBox, iCornerPoints*3);
+          coord[1] = config->GetCoordFFDBox(iFFDBox, iCornerPoints*3+1);
+          coord[2] = -0.5;
+        }
+        else {
+          coord[0] = FFDBox[iFFDBox]->GetCoordCornerPoints(0, iCornerPoints-nCornerPoints[iFFDBox]/int(2));
+          coord[1] = FFDBox[iFFDBox]->GetCoordCornerPoints(1, iCornerPoints-nCornerPoints[iFFDBox]/int(2));
+          coord[2] = 0.5;
+        }
+      }
+      else {
+        coord[0] = config->GetCoordFFDBox(iFFDBox, iCornerPoints*3);
+        coord[1] = config->GetCoordFFDBox(iFFDBox, iCornerPoints*3+1);
+        coord[2] = config->GetCoordFFDBox(iFFDBox, iCornerPoints*3+2);
+      }
+      
+      FFDBox[iFFDBox]->SetCoordCornerPoints(coord, iCornerPoints);
+      
+    }
+    
+    /*--- Method to identify if there is a FFDBox definition ---*/
+    
+    FFDBoxDefinition = false;
+    
+  }
+  
+  delete [] nCornerPoints;
+  
+  if (nFFDBox == 0) {
+    if (rank == MASTER_NODE) cout <<"There is no FFD box definition. Check the config file." << endl;
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+  }
+  
 }
 
 void CSurfaceMovement::MergeFFDInfo(CGeometry *geometry, CConfig *config) {

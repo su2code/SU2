@@ -370,7 +370,7 @@ int main(int argc, char *argv[]) {
           
           /*--- Read the FFD information from the grid file ---*/
           
-          surface_movement->ReadFFDInfo(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox, config_container[ZONE_0]->GetMesh_FileName(), true);
+          surface_movement->ReadFFDInfo(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox, config_container[ZONE_0]->GetMesh_FileName());
           
           /*--- If the FFDBox was not defined in the input file ---*/
           

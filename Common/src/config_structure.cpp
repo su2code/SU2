@@ -1217,6 +1217,12 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Free surface damping coefficient */
 	addDoubleOption("FFD_TOLERANCE", FFD_Tol, 1E-8);
 
+  /* DESCRIPTION: Definition of the FFD boxes */
+  addFFDDefOption("FFD_DEFINITION", nFFDBox, CoordFFDBox, TagFFDBox);
+  
+  /* DESCRIPTION: Definition of the FFD boxes */
+  addFFDDegreeOption("FFD_DEGREE", nFFDBox, DegreeFFDBox);
+  
   /*--- options that are used in the python optimization scripts. These have no effect on the c++ toolsuite ---*/
   /* CONFIG_CATEGORY:Python Options*/
 
@@ -3644,40 +3650,41 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   if ((val_software == SU2_DEF) || (val_software == SU2_DOT)) {
 
-    cout << "Design variables definition (markers <-> value <-> param):" << endl;
 
     for (unsigned short iDV = 0; iDV < nDV; iDV++) {
 
-      switch (Design_Variable[iDV]) {
-        case FFD_SETTING:           cout << "Setting the FFD box structure." ; break;
-        case FFD_CONTROL_POINT_2D:  cout << "FFD 2D (control point) <-> "; break;
-        case FFD_RADIUS_2D:        cout << "FFD 2D (radious)"; break;
-        case FFD_CAMBER_2D:         cout << "FFD 2D (camber) <-> "; break;
-        case FFD_THICKNESS_2D:      cout << "FFD 2D (thickness) <-> "; break;
-        case HICKS_HENNE:           cout << "Hicks Henne <-> " ; break;
-        case COSINE_BUMP:           cout << "Cosine bump <-> " ; break;
-        case FOURIER:               cout << "Fourier <-> " ; break;
-        case SPHERICAL:             cout << "Spherical design <-> " ; break;
-        case DISPLACEMENT:          cout << "Displacement design variable."; break;
-        case NACA_4DIGITS:          cout << "NACA four digits <-> "; break;
-        case PARABOLIC:             cout << "Parabolic <-> "; break;
-        case OBSTACLE:              cout << "Obstacle <-> "; break;
-        case AIRFOIL:               cout << "Airfoil <-> "; break;
-        case STRETCH:               cout << "Stretch <-> "; break;
-        case ROTATION:              cout << "Rotation <-> "; break;
-        case FFD_CONTROL_POINT:     cout << "FFD (control point) <-> "; break;
-        case FFD_DIHEDRAL_ANGLE:    cout << "FFD (dihedral angle) <-> "; break;
-        case FFD_TWIST_ANGLE:       cout << "FFD (twist angle) <-> "; break;
-        case FFD_ROTATION:          cout << "FFD (rotation) <-> "; break;
-        case FFD_CONTROL_SURFACE:   cout << "FFD (control surface) <-> "; break;
-        case FFD_CAMBER:            cout << "FFD (camber) <-> "; break;
-        case FFD_THICKNESS:         cout << "FFD (thickness) <-> "; break;
-        case SURFACE_FILE:          cout << "Surface file based deformation." ; break;
-      }
-
+      
       if ((Design_Variable[iDV] != FFD_SETTING) &&
           (Design_Variable[iDV] != SURFACE_FILE)) {
-
+        
+        if (iDV == 0)
+          cout << "Design variables definition (markers <-> value <-> param):" << endl;
+        
+        switch (Design_Variable[iDV]) {
+          case FFD_CONTROL_POINT_2D:  cout << "FFD 2D (control point) <-> "; break;
+          case FFD_RADIUS_2D:         cout << "FFD 2D (radious)"; break;
+          case FFD_CAMBER_2D:         cout << "FFD 2D (camber) <-> "; break;
+          case FFD_THICKNESS_2D:      cout << "FFD 2D (thickness) <-> "; break;
+          case HICKS_HENNE:           cout << "Hicks Henne <-> " ; break;
+          case COSINE_BUMP:           cout << "Cosine bump <-> " ; break;
+          case FOURIER:               cout << "Fourier <-> " ; break;
+          case SPHERICAL:             cout << "Spherical design <-> " ; break;
+          case DISPLACEMENT:          cout << "Displacement design variable."; break;
+          case NACA_4DIGITS:          cout << "NACA four digits <-> "; break;
+          case PARABOLIC:             cout << "Parabolic <-> "; break;
+          case OBSTACLE:              cout << "Obstacle <-> "; break;
+          case AIRFOIL:               cout << "Airfoil <-> "; break;
+          case STRETCH:               cout << "Stretch <-> "; break;
+          case ROTATION:              cout << "Rotation <-> "; break;
+          case FFD_CONTROL_POINT:     cout << "FFD (control point) <-> "; break;
+          case FFD_DIHEDRAL_ANGLE:    cout << "FFD (dihedral angle) <-> "; break;
+          case FFD_TWIST_ANGLE:       cout << "FFD (twist angle) <-> "; break;
+          case FFD_ROTATION:          cout << "FFD (rotation) <-> "; break;
+          case FFD_CONTROL_SURFACE:   cout << "FFD (control surface) <-> "; break;
+          case FFD_CAMBER:            cout << "FFD (camber) <-> "; break;
+          case FFD_THICKNESS:         cout << "FFD (thickness) <-> "; break;
+        }
+        
         for (iMarker_DV = 0; iMarker_DV < nMarker_DV; iMarker_DV++) {
           cout << Marker_DV[iMarker_DV];
           if (iMarker_DV < nMarker_DV-1) cout << ", ";
@@ -3686,29 +3693,28 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         cout << DV_Value[iDV] << " <-> ";
 
         if (Design_Variable[iDV] == FFD_SETTING) nParamDV = 0;
-        if (Design_Variable[iDV] == SURFACE_FILE) nParamDV = 0;
-        if (Design_Variable[iDV] == FFD_CONTROL_POINT_2D) nParamDV = 5;
         if (Design_Variable[iDV] == FFD_RADIUS_2D) nParamDV = 1;
-        if (Design_Variable[iDV] == FFD_CAMBER_2D) nParamDV = 2;
-        if (Design_Variable[iDV] == FFD_THICKNESS_2D) nParamDV = 2;
-        if (Design_Variable[iDV] == HICKS_HENNE) nParamDV = 2;
-        if (Design_Variable[iDV] == SPHERICAL) nParamDV = 3;
-        if (Design_Variable[iDV] == COSINE_BUMP) nParamDV = 3;
-        if (Design_Variable[iDV] == FOURIER) nParamDV = 3;
-        if (Design_Variable[iDV] == DISPLACEMENT) nParamDV = 3;
+        if ((Design_Variable[iDV] == FFD_CAMBER_2D) ||
+            (Design_Variable[iDV] == FFD_THICKNESS_2D) ||
+            (Design_Variable[iDV] == HICKS_HENNE) ||
+            (Design_Variable[iDV] == PARABOLIC) ||
+            (Design_Variable[iDV] == OBSTACLE) ||
+            (Design_Variable[iDV] == AIRFOIL) ||
+            (Design_Variable[iDV] == STRETCH) ) nParamDV = 2;
+        if ((Design_Variable[iDV] ==  SPHERICAL) ||
+            (Design_Variable[iDV] ==  COSINE_BUMP) ||
+            (Design_Variable[iDV] ==  FOURIER) ||
+            (Design_Variable[iDV] ==  DISPLACEMENT) ||
+            (Design_Variable[iDV] ==  NACA_4DIGITS) ||
+            (Design_Variable[iDV] ==  FFD_CAMBER) ||
+            (Design_Variable[iDV] ==  FFD_THICKNESS) ) nParamDV = 3;
+        if (Design_Variable[iDV] == FFD_CONTROL_POINT_2D) nParamDV = 5;
         if (Design_Variable[iDV] == ROTATION) nParamDV = 6;
-        if (Design_Variable[iDV] == NACA_4DIGITS) nParamDV = 3;
-        if (Design_Variable[iDV] == PARABOLIC) nParamDV = 2;
-        if (Design_Variable[iDV] == OBSTACLE) nParamDV = 2;
-        if (Design_Variable[iDV] == AIRFOIL) nParamDV = 2;
-        if (Design_Variable[iDV] == STRETCH) nParamDV = 2;
-        if (Design_Variable[iDV] == FFD_CONTROL_POINT) nParamDV = 7;
-        if (Design_Variable[iDV] == FFD_DIHEDRAL_ANGLE) nParamDV = 7;
-        if (Design_Variable[iDV] == FFD_TWIST_ANGLE) nParamDV = 7;
-        if (Design_Variable[iDV] == FFD_ROTATION) nParamDV = 7;
-        if (Design_Variable[iDV] == FFD_CONTROL_SURFACE) nParamDV = 7;
-        if (Design_Variable[iDV] == FFD_CAMBER) nParamDV = 3;
-        if (Design_Variable[iDV] == FFD_THICKNESS) nParamDV = 3;
+        if ((Design_Variable[iDV] ==  FFD_CONTROL_POINT) ||
+            (Design_Variable[iDV] ==  FFD_DIHEDRAL_ANGLE) ||
+            (Design_Variable[iDV] ==  FFD_TWIST_ANGLE) ||
+            (Design_Variable[iDV] ==  FFD_ROTATION) ||
+            (Design_Variable[iDV] ==  FFD_CONTROL_SURFACE) ) nParamDV = 7;
 
         for (unsigned short iParamDV = 0; iParamDV < nParamDV; iParamDV++) {
 
@@ -3730,10 +3736,42 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           else cout << ParamDV[iDV][iParamDV];
 
           if (iParamDV < nParamDV-1) cout << ", ";
-          else cout <<" )"<< endl;;
+          else cout <<" )"<< endl;
+          
         }
 
-      } else cout << endl;
+      }
+      
+      else if (Design_Variable[iDV] == FFD_SETTING) {
+        
+        cout << "Setting the FFD box structure." << endl;
+        cout << "FFD boxes definition (FFD tag <-> degree <-> coord):" << endl;
+        
+        for (unsigned short iFFDBox = 0; iFFDBox < nFFDBox; iFFDBox++) {
+          
+          cout << TagFFDBox[iFFDBox] << " <-> ";
+          
+          for (unsigned short iDegreeFFD = 0; iDegreeFFD < 3; iDegreeFFD++) {
+            if (iDegreeFFD == 0) cout << "( ";
+            cout << DegreeFFDBox[iFFDBox][iDegreeFFD];
+            if (iDegreeFFD < 2) cout << ", ";
+            else cout <<" )";
+          }
+          
+          cout << " <-> ";
+
+          for (unsigned short iCoordFFD = 0; iCoordFFD < 24; iCoordFFD++) {
+            if (iCoordFFD == 0) cout << "( ";
+            cout << CoordFFDBox[iFFDBox][iCoordFFD];
+            if (iCoordFFD < 23) cout << ", ";
+            else cout <<" )"<< endl;
+          }
+          
+        }
+        
+      }
+      
+      else cout << endl;
 
 		}
 	}
@@ -3742,34 +3780,29 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
 		cout << endl <<"----------------------- Design problem definition -----------------------" << endl;
 		switch (Kind_ObjFunc) {
-      case DRAG_COEFFICIENT: cout << "Drag objective function." << endl; break;
-      case LIFT_COEFFICIENT: cout << "Lift objective function." << endl; break;
+      case DRAG_COEFFICIENT:        cout << "CD objective function." << endl; break;
+      case LIFT_COEFFICIENT:        cout << "CL objective function." << endl; break;
+      case MOMENT_X_COEFFICIENT:    cout << "CMx objective function." << endl; break;
+      case MOMENT_Y_COEFFICIENT:    cout << "CMy objective function." << endl; break;
+      case MOMENT_Z_COEFFICIENT:    cout << "CMz objective function." << endl; break;
       case INVERSE_DESIGN_PRESSURE: cout << "Inverse design (Cp) objective function." << endl; break;
       case INVERSE_DESIGN_HEATFLUX: cout << "Inverse design (Heat Flux) objective function." << endl; break;
-      case SIDEFORCE_COEFFICIENT: cout << "Side force objective function." << endl; break;
-      case MOMENT_X_COEFFICIENT: cout << "Mx objective function." << endl; break;
-      case MOMENT_Y_COEFFICIENT: cout << "My objective function." << endl; break;
-      case MOMENT_Z_COEFFICIENT: cout << "Mz objective function." << endl; break;
-      case EFFICIENCY: cout << "Efficiency objective function." << endl; break;
-      case EQUIVALENT_AREA:
-        cout << "Equivalent area objective function." << endl;
-        cout << "Drag coefficient weight in the objective function: " << WeightCd <<"."<< endl;  break;
-      case NEARFIELD_PRESSURE:
-        cout << "Nearfield pressure objective function." << endl;
-        cout << "Drag coefficient weight in the objective function: " << WeightCd <<"."<< endl;  break;
-        break;
-      case FORCE_X_COEFFICIENT: cout << "X-force objective function." << endl; break;
-      case FORCE_Y_COEFFICIENT: cout << "Y-force moment objective function." << endl; break;
-      case FORCE_Z_COEFFICIENT: cout << "Z-force moment objective function." << endl; break;
-      case THRUST_COEFFICIENT: cout << "Thrust objective function." << endl; break;
-      case TORQUE_COEFFICIENT: cout << "Torque efficiency objective function." << endl; break;
-      case TOTAL_HEATFLUX: cout << "Total heat flux objective function." << endl; break;
-      case MAXIMUM_HEATFLUX: cout << "Maximum heat flux objective function." << endl; break;
-      case FIGURE_OF_MERIT: cout << "Rotor Figure of Merit objective function." << endl; break;
-      case FREE_SURFACE: cout << "Free-Surface objective function." << endl; break;
-      case AVG_TOTAL_PRESSURE: cout << "Average total objective pressure." << endl; break;
-      case AVG_OUTLET_PRESSURE: cout << "Average static objective pressure." << endl; break;
-      case MASS_FLOW_RATE: cout << "Mass flow rate objective function." << endl; break;
+      case SIDEFORCE_COEFFICIENT:   cout << "Side force objective function." << endl; break;
+      case EFFICIENCY:              cout << "CL/CD objective function." << endl; break;
+      case EQUIVALENT_AREA:         cout << "Equivalent area objective function. CD weight: " << WeightCd <<"."<< endl;  break;
+      case NEARFIELD_PRESSURE:      cout << "Nearfield pressure objective function. CD weight: " << WeightCd <<"."<< endl;  break;
+      case FORCE_X_COEFFICIENT:     cout << "X-force objective function." << endl; break;
+      case FORCE_Y_COEFFICIENT:     cout << "Y-force objective function." << endl; break;
+      case FORCE_Z_COEFFICIENT:     cout << "Z-force objective function." << endl; break;
+      case THRUST_COEFFICIENT:      cout << "Thrust objective function." << endl; break;
+      case TORQUE_COEFFICIENT:      cout << "Torque efficiency objective function." << endl; break;
+      case TOTAL_HEATFLUX:          cout << "Total heat flux objective function." << endl; break;
+      case MAXIMUM_HEATFLUX:        cout << "Maximum heat flux objective function." << endl; break;
+      case FIGURE_OF_MERIT:         cout << "Rotor Figure of Merit objective function." << endl; break;
+      case FREE_SURFACE:            cout << "Free-Surface objective function." << endl; break;
+      case AVG_TOTAL_PRESSURE:      cout << "Average total objective pressure." << endl; break;
+      case AVG_OUTLET_PRESSURE:     cout << "Average static objective pressure." << endl; break;
+      case MASS_FLOW_RATE:          cout << "Mass flow rate objective function." << endl; break;
 		}
 
 	}
