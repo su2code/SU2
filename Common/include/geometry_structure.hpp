@@ -855,6 +855,8 @@ class CPhysicalGeometry : public CGeometry {
 	long *Local_to_Global_Point;				/*!< \brief Local-global indexation for the points. */
 	unsigned short *Local_to_Global_Marker;	/*!< \brief Local to Global marker. */
 	unsigned short *Global_to_Local_Marker;	/*!< \brief Global to Local marker. */
+    unsigned long *adj_counter; /*!< \brief Adjacency counter. */
+    unsigned long **adjacent_elem; /*!< \brief Adjacency element list. */
   
 public:
   
@@ -944,6 +946,20 @@ public:
    * \param[in] val_nZone - Total number of domains in the grid file.
    */
   void Read_SU2_Format_Parallel(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone);
+    
+    
+    
+    /*!
+     * \brief Reads the geometry of the grid and adjust the boundary
+     *        conditions with the configuration file in parallel (for parmetis).
+     * \param[in] config - Definition of the particular problem.
+     * \param[in] val_mesh_filename - Name of the file with the grid information.
+     * \param[in] val_format - Format of the file with the grid information.
+     * \param[in] val_iZone - Domain to be read from the grid file.
+     * \param[in] val_nZone - Total number of domains in the grid file.
+     */
+    void Generate_Adjacency_For_Partitioning(unsigned long element_count);
+    
   
   /*!
 	 * \brief Reads the geometry of the grid and adjust the boundary

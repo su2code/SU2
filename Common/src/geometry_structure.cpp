@@ -5954,8 +5954,11 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   
   /*--- Initialize some arrays for the adjacency information (ParMETIS). ---*/
   
-  unsigned long *adj_counter = new unsigned long[local_node];
-  unsigned long **adjacent_elem = new unsigned long*[local_node];
+//  unsigned long *adj_counter = new unsigned long[local_node];
+//  unsigned long **adjacent_elem = new unsigned long*[local_node];
+    
+   adj_counter = new unsigned long[local_node];
+   adjacent_elem = new unsigned long*[local_node];
   for(iPoint = 0; iPoint < local_node; iPoint++) {
     adjacent_elem[iPoint] = new unsigned long[2000];
     adj_counter[iPoint] = 0;
@@ -6017,12 +6020,16 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             for(unsigned long i=0;i<N_POINTS_TRIANGLE;i++) {
               if ((vnodes_triangle[i]>=starting_node[rank])&&(vnodes_triangle[i]<ending_node[rank])){
                 elem_reqd = true;
-                for(unsigned long j=0;j<N_POINTS_TRIANGLE;j++) {
-                  if(i != j){
-                    adjacent_elem[vnodes_triangle[i]-starting_node[rank]][adj_counter[vnodes_triangle[i]-starting_node[rank]]]=vnodes_triangle[j];
-                    adj_counter[vnodes_triangle[i]-starting_node[rank]]++;
-                  }
-                }
+                  
+                  
+//                for(unsigned long j=0;j<N_POINTS_TRIANGLE;j++) {
+//                  if(i != j){
+//                    adjacent_elem[vnodes_triangle[i]-starting_node[rank]][adj_counter[vnodes_triangle[i]-starting_node[rank]]]=vnodes_triangle[j];
+//                    adj_counter[vnodes_triangle[i]-starting_node[rank]]++;
+//                  }
+//                }
+                  
+                  
               }
             }
             if (elem_reqd) {
@@ -6037,12 +6044,17 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             for(unsigned long i=0;i<N_POINTS_QUADRILATERAL;i++) {
               if ((vnodes_quad[i]>=starting_node[rank])&&(vnodes_quad[i]<ending_node[rank])){
                 elem_reqd = true;
-                for(unsigned long j=0;j<N_POINTS_QUADRILATERAL;j++) {
-                  if(i!=j){
-                    adjacent_elem[vnodes_quad[i]-starting_node[rank]][adj_counter[vnodes_quad[i]-starting_node[rank]]]=vnodes_quad[j];
-                    adj_counter[vnodes_quad[i]-starting_node[rank]]++;
-                  }
-                }
+                  
+                  
+//                for(unsigned long j=0;j<N_POINTS_QUADRILATERAL;j++) {
+//                  if(i!=j){
+//                    adjacent_elem[vnodes_quad[i]-starting_node[rank]][adj_counter[vnodes_quad[i]-starting_node[rank]]]=vnodes_quad[j];
+//                    adj_counter[vnodes_quad[i]-starting_node[rank]]++;
+//                  }
+//                }
+                  
+                  
+                  
               }
             }
             if(elem_reqd){
@@ -6057,12 +6069,12 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             for(unsigned long i=0;i<N_POINTS_TETRAHEDRON;i++) {
               if ((vnodes_tetra[i]>=starting_node[rank])&&(vnodes_tetra[i]<ending_node[rank])){
                 elem_reqd = true;
-                for(unsigned long j=0;j<N_POINTS_TETRAHEDRON;j++) {
-                  if(i!=j){
-                    adjacent_elem[vnodes_tetra[i]-starting_node[rank]][adj_counter[vnodes_tetra[i]-starting_node[rank]]]=vnodes_tetra[j];
-                    adj_counter[vnodes_tetra[i]-starting_node[rank]]++;
-                  }
-                }
+//                for(unsigned long j=0;j<N_POINTS_TETRAHEDRON;j++) {
+//                  if(i!=j){
+//                    adjacent_elem[vnodes_tetra[i]-starting_node[rank]][adj_counter[vnodes_tetra[i]-starting_node[rank]]]=vnodes_tetra[j];
+//                    adj_counter[vnodes_tetra[i]-starting_node[rank]]++;
+//                  }
+//                }
               }
             }
             if(elem_reqd){
@@ -6080,12 +6092,12 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             for(unsigned long i=0;i<N_POINTS_HEXAHEDRON;i++) {
               if ((vnodes_hexa[i]>=starting_node[rank])&&(vnodes_hexa[i]<ending_node[rank])){
                 elem_reqd = true;
-                for(unsigned long j=0;j<N_POINTS_HEXAHEDRON;j++) {
-                  if(i!=j){
-                    adjacent_elem[vnodes_hexa[i]-starting_node[rank]][adj_counter[vnodes_hexa[i]-starting_node[rank]]]=vnodes_hexa[j];
-                    adj_counter[vnodes_hexa[i]-starting_node[rank]]++;
-                  }
-                }
+//                for(unsigned long j=0;j<N_POINTS_HEXAHEDRON;j++) {
+//                  if(i!=j){
+//                    adjacent_elem[vnodes_hexa[i]-starting_node[rank]][adj_counter[vnodes_hexa[i]-starting_node[rank]]]=vnodes_hexa[j];
+//                    adj_counter[vnodes_hexa[i]-starting_node[rank]]++;
+//                  }
+//                }
               }
             }
             if(elem_reqd){
@@ -6103,12 +6115,12 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             for(unsigned long i=0;i<N_POINTS_WEDGE;i++) {
               if ((vnodes_wedge[i]>=starting_node[rank])&&(vnodes_wedge[i]<ending_node[rank])){
                 elem_reqd = true;
-                for(unsigned long j=0;j<N_POINTS_WEDGE;j++) {
-                  if(i!=j){
-                    adjacent_elem[vnodes_wedge[i]-starting_node[rank]][adj_counter[vnodes_wedge[i]-starting_node[rank]]]=vnodes_wedge[j];
-                    adj_counter[vnodes_wedge[i]-starting_node[rank]]++;
-                  }
-                }
+//                for(unsigned long j=0;j<N_POINTS_WEDGE;j++) {
+//                  if(i!=j){
+//                    adjacent_elem[vnodes_wedge[i]-starting_node[rank]][adj_counter[vnodes_wedge[i]-starting_node[rank]]]=vnodes_wedge[j];
+//                    adj_counter[vnodes_wedge[i]-starting_node[rank]]++;
+//                  }
+//                }
               }
             }
             if(elem_reqd){
@@ -6124,12 +6136,12 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             for(unsigned long i=0;i<N_POINTS_PYRAMID;i++) {
               if ((vnodes_pyramid[i]>=starting_node[rank])&&(vnodes_pyramid[i]<ending_node[rank])){
                 elem_reqd = true;
-                for(unsigned long j=0;j<N_POINTS_PYRAMID;j++) {
-                  if(i!=j){
-                    adjacent_elem[vnodes_pyramid[i]-starting_node[rank]][adj_counter[vnodes_pyramid[i]-starting_node[rank]]]=vnodes_pyramid[j];
-                    adj_counter[vnodes_pyramid[i]-starting_node[rank]]++;
-                  }
-                }
+//                for(unsigned long j=0;j<N_POINTS_PYRAMID;j++) {
+//                  if(i!=j){
+//                    adjacent_elem[vnodes_pyramid[i]-starting_node[rank]][adj_counter[vnodes_pyramid[i]-starting_node[rank]]]=vnodes_pyramid[j];
+//                    adj_counter[vnodes_pyramid[i]-starting_node[rank]]++;
+//                  }
+//                }
               }
             }
             if(elem_reqd){
@@ -6146,6 +6158,15 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   }
   
   mesh_file.close();
+    
+    
+    if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
+    cout << "Calling the partitioning functions." << endl;
+  /* Call the Generate_Adjacency_For_Partitioning() function to compute the adjacency matrix */
+//    geometry[iZone][MESH_0]->Check_IntElem_Orientation(config[iZone]);
+//    geometry[iZone][MESH_0]->Check_BoundElem_Orientation(config[iZone]);
+
+    Generate_Adjacency_For_Partitioning(loc_element_count);
   
   /*--- Store the number of local elements on each rank after determining
    which elements must be kept in the loop above. ---*/
@@ -15778,4 +15799,287 @@ void CMultiGridQueue::Update(unsigned long iPoint, CGeometry *fine_grid) {
       IncrPriorityCV(jPoint);
   }
   
+}
+
+
+
+void CPhysicalGeometry::Generate_Adjacency_For_Partitioning(unsigned long element_count){
+    
+    
+      int rank = MASTER_NODE, size = SINGLE_NODE;
+      int next_node,previous_node,third_node,fourth_node;     /*--- Specifying the next and previous node in an element---*/
+    
+    
+    #ifdef HAVE_MPI
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    #endif
+    
+    //Need to preprocess to ensure that all cells floowo vtk format
+    
+    /*--- Decide whether this rank needs each element. If so, build the
+     adjacency arrays needed by ParMETIS and store the element connectivity.
+     Note that every proc starts it's node indexing from zero. ---*/
+    
+    
+    if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
+    cout << "Getting into adjacency function." << endl;
+    
+    
+    for (unsigned long loc_elem=0;loc_elem <element_count;loc_elem++){
+    
+        next_node =0;
+        previous_node = 0;
+        third_node = 0;
+        fourth_node = 0;
+        switch(elem[loc_elem]->GetVTK_Type()) {
+                
+            case TRIANGLE:
+                
+                for(unsigned long i=0;i<N_POINTS_TRIANGLE;i++) {
+                    if ((elem[loc_elem]->GetNode(i)>=starting_node[rank])&&(elem[loc_elem]->GetNode(i)<ending_node[rank])){
+                        for(unsigned long j=0;j<N_POINTS_TRIANGLE;j++) {
+                            if(i != j){
+                                adjacent_elem[elem[loc_elem]->GetNode(i)-starting_node[rank]][adj_counter[elem[loc_elem]->GetNode(i)-starting_node[rank]]]=elem[loc_elem]->GetNode(j);
+                                adj_counter[elem[loc_elem]->GetNode(i)-starting_node[rank]]++;
+                            }
+                        }
+                    }
+                }
+                
+
+                break;
+                
+            case RECTANGLE:
+
+
+                for(unsigned long i=0;i<N_POINTS_QUADRILATERAL;i++) {
+                    if ((elem[loc_elem]->GetNode(i)>=starting_node[rank])&&(elem[loc_elem]->GetNode(i)<ending_node[rank])){
+                    
+                    /*--- finding the neighbours   ---*/
+                    if(i==0){
+                       previous_node = 3;
+                        next_node = i+1;
+                    }
+                    else if (i==3){
+                    previous_node = i-1;
+                    next_node = 0;
+                    }
+                    else{
+                        previous_node = i-1;
+                        next_node = i+1;
+                    }
+                    
+                    
+                    /*--- Setting up the adjacency elements for the array ---*/
+                    
+                    adjacent_elem[elem[loc_elem]->GetNode(i)-starting_node[rank]][adj_counter[elem[loc_elem]->GetNode(i)-starting_node[rank]]]=elem[loc_elem]->GetNode(previous_node);
+                    adj_counter[elem[loc_elem]->GetNode(i)-starting_node[rank]]++;
+                    
+                    
+                    adjacent_elem[elem[loc_elem]->GetNode(i)-starting_node[rank]][adj_counter[elem[loc_elem]->GetNode(i)-starting_node[rank]]]=elem[loc_elem]->GetNode(next_node);
+                    adj_counter[elem[loc_elem]->GetNode(i)-starting_node[rank]]++;
+                    
+                    
+                    }
+                    
+                }
+        
+
+                break;
+                
+            case TETRAHEDRON:
+
+                
+                
+                for(unsigned long i=0;i<N_POINTS_TETRAHEDRON;i++) {
+                    if ((elem[loc_elem]->GetNode(i)>=starting_node[rank])&&(elem[loc_elem]->GetNode(i)<ending_node[rank])){
+                        for(unsigned long j=0;j<N_POINTS_TETRAHEDRON;j++) {
+                            if(i!=j){
+                                adjacent_elem[elem[loc_elem]->GetNode(i)-starting_node[rank]][adj_counter[elem[loc_elem]->GetNode(i)-starting_node[rank]]]=elem[loc_elem]->GetNode(j);
+                                adj_counter[elem[loc_elem]->GetNode(i)-starting_node[rank]]++;
+                            }
+                        }
+                    }
+                }
+    
+
+                break;
+                
+            case HEXAHEDRON:
+                
+                for(unsigned long i=0;i<N_POINTS_HEXAHEDRON;i++) {
+                    
+                    if ((elem[loc_elem]->GetNode(i)>=starting_node[rank])&&(elem[loc_elem]->GetNode(i)<ending_node[rank])){
+                    /*--- finding the neighbours   ---*/
+                    if(i==0){
+                        previous_node = 3;
+                        next_node = i+1;
+                        
+                    }
+                    
+                    else if (i==4){
+                        previous_node = 7;
+                        next_node = i+1;
+                    }
+                    
+                    else if (i==3){
+                        previous_node = i-1;
+                        next_node = 0;
+                    }
+
+                    else if (i==7){
+                        previous_node = i-1;
+                        next_node = 4;
+                    }
+                    
+                    else{
+                        previous_node = i-1;
+                        next_node = i+1;
+                    }
+                    
+                    
+                    if(i<4) third_node  = i+4;
+                    if(i>=4) third_node  = i-4;
+                    
+                    /*--- Setting up the adjacency elements for the array ---*/
+                    
+                    adjacent_elem[elem[loc_elem]->GetNode(i)-starting_node[rank]][adj_counter[elem[loc_elem]->GetNode(i)-starting_node[rank]]]=elem[loc_elem]->GetNode(previous_node);
+                    adj_counter[elem[loc_elem]->GetNode(i)-starting_node[rank]]++;
+                    
+                    
+                    adjacent_elem[elem[loc_elem]->GetNode(i)-starting_node[rank]][adj_counter[elem[loc_elem]->GetNode(i)-starting_node[rank]]]=elem[loc_elem]->GetNode(next_node);
+                    adj_counter[elem[loc_elem]->GetNode(i)-starting_node[rank]]++;
+                    
+                    
+                    adjacent_elem[elem[loc_elem]->GetNode(i)-starting_node[rank]][adj_counter[elem[loc_elem]->GetNode(i)-starting_node[rank]]]=elem[loc_elem]->GetNode(third_node);
+                    adj_counter[elem[loc_elem]->GetNode(i)-starting_node[rank]]++;
+                        
+                    }
+                    
+                }
+
+                
+
+
+                break;
+                
+            case WEDGE:
+
+                for(unsigned long i=0;i<N_POINTS_WEDGE;i++) {
+                    
+                    if ((elem[loc_elem]->GetNode(i)>=starting_node[rank])&&(elem[loc_elem]->GetNode(i)<ending_node[rank])){
+
+                        /*--- finding the neighbours   ---*/
+                        if((i==0)||(i==3)){
+                            previous_node = i+2;
+                            next_node = i+1;
+                            
+                        }
+                    
+                        
+                        else if ((i==2)||(i==5)){
+                            previous_node = i-1;
+                            next_node = i-2;
+                        }
+                        
+                        else{
+                            previous_node = i-1;
+                            next_node = i+1;
+                        }
+                        
+                        
+                        if(i<3) third_node  = i+3;
+                        if(i>=3) third_node  = i-3;
+                        
+                        /*--- Setting up the adjacency elements for the array ---*/
+                        
+                        adjacent_elem[elem[loc_elem]->GetNode(i)-starting_node[rank]][adj_counter[elem[loc_elem]->GetNode(i)-starting_node[rank]]]=elem[loc_elem]->GetNode(previous_node);
+                        adj_counter[elem[loc_elem]->GetNode(i)-starting_node[rank]]++;
+                        
+                        
+                        adjacent_elem[elem[loc_elem]->GetNode(i)-starting_node[rank]][adj_counter[elem[loc_elem]->GetNode(i)-starting_node[rank]]]=elem[loc_elem]->GetNode(next_node);
+                        adj_counter[elem[loc_elem]->GetNode(i)-starting_node[rank]]++;
+                        
+                        
+                        adjacent_elem[elem[loc_elem]->GetNode(i)-starting_node[rank]][adj_counter[elem[loc_elem]->GetNode(i)-starting_node[rank]]]=elem[loc_elem]->GetNode(third_node);
+                        adj_counter[elem[loc_elem]->GetNode(i)-starting_node[rank]]++;
+                        
+                    }
+                }
+
+
+                break;
+                
+            case PYRAMID:
+
+                for(unsigned long i=0;i<N_POINTS_PYRAMID;i++) {
+                    if ((elem[loc_elem]->GetNode(i)>=starting_node[rank])&&(elem[loc_elem]->GetNode(i)<ending_node[rank])){
+                    
+                    /*--- finding the neighbours   ---*/
+                    if(i==0){
+                        previous_node = 3;
+                        next_node = i+1;
+                        
+                    }
+                    
+                    
+                    else if ((i==1)||(i==2)){
+                        previous_node = i-1;
+                        next_node = i+1;
+                    }
+                    
+                    if(i==3){
+                        previous_node = i-1;
+                        next_node = 0;
+                        
+                    }
+                    
+                    
+                    else{
+                        previous_node = i-1;
+                        next_node = 0;
+                    }
+                    
+                    
+                    if(i<4) third_node  = 4;
+                    if(i>=4){
+                        third_node  = i-2;
+                        fourth_node = i-3;
+                    }
+                    
+                    /*--- Setting up the adjacency elements for the array ---*/
+                    
+                    adjacent_elem[elem[loc_elem]->GetNode(i)-starting_node[rank]][adj_counter[elem[loc_elem]->GetNode(i)-starting_node[rank]]]=elem[loc_elem]->GetNode(previous_node);
+                    adj_counter[elem[loc_elem]->GetNode(i)-starting_node[rank]]++;
+                    
+                    
+                    adjacent_elem[elem[loc_elem]->GetNode(i)-starting_node[rank]][adj_counter[elem[loc_elem]->GetNode(i)-starting_node[rank]]]=elem[loc_elem]->GetNode(next_node);
+                    adj_counter[elem[loc_elem]->GetNode(i)-starting_node[rank]]++;
+                    
+                    
+                    adjacent_elem[elem[loc_elem]->GetNode(i)-starting_node[rank]][adj_counter[elem[loc_elem]->GetNode(i)-starting_node[rank]]]=elem[loc_elem]->GetNode(third_node);
+                    adj_counter[elem[loc_elem]->GetNode(i)-starting_node[rank]]++;
+                    
+                    
+                    if(i==4){
+                        
+                        adjacent_elem[elem[loc_elem]->GetNode(i)-starting_node[rank]][adj_counter[elem[loc_elem]->GetNode(i)-starting_node[rank]]]=elem[loc_elem]->GetNode(fourth_node);
+                        adj_counter[elem[loc_elem]->GetNode(i)-starting_node[rank]]++;
+                        
+                        
+                        }
+                        
+                    }
+
+                }
+
+
+                break;
+        }
+
+    }
+
+
+    
 }
