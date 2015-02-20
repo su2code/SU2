@@ -3958,7 +3958,7 @@ void CAdjEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 void CAdjEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_container,
     CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   unsigned short iVar, iDim;
-  unsigned long iVertex, iPoint;
+  unsigned long iVertex, iPoint, Point_Normal;
   double Area, UnitNormal[3];
   double *V_inlet, *V_domain, *Normal, *Psi_domain, *Psi_inlet;
 
@@ -4035,6 +4035,39 @@ void CAdjEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_
       if (implicit)
         Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
 
+      /*--- Viscous residual contribution, it doesn't work ---*/
+
+      if (config->GetViscous()) {
+        /*--- Index of the closest interior node ---*/
+
+        Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+
+        /*--- Points in edge, coordinates and normal vector---*/
+
+        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+        visc_numerics->SetNormal(Normal);
+
+        /*--- Conservative variables w/o reconstruction and adjoint variables w/o reconstruction---*/
+
+        visc_numerics->SetPrimitive(V_domain, V_inlet);
+        visc_numerics->SetAdjointVar(Psi_domain, Psi_inlet);
+
+        /*--- Gradient and limiter of Adjoint Variables ---*/
+
+        visc_numerics->SetAdjointVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
+
+        /*--- Compute residual ---*/
+
+        visc_numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
+
+        /*--- Update adjoint viscous residual ---*/
+
+        LinSysRes.SubtractBlock(iPoint, Residual_i);
+
+        if (implicit)
+          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
+
+      }
     }
   }
 
@@ -4048,7 +4081,7 @@ void CAdjEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_
 void CAdjEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_container,
                                           CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   unsigned short iVar, iDim;
-  unsigned long iVertex, iPoint;
+  unsigned long iVertex, iPoint, Point_Normal;
   double Area, UnitNormal[3];
   double *V_outlet, *V_domain, *Normal, *Psi_domain, *Psi_outlet;
   
@@ -4125,6 +4158,36 @@ void CAdjEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver
       if (implicit)
       Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
       
+      /*--- Viscous residual contribution, it doesn't work ---*/
+
+      if (config->GetViscous()) {
+
+        /*--- Points in edge, coordinates and normal vector---*/
+
+        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+        visc_numerics->SetNormal(Normal);
+
+        /*--- Conservative variables w/o reconstruction and adjoint variables w/o reconstruction---*/
+
+        visc_numerics->SetPrimitive(V_domain, V_outlet);
+        visc_numerics->SetAdjointVar(Psi_domain, Psi_outlet);
+
+        /*--- Gradient and limiter of Adjoint Variables ---*/
+
+        visc_numerics->SetAdjointVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
+
+        /*--- Compute residual ---*/
+
+        visc_numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
+
+        /*--- Update adjoint viscous residual ---*/
+
+        LinSysRes.SubtractBlock(iPoint, Residual_i);
+
+        if (implicit)
+          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
+
+      }
     }
   }
   
@@ -4138,7 +4201,7 @@ void CAdjEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver
 void CAdjEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   
   unsigned short iVar, iDim;
-  unsigned long iVertex, iPoint;
+  unsigned long iVertex, iPoint, Point_Normal;
   double Velocity[3], bcn, phin, Area, UnitNormal[3],
   ProjGridVel, *GridVel;
   double *V_inlet, *V_domain, *Normal, *Psi_domain, *Psi_inlet;
@@ -4282,6 +4345,39 @@ void CAdjEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, 
       if (implicit)
         Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
       
+      /*--- Viscous residual contribution, it doesn't work ---*/
+
+      if (config->GetViscous()) {
+        /*--- Index of the closest interior node ---*/
+
+        Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+
+        /*--- Points in edge, coordinates and normal vector---*/
+
+        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+        visc_numerics->SetNormal(Normal);
+
+        /*--- Conservative variables w/o reconstruction and adjoint variables w/o reconstruction---*/
+
+        visc_numerics->SetPrimitive(V_domain, V_inlet);
+        visc_numerics->SetAdjointVar(Psi_domain, Psi_inlet);
+
+        /*--- Gradient and limiter of Adjoint Variables ---*/
+
+        visc_numerics->SetAdjointVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
+
+        /*--- Compute residual ---*/
+
+        visc_numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
+
+        /*--- Update adjoint viscous residual ---*/
+
+        LinSysRes.SubtractBlock(iPoint, Residual_i);
+
+        if (implicit)
+          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
+
+      }
     }
   }
   
@@ -4559,6 +4655,36 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
       if (implicit)
         Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
       
+      /*--- Viscous residual contribution, it doesn't work ---*/
+
+      if (config->GetViscous()) {
+
+        /*--- Points in edge, coordinates and normal vector---*/
+
+        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+        visc_numerics->SetNormal(Normal);
+
+        /*--- Conservative variables w/o reconstruction and adjoint variables w/o reconstruction---*/
+
+        visc_numerics->SetPrimitive(V_domain, V_outlet);
+        visc_numerics->SetAdjointVar(Psi_domain, Psi_outlet);
+
+        /*--- Gradient and limiter of Adjoint Variables ---*/
+
+        visc_numerics->SetAdjointVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
+
+        /*--- Compute residual ---*/
+
+        visc_numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
+
+        /*--- Update adjoint viscous residual ---*/
+
+        LinSysRes.SubtractBlock(iPoint, Residual_i);
+
+        if (implicit)
+          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
+
+      }
     }
   }
   
