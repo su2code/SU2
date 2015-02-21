@@ -432,7 +432,7 @@ public:
 	/*!
 	 * \brief destructor of the class
 	 */
-	~CSysMatrixVectorProduct(){}
+	~CSysMatrixVectorProduct() {}
   
 	/*!
 	 * \brief operator that defines the CSysMatrix-CSysVector product

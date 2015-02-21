@@ -73,7 +73,7 @@ int main(int argc, char *argv[]) {
   /*--- Load in the number of zones and spatial dimensions in the mesh file (If no config
    file is specified, default.cfg is used) ---*/
   
-  if (argc == 2){ strcpy(config_file_name,argv[1]); }
+  if (argc == 2) { strcpy(config_file_name,argv[1]); }
   else { strcpy(config_file_name, "default.cfg"); }
   
   /*--- Read the name and format of the input mesh file to get from the mesh

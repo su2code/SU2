@@ -136,7 +136,7 @@ CWaveSolver::CWaveSolver(CGeometry *geometry,
 		unsigned long index;
 		string text_line;
     
-		for(unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+		for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
 			getline(restart_file,text_line);
 			istringstream point_line(text_line);
 			point_line >> index >> Solution[0] >> Solution[1];
@@ -467,7 +467,7 @@ void CWaveSolver::Wave_Strength(CGeometry *geometry, CConfig *config) {
         WaveStrength += factor*WaveSol*WaveSol;
       }
       
-      if  (Monitoring == YES) {
+      if (Monitoring == YES) {
         CWave[iMarker] = WaveStrength;
         AllBound_CWave += CWave[iMarker];
       }
@@ -563,7 +563,7 @@ void CWaveSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
 		U_time_nP1 = node[iPoint]->GetSolution();
 		
 		/*--- Compute Residual ---*/
-		for(iVar = 0; iVar < nVar; iVar++) {
+		for (iVar = 0; iVar < nVar; iVar++) {
 			total_index = iPoint*nVar+iVar;
 			LinSysRes[total_index] = 0.0;
 			if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
@@ -771,7 +771,7 @@ void CWaveSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   }
   
   /*--- Read the restart file ---*/
-  for(iPoint = 0; iPoint < geometry[MESH_0]->GetnPoint(); iPoint++) {
+  for (iPoint = 0; iPoint < geometry[MESH_0]->GetnPoint(); iPoint++) {
     getline(restart_file,text_line);
     istringstream point_line(text_line);
     point_line >> index >> Solution[0] >> Solution[1];

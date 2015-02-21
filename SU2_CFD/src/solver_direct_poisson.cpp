@@ -287,7 +287,7 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 //			}
 //		}
 //	}
-//	if(nDim == 3) {
+//	if (nDim == 3) {
 //		if (config->GetPoissonSolver()) {
 //			for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
 //				Point_0 = geometry->elem[iElem]->GetNode(0);	Coord_0 = geometry->node[Point_0]->GetCoord();

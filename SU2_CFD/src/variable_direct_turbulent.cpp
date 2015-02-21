@@ -72,9 +72,9 @@ CTurbVariable::CTurbVariable(unsigned short val_nDim, unsigned short val_nvar, C
 
 CTurbVariable::~CTurbVariable(void) { }
 
-double CTurbVariable::GetmuT(){ return muT; }
+double CTurbVariable::GetmuT() { return muT; }
 
-void CTurbVariable::SetmuT(double val_muT){ muT = val_muT; }
+void CTurbVariable::SetmuT(double val_muT) { muT = val_muT; }
 
 CTurbSAVariable::CTurbSAVariable(void) : CTurbVariable() { }
 
@@ -172,7 +172,7 @@ CTurbSSTVariable::~CTurbSSTVariable(void) {
   
 }
 
-void CTurbSSTVariable::SetBlendingFunc(double val_viscosity, double val_dist, double val_density){
+void CTurbSSTVariable::SetBlendingFunc(double val_viscosity, double val_dist, double val_density) {
 	unsigned short iDim;
 	double arg2, arg2A, arg2B, arg1;
   

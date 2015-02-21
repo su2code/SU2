@@ -194,7 +194,7 @@ void CNumerics::GetInviscidFlux(double val_density, double *val_velocity,
 		Flux_Tensor[4][2] = Flux_Tensor[0][2]*val_enthalpy;
 
 	}
-	if(nDim == 2) {
+	if (nDim == 2) {
 		Flux_Tensor[0][0] = val_density*val_velocity[0];
 		Flux_Tensor[1][0] = Flux_Tensor[0][0]*val_velocity[0]+val_pressure;
 		Flux_Tensor[2][0] = Flux_Tensor[0][0]*val_velocity[1];
@@ -748,7 +748,7 @@ void CNumerics::GetInviscidArtComp_FreeSurf_ProjJac(double *val_density, double 
 void CNumerics::SetPastSol (double *val_u_nM1, double *val_u_n, double *val_u_nP1) {
 	unsigned short iVar;
 
-	for(iVar = 0; iVar < nVar; iVar++) {
+	for (iVar = 0; iVar < nVar; iVar++) {
 		U_nM1[iVar] = val_u_nM1[iVar];
 		U_n[iVar] = val_u_n[iVar];
 		U_nP1[iVar] = val_u_nP1[iVar];
@@ -771,7 +771,7 @@ void CNumerics::GetPMatrix(double *val_density, double *val_velocity,
   rhoxc = *val_density * *val_soundspeed,
   c2 = *val_soundspeed * *val_soundspeed;
   
-  if(nDim == 2) {
+  if (nDim == 2) {
     
     sqvel = val_velocity[0]*val_velocity[0]+val_velocity[1]*val_velocity[1];
     
@@ -843,7 +843,7 @@ void CNumerics::GetPMatrix(double *val_density, double *val_velocity,
 			rhoxc = *val_density * *val_soundspeed,
 			c2 = *val_soundspeed * *val_soundspeed;
 
-	if(nDim == 2) {
+	if (nDim == 2) {
 		sqvel = val_velocity[0]*val_velocity[0]+val_velocity[1]*val_velocity[1];
 		zeta = sqvel - (*val_kappa*0.5*sqvel + *val_chi)/(*val_kappa);
 
@@ -933,7 +933,7 @@ void CNumerics::GetPMatrix(double *U, double *V, double *val_dPdU,
   a  = V[A_INDEX];
   a2 = V[A_INDEX]*V[A_INDEX];
   
-	if(nDim == 2) {
+	if (nDim == 2) {
 		cout << "P matrix not implemented for 2-D Flows!!" << endl;
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
@@ -1040,7 +1040,7 @@ void CNumerics::GetPMatrix_inv(double *val_density, double *val_velocity,
 		val_invp_tensor[4][4]=Gamma_Minus_One/rhoxc;
     
 	}
-	if(nDim == 2) {
+	if (nDim == 2) {
     
 		sqvel = val_velocity[0]*val_velocity[0]+val_velocity[1]*val_velocity[1];
 
@@ -1114,7 +1114,7 @@ void CNumerics::GetPMatrix_inv(double **val_invp_tensor, double *val_density, do
 		val_invp_tensor[4][3]=-val_normal[2] / *val_density- val_velocity[2]*k_o_rhoxc;
 		val_invp_tensor[4][4]= k_o_rhoxc;
 	}
-	if(nDim == 2) {
+	if (nDim == 2) {
 		sqvel = val_velocity[0]*val_velocity[0]+val_velocity[1]*val_velocity[1];
 		dp_drho = *val_chi + 0.5*sqvel*(*val_kappa);
 
@@ -1215,7 +1215,7 @@ void CNumerics::GetPMatrix_inv(double *U, double *V, double *val_dPdU,
     val_invp_tensor[nSpecies+4][nSpecies+3] = -val_dPdU[nSpecies+nDim] * eve;
     val_invp_tensor[nSpecies+4][nSpecies+4] = a2 - val_dPdU[nSpecies+nDim+1]*eve;
   }
-	if(nDim == 2) {
+	if (nDim == 2) {
 		cout << "InvP matrix not implemented for 2D flows!!!!" << endl;
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
@@ -1233,7 +1233,7 @@ void CNumerics::GetinvRinvPe(double Beta2, double val_enthalpy,
 	double sqvel;
 	double factor = 1.0/(val_soundspeed*val_soundspeed*Beta2);
 
-	if(nDim == 2) {
+	if (nDim == 2) {
 
 		sqvel = val_velocity[0]*val_velocity[0]+val_velocity[1]*val_velocity[1];
 
@@ -1302,7 +1302,7 @@ void CNumerics::GetRMatrix(double val_pressure, double val_soundspeed, double va
 	//double factor = 1.0/(val_soundspeed*val_soundspeed*1);
 	double gm1 = Gamma - 1.0;
 
-	if(nDim == 2) {
+	if (nDim == 2) {
 
 		sqvel = val_velocity[0]*val_velocity[0]+val_velocity[1]*val_velocity[1];
 
@@ -1371,7 +1371,7 @@ void CNumerics::GetPrecondJacobian(double Beta2, double r_hat, double s_hat, dou
 	double lam1, lam2, lam3, lam4;
 	lam1 = Lambda[0]; lam2 = Lambda[1]; lam3 = Lambda[2]; lam4 = Lambda[3];
 
-	if(nDim == 2) {
+	if (nDim == 2) {
 
 		val_absPeJac[0][0] =  lam3*s_hat/(2.0*t_hat) - lam4*r_hat/(2.0*t_hat);
 		val_absPeJac[0][1] = -lam3*rB2a2*val_normal[0]/(2.0*t_hat) + lam4*rB2a2*val_normal[0]/(2.0*t_hat);
@@ -1443,7 +1443,7 @@ void CNumerics::GetPArtCompMatrix(double *val_density, double *val_velocity, dou
 	a2 = Projvel*Projvel + ((*val_betainc2)/(*val_density))*area2; a = sqrt(a2);
 	factor = 1/(2.0*((*val_betainc2)/(*val_density))*a2);
 
-    if(nDim == 2) {
+    if (nDim == 2) {
 		val_p_tensor[0][0] = 0.0;
 		val_p_tensor[0][1] = factor*((*val_betainc2)/(*val_density))*a;
 		val_p_tensor[0][2] = -factor*((*val_betainc2)/(*val_density))*a;
@@ -1697,7 +1697,7 @@ void CNumerics::GetJacInviscidLambda_fabs(double *val_velocity, double val_sound
 		val_Lambda_Vector[4] = fabs(ProjVelocity - val_soundspeed);
 	}
 
-	if(nDim == 2) {
+	if (nDim == 2) {
 		val_Lambda_Vector[0] = fabs(ProjVelocity);
 		val_Lambda_Vector[1] = fabs(ProjVelocity);
 		val_Lambda_Vector[2] = fabs(ProjVelocity + val_soundspeed);
@@ -2646,7 +2646,7 @@ void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar,
 
 
 
-	}else {
+	} else {
 
 
 		double dTdu3= dTde_rho*(-val_Mean_PrimVar[3])*(1/rho);

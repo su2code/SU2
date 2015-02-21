@@ -246,11 +246,11 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
     long *Global2Local;
     Global2Local = new long[geometry->GetGlobal_nPointDomain()];
     /*--- First, set all indices to a negative value by default ---*/
-    for(iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
+    for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
       Global2Local[iPoint] = -1;
     }
     /*--- Now fill array with the transform values only for local points ---*/
-    for(iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
       Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
     }
     
@@ -289,7 +289,7 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
     /*--- Instantiate the variable class with an arbitrary solution
      at any halo/periodic nodes. The initial solution can be arbitrary,
      because a send/recv is performed immediately in the solver. ---*/
-    for(iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
+    for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
       node[iPoint] = new CAdjEulerVariable(Solution, nDim, nVar, config);
     }
     
@@ -1041,7 +1041,7 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
     if ((config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) &&
         (config->GetMarker_All_Monitoring(iMarker) == YES))
       
-      for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         
@@ -1227,7 +1227,7 @@ void CAdjEulerSolver::SetIntBoundary_Jump(CGeometry *geometry, CSolver **solver_
     
     if (config->GetMarker_All_KindBC(iMarker) == NEARFIELD_BOUNDARY)
       
-      for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
@@ -1724,7 +1724,7 @@ void CAdjEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
   bool limiter          = (config->GetSpatialOrder_AdjFlow() == SECOND_ORDER_LIMITER);
   bool grid_movement    = config->GetGrid_Movement();
   
-  for(iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     
     /*--- Points in edge and normal vectors ---*/
     
@@ -3400,7 +3400,7 @@ void CAdjEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solve
   
 #ifndef HAVE_MPI
   
-  for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     jPoint = geometry->vertex[val_marker][iVertex]->GetDonorPoint();
     
@@ -3452,7 +3452,7 @@ void CAdjEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solve
   /*--- Do the send process, by the moment we are sending each
    node individually, this must be changed ---*/
   
-  for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     
@@ -3491,7 +3491,7 @@ void CAdjEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solve
   }
   
   
-  for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     
@@ -3591,7 +3591,7 @@ void CAdjEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solve
 #ifndef HAVE_MPI
   
   
-  for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     jPoint = geometry->vertex[val_marker][iVertex]->GetDonorPoint();
     
@@ -3686,7 +3686,7 @@ void CAdjEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solve
   /*--- Do the send process, by the moment we are sending each
    node individually, this must be changed ---*/
   
-  for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     
@@ -3726,7 +3726,7 @@ void CAdjEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solve
   }
   
   
-  for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     
@@ -3774,7 +3774,7 @@ void CAdjEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solve
           
           /*--- Identify the inner and the outer point (based on the normal direction) ---*/
           
-          if (Normal[nDim-1] < 0.0)  { Pin = iPoint; Pout = jPoint; }
+          if (Normal[nDim-1] < 0.0) { Pin = iPoint; Pout = jPoint; }
           else { Pout = iPoint; Pin = jPoint; }
           
           IntBoundary_Jump = node[iPoint]->GetIntBoundary_Jump();
@@ -4482,7 +4482,7 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
           for (iVar = 0; iVar < nVar; iVar++) {
             Psi_outlet[iVar] = 0.0;
           }
-          if (config->GetKind_ObjFunc() == AVG_OUTLET_PRESSURE){
+          if (config->GetKind_ObjFunc() == AVG_OUTLET_PRESSURE) {
             /*--- Compute Riemann constant ---*/
             Entropy = Pressure*pow(1.0/Density,Gamma);
             Riemann = Vn + 2.0*SoundSpeed/Gamma_Minus_One;
@@ -4522,7 +4522,7 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
           /*--- Total Pressure term. NOTE: this is AREA averaged
            * Additional terms are added later (as they are common between subsonic,
            * supersonic equations) ---*/
-          if (config->GetKind_ObjFunc() == AVG_TOTAL_PRESSURE){
+          if (config->GetKind_ObjFunc() == AVG_TOTAL_PRESSURE) {
             Psi_outlet[nDim+1]=-Gamma_Minus_One*(5*Velocity2-4*Vn*Vn*Gamma_Minus_One)/2/(SoundSpeed-Vn)/(SoundSpeed+Vn)/Vn;
             Psi_outlet[0] = 0.5*Psi_outlet[nDim+1]*Velocity2;
             for (iDim = 0; iDim < nDim; iDim++) {
@@ -4622,11 +4622,11 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
       }
 
       /*--- For mass_flow objective function add B.C. contribution ---*/
-      if (config->GetKind_ObjFunc() == MASS_FLOW_RATE){
+      if (config->GetKind_ObjFunc() == MASS_FLOW_RATE) {
         Psi_outlet[0]+=1;
       }
       /*--- For total pressure objective function. NOTE: this is AREA averaged term---*/
-      if (config->GetKind_ObjFunc() == AVG_TOTAL_PRESSURE){
+      if (config->GetKind_ObjFunc() == AVG_TOTAL_PRESSURE) {
         Psi_outlet[0]+=Velocity2*(2*Vn/(SoundSpeed+Vn)-SoundSpeed/2/Vn)+2*SoundSpeed*Vn*Vn*Gamma_Minus_One/(SoundSpeed+Vn);
         for  (iDim = 0; iDim < nDim; iDim++)
           Psi_outlet[iDim+1]-=UnitNormal[iDim]*(Velocity2*0.5+2*(Gamma_Minus_One)*(Velocity2+SoundSpeed*Vn))/Vn/(SoundSpeed+Vn)+Velocity[iDim]*(1-2*Gamma)/Vn;
@@ -5019,7 +5019,7 @@ void CAdjEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
     TimeStep = config->GetDelta_UnstTimeND();
     
     /*--- Compute Residual ---*/
-    for(iVar = 0; iVar < nVar; iVar++) {
+    for (iVar = 0; iVar < nVar; iVar++) {
       if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
         Residual[iVar] = ( U_time_nP1[iVar]*Volume_nP1 - U_time_n[iVar]*Volume_n ) / TimeStep;
       if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
@@ -5240,11 +5240,11 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
     long *Global2Local;
     Global2Local = new long[geometry->GetGlobal_nPointDomain()];
     /*--- First, set all indices to a negative value by default ---*/
-    for(iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
+    for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
       Global2Local[iPoint] = -1;
     }
     /*--- Now fill array with the transform values only for local points ---*/
-    for(iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
       Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
     }
     
@@ -5283,7 +5283,7 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
     /*--- Instantiate the variable class with an arbitrary solution
      at any halo/periodic nodes. The initial solution can be arbitrary,
      because a send/recv is performed immediately in the solver. ---*/
-    for(iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
+    for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
       node[iPoint] = new CAdjNSVariable(Solution, nDim, nVar, config);
     }
     
@@ -5305,7 +5305,7 @@ CAdjNSSolver::~CAdjNSSolver(void) {
 
 
 void CAdjNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                            unsigned short iMesh, unsigned long Iteration){
+                            unsigned short iMesh, unsigned long Iteration) {
 
   /*--- Use the flow solution to update the time step
    *    The time step depends on the characteristic velocity, which is the same
@@ -5726,7 +5726,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
             }
             
             temp_sens = 0.0;
-            if (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX){
+            if (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) {
               
               /*--- Heat Flux Term: temp_sens = (\partial_tg \psi_5)\cdot (k \partial_tg T) ---*/
               
@@ -5887,7 +5887,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
               
               /*--- Calculate momentum source terms as: rho * ( Omega X V ) ---*/
               
-              for(iDim = 0; iDim < nDim; iDim++)
+              for (iDim = 0; iDim < nDim; iDim++)
                 rho_v[iDim] = U[iDim+1];
               if (nDim == 2) rho_v[2] = 0.0;
               
@@ -5896,7 +5896,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
               CrossProduct[2] = Omega[0]*rho_v[1] - Omega[1]*rho_v[0];
               
               
-              for(iDim = 0; iDim < nDim; iDim++) {
+              for (iDim = 0; iDim < nDim; iDim++) {
                 source_v_1 += Psi[iDim+1]*CrossProduct[iDim];
               }
             }

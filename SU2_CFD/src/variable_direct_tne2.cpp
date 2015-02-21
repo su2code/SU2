@@ -701,7 +701,7 @@ bool CTNE2EulerVariable::SetPressure(CConfig *config) {
   /*--- Solve for mixture pressure using ideal gas law & Dalton's law ---*/
   // Note: If free electrons are present, use Tve for their partial pressure
   P = 0.0;
-  for(iSpecies = 0; iSpecies < nHeavy; iSpecies++)
+  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)
     P += Solution[iSpecies] * Ru/Ms[iSpecies] * Primitive[T_INDEX];
   
   for (iSpecies = 0; iSpecies < nEl; iSpecies++)
@@ -1238,7 +1238,7 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, double *U, double *V,
     converr = true;
 //    cout << "T < Tmin" << endl;
   }
-  if (V[T_INDEX] > Tmax){
+  if (V[T_INDEX] > Tmax) {
     V[T_INDEX] = Tmax;
     converr = true;
 //    cout << "T > Tmax" << endl;
