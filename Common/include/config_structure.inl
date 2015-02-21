@@ -247,8 +247,6 @@ inline double* CConfig::GetMassFrac_FreeStream(void) { return MassFrac_FreeStrea
 
 inline double CConfig::GetLength_Reynolds(void) { return Length_Reynolds; }
 
-inline double CConfig::GetMesh_Scale_Change(void) { return Mesh_Scale_Change; }
-
 inline unsigned short CConfig::GetnStartUpIter(void) { return nStartUpIter; }
 
 inline double *CConfig::GetRefOriginMoment(unsigned short val_marker) {
@@ -1054,10 +1052,6 @@ inline bool CConfig::GetViscous_Limiter_Flow(void) { return Viscous_Limiter_Flow
 inline bool CConfig::GetViscous_Limiter_Turb(void) { return Viscous_Limiter_Turb; }
 
 inline bool CConfig::GetHold_GridFixed(void) { return Hold_GridFixed; }
-
-inline bool CConfig::GetCGNS_To_SU2(void) {return CGNS_To_SU2; }
-
-inline bool CConfig::GetMesh_Output(void) { return Mesh_Output; }
 
 inline unsigned short CConfig::GetnPeriodicIndex(void) { return nPeriodic_Index; }
 

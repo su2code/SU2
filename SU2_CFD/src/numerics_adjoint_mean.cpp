@@ -2107,7 +2107,7 @@ void CSourceRotatingFrame_AdjFlow::ComputeResidual(double *val_residual, double 
   
 	/*--- Get the adjoint velocity vector at the current node. ---*/
   
-	for(iDim = 0; iDim < nDim; iDim++)
+	for (iDim = 0; iDim < nDim; iDim++)
 		Phi[iDim] = Psi_i[iDim+1];
   
 	/*--- Compute the source term as the Jacobian of the rotating frame

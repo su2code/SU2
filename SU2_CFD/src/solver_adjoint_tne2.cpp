@@ -266,11 +266,11 @@ CAdjTNE2EulerSolver::CAdjTNE2EulerSolver(CGeometry *geometry, CConfig *config, u
 		long *Global2Local;
 		Global2Local = new long[geometry->GetGlobal_nPointDomain()];
 		/*--- First, set all indices to a negative value by default ---*/
-		for(iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
+		for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
 			Global2Local[iPoint] = -1;
 		}
 		/*--- Now fill array with the transform values only for local points ---*/
-		for(iPoint = 0; iPoint < nPointDomain; iPoint++) {
+		for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 			Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
 		}
     
@@ -304,7 +304,7 @@ CAdjTNE2EulerSolver::CAdjTNE2EulerSolver(CGeometry *geometry, CConfig *config, u
 		/*--- Instantiate the variable class with an arbitrary solution
      at any halo/periodic nodes. The initial solution can be arbitrary,
      because a send/recv is performed immediately in the solver. ---*/
-		for(iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
+		for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
 			node[iPoint] = new CAdjTNE2EulerVariable(Solution, nDim, nVar, config);
 		}
     
@@ -1044,7 +1044,7 @@ void CAdjTNE2EulerSolver::SetForceProj_Vector(CGeometry *geometry,
 	for (iMarker = 0; iMarker < nMarker; iMarker++)
 		if ((config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) &&
         (config->GetMarker_All_Monitoring(iMarker) == YES))
-			for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         
 				x = geometry->node[iPoint]->GetCoord(0);
@@ -1396,7 +1396,7 @@ void CAdjTNE2EulerSolver::Upwind_Residual(CGeometry *geometry,
   numerics->SetRhoCvveIndex( solver_container[TNE2_SOL]->node[0]->GetRhoCvveIndex() );
   
   /*--- Loop over edges and calculate convective fluxes ---*/
-	for(iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+	for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     
 		/*--- Retrieve node numbers and pass edge normal to CNumerics ---*/
 		iPoint = geometry->edge[iEdge]->GetNode(0);
@@ -1425,7 +1425,7 @@ void CAdjTNE2EulerSolver::Upwind_Residual(CGeometry *geometry,
     numerics->SetAdjointVar(Psi_i, Psi_j);    
     
 		/*--- High order reconstruction using MUSCL strategy ---*/
-    if (second_order){
+    if (second_order) {
       for (iDim = 0; iDim < nDim; iDim++) {
         Vector_i[iDim] = 0.5*(  geometry->node[jPoint]->GetCoord(iDim)
                               - geometry->node[iPoint]->GetCoord(iDim));
@@ -2632,11 +2632,11 @@ CAdjTNE2NSSolver::CAdjTNE2NSSolver(CGeometry *geometry,
 		long *Global2Local;
 		Global2Local = new long[geometry->GetGlobal_nPointDomain()];
 		/*--- First, set all indices to a negative value by default ---*/
-		for(iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
+		for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
 			Global2Local[iPoint] = -1;
 		}
 		/*--- Now fill array with the transform values only for local points ---*/
-		for(iPoint = 0; iPoint < nPointDomain; iPoint++) {
+		for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 			Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
 		}
     
@@ -2669,7 +2669,7 @@ CAdjTNE2NSSolver::CAdjTNE2NSSolver(CGeometry *geometry,
 		/*--- Instantiate the variable class with an arbitrary solution
      at any halo/periodic nodes. The initial solution can be arbitrary,
      because a send/recv is performed immediately in the solver. ---*/
-		for(iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
+		for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
 			node[iPoint] = new CAdjNSVariable(Solution, nDim, nVar, config);
 		}
     

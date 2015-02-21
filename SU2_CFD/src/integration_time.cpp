@@ -288,7 +288,7 @@ void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqS
         (Boundary == ISOTHERMAL            ) ||
         (Boundary == ISOTHERMAL_CATALYTIC  ) ||
         (Boundary == ISOTHERMAL_NONCATALYTIC)) {
-      for(iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
+      for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
         
         Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
         
@@ -337,7 +337,7 @@ void CMultiGridIntegration::SmoothProlongated_Correction (unsigned short RunTime
         solver->node[iPoint]->SetResidualSumZero();
       
       /*--- Loop over Interior edges ---*/
-      for(iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+      for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
         iPoint = geometry->edge[iEdge]->GetNode(0);
         jPoint = geometry->edge[iEdge]->GetNode(1);
         
@@ -362,8 +362,8 @@ void CMultiGridIntegration::SmoothProlongated_Correction (unsigned short RunTime
       }
       
       /*--- Copy boundary values ---*/
-      for(iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
-        for(iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+      for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
+        for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           Residual_Old = solver->node[iPoint]->GetResidual_Old();
           solver->LinSysRes.SetBlock(iPoint, Residual_Old);
@@ -400,7 +400,7 @@ void CMultiGridIntegration::Smooth_Solution(unsigned short RunTime_EqSystem, CSo
       
       /*--- Loop over Interior edges ---*/
       
-      for(iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+      for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
         iPoint = geometry->edge[iEdge]->GetNode(0);
         jPoint = geometry->edge[iEdge]->GetNode(1);
         
@@ -428,8 +428,8 @@ void CMultiGridIntegration::Smooth_Solution(unsigned short RunTime_EqSystem, CSo
       
       /*--- Copy boundary values ---*/
       
-      for(iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
-        for(iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+      for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
+        for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           Solution_Old = solver->node[iPoint]->GetResidual_Old();
           solver->node[iPoint]->SetSolution(Solution_Old);
@@ -512,14 +512,14 @@ void CMultiGridIntegration::SetForcing_Term(CSolver *sol_fine, CSolver *sol_coar
         (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             ) ||
         (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_CATALYTIC   ) ||
         (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_NONCATALYTIC)) {
-      for(iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
+      for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
         Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
         sol_coarse->node[Point_Coarse]->SetVel_ResTruncError_Zero();
       }
     }
   }
   
-  for(Point_Coarse = 0; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
+  for (Point_Coarse = 0; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
     sol_coarse->node[Point_Coarse]->SubtractRes_TruncError(sol_coarse->LinSysRes.GetBlock(Point_Coarse));
   }
   
@@ -563,7 +563,7 @@ void CMultiGridIntegration::SetRestricted_Residual(CSolver *sol_fine, CSolver *s
         (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             ) ||
         (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_CATALYTIC   ) ||
         (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_NONCATALYTIC)) {
-      for(iVertex = 0; iVertex<geo_coarse->nVertex[iMarker]; iVertex++) {
+      for (iVertex = 0; iVertex<geo_coarse->nVertex[iMarker]; iVertex++) {
         Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
         sol_coarse->node[Point_Coarse]->SetVel_ResTruncError_Zero();
       }

@@ -56,11 +56,11 @@ inline void CIntegration::SetProlongated_Solution(unsigned short RunTime_EqSyste
 												  CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) { }
 
 inline void CIntegration::SetRestricted_Residual(CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, 
-											     CGeometry *geo_coarse, CConfig *config)  { }
+											     CGeometry *geo_coarse, CConfig *config) { }
 
-inline void CIntegration::SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config)  { }
+inline void CIntegration::SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) { }
 
-inline void CIntegration::SetRestricted_EddyVisc(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config)  { }
+inline void CIntegration::SetRestricted_EddyVisc(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) { }
 
 inline void CIntegration::SetRestricted_Gradient(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse, 
 												 CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) { }

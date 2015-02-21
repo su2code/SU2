@@ -103,7 +103,7 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], CConfig *config) {
 
 }
 
-void CConfig::SetPointersNull(void){
+void CConfig::SetPointersNull(void) {
 
   /*--- Marker Pointers ---*/
 
@@ -846,17 +846,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\par MESH_FORMAT
    *  DESCRIPTION: Mesh input file format \n OPTIONS: see \link Input_Map \endlink \n Default: SU2 \ingroup Config*/
   addEnumOption("MESH_FORMAT", Mesh_FileFormat, Input_Map, SU2);
-  /* DESCRIPTION: Convert a CGNS mesh to SU2 format */
-  addBoolOption("CGNS_TO_SU2", CGNS_To_SU2, false);
   /* DESCRIPTION:  Mesh input file */
   addStringOption("MESH_FILENAME", Mesh_FileName, string("mesh.su2"));
-
-  /*!\par MESH_SCALE_CHANGE
-   *  DESCRIPTION: Factor for scaling the mesh \ingroup Config */
-  addDoubleOption("MESH_SCALE_CHANGE", Mesh_Scale_Change, 1.0);
-  /*!\par MESH_OUTPUT
-   *  DESCRIPTION: Write a new mesh converted to meters \n Default: NO \ingroup Config*/
-  addBoolOption("MESH_OUTPUT", Mesh_Output, false);
   /*!\par MESH_OUT_FILENAME
    *  DESCRIPTION: Mesh output file name. Used when converting, scaling, or deforming a mesh. \n Default: mesh_out.su2 \ingroup Config*/
   addStringOption("MESH_OUT_FILENAME", Mesh_Out_FileName, string("mesh_out.su2"));
@@ -1305,7 +1296,7 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
   
   while (getline (case_file,text_line)) {
     
-    if (err_count >= max_err_count){
+    if (err_count >= max_err_count) {
       errorString.append("too many errors. Stopping parse");
 
       cout << errorString << endl;
@@ -1316,7 +1307,7 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
       
       /*--- See if it's a python option ---*/
 
-      if (option_map.find(option_name) == option_map.end()){
+      if (option_map.find(option_name) == option_map.end()) {
           string newString;
           newString.append(option_name);
           newString.append(": invalid option name");
@@ -1329,7 +1320,7 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
 
       /*--- Option exists, check if the option has already been in the config file ---*/
       
-      if (included_options.find(option_name) != included_options.end()){
+      if (included_options.find(option_name) != included_options.end()) {
         string newString;
         newString.append(option_name);
         newString.append(": option appears twice");
@@ -1348,7 +1339,7 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
       /*--- Set the value and check error ---*/
       
       string out = option_map[option_name]->SetValue(option_value);
-      if (out.compare("") != 0){
+      if (out.compare("") != 0) {
         errorString.append(out);
         errorString.append("\n");
         err_count++;
@@ -1358,14 +1349,14 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
 
   /*--- See if there were any errors parsing the config file ---*/
       
-  if (errorString.size() != 0){
+  if (errorString.size() != 0) {
     if (rank == MASTER_NODE) cout << errorString << endl;
     exit(EXIT_FAILURE);
   }
 
   /*--- Set the default values for all of the options that weren't set ---*/
       
-  for(map<string, bool>::iterator iter = all_options.begin(); iter != all_options.end(); ++iter){
+  for (map<string, bool>::iterator iter = all_options.begin(); iter != all_options.end(); ++iter) {
     option_map[iter->first]->SetDefault();
   }
 
@@ -1400,7 +1391,7 @@ bool CConfig::SetRunTime_Parsing(char case_filename[MAX_STRING_SIZE]) {
   
   while (getline (case_file,text_line)) {
     
-    if (err_count >= max_err_count){
+    if (err_count >= max_err_count) {
       errorString.append("too many errors. Stopping parse");
       
       cout << errorString << endl;
@@ -1424,7 +1415,7 @@ bool CConfig::SetRunTime_Parsing(char case_filename[MAX_STRING_SIZE]) {
       
       /*--- Option exists, check if the option has already been in the config file ---*/
       
-      if (included_options.find(option_name) != included_options.end()){
+      if (included_options.find(option_name) != included_options.end()) {
         string newString;
         newString.append(option_name);
         newString.append(": option appears twice");
@@ -1453,7 +1444,7 @@ bool CConfig::SetRunTime_Parsing(char case_filename[MAX_STRING_SIZE]) {
   
   /*--- See if there were any errors parsing the runtime file ---*/
   
-  if (errorString.size() != 0){
+  if (errorString.size() != 0) {
     if (rank == MASTER_NODE) cout << errorString << endl;
     exit(EXIT_FAILURE);
   }
@@ -1487,7 +1478,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   Kind_SU2 = val_software;
   
   /*--- Make sure that 1D outputs are written when objective function requires ---*/
-  if (Kind_ObjFunc== AVG_OUTLET_PRESSURE || Kind_ObjFunc == AVG_TOTAL_PRESSURE){
+  if (Kind_ObjFunc== AVG_OUTLET_PRESSURE || Kind_ObjFunc == AVG_TOTAL_PRESSURE) {
     Wrt_1D_Output = YES;
     Marker_Out_1D = Marker_Monitoring;
     nMarker_Out_1D = nMarker_Monitoring;
@@ -1547,12 +1538,12 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Check for Convective scheme available for NICF ---*/
   
   if (!ideal_gas) {
-    if (Kind_ConvNumScheme_Flow != SPACE_UPWIND){
+    if (Kind_ConvNumScheme_Flow != SPACE_UPWIND) {
       cout << "Only ROE Upwind scheme can be used for Not Ideal Compressible Fluids" << endl;
       exit(EXIT_FAILURE);
     }
     else {
-      if (Kind_Upwind_Flow != ROE){
+      if (Kind_Upwind_Flow != ROE) {
         cout << "Only ROE Upwind scheme can be used for Not Ideal Compressible Fluids" << endl;
         exit(EXIT_FAILURE);
       }
@@ -1581,13 +1572,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Check for Boundary condition available for NICF ---*/
   
   if (ideal_gas) {
-    if (SystemMeasurements == US && standard_air){
-      if (Kind_ViscosityModel != SUTHERLAND){
+    if (SystemMeasurements == US && standard_air) {
+      if (Kind_ViscosityModel != SUTHERLAND) {
         cout << "Only SUTHERLAND viscosity model can be used with US Measurement  " << endl;
         exit(EXIT_FAILURE);
       }
     }
-    if (Kind_ConductivityModel != CONSTANT_PRANDTL ){
+    if (Kind_ConductivityModel != CONSTANT_PRANDTL ) {
       cout << "Only CONSTANT_PRANDTL thermal conductivity model can be used with STANDARD_AIR and IDEAL_GAS" << endl;
       exit(EXIT_FAILURE);
     }
@@ -4387,7 +4378,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     if (Low_MemoryOutput) cout << "Writing output files with low memory RAM requirements."<< endl;
     cout << "Writing a flow solution every " << Wrt_Sol_Freq <<" iterations."<< endl;
     cout << "Writing the convergence history every " << Wrt_Con_Freq <<" iterations."<< endl;
-    if ((Unsteady_Simulation == DT_STEPPING_1ST) || (Unsteady_Simulation == DT_STEPPING_2ND))  {
+    if ((Unsteady_Simulation == DT_STEPPING_1ST) || (Unsteady_Simulation == DT_STEPPING_2ND)) {
       cout << "Writing the dual time flow solution every " << Wrt_Sol_Freq_DualTime <<" iterations."<< endl;
       cout << "Writing the dual time convergence history every " << Wrt_Con_Freq_DualTime <<" iterations."<< endl;
     }

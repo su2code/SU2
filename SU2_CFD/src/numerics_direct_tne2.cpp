@@ -678,7 +678,7 @@ void CUpwAUSM_TNE2::ComputeResidual(double *val_residual,
         dmLP[nSpecies+nDim+1] = 0.5*(mL+1.0) * (-ProjVel_i/(a_i*a_i) * daL[nSpecies+nDim+1]);
 
         /*--- Pressure ---*/
-        for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
           dpLP[iSpecies] = 0.25*(mL+1.0) * (dPdU_i[iSpecies]*(mL+1.0)*(2.0-mL)
                                             + P_i*(-ProjVel_i/(rho_i*a_i)
                                                    -ProjVel_i*daL[iSpecies]/(a_i*a_i))*(3.0-3.0*mL));

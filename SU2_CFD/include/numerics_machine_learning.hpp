@@ -106,7 +106,7 @@ class CActivator{
 public:
 	CActivator();
 	~CActivator();
-	virtual double Activate(double combination){cout<< "IN BASE ACTIVATOR THIS IS BAD" << endl; return 0;};
+	virtual double Activate(double combination) {cout<< "IN BASE ACTIVATOR THIS IS BAD" << endl; return 0;};
 };
 
 class CTanhActivator : public CActivator{
@@ -133,8 +133,8 @@ class CNeuron{
 public:
   CNeuron();
   ~CNeuron();
-  virtual double Activate(double combination){cout << "In base neuron. Bad";return 0;};
-  virtual double Combine(double * parameters, int nParameters, double *inputs, int nInputs){cout << "In base neuron. Bad";return 0;};
+  virtual double Activate(double combination) {cout << "In base neuron. Bad";return 0;};
+  virtual double Combine(double * parameters, int nParameters, double *inputs, int nInputs) {cout << "In base neuron. Bad";return 0;};
 };
 
 class CSumNeuron : public CNeuron{
@@ -160,7 +160,7 @@ protected:
 public:
   CPredictor();
   virtual  ~CPredictor();
-  virtual void Predict(double *, double *){cout << "In base Predict, this is bad";};
+  virtual void Predict(double *, double *) {cout << "In base Predict, this is bad";};
   int InputDim();
   int OutputDim();
 };

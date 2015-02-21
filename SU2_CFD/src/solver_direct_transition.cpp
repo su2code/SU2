@@ -166,7 +166,7 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
 			exit(EXIT_FAILURE);
 		}
 		
-		for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+		for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
 			getline(restart_file,text_line);
 			istringstream point_line(text_line);
 			if (nDim == 2) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
@@ -178,7 +178,7 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
 }
 
-CTransLMSolver::~CTransLMSolver(void){
+CTransLMSolver::~CTransLMSolver(void) {
 	unsigned short iVar, iDim;
 	
 	delete [] Residual; delete [] Residual_Max;
