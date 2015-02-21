@@ -80,6 +80,7 @@ private:
 	Linearized,				/*!< \brief Flag to know if the code is solving a linearized problem. */
 	Grid_Movement,			/*!< \brief Flag to know if there is grid movement. */
     Wind_Gust,              /*!< \brief Flag to know if there is a wind gust. */
+    Shock_Tube,             /*!< \brief Flag to know if this is a shock tube problem. */
     Aeroelastic_Simulation, /*!< \brief Flag to know if there is an aeroelastic simulation. */
 	Rotating_Frame,			/*!< \brief Flag to know if there is a rotating frame. */
 	PoissonSolver,			/*!< \brief Flag to know if we are solving  poisson forces  in plasma solver. */
@@ -5086,6 +5087,12 @@ public:
 	 * \return <code>TRUE</code> if there is a wind gust; otherwise <code>FALSE</code>.
 	 */
 	bool GetWind_Gust(void);
+    
+    /*!
+     * \brief Get information about the shock tube.
+     * \return <code>TRUE</code> if a shock tube is going to be analyzed; otherwise <code>FALSE</code>.
+     */
+    bool GetShock_Tube(void);
 
     /*!
 	 * \brief Get the type of gust to simulate.
