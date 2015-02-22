@@ -2556,6 +2556,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
   bool aeroelastic = config->GetAeroelastic_Simulation();
   bool gravity = (config->GetGravityForce() == YES);
   bool engine_intake = config->GetEngine_Intake();
+  bool shock_tube = config->GetShock_Tube();
   
 
   /*--- Set the location and value of the free-surface ---*/
@@ -2892,7 +2893,52 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
     }
     
   }
+  
+  if ((shock_tube) && (ExtIter == 0))
+  {
+    /* Set the variable to store the coordinates of each point */
+    double Xcoord, Xdiaf = 0.5;
+    
+    /* Set us the left and right conditions for the Sod Shock tube */
+     
+    double Pressure_l = Pressure_Inf;
+    double density_l = Density_Inf;
+    double vel_l = 0.0;
+    double sol[4];
 
+    
+    double Pressure_r = Pressure_Inf*0.1;
+    double density_r = Density_Inf*0.125;
+    double vel_r = 0.0;
+    
+    for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
+    {
+      for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++)
+      {
+        /* Get the value for the x coordinate and compare it with the diaf location, based on this specify the state for the flow */
+        Xcoord = geometry[iMesh]->node[iPoint]->GetCoord(0);
+        if (Xcoord <= Xdiaf)
+        {
+          sol[0] = density_l;
+          sol[1] = density_l*vel_l;
+          sol[2] = 0;
+          sol[3] = Pressure_l/Gamma_Minus_One + 0.5*density_l*vel_l*vel_l;
+          
+          solver_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(sol);
+        }
+        else
+        {
+          sol[0] = density_r;
+          sol[1] = density_r*vel_r;
+          sol[2] = 0;
+          sol[3] = Pressure_r/Gamma_Minus_One + 0.5*density_r*vel_r*vel_r;
+          
+          solver_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(sol);
+        }
+      }
+    }
+  cout << "Shock tube problem initial condition set up." << endl;
+  }
 }
 
 void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
@@ -10808,6 +10854,22 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   Set_MPI_Solution(geometry, config);
   
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 CNSSolver::~CNSSolver(void) {
   unsigned short iMarker;
