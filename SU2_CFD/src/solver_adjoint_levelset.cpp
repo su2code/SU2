@@ -160,11 +160,11 @@ CAdjLevelSetSolver::CAdjLevelSetSolver(CGeometry *geometry, CConfig *config, uns
     long *Global2Local;
     Global2Local = new long[geometry->GetGlobal_nPointDomain()];
     /*--- First, set all indices to a negative value by default ---*/
-    for(iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
+    for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
       Global2Local[iPoint] = -1;
     }
     /*--- Now fill array with the transform values only for local points ---*/
-    for(iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+    for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
       Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
     }
 
@@ -193,7 +193,7 @@ CAdjLevelSetSolver::CAdjLevelSetSolver(CGeometry *geometry, CConfig *config, uns
     /*--- Instantiate the variable class with an arbitrary solution
      at any halo/periodic nodes. The initial solution can be arbitrary,
      because a send/recv is performed immediately in the solver. ---*/
-    for(iPoint = geometry->GetnPointDomain(); iPoint < geometry->GetnPoint(); iPoint++) {
+    for (iPoint = geometry->GetnPointDomain(); iPoint < geometry->GetnPoint(); iPoint++) {
       node[iPoint] = new CAdjLevelSetVariable(Solution[0], nDim, nVar, config);
     }
     

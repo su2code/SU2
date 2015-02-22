@@ -811,11 +811,11 @@ inline void CTurbMLVariable::SetTimeSpectral_Source(unsigned short val_var, doub
 
 inline double CTurbMLVariable::GetTimeSpectral_Source(unsigned short val_var) { return TS_Source[val_var]; }
 
-inline double CTurbSSTVariable::GetF1blending(){ return F1; }
+inline double CTurbSSTVariable::GetF1blending() { return F1; }
 
-inline double CTurbSSTVariable::GetF2blending(){ return F2; }
+inline double CTurbSSTVariable::GetF2blending() { return F2; }
 
-inline double CTurbSSTVariable::GetCrossDiff(){ return CDkw; }
+inline double CTurbSSTVariable::GetCrossDiff() { return CDkw; }
 
 inline void CAdjTurbVariable::SetEddyViscSens(double *val_EddyViscSens, unsigned short numTotalVar) { 
     for (unsigned short iVar = 0; iVar < numTotalVar; iVar++) {

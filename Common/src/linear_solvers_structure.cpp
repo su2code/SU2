@@ -249,7 +249,7 @@ int rank = 0;
   
   /*--- Output header information including initial residual ---*/
   int i = 0;
-  if ((monitoring) && (rank == MASTER_NODE))  {
+  if ((monitoring) && (rank == MASTER_NODE)) {
     WriteHeader("CG", tol, norm_r);
     WriteHistory(i, norm_r, norm0);
   }
@@ -288,7 +288,7 @@ int rank = 0;
   
 
   
-  if ((monitoring) && (rank == MASTER_NODE))  {
+  if ((monitoring) && (rank == MASTER_NODE)) {
     cout << "# Conjugate Gradient final (true) residual:" << endl;
     cout << "# Iteration = " << i << ": |res|/|res0| = "  << norm_r/norm0 << ".\n" << endl;
   }

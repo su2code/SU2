@@ -55,7 +55,7 @@ CFluidModel::~CFluidModel(void) {
 
   }
 
-void CFluidModel::SetLaminarViscosityModel (CConfig *config){
+void CFluidModel::SetLaminarViscosityModel (CConfig *config) {
 	switch (config->GetKind_ViscosityModel()) {
 
 	case CONSTANT_VISCOSITY:
@@ -68,7 +68,7 @@ void CFluidModel::SetLaminarViscosityModel (CConfig *config){
 	}
 }
 
-void CFluidModel::SetThermalConductivityModel (CConfig *config){
+void CFluidModel::SetThermalConductivityModel (CConfig *config) {
 	switch (config->GetKind_ConductivityModel()) {
 
 	case CONSTANT_CONDUCTIVITY:

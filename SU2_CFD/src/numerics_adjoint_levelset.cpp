@@ -46,7 +46,7 @@ CUpwLin_AdjLevelSet::~CUpwLin_AdjLevelSet(void) {
 }
 
 void CUpwLin_AdjLevelSet::ComputeResidual (double *val_residual_i, double *val_residual_j, double **val_Jacobian_ii,
-                                       double **val_Jacobian_ij, double **val_Jacobian_ji, double **val_Jacobian_jj, CConfig *config)  {
+                                       double **val_Jacobian_ij, double **val_Jacobian_ji, double **val_Jacobian_jj, CConfig *config) {
   
   unsigned short iDim;
 	double proj_conv_flux_i = 0.0, proj_conv_flux_j = 0.0, proj_conv_flux_ij = 0.0;

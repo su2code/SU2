@@ -1617,7 +1617,7 @@ public:
 	/*!
 	 * \brief Get the value of the cross diffusion of tke and omega.
 	 */
-	virtual double GetCrossDiff(void){ return 0.0; };
+	virtual double GetCrossDiff(void) { return 0.0; };
 
 	/*!
 	 * \brief Get the value of the eddy viscosity.

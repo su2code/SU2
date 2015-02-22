@@ -146,11 +146,11 @@ CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config, unsigned sh
     long *Global2Local;
     Global2Local = new long[geometry->GetGlobal_nPointDomain()];
     /*--- First, set all indices to a negative value by default ---*/
-    for(iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
+    for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
       Global2Local[iPoint] = -1;
     }
     /*--- Now fill array with the transform values only for local points ---*/
-    for(iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
       Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
     }
     
@@ -179,7 +179,7 @@ CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config, unsigned sh
     /*--- Instantiate the variable class with an arbitrary solution
      at any halo/periodic nodes. The initial solution can be arbitrary,
      because a send/recv is performed immediately in the solver. ---*/
-    for(iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
+    for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
       node[iPoint] = new CAdjTurbVariable(Solution[0], nDim, nVar, config);
     }
     

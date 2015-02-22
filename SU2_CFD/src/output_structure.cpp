@@ -97,7 +97,7 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
     if ((int(iExtIter) >= 10)   && (int(iExtIter) < 100))   sprintf (buffer, "_000%d.csv",  int(iExtIter));
     if ((int(iExtIter) >= 100)  && (int(iExtIter) < 1000))  sprintf (buffer, "_00%d.csv",   int(iExtIter));
     if ((int(iExtIter) >= 1000) && (int(iExtIter) < 10000)) sprintf (buffer, "_0%d.csv",    int(iExtIter));
-    if  (int(iExtIter) >= 10000) sprintf (buffer, "_%d.csv", int(iExtIter));
+    if (int(iExtIter) >= 10000) sprintf (buffer, "_%d.csv", int(iExtIter));
   }
   else
     sprintf (buffer, ".csv");
@@ -119,7 +119,7 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if (config->GetMarker_All_Plotting(iMarker) == YES) {
-      for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         Global_Index = geometry->node[iPoint]->GetGlobalIndex();
         xCoord = geometry->node[iPoint]->GetCoord(0);
@@ -316,7 +316,7 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
       if ((int(iExtIter) >= 10)   && (int(iExtIter) < 100))   sprintf (buffer, "_000%d.csv",  int(iExtIter));
       if ((int(iExtIter) >= 100)  && (int(iExtIter) < 1000))  sprintf (buffer, "_00%d.csv",   int(iExtIter));
       if ((int(iExtIter) >= 1000) && (int(iExtIter) < 10000)) sprintf (buffer, "_0%d.csv",    int(iExtIter));
-      if  (int(iExtIter) >= 10000) sprintf (buffer, "_%d.csv", int(iExtIter));
+      if (int(iExtIter) >= 10000) sprintf (buffer, "_%d.csv", int(iExtIter));
     }
     else
       sprintf (buffer, ".csv");
@@ -442,7 +442,7 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
     if ((int(iExtIter) >= 10)   && (int(iExtIter) < 100))   sprintf (buffer, "_000%d.csv",  int(iExtIter));
     if ((int(iExtIter) >= 100)  && (int(iExtIter) < 1000))  sprintf (buffer, "_00%d.csv",   int(iExtIter));
     if ((int(iExtIter) >= 1000) && (int(iExtIter) < 10000)) sprintf (buffer, "_0%d.csv",    int(iExtIter));
-    if  (int(iExtIter) >= 10000) sprintf (buffer, "_%d.csv", int(iExtIter));
+    if (int(iExtIter) >= 10000) sprintf (buffer, "_%d.csv", int(iExtIter));
   }
   else
     sprintf (buffer, ".csv");
@@ -1207,7 +1207,7 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
   unsigned long *Buffer_Send_AddedPeriodic = new unsigned long[maxAddedPeriodic];
   unsigned long *Buffer_Recv_AddedPeriodic = new unsigned long[size*maxAddedPeriodic];
   
-  for(iPoint = 0; iPoint < Added_Periodic.size(); iPoint++) {
+  for (iPoint = 0; iPoint < Added_Periodic.size(); iPoint++) {
     Buffer_Send_AddedPeriodic[iPoint] = Added_Periodic[iPoint];
   }
   
@@ -1219,7 +1219,7 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
                 Buffer_Recv_AddedPeriodic, maxAddedPeriodic, MPI_UNSIGNED_LONG,
                 MPI_COMM_WORLD);
 #else
-  for(iPoint = 0; iPoint < maxAddedPeriodic; iPoint++) Buffer_Recv_AddedPeriodic[iPoint] = Buffer_Send_AddedPeriodic[iPoint];
+  for (iPoint = 0; iPoint < maxAddedPeriodic; iPoint++) Buffer_Recv_AddedPeriodic[iPoint] = Buffer_Send_AddedPeriodic[iPoint];
 #endif
   
   /*--- Search all send/recv boundaries on this partition for halo cells. In
@@ -1277,7 +1277,7 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
   
   jNode = 0; jElem = 0;
   for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
-    if(geometry->elem[iElem]->GetVTK_Type() == Elem_Type) {
+    if (geometry->elem[iElem]->GetVTK_Type() == Elem_Type) {
       
       /*--- Loop over all nodes in this element and load the
        connectivity into the send buffer. ---*/
@@ -1313,8 +1313,8 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
   MPI_Gather(Buffer_Send_Elem, nBuffer_Scalar, MPI_UNSIGNED_LONG, Buffer_Recv_Elem, nBuffer_Scalar, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
   MPI_Gather(Buffer_Send_Halo, MaxLocalElem, MPI_UNSIGNED_SHORT, Buffer_Recv_Halo, MaxLocalElem, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
 #else
-  for(iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Elem[iPoint] = Buffer_Send_Elem[iPoint];
-  for(iPoint = 0; iPoint < MaxLocalElem; iPoint++) Buffer_Recv_Halo[iPoint] = Buffer_Send_Halo[iPoint];
+  for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Elem[iPoint] = Buffer_Send_Elem[iPoint];
+  for (iPoint = 0; iPoint < MaxLocalElem; iPoint++) Buffer_Recv_Halo[iPoint] = Buffer_Send_Halo[iPoint];
 #endif
   
   /*--- The master node unpacks and sorts the connectivity. ---*/
@@ -1576,7 +1576,7 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
   unsigned long *Buffer_Send_AddedPeriodic = new unsigned long[maxAddedPeriodic];
   unsigned long *Buffer_Recv_AddedPeriodic = new unsigned long[size*maxAddedPeriodic];
   
-  for(iPoint = 0; iPoint < Added_Periodic.size(); iPoint++) {
+  for (iPoint = 0; iPoint < Added_Periodic.size(); iPoint++) {
     Buffer_Send_AddedPeriodic[iPoint] = Added_Periodic[iPoint];
   }
   
@@ -1588,7 +1588,7 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
                 Buffer_Recv_AddedPeriodic, maxAddedPeriodic, MPI_UNSIGNED_LONG,
                 MPI_COMM_WORLD);
 #else
-  for(iPoint = 0; iPoint < maxAddedPeriodic; iPoint++) Buffer_Recv_AddedPeriodic[iPoint] = Buffer_Send_AddedPeriodic[iPoint];
+  for (iPoint = 0; iPoint < maxAddedPeriodic; iPoint++) Buffer_Recv_AddedPeriodic[iPoint] = Buffer_Send_AddedPeriodic[iPoint];
 #endif
   
   /*--- Search all send/recv boundaries on this partition for halo cells. In
@@ -1646,9 +1646,9 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
   jNode = 0; jElem = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
     if (config->GetMarker_All_Plotting(iMarker) == YES)
-      for(iElem = 0; iElem < geometry->GetnElem_Bound(iMarker); iElem++) {
+      for (iElem = 0; iElem < geometry->GetnElem_Bound(iMarker); iElem++) {
         
-        if(geometry->bound[iMarker][iElem]->GetVTK_Type() == Elem_Type) {
+        if (geometry->bound[iMarker][iElem]->GetVTK_Type() == Elem_Type) {
           
           /*--- Loop over all nodes in this element and load the
            connectivity into the send buffer. ---*/
@@ -1683,8 +1683,8 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
   MPI_Gather(Buffer_Send_Elem, nBuffer_Scalar, MPI_UNSIGNED_LONG, Buffer_Recv_Elem, nBuffer_Scalar, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
   MPI_Gather(Buffer_Send_Halo, MaxLocalElem, MPI_UNSIGNED_SHORT, Buffer_Recv_Halo, MaxLocalElem, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
 #else
-  for(iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Elem[iPoint] = Buffer_Send_Elem[iPoint];
-  for(iPoint = 0; iPoint < MaxLocalElem; iPoint++) Buffer_Recv_Halo[iPoint] = Buffer_Send_Halo[iPoint];
+  for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Elem[iPoint] = Buffer_Send_Elem[iPoint];
+  for (iPoint = 0; iPoint < MaxLocalElem; iPoint++) Buffer_Recv_Halo[iPoint] = Buffer_Send_Halo[iPoint];
 #endif
   
   /*--- The master node unpacks and sorts the connectivity. ---*/
@@ -2495,14 +2495,14 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
        will be placed in an auxiliary vector and then communicated like
        all other volumetric variables. ---*/
       
-      for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+      for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
         Aux_Frict[iPoint] = 0.0;
         Aux_Heat[iPoint]  = 0.0;
         Aux_yPlus[iPoint] = 0.0;
       }
       for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
         if (config->GetMarker_All_Plotting(iMarker) == YES) {
-          for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
             iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
             Aux_Frict[iPoint] = solver[FLOW_SOL]->GetCSkinFriction(iMarker,iVertex);
             Aux_Heat[iPoint]  = solver[FLOW_SOL]->GetHeatFlux(iMarker,iVertex);
@@ -3065,7 +3065,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) Aux_Sens[iPoint] = 0.0;
       for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
         if (config->GetMarker_All_Plotting(iMarker) == YES) {
-          for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
             iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
             Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
             Area = 0.0;
@@ -3619,14 +3619,14 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
     
     if (config->GetExtraOutput()) {
       string *headings = NULL;
-      //if (Kind_Solver == RANS){
+      //if (Kind_Solver == RANS) {
       headings = solver[TURB_SOL]->OutputHeadingNames;
       //}
       
       for (iVar = 0; iVar < nVar_Extra; iVar++) {
-        if (headings == NULL){
+        if (headings == NULL) {
           restart_file << "\t\"ExtraOutput_" << iVar+1<<"\"";
-        }else{
+        } else{
           restart_file << "\t\""<< headings[iVar] <<"\"";
         }
       }
@@ -3743,7 +3743,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   bool output_1d = config->GetWrt_1D_Output();
   bool output_per_surface = false;
   bool output_massflow = (config->GetKind_ObjFunc()==MASS_FLOW_RATE);
-  if(config->GetnMarker_Monitoring() > 1) output_per_surface = true;
+  if (config->GetnMarker_Monitoring() > 1) output_per_surface = true;
   
   bool isothermal = false;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
@@ -3941,7 +3941,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         OneDimensionalOutput(solver_container[val_iZone][FinestMesh][FLOW_SOL], geometry[val_iZone][FinestMesh], config[val_iZone]);
     }
   }
-  if (output_massflow){
+  if (output_massflow) {
     switch (config[val_iZone]->GetKind_Solver()) {
       case EULER:                   case NAVIER_STOKES:                   case RANS:
       case FLUID_STRUCTURE_EULER:   case FLUID_STRUCTURE_NAVIER_STOKES:   case FLUID_STRUCTURE_RANS:
@@ -4003,7 +4003,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     (config[val_iZone]->GetKind_Solver() == ADJ_NAVIER_STOKES) || (config[val_iZone]->GetKind_Solver() == ADJ_RANS);
     
     bool output_per_surface = false;
-    if(config[val_iZone]->GetnMarker_Monitoring() > 1) output_per_surface = true;
+    if (config[val_iZone]->GetnMarker_Monitoring() > 1) output_per_surface = true;
 
 
 
@@ -4055,7 +4055,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     /*--- Direct problem variables ---*/
     if (compressible) nVar_Flow = nDim+2; else nVar_Flow = nDim+1;
     if (turbulent) {
-      switch (config[val_iZone]->GetKind_Turb_Model()){
+      switch (config[val_iZone]->GetKind_Turb_Model()) {
         case SA:	   nVar_Turb = 1; break;
         case SA_NEG: nVar_Turb = 1; break;
         case ML:	   nVar_Turb = 1; break;
@@ -4072,7 +4072,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     /*--- Adjoint problem variables ---*/
     if (compressible) nVar_AdjFlow = nDim+2; else nVar_AdjFlow = nDim+1;
     if (turbulent) {
-      switch (config[val_iZone]->GetKind_Turb_Model()){
+      switch (config[val_iZone]->GetKind_Turb_Model()) {
         case SA:	   nVar_AdjTurb = 1; break;
         case SA_NEG: nVar_AdjTurb = 1; break;
         case ML:     nVar_AdjTurb = 1; break;
@@ -4499,7 +4499,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             }
             
             /*--- Turbulent residual ---*/
-            if (turbulent){
+            if (turbulent) {
               switch(nVar_Turb) {
                 case 1: sprintf (turb_resid, ", %12.10f", log10 (residual_turbulent[0])); break;
                 case 2: sprintf (turb_resid, ", %12.10f, %12.10f", log10(residual_turbulent[0]), log10(residual_turbulent[1])); break;
@@ -4509,13 +4509,13 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             if (output_1d) {
               sprintf( oneD_outputs, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", OneD_AvgStagPress, OneD_AvgMach, OneD_AvgTemp, OneD_MassFlowRate, OneD_FluxAvgPress, OneD_FluxAvgDensity, OneD_FluxAvgVelocity, OneD_FluxAvgEntalpy);
             }
-            if (output_massflow){
+            if (output_massflow) {
               sprintf(massflow_outputs,", %12.10f", Total_Mdot);
             }
 
             
             /*--- Transition residual ---*/
-            if (transition){
+            if (transition) {
               sprintf (trans_resid, ", %12.10f, %12.10f", log10(residual_transition[0]), log10(residual_transition[1]));
             }
             
@@ -4751,7 +4751,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             if (incompressible || freesurface) cout << "   Res[Press]";
             else cout << "      Res[Rho]";//,cout << "     Res[RhoE]";
             
-            switch (config[val_iZone]->GetKind_Turb_Model()){
+            switch (config[val_iZone]->GetKind_Turb_Model()) {
               case SA:	   cout << "       Res[nu]"; break;
               case SA_NEG: cout << "       Res[nu]"; break;
               case ML:	   cout << "       Res[nu]"; break;
@@ -5551,7 +5551,7 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
           break;
       }
       
-      if(viscous){
+      if (viscous) {
         
         switch (config[val_iZone]->GetKind_ViscosityModel()) {
             
@@ -5645,7 +5645,7 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
       Breakdown_file << "Free-stream viscosity: " << config[val_iZone]->GetViscosity_FreeStream();
       if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " N.s/m^2." << endl;
       else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " lbf.s/ft^2." << endl;
-      if (turbulent){
+      if (turbulent) {
         Breakdown_file << "Free-stream turb. kinetic energy per unit mass: " << config[val_iZone]->GetTke_FreeStream();
         if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " m^2/s^2." << endl;
         else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " ft^2/s^2." << endl;
@@ -5746,7 +5746,7 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
     
     if (viscous) {
       Breakdown_file << "Free-stream viscosity (non-dim): " << config[val_iZone]->GetViscosity_FreeStreamND() << endl;
-      if (turbulent){
+      if (turbulent) {
         Breakdown_file << "Free-stream turb. kinetic energy (non-dim): " << config[val_iZone]->GetTke_FreeStreamND() << endl;
         Breakdown_file << "Free-stream specific dissipation (non-dim): " << config[val_iZone]->GetOmega_FreeStreamND() << endl;
       }
@@ -6515,7 +6515,7 @@ void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned sho
   }
 }
 
-void COutput::SetMassFlowRate(CSolver *solver_container, CGeometry *geometry, CConfig *config){
+void COutput::SetMassFlowRate(CSolver *solver_container, CGeometry *geometry, CConfig *config) {
   unsigned short iDim, iMarker_monitor, iMarker;
   unsigned long iVertex, iPoint;
   double Vector[3],Total_Mdot=0.0;
@@ -6529,7 +6529,7 @@ void COutput::SetMassFlowRate(CSolver *solver_container, CGeometry *geometry, CC
 
       if (geometry->node[iPoint]->GetDomain()) {
         geometry->vertex[iMarker_monitor][iVertex]->GetNormal(Vector);
-        for (iDim = 0; iDim < nDim; iDim++){
+        for (iDim = 0; iDim < nDim; iDim++) {
           Total_Mdot += Vector[iDim]*(solver_container->node[iPoint]->GetSolution(iDim+1));
         }
       }
@@ -6587,11 +6587,11 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
           Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
           for (iDim = 0; iDim < nDim; iDim++) UnitaryNormal[iDim] = -Normal[iDim]/Area;
           
-          if (compressible){
+          if (compressible) {
             Pressure = solver_container->node[iPoint]->GetPressure();
             Density = solver_container->node[iPoint]->GetDensity();
           }
-          if (incompressible || freesurface){
+          if (incompressible || freesurface) {
             Pressure = solver_container->node[iPoint]->GetPressureInc();
             Density = solver_container->node[iPoint]->GetDensityInc();
           }
@@ -6599,7 +6599,7 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
           /*-- Find velocity normal to the marked surface/opening --*/
           
           U = 0.0;
-          for (iDim = 0; iDim < geometry->GetnDim(); iDim++){
+          for (iDim = 0; iDim < geometry->GetnDim(); iDim++) {
             U += UnitaryNormal[iDim]*solver_container->node[iPoint]->GetVelocity(iDim);
           }
           
@@ -6946,7 +6946,7 @@ void COutput::SetCp_InverseDesign(CSolver *solver_container, CGeometry *geometry
     if ((int(iExtIter) >= 10)   && (int(iExtIter) < 100))   sprintf (buffer, "_000%d.dat",  int(iExtIter));
     if ((int(iExtIter) >= 100)  && (int(iExtIter) < 1000))  sprintf (buffer, "_00%d.dat",   int(iExtIter));
     if ((int(iExtIter) >= 1000) && (int(iExtIter) < 10000)) sprintf (buffer, "_0%d.dat",    int(iExtIter));
-    if  (int(iExtIter) >= 10000) sprintf (buffer, "_%d.dat", int(iExtIter));
+    if (int(iExtIter) >= 10000) sprintf (buffer, "_%d.dat", int(iExtIter));
   }
   else
     sprintf (buffer, ".dat");
@@ -6966,7 +6966,7 @@ void COutput::SetCp_InverseDesign(CSolver *solver_container, CGeometry *geometry
     while (getline(Surface_file,text_line)) {
       for (icommas = 0; icommas < 50; icommas++) {
         position = text_line.find( ",", 0 );
-        if(position!=string::npos) text_line.erase (position,1);
+        if (position!=string::npos) text_line.erase (position,1);
       }
       stringstream  point_line(text_line);
       
@@ -7104,7 +7104,7 @@ void COutput::SetHeat_InverseDesign(CSolver *solver_container, CGeometry *geomet
     if ((int(iExtIter) >= 10)   && (int(iExtIter) < 100))   sprintf (buffer, "_000%d.dat",  int(iExtIter));
     if ((int(iExtIter) >= 100)  && (int(iExtIter) < 1000))  sprintf (buffer, "_00%d.dat",   int(iExtIter));
     if ((int(iExtIter) >= 1000) && (int(iExtIter) < 10000)) sprintf (buffer, "_0%d.dat",    int(iExtIter));
-    if  (int(iExtIter) >= 10000) sprintf (buffer, "_%d.dat", int(iExtIter));
+    if (int(iExtIter) >= 10000) sprintf (buffer, "_%d.dat", int(iExtIter));
   }
   else
     sprintf (buffer, ".dat");
@@ -7124,7 +7124,7 @@ void COutput::SetHeat_InverseDesign(CSolver *solver_container, CGeometry *geomet
     while (getline(Surface_file,text_line)) {
       for (icommas = 0; icommas < 50; icommas++) {
         position = text_line.find( ",", 0 );
-        if(position!=string::npos) text_line.erase (position,1);
+        if (position!=string::npos) text_line.erase (position,1);
       }
       stringstream  point_line(text_line);
       

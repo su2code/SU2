@@ -88,7 +88,7 @@ void COutput::SetCGNS_Coordinates(CConfig *config, CGeometry *geometry, unsigned
 		if (cgns_err) cg_error_print();
 		cgns_err = cg_coord_write(cgns_file,cgns_base,cgns_zone,RealDouble,"y",Coords[1],&cgns_coord);
 		if (cgns_err) cg_error_print();
-		if (geometry->GetnDim() == 3){
+		if (geometry->GetnDim() == 3) {
 			cgns_err = cg_coord_write(cgns_file,cgns_base,cgns_zone,RealDouble,"z",Coords[2],&cgns_coord);
 			if (cgns_err) cg_error_print();
 		}
@@ -131,7 +131,7 @@ void COutput::SetCGNS_Coordinates(CConfig *config, CGeometry *geometry, unsigned
 			if (cgns_err) cg_error_print();
 			cgns_err = cg_coord_write(cgns_file,cgns_base_results,cgns_zone_results,RealDouble,"y",Coords[1],&cgns_coord);
 			if (cgns_err) cg_error_print();
-			if (geometry->GetnDim() == 3){
+			if (geometry->GetnDim() == 3) {
 				cgns_err = cg_coord_write(cgns_file,cgns_base_results,cgns_zone_results,RealDouble,"z",Coords[2],&cgns_coord);
 				if (cgns_err) cg_error_print();
 			}
@@ -440,7 +440,7 @@ void COutput::SetCGNS_Solution(CConfig *config, CGeometry *geometry, unsigned sh
 	}
   
   /*--- Write primitive variable residuals to CGNS file ---*/
-  if (config->GetWrt_Limiters()){
+  if (config->GetWrt_Limiters()) {
     for (jVar = 0; jVar < nVar_Consv; jVar++) {
       name.str(string()); name << "Primitive Limiter " << jVar+1;
       cgns_err = cg_field_write(cgns_file,cgns_base,cgns_zone,cgns_flow,RealDouble,(char *)name.str().c_str(),Data[iVar],&cgns_field); iVar++;
@@ -449,7 +449,7 @@ void COutput::SetCGNS_Solution(CConfig *config, CGeometry *geometry, unsigned sh
   }
   
 	/*--- Write conservative variable residuals to CGNS file ---*/
-  if (config->GetWrt_Residuals()){
+  if (config->GetWrt_Residuals()) {
     for (jVar = 0; jVar < nVar_Consv; jVar++) {
       name.str(string()); name << "Conservative Residual " << jVar+1;
       cgns_err = cg_field_write(cgns_file,cgns_base,cgns_zone,cgns_flow,RealDouble,(char *)name.str().c_str(),Data[iVar],&cgns_field); iVar++;

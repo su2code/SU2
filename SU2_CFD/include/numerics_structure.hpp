@@ -477,21 +477,21 @@ public:
 	 * \param[in] val_F1_i - Value of the first Menter blending function at point i.
 	 * \param[in] val_F1_j - Value of the first Menter blending function at point j.
 	 */
-	virtual void SetF1blending(double val_F1_i, double val_F1_j){/* empty */};
+	virtual void SetF1blending(double val_F1_i, double val_F1_j) {/* empty */};
     
 	/*!
 	 * \brief Set the value of the second blending function.
 	 * \param[in] val_F1_i - Value of the second Menter blending function at point i.
 	 * \param[in] val_F1_j - Value of the second Menter blending function at point j.
 	 */
-	virtual void SetF2blending(double val_F1_i, double val_F1_j){/* empty */};
+	virtual void SetF2blending(double val_F1_i, double val_F1_j) {/* empty */};
   
 	/*!
 	 * \brief Set the value of the cross diffusion for the SST model.
 	 * \param[in] val_CDkw_i - Value of the cross diffusion at point i.
 	 * \param[in] val_CDkw_j - Value of the cross diffusion at point j.
 	 */
-	virtual void SetCrossDiff(double val_CDkw_i, double val_CDkw_j){/* empty */};
+	virtual void SetCrossDiff(double val_CDkw_i, double val_CDkw_j) {/* empty */};
     
 	/*!
 	 * \brief Set the gradient of the auxiliary variables.

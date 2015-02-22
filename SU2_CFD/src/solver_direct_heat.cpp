@@ -138,7 +138,7 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config) : CSolver() {
 		unsigned long index;
 		string text_line;
     
-		for(unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+		for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
 			getline(restart_file,text_line);
 			istringstream point_line(text_line);
 			point_line >> index >> Solution[0] >> Solution[1];
@@ -490,7 +490,7 @@ void CHeatSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
 		
 		/*--- Compute residual ---*/
     
-		for(iVar = 0; iVar < nVar; iVar++) {
+		for (iVar = 0; iVar < nVar; iVar++) {
 			total_index = iPoint*nVar+iVar;
 			if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
 				LinSysSol[total_index] = ( U_time_nP1[iVar] - U_time_n[iVar] );

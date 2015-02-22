@@ -139,7 +139,7 @@ void COutput::SetSU2_MeshASCII(CConfig *config, CGeometry *geometry) {
         
         /*--- Write the node coordinates ---*/
         
-        for(iDim = 0; iDim < nDim; iDim++)
+        for (iDim = 0; iDim < nDim; iDim++)
           output_file << scientific << Coords[iDim][iPoint] << "\t";
         
         output_file << iPoint << endl;
@@ -163,11 +163,11 @@ void COutput::SetSU2_MeshASCII(CConfig *config, CGeometry *geometry) {
         string::size_type position;
         for (iChar = 0; iChar < 20; iChar++) {
           position = text_line.find( " ", 0 );
-          if(position != string::npos) text_line.erase (position,1);
+          if (position != string::npos) text_line.erase (position,1);
           position = text_line.find( "\r", 0 );
-          if(position != string::npos) text_line.erase (position,1);
+          if (position != string::npos) text_line.erase (position,1);
           position = text_line.find( "\n", 0 );
-          if(position != string::npos) text_line.erase (position,1);
+          if (position != string::npos) text_line.erase (position,1);
         }
         Marker_Tag = text_line.c_str();
         
