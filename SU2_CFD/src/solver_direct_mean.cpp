@@ -5308,10 +5308,10 @@ void CEulerSolver::SetPreconditioner(CConfig *config, unsigned short iPoint) {
 
 void CEulerSolver::GetEngine_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) {
   
-  unsigned short iDim, iMarker;
+  unsigned short iDim, iMarker, iVar;
   unsigned long iVertex, iPoint;
   double Pressure, Temperature, Velocity[3], Velocity2, MassFlow, Density, Energy, Area,
-  Mach, SoundSpeed;
+  Mach, SoundSpeed, Flow_Dir[3], alpha;
   unsigned short iMarker_EngineInflow, iMarker_EngineBleed, iMarker_EngineExhaust;
 
   double Gas_Constant = config->GetGas_ConstantND();
@@ -5719,6 +5719,70 @@ void CEulerSolver::GetEngine_Properties(CGeometry *geometry, CConfig *config, un
     cout << "-------------------------------------------------------------------------" << endl;
 
   }
+  
+  /*--- Check the flow orientation in the engine ---*/
+  
+  if ((config->GetMarker_All_KindBC(iMarker) == ENGINE_INFLOW) ||
+      (config->GetMarker_All_KindBC(iMarker) == ENGINE_EXHAUST) ||
+      (config->GetMarker_All_KindBC(iMarker) == ENGINE_BLEED)) {
+    
+    /*--- Loop over all the vertices on this boundary marker ---*/
+    
+    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+      
+      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+      
+      /*--- Normal vector for this vertex (negate for outward convention) ---*/
+      
+      geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
+      
+      for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = -Vector[iDim];
+      
+      Area = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+        Area += Vector[iDim]*Vector[iDim];
+      Area = sqrt (Area);
+      
+      /*--- Compute unitary vector ---*/
+      
+      for (iDim = 0; iDim < nDim; iDim++)
+        Vector[iDim] /= Area;
+      
+      /*--- The flow direction is defined by the local velocity on the surface ---*/
+      
+      for (iDim = 0; iDim < nDim; iDim++)
+        Flow_Dir[iDim] = node[iPoint]->GetSolution(iDim+1) / node[iPoint]->GetSolution(0);
+      
+      /*--- Dot product of normal and flow direction. ---*/
+      
+      alpha = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+        alpha += Vector[iDim]*Flow_Dir[iDim];
+      
+      /*--- Flow in the wrong direction. ---*/
+      
+      if (((config->GetMarker_All_KindBC(iMarker) == ENGINE_EXHAUST) ||
+           (config->GetMarker_All_KindBC(iMarker) == ENGINE_BLEED)) && (alpha > 0.0)) {
+        
+        /*--- Copy the old solution ---*/
+        for (iVar = 0; iVar < nVar; iVar++)
+          node[iPoint]->SetSolution(iVar, node[iPoint]->GetSolution_Old(iVar));
+        
+      }
+      
+      if ((config->GetMarker_All_KindBC(iMarker) == ENGINE_INFLOW) && (alpha < 0.0)) {
+        
+        /*--- Copy the old solution ---*/
+        for (iVar = 0; iVar < nVar; iVar++)
+          node[iPoint]->SetSolution(iVar, node[iPoint]->GetSolution_Old(iVar));
+        
+      }
+      
+    }
+    
+  }
+
+  
 
   delete [] Inflow_MassFlow_Local;
   delete [] Inflow_Mach_Local;
