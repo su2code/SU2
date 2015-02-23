@@ -1616,16 +1616,20 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
   unsigned long iExtIter = config->GetExtIter();
   
   /*--- Define geometry constants in the solver structure ---*/
+  
   nDim = geometry->GetnDim();
   
   /*--- Allocate the node variables ---*/
+  
   node = new CVariable*[geometry->GetnPoint()];
   
   /*--- Restart the solution from file information ---*/
+  
   ifstream restart_file;
   string filename;
   
   /*--- Retrieve filename from config ---*/
+  
   if (config->GetAdjoint()) {
     filename = config->GetSolution_AdjFileName();
     filename = config->GetObjFunc_Extension(filename);
@@ -1634,37 +1638,53 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
   }
   
   /*--- Unsteady problems require an iteration number to be appended. ---*/
+  
   if (config->GetWrt_Unsteady() || config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
     filename = config->GetUnsteady_FileName(filename, int(iExtIter));
   }
   
   /*--- Open the restart file ---*/
+  
   restart_file.open(filename.data(), ios::in);
   
   /*--- In case there is no restart file ---*/
+  
   if (restart_file.fail()) {
-    cout << "SU2 flow file " << filename << " not found" << endl;
+    if (rank == MASTER_NODE)
+      cout << "SU2 flow file " << filename << " not found" << endl;
+
+#ifndef HAVE_MPI
     exit(EXIT_FAILURE);
+#else
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+    
   }
   
   /*--- Output the file name to the console. ---*/
+  
   if (rank == MASTER_NODE)
     cout << "Reading and storing the solution from " << filename << "." << endl;
   
   /*--- In case this is a parallel simulation, we need to perform the
    Global2Local index transformation first. ---*/
+  
   long *Global2Local = new long[geometry->GetGlobal_nPointDomain()];
   
   /*--- First, set all indices to a negative value by default ---*/
+  
   for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++)
     Global2Local[iPoint] = -1;
   
   /*--- Now fill array with the transform values only for local points ---*/
+  
   for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++)
     Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
   
   
   /*--- Identify the number of fields (and names) in the restart file ---*/
+  
   getline (restart_file, text_line);
   stringstream ss(text_line);
   while (ss >> Tag) {
@@ -1674,10 +1694,12 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
   
   /*--- Set the number of variables, one per field in the
    restart file (without including the PointID) ---*/
+  
   nVar = config->fields.size() - 1;
   double Solution[nVar];
   
   /*--- Read all lines in the restart file ---*/
+  
   iPoint_Global = 0;
   while (getline (restart_file, text_line)) {
     istringstream point_line(text_line);
@@ -1686,6 +1708,7 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
      on a different processor, the value of iPoint_Local will be -1.
      Otherwise, the local index for this node on the current processor
      will be returned and used to instantiate the vars. ---*/
+    
     iPoint_Local = Global2Local[iPoint_Global];
     if (iPoint_Local >= 0) {
       
@@ -1704,6 +1727,7 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
   /*--- Instantiate the variable class with an arbitrary solution
    at any halo/periodic nodes. The initial solution can be arbitrary,
    because a send/recv is performed immediately in the solver. ---*/
+  
   for (iVar = 0; iVar < nVar; iVar++)
     Solution[iVar] = 0.0;
   
@@ -1711,12 +1735,15 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
     node[iPoint] = new CBaselineVariable(Solution, nVar, config);
   
   /*--- Close the restart file ---*/
+  
   restart_file.close();
   
   /*--- Free memory needed for the transformation ---*/
+  
   delete [] Global2Local;
   
   /*--- MPI solution ---*/
+  
   Set_MPI_Solution(geometry, config);
   
 }

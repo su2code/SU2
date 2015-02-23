@@ -476,7 +476,9 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
     /*--- Read all lines in the restart file ---*/
     
-    long iPoint_Local; unsigned long iPoint_Global = 0; string text_line;
+    long iPoint_Local;
+    unsigned long iPoint_Global_Local = 0, iPoint_Global = 0; string text_line;
+    unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
 
     /*--- The first line is the header ---*/
     
@@ -510,10 +512,35 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
           if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
         }
         node[iPoint_Local] = new CEulerVariable(Solution, nDim, nVar, config);
+        iPoint_Global_Local++;
       }
       iPoint_Global++;
     }
 
+    /*--- Detect a wrong solution file ---*/
+    
+    if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
+    
+#ifndef HAVE_MPI
+    rbuf_NotMatching = sbuf_NotMatching;
+#else
+    MPI_Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
+#endif
+    
+    if (rbuf_NotMatching != 0) {
+      if (rank == MASTER_NODE) {
+        cout << endl << "The solution file " << filename.data() << " doesn't match with the mesh file!" << endl;
+        cout << "It could be empty lines at the end of the file." << endl << endl;
+      }
+#ifndef HAVE_MPI
+      exit(EXIT_FAILURE);
+#else
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
+#endif
+    }
+    
     /*--- Instantiate the variable class with an arbitrary solution
      at any halo/periodic nodes. The initial solution can be arbitrary,
      because a send/recv is performed immediately in the solver. ---*/
@@ -5281,10 +5308,10 @@ void CEulerSolver::SetPreconditioner(CConfig *config, unsigned short iPoint) {
 
 void CEulerSolver::GetEngine_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) {
   
-  unsigned short iDim, iMarker, iVar;
+  unsigned short iDim, iMarker;
   unsigned long iVertex, iPoint;
   double Pressure, Temperature, Velocity[3], Velocity2, MassFlow, Density, Energy, Area,
-  Mach, SoundSpeed, Flow_Dir[3], alpha;
+  Mach, SoundSpeed;
   unsigned short iMarker_EngineInflow, iMarker_EngineBleed, iMarker_EngineExhaust;
 
   double Gas_Constant = config->GetGas_ConstantND();
@@ -5691,109 +5718,6 @@ void CEulerSolver::GetEngine_Properties(CGeometry *geometry, CConfig *config, un
     }
     cout << "-------------------------------------------------------------------------" << endl;
 
-  }
-
-  /*--- Check the flow orientation in the engine inflow ---*/
-  
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-
-    if (config->GetMarker_All_KindBC(iMarker) == ENGINE_INFLOW) {
-
-      /*--- Loop over all the vertices on this boundary marker ---*/
-      
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-
-        /*--- Normal vector for this vertex (negate for outward convention) ---*/
-        
-        geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
-
-        for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = -Vector[iDim];
-
-        Area = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          Area += Vector[iDim]*Vector[iDim];
-        Area = sqrt (Area);
-
-        /*--- Compute unitary vector ---*/
-        
-        for (iDim = 0; iDim < nDim; iDim++)
-          Vector[iDim] /= Area;
-
-        /*--- The flow direction is defined by the local velocity on the surface ---*/
-        
-        for (iDim = 0; iDim < nDim; iDim++)
-          Flow_Dir[iDim] = node[iPoint]->GetSolution(iDim+1) / node[iPoint]->GetSolution(0);
-
-        /*--- Dot product of normal and flow direction. ---*/
-        
-        alpha = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          alpha += Vector[iDim]*Flow_Dir[iDim];
-
-        /*--- Flow in the wrong direction. ---*/
-        
-        if (alpha < 0.0) {
-
-          /*--- Copy the old solution ---*/
-          for (iVar = 0; iVar < nVar; iVar++)
-            node[iPoint]->SetSolution(iVar, node[iPoint]->GetSolution_Old(iVar));
-
-        }
-
-      }
-    }
-      
-      if ((config->GetMarker_All_KindBC(iMarker) == ENGINE_EXHAUST) ||
-          (config->GetMarker_All_KindBC(iMarker) == ENGINE_BLEED)) {
-          
-          /*--- Loop over all the vertices on this boundary marker ---*/
-          
-          for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-              
-              iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-              
-              /*--- Normal vector for this vertex (negate for outward convention) ---*/
-              
-              geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
-              
-              for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = -Vector[iDim];
-              
-              Area = 0.0;
-              for (iDim = 0; iDim < nDim; iDim++)
-                  Area += Vector[iDim]*Vector[iDim];
-              Area = sqrt (Area);
-              
-              /*--- Compute unitary vector ---*/
-              
-              for (iDim = 0; iDim < nDim; iDim++)
-                  Vector[iDim] /= Area;
-              
-              /*--- The flow direction is defined by the local velocity on the surface ---*/
-              
-              for (iDim = 0; iDim < nDim; iDim++)
-                  Flow_Dir[iDim] = node[iPoint]->GetSolution(iDim+1) / node[iPoint]->GetSolution(0);
-              
-              /*--- Dot product of normal and flow direction. ---*/
-              
-              alpha = 0.0;
-              for (iDim = 0; iDim < nDim; iDim++)
-                  alpha += Vector[iDim]*Flow_Dir[iDim];
-              
-              /*--- Flow in the wrong direction. ---*/
-              
-              if (alpha > 0.0) {
-                  
-                  /*--- Copy the old solution ---*/
-                  for (iVar = 0; iVar < nVar; iVar++)
-                      node[iPoint]->SetSolution(iVar, node[iPoint]->GetSolution_Old(iVar));
-                  
-              }
-              
-          }
-      }
-      
   }
 
   delete [] Inflow_MassFlow_Local;
@@ -8248,7 +8172,8 @@ void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_contai
   double Gas_Constant = config->GetGas_ConstantND();
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   bool tkeNeeded = ((config->GetKind_Solver() == RANS) && (config->GetKind_Turb_Model() == SST));
-
+  double Baseline_Press = 0.75 * config->GetPressure_FreeStreamND();
+  
   double *Normal = new double[nDim];
 
   /*--- Retrieve the specified target fan face mach in the nacelle. ---*/
@@ -8262,7 +8187,7 @@ void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_contai
 
   /*--- Compute the pressure increment (note that increasing pressure decreases flow speed) ---*/
   
-  Inflow_Pressure_inc = - (1.0 - (Inflow_Mach_old/Target_Inflow_Mach)) * config->GetPressure_FreeStreamND();
+  Inflow_Pressure_inc = - (1.0 - (Inflow_Mach_old/Target_Inflow_Mach)) * Baseline_Press;
 
   /*--- Estimate the new fan face pressure ---*/
   
@@ -8418,6 +8343,7 @@ void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_conta
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   bool tkeNeeded = ((config->GetKind_Solver() == RANS) && (config->GetKind_Turb_Model() == SST));
   double DampingFactor = config->GetDamp_Engine_Exhaust();
+  double Baseline_Press = 0.75 * config->GetPressure_FreeStreamND();
 
   double *Normal = new double[nDim];
 
@@ -8431,7 +8357,7 @@ void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_conta
   
   /*--- Compute the Pressure increment ---*/
   
-  Exhaust_Pressure_inc = (1.0 - (Exhaust_Pressure_old/Target_Exhaust_Pressure)) * config->GetPressure_FreeStreamND();
+  Exhaust_Pressure_inc = (1.0 - (Exhaust_Pressure_old/Target_Exhaust_Pressure)) * Baseline_Press;
   
   /*--- Estimate the new exhaust pressure ---*/
   
@@ -8664,7 +8590,8 @@ void CEulerSolver::BC_Engine_Bleed(CGeometry *geometry, CSolver **solver_contain
   bool viscous = config->GetViscous();
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   bool tkeNeeded = ((config->GetKind_Solver() == RANS) && (config->GetKind_Turb_Model() == SST));
-  
+  double Baseline_Press = 0.75 * config->GetPressure_FreeStreamND();
+
   double *Normal = new double[nDim];
   
   /*--- Retrieve the specified target bleed mass flow in the engine (non-dimensional). ---*/
@@ -8678,7 +8605,7 @@ void CEulerSolver::BC_Engine_Bleed(CGeometry *geometry, CSolver **solver_contain
   
   /*--- Compute the Pressure increment (note that increasing pressure also increases mass flow rate) ---*/
   
-  Bleed_Pressure_inc = (1.0 - (Bleed_MassFlow_old/Target_Bleed_MassFlow)) * config->GetPressure_FreeStreamND();
+  Bleed_Pressure_inc = (1.0 - (Bleed_MassFlow_old/Target_Bleed_MassFlow)) * Baseline_Press;
   
   /*--- Estimate the new bleed pressure ---*/
   
@@ -10685,8 +10612,10 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     
     /*--- Read all lines in the restart file ---*/
     
-    long iPoint_Local; unsigned long iPoint_Global = 0; string text_line;
-    
+    long iPoint_Local;
+    unsigned long iPoint_Global_Local = 0, iPoint_Global = 0; string text_line;
+    unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
+
     /*--- The first line is the header ---*/
     
     getline (restart_file, text_line);
@@ -10699,6 +10628,8 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
        Otherwise, the local index for this node on the current processor
        will be returned and used to instantiate the vars. ---*/
       
+      if (iPoint_Global >= geometry->GetGlobal_nPointDomain()) { sbuf_NotMatching = 1; break; }
+
       iPoint_Local = Global2Local[iPoint_Global];
       
       /*--- Load the solution for this node. Note that the first entry
@@ -10719,8 +10650,33 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
           if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
         }
         node[iPoint_Local] = new CNSVariable(Solution, nDim, nVar, config);
+        iPoint_Global_Local++;
       }
       iPoint_Global++;
+    }
+    
+    /*--- Detect a wrong solution file ---*/
+
+    if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
+    
+#ifndef HAVE_MPI
+    rbuf_NotMatching = sbuf_NotMatching;
+#else
+    MPI_Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
+#endif
+
+    if (rbuf_NotMatching != 0) {
+      if (rank == MASTER_NODE) {
+        cout << endl << "The solution file " << filename.data() << " doesn't match with the mesh file!" << endl;
+        cout << "It could be empty lines at the end of the file." << endl << endl;
+      }
+#ifndef HAVE_MPI
+      exit(EXIT_FAILURE);
+#else
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
+#endif
     }
     
     /*--- Instantiate the variable class with an arbitrary solution
