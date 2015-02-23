@@ -5308,15 +5308,14 @@ void CEulerSolver::SetPreconditioner(CConfig *config, unsigned short iPoint) {
 
 void CEulerSolver::GetEngine_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) {
   
-  unsigned short iDim, iMarker, iVar;
+  unsigned short iDim, iMarker, iMarker_EngineInflow, iMarker_EngineBleed, iMarker_EngineExhaust;
   unsigned long iVertex, iPoint;
   double Pressure, Temperature, Velocity[3], Velocity2, MassFlow, Density, Energy, Area,
-  Mach, SoundSpeed, Flow_Dir[3], alpha;
-  unsigned short iMarker_EngineInflow, iMarker_EngineBleed, iMarker_EngineExhaust;
+  Mach, SoundSpeed;
 
-  double Gas_Constant = config->GetGas_ConstantND();
-  unsigned short nMarker_EngineInflow = config->GetnMarker_EngineInflow();
-  unsigned short nMarker_EngineBleed = config->GetnMarker_EngineBleed();
+  double Gas_Constant                  = config->GetGas_ConstantND();
+  unsigned short nMarker_EngineInflow  = config->GetnMarker_EngineInflow();
+  unsigned short nMarker_EngineBleed   = config->GetnMarker_EngineBleed();
   unsigned short nMarker_EngineExhaust = config->GetnMarker_EngineExhaust();
 
   int rank = MASTER_NODE;
@@ -5720,68 +5719,67 @@ void CEulerSolver::GetEngine_Properties(CGeometry *geometry, CConfig *config, un
 
   }
   
-  /*--- Check the flow orientation in the engine ---*/
-  
-  if ((config->GetMarker_All_KindBC(iMarker) == ENGINE_INFLOW) ||
-      (config->GetMarker_All_KindBC(iMarker) == ENGINE_EXHAUST) ||
-      (config->GetMarker_All_KindBC(iMarker) == ENGINE_BLEED)) {
-    
-    /*--- Loop over all the vertices on this boundary marker ---*/
-    
-    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-      
-      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-      
-      /*--- Normal vector for this vertex (negate for outward convention) ---*/
-      
-      geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
-      
-      for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = -Vector[iDim];
-      
-      Area = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        Area += Vector[iDim]*Vector[iDim];
-      Area = sqrt (Area);
-      
-      /*--- Compute unitary vector ---*/
-      
-      for (iDim = 0; iDim < nDim; iDim++)
-        Vector[iDim] /= Area;
-      
-      /*--- The flow direction is defined by the local velocity on the surface ---*/
-      
-      for (iDim = 0; iDim < nDim; iDim++)
-        Flow_Dir[iDim] = node[iPoint]->GetSolution(iDim+1) / node[iPoint]->GetSolution(0);
-      
-      /*--- Dot product of normal and flow direction. ---*/
-      
-      alpha = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        alpha += Vector[iDim]*Flow_Dir[iDim];
-      
-      /*--- Flow in the wrong direction. ---*/
-      
-      if (((config->GetMarker_All_KindBC(iMarker) == ENGINE_EXHAUST) ||
-           (config->GetMarker_All_KindBC(iMarker) == ENGINE_BLEED)) && (alpha > 0.0)) {
-        
-        /*--- Copy the old solution ---*/
-        for (iVar = 0; iVar < nVar; iVar++)
-          node[iPoint]->SetSolution(iVar, node[iPoint]->GetSolution_Old(iVar));
-        
-      }
-      
-      if ((config->GetMarker_All_KindBC(iMarker) == ENGINE_INFLOW) && (alpha < 0.0)) {
-        
-        /*--- Copy the old solution ---*/
-        for (iVar = 0; iVar < nVar; iVar++)
-          node[iPoint]->SetSolution(iVar, node[iPoint]->GetSolution_Old(iVar));
-        
-      }
-      
-    }
-    
-  }
-
+//  /*--- Check the flow orientation in the engine (it doesn't work? ) ---*/
+//  
+//  if ((config->GetMarker_All_KindBC(iMarker) == ENGINE_INFLOW) ||
+//      (config->GetMarker_All_KindBC(iMarker) == ENGINE_EXHAUST) ||
+//      (config->GetMarker_All_KindBC(iMarker) == ENGINE_BLEED)) {
+//    
+//    /*--- Loop over all the vertices on this boundary marker ---*/
+//    
+//    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+//      
+//      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+//      
+//      /*--- Normal vector for this vertex (negate for outward convention) ---*/
+//      
+//      geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
+//      
+//      for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = -Vector[iDim];
+//      
+//      Area = 0.0;
+//      for (iDim = 0; iDim < nDim; iDim++)
+//        Area += Vector[iDim]*Vector[iDim];
+//      Area = sqrt (Area);
+//      
+//      /*--- Compute unitary vector ---*/
+//      
+//      for (iDim = 0; iDim < nDim; iDim++)
+//        Vector[iDim] /= Area;
+//      
+//      /*--- The flow direction is defined by the local velocity on the surface ---*/
+//      
+//      for (iDim = 0; iDim < nDim; iDim++)
+//        Flow_Dir[iDim] = node[iPoint]->GetSolution(iDim+1) / node[iPoint]->GetSolution(0);
+//      
+//      /*--- Dot product of normal and flow direction. ---*/
+//      
+//      alpha = 0.0;
+//      for (iDim = 0; iDim < nDim; iDim++)
+//        alpha += Vector[iDim]*Flow_Dir[iDim];
+//      
+//      /*--- Flow in the wrong direction. ---*/
+//      
+//      if (((config->GetMarker_All_KindBC(iMarker) == ENGINE_EXHAUST) ||
+//           (config->GetMarker_All_KindBC(iMarker) == ENGINE_BLEED)) && (alpha > 0.0)) {
+//        
+//        /*--- Copy the old solution ---*/
+//        for (iVar = 0; iVar < nVar; iVar++)
+//          node[iPoint]->SetSolution(iVar, node[iPoint]->GetSolution_Old(iVar));
+//        
+//      }
+//      
+//      if ((config->GetMarker_All_KindBC(iMarker) == ENGINE_INFLOW) && (alpha < 0.0)) {
+//        
+//        /*--- Copy the old solution ---*/
+//        for (iVar = 0; iVar < nVar; iVar++)
+//          node[iPoint]->SetSolution(iVar, node[iPoint]->GetSolution_Old(iVar));
+//        
+//      }
+//      
+//    }
+//    
+//  }
   
 
   delete [] Inflow_MassFlow_Local;
@@ -8236,7 +8234,7 @@ void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_contai
   double Gas_Constant = config->GetGas_ConstantND();
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   bool tkeNeeded = ((config->GetKind_Solver() == RANS) && (config->GetKind_Turb_Model() == SST));
-  double Baseline_Press = 0.75 * config->GetPressure_FreeStreamND();
+  double Baseline_Press = 1.00 * config->GetPressure_FreeStreamND();
   
   double *Normal = new double[nDim];
 
@@ -8407,7 +8405,7 @@ void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_conta
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   bool tkeNeeded = ((config->GetKind_Solver() == RANS) && (config->GetKind_Turb_Model() == SST));
   double DampingFactor = config->GetDamp_Engine_Exhaust();
-  double Baseline_Press = 0.75 * config->GetPressure_FreeStreamND();
+  double Baseline_Press = 1.00 * config->GetPressure_FreeStreamND();
 
   double *Normal = new double[nDim];
 
@@ -8654,7 +8652,7 @@ void CEulerSolver::BC_Engine_Bleed(CGeometry *geometry, CSolver **solver_contain
   bool viscous = config->GetViscous();
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   bool tkeNeeded = ((config->GetKind_Solver() == RANS) && (config->GetKind_Turb_Model() == SST));
-  double Baseline_Press = 0.75 * config->GetPressure_FreeStreamND();
+  double Baseline_Press = 0.01 * config->GetPressure_FreeStreamND();
 
   double *Normal = new double[nDim];
   
