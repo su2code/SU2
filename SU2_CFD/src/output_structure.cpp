@@ -4629,15 +4629,15 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         
         if (!Unsteady) {
           switch (config[val_iZone]->GetKind_Solver()) {
-            case EULER :                  case NAVIER_STOKES: case RANS:
+            case EULER : case NAVIER_STOKES: case RANS:
+            case ADJ_EULER : case ADJ_NAVIER_STOKES: case ADJ_RANS:
             case FLUID_STRUCTURE_EULER :  case FLUID_STRUCTURE_NAVIER_STOKES: case FLUID_STRUCTURE_RANS:
               cout << endl << "Local time stepping summary:" << endl;
               for (unsigned short iMesh = FinestMesh; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++)
-                cout << "MG level: "<< iMesh << "-> Min. DT: " << solver_container[val_iZone][iMesh][FLOW_SOL]->GetMin_Delta_Time()<<
+                cout << "MG level: "<< iMesh << " -> Min. DT: " << solver_container[val_iZone][iMesh][FLOW_SOL]->GetMin_Delta_Time()<<
                 ". Max. DT: " << solver_container[val_iZone][iMesh][FLOW_SOL]->GetMax_Delta_Time() <<
                 ". CFL number: " << config[val_iZone]->GetCFL(iMesh)  << "." << endl;
               break;
-              
             case TNE2_EULER: case TNE2_NAVIER_STOKES:
             case ADJ_TNE2_EULER: case ADJ_TNE2_NAVIER_STOKES:
               cout << endl << "Min Delta Time: " << solver_container[val_iZone][MESH_0][TNE2_SOL]->GetMin_Delta_Time()<< ". Max Delta Time: " << solver_container[val_iZone][MESH_0][TNE2_SOL]->GetMax_Delta_Time() << ".";

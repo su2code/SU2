@@ -6134,8 +6134,9 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
 //  unsigned long *adj_counter = new unsigned long[local_node];
 //  unsigned long **adjacent_elem = new unsigned long*[local_node];
     
-   adj_counter = new unsigned long[local_node];
-   adjacent_elem = new unsigned long*[local_node];
+  adj_counter = new unsigned long[local_node];
+  adjacent_elem = new unsigned long*[local_node];
+  
   for (iPoint = 0; iPoint < local_node; iPoint++) {
     adjacent_elem[iPoint] = new unsigned long[2000];
     adj_counter[iPoint] = 0;
@@ -6199,13 +6200,13 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
                 elem_reqd = true;
                   
                   
-//                for (unsigned long j=0; j<N_POINTS_TRIANGLE; j++) {
-//                  if (i != j) {
-//                    adjacent_elem[vnodes_triangle[i]-starting_node[rank]][adj_counter[vnodes_triangle[i]-starting_node[rank]]]=vnodes_triangle[j];
-//                    adj_counter[vnodes_triangle[i]-starting_node[rank]]++;
-//                  }
-//                }
-                  
+                for (unsigned long j=0; j<N_POINTS_TRIANGLE; j++) {
+                  if (i != j) {
+                    adjacent_elem[vnodes_triangle[i]-starting_node[rank]][adj_counter[vnodes_triangle[i]-starting_node[rank]]]=vnodes_triangle[j];
+                    adj_counter[vnodes_triangle[i]-starting_node[rank]]++;
+                  }
+                }
+                
                   
               }
             }
@@ -6223,13 +6224,13 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
                 elem_reqd = true;
                   
                   
-//                for (unsigned long j=0; j<N_POINTS_QUADRILATERAL; j++) {
-//                  if (i!=j) {
-//                    adjacent_elem[vnodes_quad[i]-starting_node[rank]][adj_counter[vnodes_quad[i]-starting_node[rank]]]=vnodes_quad[j];
-//                    adj_counter[vnodes_quad[i]-starting_node[rank]]++;
-//                  }
-//                }
-                  
+                for (unsigned long j=0; j<N_POINTS_QUADRILATERAL; j++) {
+                  if (i!=j) {
+                    adjacent_elem[vnodes_quad[i]-starting_node[rank]][adj_counter[vnodes_quad[i]-starting_node[rank]]]=vnodes_quad[j];
+                    adj_counter[vnodes_quad[i]-starting_node[rank]]++;
+                  }
+                }
+                
                   
                   
               }
@@ -6246,12 +6247,12 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             for (unsigned long i=0; i<N_POINTS_TETRAHEDRON; i++) {
               if ((vnodes_tetra[i]>=starting_node[rank])&&(vnodes_tetra[i]<ending_node[rank])) {
                 elem_reqd = true;
-//                for (unsigned long j=0; j<N_POINTS_TETRAHEDRON; j++) {
-//                  if (i!=j) {
-//                    adjacent_elem[vnodes_tetra[i]-starting_node[rank]][adj_counter[vnodes_tetra[i]-starting_node[rank]]]=vnodes_tetra[j];
-//                    adj_counter[vnodes_tetra[i]-starting_node[rank]]++;
-//                  }
-//                }
+                for (unsigned long j=0; j<N_POINTS_TETRAHEDRON; j++) {
+                  if (i!=j) {
+                    adjacent_elem[vnodes_tetra[i]-starting_node[rank]][adj_counter[vnodes_tetra[i]-starting_node[rank]]]=vnodes_tetra[j];
+                    adj_counter[vnodes_tetra[i]-starting_node[rank]]++;
+                  }
+                }
               }
             }
             if (elem_reqd) {
@@ -6269,12 +6270,12 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             for (unsigned long i=0; i<N_POINTS_HEXAHEDRON; i++) {
               if ((vnodes_hexa[i]>=starting_node[rank])&&(vnodes_hexa[i]<ending_node[rank])) {
                 elem_reqd = true;
-//                for (unsigned long j=0; j<N_POINTS_HEXAHEDRON; j++) {
-//                  if (i!=j) {
-//                    adjacent_elem[vnodes_hexa[i]-starting_node[rank]][adj_counter[vnodes_hexa[i]-starting_node[rank]]]=vnodes_hexa[j];
-//                    adj_counter[vnodes_hexa[i]-starting_node[rank]]++;
-//                  }
-//                }
+                for (unsigned long j=0; j<N_POINTS_HEXAHEDRON; j++) {
+                  if (i!=j) {
+                    adjacent_elem[vnodes_hexa[i]-starting_node[rank]][adj_counter[vnodes_hexa[i]-starting_node[rank]]]=vnodes_hexa[j];
+                    adj_counter[vnodes_hexa[i]-starting_node[rank]]++;
+                  }
+                }
               }
             }
             if (elem_reqd) {
@@ -6292,12 +6293,12 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             for (unsigned long i=0; i<N_POINTS_WEDGE; i++) {
               if ((vnodes_wedge[i]>=starting_node[rank])&&(vnodes_wedge[i]<ending_node[rank])) {
                 elem_reqd = true;
-//                for (unsigned long j=0; j<N_POINTS_WEDGE; j++) {
-//                  if (i!=j) {
-//                    adjacent_elem[vnodes_wedge[i]-starting_node[rank]][adj_counter[vnodes_wedge[i]-starting_node[rank]]]=vnodes_wedge[j];
-//                    adj_counter[vnodes_wedge[i]-starting_node[rank]]++;
-//                  }
-//                }
+                for (unsigned long j=0; j<N_POINTS_WEDGE; j++) {
+                  if (i!=j) {
+                    adjacent_elem[vnodes_wedge[i]-starting_node[rank]][adj_counter[vnodes_wedge[i]-starting_node[rank]]]=vnodes_wedge[j];
+                    adj_counter[vnodes_wedge[i]-starting_node[rank]]++;
+                  }
+                }
               }
             }
             if (elem_reqd) {
@@ -6313,12 +6314,12 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             for (unsigned long i=0; i<N_POINTS_PYRAMID; i++) {
               if ((vnodes_pyramid[i]>=starting_node[rank])&&(vnodes_pyramid[i]<ending_node[rank])) {
                 elem_reqd = true;
-//                for (unsigned long j=0; j<N_POINTS_PYRAMID; j++) {
-//                  if (i!=j) {
-//                    adjacent_elem[vnodes_pyramid[i]-starting_node[rank]][adj_counter[vnodes_pyramid[i]-starting_node[rank]]]=vnodes_pyramid[j];
-//                    adj_counter[vnodes_pyramid[i]-starting_node[rank]]++;
-//                  }
-//                }
+                for (unsigned long j=0; j<N_POINTS_PYRAMID; j++) {
+                  if (i!=j) {
+                    adjacent_elem[vnodes_pyramid[i]-starting_node[rank]][adj_counter[vnodes_pyramid[i]-starting_node[rank]]]=vnodes_pyramid[j];
+                    adj_counter[vnodes_pyramid[i]-starting_node[rank]]++;
+                  }
+                }
               }
             }
             if (elem_reqd) {
@@ -6339,12 +6340,10 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
     
     if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
     cout << "Calling the partitioning functions." << endl;
-  /*--- Call the Generate_Adjacency_For_Partitioning() function to compute the adjacency matrix ---*/
   
-//    geometry[iZone][MESH_0]->Check_IntElem_Orientation(config[iZone]);
-//    geometry[iZone][MESH_0]->Check_BoundElem_Orientation(config[iZone]);
+  /*--- Call the Generate_Adjacency_For_Partitioning() function to compute the adjacency matrix ---*/
 
-    Generate_Adjacency_For_Partitioning(loc_element_count);
+//  Generate_Adjacency_For_Partitioning(loc_element_count);
   
   /*--- Store the number of local elements on each rank after determining
    which elements must be kept in the loop above. ---*/
@@ -14110,8 +14109,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry ***geometry, CConfig **config_c
   }
   else {
     if (rank == MASTER_NODE) {
-      if (iMesh == 1) cout <<"MG level: "<< iMesh-1 <<"-> CVs: " << Global_nPointFine << ". Agglomeration rate 1/1.00. CFL "<< config->GetCFL(iMesh-1) <<"." << endl;
-      cout <<"MG level: "<< iMesh <<"-> CVs: " << Global_nPointCoarse << ". Agglomeration rate 1/" << ratio <<". CFL "<< CFL <<"." << endl;
+      if (iMesh == 1) cout <<"MG level: "<< iMesh-1 <<" -> CVs: " << Global_nPointFine << ". Agglomeration rate 1/1.00. CFL "<< config->GetCFL(iMesh-1) <<"." << endl;
+      cout <<"MG level: "<< iMesh <<" -> CVs: " << Global_nPointCoarse << ". Agglomeration rate 1/" << ratio <<". CFL "<< CFL <<"." << endl;
     }
   }
  
