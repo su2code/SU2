@@ -2,7 +2,7 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
- * \version 3.2.8.1 "eagle"
+ * \version 3.2.8.2 "eagle"
  *
  * Many of the classes in this file are templated, and therefore must
  * be declared and defined here; to keep all elements together, there
@@ -932,42 +932,36 @@ static const map<string, ENUM_OUTPUT_VARS> Output_Vars_Map = CCreateMap<string, 
  * \brief types of design parameterizations
  */
 enum ENUM_PARAM {
-  FFD_SETTING = 0,		/*!< \brief No surface deformation. */
-  HICKS_HENNE = 1,		/*!< \brief Hicks-Henne bump function for airfoil deformation. */
-  NACA_4DIGITS = 6,		/*!< \brief The four digits NACA airfoil family as design variables. */
-  DISPLACEMENT = 8,		/*!< \brief Surface movement as design variable. */
-  ROTATION = 9,			/*!< \brief Surface rotation as design variable. */
-  FFD_CONTROL_POINT = 10,	/*!< \brief Free form deformation for 3D design (change a control point). */
-  FFD_DIHEDRAL_ANGLE = 11,	/*!< \brief Free form deformation for 3D design (change the dihedral angle). */
-  FFD_TWIST_ANGLE = 12,		/*!< \brief Free form deformation for 3D design (change the twist angle). */
-  FFD_ROTATION = 13,		/*!< \brief Free form deformation for 3D design (rotation around a line). */
-  FFD_CAMBER = 14,		/*!< \brief Free form deformation for 3D design (camber change). */
-  FFD_THICKNESS = 15,		/*!< \brief Free form deformation for 3D design (thickness change). */
-  PARABOLIC = 17,		/*!< \brief Parabolic airfoil definition as design variables. */
-  OBSTACLE = 18,		        /*!< \brief Obstacle for free surface optimization. */
-  STRETCH = 19,		        /*!< \brief Stretch one side of a channel. */
-  SURFACE_FILE = 20,		   /*!< Nodal coordinates set using a surface file. */
-  COSINE_BUMP = 21,		/*!< \brief Gauss bump function for airfoil deformation. */
-  FOURIER = 22,		/*!< \brief Fourier function for airfoil deformation. */
-  SPHERICAL = 23,		/*!< \brief Spherical geometry parameterization with spline-based radial profile. */
-  AIRFOIL = 24,		/*!< \brief Airfoil definition as design variables. */
-  FFD_CONTROL_POINT_2D = 25,	/*!< \brief Free form deformation for 2D design (change a control point). */
-  FFD_CAMBER_2D = 26,		/*!< \brief Free form deformation for 3D design (camber change). */
-  FFD_THICKNESS_2D = 27,		/*!< \brief Free form deformation for 3D design (thickness change). */
-  FFD_CONTROL_SURFACE = 28,		/*!< \brief Free form deformation for 3D design (control surface). */
-  FFD_RADIUS_2D = 29		/*!< \brief Free form deformation for 2D design (radious change). */
+  TRANSLATION = 0,		       /*!< \brief Surface movement as design variable. */
+  ROTATION = 1,			         /*!< \brief Surface rotation as design variable. */
+  SCALE = 2,			           /*!< \brief Surface rotation as design variable. */
+  FFD_SETTING = 3,		       /*!< \brief No surface deformation. */
+  FFD_CONTROL_POINT = 4,	   /*!< \brief Free form deformation for 3D design (change a control point). */
+  FFD_CAMBER = 5,		       /*!< \brief Free form deformation for 3D design (camber change). */
+  FFD_THICKNESS = 6,		     /*!< \brief Free form deformation for 3D design (thickness change). */
+  FFD_DIHEDRAL_ANGLE = 7,	   /*!< \brief Free form deformation for 3D design (change the dihedral angle). */
+  FFD_TWIST_ANGLE = 8,		   /*!< \brief Free form deformation for 3D design (change the twist angle). */
+  FFD_ROTATION = 9,		       /*!< \brief Free form deformation for 3D design (rotation around a line). */
+  FFD_CONTROL_POINT_2D = 10, /*!< \brief Free form deformation for 2D design (change a control point). */
+  FFD_CAMBER_2D = 11,		     /*!< \brief Free form deformation for 3D design (camber change). */
+  FFD_THICKNESS_2D = 12,		 /*!< \brief Free form deformation for 3D design (thickness change). */
+  FFD_CONTROL_SURFACE = 13,	 /*!< \brief Free form deformation for 3D design (control surface). */
+  HICKS_HENNE = 14,	         /*!< \brief Hicks-Henne bump function for airfoil deformation. */
+  PARABOLIC = 15,		         /*!< \brief Parabolic airfoil definition as design variables. */
+  NACA_4DIGITS = 16,	         /*!< \brief The four digits NACA airfoil family as design variables. */
+  AIRFOIL = 17,		           /*!< \brief Airfoil definition as design variables. */
+  SURFACE_FILE = 18,		     /*!< Nodal coordinates set using a surface file. */
 };
 static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("FFD_SETTING", FFD_SETTING)
 ("FFD_CONTROL_POINT_2D", FFD_CONTROL_POINT_2D)
-("FFD_RADIUS_2D", FFD_RADIUS_2D)
 ("FFD_CAMBER_2D", FFD_CAMBER_2D)
 ("FFD_THICKNESS_2D", FFD_THICKNESS_2D)
 ("HICKS_HENNE", HICKS_HENNE)
-("SPHERICAL", SPHERICAL)
 ("NACA_4DIGITS", NACA_4DIGITS)
-("DISPLACEMENT", DISPLACEMENT)
+("TRANSLATION", TRANSLATION)
 ("ROTATION", ROTATION)
+("SCALE", SCALE)
 ("FFD_CONTROL_POINT", FFD_CONTROL_POINT)
 ("FFD_DIHEDRAL_ANGLE", FFD_DIHEDRAL_ANGLE)
 ("FFD_TWIST_ANGLE", FFD_TWIST_ANGLE)
@@ -976,10 +970,6 @@ static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("FFD_CAMBER", FFD_CAMBER)
 ("FFD_THICKNESS", FFD_THICKNESS)
 ("PARABOLIC", PARABOLIC)
-("OBSTACLE", OBSTACLE)
-("STRETCH", STRETCH)
-("COSINE_BUMP", COSINE_BUMP)
-("FOURIER", FOURIER)
 ("AIRFOIL", AIRFOIL)
 ("SURFACE_FILE", SURFACE_FILE);
 
@@ -1783,20 +1773,15 @@ public:
       switch (this->design_variable[iDV]) {
         case FFD_SETTING: nParamDV = 0; break;
         case FFD_CONTROL_POINT_2D: nParamDV = 5; break;
-        case FFD_RADIUS_2D: nParamDV = 1; break;
         case FFD_CAMBER_2D: nParamDV = 2; break;
         case FFD_THICKNESS_2D: nParamDV = 2; break;
         case HICKS_HENNE: nParamDV = 2; break;
-        case SPHERICAL: nParamDV = 3; break;
-        case COSINE_BUMP: nParamDV = 3; break;
-        case FOURIER: nParamDV = 3; break;
-        case DISPLACEMENT: nParamDV = 3; break;
+        case SCALE: nParamDV = 0; break;
+        case TRANSLATION: nParamDV = 3; break;
         case ROTATION: nParamDV = 6; break;
         case NACA_4DIGITS: nParamDV = 3; break;
         case PARABOLIC: nParamDV = 2; break;
-        case OBSTACLE: nParamDV = 2; break;
         case AIRFOIL: nParamDV = 2; break;
-        case STRETCH: nParamDV = 2; break;
         case FFD_CONTROL_POINT: nParamDV = 7; break;
         case FFD_DIHEDRAL_ANGLE: nParamDV = 7; break;
         case FFD_TWIST_ANGLE: nParamDV = 7; break;
@@ -1822,7 +1807,6 @@ public:
              (this->design_variable[iDV] == FFD_CONTROL_POINT_2D) ||
              (this->design_variable[iDV] == FFD_CAMBER_2D) ||
              (this->design_variable[iDV] == FFD_THICKNESS_2D) ||
-             (this->design_variable[iDV] == FFD_RADIUS_2D) ||
              (this->design_variable[iDV] == FFD_CONTROL_POINT) ||
              (this->design_variable[iDV] == FFD_DIHEDRAL_ANGLE) ||
              (this->design_variable[iDV] == FFD_TWIST_ANGLE) ||

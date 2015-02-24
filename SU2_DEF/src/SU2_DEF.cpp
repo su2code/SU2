@@ -2,7 +2,7 @@
  * \file SU2_DEF.cpp
  * \brief Main file of Mesh Deformation Code (SU2_DEF).
  * \author F. Palacios
- * \version 3.2.8.1 "eagle"
+ * \version 3.2.8.2 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -89,40 +89,18 @@ int main(int argc, char *argv[]) {
     
     CGeometry *geometry_aux = NULL;
     
-    if (config_container[iZone]->GetMesh_FileFormat() == SU2) {
-      
-      /*--- All ranks process the grid and call ParMETIS for partitioning ---*/
-      
-      geometry_aux = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
-      
-      /*--- Color the initial grid and set the send-receive domains (ParMETIS) ---*/
-      
-      geometry_aux->SetColorGrid_Parallel(config_container[iZone]);
-      
-    } else if (rank == MASTER_NODE) {
-      
-      /*--- Read the grid using the master node only ---*/
-      
-      geometry_aux = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
-      
-      /*--- Color the initial grid and set the send-receive domains (METIS) ---*/
-      
-      geometry_aux->SetColorGrid(config_container[iZone]);
-      
-    }
+    /*--- All ranks process the grid and call ParMETIS for partitioning ---*/
+    
+    geometry_aux = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
+    
+    /*--- Color the initial grid and set the send-receive domains (ParMETIS) ---*/
+    
+    geometry_aux->SetColorGrid_Parallel(config_container[iZone]);
     
     /*--- Allocate the memory of the current domain, and
      divide the grid between the nodes ---*/
     
-    if (config_container[iZone]->GetMesh_FileFormat() == SU2) {
-      
-      geometry_container[iZone] = new CPhysicalGeometry(geometry_aux, config_container[iZone], 1);
-      
-    } else {
-      
-      geometry_container[iZone] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
-      
-    }
+    geometry_container[iZone] = new CPhysicalGeometry(geometry_aux, config_container[iZone], 1);
     
     /*--- Deallocate the memory of geometry_aux ---*/
     
@@ -179,7 +157,7 @@ int main(int argc, char *argv[]) {
   
   if (config_container[ZONE_0]->GetVisualize_Deformation()) {
 
-    output->SetMesh_Files(geometry_container, config_container, SINGLE_ZONE, true);
+    output->SetMesh_Files(geometry_container, config_container, SINGLE_ZONE, true, false);
 
 //    if (rank == MASTER_NODE) cout << "Writing an STL file of the surface mesh." << endl;
 //    if (size > 1) sprintf (buffer_char, "_%d.stl", rank+1); else sprintf (buffer_char, ".stl");
@@ -229,7 +207,7 @@ int main(int argc, char *argv[]) {
   
   output = new COutput();
   
-  output->SetMesh_Files(geometry_container, config_container, SINGLE_ZONE, false);
+  output->SetMesh_Files(geometry_container, config_container, SINGLE_ZONE, false, true);
   
   /*--- Write the the free-form deformation boxes after deformation. ---*/
 

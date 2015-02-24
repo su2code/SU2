@@ -2,7 +2,7 @@
  * \file output_su2.cpp
  * \brief Main subroutines for output solver information.
  * \author F. Palacios, T. Economon, M. Colonno
- * \version 3.2.8.1 "eagle"
+ * \version 3.2.8.2 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -33,15 +33,13 @@
 
 void COutput::SetSU2_MeshASCII(CConfig *config, CGeometry *geometry) {
   
-  ofstream SU2_File;
-  char cstr[MAX_STRING_SIZE], out_file[MAX_STRING_SIZE], in_file[MAX_STRING_SIZE];
-  string str;
-  unsigned long iElem, iPoint, iElem_Bound, nElem_, nElem_Bound_, vnodes_edge[2], vnodes_triangle[3], vnodes_quad[4], vnodes_tetra[4], vnodes_hexa[8], vnodes_wedge[6], vnodes_pyramid[5];
-  unsigned short iMarker, iDim, nDim = geometry->GetnDim(), iChar, iPeriodic, nPeriodic = 0, VTK_Type, nDim_, nMarker_;
+  char cstr[MAX_STRING_SIZE], out_file[MAX_STRING_SIZE];
+  unsigned long iElem, iPoint, iElem_Bound, nElem_Bound_, vnodes_edge[2], vnodes_triangle[3], vnodes_quad[4], iNode, nElem;
+  unsigned short iMarker, iDim, nDim = geometry->GetnDim(), iChar, iPeriodic, nPeriodic = 0, VTK_Type, nMarker_;
   double *center, *angles, *transl;
   ofstream output_file;
   ifstream input_file;
-  string Grid_Marker, text_line, Marker_Tag;
+  string Grid_Marker, text_line, Marker_Tag, str;
   string::size_type position;
 
   /*--- Read the name of the output and input file ---*/
@@ -51,103 +49,89 @@ void COutput::SetSU2_MeshASCII(CConfig *config, CGeometry *geometry) {
   strcpy (cstr, out_file);
   output_file.precision(15);
   output_file.open(cstr, ios::out);
+  
+  /*--- Write dimensions data. ---*/
 
-  str = config->GetMesh_FileName();
-  strcpy (in_file, str.c_str());
-  strcpy (cstr, in_file);
-  input_file.open(cstr, ios::out);
+  output_file << "NDIME= " << nDim << endl;
+  
+  /*--- Write connectivity data. ---*/
+  
+  nElem = nGlobal_Tria+nGlobal_Quad+nGlobal_Tetr+nGlobal_Hexa+nGlobal_Wedg+nGlobal_Pyra;
+  
+  output_file << "NELEM= " << nElem<< endl;
+  
+  nElem = 0;
+  
+  for (iElem = 0; iElem < nGlobal_Tria; iElem++) {
+    iNode = iElem*N_POINTS_TRIANGLE;
+    output_file << "5\t";
+    output_file << Conn_Tria[iNode+0]-1 << "\t"; output_file << Conn_Tria[iNode+1]-1 << "\t";
+    output_file << Conn_Tria[iNode+2]-1 << "\t";
+    output_file << nElem << "\n"; nElem++;
+  }
+  
+  for (iElem = 0; iElem < nGlobal_Quad; iElem++) {
+    iNode = iElem*N_POINTS_QUADRILATERAL;
+    output_file << "9\t";
+    output_file << Conn_Quad[iNode+0]-1 << "\t"; output_file << Conn_Quad[iNode+1]-1 << "\t";
+    output_file << Conn_Quad[iNode+2]-1 << "\t"; output_file << Conn_Quad[iNode+3]-1 << "\t";
+    output_file << nElem << "\n"; nElem++;
+  }
+  
+  for (iElem = 0; iElem < nGlobal_Tetr; iElem++) {
+    iNode = iElem*N_POINTS_TETRAHEDRON;
+    output_file << "10\t";
+    output_file << Conn_Tetr[iNode+0]-1 << "\t" << Conn_Tetr[iNode+1]-1 << "\t";
+    output_file << Conn_Tetr[iNode+2]-1 << "\t" << Conn_Tetr[iNode+3]-1 << "\t";
+    output_file << nElem << "\n"; nElem++;
+  }
+  
+  for (iElem = 0; iElem < nGlobal_Hexa; iElem++) {
+    iNode = iElem*N_POINTS_HEXAHEDRON;
+    output_file << "12\t";
+    output_file << Conn_Hexa[iNode+0]-1 << "\t" << Conn_Hexa[iNode+1]-1 << "\t";
+    output_file << Conn_Hexa[iNode+2]-1 << "\t" << Conn_Hexa[iNode+3]-1 << "\t";
+    output_file << Conn_Hexa[iNode+4]-1 << "\t" << Conn_Hexa[iNode+5]-1 << "\t";
+    output_file << Conn_Hexa[iNode+6]-1 << "\t" << Conn_Hexa[iNode+7]-1 << "\t";
+    output_file << nElem << "\n"; nElem++;
+  }
+  
+  for (iElem = 0; iElem < nGlobal_Wedg; iElem++) {
+    iNode = iElem*N_POINTS_WEDGE;
+    output_file << "13\t";
+    output_file << Conn_Wedg[iNode+0]-1 << "\t" << Conn_Wedg[iNode+1]-1 << "\t";
+    output_file << Conn_Wedg[iNode+2]-1 << "\t" << Conn_Wedg[iNode+3]-1 << "\t";
+    output_file << Conn_Wedg[iNode+4]-1 << "\t" << Conn_Wedg[iNode+5]-1 << "\t";
+    output_file << nElem << "\n"; nElem++;
+  }
+  
+  for (iElem = 0; iElem < nGlobal_Pyra; iElem++) {
+    iNode = iElem*N_POINTS_PYRAMID;
+    output_file << "14\t";
+    output_file << Conn_Pyra[iNode+0]-1 << "\t" << Conn_Pyra[iNode+1]-1 << "\t";
+    output_file << Conn_Pyra[iNode+2]-1 << "\t" << Conn_Pyra[iNode+3]-1 << "\t";
+    output_file << Conn_Pyra[iNode+4]-1 << "\t";
+    output_file << nElem << "\n"; nElem++;
+  }
+  
+  /*--- Write the node coordinates ---*/
+  
+  output_file << "NPOIN= " << nGlobal_Poin<< endl;
+
+  for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+     for (iDim = 0; iDim < nDim; iDim++)
+      output_file << scientific << Coords[iDim][iPoint] << "\t";
+    output_file << iPoint << endl;
+  }
+  
+  /*--- Read the boundary information ---*/
+  
+  input_file.open("boundary.su2", ios::out);
   
   /*--- Read grid file with format SU2 ---*/
   
   while (getline (input_file, text_line)) {
-    
-    /*--- Read the dimension of the problem ---*/
-    
-    position = text_line.find ("NDIME=",0);
-    if (position != string::npos) {
-      text_line.erase (0,6); nDim_ = atoi(text_line.c_str());
-      output_file << "NDIME= " << nDim_ << endl;
-    }
-    
-    /*--- Read the information about inner elements ---*/
-    
-    position = text_line.find ("NELEM=",0);
-    if (position != string::npos) {
-      text_line.erase (0,6); nElem_ = atoi(text_line.c_str());
-      output_file << "NELEM= " << nElem_ << endl;
-      
-      /*--- Loop over all the volumetric elements ---*/
-      
-      for (iElem = 0; iElem < nElem_;  iElem++) {
-        getline(input_file, text_line);
-        istringstream elem_line(text_line);
-        
-        elem_line >> VTK_Type;
-        output_file << VTK_Type;
-        
-        switch(VTK_Type) {
-          case TRIANGLE:
-            elem_line >> vnodes_triangle[0]; elem_line >> vnodes_triangle[1]; elem_line >> vnodes_triangle[2];
-            output_file << "\t" << vnodes_triangle[0] << "\t" << vnodes_triangle[1] << "\t" << vnodes_triangle[2] << endl;
-            break;
-          case RECTANGLE:
-            elem_line >> vnodes_quad[0]; elem_line >> vnodes_quad[1]; elem_line >> vnodes_quad[2]; elem_line >> vnodes_quad[3];
-            output_file << "\t" << vnodes_quad[0] << "\t" << vnodes_quad[1] << "\t" << vnodes_quad[2] << "\t" << vnodes_quad[3] << endl;
-            break;
-          case TETRAHEDRON:
-            elem_line >> vnodes_tetra[0]; elem_line >> vnodes_tetra[1]; elem_line >> vnodes_tetra[2]; elem_line >> vnodes_tetra[3];
-            output_file << "\t" << vnodes_tetra[0] << "\t" << vnodes_tetra[1] << "\t" << vnodes_tetra[2] << "\t" << vnodes_tetra[3] << endl;
-            break;
-          case HEXAHEDRON:
-            elem_line >> vnodes_hexa[0]; elem_line >> vnodes_hexa[1]; elem_line >> vnodes_hexa[2];
-            elem_line >> vnodes_hexa[3]; elem_line >> vnodes_hexa[4]; elem_line >> vnodes_hexa[5];
-            elem_line >> vnodes_hexa[6]; elem_line >> vnodes_hexa[7];
-            output_file << "\t" << vnodes_hexa[0] << "\t" << vnodes_hexa[1] << "\t" << vnodes_hexa[2] << "\t" << vnodes_hexa[3] << "\t" << vnodes_hexa[4] << "\t" << vnodes_hexa[5] << "\t" << vnodes_hexa[6] << "\t" << vnodes_hexa[7] << endl;
-            break;
-          case WEDGE:
-            elem_line >> vnodes_wedge[0]; elem_line >> vnodes_wedge[1]; elem_line >> vnodes_wedge[2];
-            elem_line >> vnodes_wedge[3]; elem_line >> vnodes_wedge[4]; elem_line >> vnodes_wedge[5];
-            output_file << "\t" << vnodes_wedge[0] << "\t" << vnodes_wedge[1] << "\t" << vnodes_wedge[2] << "\t" << vnodes_wedge[3] << "\t" << vnodes_wedge[4] << "\t" << vnodes_wedge[5] << endl;
-            break;
-          case PYRAMID:
-            elem_line >> vnodes_pyramid[0]; elem_line >> vnodes_pyramid[1]; elem_line >> vnodes_pyramid[2];
-            elem_line >> vnodes_pyramid[3]; elem_line >> vnodes_pyramid[4];
-            output_file << "\t" << vnodes_pyramid[0] << "\t" << vnodes_pyramid[1] << "\t" << vnodes_pyramid[2] << "\t" << vnodes_pyramid[3] << "\t" << vnodes_pyramid[4] << endl;
-            break;
-        }
-      }
-    }
-    
-    /*--- Coordinates ---*/
-    
-    position = text_line.find ("NPOIN=",0);
-    if (position != string::npos) {
 
-      /*--- Skip the lines about the points ---*/
-      
-      for (iPoint = 0; iPoint < nGlobal_Poin;  iPoint++) {
-        getline(input_file, text_line);
-      }
-      
-      /*--- Add the new coordinates ---*/
-      
-      output_file << "NPOIN= " << nGlobal_Poin << endl;
-      
-      /*--- Write surface and volumetric solution data. ---*/
-      
-      for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
-        
-        /*--- Write the node coordinates ---*/
-        
-        for (iDim = 0; iDim < nDim; iDim++)
-          output_file << scientific << Coords[iDim][iPoint] << "\t";
-        
-        output_file << iPoint << endl;
-        
-      }
-      
-    }
-    
     /*--- Write the physical boundaries ---*/
     
     position = text_line.find ("NMARK=",0);
@@ -204,9 +188,13 @@ void COutput::SetSU2_MeshASCII(CConfig *config, CGeometry *geometry) {
           }
       }
     }
+    
   }
   
-  
+  input_file.close();
+
+  remove("boundary.su2");
+
   /*--- Get the total number of periodic transformations ---*/
   
   nPeriodic = config->GetnPeriodicIndex();
@@ -229,7 +217,6 @@ void COutput::SetSU2_MeshASCII(CConfig *config, CGeometry *geometry) {
     
   }
   
-  input_file.close();
   output_file.close();
   
 }
