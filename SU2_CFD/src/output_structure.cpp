@@ -2,7 +2,7 @@
  * \file output_structure.cpp
  * \brief Main subroutines for output solver information
  * \author F. Palacios, T. Economon
- * \version 3.2.8.1 "eagle"
+ * \version 3.2.8.2 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -5446,7 +5446,7 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
     
     Breakdown_file << endl <<"-------------------------------------------------------------------------" << endl;
     Breakdown_file <<"|    ___ _   _ ___                                                      |" << endl;
-    Breakdown_file <<"|   / __| | | |_  )   Release 3.2.8.1 \"eagle\"                           |" << endl;
+    Breakdown_file <<"|   / __| | | |_  )   Release 3.2.8.2 \"eagle\"                           |" << endl;
     Breakdown_file <<"|   \\__ \\ |_| |/ /                                                      |" << endl;
     Breakdown_file <<"|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl;
     Breakdown_file << "|                                                                       |" << endl;
@@ -6436,7 +6436,7 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
   }
 }
 
-void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned short val_nZone, bool new_file) {
+void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned short val_nZone, bool new_file, bool su2_file) {
   
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -6456,15 +6456,14 @@ void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned sho
      is only performed if a volume solution file is requested, and it
      is active by default. ---*/
     
-    if (Wrt_Vol || Wrt_Srf) {
-      if (rank == MASTER_NODE) cout <<"Merging grid connectivity." << endl;
-      MergeConnectivity(config[iZone], geometry[iZone], iZone);
-    }
+    if (rank == MASTER_NODE) cout <<"Merging grid connectivity." << endl;
+    MergeConnectivity(config[iZone], geometry[iZone], iZone);
     
     /*--- Merge coordinates of all grid nodes (excluding ghost points).
      The grid coordinates are always merged and included first in the
      restart files. ---*/
     
+    if (rank == MASTER_NODE) cout <<"Merging grid coordinates." << endl;
     MergeCoordinates(config[iZone], geometry[iZone]);
     
     /*--- Write restart, Tecplot or Paraview files using the merged data.
@@ -6497,7 +6496,7 @@ void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned sho
       
       /*--- Write a .su2 ASCII file ---*/
       
-      SetSU2_MeshASCII(config[iZone], geometry[iZone]);
+      if (su2_file) SetSU2_MeshASCII(config[iZone], geometry[iZone]);
       
       /*--- Deallocate connectivity ---*/
 

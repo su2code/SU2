@@ -3,7 +3,7 @@
 ## \file finite_differences.py
 #  \brief Python script for doing the finite differences computation using the SU2 suite.
 #  \author F. Palacios
-#  \version 3.2.8.1 "eagle"
+#  \version 3.2.8.2 "eagle"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).

@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for generating the file outputs.
  *        The subroutines and functions are in the <i>output_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, M. Colonno
- * \version 3.2.8.1 "eagle"
+ * \version 3.2.8.2 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -56,7 +56,7 @@ using namespace std;
  * \brief Class for writing the flow, adjoint and linearized solver 
  *        solution (including the history solution, and parallel stuff).
  * \author F. Palacios, T. Economon, M. Colonno.
- * \version 3.2.8.1 "eagle"
+ * \version 3.2.8.2 "eagle"
  */
 class COutput {
 
@@ -141,7 +141,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_nZone - Total number of domains in the grid file.
    */
-  void SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned short val_nZone, bool new_file);
+  void SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned short val_nZone, bool new_file, bool su2_file);
 
 	/*!
 	 * \brief Writes equivalent area.

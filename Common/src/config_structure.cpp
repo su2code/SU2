@@ -2,7 +2,7 @@
  * \file config_structure.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 3.2.8.1 "eagle"
+ * \version 3.2.8.2 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -3377,7 +3377,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   cout << endl << "-------------------------------------------------------------------------" << endl;
   cout << "|    ___ _   _ ___                                                      |" << endl;
-  cout << "|   / __| | | |_  )   Release 3.2.8.1 \"eagle\"                           |" << endl;
+  cout << "|   / __| | | |_  )   Release 3.2.8.2 \"eagle\"                           |" << endl;
   cout << "|   \\__ \\ |_| |/ /                                                      |" << endl;
   switch (val_software) {
     case SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;
@@ -3653,19 +3653,14 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         
         switch (Design_Variable[iDV]) {
           case FFD_CONTROL_POINT_2D:  cout << "FFD 2D (control point) <-> "; break;
-          case FFD_RADIUS_2D:         cout << "FFD 2D (radious)"; break;
           case FFD_CAMBER_2D:         cout << "FFD 2D (camber) <-> "; break;
           case FFD_THICKNESS_2D:      cout << "FFD 2D (thickness) <-> "; break;
           case HICKS_HENNE:           cout << "Hicks Henne <-> " ; break;
-          case COSINE_BUMP:           cout << "Cosine bump <-> " ; break;
-          case FOURIER:               cout << "Fourier <-> " ; break;
-          case SPHERICAL:             cout << "Spherical design <-> " ; break;
-          case DISPLACEMENT:          cout << "Displacement design variable."; break;
+          case TRANSLATION:           cout << "Translation design variable."; break;
+          case SCALE:                 cout << "Scale design variable."; break;
           case NACA_4DIGITS:          cout << "NACA four digits <-> "; break;
           case PARABOLIC:             cout << "Parabolic <-> "; break;
-          case OBSTACLE:              cout << "Obstacle <-> "; break;
           case AIRFOIL:               cout << "Airfoil <-> "; break;
-          case STRETCH:               cout << "Stretch <-> "; break;
           case ROTATION:              cout << "Rotation <-> "; break;
           case FFD_CONTROL_POINT:     cout << "FFD (control point) <-> "; break;
           case FFD_DIHEDRAL_ANGLE:    cout << "FFD (dihedral angle) <-> "; break;
@@ -3684,18 +3679,13 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         cout << DV_Value[iDV] << " <-> ";
 
         if (Design_Variable[iDV] == FFD_SETTING) nParamDV = 0;
-        if (Design_Variable[iDV] == FFD_RADIUS_2D) nParamDV = 1;
+        if (Design_Variable[iDV] == SCALE) nParamDV = 0;
         if ((Design_Variable[iDV] == FFD_CAMBER_2D) ||
             (Design_Variable[iDV] == FFD_THICKNESS_2D) ||
             (Design_Variable[iDV] == HICKS_HENNE) ||
             (Design_Variable[iDV] == PARABOLIC) ||
-            (Design_Variable[iDV] == OBSTACLE) ||
-            (Design_Variable[iDV] == AIRFOIL) ||
-            (Design_Variable[iDV] == STRETCH) ) nParamDV = 2;
-        if ((Design_Variable[iDV] ==  SPHERICAL) ||
-            (Design_Variable[iDV] ==  COSINE_BUMP) ||
-            (Design_Variable[iDV] ==  FOURIER) ||
-            (Design_Variable[iDV] ==  DISPLACEMENT) ||
+            (Design_Variable[iDV] == AIRFOIL) ) nParamDV = 2;
+        if ((Design_Variable[iDV] ==  TRANSLATION) ||
             (Design_Variable[iDV] ==  NACA_4DIGITS) ||
             (Design_Variable[iDV] ==  FFD_CAMBER) ||
             (Design_Variable[iDV] ==  FFD_THICKNESS) ) nParamDV = 3;
@@ -3716,7 +3706,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
                (Design_Variable[iDV] == FFD_CONTROL_POINT_2D) ||
                (Design_Variable[iDV] == FFD_CAMBER_2D) ||
                (Design_Variable[iDV] == FFD_THICKNESS_2D) ||
-               (Design_Variable[iDV] == FFD_RADIUS_2D) ||
                (Design_Variable[iDV] == FFD_CONTROL_POINT) ||
                (Design_Variable[iDV] == FFD_DIHEDRAL_ANGLE) ||
                (Design_Variable[iDV] == FFD_TWIST_ANGLE) ||
