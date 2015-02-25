@@ -2,7 +2,7 @@
  * \file solution_adjoint_mean.cpp
  * \brief Main subrotuines for solving adjoint problems (Euler, Navier-Stokes, etc.).
  * \author F. Palacios, T. Economon
- * \version 3.2.8.1 "eagle"
+ * \version 3.2.8.2 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -1559,10 +1559,11 @@ void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface    = (config->GetKind_Regime() == FREESURFACE);
-  
+  bool engine         = ((config->GetnMarker_EngineInflow() != 0) || (config->GetnMarker_EngineBleed() != 0) || (config->GetnMarker_EngineExhaust() != 0));
+
   /*--- Compute nacelle inflow and exhaust properties ---*/
   
-  GetEngine_Properties(geometry, config, iMesh, Output);
+  if (engine) { GetEngine_Properties(geometry, config, iMesh, Output); }
   
   /*--- Residual initialization ---*/
   
@@ -2868,56 +2869,7 @@ void CAdjEulerSolver::GetEngine_Properties(CGeometry *geometry, CConfig *config,
     
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       
-      if (config->GetMarker_All_KindBC(iMarker) == ENGINE_EXHAUST) {
-        
-        /*--- Loop over all the vertices on this boundary marker ---*/
-        
-        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          
-          /*--- Normal vector for this vertex (negate for outward convention) ---*/
-          
-          geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
-          
-          for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = -Vector[iDim];
-          
-          Area = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++)
-            Area += Vector[iDim]*Vector[iDim];
-          Area = sqrt (Area);
-          
-          /*--- Compute unitary vector ---*/
-          
-          for (iDim = 0; iDim < nDim; iDim++)
-            Vector[iDim] /= Area;
-          
-          /*--- The flow direction is defined by the local velocity on the surface ---*/
-          
-          for (iDim = 0; iDim < nDim; iDim++)
-            Flow_Dir[iDim] = node[iPoint]->GetSolution(iDim+1) / node[iPoint]->GetSolution(0);
-          
-          /*--- Dot product of normal and flow direction. ---*/
-          
-          alpha = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++)
-            alpha += Vector[iDim]*Flow_Dir[iDim];
-          
-          /*--- Flow in the wrong direction. ---*/
-          
-          if (alpha < 0.0) {
-            
-            /*--- Copy the old solution ---*/
-            
-            for (iVar = 0; iVar < nVar; iVar++)
-              node[iPoint]->SetSolution(iVar, node[iPoint]->GetSolution_Old(iVar));
-            
-          }
-          
-        }
-      }
-      
-      if (config->GetMarker_All_KindBC(iMarker) == ENGINE_BLEED) {
+      if ((config->GetMarker_All_KindBC(iMarker) == ENGINE_EXHAUST) || (config->GetMarker_All_KindBC(iMarker) == ENGINE_BLEED)) {
         
         /*--- Loop over all the vertices on this boundary marker ---*/
         
@@ -5333,10 +5285,11 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface    = (config->GetKind_Regime() == FREESURFACE);
-  
+  bool engine         = ((config->GetnMarker_EngineInflow() != 0) || (config->GetnMarker_EngineBleed() != 0) || (config->GetnMarker_EngineExhaust() != 0));
+
   /*--- Compute nacelle inflow and exhaust properties ---*/
   
-  GetEngine_Properties(geometry, config, iMesh, Output);
+  if (engine) { GetEngine_Properties(geometry, config, iMesh, Output); }
   
   /*--- Residual initialization ---*/
   

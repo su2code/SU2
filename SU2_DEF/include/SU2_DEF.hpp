@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines of the code SU2_DEF.
  *        The subroutines and functions are in the <i>SU2_DEF.cpp</i> file.
  * \author F. Palacios
- * \version 3.2.8.1 "eagle"
+ * \version 3.2.8.2 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).

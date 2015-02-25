@@ -5,7 +5,7 @@
  *        technique definition). The subroutines and functions are in 
  *        the <i>grid_movement_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, S. Padron
- * \version 3.2.8.1 "eagle"
+ * \version 3.2.8.2 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -56,7 +56,7 @@ using namespace std;
  * \brief Class for moving the surface and volumetric 
  *        numerical grid (2D and 3D problems).
  * \author F. Palacios
- * \version 3.2.8.1 "eagle"
+ * \version 3.2.8.2 "eagle"
  */
 class CGridMovement {
 public:
@@ -85,7 +85,7 @@ public:
  * \class CFreeFormDefBox
  * \brief Class for defining the free form FFDBox structure.
  * \author F. Palacios & A. Galdran.
- * \version 3.2.8.1 "eagle"
+ * \version 3.2.8.2 "eagle"
  */
 class CFreeFormDefBox : public CGridMovement {
 public:
@@ -682,7 +682,7 @@ public:
  * \class CVolumetricMovement
  * \brief Class for moving the volumetric numerical grid.
  * \author F. Palacios, A. Bueno, T. Economon, S. Padron.
- * \version 3.2.8.1 "eagle"
+ * \version 3.2.8.2 "eagle"
  */
 class CVolumetricMovement : public CGridMovement {
 protected:
@@ -949,7 +949,7 @@ public:
  * \class CSurfaceMovement
  * \brief Class for moving the surface numerical grid.
  * \author F. Palacios, T. Economon.
- * \version 3.2.8.1 "eagle"
+ * \version 3.2.8.2 "eagle"
  */
 class CSurfaceMovement : public CGridMovement {
 protected:
@@ -984,33 +984,6 @@ public:
 	 */
 	void SetHicksHenne(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef);
   
-  /*!
-	 * \brief Set a spherical design problem.
-	 * \param[in] boundary - Geometry of the boundary.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iDV - Index of the design variable.
-	 * \param[in] ResetDef - Reset the deformation before starting a new one.
-	 */
-	void SetSpherical(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef);
-	
-  /*!
-	 * \brief Set a Hicks-Henne deformation bump functions on an airfoil.
-	 * \param[in] boundary - Geometry of the boundary.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iDV - Index of the design variable.
-	 * \param[in] ResetDef - Reset the deformation before starting a new one.
-	 */
-	void SetCosBump(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef);
-  
-  /*!
-	 * \brief Set a Hicks-Henne deformation bump functions on an airfoil.
-	 * \param[in] boundary - Geometry of the boundary.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iDV - Index of the design variable.
-	 * \param[in] ResetDef - Reset the deformation before starting a new one.
-	 */
-	void SetFourier(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef);
-  
 	/*! 
 	 * \brief Set a NACA 4 digits airfoil family for airfoil deformation.
 	 * \param[in] boundary - Geometry of the boundary.
@@ -1024,13 +997,6 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void SetParabolic(CGeometry *boundary, CConfig *config);
-	
-	/*! 
-	 * \brief Set a obstacle in a channel.
-	 * \param[in] boundary - Geometry of the boundary.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void SetObstacle(CGeometry *boundary, CConfig *config);
 	
   /*!
 	 * \brief Set a obstacle in a channel.
@@ -1141,8 +1107,17 @@ public:
 	 * \param[in] iDV - Index of the design variable.
 	 * \param[in] ResetDef - Reset the deformation before starting a new one.
 	 */
-	void SetDisplacement(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef);
-	
+	void SetTranslation(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef);
+
+  /*!
+   * \brief Set a displacement for surface movement.
+   * \param[in] boundary - Geometry of the boundary.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iDV - Index of the design variable.
+   * \param[in] ResetDef - Reset the deformation before starting a new one.
+   */
+  void SetScale(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef);
+
 	/*! 
 	 * \brief Copy the boundary coordinates to each vertex.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -1212,16 +1187,6 @@ public:
 	 * \param[in] ResetDef - Reset the deformation before starting a new one.
 	 */
 	void SetFFDCPChange_2D(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iDV, bool ResetDef);
-
-	/*!
-	 * \brief Set the deformation of the Free From box using the desired radious change.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
-	 * \param[in] iDV - Index of the design variable.
-	 * \param[in] ResetDef - Reset the deformation before starting a new one.
-	 */
-	void SetFFDCPChange_2D_rad(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iDV, bool ResetDef);
 
 	/*! 
 	 * \brief Set the deformation of the Free From box using the control point position.
