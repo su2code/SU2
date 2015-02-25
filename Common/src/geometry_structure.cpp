@@ -6664,15 +6664,18 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
 #ifdef HAVE_CGNS
   
   /*--- Local variables and initialization ---*/
+  
   string text_line, Marker_Tag;
   ifstream mesh_file;
   unsigned short VTK_Type = 0, iMarker = 0;
   unsigned short nMarker_Max = config->GetnMarker_Max();
   unsigned long iPoint = 0, iProcessor = 0, ielem = 0, GlobalIndex = 0;
+  unsigned long globalOffset = 0;
   int rank = MASTER_NODE, size = SINGLE_NODE;
   nZone = val_nZone;
   
-  /*--- Local variables which are needed when calling the CGNS mid-level API. ---*/
+  /*--- Local variables needed when calling the CGNS mid-level API. ---*/
+  
   unsigned long vnodes_cgns[8];
   double Coord_cgns[3];
   int fn, nbases = 0, nzones = 0, ngrids = 0, ncoords = 0, nsections = 0;
@@ -6706,6 +6709,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   char*** sectionNames = NULL;
   
   /*--- Initialize counters for local/global points & elements ---*/
+  
 #ifdef HAVE_MPI
   unsigned long Local_nElem;
   unsigned long Local_nElemTri, Local_nElemQuad, Local_nElemTet;
@@ -6720,6 +6724,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
 #endif
   
   /*--- Initialize counters for local/global points & elements ---*/
+  
   Global_nPoint  = 0; Global_nPointDomain = 0; Global_nElem = 0;
   nelem_edge     = 0; Global_nelem_edge     = 0;
   nelem_triangle = 0; Global_nelem_triangle = 0;
@@ -7147,9 +7152,12 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
           nPoinPerElem[ii] = npe;
           
           /*--- Store the global ID for this element. Note the -1 to move
-           from CGNS convention to SU2 convention. ---*/
+           from CGNS convention to SU2 convention. We also subtract off
+           an additional offset in case we have found boundary sections
+           prior to this one, in order to keep the internal element global
+           IDs indexed starting from zero. ---*/
           
-          elemGlobalID[ii] = elemB[rank] + ii - 1;
+          elemGlobalID[ii] = elemB[rank] + ii - 1 - globalOffset;
           
           /*--- Need to check the element type and correctly specify the 
            VTK identifier for that element. SU2 recognizes elements by 
@@ -7286,6 +7294,11 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
           delete [] elemTypes;
           delete [] elemGlobalID;
           delete [] isMixed;
+          
+          /*--- Since we found an internal section, we should adjust the
+           element global ID offset by the total size of the section. ---*/
+          
+          globalOffset += element_count;
           
           if (rank == MASTER_NODE) {
             
