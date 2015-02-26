@@ -11314,7 +11314,7 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
           for (jDim = 0 ; jDim < nDim; jDim++) {
             Grad_Vel[iDim][jDim] = node[iPoint]->GetGradient_Primitive(iDim+1, jDim);
           }
-          Grad_Temp[jDim] = node[iPoint]->GetGradient_Primitive(0, jDim);
+          Grad_Temp[iDim] = node[iPoint]->GetGradient_Primitive(0, iDim);
         }
         
         if (compressible) {
