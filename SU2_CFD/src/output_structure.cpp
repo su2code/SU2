@@ -4505,7 +4505,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             /*--- Turbulent residual ---*/
             if (turbulent) {
               switch(nVar_Turb) {
-                case 1: sprintf (turb_resid, ", %12.10f, %12.10f", log10 (residual_turbulent[0]),dummy); break;
+                case 1: sprintf (turb_resid, ", %12.10f", log10 (residual_turbulent[0])); break;
                 case 2: sprintf (turb_resid, ", %12.10f, %12.10f", log10(residual_turbulent[0]), log10(residual_turbulent[1])); break;
               }
             }
@@ -4966,6 +4966,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             if (aeroelastic) ConvHist_file[0] << aeroelastic_coeff;
             if (output_per_surface) ConvHist_file[0] << monitoring_coeff;
             if (output_1d) ConvHist_file[0] << oneD_outputs;
+            if (output_massflow) ConvHist_file[0] << massflow_outputs;
             ConvHist_file[0] << end;
             ConvHist_file[0].flush();
           }
