@@ -3728,8 +3728,8 @@ void COutput::DeallocateSolution(CConfig *config, CGeometry *geometry) {
   }
 }
 
-void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
-  char cstr[200], buffer[50], turb_resid[1000];
+void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, unsigned short nDim) {
+  char cstr[200], buffer[50], turb_resid[1000], flow_resid[1000], adj_flow_resid[1000];
   unsigned short iMarker, iMarker_Monitoring, iSpecies;
   string Monitoring_Tag, monitoring_coeff, aeroelastic_coeff;
   
@@ -3743,6 +3743,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   bool output_1d = config->GetWrt_1D_Output();
   bool output_per_surface = false;
   bool output_massflow = (config->GetKind_ObjFunc()==MASS_FLOW_RATE);
+  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   if (config->GetnMarker_Monitoring() > 1) output_per_surface = true;
   
   bool isothermal = false;
@@ -3813,9 +3814,24 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   }
   
   /*--- Header for the residuals ---*/
-  
-  char flow_resid[]= ",\"Res_Flow[0]\",\"Res_Flow[1]\",\"Res_Flow[2]\",\"Res_Flow[3]\",\"Res_Flow[4]\"";
-  char adj_flow_resid[]= ",\"Res_AdjFlow[0]\",\"Res_AdjFlow[1]\",\"Res_AdjFlow[2]\",\"Res_AdjFlow[3]\",\"Res_AdjFlow[4]\"";
+  /*--- Direct problem variables ---*/
+  unsigned short nVar_Flow=0;
+  if (compressible) nVar_Flow = nDim+2; else nVar_Flow = nDim+1;
+
+  if (nVar_Flow == 3){
+    sprintf(flow_resid, ",\"Res_Flow[0]\",\"Res_Flow[1]\",\"Res_Flow[2]\"");
+    sprintf(adj_flow_resid, ",\"Res_AdjFlow[0]\",\"Res_AdjFlow[1]\",\"Res_AdjFlow[2]\"");
+  }
+  else if (nVar_Flow==4){
+    sprintf(flow_resid, ",\"Res_Flow[0]\",\"Res_Flow[1]\",\"Res_Flow[2]\",\"Res_Flow[3]\"");
+    sprintf(adj_flow_resid,",\"Res_AdjFlow[0]\",\"Res_AdjFlow[1]\",\"Res_AdjFlow[2]\",\"Res_AdjFlow[3]\"");
+  }
+  else if (nVar_Flow==5){
+    sprintf(flow_resid, ",\"Res_Flow[0]\",\"Res_Flow[1]\",\"Res_Flow[2]\",\"Res_Flow[3]\",\"Res_Flow[4]\"");
+    sprintf(adj_flow_resid, ",\"Res_AdjFlow[0]\",\"Res_AdjFlow[1]\",\"Res_AdjFlow[2]\",\"Res_AdjFlow[3]\",\"Res_AdjFlow[4]\"");
+  }
+
+
   switch (config->GetKind_Turb_Model()) {
     case SA:	   sprintf (turb_resid, ",\"Res_Turb[0]\""); break;
     case SA_NEG: sprintf (turb_resid, ",\"Res_Turb[0]\""); break;
@@ -3939,6 +3955,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
       case FLUID_STRUCTURE_EULER:   case FLUID_STRUCTURE_NAVIER_STOKES:   case FLUID_STRUCTURE_RANS:
       case ADJ_EULER:               case ADJ_NAVIER_STOKES:               case ADJ_RANS:
         OneDimensionalOutput(solver_container[val_iZone][FinestMesh][FLOW_SOL], geometry[val_iZone][FinestMesh], config[val_iZone]);
+        break;
     }
   }
   if (output_massflow) {
@@ -3947,6 +3964,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
       case FLUID_STRUCTURE_EULER:   case FLUID_STRUCTURE_NAVIER_STOKES:   case FLUID_STRUCTURE_RANS:
       case ADJ_EULER:               case ADJ_NAVIER_STOKES:               case ADJ_RANS:
         SetMassFlowRate(solver_container[val_iZone][FinestMesh][FLOW_SOL], geometry[val_iZone][FinestMesh], config[val_iZone]);
+        break;
     }
   }
 
