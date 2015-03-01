@@ -34,6 +34,7 @@
 COutput::COutput(void) {
   
   /*--- Initialize point and connectivity counters to zero. ---*/
+  
   nGlobal_Poin      = 0;
   nSurf_Poin        = 0;
   nGlobal_Elem      = 0;
@@ -49,16 +50,25 @@ COutput::COutput(void) {
   nGlobal_BoundQuad = 0;
   
   /*--- Initialize CGNS write flag ---*/
+  
   wrote_base_file = false;
   
   /*--- Initialize CGNS write flag ---*/
+  
   wrote_CGNS_base = false;
   
   /*--- Initialize Tecplot surface flag ---*/
+  
   wrote_surf_file = false;
   
   /*--- Initialize Paraview write flag ---*/
+  
   wrote_Paraview_base = false;
+  
+  /*--- Initialize residual ---*/
+
+  RhoRes_New = EPS;
+  RhoRes_Old = EPS;
   
 }
 
@@ -3744,7 +3754,6 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   bool output_1d = config->GetWrt_1D_Output();
   bool output_per_surface = false;
   bool output_massflow = (config->GetKind_ObjFunc()==MASS_FLOW_RATE);
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   if (config->GetnMarker_Monitoring() > 1) output_per_surface = true;
   
   bool isothermal = false;
@@ -5251,77 +5260,65 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
 void COutput::SetCFL_Number(CSolver ****solver_container, CConfig **config, unsigned short val_iZone) {
   
-  double CFLFactor, power, CFL, CFLMin, CFLMax, Div, Diff, MGFactor[100];
+  double CFLFactor = 1.0, power = 1.0, CFL = 0.0, CFLMin = 0.0, CFLMax = 0.0, Div = 1.0, Diff = 0.0, MGFactor[100];
   unsigned short iMesh;
-
-  int rank = MASTER_NODE;
-  
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
   
   unsigned short FinestMesh = config[val_iZone]->GetFinestMesh();
-  bool flow = ((config[val_iZone]->GetKind_Solver() == EULER) || (config[val_iZone]->GetKind_Solver() == NAVIER_STOKES) ||
-               (config[val_iZone]->GetKind_Solver() == RANS));
   unsigned long ExtIter = config[val_iZone]->GetExtIter();
 
-  /*--- Output the mean flow solution using only the master node ---*/
+  RhoRes_New = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_RMS(0);
   
-  if ((rank == MASTER_NODE) && (flow)) {
-
-    RhoRes_New = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_RMS(0);
-    if (RhoRes_Old < EPS) RhoRes_Old = RhoRes_New;
-    
-    Div = RhoRes_Old/RhoRes_New;
-    Diff = RhoRes_New-RhoRes_Old;
-
-    /*--- Compute MG factor ---*/
-    
-    MGFactor[MESH_0] = 1.0;
-    for (iMesh = 1; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
-      MGFactor[iMesh] = MGFactor[iMesh-1] * config[val_iZone]->GetCFL(iMesh)/config[val_iZone]->GetCFL(iMesh-1);
-    }
-    
-    if (Div < 1.0) power = config[val_iZone]->GetCFL_AdaptParam(0);
-    else power = config[val_iZone]->GetCFL_AdaptParam(1);
-    
-    /*--- Detect a stall in the residual ---*/
-
-    if ((fabs(Diff) <= RhoRes_New*1E-8) && (ExtIter != 0)) { Div = 0.1; power = config[val_iZone]->GetCFL_AdaptParam(1); }
-
-    CFLMin = config[val_iZone]->GetCFL_AdaptParam(2);
-    CFLMax = config[val_iZone]->GetCFL_AdaptParam(3);
-    
-    CFLFactor = pow(Div, power);
-    
-    for (iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
-      CFL = config[val_iZone]->GetCFL(iMesh);
-      CFL *= CFLFactor;
-      
-      if ((iMesh == MESH_0) && (CFL <= CFLMin)) {
-        for (iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
-          config[val_iZone]->SetCFL(iMesh, 1.001*CFLMin*MGFactor[iMesh]);
-        }
-        break;
-      }
-      if ((iMesh == MESH_0) && (CFL >= CFLMax)) {
-        for (iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++)
-          config[val_iZone]->SetCFL(iMesh, 0.999*CFLMax*MGFactor[iMesh]);
-        break;
-      }
-
-      config[val_iZone]->SetCFL(iMesh, CFL);
-      
-    }
-    
-    RhoRes_Old = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_RMS(0);
-
+  if (RhoRes_New < EPS) RhoRes_New = EPS;
+  if (RhoRes_Old < EPS) RhoRes_Old = RhoRes_New;
+  
+  Div = RhoRes_Old/RhoRes_New;
+  Diff = RhoRes_New-RhoRes_Old;
+  
+  /*--- Compute MG factor ---*/
+  
+  MGFactor[MESH_0] = 1.0;
+  for (iMesh = 1; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
+    MGFactor[iMesh] = MGFactor[iMesh-1] * config[val_iZone]->GetCFL(iMesh)/config[val_iZone]->GetCFL(iMesh-1);
   }
   
+  if (Div < 1.0) power = config[val_iZone]->GetCFL_AdaptParam(0);
+  else power = config[val_iZone]->GetCFL_AdaptParam(1);
+  
+  /*--- Detect a stall in the residual ---*/
+  
+  if ((fabs(Diff) <= RhoRes_New*1E-8) && (ExtIter != 0)) { Div = 0.1; power = config[val_iZone]->GetCFL_AdaptParam(1); }
+  
+  CFLMin = config[val_iZone]->GetCFL_AdaptParam(2);
+  CFLMax = config[val_iZone]->GetCFL_AdaptParam(3);
+  
+  CFLFactor = pow(Div, power);
+  
+  for (iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
+    CFL = config[val_iZone]->GetCFL(iMesh);
+    CFL *= CFLFactor;
+    
+    if ((iMesh == MESH_0) && (CFL <= CFLMin)) {
+      for (iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
+        config[val_iZone]->SetCFL(iMesh, 1.001*CFLMin*MGFactor[iMesh]);
+      }
+      break;
+    }
+    if ((iMesh == MESH_0) && (CFL >= CFLMax)) {
+      for (iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++)
+        config[val_iZone]->SetCFL(iMesh, 0.999*CFLMax*MGFactor[iMesh]);
+      break;
+    }
+    
+    config[val_iZone]->SetCFL(iMesh, CFL);
+    
+  }
+  
+  RhoRes_Old = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_RMS(0);
+
   
 }
 
-  
+
 void COutput::SetForces_Breakdown(CGeometry ***geometry,
                                   CSolver ****solver_container,
                                   CConfig **config,
