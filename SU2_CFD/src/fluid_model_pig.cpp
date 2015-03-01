@@ -2,7 +2,7 @@
  * fluid_model_pig.cpp
  * \brief Source of the ideal gas model.
  * \author S. Vitale, G. Gori, M. Pini, A. Guardone, P. Colonna
- * \version 3.2.8.2 "eagle"
+ * \version 3.2.8.3 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
