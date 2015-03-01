@@ -2,7 +2,7 @@
  * \file config_structure.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 3.2.8.2 "eagle"
+ * \version 3.2.8.3 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -1051,7 +1051,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Integration limits of the equivalent area ( xmin, xmax, Dist_NearField ) */
   addDoubleArrayOption("EA_INT_LIMIT", 3, EA_IntLimit, default_vec_3d);
   /* DESCRIPTION: Equivalent area scaling factor */
-  addDoubleOption("EA_SCALE_FACTOR", EA_ScaleFactor, 1E-7);
+  addDoubleOption("EA_SCALE_FACTOR", EA_ScaleFactor, 1.0);
 
 	/* CONFIG_CATEGORY: Reacting Flow */
   /*--- Options related to the reacting gas mixtures ---*/
@@ -3377,7 +3377,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   cout << endl << "-------------------------------------------------------------------------" << endl;
   cout << "|    ___ _   _ ___                                                      |" << endl;
-  cout << "|   / __| | | |_  )   Release 3.2.8.2 \"eagle\"                           |" << endl;
+  cout << "|   / __| | | |_  )   Release 3.2.8.3 \"eagle\"                           |" << endl;
   cout << "|   \\__ \\ |_| |/ /                                                      |" << endl;
   switch (val_software) {
     case SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;
