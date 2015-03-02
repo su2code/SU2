@@ -2,7 +2,7 @@
  * \file solution_direct_mean.cpp
  * \brief Main subrotuines for solving direct problems (Euler, Navier-Stokes, etc.).
  * \author F. Palacios, T. Economon
- * \version 3.2.8.2 "eagle"
+ * \version 3.2.8.3 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -11510,7 +11510,7 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
           for (jDim = 0 ; jDim < nDim; jDim++) {
             Grad_Vel[iDim][jDim] = node[iPoint]->GetGradient_Primitive(iDim+1, jDim);
           }
-          Grad_Temp[jDim] = node[iPoint]->GetGradient_Primitive(0, jDim);
+          Grad_Temp[iDim] = node[iPoint]->GetGradient_Primitive(0, iDim);
         }
         
         if (compressible) {

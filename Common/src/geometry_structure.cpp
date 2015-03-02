@@ -2,7 +2,7 @@
  * \file geometry_structure.cpp
  * \brief Main subroutines for creating the primal grid and multigrid structure.
  * \author F. Palacios
- * \version 3.2.8.2 "eagle"
+ * \version 3.2.8.3 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -5310,204 +5310,7 @@ CPhysicalGeometry::~CPhysicalGeometry(void) {
   
 }
 
-void CPhysicalGeometry::Generate_Adjacency_For_Partitioning(unsigned long element_count) {
-  
-  int rank = MASTER_NODE, size = SINGLE_NODE;
-  unsigned short iNode, jNode, next_node, previous_node, third_node, fourth_node;     // Specifying the next and previous node in an element
-  unsigned long loc_elem;
-  
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
-  
-  /*--- Decide whether this rank needs each element. If so, build the
-   adjacency arrays needed by ParMETIS and store the element connectivity.
-   Note that every proc starts it's node indexing from zero. ---*/
-  
-  if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
-    cout << "Getting into adjacency function." << endl;
-  
-  for (loc_elem=0; loc_elem < element_count; loc_elem++) {
-    
-    next_node     = 0;
-    previous_node = 0;
-    third_node    = 0;
-    fourth_node   = 0;
-    
-    switch(elem[loc_elem]->GetVTK_Type()) {
-        
-      case TRIANGLE:
-        
-        for (iNode=0; iNode<N_POINTS_TRIANGLE; iNode++) {
-          if ((elem[loc_elem]->GetNode(iNode)>=starting_node[rank])&&(elem[loc_elem]->GetNode(iNode)<ending_node[rank])) {
-            for (jNode=0; jNode<N_POINTS_TRIANGLE; jNode++) {
-              if (iNode!=jNode) {
-                adjacent_elem[elem[loc_elem]->GetNode(iNode)-starting_node[rank]][adj_counter[elem[loc_elem]->GetNode(iNode)-starting_node[rank]]]=elem[loc_elem]->GetNode(jNode);
-                adj_counter[elem[loc_elem]->GetNode(iNode)-starting_node[rank]]++;
-              }
-            }
-          }
-        }
-        
-        break;
-        
-      case RECTANGLE:
-        
-        for (iNode=0; iNode<N_POINTS_QUADRILATERAL; iNode++) {
-          if ((elem[loc_elem]->GetNode(iNode)>=starting_node[rank])&&(elem[loc_elem]->GetNode(iNode)<ending_node[rank])) {
-            
-            /*--- finding the neighbours   ---*/
-            
-            if (iNode==0) { previous_node = 3; next_node = iNode+1; }
-            else if (iNode == 3) { previous_node = iNode-1; next_node = 0; }
-            else { previous_node = iNode-1; next_node = iNode+1; }
-            
-            /*--- Setting up the adjacency elements for the array ---*/
-            
-            adjacent_elem[elem[loc_elem]->GetNode(iNode)-starting_node[rank]][adj_counter[elem[loc_elem]->GetNode(iNode)-starting_node[rank]]]=elem[loc_elem]->GetNode(previous_node);
-            adj_counter[elem[loc_elem]->GetNode(iNode)-starting_node[rank]]++;
-            
-            
-            adjacent_elem[elem[loc_elem]->GetNode(iNode)-starting_node[rank]][adj_counter[elem[loc_elem]->GetNode(iNode)-starting_node[rank]]]=elem[loc_elem]->GetNode(next_node);
-            adj_counter[elem[loc_elem]->GetNode(iNode)-starting_node[rank]]++;
-            
-          }
-          
-        }
-        
-        
-        break;
-        
-      case TETRAHEDRON:
-        
-        for (iNode=0; iNode<N_POINTS_TETRAHEDRON; iNode++) {
-          if ((elem[loc_elem]->GetNode(iNode)>=starting_node[rank])&&(elem[loc_elem]->GetNode(iNode)<ending_node[rank])) {
-            for (jNode=0; jNode<N_POINTS_TETRAHEDRON; jNode++) {
-              if (iNode!=jNode) {
-                adjacent_elem[elem[loc_elem]->GetNode(iNode)-starting_node[rank]][adj_counter[elem[loc_elem]->GetNode(iNode)-starting_node[rank]]]=elem[loc_elem]->GetNode(jNode);
-                adj_counter[elem[loc_elem]->GetNode(iNode)-starting_node[rank]]++;
-              }
-            }
-          }
-        }
-        
-        break;
-        
-      case HEXAHEDRON:
-        
-        for (iNode=0; iNode<N_POINTS_HEXAHEDRON; iNode++) {
-          
-          if ((elem[loc_elem]->GetNode(iNode)>=starting_node[rank])&&(elem[loc_elem]->GetNode(iNode)<ending_node[rank])) {
-            
-            /*--- finding the neighbours   ---*/
-            
-            if (iNode==0) { previous_node = 3; next_node = iNode+1; }
-            else if (iNode==4) { previous_node = 7; next_node = iNode+1; }
-            else if (iNode==3) { previous_node = iNode-1; next_node = 0; }
-            else if (iNode==7) { previous_node = iNode-1; next_node = 4; }
-            else { previous_node = iNode-1; next_node = iNode+1; }
-            
-            if (iNode<4) third_node = iNode+4;
-            if (iNode>=4) third_node = iNode-4;
-            
-            /*--- Setting up the adjacency elements for the array ---*/
-            
-            adjacent_elem[elem[loc_elem]->GetNode(iNode)-starting_node[rank]][adj_counter[elem[loc_elem]->GetNode(iNode)-starting_node[rank]]]=elem[loc_elem]->GetNode(previous_node);
-            adj_counter[elem[loc_elem]->GetNode(iNode)-starting_node[rank]]++;
-            
-            
-            adjacent_elem[elem[loc_elem]->GetNode(iNode)-starting_node[rank]][adj_counter[elem[loc_elem]->GetNode(iNode)-starting_node[rank]]]=elem[loc_elem]->GetNode(next_node);
-            adj_counter[elem[loc_elem]->GetNode(iNode)-starting_node[rank]]++;
-            
-            
-            adjacent_elem[elem[loc_elem]->GetNode(iNode)-starting_node[rank]][adj_counter[elem[loc_elem]->GetNode(iNode)-starting_node[rank]]]=elem[loc_elem]->GetNode(third_node);
-            adj_counter[elem[loc_elem]->GetNode(iNode)-starting_node[rank]]++;
-            
-          }
-          
-        }
-        
-        break;
-        
-      case WEDGE:
-        
-        for (iNode=0; iNode<N_POINTS_WEDGE; iNode++) {
-          
-          if ((elem[loc_elem]->GetNode(iNode)>=starting_node[rank])&&(elem[loc_elem]->GetNode(iNode)<ending_node[rank])) {
-            
-            /*--- finding the neighbours   ---*/
-            
-            if ((iNode==0)||(iNode==3)) { previous_node = iNode+2; next_node = iNode+1; }
-            else if ((iNode==2)||(iNode==5)) { previous_node = iNode-1; next_node = iNode-2; }
-            else{ previous_node = iNode-1; next_node = iNode+1; }
-            
-            if (iNode<3) third_node = iNode+3;
-            if (iNode>=3) third_node = iNode-3;
-            
-            /*--- Setting up the adjacency elements for the array ---*/
-            
-            adjacent_elem[elem[loc_elem]->GetNode(iNode)-starting_node[rank]][adj_counter[elem[loc_elem]->GetNode(iNode)-starting_node[rank]]]=elem[loc_elem]->GetNode(previous_node);
-            adj_counter[elem[loc_elem]->GetNode(iNode)-starting_node[rank]]++;
-            
-            adjacent_elem[elem[loc_elem]->GetNode(iNode)-starting_node[rank]][adj_counter[elem[loc_elem]->GetNode(iNode)-starting_node[rank]]]=elem[loc_elem]->GetNode(next_node);
-            adj_counter[elem[loc_elem]->GetNode(iNode)-starting_node[rank]]++;
-            
-            adjacent_elem[elem[loc_elem]->GetNode(iNode)-starting_node[rank]][adj_counter[elem[loc_elem]->GetNode(iNode)-starting_node[rank]]]=elem[loc_elem]->GetNode(third_node);
-            adj_counter[elem[loc_elem]->GetNode(iNode)-starting_node[rank]]++;
-            
-          }
-        }
-        
-        break;
-        
-      case PYRAMID:
-        
-        for (iNode=0; iNode<N_POINTS_PYRAMID; iNode++) {
-          
-          if ((elem[loc_elem]->GetNode(iNode)>=starting_node[rank])&&(elem[loc_elem]->GetNode(iNode)<ending_node[rank])) {
-            
-            /*--- finding the neighbours   ---*/
-            
-            if (iNode==0) { previous_node = 3; next_node = iNode+1; }
-            else if ((iNode==1)||(iNode==2)) { previous_node = iNode-1; next_node = iNode+1; }
-            
-            if (iNode==3) { previous_node = iNode-1; next_node = 0; }
-            else{ previous_node = iNode-1; next_node = 0; }
-            
-            if (iNode<4) third_node  = 4;
-            if (iNode>=4) { third_node  = iNode-2; fourth_node = iNode-3; }
-            
-            /*--- Setting up the adjacency elements for the array ---*/
-            
-            adjacent_elem[elem[loc_elem]->GetNode(iNode)-starting_node[rank]][adj_counter[elem[loc_elem]->GetNode(iNode)-starting_node[rank]]]=elem[loc_elem]->GetNode(previous_node);
-            adj_counter[elem[loc_elem]->GetNode(iNode)-starting_node[rank]]++;
-            
-            
-            adjacent_elem[elem[loc_elem]->GetNode(iNode)-starting_node[rank]][adj_counter[elem[loc_elem]->GetNode(iNode)-starting_node[rank]]]=elem[loc_elem]->GetNode(next_node);
-            adj_counter[elem[loc_elem]->GetNode(iNode)-starting_node[rank]]++;
-            
-            
-            adjacent_elem[elem[loc_elem]->GetNode(iNode)-starting_node[rank]][adj_counter[elem[loc_elem]->GetNode(iNode)-starting_node[rank]]]=elem[loc_elem]->GetNode(third_node);
-            adj_counter[elem[loc_elem]->GetNode(iNode)-starting_node[rank]]++;
-            
-            
-            if (iNode==4) {
-              adjacent_elem[elem[loc_elem]->GetNode(iNode)-starting_node[rank]][adj_counter[elem[loc_elem]->GetNode(iNode)-starting_node[rank]]]=elem[loc_elem]->GetNode(fourth_node);
-              adj_counter[elem[loc_elem]->GetNode(iNode)-starting_node[rank]]++;
-            }
-            
-          }
-          
-        }
-        
-        break;
-        
-    }
-    
-  }
-  
-}
+
 
 void CPhysicalGeometry::SetSendReceive(CConfig *config) {
   
@@ -6384,11 +6187,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
     
     if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
     cout << "Calling the partitioning functions." << endl;
-  
-  /*--- Call the Generate_Adjacency_For_Partitioning() function to compute the adjacency matrix ---*/
-
-//  Generate_Adjacency_For_Partitioning(loc_element_count);
-  
+    
   /*--- Store the number of local elements on each rank after determining
    which elements must be kept in the loop above. ---*/
   
@@ -6664,15 +6463,18 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
 #ifdef HAVE_CGNS
   
   /*--- Local variables and initialization ---*/
+  
   string text_line, Marker_Tag;
   ifstream mesh_file;
   unsigned short VTK_Type = 0, iMarker = 0;
   unsigned short nMarker_Max = config->GetnMarker_Max();
   unsigned long iPoint = 0, iProcessor = 0, ielem = 0, GlobalIndex = 0;
+  unsigned long globalOffset = 0;
   int rank = MASTER_NODE, size = SINGLE_NODE;
   nZone = val_nZone;
   
-  /*--- Local variables which are needed when calling the CGNS mid-level API. ---*/
+  /*--- Local variables needed when calling the CGNS mid-level API. ---*/
+  
   unsigned long vnodes_cgns[8];
   double Coord_cgns[3];
   int fn, nbases = 0, nzones = 0, ngrids = 0, ncoords = 0, nsections = 0;
@@ -6706,6 +6508,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   char*** sectionNames = NULL;
   
   /*--- Initialize counters for local/global points & elements ---*/
+  
 #ifdef HAVE_MPI
   unsigned long Local_nElem;
   unsigned long Local_nElemTri, Local_nElemQuad, Local_nElemTet;
@@ -6720,6 +6523,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
 #endif
   
   /*--- Initialize counters for local/global points & elements ---*/
+  
   Global_nPoint  = 0; Global_nPointDomain = 0; Global_nElem = 0;
   nelem_edge     = 0; Global_nelem_edge     = 0;
   nelem_triangle = 0; Global_nelem_triangle = 0;
@@ -7147,9 +6951,12 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
           nPoinPerElem[ii] = npe;
           
           /*--- Store the global ID for this element. Note the -1 to move
-           from CGNS convention to SU2 convention. ---*/
+           from CGNS convention to SU2 convention. We also subtract off
+           an additional offset in case we have found boundary sections
+           prior to this one, in order to keep the internal element global
+           IDs indexed starting from zero. ---*/
           
-          elemGlobalID[ii] = elemB[rank] + ii - 1;
+          elemGlobalID[ii] = elemB[rank] + ii - 1 - globalOffset;
           
           /*--- Need to check the element type and correctly specify the 
            VTK identifier for that element. SU2 recognizes elements by 
@@ -7286,6 +7093,11 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
           delete [] elemTypes;
           delete [] elemGlobalID;
           delete [] isMixed;
+          
+          /*--- Since we found an internal section, we should adjust the
+           element global ID offset by the total size of the section. ---*/
+          
+          globalOffset += element_count;
           
           if (rank == MASTER_NODE) {
             

@@ -2,7 +2,7 @@
  * \file integration_structure.cpp
  * \brief This subroutine includes the space and time integration structure
  * \author F. Palacios, T. Economon
- * \version 3.2.8.2 "eagle"
+ * \version 3.2.8.3 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).

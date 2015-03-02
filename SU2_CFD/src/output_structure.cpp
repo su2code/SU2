@@ -2,7 +2,7 @@
  * \file output_structure.cpp
  * \brief Main subroutines for output solver information
  * \author F. Palacios, T. Economon
- * \version 3.2.8.2 "eagle"
+ * \version 3.2.8.3 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -34,6 +34,7 @@
 COutput::COutput(void) {
   
   /*--- Initialize point and connectivity counters to zero. ---*/
+  
   nGlobal_Poin      = 0;
   nSurf_Poin        = 0;
   nGlobal_Elem      = 0;
@@ -49,16 +50,25 @@ COutput::COutput(void) {
   nGlobal_BoundQuad = 0;
   
   /*--- Initialize CGNS write flag ---*/
+  
   wrote_base_file = false;
   
   /*--- Initialize CGNS write flag ---*/
+  
   wrote_CGNS_base = false;
   
   /*--- Initialize Tecplot surface flag ---*/
+  
   wrote_surf_file = false;
   
   /*--- Initialize Paraview write flag ---*/
+  
   wrote_Paraview_base = false;
+  
+  /*--- Initialize residual ---*/
+
+  RhoRes_New = EPS;
+  RhoRes_Old = EPS;
   
 }
 
@@ -156,6 +166,7 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
             SkinFrictionCoeff = FlowSolver->GetCSkinFriction(iMarker,iVertex);
             HeatFlux = FlowSolver->GetHeatFlux(iMarker,iVertex);
             SurfFlow_file << scientific << SkinFrictionCoeff << ", " << HeatFlux << endl;
+            break;
         }
       }
     }
@@ -3813,7 +3824,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   }
   
   /*--- Header for the residuals ---*/
-  
+
   char flow_resid[]= ",\"Res_Flow[0]\",\"Res_Flow[1]\",\"Res_Flow[2]\",\"Res_Flow[3]\",\"Res_Flow[4]\"";
   char adj_flow_resid[]= ",\"Res_AdjFlow[0]\",\"Res_AdjFlow[1]\",\"Res_AdjFlow[2]\",\"Res_AdjFlow[3]\",\"Res_AdjFlow[4]\"";
   switch (config->GetKind_Turb_Model()) {
@@ -3939,6 +3950,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
       case FLUID_STRUCTURE_EULER:   case FLUID_STRUCTURE_NAVIER_STOKES:   case FLUID_STRUCTURE_RANS:
       case ADJ_EULER:               case ADJ_NAVIER_STOKES:               case ADJ_RANS:
         OneDimensionalOutput(solver_container[val_iZone][FinestMesh][FLOW_SOL], geometry[val_iZone][FinestMesh], config[val_iZone]);
+        break;
     }
   }
   if (output_massflow) {
@@ -3947,6 +3959,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
       case FLUID_STRUCTURE_EULER:   case FLUID_STRUCTURE_NAVIER_STOKES:   case FLUID_STRUCTURE_RANS:
       case ADJ_EULER:               case ADJ_NAVIER_STOKES:               case ADJ_RANS:
         SetMassFlowRate(solver_container[val_iZone][FinestMesh][FLOW_SOL], geometry[val_iZone][FinestMesh], config[val_iZone]);
+        break;
     }
   }
 
@@ -4490,12 +4503,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             
             /*--- Flow residual ---*/
             if (nDim == 2) {
-              if (compressible) sprintf (flow_resid, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]), dummy );
-              if (incompressible || freesurface) sprintf (flow_resid, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), dummy, dummy );
+              if (compressible) sprintf (flow_resid, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]),dummy);
+              if (incompressible || freesurface) sprintf (flow_resid, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]),dummy,dummy);
             }
             else {
               if (compressible) sprintf (flow_resid, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]), log10 (residual_flow[4]) );
-              if (incompressible || freesurface) sprintf (flow_resid, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]), dummy );
+              if (incompressible || freesurface) sprintf (flow_resid, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]),dummy);
             }
             
             /*--- Turbulent residual ---*/
@@ -4962,6 +4975,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             if (aeroelastic) ConvHist_file[0] << aeroelastic_coeff;
             if (output_per_surface) ConvHist_file[0] << monitoring_coeff;
             if (output_1d) ConvHist_file[0] << oneD_outputs;
+            if (output_massflow) ConvHist_file[0] << massflow_outputs;
             ConvHist_file[0] << end;
             ConvHist_file[0].flush();
           }
@@ -5246,77 +5260,65 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
 void COutput::SetCFL_Number(CSolver ****solver_container, CConfig **config, unsigned short val_iZone) {
   
-  double CFLFactor, power, CFL, CFLMin, CFLMax, Div, Diff, MGFactor[100];
+  double CFLFactor = 1.0, power = 1.0, CFL = 0.0, CFLMin = 0.0, CFLMax = 0.0, Div = 1.0, Diff = 0.0, MGFactor[100];
   unsigned short iMesh;
-
-  int rank = MASTER_NODE;
-  
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
   
   unsigned short FinestMesh = config[val_iZone]->GetFinestMesh();
-  bool flow = ((config[val_iZone]->GetKind_Solver() == EULER) || (config[val_iZone]->GetKind_Solver() == NAVIER_STOKES) ||
-               (config[val_iZone]->GetKind_Solver() == RANS));
   unsigned long ExtIter = config[val_iZone]->GetExtIter();
 
-  /*--- Output the mean flow solution using only the master node ---*/
+  RhoRes_New = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_RMS(0);
   
-  if ((rank == MASTER_NODE) && (flow)) {
-
-    RhoRes_New = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_RMS(0);
-    if (RhoRes_Old < EPS) RhoRes_Old = RhoRes_New;
-    
-    Div = RhoRes_Old/RhoRes_New;
-    Diff = RhoRes_New-RhoRes_Old;
-
-    /*--- Compute MG factor ---*/
-    
-    MGFactor[MESH_0] = 1.0;
-    for (iMesh = 1; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
-      MGFactor[iMesh] = MGFactor[iMesh-1] * config[val_iZone]->GetCFL(iMesh)/config[val_iZone]->GetCFL(iMesh-1);
-    }
-    
-    if (Div < 1.0) power = config[val_iZone]->GetCFL_AdaptParam(0);
-    else power = config[val_iZone]->GetCFL_AdaptParam(1);
-    
-    /*--- Detect a stall in the residual ---*/
-
-    if ((fabs(Diff) <= RhoRes_New*1E-8) && (ExtIter != 0)) { Div = 0.1; power = config[val_iZone]->GetCFL_AdaptParam(1); }
-
-    CFLMin = config[val_iZone]->GetCFL_AdaptParam(2);
-    CFLMax = config[val_iZone]->GetCFL_AdaptParam(3);
-    
-    CFLFactor = pow(Div, power);
-    
-    for (iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
-      CFL = config[val_iZone]->GetCFL(iMesh);
-      CFL *= CFLFactor;
-      
-      if ((iMesh == MESH_0) && (CFL <= CFLMin)) {
-        for (iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
-          config[val_iZone]->SetCFL(iMesh, 1.001*CFLMin*MGFactor[iMesh]);
-        }
-        break;
-      }
-      if ((iMesh == MESH_0) && (CFL >= CFLMax)) {
-        for (iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++)
-          config[val_iZone]->SetCFL(iMesh, 0.999*CFLMax*MGFactor[iMesh]);
-        break;
-      }
-
-      config[val_iZone]->SetCFL(iMesh, CFL);
-      
-    }
-    
-    RhoRes_Old = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_RMS(0);
-
+  if (RhoRes_New < EPS) RhoRes_New = EPS;
+  if (RhoRes_Old < EPS) RhoRes_Old = RhoRes_New;
+  
+  Div = RhoRes_Old/RhoRes_New;
+  Diff = RhoRes_New-RhoRes_Old;
+  
+  /*--- Compute MG factor ---*/
+  
+  MGFactor[MESH_0] = 1.0;
+  for (iMesh = 1; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
+    MGFactor[iMesh] = MGFactor[iMesh-1] * config[val_iZone]->GetCFL(iMesh)/config[val_iZone]->GetCFL(iMesh-1);
   }
   
+  if (Div < 1.0) power = config[val_iZone]->GetCFL_AdaptParam(0);
+  else power = config[val_iZone]->GetCFL_AdaptParam(1);
+  
+  /*--- Detect a stall in the residual ---*/
+  
+  if ((fabs(Diff) <= RhoRes_New*1E-8) && (ExtIter != 0)) { Div = 0.1; power = config[val_iZone]->GetCFL_AdaptParam(1); }
+  
+  CFLMin = config[val_iZone]->GetCFL_AdaptParam(2);
+  CFLMax = config[val_iZone]->GetCFL_AdaptParam(3);
+  
+  CFLFactor = pow(Div, power);
+  
+  for (iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
+    CFL = config[val_iZone]->GetCFL(iMesh);
+    CFL *= CFLFactor;
+    
+    if ((iMesh == MESH_0) && (CFL <= CFLMin)) {
+      for (iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
+        config[val_iZone]->SetCFL(iMesh, 1.001*CFLMin*MGFactor[iMesh]);
+      }
+      break;
+    }
+    if ((iMesh == MESH_0) && (CFL >= CFLMax)) {
+      for (iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++)
+        config[val_iZone]->SetCFL(iMesh, 0.999*CFLMax*MGFactor[iMesh]);
+      break;
+    }
+    
+    config[val_iZone]->SetCFL(iMesh, CFL);
+    
+  }
+  
+  RhoRes_Old = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_RMS(0);
+
   
 }
 
-  
+
 void COutput::SetForces_Breakdown(CGeometry ***geometry,
                                   CSolver ****solver_container,
                                   CConfig **config,
@@ -5446,7 +5448,7 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
     
     Breakdown_file << endl <<"-------------------------------------------------------------------------" << endl;
     Breakdown_file <<"|    ___ _   _ ___                                                      |" << endl;
-    Breakdown_file <<"|   / __| | | |_  )   Release 3.2.8.2 \"eagle\"                           |" << endl;
+    Breakdown_file <<"|   / __| | | |_  )   Release 3.2.8.3 \"eagle\"                           |" << endl;
     Breakdown_file <<"|   \\__ \\ |_| |/ /                                                      |" << endl;
     Breakdown_file <<"|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl;
     Breakdown_file << "|                                                                       |" << endl;

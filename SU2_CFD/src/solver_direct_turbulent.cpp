@@ -2,7 +2,7 @@
  * \file solution_direct_turbulent.cpp
  * \brief Main subrotuines for solving direct problems
  * \author F. Palacios, A. Bueno
- * \version 3.2.8.2 "eagle"
+ * \version 3.2.8.3 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -1018,9 +1018,11 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
     
     /*--- Define some auxiliar vector related with the residual ---*/
     
-    Residual = new double[nVar]; Residual_RMS = new double[nVar];
-    Residual_i = new double[nVar]; Residual_j = new double[nVar];
-    Residual_Max = new double[nVar];
+    Residual = new double[nVar];     for (iVar = 0; iVar < nVar; iVar++) Residual[iVar]  = 0.0;
+    Residual_RMS = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 0.0;
+    Residual_i = new double[nVar];   for (iVar = 0; iVar < nVar; iVar++) Residual_i[iVar]  = 0.0;
+    Residual_j = new double[nVar];   for (iVar = 0; iVar < nVar; iVar++) Residual_j[iVar]  = 0.0;
+    Residual_Max = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_Max[iVar]  = 0.0;
     
     /*--- Define some structures for locating max residuals ---*/
     
@@ -2476,29 +2478,37 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
 #endif
   
   /*--- Array initialization ---*/
+  
   constants = NULL;
   
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
   
   /*--- Dimension of the problem --> dependent of the turbulent model ---*/
+  
   nVar = 2;
   nPoint = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
   
   /*--- Define geometry constants in the solver structure ---*/
+  
   nDim = geometry->GetnDim();
   node = new CVariable*[nPoint];
   
   /*--- Single grid simulation ---*/
+  
   if (iMesh == MESH_0) {
     
     /*--- Define some auxiliary vector related with the residual ---*/
-    Residual = new double[nVar]; Residual_RMS = new double[nVar];
-    Residual_i = new double[nVar]; Residual_j = new double[nVar];
-    Residual_Max = new double[nVar];
+    
+    Residual = new double[nVar];     for (iVar = 0; iVar < nVar; iVar++) Residual[iVar]  = 0.0;
+    Residual_RMS = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 0.0;
+    Residual_i = new double[nVar];   for (iVar = 0; iVar < nVar; iVar++) Residual_i[iVar]  = 0.0;
+    Residual_j = new double[nVar];   for (iVar = 0; iVar < nVar; iVar++) Residual_j[iVar]  = 0.0;
+    Residual_Max = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_Max[iVar]  = 0.0;
     
     /*--- Define some structures for locating max residuals ---*/
+    
     Point_Max = new unsigned long[nVar];
     for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar] = 0;
     Point_Max_Coord = new double*[nVar];
@@ -2508,16 +2518,20 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
     }
     
     /*--- Define some auxiliary vector related with the solution ---*/
+    
     Solution = new double[nVar];
     Solution_i = new double[nVar]; Solution_j = new double[nVar];
     
     /*--- Define some auxiliary vector related with the geometry ---*/
+    
     Vector_i = new double[nDim]; Vector_j = new double[nDim];
     
     /*--- Define some auxiliary vector related with the flow solution ---*/
+    
     FlowPrimVar_i = new double [nDim+7]; FlowPrimVar_j = new double [nDim+7];
     
     /*--- Jacobians and vector structures for implicit computations ---*/
+    
     Jacobian_i = new double* [nVar];
     Jacobian_j = new double* [nVar];
     for (iVar = 0; iVar < nVar; iVar++) {
@@ -2526,6 +2540,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
     }
     
     /*--- Initialization of the structure of the whole Jacobian ---*/
+    
     if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (SST model)." << endl;
     Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
     
@@ -2540,6 +2555,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   }
   
   /*--- Computation of gradients by least squares ---*/
+  
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
     /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
     Smatrix = new double* [nDim];
