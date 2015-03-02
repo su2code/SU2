@@ -2945,28 +2945,36 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
         Xcoord = geometry[iMesh]->node[iPoint]->GetCoord(0);
         
         if (Xcoord <= Xdiaf) {
+          
+          
+          FluidModel->SetTDState_Prho(Pressure_l, density_l);
+          
           Solution[0] = density_l;
           Solution[1] = density_l*vel_l;
           Solution[2] = 0;
-          Solution[3] = Pressure_l/Gamma_Minus_One + 0.5*density_l*vel_l*vel_l;
-          if (Xcoord <= 0.1){
-            cout << "Xcoord= " << Xcoord << " density = " << Solution[0] << endl;
-            }
+          Solution[3] = density_l*FluidModel->GetStaticEnergy();
+          
+          //Solution[3] = Pressure_l/Gamma_Minus_One + 0.5*density_l*vel_l*vel_l;
           } else {
+          
+          FluidModel->SetTDState_Prho(Pressure_r, density_r);
+          
           Solution[0] = density_r;
           Solution[1] = density_r*vel_r;
           Solution[2] = 0;
-          Solution[3] = Pressure_r/Gamma_Minus_One + 0.5*density_r*vel_r*vel_r;
-            
+          Solution[3] = density_r*FluidModel->GetStaticEnergy();
+            //Solution[3] = Pressure_r/Gamma_Minus_One + 0.5*density_r*vel_r*vel_r;
+          }
           solver_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(Solution);
           solver_container[iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n();
           solver_container[iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n1();
           
-        }
+        
       }
     }
     
     delete [] Solution;
+    cout << "Pinf= " << Pressure_Inf << endl;
     cout << "Shock tube problem initial condition set up." << endl;
   }
 }
@@ -6357,6 +6365,7 @@ void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container
   double Density_b, StaticEnergy_b, Enthalpy_b, *Velocity_b, Kappa_b, Chi_b, Energy_b, VelMagnitude2_b, Pressure_b;
   double Density_i, *Velocity_i, ProjVelocity_i = 0.0, Energy_i, VelMagnitude2_i;
   double **Jacobian_b, **DubDu;
+  double Xcoord;
   
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement = config->GetGrid_Movement();
@@ -6407,6 +6416,12 @@ void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container
         VelMagnitude2_i = 0.0; ProjVelocity_i = 0.0;
         for (iDim = 0; iDim < nDim; iDim++) {
           Velocity_i[iDim] = node[iPoint]->GetVelocity(iDim);
+          
+          Xcoord = geometry->node[iPoint]->GetCoord(0);
+          if (Xcoord < 0.01 || Xcoord > 0.99){
+            //cout << "X value= " << Xcoord <<" Velocity["<<iDim<<"]= " << Velocity_i[iDim] << endl;
+          }
+          
           ProjVelocity_i += Velocity_i[iDim]*UnitNormal[iDim];
           VelMagnitude2_i += Velocity_i[iDim]*Velocity_i[iDim];
         }

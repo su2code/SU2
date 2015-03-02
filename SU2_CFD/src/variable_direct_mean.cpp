@@ -402,6 +402,7 @@ bool CEulerVariable::SetPrimVar_Compressible(CFluidModel *FluidModel) {
   
   check_dens = SetDensity();
   check_press = SetPressure(FluidModel->GetPressure());
+    cout << "Pressure = " << FluidModel->GetPressure() << endl;
   check_sos = SetSoundSpeed(FluidModel->GetSoundSpeed2());
   check_temp = SetTemperature(FluidModel->GetTemperature());
   
