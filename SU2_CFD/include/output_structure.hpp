@@ -401,7 +401,56 @@ public:
    * \param[in] val_iZone - iZone index.
 	 */
 	void SetTecplot_SurfaceSolution(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
-
+  
+  /*!
+   * \brief Write a Tecplot ASCII solution file.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] val_iZone - Current zone.
+   * \param[in] val_nZone - Total number of zones.
+   */
+  void SetFieldView_ASCII(CConfig *config, CGeometry *geometry,CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol);
+  
+  /*!
+   * \brief Write the nodal coordinates and connectivity to a Tecplot binary mesh file.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] val_iZone - iZone index.
+   */
+  void SetFieldView_MeshASCII(CConfig *config, CGeometry *geometry, bool surf_sol, bool new_file);
+  
+  /*!
+   * \brief Write the nodal coordinates and connectivity to a Tecplot binary mesh file.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] val_iZone - iZone index.
+   */
+  void SetFieldView_MeshBinary(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
+  
+  /*!
+   * \brief Write the coordinates and connectivity to a Tecplot binary surface mesh file.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] val_iZone - iZone index.
+   */
+  void SetFieldView_SurfaceMesh(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
+  
+  /*!
+   * \brief Write solution data to a Tecplot binary volume solution file.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] val_iZone - iZone index.
+   */
+  void SetFieldView_Solution(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
+  
+  /*!
+   * \brief Write solution data to a Tecplot binary surface solution file.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] val_iZone - iZone index.
+   */
+  void SetFieldView_SurfaceSolution(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
+  
   /*!
 	 * \brief Deallocate temporary memory needed for merging and writing coordinates.
 	 * \param[in] config - Definition of the particular problem.

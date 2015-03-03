@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0506980C1AA61B4500FF4F07 /* output_fieldview.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0506980B1AA61B4500FF4F07 /* output_fieldview.cpp */; };
 		05755F0C1A54B2AF00600019 /* output_su2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05755F0B1A54B2AF00600019 /* output_su2.cpp */; };
 		05E6DBA417EB61EC00FA1F7E /* config_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05E6DB9B17EB61EC00FA1F7E /* config_structure.cpp */; };
 		05E6DBA517EB61EC00FA1F7E /* dual_grid_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05E6DB9C17EB61EC00FA1F7E /* dual_grid_structure.cpp */; };
@@ -39,6 +40,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		0506980B1AA61B4500FF4F07 /* output_fieldview.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = output_fieldview.cpp; path = ../../SU2_CFD/src/output_fieldview.cpp; sourceTree = "<group>"; };
 		05755F0B1A54B2AF00600019 /* output_su2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = output_su2.cpp; path = ../../SU2_CFD/src/output_su2.cpp; sourceTree = "<group>"; };
 		0593D54416F2A810007C1809 /* SU2_SOL */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = SU2_SOL; sourceTree = BUILT_PRODUCTS_DIR; };
 		05E6DAA817EB605C00FA1F7E /* config_structure.inl */ = {isa = PBXFileReference; lastKnownFileType = text; name = config_structure.inl; path = ../../Common/include/config_structure.inl; sourceTree = "<group>"; };
@@ -160,6 +162,7 @@
 				05E6DC6817EB658F00FA1F7E /* output_paraview.cpp */,
 				05E6DC6917EB658F00FA1F7E /* output_structure.cpp */,
 				05E6DC6A17EB658F00FA1F7E /* output_tecplot.cpp */,
+				0506980B1AA61B4500FF4F07 /* output_fieldview.cpp */,
 				05755F0B1A54B2AF00600019 /* output_su2.cpp */,
 				05E6DC6317EB657400FA1F7E /* solver_structure.cpp */,
 				05E6DC6517EB657B00FA1F7E /* variable_structure.cpp */,
@@ -241,6 +244,7 @@
 				05E6DC6617EB657B00FA1F7E /* variable_structure.cpp in Sources */,
 				05E6DC6B17EB658F00FA1F7E /* output_cgns.cpp in Sources */,
 				05E6DC6C17EB658F00FA1F7E /* output_paraview.cpp in Sources */,
+				0506980C1AA61B4500FF4F07 /* output_fieldview.cpp in Sources */,
 				05E6DC6D17EB658F00FA1F7E /* output_structure.cpp in Sources */,
 				05755F0C1A54B2AF00600019 /* output_su2.cpp in Sources */,
 				05E6DC6E17EB658F00FA1F7E /* output_tecplot.cpp in Sources */,
