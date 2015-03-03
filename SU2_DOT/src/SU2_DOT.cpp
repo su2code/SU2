@@ -2,7 +2,7 @@
  * \file SU2_DOT.cpp
  * \brief Main file of the Gradient Projection Code (SU2_DOT).
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.3 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -62,8 +62,8 @@ int main(int argc, char *argv[]) {
   /*--- Load in the number of zones and spatial dimensions in the mesh file (if no config
    file is specified, default.cfg is used) ---*/
   
-  if (argc == 2){ strcpy(config_file_name,argv[1]); }
-  else{ strcpy(config_file_name, "default.cfg"); }
+  if (argc == 2) { strcpy(config_file_name,argv[1]); }
+  else { strcpy(config_file_name, "default.cfg"); }
     
   /*--- Definition of the containers per zones ---*/
   
@@ -91,22 +91,18 @@ int main(int argc, char *argv[]) {
     
     CGeometry *geometry_aux = NULL;
     
-    if (rank == MASTER_NODE) {
-      
-      /*--- Read the grid using the master node ---*/
-      
-      geometry_aux = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
-            
-      /*--- Color the initial grid and set the send-receive domains ---*/
-      
-      geometry_aux->SetColorGrid(config_container[iZone]);
-      
-    }
+    /*--- All ranks process the grid and call ParMETIS for partitioning ---*/
+    
+    geometry_aux = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
+    
+    /*--- Color the initial grid and set the send-receive domains (ParMETIS) ---*/
+    
+    geometry_aux->SetColorGrid_Parallel(config_container[iZone]);
     
     /*--- Allocate the memory of the current domain, and
      divide the grid between the nodes ---*/
     
-    geometry_container[iZone] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
+    geometry_container[iZone] = new CPhysicalGeometry(geometry_aux, config_container[iZone], 1);
     
     /*--- Deallocate the memory of geometry_aux ---*/
     
@@ -222,7 +218,6 @@ int main(int argc, char *argv[]) {
     /*--- Free Form deformation based ---*/
     
     if ((config_container[ZONE_0]->GetDesign_Variable(iDV) == FFD_CONTROL_POINT_2D) ||
-        (config_container[ZONE_0]->GetDesign_Variable(iDV) == FFD_RADIUS_2D) ||
         (config_container[ZONE_0]->GetDesign_Variable(iDV) == FFD_CAMBER_2D) ||
         (config_container[ZONE_0]->GetDesign_Variable(iDV) == FFD_THICKNESS_2D) ||
         (config_container[ZONE_0]->GetDesign_Variable(iDV) == FFD_CONTROL_POINT) ||
@@ -241,7 +236,7 @@ int main(int argc, char *argv[]) {
         
         /*--- Read the FFD information from the grid file ---*/
         
-        surface_movement->ReadFFDInfo(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox, config_container[ZONE_0]->GetMesh_FileName(), true);
+        surface_movement->ReadFFDInfo(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox, config_container[ZONE_0]->GetMesh_FileName());
         
         /*--- If the FFDBox was not defined in the input file ---*/
         if (!surface_movement->GetFFDBoxDefinition() && (rank == MASTER_NODE)) {
@@ -268,7 +263,6 @@ int main(int argc, char *argv[]) {
         
         switch (config_container[ZONE_0]->GetDesign_Variable(iDV) ) {
           case FFD_CONTROL_POINT_2D : surface_movement->SetFFDCPChange_2D(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], iDV, true); break;
-          case FFD_RADIUS_2D :        surface_movement->SetFFDCPChange_2D_rad(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], iDV, true); break;
           case FFD_CAMBER_2D :        surface_movement->SetFFDCamber_2D(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], iDV, true); break;
           case FFD_THICKNESS_2D :     surface_movement->SetFFDThickness_2D(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], iDV, true); break;
           case FFD_CONTROL_POINT :    surface_movement->SetFFDCPChange(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], iDV, true); break;
@@ -300,12 +294,22 @@ int main(int argc, char *argv[]) {
 
     /*--- Displacement design variable ---*/
 
-    else if (config_container[ZONE_0]->GetDesign_Variable(iDV) == DISPLACEMENT) {
+    else if (config_container[ZONE_0]->GetDesign_Variable(iDV) == TRANSLATION) {
       if (rank == MASTER_NODE) {
         cout << endl << "Design variable number "<< iDV <<"." << endl;
         cout << "Perform 2D deformation of the surface." << endl;
       }
-      surface_movement->SetDisplacement(geometry_container[ZONE_0], config_container[ZONE_0], iDV, true);
+      surface_movement->SetTranslation(geometry_container[ZONE_0], config_container[ZONE_0], iDV, true);
+    }
+    
+    /*--- Scale design variable ---*/
+    
+    else if (config_container[ZONE_0]->GetDesign_Variable(iDV) == SCALE) {
+      if (rank == MASTER_NODE) {
+        cout << endl << "Design variable number "<< iDV <<"." << endl;
+        cout << "Perform 2D deformation of the surface." << endl;
+      }
+      surface_movement->SetScale(geometry_container[ZONE_0], config_container[ZONE_0], iDV, true);
     }
 
     /*--- Rotation design variable ---*/
@@ -316,26 +320,6 @@ int main(int argc, char *argv[]) {
         cout << "Perform 2D deformation of the surface." << endl;
       }
       surface_movement->SetRotation(geometry_container[ZONE_0], config_container[ZONE_0], iDV, true);
-    }
-    
-    /*--- CosBump design variable ---*/
-    
-    else if (config_container[ZONE_0]->GetDesign_Variable(iDV) == COSINE_BUMP) {
-      if (rank == MASTER_NODE) {
-        cout << endl << "Design variable number "<< iDV <<"." << endl;
-        cout << "Perform 2D deformation of the surface." << endl;
-      }
-      surface_movement->SetCosBump(geometry_container[ZONE_0], config_container[ZONE_0], iDV, true);
-    }
-    
-    /*--- Fourier design variable ---*/
-    
-    else if (config_container[ZONE_0]->GetDesign_Variable(iDV) == FOURIER) {
-      if (rank == MASTER_NODE) {
-        cout << endl << "Design variable number "<< iDV <<"." << endl;
-        cout << "Perform 2D deformation of the surface." << endl;
-      }
-      surface_movement->SetFourier(geometry_container[ZONE_0], config_container[ZONE_0], iDV, true);
     }
 
     /*--- NACA_4Digits design variable ---*/
@@ -356,16 +340,6 @@ int main(int argc, char *argv[]) {
         cout << "Perform 2D deformation of the surface." << endl;
       }
       surface_movement->SetParabolic(geometry_container[ZONE_0], config_container[ZONE_0]);
-    }
-    
-    /*--- Spherical design variable ---*/
-    
-    else if (config_container[ZONE_0]->GetDesign_Variable(iDV) == SPHERICAL) {
-      if (rank == MASTER_NODE) {
-        cout << endl << "Design variable number "<< iDV <<"." << endl;
-        cout << "Perform 3D deformation of the surface." << endl;
-      }
-      surface_movement->SetSpherical(geometry_container[ZONE_0], config_container[ZONE_0], iDV, true);
     }
 
     /*--- Design variable not implement ---*/

@@ -2,7 +2,7 @@
  * \file integration_structure.cpp
  * \brief This subroutine includes the space and time integration structure
  * \author F. Palacios, T. Economon
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.3 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -107,11 +107,11 @@ void CIntegration::Space_Integration(CGeometry *geometry,
         solver_container[MainSolver]->BC_Supersonic_Outlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
         break;
       case RIEMANN_BOUNDARY:
-      	if(MainSolver == FLOW_SOL)
+      	if (MainSolver == FLOW_SOL)
       		solver_container[MainSolver]->BC_Riemann(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
-      	else if(MainSolver == TURB_SOL && config->GetKind_Data_Riemann(config->GetMarker_All_TagBound(iMarker))==TOTAL_CONDITIONS_PT)
+      	else if (MainSolver == TURB_SOL && config->GetKind_Data_Riemann(config->GetMarker_All_TagBound(iMarker))==TOTAL_CONDITIONS_PT)
       		solver_container[MainSolver]->BC_Inlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
-      	else if(MainSolver == TURB_SOL && config->GetKind_Data_Riemann(config->GetMarker_All_TagBound(iMarker))==STATIC_PRESSURE)
+      	else if (MainSolver == TURB_SOL && config->GetKind_Data_Riemann(config->GetMarker_All_TagBound(iMarker))==STATIC_PRESSURE)
       		solver_container[MainSolver]->BC_Outlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
       	break;
       case FAR_FIELD:
@@ -197,7 +197,7 @@ void CIntegration::Adjoint_Setup(CGeometry ***geometry, CSolver ****solver_conta
 	unsigned short iMGLevel;
   
 	if ( ( ((RunTime_EqSystem == RUNTIME_ADJFLOW_SYS) ||
-          (RunTime_EqSystem == RUNTIME_LINFLOW_SYS)) && (Iteration == 0) ) ){
+          (RunTime_EqSystem == RUNTIME_LINFLOW_SYS)) && (Iteration == 0) ) ) {
 		for (iMGLevel = 0; iMGLevel <= config[iZone]->GetnMGLevels(); iMGLevel++) {
       
 			/*--- Set the time step in all the MG levels ---*/
@@ -264,7 +264,8 @@ void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_contai
   
 }
 
-void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, unsigned long Iteration, double monitor) {
+void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, unsigned long Iteration,
+                                          double monitor, unsigned short iMesh) {
   
   unsigned short iCounter;
   int rank = MASTER_NODE;
@@ -403,7 +404,7 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
   
 }
 
-void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CConfig *config) {
+void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CConfig *config, unsigned short iMesh) {
 	unsigned long iPoint;
   
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
@@ -421,7 +422,7 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
 	}
   
   /*--- Store old aeroelastic solutions ---*/
-  if (config->GetGrid_Movement() && config->GetAeroelastic_Simulation() && geometry->GetFinestMGLevel()) {
+  if (config->GetGrid_Movement() && config->GetAeroelastic_Simulation() && (iMesh == MESH_0)) {
     config->SetAeroelastic_n1();
     config->SetAeroelastic_n();
     

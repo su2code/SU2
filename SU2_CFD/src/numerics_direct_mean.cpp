@@ -2,7 +2,7 @@
  * \file numerics_direct_mean.cpp
  * \brief This file contains all the convective term discretization.
  * \author F. Palacios, T. Economon
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.3 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -1828,7 +1828,7 @@ void CUpwGeneralRoe_Flow::ComputeResidual(double *val_residual, double **val_Jac
 
 
   Velocity2_j = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++){
+  for (iDim = 0; iDim < nDim; iDim++) {
     Velocity_j[iDim] = V_j[iDim+1];
     Velocity2_j += Velocity_j[iDim]*Velocity_j[iDim];
 
@@ -2437,7 +2437,7 @@ void CUpwTurkel_Flow::ComputeResidual(double *val_residual, double **val_Jacobia
     GetInviscidProjJac(Velocity_j, &Energy_j, Normal, 0.5, val_Jacobian_j);
   }
   
-  for (iVar = 0; iVar < nVar; iVar ++){
+  for (iVar = 0; iVar < nVar; iVar ++) {
     for (jVar = 0; jVar < nVar; jVar ++) {
       Matrix[iVar][jVar] = 0.0;
       for (kVar = 0; kVar < nVar; kVar++)
@@ -2445,7 +2445,7 @@ void CUpwTurkel_Flow::ComputeResidual(double *val_residual, double **val_Jacobia
     }
   }
   
-  for (iVar = 0; iVar < nVar; iVar ++){
+  for (iVar = 0; iVar < nVar; iVar ++) {
     for (jVar = 0; jVar < nVar; jVar ++) {
       Art_Visc[iVar][jVar] = 0.0;
       for (kVar = 0; kVar < nVar; kVar++)
@@ -3901,7 +3901,7 @@ void CSourceRotatingFrame_Flow::ComputeResidual(double *val_residual, double **v
   
   /*--- Get the momentum vector at the current node. ---*/
   
-  for(iDim = 0; iDim < nDim; iDim++)
+  for (iDim = 0; iDim < nDim; iDim++)
     Momentum[iDim] = U_i[iDim+1];
   
   /*--- Calculate rotating frame source term as ( Omega X Rho-U ) ---*/

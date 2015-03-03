@@ -2,7 +2,7 @@
  * \file output_tecplot.cpp
  * \brief Main subroutines for output solver information.
  * \author F. Palacios, T. Economon, M. Colonno
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.3 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -158,17 +158,17 @@ void COutput::SetTecplotNode_ASCII(CConfig *config, CGeometry *geometry, CSolver
       /*--- Only write the coordiantes of the points that are on the surfaces ---*/
       
       if (geometry->GetnDim() == 3) {
-        for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
+        for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
           if (geometry->node[iPoint]->GetBoundary()) {
-            for(iVar = 0; iVar < solver[FLOW_SOL]->GetnVar(); iVar++)
+            for (iVar = 0; iVar < solver[FLOW_SOL]->GetnVar(); iVar++)
               Tecplot_File << scientific << solver[FLOW_SOL]->node[iPoint]->GetSolution(iVar) << "\t";
             Tecplot_File << "\n";
           }
       }
       else {
-        for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
+        for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
           if (geometry->node[iPoint]->GetBoundary()) {
-            for(iVar = 0; iVar < solver[FLOW_SOL]->GetnVar(); iVar++)
+            for (iVar = 0; iVar < solver[FLOW_SOL]->GetnVar(); iVar++)
               Tecplot_File << scientific << solver[FLOW_SOL]->node[iPoint]->GetSolution(iVar) << "\t";
             Tecplot_File << "\n";
           }
@@ -178,7 +178,7 @@ void COutput::SetTecplotNode_ASCII(CConfig *config, CGeometry *geometry, CSolver
       
       for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
         if (config->GetMarker_All_Plotting(iMarker) == YES)
-          for(iElem = 0; iElem < geometry->GetnElem_Bound(iMarker); iElem++) {
+          for (iElem = 0; iElem < geometry->GetnElem_Bound(iMarker); iElem++) {
             if (geometry->GetnDim() == 2) {
               Tecplot_File << PointSurface[geometry->bound[iMarker][iElem]->GetNode(0)]+1 << " "
               << PointSurface[geometry->bound[iMarker][iElem]->GetNode(1)]+1 << endl;
@@ -207,7 +207,7 @@ void COutput::SetTecplotNode_ASCII(CConfig *config, CGeometry *geometry, CSolver
         Tecplot_File << "ZONE ";
         Tecplot_File << "T= \"MPI rank: " << rank << "\", ";
         Tecplot_File << "NODES= 1, ELEMENTS= 1, DATAPACKING=POINT, ZONETYPE=FELINESEG"<< endl;
-        for(iVar = 0; iVar < solver[FLOW_SOL]->GetnVar(); iVar++)
+        for (iVar = 0; iVar < solver[FLOW_SOL]->GetnVar(); iVar++)
           Tecplot_File << scientific << "0.0\t";
         Tecplot_File << "\n";
         Tecplot_File << "1 1"<< endl;
@@ -216,7 +216,7 @@ void COutput::SetTecplotNode_ASCII(CConfig *config, CGeometry *geometry, CSolver
         Tecplot_File << "ZONE ";
         Tecplot_File << "T= \"MPI rank: " << rank << "\", ";
         Tecplot_File << "NODES= 1, ELEMENTS= 1, DATAPACKING=POINT, ZONETYPE=FEQUADRILATERAL"<< endl;
-        for(iVar = 0; iVar < solver[FLOW_SOL]->GetnVar(); iVar++)
+        for (iVar = 0; iVar < solver[FLOW_SOL]->GetnVar(); iVar++)
           Tecplot_File << scientific << "0.0\t";
         Tecplot_File << "\n";
         Tecplot_File << "1 1 1 1"<< endl;
@@ -240,15 +240,15 @@ void COutput::SetTecplotNode_ASCII(CConfig *config, CGeometry *geometry, CSolver
     
     /*--- Adding coordinates ---*/
     
-    for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-      for(iVar = 0; iVar < solver[FLOW_SOL]->GetnVar(); iVar++)
+    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+      for (iVar = 0; iVar < solver[FLOW_SOL]->GetnVar(); iVar++)
         Tecplot_File << scientific << solver[FLOW_SOL]->node[iPoint]->GetSolution(iVar) << "\t";
       Tecplot_File << "\n";
     }
     
     /*--- Adding conectivity ---*/
     
-    for(iElem = 0; iElem < geometry->GetnElem(); iElem++) {
+    for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
       if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE) {
         Tecplot_File <<
         geometry->elem[iElem]->GetNode(0)+1 <<" "<< geometry->elem[iElem]->GetNode(1)+1 <<" "<<
@@ -546,14 +546,14 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, CSolver **s
       
       if (config->GetExtraOutput()) {
         string *headings = NULL;
-        //if (Kind_Solver == RANS){
+        //if (Kind_Solver == RANS) {
         headings = solver[TURB_SOL]->OutputHeadingNames;
         //}
         for (iVar = 0; iVar < nVar_Extra; iVar++) {
           //Tecplot_File << ", \"ExtraOutput_" << iVar+1<<"\"";
-          if (headings == NULL){
+          if (headings == NULL) {
             Tecplot_File << ", \"ExtraOutput_" << iVar+1<<"\"";
-          }else{
+          } else{
             Tecplot_File << ", \""<< headings[iVar] <<"\"";
           }
         }
@@ -574,18 +574,18 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, CSolver **s
     
     for (iPoint = 0; iPoint < nGlobal_Poin+1; iPoint++) SurfacePoint[iPoint] = false;
     
-    for(iElem = 0; iElem < nGlobal_Line; iElem++) {
+    for (iElem = 0; iElem < nGlobal_Line; iElem++) {
       iNode = iElem*N_POINTS_LINE;
       SurfacePoint[Conn_Line[iNode+0]] = true;
       SurfacePoint[Conn_Line[iNode+1]] = true;
     }
-    for(iElem = 0; iElem < nGlobal_BoundTria; iElem++) {
+    for (iElem = 0; iElem < nGlobal_BoundTria; iElem++) {
       iNode = iElem*N_POINTS_TRIANGLE;
       SurfacePoint[Conn_BoundTria[iNode+0]] = true;
       SurfacePoint[Conn_BoundTria[iNode+1]] = true;
       SurfacePoint[Conn_BoundTria[iNode+2]] = true;
     }
-    for(iElem = 0; iElem < nGlobal_BoundQuad; iElem++) {
+    for (iElem = 0; iElem < nGlobal_BoundQuad; iElem++) {
       iNode = iElem*N_POINTS_QUADRILATERAL;
       SurfacePoint[Conn_BoundQuad[iNode+0]] = true;
       SurfacePoint[Conn_BoundQuad[iNode+1]] = true;
@@ -630,7 +630,7 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, CSolver **s
         
         /*--- Write the node coordinates ---*/
         if (config->GetKind_SU2() != SU2_SOL) {
-          for(iDim = 0; iDim < nDim; iDim++)
+          for (iDim = 0; iDim < nDim; iDim++)
           Tecplot_File << scientific << Coords[iDim][iPoint] << "\t";
         }
         
@@ -646,7 +646,7 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, CSolver **s
       
       /*--- Write the node coordinates ---*/
       if (config->GetKind_SU2() != SU2_SOL) {
-        for(iDim = 0; iDim < nDim; iDim++)
+        for (iDim = 0; iDim < nDim; iDim++)
         Tecplot_File << scientific << Coords[iDim][iPoint] << "\t";
       }
       
@@ -664,13 +664,13 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, CSolver **s
   /*--- Write connectivity data. ---*/
   if (surf_sol) {
     
-    for(iElem = 0; iElem < nGlobal_Line; iElem++) {
+    for (iElem = 0; iElem < nGlobal_Line; iElem++) {
       iNode = iElem*N_POINTS_LINE;
       Tecplot_File << LocalIndex[Conn_Line[iNode+0]] << "\t";
       Tecplot_File << LocalIndex[Conn_Line[iNode+1]] << "\n";
     }
     
-    for(iElem = 0; iElem < nGlobal_BoundTria; iElem++) {
+    for (iElem = 0; iElem < nGlobal_BoundTria; iElem++) {
       iNode = iElem*N_POINTS_TRIANGLE;
       Tecplot_File << LocalIndex[Conn_BoundTria[iNode+0]] << "\t";
       Tecplot_File << LocalIndex[Conn_BoundTria[iNode+1]] << "\t";
@@ -678,7 +678,7 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, CSolver **s
       Tecplot_File << LocalIndex[Conn_BoundTria[iNode+2]] << "\n";
     }
     
-    for(iElem = 0; iElem < nGlobal_BoundQuad; iElem++) {
+    for (iElem = 0; iElem < nGlobal_BoundQuad; iElem++) {
       iNode = iElem*N_POINTS_QUADRILATERAL;
       Tecplot_File << LocalIndex[Conn_BoundQuad[iNode+0]] << "\t";
       Tecplot_File << LocalIndex[Conn_BoundQuad[iNode+1]] << "\t";
@@ -688,7 +688,7 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, CSolver **s
     
   } else {
     
-    for(iElem = 0; iElem < nGlobal_Tria; iElem++) {
+    for (iElem = 0; iElem < nGlobal_Tria; iElem++) {
       iNode = iElem*N_POINTS_TRIANGLE;
       Tecplot_File << Conn_Tria[iNode+0] << "\t";
       Tecplot_File << Conn_Tria[iNode+1] << "\t";
@@ -696,7 +696,7 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, CSolver **s
       Tecplot_File << Conn_Tria[iNode+2] << "\n";
     }
     
-    for(iElem = 0; iElem < nGlobal_Quad; iElem++) {
+    for (iElem = 0; iElem < nGlobal_Quad; iElem++) {
       iNode = iElem*N_POINTS_QUADRILATERAL;
       Tecplot_File << Conn_Quad[iNode+0] << "\t";
       Tecplot_File << Conn_Quad[iNode+1] << "\t";
@@ -704,7 +704,7 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, CSolver **s
       Tecplot_File << Conn_Quad[iNode+3] << "\n";
     }
     
-    for(iElem = 0; iElem < nGlobal_Tetr; iElem++) {
+    for (iElem = 0; iElem < nGlobal_Tetr; iElem++) {
       iNode = iElem*N_POINTS_TETRAHEDRON;
       Tecplot_File << Conn_Tetr[iNode+0] << "\t" << Conn_Tetr[iNode+1] << "\t";
       Tecplot_File << Conn_Tetr[iNode+2] << "\t" << Conn_Tetr[iNode+2] << "\t";
@@ -712,7 +712,7 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, CSolver **s
       Tecplot_File << Conn_Tetr[iNode+3] << "\t" << Conn_Tetr[iNode+3] << "\n";
     }
     
-    for(iElem = 0; iElem < nGlobal_Hexa; iElem++) {
+    for (iElem = 0; iElem < nGlobal_Hexa; iElem++) {
       iNode = iElem*N_POINTS_HEXAHEDRON;
       Tecplot_File << Conn_Hexa[iNode+0] << "\t" << Conn_Hexa[iNode+1] << "\t";
       Tecplot_File << Conn_Hexa[iNode+2] << "\t" << Conn_Hexa[iNode+3] << "\t";
@@ -720,7 +720,7 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, CSolver **s
       Tecplot_File << Conn_Hexa[iNode+6] << "\t" << Conn_Hexa[iNode+7] << "\n";
     }
     
-    for(iElem = 0; iElem < nGlobal_Wedg; iElem++) {
+    for (iElem = 0; iElem < nGlobal_Wedg; iElem++) {
       iNode = iElem*N_POINTS_WEDGE;
       Tecplot_File << Conn_Wedg[iNode+0] << "\t" << Conn_Wedg[iNode+1] << "\t";
       Tecplot_File << Conn_Wedg[iNode+1] << "\t" << Conn_Wedg[iNode+2] << "\t";
@@ -728,7 +728,7 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, CSolver **s
       Tecplot_File << Conn_Wedg[iNode+4] << "\t" << Conn_Wedg[iNode+5] << "\n";
     }
     
-    for(iElem = 0; iElem < nGlobal_Pyra; iElem++) {
+    for (iElem = 0; iElem < nGlobal_Pyra; iElem++) {
       iNode = iElem*N_POINTS_PYRAMID;
       Tecplot_File << Conn_Pyra[iNode+0] << "\t" << Conn_Pyra[iNode+1] << "\t";
       Tecplot_File << Conn_Pyra[iNode+2] << "\t" << Conn_Pyra[iNode+3] << "\t";
@@ -779,18 +779,18 @@ void COutput::SetTecplot_MeshASCII(CConfig *config, CGeometry *geometry, bool su
     
     for (iPoint = 0; iPoint < nGlobal_Poin+1; iPoint++) SurfacePoint[iPoint] = false;
     
-    for(iElem = 0; iElem < nGlobal_Line; iElem++) {
+    for (iElem = 0; iElem < nGlobal_Line; iElem++) {
       iNode = iElem*N_POINTS_LINE;
       SurfacePoint[Conn_Line[iNode+0]] = true;
       SurfacePoint[Conn_Line[iNode+1]] = true;
     }
-    for(iElem = 0; iElem < nGlobal_BoundTria; iElem++) {
+    for (iElem = 0; iElem < nGlobal_BoundTria; iElem++) {
       iNode = iElem*N_POINTS_TRIANGLE;
       SurfacePoint[Conn_BoundTria[iNode+0]] = true;
       SurfacePoint[Conn_BoundTria[iNode+1]] = true;
       SurfacePoint[Conn_BoundTria[iNode+2]] = true;
     }
-    for(iElem = 0; iElem < nGlobal_BoundQuad; iElem++) {
+    for (iElem = 0; iElem < nGlobal_BoundQuad; iElem++) {
       iNode = iElem*N_POINTS_QUADRILATERAL;
       SurfacePoint[Conn_BoundQuad[iNode+0]] = true;
       SurfacePoint[Conn_BoundQuad[iNode+1]] = true;
@@ -829,7 +829,7 @@ void COutput::SetTecplot_MeshASCII(CConfig *config, CGeometry *geometry, bool su
       if (LocalIndex[iPoint+1] != 0) {
         
         /*--- Write the node coordinates ---*/
-          for(iDim = 0; iDim < nDim; iDim++)
+          for (iDim = 0; iDim < nDim; iDim++)
             Tecplot_File << scientific << Coords[iDim][iPoint] << "\t";
         
         Tecplot_File << endl;
@@ -840,7 +840,7 @@ void COutput::SetTecplot_MeshASCII(CConfig *config, CGeometry *geometry, bool su
       
       /*--- Write the node coordinates ---*/
 
-      for(iDim = 0; iDim < nDim; iDim++)
+      for (iDim = 0; iDim < nDim; iDim++)
           Tecplot_File << scientific << Coords[iDim][iPoint] << "\t";
       
       
@@ -855,13 +855,13 @@ void COutput::SetTecplot_MeshASCII(CConfig *config, CGeometry *geometry, bool su
   
   if (surf_sol) {
     
-    for(iElem = 0; iElem < nGlobal_Line; iElem++) {
+    for (iElem = 0; iElem < nGlobal_Line; iElem++) {
       iNode = iElem*N_POINTS_LINE;
       Tecplot_File << LocalIndex[Conn_Line[iNode+0]] << "\t";
       Tecplot_File << LocalIndex[Conn_Line[iNode+1]] << "\n";
     }
     
-    for(iElem = 0; iElem < nGlobal_BoundTria; iElem++) {
+    for (iElem = 0; iElem < nGlobal_BoundTria; iElem++) {
       iNode = iElem*N_POINTS_TRIANGLE;
       Tecplot_File << LocalIndex[Conn_BoundTria[iNode+0]] << "\t";
       Tecplot_File << LocalIndex[Conn_BoundTria[iNode+1]] << "\t";
@@ -869,7 +869,7 @@ void COutput::SetTecplot_MeshASCII(CConfig *config, CGeometry *geometry, bool su
       Tecplot_File << LocalIndex[Conn_BoundTria[iNode+2]] << "\n";
     }
     
-    for(iElem = 0; iElem < nGlobal_BoundQuad; iElem++) {
+    for (iElem = 0; iElem < nGlobal_BoundQuad; iElem++) {
       iNode = iElem*N_POINTS_QUADRILATERAL;
       Tecplot_File << LocalIndex[Conn_BoundQuad[iNode+0]] << "\t";
       Tecplot_File << LocalIndex[Conn_BoundQuad[iNode+1]] << "\t";
@@ -879,7 +879,7 @@ void COutput::SetTecplot_MeshASCII(CConfig *config, CGeometry *geometry, bool su
     
   } else {
     
-    for(iElem = 0; iElem < nGlobal_Tria; iElem++) {
+    for (iElem = 0; iElem < nGlobal_Tria; iElem++) {
       iNode = iElem*N_POINTS_TRIANGLE;
       Tecplot_File << Conn_Tria[iNode+0] << "\t";
       Tecplot_File << Conn_Tria[iNode+1] << "\t";
@@ -887,7 +887,7 @@ void COutput::SetTecplot_MeshASCII(CConfig *config, CGeometry *geometry, bool su
       Tecplot_File << Conn_Tria[iNode+2] << "\n";
     }
     
-    for(iElem = 0; iElem < nGlobal_Quad; iElem++) {
+    for (iElem = 0; iElem < nGlobal_Quad; iElem++) {
       iNode = iElem*N_POINTS_QUADRILATERAL;
       Tecplot_File << Conn_Quad[iNode+0] << "\t";
       Tecplot_File << Conn_Quad[iNode+1] << "\t";
@@ -895,7 +895,7 @@ void COutput::SetTecplot_MeshASCII(CConfig *config, CGeometry *geometry, bool su
       Tecplot_File << Conn_Quad[iNode+3] << "\n";
     }
     
-    for(iElem = 0; iElem < nGlobal_Tetr; iElem++) {
+    for (iElem = 0; iElem < nGlobal_Tetr; iElem++) {
       iNode = iElem*N_POINTS_TETRAHEDRON;
       Tecplot_File << Conn_Tetr[iNode+0] << "\t" << Conn_Tetr[iNode+1] << "\t";
       Tecplot_File << Conn_Tetr[iNode+2] << "\t" << Conn_Tetr[iNode+2] << "\t";
@@ -903,7 +903,7 @@ void COutput::SetTecplot_MeshASCII(CConfig *config, CGeometry *geometry, bool su
       Tecplot_File << Conn_Tetr[iNode+3] << "\t" << Conn_Tetr[iNode+3] << "\n";
     }
     
-    for(iElem = 0; iElem < nGlobal_Hexa; iElem++) {
+    for (iElem = 0; iElem < nGlobal_Hexa; iElem++) {
       iNode = iElem*N_POINTS_HEXAHEDRON;
       Tecplot_File << Conn_Hexa[iNode+0] << "\t" << Conn_Hexa[iNode+1] << "\t";
       Tecplot_File << Conn_Hexa[iNode+2] << "\t" << Conn_Hexa[iNode+3] << "\t";
@@ -911,7 +911,7 @@ void COutput::SetTecplot_MeshASCII(CConfig *config, CGeometry *geometry, bool su
       Tecplot_File << Conn_Hexa[iNode+6] << "\t" << Conn_Hexa[iNode+7] << "\n";
     }
     
-    for(iElem = 0; iElem < nGlobal_Wedg; iElem++) {
+    for (iElem = 0; iElem < nGlobal_Wedg; iElem++) {
       iNode = iElem*N_POINTS_WEDGE;
       Tecplot_File << Conn_Wedg[iNode+0] << "\t" << Conn_Wedg[iNode+1] << "\t";
       Tecplot_File << Conn_Wedg[iNode+1] << "\t" << Conn_Wedg[iNode+2] << "\t";
@@ -919,7 +919,7 @@ void COutput::SetTecplot_MeshASCII(CConfig *config, CGeometry *geometry, bool su
       Tecplot_File << Conn_Wedg[iNode+4] << "\t" << Conn_Wedg[iNode+5] << "\n";
     }
     
-    for(iElem = 0; iElem < nGlobal_Pyra; iElem++) {
+    for (iElem = 0; iElem < nGlobal_Pyra; iElem++) {
       iNode = iElem*N_POINTS_PYRAMID;
       Tecplot_File << Conn_Pyra[iNode+0] << "\t" << Conn_Pyra[iNode+1] << "\t";
       Tecplot_File << Conn_Pyra[iNode+2] << "\t" << Conn_Pyra[iNode+3] << "\t";
@@ -1096,7 +1096,7 @@ void COutput::SetTecplot_MeshBinary(CConfig *config, CGeometry *geometry, unsign
             err = TECDAT112(&NPts, Data[2], &IsDouble);
             ShareFromZone[2] = 1;
           }
-        }else {
+        } else {
           err = TECDAT112(&NPts, Coords[0], &IsDouble); ShareFromZone[0] = 1;
           err = TECDAT112(&NPts, Coords[1], &IsDouble); ShareFromZone[1] = 1;
           if (geometry->GetnDim() == 3) {
@@ -1155,7 +1155,7 @@ void COutput::SetTecplot_MeshBinary(CConfig *config, CGeometry *geometry, unsign
             err = TECDAT112(&NPts, Data[2], &IsDouble);
             ShareFromZone[2] = 1;
           }
-        }else {
+        } else {
           err = TECDAT112(&NPts, Coords[0], &IsDouble); ShareFromZone[0] = 1;
           err = TECDAT112(&NPts, Coords[1], &IsDouble); ShareFromZone[1] = 1;
           if (geometry->GetnDim() == 3) {
@@ -1214,7 +1214,7 @@ void COutput::SetTecplot_MeshBinary(CConfig *config, CGeometry *geometry, unsign
             err = TECDAT112(&NPts, Data[2], &IsDouble);
             ShareFromZone[2] = 1;
           }
-        }else {
+        } else {
           err = TECDAT112(&NPts, Coords[0], &IsDouble); ShareFromZone[0] = 1;
           err = TECDAT112(&NPts, Coords[1], &IsDouble); ShareFromZone[1] = 1;
           if (geometry->GetnDim() == 3) {
@@ -1274,7 +1274,7 @@ void COutput::SetTecplot_MeshBinary(CConfig *config, CGeometry *geometry, unsign
             err = TECDAT112(&NPts, Data[2], &IsDouble);
             ShareFromZone[2] = 1;
           }
-        }else {
+        } else {
           err = TECDAT112(&NPts, Coords[0], &IsDouble); ShareFromZone[0] = 1;
           err = TECDAT112(&NPts, Coords[1], &IsDouble); ShareFromZone[1] = 1;
           if (geometry->GetnDim() == 3) {
@@ -1350,7 +1350,7 @@ void COutput::SetTecplot_MeshBinary(CConfig *config, CGeometry *geometry, unsign
             err = TECDAT112(&NPts, Data[2], &IsDouble);
             ShareFromZone[2] = 1;
           }
-        }else {
+        } else {
           err = TECDAT112(&NPts, Coords[0], &IsDouble); ShareFromZone[0] = 1;
           err = TECDAT112(&NPts, Coords[1], &IsDouble); ShareFromZone[1] = 1;
           if (geometry->GetnDim() == 3) {
@@ -1365,7 +1365,7 @@ void COutput::SetTecplot_MeshBinary(CConfig *config, CGeometry *geometry, unsign
       /*--- Convert the prism connectivity from 6 nodes to 8 nodes for FEBRICK ---*/
       int *Conn_Wedg_Mod = new int[nGlobal_Wedg*N_POINTS_HEXAHEDRON];
       unsigned long iNode_Wedg, iNode_Hexa;
-      for (unsigned long iElem = 0; iElem < nGlobal_Wedg; iElem++){
+      for (unsigned long iElem = 0; iElem < nGlobal_Wedg; iElem++) {
         iNode_Wedg = iElem*N_POINTS_WEDGE;
         iNode_Hexa = iElem*N_POINTS_HEXAHEDRON;
         Conn_Wedg_Mod[iNode_Hexa+0] = Conn_Wedg[iNode_Wedg+0];
@@ -1434,18 +1434,18 @@ void COutput::SetTecplot_SurfaceMesh(CConfig *config, CGeometry *geometry, unsig
     
     for (iPoint = 0; iPoint < nGlobal_Poin+1; iPoint++) SurfacePoint[iPoint] = false;
     
-    for(iElem = 0; iElem < nGlobal_Line; iElem++) {
+    for (iElem = 0; iElem < nGlobal_Line; iElem++) {
       iNode = iElem*N_POINTS_LINE;
       SurfacePoint[Conn_Line[iNode+0]] = true;
       SurfacePoint[Conn_Line[iNode+1]] = true;
     }
-    for(iElem = 0; iElem < nGlobal_BoundTria; iElem++) {
+    for (iElem = 0; iElem < nGlobal_BoundTria; iElem++) {
       iNode = iElem*N_POINTS_TRIANGLE;
       SurfacePoint[Conn_BoundTria[iNode+0]] = true;
       SurfacePoint[Conn_BoundTria[iNode+1]] = true;
       SurfacePoint[Conn_BoundTria[iNode+2]] = true;
     }
-    for(iElem = 0; iElem < nGlobal_BoundQuad; iElem++) {
+    for (iElem = 0; iElem < nGlobal_BoundQuad; iElem++) {
       iNode = iElem*N_POINTS_QUADRILATERAL;
       SurfacePoint[Conn_BoundQuad[iNode+0]] = true;
       SurfacePoint[Conn_BoundQuad[iNode+1]] = true;
@@ -1510,7 +1510,7 @@ void COutput::SetTecplot_SurfaceMesh(CConfig *config, CGeometry *geometry, unsig
       /*--- Put the connectivity into a single array for writing ---*/
       int *Conn_Line_New = new int[nGlobal_Line*N_POINTS_LINE];
       iNode = 0;
-      for(iElem = 0; iElem < nGlobal_Line; iElem++) {
+      for (iElem = 0; iElem < nGlobal_Line; iElem++) {
         iNode = iElem*N_POINTS_LINE;
         Conn_Line_New[iNode+0] = LocalIndex[Conn_Line[iNode+0]];
         Conn_Line_New[iNode+1] = LocalIndex[Conn_Line[iNode+1]];
@@ -1567,7 +1567,7 @@ void COutput::SetTecplot_SurfaceMesh(CConfig *config, CGeometry *geometry, unsig
       int *Conn_BoundTria_New = new int[nGlobal_BoundTria*N_POINTS_TRIANGLE];
       
       iNode = 0;
-      for(iElem = 0; iElem < nGlobal_BoundTria; iElem++) {
+      for (iElem = 0; iElem < nGlobal_BoundTria; iElem++) {
         iNode = iElem*N_POINTS_TRIANGLE;
         Conn_BoundTria_New[iNode+0] = LocalIndex[Conn_BoundTria[iNode+0]];
         Conn_BoundTria_New[iNode+1] = LocalIndex[Conn_BoundTria[iNode+1]];
@@ -1625,7 +1625,7 @@ void COutput::SetTecplot_SurfaceMesh(CConfig *config, CGeometry *geometry, unsig
       /*--- Put the connectivity into a single array for writing ---*/
       int *Conn_BoundQuad_New = new int[nGlobal_BoundQuad*N_POINTS_QUADRILATERAL];
       iNode = 0;
-      for(iElem = 0; iElem < nGlobal_BoundQuad; iElem++) {
+      for (iElem = 0; iElem < nGlobal_BoundQuad; iElem++) {
         iNode = iElem*N_POINTS_QUADRILATERAL;
         Conn_BoundQuad_New[iNode+0] = LocalIndex[Conn_BoundQuad[iNode+0]];
         Conn_BoundQuad_New[iNode+1] = LocalIndex[Conn_BoundQuad[iNode+1]];
@@ -2236,18 +2236,18 @@ void COutput::SetTecplot_SurfaceSolution(CConfig *config, CGeometry *geometry, u
   
   for (iPoint = 0; iPoint < nGlobal_Poin+1; iPoint++) SurfacePoint[iPoint] = false;
   
-  for(iElem = 0; iElem < nGlobal_Line; iElem++) {
+  for (iElem = 0; iElem < nGlobal_Line; iElem++) {
     iNode = iElem*N_POINTS_LINE;
     SurfacePoint[Conn_Line[iNode+0]] = true;
     SurfacePoint[Conn_Line[iNode+1]] = true;
   }
-  for(iElem = 0; iElem < nGlobal_BoundTria; iElem++) {
+  for (iElem = 0; iElem < nGlobal_BoundTria; iElem++) {
     iNode = iElem*N_POINTS_TRIANGLE;
     SurfacePoint[Conn_BoundTria[iNode+0]] = true;
     SurfacePoint[Conn_BoundTria[iNode+1]] = true;
     SurfacePoint[Conn_BoundTria[iNode+2]] = true;
   }
-  for(iElem = 0; iElem < nGlobal_BoundQuad; iElem++) {
+  for (iElem = 0; iElem < nGlobal_BoundQuad; iElem++) {
     iNode = iElem*N_POINTS_QUADRILATERAL;
     SurfacePoint[Conn_BoundQuad[iNode+0]] = true;
     SurfacePoint[Conn_BoundQuad[iNode+1]] = true;

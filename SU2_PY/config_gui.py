@@ -3,7 +3,7 @@
 ## \file config_gui.py
 #  \brief _____________.
 #  \author A. Aranake
-#  \version 3.2.8 "eagle"
+#  \version 3.2.8.3 "eagle"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).

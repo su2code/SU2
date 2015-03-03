@@ -2,7 +2,7 @@
  * \file solution_direct_elasticity.cpp
  * \brief Main subrotuines for solving the linear elasticity equation.
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.3 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -154,13 +154,13 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
     
     /*--- First, set all indices to a negative value by default ---*/
     
-    for(iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
+    for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
       Global2Local[iPoint] = -1;
     }
     
     /*--- Now fill array with the transform values only for local points ---*/
     
-    for(iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+    for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
       Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
     }
     
@@ -193,7 +193,7 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
      at any halo/periodic nodes. The initial solution can be arbitrary,
      because a send/recv is performed immediately in the solver. ---*/
     
-    for(iPoint = geometry->GetnPointDomain(); iPoint < geometry->GetnPoint(); iPoint++) {
+    for (iPoint = geometry->GetnPointDomain(); iPoint < geometry->GetnPoint(); iPoint++) {
       node[iPoint] = new CFEAVariable(Solution, nDim, nVar, config);
     }
     
@@ -1226,7 +1226,7 @@ void CFEASolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_cont
 		U_time_nP1 = node[iPoint]->GetSolution();
 		
 		/*--- Compute Residual ---*/
-		for(iVar = 0; iVar < nVar; iVar++) {
+		for (iVar = 0; iVar < nVar; iVar++) {
 			total_index = iPoint*nVar+iVar;
 			if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
 				LinSysSol[total_index] = ( U_time_nP1[iVar] - U_time_n[iVar] );
@@ -1393,7 +1393,7 @@ void CFEASolver::GetSurface_Pressure(CGeometry *geometry, CConfig *config) {
       if ((int(iExtIter) >= 10)   && (int(iExtIter) < 100))   sprintf (buffer, "_000%d.csv",  int(iExtIter));
       if ((int(iExtIter) >= 100)  && (int(iExtIter) < 1000))  sprintf (buffer, "_00%d.csv",   int(iExtIter));
       if ((int(iExtIter) >= 1000) && (int(iExtIter) < 10000)) sprintf (buffer, "_0%d.csv",    int(iExtIter));
-      if  (int(iExtIter) >= 10000) sprintf (buffer, "_%d.csv", int(iExtIter));
+      if (int(iExtIter) >= 10000) sprintf (buffer, "_%d.csv", int(iExtIter));
     }
     else sprintf (buffer, ".csv");
     

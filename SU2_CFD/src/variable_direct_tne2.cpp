@@ -2,7 +2,7 @@
  * \file variable_direct_tne2.cpp
  * \brief Definition of the solution fields.
  * \author S. Copeland
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.3 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -701,7 +701,7 @@ bool CTNE2EulerVariable::SetPressure(CConfig *config) {
   /*--- Solve for mixture pressure using ideal gas law & Dalton's law ---*/
   // Note: If free electrons are present, use Tve for their partial pressure
   P = 0.0;
-  for(iSpecies = 0; iSpecies < nHeavy; iSpecies++)
+  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)
     P += Solution[iSpecies] * Ru/Ms[iSpecies] * Primitive[T_INDEX];
   
   for (iSpecies = 0; iSpecies < nEl; iSpecies++)
@@ -1238,7 +1238,7 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, double *U, double *V,
     converr = true;
 //    cout << "T < Tmin" << endl;
   }
-  if (V[T_INDEX] > Tmax){
+  if (V[T_INDEX] > Tmax) {
     V[T_INDEX] = Tmax;
     converr = true;
 //    cout << "T > Tmax" << endl;

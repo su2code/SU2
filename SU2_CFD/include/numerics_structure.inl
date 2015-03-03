@@ -2,7 +2,7 @@
  * \file numerics_structure.inl
  * \brief In-Line subroutines of the <i>numerics_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.3 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -398,17 +398,17 @@ inline void CNumerics::SetNormal(double *val_normal) { Normal = val_normal; }
 
 inline void CNumerics::SetVolume(double val_volume) { Volume = val_volume; }
 
-inline void CSourcePieceWise_TurbSST::SetF1blending(double val_F1_i, double val_F1_j){ 
+inline void CSourcePieceWise_TurbSST::SetF1blending(double val_F1_i, double val_F1_j) { 
 	F1_i = val_F1_i; 
 	F1_j = val_F1_j;
 }
 
-inline void CSourcePieceWise_TurbSST::SetF2blending(double val_F2_i, double val_F2_j){ 
+inline void CSourcePieceWise_TurbSST::SetF2blending(double val_F2_i, double val_F2_j) { 
 	F2_i = val_F2_i; 
 	F2_j = val_F2_j;
 }
 
-inline void CSourcePieceWise_TurbSST::SetCrossDiff(double val_CDkw_i, double val_CDkw_j){
+inline void CSourcePieceWise_TurbSST::SetCrossDiff(double val_CDkw_i, double val_CDkw_j) {
 	CDkw_i = val_CDkw_i;
   CDkw_j = val_CDkw_j;
 }			
