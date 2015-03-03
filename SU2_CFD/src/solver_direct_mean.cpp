@@ -2954,7 +2954,6 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
           Solution[2] = 0;
           Solution[3] = density_l*FluidModel->GetStaticEnergy();
           
-          //Solution[3] = Pressure_l/Gamma_Minus_One + 0.5*density_l*vel_l*vel_l;
           } else {
           
           FluidModel->SetTDState_Prho(Pressure_r, density_r);
@@ -2963,7 +2962,6 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
           Solution[1] = density_r*vel_r;
           Solution[2] = 0;
           Solution[3] = density_r*FluidModel->GetStaticEnergy();
-            //Solution[3] = Pressure_r/Gamma_Minus_One + 0.5*density_r*vel_r*vel_r;
           }
           solver_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(Solution);
           solver_container[iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n();
@@ -2974,7 +2972,6 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
     }
     
     delete [] Solution;
-    cout << "Pinf= " << Pressure_Inf << endl;
     cout << "Shock tube problem initial condition set up." << endl;
   }
 }
@@ -6419,7 +6416,6 @@ void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container
           
           Xcoord = geometry->node[iPoint]->GetCoord(0);
           if (Xcoord < 0.01 || Xcoord > 0.99){
-            //cout << "X value= " << Xcoord <<" Velocity["<<iDim<<"]= " << Velocity_i[iDim] << endl;
           }
           
           ProjVelocity_i += Velocity_i[iDim]*UnitNormal[iDim];
