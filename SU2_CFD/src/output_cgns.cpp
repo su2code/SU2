@@ -2,7 +2,7 @@
  * \file output_cgns.cpp
  * \brief Main subroutines for output solver information
  * \author T. Economon
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.3 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -88,7 +88,7 @@ void COutput::SetCGNS_Coordinates(CConfig *config, CGeometry *geometry, unsigned
 		if (cgns_err) cg_error_print();
 		cgns_err = cg_coord_write(cgns_file,cgns_base,cgns_zone,RealDouble,"y",Coords[1],&cgns_coord);
 		if (cgns_err) cg_error_print();
-		if (geometry->GetnDim() == 3){
+		if (geometry->GetnDim() == 3) {
 			cgns_err = cg_coord_write(cgns_file,cgns_base,cgns_zone,RealDouble,"z",Coords[2],&cgns_coord);
 			if (cgns_err) cg_error_print();
 		}
@@ -105,10 +105,10 @@ void COutput::SetCGNS_Coordinates(CConfig *config, CGeometry *geometry, unsigned
     
 		cgns_err = cg_open((char *)results_file.str().c_str(),CG_MODE_WRITE,&cgns_file);
 
-		element_dims = geometry->GetnDim();		// Currently (release 3.2.8 "eagle") only all-2D or all-3D zones permitted
+		element_dims = geometry->GetnDim();		// Currently (release 3.2.8.3 "eagle") only all-2D or all-3D zones permitted
 		physical_dims = element_dims;
 
-    /*--- write CGNS base data (one base assumed as of version 3.2.8 "eagle") ---*/
+    /*--- write CGNS base data (one base assumed as of version 3.2.8.3 "eagle") ---*/
 		cgns_err = cg_base_write(cgns_file,"SU2 Base",element_dims,physical_dims,&cgns_base_results);
 		if (cgns_err) cg_error_print();
 
@@ -131,7 +131,7 @@ void COutput::SetCGNS_Coordinates(CConfig *config, CGeometry *geometry, unsigned
 			if (cgns_err) cg_error_print();
 			cgns_err = cg_coord_write(cgns_file,cgns_base_results,cgns_zone_results,RealDouble,"y",Coords[1],&cgns_coord);
 			if (cgns_err) cg_error_print();
-			if (geometry->GetnDim() == 3){
+			if (geometry->GetnDim() == 3) {
 				cgns_err = cg_coord_write(cgns_file,cgns_base_results,cgns_zone_results,RealDouble,"z",Coords[2],&cgns_coord);
 				if (cgns_err) cg_error_print();
 			}
@@ -212,7 +212,7 @@ void COutput::SetCGNS_Connectivity(CConfig *config, CGeometry *geometry, unsigne
 		element_dims = geometry->GetnDim();		// Currently (release 2.0) only all-2D or all-3D zones permitted
 		physical_dims = element_dims;
     
-		/*--- write CGNS base data (one base assumed as of version 3.2.8 "eagle") ---*/
+		/*--- write CGNS base data (one base assumed as of version 3.2.8.3 "eagle") ---*/
 		cgns_err = cg_base_write(cgns_file,"SU2 Base",element_dims,physical_dims,&cgns_base);
 		if (cgns_err) cg_error_print();
     
@@ -242,7 +242,7 @@ void COutput::SetCGNS_Connectivity(CConfig *config, CGeometry *geometry, unsigne
 		else cgns_err = cg_simulation_type_write(cgns_file,cgns_base,NonTimeAccurate);
 		if (cgns_err) cg_error_print();
     
-		cgns_err = cg_descriptor_write("Solver Information","SU2 version 3.2.8 \"eagle\"");
+		cgns_err = cg_descriptor_write("Solver Information","SU2 version 3.2.8.3 \"eagle\"");
 		if (cgns_err) cg_error_print();
 		
 		isize[0][0] = (cgsize_t)geometry->GetGlobal_nPointDomain(); //;				// vertex size
@@ -391,7 +391,7 @@ void COutput::SetCGNS_Solution(CConfig *config, CGeometry *geometry, unsigned sh
 		element_dims = geometry->GetnDim();		// Currently (release 2.0) only all-2D or all-3D zones permitted
 		physical_dims = element_dims;
     
-//		/*--- write CGNS base data (one base assumed as of version 3.2.8 "eagle") ---*/
+//		/*--- write CGNS base data (one base assumed as of version 3.2.8.3 "eagle") ---*/
 //		cgns_err = cg_base_write(cgns_file,"SU2 Base",element_dims,physical_dims,&cgns_base);
 //		if (cgns_err) cg_error_print();
     
@@ -440,7 +440,7 @@ void COutput::SetCGNS_Solution(CConfig *config, CGeometry *geometry, unsigned sh
 	}
   
   /*--- Write primitive variable residuals to CGNS file ---*/
-  if (config->GetWrt_Limiters()){
+  if (config->GetWrt_Limiters()) {
     for (jVar = 0; jVar < nVar_Consv; jVar++) {
       name.str(string()); name << "Primitive Limiter " << jVar+1;
       cgns_err = cg_field_write(cgns_file,cgns_base,cgns_zone,cgns_flow,RealDouble,(char *)name.str().c_str(),Data[iVar],&cgns_field); iVar++;
@@ -449,7 +449,7 @@ void COutput::SetCGNS_Solution(CConfig *config, CGeometry *geometry, unsigned sh
   }
   
 	/*--- Write conservative variable residuals to CGNS file ---*/
-  if (config->GetWrt_Residuals()){
+  if (config->GetWrt_Residuals()) {
     for (jVar = 0; jVar < nVar_Consv; jVar++) {
       name.str(string()); name << "Conservative Residual " << jVar+1;
       cgns_err = cg_field_write(cgns_file,cgns_base,cgns_zone,cgns_flow,RealDouble,(char *)name.str().c_str(),Data[iVar],&cgns_field); iVar++;

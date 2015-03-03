@@ -2,7 +2,7 @@
  * \file config_structure.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.3 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -103,7 +103,7 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], CConfig *config) {
 
 }
 
-void CConfig::SetPointersNull(void){
+void CConfig::SetPointersNull(void) {
 
   /*--- Marker Pointers ---*/
 
@@ -846,17 +846,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\par MESH_FORMAT
    *  DESCRIPTION: Mesh input file format \n OPTIONS: see \link Input_Map \endlink \n Default: SU2 \ingroup Config*/
   addEnumOption("MESH_FORMAT", Mesh_FileFormat, Input_Map, SU2);
-  /* DESCRIPTION: Convert a CGNS mesh to SU2 format */
-  addBoolOption("CGNS_TO_SU2", CGNS_To_SU2, false);
   /* DESCRIPTION:  Mesh input file */
   addStringOption("MESH_FILENAME", Mesh_FileName, string("mesh.su2"));
-
-  /*!\par MESH_SCALE_CHANGE
-   *  DESCRIPTION: Factor for scaling the mesh \ingroup Config */
-  addDoubleOption("MESH_SCALE_CHANGE", Mesh_Scale_Change, 1.0);
-  /*!\par MESH_OUTPUT
-   *  DESCRIPTION: Write a new mesh converted to meters \n Default: NO \ingroup Config*/
-  addBoolOption("MESH_OUTPUT", Mesh_Output, false);
   /*!\par MESH_OUT_FILENAME
    *  DESCRIPTION: Mesh output file name. Used when converting, scaling, or deforming a mesh. \n Default: mesh_out.su2 \ingroup Config*/
   addStringOption("MESH_OUT_FILENAME", Mesh_Out_FileName, string("mesh_out.su2"));
@@ -1029,8 +1020,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("SMOOTH_GEOMETRY", SmoothNumGrid, false);
   /* DESCRIPTION: Adapt the boundary elements */
   addBoolOption("ADAPT_BOUNDARY", AdaptBoundary, true);
-  /* DESCRIPTION: Divide rectangles into triangles */
-  addBoolOption("DIVIDE_ELEMENTS", Divide_Element, false);
 
   /* CONFIG_CATEGORY: Wind Gust */
   /*--- Options related to wind gust simulations ---*/
@@ -1062,7 +1051,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Integration limits of the equivalent area ( xmin, xmax, Dist_NearField ) */
   addDoubleArrayOption("EA_INT_LIMIT", 3, EA_IntLimit, default_vec_3d);
   /* DESCRIPTION: Equivalent area scaling factor */
-  addDoubleOption("EA_SCALE_FACTOR", EA_ScaleFactor, 1E-7);
+  addDoubleOption("EA_SCALE_FACTOR", EA_ScaleFactor, 1.0);
 
 	/* CONFIG_CATEGORY: Reacting Flow */
   /*--- Options related to the reacting gas mixtures ---*/
@@ -1135,7 +1124,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Print the residuals during mesh deformation to the console */
   addBoolOption("DEFORM_CONSOLE_OUTPUT", Deform_Output, false);
   /* DESCRIPTION: Number of nonlinear deformation iterations (surface deformation increments) */
-  addUnsignedLongOption("DEFORM_NONLINEAR_ITER", GridDef_Nonlinear_Iter, 5);
+  addUnsignedLongOption("DEFORM_NONLINEAR_ITER", GridDef_Nonlinear_Iter, 2);
   /* DESCRIPTION: Number of smoothing iterations for FEA mesh deformation */
   addUnsignedLongOption("DEFORM_LINEAR_ITER", GridDef_Linear_Iter, 500);
   /* DESCRIPTION: Factor to multiply smallest volume for deform tolerance (0.001 default) */
@@ -1146,6 +1135,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("DEFORM_ELASTICITY_MODULUS", Deform_ElasticityMod, 2E11);
   /* DESCRIPTION: Young's modulus and Poisson's ratio for constant stiffness FEA method of grid deformation*/
   addDoubleOption("DEFORM_POISSONS_RATIO", Deform_PoissonRatio, 0.3);
+  /*  DESCRIPTION: Linear solver for the mesh deformation\n OPTIONS: see \link Linear_Solver_Map \endlink \n Default: FGMRES \ingroup Config*/
+  addEnumOption("DEFORM_LINEAR_SOLVER", Deform_Linear_Solver, Linear_Solver_Map, FGMRES);
 
   /* CONFIG_CATEGORY: Rotorcraft problem */
   /*--- option related to rotorcraft problems ---*/
@@ -1217,6 +1208,12 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Free surface damping coefficient */
 	addDoubleOption("FFD_TOLERANCE", FFD_Tol, 1E-8);
 
+  /* DESCRIPTION: Definition of the FFD boxes */
+  addFFDDefOption("FFD_DEFINITION", nFFDBox, CoordFFDBox, TagFFDBox);
+  
+  /* DESCRIPTION: Definition of the FFD boxes */
+  addFFDDegreeOption("FFD_DEGREE", nFFDBox, DegreeFFDBox);
+  
   /*--- options that are used in the python optimization scripts. These have no effect on the c++ toolsuite ---*/
   /* CONFIG_CATEGORY:Python Options*/
 
@@ -1262,6 +1259,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Flag specifying if the mesh was decomposed */
   addPythonOption("DECOMPOSED");
 
+  /* DESCRIPTION: Activate ParMETIS mode for testing */
+  addBoolOption("PARMETIS", ParMETIS, false);
+  
   /* END_CONFIG_OPTIONS */
 
 }
@@ -1296,7 +1296,7 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
   
   while (getline (case_file,text_line)) {
     
-    if (err_count >= max_err_count){
+    if (err_count >= max_err_count) {
       errorString.append("too many errors. Stopping parse");
 
       cout << errorString << endl;
@@ -1307,7 +1307,7 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
       
       /*--- See if it's a python option ---*/
 
-      if (option_map.find(option_name) == option_map.end()){
+      if (option_map.find(option_name) == option_map.end()) {
           string newString;
           newString.append(option_name);
           newString.append(": invalid option name");
@@ -1320,7 +1320,7 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
 
       /*--- Option exists, check if the option has already been in the config file ---*/
       
-      if (included_options.find(option_name) != included_options.end()){
+      if (included_options.find(option_name) != included_options.end()) {
         string newString;
         newString.append(option_name);
         newString.append(": option appears twice");
@@ -1339,7 +1339,7 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
       /*--- Set the value and check error ---*/
       
       string out = option_map[option_name]->SetValue(option_value);
-      if (out.compare("") != 0){
+      if (out.compare("") != 0) {
         errorString.append(out);
         errorString.append("\n");
         err_count++;
@@ -1349,14 +1349,14 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
 
   /*--- See if there were any errors parsing the config file ---*/
       
-  if (errorString.size() != 0){
+  if (errorString.size() != 0) {
     if (rank == MASTER_NODE) cout << errorString << endl;
     exit(EXIT_FAILURE);
   }
 
   /*--- Set the default values for all of the options that weren't set ---*/
       
-  for(map<string, bool>::iterator iter = all_options.begin(); iter != all_options.end(); ++iter){
+  for (map<string, bool>::iterator iter = all_options.begin(); iter != all_options.end(); ++iter) {
     option_map[iter->first]->SetDefault();
   }
 
@@ -1391,7 +1391,7 @@ bool CConfig::SetRunTime_Parsing(char case_filename[MAX_STRING_SIZE]) {
   
   while (getline (case_file,text_line)) {
     
-    if (err_count >= max_err_count){
+    if (err_count >= max_err_count) {
       errorString.append("too many errors. Stopping parse");
       
       cout << errorString << endl;
@@ -1415,7 +1415,7 @@ bool CConfig::SetRunTime_Parsing(char case_filename[MAX_STRING_SIZE]) {
       
       /*--- Option exists, check if the option has already been in the config file ---*/
       
-      if (included_options.find(option_name) != included_options.end()){
+      if (included_options.find(option_name) != included_options.end()) {
         string newString;
         newString.append(option_name);
         newString.append(": option appears twice");
@@ -1444,7 +1444,7 @@ bool CConfig::SetRunTime_Parsing(char case_filename[MAX_STRING_SIZE]) {
   
   /*--- See if there were any errors parsing the runtime file ---*/
   
-  if (errorString.size() != 0){
+  if (errorString.size() != 0) {
     if (rank == MASTER_NODE) cout << errorString << endl;
     exit(EXIT_FAILURE);
   }
@@ -1478,7 +1478,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   Kind_SU2 = val_software;
   
   /*--- Make sure that 1D outputs are written when objective function requires ---*/
-  if (Kind_ObjFunc== AVG_OUTLET_PRESSURE || Kind_ObjFunc == AVG_TOTAL_PRESSURE){
+  if (Kind_ObjFunc== AVG_OUTLET_PRESSURE || Kind_ObjFunc == AVG_TOTAL_PRESSURE) {
     Wrt_1D_Output = YES;
     Marker_Out_1D = Marker_Monitoring;
     nMarker_Out_1D = nMarker_Monitoring;
@@ -1499,10 +1499,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     Design_Variable = new unsigned short [1];
     nDV = 1; Design_Variable[0] = NONE;
   }
-  
-  /*--- Don't divide the numerical grid unless running SU2_DEF ---*/
-  
-  if (Kind_SU2 != SU2_DEF) Divide_Element = false;
   
   /*--- Identification of free-surface problem, this problems are always unsteady and incompressible. ---*/
   
@@ -1542,12 +1538,12 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Check for Convective scheme available for NICF ---*/
   
   if (!ideal_gas) {
-    if (Kind_ConvNumScheme_Flow != SPACE_UPWIND){
+    if (Kind_ConvNumScheme_Flow != SPACE_UPWIND) {
       cout << "Only ROE Upwind scheme can be used for Not Ideal Compressible Fluids" << endl;
       exit(EXIT_FAILURE);
     }
     else {
-      if (Kind_Upwind_Flow != ROE){
+      if (Kind_Upwind_Flow != ROE) {
         cout << "Only ROE Upwind scheme can be used for Not Ideal Compressible Fluids" << endl;
         exit(EXIT_FAILURE);
       }
@@ -1576,13 +1572,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Check for Boundary condition available for NICF ---*/
   
   if (ideal_gas) {
-    if (SystemMeasurements == US && standard_air){
-      if (Kind_ViscosityModel != SUTHERLAND){
+    if (SystemMeasurements == US && standard_air) {
+      if (Kind_ViscosityModel != SUTHERLAND) {
         cout << "Only SUTHERLAND viscosity model can be used with US Measurement  " << endl;
         exit(EXIT_FAILURE);
       }
     }
-    if (Kind_ConductivityModel != CONSTANT_PRANDTL ){
+    if (Kind_ConductivityModel != CONSTANT_PRANDTL ) {
       cout << "Only CONSTANT_PRANDTL thermal conductivity model can be used with STANDARD_AIR and IDEAL_GAS" << endl;
       exit(EXIT_FAILURE);
     }
@@ -3381,7 +3377,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   cout << endl << "-------------------------------------------------------------------------" << endl;
   cout << "|    ___ _   _ ___                                                      |" << endl;
-  cout << "|   / __| | | |_  )   Release 3.2.8 \"eagle\"                             |" << endl;
+  cout << "|   / __| | | |_  )   Release 3.2.8.3 \"eagle\"                           |" << endl;
   cout << "|   \\__ \\ |_| |/ /                                                      |" << endl;
   switch (val_software) {
     case SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;
@@ -3645,40 +3641,36 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   if ((val_software == SU2_DEF) || (val_software == SU2_DOT)) {
 
-    cout << "Design variables definition (markers <-> value <-> param):" << endl;
 
     for (unsigned short iDV = 0; iDV < nDV; iDV++) {
 
-      switch (Design_Variable[iDV]) {
-        case FFD_SETTING:           cout << "Setting the FFD box structure." ; break;
-        case FFD_CONTROL_POINT_2D:  cout << "FFD 2D (control point) <-> "; break;
-        case FFD_RADIUS_2D:        cout << "FFD 2D (radious)"; break;
-        case FFD_CAMBER_2D:         cout << "FFD 2D (camber) <-> "; break;
-        case FFD_THICKNESS_2D:      cout << "FFD 2D (thickness) <-> "; break;
-        case HICKS_HENNE:           cout << "Hicks Henne <-> " ; break;
-        case COSINE_BUMP:           cout << "Cosine bump <-> " ; break;
-        case FOURIER:               cout << "Fourier <-> " ; break;
-        case SPHERICAL:             cout << "Spherical design <-> " ; break;
-        case DISPLACEMENT:          cout << "Displacement design variable."; break;
-        case NACA_4DIGITS:          cout << "NACA four digits <-> "; break;
-        case PARABOLIC:             cout << "Parabolic <-> "; break;
-        case OBSTACLE:              cout << "Obstacle <-> "; break;
-        case AIRFOIL:               cout << "Airfoil <-> "; break;
-        case STRETCH:               cout << "Stretch <-> "; break;
-        case ROTATION:              cout << "Rotation <-> "; break;
-        case FFD_CONTROL_POINT:     cout << "FFD (control point) <-> "; break;
-        case FFD_DIHEDRAL_ANGLE:    cout << "FFD (dihedral angle) <-> "; break;
-        case FFD_TWIST_ANGLE:       cout << "FFD (twist angle) <-> "; break;
-        case FFD_ROTATION:          cout << "FFD (rotation) <-> "; break;
-        case FFD_CONTROL_SURFACE:   cout << "FFD (control surface) <-> "; break;
-        case FFD_CAMBER:            cout << "FFD (camber) <-> "; break;
-        case FFD_THICKNESS:         cout << "FFD (thickness) <-> "; break;
-        case SURFACE_FILE:          cout << "Surface file based deformation." ; break;
-      }
-
+      
       if ((Design_Variable[iDV] != FFD_SETTING) &&
           (Design_Variable[iDV] != SURFACE_FILE)) {
-
+        
+        if (iDV == 0)
+          cout << "Design variables definition (markers <-> value <-> param):" << endl;
+        
+        switch (Design_Variable[iDV]) {
+          case FFD_CONTROL_POINT_2D:  cout << "FFD 2D (control point) <-> "; break;
+          case FFD_CAMBER_2D:         cout << "FFD 2D (camber) <-> "; break;
+          case FFD_THICKNESS_2D:      cout << "FFD 2D (thickness) <-> "; break;
+          case HICKS_HENNE:           cout << "Hicks Henne <-> " ; break;
+          case TRANSLATION:           cout << "Translation design variable."; break;
+          case SCALE:                 cout << "Scale design variable."; break;
+          case NACA_4DIGITS:          cout << "NACA four digits <-> "; break;
+          case PARABOLIC:             cout << "Parabolic <-> "; break;
+          case AIRFOIL:               cout << "Airfoil <-> "; break;
+          case ROTATION:              cout << "Rotation <-> "; break;
+          case FFD_CONTROL_POINT:     cout << "FFD (control point) <-> "; break;
+          case FFD_DIHEDRAL_ANGLE:    cout << "FFD (dihedral angle) <-> "; break;
+          case FFD_TWIST_ANGLE:       cout << "FFD (twist angle) <-> "; break;
+          case FFD_ROTATION:          cout << "FFD (rotation) <-> "; break;
+          case FFD_CONTROL_SURFACE:   cout << "FFD (control surface) <-> "; break;
+          case FFD_CAMBER:            cout << "FFD (camber) <-> "; break;
+          case FFD_THICKNESS:         cout << "FFD (thickness) <-> "; break;
+        }
+        
         for (iMarker_DV = 0; iMarker_DV < nMarker_DV; iMarker_DV++) {
           cout << Marker_DV[iMarker_DV];
           if (iMarker_DV < nMarker_DV-1) cout << ", ";
@@ -3687,29 +3679,23 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         cout << DV_Value[iDV] << " <-> ";
 
         if (Design_Variable[iDV] == FFD_SETTING) nParamDV = 0;
-        if (Design_Variable[iDV] == SURFACE_FILE) nParamDV = 0;
+        if (Design_Variable[iDV] == SCALE) nParamDV = 0;
+        if ((Design_Variable[iDV] == FFD_CAMBER_2D) ||
+            (Design_Variable[iDV] == FFD_THICKNESS_2D) ||
+            (Design_Variable[iDV] == HICKS_HENNE) ||
+            (Design_Variable[iDV] == PARABOLIC) ||
+            (Design_Variable[iDV] == AIRFOIL) ) nParamDV = 2;
+        if ((Design_Variable[iDV] ==  TRANSLATION) ||
+            (Design_Variable[iDV] ==  NACA_4DIGITS) ||
+            (Design_Variable[iDV] ==  FFD_CAMBER) ||
+            (Design_Variable[iDV] ==  FFD_THICKNESS) ) nParamDV = 3;
         if (Design_Variable[iDV] == FFD_CONTROL_POINT_2D) nParamDV = 5;
-        if (Design_Variable[iDV] == FFD_RADIUS_2D) nParamDV = 1;
-        if (Design_Variable[iDV] == FFD_CAMBER_2D) nParamDV = 2;
-        if (Design_Variable[iDV] == FFD_THICKNESS_2D) nParamDV = 2;
-        if (Design_Variable[iDV] == HICKS_HENNE) nParamDV = 2;
-        if (Design_Variable[iDV] == SPHERICAL) nParamDV = 3;
-        if (Design_Variable[iDV] == COSINE_BUMP) nParamDV = 3;
-        if (Design_Variable[iDV] == FOURIER) nParamDV = 3;
-        if (Design_Variable[iDV] == DISPLACEMENT) nParamDV = 3;
         if (Design_Variable[iDV] == ROTATION) nParamDV = 6;
-        if (Design_Variable[iDV] == NACA_4DIGITS) nParamDV = 3;
-        if (Design_Variable[iDV] == PARABOLIC) nParamDV = 2;
-        if (Design_Variable[iDV] == OBSTACLE) nParamDV = 2;
-        if (Design_Variable[iDV] == AIRFOIL) nParamDV = 2;
-        if (Design_Variable[iDV] == STRETCH) nParamDV = 2;
-        if (Design_Variable[iDV] == FFD_CONTROL_POINT) nParamDV = 7;
-        if (Design_Variable[iDV] == FFD_DIHEDRAL_ANGLE) nParamDV = 7;
-        if (Design_Variable[iDV] == FFD_TWIST_ANGLE) nParamDV = 7;
-        if (Design_Variable[iDV] == FFD_ROTATION) nParamDV = 7;
-        if (Design_Variable[iDV] == FFD_CONTROL_SURFACE) nParamDV = 7;
-        if (Design_Variable[iDV] == FFD_CAMBER) nParamDV = 3;
-        if (Design_Variable[iDV] == FFD_THICKNESS) nParamDV = 3;
+        if ((Design_Variable[iDV] ==  FFD_CONTROL_POINT) ||
+            (Design_Variable[iDV] ==  FFD_DIHEDRAL_ANGLE) ||
+            (Design_Variable[iDV] ==  FFD_TWIST_ANGLE) ||
+            (Design_Variable[iDV] ==  FFD_ROTATION) ||
+            (Design_Variable[iDV] ==  FFD_CONTROL_SURFACE) ) nParamDV = 7;
 
         for (unsigned short iParamDV = 0; iParamDV < nParamDV; iParamDV++) {
 
@@ -3720,7 +3706,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
                (Design_Variable[iDV] == FFD_CONTROL_POINT_2D) ||
                (Design_Variable[iDV] == FFD_CAMBER_2D) ||
                (Design_Variable[iDV] == FFD_THICKNESS_2D) ||
-               (Design_Variable[iDV] == FFD_RADIUS_2D) ||
                (Design_Variable[iDV] == FFD_CONTROL_POINT) ||
                (Design_Variable[iDV] == FFD_DIHEDRAL_ANGLE) ||
                (Design_Variable[iDV] == FFD_TWIST_ANGLE) ||
@@ -3731,10 +3716,42 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           else cout << ParamDV[iDV][iParamDV];
 
           if (iParamDV < nParamDV-1) cout << ", ";
-          else cout <<" )"<< endl;;
+          else cout <<" )"<< endl;
+          
         }
 
-      } else cout << endl;
+      }
+      
+      else if (Design_Variable[iDV] == FFD_SETTING) {
+        
+        cout << "Setting the FFD box structure." << endl;
+        cout << "FFD boxes definition (FFD tag <-> degree <-> coord):" << endl;
+        
+        for (unsigned short iFFDBox = 0; iFFDBox < nFFDBox; iFFDBox++) {
+          
+          cout << TagFFDBox[iFFDBox] << " <-> ";
+          
+          for (unsigned short iDegreeFFD = 0; iDegreeFFD < 3; iDegreeFFD++) {
+            if (iDegreeFFD == 0) cout << "( ";
+            cout << DegreeFFDBox[iFFDBox][iDegreeFFD];
+            if (iDegreeFFD < 2) cout << ", ";
+            else cout <<" )";
+          }
+          
+          cout << " <-> ";
+
+          for (unsigned short iCoordFFD = 0; iCoordFFD < 24; iCoordFFD++) {
+            if (iCoordFFD == 0) cout << "( ";
+            cout << CoordFFDBox[iFFDBox][iCoordFFD];
+            if (iCoordFFD < 23) cout << ", ";
+            else cout <<" )"<< endl;
+          }
+          
+        }
+        
+      }
+      
+      else cout << endl;
 
 		}
 	}
@@ -3743,34 +3760,29 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
 		cout << endl <<"----------------------- Design problem definition -----------------------" << endl;
 		switch (Kind_ObjFunc) {
-      case DRAG_COEFFICIENT: cout << "Drag objective function." << endl; break;
-      case LIFT_COEFFICIENT: cout << "Lift objective function." << endl; break;
+      case DRAG_COEFFICIENT:        cout << "CD objective function." << endl; break;
+      case LIFT_COEFFICIENT:        cout << "CL objective function." << endl; break;
+      case MOMENT_X_COEFFICIENT:    cout << "CMx objective function." << endl; break;
+      case MOMENT_Y_COEFFICIENT:    cout << "CMy objective function." << endl; break;
+      case MOMENT_Z_COEFFICIENT:    cout << "CMz objective function." << endl; break;
       case INVERSE_DESIGN_PRESSURE: cout << "Inverse design (Cp) objective function." << endl; break;
       case INVERSE_DESIGN_HEATFLUX: cout << "Inverse design (Heat Flux) objective function." << endl; break;
-      case SIDEFORCE_COEFFICIENT: cout << "Side force objective function." << endl; break;
-      case MOMENT_X_COEFFICIENT: cout << "Mx objective function." << endl; break;
-      case MOMENT_Y_COEFFICIENT: cout << "My objective function." << endl; break;
-      case MOMENT_Z_COEFFICIENT: cout << "Mz objective function." << endl; break;
-      case EFFICIENCY: cout << "Efficiency objective function." << endl; break;
-      case EQUIVALENT_AREA:
-        cout << "Equivalent area objective function." << endl;
-        cout << "Drag coefficient weight in the objective function: " << WeightCd <<"."<< endl;  break;
-      case NEARFIELD_PRESSURE:
-        cout << "Nearfield pressure objective function." << endl;
-        cout << "Drag coefficient weight in the objective function: " << WeightCd <<"."<< endl;  break;
-        break;
-      case FORCE_X_COEFFICIENT: cout << "X-force objective function." << endl; break;
-      case FORCE_Y_COEFFICIENT: cout << "Y-force moment objective function." << endl; break;
-      case FORCE_Z_COEFFICIENT: cout << "Z-force moment objective function." << endl; break;
-      case THRUST_COEFFICIENT: cout << "Thrust objective function." << endl; break;
-      case TORQUE_COEFFICIENT: cout << "Torque efficiency objective function." << endl; break;
-      case TOTAL_HEATFLUX: cout << "Total heat flux objective function." << endl; break;
-      case MAXIMUM_HEATFLUX: cout << "Maximum heat flux objective function." << endl; break;
-      case FIGURE_OF_MERIT: cout << "Rotor Figure of Merit objective function." << endl; break;
-      case FREE_SURFACE: cout << "Free-Surface objective function." << endl; break;
-      case AVG_TOTAL_PRESSURE: cout << "Average total objective pressure." << endl; break;
-      case AVG_OUTLET_PRESSURE: cout << "Average static objective pressure." << endl; break;
-      case MASS_FLOW_RATE: cout << "Mass flow rate objective function." << endl; break;
+      case SIDEFORCE_COEFFICIENT:   cout << "Side force objective function." << endl; break;
+      case EFFICIENCY:              cout << "CL/CD objective function." << endl; break;
+      case EQUIVALENT_AREA:         cout << "Equivalent area objective function. CD weight: " << WeightCd <<"."<< endl;  break;
+      case NEARFIELD_PRESSURE:      cout << "Nearfield pressure objective function. CD weight: " << WeightCd <<"."<< endl;  break;
+      case FORCE_X_COEFFICIENT:     cout << "X-force objective function." << endl; break;
+      case FORCE_Y_COEFFICIENT:     cout << "Y-force objective function." << endl; break;
+      case FORCE_Z_COEFFICIENT:     cout << "Z-force objective function." << endl; break;
+      case THRUST_COEFFICIENT:      cout << "Thrust objective function." << endl; break;
+      case TORQUE_COEFFICIENT:      cout << "Torque efficiency objective function." << endl; break;
+      case TOTAL_HEATFLUX:          cout << "Total heat flux objective function." << endl; break;
+      case MAXIMUM_HEATFLUX:        cout << "Maximum heat flux objective function." << endl; break;
+      case FIGURE_OF_MERIT:         cout << "Rotor Figure of Merit objective function." << endl; break;
+      case FREE_SURFACE:            cout << "Free-Surface objective function." << endl; break;
+      case AVG_TOTAL_PRESSURE:      cout << "Average total objective pressure." << endl; break;
+      case AVG_OUTLET_PRESSURE:     cout << "Average static objective pressure." << endl; break;
+      case MASS_FLOW_RATE:          cout << "Mass flow rate objective function." << endl; break;
 		}
 
 	}
@@ -3917,6 +3929,11 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
                 cout << "The reference element size is: " << RefElemLength <<". "<< endl;
                 cout << "The reference sharp edge distance is: " << SharpEdgesCoeff*RefElemLength*LimiterCoeff <<". "<< endl;
                 break;
+              case SOLID_WALL_DISTANCE:
+                cout << "Wall distance slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
+                cout << "The reference element size is: " << RefElemLength <<". "<< endl;
+                cout << "The reference wall distance is: " << SharpEdgesCoeff*RefElemLength*LimiterCoeff <<". "<< endl;
+                break;
               case BARTH_JESPERSEN:
                 cout << "Barth-Jespersen slope-limiting method." << endl;
                 break;
@@ -3945,6 +3962,11 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
                 cout << "Sharp edges slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
                 cout << "The reference element size is: " << RefElemLength <<". "<< endl;
                 cout << "The reference sharp edge distance is: " << SharpEdgesCoeff*RefElemLength*LimiterCoeff <<". "<< endl;
+                break;
+              case SOLID_WALL_DISTANCE:
+                cout << "Wall distance slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
+                cout << "The reference element size is: " << RefElemLength <<". "<< endl;
+                cout << "The reference wall distance is: " << SharpEdgesCoeff*RefElemLength*LimiterCoeff <<". "<< endl;
                 break;
               case BARTH_JESPERSEN:
                 cout << "Barth-Jespersen slope-limiting method." << endl;
@@ -3988,6 +4010,11 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
                 cout << "Sharp edges slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
                 cout << "The reference element size is: " << RefElemLength <<". "<< endl;
                 cout << "The reference sharp edge distance is: " << SharpEdgesCoeff*RefElemLength*LimiterCoeff <<". "<< endl;
+                break;
+              case SOLID_WALL_DISTANCE:
+                cout << "Wall distance slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
+                cout << "The reference element size is: " << RefElemLength <<". "<< endl;
+                cout << "The reference wall distance is: " << SharpEdgesCoeff*RefElemLength*LimiterCoeff <<". "<< endl;
                 break;
               case BARTH_JESPERSEN:
                 cout << "Barth-Jespersen slope-limiting method." << endl;
@@ -4089,7 +4116,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
               cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<< endl;
               cout << "Max number of iterations: "<< Linear_Solver_Iter <<"."<< endl;
               break;
-            case FGMRES || RFGMRES:
+            case FGMRES || RESTARTED_FGMRES:
               cout << "FGMRES is used for solving the linear system." << endl;
               cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<< endl;
               cout << "Max number of iterations: "<< Linear_Solver_Iter <<"."<< endl;
@@ -4121,7 +4148,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
               cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<< endl;
               cout << "Max number of iterations: "<< Linear_Solver_Iter <<"."<< endl;
               break;
-            case FGMRES || RFGMRES:
+            case FGMRES || RESTARTED_FGMRES:
               cout << "FGMRES is used for solving the linear system." << endl;
               cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<< endl;
               cout << "Max number of iterations: "<< Linear_Solver_Iter <<"."<< endl;
@@ -4193,7 +4220,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
       if (CFL_AdaptParam[0] == 1.0) cout << "No CFL adaptation." << endl;
       else cout << "CFL adaptation. Factor down: "<< CFL_AdaptParam[0] <<", factor up: "<< CFL_AdaptParam[1]
-        <<", lower limit:"<< CFL_AdaptParam[2] <<", upper limit:" << CFL_AdaptParam[3] << endl;
+        <<", lower limit: "<< CFL_AdaptParam[2] <<", upper limit: " << CFL_AdaptParam[3] <<"."<< endl;
 
       if (nMGLevels !=0) {
         cout << "Multigrid Level:                  ";
@@ -4340,7 +4367,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     if (Low_MemoryOutput) cout << "Writing output files with low memory RAM requirements."<< endl;
     cout << "Writing a flow solution every " << Wrt_Sol_Freq <<" iterations."<< endl;
     cout << "Writing the convergence history every " << Wrt_Con_Freq <<" iterations."<< endl;
-    if ((Unsteady_Simulation == DT_STEPPING_1ST) || (Unsteady_Simulation == DT_STEPPING_2ND))  {
+    if ((Unsteady_Simulation == DT_STEPPING_1ST) || (Unsteady_Simulation == DT_STEPPING_2ND)) {
       cout << "Writing the dual time flow solution every " << Wrt_Sol_Freq_DualTime <<" iterations."<< endl;
       cout << "Writing the dual time convergence history every " << Wrt_Con_Freq_DualTime <<" iterations."<< endl;
     }

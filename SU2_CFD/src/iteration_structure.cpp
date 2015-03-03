@@ -2,7 +2,7 @@
  * \file iteration_structure.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.3 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -40,7 +40,7 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
   
 	bool time_spectral = (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_SPECTRAL);
 	unsigned short nZone = geometry_container[ZONE_0][MESH_0]->GetnZone();
-	if (time_spectral){
+	if (time_spectral) {
     nZone = config_container[ZONE_0]->GetnTimeInstances();
   }
   unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
@@ -62,13 +62,13 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
     
     /*--- Dynamic mesh update ---*/
     
-		if ((config_container[iZone]->GetGrid_Movement()) && (!time_spectral)){
+		if ((config_container[iZone]->GetGrid_Movement()) && (!time_spectral)) {
 			SetGrid_Movement(geometry_container[iZone], surface_movement[iZone], grid_movement[iZone], FFDBox[iZone], solver_container[iZone],config_container[iZone], iZone, IntIter, ExtIter);
     }
     
     /*--- Apply a Wind Gust ---*/
     
-    if (config_container[ZONE_0]->GetWind_Gust()){
+    if (config_container[ZONE_0]->GetWind_Gust()) {
       SetWind_GustField(config_container[iZone],geometry_container[iZone],solver_container[iZone]);
     }
 	}
@@ -83,13 +83,13 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
     
 		/*--- Update global parameters ---*/
     
-		if (config_container[iZone]->GetKind_Solver() == EULER){
+		if (config_container[iZone]->GetKind_Solver() == EULER) {
       config_container[iZone]->SetGlobalParam(EULER, RUNTIME_FLOW_SYS, ExtIter);
     }
-		if (config_container[iZone]->GetKind_Solver() == NAVIER_STOKES){
+		if (config_container[iZone]->GetKind_Solver() == NAVIER_STOKES) {
       config_container[iZone]->SetGlobalParam(NAVIER_STOKES, RUNTIME_FLOW_SYS, ExtIter);
     }
-		if (config_container[iZone]->GetKind_Solver() == RANS){
+		if (config_container[iZone]->GetKind_Solver() == RANS) {
       config_container[iZone]->SetGlobalParam(RANS, RUNTIME_FLOW_SYS, ExtIter);
     }
     
@@ -128,7 +128,7 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
 	if ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
       (config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) {
     
-		for(IntIter = 1; IntIter < config_container[ZONE_0]->GetUnst_nIntIter(); IntIter++) {
+		for (IntIter = 1; IntIter < config_container[ZONE_0]->GetUnst_nIntIter(); IntIter++) {
       
       /*--- Write the convergence history (only screen output) ---*/
       
@@ -191,21 +191,21 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
 			/*--- Update dual time solver on all mesh levels ---*/
       
 			for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++) {
-				integration_container[iZone][FLOW_SOL]->SetDualTime_Solver(geometry_container[iZone][iMesh], solver_container[iZone][iMesh][FLOW_SOL], config_container[iZone]);
+				integration_container[iZone][FLOW_SOL]->SetDualTime_Solver(geometry_container[iZone][iMesh], solver_container[iZone][iMesh][FLOW_SOL], config_container[iZone], iMesh);
 				integration_container[iZone][FLOW_SOL]->SetConvergence(false);
 			}
       
 			/*--- Update dual time solver for the turbulence model ---*/
       
 			if (config_container[iZone]->GetKind_Solver() == RANS) {
-				integration_container[iZone][TURB_SOL]->SetDualTime_Solver(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0][TURB_SOL], config_container[iZone]);
+				integration_container[iZone][TURB_SOL]->SetDualTime_Solver(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0][TURB_SOL], config_container[iZone], MESH_0);
 				integration_container[iZone][TURB_SOL]->SetConvergence(false);
 			}
       
       /*--- Update dual time solver for the transition model ---*/
       
 			if (config_container[iZone]->GetKind_Trans_Model() == LM) {
-				integration_container[iZone][TRANS_SOL]->SetDualTime_Solver(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0][TRANS_SOL], config_container[iZone]);
+				integration_container[iZone][TRANS_SOL]->SetDualTime_Solver(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0][TRANS_SOL], config_container[iZone], MESH_0);
 				integration_container[iZone][TRANS_SOL]->SetConvergence(false);
 			}
       
@@ -369,7 +369,7 @@ void AdjMeanFlowIteration(COutput *output, CIntegration ***integration_container
 	if ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
 			(config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) {
     
-		for(IntIter = 1; IntIter < config_container[ZONE_0]->GetUnst_nIntIter(); IntIter++) {
+		for (IntIter = 1; IntIter < config_container[ZONE_0]->GetUnst_nIntIter(); IntIter++) {
       
       /*--- Write the convergence history (only screen output) ---*/
       
@@ -395,7 +395,7 @@ void AdjMeanFlowIteration(COutput *output, CIntegration ***integration_container
 			/*--- Update dual time solver ---*/
       
 			for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++) {
-				integration_container[iZone][ADJFLOW_SOL]->SetDualTime_Solver(geometry_container[iZone][iMesh], solver_container[iZone][iMesh][ADJFLOW_SOL], config_container[iZone]);
+				integration_container[iZone][ADJFLOW_SOL]->SetDualTime_Solver(geometry_container[iZone][iMesh], solver_container[iZone][iMesh][ADJFLOW_SOL], config_container[iZone], iMesh);
 				integration_container[iZone][ADJFLOW_SOL]->SetConvergence(false);
 			}
       
@@ -575,7 +575,7 @@ void WaveIteration(COutput *output, CIntegration ***integration_container, CGeom
 		/*--- Dual time stepping strategy ---*/
 		if ((config_container[iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config_container[iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) {
       
-			for(IntIter = 1; IntIter < config_container[iZone]->GetUnst_nIntIter(); IntIter++) {
+			for (IntIter = 1; IntIter < config_container[iZone]->GetUnst_nIntIter(); IntIter++) {
         output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, iZone);
         config_container[iZone]->SetIntIter(IntIter);
 				integration_container[iZone][WAVE_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
@@ -585,7 +585,7 @@ void WaveIteration(COutput *output, CIntegration ***integration_container, CGeom
       
 			/*--- Update dual time solver ---*/
 			for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++) {
-				integration_container[iZone][WAVE_SOL]->SetDualTime_Solver(geometry_container[iZone][iMesh], solver_container[iZone][iMesh][WAVE_SOL], config_container[iZone]);
+				integration_container[iZone][WAVE_SOL]->SetDualTime_Solver(geometry_container[iZone][iMesh], solver_container[iZone][iMesh][WAVE_SOL], config_container[iZone], iMesh);
 				integration_container[iZone][WAVE_SOL]->SetConvergence(false);
 			}
       
@@ -622,7 +622,7 @@ void HeatIteration(COutput *output, CIntegration ***integration_container, CGeom
 		/*--- Dual time stepping strategy ---*/
 		if ((config_container[iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config_container[iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) {
       
-			for(IntIter = 1; IntIter < config_container[iZone]->GetUnst_nIntIter(); IntIter++) {
+			for (IntIter = 1; IntIter < config_container[iZone]->GetUnst_nIntIter(); IntIter++) {
         output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, iZone);
         config_container[iZone]->SetIntIter(IntIter);
 				integration_container[iZone][HEAT_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
@@ -632,7 +632,7 @@ void HeatIteration(COutput *output, CIntegration ***integration_container, CGeom
       
 			/*--- Update dual time solver ---*/
 			for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++) {
-				integration_container[iZone][HEAT_SOL]->SetDualTime_Solver(geometry_container[iZone][iMesh], solver_container[iZone][iMesh][HEAT_SOL], config_container[iZone]);
+				integration_container[iZone][HEAT_SOL]->SetDualTime_Solver(geometry_container[iZone][iMesh], solver_container[iZone][iMesh][HEAT_SOL], config_container[iZone], iMesh);
 				integration_container[iZone][HEAT_SOL]->SetConvergence(false);
 			}
       
@@ -704,7 +704,7 @@ void FEAIteration(COutput *output, CIntegration ***integration_container, CGeome
 		if ((config_container[iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
 				(config_container[iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) {
       
-			for(IntIter = 1; IntIter < config_container[iZone]->GetUnst_nIntIter(); IntIter++) {
+			for (IntIter = 1; IntIter < config_container[iZone]->GetUnst_nIntIter(); IntIter++) {
         output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, iZone);
         config_container[iZone]->SetIntIter(IntIter);
 				integration_container[iZone][FEA_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
@@ -714,7 +714,7 @@ void FEAIteration(COutput *output, CIntegration ***integration_container, CGeome
       
 			/*--- Update dual time solver ---*/
 			for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++) {
-				integration_container[iZone][FEA_SOL]->SetDualTime_Solver(geometry_container[iZone][iMesh], solver_container[iZone][iMesh][FEA_SOL], config_container[iZone]);
+				integration_container[iZone][FEA_SOL]->SetDualTime_Solver(geometry_container[iZone][iMesh], solver_container[iZone][iMesh][FEA_SOL], config_container[iZone], iMesh);
 				integration_container[iZone][FEA_SOL]->SetConvergence(false);
 			}
       
@@ -760,7 +760,7 @@ void FluidStructureIteration(COutput *output, CIntegration ***integration_contai
 	/*--- Dual time stepping strategy for the coupled system ---*/
 	if ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) {
     
-		for(IntIter = 1; IntIter < config_container[ZONE_0]->GetUnst_nIntIter(); IntIter++) {
+		for (IntIter = 1; IntIter < config_container[ZONE_0]->GetUnst_nIntIter(); IntIter++) {
       
       /*--- Write the convergence history (only screen output) ---*/
 			output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_0);
@@ -791,11 +791,11 @@ void FluidStructureIteration(COutput *output, CIntegration ***integration_contai
     
 		/*--- Set convergence the global convergence criteria to false, and dual time solution ---*/
 		for (iMesh = 0; iMesh <= config_container[ZONE_0]->GetnMGLevels(); iMesh++) {
-			integration_container[ZONE_0][FLOW_SOL]->SetDualTime_Solver(geometry_container[ZONE_0][iMesh], solver_container[ZONE_0][iMesh][FLOW_SOL], config_container[ZONE_0]);
+			integration_container[ZONE_0][FLOW_SOL]->SetDualTime_Solver(geometry_container[ZONE_0][iMesh], solver_container[ZONE_0][iMesh][FLOW_SOL], config_container[ZONE_0], iMesh);
 			integration_container[ZONE_0][FLOW_SOL]->SetConvergence(false);
 		}
     
-		integration_container[ZONE_1][FEA_SOL]->SetDualTime_Solver(geometry_container[ZONE_1][MESH_0], solver_container[ZONE_1][MESH_0][FEA_SOL], config_container[ZONE_1]);
+		integration_container[ZONE_1][FEA_SOL]->SetDualTime_Solver(geometry_container[ZONE_1][MESH_0], solver_container[ZONE_1][MESH_0][FEA_SOL], config_container[ZONE_1], MESH_0);
 		integration_container[ZONE_1][FEA_SOL]->SetConvergence(false);
     
 		/*--- Set the value of the global convergence criteria ---*/
@@ -849,7 +849,7 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
   double Uinf = solver_container[MESH_0][FLOW_SOL]->GetVelocity_Inf(0); // Assumption gust moves at infinity velocity
   
   Gust = new double [nDim];
-  for(iDim = 0; iDim < nDim; iDim++) {
+  for (iDim = 0; iDim < nDim; iDim++) {
     Gust[iDim] = 0.0;
   }
   
@@ -881,7 +881,7 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
       
       /*--- eset the Grid Velocity to zero if there is no grid movement ---*/
       if (Kind_Grid_Movement == NO_MOVEMENT) {
-        for(iDim = 0; iDim < nDim; iDim++)
+        for (iDim = 0; iDim < nDim; iDim++)
           geometry_container[iMGlevel]->node[iPoint]->SetGridVel(iDim, 0.0);
       }
       
@@ -979,7 +979,7 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
       
       /*--- Store new grid velocity ---*/
       
-      for(iDim = 0; iDim < nDim; iDim++) {
+      for (iDim = 0; iDim < nDim; iDim++) {
         NewGridVel[iDim] = GridVel[iDim] - Gust[iDim];
         geometry_container[iMGlevel]->node[iPoint]->SetGridVel(iDim, NewGridVel[iDim]);
       }
@@ -1225,7 +1225,7 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
       
       if (!adjoint) {
         if (rank == MASTER_NODE)
-          cout << "Computing grid velocities by finite differencing." << endl;
+          cout << " Computing grid velocities by finite differencing." << endl;
         geometry_container[MESH_0]->SetGridVelocity(config_container, ExtIter);
       }
       
@@ -1311,7 +1311,7 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
           double *U_time_nM1 = solver_container[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_time_n1();
           double *U_time_n   = solver_container[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_time_n();
           
-          for(iDim = 0; iDim < geometry_container[MESH_0]->GetnDim(); iDim++)
+          for (iDim = 0; iDim < geometry_container[MESH_0]->GetnDim(); iDim++)
             geometry_container[MESH_0]->node[iPoint]->AddCoord(iDim, U_time_n[iDim] - U_time_nM1[iDim]);
           
         }

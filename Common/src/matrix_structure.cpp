@@ -2,7 +2,7 @@
  * \file matrix_structure.cpp
  * \brief Main subroutines for doing the sparse structures
  * \author F. Palacios, A. Bueno
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.3 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -126,7 +126,7 @@ void CSysMatrix::Initialize(unsigned long nPoint, unsigned long nPointDomain,
     }
     else {
       vneighs.clear();
-      for(iElem = 0; iElem < geometry->node[iPoint]->GetnElem(); iElem++) {
+      for (iElem = 0; iElem < geometry->node[iPoint]->GetnElem(); iElem++) {
         Elem =  geometry->node[iPoint]->GetElem(iElem);
         for (iNode = 0; iNode < geometry->elem[Elem]->GetnNodes(); iNode++)
           vneighs.push_back(geometry->elem[Elem]->GetNode(iNode));
@@ -162,7 +162,7 @@ void CSysMatrix::Initialize(unsigned long nPoint, unsigned long nPointDomain,
       vneighs.push_back(iPoint);
     }
     else {
-      for(iElem = 0; iElem < geometry->node[iPoint]->GetnElem(); iElem++) {
+      for (iElem = 0; iElem < geometry->node[iPoint]->GetnElem(); iElem++) {
         Elem =  geometry->node[iPoint]->GetElem(iElem);
         for (iNode = 0; iNode < geometry->elem[Elem]->GetnNodes(); iNode++)
           vneighs.push_back(geometry->elem[Elem]->GetNode(iNode));
@@ -809,10 +809,10 @@ void CSysMatrix::GetMultBlockBlock(double *c, double *a, double *b) {
   
   unsigned long iVar, jVar, kVar;
   
-  for(iVar = 0; iVar < nVar; iVar++)
-    for(jVar = 0; jVar < nVar; jVar++) {
+  for (iVar = 0; iVar < nVar; iVar++)
+    for (jVar = 0; jVar < nVar; jVar++) {
       c[iVar*nVar+jVar] = 0.0;
-      for(kVar = 0; kVar < nVar; kVar++)
+      for (kVar = 0; kVar < nVar; kVar++)
         c[iVar*nVar+jVar] += a[iVar*nVar+kVar] * b[kVar*nVar+jVar];
     }
   
@@ -822,9 +822,9 @@ void CSysMatrix::GetMultBlockVector(double *c, double *a, double *b) {
   
   unsigned long iVar, jVar;
   
-  for(iVar = 0; iVar < nVar; iVar++) {
+  for (iVar = 0; iVar < nVar; iVar++) {
     c[iVar] =  0.0;
-    for(jVar = 0; jVar < nVar; jVar++)
+    for (jVar = 0; jVar < nVar; jVar++)
       c[iVar] += a[iVar*nVar+jVar] * b[jVar];
   }
   
@@ -834,8 +834,8 @@ void CSysMatrix::GetSubsBlock(double *c, double *a, double *b) {
   
   unsigned long iVar, jVar;
   
-  for(iVar = 0; iVar < nVar; iVar++)
-    for(jVar = 0; jVar < nVar; jVar++)
+  for (iVar = 0; iVar < nVar; iVar++)
+    for (jVar = 0; jVar < nVar; jVar++)
       c[iVar*nVar+jVar] = a[iVar*nVar+jVar] - b[iVar*nVar+jVar];
   
 }
@@ -844,7 +844,7 @@ void CSysMatrix::GetSubsVector(double *c, double *a, double *b) {
   
   unsigned long iVar;
   
-  for(iVar = 0; iVar < nVar; iVar++)
+  for (iVar = 0; iVar < nVar; iVar++)
     c[iVar] = a[iVar] - b[iVar];
   
 }
@@ -977,7 +977,7 @@ unsigned short CSysMatrix::BuildLineletPreconditioner(CGeometry *geometry, CConf
           (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_CATALYTIC   ) ||
           (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_NONCATALYTIC) ||
           (config->GetMarker_All_KindBC(iMarker) == EULER_WALL             ) ||
-          (config->GetMarker_All_KindBC(iMarker) == DISPLACEMENT_BOUNDARY)){
+          (config->GetMarker_All_KindBC(iMarker) == DISPLACEMENT_BOUNDARY)) {
         iLinelet = 0;
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
@@ -1002,9 +1002,9 @@ unsigned short CSysMatrix::BuildLineletPreconditioner(CGeometry *geometry, CConf
         
         iPoint = LineletPoint[iLinelet][index_Point];
         max_weight = 0.0;
-        for(iNode = 0; iNode < geometry->node[iPoint]->GetnPoint(); iNode++) {
+        for (iNode = 0; iNode < geometry->node[iPoint]->GetnPoint(); iNode++) {
           jPoint = geometry->node[iPoint]->GetPoint(iNode);
-          if ((check_Point[jPoint]) && geometry->node[jPoint]->GetDomain()){
+          if ((check_Point[jPoint]) && geometry->node[jPoint]->GetDomain()) {
             iEdge = geometry->FindEdge(iPoint, jPoint);
             normal = geometry->edge[iEdge]->GetNormal();
             if (geometry->GetnDim() == 3) area = sqrt(normal[0]*normal[0]+normal[1]*normal[1]+normal[2]*normal[2]);
@@ -1021,7 +1021,7 @@ unsigned short CSysMatrix::BuildLineletPreconditioner(CGeometry *geometry, CConf
         add_point = false;
         counter = 0;
         next_Point = geometry->node[iPoint]->GetPoint(0);
-        for(iNode = 0; iNode < geometry->node[iPoint]->GetnPoint(); iNode++) {
+        for (iNode = 0; iNode < geometry->node[iPoint]->GetnPoint(); iNode++) {
           jPoint = geometry->node[iPoint]->GetPoint(iNode);
           iEdge = geometry->FindEdge(iPoint, jPoint);
           normal = geometry->edge[iEdge]->GetNormal();

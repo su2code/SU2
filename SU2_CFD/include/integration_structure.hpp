@@ -4,7 +4,7 @@
  *        The subroutines and functions are in the <i>integration_structure.cpp</i>, 
  *        <i>integration_time.cpp</i>, and <i>integration_notime.cpp</i> files.
  * \author F. Palacios, T. Economon
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.3 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -51,7 +51,7 @@ using namespace std;
  * \brief Main class for doing the space integration, time integration, and monitoring 
  *        of a system of Partial Differential Equations (PDE).
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.3 "eagle"
  */
 class CIntegration {
 protected:
@@ -121,7 +121,7 @@ public:
 	 * \param[in] monitor - Objective function that is use to study its convergence.
 	 */
 	void Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
-								unsigned long Iteration, double monitor);
+								unsigned long Iteration, double monitor, unsigned short iMesh);
 	
 	/*! 
 	 * \brief Get the value of the convergence.
@@ -156,7 +156,7 @@ public:
 	 * \param[in] solution - Flow solution.
    * \param[in] config - Definition of the particular problem.
 	 */
-	void SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CConfig *config);
+	void SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CConfig *config, unsigned short iMesh);
 	
 	/*! 
 	 * \brief A virtual member.
@@ -327,7 +327,7 @@ public:
  * \class CMultiGridIntegration
  * \brief Class for doing the numerical integration using a multigrid method.
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.3 "eagle"
  */
 class CMultiGridIntegration : public CIntegration {
 protected:
@@ -499,7 +499,7 @@ public:
  * \class CSingleGridIntegration
  * \brief Class for doing the numerical integration of the turbulence model.
  * \author A. Bueno.
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.3 "eagle"
  */
 class CSingleGridIntegration : public CIntegration {
 public:

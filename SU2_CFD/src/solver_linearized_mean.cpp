@@ -2,7 +2,7 @@
  * \file solution_linearized_mean.cpp
  * \brief Main subrotuines for solving linearized problems (Euler, Navier-Stokes, etc.).
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.3 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -33,7 +33,7 @@
 
 CLinEulerSolver::CLinEulerSolver(void) : CSolver() { }
 
-CLinEulerSolver::CLinEulerSolver(CGeometry *geometry, CConfig *config) : CSolver() {
+CLinEulerSolver::CLinEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
 	unsigned long iPoint, index;
 	string text_line, mesh_filename;
 	unsigned short iDim, iVar, nLineLets;
@@ -130,7 +130,7 @@ CLinEulerSolver::CLinEulerSolver(CGeometry *geometry, CConfig *config) : CSolver
 	}
 	
 	/*--- Restart the solution from file information ---*/
-	if (!restart || geometry->GetFinestMGLevel() == false) {
+	if (!restart || (iMesh != MESH_0)) {
 		for (iPoint=0; iPoint < geometry->GetnPoint(); iPoint++)
 			node[iPoint] = new CLinEulerVariable(DeltaRho_Inf, DeltaVel_Inf, DeltaE_Inf, nDim, nVar, config);
 	}
@@ -151,11 +151,11 @@ CLinEulerSolver::CLinEulerSolver(CGeometry *geometry, CConfig *config) : CSolver
     long *Global2Local;
     Global2Local = new long[geometry->GetGlobal_nPointDomain()];
     /*--- First, set all indices to a negative value by default ---*/
-    for(iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
+    for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
       Global2Local[iPoint] = -1;
     }
     /*--- Now fill array with the transform values only for local points ---*/
-    for(iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+    for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
       Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
     }
     
@@ -184,7 +184,7 @@ CLinEulerSolver::CLinEulerSolver(CGeometry *geometry, CConfig *config) : CSolver
     /*--- Instantiate the variable class with an arbitrary solution
      at any halo/periodic nodes. The initial solution can be arbitrary,
      because a send/recv is performed immediately in the solver. ---*/
-    for(iPoint = geometry->GetnPointDomain(); iPoint < geometry->GetnPoint(); iPoint++) {
+    for (iPoint = geometry->GetnPointDomain(); iPoint < geometry->GetnPoint(); iPoint++) {
       node[iPoint] = new CLinEulerVariable(Solution, nDim, nVar, config);
     }
     
@@ -381,7 +381,7 @@ void CLinEulerSolver::Inviscid_DeltaForces(CGeometry *geometry, CSolver **solver
 			}
 			
 			/*--- Transform ForceInviscid into CLift and CDrag ---*/
-			if  (Monitoring == YES) {
+			if (Monitoring == YES) {
 				if (nDim == 2) {
 					CDeltaDrag_Inv[iMarker] =  DeltaForceInviscid[0]*cos(Alpha) + DeltaForceInviscid[1]*sin(Alpha);
 					CDeltaLift_Inv[iMarker] = -DeltaForceInviscid[0]*sin(Alpha) + DeltaForceInviscid[1]*cos(Alpha);
@@ -570,7 +570,7 @@ void CLinEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 			
 			/*--- fix characteristics value ---*/			
 			if (nDim == 2) {
-				if(vn > 0.0) { 
+				if (vn > 0.0) { 
 					W_update[0] = W_wall[0];
 					W_update[1] = W_wall[1];
 				}
@@ -579,15 +579,15 @@ void CLinEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 					W_update[1] = W_infty[1];
 				}
 				
-				if(vn+c*dS > 0.0) W_update[2] = W_wall[2];
+				if (vn+c*dS > 0.0) W_update[2] = W_wall[2];
 				else W_update[2] = W_infty[2];
 				
-				if(vn-c*dS > 0.0) W_update[3] = W_wall[3];
+				if (vn-c*dS > 0.0) W_update[3] = W_wall[3];
 				else W_update[3] = W_infty[3];
 			}
 			
 			if (nDim == 3) {
-				if(vn > 0.0) { 
+				if (vn > 0.0) { 
 					W_update[0] = W_wall[0];
 					W_update[1] = W_wall[1];
 					W_update[2] = W_wall[2];
@@ -598,10 +598,10 @@ void CLinEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 					W_update[2] = W_infty[2];
 				}
 				
-				if(vn+c*dS > 0.0) W_update[3] = W_wall[3];
+				if (vn+c*dS > 0.0) W_update[3] = W_wall[3];
 				else W_update[3] = W_infty[3];
 				
-				if(vn-c*dS > 0.0) W_update[4] = W_wall[4];
+				if (vn-c*dS > 0.0) W_update[4] = W_wall[4];
 				else W_update[4] = W_infty[4];
 			}
 			

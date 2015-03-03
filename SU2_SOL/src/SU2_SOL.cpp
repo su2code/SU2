@@ -2,7 +2,7 @@
  * \file SU2_SOL.cpp
  * \brief Main file for the solution export/conversion code (SU2_SOL).
  * \author F. Palacios, T. Economon
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.3 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -60,8 +60,8 @@ int main(int argc, char *argv[]) {
   /*--- Load in the number of zones and spatial dimensions in the mesh file (if no config
    file is specified, default.cfg is used) ---*/
   
-  if (argc == 2){ strcpy(config_file_name,argv[1]); }
-  else{ strcpy(config_file_name, "default.cfg"); }
+  if (argc == 2) { strcpy(config_file_name,argv[1]); }
+  else { strcpy(config_file_name, "default.cfg"); }
     
 	/*--- Definition of the containers per zones ---*/
   
@@ -91,23 +91,18 @@ int main(int argc, char *argv[]) {
     
     CGeometry *geometry_aux = NULL;
     
+    /*--- All ranks process the grid and call ParMETIS for partitioning ---*/
     
-    if (rank == MASTER_NODE) {
-      
-      /*--- Read the grid using the master node ---*/
-      
-      geometry_aux = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
-            
-      /*--- Color the initial grid and set the send-receive domains ---*/
-      
-      geometry_aux->SetColorGrid(config_container[iZone]);
-      
-    }
+    geometry_aux = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
+    
+    /*--- Color the initial grid and set the send-receive domains (ParMETIS) ---*/
+    
+    geometry_aux->SetColorGrid_Parallel(config_container[iZone]);
     
     /*--- Allocate the memory of the current domain, and
      divide the grid between the nodes ---*/
     
-    geometry_container[iZone] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
+    geometry_container[iZone] = new CPhysicalGeometry(geometry_aux, config_container[iZone], 1);
     
     /*--- Deallocate the memory of geometry_aux ---*/
     

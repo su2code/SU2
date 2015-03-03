@@ -2,7 +2,7 @@
  * \file SU2_CFD.cpp
  * \brief Main file of the Computational Fluid Dynamics code
  * \author F. Palacios, T. Economon
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.3 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -46,7 +46,7 @@ int main(int argc, char *argv[]) {
   int size = SINGLE_NODE;
   
   /*--- MPI initialization, and buffer setting ---*/
-
+  
 #ifdef HAVE_MPI
   int *bptr, bl;
   MPI_Init(&argc,&argv);
@@ -73,11 +73,11 @@ int main(int argc, char *argv[]) {
   /*--- Load in the number of zones and spatial dimensions in the mesh file (If no config
    file is specified, default.cfg is used) ---*/
   
-  if (argc == 2){ strcpy(config_file_name,argv[1]); }
+  if (argc == 2) { strcpy(config_file_name,argv[1]); }
   else { strcpy(config_file_name, "default.cfg"); }
   
-  /*--- Read the name and format of the input mesh file to get from the mesh 
-   file the number of zones and dimensions from the numerical grid (required 
+  /*--- Read the name and format of the input mesh file to get from the mesh
+   file the number of zones and dimensions from the numerical grid (required
    for variables allocation)  ---*/
   
   CConfig *config = NULL;
@@ -114,40 +114,34 @@ int main(int argc, char *argv[]) {
   
   for (iZone = 0; iZone < nZone; iZone++) {
     
-      /*--- Definition of the configuration option class for all zones. In this
+    /*--- Definition of the configuration option class for all zones. In this
      constructor, the input configuration file is parsed and all options are
      read and stored. ---*/
     
     config_container[iZone] = new CConfig(config_file_name, SU2_CFD, iZone, nZone, nDim, VERB_HIGH);
     
     
-    /*--- Definition of the geometry class to store the primal grid in the 
+    /*--- Definition of the geometry class to store the primal grid in the
      partitioning process. ---*/
     
     CGeometry *geometry_aux = NULL;
     
-
-    if (rank == MASTER_NODE) {
-      
-      /*--- Read the grid using the master node ---*/
-      
-      geometry_aux = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
-      
-      /*--- Color the initial grid and set the send-receive domains ---*/
-      
-      geometry_aux->SetColorGrid(config_container[iZone]);
-      
-    }
+    /*--- All ranks process the grid and call ParMETIS for partitioning ---*/
+    
+    geometry_aux = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
+    
+    /*--- Color the initial grid and set the send-receive domains (ParMETIS) ---*/
+    
+    geometry_aux->SetColorGrid_Parallel(config_container[iZone]);
+    
+    /*--- Allocate the memory of the current domain, and divide the grid 
+     between the ranks. ---*/
     
     geometry_container[iZone] = new CGeometry *[config_container[iZone]->GetnMGLevels()+1];
-    
-    /*--- Allocate the memory of the current domain, and
-     divide the grid between the nodes ---*/
-    
-    geometry_container[iZone][MESH_0] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
+    geometry_container[iZone][MESH_0] = new CPhysicalGeometry(geometry_aux, config_container[iZone], 1);
     
     /*--- Deallocate the memory of geometry_aux ---*/
-
+    
     delete geometry_aux;
     
     /*--- Add the Send/Receive boundaries ---*/
@@ -317,7 +311,7 @@ int main(int argc, char *argv[]) {
                                   geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
     
     /*--- Read the target heat flux ---*/
-
+    
     if (config_container[ZONE_0]->GetInvDesign_HeatFlux() == YES)
       output->SetHeat_InverseDesign(solver_container[ZONE_0][MESH_0][FLOW_SOL],
                                     geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
@@ -408,9 +402,9 @@ int main(int argc, char *argv[]) {
     runtime = new CConfig(runtime_file_name, config_container[ZONE_0]);
     
     /*--- Update the convergence history file (serial and parallel computations). ---*/
-
+    
     output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container,
-                                   config_container, integration_container, false, UsedTime, ZONE_0);
+                                config_container, integration_container, false, UsedTime, ZONE_0);
     
     /*--- Evaluate the new CFL number (adaptive). ---*/
     
@@ -472,12 +466,12 @@ int main(int argc, char *argv[]) {
            surface solution, and surface comma-separated value files. ---*/
           
           output->SetResult_Files(solver_container, geometry_container, config_container, ExtIter, nZone);
-
+          
           /*--- Output a file with the forces breakdown. ---*/
           
           output->SetForces_Breakdown(geometry_container, solver_container,
                                       config_container, integration_container, ZONE_0);
-
+          
           /*--- Compute the forces at different sections. ---*/
           
           if (config_container[ZONE_0]->GetPlot_Section_Forces()) {
@@ -501,29 +495,29 @@ int main(int argc, char *argv[]) {
   
   if (rank == MASTER_NODE) {
     
-  /*--- Print out the number of non-physical points and reconstructions ---*/
+    /*--- Print out the number of non-physical points and reconstructions ---*/
     
-  if (config_container[ZONE_0]->GetNonphysical_Points() > 0)
-    cout << "Warning: there are " << config_container[ZONE_0]->GetNonphysical_Points() << " non-physical points in the solution." << endl;
-  if (config_container[ZONE_0]->GetNonphysical_Reconstr() > 0)
-    cout << "Warning: " << config_container[ZONE_0]->GetNonphysical_Reconstr() << " reconstructed states for upwinding are non-physical." << endl;
-  
-  /*--- Close the convergence history file. ---*/
+    if (config_container[ZONE_0]->GetNonphysical_Points() > 0)
+      cout << "Warning: there are " << config_container[ZONE_0]->GetNonphysical_Points() << " non-physical points in the solution." << endl;
+    if (config_container[ZONE_0]->GetNonphysical_Reconstr() > 0)
+      cout << "Warning: " << config_container[ZONE_0]->GetNonphysical_Reconstr() << " reconstructed states for upwinding are non-physical." << endl;
+    
+    /*--- Close the convergence history file. ---*/
     
     ConvHist_file.close();
     cout << "History file, closed." << endl;
   }
   
-//  /*--- Deallocate config container ---*/
-//  
-//  for (iZone = 0; iZone < nZone; iZone++) {
-//    if (config_container[iZone] != NULL) {
-//      delete config_container[iZone];
-//    }
-//  }
-//  if (config_container != NULL) delete[] config_container;
-
-
+  //  /*--- Deallocate config container ---*/
+  //
+  //  for (iZone = 0; iZone < nZone; iZone++) {
+  //    if (config_container[iZone] != NULL) {
+  //      delete config_container[iZone];
+  //    }
+  //  }
+  //  if (config_container != NULL) delete[] config_container;
+  
+  
   /*--- Synchronization point after a single solver iteration. Compute the
    wall clock time required. ---*/
   
@@ -553,4 +547,5 @@ int main(int argc, char *argv[]) {
 #endif
   
   return EXIT_SUCCESS;
+  
 }

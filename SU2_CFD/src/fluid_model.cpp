@@ -2,7 +2,7 @@
  * fluid_model.cpp
  * \brief Source of the main thermo-physical subroutines of the SU2 solvers.
  * \author S.Vitale, M.Pini, G.Gori, A.Guardone, P.Colonna
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.3 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -55,7 +55,7 @@ CFluidModel::~CFluidModel(void) {
 
   }
 
-void CFluidModel::SetLaminarViscosityModel (CConfig *config){
+void CFluidModel::SetLaminarViscosityModel (CConfig *config) {
 	switch (config->GetKind_ViscosityModel()) {
 
 	case CONSTANT_VISCOSITY:
@@ -68,7 +68,7 @@ void CFluidModel::SetLaminarViscosityModel (CConfig *config){
 	}
 }
 
-void CFluidModel::SetThermalConductivityModel (CConfig *config){
+void CFluidModel::SetThermalConductivityModel (CConfig *config) {
 	switch (config->GetKind_ConductivityModel()) {
 
 	case CONSTANT_CONDUCTIVITY:

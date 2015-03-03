@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for creating the geometrical structure.
  *        The subroutines and functions are in the <i>geometry_structure.cpp</i> file.
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.3 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -36,6 +36,11 @@
 #ifdef HAVE_METIS
   #include "metis.h"
 #endif
+#ifdef HAVE_PARMETIS
+extern "C" {
+#include "parmetis.h"
+}
+#endif
 #ifdef HAVE_CGNS
   #include "cgnslib.h"
 #endif
@@ -59,7 +64,7 @@ using namespace std;
  * \brief Parent class for defining the geometry of the problem (complete geometry, 
  *        multigrid agglomerated geometry, only boundary geometry, etc..)
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.3 "eagle"
  */
 class CGeometry {
 protected:
@@ -95,7 +100,6 @@ protected:
 	unsigned short nDim,	/*!< \brief Number of dimension of the problem. */
 	nZone,								/*!< \brief Number of zones in the problem. */
 	nMarker;				/*!< \brief Number of different markers of the mesh. */
-	bool FinestMGLevel; /*!< \brief Indicates whether the geometry class contains the finest (original) multigrid mesh. */
   unsigned long Max_GlobalPoint;  /*!< \brief Greater global point in the domain local structure. */
 
 public:
@@ -129,7 +133,20 @@ public:
 	CPrimalGrid*** newBound;            /*!< \brief Boundary vector for new periodic elements (primal grid information). */
 	unsigned long *nNewElem_Bound;			/*!< \brief Number of new periodic elements of the boundary. */
 
-	/*! 
+  //--------Parmetis variables-----
+  unsigned long * adjacency;
+  unsigned long * xadj;
+  unsigned long local_node;
+  unsigned long local_elem;
+  unsigned long xadj_size;
+  unsigned long adjacency_size;
+  unsigned long *starting_node;
+  unsigned long *ending_node;
+  unsigned long *npoint_procs;
+  unsigned long no_of_local_elements;
+  long *Global_to_local_elem;
+  
+	/*!
 	 * \brief Constructor of the class.
 	 */
 	CGeometry(void);
@@ -286,12 +303,6 @@ public:
 	 * \brief Get the number of elements in vtk fortmat.
 	 */
 	unsigned long GetMax_GlobalPoint(void);
-  
-	/*!
-	 * \brief Get boolean for whether this is the finest (original) multigrid mesh level.
-	 * \return <code>TRUE</code> if this is the finest multigrid mesh level; otherwise <code>FALSE</code>.
-	 */
-	bool GetFinestMGLevel(void);
 
 	/*! 
 	 * \brief A virtual function.
@@ -409,12 +420,6 @@ public:
 	 * \param[in] action - Allocate or not the new elements.		 
 	 */
 	virtual void SetBoundControlVolume(CConfig *config, unsigned short action);
-
-	/*! 
-	 * \brief A virtual member.
-	 * \param[in] config_filename - Name of the file where the tecplot information is going to be stored.
-	 */
-	virtual void SetTecPlot(char config_filename[MAX_STRING_SIZE]);
   
   /*!
 	 * \brief A virtual member.
@@ -456,6 +461,12 @@ public:
 	 * \param[in] config - Definition of the particular problem.		 
 	 */
 	virtual void SetColorGrid(CConfig *config);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void SetColorGrid_Parallel(CConfig *config);
   
   /*!
 	 * \brief A virtual member.
@@ -836,18 +847,20 @@ public:
  * \brief Class for reading a defining the primal grid which is read from the 
  *        grid file in .su2 format.
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.3 "eagle"
  */
 class CPhysicalGeometry : public CGeometry {
 
   long *Global_to_Local_Point;				/*!< \brief Global-local indexation for the points. */
-	unsigned long *Local_to_Global_Point;				/*!< \brief Local-global indexation for the points. */
+	long *Local_to_Global_Point;				/*!< \brief Local-global indexation for the points. */
 	unsigned short *Local_to_Global_Marker;	/*!< \brief Local to Global marker. */
 	unsigned short *Global_to_Local_Marker;	/*!< \brief Global to Local marker. */
-
+    unsigned long *adj_counter; /*!< \brief Adjacency counter. */
+    unsigned long **adjacent_elem; /*!< \brief Adjacency element list. */
+  
 public:
-
-	/*! 
+  
+	/*!
 	 * \brief Constructor of the class.
 	 */
 	CPhysicalGeometry(void);
@@ -875,6 +888,18 @@ public:
 	 * \param[in] val_nZone - Total number of domains in the grid file.
 	 */
   CPhysicalGeometry(CGeometry *geometry, CConfig *config);
+  
+  /*!
+   * \overload
+   * \brief Reads the geometry of the grid and adjust the boundary
+   *        conditions with the configuration file for parmetis version.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_mesh_filename - Name of the file with the grid information.
+   * \param[in] val_format - Format of the file with the grid information.
+   * \param[in] val_iZone - Domain to be read from the grid file.
+   * \param[in] val_nZone - Total number of domains in the grid file.
+   */
+  CPhysicalGeometry(CGeometry *geometry, CConfig *config, int options);
   
 	/*!
 	 * \brief Destructor of the class.
@@ -912,37 +937,27 @@ public:
 	unsigned short GetGlobal_to_Local_Marker(unsigned short val_imarker);
   
   /*!
-	 * \brief Reads the geometry of the grid and adjust the boundary
-	 *        conditions with the configuration file.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_mesh_filename - Name of the file with the grid information.
-	 * \param[in] val_format - Format of the file with the grid information.
-	 * \param[in] val_iZone - Domain to be read from the grid file.
-	 * \param[in] val_nZone - Total number of domains in the grid file.
-	 */
-	void Read_SU2_Format(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone);
-  
+   * \brief Reads the geometry of the grid and adjust the boundary
+   *        conditions with the configuration file in parallel (for parmetis).
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_mesh_filename - Name of the file with the grid information.
+   * \param[in] val_format - Format of the file with the grid information.
+   * \param[in] val_iZone - Domain to be read from the grid file.
+   * \param[in] val_nZone - Total number of domains in the grid file.
+   */
+  void Read_SU2_Format_Parallel(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone);
+    
+
   /*!
-	 * \brief Reads the geometry of the grid and adjust the boundary
-	 *        conditions with the configuration file.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_mesh_filename - Name of the file with the grid information.
-	 * \param[in] val_format - Format of the file with the grid information.
-	 * \param[in] val_iZone - Domain to be read from the grid file.
-	 * \param[in] val_nZone - Total number of domains in the grid file.
-	 */
-	void Read_CGNS_Format(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone);
-  
-  /*!
-	 * \brief Reads the geometry of the grid and adjust the boundary
-	 *        conditions with the configuration file.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_mesh_filename - Name of the file with the grid information.
-	 * \param[in] val_format - Format of the file with the grid information.
-	 * \param[in] val_iZone - Domain to be read from the grid file.
-	 * \param[in] val_nZone - Total number of domains in the grid file.
-	 */
-	void Read_NETCDF_Format(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone);
+   * \brief Reads the geometry of the grid and adjust the boundary
+   *        conditions with the configuration file in parallel (for parmetis).
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_mesh_filename - Name of the file with the grid information.
+   * \param[in] val_format - Format of the file with the grid information.
+   * \param[in] val_iZone - Domain to be read from the grid file.
+   * \param[in] val_nZone - Total number of domains in the grid file.
+   */
+  void Read_CGNS_Format_Parallel(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone);
 
 	/*! 
 	 * \brief Find repeated nodes between two elements to identify the common face.
@@ -1092,10 +1107,16 @@ public:
 	void Check_BoundElem_Orientation(CConfig *config);
 
 	/*! 
-	 * \brief Set the domains for grid grid partitioning.
+	 * \brief Set the domains for grid grid partitioning using METIS.
 	 * \param[in] config - Definition of the particular problem.		 
 	 */
 	void SetColorGrid(CConfig *config);
+  
+  /*!
+   * \brief Set the domains for grid grid partitioning using ParMETIS.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetColorGrid_Parallel(CConfig *config);
   
 	/*!
 	 * \brief Set the rotational velocity at each node.
@@ -1347,7 +1368,7 @@ public:
  * \brief Class for defining the multigrid geometry, the main delicated part is the 
  *        agglomeration stage, which is done in the declaration.
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.3 "eagle"
  */
 class CMultiGridGeometry : public CGeometry {
 
@@ -1516,7 +1537,7 @@ public:
  * \class CPeriodicGeometry
  * \brief Class for defining a periodic boundary condition.
  * \author T. Economon, F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.3 "eagle"
  */
 class CPeriodicGeometry : public CGeometry {
 	CPrimalGrid*** newBoundPer;            /*!< \brief Boundary vector for new periodic elements (primal grid information). */
@@ -1548,7 +1569,7 @@ public:
 	 * \param[in] config_filename - Name of the file where the Tecplot 
 	 *            information is going to be stored.
 	 */
-	void SetTecPlot(char config_filename[MAX_STRING_SIZE]);
+	void SetTecPlot(char config_filename[MAX_STRING_SIZE], bool new_file);
 
 	/*! 
 	 * \brief Write the .su2 file.
@@ -1562,7 +1583,7 @@ public:
  * \struct CMultiGridQueue
  * \brief Class for a multigrid queue system
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.3 "eagle"
  * \date Aug 12, 2012
  */
 class CMultiGridQueue {

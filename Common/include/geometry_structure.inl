@@ -2,7 +2,7 @@
  * \file geometry_structure.inl
  * \brief In-Line subroutines of the <i>geometry_structure.hpp</i> file.
  * \author F. Palacios
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.3 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -75,6 +75,8 @@ inline void CGeometry::Check_BoundElem_Orientation(CConfig *config) { }
 
 inline void CGeometry::SetColorGrid(CConfig *config) { }
 
+inline void CGeometry::SetColorGrid_Parallel(CConfig *config) { }
+
 inline void CGeometry::DivideConnectivity(CConfig *config, unsigned short Elem_Type) { }
 
 inline void CGeometry::SetRotationalVelocity(CConfig *config) { }
@@ -122,8 +124,6 @@ inline unsigned short CGeometry::GetnDim(void) { return nDim; }
 inline unsigned short CGeometry::GetnZone(void) { return nZone; }
 
 inline unsigned short CGeometry::GetnMarker(void) { return nMarker; }
-
-inline bool CGeometry::GetFinestMGLevel(void) { return FinestMGLevel; }
 
 inline string CGeometry::GetMarker_Tag(unsigned short val_marker) { return Tag_to_Marker[val_marker]; }
 
@@ -178,8 +178,6 @@ inline void CGeometry::MatchZone(CConfig *config, CGeometry *geometry_donor, CCo
 inline void CGeometry::SetBoundControlVolume(CConfig *config, unsigned short action) { }
 
 inline void CGeometry::SetBoundControlVolume(CConfig *config, CGeometry *geometry, unsigned short action) { }
-
-inline void CGeometry::SetTecPlot(char config_filename[MAX_STRING_SIZE]) { }
 
 inline void CGeometry::SetTecPlot(char config_filename[MAX_STRING_SIZE], bool new_file) { }
 

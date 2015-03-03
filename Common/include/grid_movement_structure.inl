@@ -2,7 +2,7 @@
  * \file grid_movement_structure.inl
  * \brief In-Line subroutines of the <i>grid_movement_structure.hpp</i> file.
  * \author F. Palacios, T. Economon, S. Padron
- * \version 3.2.8 "eagle"
+ * \version 3.2.8.3 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -31,7 +31,7 @@
  
 #pragma once
 
-inline void CGridMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *config)  { }
+inline void CGridMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *config) { }
 
 inline unsigned short CSurfaceMovement::GetnLevel(void) { return nLevel; }
 
@@ -93,15 +93,15 @@ inline double *CFreeFormDefBox::Get_ParametricCoord(unsigned long val_iSurfacePo
 																																										
 inline unsigned long CFreeFormDefBox::GetnSurfacePoint(void) { return PointIndex.size(); }
 
-inline void CFreeFormDefBox::SetnCornerPoints(unsigned short val_ncornerpoints){ nCornerPoints = val_ncornerpoints; }
+inline void CFreeFormDefBox::SetnCornerPoints(unsigned short val_ncornerpoints) { nCornerPoints = val_ncornerpoints; }
 
-inline unsigned short CFreeFormDefBox::GetnCornerPoints(void){ return nCornerPoints; }
+inline unsigned short CFreeFormDefBox::GetnCornerPoints(void) { return nCornerPoints; }
 
-inline unsigned short CFreeFormDefBox::GetnControlPoints(void){ return nControlPoints; }
+inline unsigned short CFreeFormDefBox::GetnControlPoints(void) { return nControlPoints; }
 
-inline void CFreeFormDefBox::SetnControlPoints(void){ nControlPoints = lOrder*mOrder*nOrder; }
+inline void CFreeFormDefBox::SetnControlPoints(void) { nControlPoints = lOrder*mOrder*nOrder; }
 
-inline unsigned long CFreeFormDefBox::GetnSurfacePoints(void){ return 0; }
+inline unsigned long CFreeFormDefBox::GetnSurfacePoints(void) { return 0; }
 
 inline double *CFreeFormDefBox::GetCoordCornerPoints(unsigned short val_icornerpoints) { return Coord_Corner_Points[val_icornerpoints]; }
 
