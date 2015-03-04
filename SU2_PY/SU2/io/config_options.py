@@ -1,3 +1,35 @@
+## \file config_options.py
+#  \brief python package for config
+#  \author T. Lukaczyk, F. Palacios
+#  \version 3.2.8.3 "eagle"
+#
+# SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
+#                      Dr. Thomas D. Economon (economon@stanford.edu).
+#
+# SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+#                 Prof. Piero Colonna's group at Delft University of Technology.
+#                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+#                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+#                 Prof. Rafael Palacios' group at Imperial College London.
+#
+# Copyright (C) 2012-2015 SU2, the open-source CFD code.
+#
+# SU2 is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+# ----------------------------------------------------------------------
+#  Imports
+# ----------------------------------------------------------------------
 
 from ..util import ordered_bunch
 
@@ -29,8 +61,6 @@ class MathProblem(Option):
         super(MathProblem,self).__set__(newval)
 
 #: class MathProblem
-
-
 
 class DEFINITION_DV(ordered_bunch):
     """ SU2.io.config.DEFINITION_DV()
@@ -79,6 +109,8 @@ class DEFINITION_DV(ordered_bunch):
         self.FFDTAG.extend(new_dvs['FFDTAG'])
         self.PARAM. extend(new_dvs['PARAM'])
 
+#: class DEFINITION_DV
+
 class DV_KIND(ordered_bunch):
   """ SU2.io.config.DV_KIND()
     
@@ -116,3 +148,5 @@ class DV_KIND(ordered_bunch):
     assert isinstance(new_dvs,DV_KIND) , 'input must be of type DV_KIND'
     self.FFDTAG.extend(new_dvs['FFDTAG'])
     self.PARAM. extend(new_dvs['PARAM'])
+
+#: class DV_KIND

@@ -1,10 +1,17 @@
 /*!
  * \file integration_structure.cpp
- * \brief This subroutine includes the space and time integration structure.
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.4 "eagle"
+ * \brief This subroutine includes the space and time integration structure
+ * \author F. Palacios, T. Economon
+ * \version 3.2.8.3 "eagle"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ *
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -29,7 +36,6 @@ CIntegration::CIntegration(CConfig *config) {
 	New_Func = 0;
 	Cauchy_Counter = 0;
 	Convergence = false;
-	Convergence_OneShot = false;
 	Convergence_FullMG = false;
 	Cauchy_Serie = new double [config->GetCauchy_Elems()+1];
 }
@@ -97,12 +103,15 @@ void CIntegration::Space_Integration(CGeometry *geometry,
       case OUTLET_FLOW:
         solver_container[MainSolver]->BC_Outlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
         break;
+      case SUPERSONIC_OUTLET:
+        solver_container[MainSolver]->BC_Supersonic_Outlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+        break;
       case RIEMANN_BOUNDARY:
-      	if(MainSolver == FLOW_SOL)
+      	if (MainSolver == FLOW_SOL)
       		solver_container[MainSolver]->BC_Riemann(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
-      	else if(MainSolver == TURB_SOL && config->GetKind_Data_Riemann(config->GetMarker_All_TagBound(iMarker))==TOTAL_CONDITIONS_PT)
+      	else if (MainSolver == TURB_SOL && config->GetKind_Data_Riemann(config->GetMarker_All_TagBound(iMarker))==TOTAL_CONDITIONS_PT)
       		solver_container[MainSolver]->BC_Inlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
-      	else if(MainSolver == TURB_SOL && config->GetKind_Data_Riemann(config->GetMarker_All_TagBound(iMarker))==STATIC_PRESSURE)
+      	else if (MainSolver == TURB_SOL && config->GetKind_Data_Riemann(config->GetMarker_All_TagBound(iMarker))==STATIC_PRESSURE)
       		solver_container[MainSolver]->BC_Outlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
       	break;
       case FAR_FIELD:
@@ -188,8 +197,8 @@ void CIntegration::Adjoint_Setup(CGeometry ***geometry, CSolver ****solver_conta
 	unsigned short iMGLevel;
   
 	if ( ( ((RunTime_EqSystem == RUNTIME_ADJFLOW_SYS) ||
-          (RunTime_EqSystem == RUNTIME_LINFLOW_SYS)) && (Iteration == 0) ) ){
-		for (iMGLevel = 0; iMGLevel <= config[iZone]->GetMGLevels(); iMGLevel++) {
+          (RunTime_EqSystem == RUNTIME_LINFLOW_SYS)) && (Iteration == 0) ) ) {
+		for (iMGLevel = 0; iMGLevel <= config[iZone]->GetnMGLevels(); iMGLevel++) {
       
 			/*--- Set the time step in all the MG levels ---*/
 			solver_container[iZone][iMGLevel][FLOW_SOL]->SetTime_Step(geometry[iZone][iMGLevel], solver_container[iZone][iMGLevel], config[iZone], iMGLevel, Iteration);
@@ -201,7 +210,7 @@ void CIntegration::Adjoint_Setup(CGeometry ***geometry, CSolver ****solver_conta
 			solver_container[iZone][iMGLevel][FLOW_SOL]->SetTotal_CQ(solver_container[iZone][MESH_0][FLOW_SOL]->GetTotal_CQ());
       
 			/*--- Restrict solution and gradients to the coarse levels ---*/
-			if (iMGLevel != config[iZone]->GetMGLevels()) {
+			if (iMGLevel != config[iZone]->GetnMGLevels()) {
 				SetRestricted_Solution(RUNTIME_FLOW_SYS, solver_container[iZone][iMGLevel][FLOW_SOL], solver_container[iZone][iMGLevel+1][FLOW_SOL],
                                geometry[iZone][iMGLevel], geometry[iZone][iMGLevel+1], config[iZone]);
 				SetRestricted_Gradient(RUNTIME_FLOW_SYS, solver_container[iZone][iMGLevel][FLOW_SOL], solver_container[iZone][iMGLevel+1][FLOW_SOL],
@@ -210,7 +219,7 @@ void CIntegration::Adjoint_Setup(CGeometry ***geometry, CSolver ****solver_conta
       
 		}
   } else if ((RunTime_EqSystem == RUNTIME_ADJTNE2_SYS) && (Iteration == 0)) {
-    for (iMGLevel = 0; iMGLevel <= config[iZone]->GetMGLevels(); iMGLevel++) {
+    for (iMGLevel = 0; iMGLevel <= config[iZone]->GetnMGLevels(); iMGLevel++) {
       
 			/*--- Set the time step in all the MG levels ---*/
 			solver_container[iZone][iMGLevel][TNE2_SOL]->SetTime_Step(geometry[iZone][iMGLevel],
@@ -224,7 +233,7 @@ void CIntegration::Adjoint_Setup(CGeometry ***geometry, CSolver ****solver_conta
 			solver_container[iZone][iMGLevel][TNE2_SOL]->SetTotal_CQ(solver_container[iZone][MESH_0][TNE2_SOL]->GetTotal_CQ());
       
 			/*--- Restrict solution and gradients to the coarse levels ---*/
-			if (iMGLevel != config[iZone]->GetMGLevels()) {
+			if (iMGLevel != config[iZone]->GetnMGLevels()) {
 				SetRestricted_Solution(RUNTIME_TNE2_SYS, solver_container[iZone][iMGLevel][TNE2_SOL], solver_container[iZone][iMGLevel+1][TNE2_SOL],
                                geometry[iZone][iMGLevel], geometry[iZone][iMGLevel+1], config[iZone]);
 				SetRestricted_Gradient(RUNTIME_TNE2_SYS, solver_container[iZone][iMGLevel][TNE2_SOL], solver_container[iZone][iMGLevel+1][TNE2_SOL],
@@ -255,142 +264,147 @@ void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_contai
   
 }
 
-void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, unsigned long Iteration, double monitor) {
+void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, unsigned long Iteration,
+                                          double monitor, unsigned short iMesh) {
   
   unsigned short iCounter;
   int rank = MASTER_NODE;
-
+  
+  /*--- Initialize some variables for controlling the output frequency. ---*/
+  
+  bool DualTime_Iteration = false;
+  unsigned long iIntIter = config->GetIntIter();
+  unsigned long iExtIter = config->GetExtIter();
+  bool Unsteady = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+                   (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool In_NoDualTime = (!DualTime_Iteration && (iExtIter % config->GetWrt_Con_Freq() == 0));
+  bool In_DualTime_0 = (DualTime_Iteration && (iIntIter % config->GetWrt_Con_Freq_DualTime() == 0));
+  bool In_DualTime_1 = (!DualTime_Iteration && Unsteady);
+  bool In_DualTime_2 = (Unsteady && DualTime_Iteration && (iExtIter % config->GetWrt_Con_Freq() == 0));
+  bool In_DualTime_3 = (Unsteady && !DualTime_Iteration && (iExtIter % config->GetWrt_Con_Freq() == 0));
+  
+  if ((In_NoDualTime || In_DualTime_0 || In_DualTime_1) && (In_NoDualTime || In_DualTime_2 || In_DualTime_3)) {
+    
 #ifdef HAVE_MPI
-  int size;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
+    int size;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
-  
-	bool Already_Converged = Convergence;
-	
-  /*--- Cauchi based convergence criteria ---*/
-  
-	if (config->GetConvCriteria() == CAUCHY) {
     
-    /*--- Initialize at the fist iteration ---*/
+    bool Already_Converged = Convergence;
     
-		if (Iteration  == 0) {
-			Cauchy_Value = 0.0;
-			Cauchy_Counter = 0;
-			for (iCounter = 0; iCounter < config->GetCauchy_Elems(); iCounter++)
-				Cauchy_Serie[iCounter] = 0.0;
-		}
+    /*--- Cauchi based convergence criteria ---*/
     
-		Old_Func = New_Func;
-		New_Func = monitor;
-		Cauchy_Func = fabs(New_Func - Old_Func);
+    if (config->GetConvCriteria() == CAUCHY) {
+      
+      /*--- Initialize at the fist iteration ---*/
+      
+      if (Iteration  == 0) {
+        Cauchy_Value = 0.0;
+        Cauchy_Counter = 0;
+        for (iCounter = 0; iCounter < config->GetCauchy_Elems(); iCounter++)
+        Cauchy_Serie[iCounter] = 0.0;
+      }
+      
+      Old_Func = New_Func;
+      New_Func = monitor;
+      Cauchy_Func = fabs(New_Func - Old_Func);
+      
+      Cauchy_Serie[Cauchy_Counter] = Cauchy_Func;
+      Cauchy_Counter++;
+      
+      if (Cauchy_Counter == config->GetCauchy_Elems()) Cauchy_Counter = 0;
+      
+      Cauchy_Value = 1;
+      if (Iteration  >= config->GetCauchy_Elems()) {
+        Cauchy_Value = 0;
+        for (iCounter = 0; iCounter < config->GetCauchy_Elems(); iCounter++)
+        Cauchy_Value += Cauchy_Serie[iCounter];
+      }
+      
+      if (Cauchy_Value >= config->GetCauchy_Eps()) { Convergence = false; Convergence_FullMG = false; }
+      else { Convergence = true; Convergence_FullMG = true; }
+      
+    }
     
-		Cauchy_Serie[Cauchy_Counter] = Cauchy_Func;
-		Cauchy_Counter++;
+    /*--- Residual based convergence criteria ---*/
     
-		if (Cauchy_Counter == config->GetCauchy_Elems()) Cauchy_Counter = 0;
+    if (config->GetConvCriteria() == RESIDUAL) {
+      
+      /*--- Compute the initial value ---*/
+      
+      if (Iteration == config->GetStartConv_Iter() ) InitResidual = monitor;
+      if (monitor > InitResidual) InitResidual = monitor;
+      
+      /*--- Check the convergence ---*/
+      
+      if (((fabs(InitResidual - monitor) >= config->GetOrderMagResidual()) && (monitor < InitResidual))  ||
+          (monitor <= config->GetMinLogResidual())) { Convergence = true; Convergence_FullMG = true; }
+      else { Convergence = false; Convergence_FullMG = false; }
+      
+    }
     
-		Cauchy_Value = 1;
-		if (Iteration  >= config->GetCauchy_Elems()) {
-			Cauchy_Value = 0;
-			for (iCounter = 0; iCounter < config->GetCauchy_Elems(); iCounter++)
-				Cauchy_Value += Cauchy_Serie[iCounter];
-		}
+    /*--- Do not apply any convergence criteria of the number
+     of iterations is less than a particular value ---*/
     
-		if (Cauchy_Value >= config->GetCauchy_Eps()) Convergence = false;
-		else Convergence = true;
+    if (Iteration < config->GetStartConv_Iter()) {
+      Convergence = false;
+      Convergence_FullMG = false;
+    }
     
-		if (Cauchy_Value >= config->GetCauchy_Eps_OneShot()) Convergence_OneShot = false;
-		else Convergence_OneShot = true;
+    if (Already_Converged) { Convergence = true; Convergence_FullMG = true; }
     
-		if (Cauchy_Value >= config->GetCauchy_Eps_FullMG()) Convergence_FullMG = false;
-		else Convergence_FullMG = true;
-	}
-  
-  /*--- Residual based convergence criteria ---*/
-  
-  if (config->GetConvCriteria() == RESIDUAL) {
     
-    /*--- Compute the initial value ---*/
+    /*--- Apply the same convergence criteria to all the processors ---*/
     
-    if (Iteration == config->GetStartConv_Iter() ) InitResidual = monitor;
-    if (monitor > InitResidual) InitResidual = monitor;
-    
-    /*--- Check the convergence ---*/
-    
-    if (((fabs(InitResidual - monitor) >= config->GetOrderMagResidual()) && (monitor < InitResidual))  ||
-        (monitor <= config->GetMinLogResidual())) Convergence = true;
-    else Convergence = false;
-    
-  }
-  
-  /*--- Do not apply any convergence criteria of the number
-   of iterations is less than a particular value ---*/
-  
-	if (Iteration < config->GetStartConv_Iter()) {
-		Convergence = false;
-		Convergence_OneShot = false;
-		Convergence_FullMG = false;
-	}
-  
-	if (Already_Converged) Convergence = true;
-  
-  
-  /*--- Apply the same convergence criteria to all the processors ---*/
-  
 #ifdef HAVE_MPI
-  
-  unsigned short *sbuf_conv = NULL, *rbuf_conv = NULL;
-  sbuf_conv = new unsigned short[1]; sbuf_conv[0] = 0;
-  rbuf_conv = new unsigned short[1]; rbuf_conv[0] = 0;
-  
-  /*--- Convergence criteria ---*/
-  
-  sbuf_conv[0] = Convergence;
-  MPI_Reduce(sbuf_conv, rbuf_conv, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
-  MPI_Barrier(MPI_COMM_WORLD);
-
-  /*-- Compute global convergence criteria in the master node --*/
-  
-  sbuf_conv[0] = 0;
-  if (rank == MASTER_NODE) {
-    if (rbuf_conv[0] == size) sbuf_conv[0] = 1;
-    else sbuf_conv[0] = 0;
-  }
-
-  MPI_Bcast(sbuf_conv, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
-  
-  if (sbuf_conv[0] == 1) Convergence = true;
-  else Convergence = false;
-  
-  delete [] sbuf_conv;
-  delete [] rbuf_conv;
-  
+    
+    unsigned short *sbuf_conv = NULL, *rbuf_conv = NULL;
+    sbuf_conv = new unsigned short[1]; sbuf_conv[0] = 0;
+    rbuf_conv = new unsigned short[1]; rbuf_conv[0] = 0;
+    
+    /*--- Convergence criteria ---*/
+    
+    sbuf_conv[0] = Convergence;
+    MPI_Reduce(sbuf_conv, rbuf_conv, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+    
+    /*-- Compute global convergence criteria in the master node --*/
+    
+    sbuf_conv[0] = 0;
+    if (rank == MASTER_NODE) {
+      if (rbuf_conv[0] == size) sbuf_conv[0] = 1;
+      else sbuf_conv[0] = 0;
+    }
+    
+    MPI_Bcast(sbuf_conv, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
+    
+    if (sbuf_conv[0] == 1) { Convergence = true; Convergence_FullMG = true; }
+    else { Convergence = false; Convergence_FullMG = false; }
+    
+    delete [] sbuf_conv;
+    delete [] rbuf_conv;
+    
 #endif
-  
-	/*--- Stop the simulation in case a nan appears, do not save the solution ---*/
-  
-	if (monitor != monitor) {
     
-    if (rank == MASTER_NODE)
-      cout << "\n !!! Error: NaNs detected in solution. Now exiting... !!! \n" << endl;
+    /*--- Stop the simulation in case a nan appears, do not save the solution ---*/
     
+    if (monitor != monitor) {
+      if (rank == MASTER_NODE)
+      cout << "\n !!! Error: SU2 has diverged. Now exiting... !!! \n" << endl;
 #ifndef HAVE_MPI
-		exit(EXIT_DIVERGENCE);
+      exit(EXIT_DIVERGENCE);
 #else
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Abort(MPI_COMM_WORLD,1);
 #endif
+    }
     
-	}
-  
-#ifdef HAVE_MPI
-  MPI_Barrier(MPI_COMM_WORLD);
-#endif
+    if (config->GetFinestMesh() != MESH_0 ) Convergence = false;
+    
+  }
   
 }
 
-void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CConfig *config) {
+void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CConfig *config, unsigned short iMesh) {
 	unsigned long iPoint;
   
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
@@ -408,7 +422,7 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
 	}
   
   /*--- Store old aeroelastic solutions ---*/
-  if (config->GetGrid_Movement() && config->GetAeroelastic_Simulation() && geometry->GetFinestMGLevel()) {
+  if (config->GetGrid_Movement() && config->GetAeroelastic_Simulation() && (iMesh == MESH_0)) {
     config->SetAeroelastic_n1();
     config->SetAeroelastic_n();
     
@@ -448,7 +462,6 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
       pitch  = config->GetAeroelastic_pitch(iMarker_Monitoring);
       
       /*--- Gather the data on the master node. ---*/
-      MPI_Barrier(MPI_COMM_WORLD);
       MPI_Gather(&plunge, 1, MPI_DOUBLE, plunge_all, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
       MPI_Gather(&pitch, 1, MPI_DOUBLE, pitch_all, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
       MPI_Gather(&owner, 1, MPI_UNSIGNED_LONG, owner_all, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);

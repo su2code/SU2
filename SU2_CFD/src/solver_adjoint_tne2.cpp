@@ -1,23 +1,32 @@
 /*!
- * \file solution_adjoint_mean.cpp
+ * \file solution_adjoint_tne2.cpp
  * \brief Main subrotuines for solving adjoint problems (Euler, Navier-Stokes, etc.).
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.4 "eagle"
+ * \author S. Copeland
+ * \version 3.2.8.3 "eagle"
  *
- * Copyright (C) 2012 Aerospace Design Laboratory
+ * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
  *
- * This program is distributed in the hope that it will be useful,
+ * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ *
+ * SU2 is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * SU2 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include "../include/solver_structure.hpp"
@@ -207,7 +216,7 @@ CAdjTNE2EulerSolver::CAdjTNE2EulerSolver(CGeometry *geometry, CConfig *config, u
   PsiE_Inf   = 0.0;
   PsiEve_Inf = 0.0;
   
-	if (!restart || geometry->GetFinestMGLevel() == false) {
+	if (!restart || (iMesh != MESH_0)) {
 		/*--- Restart the solution from infinity ---*/
 		for (iPoint = 0; iPoint < nPoint; iPoint++)
 			node[iPoint] = new CAdjTNE2EulerVariable(PsiRho_Inf, Phi_Inf, PsiE_Inf, PsiEve_Inf, nDim, nVar, config);
@@ -257,11 +266,11 @@ CAdjTNE2EulerSolver::CAdjTNE2EulerSolver(CGeometry *geometry, CConfig *config, u
 		long *Global2Local;
 		Global2Local = new long[geometry->GetGlobal_nPointDomain()];
 		/*--- First, set all indices to a negative value by default ---*/
-		for(iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
+		for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
 			Global2Local[iPoint] = -1;
 		}
 		/*--- Now fill array with the transform values only for local points ---*/
-		for(iPoint = 0; iPoint < nPointDomain; iPoint++) {
+		for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 			Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
 		}
     
@@ -295,7 +304,7 @@ CAdjTNE2EulerSolver::CAdjTNE2EulerSolver(CGeometry *geometry, CConfig *config, u
 		/*--- Instantiate the variable class with an arbitrary solution
      at any halo/periodic nodes. The initial solution can be arbitrary,
      because a send/recv is performed immediately in the solver. ---*/
-		for(iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
+		for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
 			node[iPoint] = new CAdjTNE2EulerVariable(Solution, nDim, nVar, config);
 		}
     
@@ -1035,7 +1044,7 @@ void CAdjTNE2EulerSolver::SetForceProj_Vector(CGeometry *geometry,
 	for (iMarker = 0; iMarker < nMarker; iMarker++)
 		if ((config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) &&
         (config->GetMarker_All_Monitoring(iMarker) == YES))
-			for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         
 				x = geometry->node[iPoint]->GetCoord(0);
@@ -1146,7 +1155,7 @@ void CAdjTNE2EulerSolver::SetInitialCondition(CGeometry **geometry,
    all the multigrid levels, this is important with the dual time strategy ---*/
   if (restart) {
     Solution = new double[nVar];
-    for (iMesh = 1; iMesh <= config->GetMGLevels(); iMesh++) {
+    for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
       for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
         Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
         for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
@@ -1387,7 +1396,7 @@ void CAdjTNE2EulerSolver::Upwind_Residual(CGeometry *geometry,
   numerics->SetRhoCvveIndex( solver_container[TNE2_SOL]->node[0]->GetRhoCvveIndex() );
   
   /*--- Loop over edges and calculate convective fluxes ---*/
-	for(iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+	for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     
 		/*--- Retrieve node numbers and pass edge normal to CNumerics ---*/
 		iPoint = geometry->edge[iEdge]->GetNode(0);
@@ -1416,7 +1425,7 @@ void CAdjTNE2EulerSolver::Upwind_Residual(CGeometry *geometry,
     numerics->SetAdjointVar(Psi_i, Psi_j);    
     
 		/*--- High order reconstruction using MUSCL strategy ---*/
-    if (second_order){
+    if (second_order) {
       for (iDim = 0; iDim < nDim; iDim++) {
         Vector_i[iDim] = 0.5*(  geometry->node[jPoint]->GetCoord(iDim)
                               - geometry->node[iPoint]->GetCoord(iDim));
@@ -1796,7 +1805,7 @@ void CAdjTNE2EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry,
   
 	for (iPoint = 0; iPoint < nPointDomain; iPoint++)
 		for (iVar = 0; iVar < nVar; iVar++) {
-			node[iPoint]->AddSolution(iVar, config->GetLinear_Solver_Relax()*LinSysSol[iPoint*nVar+iVar]);
+			node[iPoint]->AddSolution(iVar, LinSysSol[iPoint*nVar+iVar]);
     }
   
   /*--- MPI solution ---*/
@@ -2571,7 +2580,7 @@ CAdjTNE2NSSolver::CAdjTNE2NSSolver(CGeometry *geometry,
     PsiEve_Inf = 0.0;
   }
   
-	if (!restart || geometry->GetFinestMGLevel() == false) {
+	if (!restart || (iMesh != MESH_0)) {
 		/*--- Restart the solution from infinity ---*/
 		for (iPoint = 0; iPoint < nPoint; iPoint++)
 			node[iPoint] = new CAdjTNE2NSVariable(PsiRho_Inf, Phi_Inf,
@@ -2623,11 +2632,11 @@ CAdjTNE2NSSolver::CAdjTNE2NSSolver(CGeometry *geometry,
 		long *Global2Local;
 		Global2Local = new long[geometry->GetGlobal_nPointDomain()];
 		/*--- First, set all indices to a negative value by default ---*/
-		for(iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
+		for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
 			Global2Local[iPoint] = -1;
 		}
 		/*--- Now fill array with the transform values only for local points ---*/
-		for(iPoint = 0; iPoint < nPointDomain; iPoint++) {
+		for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 			Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
 		}
     
@@ -2660,7 +2669,7 @@ CAdjTNE2NSSolver::CAdjTNE2NSSolver(CGeometry *geometry,
 		/*--- Instantiate the variable class with an arbitrary solution
      at any halo/periodic nodes. The initial solution can be arbitrary,
      because a send/recv is performed immediately in the solver. ---*/
-		for(iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
+		for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
 			node[iPoint] = new CAdjNSVariable(Solution, nDim, nVar, config);
 		}
     

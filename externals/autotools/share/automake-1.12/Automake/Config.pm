@@ -32,7 +32,7 @@ our $PACKAGE = 'automake';
 our $PACKAGE_BUGREPORT = 'bug-automake@gnu.org';
 our $VERSION = '1.12.5';
 our $RELEASE_YEAR = '2012';
-our $libdir = '/home/tvanderstelt/Work/SU2/externals/autotools/share/automake-1.12';
+our $libdir = '/home/salvovitale/SU2/externals/autotools/share/automake-1.12';
 our $perl_threads = 1;
 
 1;

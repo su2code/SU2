@@ -1,10 +1,19 @@
 /*!
  * \file numerics_structure.inl
  * \brief In-Line subroutines of the <i>numerics_structure.hpp</i> file.
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.4 "eagle"
+ * \author F. Palacios, T. Economon
+ * \version 3.2.8.3 "eagle"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ *
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
+ *
+ * Copyright (C) 2012-2015 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -152,9 +161,17 @@ inline void CNumerics::SetVelocity2_Inf(double velocity2) {
 	vel2_inf = velocity2;
 }
 
-inline void CNumerics::SetTimeStep(double val_timestep) {TimeStep = val_timestep;}
+inline void CNumerics::SetVorticity(double *val_vorticity_i, double *val_vorticity_j) {
+  Vorticity_i = val_vorticity_i;
+  Vorticity_j = val_vorticity_j;
+}
 
-inline void CNumerics::SetElec_Cond() {}
+inline void CNumerics::SetStrainMag(double val_strainmag_i, double val_strainmag_j) {
+  StrainMag_i = val_strainmag_i;
+  StrainMag_j = val_strainmag_j;
+}
+
+inline void CNumerics::SetTimeStep(double val_timestep) {TimeStep = val_timestep;}
 
 inline void CNumerics::SetLaminarViscosity(double val_lam_viscosity_i, double val_lam_viscosity_j) {
 	Laminar_Viscosity_i = val_lam_viscosity_i;
@@ -177,8 +194,8 @@ inline void CNumerics::SetDiffusionCoeff(double* val_diffusioncoeff_i, double* v
 }
 
 inline void CNumerics::SetEddyViscosity(double val_eddy_viscosity_i, double val_eddy_viscosity_j) {
-	Eddy_Viscosity_i=val_eddy_viscosity_i;
-	Eddy_Viscosity_j=val_eddy_viscosity_j;
+	Eddy_Viscosity_i = val_eddy_viscosity_i;
+	Eddy_Viscosity_j = val_eddy_viscosity_j;
 }
 
 inline void CNumerics::SetIntermittency(double intermittency_in) { }
@@ -258,6 +275,11 @@ inline void CNumerics::SetLevelSetVarGradient(double **val_levelsetvar_grad_i, d
 inline void CNumerics::SetPrimVarGradient(double **val_primvar_grad_i, double **val_primvar_grad_j) {
 	PrimVar_Grad_i = val_primvar_grad_i;
 	PrimVar_Grad_j = val_primvar_grad_j;
+}
+
+inline void CNumerics::SetPrimVarLimiter(double *val_primvar_lim_i, double *val_primvar_lim_j) {
+  PrimVar_Lim_i = val_primvar_lim_i;
+  PrimVar_Lim_j = val_primvar_lim_j;
 }
 
 inline void CNumerics::SetConsVarGradient(double **val_consvar_grad_i, double **val_consvar_grad_j) {
@@ -376,22 +398,19 @@ inline void CNumerics::SetNormal(double *val_normal) { Normal = val_normal; }
 
 inline void CNumerics::SetVolume(double val_volume) { Volume = val_volume; }
 
-inline void CSourcePieceWise_TurbSST::SetF1blending(double val_F1_i, double val_F1_j){ 
+inline void CSourcePieceWise_TurbSST::SetF1blending(double val_F1_i, double val_F1_j) { 
 	F1_i = val_F1_i; 
 	F1_j = val_F1_j;
 }
 
-inline void CSourcePieceWise_TurbSST::SetF2blending(double val_F2_i, double val_F2_j){ 
+inline void CSourcePieceWise_TurbSST::SetF2blending(double val_F2_i, double val_F2_j) { 
 	F2_i = val_F2_i; 
 	F2_j = val_F2_j;
 }
 
-inline void CSourcePieceWise_TurbSST::SetStrainMag(double val_StrainMag_i, double val_StrainMag_j){
-	StrainMag = val_StrainMag_i;
-}
-
-inline void CSourcePieceWise_TurbSST::SetCrossDiff(double val_CDkw_i, double val_CDkw_j){
-	CDkw = val_CDkw_i;
+inline void CSourcePieceWise_TurbSST::SetCrossDiff(double val_CDkw_i, double val_CDkw_j) {
+	CDkw_i = val_CDkw_i;
+  CDkw_j = val_CDkw_j;
 }			
 
 inline void CSourcePieceWise_TurbSA::SetIntermittency(double intermittency_in) { intermittency = intermittency_in; }
@@ -408,7 +427,19 @@ inline double CSourcePieceWise_TurbSA::GetDestruction(void) { return Destruction
 
 inline double CSourcePieceWise_TurbSA::GetCrossProduction(void) { return CrossProduction; }
 
+inline void CSourcePieceWise_TurbSA_Neg::SetIntermittency(double intermittency_in) { intermittency = intermittency_in; }
 
+inline void CSourcePieceWise_TurbSA_Neg::SetProduction(double val_production) { Production = val_production; }
+
+inline void CSourcePieceWise_TurbSA_Neg::SetDestruction(double val_destruction) { Destruction = val_destruction; }
+
+inline void CSourcePieceWise_TurbSA_Neg::SetCrossProduction(double val_crossproduction) { CrossProduction = val_crossproduction; }
+
+inline double CSourcePieceWise_TurbSA_Neg::GetProduction(void) { return Production; }
+
+inline double CSourcePieceWise_TurbSA_Neg::GetDestruction(void) { return Destruction; }
+
+inline double CSourcePieceWise_TurbSA_Neg::GetCrossProduction(void) { return CrossProduction; }
 
 inline void CSourcePieceWise_TurbML::SetIntermittency(double intermittency_in) { intermittency = intermittency_in; }
 
@@ -425,10 +456,6 @@ inline double CSourcePieceWise_TurbML::GetDestruction(void) { return Destruction
 inline double CSourcePieceWise_TurbML::GetCrossProduction(void) { return CrossProduction; }
 
 inline double CUpwTurkel_Flow::GetPrecond_Beta() { return Beta; }
-
-inline double CNumerics::GetElec_CondIntegral() {return 0;}
-
-inline void CNumerics::SetElec_CondIntegralsqr(double val_var) {}
 
 inline void CNumerics::ComputeResidual(double **val_Jacobian_i, double *val_Jacobian_mui, double ***val_Jacobian_gradi, CConfig *config) { }
 

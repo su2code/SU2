@@ -1,23 +1,32 @@
 /*!
  * \file solution_direct_tne2.cpp
  * \brief Main subrotuines for solving flows in thermochemical nonequilibrium.
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.4 "eagle"
+ * \author S. Copeland
+ * \version 3.2.8.3 "eagle"
  *
- * Copyright (C) 2012 Aerospace Design Laboratory
+ * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
  *
- * This program is distributed in the hope that it will be useful,
+ * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ *
+ * SU2 is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * SU2 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include "../include/solver_structure.hpp"
@@ -286,7 +295,7 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
    the farfield values bc the solver will immediately interpolate
    the solution from the finest mesh to the coarser levels. ---*/
   
-	if (!restart || geometry->GetFinestMGLevel() == false || nZone > 1) {
+	if (!restart || (iMesh != MESH_0) || nZone > 1) {
 
 		/*--- Initialize using freestream values ---*/
 		for (iPoint = 0; iPoint < nPoint; iPoint++) {
@@ -316,11 +325,11 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
 		long *Global2Local = new long[geometry->GetGlobal_nPointDomain()];
     
 		/*--- First, set all indices to a negative value by default ---*/
-		for(iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++)
+		for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++)
 			Global2Local[iPoint] = -1;
     
 		/*--- Now fill array with the transform values only for local points ---*/
-		for(iPoint = 0; iPoint < nPointDomain; iPoint++)
+		for (iPoint = 0; iPoint < nPointDomain; iPoint++)
 			Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
     
 		/*--- Read all lines in the restart file ---*/
@@ -356,7 +365,7 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
      at any halo/periodic nodes. The initial solution can be arbitrary,
      because a send/recv is performed immediately in the solver. ---*/
     //Solution = node_infty->GetSolution();
-		for(iPoint = nPointDomain; iPoint < nPoint; iPoint++)
+		for (iPoint = nPointDomain; iPoint < nPoint; iPoint++)
       node[iPoint] = new CTNE2EulerVariable(Pressure_Inf, MassFrac_Inf,
                                             Mvec_Inf, Temperature_Inf,
                                             Temperature_ve_Inf, nDim,
@@ -1915,7 +1924,6 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
         cout << "Inviscid flow: Computing density based on free-stream" << endl;
         cout << "temperature and pressure using the ideal gas law." << endl;
       }
-      cout << "Note: Negative pressure, temperature or density is not allowed!" << endl;
     }
     
     if (grid_movement) cout << "Force coefficients computed using MACH_MOTION." << endl;
@@ -1928,7 +1936,7 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
       cout << "Mach number: "<< config->GetMach() << ", computed using the Bulk modulus." << endl;
       cout << "Angle of attack (deg): "<< config->GetAoA() << ", computed using the the free-stream velocity." << endl;
       cout << "Side slip angle (deg): "<< config->GetAoS() << ", computed using the the free-stream velocity." << endl;
-      if (viscous) cout << "Reynolds number: " << config->GetReynolds() << ", computed using free-stream values."<<endl;
+      if (viscous) cout << "Reynolds number: " << config->GetReynolds() << ", computed using free-stream values."<< endl;
       cout << "Only dimensional computation, the grid should be dimensional." << endl;
     }
     
@@ -1988,7 +1996,7 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
       cout << "Free-stream viscosity: " << config->GetViscosity_FreeStream();
       if (config->GetSystemMeasurements() == SI) cout << " N.s/m^2." << endl;
       else if (config->GetSystemMeasurements() == US) cout << " lbf.s/ft^2." << endl;
-      if (turbulent){
+      if (turbulent) {
         cout << "Free-stream turb. kinetic energy per unit mass: " << config->GetTke_FreeStream();
         if (config->GetSystemMeasurements() == SI) cout << " m^2/s^2." << endl;
         else if (config->GetSystemMeasurements() == US) cout << " ft^2/s^2." << endl;
@@ -2085,7 +2093,7 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
     
     if (viscous) {
       cout << "Free-stream viscosity (non-dim): " << config->GetViscosity_FreeStreamND() << endl;
-      if (turbulent){
+      if (turbulent) {
         cout << "Free-stream turb. kinetic energy (non-dim): " << config->GetTke_FreeStreamND() << endl;
         cout << "Free-stream specific dissipation (non-dim): " << config->GetOmega_FreeStreamND() << endl;
       }
@@ -2257,10 +2265,9 @@ void CTNE2EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solution_cont
 		sbuf_time = Global_Delta_Time;
 		MPI_Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
 		MPI_Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-		MPI_Barrier(MPI_COMM_WORLD);
 		Global_Delta_Time = rbuf_time;
 #endif
-		for(iPoint = 0; iPoint < nPointDomain; iPoint++)
+		for (iPoint = 0; iPoint < nPointDomain; iPoint++)
 			node[iPoint]->SetDelta_Time(Global_Delta_Time);
 	}
 }
@@ -2433,7 +2440,7 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
   RHOS_INDEX = node[0]->GetRhosIndex();
   
   /*--- Loop over edges and calculate convective fluxes ---*/
-	for(iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+	for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     
 		/*--- Retrieve node numbers and pass edge normal to CNumerics ---*/
 		iPoint = geometry->edge[iEdge]->GetNode(0);
@@ -2748,7 +2755,7 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
       case HEAT_FLUX: case ISOTHERMAL:
 
         /*--- Loop over all of the vertices on this boundary marker ---*/
-        for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           
           /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
@@ -2812,7 +2819,7 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
       case HEAT_FLUX_NONCATALYTIC: case HEAT_FLUX_CATALYTIC:
         
         /*--- Loop over all of the vertices on this boundary marker ---*/
-        for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           
           /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
@@ -2954,7 +2961,7 @@ void CTNE2EulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
 			}
       
 			/*--- Transform ForceInviscid and MomentInviscid into non-dimensional coefficient ---*/
-			if  (Monitoring == YES) {
+			if (Monitoring == YES) {
 				if (nDim == 2) {
 					if (Boundary != NEARFIELD_BOUNDARY) {
 						CDrag_Inv[iMarker]        =  ForceInviscid[0]*cos(Alpha) + ForceInviscid[1]*sin(Alpha);
@@ -3157,7 +3164,7 @@ void CTNE2EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry,
 	if (!adjoint) {
 		for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
       for (iVar = 0; iVar < nVar; iVar++) {
-        node[iPoint]->AddSolution(iVar, config->GetLinear_Solver_Relax()*LinSysSol[iPoint*nVar+iVar]);
+        node[iPoint]->AddSolution(iVar, LinSysSol[iPoint*nVar+iVar]);
       }
 		}
 	}
@@ -3334,7 +3341,7 @@ void CTNE2EulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *co
       
 			/*--- Sumations for entries of upper triangular matrix R ---*/
       
-      if (fabs(weight) > EPS){
+      if (fabs(weight) > EPS) {
         r11 += (Coord_j[0]-Coord_i[0])*(Coord_j[0]-Coord_i[0])/weight;
         r12 += (Coord_j[0]-Coord_i[0])*(Coord_j[1]-Coord_i[1])/weight;
         r22 += (Coord_j[1]-Coord_i[1])*(Coord_j[1]-Coord_i[1])/weight;
@@ -4593,7 +4600,7 @@ void CTNE2EulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **soluti
   V_inlet[nDim+2] = Density;
   
 	/*--- Loop over all the vertices on this boundary marker ---*/
-	for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     
 		/*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
@@ -4750,7 +4757,7 @@ void CTNE2EulerSolver::SetResidual_DualTime(CGeometry *geometry,
 		TimeStep = config->GetDelta_UnstTimeND();
     
 		/*--- Compute Residual ---*/
-		for(iVar = 0; iVar < nVar; iVar++) {
+		for (iVar = 0; iVar < nVar; iVar++) {
 			if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
 				Residual[iVar] = ( U_time_nP1[iVar]*Volume_nP1 - U_time_n[iVar]*Volume_n ) / TimeStep;
 			if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
@@ -4855,12 +4862,12 @@ void CTNE2EulerSolver::GetRestart(CGeometry *geometry, CConfig *config, unsigned
 	long *Global2Local = NULL;
 	Global2Local = new long[geometry->GetGlobal_nPointDomain()];
 	/*--- First, set all indices to a negative value by default ---*/
-	for(iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
+	for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
 		Global2Local[iPoint] = -1;
 	}
   
 	/*--- Now fill array with the transform values only for local points ---*/
-	for(iPoint = 0; iPoint < nPointDomain; iPoint++) {
+	for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 		Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
 	}
   
@@ -5232,7 +5239,7 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
    appropriately. Coarse multigrid levels will be intitially set to
    the farfield values bc the solver will immediately interpolate
    the solution from the finest mesh to the coarser levels. ---*/
-	if (!restart || geometry->GetFinestMGLevel() == false || nZone > 1) {
+	if (!restart || (iMesh != MESH_0) || nZone > 1) {
     
 		/*--- Initialize using freestream values ---*/
 		for (iPoint = 0; iPoint < nPoint; iPoint++)
@@ -5259,11 +5266,11 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
 		long *Global2Local = new long[geometry->GetGlobal_nPointDomain()];
     
 		/*--- First, set all indices to a negative value by default ---*/
-		for(iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++)
+		for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++)
 			Global2Local[iPoint] = -1;
     
 		/*--- Now fill array with the transform values only for local points ---*/
-		for(iPoint = 0; iPoint < nPointDomain; iPoint++)
+		for (iPoint = 0; iPoint < nPointDomain; iPoint++)
 			Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
     
 		/*--- Read all lines in the restart file ---*/
@@ -5298,7 +5305,7 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
 		/*--- Instantiate the variable class with an arbitrary solution
      at any halo/periodic nodes. The initial solution can be arbitrary,
      because a send/recv is performed immediately in the solver. ---*/
-		for(iPoint = nPointDomain; iPoint < nPoint; iPoint++)
+		for (iPoint = nPointDomain; iPoint < nPoint; iPoint++)
       node[iPoint] = new CTNE2NSVariable(Pressure_Inf, MassFrac_Inf,
                                          Mvec_Inf, Temperature_Inf,
                                          Temperature_ve_Inf, nDim, nVar,
@@ -5690,10 +5697,9 @@ void CTNE2NSSolver::SetTime_Step(CGeometry *geometry,
 		sbuf_time = Global_Delta_Time;
 		MPI_Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
 		MPI_Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-		MPI_Barrier(MPI_COMM_WORLD);
 		Global_Delta_Time = rbuf_time;
 #endif
-		for(iPoint = 0; iPoint < nPointDomain; iPoint++)
+		for (iPoint = 0; iPoint < nPointDomain; iPoint++)
 			node[iPoint]->SetDelta_Time(Global_Delta_Time);
 	}
   
@@ -5706,7 +5712,6 @@ void CTNE2NSSolver::SetTime_Step(CGeometry *geometry,
 		sbuf_time = Global_Delta_UnstTimeND;
 		MPI_Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
 		MPI_Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-		MPI_Barrier(MPI_COMM_WORLD);
 		Global_Delta_UnstTimeND = rbuf_time;
 #endif
 		config->SetDelta_UnstTimeND(Global_Delta_UnstTimeND);
@@ -5998,7 +6003,7 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 			}
       
 			/*--- Transform ForceInviscid into CLift and CDrag ---*/
-			if  (Monitoring == YES) {
+			if (Monitoring == YES) {
         
 				if (nDim == 2) {
 					CDrag_Visc[iMarker] =  ForceViscous[0]*cos(Alpha) + ForceViscous[1]*sin(Alpha);
@@ -6159,7 +6164,7 @@ void CTNE2NSSolver::BC_HeatFlux_Wall(CGeometry *geometry,
   TVE_INDEX  = node[0]->GetTveIndex();
   
 	/*--- Loop over all of the vertices on this boundary marker ---*/
-	for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     
 		/*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
@@ -6254,7 +6259,7 @@ void CTNE2NSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
     GradY[iSpecies] = new double[nDim];
   
 	/*--- Loop over all of the vertices on this boundary marker ---*/
-	for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     
 		/*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
@@ -6369,7 +6374,7 @@ void CTNE2NSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
   //  sour_numerics->SetRhoCvveIndex( node[0]->GetRhoCvveIndex() );
   
 	/*--- Loop over all of the vertices on this boundary marker ---*/
-	for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     
 		/*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
@@ -6537,7 +6542,7 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry,
   RHOCVVE_INDEX = node[0]->GetRhoCvveIndex();
   
 	/*--- Loop over boundary points ---*/
-	for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 		if (geometry->node[iPoint]->GetDomain()) {
       
@@ -6720,7 +6725,7 @@ void CTNE2NSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
   dYdn = new double[nSpecies];
   
 	/*--- Loop over all of the vertices on this boundary marker ---*/
-	for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     
 		/*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
@@ -6816,7 +6821,7 @@ void CTNE2NSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
   dYdn  = new double[nSpecies];
   
 	/*--- Loop over all of the vertices on this boundary marker ---*/
-	for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     
 		/*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
@@ -6918,7 +6923,7 @@ void CTNE2NSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
 //    GradY[iSpecies] = new double[nDim];
 //  
 //	/*--- Loop over all of the vertices on this boundary marker ---*/
-//	for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+//	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 //		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 //    
 //		/*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/

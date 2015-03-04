@@ -1,10 +1,17 @@
 /*!
  * \file numerics_direct_tne2.cpp
  * \brief This file contains all the convective term discretization.
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.4 "eagle"
+ * \author S. Copeland
+ * \version 3.2.8.3 "eagle"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ *
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -671,7 +678,7 @@ void CUpwAUSM_TNE2::ComputeResidual(double *val_residual,
         dmLP[nSpecies+nDim+1] = 0.5*(mL+1.0) * (-ProjVel_i/(a_i*a_i) * daL[nSpecies+nDim+1]);
 
         /*--- Pressure ---*/
-        for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
           dpLP[iSpecies] = 0.25*(mL+1.0) * (dPdU_i[iSpecies]*(mL+1.0)*(2.0-mL)
                                             + P_i*(-ProjVel_i/(rho_i*a_i)
                                                    -ProjVel_i*daL[iSpecies]/(a_i*a_i))*(3.0-3.0*mL));

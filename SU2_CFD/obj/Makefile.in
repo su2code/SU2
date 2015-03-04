@@ -14,8 +14,32 @@
 
 @SET_MAKE@
 
-# SU2 Makefile.am for CFD
-# Stanford University Aerospace Design Lab
+# SU2 Makefile.am for SU2_CFD
+# SU2 v3.2.7 "eagle"
+#
+# SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
+#                      Dr. Thomas D. Economon (economon@stanford.edu).
+#
+# SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+#                 Prof. Piero Colonna's group at Delft University of Technology.
+#                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+#                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+#                 Prof. Rafael Palacios' group at Imperial College London.
+#
+# Copyright (C) 2012-2015 SU2, the open-source CFD code.
+#
+# SU2 is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
+#
+# SU2 is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public
+# License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 #
 # Created: 		10/26/12
 # Last updated: 	3/11/13
@@ -23,7 +47,7 @@
 # Created by: 		M. Colonno
 # Updated by: 		M. Colonno
 #
-##########################
+######################################################################################
 
 VPATH = @srcdir@
 am__make_dryrun = \
@@ -68,7 +92,8 @@ DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(top_srcdir)/depcomp
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/ax_tls.m4 \
-	$(top_srcdir)/m4/metis.m4 $(top_srcdir)/m4/tecio.m4 \
+	$(top_srcdir)/m4/compiler.m4 $(top_srcdir)/m4/metis.m4 \
+	$(top_srcdir)/m4/parmetis.m4 $(top_srcdir)/m4/tecio.m4 \
 	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
@@ -109,6 +134,7 @@ am____bin_SU2_CFD_OBJECTS =  \
 	../src/___bin_SU2_CFD-output_cgns.$(OBJEXT) \
 	../src/___bin_SU2_CFD-output_structure.$(OBJEXT) \
 	../src/___bin_SU2_CFD-output_tecplot.$(OBJEXT) \
+	../src/___bin_SU2_CFD-output_su2.$(OBJEXT) \
 	../src/___bin_SU2_CFD-output_paraview.$(OBJEXT) \
 	../src/___bin_SU2_CFD-solver_adjoint_levelset.$(OBJEXT) \
 	../src/___bin_SU2_CFD-solver_adjoint_mean.$(OBJEXT) \
@@ -258,12 +284,15 @@ PACKAGE_STRING = @PACKAGE_STRING@
 PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
+PARMETIS_INCLUDE = @PARMETIS_INCLUDE@
+PARMETIS_LIB = @PARMETIS_LIB@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 RANLIB = @RANLIB@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STRIP = @STRIP@
 SU2_METIS_CPPFLAGS = @SU2_METIS_CPPFLAGS@
+SU2_PARMETIS_CPPFLAGS = @SU2_PARMETIS_CPPFLAGS@
 TECIO_CPPFLAGS = @TECIO_CPPFLAGS@
 TECIO_INCLUDE = @TECIO_INCLUDE@
 VERSION = @VERSION@
@@ -376,7 +405,8 @@ ___bin_SU2_CFD_SOURCES = ../include/definition_structure.hpp \
 		../src/output_cgns.cpp \
 		../src/output_structure.cpp \
 		../src/output_tecplot.cpp \
-		../src/output_paraview.cpp \
+    ../src/output_su2.cpp \
+    ../src/output_paraview.cpp \
 		../src/solver_adjoint_levelset.cpp \
 		../src/solver_adjoint_mean.cpp \
 		../src/solver_adjoint_tne2.cpp \
@@ -570,6 +600,8 @@ clean-binPROGRAMS:
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD-output_tecplot.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
+../src/___bin_SU2_CFD-output_su2.$(OBJEXT): ../src/$(am__dirstamp) \
+	../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD-output_paraview.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD-solver_adjoint_levelset.$(OBJEXT):  \
@@ -685,6 +717,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-output_cgns.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-output_paraview.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-output_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-output_su2.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-output_tecplot.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-solver_adjoint_levelset.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-solver_adjoint_mean.Po@am__quote@
@@ -1155,6 +1188,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/output_tecplot.cpp' object='../src/___bin_SU2_CFD-output_tecplot.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD-output_tecplot.obj `if test -f '../src/output_tecplot.cpp'; then $(CYGPATH_W) '../src/output_tecplot.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/output_tecplot.cpp'; fi`
+
+../src/___bin_SU2_CFD-output_su2.o: ../src/output_su2.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD-output_su2.o -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD-output_su2.Tpo -c -o ../src/___bin_SU2_CFD-output_su2.o `test -f '../src/output_su2.cpp' || echo '$(srcdir)/'`../src/output_su2.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/___bin_SU2_CFD-output_su2.Tpo ../src/$(DEPDIR)/___bin_SU2_CFD-output_su2.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/output_su2.cpp' object='../src/___bin_SU2_CFD-output_su2.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD-output_su2.o `test -f '../src/output_su2.cpp' || echo '$(srcdir)/'`../src/output_su2.cpp
+
+../src/___bin_SU2_CFD-output_su2.obj: ../src/output_su2.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD-output_su2.obj -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD-output_su2.Tpo -c -o ../src/___bin_SU2_CFD-output_su2.obj `if test -f '../src/output_su2.cpp'; then $(CYGPATH_W) '../src/output_su2.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/output_su2.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/___bin_SU2_CFD-output_su2.Tpo ../src/$(DEPDIR)/___bin_SU2_CFD-output_su2.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/output_su2.cpp' object='../src/___bin_SU2_CFD-output_su2.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD-output_su2.obj `if test -f '../src/output_su2.cpp'; then $(CYGPATH_W) '../src/output_su2.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/output_su2.cpp'; fi`
 
 ../src/___bin_SU2_CFD-output_paraview.o: ../src/output_paraview.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD-output_paraview.o -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD-output_paraview.Tpo -c -o ../src/___bin_SU2_CFD-output_paraview.o `test -f '../src/output_paraview.cpp' || echo '$(srcdir)/'`../src/output_paraview.cpp

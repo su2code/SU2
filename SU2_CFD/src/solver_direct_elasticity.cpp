@@ -1,10 +1,19 @@
 /*!
  * \file solution_direct_elasticity.cpp
  * \brief Main subrotuines for solving the linear elasticity equation.
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.4 "eagle"
+ * \author F. Palacios
+ * \version 3.2.8.3 "eagle"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ *
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
+ *
+ * Copyright (C) 2012-2015 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -27,7 +36,7 @@ CFEASolver::CFEASolver(void) : CSolver() { }
 CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
   
 	unsigned long iPoint;
-	unsigned short nMarker, iDim, iVar, jVar, NodesElement = 0, nLineLets;
+	unsigned short iDim, iVar, jVar, NodesElement = 0, nLineLets;
   double dull_val;
   
   int rank = MASTER_NODE;
@@ -38,7 +47,6 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
   nPoint =        geometry->GetnPoint();
   nPointDomain =  geometry->GetnPointDomain();
 	nDim =          geometry->GetnDim();
-	nMarker =       config->GetnMarker_All();
 	node =          new CVariable*[nPoint];
   if (config->GetUnsteady_Simulation() == STEADY) nVar = nDim;
   else nVar = 2*nDim;
@@ -146,13 +154,13 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
     
     /*--- First, set all indices to a negative value by default ---*/
     
-    for(iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
+    for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
       Global2Local[iPoint] = -1;
     }
     
     /*--- Now fill array with the transform values only for local points ---*/
     
-    for(iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+    for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
       Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
     }
     
@@ -185,7 +193,7 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
      at any halo/periodic nodes. The initial solution can be arbitrary,
      because a send/recv is performed immediately in the solver. ---*/
     
-    for(iPoint = geometry->GetnPointDomain(); iPoint < geometry->GetnPoint(); iPoint++) {
+    for (iPoint = geometry->GetnPointDomain(); iPoint < geometry->GetnPoint(); iPoint++) {
       node[iPoint] = new CFEAVariable(Solution, nDim, nVar, config);
     }
     
@@ -573,7 +581,7 @@ void CFEASolver::BC_Normal_Displacement(CGeometry *geometry, CSolver **solver_co
                                         unsigned short val_marker) {
 	unsigned long iPoint, iVertex, total_index;
 	unsigned short iVar, iDim;
-  double *Normal, Area, UnitaryNormal[3];
+  double *Normal, Area, UnitaryNormal[3] = {0.0,0.0,0.0};
 	
 	double TotalDispl = config->GetDispl_Value(config->GetMarker_All_TagBound(val_marker));
 	
@@ -628,10 +636,10 @@ void CFEASolver::BC_Normal_Displacement(CGeometry *geometry, CSolver **solver_co
 void CFEASolver::BC_Normal_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
                                 unsigned short val_marker) {
 	
-	double a[3], b[3];
+	double a[3] = {0.0,0.0,0.0}, b[3] = {0.0,0.0,0.0};
 	unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0;
-	double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL;
-	double Length_Elem = 0.0, Area_Elem = 0.0, Normal_Elem[3] = {0.0, 0.0, 0.0};
+	double *Coord_0 = NULL, *Coord_1 = NULL, *Coord_2 = NULL;
+	double Normal_Elem[3] = {0.0, 0.0, 0.0};
 	unsigned short iDim;
 	
 	double TotalLoad = 100*config->GetLoad_Value(config->GetMarker_All_TagBound(val_marker));
@@ -648,7 +656,6 @@ void CFEASolver::BC_Normal_Load(CGeometry *geometry, CSolver **solver_container,
       
 			for (iDim = 0; iDim < nDim; iDim++)
 				a[iDim] = Coord_0[iDim]-Coord_1[iDim];
-			Length_Elem = sqrt(a[0]*a[0]+a[1]*a[1]);
       
       Normal_Elem[0] = -(-a[1]);
 			Normal_Elem[1] = -(a[0]);
@@ -660,7 +667,6 @@ void CFEASolver::BC_Normal_Load(CGeometry *geometry, CSolver **solver_container,
 				a[iDim] = Coord_0[iDim]-Coord_2[iDim];
 				b[iDim] = Coord_1[iDim]-Coord_2[iDim];
 			}
-			Area_Elem = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
       
       Normal_Elem[0] = -(0.5*(a[1]*b[2]-a[2]*b[1]));
 			Normal_Elem[1] = -(-0.5*(a[0]*b[2]-a[2]*b[0]));
@@ -730,7 +736,7 @@ void CFEASolver::BC_Pressure(CGeometry *geometry, CSolver **solver_container, CN
 #ifndef DEBUG
   
 	unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0;
-	double *Coord_0 = NULL, *Coord_1 = NULL, *Coord_2 = NULL, Length_Elem = 0.0, Area_Elem = 0.0,
+	double *Coord_0 = NULL, *Coord_1 = NULL, *Coord_2 = NULL,
   Normal_Elem[3] = {0.0, 0.0, 0.0}, Pressure[3] = {0.0, 0.0, 0.0}, a[3], b[3];
 	unsigned short iDim;
 		
@@ -752,7 +758,6 @@ void CFEASolver::BC_Pressure(CGeometry *geometry, CSolver **solver_container, CN
 		if (nDim == 2) {
 			for (iDim = 0; iDim < nDim; iDim++)
 				a[iDim] = Coord_0[iDim]-Coord_1[iDim];
-			Length_Elem = sqrt(a[0]*a[0]+a[1]*a[1]);
       
       Normal_Elem[0] = -(-a[1]);
 			Normal_Elem[1] = -(a[0]);
@@ -763,7 +768,6 @@ void CFEASolver::BC_Pressure(CGeometry *geometry, CSolver **solver_container, CN
 				a[iDim] = Coord_0[iDim]-Coord_2[iDim];
 				b[iDim] = Coord_1[iDim]-Coord_2[iDim];
 			}
-			Area_Elem = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
       
       Normal_Elem[0] = -(0.5*(a[1]*b[2]-a[2]*b[1]));
 			Normal_Elem[1] = -(-0.5*(a[0]*b[2]-a[2]*b[0]));
@@ -1100,7 +1104,7 @@ void CFEASolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_cont
                                       unsigned short iMesh, unsigned short RunTime_EqSystem) {
 	 
 	unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0, Point_3 = 0;
-	double a[3], b[3], c[3], d[3], Area_Local = 0.0, Volume_Local = 0.0, Time_Num;
+	double a[3] = {0.0,0.0,0.0}, b[3] = {0.0,0.0,0.0}, c[3] = {0.0,0.0,0.0}, d[3] = {0.0,0.0,0.0}, Area_Local = 0.0, Volume_Local = 0.0, Time_Num;
 	double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL, *Coord_3= NULL;
 	unsigned short iDim, iVar, jVar;
 	double Density = config->GetMaterialDensity(), TimeJac = 0.0;
@@ -1119,30 +1123,33 @@ void CFEASolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_cont
 		Point_0 = geometry->elem[iElem]->GetNode(0);	Coord_0 = geometry->node[Point_0]->GetCoord();
 		Point_1 = geometry->elem[iElem]->GetNode(1);	Coord_1 = geometry->node[Point_1]->GetCoord();
 		Point_2 = geometry->elem[iElem]->GetNode(2);	Coord_2 = geometry->node[Point_2]->GetCoord();
-		if (nDim == 3) { Point_3 = geometry->elem[iElem]->GetNode(3);	Coord_3 = geometry->node[Point_3]->GetCoord(); }
 		
 		if (nDim == 2) {
 			
-			for (iDim = 0; iDim < nDim; iDim++) {
-				a[iDim] = Coord_0[iDim]-Coord_2[iDim];
-				b[iDim] = Coord_1[iDim]-Coord_2[iDim];
-			}
-			
-			/*--- Compute element area ---*/
-			Area_Local = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
-		}
-		else {
-			
-			for (iDim = 0; iDim < nDim; iDim++) {
-				a[iDim] = Coord_0[iDim]-Coord_2[iDim];
-				b[iDim] = Coord_1[iDim]-Coord_2[iDim];
-				c[iDim] = Coord_3[iDim]-Coord_2[iDim];
-			}
-			d[0] = a[1]*b[2]-a[2]*b[1]; d[1] = -(a[0]*b[2]-a[2]*b[0]); d[2] = a[0]*b[1]-a[1]*b[0];
-			
-			/*--- Compute element volume ---*/
-			Volume_Local = fabs(c[0]*d[0] + c[1]*d[1] + c[2]*d[2])/6.0;
-		}
+      for (iDim = 0; iDim < nDim; iDim++) {
+        a[iDim] = Coord_0[iDim]-Coord_2[iDim];
+        b[iDim] = Coord_1[iDim]-Coord_2[iDim];
+      }
+      
+      /*--- Compute element area ---*/
+      Area_Local = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
+    }
+    else {
+      
+      Point_3 = geometry->elem[iElem]->GetNode(3);
+      Coord_3 = geometry->node[Point_3]->GetCoord();
+      
+      for (iDim = 0; iDim < nDim; iDim++) {
+        a[iDim] = Coord_0[iDim]-Coord_2[iDim];
+        b[iDim] = Coord_1[iDim]-Coord_2[iDim];
+        c[iDim] = Coord_3[iDim]-Coord_2[iDim];
+      }
+      d[0] = a[1]*b[2]-a[2]*b[1]; d[1] = -(a[0]*b[2]-a[2]*b[0]); d[2] = a[0]*b[1]-a[1]*b[0];
+      
+      /*--- Compute element volume ---*/
+      Volume_Local = fabs(c[0]*d[0] + c[1]*d[1] + c[2]*d[2])/6.0;
+      
+    }
 		
 		/*----------------------------------------------------------------*/
 		/*--- Block contributions to the Jacobian (includes time step) ---*/
@@ -1219,7 +1226,7 @@ void CFEASolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_cont
 		U_time_nP1 = node[iPoint]->GetSolution();
 		
 		/*--- Compute Residual ---*/
-		for(iVar = 0; iVar < nVar; iVar++) {
+		for (iVar = 0; iVar < nVar; iVar++) {
 			total_index = iPoint*nVar+iVar;
 			if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
 				LinSysSol[total_index] = ( U_time_nP1[iVar] - U_time_n[iVar] );
@@ -1244,7 +1251,7 @@ void CFEASolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_cont
 void CFEASolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 
   unsigned short iVar;
-	unsigned long iPoint, total_index, IterLinSol;
+	unsigned long iPoint, total_index;
 	
 	/*--- Build implicit system ---*/
   
@@ -1270,14 +1277,14 @@ void CFEASolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_c
   /*--- Solve or smooth the linear system ---*/
   
   CSysSolve system;
-  IterLinSol = system.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+  system.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
   
 	/*--- Update solution (system written in terms of increments) ---*/
   
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
 		for (iVar = 0; iVar < nVar; iVar++) {
 			if (config->GetUnsteady_Simulation() == STEADY) node[iPoint]->SetSolution(iVar, LinSysSol[iPoint*nVar+iVar]);
-      else node[iPoint]->AddSolution(iVar, config->GetLinear_Solver_Relax()*LinSysSol[iPoint*nVar+iVar]);
+      else node[iPoint]->AddSolution(iVar, LinSysSol[iPoint*nVar+iVar]);
 		}
 	}
 	
@@ -1357,10 +1364,11 @@ void CFEASolver::GetSurface_Pressure(CGeometry *geometry, CConfig *config) {
   ifstream Surface_file;
   char buffer[50], cstr[200];
   
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
   
 #ifdef HAVE_MPI
+  int rank = MASTER_NODE;
+  int size = SINGLE_NODE;
+
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
@@ -1375,15 +1383,6 @@ void CFEASolver::GetSurface_Pressure(CGeometry *geometry, CConfig *config) {
     /*--- Prepare to read surface sensitivity files (CSV) ---*/
 
     string surfadj_filename = config->GetSurfFlowCoeff_FileName();
-    
-    /*--- Remove the domain number from the surface csv filename ---*/
-    
-    if (size > SINGLE_NODE) {
-      if ((rank+1 >= 0) && (rank+1 < 10)) surfadj_filename.erase (surfadj_filename.end()-2, surfadj_filename.end());
-      if ((rank+1 >= 10) && (rank+1 < 100)) surfadj_filename.erase (surfadj_filename.end()-3, surfadj_filename.end());
-      if ((rank+1 >= 100) && (rank+1 < 1000)) surfadj_filename.erase (surfadj_filename.end()-4, surfadj_filename.end());
-      if ((rank+1 >= 1000) && (rank+1 < 10000)) surfadj_filename.erase (surfadj_filename.end()-5, surfadj_filename.end());
-    }
     strcpy (cstr, surfadj_filename.c_str());
     
     /*--- Write file name with extension if unsteady or steady ---*/
@@ -1394,7 +1393,7 @@ void CFEASolver::GetSurface_Pressure(CGeometry *geometry, CConfig *config) {
       if ((int(iExtIter) >= 10)   && (int(iExtIter) < 100))   sprintf (buffer, "_000%d.csv",  int(iExtIter));
       if ((int(iExtIter) >= 100)  && (int(iExtIter) < 1000))  sprintf (buffer, "_00%d.csv",   int(iExtIter));
       if ((int(iExtIter) >= 1000) && (int(iExtIter) < 10000)) sprintf (buffer, "_0%d.csv",    int(iExtIter));
-      if  (int(iExtIter) >= 10000) sprintf (buffer, "_%d.csv", int(iExtIter));
+      if (int(iExtIter) >= 10000) sprintf (buffer, "_%d.csv", int(iExtIter));
     }
     else sprintf (buffer, ".csv");
     

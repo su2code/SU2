@@ -4,10 +4,17 @@
  *        The subroutines and functions are in the <i>solver_structure.cpp</i>,
  *        <i>solution_direct.cpp</i>, <i>solution_adjoint.cpp</i>, and
  *        <i>solution_linearized.cpp</i> files.
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.4 "eagle"
+ * \author F. Palacios, T. Economon
+ * \version 3.2.8.3 "eagle"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ *
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -54,8 +61,8 @@ using namespace std;
  * \class CSolver
  * \brief Main class for defining the PDE solution, it requires
  * a child class for each particular solver (Euler, Navier-Stokes, etc.)
- * \author F. Palacios.
- * \version 3.2.4 "eagle"
+ * \author F. Palacios
+ * \version 3.2.8.3 "eagle"
  */
 class CSolver {
 protected:
@@ -138,7 +145,7 @@ public:
 	 * \param[in] val_iterlinsolver - Number of linear iterations.
 	 */
 	virtual void Set_MPI_Solution(CGeometry *geometry, CConfig *config);
-  
+
   /*!
 	 * \brief Set number of linear solver iterations.
 	 * \param[in] val_iterlinsolver - Number of linear iterations.
@@ -774,7 +781,19 @@ public:
 	 */
 	virtual void BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_container,
                                      CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
-    
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  virtual void BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_container,
+                                   CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
+
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -1150,19 +1169,19 @@ public:
 	 */
 	virtual double GetCMz_Visc(unsigned short val_marker);
     
-    /*!
-	 * \brief A virtual member.
-	 * \param[in] val_marker - Surface marker where the coefficient is computed.
-	 * \return Value of the lift coefficient on the surface <i>val_marker</i>.
-	 */
-	virtual double GetSurface_CLift(unsigned short val_marker);
-    
-    /*!
-	 * \brief A virtual member.
-	 * \param[in] val_marker - Surface marker where the coefficient is computed.
-	 * \return Value of the drag coefficient on the surface <i>val_marker</i>.
-	 */
-	virtual double GetSurface_CDrag(unsigned short val_marker);
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the lift coefficient on the surface <i>val_marker</i>.
+   */
+  virtual double GetSurface_CLift(unsigned short val_marker);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the drag coefficient on the surface <i>val_marker</i>.
+   */
+  virtual double GetSurface_CDrag(unsigned short val_marker);
   
   /*!
    * \brief A virtual member.
@@ -1170,6 +1189,13 @@ public:
    * \return Value of the side force coefficient on the surface <i>val_marker</i>.
    */
   virtual double GetSurface_CSideForce(unsigned short val_marker);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the side force coefficient on the surface <i>val_marker</i>.
+   */
+  virtual double GetSurface_CEff(unsigned short val_marker);
   
   /*!
    * \brief A virtual member.
@@ -1191,28 +1217,98 @@ public:
    * \return Value of the z force coefficient on the surface <i>val_marker</i>.
    */
   virtual double GetSurface_CFz(unsigned short val_marker);
-    
-    /*!
-	 * \brief A virtual member.
-	 * \param[in] val_marker - Surface marker where the coefficient is computed.
-	 * \return Value of the x moment coefficient on the surface <i>val_marker</i>.
-	 */
-	virtual double GetSurface_CMx(unsigned short val_marker);
-    
-    /*!
-	 * \brief A virtual member.
-	 * \param[in] val_marker - Surface marker where the coefficient is computed.
-	 * \return Value of the y moment coefficient on the surface <i>val_marker</i>.
-	 */
-	virtual double GetSurface_CMy(unsigned short val_marker);
-    
-    /*!
-	 * \brief A virtual member.
-	 * \param[in] val_marker - Surface marker where the coefficient is computed.
-	 * \return Value of the z moment coefficient on the surface <i>val_marker</i>.
-	 */
-	virtual double GetSurface_CMz(unsigned short val_marker);
-
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the x moment coefficient on the surface <i>val_marker</i>.
+   */
+  virtual double GetSurface_CMx(unsigned short val_marker);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the y moment coefficient on the surface <i>val_marker</i>.
+   */
+  virtual double GetSurface_CMy(unsigned short val_marker);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the z moment coefficient on the surface <i>val_marker</i>.
+   */
+  virtual double GetSurface_CMz(unsigned short val_marker);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the lift coefficient on the surface <i>val_marker</i>.
+   */
+  virtual double GetSurface_CLift_Inv(unsigned short val_marker);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the drag coefficient on the surface <i>val_marker</i>.
+   */
+  virtual double GetSurface_CDrag_Inv(unsigned short val_marker);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the side force coefficient on the surface <i>val_marker</i>.
+   */
+  virtual double GetSurface_CSideForce_Inv(unsigned short val_marker);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the side force coefficient on the surface <i>val_marker</i>.
+   */
+  virtual double GetSurface_CEff_Inv(unsigned short val_marker);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the x force coefficient on the surface <i>val_marker</i>.
+   */
+  virtual double GetSurface_CFx_Inv(unsigned short val_marker);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the y force coefficient on the surface <i>val_marker</i>.
+   */
+  virtual double GetSurface_CFy_Inv(unsigned short val_marker);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the z force coefficient on the surface <i>val_marker</i>.
+   */
+  virtual double GetSurface_CFz_Inv(unsigned short val_marker);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the x moment coefficient on the surface <i>val_marker</i>.
+   */
+  virtual double GetSurface_CMx_Inv(unsigned short val_marker);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the y moment coefficient on the surface <i>val_marker</i>.
+   */
+  virtual double GetSurface_CMy_Inv(unsigned short val_marker);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the z moment coefficient on the surface <i>val_marker</i>.
+   */
+  virtual double GetSurface_CMz_Inv(unsigned short val_marker);
+  
   /*!
 	 * \brief A virtual member.
 	 * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -1497,7 +1593,42 @@ public:
 	 * \return Value of the drag coefficient (inviscid contribution).
 	 */
 	virtual double GetAllBound_CEff_Inv(void);
-    
+  
+  /*!
+   * \brief A virtual member.
+   * \return Value of the drag coefficient (inviscid contribution).
+   */
+  virtual double GetAllBound_CMx_Inv(void);
+  /*!
+   * \brief A virtual member.
+   * \return Value of the drag coefficient (inviscid contribution).
+   */
+  virtual double GetAllBound_CMy_Inv(void);
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of the drag coefficient (inviscid contribution).
+   */
+  virtual double GetAllBound_CMz_Inv(void);
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of the drag coefficient (inviscid contribution).
+   */
+  virtual double GetAllBound_CFx_Inv(void);
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of the drag coefficient (inviscid contribution).
+   */
+  virtual double GetAllBound_CFy_Inv(void);
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of the drag coefficient (inviscid contribution).
+   */
+  virtual double GetAllBound_CFz_Inv(void);
+  
 	/*!
 	 * \brief A virtual member.
 	 * \return Value of the lift coefficient (viscous contribution).
@@ -1587,7 +1718,31 @@ public:
 	 * \return Value of the y plus.
 	 */
 	virtual double GetYPlus(unsigned short val_marker, unsigned short val_vertex);
-    
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of the StrainMag_Max
+   */
+  virtual double GetStrainMag_Max(void);
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of the Omega_Max
+   */
+  virtual double GetOmega_Max(void);
+  
+  /*!
+   * \brief A virtual member.
+   * \return Value of the StrainMag_Max
+   */
+  virtual void SetStrainMag_Max(double val_strainmag_max);
+  
+  /*!
+   * \brief A virtual member.
+   * \return Value of the Omega_Max
+   */
+  virtual void SetOmega_Max(double val_omega_max);
+  
 	/*!
 	 * \brief A virtual member.
 	 * \return Value of the adjoint density at the infinity.
@@ -1922,6 +2077,13 @@ public:
   
   /*!
    * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solution - Container vector with all the solutions.
+   */
+  virtual void GetActuatorDisk_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
+
+  /*!
+   * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
 	 * \param[in] config - Definition of the particular problem.
@@ -1966,7 +2128,7 @@ public:
  * \class CBaselineSolver
  * \brief Main class for defining a baseline solution from a restart file (for output).
  * \author F. Palacios, T. Economon.
- * \version 3.2.4 "eagle"
+ * \version 3.2.8.3 "eagle"
  */
 class CBaselineSolver : public CSolver {
 public:
@@ -2010,8 +2172,8 @@ public:
  * \class CEulerSolver
  * \brief Main class for defining the Euler's flow solver.
  * \ingroup Euler_Equations
- * \author F. Palacios.
- * \version 3.2.4 "eagle"
+ * \author F. Palacios
+ * \version 3.2.8.3 "eagle"
  */
 class CEulerSolver : public CSolver {
 protected:
@@ -2037,6 +2199,7 @@ protected:
   *Surface_CLift_Inv, /*!< \brief Lift coefficient (inviscid contribution) for each monitoring surface. */
   *Surface_CDrag_Inv, /*!< \brief Drag coefficient (inviscid contribution) for each monitoring surface. */
   *Surface_CSideForce_Inv, /*!< \brief Side-force coefficient (inviscid contribution) for each monitoring surface. */
+  *Surface_CEff_Inv, /*!< \brief Side-force coefficient (inviscid contribution) for each monitoring surface. */
   *Surface_CFx_Inv,   /*!< \brief x Force coefficient (inviscid contribution) for each monitoring surface. */
   *Surface_CFy_Inv,   /*!< \brief y Force coefficient (inviscid contribution) for each monitoring surface. */
   *Surface_CFz_Inv,   /*!< \brief z Force coefficient (inviscid contribution) for each monitoring surface. */
@@ -2067,6 +2230,8 @@ protected:
   *Bleed_Temperature,	/*!< \brief Fan face mach number for each boundary. */
   *Bleed_Area,	/*!< \brief Boundary total area. */
   *Exhaust_Area,	/*!< \brief Boundary total area. */
+  *Exhaust_Pressure,	/*!< \brief Fan face pressure for each boundary. */
+  *Exhaust_Temperature,	/*!< \brief Fan face mach number for each boundary. */
   Inflow_MassFlow_Total,	/*!< \brief Mass flow rate for each boundary. */
   Bleed_MassFlow_Total,	/*!< \brief Mass flow rate for each boundary. */
   Exhaust_MassFlow_Total,	/*!< \brief Mass flow rate for each boundary. */
@@ -2126,6 +2291,7 @@ protected:
   double *Surface_CLift,   /*!< \brief Lift coefficient for each monitoring surface. */
   *Surface_CDrag,          /*!< \brief Drag coefficient for each monitoring surface. */
   *Surface_CSideForce,     /*!< \brief Side-force coefficient for each monitoring surface. */
+  *Surface_CEff,     /*!< \brief Side-force coefficient for each monitoring surface. */
   *Surface_CFx,            /*!< \brief x Force coefficient for each monitoring surface. */
   *Surface_CFy,            /*!< \brief y Force coefficient for each monitoring surface. */
   *Surface_CFz,            /*!< \brief z Force coefficient for each monitoring surface. */
@@ -2150,8 +2316,8 @@ protected:
 	*Primitive_i,				/*!< \brief Auxiliary nPrimVar vector for storing the primitive at point i. */
 	*Primitive_j;				/*!< \brief Auxiliary nPrimVar vector for storing the primitive at point j. */
   
-//  double *Secondary,		/*!< \brief Auxiliary nPrimVar vector. */
-	double *Secondary_i,				/*!< \brief Auxiliary nPrimVar vector for storing the primitive at point i. */
+  double *Secondary,		/*!< \brief Auxiliary nPrimVar vector. */
+	*Secondary_i,				/*!< \brief Auxiliary nPrimVar vector for storing the primitive at point i. */
 	*Secondary_j;				/*!< \brief Auxiliary nPrimVar vector for storing the primitive at point j. */
 
   double Cauchy_Value,	/*!< \brief Summed value of the convergence indicator. */
@@ -2594,7 +2760,19 @@ public:
 	 */
 	void BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_container,
                              CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
-    
+  
+  /*!
+   * \brief Impose a supersonic outlet boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_container,
+                           CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
+
 	/*!
 	 * \brief Impose the dirichlet boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -2673,6 +2851,13 @@ public:
 	void GetEngine_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
   
   /*!
+   * \brief Compute the Fan face Mach number.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solution - Container vector with all the solutions.
+   */
+  void GetActuatorDisk_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
+  
+  /*!
 	 * \brief Update the AoA and freestream velocity at the farfield.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
@@ -2742,6 +2927,13 @@ public:
   double GetSurface_CSideForce(unsigned short val_marker);
   
   /*!
+   * \brief Provide the non dimensional side-force coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the side-force coefficient on the surface <i>val_marker</i>.
+   */
+  double GetSurface_CEff(unsigned short val_marker);
+  
+  /*!
    * \brief Provide the non dimensional x force coefficient.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the x force coefficient on the surface <i>val_marker</i>.
@@ -2782,7 +2974,77 @@ public:
 	 * \return Value of the z moment coefficient on the surface <i>val_marker</i>.
 	 */
 	double GetSurface_CMz(unsigned short val_marker);
-    
+  
+  /*!
+   * \brief Provide the non dimensional lift coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the lift coefficient on the surface <i>val_marker</i>.
+   */
+  double GetSurface_CLift_Inv(unsigned short val_marker);
+  
+  /*!
+   * \brief Provide the non dimensional drag coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the drag coefficient on the surface <i>val_marker</i>.
+   */
+  double GetSurface_CDrag_Inv(unsigned short val_marker);
+  
+  /*!
+   * \brief Provide the non dimensional side-force coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the side-force coefficient on the surface <i>val_marker</i>.
+   */
+  double GetSurface_CSideForce_Inv(unsigned short val_marker);
+  
+  /*!
+   * \brief Provide the non dimensional side-force coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the side-force coefficient on the surface <i>val_marker</i>.
+   */
+  double GetSurface_CEff_Inv(unsigned short val_marker);
+  
+  /*!
+   * \brief Provide the non dimensional x force coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the x force coefficient on the surface <i>val_marker</i>.
+   */
+  double GetSurface_CFx_Inv(unsigned short val_marker);
+  
+  /*!
+   * \brief Provide the non dimensional y force coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the y force coefficient on the surface <i>val_marker</i>.
+   */
+  double GetSurface_CFy_Inv(unsigned short val_marker);
+  
+  /*!
+   * \brief Provide the non dimensional z force coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the z force coefficient on the surface <i>val_marker</i>.
+   */
+  double GetSurface_CFz_Inv(unsigned short val_marker);
+  
+  /*!
+   * \brief Provide the non dimensional x moment coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the x moment coefficient on the surface <i>val_marker</i>.
+   */
+  double GetSurface_CMx_Inv(unsigned short val_marker);
+  
+  /*!
+   * \brief Provide the non dimensional y moment coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the y moment coefficient on the surface <i>val_marker</i>.
+   */
+  double GetSurface_CMy_Inv(unsigned short val_marker);
+  
+  /*!
+   * \brief Provide the non dimensional z moment coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the z moment coefficient on the surface <i>val_marker</i>.
+   */
+  double GetSurface_CMz_Inv(unsigned short val_marker);
+  
 	/*!
 	 * \brief Provide the non dimensional drag coefficient (inviscid contribution).
 	 * \param val_marker Surface where the coeficient is going to be computed.
@@ -3029,7 +3291,43 @@ public:
 	 * \return Value of the efficiency coefficient (inviscid contribution).
 	 */
 	double GetAllBound_CEff_Inv(void);
-    
+  
+  /*!
+   * \brief Get the inviscid contribution to the efficiency coefficient.
+   * \return Value of the efficiency coefficient (inviscid contribution).
+   */
+  double GetAllBound_CMx_Inv(void);
+  
+  /*!
+   * \brief Get the inviscid contribution to the efficiency coefficient.
+   * \return Value of the efficiency coefficient (inviscid contribution).
+   */
+  double GetAllBound_CMy_Inv(void);
+  
+  /*!
+   * \brief Get the inviscid contribution to the efficiency coefficient.
+   * \return Value of the efficiency coefficient (inviscid contribution).
+   */
+  double GetAllBound_CMz_Inv(void);
+  
+  /*!
+   * \brief Get the inviscid contribution to the efficiency coefficient.
+   * \return Value of the efficiency coefficient (inviscid contribution).
+   */
+  double GetAllBound_CFx_Inv(void);
+  
+  /*!
+   * \brief Get the inviscid contribution to the efficiency coefficient.
+   * \return Value of the efficiency coefficient (inviscid contribution).
+   */
+  double GetAllBound_CFy_Inv(void);
+  
+  /*!
+   * \brief Get the inviscid contribution to the efficiency coefficient.
+   * \return Value of the efficiency coefficient (inviscid contribution).
+   */
+  double GetAllBound_CFz_Inv(void);
+  
 	/*!
 	 * \brief Provide the Pressure coefficient.
 	 * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -3208,8 +3506,8 @@ public:
  * \class CNSSolver
  * \brief Main class for defining the Navier-Stokes flow solver.
  * \ingroup Navier_Stokes_Equations
- * \author F. Palacios.
- * \version 3.2.4 "eagle"
+ * \author F. Palacios
+ * \version 3.2.8.3 "eagle"
  */
 class CNSSolver : public CEulerSolver {
 private:
@@ -3229,6 +3527,7 @@ private:
   *Surface_CLift_Visc,/*!< \brief Lift coefficient (viscous contribution) for each monitoring surface. */
   *Surface_CDrag_Visc,/*!< \brief Drag coefficient (viscous contribution) for each monitoring surface. */
   *Surface_CSideForce_Visc,/*!< \brief Side-force coefficient (viscous contribution) for each monitoring surface. */
+  *Surface_CEff_Visc,/*!< \brief Side-force coefficient (viscous contribution) for each monitoring surface. */
   *Surface_CFx_Visc,  /*!< \brief Force x coefficient (viscous contribution) for each monitoring surface. */
   *Surface_CFy_Visc,  /*!< \brief Force y coefficient (viscous contribution) for each monitoring surface. */
   *Surface_CFz_Visc,  /*!< \brief Force z coefficient (viscous contribution) for each monitoring surface. */
@@ -3259,6 +3558,7 @@ private:
 	AllBound_CQ_Visc,		/*!< \brief Torque coefficient (viscous contribution) for all the boundaries. */
   AllBound_HeatFlux_Visc,		/*!< \brief Heat load (viscous contribution) for all the boundaries. */
   AllBound_MaxHeatFlux_Visc; /*!< \brief Maximum heat flux (viscous contribution) for all boundaries. */
+  double StrainMag_Max, Omega_Max; /*!< \brief Maximum Strain Rate magnitude and Omega. */
   
 public:
   
@@ -3439,6 +3739,31 @@ public:
 	 * \return Value of the y plus.
 	 */
 	double GetYPlus(unsigned short val_marker, unsigned short val_vertex);
+  
+  /*!
+   * \brief Get the max Omega.
+   * \return Value of the max Omega.
+   */
+  double GetOmega_Max(void);
+  
+  /*!
+   * \brief Get the max Strain rate magnitude.
+   * \return Value of the max Strain rate magnitude.
+   */
+  double GetStrainMag_Max(void);
+  
+  /*!
+   * \brief A virtual member.
+   * \return Value of the StrainMag_Max
+   */
+  void SetStrainMag_Max(double val_strainmag_max);
+  
+  /*!
+   * \brief A virtual member.
+   * \return Value of the Omega_Max
+   */
+  void SetOmega_Max(double val_omega_max);
+  
 };
 
 /*!
@@ -3446,16 +3771,16 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 3.2.4 "eagle"
+ * \version 3.2.8.3 "eagle"
  */
 class CTurbSolver : public CSolver {
 protected:
-	double *FlowPrimVar_i,	/*!< \brief Store the flow solution at point i. */
-	*FlowPrimVar_j,        /*!< \brief Store the flow solution at point j. */
+	double *FlowPrimVar_i,  /*!< \brief Store the flow solution at point i. */
+	*FlowPrimVar_j,         /*!< \brief Store the flow solution at point j. */
 	*lowerlimit,            /*!< \brief contains lower limits for turbulence variables. */
 	*upperlimit;            /*!< \brief contains upper limits for turbulence variables. */
-	double Gamma;									/*!< \brief Fluid's Gamma constant (ratio of specific heats). */
-	double Gamma_Minus_One;				/*!< \brief Fluids's Gamma - 1.0  . */
+	double Gamma;           /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
+	double Gamma_Minus_One; /*!< \brief Fluids's Gamma - 1.0  . */
     
 public:
     
@@ -3575,12 +3900,12 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 3.2.4 "eagle"
+ * \version 3.2.8.3 "eagle"
  */
 
 class CTurbSASolver: public CTurbSolver {
 private:
-	double nu_tilde_Inf;
+	double nu_tilde_Inf, nu_tilde_Engine;
 	
 public:
 	/*!
@@ -3778,7 +4103,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author B. Tracey.
- * \version 3.2.4 "eagle"
+ * \version 3.2.8.3 "eagle"
  */
 
 class CTurbMLSolver: public CTurbSolver {
@@ -3916,16 +4241,15 @@ public:
 	void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter);
   
   double SAProduction, SADestruction, SACrossProduction, SASource, MLProduction, MLDestruction, MLCrossProduction, MLSource, SourceDiff;
+  
 };
-
-
 
 /*!
  * \class CTransLMSolver
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Aranake.
- * \version 3.2.4 "eagle"
+ * \version 3.2.8.3 "eagle"
  */
 
 class CTransLMSolver: public CTurbSolver {
@@ -4105,7 +4429,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Campos, F. Palacios, T. Economon
- * \version 3.2.4 "eagle"
+ * \version 3.2.8.3 "eagle"
  */
 
 class CTurbSSTSolver: public CTurbSolver {
@@ -4247,8 +4571,8 @@ public:
  * \class CAdjEulerSolver
  * \brief Main class for defining the Euler's adjoint flow solver.
  * \ingroup Euler_Equations
- * \author F. Palacios.
- * \version 3.2.4 "eagle"
+ * \author F. Palacios
+ * \version 3.2.8.3 "eagle"
  */
 class CAdjEulerSolver : public CSolver {
 protected:
@@ -4534,6 +4858,17 @@ public:
    */
 	void BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
 	              unsigned short val_marker);
+  
+  /*!
+   * \brief Impose the supersonic outlet boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] solver - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
+                           unsigned short val_marker);
 
 	/*!
 	 * \brief Impose the outlet boundary condition.
@@ -4716,8 +5051,8 @@ public:
  * \class CAdjNSSolver
  * \brief Main class for defining the Navier-Stokes' adjoint flow solver.
  * \ingroup Navier_Stokes_Equations
- * \author F. Palacios.
- * \version 3.2.4 "eagle"
+ * \author F. Palacios
+ * \version 3.2.8.3 "eagle"
  */
 class CAdjNSSolver : public CAdjEulerSolver {
 public:
@@ -4824,7 +5159,7 @@ public:
  * \brief Main class for defining the adjoint turbulence model solver.
  * \ingroup Turbulence_Model
  * \author F. Palacios, A. Bueno.
- * \version 3.2.4 "eagle"
+ * \version 3.2.8.3 "eagle"
  */
 class CAdjTurbSolver : public CSolver {
 private:
@@ -4847,7 +5182,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CAdjTurbSolver(CGeometry *geometry, CConfig *config);
+	CAdjTurbSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh);
     
     /*!
 	 * \brief Impose the send-receive boundary condition.
@@ -4969,8 +5304,8 @@ public:
  * \class CLinEulerSolver
  * \brief Main class for defining the linearized Euler solver.
  * \ingroup Euler_Equations
- * \author F. Palacios.
- * \version 3.2.4 "eagle"
+ * \author F. Palacios
+ * \version 3.2.8.3 "eagle"
  */
 class CLinEulerSolver : public CSolver {
 private:
@@ -5001,7 +5336,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CLinEulerSolver(CGeometry *geometry, CConfig *config);
+	CLinEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh);
     
 	/*!
 	 * \brief Destructor of the class.
@@ -5093,8 +5428,8 @@ public:
 
 /*! \class CPoissonSolver
  *  \brief Main class for defining the poisson potential solver.
- *  \author F. Palacios.
- *  \version 3.2.4 "eagle"
+ *  \author F. Palacios
+ *  \version 3.2.8.3 "eagle"
  *  \date May 3, 2010.
  */
 class CPoissonSolver : public CSolver {
@@ -5229,8 +5564,8 @@ public:
 
 /*! \class CWaveSolver
  *  \brief Main class for defining the wave solver.
- *  \author F. Palacios.
- *  \version 3.2.4 "eagle"
+ *  \author F. Palacios
+ *  \version 3.2.8.3 "eagle"
  *  \date May 3, 2010.
  */
 class CWaveSolver : public CSolver {
@@ -5384,8 +5719,8 @@ public:
 
 /*! \class CHeatSolver
  *  \brief Main class for defining the heat solver.
- *  \author F. Palacios.
- *  \version 3.2.4 "eagle"
+ *  \author F. Palacios
+ *  \version 3.2.8.3 "eagle"
  *  \date May 3, 2010.
  */
 class CHeatSolver : public CSolver {
@@ -5504,8 +5839,8 @@ public:
 
 /*! \class CFEASolver
  *  \brief Main class for defining the FEA solver.
- *  \author F. Palacios.
- *  \version 3.2.4 "eagle"
+ *  \author F. Palacios
+ *  \version 3.2.8.3 "eagle"
  *  \date May 3, 2010.
  */
 class CFEASolver : public CSolver {
@@ -5684,8 +6019,8 @@ public:
  * \class CAdjLevelSetSolver
  * \brief Main class for defining the level set solver.
  * \ingroup LevelSet_Model
- * \author F. Palacios.
- * \version 3.2.4 "eagle"
+ * \author F. Palacios
+ * \version 3.2.8.3 "eagle"
  */
 class CAdjLevelSetSolver : public CSolver {
 protected:
@@ -5868,8 +6203,8 @@ public:
  * \class CTemplateSolver
  * \brief Main class for defining the template model solver.
  * \ingroup Template_Flow_Equation
- * \author F. Palacios.
- * \version 3.2.4 "eagle"
+ * \author F. Palacios
+ * \version 3.2.8.3 "eagle"
  */
 class CTemplateSolver : public CSolver {
 private:
@@ -6073,7 +6408,7 @@ public:
  * \class CTNE2EulerSolver
  * \brief Main class for defining the TNE2 Euler's flow solver.
  * \ingroup Euler_Equations
- * \author S. R. Copeland, F. Palacios.
+ * \author S. R. Copeland, F. Palacios
  * \version 2.0.6
  */
 class CTNE2EulerSolver : public CSolver {
@@ -6453,8 +6788,8 @@ public:
 	void BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_container,
                            CNumerics *conv_numerics, CNumerics *visc_numerics,
                            CConfig *config, unsigned short val_marker);
-  
-	/*!
+
+  /*!
 	 * \brief Impose the outlet boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
@@ -6638,6 +6973,42 @@ public:
 	 */
 	double GetAllBound_CEff_Inv(void);
   
+  /*!
+   * \brief Get the inviscid contribution to the efficiency coefficient.
+   * \return Value of the efficiency coefficient (inviscid contribution).
+   */
+  double GetAllBound_CMx_Inv(void);
+  
+  /*!
+   * \brief Get the inviscid contribution to the efficiency coefficient.
+   * \return Value of the efficiency coefficient (inviscid contribution).
+   */
+  double GetAllBound_CMy_Inv(void);
+  
+  /*!
+   * \brief Get the inviscid contribution to the efficiency coefficient.
+   * \return Value of the efficiency coefficient (inviscid contribution).
+   */
+  double GetAllBound_CMz_Inv(void);
+  
+  /*!
+   * \brief Get the inviscid contribution to the efficiency coefficient.
+   * \return Value of the efficiency coefficient (inviscid contribution).
+   */
+  double GetAllBound_CFx_Inv(void);
+  
+  /*!
+   * \brief Get the inviscid contribution to the efficiency coefficient.
+   * \return Value of the efficiency coefficient (inviscid contribution).
+   */
+  double GetAllBound_CFy_Inv(void);
+  
+  /*!
+   * \brief Get the inviscid contribution to the efficiency coefficient.
+   * \return Value of the efficiency coefficient (inviscid contribution).
+   */
+  double GetAllBound_CFz_Inv(void);
+  
 	/*!
 	 * \brief Provide the Pressure coefficient.
 	 * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -6681,7 +7052,7 @@ public:
  * \class CTNE2NSSolver
  * \brief Main class for defining the TNE2 Navier-Stokes flow solver.
  * \ingroup Navier_Stokes_Equations
- * \author S. R. Copeland, F. Palacios.
+ * \author S. R. Copeland, F. Palacios
  * \version 2.0.6
  */
 class CTNE2NSSolver : public CTNE2EulerSolver {
@@ -6927,7 +7298,7 @@ public:
  * \class CAdjEulerSolver
  * \brief Main class for defining the Euler's adjoint flow solver.
  * \ingroup Euler_Equations
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 2.0.6
  */
 class CAdjTNE2EulerSolver : public CSolver {
@@ -7218,7 +7589,7 @@ public:
  * \class CAdjNSSolver
  * \brief Main class for defining the Navier-Stokes' adjoint flow solver.
  * \ingroup Navier_Stokes_Equations
- * \author F. Palacios.
+ * \author F. Palacios
  * \version 2.0.6
  */
 class CAdjTNE2NSSolver : public CAdjTNE2EulerSolver {

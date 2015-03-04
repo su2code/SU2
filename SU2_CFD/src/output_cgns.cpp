@@ -1,10 +1,19 @@
 /*!
  * \file output_cgns.cpp
- * \brief Main subroutines for output solver information.
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.4 "eagle"
+ * \brief Main subroutines for output solver information
+ * \author T. Economon
+ * \version 3.2.8.3 "eagle"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ *
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
+ *
+ * Copyright (C) 2012-2015 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -37,13 +46,6 @@ void COutput::SetCGNS_Coordinates(CConfig *config, CGeometry *geometry, unsigned
 	/*--- Create CGNS base file name ---*/
 	base_file = config->GetFlow_FileName();
   
-#ifdef HAVE_MPI
-	int nProcessor;
-  /*--- Remove the domain number from the CGNS filename ---*/
-	MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-	if (nProcessor > 1) base_file.erase (base_file.end()-2, base_file.end());
-#endif
-  
 	/*--- Add CGNS extension. ---*/
 	base_file = base_file.append(".cgns");
   
@@ -52,10 +54,6 @@ void COutput::SetCGNS_Coordinates(CConfig *config, CGeometry *geometry, unsigned
     
 		buffer = config->GetFlow_FileName();
     
-#ifdef HAVE_MPI
-    /*--- Remove the domain number from the CGNS filename ---*/
-    if (nProcessor > 1) buffer.erase (buffer.end()-2, buffer.end());
-#endif
 		results_file.str(string()); results_file << buffer;
 		if (((int)iExtIter >= 0) && ((int)iExtIter < 10))			results_file << "_0000" << iExtIter;
 		if (((int)iExtIter >= 10) && ((int)iExtIter < 100))		results_file << "_000" << iExtIter;
@@ -90,7 +88,7 @@ void COutput::SetCGNS_Coordinates(CConfig *config, CGeometry *geometry, unsigned
 		if (cgns_err) cg_error_print();
 		cgns_err = cg_coord_write(cgns_file,cgns_base,cgns_zone,RealDouble,"y",Coords[1],&cgns_coord);
 		if (cgns_err) cg_error_print();
-		if (geometry->GetnDim() == 3){
+		if (geometry->GetnDim() == 3) {
 			cgns_err = cg_coord_write(cgns_file,cgns_base,cgns_zone,RealDouble,"z",Coords[2],&cgns_coord);
 			if (cgns_err) cg_error_print();
 		}
@@ -107,10 +105,10 @@ void COutput::SetCGNS_Coordinates(CConfig *config, CGeometry *geometry, unsigned
     
 		cgns_err = cg_open((char *)results_file.str().c_str(),CG_MODE_WRITE,&cgns_file);
 
-		element_dims = geometry->GetnDim();		// Currently (release 3.2.4 "eagle") only all-2D or all-3D zones permitted
+		element_dims = geometry->GetnDim();		// Currently (release 3.2.8.3 "eagle") only all-2D or all-3D zones permitted
 		physical_dims = element_dims;
 
-    /*--- write CGNS base data (one base assumed as of version 3.2.4 "eagle") ---*/
+    /*--- write CGNS base data (one base assumed as of version 3.2.8.3 "eagle") ---*/
 		cgns_err = cg_base_write(cgns_file,"SU2 Base",element_dims,physical_dims,&cgns_base_results);
 		if (cgns_err) cg_error_print();
 
@@ -133,7 +131,7 @@ void COutput::SetCGNS_Coordinates(CConfig *config, CGeometry *geometry, unsigned
 			if (cgns_err) cg_error_print();
 			cgns_err = cg_coord_write(cgns_file,cgns_base_results,cgns_zone_results,RealDouble,"y",Coords[1],&cgns_coord);
 			if (cgns_err) cg_error_print();
-			if (geometry->GetnDim() == 3){
+			if (geometry->GetnDim() == 3) {
 				cgns_err = cg_coord_write(cgns_file,cgns_base_results,cgns_zone_results,RealDouble,"z",Coords[2],&cgns_coord);
 				if (cgns_err) cg_error_print();
 			}
@@ -187,13 +185,6 @@ void COutput::SetCGNS_Connectivity(CConfig *config, CGeometry *geometry, unsigne
 	/*--- Create CGNS base file name ---*/
 	base_file = config->GetFlow_FileName();
   
-#ifdef HAVE_MPI
-  /*--- Remove the domain number from the CGNS filename ---*/
-  int nProcessor;
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-  if (nProcessor > 1) base_file.erase (base_file.end()-2, base_file.end());
-#endif
-  
 	/*--- Add CGNS extension. ---*/
 	base_file = base_file.append(".cgns");
   
@@ -202,10 +193,6 @@ void COutput::SetCGNS_Connectivity(CConfig *config, CGeometry *geometry, unsigne
     
 		buffer = config->GetFlow_FileName();
     
-#ifdef HAVE_MPI
-    /*--- Remove the domain number from the CGNS filename ---*/
-    if (nProcessor > 1) buffer.erase (buffer.end()-2, buffer.end());
-#endif
 		results_file.str(string()); results_file << buffer;
 		if (((int)iExtIter >= 0) && ((int)iExtIter < 10))			results_file << "_0000" << iExtIter;
 		if (((int)iExtIter >= 10) && ((int)iExtIter < 100))		results_file << "_000" << iExtIter;
@@ -225,7 +212,7 @@ void COutput::SetCGNS_Connectivity(CConfig *config, CGeometry *geometry, unsigne
 		element_dims = geometry->GetnDim();		// Currently (release 2.0) only all-2D or all-3D zones permitted
 		physical_dims = element_dims;
     
-		/*--- write CGNS base data (one base assumed as of version 3.2.4 "eagle") ---*/
+		/*--- write CGNS base data (one base assumed as of version 3.2.8.3 "eagle") ---*/
 		cgns_err = cg_base_write(cgns_file,"SU2 Base",element_dims,physical_dims,&cgns_base);
 		if (cgns_err) cg_error_print();
     
@@ -255,7 +242,7 @@ void COutput::SetCGNS_Connectivity(CConfig *config, CGeometry *geometry, unsigne
 		else cgns_err = cg_simulation_type_write(cgns_file,cgns_base,NonTimeAccurate);
 		if (cgns_err) cg_error_print();
     
-		cgns_err = cg_descriptor_write("Solver Information","SU2 version 3.2.4 \"eagle\", Stanford University Aerospace Design Lab");
+		cgns_err = cg_descriptor_write("Solver Information","SU2 version 3.2.8.3 \"eagle\"");
 		if (cgns_err) cg_error_print();
 		
 		isize[0][0] = (cgsize_t)geometry->GetGlobal_nPointDomain(); //;				// vertex size
@@ -347,13 +334,6 @@ void COutput::SetCGNS_Solution(CConfig *config, CGeometry *geometry, unsigned sh
 	/*--- Create CGNS base file name ---*/
 	base_file = config->GetFlow_FileName();
   
-#ifdef HAVE_MPI
-  int nProcessor;
-  /*--- Remove the domain number from the CGNS filename ---*/
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-  if (nProcessor > 1) base_file.erase (base_file.end()-2, base_file.end());
-#endif
-  
 	/*--- Add CGNS extension. ---*/
 	base_file = base_file.append(".cgns");
   
@@ -362,10 +342,6 @@ void COutput::SetCGNS_Solution(CConfig *config, CGeometry *geometry, unsigned sh
     
 		buffer = config->GetFlow_FileName();
     
-#ifdef HAVE_MPI
-    /*--- Remove the domain number from the CGNS filename ---*/
-    if (nProcessor > 1) buffer.erase (buffer.end()-2, buffer.end());
-#endif
 		results_file.str(string()); results_file << buffer;
 		if (((int)iExtIter >= 0) && ((int)iExtIter < 10))			results_file << "_0000" << iExtIter;
 		if (((int)iExtIter >= 10) && ((int)iExtIter < 100))		results_file << "_000" << iExtIter;
@@ -415,7 +391,7 @@ void COutput::SetCGNS_Solution(CConfig *config, CGeometry *geometry, unsigned sh
 		element_dims = geometry->GetnDim();		// Currently (release 2.0) only all-2D or all-3D zones permitted
 		physical_dims = element_dims;
     
-//		/*--- write CGNS base data (one base assumed as of version 3.2.4 "eagle") ---*/
+//		/*--- write CGNS base data (one base assumed as of version 3.2.8.3 "eagle") ---*/
 //		cgns_err = cg_base_write(cgns_file,"SU2 Base",element_dims,physical_dims,&cgns_base);
 //		if (cgns_err) cg_error_print();
     
@@ -464,7 +440,7 @@ void COutput::SetCGNS_Solution(CConfig *config, CGeometry *geometry, unsigned sh
 	}
   
   /*--- Write primitive variable residuals to CGNS file ---*/
-  if (config->GetWrt_Limiters()){
+  if (config->GetWrt_Limiters()) {
     for (jVar = 0; jVar < nVar_Consv; jVar++) {
       name.str(string()); name << "Primitive Limiter " << jVar+1;
       cgns_err = cg_field_write(cgns_file,cgns_base,cgns_zone,cgns_flow,RealDouble,(char *)name.str().c_str(),Data[iVar],&cgns_field); iVar++;
@@ -473,7 +449,7 @@ void COutput::SetCGNS_Solution(CConfig *config, CGeometry *geometry, unsigned sh
   }
   
 	/*--- Write conservative variable residuals to CGNS file ---*/
-  if (config->GetWrt_Residuals()){
+  if (config->GetWrt_Residuals()) {
     for (jVar = 0; jVar < nVar_Consv; jVar++) {
       name.str(string()); name << "Conservative Residual " << jVar+1;
       cgns_err = cg_field_write(cgns_file,cgns_base,cgns_zone,cgns_flow,RealDouble,(char *)name.str().c_str(),Data[iVar],&cgns_field); iVar++;

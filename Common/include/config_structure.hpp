@@ -2,10 +2,17 @@
  * \file config_structure.hpp
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>config_structure.cpp</i> file.
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.4 "eagle"
+ * \author F. Palacios, T. Economon, B. Tracey
+ * \version 3.2.8.3 "eagle"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ *
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -45,53 +52,52 @@ using namespace std;
  * \class CConfig
  * \brief Main class for defining the problem; basically this class reads the configuration file, and
  *        stores all the information.
- * \author F. Palacios.
- * \version 3.2.4 "eagle"
+ * \author F. Palacios
+ * \version 3.2.8.3 "eagle"
  */
+
 class CConfig {
 private:
-	unsigned short Kind_SU2; /*!< \brief Kind of SU2 software component. */
+	unsigned short Kind_SU2; /*!< \brief Kind of SU2 software component.*/
 	unsigned short iZone, nZone; /*!< \brief Number of zones in the mesh. */
 	double OrderMagResidual; /*!< \brief Order of magnitude reduction. */
 	double MinLogResidual; /*!< \brief Minimum value of the log residual. */
 	double EA_ScaleFactor; /*!< \brief Equivalent Area scaling factor */
 	double* EA_IntLimit; /*!< \brief Integration limits of the Equivalent Area computation */
   double AdjointLimit; /*!< \brief Adjoint variable limit */
+  bool MG_AdjointFlow; /*!< \brief MG with the adjoint flow problem */
   double* Subsonic_Engine_Box; /*!< \brief Coordinates of the box subsonic region */
-	double* Hold_GridFixed_Coord; /*!< \brief Coordinates of the box to hold fixed the nbumerical grid */
-	unsigned short ConvCriteria;	/*!< \brief Kind of convergence criteria. */
+  double* Hold_GridFixed_Coord; /*!< \brief Coordinates of the box to hold fixed the nbumerical grid */
+  unsigned short ConvCriteria;	/*!< \brief Kind of convergence criteria. */
   unsigned short nFFD_Iter; 	/*!< \brief Iteration for the point inversion problem. */
   double FFD_Tol;  	/*!< \brief Tolerance in the point inversion problem. */
-	bool Adjoint,			/*!< \brief Flag to know if the code is solving an adjoint problem. */
-    Viscous,                /*!< \brief Flag to know if the code is solving a viscous problem. */
-	EquivArea,				/*!< \brief Flag to know if the code is going to compute and plot the equivalent area. */
-	InvDesign_Cp,				/*!< \brief Flag to know if the code is going to compute and plot the inverse design. */
+  bool Viscous_Limiter_Flow, Viscous_Limiter_Turb;			/*!< \brief Viscous limiters. */
+  bool Adjoint,			/*!< \brief Flag to know if the code is solving an adjoint problem. */
+  Viscous,                /*!< \brief Flag to know if the code is solving a viscous problem. */
+  EquivArea,				/*!< \brief Flag to know if the code is going to compute and plot the equivalent area. */
+  InvDesign_Cp,				/*!< \brief Flag to know if the code is going to compute and plot the inverse design. */
   InvDesign_HeatFlux,				/*!< \brief Flag to know if the code is going to compute and plot the inverse design. */
-	OneShot,				/*!< \brief Flag to know if the code is solving a one shot problem. */
-	Linearized,				/*!< \brief Flag to know if the code is solving a linearized problem. */
-	Grid_Movement,			/*!< \brief Flag to know if there is grid movement. */
-    Wind_Gust,              /*!< \brief Flag to know if there is a wind gust. */
-    Aeroelastic_Simulation, /*!< \brief Flag to know if there is an aeroelastic simulation. */
-	Rotating_Frame,			/*!< \brief Flag to know if there is a rotating frame. */
+  Linearized,				/*!< \brief Flag to know if the code is solving a linearized problem. */
+  Grid_Movement,			/*!< \brief Flag to know if there is grid movement. */
+  Wind_Gust,              /*!< \brief Flag to know if there is a wind gust. */
+  Aeroelastic_Simulation, /*!< \brief Flag to know if there is an aeroelastic simulation. */
+  Rotating_Frame,			/*!< \brief Flag to know if there is a rotating frame. */
 	PoissonSolver,			/*!< \brief Flag to know if we are solving  poisson forces  in plasma solver. */
 	Low_Mach_Precon,		/*!< \brief Flag to know if we are using a low Mach number preconditioner. */
 	GravityForce,			/*!< \brief Flag to know if the gravity force is incuded in the formulation. */
 	SmoothNumGrid,			/*!< \brief Smooth the numerical grid. */
 	AdaptBoundary,			/*!< \brief Adapt the elements on the boundary. */
-	FullMG,					/*!< \brief Full multigrid strategy. */
-	Divide_Element,			/*!< \brief Divide rectables and hexahedrom. */
 	Engine_Intake,			/*!< \brief Engine intake subsonic region. */
 	Frozen_Visc,			/*!< \brief Flag for adjoint problem with/without frozen viscosity. */
 	Sens_Remove_Sharp,			/*!< \brief Flag for removing or not the sharp edges from the sensitivity computation. */
 	Hold_GridFixed,	/*!< \brief Flag hold fixed some part of the mesh during the deformation. */
 	Axisymmetric, /*!< \brief Flag for axisymmetric calculations */
 	DebugMode, /*!< \brief Flag for debug mode */
-	Show_Adj_Sens, /*!< \brief Flag for outputting sensitivities on exit */
   ionization;  /*!< \brief Flag for determining if free electron gas is in the mixture */
-	bool Visualize_Partition;	/*!< \brief Flag to visualize each partition in the DDM. */
   double Damp_Engine_Inflow;	/*!< \brief Damping factor for the engine inlet. */
-    double Damp_Engine_Bleed;	/*!< \brief Damping factor for the engine bleed. */
-    double Damp_Res_Restric,	/*!< \brief Damping factor for the residual restriction. */
+  double Damp_Engine_Bleed;	/*!< \brief Damping factor for the engine bleed. */
+  double Damp_Engine_Exhaust;	/*!< \brief Damping factor for the engine exhaust. */
+  double Damp_Res_Restric,	/*!< \brief Damping factor for the residual restriction. */
 	Damp_Correc_Prolong; /*!< \brief Damping factor for the correction prolongation. */
 	double Position_Plane; /*!< \brief Position of the Near-Field (y coordinate 2D, and z coordinate 3D). */
 	double WeightCd; /*!< \brief Weight of the drag coefficient. */
@@ -139,7 +145,8 @@ private:
 	nMarker_Inlet,					/*!< \brief Number of inlet flow markers. */
 	nMarker_Riemann,					/*!< \brief Number of Riemann flow markers. */
 	nMarker_Supersonic_Inlet,					/*!< \brief Number of supersonic inlet flow markers. */
-	nMarker_Outlet,					/*!< \brief Number of outlet flow markers. */
+  nMarker_Supersonic_Outlet,					/*!< \brief Number of supersonic outlet flow markers. */
+  nMarker_Outlet,					/*!< \brief Number of outlet flow markers. */
 	nMarker_Out_1D,         /*!< \brief Number of outlet flow markers over which to calculate 1D outputs */
 	nMarker_Isothermal,     /*!< \brief Number of isothermal wall boundaries. */
   nMarker_IsothermalNonCatalytic, /*!< \brief Number of constant temperature wall boundaries. */
@@ -156,7 +163,8 @@ private:
 	nMarker_Neumann,				/*!< \brief Number of Neumann flow markers. */
 	nMarker_Neumann_Elec,				/*!< \brief Number of Neumann flow markers. */
 	nMarker_All,					/*!< \brief Total number of markers using the grid information. */
-	nMarker_Config;					/*!< \brief Total number of markers using the config file
+  nMarker_Max,					/*!< \brief Max number of number of markers using the grid information. */
+  nMarker_Config;					/*!< \brief Total number of markers using the config file
 									(note that using parallel computation this number can be different
 									from nMarker_All). */
 	string *Marker_Euler,			/*!< \brief Euler wall markers. */
@@ -175,7 +183,8 @@ private:
 	*Marker_Inlet,					/*!< \brief Inlet flow markers. */
 	*Marker_Riemann,					/*!< \brief Riemann markers. */
 	*Marker_Supersonic_Inlet,					/*!< \brief Supersonic inlet flow markers. */
-	*Marker_Outlet,					/*!< \brief Outlet flow markers. */
+  *Marker_Supersonic_Outlet,					/*!< \brief Supersonic outlet flow markers. */
+  *Marker_Outlet,					/*!< \brief Outlet flow markers. */
 	*Marker_Out_1D,         /*!< \brief Outlet flow markers over which to calculate 1D output. */
 	*Marker_Isothermal,     /*!< \brief Isothermal wall markers. */
   *Marker_IsothermalNonCatalytic,     /*!< \brief Isothermal wall markers. */
@@ -193,8 +202,8 @@ private:
 	*Marker_Neumann_Elec,					/*!< \brief Neumann flow markers. */
 	*Marker_All_TagBound;				/*!< \brief Global index for markers using grid information. */
 	double *Dirichlet_Value;    /*!< \brief Specified Dirichlet value at the boundaries. */
-	double *Nozzle_Ttotal;    /*!< \brief Specified total temperatures for nacelle boundaries. */
-	double *Nozzle_Ptotal;    /*!< \brief Specified total pressures for nacelle boundaries. */
+	double *Exhaust_Temperature_Target;    /*!< \brief Specified total temperatures for nacelle boundaries. */
+	double *Exhaust_Pressure_Target;    /*!< \brief Specified total pressures for nacelle boundaries. */
 	double *Inlet_Ttotal;    /*!< \brief Specified total temperatures for inlet boundaries. */
 	double *Riemann_Var1, *Riemann_Var2;    /*!< \brief Specified values for Riemann boundary. */
 	double **Riemann_FlowDir;  /*!< \brief Specified flow direction vector (unit vector) for Riemann boundaries. */
@@ -211,6 +220,8 @@ private:
   double *Bleed_Temperature_Target;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   double *Bleed_Temperature;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   double *Bleed_Pressure;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  double *Exhaust_Pressure;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  double *Exhaust_Temperature;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   double *Outlet_Pressure;    /*!< \brief Specified back pressures (static) for outlet boundaries. */
 	double *Isothermal_Temperature; /*!< \brief Specified isothermal wall temperatures (static). */
   double *Wall_Catalycity; /*!< \brief Specified wall species mass-fractions for catalytic boundaries. */
@@ -223,7 +234,8 @@ private:
   double **ActDisk_Origin;
   double *ActDisk_RootRadius;
   double *ActDisk_TipRadius;
-  double *ActDisk_CT;
+  double *ActDisk_PressJump;
+  double *ActDisk_TempJump;
   double *ActDisk_Omega;
   double **Periodic_RotCenter;  /*!< \brief Rotational center for each periodic boundary. */
 	double **Periodic_RotAngles;      /*!< \brief Rotation angles for each periodic boundary. */
@@ -245,7 +257,7 @@ private:
   long Unst_AdjointIter;			/*!< \brief Iteration number to begin the reverse time integration in the direct solver for the unsteady adjoint. */
 	unsigned short nRKStep;			/*!< \brief Number of steps of the explicit Runge-Kutta method. */
 	double *RK_Alpha_Step;			/*!< \brief Runge-Kutta beta coefficients. */
-	unsigned short nMultiLevel;		/*!< \brief Number of multigrid levels (coarse levels). */
+	unsigned short nMGLevels;		/*!< \brief Number of multigrid levels (coarse levels). */
 	unsigned short nCFL;			/*!< \brief Number of CFL, one for each multigrid level. */
 	double
 	CFLRedCoeff_Turb,		/*!< \brief CFL reduction coefficient on the LevelSet problem. */
@@ -256,10 +268,14 @@ private:
 	Unst_CFL;		/*!< \brief Unsteady CFL number. */
 	bool AddIndNeighbor;			/*!< \brief Include indirect neighbor in the agglomeration process. */
 	unsigned short nDV;		/*!< \brief Number of design variables. */
+  unsigned short nFFDBox;		/*!< \brief Number of ffd boxes. */
   unsigned short nGridMovement;		/*!< \brief Number of grid movement types specified. */
 	unsigned short nParamDV;		/*!< \brief Number of parameters of the design variable. */
 	double **ParamDV;				/*!< \brief Parameters of the design variable. */
+  double **CoordFFDBox;				/*!< \brief Coordinates of the FFD boxes. */
+  unsigned short **DegreeFFDBox;	/*!< \brief Degree of the FFD boxes. */
   string *FFDTag;				/*!< \brief Parameters of the design variable. */
+  string *TagFFDBox;				/*!< \brief Tag of the FFD box. */
 	unsigned short GeometryMode;			/*!< \brief Gemoetry mode (analysis or gradient computation). */
 	unsigned short MGCycle;			/*!< \brief Kind of multigrid cycle. */
 	unsigned short FinestMesh;		/*!< \brief Finest mesh for the full multigrid approach. */
@@ -354,7 +370,10 @@ private:
 	double Linear_Solver_Error;		/*!< \brief Min error of the linear solver for the implicit formulation. */
 	unsigned long Linear_Solver_Iter;		/*!< \brief Max iterations of the linear solver for the implicit formulation. */
 	unsigned long Linear_Solver_Restart_Frequency;   /*!< \brief Restart frequency of the linear solver for the implicit formulation. */
-	double Linear_Solver_Relax;		/*!< \brief Relaxation coefficient of the linear solver. */
+  double Roe_Kappa;		/*!< \brief Relaxation of the Roe scheme. */
+  double Relaxation_Factor_Flow;		/*!< \brief Relaxation coefficient of the linear solver mean flow. */
+  double Relaxation_Factor_Turb;		/*!< \brief Relaxation coefficient of the linear solver turbulence. */
+  double Relaxation_Factor_AdjFlow;		/*!< \brief Relaxation coefficient of the linear solver adjoint mean flow. */
 	double AdjTurb_Linear_Error;		/*!< \brief Min error of the turbulent adjoint linear solver for the implicit formulation. */
   double EntropyFix_Coeff;              /*!< \brief Entropy fix coefficient. */
 	unsigned short AdjTurb_Linear_Iter;		/*!< \brief Min error of the turbulent adjoint linear solver for the implicit formulation. */
@@ -388,6 +407,7 @@ private:
   unsigned short Deform_Stiffness_Type; /*!< \brief Type of element stiffness imposed for FEA mesh deformation. */
   bool Deform_Output;  /*!< \brief Print the residuals during mesh deformation to the console. */
   double Deform_Tol_Factor; /*!< Factor to multiply smallest volume for deform tolerance (0.001 default) */
+  unsigned short Deform_Linear_Solver; /*!< Numerical method to deform the grid */
   double Deform_ElasticityMod, Deform_PoissonRatio; /*!< young's modulus and poisson ratio for volume deformation stiffness model */
   bool Visualize_Deformation;	/*!< \brief Flag to visualize the deformation in MDC. */
 	double Mach;		/*!< \brief Mach number. */
@@ -408,9 +428,7 @@ private:
 	Cauchy_Elems;						/*!< \brief Number of elements to evaluate. */
 	unsigned short Residual_Func_Flow;	/*!< \brief Equation to apply residual convergence to. */
 	unsigned long StartConv_Iter;	/*!< \brief Start convergence criteria at iteration. */
-	double Cauchy_Eps,	/*!< \brief Epsilon used for the convergence. */
-	Cauchy_Eps_OneShot,	/*!< \brief Epsilon used for the one shot method convergence. */
-	Cauchy_Eps_FullMG;	/*!< \brief Epsilon used for the full multigrid method convergence. */
+  double Cauchy_Eps;	/*!< \brief Epsilon used for the convergence. */
 	unsigned long Wrt_Sol_Freq,	/*!< \brief Writing solution frequency. */
 	Wrt_Sol_Freq_DualTime,	/*!< \brief Writing solution frequency for Dual Time. */
 	Wrt_Con_Freq,				/*!< \brief Writing convergence history frequency. */
@@ -447,12 +465,12 @@ private:
   *Marker_CfgFile_DV,       /*!< \brief Global index for design variable markers using the config information. */
   *Marker_CfgFile_PerBound;     /*!< \brief Global index for periodic boundaries using the config information. */
   string *PlaneTag;      /*!< \brief Global index for the plane adaptation (upper, lower). */
-	unsigned short nDomain;			/*!< \brief Number of domains in the MPI parallelization. */
 	double DualVol_Power;			/*!< \brief Power for the dual volume in the grid adaptation sensor. */
 	unsigned short Analytical_Surface;	/*!< \brief Information about the analytical definition of the surface for grid adaptation. */
 	unsigned short Axis_Orientation;	/*!< \brief Axis orientation. */
 	unsigned short Mesh_FileFormat;	/*!< \brief Mesh input format. */
 	unsigned short Output_FileFormat;	/*!< \brief Format of the output files. */
+  bool CFL_Adapt;      /*!< \brief Adaptive CFL number. */
 	double RefAreaCoeff,		/*!< \brief Reference area for coefficient computation. */
 	RefElemLength,				/*!< \brief Reference element length for computing the slope limiting epsilon. */
 	RefSharpEdges,				/*!< \brief Reference coefficient for detecting sharp edges. */
@@ -461,7 +479,7 @@ private:
   *RefOriginMoment_X,      /*!< \brief X Origin for moment computation. */
   *RefOriginMoment_Y,      /*!< \brief Y Origin for moment computation. */
   *RefOriginMoment_Z,      /*!< \brief Z Origin for moment computation. */
-  *CFLRamp,      /*!< \brief Information about the CFL ramp. */
+  *CFL_AdaptParam,      /*!< \brief Information about the CFL ramp. */
   *CFL,
 	DomainVolume;		/*!< \brief Volume of the computational grid. */
   unsigned short nRefOriginMoment_X,    /*!< \brief Number of X-coordinate moment computation origins. */
@@ -496,13 +514,11 @@ private:
 	SurfAdjCoeff_FileName,			/*!< \brief Output file with the adjoint variables on the surface. */
 	SurfLinCoeff_FileName,			/*!< \brief Output file with the linearized variables on the surface. */
 	New_SU2_FileName;        		/*!< \brief Output SU2 mesh file converted from CGNS format. */
-	bool CGNS_To_SU2;      		 	/*!< \brief Flag to specify whether a CGNS mesh is converted to SU2 format. */
 	unsigned short nSpecies, 		/*!< \brief No of species present in plasma */
 	nReactions;									/*!< \brief Number of reactions in chemical model. */
 	bool Low_MemoryOutput,      /*!< \brief Write a volume solution file */
   Wrt_Vol_Sol,                /*!< \brief Write a volume solution file */
 	Wrt_Srf_Sol,                /*!< \brief Write a surface solution file */
-	Wrt_Restart,                /*!< \brief Write a restart solution file */
 	Wrt_Csv_Sol,                /*!< \brief Write a surface comma-separated values solution file */
 	Wrt_Residuals,              /*!< \brief Write residuals to solution file */
   Wrt_Limiters,              /*!< \brief Write residuals to solution file */
@@ -510,6 +526,7 @@ private:
   Wrt_Halo,                   /*!< \brief Write rind layers in solution files */
   Plot_Section_Forces,       /*!< \brief Write sectional forces for specified markers. */
 	Wrt_1D_Output;                /*!< \brief Write average stagnation pressure specified markers. */
+  unsigned short Console_Output_Verb;  /*!< \brief Level of verbosity for console output */
 	double *ArrheniusCoefficient,					/*!< \brief Arrhenius reaction coefficient */
 	*ArrheniusEta,								/*!< \brief Arrhenius reaction temperature exponent */
 	*ArrheniusTheta,							/*!< \brief Arrhenius reaction characteristic temperature */
@@ -563,14 +580,14 @@ private:
 	TurbulenceIntensity_FreeStream,     /*!< \brief Freestream turbulent intensity (for sagt transition model) of the fluid.  */
 	Turb2LamViscRatio_FreeStream,          /*!< \brief Ratio of turbulent to laminar viscosity. */
 	NuFactor_FreeStream,  /*!< \brief Ratio of turbulent to laminar viscosity. */
-	Pressure_FreeStream,     /*!< \brief Total pressure of the fluid. */
+  NuFactor_Engine,  /*!< \brief Ratio of turbulent to laminar viscosity at the engine. */
+  Pressure_FreeStream,     /*!< \brief Total pressure of the fluid. */
 	Temperature_FreeStream,  /*!< \brief Total temperature of the fluid.  */
   Temperature_ve_FreeStream,  /*!< \brief Total vibrational-electronic temperature of the fluid.  */
   *MassFrac_FreeStream, /*!< \brief Mixture mass fractions of the fluid. */
 	Prandtl_Lam,      /*!< \brief Laminar Prandtl number for the gas.  */
 	Prandtl_Turb,     /*!< \brief Turbulent Prandtl number for the gas.  */
 	Length_Ref,       /*!< \brief Reference length for non-dimensionalization. */
-	Mesh_Scale_Change,       /*!< \brief Conversion factor from grid units to meters. */
 	Pressure_Ref,     /*!< \brief Reference pressure for non-dimensionalization.  */
 	Temperature_Ref,  /*!< \brief Reference temperature for non-dimensionalization.*/
 	Density_Ref,      /*!< \brief Reference density for non-dimensionalization.*/
@@ -595,7 +612,6 @@ private:
 	int ***Reactions;					/*!< \brief Reaction map for chemically reacting, multi-species flows. */
   double ***Omega00,        /*!< \brief Collision integrals (Omega(0,0)) */
   ***Omega11;                  /*!< \brief Collision integrals (Omega(1,1)) */
-	bool Mesh_Output; /*!< \brief Flag to specify whether a new mesh should be written in the converted units. */
 	double ElasticyMod,			/*!< \brief Young's modulus of elasticity. */
 	PoissonRatio,						/*!< \brief Poisson's ratio. */
 	MaterialDensity;								/*!< \brief Material density. */
@@ -673,6 +689,7 @@ private:
   bool ExtraOutput;
   unsigned long Nonphys_Points, /*!< \brief Current number of non-physical points in the solution. */
   Nonphys_Reconstr;      /*!< \brief Current number of non-physical reconstructions for 2nd-order upwinding. */
+  bool ParMETIS;      /*!< \brief Boolean for activating ParMETIS mode (while testing). */
   
   string FluidSubLib;         /*!< \brief Name of fluid thermodynamic sub-library.  */
   unsigned short nComp;       /*!< \brief Number of components in the fluid.  */
@@ -709,7 +726,7 @@ private:
 
   /*!<\brief addDoubleOption creates a config file parser for an option with the given name whose
    value can be represented by a double.*/
-  void addDoubleOption(const string name, double & option_field, double default_value){
+  void addDoubleOption(const string name, double & option_field, double default_value) {
     // Check if the key is already in the map. If this fails, it is coder error
     // and not user error, so throw.
     assert(option_map.find(name) == option_map.end());
@@ -728,42 +745,42 @@ private:
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
-  void addStringOption(const string name, string & option_field, string default_value){
+  void addStringOption(const string name, string & option_field, string default_value) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string,bool>(name,true));
     COptionBase* val = new COptionString(name, option_field, default_value);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
-  void addIntegerOption(const string name, int & option_field, int default_value){
+  void addIntegerOption(const string name, int & option_field, int default_value) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string,bool>(name,true));
     COptionBase* val = new COptionInt(name, option_field, default_value);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
-  void addUnsignedLongOption(const string name, unsigned long & option_field, unsigned long default_value){
+  void addUnsignedLongOption(const string name, unsigned long & option_field, unsigned long default_value) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string,bool>(name,true));
     COptionBase* val = new COptionULong(name, option_field, default_value);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
-  void addUnsignedShortOption(const string name, unsigned short & option_field, unsigned short default_value){
+  void addUnsignedShortOption(const string name, unsigned short & option_field, unsigned short default_value) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string,bool>(name,true));
     COptionBase* val = new COptionUShort(name, option_field, default_value);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
-  void addLongOption(const string name, long & option_field, long default_value){
+  void addLongOption(const string name, long & option_field, long default_value) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string,bool>(name,true));
     COptionBase* val = new COptionLong(name, option_field, default_value);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
-  void addBoolOption(const string name, bool & option_field, bool default_value){
+  void addBoolOption(const string name, bool & option_field, bool default_value) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string,bool>(name,true));
     COptionBase* val = new COptionBool(name, option_field, default_value);
@@ -773,7 +790,7 @@ private:
   // enum types work differently than all of the others because there are a small number of valid
   // string entries for the type. One must also provide a list of all the valid strings of that type.
   template <class Tenum>
-  void addEnumOption(const string name, unsigned short & option_field, const map<string, Tenum> & enum_map, Tenum default_value){
+  void addEnumOption(const string name, unsigned short & option_field, const map<string, Tenum> & enum_map, Tenum default_value) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string,bool>(name,true));
     COptionBase* val = new COptionEnum<Tenum>(name, enum_map, option_field, default_value);
@@ -792,10 +809,10 @@ private:
     option_map.insert( pair<string, COptionBase*>(name, val) );
 	}
 
-  void addDoubleArrayOption(const string name, const int size, double * & option_field, double * default_value){
+  void addDoubleArrayOption(const string name, const int size, double * & option_field, double * default_value) {
 
     double * def = new double [size];
-    for (int i = 0; i < size; i++){
+    for (int i = 0; i < size; i++) {
       def[i] = default_value[i];
     }
     assert(option_map.find(name) == option_map.end());
@@ -804,28 +821,28 @@ private:
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
-  void addDoubleListOption(const string name, unsigned short & size, double * & option_field){
+  void addDoubleListOption(const string name, unsigned short & size, double * & option_field) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string,bool>(name,true));
     COptionBase* val = new COptionDoubleList(name, size, option_field);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
-  void addUShortListOption(const string name, unsigned short & size, unsigned short * & option_field){
+  void addUShortListOption(const string name, unsigned short & size, unsigned short * & option_field) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string,bool>(name,true));
     COptionBase* val = new COptionUShortList(name, size, option_field);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
-  void addStringListOption(const string name, unsigned short & num_marker, string* & option_field){
+  void addStringListOption(const string name, unsigned short & num_marker, string* & option_field) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string,bool>(name,true));
     COptionBase* val = new COptionStringList(name, num_marker, option_field);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
-  void addConvectOption(const string name, unsigned short & space_field, unsigned short & centered_field, unsigned short & upwind_field){
+  void addConvectOption(const string name, unsigned short & space_field, unsigned short & centered_field, unsigned short & upwind_field) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string,bool>(name,true));
     COptionBase* val = new COptionConvect(name, space_field, centered_field, upwind_field);
@@ -833,25 +850,38 @@ private:
   }
 
   void addMathProblemOption(const string name, bool & Adjoint, const bool & Adjoint_default,
-                      bool & OneShot, const bool & OneShot_default,
                       bool & Linearized, const bool & Linearized_default,
-                            bool & Restart_Flow, const bool & Restart_Flow_default){
+                            bool & Restart_Flow, const bool & Restart_Flow_default) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string,bool>(name,true));
-    COptionBase* val = new COptionMathProblem(name, Adjoint, Adjoint_default, OneShot, OneShot_default, Linearized, Linearized_default, Restart_Flow, Restart_Flow_default);
+    COptionBase* val = new COptionMathProblem(name, Adjoint, Adjoint_default, Linearized, Linearized_default, Restart_Flow, Restart_Flow_default);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
   void addDVParamOption(const string name, unsigned short & nDV_field, double** & paramDV, string* & FFDTag,
-                        unsigned short* & design_variable){
+                        unsigned short* & design_variable) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string,bool>(name,true));
     COptionBase* val = new COptionDVParam(name, nDV_field, paramDV, FFDTag, design_variable);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
+  
+  void addFFDDefOption(const string name, unsigned short & nFFD_field, double** & coordFFD, string* & FFDTag) {
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionFFDDef(name, nFFD_field, coordFFD, FFDTag);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+  
+  void addFFDDegreeOption(const string name, unsigned short & nFFD_field, unsigned short** & degreeFFD) {
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionFFDDegree(name, nFFD_field, degreeFFD);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
 
   void addStringDoubleListOption(const string name, unsigned short & list_size, string * & string_field,
-                        double* & double_field){
+                        double* & double_field) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string,bool>(name,true));
     COptionBase* val = new COptionStringDoubleList(name, list_size, string_field, double_field);
@@ -859,7 +889,7 @@ private:
   }
 
   void addInletOption(const string name, unsigned short & nMarker_Inlet, string * & Marker_Inlet,
-                                 double* & Ttotal, double* & Ptotal, double** & FlowDir){
+                                 double* & Ttotal, double* & Ptotal, double** & FlowDir) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string,bool>(name,true));
     COptionBase* val = new COptionInlet(name, nMarker_Inlet, Marker_Inlet, Ttotal, Ptotal, FlowDir);
@@ -868,7 +898,7 @@ private:
   template <class Tenum>
   
   void addRiemannOption(const string name, unsigned short & nMarker_Riemann, string * & Marker_Riemann, unsigned short* & option_field, const map<string, Tenum> & enum_map,
-                                 double* & var1, double* & var2, double** & FlowDir){
+                                 double* & var1, double* & var2, double** & FlowDir) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string,bool>(name,true));
     COptionBase* val = new COptionRiemann<Tenum>(name, nMarker_Riemann, Marker_Riemann, option_field, enum_map, var1, var2, FlowDir);
@@ -876,7 +906,7 @@ private:
   }
 
   void addExhaustOption(const string name, unsigned short & nMarker_Exhaust, string * & Marker_Exhaust,
-                      double* & Ttotal, double* & Ptotal){
+                      double* & Ttotal, double* & Ptotal) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string,bool>(name,true));
     COptionBase* val = new COptionExhaust(name, nMarker_Exhaust, Marker_Exhaust, Ttotal, Ptotal);
@@ -884,7 +914,7 @@ private:
   }
   
   void addBleedOption(const string name, unsigned short & nMarker_Bleed, string * & Marker_Bleed,
-                        double* & MassFlow_Target, double* & Temp_Target){
+                        double* & MassFlow_Target, double* & Temp_Target) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string,bool>(name,true));
     COptionBase* val = new COptionBleed(name, nMarker_Bleed, Marker_Bleed, MassFlow_Target, Temp_Target);
@@ -893,7 +923,7 @@ private:
 
   void addPeriodicOption(const string & name, unsigned short & nMarker_PerBound,
                     string* & Marker_PerBound, string* & Marker_PerDonor,
-                         double** & RotCenter, double** & RotAngles, double** & Translation){
+                         double** & RotCenter, double** & RotAngles, double** & Translation) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string,bool>(name,true));
     COptionBase* val = new COptionPeriodic(name, nMarker_PerBound, Marker_PerBound, Marker_PerDonor, RotCenter, RotAngles, Translation);
@@ -903,14 +933,14 @@ private:
   void addActuatorDiskOption(const string & name, unsigned short & nMarker_ActDisk_Inlet, unsigned short & nMarker_ActDisk_Outlet,
                                       string* & Marker_ActDisk_Inlet, string* & Marker_ActDisk_Outlet,
                                       double** & ActDisk_Origin, double* & ActDisk_RootRadius, double* & ActDisk_TipRadius,
-                                      double* & ActDisk_CT, double* & ActDisk_Omega) {
+                                      double* & ActDisk_PressJump, double* & ActDisk_TempJump, double* & ActDisk_Omega) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string,bool>(name,true));
-    COptionBase* val = new COptionActuatorDisk(name, nMarker_ActDisk_Inlet, nMarker_ActDisk_Outlet, Marker_ActDisk_Inlet, Marker_ActDisk_Outlet, ActDisk_Origin, ActDisk_RootRadius, ActDisk_TipRadius, ActDisk_CT, ActDisk_Omega);
+    COptionBase* val = new COptionActuatorDisk(name, nMarker_ActDisk_Inlet, nMarker_ActDisk_Outlet, Marker_ActDisk_Inlet, Marker_ActDisk_Outlet, ActDisk_Origin, ActDisk_RootRadius, ActDisk_TipRadius, ActDisk_PressJump, ActDisk_TempJump, ActDisk_Omega);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
-  void addPythonOption(const string name){
+  void addPythonOption(const string name) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string,bool>(name,true));
     COptionBase* val = new COptionPython(name);
@@ -930,6 +960,11 @@ public:
 	 * \brief Constructor of the class which reads the input file.
 	 */
 	CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software);
+  
+  /*!
+   * \brief Constructor of the class which reads the input file.
+   */
+  CConfig(char case_filename[MAX_STRING_SIZE], CConfig *config);
 
 	/*!
 	 * \brief Destructor of the class.
@@ -950,12 +985,6 @@ public:
 	 */
 	bool TokenizeString(string & str, string & option_name,
 			vector<string> & option_value);
-
-	/*!
-	 * \brief Get information about whether this is a Python config option for design.
-	 * \return <code>TRUE</code> if this is a Python config option for design; otherwise <code>FALSE</code>.
-	 */
-//	bool GetPython_Option(string & option_name);
 
 	/*!
 	 * \brief Get reference origin for moment computation.
@@ -1103,12 +1132,6 @@ public:
 	 */
 	double GetFreeSurface_Outlet(void);
 
-	/*!
-	 * \brief Creates a tecplot file to visualize the partition made by the DDC software.
-	 * \return <code>TRUE</code> if the partition is going to be plotted; otherwise <code>FALSE</code>.
-	 */
-	bool GetVisualize_Partition(void);
-
   /*!
 	 * \brief Creates a tecplot file to visualize the partition made by the DDC software.
 	 * \return <code>TRUE</code> if the partition is going to be plotted; otherwise <code>FALSE</code>.
@@ -1140,7 +1163,19 @@ public:
 	 * \return Value of the constant: Charge_Number[val_Species]
 	 */
 	int GetCharge_Number(unsigned short val_Species);
-
+  
+  /*!
+   * \brief Get the values of the CFL adapation.
+   * \return Value of CFL adapation
+   */
+  double GetCFL_AdaptParam(unsigned short val_index);
+  
+  /*!
+   * \brief Get the values of the CFL adapation.
+   * \return Value of CFL adapation
+   */
+  bool GetCFL_Adapt(void);
+  
   /*!
 	 * \brief Get the value of the limits for the sections.
 	 * \return Value of the limits for the sections.
@@ -1456,6 +1491,12 @@ public:
 	 * \return Non-dimensionalized freestream intensity.
 	 */
 	double GetNuFactor_FreeStream(void);
+  
+  /*!
+   * \brief Get the value of the non-dimensionalized engine turbulence intensity.
+   * \return Non-dimensionalized engine intensity.
+   */
+  double GetNuFactor_Engine(void);
 
 	/*!
 	 * \brief Get the value of the turbulent to laminar viscosity ratio.
@@ -1474,12 +1515,6 @@ public:
 	 * \return Reynolds length.
 	 */
 	double GetLength_Reynolds(void);
-
-	/*!
-	 * \brief Get the conversion factor for converting the grid to meters.
-	 * \return Conversion factor for converting the grid to meters.
-	 */
-	double GetMesh_Scale_Change(void);
 
 	/*!
 	 * \brief Get the start up iterations using the fine grid, this works only for multigrid problems.
@@ -1563,20 +1598,6 @@ public:
 	 * \param[in] val_volume - Value of the domain volume computed on the finest grid.
 	 */
 	void SetDomainVolume(double val_volume);
-
-	/*!
-	 * \brief Get number of domains in a parallel computation.
-	 * \note The number of domains is read from the configuration file or from mpirun -np option.
-	 * \return Number of domains in the parallel computation.
-	 */
-	unsigned short GetnDomain(void);
-
-	/*!
-	 * \brief In case we are running the CFD software, the number of domains is read
-	 *        from <i>MPI::COMM_WORLD.Get_size()</i>.
-	 * \param[in] val_ndomain - Number of domains for the MPI parallelization.
-	 */
-	void SetnDomain(unsigned short val_ndomain);
 
 	/*!
 	 * \brief Set the finest mesh in a multigrid strategy.
@@ -1878,13 +1899,13 @@ public:
 	 * \brief Get the number of multigrid levels.
 	 * \return Number of multigrid levels (without including the original grid).
 	 */
-	unsigned short GetMGLevels(void);
+	unsigned short GetnMGLevels(void);
 
 	/*!
 	 * \brief Set the number of multigrid levels.
-	 * \param[in] val_nMultiLevel - Index of the mesh were the CFL is applied
+	 * \param[in] val_nMGLevels - Index of the mesh were the CFL is applied
 	 */
-	void SetMGLevels(unsigned short val_nMultiLevel);
+	void SetMGLevels(unsigned short val_nMGLevels);
 
 	/*!
 	 * \brief Get the index of the finest grid.
@@ -1949,17 +1970,46 @@ public:
 	double GetParamDV(unsigned short val_dv, unsigned short val_param);
 
   /*!
+   * \brief Get a parameter of the particular design variable.
+   * \param[in] val_ffd - Number of the ffd that we want to read.
+   * \param[in] val_coord - Index of the coordinate that we want to read.
+   * \return FFD parameter.
+   */
+  double GetCoordFFDBox(unsigned short val_ffd, unsigned short val_coord);
+
+  /*!
+   * \brief Get a parameter of the particular design variable.
+   * \param[in] val_ffd - Number of the ffd that we want to read.
+   * \param[in] val_coord - Index of the coordinate that we want to read.
+   * \return FFD parameter.
+   */
+  unsigned short GetDegreeFFDBox(unsigned short val_ffd, unsigned short val_degree);
+
+  /*!
 	 * \brief Get the FFD Tag of a particular design variable.
 	 * \param[in] val_dv - Number of the design variable that we want to read.
 	 * \return Design variable parameter.
 	 */
 	string GetFFDTag(unsigned short val_dv);
+  
+  /*!
+   * \brief Get the FFD Tag of a particular design variable.
+   * \param[in] val_dv - Number of the design variable that we want to read.
+   * \return Design variable parameter.
+   */
+  string GetTagFFDBox(unsigned short val_ffd);
 
 	/*!
 	 * \brief Get the number of design variables.
 	 * \return Number of the design variables.
 	 */
 	unsigned short GetnDV(void);
+  
+  /*!
+   * \brief Get the number of design variables.
+   * \return Number of the design variables.
+   */
+  unsigned short GetnFFDBox(void);
 
 	/*!
 	 * \brief Get the number of Runge-Kutta steps.
@@ -1972,6 +2022,12 @@ public:
 	 * \return Total number of boundary markers.
 	 */
 	unsigned short GetnMarker_All(void);
+  
+  /*!
+   * \brief Get the total number of boundary markers.
+   * \return Total number of boundary markers.
+   */
+  unsigned short GetnMarker_Max(void);
 
     /*!
 	 * \brief Get the total number of boundary markers.
@@ -2169,12 +2225,6 @@ public:
 	bool GetWrt_Csv_Sol(void);
 
 	/*!
-	 * \brief Get information about writing a restart solution file.
-	 * \return <code>TRUE</code> means that a restart solution file will be written.
-	 */
-	bool GetWrt_Restart(void);
-
-	/*!
 	 * \brief Get information about writing residuals to volume solution file.
 	 * \return <code>TRUE</code> means that residuals will be written to the solution file.
 	 */
@@ -2225,6 +2275,22 @@ public:
 	 */
 	string GetMarker_All_TagBound(unsigned short val_marker);
 
+  /*!
+   * \brief Get the index of the surface defined in the geometry file.
+   * \param[in] val_marker - Value of the marker in which we are interested.
+   * \return Value of the index that is in the geometry file for the surface that
+   *         has the marker <i>val_marker</i>.
+   */
+  string GetMarker_ActDisk_Inlet(unsigned short val_marker);
+
+  /*!
+   * \brief Get the index of the surface defined in the geometry file.
+   * \param[in] val_marker - Value of the marker in which we are interested.
+   * \return Value of the index that is in the geometry file for the surface that
+   *         has the marker <i>val_marker</i>.
+   */
+  string GetMarker_ActDisk_Outlet(unsigned short val_marker);
+  
 	/*!
 	 * \brief Get the index of the surface defined in the geometry file.
 	 * \param[in] val_marker - Value of the marker in which we are interested.
@@ -2263,7 +2329,7 @@ public:
 	 * \return Value of the marker <i>val_marker</i> that is in the geometry file
 	 *         for the surface that has the tag.
 	 */
-  short GetTagBound_Marker_All(string val_tag);
+  short GetMarker_All_TagBound(string val_tag);
 
 	/*!
 	 * \brief Get the kind of boundary for each marker.
@@ -2630,6 +2696,12 @@ public:
 	 * \return Numerical solver for implicit formulation (solving the linear system).
 	 */
 	unsigned short GetKind_Linear_Solver(void);
+  
+  /*!
+   * \brief Get the kind of solver for the implicit solver.
+   * \return Numerical solver for implicit formulation (solving the linear system).
+   */
+  unsigned short GetDeform_Linear_Solver(void);
 
 	/*!
 	 * \brief Get the kind of preconditioner for the implicit solver.
@@ -2665,7 +2737,25 @@ public:
 	 * \brief Get the relaxation coefficient of the linear solver for the implicit formulation.
 	 * \return relaxation coefficient of the linear solver for the implicit formulation.
 	 */
-	double GetLinear_Solver_Relax(void);
+	double GetRelaxation_Factor_Flow(void);
+  
+  /*!
+   * \brief Get the relaxation coefficient of the linear solver for the implicit formulation.
+   * \return relaxation coefficient of the linear solver for the implicit formulation.
+   */
+  double GetRelaxation_Factor_AdjFlow(void);
+  
+  /*!
+   * \brief Get the relaxation coefficient of the linear solver for the implicit formulation.
+   * \return relaxation coefficient of the linear solver for the implicit formulation.
+   */
+  double GetRelaxation_Factor_Turb(void);
+  
+  /*!
+   * \brief Get the relaxation coefficient of the linear solver for the implicit formulation.
+   * \return relaxation coefficient of the linear solver for the implicit formulation.
+   */
+  double GetRoe_Kappa(void);
 
 	/*!
 	 * \brief Get the kind of solver for the implicit solver.
@@ -2761,6 +2851,12 @@ public:
 	 * \return Kind of the SU2 software component.
 	 */
 	unsigned short GetKind_SU2(void);
+  
+  /*!
+	 * \brief Get the kind of SU2 software component.
+	 * \return Kind of the SU2 software component.
+	 */
+	void SetKind_SU2(unsigned short val_kind_su2);
 
 	/*!
 	 * \brief Get the kind of the turbulence model.
@@ -3384,6 +3480,18 @@ public:
 	bool GetFrozen_Visc(void);
 
   /*!
+   * \brief Viscous limiter mean flow.
+   * \return <code>FALSE</code> means no viscous limiter turb equations.
+   */
+  bool GetViscous_Limiter_Flow(void);
+  
+  /*!
+   * \brief Viscous limiter turb equations.
+   * \return <code>FALSE</code> means no viscous limiter turb equations.
+   */
+  bool GetViscous_Limiter_Turb(void);
+  
+  /*!
 	 * \brief Provides information about if the sharp edges are going to be removed from the sensitivity.
 	 * \return <code>FALSE</code> means that the sharp edges will be removed from the sensitivity.
 	 */
@@ -3427,18 +3535,6 @@ public:
 	 * \return Kind of sensitivity smoothing technique.
 	 */
 	unsigned short GetKind_SensSmooth(void);
-
-	/*!
-	 * \brief Get equations to be treated continuously. There are several options: Euler, Navier Stokes
-	 * \return Continuous equations.
-	 */
-	unsigned short GetContinuous_Eqns(void);
-
-	/*!
-	 * \brief Get equations to be treated discretely. There are several options: None, SA, SST
-	 * \return Discrete equations.
-	 */
-	unsigned short GetDiscrete_Eqns(void);
 
 	/*!
 	 * \brief Provides information about the time integration, and change the write in the output
@@ -3641,12 +3737,6 @@ public:
    * \brief Indicates whether electron gas is present in the gas mixture.
    */
   bool GetIonization(void);
-
-	/*!
-	 * \brief Information about doing a full multigrid strategy (start in the coarse level).
-	 * \return <code>TRUE</code> or <code>FALSE</code>  depending if we are performing a full multigrid strategy.
-	 */
-	bool GetFullMG(void);
 
 	/*!
 	 * \brief Information about computing and plotting the equivalent area distribution.
@@ -3908,18 +3998,6 @@ public:
 	double GetCauchy_Eps(void);
 
 	/*!
-	 * \brief Get the value of convergence criteria for the one-shot problem.
-	 * \return Value of the convergence criteria.
-	 */
-	double GetCauchy_Eps_OneShot(void);
-
-	/*!
-	 * \brief Get the value of convergence criteria for the full multigrid method.
-	 * \return Value of the convergence criteria.
-	 */
-	double GetCauchy_Eps_FullMG(void);
-
-	/*!
 	 * \brief If we are prforming an unsteady simulation, there is only
 	 *        one value of the time step for the complete simulation.
 	 * \return Value of the time step in an unsteady simulation (non dimensional).
@@ -3959,12 +4037,6 @@ public:
 	 * \return Value of the physical time in an unsteady simulation.
 	 */
 	double GetCurrent_UnstTime(void);
-
-	/*!
-	 * \brief Divide the rectbles and hexahedron.
-	 * \return <code>TRUE</code> if the elements must be divided; otherwise <code>FALSE</code>.
-	 */
-	bool GetDivide_Element(void);
 
   /*!
 	 * \brief Divide the rectbles and hexahedron.
@@ -4305,17 +4377,18 @@ public:
 	unsigned short GetConvCriteria(void);
 
 	/*!
-	 * \brief This subroutine adds the domain index to the name of some input-output file names.
-	 * \param[in] val_domain - Index of the domain.
-	 */
-	void SetFileNameDomain(unsigned short val_domain);
-
-	/*!
 	 * \brief Get the index in the config information of the marker <i>val_marker</i>.
 	 * \note When we read the config file, it stores the markers in a particular vector.
 	 * \return Index in the config information of the marker <i>val_marker</i>.
 	 */
 	unsigned short GetMarker_CfgFile_TagBound(string val_marker);
+  
+  /*!
+   * \brief Get the name in the config information of the marker number <i>val_marker</i>.
+   * \note When we read the config file, it stores the markers in a particular vector.
+   * \return Name of the marker in the config information of the marker <i>val_marker</i>.
+   */
+  string GetMarker_CfgFile_TagBound(unsigned short val_marker);
 
 	/*!
 	 * \brief Get the boundary information (kind of boundary) in the config information of the marker <i>val_marker</i>.
@@ -4401,19 +4474,25 @@ public:
 	 * \return Value of the minimum residual value (log10 scale).
 	 */
 	double GetMinLogResidual(void);
-
-    /*!
-	 * \brief Value of the damping factor for the engine inlet bc.
-	 * \return Value of the damping factor.
-	 */
-	double GetDamp_Engine_Inflow(void);
-    
-    /*!
-     * \brief Value of the damping factor for the engine bleed inlet bc.
-     * \return Value of the damping factor.
-     */
-    double GetDamp_Engine_Bleed(void);
-
+  
+  /*!
+   * \brief Value of the damping factor for the engine inlet bc.
+   * \return Value of the damping factor.
+   */
+  double GetDamp_Engine_Inflow(void);
+  
+  /*!
+   * \brief Value of the damping factor for the engine bleed inlet bc.
+   * \return Value of the damping factor.
+   */
+  double GetDamp_Engine_Bleed(void);
+  
+  /*!
+   * \brief Value of the damping factor for the engine exhaust inlet bc.
+   * \return Value of the damping factor.
+   */
+  double GetDamp_Engine_Exhaust(void);
+  
 	/*!
 	 * \brief Value of the damping factor for the residual restriction.
 	 * \return Value of the damping factor.
@@ -4443,12 +4522,6 @@ public:
 	 * \return Azimuthal line to fix due to a misalignments of the nearfield.
 	 */
 	double GetFixAzimuthalLine(void);
-
-	/*!
-	 * \brief Update the CFL number using the ramp information.
-	 * \param[in] val_iter - Current solver iteration.
-	 */
-	void UpdateCFL(unsigned long val_iter);
 
 	/*!
 	 * \brief Set the global parameters of each simulation for each runtime system.
@@ -4496,7 +4569,12 @@ public:
   /*!
 	 * \brief Get the thurst corffient of the actuator disk.
 	 */
-  double GetActDisk_CT(string val_marker);
+  double GetActDisk_PressJump(string val_marker);
+  
+  /*!
+   * \brief Get the thurst corffient of the actuator disk.
+   */
+  double GetActDisk_TempJump(string val_marker);
 
   /*!
 	 * \brief Get the rev / min of the actuator disk.
@@ -4522,18 +4600,6 @@ public:
 	 *         has the marker <i>val_marker</i>.
 	 */
 	string GetMarker_Moving(unsigned short val_marker);
-
-	/*!
-	 * \brief Get information about converting a mesh from CGNS to SU2 format.
-	 * \return <code>TRUE</code> if a conversion is requested; otherwise <code>FALSE</code>.
-	 */
-	bool GetCGNS_To_SU2(void);
-
-	/*!
-	 * \brief Get information about whether a converted mesh should be written.
-	 * \return <code>TRUE</code> if the converted mesh should be written; otherwise <code>FALSE</code>.
-	 */
-	bool GetMesh_Output(void);
 
 	/*!
 	 * \brief Set the total number of SEND_RECEIVE periodic transformations.
@@ -4594,7 +4660,7 @@ public:
 	 * \param[in] val_index - Index corresponding to the inlet boundary.
 	 * \return The total temperature.
 	 */
-	double GetNozzle_Ttotal(string val_index);
+	double GetExhaust_Temperature_Target(string val_index);
 
 	/*!
 	 * \brief Get the total temperature at an inlet boundary.
@@ -4650,7 +4716,7 @@ public:
 	 * \param[in] val_index - Index corresponding to the inlet boundary.
 	 * \return The total pressure.
 	 */
-	double GetNozzle_Ptotal(string val_index);
+	double GetExhaust_Pressure_Target(string val_index);
 
 	/*!
 	 * \brief If inlet and outlet conditions are defined for multi species
@@ -4830,6 +4896,20 @@ public:
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
+  void SetExhaust_Temperature(unsigned short val_imarker, double val_exhaust_temp);
+  
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The outlet pressure.
+   */
+  double GetExhaust_Temperature(string val_marker);
+  
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The outlet pressure.
+   */
   double GetBleed_MassFlow_Target(string val_marker);
   
   /*!
@@ -4852,13 +4932,27 @@ public:
    * \return The outlet pressure.
    */
   double GetBleed_Pressure(string val_marker);
+
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The outlet pressure.
+   */
+  double GetExhaust_Pressure(string val_marker);
+
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The outlet pressure.
+   */
+  void SetBleed_Pressure(unsigned short val_imarker, double val_bleed_pressure);
   
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  void SetBleed_Pressure(unsigned short val_imarker, double val_fanface_pressure);
+  void SetExhaust_Pressure(unsigned short val_imarker, double val_exhaust_pressure);
   
 	/*!
 	 * \brief Get the displacement value at an displacement boundary.
@@ -4905,10 +4999,20 @@ public:
 	void SetConfig_Options(unsigned short val_iZone, unsigned short val_nZone);
 
   /*!
+   * \brief Set the config options.
+   */
+  void SetRunTime_Options(void);
+
+  /*!
 	 * \brief Set the config file parsing.
 	 */
-  void SetParsing(char case_filename[MAX_STRING_SIZE]);
+  void SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]);
 
+  /*!
+   * \brief Set the config file parsing.
+   */
+  bool SetRunTime_Parsing(char case_filename[MAX_STRING_SIZE]);
+  
 	/*!
 	 * \brief Config file postprocessing.
 	 */
@@ -4917,7 +5021,7 @@ public:
 	/*!
 	 * \brief Config file markers processing.
 	 */
-	void SetMarkers(unsigned short val_software, unsigned short val_izone);
+	void SetMarkers(unsigned short val_software);
 
 	/*!
 	 * \brief Config file output.
@@ -5130,6 +5234,12 @@ public:
 	 * \returns The interpolated value of for x.
 	 */
 	double GetSpline(vector<double> &xa, vector<double> &ya, vector<double> &y2a, unsigned long n, double x);
+  
+  /*!
+   * \brief Get the verbosity level of the console output.
+   * \return Verbosity level for the console output.
+   */
+  unsigned short GetConsole_Output_Verb(void);
 
 };
 

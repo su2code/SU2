@@ -1,10 +1,17 @@
- /*!
+/*!
  * \file linear_solvers_structure.cpp
  * \brief Main classes required for solving linear systems of equations
- * \author Current Development: Stanford University.
- * \version 3.2.4 "eagle"
+ * \author J. Hicken, F. Palacios
+ * \version 3.2.8.3 "eagle"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ *
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -87,7 +94,7 @@ void CSysSolve::ModGramSchmidt(int i, vector<vector<double> > & Hsbg, vector<CSy
   
   static const double reorth = 0.98;
   
-  /*--- get the norm of the vector being orthogonalized, and find the
+  /*--- Get the norm of the vector being orthogonalized, and find the
   threshold for re-orthogonalization ---*/
   
   double nrm = dotProd(w[i+1],w[i+1]);
@@ -109,7 +116,6 @@ void CSysSolve::ModGramSchmidt(int i, vector<vector<double> > & Hsbg, vector<CSy
   
   sbuf_conv[0] = Convergence;
   MPI_Reduce(sbuf_conv, rbuf_conv, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
-  MPI_Barrier(MPI_COMM_WORLD);
   
   /*-- Compute global convergence criteria in the master node --*/
   
@@ -131,11 +137,10 @@ void CSysSolve::ModGramSchmidt(int i, vector<vector<double> > & Hsbg, vector<CSy
   
   if (!Convergence) {
     if (rank == MASTER_NODE)
-      cout << "\n !!! Error: The FGMRES solver has diverged. Now exiting... !!! \n" << endl;
+      cout << "\n !!! Error: SU2 has diverged. Now exiting... !!! \n" << endl;
 #ifndef HAVE_MPI
 		exit(EXIT_DIVERGENCE);
 #else
-    MPI_Barrier(MPI_COMM_WORLD);
     MPI_Abort(MPI_COMM_WORLD,1);
 #endif
   }
@@ -188,7 +193,7 @@ void CSysSolve::ModGramSchmidt(int i, vector<vector<double> > & Hsbg, vector<CSy
 
 void CSysSolve::WriteHeader(const string & solver, const double & restol, const double & resinit) {
   
-  cout << "# " << solver << " residual history" << endl;
+  cout << "\n# " << solver << " residual history" << endl;
   cout << "# Residual tolerance target = " << restol << endl;
   cout << "# Initial residual norm     = " << resinit << endl;
   
@@ -211,7 +216,7 @@ int rank = 0;
   
   /*--- Check the subspace size ---*/
   if (m < 1) {
-    if (rank == 0) cerr << "CSysSolve::ConjugateGradient: illegal value for subspace size, m = " << m << endl;
+    if (rank == MASTER_NODE) cerr << "CSysSolve::ConjugateGradient: illegal value for subspace size, m = " << m << endl;
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
 #else
@@ -230,7 +235,7 @@ int rank = 0;
   double norm_r = r.norm();
   double norm0 = b.norm();
   if ( (norm_r < tol*norm0) || (norm_r < eps) ) {
-    if (rank == 0) cout << "CSysSolve::ConjugateGradient(): system solved by initial guess." << endl;
+    if (rank == MASTER_NODE) cout << "CSysSolve::ConjugateGradient(): system solved by initial guess." << endl;
     return 0;
   }
   
@@ -244,7 +249,7 @@ int rank = 0;
   
   /*--- Output header information including initial residual ---*/
   int i = 0;
-  if ((monitoring) && (rank == 0))  {
+  if ((monitoring) && (rank == MASTER_NODE)) {
     WriteHeader("CG", tol, norm_r);
     WriteHistory(i, norm_r, norm0);
   }
@@ -267,7 +272,7 @@ int rank = 0;
     /*--- Check if solution has converged, else output the relative residual if necessary ---*/
     norm_r = r.norm();
     if (norm_r < tol*norm0) break;
-    if (((monitoring) && (rank == 0)) && ((i+1) % 5 == 0)) WriteHistory(i+1, norm_r, norm0);
+    if (((monitoring) && (rank == MASTER_NODE)) && ((i+1) % 5 == 0)) WriteHistory(i+1, norm_r, norm0);
     
     precond(r, z);
     
@@ -283,9 +288,9 @@ int rank = 0;
   
 
   
-  if ((monitoring) && (rank == 0))  {
+  if ((monitoring) && (rank == MASTER_NODE)) {
     cout << "# Conjugate Gradient final (true) residual:" << endl;
-    cout << "# Iteration = " << i << ": |res|/|res0| = "  << norm_r/norm0 << endl;
+    cout << "# Iteration = " << i << ": |res|/|res0| = "  << norm_r/norm0 << ".\n" << endl;
   }
   
 //  /*--- Recalculate final residual (this should be optional) ---*/
@@ -295,7 +300,7 @@ int rank = 0;
 //  double true_res = r.norm();
 //  
 //  if (fabs(true_res - norm_r) > tol*10.0) {
-//    if (rank == 0) {
+//    if (rank == MASTER_NODE) {
 //      cout << "# WARNING in CSysSolve::ConjugateGradient(): " << endl;
 //      cout << "# true residual norm and calculated residual norm do not agree." << endl;
 //      cout << "# true_res - calc_res = " << true_res - norm_r << endl;
@@ -307,7 +312,7 @@ int rank = 0;
 }
 
 unsigned long CSysSolve::FGMRES_LinSolver(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
-                               CPreconditioner & precond, double tol, unsigned long m, bool monitoring) {
+                               CPreconditioner & precond, double tol, unsigned long m, double *residual, bool monitoring) {
 	
 int rank = 0;
 
@@ -318,7 +323,7 @@ int rank = 0;
   /*---  Check the subspace size ---*/
   
   if (m < 1) {
-    if (rank == 0) cerr << "CSysSolve::FGMRES: illegal value for subspace size, m = " << m << endl;
+    if (rank == MASTER_NODE) cerr << "CSysSolve::FGMRES: illegal value for subspace size, m = " << m << endl;
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
 #else
@@ -330,7 +335,7 @@ int rank = 0;
   /*---  Check the subspace size ---*/
   
   if (m > 1000) {
-    if (rank == 0) cerr << "CSysSolve::FGMRES: illegal value for subspace size (too high), m = " << m << endl;
+    if (rank == MASTER_NODE) cerr << "CSysSolve::FGMRES: illegal value for subspace size (too high), m = " << m << endl;
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
 #else
@@ -367,7 +372,7 @@ int rank = 0;
     
     /*---  System is already solved ---*/
     
-    if (rank == 0) cout << "CSysSolve::FGMRES(): system solved by initial guess." << endl;
+    if (rank == MASTER_NODE) cout << "CSysSolve::FGMRES(): system solved by initial guess." << endl;
     return 0;
   }
   
@@ -387,7 +392,7 @@ int rank = 0;
   /*---  Output header information including initial residual ---*/
   
   int i = 0;
-  if ((monitoring) && (rank == 0)) {
+  if ((monitoring) && (rank == MASTER_NODE)) {
     WriteHeader("FGMRES", tol, beta);
     WriteHistory(i, beta, norm0);
   }
@@ -427,7 +432,8 @@ int rank = 0;
     
     /*---  Output the relative residual if necessary ---*/
     
-    if ((((monitoring) && (rank == 0)) && ((i+1) % 100 == 0)) && (rank == 0)) WriteHistory(i+1, beta, norm0);
+    if ((((monitoring) && (rank == MASTER_NODE)) && ((i+1) % 50 == 0)) && (rank == MASTER_NODE)) WriteHistory(i+1, beta, norm0);
+    
   }
 
   /*---  Solve the least-squares system and update solution ---*/
@@ -437,30 +443,31 @@ int rank = 0;
     x.Plus_AX(y[k], z[k]);
   }
   
-  if ((monitoring) && (rank == 0)) {
+  if ((monitoring) && (rank == MASTER_NODE)) {
     cout << "# FGMRES final (true) residual:" << endl;
-    cout << "# Iteration = " << i << ": |res|/|res0| = " << beta/norm0 << endl;
+    cout << "# Iteration = " << i << ": |res|/|res0| = " << beta/norm0 << ".\n" << endl;
   }
   
 //  /*---  Recalculate final (neg.) residual (this should be optional) ---*/
 //  mat_vec(x, w[0]);
 //  w[0] -= b;
 //  double res = w[0].norm();
-//  
+//
 //  if (fabs(res - beta) > tol*10) {
-//    if (rank == 0) {
+//    if (rank == MASTER_NODE) {
 //      cout << "# WARNING in CSysSolve::FGMRES(): " << endl;
 //      cout << "# true residual norm and calculated residual norm do not agree." << endl;
 //      cout << "# res - beta = " << res - beta << endl;
 //    }
 //  }
 	
+  (*residual) = beta;
 	return i;
   
 }
 
 unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
-                                 CPreconditioner & precond, double tol, unsigned long m, bool monitoring) {
+                                 CPreconditioner & precond, double tol, unsigned long m, double *residual, bool monitoring) {
 	
   int rank = 0;
 #ifdef HAVE_MPI
@@ -470,7 +477,7 @@ unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x,
   /*--- Check the subspace size ---*/
   
   if (m < 1) {
-    if (rank == 0) cerr << "CSysSolve::BCGSTAB: illegal value for subspace size, m = " << m << endl;
+    if (rank == MASTER_NODE) cerr << "CSysSolve::BCGSTAB: illegal value for subspace size, m = " << m << endl;
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
 #else
@@ -496,7 +503,7 @@ unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x,
   double norm_r = r.norm();
   double norm0 = b.norm();
   if ( (norm_r < tol*norm0) || (norm_r < eps) ) {
-    if (rank == 0) cout << "CSysSolve::BCGSTAB(): system solved by initial guess." << endl;
+    if (rank == MASTER_NODE) cout << "CSysSolve::BCGSTAB(): system solved by initial guess." << endl;
     return 0;
   }
 	
@@ -511,7 +518,7 @@ unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x,
   /*--- Output header information including initial residual ---*/
   
   int i = 0;
-  if ((monitoring) && (rank == 0)) {
+  if ((monitoring) && (rank == MASTER_NODE)) {
     WriteHeader("BCGSTAB", tol, norm_r);
     WriteHistory(i, norm_r, norm0);
   }
@@ -570,13 +577,13 @@ unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x,
     
     norm_r = r.norm();
     if (norm_r < tol*norm0) break;
-    if (((monitoring) && (rank == 0)) && ((i+1) % 5 == 0) && (rank == 0)) WriteHistory(i+1, norm_r, norm0);
+    if (((monitoring) && (rank == MASTER_NODE)) && ((i+1) % 50 == 0) && (rank == MASTER_NODE)) WriteHistory(i+1, norm_r, norm0);
     
   }
 	  
-  if ((monitoring) && (rank == 0)) {
+  if ((monitoring) && (rank == MASTER_NODE)) {
     cout << "# BCGSTAB final (true) residual:" << endl;
-    cout << "# Iteration = " << i << ": |res|/|res0| = "  << norm_r/norm0 << endl;
+    cout << "# Iteration = " << i << ": |res|/|res0| = "  << norm_r/norm0 << ".\n" << endl;
   }
 	
 //  /*--- Recalculate final residual (this should be optional) ---*/
@@ -584,29 +591,31 @@ unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x,
 //  r = b; r -= A_x;
 //  double true_res = r.norm();
 //  
-//  if ((fabs(true_res - norm_r) > tol*10.0) && (rank == 0)) {
+//  if ((fabs(true_res - norm_r) > tol*10.0) && (rank == MASTER_NODE)) {
 //    cout << "# WARNING in CSysSolve::BCGSTAB(): " << endl;
 //    cout << "# true residual norm and calculated residual norm do not agree." << endl;
 //    cout << "# true_res - calc_res = " << true_res <<" "<< norm_r << endl;
 //  }
 	
+  (*residual) = norm_r;
 	return i;
 }
 
 unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CSysVector & LinSysSol, CGeometry *geometry, CConfig *config) {
   
-  double SolverTol = config->GetLinear_Solver_Error();
+  double SolverTol = config->GetLinear_Solver_Error(), Residual;
   unsigned long MaxIter = config->GetLinear_Solver_Iter();
   unsigned long IterLinSol = 0;
   
   /*--- Solve the linear system using a Krylov subspace method ---*/
   
   if (config->GetKind_Linear_Solver() == BCGSTAB || config->GetKind_Linear_Solver() == FGMRES
-      || config->GetKind_Linear_Solver() == RFGMRES) {
+      || config->GetKind_Linear_Solver() == RESTARTED_FGMRES) {
     
     CMatrixVectorProduct* mat_vec = new CSysMatrixVectorProduct(Jacobian, geometry, config);
     
     CPreconditioner* precond = NULL;
+    
     switch (config->GetKind_Linear_Solver_Prec()) {
       case JACOBI:
         Jacobian.BuildJacobiPreconditioner();
@@ -623,21 +632,25 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
         Jacobian.BuildJacobiPreconditioner();
         precond = new CLineletPreconditioner(Jacobian, geometry, config);
         break;
+      default:
+        Jacobian.BuildJacobiPreconditioner();
+        precond = new CJacobiPreconditioner(Jacobian, geometry, config);
+        break;
     }
     
     switch (config->GetKind_Linear_Solver()) {
       case BCGSTAB:
-        IterLinSol = BCGSTAB_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, false);
+        IterLinSol = BCGSTAB_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &Residual, false);
         break;
       case FGMRES:
-        IterLinSol = FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, false);
+        IterLinSol = FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &Residual, false);
         break;
-      case RFGMRES:
+      case RESTARTED_FGMRES:
         IterLinSol = 0;
         while (IterLinSol < config->GetLinear_Solver_Iter()) {
           if (IterLinSol + config->GetLinear_Solver_Restart_Frequency() > config->GetLinear_Solver_Iter())
             MaxIter = config->GetLinear_Solver_Iter() - IterLinSol;
-          IterLinSol += FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, false);
+          IterLinSol += FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &Residual, false);
           if (LinSysRes.norm() < SolverTol) break;
           SolverTol = SolverTol*(1.0/LinSysRes.norm());
         }

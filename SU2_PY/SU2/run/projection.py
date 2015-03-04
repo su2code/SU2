@@ -1,23 +1,33 @@
+#!/usr/bin/env python
+
 ## \file projection.py
 #  \brief python package for running gradient projection
-#  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 3.2.4 "eagle"
+#  \author T. Lukaczyk, F. Palacios
+#  \version 3.2.8.3 "eagle"
 #
-# Stanford University Unstructured (SU2) Code
-# Copyright (C) 2012 Aerospace Design Laboratory
+# SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
+#                      Dr. Thomas D. Economon (economon@stanford.edu).
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+#                 Prof. Piero Colonna's group at Delft University of Technology.
+#                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+#                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+#                 Prof. Rafael Palacios' group at Imperial College London.
 #
-# This program is distributed in the hope that it will be useful,
+# Copyright (C) 2012-2015 SU2, the open-source CFD code.
+#
+# SU2 is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
+#
+# SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# Lesser General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU Lesser General Public
+# License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
 # ----------------------------------------------------------------------
 #  Imports
@@ -27,7 +37,6 @@ import os, sys, shutil, copy
 
 from .. import io   as su2io
 from .. import util as su2util
-from decompose import decompose as su2decomp
 from interface import DOT as SU2_DOT
 
 
@@ -43,7 +52,6 @@ def projection( config, step = 1e-3 ):
             SU2.run.DOT()
             
         Assumptions:
-            Redundant decomposition if config.DECOMPOSED == True
             Writes tecplot file of gradients
             Adds objective suffix to gradient plot filename
             
@@ -57,7 +65,6 @@ def projection( config, step = 1e-3 ):
                 GRADIENTS.<config.OBJECTIVE_FUNCTION>
                 
         Updates:
-            config.DECOMPOSED
             config.MATH_PROBLEM
             
         Executes in:
@@ -65,10 +72,7 @@ def projection( config, step = 1e-3 ):
     """
     # local copy
     konfig = copy.deepcopy(config)
-    
-    # decompose
-    su2decomp(konfig)
-        
+            
     # choose dv values 
     Definition_DV = konfig['DEFINITION_DV']
     n_DV          = len(Definition_DV['KIND'])

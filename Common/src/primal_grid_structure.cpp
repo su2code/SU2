@@ -1,10 +1,19 @@
 /*!
  * \file primal_grid_structure.cpp
- * \brief Main classes for defining the primal grid elements (triangle, tetrahedra, etc.).
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.4 "eagle"
+ * \brief Main classes for defining the primal grid elements
+ * \author F. Palacios
+ * \version 3.2.8.3 "eagle"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ *
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
+ *
+ * Copyright (C) 2012-2015 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -131,6 +140,7 @@ CLine::CLine(unsigned long val_point_0, unsigned long val_point_1,
 	unsigned short iDim, iFace;
 
 	/*--- Allocate CG coordinates ---*/
+  
 	nDim = val_nDim;
 	Coord_CG = new double[nDim];
 	for (iDim = 0; iDim < nDim; iDim++)
@@ -143,6 +153,7 @@ CLine::CLine(unsigned long val_point_0, unsigned long val_point_1,
 	}
 	
 	/*--- Allocate and define face structure of the element ---*/
+  
 	Nodes = new unsigned long[nNodes];
 	Nodes[0] = val_point_0;
 	Nodes[1] = val_point_1;

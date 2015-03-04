@@ -3,10 +3,19 @@
  * \brief Headers of the main subroutines for space and time integration. 
  *        The subroutines and functions are in the <i>integration_structure.cpp</i>, 
  *        <i>integration_time.cpp</i>, and <i>integration_notime.cpp</i> files.
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.4 "eagle"
+ * \author F. Palacios, T. Economon
+ * \version 3.2.8.3 "eagle"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ *
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
+ *
+ * Copyright (C) 2012-2015 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -41,8 +50,8 @@ using namespace std;
  * \class CIntegration
  * \brief Main class for doing the space integration, time integration, and monitoring 
  *        of a system of Partial Differential Equations (PDE).
- * \author F. Palacios.
- * \version 3.2.4 "eagle"
+ * \author F. Palacios
+ * \version 3.2.8.3 "eagle"
  */
 class CIntegration {
 protected:
@@ -53,7 +62,6 @@ protected:
 	double Old_Func,	/*!< \brief Old value of the objective function (the function which is monitored). */
 	New_Func;			/*!< \brief Current value of the objective function (the function which is monitored). */
 	bool Convergence,		/*!< \brief To indicate if the flow solver (direct, adjoint, or linearized) has converged or not. */
-	Convergence_OneShot,	/*!< \brief To indicate if the one-shot method has converged. */
 	Convergence_FullMG;		/*!< \brief To indicate if the Full Multigrid has converged and it is necessary to add a new level. */
 	double InitResidual;	/*!< \brief Initial value of the residual to evaluate the convergence level. */
 
@@ -113,7 +121,7 @@ public:
 	 * \param[in] monitor - Objective function that is use to study its convergence.
 	 */
 	void Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
-								unsigned long Iteration, double monitor);
+								unsigned long Iteration, double monitor, unsigned short iMesh);
 	
 	/*! 
 	 * \brief Get the value of the convergence.
@@ -136,13 +144,6 @@ public:
 	void SetConvergence(bool value);
 	
 	/*! 
-	 * \brief Get the indicator of the convergence for the one-shot problem.
-	 * \return <code>TRUE</code> means that the convergence criteria is satisfied; 
-	 *         otherwise <code>FALSE</code>.
-	 */
-	bool GetConvergence_OneShot(void);
-	
-	/*! 
 	 * \brief Get the indicator of the convergence for the full multigrid problem.
 	 * \return <code>TRUE</code> means that the convergence criteria is satisfied; 
 	 *         otherwise <code>FALSE</code>.
@@ -155,7 +156,7 @@ public:
 	 * \param[in] solution - Flow solution.
    * \param[in] config - Definition of the particular problem.
 	 */
-	void SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CConfig *config);
+	void SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CConfig *config, unsigned short iMesh);
 	
 	/*! 
 	 * \brief A virtual member.
@@ -240,6 +241,19 @@ public:
 	 * \param[in] InclSharedDomain - Include the shared domain in the interpolation.
 	 */
 	virtual void SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+   * \param[in] sol_fine - Pointer to the solution on the fine grid.
+   * \param[out] sol_coarse - Pointer to the solution on the coarse grid.
+   * \param[in] geo_fine - Geometrical definition of the fine grid.
+   * \param[in] geo_coarse - Geometrical definition of the coarse grid.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] InclSharedDomain - Include the shared domain in the interpolation.
+   */
+  virtual void SetRestricted_EddyVisc(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
 
 	/*! 
 	 * \brief A virtual member.
@@ -312,8 +326,8 @@ public:
 /*!
  * \class CMultiGridIntegration
  * \brief Class for doing the numerical integration using a multigrid method.
- * \author F. Palacios.
- * \version 3.2.4 "eagle"
+ * \author F. Palacios
+ * \version 3.2.8.3 "eagle"
  */
 class CMultiGridIntegration : public CIntegration {
 protected:
@@ -485,7 +499,7 @@ public:
  * \class CSingleGridIntegration
  * \brief Class for doing the numerical integration of the turbulence model.
  * \author A. Bueno.
- * \version 3.2.4 "eagle"
+ * \version 3.2.8.3 "eagle"
  */
 class CSingleGridIntegration : public CIntegration {
 public:
@@ -526,6 +540,19 @@ public:
 	 */
 	void SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
   
+  /*!
+   * \brief Restrict solution from fine grid to a coarse grid.
+   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+   * \param[in] sol_fine - Pointer to the solution on the fine grid.
+   * \param[out] sol_coarse - Pointer to the solution on the coarse grid.
+   * \param[in] geo_fine - Geometrical definition of the fine grid.
+   * \param[in] geo_coarse - Geometrical definition of the coarse grid.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] InclSharedDomain - Include the shared domain in the interpolation.
+   */
+  void SetRestricted_EddyVisc(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
+
 };
 
 #include "integration_structure.inl"

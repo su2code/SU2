@@ -1,10 +1,17 @@
 /*!
  * \file numerics_machine_learning_direct_turbulent.cpp
  * \brief This file contains all the convective term discretization.
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.4 "eagle"
+ * \author B. Tracey
+ * \version 3.2.8.3 "eagle"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ *
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -23,11 +30,11 @@
 #include "../include/numerics_machine_learning_turbulent.hpp"
 
 
-SpalartAllmarasOtherOutputs::SpalartAllmarasOtherOutputs(){}
+SpalartAllmarasOtherOutputs::SpalartAllmarasOtherOutputs() {}
 
-SpalartAllmarasOtherOutputs::~SpalartAllmarasOtherOutputs(){}
+SpalartAllmarasOtherOutputs::~SpalartAllmarasOtherOutputs() {}
 
-SpalartAllmarasConstants::SpalartAllmarasConstants(){
+SpalartAllmarasConstants::SpalartAllmarasConstants() {
   /*--- Spalart-Allmaras closure constants ---*/
   cv1_3 = pow(7.1,3.0);
   k2 = pow(0.41,2.0);
@@ -40,53 +47,53 @@ SpalartAllmarasConstants::SpalartAllmarasConstants(){
   cw1 = cb1/k2+(1+cb2)/sigma;
 }
 
-SpalartAllmarasConstants::~SpalartAllmarasConstants(){}
+SpalartAllmarasConstants::~SpalartAllmarasConstants() {}
 
-SpalartAllmarasInputs::SpalartAllmarasInputs(int nDim){
+SpalartAllmarasInputs::SpalartAllmarasInputs(int nDim) {
   init(nDim, 1e-10);
 }
 
-void SpalartAllmarasInputs::init(int nDim, double limiter){
+void SpalartAllmarasInputs::init(int nDim, double limiter) {
   this->nDim = nDim;
   this->limiter = limiter;
   DUiDXj = new double*[nDim];
-  for (int i = 0; i < nDim; i++){
+  for (int i = 0; i < nDim; i++) {
     DUiDXj[i] = new double[nDim];
   }
   DTurb_Kin_Visc_DXj = new double[nDim];
   return;
 }
 
-SpalartAllmarasInputs::SpalartAllmarasInputs(int nDim, double limiter){
+SpalartAllmarasInputs::SpalartAllmarasInputs(int nDim, double limiter) {
   init(nDim, limiter);
 }
 
-SpalartAllmarasInputs::~SpalartAllmarasInputs(){
-  for (int i = 0; i < nDim; i++){
+SpalartAllmarasInputs::~SpalartAllmarasInputs() {
+  for (int i = 0; i < nDim; i++) {
     delete [] DUiDXj[i];
   }
   delete [] DUiDXj;
   delete [] DTurb_Kin_Visc_DXj;
 }
 
-int SpalartAllmarasInputs::GetNumDim(){
+int SpalartAllmarasInputs::GetNumDim() {
   return nDim;
 }
 
-double SpalartAllmarasInputs::GetLimiter(){
+double SpalartAllmarasInputs::GetLimiter() {
   return limiter;
 }
 
-double** SpalartAllmarasInputs::GetMeanFlowGradient(){
+double** SpalartAllmarasInputs::GetMeanFlowGradient() {
   return DUiDXj;
 }
-double* SpalartAllmarasInputs::GetTurbKinViscGradient(){
+double* SpalartAllmarasInputs::GetTurbKinViscGradient() {
   return DTurb_Kin_Visc_DXj;
 }
 
-void SpalartAllmarasInputs::Set(double** DUiDXj, double* DTurb_Kin_Visc_DXj, bool rotating_frame, bool transition, double dist, double Laminar_Viscosity, double Density, double Turbulent_Kinematic_Viscosity, double intermittency){
-  for (int i=0; i <this->nDim; i++){
-    for (int j = 0; j < this->nDim; j++){
+void SpalartAllmarasInputs::Set(double** DUiDXj, double* DTurb_Kin_Visc_DXj, bool rotating_frame, bool transition, double dist, double Laminar_Viscosity, double Density, double Turbulent_Kinematic_Viscosity, double intermittency) {
+  for (int i=0; i <this->nDim; i++) {
+    for (int j = 0; j < this->nDim; j++) {
       this->DUiDXj[i][j] = DUiDXj[i][j];
     }
     this->DTurb_Kin_Visc_DXj[i] = DTurb_Kin_Visc_DXj[i];
@@ -109,18 +116,18 @@ void SpalartAllmarasInputs::Set(double** DUiDXj, double* DTurb_Kin_Visc_DXj, boo
  
  Does not include the volume term
  */
-void SpalartAllmarasSourceTerm(SpalartAllmarasInputs* inputs, SpalartAllmarasConstants* constants, double* output_residual, double* output_jacobian, SpalartAllmarasOtherOutputs* otherOutput){
+void SpalartAllmarasSourceTerm(SpalartAllmarasInputs* inputs, SpalartAllmarasConstants* constants, double* output_residual, double* output_jacobian, SpalartAllmarasOtherOutputs* otherOutput) {
   double dist = inputs->dist; // Wall distance
   int nDim = inputs->GetNumDim();
   // Limit if too close to the wall
   double limiter = inputs->GetLimiter();
   int nResidOutputs = 4;
   int nJacOutputs = 1;
-  if (dist < limiter){
-    for (int i = 0; i < nResidOutputs; i++){
+  if (dist < limiter) {
+    for (int i = 0; i < nResidOutputs; i++) {
       output_residual[i] = 0;
     }
-    for (int i = 0; i < nJacOutputs; i++){
+    for (int i = 0; i < nJacOutputs; i++) {
       output_jacobian[i] = 0;
     }
     return;
@@ -178,7 +185,7 @@ void SpalartAllmarasSourceTerm(SpalartAllmarasInputs* inputs, SpalartAllmarasCon
   Shat = S + Turbulent_Kinematic_Viscosity*fv2*inv_k2_d2;
   inv_Shat = 1.0/max(Shat, 1.0e-10);
   Production = constants->cb1*Shat*Turbulent_Kinematic_Viscosity;
-  if (transition){
+  if (transition) {
     Production *= intermittency;
   }
   
@@ -192,9 +199,9 @@ void SpalartAllmarasSourceTerm(SpalartAllmarasInputs* inputs, SpalartAllmarasCon
 //  cout << "wall dist = " << dist << endl;
 //  cout << "fv2 = " << fv2 << endl;
 //  cout << "inv k2 d2 = " << inv_k2_d2 << endl;
-//  if (otherOutput->mul_production < -1e+5){
+//  if (otherOutput->mul_production < -1e+5) {
 //    cout << endl;
-//    for (int i = 0; i < 1; i++){
+//    for (int i = 0; i < 1; i++) {
 //  throw "rah";
 //      cout << "rah" << endl;
 //    }
@@ -215,13 +222,13 @@ void SpalartAllmarasSourceTerm(SpalartAllmarasInputs* inputs, SpalartAllmarasCon
   otherOutput->mul_destruction = constants->cw1 * fw;
   
   Destruction = constants->cw1*fw*Turbulent_Kinematic_Viscosity*Turbulent_Kinematic_Viscosity/dist_2;
-  if (transition){
+  if (transition) {
     Destruction *= min(max(intermittency,0.1),1.0);
   }
   
   /*--- Diffusion term ---*/
   norm2_Grad = 0.0;
-  for (int iDim = 0; iDim < nDim; iDim++){
+  for (int iDim = 0; iDim < nDim; iDim++) {
     norm2_Grad += DTurb_Kin_Visc_DXj[iDim]*DTurb_Kin_Visc_DXj[iDim];
   }
   CrossProduction = constants->cb2_sigma*norm2_Grad;
@@ -239,7 +246,7 @@ void SpalartAllmarasSourceTerm(SpalartAllmarasInputs* inputs, SpalartAllmarasCon
   
   dfv1 = 3.0*J_2*constants->cv1_3/(Laminar_Kinematic_Viscosity*pow(J_3+constants->cv1_3,2.));
   dfv2 = -(1/Laminar_Kinematic_Viscosity-J_2*dfv1)/pow(1.+J*fv1,2.);
-  if ( Shat <= 1.0e-10 ){
+  if ( Shat <= 1.0e-10 ) {
     dShat = 0.0;
   }
   else{
@@ -250,7 +257,7 @@ void SpalartAllmarasSourceTerm(SpalartAllmarasInputs* inputs, SpalartAllmarasCon
   /*--- Destruction term ---*/
   
   dr = (Shat-Turbulent_Kinematic_Viscosity*dShat)*inv_Shat*inv_Shat*inv_k2_d2;
-  if (r == 10.0){
+  if (r == 10.0) {
     dr = 0.0;
   }
   dg = dr*(1.+constants->cw2*(6.*pow(r,5.)-1.));
@@ -265,9 +272,9 @@ void SpalartAllmarasSourceTerm(SpalartAllmarasInputs* inputs, SpalartAllmarasCon
   
 };
 
-double ComputeVorticity(int nDim, double** DUiDXj){
+double ComputeVorticity(int nDim, double** DUiDXj) {
   double Vorticity = (DUiDXj[1][0]-DUiDXj[0][1])*(DUiDXj[1][0]-DUiDXj[0][1]);
-  if (nDim == 3){
+  if (nDim == 3) {
     Vorticity += ( (DUiDXj[2][1]-DUiDXj[1][2])*(DUiDXj[2][1]-DUiDXj[1][2]) + (DUiDXj[0][2]-DUiDXj[2][0])*(DUiDXj[0][2]-DUiDXj[2][0]));
   }
   return Vorticity;

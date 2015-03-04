@@ -1,10 +1,19 @@
 /*!
  * \file variable_structure.inl
  * \brief In-Line subroutines of the <i>variable_structure.hpp</i> file.
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.4 "eagle"
+ * \author F. Palacios, T. Economon
+ * \version 3.2.8.3 "eagle"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ *
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
+ *
+ * Copyright (C) 2012-2015 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -51,6 +60,10 @@ inline double CVariable::GetLevelSet(void) { return 0; }
 inline double CVariable::GetDistance(void) { return 0; }
 
 inline double CVariable::GetMassFraction(unsigned short val_Species) { return 0; }
+
+inline void CVariable::SetNon_Physical(bool val_value) { Non_Physical = !val_value; }
+
+inline double CVariable::GetNon_Physical(void) { return double(Non_Physical); }
 
 inline void CVariable::SetSolution(unsigned short val_var, double val_solution) { Solution[val_var] = val_solution; }
 
@@ -252,7 +265,7 @@ inline double CVariable::GetSpecificHeatCp(void) { return 0; }
 
 inline double CVariable::GetThermalConductivity_ve(void) { return 0; }
 
-inline double CVariable::GetVorticity(unsigned short val_dim) { return 0; }
+inline double* CVariable::GetVorticity(void) { return 0; }
 
 inline double CVariable::GetStrainMag(void) { return 0; }
 
@@ -414,9 +427,9 @@ inline void CVariable::SetThermalConductivity(CConfig *config) { }
 
 inline void CVariable::SetSpecificHeatCp(double Cp) { }
 
-inline void CVariable::SetVorticity(void) { }
+inline bool CVariable::SetVorticity(bool val_limiter) { return false; }
 
-inline void CVariable::SetStrainMag(void) { }
+inline bool CVariable::SetStrainMag(bool val_limiter) { return false; }
 
 inline void CVariable::SetGradient_PrimitiveZero(unsigned short val_primvar) { }
 
@@ -677,7 +690,7 @@ inline double CNSVariable::GetThermalConductivity(void) { return Primitive[nDim+
 
 inline double CNSVariable::GetSpecificHeatCp(void) { return Primitive[nDim+8]; }
 
-inline double CNSVariable::GetVorticity(unsigned short val_dim) { return Vorticity[val_dim]; }
+inline double* CNSVariable::GetVorticity(void) { return Vorticity; }
 
 inline double CNSVariable::GetStrainMag(void) { return StrainMag; }
 
@@ -798,11 +811,11 @@ inline void CTurbMLVariable::SetTimeSpectral_Source(unsigned short val_var, doub
 
 inline double CTurbMLVariable::GetTimeSpectral_Source(unsigned short val_var) { return TS_Source[val_var]; }
 
-inline double CTurbSSTVariable::GetF1blending(){ return F1; }
+inline double CTurbSSTVariable::GetF1blending() { return F1; }
 
-inline double CTurbSSTVariable::GetF2blending(){ return F2; }
+inline double CTurbSSTVariable::GetF2blending() { return F2; }
 
-inline double CTurbSSTVariable::GetCrossDiff(){ return CDkw; }
+inline double CTurbSSTVariable::GetCrossDiff() { return CDkw; }
 
 inline void CAdjTurbVariable::SetEddyViscSens(double *val_EddyViscSens, unsigned short numTotalVar) { 
     for (unsigned short iVar = 0; iVar < numTotalVar; iVar++) {
@@ -915,7 +928,7 @@ inline double  CTNE2NSVariable::GetThermalConductivity(void) { return ThermalCon
 
 inline double  CTNE2NSVariable::GetThermalConductivity_ve(void) { return ThermalCond_ve; }
 
-inline double  CTNE2NSVariable::GetVorticity(unsigned short val_dim) { return Vorticity[val_dim]; }
+inline double*  CTNE2NSVariable::GetVorticity(void) { return Vorticity; }
 
 inline void    CTNE2NSVariable::SetWallTemperature(double Temperature_Wall ) { Primitive[T_INDEX] = Temperature_Wall; }
 

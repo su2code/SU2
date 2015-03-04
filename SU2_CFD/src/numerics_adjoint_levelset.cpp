@@ -1,10 +1,17 @@
 /*!
  * \file numerics_adjoint_levelset.cpp
  * \brief This file contains all the convective term discretization.
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.4 "eagle"
+ * \author F. Palacios
+ * \version 3.2.8.3 "eagle"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ *
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -39,7 +46,7 @@ CUpwLin_AdjLevelSet::~CUpwLin_AdjLevelSet(void) {
 }
 
 void CUpwLin_AdjLevelSet::ComputeResidual (double *val_residual_i, double *val_residual_j, double **val_Jacobian_ii,
-                                       double **val_Jacobian_ij, double **val_Jacobian_ji, double **val_Jacobian_jj, CConfig *config)  {
+                                       double **val_Jacobian_ij, double **val_Jacobian_ji, double **val_Jacobian_jj, CConfig *config) {
   
   unsigned short iDim;
 	double proj_conv_flux_i = 0.0, proj_conv_flux_j = 0.0, proj_conv_flux_ij = 0.0;
@@ -70,4 +77,3 @@ CSourcePieceWise_AdjLevelSet::CSourcePieceWise_AdjLevelSet(unsigned short val_nD
 CSourcePieceWise_AdjLevelSet::~CSourcePieceWise_AdjLevelSet(void) { }
 
 void CSourcePieceWise_AdjLevelSet::ComputeResidual(double *val_residual, CConfig *config) {}
-
