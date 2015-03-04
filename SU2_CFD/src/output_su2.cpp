@@ -56,7 +56,7 @@ void COutput::SetSU2_MeshASCII(CConfig *config, CGeometry *geometry) {
   
   /*--- Write connectivity data. ---*/
   
-  nElem = nGlobal_Tria+nGlobal_Quad+nGlobal_Tetr+nGlobal_Hexa+nGlobal_Wedg+nGlobal_Pyra;
+  nElem = nGlobal_Tria+nGlobal_Quad+nGlobal_Tetr+nGlobal_Hexa+nGlobal_Pris+nGlobal_Pyra;
   
   output_file << "NELEM= " << nElem<< endl;
   
@@ -96,12 +96,12 @@ void COutput::SetSU2_MeshASCII(CConfig *config, CGeometry *geometry) {
     output_file << nElem << "\n"; nElem++;
   }
   
-  for (iElem = 0; iElem < nGlobal_Wedg; iElem++) {
-    iNode = iElem*N_POINTS_WEDGE;
+  for (iElem = 0; iElem < nGlobal_Pris; iElem++) {
+    iNode = iElem*N_POINTS_PRISM;
     output_file << "13\t";
-    output_file << Conn_Wedg[iNode+0]-1 << "\t" << Conn_Wedg[iNode+1]-1 << "\t";
-    output_file << Conn_Wedg[iNode+2]-1 << "\t" << Conn_Wedg[iNode+3]-1 << "\t";
-    output_file << Conn_Wedg[iNode+4]-1 << "\t" << Conn_Wedg[iNode+5]-1 << "\t";
+    output_file << Conn_Pris[iNode+0]-1 << "\t" << Conn_Pris[iNode+1]-1 << "\t";
+    output_file << Conn_Pris[iNode+2]-1 << "\t" << Conn_Pris[iNode+3]-1 << "\t";
+    output_file << Conn_Pris[iNode+4]-1 << "\t" << Conn_Pris[iNode+5]-1 << "\t";
     output_file << nElem << "\n"; nElem++;
   }
   

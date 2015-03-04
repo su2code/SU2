@@ -202,7 +202,7 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
   
   /*--- Write the header ---*/
   nSurf_Elem_Storage = nGlobal_Line*3 +nGlobal_BoundTria*4 + nGlobal_BoundQuad*5;
-  nGlobal_Elem_Storage = nGlobal_Tria*4 + nGlobal_Quad*5 + nGlobal_Tetr*5 + nGlobal_Hexa*9 + nGlobal_Wedg*7 + nGlobal_Pyra*6;
+  nGlobal_Elem_Storage = nGlobal_Tria*4 + nGlobal_Quad*5 + nGlobal_Tetr*5 + nGlobal_Hexa*9 + nGlobal_Pris*7 + nGlobal_Pyra*6;
   
   if (surf_sol) Paraview_File << "\nCELLS " << nSurf_Elem << "\t" << nSurf_Elem_Storage << "\n";
   else Paraview_File << "\nCELLS " << nGlobal_Elem << "\t" << nGlobal_Elem_Storage << "\n";
@@ -269,12 +269,12 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
       Paraview_File << Conn_Hexa[iNode+6]-1 << "\t" << Conn_Hexa[iNode+7]-1 << "\t";
     }
     
-    for (iElem = 0; iElem < nGlobal_Wedg; iElem++) {
-      iNode = iElem*N_POINTS_WEDGE;
-      Paraview_File << N_POINTS_WEDGE << "\t";
-      Paraview_File << Conn_Wedg[iNode+0]-1 << "\t" << Conn_Wedg[iNode+1]-1 << "\t";
-      Paraview_File << Conn_Wedg[iNode+2]-1 << "\t" << Conn_Wedg[iNode+3]-1 << "\t";
-      Paraview_File << Conn_Wedg[iNode+4]-1 << "\t" << Conn_Wedg[iNode+5]-1 << "\t";
+    for (iElem = 0; iElem < nGlobal_Pris; iElem++) {
+      iNode = iElem*N_POINTS_PRISM;
+      Paraview_File << N_POINTS_PRISM << "\t";
+      Paraview_File << Conn_Pris[iNode+0]-1 << "\t" << Conn_Pris[iNode+1]-1 << "\t";
+      Paraview_File << Conn_Pris[iNode+2]-1 << "\t" << Conn_Pris[iNode+3]-1 << "\t";
+      Paraview_File << Conn_Pris[iNode+4]-1 << "\t" << Conn_Pris[iNode+5]-1 << "\t";
     }
     
     for (iElem = 0; iElem < nGlobal_Pyra; iElem++) {
@@ -301,7 +301,7 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
     for (iElem = 0; iElem < nGlobal_Quad; iElem++) Paraview_File << "9\t";
     for (iElem = 0; iElem < nGlobal_Tetr; iElem++) Paraview_File << "10\t";
     for (iElem = 0; iElem < nGlobal_Hexa; iElem++) Paraview_File << "12\t";
-    for (iElem = 0; iElem < nGlobal_Wedg; iElem++) Paraview_File << "13\t";
+    for (iElem = 0; iElem < nGlobal_Pris; iElem++) Paraview_File << "13\t";
     for (iElem = 0; iElem < nGlobal_Pyra; iElem++) Paraview_File << "14\t";
   }
   
@@ -847,7 +847,7 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
   
   /*--- Write the header ---*/
   nSurf_Elem_Storage = nGlobal_Line*3 +nGlobal_BoundTria*4 + nGlobal_BoundQuad*5;
-  nGlobal_Elem_Storage = nGlobal_Tria*4 + nGlobal_Quad*5 + nGlobal_Tetr*5 + nGlobal_Hexa*9 + nGlobal_Wedg*7 + nGlobal_Pyra*6;
+  nGlobal_Elem_Storage = nGlobal_Tria*4 + nGlobal_Quad*5 + nGlobal_Tetr*5 + nGlobal_Hexa*9 + nGlobal_Pris*7 + nGlobal_Pyra*6;
   
   if (surf_sol) Paraview_File << "\nCELLS " << nSurf_Elem << "\t" << nSurf_Elem_Storage << "\n";
   else Paraview_File << "\nCELLS " << nGlobal_Elem << "\t" << nGlobal_Elem_Storage << "\n";
@@ -914,12 +914,12 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
       Paraview_File << Conn_Hexa[iNode+6]-1 << "\t" << Conn_Hexa[iNode+7]-1 << "\t";
     }
     
-    for (iElem = 0; iElem < nGlobal_Wedg; iElem++) {
-      iNode = iElem*N_POINTS_WEDGE;
-      Paraview_File << N_POINTS_WEDGE << "\t";
-      Paraview_File << Conn_Wedg[iNode+0]-1 << "\t" << Conn_Wedg[iNode+1]-1 << "\t";
-      Paraview_File << Conn_Wedg[iNode+2]-1 << "\t" << Conn_Wedg[iNode+3]-1 << "\t";
-      Paraview_File << Conn_Wedg[iNode+4]-1 << "\t" << Conn_Wedg[iNode+5]-1 << "\t";
+    for (iElem = 0; iElem < nGlobal_Pris; iElem++) {
+      iNode = iElem*N_POINTS_PRISM;
+      Paraview_File << N_POINTS_PRISM << "\t";
+      Paraview_File << Conn_Pris[iNode+0]-1 << "\t" << Conn_Pris[iNode+1]-1 << "\t";
+      Paraview_File << Conn_Pris[iNode+2]-1 << "\t" << Conn_Pris[iNode+3]-1 << "\t";
+      Paraview_File << Conn_Pris[iNode+4]-1 << "\t" << Conn_Pris[iNode+5]-1 << "\t";
     }
     
     for (iElem = 0; iElem < nGlobal_Pyra; iElem++) {
@@ -946,7 +946,7 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
     for (iElem = 0; iElem < nGlobal_Quad; iElem++) Paraview_File << "9\t";
     for (iElem = 0; iElem < nGlobal_Tetr; iElem++) Paraview_File << "10\t";
     for (iElem = 0; iElem < nGlobal_Hexa; iElem++) Paraview_File << "12\t";
-    for (iElem = 0; iElem < nGlobal_Wedg; iElem++) Paraview_File << "13\t";
+    for (iElem = 0; iElem < nGlobal_Pris; iElem++) Paraview_File << "13\t";
     for (iElem = 0; iElem < nGlobal_Pyra; iElem++) Paraview_File << "14\t";
   }
   

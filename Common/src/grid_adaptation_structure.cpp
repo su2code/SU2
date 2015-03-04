@@ -2453,13 +2453,13 @@ void CGridAdaptation::SetHomothetic_Adaptation3D(CGeometry *geometry, CPhysicalG
 		
 	}
 
-	/*--- Remove pyramids and wedges in the adaptation process ---*/
+	/*--- Remove pyramids and prisms in the adaptation process ---*/
 	unsigned short iFace, iNode, ElemIndex;
 	long jElem;
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem ++) {
 		if ((geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON) || 
 				(geometry->elem[iElem]->GetVTK_Type() == PYRAMID) || 
-				(geometry->elem[iElem]->GetVTK_Type() == WEDGE)) {
+				(geometry->elem[iElem]->GetVTK_Type() == PRISM)) {
 			geometry->elem[iElem]->SetDivide(false);
 			for (iFace = 0; iFace < geometry->elem[iElem]->GetnFaces(); iFace++)
 				for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodesFace(iFace); iNode++) {
@@ -3071,8 +3071,8 @@ void CGridAdaptation::SetHomothetic_Adaptation3D(CGeometry *geometry, CPhysicalG
 																							 geometry->elem[iElem]->GetNode(4));
 			iElemNew++;
 		}
-		if (geometry->elem[iElem]->GetVTK_Type() == WEDGE) {
-			geo_adapt->elem[iElemNew] = new CWedge(geometry->elem[iElem]->GetNode(0),
+		if (geometry->elem[iElem]->GetVTK_Type() == PRISM) {
+			geo_adapt->elem[iElemNew] = new CPrism(geometry->elem[iElem]->GetNode(0),
 																									geometry->elem[iElem]->GetNode(1),
 																									geometry->elem[iElem]->GetNode(2),
 																									geometry->elem[iElem]->GetNode(3),

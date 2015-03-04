@@ -148,7 +148,7 @@ void COutput::SetCGNS_Coordinates(CConfig *config, CGeometry *geometry, unsigned
 		if (nGlobal_Tetr > 0) cgns_err = cg_link_write("Tetrahedral Elements",(char *)base_file.c_str(),"/SU2 Base/SU2 Zone/Tetrahedral Elements");
 		if (nGlobal_Hexa > 0) cgns_err = cg_link_write("Hexahedral Elements",(char *)base_file.c_str(),"/SU2 Base/SU2 Zone/Hexahedral Elements");
 		if (nGlobal_Pyra > 0) cgns_err = cg_link_write("Pyramid Elements",(char *)base_file.c_str(),"/SU2 Base/SU2 Zone/Pyramid Elements");
-		if (nGlobal_Wedg > 0) cgns_err = cg_link_write("Wedge Elements",(char *)base_file.c_str(),"/SU2 Base/SU2 Zone/Wedge Elements");
+		if (nGlobal_Pris > 0) cgns_err = cg_link_write("Prism Elements",(char *)base_file.c_str(),"/SU2 Base/SU2 Zone/Prism Elements");
 		if (nGlobal_Line > 0) cgns_err = cg_link_write("Line Elements",(char *)base_file.c_str(),"/SU2 Base/SU2 Zone/Line Elements");
 		if (cgns_err) cg_error_print();
 
@@ -291,10 +291,10 @@ void COutput::SetCGNS_Connectivity(CConfig *config, CGeometry *geometry, unsigne
 			cgns_err = cg_section_write(cgns_file,cgns_base,cgns_zone,"Pyramid Elements",PYRA_5,
                                   elem_start,elem_end,0,(cgsize_t *)Conn_Pyra,&cgns_section);
 		}
-		if (nGlobal_Wedg > 0) {
-			elem_start = 1; elem_end = (int)nGlobal_Wedg; N = (int)nGlobal_Wedg*N_POINTS_WEDGE;
-			cgns_err = cg_section_write(cgns_file,cgns_base,cgns_zone,"Wedge Elements",PENTA_6,
-                                  elem_start,elem_end,0,(cgsize_t *)Conn_Wedg,&cgns_section);
+		if (nGlobal_Pris > 0) {
+			elem_start = 1; elem_end = (int)nGlobal_Pris; N = (int)nGlobal_Pris*N_POINTS_PRISM;
+			cgns_err = cg_section_write(cgns_file,cgns_base,cgns_zone,"Prism Elements",PENTA_6,
+                                  elem_start,elem_end,0,(cgsize_t *)Conn_Pris,&cgns_section);
 		}
 		if (nGlobal_Line > 0) {
 			elem_start = 1; elem_end = (int)nGlobal_Line; N = (int)nGlobal_Line*N_POINTS_LINE;

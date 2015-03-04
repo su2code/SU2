@@ -154,7 +154,7 @@ const unsigned int N_POINTS_QUADRILATERAL = 4; /*!< \brief General output & CGNS
 const unsigned int N_POINTS_TETRAHEDRON = 4;   /*!< \brief General output & CGNS defines. */
 const unsigned int N_POINTS_HEXAHEDRON = 8;    /*!< \brief General output & CGNS defines. */
 const unsigned int N_POINTS_PYRAMID = 5;       /*!< \brief General output & CGNS defines. */
-const unsigned int N_POINTS_WEDGE = 6;         /*!< \brief General output & CGNS defines. */
+const unsigned int N_POINTS_PRISM = 6;         /*!< \brief General output & CGNS defines. */
 
 /*!
  * \brief Boolean answers
@@ -707,7 +707,7 @@ enum GEO_TYPE {
   RECTANGLE = 9,		/*!< \brief VTK nomenclature for defining a rectangle element. */
   TETRAHEDRON = 10,     	/*!< \brief VTK nomenclature for defining a tetrahedron element. */
   HEXAHEDRON = 12,      	/*!< \brief VTK nomenclature for defining a hexahedron element. */
-  WEDGE = 13,     		/*!< \brief VTK nomenclature for defining a wedge element. */
+  PRISM = 13,     		/*!< \brief VTK nomenclature for defining a prism element. */
   PYRAMID = 14  		/*!< \brief VTK nomenclature for defining a pyramid element. */
 };
 
