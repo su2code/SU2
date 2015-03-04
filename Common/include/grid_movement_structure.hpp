@@ -791,7 +791,7 @@ public:
 	 * \param[in] CoordCorners - Coordiantes of the corners.
    * \param[in] DShapeFunction - Shape function information
 	 */
-  double ShapeFunc_Wedge(double Xi, double Eta, double Zeta, double CoordCorners[8][3], double DShapeFunction[8][4]);
+  double ShapeFunc_Prism(double Xi, double Eta, double Zeta, double CoordCorners[8][3], double DShapeFunction[8][4]);
   
   /*!
 	 * \brief Shape functions and derivative of the shape functions
@@ -827,7 +827,7 @@ public:
 	 * \brief Compute the shape functions for hexahedron
 	 * \param[in] CoordCorners - coordinates of the cornes of the hexahedron.
 	 */
-  double GetWedge_Volume(double CoordCorners[8][3]);
+  double GetPrism_Volume(double CoordCorners[8][3]);
   
   /*!
 	 * \brief Compute the shape functions for hexahedron

@@ -290,7 +290,7 @@ double CVolumetricMovement::Check_Grid(CGeometry *geometry) {
     if (geometry->elem[iElem]->GetVTK_Type() == RECTANGLE)    nNodes = 4;
     if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  nNodes = 4;
     if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      nNodes = 5;
-    if (geometry->elem[iElem]->GetVTK_Type() == WEDGE)        nNodes = 6;
+    if (geometry->elem[iElem]->GetVTK_Type() == PRISM)        nNodes = 6;
     if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)   nNodes = 8;
     
     for (iNodes = 0; iNodes < nNodes; iNodes++) {
@@ -321,7 +321,7 @@ double CVolumetricMovement::Check_Grid(CGeometry *geometry) {
       
       if (nNodes == 4) Volume = GetTetra_Volume(CoordCorners);
       if (nNodes == 5) Volume = GetPyram_Volume(CoordCorners);
-      if (nNodes == 6) Volume = GetWedge_Volume(CoordCorners);
+      if (nNodes == 6) Volume = GetPrism_Volume(CoordCorners);
       if (nNodes == 8) Volume = GetHexa_Volume(CoordCorners);
       
       if (Volume >= -EPS) RightVol = true;
@@ -570,7 +570,7 @@ double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometry, 
     if (geometry->elem[iElem]->GetVTK_Type() == RECTANGLE)    nNodes = 4;
     if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  nNodes = 4;
     if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      nNodes = 5;
-    if (geometry->elem[iElem]->GetVTK_Type() == WEDGE)        nNodes = 6;
+    if (geometry->elem[iElem]->GetVTK_Type() == PRISM)        nNodes = 6;
     if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)   nNodes = 8;
     
     for (iNodes = 0; iNodes < nNodes; iNodes++) {
@@ -893,7 +893,7 @@ double CVolumetricMovement::ShapeFunc_Pyram(double Xi, double Eta, double Zeta, 
   
 }
 
-double CVolumetricMovement::ShapeFunc_Wedge(double Xi, double Eta, double Zeta, double CoordCorners[8][3], double DShapeFunction[8][4]) {
+double CVolumetricMovement::ShapeFunc_Prism(double Xi, double Eta, double Zeta, double CoordCorners[8][3], double DShapeFunction[8][4]) {
   
   int i, j, k;
   double c0, c1, c2, xsj;
@@ -1191,7 +1191,7 @@ double CVolumetricMovement::GetPyram_Volume(double CoordCorners[8][3]) {
 
 }
 
-double CVolumetricMovement::GetWedge_Volume(double CoordCorners[8][3]) {
+double CVolumetricMovement::GetPrism_Volume(double CoordCorners[8][3]) {
   
   unsigned short iDim;
   double *Coord_0, *Coord_1, *Coord_2, *Coord_3;
@@ -1515,7 +1515,7 @@ void CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, CConfig *con
     Location[4][0] = 0.0;   Location[4][1] = 0.0;   Location[4][2] = 0.6372983346207416;  Weight[4] = 0.133333333333333;
   }
   
-  /*--- Wedge. Nodes of numerical integration at 6 points (order 3 in Xi, order 2 in Eta and Mu ). ---*/
+  /*--- Prism. Nodes of numerical integration at 6 points (order 3 in Xi, order 2 in Eta and Mu ). ---*/
   
   if (nNodes == 6) {
     nGauss = 6;
@@ -1547,7 +1547,7 @@ void CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, CConfig *con
     
     if (nNodes == 4) Det = ShapeFunc_Tetra(Xi, Eta, Zeta, CoordCorners, DShapeFunction);
     if (nNodes == 5) Det = ShapeFunc_Pyram(Xi, Eta, Zeta, CoordCorners, DShapeFunction);
-    if (nNodes == 6) Det = ShapeFunc_Wedge(Xi, Eta, Zeta, CoordCorners, DShapeFunction);
+    if (nNodes == 6) Det = ShapeFunc_Prism(Xi, Eta, Zeta, CoordCorners, DShapeFunction);
     if (nNodes == 8) Det = ShapeFunc_Hexa(Xi, Eta, Zeta, CoordCorners, DShapeFunction);
     
     /*--- Compute the B Matrix ---*/

@@ -323,7 +323,7 @@ double CGalerkin_FEA::ShapeFunc_Pyram(double Xi, double Eta, double Zeta, double
   
 }
 
-double CGalerkin_FEA::ShapeFunc_Wedge(double Xi, double Eta, double Zeta, double CoordCorners[8][3], double DShapeFunction[8][4]) {
+double CGalerkin_FEA::ShapeFunc_Prism(double Xi, double Eta, double Zeta, double CoordCorners[8][3], double DShapeFunction[8][4]) {
   
   int i, j, k;
   double c0, c1, c2, xsj;
@@ -597,7 +597,7 @@ void CGalerkin_FEA::SetFEA_StiffMatrix3D(double **StiffMatrix_Elem, double Coord
     Location[4][0] = 0.0;   Location[4][1] = 0.0;   Location[4][2] = 0.6372983346207416;  Weight[4] = 0.133333333333333;
   }
   
-  /*--- Wedge. Nodes of numerical integration at 6 points (order 3 in Xi, order 2 in Eta and Mu ). ---*/
+  /*--- Prism. Nodes of numerical integration at 6 points (order 3 in Xi, order 2 in Eta and Mu ). ---*/
   
   if (nNodes == 6) {
     nGauss = 6;
@@ -629,7 +629,7 @@ void CGalerkin_FEA::SetFEA_StiffMatrix3D(double **StiffMatrix_Elem, double Coord
     
     if (nNodes == 4) Det = ShapeFunc_Tetra(Xi, Eta, Mu, CoordCorners, DShapeFunction);
     if (nNodes == 5) Det = ShapeFunc_Pyram(Xi, Eta, Mu, CoordCorners, DShapeFunction);
-    if (nNodes == 6) Det = ShapeFunc_Wedge(Xi, Eta, Mu, CoordCorners, DShapeFunction);
+    if (nNodes == 6) Det = ShapeFunc_Prism(Xi, Eta, Mu, CoordCorners, DShapeFunction);
     if (nNodes == 8) Det = ShapeFunc_Hexa(Xi, Eta, Mu, CoordCorners, DShapeFunction);
     
     /*--- Compute the B Matrix ---*/

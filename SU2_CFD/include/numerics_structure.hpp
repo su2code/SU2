@@ -4208,7 +4208,7 @@ public:
 	 * \param[in] CoordCorners[8][3] - Coordiantes of the corners.
    * \param[in] shp[8][4] - Shape function information
 	 */
-  double ShapeFunc_Wedge(double Xi, double Eta, double Mu, double CoordCorners[8][3], double DShapeFunction[8][4]);
+  double ShapeFunc_Prism(double Xi, double Eta, double Mu, double CoordCorners[8][3], double DShapeFunction[8][4]);
   
   /*!
 	 * \brief Shape functions and derivative of the shape functions

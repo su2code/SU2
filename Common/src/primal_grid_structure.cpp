@@ -464,25 +464,25 @@ void CHexahedron::Change_Orientation(void) {
   
 }
 
-unsigned short CWedge::Faces[5][4] = {{3,4,1,0},{5,2,1,4},{2,5,3,0},{0,1,2,2},{5,4,3,3}};
+unsigned short CPrism::Faces[5][4] = {{3,4,1,0},{5,2,1,4},{2,5,3,0},{0,1,2,2},{5,4,3,3}};
 
-unsigned short CWedge::Neighbor_Nodes[6][3] = {{1,2,3},{0,2,4},{1,0,5},{0,4,5},{3,5,1},{4,3,2}};
+unsigned short CPrism::Neighbor_Nodes[6][3] = {{1,2,3},{0,2,4},{1,0,5},{0,4,5},{3,5,1},{4,3,2}};
 
-unsigned short CWedge::nNodesFace[5] = {4,4,4,3,3};
+unsigned short CPrism::nNodesFace[5] = {4,4,4,3,3};
 
-unsigned short CWedge::nNeighbor_Nodes[6] = {3,3,3,3,3,3};
+unsigned short CPrism::nNeighbor_Nodes[6] = {3,3,3,3,3,3};
 
-unsigned short CWedge::nFaces = 5;
+unsigned short CPrism::nFaces = 5;
 
-unsigned short CWedge::nNodes = 6;
+unsigned short CPrism::nNodes = 6;
 
-unsigned short CWedge::nNeighbor_Elements = 5;
+unsigned short CPrism::nNeighbor_Elements = 5;
 
-unsigned short CWedge::VTK_Type = 13;
+unsigned short CPrism::VTK_Type = 13;
 
-unsigned short CWedge::maxNodesFace = 4;
+unsigned short CPrism::maxNodesFace = 4;
 
-CWedge::CWedge(unsigned long val_point_0, unsigned long val_point_1, 
+CPrism::CPrism(unsigned long val_point_0, unsigned long val_point_1, 
 			   unsigned long val_point_2, unsigned long val_point_3, 
 			   unsigned long val_point_4, unsigned long val_point_5) : CPrimalGrid() {
 	unsigned short iDim, iFace, iNeighbor_Elements;
@@ -517,7 +517,7 @@ CWedge::CWedge(unsigned long val_point_0, unsigned long val_point_1,
   
 }
 
-CWedge::~CWedge() {
+CPrism::~CPrism() {
   unsigned short iFaces;
   
   for (iFaces = 0; iFaces < nFaces; iFaces++)
@@ -526,7 +526,7 @@ CWedge::~CWedge() {
   
 }
 
-void CWedge::Change_Orientation(void) {
+void CPrism::Change_Orientation(void) {
 	unsigned long Point_0, Point_1, Point_3, Point_4;
 	Point_0 = Nodes[0];
 	Point_1 = Nodes[1];

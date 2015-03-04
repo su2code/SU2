@@ -43,7 +43,7 @@ COutput::COutput(void) {
   nGlobal_Quad      = 0;
   nGlobal_Tetr      = 0;
   nGlobal_Hexa      = 0;
-  nGlobal_Wedg      = 0;
+  nGlobal_Pris      = 0;
   nGlobal_Pyra      = 0;
   nGlobal_Line      = 0;
   nGlobal_BoundTria = 0;
@@ -763,9 +763,9 @@ void COutput::MergeConnectivity(CConfig *config, CGeometry *geometry, unsigned s
         cout <<"Merging volumetric hexahedron grid connectivity." << endl;
       MergeVolumetricConnectivity(config, geometry, HEXAHEDRON  );
       
-      if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Wedg != 0))
-        cout <<"Merging volumetric wedge grid connectivity." << endl;
-      MergeVolumetricConnectivity(config, geometry, WEDGE       );
+      if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Pris != 0))
+        cout <<"Merging volumetric prism grid connectivity." << endl;
+      MergeVolumetricConnectivity(config, geometry, PRISM       );
       
       if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Pyra != 0))
         cout <<"Merging volumetric pyramid grid connectivity." << endl;
@@ -794,7 +794,7 @@ void COutput::MergeConnectivity(CConfig *config, CGeometry *geometry, unsigned s
     /*--- Update total number of volume elements after merge. ---*/
     
     nGlobal_Elem = nGlobal_Tria + nGlobal_Quad + nGlobal_Tetr +
-    nGlobal_Hexa + nGlobal_Pyra + nGlobal_Wedg;
+    nGlobal_Hexa + nGlobal_Pyra + nGlobal_Pris;
     
     /*--- Update total number of surface elements after merge. ---*/
     
@@ -1125,9 +1125,9 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
       nLocalElem = geometry->GetnElemHexa();
       NODES_PER_ELEMENT = N_POINTS_HEXAHEDRON;
       break;
-    case WEDGE:
-      nLocalElem = geometry->GetnElemWedg();
-      NODES_PER_ELEMENT = N_POINTS_WEDGE;
+    case PRISM:
+      nLocalElem = geometry->GetnElemPris();
+      NODES_PER_ELEMENT = N_POINTS_PRISM;
       break;
     case PYRAMID:
       nLocalElem = geometry->GetnElemPyra();
@@ -1424,9 +1424,9 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
         nGlobal_Hexa = nElem_Total;
         if (nGlobal_Hexa > 0) Conn_Hexa = Conn_Elem;
         break;
-      case WEDGE:
-        nGlobal_Wedg = nElem_Total;
-        if (nGlobal_Wedg > 0) Conn_Wedg = Conn_Elem;
+      case PRISM:
+        nGlobal_Pris = nElem_Total;
+        if (nGlobal_Pris > 0) Conn_Pris = Conn_Elem;
         break;
       case PYRAMID:
         nGlobal_Pyra = nElem_Total;
@@ -3713,7 +3713,7 @@ void COutput::DeallocateConnectivity(CConfig *config, CGeometry *geometry, bool 
       if (nGlobal_Quad > 0) delete [] Conn_Quad;
       if (nGlobal_Tetr > 0) delete [] Conn_Tetr;
       if (nGlobal_Hexa > 0) delete [] Conn_Hexa;
-      if (nGlobal_Wedg > 0) delete [] Conn_Wedg;
+      if (nGlobal_Pris > 0) delete [] Conn_Pris;
       if (nGlobal_Pyra > 0) delete [] Conn_Pyra;
     }
     
@@ -6142,8 +6142,8 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
     if ((rank == MASTER_NODE) && (Wrt_Vol || Wrt_Srf)) {
       if (FileFormat == TECPLOT_BINARY) {
         if (rank == MASTER_NODE) cout << "Writing Tecplot binary volume and surface mesh files." << endl;
-        SetTecplot_MeshBinary(config[iZone], geometry[iZone][MESH_0], iZone);
-        SetTecplot_SurfaceMesh(config[iZone], geometry[iZone][MESH_0], iZone);
+        SetTecplotBinary_DomainMesh(config[iZone], geometry[iZone][MESH_0], iZone);
+        SetTecplotBinary_SurfaceMesh(config[iZone], geometry[iZone][MESH_0], iZone);
         if (!wrote_base_file)
           DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], false);
         if (!wrote_surf_file)
@@ -6176,7 +6176,7 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
             /*--- Write a Tecplot ASCII file ---*/
             
             if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file volume solution file." << endl;
-            SetTecplot_ASCII(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0],iZone, val_nZone, false);
+            SetTecplotASCII(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0],iZone, val_nZone, false);
             DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], false);
             break;
             
@@ -6185,7 +6185,7 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
             /*--- Write a FieldView ASCII file ---*/
             
             if (rank == MASTER_NODE) cout << "Writing FieldView ASCII file volume solution file." << endl;
-            SetFieldView_ASCII(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0],iZone, val_nZone, false);
+            SetFieldViewASCII(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0],iZone, val_nZone, false);
             DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], false);
             break;
             
@@ -6194,7 +6194,7 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
             /*--- Write a Tecplot binary solution file ---*/
             
             if (rank == MASTER_NODE) cout << "Writing Tecplot binary volume solution file." << endl;
-            SetTecplot_Solution(config[iZone], geometry[iZone][MESH_0], iZone);
+            SetTecplotBinary_DomainSolution(config[iZone], geometry[iZone][MESH_0], iZone);
             break;
             
             
@@ -6222,7 +6222,7 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
             /*--- Write a Tecplot ASCII file ---*/
             
             if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII surface solution file." << endl;
-            SetTecplot_ASCII(config[iZone], geometry[iZone][MESH_0],solver_container[iZone][MESH_0] ,iZone, val_nZone, true);
+            SetTecplotASCII(config[iZone], geometry[iZone][MESH_0],solver_container[iZone][MESH_0] ,iZone, val_nZone, true);
             DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], true);
             break;
             
@@ -6231,7 +6231,7 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
             /*--- Write a Tecplot binary solution file ---*/
             
             if (rank == MASTER_NODE) cout << "Writing Tecplot binary surface solution file." << endl;
-            SetTecplot_SurfaceSolution(config[iZone], geometry[iZone][MESH_0], iZone);
+            SetTecplotBinary_SurfaceSolution(config[iZone], geometry[iZone][MESH_0], iZone);
             break;
             
           case PARAVIEW:
@@ -6325,7 +6325,7 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
               /*--- Write a Tecplot ASCII file ---*/
               
               if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file (volume grid)." << endl;
-              SetTecplot_ASCII(config[iZone], geometry[iZone], solver,iZone, val_nZone, false);
+              SetTecplotASCII(config[iZone], geometry[iZone], solver,iZone, val_nZone, false);
               DeallocateConnectivity(config[iZone], geometry[iZone], false);
               break;
               
@@ -6334,7 +6334,7 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
               /*--- Write a FieldView ASCII file ---*/
               
               if (rank == MASTER_NODE) cout << "Writing FieldView ASCII file (volume grid)." << endl;
-              SetFieldView_ASCII(config[iZone], geometry[iZone], solver,iZone, val_nZone, false);
+              SetFieldViewASCII(config[iZone], geometry[iZone], solver,iZone, val_nZone, false);
               DeallocateConnectivity(config[iZone], geometry[iZone], false);
               break;
               
@@ -6343,8 +6343,8 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
               /*--- Write a Tecplot binary solution file ---*/
               
               if (rank == MASTER_NODE) cout << "Writing Tecplot Binary file (volume grid)." << endl;
-              SetTecplot_MeshBinary(config[iZone], geometry[iZone], iZone);
-              SetTecplot_Solution(config[iZone], geometry[iZone], iZone);
+              SetTecplotBinary_DomainMesh(config[iZone], geometry[iZone], iZone);
+              SetTecplotBinary_DomainSolution(config[iZone], geometry[iZone], iZone);
               break;
               
             case PARAVIEW:
@@ -6371,7 +6371,7 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
               /*--- Write a Tecplot ASCII file ---*/
               
               if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file (surface grid)." << endl;
-              SetTecplot_ASCII(config[iZone], geometry[iZone], solver, iZone, val_nZone, true);
+              SetTecplotASCII(config[iZone], geometry[iZone], solver, iZone, val_nZone, true);
               DeallocateConnectivity(config[iZone], geometry[iZone], true);
               break;
               
@@ -6380,8 +6380,8 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
               /*--- Write a Tecplot binary solution file ---*/
               
               if (rank == MASTER_NODE) cout << "Writing Tecplot Binary file (surface grid)." << endl;
-              SetTecplot_SurfaceMesh(config[iZone], geometry[iZone], iZone);
-              SetTecplot_SurfaceSolution(config[iZone], geometry[iZone], iZone);
+              SetTecplotBinary_SurfaceMesh(config[iZone], geometry[iZone], iZone);
+              SetTecplotBinary_SurfaceSolution(config[iZone], geometry[iZone], iZone);
               break;
               
             case PARAVIEW:
@@ -6429,7 +6429,7 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
         
         sprintf (buffer_char, ".dat");
         strcpy(out_file, filename.c_str()); strcat(out_file, buffer_char);
-        SetTecplotNode_ASCII(config[iZone], geometry[iZone], solver, out_file, false);
+        SetTecplotASCII_LowMemory(config[iZone], geometry[iZone], solver, out_file, false);
       }
       
       if (Wrt_Srf) {
@@ -6448,7 +6448,7 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
         
         sprintf (buffer_char, ".dat");
         strcpy(out_file, filename.c_str()); strcat(out_file, buffer_char);
-        SetTecplotNode_ASCII(config[iZone], geometry[iZone], solver, out_file, true);
+        SetTecplotASCII_LowMemory(config[iZone], geometry[iZone], solver, out_file, true);
       }
 
     }
@@ -6505,7 +6505,7 @@ void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned sho
         
         /*--- Write a Tecplot ASCII file ---*/
         
-        SetTecplot_MeshASCII(config[iZone], geometry[iZone], false, new_file);
+        SetTecplotASCII_Mesh(config[iZone], geometry[iZone], false, new_file);
         
       }
       
@@ -6515,7 +6515,7 @@ void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned sho
         
         /*--- Write a Tecplot ASCII file ---*/
         
-        SetTecplot_MeshASCII(config[iZone], geometry[iZone], true, new_file);
+        SetTecplotASCII_Mesh(config[iZone], geometry[iZone], true, new_file);
         
       }
 

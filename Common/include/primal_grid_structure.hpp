@@ -981,12 +981,12 @@ public:
 };
 
 /*!
- * \class CWedge
- * \brief Class for wedge element definition.
+ * \class CPrism
+ * \brief Class for prism element definition.
  * \author F. Palacios
  * \version 3.2.8.3 "eagle"
  */
-class CWedge : public CPrimalGrid {
+class CPrism : public CPrimalGrid {
 private:
 	static unsigned short Faces[5][4];			/*!< \brief Matrix to store the local nodes of all the faces. */
 	static unsigned short Neighbor_Nodes[6][3];	/*!< \brief Neighbor to a nodes in the element. */
@@ -1009,19 +1009,19 @@ public:
 	 * \param[in] val_point_4 - Index of the 5th point read from the grid file.
 	 * \param[in] val_point_5 - Index of the 6th point read from the grid file.
 	 */
-	CWedge(unsigned long val_point_0, unsigned long val_point_1,
+	CPrism(unsigned long val_point_0, unsigned long val_point_1,
          unsigned long val_point_2, unsigned long val_point_3,
          unsigned long val_point_4, unsigned long val_point_5);
   
   /*!
 	 * \brief Destructor of the class.
 	 */
-	~CWedge(void);
+	~CPrism(void);
   
 	/*!
 	 * \brief Get the nodes shared by the triangle.
-	 * \param[in] val_node - Local (to the triangle) index of the node (a wedge has 6 nodes).
-	 * \return Global index of the wedge node.
+	 * \param[in] val_node - Local (to the triangle) index of the node (a prism has 6 nodes).
+	 * \return Global index of the prism node.
 	 */
 	unsigned long GetNode(unsigned short val_node);
   
