@@ -57,25 +57,25 @@ CFluidProp::CFluidProp( string thermolib, int ncomp, string* comp, double* conc,
         // Define the working fluid 
 	fluidprop_setfluid( ThermoLib.c_str(), nComp, LocalComp[0], LEN_COMPONENTS, LocalConc );
 
-        // Table generator
-        /*fluidprop_setunits( "SI", " ", " ", " ");
-        string table_name      = " ";
-        string generat_mode    = "satv";
-        string interpol_method = "bicubic2";
-        string step_func       = "constant";
-        string search_alg      = "kdtree"; 
-        double T_low           = 300.;
-        double T_high          = 564.;
-        int    n_sat           = 100;
-        int    n_row           = 100;
-        int    n_col           = 100;
-        double step_min        = 0.005;
-        double step_max        = 0.005;
-        fluidprop_settable( table_name.c_str(), generat_mode.c_str(), interpol_method.c_str(), step_func.c_str(), search_alg.c_str(),  
-                            n_row, n_col, n_sat, T_low, T_high, step_min, step_max);
-        printf( "FluidProp error message: %s\n", fluidprop_geterror());
-	fluidprop_setfluid( ThermoLib.c_str(), nComp, LocalComp[0], LEN_COMPONENTS, LocalConc );
-        //throw(-1);*/
+//        // Table generator
+//        fluidprop_setunits( "SI", " ", " ", " ");
+//        string table_name      = "MDM_table";
+//        string generat_mode    = "satv";
+//        string interpol_method = "bicubic2";
+//        string step_func       = "constant";
+//        string search_alg      = "kdtree";
+//        double T_low           = 300.;
+//        double T_high          = 560.;
+//        int    n_sat           = 300;
+//        int    n_row           = 300;
+//        int    n_col           = 500;
+//        double step_min        = 0.02;
+//        double step_max        = 0.02;
+//        fluidprop_settable( table_name.c_str(), generat_mode.c_str(), interpol_method.c_str(), step_func.c_str(), search_alg.c_str(),
+//                            n_row, n_col, n_sat, T_low, T_high, step_min, step_max);
+//        printf( "FluidProp error message: %s\n", fluidprop_geterror());
+//	fluidprop_setfluid( ThermoLib.c_str(), nComp, LocalComp[0], LEN_COMPONENTS, LocalConc );
+//        throw(-1);//*/
 
 	// In case of using LuT, read the table
         bool LuT = ThermoLib.substr(0,3) == "LuT";
