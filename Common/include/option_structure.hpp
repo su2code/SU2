@@ -861,13 +861,11 @@ static const map<string, ENUM_ADAPT> Adapt_Map = CCreateMap<string, ENUM_ADAPT>
  */
 enum ENUM_INPUT {
   SU2 = 1,                       /*!< \brief SU2 input format. */
-  CGNS = 2,                     /*!< \brief CGNS input format for the computational grid. */
-  NETCDF_ASCII = 3      	/*!< \brief ASCII NETCDF input format for the computational grid. */
+  CGNS = 2                     /*!< \brief CGNS input format for the computational grid. */
 };
 static const map<string, ENUM_INPUT> Input_Map = CCreateMap<string, ENUM_INPUT>
 ("SU2", SU2)
-("CGNS", CGNS)
-("NETCDF_ASCII", NETCDF_ASCII);
+("CGNS", CGNS);
 
 const int CGNS_STRING_SIZE = 33;/*!< \brief Length of strings used in the CGNS format. */
 
@@ -875,18 +873,20 @@ const int CGNS_STRING_SIZE = 33;/*!< \brief Length of strings used in the CGNS f
  * \brief type of solution output file formats
  */
 enum ENUM_OUTPUT {
-  TECPLOT = 1,  		/*!< \brief Tecplot format for the solution output. */
-  EXCEL = 2,			/*!< \brief Excel format for the solution output. */
-  CSV = 3,			/*!< \brief Comma-separated values format for the solution output. */
-  TECPLOT_BINARY = 4,  		/*!< \brief Tecplot binary format for the solution output. */
-  CGNS_SOL = 5,  		/*!< \brief CGNS format for the solution output. */
-  PARAVIEW = 6  		/*!< \brief Paraview format for the solution output. */
+  TECPLOT = 1,  		     /*!< \brief Tecplot format for the solution output. */
+  TECPLOT_BINARY = 2,    /*!< \brief Tecplot binary format for the solution output. */
+  FIELDVIEW = 3,  		   /*!< \brief FieldView format for the solution output. */
+  FIELDVIEW_BINARY = 4,  /*!< \brief FieldView binary format for the solution output. */
+  CSV = 5,			         /*!< \brief Comma-separated values format for the solution output. */
+  CGNS_SOL = 6,  	     	 /*!< \brief CGNS format for the solution output. */
+  PARAVIEW = 7  		     /*!< \brief Paraview format for the solution output. */
 };
 static const map<string, ENUM_OUTPUT> Output_Map = CCreateMap<string, ENUM_OUTPUT>
 ("TECPLOT", TECPLOT)
-("EXCEL", EXCEL)
-("CSV", CSV)
 ("TECPLOT_BINARY", TECPLOT_BINARY)
+("FIELDVIEW", FIELDVIEW)
+("FIELDVIEW_BINARY", FIELDVIEW_BINARY)
+("CSV", CSV)
 ("CGNS", CGNS_SOL)
 ("PARAVIEW", PARAVIEW);
 

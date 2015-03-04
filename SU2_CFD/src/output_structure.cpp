@@ -3778,8 +3778,10 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
     strcat(cstr,buffer);
   }
   
-  if (config->GetOutput_FileFormat() == TECPLOT) sprintf (buffer, ".dat");
-  else if (config->GetOutput_FileFormat() == TECPLOT_BINARY)  sprintf (buffer, ".plt");
+  if ((config->GetOutput_FileFormat() == TECPLOT) ||
+      (config->GetOutput_FileFormat() == FIELDVIEW)) sprintf (buffer, ".dat");
+  else if ((config->GetOutput_FileFormat() == TECPLOT_BINARY) ||
+           (config->GetOutput_FileFormat() == FIELDVIEW_BINARY))  sprintf (buffer, ".plt");
   else if (config->GetOutput_FileFormat() == PARAVIEW)  sprintf (buffer, ".csv");
   strcat(cstr,buffer);
   
@@ -3845,7 +3847,9 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   char end[]= ",\"Linear_Solver_Iterations\",\"CFL_Number\",\"Time(min)\"\n";
   
   if ((config->GetOutput_FileFormat() == TECPLOT) ||
-      (config->GetOutput_FileFormat() == TECPLOT_BINARY)) {
+      (config->GetOutput_FileFormat() == TECPLOT_BINARY) ||
+      (config->GetOutput_FileFormat() == FIELDVIEW) ||
+      (config->GetOutput_FileFormat() == FIELDVIEW_BINARY)) {
     ConvHist_file[0] << "TITLE = \"SU2 Simulation\"" << endl;
     ConvHist_file[0] << "VARIABLES = ";
   }
@@ -3914,7 +3918,10 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
       
   }
   
-  if (config->GetOutput_FileFormat() == TECPLOT || config->GetOutput_FileFormat() == TECPLOT_BINARY) {
+  if (config->GetOutput_FileFormat() == TECPLOT ||
+      config->GetOutput_FileFormat() == TECPLOT_BINARY ||
+      config->GetOutput_FileFormat() == FIELDVIEW ||
+      config->GetOutput_FileFormat() == FIELDVIEW_BINARY) {
     ConvHist_file[0] << "ZONE T= \"Convergence history\"" << endl;
   }
   
@@ -6173,6 +6180,15 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
             DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], false);
             break;
             
+          case FIELDVIEW:
+            
+            /*--- Write a FieldView ASCII file ---*/
+            
+            if (rank == MASTER_NODE) cout << "Writing FieldView ASCII file volume solution file." << endl;
+            SetFieldView_ASCII(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0],iZone, val_nZone, false);
+            DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], false);
+            break;
+            
           case TECPLOT_BINARY:
             
             /*--- Write a Tecplot binary solution file ---*/
@@ -6310,6 +6326,15 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
               
               if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file (volume grid)." << endl;
               SetTecplot_ASCII(config[iZone], geometry[iZone], solver,iZone, val_nZone, false);
+              DeallocateConnectivity(config[iZone], geometry[iZone], false);
+              break;
+              
+            case FIELDVIEW:
+              
+              /*--- Write a FieldView ASCII file ---*/
+              
+              if (rank == MASTER_NODE) cout << "Writing FieldView ASCII file (volume grid)." << endl;
+              SetFieldView_ASCII(config[iZone], geometry[iZone], solver,iZone, val_nZone, false);
               DeallocateConnectivity(config[iZone], geometry[iZone], false);
               break;
               
