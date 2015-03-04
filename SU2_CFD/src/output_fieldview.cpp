@@ -40,10 +40,6 @@ void COutput::SetFieldView_ASCII(CConfig *config, CGeometry *geometry, CSolver *
   
   unsigned long iPoint, iElem, iNode;
   unsigned long iExtIter = config->GetExtIter();
-  unsigned long *LocalIndex = NULL;
-  bool *SurfacePoint = NULL;
-  
-  bool grid_movement  = config->GetGrid_Movement();
   bool adjoint = config->GetAdjoint();
   
   char cstr[200], buffer[50];
@@ -164,7 +160,7 @@ void COutput::SetFieldView_ASCII(CConfig *config, CGeometry *geometry, CSolver *
    is 0, these special integrals will not be available. ---*/
   
   FieldView_File << "Boundary Table\t1" << endl;
-  FieldView_File << "1\t1\t0\tBoundary" << endl;
+  FieldView_File << "1\t0\t1\tBoundary" << endl;
 
   /*--- Output the table of variable names, starting with the number of
    variables.  The number of variables can be zero.
@@ -217,11 +213,12 @@ void COutput::SetFieldView_ASCII(CConfig *config, CGeometry *geometry, CSolver *
     
   }
   
-  //        Output the node definition section for this grid.
-  FieldView_File << "Nodes\t" << nGlobal_Poin << endl;
+//        Output the node definition section for this grid.
   
-  //        Output the X, Y, Z coordinates of successive nodes.
-  //        Note that this differs from the binary/unformatted specification.
+  FieldView_File << "Nodes\t" << nGlobal_Poin << endl;
+
+//        Output the X, Y, Z coordinates of successive nodes.
+//        Note that this differs from the binary/unformatted specification.
   
   for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
     
@@ -236,19 +233,19 @@ void COutput::SetFieldView_ASCII(CConfig *config, CGeometry *geometry, CSolver *
     FieldView_File << endl;
     
   }
-  
-  //        Output the boundary face definitions.
-  //        Note that this differs from the binary/unformatted specification.
-  //        Each face is preceded by an index into the boundary table at the
-  //        top of the file and the number of face vertices, 3 or 4.
-  //        All faces here have 4 vertices.  If the face is triangular,
-  //        the last vertex should be zero.
-  //        TIP: FIELDVIEW assumes that boundary faces are not in random
-  //        order.  It assumes that faces of the same type tend to occur
-  //        in groups.  If your boundary faces are in random order, you
-  //        may want to output them one boundary type at a time.  This
-  //        will give you better performance (less memory, greater speed)
-  //        in FIELDVIEW.
+
+//        Output the boundary face definitions.
+//        Note that this differs from the binary/unformatted specification.
+//        Each face is preceded by an index into the boundary table at the
+//        top of the file and the number of face vertices, 3 or 4.
+//        All faces here have 4 vertices.  If the face is triangular,
+//        the last vertex should be zero.
+//        TIP: FIELDVIEW assumes that boundary faces are not in random
+//        order.  It assumes that faces of the same type tend to occur
+//        in groups.  If your boundary faces are in random order, you
+//        may want to output them one boundary type at a time.  This
+//        will give you better performance (less memory, greater speed)
+//        in FIELDVIEW.
   
   unsigned long nbfaces = nGlobal_Line + nGlobal_BoundTria + nGlobal_BoundQuad;
   
@@ -275,13 +272,13 @@ void COutput::SetFieldView_ASCII(CConfig *config, CGeometry *geometry, CSolver *
     FieldView_File << Conn_BoundQuad[iNode+3] << "\n";
   }
   
-  //        Output the elements section for this grid.
-  //        Note that this differs from the binary/unformatted specification.
-  //        It contains the headers and node definitions of all elements.
-  //        In this example, each element starts with 2 for type 'hex',
-  //        with a subtype of 1 (the only subtype currently supported).
-  //        This is followed by the node indices for the element.
-  //
+//        Output the elements section for this grid.
+//        Note that this differs from the binary/unformatted specification.
+//        It contains the headers and node definitions of all elements.
+//        In this example, each element starts with 2 for type 'hex',
+//        with a subtype of 1 (the only subtype currently supported).
+//        This is followed by the node indices for the element.
+//
   
   FieldView_File << "Elements" << endl;
   
@@ -343,10 +340,10 @@ void COutput::SetFieldView_ASCII(CConfig *config, CGeometry *geometry, CSolver *
   FieldView_File << "Variables" << endl;
 
   /*--- Loop over the vars/residuals and write the values to file ---*/
-  
-  for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
-    for (iVar = nDim; iVar < nVar_Total; iVar++)
+  for (iVar = nDim; iVar < nVar_Total; iVar++) {
+    for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
       FieldView_File << scientific << Data[iVar][iPoint] << endl;
+    }
   }
   
 //        Output the boundary variables data for this grid.
