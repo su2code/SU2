@@ -137,7 +137,7 @@ CWaveSolver::CWaveSolver(CGeometry *geometry,
 		string text_line;
     
 		for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-			getline(restart_file,text_line);
+			getline(restart_file, text_line);
 			istringstream point_line(text_line);
 			point_line >> index >> Solution[0] >> Solution[1];
 			node[iPoint] = new CWaveVariable(Solution, nDim, nVar, config);
@@ -772,7 +772,7 @@ void CWaveSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   
   /*--- Read the restart file ---*/
   for (iPoint = 0; iPoint < geometry[MESH_0]->GetnPoint(); iPoint++) {
-    getline(restart_file,text_line);
+    getline(restart_file, text_line);
     istringstream point_line(text_line);
     point_line >> index >> Solution[0] >> Solution[1];
     node[iPoint]->SetSolution_Direct(Solution);

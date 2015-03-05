@@ -120,14 +120,14 @@ public:
 	void SetValZero(void);
   
   /*!
-	 * \brief Copies the block (i,j) of the matrix-by-blocks structure in the internal variable *block.
+	 * \brief Copies the block (i, j) of the matrix-by-blocks structure in the internal variable *block.
 	 * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
 	 * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
 	 */
 	double *GetBlock(unsigned long block_i, unsigned long block_j);
   
   /*!
-	 * \brief Copies the block (i,j) of the matrix-by-blocks structure in the internal variable *block.
+	 * \brief Copies the block (i, j) of the matrix-by-blocks structure in the internal variable *block.
 	 * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
 	 * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
 	 */
@@ -137,7 +137,7 @@ public:
 	 * \brief Set the value of a block in the sparse matrix.
 	 * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
 	 * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
-	 * \param[in] **val_block - Block to set to A(i,j).
+	 * \param[in] **val_block - Block to set to A(i, j).
 	 */
 	void SetBlock(unsigned long block_i, unsigned long block_j, double **val_block);
   
@@ -145,7 +145,7 @@ public:
 	 * \brief Set the value of a block in the sparse matrix.
 	 * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
 	 * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
-	 * \param[in] **val_block - Block to set to A(i,j).
+	 * \param[in] **val_block - Block to set to A(i, j).
 	 */
 	void SetBlock(unsigned long block_i, unsigned long block_j, double *val_block);
   
@@ -153,7 +153,7 @@ public:
 	 * \brief Adds the specified block to the sparse matrix.
 	 * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
 	 * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
-	 * \param[in] **val_block - Block to add to A(i,j).
+	 * \param[in] **val_block - Block to add to A(i, j).
 	 */
 	void AddBlock(unsigned long block_i, unsigned long block_j, double **val_block);
   
@@ -161,12 +161,12 @@ public:
 	 * \brief Subtracts the specified block to the sparse matrix.
 	 * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
 	 * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
-	 * \param[in] **val_block - Block to subtract to A(i,j).
+	 * \param[in] **val_block - Block to subtract to A(i, j).
 	 */
 	void SubtractBlock(unsigned long block_i, unsigned long block_j, double **val_block);
   
   /*!
-	 * \brief Copies the block (i,j) of the matrix-by-blocks structure in the internal variable *block.
+	 * \brief Copies the block (i, j) of the matrix-by-blocks structure in the internal variable *block.
 	 * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
 	 * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
 	 */
@@ -176,7 +176,7 @@ public:
 	 * \brief Set the value of a block in the sparse matrix.
 	 * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
 	 * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
-	 * \param[in] **val_block - Block to set to A(i,j).
+	 * \param[in] **val_block - Block to set to A(i, j).
 	 */
 	void SetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j, double *val_block);
   
@@ -184,23 +184,23 @@ public:
 	 * \brief Subtracts the specified block to the sparse matrix.
 	 * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
 	 * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
-	 * \param[in] **val_block - Block to subtract to A(i,j).
+	 * \param[in] **val_block - Block to subtract to A(i, j).
 	 */
 	void SubtractBlock_ILUMatrix(unsigned long block_i, unsigned long block_j, double *val_block);
   
 	/*!
-	 * \brief Adds the specified value to the diagonal of the (i,i) subblock
+	 * \brief Adds the specified value to the diagonal of the (i, i) subblock
 	 *        of the matrix-by-blocks structure.
 	 * \param[in] block_i - Index of the block in the matrix-by-blocks structure.
-	 * \param[in] val_matrix - Value to add to the diagonal elements of A(i,i).
+	 * \param[in] val_matrix - Value to add to the diagonal elements of A(i, i).
 	 */
 	void AddVal2Diag(unsigned long block_i, double val_matrix);
   
   /*!
-   * \brief Sets the specified value to the diagonal of the (i,i) subblock
+   * \brief Sets the specified value to the diagonal of the (i, i) subblock
    *        of the matrix-by-blocks structure.
    * \param[in] block_i - Index of the block in the matrix-by-blocks structure.
-   * \param[in] val_matrix - Value to add to the diagonal elements of A(i,i).
+   * \param[in] val_matrix - Value to add to the diagonal elements of A(i, i).
    */
   void SetVal2Diag(unsigned long block_i, double val_matrix);
 
@@ -227,15 +227,15 @@ public:
 	void DeleteValsRowi(unsigned long i);
   
 	/*!
-	 * \brief Performs the Gauss Elimination algorithm to solve the linear subsystem of the (i,i) subblock and rhs.
-	 * \param[in] block_i - Index of the (i,i) subblock in the matrix-by-blocks structure.
+	 * \brief Performs the Gauss Elimination algorithm to solve the linear subsystem of the (i, i) subblock and rhs.
+	 * \param[in] block_i - Index of the (i, i) subblock in the matrix-by-blocks structure.
 	 * \param[in] rhs - Right-hand-side of the linear system.
 	 * \return Solution of the linear system (overwritten on rhs).
 	 */
 	void Gauss_Elimination(unsigned long block_i, double* rhs);
   
 	/*!
-	 * \brief Performs the Gauss Elimination algorithm to solve the linear subsystem of the (i,i) subblock and rhs.
+	 * \brief Performs the Gauss Elimination algorithm to solve the linear subsystem of the (i, i) subblock and rhs.
 	 * \param[in] Block - matrix-by-blocks structure.
 	 * \param[in] rhs - Right-hand-side of the linear system.
 	 * \return Solution of the linear system (overwritten on rhs).
@@ -243,8 +243,8 @@ public:
 	void Gauss_Elimination(double* Block, double* rhs);
 
   /*!
-	 * \brief Performs the Gauss Elimination algorithm to solve the linear subsystem of the (i,i) subblock and rhs.
-	 * \param[in] block_i - Index of the (i,i) subblock in the matrix-by-blocks structure.
+	 * \brief Performs the Gauss Elimination algorithm to solve the linear subsystem of the (i, i) subblock and rhs.
+	 * \param[in] block_i - Index of the (i, i) subblock in the matrix-by-blocks structure.
 	 * \param[in] rhs - Right-hand-side of the linear system.
 	 * \return Solution of the linear system (overwritten on rhs).
 	 */
@@ -252,11 +252,11 @@ public:
   
   /*!
 	 * \fn void CSysMatrix::ProdBlockVector(unsigned long block_i, unsigned long block_j, double* vec);
-	 * \brief Performs the product of the block (i,j) by vector vec.
+	 * \brief Performs the product of the block (i, j) by vector vec.
 	 * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
 	 * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
-	 * \param[in] vec - Vector to be multiplied by the block (i,j) of the sparse matrix A.
-	 * \return Product of A(i,j) by vector *vec (stored at *prod_block_vector).
+	 * \param[in] vec - Vector to be multiplied by the block (i, j) of the sparse matrix A.
+	 * \return Product of A(i, j) by vector *vec (stored at *prod_block_vector).
 	 */
 	void ProdBlockVector(unsigned long block_i, unsigned long block_j, const CSysVector & vec);
   

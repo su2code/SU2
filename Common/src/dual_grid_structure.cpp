@@ -329,7 +329,7 @@ void CPoint::SetBoundary(unsigned short val_nmarker) {
 	Boundary = true;
 }
 
-CEdge::CEdge(unsigned long val_iPoint, unsigned long val_jPoint,unsigned short val_nDim) : CDualGrid(val_nDim) {
+CEdge::CEdge(unsigned long val_iPoint, unsigned long val_jPoint, unsigned short val_nDim) : CDualGrid(val_nDim) {
 	unsigned short iDim;
 	
   /*--- Pointers initialization ---*/

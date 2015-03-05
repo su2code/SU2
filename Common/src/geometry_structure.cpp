@@ -249,7 +249,7 @@ void CGeometry::SetFaces(void) {
   //		for (iNode = 0; iNode < node[iPoint]->GetnPoint(); iNode++) {
   //			jPoint = node[iPoint]->GetPoint(iNode);
   //			iFace = FindFace(iPoint, jPoint);
-  //			if (iPoint < jPoint) face[iFace] = new CFace(iPoint,jPoint,nDim);
+  //			if (iPoint < jPoint) face[iFace] = new CFace(iPoint, jPoint, nDim);
   //		}
 }
 
@@ -553,7 +553,7 @@ void CGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_Normal,
     Buffer_Send_Coord[iVertex*4 + 3] = Variable[iVertex];
   }
   
-  MPI_Allgather(Buffer_Send_Coord,nBuffer,MPI_DOUBLE,Buffer_Receive_Coord,nBuffer,MPI_DOUBLE,MPI_COMM_WORLD);
+  MPI_Allgather(Buffer_Send_Coord, nBuffer, MPI_DOUBLE, Buffer_Receive_Coord, nBuffer, MPI_DOUBLE, MPI_COMM_WORLD);
   
   /*--- Clean the vectors before adding the new vertices only to the master node ---*/
   
@@ -699,7 +699,7 @@ void CGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_Normal,
 
 void CGeometry::ComputeSurf_Curvature(CConfig *config) {
   unsigned short iMarker, iNeigh_Point, iDim, iNode, iNeighbor_Nodes, Neighbor_Node;
-  unsigned long Neighbor_Point, iVertex, iPoint, jPoint,iElem_Bound, iEdge, nLocalVertex, MaxLocalVertex , *Buffer_Send_nVertex, *Buffer_Receive_nVertex, TotalnPointDomain;
+  unsigned long Neighbor_Point, iVertex, iPoint, jPoint, iElem_Bound, iEdge, nLocalVertex, MaxLocalVertex , *Buffer_Send_nVertex, *Buffer_Receive_nVertex, TotalnPointDomain;
   int iProcessor, nProcessor;
   vector<unsigned long> Point_NeighborList, Elem_NeighborList, Point_Triangle, Point_Edge, Point_Critical;
   vector<unsigned long>::iterator it;
@@ -1274,8 +1274,8 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   /*--- MPI initialization ---*/
   
   MPI_Status status;
-  MPI_Comm_size(MPI_COMM_WORLD,&size);
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   
   /*--- MPI status and request arrays for non-blocking communications ---*/
   
@@ -2474,8 +2474,8 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   
   /*--- MPI initialization ---*/
   
-  MPI_Comm_size(MPI_COMM_WORLD,&size);
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   
   /*--- MPI status and request arrays for non-blocking communications ---*/
   
@@ -3526,7 +3526,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
       MPI_Probe(iDomain, rank*16+0, MPI_COMM_WORLD, &status2);
       source = status2.MPI_SOURCE;
       MPI_Get_count(&status2, MPI_DOUBLE, &recv_count);
-      MPI_Recv(Buffer_Receive_Coord,recv_count , MPI_DOUBLE,
+      MPI_Recv(Buffer_Receive_Coord, recv_count , MPI_DOUBLE,
                source, rank*16+0, MPI_COMM_WORLD, &status2);
       
       MPI_Probe(iDomain, rank*16+1, MPI_COMM_WORLD, &status2);
@@ -3960,37 +3960,37 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
       source = status2.MPI_SOURCE;
       MPI_Get_count(&status2, MPI_UNSIGNED_LONG, &recv_count);
       MPI_Recv(Buffer_Receive_Rectangle, recv_count, MPI_UNSIGNED_LONG,
-               source, rank*16+4,MPI_COMM_WORLD, &status2);
+               source, rank*16+4, MPI_COMM_WORLD, &status2);
       
       MPI_Probe(iDomain, rank*16+5, MPI_COMM_WORLD, &status2);
       source = status2.MPI_SOURCE;
       MPI_Get_count(&status2, MPI_UNSIGNED_LONG, &recv_count);
       MPI_Recv(Buffer_Receive_Tetrahedron, recv_count, MPI_UNSIGNED_LONG,
-               source, rank*16+5,MPI_COMM_WORLD, &status2);
+               source, rank*16+5, MPI_COMM_WORLD, &status2);
       
       MPI_Probe(iDomain, rank*16+6, MPI_COMM_WORLD, &status2);
       source = status2.MPI_SOURCE;
       MPI_Get_count(&status2, MPI_UNSIGNED_LONG, &recv_count);
       MPI_Recv(Buffer_Receive_Hexahedron, recv_count, MPI_UNSIGNED_LONG,
-               source, rank*16+6,MPI_COMM_WORLD, &status2);
+               source, rank*16+6, MPI_COMM_WORLD, &status2);
       
       MPI_Probe(iDomain, rank*16+7, MPI_COMM_WORLD, &status2);
       source = status2.MPI_SOURCE;
       MPI_Get_count(&status2, MPI_UNSIGNED_LONG, &recv_count);
       MPI_Recv(Buffer_Receive_Prism, recv_count, MPI_UNSIGNED_LONG,
-               source, rank*16+7,MPI_COMM_WORLD, &status2);
+               source, rank*16+7, MPI_COMM_WORLD, &status2);
       
       MPI_Probe(iDomain, rank*16+8, MPI_COMM_WORLD, &status2);
       source = status2.MPI_SOURCE;
       MPI_Get_count(&status2, MPI_UNSIGNED_LONG, &recv_count);
       MPI_Recv(Buffer_Receive_Pyramid, recv_count, MPI_UNSIGNED_LONG,
-               source, rank*16+8,MPI_COMM_WORLD, &status2);
+               source, rank*16+8, MPI_COMM_WORLD, &status2);
       
       MPI_Probe(iDomain, rank*16+9, MPI_COMM_WORLD, &status2);
       source = status2.MPI_SOURCE;
       MPI_Get_count(&status2, MPI_UNSIGNED_LONG, &recv_count);
       MPI_Recv(Buffer_Receive_GlobElem, recv_count, MPI_UNSIGNED_LONG,
-               source, rank*16+9,MPI_COMM_WORLD, &status2);
+               source, rank*16+9, MPI_COMM_WORLD, &status2);
       
       /*--- Wait to complete the above sends ---*/
       
@@ -5331,8 +5331,8 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
   
 #ifdef HAVE_MPI
   /*--- MPI initialization ---*/
-  MPI_Comm_size(MPI_COMM_WORLD,&size);
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
   if (rank == MASTER_NODE && size > SINGLE_NODE)
@@ -5487,7 +5487,7 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
   
 #ifdef HAVE_MPI
   /*--- MPI initialization ---*/
-  MPI_Comm_size(MPI_COMM_WORLD,&size);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
   
   nDomain = size+1;
@@ -5836,7 +5836,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   
   /*--- Read grid file with format SU2 ---*/
   
-  while (getline (mesh_file,text_line)) {
+  while (getline (mesh_file, text_line)) {
     
     /*--- Read the dimension of the problem ---*/
     
@@ -5938,7 +5938,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
       node = new CPoint*[local_node];
       iPoint = 0; node_count = 0;
       while (node_count < nPoint) {
-        getline(mesh_file,text_line);
+        getline(mesh_file, text_line);
         istringstream point_line(text_line);
         
         /*--- We only read information for this node if it is owned by this
@@ -5990,7 +5990,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   }
   
   mesh_file.open(cstr, ios::in);
-  while (getline (mesh_file,text_line)) {
+  while (getline (mesh_file, text_line)) {
     
     /*--- Read the information about inner elements ---*/
     
@@ -6028,7 +6028,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
       
       element_count=0; elem_reqd=false; loc_element_count=0; ielem_div=0;
       while (ielem_div < nElem) {
-        getline(mesh_file,text_line);
+        getline(mesh_file, text_line);
         istringstream elem_line(text_line);
         
         elem_line >> VTK_Type;
@@ -6150,7 +6150,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             }
             if (elem_reqd) {
               Global_to_local_elem[element_count] = loc_element_count;
-              elem[loc_element_count] = new CPrism(vnodes_prism[0],vnodes_prism[1],vnodes_prism[2],vnodes_prism[3],vnodes_prism[4],vnodes_prism[5]);
+              elem[loc_element_count] = new CPrism(vnodes_prism[0], vnodes_prism[1], vnodes_prism[2], vnodes_prism[3], vnodes_prism[4], vnodes_prism[5]);
               loc_element_count++; nelem_prism++;
             }
             break;
@@ -6171,7 +6171,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             }
             if (elem_reqd) {
               Global_to_local_elem[element_count]=loc_element_count;
-              elem[loc_element_count] = new CPyramid(vnodes_pyramid[0],vnodes_pyramid[1],vnodes_pyramid[2],vnodes_pyramid[3],vnodes_pyramid[4]);
+              elem[loc_element_count] = new CPyramid(vnodes_pyramid[0], vnodes_pyramid[1], vnodes_pyramid[2], vnodes_pyramid[3], vnodes_pyramid[4]);
               loc_element_count++; nelem_pyramid++;
             }
             break;
@@ -6236,7 +6236,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   
   adj_elem_size = xadj[npoint_procs[rank]];
   adjacency = new unsigned long[adj_elem_size];
-  copy(adjac_vec.begin(),adjac_vec.end(),adjacency);
+  copy(adjac_vec.begin(), adjac_vec.end(), adjacency);
 
   xadj_size = npoint_procs[rank]+1;
   adjacency_size = adj_elem_size;
@@ -6258,7 +6258,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   
   if (rank == MASTER_NODE) {
     
-    while (getline (mesh_file,text_line)) {
+    while (getline (mesh_file, text_line)) {
       /*--- Read number of markers ---*/
       position = text_line.find ("NMARK=",0);
       if (position != string::npos) {
@@ -6270,7 +6270,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
         Tag_to_Marker = new string [nMarker_Max];
         
         for (iMarker = 0 ; iMarker < nMarker; iMarker++) {
-          getline (mesh_file,text_line);
+          getline (mesh_file, text_line);
           text_line.erase (0,11);
           string::size_type position;
           for (iChar = 0; iChar < 20; iChar++) {
@@ -6285,7 +6285,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
           
           /*--- Physical boundaries definition ---*/
           if (Marker_Tag != "SEND_RECEIVE") {
-            getline (mesh_file,text_line);
+            getline (mesh_file, text_line);
             text_line.erase (0,13); nElem_Bound[iMarker] = atoi(text_line.c_str());
             if (rank == MASTER_NODE)
             cout << nElem_Bound[iMarker]  << " boundary elements in index "<< iMarker <<" (Marker = " <<Marker_Tag<< ")." << endl;
@@ -6296,7 +6296,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             
             nelem_edge_bound = 0; nelem_triangle_bound = 0; nelem_quad_bound = 0; ielem = 0;
             for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
-              getline(mesh_file,text_line);
+              getline(mesh_file, text_line);
               istringstream bound_line(text_line);
               bound_line >> VTK_Type;
               switch(VTK_Type) {
@@ -6313,19 +6313,19 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
                   }
                   
                   bound_line >> vnodes_edge[0]; bound_line >> vnodes_edge[1];
-                  bound[iMarker][ielem] = new CLine(vnodes_edge[0],vnodes_edge[1],2);
+                  bound[iMarker][ielem] = new CLine(vnodes_edge[0], vnodes_edge[1],2);
                   ielem++; nelem_edge_bound++; break;
                   
                 case TRIANGLE:
                   bound_line >> vnodes_triangle[0]; bound_line >> vnodes_triangle[1]; bound_line >> vnodes_triangle[2];
-                  bound[iMarker][ielem] = new CTriangle(vnodes_triangle[0],vnodes_triangle[1],vnodes_triangle[2],3);
+                  bound[iMarker][ielem] = new CTriangle(vnodes_triangle[0], vnodes_triangle[1], vnodes_triangle[2],3);
                   ielem++; nelem_triangle_bound++; break;
                   
                 case RECTANGLE:
                   
                   bound_line >> vnodes_quad[0]; bound_line >> vnodes_quad[1]; bound_line >> vnodes_quad[2]; bound_line >> vnodes_quad[3];
                   
-                  bound[iMarker][ielem] = new CRectangle(vnodes_quad[0],vnodes_quad[1],vnodes_quad[2],vnodes_quad[3],3);
+                  bound[iMarker][ielem] = new CRectangle(vnodes_quad[0], vnodes_quad[1], vnodes_quad[2], vnodes_quad[3],3);
                   ielem++; nelem_quad_bound++;
                   
                   break;
@@ -6354,17 +6354,17 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
           else {
             unsigned long nelem_vertex = 0, vnodes_vertex;
             unsigned short transform;
-            getline (mesh_file,text_line);
+            getline (mesh_file, text_line);
             text_line.erase (0,13); nElem_Bound[iMarker] = atoi(text_line.c_str());
             bound[iMarker] = new CPrimalGrid* [nElem_Bound[iMarker]];
             
             nelem_vertex = 0; ielem = 0;
-            getline (mesh_file,text_line); text_line.erase (0,8);
+            getline (mesh_file, text_line); text_line.erase (0,8);
             config->SetMarker_All_KindBC(iMarker, SEND_RECEIVE);
             config->SetMarker_All_SendRecv(iMarker, atoi(text_line.c_str()));
 
             for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
-              getline(mesh_file,text_line);
+              getline(mesh_file, text_line);
               istringstream bound_line(text_line);
               bound_line >> VTK_Type; bound_line >> vnodes_vertex; bound_line >> transform;
 
@@ -6397,7 +6397,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
         
         /*--- Store center, rotation, & translation in that order for each. ---*/
         for (iPeriodic = 0; iPeriodic < nPeriodic; iPeriodic++) {
-          getline (mesh_file,text_line);
+          getline (mesh_file, text_line);
           position = text_line.find ("PERIODIC_INDEX=",0);
           if (position != string::npos) {
             text_line.erase (0,15); iIndex = atoi(text_line.c_str());
@@ -6414,15 +6414,15 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
           double* center    = new double[3];
           double* rotation  = new double[3];
           double* translate = new double[3];
-          getline (mesh_file,text_line);
+          getline (mesh_file, text_line);
           istringstream cent(text_line);
           cent >> center[0]; cent >> center[1]; cent >> center[2];
           config->SetPeriodicCenter(iPeriodic, center);
-          getline (mesh_file,text_line);
+          getline (mesh_file, text_line);
           istringstream rot(text_line);
           rot >> rotation[0]; rot >> rotation[1]; rot >> rotation[2];
           config->SetPeriodicRotation(iPeriodic, rotation);
-          getline (mesh_file,text_line);
+          getline (mesh_file, text_line);
           istringstream tran(text_line);
           tran >> translate[0]; tran >> translate[1]; tran >> translate[2];
           config->SetPeriodicTranslate(iPeriodic, translate);
@@ -6565,7 +6565,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   unsigned short connSize = 10;
   
   /*--- Check whether the supplied file is truly a CGNS file. ---*/
-  if (cg_is_cgns(val_mesh_filename.c_str(),&file_type) != CG_OK) {
+  if (cg_is_cgns(val_mesh_filename.c_str(), &file_type) != CG_OK) {
     if (rank == MASTER_NODE) {
     printf( "\n\n   !!! Error !!!\n" );
     printf( " %s is not a CGNS file.\n", val_mesh_filename.c_str());
@@ -6583,7 +6583,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
    is the specific index number for this file and will be
    repeatedly used in the function calls. ---*/
   
-  if (cg_open(val_mesh_filename.c_str(),CG_MODE_READ,&fn)) cg_error_exit();
+  if (cg_open(val_mesh_filename.c_str(), CG_MODE_READ, &fn)) cg_error_exit();
   if (rank == MASTER_NODE) {
     cout << "Reading the CGNS file: ";
     cout << val_mesh_filename.c_str() << "." << endl;
@@ -7609,7 +7609,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
                 }
               }
               Global_to_local_elem[global_id]=ielem;
-              elem[ielem] = new CTriangle(vnodes_cgns[0],vnodes_cgns[1],vnodes_cgns[2],nDim);
+              elem[ielem] = new CTriangle(vnodes_cgns[0], vnodes_cgns[1], vnodes_cgns[2], nDim);
               ielem++; nelem_triangle++; break;
             case RECTANGLE:
               for ( int j = 0; j < N_POINTS_QUADRILATERAL; j++ ) {
@@ -7627,7 +7627,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
                 }
               }
               Global_to_local_elem[global_id]=ielem;
-              elem[ielem] = new CRectangle(vnodes_cgns[0],vnodes_cgns[1],vnodes_cgns[2],vnodes_cgns[3],nDim);
+              elem[ielem] = new CRectangle(vnodes_cgns[0], vnodes_cgns[1], vnodes_cgns[2], vnodes_cgns[3], nDim);
               ielem++; nelem_quad++;
               break;
             case TETRAHEDRON:
@@ -7646,7 +7646,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
                 }
               }
               Global_to_local_elem[global_id]=ielem;
-              elem[ielem] = new CTetrahedron(vnodes_cgns[0],vnodes_cgns[1],vnodes_cgns[2],vnodes_cgns[3]);
+              elem[ielem] = new CTetrahedron(vnodes_cgns[0], vnodes_cgns[1], vnodes_cgns[2], vnodes_cgns[3]);
               ielem++; nelem_tetra++; break;
             case HEXAHEDRON:
               for ( int j = 0; j < N_POINTS_HEXAHEDRON; j++ ) {
@@ -7664,7 +7664,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
                 }
               }
               Global_to_local_elem[global_id]=ielem;
-              elem[ielem] = new CHexahedron(vnodes_cgns[0],vnodes_cgns[1],vnodes_cgns[2],vnodes_cgns[3],vnodes_cgns[4],vnodes_cgns[5],vnodes_cgns[6],vnodes_cgns[7]);
+              elem[ielem] = new CHexahedron(vnodes_cgns[0], vnodes_cgns[1], vnodes_cgns[2], vnodes_cgns[3], vnodes_cgns[4], vnodes_cgns[5], vnodes_cgns[6], vnodes_cgns[7]);
               ielem++; nelem_hexa++;
               break;
             case PRISM:
@@ -7683,7 +7683,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
                 }
               }
               Global_to_local_elem[global_id]=ielem;
-              elem[ielem] = new CPrism(vnodes_cgns[0],vnodes_cgns[1],vnodes_cgns[2],vnodes_cgns[3],vnodes_cgns[4],vnodes_cgns[5]);
+              elem[ielem] = new CPrism(vnodes_cgns[0], vnodes_cgns[1], vnodes_cgns[2], vnodes_cgns[3], vnodes_cgns[4], vnodes_cgns[5]);
               ielem++; nelem_prism++;
               break;
             case PYRAMID:
@@ -7702,7 +7702,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
                 }
               }
               Global_to_local_elem[global_id]=ielem;
-              elem[ielem] = new CPyramid(vnodes_cgns[0],vnodes_cgns[1],vnodes_cgns[2],vnodes_cgns[3],vnodes_cgns[4]);
+              elem[ielem] = new CPyramid(vnodes_cgns[0], vnodes_cgns[1], vnodes_cgns[2], vnodes_cgns[3], vnodes_cgns[4]);
               ielem++; nelem_pyramid++;
               break;
             default:
@@ -7797,7 +7797,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   
   adj_elem_size = xadj[npoint_procs[rank]];
   adjacency = new unsigned long[adj_elem_size];
-  copy(adjac_vec.begin(),adjac_vec.end(),adjacency);
+  copy(adjac_vec.begin(), adjac_vec.end(), adjacency);
   
   xadj_size = npoint_procs[rank]+1;
   adjacency_size = adj_elem_size;
@@ -7863,7 +7863,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
           Marker_Tag = sectionNames[k][s];
           
           /*--- Remove whitespaces from the marker names ---*/
-          Marker_Tag.erase(remove(Marker_Tag.begin(),Marker_Tag.end(),' '),Marker_Tag.end());
+          Marker_Tag.erase(remove(Marker_Tag.begin(), Marker_Tag.end(),' '), Marker_Tag.end());
           
           if (Marker_Tag != "SEND_RECEIVE") {
             nElem_Bound[iMarker] = nElems[k][s];
@@ -7942,13 +7942,13 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
                     MPI_Finalize();
 #endif
                   }
-                  bound[iMarker][ielem] = new CLine(vnodes_cgns[0],vnodes_cgns[1],2);
+                  bound[iMarker][ielem] = new CLine(vnodes_cgns[0], vnodes_cgns[1],2);
                   ielem++; nelem_edge_bound++; break;
                 case TRIANGLE:
-                  bound[iMarker][ielem] = new CTriangle(vnodes_cgns[0],vnodes_cgns[1],vnodes_cgns[2],3);
+                  bound[iMarker][ielem] = new CTriangle(vnodes_cgns[0], vnodes_cgns[1], vnodes_cgns[2],3);
                   ielem++; nelem_triangle_bound++; break;
                 case RECTANGLE:
-                  bound[iMarker][ielem] = new CRectangle(vnodes_cgns[0],vnodes_cgns[1],vnodes_cgns[2],vnodes_cgns[3],3);
+                  bound[iMarker][ielem] = new CRectangle(vnodes_cgns[0], vnodes_cgns[1], vnodes_cgns[2], vnodes_cgns[3],3);
                   ielem++; nelem_quad_bound++; break;
               }
             }
@@ -8710,7 +8710,7 @@ void CPhysicalGeometry::SetPoint_Connectivity(void) {
         /*--- Localize the local index of the neighbor of iPoint in the element ---*/
           
           for (iNeighbor = 0; iNeighbor < elem[jElem]->GetnNeighbor_Nodes(iNode); iNeighbor++) {
-            Node_Neighbor = elem[jElem]->GetNeighbor_Nodes(iNode,iNeighbor);
+            Node_Neighbor = elem[jElem]->GetNeighbor_Nodes(iNode, iNeighbor);
             Point_Neighbor = elem[jElem]->GetNode(Node_Neighbor);
             
             /*--- Store the point into the point ---*/
@@ -8914,7 +8914,7 @@ void CPhysicalGeometry::SetElement_Connectivity(void) {
   for (iElem = 0; iElem < nElem; iElem++)
     for (iFace = 0; iFace < elem[iElem]->GetnFaces(); iFace++)
       for (iNode = 0; iNode < elem[iElem]->GetnNodesFace(iFace); iNode++) {
-        face_point = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace,iNode));
+        face_point = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace, iNode));
         
         /*--- Loop over all elements sharing the face point ---*/
         
@@ -8928,11 +8928,11 @@ void CPhysicalGeometry::SetElement_Connectivity(void) {
             
             /*--- Localice which faces are sharing both elements ---*/
             
-            elem[iElem]->SetNeighbor_Elements(Test_Elem,first_elem_face);
+            elem[iElem]->SetNeighbor_Elements(Test_Elem, first_elem_face);
             
             /*--- Store the element for both elements ---*/
             
-            elem[Test_Elem]->SetNeighbor_Elements(iElem,second_elem_face);
+            elem[Test_Elem]->SetNeighbor_Elements(iElem, second_elem_face);
             
           }
         }
@@ -8985,7 +8985,7 @@ void CPhysicalGeometry::SetVertex(CConfig *config) {
   
   for (iPoint = 0; iPoint < nPoint; iPoint++)
     for (iMarker = 0; iMarker < nMarker; iMarker++)
-      node[iPoint]->SetVertex(-1,iMarker);
+      node[iPoint]->SetVertex(-1, iMarker);
   
   /*--- Create and compute the vector with the number of vertex per marker ---*/
   
@@ -9002,7 +9002,7 @@ void CPhysicalGeometry::SetVertex(CConfig *config) {
         /*--- Set the vertex in the node information ---*/
         
         if ((node[iPoint]->GetVertex(iMarker) == -1) || (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE)) {
-          node[iPoint]->SetVertex(nVertex[iMarker],iMarker);
+          node[iPoint]->SetVertex(nVertex[iMarker], iMarker);
           nVertex[iMarker]++;
         }
       }
@@ -9012,7 +9012,7 @@ void CPhysicalGeometry::SetVertex(CConfig *config) {
   
   for (iPoint = 0; iPoint < nPoint; iPoint++)
     for (iMarker = 0; iMarker < nMarker; iMarker++)
-      node[iPoint]->SetVertex(-1,iMarker);
+      node[iPoint]->SetVertex(-1, iMarker);
   
   /*--- Create the bound vertex structure, note that the order
    is the same as in the input file, this is important for Send/Receive part ---*/
@@ -9037,7 +9037,7 @@ void CPhysicalGeometry::SetVertex(CConfig *config) {
           if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
             vertex[iMarker][iVertex]->SetRotation_Type(bound[iMarker][iElem]->GetRotation_Type());
           }
-          node[iPoint]->SetVertex(nVertex[iMarker],iMarker);
+          node[iPoint]->SetVertex(nVertex[iMarker], iMarker);
           nVertex[iMarker]++;
         }
       }
@@ -9155,7 +9155,7 @@ void CPhysicalGeometry::SetBoundControlVolume(CConfig *config, unsigned short ac
         /*--- Loop over the neighbor nodes, there is a face for each one ---*/
         
         for (iNeighbor_Nodes = 0; iNeighbor_Nodes < bound[iMarker][iElem]->GetnNeighbor_Nodes(iNode); iNeighbor_Nodes++) {
-          Neighbor_Node = bound[iMarker][iElem]->GetNeighbor_Nodes(iNode,iNeighbor_Nodes);
+          Neighbor_Node = bound[iMarker][iElem]->GetNeighbor_Nodes(iNode, iNeighbor_Nodes);
           Neighbor_Point = bound[iMarker][iElem]->GetNode(Neighbor_Node);
           
           /*--- Shared edge by the Neighbor Point and the point ---*/
@@ -9953,9 +9953,9 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
         
         /*--- In 3D there are several edges in each face ---*/
         if (nDim == 3) {
-          face_iPoint = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace,iEdgesFace));
+          face_iPoint = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace, iEdgesFace));
           if (iEdgesFace != nEdgesFace-1)
-            face_jPoint = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace,iEdgesFace+1));
+            face_jPoint = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace, iEdgesFace+1));
           else
             face_jPoint = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace,0));
         }
@@ -9968,7 +9968,7 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
         for (iDim = 0; iDim < nDim; iDim++) {
           Coord_Edge_CG[iDim] = edge[iEdge]->GetCG(iDim);
           Coord_Elem_CG[iDim] = elem[iElem]->GetCG(iDim);
-          Coord_FaceElem_CG[iDim] = elem[iElem]->GetFaceCG(iFace,iDim);
+          Coord_FaceElem_CG[iDim] = elem[iElem]->GetFaceCG(iFace, iDim);
           Coord_FaceiPoint[iDim] = node[face_iPoint]->GetCoord(iDim);
           Coord_FacejPoint[iDim] = node[face_jPoint]->GetCoord(iDim);
         }
@@ -9977,19 +9977,19 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
           case 2:
             /*--- Two dimensional problem ---*/
             if (change_face_orientation) edge[iEdge]->SetNodes_Coord(Coord_Elem_CG, Coord_Edge_CG);
-            else edge[iEdge]->SetNodes_Coord(Coord_Edge_CG,Coord_Elem_CG);
-            Area = edge[iEdge]->GetVolume(Coord_FaceiPoint,Coord_Edge_CG,Coord_Elem_CG);
+            else edge[iEdge]->SetNodes_Coord(Coord_Edge_CG, Coord_Elem_CG);
+            Area = edge[iEdge]->GetVolume(Coord_FaceiPoint, Coord_Edge_CG, Coord_Elem_CG);
             node[face_iPoint]->AddVolume(Area); my_DomainVolume +=Area;
-            Area = edge[iEdge]->GetVolume(Coord_FacejPoint,Coord_Edge_CG,Coord_Elem_CG);
+            Area = edge[iEdge]->GetVolume(Coord_FacejPoint, Coord_Edge_CG, Coord_Elem_CG);
             node[face_jPoint]->AddVolume(Area); my_DomainVolume +=Area;
             break;
           case 3:
             /*--- Three dimensional problem ---*/
-            if (change_face_orientation) edge[iEdge]->SetNodes_Coord(Coord_FaceElem_CG,Coord_Edge_CG,Coord_Elem_CG);
-            else edge[iEdge]->SetNodes_Coord(Coord_Edge_CG,Coord_FaceElem_CG,Coord_Elem_CG);
-            Volume = edge[iEdge]->GetVolume(Coord_FaceiPoint,Coord_Edge_CG,Coord_FaceElem_CG, Coord_Elem_CG);
+            if (change_face_orientation) edge[iEdge]->SetNodes_Coord(Coord_FaceElem_CG, Coord_Edge_CG, Coord_Elem_CG);
+            else edge[iEdge]->SetNodes_Coord(Coord_Edge_CG, Coord_FaceElem_CG, Coord_Elem_CG);
+            Volume = edge[iEdge]->GetVolume(Coord_FaceiPoint, Coord_Edge_CG, Coord_FaceElem_CG, Coord_Elem_CG);
             node[face_iPoint]->AddVolume(Volume); my_DomainVolume +=Volume;
-            Volume = edge[iEdge]->GetVolume(Coord_FacejPoint,Coord_Edge_CG,Coord_FaceElem_CG, Coord_Elem_CG);
+            Volume = edge[iEdge]->GetVolume(Coord_FacejPoint, Coord_Edge_CG, Coord_FaceElem_CG, Coord_Elem_CG);
             node[face_jPoint]->AddVolume(Volume); my_DomainVolume +=Volume;
             break;
         }
@@ -10078,9 +10078,9 @@ void CPhysicalGeometry::VisualizeControlVolume(CConfig *config, unsigned short a
         
         /*--- In 3D there are several edges in each face ---*/
         if (nDim == 3) {
-          face_iPoint = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace,iEdgesFace));
+          face_iPoint = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace, iEdgesFace));
           if (iEdgesFace != nEdgesFace-1)
-            face_jPoint = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace,iEdgesFace+1));
+            face_jPoint = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace, iEdgesFace+1));
           else
             face_jPoint = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace,0));
         }
@@ -10091,7 +10091,7 @@ void CPhysicalGeometry::VisualizeControlVolume(CConfig *config, unsigned short a
         for (iDim = 0; iDim < nDim; iDim++) {
           Coord_Edge_CG[iDim] = edge[iEdge]->GetCG(iDim);
           Coord_Elem_CG[iDim] = elem[iElem]->GetCG(iDim);
-          Coord_FaceElem_CG[iDim] = elem[iElem]->GetFaceCG(iFace,iDim);
+          Coord_FaceElem_CG[iDim] = elem[iElem]->GetFaceCG(iFace, iDim);
           Coord_FaceiPoint[iDim] = node[face_iPoint]->GetCoord(iDim);
           Coord_FacejPoint[iDim] = node[face_jPoint]->GetCoord(iDim);
         }
@@ -10127,7 +10127,7 @@ void CPhysicalGeometry::VisualizeControlVolume(CConfig *config, unsigned short a
   
   strcpy(cstr,"dual_cv");
   sprintf (buffer, "_%d.dat", int(iPoint_Viz));
-  strcat(cstr,buffer);
+  strcat(cstr, buffer);
   
   Tecplot_File.open(cstr, ios::out);
   Tecplot_File << "TITLE= \"Visualization of the control volume\"" << endl;
@@ -10413,14 +10413,14 @@ bool CPhysicalGeometry::FindFace(unsigned long first_elem, unsigned long second_
       break;
     }
     
-    PointFaceFirst.erase (PointFaceFirst.begin(),PointFaceFirst.end());
+    PointFaceFirst.erase (PointFaceFirst.begin(), PointFaceFirst.end());
   }
   
   /*--- Search the secuence in the second element ---*/
   for (iFace = 0; iFace < elem[second_elem]->GetnFaces(); iFace++) {
     nNodesFace = elem[second_elem]->GetnNodesFace(iFace);
     for (iNode = 0; iNode < nNodesFace; iNode++) {
-      face_node = elem[second_elem]->GetFaces(iFace,iNode);
+      face_node = elem[second_elem]->GetFaces(iFace, iNode);
       PointFaceSecond.push_back(elem[second_elem]->GetNode(face_node));
     }
     
@@ -10435,7 +10435,7 @@ bool CPhysicalGeometry::FindFace(unsigned long first_elem, unsigned long second_
       break;
     }
     
-    PointFaceSecond.erase (PointFaceSecond.begin(),PointFaceSecond.end());
+    PointFaceSecond.erase (PointFaceSecond.begin(), PointFaceSecond.end());
   }
   
   if (face_first_found && face_second_found) return true;
@@ -10968,9 +10968,9 @@ void CPhysicalGeometry::SetColorGrid_Parallel(CConfig *config) {
     
     /*--- Calling ParMETIS ---*/
     if (rank == MASTER_NODE) cout << "Calling ParMETIS..." << endl;
-    ParMETIS_V3_PartKway(vtxdist,xadj_l,adjacency_l,NULL,NULL,&wgtflag,
-                         &numflag,&ncon,&nparts,tpwgts,&ubvec,options,
-                         &edgecut,part,&comm);
+    ParMETIS_V3_PartKway(vtxdist,xadj_l, adjacency_l, NULL, NULL, &wgtflag,
+                         &numflag, &ncon, &nparts, tpwgts, &ubvec, options,
+                         &edgecut, part, &comm);
     if (rank == MASTER_NODE) {
       cout << "Finished partitioning using ParMETIS (";
       cout << edgecut << " edge cuts)." << endl;
@@ -11075,7 +11075,7 @@ void CPhysicalGeometry::SetRotationalVelocity(CConfig *config) {
   /*--- Print some information to the console ---*/
   
   if (rank == MASTER_NODE) {
-    cout << " Rotational origin (x,y,z): ( " << Center[0] << ", " << Center[1];
+    cout << " Rotational origin (x, y, z): ( " << Center[0] << ", " << Center[1];
     cout << ", " << Center[2] << " )" << endl;
     cout << " Angular velocity about x, y, z axes: ( " << Omega[0] << ", ";
     cout << Omega[1] << ", " << Omega[2] << " ) rad/s" << endl;
@@ -11193,8 +11193,8 @@ void CPhysicalGeometry::Set_MPI_Coord(CConfig *config) {
       
 #ifdef HAVE_MPI
       /*--- Send/Receive information using Sendrecv ---*/
-      MPI_Sendrecv(Buffer_Send_Coord,nBufferS_Vector,MPI_DOUBLE,send_to,0,
-                   Buffer_Receive_Coord,nBufferR_Vector,MPI_DOUBLE,receive_from,0,MPI_COMM_WORLD,&status);
+      MPI_Sendrecv(Buffer_Send_Coord, nBufferS_Vector, MPI_DOUBLE, send_to,0,
+                   Buffer_Receive_Coord, nBufferR_Vector, MPI_DOUBLE, receive_from,0, MPI_COMM_WORLD, &status);
 #else
       
       /*--- Receive information without MPI ---*/
@@ -11325,8 +11325,8 @@ void CPhysicalGeometry::Set_MPI_GridVel(CConfig *config) {
       
 #ifdef HAVE_MPI
       /*--- Send/Receive information using Sendrecv ---*/
-      MPI_Sendrecv(Buffer_Send_GridVel,nBufferS_Vector,MPI_DOUBLE,send_to,0,
-                   Buffer_Receive_GridVel,nBufferR_Vector,MPI_DOUBLE,receive_from,0,MPI_COMM_WORLD,&status);
+      MPI_Sendrecv(Buffer_Send_GridVel, nBufferS_Vector, MPI_DOUBLE, send_to,0,
+                   Buffer_Receive_GridVel, nBufferR_Vector, MPI_DOUBLE, receive_from,0, MPI_COMM_WORLD, &status);
 #else
       
       /*--- Receive information without MPI ---*/
@@ -11733,13 +11733,13 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
       VTK_Type = bound[iMarker][jElem]->GetVTK_Type();
       switch(VTK_Type) {
         case LINE:
-          newBound[iMarker][iElem] = new CLine(newNodes[0],newNodes[1],2);
+          newBound[iMarker][iElem] = new CLine(newNodes[0], newNodes[1],2);
           break;
         case TRIANGLE:
-          newBound[iMarker][iElem] = new CTriangle(newNodes[0],newNodes[1],newNodes[2],3);
+          newBound[iMarker][iElem] = new CTriangle(newNodes[0], newNodes[1], newNodes[2],3);
           break;
         case RECTANGLE:
-          newBound[iMarker][iElem] = new CRectangle(newNodes[0],newNodes[1],newNodes[2],newNodes[3],3);
+          newBound[iMarker][iElem] = new CRectangle(newNodes[0], newNodes[1], newNodes[2], newNodes[3],3);
           break;
       }
       
@@ -11799,7 +11799,7 @@ void CPhysicalGeometry::SetGeometryPlanes(CConfig *config) {
   bool loop_on;
   unsigned short iMarker = 0;
   double auxXCoord, auxYCoord, auxZCoord,	*Face_Normal = NULL, auxArea, *Xcoord = NULL, *Ycoord = NULL, *Zcoord = NULL, *FaceArea = NULL;
-  unsigned long jVertex, iVertex,ixCoord, iPoint, iVertex_Wall, nVertex_Wall = 0;
+  unsigned long jVertex, iVertex, ixCoord, iPoint, iVertex_Wall, nVertex_Wall = 0;
   
   /*--- Compute the total number of points on the near-field ---*/
   nVertex_Wall = 0;
@@ -12002,9 +12002,9 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
     string::size_type position;
     
     Surface_file.open(cstr, ios::in);
-    getline(Surface_file,text_line);
+    getline(Surface_file, text_line);
     
-    while (getline(Surface_file,text_line)) {
+    while (getline(Surface_file, text_line)) {
       for (icommas = 0; icommas < 50; icommas++) {
         position = text_line.find( ",", 0 );
         if (position!=string::npos) text_line.erase (position,1);
@@ -12635,7 +12635,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry ***geometry, CConfig **config_c
         
         /*--- We add the seed point (child) to the parent control volume ---*/
         
-        node[Index_CoarseCV]->SetChildren_CV(0,iPoint);
+        node[Index_CoarseCV]->SetChildren_CV(0, iPoint);
         agglomerate_seed = true; counter = 0; marker_seed = iMarker;
         
         /*--- For a particular point in the fine grid we save all the markers
@@ -12686,7 +12686,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry ***geometry, CConfig **config_c
               
               /*--- We set the value of the child ---*/
               
-              node[Index_CoarseCV]->SetChildren_CV(nChildren,CVPoint);
+              node[Index_CoarseCV]->SetChildren_CV(nChildren, CVPoint);
               nChildren++;
             }
             
@@ -12718,7 +12718,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry ***geometry, CConfig **config_c
               
               /*--- We set the value of the child ---*/
               
-              node[Index_CoarseCV]->SetChildren_CV(nChildren,CVPoint);
+              node[Index_CoarseCV]->SetChildren_CV(nChildren, CVPoint);
               nChildren++;
             }
           }
@@ -12744,7 +12744,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry ***geometry, CConfig **config_c
       if ((fine_grid->node[iPoint]->GetAgglomerate() == false) &&
           (fine_grid->node[iPoint]->GetDomain())) {
         fine_grid->node[iPoint]->SetParent_CV(Index_CoarseCV);
-        node[Index_CoarseCV]->SetChildren_CV(0,iPoint);
+        node[Index_CoarseCV]->SetChildren_CV(0, iPoint);
         node[Index_CoarseCV]->SetnChildren_CV(1);
         Index_CoarseCV++;
       }
@@ -12898,7 +12898,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry ***geometry, CConfig **config_c
       fine_grid->node[iPoint]->SetParent_CV(Index_CoarseCV);
       if (fine_grid->node[iPoint]->GetAgglomerate_Indirect())
         node[Index_CoarseCV]->SetAgglomerate_Indirect(true);
-      node[Index_CoarseCV]->SetChildren_CV(0,iPoint);
+      node[Index_CoarseCV]->SetChildren_CV(0, iPoint);
       node[Index_CoarseCV]->SetnChildren_CV(nChildren);
       Index_CoarseCV++;
       
@@ -13032,10 +13032,10 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry ***geometry, CConfig **config_c
       
 #ifdef HAVE_MPI
       /*--- Send/Receive information using Sendrecv ---*/
-      MPI_Sendrecv(Buffer_Send_Children,nBufferS_Vector,MPI_UNSIGNED_LONG,send_to,0,
-                   Buffer_Receive_Children,nBufferR_Vector,MPI_UNSIGNED_LONG,receive_from,0,MPI_COMM_WORLD,&status);
-      MPI_Sendrecv(Buffer_Send_Parent,nBufferS_Vector,MPI_UNSIGNED_LONG,send_to,1,
-                   Buffer_Receive_Parent,nBufferR_Vector,MPI_UNSIGNED_LONG,receive_from,1,MPI_COMM_WORLD,&status);
+      MPI_Sendrecv(Buffer_Send_Children, nBufferS_Vector, MPI_UNSIGNED_LONG, send_to,0,
+                   Buffer_Receive_Children, nBufferR_Vector, MPI_UNSIGNED_LONG, receive_from,0, MPI_COMM_WORLD, &status);
+      MPI_Sendrecv(Buffer_Send_Parent, nBufferS_Vector, MPI_UNSIGNED_LONG, send_to,1,
+                   Buffer_Receive_Parent, nBufferR_Vector, MPI_UNSIGNED_LONG, receive_from,1, MPI_COMM_WORLD, &status);
 #else
       /*--- Receive information without MPI ---*/
       for (iVertex = 0; iVertex < nVertexR; iVertex++) {
@@ -13484,7 +13484,7 @@ void CMultiGridGeometry::SetVertex(CGeometry *fine_grid, CConfig *config) {
         for (iMarker = 0; iMarker < nMarker; iMarker ++) {
           if ((fine_grid->node[iFinePoint]->GetVertex(iMarker) != -1) && (node[iCoarsePoint]->GetVertex(iMarker) == -1)) {
             iVertex = nVertex[iMarker];
-            node[iCoarsePoint]->SetVertex(iVertex,iMarker);
+            node[iCoarsePoint]->SetVertex(iVertex, iMarker);
             nVertex[iMarker]++;
           }
         }
@@ -13500,7 +13500,7 @@ void CMultiGridGeometry::SetVertex(CGeometry *fine_grid, CConfig *config) {
   for (iCoarsePoint = 0; iCoarsePoint < nPoint; iCoarsePoint ++)
     if (node[iCoarsePoint]->GetBoundary())
       for (iMarker = 0; iMarker < nMarker; iMarker ++)
-        node[iCoarsePoint]->SetVertex(-1,iMarker);
+        node[iCoarsePoint]->SetVertex(-1, iMarker);
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) nVertex[iMarker] = 0;
   
@@ -13512,7 +13512,7 @@ void CMultiGridGeometry::SetVertex(CGeometry *fine_grid, CConfig *config) {
           if ((fine_grid->node[iFinePoint]->GetVertex(iMarker) != -1) && (node[iCoarsePoint]->GetVertex(iMarker) == -1)) {
             iVertex = nVertex[iMarker];
             vertex[iMarker][iVertex] = new CVertex(iCoarsePoint, nDim);
-            node[iCoarsePoint]->SetVertex(iVertex,iMarker);
+            node[iCoarsePoint]->SetVertex(iVertex, iMarker);
             
             /*--- Set the transformation to apply ---*/
             unsigned long ChildVertex = fine_grid->node[iFinePoint]->GetVertex(iMarker);
@@ -13623,7 +13623,7 @@ void CMultiGridGeometry::MatchInterface(CConfig *config) {
 
 void CMultiGridGeometry::SetControlVolume(CConfig *config, CGeometry *fine_grid, unsigned short action) {
   
-  unsigned long iFinePoint,iFinePoint_Neighbor, iCoarsePoint, iEdge, iParent;
+  unsigned long iFinePoint, iFinePoint_Neighbor, iCoarsePoint, iEdge, iParent;
   long FineEdge, CoarseEdge;
   unsigned short iChildren, iNode, iDim;
   bool change_face_orientation;
@@ -13745,7 +13745,7 @@ void CMultiGridGeometry::SetCoord(CGeometry *geometry) {
         Coordinates[iDim] += Coordinates_Fine[iDim]*Area_Children/Area_Parent;
     }
     for (iDim = 0; iDim < nDim; iDim++)
-      node[Point_Coarse]->SetCoord(iDim,Coordinates[iDim]);
+      node[Point_Coarse]->SetCoord(iDim, Coordinates[iDim]);
   }
   delete[] Coordinates;
 }
@@ -13831,7 +13831,7 @@ void CMultiGridGeometry::SetGridVelocity(CConfig *config, unsigned long iter) {
       
       /*--- Store grid velocity for this point ---*/
       
-      node[Point_Coarse]->SetGridVel(iDim,GridVel);
+      node[Point_Coarse]->SetGridVel(iDim, GridVel);
       
     }
   }
@@ -13924,7 +13924,7 @@ void CMultiGridGeometry::SetGeometryPlanes(CConfig *config) {
   bool loop_on;
   unsigned short iMarker = 0;
   double auxXCoord, auxYCoord, auxZCoord,	*Face_Normal = NULL, auxArea, *Xcoord = NULL, *Ycoord = NULL, *Zcoord = NULL, *FaceArea = NULL;
-  unsigned long jVertex, iVertex,ixCoord, iPoint, iVertex_Wall, nVertex_Wall = 0;
+  unsigned long jVertex, iVertex, ixCoord, iPoint, iVertex_Wall, nVertex_Wall = 0;
   
   /*--- Compute the total number of points on the near-field ---*/
   nVertex_Wall = 0;

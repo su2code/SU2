@@ -1041,7 +1041,7 @@ void CSourcePieceWise_TurbSST::ComputeResidual(double *val_residual, double **va
     pk = min(pk,20.0*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]);
     pk = max(pk,0.0);
     
-    zeta = max(TurbVar_i[1],StrainMag_i*F2_i/a1);
+    zeta = max(TurbVar_i[1], StrainMag_i*F2_i/a1);
     pw = StrainMag_i*StrainMag_i - 2.0/3.0*zeta*diverg;
     pw = max(pw,0.0);
     
@@ -1400,7 +1400,7 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
   /* Call Spalart-Allmaras (for comparison) */
   SAInputs->Set(DUiDXj, DNuhatDXj, rotating_frame, transition, dist_i, Laminar_Viscosity_i, Density_i, TurbVar_i[0], intermittency);
   
-  SpalartAllmarasSourceTerm(SAInputs, SAConstants,SAResidual, SAJacobian, SAOtherOutputs);
+  SpalartAllmarasSourceTerm(SAInputs, SAConstants, SAResidual, SAJacobian, SAOtherOutputs);
   this->SANondimInputs -> Set(SAInputs);
 
   for (int i=0; i < nResidual; i++) {

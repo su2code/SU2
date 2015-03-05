@@ -355,7 +355,7 @@ void CSourcePieceWise_TransLM::ComputeResidual_TransLM(double *val_residual, dou
 	//SU2_CPP2C DECL_LIST END
   
 	/*-- Local intermediate variables --*/
-	double rey_tc, flen, re_v, strain, f_onset1,f_onset2,f_onset3,f_onset,f_turb,tu;
+	double rey_tc, flen, re_v, strain, f_onset1, f_onset2, f_onset3, f_onset, f_turb, tu;
   
 	double prod, des;
 	double f_lambda, re_theta = 0.0, re_theta_lim, r_t;
@@ -471,7 +471,7 @@ void CSourcePieceWise_TransLM::ComputeResidual_TransLM(double *val_residual, dou
 			theta  = re_theta * Laminar_Viscosity_i / (U_i[0]*Velocity_Mag);
       
 			lambda = U_i[0]*theta*theta*du_ds / Laminar_Viscosity_i;
-			lambda = min(max(-0.1,lambda),0.1);
+			lambda = min(max(-0.1, lambda),0.1);
       
 			if (lambda<=0.0) {
 				f_lambda = 1. - (-12.986*lambda - 123.66*lambda*lambda -
@@ -524,7 +524,7 @@ void CSourcePieceWise_TransLM::ComputeResidual_TransLM(double *val_residual, dou
     
 		/*-- Calculate term for separation correction --*/
 		f_reattach = exp(-pow(0.05*r_t,4));
-		gamma_sep = s1*max(0.,re_v/(3.235*rey_tc)-1.)*f_reattach;
+		gamma_sep = s1*max(0., re_v/(3.235*rey_tc)-1.)*f_reattach;
 		gamma_sep = min(gamma_sep,2.0)*f_theta;
     
 		/*--- Implicit part ---*/

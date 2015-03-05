@@ -84,14 +84,14 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
 	if ((Kind_Solver == EULER || Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS) &&
         (val_nZone > 1) && (config->GetUnsteady_Simulation() != TIME_SPECTRAL)) {
 		sprintf (buffer, "_%d", int(val_iZone));
-		strcat(cstr,buffer);
+		strcat(cstr, buffer);
 	}
     
 	/*--- Special cases where a number needs to be appended to the file name. ---*/
 	if (((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS)) &&
         (val_nZone > 1) && (config->GetUnsteady_Simulation() != TIME_SPECTRAL)) {
 		sprintf (buffer, "_%d", int(val_iZone));
-		strcat(cstr,buffer);
+		strcat(cstr, buffer);
 	}
     
 	if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
@@ -111,7 +111,7 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
 		sprintf (buffer, ".vtk");
 	}
     
-	strcat(cstr,buffer);
+	strcat(cstr, buffer);
     
 	/*--- Open Paraview ASCII file and write the header. ---*/
 	ofstream Paraview_File;
@@ -729,14 +729,14 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
 	if ((Kind_Solver == EULER || Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS) &&
       (val_nZone > 1) && (config->GetUnsteady_Simulation() != TIME_SPECTRAL)) {
 		sprintf (buffer, "_%d", int(val_iZone));
-		strcat(cstr,buffer);
+		strcat(cstr, buffer);
 	}
   
 	/*--- Special cases where a number needs to be appended to the file name. ---*/
 	if (((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS)) &&
       (val_nZone > 1) && (config->GetUnsteady_Simulation() != TIME_SPECTRAL)) {
 		sprintf (buffer, "_%d", int(val_iZone));
-		strcat(cstr,buffer);
+		strcat(cstr, buffer);
 	}
   
 	if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
@@ -756,7 +756,7 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
 		sprintf (buffer, ".vtk");
 	}
   
-	strcat(cstr,buffer);
+	strcat(cstr, buffer);
   
 	/*--- Open Paraview ASCII file and write the header. ---*/
 	ofstream Paraview_File;

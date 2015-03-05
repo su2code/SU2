@@ -1819,7 +1819,7 @@ private:
 	double *Velocity_i, *Velocity_j, *RoeVelocity;
 	double *ProjFlux_i, *ProjFlux_j;
 	double *Lambda, *Epsilon;
-	double **absPeJac,**invRinvPe,**R_Tensor,**Matrix,**Art_Visc;
+	double **absPeJac, **invRinvPe, **R_Tensor, **Matrix, **Art_Visc;
 	double sq_vel, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
 	Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoePressure, RoeDensity, RoeEnthalpy, RoeSoundSpeed,
 	ProjVelocity, ProjVelocity_i, ProjVelocity_j;
@@ -2002,7 +2002,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void ComputeResidual(double *val_residual_i, double *val_residual_j, double **val_Jacobian_ii,
-                         double **val_Jacobian_ij, double **val_Jacobian_ji, double **val_Jacobian_jj,CConfig *config);
+                         double **val_Jacobian_ij, double **val_Jacobian_ji, double **val_Jacobian_jj, CConfig *config);
 };
 
 /*!
@@ -2047,7 +2047,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void ComputeResidual(double *val_residual_i, double *val_residual_j, double **val_Jacobian_ii,
-                         double **val_Jacobian_ij, double **val_Jacobian_ji, double **val_Jacobian_jj,CConfig *config);
+                         double **val_Jacobian_ij, double **val_Jacobian_ji, double **val_Jacobian_jj, CConfig *config);
 };
 
 /*!
@@ -3038,7 +3038,7 @@ private:
 	double **Jacobian_j;
 	unsigned short iDim, iVar, jVar;
 	double sq_vel, Density_i, DensityEnergy_i, Energy_i, Pressure_i, Density_j,
-	DensityEnergy_j, Energy_j,Pressure_j, Param_p, Param_Kappa_0,
+	DensityEnergy_j, Energy_j, Pressure_j, Param_p, Param_Kappa_0,
 	Local_Lambda_i, Local_Lambda_j, MeanLambda, cte_0, StretchingFactor,
 	Epsilon_i, MeanDeltaRho, MeanDeltaE, ProjVelocity_i, ProjVelocity_j,
 	dS, MeanDensity, MeanPressure,
@@ -5309,7 +5309,7 @@ public:
 	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void ComputeResidual(double *val_residual, double **val_Jacobian_i,CConfig *config);
+	void ComputeResidual(double *val_residual, double **val_Jacobian_i, CConfig *config);
     
 	/*!
 	 * \brief Destructor of the class.

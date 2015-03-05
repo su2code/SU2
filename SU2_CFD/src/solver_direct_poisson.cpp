@@ -188,7 +188,7 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
                                      CConfig *config, unsigned short iMesh) {
 //  
 //	unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0, Point_3 = 0;
-//	double a[3], b[3],c[3], d[3], Area_Local,Volume_Local;
+//	double a[3], b[3], c[3], d[3], Area_Local, Volume_Local;
 //	//	double Local_Delta_Time;
 //	double **Gradient_0, **Gradient_1, **Gradient_2, **Gradient_3;
 //	double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL, *Coord_3= NULL;;
@@ -354,7 +354,7 @@ void CPoissonSolver::Copy_Zone_Solution(CSolver ***solver1_solution,
   
 	for (iPoint = 0; iPoint < solver1_geometry[MESH_0]->GetnPointDomain(); iPoint++) {
 		for (iDim =0; iDim < nDim; iDim ++) {
-			neg_EFvalue = solver1_solution[MESH_0][POISSON_SOL]->node[iPoint]->GetGradient(0,iDim);
+			neg_EFvalue = solver1_solution[MESH_0][POISSON_SOL]->node[iPoint]->GetGradient(0, iDim);
 			E_field[iDim] = -1.0*neg_EFvalue;
 		}
 	}
@@ -410,37 +410,37 @@ void CPoissonSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_cont
  * \brief Assemble the Global stiffness matrix
  * \author A. Lonkar
  */
-void CPoissonSolver::AddStiffMatrix(double **StiffMatrix_Elem, unsigned long Point_0, unsigned long Point_1,unsigned long Point_2, unsigned long Point_3) {
+void CPoissonSolver::AddStiffMatrix(double **StiffMatrix_Elem, unsigned long Point_0, unsigned long Point_1, unsigned long Point_2, unsigned long Point_3) {
   
 	if (nDim == 2 ) {
-		StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][0]; StiffMatrix.AddBlock(Point_0,Point_0,StiffMatrix_Node);
-		StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][1]; StiffMatrix.AddBlock(Point_0,Point_1,StiffMatrix_Node);
-		StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][2]; StiffMatrix.AddBlock(Point_0,Point_2,StiffMatrix_Node);
-		StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][0]; StiffMatrix.AddBlock(Point_1,Point_0,StiffMatrix_Node);
-		StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][1]; StiffMatrix.AddBlock(Point_1,Point_1,StiffMatrix_Node);
-		StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][2]; StiffMatrix.AddBlock(Point_1,Point_2,StiffMatrix_Node);
-		StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][0]; StiffMatrix.AddBlock(Point_2,Point_0,StiffMatrix_Node);
-		StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][1]; StiffMatrix.AddBlock(Point_2,Point_1,StiffMatrix_Node);
-		StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][2]; StiffMatrix.AddBlock(Point_2,Point_2,StiffMatrix_Node);
+		StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][0]; StiffMatrix.AddBlock(Point_0, Point_0, StiffMatrix_Node);
+		StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][1]; StiffMatrix.AddBlock(Point_0, Point_1, StiffMatrix_Node);
+		StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][2]; StiffMatrix.AddBlock(Point_0, Point_2, StiffMatrix_Node);
+		StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][0]; StiffMatrix.AddBlock(Point_1, Point_0, StiffMatrix_Node);
+		StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][1]; StiffMatrix.AddBlock(Point_1, Point_1, StiffMatrix_Node);
+		StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][2]; StiffMatrix.AddBlock(Point_1, Point_2, StiffMatrix_Node);
+		StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][0]; StiffMatrix.AddBlock(Point_2, Point_0, StiffMatrix_Node);
+		StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][1]; StiffMatrix.AddBlock(Point_2, Point_1, StiffMatrix_Node);
+		StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][2]; StiffMatrix.AddBlock(Point_2, Point_2, StiffMatrix_Node);
 	}
 	if (nDim == 3) {
     
-		StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][0]; StiffMatrix.AddBlock(Point_0,Point_0,StiffMatrix_Node);
-		StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][1]; StiffMatrix.AddBlock(Point_0,Point_1,StiffMatrix_Node);
-		StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][2]; StiffMatrix.AddBlock(Point_0,Point_2,StiffMatrix_Node);
-		StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][3]; StiffMatrix.AddBlock(Point_0,Point_3,StiffMatrix_Node);
-		StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][0]; StiffMatrix.AddBlock(Point_1,Point_0,StiffMatrix_Node);
-		StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][1]; StiffMatrix.AddBlock(Point_1,Point_1,StiffMatrix_Node);
-		StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][2]; StiffMatrix.AddBlock(Point_1,Point_2,StiffMatrix_Node);
-		StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][3]; StiffMatrix.AddBlock(Point_1,Point_3,StiffMatrix_Node);
-		StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][0]; StiffMatrix.AddBlock(Point_2,Point_0,StiffMatrix_Node);
-		StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][1]; StiffMatrix.AddBlock(Point_2,Point_1,StiffMatrix_Node);
-		StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][2]; StiffMatrix.AddBlock(Point_2,Point_2,StiffMatrix_Node);
-		StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][3]; StiffMatrix.AddBlock(Point_2,Point_3,StiffMatrix_Node);
-		StiffMatrix_Node[0][0] = StiffMatrix_Elem[3][0]; StiffMatrix.AddBlock(Point_3,Point_0,StiffMatrix_Node);
-		StiffMatrix_Node[0][0] = StiffMatrix_Elem[3][1]; StiffMatrix.AddBlock(Point_3,Point_1,StiffMatrix_Node);
-		StiffMatrix_Node[0][0] = StiffMatrix_Elem[3][2]; StiffMatrix.AddBlock(Point_3,Point_2,StiffMatrix_Node);
-		StiffMatrix_Node[0][0] = StiffMatrix_Elem[3][3]; StiffMatrix.AddBlock(Point_3,Point_3,StiffMatrix_Node);
+		StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][0]; StiffMatrix.AddBlock(Point_0, Point_0, StiffMatrix_Node);
+		StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][1]; StiffMatrix.AddBlock(Point_0, Point_1, StiffMatrix_Node);
+		StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][2]; StiffMatrix.AddBlock(Point_0, Point_2, StiffMatrix_Node);
+		StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][3]; StiffMatrix.AddBlock(Point_0, Point_3, StiffMatrix_Node);
+		StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][0]; StiffMatrix.AddBlock(Point_1, Point_0, StiffMatrix_Node);
+		StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][1]; StiffMatrix.AddBlock(Point_1, Point_1, StiffMatrix_Node);
+		StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][2]; StiffMatrix.AddBlock(Point_1, Point_2, StiffMatrix_Node);
+		StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][3]; StiffMatrix.AddBlock(Point_1, Point_3, StiffMatrix_Node);
+		StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][0]; StiffMatrix.AddBlock(Point_2, Point_0, StiffMatrix_Node);
+		StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][1]; StiffMatrix.AddBlock(Point_2, Point_1, StiffMatrix_Node);
+		StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][2]; StiffMatrix.AddBlock(Point_2, Point_2, StiffMatrix_Node);
+		StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][3]; StiffMatrix.AddBlock(Point_2, Point_3, StiffMatrix_Node);
+		StiffMatrix_Node[0][0] = StiffMatrix_Elem[3][0]; StiffMatrix.AddBlock(Point_3, Point_0, StiffMatrix_Node);
+		StiffMatrix_Node[0][0] = StiffMatrix_Elem[3][1]; StiffMatrix.AddBlock(Point_3, Point_1, StiffMatrix_Node);
+		StiffMatrix_Node[0][0] = StiffMatrix_Elem[3][2]; StiffMatrix.AddBlock(Point_3, Point_2, StiffMatrix_Node);
+		StiffMatrix_Node[0][0] = StiffMatrix_Elem[3][3]; StiffMatrix.AddBlock(Point_3, Point_3, StiffMatrix_Node);
     
 	}
 }

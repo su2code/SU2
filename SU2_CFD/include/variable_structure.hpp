@@ -2008,15 +2008,15 @@ protected:
 
 	/*--- Primitive variable definition ---*/
   
-	double *Primitive;	/*!< \brief Primitive variables (T,vx,vy,vz,P,rho,h,c) in compressible flows. */
-	double **Gradient_Primitive;	/*!< \brief Gradient of the primitive variables (T,vx,vy,vz,P,rho). */ 
-  double *Limiter_Primitive;    /*!< \brief Limiter of the primitive variables (T,vx,vy,vz,P,rho). */ 
+	double *Primitive;	/*!< \brief Primitive variables (T, vx, vy, vz, P, rho, h, c) in compressible flows. */
+	double **Gradient_Primitive;	/*!< \brief Gradient of the primitive variables (T, vx, vy, vz, P, rho). */ 
+  double *Limiter_Primitive;    /*!< \brief Limiter of the primitive variables (T, vx, vy, vz, P, rho). */ 
 
   /*--- Secondary variable definition ---*/
   
-	double *Secondary;	/*!< \brief Primitive variables (T,vx,vy,vz,P,rho,h,c) in compressible flows. */
-	double **Gradient_Secondary;	/*!< \brief Gradient of the primitive variables (T,vx,vy,vz,P,rho). */
-  double *Limiter_Secondary;    /*!< \brief Limiter of the primitive variables (T,vx,vy,vz,P,rho). */
+	double *Secondary;	/*!< \brief Primitive variables (T, vx, vy, vz, P, rho, h, c) in compressible flows. */
+	double **Gradient_Secondary;	/*!< \brief Gradient of the primitive variables (T, vx, vy, vz, P, rho). */
+  double *Limiter_Secondary;    /*!< \brief Limiter of the primitive variables (T, vx, vy, vz, P, rho). */
 
 public:
 
@@ -3354,9 +3354,9 @@ protected:
 	double Precond_Beta;	/*!< \brief Low Mach number preconditioner value, Beta. */
   
 	/*--- Primitive variable definition ---*/
-	double *Primitive;	/*!< \brief Primitive variables (T,vx,vy,vz,P,rho,h,c) in compressible flows. */
-	double **Gradient_Primitive;	/*!< \brief Gradient of the primitive variables (T,vx,vy,vz,P,rho). */
-  double *Limiter_Primitive;    /*!< \brief Limiter of the primitive variables (T,vx,vy,vz,P,rho). */
+	double *Primitive;	/*!< \brief Primitive variables (T, vx, vy, vz, P, rho, h, c) in compressible flows. */
+	double **Gradient_Primitive;	/*!< \brief Gradient of the primitive variables (T, vx, vy, vz, P, rho). */
+  double *Limiter_Primitive;    /*!< \brief Limiter of the primitive variables (T, vx, vy, vz, P, rho). */
   double *dPdU;                 /*!< \brief Partial derivative of pressure w.r.t. conserved variables. */
   double *dTdU;  /*!< \brief Partial derivative of temperature w.r.t. conserved variables. */
   double *dTvedU; /*!< \brief Partial derivative of vib.-el. temperature w.r.t. conserved variables. */

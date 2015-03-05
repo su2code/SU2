@@ -120,11 +120,11 @@ void CVanDerWaalsGas::SetTDState_Prho (double P, double rho ) {
 
 void CVanDerWaalsGas::SetTDState_hs (double h, double s ) {
 
-    double v, T, rho, f,fmid,rtb;
-    double x1,x2,xmid,dx,fx1,fx2;
+    double v, T, rho, f, fmid, rtb;
+    double x1,x2,xmid, dx, fx1, fx2;
     double toll = 1e-5, FACTOR=0.2;
     unsigned short count=0, NTRY=10, ITMAX=100;
-    double cons_s,cons_h;
+    double cons_s, cons_h;
 
 //    cout <<"Before  "<< h <<" "<< s << endl;
 

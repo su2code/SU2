@@ -139,7 +139,7 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config) : CSolver() {
 		string text_line;
     
 		for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-			getline(restart_file,text_line);
+			getline(restart_file, text_line);
 			istringstream point_line(text_line);
 			point_line >> index >> Solution[0] >> Solution[1];
 			node[iPoint] = new CHeatVariable(Solution, nDim, nVar, config);

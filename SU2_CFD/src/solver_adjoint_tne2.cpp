@@ -2393,7 +2393,7 @@ void CAdjTNE2EulerSolver::BC_Far_Field(CGeometry *geometry,
     
       /*--- Pass conserved & primitive variables to CNumerics ---*/
 			conv_numerics->SetConservative(U_domain, U_infty);
-      conv_numerics->SetPrimitive(V_domain,V_infty);
+      conv_numerics->SetPrimitive(V_domain, V_infty);
       
       /*--- Pass supplementary information to CNumerics ---*/
       conv_numerics->SetdPdU(solver_container[TNE2_SOL]->node[iPoint]->GetdPdU(),

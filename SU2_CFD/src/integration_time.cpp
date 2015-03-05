@@ -212,7 +212,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ***geometry,
     /*--- Compute prolongated solution, and smooth the correction $u^(new)_k = u_k +  Smooth(I^k_(k+1)(u_(k+1)-I^(k+1)_k u_k))$ ---*/
     
     GetProlongated_Correction(RunTime_EqSystem, solver_container[iZone][iMesh][SolContainer_Position], solver_container[iZone][iMesh+1][SolContainer_Position],
-                              geometry[iZone][iMesh],geometry[iZone][iMesh+1], config[iZone]);
+                              geometry[iZone][iMesh], geometry[iZone][iMesh+1], config[iZone]);
     SmoothProlongated_Correction(RunTime_EqSystem, solver_container[iZone][iMesh][SolContainer_Position], geometry[iZone][iMesh],
                                  config[iZone]->GetMG_CorrecSmooth(iMesh), 1.25, config[iZone]);
     SetProlongated_Correction(solver_container[iZone][iMesh][SolContainer_Position], geometry[iZone][iMesh], config[iZone], iMesh);

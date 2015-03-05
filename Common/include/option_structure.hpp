@@ -79,7 +79,7 @@ public:
 
 /*!
  * \brief utility function for converting strings to uppercase
- * \param[in,out] str - string we want to convert
+ * \param[in, out] str - string we want to convert
  */
 inline void StringToUpperCase(string & str) {
   std::transform(str.begin(), str.end(), str.begin(), ::toupper);
@@ -417,7 +417,7 @@ static const map<string, ENUM_GASMODEL> GasModel_Map = CCreateMap<string, ENUM_G
 ("O2", O2)
 ("N2", N2)
 ("AIR-5", AIR5)
-("ARGON-SID",ARGON_SID)
+("ARGON-SID", ARGON_SID)
 ("ONESPECIES", ONESPECIES);
 
 /*!
@@ -775,7 +775,7 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("MAX_THICK_SEC4", MAX_THICK_SEC4)
 ("MAX_THICK_SEC5", MAX_THICK_SEC5)
 ("AVG_TOTAL_PRESSURE", AVG_TOTAL_PRESSURE)
-("AVG_OUTLET_PRESSURE",AVG_OUTLET_PRESSURE)
+("AVG_OUTLET_PRESSURE", AVG_OUTLET_PRESSURE)
 ("MASS_FLOW_RATE", MASS_FLOW_RATE);
 
 /*!
@@ -2598,7 +2598,7 @@ class COptionActuatorDisk : public COptionBase{
   double * & omega;
 
 public:
-  COptionActuatorDisk(const string name, unsigned short & nMarker_ActDisk_Inlet, unsigned short & nMarker_ActDisk_Outlet, string * & Marker_ActDisk_Inlet, string * & Marker_ActDisk_Outlet, double ** & ActDisk_Origin, double * & ActDisk_RootRadius, double * & ActDisk_TipRadius, double * & ActDisk_PressJump, double * & ActDisk_TempJump, double * & ActDisk_Omega) : inlet_size(nMarker_ActDisk_Inlet),outlet_size(nMarker_ActDisk_Outlet), marker_inlet(Marker_ActDisk_Inlet), marker_outlet(Marker_ActDisk_Outlet), origin(ActDisk_Origin), root_radius(ActDisk_RootRadius), tip_radius(ActDisk_TipRadius), press_jump(ActDisk_PressJump), temp_jump(ActDisk_TempJump), omega(ActDisk_Omega) {
+  COptionActuatorDisk(const string name, unsigned short & nMarker_ActDisk_Inlet, unsigned short & nMarker_ActDisk_Outlet, string * & Marker_ActDisk_Inlet, string * & Marker_ActDisk_Outlet, double ** & ActDisk_Origin, double * & ActDisk_RootRadius, double * & ActDisk_TipRadius, double * & ActDisk_PressJump, double * & ActDisk_TempJump, double * & ActDisk_Omega) : inlet_size(nMarker_ActDisk_Inlet), outlet_size(nMarker_ActDisk_Outlet), marker_inlet(Marker_ActDisk_Inlet), marker_outlet(Marker_ActDisk_Outlet), origin(ActDisk_Origin), root_radius(ActDisk_RootRadius), tip_radius(ActDisk_TipRadius), press_jump(ActDisk_PressJump), temp_jump(ActDisk_TempJump), omega(ActDisk_Omega) {
     this->name = name;
   }
 
