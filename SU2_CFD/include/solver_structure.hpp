@@ -309,7 +309,7 @@ public:
 	 * \param[in] val_var - Index of the variable.
 	 * \param[in] val_residual - Value of the residual to store in the position <i>val_var</i>.
    * \param[in] val_point - Value of the point index for the max residual.
-   * \param[in] val_coord - Location (x,y,z) of the max residual point.
+   * \param[in] val_coord - Location (x, y, z) of the max residual point.
 	 */
 	void AddRes_Max(unsigned short val_var, double val_residual, unsigned long val_point, double* val_coord);
     
@@ -330,7 +330,7 @@ public:
   /*!
    * \brief Get the location of the maximal residual, this is useful for the convergence history.
    * \param[in] val_var - Index of the variable.
-   * \return Pointer to the location (x,y,z) of the biggest residual for the variable <i>val_var</i>.
+   * \return Pointer to the location (x, y, z) of the biggest residual for the variable <i>val_var</i>.
    */
   double* GetPoint_Max_Coord(unsigned short val_var);
   
@@ -2109,7 +2109,7 @@ public:
   * \param[in] lambda - The eigenvalues of the generalized eigensystem.
   * \param[in] config - Definition of the particular problem.
   */
-  void SetUpTypicalSectionWingModel(double (&PHI)[2][2],double (&lambda)[2], CConfig *config);
+  void SetUpTypicalSectionWingModel(double (&PHI)[2][2], double (&lambda)[2], CConfig *config);
     
   /*!
   * \brief Solve the typical section wing model.

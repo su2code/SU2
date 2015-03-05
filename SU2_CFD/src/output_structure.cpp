@@ -43,7 +43,7 @@ COutput::COutput(void) {
   nGlobal_Quad      = 0;
   nGlobal_Tetr      = 0;
   nGlobal_Hexa      = 0;
-  nGlobal_Wedg      = 0;
+  nGlobal_Pris      = 0;
   nGlobal_Pyra      = 0;
   nGlobal_Line      = 0;
   nGlobal_BoundTria = 0;
@@ -144,7 +144,7 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
         }
         
         Pressure = FlowSolver->node[iPoint]->GetPressure();
-        PressCoeff = FlowSolver->GetCPressure(iMarker,iVertex);
+        PressCoeff = FlowSolver->GetCPressure(iMarker, iVertex);
         SurfFlow_file << scientific << Global_Index << ", " << xCoord << ", " << yCoord << ", ";
         if (nDim == 3) SurfFlow_file << scientific << zCoord << ", ";
         SurfFlow_file << scientific << Pressure << ", " << PressCoeff << ", ";
@@ -154,8 +154,8 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
             SurfFlow_file << scientific << Mach << endl;
             break;
           case NAVIER_STOKES: case RANS:
-            SkinFrictionCoeff = FlowSolver->GetCSkinFriction(iMarker,iVertex);
-            HeatFlux = FlowSolver->GetHeatFlux(iMarker,iVertex);
+            SkinFrictionCoeff = FlowSolver->GetCSkinFriction(iMarker, iVertex);
+            HeatFlux = FlowSolver->GetHeatFlux(iMarker, iVertex);
             SurfFlow_file << scientific << SkinFrictionCoeff << ", " << HeatFlux << endl;
             break;
           case TNE2_EULER:
@@ -163,8 +163,8 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
             SurfFlow_file << scientific << Mach << endl;
             break;
           case TNE2_NAVIER_STOKES:
-            SkinFrictionCoeff = FlowSolver->GetCSkinFriction(iMarker,iVertex);
-            HeatFlux = FlowSolver->GetHeatFlux(iMarker,iVertex);
+            SkinFrictionCoeff = FlowSolver->GetCSkinFriction(iMarker, iVertex);
+            HeatFlux = FlowSolver->GetHeatFlux(iMarker, iVertex);
             SurfFlow_file << scientific << SkinFrictionCoeff << ", " << HeatFlux << endl;
             break;
         }
@@ -259,7 +259,7 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         if (geometry->node[iPoint]->GetDomain()) {
           Buffer_Send_Press[nVertex_Surface] = FlowSolver->node[iPoint]->GetPressure();
-          Buffer_Send_CPress[nVertex_Surface] = FlowSolver->GetCPressure(iMarker,iVertex);
+          Buffer_Send_CPress[nVertex_Surface] = FlowSolver->GetCPressure(iMarker, iVertex);
           Buffer_Send_Coord_x[nVertex_Surface] = geometry->node[iPoint]->GetCoord(0);
           Buffer_Send_Coord_y[nVertex_Surface] = geometry->node[iPoint]->GetCoord(1);
           if (nDim == 3) { Buffer_Send_Coord_z[nVertex_Surface] = geometry->node[iPoint]->GetCoord(2); }
@@ -277,12 +277,12 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
           if (solver == EULER)
             Buffer_Send_Mach[nVertex_Surface] = sqrt(FlowSolver->node[iPoint]->GetVelocity2()) / FlowSolver->node[iPoint]->GetSoundSpeed();
           if ((solver == NAVIER_STOKES) || (solver == RANS))
-            Buffer_Send_SkinFriction[nVertex_Surface] = FlowSolver->GetCSkinFriction(iMarker,iVertex);
+            Buffer_Send_SkinFriction[nVertex_Surface] = FlowSolver->GetCSkinFriction(iMarker, iVertex);
           if (solver == TNE2_EULER)
             Buffer_Send_Mach[nVertex_Surface] = sqrt(FlowSolver->node[iPoint]->GetVelocity2()) / FlowSolver->node[iPoint]->GetSoundSpeed();
           if (solver == TNE2_NAVIER_STOKES) {
-            Buffer_Send_SkinFriction[nVertex_Surface] = FlowSolver->GetCSkinFriction(iMarker,iVertex);
-            Buffer_Send_HeatTransfer[nVertex_Surface] = FlowSolver->GetHeatFlux(iMarker,iVertex);
+            Buffer_Send_SkinFriction[nVertex_Surface] = FlowSolver->GetCSkinFriction(iMarker, iVertex);
+            Buffer_Send_HeatTransfer[nVertex_Surface] = FlowSolver->GetHeatFlux(iMarker, iVertex);
           }
           nVertex_Surface++;
         }
@@ -479,7 +479,7 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
             yCoord *= 12.0;
           }
           
-          SurfAdj_file << scientific << iPoint << ", " << AdjSolver->GetCSensitivity(iMarker,iVertex) << ", " << Solution[0] << ", "
+          SurfAdj_file << scientific << iPoint << ", " << AdjSolver->GetCSensitivity(iMarker, iVertex) << ", " << Solution[0] << ", "
           << Solution[1] << ", " << Solution[2] << ", " << Solution[3] <<", " << xCoord <<", "<< yCoord << endl;
         }
     }
@@ -505,7 +505,7 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
             zCoord *= 12.0;
           }
           
-          SurfAdj_file << scientific << iPoint << ", " << AdjSolver->GetCSensitivity(iMarker,iVertex) << ", " << Solution[0] << ", "
+          SurfAdj_file << scientific << iPoint << ", " << AdjSolver->GetCSensitivity(iMarker, iVertex) << ", " << Solution[0] << ", "
           << Solution[1] << ", " << Solution[2] << ", " << Solution[3] << ", " << Solution[4] << ", "<< xCoord <<", "<< yCoord <<", "<< zCoord << endl;
         }
     }
@@ -567,7 +567,7 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
           Buffer_Send_GlobalPoint[nVertex_Surface] = geometry->node[iPoint]->GetGlobalIndex();
           Buffer_Send_Coord_x[nVertex_Surface] = Coord[0];
           Buffer_Send_Coord_y[nVertex_Surface] = Coord[1];
-          Buffer_Send_Sensitivity[nVertex_Surface] =  AdjSolver->GetCSensitivity(iMarker,iVertex);
+          Buffer_Send_Sensitivity[nVertex_Surface] =  AdjSolver->GetCSensitivity(iMarker, iVertex);
           Buffer_Send_PsiRho[nVertex_Surface] = Solution[0];
           Buffer_Send_Phi_x[nVertex_Surface] = Solution[1];
           Buffer_Send_Phi_y[nVertex_Surface] = Solution[2];
@@ -763,9 +763,9 @@ void COutput::MergeConnectivity(CConfig *config, CGeometry *geometry, unsigned s
         cout <<"Merging volumetric hexahedron grid connectivity." << endl;
       MergeVolumetricConnectivity(config, geometry, HEXAHEDRON  );
       
-      if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Wedg != 0))
-        cout <<"Merging volumetric wedge grid connectivity." << endl;
-      MergeVolumetricConnectivity(config, geometry, WEDGE       );
+      if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Pris != 0))
+        cout <<"Merging volumetric prism grid connectivity." << endl;
+      MergeVolumetricConnectivity(config, geometry, PRISM       );
       
       if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Pyra != 0))
         cout <<"Merging volumetric pyramid grid connectivity." << endl;
@@ -794,7 +794,7 @@ void COutput::MergeConnectivity(CConfig *config, CGeometry *geometry, unsigned s
     /*--- Update total number of volume elements after merge. ---*/
     
     nGlobal_Elem = nGlobal_Tria + nGlobal_Quad + nGlobal_Tetr +
-    nGlobal_Hexa + nGlobal_Pyra + nGlobal_Wedg;
+    nGlobal_Hexa + nGlobal_Pyra + nGlobal_Pris;
     
     /*--- Update total number of surface elements after merge. ---*/
     
@@ -1125,9 +1125,9 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
       nLocalElem = geometry->GetnElemHexa();
       NODES_PER_ELEMENT = N_POINTS_HEXAHEDRON;
       break;
-    case WEDGE:
-      nLocalElem = geometry->GetnElemWedg();
-      NODES_PER_ELEMENT = N_POINTS_WEDGE;
+    case PRISM:
+      nLocalElem = geometry->GetnElemPris();
+      NODES_PER_ELEMENT = N_POINTS_PRISM;
       break;
     case PYRAMID:
       nLocalElem = geometry->GetnElemPyra();
@@ -1424,9 +1424,9 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
         nGlobal_Hexa = nElem_Total;
         if (nGlobal_Hexa > 0) Conn_Hexa = Conn_Elem;
         break;
-      case WEDGE:
-        nGlobal_Wedg = nElem_Total;
-        if (nGlobal_Wedg > 0) Conn_Wedg = Conn_Elem;
+      case PRISM:
+        nGlobal_Pris = nElem_Total;
+        if (nGlobal_Pris > 0) Conn_Pris = Conn_Elem;
         break;
       case PYRAMID:
         nGlobal_Pyra = nElem_Total;
@@ -2515,9 +2515,9 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         if (config->GetMarker_All_Plotting(iMarker) == YES) {
           for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
             iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-            Aux_Frict[iPoint] = solver[FLOW_SOL]->GetCSkinFriction(iMarker,iVertex);
-            Aux_Heat[iPoint]  = solver[FLOW_SOL]->GetHeatFlux(iMarker,iVertex);
-            Aux_yPlus[iPoint] = solver[FLOW_SOL]->GetYPlus(iMarker,iVertex);
+            Aux_Frict[iPoint] = solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex);
+            Aux_Heat[iPoint]  = solver[FLOW_SOL]->GetHeatFlux(iMarker, iVertex);
+            Aux_yPlus[iPoint] = solver[FLOW_SOL]->GetYPlus(iMarker, iVertex);
           }
         }
       
@@ -3082,7 +3082,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
             Area = 0.0;
             for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
             Area = sqrt (Area);
-            Aux_Sens[iPoint] = solver[ADJFLOW_SOL]->GetCSensitivity(iMarker,iVertex)/Area;
+            Aux_Sens[iPoint] = solver[ADJFLOW_SOL]->GetCSensitivity(iMarker, iVertex)/Area;
           }
         }
       
@@ -3713,7 +3713,7 @@ void COutput::DeallocateConnectivity(CConfig *config, CGeometry *geometry, bool 
       if (nGlobal_Quad > 0) delete [] Conn_Quad;
       if (nGlobal_Tetr > 0) delete [] Conn_Tetr;
       if (nGlobal_Hexa > 0) delete [] Conn_Hexa;
-      if (nGlobal_Wedg > 0) delete [] Conn_Wedg;
+      if (nGlobal_Pris > 0) delete [] Conn_Pris;
       if (nGlobal_Pyra > 0) delete [] Conn_Pyra;
     }
     
@@ -3775,13 +3775,15 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
     if ((int(iExtIter) >= 100) && (int(iExtIter) < 1000)) sprintf (buffer, "_00%d", int(iExtIter));
     if ((int(iExtIter) >= 1000) && (int(iExtIter) < 10000)) sprintf (buffer, "_0%d", int(iExtIter));
     if (int(iExtIter) >= 10000) sprintf (buffer, "_%d", int(iExtIter));
-    strcat(cstr,buffer);
+    strcat(cstr, buffer);
   }
   
-  if (config->GetOutput_FileFormat() == TECPLOT) sprintf (buffer, ".dat");
-  else if (config->GetOutput_FileFormat() == TECPLOT_BINARY)  sprintf (buffer, ".plt");
+  if ((config->GetOutput_FileFormat() == TECPLOT) ||
+      (config->GetOutput_FileFormat() == FIELDVIEW)) sprintf (buffer, ".dat");
+  else if ((config->GetOutput_FileFormat() == TECPLOT_BINARY) ||
+           (config->GetOutput_FileFormat() == FIELDVIEW_BINARY))  sprintf (buffer, ".plt");
   else if (config->GetOutput_FileFormat() == PARAVIEW)  sprintf (buffer, ".csv");
-  strcat(cstr,buffer);
+  strcat(cstr, buffer);
   
   ConvHist_file->open(cstr, ios::out);
   ConvHist_file->precision(15);
@@ -3845,7 +3847,9 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   char end[]= ",\"Linear_Solver_Iterations\",\"CFL_Number\",\"Time(min)\"\n";
   
   if ((config->GetOutput_FileFormat() == TECPLOT) ||
-      (config->GetOutput_FileFormat() == TECPLOT_BINARY)) {
+      (config->GetOutput_FileFormat() == TECPLOT_BINARY) ||
+      (config->GetOutput_FileFormat() == FIELDVIEW) ||
+      (config->GetOutput_FileFormat() == FIELDVIEW_BINARY)) {
     ConvHist_file[0] << "TITLE = \"SU2 Simulation\"" << endl;
     ConvHist_file[0] << "VARIABLES = ";
   }
@@ -3914,7 +3918,10 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
       
   }
   
-  if (config->GetOutput_FileFormat() == TECPLOT || config->GetOutput_FileFormat() == TECPLOT_BINARY) {
+  if (config->GetOutput_FileFormat() == TECPLOT ||
+      config->GetOutput_FileFormat() == TECPLOT_BINARY ||
+      config->GetOutput_FileFormat() == FIELDVIEW ||
+      config->GetOutput_FileFormat() == FIELDVIEW_BINARY) {
     ConvHist_file[0] << "ZONE T= \"Convergence history\"" << endl;
   }
   
@@ -4458,13 +4465,13 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               for (iMarker_Monitoring = 0; iMarker_Monitoring < config[ZONE_0]->GetnMarker_Monitoring(); iMarker_Monitoring++) {
                 //Append one by one the surface coeff to aeroelastic coeff. (Think better way do this, maybe use string)
                 if (iMarker_Monitoring == 0) {
-                  sprintf(aeroelastic_coeff, ", %12.10f",aeroelastic_plunge[iMarker_Monitoring]);
+                  sprintf(aeroelastic_coeff, ", %12.10f", aeroelastic_plunge[iMarker_Monitoring]);
                 }
                 else {
-                  sprintf(surface_coeff, ", %12.10f",aeroelastic_plunge[iMarker_Monitoring]);
+                  sprintf(surface_coeff, ", %12.10f", aeroelastic_plunge[iMarker_Monitoring]);
                   strcat(aeroelastic_coeff, surface_coeff);
                 }
-                sprintf(surface_coeff, ", %12.10f",aeroelastic_pitch[iMarker_Monitoring]);
+                sprintf(surface_coeff, ", %12.10f", aeroelastic_pitch[iMarker_Monitoring]);
                 strcat(aeroelastic_coeff, surface_coeff);
               }
             }
@@ -4473,29 +4480,29 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               for (iMarker_Monitoring = 0; iMarker_Monitoring < config[ZONE_0]->GetnMarker_Monitoring(); iMarker_Monitoring++) {
                 //Append one by one the surface coeff to monitoring coeff. (Think better way do this, maybe use string)
                 if (iMarker_Monitoring == 0) {
-                  sprintf(monitoring_coeff, ", %12.10f",Surface_CLift[iMarker_Monitoring]);
+                  sprintf(monitoring_coeff, ", %12.10f", Surface_CLift[iMarker_Monitoring]);
                 }
                 else {
-                  sprintf(surface_coeff, ", %12.10f",Surface_CLift[iMarker_Monitoring]);
+                  sprintf(surface_coeff, ", %12.10f", Surface_CLift[iMarker_Monitoring]);
                   strcat(monitoring_coeff, surface_coeff);
                 }
-                sprintf(surface_coeff, ", %12.10f",Surface_CDrag[iMarker_Monitoring]);
+                sprintf(surface_coeff, ", %12.10f", Surface_CDrag[iMarker_Monitoring]);
                 strcat(monitoring_coeff, surface_coeff);
-                sprintf(surface_coeff, ", %12.10f",Surface_CSideForce[iMarker_Monitoring]);
+                sprintf(surface_coeff, ", %12.10f", Surface_CSideForce[iMarker_Monitoring]);
                 strcat(monitoring_coeff, surface_coeff);
-                sprintf(surface_coeff, ", %12.10f",Surface_CEff[iMarker_Monitoring]);
+                sprintf(surface_coeff, ", %12.10f", Surface_CEff[iMarker_Monitoring]);
                 strcat(monitoring_coeff, surface_coeff);
-                sprintf(surface_coeff, ", %12.10f",Surface_CFx[iMarker_Monitoring]);
+                sprintf(surface_coeff, ", %12.10f", Surface_CFx[iMarker_Monitoring]);
                 strcat(monitoring_coeff, surface_coeff);
-                sprintf(surface_coeff, ", %12.10f",Surface_CFy[iMarker_Monitoring]);
+                sprintf(surface_coeff, ", %12.10f", Surface_CFy[iMarker_Monitoring]);
                 strcat(monitoring_coeff, surface_coeff);
-                sprintf(surface_coeff, ", %12.10f",Surface_CFz[iMarker_Monitoring]);
+                sprintf(surface_coeff, ", %12.10f", Surface_CFz[iMarker_Monitoring]);
                 strcat(monitoring_coeff, surface_coeff);
-                sprintf(surface_coeff, ", %12.10f",Surface_CMx[iMarker_Monitoring]);
+                sprintf(surface_coeff, ", %12.10f", Surface_CMx[iMarker_Monitoring]);
                 strcat(monitoring_coeff, surface_coeff);
-                sprintf(surface_coeff, ", %12.10f",Surface_CMy[iMarker_Monitoring]);
+                sprintf(surface_coeff, ", %12.10f", Surface_CMy[iMarker_Monitoring]);
                 strcat(monitoring_coeff, surface_coeff);
-                sprintf(surface_coeff, ", %12.10f",Surface_CMz[iMarker_Monitoring]);
+                sprintf(surface_coeff, ", %12.10f", Surface_CMz[iMarker_Monitoring]);
                 strcat(monitoring_coeff, surface_coeff);
               }
             }
@@ -4503,12 +4510,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             
             /*--- Flow residual ---*/
             if (nDim == 2) {
-              if (compressible) sprintf (flow_resid, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]),dummy);
-              if (incompressible || freesurface) sprintf (flow_resid, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]),dummy,dummy);
+              if (compressible) sprintf (flow_resid, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]), dummy);
+              if (incompressible || freesurface) sprintf (flow_resid, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), dummy, dummy);
             }
             else {
               if (compressible) sprintf (flow_resid, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]), log10 (residual_flow[4]) );
-              if (incompressible || freesurface) sprintf (flow_resid, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]),dummy);
+              if (incompressible || freesurface) sprintf (flow_resid, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]), dummy);
             }
             
             /*--- Turbulent residual ---*/
@@ -4550,12 +4557,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               
               /*--- Adjoint flow residuals ---*/
               if (nDim == 2) {
-                if (compressible) sprintf (adj_flow_resid, ", %12.10f, %12.10f, %12.10f, %12.10f, 0.0", log10 (residual_adjflow[0]),log10 (residual_adjflow[1]),log10 (residual_adjflow[2]),log10 (residual_adjflow[3]) );
-                if (incompressible || freesurface) sprintf (adj_flow_resid, ", %12.10f, %12.10f, %12.10f, 0.0, 0.0", log10 (residual_adjflow[0]),log10 (residual_adjflow[1]),log10 (residual_adjflow[2]) );
+                if (compressible) sprintf (adj_flow_resid, ", %12.10f, %12.10f, %12.10f, %12.10f, 0.0", log10 (residual_adjflow[0]), log10 (residual_adjflow[1]), log10 (residual_adjflow[2]), log10 (residual_adjflow[3]) );
+                if (incompressible || freesurface) sprintf (adj_flow_resid, ", %12.10f, %12.10f, %12.10f, 0.0, 0.0", log10 (residual_adjflow[0]), log10 (residual_adjflow[1]), log10 (residual_adjflow[2]) );
               }
               else {
-                if (compressible) sprintf (adj_flow_resid, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", log10 (residual_adjflow[0]),log10 (residual_adjflow[1]),log10 (residual_adjflow[2]),log10 (residual_adjflow[3]), log10 (residual_adjflow[4]) );
-                if (incompressible || freesurface) sprintf (adj_flow_resid, ", %12.10f, %12.10f, %12.10f, %12.10f, 0.0", log10 (residual_adjflow[0]),log10 (residual_adjflow[1]),log10 (residual_adjflow[2]),log10 (residual_adjflow[3]) );
+                if (compressible) sprintf (adj_flow_resid, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", log10 (residual_adjflow[0]), log10 (residual_adjflow[1]), log10 (residual_adjflow[2]), log10 (residual_adjflow[3]), log10 (residual_adjflow[4]) );
+                if (incompressible || freesurface) sprintf (adj_flow_resid, ", %12.10f, %12.10f, %12.10f, %12.10f, 0.0", log10 (residual_adjflow[0]), log10 (residual_adjflow[1]), log10 (residual_adjflow[2]), log10 (residual_adjflow[3]) );
               }
               
               /*--- Adjoint turbulent residuals ---*/
@@ -4762,7 +4769,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
             else cout << endl << " IntIter" << " ExtIter";
             if (incompressible || freesurface) cout << "   Res[Press]";
-            else cout << "      Res[Rho]";//,cout << "     Res[RhoE]";
+            else cout << "      Res[Rho]";//, cout << "     Res[RhoE]";
             
             switch (config[val_iZone]->GetKind_Turb_Model()) {
               case SA:	   cout << "       Res[nu]"; break;
@@ -4905,7 +4912,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
       
       /*--- Write the solution on the screen and history file ---*/
       cout.precision(6);
-      cout.setf(ios::fixed,ios::floatfield);
+      cout.setf(ios::fixed, ios::floatfield);
       
       if (!Unsteady) {
         cout.width(5); cout << iExtIter;
@@ -4934,7 +4941,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           }
           
           cout.precision(6);
-          cout.setf(ios::fixed,ios::floatfield);
+          cout.setf(ios::fixed, ios::floatfield);
           cout.width(13); cout << log10(residual_flow[0]);
           if (!fluid_structure && !equiv_area) {
             if (compressible) {
@@ -4947,19 +4954,19 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           else if (fluid_structure) { cout.width(14); cout << log10(residual_fea[0]); }
           
           if (rotating_frame && nDim == 3 ) {
-            cout.setf(ios::scientific,ios::floatfield);
+            cout.setf(ios::scientific, ios::floatfield);
             cout.width(15); cout << Total_CT;
             cout.width(15); cout << Total_CQ;
             cout.unsetf(ios_base::floatfield);
           }
-          else if (equiv_area) { cout.width(15); cout << min(10000.0,max(-10000.0, Total_CLift)); cout.width(15); cout << min(10000.0,max(-10000.0, Total_CDrag)); cout.width(15);
+          else if (equiv_area) { cout.width(15); cout << min(10000.0, max(-10000.0, Total_CLift)); cout.width(15); cout << min(10000.0, max(-10000.0, Total_CDrag)); cout.width(15);
             cout.precision(4);
-            cout.setf(ios::scientific,ios::floatfield);
+            cout.setf(ios::scientific, ios::floatfield);
             cout << Total_CNearFieldOF; }
           else if (freesurface) { cout.width(15); cout << Total_CLift; cout.width(15); cout << Total_CFreeSurface; }
-          else { cout.width(15); cout << min(10000.0,max(-10000.0, Total_CLift)); cout.width(15); cout << min(10000.0,max(-10000.0, Total_CDrag)); }
+          else { cout.width(15); cout << min(10000.0, max(-10000.0, Total_CLift)); cout.width(15); cout << min(10000.0, max(-10000.0, Total_CDrag)); }
           if (aeroelastic) {
-            cout.setf(ios::scientific,ios::floatfield);
+            cout.setf(ios::scientific, ios::floatfield);
             cout.width(15); cout << aeroelastic_plunge[0]; //Only output the first marker being monitored to the console.
             cout.width(15); cout << aeroelastic_pitch[0];
             cout.unsetf(ios_base::floatfield);
@@ -4981,7 +4988,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           }
           
           cout.precision(6);
-          cout.setf(ios::fixed,ios::floatfield);
+          cout.setf(ios::fixed, ios::floatfield);
           
           if (incompressible || freesurface) cout.width(13);
          else  cout.width(14);
@@ -5001,19 +5008,19 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           if (transition) { cout.width(14); cout << log10(residual_transition[0]); cout.width(14); cout << log10(residual_transition[1]); }
           
           if (rotating_frame && nDim == 3 ) {
-            cout.setf(ios::scientific,ios::floatfield);
+            cout.setf(ios::scientific, ios::floatfield);
             cout.width(15); cout << Total_CT; cout.width(15);
             cout << Total_CQ;
             cout.unsetf(ios_base::floatfield);
           }
-          else if (equiv_area) { cout.width(15); cout << min(10000.0,max(-10000.0, Total_CLift)); cout.width(15); cout << min(10000.0,max(-10000.0, Total_CDrag)); cout.width(15);
+          else if (equiv_area) { cout.width(15); cout << min(10000.0, max(-10000.0, Total_CLift)); cout.width(15); cout << min(10000.0, max(-10000.0, Total_CDrag)); cout.width(15);
             cout.precision(4);
-            cout.setf(ios::scientific,ios::floatfield);
+            cout.setf(ios::scientific, ios::floatfield);
             cout << Total_CNearFieldOF; }
-          else { cout.width(15); cout << min(10000.0,max(-10000.0, Total_CLift)); cout.width(15); cout << min(10000.0,max(-10000.0, Total_CDrag)); }
+          else { cout.width(15); cout << min(10000.0, max(-10000.0, Total_CLift)); cout.width(15); cout << min(10000.0, max(-10000.0, Total_CDrag)); }
           
           if (aeroelastic) {
-            cout.setf(ios::scientific,ios::floatfield);
+            cout.setf(ios::scientific, ios::floatfield);
             cout.width(15); cout << aeroelastic_plunge[0]; //Only output the first marker being monitored to the console.
             cout.width(15); cout << aeroelastic_pitch[0];
             cout.unsetf(ios_base::floatfield);
@@ -5027,7 +5034,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             }
             
             cout.precision(6);
-            cout.setf(ios::fixed,ios::floatfield);
+            cout.setf(ios::fixed, ios::floatfield);
             cout.width(13); cout << log10(residual_flow[0]);
             cout.width(14); cout << log10(residual_levelset[0]);
             cout.width(15); cout << Total_CLift;
@@ -5047,7 +5054,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           }
           
           cout.precision(6);
-          cout.setf(ios::fixed,ios::floatfield);
+          cout.setf(ios::fixed, ios::floatfield);
           cout.width(13); cout << log10(residual_TNE2[0]);
           cout.width(14); cout << log10(residual_TNE2[nSpecies+nDim]);
           cout.width(14); cout << log10(residual_TNE2[nSpecies+nDim+1]);
@@ -5067,7 +5074,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           }
           
           cout.precision(6);
-          cout.setf(ios::fixed,ios::floatfield);
+          cout.setf(ios::fixed, ios::floatfield);
           cout.width(14); cout << log10(residual_wave[0]);
           cout.width(14); cout << Total_CWave;
           cout << endl;
@@ -5081,7 +5088,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           }
           
           cout.precision(6);
-          cout.setf(ios::fixed,ios::floatfield);
+          cout.setf(ios::fixed, ios::floatfield);
           cout.width(14); cout << log10(residual_heat[0]);
           cout.width(14); cout << Total_CHeat;
           cout << endl;
@@ -5095,12 +5102,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           }
           
           cout.precision(6);
-          cout.setf(ios::fixed,ios::floatfield);
+          cout.setf(ios::fixed, ios::floatfield);
           cout.width(15); cout << log10(residual_fea[0]);
           cout.width(15); cout << log10(residual_fea[1]);
           if (nDim == 3) { cout.width(15); cout << log10(residual_fea[2]); }
           cout.precision(4);
-          cout.setf(ios::scientific,ios::floatfield);
+          cout.setf(ios::scientific, ios::floatfield);
           cout.width(14); cout << Total_CFEA;
           cout << endl;
           break;
@@ -5113,7 +5120,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           }
           
           cout.precision(6);
-          cout.setf(ios::fixed,ios::floatfield);
+          cout.setf(ios::fixed, ios::floatfield);
           if (compressible) {
             cout.width(15); cout << log10(residual_adjflow[0]);
             cout.width(15); cout << log10(residual_adjflow[nDim+1]);
@@ -5123,7 +5130,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             cout.width(16); cout << log10(residual_adjflow[1]);
           }
           cout.precision(4);
-          cout.setf(ios::scientific,ios::floatfield);
+          cout.setf(ios::scientific, ios::floatfield);
           cout.width(14); cout << Total_Sens_Geo;
           cout.width(14); cout << Total_Sens_Mach;
           cout << endl;
@@ -5136,11 +5143,11 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             }
             
             cout.precision(6);
-            cout.setf(ios::fixed,ios::floatfield);
+            cout.setf(ios::fixed, ios::floatfield);
             cout.width(17); cout << log10(residual_adjflow[0]);
             cout.width(16); cout << log10(residual_adjlevelset[0]);
             cout.precision(3);
-            cout.setf(ios::scientific,ios::floatfield);
+            cout.setf(ios::scientific, ios::floatfield);
             cout.width(12); cout << Total_Sens_Geo;
             cout.width(12); cout << Total_Sens_Mach;
             cout.unsetf(ios_base::floatfield);
@@ -5160,7 +5167,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           }
           
           cout.precision(6);
-          cout.setf(ios::fixed,ios::floatfield);
+          cout.setf(ios::fixed, ios::floatfield);
           cout.width(17); cout << log10(residual_adjflow[0]);
           if (!config[val_iZone]->GetFrozen_Visc()) {
             cout.width(17); cout << log10(residual_adjturbulent[0]);
@@ -5175,7 +5182,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             }
           }
           cout.precision(4);
-          cout.setf(ios::scientific,ios::floatfield);
+          cout.setf(ios::scientific, ios::floatfield);
           cout.width(14); cout << Total_Sens_Geo;
           cout.width(14); cout << Total_Sens_Mach;
           cout << endl;
@@ -5188,12 +5195,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             }
             
             cout.precision(6);
-            cout.setf(ios::fixed,ios::floatfield);
+            cout.setf(ios::fixed, ios::floatfield);
             cout.width(17); cout << log10(residual_adjflow[0]);
             cout.width(16); cout << log10(residual_adjlevelset[0]);
             
             cout.precision(4);
-            cout.setf(ios::scientific,ios::floatfield);
+            cout.setf(ios::scientific, ios::floatfield);
             cout.width(12); cout << Total_Sens_Geo;
             cout.width(12); cout << Total_Sens_Mach;
             cout << endl;
@@ -5210,13 +5217,13 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           }
           
           cout.precision(6);
-          cout.setf(ios::fixed,ios::floatfield);
+          cout.setf(ios::fixed, ios::floatfield);
           cout.width(15); cout << log10(residual_adjTNE2[0]);
           cout.width(15); cout << log10(residual_adjTNE2[nSpecies+nDim]);
           cout.width(15); cout << log10(residual_adjTNE2[nSpecies+nDim+1]);
           
           cout.precision(4);
-          cout.setf(ios::scientific,ios::floatfield);
+          cout.setf(ios::scientific, ios::floatfield);
           cout.width(14); cout << Total_Sens_Geo;
           cout.width(14); cout << Total_Sens_Mach;
           cout << endl;
@@ -6135,8 +6142,8 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
     if ((rank == MASTER_NODE) && (Wrt_Vol || Wrt_Srf)) {
       if (FileFormat == TECPLOT_BINARY) {
         if (rank == MASTER_NODE) cout << "Writing Tecplot binary volume and surface mesh files." << endl;
-        SetTecplot_MeshBinary(config[iZone], geometry[iZone][MESH_0], iZone);
-        SetTecplot_SurfaceMesh(config[iZone], geometry[iZone][MESH_0], iZone);
+        SetTecplotBinary_DomainMesh(config[iZone], geometry[iZone][MESH_0], iZone);
+        SetTecplotBinary_SurfaceMesh(config[iZone], geometry[iZone][MESH_0], iZone);
         if (!wrote_base_file)
           DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], false);
         if (!wrote_surf_file)
@@ -6158,7 +6165,7 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
       /*--- Write a native restart file ---*/
       
       if (rank == MASTER_NODE) cout << "Writing SU2 native restart file." << endl;
-      SetRestart(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0] ,iZone);
+      SetRestart(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0] , iZone);
       
       if (Wrt_Vol) {
         
@@ -6169,7 +6176,16 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
             /*--- Write a Tecplot ASCII file ---*/
             
             if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file volume solution file." << endl;
-            SetTecplot_ASCII(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0],iZone, val_nZone, false);
+            SetTecplotASCII(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0], iZone, val_nZone, false);
+            DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], false);
+            break;
+            
+          case FIELDVIEW:
+            
+            /*--- Write a FieldView ASCII file ---*/
+            
+            if (rank == MASTER_NODE) cout << "Writing FieldView ASCII file volume solution file." << endl;
+            SetFieldViewASCII(config[iZone], geometry[iZone][MESH_0], iZone, val_nZone);
             DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], false);
             break;
             
@@ -6178,10 +6194,18 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
             /*--- Write a Tecplot binary solution file ---*/
             
             if (rank == MASTER_NODE) cout << "Writing Tecplot binary volume solution file." << endl;
-            SetTecplot_Solution(config[iZone], geometry[iZone][MESH_0], iZone);
+            SetTecplotBinary_DomainSolution(config[iZone], geometry[iZone][MESH_0], iZone);
             break;
             
+          case FIELDVIEW_BINARY:
             
+            /*--- Write a FieldView binary file ---*/
+            
+            if (rank == MASTER_NODE) cout << "Writing FieldView binary file volume solution file." << endl;
+            SetFieldViewBinary(config[iZone], geometry[iZone][MESH_0], iZone, val_nZone);
+            DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], false);
+            break;
+
           case PARAVIEW:
             
             /*--- Write a Paraview ASCII file ---*/
@@ -6206,7 +6230,7 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
             /*--- Write a Tecplot ASCII file ---*/
             
             if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII surface solution file." << endl;
-            SetTecplot_ASCII(config[iZone], geometry[iZone][MESH_0],solver_container[iZone][MESH_0] ,iZone, val_nZone, true);
+            SetTecplotASCII(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0] , iZone, val_nZone, true);
             DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], true);
             break;
             
@@ -6215,7 +6239,7 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
             /*--- Write a Tecplot binary solution file ---*/
             
             if (rank == MASTER_NODE) cout << "Writing Tecplot binary surface solution file." << endl;
-            SetTecplot_SurfaceSolution(config[iZone], geometry[iZone][MESH_0], iZone);
+            SetTecplotBinary_SurfaceSolution(config[iZone], geometry[iZone][MESH_0], iZone);
             break;
             
           case PARAVIEW:
@@ -6309,7 +6333,16 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
               /*--- Write a Tecplot ASCII file ---*/
               
               if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file (volume grid)." << endl;
-              SetTecplot_ASCII(config[iZone], geometry[iZone], solver,iZone, val_nZone, false);
+              SetTecplotASCII(config[iZone], geometry[iZone], solver, iZone, val_nZone, false);
+              DeallocateConnectivity(config[iZone], geometry[iZone], false);
+              break;
+              
+            case FIELDVIEW:
+              
+              /*--- Write a FieldView ASCII file ---*/
+              
+              if (rank == MASTER_NODE) cout << "Writing FieldView ASCII file (volume grid)." << endl;
+              SetFieldViewASCII(config[iZone], geometry[iZone], iZone, val_nZone);
               DeallocateConnectivity(config[iZone], geometry[iZone], false);
               break;
               
@@ -6318,10 +6351,19 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
               /*--- Write a Tecplot binary solution file ---*/
               
               if (rank == MASTER_NODE) cout << "Writing Tecplot Binary file (volume grid)." << endl;
-              SetTecplot_MeshBinary(config[iZone], geometry[iZone], iZone);
-              SetTecplot_Solution(config[iZone], geometry[iZone], iZone);
+              SetTecplotBinary_DomainMesh(config[iZone], geometry[iZone], iZone);
+              SetTecplotBinary_DomainSolution(config[iZone], geometry[iZone], iZone);
               break;
               
+            case FIELDVIEW_BINARY:
+              
+              /*--- Write a binary binary file ---*/
+              
+              if (rank == MASTER_NODE) cout << "Writing FieldView ASCII file (volume grid)." << endl;
+              SetFieldViewBinary(config[iZone], geometry[iZone], iZone, val_nZone);
+              DeallocateConnectivity(config[iZone], geometry[iZone], false);
+              break;
+
             case PARAVIEW:
               
               /*--- Write a Paraview ASCII file ---*/
@@ -6346,7 +6388,7 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
               /*--- Write a Tecplot ASCII file ---*/
               
               if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file (surface grid)." << endl;
-              SetTecplot_ASCII(config[iZone], geometry[iZone], solver, iZone, val_nZone, true);
+              SetTecplotASCII(config[iZone], geometry[iZone], solver, iZone, val_nZone, true);
               DeallocateConnectivity(config[iZone], geometry[iZone], true);
               break;
               
@@ -6355,8 +6397,8 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
               /*--- Write a Tecplot binary solution file ---*/
               
               if (rank == MASTER_NODE) cout << "Writing Tecplot Binary file (surface grid)." << endl;
-              SetTecplot_SurfaceMesh(config[iZone], geometry[iZone], iZone);
-              SetTecplot_SurfaceSolution(config[iZone], geometry[iZone], iZone);
+              SetTecplotBinary_SurfaceMesh(config[iZone], geometry[iZone], iZone);
+              SetTecplotBinary_SurfaceSolution(config[iZone], geometry[iZone], iZone);
               break;
               
             case PARAVIEW:
@@ -6404,7 +6446,7 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
         
         sprintf (buffer_char, ".dat");
         strcpy(out_file, filename.c_str()); strcat(out_file, buffer_char);
-        SetTecplotNode_ASCII(config[iZone], geometry[iZone], solver, out_file, false);
+        SetTecplotASCII_LowMemory(config[iZone], geometry[iZone], solver, out_file, false);
       }
       
       if (Wrt_Srf) {
@@ -6423,7 +6465,7 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
         
         sprintf (buffer_char, ".dat");
         strcpy(out_file, filename.c_str()); strcat(out_file, buffer_char);
-        SetTecplotNode_ASCII(config[iZone], geometry[iZone], solver, out_file, true);
+        SetTecplotASCII_LowMemory(config[iZone], geometry[iZone], solver, out_file, true);
       }
 
     }
@@ -6480,7 +6522,7 @@ void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned sho
         
         /*--- Write a Tecplot ASCII file ---*/
         
-        SetTecplot_MeshASCII(config[iZone], geometry[iZone], false, new_file);
+        SetTecplotASCII_Mesh(config[iZone], geometry[iZone], false, new_file);
         
       }
       
@@ -6490,7 +6532,7 @@ void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned sho
         
         /*--- Write a Tecplot ASCII file ---*/
         
-        SetTecplot_MeshASCII(config[iZone], geometry[iZone], true, new_file);
+        SetTecplotASCII_Mesh(config[iZone], geometry[iZone], true, new_file);
         
       }
 
@@ -6519,7 +6561,7 @@ void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned sho
 void COutput::SetMassFlowRate(CSolver *solver_container, CGeometry *geometry, CConfig *config) {
   unsigned short iDim, iMarker_monitor, iMarker;
   unsigned long iVertex, iPoint;
-  double Vector[3],Total_Mdot=0.0;
+  double Vector[3], Total_Mdot=0.0;
   unsigned short nDim = geometry->GetnDim();
 
   for (iMarker = 0; iMarker< config->GetnMarker_Monitoring(); iMarker++) {
@@ -6962,9 +7004,9 @@ void COutput::SetCp_InverseDesign(CSolver *solver_container, CGeometry *geometry
   
   if (!(Surface_file.fail())) {
     
-    getline(Surface_file,text_line);
+    getline(Surface_file, text_line);
     
-    while (getline(Surface_file,text_line)) {
+    while (getline(Surface_file, text_line)) {
       for (icommas = 0; icommas < 50; icommas++) {
         position = text_line.find( ",", 0 );
         if (position!=string::npos) text_line.erase (position,1);
@@ -7120,9 +7162,9 @@ void COutput::SetHeat_InverseDesign(CSolver *solver_container, CGeometry *geomet
   
   if (!(Surface_file.fail())) {
     
-    getline(Surface_file,text_line);
+    getline(Surface_file, text_line);
     
-    while (getline(Surface_file,text_line)) {
+    while (getline(Surface_file, text_line)) {
       for (icommas = 0; icommas < 50; icommas++) {
         position = text_line.find( ",", 0 );
         if (position!=string::npos) text_line.erase (position,1);
@@ -7670,7 +7712,7 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
         
         while (is.good()) {
           string token;
-          getline(is,token,',');
+          getline(is, token,',');
           
           istringstream js(token);
           

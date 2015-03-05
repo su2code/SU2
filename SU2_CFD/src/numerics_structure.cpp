@@ -2560,7 +2560,7 @@ void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar,
 
 	/* Viscous flux Jacobians for arbitrary equations of state */
 
-	//order of val_mean_primitives: T,vx,vy,vz,P,rho,ht
+	//order of val_mean_primitives: T, vx, vy, vz, P, rho, ht
 	//order of secondary:dTdrho_e, dTde_rho
 	unsigned short iDim, iVar, jVar;
 
@@ -2598,7 +2598,7 @@ void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar,
 
 	if (nDim == 2) {
 
-	    /* 2D Jacobian: (Fv1,Fv2,Fv3,Fv4) --> (T,vx,vy,rho) */
+	    /* 2D Jacobian: (Fv1, Fv2, Fv3, Fv4) --> (T, vx, vy, rho) */
 
 		double dTdu3= dTde_rho*(1/rho);
 
@@ -2736,7 +2736,7 @@ void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar,
 //
 //	/* Viscous flux Jacobians for arbitrary equations of state */
 //
-//	// order of primitives: T,vx,vy,vz,P,rho,h,c,MuLam,MuEddy,kt,Cp
+//	// order of primitives: T, vx, vy, vz, P, rho, h, c, MuLam, MuEddy, kt, Cp
 //	// order of secondary: dPdrho_e, dPde_rho, dTdrho_e, dTde_rho, dmudrho_T, dmudT_rho, dktdrho_T, dktdT_rho
 //
 //	unsigned short iDim, iVar, jVar;
@@ -2783,7 +2783,7 @@ void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar,
 //
 //	if (nDim == 2) {
 //
-//	    /* 2D Jacobian: (Fv1,Fv2,Fv3,Fv4) --> (T,vx,vy,rho) */
+//	    /* 2D Jacobian: (Fv1, Fv2, Fv3, Fv4) --> (T, vx, vy, rho) */
 //
 //		double factor1 = 4.0/3.0*pow(val_normal[0],2) + pow(val_normal[1],2);
 //		double factor2 = 1.0/3.0*val_normal[0]*val_normal[1];
@@ -2823,10 +2823,10 @@ void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar,
 //			}
 //		}
 //
-//	    /* 2D Jacobian: (T,vx,vy,rho) --> (u1,u2,u3,u4) */
+//	    /* 2D Jacobian: (T, vx, vy, rho) --> (u1, u2, u3, u4) */
 //		GetPrimitive2Conservative (val_Mean_PrimVar, val_Mean_SecVar, val_Jac_PC);
 //
-//	    /* 2D Jacobian: (Fv1,Fv2,Fv3,Fv4) --> (u1,u2,u3,u4) */
+//	    /* 2D Jacobian: (Fv1, Fv2, Fv3, Fv4) --> (u1, u2, u3, u4) */
 //		for (iVar = 0; iVar < nVar; iVar++) {
 //			for (jVar = 0; jVar < nVar; jVar++) {
 //				for (unsigned short kVar = 0; kVar < nVar; kVar++) {
@@ -2846,7 +2846,7 @@ void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar,
 //	}
 //	else {
 //
-//	    /* 3D Jacobian: (Fv1,Fv2,Fv3,Fv4,Fv5) --> (T,vx,vy,vz,rho) */
+//	    /* 3D Jacobian: (Fv1, Fv2, Fv3, Fv4, Fv5) --> (T, vx, vy, vz, rho) */
 //
 ////		double factor1 = 4.0/3.0*pow(val_normal[0],2) + pow(val_normal[1],2) + pow(val_normal[2],2);
 ////		double factor2 = 1.0/3.0*val_normal[0]*val_normal[1];
@@ -2910,10 +2910,10 @@ void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar,
 //			}
 //		}
 //
-//	    /* 3D Jacobian: (T,vx,vy,vz,rho) --> (u1,u2,u3,u4,u5) */
+//	    /* 3D Jacobian: (T, vx, vy, vz, rho) --> (u1, u2, u3, u4, u5) */
 //		GetPrimitive2Conservative (val_Mean_PrimVar, val_Mean_SecVar, val_Jac_PC);
 //
-//	    /* 3D Jacobian: (Fv1,Fv2,Fv3,Fv4,Fv5) --> (u1,u2,u3,u4,u5) */
+//	    /* 3D Jacobian: (Fv1, Fv2, Fv3, Fv4, Fv5) --> (u1, u2, u3, u4, u5) */
 //		for (iVar = 0; iVar < nVar; iVar++) {
 //			for (jVar = 0; jVar < nVar; jVar++) {
 //				for (unsigned short kVar = 0; kVar < nVar; kVar++) {
@@ -2948,7 +2948,7 @@ void CNumerics::GetPrimitive2Conservative (double *val_Mean_PrimVar, double *val
 
 	unsigned short iVar, jVar, iDim;
 
-	// order of primitives: T,vx,vy,vz,P,rho,h,c,MuLam,MuEddy,kt,Cp
+	// order of primitives: T, vx, vy, vz, P, rho, h, c, MuLam, MuEddy, kt, Cp
 	// order of secondary: dPdrho_e, dPde_rho, dTdrho_e, dTde_rho, dmudrho_T, dmudT_rho, dktdrho_T, dktdT_rho
 
 	double vx = val_Mean_PrimVar[1];
@@ -2973,7 +2973,7 @@ void CNumerics::GetPrimitive2Conservative (double *val_Mean_PrimVar, double *val
     }
   }
 
-  /*--- Primitives to conservatives Jacobian matrix : (T,vx,vy,vz,rho) --> (u1,u2,u3,u4,u5) ---*/
+  /*--- Primitives to conservatives Jacobian matrix : (T, vx, vy, vz, rho) --> (u1, u2, u3, u4, u5) ---*/
   if (nDim == 2) {
 
 	val_Jac_PC[0][0] = dTdrho_e - e/rho*dTde_rho + 0.5*dTde_rho*sqvel/rho;

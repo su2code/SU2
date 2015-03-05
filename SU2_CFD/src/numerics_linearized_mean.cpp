@@ -274,8 +274,8 @@ void CCentLax_LinFlow::ComputeResidual (double *val_resconv, double *val_resvisc
 	MeanLambda = 0.5*(Local_Lambda_i+Local_Lambda_j);
   
 	/*--- Compute stretching factor ---*/
-	Phi_i = pow(Lambda_i/(4.0*MeanLambda),Param_p);
-	Phi_j = pow(Lambda_j/(4.0*MeanLambda),Param_p);
+	Phi_i = pow(Lambda_i/(4.0*MeanLambda), Param_p);
+	Phi_j = pow(Lambda_j/(4.0*MeanLambda), Param_p);
 	StretchingFactor = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j);
   
 	sc2 = 3.0*(double(Neighbor_i)+double(Neighbor_j))/(double(Neighbor_i)*double(Neighbor_j));

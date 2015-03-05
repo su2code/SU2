@@ -136,7 +136,7 @@ CTurbSSTVariable::CTurbSSTVariable(void) : CTurbVariable() { }
 
 CTurbSSTVariable::CTurbSSTVariable(double val_kine, double val_omega, double val_muT, unsigned short val_nDim, unsigned short val_nvar,
                                    double *constants, CConfig *config)
-: CTurbVariable(val_nDim, val_nvar,config) {
+: CTurbVariable(val_nDim, val_nvar, config) {
 
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));

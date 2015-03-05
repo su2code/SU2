@@ -1896,7 +1896,7 @@ void CUpwGeneralRoe_Flow::ComputeResidual(double *val_residual, double **val_Jac
 
 //	/*--- Harten and Hyman (1983) entropy correction ---*/
 //	for (iDim = 0; iDim < nDim; iDim++)
-//		Epsilon[iDim] = 4.0*max(0.0, max(Lambda[iDim]-ProjVelocity_i,ProjVelocity_j-Lambda[iDim]));
+//		Epsilon[iDim] = 4.0*max(0.0, max(Lambda[iDim]-ProjVelocity_i, ProjVelocity_j-Lambda[iDim]));
 //
 //	Epsilon[nVar-2] = 4.0*max(0.0, max(Lambda[nVar-2]-(ProjVelocity_i+SoundSpeed_i),(ProjVelocity_j+SoundSpeed_j)-Lambda[nVar-2]));
 //	Epsilon[nVar-1] = 4.0*max(0.0, max(Lambda[nVar-1]-(ProjVelocity_i-SoundSpeed_i),(ProjVelocity_j-SoundSpeed_j)-Lambda[nVar-1]));
@@ -1956,7 +1956,7 @@ void CUpwGeneralRoe_Flow::ComputeResidual(double *val_residual, double **val_Jac
 
 		/*--- Compute inverse P ---*/
 
-		GetPMatrix_inv(invP_Tensor, &RoeDensity, RoeVelocity, &RoeSoundSpeed,&RoeChi , &RoeKappa, UnitNormal);
+		GetPMatrix_inv(invP_Tensor, &RoeDensity, RoeVelocity, &RoeSoundSpeed, &RoeChi , &RoeKappa, UnitNormal);
 
 		/*--- Jacobians of the inviscid flux, scaled by
         0.5 because val_resconv ~ 0.5*(fc_i+fc_j)*Normal ---*/
@@ -2165,7 +2165,7 @@ void CUpwMSW_Flow::ComputeResidual(double *val_residual,
   
   /*--- Calculate the state weighting function ---*/
   
-  dp = fabs(P_j-P_i) / min(P_j,P_i);
+  dp = fabs(P_j-P_i) / min(P_j, P_i);
   w = 0.5 * (1.0/(pow(alpha*dp,2.0) +1.0));
   onemw = 1.0 - w;
   
@@ -2398,7 +2398,7 @@ void CUpwTurkel_Flow::ComputeResidual(double *val_residual, double **val_Jacobia
     Lambda[iDim] = ProjVelocity;
   
   local_Mach = sqrt(sq_vel)/RoeSoundSpeed;
-  Beta 	   = max(Beta_min,min(local_Mach,Beta_max));
+  Beta 	   = max(Beta_min, min(local_Mach, Beta_max));
   Beta2 	   = Beta*Beta;
   
   one_m_Betasqr 		   = 1.0 - Beta2;  // 1-Beta*Beta
@@ -3040,8 +3040,8 @@ void CCentLaxArtComp_Flow::ComputeResidual(double *val_residual, double **val_Ja
   Local_Lambda_j = fabs(ProjVelocity_j)+SoundSpeed_j;
   MeanLambda = 0.5*(Local_Lambda_i + Local_Lambda_j);
   
-  Phi_i = pow(Lambda_i/(4.0*MeanLambda),Param_p);
-  Phi_j = pow(Lambda_j/(4.0*MeanLambda),Param_p);
+  Phi_i = pow(Lambda_i/(4.0*MeanLambda), Param_p);
+  Phi_j = pow(Lambda_j/(4.0*MeanLambda), Param_p);
   StretchingFactor = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j);
   
   sc0 = 3.0*(double(Neighbor_i)+double(Neighbor_j))/(double(Neighbor_i)*double(Neighbor_j));
@@ -3161,13 +3161,13 @@ CGeneralAvgGrad_Flow::CGeneralAvgGrad_Flow(unsigned short val_nDim, unsigned sho
   
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   
-  /*--- Compressible flow, primitive variables nDim+3, (vx,vy,vz,P,rho,h) ---*/
+  /*--- Compressible flow, primitive variables nDim+3, (vx, vy, vz, P, rho, h) ---*/
   PrimVar_i = new double [nDim+4];
   PrimVar_j = new double [nDim+4];
   Mean_PrimVar = new double [nDim+4];
   Mean_SecVar = new double [2];
   
-  /*--- Compressible flow, primitive gradient variables nDim+3, (T,vx,vy,vz) ---*/
+  /*--- Compressible flow, primitive gradient variables nDim+3, (T, vx, vy, vz) ---*/
   Mean_GradPrimVar = new double* [nDim+1];
   for (iVar = 0; iVar < nDim+1; iVar++)
     Mean_GradPrimVar[iVar] = new double [nDim];
@@ -3269,11 +3269,11 @@ CAvgGradArtComp_Flow::CAvgGradArtComp_Flow(unsigned short val_nDim, unsigned sho
   
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   
-  /*--- Incompressible flow, primitive variables nDim+1, (P,vx,vy,vz) ---*/
+  /*--- Incompressible flow, primitive variables nDim+1, (P, vx, vy, vz) ---*/
   
   Mean_GradPrimVar = new double* [nVar];
   
-  /*--- Incompressible flow, gradient primitive variables nDim+1, (P,vx,vy,vz) ---*/
+  /*--- Incompressible flow, gradient primitive variables nDim+1, (P, vx, vy, vz) ---*/
   
   for (iVar = 0; iVar < nVar; iVar++)
     Mean_GradPrimVar[iVar] = new double [nDim];
@@ -3478,13 +3478,13 @@ void CAvgGradCorrected_Flow::ComputeResidual(double *val_residual, double **val_
 //
 //  implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 //
-//  /*--- Compressible flow, primitive variables nDim+3, (T,vx,vy,vz,P,rho) ---*/
+//  /*--- Compressible flow, primitive variables nDim+3, (T, vx, vy, vz, P, rho) ---*/
 //  PrimVar_i = new double [nDim+3];
 //  PrimVar_j = new double [nDim+3];
 //  Mean_PrimVar = new double [nDim+3];
 //  Mean_SecVar = new double [8];
 //
-//  /*--- Compressible flow, primitive gradient variables nDim+1, (T,vx,vy,vz) ---*/
+//  /*--- Compressible flow, primitive gradient variables nDim+1, (T, vx, vy, vz) ---*/
 //  Proj_Mean_GradPrimVar_Edge = new double [nDim+1];
 //  Mean_GradPrimVar = new double* [nDim+1];
 //  for (iVar = 0; iVar < nDim+1; iVar++)
@@ -3608,13 +3608,13 @@ CGeneralAvgGradCorrected_Flow::CGeneralAvgGradCorrected_Flow(unsigned short val_
   
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   
-  /*--- Compressible flow, primitive variables nDim+3, (vx,vy,vz,P,rho,h) ---*/
+  /*--- Compressible flow, primitive variables nDim+3, (vx, vy, vz, P, rho, h) ---*/
   PrimVar_i = new double [nDim+4];
   PrimVar_j = new double [nDim+4];
   Mean_PrimVar = new double [nDim+4];
   Mean_SecVar = new double [2];
   
-  /*--- Compressible flow, primitive gradient variables nDim+1, (T,vx,vy,vz) ---*/
+  /*--- Compressible flow, primitive gradient variables nDim+1, (T, vx, vy, vz) ---*/
   Proj_Mean_GradPrimVar_Edge = new double [nDim+1];
   Mean_GradPrimVar = new double* [nDim+1];
   for (iVar = 0; iVar < nDim+1; iVar++)

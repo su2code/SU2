@@ -165,7 +165,7 @@ CLinEulerSolver::CLinEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
     /*--- The first line is the header ---*/
     getline (restart_file, text_line);
     
-    while (getline (restart_file,text_line)) {
+    while (getline (restart_file, text_line)) {
 			istringstream point_line(text_line);
       
       /*--- Retrieve local index. If this node from the restart file lives 
@@ -261,7 +261,7 @@ void CLinEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
 
 		/*--- Undivided laplacian ---*/
 		if (second_order) 
-			numerics->SetUndivided_Laplacian(node[iPoint]->GetUndivided_Laplacian(),node[jPoint]->GetUndivided_Laplacian());
+			numerics->SetUndivided_Laplacian(node[iPoint]->GetUndivided_Laplacian(), node[jPoint]->GetUndivided_Laplacian());
 		
 		/*--- Compute residual ---*/
 		numerics->ComputeResidual(Res_Conv, Res_Visc, Jacobian_i, Jacobian_j, config);

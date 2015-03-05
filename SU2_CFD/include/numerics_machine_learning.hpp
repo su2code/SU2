@@ -67,7 +67,7 @@ private:
 
 public:
 	CNormalScaler();
-	CNormalScaler(int,double*,double*);
+	CNormalScaler(int, double*, double*);
 #ifdef HAVE_JSONCPP
   CNormalScaler(Json::Value);
 #endif
@@ -199,7 +199,7 @@ private:
   int** nParameters; // Number of parameters for the neuron
 //  int inputDim;
   
-  void processLayer(double *, int,CNeuron **, double **, int, int * ,double *);
+  void processLayer(double *, int, CNeuron **, double **, int, int * , double *);
   
   //----
 //	int outputDim;
@@ -223,8 +223,8 @@ public:
   CSANondimInputs(int);
   ~CSANondimInputs();
   void Set(SpalartAllmarasInputs*);
-  void NondimensionalizeSource(int,double*);
-  void DimensionalizeSource(int,double*);
+  void NondimensionalizeSource(int, double*);
+  void DimensionalizeSource(int, double*);
   double Chi;
   double OmegaNondim;
   double OmegaBar;

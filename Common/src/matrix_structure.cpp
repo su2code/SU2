@@ -647,7 +647,7 @@ void CSysMatrix::DiagonalProduct(CSysVector & vec, unsigned long row_i) {
   
   for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
     if (col_ind[index] == row_i) {
-      ProdBlockVector(row_i,col_ind[index],vec);
+      ProdBlockVector(row_i, col_ind[index], vec);
       for (iVar = 0; iVar < nVar; iVar++)
         prod_row_vector[iVar] += prod_block_vector[iVar];
     }

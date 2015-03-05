@@ -446,7 +446,7 @@ void CNeurNet::Predict(double * input, double * output) {
   int inputDim = this->nNeuronsInLayer[nLayers-2];
   
   // Last layer has the actual output
-  processLayer(tmpOutput, inputDim, this->neurons[layer], this->parameters[layer], this->nNeuronsInLayer[layer],this->nParameters[layer], output);
+  processLayer(tmpOutput, inputDim, this->neurons[layer], this->parameters[layer], this->nNeuronsInLayer[layer], this->nParameters[layer], output);
   
   // Clean up garbage
   delete [] prevTmpOutput;

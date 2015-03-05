@@ -43,7 +43,7 @@ CSysVector::CSysVector(const unsigned long & size, const double & val) {
   
   /*--- Check for invalid size, then allocate memory and initialize values ---*/
   if ( (nElm <= 0) || (nElm >= UINT_MAX) ) {
-    cerr << "CSysVector::CSysVector(unsigned int,double): "
+    cerr << "CSysVector::CSysVector(unsigned int, double): "
     << "invalid input: size = " << size << endl;
     throw(-1);
   }
@@ -68,7 +68,7 @@ CSysVector::CSysVector(const unsigned long & numBlk, const unsigned long & numBl
   
   /*--- Check for invalid input, then allocate memory and initialize values ---*/
   if ( (nElm <= 0) || (nElm >= ULONG_MAX) ) {
-    cerr << "CSysVector::CSysVector(unsigned int,unsigned int,double): "
+    cerr << "CSysVector::CSysVector(unsigned int, unsigned int, double): "
     << "invalid input: numBlk, numVar = " << numBlk << "," << numVar << endl;
     throw(-1);
   }
@@ -138,7 +138,7 @@ CSysVector::CSysVector(const unsigned long & numBlk, const unsigned long & numBl
   
   /*--- check for invalid input, then allocate memory and initialize values ---*/
   if ( (nElm <= 0) || (nElm >= ULONG_MAX) ) {
-    cerr << "CSysVector::CSysVector(unsigned int,unsigned int,double*): "
+    cerr << "CSysVector::CSysVector(unsigned int, unsigned int, double*): "
     << "invalid input: numBlk, numVar = " << numBlk << "," << numVar << endl;
     throw(-1);
   }
@@ -171,7 +171,7 @@ void CSysVector::Initialize(const unsigned long & numBlk, const unsigned long & 
   
   /*--- Check for invalid input, then allocate memory and initialize values ---*/
   if ( (nElm <= 0) || (nElm >= ULONG_MAX) ) {
-    cerr << "CSysVector::CSysVector(unsigned int,unsigned int,double): "
+    cerr << "CSysVector::CSysVector(unsigned int, unsigned int, double): "
     << "invalid input: numBlk, numVar = " << numBlk << "," << numVar << endl;
     throw(-1);
   }
@@ -331,7 +331,7 @@ CSysVector & CSysVector::operator/=(const double & val) {
 double CSysVector::norm() const {
   
   /*--- just call dotProd on this*, then sqrt ---*/
-  double val = dotProd(*this,*this);
+  double val = dotProd(*this, *this);
   if (val < 0.0) {
     cerr << "CSysVector::norm(): " << "inner product of CSysVector is negative";
     throw(-1);
@@ -394,7 +394,7 @@ double dotProd(const CSysVector & u, const CSysVector & v) {
   
   /*--- check for consistent sizes ---*/
   if (u.nElm != v.nElm) {
-    cerr << "CSysVector friend dotProd(CSysVector,CSysVector): "
+    cerr << "CSysVector friend dotProd(CSysVector, CSysVector): "
     << "CSysVector sizes do not match";
     throw(-1);
   }
