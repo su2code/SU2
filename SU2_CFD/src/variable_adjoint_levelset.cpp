@@ -48,7 +48,7 @@ CAdjLevelSetVariable::CAdjLevelSetVariable(unsigned short val_nDim, unsigned sho
 }
 
 CAdjLevelSetVariable::CAdjLevelSetVariable(double val_levelset, unsigned short val_nDim, unsigned short val_nvar, CConfig *config)
-: CVariable(val_nDim, val_nvar,config) {
+: CVariable(val_nDim, val_nvar, config) {
 	
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));

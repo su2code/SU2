@@ -63,13 +63,13 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
     /*--- Dynamic mesh update ---*/
     
 		if ((config_container[iZone]->GetGrid_Movement()) && (!time_spectral)) {
-			SetGrid_Movement(geometry_container[iZone], surface_movement[iZone], grid_movement[iZone], FFDBox[iZone], solver_container[iZone],config_container[iZone], iZone, IntIter, ExtIter);
+			SetGrid_Movement(geometry_container[iZone], surface_movement[iZone], grid_movement[iZone], FFDBox[iZone], solver_container[iZone], config_container[iZone], iZone, IntIter, ExtIter);
     }
     
     /*--- Apply a Wind Gust ---*/
     
     if (config_container[ZONE_0]->GetWind_Gust()) {
-      SetWind_GustField(config_container[iZone],geometry_container[iZone],solver_container[iZone]);
+      SetWind_GustField(config_container[iZone], geometry_container[iZone], solver_container[iZone]);
     }
 	}
   
@@ -682,7 +682,7 @@ void FEAIteration(COutput *output, CIntegration ***integration_container, CGeome
     
     if (config_container[iZone]->GetGrid_Movement())
       SetGrid_Movement(geometry_container[iZone], surface_movement[iZone],
-                       grid_movement[iZone], FFDBox[iZone], solver_container[iZone],config_container[iZone], iZone, IntIter, ExtIter);
+                       grid_movement[iZone], FFDBox[iZone], solver_container[iZone], config_container[iZone], iZone, IntIter, ExtIter);
     
 		/*--- Set the value of the internal iteration ---*/
     
@@ -855,7 +855,7 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
   
   // Vortex variables
   unsigned long nVortex = 0;
-  std::vector<double> x0,y0,vort_strenth,r_core; //vortex is positive in clockwise direction.
+  std::vector<double> x0, y0, vort_strenth, r_core; //vortex is positive in clockwise direction.
   if (Gust_Type == VORTEX) {
     InitializeVortexDistribution(nVortex, x0, y0, vort_strenth, r_core);
   }
@@ -995,7 +995,7 @@ void InitializeVortexDistribution(unsigned long &nVortex, vector<double>& x0, ve
   /*--- Read in Vortex Distribution ---*/
   std::string line;
   std::ifstream file;
-  double x_temp,y_temp,vort_strength_temp,r_core_temp;
+  double x_temp, y_temp, vort_strength_temp, r_core_temp;
   file.open("vortex_distribution.txt");
   /*--- In case there is no vortex file ---*/
   if (file.fail()) {
@@ -1005,11 +1005,11 @@ void InitializeVortexDistribution(unsigned long &nVortex, vector<double>& x0, ve
   }
   
   // Ignore line containing the header
-  getline(file,line);
-  // Read in the information of the vortices (xloc, yloc, lambda(strenght), eta(size,gradient))
+  getline(file, line);
+  // Read in the information of the vortices (xloc, yloc, lambda(strenght), eta(size, gradient))
   while (file.good())
   {
-    getline(file,line);
+    getline(file, line);
     std::stringstream ss(line);
     if (line.size() != 0) { //ignore blank lines if they exist.
       ss >> x_temp;
@@ -1440,10 +1440,10 @@ void SetTimeSpectral(CGeometry ***geometry_container, CSolver ****solver_contain
         /*--- Store sources for current row ---*/
         for (iVar = 0; iVar < nVar; iVar++) {
           if (!adjoint) {
-            solver_container[iZone][iMGlevel][FLOW_SOL]->node[iPoint]->SetTimeSpectral_Source(iVar,Source[iVar]);
+            solver_container[iZone][iMGlevel][FLOW_SOL]->node[iPoint]->SetTimeSpectral_Source(iVar, Source[iVar]);
           } 
           else {
-            solver_container[iZone][iMGlevel][ADJFLOW_SOL]->node[iPoint]->SetTimeSpectral_Source(iVar,Source[iVar]);
+            solver_container[iZone][iMGlevel][ADJFLOW_SOL]->node[iPoint]->SetTimeSpectral_Source(iVar, Source[iVar]);
           }
         }
         
@@ -1469,7 +1469,7 @@ void SetTimeSpectral(CGeometry ***geometry_container, CSolver ****solver_contain
 	//				}
 	//				/*--- Store sources for current iZone ---*/
 	//				for (iVar = 0; iVar < nVar; iVar++)
-	//					solver_container[iZone][iMGlevel][FLOW_SOL]->node[iPoint]->SetTimeSpectral_Source(iVar,Source[iVar]);
+	//					solver_container[iZone][iMGlevel][FLOW_SOL]->node[iPoint]->SetTimeSpectral_Source(iVar, Source[iVar]);
 	//			}
 	//		}
 	//	}
@@ -1497,7 +1497,7 @@ void SetTimeSpectral(CGeometry ***geometry_container, CSolver ****solver_contain
         
         /*--- Store sources for current iZone ---*/
         for (iVar = 0; iVar < nVar_Turb; iVar++)
-          solver_container[iZone][MESH_0][TURB_SOL]->node[iPoint]->SetTimeSpectral_Source(iVar,Source_Turb[iVar]);
+          solver_container[iZone][MESH_0][TURB_SOL]->node[iPoint]->SetTimeSpectral_Source(iVar, Source_Turb[iVar]);
     }
     
     delete [] U_Turb;

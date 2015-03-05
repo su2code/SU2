@@ -57,7 +57,7 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
   
 	node = new CVariable*[geometry->GetnPoint()];
 	
-	/*--- Dimension of the problem --> 2 Transport equations (intermittency,Reth) ---*/
+	/*--- Dimension of the problem --> 2 Transport equations (intermittency, Reth) ---*/
 	nVar = 2;
 	
 	if (iMesh == MESH_0) {
@@ -167,7 +167,7 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
 		}
 		
 		for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-			getline(restart_file,text_line);
+			getline(restart_file, text_line);
 			istringstream point_line(text_line);
 			if (nDim == 2) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
 			if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
@@ -243,7 +243,7 @@ void CTransLMSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
     
     Delta_flow = Vol / (solver_container[FLOW_SOL]->node[iPoint]->GetDelta_Time());
     Delta = Delta_flow;
-    Jacobian.AddVal2Diag(iPoint,Delta);
+    Jacobian.AddVal2Diag(iPoint, Delta);
     
     for (iVar = 0; iVar < nVar; iVar++) {
       total_index = iPoint*nVar+iVar;
@@ -308,7 +308,7 @@ void CTransLMSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_conta
     /*--- Transition variables w/o reconstruction ---*/
     trans_var_i = node[iPoint]->GetSolution();
     trans_var_j = node[jPoint]->GetSolution();
-    numerics->SetTransVar(trans_var_i,trans_var_j);
+    numerics->SetTransVar(trans_var_i, trans_var_j);
 
     /*--- Add and subtract Residual ---*/
     numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
@@ -316,10 +316,10 @@ void CTransLMSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_conta
     LinSysRes.SubtractBlock(jPoint, Residual);
 
     /*--- Implicit part ---*/
-    Jacobian.AddBlock(iPoint,iPoint,Jacobian_i);
-    Jacobian.AddBlock(iPoint,jPoint,Jacobian_j);
-    Jacobian.SubtractBlock(jPoint,iPoint,Jacobian_i);
-    Jacobian.SubtractBlock(jPoint,jPoint,Jacobian_j);
+    Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+    Jacobian.AddBlock(iPoint, jPoint, Jacobian_j);
+    Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
+    Jacobian.SubtractBlock(jPoint, jPoint, Jacobian_j);
 
   }
 
@@ -368,10 +368,10 @@ void CTransLMSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_cont
     LinSysRes.SubtractBlock(iPoint, Residual);
     LinSysRes.AddBlock(jPoint, Residual);
     
-    Jacobian.SubtractBlock(iPoint,iPoint,Jacobian_i);
-    Jacobian.SubtractBlock(iPoint,jPoint,Jacobian_j);
-    Jacobian.AddBlock(jPoint,iPoint,Jacobian_i);
-    Jacobian.AddBlock(jPoint,jPoint,Jacobian_j);
+    Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+    Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
+    Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
+    Jacobian.AddBlock(jPoint, jPoint, Jacobian_j);
     
   }
 }
@@ -423,7 +423,7 @@ void CTransLMSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 		/*--- Subtract residual and the Jacobian ---*/
     
 		LinSysRes.SubtractBlock(iPoint, Residual);
-    Jacobian.SubtractBlock(iPoint,iPoint,Jacobian_i);
+    Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
 
 	}
 }
@@ -478,7 +478,7 @@ void CTransLMSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 //      cout << "Implicit part -AA" << endl;
 			/*--- Jacobian contribution for implicit integration ---*/
 			if (implicit) {
-        Jacobian.AddBlock(iPoint,iPoint,Jacobian_i);
+        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
       }
     }
   }

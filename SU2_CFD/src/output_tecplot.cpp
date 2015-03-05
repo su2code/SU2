@@ -49,6 +49,7 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
   string filename;
   
   /*--- Write file name with extension ---*/
+  
   if (surf_sol) {
     if (adjoint) filename = config->GetSurfAdjCoeff_FileName();
     else filename = config->GetSurfFlowCoeff_FileName();
@@ -74,49 +75,43 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
     else filename = config->GetHeat_FileName().c_str();
   }
   
-  if (Kind_Solver == POISSON_EQUATION)
-  filename = config->GetStructure_FileName().c_str();
-  
-  strcpy (cstr, filename.c_str());
-  if (Kind_Solver == POISSON_EQUATION) strcpy (cstr, config->GetStructure_FileName().c_str());
-  
-  /*--- Special cases where a number needs to be appended to the file name. ---*/
-  if ((Kind_Solver == EULER || Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS) &&
-      (val_nZone > 1) && (config->GetUnsteady_Simulation() != TIME_SPECTRAL)) {
-    sprintf (buffer, "_%d", int(val_iZone));
-    strcat(cstr,buffer);
+  if (Kind_Solver == POISSON_EQUATION) {
+    if (surf_sol) filename = config->GetSurfStructure_FileName().c_str();
+    else filename = config->GetStructure_FileName().c_str();
   }
   
+  strcpy (cstr, filename.c_str());
+  
   /*--- Special cases where a number needs to be appended to the file name. ---*/
-  if (((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS)) &&
+  
+  if ((Kind_Solver == EULER || Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS ||
+       Kind_Solver == ADJ_EULER || Kind_Solver == ADJ_NAVIER_STOKES || Kind_Solver == ADJ_RANS) &&
       (val_nZone > 1) && (config->GetUnsteady_Simulation() != TIME_SPECTRAL)) {
     sprintf (buffer, "_%d", int(val_iZone));
-    strcat(cstr,buffer);
+    strcat(cstr, buffer);
   }
   
   if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
     
-    /*--- SU2_SOL requires different names. It is only called for parallel cases. ---*/
-    if (config->GetKind_SU2() == SU2_SOL) {
-      val_iZone = iExtIter;
-    }
+    if (config->GetKind_SU2() == SU2_SOL) { val_iZone = iExtIter; }
+    
     if (int(val_iZone) < 10) sprintf (buffer, "_0000%d.dat", int(val_iZone));
     if ((int(val_iZone) >= 10) && (int(val_iZone) < 100)) sprintf (buffer, "_000%d.dat", int(val_iZone));
     if ((int(val_iZone) >= 100) && (int(val_iZone) < 1000)) sprintf (buffer, "_00%d.dat", int(val_iZone));
     if ((int(val_iZone) >= 1000) && (int(val_iZone) < 10000)) sprintf (buffer, "_0%d.dat", int(val_iZone));
     if (int(val_iZone) >= 10000) sprintf (buffer, "_%d.dat", int(val_iZone));
     
-  } else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
+  }
+  else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
     if (int(iExtIter) < 10) sprintf (buffer, "_0000%d.dat", int(iExtIter));
     if ((int(iExtIter) >= 10) && (int(iExtIter) < 100)) sprintf (buffer, "_000%d.dat", int(iExtIter));
     if ((int(iExtIter) >= 100) && (int(iExtIter) < 1000)) sprintf (buffer, "_00%d.dat", int(iExtIter));
     if ((int(iExtIter) >= 1000) && (int(iExtIter) < 10000)) sprintf (buffer, "_0%d.dat", int(iExtIter));
     if (int(iExtIter) >= 10000) sprintf (buffer, "_%d.dat", int(iExtIter));
-  } else {
-    sprintf (buffer, ".dat");
   }
+  else { sprintf (buffer, ".dat"); }
   
-  strcat(cstr,buffer);
+  strcat(cstr, buffer);
   
   /*--- Open Tecplot ASCII file and write the header. ---*/
   ofstream Tecplot_File;
@@ -429,7 +424,7 @@ void COutput::SetTecplotASCII_LowMemory(CConfig *config, CGeometry *geometry, CS
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   int size = SINGLE_NODE;
-  MPI_Comm_size(MPI_COMM_WORLD,&size);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
@@ -2531,7 +2526,7 @@ void COutput::SetTecplotBinary_SurfaceSolution(CConfig *config, CGeometry *geome
   
 }
 
-string AssembleVariableNames(CGeometry *geometry, CConfig *config, unsigned short nVar_Consv, unsigned short *NVar) {
+string COutput::AssembleVariableNames(CGeometry *geometry, CConfig *config, unsigned short nVar_Consv, unsigned short *NVar) {
   
   /*--- Local variables ---*/
   stringstream variables; variables.str(string());
@@ -2554,7 +2549,7 @@ string AssembleVariableNames(CGeometry *geometry, CConfig *config, unsigned shor
      We simply read in and remove the quotation marks from the var names. ---*/
     
     /*--- Set the number of variables to be written. Subtract off an index for
-     the PointID as well as each coordinate (x,y,z). ---*/
+     the PointID as well as each coordinate (x, y, z). ---*/
     string varname;
     
     if (Wrt_Unsteady && grid_movement) {

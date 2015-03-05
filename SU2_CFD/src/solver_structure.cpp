@@ -380,7 +380,7 @@ void CSolver::SetAuxVar_Gradient_GG(CGeometry *geometry) {
       Gradient = node[iPoint]->GetAuxVarGradient();
       DualArea = geometry->node[iPoint]->GetVolume();
       Grad_Val = Gradient[iDim]/(DualArea+EPS);
-      node[iPoint]->SetAuxVarGradient(iDim,Grad_Val);
+      node[iPoint]->SetAuxVarGradient(iDim, Grad_Val);
     }
 }
 
@@ -544,7 +544,7 @@ void CSolver::SetSolution_Gradient_GG(CGeometry *geometry, CConfig *config) {
         for (iDim = 0; iDim < nDim; iDim++) {
           Partial_Res = Solution_Vertex[iVar]*Normal[iDim];
           if (geometry->node[Point]->GetDomain())
-            node[Point]->SubtractGradient(iVar,iDim, Partial_Res);
+            node[Point]->SubtractGradient(iVar, iDim, Partial_Res);
         }
     }
   }
@@ -556,7 +556,7 @@ void CSolver::SetSolution_Gradient_GG(CGeometry *geometry, CConfig *config) {
         Gradient = node[iPoint]->GetGradient();
         DualArea = geometry->node[iPoint]->GetVolume();
         Grad_Val = Gradient[iVar][iDim] / (DualArea+EPS);
-        node[iPoint]->SetGradient(iVar,iDim,Grad_Val);
+        node[iPoint]->SetGradient(iVar, iDim, Grad_Val);
       }
   
   /*--- Gradient MPI ---*/
@@ -688,7 +688,7 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config) {
         product = 0.0;
         for (jDim = 0; jDim < nDim; jDim++)
           product += Smatrix[iDim][jDim]*cvector[iVar][jDim];
-        node[iPoint]->SetGradient(iVar,iDim,product);
+        node[iPoint]->SetGradient(iVar, iDim, product);
       }
     }
     
@@ -798,7 +798,7 @@ void CSolver::SetGridVel_Gradient(CGeometry *geometry, CConfig *config) {
         product = 0.0;
         for (jDim = 0; jDim < nDim; jDim++)
           product += Smatrix[iDim][jDim]*cvector[iVar][jDim];
-        geometry->node[iPoint]->SetGridVel_Grad(iVar,iDim,product);
+        geometry->node[iPoint]->SetGridVel_Grad(iVar, iDim, product);
       }
     }
   }
@@ -1391,7 +1391,7 @@ void CSolver::Aeroelastic(CSurfaceMovement *surface_movement, CGeometry *geometr
   
 }
 
-void CSolver::SetUpTypicalSectionWingModel(double (&PHI)[2][2],double (&lambda)[2], CConfig *config) {
+void CSolver::SetUpTypicalSectionWingModel(double (&PHI)[2][2], double (&lambda)[2], CConfig *config) {
   
   /*--- Retrieve values from the config file ---*/
   double w_h = config->GetAeroelastic_Frequency_Plunge();
@@ -1402,9 +1402,9 @@ void CSolver::SetUpTypicalSectionWingModel(double (&PHI)[2][2],double (&lambda)[
   double r_a2 = 3.48;
   
   // Mass Matrix
-  // double M[2][2] = {{1,x_a},{x_a,r_a2}};
+  // double M[2][2] = {{1,x_a},{x_a, r_a2}};
   // Stiffness Matrix
-  double K[2][2] = {{(w_h/w_a)*(w_h/w_a),0},{0,r_a2}};
+  double K[2][2] = {{(w_h/w_a)*(w_h/w_a),0},{0, r_a2}};
   
   
   /* Eigenvector and Eigenvalue Matrices of the Generalized EigenValue Problem. */
@@ -1499,7 +1499,7 @@ void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, double Cl, doubl
   /*--- Eigenvectors and Eigenvalues of the Generalized EigenValue Problem. ---*/
   double PHI[2][2];   // generalized eigenvectors.
   double w[2];        //generalized eigenvalues.
-  SetUpTypicalSectionWingModel(PHI,w,config);
+  SetUpTypicalSectionWingModel(PHI, w, config);
   
   /*--- Solving the Decoupled Aeroelastic Problem with second order time discretization Eq (9) ---*/
   
@@ -1589,8 +1589,8 @@ void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, double Cl, doubl
   pitch = config->GetAeroelastic_pitch(iMarker);
   plunge = config->GetAeroelastic_plunge(iMarker);
   
-  config->SetAeroelastic_pitch(iMarker ,pitch+dalpha);
-  config->SetAeroelastic_plunge(iMarker ,plunge+dh/b);
+  config->SetAeroelastic_pitch(iMarker , pitch+dalpha);
+  config->SetAeroelastic_plunge(iMarker , plunge+dh/b);
   
   /*--- Set the Aeroelastic solution at time n+1. This gets update every sudo time step
    and after convering the sudo time step the solution at n+1 get moved to the solution at n
@@ -1976,7 +1976,7 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   /*--- The first line is the header ---*/
   getline (solution_file, text_line);
   
-  while (getline (solution_file,text_line)) {
+  while (getline (solution_file, text_line)) {
     istringstream point_line(text_line);
     
     /*--- Retrieve local index. If this node from the restart file lives

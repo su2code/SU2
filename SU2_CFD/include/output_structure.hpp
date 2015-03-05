@@ -74,7 +74,7 @@ class COutput {
 	nGlobal_Hexa,
 	nGlobal_Pris,
 	nGlobal_Pyra;
-	double **Coords;              // node i (x,y,z) = (Coords[0][i], Coords[1][i], Coords[2][i])
+	double **Coords;              // node i (x, y, z) = (Coords[0][i], Coords[1][i], Coords[2][i])
   int *Conn_Line;
   int *Conn_BoundTria;
 	int *Conn_BoundQuad;
@@ -287,7 +287,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] val_iZone - iZone index.
 	 */
-	void SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,unsigned short val_iZone);
+	void SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
 
   /*!
 	 * \brief Write the x, y, & z coordinates to a CGNS output file.
@@ -344,7 +344,7 @@ public:
    * \param[in] val_iZone - Current zone.
    * \param[in] val_nZone - Total number of zones.
 	 */
-	void SetTecplotASCII(CConfig *config, CGeometry *geometry,CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol);
+	void SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol);
   
   /*!
    * \brief Write the nodal coordinates and connectivity to a Tecplot binary mesh file.
@@ -417,7 +417,7 @@ public:
    * \param[in] val_iZone - Current zone.
    * \param[in] val_nZone - Total number of zones.
    */
-  void SetFieldViewASCII(CConfig *config, CGeometry *geometry,CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol);
+  void SetFieldViewASCII(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone);
   
   /*!
    * \brief Write the nodal coordinates and connectivity to a Tecplot binary mesh file.
@@ -425,7 +425,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] val_iZone - iZone index.
    */
-  void SetFieldViewASCII_Mesh(CConfig *config, CGeometry *geometry, bool surf_sol, bool new_file);
+  void SetFieldViewASCII_Mesh(CConfig *config, CGeometry *geometry);
   
   /*!
    * \brief Write the nodal coordinates and connectivity to a Tecplot binary mesh file.
@@ -433,7 +433,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] val_iZone - iZone index.
    */
-  void SetFieldViewBinary_Mesh(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
+  void SetFieldViewBinary_Mesh(CConfig *config, CGeometry *geometry);
   
   /*!
    * \brief Write solution data to a Tecplot binary volume solution file.
@@ -441,7 +441,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] val_iZone - iZone index.
    */
-  void SetFieldViewBinary(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
+  void SetFieldViewBinary(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone);
   
   /*!
 	 * \brief Deallocate temporary memory needed for merging and writing coordinates.

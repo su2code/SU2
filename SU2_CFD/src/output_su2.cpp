@@ -142,7 +142,7 @@ void COutput::SetSU2_MeshASCII(CConfig *config, CGeometry *geometry) {
       
       for (iMarker = 0 ; iMarker < nMarker_; iMarker++) {
         
-        getline (input_file,text_line);
+        getline (input_file, text_line);
         text_line.erase (0,11);
         string::size_type position;
         for (iChar = 0; iChar < 20; iChar++) {

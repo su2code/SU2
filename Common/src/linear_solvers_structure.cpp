@@ -45,13 +45,13 @@ void CSysSolve::GenerateGivens(double & dx, double & dy, double & s, double & c)
   else if ( fabs(dy) > fabs(dx) ) {
     double tmp = dx/dy;
     dx = sqrt(1.0 + tmp*tmp);
-    s = Sign(1.0/dx,dy);
+    s = Sign(1.0/dx, dy);
     c = tmp*s;
   }
   else if ( fabs(dy) <= fabs(dx) ) {
     double tmp = dy/dx;
     dy = sqrt(1.0 + tmp*tmp);
-    c = Sign(1.0/dy,dx);
+    c = Sign(1.0/dy, dx);
     s = tmp*c;
   }
   else {
@@ -97,7 +97,7 @@ void CSysSolve::ModGramSchmidt(int i, vector<vector<double> > & Hsbg, vector<CSy
   /*--- Get the norm of the vector being orthogonalized, and find the
   threshold for re-orthogonalization ---*/
   
-  double nrm = dotProd(w[i+1],w[i+1]);
+  double nrm = dotProd(w[i+1], w[i+1]);
   double thr = nrm*reorth;
   
   /*--- The norm of w[i+1] < 0.0 or w[i+1] = NaN ---*/
@@ -148,14 +148,14 @@ void CSysSolve::ModGramSchmidt(int i, vector<vector<double> > & Hsbg, vector<CSy
   /*--- Begin main Gram-Schmidt loop ---*/
   
   for (int k = 0; k < i+1; k++) {
-    double prod = dotProd(w[i+1],w[k]);
+    double prod = dotProd(w[i+1], w[k]);
     Hsbg[k][i] = prod;
     w[i+1].Plus_AX(-prod, w[k]);
     
     /*--- Check if reorthogonalization is necessary ---*/
     
     if (prod*prod > thr) {
-      prod = dotProd(w[i+1],w[k]);
+      prod = dotProd(w[i+1], w[k]);
       Hsbg[k][i] += prod;
       w[i+1].Plus_AX(-prod, w[k]);
     }
@@ -229,7 +229,7 @@ int rank = 0;
   CSysVector A_p(b);
   
   /*--- Calculate the initial residual, compute norm, and check if system is already solved ---*/
-  mat_vec(x,A_p);
+  mat_vec(x, A_p);
   
   r -= A_p; // recall, r holds b initially
   double norm_r = r.norm();
@@ -363,7 +363,7 @@ int rank = 0;
   /*---  Calculate the initial residual (actually the negative residual)
 	 and compute its norm ---*/
   
-  mat_vec(x,w[0]);
+  mat_vec(x, w[0]);
   w[0] -= b;
   
   double beta = w[0].norm();
@@ -498,7 +498,7 @@ unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x,
   
   /*--- Calculate the initial residual, compute norm, and check if system is already solved ---*/
   
-	mat_vec(x,A_x);
+	mat_vec(x, A_x);
   r -= A_x; r_0 = r; // recall, r holds b initially
   double norm_r = r.norm();
   double norm0 = b.norm();
