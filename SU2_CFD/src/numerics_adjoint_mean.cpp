@@ -81,7 +81,7 @@ CUpwRoe_AdjFlow::~CUpwRoe_AdjFlow(void) {
 }
 
 void CUpwRoe_AdjFlow::ComputeResidual (double *val_residual_i, double *val_residual_j, double **val_Jacobian_ii,
-                                       double **val_Jacobian_ij, double **val_Jacobian_ji, double **val_Jacobian_jj,CConfig *config) {
+                                       double **val_Jacobian_ij, double **val_Jacobian_ji, double **val_Jacobian_jj, CConfig *config) {
   
 	/*--- Compute the area ---*/
   
@@ -211,7 +211,7 @@ void CUpwRoe_AdjFlow::ComputeResidual (double *val_residual_i, double *val_resid
 	l1l2p  = (l2psi + c * l1psi) * absQp;
 	l1l2m  = (l2psi - c * l1psi) * absQm;
   
-	/*--- adjoint flux computation in the x,y and z coordinate system ---*/
+	/*--- adjoint flux computation in the x, y and z coordinate system ---*/
   
 	Residual_Roe[0] = ((1.0-alpha)*l2psi - (1.0-alpha)*cc/Gamma_Minus_One*psi5
                      - u*beta_u*(1.0-(nx*nx)) - v*beta_v*(1.0-(ny*ny))
@@ -381,7 +381,7 @@ CUpwRoeArtComp_AdjFlow::~CUpwRoeArtComp_AdjFlow(void) {
 }
 
 void CUpwRoeArtComp_AdjFlow::ComputeResidual (double *val_residual_i, double *val_residual_j, double **val_Jacobian_ii,
-                                          double **val_Jacobian_ij, double **val_Jacobian_ji, double **val_Jacobian_jj,CConfig *config) {
+                                          double **val_Jacobian_ij, double **val_Jacobian_ji, double **val_Jacobian_jj, CConfig *config) {
   
 	/*--- Compute face area ---*/
   
@@ -1526,10 +1526,10 @@ CAvgGradArtComp_AdjFlow::CAvgGradArtComp_AdjFlow(unsigned short val_nDim, unsign
   
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   
-  /*--- Incompressible flow, primitive variables nDim+1, (P,vx,vy,vz) ---*/
+  /*--- Incompressible flow, primitive variables nDim+1, (P, vx, vy, vz) ---*/
   Mean_GradPsiVar = new double* [nVar];
   
-  /*--- Incompressible flow, gradient primitive variables nDim+1, (P,vx,vy,vz) ---*/
+  /*--- Incompressible flow, gradient primitive variables nDim+1, (P, vx, vy, vz) ---*/
   for (iVar = 0; iVar < nVar; iVar++)
     Mean_GradPsiVar[iVar] = new double [nDim];
   
@@ -2000,7 +2000,7 @@ void CSourceConservative_AdjFlow::ComputeResidual (double *val_residual, CConfig
 		fv1 = Ji_3/(Ji_3+cv1_3);
 		one_o_oneplusJifv1 = 1.0/(1.0+Ji*fv1);
 		fv2 = 1.0 - Ji*one_o_oneplusJifv1;
-		Shat = max(Omega + TurbVar_i[0]*fv2/(k2*dist_sq),TURB_EPS);
+		Shat = max(Omega + TurbVar_i[0]*fv2/(k2*dist_sq), TURB_EPS);
     
 		r = min(TurbVar_i[0]/(Shat*k2*dist_sq),10.);
 		g = r + cw2*(pow(r,6.)-r);
@@ -2055,7 +2055,7 @@ void CSourceConservative_AdjFlow::ComputeResidual (double *val_residual, CConfig
 		fv1 = Ji_3/(Ji_3+cv1_3);
 		one_o_oneplusJifv1 = 1.0/(1.0+Ji*fv1);
 		fv2 = 1.0 - Ji*one_o_oneplusJifv1;
-		Shat = max(Omega + TurbVar_j[0]*fv2/(k2*dist_sq),TURB_EPS);
+		Shat = max(Omega + TurbVar_j[0]*fv2/(k2*dist_sq), TURB_EPS);
     
 		r = min(TurbVar_j[0]/(Shat*k2*dist_sq),10.);
 		g = r + cw2*(pow(r,6.)-r);

@@ -88,11 +88,11 @@ void CVolumetricMovement::UpdateMultiGrid(CGeometry **geometry, CConfig *config)
   
   for (iMGlevel = 1; iMGlevel <= nMGlevel; iMGlevel++) {
     iMGfine = iMGlevel-1;
-    geometry[iMGlevel]->SetControlVolume(config,geometry[iMGfine], UPDATE);
-    geometry[iMGlevel]->SetBoundControlVolume(config,geometry[iMGfine],UPDATE);
+    geometry[iMGlevel]->SetControlVolume(config, geometry[iMGfine], UPDATE);
+    geometry[iMGlevel]->SetBoundControlVolume(config, geometry[iMGfine],UPDATE);
     geometry[iMGlevel]->SetCoord(geometry[iMGfine]);
     if (config->GetGrid_Movement())
-      geometry[iMGlevel]->SetRestricted_GridVelocity(geometry[iMGfine],config);
+      geometry[iMGlevel]->SetRestricted_GridVelocity(geometry[iMGfine], config);
   }
  
 }
@@ -290,7 +290,7 @@ double CVolumetricMovement::Check_Grid(CGeometry *geometry) {
     if (geometry->elem[iElem]->GetVTK_Type() == RECTANGLE)    nNodes = 4;
     if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  nNodes = 4;
     if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      nNodes = 5;
-    if (geometry->elem[iElem]->GetVTK_Type() == WEDGE)        nNodes = 6;
+    if (geometry->elem[iElem]->GetVTK_Type() == PRISM)        nNodes = 6;
     if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)   nNodes = 8;
     
     for (iNodes = 0; iNodes < nNodes; iNodes++) {
@@ -321,7 +321,7 @@ double CVolumetricMovement::Check_Grid(CGeometry *geometry) {
       
       if (nNodes == 4) Volume = GetTetra_Volume(CoordCorners);
       if (nNodes == 5) Volume = GetPyram_Volume(CoordCorners);
-      if (nNodes == 6) Volume = GetWedge_Volume(CoordCorners);
+      if (nNodes == 6) Volume = GetPrism_Volume(CoordCorners);
       if (nNodes == 8) Volume = GetHexa_Volume(CoordCorners);
       
       if (Volume >= -EPS) RightVol = true;
@@ -570,7 +570,7 @@ double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometry, 
     if (geometry->elem[iElem]->GetVTK_Type() == RECTANGLE)    nNodes = 4;
     if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  nNodes = 4;
     if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      nNodes = 5;
-    if (geometry->elem[iElem]->GetVTK_Type() == WEDGE)        nNodes = 6;
+    if (geometry->elem[iElem]->GetVTK_Type() == PRISM)        nNodes = 6;
     if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)   nNodes = 8;
     
     for (iNodes = 0; iNodes < nNodes; iNodes++) {
@@ -893,7 +893,7 @@ double CVolumetricMovement::ShapeFunc_Pyram(double Xi, double Eta, double Zeta, 
   
 }
 
-double CVolumetricMovement::ShapeFunc_Wedge(double Xi, double Eta, double Zeta, double CoordCorners[8][3], double DShapeFunction[8][4]) {
+double CVolumetricMovement::ShapeFunc_Prism(double Xi, double Eta, double Zeta, double CoordCorners[8][3], double DShapeFunction[8][4]) {
   
   int i, j, k;
   double c0, c1, c2, xsj;
@@ -1191,7 +1191,7 @@ double CVolumetricMovement::GetPyram_Volume(double CoordCorners[8][3]) {
 
 }
 
-double CVolumetricMovement::GetWedge_Volume(double CoordCorners[8][3]) {
+double CVolumetricMovement::GetPrism_Volume(double CoordCorners[8][3]) {
   
   unsigned short iDim;
   double *Coord_0, *Coord_1, *Coord_2, *Coord_3;
@@ -1515,7 +1515,7 @@ void CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, CConfig *con
     Location[4][0] = 0.0;   Location[4][1] = 0.0;   Location[4][2] = 0.6372983346207416;  Weight[4] = 0.133333333333333;
   }
   
-  /*--- Wedge. Nodes of numerical integration at 6 points (order 3 in Xi, order 2 in Eta and Mu ). ---*/
+  /*--- Prism. Nodes of numerical integration at 6 points (order 3 in Xi, order 2 in Eta and Mu ). ---*/
   
   if (nNodes == 6) {
     nGauss = 6;
@@ -1547,7 +1547,7 @@ void CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, CConfig *con
     
     if (nNodes == 4) Det = ShapeFunc_Tetra(Xi, Eta, Zeta, CoordCorners, DShapeFunction);
     if (nNodes == 5) Det = ShapeFunc_Pyram(Xi, Eta, Zeta, CoordCorners, DShapeFunction);
-    if (nNodes == 6) Det = ShapeFunc_Wedge(Xi, Eta, Zeta, CoordCorners, DShapeFunction);
+    if (nNodes == 6) Det = ShapeFunc_Prism(Xi, Eta, Zeta, CoordCorners, DShapeFunction);
     if (nNodes == 8) Det = ShapeFunc_Hexa(Xi, Eta, Zeta, CoordCorners, DShapeFunction);
     
     /*--- Compute the B Matrix ---*/
@@ -1942,7 +1942,7 @@ void CVolumetricMovement::Rigid_Rotation(CGeometry *geometry, CConfig *config,
      Do not store the grid velocity if this is an adjoint calculation.---*/
     
     for (iDim = 0; iDim < nDim; iDim++) {
-      geometry->node[iPoint]->SetCoord(iDim,rotCoord[iDim] + Center[iDim]);
+      geometry->node[iPoint]->SetCoord(iDim, rotCoord[iDim] + Center[iDim]);
       if (!adjoint) geometry->node[iPoint]->SetGridVel(iDim, newGridVel[iDim]);
       
     }
@@ -2140,8 +2140,8 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry *geometry, CConfig *config, u
      Do not store the grid velocity if this is an adjoint calculation.---*/
     
     for (iDim = 0; iDim < nDim; iDim++) {
-      geometry->node[iPoint]->SetCoord(iDim,rotCoord[iDim]+Center[iDim]);
-      if (!adjoint) geometry->node[iPoint]->SetGridVel(iDim,newGridVel[iDim]);
+      geometry->node[iPoint]->SetCoord(iDim, rotCoord[iDim]+Center[iDim]);
+      if (!adjoint) geometry->node[iPoint]->SetGridVel(iDim, newGridVel[iDim]);
     }
   }
   
@@ -2256,8 +2256,8 @@ void CVolumetricMovement::Rigid_Plunging(CGeometry *geometry, CConfig *config, u
      velocity if this is an adjoint calculation. ---*/
     
     for (iDim = 0; iDim < nDim; iDim++) {
-      geometry->node[iPoint]->SetCoord(iDim,newCoord[iDim]);
-      if (!adjoint) geometry->node[iPoint]->SetGridVel(iDim,newGridVel[iDim]);
+      geometry->node[iPoint]->SetCoord(iDim, newCoord[iDim]);
+      if (!adjoint) geometry->node[iPoint]->SetGridVel(iDim, newGridVel[iDim]);
     }
   }
   
@@ -2265,9 +2265,9 @@ void CVolumetricMovement::Rigid_Plunging(CGeometry *geometry, CConfig *config, u
    incrementing the position with the rigid translation. This
    new location will be used for subsequent pitching/rotation.---*/
   
-  config->SetMotion_Origin_X(iZone,Center[0]+deltaX[0]);
-  config->SetMotion_Origin_Y(iZone,Center[1]+deltaX[1]);
-  config->SetMotion_Origin_Z(iZone,Center[2]+deltaX[2]);
+  config->SetMotion_Origin_X(iZone, Center[0]+deltaX[0]);
+  config->SetMotion_Origin_Y(iZone, Center[1]+deltaX[1]);
+  config->SetMotion_Origin_Z(iZone, Center[2]+deltaX[2]);
   
   /*--- As the body origin may have moved, print it to the console ---*/
   
@@ -2381,7 +2381,7 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
      velocity if this is an adjoint calculation. ---*/
     
     for (iDim = 0; iDim < nDim; iDim++) {
-      geometry->node[iPoint]->SetCoord(iDim,newCoord[iDim]);
+      geometry->node[iPoint]->SetCoord(iDim, newCoord[iDim]);
       if (!adjoint) geometry->node[iPoint]->SetGridVel(iDim,xDot[iDim]);
     }
   }
@@ -2390,9 +2390,9 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
    incrementing the position with the rigid translation. This
    new location will be used for subsequent pitching/rotation.---*/
   
-  config->SetMotion_Origin_X(iZone,Center[0]+deltaX[0]);
-  config->SetMotion_Origin_Y(iZone,Center[1]+deltaX[1]);
-  config->SetMotion_Origin_Z(iZone,Center[2]+deltaX[2]);
+  config->SetMotion_Origin_X(iZone, Center[0]+deltaX[0]);
+  config->SetMotion_Origin_Y(iZone, Center[1]+deltaX[1]);
+  config->SetMotion_Origin_Z(iZone, Center[2]+deltaX[2]);
   
   /*--- Set the moment computation center to the new location after
    incrementing the position with the translation. ---*/
@@ -3827,7 +3827,7 @@ void CSurfaceMovement::SetHicksHenne(CGeometry *boundary, CConfig *config, unsig
         
 				if (double_surface) {
 					ek = log10(0.5)/log10(xk);
-					fk = pow( sin( PI_NUMBER * pow(Coord[0],ek) ) , t2);
+					fk = pow( sin( PI_NUMBER * pow(Coord[0], ek) ) , t2);
           
 					/*--- Upper and lower surface ---*/
           
@@ -3838,7 +3838,7 @@ void CSurfaceMovement::SetHicksHenne(CGeometry *boundary, CConfig *config, unsig
 				else {
 					xCoord = Coord[0] - BumpLoc;
 					ek = log10(0.5)/log10(xk/BumpSize);
-					fk = pow( sin( PI_NUMBER * pow(xCoord/BumpSize,ek)),t2);
+					fk = pow( sin( PI_NUMBER * pow(xCoord/BumpSize, ek)), t2);
 
 					/*--- Only one surface ---*/
           
@@ -4074,7 +4074,7 @@ void CSurfaceMovement::Moving_Walls(CGeometry *geometry, CConfig *config,
         /*--- Store the moving wall velocity for this node ---*/
         
         for (iDim = 0; iDim < nDim; iDim++)
-          geometry->node[iPoint]->SetGridVel(iDim,GridVel[iDim]);
+          geometry->node[iPoint]->SetGridVel(iDim, GridVel[iDim]);
   
       }
 		}
@@ -4771,8 +4771,8 @@ void CSurfaceMovement::AeroelasticDeform(CGeometry *geometry, CConfig *config, u
     geometry->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
   }
   /*--- Set the elastic axis to the new location after incrementing the position with the plunge ---*/
-  config->SetRefOriginMoment_X(iMarker_Monitoring,Center[0]+dh_x);
-  config->SetRefOriginMoment_Y(iMarker_Monitoring,Center[1]+dh_y);
+  config->SetRefOriginMoment_X(iMarker_Monitoring, Center[0]+dh_x);
+  config->SetRefOriginMoment_Y(iMarker_Monitoring, Center[1]+dh_y);
 
   
 }
@@ -4948,7 +4948,7 @@ void CSurfaceMovement::SetExternal_Deformation(CGeometry *geometry, CConfig *con
   
   /*--- Read in and store the new mesh node locations ---*/ 
   
-  while (getline(motion_file,text_line)) {
+  while (getline(motion_file, text_line)) {
     istringstream point_line(text_line);
     if (nDim == 2) point_line >> iPoint >> NewCoord[0] >> NewCoord[1];
     if (nDim == 3) point_line >> iPoint >> NewCoord[0] >> NewCoord[1] >> NewCoord[2];
@@ -5179,7 +5179,7 @@ void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
   unsigned short Kind_SU2 = config->GetKind_SU2();
   
   /*--- Read the coordinates. Two main formats:
-   - Selig are in an x,y format starting from trailing edge, along the upper surface to the leading
+   - Selig are in an x, y format starting from trailing edge, along the upper surface to the leading
    edge and back around the lower surface to trailing edge.
    - Lednicer are upper surface points leading edge to trailing edge and then lower surface leading
    edge to trailing edge.
@@ -5475,7 +5475,7 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
 			nControlPoints = new unsigned short[nFFDBox];
 			nSurfacePoints = new unsigned long[nFFDBox];
 			
-			getline (mesh_file,text_line);
+			getline (mesh_file, text_line);
 			text_line.erase (0,11);
 			nLevel = atoi(text_line.c_str());
       
@@ -5485,7 +5485,7 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
 				
 				/*--- Read the name of the FFD box ---*/
         
-				getline (mesh_file,text_line);
+				getline (mesh_file, text_line);
 				text_line.erase (0,8);
 				
 				/*--- Remove extra data from the FFDBox name ---*/
@@ -5506,7 +5506,7 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
 
 				/*--- Read the level of the FFD box ---*/
         
-				getline (mesh_file,text_line);
+				getline (mesh_file, text_line);
 				text_line.erase (0,10);
 				LevelFFDBox = atoi(text_line.c_str());
         
@@ -5514,16 +5514,16 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
 				
 				/*--- Read the degree of the FFD box ---*/
         
-				getline (mesh_file,text_line);
+				getline (mesh_file, text_line);
 				text_line.erase (0,13); degree[0] = atoi(text_line.c_str());
-				getline (mesh_file,text_line);
+				getline (mesh_file, text_line);
 				text_line.erase (0,13); degree[1] = atoi(text_line.c_str());
         
         if (nDim == 2) {
           degree[2] = 1;
         }
         else {
-          getline (mesh_file,text_line);
+          getline (mesh_file, text_line);
           text_line.erase (0,13); degree[2] = atoi(text_line.c_str());
         }
         
@@ -5538,7 +5538,7 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
 
 				/*--- Read the number of parents boxes ---*/
         
-				getline (mesh_file,text_line);
+				getline (mesh_file, text_line);
 				text_line.erase (0,12);
 				nParentFFDBox = atoi(text_line.c_str());
 				if (rank == MASTER_NODE) cout << "Number of parent boxes: " << nParentFFDBox <<". ";
@@ -5563,7 +5563,7 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
 				
 				/*--- Read the number of children boxes ---*/
         
-				getline (mesh_file,text_line);
+				getline (mesh_file, text_line);
 				text_line.erase (0,13);
 				nChildFFDBox = atoi(text_line.c_str());
 				if (rank == MASTER_NODE) cout << "Number of child boxes: " << nChildFFDBox <<"." << endl;
@@ -5589,7 +5589,7 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
 
 				/*--- Read the number of the corner points ---*/
         
-				getline (mesh_file,text_line);
+				getline (mesh_file, text_line);
 				text_line.erase (0,18); nCornerPoints[iFFDBox] = atoi(text_line.c_str());
 				if (rank == MASTER_NODE) cout << "Corner points: " << nCornerPoints[iFFDBox] <<". ";
         if (nDim == 2) nCornerPoints[iFFDBox] = nCornerPoints[iFFDBox]*int(2);
@@ -5600,7 +5600,7 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
           
           if (nDim == 2) {
             if (iCornerPoints < nCornerPoints[iFFDBox]/int(2)) {
-              getline(mesh_file,text_line); istringstream FFDBox_line(text_line);
+              getline(mesh_file, text_line); istringstream FFDBox_line(text_line);
               FFDBox_line >> coord[0]; FFDBox_line >> coord[1]; coord[2] = -0.5;
             }
             else {
@@ -5610,7 +5610,7 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
             }
           }
           else {
-            getline(mesh_file,text_line); istringstream FFDBox_line(text_line);
+            getline(mesh_file, text_line); istringstream FFDBox_line(text_line);
             FFDBox_line >> coord[0]; FFDBox_line >> coord[1]; FFDBox_line >> coord[2];
           }
           
@@ -5620,7 +5620,7 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
 				
 				/*--- Read the number of the control points ---*/
         
-				getline (mesh_file,text_line);
+				getline (mesh_file, text_line);
 				text_line.erase (0,19); nControlPoints[iFFDBox] = atoi(text_line.c_str());
         
 				if (rank == MASTER_NODE) cout << "Control points: " << nControlPoints[iFFDBox] <<". ";
@@ -5632,14 +5632,14 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
 				/*--- Read the coordinates of the control points ---*/
         
 				for (iControlPoints = 0; iControlPoints < nControlPoints[iFFDBox]; iControlPoints++) {
-					getline(mesh_file,text_line); istringstream FFDBox_line(text_line);
+					getline(mesh_file, text_line); istringstream FFDBox_line(text_line);
 					FFDBox_line >> iDegree; FFDBox_line >> jDegree; FFDBox_line >> kDegree; 
 					FFDBox_line >> coord[0]; FFDBox_line >> coord[1]; FFDBox_line >> coord[2]; 
 					FFDBox[iFFDBox]->SetCoordControlPoints(coord, iDegree, jDegree, kDegree); 
 					FFDBox[iFFDBox]->SetCoordControlPoints_Copy(coord, iDegree, jDegree, kDegree);
 				}
 				
-				getline (mesh_file,text_line);
+				getline (mesh_file, text_line);
 				text_line.erase (0,19); nSurfacePoints[iFFDBox] = atoi(text_line.c_str());
 
 				/*--- The surface points parametric coordinates, all the nodes read the FFD 
@@ -5647,7 +5647,7 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
         
         my_nSurfPoints = 0;
 				for (iSurfacePoints = 0; iSurfacePoints < nSurfacePoints[iFFDBox]; iSurfacePoints++) {
-					getline(mesh_file,text_line); istringstream FFDBox_line(text_line);
+					getline(mesh_file, text_line); istringstream FFDBox_line(text_line);
 					FFDBox_line >> iTag; FFDBox_line >> iPoint;
           
           if (config->GetMarker_All_TagBound(iTag) != -1) {
@@ -6439,18 +6439,18 @@ double *CFreeFormDefBox::GetParametricCoord_Analytical(double *cart_coord) {
 	
 	/*--- Respective Cross-Products ---*/
 	e12 = new double[3]; e23 = new double[3]; e13 = new double[3];
-	CrossProduct(e1,e2,e12);
-	CrossProduct(e1,e3,e13);
-	CrossProduct(e2,e3,e23);
+	CrossProduct(e1, e2, e12);
+	CrossProduct(e1, e3, e13);
+	CrossProduct(e2, e3, e23);
 	
 	/*--- p is Tranlated vector from the origin ---*/
 	p = new double[3];
 	for (iDim = 0; iDim < nDim; iDim++)
 		p[iDim] = cart_coord[iDim] - Coord_Corner_Points[0][iDim];
 	
-	ParamCoord[0] = DotProduct(e23,p)/DotProduct(e23,e1);
-	ParamCoord[1] = DotProduct(e13,p)/DotProduct(e13,e2);
-	ParamCoord[2] = DotProduct(e12,p)/DotProduct(e12,e3);
+	ParamCoord[0] = DotProduct(e23, p)/DotProduct(e23, e1);
+	ParamCoord[1] = DotProduct(e13, p)/DotProduct(e13, e2);
+	ParamCoord[2] = DotProduct(e12, p)/DotProduct(e12, e3);
 	
 	delete [] e1;
   delete [] e2;
@@ -6490,14 +6490,14 @@ double CFreeFormDefBox::GetBernstein(short val_n, short val_i, double val_t) {
 	if (val_i == 0) {
 		if (val_t == 0) value = 1;
 		else if (val_t == 1) value = 0;
-		else value = Binomial(val_n,val_i)*(pow(val_t, val_i)) * pow(1.0 - val_t, val_n - val_i);
+		else value = Binomial(val_n, val_i)*(pow(val_t, val_i)) * pow(1.0 - val_t, val_n - val_i);
 	}
 	else if (val_i == val_n) {
 		if (val_t == 0) value = 0;
 		else if (val_t == 1) value = 1;
-		else value = pow(val_t,val_n);
+		else value = pow(val_t, val_n);
 	}
-	else value = Binomial(val_n,val_i)*(pow(val_t,val_i)) * pow(1.0-val_t, val_n - val_i);
+	else value = Binomial(val_n, val_i)*(pow(val_t, val_i)) * pow(1.0-val_t, val_n - val_i);
 	
 	return value;
 }
@@ -6564,23 +6564,23 @@ void CFreeFormDefBox::GetFFDHessian(double *uvw, double *xyz, double **val_Hessi
    and the Hessian will be symmetric; no need to compute the under-diagonal part, for example ---*/
   
   for (iDim = 0; iDim < nDim; iDim++) {
-    val_Hessian[0][0] += 2.0 * GetDerivative3(uvw,iDim,0,lmn) * GetDerivative3(uvw,iDim,0,lmn) +
-    GetDerivative2(uvw,iDim,xyz,lmn) * GetDerivative5(uvw,iDim,0,0,lmn);
+    val_Hessian[0][0] += 2.0 * GetDerivative3(uvw, iDim,0, lmn) * GetDerivative3(uvw, iDim,0, lmn) +
+    GetDerivative2(uvw, iDim,xyz, lmn) * GetDerivative5(uvw, iDim,0,0, lmn);
     
-    val_Hessian[1][1] += 2.0 * GetDerivative3(uvw,iDim,1,lmn) * GetDerivative3(uvw,iDim,1,lmn) +
-    GetDerivative2(uvw,iDim,xyz,lmn) * GetDerivative5(uvw,iDim,1,1,lmn);
+    val_Hessian[1][1] += 2.0 * GetDerivative3(uvw, iDim,1, lmn) * GetDerivative3(uvw, iDim,1, lmn) +
+    GetDerivative2(uvw, iDim,xyz, lmn) * GetDerivative5(uvw, iDim,1,1, lmn);
     
-    val_Hessian[2][2] += 2.0 * GetDerivative3(uvw,iDim,2,lmn) * GetDerivative3(uvw,iDim,2,lmn) +
-    GetDerivative2(uvw,iDim,xyz,lmn) * GetDerivative5(uvw,iDim,2,2,lmn);
+    val_Hessian[2][2] += 2.0 * GetDerivative3(uvw, iDim,2, lmn) * GetDerivative3(uvw, iDim,2, lmn) +
+    GetDerivative2(uvw, iDim,xyz, lmn) * GetDerivative5(uvw, iDim,2,2, lmn);
     
-    val_Hessian[0][1] += 2.0 * GetDerivative3(uvw,iDim,0,lmn) * GetDerivative3(uvw,iDim,1,lmn) +
-    GetDerivative2(uvw,iDim,xyz,lmn) * GetDerivative5(uvw,iDim,0,1,lmn);
+    val_Hessian[0][1] += 2.0 * GetDerivative3(uvw, iDim,0, lmn) * GetDerivative3(uvw, iDim,1, lmn) +
+    GetDerivative2(uvw, iDim,xyz, lmn) * GetDerivative5(uvw, iDim,0,1, lmn);
     
-    val_Hessian[0][2] += 2.0 * GetDerivative3(uvw,iDim,0,lmn) * GetDerivative3(uvw,iDim,2,lmn) +
-    GetDerivative2(uvw,iDim,xyz,lmn) * GetDerivative5(uvw,iDim,0,2,lmn);
+    val_Hessian[0][2] += 2.0 * GetDerivative3(uvw, iDim,0, lmn) * GetDerivative3(uvw, iDim,2, lmn) +
+    GetDerivative2(uvw, iDim,xyz, lmn) * GetDerivative5(uvw, iDim,0,2, lmn);
     
-    val_Hessian[1][2] += 2.0 * GetDerivative3(uvw,iDim,1,lmn) * GetDerivative3(uvw,iDim,2,lmn) +
-    GetDerivative2(uvw,iDim,xyz,lmn) * GetDerivative5(uvw,iDim,1,2,lmn);
+    val_Hessian[1][2] += 2.0 * GetDerivative3(uvw, iDim,1, lmn) * GetDerivative3(uvw, iDim,2, lmn) +
+    GetDerivative2(uvw, iDim,xyz, lmn) * GetDerivative5(uvw, iDim,1,2, lmn);
   }
   
   val_Hessian[1][0] = val_Hessian[0][1];

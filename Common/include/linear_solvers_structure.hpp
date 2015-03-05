@@ -80,17 +80,17 @@ private:
    * \brief applys a Givens rotation to a 2-vector
    * \param[in] s - sine of the Givens rotation angle
    * \param[in] c - cosine of the Givens rotation angle
-   * \param[in,out] h1 - first element of 2x1 vector being transformed
-   * \param[in,out] h2 - second element of 2x1 vector being transformed
+   * \param[in, out] h1 - first element of 2x1 vector being transformed
+   * \param[in, out] h2 - second element of 2x1 vector being transformed
    */
   void ApplyGivens(const double & s, const double & c, double & h1, double & h2);
   
   /*!
    * \brief generates the Givens rotation matrix for a given 2-vector
-   * \param[in,out] dx - element of 2x1 vector being transformed
-   * \param[in,out] dy - element of 2x1 vector being set to zero
-   * \param[in,out] s - sine of the Givens rotation angle
-   * \param[in,out] c - cosine of the Givens rotation angle
+   * \param[in, out] dx - element of 2x1 vector being transformed
+   * \param[in, out] dy - element of 2x1 vector being set to zero
+   * \param[in, out] s - sine of the Givens rotation angle
+   * \param[in, out] c - cosine of the Givens rotation angle
    *
    * Based on givens() of SPARSKIT, which is based on p.202 of
    * "Matrix Computations" by Golub and van Loan.
@@ -117,8 +117,8 @@ private:
    *
    * \tparam Vec - a generic vector class
    * \param[in] i - index indicating which vector in w is being orthogonalized
-   * \param[in,out] Hsbg - the upper Hessenberg begin updated
-   * \param[in,out] w - the (i+1)th vector of w is orthogonalized against the
+   * \param[in, out] Hsbg - the upper Hessenberg begin updated
+   * \param[in, out] w - the (i+1)th vector of w is orthogonalized against the
    *                    previous vectors in w
    *
    * \pre the vectors w[0:i] are orthonormal
@@ -133,7 +133,7 @@ private:
   
   /*!
    * \brief writes header information for a CSysSolve residual history
-   * \param[in,out] os - ostream class object for output
+   * \param[in, out] os - ostream class object for output
    * \param[in] solver - string describing the solver
    * \param[in] restol - the target tolerance to solve to
    * \param[in] resinit - the initial residual norm (absolute)
@@ -156,7 +156,7 @@ public:
   
   /*! \brief Conjugate Gradient method
    * \param[in] b - the right hand size vector
-   * \param[in,out] x - on entry the intial guess, on exit the solution
+   * \param[in, out] x - on entry the intial guess, on exit the solution
    * \param[in] mat_vec - object that defines matrix-vector product
    * \param[in] precond - object that defines preconditioner
    * \param[in] tol - tolerance with which to solve the system
@@ -170,7 +170,7 @@ public:
   /*!
    * \brief Flexible Generalized Minimal Residual method
    * \param[in] b - the right hand size vector
-   * \param[in,out] x - on entry the intial guess, on exit the solution
+   * \param[in, out] x - on entry the intial guess, on exit the solution
    * \param[in] mat_vec - object that defines matrix-vector product
    * \param[in] precond - object that defines preconditioner
    * \param[in] tol - tolerance with which to solve the system
@@ -184,7 +184,7 @@ public:
 	/*!
    * \brief Biconjugate Gradient Stabilized Method (BCGSTAB)
    * \param[in] b - the right hand size vector
-   * \param[in,out] x - on entry the intial guess, on exit the solution
+   * \param[in, out] x - on entry the intial guess, on exit the solution
    * \param[in] mat_vec - object that defines matrix-vector product
    * \param[in] precond - object that defines preconditioner
    * \param[in] tol - tolerance with which to solve the system

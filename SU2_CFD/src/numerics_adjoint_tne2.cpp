@@ -600,8 +600,8 @@ void CCentJST_AdjTNE2::ComputeResidual (double *val_resconv_i, double *val_resvi
 	Local_Lambda_j = (fabs(ProjVelocity_j)+SoundSpeed_j*Area);
 	MeanLambda = 0.5*(Local_Lambda_i+Local_Lambda_j);
   
-	Phi_i = pow(Lambda_i/(4.0*MeanLambda+EPS),Param_p);
-	Phi_j = pow(Lambda_j/(4.0*MeanLambda+EPS),Param_p);
+	Phi_i = pow(Lambda_i/(4.0*MeanLambda+EPS), Param_p);
+	Phi_j = pow(Lambda_j/(4.0*MeanLambda+EPS), Param_p);
 	StretchingFactor = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j+EPS);
   
 	double sc2 = 3.0*(double(Neighbor_i)+double(Neighbor_j))/(double(Neighbor_i)*double(Neighbor_j));
@@ -743,8 +743,8 @@ void CCentLax_AdjTNE2::ComputeResidual (double *val_resconv_i,
 	MeanLambda = 0.5*(Local_Lambda_i+Local_Lambda_j);
   
 	/*--- Compute streching factor ---*/
-	Phi_i = pow(Lambda_i/(4.0*MeanLambda+EPS),Param_p);
-	Phi_j = pow(Lambda_j/(4.0*MeanLambda+EPS),Param_p);
+	Phi_i = pow(Lambda_i/(4.0*MeanLambda+EPS), Param_p);
+	Phi_j = pow(Lambda_j/(4.0*MeanLambda+EPS), Param_p);
 	StretchingFactor = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j+EPS);
   
 	sc2 = 3.0*(double(Neighbor_i)+double(Neighbor_j))/(double(Neighbor_i)*double(Neighbor_j));
@@ -1480,7 +1480,7 @@ void CSource_AdjTNE2::ComputeSourceConservative (double *val_residual,
 //		fv1 = Ji_3/(Ji_3+cv1_3);
 //		one_o_oneplusJifv1 = 1.0/(1.0+Ji*fv1);
 //		fv2 = 1.0 - Ji*one_o_oneplusJifv1;
-//		Shat = max(Omega + TurbVar_i[0]*fv2/(k2*dist_sq),TURB_EPS);
+//		Shat = max(Omega + TurbVar_i[0]*fv2/(k2*dist_sq), TURB_EPS);
 //    
 //		r = min(TurbVar_i[0]/(Shat*k2*dist_sq),10.);
 //		g = r + cw2*(pow(r,6.)-r);
@@ -1532,7 +1532,7 @@ void CSource_AdjTNE2::ComputeSourceConservative (double *val_residual,
 //		fv1 = Ji_3/(Ji_3+cv1_3);
 //		one_o_oneplusJifv1 = 1.0/(1.0+Ji*fv1);
 //		fv2 = 1.0 - Ji*one_o_oneplusJifv1;
-//		Shat = max(Omega + TurbVar_j[0]*fv2/(k2*dist_sq),TURB_EPS);
+//		Shat = max(Omega + TurbVar_j[0]*fv2/(k2*dist_sq), TURB_EPS);
 //    
 //		r = min(TurbVar_j[0]/(Shat*k2*dist_sq),10.);
 //		g = r + cw2*(pow(r,6.)-r);

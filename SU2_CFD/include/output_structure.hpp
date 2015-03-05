@@ -72,9 +72,9 @@ class COutput {
 	nGlobal_Quad,
 	nGlobal_Tetr,
 	nGlobal_Hexa,
-	nGlobal_Wedg,
+	nGlobal_Pris,
 	nGlobal_Pyra;
-	double **Coords;              // node i (x,y,z) = (Coords[0][i], Coords[1][i], Coords[2][i])
+	double **Coords;              // node i (x, y, z) = (Coords[0][i], Coords[1][i], Coords[2][i])
   int *Conn_Line;
   int *Conn_BoundTria;
 	int *Conn_BoundQuad;
@@ -82,7 +82,7 @@ class COutput {
 	int *Conn_Quad;
 	int *Conn_Tetr;
 	int *Conn_Hexa;
-	int *Conn_Wedg;
+	int *Conn_Pris;
 	int *Conn_Pyra;
 	double *Volume;
 	double **Data;
@@ -287,7 +287,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] val_iZone - iZone index.
 	 */
-	void SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,unsigned short val_iZone);
+	void SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
 
   /*!
 	 * \brief Write the x, y, & z coordinates to a CGNS output file.
@@ -335,7 +335,7 @@ public:
 	 * \brief Write a Tecplot ASCII solution file.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 */
-	void SetTecplotNode_ASCII(CConfig *config, CGeometry *geometry, CSolver **solver, char mesh_filename[MAX_STRING_SIZE], bool surf_sol);
+	void SetTecplotASCII_LowMemory(CConfig *config, CGeometry *geometry, CSolver **solver, char mesh_filename[MAX_STRING_SIZE], bool surf_sol);
 
   /*!
 	 * \brief Write a Tecplot ASCII solution file.
@@ -344,7 +344,7 @@ public:
    * \param[in] val_iZone - Current zone.
    * \param[in] val_nZone - Total number of zones.
 	 */
-	void SetTecplot_ASCII(CConfig *config, CGeometry *geometry,CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol);
+	void SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol);
   
   /*!
    * \brief Write the nodal coordinates and connectivity to a Tecplot binary mesh file.
@@ -352,7 +352,15 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] val_iZone - iZone index.
    */
-  void SetTecplot_MeshASCII(CConfig *config, CGeometry *geometry, bool surf_sol, bool new_file);
+  void SetTecplotASCII_Mesh(CConfig *config, CGeometry *geometry, bool surf_sol, bool new_file);
+
+  /*!
+   * \brief Write the nodal coordinates and connectivity to a Tecplot binary mesh file.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] val_iZone - iZone index.
+   */
+  string AssembleVariableNames(CGeometry *geometry, CConfig *config, unsigned short nVar_Consv, unsigned short *NVar);
 
   /*!
    * \brief Write the nodal coordinates and connectivity to a Tecplot binary mesh file.
@@ -376,7 +384,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] val_iZone - iZone index.
 	 */
-	void SetTecplot_MeshBinary(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
+	void SetTecplotBinary_DomainMesh(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
   
   /*!
 	 * \brief Write the coordinates and connectivity to a Tecplot binary surface mesh file.
@@ -384,7 +392,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] val_iZone - iZone index.
 	 */
-	void SetTecplot_SurfaceMesh(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
+	void SetTecplotBinary_SurfaceMesh(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
   
   /*!
 	 * \brief Write solution data to a Tecplot binary volume solution file.
@@ -392,7 +400,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] val_iZone - iZone index.
 	 */
-	void SetTecplot_Solution(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
+	void SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
 
   /*!
 	 * \brief Write solution data to a Tecplot binary surface solution file.
@@ -400,8 +408,41 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] val_iZone - iZone index.
 	 */
-	void SetTecplot_SurfaceSolution(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
-
+	void SetTecplotBinary_SurfaceSolution(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
+  
+  /*!
+   * \brief Write a Tecplot ASCII solution file.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] val_iZone - Current zone.
+   * \param[in] val_nZone - Total number of zones.
+   */
+  void SetFieldViewASCII(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone);
+  
+  /*!
+   * \brief Write the nodal coordinates and connectivity to a Tecplot binary mesh file.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] val_iZone - iZone index.
+   */
+  void SetFieldViewASCII_Mesh(CConfig *config, CGeometry *geometry);
+  
+  /*!
+   * \brief Write the nodal coordinates and connectivity to a Tecplot binary mesh file.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] val_iZone - iZone index.
+   */
+  void SetFieldViewBinary_Mesh(CConfig *config, CGeometry *geometry);
+  
+  /*!
+   * \brief Write solution data to a Tecplot binary volume solution file.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] val_iZone - iZone index.
+   */
+  void SetFieldViewBinary(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone);
+  
   /*!
 	 * \brief Deallocate temporary memory needed for merging and writing coordinates.
 	 * \param[in] config - Definition of the particular problem.

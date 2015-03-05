@@ -106,25 +106,25 @@ public:
  * \version 1.0
  */
 class CConstantViscosity : public CViscosityModel {
-
+  
 public:
-
-		/*!
-		 * \brief Constructor of the class.
-		 */
-	    CConstantViscosity(void);
-
-	    /*!
-		 * \brief Constructor of the class.
-		 */
-		CConstantViscosity(double mu_const);
-
-		/*!
-		 * \brief Destructor of the class.
-		 */
-		virtual ~CConstantViscosity(void);
-
-
+  
+  /*!
+   * \brief Constructor of the class.
+   */
+  CConstantViscosity(void);
+  
+  /*!
+   * \brief Constructor of the class.
+   */
+  CConstantViscosity(double mu_const);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CConstantViscosity(void);
+  
+  
 };
 
 
@@ -137,37 +137,37 @@ public:
  */
 class CSutherland : public CViscosityModel {
 protected:
-	double   	 Mu_ref,		/*!< \brief Internal Energy. */
-				 T_ref, 		/*!< \brief DpDd_e. */
-				 S; 			/*!< \brief DpDe_d. */
-
+  double   	 Mu_ref,		/*!< \brief Internal Energy. */
+  T_ref, 		/*!< \brief DpDd_e. */
+  S; 			/*!< \brief DpDe_d. */
+  
 public:
-
-		/*!
-		 * \brief Constructor of the class.
-		 */
-	    CSutherland(void);
-
-	    /*!
-		 * \brief Constructor of the class.
-		 */
-		CSutherland(double mu_ref, double t_ref, double s);
-
-		/*!
-		 * \brief Destructor of the class.
-		 */
-		virtual ~CSutherland(void);
-
-		/*!
-		 * \brief Set Viscosity.
-		 */
-		void SetViscosity(double T, double rho);
-
-		/*!
-		 * \brief Set Viscosity Derivatives.
-		 */
-		void SetDerViscosity(double T, double rho);
-
+  
+  /*!
+   * \brief Constructor of the class.
+   */
+  CSutherland(void);
+  
+  /*!
+   * \brief Constructor of the class.
+   */
+  CSutherland(double mu_ref, double t_ref, double s);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CSutherland(void);
+  
+  /*!
+   * \brief Set Viscosity.
+   */
+  void SetViscosity(double T, double rho);
+  
+  /*!
+   * \brief Set Viscosity Derivatives.
+   */
+  void SetDerViscosity(double T, double rho);
+  
 };
 
 

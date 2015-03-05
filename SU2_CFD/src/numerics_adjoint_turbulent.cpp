@@ -436,7 +436,7 @@ void CSourcePieceWise_AdjTurb::ComputeResidual(double *val_residual, double **va
 		fv1 = Ji_3/(Ji_3+cv1_3);
 		one_o_oneplusJifv1 = 1.0/(1.0+Ji*fv1);
 		fv2 = 1.0 - Ji*one_o_oneplusJifv1;
-		Shat = max(Vorticity + TurbVar_i[0]*fv2/(k2*dist_0_2),TURB_EPS);
+		Shat = max(Vorticity + TurbVar_i[0]*fv2/(k2*dist_0_2), TURB_EPS);
     
 		//		r = TurbVar_i[0]/(Shat*k2*dist_0_2);
 		r = min(TurbVar_i[0]/(Shat*k2*dist_0_2),10.);

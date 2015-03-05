@@ -43,6 +43,7 @@ ___bin_SU2_SOL_SOURCES = ../include/SU2_SOL.hpp \
 		../../SU2_CFD/src/output_structure.cpp \
 		../../SU2_CFD/src/output_cgns.cpp \
 		../../SU2_CFD/src/output_tecplot.cpp \
+    ../../SU2_CFD/src/output_fieldview.cpp \
     ../../SU2_CFD/src/output_su2.cpp \
     ../../SU2_CFD/src/output_paraview.cpp \
 		../../SU2_CFD/include/solver_structure.hpp \

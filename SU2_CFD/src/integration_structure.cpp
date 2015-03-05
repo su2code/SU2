@@ -470,8 +470,8 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
       if (rank == MASTER_NODE) {
         for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
           if (owner_all[iProcessor] == 1) {
-            config->SetAeroelastic_plunge(iMarker_Monitoring,plunge_all[iProcessor]);
-            config->SetAeroelastic_pitch(iMarker_Monitoring,pitch_all[iProcessor]);
+            config->SetAeroelastic_plunge(iMarker_Monitoring, plunge_all[iProcessor]);
+            config->SetAeroelastic_pitch(iMarker_Monitoring, pitch_all[iProcessor]);
             break;
           }
         }
