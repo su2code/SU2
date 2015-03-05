@@ -2966,8 +2966,6 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
           solver_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(Solution);
           solver_container[iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n();
           solver_container[iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n1();
-          
-        
       }
     }
     
