@@ -86,7 +86,7 @@ public:
 	 * \param[in] val_coord_Elem_CG - Coordinates of the centre of gravity of the element.
    * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG,double *val_coord_Elem_CG) = 0;
+	virtual void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG, double *val_coord_Elem_CG) = 0;
 	
 	/*! 
 	 * \overload

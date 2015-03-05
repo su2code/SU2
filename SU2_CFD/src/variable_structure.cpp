@@ -213,7 +213,7 @@ void CVariable::AddConservativeSolution(unsigned short val_var, double val_solut
 		double val_density, double val_density_old, double lowerlimit, double upperlimit) {
   
 	Solution[val_var] = min(max((Solution_Old[val_var]*val_density_old + val_solution)/val_density,
-			lowerlimit),upperlimit);
+			lowerlimit), upperlimit);
   
 }
 

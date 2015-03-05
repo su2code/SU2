@@ -79,7 +79,7 @@ public:
 
 /*!
  * \brief utility function for converting strings to uppercase
- * \param[in,out] str - string we want to convert
+ * \param[in, out] str - string we want to convert
  */
 inline void StringToUpperCase(string & str) {
   std::transform(str.begin(), str.end(), str.begin(), ::toupper);
@@ -154,7 +154,7 @@ const unsigned int N_POINTS_QUADRILATERAL = 4; /*!< \brief General output & CGNS
 const unsigned int N_POINTS_TETRAHEDRON = 4;   /*!< \brief General output & CGNS defines. */
 const unsigned int N_POINTS_HEXAHEDRON = 8;    /*!< \brief General output & CGNS defines. */
 const unsigned int N_POINTS_PYRAMID = 5;       /*!< \brief General output & CGNS defines. */
-const unsigned int N_POINTS_WEDGE = 6;         /*!< \brief General output & CGNS defines. */
+const unsigned int N_POINTS_PRISM = 6;         /*!< \brief General output & CGNS defines. */
 
 /*!
  * \brief Boolean answers
@@ -417,7 +417,7 @@ static const map<string, ENUM_GASMODEL> GasModel_Map = CCreateMap<string, ENUM_G
 ("O2", O2)
 ("N2", N2)
 ("AIR-5", AIR5)
-("ARGON-SID",ARGON_SID)
+("ARGON-SID", ARGON_SID)
 ("ONESPECIES", ONESPECIES);
 
 /*!
@@ -707,7 +707,7 @@ enum GEO_TYPE {
   RECTANGLE = 9,		/*!< \brief VTK nomenclature for defining a rectangle element. */
   TETRAHEDRON = 10,     	/*!< \brief VTK nomenclature for defining a tetrahedron element. */
   HEXAHEDRON = 12,      	/*!< \brief VTK nomenclature for defining a hexahedron element. */
-  WEDGE = 13,     		/*!< \brief VTK nomenclature for defining a wedge element. */
+  PRISM = 13,     		/*!< \brief VTK nomenclature for defining a prism element. */
   PYRAMID = 14  		/*!< \brief VTK nomenclature for defining a pyramid element. */
 };
 
@@ -775,7 +775,7 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("MAX_THICK_SEC4", MAX_THICK_SEC4)
 ("MAX_THICK_SEC5", MAX_THICK_SEC5)
 ("AVG_TOTAL_PRESSURE", AVG_TOTAL_PRESSURE)
-("AVG_OUTLET_PRESSURE",AVG_OUTLET_PRESSURE)
+("AVG_OUTLET_PRESSURE", AVG_OUTLET_PRESSURE)
 ("MASS_FLOW_RATE", MASS_FLOW_RATE);
 
 /*!
@@ -861,13 +861,11 @@ static const map<string, ENUM_ADAPT> Adapt_Map = CCreateMap<string, ENUM_ADAPT>
  */
 enum ENUM_INPUT {
   SU2 = 1,                       /*!< \brief SU2 input format. */
-  CGNS = 2,                     /*!< \brief CGNS input format for the computational grid. */
-  NETCDF_ASCII = 3      	/*!< \brief ASCII NETCDF input format for the computational grid. */
+  CGNS = 2                     /*!< \brief CGNS input format for the computational grid. */
 };
 static const map<string, ENUM_INPUT> Input_Map = CCreateMap<string, ENUM_INPUT>
 ("SU2", SU2)
-("CGNS", CGNS)
-("NETCDF_ASCII", NETCDF_ASCII);
+("CGNS", CGNS);
 
 const int CGNS_STRING_SIZE = 33;/*!< \brief Length of strings used in the CGNS format. */
 
@@ -875,18 +873,20 @@ const int CGNS_STRING_SIZE = 33;/*!< \brief Length of strings used in the CGNS f
  * \brief type of solution output file formats
  */
 enum ENUM_OUTPUT {
-  TECPLOT = 1,  		/*!< \brief Tecplot format for the solution output. */
-  EXCEL = 2,			/*!< \brief Excel format for the solution output. */
-  CSV = 3,			/*!< \brief Comma-separated values format for the solution output. */
-  TECPLOT_BINARY = 4,  		/*!< \brief Tecplot binary format for the solution output. */
-  CGNS_SOL = 5,  		/*!< \brief CGNS format for the solution output. */
-  PARAVIEW = 6  		/*!< \brief Paraview format for the solution output. */
+  TECPLOT = 1,  		     /*!< \brief Tecplot format for the solution output. */
+  TECPLOT_BINARY = 2,    /*!< \brief Tecplot binary format for the solution output. */
+  FIELDVIEW = 3,  		   /*!< \brief FieldView format for the solution output. */
+  FIELDVIEW_BINARY = 4,  /*!< \brief FieldView binary format for the solution output. */
+  CSV = 5,			         /*!< \brief Comma-separated values format for the solution output. */
+  CGNS_SOL = 6,  	     	 /*!< \brief CGNS format for the solution output. */
+  PARAVIEW = 7  		     /*!< \brief Paraview format for the solution output. */
 };
 static const map<string, ENUM_OUTPUT> Output_Map = CCreateMap<string, ENUM_OUTPUT>
 ("TECPLOT", TECPLOT)
-("EXCEL", EXCEL)
-("CSV", CSV)
 ("TECPLOT_BINARY", TECPLOT_BINARY)
+("FIELDVIEW", FIELDVIEW)
+("FIELDVIEW_BINARY", FIELDVIEW_BINARY)
+("CSV", CSV)
 ("CGNS", CGNS_SOL)
 ("PARAVIEW", PARAVIEW);
 
@@ -2598,7 +2598,7 @@ class COptionActuatorDisk : public COptionBase{
   double * & omega;
 
 public:
-  COptionActuatorDisk(const string name, unsigned short & nMarker_ActDisk_Inlet, unsigned short & nMarker_ActDisk_Outlet, string * & Marker_ActDisk_Inlet, string * & Marker_ActDisk_Outlet, double ** & ActDisk_Origin, double * & ActDisk_RootRadius, double * & ActDisk_TipRadius, double * & ActDisk_PressJump, double * & ActDisk_TempJump, double * & ActDisk_Omega) : inlet_size(nMarker_ActDisk_Inlet),outlet_size(nMarker_ActDisk_Outlet), marker_inlet(Marker_ActDisk_Inlet), marker_outlet(Marker_ActDisk_Outlet), origin(ActDisk_Origin), root_radius(ActDisk_RootRadius), tip_radius(ActDisk_TipRadius), press_jump(ActDisk_PressJump), temp_jump(ActDisk_TempJump), omega(ActDisk_Omega) {
+  COptionActuatorDisk(const string name, unsigned short & nMarker_ActDisk_Inlet, unsigned short & nMarker_ActDisk_Outlet, string * & Marker_ActDisk_Inlet, string * & Marker_ActDisk_Outlet, double ** & ActDisk_Origin, double * & ActDisk_RootRadius, double * & ActDisk_TipRadius, double * & ActDisk_PressJump, double * & ActDisk_TempJump, double * & ActDisk_Omega) : inlet_size(nMarker_ActDisk_Inlet), outlet_size(nMarker_ActDisk_Outlet), marker_inlet(Marker_ActDisk_Inlet), marker_outlet(Marker_ActDisk_Outlet), origin(ActDisk_Origin), root_radius(ActDisk_RootRadius), tip_radius(ActDisk_TipRadius), press_jump(ActDisk_PressJump), temp_jump(ActDisk_TempJump), omega(ActDisk_Omega) {
     this->name = name;
   }
 

@@ -217,7 +217,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("REGIME_TYPE", Kind_Regime, Regime_Map, COMPRESSIBLE);
   
   /* DESCRIPTION: Engine subsonic intake region */
-  addBoolOption("DEBUG_MODE",DebugMode, false);
+  addBoolOption("DEBUG_MODE", DebugMode, false);
   
   /*!\par PHYSICAL_PROBLEM
    *  DESCRIPTION: Physical governing equations \n Options: see \link Solver_Map \endlink \n Default: NO_SOLVER \ingroup Config*/
@@ -871,7 +871,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addStringOption("RESTART_FLOW_FILENAME", Restart_FlowFileName, string("restart_flow.dat"));
   /*!\par RESTART_LIN_FILENAME
    *  DESCRIPTION: Output file linear flow \ingroup Config*/
-  addStringOption("RESTART_LIN_FILENAME",Restart_LinFileName, string("restart_lin.dat"));
+  addStringOption("RESTART_LIN_FILENAME", Restart_LinFileName, string("restart_lin.dat"));
   /*!\par RESTART_ADJ_FILENAME
    *  DESCRIPTION: Output file restart adjoint. Objective function abbreviation will be appended. \ingroup Config*/
   addStringOption("RESTART_ADJ_FILENAME", Restart_AdjFileName, string("restart_adj.dat"));
@@ -1197,7 +1197,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addStringOption("ML_TURB_MODEL_FEATURESET", ML_Turb_Model_FeatureSet, string("none"));
 
   /* DESCRIPTION: Extra values for ML Turb model */
-  addStringListOption("ML_TURB_MODEL_EXTRA",nML_Turb_Model_Extra, ML_Turb_Model_Extra);
+  addStringListOption("ML_TURB_MODEL_EXTRA", nML_Turb_Model_Extra, ML_Turb_Model_Extra);
 
   /*--- options related to the FFD problem ---*/
   /* CONFIG_CATEGORY:FFD point inversion */
@@ -1290,11 +1290,11 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
   int  err_count = 0;  // How many errors have we found in the config file
   int max_err_count = 30; // Maximum number of errors to print before stopping
 
-  map<string,bool> included_options;
+  map<string, bool> included_options;
 
   /*--- Parse the configuration file and set the options ---*/
   
-  while (getline (case_file,text_line)) {
+  while (getline (case_file, text_line)) {
     
     if (err_count >= max_err_count) {
       errorString.append("too many errors. Stopping parse");
@@ -1333,7 +1333,7 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
 
       /*--- New found option. Add it to the map, and delete from all options ---*/
       
-      included_options.insert(pair<string,bool>(option_name, true));
+      included_options.insert(pair<string, bool>(option_name, true));
       all_options.erase(option_name);
 
       /*--- Set the value and check error ---*/
@@ -1385,11 +1385,11 @@ bool CConfig::SetRunTime_Parsing(char case_filename[MAX_STRING_SIZE]) {
   int err_count = 0;  // How many errors have we found in the config file
   int max_err_count = 30; // Maximum number of errors to print before stopping
   
-  map<string,bool> included_options;
+  map<string, bool> included_options;
   
   /*--- Parse the configuration file and set the options ---*/
   
-  while (getline (case_file,text_line)) {
+  while (getline (case_file, text_line)) {
     
     if (err_count >= max_err_count) {
       errorString.append("too many errors. Stopping parse");
@@ -1427,7 +1427,7 @@ bool CConfig::SetRunTime_Parsing(char case_filename[MAX_STRING_SIZE]) {
       
       /*--- New found option. Add it to the map, and delete from all options ---*/
       
-      included_options.insert(pair<string,bool>(option_name, true));
+      included_options.insert(pair<string, bool>(option_name, true));
       all_options.erase(option_name);
       
       /*--- Set the value and check error ---*/
@@ -3363,7 +3363,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   unsigned short iMarker_Euler, iMarker_Custom, iMarker_FarField,
   iMarker_SymWall, iMarker_PerBound, iMarker_Pressure, iMarker_NearFieldBound,
-  iMarker_InterfaceBound, iMarker_Dirichlet, iMarker_Inlet,iMarker_Riemann, iMarker_Outlet,
+  iMarker_InterfaceBound, iMarker_Dirichlet, iMarker_Inlet, iMarker_Riemann, iMarker_Outlet,
   iMarker_Isothermal, iMarker_IsothermalNonCatalytic, iMarker_IsothermalCatalytic,
   iMarker_HeatFlux, iMarker_HeatFluxNonCatalytic, iMarker_HeatFluxCatalytic,
   iMarker_EngineInflow, iMarker_EngineBleed, iMarker_EngineExhaust, iMarker_Displacement,
@@ -4376,6 +4376,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       case PARAVIEW: cout << "The output file format is Paraview ASCII (.vtk)." << endl; break;
       case TECPLOT: cout << "The output file format is Tecplot ASCII (.dat)." << endl; break;
       case TECPLOT_BINARY: cout << "The output file format is Tecplot binary (.plt)." << endl; break;
+      case FIELDVIEW: cout << "The output file format is FieldView ASCII (.uns)." << endl; break;
+      case FIELDVIEW_BINARY: cout << "The output file format is FieldView binary (.uns)." << endl; break;
       case CGNS_SOL: cout << "The output file format is CGNS (.cgns)." << endl; break;
     }
 
@@ -4418,6 +4420,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       case PARAVIEW: cout << "The output file format is Paraview ASCII (.dat)." << endl; break;
       case TECPLOT: cout << "The output file format is Tecplot ASCII (.dat)." << endl; break;
       case TECPLOT_BINARY: cout << "The output file format is Tecplot binary (.plt)." << endl; break;
+      case FIELDVIEW: cout << "The output file format is FieldView ASCII (.dat)." << endl; break;
+      case FIELDVIEW_BINARY: cout << "The output file format is FieldView ASCII (.dat)." << endl; break;
       case CGNS_SOL: cout << "The output file format is CGNS (.cgns)." << endl; break;
     }
     cout << "Flow variables file name: " << Flow_FileName << "." << endl;
@@ -4897,7 +4901,7 @@ bool CConfig::TokenizeString(string & str, string & option_name,
     throw(-1);
   }
   name_part = str.substr(0, pos);
-  value_part = str.substr(pos+1,string::npos);
+  value_part = str.substr(pos+1, string::npos);
   //cout << "name_part  = |" << name_part  << "|" << endl;
   //cout << "value_part = |" << value_part << "|" << endl;
 
@@ -4962,7 +4966,7 @@ bool CConfig::TokenizeString(string & str, string & option_name,
     pos = it->find(';');
     if (pos != string::npos) {
       string before_semi = it->substr(0, pos);
-      string after_semi= it->substr(pos+1,string::npos);
+      string after_semi= it->substr(pos+1, string::npos);
       if (before_semi.empty()) {
         *it = ";";
         it++;

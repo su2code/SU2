@@ -134,7 +134,7 @@ void SpalartAllmarasSourceTerm(SpalartAllmarasInputs* inputs, SpalartAllmarasCon
   }
   
   double **DUiDXj = inputs->GetMeanFlowGradient();
-  double Vorticity = ComputeVorticity(nDim,DUiDXj);
+  double Vorticity = ComputeVorticity(nDim, DUiDXj);
   double Omega = sqrt(Vorticity);
   otherOutput->Omega = Omega;
   
@@ -145,9 +145,9 @@ void SpalartAllmarasSourceTerm(SpalartAllmarasInputs* inputs, SpalartAllmarasCon
   bool transition = inputs->transition;
   double intermittency = inputs->intermittency;
   
-  double div,dist_2, Laminar_Kinematic_Viscosity, J, J_2, J_3,
-  fv1, fv2, S, inv_k2_d2, Shat,inv_Shat, r, g, g_6, glim, fw, norm2_Grad,
-  dfv1,dfv2, dr, dg, dfw;
+  double div, dist_2, Laminar_Kinematic_Viscosity, J, J_2, J_3,
+  fv1, fv2, S, inv_k2_d2, Shat, inv_Shat, r, g, g_6, glim, fw, norm2_Grad,
+  dfv1, dfv2, dr, dg, dfw;
   
   double Production, Destruction, CrossProduction;
   double *DTurb_Kin_Visc_DXj = inputs->GetTurbKinViscGradient();
@@ -169,7 +169,7 @@ void SpalartAllmarasSourceTerm(SpalartAllmarasInputs* inputs, SpalartAllmarasCon
       StrainMag += 2.0*pow(0.5*(DUiDXj[1][2]+DUiDXj[2][1]),2.0);
     }
     StrainMag = sqrt(2.0*StrainMag);
-    Omega += 2.0*min(0.0,StrainMag-Omega);
+    Omega += 2.0*min(0.0, StrainMag-Omega);
   }
   /*--- Production term ---*/
   

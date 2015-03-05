@@ -164,7 +164,7 @@ void CPengRobinson::SetTDState_PT (double P, double T ) {
 
 void CPengRobinson::SetTDState_Prho (double P, double rho ) {
 
-    SetEnergy_Prho(P,rho);
+    SetEnergy_Prho(P, rho);
 
 	SetTDState_rhoe(rho, StaticEnergy);
 
@@ -194,10 +194,10 @@ void CPengRobinson::SetTDState_hs (double h, double s ) {
 	}
 
 
-	T = T_v_h(x1,h);
+	T = T_v_h(x1, h);
 	fv = atanh( b*sqrt2 / (x1 + b));
 	fx1 = A*log(T) + Gas_Constant*log(x1 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
-	T = T_v_h(x2,h);
+	T = T_v_h(x2, h);
 	fv = atanh( b*sqrt2 / (x2 + b));
 	fx2 = A*log(T) + Gas_Constant*log(x2 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
 
@@ -207,12 +207,12 @@ void CPengRobinson::SetTDState_hs (double h, double s ) {
 		if (fx1*fx2 > 0.0) {
 			if (fabs(fx1) < fabs(fx2)) {
 				x1 += FACTOR*(x1-x2);
-				T = T_v_h(x1,h);
+				T = T_v_h(x1, h);
 				fv = atanh( b*sqrt2/(x1 + b));
 				fx1 = A*log(T) + Gas_Constant*log(x1 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
 			} else{
 				x2 += FACTOR*(x2-x1);
-				T = T_v_h(x2,h);
+				T = T_v_h(x2, h);
 				fv = atanh( b*sqrt2/(x2 + b));
 				fx2 = A*log(T) + Gas_Constant*log(x2 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
 			}
@@ -230,7 +230,7 @@ void CPengRobinson::SetTDState_hs (double h, double s ) {
 	rtb = f < 0.0 ? (dx=x2-x1,x1) : (dx=x1-x2,x2);
 	do{
 		xmid=rtb+(dx *= 0.5);
-		T = T_v_h(xmid,h);
+		T = T_v_h(xmid, h);
 		fv = atanh( b* sqrt2/(xmid + b));
 		fmid= A*log(T) + Gas_Constant*log(xmid - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
 
@@ -243,7 +243,7 @@ void CPengRobinson::SetTDState_hs (double h, double s ) {
 		cout <<"Too many bisections in rtbis" << endl;
 //			do{
 //					fv = atanh( b/v* sqrt2/(1 + b/v));
-//					T=T_v_h(v,h);
+//					T=T_v_h(v, h);
 //					f = A*log(T) + Gas_Constant*log(v - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
 //					f1= Gas_Constant/(v-b)+ a*sqrt(alpha2(T)) *k/(sqrt(T*TstarCrit)*(v*v - b*b - 2*v*b));
 //					dv= f/f1;
@@ -258,7 +258,7 @@ void CPengRobinson::SetTDState_hs (double h, double s ) {
 		SetTDState_rhoT(Density, Temperature);
 	}
 
-	T=T_v_h(v,h);
+	T=T_v_h(v, h);
 	SetTDState_rhoT(1/v, T);
 
 	// consistency check

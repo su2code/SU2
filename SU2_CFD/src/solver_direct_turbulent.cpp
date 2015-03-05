@@ -452,7 +452,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
     
     Turb_i = node[iPoint]->GetSolution();
     Turb_j = node[jPoint]->GetSolution();
-    numerics->SetTurbVar(Turb_i,Turb_j);
+    numerics->SetTurbVar(Turb_i, Turb_j);
     
     /*--- Grid Movement ---*/
     
@@ -569,7 +569,7 @@ void CTurbSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
     
     /*--- Menter's first blending function (only SST)---*/
     if (config->GetKind_Turb_Model() == SST)
-      numerics->SetF1blending(node[iPoint]->GetF1blending(),node[jPoint]->GetF1blending());
+      numerics->SetF1blending(node[iPoint]->GetF1blending(), node[jPoint]->GetF1blending());
     
     /*--- Compute residual, and Jacobians ---*/
     
@@ -631,7 +631,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
     /*--- Modify matrix diagonal to assure diagonal dominance ---*/
     
     Delta = Vol / (config->GetCFLRedCoeff_Turb()*solver_container[FLOW_SOL]->node[iPoint]->GetDelta_Time());
-    Jacobian.AddVal2Diag(iPoint,Delta);
+    Jacobian.AddVal2Diag(iPoint, Delta);
     
     /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
     
@@ -1175,7 +1175,7 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
     /*--- The first line is the header ---*/
     getline (restart_file, text_line);
     
-    while (getline (restart_file,text_line)) {
+    while (getline (restart_file, text_line)) {
       istringstream point_line(text_line);
       
       /*--- Retrieve local index. If this node from the restart file lives
@@ -2389,7 +2389,7 @@ void CTurbSASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig
   /*--- The first line is the header ---*/
   getline (restart_file, text_line);
   
-  while (getline (restart_file,text_line)) {
+  while (getline (restart_file, text_line)) {
     istringstream point_line(text_line);
     
     /*--- Retrieve local index. If this node from the restart file lives
@@ -2660,7 +2660,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
     getline (restart_file, text_line);
     
     
-    while (getline (restart_file,text_line)) {
+    while (getline (restart_file, text_line)) {
       istringstream point_line(text_line);
       
       /*--- Retrieve local index. If this node from the restart file lives
@@ -2783,7 +2783,7 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     
     kine  = node[iPoint]->GetSolution(0);
     omega = node[iPoint]->GetSolution(1);
-    zeta = min(1.0/omega,a1/(strMag*F2));
+    zeta = min(1.0/omega, a1/(strMag*F2));
     muT = min(max(rho*kine*zeta,0.0),1.0);
     node[iPoint]->SetmuT(muT);
     
@@ -2843,7 +2843,7 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     /*--- Subtract residual and the Jacobian ---*/
     
     LinSysRes.SubtractBlock(iPoint, Residual);
-    Jacobian.SubtractBlock(iPoint,iPoint,Jacobian_i);
+    Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
     
   }
   
@@ -3106,7 +3106,7 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
       visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
       
       /*--- Menter's first blending function ---*/
-      visc_numerics->SetF1blending(node[iPoint]->GetF1blending(),node[iPoint]->GetF1blending());
+      visc_numerics->SetF1blending(node[iPoint]->GetF1blending(), node[iPoint]->GetF1blending());
       
       /*--- Compute residual, and Jacobians ---*/
       visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
@@ -3192,7 +3192,7 @@ void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
       visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
       
       /*--- Menter's first blending function ---*/
-      visc_numerics->SetF1blending(node[iPoint]->GetF1blending(),node[iPoint]->GetF1blending());
+      visc_numerics->SetF1blending(node[iPoint]->GetF1blending(), node[iPoint]->GetF1blending());
       
       /*--- Compute residual, and Jacobians ---*/
       visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
@@ -3391,7 +3391,7 @@ CTurbMLSolver::CTurbMLSolver(CGeometry *geometry, CConfig *config, unsigned shor
     /*--- The first line is the header ---*/
     getline (restart_file, text_line);
     
-    while (getline (restart_file,text_line)) {
+    while (getline (restart_file, text_line)) {
       istringstream point_line(text_line);
       
       /*--- Retrieve local index. If this node from the restart file lives
@@ -3566,7 +3566,7 @@ void CTurbMLSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
     numerics->SetDistance(geometry->node[iPoint]->GetWall_Distance(), 0.0);
     
     /*--- Set coordinates ---*/
-    numerics->SetCoord(geometry->node[iPoint]->GetCoord(),geometry->node[iPoint]->GetCoord());
+    numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint]->GetCoord());
     
     /*--- Compute the source term ---*/
     numerics->ComputeResidual(Residual, Jacobian_i, NULL, config);
@@ -4040,7 +4040,7 @@ void CTurbMLSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig
   /*--- The first line is the header ---*/
   getline (restart_file, text_line);
   
-  while (getline (restart_file,text_line)) {
+  while (getline (restart_file, text_line)) {
     istringstream point_line(text_line);
     
     /*--- Retrieve local index. If this node from the restart file lives

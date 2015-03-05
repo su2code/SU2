@@ -1066,8 +1066,8 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
             if (nDim == 3) { ForceProj_Vector[0] = -sin(Beta) * cos(Alpha); ForceProj_Vector[1] = cos(Beta); ForceProj_Vector[2] = -sin(Beta) * sin(Alpha); }
             break;
           case INVERSE_DESIGN_PRESSURE :
-            Cp = solver_container[FLOW_SOL]->GetCPressure(iMarker,iVertex);
-            CpTarget = solver_container[FLOW_SOL]->GetCPressureTarget(iMarker,iVertex);
+            Cp = solver_container[FLOW_SOL]->GetCPressure(iMarker, iVertex);
+            CpTarget = solver_container[FLOW_SOL]->GetCPressureTarget(iMarker, iVertex);
             Area = sqrt(Normal[0]*Normal[0] + Normal[1]*Normal[1]);
             if (nDim == 3) Area = sqrt(Normal[0]*Normal[0] + Normal[1]*Normal[1] + Normal[2]*Normal[2]);
             ForceProj_Vector[0] = -2.0*(Cp-CpTarget)*Normal[0]/Area; ForceProj_Vector[1] = -2.0*(Cp-CpTarget)*Normal[1]/Area;
@@ -1891,7 +1891,7 @@ void CAdjEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       numerics->SetVolume(geometry->node[iPoint]->GetVolume());
       
       /*--- Set coordinate ---*/
-      numerics->SetCoord(geometry->node[iPoint]->GetCoord(),geometry->node[iPoint]->GetCoord());
+      numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint]->GetCoord());
       
       /*--- Compute Source term Residual ---*/
       numerics->ComputeResidual(Residual, Jacobian_i, config);
@@ -4436,7 +4436,7 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
           }
           if (config->GetKind_ObjFunc() == AVG_OUTLET_PRESSURE) {
             /*--- Compute Riemann constant ---*/
-            Entropy = Pressure*pow(1.0/Density,Gamma);
+            Entropy = Pressure*pow(1.0/Density, Gamma);
             Riemann = Vn + 2.0*SoundSpeed/Gamma_Minus_One;
             /*--- Compute (Vn - Ubn).n term for use in the BC. ---*/
 
@@ -4485,7 +4485,7 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
         } else {
           /*---Subsonic Case(s) ---*/
           /*--- Compute Riemann constant ---*/
-          Entropy = Pressure*pow(1.0/Density,Gamma);
+          Entropy = Pressure*pow(1.0/Density, Gamma);
           Riemann = Vn + 2.0*SoundSpeed/Gamma_Minus_One;
           /*--- Compute (Vn - Ubn).n term for use in the BC. ---*/
           
@@ -5567,7 +5567,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
   unsigned long iVertex, iPoint;
   unsigned short iDim, jDim, iMarker, iPos, jPos;
   double *d = NULL, **PsiVar_Grad = NULL, **PrimVar_Grad = NULL, div_phi, *Normal = NULL, Area,
-  normal_grad_psi5, normal_grad_T, sigma_partial, Laminar_Viscosity = 0.0, heat_flux_factor, LevelSet, Target_LevelSet, temp_sens = 0.0, *Psi = NULL, *U = NULL, Enthalpy, **GridVel_Grad, gradPsi5_v, psi5_tau_partial, psi5_tau_grad_vel, source_v_1, Density, Pressure = 0.0, div_vel, val_turb_ke, vartheta, vartheta_partial, psi5_p_div_vel, Omega[3], rho_v[3], CrossProduct[3], delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}}, r, ru, rv, rw, rE, p, T, dp_dr, dp_dru,dp_drv, dp_drw, dp_drE, dH_dr, dH_dru, dH_drv, dH_drw, dH_drE, H, D[3][3], Dd[3], Mach_Inf, eps, scale = 1.0;
+  normal_grad_psi5, normal_grad_T, sigma_partial, Laminar_Viscosity = 0.0, heat_flux_factor, LevelSet, Target_LevelSet, temp_sens = 0.0, *Psi = NULL, *U = NULL, Enthalpy, **GridVel_Grad, gradPsi5_v, psi5_tau_partial, psi5_tau_grad_vel, source_v_1, Density, Pressure = 0.0, div_vel, val_turb_ke, vartheta, vartheta_partial, psi5_p_div_vel, Omega[3], rho_v[3], CrossProduct[3], delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}}, r, ru, rv, rw, rE, p, T, dp_dr, dp_dru, dp_drv, dp_drw, dp_drE, dH_dr, dH_dru, dH_drv, dH_drw, dH_drE, H, D[3][3], Dd[3], Mach_Inf, eps, scale = 1.0;
   double RefVel2, RefDensity, Mach2Vel, *Velocity_Inf, factor;
 
   double *USens = new double[nVar];

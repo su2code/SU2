@@ -51,7 +51,7 @@ inline unsigned long CGeometry::GetGlobal_nElemTetr(void) { return 0; }
 
 inline unsigned long CGeometry::GetGlobal_nElemHexa(void) { return 0; }
 
-inline unsigned long CGeometry::GetGlobal_nElemWedg(void) { return 0; }
+inline unsigned long CGeometry::GetGlobal_nElemPris(void) { return 0; }
 
 inline unsigned long CGeometry::GetGlobal_nElemPyra(void) { return 0; }
 
@@ -65,7 +65,7 @@ inline unsigned long CGeometry::GetnElemTetr(void) { return 0; }
 
 inline unsigned long CGeometry::GetnElemHexa(void) { return 0; }
 
-inline unsigned long CGeometry::GetnElemWedg(void) { return 0; }
+inline unsigned long CGeometry::GetnElemPris(void) { return 0; }
 
 inline unsigned long CGeometry::GetnElemPyra(void) { return 0; }
 
@@ -229,7 +229,7 @@ inline unsigned long CPhysicalGeometry::GetGlobal_nElemTetr(void) { return Globa
 
 inline unsigned long CPhysicalGeometry::GetGlobal_nElemHexa(void) { return Global_nelem_hexa; }
 
-inline unsigned long CPhysicalGeometry::GetGlobal_nElemWedg(void) { return Global_nelem_wedge; }
+inline unsigned long CPhysicalGeometry::GetGlobal_nElemPris(void) { return Global_nelem_prism; }
 
 inline unsigned long CPhysicalGeometry::GetGlobal_nElemPyra(void) { return Global_nelem_pyramid; }
 
@@ -243,7 +243,7 @@ inline unsigned long CPhysicalGeometry::GetnElemTetr(void) { return nelem_tetra;
 
 inline unsigned long CPhysicalGeometry::GetnElemHexa(void) { return nelem_hexa; }
 
-inline unsigned long CPhysicalGeometry::GetnElemWedg(void) { return nelem_wedge; }
+inline unsigned long CPhysicalGeometry::GetnElemPris(void) { return nelem_prism; }
 
 inline unsigned long CPhysicalGeometry::GetnElemPyra(void) { return nelem_pyramid; }
 

@@ -152,9 +152,9 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   Gamma_Minus_One = Gamma - 1.0;
 
   /*--- Define geometry constants in the solver structure
-   Compressible flow, primitive variables (T,vx,vy,vz,P,rho,h,c,lamMu,EddyMu,ThCond,Cp)
-   Incompressible flow, primitive variables (P,vx,vy,vz,rho,beta,lamMu,EddyMu).
-   FreeSurface Incompressible flow, primitive variables (P,vx,vy,vz,rho,beta,lamMu,EddyMu,LevelSet,Dist).
+   Compressible flow, primitive variables (T, vx, vy, vz, P, rho, h, c, lamMu, EddyMu, ThCond, Cp)
+   Incompressible flow, primitive variables (P, vx, vy, vz, rho, beta, lamMu, EddyMu).
+   FreeSurface Incompressible flow, primitive variables (P, vx, vy, vz, rho, beta, lamMu, EddyMu, LevelSet, Dist).
    ---*/
 
   nDim = geometry->GetnDim();
@@ -2969,9 +2969,9 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
     
     node[iPoint]->SetNon_Physical(false);
     
-    /*--- Incompressible flow, primitive variables nDim+3, (P,vx,vy,vz,rho,beta),
-     FreeSurface Incompressible flow, primitive variables nDim+5, (P,vx,vy,vz,rho,beta,LevelSet,Dist),
-     Compressible flow, primitive variables nDim+5, (T,vx,vy,vz,P,rho,h,c) ---*/
+    /*--- Incompressible flow, primitive variables nDim+3, (P, vx, vy, vz, rho, beta),
+     FreeSurface Incompressible flow, primitive variables nDim+5, (P, vx, vy, vz, rho, beta, LevelSet, Dist),
+     Compressible flow, primitive variables nDim+5, (T, vx, vy, vz, P, rho, h, c) ---*/
 
     if (compressible) {
     	RightSol = node[iPoint]->SetPrimVar_Compressible(FluidModel);
@@ -3316,10 +3316,10 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
 
     /*--- Set implicit computation ---*/
     if (implicit) {
-      Jacobian.AddBlock(iPoint,iPoint,Jacobian_i);
-      Jacobian.AddBlock(iPoint,jPoint,Jacobian_j);
-      Jacobian.SubtractBlock(jPoint,iPoint,Jacobian_i);
-      Jacobian.SubtractBlock(jPoint,jPoint,Jacobian_j);
+      Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+      Jacobian.AddBlock(iPoint, jPoint, Jacobian_j);
+      Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
+      Jacobian.SubtractBlock(jPoint, jPoint, Jacobian_j);
     }
   }
 
@@ -3632,7 +3632,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
       numerics->SetVolume(geometry->node[iPoint]->GetVolume());
 
       /*--- Set y coordinate ---*/
-      numerics->SetCoord(geometry->node[iPoint]->GetCoord(),geometry->node[iPoint]->GetCoord());
+      numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint]->GetCoord());
 
       /*--- Compute Source term Residual ---*/
       numerics->ComputeResidual(Residual, Jacobian_i, config);
@@ -4630,7 +4630,7 @@ void CEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
       for (iDim = 0; iDim < nDim; iDim++) {
-        Partial_Gradient = node[iPoint]->GetGradient_Primitive(iVar,iDim) / (geometry->node[iPoint]->GetVolume());
+        Partial_Gradient = node[iPoint]->GetGradient_Primitive(iVar, iDim) / (geometry->node[iPoint]->GetVolume());
         node[iPoint]->SetGradient_Primitive(iVar, iDim, Partial_Gradient);
       }
     }
@@ -5009,7 +5009,7 @@ void CEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) {
 //  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 //    for (iVar = 0; iVar < nSecondaryVarGrad; iVar++) {
 //      for (iDim = 0; iDim < nDim; iDim++) {
-//        Partial_Gradient = node[iPoint]->GetGradient_Secondary(iVar,iDim) / (geometry->node[iPoint]->GetVolume());
+//        Partial_Gradient = node[iPoint]->GetGradient_Secondary(iVar, iDim) / (geometry->node[iPoint]->GetVolume());
 //        node[iPoint]->SetGradient_Secondary(iVar, iDim, Partial_Gradient);
 //      }
 //    }
@@ -5266,7 +5266,7 @@ void CEulerSolver::SetPreconditioner(CConfig *config, unsigned short iPoint) {
 
   /*--- Variables to calculate the preconditioner parameter Beta ---*/
   local_Mach = sqrt(node[iPoint]->GetVelocity2())/node[iPoint]->GetSoundSpeed();
-  Beta 		    = max(Beta_min,min(local_Mach,Beta_max));
+  Beta 		    = max(Beta_min, min(local_Mach, Beta_max));
   Beta2 		    = Beta*Beta;
 
   U_i = node[iPoint]->GetSolution();
@@ -5673,7 +5673,7 @@ void CEulerSolver::GetEngine_Properties(CGeometry *geometry, CConfig *config, un
   if ((rank == MASTER_NODE) && (iMesh == MESH_0) && write_heads && Output) {
 
     cout.precision(4);
-    cout.setf(ios::fixed,ios::floatfield);
+    cout.setf(ios::fixed, ios::floatfield);
 
     cout << endl << "---------------------------- Engine properties --------------------------" << endl;
     for (iMarker_EngineInflow = 0; iMarker_EngineInflow < nMarker_EngineInflow; iMarker_EngineInflow++) {
@@ -6073,7 +6073,7 @@ void CEulerSolver::GetActuatorDisk_Properties(CGeometry *geometry, CConfig *conf
   if ((rank == MASTER_NODE) && (iMesh == MESH_0) && write_heads && Output) {
     
     cout.precision(4);
-    cout.setf(ios::fixed,ios::floatfield);
+    cout.setf(ios::fixed, ios::floatfield);
     
     cout << endl << "------------------------ Actuator Disk properties -----------------------" << endl;
     
@@ -6287,7 +6287,7 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
   bool write_heads = (((config->GetExtIter() % (config->GetWrt_Con_Freq()*20)) == 0));
   if ((rank == MASTER_NODE) && (iMesh == MESH_0) && write_heads && Output) {
     cout.precision(7);
-    cout.setf(ios::fixed,ios::floatfield);
+    cout.setf(ios::fixed, ios::floatfield);
     cout << endl << "----------------------------- Fixed CL Mode -----------------------------" << endl;
     cout << " Target CL: " << config->GetTarget_CL();
     cout << ", Current CL: " << Total_CLift;
@@ -6497,7 +6497,7 @@ void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container
           
           /*--- Add the Jacobian to the sparse matrix ---*/
           
-          Jacobian.AddBlock(iPoint,iPoint,Jacobian_i);
+          Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
           
         }
         
@@ -6615,7 +6615,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
         }
         Pressure_Bound   = node[iPoint]->GetPressure();
         SoundSpeed_Bound = sqrt(Gamma*Pressure_Bound/Density_Bound);
-        Entropy_Bound    = pow(Density_Bound,Gamma)/Pressure_Bound;
+        Entropy_Bound    = pow(Density_Bound, Gamma)/Pressure_Bound;
 
         /*--- Store the primitive variable state for the freestream. Project
          the freestream velocity vector into the local normal direction,
@@ -6630,7 +6630,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
         }
         Pressure_Infty   = GetPressure_Inf();
         SoundSpeed_Infty = sqrt(Gamma*Pressure_Infty/Density_Infty);
-        Entropy_Infty    = pow(Density_Infty,Gamma)/Pressure_Infty;
+        Entropy_Infty    = pow(Density_Infty, Gamma)/Pressure_Infty;
 
         /*--- Adjust the normal freestream velocity for grid movement ---*/
 
@@ -7232,7 +7232,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
         }
         
         
-        //              Jacobian.AddBlock(iPoint,iPoint,Jacobian_i);
+        //              Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
         
         
         for (iVar = 0; iVar < nVar; iVar++) {
@@ -7471,9 +7471,9 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
              be positive, so the choice of root is clear. ---*/
             
             dd = bb*bb - 4.0*aa*cc;
-            dd = sqrt(max(0.0,dd));
+            dd = sqrt(max(0.0, dd));
             Vel_Mag   = (-bb + dd)/(2.0*aa);
-            Vel_Mag   = max(0.0,Vel_Mag);
+            Vel_Mag   = max(0.0, Vel_Mag);
             Velocity2 = Vel_Mag*Vel_Mag;
 
             /*--- Compute speed of sound from total speed of sound eqn. ---*/
@@ -7483,7 +7483,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
             /*--- Mach squared (cut between 0-1), use to adapt velocity ---*/
             
             Mach2 = Velocity2/SoundSpeed2;
-            Mach2 = min(1.0,Mach2);
+            Mach2 = min(1.0, Mach2);
             Velocity2   = Mach2*SoundSpeed2;
             Vel_Mag     = sqrt(Velocity2);
             SoundSpeed2 = SoundSpeed_Total2 - 0.5*Gamma_Minus_One*Velocity2;
@@ -7499,7 +7499,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
             /*--- Static pressure using isentropic relation at a point ---*/
             
-            Pressure = P_Total*pow((Temperature/T_Total),Gamma/Gamma_Minus_One);
+            Pressure = P_Total*pow((Temperature/T_Total), Gamma/Gamma_Minus_One);
             
             /*--- Density at the inlet from the gas law ---*/
             
@@ -7799,7 +7799,7 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
            (SUmb) solver in the routine bcSubsonicOutflow.f90 by Edwin van
            der Weide, last modified 09-10-2007. ---*/
 
-          Entropy = Pressure*pow(1.0/Density,Gamma);
+          Entropy = Pressure*pow(1.0/Density, Gamma);
           Riemann = Vn + 2.0*SoundSpeed/Gamma_Minus_One;
 
           /*--- Compute the new fictious state at the outlet ---*/
@@ -8311,7 +8311,7 @@ void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_contai
       }
       Pressure   = V_domain[nDim+1];
       SoundSpeed = sqrt(Gamma*Pressure/Density);
-      Entropy = Pressure*pow(1.0/Density,Gamma);
+      Entropy = Pressure*pow(1.0/Density, Gamma);
       Riemann = Vn + 2.0*SoundSpeed/Gamma_Minus_One;
 
       /*--- Compute the new fictious state at the outlet ---*/
@@ -8524,7 +8524,7 @@ void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_conta
        be positive, so the choice of root is clear. ---*/
       
       dd      = bb*bb - 4.0*aa*cc;
-      dd      = sqrt(max(0.0,dd));
+      dd      = sqrt(max(0.0, dd));
       Vel_Mag = (-bb + dd)/(2.0*aa);
       
       if (Vel_Mag >= 0.0) {
@@ -8550,7 +8550,7 @@ void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_conta
         
         /*--- Static pressure using isentropic relation at a point ---*/
         
-        Pressure = Exhaust_Pressure*pow((Temperature/Exhaust_Temperature),Gamma/Gamma_Minus_One);
+        Pressure = Exhaust_Pressure*pow((Temperature/Exhaust_Temperature), Gamma/Gamma_Minus_One);
         
         /*--- Density at the exhaust from the gas law ---*/
         
@@ -8767,7 +8767,7 @@ void CEulerSolver::BC_Engine_Bleed(CGeometry *geometry, CSolver **solver_contain
        be positive, so the choice of root is clear. ---*/
       
       dd = bb*bb - 4.0*aa*cc;
-      dd = sqrt(max(0.0,dd));
+      dd = sqrt(max(0.0, dd));
       Vel_Mag   = (-bb + dd)/(2.0*aa);
       
       if (Vel_Mag >= 0.0) {
@@ -8781,7 +8781,7 @@ void CEulerSolver::BC_Engine_Bleed(CGeometry *geometry, CSolver **solver_contain
         /*--- Mach squared (cut between 0-1), use to adapt velocity ---*/
         
         Mach2 = Velocity2/SoundSpeed2;
-        Mach2 = min(1.0,Mach2);
+        Mach2 = min(1.0, Mach2);
         Velocity2   = Mach2*SoundSpeed2;
         Vel_Mag     = sqrt(Velocity2);
         SoundSpeed2 = SoundSpeed_Bleed2 - 0.5*Gamma_Minus_One*Velocity2;
@@ -8797,7 +8797,7 @@ void CEulerSolver::BC_Engine_Bleed(CGeometry *geometry, CSolver **solver_contain
         
         /*--- Static pressure using isentropic relation at a point ---*/
         
-        Pressure = Bleed_Pressure*pow((Temperature/Bleed_Temperature),Gamma/Gamma_Minus_One);
+        Pressure = Bleed_Pressure*pow((Temperature/Bleed_Temperature), Gamma/Gamma_Minus_One);
         
         /*--- Density at the inlet from the gas law ---*/
         
@@ -9879,7 +9879,7 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
   
   getline (restart_file, text_line);
 
-  while (getline (restart_file,text_line)) {
+  while (getline (restart_file, text_line)) {
     istringstream point_line(text_line);
 
     /*--- Retrieve local index. If this node from the restart file lives
@@ -9988,10 +9988,10 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
 
     for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
       iMeshFine = iMesh-1;
-      geometry[iMesh]->SetControlVolume(config,geometry[iMeshFine], UPDATE);
-      geometry[iMesh]->SetBoundControlVolume(config,geometry[iMeshFine],UPDATE);
+      geometry[iMesh]->SetControlVolume(config, geometry[iMeshFine], UPDATE);
+      geometry[iMesh]->SetBoundControlVolume(config, geometry[iMeshFine],UPDATE);
       geometry[iMesh]->SetCoord(geometry[iMeshFine]);
-      geometry[iMesh]->SetRestricted_GridVelocity(geometry[iMeshFine],config);
+      geometry[iMesh]->SetRestricted_GridVelocity(geometry[iMeshFine], config);
     }
   }
 
@@ -10186,7 +10186,7 @@ void CEulerSolver::SetFreeSurface_Distance(CGeometry *geometry, CConfig *config)
         sprintf (buffer, ".dat");
       }
 
-      strcat(cstr,buffer);
+      strcat(cstr, buffer);
 
       LevelSet_file.open(cstr, ios::out);
       LevelSet_file << "TITLE = \"SU2 Free surface simulation\"" << endl;
@@ -10284,9 +10284,9 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   Gamma_Minus_One = Gamma - 1.0;
   
   /*--- Define geometry constants in the solver structure
-   Compressible flow, primitive variables (T,vx,vy,vz,P,rho,h,c,lamMu,EddyMu,ThCond,Cp)
-   Incompressible flow, primitive variables (P,vx,vy,vz,rho,beta,lamMu,EddyMu),
-   FreeSurface Incompressible flow, primitive variables (P,vx,vy,vz,rho,beta,lamMu,EddyMu,LevelSet,Dist),
+   Compressible flow, primitive variables (T, vx, vy, vz, P, rho, h, c, lamMu, EddyMu, ThCond, Cp)
+   Incompressible flow, primitive variables (P, vx, vy, vz, rho, beta, lamMu, EddyMu),
+   FreeSurface Incompressible flow, primitive variables (P, vx, vy, vz, rho, beta, lamMu, EddyMu, LevelSet, Dist),
     ---*/
   
   nDim = geometry->GetnDim();
@@ -10686,7 +10686,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     
     getline (restart_file, text_line);
     
-    while (getline (restart_file,text_line)) {
+    while (getline (restart_file, text_line)) {
       istringstream point_line(text_line);
       
       /*--- Retrieve local index. If this node from the restart file lives
@@ -10939,9 +10939,9 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
     
     node[iPoint]->SetNon_Physical(false);
 
-    /*--- Incompressible flow, primitive variables nDim+3, (P,vx,vy,vz,rho,beta),
-     FreeSurface Incompressible flow, primitive variables nDim+4, (P,vx,vy,vz,rho,beta,dist),
-     Compressible flow, primitive variables nDim+5, (T,vx,vy,vz,P,rho,h,c,lamMu,eddyMu,ThCond,Cp) ---*/
+    /*--- Incompressible flow, primitive variables nDim+3, (P, vx, vy, vz, rho, beta),
+     FreeSurface Incompressible flow, primitive variables nDim+4, (P, vx, vy, vz, rho, beta, dist),
+     Compressible flow, primitive variables nDim+5, (T, vx, vy, vz, P, rho, h, c, lamMu, eddyMu, ThCond, Cp) ---*/
     
     if (compressible) {
     	RightSol = node[iPoint]->SetPrimVar_Compressible(eddy_visc, turb_ke, FluidModel);

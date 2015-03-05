@@ -340,7 +340,7 @@ void CUpwMSW_TNE2::ComputeResidual(double *val_residual,
   }
   
   /*--- Calculate the state weighting function ---*/
-  dp = fabs(P_j-P_i) / min(P_j,P_i);
+  dp = fabs(P_j-P_i) / min(P_j, P_i);
   w = 0.5 * (1.0/(pow(alpha*dp,2.0) +1.0));
   onemw = 1.0 - w;
   
@@ -509,7 +509,7 @@ void CUpwAUSM_TNE2::ComputeResidual(double *val_residual,
   }
   
   /*--- Pull stored primitive variables ---*/
-  // Primitives: [rho1,...,rhoNs, T, Tve, u, v, w, P, rho, h, c]
+  // Primitives: [rho1,..., rhoNs, T, Tve, u, v, w, P, rho, h, c]
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     rhos_i[iSpecies] = V_i[RHOS_INDEX+iSpecies];
     rhos_j[iSpecies] = V_j[RHOS_INDEX+iSpecies];
@@ -943,7 +943,7 @@ void CUpwAUSMPWplus_TNE2::ComputeResidual(double *val_residual,
   }
   
   /*--- Pull stored primitive variables ---*/
-  // Primitives: [rho1,...,rhoNs, T, Tve, u, v, w, P, rho, h, c]
+  // Primitives: [rho1,..., rhoNs, T, Tve, u, v, w, P, rho, h, c]
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     rhos_i[iSpecies] = V_i[RHOS_INDEX+iSpecies];
     rhos_j[iSpecies] = V_j[RHOS_INDEX+iSpecies];
@@ -998,8 +998,8 @@ void CUpwAUSMPWplus_TNE2::ComputeResidual(double *val_residual,
                             ((gtl_j+1.0)/(gtl_j*rho_i) - (gtl_i+1.0)/(gtl_i*rho_j))));
   }
   
-  if (0.5*(ProjVel_i+ProjVel_j) >= 0.0) aij = atl*atl/max(fabs(ProjVel_i),atl);
-  else                                  aij = atl*atl/max(fabs(ProjVel_j),atl);
+  if (0.5*(ProjVel_i+ProjVel_j) >= 0.0) aij = atl*atl/max(fabs(ProjVel_i), atl);
+  else                                  aij = atl*atl/max(fabs(ProjVel_j), atl);
   
   /*--- Calculate L/R Mach & Pressure functions ---*/
 	mL	= ProjVel_i/aij;
@@ -1417,8 +1417,8 @@ void CCentLax_TNE2::ComputeResidual(double *val_resconv,
 	Local_Lambda_j = (fabs(ProjVel_j)+a_j*Area);
 	MeanLambda = 0.5*(Local_Lambda_i+Local_Lambda_j);
   
-	Phi_i = pow(Lambda_i/(4.0*MeanLambda+EPS),Param_p);
-	Phi_j = pow(Lambda_j/(4.0*MeanLambda+EPS),Param_p);
+	Phi_i = pow(Lambda_i/(4.0*MeanLambda+EPS), Param_p);
+	Phi_j = pow(Lambda_j/(4.0*MeanLambda+EPS), Param_p);
 	StretchingFactor = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j+EPS);
   
 	sc0 = 3.0*(double(Neighbor_i)+double(Neighbor_j))/(double(Neighbor_i)*double(Neighbor_j));
@@ -1471,14 +1471,14 @@ CAvgGrad_TNE2::CAvgGrad_TNE2(unsigned short val_nDim,
   nPrimVar     = val_nPrimVar;
   nPrimVarGrad = val_nPrimVarGrad;
   
-  /*--- Compressible flow, primitive variables nDim+3, (T,vx,vy,vz,P,rho) ---*/
+  /*--- Compressible flow, primitive variables nDim+3, (T, vx, vy, vz, P, rho) ---*/
 	PrimVar_i    = new double [nPrimVar];
 	PrimVar_j    = new double [nPrimVar];
 	Mean_PrimVar = new double [nPrimVar];
   
   Mean_Diffusion_Coeff = new double[nSpecies];
   
-  /*--- Compressible flow, primitive gradient variables nDim+3, (T,vx,vy,vz) ---*/
+  /*--- Compressible flow, primitive gradient variables nDim+3, (T, vx, vy, vz) ---*/
 	Mean_GradPrimVar = new double* [nPrimVarGrad];
 	for (iVar = 0; iVar < nPrimVarGrad; iVar++)
 		Mean_GradPrimVar[iVar] = new double [nDim];
@@ -1581,14 +1581,14 @@ CAvgGradCorrected_TNE2::CAvgGradCorrected_TNE2(unsigned short val_nDim,
   nPrimVar     = val_nPrimVar;
   nPrimVarGrad = val_nPrimVarGrad;
   
-  /*--- Compressible flow, primitive variables nDim+3, (T,vx,vy,vz,P,rho) ---*/
+  /*--- Compressible flow, primitive variables nDim+3, (T, vx, vy, vz, P, rho) ---*/
 	PrimVar_i    = new double [nPrimVar];
 	PrimVar_j    = new double [nPrimVar];
 	Mean_PrimVar = new double [nPrimVar];
   
   Mean_Diffusion_Coeff = new double[nSpecies];
   
-  /*--- Compressible flow, primitive gradient variables nDim+3, (T,vx,vy,vz) ---*/
+  /*--- Compressible flow, primitive gradient variables nDim+3, (T, vx, vy, vz) ---*/
 	Mean_GradPrimVar = new double* [nPrimVarGrad];
 	for (iVar = 0; iVar < nPrimVarGrad; iVar++)
 		Mean_GradPrimVar[iVar] = new double [nDim];
@@ -1797,7 +1797,7 @@ void CSource_TNE2::GetKeqConstants(double *A, unsigned short val_Reaction,
   /*--- Interpolate ---*/
   for (ii = 0; ii < 5; ii++)
     A[ii] =  (RxnConstantTable[iIndex+1][ii] - RxnConstantTable[iIndex][ii])
-           / (pow(10.0,pwr+1) - pow(10.0,pwr)) * (N - pow(10.0,pwr))
+           / (pow(10.0, pwr+1) - pow(10.0, pwr)) * (N - pow(10.0, pwr))
            + RxnConstantTable[iIndex][ii];
   return;
 }

@@ -65,7 +65,7 @@ unsigned short GetnZone(string val_mesh_filename, unsigned short val_format, CCo
       
       for (iLine = 0; iLine < nLine ; iLine++) {
         
-        getline (mesh_file,text_line);
+        getline (mesh_file, text_line);
         
         /*--- Search for the "NZONE" keyword to see if there are multiple Zones ---*/
         
@@ -103,7 +103,7 @@ unsigned short GetnDim(string val_mesh_filename, unsigned short val_format) {
       
       for (iLine = 0; iLine < nLine ; iLine++) {
         
-        getline (mesh_file,text_line);
+        getline (mesh_file, text_line);
         
         /*--- Search for the "NDIM" keyword to see if there are multiple Zones ---*/
         
@@ -126,7 +126,7 @@ unsigned short GetnDim(string val_mesh_filename, unsigned short val_format) {
       
       /*--- Check whether the supplied file is truly a CGNS file. ---*/
       
-      if ( cg_is_cgns(val_mesh_filename.c_str(),&file_type) != CG_OK ) {
+      if ( cg_is_cgns(val_mesh_filename.c_str(), &file_type) != CG_OK ) {
         printf( "\n\n   !!! Error !!!\n" );
         printf( " %s is not a CGNS file.\n", val_mesh_filename.c_str());
         printf( " Now exiting...\n\n");
@@ -137,12 +137,12 @@ unsigned short GetnDim(string val_mesh_filename, unsigned short val_format) {
        is the specific index number for this file and will be
        repeatedly used in the function calls. ---*/
       
-      if (cg_open(val_mesh_filename.c_str(),CG_MODE_READ,&fn)) cg_error_exit();
+      if (cg_open(val_mesh_filename.c_str(), CG_MODE_READ, &fn)) cg_error_exit();
       
       /*--- Get the number of databases. This is the highest node
        in the CGNS heirarchy. ---*/
       
-      if (cg_nbases(fn,&nbases)) cg_error_exit();
+      if (cg_nbases(fn, &nbases)) cg_error_exit();
       
       /*--- Check if there is more than one database. Throw an
        error if there is because this reader can currently
@@ -159,7 +159,7 @@ unsigned short GetnDim(string val_mesh_filename, unsigned short val_format) {
       
       for ( int i = 1; i <= nbases; i++ ) {
         
-        if (cg_base_read(fn,i,basename,&cell_dim,&phys_dim)) cg_error_exit();
+        if (cg_base_read(fn, i, basename, &cell_dim, &phys_dim)) cg_error_exit();
         
         /*--- Get the number of zones for this base. ---*/
         
@@ -282,8 +282,8 @@ void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned
       
       /*--- Create the control volume structures ---*/
       
-      geometry[iZone][iMGlevel]->SetControlVolume(config[iZone],geometry[iZone][iMGlevel-1], ALLOCATE);
-      geometry[iZone][iMGlevel]->SetBoundControlVolume(config[iZone],geometry[iZone][iMGlevel-1], ALLOCATE);
+      geometry[iZone][iMGlevel]->SetControlVolume(config[iZone], geometry[iZone][iMGlevel-1], ALLOCATE);
+      geometry[iZone][iMGlevel]->SetBoundControlVolume(config[iZone], geometry[iZone][iMGlevel-1], ALLOCATE);
       geometry[iZone][iMGlevel]->SetCoord(geometry[iZone][iMGlevel-1]);
       
       /*--- Find closest neighbor to a surface point ---*/
@@ -726,9 +726,9 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
           /*--- Compressible flow ---*/
           switch (config->GetKind_Centered_Flow()) {
             case NO_CENTERED : cout << "No centered scheme." << endl; break;
-            case LAX : numerics_container[MESH_0][FLOW_SOL][CONV_TERM] = new CCentLax_Flow(nDim,nVar_Flow, config); break;
-            case JST : numerics_container[MESH_0][FLOW_SOL][CONV_TERM] = new CCentJST_Flow(nDim,nVar_Flow, config); break;
-            case JST_KE : numerics_container[MESH_0][FLOW_SOL][CONV_TERM] = new CCentJST_KE_Flow(nDim,nVar_Flow, config); break;
+            case LAX : numerics_container[MESH_0][FLOW_SOL][CONV_TERM] = new CCentLax_Flow(nDim, nVar_Flow, config); break;
+            case JST : numerics_container[MESH_0][FLOW_SOL][CONV_TERM] = new CCentJST_Flow(nDim, nVar_Flow, config); break;
+            case JST_KE : numerics_container[MESH_0][FLOW_SOL][CONV_TERM] = new CCentJST_KE_Flow(nDim, nVar_Flow, config); break;
             default : cout << "Centered scheme not implemented." << endl; exit(EXIT_FAILURE); break;
           }
           
@@ -756,7 +756,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
             default : cout << "Centered scheme not implemented." << endl; exit(EXIT_FAILURE); break;
           }
           for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-            numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CCentLaxArtComp_Flow(nDim,nVar_Flow, config);
+            numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CCentLaxArtComp_Flow(nDim, nVar_Flow, config);
           
           /*--- Definition of the boundary condition method ---*/
           for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
@@ -915,7 +915,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
       if (config->GetRotating_Frame() == YES)
         numerics_container[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceRotatingFrame_Flow(nDim, nVar_Flow, config);
       else if (config->GetAxisymmetric() == YES)
-        numerics_container[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceAxisymmetric_Flow(nDim,nVar_Flow, config);
+        numerics_container[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceAxisymmetric_Flow(nDim, nVar_Flow, config);
       else if (config->GetGravityForce() == YES)
         numerics_container[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceGravity(nDim, nVar_Flow, config);
       else if (config->GetWind_Gust() == YES)
@@ -943,7 +943,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
           case NO_CENTERED : cout << "No centered scheme." << endl; break;
           case LAX :
             for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-              numerics_container[iMGlevel][TNE2_SOL][CONV_TERM]       = new CCentLax_TNE2(nDim,nVar_TNE2, nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
+              numerics_container[iMGlevel][TNE2_SOL][CONV_TERM]       = new CCentLax_TNE2(nDim, nVar_TNE2, nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
               numerics_container[iMGlevel][TNE2_SOL][CONV_BOUND_TERM] = new CUpwRoe_TNE2(nDim, nVar_TNE2,  nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
             }
             break;

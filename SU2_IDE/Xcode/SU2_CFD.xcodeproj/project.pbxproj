@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0506980A1AA6179100FF4F07 /* output_fieldview.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 050698091AA6179100FF4F07 /* output_fieldview.cpp */; };
 		0530E56817FDF79500733CE8 /* solver_direct_poisson.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530E56717FDF79500733CE8 /* solver_direct_poisson.cpp */; };
 		0530E56A17FDF7AC00733CE8 /* solver_direct_elasticity.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530E56917FDF7AC00733CE8 /* solver_direct_elasticity.cpp */; };
 		0530E56C17FDF7BD00733CE8 /* variable_direct_poisson.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530E56B17FDF7BD00733CE8 /* variable_direct_poisson.cpp */; };
@@ -97,6 +98,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		050698091AA6179100FF4F07 /* output_fieldview.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = output_fieldview.cpp; path = ../../SU2_CFD/src/output_fieldview.cpp; sourceTree = "<group>"; };
 		0530E56717FDF79500733CE8 /* solver_direct_poisson.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = solver_direct_poisson.cpp; path = ../../SU2_CFD/src/solver_direct_poisson.cpp; sourceTree = "<group>"; };
 		0530E56917FDF7AC00733CE8 /* solver_direct_elasticity.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = solver_direct_elasticity.cpp; path = ../../SU2_CFD/src/solver_direct_elasticity.cpp; sourceTree = "<group>"; };
 		0530E56B17FDF7BD00733CE8 /* variable_direct_poisson.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = variable_direct_poisson.cpp; path = ../../SU2_CFD/src/variable_direct_poisson.cpp; sourceTree = "<group>"; };
@@ -289,6 +291,7 @@
 				05E6DBD617EB62A100FA1F7E /* output_paraview.cpp */,
 				05E6DBD717EB62A100FA1F7E /* output_structure.cpp */,
 				05E6DBD817EB62A100FA1F7E /* output_tecplot.cpp */,
+				050698091AA6179100FF4F07 /* output_fieldview.cpp */,
 				05755F091A54AC4500600019 /* output_su2.cpp */,
 			);
 			name = Output;
@@ -540,6 +543,7 @@
 				05E6DC1217EB62A100FA1F7E /* numerics_direct_tne2.cpp in Sources */,
 				05F1089D1978D2AE00F2F288 /* fluid_model.cpp in Sources */,
 				05E6DC1317EB62A100FA1F7E /* numerics_direct_transition.cpp in Sources */,
+				0506980A1AA6179100FF4F07 /* output_fieldview.cpp in Sources */,
 				05E6DC1417EB62A100FA1F7E /* numerics_direct_turbulent.cpp in Sources */,
 				05E6DC1517EB62A100FA1F7E /* numerics_direct_wave.cpp in Sources */,
 				05E6DC1617EB62A100FA1F7E /* numerics_linearized_mean.cpp in Sources */,

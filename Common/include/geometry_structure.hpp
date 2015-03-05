@@ -87,8 +87,8 @@ protected:
   Global_nelem_tetra,          /*!< \brief Total number of tetrahedra in the mesh across all processors. */
   nelem_hexa,           /*!< \brief Number of hexahedra in the mesh. */
   Global_nelem_hexa,           /*!< \brief Total number of hexahedra in the mesh across all processors. */
-  nelem_wedge,          /*!< \brief Number of wedges in the mesh. */
-  Global_nelem_wedge,          /*!< \brief Total number of wedges in the mesh across all processors. */
+  nelem_prism,          /*!< \brief Number of prisms in the mesh. */
+  Global_nelem_prism,          /*!< \brief Total number of prisms in the mesh across all processors. */
   nelem_pyramid,        /*!< \brief Number of pyramids in the mesh. */
   Global_nelem_pyramid,        /*!< \brief Total number of pyramids in the mesh across all processors. */
   nelem_edge_bound,           /*!< \brief Number of edges on the mesh boundaries. */
@@ -726,9 +726,9 @@ public:
   
   /*!
 	 * \brief A virtual member.
-	 * \returns Total number of wedge elements in a simulation across all processors.
+	 * \returns Total number of prism elements in a simulation across all processors.
 	 */
-	virtual unsigned long GetGlobal_nElemWedg();
+	virtual unsigned long GetGlobal_nElemPris();
   
   /*!
 	 * \brief A virtual member.
@@ -768,9 +768,9 @@ public:
   
   /*!
 	 * \brief A virtual member.
-	 * \return Number of wedge elements.
+	 * \return Number of prism elements.
 	 */
-	virtual unsigned long GetnElemWedg();
+	virtual unsigned long GetnElemPris();
   
   /*!
 	 * \brief A virtual member.
@@ -1230,10 +1230,10 @@ public:
 	unsigned long GetGlobal_nElemHexa();
   
   /*!
-	 * \brief Retrieve total number of wedge elements in a simulation across all processors.
-	 * \returns Total number of wedge elements in a simulation across all processors.
+	 * \brief Retrieve total number of prism elements in a simulation across all processors.
+	 * \returns Total number of prism elements in a simulation across all processors.
 	 */
-	unsigned long GetGlobal_nElemWedg();
+	unsigned long GetGlobal_nElemPris();
   
   /*!
 	 * \brief Retrieve total number of pyramid elements in a simulation across all processors.
@@ -1272,10 +1272,10 @@ public:
 	unsigned long GetnElemHexa();
   
   /*!
-	 * \brief Get number of wedge elements.
-	 * \return Number of wedge elements.
+	 * \brief Get number of prism elements.
+	 * \return Number of prism elements.
 	 */
-	unsigned long GetnElemWedg();
+	unsigned long GetnElemPris();
   
   /*!
 	 * \brief Get number of pyramid elements.

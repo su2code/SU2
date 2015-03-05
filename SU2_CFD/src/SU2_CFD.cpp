@@ -49,7 +49,7 @@ int main(int argc, char *argv[]) {
   
 #ifdef HAVE_MPI
   int *bptr, bl;
-  MPI_Init(&argc,&argv);
+  MPI_Init(&argc, &argv);
   MPI_Buffer_attach( malloc(BUFSIZE), BUFSIZE );
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -73,7 +73,7 @@ int main(int argc, char *argv[]) {
   /*--- Load in the number of zones and spatial dimensions in the mesh file (If no config
    file is specified, default.cfg is used) ---*/
   
-  if (argc == 2) { strcpy(config_file_name,argv[1]); }
+  if (argc == 2) { strcpy(config_file_name, argv[1]); }
   else { strcpy(config_file_name, "default.cfg"); }
   
   /*--- Read the name and format of the input mesh file to get from the mesh
@@ -542,7 +542,7 @@ int main(int argc, char *argv[]) {
   
 #ifdef HAVE_MPI
   /*--- Finalize MPI parallelization ---*/
-  MPI_Buffer_detach(&bptr,&bl);
+  MPI_Buffer_detach(&bptr, &bl);
   MPI_Finalize();
 #endif
   

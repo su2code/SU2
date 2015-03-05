@@ -2136,7 +2136,7 @@ void CTNE2EulerSolver::Preprocessing(CGeometry *geometry,
   
 	for (iPoint = 0; iPoint < nPoint; iPoint ++) {
 
-		/*--- Primitive variables [rho1,...,rhoNs,T,Tve,u,v,w,P,rho,h,c] ---*/
+		/*--- Primitive variables [rho1,..., rhoNs, T, Tve, u, v, w, P, rho, h, c] ---*/
 		RightSol = node[iPoint]->SetPrimVar_Compressible(config);
     if (!RightSol) ErrorCounter++;
     
@@ -2385,10 +2385,10 @@ void CTNE2EulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_c
     
 		/*--- Set implicit computation ---*/
 		if (implicit) {
-			Jacobian.AddBlock(iPoint,iPoint,Jacobian_i);
-			Jacobian.AddBlock(iPoint,jPoint,Jacobian_j);
-			Jacobian.SubtractBlock(jPoint,iPoint,Jacobian_i);
-			Jacobian.SubtractBlock(jPoint,jPoint,Jacobian_j); 
+			Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+			Jacobian.AddBlock(iPoint, jPoint, Jacobian_j);
+			Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
+			Jacobian.SubtractBlock(jPoint, jPoint, Jacobian_j); 
 		}
 	}
 }
@@ -3261,7 +3261,7 @@ void CTNE2EulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *co
 	for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 		for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
 			for (iDim = 0; iDim < nDim; iDim++) {
-				Partial_Gradient = node[iPoint]->GetGradient_Primitive(iVar,iDim) / (geometry->node[iPoint]->GetVolume());
+				Partial_Gradient = node[iPoint]->GetGradient_Primitive(iVar, iDim) / (geometry->node[iPoint]->GetVolume());
 				node[iPoint]->SetGradient_Primitive(iVar, iDim, Partial_Gradient);
         
 			}
@@ -3808,7 +3808,7 @@ void CTNE2EulerSolver::SetPreconditioner(CConfig *config, unsigned short iPoint)
   
 	/*--- Variables to calculate the preconditioner parameter Beta ---*/
 	local_Mach = sqrt(node[iPoint]->GetVelocity2())/node[iPoint]->GetSoundSpeed();
-	Beta 		    = max(Beta_min,min(local_Mach,Beta_max));
+	Beta 		    = max(Beta_min, min(local_Mach, Beta_max));
 	Beta2 		    = Beta*Beta;
   
 	U_i = node[iPoint]->GetSolution();
@@ -3981,7 +3981,7 @@ void CTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry,
             Jacobian_i[iVar][jVar] = Jacobian_i[iVar][jVar] * Area;
         
         /*--- Apply the contribution to the system ---*/
-        Jacobian.AddBlock(iPoint,iPoint,Jacobian_i);
+        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
         
 			}
 		}
@@ -4226,9 +4226,9 @@ void CTNE2EulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
           /*--- Solve quadratic equation for velocity magnitude. Value must
            be positive, so the choice of root is clear. ---*/
           dd = bb*bb - 4.0*aa*cc;
-          dd = sqrt(max(0.0,dd));
+          dd = sqrt(max(0.0, dd));
           Vel_Mag   = (-bb + dd)/(2.0*aa);
-          Vel_Mag   = max(0.0,Vel_Mag);
+          Vel_Mag   = max(0.0, Vel_Mag);
           Velocity2 = Vel_Mag*Vel_Mag;
           
           /*--- Compute speed of sound from total speed of sound eqn. ---*/
@@ -4236,7 +4236,7 @@ void CTNE2EulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
           
           /*--- Mach squared (cut between 0-1), use to adapt velocity ---*/
           Mach2 = Velocity2/SoundSpeed2;
-          Mach2 = min(1.0,Mach2);
+          Mach2 = min(1.0, Mach2);
           Velocity2   = Mach2*SoundSpeed2;
           Vel_Mag     = sqrt(Velocity2);
           SoundSpeed2 = SoundSpeed_Total2 - 0.5*Gamma_Minus_One*Velocity2;
@@ -4249,7 +4249,7 @@ void CTNE2EulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
           Temperature = SoundSpeed2/(Gamma*Gas_Constant);
           
           /*--- Static pressure using isentropic relation at a point ---*/
-          Pressure = P_Total*pow((Temperature/T_Total),Gamma/Gamma_Minus_One);
+          Pressure = P_Total*pow((Temperature/T_Total), Gamma/Gamma_Minus_One);
           
           /*--- Density at the inlet from the gas law ---*/
           Density = Pressure/(Gas_Constant*Temperature);
@@ -4465,7 +4465,7 @@ void CTNE2EulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
          (SUmb) solver in the routine bcSubsonicOutflow.f90 by Edwin van
          der Weide, last modified 09-10-2007. ---*/
         
-        Entropy = Pressure*pow(1.0/Density,Gamma);
+        Entropy = Pressure*pow(1.0/Density, Gamma);
         Riemann = Vn + 2.0*SoundSpeed/Gamma_Minus_One;
         
         /*--- Compute the new fictious state at the outlet ---*/
@@ -4877,7 +4877,7 @@ void CTNE2EulerSolver::GetRestart(CGeometry *geometry, CConfig *config, unsigned
 	/*--- The first line is the header ---*/
 	getline (restart_file, text_line);
   
-	while (getline (restart_file,text_line)) {
+	while (getline (restart_file, text_line)) {
 		istringstream point_line(text_line);
     
 		/*--- Retrieve local index. If this node from the restart file lives
@@ -5279,7 +5279,7 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
 		/*--- The first line is the header ---*/
 		getline (restart_file, text_line);
     
-		while (getline (restart_file,text_line)) {
+		while (getline (restart_file, text_line)) {
 			istringstream point_line(text_line);
       
 			/*--- Retrieve local index. If this node from the restart file lives
@@ -5297,7 +5297,7 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
         
         /*--- Call the CVariable constructor with the solution ---*/
 				node[iPoint_Local] = new CTNE2NSVariable(Solution, nDim, nVar,
-                                                 nPrimVar,nPrimVarGrad, config);
+                                                 nPrimVar, nPrimVarGrad, config);
 			}
 			iPoint_Global++;
 		}
@@ -6670,7 +6670,7 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry,
         }
         Jacobian_i[nSpecies+4][nSpecies+4] = -kve*theta/(dij*rhoCvve) * Area;
       
-        Jacobian.SubtractBlock(iPoint,iPoint, Jacobian_i);
+        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
       }
       
       /*--- Error checking ---*/
