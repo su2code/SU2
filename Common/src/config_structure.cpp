@@ -687,7 +687,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Start up iterations using the fine grid only */
   addUnsignedShortOption("START_UP_ITER", nStartUpIter, 0);
   /* DESCRIPTION: Multi-grid Levels */
-  addUnsignedShortOption("MGLEVEL", nMGLevels, 3);
+  addUnsignedShortOption("MGLEVEL", nMGLevels, 0);
   /* DESCRIPTION: Multi-grid cycle */
   addEnumOption("MGCYCLE", MGCycle, MG_Cycle_Map, V_CYCLE);
   /* DESCRIPTION: Multi-grid pre-smoothing level */
@@ -1486,7 +1486,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   /*--- Deactivate the multigrid in the adjoint problem ---*/
   
-  if (Adjoint && !MG_AdjointFlow) { nMGLevels = 0; }
+  if ((Adjoint && !MG_AdjointFlow) ||
+      (Unsteady_Simulation == TIME_STEPPING)) { nMGLevels = 0; }
   
   /*--- Initialize non-physical points/reconstructions to zero ---*/
   
@@ -1500,7 +1501,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     nDV = 1; Design_Variable[0] = NONE;
   }
   
-  /*--- Identification of free-surface problem, this problems are always unsteady and incompressible. ---*/
+  /*--- Identification of free-surface problem, this problems are always 
+   unsteady and incompressible. ---*/
   
   if (Kind_Regime == FREESURFACE) {
     if (Unsteady_Simulation != DT_STEPPING_2ND) Unsteady_Simulation = DT_STEPPING_1ST;
@@ -1656,6 +1658,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   else nMoving = nZone;
   
   /*--- Motion Origin: ---*/
+  
   if (Motion_Origin_X == NULL) {
     Motion_Origin_X = new double[nMoving];
     for (iZone = 0; iZone < nMoving; iZone++ )
@@ -2076,10 +2079,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   /*--- Set the boolean flag if we are carrying out an aeroelastic simulation. ---*/
   
-  if (Grid_Movement && (Kind_GridMovement[ZONE_0] == AEROELASTIC || Kind_GridMovement[ZONE_0] == AEROELASTIC_RIGID_MOTION))
-    Aeroelastic_Simulation = true;
-  else
-    Aeroelastic_Simulation = false;
+  if (Grid_Movement && (Kind_GridMovement[ZONE_0] == AEROELASTIC || Kind_GridMovement[ZONE_0] == AEROELASTIC_RIGID_MOTION)) Aeroelastic_Simulation = true;
+  else Aeroelastic_Simulation = false;
   
   /*--- Initializing the size for the solutions of the Aeroelastic problem. ---*/
   
@@ -2143,19 +2144,23 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   Kappa_1st_LinFlow = Kappa_AdjFlow[0];
   Kappa_4th_LinFlow = Kappa_AdjFlow[1];
   
-  // make the MG_PreSmooth, MG_PostSmooth, and MG_CorrecSmooth arrays consistent with nMGLevels
+  /*--- Make the MG_PreSmooth, MG_PostSmooth, and MG_CorrecSmooth
+   arrays consistent with nMGLevels ---*/
+  
   unsigned short * tmp_smooth = new unsigned short[nMGLevels+1];
   
   if ((nMG_PreSmooth != nMGLevels+1) && (nMG_PreSmooth != 0)) {
     if (nMG_PreSmooth > nMGLevels+1) {
       
-      // truncate by removing unnecessary elements at the end
+      /*--- Truncate by removing unnecessary elements at the end ---*/
+      
       for (unsigned int i = 0; i <= nMGLevels; i++)
         tmp_smooth[i] = MG_PreSmooth[i];
       delete [] MG_PreSmooth;
     } else {
       
-      // add additional elements equal to last element
+      /*--- Add additional elements equal to last element ---*/
+      
       for (unsigned int i = 0; i < nMG_PreSmooth; i++)
         tmp_smooth[i] = MG_PreSmooth[i];
       for (unsigned int i = nMG_PreSmooth; i <= nMGLevels; i++)
@@ -2178,23 +2183,31 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   if ((nMG_PostSmooth != nMGLevels+1) && (nMG_PostSmooth != 0)) {
     if (nMG_PostSmooth > nMGLevels+1) {
-      // truncate by removing unnecessary elements at the end
+      
+      /*--- Truncate by removing unnecessary elements at the end ---*/
+      
       for (unsigned int i = 0; i <= nMGLevels; i++)
         tmp_smooth[i] = MG_PostSmooth[i];
       delete [] MG_PostSmooth;
     } else {
-      // add additional elements equal to last element
+      
+      /*--- Add additional elements equal to last element ---*/
+       
       for (unsigned int i = 0; i < nMG_PostSmooth; i++)
         tmp_smooth[i] = MG_PostSmooth[i];
       for (unsigned int i = nMG_PostSmooth; i <= nMGLevels; i++)
         tmp_smooth[i] = MG_PostSmooth[nMG_PostSmooth-1];
       delete [] MG_PostSmooth;
+      
     }
+    
     nMG_PostSmooth = nMGLevels+1;
     MG_PostSmooth = new unsigned short[nMG_PostSmooth];
     for (unsigned int i = 0; i < nMG_PostSmooth; i++)
       MG_PostSmooth[i] = tmp_smooth[i];
+    
   }
+  
   if ((nMGLevels != 0) && (nMG_PostSmooth == 0)) {
     delete [] MG_PostSmooth;
     nMG_PostSmooth = nMGLevels+1;
@@ -2205,12 +2218,16 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   if ((nMG_CorrecSmooth != nMGLevels+1) && (nMG_CorrecSmooth != 0)) {
     if (nMG_CorrecSmooth > nMGLevels+1) {
-      // truncate by removing unnecessary elements at the end
+      
+      /*--- Truncate by removing unnecessary elements at the end ---*/
+      
       for (unsigned int i = 0; i <= nMGLevels; i++)
         tmp_smooth[i] = MG_CorrecSmooth[i];
       delete [] MG_CorrecSmooth;
     } else {
-      // add additional elements equal to last element
+      
+      /*--- Add additional elements equal to last element ---*/
+      
       for (unsigned int i = 0; i < nMG_CorrecSmooth; i++)
         tmp_smooth[i] = MG_CorrecSmooth[i];
       for (unsigned int i = nMG_CorrecSmooth; i <= nMGLevels; i++)
@@ -2222,6 +2239,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     for (unsigned int i = 0; i < nMG_CorrecSmooth; i++)
       MG_CorrecSmooth[i] = tmp_smooth[i];
   }
+  
   if ((nMGLevels != 0) && (nMG_CorrecSmooth == 0)) {
     delete [] MG_CorrecSmooth;
     nMG_CorrecSmooth = nMGLevels+1;
@@ -2230,15 +2248,14 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       MG_CorrecSmooth[i] = 0;
   }
   
-  // override MG Smooth parameters
-  if (nMG_PreSmooth != 0)
-    MG_PreSmooth[MESH_0] = 1;
+  /*--- Override MG Smooth parameters ---*/
+  
+  if (nMG_PreSmooth != 0) MG_PreSmooth[MESH_0] = 1;
   if (nMG_PostSmooth != 0) {
     MG_PostSmooth[MESH_0] = 0;
     MG_PostSmooth[nMGLevels] = 0;
   }
-  if (nMG_CorrecSmooth != 0)
-    MG_CorrecSmooth[nMGLevels] = 0;
+  if (nMG_CorrecSmooth != 0) MG_CorrecSmooth[nMGLevels] = 0;
   
   if (Restart) MGCycle = V_CYCLE;
   
@@ -2252,11 +2269,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   if (Linearized) {
     if (Kind_Solver == EULER) Kind_Solver = LIN_EULER;
-  }
-  
-  if (Unsteady_Simulation == TIME_STEPPING) {
-    nMGLevels = 0;
-    MGCycle = V_CYCLE;
   }
   
   nCFL = nMGLevels+1;
