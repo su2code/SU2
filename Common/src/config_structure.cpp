@@ -1478,11 +1478,16 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   Kind_SU2 = val_software;
   
   /*--- Make sure that 1D outputs are written when objective function requires ---*/
+  
   if (Kind_ObjFunc== AVG_OUTLET_PRESSURE || Kind_ObjFunc == AVG_TOTAL_PRESSURE) {
     Wrt_1D_Output = YES;
     Marker_Out_1D = Marker_Monitoring;
     nMarker_Out_1D = nMarker_Monitoring;
   }
+  
+  /*--- Low memory only for ASCII Tecplot ---*/
+
+  if (Output_FileFormat != TECPLOT) Low_MemoryOutput = NO;
   
   /*--- Deactivate the multigrid in the adjoint problem ---*/
   
