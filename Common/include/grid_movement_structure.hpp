@@ -120,7 +120,10 @@ public:
 	unsigned long nSurfacePoint;				/*!< \brief Number of surfaces in the FFD FFDBox. */
 	vector<string> ParentFFDBox;					/*!< \brief Vector with all the parent FFD FFDBox. */
 	vector<string> ChildFFDBox;					/*!< \brief Vector with all the child FFD FFDBox. */
-	
+  vector<unsigned short> Fix_IPlane;  /*!< \brief Fix FFD I plane. */
+  vector<unsigned short> Fix_JPlane;  /*!< \brief Fix FFD J plane. */
+  vector<unsigned short> Fix_KPlane;  /*!< \brief Fix FFD K plane. */
+
 public:
 	
 	/*! 
@@ -141,6 +144,60 @@ public:
 	 */
 	~CFreeFormDefBox(void);
 	
+  /*!
+   * \brief Define the I planes to to fix in a FFD box.
+   * \param[in] val_plane - Index of the plane to fix.
+   */
+  void Set_Fix_IPlane(unsigned short val_plane);
+
+  /*!
+   * \brief Define the I planes to to fix in a FFD box.
+   * \param[in] val_plane - Index of the plane to fix.
+   */
+  void Set_Fix_JPlane(unsigned short val_plane);
+  
+  /*!
+   * \brief Define the I planes to to fix in a FFD box.
+   * \param[in] val_plane - Index of the plane to fix.
+   */
+  void Set_Fix_KPlane(unsigned short val_plane);
+  
+  /*!
+   * \brief Define the I planes to to fix in a FFD box.
+   * \param[in] val_plane - Index of the plane to fix.
+   */
+  unsigned short Get_Fix_IPlane(unsigned short val_index);
+  
+  /*!
+   * \brief Define the I planes to to fix in a FFD box.
+   * \param[in] val_plane - Index of the plane to fix.
+   */
+  unsigned short Get_Fix_JPlane(unsigned short val_index);
+  
+  /*!
+   * \brief Define the I planes to to fix in a FFD box.
+   * \param[in] val_plane - Index of the plane to fix.
+   */
+  unsigned short Get_Fix_KPlane(unsigned short val_index);
+  
+  /*!
+   * \brief Define the I planes to to fix in a FFD box.
+   * \param[in] val_plane - Index of the plane to fix.
+   */
+  unsigned short Get_nFix_IPlane(void);
+  
+  /*!
+   * \brief Define the I planes to to fix in a FFD box.
+   * \param[in] val_plane - Index of the plane to fix.
+   */
+  unsigned short Get_nFix_JPlane(void);
+  
+  /*!
+   * \brief Define the I planes to to fix in a FFD box.
+   * \param[in] val_plane - Index of the plane to fix.
+   */
+  unsigned short Get_nFix_KPlane(void);
+  
 	/*! 
 	 * \brief Add to the vector of markers a new marker.
 	 * \param[in] val_iMarker - New marker inside the FFD box.
@@ -1151,6 +1208,15 @@ public:
 	 */		
 	void UpdateParametricCoord(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox);
 	
+  /*!
+   * \brief Check the intersections of the FFD with the surface
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
+   * \param[in] iFFDBox - _____________________.
+   */
+  void CheckFFDIntersections(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox);
+  
 	/*! 
 	 * \brief _____________________.
 	 * \param[in] geometry - _____________________.
