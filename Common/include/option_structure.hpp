@@ -1003,6 +1003,17 @@ static const map<string, ENUM_LINEAR_SOLVER> Linear_Solver_Map = CCreateMap<stri
 ("SMOOTHER_ILU0", SMOOTHER_ILU);
 
 /*!
+ * \brief types surface continuity at the intersection with the FFD
+ */
+enum ENUM_FFD_CONTINUITY {
+  DERIVATIVE_1ST = 1,		/*!< \brief First derivative continuity. */
+  DERIVATIVE_2ND = 2			/*!< \brief Second derivative continuity. */
+};
+static const map<string, ENUM_FFD_CONTINUITY> Continuity_Map = CCreateMap<string, ENUM_FFD_CONTINUITY>
+("1ST_DERIVATIVE", DERIVATIVE_1ST)
+("2ND_DERIVATIVE", DERIVATIVE_2ND);
+
+/*!
  * \brief types of sensitivity smoothing
  */
 enum ENUM_SENS_SMOOTHING {

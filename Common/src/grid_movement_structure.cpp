@@ -2431,7 +2431,7 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
 #endif
   
   /*--- Setting the Free Form Deformation ---*/
-
+  
   if (config->GetDesign_Variable(0) == FFD_SETTING) {
     
     /*--- Definition of the FFD deformation class ---*/
@@ -2496,17 +2496,17 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
   }
   
   /*--- Free Form deformation based ---*/
-
+  
   if ((config->GetDesign_Variable(0) == FFD_CONTROL_POINT_2D) ||
-           (config->GetDesign_Variable(0) == FFD_CAMBER_2D) ||
-           (config->GetDesign_Variable(0) == FFD_THICKNESS_2D) ||
-           (config->GetDesign_Variable(0) == FFD_CONTROL_POINT) ||
-           (config->GetDesign_Variable(0) == FFD_DIHEDRAL_ANGLE) ||
-           (config->GetDesign_Variable(0) == FFD_TWIST_ANGLE) ||
-           (config->GetDesign_Variable(0) == FFD_ROTATION) ||
-           (config->GetDesign_Variable(0) == FFD_CONTROL_SURFACE) ||
-           (config->GetDesign_Variable(0) == FFD_CAMBER) ||
-           (config->GetDesign_Variable(0) == FFD_THICKNESS)) {
+      (config->GetDesign_Variable(0) == FFD_CAMBER_2D) ||
+      (config->GetDesign_Variable(0) == FFD_THICKNESS_2D) ||
+      (config->GetDesign_Variable(0) == FFD_CONTROL_POINT) ||
+      (config->GetDesign_Variable(0) == FFD_DIHEDRAL_ANGLE) ||
+      (config->GetDesign_Variable(0) == FFD_TWIST_ANGLE) ||
+      (config->GetDesign_Variable(0) == FFD_ROTATION) ||
+      (config->GetDesign_Variable(0) == FFD_CONTROL_SURFACE) ||
+      (config->GetDesign_Variable(0) == FFD_CAMBER) ||
+      (config->GetDesign_Variable(0) == FFD_THICKNESS)) {
     
     /*--- Definition of the FFD deformation class ---*/
     
@@ -2555,6 +2555,12 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
           /*--- Check the level of the FFD box ---*/
           
           if (FFDBox[iFFDBox]->GetLevel() == iLevel) {
+            
+            
+            /*--- Compute intersections of the FFD box with the surface to eliminate design
+             variables and satisfy surface continuity ---*/
+
+            CheckFFDIntersections(geometry, config, FFDBox[iFFDBox], iFFDBox);
             
             /*--- Compute the parametric coordinates of the child box
              control points (using the parent FFDBox)  ---*/
@@ -2935,6 +2941,221 @@ void CSurfaceMovement::GetCartesianCoordCP(CGeometry *geometry, CConfig *config,
 
 }
 
+void CSurfaceMovement::CheckFFDIntersections(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox) {
+  
+  double lDegree, mDegree, nDegree;
+  double *Coord_0, *Coord_1;
+  unsigned short iMarker, iNode, jNode;
+  unsigned long iElem, iPoint, jPoint;
+  
+  unsigned short Kind_SU2 = config->GetKind_SU2();
+
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+  
+  lDegree = FFDBox->GetlOrder()-1;
+  mDegree = FFDBox->GetmOrder()-1;
+  nDegree = FFDBox->GetnOrder()-1;
+  
+  /*--- Check intersection with plane i=0 ---*/
+  
+  double *IPlane_Coord_0_A = FFDBox->GetCoordControlPoints(0, 0, 0);
+  double *IPlane_Coord_1_A = FFDBox->GetCoordControlPoints(0, 0, nDegree);
+  double *IPlane_Coord_2_A = FFDBox->GetCoordControlPoints(0, mDegree, 0);
+  
+  double *IPlane_Coord_0_A_ = FFDBox->GetCoordControlPoints(0, mDegree, nDegree);
+  double *IPlane_Coord_1_A_ = FFDBox->GetCoordControlPoints(0, mDegree, 0);
+  double *IPlane_Coord_2_A_ = FFDBox->GetCoordControlPoints(0, 0, nDegree);
+  
+  /*--- Check intersection with plane i=lDegree ---*/
+  
+  double *IPlane_Coord_0_B = FFDBox->GetCoordControlPoints(lDegree, 0, 0);
+  double *IPlane_Coord_1_B = FFDBox->GetCoordControlPoints(lDegree, 0, nDegree);
+  double *IPlane_Coord_2_B = FFDBox->GetCoordControlPoints(lDegree, mDegree, 0);
+  
+  double *IPlane_Coord_0_B_ = FFDBox->GetCoordControlPoints(lDegree, mDegree, nDegree);
+  double *IPlane_Coord_1_B_ = FFDBox->GetCoordControlPoints(lDegree, mDegree, 0);
+  double *IPlane_Coord_2_B_ = FFDBox->GetCoordControlPoints(lDegree, 0, nDegree);
+  
+  /*--- Check intersection with plane j=0 ---*/
+  
+  double *JPlane_Coord_0_A = FFDBox->GetCoordControlPoints(0,      0, 0);
+  double *JPlane_Coord_1_A = FFDBox->GetCoordControlPoints(0,      0, nDegree);
+  double *JPlane_Coord_2_A = FFDBox->GetCoordControlPoints(lDegree, 0, 0);
+  
+  double *JPlane_Coord_0_A_ = FFDBox->GetCoordControlPoints(lDegree, 0, nDegree);
+  double *JPlane_Coord_1_A_ = FFDBox->GetCoordControlPoints(lDegree, 0, 0);
+  double *JPlane_Coord_2_A_ = FFDBox->GetCoordControlPoints(0,      0, nDegree);
+  
+  /*--- Check intersection with plane j=mDegree ---*/
+  
+  double *JPlane_Coord_0_B = FFDBox->GetCoordControlPoints(0,      mDegree, 0);
+  double *JPlane_Coord_1_B = FFDBox->GetCoordControlPoints(0,      mDegree, nDegree);
+  double *JPlane_Coord_2_B = FFDBox->GetCoordControlPoints(lDegree, mDegree, 0);
+  
+  double *JPlane_Coord_0_B_ = FFDBox->GetCoordControlPoints(lDegree, mDegree, nDegree);
+  double *JPlane_Coord_1_B_ = FFDBox->GetCoordControlPoints(lDegree, mDegree, 0);
+  double *JPlane_Coord_2_B_ = FFDBox->GetCoordControlPoints(0,      mDegree, nDegree);
+  
+  /*--- Check intersection with plane k=0 ---*/
+  
+  double *KPlane_Coord_0_A = FFDBox->GetCoordControlPoints(0,      0,      0);
+  double *KPlane_Coord_1_A = FFDBox->GetCoordControlPoints(0,      mDegree, 0);
+  double *KPlane_Coord_2_A = FFDBox->GetCoordControlPoints(lDegree, 0,      0);
+  
+  double *KPlane_Coord_0_A_ = FFDBox->GetCoordControlPoints(lDegree, mDegree, 0);
+  double *KPlane_Coord_1_A_ = FFDBox->GetCoordControlPoints(lDegree, 0,      0);
+  double *KPlane_Coord_2_A_ = FFDBox->GetCoordControlPoints(0,      mDegree, 0);
+  
+  /*--- Check intersection with plane k=nDegree ---*/
+  
+  double *KPlane_Coord_0_B = FFDBox->GetCoordControlPoints(0,      0,      nDegree);
+  double *KPlane_Coord_1_B = FFDBox->GetCoordControlPoints(0,      mDegree, nDegree);
+  double *KPlane_Coord_2_B = FFDBox->GetCoordControlPoints(lDegree, 0,      nDegree);
+  
+  double *KPlane_Coord_0_B_ = FFDBox->GetCoordControlPoints(lDegree, mDegree, nDegree);
+  double *KPlane_Coord_1_B_ = FFDBox->GetCoordControlPoints(lDegree, 0,      nDegree);
+  double *KPlane_Coord_2_B_ = FFDBox->GetCoordControlPoints(0,      mDegree, nDegree);
+  
+  /*--- Loop over all the grid triangles ---*/
+  
+  bool IPlane_Intersect_A = false, IPlane_Intersect_B = false;
+  bool JPlane_Intersect_A = false, JPlane_Intersect_B = false;
+  bool KPlane_Intersect_A = false, KPlane_Intersect_B = false;
+
+  /*--- Only the markers in the moving list ---*/
+  
+  for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+    if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
+        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DEF)) ||
+        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_SOL))) {
+      for (iElem = 0; iElem < geometry->GetnElem_Bound(iMarker); iElem++) {
+        for (iNode = 0; iNode < geometry->bound[iMarker][iElem]->GetnNodes(); iNode++) {
+          iPoint = geometry->bound[iMarker][iElem]->GetNode(iNode);
+          for (jNode = 0; jNode < geometry->bound[iMarker][iElem]->GetnNodes(); jNode++) {
+            jPoint = geometry->bound[iMarker][iElem]->GetNode(jNode);
+            
+            if (jPoint > iPoint) {
+              
+              Coord_0 = geometry->node[iPoint]->GetCoord();
+              Coord_1 = geometry->node[jPoint]->GetCoord();
+              
+              if (!IPlane_Intersect_A) {
+                if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, IPlane_Coord_0_A, IPlane_Coord_1_A, IPlane_Coord_2_A)) { IPlane_Intersect_A = true; }
+                if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, IPlane_Coord_0_A_, IPlane_Coord_1_A_, IPlane_Coord_2_A_)) { IPlane_Intersect_A = true; }
+              }
+              
+              if (!IPlane_Intersect_B) {
+                if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, IPlane_Coord_0_B, IPlane_Coord_1_B, IPlane_Coord_2_B)) { IPlane_Intersect_B = true; }
+                if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, IPlane_Coord_0_B_, IPlane_Coord_1_B_, IPlane_Coord_2_B_)) { IPlane_Intersect_B = true; }
+              }
+              
+              if (!JPlane_Intersect_A) {
+                if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, JPlane_Coord_0_A, JPlane_Coord_1_A, JPlane_Coord_2_A)) { JPlane_Intersect_A = true; }
+                if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, JPlane_Coord_0_A_, JPlane_Coord_1_A_, JPlane_Coord_2_A_)) { JPlane_Intersect_A = true; }
+              }
+              
+              if (!JPlane_Intersect_B) {
+                if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, JPlane_Coord_0_B, JPlane_Coord_1_B, JPlane_Coord_2_B)) { JPlane_Intersect_B = true; }
+                if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, JPlane_Coord_0_B_, JPlane_Coord_1_B_, JPlane_Coord_2_B_)) { JPlane_Intersect_B = true; }
+              }
+              
+              if (!KPlane_Intersect_A) {
+                if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, KPlane_Coord_0_A, KPlane_Coord_1_A, KPlane_Coord_2_A)) { KPlane_Intersect_A = true; }
+                if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, KPlane_Coord_0_A_, KPlane_Coord_1_A_, KPlane_Coord_2_A_)) { KPlane_Intersect_A = true; }
+              }
+              
+              if (!KPlane_Intersect_B) {
+                if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, KPlane_Coord_0_B, KPlane_Coord_1_B, KPlane_Coord_2_B)) { KPlane_Intersect_B = true; }
+                if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, KPlane_Coord_0_B_, KPlane_Coord_1_B_, KPlane_Coord_2_B_)) { KPlane_Intersect_B = true; }
+              }
+              
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  /*--- Comunicate the planes that interesect the surface ---*/
+  
+  unsigned short MyCode[6] = {0,0,0,0,0,0}, Code[6] = {0,0,0,0,0,0};
+  
+  if (IPlane_Intersect_A) MyCode[0] = 1;
+  if (IPlane_Intersect_B) MyCode[1] = 1;
+  if (JPlane_Intersect_A) MyCode[2] = 1;
+  if (JPlane_Intersect_B) MyCode[3] = 1;
+  if (KPlane_Intersect_A) MyCode[4] = 1;
+  if (KPlane_Intersect_B) MyCode[5] = 1;
+  
+#ifdef HAVE_MPI
+  
+  /*--- Add MPI_Allreduce information using all the nodes ---*/
+  
+  MPI_Allreduce(&MyCode, &Code, 6, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
+
+#else
+  
+  Code[0] = MyCode[0]; Code[1] = MyCode[1]; Code[2] = MyCode[2];
+  Code[3] = MyCode[3]; Code[4] = MyCode[4]; Code[5] = MyCode[5];
+  
+#endif
+  
+  if (Code[0] != 0) IPlane_Intersect_A = true; else IPlane_Intersect_A = false;
+  if (Code[1] != 0) IPlane_Intersect_B = true; else IPlane_Intersect_B = false;
+  if (Code[2] != 0) JPlane_Intersect_A = true; else JPlane_Intersect_A = false;
+  if (Code[3] != 0) JPlane_Intersect_B = true; else JPlane_Intersect_B = false;
+  if (Code[4] != 0) KPlane_Intersect_A = true; else KPlane_Intersect_A = false;
+  if (Code[5] != 0) KPlane_Intersect_B = true; else KPlane_Intersect_B = false;
+  
+  /*--- Screen output ---*/
+  
+  if (rank == MASTER_NODE) {
+    
+    if (IPlane_Intersect_A || IPlane_Intersect_B ||
+        JPlane_Intersect_A || JPlane_Intersect_B ||
+        KPlane_Intersect_A || KPlane_Intersect_B ) {
+      cout << "The FFD planes ";
+      if (IPlane_Intersect_A) cout << "i=0, ";
+      if (IPlane_Intersect_B) cout << "i="<< lDegree << ", ";
+      if (JPlane_Intersect_A) cout << "j=0, ";
+      if (JPlane_Intersect_B) cout << "j="<< mDegree << ", ";
+      if (KPlane_Intersect_A) cout << "k=0, ";
+      if (KPlane_Intersect_B) cout << "k="<< nDegree << ", ";
+      cout << "intersect solid surfaces." << endl;
+    }
+    
+  }
+  
+  /*--- Fix the FFD planes based on the intersections with solid surfaces, 
+   and the continuity level, check that we have enough degree for the continuity 
+   that we are looking for ---*/
+  
+  if (IPlane_Intersect_A) { FFDBox->Set_Fix_IPlane(0); FFDBox->Set_Fix_IPlane(1); }
+  if (IPlane_Intersect_B) { FFDBox->Set_Fix_IPlane(lDegree); FFDBox->Set_Fix_IPlane(lDegree-1); }
+
+  if (JPlane_Intersect_A) { FFDBox->Set_Fix_JPlane(0); FFDBox->Set_Fix_JPlane(1); }
+  if (JPlane_Intersect_B) { FFDBox->Set_Fix_JPlane(mDegree); FFDBox->Set_Fix_JPlane(mDegree-1); }
+  
+  if (KPlane_Intersect_A) { FFDBox->Set_Fix_KPlane(0); FFDBox->Set_Fix_KPlane(1); }
+  if (KPlane_Intersect_B) { FFDBox->Set_Fix_KPlane(nDegree); FFDBox->Set_Fix_KPlane(nDegree-1); }
+  
+  if (config->GetFFD_Continuity() == DERIVATIVE_2ND) {
+    
+    if ((IPlane_Intersect_A) && (lDegree > 1)) { FFDBox->Set_Fix_IPlane(2); }
+    if ((IPlane_Intersect_B) && (lDegree > 1)) { FFDBox->Set_Fix_IPlane(lDegree-2); }
+    
+    if ((JPlane_Intersect_A) && (mDegree > 1)) { FFDBox->Set_Fix_JPlane(2); }
+    if ((JPlane_Intersect_B) && (mDegree > 1)) { FFDBox->Set_Fix_JPlane(mDegree-2); }
+    
+    if ((KPlane_Intersect_A) && (nDegree > 1)) { FFDBox->Set_Fix_KPlane(2); }
+    if ((KPlane_Intersect_B) && (nDegree > 1)) { FFDBox->Set_Fix_KPlane(nDegree-2); }
+    
+  }
+
+}
 
 void CSurfaceMovement::UpdateParametricCoord(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox) {
 	unsigned short iMarker, iDim;
@@ -3203,9 +3424,9 @@ void CSurfaceMovement::SetFFDCPChange(CGeometry *geometry, CConfig *config, CFre
 																			unsigned short iDV, bool ResetDef) {
 	
 	double movement[3], Ampl;
-	unsigned short index[3], i, j, k;
+	unsigned short index[3], i, j, k, iPlane;
 	string design_FFDBox;
-  
+
   /*--- Set control points to its original value (even if the
    design variable is not in this box) ---*/
   
@@ -3226,6 +3447,20 @@ void CSurfaceMovement::SetFFDCPChange(CGeometry *geometry, CConfig *config, CFre
     index[0] = int(config->GetParamDV(iDV, 1));
     index[1] = int(config->GetParamDV(iDV, 2));
     index[2] = int(config->GetParamDV(iDV, 3));
+    
+    /*--- Check that it is possible to move the control point ---*/
+    
+    for (iPlane = 0 ; iPlane < FFDBox->Get_nFix_IPlane(); iPlane++) {
+      if (index[0] == FFDBox->Get_Fix_IPlane(iPlane)) return;
+    }
+    
+    for (iPlane = 0 ; iPlane < FFDBox->Get_nFix_JPlane(); iPlane++) {
+      if (index[1] == FFDBox->Get_Fix_JPlane(iPlane)) return;
+    }
+    
+    for (iPlane = 0 ; iPlane < FFDBox->Get_nFix_KPlane(); iPlane++) {
+      if (index[2] == FFDBox->Get_Fix_KPlane(iPlane)) return;
+    }
 
     if ((int(config->GetParamDV(iDV, 1)) == -1) &&
         (int(config->GetParamDV(iDV, 2)) != -1) &&

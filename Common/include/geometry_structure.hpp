@@ -782,7 +782,7 @@ public:
 	 * \brief Indentify geometrical planes in the mesh
 	 */
 	virtual void SetGeometryPlanes(CConfig *config);
-
+  
 	/*!
 	 * \brief Get geometrical planes in the mesh
 	 */
@@ -836,9 +836,22 @@ public:
 	 * \param[in] Plane_Normal - Definition of the particular problem.
    * \param[in] Intersection - Definition of the particular problem.
    * \returns If the intersection has has been successful.
-	 */
-  unsigned short ComputeSegmentPlane_Intersection(double *Segment_P0, double *Segment_P1, double Variable_P0, double Variable_P1,
-                                                  double *Plane_P0, double *Plane_Normal, double *Intersection, double &Variable_Interp);
+   */
+  bool SegmentIntersectsPlane(double *Segment_P0, double *Segment_P1, double Variable_P0, double Variable_P1,
+                              double *Plane_P0, double *Plane_Normal, double *Intersection, double &Variable_Interp);
+  
+  /*!
+   * \brief Ray Intersects Triangle (Moller and Trumbore algorithm)
+   */
+  bool RayIntersectsTriangle(double orig[3], double dir[3],
+                             double vert0[3], double vert1[3], double vert2[3],
+                             double *intersect);
+  
+  /*!
+   * \brief Segment Intersects Triangle
+   */
+  bool SegmentIntersectsTriangle(double point0[3], double point1[3],
+                                 double vert0[3], double vert1[3], double vert2[3]);
 
 };
 
@@ -1287,7 +1300,7 @@ public:
 	 * \brief Indentify geometrical planes in the mesh
 	 */
 	void SetGeometryPlanes(CConfig *config);
-
+  
 	/*!
 	 * \brief Get geometrical planes in the mesh
 	 */

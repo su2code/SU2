@@ -408,6 +408,7 @@ private:
   bool Deform_Output;  /*!< \brief Print the residuals during mesh deformation to the console. */
   double Deform_Tol_Factor; /*!< Factor to multiply smallest volume for deform tolerance (0.001 default) */
   unsigned short Deform_Linear_Solver; /*!< Numerical method to deform the grid */
+  unsigned short FFD_Continuity; /*!< Surface continuity at the intersection with the FFD */
   double Deform_ElasticityMod, Deform_PoissonRatio; /*!< young's modulus and poisson ratio for volume deformation stiffness model */
   bool Visualize_Deformation;	/*!< \brief Flag to visualize the deformation in MDC. */
 	double Mach;		/*!< \brief Mach number. */
@@ -2003,6 +2004,12 @@ public:
    * \return Number of the design variables.
    */
   unsigned short GetnFFDBox(void);
+  
+  /*!
+   * \brief Get the required continuity level at the surface intersection with the FFD
+   * \return Continuity level at the surface intersection.
+   */
+  unsigned short GetFFD_Continuity(void);
 
 	/*!
 	 * \brief Get the number of Runge-Kutta steps.

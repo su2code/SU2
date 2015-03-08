@@ -1214,6 +1214,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Definition of the FFD boxes */
   addFFDDegreeOption("FFD_DEGREE", nFFDBox, DegreeFFDBox);
   
+  /* DESCRIPTION: Surface continuity at the intersection with the FFD */
+  addEnumOption("FFD_CONTINUITY", FFD_Continuity, Continuity_Map, DERIVATIVE_2ND);
+
   /*--- options that are used in the python optimization scripts. These have no effect on the c++ toolsuite ---*/
   /* CONFIG_CATEGORY:Python Options*/
 

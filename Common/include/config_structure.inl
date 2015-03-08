@@ -396,6 +396,8 @@ inline unsigned short CConfig::GetnDV(void) {	return nDV; }
 
 inline unsigned short CConfig::GetnFFDBox(void) {	return nFFDBox; }
 
+inline unsigned short CConfig::GetFFD_Continuity(void) { return FFD_Continuity; }
+
 inline unsigned short CConfig::GetnRKStep(void) { return nRKStep; }
 
 inline double CConfig::Get_Alpha_RKStep(unsigned short val_step) { return RK_Alpha_Step[val_step]; }
