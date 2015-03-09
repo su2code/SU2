@@ -2,7 +2,7 @@
  * \file config_structure.inl
  * \brief In-Line subroutines of the <i>config_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 3.2.8.3 "eagle"
+ * \version 3.2.9 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -395,6 +395,8 @@ inline string CConfig::GetTagFFDBox(unsigned short val_ffd) {	return TagFFDBox[v
 inline unsigned short CConfig::GetnDV(void) {	return nDV; }
 
 inline unsigned short CConfig::GetnFFDBox(void) {	return nFFDBox; }
+
+inline unsigned short CConfig::GetFFD_Continuity(void) { return FFD_Continuity; }
 
 inline unsigned short CConfig::GetnRKStep(void) { return nRKStep; }
 

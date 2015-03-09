@@ -2,7 +2,7 @@
  * \file SU2_DOT.cpp
  * \brief Main file of the Gradient Projection Code (SU2_DOT).
  * \author F. Palacios
- * \version 3.2.8.3 "eagle"
+ * \version 3.2.9 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -243,6 +243,15 @@ int main(int argc, char *argv[]) {
           cout << "The input grid doesn't have the entire FFD information!" << endl;
           cout << "Press any key to exit..." << endl;
           cin.get();
+        }
+        
+        for (iFFDBox = 0; iFFDBox < surface_movement->GetnFFDBox(); iFFDBox++) {
+          
+          if (rank == MASTER_NODE)
+            cout << "Check the FFD box intersections with the solid surfaces." << endl;
+          
+          surface_movement->CheckFFDIntersections(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], iFFDBox);
+          
         }
         
         if (rank == MASTER_NODE)

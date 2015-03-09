@@ -3,7 +3,7 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>config_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 3.2.8.3 "eagle"
+ * \version 3.2.9 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -53,7 +53,7 @@ using namespace std;
  * \brief Main class for defining the problem; basically this class reads the configuration file, and
  *        stores all the information.
  * \author F. Palacios
- * \version 3.2.8.3 "eagle"
+ * \version 3.2.9 "eagle"
  */
 
 class CConfig {
@@ -408,6 +408,7 @@ private:
   bool Deform_Output;  /*!< \brief Print the residuals during mesh deformation to the console. */
   double Deform_Tol_Factor; /*!< Factor to multiply smallest volume for deform tolerance (0.001 default) */
   unsigned short Deform_Linear_Solver; /*!< Numerical method to deform the grid */
+  unsigned short FFD_Continuity; /*!< Surface continuity at the intersection with the FFD */
   double Deform_ElasticityMod, Deform_PoissonRatio; /*!< young's modulus and poisson ratio for volume deformation stiffness model */
   bool Visualize_Deformation;	/*!< \brief Flag to visualize the deformation in MDC. */
 	double Mach;		/*!< \brief Mach number. */
@@ -2003,6 +2004,12 @@ public:
    * \return Number of the design variables.
    */
   unsigned short GetnFFDBox(void);
+  
+  /*!
+   * \brief Get the required continuity level at the surface intersection with the FFD
+   * \return Continuity level at the surface intersection.
+   */
+  unsigned short GetFFD_Continuity(void);
 
 	/*!
 	 * \brief Get the number of Runge-Kutta steps.
