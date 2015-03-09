@@ -1206,7 +1206,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addUnsignedShortOption("FFD_ITERATIONS", nFFD_Iter, 500);
 
   /* DESCRIPTION: Free surface damping coefficient */
-	addDoubleOption("FFD_TOLERANCE", FFD_Tol, 1E-8);
+	addDoubleOption("FFD_TOLERANCE", FFD_Tol, 1E-10);
 
   /* DESCRIPTION: Definition of the FFD boxes */
   addFFDDefOption("FFD_DEFINITION", nFFDBox, CoordFFDBox, TagFFDBox);

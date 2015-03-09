@@ -357,6 +357,15 @@ int main(int argc, char *argv[]) {
             cin.get();
           }
           
+          for (iFFDBox = 0; iFFDBox < surface_movement->GetnFFDBox(); iFFDBox++) {
+            
+            if (rank == MASTER_NODE)
+              cout << "Check the FFD box intersections with the solid surfaces." << endl;
+            
+            surface_movement->CheckFFDIntersections(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], iFFDBox);
+            
+          }
+          
           if (rank == MASTER_NODE)
             cout <<"-------------------------------------------------------------------------" << endl;
           

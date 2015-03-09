@@ -2560,6 +2560,9 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
             /*--- Compute intersections of the FFD box with the surface to eliminate design
              variables and satisfy surface continuity ---*/
 
+            if (rank == MASTER_NODE)
+              cout << "Checking FFD box intersections with the solid surfaces." << endl;
+
             CheckFFDIntersections(geometry, config, FFDBox[iFFDBox], iFFDBox);
             
             /*--- Compute the parametric coordinates of the child box
@@ -3030,7 +3033,8 @@ void CSurfaceMovement::CheckFFDIntersections(CGeometry *geometry, CConfig *confi
   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
     if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
         ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DEF)) ||
-        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_SOL))) {
+        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_GEO)) ||
+        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DOT))) {
       for (iElem = 0; iElem < geometry->GetnElem_Bound(iMarker); iElem++) {
         for (iNode = 0; iNode < geometry->bound[iMarker][iElem]->GetnNodes(); iNode++) {
           iPoint = geometry->bound[iMarker][iElem]->GetNode(iNode);
