@@ -53,6 +53,8 @@ inline unsigned short CConfig::GetiZone(void) { return iZone; }
 
 inline unsigned short CConfig::GetKind_SU2(void) { return Kind_SU2; }
 
+inline unsigned short CConfig::GetRef_NonDim(void) { return Ref_NonDim; }
+
 inline void CConfig::SetKind_SU2(unsigned short val_kind_su2) { Kind_SU2 = val_kind_su2 ; }
 
 inline bool CConfig::GetAdjoint(void) { return Adjoint; }
@@ -331,6 +333,8 @@ inline void CConfig::SetVelocity_Ref(double val_velocity_ref) { Velocity_Ref = v
 inline void CConfig::SetPressure_Ref(double val_pressure_ref) { Pressure_Ref = val_pressure_ref; }
 
 inline void CConfig::SetDensity_Ref(double val_density_ref) { Density_Ref = val_density_ref; }
+
+inline void CConfig::SetTemperature_Ref(double val_temperature_ref) { Temperature_Ref = val_temperature_ref; }
 
 inline void CConfig::SetTime_Ref(double val_time_ref) { Time_Ref = val_time_ref; }
 

@@ -391,22 +391,14 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\par REF_SHARP_EDGES
    * DESCRIPTION: Reference coefficient for detecting sharp edges \ingroup Config*/
   addDoubleOption("REF_SHARP_EDGES", RefSharpEdges, 3.0);
-	/*!\par REF_PRESSURE
-	 *  DESCRIPTION: Reference pressure (1.0 N/m^2 by default, only for compressible flows)  \ingroup Config*/
-  addDoubleOption("REF_PRESSURE", Pressure_Ref, 1.0);
-	/* !\par REF_TEMPERATURE
-   *  DESCRIPTION: Reference temperature (1.0 K by default, only for compressible flows)  \ingroup Config*/
-  addDoubleOption("REF_TEMPERATURE", Temperature_Ref, 1.0);
-	/* !\par REF_DENSITY
-   *  DESCRIPTION: Reference density (1.0 Kg/m^3 by default, only for compressible flows)  \ingroup Config*/
-  addDoubleOption("REF_DENSITY", Density_Ref, 1.0);
 	/* !\par REF_VELOCITY
    *  DESCRIPTION: Reference velocity (incompressible only)  \ingroup Config*/
   addDoubleOption("REF_VELOCITY", Velocity_Ref, -1.0);
 	/* !\par REF_VISCOSITY
    *  DESCRIPTION: Reference viscosity (incompressible only)  \ingroup Config*/
   addDoubleOption("REF_VISCOSITY", Viscosity_Ref, -1.0);
-
+  /* DESCRIPTION: Type of mesh motion */
+  addEnumOption("REF_DIMENSIONALIZATION", Ref_NonDim, NonDim_Map, DIMENSIONAL);
 
   /* CONFIG_CATEGORY: Boundary Markers */
   /*--- Options related to various boundary markers ---*/
@@ -3549,6 +3541,12 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     if (Adjoint || Linearized)
       cout << "Read flow solution from: " << Solution_FlowFileName << "." << endl;
 
+    
+    if (Ref_NonDim == DIMENSIONAL) { cout << "Dimensional simulation." << endl; }
+    else if (Ref_NonDim == FREESTEAM_PRESS_EQ_ONE) { cout << "Non-Dimensional simulation (P=1.0, Rho=1.0, T=1.0 at the farfield)." << endl; }
+    else if (Ref_NonDim == FREESTEAM_VEL_EQ_MACH) { cout << "Non-Dimensional simulation (V=Mach, Rho=1.0, T=1.0 at the farfield)." << endl; }
+    else if (Ref_NonDim == FREESTEAM_VEL_EQ_ONE) { cout << "Non-Dimensional simulation (V=1.0, Rho=1.0, T=1.0 at the farfield)." << endl; }
+    
     if (RefAreaCoeff == 0) cout << "The reference length/area will be computed using y(2D) or z(3D) projection." << endl;
     else cout << "The reference length/area (force coefficient) is " << RefAreaCoeff << "." << endl;
     cout << "The reference length (moment computation) is " << RefLengthMoment << "." << endl;

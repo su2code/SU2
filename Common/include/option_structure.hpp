@@ -242,6 +242,21 @@ static const map<string, ENUM_REGIME> Regime_Map = CCreateMap<string, ENUM_REGIM
 ("FREESURFACE", FREESURFACE);
 
 /*!
+ * \brief different non-dimensional modes
+ */
+enum ENUM_KIND_NONDIM {
+  DIMENSIONAL = 0,			    /*!< \brief Dimensional simulation. */
+  FREESTEAM_PRESS_EQ_ONE = 1, /*!< \brief Non-dimensional simulation. */
+  FREESTEAM_VEL_EQ_MACH = 2, /*!< \brief Non-dimensional simulation. */
+  FREESTEAM_VEL_EQ_ONE = 3 /*!< \brief Non-dimensional simulation. */
+};
+static const map<string, ENUM_KIND_NONDIM> NonDim_Map = CCreateMap<string, ENUM_KIND_NONDIM>
+("DIMENSIONAL", DIMENSIONAL)
+("FREESTEAM_PRESS_EQ_ONE", FREESTEAM_PRESS_EQ_ONE)
+("FREESTEAM_VEL_EQ_MACH", FREESTEAM_VEL_EQ_MACH)
+("FREESTEAM_VEL_EQ_ONE", FREESTEAM_VEL_EQ_ONE);
+
+/*!
  * \brief different system of measurements
  */
 enum ENUM_MEASUREMENTS {
@@ -1419,7 +1434,7 @@ public:
 
   ~COptionEnumList() {};
   string SetValue(vector<string> option_value) {
-    if (option_value.size() == 1 && option_value[0].compare("NONE")==0) {
+    if (option_value.size() == 1 && option_value[0].compare("NONE") == 0) {
       this->size = 0;
       return "";
     }
@@ -1511,7 +1526,7 @@ public:
   string SetValue(vector<string> option_value) {
     // The size is the length of option_value
     unsigned long option_size = option_value.size();
-    if (option_size == 1 && option_value[0].compare("NONE")==0) {
+    if (option_size == 1 && option_value[0].compare("NONE") == 0) {
       // No options
       this->size = 0;
       return "";
@@ -1553,7 +1568,7 @@ public:
   string SetValue(vector<string> option_value) {
     // The size is the length of option_value
     unsigned long option_size = option_value.size();
-    if (option_size == 1 && option_value[0].compare("NONE")==0) {
+    if (option_size == 1 && option_value[0].compare("NONE") == 0) {
       // No options
       this->size = 0;
       return "";
@@ -1594,7 +1609,7 @@ public:
   string SetValue(vector<string> option_value) {
     // The size is the length of option_value
     unsigned long option_size = option_value.size();
-    if (option_size == 1 && option_value[0].compare("NONE")==0) {
+    if (option_size == 1 && option_value[0].compare("NONE") == 0) {
       this->size = 0;
       return "";
     }

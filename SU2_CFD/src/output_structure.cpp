@@ -3753,7 +3753,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   bool inv_design = (config->GetInvDesign_Cp() || config->GetInvDesign_HeatFlux());
   bool output_1d = config->GetWrt_1D_Output();
   bool output_per_surface = false;
-  bool output_massflow = (config->GetKind_ObjFunc()==MASS_FLOW_RATE);
+  bool output_massflow = (config->GetKind_ObjFunc() == MASS_FLOW_RATE);
   if (config->GetnMarker_Monitoring() > 1) output_per_surface = true;
   
   bool isothermal = false;
@@ -3938,7 +3938,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                                      unsigned short val_iZone) {
   
   bool output_1d  = config[val_iZone]->GetWrt_1D_Output();
-  bool output_massflow = (config[val_iZone]->GetKind_ObjFunc()==MASS_FLOW_RATE);
+  bool output_massflow = (config[val_iZone]->GetKind_ObjFunc() == MASS_FLOW_RATE);
   unsigned short FinestMesh = config[val_iZone]->GetFinestMesh();
   
   int rank;
@@ -5059,7 +5059,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           cout.width(14); cout << log10(residual_TNE2[nSpecies+nDim]);
           cout.width(14); cout << log10(residual_TNE2[nSpecies+nDim+1]);
           cout.width(15); cout << Total_CDrag;
-          if (config[val_iZone]->GetKind_Solver()==TNE2_NAVIER_STOKES) {
+          if (config[val_iZone]->GetKind_Solver() == TNE2_NAVIER_STOKES) {
             cout.precision(1);
             cout.width(11); cout << Total_MaxHeat;
           }
@@ -7647,15 +7647,15 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
     NearFieldEA_file << "TITLE = \"Equivalent Area evaluation at each azimuthal angle\"" << endl;
     
     if (config->GetSystemMeasurements() == US)
-      NearFieldEA_file << "VARIABLES = \"Height (in) at radial distance "<< R_Plane*12.0 << " (cylindrical coordinate system)\"";
+      NearFieldEA_file << "VARIABLES = \"Height (in) at r="<< R_Plane*12.0 << " in. (cyl. coord. system)\"";
     else
-      NearFieldEA_file << "VARIABLES = \"Height (m) at radial distance "<< R_Plane << " (cylindrical coordinate system)\"";
+      NearFieldEA_file << "VARIABLES = \"Height (m) at r="<< R_Plane << " m. (cylindrical coordinate system)\"";
     
     for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++) {
       if (config->GetSystemMeasurements() == US)
-        NearFieldEA_file << ", \"Equivalent Area (ft<sup>2</sup>), Phi= " << PhiAngleList[iPhiAngle] << " deg.\"";
+        NearFieldEA_file << ", \"Equivalent Area (in<sup>2</sup>), <greek>F</greek>= " << PhiAngleList[iPhiAngle] << " deg.\"";
       else
-        NearFieldEA_file << ", \"Equivalent Area (m<sup>2</sup>), Phi= " << PhiAngleList[iPhiAngle] << " deg.\"";
+        NearFieldEA_file << ", \"Equivalent Area (m<sup>2</sup>), <greek>F</greek>= " << PhiAngleList[iPhiAngle] << " deg.\"";
     }
     
     NearFieldEA_file << endl;
@@ -7670,7 +7670,10 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
         NearFieldEA_file << scientific << (XcoordRot - XcoordRot_init);
       
       for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++) {
-        NearFieldEA_file << scientific << ", " << EquivArea_PhiAngle[iPhiAngle][iVertex];
+        if (config->GetSystemMeasurements() == US)
+          NearFieldEA_file << scientific << ", " << EquivArea_PhiAngle[iPhiAngle][iVertex] * (12.0 * 12.0);
+        else
+          NearFieldEA_file << scientific << ", " << EquivArea_PhiAngle[iPhiAngle][iVertex];
       }
       
       NearFieldEA_file << endl;
@@ -7732,6 +7735,14 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
         for (iVertex = 0; iVertex < EquivArea_PhiAngle[iPhiAngle].size(); iVertex++)
           TargetArea_PhiAngle[iPhiAngle][iVertex] = TargetArea_PhiAngle_Trans[iVertex][iPhiAngle];
       
+      /*--- Tranform TargetArea_PhiAngle from in2 to ft2, internally SU2 works with ft ---*/
+      
+      if (config->GetSystemMeasurements() == US) {
+        for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++)
+          for (iVertex = 0; iVertex < EquivArea_PhiAngle[iPhiAngle].size(); iVertex++)
+            TargetArea_PhiAngle[iPhiAngle][iVertex] = TargetArea_PhiAngle[iPhiAngle][iVertex]/(12.0*12.0);
+      }
+      
     }
     
     /*--- Divide by the number of Phi angles in the nearfield ---*/
@@ -7781,12 +7792,12 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
     EquivArea_file << "TITLE = \"Equivalent Area evaluation at each azimuthal angle\"" << endl;
     
     if (config->GetSystemMeasurements() == US)
-      EquivArea_file << "VARIABLES = \"Height (in) at radial distance "<< R_Plane*12.0 << " (cylindrical coordinate system)\",\"Equivalent Area (ft<sup>2</sup>)\",\"Target Equivalent Area (ft<sup>2</sup>)\",\"Cp\"" << endl;
+      EquivArea_file << "VARIABLES = \"Height (in) at r="<< R_Plane*12.0 << " in. (cyl. coord. system)\",\"Equivalent Area (in<sup>2</sup>)\",\"Target Equivalent Area (in<sup>2</sup>)\",\"Cp\"" << endl;
     else
-      EquivArea_file << "VARIABLES = \"Height (m) at radial distance "<< R_Plane << " (cylindrical coordinate system)\",\"Equivalent Area (m<sup>2</sup>)\",\"Target Equivalent Area (m<sup>2</sup>)\",\"Cp\"" << endl;
+      EquivArea_file << "VARIABLES = \"Height (m) at r="<< R_Plane << " m. (cylindrical coordinate system)\",\"Equivalent Area (m<sup>2</sup>)\",\"Target Equivalent Area (m<sup>2</sup>)\",\"Cp\"" << endl;
     
     for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++) {
-      EquivArea_file << fixed << "ZONE T= \"Azimuthal angle " << PhiAngleList[iPhiAngle] << " deg.\"" << endl;
+      EquivArea_file << fixed << "ZONE T= \"<greek>F</greek>=" << PhiAngleList[iPhiAngle] << " deg.\"" << endl;
       for (iVertex = 0; iVertex < Xcoord_PhiAngle[iPhiAngle].size(); iVertex++) {
         
         double XcoordRot = Xcoord_PhiAngle[0][iVertex]*cos(AoA) - Zcoord_PhiAngle[0][iVertex]*sin(AoA);
@@ -7797,8 +7808,13 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
         else
           EquivArea_file << scientific << (XcoordRot - XcoordRot_init);
         
-        EquivArea_file << scientific << ", " << EquivArea_PhiAngle[iPhiAngle][iVertex]
-        << ", " << TargetArea_PhiAngle[iPhiAngle][iVertex] << ", " << (Pressure_PhiAngle[iPhiAngle][iVertex]-Pressure_Inf)/Pressure_Inf << endl;
+        if (config->GetSystemMeasurements() == US)
+          EquivArea_file << scientific << ", " << EquivArea_PhiAngle[iPhiAngle][iVertex] * 12.0 * 12.0
+          << ", " << TargetArea_PhiAngle[iPhiAngle][iVertex] * 12.0 * 12.0 << ", " << (Pressure_PhiAngle[iPhiAngle][iVertex]-Pressure_Inf)/Pressure_Inf << endl;
+        else
+          EquivArea_file << scientific << ", " << EquivArea_PhiAngle[iPhiAngle][iVertex]
+          << ", " << TargetArea_PhiAngle[iPhiAngle][iVertex] << ", " << (Pressure_PhiAngle[iPhiAngle][iVertex]-Pressure_Inf)/Pressure_Inf << endl;
+
       }
     }
     

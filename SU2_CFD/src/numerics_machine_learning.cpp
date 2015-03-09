@@ -35,11 +35,11 @@ using namespace std;
 CPredictor* parse_predictor(Json::Value json) {
   string type = json["Type"].asString();
   Json::Value value = json["Value"];
-  if (type.compare("github.com/reggo/reggo/supervised/nnet/Net*")==0) {
+  if (type.compare("github.com/reggo/reggo/supervised/nnet/Net*") ==0) {
     CPredictor* predictor = new CNeurNet(value);
     return predictor;
   }
-  if (type.compare("github.com/btracey/ransuq/mlalg/MulPredictor")==0) {
+  if (type.compare("github.com/btracey/ransuq/mlalg/MulPredictor") ==0) {
     CPredictor* predictor = new CMulPredictor(value);
     return predictor;
   }
@@ -481,7 +481,7 @@ CScalePredictor::CScalePredictor() {}
 #ifdef HAVE_JSONCPP
 CScalePredictor::CScalePredictor(string filename) {
   
-  if (filename.compare("none")==0) {
+  if (filename.compare("none") ==0) {
     return;
   }
   
