@@ -597,7 +597,7 @@ public:
 	double GetBernsteinDerivative(short val_n, short val_i, double val_t, short val_order);
   
 	/*! 
-	 * \brief The routine computes the gradient of F(u, v, w)=||X(u, v, w)-(x, y, z)||^2  evaluated at (u, v, w).
+	 * \brief The routine computes the gradient of F(u, v, w) = ||X(u, v, w)-(x, y, z)||^2  evaluated at (u, v, w).
 	 * \param[in] val_coord - Parametric coordiates of the target point.
 	 * \param[in] xyz - Cartesians coordinates of the point.
    * \param[in] analytical - Compute the analytical gradient.
@@ -606,7 +606,7 @@ public:
 	double *GetFFDGradient(double *val_coord, double *xyz);
 	
 	/*!
-	 * \brief The routine that computes the Hessian of F(u, v, w)=||X(u, v, w)-(x, y, z)||^2 evaluated at (u, v, w)
+	 * \brief The routine that computes the Hessian of F(u, v, w) = ||X(u, v, w)-(x, y, z)||^2 evaluated at (u, v, w)
 	 *        Input: (u, v, w), (x, y, z)
 	 *        Output: Hessian F (u, v, w).
 	 * \param[in] uvw - Current value of the parametrics coordinates.
@@ -616,7 +616,7 @@ public:
 	void GetFFDHessian(double *uvw, double *xyz, double **val_Hessian);
   
 	/*! 
-	 * \brief An auxiliary routine to help us compute the gradient of F(u, v, w)=||X(u, v, w)-(x, y, z)||^2 = 
+	 * \brief An auxiliary routine to help us compute the gradient of F(u, v, w) = ||X(u, v, w)-(x, y, z)||^2 =
 	 *        (Sum_ijk^lmn P1_ijk Bi Bj Bk -x)^2+(Sum_ijk^lmn P2_ijk Bi Bj Bk -y)^2+(Sum_ijk^lmn P3_ijk Bi Bj Bk -z)^2
 	 *        Input: val_t, val_diff (to identify the index of the Bernstein polynomail we differentiate), the i, j, k , l, m, n 
 	 *        E.G.: val_diff=2 => we differentiate w.r.t. w  (val_diff=0,1, or 2) Output: d [B_i^l*B_j^m *B_k^n] / d val_diff  
@@ -630,7 +630,7 @@ public:
 	double GetDerivative1(double *uvw, unsigned short val_diff, unsigned short *ijk, unsigned short *lmn);
 	
 	/*! 
-	 * \brief An auxiliary routine to help us compute the gradient of F(u, v, w)=||X(u, v, w)-(x, y, z)||^2 =
+	 * \brief An auxiliary routine to help us compute the gradient of F(u, v, w) = ||X(u, v, w)-(x, y, z)||^2 =
 	 *        (Sum_ijk^lmn P1_ijk Bi Bj Bk -x)^2+(Sum_ijk^lmn P2_ijk Bi Bj Bk -y)^2+(Sum_ijk^lmn P3_ijk Bi Bj Bk -z)^2
 	 *        Input: (u, v, w), dim , xyz=(x, y, z), l, m, n E.G.: dim=2 => we use the third coordinate of the control points, 
 	 *        and the z-coordinate of xyz  (0<=dim<=2) Output: 2* ( (Sum_{i, j, k}^l, m, n P_{ijk}[dim] B_i^l[u] B_j^m[v] B_k^n[w]) - 
@@ -644,7 +644,7 @@ public:
 	double GetDerivative2(double *uvw, unsigned short dim, double *xyz, unsigned short *lmn);
 	
 	/*! 
-	 * \brief An auxiliary routine to help us compute the gradient of F(u, v, w)=||X(u, v, w)-(x, y, z)||^2 =
+	 * \brief An auxiliary routine to help us compute the gradient of F(u, v, w) = ||X(u, v, w)-(x, y, z)||^2 =
 	 *        (Sum_ijk^lmn P1_ijk Bi Bj Bk -x)^2+(Sum_ijk^lmn P2_ijk Bi Bj Bk -y)+(Sum_ijk^lmn P3_ijk Bi Bj Bk -z)
 	 * \param[in] uvw - Parametric coordiates of the point.
 	 * \param[in] dim - Value of the coordinate to be differentiate.
@@ -659,7 +659,7 @@ public:
 						  unsigned short *lmn);
 	
 	/*! 
-	 * \brief An auxiliary routine to help us compute the Hessian of F(u, v, w)=||X(u, v, w)-(x, y, z)||^2 =
+	 * \brief An auxiliary routine to help us compute the Hessian of F(u, v, w) = ||X(u, v, w)-(x, y, z)||^2 =
 	 *        (Sum_ijk^lmn P1_ijk Bi Bj Bk -x)^2+(Sum_ijk^lmn P2_ijk Bi Bj Bk -y)+(Sum_ijk^lmn P3_ijk Bi Bj Bk -z) 
 	 *        Input: val_t, val_diff, val_diff2 (to identify the index of the Bernstein polynomials we differentiate), the i, j, k , l, m, n 
 	 *        E.G.: val_diff=1, val_diff2=2  =>  we differentiate w.r.t. v and w  (val_diff=0,1, or 2)
@@ -676,7 +676,7 @@ public:
 						   unsigned short *ijk, unsigned short *lmn);
 	
 	/*! 
-	 * \brief An auxiliary routine to help us compute the Hessian of F(u, v, w)=||X(u, v, w)-(x, y, z)||^2 =
+	 * \brief An auxiliary routine to help us compute the Hessian of F(u, v, w) = ||X(u, v, w)-(x, y, z)||^2 =
 	 *        (Sum_ijk^lmn P1_ijk Bi Bj Bk -x)^2+(Sum_ijk^lmn P2_ijk Bi Bj Bk -y)+(Sum_ijk^lmn P3_ijk Bi Bj Bk -z) 
 	 *        Input: (u, v, w), dim , diff_this, diff_this_also, xyz=(x, y, z), l, m, n
 	 *        Output:

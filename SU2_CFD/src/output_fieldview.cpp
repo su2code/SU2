@@ -43,7 +43,7 @@ void COutput::SetFieldViewASCII(CConfig *config, CGeometry *geometry, unsigned s
   bool grid_movement  = config->GetGrid_Movement();
 
   char cstr[200], buffer[50];
-  string filename;
+  string filename, FieldName;
   
   /*--- Write file name with extension ---*/
   
@@ -159,7 +159,17 @@ void COutput::SetFieldViewASCII(CConfig *config, CGeometry *geometry, unsigned s
     FieldView_File << "Variable Names\t" << nvars << endl;
     
     for (unsigned short iField = 1+nDim; iField < config->fields.size(); iField++) {
-      FieldView_File << config->fields[iField] << endl;
+      
+      /*--- Remove all double-quote characters ---*/
+      
+      FieldName = config->fields[iField];
+      
+      FieldName.erase(
+                      remove(FieldName.begin(), FieldName.end(), '\"' ),
+                      FieldName.end()
+                      );
+      
+      FieldView_File << FieldName << endl;
     }
     
     /*--- SU2 does not generate boundary variables ---*/
@@ -319,10 +329,9 @@ void COutput::SetFieldViewASCII(CConfig *config, CGeometry *geometry, unsigned s
   
   if (nDim ==3) {
     
-    nbfaces = nGlobal_Line + nGlobal_BoundTria + nGlobal_BoundQuad;
+    nbfaces = nGlobal_BoundTria + nGlobal_BoundQuad;
     
     FieldView_File << "Boundary Faces\t" << nbfaces << endl;
-    
     
     for (iElem = 0; iElem < nGlobal_BoundTria; iElem++) {
       iNode = iElem*N_POINTS_TRIANGLE;
@@ -418,6 +427,11 @@ void COutput::SetFieldViewASCII(CConfig *config, CGeometry *geometry, unsigned s
       for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
         FieldView_File << scientific << Data[iVar][iPoint] << endl;
       }
+      if (nDim == 2) {
+        for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+          FieldView_File << scientific << Data[iVar][iPoint] << endl;
+        }
+      }
     }
   }
   else {
@@ -425,19 +439,7 @@ void COutput::SetFieldViewASCII(CConfig *config, CGeometry *geometry, unsigned s
       for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
         FieldView_File << scientific << Data[iVar+nDim][iPoint] << endl;
       }
-    }
-  }
-  
-  if (nDim == 2) {
-    if (config->GetKind_SU2() != SU2_SOL) {
-      for (iVar = 0; iVar < nvars; iVar++) {
-        for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
-          FieldView_File << scientific << Data[iVar][iPoint] << endl;
-        }
-      }
-    }
-    else {
-      for (iVar = 0; iVar < nvars; iVar++) {
+      if (nDim == 2) {
         for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
           FieldView_File << scientific << Data[iVar+nDim][iPoint] << endl;
         }

@@ -59,7 +59,8 @@ using namespace std;
 class CConfig {
 private:
 	unsigned short Kind_SU2; /*!< \brief Kind of SU2 software component.*/
-	unsigned short iZone, nZone; /*!< \brief Number of zones in the mesh. */
+  unsigned short Ref_NonDim; /*!< \brief Kind of of non dimensionalization.*/
+  unsigned short iZone, nZone; /*!< \brief Number of zones in the mesh. */
 	double OrderMagResidual; /*!< \brief Order of magnitude reduction. */
 	double MinLogResidual; /*!< \brief Minimum value of the log residual. */
 	double EA_ScaleFactor; /*!< \brief Equivalent Area scaling factor */
@@ -1693,6 +1694,12 @@ public:
 	 * \return Value of the Froude number.
 	 */
 	void SetDensity_Ref(double val_density_ref);
+  
+  /*!
+   * \brief Set the reference temperature.
+   * \return Value of the Froude number.
+   */
+  void SetTemperature_Ref(double val_temperature_ref);
 
   /*!
 	 * \brief Set the Froude number for free surface problems.
@@ -2815,6 +2822,12 @@ public:
 	 * \return Kind of the SU2 software component.
 	 */
 	unsigned short GetKind_SU2(void);
+  
+  /*!
+   * \brief Get the kind of non-dimensionalization.
+   * \return Kind of non-dimensionalization.
+   */
+  unsigned short GetRef_NonDim(void);
   
   /*!
 	 * \brief Get the kind of SU2 software component.
