@@ -5,7 +5,7 @@
  *        technique definition). The subroutines and functions are in 
  *        the <i>grid_movement_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, S. Padron
- * \version 3.2.8.3 "eagle"
+ * \version 3.2.9 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -56,7 +56,7 @@ using namespace std;
  * \brief Class for moving the surface and volumetric 
  *        numerical grid (2D and 3D problems).
  * \author F. Palacios
- * \version 3.2.8.3 "eagle"
+ * \version 3.2.9 "eagle"
  */
 class CGridMovement {
 public:
@@ -85,7 +85,7 @@ public:
  * \class CFreeFormDefBox
  * \brief Class for defining the free form FFDBox structure.
  * \author F. Palacios & A. Galdran.
- * \version 3.2.8.3 "eagle"
+ * \version 3.2.9 "eagle"
  */
 class CFreeFormDefBox : public CGridMovement {
 public:
@@ -120,7 +120,10 @@ public:
 	unsigned long nSurfacePoint;				/*!< \brief Number of surfaces in the FFD FFDBox. */
 	vector<string> ParentFFDBox;					/*!< \brief Vector with all the parent FFD FFDBox. */
 	vector<string> ChildFFDBox;					/*!< \brief Vector with all the child FFD FFDBox. */
-	
+  vector<unsigned short> Fix_IPlane;  /*!< \brief Fix FFD I plane. */
+  vector<unsigned short> Fix_JPlane;  /*!< \brief Fix FFD J plane. */
+  vector<unsigned short> Fix_KPlane;  /*!< \brief Fix FFD K plane. */
+
 public:
 	
 	/*! 
@@ -141,6 +144,60 @@ public:
 	 */
 	~CFreeFormDefBox(void);
 	
+  /*!
+   * \brief Define the I planes to to fix in a FFD box.
+   * \param[in] val_plane - Index of the plane to fix.
+   */
+  void Set_Fix_IPlane(unsigned short val_plane);
+
+  /*!
+   * \brief Define the I planes to to fix in a FFD box.
+   * \param[in] val_plane - Index of the plane to fix.
+   */
+  void Set_Fix_JPlane(unsigned short val_plane);
+  
+  /*!
+   * \brief Define the I planes to to fix in a FFD box.
+   * \param[in] val_plane - Index of the plane to fix.
+   */
+  void Set_Fix_KPlane(unsigned short val_plane);
+  
+  /*!
+   * \brief Define the I planes to to fix in a FFD box.
+   * \param[in] val_plane - Index of the plane to fix.
+   */
+  unsigned short Get_Fix_IPlane(unsigned short val_index);
+  
+  /*!
+   * \brief Define the I planes to to fix in a FFD box.
+   * \param[in] val_plane - Index of the plane to fix.
+   */
+  unsigned short Get_Fix_JPlane(unsigned short val_index);
+  
+  /*!
+   * \brief Define the I planes to to fix in a FFD box.
+   * \param[in] val_plane - Index of the plane to fix.
+   */
+  unsigned short Get_Fix_KPlane(unsigned short val_index);
+  
+  /*!
+   * \brief Define the I planes to to fix in a FFD box.
+   * \param[in] val_plane - Index of the plane to fix.
+   */
+  unsigned short Get_nFix_IPlane(void);
+  
+  /*!
+   * \brief Define the I planes to to fix in a FFD box.
+   * \param[in] val_plane - Index of the plane to fix.
+   */
+  unsigned short Get_nFix_JPlane(void);
+  
+  /*!
+   * \brief Define the I planes to to fix in a FFD box.
+   * \param[in] val_plane - Index of the plane to fix.
+   */
+  unsigned short Get_nFix_KPlane(void);
+  
 	/*! 
 	 * \brief Add to the vector of markers a new marker.
 	 * \param[in] val_iMarker - New marker inside the FFD box.
@@ -682,7 +739,7 @@ public:
  * \class CVolumetricMovement
  * \brief Class for moving the volumetric numerical grid.
  * \author F. Palacios, A. Bueno, T. Economon, S. Padron.
- * \version 3.2.8.3 "eagle"
+ * \version 3.2.9 "eagle"
  */
 class CVolumetricMovement : public CGridMovement {
 protected:
@@ -949,7 +1006,7 @@ public:
  * \class CSurfaceMovement
  * \brief Class for moving the surface numerical grid.
  * \author F. Palacios, T. Economon.
- * \version 3.2.8.3 "eagle"
+ * \version 3.2.9 "eagle"
  */
 class CSurfaceMovement : public CGridMovement {
 protected:
@@ -1151,6 +1208,15 @@ public:
 	 */		
 	void UpdateParametricCoord(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox);
 	
+  /*!
+   * \brief Check the intersections of the FFD with the surface
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
+   * \param[in] iFFDBox - _____________________.
+   */
+  void CheckFFDIntersections(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox);
+  
 	/*! 
 	 * \brief _____________________.
 	 * \param[in] geometry - _____________________.
