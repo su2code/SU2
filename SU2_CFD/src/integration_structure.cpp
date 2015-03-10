@@ -159,6 +159,16 @@ void CIntegration::Space_Integration(CGeometry *geometry,
     }
   }
   
+#ifdef HAVE_MPI
+
+  /*--- This MPI_Barrier is important, with the current implementation there is 
+   no is no blocking communications in NEARFIELD_BOUNDARY and it is possible to have another
+   communication (linear system) at the same time ---*/
+  
+  MPI_Barrier(MPI_COMM_WORLD);
+
+#endif
+  
   /*--- Strong boundary conditions (Navier-Stokes and Dirichlet type BCs) ---*/
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
