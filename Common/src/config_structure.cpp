@@ -807,12 +807,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("MESH_FORMAT", Mesh_FileFormat, Input_Map, SU2);
   /* DESCRIPTION:  Mesh input file */
   addStringOption("MESH_FILENAME", Mesh_FileName, string("mesh.su2"));
-  /*!\brief MESH_SCALE_CHANGE \n DESCRIPTION: Factor for scaling the mesh \ingroup Config */
-  addDoubleOption("MESH_SCALE_CHANGE", Mesh_Scale_Change, 1.0);
-  /*!\brief MESH_OUTPUT  \n DESCRIPTION: Write a new mesh converted to meters \n Default: NO \ingroup Config*/
-  addBoolOption("MESH_OUTPUT", Mesh_Output, false);
-  /*!\par MESH_OUT_FILENAME
-   *  DESCRIPTION: Mesh output file name. Used when converting, scaling, or deforming a mesh. \n Default: mesh_out.su2 \ingroup Config*/
+  /*!\brief MESH_OUT_FILENAME \n DESCRIPTION: Mesh output file name. Used when converting, scaling, or deforming a mesh. \n Default: mesh_out.su2 \ingroup Config*/
   addStringOption("MESH_OUT_FILENAME", Mesh_Out_FileName, string("mesh_out.su2"));
 
   /*!\brief CONV_FILENAME \n DESCRIPTION: Output file convergence history (w/o extension) \n Default: history \ingroup Config*/
@@ -836,7 +831,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief VOLUME_FLOW_FILENAME  \n DESCRIPTION: Output file flow (w/o extension) variables \ingroup Config */
   addStringOption("VOLUME_FLOW_FILENAME", Flow_FileName, string("flow"));
   /*!\brief VOLUME_STRUCTURE_FILENAME
-   *   DESCRIPTION: Output file structure (w/o extension) variables \ingroup Config*/
+   * \n  DESCRIPTION: Output file structure (w/o extension) variables \ingroup Config*/
   addStringOption("VOLUME_STRUCTURE_FILENAME", Structure_FileName, string("structure"));
   /*!\brief SURFACE_STRUCTURE_FILENAME
    *  \n DESCRIPTION: Output file structure (w/o extension) variables \ingroup Config*/
