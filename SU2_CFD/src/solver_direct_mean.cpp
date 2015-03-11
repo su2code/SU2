@@ -9032,8 +9032,12 @@ void CEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_c
           if ((iPoint == jPoint) && (jProcessor == rank)) compute = false;
           else compute = true;
           
-          if ((compute) && (jProcessor != rank)) {
-            
+      if (compute) {
+        
+        /*--- We only receive the information that belong to other boundary ---*/
+        
+        if (jProcessor != rank) {
+          
 #ifdef HAVE_MPI
             MPI_Recv(Buffer_Receive_V, nPrimVar, MPI_DOUBLE, jProcessor, jPoint, MPI_COMM_WORLD, &status);
 #endif
@@ -9078,7 +9082,7 @@ void CEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_c
           if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
           
         }
-        
+        }
       }
     }
   }

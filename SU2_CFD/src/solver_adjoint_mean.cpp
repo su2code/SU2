@@ -3462,7 +3462,11 @@ void CAdjEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solve
           if ((iPoint == jPoint) && (jProcessor == rank)) compute = false;
           else compute = true;
           
-          if ((compute) && (jProcessor != rank)) {
+          if (compute) {
+            
+            /*--- We only receive the information that belong to other boundary ---*/
+            
+            if (jProcessor != rank) {
             
             MPI_Irecv(Buffer_Receive_Psi, nVar, MPI_DOUBLE, jProcessor, jPoint, MPI_COMM_WORLD, &recv_req[0]);
             
@@ -3509,6 +3513,7 @@ void CAdjEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solve
         }
       }
     }
+  }
   }
   
   MPI_Barrier(MPI_COMM_WORLD);
@@ -3699,7 +3704,12 @@ void CAdjEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solve
           if ((iPoint == jPoint) && (jProcessor == rank)) compute = false;
           else compute = true;
           
-          if ((compute) && (jProcessor != rank)) {
+          if (compute) {
+            
+            /*--- We only receive the information that belong to other boundary ---*/
+            
+            if (jProcessor != rank) {
+
             
             MPI_Recv(Buffer_Receive_Psi, nVar, MPI_DOUBLE, jProcessor, jPoint, MPI_COMM_WORLD, &status);
             
@@ -3785,6 +3795,7 @@ void CAdjEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solve
           LinSysRes.SubtractBlock(iPoint, Res_Conv_i);
           if (implicit) Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
           
+        }
         }
       }
     }
