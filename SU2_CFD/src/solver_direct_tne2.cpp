@@ -6851,7 +6851,7 @@ void CTNE2NSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
       /*--- Calculate revised wall species densities ---*/
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
         rhos = Yst[iSpecies]*rho;
-        node[iPoint]->SetPrimitive(rhos, RHOS_INDEX+iSpecies);
+        node[iPoint]->SetPrimitive(RHOS_INDEX+iSpecies, rhos);
       }
       
       /*--- Calculate revised primitive variable gradients ---*/
