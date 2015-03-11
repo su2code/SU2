@@ -423,10 +423,10 @@ inline void CSolver::BC_Dirichlet(CGeometry *geometry, CSolver **solver_containe
 								  unsigned short val_marker) { }
 
 inline void CSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, 
-									CConfig *config, unsigned short val_marker) { }
+									CConfig *config) { }
                   
 inline void CSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, 
-									CConfig *config, unsigned short val_marker) { }
+									CConfig *config) { }
 
 inline void CSolver::BC_ActDisk_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                                CConfig *config) { }

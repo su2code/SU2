@@ -9359,14 +9359,14 @@ void CPhysicalGeometry::MatchInterface(CConfig *config) {
                 if (dist < mindist) {mindist = dist; pPoint = jPoint;}
               }
           maxdist = max(maxdist, mindist);
-          vertex[iMarker][iVertex]->SetDonorPoint(pPoint);
+          vertex[iMarker][iVertex]->SetDonorPoint(pPoint, MASTER_NODE);
           
           if (mindist > epsilon) {
             cout.precision(10);
             cout << endl;
             cout << "   Bad match for point " << iPoint << ".\tNearest";
             cout << " donor distance: " << scientific << mindist << ".";
-            vertex[iMarker][iVertex]->SetDonorPoint(iPoint);
+            vertex[iMarker][iVertex]->SetDonorPoint(iPoint, MASTER_NODE);
             maxdist = min(maxdist, 0.0);
           }
           
@@ -9484,7 +9484,7 @@ void CPhysicalGeometry::MatchInterface(CConfig *config) {
               cout << endl;
               cout << "   Bad match for point " << iPoint << ".\tNearest";
               cout << " donor distance: " << scientific << mindist << ".";
-              vertex[iMarker][iVertex]->SetDonorPoint(iPoint);
+              vertex[iMarker][iVertex]->SetDonorPoint(iPoint, pProcessor);
               maxdist_local = min(maxdist_local, 0.0);
             }
             
@@ -9545,14 +9545,14 @@ void CPhysicalGeometry::MatchNearField(CConfig *config) {
                 if (dist < mindist) { mindist = dist; pPoint = jPoint; }
               }
           maxdist = max(maxdist, mindist);
-          vertex[iMarker][iVertex]->SetDonorPoint(pPoint);
+          vertex[iMarker][iVertex]->SetDonorPoint(pPoint, MASTER_NODE);
           
           if (mindist > epsilon) {
             cout.precision(10);
             cout << endl;
             cout << "   Bad match for point " << iPoint << ".\tNearest";
             cout << " donor distance: " << scientific << mindist << ".";
-            vertex[iMarker][iVertex]->SetDonorPoint(iPoint);
+            vertex[iMarker][iVertex]->SetDonorPoint(iPoint, MASTER_NODE);
             maxdist = min(maxdist, 0.0);
           }
         }
@@ -9672,7 +9672,7 @@ void CPhysicalGeometry::MatchNearField(CConfig *config) {
               cout << endl;
               cout << "   Bad match for point " << iPoint << ".\tNearest";
               cout << " donor distance: " << scientific << mindist << ".";
-              vertex[iMarker][iVertex]->SetDonorPoint(iPoint);
+              vertex[iMarker][iVertex]->SetDonorPoint(iPoint, pProcessor);
               maxdist_local = min(maxdist_local, 0.0);
             }
             
@@ -9851,7 +9851,7 @@ void CPhysicalGeometry::MatchActuator_Disk(CConfig *config) {
                 cout << endl;
                 cout << "   Bad match for point " << iPoint << ".\tNearest";
                 cout << " donor distance: " << scientific << mindist << ".";
-                vertex[iMarker][iVertex]->SetDonorPoint(iPoint);
+                vertex[iMarker][iVertex]->SetDonorPoint(iPoint, pProcessor);
                 maxdist_local = min(maxdist_local, 0.0);
               }
               
@@ -9911,7 +9911,7 @@ void CPhysicalGeometry::MatchZone(CConfig *config, CGeometry *geometry_donor, CC
         }
       
       maxdist = max(maxdist, mindist);
-      vertex[iMarker][iVertex]->SetDonorPoint(pPoint);
+      vertex[iMarker][iVertex]->SetDonorPoint(pPoint, MASTER_NODE);
       
     }
   }
@@ -11658,7 +11658,7 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
         }
         
         /*--- Set the periodic point for this iPoint. ---*/
-        vertex[iMarker][iVertex]->SetDonorPoint(pPoint);
+        vertex[iMarker][iVertex]->SetDonorPoint(pPoint, MASTER_NODE);
         
         /*--- Print warning if the nearest point was not within
          the specified tolerance. Computation will continue. ---*/
@@ -13652,36 +13652,26 @@ void CMultiGridGeometry::SetVertex(CGeometry *fine_grid, CConfig *config) {
 
 void CMultiGridGeometry::MatchNearField(CConfig *config) {
   
+  unsigned short iMarker;
+  unsigned long iVertex, iPoint;
+  int iProcessor;
+  
 #ifndef HAVE_MPI
-  
-  unsigned short iMarker;
-  unsigned long iVertex, iPoint;
-  
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if (config->GetMarker_All_KindBC(iMarker) == NEARFIELD_BOUNDARY)
-      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-        iPoint = vertex[iMarker][iVertex]->GetNode();
-        vertex[iMarker][iVertex]->SetDonorPoint(iPoint);
-      }
-  
+  iProcessor = MASTER_NODE;
 #else
+  MPI_Comm_rank(MPI_COMM_WORLD, &iProcessor);
+#endif
   
-  unsigned short iMarker;
-  unsigned long iVertex, iPoint;
-  int rank;
-  
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if (config->GetMarker_All_KindBC(iMarker) == NEARFIELD_BOUNDARY)
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == NEARFIELD_BOUNDARY) {
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
         iPoint = vertex[iMarker][iVertex]->GetNode();
         if (node[iPoint]->GetDomain()) {
-          vertex[iMarker][iVertex]->SetDonorPoint(iPoint, rank);
+          vertex[iMarker][iVertex]->SetDonorPoint(iPoint, iProcessor);
         }
       }
-  
-#endif
+    }
+  }
   
 }
 
@@ -13713,36 +13703,26 @@ void CMultiGridGeometry::MatchActuator_Disk(CConfig *config) {
 
 void CMultiGridGeometry::MatchInterface(CConfig *config) {
   
+  unsigned short iMarker;
+  unsigned long iVertex, iPoint;
+  int iProcessor;
+  
 #ifndef HAVE_MPI
-  
-  unsigned short iMarker;
-  unsigned long iVertex, iPoint;
-  
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if (config->GetMarker_All_KindBC(iMarker) == INTERFACE_BOUNDARY)
-      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-        iPoint = vertex[iMarker][iVertex]->GetNode();
-        vertex[iMarker][iVertex]->SetDonorPoint(iPoint);
-      }
-  
+  iProcessor = MASTER_NODE;
 #else
+  MPI_Comm_rank(MPI_COMM_WORLD, &iProcessor);
+#endif
   
-  unsigned short iMarker;
-  unsigned long iVertex, iPoint;
-  int rank;
-  
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if (config->GetMarker_All_KindBC(iMarker) == INTERFACE_BOUNDARY)
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == INTERFACE_BOUNDARY) {
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
         iPoint = vertex[iMarker][iVertex]->GetNode();
         if (node[iPoint]->GetDomain()) {
-          vertex[iMarker][iVertex]->SetDonorPoint(iPoint, rank);
+          vertex[iMarker][iVertex]->SetDonorPoint(iPoint, iProcessor);
         }
       }
-  
-#endif
+    }
+  }
   
 }
 
