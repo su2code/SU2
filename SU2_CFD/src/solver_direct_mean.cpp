@@ -8949,157 +8949,207 @@ void CEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container,
 
 void CEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                          CConfig *config) {
-
+  
   unsigned long iVertex, iPoint, jPoint;
   unsigned short iDim, iVar, iMarker;
-
+  
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-
+  
   double *Normal = new double[nDim];
   double *PrimVar_i = new double[nPrimVar];
   double *PrimVar_j = new double[nPrimVar];
   
-  int rank = MASTER_NODE, jProcessor = MASTER_NODE;
+#ifndef HAVE_MPI
   
-#ifdef HAVE_MPI
-  MPI_Status send_stat[1], recv_stat[1], status;
-  MPI_Request send_req[1], recv_req[1];
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
-  bool compute;
-  
-  double *Buffer_Send_V = new double [nPrimVar];
-  double *Buffer_Receive_V = new double [nPrimVar];
-
-  /*--- Do the send process, by the moment we are sending each
-   node individually, this must be changed ---*/
-
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     
     if ((config->GetMarker_All_KindBC(iMarker) == INTERFACE_BOUNDARY) ||
         (config->GetMarker_All_KindBC(iMarker) == NEARFIELD_BOUNDARY)) {
       
-#ifdef HAVE_MPI
-
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         
         if (geometry->node[iPoint]->GetDomain()) {
           
           /*--- Find the associate pair to the original node ---*/
           
-          jPoint = geometry->vertex[iMarker][iVertex]->GetPeriodicPointDomain()[0];
-          jProcessor = geometry->vertex[iMarker][iVertex]->GetPeriodicPointDomain()[1];
+          jPoint = geometry->vertex[iMarker][iVertex]->GetDonorPoint();
           
-          if ((iPoint == jPoint) && (jProcessor == rank)) compute = false;
-          else compute = true;
-          
-          if ((compute) && (jProcessor != rank)) {
+          if (iPoint != jPoint) {
             
-            for (iVar = 0; iVar < nPrimVar; iVar++)
-              Buffer_Send_V[iVar] = node[iPoint]->GetPrimitive(iVar);
+            /*--- Store the solution for both points ---*/
             
-            MPI_Bsend(Buffer_Send_V, nPrimVar, MPI_DOUBLE, jProcessor, iPoint, MPI_COMM_WORLD);
+            for (iVar = 0; iVar < nPrimVar; iVar++) {
+              PrimVar_i[iVar] = node[iPoint]->GetPrimitive(iVar);
+              PrimVar_j[iVar] = node[jPoint]->GetPrimitive(iVar);
+            }
             
-//            MPI_Isend(Buffer_Send_V, nPrimVar, MPI_DOUBLE, jProcessor, iPoint, MPI_COMM_WORLD, &send_req[0]);
-//            
-//            /*--- Wait for this set of non-blocking comm. to complete ---*/
-//            
-//            MPI_Waitall(1, send_req, send_stat);
+            /*--- Set primitive variables ---*/
             
-          }
-          
-          
-        }
-      }
-      
-#endif
-
-      
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        
-        if (geometry->node[iPoint]->GetDomain()) {
-          
-          /*--- Find the associate pair to the original node ---*/
-          
-          jPoint = geometry->vertex[iMarker][iVertex]->GetPeriodicPointDomain()[0];
-          jProcessor = geometry->vertex[iMarker][iVertex]->GetPeriodicPointDomain()[1];
-          
-          if ((iPoint == jPoint) && (jProcessor == rank)) compute = false;
-          else compute = true;
-          
-      if (compute) {
-        
-        /*--- We only receive the information that belong to other boundary ---*/
-        
-        if (jProcessor != rank) {
-          
-#ifdef HAVE_MPI
-            MPI_Recv(Buffer_Receive_V, nPrimVar, MPI_DOUBLE, jProcessor, jPoint, MPI_COMM_WORLD, &status);
-#endif
+            numerics->SetPrimitive(PrimVar_i, PrimVar_j);
             
-//            MPI_Irecv(Buffer_Receive_V, nPrimVar, MPI_DOUBLE, jProcessor, jPoint, MPI_COMM_WORLD, &recv_req[0]);
-//            
-//            /*--- Wait for the this set of non-blocking recv's to complete ---*/
-//            
-//            MPI_Waitall(1, recv_req, recv_stat);
+            /*--- Set the normal vector ---*/
+            
+            geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
+            for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+            numerics->SetNormal(Normal);
+            
+            /*--- Compute the convective residual using an upwind scheme ---*/
+            
+            numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+            
+            /*--- Add Residuals and Jacobians ---*/
+            
+            LinSysRes.AddBlock(iPoint, Residual);
+            if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
             
           }
           
-          else {
-            for (iVar = 0; iVar < nPrimVar; iVar++)
-              Buffer_Receive_V[iVar] = node[jPoint]->GetPrimitive(iVar);
-          }
-          
-          /*--- Store the solution for both points ---*/
-          
-          for (iVar = 0; iVar < nPrimVar; iVar++) {
-            PrimVar_i[iVar] = node[iPoint]->GetPrimitive(iVar);
-            PrimVar_j[iVar] = Buffer_Receive_V[iVar];
-          }
-          
-          /*--- Set Conservative Variables ---*/
-          
-          numerics->SetPrimitive(PrimVar_i, PrimVar_j);
-          
-          /*--- Set Normal ---*/
-          
-          geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
-          for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
-          numerics->SetNormal(Normal);
-          
-          /*--- Compute the convective residual using an upwind scheme ---*/
-          
-          numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-          
-          /*--- Add Residuals and Jacobians ---*/
-          
-          LinSysRes.AddBlock(iPoint, Residual);
-          if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-          
-        }
         }
       }
     }
   }
-
-#ifdef HAVE_MPI
+  
+#else
+  
+  int rank, jProcessor;
+  MPI_Status send_stat[1], recv_stat[1], status;
+  MPI_Request send_req[1], recv_req[1];
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  
+  bool compute;
+  double *Buffer_Send_V = new double [nPrimVar];
+  double *Buffer_Receive_V = new double [nPrimVar];
+  
+  /*--- Do the send process, by the moment we are sending each
+   node individually, this must be changed ---*/
+  
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    
+    if ((config->GetMarker_All_KindBC(iMarker) == INTERFACE_BOUNDARY) ||
+        (config->GetMarker_All_KindBC(iMarker) == NEARFIELD_BOUNDARY)) {
+      
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        
+        if (geometry->node[iPoint]->GetDomain()) {
+          
+          /*--- Find the associate pair to the original node ---*/
+          
+          jPoint = geometry->vertex[iMarker][iVertex]->GetPeriodicPointDomain()[0];
+          jProcessor = geometry->vertex[iMarker][iVertex]->GetPeriodicPointDomain()[1];
+          
+          if ((iPoint == jPoint) && (jProcessor == rank)) compute = false;
+          else compute = true;
+          
+          /*--- We only send the information that belong to other boundary, -1 processor
+           means that the boundary condition is not applied ---*/
+          
+          if (compute) {
+            
+            if (jProcessor != rank) {
+              
+              /*--- Copy the primitive variable ---*/
+              
+              for (iVar = 0; iVar < nPrimVar; iVar++)
+                Buffer_Send_V[iVar] = node[iPoint]->GetPrimitive(iVar);
+              
+              MPI_Bsend(Buffer_Send_V, nPrimVar, MPI_DOUBLE, jProcessor, iPoint, MPI_COMM_WORLD);
+              
+              //          MPI_Isend(Buffer_Send_V, nPrimVar, MPI_DOUBLE, jProcessor, iPoint, MPI_COMM_WORLD, &send_req[0]);
+              
+              //          /*--- Wait for this set of non-blocking comm. to complete ---*/
+              //
+              //          MPI_Waitall(1, send_req, send_stat);
+              
+            }
+            
+          }
+          
+        }
+      }
+      
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        
+        if (geometry->node[iPoint]->GetDomain()) {
+          
+          /*--- Find the associate pair to the original node ---*/
+          
+          jPoint = geometry->vertex[iMarker][iVertex]->GetPeriodicPointDomain()[0];
+          jProcessor = geometry->vertex[iMarker][iVertex]->GetPeriodicPointDomain()[1];
+          
+          if ((iPoint == jPoint) && (jProcessor == rank)) compute = false;
+          else compute = true;
+          
+          if (compute) {
+            
+            /*--- We only receive the information that belong to other boundary ---*/
+            
+            if (jProcessor != rank) {
+              
+              MPI_Recv(Buffer_Receive_V, nPrimVar, MPI_DOUBLE, jProcessor, jPoint, MPI_COMM_WORLD, &status);
+              
+              //         MPI_Irecv(Buffer_Receive_V, nPrimVar, MPI_DOUBLE, jProcessor, jPoint, MPI_COMM_WORLD, &recv_req[0]);
+              
+              /*--- Wait for the this set of non-blocking recv's to complete ---*/
+              
+              //          MPI_Waitall(1, recv_req, recv_stat);
+              
+            }
+            else {
+              for (iVar = 0; iVar < nPrimVar; iVar++)
+                Buffer_Receive_V[iVar] = node[jPoint]->GetPrimitive(iVar);
+            }
+            
+            /*--- Store the solution for both points ---*/
+            
+            for (iVar = 0; iVar < nPrimVar; iVar++) {
+              PrimVar_i[iVar] = node[iPoint]->GetPrimitive(iVar);
+              PrimVar_j[iVar] = Buffer_Receive_V[iVar];
+            }
+            
+            /*--- Set Conservative Variables ---*/
+            
+            numerics->SetPrimitive(PrimVar_i, PrimVar_j);
+            
+            /*--- Set Normal ---*/
+            
+            geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
+            for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+            numerics->SetNormal(Normal);
+            
+            /*--- Compute the convective residual using an upwind scheme ---*/
+            
+            numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+            
+            /*--- Add Residuals and Jacobians ---*/
+            
+            LinSysRes.AddBlock(iPoint, Residual);
+            if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+            
+          }
+          
+        }
+      }
+    }
+  }
+  
   MPI_Barrier(MPI_COMM_WORLD);
-#endif
-
+  
   delete[] Buffer_Send_V;
   delete[] Buffer_Receive_V;
-
+  
+#endif
+  
   /*--- Free locally allocated memory ---*/
-
+  
   delete [] Normal;
   delete [] PrimVar_i;
   delete [] PrimVar_j;
-
+  
 }
 
 void CEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,

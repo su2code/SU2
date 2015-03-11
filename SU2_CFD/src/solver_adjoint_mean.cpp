@@ -3430,24 +3430,29 @@ void CAdjEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solve
           
           /*--- We only send the information that belong to other boundary ---*/
           
-          if ((compute) && (jProcessor != rank)) {
+          if (compute) {
             
-            /*--- Copy the adjoint variable ---*/
-            
-            for (iVar = 0; iVar < nVar; iVar++)
-              Buffer_Send_Psi[iVar] = node[iPoint]->GetSolution(iVar);
-            
-            MPI_Isend(Buffer_Send_Psi, nVar, MPI_DOUBLE, jProcessor, iPoint, MPI_COMM_WORLD, &send_req[0]);
-            
-            /*--- Wait for this set of non-blocking comm. to complete ---*/
-            
-            MPI_Waitall(1, send_req, send_stat);
+            if (jProcessor != rank) {
+              
+              /*--- Copy the adjoint variable ---*/
+              
+              for (iVar = 0; iVar < nVar; iVar++)
+                Buffer_Send_Psi[iVar] = node[iPoint]->GetSolution(iVar);
+              
+              MPI_Isend(Buffer_Send_Psi, nVar, MPI_DOUBLE, jProcessor, iPoint, MPI_COMM_WORLD, &send_req[0]);
+              
+              /*--- Wait for this set of non-blocking comm. to complete ---*/
+              
+              MPI_Waitall(1, send_req, send_stat);
+              
+            }
             
           }
           
         }
       }
-
+      
+      
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
@@ -3467,53 +3472,54 @@ void CAdjEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solve
             /*--- We only receive the information that belong to other boundary ---*/
             
             if (jProcessor != rank) {
+              
+              MPI_Irecv(Buffer_Receive_Psi, nVar, MPI_DOUBLE, jProcessor, jPoint, MPI_COMM_WORLD, &recv_req[0]);
+              
+              /*--- Wait for the this set of non-blocking recv's to complete ---*/
+              
+              MPI_Waitall(1, recv_req, recv_stat);
+              
+            } else {
+              for (iVar = 0; iVar < nVar; iVar++)
+                Buffer_Receive_Psi[iVar] = node[jPoint]->GetSolution(iVar);
+            }
             
-            MPI_Irecv(Buffer_Receive_Psi, nVar, MPI_DOUBLE, jProcessor, jPoint, MPI_COMM_WORLD, &recv_req[0]);
+            /*--- Store the solution for both points ---*/
             
-            /*--- Wait for the this set of non-blocking recv's to complete ---*/
+            for (iVar = 0; iVar < nVar; iVar++) {
+              Psi_i[iVar] = node[iPoint]->GetSolution(iVar);
+              Psi_j[iVar] = Buffer_Receive_Psi[iVar];
+            }
             
-            MPI_Waitall(1, recv_req, recv_stat);
+            /*--- Set adjoint Variables ---*/
             
-          } else {
-            for (iVar = 0; iVar < nVar; iVar++)
-              Buffer_Receive_Psi[iVar] = node[jPoint]->GetSolution(iVar);
+            numerics->SetAdjointVar(Psi_i, Psi_j);
+            
+            /*--- Conservative variables w/o reconstruction (the same at both points) ---*/
+            
+            V_i = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
+            V_j = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
+            numerics->SetPrimitive(V_i, V_j);
+            
+            /*--- Set Normal ---*/
+            
+            geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
+            for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+            numerics->SetNormal(Normal);
+            
+            /*--- Compute the convective residual using an upwind scheme ---*/
+            numerics->ComputeResidual(Res_Conv_i, Res_Conv_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
+            
+            /*--- Add Residuals and Jacobians ---*/
+            
+            LinSysRes.SubtractBlock(iPoint, Res_Conv_i);
+            if (implicit) Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
+            
           }
-          
-          /*--- Store the solution for both points ---*/
-          
-          for (iVar = 0; iVar < nVar; iVar++) {
-            Psi_i[iVar] = node[iPoint]->GetSolution(iVar);
-            Psi_j[iVar] = Buffer_Receive_Psi[iVar];
-          }
-          
-          /*--- Set adjoint Variables ---*/
-          
-          numerics->SetAdjointVar(Psi_i, Psi_j);
-          
-          /*--- Conservative variables w/o reconstruction (the same at both points) ---*/
-          
-          V_i = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
-          V_j = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
-          numerics->SetPrimitive(V_i, V_j);
-          
-          /*--- Set Normal ---*/
-          
-          geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
-          for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
-          numerics->SetNormal(Normal);
-          
-          /*--- Compute the convective residual using an upwind scheme ---*/
-          numerics->ComputeResidual(Res_Conv_i, Res_Conv_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
-          
-          /*--- Add Residuals and Jacobians ---*/
-          
-          LinSysRes.SubtractBlock(iPoint, Res_Conv_i);
-          if (implicit) Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
           
         }
       }
     }
-  }
   }
   
   MPI_Barrier(MPI_COMM_WORLD);
@@ -3670,25 +3676,30 @@ void CAdjEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solve
           else compute = true;
           
           /*--- We only send the information that belong to other boundary ---*/
-          if ((compute) && (jProcessor != rank)) {
+          if (compute) {
             
-            /*--- Copy the adjoint variable ---*/
-            
-            for (iVar = 0; iVar < nVar; iVar++)
-              Buffer_Send_Psi[iVar] = node[iPoint]->GetSolution(iVar);
-            
-            MPI_Bsend(Buffer_Send_Psi, nVar, MPI_DOUBLE, jProcessor, iPoint, MPI_COMM_WORLD);
-            
-            //          MPI_Isend(Buffer_Send_Psi, nVar, MPI_DOUBLE, jProcessor, iPoint, MPI_COMM_WORLD, &send_req[0]);
-            
-            /*--- Wait for this set of non-blocking comm. to complete ---*/
-            
-            //          MPI_Waitall(1, send_req, send_stat);
+            if (jProcessor != rank) {
+              
+              /*--- Copy the adjoint variable ---*/
+              
+              for (iVar = 0; iVar < nVar; iVar++)
+                Buffer_Send_Psi[iVar] = node[iPoint]->GetSolution(iVar);
+              
+              MPI_Bsend(Buffer_Send_Psi, nVar, MPI_DOUBLE, jProcessor, iPoint, MPI_COMM_WORLD);
+              
+              //          MPI_Isend(Buffer_Send_Psi, nVar, MPI_DOUBLE, jProcessor, iPoint, MPI_COMM_WORLD, &send_req[0]);
+              
+              /*--- Wait for this set of non-blocking comm. to complete ---*/
+              
+              //          MPI_Waitall(1, send_req, send_stat);
+              
+            }
             
           }
           
         }
       }
+      
       
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         
@@ -3709,93 +3720,92 @@ void CAdjEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solve
             /*--- We only receive the information that belong to other boundary ---*/
             
             if (jProcessor != rank) {
-
-            
-            MPI_Recv(Buffer_Receive_Psi, nVar, MPI_DOUBLE, jProcessor, jPoint, MPI_COMM_WORLD, &status);
-            
-            //          MPI_Irecv(Buffer_Receive_Psi, nVar, MPI_DOUBLE, jProcessor, jPoint, MPI_COMM_WORLD, &recv_req[0]);
-            
-            /*--- Wait for the this set of non-blocking recv's to complete ---*/
-            
-            //          MPI_Waitall(1, recv_req, recv_stat);
-            
-          }
-          else {
-            for (iVar = 0; iVar < nVar; iVar++)
-              Buffer_Receive_Psi[iVar] = node[jPoint]->GetSolution(iVar);
-          }
-          
-          /*--- Store the solution for both points ---*/
-          
-          for (iVar = 0; iVar < nVar; iVar++) {
-            Psi_i[iVar] = node[iPoint]->GetSolution(iVar);
-            Psi_j[iVar] = Buffer_Receive_Psi[iVar];
-          }
-          
-          /*--- If equivalent area or nearfield pressure condition ---*/
-          
-          if ((config->GetKind_ObjFunc() == EQUIVALENT_AREA) ||
-              (config->GetKind_ObjFunc() == NEARFIELD_PRESSURE)) {
-            
-            /*--- Identify the inner and the outer point (based on the normal direction) ---*/
-            
-            if (Normal[nDim-1] < 0.0) { Pin = iPoint; Pout = jPoint; }
-            else { Pout = iPoint; Pin = jPoint; }
-            
-            IntBoundary_Jump = node[iPoint]->GetIntBoundary_Jump();
-            
-            /*--- Inner point ---*/
-            
-            if (iPoint == Pin) {
-              for (iVar = 0; iVar < nVar; iVar++) {
-                Psi_in[iVar] = Psi_i[iVar]; Psi_out[iVar] = Psi_j[iVar];
-                MeanPsi[iVar] = 0.5*(Psi_out[iVar] + Psi_in[iVar]);
-                Psi_in_ghost[iVar] = 2.0*MeanPsi[iVar] - Psi_in[iVar] - IntBoundary_Jump[iVar];
-              }
-              numerics->SetAdjointVar(Psi_in, Psi_in_ghost);
+              
+              MPI_Recv(Buffer_Receive_Psi, nVar, MPI_DOUBLE, jProcessor, jPoint, MPI_COMM_WORLD, &status);
+              
+              //          MPI_Irecv(Buffer_Receive_Psi, nVar, MPI_DOUBLE, jProcessor, jPoint, MPI_COMM_WORLD, &recv_req[0]);
+              
+              /*--- Wait for the this set of non-blocking recv's to complete ---*/
+              
+              //          MPI_Waitall(1, recv_req, recv_stat);
+              
+            }
+            else {
+              for (iVar = 0; iVar < nVar; iVar++)
+                Buffer_Receive_Psi[iVar] = node[jPoint]->GetSolution(iVar);
             }
             
-            /*--- Outer point ---*/
+            /*--- Store the solution for both points ---*/
             
-            if (iPoint == Pout) {
-              for (iVar = 0; iVar < nVar; iVar++) {
-                Psi_in[iVar] = Psi_j[iVar]; Psi_out[iVar] = Psi_i[iVar];
-                MeanPsi[iVar] = 0.5*(Psi_out[iVar] + Psi_in[iVar]);
-                Psi_out_ghost[iVar] = 2.0*MeanPsi[iVar] - Psi_out[iVar] + IntBoundary_Jump[iVar];
-              }
-              numerics->SetAdjointVar(Psi_out, Psi_out_ghost);
+            for (iVar = 0; iVar < nVar; iVar++) {
+              Psi_i[iVar] = node[iPoint]->GetSolution(iVar);
+              Psi_j[iVar] = Buffer_Receive_Psi[iVar];
             }
+            
+            /*--- If equivalent area or nearfield pressure condition ---*/
+            
+            if ((config->GetKind_ObjFunc() == EQUIVALENT_AREA) ||
+                (config->GetKind_ObjFunc() == NEARFIELD_PRESSURE)) {
+              
+              /*--- Identify the inner and the outer point (based on the normal direction) ---*/
+              
+              if (Normal[nDim-1] < 0.0) { Pin = iPoint; Pout = jPoint; }
+              else { Pout = iPoint; Pin = jPoint; }
+              
+              IntBoundary_Jump = node[iPoint]->GetIntBoundary_Jump();
+              
+              /*--- Inner point ---*/
+              
+              if (iPoint == Pin) {
+                for (iVar = 0; iVar < nVar; iVar++) {
+                  Psi_in[iVar] = Psi_i[iVar]; Psi_out[iVar] = Psi_j[iVar];
+                  MeanPsi[iVar] = 0.5*(Psi_out[iVar] + Psi_in[iVar]);
+                  Psi_in_ghost[iVar] = 2.0*MeanPsi[iVar] - Psi_in[iVar] - IntBoundary_Jump[iVar];
+                }
+                numerics->SetAdjointVar(Psi_in, Psi_in_ghost);
+              }
+              
+              /*--- Outer point ---*/
+              
+              if (iPoint == Pout) {
+                for (iVar = 0; iVar < nVar; iVar++) {
+                  Psi_in[iVar] = Psi_j[iVar]; Psi_out[iVar] = Psi_i[iVar];
+                  MeanPsi[iVar] = 0.5*(Psi_out[iVar] + Psi_in[iVar]);
+                  Psi_out_ghost[iVar] = 2.0*MeanPsi[iVar] - Psi_out[iVar] + IntBoundary_Jump[iVar];
+                }
+                numerics->SetAdjointVar(Psi_out, Psi_out_ghost);
+              }
+            }
+            else {
+              
+              /*--- Just do a periodic BC ---*/
+              
+              numerics->SetAdjointVar(Psi_i, Psi_j);
+              
+            }
+            
+            /*--- Conservative variables w/o reconstruction (the same at both points) ---*/
+            
+            V_i = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
+            V_j = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
+            numerics->SetPrimitive(V_i, V_j);
+            
+            /*--- Set Normal ---*/
+            
+            geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
+            for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+            numerics->SetNormal(Normal);
+            
+            /*--- Compute residual ---*/
+            
+            numerics->ComputeResidual(Res_Conv_i, Res_Conv_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
+            
+            /*--- Add Residuals and Jacobians ---*/
+            
+            LinSysRes.SubtractBlock(iPoint, Res_Conv_i);
+            if (implicit) Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
+            
           }
-          else {
-            
-            /*--- Just do a periodic BC ---*/
-            
-            numerics->SetAdjointVar(Psi_i, Psi_j);
-            
-          }
-          
-          /*--- Conservative variables w/o reconstruction (the same at both points) ---*/
-          
-          V_i = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
-          V_j = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
-          numerics->SetPrimitive(V_i, V_j);
-          
-          /*--- Set Normal ---*/
-          
-          geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
-          for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
-          numerics->SetNormal(Normal);
-          
-          /*--- Compute residual ---*/
-          
-          numerics->ComputeResidual(Res_Conv_i, Res_Conv_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
-          
-          /*--- Add Residuals and Jacobians ---*/
-          
-          LinSysRes.SubtractBlock(iPoint, Res_Conv_i);
-          if (implicit) Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
-          
-        }
         }
       }
     }
@@ -3816,6 +3826,7 @@ void CAdjEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solve
   delete[] MeanPsi;
   delete[] Psi_out_ghost;
   delete[] Psi_in_ghost;
+  
   
 }
 
