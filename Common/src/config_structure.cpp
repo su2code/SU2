@@ -439,7 +439,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief MARKER_SUPERSONIC_INLET  \n DESCRIPTION: Supersonic inlet boundary marker(s) \n   Format: (inlet marker, temperature, static pressure, velocity_x,   velocity_y, velocity_z, ... ), i.e. primitive variables specified. \ingroup Config*/
   addInletOption("MARKER_SUPERSONIC_INLET", nMarker_Supersonic_Inlet, Marker_Supersonic_Inlet,
                  Inlet_Temperature, Inlet_Pressure, Inlet_Velocity);
-  /* DESCRIPTION: Supersonic outlet boundary marker(s) */
+  /*!\brief MARKER_SUPERSONIC_OUTLET \n DESCRIPTION: Supersonic outlet boundary marker(s) \ingroup Config*/
   addStringListOption("MARKER_SUPERSONIC_OUTLET", nMarker_Supersonic_Outlet, Marker_Supersonic_Outlet);
   /*!\brief MARKER_OUTLET  \n DESCRIPTION: Outlet boundary marker(s)\n
    Format: ( outlet marker, back pressure (static), ... ) \ingroup Config*/
@@ -456,11 +456,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief MARKER_HEATFLUX  \n DESCRIPTION: Specified heat flux wall boundary marker(s)
    Format: ( Heat flux marker, wall heat flux (static), ... ) \ingroup Config*/
   addStringDoubleListOption("MARKER_HEATFLUX", nMarker_HeatFlux, Marker_HeatFlux, Heat_Flux);
-  /* DESCRIPTION: Specified heat flux wall boundary marker(s)
-   Format: ( Heat flux marker, wall heat flux (static), ... ) */
+  /*!\brief MARKER_HEATFLUX_NONCATALYTIC \n DESCRIPTION: Specified heat flux wall boundary marker(s)
+   Format: ( Heat flux marker, wall heat flux (static), ... ) \ingroup Config*/
   addStringDoubleListOption("MARKER_HEATFLUX_NONCATALYTIC", nMarker_HeatFluxNonCatalytic, Marker_HeatFluxNonCatalytic, Heat_Flux);
-  /* DESCRIPTION: Specified heat flux wall boundary marker(s)
-   Format: ( Heat flux marker, wall heat flux (static), ... ) */
+  /*!\brief MARKER_HEATFLUX_CATALYTIC \n DESCRIPTION: Specified heat flux wall boundary marker(s)
+   Format: ( Heat flux marker, wall heat flux (static), ... ) \ingroup Config*/
   addStringDoubleListOption("MARKER_HEATFLUX_CATALYTIC", nMarker_HeatFluxCatalytic, Marker_HeatFluxCatalytic, Heat_Flux);
   /*!\brief MARKER_ENGINE_INFLOW  \n DESCRIPTION: Engine inflow boundary marker(s)
    Format: ( nacelle inflow marker, fan face Mach, ... ) \ingroup Config*/
@@ -489,8 +489,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("DAMP_ENGINE_BLEED", Damp_Engine_Bleed, 0.95);
   /* DESCRIPTION: Damping factor for engine exhaust condition */
   addDoubleOption("DAMP_ENGINE_EXHAUST", Damp_Engine_Exhaust, 0.95);
-  /* DESCRIPTION: Outlet boundary marker(s) over which to calculate 1-D flow properties
-   Format: ( outlet marker) */
+  /*!\brief MARKER_OUT_1D \n DESCRIPTION: Outlet boundary marker(s) over which to calculate 1-D flow properties
+   Format: ( outlet marker) \ingroup Config*/
   addStringListOption("MARKER_OUT_1D", nMarker_Out_1D, Marker_Out_1D);
 
 

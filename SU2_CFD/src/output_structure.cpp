@@ -6521,8 +6521,8 @@ void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned sho
         if (rank == MASTER_NODE) cout <<"Writing volume mesh file." << endl;
         
         /*--- Write a Tecplot ASCII file ---*/
-        
-        SetTecplotASCII_Mesh(config[iZone], geometry[iZone], false, new_file);
+        if (config[iZone]->GetOutput_FileFormat()==PARAVIEW) SetParaview_MeshASCII(config[iZone], geometry[iZone], iZone,  val_nZone, false,new_file);
+        else SetTecplotASCII_Mesh(config[iZone], geometry[iZone], false, new_file);
         
       }
       
@@ -6531,9 +6531,10 @@ void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned sho
         if (rank == MASTER_NODE) cout <<"Writing surface mesh file." << endl;
         
         /*--- Write a Tecplot ASCII file ---*/
+        if (config[iZone]->GetOutput_FileFormat()==PARAVIEW) SetParaview_MeshASCII(config[iZone], geometry[iZone], iZone,  val_nZone, true,new_file);
+        else SetTecplotASCII_Mesh(config[iZone], geometry[iZone], true, new_file);
         
-        SetTecplotASCII_Mesh(config[iZone], geometry[iZone], true, new_file);
-        
+
       }
 
       if (rank == MASTER_NODE) cout <<"Writing .su2 file." << endl;
