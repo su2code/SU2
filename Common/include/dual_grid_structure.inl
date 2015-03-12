@@ -308,8 +308,6 @@ inline void CVertex::SetRotation_Type(short val_rotation_type) { Rotation_Type =
 
 inline short CVertex::GetRotation_Type(void) { return Rotation_Type; }
 
-inline void CVertex::SetDonorPoint(long val_periodicpoint) { PeriodicPoint[0] = val_periodicpoint; }
-
 inline void CVertex::SetDonorPoint(long val_periodicpoint, long val_processor) { 
 	PeriodicPoint[0] = val_periodicpoint; 
 	PeriodicPoint[1] = val_processor; 
