@@ -1020,12 +1020,6 @@ public:
 	 * \return Value of the rotation that must be applied to the solution of the vertex
 	 */
 	short GetRotation_Type(void);
-	
-	/*! 
-	 * \brief Set the periodic point of a vertex.
-	 * \param[in] val_periodicpoint - Value of periodic point of the vertex.
-	 */
-	void SetDonorPoint(long val_periodicpoint);
   
 	/*! 
 	 * \overload
