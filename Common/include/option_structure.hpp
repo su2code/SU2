@@ -2,7 +2,7 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
- * \version 3.2.8.3 "eagle"
+ * \version 3.2.9 "eagle"
  *
  * Many of the classes in this file are templated, and therefore must
  * be declared and defined here; to keep all elements together, there
@@ -240,6 +240,21 @@ static const map<string, ENUM_REGIME> Regime_Map = CCreateMap<string, ENUM_REGIM
 ("COMPRESSIBLE", COMPRESSIBLE)
 ("INCOMPRESSIBLE", INCOMPRESSIBLE)
 ("FREESURFACE", FREESURFACE);
+
+/*!
+ * \brief different non-dimensional modes
+ */
+enum ENUM_KIND_NONDIM {
+  DIMENSIONAL = 0,			    /*!< \brief Dimensional simulation. */
+  FREESTEAM_PRESS_EQ_ONE = 1, /*!< \brief Non-dimensional simulation. */
+  FREESTEAM_VEL_EQ_MACH = 2, /*!< \brief Non-dimensional simulation. */
+  FREESTEAM_VEL_EQ_ONE = 3 /*!< \brief Non-dimensional simulation. */
+};
+static const map<string, ENUM_KIND_NONDIM> NonDim_Map = CCreateMap<string, ENUM_KIND_NONDIM>
+("DIMENSIONAL", DIMENSIONAL)
+("FREESTEAM_PRESS_EQ_ONE", FREESTEAM_PRESS_EQ_ONE)
+("FREESTEAM_VEL_EQ_MACH", FREESTEAM_VEL_EQ_MACH)
+("FREESTEAM_VEL_EQ_ONE", FREESTEAM_VEL_EQ_ONE);
 
 /*!
  * \brief different system of measurements
@@ -1003,6 +1018,17 @@ static const map<string, ENUM_LINEAR_SOLVER> Linear_Solver_Map = CCreateMap<stri
 ("SMOOTHER_ILU0", SMOOTHER_ILU);
 
 /*!
+ * \brief types surface continuity at the intersection with the FFD
+ */
+enum ENUM_FFD_CONTINUITY {
+  DERIVATIVE_1ST = 1,		/*!< \brief First derivative continuity. */
+  DERIVATIVE_2ND = 2			/*!< \brief Second derivative continuity. */
+};
+static const map<string, ENUM_FFD_CONTINUITY> Continuity_Map = CCreateMap<string, ENUM_FFD_CONTINUITY>
+("1ST_DERIVATIVE", DERIVATIVE_1ST)
+("2ND_DERIVATIVE", DERIVATIVE_2ND);
+
+/*!
  * \brief types of sensitivity smoothing
  */
 enum ENUM_SENS_SMOOTHING {
@@ -1408,7 +1434,7 @@ public:
 
   ~COptionEnumList() {};
   string SetValue(vector<string> option_value) {
-    if (option_value.size() == 1 && option_value[0].compare("NONE")==0) {
+    if (option_value.size() == 1 && option_value[0].compare("NONE") == 0) {
       this->size = 0;
       return "";
     }
@@ -1500,7 +1526,7 @@ public:
   string SetValue(vector<string> option_value) {
     // The size is the length of option_value
     unsigned long option_size = option_value.size();
-    if (option_size == 1 && option_value[0].compare("NONE")==0) {
+    if (option_size == 1 && option_value[0].compare("NONE") == 0) {
       // No options
       this->size = 0;
       return "";
@@ -1542,7 +1568,7 @@ public:
   string SetValue(vector<string> option_value) {
     // The size is the length of option_value
     unsigned long option_size = option_value.size();
-    if (option_size == 1 && option_value[0].compare("NONE")==0) {
+    if (option_size == 1 && option_value[0].compare("NONE") == 0) {
       // No options
       this->size = 0;
       return "";
@@ -1583,7 +1609,7 @@ public:
   string SetValue(vector<string> option_value) {
     // The size is the length of option_value
     unsigned long option_size = option_value.size();
-    if (option_size == 1 && option_value[0].compare("NONE")==0) {
+    if (option_size == 1 && option_value[0].compare("NONE") == 0) {
       this->size = 0;
       return "";
     }

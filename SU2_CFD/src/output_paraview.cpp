@@ -2,7 +2,7 @@
  * \file output_paraview.cpp
  * \brief Main subroutines for output solver information
  * \author F. Palacios
- * \version 3.2.8.3 "eagle"
+ * \version 3.2.9 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -121,7 +121,7 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
   Paraview_File << "vtk output\n";
   Paraview_File << "ASCII\n";
 	Paraview_File << "DATASET UNSTRUCTURED_GRID\n";
-  
+
   /*--- If it's a surface output, print only the points 
    that are in the element list, change the numbering ---*/
   
@@ -676,7 +676,7 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
   
 }
 
-void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol) {
+void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol, bool new_file) {
   
 	/*--- Local variables and initialization ---*/
 	unsigned short iDim, iVar, nDim = geometry->GetnDim();
@@ -708,6 +708,16 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
       filename = config->GetAdj_FileName();
     else
       filename = config->GetFlow_FileName();
+  }
+  if (config->GetKind_SU2()==SU2_DEF){
+    if (new_file){
+      if (surf_sol) filename = "surface_grid";
+      else filename = "volumetric_grid";
+    }
+    else{
+      if (surf_sol) filename = "surface_deformed_grid";
+      else filename = "volumetric_deformed_grid";
+    }
   }
   
 	if (Kind_Solver == LINEAR_ELASTICITY)
@@ -760,13 +770,15 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
   
 	/*--- Open Paraview ASCII file and write the header. ---*/
 	ofstream Paraview_File;
-	Paraview_File.open(cstr, ios::out);
+  Paraview_File.open(cstr, ios::out);
   Paraview_File.precision(6);
   Paraview_File << "# vtk DataFile Version 3.0\n";
   Paraview_File << "vtk output\n";
   Paraview_File << "ASCII\n";
-	Paraview_File << "DATASET UNSTRUCTURED_GRID\n";
-  
+  if (config->GetKind_SU2()!=SU2_DEF) Paraview_File << "DATASET UNSTRUCTURED_GRID\n";
+  else Paraview_File << "DATASET UNSTRUCTURED_GRID\n";
+
+
   /*--- If it's a surface output, print only the points
    that are in the element list, change the numbering ---*/
   
@@ -953,8 +965,10 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
   
   
   /*--- Write the header ---*/
-  if (surf_sol) Paraview_File << "\nPOINT_DATA "<< nSurf_Poin <<"\n";
-  else Paraview_File << "\nPOINT_DATA "<< nGlobal_Poin <<"\n";
+  if (config->GetKind_SU2() != SU2_DEF) {
+    if (surf_sol) Paraview_File << "\nPOINT_DATA "<< nSurf_Poin <<"\n";
+    else Paraview_File << "\nPOINT_DATA "<< nGlobal_Poin <<"\n";
+  }
   
   unsigned short VarCounter = 0;
   
@@ -996,7 +1010,7 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
     
   }
   
-  else {
+  else if (config->GetKind_SU2()!=SU2_DEF){
     
     for (iVar = 0; iVar < nVar_Consv; iVar++) {
       
@@ -1317,6 +1331,7 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
   
 	Paraview_File.close();
   
-  if (surf_sol) delete [] LocalIndex;
+  if (surf_sol)  delete [] LocalIndex;
+  if (SurfacePoint!=NULL) delete [] SurfacePoint;
   
 }

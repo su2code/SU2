@@ -2,7 +2,7 @@
  * \file grid_movement_structure.inl
  * \brief In-Line subroutines of the <i>grid_movement_structure.hpp</i> file.
  * \author F. Palacios, T. Economon, S. Padron
- * \version 3.2.8.3 "eagle"
+ * \version 3.2.9 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -38,6 +38,24 @@ inline unsigned short CSurfaceMovement::GetnLevel(void) { return nLevel; }
 inline unsigned short CSurfaceMovement::GetnFFDBox(void) { return nFFDBox; }
 
 inline bool CSurfaceMovement::GetFFDBoxDefinition(void) { return FFDBoxDefinition; }
+
+inline void CFreeFormDefBox::Set_Fix_IPlane(unsigned short val_plane) { Fix_IPlane.push_back(val_plane); }
+
+inline void CFreeFormDefBox::Set_Fix_JPlane(unsigned short val_plane) { Fix_JPlane.push_back(val_plane); }
+
+inline void CFreeFormDefBox::Set_Fix_KPlane(unsigned short val_plane) { Fix_KPlane.push_back(val_plane); }
+
+inline unsigned short CFreeFormDefBox::Get_Fix_IPlane(unsigned short val_index) { return Fix_IPlane[val_index]; }
+
+inline unsigned short CFreeFormDefBox::Get_Fix_JPlane(unsigned short val_index) { return Fix_JPlane[val_index]; }
+
+inline unsigned short CFreeFormDefBox::Get_Fix_KPlane(unsigned short val_index) { return Fix_KPlane[val_index]; }
+
+inline unsigned short CFreeFormDefBox::Get_nFix_IPlane(void) { return Fix_IPlane.size(); }
+
+inline unsigned short CFreeFormDefBox::Get_nFix_JPlane(void) { return Fix_JPlane.size(); }
+
+inline unsigned short CFreeFormDefBox::Get_nFix_KPlane(void) { return Fix_KPlane.size(); }
 
 inline void CFreeFormDefBox::Set_MarkerIndex(unsigned short val_iMarker) { MarkerIndex.push_back(val_iMarker); }
 

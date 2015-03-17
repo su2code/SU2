@@ -2,7 +2,7 @@
  * \file solution_direct_wave.cpp
  * \brief Main subrotuines for solving the wave equation.
  * \author T. Economon
- * \version 3.2.8.3 "eagle"
+ * \version 3.2.9 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).

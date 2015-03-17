@@ -5,7 +5,7 @@
  *        technique definition). The subroutines and functions are in 
  *        the <i>grid_movement_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, S. Padron
- * \version 3.2.8.3 "eagle"
+ * \version 3.2.9 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -56,7 +56,7 @@ using namespace std;
  * \brief Class for moving the surface and volumetric 
  *        numerical grid (2D and 3D problems).
  * \author F. Palacios
- * \version 3.2.8.3 "eagle"
+ * \version 3.2.9 "eagle"
  */
 class CGridMovement {
 public:
@@ -85,7 +85,7 @@ public:
  * \class CFreeFormDefBox
  * \brief Class for defining the free form FFDBox structure.
  * \author F. Palacios & A. Galdran.
- * \version 3.2.8.3 "eagle"
+ * \version 3.2.9 "eagle"
  */
 class CFreeFormDefBox : public CGridMovement {
 public:
@@ -120,7 +120,10 @@ public:
 	unsigned long nSurfacePoint;				/*!< \brief Number of surfaces in the FFD FFDBox. */
 	vector<string> ParentFFDBox;					/*!< \brief Vector with all the parent FFD FFDBox. */
 	vector<string> ChildFFDBox;					/*!< \brief Vector with all the child FFD FFDBox. */
-	
+  vector<unsigned short> Fix_IPlane;  /*!< \brief Fix FFD I plane. */
+  vector<unsigned short> Fix_JPlane;  /*!< \brief Fix FFD J plane. */
+  vector<unsigned short> Fix_KPlane;  /*!< \brief Fix FFD K plane. */
+
 public:
 	
 	/*! 
@@ -141,6 +144,60 @@ public:
 	 */
 	~CFreeFormDefBox(void);
 	
+  /*!
+   * \brief Define the I planes to to fix in a FFD box.
+   * \param[in] val_plane - Index of the plane to fix.
+   */
+  void Set_Fix_IPlane(unsigned short val_plane);
+
+  /*!
+   * \brief Define the I planes to to fix in a FFD box.
+   * \param[in] val_plane - Index of the plane to fix.
+   */
+  void Set_Fix_JPlane(unsigned short val_plane);
+  
+  /*!
+   * \brief Define the I planes to to fix in a FFD box.
+   * \param[in] val_plane - Index of the plane to fix.
+   */
+  void Set_Fix_KPlane(unsigned short val_plane);
+  
+  /*!
+   * \brief Define the I planes to to fix in a FFD box.
+   * \param[in] val_plane - Index of the plane to fix.
+   */
+  unsigned short Get_Fix_IPlane(unsigned short val_index);
+  
+  /*!
+   * \brief Define the I planes to to fix in a FFD box.
+   * \param[in] val_plane - Index of the plane to fix.
+   */
+  unsigned short Get_Fix_JPlane(unsigned short val_index);
+  
+  /*!
+   * \brief Define the I planes to to fix in a FFD box.
+   * \param[in] val_plane - Index of the plane to fix.
+   */
+  unsigned short Get_Fix_KPlane(unsigned short val_index);
+  
+  /*!
+   * \brief Define the I planes to to fix in a FFD box.
+   * \param[in] val_plane - Index of the plane to fix.
+   */
+  unsigned short Get_nFix_IPlane(void);
+  
+  /*!
+   * \brief Define the I planes to to fix in a FFD box.
+   * \param[in] val_plane - Index of the plane to fix.
+   */
+  unsigned short Get_nFix_JPlane(void);
+  
+  /*!
+   * \brief Define the I planes to to fix in a FFD box.
+   * \param[in] val_plane - Index of the plane to fix.
+   */
+  unsigned short Get_nFix_KPlane(void);
+  
 	/*! 
 	 * \brief Add to the vector of markers a new marker.
 	 * \param[in] val_iMarker - New marker inside the FFD box.
@@ -540,7 +597,7 @@ public:
 	double GetBernsteinDerivative(short val_n, short val_i, double val_t, short val_order);
   
 	/*! 
-	 * \brief The routine computes the gradient of F(u, v, w)=||X(u, v, w)-(x, y, z)||^2  evaluated at (u, v, w).
+	 * \brief The routine computes the gradient of F(u, v, w) = ||X(u, v, w)-(x, y, z)||^2  evaluated at (u, v, w).
 	 * \param[in] val_coord - Parametric coordiates of the target point.
 	 * \param[in] xyz - Cartesians coordinates of the point.
    * \param[in] analytical - Compute the analytical gradient.
@@ -549,7 +606,7 @@ public:
 	double *GetFFDGradient(double *val_coord, double *xyz);
 	
 	/*!
-	 * \brief The routine that computes the Hessian of F(u, v, w)=||X(u, v, w)-(x, y, z)||^2 evaluated at (u, v, w)
+	 * \brief The routine that computes the Hessian of F(u, v, w) = ||X(u, v, w)-(x, y, z)||^2 evaluated at (u, v, w)
 	 *        Input: (u, v, w), (x, y, z)
 	 *        Output: Hessian F (u, v, w).
 	 * \param[in] uvw - Current value of the parametrics coordinates.
@@ -559,7 +616,7 @@ public:
 	void GetFFDHessian(double *uvw, double *xyz, double **val_Hessian);
   
 	/*! 
-	 * \brief An auxiliary routine to help us compute the gradient of F(u, v, w)=||X(u, v, w)-(x, y, z)||^2 = 
+	 * \brief An auxiliary routine to help us compute the gradient of F(u, v, w) = ||X(u, v, w)-(x, y, z)||^2 =
 	 *        (Sum_ijk^lmn P1_ijk Bi Bj Bk -x)^2+(Sum_ijk^lmn P2_ijk Bi Bj Bk -y)^2+(Sum_ijk^lmn P3_ijk Bi Bj Bk -z)^2
 	 *        Input: val_t, val_diff (to identify the index of the Bernstein polynomail we differentiate), the i, j, k , l, m, n 
 	 *        E.G.: val_diff=2 => we differentiate w.r.t. w  (val_diff=0,1, or 2) Output: d [B_i^l*B_j^m *B_k^n] / d val_diff  
@@ -573,7 +630,7 @@ public:
 	double GetDerivative1(double *uvw, unsigned short val_diff, unsigned short *ijk, unsigned short *lmn);
 	
 	/*! 
-	 * \brief An auxiliary routine to help us compute the gradient of F(u, v, w)=||X(u, v, w)-(x, y, z)||^2 =
+	 * \brief An auxiliary routine to help us compute the gradient of F(u, v, w) = ||X(u, v, w)-(x, y, z)||^2 =
 	 *        (Sum_ijk^lmn P1_ijk Bi Bj Bk -x)^2+(Sum_ijk^lmn P2_ijk Bi Bj Bk -y)^2+(Sum_ijk^lmn P3_ijk Bi Bj Bk -z)^2
 	 *        Input: (u, v, w), dim , xyz=(x, y, z), l, m, n E.G.: dim=2 => we use the third coordinate of the control points, 
 	 *        and the z-coordinate of xyz  (0<=dim<=2) Output: 2* ( (Sum_{i, j, k}^l, m, n P_{ijk}[dim] B_i^l[u] B_j^m[v] B_k^n[w]) - 
@@ -587,7 +644,7 @@ public:
 	double GetDerivative2(double *uvw, unsigned short dim, double *xyz, unsigned short *lmn);
 	
 	/*! 
-	 * \brief An auxiliary routine to help us compute the gradient of F(u, v, w)=||X(u, v, w)-(x, y, z)||^2 =
+	 * \brief An auxiliary routine to help us compute the gradient of F(u, v, w) = ||X(u, v, w)-(x, y, z)||^2 =
 	 *        (Sum_ijk^lmn P1_ijk Bi Bj Bk -x)^2+(Sum_ijk^lmn P2_ijk Bi Bj Bk -y)+(Sum_ijk^lmn P3_ijk Bi Bj Bk -z)
 	 * \param[in] uvw - Parametric coordiates of the point.
 	 * \param[in] dim - Value of the coordinate to be differentiate.
@@ -602,7 +659,7 @@ public:
 						  unsigned short *lmn);
 	
 	/*! 
-	 * \brief An auxiliary routine to help us compute the Hessian of F(u, v, w)=||X(u, v, w)-(x, y, z)||^2 =
+	 * \brief An auxiliary routine to help us compute the Hessian of F(u, v, w) = ||X(u, v, w)-(x, y, z)||^2 =
 	 *        (Sum_ijk^lmn P1_ijk Bi Bj Bk -x)^2+(Sum_ijk^lmn P2_ijk Bi Bj Bk -y)+(Sum_ijk^lmn P3_ijk Bi Bj Bk -z) 
 	 *        Input: val_t, val_diff, val_diff2 (to identify the index of the Bernstein polynomials we differentiate), the i, j, k , l, m, n 
 	 *        E.G.: val_diff=1, val_diff2=2  =>  we differentiate w.r.t. v and w  (val_diff=0,1, or 2)
@@ -619,7 +676,7 @@ public:
 						   unsigned short *ijk, unsigned short *lmn);
 	
 	/*! 
-	 * \brief An auxiliary routine to help us compute the Hessian of F(u, v, w)=||X(u, v, w)-(x, y, z)||^2 =
+	 * \brief An auxiliary routine to help us compute the Hessian of F(u, v, w) = ||X(u, v, w)-(x, y, z)||^2 =
 	 *        (Sum_ijk^lmn P1_ijk Bi Bj Bk -x)^2+(Sum_ijk^lmn P2_ijk Bi Bj Bk -y)+(Sum_ijk^lmn P3_ijk Bi Bj Bk -z) 
 	 *        Input: (u, v, w), dim , diff_this, diff_this_also, xyz=(x, y, z), l, m, n
 	 *        Output:
@@ -682,7 +739,7 @@ public:
  * \class CVolumetricMovement
  * \brief Class for moving the volumetric numerical grid.
  * \author F. Palacios, A. Bueno, T. Economon, S. Padron.
- * \version 3.2.8.3 "eagle"
+ * \version 3.2.9 "eagle"
  */
 class CVolumetricMovement : public CGridMovement {
 protected:
@@ -949,7 +1006,7 @@ public:
  * \class CSurfaceMovement
  * \brief Class for moving the surface numerical grid.
  * \author F. Palacios, T. Economon.
- * \version 3.2.8.3 "eagle"
+ * \version 3.2.9 "eagle"
  */
 class CSurfaceMovement : public CGridMovement {
 protected:
@@ -1151,6 +1208,15 @@ public:
 	 */		
 	void UpdateParametricCoord(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox);
 	
+  /*!
+   * \brief Check the intersections of the FFD with the surface
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
+   * \param[in] iFFDBox - _____________________.
+   */
+  void CheckFFDIntersections(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox);
+  
 	/*! 
 	 * \brief _____________________.
 	 * \param[in] geometry - _____________________.

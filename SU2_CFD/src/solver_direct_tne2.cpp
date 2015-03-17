@@ -2,7 +2,7 @@
  * \file solution_direct_tne2.cpp
  * \brief Main subrotuines for solving flows in thermochemical nonequilibrium.
  * \author S. Copeland
- * \version 3.2.8.3 "eagle"
+ * \version 3.2.9 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -1711,7 +1711,7 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
   double Temperature_FreeStream = 0.0, Mach2Vel_FreeStream = 0.0, ModVel_FreeStream = 0.0, Energy_FreeStream = 0.0, ModVel_FreeStreamND = 0.0,
   Velocity_Reynolds = 0.0, Omega_FreeStream = 0.0, Omega_FreeStreamND = 0.0, Viscosity_FreeStream = 0.0,
   Density_FreeStream = 0.0, Pressure_FreeStream = 0.0, Tke_FreeStream = 0.0;
-  double Length_Ref = 0.0, Density_Ref = 0.0, Pressure_Ref = 0.0, Velocity_Ref = 0.0, Time_Ref = 0.0, Omega_Ref = 0.0, Force_Ref = 0.0,
+  double Length_Ref = 0.0, Density_Ref = 0.0, Temperature_Ref = 0.0, Pressure_Ref = 0.0, Velocity_Ref = 0.0, Time_Ref = 0.0, Omega_Ref = 0.0, Force_Ref = 0.0,
   Gas_Constant_Ref = 0.0, Viscosity_Ref = 0.0, Energy_Ref= 0.0, Froude = 0.0;
   double Pressure_FreeStreamND = 0.0, Density_FreeStreamND = 0.0, Temperature_FreeStreamND = 0.0, Gas_ConstantND = 0.0,
   Velocity_FreeStreamND[3] = {0.0, 0.0, 0.0}, Viscosity_FreeStreamND = 0.0, Tke_FreeStreamND = 0.0, Energy_FreeStreamND = 0.0,
@@ -1804,9 +1804,12 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
     Energy_FreeStream = Pressure_FreeStream/(Density_FreeStream*Gamma_Minus_One) + 0.5*ModVel_FreeStream*ModVel_FreeStream;
     if (tkeNeeded) { Energy_FreeStream += Tke_FreeStream; }; config->SetEnergy_FreeStream(Energy_FreeStream);
     
-    /*--- Additional reference values defined by Pref, Tref, Rho_ref. By definition,
-     Lref is one because we have converted the grid to meters.---*/
+    /*--- Compute non dimensional quantities. By definition,
+     Lref is one because we have converted the grid to meters. ---*/
     
+    Pressure_Ref      = 1.0; config->SetPressure_Ref(Pressure_Ref);
+    Density_Ref       = 1.0; config->SetDensity_Ref(Density_Ref);
+    Temperature_Ref   = 1.0; config->SetTemperature_Ref(Temperature_Ref);
     Length_Ref        = 1.0;                                                         config->SetLength_Ref(Length_Ref);
     Velocity_Ref      = sqrt(config->GetPressure_Ref()/config->GetDensity_Ref());    config->SetVelocity_Ref(Velocity_Ref);
     Time_Ref          = Length_Ref/Velocity_Ref;                                     config->SetTime_Ref(Time_Ref);
@@ -6848,7 +6851,7 @@ void CTNE2NSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
       /*--- Calculate revised wall species densities ---*/
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
         rhos = Yst[iSpecies]*rho;
-        node[iPoint]->SetPrimitive(rhos, RHOS_INDEX+iSpecies);
+        node[iPoint]->SetPrimitive(RHOS_INDEX+iSpecies, rhos);
       }
       
       /*--- Calculate revised primitive variable gradients ---*/

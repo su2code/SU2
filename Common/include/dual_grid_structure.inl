@@ -2,7 +2,7 @@
  * \file dual_grid_structure.inl
  * \brief In-Line subroutines of the <i>dual_grid_structure.hpp</i> file.
  * \author F. Palacios
- * \version 3.2.8.3 "eagle"
+ * \version 3.2.9 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -307,8 +307,6 @@ inline void CVertex::SetCoord(double *val_coord) {
 inline void CVertex::SetRotation_Type(short val_rotation_type) { Rotation_Type = val_rotation_type; }
 
 inline short CVertex::GetRotation_Type(void) { return Rotation_Type; }
-
-inline void CVertex::SetDonorPoint(long val_periodicpoint) { PeriodicPoint[0] = val_periodicpoint; }
 
 inline void CVertex::SetDonorPoint(long val_periodicpoint, long val_processor) { 
 	PeriodicPoint[0] = val_periodicpoint; 
