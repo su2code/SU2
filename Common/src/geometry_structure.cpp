@@ -2,7 +2,7 @@
  * \file geometry_structure.cpp
  * \brief Main subroutines for creating the primal grid and multigrid structure.
  * \author F. Palacios
- * \version 3.2.8.3 "eagle"
+ * \version 3.2.9 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -30,6 +30,28 @@
  */
 
 #include "../include/geometry_structure.hpp"
+
+/*--- Epsilon definition ---*/
+
+#define EPSILON 0.000001
+
+/*--- Cross product ---*/
+
+#define CROSS(dest,v1,v2) \
+(dest)[0] = (v1)[1]*(v2)[2] - (v1)[2]*(v2)[1];	\
+(dest)[1] = (v1)[2]*(v2)[0] - (v1)[0]*(v2)[2];	\
+(dest)[2] = (v1)[0]*(v2)[1] - (v1)[1]*(v2)[0];
+
+/*--- Cross product ---*/
+
+#define DOT(v1,v2) ((v1)[0]*(v2)[0] + (v1)[1]*(v2)[1] + (v1)[2]*(v2)[2]);
+
+/*--- a = b - c ---*/
+
+#define SUB(dest,v1,v2) \
+(dest)[0] = (v1)[0] - (v2)[0];	\
+(dest)[1] = (v1)[1] - (v2)[1];	\
+(dest)[2] = (v1)[2] - (v2)[2];
 
 CGeometry::CGeometry(void) {
   
@@ -357,7 +379,7 @@ double CGeometry::GetSpline(vector<double>&xa, vector<double>&ya, vector<double>
   return y;
 }
 
-unsigned short CGeometry::ComputeSegmentPlane_Intersection(double *Segment_P0, double *Segment_P1, double Variable_P0, double Variable_P1,
+bool CGeometry::SegmentIntersectsPlane(double *Segment_P0, double *Segment_P1, double Variable_P0, double Variable_P1,
                                                            double *Plane_P0, double *Plane_Normal, double *Intersection, double &Variable_Interp) {
   double u[3], v[3], Denominator, Numerator, Aux, ModU;
   unsigned short iDim;
@@ -372,17 +394,18 @@ unsigned short CGeometry::ComputeSegmentPlane_Intersection(double *Segment_P0, d
   Numerator = Plane_Normal[0]*v[0] + Plane_Normal[1]*v[1] + Plane_Normal[2]*v[2];
   Denominator = Plane_Normal[0]*u[0] + Plane_Normal[1]*u[1] + Plane_Normal[2]*u[2];
   
-  if (fabs(Denominator) <= 0.0) return 0; // No intersection.
+  if (fabs(Denominator) <= 0.0) return (false); // No intersection.
   
   Aux = Numerator / Denominator;
   
-  if (Aux < 0.0 || Aux > 1.0) return 0; // No intersection.
+  if (Aux < 0.0 || Aux > 1.0) return (false); // No intersection.
   
   for (iDim = 0; iDim < 3; iDim++)
     Intersection[iDim] = Segment_P0[iDim] + Aux * u[iDim];
   
   
   /*--- Check that the intersection is in the segment ---*/
+  
   for (iDim = 0; iDim < 3; iDim++) {
     u[iDim] = Segment_P0[iDim] - Intersection[iDim];
     v[iDim] = Segment_P1[iDim] - Intersection[iDim];
@@ -395,8 +418,110 @@ unsigned short CGeometry::ComputeSegmentPlane_Intersection(double *Segment_P0, d
   
   Aux = Numerator * Denominator;
   
-  if (Aux > 0.0) return 3; // Intersection outside the segment.
-  else return 1;
+  if (Aux > 0.0) return (false); // Intersection outside the segment.
+  
+  return (true);
+  
+}
+
+bool CGeometry::RayIntersectsTriangle(double orig[3], double dir[3],
+                                      double vert0[3], double vert1[3], double vert2[3],
+                                      double *intersect) {
+  
+  double edge1[3], edge2[3], tvec[3], pvec[3], qvec[3];
+  double det, inv_det, t, u, v;
+  
+  /*--- Find vectors for two edges sharing vert0 ---*/
+  
+  SUB(edge1, vert1, vert0);
+  SUB(edge2, vert2, vert0);
+  
+  /*--- Begin calculating determinant - also used to calculate U parameter ---*/
+  
+  CROSS(pvec, dir, edge2);
+  
+  /*--- If determinant is near zero, ray lies in plane of triangle ---*/
+  
+  det = DOT(edge1, pvec);
+  
+  
+  if (det > -EPSILON && det < EPSILON) return(false);
+  
+  inv_det = 1.0 / det;
+  
+  /*--- Calculate distance from vert0 to ray origin ---*/
+  
+  SUB(tvec, orig, vert0);
+  
+  /*--- Calculate U parameter and test bounds ---*/
+  
+  u = inv_det * DOT(tvec, pvec);
+  
+  if (u < 0.0 || u > 1.0) return(false);
+  
+  /*--- prepare to test V parameter ---*/
+  
+  CROSS(qvec, tvec, edge1);
+  
+  /*--- Calculate V parameter and test bounds ---*/
+  
+  v = inv_det * DOT(dir, qvec);
+  
+  if (v < 0.0 || u + v > 1.0) return(false);
+  
+  /*--- Calculate t, ray intersects triangle ---*/
+  
+  t = inv_det * DOT(edge2, qvec);
+  
+  /*--- Compute the intersection point in cartesian coordinates ---*/
+  
+  intersect[0] = orig[0] + (t * dir[0]);
+  intersect[1] = orig[1] + (t * dir[1]);
+  intersect[2] = orig[2] + (t * dir[2]);
+
+  return (true);
+  
+}
+
+bool CGeometry::SegmentIntersectsTriangle(double point0[3], double point1[3],
+                                          double vert0[3], double vert1[3], double vert2[3]) {
+  
+  double dir[3], intersect[3], u[3], v[3], edge1[3], edge2[3], Plane_Normal[3], Denominator, Numerator, Aux;
+  
+  SUB(dir, point1, point0);
+  
+  if (RayIntersectsTriangle(point0, dir, vert0, vert1, vert2, intersect)) {
+    
+    /*--- Check that the intersection is in the segment ---*/
+    
+    SUB(u, point0, intersect);
+    SUB(v, point1, intersect);
+    
+    SUB(edge1, vert1, vert0);
+    SUB(edge2, vert2, vert0);
+    CROSS(Plane_Normal, edge1, edge2);
+    
+    Denominator = DOT(Plane_Normal, u);
+    Numerator = DOT(Plane_Normal, v);
+    
+    Aux = Numerator * Denominator;
+    
+    /*--- Intersection outside the segment ---*/
+    
+    if (Aux > 0.0) return (false);
+    
+  }
+  else {
+    
+    /*--- No intersection with the ray ---*/
+    
+    return (false);
+    
+  }
+  
+  /*--- Intersection inside the segment ---*/
+
+  return (true);
   
 }
 
@@ -406,7 +531,8 @@ void CGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_Normal,
                                        vector<double> &Zcoord_Airfoil, vector<double> &Variable_Airfoil,
                                        bool original_surface, CConfig *config) {
   
-  unsigned short iMarker, iNode, jNode, iDim, intersect;
+  unsigned short iMarker, iNode, jNode, iDim;
+  bool intersect;
   long MinDist_Point, MinDistAngle_Point;
   unsigned long iPoint, jPoint, iElem, Trailing_Point, Airfoil_Point, iVertex, jVertex;
   double Segment_P0[3] = {0.0, 0.0, 0.0}, Segment_P1[3] = {0.0, 0.0, 0.0}, Variable_P0 = 0.0, Variable_P1 = 0.0, Intersection[3] = {0.0, 0.0, 0.0}, Trailing_Coord, MinDist_Value, MinDistAngle_Value, Dist_Value,
@@ -498,8 +624,8 @@ void CGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_Normal,
               /*--- In 3D compute the intersection ---*/
               
               else if (nDim == 3) {
-                intersect = ComputeSegmentPlane_Intersection(Segment_P0, Segment_P1, Variable_P0, Variable_P1, Plane_P0, Plane_Normal, Intersection, Variable_Interp);
-                if (intersect == 1) {
+                intersect = SegmentIntersectsPlane(Segment_P0, Segment_P1, Variable_P0, Variable_P1, Plane_P0, Plane_Normal, Intersection, Variable_Interp);
+                if (intersect == true) {
                   Xcoord.push_back(Intersection[0]);
                   Ycoord.push_back(Intersection[1]);
                   Zcoord.push_back(Intersection[2]);
@@ -9233,14 +9359,14 @@ void CPhysicalGeometry::MatchInterface(CConfig *config) {
                 if (dist < mindist) {mindist = dist; pPoint = jPoint;}
               }
           maxdist = max(maxdist, mindist);
-          vertex[iMarker][iVertex]->SetDonorPoint(pPoint);
+          vertex[iMarker][iVertex]->SetDonorPoint(pPoint, MASTER_NODE);
           
           if (mindist > epsilon) {
             cout.precision(10);
             cout << endl;
             cout << "   Bad match for point " << iPoint << ".\tNearest";
             cout << " donor distance: " << scientific << mindist << ".";
-            vertex[iMarker][iVertex]->SetDonorPoint(iPoint);
+            vertex[iMarker][iVertex]->SetDonorPoint(iPoint, MASTER_NODE);
             maxdist = min(maxdist, 0.0);
           }
           
@@ -9358,7 +9484,7 @@ void CPhysicalGeometry::MatchInterface(CConfig *config) {
               cout << endl;
               cout << "   Bad match for point " << iPoint << ".\tNearest";
               cout << " donor distance: " << scientific << mindist << ".";
-              vertex[iMarker][iVertex]->SetDonorPoint(iPoint);
+              vertex[iMarker][iVertex]->SetDonorPoint(iPoint, pProcessor);
               maxdist_local = min(maxdist_local, 0.0);
             }
             
@@ -9419,14 +9545,14 @@ void CPhysicalGeometry::MatchNearField(CConfig *config) {
                 if (dist < mindist) { mindist = dist; pPoint = jPoint; }
               }
           maxdist = max(maxdist, mindist);
-          vertex[iMarker][iVertex]->SetDonorPoint(pPoint);
+          vertex[iMarker][iVertex]->SetDonorPoint(pPoint, MASTER_NODE);
           
           if (mindist > epsilon) {
             cout.precision(10);
             cout << endl;
             cout << "   Bad match for point " << iPoint << ".\tNearest";
             cout << " donor distance: " << scientific << mindist << ".";
-            vertex[iMarker][iVertex]->SetDonorPoint(iPoint);
+            vertex[iMarker][iVertex]->SetDonorPoint(iPoint, MASTER_NODE);
             maxdist = min(maxdist, 0.0);
           }
         }
@@ -9546,7 +9672,7 @@ void CPhysicalGeometry::MatchNearField(CConfig *config) {
               cout << endl;
               cout << "   Bad match for point " << iPoint << ".\tNearest";
               cout << " donor distance: " << scientific << mindist << ".";
-              vertex[iMarker][iVertex]->SetDonorPoint(iPoint);
+              vertex[iMarker][iVertex]->SetDonorPoint(iPoint, pProcessor);
               maxdist_local = min(maxdist_local, 0.0);
             }
             
@@ -9725,7 +9851,7 @@ void CPhysicalGeometry::MatchActuator_Disk(CConfig *config) {
                 cout << endl;
                 cout << "   Bad match for point " << iPoint << ".\tNearest";
                 cout << " donor distance: " << scientific << mindist << ".";
-                vertex[iMarker][iVertex]->SetDonorPoint(iPoint);
+                vertex[iMarker][iVertex]->SetDonorPoint(iPoint, pProcessor);
                 maxdist_local = min(maxdist_local, 0.0);
               }
               
@@ -9785,7 +9911,7 @@ void CPhysicalGeometry::MatchZone(CConfig *config, CGeometry *geometry_donor, CC
         }
       
       maxdist = max(maxdist, mindist);
-      vertex[iMarker][iVertex]->SetDonorPoint(pPoint);
+      vertex[iMarker][iVertex]->SetDonorPoint(pPoint, MASTER_NODE);
       
     }
   }
@@ -11532,7 +11658,7 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
         }
         
         /*--- Set the periodic point for this iPoint. ---*/
-        vertex[iMarker][iVertex]->SetDonorPoint(pPoint);
+        vertex[iMarker][iVertex]->SetDonorPoint(pPoint, MASTER_NODE);
         
         /*--- Print warning if the nearest point was not within
          the specified tolerance. Computation will continue. ---*/
@@ -13526,36 +13652,26 @@ void CMultiGridGeometry::SetVertex(CGeometry *fine_grid, CConfig *config) {
 
 void CMultiGridGeometry::MatchNearField(CConfig *config) {
   
+  unsigned short iMarker;
+  unsigned long iVertex, iPoint;
+  int iProcessor;
+  
 #ifndef HAVE_MPI
-  
-  unsigned short iMarker;
-  unsigned long iVertex, iPoint;
-  
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if (config->GetMarker_All_KindBC(iMarker) == NEARFIELD_BOUNDARY)
-      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-        iPoint = vertex[iMarker][iVertex]->GetNode();
-        vertex[iMarker][iVertex]->SetDonorPoint(iPoint);
-      }
-  
+  iProcessor = MASTER_NODE;
 #else
+  MPI_Comm_rank(MPI_COMM_WORLD, &iProcessor);
+#endif
   
-  unsigned short iMarker;
-  unsigned long iVertex, iPoint;
-  int rank;
-  
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if (config->GetMarker_All_KindBC(iMarker) == NEARFIELD_BOUNDARY)
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == NEARFIELD_BOUNDARY) {
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
         iPoint = vertex[iMarker][iVertex]->GetNode();
         if (node[iPoint]->GetDomain()) {
-          vertex[iMarker][iVertex]->SetDonorPoint(iPoint, rank);
+          vertex[iMarker][iVertex]->SetDonorPoint(iPoint, iProcessor);
         }
       }
-  
-#endif
+    }
+  }
   
 }
 
@@ -13587,36 +13703,26 @@ void CMultiGridGeometry::MatchActuator_Disk(CConfig *config) {
 
 void CMultiGridGeometry::MatchInterface(CConfig *config) {
   
+  unsigned short iMarker;
+  unsigned long iVertex, iPoint;
+  int iProcessor;
+  
 #ifndef HAVE_MPI
-  
-  unsigned short iMarker;
-  unsigned long iVertex, iPoint;
-  
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if (config->GetMarker_All_KindBC(iMarker) == INTERFACE_BOUNDARY)
-      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-        iPoint = vertex[iMarker][iVertex]->GetNode();
-        vertex[iMarker][iVertex]->SetDonorPoint(iPoint);
-      }
-  
+  iProcessor = MASTER_NODE;
 #else
+  MPI_Comm_rank(MPI_COMM_WORLD, &iProcessor);
+#endif
   
-  unsigned short iMarker;
-  unsigned long iVertex, iPoint;
-  int rank;
-  
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if (config->GetMarker_All_KindBC(iMarker) == INTERFACE_BOUNDARY)
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == INTERFACE_BOUNDARY) {
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
         iPoint = vertex[iMarker][iVertex]->GetNode();
         if (node[iPoint]->GetDomain()) {
-          vertex[iMarker][iVertex]->SetDonorPoint(iPoint, rank);
+          vertex[iMarker][iVertex]->SetDonorPoint(iPoint, iProcessor);
         }
       }
-  
-#endif
+    }
+  }
   
 }
 

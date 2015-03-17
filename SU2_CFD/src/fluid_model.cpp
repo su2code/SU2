@@ -2,7 +2,7 @@
  * fluid_model.cpp
  * \brief Source of the main thermo-physical subroutines of the SU2 solvers.
  * \author S.Vitale, M.Pini, G.Gori, A.Guardone, P.Colonna
- * \version 3.2.8.3 "eagle"
+ * \version 3.2.9 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -56,28 +56,28 @@ CFluidModel::~CFluidModel(void) {
   }
 
 void CFluidModel::SetLaminarViscosityModel (CConfig *config) {
+  
 	switch (config->GetKind_ViscosityModel()) {
-
 	case CONSTANT_VISCOSITY:
-		LaminarViscosity = new CConstantViscosity( config->GetMu_ConstantND() );
+		LaminarViscosity = new CConstantViscosity(config->GetMu_ConstantND());
 		break;
 	case SUTHERLAND:
 		LaminarViscosity = new CSutherland(config->GetMu_RefND(), config->GetMu_Temperature_RefND(), config->GetMu_SND());
 		break;
-
 	}
+  
 }
 
 void CFluidModel::SetThermalConductivityModel (CConfig *config) {
+  
 	switch (config->GetKind_ConductivityModel()) {
-
 	case CONSTANT_CONDUCTIVITY:
-		ThermalConductivity = new CConstantConductivity( config->GetKt_ConstantND() );
+		ThermalConductivity = new CConstantConductivity(config->GetKt_ConstantND());
 		break;
 	case CONSTANT_PRANDTL:
-		ThermalConductivity = new CConstantPrandtl( config->GetPrandtl_Lam() );
+		ThermalConductivity = new CConstantPrandtl(config->GetPrandtl_Lam());
 		break;
-
 	}
+  
 }
 

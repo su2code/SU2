@@ -5,7 +5,7 @@
  *        <i>solution_direct.cpp</i>, <i>solution_adjoint.cpp</i>, and
  *        <i>solution_linearized.cpp</i> files.
  * \author F. Palacios, T. Economon
- * \version 3.2.8.3 "eagle"
+ * \version 3.2.9 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -62,7 +62,7 @@ using namespace std;
  * \brief Main class for defining the PDE solution, it requires
  * a child class for each particular solver (Euler, Navier-Stokes, etc.)
  * \author F. Palacios
- * \version 3.2.8.3 "eagle"
+ * \version 3.2.9 "eagle"
  */
 class CSolver {
 protected:
@@ -583,8 +583,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	virtual void BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                                       unsigned short val_marker);
+	virtual void BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
     
 	/*!
 	 * \brief A virtual member.
@@ -594,8 +593,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	virtual void BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                                       unsigned short val_marker);
+	virtual void BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
   
   /*!
 	 * \brief A virtual member.
@@ -2128,7 +2126,7 @@ public:
  * \class CBaselineSolver
  * \brief Main class for defining a baseline solution from a restart file (for output).
  * \author F. Palacios, T. Economon.
- * \version 3.2.8.3 "eagle"
+ * \version 3.2.9 "eagle"
  */
 class CBaselineSolver : public CSolver {
 public:
@@ -2173,7 +2171,7 @@ public:
  * \brief Main class for defining the Euler's flow solver.
  * \ingroup Euler_Equations
  * \author F. Palacios
- * \version 3.2.8.3 "eagle"
+ * \version 3.2.9 "eagle"
  */
 class CEulerSolver : public CSolver {
 protected:
@@ -2689,7 +2687,7 @@ public:
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
 	void BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                               CConfig *config, unsigned short val_marker);
+                               CConfig *config);
     
 	/*!
 	 * \brief Impose the near-field boundary condition using the residual.
@@ -2700,7 +2698,7 @@ public:
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
 	void BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                               CConfig *config, unsigned short val_marker);
+                               CConfig *config);
   
   /*!
 	 * \brief Impose the actuator disk boundary condition using the residual.
@@ -3507,7 +3505,7 @@ public:
  * \brief Main class for defining the Navier-Stokes flow solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios
- * \version 3.2.8.3 "eagle"
+ * \version 3.2.9 "eagle"
  */
 class CNSSolver : public CEulerSolver {
 private:
@@ -3771,7 +3769,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 3.2.8.3 "eagle"
+ * \version 3.2.9 "eagle"
  */
 class CTurbSolver : public CSolver {
 protected:
@@ -3900,7 +3898,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 3.2.8.3 "eagle"
+ * \version 3.2.9 "eagle"
  */
 
 class CTurbSASolver: public CTurbSolver {
@@ -4073,7 +4071,7 @@ public:
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
 	void BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                               CConfig *config, unsigned short val_marker);
+                               CConfig *config);
     
 	/*!
 	 * \brief Impose the near-field boundary condition using the residual.
@@ -4084,7 +4082,7 @@ public:
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
 	void BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                               CConfig *config, unsigned short val_marker);
+                               CConfig *config);
   
   /*!
 	 * \brief Load a solution from a restart file.
@@ -4103,7 +4101,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author B. Tracey.
- * \version 3.2.8.3 "eagle"
+ * \version 3.2.9 "eagle"
  */
 
 class CTurbMLSolver: public CTurbSolver {
@@ -4249,7 +4247,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Aranake.
- * \version 3.2.8.3 "eagle"
+ * \version 3.2.9 "eagle"
  */
 
 class CTransLMSolver: public CTurbSolver {
@@ -4429,7 +4427,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Campos, F. Palacios, T. Economon
- * \version 3.2.8.3 "eagle"
+ * \version 3.2.9 "eagle"
  */
 
 class CTurbSSTSolver: public CTurbSolver {
@@ -4572,7 +4570,7 @@ public:
  * \brief Main class for defining the Euler's adjoint flow solver.
  * \ingroup Euler_Equations
  * \author F. Palacios
- * \version 3.2.8.3 "eagle"
+ * \version 3.2.9 "eagle"
  */
 class CAdjEulerSolver : public CSolver {
 protected:
@@ -4797,8 +4795,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                               unsigned short val_marker);
+	void BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
     
 	/*!
 	 * \brief Impose via the residual the near-field adjoint boundary condition.
@@ -4808,8 +4805,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                               unsigned short val_marker);
+	void BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
     
 	/*!
 	 * \brief Impose via the residual the adjoint symmetry boundary condition.
@@ -5052,7 +5048,7 @@ public:
  * \brief Main class for defining the Navier-Stokes' adjoint flow solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios
- * \version 3.2.8.3 "eagle"
+ * \version 3.2.9 "eagle"
  */
 class CAdjNSSolver : public CAdjEulerSolver {
 public:
@@ -5159,7 +5155,7 @@ public:
  * \brief Main class for defining the adjoint turbulence model solver.
  * \ingroup Turbulence_Model
  * \author F. Palacios, A. Bueno.
- * \version 3.2.8.3 "eagle"
+ * \version 3.2.9 "eagle"
  */
 class CAdjTurbSolver : public CSolver {
 private:
@@ -5305,7 +5301,7 @@ public:
  * \brief Main class for defining the linearized Euler solver.
  * \ingroup Euler_Equations
  * \author F. Palacios
- * \version 3.2.8.3 "eagle"
+ * \version 3.2.9 "eagle"
  */
 class CLinEulerSolver : public CSolver {
 private:
@@ -5429,7 +5425,7 @@ public:
 /*! \class CPoissonSolver
  *  \brief Main class for defining the poisson potential solver.
  *  \author F. Palacios
- *  \version 3.2.8.3 "eagle"
+ *  \version 3.2.9 "eagle"
  *  \date May 3, 2010.
  */
 class CPoissonSolver : public CSolver {
@@ -5565,7 +5561,7 @@ public:
 /*! \class CWaveSolver
  *  \brief Main class for defining the wave solver.
  *  \author F. Palacios
- *  \version 3.2.8.3 "eagle"
+ *  \version 3.2.9 "eagle"
  *  \date May 3, 2010.
  */
 class CWaveSolver : public CSolver {
@@ -5720,7 +5716,7 @@ public:
 /*! \class CHeatSolver
  *  \brief Main class for defining the heat solver.
  *  \author F. Palacios
- *  \version 3.2.8.3 "eagle"
+ *  \version 3.2.9 "eagle"
  *  \date May 3, 2010.
  */
 class CHeatSolver : public CSolver {
@@ -5840,7 +5836,7 @@ public:
 /*! \class CFEASolver
  *  \brief Main class for defining the FEA solver.
  *  \author F. Palacios
- *  \version 3.2.8.3 "eagle"
+ *  \version 3.2.9 "eagle"
  *  \date May 3, 2010.
  */
 class CFEASolver : public CSolver {
@@ -6020,7 +6016,7 @@ public:
  * \brief Main class for defining the level set solver.
  * \ingroup LevelSet_Model
  * \author F. Palacios
- * \version 3.2.8.3 "eagle"
+ * \version 3.2.9 "eagle"
  */
 class CAdjLevelSetSolver : public CSolver {
 protected:
@@ -6204,7 +6200,7 @@ public:
  * \brief Main class for defining the template model solver.
  * \ingroup Template_Flow_Equation
  * \author F. Palacios
- * \version 3.2.8.3 "eagle"
+ * \version 3.2.9 "eagle"
  */
 class CTemplateSolver : public CSolver {
 private:

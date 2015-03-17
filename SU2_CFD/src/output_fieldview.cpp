@@ -2,7 +2,7 @@
  * \file output_fieldview.cpp
  * \brief Main subroutines for output solver information.
  * \author F. Palacios, T. Economon, M. Colonno
- * \version 3.2.8.3 "eagle"
+ * \version 3.2.9 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -37,11 +37,13 @@ void COutput::SetFieldViewASCII(CConfig *config, CGeometry *geometry, unsigned s
   unsigned short Kind_Solver = config->GetKind_Solver();
   
   unsigned long iPoint, iElem, iNode, nbfaces;
+  
   unsigned long iExtIter = config->GetExtIter();
   bool adjoint = config->GetAdjoint();
-  
+  bool grid_movement  = config->GetGrid_Movement();
+
   char cstr[200], buffer[50];
-  string filename;
+  string filename, FieldName;
   
   /*--- Write file name with extension ---*/
   
@@ -152,12 +154,22 @@ void COutput::SetFieldViewASCII(CConfig *config, CGeometry *geometry, unsigned s
     /*--- If SU2_SOL called this routine, we already have a set of output
      variables with the appropriate string tags stored in the config class. ---*/
     
-    nvars = config->fields.size() - 1 - nDim;
+    nvars = nVar_Total-nDim;
     
     FieldView_File << "Variable Names\t" << nvars << endl;
     
     for (unsigned short iField = 1+nDim; iField < config->fields.size(); iField++) {
-      FieldView_File << config->fields[iField] << endl;
+      
+      /*--- Remove all double-quote characters ---*/
+      
+      FieldName = config->fields[iField];
+      
+      FieldName.erase(
+                      remove(FieldName.begin(), FieldName.end(), '\"' ),
+                      FieldName.end()
+                      );
+      
+      FieldView_File << FieldName << endl;
     }
     
     /*--- SU2 does not generate boundary variables ---*/
@@ -169,12 +181,55 @@ void COutput::SetFieldViewASCII(CConfig *config, CGeometry *geometry, unsigned s
   
   else {
     
-    nvars = nVar_Consv + nDim;
+    nvars = nVar_Total;
     
-    FieldView_File << "Variable Names\t" << nvars-nDim << endl;
+    FieldView_File << "Variable Names\t" << nvars << endl;
     
     for (iVar = 0; iVar < nVar_Consv; iVar++) {
       FieldView_File << "Conservative_" << iVar+1 << endl;
+    }
+    
+    /*--- Add names for any extra variables (this will need to be adjusted). ---*/
+
+    if (config->GetWrt_Limiters()) {
+      for (iVar = 0; iVar < nVar_Consv; iVar++) {
+        FieldView_File << "Limiter_" << iVar+1 << endl;
+      }
+    }
+    
+    if (config->GetWrt_Residuals()) {
+      for (iVar = 0; iVar < nVar_Consv; iVar++) {
+        FieldView_File << "Residual_" << iVar+1 << endl;
+      }
+    }
+    
+    if (grid_movement) {
+      if (nDim == 2) FieldView_File << "Grid_Velx\nGrid_Vely" << endl;
+      else FieldView_File << "Grid_Velx\nGrid_Vely\nGrid_Velz" << endl;
+    }
+    
+    if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+      FieldView_File << "Pressure\nTemperature\nPressure_Coefficient\nMach" << endl;
+    }
+    
+    if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+      FieldView_File << "Laminar_Viscosity\nSkin_Friction_Coefficient\nHeat_Flux\nY_Plus" << endl;
+    }
+    
+    if (Kind_Solver == RANS) {
+      FieldView_File << "Eddy_Viscosity" << endl;
+    }
+    
+    if (config->GetWrt_SharpEdges()) {
+      if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+        FieldView_File << "Sharp_Edge_Dist" << endl;
+      }
+    }
+    
+    if (( Kind_Solver == ADJ_EULER              ) ||
+        ( Kind_Solver == ADJ_NAVIER_STOKES      ) ||
+        ( Kind_Solver == ADJ_RANS               ) ) {
+      FieldView_File << "Surface_Sensitivity\nSolution_Sensor" << endl;
     }
     
     /*--- SU2 does not generate boundary variables ---*/
@@ -184,24 +239,54 @@ void COutput::SetFieldViewASCII(CConfig *config, CGeometry *geometry, unsigned s
     
   }
   
-  /*--- Output the node definition section for this grid ---*/
-  
-  FieldView_File << "Nodes\t" << nGlobal_Poin << endl;
-  
-  /*--- Output the X, Y, Z coordinates of successive nodes.
+  /*--- Output the node definition section for this grid
+   Output the X, Y, Z coordinates of successive nodes.
    Note that this differs from the binary/unformatted specification. ---*/
   
-  for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+  if (nDim == 3) {
     
-    if (config->GetKind_SU2() != SU2_SOL) {
-      for (iDim = 0; iDim < nDim; iDim++)
-        FieldView_File << scientific << Coords[iDim][iPoint] << "\t";
+    FieldView_File << "Nodes\t" << nGlobal_Poin << endl;
+
+    for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+      if (config->GetKind_SU2() != SU2_SOL) {
+        for (iDim = 0; iDim < nDim; iDim++)
+          FieldView_File << scientific << Coords[iDim][iPoint] << "\t";
+      }
+      else {
+        for (iDim = 0; iDim < nDim; iDim++)
+          FieldView_File << scientific << Data[iDim][iPoint] << "\t";
+      }
+      FieldView_File << endl;
     }
-    else {
-      for (iVar = 0; iVar < nVar_Total; iVar++)
-        FieldView_File << scientific << Data[iVar][iPoint] << "\t";
+    
+  }
+  
+  else {
+    
+    FieldView_File << "Nodes\t" << nGlobal_Poin*2 << endl;
+
+    for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+      if (config->GetKind_SU2() != SU2_SOL) {
+        for (iDim = 0; iDim < nDim; iDim++)
+          FieldView_File << scientific << Coords[iDim][iPoint] << "\t";
+      }
+      else {
+        for (iDim = 0; iDim < nDim; iDim++)
+          FieldView_File << scientific << Data[iDim][iPoint] << "\t";
+      }
+      FieldView_File << scientific << "0.0" << endl;
     }
-    FieldView_File << endl;
+    for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+      if (config->GetKind_SU2() != SU2_SOL) {
+        for (iDim = 0; iDim < nDim; iDim++)
+          FieldView_File << scientific << Coords[iDim][iPoint] << "\t";
+      }
+      else {
+        for (iDim = 0; iDim < nDim; iDim++)
+          FieldView_File << scientific << Data[iDim][iPoint] << "\t";
+      }
+      FieldView_File << scientific << "-1E-10" << endl;
+    }
     
   }
   
@@ -218,30 +303,53 @@ void COutput::SetFieldViewASCII(CConfig *config, CGeometry *geometry, unsigned s
    will give you better performance (less memory, greater speed)
    in FIELDVIEW. ---*/
   
-  nbfaces = nGlobal_Line + nGlobal_BoundTria + nGlobal_BoundQuad;
   
-  FieldView_File << "Boundary Faces\t" << nbfaces << endl;
-  
-  for (iElem = 0; iElem < nGlobal_Line; iElem++) {
-    iNode = iElem*N_POINTS_LINE;
-    FieldView_File << "1\t2\t" << Conn_Line[iNode+0] << "\t";
-    FieldView_File << "1\t2\t" << Conn_Line[iNode+1] << "\n";
+  if (nDim ==2) {
+    
+    nbfaces = nGlobal_Tria + nGlobal_Quad;
+    
+    FieldView_File << "Boundary Faces\t" << nbfaces << endl;
+
+    for (iElem = 0; iElem < nGlobal_Tria; iElem++) {
+      iNode = iElem*N_POINTS_TRIANGLE;
+      FieldView_File <<"1\t3\t"<< Conn_Tria[iNode+0] << "\t";
+      FieldView_File << Conn_Tria[iNode+1] << "\t";
+      FieldView_File << Conn_Tria[iNode+2] << "\n";
+    }
+    
+    for (iElem = 0; iElem < nGlobal_Quad; iElem++) {
+      iNode = iElem*N_POINTS_QUADRILATERAL;
+      FieldView_File <<"1\t4\t"<< Conn_Quad[iNode+0] << "\t";
+      FieldView_File << Conn_Quad[iNode+1] << "\t";
+      FieldView_File << Conn_Quad[iNode+2] << "\t";
+      FieldView_File << Conn_Quad[iNode+3] << "\n";
+    }
+    
   }
   
-  for (iElem = 0; iElem < nGlobal_BoundTria; iElem++) {
-    iNode = iElem*N_POINTS_TRIANGLE;
-    FieldView_File << "1\t3\t" << Conn_BoundTria[iNode+0] << "\t";
-    FieldView_File << Conn_BoundTria[iNode+1] << "\t";
-    FieldView_File << Conn_BoundTria[iNode+2] << "\n";
+  if (nDim ==3) {
+    
+    nbfaces = nGlobal_BoundTria + nGlobal_BoundQuad;
+    
+    FieldView_File << "Boundary Faces\t" << nbfaces << endl;
+    
+    for (iElem = 0; iElem < nGlobal_BoundTria; iElem++) {
+      iNode = iElem*N_POINTS_TRIANGLE;
+      FieldView_File << "1\t3\t" << Conn_BoundTria[iNode+0] << "\t";
+      FieldView_File << Conn_BoundTria[iNode+1] << "\t";
+      FieldView_File << Conn_BoundTria[iNode+2] << "\n";
+    }
+    
+    for (iElem = 0; iElem < nGlobal_BoundQuad; iElem++) {
+      iNode = iElem*N_POINTS_QUADRILATERAL;
+      FieldView_File << "1\t4\t" << Conn_BoundQuad[iNode+0] << "\t";
+      FieldView_File << Conn_BoundQuad[iNode+1] << "\t";
+      FieldView_File << Conn_BoundQuad[iNode+2] << "\t";
+      FieldView_File << Conn_BoundQuad[iNode+3] << "\n";
+    }
+    
   }
-  
-  for (iElem = 0; iElem < nGlobal_BoundQuad; iElem++) {
-    iNode = iElem*N_POINTS_QUADRILATERAL;
-    FieldView_File << "1\t4\t" << Conn_BoundQuad[iNode+0] << "\t";
-    FieldView_File << Conn_BoundQuad[iNode+1] << "\t";
-    FieldView_File << Conn_BoundQuad[iNode+2] << "\t";
-    FieldView_File << Conn_BoundQuad[iNode+3] << "\n";
-  }
+
   
   /*--- Output the elements section for this grid.
    Note that this differs from the binary/unformatted specification.
@@ -255,10 +363,12 @@ void COutput::SetFieldViewASCII(CConfig *config, CGeometry *geometry, unsigned s
   
   for (iElem = 0; iElem < nGlobal_Tria; iElem++) {
     iNode = iElem*N_POINTS_TRIANGLE;
-    FieldView_File <<"2\t1\t"<< Conn_Tria[iNode+0] << "\t";
+    FieldView_File <<"3\t1\t"<< Conn_Tria[iNode+0] << "\t";
     FieldView_File << Conn_Tria[iNode+1] << "\t";
     FieldView_File << Conn_Tria[iNode+2] << "\t";
-    FieldView_File << Conn_Tria[iNode+2] << "\n";
+    FieldView_File << nGlobal_Poin+Conn_Tria[iNode+0] << "\t";
+    FieldView_File << nGlobal_Poin+Conn_Tria[iNode+1] << "\t";
+    FieldView_File << nGlobal_Poin+Conn_Tria[iNode+2] << "\n";
   }
   
   for (iElem = 0; iElem < nGlobal_Quad; iElem++) {
@@ -266,15 +376,17 @@ void COutput::SetFieldViewASCII(CConfig *config, CGeometry *geometry, unsigned s
     FieldView_File <<"2\t1\t"<< Conn_Quad[iNode+0] << "\t";
     FieldView_File << Conn_Quad[iNode+1] << "\t";
     FieldView_File << Conn_Quad[iNode+2] << "\t";
-    FieldView_File << Conn_Quad[iNode+3] << "\n";
+    FieldView_File << Conn_Quad[iNode+3] << "\t";
+    FieldView_File << nGlobal_Poin+Conn_Quad[iNode+0] << "\t";
+    FieldView_File << nGlobal_Poin+Conn_Quad[iNode+1] << "\t";
+    FieldView_File << nGlobal_Poin+Conn_Quad[iNode+2] << "\t";
+    FieldView_File << nGlobal_Poin+Conn_Quad[iNode+3] << "\n";
   }
   
   for (iElem = 0; iElem < nGlobal_Tetr; iElem++) {
     iNode = iElem*N_POINTS_TETRAHEDRON;
     FieldView_File <<"1\t1\t"<< Conn_Tetr[iNode+0] << "\t" << Conn_Tetr[iNode+1] << "\t";
-    FieldView_File << Conn_Tetr[iNode+2] << "\t" << Conn_Tetr[iNode+2] << "\t";
-    FieldView_File << Conn_Tetr[iNode+3] << "\t" << Conn_Tetr[iNode+3] << "\t";
-    FieldView_File << Conn_Tetr[iNode+3] << "\t" << Conn_Tetr[iNode+3] << "\n";
+    FieldView_File << Conn_Tetr[iNode+2] << "\t" << Conn_Tetr[iNode+3] << "\n";
   }
   
   for (iElem = 0; iElem < nGlobal_Hexa; iElem++) {
@@ -288,8 +400,7 @@ void COutput::SetFieldViewASCII(CConfig *config, CGeometry *geometry, unsigned s
   for (iElem = 0; iElem < nGlobal_Pris; iElem++) {
     iNode = iElem*N_POINTS_PRISM;
     FieldView_File <<"3\t1\t"<< Conn_Pris[iNode+0] << "\t" << Conn_Pris[iNode+1] << "\t";
-    FieldView_File << Conn_Pris[iNode+1] << "\t" << Conn_Pris[iNode+2] << "\t";
-    FieldView_File << Conn_Pris[iNode+3] << "\t" << Conn_Pris[iNode+4] << "\t";
+    FieldView_File << Conn_Pris[iNode+2] << "\t" << Conn_Pris[iNode+3] << "\t";
     FieldView_File << Conn_Pris[iNode+4] << "\t" << Conn_Pris[iNode+5] << "\n";
   }
   
@@ -297,8 +408,7 @@ void COutput::SetFieldViewASCII(CConfig *config, CGeometry *geometry, unsigned s
     iNode = iElem*N_POINTS_PYRAMID;
     FieldView_File <<"4\t1\t"<< Conn_Pyra[iNode+0] << "\t" << Conn_Pyra[iNode+1] << "\t";
     FieldView_File << Conn_Pyra[iNode+2] << "\t" << Conn_Pyra[iNode+3] << "\t";
-    FieldView_File << Conn_Pyra[iNode+4] << "\t" << Conn_Pyra[iNode+4] << "\t";
-    FieldView_File << Conn_Pyra[iNode+4] << "\t" << Conn_Pyra[iNode+4] << "\n";
+    FieldView_File << Conn_Pyra[iNode+4] << "\n";
   }
   
   /*--- Output the variables data for this grid.
@@ -311,9 +421,29 @@ void COutput::SetFieldViewASCII(CConfig *config, CGeometry *geometry, unsigned s
   FieldView_File << "Variables" << endl;
   
   /*--- Loop over the vars/residuals and write the values to file ---*/
-  for (iVar = nDim; iVar < nVar_Total; iVar++) {
-    for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
-      FieldView_File << scientific << Data[iVar][iPoint] << endl;
+  
+  if (config->GetKind_SU2() != SU2_SOL) {
+    for (iVar = 0; iVar < nvars; iVar++) {
+      for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+        FieldView_File << scientific << Data[iVar][iPoint] << endl;
+      }
+      if (nDim == 2) {
+        for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+          FieldView_File << scientific << Data[iVar][iPoint] << endl;
+        }
+      }
+    }
+  }
+  else {
+    for (iVar = 0; iVar < nvars; iVar++) {
+      for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+        FieldView_File << scientific << Data[iVar+nDim][iPoint] << endl;
+      }
+      if (nDim == 2) {
+        for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+          FieldView_File << scientific << Data[iVar+nDim][iPoint] << endl;
+        }
+      }
     }
   }
   

@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for generating the file outputs.
  *        The subroutines and functions are in the <i>output_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, M. Colonno
- * \version 3.2.8.3 "eagle"
+ * \version 3.2.9 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -56,7 +56,7 @@ using namespace std;
  * \brief Class for writing the flow, adjoint and linearized solver 
  *        solution (including the history solution, and parallel stuff).
  * \author F. Palacios, T. Economon, M. Colonno.
- * \version 3.2.8.3 "eagle"
+ * \version 3.2.9 "eagle"
  */
 class COutput {
 
@@ -329,7 +329,7 @@ public:
    * \param[in] val_iZone - Current zone.
    * \param[in] val_nZone - Total number of zones.
 	 */
-	void SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol);
+	void SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol, bool new_file);
 
   /*!
 	 * \brief Write a Tecplot ASCII solution file.
