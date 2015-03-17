@@ -42,9 +42,9 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
 	unsigned short nZone = geometry_container[ZONE_0][MESH_0]->GetnZone();
 	if (time_spectral) {
     nZone = config_container[ZONE_0]->GetnTimeInstances();
-  }
-  unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
-  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
+    }
+    unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
+    unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
   
 #ifdef HAVE_MPI
   int rank;

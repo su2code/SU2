@@ -3288,6 +3288,9 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
 #endif
     for (iPoint = 0; iPoint < nPointDomain; iPoint++)
       node[iPoint]->SetDelta_Time(Global_Delta_Time);
+      //node[iPoint]->SetDelta_Time(2.939E-6);
+      //cout<< "Time Step set to: "<< 2.939E-6<< endl;
+
   }
 
   /*--- Recompute the unsteady time step for the dual time strategy
@@ -11312,6 +11315,8 @@ void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CC
 #endif
     for (iPoint = 0; iPoint < nPointDomain; iPoint++)
       node[iPoint]->SetDelta_Time(Global_Delta_Time);
+      //node[iPoint]->SetDelta_Time(2.939E-6);
+      cout<< "Time Step set to: "<< 2.939E-6<< endl;
   }
 
   /*--- Recompute the unsteady time step for the dual time strategy

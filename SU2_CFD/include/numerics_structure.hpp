@@ -2505,9 +2505,9 @@ public:
 
 /*!
  * \class CCentJST_Flow
- * \brief Class for centered shceme - JST.
+ * \brief Class for centered scheme - JST KE.
  * \ingroup ConvDiscr
- * \author F. Palacios
+ * \author F. Palacios, D. Manosalvas
  * \version 3.2.8.3 "eagle"
  */
 class CCentJST_KE_Flow : public CNumerics {
