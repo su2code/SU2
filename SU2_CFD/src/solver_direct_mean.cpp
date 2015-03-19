@@ -6314,7 +6314,7 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
     cout << endl << "----------------------------- Fixed CL Mode -----------------------------" << endl;
     cout << "Target CL: " << config->GetTarget_CL();
     cout << ", Current CL: " << Total_CLift;
-    cout << ", Current AoA: " << config->GetAoA() << " deg" << endl;
+    cout << ", Current AoA: " << config->GetAoA() << " deg." << endl;
     cout << "-------------------------------------------------------------------------" << endl;
   }
 
