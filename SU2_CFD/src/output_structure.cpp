@@ -4412,7 +4412,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     
     bool write_heads;
     if (Unsteady) write_heads = (iIntIter == 0);
-    else write_heads = (((iExtIter % (config[val_iZone]->GetWrt_Con_Freq()*20)) == 0));
+    else write_heads = (((iExtIter % (config[val_iZone]->GetWrt_Con_Freq()*40)) == 0));
     
     if ((In_NoDualTime || In_DualTime_0 || In_DualTime_1) && (In_NoDualTime || In_DualTime_2 || In_DualTime_3)) {
       
@@ -4652,12 +4652,18 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             case EULER : case NAVIER_STOKES: case RANS:
             case ADJ_EULER : case ADJ_NAVIER_STOKES: case ADJ_RANS:
             case FLUID_STRUCTURE_EULER :  case FLUID_STRUCTURE_NAVIER_STOKES: case FLUID_STRUCTURE_RANS:
-              cout << endl << "Local time stepping summary:" << endl;
+              
+              cout << endl << "---------------------- Local Time Stepping Summary ----------------------" << endl;
+              
               for (unsigned short iMesh = FinestMesh; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++)
                 cout << "MG level: "<< iMesh << " -> Min. DT: " << solver_container[val_iZone][iMesh][FLOW_SOL]->GetMin_Delta_Time()<<
                 ". Max. DT: " << solver_container[val_iZone][iMesh][FLOW_SOL]->GetMax_Delta_Time() <<
-                ". CFL number: " << config[val_iZone]->GetCFL(iMesh)  << "." << endl;
+                ". CFL: " << config[val_iZone]->GetCFL(iMesh)  << "." << endl;
+              
+              cout << "-------------------------------------------------------------------------" << endl;
+
               break;
+
             case TNE2_EULER: case TNE2_NAVIER_STOKES:
             case ADJ_TNE2_EULER: case ADJ_TNE2_NAVIER_STOKES:
               cout << endl << "Min Delta Time: " << solver_container[val_iZone][MESH_0][TNE2_SOL]->GetMin_Delta_Time()<< ". Max Delta Time: " << solver_container[val_iZone][MESH_0][TNE2_SOL]->GetMax_Delta_Time() << ".";
@@ -4683,7 +4689,10 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             iPointMaxResid = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetPoint_Max(0);
             Coord = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetPoint_Max_Coord(0);
             
-            cout << endl << "log10[Maximum residual]: " << log10(solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_Max(0)) << "." << endl;
+            cout << endl << "----------------------- Residual Evolution Summary ----------------------" << endl;
+
+            cout << "log10[Maximum residual]: " << log10(solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_Max(0)) << "." << endl;
+            
             if (config[val_iZone]->GetSystemMeasurements() == SI) {
               cout <<"Maximum residual point " << iPointMaxResid << ", located at (" << Coord[0] << ", " << Coord[1];
               if (nDim == 3) cout << ", " << Coord[2];
@@ -4696,11 +4705,14 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             }
             
             /*--- Print out the number of non-physical points and reconstructions ---*/
+            
             if (config[val_iZone]->GetNonphysical_Points() > 0)
               cout << "There are " << config[val_iZone]->GetNonphysical_Points() << " non-physical points in the solution." << endl;
             if (config[val_iZone]->GetNonphysical_Reconstr() > 0)
               cout << "There are " << config[val_iZone]->GetNonphysical_Reconstr() << " non-physical states in the upwind reconstruction." << endl;
             
+            cout << "-------------------------------------------------------------------------" << endl;
+
             if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
             else cout << endl << " IntIter" << " ExtIter";
             
@@ -5615,7 +5627,11 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
       else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " psf." << endl;
     }
     
-    Breakdown_file << "Free-stream pressure: " << config[val_iZone]->GetPressure_FreeStream();
+    Breakdown_file << "Free-stream static pressure: " << config[val_iZone]->GetPressure_FreeStream();
+    if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " Pa." << endl;
+    else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " psf." << endl;
+    
+    Breakdown_file << "Free-stream total pressure: " << config[val_iZone]->GetPressure_FreeStream() * pow( 1.0+config[val_iZone]->GetMach()*config[val_iZone]->GetMach()*0.5*(config[val_iZone]->GetGamma()-1.0), config[val_iZone]->GetGamma()/(config[val_iZone]->GetGamma()-1.0) );
     if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " Pa." << endl;
     else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " psf." << endl;
     
