@@ -238,6 +238,7 @@ private:
   double *ActDisk_PressJump;
   double *ActDisk_TempJump;
   double *ActDisk_Omega;
+  unsigned short *ActDisk_Distribution;
   double **Periodic_RotCenter;  /*!< \brief Rotational center for each periodic boundary. */
 	double **Periodic_RotAngles;      /*!< \brief Rotation angles for each periodic boundary. */
 	double **Periodic_Translation;      /*!< \brief Translation vector for each periodic boundary. */
@@ -926,12 +927,13 @@ private:
   }
 
   void addActuatorDiskOption(const string & name, unsigned short & nMarker_ActDisk_Inlet, unsigned short & nMarker_ActDisk_Outlet,
-                                      string* & Marker_ActDisk_Inlet, string* & Marker_ActDisk_Outlet,
-                                      double** & ActDisk_Origin, double* & ActDisk_RootRadius, double* & ActDisk_TipRadius,
-                                      double* & ActDisk_PressJump, double* & ActDisk_TempJump, double* & ActDisk_Omega) {
+                             string* & Marker_ActDisk_Inlet, string* & Marker_ActDisk_Outlet,
+                             double** & ActDisk_Origin, double* & ActDisk_RootRadius, double* & ActDisk_TipRadius,
+                             double* & ActDisk_PressJump, double* & ActDisk_TempJump, double* & ActDisk_Omega,
+                             unsigned short* & ActDisk_Distribution) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
-    COptionBase* val = new COptionActuatorDisk(name, nMarker_ActDisk_Inlet, nMarker_ActDisk_Outlet, Marker_ActDisk_Inlet, Marker_ActDisk_Outlet, ActDisk_Origin, ActDisk_RootRadius, ActDisk_TipRadius, ActDisk_PressJump, ActDisk_TempJump, ActDisk_Omega);
+    COptionBase* val = new COptionActuatorDisk(name, nMarker_ActDisk_Inlet, nMarker_ActDisk_Outlet, Marker_ActDisk_Inlet, Marker_ActDisk_Outlet, ActDisk_Origin, ActDisk_RootRadius, ActDisk_TipRadius, ActDisk_PressJump, ActDisk_TempJump, ActDisk_Omega, ActDisk_Distribution);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
@@ -4557,7 +4559,12 @@ public:
 	 * \brief Get the rev / min of the actuator disk.
 	 */
   double GetActDisk_Omega(string val_marker);
-
+  
+  /*!
+   * \brief Get the rev / min of the actuator disk.
+   */
+  unsigned short GetActDisk_Distribution(string val_marker);
+  
   /*!
 	 * \brief Get Actuator Disk Outlet for boundary <i>val_marker</i> (actuator disk inlet).
 	 * \return Actuator Disk Outlet from the config information for the marker <i>val_marker</i>.

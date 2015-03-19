@@ -5615,7 +5615,11 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
       else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " psf." << endl;
     }
     
-    Breakdown_file << "Free-stream pressure: " << config[val_iZone]->GetPressure_FreeStream();
+    Breakdown_file << "Free-stream static pressure: " << config[val_iZone]->GetPressure_FreeStream();
+    if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " Pa." << endl;
+    else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " psf." << endl;
+    
+    Breakdown_file << "Free-stream total pressure: " << config[val_iZone]->GetPressure_FreeStream() * pow( 1.0+config[val_iZone]->GetMach()*config[val_iZone]->GetMach()*0.5*(config[val_iZone]->GetGamma()-1.0), config[val_iZone]->GetGamma()/(config[val_iZone]->GetGamma()-1.0) );
     if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " Pa." << endl;
     else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " psf." << endl;
     
