@@ -422,6 +422,7 @@ private:
   bool Fixed_CL_Mode;			/*!< \brief Activate fixed CL mode (external flow only). */
   double Target_CL;			/*!< \brief Specify a target CL instead of AoA (external flow only). */
   double Damp_Fixed_CL;			/*!< \brief Damping coefficient for fixed CL mode (external flow only). */
+  unsigned long Iter_Fixed_CL;			/*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
   bool Update_AoA;			/*!< \brief Boolean flag for whether to update the AoA for fixed lift mode on a given iteration. */
 	double ChargeCoeff;		/*!< \brief Charge coefficient (just for poisson problems). */
 	double *U_FreeStreamND;			/*!< \brief Reference variables at the infinity, free stream values. */
@@ -5162,7 +5163,13 @@ public:
 	 * \return Damping coefficient for fixed CL mode.
 	 */
 	double GetDamp_Fixed_CL(void);
-
+  
+  /*!
+   * \brief Get the value of iterations to re-evaluate the angle of attack.
+   * \return Number of iterations.
+   */
+  unsigned long GetIter_Fixed_CL(void);
+  
   /*!
 	 * \brief Set the value of the boolean for updating AoA in fixed lift mode.
    * \param[in] val_update - the bool for whether to update the AoA.

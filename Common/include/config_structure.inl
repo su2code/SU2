@@ -1157,6 +1157,8 @@ inline double CConfig::GetTarget_CL(void) {return Target_CL; }
 
 inline double CConfig::GetDamp_Fixed_CL(void) {return Damp_Fixed_CL; }
 
+inline unsigned long CConfig::GetIter_Fixed_CL(void) {return Iter_Fixed_CL; }
+
 inline bool CConfig::GetUpdate_AoA(void) { return Update_AoA; }
 
 inline void CConfig::SetUpdate_AoA(bool val_update) { Update_AoA = val_update; }
