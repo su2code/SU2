@@ -344,7 +344,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Specify a fixed coefficient of lift instead of AoA (only for compressible flows) */
   addDoubleOption("TARGET_CL", Target_CL, 0.0);
   /* DESCRIPTION: Damping factor for fixed CL mode. */
-  addDoubleOption("DAMP_FIXED_CL", Damp_Fixed_CL, 0.1);
+  addDoubleOption("DAMP_FIXED_CL", Damp_Fixed_CL, 0.2);
+  /* DESCRIPTION: Iterations to re-evaluate the angle of attack. */
+  addUnsignedLongOption("ITER_FIXED_CL", Iter_Fixed_CL, 100);
 
 
   /*!\par CONFIG_CATEGORY: Reference Conditions \ingroup Config*/

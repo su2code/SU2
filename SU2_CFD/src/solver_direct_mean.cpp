@@ -5720,7 +5720,7 @@ void CEulerSolver::GetEngine_Properties(CGeometry *geometry, CConfig *config, un
     
   }
 
-  bool write_heads = (((config->GetExtIter() % (config->GetWrt_Con_Freq()*20)) == 0));
+  bool write_heads = (((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0));
 
   if ((rank == MASTER_NODE) && (iMesh == MESH_0) && write_heads && Output) {
 
@@ -6120,7 +6120,7 @@ void CEulerSolver::GetActuatorDisk_Properties(CGeometry *geometry, CConfig *conf
     else Outlet_Pressure_Total[iMarker_ActDiskOutlet] = 0.0;
   }
   
-  bool write_heads = (((config->GetExtIter() % (config->GetWrt_Con_Freq()*20)) == 0));
+  bool write_heads = (((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0));
   
   if ((rank == MASTER_NODE) && (iMesh == MESH_0) && write_heads && Output) {
     
@@ -6202,8 +6202,10 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
 
   unsigned short iDim, iCounter;
   bool Update_AoA = false;
-  double Target_CL, AoA_inc, AoA, Eps_Factor = 1e2;
+  double Target_CL, AoA_inc, AoA;
   double DampingFactor = config->GetDamp_Fixed_CL();
+  unsigned long Iter_Fixed_CL = config->GetIter_Fixed_CL();
+  unsigned long ExtIter = config->GetExtIter();
   double Beta = config->GetAoS()*PI_NUMBER/180.0;
   double Vel_Infty[3], Vel_Infty_Mag;
 
@@ -6216,54 +6218,23 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
 
   if (iMesh == MESH_0) {
 
-    /*--- Initialize the update flag to false in config ---*/
+    /*--- Initialize the update flag to false ---*/
 
-    config->SetUpdate_AoA(false);
+    Update_AoA = false;
 
-    /*--- Initialize the local cauchy criteria on the first iteration ---*/
-
-    if (config->GetExtIter() == 0) {
-      Cauchy_Value = 0.0;
-      Cauchy_Counter = 0;
-      for (iCounter = 0; iCounter < config->GetCauchy_Elems(); iCounter++)
-        Cauchy_Serie[iCounter] = 0.0;
-      AoA_old = config->GetAoA()*PI_NUMBER/180.0;
-    }
-
-    /*--- Check on the level of convergence in the lift coefficient. ---*/
-
-    Old_Func = New_Func;
-    New_Func = Total_CLift;
-    Cauchy_Func = fabs(New_Func - Old_Func);
-    Cauchy_Serie[Cauchy_Counter] = Cauchy_Func;
-    Cauchy_Counter++;
-    if (Cauchy_Counter == config->GetCauchy_Elems()) Cauchy_Counter = 0;
-
-    Cauchy_Value = 1;
-    if (config->GetExtIter() >= config->GetCauchy_Elems()) {
-      Cauchy_Value = 0;
-      for (iCounter = 0; iCounter < config->GetCauchy_Elems(); iCounter++)
-        Cauchy_Value += Cauchy_Serie[iCounter];
-    }
-
-    /*--- Check whether we are within two digits of the requested convergence
-     epsilon for the cauchy criteria. ---*/
-
-    if (Cauchy_Value >= config->GetCauchy_Eps()*Eps_Factor) Update_AoA = false;
-    else Update_AoA = true;
-
-    /*--- Do not apply any convergence criteria if the number
-     of iterations is less than a particular value ---*/
-    if (config->GetExtIter() < config->GetStartConv_Iter()) {
-      Update_AoA = false;
-
-    }
+    /*--- Reevaluate Angle of Attack at a fix number of iterations ---*/
+    
+    if (ExtIter % Iter_Fixed_CL == 0) { Update_AoA = true; };
+    
     /*--- Store the update boolean for use on other mesh levels in the MG ---*/
 
     config->SetUpdate_AoA(Update_AoA);
 
-  } else
+  }
+  
+  else {
     Update_AoA = config->GetUpdate_AoA();
+  }
 
   /*--- If we are within two digits of convergence in the CL coefficient,
    compute an updated value for the AoA at the farfield. We are iterating
@@ -6336,12 +6307,12 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
 
   /*--- Output some information to the console with the headers ---*/
 
-  bool write_heads = (((config->GetExtIter() % (config->GetWrt_Con_Freq()*20)) == 0));
+  bool write_heads = (((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0));
   if ((rank == MASTER_NODE) && (iMesh == MESH_0) && write_heads && Output) {
     cout.precision(7);
     cout.setf(ios::fixed, ios::floatfield);
     cout << endl << "----------------------------- Fixed CL Mode -----------------------------" << endl;
-    cout << " Target CL: " << config->GetTarget_CL();
+    cout << "Target CL: " << config->GetTarget_CL();
     cout << ", Current CL: " << Total_CLift;
     cout << ", Current AoA: " << config->GetAoA() << " deg" << endl;
     cout << "-------------------------------------------------------------------------" << endl;
