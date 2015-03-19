@@ -456,6 +456,8 @@ int main(int argc, char *argv[]) {
             solver_container[ZONE_0][MESH_0][config_container[ZONE_0]->GetContainerPosition(RUNTIME_FLOW_SYS)]->Preprocessing(geometry_container[ZONE_0][MESH_0], solver_container[ZONE_0][MESH_0], config_container[ZONE_0], MESH_0, 0, RUNTIME_FLOW_SYS, false);
           }
           
+          if (rank == MASTER_NODE) cout << endl << "-------------------------- File Output Summary --------------------------";
+          
           /*--- Execute the routine for writing restart, volume solution,
            surface solution, and surface comma-separated value files. ---*/
           
@@ -473,7 +475,7 @@ int main(int argc, char *argv[]) {
                                      geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
           }
           
-          if (rank == MASTER_NODE) cout << endl;
+          if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl << endl;
           
         }
     
