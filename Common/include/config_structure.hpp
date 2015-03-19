@@ -3,7 +3,7 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>config_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 3.2.8.3 "eagle"
+ * \version 3.2.9 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -53,17 +53,18 @@ using namespace std;
  * \brief Main class for defining the problem; basically this class reads the configuration file, and
  *        stores all the information.
  * \author F. Palacios
- * \version 3.2.8.3 "eagle"
+ * \version 3.2.9 "eagle"
  */
 
 class CConfig {
 private:
-  unsigned short Kind_SU2; /*!< \brief Kind of SU2 software component.*/
+	unsigned short Kind_SU2; /*!< \brief Kind of SU2 software component.*/
+  unsigned short Ref_NonDim; /*!< \brief Kind of of non dimensionalization.*/
   unsigned short iZone, nZone; /*!< \brief Number of zones in the mesh. */
-  double OrderMagResidual; /*!< \brief Order of magnitude reduction. */
-  double MinLogResidual; /*!< \brief Minimum value of the log residual. */
-  double EA_ScaleFactor; /*!< \brief Equivalent Area scaling factor */
-  double* EA_IntLimit; /*!< \brief Integration limits of the Equivalent Area computation */
+	double OrderMagResidual; /*!< \brief Order of magnitude reduction. */
+	double MinLogResidual; /*!< \brief Minimum value of the log residual. */
+	double EA_ScaleFactor; /*!< \brief Equivalent Area scaling factor */
+	double* EA_IntLimit; /*!< \brief Integration limits of the Equivalent Area computation */
   double AdjointLimit; /*!< \brief Adjoint variable limit */
   bool MG_AdjointFlow; /*!< \brief MG with the adjoint flow problem */
   double* Subsonic_Engine_Box; /*!< \brief Coordinates of the box subsonic region */
@@ -409,6 +410,7 @@ private:
   bool Deform_Output;  /*!< \brief Print the residuals during mesh deformation to the console. */
   double Deform_Tol_Factor; /*!< Factor to multiply smallest volume for deform tolerance (0.001 default) */
   unsigned short Deform_Linear_Solver; /*!< Numerical method to deform the grid */
+  unsigned short FFD_Continuity; /*!< Surface continuity at the intersection with the FFD */
   double Deform_ElasticityMod, Deform_PoissonRatio; /*!< young's modulus and poisson ratio for volume deformation stiffness model */
   bool Visualize_Deformation;	/*!< \brief Flag to visualize the deformation in MDC. */
 	double Mach;		/*!< \brief Mach number. */
@@ -1693,6 +1695,12 @@ public:
 	 * \return Value of the Froude number.
 	 */
 	void SetDensity_Ref(double val_density_ref);
+  
+  /*!
+   * \brief Set the reference temperature.
+   * \return Value of the Froude number.
+   */
+  void SetTemperature_Ref(double val_temperature_ref);
 
   /*!
 	 * \brief Set the Froude number for free surface problems.
@@ -2004,6 +2012,12 @@ public:
    * \return Number of the design variables.
    */
   unsigned short GetnFFDBox(void);
+  
+  /*!
+   * \brief Get the required continuity level at the surface intersection with the FFD
+   * \return Continuity level at the surface intersection.
+   */
+  unsigned short GetFFD_Continuity(void);
 
 	/*!
 	 * \brief Get the number of Runge-Kutta steps.
@@ -2809,6 +2823,12 @@ public:
 	 * \return Kind of the SU2 software component.
 	 */
 	unsigned short GetKind_SU2(void);
+  
+  /*!
+   * \brief Get the kind of non-dimensionalization.
+   * \return Kind of non-dimensionalization.
+   */
+  unsigned short GetRef_NonDim(void);
   
   /*!
 	 * \brief Get the kind of SU2 software component.

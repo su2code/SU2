@@ -2,7 +2,7 @@
  * \file solver_structure.inl
  * \brief In-Line subroutines of the <i>solver_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 3.2.8.3 "eagle"
+ * \version 3.2.9 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -423,10 +423,10 @@ inline void CSolver::BC_Dirichlet(CGeometry *geometry, CSolver **solver_containe
 								  unsigned short val_marker) { }
 
 inline void CSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, 
-									CConfig *config, unsigned short val_marker) { }
+									CConfig *config) { }
                   
 inline void CSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, 
-									CConfig *config, unsigned short val_marker) { }
+									CConfig *config) { }
 
 inline void CSolver::BC_ActDisk_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                                CConfig *config) { }

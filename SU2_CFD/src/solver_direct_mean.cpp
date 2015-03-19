@@ -2,7 +2,7 @@
  * \file solution_direct_mean.cpp
  * \brief Main subrotuines for solving direct problems (Euler, Navier-Stokes, etc.).
  * \author F. Palacios, T. Economon
- * \version 3.2.8.3 "eagle"
+ * \version 3.2.9 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -1929,23 +1929,28 @@ void CEulerSolver::Set_MPI_Primitive_Limiter(CGeometry *geometry, CConfig *confi
 //}
 
 void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config, unsigned short iMesh) {
-
-  double Temperature_FreeStream = 0.0, Mach2Vel_FreeStream = 0.0, ModVel_FreeStream = 0.0, Energy_FreeStream = 0.0, ModVel_FreeStreamND = 0.0,
-  Velocity_Reynolds = 0.0, Omega_FreeStream = 0.0, Omega_FreeStreamND = 0.0, Viscosity_FreeStream = 0.0,
-  Density_FreeStream = 0.0, Pressure_FreeStream = 0.0, Tke_FreeStream = 0.0;
-  double Length_Ref = 0.0, Density_Ref = 0.0, Pressure_Ref = 0.0, Velocity_Ref = 0.0, Time_Ref = 0.0, Omega_Ref = 0.0, Force_Ref = 0.0,
-  Gas_Constant_Ref = 0.0, Viscosity_Ref = 0.0, Conductivity_Ref = 0.0, Energy_Ref= 0.0, Froude = 0.0;
-  double Pressure_FreeStreamND = 0.0, Density_FreeStreamND = 0.0, Temperature_FreeStreamND = 0.0, Gas_ConstantND = 0.0,
-  Velocity_FreeStreamND[3] = {0.0, 0.0, 0.0}, Viscosity_FreeStreamND = 0.0, Tke_FreeStreamND = 0.0, Energy_FreeStreamND = 0.0,
+  
+  double Temperature_FreeStream = 0.0, Mach2Vel_FreeStream = 0.0, ModVel_FreeStream = 0.0,
+  Energy_FreeStream = 0.0, ModVel_FreeStreamND = 0.0, Velocity_Reynolds = 0.0,
+  Omega_FreeStream = 0.0, Omega_FreeStreamND = 0.0, Viscosity_FreeStream = 0.0,
+  Density_FreeStream = 0.0, Pressure_FreeStream = 0.0, Tke_FreeStream = 0.0,
+  Length_Ref = 0.0, Density_Ref = 0.0, Pressure_Ref = 0.0, Velocity_Ref = 0.0,
+  Temperature_Ref = 0.0, Time_Ref = 0.0, Omega_Ref = 0.0, Force_Ref = 0.0,
+  Gas_Constant_Ref = 0.0, Viscosity_Ref = 0.0, Conductivity_Ref = 0.0, Energy_Ref= 0.0,
+  Froude = 0.0, Pressure_FreeStreamND = 0.0, Density_FreeStreamND = 0.0,
+  Temperature_FreeStreamND = 0.0, Gas_ConstantND = 0.0,
+  Velocity_FreeStreamND[3] = {0.0, 0.0, 0.0}, Viscosity_FreeStreamND = 0.0,
+  Tke_FreeStreamND = 0.0, Energy_FreeStreamND = 0.0,
   Total_UnstTimeND = 0.0, Delta_UnstTimeND = 0.0;
+  
   unsigned short iDim;
-
+  
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
-  /*--- Local variables and memory allocation ---*/
+  /*--- Local variables ---*/
   
   double Alpha            = config->GetAoA()*PI_NUMBER/180.0;
   double Beta             = config->GetAoS()*PI_NUMBER/180.0;
@@ -1960,9 +1965,12 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
   bool gravity            = config->GetGravityForce();
   bool turbulent          = config->GetKind_Solver() == RANS;
   bool tkeNeeded          = ((config->GetKind_Solver() == RANS) && (config->GetKind_Turb_Model() == SST));
-  bool fs_temperature     = (config->GetKind_FreeStreamOption() == TEMPERATURE_FS);
+  bool free_stream_temp   = (config->GetKind_FreeStreamOption() == TEMPERATURE_FS);
   bool standard_air       = (config->GetKind_FluidModel() == STANDARD_AIR);
+  bool reynolds_init      = (config->GetKind_InitOption() == REYNOLDS);
   
+  /*--- Compressible non dimensionalization ---*/
+
   if (compressible) {
     
     /*--- Compute the Free Stream velocity, using the Mach number ---*/
@@ -1973,12 +1981,13 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
     
     switch (config->GetKind_FluidModel()) {
         
-        case STANDARD_AIR:
+      case STANDARD_AIR:
+        
         if (config->GetSystemMeasurements() == SI) config->SetGas_Constant(287.058);
         else if (config->GetSystemMeasurements() == US) config->SetGas_Constant(1716.49);
         
         FluidModel = new CIdealGas(1.4, config->GetGas_Constant());
-        if (fs_temperature) {
+        if (free_stream_temp) {
           FluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
           Density_FreeStream = FluidModel->GetDensity();
           config->SetDensity_FreeStream(Density_FreeStream);
@@ -1990,9 +1999,10 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
         }
         break;
         
-        case IDEAL_GAS:
+      case IDEAL_GAS:
+        
         FluidModel = new CIdealGas(Gamma, config->GetGas_Constant());
-        if (fs_temperature) {
+        if (free_stream_temp) {
           FluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
           Density_FreeStream = FluidModel->GetDensity();
           config->SetDensity_FreeStream(Density_FreeStream);
@@ -2004,9 +2014,11 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
         }
         break;
         
-        case VW_GAS:
-        FluidModel = new CVanDerWaalsGas(Gamma, config->GetGas_Constant(), config->GetPressure_Critical(), config->GetTemperature_Critical());
-        if (fs_temperature) {
+      case VW_GAS:
+        
+        FluidModel = new CVanDerWaalsGas(Gamma, config->GetGas_Constant(),
+                                         config->GetPressure_Critical(), config->GetTemperature_Critical());
+        if (free_stream_temp) {
           FluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
           Density_FreeStream = FluidModel->GetDensity();
           config->SetDensity_FreeStream(Density_FreeStream);
@@ -2018,9 +2030,11 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
         }
         break;
         
-        case PR_GAS:
-        FluidModel = new CPengRobinson(Gamma, config->GetGas_Constant(), config->GetPressure_Critical(), config->GetTemperature_Critical(), config->GetAcentric_Factor());
-        if (fs_temperature) {
+      case PR_GAS:
+        
+        FluidModel = new CPengRobinson(Gamma, config->GetGas_Constant(), config->GetPressure_Critical(),
+                                       config->GetTemperature_Critical(), config->GetAcentric_Factor());
+        if (free_stream_temp) {
           FluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
           Density_FreeStream = FluidModel->GetDensity();
           config->SetDensity_FreeStream(Density_FreeStream);
@@ -2031,6 +2045,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
           config->SetTemperature_FreeStream(Temperature_FreeStream);
         }
         break;
+        
     }
     
     Mach2Vel_FreeStream = FluidModel->GetSoundSpeed();
@@ -2051,13 +2066,16 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
     
     ModVel_FreeStream = 0.0;
     for (iDim = 0; iDim < nDim; iDim++)
-    ModVel_FreeStream += config->GetVelocity_FreeStream()[iDim]*config->GetVelocity_FreeStream()[iDim];
+      ModVel_FreeStream += config->GetVelocity_FreeStream()[iDim]*config->GetVelocity_FreeStream()[iDim];
     ModVel_FreeStream = sqrt(ModVel_FreeStream); config->SetModVel_FreeStream(ModVel_FreeStream);
+
+    /*--- Viscous initialization ---*/
     
     if (viscous) {
       
+      /*--- Reynolds based initialization ---*/
       
-      if (config->GetKind_InitOption()== REYNOLDS) {
+      if (reynolds_init) {
         
         /*--- First, check if there is mesh motion. If yes, use the Mach
          number relative to the body to initialize the flow. ---*/
@@ -2089,14 +2107,19 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
         Viscosity_FreeStream = FluidModel->GetLaminarViscosity();
         config->SetViscosity_FreeStream(Viscosity_FreeStream);
         
-        Density_FreeStream   = Reynolds*Viscosity_FreeStream/(Velocity_Reynolds*config->GetLength_Reynolds());
+        Density_FreeStream = Reynolds*Viscosity_FreeStream/(Velocity_Reynolds*config->GetLength_Reynolds());
         config->SetDensity_FreeStream(Density_FreeStream);
         FluidModel->SetTDState_rhoT(Density_FreeStream, Temperature_FreeStream);
-        Pressure_FreeStream  = FluidModel->GetPressure();
+        Pressure_FreeStream = FluidModel->GetPressure();
         config->SetPressure_FreeStream(Pressure_FreeStream);
         Energy_FreeStream = FluidModel->GetStaticEnergy() + 0.5*ModVel_FreeStream*ModVel_FreeStream;
         
-      } else {
+      }
+      
+      /*--- Thermodynamics quantities based initialization ---*/
+
+      else {
+        
         FluidModel->SetLaminarViscosityModel(config);
         Viscosity_FreeStream = FluidModel->GetLaminarViscosity();
         config->SetViscosity_FreeStream(Viscosity_FreeStream);
@@ -2122,8 +2145,32 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
     
     if (tkeNeeded) { Energy_FreeStream += Tke_FreeStream; }; config->SetEnergy_FreeStream(Energy_FreeStream);
     
-    /*--- Additional reference values defined by Pref, Tref, Rho_ref. By definition,
-     Lref is one because we have converted the grid to meters.---*/
+    /*--- Compute non dimensional quantities. By definition,
+     Lref is one because we have converted the grid to meters. ---*/
+    
+    if (config->GetRef_NonDim() == DIMENSIONAL) {
+      Pressure_Ref      = 1.0;
+      Density_Ref       = 1.0;
+      Temperature_Ref   = 1.0;
+    }
+    else if (config->GetRef_NonDim() == FREESTEAM_PRESS_EQ_ONE) {
+      Pressure_Ref      = Pressure_FreeStream;     // Pressure_FreeStream = 1.0
+      Density_Ref       = Density_FreeStream;      // Density_FreeStream = 1.0
+      Temperature_Ref   = Temperature_FreeStream;  // Temperature_FreeStream = 1.0
+    }
+    else if (config->GetRef_NonDim() == FREESTEAM_VEL_EQ_MACH) {
+      Pressure_Ref      = Gamma*Pressure_FreeStream; // Pressure_FreeStream = 1.0/Gamma
+      Density_Ref       = Density_FreeStream;        // Density_FreeStream = 1.0
+      Temperature_Ref   = Temperature_FreeStream;    // Temp_FreeStream = 1.0
+    }
+    else if (config->GetRef_NonDim() == FREESTEAM_VEL_EQ_ONE) {
+      Pressure_Ref      = Mach*Mach*Gamma*Pressure_FreeStream; // Pressure_FreeStream = 1.0/(Gamma*(M_inf)^2)
+      Density_Ref       = Density_FreeStream;        // Density_FreeStream = 1.0
+      Temperature_Ref   = Temperature_FreeStream;    // Temp_FreeStream = 1.0
+    }
+    config->SetPressure_Ref(Pressure_Ref);
+    config->SetDensity_Ref(Density_Ref);
+    config->SetTemperature_Ref(Temperature_Ref);
     
     Length_Ref        = 1.0;                                                         config->SetLength_Ref(Length_Ref);
     Velocity_Ref      = sqrt(config->GetPressure_Ref()/config->GetDensity_Ref());    config->SetVelocity_Ref(Velocity_Ref);
@@ -2136,9 +2183,10 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
     Froude            = ModVel_FreeStream/sqrt(STANDART_GRAVITY*Length_Ref);         config->SetFroude(Froude);
     
   }
-  
+
+  /*--- Incompressible non dimensionalization ---*/
+
   else {
-    /*--- Incompressible_case */
     
     /*--- Reference length = 1 (by default)
      Reference density = liquid density or freestream
@@ -2226,23 +2274,23 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
   
   switch (config->GetKind_FluidModel()) {
       
-      case STANDARD_AIR:
+    case STANDARD_AIR:
       FluidModel = new CIdealGas(1.4, Gas_ConstantND);
       FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
       break;
       
-      case IDEAL_GAS:
+    case IDEAL_GAS:
       FluidModel = new CIdealGas(Gamma, Gas_ConstantND);
       FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
       break;
       
-      case VW_GAS:
+    case VW_GAS:
       FluidModel = new CVanDerWaalsGas(Gamma, Gas_ConstantND, config->GetPressure_Critical() /config->GetPressure_Ref(),
                                        config->GetTemperature_Critical()/config->GetTemperature_Ref());
       FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
       break;
       
-      case PR_GAS:
+    case PR_GAS:
       FluidModel = new CPengRobinson(Gamma, Gas_ConstantND, config->GetPressure_Critical() /config->GetPressure_Ref(),
                                      config->GetTemperature_Critical()/config->GetTemperature_Ref(), config->GetAcentric_Factor());
       FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
@@ -8961,202 +9009,408 @@ void CEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container,
 }
 
 void CEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                         CConfig *config, unsigned short val_marker) {
-
+                                         CConfig *config) {
+  
   unsigned long iVertex, iPoint, jPoint;
-  unsigned short iDim, iVar;
-
+  unsigned short iDim, iVar, iMarker;
+  
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-
+  
   double *Normal = new double[nDim];
   double *PrimVar_i = new double[nPrimVar];
   double *PrimVar_j = new double[nPrimVar];
-
+  
 #ifndef HAVE_MPI
-
-  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-
-    if (geometry->node[iPoint]->GetDomain()) {
-
-      /*--- Find the associate pair to the original node ---*/
-
-      jPoint = geometry->vertex[val_marker][iVertex]->GetDonorPoint();
-
-      if (iPoint != jPoint) {
-
-        /*--- Store the solution for both points ---*/
-
-        for (iVar = 0; iVar < nPrimVar; iVar++) {
-          PrimVar_i[iVar] = node[iPoint]->GetPrimitive(iVar);
-          PrimVar_j[iVar] = node[jPoint]->GetPrimitive(iVar);
+  
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    
+    if (config->GetMarker_All_KindBC(iMarker) == INTERFACE_BOUNDARY) {
+      
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        
+        if (geometry->node[iPoint]->GetDomain()) {
+          
+          /*--- Find the associate pair to the original node ---*/
+          
+          jPoint = geometry->vertex[iMarker][iVertex]->GetDonorPoint();
+          
+          if (iPoint != jPoint) {
+            
+            /*--- Store the solution for both points ---*/
+            
+            for (iVar = 0; iVar < nPrimVar; iVar++) {
+              PrimVar_i[iVar] = node[iPoint]->GetPrimitive(iVar);
+              PrimVar_j[iVar] = node[jPoint]->GetPrimitive(iVar);
+            }
+            
+            /*--- Set primitive variables ---*/
+            
+            numerics->SetPrimitive(PrimVar_i, PrimVar_j);
+            
+            /*--- Set the normal vector ---*/
+            
+            geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
+            for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+            numerics->SetNormal(Normal);
+            
+            /*--- Compute the convective residual using an upwind scheme ---*/
+            
+            numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+            
+            /*--- Add Residuals and Jacobians ---*/
+            
+            LinSysRes.AddBlock(iPoint, Residual);
+            if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+            
+          }
+          
         }
-
-        /*--- Set primitive variables ---*/
-
-        numerics->SetPrimitive(PrimVar_i, PrimVar_j);
-
-        /*--- Set the normal vector ---*/
-
-        geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-        for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
-        numerics->SetNormal(Normal);
-
-        /*--- Compute the convective residual using an upwind scheme ---*/
-
-        numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-
-        /*--- Add Residuals and Jacobians ---*/
-
-        LinSysRes.AddBlock(iPoint, Residual);
-        if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-
       }
-
     }
-
   }
-
+  
 #else
   
   int rank, jProcessor;
   MPI_Status send_stat[1], recv_stat[1], status;
   MPI_Request send_req[1], recv_req[1];
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
+  
   bool compute;
   double *Buffer_Send_V = new double [nPrimVar];
   double *Buffer_Receive_V = new double [nPrimVar];
-
+  
   /*--- Do the send process, by the moment we are sending each
    node individually, this must be changed ---*/
-
-  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-
-    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-
-    if (geometry->node[iPoint]->GetDomain()) {
-
-      /*--- Find the associate pair to the original node ---*/
-
-      jPoint = geometry->vertex[val_marker][iVertex]->GetPeriodicPointDomain()[0];
-      jProcessor = geometry->vertex[val_marker][iVertex]->GetPeriodicPointDomain()[1];
-
-      if ((iPoint == jPoint) && (jProcessor == rank)) compute = false;
-      else compute = true;
-
-      /*--- We only send the information that belong to other boundary, -1 processor
-       means that the boundary condition is not applied ---*/
-
-      if (compute) {
-
-        if (jProcessor != rank) {
-
-          /*--- Copy the primitive variable ---*/
-
-          for (iVar = 0; iVar < nPrimVar; iVar++)
-            Buffer_Send_V[iVar] = node[iPoint]->GetPrimitive(iVar);
+  
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    
+    if (config->GetMarker_All_KindBC(iMarker) == INTERFACE_BOUNDARY) {
+      
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        
+        if (geometry->node[iPoint]->GetDomain()) {
           
-          MPI_Bsend(Buffer_Send_V, nPrimVar, MPI_DOUBLE, jProcessor, iPoint, MPI_COMM_WORLD);
-
-//          MPI_Isend(Buffer_Send_V, nPrimVar, MPI_DOUBLE, jProcessor, iPoint, MPI_COMM_WORLD, &send_req[0]);
-
-//          /*--- Wait for this set of non-blocking comm. to complete ---*/
-//
-//          MPI_Waitall(1, send_req, send_stat);
+          /*--- Find the associate pair to the original node ---*/
+          
+          jPoint = geometry->vertex[iMarker][iVertex]->GetPeriodicPointDomain()[0];
+          jProcessor = geometry->vertex[iMarker][iVertex]->GetPeriodicPointDomain()[1];
+          
+          if ((iPoint == jPoint) && (jProcessor == rank)) compute = false;
+          else compute = true;
+          
+          /*--- We only send the information that belong to other boundary, -1 processor
+           means that the boundary condition is not applied ---*/
+          
+          if (compute) {
+            
+            if (jProcessor != rank) {
+              
+              /*--- Copy the primitive variable ---*/
+              
+              for (iVar = 0; iVar < nPrimVar; iVar++)
+                Buffer_Send_V[iVar] = node[iPoint]->GetPrimitive(iVar);
+              
+              MPI_Bsend(Buffer_Send_V, nPrimVar, MPI_DOUBLE, jProcessor, iPoint, MPI_COMM_WORLD);
+              
+              //          MPI_Isend(Buffer_Send_V, nPrimVar, MPI_DOUBLE, jProcessor, iPoint, MPI_COMM_WORLD, &send_req[0]);
+              
+              //          /*--- Wait for this set of non-blocking comm. to complete ---*/
+              //
+              //          MPI_Waitall(1, send_req, send_stat);
+              
+            }
+            
+          }
           
         }
-
       }
-
+      
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        
+        if (geometry->node[iPoint]->GetDomain()) {
+          
+          /*--- Find the associate pair to the original node ---*/
+          
+          jPoint = geometry->vertex[iMarker][iVertex]->GetPeriodicPointDomain()[0];
+          jProcessor = geometry->vertex[iMarker][iVertex]->GetPeriodicPointDomain()[1];
+          
+          if ((iPoint == jPoint) && (jProcessor == rank)) compute = false;
+          else compute = true;
+          
+          if (compute) {
+            
+            /*--- We only receive the information that belong to other boundary ---*/
+            
+            if (jProcessor != rank) {
+              
+              MPI_Recv(Buffer_Receive_V, nPrimVar, MPI_DOUBLE, jProcessor, jPoint, MPI_COMM_WORLD, &status);
+              
+              //         MPI_Irecv(Buffer_Receive_V, nPrimVar, MPI_DOUBLE, jProcessor, jPoint, MPI_COMM_WORLD, &recv_req[0]);
+              
+              /*--- Wait for the this set of non-blocking recv's to complete ---*/
+              
+              //          MPI_Waitall(1, recv_req, recv_stat);
+              
+            }
+            else {
+              for (iVar = 0; iVar < nPrimVar; iVar++)
+                Buffer_Receive_V[iVar] = node[jPoint]->GetPrimitive(iVar);
+            }
+            
+            /*--- Store the solution for both points ---*/
+            
+            for (iVar = 0; iVar < nPrimVar; iVar++) {
+              PrimVar_i[iVar] = node[iPoint]->GetPrimitive(iVar);
+              PrimVar_j[iVar] = Buffer_Receive_V[iVar];
+            }
+            
+            /*--- Set Conservative Variables ---*/
+            
+            numerics->SetPrimitive(PrimVar_i, PrimVar_j);
+            
+            /*--- Set Normal ---*/
+            
+            geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
+            for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+            numerics->SetNormal(Normal);
+            
+            /*--- Compute the convective residual using an upwind scheme ---*/
+            
+            numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+            
+            /*--- Add Residuals and Jacobians ---*/
+            
+            LinSysRes.AddBlock(iPoint, Residual);
+            if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+            
+          }
+          
+        }
+      }
     }
   }
-
-  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-
-    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-
-    if (geometry->node[iPoint]->GetDomain()) {
-
-      /*--- Find the associate pair to the original node ---*/
-
-      jPoint = geometry->vertex[val_marker][iVertex]->GetPeriodicPointDomain()[0];
-      jProcessor = geometry->vertex[val_marker][iVertex]->GetPeriodicPointDomain()[1];
-
-      if ((iPoint == jPoint) && (jProcessor == rank)) compute = false;
-      else compute = true;
-
-      if (compute) {
-
-        /*--- We only receive the information that belong to other boundary ---*/
-
-        if (jProcessor != rank) {
-
-          MPI_Recv(Buffer_Receive_V, nPrimVar, MPI_DOUBLE, jProcessor, jPoint, MPI_COMM_WORLD, &status);
-
- //         MPI_Irecv(Buffer_Receive_V, nPrimVar, MPI_DOUBLE, jProcessor, jPoint, MPI_COMM_WORLD, &recv_req[0]);
-
-          /*--- Wait for the this set of non-blocking recv's to complete ---*/
-
-//          MPI_Waitall(1, recv_req, recv_stat);
-          
-        }
-        else {
-          for (iVar = 0; iVar < nPrimVar; iVar++)
-            Buffer_Receive_V[iVar] = node[jPoint]->GetPrimitive(iVar);
-        }
-
-        /*--- Store the solution for both points ---*/
-
-        for (iVar = 0; iVar < nPrimVar; iVar++) {
-          PrimVar_i[iVar] = node[iPoint]->GetPrimitive(iVar);
-          PrimVar_j[iVar] = Buffer_Receive_V[iVar];
-        }
-
-        /*--- Set Conservative Variables ---*/
-
-        numerics->SetPrimitive(PrimVar_i, PrimVar_j);
-
-        /*--- Set Normal ---*/
-
-        geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-        for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
-        numerics->SetNormal(Normal);
-
-        /*--- Compute the convective residual using an upwind scheme ---*/
-
-        numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-
-        /*--- Add Residuals and Jacobians ---*/
-
-        LinSysRes.AddBlock(iPoint, Residual);
-        if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-
-      }
-
-    }
-  }
-
+  
+  MPI_Barrier(MPI_COMM_WORLD);
+  
   delete[] Buffer_Send_V;
   delete[] Buffer_Receive_V;
-
+  
 #endif
-
+  
   /*--- Free locally allocated memory ---*/
-
+  
   delete [] Normal;
   delete [] PrimVar_i;
   delete [] PrimVar_j;
-
+  
 }
 
 void CEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                         CConfig *config, unsigned short val_marker) {
-
-  /*--- Call the Interface_Boundary residual --- */
-
-  BC_Interface_Boundary(geometry, solver_container, numerics, config, val_marker);
-
+                                         CConfig *config) {
+  
+  unsigned long iVertex, iPoint, jPoint;
+  unsigned short iDim, iVar, iMarker;
+  
+  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  
+  double *Normal = new double[nDim];
+  double *PrimVar_i = new double[nPrimVar];
+  double *PrimVar_j = new double[nPrimVar];
+  
+#ifndef HAVE_MPI
+  
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    
+    if (config->GetMarker_All_KindBC(iMarker) == NEARFIELD_BOUNDARY) {
+      
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        
+        if (geometry->node[iPoint]->GetDomain()) {
+          
+          /*--- Find the associate pair to the original node ---*/
+          
+          jPoint = geometry->vertex[iMarker][iVertex]->GetDonorPoint();
+          
+          if (iPoint != jPoint) {
+            
+            /*--- Store the solution for both points ---*/
+            
+            for (iVar = 0; iVar < nPrimVar; iVar++) {
+              PrimVar_i[iVar] = node[iPoint]->GetPrimitive(iVar);
+              PrimVar_j[iVar] = node[jPoint]->GetPrimitive(iVar);
+            }
+            
+            /*--- Set primitive variables ---*/
+            
+            numerics->SetPrimitive(PrimVar_i, PrimVar_j);
+            
+            /*--- Set the normal vector ---*/
+            
+            geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
+            for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+            numerics->SetNormal(Normal);
+            
+            /*--- Compute the convective residual using an upwind scheme ---*/
+            
+            numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+            
+            /*--- Add Residuals and Jacobians ---*/
+            
+            LinSysRes.AddBlock(iPoint, Residual);
+            if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+            
+          }
+          
+        }
+      }
+    }
+  }
+  
+#else
+  
+  int rank, jProcessor;
+  MPI_Status send_stat[1], recv_stat[1], status;
+  MPI_Request send_req[1], recv_req[1];
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  
+  bool compute;
+  double *Buffer_Send_V = new double [nPrimVar];
+  double *Buffer_Receive_V = new double [nPrimVar];
+  
+  /*--- Do the send process, by the moment we are sending each
+   node individually, this must be changed ---*/
+  
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    
+    if (config->GetMarker_All_KindBC(iMarker) == NEARFIELD_BOUNDARY) {
+      
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        
+        if (geometry->node[iPoint]->GetDomain()) {
+          
+          /*--- Find the associate pair to the original node ---*/
+          
+          jPoint = geometry->vertex[iMarker][iVertex]->GetPeriodicPointDomain()[0];
+          jProcessor = geometry->vertex[iMarker][iVertex]->GetPeriodicPointDomain()[1];
+          
+          if ((iPoint == jPoint) && (jProcessor == rank)) compute = false;
+          else compute = true;
+          
+          /*--- We only send the information that belong to other boundary, -1 processor
+           means that the boundary condition is not applied ---*/
+          
+          if (compute) {
+            
+            if (jProcessor != rank) {
+              
+              /*--- Copy the primitive variable ---*/
+              
+              for (iVar = 0; iVar < nPrimVar; iVar++)
+                Buffer_Send_V[iVar] = node[iPoint]->GetPrimitive(iVar);
+              
+              MPI_Bsend(Buffer_Send_V, nPrimVar, MPI_DOUBLE, jProcessor, iPoint, MPI_COMM_WORLD);
+              
+              //          MPI_Isend(Buffer_Send_V, nPrimVar, MPI_DOUBLE, jProcessor, iPoint, MPI_COMM_WORLD, &send_req[0]);
+              
+              //          /*--- Wait for this set of non-blocking comm. to complete ---*/
+              //
+              //          MPI_Waitall(1, send_req, send_stat);
+              
+            }
+            
+          }
+          
+        }
+      }
+      
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        
+        if (geometry->node[iPoint]->GetDomain()) {
+          
+          /*--- Find the associate pair to the original node ---*/
+          
+          jPoint = geometry->vertex[iMarker][iVertex]->GetPeriodicPointDomain()[0];
+          jProcessor = geometry->vertex[iMarker][iVertex]->GetPeriodicPointDomain()[1];
+          
+          if ((iPoint == jPoint) && (jProcessor == rank)) compute = false;
+          else compute = true;
+          
+          if (compute) {
+            
+            /*--- We only receive the information that belong to other boundary ---*/
+            
+            if (jProcessor != rank) {
+              
+              MPI_Recv(Buffer_Receive_V, nPrimVar, MPI_DOUBLE, jProcessor, jPoint, MPI_COMM_WORLD, &status);
+              
+              //         MPI_Irecv(Buffer_Receive_V, nPrimVar, MPI_DOUBLE, jProcessor, jPoint, MPI_COMM_WORLD, &recv_req[0]);
+              
+              /*--- Wait for the this set of non-blocking recv's to complete ---*/
+              
+              //          MPI_Waitall(1, recv_req, recv_stat);
+              
+            }
+            else {
+              for (iVar = 0; iVar < nPrimVar; iVar++)
+                Buffer_Receive_V[iVar] = node[jPoint]->GetPrimitive(iVar);
+            }
+            
+            /*--- Store the solution for both points ---*/
+            
+            for (iVar = 0; iVar < nPrimVar; iVar++) {
+              PrimVar_i[iVar] = node[iPoint]->GetPrimitive(iVar);
+              PrimVar_j[iVar] = Buffer_Receive_V[iVar];
+            }
+            
+            /*--- Set Conservative Variables ---*/
+            
+            numerics->SetPrimitive(PrimVar_i, PrimVar_j);
+            
+            /*--- Set Normal ---*/
+            
+            geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
+            for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+            numerics->SetNormal(Normal);
+            
+            /*--- Compute the convective residual using an upwind scheme ---*/
+            
+            numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+            
+            /*--- Add Residuals and Jacobians ---*/
+            
+            LinSysRes.AddBlock(iPoint, Residual);
+            if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+            
+          }
+          
+        }
+      }
+    }
+  }
+  
+  MPI_Barrier(MPI_COMM_WORLD);
+  
+  delete[] Buffer_Send_V;
+  delete[] Buffer_Receive_V;
+  
+#endif
+  
+  /*--- Free locally allocated memory ---*/
+  
+  delete [] Normal;
+  delete [] PrimVar_i;
+  delete [] PrimVar_j;
 
 }
 

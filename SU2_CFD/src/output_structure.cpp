@@ -2,7 +2,7 @@
  * \file output_structure.cpp
  * \brief Main subroutines for output solver information
  * \author F. Palacios, T. Economon
- * \version 3.2.8.3 "eagle"
+ * \version 3.2.9 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -3753,7 +3753,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   bool inv_design = (config->GetInvDesign_Cp() || config->GetInvDesign_HeatFlux());
   bool output_1d = config->GetWrt_1D_Output();
   bool output_per_surface = false;
-  bool output_massflow = (config->GetKind_ObjFunc()==MASS_FLOW_RATE);
+  bool output_massflow = (config->GetKind_ObjFunc() == MASS_FLOW_RATE);
   if (config->GetnMarker_Monitoring() > 1) output_per_surface = true;
   
   bool isothermal = false;
@@ -3938,7 +3938,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                                      unsigned short val_iZone) {
   
   bool output_1d  = config[val_iZone]->GetWrt_1D_Output();
-  bool output_massflow = (config[val_iZone]->GetKind_ObjFunc()==MASS_FLOW_RATE);
+  bool output_massflow = (config[val_iZone]->GetKind_ObjFunc() == MASS_FLOW_RATE);
   unsigned short FinestMesh = config[val_iZone]->GetFinestMesh();
   
   int rank;
@@ -5059,7 +5059,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           cout.width(14); cout << log10(residual_TNE2[nSpecies+nDim]);
           cout.width(14); cout << log10(residual_TNE2[nSpecies+nDim+1]);
           cout.width(15); cout << Total_CDrag;
-          if (config[val_iZone]->GetKind_Solver()==TNE2_NAVIER_STOKES) {
+          if (config[val_iZone]->GetKind_Solver() == TNE2_NAVIER_STOKES) {
             cout.precision(1);
             cout.width(11); cout << Total_MaxHeat;
           }
@@ -5455,7 +5455,7 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
     
     Breakdown_file << endl <<"-------------------------------------------------------------------------" << endl;
     Breakdown_file <<"|    ___ _   _ ___                                                      |" << endl;
-    Breakdown_file <<"|   / __| | | |_  )   Release 3.2.8.3 \"eagle\"                           |" << endl;
+    Breakdown_file <<"|   / __| | | |_  )   Release 3.2.9   \"eagle\"                           |" << endl;
     Breakdown_file <<"|   \\__ \\ |_| |/ /                                                      |" << endl;
     Breakdown_file <<"|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl;
     Breakdown_file << "|                                                                       |" << endl;
@@ -6521,8 +6521,8 @@ void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned sho
         if (rank == MASTER_NODE) cout <<"Writing volume mesh file." << endl;
         
         /*--- Write a Tecplot ASCII file ---*/
-        
-        SetTecplotASCII_Mesh(config[iZone], geometry[iZone], false, new_file);
+        if (config[iZone]->GetOutput_FileFormat()==PARAVIEW) SetParaview_MeshASCII(config[iZone], geometry[iZone], iZone,  val_nZone, false,new_file);
+        else SetTecplotASCII_Mesh(config[iZone], geometry[iZone], false, new_file);
         
       }
       
@@ -6531,9 +6531,10 @@ void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned sho
         if (rank == MASTER_NODE) cout <<"Writing surface mesh file." << endl;
         
         /*--- Write a Tecplot ASCII file ---*/
+        if (config[iZone]->GetOutput_FileFormat()==PARAVIEW) SetParaview_MeshASCII(config[iZone], geometry[iZone], iZone,  val_nZone, true,new_file);
+        else SetTecplotASCII_Mesh(config[iZone], geometry[iZone], true, new_file);
         
-        SetTecplotASCII_Mesh(config[iZone], geometry[iZone], true, new_file);
-        
+
       }
 
       if (rank == MASTER_NODE) cout <<"Writing .su2 file." << endl;
@@ -7647,15 +7648,15 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
     NearFieldEA_file << "TITLE = \"Equivalent Area evaluation at each azimuthal angle\"" << endl;
     
     if (config->GetSystemMeasurements() == US)
-      NearFieldEA_file << "VARIABLES = \"Height (in) at radial distance "<< R_Plane*12.0 << " (cylindrical coordinate system)\"";
+      NearFieldEA_file << "VARIABLES = \"Height (in) at r="<< R_Plane*12.0 << " in. (cyl. coord. system)\"";
     else
-      NearFieldEA_file << "VARIABLES = \"Height (m) at radial distance "<< R_Plane << " (cylindrical coordinate system)\"";
+      NearFieldEA_file << "VARIABLES = \"Height (m) at r="<< R_Plane << " m. (cylindrical coordinate system)\"";
     
     for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++) {
       if (config->GetSystemMeasurements() == US)
-        NearFieldEA_file << ", \"Equivalent Area (ft<sup>2</sup>), Phi= " << PhiAngleList[iPhiAngle] << " deg.\"";
+        NearFieldEA_file << ", \"Equivalent Area (ft<sup>2</sup>), <greek>F</greek>= " << PhiAngleList[iPhiAngle] << " deg.\"";
       else
-        NearFieldEA_file << ", \"Equivalent Area (m<sup>2</sup>), Phi= " << PhiAngleList[iPhiAngle] << " deg.\"";
+        NearFieldEA_file << ", \"Equivalent Area (m<sup>2</sup>), <greek>F</greek>= " << PhiAngleList[iPhiAngle] << " deg.\"";
     }
     
     NearFieldEA_file << endl;
@@ -7781,12 +7782,12 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
     EquivArea_file << "TITLE = \"Equivalent Area evaluation at each azimuthal angle\"" << endl;
     
     if (config->GetSystemMeasurements() == US)
-      EquivArea_file << "VARIABLES = \"Height (in) at radial distance "<< R_Plane*12.0 << " (cylindrical coordinate system)\",\"Equivalent Area (ft<sup>2</sup>)\",\"Target Equivalent Area (ft<sup>2</sup>)\",\"Cp\"" << endl;
+      EquivArea_file << "VARIABLES = \"Height (in) at r="<< R_Plane*12.0 << " in. (cyl. coord. system)\",\"Equivalent Area (ft<sup>2</sup>)\",\"Target Equivalent Area (ft<sup>2</sup>)\",\"Cp\"" << endl;
     else
-      EquivArea_file << "VARIABLES = \"Height (m) at radial distance "<< R_Plane << " (cylindrical coordinate system)\",\"Equivalent Area (m<sup>2</sup>)\",\"Target Equivalent Area (m<sup>2</sup>)\",\"Cp\"" << endl;
+      EquivArea_file << "VARIABLES = \"Height (m) at r="<< R_Plane << " m. (cylindrical coordinate system)\",\"Equivalent Area (m<sup>2</sup>)\",\"Target Equivalent Area (m<sup>2</sup>)\",\"Cp\"" << endl;
     
     for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++) {
-      EquivArea_file << fixed << "ZONE T= \"Azimuthal angle " << PhiAngleList[iPhiAngle] << " deg.\"" << endl;
+      EquivArea_file << fixed << "ZONE T= \"<greek>F</greek>=" << PhiAngleList[iPhiAngle] << " deg.\"" << endl;
       for (iVertex = 0; iVertex < Xcoord_PhiAngle[iPhiAngle].size(); iVertex++) {
         
         double XcoordRot = Xcoord_PhiAngle[0][iVertex]*cos(AoA) - Zcoord_PhiAngle[0][iVertex]*sin(AoA);

@@ -2,7 +2,7 @@
  * \file config_structure.inl
  * \brief In-Line subroutines of the <i>config_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 3.2.8.3 "eagle"
+ * \version 3.2.9 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -52,6 +52,8 @@ inline unsigned short CConfig::GetnZone(void) { return nZone; }
 inline unsigned short CConfig::GetiZone(void) { return iZone; }
 
 inline unsigned short CConfig::GetKind_SU2(void) { return Kind_SU2; }
+
+inline unsigned short CConfig::GetRef_NonDim(void) { return Ref_NonDim; }
 
 inline void CConfig::SetKind_SU2(unsigned short val_kind_su2) { Kind_SU2 = val_kind_su2 ; }
 
@@ -332,6 +334,8 @@ inline void CConfig::SetPressure_Ref(double val_pressure_ref) { Pressure_Ref = v
 
 inline void CConfig::SetDensity_Ref(double val_density_ref) { Density_Ref = val_density_ref; }
 
+inline void CConfig::SetTemperature_Ref(double val_temperature_ref) { Temperature_Ref = val_temperature_ref; }
+
 inline void CConfig::SetTime_Ref(double val_time_ref) { Time_Ref = val_time_ref; }
 
 inline void CConfig::SetOmega_Ref(double val_omega_ref) { Omega_Ref = val_omega_ref; }
@@ -395,6 +399,8 @@ inline string CConfig::GetTagFFDBox(unsigned short val_ffd) {	return TagFFDBox[v
 inline unsigned short CConfig::GetnDV(void) {	return nDV; }
 
 inline unsigned short CConfig::GetnFFDBox(void) {	return nFFDBox; }
+
+inline unsigned short CConfig::GetFFD_Continuity(void) { return FFD_Continuity; }
 
 inline unsigned short CConfig::GetnRKStep(void) { return nRKStep; }
 

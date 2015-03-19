@@ -2,7 +2,7 @@
  * \file integration_time.cpp
  * \brief Time deppending numerical method
  * \author F. Palacios, T. Economon
- * \version 3.2.8.3 "eagle"
+ * \version 3.2.9 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -722,6 +722,7 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
         if (config->GetCauchy_Func_Flow() == DRAG_COEFFICIENT) (*monitor) = solver_container[FinestMesh][FLOW_SOL]->GetTotal_CDrag();
         if (config->GetCauchy_Func_Flow() == LIFT_COEFFICIENT) (*monitor) = solver_container[FinestMesh][FLOW_SOL]->GetTotal_CLift();
         if (config->GetCauchy_Func_Flow() == NEARFIELD_PRESSURE) (*monitor) = solver_container[FinestMesh][FLOW_SOL]->GetTotal_CNearFieldOF();
+        if (config->GetCauchy_Func_Flow() == MASS_FLOW_RATE) (*monitor) = solver_container[FinestMesh][FLOW_SOL]->GetOneD_MassFlowRate();
       }
       
       if (config->GetConvCriteria() == RESIDUAL) {

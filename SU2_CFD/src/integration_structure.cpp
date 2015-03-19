@@ -2,7 +2,7 @@
  * \file integration_structure.cpp
  * \brief This subroutine includes the space and time integration structure
  * \author F. Palacios, T. Economon
- * \version 3.2.8.3 "eagle"
+ * \version 3.2.9 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -86,6 +86,10 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   
   solver_container[MainSolver]->BC_ActDisk_Boundary(geometry, solver_container, numerics[CONV_BOUND_TERM], config);
   
+  solver_container[MainSolver]->BC_Interface_Boundary(geometry, solver_container, numerics[CONV_BOUND_TERM], config);
+
+  solver_container[MainSolver]->BC_NearField_Boundary(geometry, solver_container, numerics[CONV_BOUND_TERM], config);
+
   
   /*--- Weak boundary conditions ---*/
   
@@ -109,9 +113,9 @@ void CIntegration::Space_Integration(CGeometry *geometry,
       case RIEMANN_BOUNDARY:
       	if (MainSolver == FLOW_SOL)
       		solver_container[MainSolver]->BC_Riemann(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
-      	else if (MainSolver == TURB_SOL && config->GetKind_Data_Riemann(config->GetMarker_All_TagBound(iMarker))==TOTAL_CONDITIONS_PT)
+      	else if (MainSolver == TURB_SOL && config->GetKind_Data_Riemann(config->GetMarker_All_TagBound(iMarker)) == TOTAL_CONDITIONS_PT)
       		solver_container[MainSolver]->BC_Inlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
-      	else if (MainSolver == TURB_SOL && config->GetKind_Data_Riemann(config->GetMarker_All_TagBound(iMarker))==STATIC_PRESSURE)
+      	else if (MainSolver == TURB_SOL && config->GetKind_Data_Riemann(config->GetMarker_All_TagBound(iMarker)) == STATIC_PRESSURE)
       		solver_container[MainSolver]->BC_Outlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
       	break;
       case FAR_FIELD:
@@ -128,12 +132,6 @@ void CIntegration::Space_Integration(CGeometry *geometry,
         break;
       case ENGINE_BLEED:
         solver_container[MainSolver]->BC_Engine_Bleed(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
-        break;
-      case INTERFACE_BOUNDARY:
-        solver_container[MainSolver]->BC_Interface_Boundary(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
-        break;
-      case NEARFIELD_BOUNDARY:
-        solver_container[MainSolver]->BC_NearField_Boundary(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
         break;
       case ELECTRODE_BOUNDARY:
         solver_container[MainSolver]->BC_Electrode(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
