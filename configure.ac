@@ -1,7 +1,7 @@
 # SU2 autoconf file
 # SU2 v3.2.9 "eagle"
 #
-# SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
+# SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
 #
 # SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
@@ -369,7 +369,7 @@ AC_MSG_RESULT([
 |   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |
 |                                                                       |
 -------------------------------------------------------------------------
-| SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu). |
+| SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com). |
 |                      Dr. Thomas D. Economon (economon@stanford.edu).  |
 -------------------------------------------------------------------------
 | SU2 Developers:                                                       |
