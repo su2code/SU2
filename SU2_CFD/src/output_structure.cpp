@@ -5473,8 +5473,8 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
     Breakdown_file << "|                                                                       |" << endl;
     Breakdown_file << "|   Local date and time: " << dt << "                      |" << endl;
     Breakdown_file <<"-------------------------------------------------------------------------" << endl;
-    Breakdown_file << "| SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com). |" << endl;
-    Breakdown_file << "|                      Dr. Thomas D. Economon (economon@stanford.edu).  |" << endl;
+    Breakdown_file << "| SU2 Lead Dev.: Dr. Francisco Palacios (francisco.palacios@boeing.com).|" << endl;
+    Breakdown_file << "|                Dr. Thomas D. Economon (economon@stanford.edu).        |" << endl;
     Breakdown_file <<"-------------------------------------------------------------------------" << endl;
     Breakdown_file << "| SU2 Developers:                                                       |" << endl;
     Breakdown_file << "| - Prof. Juan J. Alonso's group at Stanford University.                |" << endl;
