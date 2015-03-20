@@ -366,11 +366,11 @@ AC_MSG_RESULT([
 |    ___ _   _ ___                                                      |
 |   / __| | | |_  )   Release 3.2.9 'eagle'                             |
 |   \\__ \\ |_| |/ /                                                      |
-|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |
+|   |___/\\___//___|   Suite                                             |
 |                                                                       |
 -------------------------------------------------------------------------
-| SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com). |
-|                      Dr. Thomas D. Economon (economon@stanford.edu).  |
+| SU2 Lead Dev.: Dr. Francisco Palacios (francisco.palacios@boeing.com).|
+|                Dr. Thomas D. Economon (economon@stanford.edu).        |
 -------------------------------------------------------------------------
 | SU2 Developers:                                                       |
 | - Prof. Juan J. Alonso's group at Stanford University.                |

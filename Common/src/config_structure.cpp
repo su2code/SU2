@@ -3391,8 +3391,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   cout << "|                                                                       |" << endl;
   cout << "|   Local date and time: " << dt << "                      |" << endl;
   cout <<"-------------------------------------------------------------------------" << endl;
-  cout << "| SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com). |" << endl;
-  cout << "|                      Dr. Thomas D. Economon (economon@stanford.edu).  |" << endl;
+  cout << "| SU2 Lead Dev.: Dr. Francisco Palacios (francisco.palacios@boeing.com).|" << endl;
+  cout << "|                Dr. Thomas D. Economon (economon@stanford.edu).        |" << endl;
   cout <<"-------------------------------------------------------------------------" << endl;
   cout << "| SU2 Developers:                                                       |" << endl;
   cout << "| - Prof. Juan J. Alonso's group at Stanford University.                |" << endl;
