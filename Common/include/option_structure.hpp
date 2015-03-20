@@ -8,7 +8,7 @@
  * be declared and defined here; to keep all elements together, there
  * is no corresponding .cpp file at this time.
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
+ * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
@@ -2622,15 +2622,16 @@ class COptionActuatorDisk : public COptionBase{
   double * & press_jump;
   double * & temp_jump;
   double * & omega;
+  unsigned short * & distribution;
 
 public:
-  COptionActuatorDisk(const string name, unsigned short & nMarker_ActDisk_Inlet, unsigned short & nMarker_ActDisk_Outlet, string * & Marker_ActDisk_Inlet, string * & Marker_ActDisk_Outlet, double ** & ActDisk_Origin, double * & ActDisk_RootRadius, double * & ActDisk_TipRadius, double * & ActDisk_PressJump, double * & ActDisk_TempJump, double * & ActDisk_Omega) : inlet_size(nMarker_ActDisk_Inlet), outlet_size(nMarker_ActDisk_Outlet), marker_inlet(Marker_ActDisk_Inlet), marker_outlet(Marker_ActDisk_Outlet), origin(ActDisk_Origin), root_radius(ActDisk_RootRadius), tip_radius(ActDisk_TipRadius), press_jump(ActDisk_PressJump), temp_jump(ActDisk_TempJump), omega(ActDisk_Omega) {
+  COptionActuatorDisk(const string name, unsigned short & nMarker_ActDisk_Inlet, unsigned short & nMarker_ActDisk_Outlet, string * & Marker_ActDisk_Inlet, string * & Marker_ActDisk_Outlet, double ** & ActDisk_Origin, double * & ActDisk_RootRadius, double * & ActDisk_TipRadius, double * & ActDisk_PressJump, double * & ActDisk_TempJump, double * & ActDisk_Omega, unsigned short * & ActDisk_Distribution) : inlet_size(nMarker_ActDisk_Inlet), outlet_size(nMarker_ActDisk_Outlet), marker_inlet(Marker_ActDisk_Inlet), marker_outlet(Marker_ActDisk_Outlet), origin(ActDisk_Origin), root_radius(ActDisk_RootRadius), tip_radius(ActDisk_TipRadius), press_jump(ActDisk_PressJump), temp_jump(ActDisk_TempJump), omega(ActDisk_Omega), distribution(ActDisk_Distribution) {
     this->name = name;
   }
 
   ~COptionActuatorDisk() {};
   string SetValue(vector<string> option_value) {
-    const int mod_num = 10;
+    const int mod_num = 11;
     unsigned long totalVals = option_value.size();
     if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
       this->SetDefault();
@@ -2655,6 +2656,7 @@ public:
     this->press_jump = new double[this->outlet_size];
     this->temp_jump = new double[this->outlet_size];
     this->omega = new double[this->inlet_size];
+    this->distribution = new unsigned short[this->inlet_size];
 
     this->origin = new double*[this->inlet_size];
     for (int i = 0; i < this->inlet_size; i++) {
@@ -2698,6 +2700,10 @@ public:
       if (!(ss_8th >> this->omega[i])) {
         return badValue(option_value, tname, this->name);
       }
+      istringstream ss_9th(option_value[mod_num*i + 10]);
+      if (!(ss_9th >> this->distribution[i])) {
+        return badValue(option_value, tname, this->name);
+      }
     }
     return "";
   }
@@ -2712,6 +2718,7 @@ public:
     this->press_jump = NULL;
     this->temp_jump = NULL;
     this->omega = NULL;
+    this->distribution = NULL;
   }
 };
 

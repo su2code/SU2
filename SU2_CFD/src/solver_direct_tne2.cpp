@@ -4,7 +4,7 @@
  * \author S. Copeland
  * \version 3.2.9 "eagle"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
+ * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
@@ -6851,7 +6851,7 @@ void CTNE2NSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
       /*--- Calculate revised wall species densities ---*/
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
         rhos = Yst[iSpecies]*rho;
-        node[iPoint]->SetPrimitive(rhos, RHOS_INDEX+iSpecies);
+        node[iPoint]->SetPrimitive(RHOS_INDEX+iSpecies, rhos);
       }
       
       /*--- Calculate revised primitive variable gradients ---*/

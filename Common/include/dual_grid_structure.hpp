@@ -5,7 +5,7 @@
  * \author F. Palacios
  * \version 3.2.9 "eagle"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
+ * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
@@ -1020,12 +1020,6 @@ public:
 	 * \return Value of the rotation that must be applied to the solution of the vertex
 	 */
 	short GetRotation_Type(void);
-	
-	/*! 
-	 * \brief Set the periodic point of a vertex.
-	 * \param[in] val_periodicpoint - Value of periodic point of the vertex.
-	 */
-	void SetDonorPoint(long val_periodicpoint);
   
 	/*! 
 	 * \overload

@@ -4,7 +4,7 @@
  * \author F. Palacios, T. Economon
  * \version 3.2.9 "eagle"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
+ * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
@@ -1156,6 +1156,8 @@ inline bool CConfig::GetFixed_CL_Mode(void) { return Fixed_CL_Mode; }
 inline double CConfig::GetTarget_CL(void) {return Target_CL; }
 
 inline double CConfig::GetDamp_Fixed_CL(void) {return Damp_Fixed_CL; }
+
+inline unsigned long CConfig::GetIter_Fixed_CL(void) {return Iter_Fixed_CL; }
 
 inline bool CConfig::GetUpdate_AoA(void) { return Update_AoA; }
 

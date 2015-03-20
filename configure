@@ -7455,7 +7455,7 @@ abs_prefix=$prefix #`(cd $prefix && pwd)`
 |   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |
 |                                                                       |
 -------------------------------------------------------------------------
-| SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu). |
+| SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com). |
 |                      Dr. Thomas D. Economon (economon@stanford.edu).  |
 -------------------------------------------------------------------------
 | SU2 Developers:                                                       |
@@ -7530,7 +7530,7 @@ $as_echo "
 |   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |
 |                                                                       |
 -------------------------------------------------------------------------
-| SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu). |
+| SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com). |
 |                      Dr. Thomas D. Economon (economon@stanford.edu).  |
 -------------------------------------------------------------------------
 | SU2 Developers:                                                       |

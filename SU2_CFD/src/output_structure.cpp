@@ -4,7 +4,7 @@
  * \author F. Palacios, T. Economon
  * \version 3.2.9 "eagle"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
+ * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
@@ -4412,7 +4412,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     
     bool write_heads;
     if (Unsteady) write_heads = (iIntIter == 0);
-    else write_heads = (((iExtIter % (config[val_iZone]->GetWrt_Con_Freq()*20)) == 0));
+    else write_heads = (((iExtIter % (config[val_iZone]->GetWrt_Con_Freq()*40)) == 0));
     
     if ((In_NoDualTime || In_DualTime_0 || In_DualTime_1) && (In_NoDualTime || In_DualTime_2 || In_DualTime_3)) {
       
@@ -4652,12 +4652,18 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             case EULER : case NAVIER_STOKES: case RANS:
             case ADJ_EULER : case ADJ_NAVIER_STOKES: case ADJ_RANS:
             case FLUID_STRUCTURE_EULER :  case FLUID_STRUCTURE_NAVIER_STOKES: case FLUID_STRUCTURE_RANS:
-              cout << endl << "Local time stepping summary:" << endl;
+              
+              cout << endl << "---------------------- Local Time Stepping Summary ----------------------" << endl;
+              
               for (unsigned short iMesh = FinestMesh; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++)
                 cout << "MG level: "<< iMesh << " -> Min. DT: " << solver_container[val_iZone][iMesh][FLOW_SOL]->GetMin_Delta_Time()<<
                 ". Max. DT: " << solver_container[val_iZone][iMesh][FLOW_SOL]->GetMax_Delta_Time() <<
-                ". CFL number: " << config[val_iZone]->GetCFL(iMesh)  << "." << endl;
+                ". CFL: " << config[val_iZone]->GetCFL(iMesh)  << "." << endl;
+              
+              cout << "-------------------------------------------------------------------------" << endl;
+
               break;
+
             case TNE2_EULER: case TNE2_NAVIER_STOKES:
             case ADJ_TNE2_EULER: case ADJ_TNE2_NAVIER_STOKES:
               cout << endl << "Min Delta Time: " << solver_container[val_iZone][MESH_0][TNE2_SOL]->GetMin_Delta_Time()<< ". Max Delta Time: " << solver_container[val_iZone][MESH_0][TNE2_SOL]->GetMax_Delta_Time() << ".";
@@ -4683,7 +4689,10 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             iPointMaxResid = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetPoint_Max(0);
             Coord = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetPoint_Max_Coord(0);
             
-            cout << endl << "log10[Maximum residual]: " << log10(solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_Max(0)) << "." << endl;
+            cout << endl << "----------------------- Residual Evolution Summary ----------------------" << endl;
+
+            cout << "log10[Maximum residual]: " << log10(solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_Max(0)) << "." << endl;
+            
             if (config[val_iZone]->GetSystemMeasurements() == SI) {
               cout <<"Maximum residual point " << iPointMaxResid << ", located at (" << Coord[0] << ", " << Coord[1];
               if (nDim == 3) cout << ", " << Coord[2];
@@ -4696,11 +4705,14 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             }
             
             /*--- Print out the number of non-physical points and reconstructions ---*/
+            
             if (config[val_iZone]->GetNonphysical_Points() > 0)
               cout << "There are " << config[val_iZone]->GetNonphysical_Points() << " non-physical points in the solution." << endl;
             if (config[val_iZone]->GetNonphysical_Reconstr() > 0)
               cout << "There are " << config[val_iZone]->GetNonphysical_Reconstr() << " non-physical states in the upwind reconstruction." << endl;
             
+            cout << "-------------------------------------------------------------------------" << endl;
+
             if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
             else cout << endl << " IntIter" << " ExtIter";
             
@@ -5461,7 +5473,7 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
     Breakdown_file << "|                                                                       |" << endl;
     Breakdown_file << "|   Local date and time: " << dt << "                      |" << endl;
     Breakdown_file <<"-------------------------------------------------------------------------" << endl;
-    Breakdown_file << "| SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu). |" << endl;
+    Breakdown_file << "| SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com). |" << endl;
     Breakdown_file << "|                      Dr. Thomas D. Economon (economon@stanford.edu).  |" << endl;
     Breakdown_file <<"-------------------------------------------------------------------------" << endl;
     Breakdown_file << "| SU2 Developers:                                                       |" << endl;
@@ -5615,7 +5627,11 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
       else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " psf." << endl;
     }
     
-    Breakdown_file << "Free-stream pressure: " << config[val_iZone]->GetPressure_FreeStream();
+    Breakdown_file << "Free-stream static pressure: " << config[val_iZone]->GetPressure_FreeStream();
+    if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " Pa." << endl;
+    else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " psf." << endl;
+    
+    Breakdown_file << "Free-stream total pressure: " << config[val_iZone]->GetPressure_FreeStream() * pow( 1.0+config[val_iZone]->GetMach()*config[val_iZone]->GetMach()*0.5*(config[val_iZone]->GetGamma()-1.0), config[val_iZone]->GetGamma()/(config[val_iZone]->GetGamma()-1.0) );
     if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " Pa." << endl;
     else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " psf." << endl;
     
@@ -6521,8 +6537,8 @@ void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned sho
         if (rank == MASTER_NODE) cout <<"Writing volume mesh file." << endl;
         
         /*--- Write a Tecplot ASCII file ---*/
-        
-        SetTecplotASCII_Mesh(config[iZone], geometry[iZone], false, new_file);
+        if (config[iZone]->GetOutput_FileFormat()==PARAVIEW) SetParaview_MeshASCII(config[iZone], geometry[iZone], iZone,  val_nZone, false,new_file);
+        else SetTecplotASCII_Mesh(config[iZone], geometry[iZone], false, new_file);
         
       }
       
@@ -6531,9 +6547,10 @@ void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned sho
         if (rank == MASTER_NODE) cout <<"Writing surface mesh file." << endl;
         
         /*--- Write a Tecplot ASCII file ---*/
+        if (config[iZone]->GetOutput_FileFormat()==PARAVIEW) SetParaview_MeshASCII(config[iZone], geometry[iZone], iZone,  val_nZone, true,new_file);
+        else SetTecplotASCII_Mesh(config[iZone], geometry[iZone], true, new_file);
         
-        SetTecplotASCII_Mesh(config[iZone], geometry[iZone], true, new_file);
-        
+
       }
 
       if (rank == MASTER_NODE) cout <<"Writing .su2 file." << endl;
@@ -7653,7 +7670,7 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
     
     for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++) {
       if (config->GetSystemMeasurements() == US)
-        NearFieldEA_file << ", \"Equivalent Area (in<sup>2</sup>), <greek>F</greek>= " << PhiAngleList[iPhiAngle] << " deg.\"";
+        NearFieldEA_file << ", \"Equivalent Area (ft<sup>2</sup>), <greek>F</greek>= " << PhiAngleList[iPhiAngle] << " deg.\"";
       else
         NearFieldEA_file << ", \"Equivalent Area (m<sup>2</sup>), <greek>F</greek>= " << PhiAngleList[iPhiAngle] << " deg.\"";
     }
@@ -7670,10 +7687,7 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
         NearFieldEA_file << scientific << (XcoordRot - XcoordRot_init);
       
       for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++) {
-        if (config->GetSystemMeasurements() == US)
-          NearFieldEA_file << scientific << ", " << EquivArea_PhiAngle[iPhiAngle][iVertex] * (12.0 * 12.0);
-        else
-          NearFieldEA_file << scientific << ", " << EquivArea_PhiAngle[iPhiAngle][iVertex];
+        NearFieldEA_file << scientific << ", " << EquivArea_PhiAngle[iPhiAngle][iVertex];
       }
       
       NearFieldEA_file << endl;
@@ -7735,14 +7749,6 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
         for (iVertex = 0; iVertex < EquivArea_PhiAngle[iPhiAngle].size(); iVertex++)
           TargetArea_PhiAngle[iPhiAngle][iVertex] = TargetArea_PhiAngle_Trans[iVertex][iPhiAngle];
       
-      /*--- Tranform TargetArea_PhiAngle from in2 to ft2, internally SU2 works with ft ---*/
-      
-      if (config->GetSystemMeasurements() == US) {
-        for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++)
-          for (iVertex = 0; iVertex < EquivArea_PhiAngle[iPhiAngle].size(); iVertex++)
-            TargetArea_PhiAngle[iPhiAngle][iVertex] = TargetArea_PhiAngle[iPhiAngle][iVertex]/(12.0*12.0);
-      }
-      
     }
     
     /*--- Divide by the number of Phi angles in the nearfield ---*/
@@ -7792,7 +7798,7 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
     EquivArea_file << "TITLE = \"Equivalent Area evaluation at each azimuthal angle\"" << endl;
     
     if (config->GetSystemMeasurements() == US)
-      EquivArea_file << "VARIABLES = \"Height (in) at r="<< R_Plane*12.0 << " in. (cyl. coord. system)\",\"Equivalent Area (in<sup>2</sup>)\",\"Target Equivalent Area (in<sup>2</sup>)\",\"Cp\"" << endl;
+      EquivArea_file << "VARIABLES = \"Height (in) at r="<< R_Plane*12.0 << " in. (cyl. coord. system)\",\"Equivalent Area (ft<sup>2</sup>)\",\"Target Equivalent Area (ft<sup>2</sup>)\",\"Cp\"" << endl;
     else
       EquivArea_file << "VARIABLES = \"Height (m) at r="<< R_Plane << " m. (cylindrical coordinate system)\",\"Equivalent Area (m<sup>2</sup>)\",\"Target Equivalent Area (m<sup>2</sup>)\",\"Cp\"" << endl;
     
@@ -7808,13 +7814,8 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
         else
           EquivArea_file << scientific << (XcoordRot - XcoordRot_init);
         
-        if (config->GetSystemMeasurements() == US)
-          EquivArea_file << scientific << ", " << EquivArea_PhiAngle[iPhiAngle][iVertex] * 12.0 * 12.0
-          << ", " << TargetArea_PhiAngle[iPhiAngle][iVertex] * 12.0 * 12.0 << ", " << (Pressure_PhiAngle[iPhiAngle][iVertex]-Pressure_Inf)/Pressure_Inf << endl;
-        else
-          EquivArea_file << scientific << ", " << EquivArea_PhiAngle[iPhiAngle][iVertex]
-          << ", " << TargetArea_PhiAngle[iPhiAngle][iVertex] << ", " << (Pressure_PhiAngle[iPhiAngle][iVertex]-Pressure_Inf)/Pressure_Inf << endl;
-
+        EquivArea_file << scientific << ", " << EquivArea_PhiAngle[iPhiAngle][iVertex]
+        << ", " << TargetArea_PhiAngle[iPhiAngle][iVertex] << ", " << (Pressure_PhiAngle[iPhiAngle][iVertex]-Pressure_Inf)/Pressure_Inf << endl;
       }
     }
     
