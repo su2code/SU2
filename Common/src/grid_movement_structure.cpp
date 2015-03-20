@@ -4,7 +4,7 @@
  * \author F. Palacios, T. Economon, S. Padron
  * \version 3.2.9 "eagle"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
+ * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
@@ -2946,9 +2946,8 @@ void CSurfaceMovement::GetCartesianCoordCP(CGeometry *geometry, CConfig *config,
 
 void CSurfaceMovement::CheckFFDIntersections(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox) {
   
-  double lDegree, mDegree, nDegree;
   double *Coord_0, *Coord_1;
-  unsigned short iMarker, iNode, jNode;
+  unsigned short iMarker, iNode, jNode, lDegree, mDegree, nDegree;
   unsigned long iElem, iPoint, jPoint;
   
   unsigned short Kind_SU2 = config->GetKind_SU2();

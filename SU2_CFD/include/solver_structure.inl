@@ -4,7 +4,7 @@
  * \author F. Palacios, T. Economon
  * \version 3.2.9 "eagle"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
+ * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
@@ -423,10 +423,10 @@ inline void CSolver::BC_Dirichlet(CGeometry *geometry, CSolver **solver_containe
 								  unsigned short val_marker) { }
 
 inline void CSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, 
-									CConfig *config, unsigned short val_marker) { }
+									CConfig *config) { }
                   
 inline void CSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, 
-									CConfig *config, unsigned short val_marker) { }
+									CConfig *config) { }
 
 inline void CSolver::BC_ActDisk_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                                CConfig *config) { }

@@ -4,7 +4,7 @@
  * \author F. Palacios, T. Economon
  * \version 3.2.9 "eagle"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
+ * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
@@ -86,6 +86,10 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   
   solver_container[MainSolver]->BC_ActDisk_Boundary(geometry, solver_container, numerics[CONV_BOUND_TERM], config);
   
+  solver_container[MainSolver]->BC_Interface_Boundary(geometry, solver_container, numerics[CONV_BOUND_TERM], config);
+
+  solver_container[MainSolver]->BC_NearField_Boundary(geometry, solver_container, numerics[CONV_BOUND_TERM], config);
+
   
   /*--- Weak boundary conditions ---*/
   
@@ -129,12 +133,6 @@ void CIntegration::Space_Integration(CGeometry *geometry,
       case ENGINE_BLEED:
         solver_container[MainSolver]->BC_Engine_Bleed(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
         break;
-      case INTERFACE_BOUNDARY:
-        solver_container[MainSolver]->BC_Interface_Boundary(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
-        break;
-      case NEARFIELD_BOUNDARY:
-        solver_container[MainSolver]->BC_NearField_Boundary(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
-        break;
       case ELECTRODE_BOUNDARY:
         solver_container[MainSolver]->BC_Electrode(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
         break;
@@ -158,16 +156,6 @@ void CIntegration::Space_Integration(CGeometry *geometry,
         break;
     }
   }
-  
-#ifdef HAVE_MPI
-
-  /*--- This MPI_Barrier is important, with the current implementation there is 
-   no is no blocking communications in NEARFIELD_BOUNDARY and it is possible to have another
-   communication (linear system) at the same time ---*/
-  
-  MPI_Barrier(MPI_COMM_WORLD);
-
-#endif
   
   /*--- Strong boundary conditions (Navier-Stokes and Dirichlet type BCs) ---*/
   

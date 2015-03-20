@@ -4,7 +4,7 @@
  * \author F. Palacios, A. Bueno
  * \version 3.2.9 "eagle"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
+ * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
@@ -2015,7 +2015,7 @@ void CTurbSASolver::BC_Engine_Bleed(CGeometry *geometry, CSolver **solver_contai
 }
 
 void CTurbSASolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                          CConfig *config, unsigned short val_marker) {
+                                          CConfig *config) {
   //  unsigned long iVertex, iPoint, jPoint;
   //  unsigned short iVar, iDim;
   //
@@ -2177,7 +2177,7 @@ void CTurbSASolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_
 }
 
 void CTurbSASolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                          CConfig *config, unsigned short val_marker) {
+                                          CConfig *config) {
   //  unsigned long iVertex, iPoint, jPoint;
   //  unsigned short iVar, iDim;
   //
