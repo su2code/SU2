@@ -4,7 +4,7 @@
  * \author F. Palacios, T. Economon
  * \version 3.2.9 "eagle"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
+ * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
@@ -5473,7 +5473,7 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
     Breakdown_file << "|                                                                       |" << endl;
     Breakdown_file << "|   Local date and time: " << dt << "                      |" << endl;
     Breakdown_file <<"-------------------------------------------------------------------------" << endl;
-    Breakdown_file << "| SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu). |" << endl;
+    Breakdown_file << "| SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com). |" << endl;
     Breakdown_file << "|                      Dr. Thomas D. Economon (economon@stanford.edu).  |" << endl;
     Breakdown_file <<"-------------------------------------------------------------------------" << endl;
     Breakdown_file << "| SU2 Developers:                                                       |" << endl;

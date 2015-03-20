@@ -5,7 +5,7 @@
  * \author F. Palacios
  * \version 3.2.9 "eagle"
  *
- * SU2 Project Leaders: Dr. Palacios (fpalacios@stanford.edu)
+ * SU2 Project Leaders: Dr. Palacios (francisco.palacios@boeing.com)
  *                      Dr. Economon (economon@stanford.edu)
  *
  * Copyright (C) 2012-2015 SU2 Developers.
