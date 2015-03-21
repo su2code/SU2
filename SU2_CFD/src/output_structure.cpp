@@ -4762,7 +4762,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             
             cout << endl << "----------------------- Residual Evolution Summary ----------------------" << endl;
 
-            cout << endl << "log10[Maximum residual]: " << log10(solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_Max(0)) << "." << endl;
+            cout << "log10[Maximum residual]: " << log10(solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_Max(0)) << "." << endl;
             if (config[val_iZone]->GetSystemMeasurements() == SI) {
               cout <<"Maximum residual point " << iPointMaxResid << ", located at (" << Coord[0] << ", " << Coord[1];
               if (nDim == 3) cout << ", " << Coord[2];
