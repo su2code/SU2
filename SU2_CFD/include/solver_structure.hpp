@@ -1051,7 +1051,7 @@ public:
 	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
 	 * \param[in] val_sensitivity - Value of the sensitivity coefficient.
 	 */
-	virtual void SetCSensitivity(unsigned short val_marker, unsigned short val_vertex, double val_sensitivity);
+	virtual void SetCSensitivity(unsigned short val_marker, unsigned long val_vertex, double val_sensitivity);
     
 	/*!
 	 * \brief A virtual member.
@@ -1651,7 +1651,7 @@ public:
 	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
 	 * \return Value of the pressure coefficient.
 	 */
-	virtual double GetCPressure(unsigned short val_marker, unsigned short val_vertex);
+	virtual double GetCPressure(unsigned short val_marker, unsigned long val_vertex);
   
   /*!
 	 * \brief A virtual member.
@@ -1659,7 +1659,7 @@ public:
 	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
 	 * \return Value of the pressure coefficient.
 	 */
-	virtual double GetCPressureTarget(unsigned short val_marker, unsigned short val_vertex);
+	virtual double GetCPressureTarget(unsigned short val_marker, unsigned long val_vertex);
   
   /*!
 	 * \brief A virtual member.
@@ -1667,7 +1667,7 @@ public:
 	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
 	 * \return Value of the pressure coefficient.
 	 */
-	virtual void SetCPressureTarget(unsigned short val_marker, unsigned short val_vertex, double val_pressure);
+	virtual void SetCPressureTarget(unsigned short val_marker, unsigned long val_vertex, double val_pressure);
   
   /*!
 	 * \brief A virtual member.
@@ -1675,7 +1675,7 @@ public:
 	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
 	 * \return Value of the pressure coefficient.
 	 */
-	virtual double *GetCharacPrimVar(unsigned short val_marker, unsigned short val_vertex);
+	virtual double *GetCharacPrimVar(unsigned short val_marker, unsigned long val_vertex);
     
 	/*!
 	 * \brief A virtual member.
@@ -1683,7 +1683,7 @@ public:
 	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
 	 * \return Value of the skin friction coefficient.
 	 */
-	virtual double GetCSkinFriction(unsigned short val_marker, unsigned short val_vertex);
+	virtual double GetCSkinFriction(unsigned short val_marker, unsigned long val_vertex);
     
 	/*!
 	 * \brief A virtual member.
@@ -1691,7 +1691,7 @@ public:
 	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
 	 * \return Value of the heat transfer coefficient.
 	 */
-	virtual double GetHeatFlux(unsigned short val_marker, unsigned short val_vertex);
+	virtual double GetHeatFlux(unsigned short val_marker, unsigned long val_vertex);
   
   /*!
 	 * \brief A virtual member.
@@ -1699,7 +1699,7 @@ public:
 	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
 	 * \return Value of the heat transfer coefficient.
 	 */
-	virtual double GetHeatFluxTarget(unsigned short val_marker, unsigned short val_vertex);
+	virtual double GetHeatFluxTarget(unsigned short val_marker, unsigned long val_vertex);
   
   /*!
 	 * \brief A virtual member.
@@ -1707,7 +1707,7 @@ public:
 	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
 	 * \return Value of the pressure coefficient.
 	 */
-	virtual void SetHeatFluxTarget(unsigned short val_marker, unsigned short val_vertex, double val_heat);
+	virtual void SetHeatFluxTarget(unsigned short val_marker, unsigned long val_vertex, double val_heat);
   
 	/*!
 	 * \brief A virtual member.
@@ -1715,7 +1715,7 @@ public:
 	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
 	 * \return Value of the y plus.
 	 */
-	virtual double GetYPlus(unsigned short val_marker, unsigned short val_vertex);
+	virtual double GetYPlus(unsigned short val_marker, unsigned long val_vertex);
 
   /*!
    * \brief A virtual member.
@@ -1878,7 +1878,7 @@ public:
 	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
 	 * \return Value of the sensitivity coefficient.
 	 */
-	virtual double GetCSensitivity(unsigned short val_marker, unsigned short val_vertex);
+	virtual double GetCSensitivity(unsigned short val_marker, unsigned long val_vertex);
     
 	/*!
 	 * \brief A virtual member.
@@ -3332,7 +3332,7 @@ public:
 	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
 	 * \return Value of the pressure coefficient.
 	 */
-	double GetCPressure(unsigned short val_marker, unsigned short val_vertex);
+	double GetCPressure(unsigned short val_marker, unsigned long val_vertex);
   
   /*!
 	 * \brief Provide the Target Pressure coefficient.
@@ -3340,7 +3340,7 @@ public:
 	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
 	 * \return Value of the pressure coefficient.
 	 */
-	double GetCPressureTarget(unsigned short val_marker, unsigned short val_vertex);
+	double GetCPressureTarget(unsigned short val_marker, unsigned long val_vertex);
   
   /*!
 	 * \brief Set the value of the target Pressure coefficient.
@@ -3348,7 +3348,7 @@ public:
 	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
 	 * \return Value of the pressure coefficient.
 	 */
-  void SetCPressureTarget(unsigned short val_marker, unsigned short val_vertex, double val_pressure);
+  void SetCPressureTarget(unsigned short val_marker, unsigned long val_vertex, double val_pressure);
 
   /*!
 	 * \brief Value of the characteristic variables at the boundaries.
@@ -3356,7 +3356,7 @@ public:
 	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
 	 * \return Value of the pressure coefficient.
 	 */
-	double *GetCharacPrimVar(unsigned short val_marker, unsigned short val_vertex);
+	double *GetCharacPrimVar(unsigned short val_marker, unsigned long val_vertex);
   
 	/*!
 	 * \brief Provide the total (inviscid + viscous) non dimensional Free Surface coefficient.
@@ -3704,7 +3704,7 @@ public:
 	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
 	 * \return Value of the skin friction coefficient.
 	 */
-	double GetCSkinFriction(unsigned short val_marker, unsigned short val_vertex);
+	double GetCSkinFriction(unsigned short val_marker, unsigned long val_vertex);
     
 	/*!
 	 * \brief Get the skin friction coefficient.
@@ -3712,7 +3712,7 @@ public:
 	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
 	 * \return Value of the heat transfer coefficient.
 	 */
-	double GetHeatFlux(unsigned short val_marker, unsigned short val_vertex);
+	double GetHeatFlux(unsigned short val_marker, unsigned long val_vertex);
 	
   /*!
 	 * \brief Get the skin friction coefficient.
@@ -3720,7 +3720,7 @@ public:
 	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
 	 * \return Value of the heat transfer coefficient.
 	 */
-	double GetHeatFluxTarget(unsigned short val_marker, unsigned short val_vertex);
+	double GetHeatFluxTarget(unsigned short val_marker, unsigned long val_vertex);
   
   /*!
 	 * \brief Set the value of the target Pressure coefficient.
@@ -3728,7 +3728,7 @@ public:
 	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
 	 * \return Value of the pressure coefficient.
 	 */
-  void SetHeatFluxTarget(unsigned short val_marker, unsigned short val_vertex, double val_heat);
+  void SetHeatFluxTarget(unsigned short val_marker, unsigned long val_vertex, double val_heat);
   
 	/*!
 	 * \brief Get the y plus.
@@ -3736,7 +3736,7 @@ public:
 	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
 	 * \return Value of the y plus.
 	 */
-	double GetYPlus(unsigned short val_marker, unsigned short val_vertex);
+	double GetYPlus(unsigned short val_marker, unsigned long val_vertex);
   
   /*!
    * \brief Get the max Omega.
@@ -4974,7 +4974,7 @@ public:
 	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
 	 * \return Value of the sensitivity coefficient.
 	 */
-	double GetCSensitivity(unsigned short val_marker, unsigned short val_vertex);
+	double GetCSensitivity(unsigned short val_marker, unsigned long val_vertex);
     
 	/*!
 	 * \brief Set the shape sensitivity coefficient.
@@ -4982,7 +4982,7 @@ public:
 	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
 	 * \param[in] val_sensitivity - Value of the sensitivity coefficient.
 	 */
-	void SetCSensitivity(unsigned short val_marker, unsigned short val_vertex, double val_sensitivity);
+	void SetCSensitivity(unsigned short val_marker, unsigned long val_vertex, double val_sensitivity);
     
 	/*!
 	 * \brief Provide the total shape sensitivity coefficient.
@@ -7011,7 +7011,7 @@ public:
 	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
 	 * \return Value of the pressure coefficient.
 	 */
-	double GetCPressure(unsigned short val_marker, unsigned short val_vertex);
+	double GetCPressure(unsigned short val_marker, unsigned long val_vertex);
   
 	/*!
 	 * \brief Set the total residual adding the term that comes from the Dual Time Strategy.
@@ -7277,7 +7277,7 @@ public:
 	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
 	 * \return Value of the skin friction coefficient.
 	 */
-	double GetCSkinFriction(unsigned short val_marker, unsigned short val_vertex);
+	double GetCSkinFriction(unsigned short val_marker, unsigned long val_vertex);
   
 	/*!
 	 * \brief Get the skin friction coefficient.
@@ -7285,7 +7285,7 @@ public:
 	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
 	 * \return Value of the heat transfer coefficient.
 	 */
-	double GetHeatFlux(unsigned short val_marker, unsigned short val_vertex);
+	double GetHeatFlux(unsigned short val_marker, unsigned long val_vertex);
 
 };
 
@@ -7525,7 +7525,7 @@ public:
 	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
 	 * \return Value of the sensitivity coefficient.
 	 */
-	double GetCSensitivity(unsigned short val_marker, unsigned short val_vertex);
+	double GetCSensitivity(unsigned short val_marker, unsigned long val_vertex);
   
 	/*!
 	 * \brief Set the shape sensitivity coefficient.
@@ -7533,7 +7533,7 @@ public:
 	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
 	 * \param[in] val_sensitivity - Value of the sensitivity coefficient.
 	 */
-	void SetCSensitivity(unsigned short val_marker, unsigned short val_vertex, double val_sensitivity);
+	void SetCSensitivity(unsigned short val_marker, unsigned long val_vertex, double val_sensitivity);
   
 	/*!
 	 * \brief Provide the total shape sensitivity coefficient.
