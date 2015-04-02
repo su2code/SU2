@@ -3,7 +3,7 @@
 #  \author T. Lukaczyk, F. Palacios
 #  \version 3.2.9 "eagle"
 #
-# SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
+# SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
 #
 # SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
