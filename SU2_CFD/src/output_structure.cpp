@@ -4,7 +4,7 @@
  * \author F. Palacios, T. Economon
  * \version 3.2.9 "eagle"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu).
+ * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
@@ -5286,7 +5286,12 @@ void COutput::SetCFL_Number(CSolver ****solver_container, CConfig **config, unsi
   unsigned long ExtIter = config[val_iZone]->GetExtIter();
 
   RhoRes_New = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_RMS(0);
-  
+  switch( config[val_iZone]->GetKind_Solver()){
+    case ADJ_EULER : case ADJ_NAVIER_STOKES: case ADJ_RANS: case ADJ_TNE2_EULER: case ADJ_TNE2_NAVIER_STOKES:
+      RhoRes_New = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetRes_RMS(0);
+      break;
+  }
+
   if (RhoRes_New < EPS) RhoRes_New = EPS;
   if (RhoRes_Old < EPS) RhoRes_Old = RhoRes_New;
   
@@ -5333,7 +5338,11 @@ void COutput::SetCFL_Number(CSolver ****solver_container, CConfig **config, unsi
   }
   
   RhoRes_Old = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_RMS(0);
-
+  switch( config[val_iZone]->GetKind_Solver()){
+      case ADJ_EULER : case ADJ_NAVIER_STOKES: case ADJ_RANS: case ADJ_TNE2_EULER: case ADJ_TNE2_NAVIER_STOKES:
+        RhoRes_Old = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetRes_RMS(0);
+        break;
+    }
   
 }
 
@@ -5473,8 +5482,8 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
     Breakdown_file << "|                                                                       |" << endl;
     Breakdown_file << "|   Local date and time: " << dt << "                      |" << endl;
     Breakdown_file <<"-------------------------------------------------------------------------" << endl;
-    Breakdown_file << "| SU2 Lead Developers: Dr. Francisco Palacios (fpalacios@stanford.edu). |" << endl;
-    Breakdown_file << "|                      Dr. Thomas D. Economon (economon@stanford.edu).  |" << endl;
+    Breakdown_file << "| SU2 Lead Dev.: Dr. Francisco Palacios (francisco.palacios@boeing.com).|" << endl;
+    Breakdown_file << "|                Dr. Thomas D. Economon (economon@stanford.edu).        |" << endl;
     Breakdown_file <<"-------------------------------------------------------------------------" << endl;
     Breakdown_file << "| SU2 Developers:                                                       |" << endl;
     Breakdown_file << "| - Prof. Juan J. Alonso's group at Stanford University.                |" << endl;
