@@ -30,9 +30,8 @@
 
 #pragma once
 
-#ifdef HAVE_MPI
-  #include "mpi.h"
-#endif
+#include "./mpi_structure.hpp"
+
 #include <iostream>
 #include <cstdlib>
 #include <fstream>
@@ -45,6 +44,7 @@
 #include <assert.h>
 
 #include "./option_structure.hpp"
+#include "./datatype_structure.hpp"
 
 using namespace std;
 
