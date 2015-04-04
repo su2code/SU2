@@ -364,7 +364,7 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
     /*--- Convergence criteria ---*/
     
     sbuf_conv[0] = Convergence;
-    MPI_Reduce(sbuf_conv, rbuf_conv, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Reduce(sbuf_conv, rbuf_conv, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
     
     /*-- Compute global convergence criteria in the master node --*/
     
@@ -374,7 +374,7 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
       else sbuf_conv[0] = 0;
     }
     
-    MPI_Bcast(sbuf_conv, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Bcast(sbuf_conv, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
     
     if (sbuf_conv[0] == 1) { Convergence = true; Convergence_FullMG = true; }
     else { Convergence = false; Convergence_FullMG = false; }
@@ -460,9 +460,9 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
       pitch  = config->GetAeroelastic_pitch(iMarker_Monitoring);
       
       /*--- Gather the data on the master node. ---*/
-      MPI_Gather(&plunge, 1, MPI_DOUBLE, plunge_all, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-      MPI_Gather(&pitch, 1, MPI_DOUBLE, pitch_all, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-      MPI_Gather(&owner, 1, MPI_UNSIGNED_LONG, owner_all, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+      SU2_MPI::Gather(&plunge, 1, MPI_DOUBLE, plunge_all, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+      SU2_MPI::Gather(&pitch, 1, MPI_DOUBLE, pitch_all, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+      SU2_MPI::Gather(&owner, 1, MPI_UNSIGNED_LONG, owner_all, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
       
       /*--- Set plunge and pitch on the master node ---*/
       if (rank == MASTER_NODE) {

@@ -1090,7 +1090,7 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
   /*--- Compute MaxVonMises_Stress using all the nodes ---*/
   
   double MyMaxVonMises_Stress = MaxVonMises_Stress; MaxVonMises_Stress = 0.0;
-  MPI_Allreduce(&MyMaxVonMises_Stress, &MaxVonMises_Stress, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MyMaxVonMises_Stress, &MaxVonMises_Stress, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
   
 #endif
   

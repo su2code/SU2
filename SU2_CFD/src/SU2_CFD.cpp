@@ -49,7 +49,7 @@ int main(int argc, char *argv[]) {
   
 #ifdef HAVE_MPI
   int *bptr, bl;
-  MPI_Init(&argc, &argv);
+  SU2_MPI::Init(&argc, &argv);
   MPI_Buffer_attach( malloc(BUFSIZE), BUFSIZE );
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);

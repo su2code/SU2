@@ -54,7 +54,7 @@ CSysVector::CSysVector(const unsigned long & size, const double & val) {
   
 #ifdef HAVE_MPI
   unsigned long nElmLocal = (unsigned long)nElm;
-  MPI_Allreduce(&nElmLocal, &nElmGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&nElmLocal, &nElmGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
   
 }
@@ -81,7 +81,7 @@ CSysVector::CSysVector(const unsigned long & numBlk, const unsigned long & numBl
   int myrank;
   MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
   unsigned long nElmLocal = (unsigned long)nElm;
-  MPI_Allreduce(&nElmLocal, &nElmGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&nElmLocal, &nElmGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
   
 }
@@ -124,7 +124,7 @@ CSysVector::CSysVector(const unsigned long & size, const double* u_array) {
   int myrank;
   MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
   unsigned long nElmLocal = (unsigned long)nElm;
-  MPI_Allreduce(&nElmLocal, &nElmGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&nElmLocal, &nElmGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
   
 }
@@ -149,7 +149,7 @@ CSysVector::CSysVector(const unsigned long & numBlk, const unsigned long & numBl
 
 #ifdef HAVE_MPI
   unsigned long nElmLocal = (unsigned long)nElm;
-  MPI_Allreduce(&nElmLocal, &nElmGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&nElmLocal, &nElmGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
   
 }
@@ -182,7 +182,7 @@ void CSysVector::Initialize(const unsigned long & numBlk, const unsigned long & 
   
 #ifdef HAVE_MPI
   unsigned long nElmLocal = (unsigned long)nElm;
-  MPI_Allreduce(&nElmLocal, &nElmGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&nElmLocal, &nElmGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
   
 }
@@ -407,7 +407,7 @@ double dotProd(const CSysVector & u, const CSysVector & v) {
   double prod = 0.0;
   
 #ifdef HAVE_MPI
-  MPI_Allreduce(&loc_prod, &prod, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&loc_prod, &prod, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 #else
   prod = loc_prod;
 #endif

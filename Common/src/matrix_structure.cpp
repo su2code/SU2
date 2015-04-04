@@ -700,7 +700,7 @@ void CSysMatrix::SendReceive_Solution(CSysVector & x, CGeometry *geometry, CConf
       
       /*--- Send/Receive information using Sendrecv ---*/
       
-      MPI_Sendrecv(Buffer_Send, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
+      SU2_MPI::Sendrecv(Buffer_Send, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
                    Buffer_Receive, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
       
 #else
@@ -1092,8 +1092,8 @@ unsigned short CSysMatrix::BuildLineletPreconditioner(CGeometry *geometry, CConf
   Global_nPoints = Local_nPoints;
   Global_nLineLets = Local_nLineLets;
 #else
-  MPI_Allreduce(&Local_nPoints, &Global_nPoints, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  MPI_Allreduce(&Local_nLineLets, &Global_nLineLets, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&Local_nPoints, &Global_nPoints, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&Local_nLineLets, &Global_nLineLets, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
 
   MeanPoints = int(double(Global_nPoints)/double(Global_nLineLets));

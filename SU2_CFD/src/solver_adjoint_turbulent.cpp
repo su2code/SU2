@@ -250,7 +250,7 @@ void CAdjTurbSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
 #ifdef HAVE_MPI
 
       /*--- Send/Receive information using Sendrecv ---*/
-	  MPI_Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
+	  SU2_MPI::Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
                                Buffer_Receive_U, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
 #else
       
@@ -325,7 +325,7 @@ void CAdjTurbSolver::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config) 
 #ifdef HAVE_MPI
 
       /*--- Send/Receive information using Sendrecv ---*/
-	  MPI_Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
+	  SU2_MPI::Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
                                Buffer_Receive_U, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
       
 #else
@@ -406,7 +406,7 @@ void CAdjTurbSolver::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *con
 #ifdef HAVE_MPI
       
       /*--- Send/Receive information using Sendrecv ---*/
-	  MPI_Sendrecv(Buffer_Send_Gradient, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
+	  SU2_MPI::Sendrecv(Buffer_Send_Gradient, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
                                Buffer_Receive_Gradient, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
 #else
       

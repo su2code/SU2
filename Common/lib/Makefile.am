@@ -59,6 +59,8 @@ libSU2_a_SOURCES = \
 	        ../include/matrix_structure.hpp \
 	        ../include/matrix_structure.inl \
 	    ../include/su2mpi.hpp \
+		../mpi_structure.hpp \
+		../mpi_structure.inl \
 		../src/config_structure.cpp \
 		../src/dual_grid_structure.cpp \
 		../src/geometry_structure.cpp \
