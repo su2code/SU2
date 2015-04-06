@@ -642,7 +642,7 @@ public:
 	 * \param[in] val_pressure_i - Value of the pressure at point i.
 	 * \param[in] val_pressure_j - Value of the pressure at point j.
 	 */
-	void SetPressure(double* val_pressure_i, double* val_pressure_j);
+	//void SetPressure(double* val_pressure_i, double* val_pressure_j);
     
 	/*!
 	 * \brief Set the value of the enthalpy.
@@ -980,9 +980,9 @@ void GetViscousProjFlux(double *val_primvar, double **val_gradprimvar,
 	 * \param[in] val_scale - Scale of the projection.
 	 * \param[out] val_Proj_Jac_tensor - Pointer to the projected inviscid Jacobian.
 	 */
-	void GetInviscidProjJac(double **val_velocity, double *val_energy,
-                          double *val_normal, double val_scale,
-                          double **val_Proj_Jac_tensor);
+//	void GetInviscidProjJac(double **val_velocity, double *val_energy,
+//                          double *val_normal, double val_scale,
+//                          double **val_Proj_Jac_tensor);
     
 	/*!
 	 * \overload
@@ -1137,9 +1137,9 @@ void GetViscousProjFlux(double *val_primvar, double **val_gradprimvar,
 	 * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
 	 * \param[out] val_p_tensor - Pointer to the P matrix.
 	 */
-	void GetPMatrix(double *val_density, double **val_velocity,
-                  double *val_soundspeed, double *val_normal,
-                  double **val_p_tensor);
+//	void GetPMatrix(double *val_density, double **val_velocity,
+//                  double *val_soundspeed, double *val_normal,
+//                  double **val_p_tensor);
     
   /*!
 	 * \overload
@@ -1260,9 +1260,9 @@ void GetViscousProjFlux(double *val_primvar, double **val_gradprimvar,
 	 * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
 	 * \param[out] val_invp_tensor - Pointer to inverse of the P matrix.
 	 */
-	void GetPMatrix_inv(double *val_density, double **val_velocity,
-                      double *val_soundspeed, double *val_normal,
-                      double **val_invp_tensor);
+//	void GetPMatrix_inv(double *val_density, double **val_velocity,
+//                      double *val_soundspeed, double *val_normal,
+//                      double **val_invp_tensor);
     
   /*!
 	 * \overload
@@ -2200,29 +2200,29 @@ private:
     
 public:
     
-	/*!
-	 * \brief Constructor of the class.
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_nVar - Number of variables of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CUpwLin_LevelSet(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-    
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CUpwLin_LevelSet(void);
-    
-	/*!
-	 * \brief Compute the upwind flux between two nodes i and j.
-	 * \param[out] val_residual - Pointer to the total residual.
-	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-	 * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j,
-                         double **val_JacobianMeanFlow_i, double **val_JacobianMeanFlow_j, CConfig *config);
-    
+//	/*!
+//	 * \brief Constructor of the class.
+//	 * \param[in] val_nDim - Number of dimensions of the problem.
+//	 * \param[in] val_nVar - Number of variables of the problem.
+//	 * \param[in] config - Definition of the particular problem.
+//	 */
+//	CUpwLin_LevelSet(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+//    
+//	/*!
+//	 * \brief Destructor of the class.
+//	 */
+//	~CUpwLin_LevelSet(void);
+//    
+//	/*!
+//	 * \brief Compute the upwind flux between two nodes i and j.
+//	 * \param[out] val_residual - Pointer to the total residual.
+//	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+//	 * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+//	 * \param[in] config - Definition of the particular problem.
+//	 */
+//	void ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j,
+//                         double **val_JacobianMeanFlow_i, double **val_JacobianMeanFlow_j, CConfig *config);
+//    
 };
 
 /*!
@@ -4792,26 +4792,26 @@ class CSourcePieceWise_FreeSurface : public CNumerics {
     
 public:
     
-	/*!
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_nVar - Number of variables of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CSourcePieceWise_FreeSurface(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-    
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CSourcePieceWise_FreeSurface(void);
-    
-	/*!
-	 * \brief Source term integration for the poissonal potential.
-	 * \param[out] val_residual - Pointer to the total residual.
-	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-	 * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j,  CConfig *config);
+//	/*!
+//	 * \param[in] val_nDim - Number of dimensions of the problem.
+//	 * \param[in] val_nVar - Number of variables of the problem.
+//	 * \param[in] config - Definition of the particular problem.
+//	 */
+//	CSourcePieceWise_FreeSurface(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+//    
+//	/*!
+//	 * \brief Destructor of the class.
+//	 */
+//	~CSourcePieceWise_FreeSurface(void);
+//    
+//	/*!
+//	 * \brief Source term integration for the poissonal potential.
+//	 * \param[out] val_residual - Pointer to the total residual.
+//	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+//	 * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+//	 * \param[in] config - Definition of the particular problem.
+//	 */
+//	void ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j,  CConfig *config);
 };
 
 /*!
@@ -4885,7 +4885,7 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] val_phi - Value of the adjoint velocity.
 	 */
-	void SetPhi_Old(double *val_phi);
+	//void SetPhi_Old(double *val_phi);
     
 };
 
@@ -4935,25 +4935,25 @@ public:
 class CSourcePieceWise_AdjElec : public CNumerics {
 public:
     
-	/*!
-	 * \brief Constructor of the class.
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_nVar - Number of variables of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CSourcePieceWise_AdjElec(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-    
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CSourcePieceWise_AdjElec(void);
-    
-	/*!
-	 * \brief Source term integration of the adjoint poisson potential equation.
-	 * \param[out] val_residual - Pointer to the total residual.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void ComputeResidual(double *val_residual, CConfig *config);
+//	/*!
+//	 * \brief Constructor of the class.
+//	 * \param[in] val_nDim - Number of dimensions of the problem.
+//	 * \param[in] val_nVar - Number of variables of the problem.
+//	 * \param[in] config - Definition of the particular problem.
+//	 */
+//	CSourcePieceWise_AdjElec(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+//    
+//	/*!
+//	 * \brief Destructor of the class.
+//	 */
+//	~CSourcePieceWise_AdjElec(void);
+//    
+//	/*!
+//	 * \brief Source term integration of the adjoint poisson potential equation.
+//	 * \param[out] val_residual - Pointer to the total residual.
+//	 * \param[in] config - Definition of the particular problem.
+//	 */
+//	void ComputeResidual(double *val_residual, CConfig *config);
 };
 
 /*!
@@ -4966,25 +4966,25 @@ public:
 class CSourcePieceWise_LevelSet : public CNumerics {
 public:
     
-	/*!
-	 * \brief Constructor of the class.
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_nVar - Number of variables of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CSourcePieceWise_LevelSet(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-    
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CSourcePieceWise_LevelSet(void);
-    
-	/*!
-	 * \brief Source term integration of the adjoint poisson potential equation.
-	 * \param[out] val_residual - Pointer to the total residual.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void ComputeResidual(double *val_residual, CConfig *config);
+//	/*!
+//	 * \brief Constructor of the class.
+//	 * \param[in] val_nDim - Number of dimensions of the problem.
+//	 * \param[in] val_nVar - Number of variables of the problem.
+//	 * \param[in] config - Definition of the particular problem.
+//	 */
+//	CSourcePieceWise_LevelSet(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+//    
+//	/*!
+//	 * \brief Destructor of the class.
+//	 */
+//	~CSourcePieceWise_LevelSet(void);
+//    
+//	/*!
+//	 * \brief Source term integration of the adjoint poisson potential equation.
+//	 * \param[out] val_residual - Pointer to the total residual.
+//	 * \param[in] config - Definition of the particular problem.
+//	 */
+//	void ComputeResidual(double *val_residual, CConfig *config);
 };
 
 /*!
@@ -5028,25 +5028,25 @@ public:
 class CSourcePieceWise_LinElec : public CNumerics {
 public:
     
-	/*!
-	 * \brief Constructor of the class.
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_nVar - Number of variables of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CSourcePieceWise_LinElec(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-    
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CSourcePieceWise_LinElec(void);
-    
-	/*!
-	 * \brief Source term integration of the linearized poisson potential equation.
-	 * \param[out] val_residual - Pointer to the total residual.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void ComputeResidual(double *val_residual, CConfig *config);
+//	/*!
+//	 * \brief Constructor of the class.
+//	 * \param[in] val_nDim - Number of dimensions of the problem.
+//	 * \param[in] val_nVar - Number of variables of the problem.
+//	 * \param[in] config - Definition of the particular problem.
+//	 */
+//	CSourcePieceWise_LinElec(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+//    
+//	/*!
+//	 * \brief Destructor of the class.
+//	 */
+//	~CSourcePieceWise_LinElec(void);
+//    
+//	/*!
+//	 * \brief Source term integration of the linearized poisson potential equation.
+//	 * \param[out] val_residual - Pointer to the total residual.
+//	 * \param[in] config - Definition of the particular problem.
+//	 */
+//	void ComputeResidual(double *val_residual, CConfig *config);
 };
 
 /*!

@@ -184,7 +184,7 @@ public:
 	 * \brief Get number of elements.
 	 * \return Number of elements.
 	 */
-	unsigned long GetnLine(void);
+	//unsigned long GetnLine(void);
   
 	/*! 
 	 * \brief Get number of elements.
@@ -1186,7 +1186,7 @@ public:
 	 * \brief Find and store all vertices on a sharp corner in the geometry.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void ComputeSurf_Curvature(CConfig *config);
+	//void ComputeSurf_Curvature(CConfig *config);
 
 	/*! 
 	 * \brief Find and store the closest neighbor to a vertex.

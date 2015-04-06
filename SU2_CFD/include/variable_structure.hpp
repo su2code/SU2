@@ -2451,7 +2451,7 @@ public:
 	 * \brief Set the value of the magnetic field
 	 * \param[in] Value of the magnetic field
 	 */
-	void SetMagneticField(double* val_B);
+	//void SetMagneticField(double* val_B);
     
     /*!
 	 * \brief Get the value of the wind gust
@@ -2940,25 +2940,25 @@ private:
 
 public:
 
-	/*!
-	 * \brief Constructor of the class. 
-	 */
-	CAdjPotentialVariable(void);
-
-	/*!
-	 * \overload
-	 * \param[in] val_psi - Potential adjoint variable value (initialization value).
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_nvar - Number of variables of the problem.
-	 * \param[in] config - Definition of the particular problem.	 
-	 */	
-	CAdjPotentialVariable(double val_psi, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
-
-	/*!
-	 * \brief Destructor of the class. 
-	 */
-
-	~CAdjPotentialVariable(void);
+//	/*!
+//	 * \brief Constructor of the class. 
+//	 */
+//	CAdjPotentialVariable(void);
+//
+//	/*!
+//	 * \overload
+//	 * \param[in] val_psi - Potential adjoint variable value (initialization value).
+//	 * \param[in] val_nDim - Number of dimensions of the problem.
+//	 * \param[in] val_nvar - Number of variables of the problem.
+//	 * \param[in] config - Definition of the particular problem.	 
+//	 */	
+//	CAdjPotentialVariable(double val_psi, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
+//
+//	/*!
+//	 * \brief Destructor of the class. 
+//	 */
+//
+//	~CAdjPotentialVariable(void);
 };
 
 /*! 
@@ -3528,12 +3528,12 @@ public:
   /*!
    * \brief Set partial derivative of pressure w.r.t. density \f$\frac{\partial P}{\partial \rho_s}\f$
    */
-  void SetdTdrhos(CConfig *config);
+  //void SetdTdrhos(CConfig *config);
   
   /*!
    * \brief Set partial derivative of pressure w.r.t. density \f$\frac{\partial P}{\partial \rho_s}\f$
    */
-  void SetdTvedrhos(CConfig *config);
+  //void SetdTvedrhos(CConfig *config);
   
   /*!
    * \brief Set partial derivative of pressure w.r.t. density \f$\frac{\partial P}{\partial \rho_s}\f$

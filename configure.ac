@@ -105,6 +105,9 @@ AC_ARG_ENABLE(SOL,
 AC_ARG_ENABLE(GEO,
    	AS_HELP_STRING([--disable-GEO], [build the SU2_GEO executable (default = yes)]),
 	[build_GEO=$enableval], [build_GEO="yes"])
+AC_ARG_ENABLE(pySU2,
+AS_HELP_STRING([--disable-pySU2], [build the pySU2 executable (default = yes)]),
+[build_pySU2=$enableval], [build_pySU2="yes"])
 
 # Check for the old  MPI option so that we can throw an error
 AC_ARG_WITH(MPI,
@@ -342,6 +345,7 @@ AM_CONDITIONAL([BUILD_MSH],[test $build_MSH != "no"])
 AM_CONDITIONAL([BUILD_DEF],[test $build_DEF != "no"])
 AM_CONDITIONAL([BUILD_SOL],[test $build_SOL != "no"])
 AM_CONDITIONAL([BUILD_GEO],[test $build_GEO != "no"])
+AM_CONDITIONAL([BUILD_pySU2],[test $build_pySU2 != "no"])
 
 ###########################
 
@@ -354,6 +358,7 @@ AC_OUTPUT(Makefile \
 	SU2_DEF/obj/Makefile \
 	SU2_SOL/obj/Makefile \
 	SU2_GEO/obj/Makefile \
+    pySU2/obj/Makefile \
 	SU2_PY/Makefile)
 
 abs_srcdir=`(cd $srcdir && pwd)`
@@ -423,6 +428,7 @@ Build Configuration Summary:
     Build SU2_DEF:        $build_DEF
     Build SU2_SOL:        $build_SOL
     Build SU2_GEO:        $build_GEO
+    Build pySU2:          $build_pySU2
 
 Please be sure to add the [\$]SU2_HOME and [\$]SU2_RUN environment variables,
 and update your [\$]PATH (and [\$]PYTHONPATH if applicable) with [\$]SU2_RUN.

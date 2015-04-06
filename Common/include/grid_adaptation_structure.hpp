@@ -162,7 +162,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */		
-	void SetNearField_Refinement(CGeometry *geometry, CConfig *config);
+	//void SetNearField_Refinement(CGeometry *geometry, CConfig *config);
 	
 	/*! 
 	 * \brief Do a complete adaptation of the computational grid using a homothetic technique (2D).

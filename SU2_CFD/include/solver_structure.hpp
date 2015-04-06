@@ -4275,7 +4275,7 @@ public:
 	 * \brief Correlation function to relate turbulence intensity to transition onset reynolds number
 	 * \param[in]  tu - turbulence intensity
 	 */
-	double REthCorrelation(double tu);
+	//double REthCorrelation(double tu);
     
 	/*!
 	 * \brief Restart residual and compute gradients.

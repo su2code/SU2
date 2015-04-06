@@ -69,3 +69,7 @@ endif
 if BUILD_GEO
 SUBDIRS +=SU2_GEO/obj
 endif
+
+if BUILD_pySU2
+SUBDIRS +=pySU2/obj
+endif

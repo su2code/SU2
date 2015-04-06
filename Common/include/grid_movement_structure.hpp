@@ -1146,7 +1146,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-  void SetCollective_Pitch(CGeometry *geometry, CConfig *config);
+  //void SetCollective_Pitch(CGeometry *geometry, CConfig *config);
   
   /*! 
 	 * \brief Set any surface deformationsbased on an input file.

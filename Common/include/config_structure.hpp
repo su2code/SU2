@@ -1153,14 +1153,14 @@ public:
 	 * \param[in] - val_Species: Index of desired species specific heat ratio.
 	 * \return Value of the constant: Species_Gamma[iSpecies]
 	 */
-	double GetSpecies_Gamma(unsigned short val_Species);
+	//double GetSpecies_Gamma(unsigned short val_Species);
 
 	/*!
 	 * \brief Get the value of the charge number for a particular species (1 for ions, -1 for electrons, 0 for neutral).
 	 * \param[in] - val_Species: Index of desired species charge number.
 	 * \return Value of the constant: Charge_Number[val_Species]
 	 */
-	int GetCharge_Number(unsigned short val_Species);
+	//int GetCharge_Number(unsigned short val_Species);
   
   /*!
    * \brief Get the values of the CFL adapation.
@@ -1208,13 +1208,13 @@ public:
 	 * \brief Get the value of the Gamma of fluid (ratio of specific heats) for monatomic species.
 	 * \return Value of the constant: GammaMonatomic
 	 */
-	double GetGammaMonatomic(void);
+	//double GetGammaMonatomic(void);
 
 	/*!
 	 * \brief Get the value of the Gamma of fluid (ratio of specific heats) for diatomic species.
 	 * \return Value of the constant: Gamma
 	 */
-	double GetGammaDiatomic(void);
+	//double GetGammaDiatomic(void);
 
 	/*!
 	 * \brief Get the artificial compresibility factor.
@@ -1251,7 +1251,7 @@ public:
 	 * \param[in] val_Species - Index of desired species gas constant.
 	 * \return Value of the constant: R
 	 */
-	double GetSpecies_Gas_Constant(unsigned short val_Species);
+	//double GetSpecies_Gas_Constant(unsigned short val_Species);
 
 	/*!
 	 * \brief Get the coefficients of the Blottner viscosity model
@@ -1951,7 +1951,7 @@ public:
 	 * \param[in] val_Species - Index of the chemical species
 	 * \return CFL number for each grid.
 	 */
-	double GetCFL(unsigned short val_mesh, unsigned short val_Species);
+	//double GetCFL(unsigned short val_mesh, unsigned short val_Species);
 
 	/*!
 	 * \brief Get the Courant Friedrich Levi number for unsteady simulations.
@@ -3045,7 +3045,7 @@ public:
 	 *       during the computation.
 	 * \return Kind of integration scheme for the plasma equations.
 	 */
-	unsigned short GetKind_TimeIntScheme_Template(void);
+	//unsigned short GetKind_TimeIntScheme_Template(void);
 
 	/*!
 	 * \brief Get the kind of convective numerical scheme for the flow
@@ -3130,7 +3130,7 @@ public:
 	 *       during the computation.
 	 * \return Kind of center convective numerical scheme for the flow equations.
 	 */
-	unsigned short GetKind_Centered_Template(void);
+	//unsigned short GetKind_Centered_Template(void);
 
 	/*!
 	 * \brief Get the kind of upwind convective numerical scheme for the flow equations.
@@ -3649,13 +3649,13 @@ public:
 	 * \brief Retrieves the number of monatomic species in the multicomponent gas.
 	 * \return: Number of monatomic species.
 	 */
-	unsigned short GetnMonatomics(void);
+	//unsigned short GetnMonatomics(void);
 
 	/*!
 	 * \brief Retrieves the number of monatomic species in the multicomponent gas.
 	 * \return: Number of monatomic species.
 	 */
-	unsigned short GetnDiatomics(void);
+	//unsigned short GetnDiatomics(void);
 
 	/*!
 	 * \brief Provides the molar mass of each species present in multi species fluid
@@ -3667,7 +3667,7 @@ public:
 	 * \brief Retrieves the multi-species fluid mixture molar mass.
 	 * \return: Molar mass of the fluid mixture
 	 */
-	double GetMixtureMolar_Mass();
+	//double GetMixtureMolar_Mass();
 
   /*!
 	 * \brief Provides the formation enthalpy of the specified species at standard conditions
@@ -3691,7 +3691,7 @@ public:
 	 * \brief Provides the number of varaibles.
 	 * \return Number of variables.
 	 */
-	unsigned short GetnVar(void);
+	//unsigned short GetnVar(void);
 
   /*!
 	 * \brief Provides the number of varaibles.
@@ -3773,7 +3773,7 @@ public:
 	 * \brief Get the name of the file with the residual of the problem.
 	 * \return Name of the file with the residual of the problem.
 	 */
-	string GetResidual_FileName(void);
+	//string GetResidual_FileName(void);
 
 	/*!
 	 * \brief Get the format of the input/output grid.
@@ -4269,19 +4269,19 @@ public:
 	 * \brief Get information about the adibatic wall condition
 	 * \return <code>TRUE</code> if it is a adiabatic wall condition; otherwise <code>FALSE</code>.
 	 */
-	bool GetAdiabaticWall(void);
+	//bool GetAdiabaticWall(void);
 
 	/*!
 	 * \brief Get information about the isothermal wall condition
 	 * \return <code>TRUE</code> if it is a isothermal wall condition; otherwise <code>FALSE</code>.
 	 */
-	bool GetIsothermalWall(void);
+	//bool GetIsothermalWall(void);
 
 	/*!
 	 * \brief Get information about the catalytic wall condition
 	 * \return <code>TRUE</code> if it is a catalytic wall condition; otherwise <code>FALSE</code>.
 	 */
-	bool GetCatalyticWall(void);
+	//bool GetCatalyticWall(void);
 
 	/*!
 	 * \brief Get information about the Low Mach Preconditioning
@@ -4714,42 +4714,42 @@ public:
 	 * \param[in] iSpecies - Index of the species
 	 * \return The total temperature.
 	 */
-	double GetInlet_Species_Temperature(unsigned short iSpecies);
+	//double GetInlet_Species_Temperature(unsigned short iSpecies);
 
 	/*!
 	 * \brief Get the temperature at an outlet boundary.
 	 * \param[in] iSpecies - Index of the species
 	 * \return The total temperature.
 	 */
-	double GetOutlet_Species_Temperature(unsigned short iSpecies);
+	//double GetOutlet_Species_Temperature(unsigned short iSpecies);
 
 	/*!
 	 * \brief Get the pressure at an inlet boundary.
 	 * \param[in] iSpecies - Index of the species
 	 * \return The total temperature.
 	 */
-	double GetInlet_Species_Pressure(unsigned short iSpecies);
+	//double GetInlet_Species_Pressure(unsigned short iSpecies);
 
 	/*!
 	 * \brief Get the pressure at an outlet boundary.
 	 * \param[in] iSpecies - Index of the species
 	 * \return The total temperature.
 	 */
-	double GetOutlet_Species_Pressure(unsigned short iSpecies);
+	//double GetOutlet_Species_Pressure(unsigned short iSpecies);
 
 	/*!
 	 * \brief Get the velocity at an inlet boundary.
 	 * \param[in] iSpecies - Index of the species
 	 * \return The total temperature.
 	 */
-	double GetInlet_Species_Velocity(unsigned short iSpecies);
+	//double GetInlet_Species_Velocity(unsigned short iSpecies);
 
 	/*!
 	 * \brief Get the velocity at an outlet boundary.
 	 * \param[in] iSpecies - Index of the species
 	 * \return The total temperature.
 	 */
-	double GetOutlet_Species_Velocity(unsigned short iSpecies);
+	//double GetOutlet_Species_Velocity(unsigned short iSpecies);
 
   /*!
 	 * \brief Value of the CFL reduction in LevelSet problems.
