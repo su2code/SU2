@@ -11507,10 +11507,15 @@ void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CC
     MPI_Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
     Global_Delta_Time = rbuf_time;
 #endif
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++)
-      node[iPoint]->SetDelta_Time(Global_Delta_Time);
-      //node[iPoint]->SetDelta_Time(2.939E-6);
-      cout<< "Time Step set to: "<< 2.939E-6<< endl;
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++){
+      /*--- If the unsteady CFL is set to zero, it uses the defined unsteady time step, otherwise
+       it computes the time step based on the unsteady CFL ---*/
+      if (config->GetUnst_CFL() == 0.0){
+        node[iPoint]->SetDelta_Time(config->GetDelta_UnstTime());
+      } else {
+        node[iPoint]->SetDelta_Time(Global_Delta_Time);
+      }
+    }
   }
 
   /*--- Recompute the unsteady time step for the dual time strategy

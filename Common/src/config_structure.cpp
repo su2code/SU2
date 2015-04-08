@@ -1519,7 +1519,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Decide whether we should be writing unsteady solution files. ---*/
   
   if (Unsteady_Simulation == STEADY ||
-      Unsteady_Simulation == TIME_STEPPING ||
       Unsteady_Simulation == TIME_SPECTRAL  ||
       Kind_Regime == FREESURFACE) { Wrt_Unsteady = false; }
   else { Wrt_Unsteady = true; }
