@@ -83,32 +83,32 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
 	/*--- Special cases where a number needs to be appended to the file name. ---*/
 	if ((Kind_Solver == EULER || Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS) &&
         (val_nZone > 1) && (config->GetUnsteady_Simulation() != TIME_SPECTRAL)) {
-		sprintf (buffer, "_%d", int(val_iZone));
+		SPRINTF (buffer, "_%d", int(val_iZone));
 		strcat(cstr, buffer);
 	}
     
 	/*--- Special cases where a number needs to be appended to the file name. ---*/
 	if (((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS)) &&
         (val_nZone > 1) && (config->GetUnsteady_Simulation() != TIME_SPECTRAL)) {
-		sprintf (buffer, "_%d", int(val_iZone));
+		SPRINTF (buffer, "_%d", int(val_iZone));
 		strcat(cstr, buffer);
 	}
     
 	if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
-		if (int(val_iZone) < 10) sprintf (buffer, "_0000%d.vtk", int(val_iZone));
-		if ((int(val_iZone) >= 10) && (int(val_iZone) < 100)) sprintf (buffer, "_000%d.vtk", int(val_iZone));
-		if ((int(val_iZone) >= 100) && (int(val_iZone) < 1000)) sprintf (buffer, "_00%d.vtk", int(val_iZone));
-		if ((int(val_iZone) >= 1000) && (int(val_iZone) < 10000)) sprintf (buffer, "_0%d.vtk", int(val_iZone));
-		if (int(val_iZone) >= 10000) sprintf (buffer, "_%d.vtk", int(val_iZone));
+		if (int(val_iZone) < 10) SPRINTF (buffer, "_0000%d.vtk", int(val_iZone));
+		if ((int(val_iZone) >= 10) && (int(val_iZone) < 100)) SPRINTF (buffer, "_000%d.vtk", int(val_iZone));
+		if ((int(val_iZone) >= 100) && (int(val_iZone) < 1000)) SPRINTF (buffer, "_00%d.vtk", int(val_iZone));
+		if ((int(val_iZone) >= 1000) && (int(val_iZone) < 10000)) SPRINTF (buffer, "_0%d.vtk", int(val_iZone));
+		if (int(val_iZone) >= 10000) SPRINTF (buffer, "_%d.vtk", int(val_iZone));
         
 	} else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
-		if (int(iExtIter) < 10) sprintf (buffer, "_0000%d.vtk", int(iExtIter));
-		if ((int(iExtIter) >= 10) && (int(iExtIter) < 100)) sprintf (buffer, "_000%d.vtk", int(iExtIter));
-		if ((int(iExtIter) >= 100) && (int(iExtIter) < 1000)) sprintf (buffer, "_00%d.vtk", int(iExtIter));
-		if ((int(iExtIter) >= 1000) && (int(iExtIter) < 10000)) sprintf (buffer, "_0%d.vtk", int(iExtIter));
-		if (int(iExtIter) >= 10000) sprintf (buffer, "_%d.vtk", int(iExtIter));
+		if (int(iExtIter) < 10) SPRINTF (buffer, "_0000%d.vtk", int(iExtIter));
+		if ((int(iExtIter) >= 10) && (int(iExtIter) < 100)) SPRINTF (buffer, "_000%d.vtk", int(iExtIter));
+		if ((int(iExtIter) >= 100) && (int(iExtIter) < 1000)) SPRINTF (buffer, "_00%d.vtk", int(iExtIter));
+		if ((int(iExtIter) >= 1000) && (int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d.vtk", int(iExtIter));
+		if (int(iExtIter) >= 10000) SPRINTF (buffer, "_%d.vtk", int(iExtIter));
 	} else {
-		sprintf (buffer, ".vtk");
+		SPRINTF (buffer, ".vtk");
 	}
     
 	strcat(cstr, buffer);
@@ -319,7 +319,7 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
      variables with the appropriate string tags stored in the config class. ---*/
     for (unsigned short iField = 1; iField < config->fields.size(); iField++) {
       
-      double output_variable = true;
+      bool output_variable = true;
       size_t found = config->fields[iField].find("\"x\"");
       if (found!=string::npos) output_variable = false;
       found = config->fields[iField].find("\"y\"");
@@ -738,32 +738,32 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
 	/*--- Special cases where a number needs to be appended to the file name. ---*/
 	if ((Kind_Solver == EULER || Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS) &&
       (val_nZone > 1) && (config->GetUnsteady_Simulation() != TIME_SPECTRAL)) {
-		sprintf (buffer, "_%d", int(val_iZone));
+		SPRINTF (buffer, "_%d", int(val_iZone));
 		strcat(cstr, buffer);
 	}
   
 	/*--- Special cases where a number needs to be appended to the file name. ---*/
 	if (((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS)) &&
       (val_nZone > 1) && (config->GetUnsteady_Simulation() != TIME_SPECTRAL)) {
-		sprintf (buffer, "_%d", int(val_iZone));
+		SPRINTF (buffer, "_%d", int(val_iZone));
 		strcat(cstr, buffer);
 	}
   
 	if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
-		if (int(val_iZone) < 10) sprintf (buffer, "_0000%d.vtk", int(val_iZone));
-		if ((int(val_iZone) >= 10) && (int(val_iZone) < 100)) sprintf (buffer, "_000%d.vtk", int(val_iZone));
-		if ((int(val_iZone) >= 100) && (int(val_iZone) < 1000)) sprintf (buffer, "_00%d.vtk", int(val_iZone));
-		if ((int(val_iZone) >= 1000) && (int(val_iZone) < 10000)) sprintf (buffer, "_0%d.vtk", int(val_iZone));
-		if (int(val_iZone) >= 10000) sprintf (buffer, "_%d.vtk", int(val_iZone));
+		if (int(val_iZone) < 10) SPRINTF (buffer, "_0000%d.vtk", int(val_iZone));
+		if ((int(val_iZone) >= 10) && (int(val_iZone) < 100)) SPRINTF (buffer, "_000%d.vtk", int(val_iZone));
+		if ((int(val_iZone) >= 100) && (int(val_iZone) < 1000)) SPRINTF (buffer, "_00%d.vtk", int(val_iZone));
+		if ((int(val_iZone) >= 1000) && (int(val_iZone) < 10000)) SPRINTF (buffer, "_0%d.vtk", int(val_iZone));
+		if (int(val_iZone) >= 10000) SPRINTF (buffer, "_%d.vtk", int(val_iZone));
     
 	} else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
-		if (int(iExtIter) < 10) sprintf (buffer, "_0000%d.vtk", int(iExtIter));
-		if ((int(iExtIter) >= 10) && (int(iExtIter) < 100)) sprintf (buffer, "_000%d.vtk", int(iExtIter));
-		if ((int(iExtIter) >= 100) && (int(iExtIter) < 1000)) sprintf (buffer, "_00%d.vtk", int(iExtIter));
-		if ((int(iExtIter) >= 1000) && (int(iExtIter) < 10000)) sprintf (buffer, "_0%d.vtk", int(iExtIter));
-		if (int(iExtIter) >= 10000) sprintf (buffer, "_%d.vtk", int(iExtIter));
+		if (int(iExtIter) < 10) SPRINTF (buffer, "_0000%d.vtk", int(iExtIter));
+		if ((int(iExtIter) >= 10) && (int(iExtIter) < 100)) SPRINTF (buffer, "_000%d.vtk", int(iExtIter));
+		if ((int(iExtIter) >= 100) && (int(iExtIter) < 1000)) SPRINTF (buffer, "_00%d.vtk", int(iExtIter));
+		if ((int(iExtIter) >= 1000) && (int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d.vtk", int(iExtIter));
+		if (int(iExtIter) >= 10000) SPRINTF (buffer, "_%d.vtk", int(iExtIter));
 	} else {
-		sprintf (buffer, ".vtk");
+		SPRINTF (buffer, ".vtk");
 	}
   
 	strcat(cstr, buffer);
@@ -978,7 +978,7 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
      variables with the appropriate string tags stored in the config class. ---*/
     for (unsigned short iField = 1; iField < config->fields.size(); iField++) {
       
-      double output_variable = true;
+      bool output_variable = true;
       size_t found = config->fields[iField].find("\"x\"");
       if (found!=string::npos) output_variable = false;
       found = config->fields[iField].find("\"y\"");

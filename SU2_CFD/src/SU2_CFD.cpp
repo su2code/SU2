@@ -36,7 +36,7 @@ using namespace std;
 int main(int argc, char *argv[]) {
   
   bool StopCalc = false;
-  double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
+  su2double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
   unsigned long ExtIter = 0;
   unsigned short iMesh, iZone, iSol, nZone, nDim;
   char config_file_name[MAX_STRING_SIZE];
@@ -293,7 +293,7 @@ int main(int argc, char *argv[]) {
   /*--- Set up a timer for performance benchmarking (preprocessing time is not included) ---*/
   
 #ifndef HAVE_MPI
-  StartTime = double(clock())/double(CLOCKS_PER_SEC);
+  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #else
   StartTime = MPI_Wtime();
 #endif
@@ -381,7 +381,7 @@ int main(int argc, char *argv[]) {
      wall clock time required. ---*/
     
 #ifndef HAVE_MPI
-    StopTime = double(clock())/double(CLOCKS_PER_SEC);
+    StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #else
     StopTime = MPI_Wtime();
 #endif
@@ -518,7 +518,7 @@ int main(int argc, char *argv[]) {
    wall clock time required. ---*/
   
 #ifndef HAVE_MPI
-  StopTime = double(clock())/double(CLOCKS_PER_SEC);
+  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #else
   StopTime = MPI_Wtime();
 #endif

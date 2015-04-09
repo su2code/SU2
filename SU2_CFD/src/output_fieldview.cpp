@@ -69,7 +69,7 @@ void COutput::SetFieldViewASCII(CConfig *config, CGeometry *geometry, unsigned s
   if ((Kind_Solver == EULER || Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS ||
        Kind_Solver == ADJ_EULER || Kind_Solver == ADJ_NAVIER_STOKES || Kind_Solver == ADJ_RANS) &&
       (val_nZone > 1) && (config->GetUnsteady_Simulation() != TIME_SPECTRAL)) {
-    sprintf (buffer, "_%d", int(val_iZone));
+    SPRINTF (buffer, "_%d", int(val_iZone));
     strcat(cstr, buffer);
   }
   
@@ -77,21 +77,21 @@ void COutput::SetFieldViewASCII(CConfig *config, CGeometry *geometry, unsigned s
     
     if (config->GetKind_SU2() == SU2_SOL) { val_iZone = iExtIter; }
     
-    if (int(val_iZone) < 10) sprintf (buffer, "_0000%d.uns", int(val_iZone));
-    if ((int(val_iZone) >= 10) && (int(val_iZone) < 100)) sprintf (buffer, "_000%d.uns", int(val_iZone));
-    if ((int(val_iZone) >= 100) && (int(val_iZone) < 1000)) sprintf (buffer, "_00%d.uns", int(val_iZone));
-    if ((int(val_iZone) >= 1000) && (int(val_iZone) < 10000)) sprintf (buffer, "_0%d.uns", int(val_iZone));
-    if (int(val_iZone) >= 10000) sprintf (buffer, "_%d.uns", int(val_iZone));
+    if (int(val_iZone) < 10) SPRINTF (buffer, "_0000%d.uns", int(val_iZone));
+    if ((int(val_iZone) >= 10) && (int(val_iZone) < 100)) SPRINTF (buffer, "_000%d.uns", int(val_iZone));
+    if ((int(val_iZone) >= 100) && (int(val_iZone) < 1000)) SPRINTF (buffer, "_00%d.uns", int(val_iZone));
+    if ((int(val_iZone) >= 1000) && (int(val_iZone) < 10000)) SPRINTF (buffer, "_0%d.uns", int(val_iZone));
+    if (int(val_iZone) >= 10000) SPRINTF (buffer, "_%d.uns", int(val_iZone));
     
   }
   else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
-    if (int(iExtIter) < 10) sprintf (buffer, "_0000%d.uns", int(iExtIter));
-    if ((int(iExtIter) >= 10) && (int(iExtIter) < 100)) sprintf (buffer, "_000%d.uns", int(iExtIter));
-    if ((int(iExtIter) >= 100) && (int(iExtIter) < 1000)) sprintf (buffer, "_00%d.uns", int(iExtIter));
-    if ((int(iExtIter) >= 1000) && (int(iExtIter) < 10000)) sprintf (buffer, "_0%d.uns", int(iExtIter));
-    if (int(iExtIter) >= 10000) sprintf (buffer, "_%d.uns", int(iExtIter));
+    if (int(iExtIter) < 10) SPRINTF (buffer, "_0000%d.uns", int(iExtIter));
+    if ((int(iExtIter) >= 10) && (int(iExtIter) < 100)) SPRINTF (buffer, "_000%d.uns", int(iExtIter));
+    if ((int(iExtIter) >= 100) && (int(iExtIter) < 1000)) SPRINTF (buffer, "_00%d.uns", int(iExtIter));
+    if ((int(iExtIter) >= 1000) && (int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d.uns", int(iExtIter));
+    if (int(iExtIter) >= 10000) SPRINTF (buffer, "_%d.uns", int(iExtIter));
   }
-  else { sprintf (buffer, ".uns"); }
+  else { SPRINTF (buffer, ".uns"); }
   
   strcat(cstr, buffer);
   
@@ -160,7 +160,7 @@ void COutput::SetFieldViewASCII(CConfig *config, CGeometry *geometry, unsigned s
     
     for (unsigned short iField = 1+nDim; iField < config->fields.size(); iField++) {
       
-      /*--- Remove all double-quote characters ---*/
+      /*--- Remove all su2double-quote characters ---*/
       
       FieldName = config->fields[iField];
       
@@ -504,7 +504,7 @@ void COutput::SetFieldViewBinary(CConfig *config, CGeometry *geometry, unsigned 
   if ((Kind_Solver == EULER || Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS ||
        Kind_Solver == ADJ_EULER || Kind_Solver == ADJ_NAVIER_STOKES || Kind_Solver == ADJ_RANS) &&
       (val_nZone > 1) && (config->GetUnsteady_Simulation() != TIME_SPECTRAL)) {
-    sprintf (buffer, "_%d", int(val_iZone));
+    SPRINTF (buffer, "_%d", int(val_iZone));
     strcat(cstr, buffer);
   }
   
@@ -512,21 +512,21 @@ void COutput::SetFieldViewBinary(CConfig *config, CGeometry *geometry, unsigned 
     
     if (config->GetKind_SU2() == SU2_SOL) { val_iZone = iExtIter; }
     
-    if (int(val_iZone) < 10) sprintf (buffer, "_0000%d.uns", int(val_iZone));
-    if ((int(val_iZone) >= 10) && (int(val_iZone) < 100)) sprintf (buffer, "_000%d.uns", int(val_iZone));
-    if ((int(val_iZone) >= 100) && (int(val_iZone) < 1000)) sprintf (buffer, "_00%d.uns", int(val_iZone));
-    if ((int(val_iZone) >= 1000) && (int(val_iZone) < 10000)) sprintf (buffer, "_0%d.uns", int(val_iZone));
-    if (int(val_iZone) >= 10000) sprintf (buffer, "_%d.uns", int(val_iZone));
+    if (int(val_iZone) < 10) SPRINTF (buffer, "_0000%d.uns", int(val_iZone));
+    if ((int(val_iZone) >= 10) && (int(val_iZone) < 100)) SPRINTF (buffer, "_000%d.uns", int(val_iZone));
+    if ((int(val_iZone) >= 100) && (int(val_iZone) < 1000)) SPRINTF (buffer, "_00%d.uns", int(val_iZone));
+    if ((int(val_iZone) >= 1000) && (int(val_iZone) < 10000)) SPRINTF (buffer, "_0%d.uns", int(val_iZone));
+    if (int(val_iZone) >= 10000) SPRINTF (buffer, "_%d.uns", int(val_iZone));
     
   }
   else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
-    if (int(iExtIter) < 10) sprintf (buffer, "_0000%d.uns", int(iExtIter));
-    if ((int(iExtIter) >= 10) && (int(iExtIter) < 100)) sprintf (buffer, "_000%d.uns", int(iExtIter));
-    if ((int(iExtIter) >= 100) && (int(iExtIter) < 1000)) sprintf (buffer, "_00%d.uns", int(iExtIter));
-    if ((int(iExtIter) >= 1000) && (int(iExtIter) < 10000)) sprintf (buffer, "_0%d.uns", int(iExtIter));
-    if (int(iExtIter) >= 10000) sprintf (buffer, "_%d.uns", int(iExtIter));
+    if (int(iExtIter) < 10) SPRINTF (buffer, "_0000%d.uns", int(iExtIter));
+    if ((int(iExtIter) >= 10) && (int(iExtIter) < 100)) SPRINTF (buffer, "_000%d.uns", int(iExtIter));
+    if ((int(iExtIter) >= 100) && (int(iExtIter) < 1000)) SPRINTF (buffer, "_00%d.uns", int(iExtIter));
+    if ((int(iExtIter) >= 1000) && (int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d.uns", int(iExtIter));
+    if (int(iExtIter) >= 10000) SPRINTF (buffer, "_%d.uns", int(iExtIter));
   }
-  else { sprintf (buffer, ".uns"); }
+  else { SPRINTF (buffer, ".uns"); }
   
   strcat(cstr, buffer);
   

@@ -34,11 +34,23 @@
 
 #ifdef HAVE_MPI
 #include "mpi.h"
+#include <map>
 #endif
 
 #include "./datatype_structure.hpp"
 
 #ifdef HAVE_MPI
+
+/* --- Depending on the datatype used, the correct MPI wrapper class is defined.
+ * For the default (double type) case this results in using the normal MPI routines. --- */
+
+#ifdef COMPLEX_TYPE
+class CComplexMPIWrapper;
+typedef CComplexMPIWrapper SU2_MPI;
+#else
+class CMPIWrapper;
+typedef CMPIWrapper SU2_MPI;
+#endif
 
 /*!
  * \class CMPIWrapper
@@ -95,5 +107,77 @@ protected:
   static char* buff;
 
 };
+
+#ifdef COMPLEX_TYPE
+class CComplexMPIWrapper : public CMPIWrapper{
+public:
+  static void Isend(void *buf, int count, MPI_Datatype datatype, int dest,
+                    int tag, MPI_Comm comm, MPI_Request* request);
+
+  static void Irecv(void *buf, int count, MPI_Datatype datatype, int source,
+                    int tag, MPI_Comm comm, MPI_Request* request);
+
+  static void Wait(MPI_Request *request, MPI_Status *status);
+
+  static void Waitall(int nrequests, MPI_Request *request, MPI_Status *status);
+
+  static void Send(void *buf, int count, MPI_Datatype datatype, int dest,
+                   int tag, MPI_Comm comm);
+
+  static void Recv(void *buf, int count, MPI_Datatype datatype, int dest,
+                   int tag, MPI_Comm comm, MPI_Status *status);
+
+  static void Bcast(void *buf, int count, MPI_Datatype datatype, int root,
+                    MPI_Comm comm);
+
+  static void Bsend(void *buf, int count, MPI_Datatype datatype, int dest,
+                    int tag, MPI_Comm comm);
+
+  static void Reduce(void *sendbuf, void *recvbuf, int count,
+                     MPI_Datatype datatype, MPI_Op op, int root, MPI_Comm comm);
+
+  static void Allreduce(void *sendbuf, void *recvbuf, int count,
+                        MPI_Datatype datatype, MPI_Op op, MPI_Comm comm);
+
+  static void Gather(void *sendbuf, int sendcnt,MPI_Datatype sendtype,
+                     void *recvbuf, int recvcnt, MPI_Datatype recvtype, int root, MPI_Comm comm);
+
+  static void Allgather(void *sendbuf, int sendcnt, MPI_Datatype sendtype,
+                        void *recvbuf, int recvcnt, MPI_Datatype recvtype, MPI_Comm comm);
+
+  static void Sendrecv(void *sendbuf, int sendcnt, MPI_Datatype sendtype,
+                       int dest, int sendtag, void *recvbuf, int recvcnt,
+                       MPI_Datatype recvtype,int source, int recvtag,
+                       MPI_Comm comm, MPI_Status *status);
+
+private:
+
+  enum CommType {
+    ISEND,
+    IRECV
+  };
+
+  struct CommInfo{
+    CommType Type;
+    MPI_Request* RequestAux;
+    double* ValueBuffer;
+    double* AuxBuffer;
+    su2double* su2doubleBuffer;
+    int     count;
+  };
+
+  struct ValRank{
+    double value;
+    int rank;
+  };
+
+  static std::map<MPI_Request*, CommInfo>::iterator CommInfoIterator;
+
+  static std::map<MPI_Request*, CommInfo> CommInfoMap;
+
+  static void FinalizeCommunication(std::map<MPI_Request*, CommInfo>::iterator &CommInfo);
+
+};
+#endif
 #endif
 #include "mpi_structure.inl"

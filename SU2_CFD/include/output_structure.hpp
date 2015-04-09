@@ -73,7 +73,7 @@ class COutput {
 	nGlobal_Hexa,
 	nGlobal_Pris,
 	nGlobal_Pyra;
-	double **Coords;              // node i (x, y, z) = (Coords[0][i], Coords[1][i], Coords[2][i])
+	su2double **Coords;              // node i (x, y, z) = (Coords[0][i], Coords[1][i], Coords[2][i])
   int *Conn_Line;
   int *Conn_BoundTria;
 	int *Conn_BoundQuad;
@@ -83,14 +83,14 @@ class COutput {
 	int *Conn_Hexa;
 	int *Conn_Pris;
 	int *Conn_Pyra;
-	double *Volume;
-	double **Data;
-	double **residuals, **consv_vars;					// placeholders
-	double *p, *rho, *M, *Cp, *Cf, *Ch, *h, *yplus;		// placeholders 
+	su2double *Volume;
+	su2double **Data;
+	su2double **residuals, **consv_vars;					// placeholders
+	su2double *p, *rho, *M, *Cp, *Cf, *Ch, *h, *yplus;		// placeholders 
 	unsigned short nVar_Consv, nVar_Total, nVar_Extra, nZones;
 	bool wrote_surf_file, wrote_CGNS_base, wrote_Tecplot_base, wrote_Paraview_base;
   unsigned short wrote_base_file;
-  double RhoRes_New, RhoRes_Old;
+  su2double RhoRes_New, RhoRes_Old;
   int cgns_base, cgns_zone, cgns_base_results, cgns_zone_results;
   
 protected:
@@ -98,7 +98,7 @@ protected:
 public:
 
   unsigned short **nOutput_Vars;
-  double ****data_container;
+  su2double ****data_container;
   
 	/*! 
 	 * \brief Constructor of the class. 
@@ -482,7 +482,7 @@ public:
 	 * \param[in] val_nZone - iZone index.
 	 */
 	void SetConvHistory_Body(ofstream *ConvHist_file, CGeometry ***geometry, CSolver ****solver_container, CConfig **config,
-                              CIntegration ***integration, bool DualTime, double timeused, unsigned short val_iZone);
+                              CIntegration ***integration, bool DualTime, su2double timeused, unsigned short val_iZone);
   
   /*!
    * \brief Write the history file and the convergence on the screen for serial computations.

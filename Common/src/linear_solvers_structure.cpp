@@ -29,27 +29,27 @@
 
 #include "../include/linear_solvers_structure.hpp"
 
-void CSysSolve::ApplyGivens(const double & s, const double & c, double & h1, double & h2) {
+void CSysSolve::ApplyGivens(const su2double & s, const su2double & c, su2double & h1, su2double & h2) {
   
-  double temp = c*h1 + s*h2;
+  su2double temp = c*h1 + s*h2;
   h2 = c*h2 - s*h1;
   h1 = temp;
 }
 
-void CSysSolve::GenerateGivens(double & dx, double & dy, double & s, double & c) {
+void CSysSolve::GenerateGivens(su2double & dx, su2double & dy, su2double & s, su2double & c) {
   
   if ( (dx == 0.0) && (dy == 0.0) ) {
     c = 1.0;
     s = 0.0;
   }
   else if ( fabs(dy) > fabs(dx) ) {
-    double tmp = dx/dy;
+    su2double tmp = dx/dy;
     dx = sqrt(1.0 + tmp*tmp);
     s = Sign(1.0/dx, dy);
     c = tmp*s;
   }
   else if ( fabs(dy) <= fabs(dx) ) {
-    double tmp = dy/dx;
+    su2double tmp = dy/dx;
     dy = sqrt(1.0 + tmp*tmp);
     c = Sign(1.0/dy, dx);
     s = tmp*c;
@@ -65,8 +65,8 @@ void CSysSolve::GenerateGivens(double & dx, double & dy, double & s, double & c)
   dy = 0.0;
 }
 
-void CSysSolve::SolveReduced(const int & n, const vector<vector<double> > & Hsbg,
-                             const vector<double> & rhs, vector<double> & x) {
+void CSysSolve::SolveReduced(const int & n, const vector<vector<su2double> > & Hsbg,
+                             const vector<su2double> & rhs, vector<su2double> & x) {
   // initialize...
   for (int i = 0; i < n; i++)
     x[i] = rhs[i];
@@ -79,7 +79,7 @@ void CSysSolve::SolveReduced(const int & n, const vector<vector<double> > & Hsbg
   }
 }
 
-void CSysSolve::ModGramSchmidt(int i, vector<vector<double> > & Hsbg, vector<CSysVector> & w) {
+void CSysSolve::ModGramSchmidt(int i, vector<vector<su2double> > & Hsbg, vector<CSysVector> & w) {
   
   bool Convergence = true;
   int rank = MASTER_NODE;
@@ -92,13 +92,13 @@ void CSysSolve::ModGramSchmidt(int i, vector<vector<double> > & Hsbg, vector<CSy
   
   /*--- Parameter for reorthonormalization ---*/
   
-  static const double reorth = 0.98;
+  static const su2double reorth = 0.98;
   
   /*--- Get the norm of the vector being orthogonalized, and find the
   threshold for re-orthogonalization ---*/
   
-  double nrm = dotProd(w[i+1], w[i+1]);
-  double thr = nrm*reorth;
+  su2double nrm = dotProd(w[i+1], w[i+1]);
+  su2double thr = nrm*reorth;
   
   /*--- The norm of w[i+1] < 0.0 or w[i+1] = NaN ---*/
 
@@ -148,7 +148,7 @@ void CSysSolve::ModGramSchmidt(int i, vector<vector<double> > & Hsbg, vector<CSy
   /*--- Begin main Gram-Schmidt loop ---*/
   
   for (int k = 0; k < i+1; k++) {
-    double prod = dotProd(w[i+1], w[k]);
+    su2double prod = dotProd(w[i+1], w[k]);
     Hsbg[k][i] = prod;
     w[i+1].Plus_AX(-prod, w[k]);
     
@@ -191,7 +191,7 @@ void CSysSolve::ModGramSchmidt(int i, vector<vector<double> > & Hsbg, vector<CSy
   w[i+1] /= nrm;
 }
 
-void CSysSolve::WriteHeader(const string & solver, const double & restol, const double & resinit) {
+void CSysSolve::WriteHeader(const string & solver, const su2double & restol, const su2double & resinit) {
   
   cout << "\n# " << solver << " residual history" << endl;
   cout << "# Residual tolerance target = " << restol << endl;
@@ -199,14 +199,14 @@ void CSysSolve::WriteHeader(const string & solver, const double & restol, const 
   
 }
 
-void CSysSolve::WriteHistory(const int & iter, const double & res, const double & resinit) {
+void CSysSolve::WriteHistory(const int & iter, const su2double & res, const su2double & resinit) {
   
   cout << "     " << iter << "     " << res/resinit << endl;
   
 }
 
 unsigned long CSysSolve::CG_LinSolver(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
-                                           CPreconditioner & precond, double tol, unsigned long m, bool monitoring) {
+                                           CPreconditioner & precond, su2double tol, unsigned long m, bool monitoring) {
 	
 int rank = 0;
 
@@ -232,14 +232,14 @@ int rank = 0;
   mat_vec(x, A_p);
   
   r -= A_p; // recall, r holds b initially
-  double norm_r = r.norm();
-  double norm0 = b.norm();
+  su2double norm_r = r.norm();
+  su2double norm0 = b.norm();
   if ( (norm_r < tol*norm0) || (norm_r < eps) ) {
     if (rank == MASTER_NODE) cout << "CSysSolve::ConjugateGradient(): system solved by initial guess." << endl;
     return 0;
   }
   
-  double alpha, beta, r_dot_z;
+  su2double alpha, beta, r_dot_z;
   CSysVector z(r);
   precond(r, z);
   CSysVector p(z);
@@ -297,7 +297,7 @@ int rank = 0;
 //  mat_vec(x, A_p);
 //  r = b;
 //  r -= A_p;
-//  double true_res = r.norm();
+//  su2double true_res = r.norm();
 //  
 //  if (fabs(true_res - norm_r) > tol*10.0) {
 //    if (rank == MASTER_NODE) {
@@ -312,7 +312,7 @@ int rank = 0;
 }
 
 unsigned long CSysSolve::FGMRES_LinSolver(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
-                               CPreconditioner & precond, double tol, unsigned long m, double *residual, bool monitoring) {
+                               CPreconditioner & precond, su2double tol, unsigned long m, su2double *residual, bool monitoring) {
 	
 int rank = 0;
 
@@ -350,15 +350,15 @@ int rank = 0;
   
   vector<CSysVector> w(m+1, x);
   vector<CSysVector> z(m+1, x);
-  vector<double> g(m+1, 0.0);
-  vector<double> sn(m+1, 0.0);
-  vector<double> cs(m+1, 0.0);
-  vector<double> y(m, 0.0);
-  vector<vector<double> > H(m+1, vector<double>(m, 0.0));
+  vector<su2double> g(m+1, 0.0);
+  vector<su2double> sn(m+1, 0.0);
+  vector<su2double> cs(m+1, 0.0);
+  vector<su2double> y(m, 0.0);
+  vector<vector<su2double> > H(m+1, vector<su2double>(m, 0.0));
   
   /*---  Calculate the norm of the rhs vector ---*/
   
-  double norm0 = b.norm();
+  su2double norm0 = b.norm();
   
   /*---  Calculate the initial residual (actually the negative residual)
 	 and compute its norm ---*/
@@ -366,7 +366,7 @@ int rank = 0;
   mat_vec(x, w[0]);
   w[0] -= b;
   
-  double beta = w[0].norm();
+  su2double beta = w[0].norm();
   
   if ( (beta < tol*norm0) || (beta < eps) ) {
     
@@ -451,7 +451,7 @@ int rank = 0;
 //  /*---  Recalculate final (neg.) residual (this should be optional) ---*/
 //  mat_vec(x, w[0]);
 //  w[0] -= b;
-//  double res = w[0].norm();
+//  su2double res = w[0].norm();
 //
 //  if (fabs(res - beta) > tol*10) {
 //    if (rank == MASTER_NODE) {
@@ -467,7 +467,7 @@ int rank = 0;
 }
 
 unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
-                                 CPreconditioner & precond, double tol, unsigned long m, double *residual, bool monitoring) {
+                                 CPreconditioner & precond, su2double tol, unsigned long m, su2double *residual, bool monitoring) {
 	
   int rank = 0;
 #ifdef HAVE_MPI
@@ -500,8 +500,8 @@ unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x,
   
 	mat_vec(x, A_x);
   r -= A_x; r_0 = r; // recall, r holds b initially
-  double norm_r = r.norm();
-  double norm0 = b.norm();
+  su2double norm_r = r.norm();
+  su2double norm0 = b.norm();
   if ( (norm_r < tol*norm0) || (norm_r < eps) ) {
     if (rank == MASTER_NODE) cout << "CSysSolve::BCGSTAB(): system solved by initial guess." << endl;
     return 0;
@@ -509,7 +509,7 @@ unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x,
 	
 	/*--- Initialization ---*/
   
-  double alpha = 1.0, beta = 1.0, omega = 1.0, rho = 1.0, rho_prime = 1.0;
+  su2double alpha = 1.0, beta = 1.0, omega = 1.0, rho = 1.0, rho_prime = 1.0;
 	
   /*--- Set the norm to the initial initial residual value ---*/
   
@@ -541,7 +541,7 @@ unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x,
 		
 		/*--- p_{i} = r_{i-1} + beta * p_{i-1} - beta * omega * v_{i-1} ---*/
     
-		double beta_omega = -beta*omega;
+		su2double beta_omega = -beta*omega;
 		p.Equals_AX_Plus_BY(beta, p, beta_omega, v);
 		p.Plus_AX(1.0, r);
 		
@@ -552,7 +552,7 @@ unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x,
     
 		/*--- Calculate step-length alpha ---*/
     
-    double r_0_v = dotProd(r_0, v);
+    su2double r_0_v = dotProd(r_0, v);
     alpha = rho / r_0_v;
     
 		/*--- s_{i} = r_{i-1} - alpha * v_{i} ---*/
@@ -589,7 +589,7 @@ unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x,
 //  /*--- Recalculate final residual (this should be optional) ---*/
 //	mat_vec(x, A_x);
 //  r = b; r -= A_x;
-//  double true_res = r.norm();
+//  su2double true_res = r.norm();
 //  
 //  if ((fabs(true_res - norm_r) > tol*10.0) && (rank == MASTER_NODE)) {
 //    cout << "# WARNING in CSysSolve::BCGSTAB(): " << endl;
@@ -603,7 +603,7 @@ unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x,
 
 unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CSysVector & LinSysSol, CGeometry *geometry, CConfig *config) {
   
-  double SolverTol = config->GetLinear_Solver_Error(), Residual;
+  su2double SolverTol = config->GetLinear_Solver_Error(), Residual;
   unsigned long MaxIter = config->GetLinear_Solver_Iter();
   unsigned long IterLinSol = 0;
   

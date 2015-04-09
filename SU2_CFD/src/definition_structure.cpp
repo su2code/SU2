@@ -572,7 +572,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
   nVar_Heat             = 0,
   nVar_Lin_Flow         = 0;
   
-  double *constants = NULL;
+  su2double *constants = NULL;
   
   bool
   euler, adj_euler, lin_euler,

@@ -1,7 +1,7 @@
 /*!
- * \file linear_solvers_structure.inl
- * \brief inline subroutines of the <i>linear_solvers_structure.hpp</i> file.
- * \author J. Hicken, F. Palacios
+ * \file datatype_structure.inl
+ * \brief In-Line subroutines of the <i>datatype_structure.hpp</i> file.
+ * \author T. Albring
  * \version 3.2.9 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
@@ -12,6 +12,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *
+ * Copyright (C) 2012-2015 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,13 +28,41 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
 
-inline su2double CSysSolve::Sign(const su2double & x, const su2double & y) const {
-  if (y == 0.0)
-    return 0.0;
-  else {
-    return (y < 0 ? -fabs(x) : fabs(x));
-  }
+inline void CTypeWrapper::SetPrimary(su2double& data, const double &val){
+  data = val;
 }
+
+
+inline double CTypeWrapper::GetPrimary(su2double& data){
+  return data;
+}
+
+inline void CTypeWrapper::SetSecondary(su2double& data, const double &val){
+
+}
+
+
+inline double CTypeWrapper::GetSecondary(su2double& data){
+  return 0.0;
+}
+
+#ifdef COMPLEX_TYPE
+inline void CComplexTypeWrapper::SetPrimary(su2double& data, const double &val){
+  data = su2double(val, data.imag());
+}
+
+
+inline double CComplexTypeWrapper::GetPrimary(su2double& data){
+  return data.real();
+}
+
+inline void CComplexTypeWrapper::SetSecondary(su2double& data, const double &val){
+  data = su2double(data.real(), val);
+}
+
+inline double CComplexTypeWrapper::GetSecondary(su2double& data){
+  return data.imag();
+}
+#endif

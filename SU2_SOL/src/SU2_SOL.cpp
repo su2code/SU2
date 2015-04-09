@@ -36,7 +36,7 @@ using namespace std;
 int main(int argc, char *argv[]) {
   
 	unsigned short iZone, nZone = SINGLE_ZONE;
-  double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
+  su2double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
 	ofstream ConvHist_file;
 	char config_file_name[MAX_STRING_SIZE];
 	int rank = MASTER_NODE;
@@ -128,7 +128,7 @@ int main(int argc, char *argv[]) {
 #ifdef HAVE_MPI
   StartTime = MPI_Wtime();
 #else
-  StartTime = double(clock())/double(CLOCKS_PER_SEC);
+  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #endif
   
   if (rank == MASTER_NODE)
@@ -145,7 +145,7 @@ int main(int argc, char *argv[]) {
     /*--- Unsteady simulation: merge all unsteady time steps. First,
      find the frequency and total number of files to write. ---*/
     
-    double Physical_dt, Physical_t;
+    su2double Physical_dt, Physical_t;
     unsigned long iExtIter = 0;
     bool StopCalc = false;
     bool SolutionInstantiated = false;
@@ -246,7 +246,7 @@ int main(int argc, char *argv[]) {
 #ifdef HAVE_MPI
   StopTime = MPI_Wtime();
 #else
-  StopTime = double(clock())/double(CLOCKS_PER_SEC);
+  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #endif
   
   /*--- Compute/print the total time for performance benchmarking. ---*/

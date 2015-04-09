@@ -35,7 +35,7 @@ CSysVector::CSysVector(void) {
   
 }
 
-CSysVector::CSysVector(const unsigned long & size, const double & val) {
+CSysVector::CSysVector(const unsigned long & size, const su2double & val) {
   
   nElm = size; nElmDomain = size;
   nBlk = nElm; nBlkDomain = nElmDomain;
@@ -43,12 +43,12 @@ CSysVector::CSysVector(const unsigned long & size, const double & val) {
   
   /*--- Check for invalid size, then allocate memory and initialize values ---*/
   if ( (nElm <= 0) || (nElm >= UINT_MAX) ) {
-    cerr << "CSysVector::CSysVector(unsigned int, double): "
+    cerr << "CSysVector::CSysVector(unsigned int, su2double): "
     << "invalid input: size = " << size << endl;
     throw(-1);
   }
 
-  vec_val = new double[nElm];
+  vec_val = new su2double[nElm];
   for (unsigned int i = 0; i < nElm; i++)
     vec_val[i] = val;
   
@@ -60,7 +60,7 @@ CSysVector::CSysVector(const unsigned long & size, const double & val) {
 }
 
 CSysVector::CSysVector(const unsigned long & numBlk, const unsigned long & numBlkDomain, const unsigned short & numVar,
-                       const double & val) {
+                       const su2double & val) {
 
   nElm = numBlk*numVar; nElmDomain = numBlkDomain*numVar;
   nBlk = numBlk; nBlkDomain = numBlkDomain;
@@ -68,12 +68,12 @@ CSysVector::CSysVector(const unsigned long & numBlk, const unsigned long & numBl
   
   /*--- Check for invalid input, then allocate memory and initialize values ---*/
   if ( (nElm <= 0) || (nElm >= ULONG_MAX) ) {
-    cerr << "CSysVector::CSysVector(unsigned int, unsigned int, double): "
+    cerr << "CSysVector::CSysVector(unsigned int, unsigned int, su2double): "
     << "invalid input: numBlk, numVar = " << numBlk << "," << numVar << endl;
     throw(-1);
   }
 	
-  vec_val = new double[nElm];
+  vec_val = new su2double[nElm];
   for (unsigned int i = 0; i < nElm; i++)
     vec_val[i] = val;
   
@@ -93,7 +93,7 @@ CSysVector::CSysVector(const CSysVector & u) {
   nBlk = u.nBlk; nBlkDomain = u.nBlkDomain;
   nVar = u.nVar;
   
-  vec_val = new double[nElm];
+  vec_val = new su2double[nElm];
   for (unsigned long i = 0; i < nElm; i++)
     vec_val[i] = u.vec_val[i];
   
@@ -103,7 +103,7 @@ CSysVector::CSysVector(const CSysVector & u) {
   
 }
 
-CSysVector::CSysVector(const unsigned long & size, const double* u_array) {
+CSysVector::CSysVector(const unsigned long & size, const su2double* u_array) {
   
   nElm = size; nElmDomain = size;
   nBlk = nElm; nBlkDomain = nElmDomain;
@@ -111,12 +111,12 @@ CSysVector::CSysVector(const unsigned long & size, const double* u_array) {
   
   /*--- Check for invalid size, then allocate memory and initialize values ---*/
   if ( (nElm <= 0) || (nElm >= ULONG_MAX) ) {
-    cerr << "CSysVector::CSysVector(unsigned int, double*): "
+    cerr << "CSysVector::CSysVector(unsigned int, su2double*): "
     << "invalid input: size = " << size << endl;
     throw(-1);
   }
 
-  vec_val = new double[nElm];
+  vec_val = new su2double[nElm];
   for (unsigned long i = 0; i < nElm; i++)
     vec_val[i] = u_array[i];
 
@@ -130,7 +130,7 @@ CSysVector::CSysVector(const unsigned long & size, const double* u_array) {
 }
 
 CSysVector::CSysVector(const unsigned long & numBlk, const unsigned long & numBlkDomain, const unsigned short & numVar,
-                       const double* u_array) {
+                       const su2double* u_array) {
 
   nElm = numBlk*numVar; nElmDomain = numBlkDomain*numVar;
   nBlk = numBlk; nBlkDomain = numBlkDomain;
@@ -138,12 +138,12 @@ CSysVector::CSysVector(const unsigned long & numBlk, const unsigned long & numBl
   
   /*--- check for invalid input, then allocate memory and initialize values ---*/
   if ( (nElm <= 0) || (nElm >= ULONG_MAX) ) {
-    cerr << "CSysVector::CSysVector(unsigned int, unsigned int, double*): "
+    cerr << "CSysVector::CSysVector(unsigned int, unsigned int, su2double*): "
     << "invalid input: numBlk, numVar = " << numBlk << "," << numVar << endl;
     throw(-1);
   }
 
-  vec_val = new double[nElm];
+  vec_val = new su2double[nElm];
   for (unsigned long i = 0; i < nElm; i++)
     vec_val[i] = u_array[i];
 
@@ -163,7 +163,7 @@ CSysVector::~CSysVector() {
   
 }
 
-void CSysVector::Initialize(const unsigned long & numBlk, const unsigned long & numBlkDomain, const unsigned short & numVar, const double & val) {
+void CSysVector::Initialize(const unsigned long & numBlk, const unsigned long & numBlkDomain, const unsigned short & numVar, const su2double & val) {
   
   nElm = numBlk*numVar; nElmDomain = numBlkDomain*numVar;
   nBlk = numBlk; nBlkDomain = numBlkDomain;
@@ -171,12 +171,12 @@ void CSysVector::Initialize(const unsigned long & numBlk, const unsigned long & 
   
   /*--- Check for invalid input, then allocate memory and initialize values ---*/
   if ( (nElm <= 0) || (nElm >= ULONG_MAX) ) {
-    cerr << "CSysVector::CSysVector(unsigned int, unsigned int, double): "
+    cerr << "CSysVector::CSysVector(unsigned int, unsigned int, su2double): "
     << "invalid input: numBlk, numVar = " << numBlk << "," << numVar << endl;
     throw(-1);
   }
 	
-  vec_val = new double[nElm];
+  vec_val = new su2double[nElm];
   for (unsigned long i = 0; i < nElm; i++)
     vec_val[i] = val;
   
@@ -187,7 +187,7 @@ void CSysVector::Initialize(const unsigned long & numBlk, const unsigned long & 
   
 }
 
-void CSysVector::Equals_AX(const double & a, CSysVector & x) {
+void CSysVector::Equals_AX(const su2double & a, CSysVector & x) {
   /*--- check that *this and x are compatible ---*/
   if (nElm != x.nElm) {
     cerr << "CSysVector::Equals_AX(): " << "sizes do not match";
@@ -197,7 +197,7 @@ void CSysVector::Equals_AX(const double & a, CSysVector & x) {
     vec_val[i] = a * x.vec_val[i];
 }
 
-void CSysVector::Plus_AX(const double & a, CSysVector & x) {
+void CSysVector::Plus_AX(const su2double & a, CSysVector & x) {
   /*--- check that *this and x are compatible ---*/
   if (nElm != x.nElm) {
     cerr << "CSysVector::Plus_AX(): " << "sizes do not match";
@@ -207,7 +207,7 @@ void CSysVector::Plus_AX(const double & a, CSysVector & x) {
     vec_val[i] += a * x.vec_val[i];
 }
 
-void CSysVector::Equals_AX_Plus_BY(const double & a, CSysVector & x, const double & b, CSysVector & y) {
+void CSysVector::Equals_AX_Plus_BY(const su2double & a, CSysVector & x, const su2double & b, CSysVector & y) {
   /*--- check that *this, x and y are compatible ---*/
   if ((nElm != x.nElm) || (nElm != y.nElm)) {
     cerr << "CSysVector::Equals_AX_Plus_BY(): " << "sizes do not match";
@@ -230,7 +230,7 @@ CSysVector & CSysVector::operator=(const CSysVector & u) {
 	nBlkDomain = u.nBlkDomain;
   
   nVar = u.nVar;
-  vec_val = new double[nElm];
+  vec_val = new su2double[nElm];
   for (unsigned long i = 0; i < nElm; i++)
     vec_val[i] = u.vec_val[i];
   
@@ -241,7 +241,7 @@ CSysVector & CSysVector::operator=(const CSysVector & u) {
   return *this;
 }
 
-CSysVector & CSysVector::operator=(const double & val) {
+CSysVector & CSysVector::operator=(const su2double & val) {
   for (unsigned long i = 0; i < nElm; i++)
     vec_val[i] = val;
   return *this;
@@ -287,7 +287,7 @@ CSysVector & CSysVector::operator-=(const CSysVector & u) {
   return *this;
 }
 
-CSysVector CSysVector::operator*(const double & val) const {
+CSysVector CSysVector::operator*(const su2double & val) const {
   
   /*--- use copy constructor and compound scalar
    multiplication-assignment ---*/
@@ -296,7 +296,7 @@ CSysVector CSysVector::operator*(const double & val) const {
   return prod;
 }
 
-CSysVector operator*(const double & val, const CSysVector & u) {
+CSysVector operator*(const su2double & val, const CSysVector & u) {
   
   /*--- use copy constructor and compound scalar
    multiplication-assignment ---*/
@@ -305,14 +305,14 @@ CSysVector operator*(const double & val, const CSysVector & u) {
   return prod;
 }
 
-CSysVector & CSysVector::operator*=(const double & val) {
+CSysVector & CSysVector::operator*=(const su2double & val) {
   
   for (unsigned long i = 0; i < nElm; i++)
     vec_val[i] *= val;
   return *this;
 }
 
-CSysVector CSysVector::operator/(const double & val) const {
+CSysVector CSysVector::operator/(const su2double & val) const {
   
   /*--- use copy constructor and compound scalar
    division-assignment ---*/
@@ -321,17 +321,17 @@ CSysVector CSysVector::operator/(const double & val) const {
   return quotient;
 }
 
-CSysVector & CSysVector::operator/=(const double & val) {
+CSysVector & CSysVector::operator/=(const su2double & val) {
   
   for (unsigned long i = 0; i < nElm; i++)
     vec_val[i] /= val;
   return *this;
 }
 
-double CSysVector::norm() const {
+su2double CSysVector::norm() const {
   
   /*--- just call dotProd on this*, then sqrt ---*/
-  double val = dotProd(*this, *this);
+  su2double val = dotProd(*this, *this);
   if (val < 0.0) {
     cerr << "CSysVector::norm(): " << "inner product of CSysVector is negative";
     throw(-1);
@@ -339,34 +339,34 @@ double CSysVector::norm() const {
   return sqrt(val);
 }
 
-void CSysVector::CopyToArray(double* u_array) {
+void CSysVector::CopyToArray(su2double* u_array) {
   
   for (unsigned long i = 0; i < nElm; i++)
     u_array[i] = vec_val[i];
 }
 
-void CSysVector::AddBlock(unsigned long val_ipoint, double *val_residual) {
+void CSysVector::AddBlock(unsigned long val_ipoint, su2double *val_residual) {
   unsigned short iVar;
   
   for (iVar = 0; iVar < nVar; iVar++)
     vec_val[val_ipoint*nVar+iVar] += val_residual[iVar];
 }
 
-void CSysVector::SubtractBlock(unsigned long val_ipoint, double *val_residual) {
+void CSysVector::SubtractBlock(unsigned long val_ipoint, su2double *val_residual) {
   unsigned short iVar;
   
   for (iVar = 0; iVar < nVar; iVar++)
     vec_val[val_ipoint*nVar+iVar] -= val_residual[iVar];
 }
 
-void CSysVector::SetBlock(unsigned long val_ipoint, double *val_residual) {
+void CSysVector::SetBlock(unsigned long val_ipoint, su2double *val_residual) {
   unsigned short iVar;
   
   for (iVar = 0; iVar < nVar; iVar++)
     vec_val[val_ipoint*nVar+iVar] = val_residual[iVar];
 }
 
-void CSysVector::SetBlock(unsigned long val_ipoint, unsigned short val_var, double val_residual) {
+void CSysVector::SetBlock(unsigned long val_ipoint, unsigned short val_var, su2double val_residual) {
 
   vec_val[val_ipoint*nVar+val_var] = val_residual;
 }
@@ -382,15 +382,15 @@ void CSysVector::SetBlock_Zero(unsigned long val_ipoint, unsigned short val_var)
     vec_val[val_ipoint*nVar+val_var] = 0.0;
 }
 
-double CSysVector::GetBlock(unsigned long val_ipoint, unsigned short val_var) {
+su2double CSysVector::GetBlock(unsigned long val_ipoint, unsigned short val_var) {
   return vec_val[val_ipoint*nVar + val_var];
 }
 
-double *CSysVector::GetBlock(unsigned long val_ipoint) {
+su2double *CSysVector::GetBlock(unsigned long val_ipoint) {
   return &vec_val[val_ipoint*nVar];
 }
 
-double dotProd(const CSysVector & u, const CSysVector & v) {
+su2double dotProd(const CSysVector & u, const CSysVector & v) {
   
   /*--- check for consistent sizes ---*/
   if (u.nElm != v.nElm) {
@@ -401,10 +401,10 @@ double dotProd(const CSysVector & u, const CSysVector & v) {
   
   /*--- find local inner product and, if a parallel run, sum over all
    processors (we use nElemDomain instead of nElem) ---*/
-  double loc_prod = 0.0;
+  su2double loc_prod = 0.0;
   for (unsigned long i = 0; i < u.nElmDomain; i++)
     loc_prod += u.vec_val[i]*v.vec_val[i];
-  double prod = 0.0;
+  su2double prod = 0.0;
   
 #ifdef HAVE_MPI
   SU2_MPI::Allreduce(&loc_prod, &prod, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);

@@ -206,15 +206,15 @@ void CSysMatrix::SetIndexes(unsigned long val_nPoint, unsigned long val_nPointDo
   row_ptr = val_row_ptr;
   col_ind = val_col_ind;
   
-  matrix            = new double [nnz*nVar*nEqn];	// Reserve memory for the values of the matrix
-  block             = new double [nVar*nEqn];
-  block_weight      = new double [nVar*nEqn];
-  block_inverse     = new double [nVar*nEqn];
+  matrix            = new su2double [nnz*nVar*nEqn];	// Reserve memory for the values of the matrix
+  block             = new su2double [nVar*nEqn];
+  block_weight      = new su2double [nVar*nEqn];
+  block_inverse     = new su2double [nVar*nEqn];
 
-  prod_block_vector = new double [nEqn];
-  prod_row_vector   = new double [nVar];
-  aux_vector        = new double [nVar];
-  sum_vector        = new double [nVar];
+  prod_block_vector = new su2double [nEqn];
+  prod_row_vector   = new su2double [nVar];
+  aux_vector        = new su2double [nVar];
+  sum_vector        = new su2double [nVar];
   
   /*--- Memory initialization ---*/
   
@@ -233,7 +233,7 @@ void CSysMatrix::SetIndexes(unsigned long val_nPoint, unsigned long val_nPointDo
   
   if ((config->GetKind_Linear_Solver_Prec() == ILU) ||
     (config->GetKind_Linear_Solver() == SMOOTHER_ILU)) {
-    ILU_matrix = new double [nnz*nVar*nEqn];	// Reserve memory for the ILU matrix
+    ILU_matrix = new su2double [nnz*nVar*nEqn];	// Reserve memory for the ILU matrix
     for (iVar = 0; iVar < nnz*nVar*nEqn; iVar++)    ILU_matrix[iVar] = 0.0;
   }
   
@@ -243,13 +243,13 @@ void CSysMatrix::SetIndexes(unsigned long val_nPoint, unsigned long val_nPointDo
       (config->GetKind_Linear_Solver_Prec() == LINELET) ||
       (config->GetKind_Linear_Solver() == SMOOTHER_JACOBI) ||
       (config->GetKind_Linear_Solver() == SMOOTHER_LINELET))   {
-    invM = new double [nPoint*nVar*nEqn];	// Reserve memory for the values of the inverse of the preconditioner
+    invM = new su2double [nPoint*nVar*nEqn];	// Reserve memory for the values of the inverse of the preconditioner
     for (iVar = 0; iVar < nPoint*nVar*nEqn; iVar++) invM[iVar] = 0.0;
   }
 
 }
 
-double *CSysMatrix::GetBlock(unsigned long block_i, unsigned long block_j) {
+su2double *CSysMatrix::GetBlock(unsigned long block_i, unsigned long block_j) {
   
   unsigned long step = 0, index;
   
@@ -261,7 +261,7 @@ double *CSysMatrix::GetBlock(unsigned long block_i, unsigned long block_j) {
   
 }
 
-double CSysMatrix::GetBlock(unsigned long block_i, unsigned long block_j, unsigned short iVar, unsigned short jVar) {
+su2double CSysMatrix::GetBlock(unsigned long block_i, unsigned long block_j, unsigned short iVar, unsigned short jVar) {
   
   unsigned long step = 0, index;
   
@@ -273,7 +273,7 @@ double CSysMatrix::GetBlock(unsigned long block_i, unsigned long block_j, unsign
   
 }
 
-void CSysMatrix::SetBlock(unsigned long block_i, unsigned long block_j, double **val_block) {
+void CSysMatrix::SetBlock(unsigned long block_i, unsigned long block_j, su2double **val_block) {
   
   unsigned long iVar, jVar, index, step = 0;
   
@@ -289,7 +289,7 @@ void CSysMatrix::SetBlock(unsigned long block_i, unsigned long block_j, double *
   
 }
   
-void CSysMatrix::SetBlock(unsigned long block_i, unsigned long block_j, double *val_block) {
+void CSysMatrix::SetBlock(unsigned long block_i, unsigned long block_j, su2double *val_block) {
   
   unsigned long iVar, jVar, index, step = 0;
   
@@ -305,7 +305,7 @@ void CSysMatrix::SetBlock(unsigned long block_i, unsigned long block_j, double *
   
 }
 
-void CSysMatrix::AddBlock(unsigned long block_i, unsigned long block_j, double **val_block) {
+void CSysMatrix::AddBlock(unsigned long block_i, unsigned long block_j, su2double **val_block) {
   
   unsigned long iVar, jVar, index, step = 0;
   
@@ -321,7 +321,7 @@ void CSysMatrix::AddBlock(unsigned long block_i, unsigned long block_j, double *
   
 }
 
-void CSysMatrix::SubtractBlock(unsigned long block_i, unsigned long block_j, double **val_block) {
+void CSysMatrix::SubtractBlock(unsigned long block_i, unsigned long block_j, su2double **val_block) {
   
   unsigned long iVar, jVar, index, step = 0;
   
@@ -337,7 +337,7 @@ void CSysMatrix::SubtractBlock(unsigned long block_i, unsigned long block_j, dou
   
 }
 
-double *CSysMatrix::GetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j) {
+su2double *CSysMatrix::GetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j) {
   
   unsigned long step = 0, index;
   
@@ -349,7 +349,7 @@ double *CSysMatrix::GetBlock_ILUMatrix(unsigned long block_i, unsigned long bloc
   
 }
 
-void CSysMatrix::SetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j, double *val_block) {
+void CSysMatrix::SetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j, su2double *val_block) {
   
   unsigned long iVar, jVar, index, step = 0;
   
@@ -365,7 +365,7 @@ void CSysMatrix::SetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j
   
 }
 
-void CSysMatrix::SubtractBlock_ILUMatrix(unsigned long block_i, unsigned long block_j, double *val_block) {
+void CSysMatrix::SubtractBlock_ILUMatrix(unsigned long block_i, unsigned long block_j, su2double *val_block) {
   
   unsigned long iVar, jVar, index, step = 0;
   
@@ -381,7 +381,7 @@ void CSysMatrix::SubtractBlock_ILUMatrix(unsigned long block_i, unsigned long bl
   
 }
 
-void CSysMatrix::MatrixVectorProduct(double *matrix, double *vector, double *product) {
+void CSysMatrix::MatrixVectorProduct(su2double *matrix, su2double *vector, su2double *product) {
   
   unsigned short iVar, jVar;
   
@@ -394,7 +394,7 @@ void CSysMatrix::MatrixVectorProduct(double *matrix, double *vector, double *pro
   
 }
 
-void CSysMatrix::MatrixMatrixProduct(double *matrix_a, double *matrix_b, double *product) {
+void CSysMatrix::MatrixMatrixProduct(su2double *matrix_a, su2double *matrix_b, su2double *product) {
   
   unsigned short iVar, jVar, kVar;
 
@@ -409,7 +409,7 @@ void CSysMatrix::MatrixMatrixProduct(double *matrix_a, double *matrix_b, double 
   
 }
 
-void CSysMatrix::AddVal2Diag(unsigned long block_i, double val_matrix) {
+void CSysMatrix::AddVal2Diag(unsigned long block_i, su2double val_matrix) {
   
   unsigned long step = 0, iVar, index;
   
@@ -424,7 +424,7 @@ void CSysMatrix::AddVal2Diag(unsigned long block_i, double val_matrix) {
   
 }
 
-void CSysMatrix::SetVal2Diag(unsigned long block_i, double val_matrix) {
+void CSysMatrix::SetVal2Diag(unsigned long block_i, su2double val_matrix) {
   
   unsigned long step = 0, iVar, jVar, index;
   
@@ -460,12 +460,12 @@ void CSysMatrix::DeleteValsRowi(unsigned long i) {
   
 }
 
-void CSysMatrix::Gauss_Elimination(unsigned long block_i, double* rhs) {
+void CSysMatrix::Gauss_Elimination(unsigned long block_i, su2double* rhs) {
   
   short iVar, jVar, kVar; // This is important, otherwise some compilers optimizations will fail
-  double weight, aux;
+  su2double weight, aux;
   
-  double *Block = GetBlock(block_i, block_i);
+  su2double *Block = GetBlock(block_i, block_i);
   
   /*--- Copy block matrix, note that the original matrix
    is modified by the algorithm---*/
@@ -506,12 +506,12 @@ void CSysMatrix::Gauss_Elimination(unsigned long block_i, double* rhs) {
   
 }
 
-void CSysMatrix::Gauss_Elimination_ILUMatrix(unsigned long block_i, double* rhs) {
+void CSysMatrix::Gauss_Elimination_ILUMatrix(unsigned long block_i, su2double* rhs) {
   
   short iVar, jVar, kVar; // This is important, otherwise some compilers optimizations will fail
-  double weight, aux;
+  su2double weight, aux;
   
-  double *Block = GetBlock_ILUMatrix(block_i, block_i);
+  su2double *Block = GetBlock_ILUMatrix(block_i, block_i);
   
   /*--- Copy block matrix, note that the original matrix
    is modified by the algorithm---*/
@@ -549,10 +549,10 @@ void CSysMatrix::Gauss_Elimination_ILUMatrix(unsigned long block_i, double* rhs)
   
 }
 
-void CSysMatrix::Gauss_Elimination(double* Block, double* rhs) {
+void CSysMatrix::Gauss_Elimination(su2double* Block, su2double* rhs) {
   
   short iVar, jVar, kVar; // This is important, otherwise some compilers optimizations will fail
-  double weight, aux;
+  su2double weight, aux;
   
   /*--- Copy block matrix, note that the original matrix
    is modified by the algorithm---*/
@@ -594,7 +594,7 @@ void CSysMatrix::ProdBlockVector(unsigned long block_i, unsigned long block_j, c
   unsigned long j = block_j*nVar;
   unsigned short iVar, jVar;
   
-  double *block = GetBlock(block_i, block_j);
+  su2double *block = GetBlock(block_i, block_j);
   
   for (iVar = 0; iVar < nVar; iVar++) {
     prod_block_vector[iVar] = 0;
@@ -659,7 +659,7 @@ void CSysMatrix::SendReceive_Solution(CSysVector & x, CGeometry *geometry, CConf
   
   unsigned short iVar, iMarker, MarkerS, MarkerR;
   unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
-  double *Buffer_Receive = NULL, *Buffer_Send = NULL;
+  su2double *Buffer_Receive = NULL, *Buffer_Send = NULL;
   
 #ifdef HAVE_MPI
   int send_to, receive_from;
@@ -685,8 +685,8 @@ void CSysMatrix::SendReceive_Solution(CSysVector & x, CGeometry *geometry, CConf
       
       /*--- Allocate Receive and send buffers  ---*/
       
-      Buffer_Receive = new double [nBufferR_Vector];
-      Buffer_Send = new double[nBufferS_Vector];
+      Buffer_Receive = new su2double [nBufferR_Vector];
+      Buffer_Send = new su2double[nBufferS_Vector];
       
       /*--- Copy the solution that should be sended ---*/
       
@@ -786,7 +786,7 @@ void CSysMatrix::MatrixVectorProduct(const CSysVector & vec, CSysVector & prod, 
     throw(-1);
   }
   
-  prod = 0.0; // set all entries of prod to zero
+  prod = su2double(0.0); // set all entries of prod to zero
   for (row_i = 0; row_i < nPointDomain; row_i++) {
     prod_begin = row_i*nVar; // offset to beginning of block row_i
     for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
@@ -805,7 +805,7 @@ void CSysMatrix::MatrixVectorProduct(const CSysVector & vec, CSysVector & prod, 
   
 }
 
-void CSysMatrix::GetMultBlockBlock(double *c, double *a, double *b) {
+void CSysMatrix::GetMultBlockBlock(su2double *c, su2double *a, su2double *b) {
   
   unsigned long iVar, jVar, kVar;
   
@@ -818,7 +818,7 @@ void CSysMatrix::GetMultBlockBlock(double *c, double *a, double *b) {
   
 }
 
-void CSysMatrix::GetMultBlockVector(double *c, double *a, double *b) {
+void CSysMatrix::GetMultBlockVector(su2double *c, su2double *a, su2double *b) {
   
   unsigned long iVar, jVar;
   
@@ -830,7 +830,7 @@ void CSysMatrix::GetMultBlockVector(double *c, double *a, double *b) {
   
 }
 
-void CSysMatrix::GetSubsBlock(double *c, double *a, double *b) {
+void CSysMatrix::GetSubsBlock(su2double *c, su2double *a, su2double *b) {
   
   unsigned long iVar, jVar;
   
@@ -840,7 +840,7 @@ void CSysMatrix::GetSubsBlock(double *c, double *a, double *b) {
   
 }
 
-void CSysMatrix::GetSubsVector(double *c, double *a, double *b) {
+void CSysMatrix::GetSubsVector(su2double *c, su2double *a, su2double *b) {
   
   unsigned long iVar;
   
@@ -849,7 +849,7 @@ void CSysMatrix::GetSubsVector(double *c, double *a, double *b) {
   
 }
 
-void CSysMatrix::InverseBlock(double *Block, double *invBlock) {
+void CSysMatrix::InverseBlock(su2double *Block, su2double *invBlock) {
   
   unsigned long iVar, jVar;
   
@@ -867,7 +867,7 @@ void CSysMatrix::InverseBlock(double *Block, double *invBlock) {
   
 }
 
-void CSysMatrix::InverseDiagonalBlock(unsigned long block_i, double *invBlock) {
+void CSysMatrix::InverseDiagonalBlock(unsigned long block_i, su2double *invBlock) {
   
   unsigned long iVar, jVar;
   
@@ -885,7 +885,7 @@ void CSysMatrix::InverseDiagonalBlock(unsigned long block_i, double *invBlock) {
   
 }
 
-void CSysMatrix::InverseDiagonalBlock_ILUMatrix(unsigned long block_i, double *invBlock) {
+void CSysMatrix::InverseDiagonalBlock_ILUMatrix(unsigned long block_i, su2double *invBlock) {
   
   unsigned long iVar, jVar;
   
@@ -932,7 +932,7 @@ unsigned short CSysMatrix::BuildLineletPreconditioner(CGeometry *geometry, CConf
   bool *check_Point, add_point;
   unsigned long iEdge, iPoint, jPoint, index_Point, iLinelet, iVertex, next_Point, counter, iElem;
   unsigned short iMarker, iNode, ExtraLines = 100, MeanPoints;
-  double alpha = 0.9, weight, max_weight, *normal, area, volume_iPoint, volume_jPoint;
+  su2double alpha = 0.9, weight, max_weight, *normal, area, volume_iPoint, volume_jPoint;
   unsigned long Local_nPoints, Local_nLineLets, Global_nPoints, Global_nLineLets;
 
   /*--- Memory allocation --*/
@@ -1096,28 +1096,28 @@ unsigned short CSysMatrix::BuildLineletPreconditioner(CGeometry *geometry, CConf
   SU2_MPI::Allreduce(&Local_nLineLets, &Global_nLineLets, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
 
-  MeanPoints = int(double(Global_nPoints)/double(Global_nLineLets));
+  MeanPoints = int(su2double(Global_nPoints)/su2double(Global_nLineLets));
   
   /*--- Memory allocation --*/
 
-  UBlock = new double* [max_nElem];
-  invUBlock = new double* [max_nElem];
-  LBlock = new double* [max_nElem];
-  yVector = new double* [max_nElem];
-  zVector = new double* [max_nElem];
-  rVector = new double* [max_nElem];
+  UBlock = new su2double* [max_nElem];
+  invUBlock = new su2double* [max_nElem];
+  LBlock = new su2double* [max_nElem];
+  yVector = new su2double* [max_nElem];
+  zVector = new su2double* [max_nElem];
+  rVector = new su2double* [max_nElem];
   for (iElem = 0; iElem < max_nElem; iElem++) {
-    UBlock[iElem] = new double [nVar*nVar];
-    invUBlock[iElem] = new double [nVar*nVar];
-    LBlock[iElem] = new double [nVar*nVar];
-    yVector[iElem] = new double [nVar];
-    zVector[iElem] = new double [nVar];
-    rVector[iElem] = new double [nVar];
+    UBlock[iElem] = new su2double [nVar*nVar];
+    invUBlock[iElem] = new su2double [nVar*nVar];
+    LBlock[iElem] = new su2double [nVar*nVar];
+    yVector[iElem] = new su2double [nVar];
+    zVector[iElem] = new su2double [nVar];
+    rVector[iElem] = new su2double [nVar];
   }
   
-  LFBlock = new double [nVar*nVar];
-  LyVector = new double [nVar];
-  FzVector = new double [nVar];
+  LFBlock = new su2double [nVar*nVar];
+  LyVector = new su2double [nVar];
+  FzVector = new su2double [nVar];
   
   /*--- Memory deallocation --*/
 
@@ -1149,7 +1149,7 @@ void CSysMatrix::ComputeJacobiPreconditioner(const CSysVector & vec, CSysVector 
 void CSysMatrix::ComputeILUPreconditioner(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config) {
   
   unsigned long index, index_;
-  double *Block_ij, *Block_jk;
+  su2double *Block_ij, *Block_jk;
   long iPoint, jPoint, kPoint;
   unsigned short iVar;
   
@@ -1270,7 +1270,7 @@ void CSysMatrix::ComputeLineletPreconditioner(const CSysVector & vec, CSysVector
   
   unsigned long iVar, jVar, nElem = 0, iLinelet, im1Point, iPoint, ip1Point, iElem;
   long iElemLoop;
-  double *block;
+  su2double *block;
   
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;

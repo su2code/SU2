@@ -39,8 +39,8 @@ CUpwLin_TransLM::CUpwLin_TransLM(unsigned short val_nDim, unsigned short val_nVa
 	Gamma = config->GetGamma();
 	Gamma_Minus_One = Gamma - 1.0;
   
-	Velocity_i = new double [nDim];
-	Velocity_j = new double [nDim];
+	Velocity_i = new su2double [nDim];
+	Velocity_j = new su2double [nDim];
   
 }
 
@@ -49,7 +49,7 @@ CUpwLin_TransLM::~CUpwLin_TransLM(void) {
 	delete [] Velocity_j;
 }
 
-void CUpwLin_TransLM::ComputeResidual (double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+void CUpwLin_TransLM::ComputeResidual (su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
   
   
 	Density_i = U_i[0];
@@ -86,8 +86,8 @@ CUpwSca_TransLM::CUpwSca_TransLM(unsigned short val_nDim, unsigned short val_nVa
 	Gamma = config->GetGamma();
 	Gamma_Minus_One = Gamma - 1.0;
   
-	Velocity_i = new double [nDim];
-	Velocity_j = new double [nDim];
+	Velocity_i = new su2double [nDim];
+	Velocity_j = new su2double [nDim];
 }
 
 CUpwSca_TransLM::~CUpwSca_TransLM(void) {
@@ -95,7 +95,7 @@ CUpwSca_TransLM::~CUpwSca_TransLM(void) {
 	delete [] Velocity_j;
 }
 
-void CUpwSca_TransLM::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+void CUpwSca_TransLM::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
   
 	q_ij = 0;
 	for (iDim = 0; iDim < nDim; iDim++) {
@@ -133,12 +133,12 @@ CAvgGrad_TransLM::CAvgGrad_TransLM(unsigned short val_nDim, unsigned short val_n
   
 	sigma = 2./3.;
   
-	Edge_Vector = new double [nDim];
-	Proj_Mean_GradTransVar_Kappa = new double [nVar];
-	Proj_Mean_GradTransVar_Edge = new double [nVar];
-	Mean_GradTransVar = new double* [nVar];
+	Edge_Vector = new su2double [nDim];
+	Proj_Mean_GradTransVar_Kappa = new su2double [nVar];
+	Proj_Mean_GradTransVar_Edge = new su2double [nVar];
+	Mean_GradTransVar = new su2double* [nVar];
 	for (iVar = 0; iVar < nVar; iVar++)
-		Mean_GradTransVar[iVar] = new double [nDim];
+		Mean_GradTransVar[iVar] = new su2double [nDim];
 }
 
 CAvgGrad_TransLM::~CAvgGrad_TransLM(void) {
@@ -153,17 +153,17 @@ CAvgGrad_TransLM::~CAvgGrad_TransLM(void) {
 	delete [] Mean_GradTransVar;
 }
 
-void CAvgGrad_TransLM::ComputeResidual(double *val_residual, double **Jacobian_i, double **Jacobian_j, CConfig *config) {
+void CAvgGrad_TransLM::ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config) {
   
-  double Density_Grad_i[nDim], Density_Grad_j[nDim], Conservative_Grad_i[nDim], Conservative_Grad_j[nDim];
-  double Primitive_Grad_i[nDim], Primitive_Grad_j[nDim];
+  su2double Density_Grad_i[nDim], Density_Grad_j[nDim], Conservative_Grad_i[nDim], Conservative_Grad_j[nDim];
+  su2double Primitive_Grad_i[nDim], Primitive_Grad_j[nDim];
   
   /*--- Intermediate values for combining viscosities ---*/
-  double Inter_Viscosity_i, Inter_Viscosity_j, REth_Viscosity_i, REth_Viscosity_j, Inter_Viscosity_Mean, REth_Viscosity_Mean;
+  su2double Inter_Viscosity_i, Inter_Viscosity_j, REth_Viscosity_i, REth_Viscosity_j, Inter_Viscosity_Mean, REth_Viscosity_Mean;
   
   /*--- Model constants---*/
-  double sigmaf       = 1.0;
-  double sigma_thetat = 2.0;
+  su2double sigmaf       = 1.0;
+  su2double sigma_thetat = 2.0;
   
   /*--- Get density ---*/
   Density_i = U_i[0];
@@ -232,13 +232,13 @@ CAvgGradCorrected_TransLM::CAvgGradCorrected_TransLM(unsigned short val_nDim, un
   
 	sigma = 2./3.;
   
-	Edge_Vector = new double [nDim];
-	Proj_Mean_GradTurbVar_Kappa = new double [nVar];
-	Proj_Mean_GradTurbVar_Edge = new double [nVar];
-	Proj_Mean_GradTurbVar_Corrected = new double [nVar];
-	Mean_GradTurbVar = new double* [nVar];
+	Edge_Vector = new su2double [nDim];
+	Proj_Mean_GradTurbVar_Kappa = new su2double [nVar];
+	Proj_Mean_GradTurbVar_Edge = new su2double [nVar];
+	Proj_Mean_GradTurbVar_Corrected = new su2double [nVar];
+	Mean_GradTurbVar = new su2double* [nVar];
 	for (iVar = 0; iVar < nVar; iVar++)
-		Mean_GradTurbVar[iVar] = new double [nDim];
+		Mean_GradTurbVar[iVar] = new su2double [nDim];
 }
 
 CAvgGradCorrected_TransLM::~CAvgGradCorrected_TransLM(void) {
@@ -254,7 +254,7 @@ CAvgGradCorrected_TransLM::~CAvgGradCorrected_TransLM(void) {
 	delete [] Mean_GradTurbVar;
 }
 
-void CAvgGradCorrected_TransLM::ComputeResidual(double *val_residual, double **Jacobian_i, double **Jacobian_j, CConfig *config) {
+void CAvgGradCorrected_TransLM::ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config) {
   
   //	switch (config->GetKind_Turb_Model()) {
   //	case SA :
@@ -335,7 +335,7 @@ CSourcePieceWise_TransLM::CSourcePieceWise_TransLM(unsigned short val_nDim, unsi
 
 CSourcePieceWise_TransLM::~CSourcePieceWise_TransLM(void) { }
 
-void CSourcePieceWise_TransLM::ComputeResidual_TransLM(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config, double &gamma_sep) {
+void CSourcePieceWise_TransLM::ComputeResidual_TransLM(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config, su2double &gamma_sep) {
 	//************************************************//
 	// Please do not delete //SU2_CPP2C comment lines //
 	//************************************************//
@@ -355,16 +355,16 @@ void CSourcePieceWise_TransLM::ComputeResidual_TransLM(double *val_residual, dou
 	//SU2_CPP2C DECL_LIST END
   
 	/*-- Local intermediate variables --*/
-	double rey_tc, flen, re_v, strain, f_onset1, f_onset2, f_onset3, f_onset, f_turb, tu;
+	su2double rey_tc, flen, re_v, strain, f_onset1, f_onset2, f_onset3, f_onset, f_turb, tu;
   
-	double prod, des;
-	double f_lambda, re_theta = 0.0, re_theta_lim, r_t;
-	double Velocity_Mag = 0.0, du_ds, theta, lambda, time_scale, var1, f_theta;
-	double f_reattach;
-	double dU_dx, dU_dy, dU_dz = 0.0;
+	su2double prod, des;
+	su2double f_lambda, re_theta = 0.0, re_theta_lim, r_t;
+	su2double Velocity_Mag = 0.0, du_ds, theta, lambda, time_scale, var1, f_theta;
+	su2double f_reattach;
+	su2double dU_dx, dU_dy, dU_dz = 0.0;
   
 	//SU2_CPP2C COMMENT START
-  double val_residuald[2], TransVar_id[2];
+  su2double val_residuald[2], TransVar_id[2];
   
 	//SU2_CPP2C COMMENT END
   
@@ -544,28 +544,28 @@ void CSourcePieceWise_TransLM::ComputeResidual_TransLM(double *val_residual, dou
 }
 
 
-void CSourcePieceWise_TransLM::CSourcePieceWise_TransLM__ComputeResidual_TransLM_d(double *TransVar_i, double *TransVar_id, double *val_residual, double *val_residuald, CConfig *config)
+void CSourcePieceWise_TransLM::CSourcePieceWise_TransLM__ComputeResidual_TransLM_d(su2double *TransVar_i, su2double *TransVar_id, su2double *val_residual, su2double *val_residuald, CConfig *config)
 {
-  double rey_tc, flen, re_v, strain, f_onset1, f_onset2, f_onset3, f_onset,
+  su2double rey_tc, flen, re_v, strain, f_onset1, f_onset2, f_onset3, f_onset,
   f_turb, tu;
-  double rey_tcd, f_onset1d, f_onset2d, f_onsetd;
-  double prod, des;
-  double prodd, desd;
-  double f_lambda, re_theta = 0.0, re_theta_lim, r_t;
-  double Velocity_Mag = 0.0, du_ds, theta, lambda, time_scale,
+  su2double rey_tcd, f_onset1d, f_onset2d, f_onsetd;
+  su2double prod, des;
+  su2double prodd, desd;
+  su2double f_lambda, re_theta = 0.0, re_theta_lim, r_t;
+  su2double Velocity_Mag = 0.0, du_ds, theta, lambda, time_scale,
   var1, f_theta;
-  double var1d, f_thetad;
-  double dU_dx, dU_dy, dU_dz = 0.0;
-  double result1;
-  double result1d;
-  double arg1;
-  double arg1d;
-  double result2;
-  double x2;
-  double x1;
-  double x1d;
-  double y1;
-  double y1d;
+  su2double var1d, f_thetad;
+  su2double dU_dx, dU_dy, dU_dz = 0.0;
+  su2double result1;
+  su2double result1d;
+  su2double arg1;
+  su2double arg1d;
+  su2double result2;
+  su2double x2;
+  su2double x1;
+  su2double x1d;
+  su2double y1;
+  su2double y1d;
   val_residuald[0] = 0.0;
   val_residual[0] = 0.0;
   val_residuald[1] = 0.0;
@@ -635,7 +635,8 @@ void CSourcePieceWise_TransLM::CSourcePieceWise_TransLM__ComputeResidual_TransLM
     // Medida eq. 10
     arg1d = f_onsetd*TransVar_i[0] + f_onset*TransVar_id[0];
     arg1 = f_onset*TransVar_i[0];
-    result1d = (arg1 == 0.0 ? 0.0 : arg1d/(2.0*sqrt(arg1)));
+    //result1d = (arg1 == 0.0 ? 0.0 : arg1d/(2.0*sqrt(arg1)));
+    if (arg1 == 0) { result1d = 0.0; } else result1d = arg1d/(2.0*sqrt(arg1));
     result1 = sqrt(arg1);
     prodd = flen*c_a1*U_i[0]*strain*result1d;
     prod = flen*c_a1*U_i[0]*strain*result1;
@@ -680,7 +681,7 @@ void CSourcePieceWise_TransLM::CSourcePieceWise_TransLM__ComputeResidual_TransLM
     /*-- Fixed-point iterations to solve REth correlation --*/
     f_lambda = 1.;
     {
-      double x3;
+      su2double x3;
       for (int iter = 0; iter < 10; ++iter) {
         if (tu <= 1.3)
           re_theta = f_lambda*(1173.51-589.428*tu+0.2196/(tu*tu));
