@@ -101,4 +101,35 @@ inline void CMPIWrapper::Sendrecv(void *sendbuf, int sendcnt, MPI_Datatype sendt
                                   MPI_Comm comm, MPI_Status *status){
   MPI_Sendrecv(sendbuf,sendcnt,sendtype,dest,sendtag,recvbuf,recvcnt,recvtype,source,recvtag,comm,status);
 }
+#ifdef COMPLEX_TYPE
+inline void CComplexMPIWrapper::Allgather(void *sendbuf, int sendcnt, MPI_Datatype sendtype, void *recvbuf, int recvcnt, MPI_Datatype recvtype, MPI_Comm comm){
+  if (sendtype != MPI_DOUBLE){
+    MPI_Allgather(sendbuf,sendcnt,sendtype,recvbuf,recvcnt,recvtype,comm);
+  } else {
+    int size;
+    MPI_Comm_size(comm,&size);
+    Gather(sendbuf,sendcnt,sendtype,recvbuf,recvcnt,recvtype,0,comm);
+    Bcast(recvbuf,recvcnt*size,recvtype,0,comm);
+  }
+}
+
+inline void CComplexMPIWrapper::Allreduce(void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm){
+  if (datatype != MPI_DOUBLE){
+    MPI_Allreduce(sendbuf,recvbuf,count,datatype,op,comm);
+  } else {
+    Reduce(sendbuf,recvbuf, count,datatype,op,0,comm);
+    Bcast(recvbuf,count,datatype,0,comm);
+  }
+}
+
+inline void CComplexMPIWrapper::Sendrecv(void *sendbuf, int sendcnt, MPI_Datatype sendtype, int dest, int sendtag, void *recvbuf, int recvcnt, MPI_Datatype recvtype,int source, int recvtag, MPI_Comm comm, MPI_Status *status){
+  if (sendtype != MPI_DOUBLE){
+    MPI_Sendrecv(sendbuf,sendcnt,sendtype,dest,sendtag,recvbuf,recvcnt,recvtype,source,recvtag,comm,status);
+  } else {
+    Bsend(sendbuf,sendcnt,sendtype,dest,sendtag,comm);
+    Recv(recvbuf,recvcnt,recvtype,source,recvtag,comm,status);
+  }
+}
+
+#endif
 #endif

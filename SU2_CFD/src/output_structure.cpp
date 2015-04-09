@@ -80,8 +80,8 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
   
   unsigned short iMarker;
   unsigned long iPoint, iVertex, Global_Index;
-  double PressCoeff = 0.0, SkinFrictionCoeff, HeatFlux;
-  double xCoord = 0.0, yCoord = 0.0, zCoord = 0.0, Mach, Pressure;
+  su2double PressCoeff = 0.0, SkinFrictionCoeff, HeatFlux;
+  su2double xCoord = 0.0, yCoord = 0.0, zCoord = 0.0, Mach, Pressure;
   char cstr[200];
   
   unsigned short solver = config->GetKind_Solver();
@@ -96,21 +96,21 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
   strcpy (cstr, config->GetSurfFlowCoeff_FileName().c_str());
   
   if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
-    if (int(val_iZone) < 10) sprintf (buffer, "_0000%d.csv", int(val_iZone));
-    if ((int(val_iZone) >= 10)   && (int(val_iZone) < 100))   sprintf (buffer, "_000%d.csv", int(val_iZone));
-    if ((int(val_iZone) >= 100)  && (int(val_iZone) < 1000))  sprintf (buffer, "_00%d.csv", int(val_iZone));
-    if ((int(val_iZone) >= 1000) && (int(val_iZone) < 10000)) sprintf (buffer, "_0%d.csv", int(val_iZone));
-    if (int(val_iZone) >= 10000) sprintf (buffer, "_%d.csv", int(val_iZone));
+    if (int(val_iZone) < 10) SPRINTF (buffer, "_0000%d.csv", int(val_iZone));
+    if ((int(val_iZone) >= 10)   && (int(val_iZone) < 100))   SPRINTF (buffer, "_000%d.csv", int(val_iZone));
+    if ((int(val_iZone) >= 100)  && (int(val_iZone) < 1000))  SPRINTF (buffer, "_00%d.csv", int(val_iZone));
+    if ((int(val_iZone) >= 1000) && (int(val_iZone) < 10000)) SPRINTF (buffer, "_0%d.csv", int(val_iZone));
+    if (int(val_iZone) >= 10000) SPRINTF (buffer, "_%d.csv", int(val_iZone));
     
   } else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
-    if ((int(iExtIter) >= 0)    && (int(iExtIter) < 10))    sprintf (buffer, "_0000%d.csv", int(iExtIter));
-    if ((int(iExtIter) >= 10)   && (int(iExtIter) < 100))   sprintf (buffer, "_000%d.csv",  int(iExtIter));
-    if ((int(iExtIter) >= 100)  && (int(iExtIter) < 1000))  sprintf (buffer, "_00%d.csv",   int(iExtIter));
-    if ((int(iExtIter) >= 1000) && (int(iExtIter) < 10000)) sprintf (buffer, "_0%d.csv",    int(iExtIter));
-    if (int(iExtIter) >= 10000) sprintf (buffer, "_%d.csv", int(iExtIter));
+    if ((int(iExtIter) >= 0)    && (int(iExtIter) < 10))    SPRINTF (buffer, "_0000%d.csv", int(iExtIter));
+    if ((int(iExtIter) >= 10)   && (int(iExtIter) < 100))   SPRINTF (buffer, "_000%d.csv",  int(iExtIter));
+    if ((int(iExtIter) >= 100)  && (int(iExtIter) < 1000))  SPRINTF (buffer, "_00%d.csv",   int(iExtIter));
+    if ((int(iExtIter) >= 1000) && (int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d.csv",    int(iExtIter));
+    if (int(iExtIter) >= 10000) SPRINTF (buffer, "_%d.csv", int(iExtIter));
   }
   else
-    sprintf (buffer, ".csv");
+    SPRINTF (buffer, ".csv");
   
   strcat (cstr, buffer);
   SurfFlow_file.precision(15);
@@ -207,29 +207,29 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
   
   /*--- Send and Recv buffers ---*/
   
-  double *Buffer_Send_Coord_x = new double [MaxLocalVertex_Surface];
-  double *Buffer_Recv_Coord_x = NULL;
+  su2double *Buffer_Send_Coord_x = new su2double [MaxLocalVertex_Surface];
+  su2double *Buffer_Recv_Coord_x = NULL;
   
-  double *Buffer_Send_Coord_y = new double [MaxLocalVertex_Surface];
-  double *Buffer_Recv_Coord_y = NULL;
+  su2double *Buffer_Send_Coord_y = new su2double [MaxLocalVertex_Surface];
+  su2double *Buffer_Recv_Coord_y = NULL;
   
-  double *Buffer_Send_Coord_z = new double [MaxLocalVertex_Surface];
-  double *Buffer_Recv_Coord_z = NULL;
+  su2double *Buffer_Send_Coord_z = new su2double [MaxLocalVertex_Surface];
+  su2double *Buffer_Recv_Coord_z = NULL;
   
-  double *Buffer_Send_Press = new double [MaxLocalVertex_Surface];
-  double *Buffer_Recv_Press = NULL;
+  su2double *Buffer_Send_Press = new su2double [MaxLocalVertex_Surface];
+  su2double *Buffer_Recv_Press = NULL;
   
-  double *Buffer_Send_CPress = new double [MaxLocalVertex_Surface];
-  double *Buffer_Recv_CPress = NULL;
+  su2double *Buffer_Send_CPress = new su2double [MaxLocalVertex_Surface];
+  su2double *Buffer_Recv_CPress = NULL;
   
-  double *Buffer_Send_Mach = new double [MaxLocalVertex_Surface];
-  double *Buffer_Recv_Mach = NULL;
+  su2double *Buffer_Send_Mach = new su2double [MaxLocalVertex_Surface];
+  su2double *Buffer_Recv_Mach = NULL;
   
-  double *Buffer_Send_SkinFriction = new double [MaxLocalVertex_Surface];
-  double *Buffer_Recv_SkinFriction = NULL;
+  su2double *Buffer_Send_SkinFriction = new su2double [MaxLocalVertex_Surface];
+  su2double *Buffer_Recv_SkinFriction = NULL;
   
-  double *Buffer_Send_HeatTransfer = new double [MaxLocalVertex_Surface];
-  double *Buffer_Recv_HeatTransfer = NULL;
+  su2double *Buffer_Send_HeatTransfer = new su2double [MaxLocalVertex_Surface];
+  su2double *Buffer_Recv_HeatTransfer = NULL;
   
   unsigned long *Buffer_Send_GlobalIndex = new unsigned long [MaxLocalVertex_Surface];
   unsigned long *Buffer_Recv_GlobalIndex = NULL;
@@ -237,14 +237,14 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
   /*--- Prepare the receive buffers on the master node only. ---*/
   
   if (rank == MASTER_NODE) {
-    Buffer_Recv_Coord_x = new double [nProcessor*MaxLocalVertex_Surface];
-    Buffer_Recv_Coord_y = new double [nProcessor*MaxLocalVertex_Surface];
-    if (nDim == 3) Buffer_Recv_Coord_z = new double [nProcessor*MaxLocalVertex_Surface];
-    Buffer_Recv_Press   = new double [nProcessor*MaxLocalVertex_Surface];
-    Buffer_Recv_CPress  = new double [nProcessor*MaxLocalVertex_Surface];
-    Buffer_Recv_Mach    = new double [nProcessor*MaxLocalVertex_Surface];
-    Buffer_Recv_SkinFriction = new double [nProcessor*MaxLocalVertex_Surface];
-    Buffer_Recv_HeatTransfer = new double [nProcessor*MaxLocalVertex_Surface];
+    Buffer_Recv_Coord_x = new su2double [nProcessor*MaxLocalVertex_Surface];
+    Buffer_Recv_Coord_y = new su2double [nProcessor*MaxLocalVertex_Surface];
+    if (nDim == 3) Buffer_Recv_Coord_z = new su2double [nProcessor*MaxLocalVertex_Surface];
+    Buffer_Recv_Press   = new su2double [nProcessor*MaxLocalVertex_Surface];
+    Buffer_Recv_CPress  = new su2double [nProcessor*MaxLocalVertex_Surface];
+    Buffer_Recv_Mach    = new su2double [nProcessor*MaxLocalVertex_Surface];
+    Buffer_Recv_SkinFriction = new su2double [nProcessor*MaxLocalVertex_Surface];
+    Buffer_Recv_HeatTransfer = new su2double [nProcessor*MaxLocalVertex_Surface];
     Buffer_Recv_GlobalIndex  = new unsigned long [nProcessor*MaxLocalVertex_Surface];
   }
   
@@ -316,21 +316,21 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
     /*--- Write file name with extension if unsteady ---*/
     strcpy (cstr, filename.c_str());
     if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
-      if (int(val_iZone) < 10) sprintf (buffer, "_0000%d.csv", int(val_iZone));
-      if ((int(val_iZone) >= 10) && (int(val_iZone) < 100)) sprintf (buffer, "_000%d.csv", int(val_iZone));
-      if ((int(val_iZone) >= 100) && (int(val_iZone) < 1000)) sprintf (buffer, "_00%d.csv", int(val_iZone));
-      if ((int(val_iZone) >= 1000) && (int(val_iZone) < 10000)) sprintf (buffer, "_0%d.csv", int(val_iZone));
-      if (int(val_iZone) >= 10000) sprintf (buffer, "_%d.csv", int(val_iZone));
+      if (int(val_iZone) < 10) SPRINTF (buffer, "_0000%d.csv", int(val_iZone));
+      if ((int(val_iZone) >= 10) && (int(val_iZone) < 100)) SPRINTF (buffer, "_000%d.csv", int(val_iZone));
+      if ((int(val_iZone) >= 100) && (int(val_iZone) < 1000)) SPRINTF (buffer, "_00%d.csv", int(val_iZone));
+      if ((int(val_iZone) >= 1000) && (int(val_iZone) < 10000)) SPRINTF (buffer, "_0%d.csv", int(val_iZone));
+      if (int(val_iZone) >= 10000) SPRINTF (buffer, "_%d.csv", int(val_iZone));
       
     } else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
-      if ((int(iExtIter) >= 0)    && (int(iExtIter) < 10))    sprintf (buffer, "_0000%d.csv", int(iExtIter));
-      if ((int(iExtIter) >= 10)   && (int(iExtIter) < 100))   sprintf (buffer, "_000%d.csv",  int(iExtIter));
-      if ((int(iExtIter) >= 100)  && (int(iExtIter) < 1000))  sprintf (buffer, "_00%d.csv",   int(iExtIter));
-      if ((int(iExtIter) >= 1000) && (int(iExtIter) < 10000)) sprintf (buffer, "_0%d.csv",    int(iExtIter));
-      if (int(iExtIter) >= 10000) sprintf (buffer, "_%d.csv", int(iExtIter));
+      if ((int(iExtIter) >= 0)    && (int(iExtIter) < 10))    SPRINTF (buffer, "_0000%d.csv", int(iExtIter));
+      if ((int(iExtIter) >= 10)   && (int(iExtIter) < 100))   SPRINTF (buffer, "_000%d.csv",  int(iExtIter));
+      if ((int(iExtIter) >= 100)  && (int(iExtIter) < 1000))  SPRINTF (buffer, "_00%d.csv",   int(iExtIter));
+      if ((int(iExtIter) >= 1000) && (int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d.csv",    int(iExtIter));
+      if (int(iExtIter) >= 10000) SPRINTF (buffer, "_%d.csv", int(iExtIter));
     }
     else
-      sprintf (buffer, ".csv");
+      SPRINTF (buffer, ".csv");
     
     strcat (cstr, buffer);
     SurfFlow_file.precision(15);
@@ -433,7 +433,7 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
 #ifndef HAVE_MPI
   
   unsigned long iPoint, iVertex;
-  double *Solution, xCoord, yCoord, zCoord;
+  su2double *Solution, xCoord, yCoord, zCoord;
   unsigned short iMarker;
   char cstr[200], buffer[50];
   ofstream SurfAdj_file;
@@ -442,21 +442,21 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
   strcpy (cstr, config->GetSurfAdjCoeff_FileName().c_str());
   
   if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
-    if (int(val_iZone) < 10) sprintf (buffer, "_0000%d.csv", int(val_iZone));
-    if ((int(val_iZone) >= 10) && (int(val_iZone) < 100)) sprintf (buffer, "_000%d.csv", int(val_iZone));
-    if ((int(val_iZone) >= 100) && (int(val_iZone) < 1000)) sprintf (buffer, "_00%d.csv", int(val_iZone));
-    if ((int(val_iZone) >= 1000) && (int(val_iZone) < 10000)) sprintf (buffer, "_0%d.csv", int(val_iZone));
-    if (int(val_iZone) >= 10000) sprintf (buffer, "_%d.csv", int(val_iZone));
+    if (int(val_iZone) < 10) SPRINTF (buffer, "_0000%d.csv", int(val_iZone));
+    if ((int(val_iZone) >= 10) && (int(val_iZone) < 100)) SPRINTF (buffer, "_000%d.csv", int(val_iZone));
+    if ((int(val_iZone) >= 100) && (int(val_iZone) < 1000)) SPRINTF (buffer, "_00%d.csv", int(val_iZone));
+    if ((int(val_iZone) >= 1000) && (int(val_iZone) < 10000)) SPRINTF (buffer, "_0%d.csv", int(val_iZone));
+    if (int(val_iZone) >= 10000) SPRINTF (buffer, "_%d.csv", int(val_iZone));
     
   } else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
-    if ((int(iExtIter) >= 0)    && (int(iExtIter) < 10))    sprintf (buffer, "_0000%d.csv", int(iExtIter));
-    if ((int(iExtIter) >= 10)   && (int(iExtIter) < 100))   sprintf (buffer, "_000%d.csv",  int(iExtIter));
-    if ((int(iExtIter) >= 100)  && (int(iExtIter) < 1000))  sprintf (buffer, "_00%d.csv",   int(iExtIter));
-    if ((int(iExtIter) >= 1000) && (int(iExtIter) < 10000)) sprintf (buffer, "_0%d.csv",    int(iExtIter));
-    if (int(iExtIter) >= 10000) sprintf (buffer, "_%d.csv", int(iExtIter));
+    if ((int(iExtIter) >= 0)    && (int(iExtIter) < 10))    SPRINTF (buffer, "_0000%d.csv", int(iExtIter));
+    if ((int(iExtIter) >= 10)   && (int(iExtIter) < 100))   SPRINTF (buffer, "_000%d.csv",  int(iExtIter));
+    if ((int(iExtIter) >= 100)  && (int(iExtIter) < 1000))  SPRINTF (buffer, "_00%d.csv",   int(iExtIter));
+    if ((int(iExtIter) >= 1000) && (int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d.csv",    int(iExtIter));
+    if (int(iExtIter) >= 10000) SPRINTF (buffer, "_%d.csv", int(iExtIter));
   }
   else
-    sprintf (buffer, ".csv");
+    SPRINTF (buffer, ".csv");
   
   strcat(cstr, buffer);
   SurfAdj_file.precision(15);
@@ -520,7 +520,7 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
   
   unsigned short nDim = geometry->GetnDim(), iMarker;
-  double *Solution, *Normal, *d, *Coord;
+  su2double *Solution, *Normal, *d, *Coord;
   unsigned long Buffer_Send_nVertex[1], iVertex, iPoint, nVertex_Surface = 0, nLocalVertex_Surface = 0,
   MaxLocalVertex_Surface = 0, nBuffer_Scalar;
   unsigned long *Buffer_Receive_nVertex = NULL;
@@ -543,16 +543,16 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
   SU2_MPI::Allreduce(&nLocalVertex_Surface, &MaxLocalVertex_Surface, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
   SU2_MPI::Gather(&Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
   
-  double *Buffer_Send_Coord_x = new double[MaxLocalVertex_Surface];
-  double *Buffer_Send_Coord_y= new double[MaxLocalVertex_Surface];
-  double *Buffer_Send_Coord_z= new double[MaxLocalVertex_Surface];
+  su2double *Buffer_Send_Coord_x = new su2double[MaxLocalVertex_Surface];
+  su2double *Buffer_Send_Coord_y= new su2double[MaxLocalVertex_Surface];
+  su2double *Buffer_Send_Coord_z= new su2double[MaxLocalVertex_Surface];
   unsigned long *Buffer_Send_GlobalPoint= new unsigned long[MaxLocalVertex_Surface];
-  double *Buffer_Send_Sensitivity= new double[MaxLocalVertex_Surface];
-  double *Buffer_Send_PsiRho= new double[MaxLocalVertex_Surface];
-  double *Buffer_Send_Phi_x= new double[MaxLocalVertex_Surface];
-  double *Buffer_Send_Phi_y= new double[MaxLocalVertex_Surface];
-  double *Buffer_Send_Phi_z= new double[MaxLocalVertex_Surface];
-  double *Buffer_Send_PsiE= new double[MaxLocalVertex_Surface];
+  su2double *Buffer_Send_Sensitivity= new su2double[MaxLocalVertex_Surface];
+  su2double *Buffer_Send_PsiRho= new su2double[MaxLocalVertex_Surface];
+  su2double *Buffer_Send_Phi_x= new su2double[MaxLocalVertex_Surface];
+  su2double *Buffer_Send_Phi_y= new su2double[MaxLocalVertex_Surface];
+  su2double *Buffer_Send_Phi_z= new su2double[MaxLocalVertex_Surface];
+  su2double *Buffer_Send_PsiE= new su2double[MaxLocalVertex_Surface];
   
   nVertex_Surface = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
@@ -590,22 +590,22 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
         }
       }
   
-  double *Buffer_Receive_Coord_x = NULL, *Buffer_Receive_Coord_y = NULL, *Buffer_Receive_Coord_z = NULL, *Buffer_Receive_Sensitivity = NULL,
+  su2double *Buffer_Receive_Coord_x = NULL, *Buffer_Receive_Coord_y = NULL, *Buffer_Receive_Coord_z = NULL, *Buffer_Receive_Sensitivity = NULL,
   *Buffer_Receive_PsiRho = NULL, *Buffer_Receive_Phi_x = NULL, *Buffer_Receive_Phi_y = NULL, *Buffer_Receive_Phi_z = NULL,
   *Buffer_Receive_PsiE = NULL;
   unsigned long *Buffer_Receive_GlobalPoint = NULL;
   
   if (rank == MASTER_NODE) {
-    Buffer_Receive_Coord_x = new double [nProcessor*MaxLocalVertex_Surface];
-    Buffer_Receive_Coord_y = new double [nProcessor*MaxLocalVertex_Surface];
-    if (nDim == 3) Buffer_Receive_Coord_z = new double [nProcessor*MaxLocalVertex_Surface];
+    Buffer_Receive_Coord_x = new su2double [nProcessor*MaxLocalVertex_Surface];
+    Buffer_Receive_Coord_y = new su2double [nProcessor*MaxLocalVertex_Surface];
+    if (nDim == 3) Buffer_Receive_Coord_z = new su2double [nProcessor*MaxLocalVertex_Surface];
     Buffer_Receive_GlobalPoint = new unsigned long [nProcessor*MaxLocalVertex_Surface];
-    Buffer_Receive_Sensitivity = new double [nProcessor*MaxLocalVertex_Surface];
-    Buffer_Receive_PsiRho = new double [nProcessor*MaxLocalVertex_Surface];
-    Buffer_Receive_Phi_x = new double [nProcessor*MaxLocalVertex_Surface];
-    Buffer_Receive_Phi_y = new double [nProcessor*MaxLocalVertex_Surface];
-    if (nDim == 3) Buffer_Receive_Phi_z = new double [nProcessor*MaxLocalVertex_Surface];
-    Buffer_Receive_PsiE = new double [nProcessor*MaxLocalVertex_Surface];
+    Buffer_Receive_Sensitivity = new su2double [nProcessor*MaxLocalVertex_Surface];
+    Buffer_Receive_PsiRho = new su2double [nProcessor*MaxLocalVertex_Surface];
+    Buffer_Receive_Phi_x = new su2double [nProcessor*MaxLocalVertex_Surface];
+    Buffer_Receive_Phi_y = new su2double [nProcessor*MaxLocalVertex_Surface];
+    if (nDim == 3) Buffer_Receive_Phi_z = new su2double [nProcessor*MaxLocalVertex_Surface];
+    Buffer_Receive_PsiE = new su2double [nProcessor*MaxLocalVertex_Surface];
   }
   
   nBuffer_Scalar = MaxLocalVertex_Surface;
@@ -633,21 +633,21 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
     strcpy (cstr, filename.c_str());
     
     if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
-      if (int(val_iZone) < 10) sprintf (buffer, "_0000%d.csv", int(val_iZone));
-      if ((int(val_iZone) >= 10) && (int(val_iZone) < 100)) sprintf (buffer, "_000%d.csv", int(val_iZone));
-      if ((int(val_iZone) >= 100) && (int(val_iZone) < 1000)) sprintf (buffer, "_00%d.csv", int(val_iZone));
-      if ((int(val_iZone) >= 1000) && (int(val_iZone) < 10000)) sprintf (buffer, "_0%d.csv", int(val_iZone));
-      if (int(val_iZone) >= 10000) sprintf (buffer, "_%d.csv", int(val_iZone));
+      if (int(val_iZone) < 10) SPRINTF (buffer, "_0000%d.csv", int(val_iZone));
+      if ((int(val_iZone) >= 10) && (int(val_iZone) < 100)) SPRINTF (buffer, "_000%d.csv", int(val_iZone));
+      if ((int(val_iZone) >= 100) && (int(val_iZone) < 1000)) SPRINTF (buffer, "_00%d.csv", int(val_iZone));
+      if ((int(val_iZone) >= 1000) && (int(val_iZone) < 10000)) SPRINTF (buffer, "_0%d.csv", int(val_iZone));
+      if (int(val_iZone) >= 10000) SPRINTF (buffer, "_%d.csv", int(val_iZone));
       
     } else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
-      if ((int(iExtIter) >= 0) && (int(iExtIter) < 10)) sprintf (buffer, "_0000%d.csv", int(iExtIter));
-      if ((int(iExtIter) >= 10) && (int(iExtIter) < 100)) sprintf (buffer, "_000%d.csv", int(iExtIter));
-      if ((int(iExtIter) >= 100) && (int(iExtIter) < 1000)) sprintf (buffer, "_00%d.csv", int(iExtIter));
-      if ((int(iExtIter) >= 1000) && (int(iExtIter) < 10000)) sprintf (buffer, "_0%d.csv", int(iExtIter));
-      if (int(iExtIter) >= 10000) sprintf (buffer, "_%d.csv", int(iExtIter));
+      if ((int(iExtIter) >= 0) && (int(iExtIter) < 10)) SPRINTF (buffer, "_0000%d.csv", int(iExtIter));
+      if ((int(iExtIter) >= 10) && (int(iExtIter) < 100)) SPRINTF (buffer, "_000%d.csv", int(iExtIter));
+      if ((int(iExtIter) >= 100) && (int(iExtIter) < 1000)) SPRINTF (buffer, "_00%d.csv", int(iExtIter));
+      if ((int(iExtIter) >= 1000) && (int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d.csv", int(iExtIter));
+      if (int(iExtIter) >= 10000) SPRINTF (buffer, "_%d.csv", int(iExtIter));
     }
     else
-      sprintf (buffer, ".csv");
+      SPRINTF (buffer, ".csv");
     
     strcat (cstr, buffer);
     SurfAdj_file.open(cstr, ios::out);
@@ -847,9 +847,9 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
   
   /*--- Allocate the coordinates data structure. ---*/
   
-  Coords = new double*[nDim];
+  Coords = new su2double*[nDim];
   for (iDim = 0; iDim < nDim; iDim++) {
-    Coords[iDim] = new double[nGlobal_Poin];
+    Coords[iDim] = new su2double[nGlobal_Poin];
   }
   
   /*--- Loop over the mesh to collect the coords of the local points ---*/
@@ -957,14 +957,14 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
   
   /*--- Send and Recv buffers. ---*/
   
-  double *Buffer_Send_X = new double[MaxLocalPoint];
-  double *Buffer_Recv_X = NULL;
+  su2double *Buffer_Send_X = new su2double[MaxLocalPoint];
+  su2double *Buffer_Recv_X = NULL;
   
-  double *Buffer_Send_Y = new double[MaxLocalPoint];
-  double *Buffer_Recv_Y = NULL;
+  su2double *Buffer_Send_Y = new su2double[MaxLocalPoint];
+  su2double *Buffer_Recv_Y = NULL;
   
-  double *Buffer_Send_Z, *Buffer_Recv_Z = NULL;
-  if (nDim == 3) Buffer_Send_Z = new double[MaxLocalPoint];
+  su2double *Buffer_Send_Z, *Buffer_Recv_Z = NULL;
+  if (nDim == 3) Buffer_Send_Z = new su2double[MaxLocalPoint];
   
   unsigned long *Buffer_Send_GlobalIndex = new unsigned long[MaxLocalPoint];
   unsigned long *Buffer_Recv_GlobalIndex = NULL;
@@ -973,9 +973,9 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
   
   if (rank == MASTER_NODE) {
     
-    Buffer_Recv_X = new double[nProcessor*MaxLocalPoint];
-    Buffer_Recv_Y = new double[nProcessor*MaxLocalPoint];
-    if (nDim == 3) Buffer_Recv_Z = new double[nProcessor*MaxLocalPoint];
+    Buffer_Recv_X = new su2double[nProcessor*MaxLocalPoint];
+    Buffer_Recv_Y = new su2double[nProcessor*MaxLocalPoint];
+    if (nDim == 3) Buffer_Recv_Z = new su2double[nProcessor*MaxLocalPoint];
     Buffer_Recv_GlobalIndex = new unsigned long[nProcessor*MaxLocalPoint];
     
     /*--- Sum total number of nodes to be written and allocate arrays ---*/
@@ -983,9 +983,9 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
     for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
       nGlobal_Poin += Buffer_Recv_nPoin[iProcessor];
     }
-    Coords = new double*[nDim];
+    Coords = new su2double*[nDim];
     for (iDim = 0; iDim < nDim; iDim++) {
-      Coords[iDim] = new double[nGlobal_Poin];
+      Coords[iDim] = new su2double[nGlobal_Poin];
     }
   }
   
@@ -995,7 +995,7 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
    by the master and sorted by global index in one large n-dim. array. ---*/
   
   /*--- Loop over this partition to collect the coords of the local points. ---*/
-  double *Coords_Local; jPoint = 0;
+  su2double *Coords_Local; jPoint = 0;
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
     
     /*--- Check for halos and write only if requested ---*/
@@ -1808,9 +1808,9 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   iVar_ViscCoeffs = 0, iVar_Sens = 0, iVar_FEA = 0, iVar_Extra = 0, iVar_Eddy = 0, iVar_Sharp = 0;
   
   unsigned long iPoint = 0, jPoint = 0, iVertex = 0, iMarker = 0;
-  double Gas_Constant, Mach2Vel, Mach_Motion, RefDensity, RefPressure = 0.0, factor = 0.0;
+  su2double Gas_Constant, Mach2Vel, Mach_Motion, RefDensity, RefPressure = 0.0, factor = 0.0;
   
-  double *Aux_Frict = NULL, *Aux_Heat = NULL, *Aux_yPlus = NULL, *Aux_Sens = NULL;
+  su2double *Aux_Frict = NULL, *Aux_Heat = NULL, *Aux_yPlus = NULL, *Aux_Sens = NULL;
   
   unsigned short CurrentIndex;
   int SendRecv, RecvFrom, *Local_Halo;
@@ -1842,9 +1842,9 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   
   unsigned short iDim;
   unsigned short nDim = geometry->GetnDim();
-  double RefAreaCoeff = config->GetRefAreaCoeff();
-  double Gamma = config->GetGamma();
-  double RefVel2, *Normal, Area;
+  su2double RefAreaCoeff = config->GetRefAreaCoeff();
+  su2double Gamma = config->GetGamma();
+  su2double RefVel2, *Normal, Area;
   
   /*--- Set the non-dimensionalization ---*/
   if (flow) {
@@ -2030,14 +2030,14 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   
   /*--- Send and Recv buffers. ---*/
   
-  double *Buffer_Send_Var = new double[MaxLocalPoint];
-  double *Buffer_Recv_Var = NULL;
+  su2double *Buffer_Send_Var = new su2double[MaxLocalPoint];
+  su2double *Buffer_Recv_Var = NULL;
   
-  double *Buffer_Send_Res = new double[MaxLocalPoint];
-  double *Buffer_Recv_Res = NULL;
+  su2double *Buffer_Send_Res = new su2double[MaxLocalPoint];
+  su2double *Buffer_Recv_Res = NULL;
   
-  double *Buffer_Send_Vol = new double[MaxLocalPoint];
-  double *Buffer_Recv_Vol = NULL;
+  su2double *Buffer_Send_Vol = new su2double[MaxLocalPoint];
+  su2double *Buffer_Recv_Vol = NULL;
   
   unsigned long *Buffer_Send_GlobalIndex = new unsigned long[MaxLocalPoint];
   unsigned long *Buffer_Recv_GlobalIndex = NULL;
@@ -2045,24 +2045,24 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   /*--- Auxiliary vectors for surface coefficients ---*/
   
   if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-    Aux_Frict = new double[geometry->GetnPoint()];
-    Aux_Heat  = new double[geometry->GetnPoint()];
-    Aux_yPlus = new double[geometry->GetnPoint()];
+    Aux_Frict = new su2double[geometry->GetnPoint()];
+    Aux_Heat  = new su2double[geometry->GetnPoint()];
+    Aux_yPlus = new su2double[geometry->GetnPoint()];
   }
   
   if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) ||
       (Kind_Solver == ADJ_RANS)  || (Kind_Solver == ADJ_TNE2_EULER)    ||
       (Kind_Solver == ADJ_TNE2_NAVIER_STOKES)                            ) {
-    Aux_Sens = new double[geometry->GetnPoint()];
+    Aux_Sens = new su2double[geometry->GetnPoint()];
   }
   
   /*--- Prepare the receive buffers in the master node only. ---*/
   
   if (rank == MASTER_NODE) {
     
-    Buffer_Recv_Var = new double[size*MaxLocalPoint];
-    Buffer_Recv_Res = new double[size*MaxLocalPoint];
-    Buffer_Recv_Vol = new double[size*MaxLocalPoint];
+    Buffer_Recv_Var = new su2double[size*MaxLocalPoint];
+    Buffer_Recv_Res = new su2double[size*MaxLocalPoint];
+    Buffer_Recv_Vol = new su2double[size*MaxLocalPoint];
     Buffer_Recv_GlobalIndex = new unsigned long[size*MaxLocalPoint];
     
     /*--- Sum total number of nodes to be written and allocate arrays ---*/
@@ -2070,9 +2070,9 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     for (iProcessor = 0; iProcessor < size; iProcessor++) {
       nGlobal_Poin += Buffer_Recv_nPoint[iProcessor];
     }
-    Data = new double*[nVar_Total];
+    Data = new su2double*[nVar_Total];
     for (iVar = 0; iVar < nVar_Total; iVar++) {
-      Data[iVar] = new double[nGlobal_Poin];
+      Data[iVar] = new su2double[nGlobal_Poin];
     }
   }
   
@@ -2216,7 +2216,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       
       /*--- Loop over this partition to collect the current variable ---*/
       
-      jPoint = 0; double *Grid_Vel;
+      jPoint = 0; su2double *Grid_Vel;
       for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
         
         /*--- Check for halos & write only if requested ---*/
@@ -3322,9 +3322,9 @@ void COutput::MergeBaselineSolution(CConfig *config, CGeometry *geometry, CSolve
     if (!Local_Halo[iPoint]) nTotalPoints++;
   
   nGlobal_Poin = nTotalPoints;
-  Data = new double*[nVar_Total];
+  Data = new su2double*[nVar_Total];
   for (iVar = 0; iVar < nVar_Total; iVar++) {
-    Data[iVar] = new double[nGlobal_Poin];
+    Data[iVar] = new su2double[nGlobal_Poin];
   }
   
   /*--- Loop over all points in the mesh, but only write data
@@ -3416,8 +3416,8 @@ void COutput::MergeBaselineSolution(CConfig *config, CGeometry *geometry, CSolve
   
   /*--- Send and Recv buffers. ---*/
   
-  double *Buffer_Send_Var = new double[MaxLocalPoint];
-  double *Buffer_Recv_Var = NULL;
+  su2double *Buffer_Send_Var = new su2double[MaxLocalPoint];
+  su2double *Buffer_Recv_Var = NULL;
   
   unsigned long *Buffer_Send_GlobalIndex = new unsigned long[MaxLocalPoint];
   unsigned long *Buffer_Recv_GlobalIndex = NULL;
@@ -3425,7 +3425,7 @@ void COutput::MergeBaselineSolution(CConfig *config, CGeometry *geometry, CSolve
   /*--- Prepare the receive buffers in the master node only. ---*/
   if (rank == MASTER_NODE) {
     
-    Buffer_Recv_Var = new double[nProcessor*MaxLocalPoint];
+    Buffer_Recv_Var = new su2double[nProcessor*MaxLocalPoint];
     Buffer_Recv_GlobalIndex = new unsigned long[nProcessor*MaxLocalPoint];
     
     /*--- Sum total number of nodes to be written and allocate arrays ---*/
@@ -3433,9 +3433,9 @@ void COutput::MergeBaselineSolution(CConfig *config, CGeometry *geometry, CSolve
     for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
       nGlobal_Poin += Buffer_Recv_nPoint[iProcessor];
     }
-    Data = new double*[nVar_Total];
+    Data = new su2double*[nVar_Total];
     for (iVar = 0; iVar < nVar_Total; iVar++) {
-      Data[iVar] = new double[nGlobal_Poin];
+      Data[iVar] = new su2double[nGlobal_Poin];
     }
     
   }
@@ -3770,19 +3770,19 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   
   if (config->GetWrt_Unsteady() && config->GetRestart()) {
     long iExtIter = config->GetUnst_RestartIter();
-    if (int(iExtIter) < 10) sprintf (buffer, "_0000%d", int(iExtIter));
-    if ((int(iExtIter) >= 10) && (int(iExtIter) < 100)) sprintf (buffer, "_000%d", int(iExtIter));
-    if ((int(iExtIter) >= 100) && (int(iExtIter) < 1000)) sprintf (buffer, "_00%d", int(iExtIter));
-    if ((int(iExtIter) >= 1000) && (int(iExtIter) < 10000)) sprintf (buffer, "_0%d", int(iExtIter));
-    if (int(iExtIter) >= 10000) sprintf (buffer, "_%d", int(iExtIter));
+    if (int(iExtIter) < 10) SPRINTF (buffer, "_0000%d", int(iExtIter));
+    if ((int(iExtIter) >= 10) && (int(iExtIter) < 100)) SPRINTF (buffer, "_000%d", int(iExtIter));
+    if ((int(iExtIter) >= 100) && (int(iExtIter) < 1000)) SPRINTF (buffer, "_00%d", int(iExtIter));
+    if ((int(iExtIter) >= 1000) && (int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d", int(iExtIter));
+    if (int(iExtIter) >= 10000) SPRINTF (buffer, "_%d", int(iExtIter));
     strcat(cstr, buffer);
   }
   
   if ((config->GetOutput_FileFormat() == TECPLOT) ||
-      (config->GetOutput_FileFormat() == FIELDVIEW)) sprintf (buffer, ".dat");
+      (config->GetOutput_FileFormat() == FIELDVIEW)) SPRINTF (buffer, ".dat");
   else if ((config->GetOutput_FileFormat() == TECPLOT_BINARY) ||
-           (config->GetOutput_FileFormat() == FIELDVIEW_BINARY))  sprintf (buffer, ".plt");
-  else if (config->GetOutput_FileFormat() == PARAVIEW)  sprintf (buffer, ".csv");
+           (config->GetOutput_FileFormat() == FIELDVIEW_BINARY))  SPRINTF (buffer, ".plt");
+  else if (config->GetOutput_FileFormat() == PARAVIEW)  SPRINTF (buffer, ".csv");
   strcat(cstr, buffer);
   
   ConvHist_file->open(cstr, ios::out);
@@ -3830,10 +3830,10 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   char flow_resid[]= ",\"Res_Flow[0]\",\"Res_Flow[1]\",\"Res_Flow[2]\",\"Res_Flow[3]\",\"Res_Flow[4]\"";
   char adj_flow_resid[]= ",\"Res_AdjFlow[0]\",\"Res_AdjFlow[1]\",\"Res_AdjFlow[2]\",\"Res_AdjFlow[3]\",\"Res_AdjFlow[4]\"";
   switch (config->GetKind_Turb_Model()) {
-    case SA:	   sprintf (turb_resid, ",\"Res_Turb[0]\""); break;
-    case SA_NEG: sprintf (turb_resid, ",\"Res_Turb[0]\""); break;
-    case ML:	   sprintf (turb_resid, ",\"Res_Turb[0]\""); break;
-    case SST:   	sprintf (turb_resid, ",\"Res_Turb[0]\",\"Res_Turb[1]\""); break;
+    case SA:	   SPRINTF (turb_resid, ",\"Res_Turb[0]\""); break;
+    case SA_NEG: SPRINTF (turb_resid, ",\"Res_Turb[0]\""); break;
+    case ML:	   SPRINTF (turb_resid, ",\"Res_Turb[0]\""); break;
+    case SST:   	SPRINTF (turb_resid, ",\"Res_Turb[0]\",\"Res_Turb[1]\""); break;
   }
   char adj_turb_resid[]= ",\"Res_AdjTurb[0]\"";
   char levelset_resid[]= ",\"Res_LevelSet\"";
@@ -3934,7 +3934,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                                      CConfig **config,
                                      CIntegration ***integration,
                                      bool DualTime_Iteration,
-                                     double timeused,
+                                     su2double timeused,
                                      unsigned short val_iZone) {
   
   bool output_1d  = config[val_iZone]->GetWrt_1D_Output();
@@ -3984,11 +3984,11 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     heat_coeff[1000], fea_coeff[1000], wave_resid[1000], heat_resid[1000], fea_resid[1000], end[1000],
     oneD_outputs[1000], massflow_outputs[1000];
 
-    double dummy = 0.0, *Coord;
+    su2double dummy = 0.0, *Coord;
     unsigned short iVar, iMarker, iMarker_Monitoring;
     
     unsigned long LinSolvIter = 0, iPointMaxResid;
-    double timeiter = timeused/double(iExtIter+1);
+    su2double timeiter = timeused/su2double(iExtIter+1);
     
     unsigned short nDim = geometry[val_iZone][FinestMesh]->GetnDim();
     unsigned short nSpecies = config[val_iZone]->GetnSpecies();
@@ -4028,33 +4028,33 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
 
     /*--- Initialize variables to store information from all domains (direct solution) ---*/
-    double Total_CLift = 0.0, Total_CDrag = 0.0, Total_CSideForce = 0.0, Total_CMx = 0.0, Total_CMy = 0.0, Total_CMz = 0.0, Total_CEff = 0.0,
+    su2double Total_CLift = 0.0, Total_CDrag = 0.0, Total_CSideForce = 0.0, Total_CMx = 0.0, Total_CMy = 0.0, Total_CMz = 0.0, Total_CEff = 0.0,
     Total_CEquivArea = 0.0, Total_CNearFieldOF = 0.0, Total_CFx = 0.0, Total_CFy = 0.0, Total_CFz = 0.0, Total_CMerit = 0.0,
     Total_CT = 0.0, Total_CQ = 0.0, Total_CFreeSurface = 0.0, Total_CWave = 0.0, Total_CHeat = 0.0, Total_CpDiff = 0.0, Total_HeatFluxDiff = 0.0,
     Total_CFEA = 0.0, Total_Heat = 0.0, Total_MaxHeat = 0.0, Total_Mdot = 0.0;
-    double OneD_AvgStagPress = 0.0, OneD_AvgMach = 0.0, OneD_AvgTemp = 0.0, OneD_MassFlowRate = 0.0,
+    su2double OneD_AvgStagPress = 0.0, OneD_AvgMach = 0.0, OneD_AvgTemp = 0.0, OneD_MassFlowRate = 0.0,
     OneD_FluxAvgPress = 0.0, OneD_FluxAvgDensity = 0.0, OneD_FluxAvgVelocity = 0.0, OneD_FluxAvgEntalpy = 0.0;
     
     /*--- Initialize variables to store information from all domains (adjoint solution) ---*/
-    double Total_Sens_Geo = 0.0, Total_Sens_Mach = 0.0, Total_Sens_AoA = 0.0;
-    double Total_Sens_Press = 0.0, Total_Sens_Temp = 0.0;
+    su2double Total_Sens_Geo = 0.0, Total_Sens_Mach = 0.0, Total_Sens_AoA = 0.0;
+    su2double Total_Sens_Press = 0.0, Total_Sens_Temp = 0.0;
     
     /*--- Residual arrays ---*/
-    double *residual_flow         = NULL,
+    su2double *residual_flow         = NULL,
     *residual_turbulent    = NULL,
     *residual_transition   = NULL,
     *residual_TNE2         = NULL,
     *residual_levelset     = NULL;
-    double *residual_adjflow      = NULL,
+    su2double *residual_adjflow      = NULL,
     *residual_adjturbulent = NULL,
     *residual_adjTNE2      = NULL,
     *residual_adjlevelset  = NULL;
-    double *residual_wave         = NULL;
-    double *residual_fea          = NULL;
-    double *residual_heat         = NULL;
+    su2double *residual_wave         = NULL;
+    su2double *residual_fea          = NULL;
+    su2double *residual_heat         = NULL;
     
     /*--- Coefficients Monitored arrays ---*/
-    double *aeroelastic_plunge = NULL,
+    su2double *aeroelastic_plunge = NULL,
     *aeroelastic_pitch  = NULL,
     *Surface_CLift      = NULL,
     *Surface_CDrag      = NULL,
@@ -4103,33 +4103,33 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     if (freesurface) nVar_AdjLevelSet = 1;
     
     /*--- Allocate memory for the residual ---*/
-    residual_flow       = new double[nVar_Flow];
-    residual_turbulent  = new double[nVar_Turb];
-    residual_transition = new double[nVar_Trans];
-    residual_TNE2       = new double[nVar_TNE2];
-    residual_levelset   = new double[nVar_LevelSet];
-    residual_wave       = new double[nVar_Wave];
-    residual_fea        = new double[nVar_FEA];
-    residual_heat       = new double[nVar_Heat];
+    residual_flow       = new su2double[nVar_Flow];
+    residual_turbulent  = new su2double[nVar_Turb];
+    residual_transition = new su2double[nVar_Trans];
+    residual_TNE2       = new su2double[nVar_TNE2];
+    residual_levelset   = new su2double[nVar_LevelSet];
+    residual_wave       = new su2double[nVar_Wave];
+    residual_fea        = new su2double[nVar_FEA];
+    residual_heat       = new su2double[nVar_Heat];
     
-    residual_adjflow      = new double[nVar_AdjFlow];
-    residual_adjturbulent = new double[nVar_AdjTurb];
-    residual_adjTNE2      = new double[nVar_AdjTNE2];
-    residual_adjlevelset  = new double[nVar_AdjLevelSet];
+    residual_adjflow      = new su2double[nVar_AdjFlow];
+    residual_adjturbulent = new su2double[nVar_AdjTurb];
+    residual_adjTNE2      = new su2double[nVar_AdjTNE2];
+    residual_adjlevelset  = new su2double[nVar_AdjLevelSet];
     
     /*--- Allocate memory for the coefficients being monitored ---*/
-    aeroelastic_plunge = new double[config[ZONE_0]->GetnMarker_Monitoring()];
-    aeroelastic_pitch  = new double[config[ZONE_0]->GetnMarker_Monitoring()];
-    Surface_CLift      = new double[config[ZONE_0]->GetnMarker_Monitoring()];
-    Surface_CDrag      = new double[config[ZONE_0]->GetnMarker_Monitoring()];
-    Surface_CSideForce = new double[config[ZONE_0]->GetnMarker_Monitoring()];
-    Surface_CEff       = new double[config[ZONE_0]->GetnMarker_Monitoring()];
-    Surface_CFx        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
-    Surface_CFy        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
-    Surface_CFz        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
-    Surface_CMx        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
-    Surface_CMy        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
-    Surface_CMz        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
+    aeroelastic_plunge = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    aeroelastic_pitch  = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CLift      = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CDrag      = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CSideForce = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CEff       = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CFx        = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CFy        = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CFz        = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CMx        = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CMy        = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CMz        = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
     
     /*--- Write information from nodes ---*/
     switch (config[val_iZone]->GetKind_Solver()) {
@@ -4421,10 +4421,10 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
       if (!DualTime_Iteration) {
         
         /*--- Write the begining of the history file ---*/
-        sprintf (begin, "%12d", int(iExtIter));
+        SPRINTF (begin, "%12d", int(iExtIter));
         
         /*--- Write the end of the history file ---*/
-        sprintf (end, ", %12.10f, %12.10f, %12.10f\n", double(LinSolvIter), config[val_iZone]->GetCFL(MESH_0), timeused/60.0);
+        SPRINTF (end, ", %12.10f, %12.10f, %12.10f\n", su2double(LinSolvIter), config[val_iZone]->GetCFL(MESH_0), timeused/60.0);
         
         /*--- Write the solution and residual of the history file ---*/
         switch (config[val_iZone]->GetKind_Solver()) {
@@ -4434,44 +4434,44 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
             
             /*--- Direct coefficients ---*/
-            sprintf (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f",
+            SPRINTF (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f",
                      Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy,
                      Total_CFz, Total_CEff);
             if (isothermal)
-              sprintf (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx, Total_CMy,
+              SPRINTF (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx, Total_CMy,
                        Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_Heat, Total_MaxHeat);
             if (equiv_area)
-              sprintf (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_CEquivArea, Total_CNearFieldOF);
+              SPRINTF (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_CEquivArea, Total_CNearFieldOF);
             if (inv_design) {
-              sprintf (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_CpDiff);
+              SPRINTF (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_CpDiff);
               Total_CpDiff  = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CpDiff();
               if (isothermal) {
-                sprintf (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_Heat, Total_MaxHeat, Total_CpDiff, Total_HeatFluxDiff);
+                SPRINTF (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_Heat, Total_MaxHeat, Total_CpDiff, Total_HeatFluxDiff);
               }
             }
             if (rotating_frame)
-              sprintf (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx,
+              SPRINTF (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx,
                        Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_CMerit, Total_CT, Total_CQ);
             
             if (freesurface) {
-              sprintf (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy,
+              SPRINTF (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy,
                        Total_CFz, Total_CEff, Total_CFreeSurface);
             }
             if (fluid_structure)
-              sprintf (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx, Total_CMy, Total_CMz,
+              SPRINTF (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx, Total_CMy, Total_CMz,
                        Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_CFEA);
             
             if (aeroelastic) {
               for (iMarker_Monitoring = 0; iMarker_Monitoring < config[ZONE_0]->GetnMarker_Monitoring(); iMarker_Monitoring++) {
                 //Append one by one the surface coeff to aeroelastic coeff. (Think better way do this, maybe use string)
                 if (iMarker_Monitoring == 0) {
-                  sprintf(aeroelastic_coeff, ", %12.10f", aeroelastic_plunge[iMarker_Monitoring]);
+                  SPRINTF(aeroelastic_coeff, ", %12.10f", aeroelastic_plunge[iMarker_Monitoring]);
                 }
                 else {
-                  sprintf(surface_coeff, ", %12.10f", aeroelastic_plunge[iMarker_Monitoring]);
+                  SPRINTF(surface_coeff, ", %12.10f", aeroelastic_plunge[iMarker_Monitoring]);
                   strcat(aeroelastic_coeff, surface_coeff);
                 }
-                sprintf(surface_coeff, ", %12.10f", aeroelastic_pitch[iMarker_Monitoring]);
+                SPRINTF(surface_coeff, ", %12.10f", aeroelastic_pitch[iMarker_Monitoring]);
                 strcat(aeroelastic_coeff, surface_coeff);
               }
             }
@@ -4480,29 +4480,29 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               for (iMarker_Monitoring = 0; iMarker_Monitoring < config[ZONE_0]->GetnMarker_Monitoring(); iMarker_Monitoring++) {
                 //Append one by one the surface coeff to monitoring coeff. (Think better way do this, maybe use string)
                 if (iMarker_Monitoring == 0) {
-                  sprintf(monitoring_coeff, ", %12.10f", Surface_CLift[iMarker_Monitoring]);
+                  SPRINTF(monitoring_coeff, ", %12.10f", Surface_CLift[iMarker_Monitoring]);
                 }
                 else {
-                  sprintf(surface_coeff, ", %12.10f", Surface_CLift[iMarker_Monitoring]);
+                  SPRINTF(surface_coeff, ", %12.10f", Surface_CLift[iMarker_Monitoring]);
                   strcat(monitoring_coeff, surface_coeff);
                 }
-                sprintf(surface_coeff, ", %12.10f", Surface_CDrag[iMarker_Monitoring]);
+                SPRINTF(surface_coeff, ", %12.10f", Surface_CDrag[iMarker_Monitoring]);
                 strcat(monitoring_coeff, surface_coeff);
-                sprintf(surface_coeff, ", %12.10f", Surface_CSideForce[iMarker_Monitoring]);
+                SPRINTF(surface_coeff, ", %12.10f", Surface_CSideForce[iMarker_Monitoring]);
                 strcat(monitoring_coeff, surface_coeff);
-                sprintf(surface_coeff, ", %12.10f", Surface_CEff[iMarker_Monitoring]);
+                SPRINTF(surface_coeff, ", %12.10f", Surface_CEff[iMarker_Monitoring]);
                 strcat(monitoring_coeff, surface_coeff);
-                sprintf(surface_coeff, ", %12.10f", Surface_CFx[iMarker_Monitoring]);
+                SPRINTF(surface_coeff, ", %12.10f", Surface_CFx[iMarker_Monitoring]);
                 strcat(monitoring_coeff, surface_coeff);
-                sprintf(surface_coeff, ", %12.10f", Surface_CFy[iMarker_Monitoring]);
+                SPRINTF(surface_coeff, ", %12.10f", Surface_CFy[iMarker_Monitoring]);
                 strcat(monitoring_coeff, surface_coeff);
-                sprintf(surface_coeff, ", %12.10f", Surface_CFz[iMarker_Monitoring]);
+                SPRINTF(surface_coeff, ", %12.10f", Surface_CFz[iMarker_Monitoring]);
                 strcat(monitoring_coeff, surface_coeff);
-                sprintf(surface_coeff, ", %12.10f", Surface_CMx[iMarker_Monitoring]);
+                SPRINTF(surface_coeff, ", %12.10f", Surface_CMx[iMarker_Monitoring]);
                 strcat(monitoring_coeff, surface_coeff);
-                sprintf(surface_coeff, ", %12.10f", Surface_CMy[iMarker_Monitoring]);
+                SPRINTF(surface_coeff, ", %12.10f", Surface_CMy[iMarker_Monitoring]);
                 strcat(monitoring_coeff, surface_coeff);
-                sprintf(surface_coeff, ", %12.10f", Surface_CMz[iMarker_Monitoring]);
+                SPRINTF(surface_coeff, ", %12.10f", Surface_CMz[iMarker_Monitoring]);
                 strcat(monitoring_coeff, surface_coeff);
               }
             }
@@ -4510,68 +4510,68 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             
             /*--- Flow residual ---*/
             if (nDim == 2) {
-              if (compressible) sprintf (flow_resid, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]), dummy);
-              if (incompressible || freesurface) sprintf (flow_resid, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), dummy, dummy);
+              if (compressible) SPRINTF (flow_resid, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]), dummy);
+              if (incompressible || freesurface) SPRINTF (flow_resid, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), dummy, dummy);
             }
             else {
-              if (compressible) sprintf (flow_resid, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]), log10 (residual_flow[4]) );
-              if (incompressible || freesurface) sprintf (flow_resid, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]), dummy);
+              if (compressible) SPRINTF (flow_resid, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]), log10 (residual_flow[4]) );
+              if (incompressible || freesurface) SPRINTF (flow_resid, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]), dummy);
             }
             
             /*--- Turbulent residual ---*/
             if (turbulent) {
               switch(nVar_Turb) {
-                case 1: sprintf (turb_resid, ", %12.10f", log10 (residual_turbulent[0])); break;
-                case 2: sprintf (turb_resid, ", %12.10f, %12.10f", log10(residual_turbulent[0]), log10(residual_turbulent[1])); break;
+                case 1: SPRINTF (turb_resid, ", %12.10f", log10 (residual_turbulent[0])); break;
+                case 2: SPRINTF (turb_resid, ", %12.10f, %12.10f", log10(residual_turbulent[0]), log10(residual_turbulent[1])); break;
               }
             }
             /*---- Averaged stagnation pressure at an exit ---- */
             if (output_1d) {
-              sprintf( oneD_outputs, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", OneD_AvgStagPress, OneD_AvgMach, OneD_AvgTemp, OneD_MassFlowRate, OneD_FluxAvgPress, OneD_FluxAvgDensity, OneD_FluxAvgVelocity, OneD_FluxAvgEntalpy);
+              SPRINTF( oneD_outputs, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", OneD_AvgStagPress, OneD_AvgMach, OneD_AvgTemp, OneD_MassFlowRate, OneD_FluxAvgPress, OneD_FluxAvgDensity, OneD_FluxAvgVelocity, OneD_FluxAvgEntalpy);
             }
             if (output_massflow) {
-              sprintf(massflow_outputs,", %12.10f", Total_Mdot);
+              SPRINTF(massflow_outputs,", %12.10f", Total_Mdot);
             }
 
             
             /*--- Transition residual ---*/
             if (transition) {
-              sprintf (trans_resid, ", %12.10f, %12.10f", log10(residual_transition[0]), log10(residual_transition[1]));
+              SPRINTF (trans_resid, ", %12.10f, %12.10f", log10(residual_transition[0]), log10(residual_transition[1]));
             }
             
             /*--- Free surface residual ---*/
             if (freesurface) {
-              sprintf (levelset_resid, ", %12.10f", log10 (residual_levelset[0]));
+              SPRINTF (levelset_resid, ", %12.10f", log10 (residual_levelset[0]));
             }
             
             /*--- Fluid structure residual ---*/
             if (fluid_structure) {
-              if (nDim == 2) sprintf (levelset_resid, ", %12.10f, %12.10f, 0.0", log10 (residual_fea[0]), log10 (residual_fea[1]));
-              else sprintf (levelset_resid, ", %12.10f, %12.10f, %12.10f", log10 (residual_fea[0]), log10 (residual_fea[1]), log10 (residual_fea[2]));
+              if (nDim == 2) SPRINTF (levelset_resid, ", %12.10f, %12.10f, 0.0", log10 (residual_fea[0]), log10 (residual_fea[1]));
+              else SPRINTF (levelset_resid, ", %12.10f, %12.10f, %12.10f", log10 (residual_fea[0]), log10 (residual_fea[1]), log10 (residual_fea[2]));
             }
             
             if (adjoint) {
               
               /*--- Adjoint coefficients ---*/
-              sprintf (adjoint_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, 0.0", Total_Sens_Geo, Total_Sens_Mach, Total_Sens_AoA, Total_Sens_Press, Total_Sens_Temp);
+              SPRINTF (adjoint_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, 0.0", Total_Sens_Geo, Total_Sens_Mach, Total_Sens_AoA, Total_Sens_Press, Total_Sens_Temp);
               
               /*--- Adjoint flow residuals ---*/
               if (nDim == 2) {
-                if (compressible) sprintf (adj_flow_resid, ", %12.10f, %12.10f, %12.10f, %12.10f, 0.0", log10 (residual_adjflow[0]), log10 (residual_adjflow[1]), log10 (residual_adjflow[2]), log10 (residual_adjflow[3]) );
-                if (incompressible || freesurface) sprintf (adj_flow_resid, ", %12.10f, %12.10f, %12.10f, 0.0, 0.0", log10 (residual_adjflow[0]), log10 (residual_adjflow[1]), log10 (residual_adjflow[2]) );
+                if (compressible) SPRINTF (adj_flow_resid, ", %12.10f, %12.10f, %12.10f, %12.10f, 0.0", log10 (residual_adjflow[0]), log10 (residual_adjflow[1]), log10 (residual_adjflow[2]), log10 (residual_adjflow[3]) );
+                if (incompressible || freesurface) SPRINTF (adj_flow_resid, ", %12.10f, %12.10f, %12.10f, 0.0, 0.0", log10 (residual_adjflow[0]), log10 (residual_adjflow[1]), log10 (residual_adjflow[2]) );
               }
               else {
-                if (compressible) sprintf (adj_flow_resid, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", log10 (residual_adjflow[0]), log10 (residual_adjflow[1]), log10 (residual_adjflow[2]), log10 (residual_adjflow[3]), log10 (residual_adjflow[4]) );
-                if (incompressible || freesurface) sprintf (adj_flow_resid, ", %12.10f, %12.10f, %12.10f, %12.10f, 0.0", log10 (residual_adjflow[0]), log10 (residual_adjflow[1]), log10 (residual_adjflow[2]), log10 (residual_adjflow[3]) );
+                if (compressible) SPRINTF (adj_flow_resid, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", log10 (residual_adjflow[0]), log10 (residual_adjflow[1]), log10 (residual_adjflow[2]), log10 (residual_adjflow[3]), log10 (residual_adjflow[4]) );
+                if (incompressible || freesurface) SPRINTF (adj_flow_resid, ", %12.10f, %12.10f, %12.10f, %12.10f, 0.0", log10 (residual_adjflow[0]), log10 (residual_adjflow[1]), log10 (residual_adjflow[2]), log10 (residual_adjflow[3]) );
               }
               
               /*--- Adjoint turbulent residuals ---*/
               if (turbulent)
                 if (!config[val_iZone]->GetFrozen_Visc())
-                  sprintf (adj_turb_resid, ", %12.10f", log10 (residual_adjturbulent[0]));
+                  SPRINTF (adj_turb_resid, ", %12.10f", log10 (residual_adjturbulent[0]));
               
               /*--- Adjoint free surface residuals ---*/
-              if (freesurface) sprintf (adj_levelset_resid, ", %12.10f", log10 (residual_adjlevelset[0]));
+              if (freesurface) SPRINTF (adj_levelset_resid, ", %12.10f", log10 (residual_adjlevelset[0]));
             }
             
             break;
@@ -4582,25 +4582,25 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             /*--- Direct coefficients ---*/
             if (config[val_iZone]->GetKind_Solver() == TNE2_NAVIER_STOKES) {
               if (!(inv_design))
-                sprintf (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f",
+                SPRINTF (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f",
                          Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx,
                          Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz,
                          Total_CEff, Total_Heat, Total_MaxHeat);
               else
-                sprintf (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f",
+                SPRINTF (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f",
                          Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx,
                          Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz,
                          Total_CEff, Total_Heat, Total_MaxHeat, Total_HeatFluxDiff);
             }
             else
-              sprintf (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f",
+              SPRINTF (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f",
                        Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx,
                        Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz,
                        Total_CEff);
             
             /*--- Direct problem residual ---*/
             for (iVar = 0; iVar < nSpecies+nDim+2; iVar++) {
-              sprintf (resid_aux, ", %12.10f", log10 (residual_TNE2[iVar]));
+              SPRINTF (resid_aux, ", %12.10f", log10 (residual_TNE2[iVar]));
               if (iVar == 0) strcpy(flow_resid, resid_aux);
               else strcat(flow_resid, resid_aux);
             }
@@ -4608,11 +4608,11 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             if (adjoint) {
               
               /*--- Adjoint coefficients ---*/
-              sprintf (adjoint_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, 0.0", Total_Sens_Geo, Total_Sens_Mach, Total_Sens_AoA, Total_Sens_Press, Total_Sens_Temp);
+              SPRINTF (adjoint_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, 0.0", Total_Sens_Geo, Total_Sens_Mach, Total_Sens_AoA, Total_Sens_Press, Total_Sens_Temp);
               
               /*--- Adjoint flow residuals ---*/
               for (iVar = 0; iVar < nSpecies+nDim+2; iVar++) {
-                sprintf (resid_aux, ", %12.10f", log10 (residual_adjTNE2[iVar]));
+                SPRINTF (resid_aux, ", %12.10f", log10 (residual_adjTNE2[iVar]));
                 if (iVar == 0) strcpy(adj_flow_resid, resid_aux);
                 else strcat(adj_flow_resid, resid_aux);
               }
@@ -4622,22 +4622,22 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             
           case WAVE_EQUATION:
             
-            sprintf (direct_coeff, ", %12.10f", Total_CWave);
-            sprintf (wave_resid, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", log10 (residual_wave[0]), log10 (residual_wave[1]), dummy, dummy, dummy );
+            SPRINTF (direct_coeff, ", %12.10f", Total_CWave);
+            SPRINTF (wave_resid, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", log10 (residual_wave[0]), log10 (residual_wave[1]), dummy, dummy, dummy );
             
             break;
             
           case HEAT_EQUATION:
             
-            sprintf (direct_coeff, ", %12.10f", Total_CHeat);
-            sprintf (heat_resid, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", log10 (residual_heat[0]), dummy, dummy, dummy, dummy );
+            SPRINTF (direct_coeff, ", %12.10f", Total_CHeat);
+            SPRINTF (heat_resid, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", log10 (residual_heat[0]), dummy, dummy, dummy, dummy );
             
             break;
             
           case LINEAR_ELASTICITY:
             
-            sprintf (direct_coeff, ", %12.10f", Total_CFEA);
-            sprintf (fea_resid, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", log10 (residual_fea[0]), dummy, dummy, dummy, dummy );
+            SPRINTF (direct_coeff, ", %12.10f", Total_CFEA);
+            SPRINTF (fea_resid, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", log10 (residual_fea[0]), dummy, dummy, dummy, dummy );
             
             break;
             
@@ -4976,7 +4976,11 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             cout.setf(ios::scientific, ios::floatfield);
             cout << Total_CNearFieldOF; }
           else if (freesurface) { cout.width(15); cout << Total_CLift; cout.width(15); cout << Total_CFreeSurface; }
-          else { cout.width(15); cout << min(10000.0, max(-10000.0, Total_CLift)); cout.width(15); cout << min(10000.0, max(-10000.0, Total_CDrag)); }
+          else { cout.width(15); cout << min(10000.0, max(-10000.0, Total_CLift)); cout.width(15); cout << min(10000.0, max(-10000.0, Total_CDrag));
+#ifdef COMPLEX_TYPE
+              cout.width(15); cout << SU2_TYPE::GetSecondary(Total_CDrag)/1e-50;
+#endif
+            }
           if (aeroelastic) {
             cout.setf(ios::scientific, ios::floatfield);
             cout.width(15); cout << aeroelastic_plunge[0]; //Only output the first marker being monitored to the console.
@@ -5279,7 +5283,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
 void COutput::SetCFL_Number(CSolver ****solver_container, CConfig **config, unsigned short val_iZone) {
   
-  double CFLFactor = 1.0, power = 1.0, CFL = 0.0, CFLMin = 0.0, CFLMax = 0.0, Div = 1.0, Diff = 0.0, MGFactor[100];
+  su2double CFLFactor = 1.0, power = 1.0, CFL = 0.0, CFLMin = 0.0, CFLMax = 0.0, Div = 1.0, Diff = 0.0, MGFactor[100];
   unsigned short iMesh;
   
   unsigned short FinestMesh = config[val_iZone]->GetFinestMesh();
@@ -5375,7 +5379,7 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
 
     /*--- Initialize variables to store information from all domains (direct solution) ---*/
     
-    double Total_CLift = 0.0, Total_CDrag = 0.0, Total_CSideForce = 0.0, Total_CMx = 0.0, Total_CMy = 0.0, Total_CMz = 0.0, Total_CEff = 0.0, Total_CFx = 0.0, Total_CFy = 0.0, Total_CFz = 0.0,
+    su2double Total_CLift = 0.0, Total_CDrag = 0.0, Total_CSideForce = 0.0, Total_CMx = 0.0, Total_CMy = 0.0, Total_CMz = 0.0, Total_CEff = 0.0, Total_CFx = 0.0, Total_CFy = 0.0, Total_CFz = 0.0,
     Inv_CLift = 0.0, Inv_CDrag = 0.0, Inv_CSideForce = 0.0, Inv_CMx = 0.0, Inv_CMy = 0.0, Inv_CMz = 0.0, Inv_CEff = 0.0, Inv_CFx = 0.0, Inv_CFy = 0.0, Inv_CFz = 0.0,
     *Surface_CLift = NULL, *Surface_CDrag = NULL, *Surface_CSideForce = NULL, *Surface_CEff = NULL, *Surface_CFx = NULL, *Surface_CFy = NULL,  *Surface_CFz = NULL, *Surface_CMx = NULL, *Surface_CMy = NULL, *Surface_CMz = NULL,
     *Surface_CLift_Inv = NULL, *Surface_CDrag_Inv = NULL, *Surface_CSideForce_Inv = NULL, *Surface_CEff_Inv = NULL, *Surface_CFx_Inv = NULL, *Surface_CFy_Inv = NULL,  *Surface_CFz_Inv = NULL, *Surface_CMx_Inv = NULL, *Surface_CMy_Inv = NULL, *Surface_CMz_Inv = NULL;
@@ -5384,27 +5388,27 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
 
     /*--- Allocate memory for the coefficients being monitored ---*/
     
-    Surface_CLift      = new double[config[ZONE_0]->GetnMarker_Monitoring()];
-    Surface_CDrag      = new double[config[ZONE_0]->GetnMarker_Monitoring()];
-    Surface_CSideForce = new double[config[ZONE_0]->GetnMarker_Monitoring()];
-    Surface_CEff       = new double[config[ZONE_0]->GetnMarker_Monitoring()];
-    Surface_CFx        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
-    Surface_CFy        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
-    Surface_CFz        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
-    Surface_CMx        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
-    Surface_CMy        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
-    Surface_CMz        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CLift      = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CDrag      = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CSideForce = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CEff       = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CFx        = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CFy        = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CFz        = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CMx        = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CMy        = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CMz        = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
     
-    Surface_CLift_Inv      = new double[config[ZONE_0]->GetnMarker_Monitoring()];
-    Surface_CDrag_Inv      = new double[config[ZONE_0]->GetnMarker_Monitoring()];
-    Surface_CSideForce_Inv = new double[config[ZONE_0]->GetnMarker_Monitoring()];
-    Surface_CEff_Inv       = new double[config[ZONE_0]->GetnMarker_Monitoring()];
-    Surface_CFx_Inv        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
-    Surface_CFy_Inv        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
-    Surface_CFz_Inv        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
-    Surface_CMx_Inv        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
-    Surface_CMy_Inv        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
-    Surface_CMz_Inv        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CLift_Inv      = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CDrag_Inv      = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CSideForce_Inv = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CEff_Inv       = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CFx_Inv        = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CFy_Inv        = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CFz_Inv        = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CMx_Inv        = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CMy_Inv        = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CMz_Inv        = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
 
     /*--- Flow solution coefficients ---*/
     
@@ -6456,11 +6460,11 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
         else filename = config[iZone]->GetAdj_FileName();
 
         if (size > 1) {
-          sprintf (buffer_char, "_%d", int(rank+1));
+          SPRINTF (buffer_char, "_%d", int(rank+1));
           filename = filename + buffer_char;
         }
         
-        sprintf (buffer_char, ".dat");
+        SPRINTF (buffer_char, ".dat");
         strcpy(out_file, filename.c_str()); strcat(out_file, buffer_char);
         SetTecplotASCII_LowMemory(config[iZone], geometry[iZone], solver, out_file, false);
       }
@@ -6475,11 +6479,11 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
         else filename = config[iZone]->GetSurfAdjCoeff_FileName();
 
         if (size > 1) {
-          sprintf (buffer_char, "_%d", int(rank+1));
+          SPRINTF (buffer_char, "_%d", int(rank+1));
           filename = filename + buffer_char;
         }
         
-        sprintf (buffer_char, ".dat");
+        SPRINTF (buffer_char, ".dat");
         strcpy(out_file, filename.c_str()); strcat(out_file, buffer_char);
         SetTecplotASCII_LowMemory(config[iZone], geometry[iZone], solver, out_file, true);
       }
@@ -6578,7 +6582,7 @@ void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned sho
 void COutput::SetMassFlowRate(CSolver *solver_container, CGeometry *geometry, CConfig *config) {
   unsigned short iDim, iMarker_monitor, iMarker;
   unsigned long iVertex, iPoint;
-  double Vector[3], Total_Mdot=0.0;
+  su2double Vector[3], Total_Mdot=0.0;
   unsigned short nDim = geometry->GetnDim();
 
   for (iMarker = 0; iMarker< config->GetnMarker_Monitoring(); iMarker++) {
@@ -6598,7 +6602,7 @@ void COutput::SetMassFlowRate(CSolver *solver_container, CGeometry *geometry, CC
 
 #ifdef HAVE_MPI
   /*--- Add AllBound information using all the nodes ---*/
-  double My_Total_Mdot    = Total_Mdot;    Total_Mdot = 0.0;
+  su2double My_Total_Mdot    = Total_Mdot;    Total_Mdot = 0.0;
   SU2_MPI::Allreduce(&My_Total_Mdot, &Total_Mdot, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 #endif
   /*--- Set the output: reusing same variable from OneDimensionalOutput code ---*/
@@ -6609,7 +6613,7 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
   
   unsigned long iVertex, iPoint;
   unsigned short iDim, iMarker, Out1D;
-  double *Normal = NULL, Area = 0.0, OverArea = 0.0, UnitaryNormal[3],
+  su2double *Normal = NULL, Area = 0.0, OverArea = 0.0, UnitaryNormal[3],
   Stag_Pressure, Mach, Temperature, Pressure = 0.0, Density = 0.0, Velocity2, Enthalpy, RhoU, U,// local values at each node (Velocity2 = V^2). U = normal velocity
   SumPressure = 0.0, SumStagPressure = 0.0, SumArea = 0.0, SumMach = 0.0, SumTemperature = 0.0, SumForUref = 0.0, SumRhoU = 0.0, SumEnthalpy = 0.0,// sum of (local value ) * (dA) (integral)
   AveragePressure = 0.0, AverageMach = 0.0, AverageTemperature = 0.0, MassFlowRate = 0.0, // Area Averaged value ( sum / A )
@@ -6618,7 +6622,7 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
-  double Gamma = config->GetGamma();
+  su2double Gamma = config->GetGamma();
   unsigned short nDim = geometry->GetnDim();
   
   
@@ -6705,14 +6709,14 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
   
   /*--- Add AllBound information using all the nodes ---*/
   
-  double My_AveragePressure     = AveragePressure;    AveragePressure = 0.0;
-  double My_AverageMach         = AverageMach;        AverageMach = 0.0;
-  double My_AverageTemperature  = AverageTemperature; AverageTemperature = 0.0;
-  double My_MassFlowRate        = MassFlowRate;       MassFlowRate = 0.0;
-  double My_PressureRef         = PressureRef;        PressureRef = 0.0;
-  double My_VelocityRef         = VelocityRef;        VelocityRef = 0.0;
-  double My_EnthalpyRef         = EnthalpyRef;        EnthalpyRef = 0.0;
-  double My_DensityRef          = DensityRef;         DensityRef = 0.0;
+  su2double My_AveragePressure     = AveragePressure;    AveragePressure = 0.0;
+  su2double My_AverageMach         = AverageMach;        AverageMach = 0.0;
+  su2double My_AverageTemperature  = AverageTemperature; AverageTemperature = 0.0;
+  su2double My_MassFlowRate        = MassFlowRate;       MassFlowRate = 0.0;
+  su2double My_PressureRef         = PressureRef;        PressureRef = 0.0;
+  su2double My_VelocityRef         = VelocityRef;        VelocityRef = 0.0;
+  su2double My_EnthalpyRef         = EnthalpyRef;        EnthalpyRef = 0.0;
+  su2double My_DensityRef          = DensityRef;         DensityRef = 0.0;
   
   SU2_MPI::Allreduce(&My_AveragePressure, &AveragePressure, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&My_AverageMach, &AverageMach, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -6743,9 +6747,9 @@ void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry, C
   
   short iSection, nSection;
   unsigned long iVertex, iPoint;
-  double *Plane_P0, *Plane_Normal, MinPlane, MaxPlane, *CPressure, MinXCoord, MaxXCoord, Force[3], ForceInviscid[3],
+  su2double *Plane_P0, *Plane_Normal, MinPlane, MaxPlane, *CPressure, MinXCoord, MaxXCoord, Force[3], ForceInviscid[3],
   MomentInviscid[3] = {0.0,0.0,0.0}, MomentDist[3] = {0.0,0.0,0.0}, RefDensity, RefPressure, RefAreaCoeff, *Velocity_Inf, Gas_Constant, Mach2Vel, Mach_Motion, Gamma, RefVel2 = 0.0, factor, NDPressure, *Origin, RefLengthMoment, Alpha, Beta, CDrag_Inv, CLift_Inv, CMy_Inv;
-  vector<double> Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil, Pressure_Airfoil;
+  vector<su2double> Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil, Pressure_Airfoil;
   string Marker_Tag, Slice_Filename, Slice_Ext;
   ofstream Cp_File;
   unsigned short iDim;
@@ -6755,9 +6759,9 @@ void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry, C
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   
-  Plane_P0 = new double [3];
-  Plane_Normal = new double [3];
-  CPressure = new double[geometry->GetnPoint()];
+  Plane_P0 = new su2double [3];
+  Plane_Normal = new su2double [3];
+  CPressure = new su2double[geometry->GetnPoint()];
   
   /*--- Compute some reference quantities and necessary values ---*/
   RefDensity = solver_container->GetDensity_Inf();
@@ -6815,7 +6819,7 @@ void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry, C
       Plane_Normal[2] = 0.0;    Plane_P0[2] = 0.0;
       
       Plane_Normal[config->GetAxis_Orientation()] = 1.0;
-      Plane_P0[config->GetAxis_Orientation()] = MinPlane + iSection*(MaxPlane - MinPlane)/double(nSection-1);
+      Plane_P0[config->GetAxis_Orientation()] = MinPlane + iSection*(MaxPlane - MinPlane)/su2double(nSection-1);
       
       /*--- Compute the airfoil sections (note that we feed in the Cp) ---*/
       
@@ -6941,7 +6945,7 @@ void COutput::SetCp_InverseDesign(CSolver *solver_container, CGeometry *geometry
   
   unsigned short iMarker, icommas, Boundary, iDim;
   unsigned long iVertex, iPoint, (*Point2Vertex)[2], nPointLocal = 0, nPointGlobal = 0;
-  double XCoord, YCoord, ZCoord, Pressure, PressureCoeff = 0, Cp, CpTarget, *Normal = NULL, Area, PressDiff;
+  su2double XCoord, YCoord, ZCoord, Pressure, PressureCoeff = 0, Cp, CpTarget, *Normal = NULL, Area, PressDiff;
   bool *PointInDomain;
   string text_line, surfCp_filename;
   ifstream Surface_file;
@@ -7002,14 +7006,14 @@ void COutput::SetCp_InverseDesign(CSolver *solver_container, CGeometry *geometry
   
   if ((config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) ||
       (config->GetUnsteady_Simulation() == TIME_SPECTRAL)) {
-    if ((int(iExtIter) >= 0)    && (int(iExtIter) < 10))    sprintf (buffer, "_0000%d.dat", int(iExtIter));
-    if ((int(iExtIter) >= 10)   && (int(iExtIter) < 100))   sprintf (buffer, "_000%d.dat",  int(iExtIter));
-    if ((int(iExtIter) >= 100)  && (int(iExtIter) < 1000))  sprintf (buffer, "_00%d.dat",   int(iExtIter));
-    if ((int(iExtIter) >= 1000) && (int(iExtIter) < 10000)) sprintf (buffer, "_0%d.dat",    int(iExtIter));
-    if (int(iExtIter) >= 10000) sprintf (buffer, "_%d.dat", int(iExtIter));
+    if ((int(iExtIter) >= 0)    && (int(iExtIter) < 10))    SPRINTF (buffer, "_0000%d.dat", int(iExtIter));
+    if ((int(iExtIter) >= 10)   && (int(iExtIter) < 100))   SPRINTF (buffer, "_000%d.dat",  int(iExtIter));
+    if ((int(iExtIter) >= 100)  && (int(iExtIter) < 1000))  SPRINTF (buffer, "_00%d.dat",   int(iExtIter));
+    if ((int(iExtIter) >= 1000) && (int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d.dat",    int(iExtIter));
+    if (int(iExtIter) >= 10000) SPRINTF (buffer, "_%d.dat", int(iExtIter));
   }
   else
-    sprintf (buffer, ".dat");
+    SPRINTF (buffer, ".dat");
   
   strcat (cstr, buffer);
   
@@ -7083,7 +7087,7 @@ void COutput::SetCp_InverseDesign(CSolver *solver_container, CGeometry *geometry
   }
   
 #ifdef HAVE_MPI
-  double MyPressDiff = PressDiff;   PressDiff = 0.0;
+  su2double MyPressDiff = PressDiff;   PressDiff = 0.0;
   SU2_MPI::Allreduce(&MyPressDiff, &PressDiff, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 #endif
   
@@ -7099,7 +7103,7 @@ void COutput::SetHeat_InverseDesign(CSolver *solver_container, CGeometry *geomet
   
   unsigned short iMarker, icommas, Boundary, iDim;
   unsigned long iVertex, iPoint, (*Point2Vertex)[2], nPointLocal = 0, nPointGlobal = 0;
-  double XCoord, YCoord, ZCoord, PressureCoeff, HeatFlux = 0.0, HeatFluxDiff, HeatFluxTarget, *Normal = NULL, Area,
+  su2double XCoord, YCoord, ZCoord, PressureCoeff, HeatFlux = 0.0, HeatFluxDiff, HeatFluxTarget, *Normal = NULL, Area,
   Pressure, Cf;
   bool *PointInDomain;
   string text_line, surfHeatFlux_filename;
@@ -7160,14 +7164,14 @@ void COutput::SetHeat_InverseDesign(CSolver *solver_container, CGeometry *geomet
   
   if ((config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) ||
       (config->GetUnsteady_Simulation() == TIME_SPECTRAL)) {
-    if ((int(iExtIter) >= 0)    && (int(iExtIter) < 10))    sprintf (buffer, "_0000%d.dat", int(iExtIter));
-    if ((int(iExtIter) >= 10)   && (int(iExtIter) < 100))   sprintf (buffer, "_000%d.dat",  int(iExtIter));
-    if ((int(iExtIter) >= 100)  && (int(iExtIter) < 1000))  sprintf (buffer, "_00%d.dat",   int(iExtIter));
-    if ((int(iExtIter) >= 1000) && (int(iExtIter) < 10000)) sprintf (buffer, "_0%d.dat",    int(iExtIter));
-    if (int(iExtIter) >= 10000) sprintf (buffer, "_%d.dat", int(iExtIter));
+    if ((int(iExtIter) >= 0)    && (int(iExtIter) < 10))    SPRINTF (buffer, "_0000%d.dat", int(iExtIter));
+    if ((int(iExtIter) >= 10)   && (int(iExtIter) < 100))   SPRINTF (buffer, "_000%d.dat",  int(iExtIter));
+    if ((int(iExtIter) >= 100)  && (int(iExtIter) < 1000))  SPRINTF (buffer, "_00%d.dat",   int(iExtIter));
+    if ((int(iExtIter) >= 1000) && (int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d.dat",    int(iExtIter));
+    if (int(iExtIter) >= 10000) SPRINTF (buffer, "_%d.dat", int(iExtIter));
   }
   else
-    sprintf (buffer, ".dat");
+    SPRINTF (buffer, ".dat");
   
   strcat (cstr, buffer);
   
@@ -7241,7 +7245,7 @@ void COutput::SetHeat_InverseDesign(CSolver *solver_container, CGeometry *geomet
   }
   
 #ifdef HAVE_MPI
-  double MyHeatFluxDiff = HeatFluxDiff;   HeatFluxDiff = 0.0;
+  su2double MyHeatFluxDiff = HeatFluxDiff;   HeatFluxDiff = 0.0;
   SU2_MPI::Allreduce(&MyHeatFluxDiff, &HeatFluxDiff, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 #endif
   
@@ -7258,7 +7262,7 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
   ofstream EquivArea_file, FuncGrad_file;
   unsigned short iMarker = 0, iDim;
   short *AzimuthalAngle = NULL;
-  double Gamma, auxXCoord, auxYCoord, auxZCoord, InverseDesign = 0.0, DeltaX, Coord_i, Coord_j, jp1Coord, *Coord = NULL, MeanFuntion,
+  su2double Gamma, auxXCoord, auxYCoord, auxZCoord, InverseDesign = 0.0, DeltaX, Coord_i, Coord_j, jp1Coord, *Coord = NULL, MeanFuntion,
   *Face_Normal = NULL, auxArea, auxPress, Mach, Beta, R_Plane, Pressure_Inf,
   ModVelocity_Inf, Velocity_Inf[3], factor, *Xcoord = NULL, *Ycoord = NULL, *Zcoord = NULL,
   *Pressure = NULL, *FaceArea = NULL, *EquivArea = NULL, *TargetArea = NULL, *NearFieldWeight = NULL,
@@ -7268,12 +7272,12 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
   unsigned short iPhiAngle;
   ofstream NearFieldEA_file; ifstream TargetEA_file;
   
-  double XCoordBegin_OF = config->GetEA_IntLimit(0);
-  double XCoordEnd_OF = config->GetEA_IntLimit(1);
+  su2double XCoordBegin_OF = config->GetEA_IntLimit(0);
+  su2double XCoordEnd_OF = config->GetEA_IntLimit(1);
   
   unsigned short nDim = geometry->GetnDim();
-  double AoA = -(config->GetAoA()*PI_NUMBER/180.0);
-  double EAScaleFactor = config->GetEA_ScaleFactor(); // The EA Obj. Func. should be ~ force based Obj. Func.
+  su2double AoA = -(config->GetAoA()*PI_NUMBER/180.0);
+  su2double EAScaleFactor = config->GetEA_ScaleFactor(); // The EA Obj. Func. should be ~ force based Obj. Func.
   
   int rank = MESH_0;
   
@@ -7312,18 +7316,18 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
   /*--- Create an array with all the coordinates, points, pressures, face area,
    equivalent area, and nearfield weight ---*/
   
-  Xcoord = new double[nVertex_NearField];
-  Ycoord = new double[nVertex_NearField];
-  Zcoord = new double[nVertex_NearField];
+  Xcoord = new su2double[nVertex_NearField];
+  Ycoord = new su2double[nVertex_NearField];
+  Zcoord = new su2double[nVertex_NearField];
   AzimuthalAngle = new short[nVertex_NearField];
   IdPoint = new unsigned long[nVertex_NearField];
   IdDomain = new unsigned long[nVertex_NearField];
-  Pressure = new double[nVertex_NearField];
-  FaceArea = new double[nVertex_NearField];
-  EquivArea = new double[nVertex_NearField];
-  TargetArea = new double[nVertex_NearField];
-  NearFieldWeight = new double[nVertex_NearField];
-  Weight = new double[nVertex_NearField];
+  Pressure = new su2double[nVertex_NearField];
+  FaceArea = new su2double[nVertex_NearField];
+  EquivArea = new su2double[nVertex_NearField];
+  TargetArea = new su2double[nVertex_NearField];
+  NearFieldWeight = new su2double[nVertex_NearField];
+  Weight = new su2double[nVertex_NearField];
   
   /*--- Copy the boundary information to an array ---*/
   
@@ -7350,17 +7354,17 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
             
             /*--- Rotate the nearfield cylinder (AoA) only 3D ---*/
             
-            double YcoordRot = Ycoord[nVertex_NearField];
-            double ZcoordRot = Xcoord[nVertex_NearField]*sin(AoA) + Zcoord[nVertex_NearField]*cos(AoA);
+            su2double YcoordRot = Ycoord[nVertex_NearField];
+            su2double ZcoordRot = Xcoord[nVertex_NearField]*sin(AoA) + Zcoord[nVertex_NearField]*cos(AoA);
             
             /*--- Compute the Azimuthal angle (resolution of degress in the Azimuthal angle)---*/
             
-            double AngleDouble; short AngleInt;
+            su2double AngleDouble; short AngleInt;
             AngleDouble = fabs(atan(-YcoordRot/ZcoordRot)*180.0/PI_NUMBER);
             
             /*--- Fix an azimuthal line due to misalignments of the near-field ---*/
             
-            double FixAzimuthalLine = config->GetFixAzimuthalLine();
+            su2double FixAzimuthalLine = config->GetFixAzimuthalLine();
             
             if ((AngleDouble >= FixAzimuthalLine - 0.1) && (AngleDouble <= FixAzimuthalLine + 0.1)) AngleDouble = FixAzimuthalLine - 0.1;
             
@@ -7417,27 +7421,27 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
   SU2_MPI::Gather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
   delete [] Buffer_Send_nVertex;
 
-  double *Buffer_Send_Xcoord = new double[MaxLocalVertex_NearField];
-  double *Buffer_Send_Ycoord = new double[MaxLocalVertex_NearField];
-  double *Buffer_Send_Zcoord = new double[MaxLocalVertex_NearField];
+  su2double *Buffer_Send_Xcoord = new su2double[MaxLocalVertex_NearField];
+  su2double *Buffer_Send_Ycoord = new su2double[MaxLocalVertex_NearField];
+  su2double *Buffer_Send_Zcoord = new su2double[MaxLocalVertex_NearField];
   unsigned long *Buffer_Send_IdPoint = new unsigned long [MaxLocalVertex_NearField];
-  double *Buffer_Send_Pressure = new double [MaxLocalVertex_NearField];
-  double *Buffer_Send_FaceArea = new double[MaxLocalVertex_NearField];
+  su2double *Buffer_Send_Pressure = new su2double [MaxLocalVertex_NearField];
+  su2double *Buffer_Send_FaceArea = new su2double[MaxLocalVertex_NearField];
   
-  double *Buffer_Receive_Xcoord = NULL;
-  double *Buffer_Receive_Ycoord = NULL;
-  double *Buffer_Receive_Zcoord = NULL;
+  su2double *Buffer_Receive_Xcoord = NULL;
+  su2double *Buffer_Receive_Ycoord = NULL;
+  su2double *Buffer_Receive_Zcoord = NULL;
   unsigned long *Buffer_Receive_IdPoint = NULL;
-  double *Buffer_Receive_Pressure = NULL;
-  double *Buffer_Receive_FaceArea = NULL;
+  su2double *Buffer_Receive_Pressure = NULL;
+  su2double *Buffer_Receive_FaceArea = NULL;
   
   if (rank == MASTER_NODE) {
-    Buffer_Receive_Xcoord = new double[nProcessor*MaxLocalVertex_NearField];
-    Buffer_Receive_Ycoord = new double[nProcessor*MaxLocalVertex_NearField];
-    Buffer_Receive_Zcoord = new double[nProcessor*MaxLocalVertex_NearField];
+    Buffer_Receive_Xcoord = new su2double[nProcessor*MaxLocalVertex_NearField];
+    Buffer_Receive_Ycoord = new su2double[nProcessor*MaxLocalVertex_NearField];
+    Buffer_Receive_Zcoord = new su2double[nProcessor*MaxLocalVertex_NearField];
     Buffer_Receive_IdPoint = new unsigned long[nProcessor*MaxLocalVertex_NearField];
-    Buffer_Receive_Pressure = new double[nProcessor*MaxLocalVertex_NearField];
-    Buffer_Receive_FaceArea = new double[nProcessor*MaxLocalVertex_NearField];
+    Buffer_Receive_Pressure = new su2double[nProcessor*MaxLocalVertex_NearField];
+    Buffer_Receive_FaceArea = new su2double[nProcessor*MaxLocalVertex_NearField];
   }
   
   unsigned long nBuffer_Xcoord = MaxLocalVertex_NearField;
@@ -7492,18 +7496,18 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
 
   if (rank == MASTER_NODE) {
     
-    Xcoord = new double[nVertex_NearField];
-    Ycoord = new double[nVertex_NearField];
-    Zcoord = new double[nVertex_NearField];
+    Xcoord = new su2double[nVertex_NearField];
+    Ycoord = new su2double[nVertex_NearField];
+    Zcoord = new su2double[nVertex_NearField];
     AzimuthalAngle = new short[nVertex_NearField];
     IdPoint = new unsigned long[nVertex_NearField];
     IdDomain = new unsigned long[nVertex_NearField];
-    Pressure = new double[nVertex_NearField];
-    FaceArea = new double[nVertex_NearField];
-    EquivArea = new double[nVertex_NearField];
-    TargetArea = new double[nVertex_NearField];
-    NearFieldWeight = new double[nVertex_NearField];
-    Weight = new double[nVertex_NearField];
+    Pressure = new su2double[nVertex_NearField];
+    FaceArea = new su2double[nVertex_NearField];
+    EquivArea = new su2double[nVertex_NearField];
+    TargetArea = new su2double[nVertex_NearField];
+    NearFieldWeight = new su2double[nVertex_NearField];
+    Weight = new su2double[nVertex_NearField];
     
     nVertex_NearField = 0;
     for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
@@ -7520,17 +7524,17 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
           
           /*--- Rotate the nearfield cylinder  ---*/
           
-          double YcoordRot = Ycoord[nVertex_NearField];
-          double ZcoordRot = Xcoord[nVertex_NearField]*sin(AoA) + Zcoord[nVertex_NearField]*cos(AoA);
+          su2double YcoordRot = Ycoord[nVertex_NearField];
+          su2double ZcoordRot = Xcoord[nVertex_NearField]*sin(AoA) + Zcoord[nVertex_NearField]*cos(AoA);
           
           /*--- Compute the Azimuthal angle ---*/
           
-          double AngleDouble; short AngleInt;
+          su2double AngleDouble; short AngleInt;
           AngleDouble = fabs(atan(-YcoordRot/ZcoordRot)*180.0/PI_NUMBER);
           
           /*--- Fix an azimuthal line due to misalignments of the near-field ---*/
           
-          double FixAzimuthalLine = config->GetFixAzimuthalLine();
+          su2double FixAzimuthalLine = config->GetFixAzimuthalLine();
           
           if ((AngleDouble >= FixAzimuthalLine - 0.1) && (AngleDouble <= FixAzimuthalLine + 0.1))
             AngleDouble = FixAzimuthalLine - 0.1;
@@ -7578,17 +7582,17 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
     
     /*--- Create vectors and distribute the values among the different PhiAngle queues ---*/
     
-    vector<vector<double> > Xcoord_PhiAngle; Xcoord_PhiAngle.resize(PhiAngleList.size());
-    vector<vector<double> > Ycoord_PhiAngle; Ycoord_PhiAngle.resize(PhiAngleList.size());
-    vector<vector<double> > Zcoord_PhiAngle; Zcoord_PhiAngle.resize(PhiAngleList.size());
+    vector<vector<su2double> > Xcoord_PhiAngle; Xcoord_PhiAngle.resize(PhiAngleList.size());
+    vector<vector<su2double> > Ycoord_PhiAngle; Ycoord_PhiAngle.resize(PhiAngleList.size());
+    vector<vector<su2double> > Zcoord_PhiAngle; Zcoord_PhiAngle.resize(PhiAngleList.size());
     vector<vector<unsigned long> > IdPoint_PhiAngle; IdPoint_PhiAngle.resize(PhiAngleList.size());
     vector<vector<unsigned long> > IdDomain_PhiAngle; IdDomain_PhiAngle.resize(PhiAngleList.size());
-    vector<vector<double> > Pressure_PhiAngle; Pressure_PhiAngle.resize(PhiAngleList.size());
-    vector<vector<double> > FaceArea_PhiAngle; FaceArea_PhiAngle.resize(PhiAngleList.size());
-    vector<vector<double> > EquivArea_PhiAngle; EquivArea_PhiAngle.resize(PhiAngleList.size());
-    vector<vector<double> > TargetArea_PhiAngle; TargetArea_PhiAngle.resize(PhiAngleList.size());
-    vector<vector<double> > NearFieldWeight_PhiAngle; NearFieldWeight_PhiAngle.resize(PhiAngleList.size());
-    vector<vector<double> > Weight_PhiAngle; Weight_PhiAngle.resize(PhiAngleList.size());
+    vector<vector<su2double> > Pressure_PhiAngle; Pressure_PhiAngle.resize(PhiAngleList.size());
+    vector<vector<su2double> > FaceArea_PhiAngle; FaceArea_PhiAngle.resize(PhiAngleList.size());
+    vector<vector<su2double> > EquivArea_PhiAngle; EquivArea_PhiAngle.resize(PhiAngleList.size());
+    vector<vector<su2double> > TargetArea_PhiAngle; TargetArea_PhiAngle.resize(PhiAngleList.size());
+    vector<vector<su2double> > NearFieldWeight_PhiAngle; NearFieldWeight_PhiAngle.resize(PhiAngleList.size());
+    vector<vector<su2double> > Weight_PhiAngle; Weight_PhiAngle.resize(PhiAngleList.size());
     
     /*--- Distribute the values among the different PhiAngles ---*/
     
@@ -7678,8 +7682,8 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
     NearFieldEA_file << endl;
     for (iVertex = 0; iVertex < EquivArea_PhiAngle[0].size(); iVertex++) {
       
-      double XcoordRot = Xcoord_PhiAngle[0][iVertex]*cos(AoA) - Zcoord_PhiAngle[0][iVertex]*sin(AoA);
-      double XcoordRot_init = Xcoord_PhiAngle[0][0]*cos(AoA) - Zcoord_PhiAngle[0][0]*sin(AoA);
+      su2double XcoordRot = Xcoord_PhiAngle[0][iVertex]*cos(AoA) - Zcoord_PhiAngle[0][iVertex]*sin(AoA);
+      su2double XcoordRot_init = Xcoord_PhiAngle[0][0]*cos(AoA) - Zcoord_PhiAngle[0][0]*sin(AoA);
       
       if (config->GetSystemMeasurements() == US)
         NearFieldEA_file << scientific << (XcoordRot - XcoordRot_init) * 12.0;
@@ -7699,7 +7703,7 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
      this first implementation requires a complete table (same as the original
      EA table). so... no interpolation. ---*/
     
-    vector<vector<double> > TargetArea_PhiAngle_Trans;
+    vector<vector<su2double> > TargetArea_PhiAngle_Trans;
     TargetEA_file.open("TargetEA.dat", ios::in);
     
     if (TargetEA_file.fail()) {
@@ -7724,7 +7728,7 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
         string line;
         getline(TargetEA_file, line);
         istringstream is(line);
-        vector<double> row;
+        vector<su2double> row;
         unsigned short iter = 0;
         
         while (is.good()) {
@@ -7733,7 +7737,7 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
           
           istringstream js(token);
           
-          double data;
+          su2double data;
           js >> data;
           
           /*--- The first element in the table is the coordinate (in or m)---*/
@@ -7753,7 +7757,7 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
     
     /*--- Divide by the number of Phi angles in the nearfield ---*/
     
-    double PhiFactor = 1.0/double(PhiAngleList.size());
+    su2double PhiFactor = 1.0/su2double(PhiAngleList.size());
     
     /*--- Evaluate the objective function ---*/
     
@@ -7763,8 +7767,8 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
         Weight_PhiAngle[iPhiAngle][iVertex] = 1.0;
         Coord_i = Xcoord_PhiAngle[iPhiAngle][iVertex];
         
-        double Difference = EquivArea_PhiAngle[iPhiAngle][iVertex]-TargetArea_PhiAngle[iPhiAngle][iVertex];
-        double percentage = fabs(Difference)*100/fabs(TargetArea_PhiAngle[iPhiAngle][iVertex]);
+        su2double Difference = EquivArea_PhiAngle[iPhiAngle][iVertex]-TargetArea_PhiAngle[iPhiAngle][iVertex];
+        su2double percentage = fabs(Difference)*100/fabs(TargetArea_PhiAngle[iPhiAngle][iVertex]);
         
         if ((percentage < 0.1) || (Coord_i < XCoordBegin_OF) || (Coord_i > XCoordEnd_OF)) Difference = 0.0;
         
@@ -7782,8 +7786,8 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
           Coord_j = Xcoord_PhiAngle[iPhiAngle][jVertex];
           Weight_PhiAngle[iPhiAngle][iVertex] = 1.0;
           
-          double Difference = EquivArea_PhiAngle[iPhiAngle][jVertex]-TargetArea_PhiAngle[iPhiAngle][jVertex];
-          double percentage = fabs(Difference)*100/fabs(TargetArea_PhiAngle[iPhiAngle][jVertex]);
+          su2double Difference = EquivArea_PhiAngle[iPhiAngle][jVertex]-TargetArea_PhiAngle[iPhiAngle][jVertex];
+          su2double percentage = fabs(Difference)*100/fabs(TargetArea_PhiAngle[iPhiAngle][jVertex]);
           
           if ((percentage < 0.1) || (Coord_j < XCoordBegin_OF) || (Coord_j > XCoordEnd_OF)) Difference = 0.0;
           
@@ -7806,8 +7810,8 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
       EquivArea_file << fixed << "ZONE T= \"<greek>F</greek>=" << PhiAngleList[iPhiAngle] << " deg.\"" << endl;
       for (iVertex = 0; iVertex < Xcoord_PhiAngle[iPhiAngle].size(); iVertex++) {
         
-        double XcoordRot = Xcoord_PhiAngle[0][iVertex]*cos(AoA) - Zcoord_PhiAngle[0][iVertex]*sin(AoA);
-        double XcoordRot_init = Xcoord_PhiAngle[0][0]*cos(AoA) - Zcoord_PhiAngle[0][0]*sin(AoA);
+        su2double XcoordRot = Xcoord_PhiAngle[0][iVertex]*cos(AoA) - Zcoord_PhiAngle[0][iVertex]*sin(AoA);
+        su2double XcoordRot_init = Xcoord_PhiAngle[0][0]*cos(AoA) - Zcoord_PhiAngle[0][0]*sin(AoA);
         
         if (config->GetSystemMeasurements() == US)
           EquivArea_file << scientific << (XcoordRot - XcoordRot_init) * 12.0;
@@ -7832,7 +7836,7 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
     FuncGrad_file << endl;
     
     for (iVertex = 0; iVertex < NearFieldWeight_PhiAngle[0].size(); iVertex++) {
-      double XcoordRot = Xcoord_PhiAngle[0][iVertex]*cos(AoA) - Zcoord_PhiAngle[0][iVertex]*sin(AoA);
+      su2double XcoordRot = Xcoord_PhiAngle[0][iVertex]*cos(AoA) - Zcoord_PhiAngle[0][iVertex]*sin(AoA);
       FuncGrad_file << scientific << XcoordRot;
       for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++)
         FuncGrad_file << scientific << "\t" << NearFieldWeight_PhiAngle[iPhiAngle][iVertex];

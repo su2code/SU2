@@ -30,14 +30,66 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+
 #pragma once
 
-/* --- Depending on the datatype used, the correct MPI wrapper class is defined.
- * For the default (double type) case this results in using the normal MPI routines. --- */
-#ifndef SU2_TYPE
+#include <ostream>
+#include <cstdio>
 
-#define SU2_MPI CMPIWrapper
+#ifdef COMPLEX_TYPE
+#include "complex_structure.hpp"
+
+/* --- Define the complex datatype to be the base type used in SU2 --- */
+
+typedef CComplexType su2double;
+
+class CComplexTypeWrapper;
+
+typedef CComplexTypeWrapper SU2_TYPE;
+
+#else
+
+#define SPRINTF sprintf
+
+/* --- Define the double datatype to be the base type used in SU2 --- */
 
 typedef double su2double;
 
+class CTypeWrapper;
+
+typedef CTypeWrapper SU2_TYPE;
+
 #endif
+
+/*!
+ * \class CTypeWrapper
+ * \brief Class for defining the datatype wrapper routines; this class features as a base class for
+ * type interfaces for non-primitive dataypes e.g. used by AD, complex etc.
+ * \author T. Albring
+ * \version 3.2.9 "eagle"
+ */
+class CTypeWrapper{
+public:
+  static void SetPrimary(su2double& data, const double &val);
+
+  static void SetSecondary(su2double& data, const double &val);
+
+  static double GetPrimary(su2double &data);
+
+  static double GetSecondary(su2double &data);
+};
+
+#ifdef COMPLEX_TYPE
+class CComplexTypeWrapper : CTypeWrapper{
+public:
+  static void SetPrimary(su2double& data, const double &val);
+
+  static void SetSecondary(su2double& data, const double &val);
+
+  static double GetPrimary(su2double &data);
+
+  static double GetSecondary(su2double &data);
+};
+#endif
+
+#include "datatype_structure.inl"

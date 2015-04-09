@@ -61,17 +61,17 @@ private:
 	unsigned short Kind_SU2; /*!< \brief Kind of SU2 software component.*/
   unsigned short Ref_NonDim; /*!< \brief Kind of of non dimensionalization.*/
   unsigned short iZone, nZone; /*!< \brief Number of zones in the mesh. */
-	double OrderMagResidual; /*!< \brief Order of magnitude reduction. */
-	double MinLogResidual; /*!< \brief Minimum value of the log residual. */
-	double EA_ScaleFactor; /*!< \brief Equivalent Area scaling factor */
-	double* EA_IntLimit; /*!< \brief Integration limits of the Equivalent Area computation */
-  double AdjointLimit; /*!< \brief Adjoint variable limit */
+	su2double OrderMagResidual; /*!< \brief Order of magnitude reduction. */
+	su2double MinLogResidual; /*!< \brief Minimum value of the log residual. */
+	su2double EA_ScaleFactor; /*!< \brief Equivalent Area scaling factor */
+	su2double* EA_IntLimit; /*!< \brief Integration limits of the Equivalent Area computation */
+  su2double AdjointLimit; /*!< \brief Adjoint variable limit */
   bool MG_AdjointFlow; /*!< \brief MG with the adjoint flow problem */
-  double* Subsonic_Engine_Box; /*!< \brief Coordinates of the box subsonic region */
-  double* Hold_GridFixed_Coord; /*!< \brief Coordinates of the box to hold fixed the nbumerical grid */
+  su2double* Subsonic_Engine_Box; /*!< \brief Coordinates of the box subsonic region */
+  su2double* Hold_GridFixed_Coord; /*!< \brief Coordinates of the box to hold fixed the nbumerical grid */
   unsigned short ConvCriteria;	/*!< \brief Kind of convergence criteria. */
   unsigned short nFFD_Iter; 	/*!< \brief Iteration for the point inversion problem. */
-  double FFD_Tol;  	/*!< \brief Tolerance in the point inversion problem. */
+  su2double FFD_Tol;  	/*!< \brief Tolerance in the point inversion problem. */
   bool Viscous_Limiter_Flow, Viscous_Limiter_Turb;			/*!< \brief Viscous limiters. */
   bool Adjoint,			/*!< \brief Flag to know if the code is solving an adjoint problem. */
   Viscous,                /*!< \brief Flag to know if the code is solving a viscous problem. */
@@ -95,20 +95,20 @@ private:
 	Axisymmetric, /*!< \brief Flag for axisymmetric calculations */
 	DebugMode, /*!< \brief Flag for debug mode */
   ionization;  /*!< \brief Flag for determining if free electron gas is in the mixture */
-  double Damp_Engine_Inflow;	/*!< \brief Damping factor for the engine inlet. */
-  double Damp_Engine_Bleed;	/*!< \brief Damping factor for the engine bleed. */
-  double Damp_Engine_Exhaust;	/*!< \brief Damping factor for the engine exhaust. */
-  double Damp_Res_Restric,	/*!< \brief Damping factor for the residual restriction. */
+  su2double Damp_Engine_Inflow;	/*!< \brief Damping factor for the engine inlet. */
+  su2double Damp_Engine_Bleed;	/*!< \brief Damping factor for the engine bleed. */
+  su2double Damp_Engine_Exhaust;	/*!< \brief Damping factor for the engine exhaust. */
+  su2double Damp_Res_Restric,	/*!< \brief Damping factor for the residual restriction. */
 	Damp_Correc_Prolong; /*!< \brief Damping factor for the correction prolongation. */
-	double Position_Plane; /*!< \brief Position of the Near-Field (y coordinate 2D, and z coordinate 3D). */
-	double WeightCd; /*!< \brief Weight of the drag coefficient. */
+	su2double Position_Plane; /*!< \brief Position of the Near-Field (y coordinate 2D, and z coordinate 3D). */
+	su2double WeightCd; /*!< \brief Weight of the drag coefficient. */
 	unsigned short Unsteady_Simulation;	/*!< \brief Steady or unsteady (time stepping or dual time stepping) computation. */
 	unsigned short nStartUpIter;	/*!< \brief Start up iterations using the fine grid. */
-  double FixAzimuthalLine; /*!< \brief Fix an azimuthal line due to misalignments of the nearfield. */
-	double *DV_Value;		/*!< \brief Previous value of the design variable. */
-	double LimiterCoeff;				/*!< \brief Limiter coefficient */
+  su2double FixAzimuthalLine; /*!< \brief Fix an azimuthal line due to misalignments of the nearfield. */
+	su2double *DV_Value;		/*!< \brief Previous value of the design variable. */
+	su2double LimiterCoeff;				/*!< \brief Limiter coefficient */
   unsigned long LimiterIter;	/*!< \brief Freeze the value of the limiter after a number of iterations */
-	double SharpEdgesCoeff;				/*!< \brief Coefficient to identify the limit of a sharp edge. */
+	su2double SharpEdgesCoeff;				/*!< \brief Coefficient to identify the limit of a sharp edge. */
   unsigned short SystemMeasurements; /*!< \brief System of measurements. */
   unsigned short Kind_Regime;  /*!< \brief Kind of adjoint function. */
   unsigned short Kind_ObjFunc;  /*!< \brief Kind of objective function. */
@@ -116,7 +116,7 @@ private:
   unsigned short Continuous_Eqns; /*!< \brief Which equations to treat continuously (Hybrid adjoint)*/
   unsigned short Discrete_Eqns; /*!< \brief Which equations to treat discretely (Hybrid adjoint). */
 	unsigned short *Design_Variable; /*!< \brief Kind of design variable. */
-	double RatioDensity,				/*!< \brief Ratio of density for a free surface problem. */
+	su2double RatioDensity,				/*!< \brief Ratio of density for a free surface problem. */
 	RatioViscosity,				/*!< \brief Ratio of viscosity for a free surface problem. */
 	FreeSurface_Thickness,  /*!< \brief Thickness of the interfase for a free surface problem. */
 	FreeSurface_Outlet,  /*!< \brief Outlet of the interfase for a free surface problem. */
@@ -124,13 +124,13 @@ private:
 	FreeSurface_Damping_Length;  /*!< \brief Damping length of the free surface for a free surface problem. */
 	unsigned short Kind_Adaptation;	/*!< \brief Kind of numerical grid adaptation. */
 	unsigned short nTimeInstances;  /*!< \brief Number of periodic time instances for Time Spectral integration. */
-	double TimeSpectral_Period;		/*!< \brief Period of oscillation to be used with time-spectral computations. */
-	double New_Elem_Adapt;			/*!< \brief Elements to adapt in the numerical grid adaptation process. */
-	double Delta_UnstTime,			/*!< \brief Time step for unsteady computations. */
+	su2double TimeSpectral_Period;		/*!< \brief Period of oscillation to be used with time-spectral computations. */
+	su2double New_Elem_Adapt;			/*!< \brief Elements to adapt in the numerical grid adaptation process. */
+	su2double Delta_UnstTime,			/*!< \brief Time step for unsteady computations. */
 	Delta_UnstTimeND;						/*!< \brief Time step for unsteady computations (non dimensional). */
-	double Total_UnstTime,						/*!< \brief Total time for unsteady computations. */
+	su2double Total_UnstTime,						/*!< \brief Total time for unsteady computations. */
 	Total_UnstTimeND;								/*!< \brief Total time for unsteady computations (non dimensional). */
-	double Current_UnstTime,									/*!< \brief Global time of the unsteady simulation. */
+	su2double Current_UnstTime,									/*!< \brief Global time of the unsteady simulation. */
 	Current_UnstTimeND;									/*!< \brief Global time of the unsteady simulation. */
 	unsigned short nMarker_Euler,	/*!< \brief Number of Euler wall markers. */
 	nMarker_FarField,				/*!< \brief Number of far-field markers. */
@@ -202,50 +202,50 @@ private:
 	*Marker_Neumann,					/*!< \brief Neumann flow markers. */
 	*Marker_Neumann_Elec,					/*!< \brief Neumann flow markers. */
 	*Marker_All_TagBound;				/*!< \brief Global index for markers using grid information. */
-	double *Dirichlet_Value;    /*!< \brief Specified Dirichlet value at the boundaries. */
-	double *Exhaust_Temperature_Target;    /*!< \brief Specified total temperatures for nacelle boundaries. */
-	double *Exhaust_Pressure_Target;    /*!< \brief Specified total pressures for nacelle boundaries. */
-	double *Inlet_Ttotal;    /*!< \brief Specified total temperatures for inlet boundaries. */
-	double *Riemann_Var1, *Riemann_Var2;    /*!< \brief Specified values for Riemann boundary. */
-	double **Riemann_FlowDir;  /*!< \brief Specified flow direction vector (unit vector) for Riemann boundaries. */
-	double *Inlet_Ptotal;    /*!< \brief Specified total pressures for inlet boundaries. */
-	double **Inlet_FlowDir;  /*!< \brief Specified flow direction vector (unit vector) for inlet boundaries. */
-	double *Inlet_Temperature;    /*!< \brief Specified temperatures for a supersonic inlet boundaries. */
-	double *Inlet_Pressure;    /*!< \brief Specified static pressures for supersonic inlet boundaries. */
-	double **Inlet_Velocity;  /*!< \brief Specified flow velocity vectors for supersonic inlet boundaries. */
-	double *Inflow_Mach_Target;    /*!< \brief Specified fan face mach for nacelle boundaries. */
-	double *Inflow_Mach;    /*!< \brief Specified fan face mach for nacelle boundaries. */
-	double *Inflow_Pressure;    /*!< \brief Specified fan face mach for nacelle boundaries. */
-  double *Bleed_MassFlow_Target;    /*!< \brief Specified fan face mach for nacelle boundaries. */
-  double *Bleed_MassFlow;    /*!< \brief Specified fan face mach for nacelle boundaries. */
-  double *Bleed_Temperature_Target;    /*!< \brief Specified fan face mach for nacelle boundaries. */
-  double *Bleed_Temperature;    /*!< \brief Specified fan face mach for nacelle boundaries. */
-  double *Bleed_Pressure;    /*!< \brief Specified fan face mach for nacelle boundaries. */
-  double *Exhaust_Pressure;    /*!< \brief Specified fan face mach for nacelle boundaries. */
-  double *Exhaust_Temperature;    /*!< \brief Specified fan face mach for nacelle boundaries. */
-  double *Outlet_Pressure;    /*!< \brief Specified back pressures (static) for outlet boundaries. */
-	double *Isothermal_Temperature; /*!< \brief Specified isothermal wall temperatures (static). */
-  double *Wall_Catalycity; /*!< \brief Specified wall species mass-fractions for catalytic boundaries. */
-	double *Heat_Flux;  /*!< \brief Specified wall heat fluxes. */
-  double *Heat_FluxNonCatalytic;  /*!< \brief Specified wall heat fluxes. */
-  double *Heat_FluxCatalytic;  /*!< \brief Specified wall heat fluxes. */
-	double *Displ_Value;    /*!< \brief Specified displacement for displacement boundaries. */
-	double *Load_Value;    /*!< \brief Specified force for load boundaries. */
-	double *FlowLoad_Value;    /*!< \brief Specified force for flow load boundaries. */
-  double **ActDisk_Origin;
-  double *ActDisk_RootRadius;
-  double *ActDisk_TipRadius;
-  double *ActDisk_PressJump;
-  double *ActDisk_TempJump;
-  double *ActDisk_Omega;
+	su2double *Dirichlet_Value;    /*!< \brief Specified Dirichlet value at the boundaries. */
+	su2double *Exhaust_Temperature_Target;    /*!< \brief Specified total temperatures for nacelle boundaries. */
+	su2double *Exhaust_Pressure_Target;    /*!< \brief Specified total pressures for nacelle boundaries. */
+	su2double *Inlet_Ttotal;    /*!< \brief Specified total temperatures for inlet boundaries. */
+	su2double *Riemann_Var1, *Riemann_Var2;    /*!< \brief Specified values for Riemann boundary. */
+	su2double **Riemann_FlowDir;  /*!< \brief Specified flow direction vector (unit vector) for Riemann boundaries. */
+	su2double *Inlet_Ptotal;    /*!< \brief Specified total pressures for inlet boundaries. */
+	su2double **Inlet_FlowDir;  /*!< \brief Specified flow direction vector (unit vector) for inlet boundaries. */
+	su2double *Inlet_Temperature;    /*!< \brief Specified temperatures for a supersonic inlet boundaries. */
+	su2double *Inlet_Pressure;    /*!< \brief Specified static pressures for supersonic inlet boundaries. */
+	su2double **Inlet_Velocity;  /*!< \brief Specified flow velocity vectors for supersonic inlet boundaries. */
+	su2double *Inflow_Mach_Target;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+	su2double *Inflow_Mach;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+	su2double *Inflow_Pressure;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  su2double *Bleed_MassFlow_Target;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  su2double *Bleed_MassFlow;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  su2double *Bleed_Temperature_Target;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  su2double *Bleed_Temperature;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  su2double *Bleed_Pressure;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  su2double *Exhaust_Pressure;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  su2double *Exhaust_Temperature;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  su2double *Outlet_Pressure;    /*!< \brief Specified back pressures (static) for outlet boundaries. */
+	su2double *Isothermal_Temperature; /*!< \brief Specified isothermal wall temperatures (static). */
+  su2double *Wall_Catalycity; /*!< \brief Specified wall species mass-fractions for catalytic boundaries. */
+	su2double *Heat_Flux;  /*!< \brief Specified wall heat fluxes. */
+  su2double *Heat_FluxNonCatalytic;  /*!< \brief Specified wall heat fluxes. */
+  su2double *Heat_FluxCatalytic;  /*!< \brief Specified wall heat fluxes. */
+	su2double *Displ_Value;    /*!< \brief Specified displacement for displacement boundaries. */
+	su2double *Load_Value;    /*!< \brief Specified force for load boundaries. */
+	su2double *FlowLoad_Value;    /*!< \brief Specified force for flow load boundaries. */
+  su2double **ActDisk_Origin;
+  su2double *ActDisk_RootRadius;
+  su2double *ActDisk_TipRadius;
+  su2double *ActDisk_PressJump;
+  su2double *ActDisk_TempJump;
+  su2double *ActDisk_Omega;
   unsigned short *ActDisk_Distribution;
-  double **Periodic_RotCenter;  /*!< \brief Rotational center for each periodic boundary. */
-	double **Periodic_RotAngles;      /*!< \brief Rotation angles for each periodic boundary. */
-	double **Periodic_Translation;      /*!< \brief Translation vector for each periodic boundary. */
+  su2double **Periodic_RotCenter;  /*!< \brief Rotational center for each periodic boundary. */
+	su2double **Periodic_RotAngles;      /*!< \brief Rotation angles for each periodic boundary. */
+	su2double **Periodic_Translation;      /*!< \brief Translation vector for each periodic boundary. */
 	unsigned short nPeriodic_Index;     /*!< \brief Number of SEND_RECEIVE periodic transformations. */
-	double **Periodic_Center;         /*!< \brief Rotational center for each SEND_RECEIVE boundary. */
-	double **Periodic_Rotation;      /*!< \brief Rotation angles for each SEND_RECEIVE boundary. */
-	double **Periodic_Translate;      /*!< \brief Translation vector for each SEND_RECEIVE boundary. */
+	su2double **Periodic_Center;         /*!< \brief Rotational center for each SEND_RECEIVE boundary. */
+	su2double **Periodic_Rotation;      /*!< \brief Rotation angles for each SEND_RECEIVE boundary. */
+	su2double **Periodic_Translate;      /*!< \brief Translation vector for each SEND_RECEIVE boundary. */
 	string *Marker_CfgFile_TagBound;			/*!< \brief Global index for markers using config file. */
 	unsigned short *Marker_All_KindBC,			/*!< \brief Global index for boundaries using grid information. */
 	*Marker_CfgFile_KindBC;		/*!< \brief Global index for boundaries using config file. */
@@ -258,10 +258,10 @@ private:
   long Unst_RestartIter;			/*!< \brief Iteration number to restart an unsteady simulation (Dual time Method). */
   long Unst_AdjointIter;			/*!< \brief Iteration number to begin the reverse time integration in the direct solver for the unsteady adjoint. */
 	unsigned short nRKStep;			/*!< \brief Number of steps of the explicit Runge-Kutta method. */
-	double *RK_Alpha_Step;			/*!< \brief Runge-Kutta beta coefficients. */
+	su2double *RK_Alpha_Step;			/*!< \brief Runge-Kutta beta coefficients. */
 	unsigned short nMGLevels;		/*!< \brief Number of multigrid levels (coarse levels). */
 	unsigned short nCFL;			/*!< \brief Number of CFL, one for each multigrid level. */
-	double
+	su2double
 	CFLRedCoeff_Turb,		/*!< \brief CFL reduction coefficient on the LevelSet problem. */
 	CFLRedCoeff_AdjFlow,	/*!< \brief CFL reduction coefficient for the adjoint problem. */
 	CFLRedCoeff_AdjTurb,	/*!< \brief CFL reduction coefficient for the adjoint problem. */
@@ -273,8 +273,8 @@ private:
   unsigned short nFFDBox;		/*!< \brief Number of ffd boxes. */
   unsigned short nGridMovement;		/*!< \brief Number of grid movement types specified. */
 	unsigned short nParamDV;		/*!< \brief Number of parameters of the design variable. */
-	double **ParamDV;				/*!< \brief Parameters of the design variable. */
-  double **CoordFFDBox;				/*!< \brief Coordinates of the FFD boxes. */
+	su2double **ParamDV;				/*!< \brief Parameters of the design variable. */
+  su2double **CoordFFDBox;				/*!< \brief Coordinates of the FFD boxes. */
   unsigned short **DegreeFFDBox;	/*!< \brief Degree of the FFD boxes. */
   string *FFDTag;				/*!< \brief Parameters of the design variable. */
   string *TagFFDBox;				/*!< \brief Tag of the FFD box. */
@@ -369,25 +369,25 @@ private:
 
   unsigned short Kind_Trans_Model,			/*!< \brief Transition model definition. */
 	Kind_Inlet, *Kind_Data_Riemann;           /*!< \brief Kind of inlet boundary treatment. */
-	double Linear_Solver_Error;		/*!< \brief Min error of the linear solver for the implicit formulation. */
+	su2double Linear_Solver_Error;		/*!< \brief Min error of the linear solver for the implicit formulation. */
 	unsigned long Linear_Solver_Iter;		/*!< \brief Max iterations of the linear solver for the implicit formulation. */
 	unsigned long Linear_Solver_Restart_Frequency;   /*!< \brief Restart frequency of the linear solver for the implicit formulation. */
-  double Roe_Kappa;		/*!< \brief Relaxation of the Roe scheme. */
-  double Relaxation_Factor_Flow;		/*!< \brief Relaxation coefficient of the linear solver mean flow. */
-  double Relaxation_Factor_Turb;		/*!< \brief Relaxation coefficient of the linear solver turbulence. */
-  double Relaxation_Factor_AdjFlow;		/*!< \brief Relaxation coefficient of the linear solver adjoint mean flow. */
-	double AdjTurb_Linear_Error;		/*!< \brief Min error of the turbulent adjoint linear solver for the implicit formulation. */
-  double EntropyFix_Coeff;              /*!< \brief Entropy fix coefficient. */
+  su2double Roe_Kappa;		/*!< \brief Relaxation of the Roe scheme. */
+  su2double Relaxation_Factor_Flow;		/*!< \brief Relaxation coefficient of the linear solver mean flow. */
+  su2double Relaxation_Factor_Turb;		/*!< \brief Relaxation coefficient of the linear solver turbulence. */
+  su2double Relaxation_Factor_AdjFlow;		/*!< \brief Relaxation coefficient of the linear solver adjoint mean flow. */
+	su2double AdjTurb_Linear_Error;		/*!< \brief Min error of the turbulent adjoint linear solver for the implicit formulation. */
+  su2double EntropyFix_Coeff;              /*!< \brief Entropy fix coefficient. */
 	unsigned short AdjTurb_Linear_Iter;		/*!< \brief Min error of the turbulent adjoint linear solver for the implicit formulation. */
-	double *Section_Location;                  /*!< \brief Airfoil section limit. */
+	su2double *Section_Location;                  /*!< \brief Airfoil section limit. */
   unsigned short nSections,      /*!< \brief Number of section cuts to make when calculating internal volume. */
   nVolSections;               /*!< \brief Number of sections. */
-	double* Kappa_Flow,           /*!< \brief Numerical dissipation coefficients for the flow equations. */
+	su2double* Kappa_Flow,           /*!< \brief Numerical dissipation coefficients for the flow equations. */
 	*Kappa_AdjFlow,                  /*!< \brief Numerical dissipation coefficients for the adjoint equations. */
   *Kappa_TNE2,             /*!< \brief Numerical dissipation coefficients for the TNE2 equations. */
   *Kappa_AdjTNE2,          /*!< \brief Numerical dissipation coefficients for the adjoint TNE2 equations. */
 	*Kappa_LinFlow;                  /*!< \brief Numerical dissipation coefficients for the linearized equations. */
-	double Kappa_1st_AdjFlow,	/*!< \brief JST 1st order dissipation coefficient for adjoint flow equations (coarse multigrid levels). */
+	su2double Kappa_1st_AdjFlow,	/*!< \brief JST 1st order dissipation coefficient for adjoint flow equations (coarse multigrid levels). */
 	Kappa_2nd_AdjFlow,			/*!< \brief JST 2nd order dissipation coefficient for adjoint flow equations. */
 	Kappa_4th_AdjFlow,			/*!< \brief JST 4th order dissipation coefficient for adjoint flow equations. */
 	Kappa_1st_LinFlow,			/*!< \brief JST 1st order dissipation coefficient for linearized flow equations (coarse multigrid levels). */
@@ -402,37 +402,37 @@ private:
 	Kappa_2nd_AdjTNE2,			/*!< \brief JST 2nd order dissipation coefficient for flow equations. */
 	Kappa_4th_AdjTNE2;			/*!< \brief JST 4th order dissipation coefficient for flow equations. */
 
-	double Min_Beta_RoeTurkel,		/*!< \brief Minimum value of Beta for the Roe-Turkel low Mach preconditioner. */
+	su2double Min_Beta_RoeTurkel,		/*!< \brief Minimum value of Beta for the Roe-Turkel low Mach preconditioner. */
 	Max_Beta_RoeTurkel;		/*!< \brief Maximum value of Beta for the Roe-Turkel low Mach preconditioner. */
   unsigned long GridDef_Nonlinear_Iter, /*!< \brief Number of nonlinear increments for grid deformation. */
   GridDef_Linear_Iter; /*!< \brief Number of linear smoothing iterations for grid deformation. */
   unsigned short Deform_Stiffness_Type; /*!< \brief Type of element stiffness imposed for FEA mesh deformation. */
   bool Deform_Output;  /*!< \brief Print the residuals during mesh deformation to the console. */
-  double Deform_Tol_Factor; /*!< Factor to multiply smallest volume for deform tolerance (0.001 default) */
+  su2double Deform_Tol_Factor; /*!< Factor to multiply smallest volume for deform tolerance (0.001 default) */
   unsigned short Deform_Linear_Solver; /*!< Numerical method to deform the grid */
   unsigned short FFD_Continuity; /*!< Surface continuity at the intersection with the FFD */
-  double Deform_ElasticityMod, Deform_PoissonRatio; /*!< young's modulus and poisson ratio for volume deformation stiffness model */
+  su2double Deform_ElasticityMod, Deform_PoissonRatio; /*!< young's modulus and poisson ratio for volume deformation stiffness model */
   bool Visualize_Deformation;	/*!< \brief Flag to visualize the deformation in MDC. */
-	double Mach;		/*!< \brief Mach number. */
-	double Reynolds;	/*!< \brief Reynolds number. */
-	double Froude;	/*!< \brief Froude number. */
-	double Length_Reynolds;	/*!< \brief Reynolds length (dimensional). */
-	double AoA,			/*!< \brief Angle of attack (just external flow). */
+	su2double Mach;		/*!< \brief Mach number. */
+	su2double Reynolds;	/*!< \brief Reynolds number. */
+	su2double Froude;	/*!< \brief Froude number. */
+	su2double Length_Reynolds;	/*!< \brief Reynolds length (dimensional). */
+	su2double AoA,			/*!< \brief Angle of attack (just external flow). */
 	AoS;				/*!< \brief Angle of sideSlip (just external flow). */
   bool Fixed_CL_Mode;			/*!< \brief Activate fixed CL mode (external flow only). */
-  double Target_CL;			/*!< \brief Specify a target CL instead of AoA (external flow only). */
-  double Damp_Fixed_CL;			/*!< \brief Damping coefficient for fixed CL mode (external flow only). */
+  su2double Target_CL;			/*!< \brief Specify a target CL instead of AoA (external flow only). */
+  su2double Damp_Fixed_CL;			/*!< \brief Damping coefficient for fixed CL mode (external flow only). */
   unsigned long Iter_Fixed_CL;			/*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
   bool Update_AoA;			/*!< \brief Boolean flag for whether to update the AoA for fixed lift mode on a given iteration. */
-	double ChargeCoeff;		/*!< \brief Charge coefficient (just for poisson problems). */
-	double *U_FreeStreamND;			/*!< \brief Reference variables at the infinity, free stream values. */
+	su2double ChargeCoeff;		/*!< \brief Charge coefficient (just for poisson problems). */
+	su2double *U_FreeStreamND;			/*!< \brief Reference variables at the infinity, free stream values. */
 	unsigned short Cauchy_Func_Flow,	/*!< \brief Function where to apply the convergence criteria in the flow problem. */
 	Cauchy_Func_AdjFlow,				/*!< \brief Function where to apply the convergence criteria in the adjoint problem. */
 	Cauchy_Func_LinFlow,				/*!< \brief Function where to apply the convergence criteria in the linearized problem. */
 	Cauchy_Elems;						/*!< \brief Number of elements to evaluate. */
 	unsigned short Residual_Func_Flow;	/*!< \brief Equation to apply residual convergence to. */
 	unsigned long StartConv_Iter;	/*!< \brief Start convergence criteria at iteration. */
-  double Cauchy_Eps;	/*!< \brief Epsilon used for the convergence. */
+  su2double Cauchy_Eps;	/*!< \brief Epsilon used for the convergence. */
 	unsigned long Wrt_Sol_Freq,	/*!< \brief Writing solution frequency. */
 	Wrt_Sol_Freq_DualTime,	/*!< \brief Writing solution frequency for Dual Time. */
 	Wrt_Con_Freq,				/*!< \brief Writing convergence history frequency. */
@@ -469,13 +469,13 @@ private:
   *Marker_CfgFile_DV,       /*!< \brief Global index for design variable markers using the config information. */
   *Marker_CfgFile_PerBound;     /*!< \brief Global index for periodic boundaries using the config information. */
   string *PlaneTag;      /*!< \brief Global index for the plane adaptation (upper, lower). */
-	double DualVol_Power;			/*!< \brief Power for the dual volume in the grid adaptation sensor. */
+	su2double DualVol_Power;			/*!< \brief Power for the dual volume in the grid adaptation sensor. */
 	unsigned short Analytical_Surface;	/*!< \brief Information about the analytical definition of the surface for grid adaptation. */
 	unsigned short Axis_Orientation;	/*!< \brief Axis orientation. */
 	unsigned short Mesh_FileFormat;	/*!< \brief Mesh input format. */
 	unsigned short Output_FileFormat;	/*!< \brief Format of the output files. */
   bool CFL_Adapt;      /*!< \brief Adaptive CFL number. */
-	double RefAreaCoeff,		/*!< \brief Reference area for coefficient computation. */
+	su2double RefAreaCoeff,		/*!< \brief Reference area for coefficient computation. */
 	RefElemLength,				/*!< \brief Reference element length for computing the slope limiting epsilon. */
 	RefSharpEdges,				/*!< \brief Reference coefficient for detecting sharp edges. */
 	RefLengthMoment,			/*!< \brief Reference length for moment computation. */
@@ -531,7 +531,7 @@ private:
   Plot_Section_Forces,       /*!< \brief Write sectional forces for specified markers. */
 	Wrt_1D_Output;                /*!< \brief Write average stagnation pressure specified markers. */
   unsigned short Console_Output_Verb;  /*!< \brief Level of verbosity for console output */
-	double *ArrheniusCoefficient,					/*!< \brief Arrhenius reaction coefficient */
+	su2double *ArrheniusCoefficient,					/*!< \brief Arrhenius reaction coefficient */
 	*ArrheniusEta,								/*!< \brief Arrhenius reaction temperature exponent */
 	*ArrheniusTheta,							/*!< \brief Arrhenius reaction characteristic temperature */
 	*CharVibTemp,									/*!< \brief Characteristic vibrational temperature for e_vib */
@@ -545,7 +545,7 @@ private:
 	unsigned short nMass,                 /*!< \brief No of particle masses */
 	nTemp;						/*!< \brief No of freestream temperatures specified */
 	bool Inlet_Outlet_Defined; /*!< \brief  that inlet and outlet conditions are defined for each species*/
-  double *Particle_Mass,         /*!< \brief Mass of all particles present in the plasma */
+  su2double *Particle_Mass,         /*!< \brief Mass of all particles present in the plasma */
   *Molar_Mass,               /*!< \brief Molar mass of species in the plasma [kg/kmol] */
   Mixture_Molar_mass,       /*!< \brief Molar mass of the multi-species fluid [kg/kmol] */
   *Gas_Composition,          /*!< \brief Initial mass fractions of flow [dimensionless] */
@@ -554,9 +554,9 @@ private:
   *Species_Ref_Temperature,  /*!< \brief Reference Temperature for viscosity of all particles present in the plasma */
   *Species_Ref_Viscosity;    /*!< \brief Reference viscosity  of all particles present in the plasma */
   unsigned short *nElStates; /*!< \brief Number of electron states. */
-  double **CharElTemp, /*!< \brief Characteristic temperature of electron states. */
+  su2double **CharElTemp, /*!< \brief Characteristic temperature of electron states. */
   **degen; /*!< \brief Degeneracy of electron states. */
-	double Gamma,			/*!< \brief Ratio of specific heats of the gas. */
+	su2double Gamma,			/*!< \brief Ratio of specific heats of the gas. */
 	Bulk_Modulus,			/*!< \brief Value of the bulk modulus for incompressible flows. */
 	ArtComp_Factor,			/*!< \brief Value of the artificial compresibility factor for incompressible flows. */
 	Gas_Constant,     /*!< \brief Specific gas constant. */
@@ -614,18 +614,18 @@ private:
   Omega_FreeStream, /*!< \brief Specific dissipation (external flow). */
   pnorm_heat;           /*!< \brief pnorm for heat-flux objective functions. */
 	int ***Reactions;					/*!< \brief Reaction map for chemically reacting, multi-species flows. */
-  double ***Omega00,        /*!< \brief Collision integrals (Omega(0,0)) */
+  su2double ***Omega00,        /*!< \brief Collision integrals (Omega(0,0)) */
   ***Omega11;                  /*!< \brief Collision integrals (Omega(1,1)) */
-	double ElasticyMod,			/*!< \brief Young's modulus of elasticity. */
+	su2double ElasticyMod,			/*!< \brief Young's modulus of elasticity. */
 	PoissonRatio,						/*!< \brief Poisson's ratio. */
 	MaterialDensity;								/*!< \brief Material density. */
-	double Wave_Speed;			/*!< \brief Wave speed used in the wave solver. */
-	double Thermal_Diffusivity;			/*!< \brief Thermal diffusivity used in the heat solver. */
-	double Cyclic_Pitch,          /*!< \brief Cyclic pitch for rotorcraft simulations. */
+	su2double Wave_Speed;			/*!< \brief Wave speed used in the wave solver. */
+	su2double Thermal_Diffusivity;			/*!< \brief Thermal diffusivity used in the heat solver. */
+	su2double Cyclic_Pitch,          /*!< \brief Cyclic pitch for rotorcraft simulations. */
 	Collective_Pitch;             /*!< \brief Collective pitch for rotorcraft simulations. */
 	string Motion_Filename;				/*!< \brief Arbitrary mesh motion input base filename. */
-	double Mach_Motion;			/*!< \brief Mach number based on mesh velocity and freestream quantities. */
-  double *Motion_Origin_X,    /*!< \brief X-coordinate of the mesh motion origin. */
+	su2double Mach_Motion;			/*!< \brief Mach number based on mesh velocity and freestream quantities. */
+  su2double *Motion_Origin_X,    /*!< \brief X-coordinate of the mesh motion origin. */
   *Motion_Origin_Y,           /*!< \brief Y-coordinate of the mesh motion origin. */
   *Motion_Origin_Z,           /*!< \brief Z-coordinate of the mesh motion origin. */
   *Translation_Rate_X,           /*!< \brief Translational velocity of the mesh in the x-direction. */
@@ -675,16 +675,16 @@ private:
 	nPlunging_Ampl_Z,           /*!< \brief Number of Plunging amplitudes in the z-direction. */
   nMoveMotion_Origin,         /*!< \brief Number of motion origins. */
   *MoveMotion_Origin;         /*!< \brief Keeps track if we should move moment origin. */
-  vector<vector<vector<double> > > Aeroelastic_np1, /*!< \brief Aeroelastic solution at time level n+1. */
+  vector<vector<vector<su2double> > > Aeroelastic_np1, /*!< \brief Aeroelastic solution at time level n+1. */
   Aeroelastic_n, /*!< \brief Aeroelastic solution at time level n. */
 	Aeroelastic_n1; /*!< \brief Aeroelastic solution at time level n-1. */
-  double FreqPlungeAeroelastic, /*!< \brief Plunging natural frequency for Aeroelastic. */
+  su2double FreqPlungeAeroelastic, /*!< \brief Plunging natural frequency for Aeroelastic. */
 	FreqPitchAeroelastic; /*!< \brief Pitch natural frequency for Aeroelastic. */
-  double *Aeroelastic_plunge, /*!< \brief Value of plunging coordinate at the end of an external iteration. */
+  su2double *Aeroelastic_plunge, /*!< \brief Value of plunging coordinate at the end of an external iteration. */
 	*Aeroelastic_pitch; /*!< \brief Value of pitching coordinate at the end of an external iteration. */
   unsigned short Gust_Type,	/*!< \brief Type of Gust. */
   Gust_Dir;   /*!< \brief Direction of the gust */
-  double Gust_WaveLength,     /*!< \brief The gust wavelength. */
+  su2double Gust_WaveLength,     /*!< \brief The gust wavelength. */
   Gust_Periods,              /*!< \brief Number of gust periods. */
   Gust_Ampl,                  /*!< \brief Gust amplitude. */
   Gust_Begin_Time,            /*!< \brief Time at which to begin the gust. */
@@ -722,8 +722,8 @@ private:
   // are no elements. This allows the option to be present in a config file but left blank.
 
   /*!<\brief addDoubleOption creates a config file parser for an option with the given name whose
-   value can be represented by a double.*/
-  void addDoubleOption(const string name, double & option_field, double default_value) {
+   value can be represented by a su2double.*/
+  void addDoubleOption(const string name, su2double & option_field, su2double default_value) {
     // Check if the key is already in the map. If this fails, it is coder error
     // and not user error, so throw.
     assert(option_map.find(name) == option_map.end());
@@ -731,9 +731,9 @@ private:
     // Add this option to the list of all the options
     all_options.insert(pair<string, bool>(name, true));
 
-    // Create the parser for a double option with a reference to the option_field and the desired
-    // default value. This will take the string in the config file, convert it to a double, and
-    // place that double in the memory location specified by the reference.
+    // Create the parser for a su2double option with a reference to the option_field and the desired
+    // default value. This will take the string in the config file, convert it to a su2double, and
+    // place that su2double in the memory location specified by the reference.
     COptionBase* val = new COptionDouble(name, option_field, default_value);
 
     // Create an association between the option name ("CFL") and the parser generated above.
@@ -806,9 +806,9 @@ private:
     option_map.insert( pair<string, COptionBase*>(name, val) );
 	}
 
-  void addDoubleArrayOption(const string name, const int size, double * & option_field, double * default_value) {
+  void addDoubleArrayOption(const string name, const int size, su2double * & option_field, su2double * default_value) {
 
-    double * def = new double [size];
+    su2double * def = new su2double [size];
     for (int i = 0; i < size; i++) {
       def[i] = default_value[i];
     }
@@ -818,7 +818,7 @@ private:
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
-  void addDoubleListOption(const string name, unsigned short & size, double * & option_field) {
+  void addDoubleListOption(const string name, unsigned short & size, su2double * & option_field) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
     COptionBase* val = new COptionDoubleList(name, size, option_field);
@@ -855,7 +855,7 @@ private:
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
-  void addDVParamOption(const string name, unsigned short & nDV_field, double** & paramDV, string* & FFDTag,
+  void addDVParamOption(const string name, unsigned short & nDV_field, su2double** & paramDV, string* & FFDTag,
                         unsigned short* & design_variable) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
@@ -863,7 +863,7 @@ private:
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
   
-  void addFFDDefOption(const string name, unsigned short & nFFD_field, double** & coordFFD, string* & FFDTag) {
+  void addFFDDefOption(const string name, unsigned short & nFFD_field, su2double** & coordFFD, string* & FFDTag) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
     COptionBase* val = new COptionFFDDef(name, nFFD_field, coordFFD, FFDTag);
@@ -878,15 +878,15 @@ private:
   }
 
   void addStringDoubleListOption(const string name, unsigned short & list_size, string * & string_field,
-                        double* & double_field) {
+                        su2double* & su2double_field) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
-    COptionBase* val = new COptionStringDoubleList(name, list_size, string_field, double_field);
+    COptionBase* val = new COptionStringDoubleList(name, list_size, string_field, su2double_field);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
   void addInletOption(const string name, unsigned short & nMarker_Inlet, string * & Marker_Inlet,
-                                 double* & Ttotal, double* & Ptotal, double** & FlowDir) {
+                                 su2double* & Ttotal, su2double* & Ptotal, su2double** & FlowDir) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
     COptionBase* val = new COptionInlet(name, nMarker_Inlet, Marker_Inlet, Ttotal, Ptotal, FlowDir);
@@ -895,7 +895,7 @@ private:
   template <class Tenum>
   
   void addRiemannOption(const string name, unsigned short & nMarker_Riemann, string * & Marker_Riemann, unsigned short* & option_field, const map<string, Tenum> & enum_map,
-                                 double* & var1, double* & var2, double** & FlowDir) {
+                                 su2double* & var1, su2double* & var2, su2double** & FlowDir) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
     COptionBase* val = new COptionRiemann<Tenum>(name, nMarker_Riemann, Marker_Riemann, option_field, enum_map, var1, var2, FlowDir);
@@ -903,7 +903,7 @@ private:
   }
 
   void addExhaustOption(const string name, unsigned short & nMarker_Exhaust, string * & Marker_Exhaust,
-                      double* & Ttotal, double* & Ptotal) {
+                      su2double* & Ttotal, su2double* & Ptotal) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
     COptionBase* val = new COptionExhaust(name, nMarker_Exhaust, Marker_Exhaust, Ttotal, Ptotal);
@@ -911,7 +911,7 @@ private:
   }
   
   void addBleedOption(const string name, unsigned short & nMarker_Bleed, string * & Marker_Bleed,
-                        double* & MassFlow_Target, double* & Temp_Target) {
+                        su2double* & MassFlow_Target, su2double* & Temp_Target) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
     COptionBase* val = new COptionBleed(name, nMarker_Bleed, Marker_Bleed, MassFlow_Target, Temp_Target);
@@ -920,7 +920,7 @@ private:
 
   void addPeriodicOption(const string & name, unsigned short & nMarker_PerBound,
                     string* & Marker_PerBound, string* & Marker_PerDonor,
-                         double** & RotCenter, double** & RotAngles, double** & Translation) {
+                         su2double** & RotCenter, su2double** & RotAngles, su2double** & Translation) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
     COptionBase* val = new COptionPeriodic(name, nMarker_PerBound, Marker_PerBound, Marker_PerDonor, RotCenter, RotAngles, Translation);
@@ -929,8 +929,8 @@ private:
 
   void addActuatorDiskOption(const string & name, unsigned short & nMarker_ActDisk_Inlet, unsigned short & nMarker_ActDisk_Outlet,
                              string* & Marker_ActDisk_Inlet, string* & Marker_ActDisk_Outlet,
-                             double** & ActDisk_Origin, double* & ActDisk_RootRadius, double* & ActDisk_TipRadius,
-                             double* & ActDisk_PressJump, double* & ActDisk_TempJump, double* & ActDisk_Omega,
+                             su2double** & ActDisk_Origin, su2double* & ActDisk_RootRadius, su2double* & ActDisk_TipRadius,
+                             su2double* & ActDisk_PressJump, su2double* & ActDisk_TempJump, su2double* & ActDisk_Omega,
                              unsigned short* & ActDisk_Distribution) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
@@ -989,49 +989,49 @@ public:
      * \param[in] val_marker - the marker we are monitoring.
 	 * \return Reference origin (in cartesians coordinates) for moment computation.
 	 */
-	double *GetRefOriginMoment(unsigned short val_marker);
+	su2double *GetRefOriginMoment(unsigned short val_marker);
 
   /*!
 	 * \brief Get reference origin x-coordinate for moment computation.
    * \param[in] val_marker - the marker we are monitoring.
 	 * \return Reference origin x-coordinate (in cartesians coordinates) for moment computation.
 	 */
-	double GetRefOriginMoment_X(unsigned short val_marker);
+	su2double GetRefOriginMoment_X(unsigned short val_marker);
 
   /*!
 	 * \brief Get reference origin y-coordinate for moment computation.
    * \param[in] val_marker - the marker we are monitoring.
 	 * \return Reference origin y-coordinate (in cartesians coordinates) for moment computation.
 	 */
-	double GetRefOriginMoment_Y(unsigned short val_marker);
+	su2double GetRefOriginMoment_Y(unsigned short val_marker);
 
   /*!
 	 * \brief Get reference origin z-coordinate for moment computation.
    * \param[in] val_marker - the marker we are monitoring.
 	 * \return Reference origin z-coordinate (in cartesians coordinates) for moment computation.
 	 */
-	double GetRefOriginMoment_Z(unsigned short val_marker);
+	su2double GetRefOriginMoment_Z(unsigned short val_marker);
 
   /*!
 	 * \brief Set reference origin x-coordinate for moment computation.
    * \param[in] val_marker - the marker we are monitoring.
 	 * \param[in] val_origin - New x-coordinate of the mesh motion origin.
 	 */
-	void SetRefOriginMoment_X(unsigned short val_marker, double val_origin);
+	void SetRefOriginMoment_X(unsigned short val_marker, su2double val_origin);
 
   /*!
 	 * \brief Set reference origin y-coordinate for moment computation.
    * \param[in] val_marker - the marker we are monitoring.
 	 * \param[in] val_origin - New y-coordinate of the mesh motion origin.
 	 */
-	void SetRefOriginMoment_Y(unsigned short val_marker, double val_origin);
+	void SetRefOriginMoment_Y(unsigned short val_marker, su2double val_origin);
 
   /*!
 	 * \brief Set reference origin z-coordinate for moment computation.
    * \param[in] val_marker - the marker we are monitoring.
 	 * \param[in] val_origin - New z-coordinate of the mesh motion origin.
 	 */
-	void SetRefOriginMoment_Z(unsigned short val_marker, double val_origin);
+	void SetRefOriginMoment_Z(unsigned short val_marker, su2double val_origin);
 
 	/*!
 	 * \brief Get index of the upper and lower horizontal plane.
@@ -1045,38 +1045,38 @@ public:
 	 * \param[in] index - 0 means x_min, and 1 means x_max.
 	 * \return Integration limits for the equivalent area computation.
 	 */
-	double GetEA_IntLimit(unsigned short index);
+	su2double GetEA_IntLimit(unsigned short index);
   
   /*!
 	 * \brief Get the integration limits for the equivalent area computation.
 	 * \param[in] index - 0 means x_min, and 1 means x_max.
 	 * \return Integration limits for the equivalent area computation.
 	 */
-	double GetEA_ScaleFactor(void);
+	su2double GetEA_ScaleFactor(void);
 
   /*!
 	 * \brief Get the limit value for the adjoint variables.
 	 * \return Limit value for the adjoint variables.
 	 */
-	double GetAdjointLimit(void);
+	su2double GetAdjointLimit(void);
 
 	/*!
 	 * \brief Get the the coordinates where of the box where the grid is going to be deformed.
 	 * \return Coordinates where of the box where the grid is going to be deformed.
 	 */
-	double *GetHold_GridFixed_Coord(void);
+	su2double *GetHold_GridFixed_Coord(void);
 
   /*!
    * \brief Get the the coordinates where of the box where a subsonic region is imposed.
    * \return Coordinates where of the box where the grid is going to be a subsonic region.
    */
-  double *GetSubsonic_Engine_Box(void);
+  su2double *GetSubsonic_Engine_Box(void);
   
 	/*!
 	 * \brief Get the power of the dual volume in the grid adaptation sensor.
 	 * \return Power of the dual volume in the grid adaptation sensor.
 	 */
-	double GetDualVol_Power(void);
+	su2double GetDualVol_Power(void);
 
 	/*!
 	 * \brief Get Information about if there is an analytical definition of the surface for doing the
@@ -1098,37 +1098,37 @@ public:
 	 * \brief Get the ratio of density for a free surface problem.
 	 * \return Ratio of density for a free surface problem.
 	 */
-	double GetRatioDensity(void);
+	su2double GetRatioDensity(void);
 
 	/*!
 	 * \brief Get the ratio of viscosity for a free surface problem.
 	 * \return Ratio of viscosity for a free surface problem.
 	 */
-	double GetRatioViscosity(void);
+	su2double GetRatioViscosity(void);
 
 	/*!
 	 * \brief Get the thickness of the interfase for a free surface problem.
 	 * \return Thickness of the interfase for a free surface problem.
 	 */
-	double GetFreeSurface_Thickness(void);
+	su2double GetFreeSurface_Thickness(void);
 
 	/*!
 	 * \brief Get the damping of the free surface for a free surface problem.
 	 * \return Damping of the interfase for a free surface problem.
 	 */
-	double GetFreeSurface_Damping_Coeff(void);
+	su2double GetFreeSurface_Damping_Coeff(void);
 
 	/*!
 	 * \brief Get the damping of the free surface for a free surface problem.
 	 * \return Damping of the interfase for a free surface problem.
 	 */
-	double GetFreeSurface_Damping_Length(void);
+	su2double GetFreeSurface_Damping_Length(void);
 
 	/*!
 	 * \brief Get the outlet position of the free surface for a free surface problem.
 	 * \return Outlet position of the interfase for a free surface problem.
 	 */
-	double GetFreeSurface_Outlet(void);
+	su2double GetFreeSurface_Outlet(void);
 
   /*!
 	 * \brief Creates a tecplot file to visualize the partition made by the DDC software.
@@ -1140,20 +1140,20 @@ public:
 	 * \brief Get the value of the Mach number (velocity divided by speed of sound).
 	 * \return Value of the Mach number.
 	 */
-	double GetMach(void);
+	su2double GetMach(void);
 
 	/*!
 	 * \brief Get the value of the Gamma of fluid (ratio of specific heats).
 	 * \return Value of the constant: Gamma
 	 */
-	double GetGamma(void);
+	su2double GetGamma(void);
 
 	/*!
 	 * \brief Get the value of the Gamma of fluid (ratio of specific heats) for a particular species.
 	 * \param[in] - val_Species: Index of desired species specific heat ratio.
 	 * \return Value of the constant: Species_Gamma[iSpecies]
 	 */
-	double GetSpecies_Gamma(unsigned short val_Species);
+	su2double GetSpecies_Gamma(unsigned short val_Species);
 
 	/*!
 	 * \brief Get the value of the charge number for a particular species (1 for ions, -1 for electrons, 0 for neutral).
@@ -1166,7 +1166,7 @@ public:
    * \brief Get the values of the CFL adapation.
    * \return Value of CFL adapation
    */
-  double GetCFL_AdaptParam(unsigned short val_index);
+  su2double GetCFL_AdaptParam(unsigned short val_index);
   
   /*!
    * \brief Get the values of the CFL adapation.
@@ -1178,7 +1178,7 @@ public:
 	 * \brief Get the value of the limits for the sections.
 	 * \return Value of the limits for the sections.
 	 */
-	double GetSection_Location(unsigned short val_var);
+	su2double GetSection_Location(unsigned short val_var);
 
 	/*!
 	 * \brief Get the array that maps chemical consituents to each chemical reaction.
@@ -1190,68 +1190,68 @@ public:
 	 * \brief Get the array containing the curve fit coefficients for the Omega(0,0) collision integrals.
 	 * \return Memory location of the triple pointer to the 3-D collision integral array.
 	 */
-	double ***GetCollisionIntegral00(void);
+	su2double ***GetCollisionIntegral00(void);
 
 	/*!
 	 * \brief Get the array containing the curve fit coefficients for the Omega(1,1) collision integrals.
 	 * \return Memory location of the triple pointer to the 3-D collision integral array.
 	 */
-	double ***GetCollisionIntegral11(void);
+	su2double ***GetCollisionIntegral11(void);
 
 	/*!
 	 * \brief Get the value of the bulk modulus.
 	 * \return Value of the bulk modulus.
 	 */
-	double GetBulk_Modulus(void);
+	su2double GetBulk_Modulus(void);
 
 	/*!
 	 * \brief Get the value of the Gamma of fluid (ratio of specific heats) for monatomic species.
 	 * \return Value of the constant: GammaMonatomic
 	 */
-	double GetGammaMonatomic(void);
+	su2double GetGammaMonatomic(void);
 
 	/*!
 	 * \brief Get the value of the Gamma of fluid (ratio of specific heats) for diatomic species.
 	 * \return Value of the constant: Gamma
 	 */
-	double GetGammaDiatomic(void);
+	su2double GetGammaDiatomic(void);
 
 	/*!
 	 * \brief Get the artificial compresibility factor.
 	 * \return Value of the artificial compresibility factor.
 	 */
-	double GetArtComp_Factor(void);
+	su2double GetArtComp_Factor(void);
 
 	/*!
 	 * \brief Get the Level set zero for free surface .
 	 * \return Value of the level set zero coordinate
 	 */
-	double GetFreeSurface_Zero(void);
+	su2double GetFreeSurface_Zero(void);
 
 	/*!
 	 * \brief Get the Level set zero for free surface .
 	 * \return Value of the level set zero coordinate
 	 */
-	double GetFreeSurface_Depth(void);
+	su2double GetFreeSurface_Depth(void);
 
 	/*!
 	 * \brief Get the value of specific gas constant.
 	 * \return Value of the constant: Gamma
 	 */
-	double GetGas_Constant(void);
+	su2double GetGas_Constant(void);
 
   /*!
 	 * \brief Get the value of specific gas constant.
 	 * \return Value of the constant: Gamma
 	 */
-	double GetGas_ConstantND(void);
+	su2double GetGas_ConstantND(void);
 
 	/*!
 	 * \brief Get the value of specific gas constant for a particular species.
 	 * \param[in] val_Species - Index of desired species gas constant.
 	 * \return Value of the constant: R
 	 */
-	double GetSpecies_Gas_Constant(unsigned short val_Species);
+	su2double GetSpecies_Gas_Constant(unsigned short val_Species);
 
 	/*!
 	 * \brief Get the coefficients of the Blottner viscosity model
@@ -1259,260 +1259,260 @@ public:
 	 * \param[in] val_Coeff - Index of the coefficient (As, Bs, Cs)
 	 * \return Value of the Blottner coefficient
 	 */
-	double GetBlottnerCoeff(unsigned short val_Species, unsigned short val_Coeff);
+	su2double GetBlottnerCoeff(unsigned short val_Species, unsigned short val_Coeff);
 
   /*!
 	 * \brief Get the p-norm for heat-flux objective functions (adjoint problem).
 	 * \return Value of the heat flux p-norm
 	 */
-	double GetPnormHeat(void);
+	su2double GetPnormHeat(void);
 
 	/*!
 	 * \brief Get the value of wall temperature.
 	 * \return Value of the constant: Temperature
 	 */
-	double GetWallTemperature(void);
+	su2double GetWallTemperature(void);
 
 	/*!
 	 * \brief Get the reference value for the specific gas constant.
 	 * \return Reference value for the specific gas constant.
 	 */
-	double GetGas_Constant_Ref(void);
+	su2double GetGas_Constant_Ref(void);
 
 	/*!
 	 * \brief Get the value of the frestream temperature.
 	 * \return Freestream temperature.
 	 */
-	double GetTemperature_FreeStream(void);
+	su2double GetTemperature_FreeStream(void);
 
   /*!
 	 * \brief Get the value of the frestream temperature.
 	 * \return Freestream temperature.
 	 */
-	double GetEnergy_FreeStream(void);
+	su2double GetEnergy_FreeStream(void);
 
   /*!
 	 * \brief Get the value of the frestream temperature.
 	 * \return Freestream temperature.
 	 */
-	double GetViscosity_FreeStream(void);
+	su2double GetViscosity_FreeStream(void);
 
   /*!
 	 * \brief Get the value of the frestream temperature.
 	 * \return Freestream temperature.
 	 */
-	double GetDensity_FreeStream(void);
+	su2double GetDensity_FreeStream(void);
 
   /*!
 	 * \brief Get the value of the frestream temperature.
 	 * \return Freestream temperature.
 	 */
-	double GetModVel_FreeStream(void);
+	su2double GetModVel_FreeStream(void);
 
   /*!
 	 * \brief Get the value of the frestream temperature.
 	 * \return Freestream temperature.
 	 */
-	double GetModVel_FreeStreamND(void);
+	su2double GetModVel_FreeStreamND(void);
 
   /*!
 	 * \brief Get the value of the frestream vibrational-electronic temperature.
 	 * \return Freestream temperature.
 	 */
-	double GetTemperature_ve_FreeStream(void);
+	su2double GetTemperature_ve_FreeStream(void);
 
 	/*!
 	 * \brief Get the value of the laminar Prandtl number.
 	 * \return Laminar Prandtl number.
 	 */
-	double GetPrandtl_Lam(void);
+	su2double GetPrandtl_Lam(void);
 
 	/*!
 	 * \brief Get the value of the turbulent Prandtl number.
 	 * \return Turbulent Prandtl number.
 	 */
-	double GetPrandtl_Turb(void);
+	su2double GetPrandtl_Turb(void);
 
 	/*!
 	 * \brief Get the value of the reference length for non-dimensionalization.
 	 *        This value should always be 1 internally, and is not user-specified.
 	 * \return Reference length for non-dimensionalization.
 	 */
-	double GetLength_Ref(void);
+	su2double GetLength_Ref(void);
 
 	/*!
 	 * \brief Get the value of the reference pressure for non-dimensionalization.
 	 * \return Reference pressure for non-dimensionalization.
 	 */
-	double GetPressure_Ref(void);
+	su2double GetPressure_Ref(void);
 
   /*!
 	 * \brief Get the value of the reference pressure for non-dimensionalization.
 	 * \return Reference pressure for non-dimensionalization.
 	 */
-	double GetEnergy_Ref(void);
+	su2double GetEnergy_Ref(void);
 
 	/*!
 	 * \brief Get the value of the reference temperature for non-dimensionalization.
 	 * \return Reference temperature for non-dimensionalization.
 	 */
-	double GetTemperature_Ref(void);
+	su2double GetTemperature_Ref(void);
 
 	/*!
 	 * \brief Get the value of the reference density for non-dimensionalization.
 	 * \return Reference density for non-dimensionalization.
 	 */
-	double GetDensity_Ref(void);
+	su2double GetDensity_Ref(void);
 
 	/*!
 	 * \brief Get the value of the reference velocity for non-dimensionalization.
 	 * \return Reference velocity for non-dimensionalization.
 	 */
-	double GetVelocity_Ref(void);
+	su2double GetVelocity_Ref(void);
 
 	/*!
 	 * \brief Get the value of the reference time for non-dimensionalization.
 	 * \return Reference time for non-dimensionalization.
 	 */
-	double GetTime_Ref(void);
+	su2double GetTime_Ref(void);
 
 	/*!
 	 * \brief Get the value of the reference viscosity for non-dimensionalization.
 	 * \return Reference viscosity for non-dimensionalization.
 	 */
-	double GetViscosity_Ref(void);
+	su2double GetViscosity_Ref(void);
 
 	/*!
 	 * \brief Get the value of the reference conductivity for non-dimensionalization.
 	 * \return Reference conductivity for non-dimensionalization.
 	 */
-	double GetConductivity_Ref(void);
+	su2double GetConductivity_Ref(void);
 
 	/*!
 	 * \brief Get the value of the reference angular velocity for non-dimensionalization.
 	 * \return Reference angular velocity for non-dimensionalization.
 	 */
-	double GetOmega_Ref(void);
+	su2double GetOmega_Ref(void);
 
 	/*!
 	 * \brief Get the value of the reference force for non-dimensionalization.
 	 * \return Reference force for non-dimensionalization.
 	 */
-	double GetForce_Ref(void);
+	su2double GetForce_Ref(void);
 
   /*!
 	 * \brief Get the value of the non-dimensionalized freestream pressure.
 	 * \return Non-dimensionalized freestream pressure.
 	 */
-	double GetPressure_FreeStream(void);
+	su2double GetPressure_FreeStream(void);
 
 	/*!
 	 * \brief Get the value of the non-dimensionalized freestream pressure.
 	 * \return Non-dimensionalized freestream pressure.
 	 */
-	double GetPressure_FreeStreamND(void);
+	su2double GetPressure_FreeStreamND(void);
 
 	/*!
 	 * \brief Get the vector of the dimensionalized freestream velocity.
 	 * \return Dimensionalized freestream velocity vector.
 	 */
-	double* GetVelocity_FreeStream(void);
+	su2double* GetVelocity_FreeStream(void);
 
 	/*!
 	 * \brief Get the value of the non-dimensionalized freestream temperature.
 	 * \return Non-dimensionalized freestream temperature.
 	 */
-	double GetTemperature_FreeStreamND(void);
+	su2double GetTemperature_FreeStreamND(void);
 
 	/*!
 	 * \brief Get the value of the non-dimensionalized freestream density.
 	 * \return Non-dimensionalized freestream density.
 	 */
-	double GetDensity_FreeStreamND(void);
+	su2double GetDensity_FreeStreamND(void);
 
 	/*!
 	 * \brief Get the vector of the non-dimensionalized freestream velocity.
 	 * \return Non-dimensionalized freestream velocity vector.
 	 */
-	double* GetVelocity_FreeStreamND(void);
+	su2double* GetVelocity_FreeStreamND(void);
 
 	/*!
 	 * \brief Get the value of the non-dimensionalized freestream energy.
 	 * \return Non-dimensionalized freestream energy.
 	 */
-	double GetEnergy_FreeStreamND(void);
+	su2double GetEnergy_FreeStreamND(void);
 
 	/*!
 	 * \brief Get the value of the non-dimensionalized freestream viscosity.
 	 * \return Non-dimensionalized freestream viscosity.
 	 */
-	double GetViscosity_FreeStreamND(void);
+	su2double GetViscosity_FreeStreamND(void);
 
   /*!
 	 * \brief Get the value of the non-dimensionalized freestream viscosity.
 	 * \return Non-dimensionalized freestream viscosity.
 	 */
-	double GetTke_FreeStreamND(void);
+	su2double GetTke_FreeStreamND(void);
 
   /*!
 	 * \brief Get the value of the non-dimensionalized freestream viscosity.
 	 * \return Non-dimensionalized freestream viscosity.
 	 */
-	double GetOmega_FreeStreamND(void);
+	su2double GetOmega_FreeStreamND(void);
 
   /*!
 	 * \brief Get the value of the non-dimensionalized freestream viscosity.
 	 * \return Non-dimensionalized freestream viscosity.
 	 */
-	double GetTke_FreeStream(void);
+	su2double GetTke_FreeStream(void);
 
   /*!
 	 * \brief Get the value of the non-dimensionalized freestream viscosity.
 	 * \return Non-dimensionalized freestream viscosity.
 	 */
-	double GetOmega_FreeStream(void);
+	su2double GetOmega_FreeStream(void);
 
 	/*!
 	 * \brief Get the value of the non-dimensionalized freestream intermittency.
 	 * \return Non-dimensionalized freestream intermittency.
 	 */
-	double GetIntermittency_FreeStream(void);
+	su2double GetIntermittency_FreeStream(void);
 
 	/*!
 	 * \brief Get the value of the non-dimensionalized freestream turbulence intensity.
 	 * \return Non-dimensionalized freestream intensity.
 	 */
-	double GetTurbulenceIntensity_FreeStream(void);
+	su2double GetTurbulenceIntensity_FreeStream(void);
 
 	/*!
 	 * \brief Get the value of the non-dimensionalized freestream turbulence intensity.
 	 * \return Non-dimensionalized freestream intensity.
 	 */
-	double GetNuFactor_FreeStream(void);
+	su2double GetNuFactor_FreeStream(void);
   
   /*!
    * \brief Get the value of the non-dimensionalized engine turbulence intensity.
    * \return Non-dimensionalized engine intensity.
    */
-  double GetNuFactor_Engine(void);
+  su2double GetNuFactor_Engine(void);
 
 	/*!
 	 * \brief Get the value of the turbulent to laminar viscosity ratio.
 	 * \return Ratio of turbulent to laminar viscosity ratio.
 	 */
-	double GetTurb2LamViscRatio_FreeStream(void);
+	su2double GetTurb2LamViscRatio_FreeStream(void);
 
   /*!
 	 * \brief Get the vector of free stream mass fraction values.
 	 * \return Ratio of species mass to mixture mass.
 	 */
-	double* GetMassFrac_FreeStream(void);
+	su2double* GetMassFrac_FreeStream(void);
 
 	/*!
 	 * \brief Get the value of the Reynolds length.
 	 * \return Reynolds length.
 	 */
-	double GetLength_Reynolds(void);
+	su2double GetLength_Reynolds(void);
 
 	/*!
 	 * \brief Get the start up iterations using the fine grid, this works only for multigrid problems.
@@ -1526,76 +1526,76 @@ public:
 	 *        the z plane (3D) or the x plane (2D).
 	 * \return Value of the reference area for coefficient computation.
 	 */
-	double GetRefAreaCoeff(void);
+	su2double GetRefAreaCoeff(void);
 
 	/*!
 	 * \brief Get the wave speed.
 	 * \return Value of the wave speed.
 	 */
-	double GetWaveSpeed(void);
+	su2double GetWaveSpeed(void);
 
 	/*!
 	 * \brief Get the wave speed.
 	 * \return Value of the wave speed.
 	 */
-	double GetThermalDiffusivity(void);
+	su2double GetThermalDiffusivity(void);
 
 	/*!
 	 * \brief Get the Young's modulus of elasticity.
 	 * \return Value of the Young's modulus of elasticity.
 	 */
-	double GetElasticyMod(void);
+	su2double GetElasticyMod(void);
 
 	/*!
 	 * \brief Get the Poisson's ratio.
 	 * \return Value of the Poisson's ratio.
 	 */
-	double GetPoissonRatio(void);
+	su2double GetPoissonRatio(void);
 
 	/*!
 	 * \brief Get the Material Density.
 	 * \return Value of the Material Density.
 	 */
-	double GetMaterialDensity(void);
+	su2double GetMaterialDensity(void);
 
 	/*!
 	 * \brief Get the reference length for computing moment (the default value is 1).
 	 * \return Reference length for moment computation.
 	 */
-	double GetRefLengthMoment(void);
+	su2double GetRefLengthMoment(void);
 
 	/*!
 	 * \brief Get the reference element length for computing the slope limiting epsilon.
 	 * \return Reference element length for slope limiting epsilon.
 	 */
-	double GetRefElemLength(void);
+	su2double GetRefElemLength(void);
 
   /*!
 	 * \brief Get the reference coefficient for detecting sharp edges.
 	 * \return Reference coefficient for detecting sharp edges.
 	 */
-	double GetRefSharpEdges(void);
+	su2double GetRefSharpEdges(void);
 
 	/*!
 	 * \brief Get the volume of the whole domain using the fine grid, this value is common for all the grids
 	 *        in the multigrid method.
 	 * \return Volume of the whole domain.
 	 */
-	double GetDomainVolume(void);
+	su2double GetDomainVolume(void);
 
 	/*!
 	 * \brief In case the <i>RefAreaCoeff</i> is equal to 0 then, it is necessary to compute a reference area,
 	 *        with this function we set the value of the reference area.
 	 * \param[in] val_area - Value of the reference area for non dimensional coefficient computation.
 	 */
-	void SetRefAreaCoeff(double val_area);
+	void SetRefAreaCoeff(su2double val_area);
 
 	/*!
 	 * \brief Set the value of the domain volume computed on the finest grid.
 	 * \note This volume do not include the volume of the body that is being simulated.
 	 * \param[in] val_volume - Value of the domain volume computed on the finest grid.
 	 */
-	void SetDomainVolume(double val_volume);
+	void SetDomainVolume(su2double val_volume);
 
 	/*!
 	 * \brief Set the finest mesh in a multigrid strategy.
@@ -1628,7 +1628,7 @@ public:
 	 * \brief Get the value of limiter coefficient.
 	 * \return Value of the limiter coefficient.
 	 */
-	double GetLimiterCoeff(void);
+	su2double GetLimiterCoeff(void);
   
   /*!
 	 * \brief Freeze the value of the limiter after a number of iterations.
@@ -1640,7 +1640,7 @@ public:
 	 * \brief Get the value of sharp edge limiter.
 	 * \return Value of the sharp edge limiter coefficient.
 	 */
-	double GetSharpEdgesCoeff(void);
+	su2double GetSharpEdgesCoeff(void);
 
 	/*!
 	 * \brief Get the Reynolds number. Dimensionless number that gives a measure of the ratio of inertial forces
@@ -1648,223 +1648,223 @@ public:
 	 *        for given flow condition.
 	 * \return Value of the Reynolds number.
 	 */
-	double GetReynolds(void);
+	su2double GetReynolds(void);
 
 	/*!
 	 * \brief Get the Froude number for free surface problems.
 	 * \return Value of the Froude number.
 	 */
-	double GetFroude(void);
+	su2double GetFroude(void);
 
   /*!
 	 * \brief Set the Froude number for free surface problems.
 	 * \return Value of the Froude number.
 	 */
-	void SetFroude(double val_froude);
+	void SetFroude(su2double val_froude);
 
   /*!
 	 * \brief Set the Froude number for free surface problems.
 	 * \return Value of the Froude number.
 	 */
-	void SetMach(double val_mach);
+	void SetMach(su2double val_mach);
 
   /*!
 	 * \brief Set the Froude number for free surface problems.
 	 * \return Value of the Froude number.
 	 */
-	void SetReynolds(double val_reynolds);
+	void SetReynolds(su2double val_reynolds);
 
   /*!
 	 * \brief Set the Froude number for free surface problems.
 	 * \return Value of the Froude number.
 	 */
-	void SetLength_Ref(double val_length_ref);
+	void SetLength_Ref(su2double val_length_ref);
 
   /*!
 	 * \brief Set the Froude number for free surface problems.
 	 * \return Value of the Froude number.
 	 */
-	void SetVelocity_Ref(double val_velocity_ref);
+	void SetVelocity_Ref(su2double val_velocity_ref);
 
   /*!
 	 * \brief Set the Froude number for free surface problems.
 	 * \return Value of the Froude number.
 	 */
-	void SetPressure_Ref(double val_pressure_ref);
+	void SetPressure_Ref(su2double val_pressure_ref);
 
   /*!
 	 * \brief Set the Froude number for free surface problems.
 	 * \return Value of the Froude number.
 	 */
-	void SetDensity_Ref(double val_density_ref);
+	void SetDensity_Ref(su2double val_density_ref);
   
   /*!
    * \brief Set the reference temperature.
    * \return Value of the Froude number.
    */
-  void SetTemperature_Ref(double val_temperature_ref);
+  void SetTemperature_Ref(su2double val_temperature_ref);
 
   /*!
 	 * \brief Set the Froude number for free surface problems.
 	 * \return Value of the Froude number.
 	 */
-	void SetTime_Ref(double val_time_ref);
+	void SetTime_Ref(su2double val_time_ref);
 
   /*!
 	 * \brief Set the Froude number for free surface problems.
 	 * \return Value of the Froude number.
 	 */
-	void SetEnergy_Ref(double val_energy_ref);
+	void SetEnergy_Ref(su2double val_energy_ref);
 
   /*!
 	 * \brief Set the Froude number for free surface problems.
 	 * \return Value of the Froude number.
 	 */
-	void SetOmega_Ref(double val_omega_ref);
+	void SetOmega_Ref(su2double val_omega_ref);
 
   /*!
 	 * \brief Set the Froude number for free surface problems.
 	 * \return Value of the Froude number.
 	 */
-	void SetForce_Ref(double val_force_ref);
+	void SetForce_Ref(su2double val_force_ref);
 
   /*!
 	 * \brief Set the Froude number for free surface problems.
 	 * \return Value of the Froude number.
 	 */
-	void SetGas_Constant_Ref(double val_gas_constant_ref);
+	void SetGas_Constant_Ref(su2double val_gas_constant_ref);
 
   /*!
 	 * \brief Set the Froude number for free surface problems.
 	 * \return Value of the Froude number.
 	 */
-	void SetGas_Constant(double val_gas_constant);
+	void SetGas_Constant(su2double val_gas_constant);
 
   /*!
 	 * \brief Set the Froude number for free surface problems.
 	 * \return Value of the Froude number.
 	 */
-	void SetViscosity_Ref(double val_viscosity_ref);
+	void SetViscosity_Ref(su2double val_viscosity_ref);
 
    /*!
     * \brief Set the Froude number for free surface problems.
 	* \return Value of the Froude number.
 	*/
-	void SetConductivity_Ref(double val_conductivity_ref);
+	void SetConductivity_Ref(su2double val_conductivity_ref);
 
   /*!
 	 * \brief Set the Froude number for free surface problems.
 	 * \return Value of the Froude number.
 	 */
-	void SetPressure_FreeStreamND(double val_pressure_freestreamnd);
+	void SetPressure_FreeStreamND(su2double val_pressure_freestreamnd);
 
   /*!
 	 * \brief Set the Froude number for free surface problems.
 	 * \return Value of the Froude number.
 	 */
-	void SetPressure_FreeStream(double val_pressure_freestream);
+	void SetPressure_FreeStream(su2double val_pressure_freestream);
 
   /*!
 	 * \brief Set the Froude number for free surface problems.
 	 * \return Value of the Froude number.
 	 */
-	void SetDensity_FreeStreamND(double val_density_freestreamnd);
+	void SetDensity_FreeStreamND(su2double val_density_freestreamnd);
 
   /*!
 	 * \brief Set the Froude number for free surface problems.
 	 * \return Value of the Froude number.
 	 */
-	void SetDensity_FreeStream(double val_density_freestream);
+	void SetDensity_FreeStream(su2double val_density_freestream);
 
   /*!
 	 * \brief Set the Froude number for free surface problems.
 	 * \return Value of the Froude number.
 	 */
-	void SetViscosity_FreeStream(double val_viscosity_freestream);
+	void SetViscosity_FreeStream(su2double val_viscosity_freestream);
 
   /*!
 	 * \brief Set the Froude number for free surface problems.
 	 * \return Value of the Froude number.
 	 */
-	void SetModVel_FreeStream(double val_modvel_freestream);
+	void SetModVel_FreeStream(su2double val_modvel_freestream);
 
   /*!
 	 * \brief Set the Froude number for free surface problems.
 	 * \return Value of the Froude number.
 	 */
-	void SetModVel_FreeStreamND(double val_modvel_freestreamnd);
+	void SetModVel_FreeStreamND(su2double val_modvel_freestreamnd);
 
   /*!
 	 * \brief Set the Froude number for free surface problems.
 	 * \return Value of the Froude number.
 	 */
-	void SetTemperature_FreeStream(double val_temperature_freestream);
+	void SetTemperature_FreeStream(su2double val_temperature_freestream);
   
   /*!
 	 * \brief Set the Froude number for free surface problems.
 	 * \return Value of the Froude number.
 	 */
-	void SetTemperature_FreeStreamND(double val_temperature_freestreamnd);
+	void SetTemperature_FreeStreamND(su2double val_temperature_freestreamnd);
 
   /*!
 	 * \brief Set the Froude number for free surface problems.
 	 * \return Value of the Froude number.
 	 */
-	void SetGas_ConstantND(double val_gas_constantnd);
+	void SetGas_ConstantND(su2double val_gas_constantnd);
 
   /*!
 	 * \brief Set the Froude number for free surface problems.
 	 * \return Value of the Froude number.
 	 */
-	void SetVelocity_FreeStreamND(double val_velocity_freestreamnd, unsigned short val_dim);
+	void SetVelocity_FreeStreamND(su2double val_velocity_freestreamnd, unsigned short val_dim);
 
   /*!
 	 * \brief Set the Froude number for free surface problems.
 	 * \return Value of the Froude number.
 	 */
-	void SetViscosity_FreeStreamND(double val_viscosity_freestreamnd);
+	void SetViscosity_FreeStreamND(su2double val_viscosity_freestreamnd);
 
   /*!
 	 * \brief Set the Froude number for free surface problems.
 	 * \return Value of the Froude number.
 	 */
-	void SetTke_FreeStreamND(double val_tke_freestreamnd);
+	void SetTke_FreeStreamND(su2double val_tke_freestreamnd);
 
   /*!
 	 * \brief Set the Froude number for free surface problems.
 	 * \return Value of the Froude number.
 	 */
-	void SetOmega_FreeStreamND(double val_omega_freestreamnd);
+	void SetOmega_FreeStreamND(su2double val_omega_freestreamnd);
 
   /*!
 	 * \brief Set the Froude number for free surface problems.
 	 * \return Value of the Froude number.
 	 */
-	void SetTke_FreeStream(double val_tke_freestream);
+	void SetTke_FreeStream(su2double val_tke_freestream);
 
   /*!
 	 * \brief Set the Froude number for free surface problems.
 	 * \return Value of the Froude number.
 	 */
-	void SetOmega_FreeStream(double val_omega_freestream);
+	void SetOmega_FreeStream(su2double val_omega_freestream);
 
   /*!
 	 * \brief Set the Froude number for free surface problems.
 	 * \return Value of the Froude number.
 	 */
-	void SetEnergy_FreeStreamND(double val_energy_freestreamnd);
+	void SetEnergy_FreeStreamND(su2double val_energy_freestreamnd);
 
   /*!
 	 * \brief Set the Froude number for free surface problems.
 	 * \return Value of the Froude number.
 	 */
-	void SetEnergy_FreeStream(double val_energy_freestream);
+	void SetEnergy_FreeStream(su2double val_energy_freestream);
 
   /*!
 	 * \brief Set the Froude number for free surface problems.
 	 * \return Value of the Froude number.
 	 */
-	void SetTotal_UnstTimeND(double val_total_unsttimend);
+	void SetTotal_UnstTimeND(su2double val_total_unsttimend);
 
 	/*!
 	 * \brief Get the angle of attack of the body. This is the angle between a reference line on a lifting body
@@ -1872,32 +1872,32 @@ public:
 	 *        lifting body and the fluid through which it is moving.
 	 * \return Value of the angle of attack.
 	 */
-	double GetAoA(void);
+	su2double GetAoA(void);
 
 	/*!
 	 * \brief Set the angle of attack.
 	 * \param[in] val_AoA - Value of the angle of attack.
 	 */
-	void SetAoA(double val_AoA);
+	void SetAoA(su2double val_AoA);
 
   /*!
 	 * \brief Set the angle of attack.
 	 * \param[in] val_AoA - Value of the angle of attack.
 	 */
-	void SetAoS(double val_AoS);
+	void SetAoS(su2double val_AoS);
 
 	/*!
 	 * \brief Get the angle of sideslip of the body. It relates to the rotation of the aircraft centerline from
 	 *        the relative wind.
 	 * \return Value of the angle of sideslip.
 	 */
-	double GetAoS(void);
+	su2double GetAoS(void);
 
 	/*!
 	 * \brief Get the charge coefficient that is used in the poissonal potential simulation.
 	 * \return Value of the charge coefficient.
 	 */
-	double GetChargeCoeff(void);
+	su2double GetChargeCoeff(void);
 
 	/*!
 	 * \brief Get the number of multigrid levels.
@@ -1936,14 +1936,14 @@ public:
 	 * \param[in] val_mesh - Index of the mesh were the CFL is applied.
 	 * \return CFL number for each grid.
 	 */
-	double GetCFL(unsigned short val_mesh);
+	su2double GetCFL(unsigned short val_mesh);
   
   /*!
 	 * \brief Get the Courant Friedrich Levi number for each grid.
 	 * \param[in] val_mesh - Index of the mesh were the CFL is applied.
 	 * \return CFL number for each grid.
 	 */
-	void SetCFL(unsigned short val_mesh, double val_cfl);
+	void SetCFL(unsigned short val_mesh, su2double val_cfl);
 
 	/*!
 	 * \brief Get the Courant Friedrich Levi number for each grid, for each species
@@ -1951,19 +1951,19 @@ public:
 	 * \param[in] val_Species - Index of the chemical species
 	 * \return CFL number for each grid.
 	 */
-	double GetCFL(unsigned short val_mesh, unsigned short val_Species);
+	su2double GetCFL(unsigned short val_mesh, unsigned short val_Species);
 
 	/*!
 	 * \brief Get the Courant Friedrich Levi number for unsteady simulations.
 	 * \return CFL number for unsteady simulations.
 	 */
-	double GetUnst_CFL(void);
+	su2double GetUnst_CFL(void);
   
   /*!
    * \brief Get the Courant Friedrich Levi number for unsteady simulations.
    * \return CFL number for unsteady simulations.
    */
-  double GetMax_DeltaTime(void);
+  su2double GetMax_DeltaTime(void);
   
 	/*!
 	 * \brief Get a parameter of the particular design variable.
@@ -1971,7 +1971,7 @@ public:
 	 * \param[in] val_param - Index of the parameter that we want to read.
 	 * \return Design variable parameter.
 	 */
-	double GetParamDV(unsigned short val_dv, unsigned short val_param);
+	su2double GetParamDV(unsigned short val_dv, unsigned short val_param);
 
   /*!
    * \brief Get a parameter of the particular design variable.
@@ -1979,7 +1979,7 @@ public:
    * \param[in] val_coord - Index of the coordinate that we want to read.
    * \return FFD parameter.
    */
-  double GetCoordFFDBox(unsigned short val_ffd, unsigned short val_coord);
+  su2double GetCoordFFDBox(unsigned short val_ffd, unsigned short val_coord);
 
   /*!
    * \brief Get a parameter of the particular design variable.
@@ -2140,7 +2140,7 @@ public:
 	 * \brief Retrieves the period of oscillations to be used with Time Spectral.
 	 * \return: Period for Time Spectral.
 	 */
-	double GetTimeSpectral_Period(void);
+	su2double GetTimeSpectral_Period(void);
 
 	/*!
 	 * \brief Set the number of external iterations.
@@ -2275,7 +2275,7 @@ public:
 	 * \param[in] val_step - Index of the step.
 	 * \return Alpha coefficient for the Runge-Kutta integration scheme.
 	 */
-	double Get_Alpha_RKStep(unsigned short val_step);
+	su2double Get_Alpha_RKStep(unsigned short val_step);
 
 	/*!
 	 * \brief Get the index of the surface defined in the geometry file.
@@ -2573,19 +2573,19 @@ public:
 	 * \brief Get the value of the critical pressure.
 	 * \return Critical pressure.
 	 */
-	double GetPressure_Critical(void);
+	su2double GetPressure_Critical(void);
 
 	/*!
 	 * \brief Get the value of the critical temperature.
 	 * \return Critical temperature.
 	 */
-	double GetTemperature_Critical(void);
+	su2double GetTemperature_Critical(void);
 
 	/*!
 	 * \brief Get the value of the critical pressure.
 	 * \return Critical pressure.
 	 */
-	double GetAcentric_Factor(void);
+	su2double GetAcentric_Factor(void);
 
 	/*!
 	 * \brief Get the value of the critical temperature.
@@ -2603,61 +2603,61 @@ public:
 	 * \brief Get the value of the critical temperature.
 	 * \return Critical temperature.
 	 */
-	double GetMu_ConstantND(void);
+	su2double GetMu_ConstantND(void);
 
 	/*!
 	 * \brief Get the value of the non-dimensional thermal conductivity.
 	 * \return Critical temperature.
 	 */
-	double GetKt_ConstantND(void);
+	su2double GetKt_ConstantND(void);
 
 	/*!
 	 * \brief Get the value of the critical temperature.
 	 * \return Critical temperature.
 	 */
-	double GetMu_RefND(void);
+	su2double GetMu_RefND(void);
 
 	/*!
 	 * \brief Get the value of the critical temperature.
 	 * \return Critical temperature.
 	 */
-	double GetMu_Temperature_RefND(void);
+	su2double GetMu_Temperature_RefND(void);
 
 	/*!
 	 * \brief Get the value of the critical temperature.
 	 * \return Critical temperature.
 	 */
-	double GetMu_SND(void);
+	su2double GetMu_SND(void);
 
 	/*!
 	 * \brief Get the value of the critical temperature.
 	 * \return Critical temperature.
 	 */
-	void SetMu_ConstantND(double mu_const);
+	void SetMu_ConstantND(su2double mu_const);
 
 	/*!
 	 * \brief Get the value of the critical temperature.
 	 * \return Critical temperature.
 	 */
-	void SetKt_ConstantND(double kt_const);
+	void SetKt_ConstantND(su2double kt_const);
 
 	/*!
 	 * \brief Get the value of the critical temperature.
 	 * \return Critical temperature.
 	 */
-	void SetMu_RefND(double mu_ref);
+	void SetMu_RefND(su2double mu_ref);
 
 	/*!
 	 * \brief Get the value of the critical temperature.
 	 * \return Critical temperature.
 	 */
-	void SetMu_Temperature_RefND(double mu_Tref);
+	void SetMu_Temperature_RefND(su2double mu_Tref);
 
 	/*!
 	 * \brief Get the value of the critical temperature.
 	 * \return Critical temperature.
 	 */
-	void SetMu_SND(double mu_s);
+	void SetMu_SND(su2double mu_s);
 
 	/*!
 	 * \brief Get the kind of method for computation of spatial gradients.
@@ -2693,7 +2693,7 @@ public:
 	 * \brief Get min error of the linear solver for the implicit formulation.
 	 * \return Min error of the linear solver for the implicit formulation.
 	 */
-	double GetLinear_Solver_Error(void);
+	su2double GetLinear_Solver_Error(void);
 
 	/*!
 	 * \brief Get max number of iterations of the linear solver for the implicit formulation.
@@ -2711,25 +2711,25 @@ public:
 	 * \brief Get the relaxation coefficient of the linear solver for the implicit formulation.
 	 * \return relaxation coefficient of the linear solver for the implicit formulation.
 	 */
-	double GetRelaxation_Factor_Flow(void);
+	su2double GetRelaxation_Factor_Flow(void);
   
   /*!
    * \brief Get the relaxation coefficient of the linear solver for the implicit formulation.
    * \return relaxation coefficient of the linear solver for the implicit formulation.
    */
-  double GetRelaxation_Factor_AdjFlow(void);
+  su2double GetRelaxation_Factor_AdjFlow(void);
   
   /*!
    * \brief Get the relaxation coefficient of the linear solver for the implicit formulation.
    * \return relaxation coefficient of the linear solver for the implicit formulation.
    */
-  double GetRelaxation_Factor_Turb(void);
+  su2double GetRelaxation_Factor_Turb(void);
   
   /*!
    * \brief Get the relaxation coefficient of the linear solver for the implicit formulation.
    * \return relaxation coefficient of the linear solver for the implicit formulation.
    */
-  double GetRoe_Kappa(void);
+  su2double GetRoe_Kappa(void);
 
 	/*!
 	 * \brief Get the kind of solver for the implicit solver.
@@ -2753,13 +2753,13 @@ public:
 	 * \brief Get min error of the linear solver for the implicit formulation.
 	 * \return Min error of the linear solver for the implicit formulation.
 	 */
-	double GetAdjTurb_Linear_Error(void);
+	su2double GetAdjTurb_Linear_Error(void);
   
   /*!
 	 * \brief Get the entropy fix.
 	 * \return Vaule of the entropy fix.
 	 */
-	double GetEntropyFix_Coeff(void);
+	su2double GetEntropyFix_Coeff(void);
 
 	/*!
 	 * \brief Get max number of iterations of the linear solver for the implicit formulation.
@@ -2771,7 +2771,7 @@ public:
 	 * \brief Get CFL reduction factor for adjoint turbulence model.
 	 * \return CFL reduction factor.
 	 */
-	double GetCFLRedCoeff_AdjTurb(void);
+	su2double GetCFLRedCoeff_AdjTurb(void);
 
   /*!
 	 * \brief Get the number of linear smoothing iterations for mesh deformation.
@@ -2795,18 +2795,18 @@ public:
 	 * \brief Get factor to multiply smallest volume for deform tolerance.
 	 * \return Factor to multiply smallest volume for deform tolerance.
 	 */
-	double GetDeform_Tol_Factor(void);
+	su2double GetDeform_Tol_Factor(void);
 
   /*!
    * \brief Get Young's modulus for deformation (constant stiffness deformation)
    */
-  double GetDeform_ElasticityMod(void);
+  su2double GetDeform_ElasticityMod(void);
 
   /*!
    * \brief Get Poisson's ratio for deformation (constant stiffness deformation)
    * \
    */
-  double GetDeform_PoissonRatio(void);
+  su2double GetDeform_PoissonRatio(void);
 
   /*!
 	 * \brief Get the type of stiffness to impose for FEA mesh deformation.
@@ -2883,7 +2883,7 @@ public:
 	 * \brief Get the number of new elements added in the adaptation process.
 	 * \return percentage of new elements that are going to be added in the adaptation.
 	 */
-	double GetNew_Elem_Adapt(void);
+	su2double GetNew_Elem_Adapt(void);
 
 	/*!
 	 * \brief Get the kind of time integration method.
@@ -3217,38 +3217,38 @@ public:
 	 * \note This constant is used in coarse levels and with first order methods.
 	 * \return Calibrated constant for the Lax method.
 	 */
-	double GetKappa_1st_Flow(void);
+	su2double GetKappa_1st_Flow(void);
 
 	/*!
 	 * \brief Value of the calibrated constant for the JST method (center scheme).
 	 * \return Calibrated constant for the JST method for the flow equations.
 	 */
-	double GetKappa_2nd_Flow(void);
+	su2double GetKappa_2nd_Flow(void);
 
 	/*!
 	 * \brief Value of the calibrated constant for the JST method (center scheme).
 	 * \return Calibrated constant for the JST method for the flow equations.
 	 */
-	double GetKappa_4th_Flow(void);
+	su2double GetKappa_4th_Flow(void);
 
   /*!
 	 * \brief Value of the calibrated constant for the Lax method (center scheme).
 	 * \note This constant is used in coarse levels and with first order methods.
 	 * \return Calibrated constant for the Lax method.
 	 */
-	double GetKappa_1st_TNE2(void);
+	su2double GetKappa_1st_TNE2(void);
 
 	/*!
 	 * \brief Value of the calibrated constant for the JST method (center scheme).
 	 * \return Calibrated constant for the JST method for the flow equations.
 	 */
-	double GetKappa_2nd_TNE2(void);
+	su2double GetKappa_2nd_TNE2(void);
 
 	/*!
 	 * \brief Value of the calibrated constant for the JST method (center scheme).
 	 * \return Calibrated constant for the JST method for the flow equations.
 	 */
-	double GetKappa_4th_TNE2(void);
+	su2double GetKappa_4th_TNE2(void);
 
 	/*!
 	 * \brief Get the kind of integration scheme (explicit or implicit)
@@ -3297,37 +3297,37 @@ public:
 	 * \brief Value of the calibrated constant for the high order method (center scheme).
 	 * \return Calibrated constant for the high order center method for the adjoint flow equations.
 	 */
-	double GetKappa_2nd_AdjFlow(void);
+	su2double GetKappa_2nd_AdjFlow(void);
 
 	/*!
 	 * \brief Value of the calibrated constant for the high order method (center scheme).
 	 * \return Calibrated constant for the high order center method for the adjoint flow equations.
 	 */
-	double GetKappa_4th_AdjFlow(void);
+	su2double GetKappa_4th_AdjFlow(void);
 
 	/*!
 	 * \brief Value of the calibrated constant for the low order method (center scheme).
 	 * \return Calibrated constant for the low order center method for the adjoint flow equations.
 	 */
-	double GetKappa_1st_AdjFlow(void);
+	su2double GetKappa_1st_AdjFlow(void);
 
   /*!
 	 * \brief Value of the calibrated constant for the high order method (center scheme).
 	 * \return Calibrated constant for the high order center method for the adjoint flow equations.
 	 */
-	double GetKappa_2nd_AdjTNE2(void);
+	su2double GetKappa_2nd_AdjTNE2(void);
 
 	/*!
 	 * \brief Value of the calibrated constant for the high order method (center scheme).
 	 * \return Calibrated constant for the high order center method for the adjoint flow equations.
 	 */
-	double GetKappa_4th_AdjTNE2(void);
+	su2double GetKappa_4th_AdjTNE2(void);
 
 	/*!
 	 * \brief Value of the calibrated constant for the low order method (center scheme).
 	 * \return Calibrated constant for the low order center method for the adjoint flow equations.
 	 */
-	double GetKappa_1st_AdjTNE2(void);
+	su2double GetKappa_1st_AdjTNE2(void);
 
 	/*!
 	 * \brief Get the kind of integration scheme (explicit or implicit)
@@ -3367,13 +3367,13 @@ public:
 	 * \brief Value of the calibrated constant for the high order method (center scheme).
 	 * \return Calibrated constant for the high order center method for the linearized flow equations.
 	 */
-	double GetKappa_4th_LinFlow(void);
+	su2double GetKappa_4th_LinFlow(void);
 
 	/*!
 	 * \brief Value of the calibrated constant for the low order method (center scheme).
 	 * \return Calibrated constant for the low order center method for the linearized flow equations.
 	 */
-	double GetKappa_1st_LinFlow(void);
+	su2double GetKappa_1st_LinFlow(void);
 
 	/*!
 	 * \brief Get the kind of integration scheme (implicit)
@@ -3540,73 +3540,73 @@ public:
 	 * \brief Provides the number of chemical reactions in the chemistry model
 	 * \return: The number of chemical reactions, read from input file
 	 */
-	double GetArrheniusCoeff(unsigned short iReaction);
+	su2double GetArrheniusCoeff(unsigned short iReaction);
 
 	/*!
 	 * \brief Provides the number of chemical reactions in the chemistry model
 	 * \return: The number of chemical reactions, read from input file
 	 */
-	double GetArrheniusEta(unsigned short iReaction);
+	su2double GetArrheniusEta(unsigned short iReaction);
 
 	/*!
 	 * \brief Provides the number of chemical reactions in the chemistry model
 	 * \return: The number of chemical reactions, read from input file
 	 */
-	double GetArrheniusTheta(unsigned short iReaction);
+	su2double GetArrheniusTheta(unsigned short iReaction);
 
   /*!
 	 * \brief Provides the rate controlling temperature exponents for chemistry.
 	 * \return: Rate controlling temperature exponents.
 	 */
-  double* GetRxnTcf_a(void);
+  su2double* GetRxnTcf_a(void);
 
   /*!
 	 * \brief Provides the rate controlling temperature exponents for chemistry.
 	 * \return: Rate controlling temperature exponents.
 	 */
-  double* GetRxnTcf_b(void);
+  su2double* GetRxnTcf_b(void);
 
   /*!
 	 * \brief Provides the rate controlling temperature exponents for chemistry.
 	 * \return: Rate controlling temperature exponents.
 	 */
-  double* GetRxnTcb_a(void);
+  su2double* GetRxnTcb_a(void);
 
   /*!
 	 * \brief Provides the rate controlling temperature exponents for chemistry.
 	 * \return: Rate controlling temperature exponents.
 	 */
-  double* GetRxnTcb_b(void);
+  su2double* GetRxnTcb_b(void);
 
   /*!
 	 * \brief Dissociation potential of species.
 	 * \return: Dissociation potential.
 	 */
-	double* GetDissociationPot(void);
+	su2double* GetDissociationPot(void);
 
 	/*!
 	 * \brief Provides the number of rotational modes of energy storage
 	 * \return: Vector of rotational mode count
 	 */
-  double* GetRotationModes(void);
+  su2double* GetRotationModes(void);
 
 	/*!
 	 * \brief Provides the characteristic vibrational temperature for calculating e_vib
 	 * \return: Vector of characteristic vibrational temperatures [K]
 	 */
-	double* GetCharVibTemp(void);
+	su2double* GetCharVibTemp(void);
 
   /*!
 	 * \brief Provides the characteristic electronic temperature for calculating e_el
 	 * \return: Vector of characteristic vibrational temperatures [K]
 	 */
-	double** GetCharElTemp(void);
+	su2double** GetCharElTemp(void);
 
   /*!
 	 * \brief Provides the degeneracy of electron states for calculating e_el
 	 * \return: Vector of characteristic vibrational temperatures [K]
 	 */
-	double** GetElDegeneracy(void);
+	su2double** GetElDegeneracy(void);
 
   /*!
 	 * \brief Provides number electron states for calculating e_el
@@ -3619,31 +3619,31 @@ public:
 	 * \brief Provides the thermodynamic reference temperatures from the JANAF tables
 	 * \return: Vector of reference temperatures [K]
 	 */
-  double* GetRefTemperature(void);
+  su2double* GetRefTemperature(void);
 
   /*!
 	 * \brief Provides the characteristic vibrational temperature for calculating e_vib
 	 * \return: The number of chemical reactions, read from input file
 	 */
-	double GetCharVibTemp(unsigned short iSpecies);
+	su2double GetCharVibTemp(unsigned short iSpecies);
 
 	/*!
 	 * \brief Provides a table of equilibrium constants for a particular chemical reaction for a supplied gas model.
 	 * \return: Matrix of reaction constants
 	 */
-	void GetChemistryEquilConstants(double **RxnConstantTable, unsigned short iReaction);
+	void GetChemistryEquilConstants(su2double **RxnConstantTable, unsigned short iReaction);
 
 	/*!
 	 * \brief Provides the molar mass of each species present in multi species fluid
 	 * \return: Vector of molar mass of each species in kg/kmol
 	 */
-	double* GetMolar_Mass(void);
+	su2double* GetMolar_Mass(void);
 
   /*!
 	 * \brief Provides the molar mass of each species present in multi species fluid
 	 * \return: Mass of each species in Kg
 	 */
-	double GetMolar_Mass(unsigned short iSpecies);
+	su2double GetMolar_Mass(unsigned short iSpecies);
 
 	/*!
 	 * \brief Retrieves the number of monatomic species in the multicomponent gas.
@@ -3661,25 +3661,25 @@ public:
 	 * \brief Provides the molar mass of each species present in multi species fluid
 	 * \return: Molar mass of the specified gas consituent [kg/kmol]
 	 */
-	double GetInitial_Gas_Composition(unsigned short iSpecies);
+	su2double GetInitial_Gas_Composition(unsigned short iSpecies);
 
 	/*!
 	 * \brief Retrieves the multi-species fluid mixture molar mass.
 	 * \return: Molar mass of the fluid mixture
 	 */
-	double GetMixtureMolar_Mass();
+	su2double GetMixtureMolar_Mass();
 
   /*!
 	 * \brief Provides the formation enthalpy of the specified species at standard conditions
 	 * \return: Enthalpy of formation
 	 */
-	double* GetEnthalpy_Formation(void);
+	su2double* GetEnthalpy_Formation(void);
 
 	/*!
 	 * \brief Provides the formation enthalpy of the specified species at standard conditions
 	 * \return: Enthalpy of formation
 	 */
-	double GetEnthalpy_Formation(unsigned short iSpecies);
+	su2double GetEnthalpy_Formation(unsigned short iSpecies);
 
 	/*!
 	 * \brief Provides the restart information.
@@ -3975,48 +3975,48 @@ public:
 	 *        adjoint or linearized problem.
 	 * \return Value of the convergence criteria.
 	 */
-	double GetCauchy_Eps(void);
+	su2double GetCauchy_Eps(void);
 
 	/*!
 	 * \brief If we are prforming an unsteady simulation, there is only
 	 *        one value of the time step for the complete simulation.
 	 * \return Value of the time step in an unsteady simulation (non dimensional).
 	 */
-	double GetDelta_UnstTimeND(void);
+	su2double GetDelta_UnstTimeND(void);
 
   /*!
 	 * \brief If we are prforming an unsteady simulation, there is only
 	 *        one value of the time step for the complete simulation.
 	 * \return Value of the time step in an unsteady simulation (non dimensional).
 	 */
-	double GetTotal_UnstTimeND(void);
+	su2double GetTotal_UnstTimeND(void);
 
 	/*!
 	 * \brief If we are prforming an unsteady simulation, there is only
 	 *        one value of the time step for the complete simulation.
 	 * \return Value of the time step in an unsteady simulation.
 	 */
-	double GetDelta_UnstTime(void);
+	su2double GetDelta_UnstTime(void);
 
 	/*!
 	 * \brief Set the value of the unsteadty time step using the CFL number.
 	 * \param[in] val_delta_unsttimend - Value of the unsteady time step using CFL number.
 	 */
-	void SetDelta_UnstTimeND(double val_delta_unsttimend);
+	void SetDelta_UnstTimeND(su2double val_delta_unsttimend);
 
 	/*!
 	 * \brief If we are performing an unsteady simulation, this is the
 	 * 	value of max physical time for which we run the simulation
 	 * \return Value of the physical time in an unsteady simulation.
 	 */
-	double GetTotal_UnstTime(void);
+	su2double GetTotal_UnstTime(void);
 
 	/*!
 	 * \brief If we are performing an unsteady simulation, this is the
 	 * 	value of current time.
 	 * \return Value of the physical time in an unsteady simulation.
 	 */
-	double GetCurrent_UnstTime(void);
+	su2double GetCurrent_UnstTime(void);
 
   /*!
 	 * \brief Divide the rectbles and hexahedron.
@@ -4029,7 +4029,7 @@ public:
 	 * \param[in] val_dv - Number of the design variable that we want to read.
 	 * \return Design variable step.
 	 */
-	double GetDV_Value(unsigned short val_dv);
+	su2double GetDV_Value(unsigned short val_dv);
 
 	/*!
 	 * \brief Get information about the grid movement.
@@ -4055,196 +4055,196 @@ public:
 	 * \brief Get the mach number based on the mesh velocity and freestream quantities.
 	 * \return Mach number based on the mesh velocity and freestream quantities.
 	 */
-	double GetMach_Motion(void);
+	su2double GetMach_Motion(void);
 
 	/*!
 	 * \brief Get x-coordinate of the mesh motion origin.
 	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
 	 * \return X-coordinate of the mesh motion origin.
 	 */
-	double GetMotion_Origin_X(unsigned short val_iZone);
+	su2double GetMotion_Origin_X(unsigned short val_iZone);
 
 	/*!
 	 * \brief Get y-coordinate of the mesh motion origin
 	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
 	 * \return Y-coordinate of the mesh motion origin.
 	 */
-	double GetMotion_Origin_Y(unsigned short val_iZone);
+	su2double GetMotion_Origin_Y(unsigned short val_iZone);
 
 	/*!
 	 * \brief Get z-coordinate of the mesh motion origin
 	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
 	 * \return Z-coordinate of the mesh motion origin.
 	 */
-	double GetMotion_Origin_Z(unsigned short val_iZone);
+	su2double GetMotion_Origin_Z(unsigned short val_iZone);
 
 	/*!
 	 * \brief Set x-coordinate of the mesh motion origin.
 	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
 	 * \param[in] val_origin - New x-coordinate of the mesh motion origin.
 	 */
-	void SetMotion_Origin_X(unsigned short val_iZone, double val_origin);
+	void SetMotion_Origin_X(unsigned short val_iZone, su2double val_origin);
 
 	/*!
 	 * \brief Set y-coordinate of the mesh motion origin
 	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
 	 * \param[in] val_origin - New y-coordinate of the mesh motion origin.
 	 */
-	void SetMotion_Origin_Y(unsigned short val_iZone, double val_origin);
+	void SetMotion_Origin_Y(unsigned short val_iZone, su2double val_origin);
 
 	/*!
 	 * \brief Set z-coordinate of the mesh motion origin
 	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
 	 * \param[in] val_origin - New y-coordinate of the mesh motion origin.
 	 */
-	void SetMotion_Origin_Z(unsigned short val_iZone, double val_origin);
+	void SetMotion_Origin_Z(unsigned short val_iZone, su2double val_origin);
 
 	/*!
 	 * \brief Get the translational velocity of the mesh in the x-direction.
 	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
 	 * \return Translational velocity of the mesh in the x-direction.
 	 */
-	double GetTranslation_Rate_X(unsigned short val_iZone);
+	su2double GetTranslation_Rate_X(unsigned short val_iZone);
 
 	/*!
 	 * \brief Get the translational velocity of the mesh in the y-direction.
 	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
 	 * \return Translational velocity of the mesh in the y-direction.
 	 */
-	double GetTranslation_Rate_Y(unsigned short val_iZone);
+	su2double GetTranslation_Rate_Y(unsigned short val_iZone);
 
 	/*!
 	 * \brief Get the translational velocity of the mesh in the z-direction.
 	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
 	 * \return Translational velocity of the mesh in the z-direction.
 	 */
-	double GetTranslation_Rate_Z(unsigned short val_iZone);
+	su2double GetTranslation_Rate_Z(unsigned short val_iZone);
 
 	/*!
 	 * \brief Get the angular velocity of the mesh about the x-axis.
 	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
 	 * \return Angular velocity of the mesh about the x-axis.
 	 */
-	double GetRotation_Rate_X(unsigned short val_iZone);
+	su2double GetRotation_Rate_X(unsigned short val_iZone);
 
 	/*!
 	 * \brief Get the angular velocity of the mesh about the y-axis.
 	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
 	 * \return Angular velocity of the mesh about the y-axis.
 	 */
-	double GetRotation_Rate_Y(unsigned short val_iZone);
+	su2double GetRotation_Rate_Y(unsigned short val_iZone);
 
 	/*!
 	 * \brief Get the angular velocity of the mesh about the z-axis.
 	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
 	 * \return Angular velocity of the mesh about the z-axis.
 	 */
-	double GetRotation_Rate_Z(unsigned short val_iZone);
+	su2double GetRotation_Rate_Z(unsigned short val_iZone);
 
 	/*!
 	 * \brief Get the angular frequency of a mesh pitching about the x-axis.
 	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
 	 * \return Angular frequency of a mesh pitching about the x-axis.
 	 */
-	double GetPitching_Omega_X(unsigned short val_iZone);
+	su2double GetPitching_Omega_X(unsigned short val_iZone);
 
 	/*!
 	 * \brief Get the angular frequency of a mesh pitching about the y-axis.
 	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
 	 * \return Angular frequency of a mesh pitching about the y-axis.
 	 */
-	double GetPitching_Omega_Y(unsigned short val_iZone);
+	su2double GetPitching_Omega_Y(unsigned short val_iZone);
 
 	/*!
 	 * \brief Get the angular frequency of a mesh pitching about the z-axis.
 	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
 	 * \return Angular frequency of a mesh pitching about the z-axis.
 	 */
-	double GetPitching_Omega_Z(unsigned short val_iZone);
+	su2double GetPitching_Omega_Z(unsigned short val_iZone);
 
 	/*!
 	 * \brief Get the pitching amplitude about the x-axis.
 	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
 	 * \return Pitching amplitude about the x-axis.
 	 */
-	double GetPitching_Ampl_X(unsigned short val_iZone);
+	su2double GetPitching_Ampl_X(unsigned short val_iZone);
 
 	/*!
 	 * \brief Get the pitching amplitude about the y-axis.
 	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
 	 * \return Pitching amplitude about the y-axis.
 	 */
-	double GetPitching_Ampl_Y(unsigned short val_iZone);
+	su2double GetPitching_Ampl_Y(unsigned short val_iZone);
 
 	/*!
 	 * \brief Get the pitching amplitude about the z-axis.
 	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
 	 * \return Pitching amplitude about the z-axis.
 	 */
-	double GetPitching_Ampl_Z(unsigned short val_iZone);
+	su2double GetPitching_Ampl_Z(unsigned short val_iZone);
 
 	/*!
 	 * \brief Get the pitching phase offset about the x-axis.
 	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
 	 * \return Pitching phase offset about the x-axis.
 	 */
-	double GetPitching_Phase_X(unsigned short val_iZone);
+	su2double GetPitching_Phase_X(unsigned short val_iZone);
 
 	/*!
 	 * \brief Get the pitching phase offset about the y-axis.
 	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
 	 * \return Pitching phase offset about the y-axis.
 	 */
-	double GetPitching_Phase_Y(unsigned short val_iZone);
+	su2double GetPitching_Phase_Y(unsigned short val_iZone);
 
 	/*!
 	 * \brief Get the pitching phase offset about the z-axis.
 	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
 	 * \return Pitching phase offset about the z-axis.
 	 */
-	double GetPitching_Phase_Z(unsigned short val_iZone);
+	su2double GetPitching_Phase_Z(unsigned short val_iZone);
 
 	/*!
 	 * \brief Get the angular frequency of a mesh plunging in the x-direction.
 	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
 	 * \return Angular frequency of a mesh plunging in the x-direction.
 	 */
-	double GetPlunging_Omega_X(unsigned short val_iZone);
+	su2double GetPlunging_Omega_X(unsigned short val_iZone);
 
 	/*!
 	 * \brief Get the angular frequency of a mesh plunging in the y-direction.
 	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
 	 * \return Angular frequency of a mesh plunging in the y-direction.
 	 */
-	double GetPlunging_Omega_Y(unsigned short val_iZone);
+	su2double GetPlunging_Omega_Y(unsigned short val_iZone);
 
 	/*!
 	 * \brief Get the angular frequency of a mesh plunging in the z-direction.
 	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
 	 * \return Angular frequency of a mesh plunging in the z-direction.
 	 */
-	double GetPlunging_Omega_Z(unsigned short val_iZone);
+	su2double GetPlunging_Omega_Z(unsigned short val_iZone);
 
 	/*!
 	 * \brief Get the plunging amplitude in the x-direction.
 	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
 	 * \return Plunging amplitude in the x-direction.
 	 */
-	double GetPlunging_Ampl_X(unsigned short val_iZone);
+	su2double GetPlunging_Ampl_X(unsigned short val_iZone);
 
 	/*!
 	 * \brief Get the plunging amplitude in the y-direction.
 	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
 	 * \return Plunging amplitude in the y-direction.
 	 */
-	double GetPlunging_Ampl_Y(unsigned short val_iZone);
+	su2double GetPlunging_Ampl_Y(unsigned short val_iZone);
 
 	/*!
 	 * \brief Get the plunging amplitude in the z-direction.
 	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
 	 * \return Plunging amplitude in the z-direction.
 	 */
-	double GetPlunging_Ampl_Z(unsigned short val_iZone);
+	su2double GetPlunging_Ampl_Z(unsigned short val_iZone);
 
   /*!
 	 * \brief Get if we should update the motion origin.
@@ -4257,13 +4257,13 @@ public:
 	 * \brief Get the minimum value of Beta for Roe-Turkel preconditioner
 	 * \return the minimum value of Beta for Roe-Turkel preconditioner
 	 */
-	double GetminTurkelBeta();
+	su2double GetminTurkelBeta();
 
 	/*!
 	 * \brief Get the minimum value of Beta for Roe-Turkel preconditioner
 	 * \return the minimum value of Beta for Roe-Turkel preconditioner
 	 */
-	double GetmaxTurkelBeta();
+	su2double GetmaxTurkelBeta();
 
 	/*!
 	 * \brief Get information about the adibatic wall condition
@@ -4447,61 +4447,61 @@ public:
 	 * \brief Value of the order of magnitude reduction of the residual.
 	 * \return Value of the order of magnitude reduction of the residual.
 	 */
-	double GetOrderMagResidual(void);
+	su2double GetOrderMagResidual(void);
 
 	/*!
 	 * \brief Value of the minimum residual value (log10 scale).
 	 * \return Value of the minimum residual value (log10 scale).
 	 */
-	double GetMinLogResidual(void);
+	su2double GetMinLogResidual(void);
   
   /*!
    * \brief Value of the damping factor for the engine inlet bc.
    * \return Value of the damping factor.
    */
-  double GetDamp_Engine_Inflow(void);
+  su2double GetDamp_Engine_Inflow(void);
   
   /*!
    * \brief Value of the damping factor for the engine bleed inlet bc.
    * \return Value of the damping factor.
    */
-  double GetDamp_Engine_Bleed(void);
+  su2double GetDamp_Engine_Bleed(void);
   
   /*!
    * \brief Value of the damping factor for the engine exhaust inlet bc.
    * \return Value of the damping factor.
    */
-  double GetDamp_Engine_Exhaust(void);
+  su2double GetDamp_Engine_Exhaust(void);
   
 	/*!
 	 * \brief Value of the damping factor for the residual restriction.
 	 * \return Value of the damping factor.
 	 */
-	double GetDamp_Res_Restric(void);
+	su2double GetDamp_Res_Restric(void);
 
 	/*!
 	 * \brief Value of the damping factor for the correction prolongation.
 	 * \return Value of the damping factor.
 	 */
-	double GetDamp_Correc_Prolong(void);
+	su2double GetDamp_Correc_Prolong(void);
 
 	/*!
 	 * \brief Value of the position of the Near Field (y coordinate for 2D, and z coordinate for 3D).
 	 * \return Value of the Near Field position.
 	 */
-	double GetPosition_Plane(void);
+	su2double GetPosition_Plane(void);
 
 	/*!
 	 * \brief Value of the weight of the drag coefficient in the Sonic Boom optimization.
 	 * \return Value of the weight of the drag coefficient in the Sonic Boom optimization.
 	 */
-	double GetWeightCd(void);
+	su2double GetWeightCd(void);
 
   /*!
 	 * \brief Value of the azimuthal line to fix due to a misalignments of the nearfield.
 	 * \return Azimuthal line to fix due to a misalignments of the nearfield.
 	 */
-	double GetFixAzimuthalLine(void);
+	su2double GetFixAzimuthalLine(void);
 
 	/*!
 	 * \brief Set the global parameters of each simulation for each runtime system.
@@ -4513,17 +4513,17 @@ public:
 	/*!
 	 * \brief Center of rotation for a rotational periodic boundary.
 	 */
-	double *GetPeriodicRotCenter(string val_marker);
+	su2double *GetPeriodicRotCenter(string val_marker);
 
 	/*!
 	 * \brief Angles of rotation for a rotational periodic boundary.
 	 */
-	double *GetPeriodicRotAngles(string val_marker);
+	su2double *GetPeriodicRotAngles(string val_marker);
 
 	/*!
 	 * \brief Translation vector for a rotational periodic boundary.
 	 */
-	double *GetPeriodicTranslation(string val_marker);
+	su2double *GetPeriodicTranslation(string val_marker);
 
 	/*!
 	 * \brief Get the rotationally periodic donor marker for boundary <i>val_marker</i>.
@@ -4534,32 +4534,32 @@ public:
   /*!
 	 * \brief Get the origin of the actuator disk.
 	 */
-  double* GetActDisk_Origin(string val_marker);
+  su2double* GetActDisk_Origin(string val_marker);
 
   /*!
 	 * \brief Get the root radius of the actuator disk.
 	 */
-  double GetActDisk_RootRadius(string val_marker);
+  su2double GetActDisk_RootRadius(string val_marker);
 
   /*!
 	 * \brief Get the tip radius of th actuator disk.
 	 */
-  double GetActDisk_TipRadius(string val_marker);
+  su2double GetActDisk_TipRadius(string val_marker);
 
   /*!
 	 * \brief Get the thurst corffient of the actuator disk.
 	 */
-  double GetActDisk_PressJump(string val_marker);
+  su2double GetActDisk_PressJump(string val_marker);
   
   /*!
    * \brief Get the thurst corffient of the actuator disk.
    */
-  double GetActDisk_TempJump(string val_marker);
+  su2double GetActDisk_TempJump(string val_marker);
 
   /*!
 	 * \brief Get the rev / min of the actuator disk.
 	 */
-  double GetActDisk_Omega(string val_marker);
+  su2double GetActDisk_Omega(string val_marker);
   
   /*!
    * \brief Get the rev / min of the actuator disk.
@@ -4603,84 +4603,84 @@ public:
 	 * \param[in] val_index - Index corresponding to the periodic transformation.
 	 * \param[in] center - Pointer to a vector containing the coordinate of the center.
 	 */
-	void SetPeriodicCenter(unsigned short val_index, double* center);
+	void SetPeriodicCenter(unsigned short val_index, su2double* center);
 
 	/*!
 	 * \brief Get the rotation center for a periodic transformation.
 	 * \param[in] val_index - Index corresponding to the periodic transformation.
 	 * \return A vector containing coordinates of the center point.
 	 */
-	double* GetPeriodicCenter(unsigned short val_index);
+	su2double* GetPeriodicCenter(unsigned short val_index);
 
 	/*!
 	 * \brief Set the rotation angles for a periodic transformation.
 	 * \param[in] val_index - Index corresponding to the periodic transformation.
 	 * \param[in] rotation - Pointer to a vector containing the rotation angles.
 	 */
-	void SetPeriodicRotation(unsigned short val_index, double* rotation);
+	void SetPeriodicRotation(unsigned short val_index, su2double* rotation);
 
 	/*!
 	 * \brief Get the rotation angles for a periodic transformation.
 	 * \param[in] val_index - Index corresponding to the periodic transformation.
 	 * \return A vector containing the angles of rotation.
 	 */
-	double* GetPeriodicRotation(unsigned short val_index);
+	su2double* GetPeriodicRotation(unsigned short val_index);
 
 	/*!
 	 * \brief Set the translation vector for a periodic transformation.
 	 * \param[in] val_index - Index corresponding to the periodic transformation.
 	 * \param[in] translate - Pointer to a vector containing the coordinate of the center.
 	 */
-	void SetPeriodicTranslate(unsigned short val_index, double* translate);
+	void SetPeriodicTranslate(unsigned short val_index, su2double* translate);
 
 	/*!
 	 * \brief Get the translation vector for a periodic transformation.
 	 * \param[in] val_index - Index corresponding to the periodic transformation.
 	 * \return The translation vector.
 	 */
-	double* GetPeriodicTranslate(unsigned short val_index);
+	su2double* GetPeriodicTranslate(unsigned short val_index);
 
 	/*!
 	 * \brief Get the total temperature at a nacelle boundary.
 	 * \param[in] val_index - Index corresponding to the inlet boundary.
 	 * \return The total temperature.
 	 */
-	double GetExhaust_Temperature_Target(string val_index);
+	su2double GetExhaust_Temperature_Target(string val_index);
 
 	/*!
 	 * \brief Get the total temperature at an inlet boundary.
 	 * \param[in] val_index - Index corresponding to the inlet boundary.
 	 * \return The total temperature.
 	 */
-	double GetInlet_Ttotal(string val_index);
+	su2double GetInlet_Ttotal(string val_index);
 
 	/*!
 	 * \brief Get the temperature at a supersonic inlet boundary.
 	 * \param[in] val_index - Index corresponding to the inlet boundary.
 	 * \return The inlet density.
 	 */
-	double GetInlet_Temperature(string val_index);
+	su2double GetInlet_Temperature(string val_index);
 
 	/*!
 	 * \brief Get the pressure at a supersonic inlet boundary.
 	 * \param[in] val_index - Index corresponding to the inlet boundary.
 	 * \return The inlet pressure.
 	 */
-	double GetInlet_Pressure(string val_index);
+	su2double GetInlet_Pressure(string val_index);
 
 	/*!
 	 * \brief Get the velocity vector at a supersonic inlet boundary.
 	 * \param[in] val_index - Index corresponding to the inlet boundary.
 	 * \return The inlet velocity vector.
 	 */
-	double* GetInlet_Velocity(string val_index);
+	su2double* GetInlet_Velocity(string val_index);
 
 	/*!
 	 * \brief Get the fixed value at the Dirichlet boundary.
 	 * \param[in] val_index - Index corresponding to the Dirichlet boundary.
 	 * \return The total temperature.
 	 */
-	double GetDirichlet_Value(string val_index);
+	su2double GetDirichlet_Value(string val_index);
 
 	/*!
 	 * \brief Get whether this is a Dirichlet or a Neumann boundary.
@@ -4694,14 +4694,14 @@ public:
 	 * \param[in] val_index - Index corresponding to the inlet boundary.
 	 * \return The total pressure.
 	 */
-	double GetInlet_Ptotal(string val_index);
+	su2double GetInlet_Ptotal(string val_index);
 
 	/*!
 	 * \brief Get the total pressure at an nacelle boundary.
 	 * \param[in] val_index - Index corresponding to the inlet boundary.
 	 * \return The total pressure.
 	 */
-	double GetExhaust_Pressure_Target(string val_index);
+	su2double GetExhaust_Pressure_Target(string val_index);
 
 	/*!
 	 * \brief If inlet and outlet conditions are defined for multi species
@@ -4714,69 +4714,69 @@ public:
 	 * \param[in] iSpecies - Index of the species
 	 * \return The total temperature.
 	 */
-	double GetInlet_Species_Temperature(unsigned short iSpecies);
+	su2double GetInlet_Species_Temperature(unsigned short iSpecies);
 
 	/*!
 	 * \brief Get the temperature at an outlet boundary.
 	 * \param[in] iSpecies - Index of the species
 	 * \return The total temperature.
 	 */
-	double GetOutlet_Species_Temperature(unsigned short iSpecies);
+	su2double GetOutlet_Species_Temperature(unsigned short iSpecies);
 
 	/*!
 	 * \brief Get the pressure at an inlet boundary.
 	 * \param[in] iSpecies - Index of the species
 	 * \return The total temperature.
 	 */
-	double GetInlet_Species_Pressure(unsigned short iSpecies);
+	su2double GetInlet_Species_Pressure(unsigned short iSpecies);
 
 	/*!
 	 * \brief Get the pressure at an outlet boundary.
 	 * \param[in] iSpecies - Index of the species
 	 * \return The total temperature.
 	 */
-	double GetOutlet_Species_Pressure(unsigned short iSpecies);
+	su2double GetOutlet_Species_Pressure(unsigned short iSpecies);
 
 	/*!
 	 * \brief Get the velocity at an inlet boundary.
 	 * \param[in] iSpecies - Index of the species
 	 * \return The total temperature.
 	 */
-	double GetInlet_Species_Velocity(unsigned short iSpecies);
+	su2double GetInlet_Species_Velocity(unsigned short iSpecies);
 
 	/*!
 	 * \brief Get the velocity at an outlet boundary.
 	 * \param[in] iSpecies - Index of the species
 	 * \return The total temperature.
 	 */
-	double GetOutlet_Species_Velocity(unsigned short iSpecies);
+	su2double GetOutlet_Species_Velocity(unsigned short iSpecies);
 
   /*!
 	 * \brief Value of the CFL reduction in LevelSet problems.
 	 * \return Value of the CFL reduction in LevelSet problems.
 	 */
-	double GetCFLRedCoeff_Turb(void);
+	su2double GetCFLRedCoeff_Turb(void);
 
 	/*!
 	 * \brief Get the flow direction unit vector at an inlet boundary.
 	 * \param[in] val_index - Index corresponding to the inlet boundary.
 	 * \return The flow direction vector.
 	 */
-	double* GetInlet_FlowDir(string val_index);
+	su2double* GetInlet_FlowDir(string val_index);
 
 	/*!
 	 * \brief Get the back pressure (static) at an outlet boundary.
 	 * \param[in] val_index - Index corresponding to the outlet boundary.
 	 * \return The outlet pressure.
 	 */
-	double GetOutlet_Pressure(string val_index);
+	su2double GetOutlet_Pressure(string val_index);
 
 	/*!
 	 * \brief Get the var 1 at Riemann boundary.
 	 * \param[in] val_marker - Index corresponding to the Riemann boundary.
 	 * \return The var1
 	 */
-	double GetRiemann_Var1(string val_marker);
+	su2double GetRiemann_Var1(string val_marker);
 
 	/*!
 	 * \brief Get the var 2 at Riemann boundary.
@@ -4784,14 +4784,14 @@ public:
 	 * \return The var2
 	 */
 
-	double GetRiemann_Var2(string val_marker);
+	su2double GetRiemann_Var2(string val_marker);
 
 	/*!
 	 * \brief Get the Flowdir at Riemann boundary.
 	 * \param[in] val_marker - Index corresponding to the Riemann boundary.
 	 * \return The Flowdir
 	 */
-	double* GetRiemann_FlowDir(string val_marker);
+	su2double* GetRiemann_FlowDir(string val_marker);
 
 	/*!
 	 * \brief Get Kind Data of Riemann boundary.
@@ -4805,172 +4805,172 @@ public:
 	 * \param[in] val_index - Index corresponding to the isothermal boundary.
 	 * \return The wall temperature.
 	 */
-	double GetIsothermal_Temperature(string val_index);
+	su2double GetIsothermal_Temperature(string val_index);
 
 	/*!
 	 * \brief Get the wall heat flux on a constant heat flux boundary.
 	 * \param[in] val_index - Index corresponding to the constant heat flux boundary.
 	 * \return The heat flux.
 	 */
-	double GetWall_HeatFlux(string val_index);
+	su2double GetWall_HeatFlux(string val_index);
 
 	/*!
 	 * \brief Get the wall heat flux on a constant heat flux boundary.
 	 * \return The heat flux.
 	 */
-	double *GetWall_Catalycity(void);
+	su2double *GetWall_Catalycity(void);
 
 	/*!
 	 * \brief Get the back pressure (static) at an outlet boundary.
 	 * \param[in] val_index - Index corresponding to the outlet boundary.
 	 * \return The outlet pressure.
 	 */
-	double GetInflow_Mach_Target(string val_marker);
+	su2double GetInflow_Mach_Target(string val_marker);
 
     /*!
 	 * \brief Get the back pressure (static) at an outlet boundary.
 	 * \param[in] val_index - Index corresponding to the outlet boundary.
 	 * \return The outlet pressure.
 	 */
-	double GetInflow_Mach(string val_marker);
+	su2double GetInflow_Mach(string val_marker);
 
     /*!
 	 * \brief Get the back pressure (static) at an outlet boundary.
 	 * \param[in] val_index - Index corresponding to the outlet boundary.
 	 * \return The outlet pressure.
 	 */
-	void SetInflow_Mach(unsigned short val_imarker, double val_fanface_mach);
+	void SetInflow_Mach(unsigned short val_imarker, su2double val_fanface_mach);
 
     /*!
 	 * \brief Get the back pressure (static) at an outlet boundary.
 	 * \param[in] val_index - Index corresponding to the outlet boundary.
 	 * \return The outlet pressure.
 	 */
-	double GetInflow_Pressure(string val_marker);
+	su2double GetInflow_Pressure(string val_marker);
 
     /*!
 	 * \brief Get the back pressure (static) at an outlet boundary.
 	 * \param[in] val_index - Index corresponding to the outlet boundary.
 	 * \return The outlet pressure.
 	 */
-	void SetInflow_Pressure(unsigned short val_imarker, double val_fanface_pressure);
+	void SetInflow_Pressure(unsigned short val_imarker, su2double val_fanface_pressure);
   
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  double GetBleed_Temperature_Target(string val_marker);
+  su2double GetBleed_Temperature_Target(string val_marker);
   
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  double GetBleed_Temperature(string val_marker);
+  su2double GetBleed_Temperature(string val_marker);
   
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  void SetBleed_Temperature(unsigned short val_imarker, double val_bleed_temp);
+  void SetBleed_Temperature(unsigned short val_imarker, su2double val_bleed_temp);
   
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  void SetExhaust_Temperature(unsigned short val_imarker, double val_exhaust_temp);
+  void SetExhaust_Temperature(unsigned short val_imarker, su2double val_exhaust_temp);
   
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  double GetExhaust_Temperature(string val_marker);
+  su2double GetExhaust_Temperature(string val_marker);
   
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  double GetBleed_MassFlow_Target(string val_marker);
+  su2double GetBleed_MassFlow_Target(string val_marker);
   
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  double GetBleed_MassFlow(string val_marker);
+  su2double GetBleed_MassFlow(string val_marker);
   
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  void SetBleed_MassFlow(unsigned short val_imarker, double val_bleed_massflow);
+  void SetBleed_MassFlow(unsigned short val_imarker, su2double val_bleed_massflow);
   
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  double GetBleed_Pressure(string val_marker);
+  su2double GetBleed_Pressure(string val_marker);
 
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  double GetExhaust_Pressure(string val_marker);
+  su2double GetExhaust_Pressure(string val_marker);
 
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  void SetBleed_Pressure(unsigned short val_imarker, double val_bleed_pressure);
+  void SetBleed_Pressure(unsigned short val_imarker, su2double val_bleed_pressure);
   
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  void SetExhaust_Pressure(unsigned short val_imarker, double val_exhaust_pressure);
+  void SetExhaust_Pressure(unsigned short val_imarker, su2double val_exhaust_pressure);
   
 	/*!
 	 * \brief Get the displacement value at an displacement boundary.
 	 * \param[in] val_index - Index corresponding to the displacement boundary.
 	 * \return The displacement value.
 	 */
-	double GetDispl_Value(string val_index);
+	su2double GetDispl_Value(string val_index);
 
 	/*!
 	 * \brief Get the force value at an load boundary.
 	 * \param[in] val_index - Index corresponding to the load boundary.
 	 * \return The load value.
 	 */
-	double GetLoad_Value(string val_index);
+	su2double GetLoad_Value(string val_index);
 
 	/*!
 	 * \brief Get the force value at an load boundary.
 	 * \param[in] val_index - Index corresponding to the load boundary.
 	 * \return The load value.
 	 */
-	double GetFlowLoad_Value(string val_index);
+	su2double GetFlowLoad_Value(string val_index);
 
 	/*!
 	 * \brief Cyclic pitch amplitude for rotor blades.
 	 * \return The specified cyclic pitch amplitude.
 	 */
-	double GetCyclic_Pitch(void);
+	su2double GetCyclic_Pitch(void);
 
 	/*!
 	 * \brief Collective pitch setting for rotor blades.
 	 * \return The specified collective pitch setting.
 	 */
-	double GetCollective_Pitch(void);
+	su2double GetCollective_Pitch(void);
 
 	/*!
 	 * \brief Get name of the arbitrary mesh motion input file.
@@ -5016,22 +5016,22 @@ public:
 	/*!
 	 * \brief Value of Aeroelastic solution coordinate at time n+1.
 	 */
-	vector<vector<double> > GetAeroelastic_np1(unsigned short iMarker);
+	vector<vector<su2double> > GetAeroelastic_np1(unsigned short iMarker);
 
 	/*!
 	 * \brief Value of Aeroelastic solution coordinate at time n.
 	 */
-	vector<vector<double> > GetAeroelastic_n(unsigned short iMarker);
+	vector<vector<su2double> > GetAeroelastic_n(unsigned short iMarker);
 
 	/*!
 	 * \brief Value of Aeroelastic solution coordinate at time n-1.
 	 */
-	vector<vector<double> > GetAeroelastic_n1(unsigned short iMarker);
+	vector<vector<su2double> > GetAeroelastic_n1(unsigned short iMarker);
 
 	/*!
 	 * \brief Value of Aeroelastic solution coordinate at time n+1.
 	 */
-	void SetAeroelastic_np1(unsigned short iMarker, vector<vector<double> > solution);
+	void SetAeroelastic_np1(unsigned short iMarker, vector<vector<su2double> > solution);
 
 	/*!
 	 * \brief Value of Aeroelastic solution coordinate at time n from time n+1.
@@ -5046,40 +5046,40 @@ public:
 	/*!
 	 * \brief Uncoupled Aeroelastic Frequency Plunge.
 	 */
-	double GetAeroelastic_Frequency_Plunge(void);
+	su2double GetAeroelastic_Frequency_Plunge(void);
 
 	/*!
 	 * \brief Uncoupled Aeroelastic Frequency Pitch.
 	 */
-	double GetAeroelastic_Frequency_Pitch(void);
+	su2double GetAeroelastic_Frequency_Pitch(void);
 
 	/*!
 	 * \brief Value of plunging coordinate.
      * \param[in] val_marker - the marker we are monitoring.
 	 * \return Value of plunging coordinate.
 	 */
-	double GetAeroelastic_plunge(unsigned short val_marker);
+	su2double GetAeroelastic_plunge(unsigned short val_marker);
 
     /*!
 	 * \brief Value of pitching coordinate.
      * \param[in] val_marker - the marker we are monitoring.
 	 * \return Value of pitching coordinate.
 	 */
-	double GetAeroelastic_pitch(unsigned short val_marker);
+	su2double GetAeroelastic_pitch(unsigned short val_marker);
 
 	/*!
 	 * \brief Value of plunging coordinate.
      * \param[in] val_marker - the marker we are monitoring.
      * \param[in] val - value of plunging coordinate.
 	 */
-	void SetAeroelastic_plunge(unsigned short val_marker, double val);
+	void SetAeroelastic_plunge(unsigned short val_marker, su2double val);
 
 	/*!
 	 * \brief Value of pitching coordinate.
      * \param[in] val_marker - the marker we are monitoring.
      * \param[in] val - value of pitching coordinate.
 	 */
-	void SetAeroelastic_pitch(unsigned short val_marker, double val);
+	void SetAeroelastic_pitch(unsigned short val_marker, su2double val);
 
     /*!
 	 * \brief Get information about the aeroelastic simulation.
@@ -5108,27 +5108,27 @@ public:
     /*!
 	 * \brief Value of the gust wavelength.
 	 */
-	double GetGust_WaveLength(void);
+	su2double GetGust_WaveLength(void);
 
     /*!
 	 * \brief Value of the number of gust periods.
 	 */
-	double GetGust_Periods(void);
+	su2double GetGust_Periods(void);
 
     /*!
 	 * \brief Value of the gust amplitude.
 	 */
-	double GetGust_Ampl(void);
+	su2double GetGust_Ampl(void);
 
     /*!
 	 * \brief Value of the time at which to begin the gust.
 	 */
-	double GetGust_Begin_Time(void);
+	su2double GetGust_Begin_Time(void);
 
     /*!
 	 * \brief Value of the location ath which the gust begins.
 	 */
-	double GetGust_Begin_Loc(void);
+	su2double GetGust_Begin_Loc(void);
 
   /*!
 	 * \brief Value of the time at which to begin the gust.
@@ -5138,7 +5138,7 @@ public:
   /*!
 	 * \brief Value of the location ath which the gust begins.
 	 */
-	double GetFFD_Tol(void);
+	su2double GetFFD_Tol(void);
 
   /*!
 	 * \brief Get the node number of the CV to visualize.
@@ -5156,13 +5156,13 @@ public:
 	 * \brief Get the value specified for the target CL.
 	 * \return Value of the target CL.
 	 */
-	double GetTarget_CL(void);
+	su2double GetTarget_CL(void);
 
   /*!
 	 * \brief Get the value of the damping coefficient for fixed CL mode.
 	 * \return Damping coefficient for fixed CL mode.
 	 */
-	double GetDamp_Fixed_CL(void);
+	su2double GetDamp_Fixed_CL(void);
   
   /*!
    * \brief Get the value of iterations to re-evaluate the angle of attack.
@@ -5215,7 +5215,7 @@ public:
 	          condition for a natural spline, with zero second derivative on that boundary.
 						Numerical Recipes: The Art of Scientific Computing, Third Edition in C++.
 	 */
-	void SetSpline(vector<double> &x, vector<double> &y, unsigned long n, double yp1, double ypn, vector<double> &y2);
+	void SetSpline(vector<su2double> &x, vector<su2double> &y, unsigned long n, su2double yp1, su2double ypn, vector<su2double> &y2);
 
 	/*!
 	 * \brief Given the arrays xa[1..n] and ya[1..n], which tabulate a function (with the xai’s in order),
@@ -5224,7 +5224,7 @@ public:
          	  Numerical Recipes: The Art of Scientific Computing, Third Edition in C++.
 	 * \returns The interpolated value of for x.
 	 */
-	double GetSpline(vector<double> &xa, vector<double> &ya, vector<double> &y2a, unsigned long n, double x);
+	su2double GetSpline(vector<su2double> &xa, vector<su2double> &ya, vector<su2double> &y2a, unsigned long n, su2double x);
   
   /*!
    * \brief Get the verbosity level of the console output.

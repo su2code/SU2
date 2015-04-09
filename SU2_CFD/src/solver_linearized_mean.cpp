@@ -47,7 +47,7 @@ CLinEulerSolver::CLinEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 	bool restart = config->GetRestart();
 	Gamma = config->GetGamma();
 	Gamma_Minus_One = Gamma - 1.0;
-	double dull_val;
+	su2double dull_val;
   
 	/*--- Define geometry constants in the solver structure ---*/
 	nDim = geometry->GetnDim();
@@ -58,33 +58,33 @@ CLinEulerSolver::CLinEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 	node = new CVariable*[geometry->GetnPoint()];
 	
 	/*--- Define some auxiliar vector related with the residual ---*/
-	Residual = new double[nVar];	Residual_RMS = new double[nVar];  
-	Residual_i = new double[nVar]; Residual_j = new double[nVar];
-	Res_Conv = new double[nVar];	Res_Visc = new double[nVar]; Res_Sour = new double[nVar];
-  Residual_Max = new double[nVar];
+	Residual = new su2double[nVar];	Residual_RMS = new su2double[nVar];  
+	Residual_i = new su2double[nVar]; Residual_j = new su2double[nVar];
+	Res_Conv = new su2double[nVar];	Res_Visc = new su2double[nVar]; Res_Sour = new su2double[nVar];
+  Residual_Max = new su2double[nVar];
   
   /*--- Define some structures for locating max residuals ---*/
   Point_Max = new unsigned long[nVar];
   for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar] = 0;
-  Point_Max_Coord = new double*[nVar];
+  Point_Max_Coord = new su2double*[nVar];
   for (iVar = 0; iVar < nVar; iVar++) {
-    Point_Max_Coord[iVar] = new double[nDim];
+    Point_Max_Coord[iVar] = new su2double[nDim];
     for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
   }
 
 	/*--- Define some auxiliar vector related with the solution ---*/
-	Solution   = new double[nVar];
-	Solution_i = new double[nVar];	Solution_j = new double[nVar];
+	Solution   = new su2double[nVar];
+	Solution_i = new su2double[nVar];	Solution_j = new su2double[nVar];
 	
 	/*--- Define some auxiliar vector related with the geometry ---*/
-	Vector_i = new double[nDim];	Vector_j = new double[nDim];
+	Vector_i = new su2double[nDim];	Vector_j = new su2double[nDim];
 	
 	/*--- Jacobians and vector structures for implicit computations ---*/
 	if (config->GetKind_TimeIntScheme_LinFlow() == EULER_IMPLICIT) {
 		/*--- Point to point Jacobians ---*/
-		Jacobian_i = new double* [nVar]; Jacobian_j = new double* [nVar];
+		Jacobian_i = new su2double* [nVar]; Jacobian_j = new su2double* [nVar];
 		for (iVar = 0; iVar < nVar; iVar++) {
-			Jacobian_i[iVar] = new double [nVar]; Jacobian_j[iVar] = new double [nVar]; }
+			Jacobian_i[iVar] = new su2double [nVar]; Jacobian_j[iVar] = new su2double [nVar]; }
 		/*--- Initialization of the structure of the whole Jacobian ---*/
 		Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
     
@@ -101,24 +101,24 @@ CLinEulerSolver::CLinEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 	/*--- Computation of gradients by least squares ---*/
 	if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
 		/*--- S matrix := inv(R)*traspose(inv(R)) ---*/
-		Smatrix = new double* [nDim]; 
+		Smatrix = new su2double* [nDim]; 
 		for (iDim = 0; iDim < nDim; iDim++)
-			Smatrix[iDim] = new double [nDim];
+			Smatrix[iDim] = new su2double [nDim];
 		/*--- c vector := transpose(WA)*(Wb) ---*/
-		cvector = new double* [nVar]; 
+		cvector = new su2double* [nVar]; 
 		for (iVar = 0; iVar < nVar; iVar++)
-			cvector[iVar] = new double [nDim];
+			cvector[iVar] = new su2double [nDim];
 	}
 	
 	/*--- Delta forces definition and coefficient in all the markers ---*/
-	DeltaForceInviscid = new double[nDim];
-	CDeltaDrag_Inv = new double[config->GetnMarker_All()];
-	CDeltaLift_Inv = new double[config->GetnMarker_All()];
+	DeltaForceInviscid = new su2double[nDim];
+	CDeltaDrag_Inv = new su2double[config->GetnMarker_All()];
+	CDeltaLift_Inv = new su2double[config->GetnMarker_All()];
 	
 	/*--- Linearized flow at the inifinity, inizialization stuff ---*/
 	DeltaRho_Inf = 0.0;	
 	DeltaE_Inf = 0.0;
-	DeltaVel_Inf = new double [nDim];
+	DeltaVel_Inf = new su2double [nDim];
 	if (nDim == 2) {
 		DeltaVel_Inf[0] = 0.0;	
 		DeltaVel_Inf[1] = 0.0;
@@ -286,10 +286,10 @@ void CLinEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *confi
 
 void CLinEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container, 
 											CConfig *config, unsigned short iRKStep) {
-	double *Residual, Vol, Delta, *Res_TruncError;
+	su2double *Residual, Vol, Delta, *Res_TruncError;
 	unsigned short iVar;
 	unsigned long iPoint;
-	double RK_AlphaCoeff = config->Get_Alpha_RKStep(iRKStep);
+	su2double RK_AlphaCoeff = config->Get_Alpha_RKStep(iRKStep);
 
 	/*--- Set maximum residual to zero ---*/
 	for (iVar = 0; iVar < nVar; iVar++) {
@@ -334,18 +334,18 @@ void CLinEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
 void CLinEulerSolver::Inviscid_DeltaForces(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 	unsigned long iVertex, Point;
 	unsigned short iDim, iMarker, Boundary, Monitoring;
-	double  *Face_Normal, DeltaPressure, *Velocity;
-	double Alpha = config->GetAoA()*PI_NUMBER / 180.0;
-	double Beta  = config->GetAoS()*PI_NUMBER / 180.0;
-	double RefAreaCoeff = config->GetRefAreaCoeff();
-	double Density_Inf = solver_container[FLOW_SOL]->GetDensity_Inf();
-	double ModVelocity_Inf = solver_container[FLOW_SOL]->GetModVelocity_Inf();
-	double C_p = 1.0/(0.5*Density_Inf*RefAreaCoeff*ModVelocity_Inf*ModVelocity_Inf);
+	su2double  *Face_Normal, DeltaPressure, *Velocity;
+	su2double Alpha = config->GetAoA()*PI_NUMBER / 180.0;
+	su2double Beta  = config->GetAoS()*PI_NUMBER / 180.0;
+	su2double RefAreaCoeff = config->GetRefAreaCoeff();
+	su2double Density_Inf = solver_container[FLOW_SOL]->GetDensity_Inf();
+	su2double ModVelocity_Inf = solver_container[FLOW_SOL]->GetModVelocity_Inf();
+	su2double C_p = 1.0/(0.5*Density_Inf*RefAreaCoeff*ModVelocity_Inf*ModVelocity_Inf);
 
 	/*-- Inicialization ---*/
 	Total_CDeltaDrag = 0.0; Total_CDeltaLift = 0.0;
 	AllBound_CDeltaDrag_Inv = 0.0; AllBound_CDeltaLift_Inv = 0.0;
-	Velocity = new double[nDim];
+	Velocity = new su2double[nDim];
 
 	/*--- Loop over the Euler markers ---*/
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -361,11 +361,11 @@ void CLinEulerSolver::Inviscid_DeltaForces(CGeometry *geometry, CSolver **solver
 					for (iDim = 0; iDim < nDim; iDim++) 
 						Velocity[iDim] = solver_container[FLOW_SOL]->node[Point]->GetVelocity(iDim);
 					
-					double rho = solver_container[FLOW_SOL]->node[Point]->GetSolution(0) + node[Point]->GetSolution(0);
-					double rhoE = solver_container[FLOW_SOL]->node[Point]->GetSolution(nVar-1) + node[Point]->GetSolution(nVar-1);
-					double Pressure = solver_container[FLOW_SOL]->node[Point]->GetPressure();
-					double rhoVel[3];
-					double sqr_vel = 0.0;
+					su2double rho = solver_container[FLOW_SOL]->node[Point]->GetSolution(0) + node[Point]->GetSolution(0);
+					su2double rhoE = solver_container[FLOW_SOL]->node[Point]->GetSolution(nVar-1) + node[Point]->GetSolution(nVar-1);
+					su2double Pressure = solver_container[FLOW_SOL]->node[Point]->GetPressure();
+					su2double rhoVel[3];
+					su2double sqr_vel = 0.0;
 					for (iDim = 0; iDim < nDim; iDim++) {
 						rhoVel[iDim] = solver_container[FLOW_SOL]->node[Point]->GetSolution(iDim+1) + node[Point]->GetSolution(iDim+1);
 						sqr_vel += rhoVel[iDim]*rhoVel[iDim]/(rho*rho);
@@ -407,12 +407,12 @@ void CLinEulerSolver::Inviscid_DeltaForces(CGeometry *geometry, CSolver **solver
 void CLinEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
 	unsigned short iDim, iVar;
 	unsigned long iVertex, iPoint;
-	double phi, a1, a2, sqvel, d, *Face_Normal, *U, dS, VelxDeltaRhoVel, Energy, Rho, 
+	su2double phi, a1, a2, sqvel, d, *Face_Normal, *U, dS, VelxDeltaRhoVel, Energy, Rho, 
 		   *Normal, *Delta_RhoVel, *Vel, *DeltaU, Delta_RhoE, Delta_Rho;
 
-	Normal = new double[nDim];
-	Delta_RhoVel = new double[nDim];
-	Vel = new double[nDim];
+	Normal = new su2double[nDim];
+	Delta_RhoVel = new su2double[nDim];
+	Vel = new su2double[nDim];
 	
 	/*--- Loop over all the vertices ---*/
 	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -467,19 +467,19 @@ void CLinEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 	unsigned long iVertex, iPoint;
 	unsigned short iVar, jVar, iDim;
 	
-	double *Face_Normal;
-	double *kappa = new double[nDim];
-	double *velocity = new double[nDim];
-	double *U_wall = new double[nVar];
-	double *U_infty = new double[nVar];
-	double *DeltaU_wall = new double[nVar];
-	double *DeltaU_infty = new double[nVar];
-	double *DeltaU_update = new double[nVar];
-	double *W_wall = new double[nVar];
-	double *W_infty = new double[nVar];
-	double *W_update = new double[nVar];
-	double Mach = config->GetMach();
-	double DeltaMach = 1.0;
+	su2double *Face_Normal;
+	su2double *kappa = new su2double[nDim];
+	su2double *velocity = new su2double[nDim];
+	su2double *U_wall = new su2double[nVar];
+	su2double *U_infty = new su2double[nVar];
+	su2double *DeltaU_wall = new su2double[nVar];
+	su2double *DeltaU_infty = new su2double[nVar];
+	su2double *DeltaU_update = new su2double[nVar];
+	su2double *W_wall = new su2double[nVar];
+	su2double *W_infty = new su2double[nVar];
+	su2double *W_update = new su2double[nVar];
+	su2double Mach = config->GetMach();
+	su2double DeltaMach = 1.0;
 
 	/*--- Loop over all the vertices ---*/
 	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -513,7 +513,7 @@ void CLinEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 
 			/*--- Normal vector ---*/
 			Face_Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
-			double dS = 0.0;
+			su2double dS = 0.0;
 			for (iDim = 0; iDim < nDim; iDim++)
 				dS += Face_Normal[iDim]*Face_Normal[iDim];
 			dS = sqrt (dS);
@@ -522,33 +522,33 @@ void CLinEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 				kappa[iDim] = -Face_Normal[iDim]/dS;
 			
 			/*--- Computation of P and inverse P matrix using values at the infinity ---*/
-			double sq_vel = 0.0, vn = 0.0;
-			double rho = solver_container[FLOW_SOL]->node[iPoint]->GetSolution(0);
-			double rhoE = solver_container[FLOW_SOL]->node[iPoint]->GetSolution(nVar-1);
+			su2double sq_vel = 0.0, vn = 0.0;
+			su2double rho = solver_container[FLOW_SOL]->node[iPoint]->GetSolution(0);
+			su2double rhoE = solver_container[FLOW_SOL]->node[iPoint]->GetSolution(nVar-1);
 			for (iDim = 0; iDim < nDim; iDim++) {
 				velocity[iDim] = solver_container[FLOW_SOL]->node[iPoint]->GetSolution(iDim+1)/rho;
 				sq_vel +=velocity[iDim]*velocity[iDim];
 				vn += velocity[iDim]*kappa[iDim]*dS;
 			}
 			
-/*			double sq_vel = 0.0, vn = 0.0;
-			double rho = U_infty[0];
-			double rhoE = U_infty[nVar-1];
+/*			su2double sq_vel = 0.0, vn = 0.0;
+			su2double rho = U_infty[0];
+			su2double rhoE = U_infty[nVar-1];
 			for (iDim = 0; iDim < nDim; iDim++) {
 				velocity[iDim] = U_infty[iDim+1]/rho;
 				sq_vel +=velocity[iDim]*velocity[iDim];
 				vn += velocity[iDim]*kappa[iDim]*dS;
 			}*/
 			
-			double c = sqrt(Gamma*Gamma_Minus_One*(rhoE/rho-0.5*sq_vel));
-			double energy = rhoE / rho;
+			su2double c = sqrt(Gamma*Gamma_Minus_One*(rhoE/rho-0.5*sq_vel));
+			su2double energy = rhoE / rho;
 			
-			double **P_Matrix, **invP_Matrix;
-			P_Matrix = new double* [nVar];
-			invP_Matrix = new double* [nVar];
+			su2double **P_Matrix, **invP_Matrix;
+			P_Matrix = new su2double* [nVar];
+			invP_Matrix = new su2double* [nVar];
 			for (iVar = 0; iVar < nVar; iVar++) {
-				P_Matrix[iVar] = new double [nVar];
-				invP_Matrix[iVar] = new double [nVar];
+				P_Matrix[iVar] = new su2double [nVar];
+				invP_Matrix[iVar] = new su2double [nVar];
 			}
 			
 			conv_numerics->GetPMatrix_inv(&rho, velocity, &c, kappa, invP_Matrix);
@@ -613,10 +613,10 @@ void CLinEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 			}
 			
 			/*--- Residual computation ---*/
-			double **Jac_Matrix;
-			Jac_Matrix = new double* [nVar];
+			su2double **Jac_Matrix;
+			Jac_Matrix = new su2double* [nVar];
 			for (iVar = 0; iVar < nVar; iVar++) {
-				Jac_Matrix[iVar] = new double [nVar];
+				Jac_Matrix[iVar] = new su2double [nVar];
 			}			
 			conv_numerics->GetInviscidProjJac(velocity, &energy, kappa, 1.0, Jac_Matrix);
 			for (iVar = 0; iVar < nVar; iVar++) {

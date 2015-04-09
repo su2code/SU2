@@ -37,7 +37,7 @@ CIntegration::CIntegration(CConfig *config) {
 	Cauchy_Counter = 0;
 	Convergence = false;
 	Convergence_FullMG = false;
-	Cauchy_Serie = new double [config->GetCauchy_Elems()+1];
+	Cauchy_Serie = new su2double [config->GetCauchy_Elems()+1];
 }
 
 CIntegration::~CIntegration(void) {
@@ -263,7 +263,7 @@ void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_contai
 }
 
 void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, unsigned long Iteration,
-                                          double monitor, unsigned short iMesh) {
+                                          su2double monitor, unsigned short iMesh) {
   
   unsigned short iCounter;
   int rank = MASTER_NODE;
@@ -426,7 +426,7 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
     
     /*--- Also communicate plunge and pitch to the master node. Needed for output in case of parallel run ---*/
 #ifdef HAVE_MPI
-    double plunge, pitch, *plunge_all = NULL, *pitch_all = NULL;
+    su2double plunge, pitch, *plunge_all = NULL, *pitch_all = NULL;
     unsigned short iMarker, iMarker_Monitoring;
     unsigned long iProcessor, owner, *owner_all = NULL;
     
@@ -438,8 +438,8 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
 
     /*--- Only if mater node allocate memory ---*/
     if (rank == MASTER_NODE) {
-      plunge_all = new double[nProcessor];
-      pitch_all  = new double[nProcessor];
+      plunge_all = new su2double[nProcessor];
+      pitch_all  = new su2double[nProcessor];
       owner_all  = new unsigned long[nProcessor];
     }
     

@@ -105,7 +105,12 @@ AC_ARG_ENABLE(SOL,
 AC_ARG_ENABLE(GEO,
    	AS_HELP_STRING([--disable-GEO], [build the SU2_GEO executable (default = yes)]),
 	[build_GEO=$enableval], [build_GEO="yes"])
-
+AC_ARG_ENABLE(complex,
+    AS_HELP_STRING([--enable-complex], [build executables with complex datatype (default = no)]),
+    [build_COMPLEX="yes"], [build_COMPLEX="no"])
+AC_ARG_ENABLE(normal,
+    AS_HELP_STRING([--disable-complex], [build executables with complex datatype (default = no)]),
+    [build_NORMAL=$enableval], [build_NORMAL="yes"])
 # Check for the old  MPI option so that we can throw an error
 AC_ARG_WITH(MPI,
 AS_HELP_STRING(),
@@ -335,6 +340,15 @@ AC_SUBST([LAPACK_CXX])
 AC_SUBST([LAPACK_LD])
 
 ###########################
+# Determine what versions of the code to build
+
+COMPLEX_CXX="-DCOMPLEX_TYPE"
+AC_SUBST([COMPLEX_CXX])
+
+AM_CONDITIONAL([BUILD_NORMAL], [test $build_NORMAL != "no"])
+AM_CONDITIONAL([BUILD_COMPLEX], [test $build_COMPLEX != "no"])
+
+###########################
 
 AM_CONDITIONAL([BUILD_CFD],[test $build_CFD != "no"])
 AM_CONDITIONAL([BUILD_DOT],[test $build_DOT != "no"])
@@ -413,6 +427,9 @@ Build Configuration Summary:
     Mutation++ support:   $have_Mutationpp
     Jsoncpp support: 	  $have_Jsoncpp
     LAPACK support:       $have_LAPACK
+    Datatype support:
+        double              $build_NORMAL
+        complex             $build_COMPLEX
 
     External includes:    $su2_externals_INCLUDES
     External libs:        $su2_externals_LIBS

@@ -637,6 +637,11 @@ BUILD_DOT_FALSE
 BUILD_DOT_TRUE
 BUILD_CFD_FALSE
 BUILD_CFD_TRUE
+BUILD_COMPLEX_FALSE
+BUILD_COMPLEX_TRUE
+BUILD_NORMAL_FALSE
+BUILD_NORMAL_TRUE
+COMPLEX_CXX
 LAPACK_LD
 LAPACK_CXX
 BUILD_LAPACK_FALSE
@@ -795,6 +800,8 @@ enable_MSH
 enable_DEF
 enable_SOL
 enable_GEO
+enable_complex
+enable_normal
 with_MPI
 enable_tecio
 enable_metis
@@ -1446,6 +1453,10 @@ Optional Features:
   --disable-DEF           build the SU2_DEF executable (default = yes)
   --disable-SOL           build the SU2_SOL executable (default = yes)
   --disable-GEO           build the SU2_GEO executable (default = yes)
+  --enable-complex        build executables with complex datatype (default =
+                          no)
+  --disable-complex       build executables with complex datatype (default =
+                          no)
   --enable-tecio          build with Tecplot TecIO API support (from source)
   --enable-metis          build with Metis graph partitioning suppport
   --disable-parmetis      build without Parmetis parallel graph partitioning
@@ -2522,7 +2533,7 @@ test -n "$target_alias" &&
   test "$program_prefix$program_suffix$program_transform_name" = \
     NONENONEs,x,x, &&
   program_prefix=${target_alias}-
-am__api_version='1.12'
+am__api_version='1.13'
 
 # Find a good install program.  We prefer a C program (faster),
 # so one script is as good as another.  But avoid the broken or
@@ -2706,8 +2717,8 @@ if test x"${MISSING+set}" != xset; then
   esac
 fi
 # Use eval to expand $SHELL
-if eval "$MISSING --run true"; then
-  am_missing_run="$MISSING --run "
+if eval "$MISSING --is-lightweight"; then
+  am_missing_run="$MISSING "
 else
   am_missing_run=
   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: 'missing' script is too old or missing" >&5
@@ -2947,6 +2958,45 @@ else
 fi
 rmdir .tst 2>/dev/null
 
+# Check whether --enable-silent-rules was given.
+if test "${enable_silent_rules+set}" = set; then :
+  enableval=$enable_silent_rules;
+fi
+
+case $enable_silent_rules in # (((
+  yes) AM_DEFAULT_VERBOSITY=0;;
+   no) AM_DEFAULT_VERBOSITY=1;;
+    *) AM_DEFAULT_VERBOSITY=1;;
+esac
+am_make=${MAKE-make}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $am_make supports nested variables" >&5
+$as_echo_n "checking whether $am_make supports nested variables... " >&6; }
+if ${am_cv_make_support_nested_variables+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if $as_echo 'TRUE=$(BAR$(V))
+BAR0=false
+BAR1=true
+V=1
+am__doit:
+	@$(TRUE)
+.PHONY: am__doit' | $am_make -f - >/dev/null 2>&1; then
+  am_cv_make_support_nested_variables=yes
+else
+  am_cv_make_support_nested_variables=no
+fi
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $am_cv_make_support_nested_variables" >&5
+$as_echo "$am_cv_make_support_nested_variables" >&6; }
+if test $am_cv_make_support_nested_variables = yes; then
+    AM_V='$(V)'
+  AM_DEFAULT_V='$(AM_DEFAULT_VERBOSITY)'
+else
+  AM_V=$AM_DEFAULT_VERBOSITY
+  AM_DEFAULT_V=$AM_DEFAULT_VERBOSITY
+fi
+AM_BACKSLASH='\'
+
 if test "`cd $srcdir && pwd`" != "`pwd`"; then
   # Use -I$(srcdir) only when $(srcdir) != ., so that make's output
   # is not polluted with repeated "-I."
@@ -3009,7 +3059,12 @@ mkdir_p='$(MKDIR_P)'
 # in the wild :-(  We should find a proper way to deprecate it ...
 AMTAR='$${TAR-tar}'
 
+
+# We'll loop over all known methods to create a tar archive until one works.
+_am_tools='gnutar  pax cpio none'
+
 am__tar='$${TAR-tar} chof - "$$tardir"' am__untar='$${TAR-tar} xf -'
+
 
 
 
@@ -5255,6 +5310,19 @@ else
   build_GEO="yes"
 fi
 
+# Check whether --enable-complex was given.
+if test "${enable_complex+set}" = set; then :
+  enableval=$enable_complex; build_COMPLEX="yes"
+else
+  build_COMPLEX="no"
+fi
+
+# Check whether --enable-normal was given.
+if test "${enable_normal+set}" = set; then :
+  enableval=$enable_normal; build_NORMAL=$enableval
+else
+  build_NORMAL="yes"
+fi
 
 # Check for the old  MPI option so that we can throw an error
 
@@ -5999,6 +6067,29 @@ fi
 
 
 ###########################
+# Determine what versions of the code to build
+
+COMPLEX_CXX="-DCOMPLEX_TYPE"
+
+
+ if test $build_NORMAL != "no"; then
+  BUILD_NORMAL_TRUE=
+  BUILD_NORMAL_FALSE='#'
+else
+  BUILD_NORMAL_TRUE='#'
+  BUILD_NORMAL_FALSE=
+fi
+
+ if test $build_COMPLEX != "no"; then
+  BUILD_COMPLEX_TRUE=
+  BUILD_COMPLEX_FALSE='#'
+else
+  BUILD_COMPLEX_TRUE='#'
+  BUILD_COMPLEX_FALSE=
+fi
+
+
+###########################
 
  if test $build_CFD != "no"; then
   BUILD_CFD_TRUE=
@@ -6268,6 +6359,14 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${BUILD_LAPACK_TRUE}" && test -z "${BUILD_LAPACK_FALSE}"; then
   as_fn_error $? "conditional \"BUILD_LAPACK\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${BUILD_NORMAL_TRUE}" && test -z "${BUILD_NORMAL_FALSE}"; then
+  as_fn_error $? "conditional \"BUILD_NORMAL\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${BUILD_COMPLEX_TRUE}" && test -z "${BUILD_COMPLEX_FALSE}"; then
+  as_fn_error $? "conditional \"BUILD_COMPLEX\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${BUILD_CFD_TRUE}" && test -z "${BUILD_CFD_FALSE}"; then
@@ -7311,7 +7410,7 @@ $as_echo "$as_me: executing $ac_file commands" >&6;}
 
   case $ac_file$ac_mode in
     "depfiles":C) test x"$AMDEP_TRUE" != x"" || {
-  # Autoconf 2.62 quotes --file arguments for eval, but not when files
+  # Older Autoconf quotes --file arguments for eval, but not when files
   # are listed without --file.  Let's play safe and only enable the eval
   # if we detect the quoting.
   case $CONFIG_FILES in
@@ -7362,7 +7461,7 @@ $as_echo X"$mf" |
     DEPDIR=`sed -n 's/^DEPDIR = //p' < "$mf"`
     test -z "$DEPDIR" && continue
     am__include=`sed -n 's/^am__include = //p' < "$mf"`
-    test -z "am__include" && continue
+    test -z "$am__include" && continue
     am__quote=`sed -n 's/^am__quote = //p' < "$mf"`
     # Find all dependency output files, they are included files with
     # $(DEPDIR) in their names.  We invoke sed twice because it is the
@@ -7499,6 +7598,9 @@ Build Configuration Summary:
     Mutation++ support:   $have_Mutationpp
     Jsoncpp support: 	  $have_Jsoncpp
     LAPACK support:       $have_LAPACK
+    Datatype support:
+        double              $build_NORMAL
+        complex             $build_COMPLEX
 
     External includes:    $su2_externals_INCLUDES
     External libs:        $su2_externals_LIBS
@@ -7574,6 +7676,9 @@ Build Configuration Summary:
     Mutation++ support:   $have_Mutationpp
     Jsoncpp support: 	  $have_Jsoncpp
     LAPACK support:       $have_LAPACK
+    Datatype support:
+        double              $build_NORMAL
+        complex             $build_COMPLEX
 
     External includes:    $su2_externals_INCLUDES
     External libs:        $su2_externals_LIBS

@@ -36,9 +36,17 @@
 # AUTOMAKE_OPTIONS = subdir-objects
 ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS}
 
-noinst_LIBRARIES = libSU2.a
+noinst_LIBRARIES =
 
-libSU2_a_SOURCES = \
+if BUILD_NORMAL
+noinst_LIBRARIES += libSU2.a
+endif
+
+if BUILD_COMPLEX
+noinst_LIBRARIES += libSU2_COMPLEX.a
+endif
+
+lib_sources = \
                 ../include/config_structure.hpp \
 		../include/config_structure.inl \
 		../include/dual_grid_structure.hpp \
@@ -61,6 +69,10 @@ libSU2_a_SOURCES = \
 	    ../include/su2mpi.hpp \
 		../mpi_structure.hpp \
 		../mpi_structure.inl \
+    ../datatype_structure.hpp \
+    ../datatype_structure.inl \
+    ../complex_structure.hpp \
+    ../complex_structure.inl \
 		../src/config_structure.cpp \
 		../src/dual_grid_structure.cpp \
 		../src/geometry_structure.cpp \
@@ -70,7 +82,11 @@ libSU2_a_SOURCES = \
 		../src/primal_grid_structure.cpp \
 	        ../src/vector_structure.cpp \
 		../src/matrix_structure.cpp \
-		../src/su2mpi.cpp 
+    ../src/su2mpi.cpp \
+    ../src/mpi_structure.cpp
+
+if BUILD_NORMAL
+libSU2_a_SOURCES = $(lib_sources)
 
 libSU2_a_CXXFLAGS =
 libSU2_a_LIBADD =
@@ -93,3 +109,31 @@ libSU2_a_LIBADD += @MUTATIONPP_LD@
 libSU2_a_CXXFLAGS += @JSONCPP_CXX@
 libSU2_a_LIBADD += @JSONCPP_LD@
 # endif
+endif
+
+if BUILD_COMPLEX
+libSU2_COMPLEX_a_SOURCES = $(lib_sources)
+
+libSU2_COMPLEX_a_CXXFLAGS = @COMPLEX_CXX@
+libSU2_COMPLEX_a_LIBADD =
+
+# always link to built dependencies from ./externals
+libSU2_COMPLEX_a_CXXFLAGS += @su2_externals_INCLUDES@
+libSU2_COMPLEX_a_LIBADD += @su2_externals_LIBS@
+
+# if BUILD_CGNS
+libSU2_COMPLEX_a_CXXFLAGS += @CGNS_CXX@
+libSU2_COMPLEX_a_LIBADD += @CGNS_LD@
+# endif
+
+# if BUILD_MUTATIONPP
+libSU2_COMPLEX_a_CXXFLAGS += @MUTATIONPP_CXX@
+libSU2_COMPLEX_a_LIBADD += @MUTATIONPP_LD@
+# endif
+
+# if BUILD_JSONCPP
+libSU2_COMPLEX_a_CXXFLAGS += @JSONCPP_CXX@
+libSU2_COMPLEX_a_LIBADD += @JSONCPP_LD@
+# endif
+
+endif

@@ -41,11 +41,11 @@ CGalerkin_FEA::CGalerkin_FEA(unsigned short val_nDim, unsigned short val_nVar, C
 
 CGalerkin_FEA::~CGalerkin_FEA(void) { }
 
-double CGalerkin_FEA::ShapeFunc_Triangle(double Xi, double Eta, double CoordCorners[8][3], double DShapeFunction[8][4]) {
+su2double CGalerkin_FEA::ShapeFunc_Triangle(su2double Xi, su2double Eta, su2double CoordCorners[8][3], su2double DShapeFunction[8][4]) {
   
   int i, j, k;
-  double c0, c1, xsj;
-  double xs[3][3], ad[3][3];
+  su2double c0, c1, xsj;
+  su2double xs[3][3], ad[3][3];
   
   /*--- Shape functions ---*/
   
@@ -102,11 +102,11 @@ double CGalerkin_FEA::ShapeFunc_Triangle(double Xi, double Eta, double CoordCorn
   
 }
 
-double CGalerkin_FEA::ShapeFunc_Rectangle(double Xi, double Eta, double CoordCorners[8][3], double DShapeFunction[8][4]) {
+su2double CGalerkin_FEA::ShapeFunc_Rectangle(su2double Xi, su2double Eta, su2double CoordCorners[8][3], su2double DShapeFunction[8][4]) {
   
   int i, j, k;
-  double c0, c1, xsj;
-  double xs[3][3], ad[3][3];
+  su2double c0, c1, xsj;
+  su2double xs[3][3], ad[3][3];
   
   /*--- Shape functions ---*/
   
@@ -165,11 +165,11 @@ double CGalerkin_FEA::ShapeFunc_Rectangle(double Xi, double Eta, double CoordCor
   
 }
 
-double CGalerkin_FEA::ShapeFunc_Tetra(double Xi, double Eta, double Zeta, double CoordCorners[8][3], double DShapeFunction[8][4]) {
+su2double CGalerkin_FEA::ShapeFunc_Tetra(su2double Xi, su2double Eta, su2double Zeta, su2double CoordCorners[8][3], su2double DShapeFunction[8][4]) {
   
   int i, j, k;
-  double c0, c1, c2, xsj;
-  double xs[3][3], ad[3][3];
+  su2double c0, c1, c2, xsj;
+  su2double xs[3][3], ad[3][3];
   
   /*--- Shape functions ---*/
   
@@ -235,15 +235,15 @@ double CGalerkin_FEA::ShapeFunc_Tetra(double Xi, double Eta, double Zeta, double
   
 }
 
-double CGalerkin_FEA::ShapeFunc_Pyram(double Xi, double Eta, double Zeta, double CoordCorners[8][3], double DShapeFunction[8][4]) {
+su2double CGalerkin_FEA::ShapeFunc_Pyram(su2double Xi, su2double Eta, su2double Zeta, su2double CoordCorners[8][3], su2double DShapeFunction[8][4]) {
   
   int i, j, k;
-  double c0, c1, c2, xsj;
-  double xs[3][3], ad[3][3];
+  su2double c0, c1, c2, xsj;
+  su2double xs[3][3], ad[3][3];
   
   /*--- Shape functions ---*/
   
-  double Den = 4.0*(1.0 - Mu);
+  su2double Den = 4.0*(1.0 - Mu);
   
   DShapeFunction[0][3] = (-Xi+Eta+Mu-1.0)*(-Xi-Eta+Mu-1.0)/Den;
   DShapeFunction[1][3] = (-Xi-Eta+Mu-1.0)*(Xi-Eta+Mu-1.0)/Den;
@@ -323,11 +323,11 @@ double CGalerkin_FEA::ShapeFunc_Pyram(double Xi, double Eta, double Zeta, double
   
 }
 
-double CGalerkin_FEA::ShapeFunc_Prism(double Xi, double Eta, double Zeta, double CoordCorners[8][3], double DShapeFunction[8][4]) {
+su2double CGalerkin_FEA::ShapeFunc_Prism(su2double Xi, su2double Eta, su2double Zeta, su2double CoordCorners[8][3], su2double DShapeFunction[8][4]) {
   
   int i, j, k;
-  double c0, c1, c2, xsj;
-  double xs[3][3], ad[3][3];
+  su2double c0, c1, c2, xsj;
+  su2double xs[3][3], ad[3][3];
   
   /*--- Shape functions ---*/
   
@@ -397,14 +397,14 @@ double CGalerkin_FEA::ShapeFunc_Prism(double Xi, double Eta, double Zeta, double
   
 }
 
-double CGalerkin_FEA::ShapeFunc_Hexa(double Xi, double Eta, double Zeta, double CoordCorners[8][3], double DShapeFunction[8][4]) {
+su2double CGalerkin_FEA::ShapeFunc_Hexa(su2double Xi, su2double Eta, su2double Zeta, su2double CoordCorners[8][3], su2double DShapeFunction[8][4]) {
   
   int i, j, k;
-  double a0, a1, a2, c0, c1, c2, xsj;
-  double ss[3], xs[3][3], ad[3][3];
-  double s0[8] = {-0.5, 0.5, 0.5,-0.5,-0.5, 0.5,0.5,-0.5};
-  double s1[8] = {-0.5,-0.5, 0.5, 0.5,-0.5,-0.5,0.5, 0.5};
-  double s2[8] = {-0.5,-0.5,-0.5,-0.5, 0.5, 0.5,0.5, 0.5};
+  su2double a0, a1, a2, c0, c1, c2, xsj;
+  su2double ss[3], xs[3][3], ad[3][3];
+  su2double s0[8] = {-0.5, 0.5, 0.5,-0.5,-0.5, 0.5,0.5,-0.5};
+  su2double s1[8] = {-0.5,-0.5, 0.5, 0.5,-0.5,-0.5,0.5, 0.5};
+  su2double s2[8] = {-0.5,-0.5,-0.5,-0.5, 0.5, 0.5,0.5, 0.5};
   
   ss[0] = Xi;
   ss[1] = Eta;
@@ -471,14 +471,14 @@ double CGalerkin_FEA::ShapeFunc_Hexa(double Xi, double Eta, double Zeta, double 
   
 }
 
-void CGalerkin_FEA::SetFEA_StiffMatrix2D(double **StiffMatrix_Elem, double CoordCorners[8][3], unsigned short nNodes) {
+void CGalerkin_FEA::SetFEA_StiffMatrix2D(su2double **StiffMatrix_Elem, su2double CoordCorners[8][3], unsigned short nNodes) {
   
-  double B_Matrix[3][8], D_Matrix[3][3], Aux_Matrix[8][3];
-  double Xi = 0.0, Eta = 0.0, Det = 0.0;
+  su2double B_Matrix[3][8], D_Matrix[3][3], Aux_Matrix[8][3];
+  su2double Xi = 0.0, Eta = 0.0, Det = 0.0;
   unsigned short iNode, iVar, jVar, kVar, iGauss, nGauss = 0;
-  double DShapeFunction[8][4] = {{0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0},
+  su2double DShapeFunction[8][4] = {{0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0},
     {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}};
-  double Location[4][3], Weight[4];
+  su2double Location[4][3], Weight[4];
   unsigned short nVar = 2;
   
   /*--- Integration formulae from "Shape functions and points of
@@ -559,14 +559,14 @@ void CGalerkin_FEA::SetFEA_StiffMatrix2D(double **StiffMatrix_Elem, double Coord
   
 }
 
-void CGalerkin_FEA::SetFEA_StiffMatrix3D(double **StiffMatrix_Elem, double CoordCorners[8][3], unsigned short nNodes) {
+void CGalerkin_FEA::SetFEA_StiffMatrix3D(su2double **StiffMatrix_Elem, su2double CoordCorners[8][3], unsigned short nNodes) {
   
-  double B_Matrix[6][24], D_Matrix[6][6], Aux_Matrix[24][6];
-  double Xi = 0.0, Eta = 0.0, Det = 0.0;
+  su2double B_Matrix[6][24], D_Matrix[6][6], Aux_Matrix[24][6];
+  su2double Xi = 0.0, Eta = 0.0, Det = 0.0;
   unsigned short iNode, iVar, jVar, kVar, iGauss, nGauss = 0;
-  double DShapeFunction[8][4] = {{0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0},
+  su2double DShapeFunction[8][4] = {{0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0},
     {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}};
-  double Location[8][3], Weight[8];
+  su2double Location[8][3], Weight[8];
   
   unsigned short nVar = 3;
   
