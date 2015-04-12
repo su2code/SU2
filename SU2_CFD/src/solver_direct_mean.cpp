@@ -4,7 +4,7 @@
  * \author F. Palacios, T. Economon
  * \version 3.2.9 "eagle"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
+ * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
@@ -2153,17 +2153,17 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
       Density_Ref       = 1.0;
       Temperature_Ref   = 1.0;
     }
-    else if (config->GetRef_NonDim() == FREESTEAM_PRESS_EQ_ONE) {
+    else if (config->GetRef_NonDim() == FREESTREAM_PRESS_EQ_ONE) {
       Pressure_Ref      = Pressure_FreeStream;     // Pressure_FreeStream = 1.0
       Density_Ref       = Density_FreeStream;      // Density_FreeStream = 1.0
       Temperature_Ref   = Temperature_FreeStream;  // Temperature_FreeStream = 1.0
     }
-    else if (config->GetRef_NonDim() == FREESTEAM_VEL_EQ_MACH) {
+    else if (config->GetRef_NonDim() == FREESTREAM_VEL_EQ_MACH) {
       Pressure_Ref      = Gamma*Pressure_FreeStream; // Pressure_FreeStream = 1.0/Gamma
       Density_Ref       = Density_FreeStream;        // Density_FreeStream = 1.0
       Temperature_Ref   = Temperature_FreeStream;    // Temp_FreeStream = 1.0
     }
-    else if (config->GetRef_NonDim() == FREESTEAM_VEL_EQ_ONE) {
+    else if (config->GetRef_NonDim() == FREESTREAM_VEL_EQ_ONE) {
       Pressure_Ref      = Mach*Mach*Gamma*Pressure_FreeStream; // Pressure_FreeStream = 1.0/(Gamma*(M_inf)^2)
       Density_Ref       = Density_FreeStream;        // Density_FreeStream = 1.0
       Temperature_Ref   = Temperature_FreeStream;    // Temp_FreeStream = 1.0
