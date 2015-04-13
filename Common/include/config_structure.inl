@@ -1172,3 +1172,7 @@ inline void CConfig::SetNonphysical_Reconstr(unsigned long val_nonphys_reconstr)
 inline unsigned long CConfig::GetNonphysical_Reconstr(void) { return Nonphys_Reconstr; }
 
 inline unsigned short CConfig::GetConsole_Output_Verb(void) { return Console_Output_Verb; }
+
+inline unsigned short CConfig::GetDirectDiff(){ return DirectDiff;}
+
+inline unsigned short CConfig::GetDirectDiff_Var(){ return DirectDiff_Var;}

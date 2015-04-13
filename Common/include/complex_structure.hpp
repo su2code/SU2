@@ -64,7 +64,8 @@ public:
   /* --- To get rid of some ambiguities, we need to reimplement some operators
    * (although they are already implemented for std::complex). --- */
 
-  /* --- Comparison operators --- */
+  /* --- Comparison operators (they are defined by comparing only the real parts
+   * as we assume a very small imag. step ( < 1e-50)--- */
 
   template<typename T, typename Z>
   friend bool operator==(const Z&, const T&);

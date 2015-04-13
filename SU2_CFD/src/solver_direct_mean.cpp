@@ -108,6 +108,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   bool adjoint = config->GetAdjoint();
   string filename = config->GetSolution_FlowFileName();
 
+  bool direct_derivatives = config->GetDirectDiff() != NO_DIRECTDIFF;
+
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -395,6 +397,29 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   Energy_Inf      = config->GetEnergy_FreeStreamND();
   Temperature_Inf = config->GetTemperature_FreeStreamND();
   Mach_Inf        = config->GetMach();
+
+  /*--- Initialize the secondary values for direct derivative approxiations ---*/
+
+  if (direct_derivatives){
+    switch(config->GetDirectDiff_Var()){
+      case DENSITY_DIRECTDIFF:
+        SU2_TYPE::SetDerivative(Density_Inf, 1.0);
+        break;
+      case PRESSURE_DIRECTDIFF:
+        SU2_TYPE::SetDerivative(Pressure_Inf, 1.0);
+        break;
+      case TEMPERATURE_DIRECTDIFF:
+        SU2_TYPE::SetDerivative(Temperature_Inf, 1.0);
+        break;
+      case MACH_DIRECTDIFF: case AOA_DIRECTDIFF:
+      case SIDESLIP_DIRECTDIFF: case REYNOLDS_DIRECTDIFF:
+      case TURB2LAM_DIRECTDIFF:
+        /*--- Already done in postprocessing of config ---*/
+        break;
+      default:
+        break;
+      }
+  }
 
   /*--- Initializate fan face pressure, fan face mach number, and mass flow rate ---*/
 
@@ -1955,9 +1980,6 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
   su2double Alpha            = config->GetAoA()*PI_NUMBER/180.0;
   su2double Beta             = config->GetAoS()*PI_NUMBER/180.0;
   su2double Mach             = config->GetMach();
-#ifdef COMPLEX_TYPE
-  SU2_TYPE::SetSecondary(Mach, 1e-50);
-#endif
   su2double Reynolds         = config->GetReynolds();
   bool compressible       = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible     = (config->GetKind_Regime() == INCOMPRESSIBLE);
@@ -10456,6 +10478,8 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   bool adjoint = config->GetAdjoint();
   string filename = config->GetSolution_FlowFileName();
 
+  bool direct_derivatives = config->GetDirectDiff() != NO_DIRECTDIFF;
+
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -10794,6 +10818,33 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   Prandtl_Turb    = config->GetPrandtl_Turb();
   Tke_Inf         = config->GetTke_FreeStreamND();
   
+  /*--- Initialize the secondary values for direct derivative approxiations ---*/
+
+  if (direct_derivatives){
+
+    switch(config->GetDirectDiff_Var()){
+      case DENSITY_DIRECTDIFF:
+        SU2_TYPE::SetDerivative(Density_Inf, 1.0);
+        break;
+      case PRESSURE_DIRECTDIFF:
+        SU2_TYPE::SetDerivative(Pressure_Inf, 1.0);
+        break;
+      case TEMPERATURE_DIRECTDIFF:
+        SU2_TYPE::SetDerivative(Temperature_Inf, 1.0);
+        break;
+      case VISCOSITY_DIRECTDIFF:
+        SU2_TYPE::SetDerivative(Viscosity_Inf, 1.0);
+        break;
+      case MACH_DIRECTDIFF: case AOA_DIRECTDIFF:
+      case SIDESLIP_DIRECTDIFF: case REYNOLDS_DIRECTDIFF:
+      case TURB2LAM_DIRECTDIFF:
+        /*--- Already done in postprocessing of config ---*/
+        break;
+      default:
+        break;
+      }
+  }
+
   /*--- Initializate fan face pressure, fan face mach number, and mass flow rate ---*/
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {

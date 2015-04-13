@@ -1,6 +1,6 @@
 /*!
- * \file datatype_structure.inl
- * \brief In-Line subroutines of the <i>datatype_structure.hpp</i> file.
+ * \file dataype_structure.cpp
+ * \brief Main subroutines for the datatype structures.
  * \author T. Albring
  * \version 3.2.9 "eagle"
  *
@@ -28,56 +28,9 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
 
-inline void CTypeWrapper::SetPrimary(su2double& data, const double &val){
-  data = val;
-}
-
-
-inline double CTypeWrapper::GetPrimary(su2double& data){
-  return data;
-}
-
-inline void CTypeWrapper::SetSecondary(su2double& data, const double &val){
-
-}
-
-inline double CTypeWrapper::GetDerivative(su2double& data){
-  return 0.0;
-}
-
-inline double CTypeWrapper::GetSecondary(su2double& data){
-  return 0.0;
-}
-
-inline void CTypeWrapper::SetDerivative(su2double& data, const double &val){}
+#include "../include/datatype_structure.hpp"
 
 #ifdef COMPLEX_TYPE
-inline void CComplexTypeWrapper::SetPrimary(su2double& data, const double &val){
-  data = su2double(val, data.imag());
-}
-
-
-inline double CComplexTypeWrapper::GetPrimary(su2double& data){
-  return data.real();
-}
-
-inline void CComplexTypeWrapper::SetSecondary(su2double& data, const double &val){
-  data = su2double(data.real(), val);
-}
-
-inline double CComplexTypeWrapper::GetSecondary(su2double& data){
-  return data.imag();
-}
-
-inline double CComplexTypeWrapper::GetDerivative(su2double& data){
-  return data.imag()/Seeding;
-}
-
-inline void CComplexTypeWrapper::SetDerivative(su2double& data, const double &val){
-  data = su2double(data.real(), val*Seeding);
-}
-
-
+double CComplexTypeWrapper::Seeding = 1e-50;
 #endif

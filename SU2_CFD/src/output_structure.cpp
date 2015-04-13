@@ -3756,6 +3756,8 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   bool output_massflow = (config->GetKind_ObjFunc() == MASS_FLOW_RATE);
   if (config->GetnMarker_Monitoring() > 1) output_per_surface = true;
   
+  bool direct_derivatives = config->GetDirectDiff() != NO_DIRECTDIFF;
+
   bool isothermal = false;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
     if ((config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             ) ||
@@ -3806,7 +3808,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   char Cp_inverse_design[]= ",\"Cp_Diff\"";
   char Heat_inverse_design[]= ",\"HeatFlux_Diff\"";
   char mass_flow_rate[] = ",\"MassFlowRate\"";
-
+  char d_flow_coeff[] = ",\"D(CLift)\",\"D(CDrag)\",\"D(CSideForce)\",\"D(CMx)\",\"D(CMy)\",\"D(CMz)\",\"C(DFx)\",\"D(CFy)\",\"D(CFz)\",\"D(CL/CD)\"";
   
   /* Find the markers being monitored and create a header for them */
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
@@ -3872,6 +3874,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
       if (output_per_surface) ConvHist_file[0] << monitoring_coeff;
       if (output_1d) ConvHist_file[0] << oneD_outputs;
       if (output_massflow)  ConvHist_file[0]<< mass_flow_rate;
+      if (direct_derivatives) ConvHist_file[0] << d_flow_coeff;
       ConvHist_file[0] << end;
       if (freesurface) {
         ConvHist_file[0] << begin << flow_coeff << free_surface_coeff;
@@ -3982,7 +3985,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     adjoint_coeff[1000], flow_resid[1000], adj_flow_resid[1000], turb_resid[1000], trans_resid[1000],
     adj_turb_resid[1000], resid_aux[1000], levelset_resid[1000], adj_levelset_resid[1000], wave_coeff[1000],
     heat_coeff[1000], fea_coeff[1000], wave_resid[1000], heat_resid[1000], fea_resid[1000], end[1000],
-    oneD_outputs[1000], massflow_outputs[1000];
+    oneD_outputs[1000], massflow_outputs[1000], d_direct_coeff[1000];
 
     su2double dummy = 0.0, *Coord;
     unsigned short iVar, iMarker, iMarker_Monitoring;
@@ -4025,6 +4028,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     bool output_per_surface = false;
     if (config[val_iZone]->GetnMarker_Monitoring() > 1) output_per_surface = true;
 
+    bool direct_derivatives = config[val_iZone]->GetDirectDiff() != NO_DIRECTDIFF;
 
 
     /*--- Initialize variables to store information from all domains (direct solution) ---*/
@@ -4039,6 +4043,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     su2double Total_Sens_Geo = 0.0, Total_Sens_Mach = 0.0, Total_Sens_AoA = 0.0;
     su2double Total_Sens_Press = 0.0, Total_Sens_Temp = 0.0;
     
+    /*--- Initialize variables to store information from all domains (direct differentiation) ---*/
+    su2double D_Total_CLift = 0.0, D_Total_CDrag = 0.0, D_Total_CSideForce = 0.0, D_Total_CMx = 0.0, D_Total_CMy = 0.0, D_Total_CMz = 0.0, D_Total_CEff = 0.0,
+    D_Total_CEquivArea = 0.0, D_Total_CNearFieldOF = 0.0, D_Total_CFx = 0.0, D_Total_CFy = 0.0, D_Total_CFz = 0.0, D_Total_CMerit = 0.0,
+    D_Total_CT = 0.0, D_Total_CQ = 0.0, D_Total_CFreeSurface = 0.0, D_Total_CWave = 0.0, D_Total_CHeat = 0.0, D_Total_CpDiff = 0.0, D_Total_HeatFluxDiff = 0.0,
+    D_Total_CFEA = 0.0, D_Total_Heat = 0.0, D_Total_MaxHeat = 0.0, D_Total_Mdot = 0.0;
+
     /*--- Residual arrays ---*/
     su2double *residual_flow         = NULL,
     *residual_turbulent    = NULL,
@@ -4149,6 +4159,19 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         Total_CFx         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFx();
         Total_CFy         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFy();
         Total_CFz         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFz();
+
+        if (direct_derivatives){
+          D_Total_CLift       = SU2_TYPE::GetDerivative(Total_CLift);
+          D_Total_CDrag       = SU2_TYPE::GetDerivative(Total_CDrag);
+          D_Total_CSideForce  = SU2_TYPE::GetDerivative(Total_CSideForce);
+          D_Total_CEff        = SU2_TYPE::GetDerivative(Total_CEff);
+          D_Total_CMx         = SU2_TYPE::GetDerivative(Total_CMx);
+          D_Total_CMy         = SU2_TYPE::GetDerivative(Total_CMy);
+          D_Total_CMz         = SU2_TYPE::GetDerivative(Total_CMz);
+          D_Total_CFx         = SU2_TYPE::GetDerivative(Total_CFx);
+          D_Total_CFy         = SU2_TYPE::GetDerivative(Total_CFy);
+          D_Total_CFz         = SU2_TYPE::GetDerivative(Total_CFz);
+        }
 
         if (freesurface) {
           Total_CFreeSurface = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFreeSurface();
@@ -4437,6 +4460,11 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             SPRINTF (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f",
                      Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy,
                      Total_CFz, Total_CEff);
+            if (direct_derivatives){
+              SPRINTF (d_direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f",
+                       D_Total_CLift, D_Total_CDrag, D_Total_CSideForce, D_Total_CMx, D_Total_CMy, D_Total_CMz, D_Total_CFx, D_Total_CFy,
+                       D_Total_CFz, D_Total_CEff);
+            }
             if (isothermal)
               SPRINTF (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx, Total_CMy,
                        Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_Heat, Total_MaxHeat);
@@ -4662,6 +4690,49 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               
               cout << "-------------------------------------------------------------------------" << endl;
 
+              if (direct_derivatives){
+                cout << endl << "---------------------- Direct Differentation Summary --------------------" << endl;
+                cout << "Coefficients are differentiated with respect to ";
+                switch (config[val_iZone]->GetDirectDiff_Var()) {
+                  case MACH_DIRECTDIFF:
+                    cout << "Mach number." << endl;
+                    break;
+                  case AOA_DIRECTDIFF:
+                    cout << "AoA." << endl;
+                    break;
+                  case SIDESLIP_DIRECTDIFF:
+                    cout << "AoS." << endl;
+                    break;
+                  case REYNOLDS_DIRECTDIFF:
+                    cout << "Reynolds number." << endl;
+                    break;
+                  case TURB2LAM_DIRECTDIFF:
+                    cout << "Turb/Lam ratio." << endl;
+                    break;
+                  case PRESSURE_DIRECTDIFF:
+                    cout << "Freestream Pressure." << endl;
+                    break;
+                  case TEMPERATURE_DIRECTDIFF:
+                    cout << "Freestream Temperature." << endl;
+                    break;
+                  case DENSITY_DIRECTDIFF:
+                    cout << "Freestream Density." << endl;
+                    break;
+                  case VISCOSITY_DIRECTDIFF:
+                    cout << "Freestream Viscosity." << endl;
+                    break;
+                  default:
+                    break;
+                  }
+
+                cout << "    D_CLift(Total)" << "    D_CDrag(Total)" << "      D_CMz(Total)" <<"     D_CEff(Total)" << endl;
+                cout.width(18); cout << D_Total_CLift;
+                cout.width(18); cout << D_Total_CDrag;
+                cout.width(18); cout << D_Total_CMz;
+                cout.width(18); cout << D_Total_CEff;
+                cout << endl << "-------------------------------------------------------------------------" << endl;
+                cout << endl;
+              }
               break;
 
             case TNE2_EULER: case TNE2_NAVIER_STOKES:
@@ -4948,6 +5019,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             if (output_per_surface) ConvHist_file[0] << monitoring_coeff;
             if (output_1d) ConvHist_file[0] << oneD_outputs;
             if (output_massflow) ConvHist_file[0] << massflow_outputs;
+            if (direct_derivatives) ConvHist_file[0] << d_direct_coeff;
             ConvHist_file[0] << end;
             ConvHist_file[0].flush();
           }
@@ -4976,11 +5048,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             cout.setf(ios::scientific, ios::floatfield);
             cout << Total_CNearFieldOF; }
           else if (freesurface) { cout.width(15); cout << Total_CLift; cout.width(15); cout << Total_CFreeSurface; }
-          else { cout.width(15); cout << min(10000.0, max(-10000.0, Total_CLift)); cout.width(15); cout << min(10000.0, max(-10000.0, Total_CDrag));
-#ifdef COMPLEX_TYPE
-              cout.width(15); cout << SU2_TYPE::GetSecondary(Total_CDrag)/1e-50;
-#endif
-            }
+          else { cout.width(15); cout << min(10000.0, max(-10000.0, Total_CLift)); cout.width(15); cout << min(10000.0, max(-10000.0, Total_CDrag));}
           if (aeroelastic) {
             cout.setf(ios::scientific, ios::floatfield);
             cout.width(15); cout << aeroelastic_plunge[0]; //Only output the first marker being monitored to the console.
@@ -4999,6 +5067,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             if (output_per_surface) ConvHist_file[0] << monitoring_coeff;
             if (output_1d) ConvHist_file[0] << oneD_outputs;
             if (output_massflow) ConvHist_file[0] << massflow_outputs;
+            if (direct_derivatives) ConvHist_file[0] << d_direct_coeff;
             ConvHist_file[0] << end;
             ConvHist_file[0].flush();
           }
