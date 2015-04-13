@@ -31,6 +31,7 @@
 
 #include "../include/mpi_structure.hpp"
 
+
 #ifdef HAVE_MPI
 
 #ifdef COMPLEX_TYPE

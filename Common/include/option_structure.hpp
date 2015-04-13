@@ -1129,6 +1129,46 @@ static const map<string, ENUM_DEFORM_STIFFNESS> Deform_Stiffness_Map = CCreateMa
 ("INVERSE_VOLUME", INVERSE_VOLUME)
 ("WALL_DISTANCE", WALL_DISTANCE);
 
+/*!
+ * \brief The direct differentation method.
+ */
+enum ENUM_DIRECTDIFF {
+  NO_DIRECTDIFF = 0,
+  COMPLEX_STEP = 1,
+  AD = 2
+};
+static const map<string, ENUM_DIRECTDIFF> DirectDiff_Map = CCreateMap<string, ENUM_DIRECTDIFF>
+("NONE", NO_DIRECTDIFF)
+("COMPLEX_STEP", COMPLEX_STEP)
+("AD", AD);
+
+/*!
+ * \brief The direct differentation variables.
+ */
+enum ENUM_DIRECTDIFF_VAR {
+  MACH_DIRECTDIFF = 1,   /*!< \brief Derivative with respect to the mach number */
+  AOA_DIRECTDIFF = 2,		 /*!< \brief Derivative with respect to the angle of attack */
+  PRESSURE_DIRECTDIFF = 3, /*!< \brief Derivative with respect to the freestream pressure */
+  TEMPERATURE_DIRECTDIFF = 4,/*!< \brief Derivative with respect to the freestream temperature */
+  DENSITY_DIRECTDIFF = 5,
+  TURB2LAM_DIRECTDIFF = 6,
+  SIDESLIP_DIRECTDIFF = 7,
+  VISCOSITY_DIRECTDIFF = 8,
+  REYNOLDS_DIRECTDIFF = 9
+};
+static const map<string, ENUM_DIRECTDIFF_VAR> DirectDiff_Var_Map = CCreateMap<string, ENUM_DIRECTDIFF_VAR>
+("MACH", MACH_DIRECTDIFF)
+("AOA", AOA_DIRECTDIFF)
+("PRESSURE", PRESSURE_DIRECTDIFF)
+("TEMPERATURE", TEMPERATURE_DIRECTDIFF)
+("DENSITY", DENSITY_DIRECTDIFF)
+("TURB2LAM", TURB2LAM_DIRECTDIFF)
+("SIDESLIP", SIDESLIP_DIRECTDIFF)
+("VISCOSITY", VISCOSITY_DIRECTDIFF)
+("REYNOLDS", REYNOLDS_DIRECTDIFF);
+
+
+
 /* END_CONFIG_ENUMS */
 
 class COptionBase{

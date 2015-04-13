@@ -1197,6 +1197,15 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Surface continuity at the intersection with the FFD */
   addEnumOption("FFD_CONTINUITY", FFD_Continuity, Continuity_Map, DERIVATIVE_2ND);
 
+  /*--- Options for the direct differentiation methods ---*/
+  /*!\par CONFIG_CATEGORY: Direct Differentation options\ingroup Config*/
+
+  /* DESCRIPTION: Direct differentiation mode */
+  addEnumOption("DIRECT_DIFF", DirectDiff, DirectDiff_Map, NO_DIRECTDIFF);
+
+  /* DESCRIPTION: Direct differentiation mode */
+  addEnumOption("DIRECT_DIFF_VAR", DirectDiff_Var, DirectDiff_Var_Map, MACH_DIRECTDIFF);
+
   /*--- options that are used in the python optimization scripts. These have no effect on the c++ toolsuite ---*/
   /*!\par CONFIG_CATEGORY:Python Options\ingroup Config*/
 
@@ -3007,6 +3016,34 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     
   }
   
+  if (DirectDiff != NO_DIRECTDIFF){
+
+    /*--- Initialize the imaginary step --- */
+    switch (DirectDiff_Var) {
+      case MACH_DIRECTDIFF:
+        SU2_TYPE::SetDerivative(Mach, 1.0);
+        break;
+      case AOA_DIRECTDIFF:
+        SU2_TYPE::SetDerivative(AoA, 1.0);
+        break;
+      case SIDESLIP_DIRECTDIFF:
+        SU2_TYPE::SetDerivative(AoS, 1.0);
+        break;
+      case REYNOLDS_DIRECTDIFF:
+        SU2_TYPE::SetDerivative(Reynolds, 1.0);
+        break;
+      case TURB2LAM_DIRECTDIFF:
+       SU2_TYPE::SetDerivative(Turb2LamViscRatio_FreeStream, 1.0);
+        break;
+      case PRESSURE_DIRECTDIFF: case TEMPERATURE_DIRECTDIFF:
+      case DENSITY_DIRECTDIFF: case VISCOSITY_DIRECTDIFF:
+        /*--- Done in the specific solver ---*/
+        break;
+      default:
+        break;
+      }
+  }
+
   /*--- Check for 2nd order w/ limiting for JST and correct ---*/
   
   if ((Kind_ConvNumScheme_Flow == SPACE_CENTERED) && (Kind_Centered_Flow == JST) && (SpatialOrder_Flow == SECOND_ORDER_LIMITER))

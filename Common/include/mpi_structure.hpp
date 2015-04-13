@@ -107,7 +107,12 @@ protected:
   static char* buff;
 
 };
-
+/*!
+ * \class CComplexMPIWrapper
+ * \brief Class for defining the MPI wrapper routines for the complex datatype.
+ * \author T. Albring
+ * \version 3.2.9 "eagle"
+ */
 #ifdef COMPLEX_TYPE
 class CComplexMPIWrapper : public CMPIWrapper{
 public:
