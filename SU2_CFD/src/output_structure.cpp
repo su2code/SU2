@@ -2113,7 +2113,8 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         if (!config->GetLow_MemoryOutput()) {
           
           if (config->GetWrt_Limiters()) {
-            Buffer_Send_Vol[jPoint] = solver[CurrentIndex]->node[iPoint]->GetLimiter_Primitive(jVar);
+            //Buffer_Send_Vol[jPoint] = solver[CurrentIndex]->node[iPoint]->GetLimiter_Primitive(jVar);
+              Buffer_Send_Vol[jPoint] = solver[CurrentIndex]->node[iPoint]->GetSensor();
           }
           
           if (config->GetWrt_Residuals()) {

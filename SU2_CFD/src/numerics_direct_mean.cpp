@@ -77,6 +77,7 @@ void CCentJST_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_
   Energy_i = Enthalpy_i - Pressure_i/Density_i;   Energy_j = Enthalpy_j - Pressure_j/Density_j;
   
   sq_vel_i = 0.0; sq_vel_j = 0.0;
+    
   for (iDim = 0; iDim < nDim; iDim++) {
     Velocity_i[iDim] = V_i[iDim+1];
     Velocity_j[iDim] = V_j[iDim+1];
@@ -97,8 +98,10 @@ void CCentJST_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_
   MeanDensity = 0.5*(Density_i+Density_j);
   MeanPressure = 0.5*(Pressure_i+Pressure_j);
   MeanEnthalpy = 0.5*(Enthalpy_i+Enthalpy_j);
+  
   for (iDim = 0; iDim < nDim; iDim++)
-    MeanVelocity[iDim] =  0.5*(Velocity_i[iDim]+Velocity_j[iDim]);
+  MeanVelocity[iDim] =  0.5*(Velocity_i[iDim]+Velocity_j[iDim]);
+  
   MeanEnergy = 0.5*(Energy_i+Energy_j);
   
   /*--- Get projected flux tensor ---*/
@@ -179,8 +182,15 @@ void CCentJST_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_
   
   /*--- Compute viscous part of the residual ---*/
   
-  for (iVar = 0; iVar < nVar; iVar++)
+  for (iVar = 0; iVar < nVar; iVar++){
+    //cout << "iVar " << iVar << "  art dif=  " << (Epsilon_2*Diff_U[iVar] - Epsilon_4*Diff_Lapl[iVar])*StretchingFactor*MeanLambda << "  flux =   " <<  val_residual[iVar] <<  endl;
+    
     val_residual[iVar] += (Epsilon_2*Diff_U[iVar] - Epsilon_4*Diff_Lapl[iVar])*StretchingFactor*MeanLambda;
+    
+  }
+  
+  
+  
   
   /*--- Jacobian computation ---*/
   

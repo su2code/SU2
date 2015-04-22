@@ -2975,18 +2975,19 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
   
   if ((shock_tube) && (ExtIter == 0))
   {
+      
     
     /* Set the variable to store the coordinates of each point */
     Solution = new double[nVar];
     double Xcoord, Xdiaf = 0.5;
     
     /* Set the left and right conditions for the Sod Shock tube */
-    double Pressure_l = Pressure_Inf;
-    double density_l = Density_Inf;
+    double Pressure_l = 101325;//Pressure_Inf;
+    double density_l = 1.225;//Density_Inf;
     double vel_l = 0.0;
    
-    double Pressure_r = Pressure_Inf*0.1;
-    double density_r = Density_Inf*0.125;
+    double Pressure_r = Pressure_l*0.1;
+    double density_r = density_l*0.125;
     double vel_r = 0.0;
 
     for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
@@ -4119,6 +4120,7 @@ void CEulerSolver::SetDissipation_Switch(CGeometry *geometry, CConfig *config) {
   
   for (iPoint = 0; iPoint < nPointDomain; iPoint++)
     node[iPoint]->SetSensor(fabs(iPoint_UndLapl[iPoint]) / jPoint_UndLapl[iPoint]);
+    
 
   /*--- MPI parallelization ---*/
   
