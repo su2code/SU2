@@ -118,14 +118,14 @@ CGeometry::~CGeometry(void) {
   
   if (edge != NULL) {
     for (iEdge = 0; iEdge < nEdge; iEdge ++)
-      if (edge[iEdge] != NULL) delete edge[iEdge];
+      if (edge[iEdge] != NULL) delete [] edge[iEdge];
     delete[] edge;
   }
   
   if (vertex != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-        if (vertex[iMarker][iVertex] != NULL) delete vertex[iMarker][iVertex];
+        if (vertex[iMarker][iVertex] != NULL) delete [] vertex[iMarker][iVertex];
       }
     }
     delete[] vertex;
@@ -134,7 +134,7 @@ CGeometry::~CGeometry(void) {
   if (newBound != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
-        if (newBound[iMarker][iElem_Bound] != NULL) delete newBound[iMarker][iElem_Bound];
+        if (newBound[iMarker][iElem_Bound] != NULL) delete [] newBound[iMarker][iElem_Bound];
       }
     }
     delete[] newBound;
@@ -841,6 +841,7 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
   
   /*--- Allocate surface curvature ---*/
   K = new su2double [nPoint];
+  for (iPoint = 0; iPoint < nPoint; iPoint++) K[iPoint] = 0.0;
   
   if (nDim == 2) {
     
@@ -883,12 +884,11 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
               radius = sqrt(((X2-X1)*(X2-X1) + (Y2-Y1)*(Y2-Y1))*
                             ((X2-X3)*(X2-X3) + (Y2-Y3)*(Y2-Y3))*
                             ((X3-X1)*(X3-X1) + (Y3-Y1)*(Y3-Y1)))/
-              (2.0*fabs(X1*Y2+X2*Y3+X3*Y1-X1*Y3-X2*Y1-X3*Y2));
+              (2.0*fabs(X1*Y2+X2*Y3+X3*Y1-X1*Y3-X2*Y1-X3*Y2)+EPS);
               
               K[iPoint] = 1.0/radius;
               node[iPoint]->SetCurvature(K[iPoint]);
             }
-            
           }
           
         }
@@ -1050,7 +1050,7 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
     delete [] Check_Edge;
     
     for (iPoint = 0; iPoint < nPoint; iPoint++)
-      delete NormalMeanK[iPoint];
+      delete [] NormalMeanK[iPoint];
     delete [] NormalMeanK;
     
   }
@@ -1201,7 +1201,8 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
           Dist += (Coord[iDim]-Buffer_Receive_Coord[(iProcessor*MaxLocalVertex+iVertex)*nDim+iDim])*
           (Coord[iDim]-Buffer_Receive_Coord[(iProcessor*MaxLocalVertex+iVertex)*nDim+iDim]);
         }
-        Dist = sqrt(Dist);
+        if (Dist!=0.0) Dist = sqrt(Dist);
+        else Dist = 0.0;
         if (Dist < MinDist) MinDist = Dist;
       }
     }
@@ -2520,7 +2521,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
     delete[] Global2Local_Point;
     
     for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
-      delete VertexIn[iMarker];
+      delete [] VertexIn[iMarker];
     delete[] VertexIn;
     
   }
@@ -5398,7 +5399,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
     delete [] Marker_All_TagBound_Copy;
     delete [] PointIn;
     for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
-      delete VertexIn[iMarker];
+      delete [] VertexIn[iMarker];
     delete[] VertexIn;
   }
   
@@ -5788,19 +5789,19 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
   
   delete [] DomainSendCount;
   for (iDomain = 0; iDomain < nDomain; iDomain++)
-    delete DomainSendMarkers[iDomain];
+    delete [] DomainSendMarkers[iDomain];
   delete[] DomainSendMarkers;
   
   delete [] DomainReceiveCount;
   for (iDomain = 0; iDomain < nDomain; iDomain++)
-    delete DomainReceiveMarkers[iDomain];
+    delete [] DomainReceiveMarkers[iDomain];
   delete[] DomainReceiveMarkers;
   
   /*--- Deallocate the bound variables ---*/
   
   for (iMarker = 0; iMarker < nMarker; iMarker++)
-    delete bound[iMarker];
-  delete bound;
+    delete [] bound[iMarker];
+  delete [] bound;
   
   /*--- Allocate the new bound variables, and set the number of markers ---*/
   
@@ -14460,7 +14461,7 @@ CPeriodicGeometry::~CPeriodicGeometry(void) {
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
-      if (newBoundPer[iMarker][iElem_Bound] != NULL) delete newBoundPer[iMarker][iElem_Bound];
+      if (newBoundPer[iMarker][iElem_Bound] != NULL) delete [] newBoundPer[iMarker][iElem_Bound];
     }
   }
   if (newBoundPer != NULL) delete[] newBoundPer;

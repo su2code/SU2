@@ -1664,7 +1664,7 @@ void SetTimeSpectral_Velocities(CGeometry ***geometry_container,
   
 	/*--- find the highest-degree trigonometric polynomial allowed by the Nyquist criterion---*/
 	su2double high_degree = (nZone-1)/2.0;
-	int highest_degree = (int)(high_degree);
+  int highest_degree = SU2_TYPE::Int(high_degree);
   
 	/*--- allocate dynamic memory for a given point's coordinates ---*/
 	su2double **coords = new su2double *[nZone];

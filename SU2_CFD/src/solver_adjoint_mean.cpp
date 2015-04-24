@@ -1198,7 +1198,7 @@ void CAdjEulerSolver::SetIntBoundary_Jump(CGeometry *geometry, CSolver **solver_
       
       if (nPointNearField == 0) {
         is >> data; // The first column is related with the coordinate
-        while (is.good()) { is >> data; IndexNF.push_back(int(data)); }
+        while (is.good()) { is >> data; IndexNF.push_back(SU2_TYPE::Int(data)); }
       }
       else {
         is >> data; CoordNF.push_back(data); // The first column is the point coordinate
@@ -1278,7 +1278,7 @@ void CAdjEulerSolver::SetIntBoundary_Jump(CGeometry *geometry, CSolver **solver_
                 
                 if ((AngleDouble >= FixAzimuthalLine - 0.1) && (AngleDouble <= FixAzimuthalLine + 0.1)) AngleDouble = FixAzimuthalLine - 0.1;
                 
-                AngleInt = (short) floor(AngleDouble + 0.5);
+                AngleInt = SU2_TYPE::Short(floor(AngleDouble + 0.5));
                 if (AngleInt < 0) AngleInt = 180 + AngleInt;
                 
               }

@@ -1409,7 +1409,7 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
   Debug						= 0;
   IsDouble					= 1;
   NPts						= (INTEGER4)nGlobal_Poin;
-  t							= iExtIter*config->GetDelta_UnstTime();
+  t							= SU2_TYPE::GetPrimary(iExtIter*config->GetDelta_UnstTime());
   KMax						= 0;
   ICellMax					= 0;
   JCellMax					= 0;
@@ -2302,7 +2302,7 @@ void COutput::SetTecplotBinary_SurfaceSolution(CConfig *config, CGeometry *geome
   Debug						= 0;
   IsDouble					= 1;
   NPts						= (INTEGER4)nSurf_Poin;
-  t							= iExtIter*config->GetDelta_UnstTime();
+  t							= SU2_TYPE::GetPrimary(iExtIter*config->GetDelta_UnstTime());
   KMax						= 0;
   ICellMax					= 0;
   JCellMax					= 0;

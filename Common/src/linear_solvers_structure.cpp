@@ -549,7 +549,7 @@ unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x,
     
 		precond(p, phat);
 		mat_vec(phat, v);
-    
+
 		/*--- Calculate step-length alpha ---*/
     
     su2double r_0_v = dotProd(r_0, v);

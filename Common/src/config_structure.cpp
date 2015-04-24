@@ -1201,7 +1201,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\par CONFIG_CATEGORY: Direct Differentation options\ingroup Config*/
 
   /* DESCRIPTION: Direct differentiation mode */
-  addEnumOption("DIRECT_DIFF", DirectDiff, DirectDiff_Map, NO_DIRECTDIFF);
+  addBoolOption("DIRECT_DIFF", DirectDiff, false);
 
   /* DESCRIPTION: Direct differentiation mode */
   addEnumOption("DIRECT_DIFF_VAR", DirectDiff_Var, DirectDiff_Var_Map, MACH_DIRECTDIFF);
@@ -3016,9 +3016,15 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     
   }
   
-  if (DirectDiff != NO_DIRECTDIFF){
-
-    /*--- Initialize the imaginary step --- */
+  if (DirectDiff){
+#if !defined COMPLEX_TYPE && !defined ADOLC_FORWARD_TYPE
+      if (Kind_SU2 == SU2_CFD){
+        cout << "SU2_CFD: DIRECT_DIFF=YES requires forward or complex mode support!" << endl;
+        cout << "Please use or compile correct executables." << endl;
+        exit(EXIT_FAILURE);
+      }
+#endif
+    /*--- Initialize the derivative values --- */
     switch (DirectDiff_Var) {
       case MACH_DIRECTDIFF:
         SU2_TYPE::SetDerivative(Mach, 1.0);

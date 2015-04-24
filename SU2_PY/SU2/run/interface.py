@@ -75,15 +75,26 @@ def CFD(config):
     """ run SU2_CFD
         partitions set by config.NUMBER_PART
     """
-    
     konfig = copy.deepcopy(config)
     
-    tempname = 'config_CFD.cfg'
-    konfig.dump(tempname)
+    direct_diff = konfig.get('DIRECT_DIFF',"NO") == 'YES'
+
+    if direct_diff:
+        tempname = 'config_CFD_DIRECTDIFF.cfg'
+
+        konfig.dump(tempname)
+
+        processes = konfig['NUMBER_PART']
+
+        the_Command = 'SU2_CFD_DIRECTDIFF ' + tempname
+    else:
+        tempname = 'config_CFD.cfg'
+        konfig.dump(tempname)
     
-    processes = konfig['NUMBER_PART']
+        processes = konfig['NUMBER_PART']
     
-    the_Command = 'SU2_CFD ' + tempname
+        the_Command = 'SU2_CFD ' + tempname
+
     the_Command = build_command( the_Command , processes )
     run_command( the_Command )
     

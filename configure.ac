@@ -50,7 +50,7 @@ SU2_SET_COMPILERS
 AM_PROG_CC_C_O
 AC_PROG_RANLIB
 AC_PROG_MKDIR_P
-
+PKG_PROG_PKG_CONFIG
 # --------------------------------------------------------------
 # Check for important type sizes
 # --------------------------------------------------------------
@@ -109,8 +109,14 @@ AC_ARG_ENABLE(complex,
     AS_HELP_STRING([--enable-complex], [build executables with complex datatype (default = no)]),
     [build_COMPLEX="yes"], [build_COMPLEX="no"])
 AC_ARG_ENABLE(normal,
-    AS_HELP_STRING([--disable-complex], [build executables with complex datatype (default = no)]),
+    AS_HELP_STRING([--disable-normal], [build executables with normal datatype (default = yes)]),
     [build_NORMAL=$enableval], [build_NORMAL="yes"])
+AC_ARG_ENABLE(adolc-reverse,
+    AS_HELP_STRING([--enable-adolc-reverse], [build executables with adolc reverse datatype (default = no)]),
+    [build_ADOLC_REVERSE="yes"], [build_ADOLC_REVERSE="no"])
+AC_ARG_ENABLE(adolc-forward,
+    AS_HELP_STRING([--enable-adolc-forward], [build executables with adolc forward datatype (default = no)]),
+    [build_ADOLC_FORWARD="yes"], [build_ADOLC_FORWARD="no"])
 # Check for the old  MPI option so that we can throw an error
 AC_ARG_WITH(MPI,
 AS_HELP_STRING(),
@@ -342,11 +348,54 @@ AC_SUBST([LAPACK_LD])
 ###########################
 # Determine what versions of the code to build
 
+# Complex type
 COMPLEX_CXX="-DCOMPLEX_TYPE"
-AC_SUBST([COMPLEX_CXX])
 
+# direct differentation type
+build_DIRECTDIFF=no
+DIRECTDIFF_CXX=
+DIRECTDIFF_LIBS=
+# reverse mode type
+ADOLC_REVERSE_CXX=
+ADOLC_FORWARD_CXX=
+ADOLC_LIBS=
+
+ADOLC_VERSION=
+
+if test "$have_MPI" == "yes" && test "$build_ADOLC_REVERSE" == "yes"
+then
+  ADOLC_VERSION="adolc_ampi = 2.5.3-trunk"
+else
+  ADOLC_VERSION="adolc = 2.5.3-trunk"
+fi
+
+if test "$build_ADOLC_REVERSE" == "yes" || test "$build_ADOLC_FORWARD" == "yes"
+then
+  PKG_CHECK_MODULES([ADOLC], [${ADOLC_VERSION}], [have_ADOLC='yes'], [have_ADOLC='no'])
+  if test "$have_ADOLC" == "no"
+  then
+    AC_MSG_ERROR([ADOLC requested but library file not found.])
+  fi
+fi
+ADOLC_FORWARD_CXX="-DADOLC_FORWARD_TYPE "$ADOLC_CFLAGS""
+ADOLC_REVERSE_CXX="-DADOLC_REVERSE_TYPE "$ADOLC_CFLAGS""
+
+if test $build_ADOLC_FORWARD != "no"
+then
+   DIRECTDIFF_CXX=$ADOLC_FORWARD_CXX
+   DIRECTDIFF_LIBS=$ADOLC_LIBS
+   build_DIRECTDIFF=yes
+elif test $build_COMPLEX != "no"
+then 
+   DIRECTDIFF_CXX=$COMPLEX_CXX
+   build_DIRECTDIFF=yes
+fi
+
+AC_SUBST([DIRECTDIFF_CXX])
+AC_SUBST([DIRECTDIFF_LIBS])
+# Set the variables
 AM_CONDITIONAL([BUILD_NORMAL], [test $build_NORMAL != "no"])
-AM_CONDITIONAL([BUILD_COMPLEX], [test $build_COMPLEX != "no"])
+AM_CONDITIONAL([BUILD_DIRECTDIFF], [test $build_DIRECTDIFF != "no"])
 
 ###########################
 
@@ -430,6 +479,8 @@ Build Configuration Summary:
     Datatype support:
         double              $build_NORMAL
         complex             $build_COMPLEX
+        adolc_reverse       $build_ADOLC_REVERSE
+        adolc_forward       $build_ADOLC_FORWARD
 
     External includes:    $su2_externals_INCLUDES
     External libs:        $su2_externals_LIBS

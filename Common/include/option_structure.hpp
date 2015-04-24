@@ -1130,19 +1130,6 @@ static const map<string, ENUM_DEFORM_STIFFNESS> Deform_Stiffness_Map = CCreateMa
 ("WALL_DISTANCE", WALL_DISTANCE);
 
 /*!
- * \brief The direct differentation method.
- */
-enum ENUM_DIRECTDIFF {
-  NO_DIRECTDIFF = 0,
-  COMPLEX_STEP = 1,
-  AD = 2
-};
-static const map<string, ENUM_DIRECTDIFF> DirectDiff_Map = CCreateMap<string, ENUM_DIRECTDIFF>
-("NONE", NO_DIRECTDIFF)
-("COMPLEX_STEP", COMPLEX_STEP)
-("AD", AD);
-
-/*!
  * \brief The direct differentation variables.
  */
 enum ENUM_DIRECTDIFF_VAR {
