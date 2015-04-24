@@ -3344,31 +3344,31 @@ void CSurfaceMovement::SetFFDCPChange_2D(CGeometry *geometry, CConfig *config, C
     movement[1] = config->GetParamDV(iDV, 4)*Ampl;
     movement[2] = 0.0;
     
-    index[0] = int(config->GetParamDV(iDV, 1));
-    index[1] = int(config->GetParamDV(iDV, 2));
+    index[0] = SU2_TYPE::Int(config->GetParamDV(iDV, 1));
+    index[1] = SU2_TYPE::Int(config->GetParamDV(iDV, 2));
     
     /*--- Lower surface ---*/
     
     index[2] = 0;
     
-    if ((int(config->GetParamDV(iDV, 1)) == -1) &&
-        (int(config->GetParamDV(iDV, 2)) != -1)) {
+    if ((SU2_TYPE::Int(config->GetParamDV(iDV, 1)) == -1) &&
+        (SU2_TYPE::Int(config->GetParamDV(iDV, 2)) != -1)) {
       for (i = 0; i < FFDBox->GetlOrder(); i++) {
         index[0] = i;
         FFDBox->SetControlPoints(index, movement);
       }
     }
     
-    if ((int(config->GetParamDV(iDV, 1)) != -1) &&
-        (int(config->GetParamDV(iDV, 2)) == -1)) {
+    if ((SU2_TYPE::Int(config->GetParamDV(iDV, 1)) != -1) &&
+        (SU2_TYPE::Int(config->GetParamDV(iDV, 2)) == -1)) {
       for (j = 0; j < FFDBox->GetmOrder(); j++) {
         index[1] = j;
         FFDBox->SetControlPoints(index, movement);
       }
     }
     
-    if ((int(config->GetParamDV(iDV, 1)) == -1) &&
-        (int(config->GetParamDV(iDV, 2)) == -1)) {
+    if ((SU2_TYPE::Int(config->GetParamDV(iDV, 1)) == -1) &&
+        (SU2_TYPE::Int(config->GetParamDV(iDV, 2)) == -1)) {
       for (i = 0; i < FFDBox->GetlOrder(); i++) {
         index[0] = i;
         for (j = 0; j < FFDBox->GetmOrder(); j++) {
@@ -3377,8 +3377,8 @@ void CSurfaceMovement::SetFFDCPChange_2D(CGeometry *geometry, CConfig *config, C
         }
       }
     }
-    if ((int(config->GetParamDV(iDV, 1)) != -1) &&
-        (int(config->GetParamDV(iDV, 2)) != -1)) {
+    if ((SU2_TYPE::Int(config->GetParamDV(iDV, 1)) != -1) &&
+        (SU2_TYPE::Int(config->GetParamDV(iDV, 2)) != -1)) {
       
       FFDBox->SetControlPoints(index, movement);
     }
@@ -3388,24 +3388,24 @@ void CSurfaceMovement::SetFFDCPChange_2D(CGeometry *geometry, CConfig *config, C
     
     index[2] = 1;
     
-    if ((int(config->GetParamDV(iDV, 1)) == -1) &&
-        (int(config->GetParamDV(iDV, 2)) != -1)) {
+    if ((SU2_TYPE::Int(config->GetParamDV(iDV, 1)) == -1) &&
+        (SU2_TYPE::Int(config->GetParamDV(iDV, 2)) != -1)) {
       for (i = 0; i < FFDBox->GetlOrder(); i++) {
         index[0] = i;
         FFDBox->SetControlPoints(index, movement);
       }
     }
     
-    if ((int(config->GetParamDV(iDV, 1)) != -1) &&
-        (int(config->GetParamDV(iDV, 2)) == -1)) {
+    if ((SU2_TYPE::Int(config->GetParamDV(iDV, 1)) != -1) &&
+        (SU2_TYPE::Int(config->GetParamDV(iDV, 2)) == -1)) {
       for (j = 0; j < FFDBox->GetmOrder(); j++) {
         index[1] = j;
         FFDBox->SetControlPoints(index, movement);
       }
     }
     
-    if ((int(config->GetParamDV(iDV, 1)) == -1) &&
-        (int(config->GetParamDV(iDV, 2)) == -1)) {
+    if ((SU2_TYPE::Int(config->GetParamDV(iDV, 1)) == -1) &&
+        (SU2_TYPE::Int(config->GetParamDV(iDV, 2)) == -1)) {
       for (i = 0; i < FFDBox->GetlOrder(); i++) {
         index[0] = i;
         for (j = 0; j < FFDBox->GetmOrder(); j++) {
@@ -3414,8 +3414,8 @@ void CSurfaceMovement::SetFFDCPChange_2D(CGeometry *geometry, CConfig *config, C
         }
       }
     }
-    if ((int(config->GetParamDV(iDV, 1)) != -1) &&
-        (int(config->GetParamDV(iDV, 2)) != -1)) {
+    if ((SU2_TYPE::Int(config->GetParamDV(iDV, 1)) != -1) &&
+        (SU2_TYPE::Int(config->GetParamDV(iDV, 2)) != -1)) {
       
       FFDBox->SetControlPoints(index, movement);
     }
@@ -3447,9 +3447,9 @@ void CSurfaceMovement::SetFFDCPChange(CGeometry *geometry, CConfig *config, CFre
 		movement[1] = config->GetParamDV(iDV, 5)*Ampl;
 		movement[2] = config->GetParamDV(iDV, 6)*Ampl;
 
-    index[0] = int(config->GetParamDV(iDV, 1));
-    index[1] = int(config->GetParamDV(iDV, 2));
-    index[2] = int(config->GetParamDV(iDV, 3));
+    index[0] = SU2_TYPE::Int(config->GetParamDV(iDV, 1));
+    index[1] = SU2_TYPE::Int(config->GetParamDV(iDV, 2));
+    index[2] = SU2_TYPE::Int(config->GetParamDV(iDV, 3));
     
     /*--- Check that it is possible to move the control point ---*/
     
@@ -3465,36 +3465,36 @@ void CSurfaceMovement::SetFFDCPChange(CGeometry *geometry, CConfig *config, CFre
       if (index[2] == FFDBox->Get_Fix_KPlane(iPlane)) return;
     }
 
-    if ((int(config->GetParamDV(iDV, 1)) == -1) &&
-        (int(config->GetParamDV(iDV, 2)) != -1) &&
-        (int(config->GetParamDV(iDV, 3)) != -1)) {
+    if ((SU2_TYPE::Int(config->GetParamDV(iDV, 1)) == -1) &&
+        (SU2_TYPE::Int(config->GetParamDV(iDV, 2)) != -1) &&
+        (SU2_TYPE::Int(config->GetParamDV(iDV, 3)) != -1)) {
       for (i = 0; i < FFDBox->GetlOrder(); i++) {
         index[0] = i;
         FFDBox->SetControlPoints(index, movement);
       }
     }
 
-    if ((int(config->GetParamDV(iDV, 1)) != -1) &&
-        (int(config->GetParamDV(iDV, 2)) == -1) &&
-        (int(config->GetParamDV(iDV, 3)) != -1)) {
+    if ((SU2_TYPE::Int(config->GetParamDV(iDV, 1)) != -1) &&
+        (SU2_TYPE::Int(config->GetParamDV(iDV, 2)) == -1) &&
+        (SU2_TYPE::Int(config->GetParamDV(iDV, 3)) != -1)) {
       for (j = 0; j < FFDBox->GetmOrder(); j++) {
         index[1] = j;
         FFDBox->SetControlPoints(index, movement);
       }
     }
     
-    if ((int(config->GetParamDV(iDV, 1)) != -1) &&
-        (int(config->GetParamDV(iDV, 2)) != -1) &&
-        (int(config->GetParamDV(iDV, 3)) == -1)) {
+    if ((SU2_TYPE::Int(config->GetParamDV(iDV, 1)) != -1) &&
+        (SU2_TYPE::Int(config->GetParamDV(iDV, 2)) != -1) &&
+        (SU2_TYPE::Int(config->GetParamDV(iDV, 3)) == -1)) {
       for (k = 0; k < FFDBox->GetnOrder(); k++) {
         index[2] = k;
         FFDBox->SetControlPoints(index, movement);
       }
     }
     
-    if ((int(config->GetParamDV(iDV, 1)) == -1) &&
-        (int(config->GetParamDV(iDV, 2)) == -1) &&
-        (int(config->GetParamDV(iDV, 3)) != -1)) {
+    if ((SU2_TYPE::Int(config->GetParamDV(iDV, 1)) == -1) &&
+        (SU2_TYPE::Int(config->GetParamDV(iDV, 2)) == -1) &&
+        (SU2_TYPE::Int(config->GetParamDV(iDV, 3)) != -1)) {
       for (i = 0; i < FFDBox->GetlOrder(); i++) {
         index[0] = i;
         for (j = 0; j < FFDBox->GetmOrder(); j++) {
@@ -3504,9 +3504,9 @@ void CSurfaceMovement::SetFFDCPChange(CGeometry *geometry, CConfig *config, CFre
       }
     }
     
-    if ((int(config->GetParamDV(iDV, 1)) != -1) &&
-        (int(config->GetParamDV(iDV, 2)) == -1) &&
-        (int(config->GetParamDV(iDV, 3)) == -1)) {
+    if ((SU2_TYPE::Int(config->GetParamDV(iDV, 1)) != -1) &&
+        (SU2_TYPE::Int(config->GetParamDV(iDV, 2)) == -1) &&
+        (SU2_TYPE::Int(config->GetParamDV(iDV, 3)) == -1)) {
       for (j = 0; j < FFDBox->GetmOrder(); j++) {
         index[1] = j;
         for (k = 0; k < FFDBox->GetnOrder(); k++) {
@@ -3516,9 +3516,9 @@ void CSurfaceMovement::SetFFDCPChange(CGeometry *geometry, CConfig *config, CFre
       }
     }
     
-    if ((int(config->GetParamDV(iDV, 1)) == -1) &&
-        (int(config->GetParamDV(iDV, 2)) != -1) &&
-        (int(config->GetParamDV(iDV, 3)) == -1)) {
+    if ((SU2_TYPE::Int(config->GetParamDV(iDV, 1)) == -1) &&
+        (SU2_TYPE::Int(config->GetParamDV(iDV, 2)) != -1) &&
+        (SU2_TYPE::Int(config->GetParamDV(iDV, 3)) == -1)) {
       for (i = 0; i < FFDBox->GetlOrder(); i++) {
         index[0] = i;
         for (k = 0; k < FFDBox->GetnOrder(); k++) {
@@ -3528,9 +3528,9 @@ void CSurfaceMovement::SetFFDCPChange(CGeometry *geometry, CConfig *config, CFre
       }
     }
     
-    if ((int(config->GetParamDV(iDV, 1)) != -1) &&
-        (int(config->GetParamDV(iDV, 2)) != -1) &&
-        (int(config->GetParamDV(iDV, 3)) != -1)) {
+    if ((SU2_TYPE::Int(config->GetParamDV(iDV, 1)) != -1) &&
+        (SU2_TYPE::Int(config->GetParamDV(iDV, 2)) != -1) &&
+        (SU2_TYPE::Int(config->GetParamDV(iDV, 3)) != -1)) {
       FFDBox->SetControlPoints(index, movement);
     }
 		
@@ -3562,7 +3562,7 @@ void CSurfaceMovement::SetFFDCamber_2D(CGeometry *geometry, CConfig *config, CFr
 			else movement[1] = Ampl;
       movement[2] = 0.0;
       
-			index[0] = int(config->GetParamDV(iDV, 1)); index[1] = kIndex; index[2] = 0;
+      index[0] = SU2_TYPE::Int(config->GetParamDV(iDV, 1)); index[1] = kIndex; index[2] = 0;
 			FFDBox->SetControlPoints(index, movement);
       
       index[2] = 1;
@@ -3598,7 +3598,7 @@ void CSurfaceMovement::SetFFDThickness_2D(CGeometry *geometry, CConfig *config, 
 			else movement[1] = Ampl;
 			movement[2] = 0.0;
       
-			index[0] = int(config->GetParamDV(iDV, 1)); index[1] = kIndex; index[2] = 0;
+      index[0] = SU2_TYPE::Int(config->GetParamDV(iDV, 1)); index[1] = kIndex; index[2] = 0;
 			FFDBox->SetControlPoints(index, movement);
       
       index[2] = 1;
@@ -3629,8 +3629,8 @@ void CSurfaceMovement::SetFFDCamber(CGeometry *geometry, CConfig *config, CFreeF
 						
 			Ampl = config->GetDV_Value(iDV);
 						
-			index[0] = int(config->GetParamDV(iDV, 1));
-			index[1] = int(config->GetParamDV(iDV, 2)); 
+      index[0] = SU2_TYPE::Int(config->GetParamDV(iDV, 1));
+      index[1] = SU2_TYPE::Int(config->GetParamDV(iDV, 2));
 			index[2] = kIndex;
 			
 			movement[0] = 0.0; movement[1] = 0.0; 
@@ -3664,8 +3664,8 @@ void CSurfaceMovement::SetFFDThickness(CGeometry *geometry, CConfig *config, CFr
 			
 			Ampl = config->GetDV_Value(iDV);
 			
-			index[0] = int(config->GetParamDV(iDV, 1));
-			index[1] = int(config->GetParamDV(iDV, 2)); 
+      index[0] = SU2_TYPE::Int(config->GetParamDV(iDV, 1));
+      index[1] = SU2_TYPE::Int(config->GetParamDV(iDV, 2));
 			index[2] = kIndex;
 			
 			movement[0] = 0.0; movement[1] = 0.0; 
@@ -5479,8 +5479,8 @@ void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
     istringstream point_line(text_line);
     point_line >> Upper >> Lower;
     
-    nUpper = int(Upper);
-    nLower = int(Lower);
+    nUpper = SU2_TYPE::Int(Upper);
+    nLower = SU2_TYPE::Int(Lower);
   
     Xcoord.resize(nUpper+nLower-1);
     Ycoord.resize(nUpper+nLower-1);

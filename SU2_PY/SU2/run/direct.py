@@ -75,6 +75,8 @@ def direct ( config ):
     konfig['MATH_PROBLEM']  = 'DIRECT'
     konfig['CONV_FILENAME'] = konfig['CONV_FILENAME'] + '_direct'    
     
+    direct_diff = konfig.get('DIRECT_DIFF','NO') == "YES"
+
     # Run Solution
     SU2_CFD(konfig)
     

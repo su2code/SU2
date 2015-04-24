@@ -44,9 +44,9 @@
 /* --- Depending on the datatype used, the correct MPI wrapper class is defined.
  * For the default (double type) case this results in using the normal MPI routines. --- */
 
-#ifdef COMPLEX_TYPE
-class CComplexMPIWrapper;
-typedef CComplexMPIWrapper SU2_MPI;
+#if defined COMPLEX_TYPE  || defined ADOLC_FORWARD_TYPE
+class CAuxMPIWrapper;
+typedef CAuxMPIWrapper SU2_MPI;
 #else
 class CMPIWrapper;
 typedef CMPIWrapper SU2_MPI;
@@ -108,13 +108,14 @@ protected:
 
 };
 /*!
- * \class CComplexMPIWrapper
- * \brief Class for defining the MPI wrapper routines for the complex datatype.
+ * \class CAuxMPIWrapper
+ * \brief Class for defining the MPI wrapper routines for the simplest non-primitive data where a
+ * auxiliary variable is attached to each primary value.
  * \author T. Albring
  * \version 3.2.9 "eagle"
  */
-#ifdef COMPLEX_TYPE
-class CComplexMPIWrapper : public CMPIWrapper{
+#if defined COMPLEX_TYPE || defined ADOLC_FORWARD_TYPE
+class CAuxMPIWrapper : public CMPIWrapper{
 public:
   static void Isend(void *buf, int count, MPI_Datatype datatype, int dest,
                     int tag, MPI_Comm comm, MPI_Request* request);

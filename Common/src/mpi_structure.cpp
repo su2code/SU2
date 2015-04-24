@@ -34,13 +34,13 @@
 
 #ifdef HAVE_MPI
 
-#ifdef COMPLEX_TYPE
-std::map<MPI_Request*, CComplexMPIWrapper::CommInfo>
-CComplexMPIWrapper::CommInfoMap;
-std::map<MPI_Request*, CComplexMPIWrapper::CommInfo>::iterator
-CComplexMPIWrapper::CommInfoIterator;
+#if defined COMPLEX_TYPE || defined ADOLC_FORWARD_TYPE
+std::map<MPI_Request*, CAuxMPIWrapper::CommInfo>
+CAuxMPIWrapper::CommInfoMap;
+std::map<MPI_Request*, CAuxMPIWrapper::CommInfo>::iterator
+CAuxMPIWrapper::CommInfoIterator;
 
-void CComplexMPIWrapper::Isend(void *buf, int count, MPI_Datatype datatype,
+void CAuxMPIWrapper::Isend(void *buf, int count, MPI_Datatype datatype,
                                int dest, int tag, MPI_Comm comm, MPI_Request *request) {
   if (datatype != MPI_DOUBLE) {
     MPI_Isend(buf,count,datatype,dest,tag,comm,request);
@@ -89,7 +89,7 @@ void CComplexMPIWrapper::Isend(void *buf, int count, MPI_Datatype datatype,
 }
 
 
-void CComplexMPIWrapper::Irecv(void *buf, int count, MPI_Datatype datatype,
+void CAuxMPIWrapper::Irecv(void *buf, int count, MPI_Datatype datatype,
                                int source, int tag, MPI_Comm comm, MPI_Request *request) {
   if (datatype != MPI_DOUBLE) {
     MPI_Irecv(buf,count,datatype,source,tag,comm,request);
@@ -128,7 +128,7 @@ void CComplexMPIWrapper::Irecv(void *buf, int count, MPI_Datatype datatype,
   }
 }
 
-void CComplexMPIWrapper::Wait(MPI_Request *request, MPI_Status *status) {
+void CAuxMPIWrapper::Wait(MPI_Request *request, MPI_Status *status) {
 
   /* --- First wait for send/recv of normal value operation to finish --- */
 
@@ -142,7 +142,7 @@ void CComplexMPIWrapper::Wait(MPI_Request *request, MPI_Status *status) {
 }
 
 
-void CComplexMPIWrapper::FinalizeCommunication(
+void CAuxMPIWrapper::FinalizeCommunication(
   std::map<MPI_Request *, CommInfo>::iterator &CommInfoIt) {
 
   /*--- Get info about communication --- */
@@ -182,7 +182,7 @@ void CComplexMPIWrapper::FinalizeCommunication(
 
 }
 
-void CComplexMPIWrapper::Waitall(int nrequests, MPI_Request *request,
+void CAuxMPIWrapper::Waitall(int nrequests, MPI_Request *request,
                                  MPI_Status *status) {
 
   /* --- Wait for normal requests to finish ---*/
@@ -198,7 +198,7 @@ void CComplexMPIWrapper::Waitall(int nrequests, MPI_Request *request,
   }
 }
 
-void CComplexMPIWrapper::Send(void *buf, int count, MPI_Datatype datatype,
+void CAuxMPIWrapper::Send(void *buf, int count, MPI_Datatype datatype,
                               int dest, int tag, MPI_Comm comm) {
   if (datatype != MPI_DOUBLE) {
     MPI_Send(buf,count,datatype,dest,tag,comm);
@@ -223,7 +223,7 @@ void CComplexMPIWrapper::Send(void *buf, int count, MPI_Datatype datatype,
   }
 }
 
-void CComplexMPIWrapper::Recv(void *buf, int count, MPI_Datatype datatype,
+void CAuxMPIWrapper::Recv(void *buf, int count, MPI_Datatype datatype,
                               int dest, int tag, MPI_Comm comm, MPI_Status* status) {
   if (datatype != MPI_DOUBLE) {
     MPI_Recv(buf,count,datatype,dest,tag,comm,status);
@@ -247,7 +247,7 @@ void CComplexMPIWrapper::Recv(void *buf, int count, MPI_Datatype datatype,
   }
 }
 
-void CComplexMPIWrapper::Bsend(void *buf, int count, MPI_Datatype datatype,
+void CAuxMPIWrapper::Bsend(void *buf, int count, MPI_Datatype datatype,
                                int dest, int tag, MPI_Comm comm) {
   if (datatype != MPI_DOUBLE) {
     MPI_Bsend(buf,count,datatype,dest,tag,comm);
@@ -272,7 +272,7 @@ void CComplexMPIWrapper::Bsend(void *buf, int count, MPI_Datatype datatype,
   }
 }
 
-void CComplexMPIWrapper::Reduce(void *sendbuf, void *recvbuf, int count,
+void CAuxMPIWrapper::Reduce(void *sendbuf, void *recvbuf, int count,
                                 MPI_Datatype datatype, MPI_Op op, int root, MPI_Comm comm) {
   if (datatype != MPI_DOUBLE) {
     MPI_Reduce(sendbuf, recvbuf,count,datatype,op,root,comm);
@@ -306,7 +306,8 @@ void CComplexMPIWrapper::Reduce(void *sendbuf, void *recvbuf, int count,
                  comm);
       if (rank == root) {
         for (iVal = 0; iVal < count; iVal++) {
-          RecvBuffer[iVal] = su2double(RecvValueBuffer[iVal],RecvAuxBuffer[iVal]);
+            SU2_TYPE::SetPrimary(RecvBuffer[iVal], RecvValueBuffer[iVal]);
+            SU2_TYPE::SetSecondary(RecvBuffer[iVal], RecvAuxBuffer[iVal]);
         }
       }
 
@@ -322,7 +323,7 @@ void CComplexMPIWrapper::Reduce(void *sendbuf, void *recvbuf, int count,
       double temp = 0;
 
       for (iVal = 0; iVal < count; iVal++) {
-        SendValLoc[iVal].value = SendBuffer[iVal].real();
+        SendValLoc[iVal].value = SU2_TYPE::GetPrimary(SendBuffer[iVal]);
         SendValLoc[iVal].rank = rank;
       }
 
@@ -357,12 +358,13 @@ void CComplexMPIWrapper::Reduce(void *sendbuf, void *recvbuf, int count,
   }
 }
 
-void CComplexMPIWrapper::Gather(void *sendbuf, int sendcnt,
+void CAuxMPIWrapper::Gather(void *sendbuf, int sendcnt,
                                 MPI_Datatype sendtype, void *recvbuf, int recvcnt, MPI_Datatype recvtype,
                                 int root, MPI_Comm comm) {
   if (sendtype != MPI_DOUBLE) {
     MPI_Gather(sendbuf,sendcnt,sendtype, recvbuf, recvcnt, recvtype,root,comm);
   } else {
+
     double* SendValueBuffer = new double[sendcnt];
     double* SendAuxBuffer   = new double[sendcnt];
 
@@ -394,7 +396,7 @@ void CComplexMPIWrapper::Gather(void *sendbuf, int sendcnt,
 
     if (rank == root) {
       for (iVal = 0; iVal < recvcnt*size; iVal++) {
-        SU2_TYPE::SetPrimary(RecvBuffer[iVal], RecvValueBuffer[iVal]);
+        SU2_TYPE::SetPrimary(RecvBuffer[iVal],  RecvValueBuffer[iVal]);
         SU2_TYPE::SetSecondary(RecvBuffer[iVal], RecvAuxBuffer[iVal]);
       }
       delete [] RecvValueBuffer;
@@ -406,7 +408,7 @@ void CComplexMPIWrapper::Gather(void *sendbuf, int sendcnt,
   }
 }
 
-void CComplexMPIWrapper::Bcast(void *buf, int count, MPI_Datatype datatype,
+void CAuxMPIWrapper::Bcast(void *buf, int count, MPI_Datatype datatype,
                                int root, MPI_Comm comm) {
   if (datatype != MPI_DOUBLE) {
     MPI_Bcast(buf,count,datatype,root,comm);

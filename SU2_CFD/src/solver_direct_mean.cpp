@@ -108,7 +108,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   bool adjoint = config->GetAdjoint();
   string filename = config->GetSolution_FlowFileName();
 
-  bool direct_derivatives = config->GetDirectDiff() != NO_DIRECTDIFF;
+  bool direct_diff = config->GetDirectDiff();
 
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -400,7 +400,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   /*--- Initialize the secondary values for direct derivative approxiations ---*/
 
-  if (direct_derivatives){
+  if (direct_diff){
     switch(config->GetDirectDiff_Var()){
       case DENSITY_DIRECTDIFF:
         SU2_TYPE::SetDerivative(Density_Inf, 1.0);
@@ -10478,7 +10478,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   bool adjoint = config->GetAdjoint();
   string filename = config->GetSolution_FlowFileName();
 
-  bool direct_derivatives = config->GetDirectDiff() != NO_DIRECTDIFF;
+  bool direct_diff = config->GetDirectDiff();
 
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -10820,7 +10820,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   
   /*--- Initialize the secondary values for direct derivative approxiations ---*/
 
-  if (direct_derivatives){
+  if (direct_diff){
 
     switch(config->GetDirectDiff_Var()){
       case DENSITY_DIRECTDIFF:

@@ -31,6 +31,3 @@
 
 #include "../include/datatype_structure.hpp"
 
-#ifdef COMPLEX_TYPE
-double CComplexTypeWrapper::Seeding = 1e-50;
-#endif

@@ -33,35 +33,34 @@
 
 #pragma once
 
-#include <ostream>
+#include <iostream>
 #include <cstdio>
 
-#ifdef COMPLEX_TYPE
-#include "complex_structure.hpp"
-
-/* --- Define the complex datatype to be the base type used in SU2 --- */
-
-typedef CComplexType su2double;
-
 /* --- Define the complex datatype interface --- */
-
-class CComplexTypeWrapper;
-
-typedef CComplexTypeWrapper SU2_TYPE;
-
-#else
-
-#define SPRINTF sprintf
-
-/* --- Define the double datatype to be the base type used in SU2 --- */
-
-typedef double su2double;
-
-/* --- Define the default datatype interface --- */
 
 class CTypeWrapper;
 
 typedef CTypeWrapper SU2_TYPE;
+
+#define SPRINTF sprintfOver
+
+#ifdef COMPLEX_TYPE
+#include "complex_structure.hpp"
+/* --- Define the complex datatype to be the base type used in SU2 --- */
+
+typedef CComplexType su2double;
+
+#elif defined ADOLC_FORWARD_TYPE
+#define ADOLC_TAPELESS
+#include "adolc/adtl.h"
+
+typedef adtl::adouble su2double;
+
+#else
+
+/* --- Define the double datatype to be the base type used in SU2 --- */
+
+typedef double su2double;
 
 #endif
 
@@ -69,8 +68,7 @@ typedef CTypeWrapper SU2_TYPE;
 /*!
  * \class CTypeWrapper
  * \brief Class for defining the datatype wrapper routines; this class features as a base class for
- * type interfaces for non-primitive dataypes e.g. used by AD, complex etc. However, if we use the normal double datatype
- * then this base class is used which does essentially nothing.
+ * type interfaces for non-primitive dataypes e.g. used by AD, complex etc.
  * \author T. Albring
  * \version 3.2.9 "eagle"
  */
@@ -78,101 +76,61 @@ class CTypeWrapper{
 public:
 
   /*!
-   * \brief Set the primary (primitive) value of the datatype.
+   * \brief Set the primary (primitive) value of the datatype (needs to be implemented for each new type).
    * \param[in] data - The non-primitive datatype.
    * \param[in] val - The primitive value.
    */
   static void SetPrimary(su2double& data, const double &val);
 
   /*!
-   * \brief Set the secondary (primitive) value of the datatype (in this particular case it does nothing).
+   * \brief Set the secondary (primitive) value of the datatype (needs to be implemented for each new type).
    * \param[in] data - The non-primitive datatype.
    * \param[in] val - The primitive value.
    */
   static void SetSecondary(su2double& data, const double &val);
 
   /*!
-   * \brief Get the primary (primitive) value of the datatype.
+   * \brief Get the primary (primitive) value of the datatype (needs to be implemented for each new type).
    * \param[in] data - The non-primitive datatype.
    * \return The primitive value.
    */
-  static double GetPrimary(su2double &data);
+  static double GetPrimary(const su2double &data);
 
   /*!
-   * \brief Get the secondary (primitive) value of the datatype (in this case it just return zero).
+   * \brief Get the secondary (primitive) value of the datatype (needs to be implemented for each new type).
    * \param[in] data - The non-primitive datatype.
    * \return The primitive value.
    */
-  static double GetSecondary(su2double &data);
+  static double GetSecondary(const su2double &data);
 
   /*!
-   * \brief Get the derivative (primitive) value of the datatype (in this case it just return zero).
+   * \brief Get the derivative (primitive) value of the datatype (needs to be implemented for each new type).
    * \param[in] data - The non-primitive datatype.
    * \return The derivative value.
    */
-  static double GetDerivative(su2double &data);
+  static double GetDerivative(const su2double &data);
 
   /*!
-   * \brief Set the derivative (primitive) value of the datatype (in this case it does nothing).
+   * \brief Set the derivative (primitive) value of the datatype (needs to be implemented for each new type).
    * \param[in] data - The non-primitive datatype.
    * \param[in] val - The value of the derivative.
    */
   static void SetDerivative(su2double &data, const double &val);
 
-};
-/*!
- * \class CComplexTypeWrapper
- * \brief Class for defining the datatype wrapper routines for the complex datatype. It enables the extraction and setting of real and imag
- * values as well as the derivative values.
- * \author T. Albring
- * \version 3.2.9 "eagle"
- */
-#ifdef COMPLEX_TYPE
-class CComplexTypeWrapper : CTypeWrapper{
-public:
-  /*!
-   * \brief Set the primary (primitive) value of the datatype (aka the real value).
-   * \param[in] data - The non-primitive datatype.
-   * \param[in] val - The primitive value.
-   */
-  static void SetPrimary(su2double& data, const double &val);
 
   /*!
-   * \brief Set the secondary (primitive) value of the datatype (aka the imag value).
+   * \brief Casts the primary value to int (uses GetPrimary, already implemented for each type).
    * \param[in] data - The non-primitive datatype.
-   * \param[in] val - The imag value.
+   * \return - The primary value casted to int.
    */
-  static void SetSecondary(su2double& data, const double &val);
+  static int Int(const su2double& data);
 
   /*!
-   * \brief Get the primary (primitive) value of the datatype (aka the real value).
+   * \brief Casts the primary value to short (uses GetPrimary, already implemented for each type).
    * \param[in] data - The non-primitive datatype.
-   * \return The primitive value.
+   * \return - The primary value casted to short.
    */
-  static double GetPrimary(su2double &data);
+  static short Short(const su2double& data);
 
-  /*!
-   * \brief Get the secondary (primitive) value of the datatype (aka the imag value).
-   * \param[in] data - The non-primitive datatype.
-   * \return The imag value.
-   */
-  static double GetSecondary(su2double &data);
-
-  /*!
-   * \brief Get the derivative (primitive) value of the datatype (imag divided by the stepsize).
-   * \param[in] data - The non-primitive datatype.
-   * \return The derivative value.
-   */
-  static double GetDerivative(su2double &data);
-
-  /*!
-   * \brief Set the derivative (primitive) value of the datatype (sets imag value to val times the stepsize).
-   * \param[in] data - The non-primitive datatype.
-   * \param[in] val - The value of the derivative.
-   */
-  static void SetDerivative(su2double &data, const double &val);
-
-};
-#endif
-
+  };
 #include "datatype_structure.inl"

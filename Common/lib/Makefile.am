@@ -42,98 +42,82 @@ if BUILD_NORMAL
 noinst_LIBRARIES += libSU2.a
 endif
 
-if BUILD_COMPLEX
-noinst_LIBRARIES += libSU2_COMPLEX.a
+if BUILD_DIRECTDIFF
+noinst_LIBRARIES += libSU2_DIRECTDIFF.a
 endif
 
 lib_sources = \
                 ../include/config_structure.hpp \
-		../include/config_structure.inl \
-		../include/dual_grid_structure.hpp \
-		../include/dual_grid_structure.inl \
-		../include/geometry_structure.hpp \
-		../include/geometry_structure.inl \
-		../include/grid_adaptation_structure.hpp \
-		../include/grid_adaptation_structure.inl \
-		../include/grid_movement_structure.hpp \
-		../include/grid_movement_structure.inl \
-		../include/linear_solvers_structure.hpp \
-		../include/linear_solvers_structure.inl \
-		../include/option_structure.hpp \
-		../include/primal_grid_structure.hpp \
-		../include/primal_grid_structure.inl \
-		../include/vector_structure.hpp \
-		../include/vector_structure.inl \
-	        ../include/matrix_structure.hpp \
-	        ../include/matrix_structure.inl \
-	    ../include/su2mpi.hpp \
-		../mpi_structure.hpp \
-		../mpi_structure.inl \
+    ../include/config_structure.inl \
+    ../include/dual_grid_structure.hpp \
+    ../include/dual_grid_structure.inl \
+    ../include/geometry_structure.hpp \
+    ../include/geometry_structure.inl \
+    ../include/grid_adaptation_structure.hpp \
+    ../include/grid_adaptation_structure.inl \
+    ../include/grid_movement_structure.hpp \
+    ../include/grid_movement_structure.inl \
+    ../include/linear_solvers_structure.hpp \
+    ../include/linear_solvers_structure.inl \
+    ../include/option_structure.hpp \
+    ../include/primal_grid_structure.hpp \
+    ../include/primal_grid_structure.inl \
+    ../include/vector_structure.hpp \
+    ../include/vector_structure.inl \
+          ../include/matrix_structure.hpp \
+          ../include/matrix_structure.inl \
+      ../include/su2mpi.hpp \
+    ../mpi_structure.hpp \
+    ../mpi_structure.inl \
     ../datatype_structure.hpp \
     ../datatype_structure.inl \
     ../complex_structure.hpp \
     ../complex_structure.inl \
-		../src/config_structure.cpp \
-		../src/dual_grid_structure.cpp \
-		../src/geometry_structure.cpp \
-		../src/grid_adaptation_structure.cpp \
-		../src/grid_movement_structure.cpp \
-		../src/linear_solvers_structure.cpp \
-		../src/primal_grid_structure.cpp \
-	        ../src/vector_structure.cpp \
-		../src/matrix_structure.cpp \
+    ../src/datatype_structure.cpp \
+    ../src/config_structure.cpp \
+    ../src/dual_grid_structure.cpp \
+    ../src/geometry_structure.cpp \
+    ../src/grid_adaptation_structure.cpp \
+    ../src/grid_movement_structure.cpp \
+    ../src/linear_solvers_structure.cpp \
+    ../src/primal_grid_structure.cpp \
+          ../src/vector_structure.cpp \
+    ../src/matrix_structure.cpp \
     ../src/su2mpi.cpp \
     ../src/mpi_structure.cpp
 
+lib_cxxflags =
+lib_ldadd =
+
+# always link to built dependencies from ./externals
+lib_cxxflags += @su2_externals_INCLUDES@
+lib_ldadd += @su2_externals_LIBS@
+
+# if BUILD_CGNS
+lib_cxxflags += @CGNS_CXX@
+lib_ldadd += @CGNS_LD@
+# endif
+
+# if BUILD_MUTATIONPP
+lib_cxxflags += @MUTATIONPP_CXX@
+lib_ldadd += @MUTATIONPP_LD@
+# endif
+
+# if BUILD_JSONCPP
+lib_cxxflags += @JSONCPP_CXX@
+lib_ldadd += @JSONCPP_LD@
+# endif
+
+
 if BUILD_NORMAL
 libSU2_a_SOURCES = $(lib_sources)
-
-libSU2_a_CXXFLAGS =
-libSU2_a_LIBADD =
-
-# always link to built dependencies from ./externals
-libSU2_a_CXXFLAGS += @su2_externals_INCLUDES@
-libSU2_a_LIBADD += @su2_externals_LIBS@
-
-# if BUILD_CGNS
-libSU2_a_CXXFLAGS += @CGNS_CXX@
-libSU2_a_LIBADD += @CGNS_LD@
-# endif
-
-# if BUILD_MUTATIONPP
-libSU2_a_CXXFLAGS += @MUTATIONPP_CXX@
-libSU2_a_LIBADD += @MUTATIONPP_LD@
-# endif
-
-# if BUILD_JSONCPP
-libSU2_a_CXXFLAGS += @JSONCPP_CXX@
-libSU2_a_LIBADD += @JSONCPP_LD@
-# endif
+libSU2_a_CXXFLAGS = ${lib_cxxflags}
+libSU2_a_LIBADD = ${lib_ldadd}
 endif
 
-if BUILD_COMPLEX
-libSU2_COMPLEX_a_SOURCES = $(lib_sources)
-
-libSU2_COMPLEX_a_CXXFLAGS = @COMPLEX_CXX@
-libSU2_COMPLEX_a_LIBADD =
-
-# always link to built dependencies from ./externals
-libSU2_COMPLEX_a_CXXFLAGS += @su2_externals_INCLUDES@
-libSU2_COMPLEX_a_LIBADD += @su2_externals_LIBS@
-
-# if BUILD_CGNS
-libSU2_COMPLEX_a_CXXFLAGS += @CGNS_CXX@
-libSU2_COMPLEX_a_LIBADD += @CGNS_LD@
-# endif
-
-# if BUILD_MUTATIONPP
-libSU2_COMPLEX_a_CXXFLAGS += @MUTATIONPP_CXX@
-libSU2_COMPLEX_a_LIBADD += @MUTATIONPP_LD@
-# endif
-
-# if BUILD_JSONCPP
-libSU2_COMPLEX_a_CXXFLAGS += @JSONCPP_CXX@
-libSU2_COMPLEX_a_LIBADD += @JSONCPP_LD@
-# endif
-
+if BUILD_DIRECTDIFF
+libSU2_DIRECTDIFF_a_SOURCES = $(lib_sources)
+libSU2_DIRECTDIFF_a_CXXFLAGS = @DIRECTDIFF_CXX@ ${lib_cxxflags}
+libSU2_DIRECTDIFF_a_LIBADD =  ${lib_ldadd}
 endif
+

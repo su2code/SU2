@@ -694,7 +694,7 @@ private:
   unsigned long Nonphys_Points, /*!< \brief Current number of non-physical points in the solution. */
   Nonphys_Reconstr;      /*!< \brief Current number of non-physical reconstructions for 2nd-order upwinding. */
   bool ParMETIS;      /*!< \brief Boolean for activating ParMETIS mode (while testing). */
-  unsigned short DirectDiff; /*!< \brief Direct Differentation Mode. */
+  bool DirectDiff; /*!< \brief Direct Differentation Mode. */
   unsigned short DirectDiff_Var; /*! \brief Direct Differentation Variable. */
   /*!< \brief param is a map from the option name (config file string) to a pointer to an option child class */
 //	map<string, CAnyOptionRef*> param;
@@ -5238,7 +5238,7 @@ public:
    * \brief Get the direct differentation method.
    * \return direct differentiation method.
    */
-  unsigned short GetDirectDiff();
+  bool GetDirectDiff();
 
   /*!
    * \brief Get the direct differentiation variable.
