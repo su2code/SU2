@@ -18,12 +18,7 @@ ENV SU2_HOME "~/SU2-master"
 ENV PATH $PATH:$SU2_RUN
 ENV PYTHONPATH $PYTHONPATH:$SU2_RUN
 
-CMD cp /usr/local/bin/SU2_CFD /home/krishna/su2-binaries/.
-CMD cp /usr/local/bin/SU2_DEF /home/krishna/su2-binaries/.
-CMD cp /usr/local/bin/SU2_DOT /home/krishna/su2-binaries/.
-CMD cp /usr/local/bin/SU2_GEO /home/krishna/su2-binaries/.
-CMD cp /usr/local/bin/SU2_MSH /home/krishna/su2-binaries/.
-CMD cp /usr/local/bin/SU2_SOL /home/krishna/su2-binaries/.
+CMD cp /usr/local/bin/* /home/krishna/su2-binaries/.
 
 #sudo docker build -t krishna/scfd-su2 .
 #sudo docker run -v ~/su2-binaries/.:~/su2-binaries/. -t krishna/scfd-su2
