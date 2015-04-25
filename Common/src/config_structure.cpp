@@ -2262,7 +2262,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   nCFL = nMGLevels+1;
   CFL = new double[nCFL];
   CFL[0] = CFLFineGrid;
-  if (Adjoint) CFL[0] = CFL[0] * CFLRedCoeff_AdjFlow;
+  if (Adjoint){
+    CFL[0] = CFL[0] * CFLRedCoeff_AdjFlow;
+    CFL_AdaptParam[2]*=CFLRedCoeff_AdjFlow;
+    CFL_AdaptParam[3]*=CFLRedCoeff_AdjFlow;
+  }
   
   for (iCFL = 1; iCFL < nCFL; iCFL++)
     CFL[iCFL] = CFL[iCFL-1];
