@@ -36,7 +36,6 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
-  ParamDV=NULL;
   /*--- Initialize pointers to Null---*/
   
   SetPointersNull();
@@ -61,10 +60,11 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
 
   if ((rank == MASTER_NODE) && (verb_level == VERB_HIGH) && (val_iZone != 1))
     SetOutput(val_software, val_iZone);
+
 }
 
 CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software) {
-
+  
   /*--- Initialize pointers to Null---*/
   
   SetPointersNull();
@@ -135,7 +135,6 @@ void CConfig::SetPointersNull(void) {
   Periodic_Translation=NULL;  Periodic_Center=NULL;         Periodic_Rotation=NULL;
   Periodic_Translate=NULL;    Wall_Catalycity=NULL;
 
-
   /*--- Miscellaneous/unsorted ---*/
 
   Aeroelastic_plunge=NULL;    Aeroelastic_pitch=NULL;
@@ -175,22 +174,7 @@ void CConfig::SetPointersNull(void) {
   Species_Ref_Temperature=NULL;   Species_Ref_Viscosity=NULL; nElStates=NULL;
   CharElTemp=NULL;                degen=NULL;
   Molar_Mass=NULL;                Particle_Mass=NULL;
-  ArrheniusCoefficient=NULL;      ArrheniusEta=NULL;    ArrheniusTheta=NULL;
-  CharVibTemp=NULL;               RotationModes=NULL;   Ref_Temperature=NULL;
-  Tcf_a=NULL;                     Tcf_b=NULL;           Tcb_a=NULL;
-  Tcb_b=NULL;                     Diss=NULL;
-  /*Miscellaneous/unsorted*/
-  Aeroelastic_plunge=NULL;    Aeroelastic_pitch=NULL;
-  Velocity_FreeStreamND=NULL; MassFrac_FreeStream=NULL;
-  Velocity_FreeStream=NULL;
-  RefOriginMoment=NULL;     RefOriginMoment_X=NULL;  RefOriginMoment_Y=NULL;
-  RefOriginMoment_Z=NULL;   CFLRamp=NULL;            CFL=NULL;
-  PlaneTag=NULL;
-  Kappa_Flow=NULL;        Kappa_AdjFlow=NULL;  Kappa_TNE2=NULL;
-  Kappa_AdjTNE2=NULL;     Kappa_LinFlow=NULL;
-  Section_Location=NULL;  U_FreeStreamND=NULL;  EA_IntLimit=NULL;
-  Hold_GridFixed_Coord=NULL;  DV_Value=NULL;  Design_Variable=NULL;
-
+  ArrheniusCoefficient=NULL;    ArrheniusEta=NULL;    ArrheniusTheta=NULL;
   CharVibTemp=NULL;             RotationModes=NULL;   Ref_Temperature=NULL;
   Tcf_a=NULL;    Tcf_b=NULL;    Tcb_a=NULL;    Tcb_b=NULL;
   Diss=NULL;
@@ -202,35 +186,6 @@ void CConfig::SetRunTime_Options(void) {
   /* DESCRIPTION: Number of external iterations */
   
   addUnsignedLongOption("EXT_ITER", nExtIter, 999999);
-
-
-  Heat_FluxNonCatalytic=NULL;
-  Heat_FluxCatalytic=NULL;
-  Marker_All_Moving=NULL;
-  /*Marker_CfgFile and Marker_ALL*/
-  Marker_All_Monitoring=NULL;
-  Marker_All_GeoEval=NULL;
-  Marker_All_Plotting=NULL;
-  Marker_All_DV=NULL;
-  Marker_All_Moving=NULL;
-  Marker_All_Designing=NULL;
-  Marker_All_Out_1D=NULL;
-  Marker_CfgFile_Monitoring=NULL;
-  Marker_CfgFile_Designing=NULL;
-  Marker_CfgFile_GeoEval=NULL;
-  Marker_CfgFile_Plotting=NULL;
-  Marker_CfgFile_Out_1D=NULL;
-  Marker_CfgFile_Moving=NULL;
-  Marker_CfgFile_DV=NULL;
-  Marker_CfgFile_PerBound=NULL;
-
-  PlaneTag=NULL;
-  Marker_Monitoring=NULL;
-  Marker_Designing=NULL;
-  Marker_GeoEval=NULL;
-  Marker_Plotting=NULL;
-  Marker_Moving=NULL;
-  Marker_DV=NULL;
 
 }
 
@@ -1389,7 +1344,7 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
   }
 
   case_file.close();
-
+  
 }
 
 bool CConfig::SetRunTime_Parsing(char case_filename[MAX_STRING_SIZE]) {
@@ -1502,6 +1457,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 #endif
   
   /*--- Store the SU2 module that we are executing. ---*/
+  
   Kind_SU2 = val_software;
   
   /*--- Make sure that 1D outputs are written when objective function requires ---*/
@@ -1539,7 +1495,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if (Kind_Regime == FREESURFACE) {
     if (Unsteady_Simulation != DT_STEPPING_2ND) Unsteady_Simulation = DT_STEPPING_1ST;
   }
-
+  
   if (Kind_Solver == POISSON_EQUATION) {
     Unsteady_Simulation = STEADY;
   }
@@ -1680,7 +1636,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     cout << "Can not support more than one rotating frame in GRID_MOVEMENT_KIND!!" << endl;
     exit(EXIT_FAILURE);
   }
-
+  
   /*--- In case the grid movement parameters have not been declared in the
    config file, set them equal to zero for safety. Also check to make sure
    that for each option, a value has been declared for each moving marker. ---*/
@@ -5279,7 +5235,6 @@ CConfig::~CConfig(void) {
   if (RefOriginMoment_Z != NULL)
     delete [] RefOriginMoment_Z;
 
-
   /*--- Marker pointers ---*/
   
   if (Marker_CfgFile_Out_1D!=NULL)   delete[] Marker_CfgFile_Out_1D;
@@ -5289,7 +5244,6 @@ CConfig::~CConfig(void) {
   if (Marker_CfgFile_TagBound!=NULL)      delete[] Marker_CfgFile_TagBound;
   if (Marker_All_TagBound!=NULL)         delete[] Marker_All_TagBound;
   if (Marker_CfgFile_KindBC!=NULL) delete[] Marker_CfgFile_KindBC;
-
   if (Marker_All_KindBC!=NULL)    delete[] Marker_All_KindBC;
   if (Marker_CfgFile_Monitoring!=NULL)    delete[] Marker_CfgFile_Monitoring;
   if (Marker_All_Monitoring!=NULL)   delete[] Marker_All_Monitoring;
@@ -5310,7 +5264,6 @@ CConfig::~CConfig(void) {
   if (Marker_Designing!=NULL)       delete[] Marker_Designing;
   if (Marker_GeoEval!=NULL)         delete[] Marker_GeoEval;
   if (Marker_Plotting!=NULL)        delete[] Marker_Plotting;
-  if (Marker_CfgFile_PerBound!=NULL) delete[] Marker_CfgFile_PerBound;
   if (Marker_All_SendRecv!=NULL)    delete[] Marker_All_SendRecv;
 
   if (EA_IntLimit!=NULL)    delete[] EA_IntLimit;
@@ -5342,7 +5295,6 @@ CConfig::~CConfig(void) {
   if (Heat_Flux!=NULL)    delete[] Heat_Flux;
   if (Heat_FluxNonCatalytic!=NULL)    delete[] Heat_FluxNonCatalytic;
   if (Heat_FluxCatalytic!=NULL)    delete[] Heat_FluxCatalytic;
-
   if (Displ_Value!=NULL)    delete[] Displ_Value;
   if (Load_Value!=NULL)    delete[] Load_Value;
   if (FlowLoad_Value!=NULL)    delete[] FlowLoad_Value;

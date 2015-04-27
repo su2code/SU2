@@ -148,14 +148,11 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   Secondary = NULL; Secondary_i = NULL; Secondary_j = NULL;
   CharacPrimVar = NULL;
   Cauchy_Serie = NULL;
-<<<<<<< HEAD
-  
   node_infty=NULL;
   Velocity_Inf = NULL;
   PrimVar_i=NULL;
   PrimVar_j=NULL;
-=======
->>>>>>> develop
+
 
   /*--- Set the gamma value ---*/
 
@@ -635,7 +632,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 }
 
 CEulerSolver::~CEulerSolver(void) {
-<<<<<<< HEAD
 
   unsigned short iVar, iMarker, iPoint, iVertex, iDim;
 
@@ -648,10 +644,6 @@ CEulerSolver::~CEulerSolver(void) {
   if (PrimVar_i!=NULL)        delete [] PrimVar_i;
   if (PrimVar_j!=NULL)        delete [] PrimVar_j;
   
-=======
-  unsigned short iVar, iMarker;
-
->>>>>>> develop
   /*--- Array deallocation ---*/
   if (CDrag_Inv != NULL)         delete [] CDrag_Inv;
   if (CLift_Inv != NULL)         delete [] CLift_Inv;
@@ -693,16 +685,6 @@ CEulerSolver::~CEulerSolver(void) {
   if (Inflow_MassFlow != NULL)  delete [] Inflow_MassFlow;
   if (Exhaust_MassFlow != NULL)  delete [] Exhaust_MassFlow;
   if (Exhaust_Area != NULL)      delete [] Exhaust_Area;
-<<<<<<< HEAD
-  if (FanFace_Pressure != NULL)  delete [] FanFace_Pressure;
-  if (FanFace_Mach != NULL)      delete [] FanFace_Mach;
-  if (FanFace_Area != NULL)      delete [] FanFace_Area;
-  //if (iPoint_UndLapl != NULL)       delete [] iPoint_UndLapl;
-  //if (jPoint_UndLapl != NULL)       delete [] jPoint_UndLapl;
-  if (Primitive != NULL)        delete [] Primitive;
-  if (Primitive_i != NULL)      delete [] Primitive_i;
-  if (Primitive_j != NULL)      delete [] Primitive_j;
-=======
   if (Inflow_Pressure != NULL)  delete [] Inflow_Pressure;
   if (Inflow_Mach != NULL)      delete [] Inflow_Mach;
   if (Inflow_Area != NULL)      delete [] Inflow_Area;
@@ -719,7 +701,6 @@ CEulerSolver::~CEulerSolver(void) {
 //  if (Secondary != NULL)        delete [] Secondary;
   if (Secondary_i != NULL)      delete [] Secondary_i;
   if (Secondary_j != NULL)      delete [] Secondary_j;
->>>>>>> develop
 
   if (LowMach_Precontioner != NULL) {
     for (iVar = 0; iVar < nVar; iVar ++)
@@ -733,29 +714,19 @@ CEulerSolver::~CEulerSolver(void) {
     delete [] CPressure;
   }
 
-<<<<<<< HEAD
+
   if (CharacPrimVar != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       delete [] CharacPrimVar[iMarker];
     }
     delete [] CharacPrimVar;
   }
-=======
->>>>>>> develop
+
   if (CPressureTarget != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
       delete CPressureTarget[iMarker];
     delete [] CPressureTarget;
   }
-
-  //  if (CharacPrimVar != NULL) {
-  //    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-  //      for (iVertex = 0; iVertex < nVertex; iVertex++) {
-  //        delete CharacPrimVar[iMarker][iVertex];
-  //      }
-  //    }
-  //    delete [] CharacPrimVar;
-  //  }
 
   if (HeatFlux != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -778,16 +749,12 @@ CEulerSolver::~CEulerSolver(void) {
     delete [] YPlus;
   }
 
-<<<<<<< HEAD
+
   /*---Pointers from Solver parent Class---*/
 
   if (Cauchy_Serie != NULL)
     delete [] Cauchy_Serie;
-=======
-  if (Cauchy_Serie != NULL)
-    delete [] Cauchy_Serie;
 
->>>>>>> develop
 }
 
 void CEulerSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
@@ -10502,8 +10469,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-<<<<<<< HEAD
-  
+
   /*--- Array initialization ---*/
   CDrag_Visc = NULL;
   CLift_Visc = NULL;
@@ -10530,13 +10496,11 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   CSkinFriction = NULL;
   Velocity_Inf = NULL;
   Cauchy_Serie = NULL;
-  
-=======
+
   bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
   bool adjoint = config->GetAdjoint();
   string filename = config->GetSolution_FlowFileName();
 
->>>>>>> develop
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -11118,34 +11082,6 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 CNSSolver::~CNSSolver(void) {
   unsigned short iMarker;
 
-<<<<<<< HEAD
-  /*--- Array initialization ---*/
-
-  if (CDrag_Visc != NULL)      delete [] CDrag_Visc;
-  if (CLift_Visc != NULL)      delete [] CLift_Visc;
-  if (CSideForce_Visc != NULL) delete [] CSideForce_Visc;
-  if (CMx_Visc != NULL)        delete [] CMx_Visc;
-  if (CMy_Visc != NULL)        delete [] CMy_Visc;
-  if (CMz_Visc != NULL)        delete [] CMz_Visc;
-  if (CFx_Visc != NULL)        delete [] CFx_Visc;
-  if (CFy_Visc != NULL)        delete [] CFy_Visc;
-  if (CFz_Visc != NULL)        delete [] CFz_Visc;
-  if (CEff_Visc != NULL)       delete [] CEff_Visc;
-  if (CMerit_Visc != NULL)     delete [] CMerit_Visc;
-  if (CT_Visc != NULL)         delete [] CT_Visc;
-  if (CQ_Visc != NULL)         delete [] CQ_Visc;
-  if (Heat_Visc != NULL)          delete [] Heat_Visc;
-  if (MaxHeatFlux_Visc != NULL)       delete [] MaxHeatFlux_Visc;
-  if (ForceViscous != NULL)    delete [] ForceViscous;
-  if (MomentViscous != NULL)   delete [] MomentViscous;
-
-  if (Surface_CLift_Visc != NULL) delete [] Surface_CLift_Visc;
-  if (Surface_CDrag_Visc != NULL) delete [] Surface_CDrag_Visc;
-  if (Surface_CMx_Visc != NULL)   delete [] Surface_CMx_Visc;
-  if (Surface_CMy_Visc != NULL)   delete [] Surface_CMy_Visc;
-  if (Surface_CMz_Visc != NULL)   delete [] Surface_CMz_Visc;
-  
-=======
   if (CDrag_Visc != NULL)       delete [] CDrag_Visc;
   if (CLift_Visc != NULL)       delete [] CLift_Visc;
   if (CSideForce_Visc != NULL)  delete [] CSideForce_Visc;
@@ -11178,7 +11114,6 @@ CNSSolver::~CNSSolver(void) {
   
   if (Cauchy_Serie != NULL) delete [] Cauchy_Serie;
 
->>>>>>> develop
   if (CSkinFriction != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       delete CSkinFriction[iMarker];
@@ -11186,12 +11121,9 @@ CNSSolver::~CNSSolver(void) {
     delete [] CSkinFriction;
   }
 
-<<<<<<< HEAD
   if (Cauchy_Serie != NULL)
     delete [] Cauchy_Serie;
-  
-=======
->>>>>>> develop
+
 }
 
 void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
