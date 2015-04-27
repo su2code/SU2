@@ -81,6 +81,15 @@ CGeometry::CGeometry(void) {
 	Zcoord_plane.clear();
 	FaceArea_plane.clear();
 	Plane_points.clear();
+
+	/*--- parmetis variables---*/
+  adjacency=NULL;
+  xadj=NULL;
+  starting_node=NULL;
+  ending_node=NULL;
+  npoint_procs=NULL;
+  Global_to_local_elem=NULL;
+
 }
 
 CGeometry::~CGeometry(void) {
@@ -148,6 +157,14 @@ CGeometry::~CGeometry(void) {
 	Zcoord_plane.~vector();
 	FaceArea_plane.~vector();
 	Plane_points.~vector();
+
+	/*--- parmetis variables ---*/
+	if (adjacency!=NULL) delete adjacency;
+  if (xadj!=NULL) delete xadj;
+  if (starting_node!=NULL) delete starting_node;
+  if (ending_node!=NULL) delete ending_node;
+  if (npoint_procs!=NULL) delete npoint_procs;
+  if (Global_to_local_elem!=NULL) delete Global_to_local_elem;
 
 }
 
@@ -11117,8 +11134,8 @@ void CPhysicalGeometry::SetColorGrid_Parallel(CConfig *config) {
   /*--- Delete the memory from the geometry class that carried the
    adjacency structure. ---*/
   
-  delete [] xadj;
-  delete [] adjacency;
+  delete [] xadj; xadj=NULL;
+  delete [] adjacency; adjacency = NULL;
   
 #endif
 #endif
@@ -13292,9 +13309,6 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry ***geometry, CConfig **config_c
 }
 
 
-CMultiGridGeometry::~CMultiGridGeometry(void) {
-  
-}
 
 bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, short marker_seed, CGeometry *fine_grid, CConfig *config) {
   

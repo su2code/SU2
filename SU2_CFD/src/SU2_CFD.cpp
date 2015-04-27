@@ -506,7 +506,7 @@ int main(int argc, char *argv[]) {
   
   /*--- Numerics class deallocation ---*/
   for (iZone = 0; iZone < nZone; iZone++) {
-    for (iMesh = 0; iMesh <= config_container[iZone]->GetMGLevels(); iMesh++) {
+    for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++) {
       for (iSol = 0; iSol < MAX_SOLS; iSol++) {
         for (unsigned short iTerm = 0; iTerm < MAX_TERMS; iTerm++){
           if (numerics_container[iZone][iMesh][iSol][iTerm] != NULL) {
@@ -525,11 +525,10 @@ int main(int argc, char *argv[]) {
   delete [] numerics_container;
   if (rank == MASTER_NODE) cout <<"Numerics container deallocated." << endl;
   
-<<<<<<< HEAD
   /*--- Solver class deallocation ---*/
 
     for (iZone = 0; iZone < nZone; iZone++) {
-      for (iMesh = 0; iMesh <= config_container[iZone]->GetMGLevels(); iMesh++) {
+      for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++) {
         for (iSol = 0; iSol < MAX_SOLS; iSol++) {
           if (solver_container[iZone][iMesh][iSol] != NULL) {
             delete solver_container[iZone][iMesh][iSol];
@@ -543,8 +542,9 @@ int main(int argc, char *argv[]) {
     if (rank == MASTER_NODE) cout <<"Solution container, deallocated." << endl;
 
   /*--- Geometry class deallocation ---*/
+    //geometry_container[iZone][MESH_0] = new CPhysicalGeometry(geometry_aux, config_container[iZone], 1);
   for (iZone = 0; iZone < nZone; iZone++) {
-      for (int iMGlevel = 1; iMGlevel < config_container[ZONE_0]->GetMGLevels()+1; iMGlevel++)
+      for (int iMGlevel = 1; iMGlevel < config_container[ZONE_0]->GetnMGLevels()+1; iMGlevel++)
         delete geometry_container[iZone][iMGlevel];
      delete geometry_container[iZone];
   }
@@ -553,7 +553,7 @@ int main(int argc, char *argv[]) {
   
   /*--- Integration class deallocation ---*/
   for (iZone = 0; iZone < nZone; iZone++) {
-    delete integration_container[iZone];
+    delete [] integration_container[iZone];
   }
   delete [] integration_container;
   cout <<"Integration container deallocated." << endl;
@@ -584,18 +584,6 @@ int main(int argc, char *argv[]) {
   delete output;
   cout <<"Output container deallocated." << endl;
 
-=======
-  //  /*--- Deallocate config container ---*/
-  //
-  //  for (iZone = 0; iZone < nZone; iZone++) {
-  //    if (config_container[iZone] != NULL) {
-  //      delete config_container[iZone];
-  //    }
-  //  }
-  //  if (config_container != NULL) delete[] config_container;
-  
-  
->>>>>>> develop
   /*--- Synchronization point after a single solver iteration. Compute the
    wall clock time required. ---*/
   
