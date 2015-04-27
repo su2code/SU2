@@ -1,10 +1,19 @@
 /*!
  * \file grid_movement_structure.inl
  * \brief In-Line subroutines of the <i>grid_movement_structure.hpp</i> file.
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.0 "eagle"
+ * \author F. Palacios, T. Economon, S. Padron
+ * \version 3.2.9 "eagle"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ *
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
+ *
+ * Copyright (C) 2012-2015 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,13 +31,31 @@
  
 #pragma once
 
-inline void CGridMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *config)  { }
+inline void CGridMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *config) { }
 
 inline unsigned short CSurfaceMovement::GetnLevel(void) { return nLevel; }
 
 inline unsigned short CSurfaceMovement::GetnFFDBox(void) { return nFFDBox; }
 
 inline bool CSurfaceMovement::GetFFDBoxDefinition(void) { return FFDBoxDefinition; }
+
+inline void CFreeFormDefBox::Set_Fix_IPlane(unsigned short val_plane) { Fix_IPlane.push_back(val_plane); }
+
+inline void CFreeFormDefBox::Set_Fix_JPlane(unsigned short val_plane) { Fix_JPlane.push_back(val_plane); }
+
+inline void CFreeFormDefBox::Set_Fix_KPlane(unsigned short val_plane) { Fix_KPlane.push_back(val_plane); }
+
+inline unsigned short CFreeFormDefBox::Get_Fix_IPlane(unsigned short val_index) { return Fix_IPlane[val_index]; }
+
+inline unsigned short CFreeFormDefBox::Get_Fix_JPlane(unsigned short val_index) { return Fix_JPlane[val_index]; }
+
+inline unsigned short CFreeFormDefBox::Get_Fix_KPlane(unsigned short val_index) { return Fix_KPlane[val_index]; }
+
+inline unsigned short CFreeFormDefBox::Get_nFix_IPlane(void) { return Fix_IPlane.size(); }
+
+inline unsigned short CFreeFormDefBox::Get_nFix_JPlane(void) { return Fix_JPlane.size(); }
+
+inline unsigned short CFreeFormDefBox::Get_nFix_KPlane(void) { return Fix_KPlane.size(); }
 
 inline void CFreeFormDefBox::Set_MarkerIndex(unsigned short val_iMarker) { MarkerIndex.push_back(val_iMarker); }
 
@@ -84,15 +111,15 @@ inline double *CFreeFormDefBox::Get_ParametricCoord(unsigned long val_iSurfacePo
 																																										
 inline unsigned long CFreeFormDefBox::GetnSurfacePoint(void) { return PointIndex.size(); }
 
-inline void CFreeFormDefBox::SetnCornerPoints(unsigned short val_ncornerpoints){ nCornerPoints = val_ncornerpoints; }
+inline void CFreeFormDefBox::SetnCornerPoints(unsigned short val_ncornerpoints) { nCornerPoints = val_ncornerpoints; }
 
-inline unsigned short CFreeFormDefBox::GetnCornerPoints(void){ return nCornerPoints; }
+inline unsigned short CFreeFormDefBox::GetnCornerPoints(void) { return nCornerPoints; }
 
-inline unsigned short CFreeFormDefBox::GetnControlPoints(void){ return nControlPoints; }
+inline unsigned short CFreeFormDefBox::GetnControlPoints(void) { return nControlPoints; }
 
-inline void CFreeFormDefBox::SetnControlPoints(void){ nControlPoints = lOrder*mOrder*nOrder; }
+inline void CFreeFormDefBox::SetnControlPoints(void) { nControlPoints = lOrder*mOrder*nOrder; }
 
-inline unsigned long CFreeFormDefBox::GetnSurfacePoints(void){ return 0; }
+inline unsigned long CFreeFormDefBox::GetnSurfacePoints(void) { return 0; }
 
 inline double *CFreeFormDefBox::GetCoordCornerPoints(unsigned short val_icornerpoints) { return Coord_Corner_Points[val_icornerpoints]; }
 

@@ -1,10 +1,17 @@
 /*!
  * \file numerics_linearized_mean.cpp
  * \brief This file contains all the convective term discretization.
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.0 "eagle"
+ * \author F. Palacios
+ * \version 3.2.9 "eagle"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ *
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -121,7 +128,7 @@ void CCentJST_LinFlow::ComputeResidual (double *val_resconv, double *val_resvisc
 	MeanEnthalpy = 0.5*(Enthalpy_j+Enthalpy_i);
 	MeanEnergy = 0.5*(Energy_j+Energy_i);
   
-	/*--- Compute projected inviscid jacobian (scale = 0.5 because val_resconv ~ 0.5*(fc_i+fc_j)*Normal) ---*/
+	/*--- Compute projected inviscid Jacobian (scale = 0.5 because val_resconv ~ 0.5*(fc_i+fc_j)*Normal) ---*/
 	GetInviscidProjJac(Velocity_i, &Energy_i, Normal, 0.5, Jacobian_i);
 	GetInviscidProjJac(Velocity_j, &Energy_j, Normal, 0.5, Jacobian_j);
   
@@ -246,7 +253,7 @@ void CCentLax_LinFlow::ComputeResidual (double *val_resconv, double *val_resvisc
 	MeanEnthalpy = 0.5*(Enthalpy_i + Enthalpy_j);
 	MeanEnergy = 0.5*(Energy_i + Energy_j);
   
-	/*--- Compute projected inviscid jacobian (scale = 0.5 because val_resconv ~ 0.5*(fc_i+fc_j)*Normal) ---*/
+	/*--- Compute projected inviscid Jacobian (scale = 0.5 because val_resconv ~ 0.5*(fc_i+fc_j)*Normal) ---*/
 	GetInviscidProjJac(Velocity_i, &Energy_i, Normal, 0.5, Jacobian_i);
 	GetInviscidProjJac(Velocity_j, &Energy_j, Normal, 0.5, Jacobian_j);
   
@@ -267,8 +274,8 @@ void CCentLax_LinFlow::ComputeResidual (double *val_resconv, double *val_resvisc
 	MeanLambda = 0.5*(Local_Lambda_i+Local_Lambda_j);
   
 	/*--- Compute stretching factor ---*/
-	Phi_i = pow(Lambda_i/(4.0*MeanLambda),Param_p);
-	Phi_j = pow(Lambda_j/(4.0*MeanLambda),Param_p);
+	Phi_i = pow(Lambda_i/(4.0*MeanLambda), Param_p);
+	Phi_j = pow(Lambda_j/(4.0*MeanLambda), Param_p);
 	StretchingFactor = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j);
   
 	sc2 = 3.0*(double(Neighbor_i)+double(Neighbor_j))/(double(Neighbor_i)*double(Neighbor_j));

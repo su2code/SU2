@@ -1,10 +1,19 @@
 /*!
  * \file integration_structure.inl
  * \brief In-Line subroutines of the <i>integration_structure.hpp</i> file.
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.0 "eagle"
+ * \author F. Palacios, T. Economon
+ * \version 3.2.9 "eagle"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ *
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
+ *
+ * Copyright (C) 2012-2015 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -28,8 +37,6 @@ inline bool CIntegration::GetConvergence(void) { return Convergence; }
 
 inline bool CIntegration::GetConvergence_FullMG(void) { return Convergence_FullMG; }
 
-inline bool CIntegration::GetConvergence_OneShot(void) { return Convergence_OneShot; }
-
 inline void CIntegration::SetConvergence(bool value) { Convergence = value; }
 
 inline void CIntegration::MultiGrid_Iteration(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container, 
@@ -43,23 +50,25 @@ inline void CIntegration::NonDimensional_Parameters(CGeometry **geometry, CSolve
 																											CConfig *config, unsigned short FinestMesh, unsigned short RunTime_EqSystem, unsigned long Iteration, 
 																											double *monitor) { }
 	
-inline void CIntegration::SetProlongated_Correction(CSolver *sol_fine, CGeometry *geo_fine, CConfig *config) { }
+inline void CIntegration::SetProlongated_Correction(CSolver *sol_fine, CGeometry *geo_fine, CConfig *config, unsigned short iMesh) { }
 
-inline void CIntegration::SetProlongated_Solution(unsigned short RunTime_EqSystem, CSolver **sol_fine, CSolver **sol_coarse,
+inline void CIntegration::SetProlongated_Solution(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
 												  CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) { }
 
 inline void CIntegration::SetRestricted_Residual(CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, 
-											     CGeometry *geo_coarse, CConfig *config)  { }
+											     CGeometry *geo_coarse, CConfig *config) { }
 
-inline void CIntegration::SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolver **sol_fine, CSolver **sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config)  { }
+inline void CIntegration::SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) { }
 
-inline void CIntegration::SetRestricted_Gradient(unsigned short RunTime_EqSystem, CSolver **sol_fine, CSolver **sol_coarse, 
+inline void CIntegration::SetRestricted_EddyVisc(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) { }
+
+inline void CIntegration::SetRestricted_Gradient(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse, 
 												 CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) { }
 	
 inline void CIntegration::SetResidual_Term(CGeometry *geometry, CSolver *flow) { }
 
 inline void CIntegration::SetForcing_Term(CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, 
-										  CConfig *config) { }
+										  CConfig *config, unsigned short iMesh) { }
 
 inline void CIntegration::SingleGrid_Iteration(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container, 
 											  CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone) { }
@@ -67,4 +76,4 @@ inline void CIntegration::SingleGrid_Iteration(CGeometry ***geometry, CSolver **
 inline void CIntegration::SetPotential_Solver(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container, 
                                               CConfig **config, unsigned short RunTime_EqSystem, unsigned short iMesh, unsigned short iZone) { }
                                               
-inline void CIntegration::Smooth_Solution(unsigned short RunTime_EqSystem, CSolver **solver, CGeometry *geometry, unsigned short val_nSmooth, double val_smooth_coeff, CConfig *config) { }
+inline void CIntegration::Smooth_Solution(unsigned short RunTime_EqSystem, CSolver *solver, CGeometry *geometry, unsigned short val_nSmooth, double val_smooth_coeff, CConfig *config) { }

@@ -1,10 +1,19 @@
 /*!
  * \file variable_direct_transition.cpp
  * \brief Definition of the solution fields.
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.0 "eagle"
+ * \author A. Aranake
+ * \version 3.2.9 "eagle"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ *
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
+ *
+ * Copyright (C) 2012-2015 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -25,7 +34,7 @@
 CTransLMVariable::CTransLMVariable(void) : CTurbVariable() {}
 
 CTransLMVariable::CTransLMVariable(double val_nu_tilde, double val_intermittency, double val_REth,  unsigned short val_nDim, unsigned short val_nvar, CConfig *config)
-: CTurbVariable(val_nDim, val_nvar,config) {
+: CTurbVariable(val_nDim, val_nvar, config) {
   
 	// Initialization of variables
 	Solution[0] = val_intermittency; Solution_Old[0] = val_intermittency;
@@ -38,6 +47,6 @@ CTransLMVariable::~CTransLMVariable(void) { }
 void CTransLMVariable::SetGammaEff() {
   
 	/* -- Correction for separation-induced transition -- */
-	Solution[0] = max(Solution[0],gamma_sep);
+	Solution[0] = max(Solution[0], gamma_sep);
   
 }
