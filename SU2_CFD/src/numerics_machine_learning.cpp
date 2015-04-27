@@ -1,16 +1,45 @@
+/*!
+ * \file numerics_template.cpp
+ * \brief This file contains all the convective term discretization.
+ * \author B. Tracey
+ * \version 3.2.9 "eagle"
+ *
+ * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ *
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
+ *
+ * SU2 is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * SU2 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "../include/numerics_machine_learning.hpp"
 using namespace std;
 
 // This is up here because otherwise it's not in scope of the functions below
 #ifdef HAVE_JSONCPP
-CPredictor* parse_predictor(Json::Value json){
+CPredictor* parse_predictor(Json::Value json) {
   string type = json["Type"].asString();
   Json::Value value = json["Value"];
-  if (type.compare("github.com/reggo/reggo/supervised/nnet/Net*")==0){
+  if (type.compare("github.com/reggo/reggo/supervised/nnet/Net*") ==0) {
     CPredictor* predictor = new CNeurNet(value);
     return predictor;
   }
-  if (type.compare("github.com/btracey/ransuq/mlalg/MulPredictor")==0){
+  if (type.compare("github.com/btracey/ransuq/mlalg/MulPredictor") ==0) {
     CPredictor* predictor = new CMulPredictor(value);
     return predictor;
   }
@@ -18,28 +47,28 @@ CPredictor* parse_predictor(Json::Value json){
   return NULL;
 }
 
-CScaler* parse_cscaler(Json::Value json){
+CScaler* parse_cscaler(Json::Value json) {
   
   string type = json["Type"].asString();
   Json::Value value = json["Value"];
-  if (type.compare("github.com/reggo/reggo/scale/Normal*") == 0){
+  if (type.compare("github.com/reggo/reggo/scale/Normal*") == 0) {
     // We matched the normal scaler. Now, allocate a new one
     CScaler * scaler = new CNormalScaler(value);
     return scaler;
-  }else if(type.compare("github.com/btracey/ransuq/mlalg/MulInputScaler*") == 0){
+  } else if (type.compare("github.com/btracey/ransuq/mlalg/MulInputScaler*") == 0) {
     // Allocate a MulScaler
     CScaler * scaler = new CMulInputScaler(value);
     return scaler;
-  }else if(type.compare("github.com/btracey/ransuq/mlalg/MulOutputScaler*") == 0){
+  } else if (type.compare("github.com/btracey/ransuq/mlalg/MulOutputScaler*") == 0) {
     // Allocate a MulScaler
     CScaler * scaler = new CMulOutputScaler(value);
     return scaler;
-  }else{
+  } else{
     cout << "NoMatch for scaler type: "<< type << endl;
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   cout << "Shouldnt' be here" << endl;
-  exit(1);
+  exit(EXIT_FAILURE);
   
   return NULL;
 }
@@ -47,42 +76,42 @@ CScaler* parse_cscaler(Json::Value json){
 
 
 
-CScaler::CScaler(){}
-CScaler::~CScaler(){}
+CScaler::CScaler() {}
+CScaler::~CScaler() {}
 
-CNormalScaler::CNormalScaler(){}
-CNormalScaler::CNormalScaler(int dim, double *mu, double *sigma){
+CNormalScaler::CNormalScaler() {}
+CNormalScaler::CNormalScaler(int dim, double *mu, double *sigma) {
 	this->dim = dim;
 	this->mu = new double[dim];
 	this->sigma = new double[dim];
-	for (int i=0; i < dim; i++){
+	for (int i=0; i < dim; i++) {
 		this->mu[i] = mu[i];
 		this->sigma[i] = sigma[i];
 	}
 	return;
 }
-CNormalScaler::~CNormalScaler(){
+CNormalScaler::~CNormalScaler() {
 	delete [] mu;
 	delete [] sigma;
 }
 
 #ifdef HAVE_JSONCPP
-CNormalScaler::CNormalScaler(Json::Value json){
+CNormalScaler::CNormalScaler(Json::Value json) {
   int nDim = json["Dim"].asInt();
   Json::Value muVal = json["Mu"];
   
   int muSize = muVal.size();
-  if (muSize != nDim){
+  if (muSize != nDim) {
     cout << "musize and Dim mismatch" << endl;
   }
   double *mu = new double[muSize];
-  for (int i = 0; i < nDim; i++){
+  for (int i = 0; i < nDim; i++) {
     mu[i] = muVal[i].asDouble();
   }
 
   Json::Value sigmaVal = json["Sigma"];
   int sigmaSize = sigmaVal.size();
-  if (sigmaSize != nDim){
+  if (sigmaSize != nDim) {
     cout << "sigmasize and and Dim mismatch" << endl;
   }
   
@@ -100,23 +129,23 @@ CNormalScaler::CNormalScaler(Json::Value json){
 #endif
 
 
-void CNormalScaler::Scale(double * inputs){
-	for (int i=0; i<dim; i++){
+void CNormalScaler::Scale(double * inputs) {
+	for (int i=0; i<dim; i++) {
 		inputs[i] = (inputs[i]-mu[i])/sigma[i];
 	}
 	return;
 }
-void CNormalScaler::Unscale(double * inputs){
-	for (int i=0; i<dim; i++){
+void CNormalScaler::Unscale(double * inputs) {
+	for (int i=0; i<dim; i++) {
 		inputs[i] = inputs[i]*sigma[i] + mu[i];
 	}
 	return;
 }
 
-CMulInputScaler::CMulInputScaler(){}
+CMulInputScaler::CMulInputScaler() {}
 
 #ifdef HAVE_JSONCPP
-CMulInputScaler::CMulInputScaler(Json::Value json){
+CMulInputScaler::CMulInputScaler(Json::Value json) {
   // Get the scaler subfield
   this->InnerScaler = parse_cscaler(json["Scaler"]);
 
@@ -125,96 +154,96 @@ CMulInputScaler::CMulInputScaler(Json::Value json){
 }
 #endif
 
-CMulInputScaler::~CMulInputScaler(){}
-void CMulInputScaler::Scale(double * inputs){
+CMulInputScaler::~CMulInputScaler() {}
+void CMulInputScaler::Scale(double * inputs) {
   inputs[0] /= this->MulScale;
   double * second = &inputs[1];
   this->InnerScaler->Scale(second);
   return;
 }
 
-void CMulInputScaler::Unscale(double * inputs){
+void CMulInputScaler::Unscale(double * inputs) {
   inputs[0] *= this->MulScale;
   double * second = &inputs[1];
   this->InnerScaler->Unscale(second);
   return;
 }
 
-CMulOutputScaler::CMulOutputScaler(){}
-CMulOutputScaler::~CMulOutputScaler(){}
-void CMulOutputScaler::Scale(double * outputs){
+CMulOutputScaler::CMulOutputScaler() {}
+CMulOutputScaler::~CMulOutputScaler() {}
+void CMulOutputScaler::Scale(double * outputs) {
   outputs[0] /= this->MulScale;
   return;
 }
 
 #ifdef HAVE_JSONCPP
-CMulOutputScaler::CMulOutputScaler(Json::Value json){
+CMulOutputScaler::CMulOutputScaler(Json::Value json) {
   this->MulScale = json["MulScale"].asDouble();
 }
 #endif
 
-void CMulOutputScaler::Unscale(double * outputs){
+void CMulOutputScaler::Unscale(double * outputs) {
   outputs[0] *= this->MulScale;
   return;
 }
 
-CActivator::CActivator(){}
-CActivator::~CActivator(){}
+CActivator::CActivator() {}
+CActivator::~CActivator() {}
 
-CTanhActivator::CTanhActivator(){}
+CTanhActivator::CTanhActivator() {}
 #ifdef HAVE_JSONCPP
-CTanhActivator::CTanhActivator(Json::Value json){
+CTanhActivator::CTanhActivator(Json::Value json) {
 }
 #endif
-CTanhActivator::~CTanhActivator(){}
-double CTanhActivator::Activate(double sum){
+CTanhActivator::~CTanhActivator() {}
+double CTanhActivator::Activate(double sum) {
   //cout << "In CTanhActivator" << endl;
 	double val =  1.7159 * tanh(2.0/3.0 *sum);
   //cout << "Done CTanhActivator" << endl;
 	return val;
 }
 
-CLinearActivator::CLinearActivator(){}
+CLinearActivator::CLinearActivator() {}
 #ifdef HAVE_JSONCPP
-CLinearActivator::CLinearActivator(Json::Value){
+CLinearActivator::CLinearActivator(Json::Value) {
 }
 #endif
 
-CLinearActivator::~CLinearActivator(){}
+CLinearActivator::~CLinearActivator() {}
 
-double CLinearActivator::Activate(double sum){
+double CLinearActivator::Activate(double sum) {
 //  cout << "In CLinear Activate" << endl;
 	return sum;
 }
 
-CNeuron::CNeuron(){}
-CNeuron::~CNeuron(){}
+CNeuron::CNeuron() {}
+CNeuron::~CNeuron() {}
 
-CSumNeuron::CSumNeuron(){}
-CSumNeuron::CSumNeuron(CActivator* activator){
+CSumNeuron::CSumNeuron() {}
+CSumNeuron::CSumNeuron(CActivator* activator) {
 	this->activator = activator;
 }
 #ifdef HAVE_JSONCPP
-CSumNeuron::CSumNeuron(Json::Value json){
+CSumNeuron::CSumNeuron(Json::Value json) {
   string type = json["Type"].asString();
-  if (type.compare("github.com/reggo/reggo/supervised/nnet/Tanh") == 0){
+  if (type.compare("github.com/reggo/reggo/supervised/nnet/Tanh") == 0) {
     this->activator = new CTanhActivator(json["Value"]);
-  }else if(type.compare("github.com/reggo/reggo/supervised/nnet/Linear") == 0){
+  } else if (type.compare("github.com/reggo/reggo/supervised/nnet/Linear") == 0) {
     this->activator = new CLinearActivator(json["Value"]);
-  }else{
+  } else{
     cout << "Unknown activator type: " << type << endl;
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 }
 #endif
 
-CSumNeuron::~CSumNeuron(){
+CSumNeuron::~CSumNeuron() {
 	delete this->activator;
 }
 
-double CSumNeuron::Combine(double *parameters, int nParameters, double *inputs, int nInputs){
+double CSumNeuron::Combine(double *parameters, int nParameters, double *inputs, int nInputs) {
   double combination = 0;
-	for (int i = 0; i < nInputs; i++){
+	for (int i = 0; i < nInputs; i++) {
 		combination += inputs[i] * parameters[i];
 	}
  
@@ -224,45 +253,45 @@ double CSumNeuron::Combine(double *parameters, int nParameters, double *inputs, 
 	return combination;
 }
 
-double CSumNeuron::Activate(double combination){
+double CSumNeuron::Activate(double combination) {
   return this->activator->Activate(combination);
 }
 
-CPredictor::CPredictor(){}
-CPredictor::~CPredictor(){}
+CPredictor::CPredictor() {}
+CPredictor::~CPredictor() {}
 
-int CPredictor::InputDim(){
+int CPredictor::InputDim() {
   return this->inputDim;
 }
 
-int CPredictor::OutputDim(){
+int CPredictor::OutputDim() {
   return this->outputDim;
 }
 
-CMulPredictor::CMulPredictor(){}
+CMulPredictor::CMulPredictor() {}
 #ifdef HAVE_JSONCPP
-CMulPredictor::CMulPredictor(Json::Value json){
+CMulPredictor::CMulPredictor(Json::Value json) {
   this->Inner = parse_predictor(json["Inner"]);
   this->inputDim = this->Inner->InputDim() + 1;
   this->outputDim = this->Inner->OutputDim();
 }
 #endif
 
-CMulPredictor::~CMulPredictor(){}
+CMulPredictor::~CMulPredictor() {}
 
-void CMulPredictor::Predict(double * input, double * output){
+void CMulPredictor::Predict(double * input, double * output) {
   double * secondInput = &input[1];
   this->Inner->Predict(secondInput, output);
-  for (int i = 0; i < this->OutputDim(); i++){
+  for (int i = 0; i < this->OutputDim(); i++) {
     output[i] *= input[0];
   }
   return;
 }
 
-CNeurNet::CNeurNet(){}
+CNeurNet::CNeurNet() {}
 
 #ifdef HAVE_JSONCPP
-CNeurNet::CNeurNet(Json::Value json){
+CNeurNet::CNeurNet(Json::Value json) {
   this-> inputDim = json["InputDim"].asInt();
   this-> outputDim = json["OutputDim"].asInt();
   this-> totalNumParameters = json["TotalNumParameters"].asInt();
@@ -272,7 +301,7 @@ CNeurNet::CNeurNet(Json::Value json){
   Json::Value parameters = json["Parameters"];
   int nLayers = layers.size();
   int nParameterLayers = parameters.size();
-  if (nLayers != nParameterLayers){
+  if (nLayers != nParameterLayers) {
     cout << "neurons and parameters disagree on number of layers" << endl;
   }
   this->nLayers = nLayers;
@@ -284,17 +313,17 @@ CNeurNet::CNeurNet(Json::Value json){
   this->parameters = new double**[nLayers];
   
   // Per layer, get the number of neurons in the layer and then read in the neurons
-  for (int i = 0; i < nLayers; i++){
+  for (int i = 0; i < nLayers; i++) {
     Json::Value layer = layers[i];
     Json::Value parameterLayer = parameters[i];
     int neuronsInLayer = layer.size();
     int parameterNeurons = parameterLayer.size();
-    if (neuronsInLayer != parameterNeurons){
+    if (neuronsInLayer != parameterNeurons) {
       cout << "neurons and parameters disagree on the number of neurons in layer i" << endl;
     }
     this->nNeuronsInLayer[i] = neuronsInLayer;
-    if (i == nLayers-1){
-      if (neuronsInLayer != this->outputDim){
+    if (i == nLayers-1) {
+      if (neuronsInLayer != this->outputDim) {
         cout << "Size of initial layer is not equal to input dimension" << endl;
       }
     }
@@ -303,14 +332,14 @@ CNeurNet::CNeurNet(Json::Value json){
     this->parameters[i] = new double *[neuronsInLayer];
     
     // Loop over all the neurons in the layer and add the parameters and neuron itself
-    for (int j = 0; j < neuronsInLayer; j++){
+    for (int j = 0; j < neuronsInLayer; j++) {
       Json::Value neuron = layer[j];
       
       // get the parameters
       int nParametersInNeuron = parameterLayer[j].size();
       this->nParameters[i][j] = nParametersInNeuron;
       this->parameters[i][j] = new double [nParametersInNeuron];
-      for (int k = 0; k < nParametersInNeuron; k++){
+      for (int k = 0; k < nParametersInNeuron; k++) {
         
         double val = parameterLayer[j][k].asDouble();
         this->parameters[i][j][k] = val;
@@ -324,9 +353,9 @@ CNeurNet::CNeurNet(Json::Value json){
       
       // get the neurons
       string type = neuron["Type"].asString();
-      if (type.compare("github.com/reggo/reggo/supervised/nnet/SumNeuron") == 0){
+      if (type.compare("github.com/reggo/reggo/supervised/nnet/SumNeuron") == 0) {
         this->neurons[i][j] = new CSumNeuron(neuron["Value"]);
-      }else{
+      } else{
         cout << "neuron type unknown: " << type << endl;
       }
     }
@@ -335,18 +364,18 @@ CNeurNet::CNeurNet(Json::Value json){
   
   // Find the maximum number of neurons
   this->maxNeurons = 0;
-  for (int i = 0; i < this->nLayers; i++){
-    if (this->maxNeurons < this->nNeuronsInLayer[i]){
+  for (int i = 0; i < this->nLayers; i++) {
+    if (this->maxNeurons < this->nNeuronsInLayer[i]) {
       this->maxNeurons = this->nNeuronsInLayer[i];
     }
   }
 }
 #endif
 
-CNeurNet::~CNeurNet(){
+CNeurNet::~CNeurNet() {
   
-  for (int i = 0; i < this->nLayers; i++){
-    for (int j = 0; j < this->nNeuronsInLayer[i]; j++){
+  for (int i = 0; i < this->nLayers; i++) {
+    for (int j = 0; j < this->nNeuronsInLayer[i]; j++) {
       delete [] this-> parameters[i][j];
       delete [] this->neurons[i][j];
     }
@@ -360,15 +389,15 @@ CNeurNet::~CNeurNet(){
   delete [] this->nParameters;
 }
 
-void CNeurNet::processLayer(double * input, int nInput, CNeuron **neurons, double **parameters, int nNeurons, int * nParameters, double *output){
-  for (int i = 0; i < nNeurons; i++){
+void CNeurNet::processLayer(double * input, int nInput, CNeuron **neurons, double **parameters, int nNeurons, int * nParameters, double *output) {
+  for (int i = 0; i < nNeurons; i++) {
     double combination = neurons[i]->Combine(parameters[i], nParameters[i], input, nInput);
     output[i] = neurons[i]->Activate(combination);
   }
   return;
 }
 
-void CNeurNet::Predict(double * input, double * output){
+void CNeurNet::Predict(double * input, double * output) {
   double * prevTmpOutput = new double[this->maxNeurons];
   double *tmpOutput = new double[this->maxNeurons];
   
@@ -376,13 +405,13 @@ void CNeurNet::Predict(double * input, double * output){
   
   /*
   cout << "Input is:" << endl;
-  for (int i=0; i < this->InputDim(); i++){
+  for (int i=0; i < this->InputDim(); i++) {
     cout << input[i] << endl;
   }
   cout << "Done input" << endl;
    */
   
-  if (nLayers == 1){
+  if (nLayers == 1) {
     this->processLayer(input, this->inputDim, this->neurons[0], this->parameters[0], this->nNeuronsInLayer[0], this->nParameters[0], output);
     return;
   }
@@ -392,7 +421,7 @@ void CNeurNet::Predict(double * input, double * output){
   
   /*
   cout << "First layer tmp output" << endl;
-  for (int i = 0; i < this->nNeuronsInLayer[0]; i++){
+  for (int i = 0; i < this->nNeuronsInLayer[0]; i++) {
     cout << tmpOutput[i] << endl;
     double tmp = tmpOutput[i];
     long *ptrFloatAsInt =(long *)( &tmp);
@@ -404,7 +433,7 @@ void CNeurNet::Predict(double * input, double * output){
    */
   
   // Middle layers use the previous output as input
-  for (int i= 1; i < nLayers -1; i++){
+  for (int i= 1; i < nLayers -1; i++) {
     double *tmp;
     tmp = prevTmpOutput;
     prevTmpOutput = tmpOutput;
@@ -417,7 +446,7 @@ void CNeurNet::Predict(double * input, double * output){
   int inputDim = this->nNeuronsInLayer[nLayers-2];
   
   // Last layer has the actual output
-  processLayer(tmpOutput, inputDim, this->neurons[layer], this->parameters[layer], this->nNeuronsInLayer[layer],this->nParameters[layer], output);
+  processLayer(tmpOutput, inputDim, this->neurons[layer], this->parameters[layer], this->nNeuronsInLayer[layer], this->nParameters[layer], output);
   
   // Clean up garbage
   delete [] prevTmpOutput;
@@ -428,7 +457,7 @@ void CNeurNet::Predict(double * input, double * output){
 
 
 // get_file_contents gets all of the file contents and returns them as a string
-string get_file_contents(string filename){
+string get_file_contents(string filename) {
   
   const char * charfile = filename.c_str();
   
@@ -443,16 +472,16 @@ string get_file_contents(string filename){
     in.close();
     return(contents);
   }
-  cout << "Predictor filename " << filename << " not found" <<endl;
-  exit(1);
+  cout << "Predictor filename " << filename << " not found" << endl;
+  exit(EXIT_FAILURE);
 }
 
 // TODO: Separate filename from parse script. (make a function of a Node)
-CScalePredictor::CScalePredictor(){}
+CScalePredictor::CScalePredictor() {}
 #ifdef HAVE_JSONCPP
-CScalePredictor::CScalePredictor(string filename){
+CScalePredictor::CScalePredictor(string filename) {
   
-  if (filename.compare("none")==0) {
+  if (filename.compare("none") ==0) {
     return;
   }
   
@@ -461,8 +490,8 @@ CScalePredictor::CScalePredictor(string filename){
   Json::Value root;
   Json::Reader reader;
   bool parsingSuccessful = reader.parse(contents, root);
-  if (!parsingSuccessful){
-    std::cout << "Failed to parse \n" << reader.getFormatedErrorMessages()<<endl;
+  if (!parsingSuccessful) {
+    std::cout << "Failed to parse \n" << reader.getFormatedErrorMessages()<< endl;
   }
   
   // Get the input scaler
@@ -473,48 +502,48 @@ CScalePredictor::CScalePredictor(string filename){
   // Check the predictions
   int nTestInputs = root["TestInputs"].size();
   int nTestOutputs = root["TestOutputs"].size();
-  if (nTestInputs != nTestOutputs){
+  if (nTestInputs != nTestOutputs) {
     cout << "Number of test inputs and number of test outputs doesn't match" << endl;
   }
   Json::Value testInputs = root["TestInputs"];
   Json::Value testOutputs = root["TestOutputs"];
   
-  for (int i = 0; i < nTestInputs; i++){
+  for (int i = 0; i < nTestInputs; i++) {
     int nInputs = testInputs[i].size();
     int nOutputs = testOutputs[i].size();
     double *input = new double[nInputs];
     double *output = new double[nOutputs];
-    for (int j = 0; j < nInputs; j++){
+    for (int j = 0; j < nInputs; j++) {
       input[j] = testInputs[i][j].asDouble();
     }
-    for (int j=0; j < nOutputs; j++){
+    for (int j=0; j < nOutputs; j++) {
       output[j] = testOutputs[i][j].asDouble();
     }
     double *predOutput = new double[nOutputs];
     
     this->Predict(input, predOutput);
     bool mismatch = 0;
-    for (int j = 0; j < nOutputs; j++){
+    for (int j = 0; j < nOutputs; j++) {
       double max = abs(output[j]);
-      if (predOutput[j] > max){
+      if (predOutput[j] > max) {
         max = abs(predOutput[j]);
       }
-      if (max < 1.0){
+      if (max < 1.0) {
         max = 1.0;
       }
-      if (abs(output[j] - predOutput[j])/(max) > 1e-12){
+      if (abs(output[j] - predOutput[j])/(max) > 1e-12) {
         mismatch = 1;
       }
       cout.precision(16);
-      if (mismatch){
-        cout << "Prediction mismatch" <<endl;
-        for (int j = 0; j < nOutputs; j++){
+      if (mismatch) {
+        cout << "Prediction mismatch" << endl;
+        for (int j = 0; j < nOutputs; j++) {
           cout << "j = " <<  " true: " << output[j] << " pred: " << predOutput[j] << " rel error: " << abs(output[j] - predOutput[j])/(max) <<  endl;
         }
         throw string("mismatch");
       }
     }
-//    if (mismatch){
+//    if (mismatch) {
 //      throw(-1);
 //    }
 
@@ -525,18 +554,18 @@ CScalePredictor::CScalePredictor(string filename){
   return;
 }
 #else
-  CScalePredictor::CScalePredictor(string filename){
+  CScalePredictor::CScalePredictor(string filename) {
     cout << "Must have JsonCpp installed" << endl;
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 #endif
-CScalePredictor::~CScalePredictor(){
+CScalePredictor::~CScalePredictor() {
   delete this->Pred;
   delete this->InputScaler;
   delete this->OutputScaler;
   return;
 }
-void CScalePredictor::Predict(double *input, double *output){
+void CScalePredictor::Predict(double *input, double *output) {
   // Scale the input
   this->InputScaler->Scale(input);
   
@@ -548,20 +577,20 @@ void CScalePredictor::Predict(double *input, double *output){
 	this->OutputScaler->Unscale(output);
 }
 
-CSANondimInputs::CSANondimInputs(int nDim){
+CSANondimInputs::CSANondimInputs(int nDim) {
   this->nDim = nDim;
   this->DNuHatDXBar = new double[nDim];
 };
-CSANondimInputs::~CSANondimInputs(){
+CSANondimInputs::~CSANondimInputs() {
   delete [] this->DNuHatDXBar;
 };
 
-void CSANondimInputs::Set(SpalartAllmarasInputs* sainputs){
+void CSANondimInputs::Set(SpalartAllmarasInputs* sainputs) {
   double kin_visc = sainputs->Laminar_Viscosity / sainputs->Density;
   this->Chi = sainputs->Turbulent_Kinematic_Viscosity / kin_visc;
   double nuSum = sainputs->Turbulent_Kinematic_Viscosity + kin_visc;
   double dist = sainputs->dist;
-  if (dist < 1e-10){
+  if (dist < 1e-10) {
     dist = 1e-10;
   }
   
@@ -579,26 +608,26 @@ void CSANondimInputs::Set(SpalartAllmarasInputs* sainputs){
     cout << "dist = " << dist << endl;
     cout << "distSq = " << distSq << endl;
     cout << "nuSum = " << nuSum << endl;
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   
   double * turbViscGrad = sainputs->GetTurbKinViscGradient();
   this->NuHatGradNorm = 0;
-  for (int i = 0; i < this->nDim; i++){
+  for (int i = 0; i < this->nDim; i++) {
     this->DNuHatDXBar[i] = turbViscGrad[i] / this->NuGradNondim;
     this->NuHatGradNorm += turbViscGrad[i] * turbViscGrad[i];
   }
   this->NuHatGradNormBar = this->NuHatGradNorm / this->SourceNondim;
 };
-void CSANondimInputs::NondimensionalizeSource(int nResidual, double * source){
-  for (int i = 0; i < nResidual; i++){
+void CSANondimInputs::NondimensionalizeSource(int nResidual, double * source) {
+  for (int i = 0; i < nResidual; i++) {
     source[i] /= this->SourceNondim;
   }
 }
 
-void CSANondimInputs::DimensionalizeSource(int nResidual, double * source){
+void CSANondimInputs::DimensionalizeSource(int nResidual, double * source) {
   
-  for (int i = 0; i < nResidual; i++){
+  for (int i = 0; i < nResidual; i++) {
     //    cout << "pre" << source[i] << endl;
     source[i] *= this->SourceNondim;
     //    cout << "post" << source[i] << endl;

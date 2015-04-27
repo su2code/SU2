@@ -1,10 +1,17 @@
 /*!
  * \file numerics_template.cpp
  * \brief This file contains all the convective term discretization.
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.0 "eagle"
+ * \author F. Palacios
+ * \version 3.2.9 "eagle"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ *
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -105,7 +112,7 @@ void CConvective_Template::ComputeResidual(double *val_residual, double **val_Ja
   Pressure_j = (SoundSpeed_j * SoundSpeed_j * Density_j) / Gamma;
   Enthalpy_j = (U_j[nDim+1] + Pressure_j) / Density_j;
   
-  /*--- Promediate Roe variables iPoint and jPoint ---*/
+  /*--- Mean Roe variables iPoint and jPoint ---*/
   R = sqrt(Density_j/Density_i);
   RoeDensity = R*Density_i;
   sq_vel = 0;
@@ -135,7 +142,7 @@ void CConvective_Template::ComputeResidual(double *val_residual, double **val_Ja
   /*--- Flow eigenvalues and Entropy correctors ---*/
   for (iDim = 0; iDim < nDim; iDim++) {
     Lambda[iDim] = ProjVelocity;
-    Epsilon[iDim] = 4.0*max(0.0, max(Lambda[iDim]-ProjVelocity_i,ProjVelocity_j-Lambda[iDim]));
+    Epsilon[iDim] = 4.0*max(0.0, max(Lambda[iDim]-ProjVelocity_i, ProjVelocity_j-Lambda[iDim]));
   }
   Lambda[nVar-2]  = ProjVelocity + RoeSoundSpeed;
   Epsilon[nVar-2] = 4.0*max(0.0, max(Lambda[nVar-2]-(ProjVelocity_i+SoundSpeed_i),(ProjVelocity_j+SoundSpeed_j)-Lambda[nVar-2]));

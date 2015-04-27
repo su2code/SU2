@@ -1,10 +1,19 @@
 /*!
  * \file solution_linearized_mean.cpp
  * \brief Main subrotuines for solving linearized problems (Euler, Navier-Stokes, etc.).
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.0 "eagle"
+ * \author F. Palacios
+ * \version 3.2.9 "eagle"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ *
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
+ *
+ * Copyright (C) 2012-2015 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -24,7 +33,7 @@
 
 CLinEulerSolver::CLinEulerSolver(void) : CSolver() { }
 
-CLinEulerSolver::CLinEulerSolver(CGeometry *geometry, CConfig *config) : CSolver() {
+CLinEulerSolver::CLinEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
 	unsigned long iPoint, index;
 	string text_line, mesh_filename;
 	unsigned short iDim, iVar, nLineLets;
@@ -52,7 +61,16 @@ CLinEulerSolver::CLinEulerSolver(CGeometry *geometry, CConfig *config) : CSolver
 	Residual = new double[nVar];	Residual_RMS = new double[nVar];  
 	Residual_i = new double[nVar]; Residual_j = new double[nVar];
 	Res_Conv = new double[nVar];	Res_Visc = new double[nVar]; Res_Sour = new double[nVar];
-  Residual_Max = new double[nVar]; Point_Max = new unsigned long[nVar];
+  Residual_Max = new double[nVar];
+  
+  /*--- Define some structures for locating max residuals ---*/
+  Point_Max = new unsigned long[nVar];
+  for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar] = 0;
+  Point_Max_Coord = new double*[nVar];
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Point_Max_Coord[iVar] = new double[nDim];
+    for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
+  }
 
 	/*--- Define some auxiliar vector related with the solution ---*/
 	Solution   = new double[nVar];
@@ -70,7 +88,8 @@ CLinEulerSolver::CLinEulerSolver(CGeometry *geometry, CConfig *config) : CSolver
 		/*--- Initialization of the structure of the whole Jacobian ---*/
 		Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
     
-    if (config->GetKind_Linear_Solver_Prec() == LINELET) {
+    if ((config->GetKind_Linear_Solver_Prec() == LINELET) ||
+        (config->GetKind_Linear_Solver() == SMOOTHER_LINELET)) {
       nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
       if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
     }
@@ -111,7 +130,7 @@ CLinEulerSolver::CLinEulerSolver(CGeometry *geometry, CConfig *config) : CSolver
 	}
 	
 	/*--- Restart the solution from file information ---*/
-	if (!restart || geometry->GetFinestMGLevel() == false) {
+	if (!restart || (iMesh != MESH_0)) {
 		for (iPoint=0; iPoint < geometry->GetnPoint(); iPoint++)
 			node[iPoint] = new CLinEulerVariable(DeltaRho_Inf, DeltaVel_Inf, DeltaE_Inf, nDim, nVar, config);
 	}
@@ -124,7 +143,7 @@ CLinEulerSolver::CLinEulerSolver(CGeometry *geometry, CConfig *config) : CSolver
     /*--- In case there is no file ---*/
 		if (restart_file.fail()) {
 			cout << "There is no linearized restart file!!" << endl;
-			exit(1);
+			exit(EXIT_FAILURE);
 		}    
     
     /*--- In case this is a parallel simulation, we need to perform the 
@@ -132,11 +151,11 @@ CLinEulerSolver::CLinEulerSolver(CGeometry *geometry, CConfig *config) : CSolver
     long *Global2Local;
     Global2Local = new long[geometry->GetGlobal_nPointDomain()];
     /*--- First, set all indices to a negative value by default ---*/
-    for(iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
+    for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
       Global2Local[iPoint] = -1;
     }
     /*--- Now fill array with the transform values only for local points ---*/
-    for(iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+    for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
       Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
     }
     
@@ -146,7 +165,7 @@ CLinEulerSolver::CLinEulerSolver(CGeometry *geometry, CConfig *config) : CSolver
     /*--- The first line is the header ---*/
     getline (restart_file, text_line);
     
-    while (getline (restart_file,text_line)) {
+    while (getline (restart_file, text_line)) {
 			istringstream point_line(text_line);
       
       /*--- Retrieve local index. If this node from the restart file lives 
@@ -165,7 +184,7 @@ CLinEulerSolver::CLinEulerSolver(CGeometry *geometry, CConfig *config) : CSolver
     /*--- Instantiate the variable class with an arbitrary solution
      at any halo/periodic nodes. The initial solution can be arbitrary,
      because a send/recv is performed immediately in the solver. ---*/
-    for(iPoint = geometry->GetnPointDomain(); iPoint < geometry->GetnPoint(); iPoint++) {
+    for (iPoint = geometry->GetnPointDomain(); iPoint < geometry->GetnPoint(); iPoint++) {
       node[iPoint] = new CLinEulerVariable(Solution, nDim, nVar, config);
     }
     
@@ -242,7 +261,7 @@ void CLinEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
 
 		/*--- Undivided laplacian ---*/
 		if (second_order) 
-			numerics->SetUndivided_Laplacian(node[iPoint]->GetUndivided_Laplacian(),node[jPoint]->GetUndivided_Laplacian());
+			numerics->SetUndivided_Laplacian(node[iPoint]->GetUndivided_Laplacian(), node[jPoint]->GetUndivided_Laplacian());
 		
 		/*--- Compute residual ---*/
 		numerics->ComputeResidual(Res_Conv, Res_Visc, Jacobian_i, Jacobian_j, config);
@@ -287,7 +306,7 @@ void CLinEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver
 			for (iVar = 0; iVar < nVar; iVar++) {
 				node[iPoint]->AddSolution(iVar, -(Residual[iVar]+Res_TruncError[iVar])*Delta*RK_AlphaCoeff);
 				AddRes_RMS(iVar, Residual[iVar]*Residual[iVar]);
-        AddRes_Max(iVar, fabs(Residual[iVar]), geometry->node[iPoint]->GetGlobalIndex());
+        AddRes_Max(iVar, fabs(Residual[iVar]), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
 			}
 		}
 	
@@ -307,7 +326,7 @@ void CLinEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
 		LinSysRes.SetBlock_Zero(iPoint);
 	}
 	
-	/*--- Inicialize the jacobian matrices ---*/
+	/*--- Inicialize the Jacobian matrices ---*/
 	if (config->GetKind_TimeIntScheme_LinFlow() == EULER_IMPLICIT)
 		Jacobian.SetValZero();
 }
@@ -315,7 +334,7 @@ void CLinEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
 void CLinEulerSolver::Inviscid_DeltaForces(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 	unsigned long iVertex, Point;
 	unsigned short iDim, iMarker, Boundary, Monitoring;
-	double  *Face_Normal, dS, DeltaPressure, *Velocity;
+	double  *Face_Normal, DeltaPressure, *Velocity;
 	double Alpha = config->GetAoA()*PI_NUMBER / 180.0;
 	double Beta  = config->GetAoS()*PI_NUMBER / 180.0;
 	double RefAreaCoeff = config->GetRefAreaCoeff();
@@ -355,7 +374,6 @@ void CLinEulerSolver::Inviscid_DeltaForces(CGeometry *geometry, CSolver **solver
 					
 					if (Monitoring == YES) {
 						Face_Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-						dS = 0.0; for (iDim = 0; iDim < nDim; iDim++) dS += Face_Normal[iDim]*Face_Normal[iDim]; dS = sqrt(dS);
 						for (iDim = 0; iDim < nDim; iDim++)
 							DeltaForceInviscid[iDim] -= C_p*DeltaPressure*Face_Normal[iDim];
 					}
@@ -363,7 +381,7 @@ void CLinEulerSolver::Inviscid_DeltaForces(CGeometry *geometry, CSolver **solver
 			}
 			
 			/*--- Transform ForceInviscid into CLift and CDrag ---*/
-			if  (Monitoring == YES) {
+			if (Monitoring == YES) {
 				if (nDim == 2) {
 					CDeltaDrag_Inv[iMarker] =  DeltaForceInviscid[0]*cos(Alpha) + DeltaForceInviscid[1]*sin(Alpha);
 					CDeltaLift_Inv[iMarker] = -DeltaForceInviscid[0]*sin(Alpha) + DeltaForceInviscid[1]*cos(Alpha);
@@ -552,7 +570,7 @@ void CLinEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 			
 			/*--- fix characteristics value ---*/			
 			if (nDim == 2) {
-				if(vn > 0.0) { 
+				if (vn > 0.0) { 
 					W_update[0] = W_wall[0];
 					W_update[1] = W_wall[1];
 				}
@@ -561,15 +579,15 @@ void CLinEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 					W_update[1] = W_infty[1];
 				}
 				
-				if(vn+c*dS > 0.0) W_update[2] = W_wall[2];
+				if (vn+c*dS > 0.0) W_update[2] = W_wall[2];
 				else W_update[2] = W_infty[2];
 				
-				if(vn-c*dS > 0.0) W_update[3] = W_wall[3];
+				if (vn-c*dS > 0.0) W_update[3] = W_wall[3];
 				else W_update[3] = W_infty[3];
 			}
 			
 			if (nDim == 3) {
-				if(vn > 0.0) { 
+				if (vn > 0.0) { 
 					W_update[0] = W_wall[0];
 					W_update[1] = W_wall[1];
 					W_update[2] = W_wall[2];
@@ -580,10 +598,10 @@ void CLinEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 					W_update[2] = W_infty[2];
 				}
 				
-				if(vn+c*dS > 0.0) W_update[3] = W_wall[3];
+				if (vn+c*dS > 0.0) W_update[3] = W_wall[3];
 				else W_update[3] = W_infty[3];
 				
-				if(vn-c*dS > 0.0) W_update[4] = W_wall[4];
+				if (vn-c*dS > 0.0) W_update[4] = W_wall[4];
 				else W_update[4] = W_infty[4];
 			}
 			

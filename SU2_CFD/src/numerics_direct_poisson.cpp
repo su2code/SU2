@@ -1,10 +1,17 @@
 /*!
  * \file numerics_direct_poisson.cpp
  * \brief This file contains all the convective term discretization.
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.0 "eagle"
+ * \author F. Palacios
+ * \version 3.2.9 "eagle"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ *
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -42,7 +49,7 @@ void CGalerkin_Flow::ComputeResidual(double **val_stiffmatrix_elem, CConfig *con
 			b[iDim] = Coord_1[iDim]-Coord_2[iDim];
 		}
     
-		Area = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);	/* Norm of the normal component of area, area = 1/2*cross(a,b) */
+		Area = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);	/* Norm of the normal component of area, area = 1/2*cross(a, b) */
     
 		a[0] = 0.5 * (Coord_1[0]*Coord_2[1]-Coord_2[0]*Coord_1[1]) / Area;
 		a[1] = 0.5 * (Coord_2[0]*Coord_0[1]-Coord_0[0]*Coord_2[1]) / Area;
@@ -71,31 +78,31 @@ void CGalerkin_Flow::ComputeResidual(double **val_stiffmatrix_elem, CConfig *con
   
 	if (nDim == 3) {
 		double Volume = 0.0;
-		Volume -= Determinant_3x3(Coord_1[0],Coord_1[1],Coord_1[2],Coord_2[0],Coord_2[1],Coord_2[2],Coord_3[0],Coord_3[1],Coord_3[2]);
-		Volume += Determinant_3x3(Coord_0[0],Coord_0[1],Coord_0[2],Coord_2[0],Coord_2[1],Coord_2[2],Coord_3[0],Coord_3[1],Coord_3[2]);
-		Volume -= Determinant_3x3(Coord_0[0],Coord_0[1],Coord_0[2],Coord_1[0],Coord_1[1],Coord_1[2],Coord_3[0],Coord_3[1],Coord_3[2]);
-		Volume += Determinant_3x3(Coord_0[0],Coord_0[1],Coord_0[2],Coord_1[0],Coord_1[1],Coord_1[2],Coord_2[0],Coord_2[1],Coord_2[2]);
+		Volume -= Determinant_3x3(Coord_1[0], Coord_1[1], Coord_1[2], Coord_2[0], Coord_2[1], Coord_2[2], Coord_3[0], Coord_3[1], Coord_3[2]);
+		Volume += Determinant_3x3(Coord_0[0], Coord_0[1], Coord_0[2], Coord_2[0], Coord_2[1], Coord_2[2], Coord_3[0], Coord_3[1], Coord_3[2]);
+		Volume -= Determinant_3x3(Coord_0[0], Coord_0[1], Coord_0[2], Coord_1[0], Coord_1[1], Coord_1[2], Coord_3[0], Coord_3[1], Coord_3[2]);
+		Volume += Determinant_3x3(Coord_0[0], Coord_0[1], Coord_0[2], Coord_1[0], Coord_1[1], Coord_1[2], Coord_2[0], Coord_2[1], Coord_2[2]);
 		Volume = fabs(Volume / 6.0);
     
-		a[0] = Determinant_3x3(Coord_1[0],Coord_1[1],Coord_1[2],Coord_2[0],Coord_2[1],Coord_2[2],Coord_3[0],Coord_3[1],Coord_3[2])/(6.0*Volume);
-		b[0] = -Determinant_3x3(1.0,Coord_1[1],Coord_1[2],1.0,Coord_2[1],Coord_2[2],1.0,Coord_3[1],Coord_3[2])/(6.0*Volume);
-		c[0] = -Determinant_3x3(Coord_1[0],1.0,Coord_1[2],Coord_2[0],1.0,Coord_2[2],Coord_3[0],1.0,Coord_3[2])/(6.0*Volume);
-		d[0] = -Determinant_3x3(Coord_1[0],Coord_1[1],1.0,Coord_2[0],Coord_2[1],1.0,Coord_3[0],Coord_3[1],1.0)/(6.0*Volume);
+		a[0] = Determinant_3x3(Coord_1[0], Coord_1[1], Coord_1[2], Coord_2[0], Coord_2[1], Coord_2[2], Coord_3[0], Coord_3[1], Coord_3[2])/(6.0*Volume);
+		b[0] = -Determinant_3x3(1.0, Coord_1[1], Coord_1[2],1.0, Coord_2[1], Coord_2[2],1.0, Coord_3[1], Coord_3[2])/(6.0*Volume);
+		c[0] = -Determinant_3x3(Coord_1[0],1.0, Coord_1[2], Coord_2[0],1.0, Coord_2[2], Coord_3[0],1.0, Coord_3[2])/(6.0*Volume);
+		d[0] = -Determinant_3x3(Coord_1[0], Coord_1[1],1.0, Coord_2[0], Coord_2[1],1.0, Coord_3[0], Coord_3[1],1.0)/(6.0*Volume);
     
-		a[1] = -Determinant_3x3(Coord_2[0],Coord_2[1],Coord_2[2],Coord_3[0],Coord_3[1],Coord_3[2],Coord_0[0],Coord_0[1],Coord_0[2])/(6.0*Volume);
-		b[1] = Determinant_3x3(1.0,Coord_2[1],Coord_2[2],1.0,Coord_3[1],Coord_3[2],1.0,Coord_0[1],Coord_0[2])/(6.0*Volume);
-		c[1] = Determinant_3x3(Coord_2[0],1.0,Coord_2[2],Coord_3[0],1.0,Coord_3[2],Coord_0[0],1.0,Coord_0[2])/(6.0*Volume);
-		d[1] = Determinant_3x3(Coord_2[0],Coord_2[1],1.0,Coord_3[0],Coord_3[1],1.0,Coord_0[0],Coord_0[1],1.0)/(6.0*Volume);
+		a[1] = -Determinant_3x3(Coord_2[0], Coord_2[1], Coord_2[2], Coord_3[0], Coord_3[1], Coord_3[2], Coord_0[0], Coord_0[1], Coord_0[2])/(6.0*Volume);
+		b[1] = Determinant_3x3(1.0, Coord_2[1], Coord_2[2],1.0, Coord_3[1], Coord_3[2],1.0, Coord_0[1], Coord_0[2])/(6.0*Volume);
+		c[1] = Determinant_3x3(Coord_2[0],1.0, Coord_2[2], Coord_3[0],1.0, Coord_3[2], Coord_0[0],1.0, Coord_0[2])/(6.0*Volume);
+		d[1] = Determinant_3x3(Coord_2[0], Coord_2[1],1.0, Coord_3[0], Coord_3[1],1.0, Coord_0[0], Coord_0[1],1.0)/(6.0*Volume);
     
-		a[2] = Determinant_3x3(Coord_3[0],Coord_3[1],Coord_3[2],Coord_0[0],Coord_0[1],Coord_0[2],Coord_1[0],Coord_1[1],Coord_1[2])/(6.0*Volume);
-		b[2] = -Determinant_3x3(1.0,Coord_3[1],Coord_3[2],1.0,Coord_0[1],Coord_0[2],1.0,Coord_1[1],Coord_1[2])/(6.0*Volume);
-		c[2] = -Determinant_3x3(Coord_3[0],1.0,Coord_3[2],Coord_0[0],1.0,Coord_0[2],Coord_1[0],1.0,Coord_1[2])/(6.0*Volume);
-		d[2] = -Determinant_3x3(Coord_3[0],Coord_3[1],1.0,Coord_0[0],Coord_0[1],1.0,Coord_1[0],Coord_1[1],1.0)/(6.0*Volume);
+		a[2] = Determinant_3x3(Coord_3[0], Coord_3[1], Coord_3[2], Coord_0[0], Coord_0[1], Coord_0[2], Coord_1[0], Coord_1[1], Coord_1[2])/(6.0*Volume);
+		b[2] = -Determinant_3x3(1.0, Coord_3[1], Coord_3[2],1.0, Coord_0[1], Coord_0[2],1.0, Coord_1[1], Coord_1[2])/(6.0*Volume);
+		c[2] = -Determinant_3x3(Coord_3[0],1.0, Coord_3[2], Coord_0[0],1.0, Coord_0[2], Coord_1[0],1.0, Coord_1[2])/(6.0*Volume);
+		d[2] = -Determinant_3x3(Coord_3[0], Coord_3[1],1.0, Coord_0[0], Coord_0[1],1.0, Coord_1[0], Coord_1[1],1.0)/(6.0*Volume);
     
-		a[3] = -Determinant_3x3(Coord_0[0],Coord_0[1],Coord_0[2],Coord_1[0],Coord_1[1],Coord_1[2],Coord_2[0],Coord_2[1],Coord_2[2])/(6.0*Volume);
-		b[3] = Determinant_3x3(1.0,Coord_0[1],Coord_0[2],1.0,Coord_1[1],Coord_1[2],1.0,Coord_2[1],Coord_2[2])/(6.0*Volume);
-		c[3] = Determinant_3x3(Coord_0[0],1.0,Coord_0[2],Coord_1[0],1.0,Coord_1[2],Coord_2[0],1.0,Coord_2[2])/(6.0*Volume);
-		d[3] = Determinant_3x3(Coord_0[0],Coord_0[1],1.0,Coord_1[0],Coord_1[1],1.0,Coord_2[0],Coord_2[1],1.0)/(6.0*Volume);
+		a[3] = -Determinant_3x3(Coord_0[0], Coord_0[1], Coord_0[2], Coord_1[0], Coord_1[1], Coord_1[2], Coord_2[0], Coord_2[1], Coord_2[2])/(6.0*Volume);
+		b[3] = Determinant_3x3(1.0, Coord_0[1], Coord_0[2],1.0, Coord_1[1], Coord_1[2],1.0, Coord_2[1], Coord_2[2])/(6.0*Volume);
+		c[3] = Determinant_3x3(Coord_0[0],1.0, Coord_0[2], Coord_1[0],1.0, Coord_1[2], Coord_2[0],1.0, Coord_2[2])/(6.0*Volume);
+		d[3] = Determinant_3x3(Coord_0[0], Coord_0[1],1.0, Coord_1[0], Coord_1[1],1.0, Coord_2[0], Coord_2[1],1.0)/(6.0*Volume);
     
 		/*--- Compute the B Matrix = grad N_j, dot grad N_i  ---*/
 		B_Matrix[0][0] = b[0]*b[0] + c[0]*c[0] + d[0]*d[0];

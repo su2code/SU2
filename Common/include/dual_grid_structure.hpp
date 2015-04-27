@@ -2,10 +2,19 @@
  * \file dual_grid_structure.hpp
  * \brief Headers of the main subroutines for doing the complete dual grid structure.
  *        The subroutines and functions are in the <i>dual_grid_structure.cpp</i> file.
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.0 "eagle"
+ * \author F. Palacios
+ * \version 3.2.9 "eagle"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ *
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
+ *
+ * Copyright (C) 2012-2015 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -39,8 +48,8 @@ using namespace std;
  * \class CDualGrid
  * \brief Class for controlling the dual volume definition. The dual volume is compose by 
  *        three main elements: points, edges, and vertices.
- * \author F. Palacios.
- * \version 3.2.0 "eagle"
+ * \author F. Palacios
+ * \version 3.2.9 "eagle"
  */
 class CDualGrid{
 protected:
@@ -77,7 +86,7 @@ public:
 	 * \param[in] val_coord_Elem_CG - Coordinates of the centre of gravity of the element.
    * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG,double *val_coord_Elem_CG) = 0;
+	virtual void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG, double *val_coord_Elem_CG) = 0;
 	
 	/*! 
 	 * \overload
@@ -124,8 +133,8 @@ public:
 /*! 
  * \class CPoint
  * \brief Class for point definition (including control volume definition).
- * \author F. Palacios.
- * \version 3.2.0 "eagle"
+ * \author F. Palacios
+ * \version 3.2.9 "eagle"
  */
 class CPoint : public CDualGrid {
 private:
@@ -719,8 +728,8 @@ public:
 /*! 
  * \class CEdge
  * \brief Class for defining an edge.
- * \author F. Palacios.
- * \version 3.2.0 "eagle"
+ * \author F. Palacios
+ * \version 3.2.9 "eagle"
  */
 class CEdge : public CDualGrid {
 private:
@@ -856,13 +865,13 @@ public:
 /*! 
  * \class CVertex
  * \brief Class for vertex definition (equivalent to edges, but for the boundaries).
- * \author F. Palacios.
- * \version 3.2.0 "eagle"
+ * \author F. Palacios
+ * \version 3.2.9 "eagle"
  */
 class CVertex : public CDualGrid {
 private:
 	unsigned long *Nodes;	/*!< \brief Vector to store the global nodes of an element. */
-	double *Normal;			/*!< \brief Normal al elemento y coordenadas de su centro de gravedad. */
+	double *Normal;			/*!< \brief Normal coordinates of the element and its center of gravity. */
 	double Aux_Var;			/*!< \brief Auxiliar variable defined only on the surface. */
 	double CartCoord[3];		/*!< \brief Vertex cartesians coordinates. */
 	double VarCoord[3];		/*!< \brief Used for storing the coordinate variation due to a surface modification. */
@@ -903,7 +912,6 @@ public:
 	 * \param[in] val_coord_Edge_CG - Coordinates of the centre of gravity of the edge.
 	 * \param[in] val_coord_FaceElem_CG - Coordinates of the centre of gravity of the face of an element.
 	 * \param[in] val_coord_Elem_CG - Coordinates of the centre of gravity of the element.
-   * \param[in] config - Definition of the particular problem.
 	 * \return Compute the normal (dimensional) to the face that makes the vertex.
 	 */
 	void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG, double *val_coord_Elem_CG);
@@ -912,7 +920,6 @@ public:
 	 * \overload
 	 * \param[in] val_coord_Edge_CG - Coordinates of the centre of gravity of the edge.
 	 * \param[in] val_coord_Elem_CG - Coordinates of the centre of gravity of the element.
-   * \param[in] config - Definition of the particular problem.
 	 * \return Compute the normal (dimensional) to the face that makes the vertex.
 	 */
 	void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_Elem_CG);
@@ -1013,12 +1020,6 @@ public:
 	 * \return Value of the rotation that must be applied to the solution of the vertex
 	 */
 	short GetRotation_Type(void);
-	
-	/*! 
-	 * \brief Set the periodic point of a vertex.
-	 * \param[in] val_periodicpoint - Value of periodic point of the vertex.
-	 */
-	void SetDonorPoint(long val_periodicpoint);
   
 	/*! 
 	 * \overload

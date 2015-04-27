@@ -1,23 +1,33 @@
+#!/usr/bin/env python
+
 ## \file design.py
 #  \brief python package for designs
-#  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 3.2.0 "eagle"
+#  \author T. Lukaczyk, F. Palacios
+#  \version 3.2.9 "eagle"
 #
-# Stanford University Unstructured (SU2) Code
-# Copyright (C) 2012 Aerospace Design Laboratory
+# SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
+#                      Dr. Thomas D. Economon (economon@stanford.edu).
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+#                 Prof. Piero Colonna's group at Delft University of Technology.
+#                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+#                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+#                 Prof. Rafael Palacios' group at Imperial College London.
 #
-# This program is distributed in the hope that it will be useful,
+# Copyright (C) 2012-2015 SU2, the open-source CFD code.
+#
+# SU2 is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
+#
+# SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# Lesser General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU Lesser General Public
+# License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
 # ----------------------------------------------------------------------
 #  Imports
@@ -80,7 +90,7 @@ class Design(object):
         
         if '*' in folder: folder = su2io.next_folder(folder)
         
-        print "New Design: %s" % folder
+#        print "New Design: %s" % folder
         
         config = copy.deepcopy(config)
         state  = copy.deepcopy(state)
@@ -217,7 +227,7 @@ def obj_f(dvs,config,state=None):
     n_obj = len( objectives )
     assert n_obj == 1 , 'SU2 currently only supports one objective'
     
-    if objectives: print('Evaluate Objectives')
+#    if objectives: print('Evaluate Objectives')
     
     # evaluate each objective
     vals_out = []
@@ -226,9 +236,9 @@ def obj_f(dvs,config,state=None):
         sign  = su2io.get_objectiveSign(this_obj)
         
         # Evaluate Objective Function
-        sys.stdout.write('  %s... ' % this_obj.title())
+#        sys.stdout.write('  %s... ' % this_obj.title())
         func = su2func(this_obj,config,state)
-        sys.stdout.write('done: %.6f\n' % func)
+#        sys.stdout.write('done: %.6f\n' % func)
         
         # scaling and sign
         func = func * sign * scale
@@ -266,7 +276,7 @@ def obj_df(dvs,config,state=None):
     
     dv_scales = config['DEFINITION_DV']['SCALE']
     
-    if objectives: print('Evaluate Objective Gradients')
+#    if objectives: print('Evaluate Objective Gradients')
     
     # evaluate each objective
     vals_out = []
@@ -275,9 +285,9 @@ def obj_df(dvs,config,state=None):
         sign  = su2io.get_objectiveSign(this_obj)
         
         # Evaluate Objective Gradient
-        sys.stdout.write('  %s... ' % this_obj.title())
+#        sys.stdout.write('  %s... ' % this_obj.title())
         grad = su2grad(this_obj,grad_method,config,state)
-        sys.stdout.write('done\n')
+#        sys.stdout.write('done\n')
         
         # scaling and sign
         for i_grd,dv_scl in enumerate(dv_scales):
@@ -312,7 +322,7 @@ def con_ceq(dvs,config,state=None):
     def_cons = config['OPT_CONSTRAINT']['EQUALITY']
     constraints = def_cons.keys()
     
-    if constraints: print('Evalaute Equality Constraints')
+ #   if constraints: sys.stdout.write('Evalaute Equality Constraints')
     
     # evaluate each constraint
     vals_out = []
@@ -321,9 +331,9 @@ def con_ceq(dvs,config,state=None):
         value = def_cons[this_con]['VALUE']
         
         # Evaluate Constraint Function
-        sys.stdout.write('  %s... ' % this_con.title())
+#        sys.stdout.write('  %s... ' % this_con.title())
         func = su2func(this_con,config,state)
-        sys.stdout.write('done: %.6f\n' % func)
+#        sys.stdout.write('done: %.6f\n' % func)
         
         # scaling and centering
         func = (func - value) * scale
@@ -360,7 +370,7 @@ def con_dceq(dvs,config,state=None):
     
     dv_scales = config['DEFINITION_DV']['SCALE']
     
-    if constraints: print('Evaluate Equality Constraint Gradients ...')
+#    if constraints: sys.stdout.write('Evaluate Equality Constraint Gradients ...')
     
     # evaluate each constraint
     vals_out = []
@@ -369,9 +379,9 @@ def con_dceq(dvs,config,state=None):
         value = def_cons[this_con]['VALUE']
         
         # Evaluate Constraint Gradient
-        sys.stdout.write('  %s... ' % this_con.title())
+#        sys.stdout.write('  %s... ' % this_con.title())
         grad = su2grad(this_con,grad_method,config,state)
-        sys.stdout.write('done\n')
+#        sys.stdout.write('done\n')
         
         # scaling
         for i_grd,dv_scl in enumerate(dv_scales):
@@ -407,7 +417,7 @@ def con_cieq(dvs,config,state=None):
     def_cons = config['OPT_CONSTRAINT']['INEQUALITY']
     constraints = def_cons.keys()
     
-    if constraints: print('Evaluate Inequality Constraints')
+#    if constraints: sys.stdout.write('Evaluate Inequality Constraints')
     
     # evaluate each constraint
     vals_out = []
@@ -418,9 +428,9 @@ def con_cieq(dvs,config,state=None):
         sign  = su2io.get_constraintSign(sign)
         
         # Evaluate Constraint Function
-        sys.stdout.write('  %s... ' % this_con.title())
+#        sys.stdout.write('  %s... ' % this_con.title())
         func = su2func(this_con,config,state)
-        sys.stdout.write('done: %s\n' % func)
+#        sys.stdout.write('done: %s\n' % func)
         
         # scaling and centering
         func = (func - value) * scale * sign
@@ -458,7 +468,7 @@ def con_dcieq(dvs,config,state=None):
     
     dv_scales = config['DEFINITION_DV']['SCALE']
     
-    if constraints: print('Evaluate Inequality Constraint Gradients')
+#    if constraints: sys.stdout.write('Evaluate Inequality Constraint Gradients')
     
     # evaluate each constraint
     vals_out = []
@@ -469,9 +479,9 @@ def con_dcieq(dvs,config,state=None):
         sign  = su2io.get_constraintSign(sign)        
         
         # Evaluate Constraint Gradient
-        sys.stdout.write('  %s... ' % this_con.title())
+#        sys.stdout.write('  %s... ' % this_con.title())
         grad = su2grad(this_con,grad_method,config,state)
-        sys.stdout.write('done\n')
+#        sys.stdout.write('done\n')
         
         # scaling and sign
         for i_grd,dv_scl in enumerate(dv_scales):
