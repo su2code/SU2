@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html ng-app="app" id="ng-app">
+  <head>
+    <title>Angular Dynamic Forms Test</title>
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css">
+    <style>
+      .nav,
+      .pagination,
+      .carousel a {
+        cursor: pointer;
+      }
+
+      .fixed {
+        position: fixed;
+        margin: 0;
+      }
+
+      [ng-cloak] {
+        display: none;
+      }
+
+      div.fixed {
+        overflow-y: auto;
+        height: 100%;
+        margin-left: -15px;
+      }
+
+      pre {
+        margin: 1ex 0;
+      }
+
+      form,
+      ng-form {
+        border: 1px solid blue;
+        border-radius: 4px;
+        display: block;
+      }
+
+      fieldset {
+        border: 1px solid blue;
+        border-radius: 4px;
+        display: block;
+        padding: .35em .625em .75em;
+        margin: 0 2px;
+      }
+
+      legend {
+        font-weight: bold;
+      }
+
+      fieldset > legend:first-of-type {
+        border: none;
+        margin-bottom: auto;
+        width: inherit;
+        padding: inherit;
+        color: blue;
+      }
+
+      label,
+      span,
+      form > button,
+      ng-form > button,
+      form > input,
+      ng-form > input {
+        width: 48%;
+        padding: 1ex 1em;
+      }
+
+      label > input,
+      label > select,
+      label > textarea {
+        float: right;
+        width: 60%;
+      }
+
+      label div > label {
+        display: block;
+        padding: 1ex;
+        width: 100%;
+      }
+    </style>
+  </head>
+  <body ng-controller="AppCtrl" ng-cloak="">
+
+    <dynamic-form class="col-md-6" template-url="form-template.json" ng-submit="processForm()" ng-model="urlFormData">
+	</dynamic-form>
+
+    <div class="col-md-4">
+      <div class="fixed col-md-6">
+        <pre>Config Data : {{urlFormData | pretty}}</pre>
+      </div>
+    </div>
+    <!-- Load scripts at the end for performance. -->
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.0.8/angular.min.js"></script>
+    <script src="dynamic-forms.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
