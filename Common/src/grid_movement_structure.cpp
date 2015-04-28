@@ -97,9 +97,9 @@ void CVolumetricMovement::UpdateMultiGrid(CGeometry **geometry, CConfig *config)
  
 }
 
-void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *config, bool UpdateGeo) {
+void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *config, bool UpdateGeo, bool Derivative) {
   
-	unsigned long IterLinSol = 0, Smoothing_Iter, iNonlinear_Iter, MaxIter = 0, RestartIter = 50, Tot_Iter = 0;
+  unsigned long IterLinSol = 0, Smoothing_Iter, iNonlinear_Iter, MaxIter = 0, RestartIter = 50, Tot_Iter = 0, Nonlinear_Iter = 0;
   su2double MinVolume, NumError, Tol_Factor, Residual = 0.0, Residual_Init = 0.0;
   bool Screen_Output;
   
@@ -107,16 +107,21 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 #ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-  
+
   /*--- Retrieve number or iterations, tol, output, etc. from config ---*/
   
   Smoothing_Iter = config->GetGridDef_Linear_Iter();
   Screen_Output  = config->GetDeform_Output();
   Tol_Factor     = config->GetDeform_Tol_Factor();
+  Nonlinear_Iter = config->GetGridDef_Nonlinear_Iter();
   
   /*--- Disable the screen output if we're running SU2_CFD ---*/
   
-  if (config->GetKind_SU2() == SU2_CFD) Screen_Output = false;
+  if (config->GetKind_SU2() == SU2_CFD && !Derivative) Screen_Output = false;
+
+  /*--- Set the number of nonlinear iterations to 1 if Derivative computation is enabled ---*/
+
+  if (Derivative) Nonlinear_Iter = 1;
 
   /*--- Initialize the number of spatial dimensions, length of the state
    vector (same as spatial dimensions for grid deformation), and grid nodes. ---*/
@@ -137,7 +142,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
    deformation can be divided into increments to help with stability. In
    particular, the linear elasticity equations hold only for small deformations. ---*/
   
-  for (iNonlinear_Iter = 0; iNonlinear_Iter < config->GetGridDef_Nonlinear_Iter(); iNonlinear_Iter++) {
+  for (iNonlinear_Iter = 0; iNonlinear_Iter < Nonlinear_Iter; iNonlinear_Iter++) {
     
     /*--- Initialize vector and sparse matrix ---*/
     
@@ -159,6 +164,12 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
      perturbations controlling the surface shape) as a Dirichlet BC. ---*/
     
     SetBoundaryDisplacements(geometry, config);
+
+    /*--- Set the boundary derivatives (overrides the actual displacements) ---*/
+
+    if (Derivative){
+      SetBoundaryDerivatives(geometry, config);
+    }
     
     /*--- Fix the location of any points in the domain, if requested. ---*/
     
@@ -243,8 +254,13 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     
     /*--- Update the grid coordinates and cell volumes using the solution
      of the linear system (usol contains the x, y, z displacements). ---*/
-    
-    UpdateGridCoord(geometry, config);
+
+    if (!Derivative){
+      UpdateGridCoord(geometry, config);
+    }else{
+      UpdateGridCoord_Derivatives(geometry, config);
+    }
+
     if (UpdateGeo)
       UpdateDualGrid(geometry, config);
     
@@ -253,7 +269,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     MinVolume = Check_Grid(geometry);
     
     if (rank == MASTER_NODE) {
-      cout << "Non-linear iter.: " << iNonlinear_Iter+1 << "/" << config->GetGridDef_Nonlinear_Iter()
+      cout << "Non-linear iter.: " << iNonlinear_Iter+1 << "/" << Nonlinear_Iter
       << ". Linear iter.: " << Tot_Iter << ". ";
       if (nDim == 2) cout << "Min. area: " << MinVolume << ". Error: " << Residual << "." << endl;
       else cout << "Min. volume: " << MinVolume << ". Error: " << Residual << "." << endl;
@@ -268,6 +284,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
   StiffMatrix.~CSysMatrix();
   
 }
+
 
 su2double CVolumetricMovement::Check_Grid(CGeometry *geometry) {
   
@@ -1743,7 +1760,8 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
   
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 		if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
-        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DEF))) {
+        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DEF)) ||
+         (config->GetDirectDiff() == D_DESIGN)) {
 			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 				VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
@@ -1773,6 +1791,49 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
     }
   }
 
+}
+
+void CVolumetricMovement::SetBoundaryDerivatives(CGeometry *geometry, CConfig *config){
+  unsigned short iDim, nDim = geometry->GetnDim(), iMarker;
+  unsigned long iPoint, total_index, iVertex;
+
+  unsigned short Kind_SU2 = config->GetKind_SU2();
+
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
+          ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DEF)) ||
+           (config->GetDirectDiff() == D_DESIGN)) {
+        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          for (iDim = 0; iDim < nDim; iDim++) {
+            total_index = iPoint*nDim + iDim;
+            LinSysRes[total_index] = SU2_TYPE::GetDerivative(LinSysRes[total_index]);
+            LinSysSol[total_index] = SU2_TYPE::GetDerivative(LinSysSol[total_index]);
+          }
+        }
+      }
+    }
+  }
+  if (LinSysRes.norm() == 0.0) cout << "Warning: Derivatives are zero!" << endl;
+}
+
+void CVolumetricMovement::UpdateGridCoord_Derivatives(CGeometry *geometry, CConfig *config){
+  unsigned short iDim;
+  unsigned long iPoint, total_index;
+  su2double new_coord[3];
+
+  /*--- Update derivatives of the grid coordinates using the solution of the linear system
+     after grid deformation (LinSysSol contains the derivatives of the x, y, z displacements). ---*/
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+    for (iDim = 0; iDim < nDim; iDim++) {
+      total_index = iPoint*nDim + iDim;
+      new_coord[iDim] = geometry->node[iPoint]->GetCoord(iDim);
+      SU2_TYPE::SetDerivative(new_coord[iDim], LinSysSol[total_index]);
+    }
+    geometry->node[iPoint]->SetCoord(new_coord);
+  }
 }
 
 void CVolumetricMovement::SetDomainDisplacements(CGeometry *geometry, CConfig *config) {
@@ -2743,6 +2804,35 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
   
 }
 
+
+void CSurfaceMovement::SetSurface_Derivative(CGeometry *geometry, CConfig *config){
+
+  su2double DV_Value = 0.0;
+
+  unsigned short iDV = 0;
+
+  for (iDV = 0; iDV < config->GetnDV(); iDV++){
+
+    DV_Value = config->GetDV_Value(iDV);
+
+    /* --- If value of the design variable is not 0.0 we apply the differentation.
+     *     Note if multiple variables are non-zero, we end up with the sum of all the derivatives. ---*/
+
+    if (DV_Value != 0.0){
+
+      DV_Value = 0.0;
+
+      SU2_TYPE::SetDerivative(DV_Value, 1.0);
+
+      config->SetDV_Value(iDV, DV_Value);
+    }
+  }
+
+  /* --- Run the surface deformation with DV_Value = 0.0 (no deformation at all) ---*/
+
+  SetSurface_Deformation(geometry, config);
+}
+
 void CSurfaceMovement::CopyBoundary(CGeometry *geometry, CConfig *config) {
   
 	unsigned short iMarker;
@@ -3033,7 +3123,8 @@ void CSurfaceMovement::CheckFFDIntersections(CGeometry *geometry, CConfig *confi
     if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
         ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DEF)) ||
         ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_GEO)) ||
-        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DOT))) {
+        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DOT)) ||
+        ((config->GetMarker_All_DV(iMarker) == YES) && (config->GetDirectDiff() == D_DESIGN))) {
       for (iElem = 0; iElem < geometry->GetnElem_Bound(iMarker); iElem++) {
         for (iNode = 0; iNode < geometry->bound[iMarker][iElem]->GetnNodes(); iNode++) {
           iPoint = geometry->bound[iMarker][iElem]->GetNode(iNode);
@@ -3294,7 +3385,8 @@ void CSurfaceMovement::SetCartesianCoord(CGeometry *geometry, CConfig *config, C
       Diff = 0.0;
 			for (iDim = 0; iDim < nDim; iDim++) {
 				VarCoord[iDim] = CartCoordNew[iDim] - CartCoordOld[iDim];
-				if (fabs(VarCoord[iDim]) <= EPS) VarCoord[iDim] = 0.0;
+        if ((fabs(VarCoord[iDim]) <= EPS) && (config->GetDirectDiff() != D_DESIGN))
+          VarCoord[iDim] = 0.0;
         Diff += (VarCoord[iDim]*VarCoord[iDim]);
 			}
 			Diff = sqrt(Diff);
@@ -3450,7 +3542,7 @@ void CSurfaceMovement::SetFFDCPChange(CGeometry *geometry, CConfig *config, CFre
     index[0] = SU2_TYPE::Int(config->GetParamDV(iDV, 1));
     index[1] = SU2_TYPE::Int(config->GetParamDV(iDV, 2));
     index[2] = SU2_TYPE::Int(config->GetParamDV(iDV, 3));
-    
+
     /*--- Check that it is possible to move the control point ---*/
     
     for (iPlane = 0 ; iPlane < FFDBox->Get_nFix_IPlane(); iPlane++) {
@@ -3940,7 +4032,7 @@ void CSurfaceMovement::SetHicksHenne(CGeometry *boundary, CConfig *config, unsig
   BumpLoc = 0.0, Coord[3] = {0.0,0.0,0.0}, Normal[3] = {0.0,0.0,0.0},
   xCoord, TPCoord[2] = {0.0, 0.0}, LPCoord[2] = {0.0, 0.0}, Distance, Chord, AoA, ValCos, ValSin;
   
-	bool upper = true, su2double_surface = false;
+  bool upper = true, double_surface = false;
 
 	/*--- Reset airfoil deformation if first deformation or if it required by the solver ---*/
   
@@ -4035,8 +4127,8 @@ void CSurfaceMovement::SetHicksHenne(CGeometry *boundary, CConfig *config, unsig
 	su2double xk = config->GetParamDV(iDV, 1);
 	const su2double t2 = 3.0;
   
-	if (config->GetParamDV(iDV, 0) == NO) { upper = false; su2double_surface = true; }
-	if (config->GetParamDV(iDV, 0) == YES) { upper = true; su2double_surface = true; }
+  if (config->GetParamDV(iDV, 0) == NO) { upper = false; double_surface = true; }
+  if (config->GetParamDV(iDV, 0) == YES) { upper = true; double_surface = true; }
   
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
@@ -4063,7 +4155,7 @@ void CSurfaceMovement::SetHicksHenne(CGeometry *boundary, CConfig *config, unsig
         
         /*--- Bump computation ---*/
         
-				if (su2double_surface) {
+        if (double_surface) {
 					ek = log10(0.5)/log10(xk);
 					fk = pow( sin( PI_NUMBER * pow(Coord[0], ek) ) , t2);
           

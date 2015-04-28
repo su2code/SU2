@@ -993,6 +993,8 @@ inline bool CConfig::GetEngine_Intake(void) { return Engine_Intake; }
 
 inline su2double CConfig::GetDV_Value(unsigned short val_dv) { return DV_Value[val_dv]; }
 
+inline void CConfig::SetDV_Value(unsigned short val_dv, su2double val) { DV_Value[val_dv] = val; }
+
 inline su2double CConfig::GetOrderMagResidual(void) { return OrderMagResidual; }
 
 inline su2double CConfig::GetMinLogResidual(void) { return MinLogResidual; }
@@ -1173,6 +1175,4 @@ inline unsigned long CConfig::GetNonphysical_Reconstr(void) { return Nonphys_Rec
 
 inline unsigned short CConfig::GetConsole_Output_Verb(void) { return Console_Output_Verb; }
 
-inline bool CConfig::GetDirectDiff(){ return DirectDiff;}
-
-inline unsigned short CConfig::GetDirectDiff_Var(){ return DirectDiff_Var;}
+inline unsigned short CConfig::GetDirectDiff(){ return DirectDiff;}

@@ -694,8 +694,7 @@ private:
   unsigned long Nonphys_Points, /*!< \brief Current number of non-physical points in the solution. */
   Nonphys_Reconstr;      /*!< \brief Current number of non-physical reconstructions for 2nd-order upwinding. */
   bool ParMETIS;      /*!< \brief Boolean for activating ParMETIS mode (while testing). */
-  bool DirectDiff; /*!< \brief Direct Differentation Mode. */
-  unsigned short DirectDiff_Var; /*! \brief Direct Differentation Variable. */
+  unsigned short DirectDiff; /*!< \brief Direct Differentation Mode. */
   /*!< \brief param is a map from the option name (config file string) to a pointer to an option child class */
 //	map<string, CAnyOptionRef*> param;
 
@@ -4032,6 +4031,13 @@ public:
 	 */
 	su2double GetDV_Value(unsigned short val_dv);
 
+  /*!
+   * \brief Set the value of the design variable step, we use this value in design problems.
+   * \param[in] val_dv - Number of the design variable that we want to read.
+   * \param[in] val    - Value of the design variable.
+   */
+  void SetDV_Value(unsigned short val_dv, su2double val);
+
 	/*!
 	 * \brief Get information about the grid movement.
 	 * \return <code>TRUE</code> if there is a grid movement; otherwise <code>FALSE</code>.
@@ -5238,13 +5244,8 @@ public:
    * \brief Get the direct differentation method.
    * \return direct differentiation method.
    */
-  bool GetDirectDiff();
+  unsigned short GetDirectDiff();
 
-  /*!
-   * \brief Get the direct differentiation variable.
-   * \return Direct diff. variable
-   */
-  unsigned short GetDirectDiff_Var();
 };
 
 #include "config_structure.inl"
