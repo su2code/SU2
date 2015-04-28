@@ -980,10 +980,25 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] UpdateGeo - Update geometry.
+   * \param[in] Derivative - Compute the derivative (disabled by default). Does not actually deform the grid if enabled.
 	 */
-	void SetVolume_Deformation(CGeometry *geometry, CConfig *config, bool UpdateGeo);
-  
+  void SetVolume_Deformation(CGeometry *geometry, CConfig *config, bool UpdateGeo, bool Derivative = false);
+
   /*!
+   * \brief Set the derivatives of the boundary nodes.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetBoundaryDerivatives(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Update the derivatives of the coordinates after the grid movement.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void UpdateGridCoord_Derivatives(CGeometry *geometry, CConfig *config);
+
+	/*!
 	 * \brief Compute the determinant of a 3 by 3 matrix.
 	 * 3 by 3 matrix elements
 	 * \param[in] A00
@@ -1398,7 +1413,13 @@ public:
 	 * \return Number of FFD levels.
 	 */		
 	unsigned short GetnLevel(void);
-	
+
+  /*!
+   * \brief Set derivatives of the surface/boundary deformation.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetSurface_Derivative(CGeometry *geometry, CConfig *config);
 };
 
 #include "grid_movement_structure.inl"

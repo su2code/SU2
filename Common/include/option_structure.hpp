@@ -1133,26 +1133,30 @@ static const map<string, ENUM_DEFORM_STIFFNESS> Deform_Stiffness_Map = CCreateMa
  * \brief The direct differentation variables.
  */
 enum ENUM_DIRECTDIFF_VAR {
-  MACH_DIRECTDIFF = 1,   /*!< \brief Derivative with respect to the mach number */
-  AOA_DIRECTDIFF = 2,		 /*!< \brief Derivative with respect to the angle of attack */
-  PRESSURE_DIRECTDIFF = 3, /*!< \brief Derivative with respect to the freestream pressure */
-  TEMPERATURE_DIRECTDIFF = 4,/*!< \brief Derivative with respect to the freestream temperature */
-  DENSITY_DIRECTDIFF = 5,
-  TURB2LAM_DIRECTDIFF = 6,
-  SIDESLIP_DIRECTDIFF = 7,
-  VISCOSITY_DIRECTDIFF = 8,
-  REYNOLDS_DIRECTDIFF = 9
+  NO_DERIVATIVE = 0,
+  D_MACH = 1,   /*!< \brief Derivative with respect to the mach number */
+  D_AOA = 2,		 /*!< \brief Derivative with respect to the angle of attack */
+  D_PRESSURE = 3, /*!< \brief Derivative with respect to the freestream pressure */
+  D_TEMPERATURE = 4,/*!< \brief Derivative with respect to the freestream temperature */
+  D_DENSITY = 5,
+  D_TURB2LAM = 6,
+  D_SIDESLIP = 7,
+  D_VISCOSITY = 8,
+  D_REYNOLDS = 9,
+  D_DESIGN = 10
 };
 static const map<string, ENUM_DIRECTDIFF_VAR> DirectDiff_Var_Map = CCreateMap<string, ENUM_DIRECTDIFF_VAR>
-("MACH", MACH_DIRECTDIFF)
-("AOA", AOA_DIRECTDIFF)
-("PRESSURE", PRESSURE_DIRECTDIFF)
-("TEMPERATURE", TEMPERATURE_DIRECTDIFF)
-("DENSITY", DENSITY_DIRECTDIFF)
-("TURB2LAM", TURB2LAM_DIRECTDIFF)
-("SIDESLIP", SIDESLIP_DIRECTDIFF)
-("VISCOSITY", VISCOSITY_DIRECTDIFF)
-("REYNOLDS", REYNOLDS_DIRECTDIFF);
+("NONE", NO_DERIVATIVE)
+("MACH", D_MACH)
+("AOA", D_AOA)
+("PRESSURE", D_PRESSURE)
+("TEMPERATURE", D_TEMPERATURE)
+("DENSITY", D_DENSITY)
+("TURB2LAM", D_TURB2LAM)
+("SIDESLIP", D_SIDESLIP)
+("VISCOSITY", D_VISCOSITY)
+("REYNOLDS", D_REYNOLDS)
+("DESIGN_VARIABLES", D_DESIGN);
 
 
 

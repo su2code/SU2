@@ -1201,10 +1201,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\par CONFIG_CATEGORY: Direct Differentation options\ingroup Config*/
 
   /* DESCRIPTION: Direct differentiation mode */
-  addBoolOption("DIRECT_DIFF", DirectDiff, false);
-
-  /* DESCRIPTION: Direct differentiation mode */
-  addEnumOption("DIRECT_DIFF_VAR", DirectDiff_Var, DirectDiff_Var_Map, MACH_DIRECTDIFF);
+  addEnumOption("DIRECT_DIFF", DirectDiff, DirectDiff_Var_Map, NO_DERIVATIVE);
 
   /*--- options that are used in the python optimization scripts. These have no effect on the c++ toolsuite ---*/
   /*!\par CONFIG_CATEGORY:Python Options\ingroup Config*/
@@ -3016,7 +3013,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     
   }
   
-  if (DirectDiff){
+  if (DirectDiff != NO_DERIVATIVE){
 #if !defined COMPLEX_TYPE && !defined ADOLC_FORWARD_TYPE
       if (Kind_SU2 == SU2_CFD){
         cout << "SU2_CFD: DIRECT_DIFF=YES requires forward or complex mode support!" << endl;
@@ -3025,27 +3022,24 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       }
 #endif
     /*--- Initialize the derivative values --- */
-    switch (DirectDiff_Var) {
-      case MACH_DIRECTDIFF:
+    switch (DirectDiff) {
+      case D_MACH:
         SU2_TYPE::SetDerivative(Mach, 1.0);
         break;
-      case AOA_DIRECTDIFF:
+      case D_AOA:
         SU2_TYPE::SetDerivative(AoA, 1.0);
         break;
-      case SIDESLIP_DIRECTDIFF:
+      case D_SIDESLIP:
         SU2_TYPE::SetDerivative(AoS, 1.0);
         break;
-      case REYNOLDS_DIRECTDIFF:
+      case D_REYNOLDS:
         SU2_TYPE::SetDerivative(Reynolds, 1.0);
         break;
-      case TURB2LAM_DIRECTDIFF:
+      case D_TURB2LAM:
        SU2_TYPE::SetDerivative(Turb2LamViscRatio_FreeStream, 1.0);
         break;
-      case PRESSURE_DIRECTDIFF: case TEMPERATURE_DIRECTDIFF:
-      case DENSITY_DIRECTDIFF: case VISCOSITY_DIRECTDIFF:
-        /*--- Done in the specific solver ---*/
-        break;
       default:
+        /*--- All other cases are handled in the specific solver ---*/
         break;
       }
   }

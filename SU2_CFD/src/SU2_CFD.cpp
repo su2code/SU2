@@ -239,7 +239,8 @@ int main(int argc, char *argv[]) {
      flows on dynamic meshes, including rigid mesh transformations, dynamically
      deforming meshes, and time-spectral preprocessing. ---*/
     
-    if (config_container[iZone]->GetGrid_Movement()) {
+    if (config_container[iZone]->GetGrid_Movement() ||
+        (config_container[iZone]->GetDirectDiff() == D_DESIGN)) {
       if (rank == MASTER_NODE)
         cout << "Setting dynamic mesh structure." << endl;
       grid_movement[iZone] = new CVolumetricMovement(geometry_container[iZone][MESH_0]);
@@ -250,7 +251,27 @@ int main(int argc, char *argv[]) {
         SetGrid_Movement(geometry_container[iZone], surface_movement[iZone], grid_movement[iZone],
                          FFDBox[iZone], solver_container[iZone], config_container[iZone], iZone, 0, 0);
     }
-    
+
+    if (config_container[iZone]->GetDirectDiff() == D_DESIGN){
+      if (rank == MASTER_NODE)
+        cout << "Setting surface/volume derivatives." << endl;
+
+      surface_movement[iZone]->SetSurface_Derivative(geometry_container[iZone][MESH_0],config_container[iZone]);
+
+      grid_movement[iZone]->SetVolume_Deformation(geometry_container[iZone][MESH_0],config_container[iZone], true, true);
+
+      /*--- Update the multi-grid structure to propagate the derivative information to the coarser levels ---*/
+
+      grid_movement[iZone]->UpdateMultiGrid(geometry_container[iZone], config_container[iZone]);
+
+      /*--- Recompute the wall-distance ---*/
+
+      if ( (config_container[iZone]->GetKind_Solver() == RANS) ||
+          (config_container[iZone]->GetKind_Solver() == ADJ_RANS) )
+        geometry_container[iZone][MESH_0]->ComputeWall_Distance(config_container[iZone]);
+    }
+
+
   }
   
   /*--- For the time-spectral solver, set the grid node velocities. ---*/
