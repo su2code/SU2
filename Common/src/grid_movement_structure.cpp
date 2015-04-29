@@ -612,7 +612,7 @@ su2double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometr
   /*--- Deallocate memory and exit ---*/
   
   for (iVar = 0; iVar < StiffMatrix_nElem; iVar++)
-    delete StiffMatrix_Elem[iVar];
+    delete [] StiffMatrix_Elem[iVar];
   delete [] StiffMatrix_Elem;
   
   delete [] Edge_Vector;
@@ -1687,7 +1687,7 @@ void CVolumetricMovement::AddFEA_StiffMatrix(CGeometry *geometry, su2double **St
   /*--- Deallocate memory and exit ---*/
   
   for (iVar = 0; iVar < nVar; iVar++)
-    delete StiffMatrix_Node[iVar];
+    delete [] StiffMatrix_Node[iVar];
   delete [] StiffMatrix_Node;
   
 }
@@ -1830,7 +1830,7 @@ void CVolumetricMovement::UpdateGridCoord_Derivatives(CGeometry *geometry, CConf
     for (iDim = 0; iDim < nDim; iDim++) {
       total_index = iPoint*nDim + iDim;
       new_coord[iDim] = geometry->node[iPoint]->GetCoord(iDim);
-      SU2_TYPE::SetDerivative(new_coord[iDim], LinSysSol[total_index]);
+      SU2_TYPE::SetDerivative(new_coord[iDim], SU2_TYPE::GetPrimary(LinSysSol[total_index]));
     }
     geometry->node[iPoint]->SetCoord(new_coord);
   }

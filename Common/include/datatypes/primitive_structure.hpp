@@ -1,6 +1,6 @@
 /*!
- * \file dataype_structure.cpp
- * \brief Main subroutines for the datatype structures.
+ * \file primitive_structure.hpp
+ * \brief Header for the primitive datatype.
  * \author T. Albring
  * \version 3.2.9 "eagle"
  *
@@ -28,14 +28,6 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
+#pragma once
 
-#include "../include/datatype_structure.hpp"
-
-#ifdef ADOLC_REVERSE_TYPE
-namespace AD{
-  std::vector<double> inputVariables;
-  std::vector<double> seedVector;
-  int adjointVectorPos = 0;
-  double* adjointVector = NULL;
-}
-#endif
+typedef double su2double;

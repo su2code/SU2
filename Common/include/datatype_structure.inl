@@ -29,109 +29,32 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#if defined COMPLEX_TYPE
-inline void CTypeWrapper::SetPrimary(su2double& data, const double &val){
-  data = su2double(val, data.imag());
-}
 
-inline double CTypeWrapper::GetPrimary(const su2double& data){
-  return data.real();
-}
-
-inline void CTypeWrapper::SetSecondary(su2double& data, const double &val){
-  data = su2double(data.real(), val);
-}
-
-inline double CTypeWrapper::GetSecondary(const su2double& data){
-  return data.imag();
-}
-
-inline double CTypeWrapper::GetDerivative(const su2double& data){
-  return data.imag()/1e-50;
-}
-
-inline void CTypeWrapper::SetDerivative(su2double& data, const double &val){
-  data = su2double(data.real(), val*1e-50);
-}
-
-
-#elif defined ADOLC_FORWARD_TYPE
-inline void CTypeWrapper::SetPrimary(su2double& data, const double &val){
- data.setValue(val);
-}
-
-inline double CTypeWrapper::GetPrimary(const su2double& data){
-  return data.getValue();
-}
-
-inline void CTypeWrapper::SetSecondary(su2double& data, const double &val){
-  data.setADValue(&val);
-}
-
-inline double CTypeWrapper::GetSecondary(const su2double& data){
-  return *data.getADValue();
-}
-
-inline double CTypeWrapper::GetDerivative(const su2double& data){
-  return *data.getADValue();
-}
-
-inline void CTypeWrapper::SetDerivative(su2double& data, const double &val){
-  data.setADValue(&val);
-}
-
-/* --- We need additional functions that are not defined yet --- */
-
-inline su2double min(const su2double& a, const su2double& b){ return fmin(a,b);}
-inline su2double max(const su2double& a, const su2double& b){ return fmax(a,b);}
-inline su2double abs(const su2double&a){ return fabs(a);}
-inline su2double atanh(const su2double& a){return 0.5*log(1+a)/log(1-a);}
-
-namespace adtl{
-  inline std::ostream& operator<<(std::ostream& out, const su2double& data){
-    out << data.getValue();
-    return out;
+namespace SU2_TYPE{
+  inline int Int(const su2double& data){
+    return int(SU2_TYPE::GetPrimary(data));
   }
-  inline std::istream& operator>>(std::istream& in, su2double& data){
-    double val;
-    in >> val;
-    data.setValue(val);
-    return in;
+
+  inline short Short(const su2double& data){
+    return short(SU2_TYPE::GetPrimary(data));
   }
 }
-#else
-inline void CTypeWrapper::SetPrimary(su2double& data, const double &val){
-  data = val;
+
+#if !defined ADOLC_REVERSE_TYPE
+namespace AD{
+  inline void RegisterInputVariable(double &data){}
+
+  inline void RegisterOutputVariable(double& data){}
+
+  inline void StartRecording(){}
+
+  inline void StopRecording(){}
+
+  inline void ClearAdjoints(){}
+
+  inline void ComputeAdjoint(){}
 }
-
-
-inline double CTypeWrapper::GetPrimary(const su2double& data){
-  return data;
-}
-
-inline void CTypeWrapper::SetSecondary(su2double& data, const double &val){
-
-}
-
-inline double CTypeWrapper::GetDerivative(const su2double& data){
-  return 0.0;
-}
-
-inline double CTypeWrapper::GetSecondary(const su2double& data){
-  return 0.0;
-}
-
-inline void CTypeWrapper::SetDerivative(su2double& data, const double &val){}
 #endif
-
-
-inline int CTypeWrapper::Int(const su2double& data){
-  return int(SU2_TYPE::GetPrimary(data));
-}
-
-inline short CTypeWrapper::Short(const su2double& data){
-  return short(SU2_TYPE::GetPrimary(data));
-}
 
 /* --- The following functions are necessary for the handling of the sprintf function --- */
 
@@ -252,3 +175,14 @@ template <class A001, class A002, class A003, class A004, class A005, class A006
 inline void sprintfOver(char * str, const char * format, const A001 &a001, const A002 &a002, const A003 &a003, const A004 &a004, const A005 &a005, const A006 &a006, const A007 &a007, const A008 &a008, const A009 &a009, const A010 &a010, const A011 &a011, const A012 &a012, const A013 &a013, const A014 &a014, const A015 &a015, const A016 &a016, const A017 &a017, const A018 &a018, const A019 &a019, const A020 &a020, const A021 &a021, const A022 &a022, const A023 &a023, const A024 &a024, const A025 &a025) {
   sprintf(str, format, Impl_getValue<A001 >::getValue(a001), Impl_getValue<A002 >::getValue(a002), Impl_getValue<A003 >::getValue(a003), Impl_getValue<A004 >::getValue(a004), Impl_getValue<A005 >::getValue(a005), Impl_getValue<A006 >::getValue(a006), Impl_getValue<A007 >::getValue(a007), Impl_getValue<A008 >::getValue(a008), Impl_getValue<A009 >::getValue(a009), Impl_getValue<A010 >::getValue(a010), Impl_getValue<A011 >::getValue(a011), Impl_getValue<A012 >::getValue(a012), Impl_getValue<A013 >::getValue(a013), Impl_getValue<A014 >::getValue(a014), Impl_getValue<A015 >::getValue(a015), Impl_getValue<A016 >::getValue(a016), Impl_getValue<A017 >::getValue(a017), Impl_getValue<A018 >::getValue(a018), Impl_getValue<A019 >::getValue(a019), Impl_getValue<A020 >::getValue(a020), Impl_getValue<A021 >::getValue(a021), Impl_getValue<A022 >::getValue(a022), Impl_getValue<A023 >::getValue(a023), Impl_getValue<A024 >::getValue(a024), Impl_getValue<A025 >::getValue(a025));
 }
+
+
+#if defined COMPLEX_TYPE
+#include "datatypes/complex_structure.inl"
+#elif defined ADOLC_FORWARD_TYPE
+#include "datatypes/adolc_f_structure.inl"
+#elif defined ADOLC_REVERSE_TYPE
+#include "datatypes/adolc_r_structure.inl"
+#else
+#include "datatypes/primitive_structure.inl"
+#endif

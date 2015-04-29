@@ -637,10 +637,14 @@ BUILD_DOT_FALSE
 BUILD_DOT_TRUE
 BUILD_CFD_FALSE
 BUILD_CFD_TRUE
+BUILD_REVERSE_FALSE
+BUILD_REVERSE_TRUE
 BUILD_DIRECTDIFF_FALSE
 BUILD_DIRECTDIFF_TRUE
 BUILD_NORMAL_FALSE
 BUILD_NORMAL_TRUE
+REVERSE_LIBS
+REVERSE_CXX
 DIRECTDIFF_LIBS
 DIRECTDIFF_CXX
 ADOLC_LIBS
@@ -6309,6 +6313,11 @@ then
    DIRECTDIFF_CXX=$ADOLC_FORWARD_CXX
    DIRECTDIFF_LIBS=$ADOLC_LIBS
    build_DIRECTDIFF=yes
+elif test $build_ADOLC_REVERSE != "no"
+then
+   REVERSE_CXX=$ADOLC_REVERSE_CXX
+   REVERSE_LIBS=$ADOLC_LIBS
+   build_REVERSE=yes
 elif test $build_COMPLEX != "no"
 then
    DIRECTDIFF_CXX=$COMPLEX_CXX
@@ -6334,6 +6343,13 @@ else
   BUILD_DIRECTDIFF_FALSE=
 fi
 
+ if test $build_REVERSE != "no"; then
+  BUILD_REVERSE_TRUE=
+  BUILD_REVERSE_FALSE='#'
+else
+  BUILD_REVERSE_TRUE='#'
+  BUILD_REVERSE_FALSE=
+fi
 
 ###########################
 
@@ -6613,6 +6629,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${BUILD_DIRECTDIFF_TRUE}" && test -z "${BUILD_DIRECTDIFF_FALSE}"; then
   as_fn_error $? "conditional \"BUILD_DIRECTDIFF\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${BUILD_REVERSE_TRUE}" && test -z "${BUILD_REVERSE_FALSE}"; then
+  as_fn_error $? "conditional \"BUILD_REVERSE\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${BUILD_CFD_TRUE}" && test -z "${BUILD_CFD_FALSE}"; then

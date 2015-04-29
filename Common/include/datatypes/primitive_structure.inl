@@ -1,6 +1,6 @@
 /*!
- * \file dataype_structure.cpp
- * \brief Main subroutines for the datatype structures.
+ * \file primitive_structure.inl
+ * \brief Inline subroutines for <i>datatype_structure.hpp<i>.
  * \author T. Albring
  * \version 3.2.9 "eagle"
  *
@@ -28,14 +28,17 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
+#pragma once
+namespace SU2_TYPE{
+  inline void SetPrimary(su2double& data, const double &val){data = val;}
 
-#include "../include/datatype_structure.hpp"
+  inline double GetPrimary(const su2double& data){ return data;}
 
-#ifdef ADOLC_REVERSE_TYPE
-namespace AD{
-  std::vector<double> inputVariables;
-  std::vector<double> seedVector;
-  int adjointVectorPos = 0;
-  double* adjointVector = NULL;
+  inline void SetSecondary(su2double& data, const double &val){}
+
+  inline double GetDerivative(const su2double& data){return 0.0;}
+
+  inline double GetSecondary(const su2double& data){return 0.0;}
+
+  inline void SetDerivative(su2double &data, const double &val){}
 }
-#endif

@@ -1,6 +1,6 @@
 /*!
- * \file dataype_structure.cpp
- * \brief Main subroutines for the datatype structures.
+ * \file adolc_f_structure.inl
+ * \brief Inline subroutines for <i>datatype_structure.hpp<i>.
  * \author T. Albring
  * \version 3.2.9 "eagle"
  *
@@ -28,14 +28,38 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
+#pragma once
 
-#include "../include/datatype_structure.hpp"
+namespace SU2_TYPE{
+  inline void SetPrimary(su2double& data, const double &val){data.setValue(val);}
 
-#ifdef ADOLC_REVERSE_TYPE
-namespace AD{
-  std::vector<double> inputVariables;
-  std::vector<double> seedVector;
-  int adjointVectorPos = 0;
-  double* adjointVector = NULL;
+  inline double GetPrimary(const su2double& data){return data.getValue();}
+
+  inline void SetSecondary(su2double& data, const double &val){data.setADValue(&val);}
+
+  inline double GetSecondary(const su2double& data){return *data.getADValue();}
+
+  inline double GetDerivative(const su2double& data){return *data.getADValue();}
+
+  inline void SetDerivative(su2double& data, const double &val){data.setADValue(&val);}
 }
-#endif
+
+namespace adtl{
+  inline std::ostream& operator<<(std::ostream& out, const su2double& data){
+    out << data.getValue();
+    return out;
+  }
+  inline std::istream& operator>>(std::istream& in, su2double& data){
+    double val;
+    in >> val;
+    data.setValue(val);
+    return in;
+  }
+}
+
+/* --- We need additional functions that are not defined yet --- */
+
+inline su2double min(const su2double& a, const su2double& b){ return fmin(a,b);}
+inline su2double max(const su2double& a, const su2double& b){ return fmax(a,b);}
+inline su2double abs(const su2double&a){ return fabs(a);}
+inline su2double atanh(const su2double& a){return 0.5*log(1+a)/log(1-a);}

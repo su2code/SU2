@@ -256,7 +256,12 @@ int main(int argc, char *argv[]) {
       if (rank == MASTER_NODE)
         cout << "Setting surface/volume derivatives." << endl;
 
+      /*--- Set the surface derivatives, i.e. the derivative of the surface mesh nodes with respect to the design variables ---*/
+
       surface_movement[iZone]->SetSurface_Derivative(geometry_container[iZone][MESH_0],config_container[iZone]);
+
+      /*--- Call the volume deformation routine with derivative mode enabled.
+       This computes the derivative of the volume mesh with respect to the surface nodes ---*/
 
       grid_movement[iZone]->SetVolume_Deformation(geometry_container[iZone][MESH_0],config_container[iZone], true, true);
 
@@ -264,7 +269,7 @@ int main(int argc, char *argv[]) {
 
       grid_movement[iZone]->UpdateMultiGrid(geometry_container[iZone], config_container[iZone]);
 
-      /*--- Recompute the wall-distance ---*/
+      /*--- Set the derivative of the wall-distance with respect to the surface nodes ---*/
 
       if ( (config_container[iZone]->GetKind_Solver() == RANS) ||
           (config_container[iZone]->GetKind_Solver() == ADJ_RANS) )
