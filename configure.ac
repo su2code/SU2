@@ -385,6 +385,11 @@ then
    DIRECTDIFF_CXX=$ADOLC_FORWARD_CXX
    DIRECTDIFF_LIBS=$ADOLC_LIBS
    build_DIRECTDIFF=yes
+elif test $build_ADOLC_REVERSE != "no"
+then
+   REVERSE_CXX=$ADOLC_REVERSE_CXX
+   REVERSE_LIBS=$ADOLC_LIBS
+   build_REVERSE=yes
 elif test $build_COMPLEX != "no"
 then 
    DIRECTDIFF_CXX=$COMPLEX_CXX
@@ -393,10 +398,12 @@ fi
 
 AC_SUBST([DIRECTDIFF_CXX])
 AC_SUBST([DIRECTDIFF_LIBS])
+AC_SUBST([REVERSE_CXX])
+AC_SUBST([REVERSE_LIBS])
 # Set the variables
 AM_CONDITIONAL([BUILD_NORMAL], [test $build_NORMAL != "no"])
 AM_CONDITIONAL([BUILD_DIRECTDIFF], [test $build_DIRECTDIFF != "no"])
-
+AM_CONDITIONAL([BUILD_REVERSE], [test $build_REVERSE != "no"])
 ###########################
 
 AM_CONDITIONAL([BUILD_CFD],[test $build_CFD != "no"])

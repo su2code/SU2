@@ -46,6 +46,10 @@ if BUILD_DIRECTDIFF
 noinst_LIBRARIES += libSU2_DIRECTDIFF.a
 endif
 
+if BUILD_REVERSE
+noinst_LIBRARIES += libSU2_REVERSE.a
+endif
+
 lib_sources = \
                 ../include/config_structure.hpp \
     ../include/config_structure.inl \
@@ -119,5 +123,11 @@ if BUILD_DIRECTDIFF
 libSU2_DIRECTDIFF_a_SOURCES = $(lib_sources)
 libSU2_DIRECTDIFF_a_CXXFLAGS = @DIRECTDIFF_CXX@ ${lib_cxxflags}
 libSU2_DIRECTDIFF_a_LIBADD =  ${lib_ldadd}
+endif
+
+if BUILD_REVERSE
+libSU2_REVERSE_a_SOURCES = $(lib_sources)
+libSU2_REVERSE_a_CXXFLAGS = @REVERSE_CXX@ ${lib_cxxflags}
+libSU2_REVERSE_a_LIBADD =  ${lib_ldadd}
 endif
 

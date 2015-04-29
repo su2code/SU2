@@ -30,107 +30,134 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #pragma once
 
 #include <iostream>
 #include <cstdio>
 
-/* --- Define the complex datatype interface --- */
-
-class CTypeWrapper;
-
-typedef CTypeWrapper SU2_TYPE;
+/*--- Depending on the datatype defined during the configuration, include the correct datatype
+ * definition. Each file uses a typedef from the specific datatype to su2double and implements
+ * the routines defined in the namespace SU2_TYPE below. ---*/
+#if defined COMPLEX_TYPE
+#include "datatypes/complex_structure.hpp"
+#elif defined ADOLC_FORWARD_TYPE
+#include "datatypes/adolc_f_structure.hpp"
+#elif defined ADOLC_REVERSE_TYPE
+#include "datatypes/adolc_r_structure.hpp"
+#else
+#include "datatypes/primitive_structure.hpp"
+#endif
 
 #define SPRINTF sprintfOver
 
-#ifdef COMPLEX_TYPE
-#include "complex_structure.hpp"
-/* --- Define the complex datatype to be the base type used in SU2 --- */
-
-typedef CComplexType su2double;
-
-#elif defined ADOLC_FORWARD_TYPE
-#define ADOLC_TAPELESS
-#include "adolc/adtl.h"
-
-typedef adtl::adouble su2double;
-
-#else
-
-/* --- Define the double datatype to be the base type used in SU2 --- */
-
-typedef double su2double;
-
-#endif
-
 
 /*!
- * \class CTypeWrapper
- * \brief Class for defining the datatype wrapper routines; this class features as a base class for
+ * \namespace SU2_TYPE
+ * \brief Namespace for defining the datatype wrapper routines; this class features as a base class for
  * type interfaces for non-primitive dataypes e.g. used by AD, complex etc.
  * \author T. Albring
  * \version 3.2.9 "eagle"
  */
-class CTypeWrapper{
-public:
-
+namespace SU2_TYPE{
   /*!
    * \brief Set the primary (primitive) value of the datatype (needs to be implemented for each new type).
    * \param[in] data - The non-primitive datatype.
    * \param[in] val - The primitive value.
    */
-  static void SetPrimary(su2double& data, const double &val);
+  void SetPrimary(su2double& data, const double &val);
 
   /*!
    * \brief Set the secondary (primitive) value of the datatype (needs to be implemented for each new type).
    * \param[in] data - The non-primitive datatype.
    * \param[in] val - The primitive value.
    */
-  static void SetSecondary(su2double& data, const double &val);
+  void SetSecondary(su2double& data, const double &val);
 
   /*!
    * \brief Get the primary (primitive) value of the datatype (needs to be implemented for each new type).
    * \param[in] data - The non-primitive datatype.
    * \return The primitive value.
    */
-  static double GetPrimary(const su2double &data);
+  double GetPrimary(const su2double &data);
 
   /*!
    * \brief Get the secondary (primitive) value of the datatype (needs to be implemented for each new type).
    * \param[in] data - The non-primitive datatype.
    * \return The primitive value.
    */
-  static double GetSecondary(const su2double &data);
+  double GetSecondary(const su2double &data);
 
   /*!
    * \brief Get the derivative (primitive) value of the datatype (needs to be implemented for each new type).
    * \param[in] data - The non-primitive datatype.
    * \return The derivative value.
    */
-  static double GetDerivative(const su2double &data);
+  double GetDerivative(const su2double &data);
 
   /*!
    * \brief Set the derivative (primitive) value of the datatype (needs to be implemented for each new type).
    * \param[in] data - The non-primitive datatype.
    * \param[in] val - The value of the derivative.
    */
-  static void SetDerivative(su2double &data, const double &val);
-
+  void SetDerivative(su2double &data, const double &val);
 
   /*!
    * \brief Casts the primary value to int (uses GetPrimary, already implemented for each type).
    * \param[in] data - The non-primitive datatype.
    * \return - The primary value casted to int.
    */
-  static int Int(const su2double& data);
+  int Int(const su2double& data);
 
   /*!
    * \brief Casts the primary value to short (uses GetPrimary, already implemented for each type).
    * \param[in] data - The non-primitive datatype.
    * \return - The primary value casted to short.
    */
-  static short Short(const su2double& data);
+  short Short(const su2double& data);
+}
 
-  };
+/*!
+ * \namespace AD
+ * \brief Contains routines for the reverse mode of AD.
+ * In case there is no reverse type configured, they have no effect at all.
+ */
+
+namespace AD{
+  /*!
+   * \brief Start the recording of the operations and involved variables.
+   * If called, the computational graph of all operations occuring after the call will be stored,
+   * starting with the variables registered with RegisterInputVariable.
+   */
+  void StartRecording();
+
+  /*!
+   * \brief Stops the recording of the operations and variables.
+   */
+  void StopRecording();
+
+  /*!
+   * \brief Registers the variable as an input. I.e. as a leaf of the computational graph.
+   * \param[in] The variables to be registered as input.
+   */
+  void RegisterInputVariable(su2double &data);
+
+  /*!
+   * \brief Registers the variable as an output. I.e. as the root of the computational graph.
+   * \param[in] The variables to be registered as output.
+   */
+  void RegisterOutputVariable(su2double &data);
+
+  /*!
+   * \brief Clears the currently stored adjoints but keeps the computational graph.
+   */
+  void ClearAdjoints();
+
+  /*!
+   * \brief Computes the adjoints, i.e. the derivatives of the output with respect to the input variables.
+   */
+  void ComputeAdjoint();
+
+}
 #include "datatype_structure.inl"
+
+

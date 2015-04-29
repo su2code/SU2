@@ -77,7 +77,7 @@ def CFD(config):
     """
     konfig = copy.deepcopy(config)
     
-    direct_diff = konfig.get('DIRECT_DIFF',"NO") == 'YES'
+    direct_diff = not konfig.get('DIRECT_DIFF',"") in ["NONE", ""]
 
     if direct_diff:
         tempname = 'config_CFD_DIRECTDIFF.cfg'
