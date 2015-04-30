@@ -8,7 +8,7 @@
  * be declared and defined here; to keep all elements together, there
  * is no corresponding .cpp file at this time.
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
+ * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
@@ -246,15 +246,15 @@ static const map<string, ENUM_REGIME> Regime_Map = CCreateMap<string, ENUM_REGIM
  */
 enum ENUM_KIND_NONDIM {
   DIMENSIONAL = 0,			    /*!< \brief Dimensional simulation. */
-  FREESTEAM_PRESS_EQ_ONE = 1, /*!< \brief Non-dimensional simulation. */
-  FREESTEAM_VEL_EQ_MACH = 2, /*!< \brief Non-dimensional simulation. */
-  FREESTEAM_VEL_EQ_ONE = 3 /*!< \brief Non-dimensional simulation. */
+  FREESTREAM_PRESS_EQ_ONE = 1, /*!< \brief Non-dimensional simulation. */
+  FREESTREAM_VEL_EQ_MACH = 2, /*!< \brief Non-dimensional simulation. */
+  FREESTREAM_VEL_EQ_ONE = 3 /*!< \brief Non-dimensional simulation. */
 };
 static const map<string, ENUM_KIND_NONDIM> NonDim_Map = CCreateMap<string, ENUM_KIND_NONDIM>
 ("DIMENSIONAL", DIMENSIONAL)
-("FREESTEAM_PRESS_EQ_ONE", FREESTEAM_PRESS_EQ_ONE)
-("FREESTEAM_VEL_EQ_MACH", FREESTEAM_VEL_EQ_MACH)
-("FREESTEAM_VEL_EQ_ONE", FREESTEAM_VEL_EQ_ONE);
+("FREESTREAM_PRESS_EQ_ONE", FREESTREAM_PRESS_EQ_ONE)
+("FREESTREAM_VEL_EQ_MACH", FREESTREAM_VEL_EQ_MACH)
+("FREESTREAM_VEL_EQ_ONE", FREESTREAM_VEL_EQ_ONE);
 
 /*!
  * \brief different system of measurements
