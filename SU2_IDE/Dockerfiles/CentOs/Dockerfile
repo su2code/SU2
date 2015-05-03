@@ -18,7 +18,7 @@ ENV SU2_HOME "~/SU2-master"
 ENV PATH $PATH:$SU2_RUN
 ENV PYTHONPATH $PYTHONPATH:$SU2_RUN
 
-CMD cp /usr/local/bin/* /home/krishna/su2-binaries/.
+CMD cp /usr/local/bin/* /tmp/su2-binaries/.
 
 #sudo docker build -t krishna/scfd-su2 .
-#sudo docker run -v ~/su2-binaries/.:~/su2-binaries/. -t krishna/scfd-su2
+#sudo docker run -v /tmp/su2-binaries/.:/tmp/su2-binaries/. -t krishna/scfd-su2
