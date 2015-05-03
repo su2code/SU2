@@ -43,23 +43,23 @@
       "fields" : {
          "AoA" : {
             "label" : "AoA",
-            "type" : "text"
+            "type" : "number"
          },
          "FREESTREAM_PRESSURE" : {
             "label" : "FREESTREAM_PRES (101325.0 N/m^2 by default)",
-            "type" : "text"
+            "type" : "number"
          },
          "FREESTREAM_TEMP" : {
             "label" : "FREESTREAM_TEMP (288.15 K by default)",
-            "type" : "text"
+            "type" : "number"
          },
          "MACH_NUMBER" : {
             "label" : "MACH_NUMBER (0 - 1)",
-            "type" : "text"
+            "type" : "number"
          },
          "SIDESLIP_ANGLE" : {
             "label" : "SIDESLIP_ANGLE",
-            "type" : "text"
+            "type" : "number"
          }
       },
       "label" : "COMPRESSIBLE FREE-STREAM DEFINITION",
@@ -71,15 +71,15 @@
             "fields" : {
                "REF_ORIGIN_MOMENT_X" : {
                   "label" : "REF_ORIGIN_MOMENT_X",
-                  "type" : "text"
+                  "type" : "number"
                },
                "REF_ORIGIN_MOMENT_Y" : {
                   "label" : "REF_ORIGIN_MOMENT_Y",
-                  "type" : "text"
+                  "type" : "number"
                },
                "REF_ORIGIN_MOMENT_Z" : {
                   "label" : "REF_ORIGIN_MOMENT_Z",
-                  "type" : "text"
+                  "type" : "number"
                }
             },
             "label" : "Reference origin for moment computation",
@@ -87,138 +87,438 @@
          },
          "FREESTREAM_PRESSURE" : {
             "label" : "FREESTREAM_PRESSURE",
-            "type" : "text"
+            "type" : "number"
          },
          "FREESTREAM_TEMPERATURE" : {
             "label" : "FREESTREAM_TEMPERATURE",
-            "type" : "text"
+            "type" : "number"
          },
          "MACH_NUMBER" : {
             "label" : "MACH_NUMBER",
-            "type" : "text"
+            "type" : "number"
          },
          "SIDESLIP_ANGLE" : {
             "label" : "SIDESLIP_ANGLE",
-            "type" : "text"
+            "type" : "number"
          }
       },
       "label" : "REFERENCE VALUE DEFINITION",
       "type" : "fieldset"
    },
-   "bogus" : {
-      "label" : "bogus",
-      "type" : "bogus"
-   },
-   "button" : {
-      "label" : "button",
-      "type" : "button"
-   },
-   "checkbox" : {
-      "label" : "checkbox",
-      "type" : "checkbox"
-   },
-   "checklist" : {
-      "label" : "checklist",
-      "options" : {
-         "first" : {
-            "label" : "first option"
+   "BOUNDARY CONDITION DEFINITION" : {
+      "fields" : {
+         "MARKER_EULER" : {
+            "label" : "MARKER_EULER",
+            "type" : "text"
          },
-         "second" : {
-            "isOff" : "off",
-            "isOn" : "on",
-            "label" : "second option"
+         "MARKER_INLET" : {
+            "label" : "MARKER_INLET",
+            "type" : "text"
+         },
+         "MARKER_OUTLET": {
+            "label" : "MARKER_OUTLET",
+            "type" : "text"
+         }
+     },
+      "label" : "BOUNDARY CONDITION DEFINITION",
+      "type" : "fieldset"
+   },
+   "SURFACES IDENTIFICATION" : {
+      "fields" : {
+         "MARKER_PLOTTING" : {
+            "label" : "MARKER_PLOTTING",
+            "type": "text"
+         },
+         "MARKER_MONITORING": {
+            "label" : "MARKER_MONITORING",
+            "type": "text"
          }
       },
-      "type" : "checklist"
+      "label" : "SURFACES IDENTIFICATION",
+      "type" : "fieldset"
    },
-   "color" : {
-      "label" : "color",
-      "type" : "color"
-   },
-   "file" : {
-      "label" : "file",
-      "multiple" : true,
-      "type" : "file"
-   },
-   "hidden" : {
-      "label" : "hidden",
-      "type" : "hidden",
-      "val" : "hidden"
-   },
-   "image" : {
-      "label" : "image",
-      "source" : "http://angularjs.org/img/AngularJS-large.png",
-      "type" : "image"
-   },
-   "legend" : {
-      "label" : "legend",
-      "type" : "legend"
-   },
-   "radio" : {
-      "label" : "radio",
-      "type" : "radio",
-      "values" : {
-         "fifth" : "fifth option",
-         "first" : "first option",
-         "fourth" : "fourth option",
-         "second" : "second option",
-         "third" : "third option"
-      }
-   },
-   "range" : {
-      "label" : "range",
-      "maxValue" : 84,
-      "minValue" : -42,
-      "model" : "number",
-      "type" : "range",
-      "val" : 42
-   },
-   "reset" : {
-      "label" : "reset",
-      "type" : "reset"
-   },
-   "select" : {
-      "empty" : "nothing selected",
-      "label" : "select",
-      "options" : {
-         "eighth" : {
-            "group" : "first group",
-            "label" : "eighth option"
+   "COMMON PARAMETERS DEFINING THE NUMERICAL METHOD": {
+      "fields": {
+         "NUM_METHOD_GRAD" : {
+            "label" : "NUM_METHOD_GRAD",
+            "options" : {
+               "GREEN_GAUSS" : {
+                  "label" : "GREEN_GAUSS"
+               },
+               "WEIGHTED_LEAST_SQUARES" : {
+                  "label" : "WEIGHTED_LEAST_SQUARES"
+               }
+            },
+            "type" : "select"
          },
-         "fifth" : {
-            "label" : "fifth option"
+         "CFL_NUMBER": {
+            "label": "CFL_NUMBER",
+            "type": "number"
+         }, 
+         "CFL_ADAPT": {
+            "label" : "CFL_ADAPT",
+            "type" : "checkbox"
          },
-         "first" : {
-            "label" : "first option"
+         "CFL_ADAPT_PARAM": {
+            "label": "CFL_NUMBER",
+            "type": "text"
          },
-         "fourth" : {
-            "group" : "first group",
-            "label" : "fourth option"
+         "RK_ALPHA_COEFF": {
+            "label": "CFL_NUMBER",
+            "type": "text"
          },
-         "ninth" : {
-            "group" : "second group",
-            "label" : "ninth option"
-         },
-         "second" : {
-            "group" : "first group",
-            "label" : "second option"
-         },
-         "seventh" : {
-            "label" : "seventh option"
-         },
-         "sixth" : {
-            "group" : "second group",
-            "label" : "sixth option"
-         },
-         "tenth" : {
-            "label" : "tenth option"
-         },
-         "third" : {
-            "group" : "second group",
-            "label" : "third option"
+         "EXT_ITER": {
+            "label": "CFL_NUMBER",
+            "type": "number"
          }
       },
-      "type" : "select"
+      "label" : "COMMON PARAMETERS DEFINING THE NUMERICAL METHOD",
+      "type" : "fieldset"
+   },
+   "LINEAR SOLVER DEFINITION": {
+      "fields": {
+         "LINEAR_SOLVER" : {
+            "label" : "LINEAR_SOLVER",
+            "options" : {
+               "BCGSTAB" : {
+                  "label" : "BCGSTAB"
+               },
+               "FGMRES" : {
+                  "label" : "FGMRES"
+               }
+            },
+            "type" : "select"
+         },
+         "LINEAR_SOLVER_PREC" : {
+           "label" : "LINEAR_SOLVER",
+           "options" : {
+              "JACOBI" : {
+                 "label" : "JACOBI"
+              },
+              "LINELET" : {
+                 "label" : "LINELET"
+              },
+              "LU_SGS": {
+                 "label" : "LU_SGS"
+              }
+           },
+           "type" : "select"
+         },
+         "LINEAR_SOLVER_ERROR": {
+            "label": "LINEAR_SOLVER_ERROR",
+            "type": "number"
+         },
+         "LINEAR_SOLVER_ITER": {
+            "label": "LINEAR_SOLVER_ITER",
+            "type": "number"
+         }
+      },
+      "label" : "LINEAR_SOLVER_PREC",
+      "type" : "fieldset"
+   },
+   "MULTIGRID PARAMETERS": {
+      "fields": {
+         "MGLEVEL": {
+            "label": "MGLEVEL",
+            "type": "number"
+         }, 
+         "MGCYCLE": {
+           "label" : "MGCYCLE",
+           "options" : {
+              "V_CYCLE" : {
+                 "label" : "V_CYCLE"
+              },
+              "W_CYCLE" : {
+                 "label" : "W_CYCLE"
+              },
+              "FULLMG_CYCLE": {
+                 "label" : "FULLMG_CYCLE"
+              }
+           },
+           "type" : "select"
+         },
+         "MG_PRE_SMOOTH": {
+            "label": "MG_PRE_SMOOTH",
+            "type": "text"
+         }, 
+         "MG_POST_SMOOTH": {
+            "label": "MG_POST_SMOOTH",
+            "type": "text"
+         }, 
+         "MG_CORRECTION_SMOOTH": {
+            "label": "MG_CORRECTION_SMOOTH",
+            "type": "text"
+         }, 
+         "MG_DAMP_RESTRICTION": {
+            "label": "MG_DAMP_RESTRICTION",
+            "type": "number"
+         }, 
+         "MG_DAMP_PROLONGATION": {
+            "label": "MG_DAMP_PROLONGATION",
+            "type": "number"
+         }
+      },
+      "label" : "MULTIGRID PARAMETERS",
+      "type" : "fieldset"
+   },
+   "FLOW NUMERICAL METHOD DEFINITION": {
+      "fields": {
+         "CONV_NUM_METHOD_FLOW": {
+           "label" : "CONV_NUM_METHOD_FLOW",
+           "options" : {
+              "JST" : {
+                 "label" : "JST"
+              },
+              "LAX-FRIEDRICH" : {
+                 "label" : "LAX-FRIEDRICH"
+              },
+              "CUSP": {
+                 "label" : "CUSP"
+              },
+              "ROE" : {
+                 "label" : "ROE"
+              },
+              "AUSM" : {
+                 "label" : "AUSM"
+              },
+              "HLLC": {
+                 "label" : "HLLC"
+              },
+              "TURKEL_PREC" : {
+                 "label" : "TURKEL_PREC"
+              },
+              "MSW" : {
+                 "label" : "MSW"
+              }
+           },
+           "type" : "select"
+         },
+         "SPATIAL_ORDER_FLOW": {
+           "label" : "CONV_NUM_METHOD_FLOW",
+           "options" : {
+              "1ST_ORDER" : {
+                 "label" : "1ST_ORDER"
+              },
+              "2ND_ORDER" : {
+                 "label" : "2ND_ORDER"
+              },
+              "2ND_ORDER_LIMITER": {
+                 "label" : "2ND_ORDER_LIMITER"
+              }
+           },
+           "type" : "select"
+         },
+         "SLOPE_LIMITER_FLOW": {
+           "label" : "CONV_NUM_METHOD_FLOW",
+           "options" : {
+              "VENKATAKRISHNAN" : {
+                 "label" : "VENKATAKRISHNAN"
+              },
+              "MINMOD" : {
+                 "label" : "MINMOD"
+              }
+           },
+           "type" : "select"
+         },
+         "LIMITER_COEFF": {
+            "label": "LIMITER_COEFF",
+            "type": "number"
+         }, 
+         "AD_COEFF_FLOW": {
+            "label": "AD_COEFF_FLOW",
+            "type": "number"
+         },
+         "TIME_DISCRE_FLOW": {
+           "label" : "TIME_DISCRE_FLOW",
+           "options" : {
+              "RUNGE-KUTTA_EXPLICIT" : {
+                 "label" : "RUNGE-KUTTA_EXPLICIT"
+              },
+              "EULER_IMPLICIT" : {
+                 "label" : "EULER_IMPLICIT"
+              },
+              "EULER_EXPLICIT": {
+                 "label" : "EULER_EXPLICIT"
+              }
+           },
+           "type" : "select"
+         }
+      },
+      "label" : "FLOW NUMERICAL METHOD DEFINITION",
+      "type" : "fieldset"
+   },
+   "CONVERGENCE PARAMETERS": {
+      "fields": {
+         "CONV_CRITERIA": {
+           "label" : "CONV_CRITERIA",
+           "options" : {
+              "CAUCHY" : {
+                 "label" : "CAUCHY"
+              },
+              "RESIDUAL" : {
+                 "label" : "RESIDUAL"
+              }
+           },
+           "type" : "select"
+         },
+         "RESIDUAL_REDUCTION": {
+            "label": "RESIDUAL_REDUCTION",
+            "type": "number"
+         },
+         "RESIDUAL_MINVAL": {
+            "label": "RESIDUAL_MINVAL",
+            "type": "number"
+         },
+         "STARTCONV_ITER": {
+            "label": "STARTCONV_ITER",
+            "type": "number"
+         },
+         "CAUCHY_ELEMS": {
+            "label": "CAUCHY_ELEMS",
+            "type": "number"
+         },
+         "CAUCHY_EPS": {
+            "label": "CAUCHY_EPS",
+            "type": "number"
+         },
+         "CAUCHY_FUNC_FLOW": {
+           "label" : "CAUCHY_FUNC_FLOW",
+           "options" : {
+              "LIFT" : {
+                 "label" : "LIFT"
+              },
+              "DRAG" : {
+                 "label" : "DRAG"
+              },
+              "NEARFIELD_PRESS" : {
+                 "label" : "NEARFIELD_PRESS"
+              },
+              "SENS_GEOMETRY" : {
+                 "label" : "SENS_GEOMETRY"
+              },
+              "SENS_MACH" : {
+                 "label" : "SENS_MACH"
+              },
+              "DELTA_LIFT" : {
+                 "label" : "DELTA_LIFT"
+              },
+              "DELTA_DRAG" : {
+                 "label" : "DELTA_DRAG"
+              }
+           },
+           "type" : "select"
+         }
+      },
+      "label" : "FLOW NUMERICAL METHOD DEFINITION",
+      "type" : "fieldset"
+   },
+   "INPUT/OUTPUT INFORMATION": {
+      "fields": {
+         "MESH_FILENAME": {
+           "label" : "MESH_FILENAME",
+           "type": "text"
+         },
+         "MESH_FORMAT": {
+           "label" : "MESH_FILENAME",
+           "options" : {
+              "SU2" : {
+                 "label" : "SU2"
+              },
+              "CGNS" : {
+                 "label" : "CGNS"
+              },
+              "NETCDF_ASCII" : {
+                 "label" : "NETCDF_ASCII"
+              }
+            },
+           "type" : "select"
+         },
+         "MESH_OUT_FILENAME": {
+           "label" : "MESH_OUT_FILENAME",
+           "type": "text"
+         },
+         "SOLUTION_FLOW_FILENAME": {
+           "label" : "SOLUTION_FLOW_FILENAME",
+           "type": "text"
+         },
+         "SOLUTION_LIN_FILENAME": {
+           "label" : "SOLUTION_LIN_FILENAME",
+           "type": "text"
+         },
+         "SOLUTION_ADJ_FILENAME": {
+           "label" : "SOLUTION_ADJ_FILENAME",
+           "type": "text"
+         },
+         "OUTPUT_FORMAT": {
+           "label" : "OUTPUT_FORMAT",
+           "options" : {
+              "PARAVIEW" : {
+                 "label" : "PARAVIEW"
+              },
+              "TECPLOT" : {
+                 "label" : "TECPLOT"
+              },
+              "STL": {
+                 "label" : "STL"
+              }
+           },
+           "type" : "select"
+         },
+         "CONV_FILENAME": {
+           "label" : "CONV_FILENAME",
+           "type": "text"
+         },
+         "RESTART_FLOW_FILENAME": {
+           "label" : "RESTART_FLOW_FILENAME",
+           "type": "text"
+         },
+         "RESTART_ADJ_FILENAME": {
+           "label" : "RESTART_ADJ_FILENAME",
+           "type": "text"
+         },
+         "RESTART_LIN_FILENAME": {
+           "label" : "RESTART_LIN_FILENAME",
+           "type": "text"
+         },
+         "VOLUME_FLOW_FILENAME": {
+           "label" : "VOLUME_FLOW_FILENAME",
+           "type": "text"
+         },
+         "VOLUME_ADJ_FILENAME": {
+           "label" : "VOLUME_ADJ_FILENAME",
+           "type": "text"
+         },
+         "VOLUME_LIN_FILENAME": {
+           "label" : "VOLUME_LIN_FILENAME",
+           "type": "text"
+         },
+         "GRAD_OBJFUNC_FILENAME": {
+           "label" : "GRAD_OBJFUNC_FILENAME",
+           "type": "text"
+         },
+         "SURFACE_FLOW_FILENAME": {
+           "label" : "SURFACE_FLOW_FILENAME",
+           "type": "text"
+         }, 
+         "SURFACE_ADJ_FILENAME": {
+           "label" : "SURFACE_ADJ_FILENAME",
+           "type": "text"
+         },
+         "SURFACE_LINE_FILENAME": {
+           "label" : "SURFACE_LINE_FILENAME",
+           "type": "text"
+         },
+         "WRT_SOL_FREQ": {
+           "label" : "WRT_SOL_FREQ",
+           "type": "number"
+         },
+         "WRT_CON_FREQ": {
+           "label" : "WRT_CON_FREQ",
+           "type": "number"
+         }
+      },
+      "label" : "FLOW NUMERICAL METHOD DEFINITION",
+      "type" : "fieldset"
    },
    "submit" : {
       "label" : "submit",
