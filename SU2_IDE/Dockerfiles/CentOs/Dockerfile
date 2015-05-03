@@ -3,7 +3,7 @@ FROM centos:7
 MAINTAINER Krishna Prasad <praskrishna@gmail.com>
 
 RUN yum -y update; yum clean all
-RUN yum -y install build-essential g++
+RUN yum -y install gcc-c++
 RUN yum -y install unzip wget make
 RUN wget https://github.com/su2code/SU2/archive/master.zip
 
