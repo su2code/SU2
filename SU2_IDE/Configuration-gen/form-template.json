@@ -5,7 +5,8 @@
             "label" : "MATH_PROBLEM",
             "options" : {
                "ADJOINT" : {
-                  "label" : "ADJOINT"
+                  "label" : "ADJOINT",
+                  "slaveTo": "true"
                },
                "DIRECT" : {
                   "label" : "DIRECT"
@@ -20,7 +21,8 @@
             "label" : "PHY_PROBLEM",
             "options" : {
                "EULER" : {
-                  "label" : "EULER"
+                  "label" : "EULER",
+                  "slaveTo": "true"
                },
                "NAVIER_STOKES" : {
                   "label" : "NAVIER_STOKES"
@@ -33,7 +35,8 @@
          },
          "RESTART_SOL" : {
             "label" : "RESTART_SOL",
-            "type" : "checkbox"
+            "type" : "checkbox",
+            "slaveTo": "true"
          }
       },
       "label" : "DIRECT, ADJOINT, AND LINEARIZED PROBLEM DEFINITION",
@@ -41,25 +44,37 @@
    },
    "COMPRESSIBLE FREE-STREAM DEFINITION" : {
       "fields" : {
-         "AoA" : {
-            "label" : "AoA",
-            "type" : "number"
-         },
-         "FREESTREAM_PRESSURE" : {
-            "label" : "FREESTREAM_PRES (101325.0 N/m^2 by default)",
-            "type" : "number"
-         },
-         "FREESTREAM_TEMP" : {
-            "label" : "FREESTREAM_TEMP (288.15 K by default)",
-            "type" : "number"
-         },
          "MACH_NUMBER" : {
             "label" : "MACH_NUMBER (0 - 1)",
-            "type" : "number"
+            "type" : "number",
+            "val": 0.5,
+            "minValue": 0.0,
+            "maxValue": 1.0,
+           "required": true
+         },
+         "AoA" : {
+            "label" : "AoA",
+            "type" : "number",
+            "val": 0.0,
+           "required": true
          },
          "SIDESLIP_ANGLE" : {
             "label" : "SIDESLIP_ANGLE",
-            "type" : "number"
+            "type" : "number",
+            "val": 0.0,
+           "required": true
+         },
+         "FREESTREAM_PRESSURE" : {
+            "label" : "FREESTREAM_PRES (101325.0 N/m^2 by default)",
+            "type" : "number",
+            "val": 101325.0,
+           "required": true
+         },
+         "FREESTREAM_TEMP" : {
+            "label" : "FREESTREAM_TEMP (288.15 K by default)",
+            "type" : "number",
+            "val": 288.15,
+           "required": true
          }
       },
       "label" : "COMPRESSIBLE FREE-STREAM DEFINITION",
@@ -71,35 +86,43 @@
             "fields" : {
                "REF_ORIGIN_MOMENT_X" : {
                   "label" : "REF_ORIGIN_MOMENT_X",
-                  "type" : "number"
+                  "type" : "number",
+                  "val": 0.25,
+                  "required": true
                },
                "REF_ORIGIN_MOMENT_Y" : {
                   "label" : "REF_ORIGIN_MOMENT_Y",
-                  "type" : "number"
+                  "type" : "number",
+                  "val": 0,
+                  "required": true
                },
                "REF_ORIGIN_MOMENT_Z" : {
                   "label" : "REF_ORIGIN_MOMENT_Z",
-                  "type" : "number"
+                  "type" : "number",
+                  "val": 0,
+                  "required": true
                }
             },
             "label" : "Reference origin for moment computation",
             "type" : "fieldset"
          },
-         "FREESTREAM_PRESSURE" : {
-            "label" : "FREESTREAM_PRESSURE",
-            "type" : "number"
+         "REF_LENGTH_MOMENT" : {
+            "label" : "REF_LENGTH_MOMENT",
+            "type" : "number",
+            "val": 1.0,
+           "required": true
          },
-         "FREESTREAM_TEMPERATURE" : {
-            "label" : "FREESTREAM_TEMPERATURE",
-            "type" : "number"
+         "REF_AREA" : {
+            "label" : "REF_AREA",
+            "type" : "number",
+            "val": 1.0,
+           "required": true
          },
-         "MACH_NUMBER" : {
-            "label" : "MACH_NUMBER",
-            "type" : "number"
-         },
-         "SIDESLIP_ANGLE" : {
-            "label" : "SIDESLIP_ANGLE",
-            "type" : "number"
+         "REF_ELEM_LENGTH" : {
+            "label" : "REF_ELEM_LENGTH",
+            "type" : "number",
+            "val": 0.1,
+           "required": true
          }
       },
       "label" : "REFERENCE VALUE DEFINITION",
@@ -109,15 +132,21 @@
       "fields" : {
          "MARKER_EULER" : {
             "label" : "MARKER_EULER",
-            "type" : "text"
+            "type" : "text",
+            "val": "( upper_wall, lower_wall )",
+           "required": true
          },
          "MARKER_INLET" : {
             "label" : "MARKER_INLET",
-            "type" : "text"
+            "type" : "text",
+            "val": "( inlet, 288.6, 102010.0, 1.0, 0.0, 0.0 )",
+           "required": true
          },
          "MARKER_OUTLET": {
             "label" : "MARKER_OUTLET",
-            "type" : "text"
+            "type" : "text",
+            "val": "( outlet, 101300.0 )",
+           "required": true
          }
      },
       "label" : "BOUNDARY CONDITION DEFINITION",
@@ -127,11 +156,15 @@
       "fields" : {
          "MARKER_PLOTTING" : {
             "label" : "MARKER_PLOTTING",
-            "type": "text"
+            "type": "text",
+            "val": "( lower_wall )",
+           "required": true
          },
          "MARKER_MONITORING": {
             "label" : "MARKER_MONITORING",
-            "type": "text"
+            "type": "text",
+            "val": "( upper_wall, lower_wall )",
+           "required": true
          }
       },
       "label" : "SURFACES IDENTIFICATION",
@@ -143,7 +176,8 @@
             "label" : "NUM_METHOD_GRAD",
             "options" : {
                "GREEN_GAUSS" : {
-                  "label" : "GREEN_GAUSS"
+                  "label" : "GREEN_GAUSS",
+                  "slaveTo": "true"
                },
                "WEIGHTED_LEAST_SQUARES" : {
                   "label" : "WEIGHTED_LEAST_SQUARES"
@@ -153,23 +187,32 @@
          },
          "CFL_NUMBER": {
             "label": "CFL_NUMBER",
-            "type": "number"
+            "type": "number",
+            "val": 6.0,
+           "required": true
          }, 
          "CFL_ADAPT": {
             "label" : "CFL_ADAPT",
-            "type" : "checkbox"
+            "type" : "checkbox",
+            "slaveTo": "true"
          },
          "CFL_ADAPT_PARAM": {
             "label": "CFL_NUMBER",
-            "type": "text"
+            "type": "text",
+            "val": "( 1.5, 0.5, 1.0, 100.0 )",
+           "required": true
          },
          "RK_ALPHA_COEFF": {
             "label": "CFL_NUMBER",
-            "type": "text"
+            "type": "text",
+            "val": "( 0.66667, 0.66667, 1.000000 )",
+           "required": true
          },
          "EXT_ITER": {
             "label": "CFL_NUMBER",
-            "type": "number"
+            "type": "number",
+            "val": 999999,
+           "required": true
          }
       },
       "label" : "COMMON PARAMETERS DEFINING THE NUMERICAL METHOD",
@@ -184,7 +227,8 @@
                   "label" : "BCGSTAB"
                },
                "FGMRES" : {
-                  "label" : "FGMRES"
+                  "label" : "FGMRES",
+                  "slaveTo": "true"
                }
             },
             "type" : "select"
@@ -199,18 +243,23 @@
                  "label" : "LINELET"
               },
               "LU_SGS": {
-                 "label" : "LU_SGS"
+                 "label" : "LU_SGS",
+                  "slaveTo": "true"
               }
            },
            "type" : "select"
          },
          "LINEAR_SOLVER_ERROR": {
             "label": "LINEAR_SOLVER_ERROR",
-            "type": "number"
+            "type": "number",
+            "val": 1E-4,
+           "required": true
          },
          "LINEAR_SOLVER_ITER": {
             "label": "LINEAR_SOLVER_ITER",
-            "type": "number"
+            "type": "number",
+            "val": 10,
+           "required": true
          }
       },
       "label" : "LINEAR_SOLVER_PREC",
@@ -220,13 +269,16 @@
       "fields": {
          "MGLEVEL": {
             "label": "MGLEVEL",
-            "type": "number"
+            "type": "number",
+            "val": 3,
+           "required": true
          }, 
          "MGCYCLE": {
            "label" : "MGCYCLE",
            "options" : {
               "V_CYCLE" : {
-                 "label" : "V_CYCLE"
+                 "label" : "V_CYCLE",
+                  "slaveTo": "true"
               },
               "W_CYCLE" : {
                  "label" : "W_CYCLE"
@@ -239,23 +291,33 @@
          },
          "MG_PRE_SMOOTH": {
             "label": "MG_PRE_SMOOTH",
-            "type": "text"
+            "type": "text",
+            "val": "( 1, 2, 3, 3 )",
+           "required": true
          }, 
          "MG_POST_SMOOTH": {
             "label": "MG_POST_SMOOTH",
-            "type": "text"
+            "type": "text",
+            "val": "( 0, 0, 0, 0 )",
+           "required": true
          }, 
          "MG_CORRECTION_SMOOTH": {
             "label": "MG_CORRECTION_SMOOTH",
-            "type": "text"
+            "type": "text",
+            "val": "( 0, 0, 0, 0 )",
+           "required": true
          }, 
          "MG_DAMP_RESTRICTION": {
             "label": "MG_DAMP_RESTRICTION",
-            "type": "number"
+            "type": "number",
+            "val": 0.9,
+           "required": true
          }, 
          "MG_DAMP_PROLONGATION": {
             "label": "MG_DAMP_PROLONGATION",
-            "type": "number"
+            "type": "number",
+            "val": 0.9,
+           "required": true
          }
       },
       "label" : "MULTIGRID PARAMETERS",
@@ -267,7 +329,8 @@
            "label" : "CONV_NUM_METHOD_FLOW",
            "options" : {
               "JST" : {
-                 "label" : "JST"
+                 "label" : "JST",
+                  "slaveTo": "true"
               },
               "LAX-FRIEDRICH" : {
                  "label" : "LAX-FRIEDRICH"
@@ -303,7 +366,8 @@
                  "label" : "2ND_ORDER"
               },
               "2ND_ORDER_LIMITER": {
-                 "label" : "2ND_ORDER_LIMITER"
+                 "label" : "2ND_ORDER_LIMITER",
+                  "slaveTo": "true"
               }
            },
            "type" : "select"
@@ -312,7 +376,8 @@
            "label" : "CONV_NUM_METHOD_FLOW",
            "options" : {
               "VENKATAKRISHNAN" : {
-                 "label" : "VENKATAKRISHNAN"
+                 "label" : "VENKATAKRISHNAN",
+                  "slaveTo": "true"
               },
               "MINMOD" : {
                  "label" : "MINMOD"
@@ -322,11 +387,15 @@
          },
          "LIMITER_COEFF": {
             "label": "LIMITER_COEFF",
-            "type": "number"
+            "type": "number",
+            "val": 0.3,
+           "required": true
          }, 
          "AD_COEFF_FLOW": {
             "label": "AD_COEFF_FLOW",
-            "type": "number"
+            "type": "text",
+            "val": "( 0.15, 0.5, 0.02 )",
+           "required": true
          },
          "TIME_DISCRE_FLOW": {
            "label" : "TIME_DISCRE_FLOW",
@@ -335,7 +404,8 @@
                  "label" : "RUNGE-KUTTA_EXPLICIT"
               },
               "EULER_IMPLICIT" : {
-                 "label" : "EULER_IMPLICIT"
+                 "label" : "EULER_IMPLICIT",
+                  "slaveTo": "true"
               },
               "EULER_EXPLICIT": {
                  "label" : "EULER_EXPLICIT"
@@ -356,30 +426,41 @@
                  "label" : "CAUCHY"
               },
               "RESIDUAL" : {
-                 "label" : "RESIDUAL"
+                 "label" : "RESIDUAL",
+                  "slaveTo": "true"
               }
            },
            "type" : "select"
          },
          "RESIDUAL_REDUCTION": {
             "label": "RESIDUAL_REDUCTION",
-            "type": "number"
+            "type": "number",
+            "val": 6,
+           "required": true
          },
          "RESIDUAL_MINVAL": {
             "label": "RESIDUAL_MINVAL",
-            "type": "number"
+            "type": "number",
+            "val": -12,
+           "required": true
          },
          "STARTCONV_ITER": {
             "label": "STARTCONV_ITER",
-            "type": "number"
+            "type": "number",
+            "val": 10,
+           "required": true
          },
          "CAUCHY_ELEMS": {
             "label": "CAUCHY_ELEMS",
-            "type": "number"
+            "type": "number",
+            "val": 100,
+           "required": true
          },
          "CAUCHY_EPS": {
             "label": "CAUCHY_EPS",
-            "type": "number"
+            "type": "number",
+            "val": 1E-10,
+           "required": true
          },
          "CAUCHY_FUNC_FLOW": {
            "label" : "CAUCHY_FUNC_FLOW",
@@ -388,7 +469,8 @@
                  "label" : "LIFT"
               },
               "DRAG" : {
-                 "label" : "DRAG"
+                 "label" : "DRAG",
+                  "slaveTo": "true"
               },
               "NEARFIELD_PRESS" : {
                  "label" : "NEARFIELD_PRESS"
@@ -416,13 +498,15 @@
       "fields": {
          "MESH_FILENAME": {
            "label" : "MESH_FILENAME",
-           "type": "text"
+           "type": "text",
+           "required": true
          },
          "MESH_FORMAT": {
            "label" : "MESH_FILENAME",
            "options" : {
               "SU2" : {
-                 "label" : "SU2"
+                 "label" : "SU2",
+                  "slaveTo": "true"
               },
               "CGNS" : {
                  "label" : "CGNS"
@@ -435,25 +519,33 @@
          },
          "MESH_OUT_FILENAME": {
            "label" : "MESH_OUT_FILENAME",
-           "type": "text"
+           "type": "text",
+           "required": true
          },
          "SOLUTION_FLOW_FILENAME": {
            "label" : "SOLUTION_FLOW_FILENAME",
-           "type": "text"
+           "type": "text",
+           "val": "solution_flow.dat",
+           "required": true
          },
          "SOLUTION_LIN_FILENAME": {
            "label" : "SOLUTION_LIN_FILENAME",
-           "type": "text"
+           "type": "text",
+           "val": "solution_lin.dat",
+           "required": true
          },
          "SOLUTION_ADJ_FILENAME": {
            "label" : "SOLUTION_ADJ_FILENAME",
-           "type": "text"
+           "type": "text",
+           "val": "solution_adj.dat",
+           "required": true
          },
          "OUTPUT_FORMAT": {
            "label" : "OUTPUT_FORMAT",
            "options" : {
               "PARAVIEW" : {
-                 "label" : "PARAVIEW"
+                 "label" : "PARAVIEW",
+                  "slaveTo": "true"
               },
               "TECPLOT" : {
                  "label" : "TECPLOT"
@@ -466,55 +558,81 @@
          },
          "CONV_FILENAME": {
            "label" : "CONV_FILENAME",
-           "type": "text"
+           "type": "text",
+           "val": "history",
+           "required": true
          },
          "RESTART_FLOW_FILENAME": {
            "label" : "RESTART_FLOW_FILENAME",
-           "type": "text"
+           "type": "text",
+           "val": "restart_flow.dat",
+           "required": true
          },
          "RESTART_ADJ_FILENAME": {
            "label" : "RESTART_ADJ_FILENAME",
-           "type": "text"
+           "type": "text",
+           "val": "restart_adj.dat",
+           "required": true
          },
          "RESTART_LIN_FILENAME": {
            "label" : "RESTART_LIN_FILENAME",
-           "type": "text"
+           "type": "text",
+           "val": "restart_lin.dat",
+           "required": true
          },
          "VOLUME_FLOW_FILENAME": {
            "label" : "VOLUME_FLOW_FILENAME",
-           "type": "text"
+           "type": "text",
+           "val": "flow",
+           "required": true
          },
          "VOLUME_ADJ_FILENAME": {
            "label" : "VOLUME_ADJ_FILENAME",
-           "type": "text"
+           "type": "text",
+           "val": "adjoint",
+           "required": true
          },
          "VOLUME_LIN_FILENAME": {
            "label" : "VOLUME_LIN_FILENAME",
-           "type": "text"
+           "type": "text",
+           "val": "linearized",
+           "required": true
          },
          "GRAD_OBJFUNC_FILENAME": {
            "label" : "GRAD_OBJFUNC_FILENAME",
-           "type": "text"
+           "type": "text",
+           "val": "of_grad.dat",
+           "required": true
          },
          "SURFACE_FLOW_FILENAME": {
            "label" : "SURFACE_FLOW_FILENAME",
-           "type": "text"
+           "type": "text",
+           "val": "surface_flow",
+           "required": true
          }, 
          "SURFACE_ADJ_FILENAME": {
            "label" : "SURFACE_ADJ_FILENAME",
-           "type": "text"
+           "type": "text",
+           "val": "surface_adjoint",
+           "required": true
          },
          "SURFACE_LINE_FILENAME": {
            "label" : "SURFACE_LINE_FILENAME",
-           "type": "text"
+           "type": "text",
+           "val": "surface_linear",
+           "required": true
          },
          "WRT_SOL_FREQ": {
            "label" : "WRT_SOL_FREQ",
-           "type": "number"
+           "type": "number",
+           "val": 250,
+           "required": true
          },
          "WRT_CON_FREQ": {
            "label" : "WRT_CON_FREQ",
-           "type": "number"
+           "type": "number",
+           "val": 1,
+           "required": true
          }
       },
       "label" : "FLOW NUMERICAL METHOD DEFINITION",
