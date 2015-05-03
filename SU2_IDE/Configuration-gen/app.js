@@ -3,15 +3,19 @@ angular.module('app', ['dynform'])
         $scope.urlFormData = {};   // JavaScript needs an object to put our form's models into.
 
         $scope.processForm = function () {
-            alert ($scope.urlFormData.email);
+            alert ($scope.urlFormData.MACH_NUMBER);
         };
     }])
-    .filter('pretty', function() {
+    .filter('nl2br', function() {
         return function (input) {
             var temp;
             try {
                 //temp = angular.fromJson(input);
-                temp = input.email
+                temp = '<br/>' +
+                        'PHYSICAL_PROBLEM=' + input.PHYSICAL_PROBLEM + '<br />' +
+                		'MATH_PROBLEM=' + input.MATH_PROBLEM + '<br />' +
+                		'MACH_NUMBER=' + input.MACH_NUMBER +
+                		'<br/>';
             }
             catch (e) {
                 temp = input;

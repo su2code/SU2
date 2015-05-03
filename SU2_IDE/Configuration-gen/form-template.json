@@ -1,217 +1,227 @@
 {
-      "fieldset": {
-        "type": "fieldset",
-        "label": "fieldset",
-        "fields": {
-          "text": {
-            "type": "text",
-            "label": "text",
-            "placeholder": "text"
-          },
-          "date": {
-            "type": "date",
-            "label": "date",
-            "placeholder": "date"
-          },
-          "datetime": {
-            "type": "datetime",
-            "label": "datetime",
-            "placeholder": "datetime"
-          },
-          "datetime-local": {
-            "type": "datetime-local",
-            "label": "datetime-local",
-            "placeholder": "datetime-local"
-          },
-          "email": {
-            "type": "email",
-            "label": "email",
-            "placeholder": "email"
-          },
-          "month": {
-            "type": "month",
-            "label": "month",
-            "placeholder": "month"
-          },
-          "coordinates-fieldset": {
-            "type": "fieldset",
-            "label": "nested model example",
-            "fields": {
-              "coordinates.lat": {
-                "type": "number",
-                "label": "coordinates.lat",
-                "placeholder": "coordinates.lat",
-                "val": 36.5
-              },
-              "coordinates.lon": {
-                "type": "number",
-                "label": "coordinates.lon",
-                "placeholder": "coordinates.lon",
-                "val": -0.15
-              }
-            }
-          },
-          "number": {
-            "type": "number",
-            "label": "number",
-            "placeholder": "number"
-          },
-          "password": {
-            "type": "password",
-            "label": "password",
-            "placeholder": "password"
-          },
-          "search": {
-            "type": "search",
-            "label": "search",
-            "placeholder": "search"
-          },
-          "tel": {
-            "type": "tel",
-            "label": "tel",
-            "placeholder": "tel"
-          },
-          "textarea": {
-            "type": "textarea",
-            "label": "textarea",
-            "placeholder": "textarea",
-            "splitBy": "\n",
-            "val": ["This array should be","separated by new lines"]
-          },
-          "time": {
-            "type": "time",
-            "label": "time",
-            "placeholder": "time"
-          },
-          "url": {
-            "type": "url",
-            "label": "url",
-            "placeholder": "url"
-          },
-          "week": {
-            "type": "week",
-            "label": "week",
-            "placeholder": "week"
-          }
-        }
+   "DIRECT, ADJOINT, AND LINEARIZED PROBLEM DEFINITION" : {
+      "fields" : {
+         "MATH_PROBLEM" : {
+            "label" : "MATH_PROBLEM",
+            "options" : {
+               "ADJOINT" : {
+                  "label" : "ADJOINT"
+               },
+               "DIRECT" : {
+                  "label" : "DIRECT"
+               },
+               "LINEARIZED" : {
+                  "label" : "LINEARIZED"
+               }
+            },
+            "type" : "select"
+         },
+         "PHYSICAL_PROBLEM" : {
+            "label" : "PHY_PROBLEM",
+            "options" : {
+               "EULER" : {
+                  "label" : "EULER"
+               },
+               "NAVIER_STOKES" : {
+                  "label" : "NAVIER_STOKES"
+               },
+               "NS_PLASMA" : {
+                  "label" : "NS_PLASMA"
+               }
+            },
+            "type" : "select"
+         },
+         "RESTART_SOL" : {
+            "label" : "RESTART_SOL",
+            "type" : "checkbox"
+         }
       },
-      "checkbox": {
-        "type": "checkbox",
-        "label": "checkbox"
+      "label" : "DIRECT, ADJOINT, AND LINEARIZED PROBLEM DEFINITION",
+      "type" : "fieldset"
+   },
+   "COMPRESSIBLE FREE-STREAM DEFINITION" : {
+      "fields" : {
+         "AoA" : {
+            "label" : "AoA",
+            "type" : "text"
+         },
+         "FREESTREAM_PRESSURE" : {
+            "label" : "FREESTREAM_PRES (101325.0 N/m^2 by default)",
+            "type" : "text"
+         },
+         "FREESTREAM_TEMP" : {
+            "label" : "FREESTREAM_TEMP (288.15 K by default)",
+            "type" : "text"
+         },
+         "MACH_NUMBER" : {
+            "label" : "MACH_NUMBER (0 - 1)",
+            "type" : "text"
+         },
+         "SIDESLIP_ANGLE" : {
+            "label" : "SIDESLIP_ANGLE",
+            "type" : "text"
+         }
       },
-      "color": {
-        "type": "color",
-        "label": "color"
+      "label" : "COMPRESSIBLE FREE-STREAM DEFINITION",
+      "type" : "fieldset"
+   },
+   "REFERENCE VALUE DEFINITION" : {
+      "fields" : {
+         "Reference origin for moment computation" : {
+            "fields" : {
+               "REF_ORIGIN_MOMENT_X" : {
+                  "label" : "REF_ORIGIN_MOMENT_X",
+                  "type" : "text"
+               },
+               "REF_ORIGIN_MOMENT_Y" : {
+                  "label" : "REF_ORIGIN_MOMENT_Y",
+                  "type" : "text"
+               },
+               "REF_ORIGIN_MOMENT_Z" : {
+                  "label" : "REF_ORIGIN_MOMENT_Z",
+                  "type" : "text"
+               }
+            },
+            "label" : "Reference origin for moment computation",
+            "type" : "fieldset"
+         },
+         "FREESTREAM_PRESSURE" : {
+            "label" : "FREESTREAM_PRESSURE",
+            "type" : "text"
+         },
+         "FREESTREAM_TEMPERATURE" : {
+            "label" : "FREESTREAM_TEMPERATURE",
+            "type" : "text"
+         },
+         "MACH_NUMBER" : {
+            "label" : "MACH_NUMBER",
+            "type" : "text"
+         },
+         "SIDESLIP_ANGLE" : {
+            "label" : "SIDESLIP_ANGLE",
+            "type" : "text"
+         }
       },
-      "file": {
-        "type": "file",
-        "label": "file",
-        "multiple": true
+      "label" : "REFERENCE VALUE DEFINITION",
+      "type" : "fieldset"
+   },
+   "bogus" : {
+      "label" : "bogus",
+      "type" : "bogus"
+   },
+   "button" : {
+      "label" : "button",
+      "type" : "button"
+   },
+   "checkbox" : {
+      "label" : "checkbox",
+      "type" : "checkbox"
+   },
+   "checklist" : {
+      "label" : "checklist",
+      "options" : {
+         "first" : {
+            "label" : "first option"
+         },
+         "second" : {
+            "isOff" : "off",
+            "isOn" : "on",
+            "label" : "second option"
+         }
       },
-      "range": {
-        "type": "range",
-        "label": "range",
-        "model": "number",
-        "val": 42,
-        "minValue": -42,
-        "maxValue": 84
-      },
-      "select": {
-        "type": "select",
-        "label": "select",
-        "empty": "nothing selected",
-        "options": {
-          "first": {
-            "label": "first option"
-          },
-          "second": {
-            "label": "second option",
-            "group": "first group"
-          },
-          "third": {
-            "label": "third option",
-            "group": "second group"
-          },
-          "fourth": {
-            "label": "fourth option",
-            "group": "first group"
-          },
-          "fifth": {
-            "label": "fifth option"
-          },
-          "sixth": {
-            "label": "sixth option",
-            "group": "second group"
-          },
-          "seventh": {
-            "label": "seventh option"
-          },
-          "eighth": {
-            "label": "eighth option",
-            "group": "first group"
-          },
-          "ninth": {
-            "label": "ninth option",
-            "group": "second group"
-          },
-          "tenth": {
-            "label": "tenth option"
-          }
-        }
-      },
-      "checklist": {
-        "type": "checklist",
-        "label": "checklist",
-        "options": {
-          "first": {
-            "label": "first option"
-          },
-          "second": {
-            "label": "second option",
-            "isOn": "on",   
-            "isOff": "off"  
-          }
-        }
-      },
-      "radio": {
-        "type": "radio",
-        "label": "radio",
-        "values": {
-          "first": "first option",
-          "second": "second option",
-          "third": "third option",
-          "fourth": "fourth option",
-          "fifth": "fifth option"
-        }
-      },
-      "button": {
-        "type": "button",
-        "label": "button"
-      },
-      "hidden": {
-        "type": "hidden",
-        "label": "hidden",
-        "val": "hidden"
-      },
-      "image": {
-        "type": "image",
-        "label": "image",
-        "source": "http://angularjs.org/img/AngularJS-large.png"
-      },
-      "legend": {
-        "type": "legend",
-        "label": "legend"
-      },
-      "reset": {
-        "type": "reset",
-        "label": "reset"
-      },
-      "submit": {
-        "type": "submit",
-        "label": "submit"
-      },
-      "bogus": {
-        "type": "bogus",
-        "label": "bogus"
+      "type" : "checklist"
+   },
+   "color" : {
+      "label" : "color",
+      "type" : "color"
+   },
+   "file" : {
+      "label" : "file",
+      "multiple" : true,
+      "type" : "file"
+   },
+   "hidden" : {
+      "label" : "hidden",
+      "type" : "hidden",
+      "val" : "hidden"
+   },
+   "image" : {
+      "label" : "image",
+      "source" : "http://angularjs.org/img/AngularJS-large.png",
+      "type" : "image"
+   },
+   "legend" : {
+      "label" : "legend",
+      "type" : "legend"
+   },
+   "radio" : {
+      "label" : "radio",
+      "type" : "radio",
+      "values" : {
+         "fifth" : "fifth option",
+         "first" : "first option",
+         "fourth" : "fourth option",
+         "second" : "second option",
+         "third" : "third option"
       }
-    }
+   },
+   "range" : {
+      "label" : "range",
+      "maxValue" : 84,
+      "minValue" : -42,
+      "model" : "number",
+      "type" : "range",
+      "val" : 42
+   },
+   "reset" : {
+      "label" : "reset",
+      "type" : "reset"
+   },
+   "select" : {
+      "empty" : "nothing selected",
+      "label" : "select",
+      "options" : {
+         "eighth" : {
+            "group" : "first group",
+            "label" : "eighth option"
+         },
+         "fifth" : {
+            "label" : "fifth option"
+         },
+         "first" : {
+            "label" : "first option"
+         },
+         "fourth" : {
+            "group" : "first group",
+            "label" : "fourth option"
+         },
+         "ninth" : {
+            "group" : "second group",
+            "label" : "ninth option"
+         },
+         "second" : {
+            "group" : "first group",
+            "label" : "second option"
+         },
+         "seventh" : {
+            "label" : "seventh option"
+         },
+         "sixth" : {
+            "group" : "second group",
+            "label" : "sixth option"
+         },
+         "tenth" : {
+            "label" : "tenth option"
+         },
+         "third" : {
+            "group" : "second group",
+            "label" : "third option"
+         }
+      },
+      "type" : "select"
+   },
+   "submit" : {
+      "label" : "submit",
+      "type" : "submit"
+   }
+}
