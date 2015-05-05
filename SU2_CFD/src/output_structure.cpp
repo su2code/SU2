@@ -4,7 +4,7 @@
  * \author F. Palacios, T. Economon
  * \version 3.2.9 "eagle"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
+ * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
@@ -4799,7 +4799,10 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             /*--- Visualize the maximum residual ---*/
             iPointMaxResid = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetPoint_Max(0);
             Coord = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetPoint_Max_Coord(0);
-            cout << endl << "log10[Maximum residual]: " << log10(solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_Max(0)) << "." << endl;
+            
+            cout << endl << "----------------------- Residual Evolution Summary ----------------------" << endl;
+
+            cout << "log10[Maximum residual]: " << log10(solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_Max(0)) << "." << endl;
             if (config[val_iZone]->GetSystemMeasurements() == SI) {
               cout <<"Maximum residual point " << iPointMaxResid << ", located at (" << Coord[0] << ", " << Coord[1];
               if (nDim == 3) cout << ", " << Coord[2];
@@ -4818,6 +4821,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             if (config[val_iZone]->GetNonphysical_Reconstr() > 0)
               cout << "There are " << config[val_iZone]->GetNonphysical_Reconstr() << " non-physical states in the upwind reconstruction." << endl;
             
+            cout << "-------------------------------------------------------------------------" << endl;
+
             if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
             else cout << endl << " IntIter" << " ExtIter";
             if (incompressible || freesurface) cout << "   Res[Press]";
@@ -5522,7 +5527,7 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
     Breakdown_file << "|                                                                       |" << endl;
     Breakdown_file << "|   Local date and time: " << dt << "                      |" << endl;
     Breakdown_file <<"-------------------------------------------------------------------------" << endl;
-    Breakdown_file << "| SU2 Lead Dev.: Dr. Francisco Palacios (francisco.palacios@boeing.com).|" << endl;
+    Breakdown_file << "| SU2 Lead Dev.: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).|" << endl;
     Breakdown_file << "|                Dr. Thomas D. Economon (economon@stanford.edu).        |" << endl;
     Breakdown_file <<"-------------------------------------------------------------------------" << endl;
     Breakdown_file << "| SU2 Developers:                                                       |" << endl;

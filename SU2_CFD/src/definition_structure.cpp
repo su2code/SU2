@@ -4,7 +4,7 @@
  * \author F. Palacios, T. Economon
  * \version 3.2.9 "eagle"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
+ * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
@@ -77,6 +77,11 @@ unsigned short GetnZone(string val_mesh_filename, unsigned short val_format, CCo
       
       break;
       
+  }
+  
+  /*--- For time spectral integration, nZones = nTimeInstances. ---*/
+  if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+    nZone = config->GetnTimeInstances();
   }
   
   return (unsigned short) nZone;
