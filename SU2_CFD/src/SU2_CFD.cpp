@@ -4,7 +4,7 @@
  * \author F. Palacios, T. Economon
  * \version 3.2.9 "eagle"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
+ * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
@@ -437,13 +437,19 @@ int main(int argc, char *argv[]) {
      routines. ---*/
     
     if ((ExtIter+1 >= config_container[ZONE_0]->GetnExtIter()) ||
+        
         ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq() == 0) && (ExtIter != 0) &&
          !((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
            (config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND))) ||
+        
         (StopCalc) ||
-        (((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-          (config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) &&
-         ((ExtIter == 0) || (ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0)))) {
+        
+        ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) &&
+         ((ExtIter == 0) || (ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))) ||
+        
+        ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) &&
+         ((ExtIter == 0) || ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0) ||
+                             ((ExtIter-1) % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))))) {
           
           /*--- Low-fidelity simulations (using a coarser multigrid level
            approximation to the solution) require an interpolation back to the
