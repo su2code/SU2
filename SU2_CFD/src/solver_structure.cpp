@@ -142,6 +142,7 @@ CSolver::~CSolver(void) {
    node = NULL;
   }
    
+
    //	delete [] **StiffMatrix_Elem;
    //	delete [] **StiffMatrix_Node;*/
   

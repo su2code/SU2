@@ -747,11 +747,10 @@ CEulerSolver::~CEulerSolver(void) {
     delete [] YPlus;
   }
 
-
-  /*---Pointers from Solver parent Class---*/
-
-  if (Cauchy_Serie != NULL)
+  if (Cauchy_Serie != NULL){
     delete [] Cauchy_Serie;
+    Cauchy_Serie = NULL;
+  }
 
 }
 
@@ -10458,6 +10457,7 @@ CNSSolver::CNSSolver(void) : CEulerSolver() {
   /*--- Rotorcraft simulation array initialization ---*/
 
   CMerit_Visc = NULL; CT_Visc = NULL; CQ_Visc = NULL;
+  Velocity_Inf=NULL;
 
 }
 
@@ -11118,8 +11118,6 @@ CNSSolver::~CNSSolver(void) {
   if (Surface_CMx_Visc != NULL)        delete [] Surface_CMx_Visc;
   if (Surface_CMy_Visc != NULL)        delete [] Surface_CMy_Visc;
   if (Surface_CMz_Visc != NULL)        delete [] Surface_CMz_Visc;
-  
-  if (Cauchy_Serie != NULL) delete [] Cauchy_Serie;
 
   if (CSkinFriction != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -11127,9 +11125,6 @@ CNSSolver::~CNSSolver(void) {
     }
     delete [] CSkinFriction;
   }
-
-  if (Cauchy_Serie != NULL)
-    delete [] Cauchy_Serie;
 
 }
 
