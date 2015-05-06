@@ -868,8 +868,8 @@ class CPhysicalGeometry : public CGeometry {
 	long *Local_to_Global_Point;				/*!< \brief Local-global indexation for the points. */
 	unsigned short *Local_to_Global_Marker;	/*!< \brief Local to Global marker. */
 	unsigned short *Global_to_Local_Marker;	/*!< \brief Global to Local marker. */
-    unsigned long *adj_counter; /*!< \brief Adjacency counter. */
-    unsigned long **adjacent_elem; /*!< \brief Adjacency element list. */
+  unsigned long *adj_counter; /*!< \brief Adjacency counter. */
+  unsigned long **adjacent_elem; /*!< \brief Adjacency element list. */
   
 public:
   
