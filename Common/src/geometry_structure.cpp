@@ -94,7 +94,7 @@ CGeometry::CGeometry(void) {
 
 CGeometry::~CGeometry(void) {
   
-  unsigned long iElem, iElem_Bound, iFace, iVertex, iEdge;
+  unsigned long iElem, iElem_Bound, iFace, iVertex, iEdge, iPoint;
   unsigned short iMarker;
 
   if (elem != NULL) {
@@ -165,6 +165,13 @@ CGeometry::~CGeometry(void) {
   if (ending_node!=NULL) delete ending_node;
   if (npoint_procs!=NULL) delete npoint_procs;
   if (Global_to_local_elem!=NULL) delete Global_to_local_elem;
+
+  if (node!=NULL) {
+    for(iPoint=0; iPoint<nPoint; iPoint++)
+      delete node;
+    delete [] node;
+    node=NULL;
+  }
 
 }
 
@@ -1235,6 +1242,9 @@ CPhysicalGeometry::CPhysicalGeometry() : CGeometry() {
   Local_to_Global_Point = NULL;
   Local_to_Global_Marker = NULL;
   Global_to_Local_Marker = NULL;
+  adj_counter=NULL;
+  adjacent_elem=NULL;
+  node = NULL;
 
 }
 
@@ -1244,7 +1254,10 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
   Local_to_Global_Point = NULL;
   Local_to_Global_Marker = NULL;
   Global_to_Local_Marker = NULL;
-  
+  adj_counter=NULL;
+  adjacent_elem=NULL;
+  node = NULL;
+
   string text_line, Marker_Tag;
   ifstream mesh_file;
   unsigned short iDim, iMarker, iNodes;
@@ -1359,6 +1372,9 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   Local_to_Global_Point = NULL;
   Local_to_Global_Marker = NULL;
   Global_to_Local_Marker = NULL;
+  adj_counter=NULL;
+  adjacent_elem=NULL;
+  node = NULL;
 
   unsigned long iter,  iPoint, jPoint, iElem, jElem, iVertex;
   unsigned long nElemTotal = 0, nPointTotal = 0, nPointDomainTotal = 0, nPointGhost = 0, nPointPeriodic = 0, nElemTriangle = 0, nElemRectangle = 0, nElemTetrahedron = 0, nElemHexahedron = 0, nElemPrism = 0, nElemPyramid = 0;
@@ -2558,6 +2574,10 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   Local_to_Global_Point = NULL;
   Local_to_Global_Marker = NULL;
   Global_to_Local_Marker = NULL;
+  adj_counter=NULL;
+  adjacent_elem=NULL;
+  node = NULL;
+
   
   unsigned long iter,  iPoint, jPoint, iElem, iVertex;
   unsigned long nElemTotal = 0, nPointTotal = 0, nPointDomainTotal = 0, nPointGhost = 0, nPointPeriodic = 0, nElemTriangle = 0, nElemRectangle = 0, nElemTetrahedron = 0, nElemHexahedron = 0, nElemPrism = 0, nElemPyramid = 0;
@@ -5367,7 +5387,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
     cout << Global_nPoint << " vertices including ghost points. " << endl;
   
   /*--- Release all of the temporary memory ---*/
-  
+
   delete [] nDim_s;
   delete [] nDim_r;
   
@@ -5407,6 +5427,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
     delete [] Marker_All_SendRecv_Copy;
     delete [] Marker_All_TagBound_Copy;
     delete [] PointIn;
+    delete [] ElemIn;
     for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
       delete VertexIn[iMarker];
     delete[] VertexIn;
@@ -5438,12 +5459,28 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
 
 
 CPhysicalGeometry::~CPhysicalGeometry(void) {
-  
+  unsigned long iPoint;
   if (Global_to_Local_Point  != NULL) delete [] Global_to_Local_Point;
   if (Local_to_Global_Point  != NULL) delete [] Local_to_Global_Point;
   if (Global_to_Local_Marker != NULL) delete [] Global_to_Local_Marker;
   if (Local_to_Global_Marker != NULL) delete [] Local_to_Global_Marker;
-  
+  //if (adj_counter!=NULL) delete [] adj_counter;
+  /*
+  cout <<"adj_elem:"<<endl;
+  if (adjacent_elem!=NULL){
+    for (iPoint=0; iPoint<local_node; iPoint++)
+      delete adjacent_elem[iPoint];
+    delete [] adjacent_elem;
+  }
+  */
+  /*node must be deleted here rather than in parent class b/c local_node \neq nPoint  */
+  if (node!=NULL){
+    for (iPoint=0; iPoint<local_node; iPoint++)
+      delete node[iPoint];
+    delete [] node;
+    node = NULL;
+  }
+
 }
 
 
@@ -12276,13 +12313,6 @@ double CPhysicalGeometry::Compute_MaxThickness(double *Plane_P0, double *Plane_N
   return MaxThickness_Value;
 }
 
-CMultiGridGeometry::~CMultiGridGeometry(void) {
-
-  for (int iPoint = 0; iPoint < Fine_nPoint; iPoint ++)
-      delete node[iPoint];
-
-  delete node;
-}
 
 double CPhysicalGeometry::Compute_AoA(double *Plane_P0, double *Plane_Normal, unsigned short iSection, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface) {
   unsigned long iVertex, Trailing_Point, Leading_Point;
@@ -13308,7 +13338,15 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry ***geometry, CConfig **config_c
   
 }
 
-
+CMultiGridGeometry::~CMultiGridGeometry(void) {
+  /* Must be deleted here rather than in parent class because Fine_nPoint \neq nPoint */
+  if (node!=NULL){
+    for (int iPoint = 0; iPoint < Fine_nPoint; iPoint ++)
+      delete node[iPoint];
+    delete [] node;
+    node = NULL;
+  }
+}
 
 bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, short marker_seed, CGeometry *fine_grid, CConfig *config) {
   
@@ -13382,11 +13420,11 @@ bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, short mark
     else { agglomerate_CV = true; }
     
   }
+
+  delete [] copy_marker;
   
   return agglomerate_CV;
   
-  delete [] copy_marker;
-
 }
 
 
@@ -14469,6 +14507,7 @@ CPeriodicGeometry::CPeriodicGeometry(CGeometry *geometry, CConfig *config) {
 CPeriodicGeometry::~CPeriodicGeometry(void) {
   unsigned long iElem_Bound;
   unsigned short iMarker;
+  unsigned long iPoint;
   
   if (newBoundPer[iMarker][iElem_Bound] != NULL) {
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -14480,7 +14519,7 @@ CPeriodicGeometry::~CPeriodicGeometry(void) {
   if (newBoundPer != NULL) delete[] newBoundPer;
   
   if (nNewElem_BoundPer != NULL) delete[] nNewElem_BoundPer;
-  
+
 }
 
 void CPeriodicGeometry::SetPeriodicBoundary(CGeometry *geometry, CConfig *config) {
