@@ -142,9 +142,7 @@ void CConfig::SetPointersNull(void) {
   Bleed_MassFlow_Target=NULL; Bleed_MassFlow=NULL;          Exhaust_Pressure=NULL; Exhaust_Temperature=NULL;
   Bleed_Pressure=NULL;        Outlet_Pressure=NULL;         Isothermal_Temperature=NULL;
   Heat_Flux=NULL;             Displ_Value=NULL;             Load_Value=NULL;
-  FlowLoad_Value=NULL;        Periodic_RotCenter=NULL;      Periodic_RotAngles=NULL;
-  Periodic_Translation=NULL;  Periodic_Center=NULL;         Periodic_Rotation=NULL;
-  Periodic_Translate=NULL;    Wall_Catalycity=NULL;
+  FlowLoad_Value=NULL;        Wall_Catalycity=NULL;
 
   /*--- Miscellaneous/unsorted ---*/
 
@@ -158,6 +156,12 @@ void CConfig::SetPointersNull(void) {
   Kappa_AdjTNE2=NULL;  Kappa_LinFlow=NULL;
   Section_Location=NULL;
   U_FreeStreamND=NULL;
+  EA_IntLimit=NULL;
+  Hold_GridFixed_Coord=NULL;
+  MG_CorrecSmooth=NULL;
+  ParamDV=NULL; DV_Value=NULL; Design_Variable=NULL;
+  Subsonic_Engine_Box=NULL;
+
 
   /*--- Moving mesh pointers ---*/
 
@@ -172,6 +176,8 @@ void CConfig::SetPointersNull(void) {
   Plunging_Ampl_X = NULL;     Plunging_Ampl_Y = NULL;     Plunging_Ampl_Z = NULL;
   RefOriginMoment_X = NULL;   RefOriginMoment_Y = NULL;   RefOriginMoment_Z = NULL;
   MoveMotion_Origin = NULL;
+  Periodic_Translate=NULL;    Periodic_Rotation=NULL;    Periodic_Center=NULL;
+  Periodic_Translation=NULL;   Periodic_RotAngles=NULL;   Periodic_RotCenter=NULL;
 
   /*--- Variable initialization ---*/
   
@@ -5138,7 +5144,6 @@ CConfig::~CConfig(void) {
   if (ArrheniusEta         != NULL) delete [] ArrheniusEta;
   if (ArrheniusTheta       != NULL) delete [] ArrheniusTheta;
   if (CharVibTemp          != NULL) delete [] CharVibTemp;
-
   if (CharElTemp           != NULL) {
     for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++)
       delete[] CharElTemp[iSpecies];
@@ -5250,7 +5255,6 @@ CConfig::~CConfig(void) {
   if (Marker_GeoEval!=NULL)         delete[] Marker_GeoEval;
   if (Marker_Plotting!=NULL)        delete[] Marker_Plotting;
   if (Marker_All_SendRecv!=NULL)    delete[] Marker_All_SendRecv;
-
   if (EA_IntLimit!=NULL)    delete[] EA_IntLimit;
   if (Hold_GridFixed_Coord!=NULL)    delete[] Hold_GridFixed_Coord ;
   if (Subsonic_Engine_Box!=NULL)    delete[] Subsonic_Engine_Box ;
@@ -5300,7 +5304,6 @@ CConfig::~CConfig(void) {
   if (PlaneTag!=NULL)    delete[] PlaneTag;
   if (CFL_AdaptParam!=NULL)    delete[] CFL_AdaptParam;
   if (CFL!=NULL)    delete[] CFL;
-
   /*--- String markers ---*/
   if (Marker_Euler!=NULL )              delete[] Marker_Euler;
   if (Marker_FarField!=NULL )           delete[] Marker_FarField;
