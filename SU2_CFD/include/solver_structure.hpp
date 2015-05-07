@@ -2303,7 +2303,8 @@ protected:
 	double *PrimVar_i,	/*!< \brief Auxiliary vector for storing the solution at point i. */
 	*PrimVar_j;			/*!< \brief Auxiliary vector for storing the solution at point j. */
 	double **LowMach_Precontioner; /*!< \brief Auxiliary vector for storing the inverse of Roe-turkel preconditioner. */
-	unsigned long nMarker;				/*!< \brief Total number of markers using the grid information. */
+	unsigned long nMarker,				/*!< \brief Total number of markers using the grid information. */
+	*nVertex;       /*!< \brief Store nVertex at each marker for deallocation */
 	bool space_centered,  /*!< \brief True if space centered scheeme used. */
 	euler_implicit,			/*!< \brief True if euler implicit scheme used. */
 	least_squares;        /*!< \brief True if computing gradients by least squares. */

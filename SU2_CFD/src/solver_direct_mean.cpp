@@ -90,6 +90,7 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
   PrimVar_i=NULL;
   PrimVar_j=NULL;
 
+  nVertex = NULL;
 }
 
 CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
@@ -152,7 +153,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   Velocity_Inf = NULL;
   PrimVar_i=NULL;
   PrimVar_j=NULL;
-
+  nVertex=NULL;
 
   /*--- Set the gamma value ---*/
 
@@ -177,6 +178,11 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   nMarker      = config->GetnMarker_All();
   nPoint       = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
+
+  /* Initialize nVertex (for deallocation)*/
+  nVertex = new unsigned long[nMarker];
+  for (iMarker=0; iMarker<nMarker; iMarker++)
+    nVertex[iMarker]=geometry->nVertex[iMarker];
 
   /*--- Perform the non-dimensionalization for the flow equations using the
    specified reference values. ---*/
@@ -715,10 +721,15 @@ CEulerSolver::~CEulerSolver(void) {
 
   if (CharacPrimVar != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      if (nVertex!=NULL){
+      for (iVertex=0; iVertex<nVertex[iMarker]; iVertex++)
+        delete [] CharacPrimVar[iMarker][iVertex];
+      }
       delete [] CharacPrimVar[iMarker];
     }
     delete [] CharacPrimVar;
   }
+  delete [] nVertex;
 
   if (CPressureTarget != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
@@ -10458,7 +10469,7 @@ CNSSolver::CNSSolver(void) : CEulerSolver() {
 
   CMerit_Visc = NULL; CT_Visc = NULL; CQ_Visc = NULL;
   Velocity_Inf=NULL;
-
+  nVertex=NULL;
 }
 
 CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CEulerSolver() {
@@ -10550,6 +10561,11 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   nMarker      = config->GetnMarker_All();
   nPoint       = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
+
+  /* Initialize nVertex (for deallocation)*/
+  nVertex = new unsigned long[nMarker];
+  for (iMarker=0; iMarker<nMarker; iMarker++)
+    nVertex[iMarker]=geometry->nVertex[iMarker];
   
   /*--- Perform the non-dimensionalization for the flow equations using the
    specified reference values. ---*/
@@ -10668,7 +10684,6 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   }
   
   /*--- Store the value of the characteristic primitive variables at the boundaries ---*/
-  
   CharacPrimVar = new double** [nMarker];
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     CharacPrimVar[iMarker] = new double* [geometry->nVertex[iMarker]];

@@ -285,7 +285,7 @@ CPoint::~CPoint() {
 	if (GridVel != NULL)   delete[] GridVel;
   if (GridVel_Grad != NULL) {
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
-      if (GridVel_Grad[iDim] != NULL) delete GridVel_Grad[iDim];
+      if (GridVel_Grad[iDim] != NULL) delete [] GridVel_Grad[iDim];
     delete [] GridVel_Grad;
   }
 

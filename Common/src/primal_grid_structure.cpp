@@ -162,7 +162,7 @@ CLine::CLine(unsigned long val_point_0, unsigned long val_point_1,
 
 CLine::~CLine() {
   unsigned short iFaces;
-  
+  /*Must be deleted here rather than parent class b/c parent class does not have nFaces*/
   for (iFaces = 0; iFaces < nFaces; iFaces++)
     if (Coord_FaceElems_CG[iFaces] != NULL) delete[] Coord_FaceElems_CG[iFaces];
   if (Coord_FaceElems_CG != NULL) delete[] Coord_FaceElems_CG;
