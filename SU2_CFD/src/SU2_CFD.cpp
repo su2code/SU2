@@ -138,6 +138,9 @@ int main(int argc, char *argv[]) {
      between the ranks. ---*/
     
     geometry_container[iZone] = new CGeometry *[config_container[iZone]->GetnMGLevels()+1];
+    for (unsigned short iMGlevel=0; iMGlevel<config_container[iZone]->GetnMGLevels()+1; iMGlevel++){
+      geometry_container[iZone][iMGlevel]=NULL;
+    }
     geometry_container[iZone][MESH_0] = new CPhysicalGeometry(geometry_aux, config_container[iZone], 1);
     
     /*--- Deallocate the memory of geometry_aux ---*/
@@ -181,7 +184,7 @@ int main(int argc, char *argv[]) {
     geometry_container[iZone][MESH_0]->SetPositive_ZArea(config_container[iZone]);
     
     /*--- Set the near-field, interface and actuator disk boundary conditions, if necessary. ---*/
-    
+
     for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++) {
       geometry_container[iZone][iMesh]->MatchNearField(config_container[iZone]);
       geometry_container[iZone][iMesh]->MatchInterface(config_container[iZone]);
@@ -194,16 +197,15 @@ int main(int argc, char *argv[]) {
      term of the PDE, i.e. loops over the edges to compute convective and viscous
      fluxes, loops over the nodes to compute source terms, and routines for
      imposing various boundary condition type for the PDE. ---*/
-    
+
     solver_container[iZone] = new CSolver** [config_container[iZone]->GetnMGLevels()+1];
-    for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++)
-      solver_container[iZone][iMesh] = NULL;
     
     for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++) {
       solver_container[iZone][iMesh] = new CSolver* [MAX_SOLS];
       for (iSol = 0; iSol < MAX_SOLS; iSol++)
         solver_container[iZone][iMesh][iSol] = NULL;
     }
+
     Solver_Preprocessing(solver_container[iZone], geometry_container[iZone],
                          config_container[iZone], iZone);
     
@@ -534,13 +536,15 @@ int main(int argc, char *argv[]) {
   /*--- Solver class deallocation ---*/
 
     for (iZone = 0; iZone < nZone; iZone++) {
-      for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++) {
-        for (iSol = 0; iSol < MAX_SOLS; iSol++) {
-          if (solver_container[iZone][iMesh][iSol] != NULL) {
-            delete solver_container[iZone][iMesh][iSol];
+      for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels()-1; iMesh++) {
+        if (solver_container[iZone][iMesh]!=NULL){
+          for (iSol = 0; iSol < MAX_SOLS; iSol++) {
+            if (solver_container[iZone][iMesh][iSol] != NULL) {
+              delete solver_container[iZone][iMesh][iSol];
+            }
           }
+          delete [] solver_container[iZone][iMesh];
         }
-        delete [] solver_container[iZone][iMesh];
       }
       delete [] solver_container[iZone];
     }
@@ -548,11 +552,13 @@ int main(int argc, char *argv[]) {
     if (rank == MASTER_NODE) cout <<"Solution container, deallocated." << endl;
 
   /*--- Geometry class deallocation ---*/
-    //geometry_container[iZone][MESH_0] = new CPhysicalGeometry(geometry_aux, config_container[iZone], 1);
   for (iZone = 0; iZone < nZone; iZone++) {
-      for (int iMGlevel = 1; iMGlevel < config_container[ZONE_0]->GetnMGLevels()+1; iMGlevel++)
-        delete geometry_container[iZone][iMGlevel];
-     delete geometry_container[iZone];
+    if (geometry_container[iZone]!=NULL){
+      for (unsigned short iMGlevel = 1; iMGlevel < config_container[iZone]->GetnMGLevels()-1; iMGlevel++){
+        if (geometry_container[iZone][iMGlevel]!=NULL) delete geometry_container[iZone][iMGlevel];
+      }
+      delete [] geometry_container[iZone];
+    }
   }
   delete [] geometry_container;
   cout <<"Geometry container deallocated." << endl;
