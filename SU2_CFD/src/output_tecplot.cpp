@@ -415,7 +415,10 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
   
   Tecplot_File.close();
   
-  if (surf_sol) delete [] LocalIndex;
+  if (surf_sol) {
+    delete [] LocalIndex;
+    delete[] SurfacePoint;
+  }
   
 }
 

@@ -490,7 +490,7 @@ int main(int argc, char *argv[]) {
     if (StopCalc) break;
     
     ExtIter++;
-    
+    //delete [] runtime;
   }
   
   /*--- Output some information to the console. ---*/

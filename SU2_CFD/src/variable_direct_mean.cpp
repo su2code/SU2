@@ -36,8 +36,11 @@ CEulerVariable::CEulerVariable(void) : CVariable() {
   /*--- Array initialization ---*/
 	TS_Source = NULL;
 	Primitive = NULL;
+	Secondary = NULL;
 	Gradient_Primitive = NULL;
+	Gradient_Secondary = NULL;
 	Limiter_Primitive = NULL;
+	Limiter_Secondary = NULL;
   WindGust = NULL;
   WindGustDer = NULL;
   
@@ -348,7 +351,9 @@ CEulerVariable::~CEulerVariable(void) {
   
 	if (TS_Source         != NULL) delete [] TS_Source;
   if (Primitive         != NULL) delete [] Primitive;
+  if (Secondary         != NULL) delete [] Secondary;
   if (Limiter_Primitive != NULL) delete [] Limiter_Primitive;
+  if (Limiter_Secondary != NULL) delete [] Limiter_Secondary;
   if (WindGust          != NULL) delete [] WindGust;
   if (WindGustDer       != NULL) delete [] WindGustDer;
 
@@ -356,6 +361,11 @@ CEulerVariable::~CEulerVariable(void) {
     for (iVar = 0; iVar < nPrimVarGrad; iVar++)
       delete [] Gradient_Primitive[iVar];
     delete [] Gradient_Primitive;
+  }
+  if (Gradient_Secondary != NULL) {
+    for (iVar = 0; iVar < nSecondaryVarGrad; iVar++)
+      delete [] Gradient_Secondary[iVar];
+    delete [] Gradient_Secondary;
   }
   
 }
@@ -757,3 +767,4 @@ bool CNSVariable::SetPrimVar_FreeSurface(double eddy_visc, double turb_ke, CConf
   return true;
   
 }
+

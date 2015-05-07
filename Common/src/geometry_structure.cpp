@@ -108,6 +108,7 @@ CGeometry::~CGeometry(void) {
       for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
         if (bound[iMarker][iElem_Bound] != NULL) delete bound[iMarker][iElem_Bound];
       }
+      delete[] bound[iMarker];
     }
     delete[] bound;
   }
@@ -129,6 +130,7 @@ CGeometry::~CGeometry(void) {
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
         if (vertex[iMarker][iVertex] != NULL) delete vertex[iMarker][iVertex];
       }
+      delete[] vertex[iMarker];
     }
     delete[] vertex;
   }
@@ -138,6 +140,7 @@ CGeometry::~CGeometry(void) {
       for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
         if (newBound[iMarker][iElem_Bound] != NULL) delete newBound[iMarker][iElem_Bound];
       }
+      delete[] newBound[iMarker];
     }
     delete[] newBound;
   }
@@ -2931,7 +2934,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   /*--- Free temporary buffer for communicating colors. ---*/
   
   delete [] local_colour_temp;
-  
+
 #ifdef HAVE_MPI
   MPI_Barrier(MPI_COMM_WORLD);
 #endif
@@ -4324,13 +4327,15 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
       }
       
       /*--- Free memory for element data ---*/
-      
+      delete[] Local_to_global_elem;
+
       delete[] Buffer_Receive_Triangle_loc;
       delete[] Buffer_Receive_Rectangle_loc;
       delete[] Buffer_Receive_Tetrahedron_loc;
       delete[] Buffer_Receive_Hexahedron_loc;
       delete[] Buffer_Receive_Prism_loc;
       delete[] Buffer_Receive_Pyramid_loc;
+      delete[] Buffer_Receive_GlobElem_loc;
       
       delete[] Buffer_Receive_Triangle_presence_loc;
       delete[] Buffer_Receive_Rectangle_presence_loc;
@@ -4360,6 +4365,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   delete[] Buffer_Send_Hexahedron;
   delete[] Buffer_Send_Prism;
   delete[] Buffer_Send_Pyramid;
+  delete[] Buffer_Send_GlobElem;
   delete[] Buffer_Send_BoundLine;
   delete[] Buffer_Send_BoundTriangle;
   delete[] Buffer_Send_BoundRectangle;
@@ -4448,6 +4454,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   delete [] Hexahedron_presence;
   delete [] Prism_presence;
   delete [] Pyramid_presence;
+  delete [] Element_presence;
 
   /*--- Now partition the boundary elements on the markers. Note that, for
    now, we are still performing the boundary partitioning using the master
@@ -5448,13 +5455,16 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   delete [] Buffer_Send_nBoundRectangle;
   delete [] Buffer_Send_Marker_All_SendRecv;
   
+  delete [] local_colour_values;
+
 #ifdef HAVE_MPI
   delete [] send_stat;
   delete [] recv_stat;
   delete [] send_req;
   delete [] recv_req;
 #endif
-  
+
+
 }
 
 
