@@ -93,7 +93,7 @@ CGeometry::CGeometry(void) {
 }
 
 CGeometry::~CGeometry(void) {
-  
+
   unsigned long iElem, iElem_Bound, iFace, iVertex, iEdge, iPoint;
   unsigned short iMarker;
 
@@ -151,15 +151,16 @@ CGeometry::~CGeometry(void) {
   if (Marker_All_SendRecv != NULL) delete[] Marker_All_SendRecv;
   if (Tag_to_Marker != NULL) delete[] Tag_to_Marker;
 
-	PeriodicPoint[MAX_NUMBER_PERIODIC][2].~vector();
-	PeriodicElem[MAX_NUMBER_PERIODIC].~vector();
-	XCoordList.~vector();
 
-	Xcoord_plane.~vector();
-	Ycoord_plane.~vector();
-	Zcoord_plane.~vector();
-	FaceArea_plane.~vector();
-	Plane_points.~vector();
+	//PeriodicPoint[MAX_NUMBER_PERIODIC][2].~vector();
+	//PeriodicElem[MAX_NUMBER_PERIODIC].~vector();
+	//XCoordList.~vector();
+
+	//Xcoord_plane.~vector();
+	//Ycoord_plane.~vector();
+	//Zcoord_plane.~vector();
+	//FaceArea_plane.~vector();
+	//Plane_points.~vector();
 
 	/*--- parmetis variables ---*/
 	if (adjacency!=NULL) delete adjacency;
@@ -171,7 +172,7 @@ CGeometry::~CGeometry(void) {
 
   if (node!=NULL) {
     for(iPoint=0; iPoint<nPoint; iPoint++)
-      delete node;
+      if (node[iPoint]!=NULL) delete node[iPoint];
     delete [] node;
     node=NULL;
   }
@@ -5469,6 +5470,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
 
 
 CPhysicalGeometry::~CPhysicalGeometry(void) {
+
   unsigned long iPoint;
   if (Global_to_Local_Point  != NULL) delete [] Global_to_Local_Point;
   if (Local_to_Global_Point  != NULL) delete [] Local_to_Global_Point;
@@ -5486,7 +5488,7 @@ CPhysicalGeometry::~CPhysicalGeometry(void) {
   /*node must be deleted here rather than in parent class b/c local_node \neq nPoint  */
   if (node!=NULL){
     for (iPoint=0; iPoint<local_node; iPoint++)
-      delete node[iPoint];
+      if (node[iPoint]!=NULL) delete node[iPoint];
     delete [] node;
     node = NULL;
   }
@@ -12780,9 +12782,9 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry ***geometry, CConfig **config_c
   /*--- Create the coarse grid structure using as baseline the fine grid ---*/
   
   CMultiGridQueue MGQueue_InnerCV(fine_grid->GetnPoint());
-  
-  node = new CPoint*[fine_grid->GetnPoint()];
-  for (iPoint = 0; iPoint < fine_grid->GetnPoint(); iPoint ++) {
+  Fine_nPoint = fine_grid->GetnPoint();
+  node = new CPoint*[Fine_nPoint];
+  for (iPoint = 0; iPoint < Fine_nPoint; iPoint ++) {
     
     /*--- Create node structure ---*/
     
@@ -13351,9 +13353,11 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry ***geometry, CConfig **config_c
 CMultiGridGeometry::~CMultiGridGeometry(void) {
   /* Must be deleted here rather than in parent class because Fine_nPoint \neq nPoint */
   if (node!=NULL){
-    for (int iPoint = 0; iPoint < Fine_nPoint; iPoint ++)
-      delete node[iPoint];
-    delete [] node;
+    for (int iPoint = 0; iPoint < Fine_nPoint; iPoint ++){
+      if (node[iPoint]!=NULL) delete node[iPoint];
+      node[iPoint]=NULL;
+    }
+    delete[] node;
     node = NULL;
   }
 }
@@ -14518,7 +14522,7 @@ CPeriodicGeometry::~CPeriodicGeometry(void) {
   unsigned long iElem_Bound;
   unsigned short iMarker;
   unsigned long iPoint;
-  
+
   if (newBoundPer[iMarker][iElem_Bound] != NULL) {
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
@@ -14807,7 +14811,7 @@ CMultiGridQueue::CMultiGridQueue(unsigned long val_npoint) {
 }
 
 CMultiGridQueue::~CMultiGridQueue(void) {
-  
+
   delete[] Priority;
   delete[] RightCV;
   
