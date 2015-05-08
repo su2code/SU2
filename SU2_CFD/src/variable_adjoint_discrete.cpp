@@ -1,6 +1,6 @@
 /*!
- * \file dataype_structure.cpp
- * \brief Main subroutines for the datatype structures.
+ * \file variable_adjoint_discrete.cpp
+ * \brief Main subroutines for the discrete adjoint variable structure.
  * \author T. Albring
  * \version 3.2.9 "eagle"
  *
@@ -28,14 +28,41 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
+#include "../include/variable_structure.hpp"
 
-#include "../include/datatype_structure.hpp"
+CDiscAdjVariable::CDiscAdjVariable() : CVariable(){
 
-#if defined ADOLC_REVERSE_TYPE
-namespace AD{
-  std::vector<double> inputVariables;
-  std::vector<double> seedVector;
-  int adjointVectorPos = 0;
-  double* adjointVector = NULL;
 }
-#endif
+
+CDiscAdjVariable::CDiscAdjVariable(su2double* val_solution, unsigned short val_ndim,
+                               unsigned short val_nvar, CConfig *config) : CVariable(val_ndim, val_nvar, config){
+
+  bool dual_time = (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+      || (config->GetUnsteady_Simulation() == DT_STEPPING_2ND);
+
+  if (dual_time){
+    DualTime_Derivative = new su2double[nVar];
+    DualTime_Derivative_n = new su2double[nVar];
+  }
+    Sensitivity = new su2double[nVar];
+
+    unsigned short iVar;
+
+    for (iVar = 0; iVar < nVar; iVar++){
+        Solution[iVar]     = val_solution[iVar];
+    }
+
+    if (dual_time){
+        for (iVar = 0; iVar < nVar; iVar++){
+            Solution_time_n[iVar]  = 0.0;
+            Solution_time_n1[iVar] = 0.0;
+            DualTime_Derivative[iVar] = 0.0;
+            DualTime_Derivative_n[iVar] = 0.0;
+        }
+    }
+}
+
+
+CDiscAdjVariable::~CDiscAdjVariable(){
+
+}

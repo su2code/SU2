@@ -2003,7 +2003,7 @@ void CUpwGeneralRoe_Flow::ComputeResidual(su2double *val_residual, su2double **v
 
 void CUpwGeneralRoe_Flow::ComputeRoeAverage() {
 
-	su2double delta_rhoStaticEnergy, err_P, s, D;//, stateSeparationLimit;
+  su2double delta_rhoStaticEnergy, err_P, s, D;//, stateSeparationLimit;
 	// su2double tol = 10-6;
 	//
 	R = sqrt(fabs(Density_j/Density_i));

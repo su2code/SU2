@@ -694,7 +694,8 @@ private:
   unsigned long Nonphys_Points, /*!< \brief Current number of non-physical points in the solution. */
   Nonphys_Reconstr;      /*!< \brief Current number of non-physical reconstructions for 2nd-order upwinding. */
   bool ParMETIS;      /*!< \brief Boolean for activating ParMETIS mode (while testing). */
-  unsigned short DirectDiff; /*!< \brief Direct Differentation Mode. */
+  unsigned short DirectDiff; /*!< \brief Direct Differentation mode. */
+  bool DiscreteAdjoint; /*!< \brief AD-based discrete adjoint mode. */
   /*!< \brief param is a map from the option name (config file string) to a pointer to an option child class */
 //	map<string, CAnyOptionRef*> param;
 
@@ -848,10 +849,11 @@ private:
 
   void addMathProblemOption(const string name, bool & Adjoint, const bool & Adjoint_default,
                       bool & Linearized, const bool & Linearized_default,
-                            bool & Restart_Flow, const bool & Restart_Flow_default) {
+                            bool & Restart_Flow, const bool & Restart_Flow_default,
+                            bool &DiscreteAdjoint, const bool & DiscreteAdjoint_default) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
-    COptionBase* val = new COptionMathProblem(name, Adjoint, Adjoint_default, Linearized, Linearized_default, Restart_Flow, Restart_Flow_default);
+    COptionBase* val = new COptionMathProblem(name, Adjoint, Adjoint_default, Linearized, Linearized_default, Restart_Flow, Restart_Flow_default, DiscreteAdjoint, DiscreteAdjoint_default);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
@@ -5245,6 +5247,12 @@ public:
    * \return direct differentiation method.
    */
   unsigned short GetDirectDiff();
+
+  /*!
+   * \brief Get the indicator whether we are solving an discrete adjoint problem.
+   * \return the discrete adjoint indicator.
+  */
+  bool GetDiscrete_Adjoint(void);
 
 };
 

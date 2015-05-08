@@ -172,7 +172,8 @@ int main(int argc, char *argv[]) {
     /*--- Computation of wall distances for turbulence modeling ---*/
     
     if ( (config_container[iZone]->GetKind_Solver() == RANS) ||
-        (config_container[iZone]->GetKind_Solver() == ADJ_RANS) )
+        (config_container[iZone]->GetKind_Solver() == ADJ_RANS) ||
+         (config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS))
       geometry_container[iZone][MESH_0]->ComputeWall_Distance(config_container[iZone]);
     
     /*--- Computation of positive surface area in the z-plane which is used for
@@ -272,7 +273,8 @@ int main(int argc, char *argv[]) {
       /*--- Set the derivative of the wall-distance with respect to the surface nodes ---*/
 
       if ( (config_container[iZone]->GetKind_Solver() == RANS) ||
-          (config_container[iZone]->GetKind_Solver() == ADJ_RANS) )
+          (config_container[iZone]->GetKind_Solver() == ADJ_RANS) ||
+           (config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS))
         geometry_container[iZone][MESH_0]->ComputeWall_Distance(config_container[iZone]);
     }
 
@@ -400,6 +402,17 @@ int main(int argc, char *argv[]) {
                          solver_container, numerics_container, config_container,
                          surface_movement, grid_movement, FFDBox);
         break;
+
+      case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES:
+        DiscAdjMeanFlowIteration(output, integration_container, geometry_container,
+                                 solver_container, numerics_container, config_container,
+                                 surface_movement, grid_movement, FFDBox);
+        break;
+      case DISC_ADJ_RANS:
+        cout << "DISC_ADJ_RANS currently in validation phase. Not working yet." << endl;
+        exit(EXIT_FAILURE);
+        break;
+
     }
     
     
@@ -453,6 +466,7 @@ int main(int argc, char *argv[]) {
       case LINEAR_ELASTICITY:
         StopCalc = integration_container[ZONE_0][FEA_SOL]->GetConvergence(); break;
       case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
+      case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
         StopCalc = integration_container[ZONE_0][ADJFLOW_SOL]->GetConvergence(); break;
       case ADJ_TNE2_EULER: case ADJ_TNE2_NAVIER_STOKES:
         StopCalc = integration_container[ZONE_0][ADJTNE2_SOL]->GetConvergence(); break;
