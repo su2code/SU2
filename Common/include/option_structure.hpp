@@ -201,7 +201,10 @@ enum ENUM_SOLVER {
   TNE2_EULER = 31,
   TNE2_NAVIER_STOKES = 32,
   ADJ_TNE2_EULER = 33,
-  ADJ_TNE2_NAVIER_STOKES = 34
+  ADJ_TNE2_NAVIER_STOKES = 34,
+  DISC_ADJ_EULER = 35,
+  DISC_ADJ_RANS = 36,
+  DISC_ADJ_NAVIER_STOKES = 37
 };
 /* BEGIN_CONFIG_ENUMS */
 static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVER>
@@ -225,8 +228,10 @@ static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVE
 ("FLUID_STRUCTURE_EULER", FLUID_STRUCTURE_EULER)
 ("FLUID_STRUCTURE_NAVIER_STOKES", FLUID_STRUCTURE_NAVIER_STOKES)
 ("FLUID_STRUCTURE_RANS", FLUID_STRUCTURE_RANS)
-("TEMPLATE_SOLVER", TEMPLATE_SOLVER);
-
+("TEMPLATE_SOLVER", TEMPLATE_SOLVER)
+("DISC_ADJ_EULER", DISC_ADJ_EULER)
+("DISC_ADJ_RANS", DISC_ADJ_RANS)
+("DISC_ADJ_NAVIERSTOKES", DISC_ADJ_EULER);
 /*!
  * \brief different regime modes
  */
@@ -320,12 +325,14 @@ const int VISC_BOUND_TERM = 5;       /*!< \brief Position of the viscous boundar
 enum ENUM_MATH_PROBLEM {
   DIRECT_PROBLEM = 0,		/*!< \brief Direct problem */
   ADJOINT_PROBLEM = 1,		/*!< \brief Adjoint problem */
-  LINEARIZED_PROBLEM = 2 /*< \brief Linearized numerical method */
+  LINEARIZED_PROBLEM = 2, /*< \brief Linearized numerical method */
+  ADJOINT_AD_PROBLEM = 3, /*< \brief AD-based adjoint problem */
 };
 static const map<string, ENUM_MATH_PROBLEM> Math_Problem_Map = CCreateMap<string, ENUM_MATH_PROBLEM>
 ("DIRECT", DIRECT_PROBLEM)
 ("ADJOINT", ADJOINT_PROBLEM)
-("LINEARIZED", LINEARIZED_PROBLEM);
+("LINEARIZED", LINEARIZED_PROBLEM)
+("DISCRETE_ADJOINT", ADJOINT_AD_PROBLEM);
 
 /*!
  * \brief types of spatial discretizations
@@ -1710,16 +1717,19 @@ class COptionMathProblem : public COptionBase{
   bool & adjoint;
   bool & linearized;
   bool & restart;
+  bool & disc_adjoint;
   bool adjoint_def;
   bool linearized_def;
   bool restart_def;
+  bool disc_adjoint_def;
 
 public:
-  COptionMathProblem(string option_field_name, bool & adjoint_field, bool adjoint_default, bool & linearized_field, bool linearized_default, bool & restart_field, bool restart_default) : adjoint(adjoint_field), linearized(linearized_field), restart(restart_field) {
+  COptionMathProblem(string option_field_name, bool & adjoint_field, bool adjoint_default, bool & linearized_field, bool linearized_default, bool & restart_field, bool restart_default, bool & disc_adjoint_field, bool disc_adjoint_default) : adjoint(adjoint_field), linearized(linearized_field), restart(restart_field), disc_adjoint(disc_adjoint_field){
     this->name = option_field_name;
     this->adjoint_def = adjoint_default;
     this->linearized_def = linearized_default;
     this->restart_def = restart_default;
+    this->disc_adjoint_def = disc_adjoint_default;
   }
 
   ~COptionMathProblem() {};
@@ -1735,16 +1745,26 @@ public:
       this->adjoint = false;
       this->linearized = false;
       this->restart = false;
+      this->disc_adjoint = false;
       return "";
     }
     if (option_value[0] == "ADJOINT") {
       this->adjoint= true;
       this->restart= true;
       this->linearized = false;
+      this->disc_adjoint = false;
       return "";
     }
     if (option_value[0] == "LINEARIZED") {
       this->linearized = true;
+      this->restart = true;
+      this->adjoint= false;
+      this->disc_adjoint = false;
+      return "";
+    }
+    if (option_value[0] == "DISCRETE_ADJOINT"){
+      this->disc_adjoint = true;
+      this->linearized = false;
       this->restart = true;
       this->adjoint= false;
       return "";
@@ -1756,6 +1776,7 @@ public:
     this->adjoint = this->adjoint_def;
     this->linearized = this->linearized_def;
     this->restart = this->restart_def;
+    this->disc_adjoint = this->disc_adjoint_def;
   }
 };
 

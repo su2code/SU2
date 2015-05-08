@@ -51,6 +51,14 @@ noinst_LIBRARIES += libSU2_REVERSE.a
 endif
 
 lib_sources = \
+		../include/datatypes/adolc_f_structure.hpp \
+		../include/datatypes/adolc_f_structure.inl \
+		../include/datatypes/adolc_r_structure.hpp \
+		../include/datatypes/adolc_r_structure.inl \
+		../include/datatypes/primitive_structure.hpp \
+		../include/datatypes/primitive_structure.inl \
+		../include/datatypes/complex_structure.hpp \
+		../include/datatypes/complex_structure.inl \
                 ../include/config_structure.hpp \
     ../include/config_structure.inl \
     ../include/dual_grid_structure.hpp \

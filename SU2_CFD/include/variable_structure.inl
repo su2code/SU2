@@ -955,3 +955,81 @@ inline void    CAdjTNE2NSVariable::SetVelSolutionDVector(void) { for (unsigned s
 inline void    CAdjTNE2NSVariable::SetVelSolutionOldDVector(void) { for (unsigned short iDim = 0; iDim < nDim; iDim++) Solution_Old[iDim+1] = ForceProj_Vector[iDim]; };
 
 inline su2double  CAdjTNE2NSVariable::GetTheta(void) { return Theta; }
+
+inline void CVariable::RegisterSolution(bool input) {
+  if (input) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++)
+      AD::RegisterInputVariable(Solution[iVar]);
+  }
+  else { for (unsigned short iVar = 0; iVar < nVar; iVar++)
+      AD::RegisterOutputVariable(Solution[iVar]);}
+}
+
+inline void CVariable::RegisterSolution_time_n(){
+  for (unsigned short iVar = 0; iVar < nVar; iVar++)
+    AD::RegisterInputVariable(Solution_time_n[iVar]);
+}
+
+inline void CVariable::RegisterSolution_time_n1(){
+  for (unsigned short iVar = 0; iVar < nVar; iVar++)
+    AD::RegisterInputVariable(Solution_time_n1[iVar]);
+}
+
+inline void CVariable::SetAdjointSolution(su2double *adj_sol){
+    for (unsigned short iVar = 0; iVar < nVar; iVar++)
+        SU2_TYPE::SetDerivative(Solution[iVar], SU2_TYPE::GetPrimary(adj_sol[iVar]));
+}
+
+
+inline void CVariable::GetAdjointSolution(su2double *adj_sol){
+    for (unsigned short iVar = 0; iVar < nVar; iVar++){
+        adj_sol[iVar] = SU2_TYPE::GetDerivative(Solution[iVar]);
+    }
+}
+
+inline void CVariable::SetAdjointSolution_time_n(su2double *adj_sol){
+  for (unsigned short iVar = 0; iVar < nVar; iVar++)
+      SU2_TYPE::SetDerivative(Solution_time_n[iVar], SU2_TYPE::GetPrimary(adj_sol[iVar]));
+}
+
+
+inline void CVariable::GetAdjointSolution_time_n(su2double *adj_sol){
+  for (unsigned short iVar = 0; iVar < nVar; iVar++){
+      adj_sol[iVar] = SU2_TYPE::GetDerivative(Solution_time_n[iVar]);
+  }
+}
+
+inline void CVariable::SetAdjointSolution_time_n1(su2double *adj_sol){
+  for (unsigned short iVar = 0; iVar < nVar; iVar++)
+      SU2_TYPE::SetDerivative(Solution_time_n1[iVar], SU2_TYPE::GetPrimary(adj_sol[iVar]));
+}
+
+
+inline void CVariable::GetAdjointSolution_time_n1(su2double *adj_sol){
+  for (unsigned short iVar = 0; iVar < nVar; iVar++){
+      adj_sol[iVar] = SU2_TYPE::GetDerivative(Solution_time_n1[iVar]);
+  }
+}
+inline void CVariable::SetDual_Time_Derivative(unsigned short iVar, su2double der){}
+
+inline void CDiscAdjVariable::SetDual_Time_Derivative(unsigned short iVar, su2double der){DualTime_Derivative[iVar] = der;}
+
+inline void CVariable::SetDual_Time_Derivative_n(unsigned short iVar, su2double der){}
+
+inline void CDiscAdjVariable::SetDual_Time_Derivative_n(unsigned short iVar, su2double der){DualTime_Derivative_n[iVar] = der;}
+
+inline su2double CVariable::GetDual_Time_Derivative(unsigned short iVar){return 0.0;}
+
+inline su2double CDiscAdjVariable::GetDual_Time_Derivative(unsigned short iVar){return DualTime_Derivative[iVar];}
+
+inline su2double CVariable::GetDual_Time_Derivative_n(unsigned short iVar){return 0.0;}
+
+inline su2double CDiscAdjVariable::GetDual_Time_Derivative_n(unsigned short iVar){return DualTime_Derivative_n[iVar];}
+
+inline void CVariable::SetSensitivity(unsigned short iDim, su2double val){}
+
+inline su2double CVariable::GetSensitivity(unsigned short iDim){}
+
+inline void CDiscAdjVariable::SetSensitivity(unsigned short iDim, su2double val){Sensitivity[iDim] = val;}
+
+inline su2double CDiscAdjVariable::GetSensitivity(unsigned short iDim){return Sensitivity[iDim];}

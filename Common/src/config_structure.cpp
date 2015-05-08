@@ -221,7 +221,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief PHYSICAL_PROBLEM \n DESCRIPTION: Physical governing equations \n Options: see \link Solver_Map \endlink \n Default: NO_SOLVER \ingroup Config*/
   addEnumOption("PHYSICAL_PROBLEM", Kind_Solver, Solver_Map, NO_SOLVER);
   /*!\brief MATH_PROBLEM  \n DESCRIPTION: Mathematical problem \n  Options: DIRECT, ADJOINT \ingroup Config*/
-  addMathProblemOption("MATH_PROBLEM" , Adjoint, false , Linearized, false, Restart_Flow, false);
+  addMathProblemOption("MATH_PROBLEM" , Adjoint, false , Linearized, false, Restart_Flow, false, DiscreteAdjoint, false);
   /*!\brief KIND_TURB_MODEL \n DESCRIPTION: Specify turbulence model \n Options: see \link Turb_Model_Map \endlink \n Default: NO_TURB_MODEL \ingroup Config*/
   addEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, NO_TURB_MODEL);
 
@@ -3044,6 +3044,29 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       }
   }
 
+  if (DiscreteAdjoint){
+#if !defined ADOLC_REVERSE_TYPE && !defined CODI_REVERSE_TYPE
+    if (Kind_SU2 == SU2_CFD){
+      cout << "SU2_CFD: MATH_PROBLEM= DISC_ADJOINT requires reverse mode support!" << endl;
+      cout << "Please use or compile correct executable." << endl;
+      exit(EXIT_FAILURE);
+    }
+#endif
+    switch(Kind_Solver){
+      case EULER:
+        Kind_Solver = DISC_ADJ_EULER;
+        break;
+      case RANS:
+        Kind_Solver = DISC_ADJ_RANS;
+        break;
+      case NAVIER_STOKES:
+        Kind_Solver = DISC_ADJ_NAVIER_STOKES;
+        break;
+      default:
+        break;
+    }
+  }
+
   /*--- Check for 2nd order w/ limiting for JST and correct ---*/
   
   if ((Kind_ConvNumScheme_Flow == SPACE_CENTERED) && (Kind_Centered_Flow == JST) && (SpatialOrder_Flow == SECOND_ORDER_LIMITER))
@@ -5415,7 +5438,7 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
 
   string AdjExt, Filename = val_filename;
 
-  if (Adjoint) {
+  if (Adjoint || DiscreteAdjoint) {
 
     /*--- Remove filename extension (.dat) ---*/
     unsigned short lastindex = Filename.find_last_of(".");

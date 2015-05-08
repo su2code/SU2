@@ -823,6 +823,37 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
   
 }
 
+
+void CGeometry::RegisterCoordinates(CConfig *config){
+  unsigned short iDim;
+  unsigned long iPoint;
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+    for (iDim = 0; iDim < nDim; iDim++){
+      AD::RegisterInputVariable(node[iPoint]->GetCoord()[iDim]);
+    }
+  }
+}
+
+void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config){
+
+    unsigned short iMesh;
+    geometry_container[MESH_0]->Set_MPI_Coord(config);
+
+    geometry_container[MESH_0]->SetCG();
+    geometry_container[MESH_0]->SetControlVolume(config, UPDATE);
+    geometry_container[MESH_0]->SetBoundControlVolume(config, UPDATE);
+
+    for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++){
+        /*--- Update the control volume structures ---*/
+
+        geometry_container[iMesh]->SetControlVolume(config,geometry_container[iMesh-1], UPDATE);
+        geometry_container[iMesh]->SetBoundControlVolume(config,geometry_container[iMesh-1], UPDATE);
+        geometry_container[iMesh]->SetCoord(geometry_container[iMesh-1]);
+
+    }
+}
+
 void CGeometry::ComputeSurf_Curvature(CConfig *config) {
   unsigned short iMarker, iNeigh_Point, iDim, iNode, iNeighbor_Nodes, Neighbor_Node;
   unsigned long Neighbor_Point, iVertex, iPoint, jPoint, iElem_Bound, iEdge, nLocalVertex, MaxLocalVertex , *Buffer_Send_nVertex, *Buffer_Receive_nVertex, TotalnPointDomain;

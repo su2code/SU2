@@ -40,11 +40,11 @@ namespace SU2_TYPE{
   }
 }
 
-#if !defined ADOLC_REVERSE_TYPE
+#if !defined ADOLC_REVERSE_TYPE && !defined CODI_REVERSE_TYPE
 namespace AD{
-  inline void RegisterInputVariable(double &data){}
+  inline void RegisterInputVariable(su2double &data){}
 
-  inline void RegisterOutputVariable(double& data){}
+  inline void RegisterOutputVariable(su2double& data){}
 
   inline void StartRecording(){}
 

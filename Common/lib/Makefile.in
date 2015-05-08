@@ -140,7 +140,16 @@ am__v_AR_1 =
 libSU2_a_AR = $(AR) $(ARFLAGS)
 am__DEPENDENCIES_1 =
 @BUILD_NORMAL_TRUE@libSU2_a_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am__libSU2_a_SOURCES_DIST = ../include/config_structure.hpp \
+am__libSU2_a_SOURCES_DIST =  \
+	../include/datatypes/adolc_f_structure.hpp \
+	../include/datatypes/adolc_f_structure.inl \
+	../include/datatypes/adolc_r_structure.hpp \
+	../include/datatypes/adolc_r_structure.inl \
+	../include/datatypes/primitive_structure.hpp \
+	../include/datatypes/primitive_structure.inl \
+	../include/datatypes/complex_structure.hpp \
+	../include/datatypes/complex_structure.inl \
+	../include/config_structure.hpp \
 	../include/config_structure.inl \
 	../include/dual_grid_structure.hpp \
 	../include/dual_grid_structure.inl \
@@ -189,6 +198,14 @@ libSU2_DIRECTDIFF_a_AR = $(AR) $(ARFLAGS)
 @BUILD_DIRECTDIFF_TRUE@libSU2_DIRECTDIFF_a_DEPENDENCIES =  \
 @BUILD_DIRECTDIFF_TRUE@	$(am__DEPENDENCIES_1)
 am__libSU2_DIRECTDIFF_a_SOURCES_DIST =  \
+	../include/datatypes/adolc_f_structure.hpp \
+	../include/datatypes/adolc_f_structure.inl \
+	../include/datatypes/adolc_r_structure.hpp \
+	../include/datatypes/adolc_r_structure.inl \
+	../include/datatypes/primitive_structure.hpp \
+	../include/datatypes/primitive_structure.inl \
+	../include/datatypes/complex_structure.hpp \
+	../include/datatypes/complex_structure.inl \
 	../include/config_structure.hpp \
 	../include/config_structure.inl \
 	../include/dual_grid_structure.hpp \
@@ -238,7 +255,16 @@ libSU2_DIRECTDIFF_a_OBJECTS = $(am_libSU2_DIRECTDIFF_a_OBJECTS)
 libSU2_REVERSE_a_AR = $(AR) $(ARFLAGS)
 @BUILD_REVERSE_TRUE@libSU2_REVERSE_a_DEPENDENCIES =  \
 @BUILD_REVERSE_TRUE@	$(am__DEPENDENCIES_1)
-am__libSU2_REVERSE_a_SOURCES_DIST = ../include/config_structure.hpp \
+am__libSU2_REVERSE_a_SOURCES_DIST =  \
+	../include/datatypes/adolc_f_structure.hpp \
+	../include/datatypes/adolc_f_structure.inl \
+	../include/datatypes/adolc_r_structure.hpp \
+	../include/datatypes/adolc_r_structure.inl \
+	../include/datatypes/primitive_structure.hpp \
+	../include/datatypes/primitive_structure.inl \
+	../include/datatypes/complex_structure.hpp \
+	../include/datatypes/complex_structure.inl \
+	../include/config_structure.hpp \
 	../include/config_structure.inl \
 	../include/dual_grid_structure.hpp \
 	../include/dual_grid_structure.inl \
@@ -493,6 +519,14 @@ top_srcdir = @top_srcdir@
 ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS}
 noinst_LIBRARIES = $(am__append_1) $(am__append_2) $(am__append_3)
 lib_sources = \
+		../include/datatypes/adolc_f_structure.hpp \
+		../include/datatypes/adolc_f_structure.inl \
+		../include/datatypes/adolc_r_structure.hpp \
+		../include/datatypes/adolc_r_structure.inl \
+		../include/datatypes/primitive_structure.hpp \
+		../include/datatypes/primitive_structure.inl \
+		../include/datatypes/complex_structure.hpp \
+		../include/datatypes/complex_structure.inl \
                 ../include/config_structure.hpp \
     ../include/config_structure.inl \
     ../include/dual_grid_structure.hpp \

@@ -1176,3 +1176,5 @@ inline unsigned long CConfig::GetNonphysical_Reconstr(void) { return Nonphys_Rec
 inline unsigned short CConfig::GetConsole_Output_Verb(void) { return Console_Output_Verb; }
 
 inline unsigned short CConfig::GetDirectDiff(){ return DirectDiff;}
+
+inline bool CConfig::GetDiscrete_Adjoint() {return DiscreteAdjoint;}

@@ -83,13 +83,16 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
     
 		/*--- Update global parameters ---*/
     
-		if (config_container[iZone]->GetKind_Solver() == EULER) {
+    if ((config_container[iZone]->GetKind_Solver() == EULER) ||
+        (config_container[iZone]->GetKind_Solver() == DISC_ADJ_EULER)) {
       config_container[iZone]->SetGlobalParam(EULER, RUNTIME_FLOW_SYS, ExtIter);
     }
-		if (config_container[iZone]->GetKind_Solver() == NAVIER_STOKES) {
+    if ((config_container[iZone]->GetKind_Solver() == NAVIER_STOKES) ||
+        (config_container[iZone]->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES)) {
       config_container[iZone]->SetGlobalParam(NAVIER_STOKES, RUNTIME_FLOW_SYS, ExtIter);
     }
-		if (config_container[iZone]->GetKind_Solver() == RANS) {
+    if ((config_container[iZone]->GetKind_Solver() == RANS) ||
+        (config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS)) {
       config_container[iZone]->SetGlobalParam(RANS, RUNTIME_FLOW_SYS, ExtIter);
     }
     
@@ -98,7 +101,8 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
 		integration_container[iZone][FLOW_SOL]->MultiGrid_Iteration(geometry_container, solver_container, numerics_container,
                                                                 config_container, RUNTIME_FLOW_SYS, IntIter, iZone);
     
-		if (config_container[iZone]->GetKind_Solver() == RANS) {
+    if ((config_container[iZone]->GetKind_Solver() == RANS) ||
+        (config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS)) {
       
       /*--- Solve the turbulence model ---*/
       
@@ -144,12 +148,18 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
         
 				/*--- Pseudo-timestepping for the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes equations ---*/
         
-				if (config_container[iZone]->GetKind_Solver() == EULER)
+        if ((config_container[iZone]->GetKind_Solver() == EULER) ||
+            (config_container[iZone]->GetKind_Solver() == DISC_ADJ_EULER)) {
           config_container[iZone]->SetGlobalParam(EULER, RUNTIME_FLOW_SYS, ExtIter);
-				if (config_container[iZone]->GetKind_Solver() == NAVIER_STOKES)
+        }
+        if ((config_container[iZone]->GetKind_Solver() == NAVIER_STOKES) ||
+            (config_container[iZone]->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES)) {
           config_container[iZone]->SetGlobalParam(NAVIER_STOKES, RUNTIME_FLOW_SYS, ExtIter);
-				if (config_container[iZone]->GetKind_Solver() == RANS)
+        }
+        if ((config_container[iZone]->GetKind_Solver() == RANS) ||
+            (config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS)) {
           config_container[iZone]->SetGlobalParam(RANS, RUNTIME_FLOW_SYS, ExtIter);
+        }
         
         /*--- Solve the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes (RANS) equations (one iteration) ---*/
         
@@ -158,7 +168,8 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
         
 				/*--- Pseudo-timestepping the turbulence model ---*/
         
-				if (config_container[iZone]->GetKind_Solver() == RANS) {
+        if ((config_container[iZone]->GetKind_Solver() == RANS) ||
+            (config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS)) {
           
           /*--- Solve the turbulence model ---*/
           
@@ -197,7 +208,8 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
       
 			/*--- Update dual time solver for the turbulence model ---*/
       
-			if (config_container[iZone]->GetKind_Solver() == RANS) {
+      if ((config_container[iZone]->GetKind_Solver() == RANS) ||
+          (config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS)) {
 				integration_container[iZone][TURB_SOL]->SetDualTime_Solver(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0][TURB_SOL], config_container[iZone], MESH_0);
 				integration_container[iZone][TURB_SOL]->SetConvergence(false);
 			}
@@ -445,6 +457,168 @@ void TNE2Iteration(COutput *output, CIntegration ***integration_container, CGeom
                                                                 RUNTIME_TNE2_SYS, IntIter, iZone);
 	}
   
+}
+
+void DiscAdjMeanFlowIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
+                          CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
+                          CSurfaceMovement **surface_movement, CVolumetricMovement **volume_grid_movement, CFreeFormDefBox*** FFDBox) {
+
+  unsigned short iZone, iMesh, ExtIter = config_container[ZONE_0]->GetExtIter();
+  unsigned short nZone = config_container[ZONE_0]->GetnZone();
+
+  bool turbulent = false, flow = false;
+
+  switch(config_container[ZONE_0]->GetKind_Solver()){
+    case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: flow = true; break;
+    case DISC_ADJ_RANS: flow = true; turbulent = true; break;
+  }
+
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  if (ExtIter == 0){
+
+    /*--- Start the recording of all operations ---*/
+
+    AD::StartRecording();
+
+    /*--- Register all necessary variables on the tape ---*/
+    for (iZone = 0; iZone < nZone; iZone++){
+
+      /*--- Register the node coordinates as input of the iteration ---*/
+
+      geometry_container[iZone][MESH_0]->RegisterCoordinates(config_container[iZone]);
+
+      for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++){
+
+        /*--- Register the conservative variables as input of the iteration ---*/
+        if (flow){
+          solver_container[iZone][iMesh][ADJFLOW_SOL]->RegisterInput(geometry_container[iZone][iMesh],
+                                                                     config_container[iZone]);
+        }
+        if (turbulent){
+          solver_container[iZone][iMesh][ADJTURB_SOL]->RegisterInput(geometry_container[iZone][iMesh],
+                                                                     config_container[iZone]);
+        }
+      }
+    }
+
+    /*--- Update the mesh structure to get the influence of node coordinates ---*/
+
+    for (iZone = 0; iZone < nZone; iZone++){
+      geometry_container[iZone][MESH_0]->UpdateGeometry(geometry_container[iZone],config_container[iZone]);
+    }
+
+    if (rank == MASTER_NODE){
+      cout << "Begin direct solver to store computational graph (single iteration)." << endl;
+    }
+
+    /*--- One iteration of the flow solver ---*/
+    if (flow){
+      MeanFlowIteration(output, integration_container, geometry_container,
+                      solver_container, numerics_container, config_container,
+                      surface_movement, volume_grid_movement, FFDBox);
+    }
+
+    if (rank == MASTER_NODE){
+      if(flow){
+        cout << "log10[RMS Density]: " << log10(solver_container[ZONE_0][MESH_0][FLOW_SOL]->GetRes_RMS(0))
+             <<", Drag: "<< solver_container[ZONE_0][MESH_0][FLOW_SOL]->GetTotal_CDrag()
+            <<", Lift: "<< solver_container[ZONE_0][MESH_0][FLOW_SOL]->GetTotal_CLift() << "." << endl;
+      }
+      if (turbulent){
+        cout << "log10[RMS k]: " << log10(solver_container[ZONE_0][MESH_0][TURB_SOL]->GetRes_RMS(0)) << std::endl;
+      }
+    }
+
+    for (iZone = 0; iZone < nZone; iZone++){
+      /*--- Register objective function as output of the iteration ---*/
+      if (flow){
+        solver_container[iZone][MESH_0][ADJFLOW_SOL]->RegisterObj_Func(config_container[iZone]);
+      }
+      for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++){
+
+        /*--- Register conservative variables as output of the iteration ---*/
+        if (flow){
+          solver_container[iZone][iMesh][ADJFLOW_SOL]->RegisterOutput(geometry_container[iZone][iMesh],
+                                                                      config_container[iZone]);
+        }
+        if (turbulent){
+          solver_container[iZone][iMesh][ADJTURB_SOL]->RegisterOutput(geometry_container[iZone][iMesh],
+                                                                      config_container[iZone]);
+        }
+      }
+    }
+
+    /*--- Stop the recording ---*/
+
+    AD::StopRecording();
+
+  }
+  for (iZone = 0; iZone < nZone; iZone++){
+
+    /*--- Initialize the adjoint of the objective function (typically with 1.0) ---*/
+    if (flow){
+      solver_container[iZone][MESH_0][ADJFLOW_SOL]->SetAdj_ObjFunc(geometry_container[iZone][MESH_0], config_container[iZone]);
+    }
+    for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++){
+
+      /*--- Initialize the adjoints the conservative variables ---*/
+      if (flow){
+        solver_container[iZone][iMesh][ADJFLOW_SOL]->SetAdjointOutput(geometry_container[iZone][iMesh],
+                                                                      config_container[iZone]);
+      }
+      if (turbulent){
+        solver_container[iZone][iMesh][ADJTURB_SOL]->SetAdjointOutput(geometry_container[iZone][iMesh],
+                                                                      config_container[iZone]);
+      }
+    }
+  }
+
+  /*--- Run the adjoint computation ---*/
+
+  AD::ComputeAdjoint();
+
+  for (iZone = 0; iZone < nZone; iZone++){
+
+    /*--- Set the sensitivities by extracting the adjoints of the node coordinates ---*/
+    if (flow){
+      solver_container[iZone][MESH_0][ADJFLOW_SOL]->SetSensitivity(geometry_container[iZone][MESH_0],config_container[iZone]);
+    }
+    for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++){
+
+      /*--- Extract the adjoints of the conservative input variables and store them for the next iteration ---*/
+      if (flow){
+        solver_container[iZone][iMesh][ADJFLOW_SOL]->SetAdjointInput(geometry_container[iZone][iMesh],
+                                                                     config_container[iZone]);
+      }
+      if (turbulent){
+        solver_container[iZone][iMesh][ADJTURB_SOL]->SetAdjointInput(geometry_container[iZone][iMesh],
+                                                                     config_container[iZone]);
+      }
+    }
+  }
+
+  /*--- Clear all adjoints to re-use the stored computational graph in the next iteration ---*/
+
+  AD::ClearAdjoints();
+
+  /*--- Set the convergence criteria ---*/
+
+  if (config_container[ZONE_0]->GetConvCriteria() == RESIDUAL){
+    if (flow){
+      integration_container[ZONE_0][ADJFLOW_SOL]->Convergence_Monitoring(geometry_container[ZONE_0][MESH_0],config_container[ZONE_0],
+                                                                         ExtIter,log10(solver_container[ZONE_0][MESH_0][ADJFLOW_SOL]->GetRes_RMS(0)), MESH_0);
+    }
+  }
+  else if (config_container[ZONE_0]->GetConvCriteria() == CAUCHY){
+    if (flow){
+      integration_container[ZONE_0][ADJFLOW_SOL]->Convergence_Monitoring(geometry_container[ZONE_0][MESH_0],config_container[ZONE_0],
+                                                                         ExtIter,solver_container[ZONE_0][MESH_0][ADJFLOW_SOL]->GetTotal_Sens_Geo(), MESH_0);
+    }
+  }
 }
 
 void AdjTNE2Iteration(COutput *output, CIntegration ***integration_container,

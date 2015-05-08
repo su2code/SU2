@@ -102,6 +102,7 @@ su2_cfd_sources = ../include/definition_structure.hpp \
     ../src/output_fieldview.cpp \
     ../src/output_su2.cpp \
     ../src/output_paraview.cpp \
+    ../src/solver_adjoint_discrete.cpp \
     ../src/solver_adjoint_levelset.cpp \
     ../src/solver_adjoint_mean.cpp \
     ../src/solver_adjoint_tne2.cpp \
@@ -135,7 +136,8 @@ su2_cfd_sources = ../include/definition_structure.hpp \
     ../src/variable_linearized_mean.cpp \
     ../src/variable_linearized_turbulent.cpp \
     ../src/variable_structure.cpp \
-    ../src/variable_template.cpp
+    ../src/variable_template.cpp \
+    ../src/variable_adjoint_discrete.cpp
 
 
 su2_cfd_cxx_flags =
