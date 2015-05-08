@@ -4,7 +4,7 @@
  * \author F. Palacios, T. Economon
  * \version 3.2.9 "eagle"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
+ * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
@@ -2153,17 +2153,17 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
       Density_Ref       = 1.0;
       Temperature_Ref   = 1.0;
     }
-    else if (config->GetRef_NonDim() == FREESTEAM_PRESS_EQ_ONE) {
+    else if (config->GetRef_NonDim() == FREESTREAM_PRESS_EQ_ONE) {
       Pressure_Ref      = Pressure_FreeStream;     // Pressure_FreeStream = 1.0
       Density_Ref       = Density_FreeStream;      // Density_FreeStream = 1.0
       Temperature_Ref   = Temperature_FreeStream;  // Temperature_FreeStream = 1.0
     }
-    else if (config->GetRef_NonDim() == FREESTEAM_VEL_EQ_MACH) {
+    else if (config->GetRef_NonDim() == FREESTREAM_VEL_EQ_MACH) {
       Pressure_Ref      = Gamma*Pressure_FreeStream; // Pressure_FreeStream = 1.0/Gamma
       Density_Ref       = Density_FreeStream;        // Density_FreeStream = 1.0
       Temperature_Ref   = Temperature_FreeStream;    // Temp_FreeStream = 1.0
     }
-    else if (config->GetRef_NonDim() == FREESTEAM_VEL_EQ_ONE) {
+    else if (config->GetRef_NonDim() == FREESTREAM_VEL_EQ_ONE) {
       Pressure_Ref      = Mach*Mach*Gamma*Pressure_FreeStream; // Pressure_FreeStream = 1.0/(Gamma*(M_inf)^2)
       Density_Ref       = Density_FreeStream;        // Density_FreeStream = 1.0
       Temperature_Ref   = Temperature_FreeStream;    // Temp_FreeStream = 1.0
@@ -6453,13 +6453,13 @@ void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container
         /*--- Compute the boundary state b ---*/
         
         for (iDim = 0; iDim < nDim; iDim++)
-          Velocity_b[iDim] = Velocity_i[iDim] - ProjVelocity_i * UnitNormal[iDim];
+          Velocity_b[iDim] = Velocity_i[iDim] - ProjVelocity_i * UnitNormal[iDim]; //Force the velocity to be tangential to the surface.
         
         if (grid_movement) {
           GridVel = geometry->node[iPoint]->GetGridVel();
           ProjGridVel = 0.0;
           for (iDim = 0; iDim < nDim; iDim++) ProjGridVel += GridVel[iDim]*UnitNormal[iDim];
-          for (iDim = 0; iDim < nDim; iDim++) Velocity_b[iDim] += ProjGridVel * UnitNormal[iDim];
+          for (iDim = 0; iDim < nDim; iDim++) Velocity_b[iDim] += GridVel[iDim] - ProjGridVel * UnitNormal[iDim];
         }
         
         VelMagnitude2_b = 0.0;
@@ -6483,6 +6483,15 @@ void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container
         
         numerics->GetInviscidProjFlux(&Density_b, Velocity_b, &Pressure_b, &Enthalpy_b, NormalArea, Residual);
 
+        /*--- Grid velocity correction to the energy term ---*/
+        if (grid_movement) {
+          GridVel = geometry->node[iPoint]->GetGridVel();
+          ProjGridVel = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++)
+            ProjGridVel += GridVel[iDim]*UnitNormal[iDim];
+          Residual[nVar-1] += Pressure_b*ProjGridVel*Area;
+        }
+        
         /*--- Add the Reynolds stress tensor contribution ---*/
         
         if (tkeNeeded) {

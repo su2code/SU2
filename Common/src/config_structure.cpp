@@ -4,7 +4,7 @@
  * \author F. Palacios, T. Economon, B. Tracey
  * \version 3.2.9 "eagle"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
+ * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
@@ -3401,7 +3401,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   cout << "|                                                                       |" << endl;
   cout << "|   Local date and time: " << dt << "                      |" << endl;
   cout <<"-------------------------------------------------------------------------" << endl;
-  cout << "| SU2 Lead Dev.: Dr. Francisco Palacios (francisco.palacios@boeing.com).|" << endl;
+  cout << "| SU2 Lead Dev.: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).|" << endl;
   cout << "|                Dr. Thomas D. Economon (economon@stanford.edu).        |" << endl;
   cout <<"-------------------------------------------------------------------------" << endl;
   cout << "| SU2 Developers:                                                       |" << endl;
@@ -3541,9 +3541,9 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     
     if (Ref_NonDim == DIMENSIONAL) { cout << "Dimensional simulation." << endl; }
-    else if (Ref_NonDim == FREESTEAM_PRESS_EQ_ONE) { cout << "Non-Dimensional simulation (P=1.0, Rho=1.0, T=1.0 at the farfield)." << endl; }
-    else if (Ref_NonDim == FREESTEAM_VEL_EQ_MACH) { cout << "Non-Dimensional simulation (V=Mach, Rho=1.0, T=1.0 at the farfield)." << endl; }
-    else if (Ref_NonDim == FREESTEAM_VEL_EQ_ONE) { cout << "Non-Dimensional simulation (V=1.0, Rho=1.0, T=1.0 at the farfield)." << endl; }
+    else if (Ref_NonDim == FREESTREAM_PRESS_EQ_ONE) { cout << "Non-Dimensional simulation (P=1.0, Rho=1.0, T=1.0 at the farfield)." << endl; }
+    else if (Ref_NonDim == FREESTREAM_VEL_EQ_MACH) { cout << "Non-Dimensional simulation (V=Mach, Rho=1.0, T=1.0 at the farfield)." << endl; }
+    else if (Ref_NonDim == FREESTREAM_VEL_EQ_ONE) { cout << "Non-Dimensional simulation (V=1.0, Rho=1.0, T=1.0 at the farfield)." << endl; }
     
     if (RefAreaCoeff == 0) cout << "The reference length/area will be computed using y(2D) or z(3D) projection." << endl;
     else cout << "The reference length/area (force coefficient) is " << RefAreaCoeff << "." << endl;
