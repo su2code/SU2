@@ -69,13 +69,16 @@ CSolver::CSolver(void) {
 }
 
 CSolver::~CSolver(void) {
+
+  unsigned short iVar, iDim;
+  unsigned long iPoint;
+
+
   if ( OutputHeadingNames != NULL) {
     delete []OutputHeadingNames;
   }
   delete [] OutputHeadingNames;
 
-  unsigned short iVar, iDim;
-  unsigned long iPoint;
   if(Residual_RMS!=NULL)    delete [] Residual_RMS;
   if(Residual_Max!=NULL)    delete [] Residual_Max;
   if(Residual!=NULL)    delete [] Residual;
@@ -108,6 +111,7 @@ CSolver::~CSolver(void) {
     }
     delete [] Jacobian_j;
   }
+
   if(Jacobian_ii!=NULL and Jacobian_ij!=NULL and Jacobian_ji!=NULL and Jacobian_jj!=NULL ){
     for  (iDim = 0; iDim < nDim; iDim++) {
       delete [] Jacobian_ii[iDim];
@@ -138,7 +142,7 @@ CSolver::~CSolver(void) {
      if (node[iPoint]!=NULL) delete node[iPoint];
      node[iPoint]=NULL;
    }
-   delete node;
+   delete[] node;
    node = NULL;
   }
    

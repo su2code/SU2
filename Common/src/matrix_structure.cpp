@@ -44,6 +44,8 @@ CSysMatrix::CSysMatrix(void) {
   aux_vector        = NULL;
   sum_vector        = NULL;
   invM              = NULL;
+  block_weight      = NULL;
+  block_inverse     = NULL;
   
   /*--- Linelet preconditioner ---*/
   

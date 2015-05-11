@@ -311,7 +311,7 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
 CAdjEulerSolver::~CAdjEulerSolver(void) {
   unsigned short iVar, iMarker;
-  
+
   if (Phi_Inf != NULL) delete [] Phi_Inf;
   if (Sens_Mach != NULL) delete [] Sens_Mach;
   if (Sens_AoA != NULL) delete [] Sens_AoA;
@@ -322,19 +322,19 @@ CAdjEulerSolver::~CAdjEulerSolver(void) {
   if (jPoint_UndLapl != NULL) delete [] jPoint_UndLapl;
   if (FlowPrimVar_i != NULL) delete [] FlowPrimVar_i;
   if (FlowPrimVar_j != NULL) delete [] FlowPrimVar_j;
-  
+
   if (Jacobian_Axisymmetric != NULL) {
     for (iVar = 0; iVar < nVar; iVar++)
-      delete Jacobian_Axisymmetric[iVar];
+      delete[] Jacobian_Axisymmetric[iVar];
     delete [] Jacobian_Axisymmetric;
   }
-  
+
   if (CSensitivity != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
-      delete CSensitivity[iMarker];
+      delete[] CSensitivity[iMarker];
     delete [] CSensitivity;
   }
-  
+
 }
 
 void CAdjEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,

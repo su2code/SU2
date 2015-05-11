@@ -53,7 +53,7 @@ CTurbSolver::CTurbSolver(CConfig *config) : CSolver() {
 }
 
 CTurbSolver::~CTurbSolver(void) {
-  
+
   if (FlowPrimVar_i != NULL) delete [] FlowPrimVar_i;
   if (FlowPrimVar_j != NULL) delete [] FlowPrimVar_j;
   if (lowerlimit != NULL) delete [] lowerlimit;

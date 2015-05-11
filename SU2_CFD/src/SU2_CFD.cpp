@@ -536,17 +536,19 @@ int main(int argc, char *argv[]) {
   /*--- Solver class deallocation ---*/
 
     for (iZone = 0; iZone < nZone; iZone++) {
-      for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels()-1; iMesh++) {
-        if (solver_container[iZone][iMesh]!=NULL){
-          for (iSol = 0; iSol < MAX_SOLS; iSol++) {
-            if (solver_container[iZone][iMesh][iSol] != NULL) {
-              delete solver_container[iZone][iMesh][iSol];
+      if (solver_container[iZone]!=NULL){
+        for (iMesh = 1; iMesh < config_container[iZone]->GetnMGLevels(); iMesh++) {
+          if (solver_container[iZone][iMesh]!=NULL){
+            for (iSol = 0; iSol < MAX_SOLS; iSol++) {
+              if (solver_container[iZone][iMesh][iSol] != NULL) {
+                delete solver_container[iZone][iMesh][iSol];
+              }
             }
+            delete [] solver_container[iZone][iMesh];
           }
-          delete [] solver_container[iZone][iMesh];
         }
+        if (solver_container[iZone]!=NULL) delete [] solver_container[iZone];
       }
-      delete [] solver_container[iZone];
     }
     delete [] solver_container;
     if (rank == MASTER_NODE) cout <<"Solution container, deallocated." << endl;
