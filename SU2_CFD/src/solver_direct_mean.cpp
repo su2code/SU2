@@ -716,7 +716,7 @@ CEulerSolver::~CEulerSolver(void) {
 
   if (CPressureTarget != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
-      delete CPressureTarget[iMarker];
+      if (CPressureTarget[iMarker]!=NULL) delete[] CPressureTarget[iMarker];
     delete [] CPressureTarget;
   }
 
