@@ -43,6 +43,10 @@ CEulerVariable::CEulerVariable(void) : CVariable() {
 	Limiter_Secondary = NULL;
   WindGust = NULL;
   WindGustDer = NULL;
+  nSecondaryVarGrad=0;
+  nPrimVarGrad=0;
+  nSecondaryVar=0;
+  nPrimVar=0;
   
 }
 
@@ -67,6 +71,10 @@ CEulerVariable::CEulerVariable(double val_density, double *val_velocity, double 
 	Limiter_Primitive = NULL;
   WindGust = NULL;
   WindGustDer = NULL;
+  nSecondaryVarGrad=0;
+  nPrimVarGrad=0;
+  nSecondaryVar=0;
+  nPrimVar=0;
 
   /*--- Allocate and initialize the primitive variables and gradients ---*/
   
@@ -235,6 +243,10 @@ CEulerVariable::CEulerVariable(double *val_solution, unsigned short val_nDim, un
   Limiter_Primitive = NULL;
   WindGust = NULL;
   WindGustDer = NULL;
+  nSecondaryVarGrad=0;
+  nPrimVarGrad=0;
+  nSecondaryVar=0;
+  nPrimVar=0;
   
 	/*--- Allocate and initialize the primitive variables and gradients ---*/
   if (incompressible) { nPrimVar = nDim+5; nPrimVarGrad = nDim+3; }
@@ -359,12 +371,12 @@ CEulerVariable::~CEulerVariable(void) {
 
   if (Gradient_Primitive != NULL) {
     for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-      delete [] Gradient_Primitive[iVar];
+      if (Gradient_Primitive!=NULL) delete [] Gradient_Primitive[iVar];
     delete [] Gradient_Primitive;
   }
   if (Gradient_Secondary != NULL) {
     for (iVar = 0; iVar < nSecondaryVarGrad; iVar++)
-      delete [] Gradient_Secondary[iVar];
+      if (Gradient_Secondary!=NULL) delete [] Gradient_Secondary[iVar];
     delete [] Gradient_Secondary;
   }
   

@@ -73,12 +73,10 @@ CSolver::~CSolver(void) {
   unsigned short iVar, iDim;
   unsigned long iPoint;
 
-
   if ( OutputHeadingNames != NULL) {
     delete []OutputHeadingNames;
   }
   delete [] OutputHeadingNames;
-
   if(Residual_RMS!=NULL)    delete [] Residual_RMS;
   if(Residual_Max!=NULL)    delete [] Residual_Max;
   if(Residual!=NULL)    delete [] Residual;
@@ -92,13 +90,13 @@ CSolver::~CSolver(void) {
   if(Vector_i!=NULL)    delete [] Vector_i;
   if(Vector_j!=NULL)    delete [] Vector_j;
   if(Res_Conv!=NULL)    delete [] Res_Conv;
-  if(Res_Visc!=NULL)    delete [] Res_Visc;
-  if(Res_Sour!=NULL)    delete [] Res_Sour;
+  //if(Res_Visc!=NULL)    delete [] Res_Visc;
+  //if(Res_Sour!=NULL)    delete [] Res_Sour;
+  cout <<"csolver"<<endl;
   if(Res_Conv_i!=NULL)    delete [] Res_Conv_i;
   if(Res_Visc_i!=NULL)    delete [] Res_Visc_i;
   if(Res_Conv_j!=NULL)    delete [] Res_Conv_j;
   if(Res_Visc_j!=NULL)    delete [] Res_Visc_j;
-
   if(Jacobian_i!=NULL){
     for  (iDim = 0; iDim < nDim; iDim++) {
       delete [] Jacobian_i[iDim];
@@ -124,15 +122,17 @@ CSolver::~CSolver(void) {
     delete [] Jacobian_ji;
     delete [] Jacobian_jj;
   }
+
   if (Smatrix!=NULL){
     for (iDim=0; iDim<nDim; iDim++){
       delete [] Smatrix[iDim];
     }
     delete [] Smatrix;
   }
+
   if (cvector!=NULL){
-    for (iVar=0; iVar<nPrimVarGrad; iVar++){
-      delete [] cvector[iVar];
+    for (iVar=0; iVar<nVar; iVar++){
+      if (cvector[iVar]!=NULL) delete[] cvector[iVar];
     }
     delete [] cvector;
   }
@@ -145,11 +145,11 @@ CSolver::~CSolver(void) {
    delete[] node;
    node = NULL;
   }
-   
+
 
    //	delete [] **StiffMatrix_Elem;
    //	delete [] **StiffMatrix_Node;*/
-  
+
 }
 
 void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {

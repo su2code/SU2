@@ -515,6 +515,7 @@ int main(int argc, char *argv[]) {
   /*--- Numerics class deallocation ---*/
   for (iZone = 0; iZone < nZone; iZone++) {
     for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++) {
+      /*
       for (iSol = 0; iSol < MAX_SOLS; iSol++) {
         for (unsigned short iTerm = 0; iTerm < MAX_TERMS; iTerm++){
           if (numerics_container[iZone][iMesh][iSol][iTerm] != NULL) {
@@ -524,11 +525,12 @@ int main(int argc, char *argv[]) {
         if (numerics_container[iZone][iMesh][iSol] != NULL)
         delete [] numerics_container[iZone][iMesh][iSol];
       }
+      */
       if (numerics_container[iZone][iMesh]!= NULL)
-      delete numerics_container[iZone][iMesh];
+      delete[] numerics_container[iZone][iMesh];
     }
     if (numerics_container[iZone] != NULL)
-    delete numerics_container[iZone];
+    delete[] numerics_container[iZone];
   }
   delete [] numerics_container;
   if (rank == MASTER_NODE) cout <<"Numerics container deallocated." << endl;
@@ -539,12 +541,8 @@ int main(int argc, char *argv[]) {
       if (solver_container[iZone]!=NULL){
         for (iMesh = 1; iMesh < config_container[iZone]->GetnMGLevels(); iMesh++) {
           if (solver_container[iZone][iMesh]!=NULL){
-            for (iSol = 0; iSol < MAX_SOLS; iSol++) {
-              if (solver_container[iZone][iMesh][iSol] != NULL) {
-                delete solver_container[iZone][iMesh][iSol];
-              }
-            }
             delete [] solver_container[iZone][iMesh];
+            // solver_container[iZone][iMesh][iSol]: see solver_preprocessing
           }
         }
         if (solver_container[iZone]!=NULL) delete [] solver_container[iZone];
@@ -594,8 +592,9 @@ int main(int argc, char *argv[]) {
   }
   if (config_container!=NULL) delete [] config_container;
   cout <<"Config container deallocated." << endl;
+
   /*--- Deallocate output container ---*/
-  delete output;
+  if (output!=NULL) delete output;
   cout <<"Output container deallocated." << endl;
 
   /*--- Synchronization point after a single solver iteration. Compute the

@@ -84,7 +84,40 @@ COutput::COutput(void) {
   
 }
 
-COutput::~COutput(void) { }
+COutput::~COutput(void) {
+  /* delete pointers initialized at construction*/
+/*
+  if(  Coords!=NULL)          delete  Coords;//
+  if(  Conn_Line!=NULL)       delete Conn_Line;//
+
+  //if(Conn_BoundTria!=NULL)  delete [] Conn_BoundTria;
+  if(Conn_BoundQuad!=NULL)    delete [] Conn_BoundQuad;
+  if(   Conn_Tria!=NULL)      delete Conn_Tria;//
+  if(Conn_Quad!=NULL)      delete Conn_Quad;//
+
+  //if(Conn_Tetr!=NULL)      delete [] Conn_Tetr;
+  if(Conn_Hexa!=NULL)      delete [] Conn_Hexa;
+  if(Conn_Pris!=NULL)      delete [] Conn_Pris;
+  if(Conn_Pyra!=NULL)      delete [] Conn_Pyra;
+  if(Volume!=NULL)      delete [] Volume;
+  //if(Data!=NULL)        delete Data;//
+  if(residuals!=NULL)   delete [] residuals;
+  if(consv_vars!=NULL)  delete [] consv_vars;
+
+  if(p!=NULL)      delete [] p;
+  if(rho!=NULL)    delete [] rho;
+  if(M!=NULL)      delete [] M;
+  if(Cp!=NULL)     delete [] Cp;
+  if(Cf!=NULL)     delete [] Cf;
+  if(Ch!=NULL)     delete [] Ch;
+  if(h!=NULL)      delete [] h;
+*/
+  //if(yplus!=NULL)  delete [] yplus;
+  /*public pointers*/
+  //if(nOutput_Vars!=NULL) delete[] nOutput_Vars;
+  //if(data_container!=NULL) delete[] data_container;
+
+}
 
 void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
                                  CSolver *FlowSolver, unsigned long iExtIter,
@@ -438,34 +471,6 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
   
 #endif
   
-  /* delete pointers initialized at construction*/
-
-  if(  Coords!=NULL)          delete [] Coords;
-  if(  Conn_Line!=NULL)       delete [] Conn_Line;
-  if(  Conn_BoundTria!=NULL)  delete [] Conn_BoundTria;
-  if(Conn_BoundQuad!=NULL)    delete [] Conn_BoundQuad;
-  if(   Conn_Tria!=NULL)      delete [] Conn_Tria;
-  if(Conn_Quad!=NULL)      delete [] Conn_Quad;
-  if(Conn_Tetr!=NULL)      delete [] Conn_Tetr;
-  if(Conn_Hexa!=NULL)      delete [] Conn_Hexa;
-  if(Conn_Pris!=NULL)      delete [] Conn_Pris;
-  if(Conn_Pyra!=NULL)      delete [] Conn_Pyra;
-  if(Volume!=NULL)      delete [] Volume;
-  if(Data!=NULL)        delete [] Data;
-  if(residuals!=NULL)   delete [] residuals;
-  if(consv_vars!=NULL)  delete [] consv_vars;
-  if(p!=NULL)      delete [] p;
-  if(rho!=NULL)    delete [] rho;
-  if(M!=NULL)      delete [] M;
-  if(Cp!=NULL)     delete [] Cp;
-  if(Cf!=NULL)     delete [] Cf;
-  if(Ch!=NULL)     delete [] Ch;
-  if(h!=NULL)      delete [] h;
-  if(yplus!=NULL)  delete [] yplus;
-  /*public pointers*/
-  if(nOutput_Vars!=NULL) delete[] nOutput_Vars;
-  if(data_container!=NULL) delete[] data_container;
-
 }
 
 void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolver *AdjSolver, CSolver *FlowSolution, unsigned long iExtIter, unsigned short val_iZone) {
@@ -475,9 +480,10 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
   unsigned long iPoint, iVertex;
   double *Solution, xCoord, yCoord, zCoord;
   unsigned short iMarker;
+  unsigned short nDim = geometry->GetnDim();
   char cstr[200], buffer[50];
   ofstream SurfAdj_file;
-  
+
   /*--- Write file name with extension if unsteady ---*/
   strcpy (cstr, config->GetSurfAdjCoeff_FileName().c_str());
   
@@ -524,7 +530,7 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
         }
     }
   }
-  
+
   if (geometry->GetnDim() == 3) {
     SurfAdj_file <<  "\"Point\",\"Sensitivity\",\"PsiRho\",\"Phi_x\",\"Phi_y\",\"Phi_z\",\"PsiE\",\"x_coord\",\"y_coord\",\"z_coord\"" << endl;
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
