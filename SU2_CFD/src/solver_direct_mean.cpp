@@ -722,21 +722,21 @@ CEulerSolver::~CEulerSolver(void) {
 
   if (HeatFlux != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      delete HeatFlux[iMarker];
+      delete[] HeatFlux[iMarker];
     }
     delete [] HeatFlux;
   }
 
   if (HeatFluxTarget != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      delete HeatFluxTarget[iMarker];
+      delete[] HeatFluxTarget[iMarker];
     }
     delete [] HeatFluxTarget;
   }
 
   if (YPlus != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      delete YPlus[iMarker];
+      delete[] YPlus[iMarker];
     }
     delete [] YPlus;
   }
@@ -745,6 +745,7 @@ CEulerSolver::~CEulerSolver(void) {
     delete [] Cauchy_Serie;
     Cauchy_Serie = NULL;
   }
+
 }
 
 void CEulerSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
@@ -11084,6 +11085,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 }
 
 CNSSolver::~CNSSolver(void) {
+
   unsigned short iMarker;
 
   if (CDrag_Visc != NULL)       delete [] CDrag_Visc;
@@ -11118,7 +11120,7 @@ CNSSolver::~CNSSolver(void) {
 
   if (CSkinFriction != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      delete CSkinFriction[iMarker];
+      delete[] CSkinFriction[iMarker];
     }
     delete [] CSkinFriction;
   }

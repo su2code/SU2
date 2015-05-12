@@ -46,6 +46,9 @@ CAdjEulerSolver::CAdjEulerSolver(void) : CSolver() {
   CSensitivity = NULL;
   FlowPrimVar_i = NULL;
   FlowPrimVar_j = NULL;
+  Res_Conv = NULL;
+  Res_Visc = NULL;
+  Res_Sour = NULL;
   
 }
 
@@ -92,7 +95,7 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   nPointDomain = geometry->GetnPointDomain();
   
   if (compressible) { nVar = nDim + 2; }
-  if (incompressible) { nVar = nDim + 1; }
+  if (incompressible) { nVar = nDim + 2; } /* For incompressible: nVar = nDim+1 later */
   if (freesurface) { nVar = nDim + 2; }
   
   node = new CVariable*[nPoint];
@@ -193,7 +196,7 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
     for (iVar = 0; iVar < nVar; iVar++)
       cvector[iVar] = new double [nDim];
   }
-  
+  if (incompressible) { nVar = nDim + 1; }
   /*--- Sensitivity definition and coefficient in all the markers ---*/
   CSensitivity = new double* [nMarker];
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -310,7 +313,9 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 }
 
 CAdjEulerSolver::~CAdjEulerSolver(void) {
+
   unsigned short iVar, iMarker;
+  unsigned long iPoint;
 
   if (Phi_Inf != NULL) delete [] Phi_Inf;
   if (Sens_Mach != NULL) delete [] Sens_Mach;
@@ -334,6 +339,16 @@ CAdjEulerSolver::~CAdjEulerSolver(void) {
       delete[] CSensitivity[iMarker];
     delete [] CSensitivity;
   }
+
+  if (node!=NULL){
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++){
+      if (node[iPoint]!=NULL) delete node[iPoint];
+      node[iPoint]=NULL;
+    }
+    delete[] node;
+    node = NULL;
+  }
+
 
 }
 
@@ -5049,6 +5064,10 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
+  Res_Conv = NULL;
+  Res_Visc = NULL;
+  Res_Sour = NULL;
+
   /*--- Norm heat flux objective test ---*/
   
   pnorm = 10;
@@ -5280,7 +5299,6 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
 }
 
 CAdjNSSolver::~CAdjNSSolver(void) {
-  
 }
 
 
