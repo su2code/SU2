@@ -1,10 +1,17 @@
 /*!
  * \file numerics_adjoint_mean.cpp
  * \brief This file contains all the convective term discretization.
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.0 "eagle"
+ * \author S. Copeland
+ * \version 3.2.9 "eagle"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ *
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -593,8 +600,8 @@ void CCentJST_AdjTNE2::ComputeResidual (double *val_resconv_i, double *val_resvi
 	Local_Lambda_j = (fabs(ProjVelocity_j)+SoundSpeed_j*Area);
 	MeanLambda = 0.5*(Local_Lambda_i+Local_Lambda_j);
   
-	Phi_i = pow(Lambda_i/(4.0*MeanLambda+EPS),Param_p);
-	Phi_j = pow(Lambda_j/(4.0*MeanLambda+EPS),Param_p);
+	Phi_i = pow(Lambda_i/(4.0*MeanLambda+EPS), Param_p);
+	Phi_j = pow(Lambda_j/(4.0*MeanLambda+EPS), Param_p);
 	StretchingFactor = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j+EPS);
   
 	double sc2 = 3.0*(double(Neighbor_i)+double(Neighbor_j))/(double(Neighbor_i)*double(Neighbor_j));
@@ -736,8 +743,8 @@ void CCentLax_AdjTNE2::ComputeResidual (double *val_resconv_i,
 	MeanLambda = 0.5*(Local_Lambda_i+Local_Lambda_j);
   
 	/*--- Compute streching factor ---*/
-	Phi_i = pow(Lambda_i/(4.0*MeanLambda+EPS),Param_p);
-	Phi_j = pow(Lambda_j/(4.0*MeanLambda+EPS),Param_p);
+	Phi_i = pow(Lambda_i/(4.0*MeanLambda+EPS), Param_p);
+	Phi_j = pow(Lambda_j/(4.0*MeanLambda+EPS), Param_p);
 	StretchingFactor = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j+EPS);
   
 	sc2 = 3.0*(double(Neighbor_i)+double(Neighbor_j))/(double(Neighbor_i)*double(Neighbor_j));
@@ -825,7 +832,7 @@ void CAvgGrad_AdjTNE2::ComputeResidual(double *val_residual_i,
   
   unsigned short iDim, jDim, iVar, jVar;
   double mu_i, mu_j, ktr_i, ktr_j, kve_i, kve_j;
-  double rho, rho_i, rho_j, un;
+  double rho_i, rho_j, un;
   double GdotPhi, GPsiEdotVel, GPsiEdotn, GPsiEvedotn;
   double dij, theta, thetax, thetay, thetaz, etax, etay, etaz;
   
@@ -871,7 +878,6 @@ void CAvgGrad_AdjTNE2::ComputeResidual(double *val_residual_i,
   kve_j = Thermal_Conductivity_ve_j;
   rho_i = V_i[RHO_INDEX];
   rho_j = V_j[RHO_INDEX];
-  rho   = 0.5*(rho_i+rho_j);
   for (iDim = 0; iDim < nDim; iDim++) {
     vel_i[iDim] = V_i[VEL_INDEX+iDim];
     vel_j[iDim] = V_j[VEL_INDEX+iDim];
@@ -1474,7 +1480,7 @@ void CSource_AdjTNE2::ComputeSourceConservative (double *val_residual,
 //		fv1 = Ji_3/(Ji_3+cv1_3);
 //		one_o_oneplusJifv1 = 1.0/(1.0+Ji*fv1);
 //		fv2 = 1.0 - Ji*one_o_oneplusJifv1;
-//		Shat = max(Omega + TurbVar_i[0]*fv2/(k2*dist_sq),TURB_EPS);
+//		Shat = max(Omega + TurbVar_i[0]*fv2/(k2*dist_sq), TURB_EPS);
 //    
 //		r = min(TurbVar_i[0]/(Shat*k2*dist_sq),10.);
 //		g = r + cw2*(pow(r,6.)-r);
@@ -1526,7 +1532,7 @@ void CSource_AdjTNE2::ComputeSourceConservative (double *val_residual,
 //		fv1 = Ji_3/(Ji_3+cv1_3);
 //		one_o_oneplusJifv1 = 1.0/(1.0+Ji*fv1);
 //		fv2 = 1.0 - Ji*one_o_oneplusJifv1;
-//		Shat = max(Omega + TurbVar_j[0]*fv2/(k2*dist_sq),TURB_EPS);
+//		Shat = max(Omega + TurbVar_j[0]*fv2/(k2*dist_sq), TURB_EPS);
 //    
 //		r = min(TurbVar_j[0]/(Shat*k2*dist_sq),10.);
 //		g = r + cw2*(pow(r,6.)-r);

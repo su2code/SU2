@@ -1,23 +1,33 @@
+#!/usr/bin/env python
+
 ## \file deform.py
 #  \brief python package for deforming meshes
-#  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 3.2.0 "eagle"
+#  \author T. Lukaczyk, F. Palacios
+#  \version 3.2.9 "eagle"
 #
-# Stanford University Unstructured (SU2) Code
-# Copyright (C) 2012 Aerospace Design Laboratory
+# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
+#                      Dr. Thomas D. Economon (economon@stanford.edu).
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+#                 Prof. Piero Colonna's group at Delft University of Technology.
+#                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+#                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+#                 Prof. Rafael Palacios' group at Imperial College London.
 #
-# This program is distributed in the hope that it will be useful,
+# Copyright (C) 2012-2015 SU2, the open-source CFD code.
+#
+# SU2 is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
+#
+# SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# Lesser General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU Lesser General Public
+# License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
 # ----------------------------------------------------------------------
 #  Imports
@@ -26,7 +36,6 @@
 import os, sys, shutil, copy
 
 from .. import io  as su2io
-from decompose import decompose as su2decomp
 from interface import DEF as SU2_DEF
 
 
@@ -42,7 +51,6 @@ def deform ( config, dv_new=None, dv_old=None ):
             SU2.run.DEF()
             
         Assumptions:
-            Redundant decomposition if config.DECOMPOSED == True
             If optional dv_new ommitted, config is setup for deformation
             If using dv_old, must provide dv_new
             Adds 'deform' suffix to mesh output name
@@ -53,7 +61,6 @@ def deform ( config, dv_new=None, dv_old=None ):
                 FILES.ADJOINT_NAME
                 
         Updates:
-            config.DECOMPOSED
             config.MESH_FILENAME
             config.DV_VALUE_OLD = config.DV_VALUE_NEW
             
@@ -69,9 +76,6 @@ def deform ( config, dv_new=None, dv_old=None ):
     
     # local copy
     konfig = copy.deepcopy(config)
-    
-    # decompose
-    su2decomp(konfig)
     
     # unpack design variables
     if dv_new: konfig.unpack_dvs(dv_new,dv_old)
@@ -93,8 +97,7 @@ def deform ( config, dv_new=None, dv_old=None ):
     SU2_DEF(konfig)
     
     # update super config
-    config.update({ 'DECOMPOSED'    : konfig['DECOMPOSED']        ,
-                    'MESH_FILENAME' : konfig['MESH_OUT_FILENAME'] , 
+    config.update({ 'MESH_FILENAME' : konfig['MESH_OUT_FILENAME'] , 
                     'DV_KIND'       : konfig['DV_KIND']           ,
                     'DV_MARKER'     : konfig['DV_MARKER']         ,
                     'DV_PARAM'      : konfig['DV_PARAM']          ,

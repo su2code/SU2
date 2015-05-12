@@ -1,10 +1,17 @@
 /*!
  * transport_model.hpp
  * \brief Headers of the main transport properties subroutines of the SU2 solvers.
- * \author S.Vitale, M.Pini, G.Gori, A.Guardone, P.Colonna
- * \version 3.2.0 "eagle"
+ * \author S. Vitale, M. Pini, G. Gori, A. Guardone, P. Colonna
+ * \version 3.2.9 "eagle"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ *
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -19,7 +26,6 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
-
 
 #ifndef TRANSPORT_MODEL_HPP_
 #define TRANSPORT_MODEL_HPP_
@@ -84,6 +90,10 @@ public:
 		 */
 		virtual	 void SetViscosity(double T, double rho);
 
+		/*!
+		 * \brief Set Viscosity Derivatives.
+		 */
+		virtual	 void SetDerViscosity(double T, double rho);
 
 };
 
@@ -96,25 +106,25 @@ public:
  * \version 1.0
  */
 class CConstantViscosity : public CViscosityModel {
-
+  
 public:
-
-		/*!
-		 * \brief Constructor of the class.
-		 */
-	    CConstantViscosity(void);
-
-	    /*!
-		 * \brief Constructor of the class.
-		 */
-		CConstantViscosity(double mu_const);
-
-		/*!
-		 * \brief Destructor of the class.
-		 */
-		virtual ~CConstantViscosity(void);
-
-
+  
+  /*!
+   * \brief Constructor of the class.
+   */
+  CConstantViscosity(void);
+  
+  /*!
+   * \brief Constructor of the class.
+   */
+  CConstantViscosity(double mu_const);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CConstantViscosity(void);
+  
+  
 };
 
 
@@ -127,32 +137,37 @@ public:
  */
 class CSutherland : public CViscosityModel {
 protected:
-	double   	 Mu_ref,		/*!< \brief Internal Energy. */
-				 T_ref, 		/*!< \brief DpDd_e. */
-				 S; 			/*!< \brief DpDe_d. */
-
+  double   	 Mu_ref,		/*!< \brief Internal Energy. */
+  T_ref, 		/*!< \brief DpDd_e. */
+  S; 			/*!< \brief DpDe_d. */
+  
 public:
-
-		/*!
-		 * \brief Constructor of the class.
-		 */
-	    CSutherland(void);
-
-	    /*!
-		 * \brief Constructor of the class.
-		 */
-		CSutherland(double mu_ref, double t_ref, double s);
-
-		/*!
-		 * \brief Destructor of the class.
-		 */
-		virtual ~CSutherland(void);
-
-		/*!
-		 * \brief Set Viscosity.
-		 */
-		void SetViscosity(double T, double rho);
-
+  
+  /*!
+   * \brief Constructor of the class.
+   */
+  CSutherland(void);
+  
+  /*!
+   * \brief Constructor of the class.
+   */
+  CSutherland(double mu_ref, double t_ref, double s);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CSutherland(void);
+  
+  /*!
+   * \brief Set Viscosity.
+   */
+  void SetViscosity(double T, double rho);
+  
+  /*!
+   * \brief Set Viscosity Derivatives.
+   */
+  void SetDerViscosity(double T, double rho);
+  
 };
 
 
@@ -163,7 +178,7 @@ public:
  * \author S. Vitale, M. Pini
  * \version 1.0
  */
-class CThermalConductivityModel {
+class CConductivityModel {
 protected:
 double   	 Kt,			/*!< \brief Thermal conductivity. */
 			 dktdrho_T, 	/*!< \brief DktDrho_T. */
@@ -173,33 +188,37 @@ public:
 		/*!
 		 * \brief Constructor of the class.
 		 */
-		CThermalConductivityModel(void);
+		CConductivityModel(void);
 
 		/*!
 		 * \brief Destructor of the class.
 		 */
-		virtual ~CThermalConductivityModel(void);
+		virtual ~CConductivityModel(void);
 
 		/*!
 		 * \brief return viscosity value.
 		 */
-		double GetThermalConductivity(void);
+		double GetConductivity(void);
 
 		/*!
 		 * \brief return viscosity partial derivative value.
 		 */
-		double GetDerThermalConductivity_rho_T(void);
+		double Getdktdrho_T(void);
 
 		/*!
 		 * \brief return viscosity partial derivative value.
 		 */
-		double GetDerThermalConductivity_T_rho(void);
+		double GetdktdT_rho(void);
 
 		/*!
 		 * \brief Set Thermal conductivity.
 		 */
-		virtual	 void SetThermalConductivity(double par1, double par2);
+		virtual	 void SetConductivity(double T, double rho, double mu, double cp);
 
+		/*!
+		 * \brief Set Thermal conductivity derivatives.
+		 */
+		virtual	 void SetDerConductivity(double T, double rho, double dmudrho_T, double dmudT_rho, double cp);
 
 };
 
@@ -210,24 +229,24 @@ public:
  * \author S.Vitale, M.Pini
  * \version 1.0
  */
-class CConstantThermalConductivity : public CThermalConductivityModel {
+class CConstantConductivity : public CConductivityModel {
 
 public:
 
 		/*!
 		 * \brief Constructor of the class.
 		 */
-	    CConstantThermalConductivity(void);
+	    CConstantConductivity(void);
 
 		/*!
 		 * \brief Constructor of the class.
 		 */
-	    CConstantThermalConductivity(double kt_const);
+	    CConstantConductivity(double kt_const);
 
 		/*!
 		 * \brief Destructor of the class.
 		 */
-		virtual ~CConstantThermalConductivity(void);
+		virtual ~CConstantConductivity(void);
 
 };
 
@@ -238,7 +257,7 @@ public:
  * \author S.Vitale, M.Pini
  * \version 1.0
  */
-class CConstantPrandtl : public CThermalConductivityModel {
+class CConstantPrandtl : public CConductivityModel {
 protected:
 	double   	 Pr_const;		/*!< \brief Prandtl's number. */
 
@@ -264,7 +283,12 @@ public:
 		 * \brief par1 -> Cp.
 		 * \brief par2 -> Mu.
 		 */
-		void SetThermalConductivity(double par1, double par2);
+		void SetConductivity(double T, double rho, double mu, double cp);
+
+		/*!
+		 * \brief Set Thermal conductivity derivatives.
+		 */
+		void SetDerConductivity(double T, double rho, double dmudrho_T, double dmudT_rho, double cp);
 
 };
 

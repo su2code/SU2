@@ -1,5 +1,29 @@
-# SU2 Makefile.am for MDC
-# Stanford University Aerospace Design Lab
+# SU2 Makefile.am for SU2_DEF
+# SU2 v3.2.7 "eagle"
+#
+# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
+#                      Dr. Thomas D. Economon (economon@stanford.edu).
+#
+# SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+#                 Prof. Piero Colonna's group at Delft University of Technology.
+#                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+#                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+#                 Prof. Rafael Palacios' group at Imperial College London.
+#
+# Copyright (C) 2012-2015 SU2, the open-source CFD code.
+#
+# SU2 is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
+#
+# SU2 is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public
+# License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 #
 # Created: 		10/26/12
 # Last updated: 	3/12/13
@@ -7,7 +31,7 @@
 # Created by: 		M. Colonno
 # Updated by: 		M. Colonno
 #
-##########################
+######################################################################################
 
 # AUTOMAKE_OPTIONS = subdir-objects
 ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS}
@@ -15,7 +39,18 @@ ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS}
 bin_PROGRAMS = ../bin/SU2_DEF
 
 ___bin_SU2_DEF_SOURCES = ../include/SU2_DEF.hpp \
-		../src/SU2_DEF.cpp
+		../src/SU2_DEF.cpp \
+		../../SU2_CFD/include/output_structure.hpp \
+		../../SU2_CFD/src/output_structure.cpp \
+		../../SU2_CFD/src/output_cgns.cpp \
+		../../SU2_CFD/src/output_tecplot.cpp \
+    ../../SU2_CFD/src/output_fieldview.cpp \
+    ../../SU2_CFD/src/output_su2.cpp \
+    ../../SU2_CFD/src/output_paraview.cpp \
+		../../SU2_CFD/include/solver_structure.hpp \
+    ../../SU2_CFD/src/solver_structure.cpp \
+    ../../SU2_CFD/include/variable_structure.hpp \
+    ../../SU2_CFD/src/variable_structure.cpp
 
 ___bin_SU2_DEF_CXXFLAGS =
 ___bin_SU2_DEF_LDADD = ../../Common/lib/libSU2.a
