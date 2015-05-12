@@ -99,7 +99,7 @@ AUTOMAKE_OPTIONS = subdir-objects
 AM_CPPFLAGS  = $(pkg_cppflags) # any defined package-specific include paths
 AM_CFLAGS    =
 AM_CXXFLAGS  =
-AM_LDFLAGS   = 
+AM_LDFLAGS   =
 
 noinst_LIBRARIES = libmetis.a
 

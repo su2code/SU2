@@ -1,10 +1,19 @@
 /*!
  * \file primal_grid_structure.cpp
- * \brief Main classes for defining the primal grid elements (triangle, tetrahedra, etc.).
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.0 "eagle"
+ * \brief Main classes for defining the primal grid elements
+ * \author F. Palacios
+ * \version 3.2.9 "eagle"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ *
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
+ *
+ * Copyright (C) 2012-2015 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -131,6 +140,7 @@ CLine::CLine(unsigned long val_point_0, unsigned long val_point_1,
 	unsigned short iDim, iFace;
 
 	/*--- Allocate CG coordinates ---*/
+  
 	nDim = val_nDim;
 	Coord_CG = new double[nDim];
 	for (iDim = 0; iDim < nDim; iDim++)
@@ -143,6 +153,7 @@ CLine::CLine(unsigned long val_point_0, unsigned long val_point_1,
 	}
 	
 	/*--- Allocate and define face structure of the element ---*/
+  
 	Nodes = new unsigned long[nNodes];
 	Nodes[0] = val_point_0;
 	Nodes[1] = val_point_1;
@@ -151,7 +162,7 @@ CLine::CLine(unsigned long val_point_0, unsigned long val_point_1,
 
 CLine::~CLine() {
   unsigned short iFaces;
-  
+  /*Must be deleted here rather than parent class b/c parent class does not have nFaces*/
   for (iFaces = 0; iFaces < nFaces; iFaces++)
     if (Coord_FaceElems_CG[iFaces] != NULL) delete[] Coord_FaceElems_CG[iFaces];
   if (Coord_FaceElems_CG != NULL) delete[] Coord_FaceElems_CG;
@@ -453,25 +464,25 @@ void CHexahedron::Change_Orientation(void) {
   
 }
 
-unsigned short CWedge::Faces[5][4] = {{3,4,1,0},{5,2,1,4},{2,5,3,0},{0,1,2,2},{5,4,3,3}};
+unsigned short CPrism::Faces[5][4] = {{3,4,1,0},{5,2,1,4},{2,5,3,0},{0,1,2,2},{5,4,3,3}};
 
-unsigned short CWedge::Neighbor_Nodes[6][3] = {{1,2,3},{0,2,4},{1,0,5},{0,4,5},{3,5,1},{4,3,2}};
+unsigned short CPrism::Neighbor_Nodes[6][3] = {{1,2,3},{0,2,4},{1,0,5},{0,4,5},{3,5,1},{4,3,2}};
 
-unsigned short CWedge::nNodesFace[5] = {4,4,4,3,3};
+unsigned short CPrism::nNodesFace[5] = {4,4,4,3,3};
 
-unsigned short CWedge::nNeighbor_Nodes[6] = {3,3,3,3,3,3};
+unsigned short CPrism::nNeighbor_Nodes[6] = {3,3,3,3,3,3};
 
-unsigned short CWedge::nFaces = 5;
+unsigned short CPrism::nFaces = 5;
 
-unsigned short CWedge::nNodes = 6;
+unsigned short CPrism::nNodes = 6;
 
-unsigned short CWedge::nNeighbor_Elements = 5;
+unsigned short CPrism::nNeighbor_Elements = 5;
 
-unsigned short CWedge::VTK_Type = 13;
+unsigned short CPrism::VTK_Type = 13;
 
-unsigned short CWedge::maxNodesFace = 4;
+unsigned short CPrism::maxNodesFace = 4;
 
-CWedge::CWedge(unsigned long val_point_0, unsigned long val_point_1, 
+CPrism::CPrism(unsigned long val_point_0, unsigned long val_point_1, 
 			   unsigned long val_point_2, unsigned long val_point_3, 
 			   unsigned long val_point_4, unsigned long val_point_5) : CPrimalGrid() {
 	unsigned short iDim, iFace, iNeighbor_Elements;
@@ -506,7 +517,7 @@ CWedge::CWedge(unsigned long val_point_0, unsigned long val_point_1,
   
 }
 
-CWedge::~CWedge() {
+CPrism::~CPrism() {
   unsigned short iFaces;
   
   for (iFaces = 0; iFaces < nFaces; iFaces++)
@@ -515,7 +526,7 @@ CWedge::~CWedge() {
   
 }
 
-void CWedge::Change_Orientation(void) {
+void CPrism::Change_Orientation(void) {
 	unsigned long Point_0, Point_1, Point_3, Point_4;
 	Point_0 = Nodes[0];
 	Point_1 = Nodes[1];

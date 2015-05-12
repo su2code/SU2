@@ -2,10 +2,19 @@
  * \file primal_grid_structure.hpp
  * \brief Headers of the main subroutines for storing the primal grid structure.
  *        The subroutines and functions are in the <i>primal_grid_structure.cpp</i> file.
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.0 "eagle"
+ * \author F. Palacios
+ * \version 3.2.9 "eagle"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ *
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
+ *
+ * Copyright (C) 2012-2015 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -38,8 +47,8 @@ using namespace std;
 /*!
  * \class CPrimalGrid
  * \brief Class to define the numerical primal grid.
- * \author F. Palacios.
- * \version 3.2.0 "eagle"
+ * \author F. Palacios
+ * \version 3.2.9 "eagle"
  */
 class CPrimalGrid {
 protected:
@@ -238,8 +247,8 @@ public:
  * \class CVertexMPI
  * \brief Class for vertex element definition. This kind
  *        of element is used in the parallelization stuff.
- * \author F. Palacios.
- * \version 3.2.0 "eagle"
+ * \author F. Palacios
+ * \version 3.2.9 "eagle"
  */
 class CVertexMPI : public CPrimalGrid {
 private:
@@ -355,8 +364,8 @@ public:
 /*!
  * \class CLine
  * \brief Class for line element definition.
- * \author F. Palacios.
- * \version 3.2.0 "eagle"
+ * \author F. Palacios
+ * \version 3.2.9 "eagle"
  */
 class CLine : public CPrimalGrid {
 private:
@@ -481,8 +490,8 @@ public:
 /*!
  * \class CTriangle
  * \brief Class for triangle element definition.
- * \author F. Palacios.
- * \version 3.2.0 "eagle"
+ * \author F. Palacios
+ * \version 3.2.9 "eagle"
  */
 class CTriangle : public CPrimalGrid {
 private:
@@ -609,8 +618,8 @@ public:
 /*!
  * \class CRectangle
  * \brief Class for rectangle element definition.
- * \author F. Palacios.
- * \version 3.2.0 "eagle"
+ * \author F. Palacios
+ * \version 3.2.9 "eagle"
  */
 class CRectangle : public CPrimalGrid {
 private:
@@ -737,8 +746,8 @@ public:
 /*!
  * \class CTetrahedron
  * \brief Class for tetrahedron element definition.
- * \author F. Palacios.
- * \version 3.2.0 "eagle"
+ * \author F. Palacios
+ * \version 3.2.9 "eagle"
  */
 class CTetrahedron : public CPrimalGrid {
 private:
@@ -852,8 +861,8 @@ public:
 /*!
  * \class CHexahedron
  * \brief Class for hexahedron element definition.
- * \author F. Palacios.
- * \version 3.2.0 "eagle"
+ * \author F. Palacios
+ * \version 3.2.9 "eagle"
  */
 class CHexahedron : public CPrimalGrid {
 private:
@@ -972,12 +981,12 @@ public:
 };
 
 /*!
- * \class CWedge
- * \brief Class for wedge element definition.
- * \author F. Palacios.
- * \version 3.2.0 "eagle"
+ * \class CPrism
+ * \brief Class for prism element definition.
+ * \author F. Palacios
+ * \version 3.2.9 "eagle"
  */
-class CWedge : public CPrimalGrid {
+class CPrism : public CPrimalGrid {
 private:
 	static unsigned short Faces[5][4];			/*!< \brief Matrix to store the local nodes of all the faces. */
 	static unsigned short Neighbor_Nodes[6][3];	/*!< \brief Neighbor to a nodes in the element. */
@@ -1000,19 +1009,19 @@ public:
 	 * \param[in] val_point_4 - Index of the 5th point read from the grid file.
 	 * \param[in] val_point_5 - Index of the 6th point read from the grid file.
 	 */
-	CWedge(unsigned long val_point_0, unsigned long val_point_1,
+	CPrism(unsigned long val_point_0, unsigned long val_point_1,
          unsigned long val_point_2, unsigned long val_point_3,
          unsigned long val_point_4, unsigned long val_point_5);
   
   /*!
 	 * \brief Destructor of the class.
 	 */
-	~CWedge(void);
+	~CPrism(void);
   
 	/*!
 	 * \brief Get the nodes shared by the triangle.
-	 * \param[in] val_node - Local (to the triangle) index of the node (a wedge has 6 nodes).
-	 * \return Global index of the wedge node.
+	 * \param[in] val_node - Local (to the triangle) index of the node (a prism has 6 nodes).
+	 * \return Global index of the prism node.
 	 */
 	unsigned long GetNode(unsigned short val_node);
   
@@ -1092,8 +1101,8 @@ public:
 /*!
  * \class CPyramid
  * \brief Class for pyramid element definition.
- * \author F. Palacios.
- * \version 3.2.0 "eagle"
+ * \author F. Palacios
+ * \version 3.2.9 "eagle"
  */
 class CPyramid : public CPrimalGrid {
 private:
