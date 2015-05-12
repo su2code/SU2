@@ -1314,7 +1314,7 @@ void CSolver::Aeroelastic(CSurfaceMovement *surface_movement, CGeometry *geometr
   
   double Cl, Cd, Cn, Ct, Cm, Cn_rot;
   double Alpha = config->GetAoA()*PI_NUMBER/180.0;
-  double structural_solution[4]; //contains solution of typical section wing model.
+  vector<double> structural_solution(4,0.0); //contains solution of typical section wing model.
   
   unsigned short iMarker, iMarker_Monitoring, Monitoring;
   string Marker_Tag, Monitoring_Tag;
@@ -1391,7 +1391,7 @@ void CSolver::Aeroelastic(CSurfaceMovement *surface_movement, CGeometry *geometr
   
 }
 
-void CSolver::SetUpTypicalSectionWingModel(double (&PHI)[2][2], double (&lambda)[2], CConfig *config) {
+void CSolver::SetUpTypicalSectionWingModel(vector<vector<double> >& PHI, vector<double>& lambda, CConfig *config) {
   
   /*--- Retrieve values from the config file ---*/
   double w_h = config->GetAeroelastic_Frequency_Plunge();
@@ -1402,14 +1402,22 @@ void CSolver::SetUpTypicalSectionWingModel(double (&PHI)[2][2], double (&lambda)
   double r_a2 = 3.48;
   
   // Mass Matrix
-  // double M[2][2] = {{1,x_a},{x_a, r_a2}};
-  // Stiffness Matrix
-  double K[2][2] = {{(w_h/w_a)*(w_h/w_a),0},{0, r_a2}};
+  // vector<vector<double> > M(2,vector<double>(2,0.0));
+  // M[0][0] = 1;
+  // M[0][1] = x_a;
+  // M[1][0] = x_a;
+  // M[1][1] = r_a2;
   
+  // Stiffness Matrix
+  vector<vector<double> > K(2,vector<double>(2,0.0));
+  K[0][0] = (w_h/w_a)*(w_h/w_a);
+  K[0][1] = 0.0;
+  K[1][0] = 0.0;
+  K[1][1] = r_a2;
   
   /* Eigenvector and Eigenvalue Matrices of the Generalized EigenValue Problem. */
   
-  double LAMBDA[2][2];
+  vector<vector<double> > LAMBDA(2,vector<double>(2,0.0));
   double y;
   y = sqrt(r_a2*pow(w_a,4) - 2*r_a2*pow(w_a,2)*pow(w_h,2) + r_a2*pow(w_h,4) + 4*pow(w_a,2)*pow(w_h,2)*pow(x_a,2));
   
@@ -1456,7 +1464,7 @@ void CSolver::SetUpTypicalSectionWingModel(double (&PHI)[2][2], double (&lambda)
   
 }
 
-void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, double Cl, double Cm, CConfig *config, unsigned short iMarker, double (&displacements)[4]) {
+void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, double Cl, double Cm, CConfig *config, unsigned short iMarker, vector<double>& displacements) {
   
   /*--- The aeroelastic model solved in this routine is the typical section wing model
    The details of the implementation can be found in J.J. Alonso "Fully-Implicit Time-Marching Aeroelastic Solutions" 1994.
@@ -1491,14 +1499,14 @@ void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, double Cl, doubl
   /*--- airfoil mass ratio ---*/
   double mu = 60;
   /*--- Structural Equation damping ---*/
-  double xi[2] = {0.0,0.0};
+  vector<double> xi(2,0.0);
   
   /*--- Flutter Speep Index ---*/
   double Vf = (Mach_Inf*sqrt(gamma*P_Inf/Density_Inf))/(b*w_a*sqrt(mu));
   
   /*--- Eigenvectors and Eigenvalues of the Generalized EigenValue Problem. ---*/
-  double PHI[2][2];   // generalized eigenvectors.
-  double w[2];        //generalized eigenvalues.
+  vector<vector<double> > PHI(2,vector<double>(2,0.0));   // generalized eigenvectors.
+  vector<double> w(2,0.0);        //generalized eigenvalues.
   SetUpTypicalSectionWingModel(PHI, w, config);
   
   /*--- Solving the Decoupled Aeroelastic Problem with second order time discretization Eq (9) ---*/
@@ -1516,17 +1524,19 @@ void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, double Cl, doubl
   vector<vector<double> > x_n1 = config->GetAeroelastic_n1(iMarker);
   
   /*--- Set up of variables used to solve the structural problem. ---*/
-  double Q[2];
-  double A_inv[2][2];
+  vector<double> Q(2,0.0);
+  vector<vector<double> > A_inv(2,vector<double>(2,0.0));
   double detA;
   double S1, S2;
-  double RHS[2];
-  double eta[2];
-  double eta_dot[2];
+  vector<double> RHS(2,0.0);
+  vector<double> eta(2,0.0);
+  vector<double> eta_dot(2,0.0);
   
   /*--- Forcing Term ---*/
   double cons = Vf*Vf/PI_NUMBER;
-  double F[2] = {cons*(-Cl), cons*(2*Cm)};
+  vector<double> F(2,0.0);
+  F[0] = cons*(-Cl);
+  F[1] = cons*(2*Cm);
   
   for (int i=0; i<2; i++) {
     Q[i] = 0;
@@ -1561,8 +1571,8 @@ void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, double Cl, doubl
   }
   
   /*--- Transform back from the generalized coordinates to get the actual displacements in plunge and pitch ---*/
-  double q[2];
-  double q_dot[2];
+  vector<double> q(2,0.0);
+  vector<double> q_dot(2,0.0);
   for (int i=0; i<2; i++) {
     q[i] = 0;
     q_dot[i] = 0;
