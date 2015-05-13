@@ -2162,6 +2162,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       for (unsigned int i = 0; i <= nMGLevels; i++)
         tmp_smooth[i] = MG_PreSmooth[i];
       delete [] MG_PreSmooth;
+      MG_PreSmooth=NULL;
     } else {
       
       /*--- Add additional elements equal to last element ---*/
@@ -2171,6 +2172,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       for (unsigned int i = nMG_PreSmooth; i <= nMGLevels; i++)
         tmp_smooth[i] = MG_PreSmooth[nMG_PreSmooth-1];
       delete [] MG_PreSmooth;
+      MG_PreSmooth=NULL;
     }
     
     nMG_PreSmooth = nMGLevels+1;
@@ -2194,6 +2196,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       for (unsigned int i = 0; i <= nMGLevels; i++)
         tmp_smooth[i] = MG_PostSmooth[i];
       delete [] MG_PostSmooth;
+      MG_PostSmooth=NULL;
     } else {
       
       /*--- Add additional elements equal to last element ---*/
@@ -2203,7 +2206,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       for (unsigned int i = nMG_PostSmooth; i <= nMGLevels; i++)
         tmp_smooth[i] = MG_PostSmooth[nMG_PostSmooth-1];
       delete [] MG_PostSmooth;
-      
+      MG_PostSmooth=NULL;
     }
     
     nMG_PostSmooth = nMGLevels+1;
@@ -2229,6 +2232,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       for (unsigned int i = 0; i <= nMGLevels; i++)
         tmp_smooth[i] = MG_CorrecSmooth[i];
       delete [] MG_CorrecSmooth;
+      MG_CorrecSmooth = NULL;
     } else {
       
       /*--- Add additional elements equal to last element ---*/
@@ -2238,6 +2242,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       for (unsigned int i = nMG_CorrecSmooth; i <= nMGLevels; i++)
         tmp_smooth[i] = MG_CorrecSmooth[nMG_CorrecSmooth-1];
       delete [] MG_CorrecSmooth;
+      MG_CorrecSmooth = NULL;
     }
     nMG_CorrecSmooth = nMGLevels+1;
     MG_CorrecSmooth = new unsigned short[nMG_CorrecSmooth];

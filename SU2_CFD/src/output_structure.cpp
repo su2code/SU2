@@ -86,21 +86,21 @@ COutput::COutput(void) {
 
 COutput::~COutput(void) {
   /* delete pointers initialized at construction*/
-/*
-  if(  Coords!=NULL)          delete  Coords;//
-  if(  Conn_Line!=NULL)       delete Conn_Line;//
 
-  //if(Conn_BoundTria!=NULL)  delete [] Conn_BoundTria;
+  if(Coords!=NULL)          delete  Coords;//
+  if(Conn_Line!=NULL)       delete Conn_Line;//
+
+  if(Conn_BoundTria!=NULL)  delete [] Conn_BoundTria;
   if(Conn_BoundQuad!=NULL)    delete [] Conn_BoundQuad;
-  if(   Conn_Tria!=NULL)      delete Conn_Tria;//
+  if(Conn_Tria!=NULL)      delete Conn_Tria;//
   if(Conn_Quad!=NULL)      delete Conn_Quad;//
 
-  //if(Conn_Tetr!=NULL)      delete [] Conn_Tetr;
+  if(Conn_Tetr!=NULL)      delete [] Conn_Tetr;
   if(Conn_Hexa!=NULL)      delete [] Conn_Hexa;
   if(Conn_Pris!=NULL)      delete [] Conn_Pris;
   if(Conn_Pyra!=NULL)      delete [] Conn_Pyra;
   if(Volume!=NULL)      delete [] Volume;
-  //if(Data!=NULL)        delete Data;//
+  if(Data!=NULL)        delete Data;//
   if(residuals!=NULL)   delete [] residuals;
   if(consv_vars!=NULL)  delete [] consv_vars;
 
@@ -111,11 +111,11 @@ COutput::~COutput(void) {
   if(Cf!=NULL)     delete [] Cf;
   if(Ch!=NULL)     delete [] Ch;
   if(h!=NULL)      delete [] h;
-*/
-  //if(yplus!=NULL)  delete [] yplus;
+
+  if(yplus!=NULL)  delete [] yplus;
   /*public pointers*/
-  //if(nOutput_Vars!=NULL) delete[] nOutput_Vars;
-  //if(data_container!=NULL) delete[] data_container;
+  if(nOutput_Vars!=NULL) delete[] nOutput_Vars;
+  if(data_container!=NULL) delete[] data_container;
 
 }
 
@@ -3734,7 +3734,7 @@ void COutput::DeallocateCoordinates(CConfig *config, CGeometry *geometry) {
       delete [] Coords[iDim];
     }
     delete [] Coords;
-    
+    Coords = NULL;
   }
 }
 
@@ -3750,9 +3750,12 @@ void COutput::DeallocateConnectivity(CConfig *config, CGeometry *geometry, bool 
     
     /*--- Deallocate memory for connectivity data ---*/
     if (surf_sol) {
-      if (nGlobal_Line > 0) delete [] Conn_Line;
-      if (nGlobal_BoundTria > 0) delete [] Conn_BoundTria;
-      if (nGlobal_BoundQuad > 0) delete [] Conn_BoundQuad;
+      if (nGlobal_Line > 0)             delete [] Conn_Line;
+      if (nGlobal_BoundTria > 0)        delete [] Conn_BoundTria;
+      if (nGlobal_BoundQuad > 0)        delete [] Conn_BoundQuad;
+      Conn_Line=NULL;
+      Conn_BoundTria=NULL;
+      Conn_BoundQuad=NULL;
     }
     else {
       if (nGlobal_Tria > 0) delete [] Conn_Tria;
@@ -3761,6 +3764,12 @@ void COutput::DeallocateConnectivity(CConfig *config, CGeometry *geometry, bool 
       if (nGlobal_Hexa > 0) delete [] Conn_Hexa;
       if (nGlobal_Pris > 0) delete [] Conn_Pris;
       if (nGlobal_Pyra > 0) delete [] Conn_Pyra;
+      Conn_Tria=NULL;
+      Conn_Quad=NULL;
+      Conn_Tetr=NULL;
+      Conn_Hexa=NULL;
+      Conn_Pris=NULL;
+      Conn_Pyra=NULL;
     }
     
   }
@@ -3781,7 +3790,7 @@ void COutput::DeallocateSolution(CConfig *config, CGeometry *geometry) {
       delete [] Data[iVar];
     }
     delete [] Data;
-    
+    Data = NULL;
   }
 }
 

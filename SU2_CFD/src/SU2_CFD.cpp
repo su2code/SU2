@@ -144,9 +144,9 @@ int main(int argc, char *argv[]) {
     geometry_container[iZone][MESH_0] = new CPhysicalGeometry(geometry_aux, config_container[iZone], 1);
     
     /*--- Deallocate the memory of geometry_aux ---*/
-    
+
     delete geometry_aux;
-    
+
     /*--- Add the Send/Receive boundaries ---*/
     
     geometry_container[iZone][MESH_0]->SetSendReceive(config_container[iZone]);
@@ -492,8 +492,9 @@ int main(int argc, char *argv[]) {
     if (StopCalc) break;
     
     ExtIter++;
-    //delete [] runtime;
+
   }
+
   
   /*--- Output some information to the console. ---*/
   
@@ -514,22 +515,7 @@ int main(int argc, char *argv[]) {
   
   /*--- Numerics class deallocation ---*/
   for (iZone = 0; iZone < nZone; iZone++) {
-    for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++) {
-      /*
-      for (iSol = 0; iSol < MAX_SOLS; iSol++) {
-        for (unsigned short iTerm = 0; iTerm < MAX_TERMS; iTerm++){
-          if (numerics_container[iZone][iMesh][iSol][iTerm] != NULL) {
-            delete numerics_container[iZone][iMesh][iSol][iTerm];
-          }
-        }
-        if (numerics_container[iZone][iMesh][iSol] != NULL)
-        delete [] numerics_container[iZone][iMesh][iSol];
-      }
-      */
-      if (numerics_container[iZone][iMesh]!= NULL)
-      delete[] numerics_container[iZone][iMesh];
-    }
-    if (numerics_container[iZone] != NULL)
+    Numerics_Postprocessing(numerics_container[iZone], solver_container[iZone],  geometry_container[iZone], config_container[iZone], iZone);
     delete[] numerics_container[iZone];
   }
   delete [] numerics_container;
@@ -537,24 +523,19 @@ int main(int argc, char *argv[]) {
   
   /*--- Solver class deallocation ---*/
 
-    for (iZone = 0; iZone < nZone; iZone++) {
-      if (solver_container[iZone]!=NULL){
-        for (iMesh = 1; iMesh < config_container[iZone]->GetnMGLevels(); iMesh++) {
-          if (solver_container[iZone][iMesh]!=NULL){
-            delete [] solver_container[iZone][iMesh];
-            // solver_container[iZone][iMesh][iSol]: see solver_preprocessing
-          }
-        }
-        if (solver_container[iZone]!=NULL) delete [] solver_container[iZone];
-      }
+  for (iZone = 0; iZone < nZone; iZone++) {
+    if (solver_container[iZone]!=NULL){
+      Solver_Postprocessing(solver_container[iZone], geometry_container[iZone],  config_container[iZone], iZone);
+      delete [] solver_container[iZone];
     }
-    delete [] solver_container;
-    if (rank == MASTER_NODE) cout <<"Solution container, deallocated." << endl;
+  }
+  delete [] solver_container;
+  if (rank == MASTER_NODE) cout <<"Solution container, deallocated." << endl;
 
   /*--- Geometry class deallocation ---*/
   for (iZone = 0; iZone < nZone; iZone++) {
     if (geometry_container[iZone]!=NULL){
-      for (unsigned short iMGlevel = 1; iMGlevel < config_container[iZone]->GetnMGLevels()-1; iMGlevel++){
+      for (unsigned short iMGlevel = 1; iMGlevel < config_container[iZone]->GetnMGLevels()+1; iMGlevel++){
         if (geometry_container[iZone][iMGlevel]!=NULL) delete geometry_container[iZone][iMGlevel];
       }
       delete [] geometry_container[iZone];
