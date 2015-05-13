@@ -72,6 +72,16 @@ unsigned short GetnDim(string val_mesh_filename, unsigned short val_format);
 void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry, CConfig *config, unsigned short iZone);
 
 /*! 
+ * \brief De-allocation of all solution classes.
+ * \param[in] solver_container - Container vector with all the solutions.
+ * \param[in] geometry - Geometrical definition of the problem.
+ * \param[in] config - Definition of the particular problem.
+ * \param[in] iZone - Index of the zone.
+ */
+void Solver_Postprocessing(CSolver ***solver_container, CGeometry **geometry, CConfig *config, unsigned short iZone);
+
+
+/*!
  * \brief Definition and allocation of all integration classes.
  * \param[in] integration_container - Container vector with all the integration methods.
  * \param[in] geometry - Geometrical definition of the problem.
@@ -91,6 +101,17 @@ void Integration_Preprocessing(CIntegration **integration_container, CGeometry *
 void Numerics_Preprocessing(CNumerics ****numerics_container, CSolver ***solver_container, CGeometry **geometry, CConfig *config, unsigned short iZone);
 
 /*! 
+ * \brief De-allocation of all solver classes.
+ * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
+ * \param[in] solver_container - Container vector with all the solutions.
+ * \param[in] geometry - Geometrical definition of the problem.
+ * \param[in] config - Definition of the particular problem.
+ * \param[in] iZone - Index of the zone.
+ */
+void Numerics_Postprocessing(CNumerics ****numerics_container, CSolver ***solver_container, CGeometry **geometry, CConfig *config, unsigned short iZone);
+
+
+/*!
  * \brief Do the geometrical preprocessing.
  * \param[in] geometry - Geometrical definition of the problem.
  * \param[in] config - Definition of the particular problem.

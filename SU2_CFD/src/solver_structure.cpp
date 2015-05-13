@@ -92,7 +92,7 @@ CSolver::~CSolver(void) {
   if(Res_Conv!=NULL)    delete [] Res_Conv;
   //if(Res_Visc!=NULL)    delete [] Res_Visc;
   //if(Res_Sour!=NULL)    delete [] Res_Sour;
-  cout <<"csolver"<<endl;
+
   if(Res_Conv_i!=NULL)    delete [] Res_Conv_i;
   if(Res_Visc_i!=NULL)    delete [] Res_Visc_i;
   if(Res_Conv_j!=NULL)    delete [] Res_Conv_j;

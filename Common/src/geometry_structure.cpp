@@ -152,15 +152,15 @@ CGeometry::~CGeometry(void) {
   if (Tag_to_Marker != NULL) delete[] Tag_to_Marker;
 
 
-	//PeriodicPoint[MAX_NUMBER_PERIODIC][2].~vector();
-	//PeriodicElem[MAX_NUMBER_PERIODIC].~vector();
-	//XCoordList.~vector();
+	PeriodicPoint[MAX_NUMBER_PERIODIC][2].~vector();
+	PeriodicElem[MAX_NUMBER_PERIODIC].~vector();
+	XCoordList.~vector();
 
-	//Xcoord_plane.~vector();
-	//Ycoord_plane.~vector();
-	//Zcoord_plane.~vector();
-	//FaceArea_plane.~vector();
-	//Plane_points.~vector();
+	Xcoord_plane.~vector();
+	Ycoord_plane.~vector();
+	Zcoord_plane.~vector();
+	FaceArea_plane.~vector();
+	Plane_points.~vector();
 
 	/*--- parmetis variables ---*/
 	if (adjacency!=NULL) delete adjacency;
@@ -4329,6 +4329,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
       
       /*--- Free memory for element data ---*/
       delete[] Local_to_global_elem;
+      delete[] Global_to_local_Point_recv;
 
       delete[] Buffer_Receive_Triangle_loc;
       delete[] Buffer_Receive_Rectangle_loc;

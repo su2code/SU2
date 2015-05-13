@@ -746,6 +746,8 @@ CEulerSolver::~CEulerSolver(void) {
     Cauchy_Serie = NULL;
   }
 
+  if (FluidModel!=NULL) delete FluidModel;
+
 }
 
 void CEulerSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
@@ -11105,8 +11107,8 @@ CNSSolver::~CNSSolver(void) {
   if (MaxHeatFlux_Visc != NULL) delete [] MaxHeatFlux_Visc;
   if (ForceViscous != NULL)     delete [] ForceViscous;
   if (MomentViscous != NULL)    delete [] MomentViscous;
+  if (Point_Max_Coord!=NULL)  delete[] Point_Max_Coord;
 
-  
   if (Surface_CLift_Visc != NULL)      delete [] Surface_CLift_Visc;
   if (Surface_CDrag_Visc != NULL)      delete [] Surface_CDrag_Visc;
   if (Surface_CSideForce_Visc != NULL) delete [] Surface_CSideForce_Visc;

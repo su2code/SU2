@@ -52,8 +52,9 @@ CFluidModel::CFluidModel(void) {
 }
 
 CFluidModel::~CFluidModel(void) {
-
-  }
+  if (LaminarViscosity!=NULL) delete LaminarViscosity;
+  if (ThermalConductivity!=NULL) delete ThermalConductivity;
+}
 
 void CFluidModel::SetLaminarViscosityModel (CConfig *config) {
   
