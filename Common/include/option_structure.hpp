@@ -182,23 +182,21 @@ static const map<string, VERB_LEVEL> Verb_Map = CCreateMap<string, VERB_LEVEL>
  * \brief different solver types for the CFD component
  */
 enum ENUM_SOLVER {
-  NO_SOLVER = 0,			/*!< \brief Definition of no solver. */
-  EULER = 1,				/*!< \brief Definition of the Euler's solver. */
-  NAVIER_STOKES = 2,			/*!< \brief Definition of the Navier-Stokes' solver. */
-  RANS = 3,				/*!< \brief Definition of the Reynolds-averaged Navier-Stokes' (RANS) solver. */
-  POISSON_EQUATION = 4,       	/*!< \brief Definition of the poisson potential solver. */
-  WAVE_EQUATION = 10,	/*!< \brief Definition of the wave solver. */
-  HEAT_EQUATION = 29,								/*!< \brief Definition of the heat solver. */
-  LINEAR_ELASTICITY = 11,	/*!< \brief Definition of the FEA solver. */
-  FLUID_STRUCTURE_EULER = 12,	/*!< \brief Definition of the FEA solver. */
-  FLUID_STRUCTURE_NAVIER_STOKES = 13,	/*!< \brief Definition of the FEA solver. */
-  FLUID_STRUCTURE_RANS = 14,	/*!< \brief Definition of the FEA solver. */
-  ADJ_EULER = 18,			/*!< \brief Definition of the continuous adjoint Euler's solver. */
-  ADJ_NAVIER_STOKES = 19,		/*!< \brief Definition of the continuous adjoint Navier-Stokes' solver. */
-  ADJ_RANS = 20,				/*!< \brief Definition of the continuous adjoint Reynolds-averaged Navier-Stokes' (RANS) solver. */
-  LIN_EULER = 21,			/*!< \brief Definition of the linear Euler's solver. */
-  LIN_NAVIER_STOKES = 22,		/*!< \brief Definition of the linear Navier-Stokes' solver. */
-  TEMPLATE_SOLVER = 30,                  /*!< \brief Definition of template solver. */
+  NO_SOLVER = 0,						/*!< \brief Definition of no solver. */
+  EULER = 1,							/*!< \brief Definition of the Euler's solver. */
+  NAVIER_STOKES = 2,					/*!< \brief Definition of the Navier-Stokes' solver. */
+  RANS = 3,								/*!< \brief Definition of the Reynolds-averaged Navier-Stokes' (RANS) solver. */
+  POISSON_EQUATION = 4,       			/*!< \brief Definition of the poisson potential solver. */
+  WAVE_EQUATION = 10,					/*!< \brief Definition of the wave solver. */
+  HEAT_EQUATION = 29,					/*!< \brief Definition of the heat solver. */
+  LINEAR_ELASTICITY = 11,				/*!< \brief Definition of the FEA solver. */
+  FLUID_STRUCTURE_INTERACTION = 12,		/*!< \brief Definition of a FSI solver. */
+  ADJ_EULER = 18,						/*!< \brief Definition of the continuous adjoint Euler's solver. */
+  ADJ_NAVIER_STOKES = 19,				/*!< \brief Definition of the continuous adjoint Navier-Stokes' solver. */
+  ADJ_RANS = 20,						/*!< \brief Definition of the continuous adjoint Reynolds-averaged Navier-Stokes' (RANS) solver. */
+  LIN_EULER = 21,						/*!< \brief Definition of the linear Euler's solver. */
+  LIN_NAVIER_STOKES = 22,				/*!< \brief Definition of the linear Navier-Stokes' solver. */
+  TEMPLATE_SOLVER = 30,                 /*!< \brief Definition of template solver. */
   TNE2_EULER = 31,
   TNE2_NAVIER_STOKES = 32,
   ADJ_TNE2_EULER = 33,
@@ -223,10 +221,38 @@ static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVE
 ("WAVE_EQUATION", WAVE_EQUATION)
 ("HEAT_EQUATION", HEAT_EQUATION)
 ("LINEAR_ELASTICITY", LINEAR_ELASTICITY)
-("FLUID_STRUCTURE_EULER", FLUID_STRUCTURE_EULER)
-("FLUID_STRUCTURE_NAVIER_STOKES", FLUID_STRUCTURE_NAVIER_STOKES)
-("FLUID_STRUCTURE_RANS", FLUID_STRUCTURE_RANS)
+("FLUID_STRUCTURE_INTERACTION", FLUID_STRUCTURE_INTERACTION)
+
 ("TEMPLATE_SOLVER", TEMPLATE_SOLVER);
+
+
+/*!
+ * \brief types of fluid solvers
+ */
+enum ENUM_FSI_FLUID_PROBLEM {
+	  NO_SOLVER_FFSI = 0,			/*!< \brief Definition of no solver. */
+	  EULER_FFSI = 1,				/*!< \brief Euler equations for the FSI problem */
+	  NAVIER_STOKES_FFSI = 2,		/*!< \brief NS equations for the FSI problem */
+	  RANS_FFSI = 3 				/*!< \brief RANS equations for the FSI problem */
+};
+static const map<string, ENUM_FSI_FLUID_PROBLEM> FSI_Fluid_Solver_Map = CCreateMap<string, ENUM_FSI_FLUID_PROBLEM>
+("NONE", NO_SOLVER_FFSI)
+("EULER", EULER_FFSI)
+("NAVIER_STOKES", NAVIER_STOKES_FFSI)
+("RANS", RANS_FFSI);
+
+/*!
+ * \brief types of structural solvers
+ */
+enum ENUM_FSI_STRUC_PROBLEM {
+  NO_SOLVER_SFSI = 0,				/*!< \brief Definition of no solver. */
+  LINEAR_ELASTICITY_SFSI = 11,		/*!< \brief Linear elasticity equations for the FSI problem */
+  NONLINEAR_ELASTICITY_SFSI = 2,		/*!< \brief Nonlinear elasticity equations for the FSI problem */
+};
+static const map<string, ENUM_FSI_STRUC_PROBLEM> FSI_Struc_Solver_Map = CCreateMap<string, ENUM_FSI_STRUC_PROBLEM>
+("NONE", NO_SOLVER_SFSI)
+("LINEAR_ELASTICITY", LINEAR_ELASTICITY_SFSI)
+("NONLINEAR_ELASTICITY", NONLINEAR_ELASTICITY_SFSI);
 
 /*!
  * \brief different regime modes
@@ -612,6 +638,19 @@ static const map<string, ENUM_TIME_INT> Time_Int_Map = CCreateMap<string, ENUM_T
 ("EULER_IMPLICIT", EULER_IMPLICIT);
 
 /*!
+ * \brief type of time integration schemes
+ */
+enum ENUM_TIME_INT_FEA {
+  CD_EXPLICIT = 1,			/*!< \brief Support for implementing an explicit method. */
+  NEWMARK_IMPLICIT = 2,   	/*!< \brief Implicit Newmark integration definition. */
+  GA_IMPLICIT = 3   		/*!< \brief Support for implementing another implicit method. */
+};
+static const map<string, ENUM_TIME_INT_FEA> Time_Int_Map_FEA = CCreateMap<string, ENUM_TIME_INT_FEA>
+("CD_EXPLICIT", CD_EXPLICIT)
+("NEWMARK_IMPLICIT", NEWMARK_IMPLICIT)
+("GA_IMPLICIT", GA_IMPLICIT);
+
+/*!
  * \brief types of schemes to compute the flow gradient
  */
 enum ENUM_FLOW_GRADIENT {
@@ -678,8 +717,39 @@ enum BC_TYPE {
   ISOTHERMAL_CATALYTIC = 31, /*!< \brief No-slip, constant temperature, catalytic bc. */
   ACTDISK_INLET = 32,	/*!< \brief Actuator disk inlet boundary definition. */
   ACTDISK_OUTLET = 33,	/*!< \brief Actuator disk outlet boundary definition. */
+  CLAMPED_BOUNDARY = 34,		/*!< \brief Clamped Boundary definition. */
+  LOAD_DIR_BOUNDARY = 35,		/*!< \brief Boundary Load definition. */
+  LOAD_SINE_BOUNDARY = 36,		/*!< \brief Sine-waveBoundary Load definition. */
   SEND_RECEIVE = 99,		/*!< \brief Boundary send-receive definition. */
 };
+
+
+/*!
+ * \brief different regime modes
+ */
+enum ENUM_2DFORM {
+  PLANE_STRESS = 0,			/*!< \brief Definition of plane stress solver. */
+  PLANE_STRAIN = 1,			/*!< \brief Definition of plane strain solver. */
+};
+static const map<string, ENUM_2DFORM> ElasForm_2D = CCreateMap<string, ENUM_2DFORM>
+("PLANE_STRESS", PLANE_STRESS)
+("PLANE_STRAIN", PLANE_STRAIN);
+
+
+/*!
+ * \brief different regime modes
+ */
+enum ENUM_AITKEN {
+  NO_RELAXATION = 0,			/*!< \brief No relaxation in the strongly coupled approach. */
+  FIXED_PARAMETER = 1,			/*!< \brief Relaxation with a fixed parameter. */
+  AITKEN_DYNAMIC = 2,			/*!< \brief Relaxation using Aitken's dynamic parameter. */
+};
+static const map<string, ENUM_AITKEN> AitkenForm_Map = CCreateMap<string, ENUM_AITKEN>
+("NONE", NO_RELAXATION)
+("FIXED_PARAMETER", FIXED_PARAMETER)
+("AITKEN_DYNAMIC", AITKEN_DYNAMIC);
+
+
 
 /*!
  * \brief types inlet boundary treatments
@@ -1129,6 +1199,18 @@ static const map<string, ENUM_DEFORM_STIFFNESS> Deform_Stiffness_Map = CCreateMa
 ("CONSTANT_STIFFNESS", CONSTANT_STIFFNESS)
 ("INVERSE_VOLUME", INVERSE_VOLUME)
 ("WALL_DISTANCE", WALL_DISTANCE);
+
+
+/*!
+ * \brief types of schemes for dynamic structural computations
+ */
+enum ENUM_DYNAMIC {
+  STATIC = 0,             /*!< \brief A static structural computation. */
+  DYNAMIC = 1,		      /*!< \brief Use a time stepping strategy for dynamic computations. */
+};
+static const map<string, ENUM_DYNAMIC> Dynamic_Map = CCreateMap<string, ENUM_DYNAMIC>
+("NO", STATIC)
+("YES", DYNAMIC);
 
 /* END_CONFIG_ENUMS */
 
