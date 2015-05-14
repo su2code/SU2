@@ -5919,6 +5919,9 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   unsigned long loc_element_count = 0;
   bool elem_reqd = false;
   
+  /*--- Initialize bool for FSI problems ---*/
+  bool fsi = config->GetFSI_Simulation();
+
   /*--- Initialize counters for local/global points & elements ---*/
 #ifdef HAVE_MPI
   unsigned long LocalIndex;
@@ -6560,7 +6563,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
           }
           boundary_marker_count++;
         }
-        if (boundary_marker_count == nMarker) break;
+        if ((boundary_marker_count == nMarker) && (fsi)) break;
       }
       
       /*--- Read periodic transformation info (center, rotation, translation) ---*/
