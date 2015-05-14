@@ -1,10 +1,19 @@
 /*!
  * \file variable_direct_tne2.cpp
  * \brief Definition of the solution fields.
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.0 "eagle"
+ * \author S. Copeland
+ * \version 3.2.9 "eagle"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ *
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
+ *
+ * Copyright (C) 2012-2015 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -142,7 +151,7 @@ CTNE2EulerVariable::CTNE2EulerVariable(double val_pressure,
 	}
   
 	/*--- If using multigrid, allocate residual-smoothing vectors ---*/
-	for (iMesh = 0; iMesh <= config->GetMGLevels(); iMesh++)
+	for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
 		nMGSmooth += config->GetMG_CorrecSmooth(iMesh);
 	if (nMGSmooth > 0) {
 		Residual_Sum = new double [nVar];
@@ -323,7 +332,7 @@ CTNE2EulerVariable::CTNE2EulerVariable(double *val_solution,
 	}
   
 	/*--- If using multigrid, allocate residual-smoothing vectors ---*/
-	for (iMesh = 0; iMesh <= config->GetMGLevels(); iMesh++)
+	for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
 		nMGSmooth += config->GetMG_CorrecSmooth(iMesh);
 	if (nMGSmooth > 0) {
 		Residual_Sum = new double [nVar];
@@ -692,7 +701,7 @@ bool CTNE2EulerVariable::SetPressure(CConfig *config) {
   /*--- Solve for mixture pressure using ideal gas law & Dalton's law ---*/
   // Note: If free electrons are present, use Tve for their partial pressure
   P = 0.0;
-  for(iSpecies = 0; iSpecies < nHeavy; iSpecies++)
+  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)
     P += Solution[iSpecies] * Ru/Ms[iSpecies] * Primitive[T_INDEX];
   
   for (iSpecies = 0; iSpecies < nEl; iSpecies++)
@@ -766,7 +775,7 @@ void CTNE2EulerVariable::CalcdPdU(double *V, CConfig *config, double *val_dPdU) 
   
   if (val_dPdU == NULL) {
     cout << "ERROR: CalcdPdU - Array dPdU not allocated!" << endl;
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   
   /*--- Determine the number of heavy species ---*/
@@ -1036,7 +1045,7 @@ void CTNE2EulerVariable::CalcdTdU(double *V, CConfig *config,
   }
   if (ionization) {
     cout << "CTNE2Variable: NEED TO IMPLEMENT dTdU for IONIZED MIX" << endl;
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   
   /*--- Momentum derivatives ---*/
@@ -1229,7 +1238,7 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, double *U, double *V,
     converr = true;
 //    cout << "T < Tmin" << endl;
   }
-  if (V[T_INDEX] > Tmax){
+  if (V[T_INDEX] > Tmax) {
     V[T_INDEX] = Tmax;
     converr = true;
 //    cout << "T > Tmax" << endl;
@@ -1766,7 +1775,7 @@ void CTNE2NSVariable ::SetThermalConductivity(CConfig *config) {
   
   if (ionization) {
     cout << "SetThermalConductivity: NEEDS REVISION w/ IONIZATION" << endl;
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   
   /*--- Acquire gas parameters from CConfig ---*/
@@ -1848,7 +1857,7 @@ void CTNE2NSVariable ::SetThermalConductivity(CConfig *config) {
 }
 
 
-void CTNE2NSVariable::SetVorticity(void) {
+bool CTNE2NSVariable::SetVorticity(bool val_limiter) {
 	double u_y = Gradient_Primitive[VEL_INDEX][1];
 	double v_x = Gradient_Primitive[VEL_INDEX+1][0];
 	double u_z = 0.0;
@@ -1866,6 +1875,8 @@ void CTNE2NSVariable::SetVorticity(void) {
 	Vorticity[0] = w_y-v_z;
 	Vorticity[1] = -(w_x-u_z);
 	Vorticity[2] = v_x-u_y;
+  
+  return false;
 }
 
 bool CTNE2NSVariable::SetPrimVar_Compressible(CConfig *config) {
