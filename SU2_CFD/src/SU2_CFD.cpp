@@ -300,6 +300,26 @@ int main(int argc, char *argv[]) {
   StartTime = MPI_Wtime();
 #endif
   
+  bool fsi = config_container[ZONE_0]->GetFSI_Simulation();
+
+  unsigned short iFluidIt, nFluidIt;
+
+  iFluidIt=0;
+  nFluidIt=config_container[ZONE_0]->GetnIterFSI();
+
+  /*--- This is temporal and just to check. It will have to be added to the regular history file ---*/
+
+  ofstream historyFile_FSI;
+  bool writeHistFSI = config_container[ZONE_0]->GetWrite_Conv_FSI();
+  if (writeHistFSI){
+	  char cstrFSI[200];
+	  string filenameHistFSI = config_container[ZONE_0]->GetConv_FileName_FSI();
+	  strcpy (cstrFSI, filenameHistFSI.data());
+	  historyFile_FSI.open (cstrFSI);
+	  historyFile_FSI << "Time,Iteration,Aitken,URes,logResidual,orderMagnResidual" << endl;
+	  historyFile_FSI.close();
+  }
+
   while (ExtIter < config_container[ZONE_0]->GetnExtIter()) {
     
     /*--- Set the value of the external iteration. ---*/
@@ -320,6 +340,16 @@ int main(int argc, char *argv[]) {
     
     /*--- Perform a single iteration of the chosen PDE solver. ---*/
     
+	if (fsi){
+	    config_container[ZONE_1]->SetExtIter(ExtIter);
+	    FluidStructureIteration(output, integration_container, geometry_container,
+	    	                		solver_container, numerics_container, config_container,
+	    	                		surface_movement, grid_movement, FFDBox,
+	    	                		iFluidIt, nFluidIt);
+	}
+
+	else {
+
     switch (config_container[ZONE_0]->GetKind_Solver()) {
         
       case EULER: case NAVIER_STOKES: case RANS:
@@ -334,13 +364,7 @@ int main(int argc, char *argv[]) {
                       numerics_container, config_container,
                       surface_movement, grid_movement, FFDBox);
         break;
-        
-      case FLUID_STRUCTURE_EULER: case FLUID_STRUCTURE_NAVIER_STOKES:
-        FluidStructureIteration(output, integration_container, geometry_container,
-                                solver_container, numerics_container, config_container,
-                                surface_movement, grid_movement, FFDBox);
-        break;
-        
+
       case WAVE_EQUATION:
         WaveIteration(output, integration_container, geometry_container,
                       solver_container, numerics_container, config_container,
@@ -377,6 +401,7 @@ int main(int argc, char *argv[]) {
                          surface_movement, grid_movement, FFDBox);
         break;
     }
+	}
     
     
     /*--- Synchronization point after a single solver iteration. Compute the
@@ -417,22 +442,24 @@ int main(int argc, char *argv[]) {
     /*--- Check whether the current simulation has reached the specified
      convergence criteria, and set StopCalc to true, if so. ---*/
     
-    switch (config_container[ZONE_0]->GetKind_Solver()) {
-      case EULER: case NAVIER_STOKES: case RANS:
-        StopCalc = integration_container[ZONE_0][FLOW_SOL]->GetConvergence(); break;
-      case TNE2_EULER: case TNE2_NAVIER_STOKES:
-        StopCalc = integration_container[ZONE_0][TNE2_SOL]->GetConvergence(); break;
-      case WAVE_EQUATION:
-        StopCalc = integration_container[ZONE_0][WAVE_SOL]->GetConvergence(); break;
-      case HEAT_EQUATION:
-        StopCalc = integration_container[ZONE_0][HEAT_SOL]->GetConvergence(); break;
-      case LINEAR_ELASTICITY:
-        StopCalc = integration_container[ZONE_0][FEA_SOL]->GetConvergence(); break;
-      case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
-        StopCalc = integration_container[ZONE_0][ADJFLOW_SOL]->GetConvergence(); break;
-      case ADJ_TNE2_EULER: case ADJ_TNE2_NAVIER_STOKES:
-        StopCalc = integration_container[ZONE_0][ADJTNE2_SOL]->GetConvergence(); break;
-    }
+	    switch (config_container[ZONE_0]->GetKind_Solver()) {
+	      case EULER: case NAVIER_STOKES: case RANS:
+	        StopCalc = integration_container[ZONE_0][FLOW_SOL]->GetConvergence(); break;
+	      case TNE2_EULER: case TNE2_NAVIER_STOKES:
+	        StopCalc = integration_container[ZONE_0][TNE2_SOL]->GetConvergence(); break;
+	      case WAVE_EQUATION:
+	        StopCalc = integration_container[ZONE_0][WAVE_SOL]->GetConvergence(); break;
+	      case HEAT_EQUATION:
+	        StopCalc = integration_container[ZONE_0][HEAT_SOL]->GetConvergence(); break;
+	      case LINEAR_ELASTICITY:
+	    	// This is a temporal fix, while we code the non-linear solver 
+//	        StopCalc = integration_container[ZONE_0][FEA_SOL]->GetConvergence(); break;
+	    	StopCalc = false; break;
+	      case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
+	        StopCalc = integration_container[ZONE_0][ADJFLOW_SOL]->GetConvergence(); break;
+	      case ADJ_TNE2_EULER: case ADJ_TNE2_NAVIER_STOKES:
+	        StopCalc = integration_container[ZONE_0][ADJTNE2_SOL]->GetConvergence(); break;
+	    }
     
     /*--- Solution output. Determine whether a solution needs to be written
      after the current iteration, and if so, execute the output file writing
@@ -449,9 +476,12 @@ int main(int argc, char *argv[]) {
         ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) &&
          ((ExtIter == 0) || (ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))) ||
         
-        ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) &&
+        ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) && (!fsi) &&
          ((ExtIter == 0) || ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0) ||
-                             ((ExtIter-1) % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))))) {
+                             ((ExtIter-1) % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0)))) ||
+
+        ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) && (fsi) &&
+        ((ExtIter == 0) || ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))))) {
           
           /*--- Low-fidelity simulations (using a coarser multigrid level
            approximation to the solution) require an interpolation back to the
