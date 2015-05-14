@@ -7,12 +7,14 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0506980A1AA6179100FF4F07 /* output_fieldview.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 050698091AA6179100FF4F07 /* output_fieldview.cpp */; };
 		0530E56817FDF79500733CE8 /* solver_direct_poisson.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530E56717FDF79500733CE8 /* solver_direct_poisson.cpp */; };
 		0530E56A17FDF7AC00733CE8 /* solver_direct_elasticity.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530E56917FDF7AC00733CE8 /* solver_direct_elasticity.cpp */; };
 		0530E56C17FDF7BD00733CE8 /* variable_direct_poisson.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530E56B17FDF7BD00733CE8 /* variable_direct_poisson.cpp */; };
 		0530E56E17FDF7C600733CE8 /* variable_direct_elasticity.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530E56D17FDF7C600733CE8 /* variable_direct_elasticity.cpp */; };
 		0530E57017FDF7D300733CE8 /* numerics_direct_elasticity.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530E56F17FDF7D300733CE8 /* numerics_direct_elasticity.cpp */; };
 		0530E57217FDF7D800733CE8 /* numerics_direct_poisson.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530E57117FDF7D800733CE8 /* numerics_direct_poisson.cpp */; };
+		05755F0A1A54AC4500600019 /* output_su2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05755F091A54AC4500600019 /* output_su2.cpp */; };
 		05DF0B1018CFB2C100DC3CFE /* numerics_machine_learning_turbulent.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05DF0B0E18CFB2C100DC3CFE /* numerics_machine_learning_turbulent.cpp */; };
 		05DF0B1118CFB2C100DC3CFE /* numerics_machine_learning.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05DF0B0F18CFB2C100DC3CFE /* numerics_machine_learning.cpp */; };
 		05E6DB9217EB61E600FA1F7E /* config_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05E6DB8917EB61E600FA1F7E /* config_structure.cpp */; };
@@ -96,6 +98,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		050698091AA6179100FF4F07 /* output_fieldview.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = output_fieldview.cpp; path = ../../SU2_CFD/src/output_fieldview.cpp; sourceTree = "<group>"; };
 		0530E56717FDF79500733CE8 /* solver_direct_poisson.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = solver_direct_poisson.cpp; path = ../../SU2_CFD/src/solver_direct_poisson.cpp; sourceTree = "<group>"; };
 		0530E56917FDF7AC00733CE8 /* solver_direct_elasticity.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = solver_direct_elasticity.cpp; path = ../../SU2_CFD/src/solver_direct_elasticity.cpp; sourceTree = "<group>"; };
 		0530E56B17FDF7BD00733CE8 /* variable_direct_poisson.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = variable_direct_poisson.cpp; path = ../../SU2_CFD/src/variable_direct_poisson.cpp; sourceTree = "<group>"; };
@@ -103,6 +106,8 @@
 		0530E56F17FDF7D300733CE8 /* numerics_direct_elasticity.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = numerics_direct_elasticity.cpp; path = ../../SU2_CFD/src/numerics_direct_elasticity.cpp; sourceTree = "<group>"; };
 		0530E57117FDF7D800733CE8 /* numerics_direct_poisson.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = numerics_direct_poisson.cpp; path = ../../SU2_CFD/src/numerics_direct_poisson.cpp; sourceTree = "<group>"; };
 		0541ABEE1370F5A6002D668B /* SU2_CFD */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = SU2_CFD; sourceTree = BUILT_PRODUCTS_DIR; };
+		0541C14E1A7EA6970095A680 /* config_template_basic.cfg */ = {isa = PBXFileReference; lastKnownFileType = text; name = config_template_basic.cfg; path = ../../config_template_basic.cfg; sourceTree = "<group>"; };
+		05755F091A54AC4500600019 /* output_su2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = output_su2.cpp; path = ../../SU2_CFD/src/output_su2.cpp; sourceTree = "<group>"; };
 		05DF0B0C18CFB29800DC3CFE /* numerics_machine_learning_turbulent.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = numerics_machine_learning_turbulent.hpp; path = ../../SU2_CFD/include/numerics_machine_learning_turbulent.hpp; sourceTree = "<group>"; };
 		05DF0B0D18CFB29E00DC3CFE /* numerics_machine_learning.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = numerics_machine_learning.hpp; path = ../../SU2_CFD/include/numerics_machine_learning.hpp; sourceTree = "<group>"; };
 		05DF0B0E18CFB2C100DC3CFE /* numerics_machine_learning_turbulent.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = numerics_machine_learning_turbulent.cpp; path = ../../SU2_CFD/src/numerics_machine_learning_turbulent.cpp; sourceTree = "<group>"; };
@@ -286,6 +291,8 @@
 				05E6DBD617EB62A100FA1F7E /* output_paraview.cpp */,
 				05E6DBD717EB62A100FA1F7E /* output_structure.cpp */,
 				05E6DBD817EB62A100FA1F7E /* output_tecplot.cpp */,
+				050698091AA6179100FF4F07 /* output_fieldview.cpp */,
+				05755F091A54AC4500600019 /* output_su2.cpp */,
 			);
 			name = Output;
 			sourceTree = "<group>";
@@ -413,6 +420,7 @@
 			isa = PBXGroup;
 			children = (
 				E97B6C8117F941800008255B /* config_template.cfg */,
+				0541C14E1A7EA6970095A680 /* config_template_basic.cfg */,
 				08FB7795FE84155DC02AAC07 /* Source */,
 				0541ABE41370DC56002D668B /* InLine */,
 				0541ABE51370DC5E002D668B /* Include */,
@@ -424,8 +432,6 @@
 		08FB7795FE84155DC02AAC07 /* Source */ = {
 			isa = PBXGroup;
 			children = (
-				05F108A21978D2E500F2F288 /* TransportModel */,
-				05F108951978D28F00F2F288 /* FluidModel */,
 				05E6DBEC17EB62A100FA1F7E /* SU2_CFD.cpp */,
 				05E6DB8917EB61E600FA1F7E /* config_structure.cpp */,
 				05E6DBBC17EB62A000FA1F7E /* definition_structure.cpp */,
@@ -438,6 +444,8 @@
 				052D517F17A21FAC003BE8B2 /* Solver */,
 				052D515817A1D352003BE8B2 /* Variable */,
 				05D28619178BCA1200DD76AE /* Numerics */,
+				05F108951978D28F00F2F288 /* FluidModel */,
+				05F108A21978D2E500F2F288 /* TransportModel */,
 			);
 			name = Source;
 			sourceTree = "<group>";
@@ -504,6 +512,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				05E6DB9217EB61E600FA1F7E /* config_structure.cpp in Sources */,
+				05755F0A1A54AC4500600019 /* output_su2.cpp in Sources */,
 				05E6DB9317EB61E600FA1F7E /* dual_grid_structure.cpp in Sources */,
 				05E6DB9417EB61E600FA1F7E /* geometry_structure.cpp in Sources */,
 				05E6DB9517EB61E600FA1F7E /* grid_adaptation_structure.cpp in Sources */,
@@ -534,6 +543,7 @@
 				05E6DC1217EB62A100FA1F7E /* numerics_direct_tne2.cpp in Sources */,
 				05F1089D1978D2AE00F2F288 /* fluid_model.cpp in Sources */,
 				05E6DC1317EB62A100FA1F7E /* numerics_direct_transition.cpp in Sources */,
+				0506980A1AA6179100FF4F07 /* output_fieldview.cpp in Sources */,
 				05E6DC1417EB62A100FA1F7E /* numerics_direct_turbulent.cpp in Sources */,
 				05E6DC1517EB62A100FA1F7E /* numerics_direct_wave.cpp in Sources */,
 				05E6DC1617EB62A100FA1F7E /* numerics_linearized_mean.cpp in Sources */,
@@ -601,9 +611,10 @@
 				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = NO;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 3.2.9;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_MODEL_TUNING = G5;
-				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_OPTIMIZATION_LEVEL = 3;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					NO_OMP,
 					NO_METIS,
@@ -664,9 +675,10 @@
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = NO;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CURRENT_PROJECT_VERSION = 3.2.9;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				GCC_MODEL_TUNING = G5;
-				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_OPTIMIZATION_LEVEL = 3;
 				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = NO;
 				GCC_TREAT_INCOMPATIBLE_POINTER_TYPE_WARNINGS_AS_ERRORS = NO;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;

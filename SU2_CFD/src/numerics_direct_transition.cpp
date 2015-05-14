@@ -1,10 +1,17 @@
 /*!
  * \file numerics_direct_transition.cpp
  * \brief This file contains all the convective term discretization.
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.0 "eagle"
+ * \author A. Aranake
+ * \version 3.2.9 "eagle"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ *
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -348,10 +355,10 @@ void CSourcePieceWise_TransLM::ComputeResidual_TransLM(double *val_residual, dou
 	//SU2_CPP2C DECL_LIST END
   
 	/*-- Local intermediate variables --*/
-	double rey_tc, flen, re_v, strain, f_onset1,f_onset2,f_onset3,f_onset,f_turb,tu;
+	double rey_tc, flen, re_v, strain, f_onset1, f_onset2, f_onset3, f_onset, f_turb, tu;
   
 	double prod, des;
-	double f_lambda, re_theta = 0.0, rey, re_theta_lim, r_t, mach;
+	double f_lambda, re_theta = 0.0, re_theta_lim, r_t;
 	double Velocity_Mag = 0.0, du_ds, theta, lambda, time_scale, var1, f_theta;
 	double f_reattach;
 	double dU_dx, dU_dy, dU_dz = 0.0;
@@ -375,13 +382,13 @@ void CSourcePieceWise_TransLM::ComputeResidual_TransLM(double *val_residual, dou
 	//SU2_CPP2C COMMENT END
   
   /* -- These lines included just so Tapenade doesn't complain --*/
-  rey  = 0.0;
-  mach = 0.0;
-  tu   = 0.0;
+//  rey  = 0.0;
+//  mach = 0.0;
+//  tu   = 0.0;
 	//SU2_CPP2C COMMENT START
   /* -- These lines must be manually reinserted into the differentiated routine! --*/
-  rey  = config->GetReynolds();
-  mach = config->GetMach();
+//  rey  = config->GetReynolds();
+//  mach = config->GetMach();
 	tu   = config->GetTurbulenceIntensity_FreeStream();
 	//SU2_CPP2C COMMENT END
   
@@ -464,7 +471,7 @@ void CSourcePieceWise_TransLM::ComputeResidual_TransLM(double *val_residual, dou
 			theta  = re_theta * Laminar_Viscosity_i / (U_i[0]*Velocity_Mag);
       
 			lambda = U_i[0]*theta*theta*du_ds / Laminar_Viscosity_i;
-			lambda = min(max(-0.1,lambda),0.1);
+			lambda = min(max(-0.1, lambda),0.1);
       
 			if (lambda<=0.0) {
 				f_lambda = 1. - (-12.986*lambda - 123.66*lambda*lambda -
@@ -517,7 +524,7 @@ void CSourcePieceWise_TransLM::ComputeResidual_TransLM(double *val_residual, dou
     
 		/*-- Calculate term for separation correction --*/
 		f_reattach = exp(-pow(0.05*r_t,4));
-		gamma_sep = s1*max(0.,re_v/(3.235*rey_tc)-1.)*f_reattach;
+		gamma_sep = s1*max(0., re_v/(3.235*rey_tc)-1.)*f_reattach;
 		gamma_sep = min(gamma_sep,2.0)*f_theta;
     
 		/*--- Implicit part ---*/
@@ -544,7 +551,7 @@ void CSourcePieceWise_TransLM::CSourcePieceWise_TransLM__ComputeResidual_TransLM
   double rey_tcd, f_onset1d, f_onset2d, f_onsetd;
   double prod, des;
   double prodd, desd;
-  double f_lambda, re_theta = 0.0, rey, re_theta_lim, r_t, mach;
+  double f_lambda, re_theta = 0.0, re_theta_lim, r_t;
   double Velocity_Mag = 0.0, du_ds, theta, lambda, time_scale,
   var1, f_theta;
   double var1d, f_thetad;
@@ -564,11 +571,11 @@ void CSourcePieceWise_TransLM::CSourcePieceWise_TransLM__ComputeResidual_TransLM
   val_residuald[1] = 0.0;
   val_residual[1] = 0.0;
   /* -- These lines included just so Tapenade doesn't complain --*/
-  rey = 0.0;
-  mach = 0.0;
-  tu = 0.0;
-  rey  = config->GetReynolds();
-  mach = config->GetMach();
+//  rey = 0.0;
+//  mach = 0.0;
+//  tu = 0.0;
+//  rey  = config->GetReynolds();
+//  mach = config->GetMach();
   tu   = config->GetTurbulenceIntensity_FreeStream();
   /*--- Compute vorticity and strain (TODO: Update for 3D) ---*/
   Vorticity = fabs(PrimVar_Grad_i[1][1] - PrimVar_Grad_i[2][0]);

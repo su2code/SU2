@@ -2,30 +2,39 @@
 
 ## \file tools.py
 #  \brief mesh functions
-#  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 3.2.0 "eagle"
+#  \author T. Lukaczyk, F. Palacios
+#  \version 3.2.9 "eagle"
 #
-# Stanford University Unstructured (SU2) Code
-# Copyright (C) 2012 Aerospace Design Laboratory
+# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
+#                      Dr. Thomas D. Economon (economon@stanford.edu).
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+#                 Prof. Piero Colonna's group at Delft University of Technology.
+#                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+#                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+#                 Prof. Rafael Palacios' group at Imperial College London.
 #
-# This program is distributed in the hope that it will be useful,
+# Copyright (C) 2012-2015 SU2, the open-source CFD code.
+#
+# SU2 is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
+#
+# SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# Lesser General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU Lesser General Public
+# License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
 # -------------------------------------------------------------------
 #  Imports
 # -------------------------------------------------------------------
 
 import numpy as np
+from itertools import islice
 
 # ---------------------------------------------------------------------- 
 #  Read SU2 Mesh File
@@ -53,22 +62,31 @@ def read(filename,scale=1.0):
 
     # open meshfile
     meshfile = open(filename,'r')
+    
+    # readline helper functin
+    def mesh_readlines(n_lines=1):
+        fileslice = islice(meshfile,n_lines)
+        return list(fileslice)
 
     # scan file until end of file
     keepon = True
     while keepon:
 
         # read line
-        line = meshfile.readline()
-        line = line.replace('\t',' ')
-        line = line.replace('\n',' ')
-        
+        line = mesh_readlines()
+
         # stop if line is empty
         if not line: 
             keepon = False
+            break
+        
+        # fix white space
+        line = line[0]
+        line = line.replace('\t',' ')
+        line = line.replace('\n',' ')
 
         # skip comments
-        elif line[0] == "%":
+        if line[0] == "%":
             pass
 
         # number of dimensions
@@ -79,44 +97,47 @@ def read(filename,scale=1.0):
 
         # elements
         elif "NELEM=" in line:
+            
             # number of elements
             nelem = long( line.split("=")[1].strip() )
             # save to SU2_MESH data
             data['NELEM'] = nelem
             
-            # element data list
-            elem = []
-
+            # only read nelem lines
+            fileslice = islice(meshfile,nelem)
+            
+            # the data pattern
+            pattern = tuple( [int] + [long]*9 )
+            
             # scan next lines for element data
-            for ielem in range(nelem):
-                # read line
-                line = meshfile.readline()
-                # split line, convert to long ints
-                thiselem = map(long, line.split() )
-                # add to element list
-                elem = elem + [thiselem]
-
+            elem = [ 
+                [ t(s) for t,s in zip(pattern,line.split()) ] 
+                for line in fileslice 
+            ]
+            
             # save to SU2_MESH data
             data['ELEM'] = elem
         #: if NELEM
 
         # points
         elif "NPOIN=" in line:
+            
+            # number of points
             npoin = long( line.split("=")[1].strip().split(' ')[0] )
             # save to SU2_MESH data
             data['NPOIN'] = npoin
-
-            # point data list
-            poin = []
             
-            #scan next lines for point data
-            for ipoin in range(npoin):
-                # read line
-                line = meshfile.readline()
-                # split line, convert to long ints
-                thispoin = [float(x)*scale for x in line.split() ]
-                # add to point list
-                poin = poin + [thispoin]
+            # only read npoin lines
+            fileslice = islice(meshfile,npoin)
+            
+            # the data pattern
+            pattern = tuple( [float]*3 ) # + [long] )
+            
+            # scan next lines for element data
+            poin = [ 
+                [ t(s) for t,s in zip(pattern,line.split()) ] 
+                for line in fileslice 
+            ]            
 
             # save to SU2_MESH data
             data['POIN'] = poin
@@ -139,26 +160,31 @@ def read(filename,scale=1.0):
             thismark['TAG'] = thistag
 
             # read number of marker elements
-            line = meshfile.readline()
+            line = mesh_readlines()[0]
             if not "MARKER_ELEMS=" in line:
                 raise Exception("Marker Specification Error")
+            
             # convert string to long int
             thisnelem = long( line.split("=")[1].strip() )
+            
             # save to SU2_MARK data
             thismark['NELEM'] = thisnelem
-
-            # marker element data list
-            markelem = []
-            # scan next lines for marker elements
-            for ielem in range(thisnelem):
-                # read line
-                line = meshfile.readline()
-                # split and convert to long ints
-                thiselem = map(long, line.split() )
-                # add to marker element list
-                markelem = markelem + [thiselem]
+            
+            # only read thisnelem lines
+            fileslice = islice(meshfile,thisnelem)
+            
+            # the data pattern
+            pattern = tuple( [int] + [long]*9 )
+            
+            # scan next lines for element data
+            markelem = [ 
+                [ t(s) for t,s in zip(pattern,line.split()) ] 
+                for line in fileslice 
+            ]
+            
             # save to SU2_MARK data
             thismark['ELEM'] = markelem
+            
             # add to marker list
             marks[thismark['TAG']] = thismark
         #:if MARKER_TAG
@@ -250,25 +276,19 @@ def get_markerPoints(meshdata,mark_tags):
         # marker elements
         markelems = this_mark['ELEM']
         # list for marker nodes
-        marknodes = []
-        # pull all marker nodes, there will be duplicates
-        for row in markelems:
-            # ignore first marker element entry (element type)
-            marknodes = marknodes + row[1:]
-        # find unique node points
-        marknodes = dict(map(lambda i:(i,1),marknodes)).keys()
+        marknodes = [ row[1:] for row in markelems ]
         # add to mesh node list
-        markernodes  = markernodes  + marknodes
+        markernodes  = markernodes + marknodes
     #: for each marker
 
-    # one more unique check
-    markernodes = dict(map(lambda i:(i,1),markernodes)).keys()
+    # unique check
+    #markernodes = dict(map(lambda i:(i,1),markernodes)).keys()
+    markernodes = np.hstack(markernodes)
+    markernodes = np.unique(markernodes)
+    markernodes = list(markernodes)
 
     # list for marker points
-    markerpoints = []
-    # pull all nodes on markers
-    for inode in markernodes:
-        markerpoints = markerpoints + [ tuple( meshdata['POIN'][inode][0:ndim] ) ]
+    markerpoints = [ meshdata['POIN'][inode][0:ndim] for inode in markernodes ]
 
     return markerpoints, markernodes
 

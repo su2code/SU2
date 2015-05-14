@@ -1,10 +1,19 @@
 /*!
  * \file SU2_CFD.cpp
- * \brief Main file of Computational Fluid Dynamics Code (SU2_CFD).
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.0 "eagle"
+ * \brief Main file of the Computational Fluid Dynamics code
+ * \author F. Palacios, T. Economon
+ * \version 3.2.9 "eagle"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ *
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
+ *
+ * Copyright (C) 2012-2015 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,25 +31,6 @@
 
 #include "../include/SU2_CFD.hpp"
 
-/*
- * Pseudocode:
- *  Initialize data structures
- *  Parse the input file and load settings
- *  Load in the geometry from the mesh
- *  Set up the solver structure for the particular PDE
- *  Set up the time integration scheme
- *  Set up the numerical methods for spatial integration
- *  Instantiate the output class
- *
- *  for (ExtIter = 0; ExtIter < MaxIter; ExtIter++) {
- *    Make an iteration (problem dependent)
- *    Check Convergence of the flow solution (problem dependent)
- *    Write convergence history
- *  }
- *  Write solution files
- *  Deallocate memory
- */
-
 using namespace std;
 
 int main(int argc, char *argv[]) {
@@ -49,14 +39,18 @@ int main(int argc, char *argv[]) {
   double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
   unsigned long ExtIter = 0;
   unsigned short iMesh, iZone, iSol, nZone, nDim;
+  char config_file_name[MAX_STRING_SIZE];
+  char runtime_file_name[MAX_STRING_SIZE];
   ofstream ConvHist_file;
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
   
+  /*--- MPI initialization, and buffer setting ---*/
   
 #ifdef HAVE_MPI
-  /*--- MPI initialization, and buffer setting ---*/
-  MPI_Init(&argc,&argv);
+  int *bptr, bl;
+  MPI_Init(&argc, &argv);
+  MPI_Buffer_attach( malloc(BUFSIZE), BUFSIZE );
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
@@ -79,17 +73,15 @@ int main(int argc, char *argv[]) {
   /*--- Load in the number of zones and spatial dimensions in the mesh file (If no config
    file is specified, default.cfg is used) ---*/
   
-  char config_file_name[200];
-  if (argc == 2){ strcpy(config_file_name,argv[1]); }
-  else{ strcpy(config_file_name, "default.cfg"); }
+  if (argc == 2) { strcpy(config_file_name, argv[1]); }
+  else { strcpy(config_file_name, "default.cfg"); }
   
-  /*--- Read the name and format of the input mesh file ---*/
+  /*--- Read the name and format of the input mesh file to get from the mesh
+   file the number of zones and dimensions from the numerical grid (required
+   for variables allocation)  ---*/
   
   CConfig *config = NULL;
-  config = new CConfig(config_file_name);
-  
-  /*--- Get the number of zones and dimensions from the numerical grid
-   (required for variables allocation) ---*/
+  config = new CConfig(config_file_name, SU2_CFD);
   
   nZone = GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
   nDim  = GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
@@ -100,9 +92,9 @@ int main(int argc, char *argv[]) {
   integration_container = new CIntegration**[nZone];
   numerics_container    = new CNumerics****[nZone];
   config_container      = new CConfig*[nZone];
-  geometry_container    = new CGeometry **[nZone];
-  surface_movement      = new CSurfaceMovement *[nZone];
-  grid_movement         = new CVolumetricMovement *[nZone];
+  geometry_container    = new CGeometry**[nZone];
+  surface_movement      = new CSurfaceMovement*[nZone];
+  grid_movement         = new CVolumetricMovement*[nZone];
   FFDBox                = new CFreeFormDefBox**[nZone];
   
   for (iZone = 0; iZone < nZone; iZone++) {
@@ -122,23 +114,43 @@ int main(int argc, char *argv[]) {
   
   for (iZone = 0; iZone < nZone; iZone++) {
     
-      /*--- Definition of the configuration option class for all zones. In this
+    /*--- Definition of the configuration option class for all zones. In this
      constructor, the input configuration file is parsed and all options are
      read and stored. ---*/
     
     config_container[iZone] = new CConfig(config_file_name, SU2_CFD, iZone, nZone, nDim, VERB_HIGH);
     
-#ifdef HAVE_MPI
-    /*--- Change the name of the input-output files for a parallel computation ---*/
-    config_container[iZone]->SetFileNameDomain(rank+1);
-#endif
-        
-    /*--- Definition of the geometry class. Within this constructor, the
-     mesh file is read and the primal grid is stored (node coords, connectivity,
-     & boundary markers. MESH_0 is the index of the finest mesh. ---*/
     
-    geometry_container[iZone] = new CGeometry *[config_container[iZone]->GetMGLevels()+1];
-    geometry_container[iZone][MESH_0] = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
+    /*--- Definition of the geometry class to store the primal grid in the
+     partitioning process. ---*/
+    
+    CGeometry *geometry_aux = NULL;
+    
+    /*--- All ranks process the grid and call ParMETIS for partitioning ---*/
+    
+    geometry_aux = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
+    
+    /*--- Color the initial grid and set the send-receive domains (ParMETIS) ---*/
+    
+    geometry_aux->SetColorGrid_Parallel(config_container[iZone]);
+    
+    /*--- Allocate the memory of the current domain, and divide the grid 
+     between the ranks. ---*/
+    
+    geometry_container[iZone] = new CGeometry *[config_container[iZone]->GetnMGLevels()+1];
+    geometry_container[iZone][MESH_0] = new CPhysicalGeometry(geometry_aux, config_container[iZone], 1);
+    
+    /*--- Deallocate the memory of geometry_aux ---*/
+    
+    delete geometry_aux;
+    
+    /*--- Add the Send/Receive boundaries ---*/
+    
+    geometry_container[iZone][MESH_0]->SetSendReceive(config_container[iZone]);
+    
+    /*--- Add the Send/Receive boundaries ---*/
+    
+    geometry_container[iZone][MESH_0]->SetBoundaries(config_container[iZone]);
     
   }
   
@@ -151,11 +163,6 @@ int main(int argc, char *argv[]) {
    computed, and the multigrid levels are created using an agglomeration procedure. ---*/
   
   Geometrical_Preprocessing(geometry_container, config_container, nZone);
-  
-#ifdef HAVE_MPI
-  /*--- Synchronization point after the geometrical definition subroutine ---*/
-MPI_Barrier(MPI_COMM_WORLD);
-#endif
   
   if (rank == MASTER_NODE)
     cout << endl <<"------------------------- Solver Preprocessing --------------------------" << endl;
@@ -175,7 +182,7 @@ MPI_Barrier(MPI_COMM_WORLD);
     
     /*--- Set the near-field, interface and actuator disk boundary conditions, if necessary. ---*/
     
-    for (iMesh = 0; iMesh <= config_container[iZone]->GetMGLevels(); iMesh++) {
+    for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++) {
       geometry_container[iZone][iMesh]->MatchNearField(config_container[iZone]);
       geometry_container[iZone][iMesh]->MatchInterface(config_container[iZone]);
       geometry_container[iZone][iMesh]->MatchActuator_Disk(config_container[iZone]);
@@ -188,22 +195,17 @@ MPI_Barrier(MPI_COMM_WORLD);
      fluxes, loops over the nodes to compute source terms, and routines for
      imposing various boundary condition type for the PDE. ---*/
     
-    solver_container[iZone] = new CSolver** [config_container[iZone]->GetMGLevels()+1];
-    for (iMesh = 0; iMesh <= config_container[iZone]->GetMGLevels(); iMesh++)
+    solver_container[iZone] = new CSolver** [config_container[iZone]->GetnMGLevels()+1];
+    for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++)
       solver_container[iZone][iMesh] = NULL;
     
-    for (iMesh = 0; iMesh <= config_container[iZone]->GetMGLevels(); iMesh++) {
+    for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++) {
       solver_container[iZone][iMesh] = new CSolver* [MAX_SOLS];
       for (iSol = 0; iSol < MAX_SOLS; iSol++)
         solver_container[iZone][iMesh][iSol] = NULL;
     }
     Solver_Preprocessing(solver_container[iZone], geometry_container[iZone],
                          config_container[iZone], iZone);
-    
-#ifdef HAVE_MPI
-    /*--- Synchronization point after the solution preprocessing subroutine ---*/
-    MPI_Barrier(MPI_COMM_WORLD);
-#endif
     
     if (rank == MASTER_NODE)
       cout << endl <<"----------------- Integration and Numerics Preprocessing ----------------" << endl;
@@ -220,11 +222,6 @@ MPI_Barrier(MPI_COMM_WORLD);
     
     if (rank == MASTER_NODE) cout << "Integration Preprocessing." << endl;
     
-#ifdef HAVE_MPI
-    /*--- Synchronization point after the integration definition subroutine ---*/
-    MPI_Barrier(MPI_COMM_WORLD);
-#endif
-    
     /*--- Definition of the numerical method class:
      numerics_container[#ZONES][#MG_GRIDS][#EQ_SYSTEMS][#EQ_TERMS].
      The numerics class contains the implementation of the numerical methods for
@@ -232,16 +229,11 @@ MPI_Barrier(MPI_COMM_WORLD);
      data structure (centered, upwind, galerkin), as well as any source terms
      (piecewise constant reconstruction) evaluated in each dual mesh volume. ---*/
     
-    numerics_container[iZone] = new CNumerics***[config_container[iZone]->GetMGLevels()+1];
+    numerics_container[iZone] = new CNumerics***[config_container[iZone]->GetnMGLevels()+1];
     Numerics_Preprocessing(numerics_container[iZone], solver_container[iZone],
                            geometry_container[iZone], config_container[iZone], iZone);
     
     if (rank == MASTER_NODE) cout << "Numerics Preprocessing." << endl;
-    
-#ifdef HAVE_MPI
-    /*--- Synchronization point after the solver definition subroutine ---*/
-    MPI_Barrier(MPI_COMM_WORLD);
-#endif
     
     /*--- Instantiate the geometry movement classes for the solution of unsteady
      flows on dynamic meshes, including rigid mesh transformations, dynamically
@@ -287,7 +279,7 @@ MPI_Barrier(MPI_COMM_WORLD);
   /*--- Open the convergence history file ---*/
   
   if (rank == MASTER_NODE)
-    output->SetHistory_Header(&ConvHist_file, config_container[ZONE_0]);
+    output->SetConvHistory_Header(&ConvHist_file, config_container[ZONE_0]);
   
   /*--- Check for an unsteady restart. Update ExtIter if necessary. ---*/
   if (config_container[ZONE_0]->GetWrt_Unsteady() && config_container[ZONE_0]->GetRestart())
@@ -303,20 +295,14 @@ MPI_Barrier(MPI_COMM_WORLD);
 #ifndef HAVE_MPI
   StartTime = double(clock())/double(CLOCKS_PER_SEC);
 #else
-  MPI_Barrier(MPI_COMM_WORLD);
   StartTime = MPI_Wtime();
 #endif
   
   while (ExtIter < config_container[ZONE_0]->GetnExtIter()) {
     
-    /*--- Set a timer for each iteration. Store the current iteration and
-     update  the value of the CFL number (if there is CFL ramping specified)
-     in the config class. ---*/
+    /*--- Set the value of the external iteration. ---*/
     
-    for (iZone = 0; iZone < nZone; iZone++) {
-      config_container[iZone]->SetExtIter(ExtIter);
-      config_container[iZone]->UpdateCFL(ExtIter);
-    }
+    config_container[ZONE_0]->SetExtIter(ExtIter);
     
     /*--- Read the target pressure ---*/
     
@@ -325,7 +311,7 @@ MPI_Barrier(MPI_COMM_WORLD);
                                   geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
     
     /*--- Read the target heat flux ---*/
-
+    
     if (config_container[ZONE_0]->GetInvDesign_HeatFlux() == YES)
       output->SetHeat_InverseDesign(solver_container[ZONE_0][MESH_0][FLOW_SOL],
                                     geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
@@ -397,24 +383,34 @@ MPI_Barrier(MPI_COMM_WORLD);
 #ifndef HAVE_MPI
     StopTime = double(clock())/double(CLOCKS_PER_SEC);
 #else
-    MPI_Barrier(MPI_COMM_WORLD);
     StopTime = MPI_Wtime();
 #endif
     
     UsedTime = (StopTime - StartTime);
     
-    /*--- For specific applications, evaluate and plot the equivalent area or flow rate. ---*/
+    /*--- For specific applications, evaluate and plot the equivalent area. ---*/
     
-    if ((config_container[ZONE_0]->GetKind_Solver() == EULER) &&
-        (config_container[ZONE_0]->GetEquivArea() == YES)) {
+    if (config_container[ZONE_0]->GetEquivArea() == YES) {
       output->SetEquivalentArea(solver_container[ZONE_0][MESH_0][FLOW_SOL],
                                 geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
     }
     
+    /*--- Check if there is any change in the runtime parameters ---*/
+    
+    CConfig *runtime = NULL;
+    strcpy(runtime_file_name, "runtime.dat");
+    runtime = new CConfig(runtime_file_name, config_container[ZONE_0]);
+    
     /*--- Update the convergence history file (serial and parallel computations). ---*/
     
-    output->SetConvergence_History(&ConvHist_file, geometry_container, solver_container,
-                                   config_container, integration_container, false, UsedTime, ZONE_0);
+    output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container,
+                                config_container, integration_container, false, UsedTime, ZONE_0);
+    
+    /*--- Evaluate the new CFL number (adaptive). ---*/
+    
+    if (config_container[ZONE_0]->GetCFL_Adapt() == YES) {
+      output->SetCFL_Number(solver_container, config_container, ZONE_0);
+    }
     
     /*--- Check whether the current simulation has reached the specified
      convergence criteria, and set StopCalc to true, if so. ---*/
@@ -440,40 +436,52 @@ MPI_Barrier(MPI_COMM_WORLD);
      after the current iteration, and if so, execute the output file writing
      routines. ---*/
     
-    if ((ExtIter+1 == config_container[ZONE_0]->GetnExtIter()) ||
+    if ((ExtIter+1 >= config_container[ZONE_0]->GetnExtIter()) ||
+        
         ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq() == 0) && (ExtIter != 0) &&
          !((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
            (config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND))) ||
+        
         (StopCalc) ||
-        (((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-          (config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) &&
-         ((ExtIter == 0) || (ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0)))) {
+        
+        ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) &&
+         ((ExtIter == 0) || (ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))) ||
+        
+        ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) &&
+         ((ExtIter == 0) || ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0) ||
+                             ((ExtIter-1) % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))))) {
           
           /*--- Low-fidelity simulations (using a coarser multigrid level
            approximation to the solution) require an interpolation back to the
            finest grid. ---*/
           
           if (config_container[ZONE_0]->GetLowFidelitySim()) {
-            integration_container[ZONE_0][FLOW_SOL]->SetProlongated_Solution(RUNTIME_FLOW_SYS, solver_container[ZONE_0][MESH_0], solver_container[ZONE_0][MESH_1], geometry_container[ZONE_0][MESH_0], geometry_container[ZONE_0][MESH_1], config_container[ZONE_0]);
-            integration_container[ZONE_0][FLOW_SOL]->Smooth_Solution(RUNTIME_FLOW_SYS, solver_container[ZONE_0][MESH_0], geometry_container[ZONE_0][MESH_0], 3, 1.25, config_container[ZONE_0]);
+            integration_container[ZONE_0][FLOW_SOL]->SetProlongated_Solution(RUNTIME_FLOW_SYS, solver_container[ZONE_0][MESH_0][FLOW_SOL], solver_container[ZONE_0][MESH_1][FLOW_SOL], geometry_container[ZONE_0][MESH_0], geometry_container[ZONE_0][MESH_1], config_container[ZONE_0]);
+            integration_container[ZONE_0][FLOW_SOL]->Smooth_Solution(RUNTIME_FLOW_SYS, solver_container[ZONE_0][MESH_0][FLOW_SOL], geometry_container[ZONE_0][MESH_0], 3, 1.25, config_container[ZONE_0]);
             solver_container[ZONE_0][MESH_0][config_container[ZONE_0]->GetContainerPosition(RUNTIME_FLOW_SYS)]->Set_MPI_Solution(geometry_container[ZONE_0][MESH_0], config_container[ZONE_0]);
             solver_container[ZONE_0][MESH_0][config_container[ZONE_0]->GetContainerPosition(RUNTIME_FLOW_SYS)]->Preprocessing(geometry_container[ZONE_0][MESH_0], solver_container[ZONE_0][MESH_0], config_container[ZONE_0], MESH_0, 0, RUNTIME_FLOW_SYS, false);
           }
+          
+          if (rank == MASTER_NODE) cout << endl << "-------------------------- File Output Summary --------------------------";
           
           /*--- Execute the routine for writing restart, volume solution,
            surface solution, and surface comma-separated value files. ---*/
           
           output->SetResult_Files(solver_container, geometry_container, config_container, ExtIter, nZone);
           
+          /*--- Output a file with the forces breakdown. ---*/
+          
+          output->SetForces_Breakdown(geometry_container, solver_container,
+                                      config_container, integration_container, ZONE_0);
+          
           /*--- Compute the forces at different sections. ---*/
-          if (config_container[ZONE_0]->GetPlot_Section_Forces())
+          
+          if (config_container[ZONE_0]->GetPlot_Section_Forces()) {
             output->SetForceSections(solver_container[ZONE_0][MESH_0][FLOW_SOL],
                                      geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
+          }
           
-//          /*--- Compute 1D output. ---*/
-//          if (config->GetWrt_1D_Output())
-//            output->OneDimensionalOutput(solver_container[ZONE_0][MESH_0][FLOW_SOL],
-//                                         geometry_container[ZONE_0][MESH_0], config_container[ZONE_0]);
+          if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl << endl;
           
         }
     
@@ -486,37 +494,38 @@ MPI_Barrier(MPI_COMM_WORLD);
   }
   
   /*--- Output some information to the console. ---*/
-  if (rank == MASTER_NODE) {
-    cout << endl;
-    
-  /*--- Print out the number of non-physical points and reconstructions ---*/
-  if (config_container[ZONE_0]->GetNonphysical_Points() > 0)
-    cout << "Warning: there are " << config_container[ZONE_0]->GetNonphysical_Points() << " non-physical points in the solution." << endl;
-  if (config_container[ZONE_0]->GetNonphysical_Reconstr() > 0)
-    cout << "Warning: " << config_container[ZONE_0]->GetNonphysical_Reconstr() << " reconstructed states for upwinding are non-physical." << endl;
   
-  /*--- Close the convergence history file. ---*/
+  if (rank == MASTER_NODE) {
+    
+    /*--- Print out the number of non-physical points and reconstructions ---*/
+    
+    if (config_container[ZONE_0]->GetNonphysical_Points() > 0)
+      cout << "Warning: there are " << config_container[ZONE_0]->GetNonphysical_Points() << " non-physical points in the solution." << endl;
+    if (config_container[ZONE_0]->GetNonphysical_Reconstr() > 0)
+      cout << "Warning: " << config_container[ZONE_0]->GetNonphysical_Reconstr() << " reconstructed states for upwinding are non-physical." << endl;
+    
+    /*--- Close the convergence history file. ---*/
+    
     ConvHist_file.close();
     cout << "History file, closed." << endl;
   }
   
-//  /*--- Deallocate config container ---*/
-//  
-//  for (iZone = 0; iZone < nZone; iZone++) {
-//    if (config_container[iZone] != NULL) {
-//      delete config_container[iZone];
-//    }
-//  }
-//  if (config_container != NULL) delete[] config_container;
-
-
+  //  /*--- Deallocate config container ---*/
+  //
+  //  for (iZone = 0; iZone < nZone; iZone++) {
+  //    if (config_container[iZone] != NULL) {
+  //      delete config_container[iZone];
+  //    }
+  //  }
+  //  if (config_container != NULL) delete[] config_container;
+  
+  
   /*--- Synchronization point after a single solver iteration. Compute the
    wall clock time required. ---*/
   
 #ifndef HAVE_MPI
   StopTime = double(clock())/double(CLOCKS_PER_SEC);
 #else
-  MPI_Barrier(MPI_COMM_WORLD);
   StopTime = MPI_Wtime();
 #endif
   
@@ -535,9 +544,10 @@ MPI_Barrier(MPI_COMM_WORLD);
   
 #ifdef HAVE_MPI
   /*--- Finalize MPI parallelization ---*/
-  MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Buffer_detach(&bptr, &bl);
   MPI_Finalize();
 #endif
   
   return EXIT_SUCCESS;
+  
 }

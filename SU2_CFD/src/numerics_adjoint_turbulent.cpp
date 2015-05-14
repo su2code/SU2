@@ -1,10 +1,17 @@
 /*!
  * \file numerics_adjoint_turbulent.cpp
  * \brief This file contains all the convective term discretization.
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.0 "eagle"
+ * \author F. Palacios, A. Bueno
+ * \version 3.2.9 "eagle"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ *
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -379,7 +386,9 @@ CSourcePieceWise_AdjTurb::~CSourcePieceWise_AdjTurb(void) {
 
 void CSourcePieceWise_AdjTurb::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
 	unsigned short iDim, jDim;
+  
 	bool implicit = (config->GetKind_TimeIntScheme_AdjTurb() == EULER_IMPLICIT);
+  double Prandtl_Turb = config->GetPrandtl_Turb();
   
 	val_residual[0] = 0.0;
 	if (implicit)
@@ -427,7 +436,7 @@ void CSourcePieceWise_AdjTurb::ComputeResidual(double *val_residual, double **va
 		fv1 = Ji_3/(Ji_3+cv1_3);
 		one_o_oneplusJifv1 = 1.0/(1.0+Ji*fv1);
 		fv2 = 1.0 - Ji*one_o_oneplusJifv1;
-		Shat = max(Vorticity + TurbVar_i[0]*fv2/(k2*dist_0_2),TURB_EPS);
+		Shat = max(Vorticity + TurbVar_i[0]*fv2/(k2*dist_0_2), TURB_EPS);
     
 		//		r = TurbVar_i[0]/(Shat*k2*dist_0_2);
 		r = min(TurbVar_i[0]/(Shat*k2*dist_0_2),10.);
@@ -485,7 +494,7 @@ void CSourcePieceWise_AdjTurb::ComputeResidual(double *val_residual, double **va
 				vel_tau_gradpsi5 += Velocity[iDim]*tau[iDim][jDim]*PsiVar_Grad_i[nVar-1][jDim];
 			}
 		}
-		val_residual[0] += (tau_gradphi + vel_tau_gradpsi5 + Cp/PRANDTL_TURB*gradT_gradpsi5)*dEddyVisc_nuhat*Volume;
+		val_residual[0] += (tau_gradphi + vel_tau_gradpsi5 + Cp/Prandtl_Turb*gradT_gradpsi5)*dEddyVisc_nuhat*Volume;
     
 	}
 }

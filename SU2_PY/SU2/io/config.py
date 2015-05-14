@@ -1,23 +1,33 @@
+#!/usr/bin/env python
+
 ## \file config.py
 #  \brief python package for config 
-#  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 3.2.0 "eagle"
+#  \author T. Lukaczyk, F. Palacios
+#  \version 3.2.9 "eagle"
 #
-# Stanford University Unstructured (SU2) Code
-# Copyright (C) 2012 Aerospace Design Laboratory
+# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
+#                      Dr. Thomas D. Economon (economon@stanford.edu).
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+#                 Prof. Piero Colonna's group at Delft University of Technology.
+#                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+#                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+#                 Prof. Rafael Palacios' group at Imperial College London.
 #
-# This program is distributed in the hope that it will be useful,
+# Copyright (C) 2012-2015 SU2, the open-source CFD code.
+#
+# SU2 is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
+#
+# SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# Lesser General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU Lesser General Public
+# License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
 # ----------------------------------------------------------------------
 #  Imports
@@ -146,17 +156,23 @@ class Config(ordered_bunch):
         if not dv_old: dv_old = [0.0]*n_dv
         assert len(dv_new) == len(dv_old) , 'unexpected design vector length'
         
+        # handle param
+        param_dv = self['DV_PARAM']
+
         # apply scale
         dv_scales = def_dv['SCALE']
         dv_new = [ dv_new[i]*dv_scl for i,dv_scl in enumerate(dv_scales) ]
         dv_old = [ dv_old[i]*dv_scl for i,dv_scl in enumerate(dv_scales) ]
         
         # Change the parameters of the design variables
-        self.update({ 'DV_KIND'      : def_dv['KIND']      ,
-                      'DV_MARKER'    : def_dv['MARKER'][0] ,
-                      'DV_PARAM'     : def_dv['PARAM']     ,
-                      'DV_VALUE_OLD' : dv_old              ,
-                      'DV_VALUE_NEW' : dv_new              })
+
+        self['DV_KIND'] = def_dv['KIND']
+        param_dv['PARAM'] = def_dv['PARAM']
+        param_dv['FFDTAG'] = def_dv['FFDTAG']
+
+        self.update({ 'DV_MARKER'        : def_dv['MARKER'][0] ,
+                      'DV_VALUE_OLD'     : dv_old              ,
+                      'DV_VALUE_NEW'     : dv_new              })
         
     def __eq__(self,konfig):
         return super(Config,self).__eq__(konfig)
@@ -317,20 +333,31 @@ def read_config(filename):
                 info_General = info_General.split(';')
                 # build list of dv params, convert string to float
                 dv_Parameters = []
-                
+                dv_FFDTag     = []
+
                 for this_dvParam in info_General:
                     this_dvParam = this_dvParam.strip('()')
                     this_dvParam = this_dvParam.split(",")
                     
                     # if FFD change the first element to work with numbers and float(x)
                     if data_dict["DV_KIND"][0] in ['FFD_SETTING','FFD_CONTROL_POINT','FFD_DIHEDRAL_ANGLE','FFD_TWIST_ANGLE','FFD_ROTATION','FFD_CAMBER','FFD_THICKNESS','FFD_CONTROL_POINT_2D','FFD_CAMBER_2D','FFD_THICKNESS_2D']:
+                        this_dvFFDTag = this_dvParam[0]
                         this_dvParam[0] = '0'
-                    
+                    else:
+                        this_dvFFDTag = []
+
                     this_dvParam = [ float(x) for x in this_dvParam ]
                     
+                    dv_FFDTag     = dv_FFDTag     + [this_dvFFDTag]
                     dv_Parameters = dv_Parameters + [this_dvParam]
-                data_dict[this_param] = dv_Parameters
-                break     
+            
+            # store in a dictionary
+                dv_Definitions = { 'FFDTAG' : dv_FFDTag     ,
+                                   'PARAM'  : dv_Parameters }
+
+
+                data_dict[this_param] = dv_Definitions
+                break
             
             # comma delimited lists of floats
             if case("DV_VALUE_OLD")    : pass
@@ -346,15 +373,10 @@ def read_config(filename):
             if case("MACH_NUMBER")            : pass
             if case("AoA")                    : pass
             if case("FIN_DIFF_STEP")          : pass
+            if case("CFL_NUMBER")             : pass
             if case("WRT_SOL_FREQ")           :
                 data_dict[this_param] = float(this_value)
                 break   
-            
-            # boolean parameters
-            if case("DECOMPOSED")             :
-                this_value = this_value.upper()
-                data_dict[this_param] = this_value == "TRUE" or this_value == "1"
-                break 
             
             # int parameters
             if case("NUMBER_PART")            : pass
@@ -493,17 +515,19 @@ def read_config(filename):
         #: for case
         
     #: for line
-    
-    # some defaults
-    if not data_dict.has_key('DECOMPOSED'):
-        data_dict['DECOMPOSED'] = False
-    
+
     #hack - twl
     if not data_dict.has_key('DV_VALUE_NEW'):
         data_dict['DV_VALUE_NEW'] = [0]
     if not data_dict.has_key('DV_VALUE_OLD'):
         data_dict['DV_VALUE_OLD'] = [0]
-
+    if not data_dict.has_key('OPT_ITERATIONS'):
+        data_dict['OPT_ITERATIONS'] = 100
+    if not data_dict.has_key('OPT_ACCURACY'):
+        data_dict['OPT_ACCURACY'] = 1e-10
+    if not data_dict.has_key('BOUND_DV'):
+        data_dict['BOUND_DV'] = 1e10
+    
     return data_dict
     
 #: def read_config()
@@ -594,41 +618,31 @@ def write_config(filename,param_dict):
             
             # semicolon delimited lists of comma delimited lists
             if case("DV_PARAM") :
-              
-                if 'DEFINITION_DV' in param_dict:
-                    new_value_ = param_dict["DEFINITION_DV"]
+
+                assert isinstance(new_value['PARAM'],list) , 'incorrect specification of DV_PARAM'
+                if not isinstance(new_value['PARAM'][0],list): new_value = [ new_value ]
                 
-                assert isinstance(new_value,list) , 'incorrect specification of DV_PARAM'
-                if not isinstance(new_value[0],list): new_value = [ new_value ]
-                
-                for i_value in range(len(new_value)):
+                for i_value in range(len(new_value['PARAM'])):
+
                     output_file.write("( ")
-                    this_list = new_value[i_value]
-                    n_lists = len(new_value[i_value])
+                    this_param_list = new_value['PARAM'][i_value]
+                    this_ffd_list = new_value['FFDTAG'][i_value]
+                    n_lists = len(this_param_list)
                     
-                    if 'DEFINITION_DV' in param_dict:
-                       this_kind = new_value_['KIND'][i_value]
-                       # Copy the FFD tag if there is information
-                       if this_kind in ['FFD_SETTING','FFD_CONTROL_POINT','FFD_DIHEDRAL_ANGLE','FFD_TWIST_ANGLE','FFD_ROTATION','FFD_CAMBER','FFD_THICKNESS','FFD_CONTROL_POINT_2D','FFD_CAMBER_2D','FFD_THICKNESS_2D']:
-                           output_file.write("%s, " % new_value_['FFDTAG'][i_value])
-                           for j_value in range(1,n_lists):
-                               output_file.write("%s" % this_list[j_value])
-                               if j_value+1 < n_lists:
-                                   output_file.write(", ")
-                       # No FFD design variable
-                       else:
-                           for j_value in range(n_lists):
-                               output_file.write("%s" % this_list[j_value])
-                               if j_value+1 < n_lists:
-                                  output_file.write(", ")
+                    if this_ffd_list != []:
+                      output_file.write("%s, " % this_ffd_list)
+                      for j_value in range(1,n_lists):
+                        output_file.write("%s" % this_param_list[j_value])
+                        if j_value+1 < n_lists:
+                          output_file.write(", ")
                     else:
-                        for j_value in range(n_lists):
-                            output_file.write("%s" % this_list[j_value])
-                            if j_value+1 < n_lists:
-                                output_file.write(", ")
-      
+                      for j_value in range(n_lists):
+                        output_file.write("%s" % this_param_list[j_value])
+                        if j_value+1 < n_lists:
+                          output_file.write(", ")
+
                     output_file.write(") ")
-                    if i_value+1 < len(new_value):
+                    if i_value+1 < len(new_value['PARAM']):
                         output_file.write("; ")
                 break
             
@@ -641,13 +655,7 @@ def write_config(filename,param_dict):
             if case("EXT_ITER")               :
                 output_file.write("%i" % new_value)
                 break
-            
-            # boolean parameters
-            if case("DECOMPOSED")             :
-                new_value = str(new_value).upper()
-                output_file.write(new_value)
-                break             
-            
+                        
             if case("DEFINITION_DV") :
                 n_dv = len(new_value['KIND'])
                 if not n_dv:

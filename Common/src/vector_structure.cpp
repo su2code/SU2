@@ -1,10 +1,17 @@
 /*!
  * \file vector_structure.cpp
  * \brief Main classes required for solving linear systems of equations
- * \author Current Development: Stanford University.
- * \version 3.2.0 "eagle"
+ * \author F. Palacios, J. Hicken
+ * \version 3.2.9 "eagle"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ *
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -36,7 +43,7 @@ CSysVector::CSysVector(const unsigned long & size, const double & val) {
   
   /*--- Check for invalid size, then allocate memory and initialize values ---*/
   if ( (nElm <= 0) || (nElm >= UINT_MAX) ) {
-    cerr << "CSysVector::CSysVector(unsigned int,double): "
+    cerr << "CSysVector::CSysVector(unsigned int, double): "
     << "invalid input: size = " << size << endl;
     throw(-1);
   }
@@ -46,8 +53,6 @@ CSysVector::CSysVector(const unsigned long & size, const double & val) {
     vec_val[i] = val;
   
 #ifdef HAVE_MPI
-  int myrank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
   unsigned long nElmLocal = (unsigned long)nElm;
   MPI_Allreduce(&nElmLocal, &nElmGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
@@ -63,7 +68,7 @@ CSysVector::CSysVector(const unsigned long & numBlk, const unsigned long & numBl
   
   /*--- Check for invalid input, then allocate memory and initialize values ---*/
   if ( (nElm <= 0) || (nElm >= ULONG_MAX) ) {
-    cerr << "CSysVector::CSysVector(unsigned int,unsigned int,double): "
+    cerr << "CSysVector::CSysVector(unsigned int, unsigned int, double): "
     << "invalid input: numBlk, numVar = " << numBlk << "," << numVar << endl;
     throw(-1);
   }
@@ -93,7 +98,6 @@ CSysVector::CSysVector(const CSysVector & u) {
     vec_val[i] = u.vec_val[i];
   
 #ifdef HAVE_MPI
-  myrank = u.myrank;
   nElmGlobal = u.nElmGlobal;
 #endif
   
@@ -134,7 +138,7 @@ CSysVector::CSysVector(const unsigned long & numBlk, const unsigned long & numBl
   
   /*--- check for invalid input, then allocate memory and initialize values ---*/
   if ( (nElm <= 0) || (nElm >= ULONG_MAX) ) {
-    cerr << "CSysVector::CSysVector(unsigned int,unsigned int,double*): "
+    cerr << "CSysVector::CSysVector(unsigned int, unsigned int, double*): "
     << "invalid input: numBlk, numVar = " << numBlk << "," << numVar << endl;
     throw(-1);
   }
@@ -144,8 +148,6 @@ CSysVector::CSysVector(const unsigned long & numBlk, const unsigned long & numBl
     vec_val[i] = u_array[i];
 
 #ifdef HAVE_MPI
-  int myrank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
   unsigned long nElmLocal = (unsigned long)nElm;
   MPI_Allreduce(&nElmLocal, &nElmGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
@@ -154,14 +156,11 @@ CSysVector::CSysVector(const unsigned long & numBlk, const unsigned long & numBl
 
 CSysVector::~CSysVector() {
   delete [] vec_val;
-  nElm = -1;
-	nElmDomain = -1;
-  nBlk = -1;
-  nBlkDomain = -1;
-  nVar = -1;
-#ifdef HAVE_MPI
-  myrank = -1;
-#endif
+  
+  nElm = 0; nElmDomain = 0;
+  nBlk = 0; nBlkDomain = 0;
+  nVar = 0;
+  
 }
 
 void CSysVector::Initialize(const unsigned long & numBlk, const unsigned long & numBlkDomain, const unsigned short & numVar, const double & val) {
@@ -172,7 +171,7 @@ void CSysVector::Initialize(const unsigned long & numBlk, const unsigned long & 
   
   /*--- Check for invalid input, then allocate memory and initialize values ---*/
   if ( (nElm <= 0) || (nElm >= ULONG_MAX) ) {
-    cerr << "CSysVector::CSysVector(unsigned int,unsigned int,double): "
+    cerr << "CSysVector::CSysVector(unsigned int, unsigned int, double): "
     << "invalid input: numBlk, numVar = " << numBlk << "," << numVar << endl;
     throw(-1);
   }
@@ -182,8 +181,6 @@ void CSysVector::Initialize(const unsigned long & numBlk, const unsigned long & 
     vec_val[i] = val;
   
 #ifdef HAVE_MPI
-  int myrank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
   unsigned long nElmLocal = (unsigned long)nElm;
   MPI_Allreduce(&nElmLocal, &nElmGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
@@ -238,7 +235,6 @@ CSysVector & CSysVector::operator=(const CSysVector & u) {
     vec_val[i] = u.vec_val[i];
   
 #ifdef HAVE_MPI
-  myrank = u.myrank;
   nElmGlobal = u.nElmGlobal;
 #endif
   
@@ -335,7 +331,7 @@ CSysVector & CSysVector::operator/=(const double & val) {
 double CSysVector::norm() const {
   
   /*--- just call dotProd on this*, then sqrt ---*/
-  double val = dotProd(*this,*this);
+  double val = dotProd(*this, *this);
   if (val < 0.0) {
     cerr << "CSysVector::norm(): " << "inner product of CSysVector is negative";
     throw(-1);
@@ -398,7 +394,7 @@ double dotProd(const CSysVector & u, const CSysVector & v) {
   
   /*--- check for consistent sizes ---*/
   if (u.nElm != v.nElm) {
-    cerr << "CSysVector friend dotProd(CSysVector,CSysVector): "
+    cerr << "CSysVector friend dotProd(CSysVector, CSysVector): "
     << "CSysVector sizes do not match";
     throw(-1);
   }

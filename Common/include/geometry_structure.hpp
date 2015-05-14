@@ -2,10 +2,17 @@
  * \file geometry_structure.hpp
  * \brief Headers of the main subroutines for creating the geometrical structure.
  *        The subroutines and functions are in the <i>geometry_structure.cpp</i> file.
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.0 "eagle"
+ * \author F. Palacios
+ * \version 3.2.9 "eagle"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ *
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -29,6 +36,11 @@
 #ifdef HAVE_METIS
   #include "metis.h"
 #endif
+#ifdef HAVE_PARMETIS
+extern "C" {
+#include "parmetis.h"
+}
+#endif
 #ifdef HAVE_CGNS
   #include "cgnslib.h"
 #endif
@@ -51,8 +63,8 @@ using namespace std;
  * \class CGeometry
  * \brief Parent class for defining the geometry of the problem (complete geometry, 
  *        multigrid agglomerated geometry, only boundary geometry, etc..)
- * \author F. Palacios.
- * \version 3.2.0 "eagle"
+ * \author F. Palacios
+ * \version 3.2.9 "eagle"
  */
 class CGeometry {
 protected:
@@ -75,8 +87,8 @@ protected:
   Global_nelem_tetra,          /*!< \brief Total number of tetrahedra in the mesh across all processors. */
   nelem_hexa,           /*!< \brief Number of hexahedra in the mesh. */
   Global_nelem_hexa,           /*!< \brief Total number of hexahedra in the mesh across all processors. */
-  nelem_wedge,          /*!< \brief Number of wedges in the mesh. */
-  Global_nelem_wedge,          /*!< \brief Total number of wedges in the mesh across all processors. */
+  nelem_prism,          /*!< \brief Number of prisms in the mesh. */
+  Global_nelem_prism,          /*!< \brief Total number of prisms in the mesh across all processors. */
   nelem_pyramid,        /*!< \brief Number of pyramids in the mesh. */
   Global_nelem_pyramid,        /*!< \brief Total number of pyramids in the mesh across all processors. */
   nelem_edge_bound,           /*!< \brief Number of edges on the mesh boundaries. */
@@ -88,7 +100,6 @@ protected:
 	unsigned short nDim,	/*!< \brief Number of dimension of the problem. */
 	nZone,								/*!< \brief Number of zones in the problem. */
 	nMarker;				/*!< \brief Number of different markers of the mesh. */
-	bool FinestMGLevel; /*!< \brief Indicates whether the geometry class contains the finest (original) multigrid mesh. */
   unsigned long Max_GlobalPoint;  /*!< \brief Greater global point in the domain local structure. */
 
 public:
@@ -108,7 +119,6 @@ public:
 																			 must be sent [0], and the image point in the periodic bc[1]. */
 	vector<unsigned long> PeriodicElem[MAX_NUMBER_PERIODIC];				/*!< \brief PeriodicElem[Periodic bc] and return the elements that 
 																			 must be sent. */
-	vector<unsigned long> OldBoundaryElems[MAX_NUMBER_MARKER];  /*!< \brief Vector of old boundary elements. */
   
   short *Marker_All_SendRecv;
   
@@ -123,7 +133,20 @@ public:
 	CPrimalGrid*** newBound;            /*!< \brief Boundary vector for new periodic elements (primal grid information). */
 	unsigned long *nNewElem_Bound;			/*!< \brief Number of new periodic elements of the boundary. */
 
-	/*! 
+  //--------Parmetis variables-----
+  unsigned long * adjacency;
+  unsigned long * xadj;
+  unsigned long local_node;
+  unsigned long local_elem;
+  unsigned long xadj_size;
+  unsigned long adjacency_size;
+  unsigned long *starting_node;
+  unsigned long *ending_node;
+  unsigned long *npoint_procs;
+  unsigned long no_of_local_elements;
+  long *Global_to_local_elem;
+  
+	/*!
 	 * \brief Constructor of the class.
 	 */
 	CGeometry(void);
@@ -280,12 +303,6 @@ public:
 	 * \brief Get the number of elements in vtk fortmat.
 	 */
 	unsigned long GetMax_GlobalPoint(void);
-  
-	/*!
-	 * \brief Get boolean for whether this is the finest (original) multigrid mesh level.
-	 * \return <code>TRUE</code> if this is the finest multigrid mesh level; otherwise <code>FALSE</code>.
-	 */
-	bool GetFinestMGLevel(void);
 
 	/*! 
 	 * \brief A virtual function.
@@ -403,12 +420,6 @@ public:
 	 * \param[in] action - Allocate or not the new elements.		 
 	 */
 	virtual void SetBoundControlVolume(CConfig *config, unsigned short action);
-
-	/*! 
-	 * \brief A virtual member.
-	 * \param[in] config_filename - Name of the file where the tecplot information is going to be stored.
-	 */
-	virtual void SetTecPlot(char config_filename[MAX_STRING_SIZE]);
   
   /*!
 	 * \brief A virtual member.
@@ -424,17 +435,38 @@ public:
 	 */
 	virtual void SetBoundTecPlot(char mesh_filename[MAX_STRING_SIZE], bool new_file, CConfig *config);
 
+  /*!
+	 * \brief A virtual member.
+   * \param[in] mesh_filename - Name of the file where the tecplot information is going to be stored.
+   * \param[in] new_file - Boolean to decide if aopen a new file or add to a old one
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	virtual void SetBoundSTL(char mesh_filename[MAX_STRING_SIZE], bool new_file, CConfig *config);
+
+  
 	/*! 
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.		 
 	 */
-	virtual void Check_Orientation(CConfig *config);
+	virtual void Check_IntElem_Orientation(CConfig *config);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	virtual void Check_BoundElem_Orientation(CConfig *config);
 
 	/*! 
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.		 
 	 */
 	virtual void SetColorGrid(CConfig *config);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void SetColorGrid_Parallel(CConfig *config);
   
   /*!
 	 * \brief A virtual member.
@@ -455,7 +487,15 @@ public:
 	 * \param[in] val_domain - Number of domains for parallelization purposes.		 
 	 */
 	virtual void SetSendReceive(CConfig *config);
-
+  
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_domain - Number of domains for parallelization purposes.
+	 */
+	virtual void SetBoundaries(CConfig *config);
+  
 	/*! 
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -513,13 +553,6 @@ public:
 	 */
 	virtual void SetMeshFile(CGeometry *geometry, CConfig *config, string val_mesh_out_filename);
 
-  /*!
-	 * \brief A virtual member.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_mesh_out_filename - Name of the output file.
-	 */
-	virtual void SetMeshFile(CConfig *config, string val_mesh_out_filename, string val_mesh_in_filename);
-
 	/*! 
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.
@@ -575,7 +608,7 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void ComputeAirfoil_Section(double *Plane_P0, double *Plane_Normal, unsigned short iSection,
+	void ComputeAirfoil_Section(double *Plane_P0, double *Plane_Normal,
                                       double MinXCoord, double MaxXCoord, double *FlowVariable,
                                       vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil,
                                       vector<double> &Zcoord_Airfoil, vector<double> &Variable_Airfoil,
@@ -693,9 +726,9 @@ public:
   
   /*!
 	 * \brief A virtual member.
-	 * \returns Total number of wedge elements in a simulation across all processors.
+	 * \returns Total number of prism elements in a simulation across all processors.
 	 */
-	virtual unsigned long GetGlobal_nElemWedg();
+	virtual unsigned long GetGlobal_nElemPris();
   
   /*!
 	 * \brief A virtual member.
@@ -735,9 +768,9 @@ public:
   
   /*!
 	 * \brief A virtual member.
-	 * \return Number of wedge elements.
+	 * \return Number of prism elements.
 	 */
-	virtual unsigned long GetnElemWedg();
+	virtual unsigned long GetnElemPris();
   
   /*!
 	 * \brief A virtual member.
@@ -749,7 +782,7 @@ public:
 	 * \brief Indentify geometrical planes in the mesh
 	 */
 	virtual void SetGeometryPlanes(CConfig *config);
-
+  
 	/*!
 	 * \brief Get geometrical planes in the mesh
 	 */
@@ -803,9 +836,22 @@ public:
 	 * \param[in] Plane_Normal - Definition of the particular problem.
    * \param[in] Intersection - Definition of the particular problem.
    * \returns If the intersection has has been successful.
-	 */
-  unsigned short ComputeSegmentPlane_Intersection(double *Segment_P0, double *Segment_P1, double Variable_P0, double Variable_P1,
-                                                  double *Plane_P0, double *Plane_Normal, double *Intersection, double &Variable_Interp);
+   */
+  bool SegmentIntersectsPlane(double *Segment_P0, double *Segment_P1, double Variable_P0, double Variable_P1,
+                              double *Plane_P0, double *Plane_Normal, double *Intersection, double &Variable_Interp);
+  
+  /*!
+   * \brief Ray Intersects Triangle (Moller and Trumbore algorithm)
+   */
+  bool RayIntersectsTriangle(double orig[3], double dir[3],
+                             double vert0[3], double vert1[3], double vert2[3],
+                             double *intersect);
+  
+  /*!
+   * \brief Segment Intersects Triangle
+   */
+  bool SegmentIntersectsTriangle(double point0[3], double point1[3],
+                                 double vert0[3], double vert1[3], double vert2[3]);
 
 };
 
@@ -813,19 +859,21 @@ public:
  * \class CPhysicalGeometry
  * \brief Class for reading a defining the primal grid which is read from the 
  *        grid file in .su2 format.
- * \author F. Palacios.
- * \version 3.2.0 "eagle"
+ * \author F. Palacios
+ * \version 3.2.9 "eagle"
  */
 class CPhysicalGeometry : public CGeometry {
 
   long *Global_to_Local_Point;				/*!< \brief Global-local indexation for the points. */
-	unsigned long *Local_to_Global_Point;				/*!< \brief Local-global indexation for the points. */
+	long *Local_to_Global_Point;				/*!< \brief Local-global indexation for the points. */
 	unsigned short *Local_to_Global_Marker;	/*!< \brief Local to Global marker. */
 	unsigned short *Global_to_Local_Marker;	/*!< \brief Global to Local marker. */
-
+    unsigned long *adj_counter; /*!< \brief Adjacency counter. */
+    unsigned long **adjacent_elem; /*!< \brief Adjacency element list. */
+  
 public:
-
-	/*! 
+  
+	/*!
 	 * \brief Constructor of the class.
 	 */
 	CPhysicalGeometry(void);
@@ -853,6 +901,18 @@ public:
 	 * \param[in] val_nZone - Total number of domains in the grid file.
 	 */
   CPhysicalGeometry(CGeometry *geometry, CConfig *config);
+  
+  /*!
+   * \overload
+   * \brief Reads the geometry of the grid and adjust the boundary
+   *        conditions with the configuration file for parmetis version.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_mesh_filename - Name of the file with the grid information.
+   * \param[in] val_format - Format of the file with the grid information.
+   * \param[in] val_iZone - Domain to be read from the grid file.
+   * \param[in] val_nZone - Total number of domains in the grid file.
+   */
+  CPhysicalGeometry(CGeometry *geometry, CConfig *config, int options);
   
 	/*!
 	 * \brief Destructor of the class.
@@ -890,37 +950,27 @@ public:
 	unsigned short GetGlobal_to_Local_Marker(unsigned short val_imarker);
   
   /*!
-	 * \brief Reads the geometry of the grid and adjust the boundary
-	 *        conditions with the configuration file.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_mesh_filename - Name of the file with the grid information.
-	 * \param[in] val_format - Format of the file with the grid information.
-	 * \param[in] val_iZone - Domain to be read from the grid file.
-	 * \param[in] val_nZone - Total number of domains in the grid file.
-	 */
-	void Read_SU2_Format(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone);
-  
+   * \brief Reads the geometry of the grid and adjust the boundary
+   *        conditions with the configuration file in parallel (for parmetis).
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_mesh_filename - Name of the file with the grid information.
+   * \param[in] val_format - Format of the file with the grid information.
+   * \param[in] val_iZone - Domain to be read from the grid file.
+   * \param[in] val_nZone - Total number of domains in the grid file.
+   */
+  void Read_SU2_Format_Parallel(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone);
+    
+
   /*!
-	 * \brief Reads the geometry of the grid and adjust the boundary
-	 *        conditions with the configuration file.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_mesh_filename - Name of the file with the grid information.
-	 * \param[in] val_format - Format of the file with the grid information.
-	 * \param[in] val_iZone - Domain to be read from the grid file.
-	 * \param[in] val_nZone - Total number of domains in the grid file.
-	 */
-	void Read_CGNS_Format(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone);
-  
-  /*!
-	 * \brief Reads the geometry of the grid and adjust the boundary
-	 *        conditions with the configuration file.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_mesh_filename - Name of the file with the grid information.
-	 * \param[in] val_format - Format of the file with the grid information.
-	 * \param[in] val_iZone - Domain to be read from the grid file.
-	 * \param[in] val_nZone - Total number of domains in the grid file.
-	 */
-	void Read_NETCDF_Format(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone);
+   * \brief Reads the geometry of the grid and adjust the boundary
+   *        conditions with the configuration file in parallel (for parmetis).
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_mesh_filename - Name of the file with the grid information.
+   * \param[in] val_format - Format of the file with the grid information.
+   * \param[in] val_iZone - Domain to be read from the grid file.
+   * \param[in] val_nZone - Total number of domains in the grid file.
+   */
+  void Read_CGNS_Format_Parallel(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone);
 
 	/*! 
 	 * \brief Find repeated nodes between two elements to identify the common face.
@@ -1061,13 +1111,25 @@ public:
 	 * \brief Check the volume element orientation.
 	 * \param[in] config - Definition of the particular problem.		 
 	 */
-	void Check_Orientation(CConfig *config);
+	void Check_IntElem_Orientation(CConfig *config);
+  
+  /*!
+	 * \brief Check the volume element orientation.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void Check_BoundElem_Orientation(CConfig *config);
 
 	/*! 
-	 * \brief Set the domains for grid grid partitioning.
+	 * \brief Set the domains for grid grid partitioning using METIS.
 	 * \param[in] config - Definition of the particular problem.		 
 	 */
 	void SetColorGrid(CConfig *config);
+  
+  /*!
+   * \brief Set the domains for grid grid partitioning using ParMETIS.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetColorGrid_Parallel(CConfig *config);
   
 	/*!
 	 * \brief Set the rotational velocity at each node.
@@ -1113,13 +1175,6 @@ public:
 	 * \param[in] val_mesh_out_filename - Name of the output file.
 	 */	
 	void SetMeshFile(CConfig *config, string val_mesh_out_filename);
-  
-  /*!
-	 * \brief Write the .su2 file, with new domain coordinates
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_mesh_out_filename - Name of the output file.
-	 */
-	void SetMeshFile(CConfig *config, string val_mesh_out_filename, string val_mesh_in_filename);
 
 	/*! 
 	 * \brief Compute some parameters about the grid quality.
@@ -1188,10 +1243,10 @@ public:
 	unsigned long GetGlobal_nElemHexa();
   
   /*!
-	 * \brief Retrieve total number of wedge elements in a simulation across all processors.
-	 * \returns Total number of wedge elements in a simulation across all processors.
+	 * \brief Retrieve total number of prism elements in a simulation across all processors.
+	 * \returns Total number of prism elements in a simulation across all processors.
 	 */
-	unsigned long GetGlobal_nElemWedg();
+	unsigned long GetGlobal_nElemPris();
   
   /*!
 	 * \brief Retrieve total number of pyramid elements in a simulation across all processors.
@@ -1230,10 +1285,10 @@ public:
 	unsigned long GetnElemHexa();
   
   /*!
-	 * \brief Get number of wedge elements.
-	 * \return Number of wedge elements.
+	 * \brief Get number of prism elements.
+	 * \return Number of prism elements.
 	 */
-	unsigned long GetnElemWedg();
+	unsigned long GetnElemPris();
   
   /*!
 	 * \brief Get number of pyramid elements.
@@ -1245,7 +1300,7 @@ public:
 	 * \brief Indentify geometrical planes in the mesh
 	 */
 	void SetGeometryPlanes(CConfig *config);
-
+  
 	/*!
 	 * \brief Get geometrical planes in the mesh
 	 */
@@ -1271,14 +1326,62 @@ public:
 	 */
 	vector<vector<unsigned long> > GetPlanarPoints();
   
+  /*!
+   * \brief Read the sensitivity from an input file.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetBoundSensitivity(CConfig *config);
+  
+  /*!
+   * \brief Compute the sections of a wing.
+   * \param[in] config - Definition of the particular problem.
+   */
+  double Compute_MaxThickness(double *Plane_P0, double *Plane_Normal, unsigned short iSection, CConfig *config, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface);
+  
+  /*!
+   * \brief Compute the sections of a wing.
+   * \param[in] config - Definition of the particular problem.
+   */
+  double Compute_AoA(double *Plane_P0, double *Plane_Normal, unsigned short iSection, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface);
+  
+  /*!
+   * \brief Compute the sections of a wing.
+   * \param[in] config - Definition of the particular problem.
+   */
+  double Compute_Chord(double *Plane_P0, double *Plane_Normal, unsigned short iSection, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface);
+  
+  /*!
+   * \brief Find the minimum thickness of the airfoil.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] original_surface - <code>TRUE</code> if this is the undeformed surface; otherwise <code>FALSE</code>.
+   * \returns The minimum value of the airfoil thickness.
+   */
+  double Compute_Thickness(double *Plane_P0, double *Plane_Normal, unsigned short iSection, double Location, CConfig *config, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface);
+  
+  /*!
+   * \brief Find the total volume of the airfoil.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] original_surface - <code>TRUE</code> if this is the undeformed surface; otherwise <code>FALSE</code>.
+   * \returns The total volume of the airfoil.
+   */
+  double Compute_Area(double *Plane_P0, double *Plane_Normal, unsigned short iSection, CConfig *config, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface);
+  
+  /*!
+   * \brief Find the internal volume of the 3D body.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] original_surface - <code>TRUE</code> if this is the undeformed surface; otherwise <code>FALSE</code>.
+   * \returns The total volume of the 3D body.
+   */
+  double Compute_Volume(CConfig *config, bool original_surface);
+  
 };
 
 /*! 
  * \class CMultiGridGeometry
  * \brief Class for defining the multigrid geometry, the main delicated part is the 
  *        agglomeration stage, which is done in the declaration.
- * \author F. Palacios.
- * \version 3.2.0 "eagle"
+ * \author F. Palacios
+ * \version 3.2.9 "eagle"
  */
 class CMultiGridGeometry : public CGeometry {
 
@@ -1444,111 +1547,10 @@ public:
 };
 
 /*! 
- * \class CBoundaryGeometry
- * \brief Class for only defining the boundary of the geometry, this class is only 
- *        used in case we are not interested in the volumetric grid.
- * \author F. Palacios.
- * \version 3.2.0 "eagle"
- */
-class CBoundaryGeometry : public CGeometry {
-  
-public:
-
-	/*! 
-	 * \brief Constructor of the class.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_mesh_filename - Name of the file with the grid information, be careful 
-	 *            because as input file we don't use a .su2, in this case we use a .csv file.
-	 * \param[in] val_format - Format of the file with the grid information.
-	 */
-	CBoundaryGeometry(CConfig *config, string val_mesh_filename, unsigned short val_format);
-
-	/*! 
-	 * \brief Destructor of the class.
-	 */
-	~CBoundaryGeometry(void);
-
-	/*! 
-	 * \brief Set boundary vertex.
-	 */
-	void SetVertex(void);
-  
-  /*!
-	 * \brief Store boundary points which surround a point.
-	 */
-	void SetPoint_Connectivity(void);
-  
-	/*! 
-	 * \brief Compute the boundary geometrical structure.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] action - Allocate or not the new elements.
-	 */
-	void SetBoundControlVolume(CConfig *config, unsigned short action);
-
-	/*! 
-	 * \brief Read the sensitivity from an input file.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void SetBoundSensitivity(CConfig *config);
-
-  /*!
-	 * \brief Compute the sections of a wing.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-  double Compute_MaxThickness(double *Plane_P0, double *Plane_Normal, unsigned short iSection, CConfig *config, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface);
-
-  /*!
-	 * \brief Compute the sections of a wing.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-  double Compute_AoA(double *Plane_P0, double *Plane_Normal, unsigned short iSection, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface);
-
-  /*!
-	 * \brief Compute the sections of a wing.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-  double Compute_Chord(double *Plane_P0, double *Plane_Normal, unsigned short iSection, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface);
-
-  /*!
-	 * \brief Find the minimum thickness of the airfoil.
-	 * \param[in] config - Definition of the particular problem.
-   * \param[in] original_surface - <code>TRUE</code> if this is the undeformed surface; otherwise <code>FALSE</code>.
-   * \returns The minimum value of the airfoil thickness.
-	 */
-  double Compute_Thickness(double *Plane_P0, double *Plane_Normal, unsigned short iSection, double Location, CConfig *config, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface);
-  
-	/*! 
-	 * \brief Find the total volume of the airfoil.
-	 * \param[in] config - Definition of the particular problem.
-   * \param[in] original_surface - <code>TRUE</code> if this is the undeformed surface; otherwise <code>FALSE</code>.
-   * \returns The total volume of the airfoil.
-	 */
-  double Compute_Area(double *Plane_P0, double *Plane_Normal, unsigned short iSection, CConfig *config, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface);
-
-  /*!
-	 * \brief Find the internal volume of the 3D body.
-	 * \param[in] config - Definition of the particular problem.
-   * \param[in] original_surface - <code>TRUE</code> if this is the undeformed surface; otherwise <code>FALSE</code>.
-   * \returns The total volume of the 3D body.
-	 */
-  double Compute_Volume(CConfig *config, bool original_surface);
-  
-  /*!
-	 * \brief Set the output file for boundaries in Tecplot with surface curvature.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] mesh_filename - Name of the file where the Tecplot
-	 *            information is going to be stored.
-   * \param[in] new_file - Create a new file.
-	 */
-	void SetBoundTecPlot(char mesh_filename[MAX_STRING_SIZE], bool new_file, CConfig *config);
-  
-};
-
-/*! 
  * \class CPeriodicGeometry
  * \brief Class for defining a periodic boundary condition.
- * \author T. Economon, F. Palacios.
- * \version 3.2.0 "eagle"
+ * \author T. Economon, F. Palacios
+ * \version 3.2.9 "eagle"
  */
 class CPeriodicGeometry : public CGeometry {
 	CPrimalGrid*** newBoundPer;            /*!< \brief Boundary vector for new periodic elements (primal grid information). */
@@ -1580,7 +1582,7 @@ public:
 	 * \param[in] config_filename - Name of the file where the Tecplot 
 	 *            information is going to be stored.
 	 */
-	void SetTecPlot(char config_filename[MAX_STRING_SIZE]);
+	void SetTecPlot(char config_filename[MAX_STRING_SIZE], bool new_file);
 
 	/*! 
 	 * \brief Write the .su2 file.
@@ -1593,8 +1595,8 @@ public:
 /*! 
  * \struct CMultiGridQueue
  * \brief Class for a multigrid queue system
- * \author F. Palacios.
- * \version 3.2.0 "eagle"
+ * \author F. Palacios
+ * \version 3.2.9 "eagle"
  * \date Aug 12, 2012
  */
 class CMultiGridQueue {
