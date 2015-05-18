@@ -1391,76 +1391,83 @@ void CSolver::Aeroelastic(CSurfaceMovement *surface_movement, CGeometry *geometr
   
 }
 
-void CSolver::SetUpTypicalSectionWingModel(vector<vector<double> >& PHI, vector<double>& lambda, CConfig *config) {
+void CSolver::SetUpTypicalSectionWingModel(vector<vector<double> >& Phi, vector<double>& omega, CConfig *config) {
   
   /*--- Retrieve values from the config file ---*/
   double w_h = config->GetAeroelastic_Frequency_Plunge();
   double w_a = config->GetAeroelastic_Frequency_Pitch();
+  double w = w_h/w_a;
   
   /*--- Geometrical Parameters */
   double x_a = 1.8;
-  double r_a2 = 3.48;
+  double r_a = sqrt(3.48);
   
   // Mass Matrix
-  // vector<vector<double> > M(2,vector<double>(2,0.0));
-  // M[0][0] = 1;
-  // M[0][1] = x_a;
-  // M[1][0] = x_a;
-  // M[1][1] = r_a2;
+  vector<vector<double> > M(2,vector<double>(2,0.0));
+  M[0][0] = 1;
+  M[0][1] = x_a;
+  M[1][0] = x_a;
+  M[1][1] = r_a*r_a;
   
   // Stiffness Matrix
-  vector<vector<double> > K(2,vector<double>(2,0.0));
-  K[0][0] = (w_h/w_a)*(w_h/w_a);
-  K[0][1] = 0.0;
-  K[1][0] = 0.0;
-  K[1][1] = r_a2;
+  //  vector<vector<double> > K(2,vector<double>(2,0.0));
+  //  K[0][0] = (w_h/w_a)*(w_h/w_a);
+  //  K[0][1] = 0.0;
+  //  K[1][0] = 0.0;
+  //  K[1][1] = r_a*r_a;
   
   /* Eigenvector and Eigenvalue Matrices of the Generalized EigenValue Problem. */
   
-  vector<vector<double> > LAMBDA(2,vector<double>(2,0.0));
-  double y;
-  y = sqrt(r_a2*pow(w_a,4) - 2*r_a2*pow(w_a,2)*pow(w_h,2) + r_a2*pow(w_h,4) + 4*pow(w_a,2)*pow(w_h,2)*pow(x_a,2));
+  vector<vector<double> > Omega(2,vector<double>(2,0.0));
+  double aux; // auxiliary variable
+  aux = sqrt(pow(r_a,2)*pow(w,4) - 2*pow(r_a,2)*pow(w,2) + pow(r_a,2) + 4*pow(x_a,2)*pow(w,2));
+  Phi[0][0] = (r_a * (r_a - r_a*pow(w,2) + aux)) / (2*x_a*pow(w, 2));
+  Phi[0][1] = (r_a * (r_a - r_a*pow(w,2) - aux)) / (2*x_a*pow(w, 2));
+  Phi[1][0] = 1.0;
+  Phi[1][1] = 1.0;
   
-  PHI[0][0] = (sqrt(r_a2)*y + r_a2*pow(w_a,2) - r_a2*pow(w_h,2))/(2*pow(w_h,2)*x_a);
-  PHI[0][1] = -(sqrt(r_a2)*y - r_a2*pow(w_a,2) + r_a2*pow(w_h,2))/(2*pow(w_h,2)*x_a);
-  PHI[1][0] = 1.0;
-  PHI[1][1] = 1.0;
+  Omega[0][0] = (r_a * (r_a + r_a*pow(w,2) - aux)) / (2*(pow(r_a, 2) - pow(x_a, 2)));
+  Omega[0][1] = 0;
+  Omega[1][0] = 0;
+  Omega[1][1] = (r_a * (r_a + r_a*pow(w,2) + aux)) / (2*(pow(r_a, 2) - pow(x_a, 2)));
   
-  LAMBDA[0][0] = (r_a2*pow(w_a,2) + r_a2*pow(w_h,2) - sqrt(r_a2)*y) / (2*pow(w_a,2)*(r_a2-pow(x_a,2)));
-  LAMBDA[0][1] = 0;
-  LAMBDA[1][0] = 0;
-  LAMBDA[1][1] = (r_a2*pow(w_a,2) + r_a2*pow(w_h,2) + sqrt(r_a2)*y) / (2*pow(w_a,2)*(r_a2-pow(x_a,2)));
+  /* Nondimesionalize the Eigenvectors such that Phi'*M*Phi = I and PHI'*K*PHI = Omega */
+  // Phi'*M*Phi = D
+  // D^(-1/2)*Phi'*M*Phi*D^(-1/2) = D^(-1/2)*D^(1/2)*D^(1/2)*D^(-1/2) = I
+  // Phi = Phi*D^(-1/2)
   
-  /* Nondimesionalize the Eigenvectors such that PHI'*M*PHI = I and PHI'*K*PHI = LAMBDA */
-  double temp1[2][2], temp2[2][2];
+  vector<vector<double> > Aux(2,vector<double>(2,0.0));
+  vector<vector<double> > D(2,vector<double>(2,0.0));
+  // Aux = M*Phi
   for (int i=0; i<2; i++) {
     for (int j=0; j<2; j++) {
-      temp1[i][j] = 0;
+      Aux[i][j] = 0;
       for (int k=0; k<2; k++) {
-        temp1[i][j] += K[i][k]*PHI[k][j];
+        Aux[i][j] += M[i][k]*Phi[k][j];
       }
     }
   }
   
+  // D = Phi'*Aux
   for (int i=0; i<2; i++) {
     for (int j=0; j<2; j++) {
-      temp2[i][j] = 0;
+      D[i][j] = 0;
       for (int k=0; k<2; k++) {
-        temp2[i][j] += PHI[k][i]*temp1[k][j]; //PHI transpose
+        D[i][j] += Phi[k][i]*Aux[k][j]; //PHI transpose
       }
     }
   }
   
   //Modify the first column
-  PHI[0][0] = 1/sqrt(temp2[0][0]/LAMBDA[0][0])*PHI[0][0];
-  PHI[1][0] = 1/sqrt(temp2[0][0]/LAMBDA[0][0])*PHI[1][0];
+  Phi[0][0] = Phi[0][0] * 1/sqrt(D[0][0]);
+  Phi[1][0] = Phi[1][0] * 1/sqrt(D[0][0]);
   //Modify the second column
-  PHI[0][1] = 1/sqrt(temp2[1][1]/LAMBDA[1][1])*PHI[0][1];
-  PHI[1][1] = 1/sqrt(temp2[1][1]/LAMBDA[1][1])*PHI[1][1];
+  Phi[0][1] = Phi[0][1] * 1/sqrt(D[1][1]);
+  Phi[1][1] = Phi[1][1] * 1/sqrt(D[1][1]);
   
   //Eigenvalues
-  lambda[0] = sqrt(LAMBDA[0][0]);
-  lambda[1] = sqrt(LAMBDA[1][1]);
+  omega[0] = sqrt(Omega[0][0]);
+  omega[1] = sqrt(Omega[1][1]);
   
 }
 

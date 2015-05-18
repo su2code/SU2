@@ -2099,7 +2099,6 @@ public:
   * \param[in] ExtIter - Physical iteration number.
   */
 	void Aeroelastic(CSurfaceMovement *surface_movement, CGeometry *geometry, CConfig *config, unsigned long ExtIter);
-
     
   /*!
   * \brief Sets up the generalized eigenvectors and eigenvalues needed to solve the aeroelastic equations.
