@@ -43,3 +43,4 @@ Debug/
 go.sh
 log_make.txt
 log_make_install.txt
+SU2_FSI/bin/*
