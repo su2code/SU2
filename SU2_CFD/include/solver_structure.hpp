@@ -2118,7 +2118,7 @@ public:
   * \param[in] displacements - solution of typical section wing model.
 	*/
   void SolveTypicalSectionWingModel(CGeometry *geometry, double Cl, double Cm, CConfig *config, unsigned short val_Marker, vector<double>& displacements);
-
+  
 };
 
 /*!
