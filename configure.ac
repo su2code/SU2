@@ -30,13 +30,13 @@
 #
 # Created by: 		M. Colonno  10/26/12
 # Updated by: 		T. Economon 	3/24/14
-# Last updated by: 		R. Sanchez   05/18/15
+# Last updated by: 		R. Sanchez   05/19/15
 #
 # Major Changes/Contributions:
 # METIS & TECIO integration added by Ben Kirk, 3/24/2014
 # LAPACK connection added by Teus van der Stelt, 11/13/2014
 # ParMETIS integration added by Ben Kirk & Thomas D. Economon, 2/3/2015
-# SU2_FSI integration added by Ruben Sanchez, 5/18/2015
+# SU2_FSI integration added by Ruben Sanchez, 5/19/2015
 ##########################
 
 AC_INIT([SU2], [3.2.9], [su2code-dev@lists.stanford.edu],
@@ -355,7 +355,7 @@ AC_OUTPUT(Makefile \
         externals/Makefile \
 	Common/lib/Makefile \
 	SU2_CFD/obj/Makefile \
-	SU2_FSI/obj/Makefile \	
+	SU2_FSI/obj/Makefile \
 	SU2_DOT/obj/Makefile \
 	SU2_MSH/obj/Makefile \
 	SU2_DEF/obj/Makefile \

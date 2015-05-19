@@ -26,7 +26,7 @@
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 #
 # Created: 		05/18/15
-# Last updated: 	05/18/15
+# Last updated: 	05/19/15
 #
 # Created by: 		R. Sanchez
 # Updated by: 		R. Sanchez
@@ -40,6 +40,8 @@ bin_PROGRAMS = ../bin/SU2_FSI
 
 ___bin_SU2_FSI_SOURCES = ../include/SU2_FSI.hpp \
 		../src/SU2_FSI.cpp \
+	../include/iteration_structure_fsi.hpp \
+		../src/iteration_structure_fsi.cpp \
     ../../SU2_CFD/include/fluid_model.hpp \
     ../../SU2_CFD/include/fluid_model.inl \
 		../../SU2_CFD/include/integration_structure.hpp \
@@ -53,7 +55,6 @@ ___bin_SU2_FSI_SOURCES = ../include/SU2_FSI.hpp \
 		../../SU2_CFD/include/output_structure.hpp \
 		../../SU2_CFD/include/solver_structure.hpp \
 		../../SU2_CFD/include/solver_structure.inl \
-		../../SU2_CFD/include/SU2_CFD.hpp \
     ../../SU2_CFD/include/transport_model.hpp \
     ../../SU2_CFD/include/transport_model.inl \
 		../../SU2_CFD/include/variable_structure.hpp \
@@ -106,7 +107,6 @@ ___bin_SU2_FSI_SOURCES = ../include/SU2_FSI.hpp \
 		../../SU2_CFD/src/solver_linearized_turbulent.cpp \
 		../../SU2_CFD/src/solver_structure.cpp \
 		../../SU2_CFD/src/solver_template.cpp \
-		../../SU2_CFD/src/SU2_CFD.cpp \
     ../../SU2_CFD/src/transport_model.cpp \
 		../../SU2_CFD/src/variable_adjoint_levelset.cpp \
 		../../SU2_CFD/src/variable_adjoint_mean.cpp \

@@ -342,7 +342,7 @@ int main(int argc, char *argv[]) {
 
 		if (fsi){
 		    config_container[ZONE_1]->SetExtIter(ExtIter);
-		    FluidStructureIteration(output, integration_container, geometry_container,
+		    FSI_BGS_Iteration(output, integration_container, geometry_container,
 		    	                		solver_container, numerics_container, config_container,
 		    	                		surface_movement, grid_movement, FFDBox,
 		    	                		iFluidIt, nFluidIt);
