@@ -37,7 +37,15 @@ inline void CVariable::SetVelSolutionOldDVector(void) { }
 
 inline void CVariable::SetVelSolutionDVector(void) { }
 
+inline void CVariable::SetTraction(unsigned short iVar, unsigned short jVar, double val_traction) { }
+
+inline void CVariable::AddTraction(unsigned short iVar, unsigned short jVar, double val_traction) { }
+  
+inline double **CVariable::GetTraction(void) { }
+
 inline void CVariable::SetStress(unsigned short iVar, unsigned short jVar, double val_stress) { }
+
+inline void CVariable::AddStress(unsigned short iVar, unsigned short jVar, double val_stress) { }
   
 inline double **CVariable::GetStress(void) { return 0; }
   
@@ -48,6 +56,12 @@ inline double CVariable::GetVonMises_Stress(void) { return 0; }
 inline void CVariable::SetFlow_Pressure(double val_pressure) { }
 
 inline double CVariable::GetFlow_Pressure(void) { return 0; }
+
+inline void CVariable::Initialize_Connectivity(void) { }
+
+inline void CVariable::Upgrade_Connectivity(void) { }
+
+inline unsigned short CVariable::Get_Connectivity(void) { }
 
 inline double CVariable::GetBetaInc2(void) { return 0; }
 
@@ -509,6 +523,62 @@ inline void CVariable::SetEddyViscSens(double *val_EddyViscSens, unsigned short 
 
 inline double *CVariable::GetEddyViscSens(void) { return NULL; }
 
+	inline void CVariable::SetSolution_time_n(void) { }	
+
+	inline void CVariable::SetSolution_Vel(double *val_solution_vel) { }
+
+	inline void CVariable::SetSolution_Vel(unsigned short val_var, double val_solution_vel) { }
+
+	inline void CVariable::SetSolution_Vel_time_n(double *val_solution_vel_time_n) { }
+	
+	inline void CVariable::SetSolution_Vel_time_n(void) { }	
+
+	inline void CVariable::SetSolution_Vel_time_n(unsigned short val_var, double val_solution_vel_time_n) { }
+
+	inline double CVariable::GetSolution_time_n(unsigned short val_var) { }	
+
+	inline double CVariable::GetSolution_Vel(unsigned short val_var) { return 0; }
+
+	inline double *CVariable::GetSolution_Vel(void) { return NULL; }
+
+	inline double CVariable::GetSolution_Vel_time_n(unsigned short val_var) { return 0; }
+
+	inline double *CVariable::GetSolution_Vel_time_n(void) { return NULL; }
+
+	inline void CVariable::SetSolution_Accel(double *val_solution_accel) { }
+
+	inline void CVariable::SetSolution_Accel(unsigned short val_var, double val_solution_accel) { }
+
+	inline void CVariable::SetSolution_Accel_time_n(double *val_solution_accel_time_n) { }
+
+	inline void CVariable::SetSolution_Accel_time_n(void) { }	
+
+	inline void CVariable::SetSolution_Accel_time_n(unsigned short val_var, double val_solution_accel_time_n) { }
+
+	inline double CVariable::GetSolution_Accel(unsigned short val_var) { return 0; }
+
+	inline double *CVariable::GetSolution_Accel(void) { return NULL; }
+
+	inline double CVariable::GetSolution_Accel_time_n(unsigned short val_var) { return 0; }
+
+	inline double *CVariable::GetSolution_Accel_time_n(void) { return NULL; }
+	
+	inline void CVariable::SetSolution_Pred(double *val_solution_pred){  }
+	
+	inline void CVariable::SetSolution_Pred(void){ }
+	
+	inline double CVariable::GetSolution_Pred(unsigned short val_var){ return 0.0; }
+	
+	inline double *CVariable::GetSolution_Pred(void){ return NULL; }	
+	
+	inline void CVariable::SetSolution_Pred_Old(double *val_solution_pred_Old){  }
+	
+	inline void CVariable::SetSolution_Pred_Old(void){ }
+	
+	inline double CVariable::GetSolution_Pred_Old(unsigned short val_var){ return 0.0; }
+	
+	inline double *CVariable::GetSolution_Pred_Old(void){ return NULL; }		
+
 inline double CEulerVariable::GetDensity(void) { return Solution[0]; }
 
 inline double CEulerVariable::GetDensityInc(void) { return Primitive[nDim+1]; }
@@ -779,6 +849,8 @@ inline void CLinEulerVariable::SetDeltaVel_Old(double *val_deltavel) { for (unsi
 inline double CLinEulerVariable::GetDeltaPressure(void) { return DeltaPressure; }
 
 inline void CFEAVariable::SetStress(unsigned short iVar, unsigned short jVar, double val_stress) { Stress[iVar][jVar] = val_stress; }
+
+inline void CFEAVariable::AddStress(unsigned short iVar, unsigned short jVar, double val_stress) { Stress[iVar][jVar] += val_stress; }
   
 inline double **CFEAVariable::GetStress(void) { return Stress; }
   
@@ -789,6 +861,56 @@ inline double CFEAVariable::GetVonMises_Stress(void) { return VonMises_Stress; }
 inline void CFEAVariable::SetFlow_Pressure(double val_pressure) { Flow_Pressure = val_pressure; }
 
 inline double CFEAVariable::GetFlow_Pressure(void) { return Flow_Pressure; }
+
+inline void CFEAVariable::Initialize_Connectivity(void) { nAttachedElements = 0; }
+
+inline void CFEAVariable::Upgrade_Connectivity(void) { nAttachedElements += 1; }
+
+inline unsigned short CFEAVariable::Get_Connectivity(void) { return nAttachedElements; }
+
+inline void CFEABoundVariable::SetTraction(unsigned short iVar, unsigned short jVar, double val_traction) { Traction[iVar][jVar] = val_traction; }
+
+inline void CFEABoundVariable::AddTraction(unsigned short iVar, unsigned short jVar, double val_traction) { Traction[iVar][jVar] += val_traction; }
+  
+inline double **CFEABoundVariable::GetTraction(void) { return Traction; }
+
+inline void CFEAVariable::SetSolution_Vel(unsigned short val_var, double val_solution_vel) { Solution_Vel[val_var] = val_solution_vel; }
+
+inline void CFEAVariable::SetSolution_Vel_time_n(unsigned short val_var, double val_solution_vel_time_n) { Solution_Vel_time_n[val_var] = val_solution_vel_time_n; }
+	
+inline double CFEAVariable::GetSolution_time_n(unsigned short val_var) { return Solution_time_n[val_var]; }	
+
+inline double CFEAVariable::GetSolution_Vel(unsigned short val_var) { return Solution_Vel[val_var]; }
+
+inline double *CFEAVariable::GetSolution_Vel(void) { return Solution_Vel; }
+
+inline double CFEAVariable::GetSolution_Vel_time_n(unsigned short val_var) { return Solution_Vel_time_n[val_var]; }
+
+inline double *CFEAVariable::GetSolution_Vel_time_n(void) { return Solution_Vel_time_n; }
+
+inline void CFEAVariable::SetSolution_Accel(unsigned short val_var, double val_solution_accel) { Solution_Accel[val_var] = val_solution_accel;  }
+
+inline void CFEAVariable::SetSolution_Accel_time_n(unsigned short val_var, double val_solution_accel_time_n) { Solution_Accel_time_n[val_var] = val_solution_accel_time_n; }
+
+inline double CFEAVariable::GetSolution_Accel(unsigned short val_var) { return Solution_Accel[val_var]; }
+
+inline double *CFEAVariable::GetSolution_Accel(void) { return Solution_Accel; }
+
+inline double CFEAVariable::GetSolution_Accel_time_n(unsigned short val_var) { return Solution_Accel_time_n[val_var]; }
+
+inline double *CFEAVariable::GetSolution_Accel_time_n(void) { return Solution_Accel_time_n; }
+	
+inline void CFEAVariable::SetSolution_Pred(double *val_solution_pred){ Solution_Pred = val_solution_pred;  }
+	
+inline double CFEAVariable::GetSolution_Pred(unsigned short val_var){ return Solution_Pred[val_var]; }
+	
+inline double *CFEAVariable::GetSolution_Pred(void){ return Solution_Pred; }
+	
+inline void CFEAVariable::SetSolution_Pred_Old(double *val_solution_pred_Old){ Solution_Pred_Old = val_solution_pred_Old;  }
+	
+inline double CFEAVariable::GetSolution_Pred_Old(unsigned short val_var){ return Solution_Pred_Old[val_var]; }
+	
+inline double *CFEAVariable::GetSolution_Pred_Old(void){ return Solution_Pred_Old; }	
 
 inline double* CWaveVariable::GetSolution_Direct() { return Solution_Direct;}
 
