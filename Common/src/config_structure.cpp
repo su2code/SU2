@@ -1605,7 +1605,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     else Unst_nIntIter = 2;
   }
   
-  if ((Kind_Solver == LINEAR_ELASTICITY)) {
+  if (Kind_Solver == LINEAR_ELASTICITY) {
     nMGLevels = 0;
     if (Dynamic_Analysis == STATIC) 
 	nExtIter = 1;
@@ -1619,7 +1619,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       Kind_Regime == FREESURFACE) { Wrt_Unsteady = false; }
   else { Wrt_Unsteady = true; }
 
-  if ((Kind_Solver == LINEAR_ELASTICITY)) {
+  if (Kind_Solver == LINEAR_ELASTICITY) {
 
 	  if (Dynamic_Analysis == STATIC) { Wrt_Dynamic = false; }
 	  else { Wrt_Dynamic = true; }
