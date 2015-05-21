@@ -1268,7 +1268,8 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
       }
       
       /*--- Use the if statement to move the grid only at selected dual time step iterations. ---*/
-      else if (IntIter % 3 ==0) {
+      else if (IntIter % config_container->GetAeroelasticIter() ==0) {
+
         if (rank == MASTER_NODE)
           cout << endl << " Solving aeroelastic equations and updating surface positions." << endl;
         
