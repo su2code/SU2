@@ -922,8 +922,45 @@ void CSysMatrix::BuildJacobiPreconditioner(void) {
 }
 
 void CSysMatrix::BuildILUPreconditioner(void) {
-
-/*--- Reimplement is such a way the LU is a preprocessing ---*/
+  
+  unsigned long index, index_;
+  double *Block_ij, *Block_jk;
+  long iPoint, jPoint, kPoint;
+  
+  /*--- Copy block matrix, note that the original matrix
+   is modified by the algorithm---*/
+  
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    for (index = row_ptr[iPoint]; index < row_ptr[iPoint+1]; index++) {
+      jPoint = col_ind[index];
+      Block_ij = GetBlock(iPoint, jPoint);
+      SetBlock_ILUMatrix(iPoint, jPoint, Block_ij);
+    }
+  }
+  
+  /*--- Transform system in Upper Matrix ---*/
+  
+  for (iPoint = 1; iPoint < nPointDomain; iPoint++) {
+    for (index = row_ptr[iPoint]; index < row_ptr[iPoint+1]; index++) {
+      jPoint = col_ind[index];
+      if ((jPoint < iPoint) && (jPoint < nPointDomain)) {
+        Block_ij = GetBlock_ILUMatrix(iPoint, jPoint);
+        InverseDiagonalBlock_ILUMatrix(jPoint, block_inverse);
+        MatrixMatrixProduct(Block_ij, block_inverse, block_weight);
+        for (index_ = row_ptr[jPoint]; index_ < row_ptr[jPoint+1]; index_++) {
+          kPoint = col_ind[index_];
+          if (kPoint < nPointDomain) {
+            Block_jk = GetBlock_ILUMatrix(jPoint, kPoint);
+            if (kPoint >= jPoint) {
+              MatrixMatrixProduct(Block_jk, block_weight, block);
+              SubtractBlock_ILUMatrix(iPoint, kPoint, block);
+            }
+          }
+        }
+        SetBlock_ILUMatrix(iPoint, jPoint, block_weight);
+      }
+    }
+  }
 
 }
 
@@ -1148,20 +1185,15 @@ void CSysMatrix::ComputeJacobiPreconditioner(const CSysVector & vec, CSysVector 
 
 void CSysMatrix::ComputeILUPreconditioner(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config) {
   
-  unsigned long index, index_;
-  double *Block_ij, *Block_jk;
-  long iPoint, jPoint, kPoint;
+  unsigned long index;
+  double *Block_ij;
+  long iPoint, jPoint;
   unsigned short iVar;
   
   /*--- Copy block matrix, note that the original matrix
    is modified by the algorithm---*/
   
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    for (index = row_ptr[iPoint]; index < row_ptr[iPoint+1]; index++) {
-      jPoint = col_ind[index];
-      Block_ij = GetBlock(iPoint, jPoint);
-      SetBlock_ILUMatrix(iPoint, jPoint, Block_ij);
-    }
     for (iVar = 0; iVar < nVar; iVar++) {
       prod[iPoint*nVar+iVar] = vec[iPoint*nVar+iVar];
     }
@@ -1174,19 +1206,7 @@ void CSysMatrix::ComputeILUPreconditioner(const CSysVector & vec, CSysVector & p
       jPoint = col_ind[index];
       if ((jPoint < iPoint) && (jPoint < nPointDomain)) {
         Block_ij = GetBlock_ILUMatrix(iPoint, jPoint);
-        InverseDiagonalBlock_ILUMatrix(jPoint, block_inverse);
-        MatrixMatrixProduct(Block_ij, block_inverse, block_weight);
-        for (index_ = row_ptr[jPoint]; index_ < row_ptr[jPoint+1]; index_++) {
-          kPoint = col_ind[index_];
-          if (kPoint < nPointDomain) {
-            Block_jk = GetBlock_ILUMatrix(jPoint, kPoint);
-            if (kPoint >= jPoint) {
-              MatrixMatrixProduct(Block_jk, block_weight, block);
-              SubtractBlock_ILUMatrix(iPoint, kPoint, block);
-            }
-          }
-        }
-        MatrixVectorProduct(block_weight, &prod[jPoint*nVar], aux_vector);
+        MatrixVectorProduct(Block_ij, &prod[jPoint*nVar], aux_vector);
         for (iVar = 0; iVar < nVar; iVar++)
           prod[iPoint*nVar+iVar] -= aux_vector[iVar];
         
