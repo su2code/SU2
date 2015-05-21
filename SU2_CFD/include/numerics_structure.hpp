@@ -1583,7 +1583,7 @@ void GetViscousProjFlux(double *val_primvar, double **val_gradprimvar,
 	 * \param[out] val_stiffmatrix_elem - Stiffness matrix for Galerkin computation.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void SetFEA_StiffMatrix2D(double **StiffMatrix_Elem, double CoordCorners[8][3], unsigned short nNodes);
+	virtual void SetFEA_StiffMatrix2D(double **StiffMatrix_Elem, double CoordCorners[8][3], unsigned short nNodes, unsigned short form2d);
   
   /*!
 	 * \brief Computing stiffness matrix of the Galerkin method.
@@ -1591,6 +1591,60 @@ void GetViscousProjFlux(double *val_primvar, double **val_gradprimvar,
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	virtual void SetFEA_StiffMatrix3D(double **StiffMatrix_Elem, double CoordCorners[8][3], unsigned short nNodes);
+
+  /*!
+	 * \brief Computing mass matrix of the Galerkin method.
+	 * \param[out] val_stiffmatrix_elem - Stiffness matrix for Galerkin computation.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	virtual void SetFEA_StiffMassMatrix2D(double **StiffMatrix_Elem, double **MassMatrix_Elem, double CoordCorners[8][3], unsigned short nNodes, unsigned short form2d);
+
+  /*!
+	 * \brief Computing mass matrix of the Galerkin method.
+	 * \param[out] val_stiffmatrix_elem - Stiffness matrix for Galerkin computation.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	virtual void SetFEA_StiffMassMatrix3D(double **StiffMatrix_Elem, double **MassMatrix_Elem, double CoordCorners[8][3], unsigned short nNodes);
+
+  /*!
+	 * \brief Computing dead load vector of the Galerkin method.
+	 * \param[out] val_deadloadvector_elem - Dead load at the nodes for Galerkin computation.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	virtual void SetFEA_DeadLoad2D(double *DeadLoadVector_Elem, double CoordCorners[8][3], unsigned short nNodes, double matDensity);
+
+  /*!
+	 * \brief Computing stiffness matrix of the Galerkin method.
+	 * \param[out] val_deadloadvector_elem - Dead load at the nodes for Galerkin computation.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	virtual void SetFEA_DeadLoad3D(double *DeadLoadVector_Elem, double CoordCorners[8][3], unsigned short nNodes, double matDensity);
+
+
+  /*!
+	 * \brief Computing stresses in FEA method.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	virtual void GetFEA_StressNodal2D(double StressVector[8][3], double DispElement[8], double CoordCorners[8][3], unsigned short nNodes, unsigned short form2d);
+
+
+  /*!
+	 * \brief Computing stresses in FEA method.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	virtual void GetFEA_StressNodal3D(double StressVector[8][6], double DispElement[24], double CoordCorners[8][3], unsigned short nNodes);
+
+	/*!
+	 * \brief A virtual member to linearly interpolate pressures
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	virtual void PressInt_Linear(double CoordCorners[4][3], double *tn_e, double Fnodal[12]);
+
+	/*!
+	 * \brief A virtual member to linearly interpolate viscous stresses
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	virtual void ViscTermInt_Linear(double CoordCorners[2][2], double Tau_0[3][3], double Tau_1[3][3],  double FviscNodal[4]);
 
   /*!
 	 * \brief Computes a basis of orthogonal vectors from a suppled vector
@@ -4146,12 +4200,13 @@ public:
  * \class CGalerkin_FEA
  * \brief Class for computing the stiffness matrix of the Galerkin method.
  * \ingroup ViscDiscr
- * \author F. Palacios
+ * \author F. Palacios, R.Sanchez
  * \version 3.2.9 "eagle"
  */
 class CGalerkin_FEA : public CNumerics {
 	double E;				/*!< \brief Young's modulus of elasticity. */
 	double Nu;			/*!< \brief Poisson's ratio. */
+	double Rho_s;		/*!< \brief Structural density. */
 	double Mu;			/*!< \brief Lame's coeficient. */
 	double Lambda;	/*!< \brief Lame's coeficient. */
 	double Density;	/*!< \brief Material density. */
@@ -4169,7 +4224,24 @@ public:
 	 * \brief Destructor of the class.
 	 */
 	~CGalerkin_FEA(void);
+
+  /*!
+	 * \brief Shape functions and derivative of the shape functions
+   * \param[in] Fnodal - Forces at the nodes in cartesian coordinates.
+   * \param[in] Pnodal - Pressure at the nodes.
+   * \param[in] CoordCorners[2][2] - Coordiantes of the corners.
+	 */
+  void PressInt_Linear(double CoordCorners[4][3], double *tn_e, double Fnodal[12]);
   
+  /*!
+	 * \brief Shape functions and derivative of the shape functions
+   * \param[in] Tau_0 - Stress tensor at the node 0.
+   * \param[in] Tau_1 - Stress tensor at the node 1.
+   * \param[in] Fnodal - Forces at the nodes in cartesian coordinates.
+   * \param[in] CoordCorners[2][2] - Coordiantes of the corners.
+	 */
+  void ViscTermInt_Linear(double CoordCorners[2][2], double Tau_0[3][3], double Tau_1[3][3],  double FviscNodal[4]);
+
   /*!
 	 * \brief Shape functions and derivative of the shape functions
    * \param[in] Xi - Local coordinates.
@@ -4235,7 +4307,7 @@ public:
 	 * \param[out] val_stiffmatrix_elem - Stiffness matrix for Galerkin computation.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void SetFEA_StiffMatrix2D(double **StiffMatrix_Elem, double CoordCorners[8][3], unsigned short nNodes);
+	void SetFEA_StiffMatrix2D(double **StiffMatrix_Elem, double CoordCorners[8][3], unsigned short nNodes, unsigned short form2d);
   
   /*!
 	 * \brief Computing stiffness matrix of the Galerkin method.
@@ -4243,7 +4315,48 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void SetFEA_StiffMatrix3D(double **StiffMatrix_Elem, double CoordCorners[8][3], unsigned short nNodes);
-  
+
+  /*!
+	 * \brief Computing mass matrix of the Galerkin method.
+	 * \param[out] val_stiffmatrix_elem - Stiffness matrix for Galerkin computation.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void SetFEA_StiffMassMatrix2D(double **StiffMatrix_Elem, double **MassMatrix_Elem, double CoordCorners[8][3], unsigned short nNodes, unsigned short form2d);
+
+  /*!
+	 * \brief Computing mass matrix of the Galerkin method.
+	 * \param[out] val_stiffmatrix_elem - Stiffness matrix for Galerkin computation.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void SetFEA_StiffMassMatrix3D(double **StiffMatrix_Elem, double **MassMatrix_Elem, double CoordCorners[8][3], unsigned short nNodes);
+
+  /*!
+	 * \brief Computing stresses in FEA method at the nodes.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void GetFEA_StressNodal2D(double StressVector[8][3], double DispElement[8], double CoordCorners[8][3], unsigned short nNodes, unsigned short form2d);
+
+
+  /*!
+	 * \brief Computing stresses in FEA method at the nodes.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void GetFEA_StressNodal3D(double StressVector[8][6], double DispElement[24], double CoordCorners[8][3], unsigned short nNodes);
+
+  /*!
+	 * \brief Computing dead load vector of the Galerkin method.
+	 * \param[out] val_deadloadvector_elem - Dead load at the nodes for Galerkin computation.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void SetFEA_DeadLoad2D(double *DeadLoadVector_Elem, double CoordCorners[8][3], unsigned short nNodes, double matDensity);
+
+  /*!
+	 * \brief Computing stiffness matrix of the Galerkin method.
+	 * \param[out] val_deadloadvector_elem - Dead load at the nodes for Galerkin computation.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void SetFEA_DeadLoad3D(double *DeadLoadVector_Elem, double CoordCorners[8][3], unsigned short nNodes, double matDensity);
+
 };
 
 /*!

@@ -62,7 +62,7 @@ inline void CSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_
 																		 
 inline void CSolver::SetFreeSurface_Distance(CGeometry *geometry, CConfig *config) { }
 
-inline void CSolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fea_geometry, CGeometry **flow_geometry, CConfig *fea_config, CConfig *flow_config) { }
+inline void CSolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fea_geometry, CGeometry **flow_geometry, CConfig *fea_config, CConfig *flow_config, CNumerics *fea_numerics) { }
 
 inline void CSolver::GetSurface_Pressure(CGeometry *geometry, CConfig *config) { }
 
@@ -71,6 +71,16 @@ inline void CSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver
 inline void CSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter) { }
   
 inline void CSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetricMovement *flow_grid_movement, CConfig *flow_config, CConfig *fea_config, CGeometry **fea_geometry, CSolver ***fea_solution) { }
+
+inline void CSolver::SetStruct_Displacement(CGeometry **fea_geometry, CConfig *fea_config, CSolver ***fea_solution) { }
+
+inline void CSolver::PredictStruct_Displacement(CGeometry **fea_geometry, CConfig *fea_config, CSolver ***fea_solution) { }
+
+inline void CSolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, CConfig *fea_config, CSolver ***fea_solution, unsigned long iFSIIter) { }
+
+inline void CSolver::SetAitken_Relaxation(CGeometry **fea_geometry, CConfig *fea_config, CSolver ***fea_solution) { }
+
+inline void CSolver::Update_StructSolution(CGeometry **fea_geometry, CConfig *fea_config, CSolver ***fea_solution) { }
 
 inline void CSolver::SetCSensitivity(unsigned short val_marker, unsigned long val_vertex, double val_sensitivity) { }
 
@@ -270,6 +280,14 @@ inline void CSolver::SetTotal_HeatFluxDiff(double val_heat) { }
 
 inline void CSolver::SetTotal_CFEA(double val_cfea) { }
 
+inline double CSolver::GetWAitken_Dyn(void) { return 0; }
+
+inline double CSolver::GetWAitken_Dyn_tn1(void) { return 0; }
+
+inline void CSolver::SetWAitken_Dyn(double waitk) {  }
+
+inline void CSolver::SetWAitken_Dyn_tn1(double waitk_tn1) {  }
+
 inline void CSolver::SetTotal_CFreeSurface(double val_freesurface) { }
 
 inline void CSolver::SetTotal_CNearFieldOF(double val_cnearfieldpress) { }
@@ -394,6 +412,13 @@ inline void CSolver::SetOneD_FluxAvgEntalpy(double EnthalpyRef) { }
 
 inline void CSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
 									 unsigned short val_marker) { }
+
+
+inline void CSolver::BC_Clamped(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
+									 unsigned short val_marker) { }
+
+inline void CSolver::BC_Clamped_Post(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
+									 unsigned short val_marker) { }
 									 
 inline void CSolver::BC_Normal_Displacement(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
 									 unsigned short val_marker) { }
@@ -403,6 +428,12 @@ inline void CSolver::BC_Flow_Load(CGeometry *geometry, CSolver **solver_containe
 									 
 inline void CSolver::BC_Normal_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
 									 unsigned short val_marker) { }
+
+inline void CSolver::BC_Dir_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
+									 unsigned short val_marker) { }
+									 
+inline void CSolver::BC_Sine_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
+									 unsigned short val_marker) { }									 
                    
 inline void CSolver::BC_Pressure(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
 									 unsigned short val_marker) { }
@@ -484,7 +515,10 @@ inline void CSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
 							        unsigned short iMesh, unsigned long Iteration) { }	
 							        
 inline void CSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, 
-							        unsigned short iMesh) { }								        
+							        unsigned short iMesh) { }	
+
+inline void CSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,  CNumerics **numerics,
+							        unsigned short iMesh) { }	
 
 inline void CSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, 
 										CConfig *config, unsigned short iMesh, unsigned short iRKStep) { }
@@ -493,6 +527,8 @@ inline void CSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_conta
 									   CConfig *config, unsigned short iMesh) { }
 
 inline void CSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) { }
+
+inline void CSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, CNumerics **numerics, unsigned short iMesh, unsigned long Iteration, unsigned short RunTime_EqSystem, bool Output) { }
 
 inline void CSolver::SetDissipation_Switch(CGeometry *geometry, CConfig *config) { }
 
@@ -522,6 +558,8 @@ inline void CSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_
 inline void CSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
 inline void CSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
+
+inline void CSolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
 inline void CSolver::Compute_Residual(CGeometry *geometry, CSolver **solver_container, CConfig *config, 
 										unsigned short iMesh) { }
@@ -582,7 +620,19 @@ inline void CSolver::Copy_Zone_Solution(CSolver ***solver1_solution, CGeometry *
 inline CFluidModel* CSolver::GetFluidModel(void) { return NULL;}
 
 inline CFluidModel* CEulerSolver::GetFluidModel(void) { return FluidModel;}
+										  
+inline void CSolver::Compute_StiffMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config) { }
 
+inline void CSolver::Compute_StiffMassMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config) { }										  
+
+inline void CSolver::Compute_StiffMassDampMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config) { }
+
+inline void CSolver::Initialize_SystemMatrix(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }	
+
+inline void CSolver::Compute_IntegrationConstants(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config) { }
+
+inline void CSolver::SetSolution_time_n(CGeometry *geometry, CConfig *config) { }										  
+										  
 inline double CEulerSolver::GetDensity_Inf(void) { return Density_Inf; }
 
 inline double CEulerSolver::GetModVelocity_Inf(void) { 
@@ -591,6 +641,10 @@ inline double CEulerSolver::GetModVelocity_Inf(void) {
 		Vel2 += Velocity_Inf[iDim]*Velocity_Inf[iDim]; 
 	return sqrt(Vel2);
 }
+
+inline void CSolver::SetFSI_ConvValue(unsigned short val_index, double val_criteria) { };
+
+inline double CSolver::GetFSI_ConvValue(unsigned short val_index) { return 0.0; }
 
 inline double CEulerSolver::GetDensity_Energy_Inf(void) { return Density_Inf*Energy_Inf; }
 
@@ -845,6 +899,18 @@ inline double CLinEulerSolver::GetTotal_CDeltaDrag() { return Total_CDeltaDrag; 
 inline double CFEASolver::GetTotal_CFEA() { return Total_CFEA; }
 
 inline void CFEASolver::SetTotal_CFEA(double cfea) { Total_CFEA = cfea; }
+
+inline double CFEASolver::GetWAitken_Dyn(void) { return WAitken_Dyn; }
+
+inline double CFEASolver::GetWAitken_Dyn_tn1(void) { return WAitken_Dyn_tn1; }
+
+inline void CFEASolver::SetWAitken_Dyn(double waitk) { WAitken_Dyn = waitk; }
+
+inline void CFEASolver::SetWAitken_Dyn_tn1(double waitk_tn1) { WAitken_Dyn_tn1 = waitk_tn1; }
+
+inline void CFEASolver::SetFSI_ConvValue(unsigned short val_index, double val_criteria) { FSI_Conv[val_index] = val_criteria; }
+
+inline double CFEASolver::GetFSI_ConvValue(unsigned short val_index){ return FSI_Conv[val_index]; }
 
 inline double CWaveSolver::GetTotal_CWave() { return Total_CWave; }
 

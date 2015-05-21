@@ -1,0 +1,60 @@
+This README file includes instructions on how to use Eclipse with the SU2
+github repository. It is assumed that Eclipse has already been installed.
+-------------------------------------------------------------------------------
+1. Initial Eclipse Set-up
+In order to view files with helpful text highlighting and code navigation 
+tools, install the packages for C++, Python, and Git:
+	Help -> Install New Software
+	Install packages for Git, C++ and Python, for example: 
+		C/C++ Development Tools SDK
+		Eclipse EGit
+		PyDev for Eclipse
+
+-------------------------------------------------------------------------------
+2. Get the code
+
+2a.If you have already cloned the SU2 source code, or prefer to clone via the 
+command line, you will need to import this project into the Eclipse Workspace: 
+	File -> New -> Makefile project with existing code
+	Name the project and navigate to the appropriate directory.
+	Make sure "C++" is checked and select "finish"
+
+2b. To clone the repository to your local system using Eclipse tools:
+	Switch to the Git perspective:
+		Window -> open perspective -> Git Repository Exploring
+	Use Eclipse to clone th repository:
+		"Clone a Git Repository and add the clone to this view"
+		Select "URI"
+		Select the "git" protocol
+		Type "github.com" in the Host field
+		Type "su2code/SU2" in the Repository Path field.
+		Select "Next"
+		Select branches to clone and select "next"
+		Select the destination directory, initial branch, etc
+		Select "Finish"
+-------------------------------------------------------------------------------
+3. View the branch structure and use Eclipse git tools:
+If you did not clone the repository using Egit:
+	Window -> open perspective -> Git Repository Exploring
+	Window -> Show View -> Git Repositories
+	Add the repository: 
+	In the Git repositories window, select "add an existing local git
+	repository to this view". 
+	Browse to the location where you cloned the repository, select "finish"
+
+	When in the Git perspective, you will be able to see your local github 
+	repositories and graphically explore the branch structure. 
+
+
+-------------------------------------------------------------------------------
+4. Viewing and Editting the code:
+	Select Wndow -> open perspectives -> C/C++
+	If the C/C++ projects view does not open automatically:
+		Select Window -> show view -> C/C++ Projects
+	Select Project-> Properties to edit Eclipse behavior
+
+-------------------------------------------------------------------------------
+
+
+
+
