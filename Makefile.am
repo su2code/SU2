@@ -26,13 +26,15 @@
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 #
 # Created: 		10/26/12
-# Last updated: 	03/24/14
+# Last updated: 	05/18/15
 #
 # Created by: 		M. Colonno
 # Updated by: 		T. Economon
+# Last updated by: 		R. Sanchez
 #
 # Major Changes/Contributions:
 # METIS & TECIO integration added by Ben Kirk, 3/24/2014
+# SU2_FSI integration added by Ruben Sanchez, 5/18/2015
 #
 ######################################################################################
 
@@ -48,6 +50,10 @@ SUBDIRS += SU2_PY
 
 if BUILD_CFD
 SUBDIRS +=SU2_CFD/obj
+endif
+
+if BUILD_FSI
+SUBDIRS +=SU2_FSI/obj
 endif
 
 if BUILD_DOT
