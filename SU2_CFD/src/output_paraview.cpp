@@ -4,7 +4,7 @@
  * \author F. Palacios
  * \version 3.2.9 "eagle"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
+ * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
@@ -65,8 +65,12 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
       filename = config->GetFlow_FileName();
   }
   
-	if (Kind_Solver == LINEAR_ELASTICITY)
-		filename = config->GetStructure_FileName().c_str();
+	if (Kind_Solver == LINEAR_ELASTICITY){
+		if (surf_sol)
+			filename = config->GetSurfStructure_FileName().c_str();
+		else
+			filename = config->GetStructure_FileName().c_str();
+	}
   
 	if (Kind_Solver == WAVE_EQUATION)
 		filename = config->GetWave_FileName().c_str();
@@ -107,6 +111,13 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
 		if ((SU2_TYPE::Int(iExtIter) >= 100) && (SU2_TYPE::Int(iExtIter) < 1000)) SPRINTF (buffer, "_00%d.vtk", SU2_TYPE::Int(iExtIter));
 		if ((SU2_TYPE::Int(iExtIter) >= 1000) && (SU2_TYPE::Int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d.vtk", SU2_TYPE::Int(iExtIter));
 		if (SU2_TYPE::Int(iExtIter) >= 10000) SPRINTF (buffer, "_%d.vtk", SU2_TYPE::Int(iExtIter));
+
+    } else if (config->GetDynamic_Analysis() && config->GetWrt_Dynamic()) {
+      if ((SU2_TYPE::Int(iExtIter) >= 0) && (SU2_TYPE::Int(iExtIter) < 10)) SPRINTF (buffer, "_0000%d.vtk", SU2_TYPE::Int(iExtIter));
+      if ((SU2_TYPE::Int(iExtIter) >= 10) && (SU2_TYPE::Int(iExtIter) < 100)) SPRINTF (buffer, "_000%d.vtk", SU2_TYPE::Int(iExtIter));
+      if ((SU2_TYPE::Int(iExtIter) >= 100) && (SU2_TYPE::Int(iExtIter) < 1000)) SPRINTF (buffer, "_00%d.vtk", SU2_TYPE::Int(iExtIter));
+      if ((SU2_TYPE::Int(iExtIter) >= 1000) && (SU2_TYPE::Int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d.vtk", SU2_TYPE::Int(iExtIter));
+      if (SU2_TYPE::Int(iExtIter) >= 10000) SPRINTF (buffer, "_%d.vtk", SU2_TYPE::Int(iExtIter));
 	} else {
 		SPRINTF (buffer, ".vtk");
 	}
@@ -354,8 +365,12 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
   else {
     
     for (iVar = 0; iVar < nVar_Consv; iVar++) {
+
+    	if ( Kind_Solver == LINEAR_ELASTICITY )
+    		Paraview_File << "\nSCALARS Displacement_" << iVar+1 << " float 1\n";
+    	else
+    		Paraview_File << "\nSCALARS Conservative_" << iVar+1 << " float 1\n";
       
-      Paraview_File << "\nSCALARS Conservative_" << iVar+1 << " float 1\n";
       Paraview_File << "LOOKUP_TABLE default\n";
       
       for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
@@ -667,6 +682,90 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
       VarCounter++;
       
     }
+
+    if ( Kind_Solver == LINEAR_ELASTICITY ) {
+
+       Paraview_File << "\nSCALARS Sxx float 1\n";
+       Paraview_File << "LOOKUP_TABLE default\n";
+
+       for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+          if (! surf_sol) {
+        	  Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
+          }
+        }
+      VarCounter++;
+
+      Paraview_File << "\nSCALARS Syy float 1\n";
+      Paraview_File << "LOOKUP_TABLE default\n";
+
+      for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+         if (! surf_sol) {
+       	  Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
+         }
+       }
+     VarCounter++;
+
+     Paraview_File << "\nSCALARS Sxy float 1\n";
+     Paraview_File << "LOOKUP_TABLE default\n";
+
+     for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+        if (! surf_sol) {
+      	  Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
+        }
+      }
+    VarCounter++;
+
+    if (nDim == 3){
+
+			Paraview_File << "\nSCALARS Szz float 1\n";
+			Paraview_File << "LOOKUP_TABLE default\n";
+
+			for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+			   if (! surf_sol) {
+				  Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
+			   }
+			 }
+		   VarCounter++;
+
+		   Paraview_File << "\nSCALARS Sxz float 1\n";
+		   Paraview_File << "LOOKUP_TABLE default\n";
+
+		   for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+			  if (! surf_sol) {
+				  Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
+			  }
+			}
+		  VarCounter++;
+
+		  Paraview_File << "\nSCALARS Syz float 1\n";
+		  Paraview_File << "LOOKUP_TABLE default\n";
+
+		  for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+			 if (! surf_sol) {
+			  Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
+			 }
+		   }
+		 VarCounter++;
+
+    }
+
+      Paraview_File << "\nSCALARS Von_Mises_Stress float 1\n";
+      Paraview_File << "LOOKUP_TABLE default\n";
+
+      for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+        if (surf_sol) {
+          if (LocalIndex[iPoint+1] != 0) {
+            /*--- Loop over the vars/residuals and write the values to file ---*/
+            Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
+          }
+        } else {
+          /*--- Loop over the vars/residuals and write the values to file ---*/
+          Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
+        }
+      }
+      VarCounter++;
+
+    }
     
   }
   
@@ -720,8 +819,12 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
     }
   }
   
-	if (Kind_Solver == LINEAR_ELASTICITY)
-		filename = config->GetStructure_FileName().c_str();
+	if (Kind_Solver == LINEAR_ELASTICITY){
+		if (surf_sol)
+			filename = config->GetSurfStructure_FileName().c_str();
+		else
+			filename = config->GetStructure_FileName().c_str();
+	}
   
 	if (Kind_Solver == WAVE_EQUATION)
 		filename = config->GetWave_FileName().c_str();
@@ -762,6 +865,13 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
 		if ((SU2_TYPE::Int(iExtIter) >= 100) && (SU2_TYPE::Int(iExtIter) < 1000)) SPRINTF (buffer, "_00%d.vtk", SU2_TYPE::Int(iExtIter));
 		if ((SU2_TYPE::Int(iExtIter) >= 1000) && (SU2_TYPE::Int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d.vtk", SU2_TYPE::Int(iExtIter));
 		if (SU2_TYPE::Int(iExtIter) >= 10000) SPRINTF (buffer, "_%d.vtk", SU2_TYPE::Int(iExtIter));
+
+    } else if (config->GetDynamic_Analysis() && config->GetWrt_Dynamic()) {
+      if ((SU2_TYPE::Int(iExtIter) >= 0) && (SU2_TYPE::Int(iExtIter) < 10)) SPRINTF (buffer, "_0000%d.vtk", SU2_TYPE::Int(iExtIter));
+      if ((SU2_TYPE::Int(iExtIter) >= 10) && (SU2_TYPE::Int(iExtIter) < 100)) SPRINTF (buffer, "_000%d.vtk", SU2_TYPE::Int(iExtIter));
+      if ((SU2_TYPE::Int(iExtIter) >= 100) && (SU2_TYPE::Int(iExtIter) < 1000)) SPRINTF (buffer, "_00%d.vtk", SU2_TYPE::Int(iExtIter));
+      if ((SU2_TYPE::Int(iExtIter) >= 1000) && (SU2_TYPE::Int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d.vtk", SU2_TYPE::Int(iExtIter));
+      if (SU2_TYPE::Int(iExtIter) >= 10000) SPRINTF (buffer, "_%d.vtk", SU2_TYPE::Int(iExtIter));	
 	} else {
 		SPRINTF (buffer, ".vtk");
 	}
@@ -1013,8 +1123,12 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
   else if (config->GetKind_SU2()!=SU2_DEF){
     
     for (iVar = 0; iVar < nVar_Consv; iVar++) {
+
+    	if ( Kind_Solver == LINEAR_ELASTICITY )
+    		Paraview_File << "\nSCALARS Displacement_" << iVar+1 << " float 1\n";
+    	else
+    		Paraview_File << "\nSCALARS Conservative_" << iVar+1 << " float 1\n";
       
-      Paraview_File << "\nSCALARS Conservative_" << iVar+1 << " float 1\n";
       Paraview_File << "LOOKUP_TABLE default\n";
       
       for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
@@ -1327,6 +1441,92 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
       
     }
     
+
+    if ( Kind_Solver == LINEAR_ELASTICITY ) {
+
+       Paraview_File << "\nSCALARS Sxx float 1\n";
+       Paraview_File << "LOOKUP_TABLE default\n";
+
+       for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+          if (! surf_sol) {
+        	  Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
+          }
+        }
+      VarCounter++;
+
+      Paraview_File << "\nSCALARS Syy float 1\n";
+      Paraview_File << "LOOKUP_TABLE default\n";
+
+      for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+         if (! surf_sol) {
+       	  Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
+         }
+       }
+     VarCounter++;
+
+     Paraview_File << "\nSCALARS Sxy float 1\n";
+     Paraview_File << "LOOKUP_TABLE default\n";
+
+     for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+        if (! surf_sol) {
+      	  Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
+        }
+      }
+    VarCounter++;
+
+    if (nDim == 3){
+
+			Paraview_File << "\nSCALARS Szz float 1\n";
+			Paraview_File << "LOOKUP_TABLE default\n";
+
+			for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+			   if (! surf_sol) {
+				  Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
+			   }
+			 }
+		   VarCounter++;
+
+		   Paraview_File << "\nSCALARS Sxz float 1\n";
+		   Paraview_File << "LOOKUP_TABLE default\n";
+
+		   for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+			  if (! surf_sol) {
+				  Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
+			  }
+			}
+		  VarCounter++;
+
+		  Paraview_File << "\nSCALARS Syz float 1\n";
+		  Paraview_File << "LOOKUP_TABLE default\n";
+
+		  for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+			 if (! surf_sol) {
+			  Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
+			 }
+		   }
+		 VarCounter++;
+
+    }
+
+      Paraview_File << "\nSCALARS Von_Mises_Stress float 1\n";
+      Paraview_File << "LOOKUP_TABLE default\n";
+
+      for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+        if (surf_sol) {
+          if (LocalIndex[iPoint+1] != 0) {
+            /*--- Loop over the vars/residuals and write the values to file ---*/
+            Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
+          }
+        } else {
+          /*--- Loop over the vars/residuals and write the values to file ---*/
+          Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
+        }
+      }
+      VarCounter++;
+
+    }
+
+
   }
   
 	Paraview_File.close();

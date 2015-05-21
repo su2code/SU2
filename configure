@@ -6326,6 +6326,8 @@ fi
 
 
 
+
+
 # Set the variables
  if test $build_NORMAL != "no"; then
   BUILD_NORMAL_TRUE=
@@ -7820,7 +7822,7 @@ abs_prefix=$prefix #`(cd $prefix && pwd)`
 |   |___/\\___//___|   Suite                                             |
 |                                                                       |
 -------------------------------------------------------------------------
-| SU2 Lead Dev.: Dr. Francisco Palacios (francisco.palacios@boeing.com).|
+| SU2 Lead Dev.: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).|
 |                Dr. Thomas D. Economon (economon@stanford.edu).        |
 -------------------------------------------------------------------------
 | SU2 Developers:                                                       |
@@ -7900,7 +7902,7 @@ $as_echo "
 |   |___/\\___//___|   Suite                                             |
 |                                                                       |
 -------------------------------------------------------------------------
-| SU2 Lead Dev.: Dr. Francisco Palacios (francisco.palacios@boeing.com).|
+| SU2 Lead Dev.: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).|
 |                Dr. Thomas D. Economon (economon@stanford.edu).        |
 -------------------------------------------------------------------------
 | SU2 Developers:                                                       |

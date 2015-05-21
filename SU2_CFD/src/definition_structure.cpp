@@ -4,7 +4,7 @@
  * \author F. Palacios, T. Economon
  * \version 3.2.9 "eagle"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
+ * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
@@ -77,6 +77,11 @@ unsigned short GetnZone(string val_mesh_filename, unsigned short val_format, CCo
       
       break;
       
+  }
+  
+  /*--- For time spectral integration, nZones = nTimeInstances. ---*/
+  if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+    nZone = config->GetnTimeInstances();
   }
   
   return (unsigned short) nZone;
@@ -355,9 +360,6 @@ void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry,
     case RANS : ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; break;
     case TNE2_EULER : tne2_euler = true; break;
     case TNE2_NAVIER_STOKES: tne2_ns = true; break;
-    case FLUID_STRUCTURE_EULER: euler = true; fea = true; break;
-    case FLUID_STRUCTURE_NAVIER_STOKES: ns = true; fea = true; break;
-    case FLUID_STRUCTURE_RANS: ns = true; turbulent = true; fea = true; break;
     case POISSON_EQUATION: poisson = true; break;
     case WAVE_EQUATION: wave = true; break;
     case HEAT_EQUATION: heat = true; break;
@@ -513,9 +515,6 @@ void Integration_Preprocessing(CIntegration **integration_container,
     case RANS : ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; break;
     case TNE2_EULER : tne2_euler = true; break;
     case TNE2_NAVIER_STOKES: tne2_ns = true; break;
-    case FLUID_STRUCTURE_EULER: euler = true; fea = true; break;
-    case FLUID_STRUCTURE_NAVIER_STOKES: ns = true; fea = true; break;
-    case FLUID_STRUCTURE_RANS: ns = true; turbulent = true; fea = true; break;
     case POISSON_EQUATION: poisson = true; break;
     case WAVE_EQUATION: wave = true; break;
     case HEAT_EQUATION: heat = true; break;
@@ -545,7 +544,7 @@ void Integration_Preprocessing(CIntegration **integration_container,
   if (poisson) integration_container[POISSON_SOL] = new CSingleGridIntegration(config);
   if (wave) integration_container[WAVE_SOL] = new CSingleGridIntegration(config);
   if (heat) integration_container[HEAT_SOL] = new CSingleGridIntegration(config);
-  if (fea) integration_container[FEA_SOL] = new CSingleGridIntegration(config);
+  if (fea) integration_container[FEA_SOL] = new CStructuralIntegration(config);
   
   /*--- Allocate solution for adjoint problem ---*/
   if (adj_euler) integration_container[ADJFLOW_SOL] = new CMultiGridIntegration(config);
@@ -581,6 +580,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
   nPrimVar_Adj_TNE2     = 0,
   nPrimVarGrad_Adj_TNE2 = 0,
   nVar_Poisson          = 0,
+  nVar_FEA              = 0,
   nVar_Wave             = 0,
   nVar_Heat             = 0,
   nVar_Lin_Flow         = 0;
@@ -625,9 +625,6 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
     case RANS : case DISC_ADJ_RANS:  ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; break;
     case TNE2_EULER : tne2_euler = true; break;
     case TNE2_NAVIER_STOKES: tne2_ns = true; break;
-    case FLUID_STRUCTURE_EULER: euler = true; fea = true; break;
-    case FLUID_STRUCTURE_NAVIER_STOKES: ns = true; fea = true; break;
-    case FLUID_STRUCTURE_RANS: ns = true; turbulent = true; fea = true; break;
     case POISSON_EQUATION: poisson = true; break;
     case WAVE_EQUATION: wave = true; break;
     case HEAT_EQUATION: heat = true; break;
@@ -669,6 +666,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
   if (poisson)			nVar_Poisson = solver_container[MESH_0][POISSON_SOL]->GetnVar();
   
   if (wave)				nVar_Wave = solver_container[MESH_0][WAVE_SOL]->GetnVar();
+  if (fea)				nVar_FEA = solver_container[MESH_0][FEA_SOL]->GetnVar();
   if (heat)				nVar_Heat = solver_container[MESH_0][HEAT_SOL]->GetnVar();
   
   /*--- Number of variables for adjoint problem ---*/

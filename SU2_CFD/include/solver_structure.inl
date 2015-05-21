@@ -4,7 +4,7 @@
  * \author F. Palacios, T. Economon
  * \version 3.2.9 "eagle"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
+ * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
@@ -55,14 +55,14 @@ inline void CSolver::SetNondimensionalization(CGeometry *geometry, CConfig *conf
 
 inline unsigned short CSolver::GetIterLinSolver(void) { return IterLinSolver; }
 
-inline su2double CSolver::GetCSensitivity(unsigned short val_marker, unsigned short val_vertex) { return 0; }
+inline su2double CSolver::GetCSensitivity(unsigned short val_marker, unsigned long val_vertex) { return 0; }
 
 inline void CSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep, 
 																		 unsigned short iMesh, unsigned short RunTime_EqSystem) { }
 																		 
 inline void CSolver::SetFreeSurface_Distance(CGeometry *geometry, CConfig *config) { }
 
-inline void CSolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fea_geometry, CGeometry **flow_geometry, CConfig *fea_config, CConfig *flow_config) { }
+inline void CSolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fea_geometry, CGeometry **flow_geometry, CConfig *fea_config, CConfig *flow_config, CNumerics *fea_numerics) { }
 
 inline void CSolver::GetSurface_Pressure(CGeometry *geometry, CConfig *config) { }
 
@@ -72,7 +72,17 @@ inline void CSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
   
 inline void CSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetricMovement *flow_grid_movement, CConfig *flow_config, CConfig *fea_config, CGeometry **fea_geometry, CSolver ***fea_solution) { }
 
-inline void CSolver::SetCSensitivity(unsigned short val_marker, unsigned short val_vertex, su2double val_sensitivity) { }
+inline void CSolver::SetStruct_Displacement(CGeometry **fea_geometry, CConfig *fea_config, CSolver ***fea_solution) { }
+
+inline void CSolver::PredictStruct_Displacement(CGeometry **fea_geometry, CConfig *fea_config, CSolver ***fea_solution) { }
+
+inline void CSolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, CConfig *fea_config, CSolver ***fea_solution, unsigned long iFSIIter) { }
+
+inline void CSolver::SetAitken_Relaxation(CGeometry **fea_geometry, CConfig *fea_config, CSolver ***fea_solution) { }
+
+inline void CSolver::Update_StructSolution(CGeometry **fea_geometry, CConfig *fea_config, CSolver ***fea_solution) { }
+
+inline void CSolver::SetCSensitivity(unsigned short val_marker, unsigned long val_vertex, su2double val_sensitivity) { }
 
 inline void CSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config) { }
 
@@ -270,6 +280,14 @@ inline void CSolver::SetTotal_HeatFluxDiff(su2double val_heat) { }
 
 inline void CSolver::SetTotal_CFEA(su2double val_cfea) { }
 
+inline su2double CSolver::GetWAitken_Dyn(void) { return 0; }
+
+inline su2double CSolver::GetWAitken_Dyn_tn1(void) { return 0; }
+
+inline void CSolver::SetWAitken_Dyn(su2double waitk) {  }
+
+inline void CSolver::SetWAitken_Dyn_tn1(su2double waitk_tn1) {  }
+
 inline void CSolver::SetTotal_CFreeSurface(su2double val_freesurface) { }
 
 inline void CSolver::SetTotal_CNearFieldOF(su2double val_cnearfieldpress) { }
@@ -286,23 +304,23 @@ inline void CSolver::SetTotal_CLift(su2double val_Total_CLift) { }
 
 inline void CSolver::SetTotal_CDrag(su2double val_Total_CDrag) { }
 
-inline su2double CSolver::GetCPressure(unsigned short val_marker, unsigned short val_vertex) { return 0; }
+inline su2double CSolver::GetCPressure(unsigned short val_marker, unsigned long val_vertex) { return 0; }
 
-inline su2double CSolver::GetCPressureTarget(unsigned short val_marker, unsigned short val_vertex) { return 0; }
+inline su2double CSolver::GetCPressureTarget(unsigned short val_marker, unsigned long val_vertex) { return 0; }
 
-inline void CSolver::SetCPressureTarget(unsigned short val_marker, unsigned short val_vertex, su2double val_pressure) { }
+inline void CSolver::SetCPressureTarget(unsigned short val_marker, unsigned long val_vertex, su2double val_pressure) { }
 
-inline void CSolver::SetHeatFluxTarget(unsigned short val_marker, unsigned short val_vertex, su2double val_heat) { }
+inline void CSolver::SetHeatFluxTarget(unsigned short val_marker, unsigned long val_vertex, su2double val_heat) { }
 
-inline su2double *CSolver::GetCharacPrimVar(unsigned short val_marker, unsigned short val_vertex) { return 0; }
+inline su2double *CSolver::GetCharacPrimVar(unsigned short val_marker, unsigned long val_vertex) { return 0; }
 
-inline su2double CSolver::GetCSkinFriction(unsigned short val_marker, unsigned short val_vertex) { return 0; }
+inline su2double CSolver::GetCSkinFriction(unsigned short val_marker, unsigned long val_vertex) { return 0; }
 
-inline su2double CSolver::GetHeatFlux(unsigned short val_marker, unsigned short val_vertex) { return 0; }
+inline su2double CSolver::GetHeatFlux(unsigned short val_marker, unsigned long val_vertex) { return 0; }
 
-inline su2double CSolver::GetHeatFluxTarget(unsigned short val_marker, unsigned short val_vertex) { return 0; }
+inline su2double CSolver::GetHeatFluxTarget(unsigned short val_marker, unsigned long val_vertex) { return 0; }
 
-inline su2double CSolver::GetYPlus(unsigned short val_marker, unsigned short val_vertex) { return 0; }
+inline su2double CSolver::GetYPlus(unsigned short val_marker, unsigned long val_vertex) { return 0; }
 
 inline su2double CSolver::GetStrainMag_Max(void) { return 0; }
 
@@ -394,6 +412,13 @@ inline void CSolver::SetOneD_FluxAvgEntalpy(su2double EnthalpyRef) { }
 
 inline void CSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
 									 unsigned short val_marker) { }
+
+
+inline void CSolver::BC_Clamped(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
+									 unsigned short val_marker) { }
+
+inline void CSolver::BC_Clamped_Post(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
+									 unsigned short val_marker) { }
 									 
 inline void CSolver::BC_Normal_Displacement(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
 									 unsigned short val_marker) { }
@@ -403,6 +428,12 @@ inline void CSolver::BC_Flow_Load(CGeometry *geometry, CSolver **solver_containe
 									 
 inline void CSolver::BC_Normal_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
 									 unsigned short val_marker) { }
+
+inline void CSolver::BC_Dir_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
+									 unsigned short val_marker) { }
+									 
+inline void CSolver::BC_Sine_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
+									 unsigned short val_marker) { }									 
                    
 inline void CSolver::BC_Pressure(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
 									 unsigned short val_marker) { }
@@ -484,7 +515,10 @@ inline void CSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
 							        unsigned short iMesh, unsigned long Iteration) { }	
 							        
 inline void CSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, 
-							        unsigned short iMesh) { }								        
+							        unsigned short iMesh) { }	
+
+inline void CSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,  CNumerics **numerics,
+							        unsigned short iMesh) { }	
 
 inline void CSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, 
 										CConfig *config, unsigned short iMesh, unsigned short iRKStep) { }
@@ -493,6 +527,8 @@ inline void CSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_conta
 									   CConfig *config, unsigned short iMesh) { }
 
 inline void CSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) { }
+
+inline void CSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, CNumerics **numerics, unsigned short iMesh, unsigned long Iteration, unsigned short RunTime_EqSystem, bool Output) { }
 
 inline void CSolver::SetDissipation_Switch(CGeometry *geometry, CConfig *config) { }
 
@@ -522,6 +558,8 @@ inline void CSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_
 inline void CSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
 inline void CSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
+
+inline void CSolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
 inline void CSolver::Compute_Residual(CGeometry *geometry, CSolver **solver_container, CConfig *config, 
 										unsigned short iMesh) { }
@@ -582,7 +620,19 @@ inline void CSolver::Copy_Zone_Solution(CSolver ***solver1_solution, CGeometry *
 inline CFluidModel* CSolver::GetFluidModel(void) { return NULL;}
 
 inline CFluidModel* CEulerSolver::GetFluidModel(void) { return FluidModel;}
+										  
+inline void CSolver::Compute_StiffMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config) { }
 
+inline void CSolver::Compute_StiffMassMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config) { }										  
+
+inline void CSolver::Compute_StiffMassDampMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config) { }
+
+inline void CSolver::Initialize_SystemMatrix(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }	
+
+inline void CSolver::Compute_IntegrationConstants(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config) { }
+
+inline void CSolver::SetSolution_time_n(CGeometry *geometry, CConfig *config) { }										  
+										  
 inline su2double CEulerSolver::GetDensity_Inf(void) { return Density_Inf; }
 
 inline su2double CEulerSolver::GetModVelocity_Inf(void) { 
@@ -591,6 +641,10 @@ inline su2double CEulerSolver::GetModVelocity_Inf(void) {
 		Vel2 += Velocity_Inf[iDim]*Velocity_Inf[iDim]; 
 	return sqrt(Vel2);
 }
+
+inline void CSolver::SetFSI_ConvValue(unsigned short val_index, su2double val_criteria) { };
+
+inline su2double CSolver::GetFSI_ConvValue(unsigned short val_index) { return 0.0; }
 
 inline su2double CEulerSolver::GetDensity_Energy_Inf(void) { return Density_Inf*Energy_Inf; }
 
@@ -602,13 +656,13 @@ inline su2double *CEulerSolver::GetVelocity_Inf(void) { return Velocity_Inf; }
 
 inline su2double CEulerSolver::GetPressure_Inf(void) { return Pressure_Inf; }
 
-inline su2double CEulerSolver::GetCPressure(unsigned short val_marker, unsigned short val_vertex) { return CPressure[val_marker][val_vertex]; }
+inline su2double CEulerSolver::GetCPressure(unsigned short val_marker, unsigned long val_vertex) { return CPressure[val_marker][val_vertex]; }
 
-inline su2double CEulerSolver::GetCPressureTarget(unsigned short val_marker, unsigned short val_vertex) { return CPressureTarget[val_marker][val_vertex]; }
+inline su2double CEulerSolver::GetCPressureTarget(unsigned short val_marker, unsigned long val_vertex) { return CPressureTarget[val_marker][val_vertex]; }
 
-inline void CEulerSolver::SetCPressureTarget(unsigned short val_marker, unsigned short val_vertex, su2double val_pressure) { CPressureTarget[val_marker][val_vertex] = val_pressure; }
+inline void CEulerSolver::SetCPressureTarget(unsigned short val_marker, unsigned long val_vertex, su2double val_pressure) { CPressureTarget[val_marker][val_vertex] = val_pressure; }
 
-inline su2double *CEulerSolver::GetCharacPrimVar(unsigned short val_marker, unsigned short val_vertex) { return CharacPrimVar[val_marker][val_vertex]; }
+inline su2double *CEulerSolver::GetCharacPrimVar(unsigned short val_marker, unsigned long val_vertex) { return CharacPrimVar[val_marker][val_vertex]; }
 
 inline su2double CEulerSolver::GetCLift_Inv(unsigned short val_marker) { return CLift_Inv[val_marker]; }
 
@@ -800,15 +854,15 @@ inline su2double CNSSolver::GetAllBound_CSideForce_Visc() { return AllBound_CSid
 
 inline su2double CNSSolver::GetAllBound_CDrag_Visc() { return AllBound_CDrag_Visc; }
 
-inline su2double CNSSolver::GetCSkinFriction(unsigned short val_marker, unsigned short val_vertex) { return CSkinFriction[val_marker][val_vertex]; }
+inline su2double CNSSolver::GetCSkinFriction(unsigned short val_marker, unsigned long val_vertex) { return CSkinFriction[val_marker][val_vertex]; }
 
-inline su2double CNSSolver::GetHeatFlux(unsigned short val_marker, unsigned short val_vertex) { return HeatFlux[val_marker][val_vertex]; }
+inline su2double CNSSolver::GetHeatFlux(unsigned short val_marker, unsigned long val_vertex) { return HeatFlux[val_marker][val_vertex]; }
 
-inline su2double CNSSolver::GetHeatFluxTarget(unsigned short val_marker, unsigned short val_vertex) { return HeatFluxTarget[val_marker][val_vertex]; }
+inline su2double CNSSolver::GetHeatFluxTarget(unsigned short val_marker, unsigned long val_vertex) { return HeatFluxTarget[val_marker][val_vertex]; }
 
-inline void CNSSolver::SetHeatFluxTarget(unsigned short val_marker, unsigned short val_vertex, su2double val_heat) { HeatFluxTarget[val_marker][val_vertex] = val_heat; }
+inline void CNSSolver::SetHeatFluxTarget(unsigned short val_marker, unsigned long val_vertex, su2double val_heat) { HeatFluxTarget[val_marker][val_vertex] = val_heat; }
 
-inline su2double CNSSolver::GetYPlus(unsigned short val_marker, unsigned short val_vertex) { return YPlus[val_marker][val_vertex]; }
+inline su2double CNSSolver::GetYPlus(unsigned short val_marker, unsigned long val_vertex) { return YPlus[val_marker][val_vertex]; }
 
 inline su2double CNSSolver::GetStrainMag_Max(void) { return StrainMag_Max; }
 
@@ -818,9 +872,9 @@ inline void CNSSolver::SetStrainMag_Max(su2double val_strainmag_max) { StrainMag
 
 inline void CNSSolver::SetOmega_Max(su2double val_omega_max) { Omega_Max = val_omega_max; }
 
-inline su2double CAdjEulerSolver::GetCSensitivity(unsigned short val_marker, unsigned short val_vertex) { return CSensitivity[val_marker][val_vertex]; }
+inline su2double CAdjEulerSolver::GetCSensitivity(unsigned short val_marker, unsigned long val_vertex) { return CSensitivity[val_marker][val_vertex]; }
 
-inline void CAdjEulerSolver::SetCSensitivity(unsigned short val_marker, unsigned short val_vertex, su2double val_sensitivity) {CSensitivity[val_marker][val_vertex]=val_sensitivity; }
+inline void CAdjEulerSolver::SetCSensitivity(unsigned short val_marker, unsigned long val_vertex, su2double val_sensitivity) {CSensitivity[val_marker][val_vertex]=val_sensitivity; }
 
 inline su2double CAdjEulerSolver::GetTotal_Sens_Geo() { return Total_Sens_Geo; }
 
@@ -846,6 +900,18 @@ inline su2double CFEASolver::GetTotal_CFEA() { return Total_CFEA; }
 
 inline void CFEASolver::SetTotal_CFEA(su2double cfea) { Total_CFEA = cfea; }
 
+inline su2double CFEASolver::GetWAitken_Dyn(void) { return WAitken_Dyn; }
+
+inline su2double CFEASolver::GetWAitken_Dyn_tn1(void) { return WAitken_Dyn_tn1; }
+
+inline void CFEASolver::SetWAitken_Dyn(su2double waitk) { WAitken_Dyn = waitk; }
+
+inline void CFEASolver::SetWAitken_Dyn_tn1(su2double waitk_tn1) { WAitken_Dyn_tn1 = waitk_tn1; }
+
+inline void CFEASolver::SetFSI_ConvValue(unsigned short val_index, su2double val_criteria) { FSI_Conv[val_index] = val_criteria; }
+
+inline su2double CFEASolver::GetFSI_ConvValue(unsigned short val_index){ return FSI_Conv[val_index]; }
+
 inline su2double CWaveSolver::GetTotal_CWave() { return Total_CWave; }
 
 inline su2double CHeatSolver::GetTotal_CHeat() { return Total_CHeat; }
@@ -867,7 +933,7 @@ inline su2double CTNE2EulerSolver::GetModVelocity_Inf(void) {
 	return sqrt(Vel2);
 }
 
-inline su2double CTNE2EulerSolver::GetCPressure(unsigned short val_marker, unsigned short val_vertex) { return CPressure[val_marker][val_vertex]; }
+inline su2double CTNE2EulerSolver::GetCPressure(unsigned short val_marker, unsigned long val_vertex) { return CPressure[val_marker][val_vertex]; }
 
 inline su2double CTNE2EulerSolver::GetCLift_Inv(unsigned short val_marker) { return CLift_Inv[val_marker]; }
 
@@ -933,11 +999,11 @@ inline su2double CTNE2NSSolver::GetCDrag_Visc(unsigned short val_marker) { retur
 
 inline su2double CTNE2NSSolver::GetCLift_Visc(unsigned short val_marker) { return CLift_Visc[val_marker]; }
 
-inline su2double CTNE2NSSolver::GetCSkinFriction(unsigned short val_marker, unsigned short val_vertex) { return CSkinFriction[val_marker][val_vertex]; }
+inline su2double CTNE2NSSolver::GetCSkinFriction(unsigned short val_marker, unsigned long val_vertex) { return CSkinFriction[val_marker][val_vertex]; }
 
 inline su2double CTNE2NSSolver::GetViscosity_Inf(void) { return Viscosity_Inf; }
 
-inline su2double CTNE2NSSolver::GetHeatFlux(unsigned short val_marker, unsigned short val_vertex) { return HeatFlux[val_marker][val_vertex]; }
+inline su2double CTNE2NSSolver::GetHeatFlux(unsigned short val_marker, unsigned long val_vertex) { return HeatFlux[val_marker][val_vertex]; }
 
 inline su2double CTNE2NSSolver::GetAllBound_CLift_Visc() { return AllBound_CLift_Visc; }
 
@@ -951,9 +1017,9 @@ inline su2double* CAdjTNE2EulerSolver::GetPsiRhos_Inf(void) { return PsiRho_Inf;
 
 inline su2double CAdjTNE2EulerSolver::GetTotal_Sens_Geo() { return Total_Sens_Geo; }
 
-inline void CAdjTNE2EulerSolver::SetCSensitivity(unsigned short val_marker, unsigned short val_vertex, su2double val_sensitivity) {CSensitivity[val_marker][val_vertex]=val_sensitivity; }
+inline void CAdjTNE2EulerSolver::SetCSensitivity(unsigned short val_marker, unsigned long val_vertex, su2double val_sensitivity) {CSensitivity[val_marker][val_vertex]=val_sensitivity; }
 
-inline su2double CAdjTNE2EulerSolver::GetCSensitivity(unsigned short val_marker, unsigned short val_vertex) { return CSensitivity[val_marker][val_vertex]; }
+inline su2double CAdjTNE2EulerSolver::GetCSensitivity(unsigned short val_marker, unsigned long val_vertex) { return CSensitivity[val_marker][val_vertex]; }
 
 inline su2double CAdjTNE2EulerSolver::GetTotal_Sens_AoA() { return Total_Sens_AoA; }
 

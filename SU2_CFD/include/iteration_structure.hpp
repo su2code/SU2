@@ -5,7 +5,7 @@
  * \author F. Palacios, T. Economon
  * \version 3.2.9 "eagle"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
+ * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
@@ -79,7 +79,8 @@ void TNE2Iteration(COutput *output, CIntegration ***integration_container, CGeom
                    CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox);
 
 /*! 
- * \brief ________________________.
+ * \brief Iteration function for Fluid-Structure Interaction applications.
+ * \author F. Palacios, R. Sanchez.
  * \param[in] output - Pointer to the COutput class.
  * \param[in] integration_container - Container vector with all the integration methods.
  * \param[in] geometry_container - Geometrical definition of the problem.
@@ -90,10 +91,12 @@ void TNE2Iteration(COutput *output, CIntegration ***integration_container, CGeom
  * \param[in] grid_movement - Volume grid movement classes of the problem.
  * \param[in] FFDBox - FFD FFDBoxes of the problem.
  * \param[in] ExtIter - Current physical time iteration number.
+ * \param[in] nFluidIt - Number of fluid iterations within a fixed time step.
  */
 void FluidStructureIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container, 
 														 CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container, 
-														 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox);
+														 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox,
+														 unsigned long iFluidIt, unsigned long nFluidIt);
 
 /*! 
  * \brief ________________________.
