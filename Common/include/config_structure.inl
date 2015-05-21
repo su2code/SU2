@@ -439,7 +439,7 @@ inline bool CConfig::GetIonization(void) { return ionization; }
 
 inline unsigned short CConfig::GetKind_Solver(void) { return Kind_Solver; }
 
-inline unsigned short CConfig::SetKind_Solver(unsigned short val_solver) { Kind_Solver = val_solver; }
+inline void CConfig::SetKind_Solver(unsigned short val_solver) { Kind_Solver = val_solver; }
 
 inline unsigned short CConfig::GetKind_Regime(void) { return Kind_Regime; }
 
