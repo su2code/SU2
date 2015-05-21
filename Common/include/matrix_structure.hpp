@@ -53,7 +53,7 @@ using namespace std;
  * \version 3.2.9 "eagle"
  */
 class CSysMatrix {
-private:
+protected:
 	unsigned long nPoint,   /*!< \brief Number of points in the grid. */
 	nPointDomain,           /*!< \brief Number of points in the grid. */
 	nVar,                   /*!< \brief Number of variables. */
@@ -565,6 +565,37 @@ public:
 	 * \param[out] v - CSysVector that is the result of the preconditioning
 	 */
 	void operator()(const CSysVector & u, CSysVector & v) const;
+};
+
+/*!
+ * \class CSysTransferMatrix
+ * \brief Specialization of CSysMatrix to handle transfer coefficients between dissimilar meshes
+ */
+class CSysTransferMatrix : public CSysMatrix {
+private:
+	unsigned long nPoint_Zone1, nElem_Zone1; /*\brief number of nodes, elements in ZONE_1 */
+public:
+
+	/*!
+	 * \brief constructor of the class
+	 */
+	CSysTransferMatrix();
+
+	/*!
+	 * \brief destructor of the class
+	 */
+	~CSysTransferMatrix(){};
+
+	  /*!
+		 * \brief Initializes space matrix system.
+		 * \param[in] nVar - Number of variables.
+		 * \param[in] nEqn - Number of equations.
+		 * \param[in] geometry - Geometrical definition of the problem.
+		 * \param[in] config - Definition of the particular problem.
+		 */
+	  void Initialize(unsigned long nPoint, unsigned long nPointDomain, unsigned short nVar, unsigned short nEqn,
+	                  bool EdgeConnect, CGeometry **geometry, CConfig **config);
+
 };
 
 #include "matrix_structure.inl"

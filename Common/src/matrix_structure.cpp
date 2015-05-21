@@ -1397,3 +1397,99 @@ void CSysMatrix::ComputeResidual(const CSysVector & sol, const CSysVector & f, C
   }
   
 }
+
+
+void CSysTransferMatrix::Initialize(unsigned long nPoint, unsigned long nPointDomain,
+                            unsigned short nVar, unsigned short nEqn,
+                            bool EdgeConnect, CGeometry **geometry, CConfig **config) {
+
+
+	// initialize to length of Zone_0 points
+	unsigned long iPoint, *row_ptr, *col_ind, index, nnz, Elem;
+  unsigned short iNeigh, iElem, iNode, *nNeigh;
+  vector<unsigned long>::iterator it;
+  vector<unsigned long> vneighs;
+
+  nPoint = geometry[ZONE_0]->GetnPoint();
+  nPoint_Zone1 = geometry[ZONE_1]->GetnPoint();
+  nElem_Zone1 = geometry[ZONE_1]->GetnElem();
+  /*--- Don't delete *row_ptr, *col_ind because they are
+   asigned to the Jacobian structure. ---*/
+
+  /*--- Compute the number of neighbors ---*/
+
+  nNeigh = new unsigned short [nPoint];
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+
+    if (EdgeConnect) {
+      nNeigh[iPoint] = (geometry->node[iPoint]->GetnPoint()+1);  // +1 -> to include diagonal element
+    }
+    else {
+      vneighs.clear();
+      for (iElem = 0; iElem < geometry->node[iPoint]->GetnElem(); iElem++) {
+        Elem =  geometry->node[iPoint]->GetElem(iElem);
+        for (iNode = 0; iNode < geometry->elem[Elem]->GetnNodes(); iNode++)
+          vneighs.push_back(geometry->elem[Elem]->GetNode(iNode));
+      }
+      vneighs.push_back(iPoint);
+
+      sort(vneighs.begin(), vneighs.end());
+      it = unique(vneighs.begin(), vneighs.end());
+      vneighs.resize(it - vneighs.begin());
+      nNeigh[iPoint] = vneighs.size();
+    }
+
+  }
+
+  /*--- Create row_ptr structure, using the number of neighbors ---*/
+
+  row_ptr = new unsigned long [nPoint+1];
+  row_ptr[0] = 0;
+  for (iPoint = 0; iPoint < nPoint; iPoint++)
+    row_ptr[iPoint+1] = row_ptr[iPoint] + nNeigh[iPoint];
+  nnz = row_ptr[nPoint];
+
+  /*--- Create col_ind structure ---*/
+
+  col_ind = new unsigned long [nnz];
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+
+    vneighs.clear();
+
+    if (EdgeConnect) {
+      for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++)
+        vneighs.push_back(geometry->node[iPoint]->GetPoint(iNeigh));
+      vneighs.push_back(iPoint);
+    }
+    else {
+      for (iElem = 0; iElem < geometry->node[iPoint]->GetnElem(); iElem++) {
+        Elem =  geometry->node[iPoint]->GetElem(iElem);
+        for (iNode = 0; iNode < geometry->elem[Elem]->GetnNodes(); iNode++)
+          vneighs.push_back(geometry->elem[Elem]->GetNode(iNode));
+      }
+      vneighs.push_back(iPoint);
+    }
+
+    sort(vneighs.begin(), vneighs.end());
+    it = unique(vneighs.begin(), vneighs.end());
+    vneighs.resize( it - vneighs.begin() );
+
+    index = row_ptr[iPoint];
+    for (iNeigh = 0; iNeigh < vneighs.size(); iNeigh++) {
+      col_ind[index] = vneighs[iNeigh];
+      index++;
+    }
+
+  }
+
+  /*--- Set the indices in the in the sparce matrix structure, and memory allocation ---*/
+
+  SetIndexes(nPoint, nPointDomain, nVar, nEqn, row_ptr, col_ind, nnz, config);
+
+  /*--- Initialization matrix to zero ---*/
+
+  SetValZero();
+
+  delete [] nNeigh;
+
+}
