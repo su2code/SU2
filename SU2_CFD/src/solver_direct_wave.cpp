@@ -738,22 +738,22 @@ void CWaveSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
     flowIter  = nFlowIter - adjIter - 1;
     unsigned short lastindex = restart_filename.find_last_of(".");
     restart_filename = restart_filename.substr(0, lastindex);
-    if ((int(flowIter) >= 0) && (int(flowIter) < 10)) SPRINTF (buffer, "_0000%d.dat", int(flowIter));
-    if ((int(flowIter) >= 10) && (int(flowIter) < 100)) SPRINTF (buffer, "_000%d.dat", int(flowIter));
-    if ((int(flowIter) >= 100) && (int(flowIter) < 1000)) SPRINTF (buffer, "_00%d.dat", int(flowIter));
-    if ((int(flowIter) >= 1000) && (int(flowIter) < 10000)) SPRINTF (buffer, "_0%d.dat", int(flowIter));
-    if (int(flowIter) >= 10000) SPRINTF (buffer, "_%d.dat", int(flowIter));
+    if ((SU2_TYPE::Int(flowIter) >= 0) && (SU2_TYPE::Int(flowIter) < 10)) SPRINTF (buffer, "_0000%d.dat", SU2_TYPE::Int(flowIter));
+    if ((SU2_TYPE::Int(flowIter) >= 10) && (SU2_TYPE::Int(flowIter) < 100)) SPRINTF (buffer, "_000%d.dat", SU2_TYPE::Int(flowIter));
+    if ((SU2_TYPE::Int(flowIter) >= 100) && (SU2_TYPE::Int(flowIter) < 1000)) SPRINTF (buffer, "_00%d.dat", SU2_TYPE::Int(flowIter));
+    if ((SU2_TYPE::Int(flowIter) >= 1000) && (SU2_TYPE::Int(flowIter) < 10000)) SPRINTF (buffer, "_0%d.dat", SU2_TYPE::Int(flowIter));
+    if (SU2_TYPE::Int(flowIter) >= 10000) SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(flowIter));
     UnstExt = string(buffer);
     restart_filename.append(UnstExt);
   } else {
     flowIter  =config->GetExtIter();
     unsigned short lastindex = restart_filename.find_last_of(".");
     restart_filename = restart_filename.substr(0, lastindex);
-    if ((int(flowIter) >= 0) && (int(flowIter) < 10)) SPRINTF (buffer, "_0000%d.dat", int(flowIter));
-    if ((int(flowIter) >= 10) && (int(flowIter) < 100)) SPRINTF (buffer, "_000%d.dat", int(flowIter));
-    if ((int(flowIter) >= 100) && (int(flowIter) < 1000)) SPRINTF (buffer, "_00%d.dat", int(flowIter));
-    if ((int(flowIter) >= 1000) && (int(flowIter) < 10000)) SPRINTF (buffer, "_0%d.dat", int(flowIter));
-    if (int(flowIter) >= 10000) SPRINTF (buffer, "_%d.dat", int(flowIter));
+    if ((SU2_TYPE::Int(flowIter) >= 0) && (SU2_TYPE::Int(flowIter) < 10)) SPRINTF (buffer, "_0000%d.dat", SU2_TYPE::Int(flowIter));
+    if ((SU2_TYPE::Int(flowIter) >= 10) && (SU2_TYPE::Int(flowIter) < 100)) SPRINTF (buffer, "_000%d.dat", SU2_TYPE::Int(flowIter));
+    if ((SU2_TYPE::Int(flowIter) >= 100) && (SU2_TYPE::Int(flowIter) < 1000)) SPRINTF (buffer, "_00%d.dat", SU2_TYPE::Int(flowIter));
+    if ((SU2_TYPE::Int(flowIter) >= 1000) && (SU2_TYPE::Int(flowIter) < 10000)) SPRINTF (buffer, "_0%d.dat", SU2_TYPE::Int(flowIter));
+    if (SU2_TYPE::Int(flowIter) >= 10000) SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(flowIter));
     UnstExt = string(buffer);
     restart_filename.append(UnstExt);
   }

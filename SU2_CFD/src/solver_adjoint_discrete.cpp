@@ -41,7 +41,7 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config){
 
 CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *direct_solver, unsigned short Kind_Solver, unsigned short iMesh){
 
-  unsigned short iVar, iMarker, iDim, nZone;
+  unsigned short iVar, iMarker, iDim, nZone, nExtraVar = 0;
 
   bool restart = config->GetRestart();
 
@@ -65,6 +65,16 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
   /*-- Store some information about direct solver ---*/
   this->KindDirect_Solver = Kind_Solver;
   this->direct_solver = direct_solver;
+
+  if (Kind_Solver == SST || Kind_Solver == SA){
+    nExtraVar = 1;
+  }
+
+  if (nExtraVar != 0){
+    ExtraVars = new su2double[nExtraVar];
+  }else{
+    ExtraVars = NULL;
+  }
 
   nMarker      = config->GetnMarker_All();
   nPoint       = geometry->GetnPoint();
@@ -129,7 +139,7 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
 
     /*--- Restart the solution from zero ---*/
     for (iPoint = 0; iPoint < nPoint; iPoint++)
-      node[iPoint] = new CDiscAdjVariable(Solution, nDim, nVar, config);
+      node[iPoint] = new CDiscAdjVariable(Solution, nDim, nVar, nExtraVar, config);
 
   }
   else {

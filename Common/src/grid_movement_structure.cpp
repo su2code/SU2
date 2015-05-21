@@ -5242,11 +5242,11 @@ void CSurfaceMovement::SetExternal_Deformation(CGeometry *geometry, CConfig *con
       flowIter  = nFlowIter - iter;
       unsigned short lastindex = motion_filename.find_last_of(".");
       motion_filename = motion_filename.substr(0, lastindex);
-      if ((int(flowIter) >= 0) && (int(flowIter) < 10)) SPRINTF (buffer, "_0000%d.dat", int(flowIter));
-      if ((int(flowIter) >= 10) && (int(flowIter) < 100)) SPRINTF (buffer, "_000%d.dat", int(flowIter));
-      if ((int(flowIter) >= 100) && (int(flowIter) < 1000)) SPRINTF (buffer, "_00%d.dat", int(flowIter));
-      if ((int(flowIter) >= 1000) && (int(flowIter) < 10000)) SPRINTF (buffer, "_0%d.dat", int(flowIter));
-      if (int(flowIter) >= 10000) SPRINTF (buffer, "_%d.dat", int(flowIter));
+      if ((SU2_TYPE::Int(flowIter) >= 0) && (SU2_TYPE::Int(flowIter) < 10)) SPRINTF (buffer, "_0000%d.dat", SU2_TYPE::Int(flowIter));
+      if ((SU2_TYPE::Int(flowIter) >= 10) && (SU2_TYPE::Int(flowIter) < 100)) SPRINTF (buffer, "_000%d.dat", SU2_TYPE::Int(flowIter));
+      if ((SU2_TYPE::Int(flowIter) >= 100) && (SU2_TYPE::Int(flowIter) < 1000)) SPRINTF (buffer, "_00%d.dat", SU2_TYPE::Int(flowIter));
+      if ((SU2_TYPE::Int(flowIter) >= 1000) && (SU2_TYPE::Int(flowIter) < 10000)) SPRINTF (buffer, "_0%d.dat", SU2_TYPE::Int(flowIter));
+      if (SU2_TYPE::Int(flowIter) >= 10000) SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(flowIter));
       UnstExt = string(buffer);
       motion_filename.append(UnstExt);
     } else {
@@ -5254,11 +5254,11 @@ void CSurfaceMovement::SetExternal_Deformation(CGeometry *geometry, CConfig *con
       flowIter = iter;
       unsigned short lastindex = motion_filename.find_last_of(".");
       motion_filename = motion_filename.substr(0, lastindex);
-      if ((int(flowIter) >= 0) && (int(flowIter) < 10)) SPRINTF (buffer, "_0000%d.dat", int(flowIter));
-      if ((int(flowIter) >= 10) && (int(flowIter) < 100)) SPRINTF (buffer, "_000%d.dat", int(flowIter));
-      if ((int(flowIter) >= 100) && (int(flowIter) < 1000)) SPRINTF (buffer, "_00%d.dat", int(flowIter));
-      if ((int(flowIter) >= 1000) && (int(flowIter) < 10000)) SPRINTF (buffer, "_0%d.dat", int(flowIter));
-      if (int(flowIter) >= 10000) SPRINTF (buffer, "_%d.dat", int(flowIter));
+      if ((SU2_TYPE::Int(flowIter) >= 0) && (SU2_TYPE::Int(flowIter) < 10)) SPRINTF (buffer, "_0000%d.dat", SU2_TYPE::Int(flowIter));
+      if ((SU2_TYPE::Int(flowIter) >= 10) && (SU2_TYPE::Int(flowIter) < 100)) SPRINTF (buffer, "_000%d.dat", SU2_TYPE::Int(flowIter));
+      if ((SU2_TYPE::Int(flowIter) >= 100) && (SU2_TYPE::Int(flowIter) < 1000)) SPRINTF (buffer, "_00%d.dat", SU2_TYPE::Int(flowIter));
+      if ((SU2_TYPE::Int(flowIter) >= 1000) && (SU2_TYPE::Int(flowIter) < 10000)) SPRINTF (buffer, "_0%d.dat", SU2_TYPE::Int(flowIter));
+      if (SU2_TYPE::Int(flowIter) >= 10000) SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(flowIter));
       UnstExt = string(buffer);
       motion_filename.append(UnstExt);
     }
@@ -5863,7 +5863,7 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
           cout << ". " << endl;
         }
         
-				FFDBox[iFFDBox] = new CFreeFormDefBox(int(degree[0]), int(degree[1]), int(degree[2]));				
+				FFDBox[iFFDBox] = new CFreeFormDefBox(SU2_TYPE::Int(degree[0]), SU2_TYPE::Int(degree[1]), SU2_TYPE::Int(degree[2]));				
 				FFDBox[iFFDBox]->SetTag(TagFFDBox); FFDBox[iFFDBox]->SetLevel(LevelFFDBox);
 
 				/*--- Read the number of parents boxes ---*/
@@ -5922,20 +5922,20 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
 				getline (mesh_file, text_line);
 				text_line.erase (0,18); nCornerPoints[iFFDBox] = atoi(text_line.c_str());
 				if (rank == MASTER_NODE) cout << "Corner points: " << nCornerPoints[iFFDBox] <<". ";
-        if (nDim == 2) nCornerPoints[iFFDBox] = nCornerPoints[iFFDBox]*int(2);
+        if (nDim == 2) nCornerPoints[iFFDBox] = nCornerPoints[iFFDBox]*SU2_TYPE::Int(2);
 
 				/*--- Read the coordinates of the corner points ---*/
         
 				for (iCornerPoints = 0; iCornerPoints < nCornerPoints[iFFDBox]; iCornerPoints++) {
           
           if (nDim == 2) {
-            if (iCornerPoints < nCornerPoints[iFFDBox]/int(2)) {
+            if (iCornerPoints < nCornerPoints[iFFDBox]/SU2_TYPE::Int(2)) {
               getline(mesh_file, text_line); istringstream FFDBox_line(text_line);
               FFDBox_line >> coord[0]; FFDBox_line >> coord[1]; coord[2] = -0.5;
             }
             else {
-              coord[0] = FFDBox[iFFDBox]->GetCoordCornerPoints(0, iCornerPoints-nCornerPoints[iFFDBox]/int(2));
-              coord[1] = FFDBox[iFFDBox]->GetCoordCornerPoints(1, iCornerPoints-nCornerPoints[iFFDBox]/int(2));
+              coord[0] = FFDBox[iFFDBox]->GetCoordCornerPoints(0, iCornerPoints-nCornerPoints[iFFDBox]/SU2_TYPE::Int(2));
+              coord[1] = FFDBox[iFFDBox]->GetCoordCornerPoints(1, iCornerPoints-nCornerPoints[iFFDBox]/SU2_TYPE::Int(2));
               coord[2] = 0.5;
             }
           }
@@ -6083,7 +6083,7 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
       cout << ". " << endl;
     }
     
-    FFDBox[iFFDBox] = new CFreeFormDefBox(int(degree[0]), int(degree[1]), int(degree[2]));
+    FFDBox[iFFDBox] = new CFreeFormDefBox(SU2_TYPE::Int(degree[0]), SU2_TYPE::Int(degree[1]), SU2_TYPE::Int(degree[2]));
     FFDBox[iFFDBox]->SetTag(TagFFDBox); FFDBox[iFFDBox]->SetLevel(LevelFFDBox);
     
     /*--- Read the number of parents boxes ---*/
@@ -6115,14 +6115,14 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
     for (iCornerPoints = 0; iCornerPoints < nCornerPoints[iFFDBox]; iCornerPoints++) {
       
       if (nDim == 2) {
-        if (iCornerPoints < nCornerPoints[iFFDBox]/int(2)) {
+        if (iCornerPoints < nCornerPoints[iFFDBox]/SU2_TYPE::Int(2)) {
           coord[0] = config->GetCoordFFDBox(iFFDBox, iCornerPoints*3);
           coord[1] = config->GetCoordFFDBox(iFFDBox, iCornerPoints*3+1);
           coord[2] = -0.5;
         }
         else {
-          coord[0] = FFDBox[iFFDBox]->GetCoordCornerPoints(0, iCornerPoints-nCornerPoints[iFFDBox]/int(2));
-          coord[1] = FFDBox[iFFDBox]->GetCoordCornerPoints(1, iCornerPoints-nCornerPoints[iFFDBox]/int(2));
+          coord[0] = FFDBox[iFFDBox]->GetCoordCornerPoints(0, iCornerPoints-nCornerPoints[iFFDBox]/SU2_TYPE::Int(2));
+          coord[1] = FFDBox[iFFDBox]->GetCoordCornerPoints(1, iCornerPoints-nCornerPoints[iFFDBox]/SU2_TYPE::Int(2));
           coord[2] = 0.5;
         }
       }
@@ -6430,8 +6430,8 @@ void CSurfaceMovement::WriteFFDInfo(CGeometry *geometry, CConfig *config) {
         output_file << FFDBox[iFFDBox]->GetChildFFDBoxTag(iChildFFDBox) << endl;
       
       if (nDim == 2) {
-        output_file << "FFD_CORNER_POINTS= " << FFDBox[iFFDBox]->GetnCornerPoints()/int(2) << endl;
-        for (iCornerPoints = 0; iCornerPoints < FFDBox[iFFDBox]->GetnCornerPoints()/int(2); iCornerPoints++) {
+        output_file << "FFD_CORNER_POINTS= " << FFDBox[iFFDBox]->GetnCornerPoints()/SU2_TYPE::Int(2) << endl;
+        for (iCornerPoints = 0; iCornerPoints < FFDBox[iFFDBox]->GetnCornerPoints()/SU2_TYPE::Int(2); iCornerPoints++) {
           coord = FFDBox[iFFDBox]->GetCoordCornerPoints(iCornerPoints);
           output_file << coord[0] << "\t" << coord[1] << endl;
         }

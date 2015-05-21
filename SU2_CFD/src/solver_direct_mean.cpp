@@ -468,11 +468,11 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
     
     if (dual_time) {
       
-      if (adjoint) { Unst_RestartIter = int(config->GetUnst_AdjointIter()) - 1; }
+      if (adjoint) { Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter()) - 1; }
       else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
-        Unst_RestartIter = int(config->GetUnst_RestartIter())-1;
+        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
       else
-        Unst_RestartIter = int(config->GetUnst_RestartIter())-2;
+        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
       
       filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
     }
@@ -2969,11 +2969,11 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
 
       /*--- Load an additional restart file for a 2nd-order restart ---*/
       
-      solver_container[MESH_0][FLOW_SOL]->LoadRestart(geometry, solver_container, config, int(config->GetUnst_RestartIter()-1));
+      solver_container[MESH_0][FLOW_SOL]->LoadRestart(geometry, solver_container, config, SU2_TYPE::Int(config->GetUnst_RestartIter()-1));
 
       /*--- Load an additional restart file for the turbulence model ---*/
       if (rans)
-        solver_container[MESH_0][TURB_SOL]->LoadRestart(geometry, solver_container, config, int(config->GetUnst_RestartIter()-1));
+        solver_container[MESH_0][TURB_SOL]->LoadRestart(geometry, solver_container, config, SU2_TYPE::Int(config->GetUnst_RestartIter()-1));
 
       /*--- Push back this new solution to time level N. ---*/
       
@@ -10403,11 +10403,11 @@ void CEulerSolver::SetFreeSurface_Distance(CGeometry *geometry, CConfig *config)
       /*--- Write file name with extension ---*/
       strcpy (cstr, "LevelSet");
       if (config->GetUnsteady_Simulation()) {
-        if ((int(iExtIter) >= 0) && (int(iExtIter) < 10)) SPRINTF (buffer, "_0000%d.dat", int(iExtIter));
-        if ((int(iExtIter) >= 10) && (int(iExtIter) < 100)) SPRINTF (buffer, "_000%d.dat", int(iExtIter));
-        if ((int(iExtIter) >= 100) && (int(iExtIter) < 1000)) SPRINTF (buffer, "_00%d.dat", int(iExtIter));
-        if ((int(iExtIter) >= 1000) && (int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d.dat", int(iExtIter));
-        if (int(iExtIter) >= 10000) SPRINTF (buffer, "_%d.dat", int(iExtIter));
+        if ((SU2_TYPE::Int(iExtIter) >= 0) && (SU2_TYPE::Int(iExtIter) < 10)) SPRINTF (buffer, "_0000%d.dat", SU2_TYPE::Int(iExtIter));
+        if ((SU2_TYPE::Int(iExtIter) >= 10) && (SU2_TYPE::Int(iExtIter) < 100)) SPRINTF (buffer, "_000%d.dat", SU2_TYPE::Int(iExtIter));
+        if ((SU2_TYPE::Int(iExtIter) >= 100) && (SU2_TYPE::Int(iExtIter) < 1000)) SPRINTF (buffer, "_00%d.dat", SU2_TYPE::Int(iExtIter));
+        if ((SU2_TYPE::Int(iExtIter) >= 1000) && (SU2_TYPE::Int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d.dat", SU2_TYPE::Int(iExtIter));
+        if (SU2_TYPE::Int(iExtIter) >= 10000) SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(iExtIter));
       }
       else {
         SPRINTF (buffer, ".dat");
@@ -10898,11 +10898,11 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     if (dual_time) {
       
       if (adjoint) {
-        Unst_RestartIter = int(config->GetUnst_AdjointIter()) - 1;
+        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter()) - 1;
       } else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
-        Unst_RestartIter = int(config->GetUnst_RestartIter())-1;
+        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
       else
-        Unst_RestartIter = int(config->GetUnst_RestartIter())-2;
+        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
       
       filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
     }

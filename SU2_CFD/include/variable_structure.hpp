@@ -1766,6 +1766,11 @@ public:
   void RegisterSolution(bool input);
 
   /*!
+   * \brief Register extra variables as input/output variables.
+   */
+  virtual void RegisterExtraVariables(bool input);
+
+  /*!
    * \brief Register the variables in the solution_time_n array as input/output variable.
    */
   void RegisterSolution_time_n();
@@ -1780,6 +1785,16 @@ public:
    * \param[in] adj_sol - The adjoint values of the solution.
    */
   void SetAdjointSolution(su2double *adj_sol);
+
+  /*!
+   * \brief Set the adjoints of the extra variables.
+   */
+  virtual void SetAdjointExtraVariables(su2double *adj_sol);
+
+  /*!
+   * \brief Get the adjoints of the extra variables.
+   */
+  virtual void GetAdjointExtraVariables(su2double *adj_sol);
 
   /*!
    * \brief Get the adjoint values of the solution.
@@ -2799,6 +2814,21 @@ public:
 	 * \param[in] val_muT - Value of the eddy viscosity.
 	 */
 	void SetmuT(su2double val_muT);
+
+  /*!
+   * \brief Register extra variables as input/output variables.
+   */
+  void RegisterExtraVariables(bool input);
+
+  /*!
+   * \brief Set the adjoints of the extra variables.
+   */
+  void SetAdjointExtraVariables(su2double *adj_sol);
+
+  /*!
+   * \brief Get the adjoints of the extra variables.
+   */
+  void GetAdjointExtraVariables(su2double *adj_sol);
 };
 
 /*!
@@ -4236,6 +4266,8 @@ private:
     su2double* Sensitivity; /* Vector holding the derivative of target functional with respect to the coordinates at this node*/
     su2double* DualTime_Derivative;
     su2double* DualTime_Derivative_n;
+    su2double* AdjExtraVar;
+    unsigned short nExtraVar;
 public:
     /*!
      * \brief Constructor of the class.
@@ -4254,7 +4286,7 @@ public:
      * \param[in] val_nvar - Number of variables of the problem.
      * \param[in] config - Definition of the particular problem.
      */
-    CDiscAdjVariable(su2double *val_solution, unsigned short val_ndim, unsigned short val_nvar, CConfig *config);
+    CDiscAdjVariable(su2double *val_solution, unsigned short val_ndim, unsigned short val_nvar, unsigned short val_nextra_vars, CConfig *config);
 
     /*!
      * \brief Set the sensitivity at the node
@@ -4277,6 +4309,10 @@ public:
     su2double GetDual_Time_Derivative(unsigned short iVar);
 
     su2double GetDual_Time_Derivative_n(unsigned short iVar);
+
+    void SetAdjointExtraVariables(su2double *adj_sol);
+
+    void GetAdjointExtraVariables(su2double *adj_sol);
 };
 
 

@@ -2828,7 +2828,7 @@ void CAdjEulerSolver::Smooth_Sensitivity(CGeometry *geometry, CSolver **solver_c
       
       /*--- Dirichlet boundary condition ---*/
       
-      unsigned long iVertex = int(nVertex/2);
+      unsigned long iVertex = SU2_TYPE::Int(nVertex/2);
       A[iVertex][iVertex] = 1.0;
       A[iVertex][iVertex+1] = 0.0;
       A[iVertex][iVertex-1] = 0.0;

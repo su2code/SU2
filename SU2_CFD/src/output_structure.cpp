@@ -96,18 +96,18 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
   strcpy (cstr, config->GetSurfFlowCoeff_FileName().c_str());
   
   if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
-    if (int(val_iZone) < 10) SPRINTF (buffer, "_0000%d.csv", int(val_iZone));
-    if ((int(val_iZone) >= 10)   && (int(val_iZone) < 100))   SPRINTF (buffer, "_000%d.csv", int(val_iZone));
-    if ((int(val_iZone) >= 100)  && (int(val_iZone) < 1000))  SPRINTF (buffer, "_00%d.csv", int(val_iZone));
-    if ((int(val_iZone) >= 1000) && (int(val_iZone) < 10000)) SPRINTF (buffer, "_0%d.csv", int(val_iZone));
-    if (int(val_iZone) >= 10000) SPRINTF (buffer, "_%d.csv", int(val_iZone));
+    if (SU2_TYPE::Int(val_iZone) < 10) SPRINTF (buffer, "_0000%d.csv", SU2_TYPE::Int(val_iZone));
+    if ((SU2_TYPE::Int(val_iZone) >= 10)   && (SU2_TYPE::Int(val_iZone) < 100))   SPRINTF (buffer, "_000%d.csv", SU2_TYPE::Int(val_iZone));
+    if ((SU2_TYPE::Int(val_iZone) >= 100)  && (SU2_TYPE::Int(val_iZone) < 1000))  SPRINTF (buffer, "_00%d.csv", SU2_TYPE::Int(val_iZone));
+    if ((SU2_TYPE::Int(val_iZone) >= 1000) && (SU2_TYPE::Int(val_iZone) < 10000)) SPRINTF (buffer, "_0%d.csv", SU2_TYPE::Int(val_iZone));
+    if (SU2_TYPE::Int(val_iZone) >= 10000) SPRINTF (buffer, "_%d.csv", SU2_TYPE::Int(val_iZone));
     
   } else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
-    if ((int(iExtIter) >= 0)    && (int(iExtIter) < 10))    SPRINTF (buffer, "_0000%d.csv", int(iExtIter));
-    if ((int(iExtIter) >= 10)   && (int(iExtIter) < 100))   SPRINTF (buffer, "_000%d.csv",  int(iExtIter));
-    if ((int(iExtIter) >= 100)  && (int(iExtIter) < 1000))  SPRINTF (buffer, "_00%d.csv",   int(iExtIter));
-    if ((int(iExtIter) >= 1000) && (int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d.csv",    int(iExtIter));
-    if (int(iExtIter) >= 10000) SPRINTF (buffer, "_%d.csv", int(iExtIter));
+    if ((SU2_TYPE::Int(iExtIter) >= 0)    && (SU2_TYPE::Int(iExtIter) < 10))    SPRINTF (buffer, "_0000%d.csv", SU2_TYPE::Int(iExtIter));
+    if ((SU2_TYPE::Int(iExtIter) >= 10)   && (SU2_TYPE::Int(iExtIter) < 100))   SPRINTF (buffer, "_000%d.csv",  SU2_TYPE::Int(iExtIter));
+    if ((SU2_TYPE::Int(iExtIter) >= 100)  && (SU2_TYPE::Int(iExtIter) < 1000))  SPRINTF (buffer, "_00%d.csv",   SU2_TYPE::Int(iExtIter));
+    if ((SU2_TYPE::Int(iExtIter) >= 1000) && (SU2_TYPE::Int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d.csv",    SU2_TYPE::Int(iExtIter));
+    if (SU2_TYPE::Int(iExtIter) >= 10000) SPRINTF (buffer, "_%d.csv", SU2_TYPE::Int(iExtIter));
   }
   else
     SPRINTF (buffer, ".csv");
@@ -316,18 +316,18 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
     /*--- Write file name with extension if unsteady ---*/
     strcpy (cstr, filename.c_str());
     if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
-      if (int(val_iZone) < 10) SPRINTF (buffer, "_0000%d.csv", int(val_iZone));
-      if ((int(val_iZone) >= 10) && (int(val_iZone) < 100)) SPRINTF (buffer, "_000%d.csv", int(val_iZone));
-      if ((int(val_iZone) >= 100) && (int(val_iZone) < 1000)) SPRINTF (buffer, "_00%d.csv", int(val_iZone));
-      if ((int(val_iZone) >= 1000) && (int(val_iZone) < 10000)) SPRINTF (buffer, "_0%d.csv", int(val_iZone));
-      if (int(val_iZone) >= 10000) SPRINTF (buffer, "_%d.csv", int(val_iZone));
+      if (SU2_TYPE::Int(val_iZone) < 10) SPRINTF (buffer, "_0000%d.csv", SU2_TYPE::Int(val_iZone));
+      if ((SU2_TYPE::Int(val_iZone) >= 10) && (SU2_TYPE::Int(val_iZone) < 100)) SPRINTF (buffer, "_000%d.csv", SU2_TYPE::Int(val_iZone));
+      if ((SU2_TYPE::Int(val_iZone) >= 100) && (SU2_TYPE::Int(val_iZone) < 1000)) SPRINTF (buffer, "_00%d.csv", SU2_TYPE::Int(val_iZone));
+      if ((SU2_TYPE::Int(val_iZone) >= 1000) && (SU2_TYPE::Int(val_iZone) < 10000)) SPRINTF (buffer, "_0%d.csv", SU2_TYPE::Int(val_iZone));
+      if (SU2_TYPE::Int(val_iZone) >= 10000) SPRINTF (buffer, "_%d.csv", SU2_TYPE::Int(val_iZone));
       
     } else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
-      if ((int(iExtIter) >= 0)    && (int(iExtIter) < 10))    SPRINTF (buffer, "_0000%d.csv", int(iExtIter));
-      if ((int(iExtIter) >= 10)   && (int(iExtIter) < 100))   SPRINTF (buffer, "_000%d.csv",  int(iExtIter));
-      if ((int(iExtIter) >= 100)  && (int(iExtIter) < 1000))  SPRINTF (buffer, "_00%d.csv",   int(iExtIter));
-      if ((int(iExtIter) >= 1000) && (int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d.csv",    int(iExtIter));
-      if (int(iExtIter) >= 10000) SPRINTF (buffer, "_%d.csv", int(iExtIter));
+      if ((SU2_TYPE::Int(iExtIter) >= 0)    && (SU2_TYPE::Int(iExtIter) < 10))    SPRINTF (buffer, "_0000%d.csv", SU2_TYPE::Int(iExtIter));
+      if ((SU2_TYPE::Int(iExtIter) >= 10)   && (SU2_TYPE::Int(iExtIter) < 100))   SPRINTF (buffer, "_000%d.csv",  SU2_TYPE::Int(iExtIter));
+      if ((SU2_TYPE::Int(iExtIter) >= 100)  && (SU2_TYPE::Int(iExtIter) < 1000))  SPRINTF (buffer, "_00%d.csv",   SU2_TYPE::Int(iExtIter));
+      if ((SU2_TYPE::Int(iExtIter) >= 1000) && (SU2_TYPE::Int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d.csv",    SU2_TYPE::Int(iExtIter));
+      if (SU2_TYPE::Int(iExtIter) >= 10000) SPRINTF (buffer, "_%d.csv", SU2_TYPE::Int(iExtIter));
     }
     else
       SPRINTF (buffer, ".csv");
@@ -442,18 +442,18 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
   strcpy (cstr, config->GetSurfAdjCoeff_FileName().c_str());
   
   if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
-    if (int(val_iZone) < 10) SPRINTF (buffer, "_0000%d.csv", int(val_iZone));
-    if ((int(val_iZone) >= 10) && (int(val_iZone) < 100)) SPRINTF (buffer, "_000%d.csv", int(val_iZone));
-    if ((int(val_iZone) >= 100) && (int(val_iZone) < 1000)) SPRINTF (buffer, "_00%d.csv", int(val_iZone));
-    if ((int(val_iZone) >= 1000) && (int(val_iZone) < 10000)) SPRINTF (buffer, "_0%d.csv", int(val_iZone));
-    if (int(val_iZone) >= 10000) SPRINTF (buffer, "_%d.csv", int(val_iZone));
+    if (SU2_TYPE::Int(val_iZone) < 10) SPRINTF (buffer, "_0000%d.csv", SU2_TYPE::Int(val_iZone));
+    if ((SU2_TYPE::Int(val_iZone) >= 10) && (SU2_TYPE::Int(val_iZone) < 100)) SPRINTF (buffer, "_000%d.csv", SU2_TYPE::Int(val_iZone));
+    if ((SU2_TYPE::Int(val_iZone) >= 100) && (SU2_TYPE::Int(val_iZone) < 1000)) SPRINTF (buffer, "_00%d.csv", SU2_TYPE::Int(val_iZone));
+    if ((SU2_TYPE::Int(val_iZone) >= 1000) && (SU2_TYPE::Int(val_iZone) < 10000)) SPRINTF (buffer, "_0%d.csv", SU2_TYPE::Int(val_iZone));
+    if (SU2_TYPE::Int(val_iZone) >= 10000) SPRINTF (buffer, "_%d.csv", SU2_TYPE::Int(val_iZone));
     
   } else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
-    if ((int(iExtIter) >= 0)    && (int(iExtIter) < 10))    SPRINTF (buffer, "_0000%d.csv", int(iExtIter));
-    if ((int(iExtIter) >= 10)   && (int(iExtIter) < 100))   SPRINTF (buffer, "_000%d.csv",  int(iExtIter));
-    if ((int(iExtIter) >= 100)  && (int(iExtIter) < 1000))  SPRINTF (buffer, "_00%d.csv",   int(iExtIter));
-    if ((int(iExtIter) >= 1000) && (int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d.csv",    int(iExtIter));
-    if (int(iExtIter) >= 10000) SPRINTF (buffer, "_%d.csv", int(iExtIter));
+    if ((SU2_TYPE::Int(iExtIter) >= 0)    && (SU2_TYPE::Int(iExtIter) < 10))    SPRINTF (buffer, "_0000%d.csv", SU2_TYPE::Int(iExtIter));
+    if ((SU2_TYPE::Int(iExtIter) >= 10)   && (SU2_TYPE::Int(iExtIter) < 100))   SPRINTF (buffer, "_000%d.csv",  SU2_TYPE::Int(iExtIter));
+    if ((SU2_TYPE::Int(iExtIter) >= 100)  && (SU2_TYPE::Int(iExtIter) < 1000))  SPRINTF (buffer, "_00%d.csv",   SU2_TYPE::Int(iExtIter));
+    if ((SU2_TYPE::Int(iExtIter) >= 1000) && (SU2_TYPE::Int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d.csv",    SU2_TYPE::Int(iExtIter));
+    if (SU2_TYPE::Int(iExtIter) >= 10000) SPRINTF (buffer, "_%d.csv", SU2_TYPE::Int(iExtIter));
   }
   else
     SPRINTF (buffer, ".csv");
@@ -682,18 +682,18 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
     strcpy (cstr, filename.c_str());
     
     if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
-      if (int(val_iZone) < 10) SPRINTF (buffer, "_0000%d.csv", int(val_iZone));
-      if ((int(val_iZone) >= 10) && (int(val_iZone) < 100)) SPRINTF (buffer, "_000%d.csv", int(val_iZone));
-      if ((int(val_iZone) >= 100) && (int(val_iZone) < 1000)) SPRINTF (buffer, "_00%d.csv", int(val_iZone));
-      if ((int(val_iZone) >= 1000) && (int(val_iZone) < 10000)) SPRINTF (buffer, "_0%d.csv", int(val_iZone));
-      if (int(val_iZone) >= 10000) SPRINTF (buffer, "_%d.csv", int(val_iZone));
+      if (SU2_TYPE::Int(val_iZone) < 10) SPRINTF (buffer, "_0000%d.csv", SU2_TYPE::Int(val_iZone));
+      if ((SU2_TYPE::Int(val_iZone) >= 10) && (SU2_TYPE::Int(val_iZone) < 100)) SPRINTF (buffer, "_000%d.csv", SU2_TYPE::Int(val_iZone));
+      if ((SU2_TYPE::Int(val_iZone) >= 100) && (SU2_TYPE::Int(val_iZone) < 1000)) SPRINTF (buffer, "_00%d.csv", SU2_TYPE::Int(val_iZone));
+      if ((SU2_TYPE::Int(val_iZone) >= 1000) && (SU2_TYPE::Int(val_iZone) < 10000)) SPRINTF (buffer, "_0%d.csv", SU2_TYPE::Int(val_iZone));
+      if (SU2_TYPE::Int(val_iZone) >= 10000) SPRINTF (buffer, "_%d.csv", SU2_TYPE::Int(val_iZone));
       
     } else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
-      if ((int(iExtIter) >= 0) && (int(iExtIter) < 10)) SPRINTF (buffer, "_0000%d.csv", int(iExtIter));
-      if ((int(iExtIter) >= 10) && (int(iExtIter) < 100)) SPRINTF (buffer, "_000%d.csv", int(iExtIter));
-      if ((int(iExtIter) >= 100) && (int(iExtIter) < 1000)) SPRINTF (buffer, "_00%d.csv", int(iExtIter));
-      if ((int(iExtIter) >= 1000) && (int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d.csv", int(iExtIter));
-      if (int(iExtIter) >= 10000) SPRINTF (buffer, "_%d.csv", int(iExtIter));
+      if ((SU2_TYPE::Int(iExtIter) >= 0) && (SU2_TYPE::Int(iExtIter) < 10)) SPRINTF (buffer, "_0000%d.csv", SU2_TYPE::Int(iExtIter));
+      if ((SU2_TYPE::Int(iExtIter) >= 10) && (SU2_TYPE::Int(iExtIter) < 100)) SPRINTF (buffer, "_000%d.csv", SU2_TYPE::Int(iExtIter));
+      if ((SU2_TYPE::Int(iExtIter) >= 100) && (SU2_TYPE::Int(iExtIter) < 1000)) SPRINTF (buffer, "_00%d.csv", SU2_TYPE::Int(iExtIter));
+      if ((SU2_TYPE::Int(iExtIter) >= 1000) && (SU2_TYPE::Int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d.csv", SU2_TYPE::Int(iExtIter));
+      if (SU2_TYPE::Int(iExtIter) >= 10000) SPRINTF (buffer, "_%d.csv", SU2_TYPE::Int(iExtIter));
     }
     else
       SPRINTF (buffer, ".csv");
@@ -3679,9 +3679,9 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
   /*--- Unsteady problems require an iteration number to be appended. ---*/
   
   if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
-    filename = config->GetUnsteady_FileName(filename, int(val_iZone));
+    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(val_iZone));
   } else if (config->GetWrt_Unsteady()) {
-    filename = config->GetUnsteady_FileName(filename, int(iExtIter));
+    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   }
   
   /*--- Open the restart file and write the solution. ---*/
@@ -3933,11 +3933,11 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   
   if (config->GetWrt_Unsteady() && config->GetRestart()) {
     long iExtIter = config->GetUnst_RestartIter();
-    if (int(iExtIter) < 10) SPRINTF (buffer, "_0000%d", int(iExtIter));
-    if ((int(iExtIter) >= 10) && (int(iExtIter) < 100)) SPRINTF (buffer, "_000%d", int(iExtIter));
-    if ((int(iExtIter) >= 100) && (int(iExtIter) < 1000)) SPRINTF (buffer, "_00%d", int(iExtIter));
-    if ((int(iExtIter) >= 1000) && (int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d", int(iExtIter));
-    if (int(iExtIter) >= 10000) SPRINTF (buffer, "_%d", int(iExtIter));
+    if (SU2_TYPE::Int(iExtIter) < 10) SPRINTF (buffer, "_0000%d", SU2_TYPE::Int(iExtIter));
+    if ((SU2_TYPE::Int(iExtIter) >= 10) && (SU2_TYPE::Int(iExtIter) < 100)) SPRINTF (buffer, "_000%d", SU2_TYPE::Int(iExtIter));
+    if ((SU2_TYPE::Int(iExtIter) >= 100) && (SU2_TYPE::Int(iExtIter) < 1000)) SPRINTF (buffer, "_00%d", SU2_TYPE::Int(iExtIter));
+    if ((SU2_TYPE::Int(iExtIter) >= 1000) && (SU2_TYPE::Int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d", SU2_TYPE::Int(iExtIter));
+    if (SU2_TYPE::Int(iExtIter) >= 10000) SPRINTF (buffer, "_%d", SU2_TYPE::Int(iExtIter));
     strcat(cstr, buffer);
   }
   
@@ -4607,7 +4607,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
       if (!DualTime_Iteration) {
         
         /*--- Write the begining of the history file ---*/
-        SPRINTF (begin, "%12d", int(iExtIter));
+        SPRINTF (begin, "%12d", SU2_TYPE::Int(iExtIter));
         
         /*--- Write the end of the history file ---*/
         SPRINTF (end, ", %12.10f, %12.10f, %12.10f\n", su2double(LinSolvIter), config[val_iZone]->GetCFL(MESH_0), timeused/60.0);
@@ -6698,7 +6698,7 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
         else filename = config[iZone]->GetAdj_FileName();
 
         if (size > 1) {
-          SPRINTF (buffer_char, "_%d", int(rank+1));
+          SPRINTF (buffer_char, "_%d", SU2_TYPE::Int(rank+1));
           filename = filename + buffer_char;
         }
         
@@ -6717,7 +6717,7 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
         else filename = config[iZone]->GetSurfAdjCoeff_FileName();
 
         if (size > 1) {
-          SPRINTF (buffer_char, "_%d", int(rank+1));
+          SPRINTF (buffer_char, "_%d", SU2_TYPE::Int(rank+1));
           filename = filename + buffer_char;
         }
         
@@ -7244,11 +7244,11 @@ void COutput::SetCp_InverseDesign(CSolver *solver_container, CGeometry *geometry
   
   if ((config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) ||
       (config->GetUnsteady_Simulation() == TIME_SPECTRAL)) {
-    if ((int(iExtIter) >= 0)    && (int(iExtIter) < 10))    SPRINTF (buffer, "_0000%d.dat", int(iExtIter));
-    if ((int(iExtIter) >= 10)   && (int(iExtIter) < 100))   SPRINTF (buffer, "_000%d.dat",  int(iExtIter));
-    if ((int(iExtIter) >= 100)  && (int(iExtIter) < 1000))  SPRINTF (buffer, "_00%d.dat",   int(iExtIter));
-    if ((int(iExtIter) >= 1000) && (int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d.dat",    int(iExtIter));
-    if (int(iExtIter) >= 10000) SPRINTF (buffer, "_%d.dat", int(iExtIter));
+    if ((SU2_TYPE::Int(iExtIter) >= 0)    && (SU2_TYPE::Int(iExtIter) < 10))    SPRINTF (buffer, "_0000%d.dat", SU2_TYPE::Int(iExtIter));
+    if ((SU2_TYPE::Int(iExtIter) >= 10)   && (SU2_TYPE::Int(iExtIter) < 100))   SPRINTF (buffer, "_000%d.dat",  SU2_TYPE::Int(iExtIter));
+    if ((SU2_TYPE::Int(iExtIter) >= 100)  && (SU2_TYPE::Int(iExtIter) < 1000))  SPRINTF (buffer, "_00%d.dat",   SU2_TYPE::Int(iExtIter));
+    if ((SU2_TYPE::Int(iExtIter) >= 1000) && (SU2_TYPE::Int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d.dat",    SU2_TYPE::Int(iExtIter));
+    if (SU2_TYPE::Int(iExtIter) >= 10000) SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(iExtIter));
   }
   else
     SPRINTF (buffer, ".dat");
@@ -7402,11 +7402,11 @@ void COutput::SetHeat_InverseDesign(CSolver *solver_container, CGeometry *geomet
   
   if ((config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) ||
       (config->GetUnsteady_Simulation() == TIME_SPECTRAL)) {
-    if ((int(iExtIter) >= 0)    && (int(iExtIter) < 10))    SPRINTF (buffer, "_0000%d.dat", int(iExtIter));
-    if ((int(iExtIter) >= 10)   && (int(iExtIter) < 100))   SPRINTF (buffer, "_000%d.dat",  int(iExtIter));
-    if ((int(iExtIter) >= 100)  && (int(iExtIter) < 1000))  SPRINTF (buffer, "_00%d.dat",   int(iExtIter));
-    if ((int(iExtIter) >= 1000) && (int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d.dat",    int(iExtIter));
-    if (int(iExtIter) >= 10000) SPRINTF (buffer, "_%d.dat", int(iExtIter));
+    if ((SU2_TYPE::Int(iExtIter) >= 0)    && (SU2_TYPE::Int(iExtIter) < 10))    SPRINTF (buffer, "_0000%d.dat", SU2_TYPE::Int(iExtIter));
+    if ((SU2_TYPE::Int(iExtIter) >= 10)   && (SU2_TYPE::Int(iExtIter) < 100))   SPRINTF (buffer, "_000%d.dat",  SU2_TYPE::Int(iExtIter));
+    if ((SU2_TYPE::Int(iExtIter) >= 100)  && (SU2_TYPE::Int(iExtIter) < 1000))  SPRINTF (buffer, "_00%d.dat",   SU2_TYPE::Int(iExtIter));
+    if ((SU2_TYPE::Int(iExtIter) >= 1000) && (SU2_TYPE::Int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d.dat",    SU2_TYPE::Int(iExtIter));
+    if (SU2_TYPE::Int(iExtIter) >= 10000) SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(iExtIter));
   }
   else
     SPRINTF (buffer, ".dat");
