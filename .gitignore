@@ -36,3 +36,11 @@ Makefile
 contrib/autotools/bin
 contrib/autotools/include
 contrib/autotools/share
+.cproject
+.project
+.settings/
+Debug/
+go.sh
+log_make.txt
+log_make_install.txt
+SU2_FSI/bin/SU2_FSI
