@@ -120,6 +120,44 @@ void FEA_Subiteration(COutput *output, CIntegration ***integration_container, CG
 						 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox);
 
 /*!
+ * \brief Displacement transfer function for Fluid-Structure Interaction applications.
+ * \author R. Sanchez.
+ * \param[in] output - Pointer to the COutput class.
+ * \param[in] integration_container - Container vector with all the integration methods.
+ * \param[in] geometry_container - Geometrical definition of the problem.
+ * \param[in] solver_container - Container vector with all the solutions.
+ * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
+ * \param[in] config_container - Definition of the particular problem.
+ * \param[in] surface_movement - Surface movement classes of the problem.
+ * \param[in] grid_movement - Volume grid movement classes of the problem.
+ * \param[in] FFDBox - FFD FFDBoxes of the problem.
+ * \param[in] ExtIter - Current physical time iteration number.
+ */
+void FSI_Disp_Transfer(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
+					     CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
+						 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox);
+
+/*!
+ * \brief Load transfer function for Fluid-Structure Interaction applications.
+ * \author R. Sanchez.
+ * \param[in] output - Pointer to the COutput class.
+ * \param[in] integration_container - Container vector with all the integration methods.
+ * \param[in] geometry_container - Geometrical definition of the problem.
+ * \param[in] solver_container - Container vector with all the solutions.
+ * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
+ * \param[in] config_container - Definition of the particular problem.
+ * \param[in] surface_movement - Surface movement classes of the problem.
+ * \param[in] grid_movement - Volume grid movement classes of the problem.
+ * \param[in] FFDBox - FFD FFDBoxes of the problem.
+ * \param[in] ExtIter - Current physical time iteration number.
+ */
+void FSI_Load_Transfer(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
+					     CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
+						 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox,
+						 unsigned long ExtIter);
+
+
+/*!
  * \brief FEA update function for Fluid-Structure Interaction applications.
  * \param[in] output - Pointer to the COutput class.
  * \param[in] integration_container - Container vector with all the integration methods.
@@ -133,7 +171,7 @@ void FEA_Update(COutput *output, CIntegration ***integration_container, CGeometr
 
 
 /*!
- * \brief Relaxation step for displacements.
+ * \brief Relaxation step for displacement transfer.
  * \author R. Sanchez.
  * \param[in] output - Pointer to the COutput class.
  * \param[in] geometry_container - Geometrical definition of the problem.
@@ -143,3 +181,53 @@ void FEA_Update(COutput *output, CIntegration ***integration_container, CGeometr
  */
 void FSI_Disp_Relaxation(COutput *output, CGeometry ***geometry_container, CSolver ****solver_container,
 					     CConfig **config_container, unsigned long iFSIIter);
+
+/*!
+ * \brief Relaxation step for load transfer.
+ * \author R. Sanchez.
+ * \param[in] output - Pointer to the COutput class.
+ * \param[in] geometry_container - Geometrical definition of the problem.
+ * \param[in] solver_container - Container vector with all the solutions.
+ * \param[in] config_container - Definition of the particular problem.
+ * \param[in] iFSIIter - Current FSI iteration number.
+ */
+void FSI_Load_Relaxation(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
+	     	 	 	 	 	CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
+	     	 	 	 	 	CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox);
+
+/*!
+ * \brief Displacement predictor function for Fluid-Structure Interaction applications.
+ * \author R. Sanchez.
+ * \param[in] output - Pointer to the COutput class.
+ * \param[in] integration_container - Container vector with all the integration methods.
+ * \param[in] geometry_container - Geometrical definition of the problem.
+ * \param[in] solver_container - Container vector with all the solutions.
+ * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
+ * \param[in] config_container - Definition of the particular problem.
+ * \param[in] surface_movement - Surface movement classes of the problem.
+ * \param[in] grid_movement - Volume grid movement classes of the problem.
+ * \param[in] FFDBox - FFD FFDBoxes of the problem.
+ * \param[in] ExtIter - Current physical time iteration number.
+ */
+void FSI_Disp_Predictor(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
+					     CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
+						 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox);
+
+/*!
+ * \brief Load predictor function for Fluid-Structure Interaction applications.
+ * \author R. Sanchez.
+ * \param[in] output - Pointer to the COutput class.
+ * \param[in] integration_container - Container vector with all the integration methods.
+ * \param[in] geometry_container - Geometrical definition of the problem.
+ * \param[in] solver_container - Container vector with all the solutions.
+ * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
+ * \param[in] config_container - Definition of the particular problem.
+ * \param[in] surface_movement - Surface movement classes of the problem.
+ * \param[in] grid_movement - Volume grid movement classes of the problem.
+ * \param[in] FFDBox - FFD FFDBoxes of the problem.
+ * \param[in] ExtIter - Current physical time iteration number.
+ */
+void FSI_Load_Predictor(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
+					     CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
+						 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox,
+						 unsigned long ExtIter);
