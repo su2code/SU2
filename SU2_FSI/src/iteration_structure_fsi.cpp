@@ -44,14 +44,13 @@ void FSI_BGS_Iteration(COutput *output, CIntegration ***integration_container, C
 	unsigned long nFSIIter = config_container[ZONE_0]->GetnIterFSI();
 	unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
 
-	unsigned short SolContainer_Position_fea = config_container[ZONE_1]->GetContainerPosition(RUNTIME_FEA_SYS);
-
 	/*-----------------------------------------------------------------*/
 	/*---------------- Predict structural displacements ---------------*/
 	/*-----------------------------------------------------------------*/
 
-	solver_container[ZONE_1][MESH_0][FEA_SOL]->PredictStruct_Displacement(geometry_container[ZONE_1], config_container[ZONE_1],
-																		  solver_container[ZONE_1]);
+	FSI_Disp_Predictor(output, integration_container, geometry_container,
+                          solver_container, numerics_container, config_container,
+                          surface_movement, grid_movement, FFDBox);
 
 	while (iFSIIter<nFSIIter){
 
@@ -59,9 +58,9 @@ void FSI_BGS_Iteration(COutput *output, CIntegration ***integration_container, C
 		/*------------------------ Update mesh ----------------------------*/
 		/*-----------------------------------------------------------------*/
 
-		solver_container[ZONE_0][MESH_0][FLOW_SOL]->SetFlow_Displacement(geometry_container[ZONE_0], grid_movement[ZONE_0],
-																	   config_container[ZONE_0], config_container[ZONE_1],
-																	   geometry_container[ZONE_1], solver_container[ZONE_1]);
+        FSI_Disp_Transfer(output, integration_container, geometry_container,
+                          solver_container, numerics_container, config_container,
+                          surface_movement, grid_movement, FFDBox);
 
 		/*-----------------------------------------------------------------*/
 		/*-------------------- Fluid subiteration -------------------------*/
@@ -75,8 +74,10 @@ void FSI_BGS_Iteration(COutput *output, CIntegration ***integration_container, C
 		/*------------------- Set FEA loads from fluid --------------------*/
 		/*-----------------------------------------------------------------*/
 
-		solver_container[ZONE_1][MESH_0][FEA_SOL]->SetFEA_Load(solver_container[ZONE_0], geometry_container[ZONE_1], geometry_container[ZONE_0],
-															   config_container[ZONE_1], config_container[ZONE_0], numerics_container[ZONE_1][MESH_0][SolContainer_Position_fea][VISC_TERM]);
+        FSI_Load_Transfer(output, integration_container, geometry_container,
+	                 	 solver_container, numerics_container, config_container,
+	                 	 surface_movement, grid_movement, FFDBox, ExtIter);
+
 
 		/*-----------------------------------------------------------------*/
 		/*------------------ Structural subiteration ----------------------*/
@@ -379,6 +380,41 @@ void FEA_Subiteration(COutput *output, CIntegration ***integration_container, CG
 
 }
 
+
+void FSI_Disp_Transfer(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
+					     CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
+						 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox){
+
+	/*--- Displacement transfer --  This will have to be modified for non-matching meshes ---*/
+
+	solver_container[ZONE_0][MESH_0][FLOW_SOL]->SetFlow_Displacement(geometry_container[ZONE_0], grid_movement[ZONE_0],
+																   config_container[ZONE_0], config_container[ZONE_1],
+																   geometry_container[ZONE_1], solver_container[ZONE_1]);
+
+
+}
+
+
+void FSI_Load_Transfer(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
+					     CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
+						 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox,
+						 unsigned long ExtIter){
+
+	/*--- Load transfer --  This will have to be modified for non-matching meshes ---*/
+
+	unsigned short SolContainer_Position_fea = config_container[ZONE_1]->GetContainerPosition(RUNTIME_FEA_SYS);
+
+	/*--- FEA equations -- Necessary as the SetFEA_Load routine is as of now contained in the structural solver ---*/
+
+	config_container[ZONE_1]->SetGlobalParam(LINEAR_ELASTICITY, RUNTIME_FEA_SYS, ExtIter);
+
+	solver_container[ZONE_1][MESH_0][FEA_SOL]->SetFEA_Load(solver_container[ZONE_0], geometry_container[ZONE_1], geometry_container[ZONE_0],
+														   config_container[ZONE_1], config_container[ZONE_0], numerics_container[ZONE_1][MESH_0][SolContainer_Position_fea][VISC_TERM]);
+
+
+}
+
+
 void FSI_Disp_Relaxation(COutput *output, CGeometry ***geometry_container, CSolver ****solver_container,
 							CConfig **config_container, unsigned long iFSIIter) {
 
@@ -403,5 +439,30 @@ void FSI_Disp_Relaxation(COutput *output, CGeometry ***geometry_container, CSolv
 																	   solver_container[iZone]);
 
 	}
+
+}
+
+void FSI_Load_Relaxation(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
+	     	 	 	 	 	CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
+	     	 	 	 	 	CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox){
+
+
+}
+
+
+void FSI_Disp_Predictor(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
+					     CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
+						 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox){
+
+	solver_container[ZONE_1][MESH_0][FEA_SOL]->PredictStruct_Displacement(geometry_container[ZONE_1], config_container[ZONE_1],
+																		  solver_container[ZONE_1]);
+
+}
+
+void FSI_Load_Predictor(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
+					     CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
+						 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox,
+						 unsigned long ExtIter){
+
 
 }
