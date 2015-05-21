@@ -1314,7 +1314,7 @@ void CSolver::Aeroelastic(CSurfaceMovement *surface_movement, CGeometry *geometr
   
   double Cl, Cd, Cn, Ct, Cm, Cn_rot;
   double Alpha = config->GetAoA()*PI_NUMBER/180.0;
-  vector<double> structural_solution(4,0.0); //contains solution of typical section wing model.
+  vector<double> structural_solution(4,0.0); //contains solution(displacements and rates) of typical section wing model.
   
   unsigned short iMarker, iMarker_Monitoring, Monitoring;
   string Marker_Tag, Monitoring_Tag;
@@ -1371,11 +1371,8 @@ void CSolver::Aeroelastic(CSurfaceMovement *surface_movement, CGeometry *geometr
             Cn = Cn_rot;
           }
           
-          //          Can compare the Cn values here, with the values in post-processing.
-          //          std::cout << "Cn = " << Cn << endl;
-          //          std::cout << "Cm = " << Cm << endl;
-          
           /*--- Solve the aeroelastic equations for the particular marker(surface) ---*/
+          
           SolveTypicalSectionWingModel(geometry, Cn, Cm, config, iMarker_Monitoring, structural_solution);
           
           break;
@@ -1396,11 +1393,9 @@ void CSolver::SetUpTypicalSectionWingModel(vector<vector<double> >& Phi, vector<
   /*--- Retrieve values from the config file ---*/
   double w_h = config->GetAeroelastic_Frequency_Plunge();
   double w_a = config->GetAeroelastic_Frequency_Pitch();
+  double x_a = config->GetAeroelastic_CG_Location();
+  double r_a = sqrt(config->GetAeroelastic_Radius_Gyration_Squared());
   double w = w_h/w_a;
-  
-  /*--- Geometrical Parameters */
-  double x_a = 1.8;
-  double r_a = sqrt(3.48);
   
   // Mass Matrix
   vector<vector<double> > M(2,vector<double>(2,0.0));
@@ -1479,22 +1474,13 @@ void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, double Cl, doubl
   
   /*--- Retrieve values from the config file ---*/
   double w_alpha = config->GetAeroelastic_Frequency_Pitch();
-  double dt = config->GetDelta_UnstTime();
+  double vf      = config->GetAeroelastic_Flutter_Speed_Index();
+  double b       = config->GetLength_Reynolds()/2.0; // airfoil semichord, Reynolds length is by defaul 1.0
+  double dt      = config->GetDelta_UnstTimeND();
   dt = dt*w_alpha; //Non-dimensionalize the structural time.
-  double Lref = config->GetLength_Ref();
-  double b = Lref/2.0;  // airfoil semichord
-  double Density_Inf  = config->GetDensity_FreeStreamND();
-  double P_Inf = config->GetPressure_FreeStreamND();
-  double Mach_Inf     = config->GetMach();
-  double gamma = config->GetGamma();
   
-  /*--- airfoil mass ratio ---*/
-  double mu = 60;
   /*--- Structural Equation damping ---*/
   vector<double> xi(2,0.0);
-  
-  /*--- Flutter Speep Index ---*/
-  double Vf = (Mach_Inf*sqrt(gamma*P_Inf/Density_Inf))/(b*w_alpha*sqrt(mu));
   
   /*--- Eigenvectors and Eigenvalues of the Generalized EigenValue Problem. ---*/
   vector<vector<double> > Phi(2,vector<double>(2,0.0));   // generalized eigenvectors.
@@ -1524,7 +1510,7 @@ void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, double Cl, doubl
   vector<double> eta_dot(2,0.0);
   
   /*--- Forcing Term ---*/
-  double cons = Vf*Vf/PI_NUMBER;
+  double cons = vf*vf/PI_NUMBER;
   vector<double> f(2,0.0);
   f[0] = cons*(-Cl);
   f[1] = cons*(2*-Cm);
