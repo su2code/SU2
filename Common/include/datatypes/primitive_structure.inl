@@ -30,15 +30,15 @@
  */
 #pragma once
 namespace SU2_TYPE{
-  inline void SetPrimary(su2double& data, const double &val){data = val;}
+  inline void SetPrimary(double& data, const double &val){data = val;}
 
-  inline double GetPrimary(const su2double& data){ return data;}
+  inline double GetPrimary(const double& data){ return data;}
 
-  inline void SetSecondary(su2double& data, const double &val){}
+  inline void SetSecondary(double& data, const double &val){}
 
-  inline double GetDerivative(const su2double& data){return 0.0;}
+  inline double GetDerivative(const double& data){return 0.0;}
 
-  inline double GetSecondary(const su2double& data){return 0.0;}
+  inline double GetSecondary(const double& data){return 0.0;}
 
-  inline void SetDerivative(su2double &data, const double &val){}
+  inline void SetDerivative(double &data, const double &val){}
 }

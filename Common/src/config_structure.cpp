@@ -3058,6 +3058,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         break;
       case RANS:
         Kind_Solver = DISC_ADJ_RANS;
+        Frozen_Visc = false;
         break;
       case NAVIER_STOKES:
         Kind_Solver = DISC_ADJ_NAVIER_STOKES;

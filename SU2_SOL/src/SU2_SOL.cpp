@@ -186,7 +186,7 @@ int main(int argc, char *argv[]) {
             SolutionInstantiated = true;
           }
           else
-            solver_container[iZone]->LoadRestart(geometry_container, &solver_container, config_container[iZone], int(MESH_0));
+            solver_container[iZone]->LoadRestart(geometry_container, &solver_container, config_container[iZone], SU2_TYPE::Int(MESH_0));
         }
 
             if (rank == MASTER_NODE)
@@ -216,7 +216,7 @@ int main(int argc, char *argv[]) {
 			  if (iTimeSpectral == 0)
 				  solver_container[iZone] = new CBaselineSolver(geometry_container[iZone], config_container[iZone], MESH_0);
 			  else
-				  solver_container[iZone]->LoadRestart(geometry_container, &solver_container, config_container[iZone], int(MESH_0));
+				  solver_container[iZone]->LoadRestart(geometry_container, &solver_container, config_container[iZone], SU2_TYPE::Int(MESH_0));
 		  }
 
 		  /*--- Print progress in solution writing to the screen. ---*/
