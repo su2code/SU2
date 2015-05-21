@@ -4,7 +4,7 @@
  * \author F. Palacios, T. Economon
  * \version 3.2.9 "eagle"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
+ * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
@@ -278,6 +278,13 @@ void CVariable::SetSolution_Old(su2double *val_solution_old) {
 	for (unsigned short iVar = 0; iVar < nVar; iVar++)
 		Solution_Old[iVar] = val_solution_old[iVar];
   
+}
+
+void CVariable::SetSolution_time_n(su2double *val_solution_time_n) {
+
+	for (unsigned short iVar = 0; iVar < nVar; iVar++)
+		Solution_time_n[iVar] = val_solution_time_n[iVar];
+
 }
 
 void CVariable::AddResidual_Sum(su2double *val_residual) {

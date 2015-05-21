@@ -4,7 +4,7 @@
  * \author F. Palacios, T. Economon
  * \version 3.2.9 "eagle"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
+ * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
@@ -35,9 +35,25 @@ inline su2double CNumerics::Determinant_3x3(su2double A00, su2double A01, su2dou
 	return A00*(A11*A22-A12*A21) - A01*(A10*A22-A12*A20) + A02*(A10*A21-A11*A20);
 }
 
-inline void CNumerics::SetFEA_StiffMatrix2D(su2double **StiffMatrix_Elem, su2double CoordCorners[8][3], unsigned short nNodes) { }
+inline void CNumerics::SetFEA_StiffMatrix2D(su2double **StiffMatrix_Elem, su2double CoordCorners[8][3], unsigned short nNodes, unsigned short form2d) { }
 
 inline void CNumerics::SetFEA_StiffMatrix3D(su2double **StiffMatrix_Elem, su2double CoordCorners[8][3], unsigned short nNodes) { }
+
+inline void CNumerics::SetFEA_StiffMassMatrix2D(su2double **StiffMatrix_Elem, su2double **MassMatrix_Elem, su2double CoordCorners[8][3], unsigned short nNodes, unsigned short form2d) { }
+
+inline void CNumerics::SetFEA_StiffMassMatrix3D(su2double **StiffMatrix_Elem, su2double **MassMatrix_Elem, su2double CoordCorners[8][3], unsigned short nNodes) { }
+
+inline void CNumerics::GetFEA_StressNodal2D(su2double StressVector[8][3], su2double DispElement[8], su2double CoordCorners[8][3], unsigned short nNodes, unsigned short form2d) { }
+
+inline void CNumerics::GetFEA_StressNodal3D(su2double StressVector[8][6], su2double DispElement[24], su2double CoordCorners[8][3], unsigned short nNodes) { }
+
+inline void CNumerics::SetFEA_DeadLoad2D(su2double *DeadLoadVector_Elem, su2double CoordCorners[8][3], unsigned short nNodes, su2double matDensity) { }
+
+inline void CNumerics::SetFEA_DeadLoad3D(su2double *DeadLoadVector_Elem, su2double CoordCorners[8][3], unsigned short nNodes, su2double matDensity) { }
+
+inline void CNumerics::PressInt_Linear(su2double CoordCorners[4][3], su2double *tn_e, su2double *Fnodal) { }
+
+inline void CNumerics::ViscTermInt_Linear(su2double CoordCorners[2][2], su2double Tau_0[3][3], su2double Tau_1[3][3], su2double FviscNodal[4]) { }
 
 inline void CNumerics::ComputeResidual(su2double *val_residual, CConfig *config) { }
 
