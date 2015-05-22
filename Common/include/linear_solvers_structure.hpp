@@ -2,7 +2,7 @@
  * \file linear_solvers_structure.hpp
  * \brief Headers for the classes related to linear solvers (CG, FGMRES, etc)
  *        The subroutines and functions are in the <i>linear_solvers_structure.cpp</i> file.
- * \author J. Hicken, F. Palacios
+ * \author J. Hicken, F. Palacios, T. Economon
  * \version 3.2.9 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
