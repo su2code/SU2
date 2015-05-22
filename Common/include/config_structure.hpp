@@ -2610,7 +2610,7 @@ public:
 	 * \param[in] val_zone - Zone where the soler is applied.
 	 * \return Governing equation that we are solving.
 	 */
-	unsigned short SetKind_Solver(unsigned short val_solver);
+	void SetKind_Solver(unsigned short val_solver);
 
 
   /*!

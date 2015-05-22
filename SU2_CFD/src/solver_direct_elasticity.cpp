@@ -975,11 +975,11 @@ void CFEASolver::BC_Dir_Load(CGeometry *geometry, CSolver **solver_container, CN
 
 	double TotalLoad;
 
-	double Gradual_Load = config->GetGradual_Load();
+  bool Gradual_Load = config->GetGradual_Load();
 	double CurrentTime=config->GetCurrent_DynTime();
 	double ModAmpl, NonModAmpl;
 
-	double Ramp_Load = config->GetRamp_Load();
+  bool Ramp_Load = config->GetRamp_Load();
 	double Ramp_Time = config->GetRamp_Time();
 
 	if (Ramp_Load){
@@ -1958,7 +1958,7 @@ void CFEASolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fea_geometry,
 	double CurrentTime=fea_config->GetCurrent_DynTime();
 	double Static_Time=fea_config->GetStatic_Time();
 
-	double Ramp_Load = fea_config->GetRamp_Load();
+  bool Ramp_Load = fea_config->GetRamp_Load();
 	double Ramp_Time = fea_config->GetRamp_Time();
 
 	if (CurrentTime <= Static_Time){
