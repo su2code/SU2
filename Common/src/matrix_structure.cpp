@@ -1,7 +1,7 @@
 /*!
  * \file matrix_structure.cpp
  * \brief Main subroutines for doing the sparse structures
- * \author F. Palacios, A. Bueno
+ * \author F. Palacios, A. Bueno, T. Economon
  * \version 3.2.9 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
@@ -928,7 +928,8 @@ void CSysMatrix::BuildILUPreconditioner(void) {
   long iPoint, jPoint, kPoint;
   
   /*--- Copy block matrix, note that the original matrix
-   is modified by the algorithm---*/
+   is modified by the algorithm, so that we have the factorization stored
+   in the ILUMatrix at the end of this preprocessing. ---*/
   
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     for (index = row_ptr[iPoint]; index < row_ptr[iPoint+1]; index++) {
@@ -941,23 +942,59 @@ void CSysMatrix::BuildILUPreconditioner(void) {
   /*--- Transform system in Upper Matrix ---*/
   
   for (iPoint = 1; iPoint < nPointDomain; iPoint++) {
+    
+    /*--- For each row (unknown), loop over all entries in A on this row
+     row_ptr[iPoint+1] will have the index for the first entry on the next
+     row. ---*/
+    
     for (index = row_ptr[iPoint]; index < row_ptr[iPoint+1]; index++) {
+      
+      /*--- jPoint here is the column for each entry on this row ---*/
+      
       jPoint = col_ind[index];
+      
+      /*--- Check that this column is in the lower triangular portion ---*/
+      
       if ((jPoint < iPoint) && (jPoint < nPointDomain)) {
+        
+        /*--- If we're in the lower triangle, get the pointer to this block,
+         invert it, and then right multiply against the original block ---*/
+        
         Block_ij = GetBlock_ILUMatrix(iPoint, jPoint);
         InverseDiagonalBlock_ILUMatrix(jPoint, block_inverse);
         MatrixMatrixProduct(Block_ij, block_inverse, block_weight);
+        
+        /*--- block_weight holds Aij*inv(Ajj). Jump to the row for jPoint ---*/
+         
         for (index_ = row_ptr[jPoint]; index_ < row_ptr[jPoint+1]; index_++) {
+          
+          /*--- Get the column of the entry ---*/
+          
           kPoint = col_ind[index_];
+          
+          /*--- If the column is greater than or equal to jPoint, i.e., the 
+           upper triangular part, then multiply and modify the matrix.
+           Here, Aik' = Aik - Aij*inv(Ajj)*Ajk. ---*/
+          
           if (kPoint < nPointDomain) {
             Block_jk = GetBlock_ILUMatrix(jPoint, kPoint);
             if (kPoint >= jPoint) {
+              
+              // WARNING: here we have a left multiply by Block_jk, should it
+              // be a right multiply to give Aik' = Aik - Aij*inv(Ajj)*Ajk?
+              
               MatrixMatrixProduct(Block_jk, block_weight, block);
               SubtractBlock_ILUMatrix(iPoint, kPoint, block);
+              
             }
           }
         }
+        
+        /*--- Lastly, store block_weight in the lower triangular part, which
+         will be reused during the forward solve in the precon/smoother. ---*/
+        
         SetBlock_ILUMatrix(iPoint, jPoint, block_weight);
+        
       }
     }
   }
@@ -1244,6 +1281,161 @@ void CSysMatrix::ComputeILUPreconditioner(const CSysVector & vec, CSysVector & p
   /*--- MPI Parallelization ---*/
   
   SendReceive_Solution(prod, geometry, config);
+  
+}
+
+unsigned long CSysMatrix::ILU0_Smoother(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec, double tol, unsigned long m, double *residual, bool monitoring, CGeometry *geometry, CConfig *config) {
+  
+  unsigned long index;
+  double *Block_ij, omega = 1.0;
+  long iPoint, jPoint;
+  unsigned short iVar;
+  int rank = MASTER_NODE;
+  
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+  
+  /*---  Check the number of iterations requested ---*/
+  
+  if (m < 1) {
+    if (rank == MASTER_NODE) cerr << "CSysMatrix::ComputeILUSmoother: illegal value for smoothing iterations, m = " << m << endl;
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+  }
+  
+  /*--- Create vectors to hold the residual and the Matrix-Vector product
+   of the Jacobian matrix with the current solution (x^k). These must be
+   stored in order to perform multiple iterations of the smoother. ---*/
+  
+  CSysVector r(b);
+  CSysVector A_x(b);
+  
+  /*--- Calculate the initial residual, compute norm, and check
+   if system is already solved. Recall, r holds b initially. ---*/
+  
+  mat_vec(x, A_x);
+  r -= A_x;
+  double norm_r = r.norm();
+  double norm0  = b.norm();
+  if ( (norm_r < tol*norm0) || (norm_r < eps) ) {
+    if (rank == MASTER_NODE) cout << "CSysMatrix::ComputeILUSmoother(): system solved by initial guess." << endl;
+    return 0;
+  }
+  
+  /*--- Set the norm to the initial initial residual value ---*/
+  
+  norm0 = norm_r;
+  
+  /*--- Output header information including initial residual ---*/
+  
+  int i = 0;
+  if ((monitoring) && (rank == MASTER_NODE)) {
+    cout << "\n# " << "ILU0 Smoother" << " residual history" << endl;
+    cout << "# Residual tolerance target = " << tol << endl;
+    cout << "# Initial residual norm     = " << norm_r << endl;
+    cout << "     " << i << "     " << norm_r/norm0 << endl;
+  }
+  
+  /*---  Loop over all smoothing iterations ---*/
+  
+  for (i = 0; i < m; i++) {
+    
+    /*--- Forward solve the system using the lower matrix entries that
+     were computed and stored during the ILU0 preprocessing. Note
+     that we are overwriting the residual vector as we go. ---*/
+    
+    for (iPoint = 1; iPoint < nPointDomain; iPoint++) {
+      
+      /*--- For each row (unknown), loop over all entries in A on this row
+       row_ptr[iPoint+1] will have the index for the first entry on the next
+       row. ---*/
+      
+      for (index = row_ptr[iPoint]; index < row_ptr[iPoint+1]; index++) {
+        
+        /*--- jPoint here is the column for each entry on this row ---*/
+        
+        jPoint = col_ind[index];
+        
+        /*--- Check that this column is in the lower triangular portion ---*/
+        
+        if ((jPoint < iPoint) && (jPoint < nPointDomain)) {
+          
+          /*--- Lastly, get Aij*inv(Ajj) from the lower triangular part, which
+           was calculated in the preprocessing, and apply to r. ---*/
+          
+          Block_ij = GetBlock_ILUMatrix(iPoint, jPoint);
+          MatrixVectorProduct(Block_ij, &r[jPoint*nVar], aux_vector);
+          for (iVar = 0; iVar < nVar; iVar++)
+            r[iPoint*nVar+iVar] -= aux_vector[iVar];
+          
+        }
+      }
+    }
+    
+    /*--- Backwards substitution (starts at the last row) ---*/
+    
+    InverseDiagonalBlock_ILUMatrix((nPointDomain-1), block_inverse);
+    MatrixVectorProduct(block_inverse, &r[(nPointDomain-1)*nVar], aux_vector);
+    
+    for (iVar = 0; iVar < nVar; iVar++)
+      r[(nPointDomain-1)*nVar + iVar] = aux_vector[iVar];
+    
+    for (iPoint = nPointDomain-2; iPoint >= 0; iPoint--) {
+      for (iVar = 0; iVar < nVar; iVar++) sum_vector[iVar] = 0.0;
+      for (index = row_ptr[iPoint]; index < row_ptr[iPoint+1]; index++) {
+        jPoint = col_ind[index];
+        if (jPoint < nPointDomain) {
+          Block_ij = GetBlock_ILUMatrix(iPoint, jPoint);
+          if ((jPoint >= iPoint+1) && (jPoint < nPointDomain)) {
+            MatrixVectorProduct(Block_ij, &r[jPoint*nVar], aux_vector);
+            for (iVar = 0; iVar < nVar; iVar++) sum_vector[iVar] += aux_vector[iVar];
+          }
+        }
+      }
+      for (iVar = 0; iVar < nVar; iVar++) r[iPoint*nVar+iVar] = (r[iPoint*nVar+iVar]-sum_vector[iVar]);
+      InverseDiagonalBlock_ILUMatrix(iPoint, block_inverse);
+      MatrixVectorProduct(block_inverse, &r[iPoint*nVar], aux_vector);
+      for (iVar = 0; iVar < nVar; iVar++) r[iPoint*nVar+iVar] = aux_vector[iVar];
+      if (iPoint == 0) break;
+    }
+    
+    /*--- Update solution (x^k+1 = x^k + w*M^-1*r^k) using the residual vector,
+     which holds the update after applying the ILU0 smoother, i.e., M^-1*r^k.
+     Omega is a relaxation factor that we have currently set to 1.0. ---*/
+    
+    x.Plus_AX(omega, r);
+    
+    /*--- MPI Parallelization ---*/
+    
+    SendReceive_Solution(x, geometry, config);
+    
+    /*--- Update the residual (r^k+1 = b - A*x^k+1) with the new solution ---*/
+    
+    r = b;
+    mat_vec(x, A_x);
+    r -= A_x;
+    
+    /*--- Check if solution has converged, else output the relative 
+     residual if necessary. ---*/
+    
+    norm_r = r.norm();
+    if (norm_r < tol*norm0) break;
+    if (((monitoring) && (rank == MASTER_NODE)) && ((i+1) % 5 == 0))
+      cout << "     " << i << "     " << norm_r/norm0 << endl;
+    
+  }
+  
+  if ((monitoring) && (rank == MASTER_NODE)) {
+    cout << "# ILU0 smoother final (true) residual:" << endl;
+    cout << "# Iteration = " << i << ": |res|/|res0| = "  << norm_r/norm0 << ".\n" << endl;
+  }
+  
+  return i;
   
 }
 

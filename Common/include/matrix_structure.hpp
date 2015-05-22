@@ -2,7 +2,7 @@
  * \file matrix_structure.hpp
  * \brief Headers of the main subroutines for creating the sparse matrices-by-blocks.
  *        The subroutines and functions are in the <i>matrix_structure.cpp</i> file.
- * \author F. Palacios, A. Bueno
+ * \author F. Palacios, A. Bueno, T. Economon
  * \version 3.2.9 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
@@ -386,6 +386,18 @@ public:
 	 * \param[out] prod - Result of the product A*vec.
 	 */
 	void ComputeILUPreconditioner(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config);
+  
+  /*!
+   * \brief Apply ILU0 as a classical iterative smoother
+   * \param[in] b - CSysVector containing the residual (b)
+   * \param[in] x - CSysVector containing the solution (x^k)
+   * \param[in] mat_vec - object that defines matrix-vector product
+   * \param[in] tol - tolerance with which to solve the system
+   * \param[in] m - maximum size of the search subspace
+   * \param[in] monitoring - turn on priting residuals from solver to screen.
+   * \param[out] x - CSysVector containing the result of the smoothing (x^k+1 = x^k + M^-1*(b - A*x^k).
+   */
+  unsigned long ILU0_Smoother(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec, double tol, unsigned long m, double *residual, bool monitoring, CGeometry *geometry, CConfig *config);
 
   /*!
 	 * \brief Multiply CSysVector by the preconditioner
