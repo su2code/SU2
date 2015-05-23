@@ -1399,46 +1399,56 @@ void CSysMatrix::ComputeResidual(const CSysVector & sol, const CSysVector & f, C
 }
 
 
-void CSysTransferMatrix::Initialize(unsigned long nPoint, unsigned long nPointDomain,
-                            unsigned short nVar, unsigned short nEqn,
-                            bool EdgeConnect, CGeometry **geometry, CConfig **config) {
+CSysTransferMatrix::CSysTransferMatrix(void): CSysMatrix() {
+  nVar = 1;
+  nEqn=1;
+  row_ptr = NULL;
+  col_ind = NULL;
+
+}
 
 
-	// initialize to length of Zone_0 points
-	unsigned long iPoint, *row_ptr, *col_ind, index, nnz, Elem;
+CSysTransferMatrix::~CSysTransferMatrix(void) {
+
+  if (row_ptr != NULL) delete [] row_ptr;
+  if (col_ind != NULL) delete [] col_ind;
+
+}
+
+void CSysTransferMatrix::Initialize(CGeometry **geometry, CConfig **config) {
+
+  unsigned long iPoint, index, nnz;
+	double *Coord_Point, distance, last_distance;
+	unsigned short iDim;
   unsigned short iNeigh, iElem, iNode, *nNeigh;
-  vector<unsigned long>::iterator it;
-  vector<unsigned long> vneighs;
+  unsigned long *Neigh;
+
 
   nPoint = geometry[ZONE_0]->GetnPoint();
   nPoint_Zone1 = geometry[ZONE_1]->GetnPoint();
   nElem_Zone1 = geometry[ZONE_1]->GetnElem();
+  nDim = geometry[ZONE_0]->GetnDim();
   /*--- Don't delete *row_ptr, *col_ind because they are
    asigned to the Jacobian structure. ---*/
 
-  /*--- Compute the number of neighbors ---*/
+  /*--- Compute the number of neighbors = nodes of the nearest element ---*/
 
-  nNeigh = new unsigned short [nPoint];
+  nNeigh = new unsigned short [nPoint]; /* number of nodes assc w/ nearest neighbor element*/
+  Neigh =  new unsigned long [nPoint]; /*Nearest neighbor element*/
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
-
-    if (EdgeConnect) {
-      nNeigh[iPoint] = (geometry->node[iPoint]->GetnPoint()+1);  // +1 -> to include diagonal element
-    }
-    else {
-      vneighs.clear();
-      for (iElem = 0; iElem < geometry->node[iPoint]->GetnElem(); iElem++) {
-        Elem =  geometry->node[iPoint]->GetElem(iElem);
-        for (iNode = 0; iNode < geometry->elem[Elem]->GetnNodes(); iNode++)
-          vneighs.push_back(geometry->elem[Elem]->GetNode(iNode));
-      }
-      vneighs.push_back(iPoint);
-
-      sort(vneighs.begin(), vneighs.end());
-      it = unique(vneighs.begin(), vneighs.end());
-      vneighs.resize(it - vneighs.begin());
-      nNeigh[iPoint] = vneighs.size();
-    }
-
+	  Coord_Point = geometry[ZONE_0]->node[iPoint]->GetCoord();
+	  last_distance=-1.0; /* Negative value */
+	  /*--- Loop over elements of ZONE_1 (Assumed to be structures), find the one nearest ---*/
+	  /*--- Brute force nearest neighbor - should be improved ---*/
+	  for (iElem = 0; iElem < nElem_Zone1; iElem++){
+		  distance = 0.0;
+		  for (iDim=0; iDim<nDim; iDim++) distance += pow(geometry[ZONE_1]->elem[iElem]->GetCG(iDim)-Coord_Point[iDim],2.0);
+		  if (distance<last_distance){
+		    Neigh[iPoint] = iElem;
+		  }
+		  last_distance = distance;
+	  }
+	  nNeigh[iPoint] = geometry[ZONE_1]->elem[Neigh[iPoint]]->GetnNodes();
   }
 
   /*--- Create row_ptr structure, using the number of neighbors ---*/
@@ -1454,29 +1464,9 @@ void CSysTransferMatrix::Initialize(unsigned long nPoint, unsigned long nPointDo
   col_ind = new unsigned long [nnz];
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
 
-    vneighs.clear();
-
-    if (EdgeConnect) {
-      for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++)
-        vneighs.push_back(geometry->node[iPoint]->GetPoint(iNeigh));
-      vneighs.push_back(iPoint);
-    }
-    else {
-      for (iElem = 0; iElem < geometry->node[iPoint]->GetnElem(); iElem++) {
-        Elem =  geometry->node[iPoint]->GetElem(iElem);
-        for (iNode = 0; iNode < geometry->elem[Elem]->GetnNodes(); iNode++)
-          vneighs.push_back(geometry->elem[Elem]->GetNode(iNode));
-      }
-      vneighs.push_back(iPoint);
-    }
-
-    sort(vneighs.begin(), vneighs.end());
-    it = unique(vneighs.begin(), vneighs.end());
-    vneighs.resize( it - vneighs.begin() );
-
     index = row_ptr[iPoint];
-    for (iNeigh = 0; iNeigh < vneighs.size(); iNeigh++) {
-      col_ind[index] = vneighs[iNeigh];
+    for (iNeigh = 0; iNeigh < nNeigh[iPoint]; iNeigh++) {
+      col_ind[index] = geometry[ZONE_1]->elem[Neigh[iPoint]]->GetNode(iNode); //vneighs[iNeigh];
       index++;
     }
 
@@ -1484,12 +1474,33 @@ void CSysTransferMatrix::Initialize(unsigned long nPoint, unsigned long nPointDo
 
   /*--- Set the indices in the in the sparce matrix structure, and memory allocation ---*/
 
-  SetIndexes(nPoint, nPointDomain, nVar, nEqn, row_ptr, col_ind, nnz, config);
+  SetIndexes( nnz, config[ZONE_0]);
 
   /*--- Initialization matrix to zero ---*/
 
   SetValZero();
 
   delete [] nNeigh;
+
+
+}
+
+void CSysTransferMatrix::SetIndexes( unsigned long val_nnz, CConfig *config) {
+
+  unsigned long iVar;
+  unsigned short iDim;
+
+  nnz = val_nnz;                    // Assign number of possible non zero blocks
+
+  matrix            = new double [nnz*nDim]; // Reserve memory for the values of the matrix
+  aux_vector        = new double [nDim];
+  sum_vector        = new double [nDim];
+
+  /*--- Memory initialization ---*/
+
+  for (iVar = 0; iVar < nnz*nDim; iVar++)         matrix[iVar] = 0.0;
+  for (iVar = 0; iDim < nDim; iVar++)             aux_vector[iDim] = 0.0;
+  for (iVar = 0; iDim < nDim; iVar++)             sum_vector[iDim] = 0.0;
+
 
 }
