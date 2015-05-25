@@ -4093,7 +4093,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         break;
     }
   }
-  if (output_massflow) {
+  if (output_massflow and !output_1d) {
     switch (config[val_iZone]->GetKind_Solver()) {
       case EULER:                   case NAVIER_STOKES:                   case RANS:
       case ADJ_EULER:               case ADJ_NAVIER_STOKES:               case ADJ_RANS:
@@ -6722,14 +6722,15 @@ void COutput::SetMassFlowRate(CSolver *solver_container, CGeometry *geometry, CC
 
   for (iMarker = 0; iMarker< config->GetnMarker_Monitoring(); iMarker++) {
     iMarker_monitor = config->GetMarker_All_Monitoring(iMarker);
+    if (iMarker_monitor){
+      for (iVertex = 0; iVertex < geometry->nVertex[ iMarker ]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-    for (iVertex = 0; iVertex < geometry->nVertex[ iMarker_monitor ]; iVertex++) {
-      iPoint = geometry->vertex[iMarker_monitor][iVertex]->GetNode();
+        if (geometry->node[iPoint]->GetDomain()) {
+          geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
 
-      if (geometry->node[iPoint]->GetDomain()) {
-        geometry->vertex[iMarker_monitor][iVertex]->GetNormal(Vector);
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Total_Mdot += Vector[iDim]*(solver_container->node[iPoint]->GetSolution(iDim+1));
+          for (iDim = 0; iDim < nDim; iDim++)
+            Total_Mdot -= Vector[iDim]*(solver_container->node[iPoint]->GetSolution(iDim+1));
         }
       }
     }
