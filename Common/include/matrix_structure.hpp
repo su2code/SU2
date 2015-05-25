@@ -514,7 +514,7 @@ private:
 	CSysMatrix* sparse_matrix; /*!< \brief pointer to matrix that defines the preconditioner. */
   CGeometry* geometry; /*!< \brief pointer to matrix that defines the geometry. */
 	CConfig* config; /*!< \brief pointer to matrix that defines the config. */
-  
+
 public:
 	
 	/*!
@@ -573,9 +573,16 @@ public:
  */
 class CSysTransferMatrix : public CSysMatrix {
 private:
-	unsigned long nPoint_Zone1, nElem_Zone1; /*\brief number of nodes, elements in ZONE_1 */
+	unsigned long nPoint_1, nElem_1; /*\brief number of nodes, elements in ZONE_1 */
 	unsigned short nDim;
-	unsigned long *row_ptr, *col_ind;
+	unsigned long *row_ptr,
+	*col_ind,
+	*row_vertex, /*\brief index to retrieve vertex[iMarker][iVertex] assc with the transfer matrix */
+	*col_vertex,
+  *row_marker, /*\brief index to retrieve vertex[iMarker][iVertex] assc with the transfer matrix */
+  *col_marker;
+  unsigned long nVertex_flow,
+  nVertex_fea;
 public:
 
 	/*!
