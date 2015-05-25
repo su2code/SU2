@@ -35,8 +35,8 @@
 #endif
 #include <ctime>
 
-#include "./geometry_structure.hpp"
-#include "./config_structure.hpp"
+#include "geometry_structure.hpp"
+#include "config_structure.hpp"
 
 using namespace std;
 
@@ -54,7 +54,7 @@ protected:
   unsigned short nZone;
 public:
   CGeometry** Geometry; /*! \brief Vector which stores n zones of geometry. */
-  CSysMatrix* TransferMatrix; /*! \brief Sparse matrix structure defining transfer from one mesh to another. */
+  CSysTransferMatrix* TransferMatrix; /*! \brief Sparse matrix structure defining transfer from one mesh to another. */
 
   /*!
    * \brief Constructor of the class.
@@ -84,7 +84,17 @@ public:
   /*!
    * \brief Set up transfer matrix defining relation between two meshes
    */
-  void Set_TransferMatrix(unsigned short nZone_source, unsigned short nZone_dest);
+  void Set_TransferMatrix(unsigned short iZone_0, unsigned short iZone_1);
 
+
+};
+
+
+class CNearestNeighbor : public CInterpolator {
+public:
+  /*!
+   * \brief Set up transfer matrix defining relation between two meshes
+   */
+  void Set_TransferMatrix(unsigned short iZone_0, unsigned short iZone_1);
 
 };
