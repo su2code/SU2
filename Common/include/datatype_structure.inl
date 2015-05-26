@@ -40,11 +40,13 @@ namespace SU2_TYPE{
   }
 }
 
+/* --- Default implementation if reverse mode is disabled --- */
+
 #if !defined ADOLC_REVERSE_TYPE && !defined CODI_REVERSE_TYPE
 namespace AD{
-  inline void RegisterInputVariable(su2double &data){}
+  inline void RegisterInput(su2double &data){}
 
-  inline void RegisterOutputVariable(su2double& data){}
+  inline void RegisterOutput(su2double& data){}
 
   inline void StartRecording(){}
 
@@ -56,7 +58,9 @@ namespace AD{
 }
 #endif
 
-/* --- The following functions are necessary for the handling of the sprintf function --- */
+/* --- Since the sprintf function is a variadic function,
+ * we cannot simply overload it for general datatypes. Instead we define templates for
+ * arbitrary combinations of inputs and for a certain number of arguments.  --- */
 
 template< typename IN > struct Impl_getValue {
   typedef IN OUT; // Default implementation has the same output type as input type
@@ -180,9 +184,9 @@ inline void sprintfOver(char * str, const char * format, const A001 &a001, const
 #if defined COMPLEX_TYPE
 #include "datatypes/complex_structure.inl"
 #elif defined ADOLC_FORWARD_TYPE
-#include "datatypes/adolc_f_structure.inl"
+#include "datatypes/adolc_forward_structure.inl"
 #elif defined ADOLC_REVERSE_TYPE
-#include "datatypes/adolc_r_structure.inl"
+#include "datatypes/adolc_reverse_structure.inl"
 #else
 #include "datatypes/primitive_structure.inl"
 #endif

@@ -41,9 +41,9 @@
 #if defined COMPLEX_TYPE
 #include "datatypes/complex_structure.hpp"
 #elif defined ADOLC_FORWARD_TYPE
-#include "datatypes/adolc_f_structure.hpp"
+#include "datatypes/adolc_forward_structure.hpp"
 #elif defined ADOLC_REVERSE_TYPE
-#include "datatypes/adolc_r_structure.hpp"
+#include "datatypes/adolc_reverse_structure.hpp"
 #else
 #include "datatypes/primitive_structure.hpp"
 #endif
@@ -126,7 +126,7 @@ namespace AD{
   /*!
    * \brief Start the recording of the operations and involved variables.
    * If called, the computational graph of all operations occuring after the call will be stored,
-   * starting with the variables registered with RegisterInputVariable.
+   * starting with the variables registered with RegisterInput.
    */
   void StartRecording();
 
@@ -137,15 +137,15 @@ namespace AD{
 
   /*!
    * \brief Registers the variable as an input. I.e. as a leaf of the computational graph.
-   * \param[in] The variables to be registered as input.
+   * \param[in] The variable to be registered as input.
    */
-  void RegisterInputVariable(su2double &data);
+  void RegisterInput(su2double &data);
 
   /*!
    * \brief Registers the variable as an output. I.e. as the root of the computational graph.
-   * \param[in] The variables to be registered as output.
+   * \param[in] The variable to be registered as output.
    */
-  void RegisterOutputVariable(su2double &data);
+  void RegisterOutput(su2double &data);
 
   /*!
    * \brief Clears the currently stored adjoints but keeps the computational graph.

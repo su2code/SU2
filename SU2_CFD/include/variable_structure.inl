@@ -1081,20 +1081,20 @@ inline su2double  CAdjTNE2NSVariable::GetTheta(void) { return Theta; }
 inline void CVariable::RegisterSolution(bool input) {
   if (input) {
     for (unsigned short iVar = 0; iVar < nVar; iVar++)
-      AD::RegisterInputVariable(Solution[iVar]);
+      AD::RegisterInput(Solution[iVar]);
   }
   else { for (unsigned short iVar = 0; iVar < nVar; iVar++)
-      AD::RegisterOutputVariable(Solution[iVar]);}
+      AD::RegisterOutput(Solution[iVar]);}
 }
 
 inline void CVariable::RegisterSolution_time_n(){
   for (unsigned short iVar = 0; iVar < nVar; iVar++)
-    AD::RegisterInputVariable(Solution_time_n[iVar]);
+    AD::RegisterInput(Solution_time_n[iVar]);
 }
 
 inline void CVariable::RegisterSolution_time_n1(){
   for (unsigned short iVar = 0; iVar < nVar; iVar++)
-    AD::RegisterInputVariable(Solution_time_n1[iVar]);
+    AD::RegisterInput(Solution_time_n1[iVar]);
 }
 
 inline void CVariable::SetAdjointSolution(su2double *adj_sol){
@@ -1160,9 +1160,9 @@ inline su2double CDiscAdjVariable::GetSensitivity(unsigned short iDim){return Se
 
 inline void CTurbVariable::RegisterExtraVariables(bool input){
   if (input) {
-    AD::RegisterInputVariable(muT);
+    AD::RegisterInput(muT);
   }else{
-    AD::RegisterOutputVariable(muT);
+    AD::RegisterOutput(muT);
   }
 }
 

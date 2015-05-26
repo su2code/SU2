@@ -830,7 +830,7 @@ void CGeometry::RegisterCoordinates(CConfig *config){
 
   for (iPoint = 0; iPoint < nPoint; iPoint++){
     for (iDim = 0; iDim < nDim; iDim++){
-      AD::RegisterInputVariable(node[iPoint]->GetCoord()[iDim]);
+      AD::RegisterInput(node[iPoint]->GetCoord()[iDim]);
     }
   }
 }
@@ -12156,11 +12156,8 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
         
         /*--- The sensitivity file uses the global numbering ---*/
-#ifndef HAVE_MPI
-        iPoint = vertex[iMarker][iVertex]->GetNode();
-#else
         iPoint = node[vertex[iMarker][iVertex]->GetNode()]->GetGlobalIndex();
-#endif
+
         if (vertex[iMarker][iVertex]->GetNode() < GetnPointDomain()) {
           Point2Vertex[iPoint][0] = iMarker;
           Point2Vertex[iPoint][1] = iVertex;

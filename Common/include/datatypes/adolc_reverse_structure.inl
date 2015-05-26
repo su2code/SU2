@@ -31,10 +31,20 @@
 #pragma once
 
 namespace AD{
+  /* --- Stores a copy of the input variables (since they might be overwritten) --- */
 
   extern std::vector<double> inputVariables;
+
+  /* --- Stores the seeding vector for the adjoint computation (adjoints of output variables) --- */
+
   extern std::vector<double> seedVector;
-  extern int adjointVectorPos;
+
+  /* --- The current position in the adjoint vector --- */
+
+  extern int adjointVector_Position;
+
+  /* --- Holds the adjoint values of the input variables after the adjoint computation --- */
+
   extern double* adjointVector;
 
 }
@@ -45,68 +55,32 @@ namespace SU2_TYPE{
 
   inline void SetSecondary(su2double& data, const double &val){AD::seedVector.push_back(val);}
 
-  inline double GetSecondary(const su2double& data){return AD::adjointVector[AD::adjointVectorPos++];}
+  inline double GetSecondary(const su2double& data){return AD::adjointVector[AD::adjointVector_Position++];}
 
-  inline double GetDerivative(const su2double& data){return AD::adjointVector[AD::adjointVectorPos++];}
+  inline double GetDerivative(const su2double& data){return AD::adjointVector[AD::adjointVector_Position++];}
 
   inline void SetDerivative(su2double& data, const double &val){AD::seedVector.push_back(val);}
 }
 namespace AD{
 
-  inline void RegisterInputVariable(su2double &data){
-    inputVariables.push_back(data.value());
-    data <<= data.value();
-  }
+  inline void RegisterInput(su2double &data){inputVariables.push_back(data.value()); data <<= data.value();}
 
-  inline void RegisterOutputVariable(su2double& data){
-    double temp;
-    data >>= temp;
-  }
+  inline void RegisterOutput(su2double& data){double temp; data >>= temp;}
 
   inline void StartRecording(){trace_on(1,1);}
 
   inline void StopRecording(){trace_off();}
 
-  inline void ClearAdjoints(){
-    delete [] adjointVector;
-    adjointVector = NULL;
-    seedVector.clear();
-  }
-  inline void ComputeAdjoint(){
-    size_t tape_stats[STAT_SIZE];
-    tapestats(1, tape_stats);
-
-    double* input = new double[tape_stats[0]];
-    double* gradient = new double[tape_stats[0]];
-    double* adjoint = new double[tape_stats[1]];
-
-    for (int i = 0; i < tape_stats[0]; ++i) {
-      input[i] = inputVariables[i];
-      gradient[i] = 0.0;
-    }
-
-    for(int i = 0; i < tape_stats[1]; ++i) {
-      adjoint[i] = seedVector[i];
-    }
-
-    fos_reverse(1,tape_stats[1], tape_stats[0],adjoint, gradient);
-
-    adjointVector = gradient;
-    adjointVectorPos = 0;
-
-    inputVariables.clear();
-    seedVector.clear();
-
-    delete [] input;
-    delete [] adjoint;
-  }
 }
 
 /* --- We need additional functions that are not defined yet --- */
 
 inline su2double min(const su2double& a, const su2double& b){ return fmin(a,b);}
+
 inline su2double max(const su2double& a, const su2double& b){ return fmax(a,b);}
+
 inline su2double abs(const su2double&a){ return fabs(a);}
+
 inline su2double atanh(const su2double& a){return 0.5*log(1+a)/log(1-a);}
 
 

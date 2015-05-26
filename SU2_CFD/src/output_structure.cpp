@@ -432,7 +432,7 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
   
 #ifndef HAVE_MPI
   
-  unsigned long iPoint, iVertex;
+  unsigned long iPoint, iVertex, Global_Index;
   su2double *Solution, xCoord, yCoord, zCoord;
   unsigned short iMarker;
   char cstr[200], buffer[50];
@@ -474,6 +474,7 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           Solution = AdjSolver->node[iPoint]->GetSolution();
+          Global_Index = geometry->node[iPoint]->GetGlobalIndex();
           xCoord = geometry->node[iPoint]->GetCoord(0);
           yCoord = geometry->node[iPoint]->GetCoord(1);
           
@@ -484,7 +485,7 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
             yCoord *= 12.0;
           }
           
-          SurfAdj_file << scientific << iPoint << ", " << AdjSolver->GetCSensitivity(iMarker, iVertex) << ", " << Solution[0] << ", "
+          SurfAdj_file << scientific << Global_Index << ", " << AdjSolver->GetCSensitivity(iMarker, iVertex) << ", " << Solution[0] << ", "
           << Solution[1] << ", " << Solution[2] << ", " << Solution[3] <<", " << xCoord <<", "<< yCoord;
           if (config->GetDiscrete_Adjoint()){
             SurfAdj_file << ", " << AdjSolver->node[iPoint]->GetSensitivity(0) << ", " << AdjSolver->node[iPoint]->GetSensitivity(1);
@@ -504,6 +505,7 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
       if (config->GetMarker_All_Plotting(iMarker) == YES)
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          Global_Index = geometry->node[iPoint]->GetGlobalIndex();
           Solution = AdjSolver->node[iPoint]->GetSolution();
           
           xCoord = geometry->node[iPoint]->GetCoord(0);
@@ -518,7 +520,7 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
             zCoord *= 12.0;
           }
           
-          SurfAdj_file << scientific << iPoint << ", " << AdjSolver->GetCSensitivity(iMarker, iVertex) << ", " << Solution[0] << ", "
+          SurfAdj_file << scientific << Global_Index << ", " << AdjSolver->GetCSensitivity(iMarker, iVertex) << ", " << Solution[0] << ", "
           << Solution[1] << ", " << Solution[2] << ", " << Solution[3] << ", " << Solution[4] << ", "<< xCoord <<", "<< yCoord <<", "<< zCoord;
           if (config->GetDiscrete_Adjoint()){
             SurfAdj_file << ", " << AdjSolver->node[iPoint]->GetSensitivity(0) << ", " << AdjSolver->node[iPoint]->GetSensitivity(1)
@@ -606,10 +608,10 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
             Buffer_Send_PsiE[nVertex_Surface] = Solution[4];
           }
           if (config->GetDiscrete_Adjoint()){
-            Buffer_Send_Sens_x = AdjSolver->node[iPoint]->GetSensitivity(0);
-            Buffer_Send_Sens_y = AdjSolver->node[iPoint]->GetSensitivity(1);
+            Buffer_Send_Sens_x[nVertex_Surface] = AdjSolver->node[iPoint]->GetSensitivity(0);
+            Buffer_Send_Sens_y[nVertex_Surface] = AdjSolver->node[iPoint]->GetSensitivity(1);
             if (nDim == 3){
-              Buffer_Send_Sens_z = AdjSolver->node[iPoint]->GetSensitivity(2);
+              Buffer_Send_Sens_z[nVertex_Surface] = AdjSolver->node[iPoint]->GetSensitivity(2);
             }
           }
           
