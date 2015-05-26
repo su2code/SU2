@@ -8313,7 +8313,7 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the sensitivity coefficient.
    */
-  su2double GetCSensitivity(unsigned short val_marker, unsigned short val_vertex);
+  su2double GetCSensitivity(unsigned short val_marker, unsigned long val_vertex);
 
 
 };

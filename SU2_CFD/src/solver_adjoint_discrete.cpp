@@ -287,7 +287,7 @@ void CDiscAdjSolver::RegisterObj_Func(CConfig *config){
       ObjFunc_Value = direct_solver->GetTotal_CEquivArea();
       break;
   }
-  AD::RegisterOutputVariable(ObjFunc_Value);
+  AD::RegisterOutput(ObjFunc_Value);
 }
 
 void CDiscAdjSolver::SetAdjointInput(CGeometry *geometry, CConfig *config){
