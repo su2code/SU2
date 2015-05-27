@@ -5907,6 +5907,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   int rank = MASTER_NODE, size = SINGLE_NODE;
   bool domain_flag = false;
   bool found_transform = false;
+  bool time_spectral = config->GetUnsteady_Simulation() == TIME_SPECTRAL;
   nZone = val_nZone;
   
   /*--- Initialize some additional counters for the parallel partitioning ---*/
@@ -5921,7 +5922,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   
   /*--- Initialize bool for FSI problems ---*/
   bool fsi = config->GetFSI_Simulation();
-
+  
   /*--- Initialize counters for local/global points & elements ---*/
 #ifdef HAVE_MPI
   unsigned long LocalIndex;
@@ -5968,7 +5969,10 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   
   /*--- If more than one, find the zone in the mesh file ---*/
   
-  if (val_nZone > 1) {
+  if (val_nZone > 1 || time_spectral) {
+    if (time_spectral) {
+      if (rank == MASTER_NODE) cout << "Reading time spectral instance " << val_iZone+1 << ":" << endl;
+    } else {
       while (getline (mesh_file,text_line)) {
         /*--- Search for the current domain ---*/
         position = text_line.find ("IZONE=",0);
@@ -5981,6 +5985,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
           }
         }
       }
+    }
   }
 
   /*--- Read grid file with format SU2 ---*/
@@ -6142,7 +6147,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
 
   /*--- If more than one, find the zone in the mesh file  ---*/
   
-  if (val_nZone > 1) {
+  if (val_nZone > 1 && !time_spectral) {
       while (getline (mesh_file,text_line)) {
         /*--- Search for the current domain ---*/
         position = text_line.find ("IZONE=",0);
@@ -6426,7 +6431,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
 
   /*--- If more than one, find the zone in the mesh file ---*/
   
-  if (val_nZone > 1) {
+  if (val_nZone > 1 && !time_spectral) {
       while (getline (mesh_file,text_line)) {
         /*--- Search for the current domain ---*/
         position = text_line.find ("IZONE=",0);
@@ -6528,7 +6533,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             config->SetMarker_All_GeoEval(iMarker, config->GetMarker_CfgFile_GeoEval(Marker_Tag));
             config->SetMarker_All_Designing(iMarker, config->GetMarker_CfgFile_Designing(Marker_Tag));
             config->SetMarker_All_Plotting(iMarker, config->GetMarker_CfgFile_Plotting(Marker_Tag));
-			config->SetMarker_All_FSIinterface(iMarker, config->GetMarker_CfgFile_FSIinterface(Marker_Tag));
+			      config->SetMarker_All_FSIinterface(iMarker, config->GetMarker_CfgFile_FSIinterface(Marker_Tag));
             config->SetMarker_All_DV(iMarker, config->GetMarker_CfgFile_DV(Marker_Tag));
             config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
             config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
