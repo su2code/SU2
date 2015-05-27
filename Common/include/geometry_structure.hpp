@@ -569,8 +569,9 @@ public:
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.
+   * \param[in] val_iZone - Index of the current zone.
 	 */
-	virtual void SetRotationalVelocity(CConfig *config);
+	virtual void SetRotationalVelocity(CConfig *config, unsigned short val_iZone);
 
 	/*!
 	 * \brief A virtual member.
@@ -1134,8 +1135,9 @@ public:
 	/*!
 	 * \brief Set the rotational velocity at each node.
 	 * \param[in] config - Definition of the particular problem.
+   * \param[in] val_iZone - Index of the current zone.
 	 */
-	void SetRotationalVelocity(CConfig *config);
+	void SetRotationalVelocity(CConfig *config, unsigned short val_iZone);
 
 	/*! 
 	 * \brief Set the grid velocity via finite differencing at each node.
@@ -1490,8 +1492,9 @@ public:
 	/*!
 	 * \brief Set the rotational velocity at each grid point on a coarse mesh.
 	 * \param[in] config - Definition of the particular problem.
+   * \param[in] val_iZone - Index of the current zone.
 	 */
-	void SetRotationalVelocity(CConfig *config);
+	void SetRotationalVelocity(CConfig *config, unsigned short val_iZone);
 
 	/*!
 	 * \brief Set the grid velocity at each node in the coarse mesh level.
