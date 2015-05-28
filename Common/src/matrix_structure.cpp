@@ -233,8 +233,11 @@ void CSysMatrix::SetIndexes(unsigned long val_nPoint, unsigned long val_nPointDo
   
   if ((config->GetKind_Linear_Solver_Prec() == ILU) ||
     (config->GetKind_Linear_Solver() == SMOOTHER_ILU)) {
-    ILU_matrix = new double [nnz*nVar*nEqn];	// Reserve memory for the ILU matrix
-    for (iVar = 0; iVar < nnz*nVar*nEqn; iVar++)    ILU_matrix[iVar] = 0.0;
+    
+    /*--- Reserve memory for the ILU matrix. ---*/
+    
+    ILU_matrix = new double [nnz*nVar*nEqn];
+    for (iVar = 0; iVar < nnz*nVar*nEqn; iVar++) ILU_matrix[iVar] = 0.0;
   }
   
   /*--- Set specific preconditioner matrices (Jacobi and Linelet) ---*/
@@ -243,7 +246,10 @@ void CSysMatrix::SetIndexes(unsigned long val_nPoint, unsigned long val_nPointDo
       (config->GetKind_Linear_Solver_Prec() == LINELET) ||
       (config->GetKind_Linear_Solver() == SMOOTHER_JACOBI) ||
       (config->GetKind_Linear_Solver() == SMOOTHER_LINELET))   {
-    invM = new double [nPoint*nVar*nEqn];	// Reserve memory for the values of the inverse of the preconditioner
+    
+    /*--- Reserve memory for the values of the inverse of the preconditioner. ---*/
+    
+    invM = new double [nPoint*nVar*nEqn];
     for (iVar = 0; iVar < nPoint*nVar*nEqn; iVar++) invM[iVar] = 0.0;
   }
 
@@ -921,286 +927,6 @@ void CSysMatrix::BuildJacobiPreconditioner(void) {
   
 }
 
-void CSysMatrix::BuildILUPreconditioner(void) {
-  
-  unsigned long index, index_;
-  double *Block_ij, *Block_jk;
-  long iPoint, jPoint, kPoint;
-  
-  /*--- Copy block matrix, note that the original matrix
-   is modified by the algorithm, so that we have the factorization stored
-   in the ILUMatrix at the end of this preprocessing. ---*/
-  
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    for (index = row_ptr[iPoint]; index < row_ptr[iPoint+1]; index++) {
-      jPoint = col_ind[index];
-      Block_ij = GetBlock(iPoint, jPoint);
-      SetBlock_ILUMatrix(iPoint, jPoint, Block_ij);
-    }
-  }
-  
-  /*--- Transform system in Upper Matrix ---*/
-  
-  for (iPoint = 1; iPoint < nPointDomain; iPoint++) {
-    
-    /*--- For each row (unknown), loop over all entries in A on this row
-     row_ptr[iPoint+1] will have the index for the first entry on the next
-     row. ---*/
-    
-    for (index = row_ptr[iPoint]; index < row_ptr[iPoint+1]; index++) {
-      
-      /*--- jPoint here is the column for each entry on this row ---*/
-      
-      jPoint = col_ind[index];
-      
-      /*--- Check that this column is in the lower triangular portion ---*/
-      
-      if ((jPoint < iPoint) && (jPoint < nPointDomain)) {
-        
-        /*--- If we're in the lower triangle, get the pointer to this block,
-         invert it, and then right multiply against the original block ---*/
-        
-        Block_ij = GetBlock_ILUMatrix(iPoint, jPoint);
-        InverseDiagonalBlock_ILUMatrix(jPoint, block_inverse);
-        MatrixMatrixProduct(Block_ij, block_inverse, block_weight);
-        
-        /*--- block_weight holds Aij*inv(Ajj). Jump to the row for jPoint ---*/
-         
-        for (index_ = row_ptr[jPoint]; index_ < row_ptr[jPoint+1]; index_++) {
-          
-          /*--- Get the column of the entry ---*/
-          
-          kPoint = col_ind[index_];
-          
-          /*--- If the column is greater than or equal to jPoint, i.e., the 
-           upper triangular part, then multiply and modify the matrix.
-           Here, Aik' = Aik - Aij*inv(Ajj)*Ajk. ---*/
-          
-          if (kPoint < nPointDomain) {
-            Block_jk = GetBlock_ILUMatrix(jPoint, kPoint);
-            if (kPoint >= jPoint) {
-              
-              // WARNING: here we have a left multiply by Block_jk, should it
-              // be a right multiply to give Aik' = Aik - Aij*inv(Ajj)*Ajk?
-              
-              MatrixMatrixProduct(Block_jk, block_weight, block);
-              SubtractBlock_ILUMatrix(iPoint, kPoint, block);
-              
-            }
-          }
-        }
-        
-        /*--- Lastly, store block_weight in the lower triangular part, which
-         will be reused during the forward solve in the precon/smoother. ---*/
-        
-        SetBlock_ILUMatrix(iPoint, jPoint, block_weight);
-        
-      }
-    }
-  }
-
-}
-
-unsigned short CSysMatrix::BuildLineletPreconditioner(CGeometry *geometry, CConfig *config) {
-  
-  bool *check_Point, add_point;
-  unsigned long iEdge, iPoint, jPoint, index_Point, iLinelet, iVertex, next_Point, counter, iElem;
-  unsigned short iMarker, iNode, ExtraLines = 100, MeanPoints;
-  double alpha = 0.9, weight, max_weight, *normal, area, volume_iPoint, volume_jPoint;
-  unsigned long Local_nPoints, Local_nLineLets, Global_nPoints, Global_nLineLets;
-
-  /*--- Memory allocation --*/
-
-  check_Point = new bool [geometry->GetnPoint()];
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-    check_Point[iPoint] = true;
-  
-  LineletBool = new bool[geometry->GetnPoint()];
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++)
-    LineletBool[iPoint] = false;
-  
-  nLinelet = 0;
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX              ) ||
-        (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_CATALYTIC    ) ||
-        (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_NONCATALYTIC ) ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             ) ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_CATALYTIC   ) ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_NONCATALYTIC) ||
-        (config->GetMarker_All_KindBC(iMarker) == EULER_WALL             ) ||
-        (config->GetMarker_All_KindBC(iMarker) == DISPLACEMENT_BOUNDARY)) {
-      nLinelet += geometry->nVertex[iMarker];
-    }
-  }
-  
-  /*--- If the domain contains well defined Linelets ---*/
-  
-  if (nLinelet != 0) {
-    
-    /*--- Basic initial allocation ---*/
-    
-    LineletPoint = new vector<unsigned long>[nLinelet + ExtraLines];
-    
-    /*--- Define the basic linelets, starting from each vertex ---*/
-    
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX              ) ||
-          (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_CATALYTIC    ) ||
-          (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_NONCATALYTIC ) ||
-          (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             ) ||
-          (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_CATALYTIC   ) ||
-          (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_NONCATALYTIC) ||
-          (config->GetMarker_All_KindBC(iMarker) == EULER_WALL             ) ||
-          (config->GetMarker_All_KindBC(iMarker) == DISPLACEMENT_BOUNDARY)) {
-        iLinelet = 0;
-        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          LineletPoint[iLinelet].push_back(iPoint);
-          check_Point[iPoint] = false;
-          iLinelet++;
-        }
-      }
-    }
-    
-    /*--- Create the linelet structure ---*/
-    
-    iLinelet = 0;
-    
-    do {
-      
-      index_Point = 0;
-      
-      do {
-        
-        /*--- Compute the value of the max weight ---*/
-        
-        iPoint = LineletPoint[iLinelet][index_Point];
-        max_weight = 0.0;
-        for (iNode = 0; iNode < geometry->node[iPoint]->GetnPoint(); iNode++) {
-          jPoint = geometry->node[iPoint]->GetPoint(iNode);
-          if ((check_Point[jPoint]) && geometry->node[jPoint]->GetDomain()) {
-            iEdge = geometry->FindEdge(iPoint, jPoint);
-            normal = geometry->edge[iEdge]->GetNormal();
-            if (geometry->GetnDim() == 3) area = sqrt(normal[0]*normal[0]+normal[1]*normal[1]+normal[2]*normal[2]);
-            else area = sqrt(normal[0]*normal[0]+normal[1]*normal[1]);
-            volume_iPoint = geometry->node[iPoint]->GetVolume();
-            volume_jPoint = geometry->node[jPoint]->GetVolume();
-            weight = 0.5*area*((1.0/volume_iPoint)+(1.0/volume_jPoint));
-            max_weight = max(max_weight, weight);
-          }
-        }
-        
-        /*--- Verify if any face of the control volume must be added ---*/
-        
-        add_point = false;
-        counter = 0;
-        next_Point = geometry->node[iPoint]->GetPoint(0);
-        for (iNode = 0; iNode < geometry->node[iPoint]->GetnPoint(); iNode++) {
-          jPoint = geometry->node[iPoint]->GetPoint(iNode);
-          iEdge = geometry->FindEdge(iPoint, jPoint);
-          normal = geometry->edge[iEdge]->GetNormal();
-          if (geometry->GetnDim() == 3) area = sqrt(normal[0]*normal[0]+normal[1]*normal[1]+normal[2]*normal[2]);
-          else area = sqrt(normal[0]*normal[0]+normal[1]*normal[1]);
-          volume_iPoint = geometry->node[iPoint]->GetVolume();
-          volume_jPoint = geometry->node[jPoint]->GetVolume();
-          weight = 0.5*area*((1.0/volume_iPoint)+(1.0/volume_jPoint));
-          if (((check_Point[jPoint]) && (weight/max_weight > alpha) && (geometry->node[jPoint]->GetDomain())) &&
-              ((index_Point == 0) || ((index_Point > 0) && (jPoint != LineletPoint[iLinelet][index_Point-1])))) {
-            add_point = true;
-            next_Point = jPoint;
-            counter++;
-          }
-        }
-        
-        /*--- We have arrived to an isotropic zone ---*/
-        
-        if (counter > 1) add_point = false;
-        
-        /*--- Add a typical point to the linelet, no leading edge ---*/
-        
-        if (add_point) {
-          LineletPoint[iLinelet].push_back(next_Point);
-          check_Point[next_Point] = false;
-          index_Point++;
-        }
-        
-      } while (add_point);
-      iLinelet++;
-    } while (iLinelet < nLinelet);
-    
-    /*--- Identify the points that belong to a Linelet ---*/
-    
-    for (iLinelet = 0; iLinelet < nLinelet; iLinelet++) {
-      for (iElem = 0; iElem < LineletPoint[iLinelet].size(); iElem++) {
-        iPoint = LineletPoint[iLinelet][iElem];
-        LineletBool[iPoint] = true;
-      }
-    }
-    
-    /*--- Identify the maximum number of elements in a Linelet ---*/
-    
-    max_nElem = LineletPoint[0].size();
-    for (iLinelet = 1; iLinelet < nLinelet; iLinelet++)
-      if (LineletPoint[iLinelet].size() > max_nElem)
-        max_nElem = LineletPoint[iLinelet].size();
-    
-  }
-  
-  /*--- The domain doesn't have well defined linelets ---*/
-  
-  else {
-    
-    max_nElem = 0;
-  
-  }
-  
-  /*--- Screen output ---*/
-  
-  Local_nPoints = 0;
-  for (iLinelet = 0; iLinelet < nLinelet; iLinelet++) {
-    Local_nPoints += LineletPoint[iLinelet].size();
-  }
-  Local_nLineLets = nLinelet;
-
-#ifndef HAVE_MPI
-  Global_nPoints = Local_nPoints;
-  Global_nLineLets = Local_nLineLets;
-#else
-  MPI_Allreduce(&Local_nPoints, &Global_nPoints, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  MPI_Allreduce(&Local_nLineLets, &Global_nLineLets, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#endif
-
-  MeanPoints = int(double(Global_nPoints)/double(Global_nLineLets));
-  
-  /*--- Memory allocation --*/
-
-  UBlock = new double* [max_nElem];
-  invUBlock = new double* [max_nElem];
-  LBlock = new double* [max_nElem];
-  yVector = new double* [max_nElem];
-  zVector = new double* [max_nElem];
-  rVector = new double* [max_nElem];
-  for (iElem = 0; iElem < max_nElem; iElem++) {
-    UBlock[iElem] = new double [nVar*nVar];
-    invUBlock[iElem] = new double [nVar*nVar];
-    LBlock[iElem] = new double [nVar*nVar];
-    yVector[iElem] = new double [nVar];
-    zVector[iElem] = new double [nVar];
-    rVector[iElem] = new double [nVar];
-  }
-  
-  LFBlock = new double [nVar*nVar];
-  LyVector = new double [nVar];
-  FzVector = new double [nVar];
-  
-  /*--- Memory deallocation --*/
-
-  delete [] check_Point;
-
-  return MeanPoints;
-  
-}
-
 void CSysMatrix::ComputeJacobiPreconditioner(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config) {
   
   unsigned long iPoint, iVar, jVar;
@@ -1223,7 +949,6 @@ void CSysMatrix::ComputeJacobiPreconditioner(const CSysVector & vec, CSysVector 
 unsigned long CSysMatrix::Jacobi_Smoother(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec, double tol, unsigned long m, double *residual, bool monitoring, CGeometry *geometry, CConfig *config) {
   
   unsigned long iPoint, iVar, jVar;
-  double omega = 1.0, sum = 0.0;
   int rank = MASTER_NODE;
   
 #ifdef HAVE_MPI
@@ -1317,6 +1042,86 @@ unsigned long CSysMatrix::Jacobi_Smoother(const CSysVector & b, CSysVector & x, 
   }
   
   return i;
+  
+}
+
+void CSysMatrix::BuildILUPreconditioner(void) {
+  
+  unsigned long index, index_;
+  double *Block_ij, *Block_jk;
+  long iPoint, jPoint, kPoint;
+  
+  /*--- Copy block matrix, note that the original matrix
+   is modified by the algorithm, so that we have the factorization stored
+   in the ILUMatrix at the end of this preprocessing. ---*/
+  
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    for (index = row_ptr[iPoint]; index < row_ptr[iPoint+1]; index++) {
+      jPoint = col_ind[index];
+      Block_ij = GetBlock(iPoint, jPoint);
+      SetBlock_ILUMatrix(iPoint, jPoint, Block_ij);
+    }
+  }
+  
+  /*--- Transform system in Upper Matrix ---*/
+  
+  for (iPoint = 1; iPoint < nPointDomain; iPoint++) {
+    
+    /*--- For each row (unknown), loop over all entries in A on this row
+     row_ptr[iPoint+1] will have the index for the first entry on the next
+     row. ---*/
+    
+    for (index = row_ptr[iPoint]; index < row_ptr[iPoint+1]; index++) {
+      
+      /*--- jPoint here is the column for each entry on this row ---*/
+      
+      jPoint = col_ind[index];
+      
+      /*--- Check that this column is in the lower triangular portion ---*/
+      
+      if ((jPoint < iPoint) && (jPoint < nPointDomain)) {
+        
+        /*--- If we're in the lower triangle, get the pointer to this block,
+         invert it, and then right multiply against the original block ---*/
+        
+        Block_ij = GetBlock_ILUMatrix(iPoint, jPoint);
+        InverseDiagonalBlock_ILUMatrix(jPoint, block_inverse);
+        MatrixMatrixProduct(Block_ij, block_inverse, block_weight);
+        
+        /*--- block_weight holds Aij*inv(Ajj). Jump to the row for jPoint ---*/
+        
+        for (index_ = row_ptr[jPoint]; index_ < row_ptr[jPoint+1]; index_++) {
+          
+          /*--- Get the column of the entry ---*/
+          
+          kPoint = col_ind[index_];
+          
+          /*--- If the column is greater than or equal to jPoint, i.e., the
+           upper triangular part, then multiply and modify the matrix.
+           Here, Aik' = Aik - Aij*inv(Ajj)*Ajk. ---*/
+          
+          if (kPoint < nPointDomain) {
+            Block_jk = GetBlock_ILUMatrix(jPoint, kPoint);
+            if (kPoint >= jPoint) {
+              
+              // WARNING: here we have a left multiply by Block_jk, should it
+              // be a right multiply to give Aik' = Aik - Aij*inv(Ajj)*Ajk?
+              
+              MatrixMatrixProduct(Block_jk, block_weight, block);
+              SubtractBlock_ILUMatrix(iPoint, kPoint, block);
+              
+            }
+          }
+        }
+        
+        /*--- Lastly, store block_weight in the lower triangular part, which
+         will be reused during the forward solve in the precon/smoother. ---*/
+        
+        SetBlock_ILUMatrix(iPoint, jPoint, block_weight);
+        
+      }
+    }
+  }
   
 }
 
@@ -1579,7 +1384,326 @@ void CSysMatrix::ComputeLU_SGSPreconditioner(const CSysVector & vec, CSysVector 
 
 unsigned long CSysMatrix::LU_SGS_Smoother(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec, double tol, unsigned long m, double *residual, bool monitoring, CGeometry *geometry, CConfig *config) {
   
-  return 0;
+  unsigned long iPoint, iVar;
+  double omega = 1.0;
+  int rank = MASTER_NODE;
+  
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+  
+  /*---  Check the number of iterations requested ---*/
+  
+  if (m < 1) {
+    if (rank == MASTER_NODE) cerr << "CSysMatrix::LU_SGS_Smoother(): illegal value for smoothing iterations, m = " << m << endl;
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+  }
+  
+  /*--- Create vectors to hold the residual and the Matrix-Vector product
+   of the Jacobian matrix with the current solution (x^k). These must be
+   stored in order to perform multiple iterations of the smoother. ---*/
+  
+  CSysVector r(b);
+  CSysVector A_x(b);
+  CSysVector xStar(x);
+  
+  /*--- Calculate the initial residual, compute norm, and check
+   if system is already solved. Recall, r holds b initially. ---*/
+  
+  mat_vec(x, A_x);
+  r -= A_x;
+  double norm_r = r.norm();
+  double norm0  = b.norm();
+  if ( (norm_r < tol*norm0) || (norm_r < eps) ) {
+    if (rank == MASTER_NODE) cout << "CSysMatrix::LU_SGS_Smoother(): system solved by initial guess." << endl;
+    return 0;
+  }
+  
+  /*--- Set the norm to the initial initial residual value ---*/
+  
+  norm0 = norm_r;
+  
+  /*--- Output header information including initial residual ---*/
+  
+  int i = 0;
+  if ((monitoring) && (rank == MASTER_NODE)) {
+    cout << "\n# " << "LU_SGS Smoother" << " residual history" << endl;
+    cout << "# Residual tolerance target = " << tol << endl;
+    cout << "# Initial residual norm     = " << norm_r << endl;
+    cout << "     " << i << "     " << norm_r/norm0 << endl;
+  }
+  
+  /*---  Loop over all smoothing iterations ---*/
+  
+  for (i = 0; i < m; i++) {
+
+    /*--- First part of the symmetric iteration: (D+L).x* = b ---*/
+    
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      LowerProduct(xStar, iPoint);                                      // Compute L.x*
+      for (iVar = 0; iVar < nVar; iVar++)
+        aux_vector[iVar] = r[iPoint*nVar+iVar] - prod_row_vector[iVar]; // Compute aux_vector = b - L.x*
+      Gauss_Elimination(iPoint, aux_vector);                            // Solve D.x* = aux_vector
+      for (iVar = 0; iVar < nVar; iVar++)
+        xStar[iPoint*nVar+iVar] = aux_vector[iVar];                     // Assesing x* = solution, stored in r
+    }
+    
+    /*--- MPI Parallelization ---*/
+    
+    SendReceive_Solution(xStar, geometry, config);
+    
+    /*--- Second part of the symmetric iteration: (D+U).x_(1) = D.x* ---*/
+    
+    for (iPoint = nPointDomain-1; (int)iPoint >= 0; iPoint--) {
+      DiagonalProduct(xStar, iPoint);               // Compute D.x*
+      for (iVar = 0; iVar < nVar; iVar++)
+        aux_vector[iVar] = prod_row_vector[iVar];   // Compute aux_vector = D.x*
+      UpperProduct(xStar, iPoint);                  // Compute U.x_(n+1)
+      for (iVar = 0; iVar < nVar; iVar++)
+        aux_vector[iVar] -= prod_row_vector[iVar];  // Compute aux_vector = D.x*-U.x_(n+1)
+      Gauss_Elimination(iPoint, aux_vector);        // Solve D.x* = aux_vector
+      for (iVar = 0; iVar < nVar; iVar++)
+        xStar[iPoint*nVar+iVar] = aux_vector[iVar]; // Assesing x_(1) = solution
+    }
+    
+    /*--- Update solution (x^k+1 = x^k + w*M^-1*r^k) using the xStar vector,
+     which holds the update after applying the LU_SGS smoother, i.e., M^-1*r^k.
+     Omega is a relaxation factor that we have currently set to 1.0. ---*/
+    
+    x.Plus_AX(omega, xStar);
+    
+    /*--- MPI Parallelization ---*/
+    
+    SendReceive_Solution(x, geometry, config);
+    
+    /*--- Update the residual (r^k+1 = b - A*x^k+1) with the new solution ---*/
+    
+    r = b;
+    mat_vec(x, A_x);
+    r -= A_x;
+    xStar = x;
+    
+    /*--- Check if solution has converged, else output the relative
+     residual if necessary. ---*/
+    
+    norm_r = r.norm();
+    if (norm_r < tol*norm0) break;
+    if (((monitoring) && (rank == MASTER_NODE)) && ((i+1) % 5 == 0))
+      cout << "     " << i << "     " << norm_r/norm0 << endl;
+    
+  }
+  
+  if ((monitoring) && (rank == MASTER_NODE)) {
+    cout << "# LU_SGS smoother final (true) residual:" << endl;
+    cout << "# Iteration = " << i << ": |res|/|res0| = "  << norm_r/norm0 << ".\n" << endl;
+  }
+  
+  return i;
+  
+}
+
+unsigned short CSysMatrix::BuildLineletPreconditioner(CGeometry *geometry, CConfig *config) {
+  
+  bool *check_Point, add_point;
+  unsigned long iEdge, iPoint, jPoint, index_Point, iLinelet, iVertex, next_Point, counter, iElem;
+  unsigned short iMarker, iNode, ExtraLines = 100, MeanPoints;
+  double alpha = 0.9, weight, max_weight, *normal, area, volume_iPoint, volume_jPoint;
+  unsigned long Local_nPoints, Local_nLineLets, Global_nPoints, Global_nLineLets;
+  
+  /*--- Memory allocation --*/
+  
+  check_Point = new bool [geometry->GetnPoint()];
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
+    check_Point[iPoint] = true;
+  
+  LineletBool = new bool[geometry->GetnPoint()];
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++)
+    LineletBool[iPoint] = false;
+  
+  nLinelet = 0;
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX              ) ||
+        (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_CATALYTIC    ) ||
+        (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_NONCATALYTIC ) ||
+        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             ) ||
+        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_CATALYTIC   ) ||
+        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_NONCATALYTIC) ||
+        (config->GetMarker_All_KindBC(iMarker) == EULER_WALL             ) ||
+        (config->GetMarker_All_KindBC(iMarker) == DISPLACEMENT_BOUNDARY)) {
+      nLinelet += geometry->nVertex[iMarker];
+    }
+  }
+  
+  /*--- If the domain contains well defined Linelets ---*/
+  
+  if (nLinelet != 0) {
+    
+    /*--- Basic initial allocation ---*/
+    
+    LineletPoint = new vector<unsigned long>[nLinelet + ExtraLines];
+    
+    /*--- Define the basic linelets, starting from each vertex ---*/
+    
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX              ) ||
+          (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_CATALYTIC    ) ||
+          (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_NONCATALYTIC ) ||
+          (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             ) ||
+          (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_CATALYTIC   ) ||
+          (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_NONCATALYTIC) ||
+          (config->GetMarker_All_KindBC(iMarker) == EULER_WALL             ) ||
+          (config->GetMarker_All_KindBC(iMarker) == DISPLACEMENT_BOUNDARY)) {
+        iLinelet = 0;
+        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          LineletPoint[iLinelet].push_back(iPoint);
+          check_Point[iPoint] = false;
+          iLinelet++;
+        }
+      }
+    }
+    
+    /*--- Create the linelet structure ---*/
+    
+    iLinelet = 0;
+    
+    do {
+      
+      index_Point = 0;
+      
+      do {
+        
+        /*--- Compute the value of the max weight ---*/
+        
+        iPoint = LineletPoint[iLinelet][index_Point];
+        max_weight = 0.0;
+        for (iNode = 0; iNode < geometry->node[iPoint]->GetnPoint(); iNode++) {
+          jPoint = geometry->node[iPoint]->GetPoint(iNode);
+          if ((check_Point[jPoint]) && geometry->node[jPoint]->GetDomain()) {
+            iEdge = geometry->FindEdge(iPoint, jPoint);
+            normal = geometry->edge[iEdge]->GetNormal();
+            if (geometry->GetnDim() == 3) area = sqrt(normal[0]*normal[0]+normal[1]*normal[1]+normal[2]*normal[2]);
+            else area = sqrt(normal[0]*normal[0]+normal[1]*normal[1]);
+            volume_iPoint = geometry->node[iPoint]->GetVolume();
+            volume_jPoint = geometry->node[jPoint]->GetVolume();
+            weight = 0.5*area*((1.0/volume_iPoint)+(1.0/volume_jPoint));
+            max_weight = max(max_weight, weight);
+          }
+        }
+        
+        /*--- Verify if any face of the control volume must be added ---*/
+        
+        add_point = false;
+        counter = 0;
+        next_Point = geometry->node[iPoint]->GetPoint(0);
+        for (iNode = 0; iNode < geometry->node[iPoint]->GetnPoint(); iNode++) {
+          jPoint = geometry->node[iPoint]->GetPoint(iNode);
+          iEdge = geometry->FindEdge(iPoint, jPoint);
+          normal = geometry->edge[iEdge]->GetNormal();
+          if (geometry->GetnDim() == 3) area = sqrt(normal[0]*normal[0]+normal[1]*normal[1]+normal[2]*normal[2]);
+          else area = sqrt(normal[0]*normal[0]+normal[1]*normal[1]);
+          volume_iPoint = geometry->node[iPoint]->GetVolume();
+          volume_jPoint = geometry->node[jPoint]->GetVolume();
+          weight = 0.5*area*((1.0/volume_iPoint)+(1.0/volume_jPoint));
+          if (((check_Point[jPoint]) && (weight/max_weight > alpha) && (geometry->node[jPoint]->GetDomain())) &&
+              ((index_Point == 0) || ((index_Point > 0) && (jPoint != LineletPoint[iLinelet][index_Point-1])))) {
+            add_point = true;
+            next_Point = jPoint;
+            counter++;
+          }
+        }
+        
+        /*--- We have arrived to an isotropic zone ---*/
+        
+        if (counter > 1) add_point = false;
+        
+        /*--- Add a typical point to the linelet, no leading edge ---*/
+        
+        if (add_point) {
+          LineletPoint[iLinelet].push_back(next_Point);
+          check_Point[next_Point] = false;
+          index_Point++;
+        }
+        
+      } while (add_point);
+      iLinelet++;
+    } while (iLinelet < nLinelet);
+    
+    /*--- Identify the points that belong to a Linelet ---*/
+    
+    for (iLinelet = 0; iLinelet < nLinelet; iLinelet++) {
+      for (iElem = 0; iElem < LineletPoint[iLinelet].size(); iElem++) {
+        iPoint = LineletPoint[iLinelet][iElem];
+        LineletBool[iPoint] = true;
+      }
+    }
+    
+    /*--- Identify the maximum number of elements in a Linelet ---*/
+    
+    max_nElem = LineletPoint[0].size();
+    for (iLinelet = 1; iLinelet < nLinelet; iLinelet++)
+      if (LineletPoint[iLinelet].size() > max_nElem)
+        max_nElem = LineletPoint[iLinelet].size();
+    
+  }
+  
+  /*--- The domain doesn't have well defined linelets ---*/
+  
+  else {
+    
+    max_nElem = 0;
+    
+  }
+  
+  /*--- Screen output ---*/
+  
+  Local_nPoints = 0;
+  for (iLinelet = 0; iLinelet < nLinelet; iLinelet++) {
+    Local_nPoints += LineletPoint[iLinelet].size();
+  }
+  Local_nLineLets = nLinelet;
+  
+#ifndef HAVE_MPI
+  Global_nPoints = Local_nPoints;
+  Global_nLineLets = Local_nLineLets;
+#else
+  MPI_Allreduce(&Local_nPoints, &Global_nPoints, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(&Local_nLineLets, &Global_nLineLets, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+#endif
+  
+  MeanPoints = int(double(Global_nPoints)/double(Global_nLineLets));
+  
+  /*--- Memory allocation --*/
+  
+  UBlock = new double* [max_nElem];
+  invUBlock = new double* [max_nElem];
+  LBlock = new double* [max_nElem];
+  yVector = new double* [max_nElem];
+  zVector = new double* [max_nElem];
+  rVector = new double* [max_nElem];
+  for (iElem = 0; iElem < max_nElem; iElem++) {
+    UBlock[iElem] = new double [nVar*nVar];
+    invUBlock[iElem] = new double [nVar*nVar];
+    LBlock[iElem] = new double [nVar*nVar];
+    yVector[iElem] = new double [nVar];
+    zVector[iElem] = new double [nVar];
+    rVector[iElem] = new double [nVar];
+  }
+  
+  LFBlock = new double [nVar*nVar];
+  LyVector = new double [nVar];
+  FzVector = new double [nVar];
+  
+  /*--- Memory deallocation --*/
+  
+  delete [] check_Point;
+  
+  return MeanPoints;
   
 }
 
