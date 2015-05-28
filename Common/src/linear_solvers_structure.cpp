@@ -610,8 +610,9 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
   
   /*--- Solve the linear system using a Krylov subspace method ---*/
   
-  if (config->GetKind_Linear_Solver() == BCGSTAB || config->GetKind_Linear_Solver() == FGMRES
-      || config->GetKind_Linear_Solver() == RESTARTED_FGMRES) {
+  if (config->GetKind_Linear_Solver() == BCGSTAB ||
+      config->GetKind_Linear_Solver() == FGMRES ||
+      config->GetKind_Linear_Solver() == RESTARTED_FGMRES) {
     
     mat_vec = new CSysMatrixVectorProduct(Jacobian, geometry, config);
     CPreconditioner* precond = NULL;
@@ -673,14 +674,16 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
         IterLinSol = 1;
         break;
       case SMOOTHER_JACOBI:
+        mat_vec = new CSysMatrixVectorProduct(Jacobian, geometry, config);
         Jacobian.BuildJacobiPreconditioner();
-        Jacobian.ComputeJacobiPreconditioner(LinSysRes, LinSysSol, geometry, config);
-        IterLinSol = 1;
+        IterLinSol = Jacobian.Jacobi_Smoother(LinSysRes, LinSysSol, *mat_vec, SolverTol, MaxIter, &Residual, false, geometry, config);
+        delete mat_vec;
         break;
       case SMOOTHER_ILU:
         mat_vec = new CSysMatrixVectorProduct(Jacobian, geometry, config);
         Jacobian.BuildILUPreconditioner();
         IterLinSol = Jacobian.ILU0_Smoother(LinSysRes, LinSysSol, *mat_vec, SolverTol, MaxIter, &Residual, false, geometry, config);
+        delete mat_vec;
         break;
       case SMOOTHER_LINELET:
         Jacobian.BuildJacobiPreconditioner();
