@@ -1220,6 +1220,106 @@ void CSysMatrix::ComputeJacobiPreconditioner(const CSysVector & vec, CSysVector 
   
 }
 
+unsigned long CSysMatrix::Jacobi_Smoother(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec, double tol, unsigned long m, double *residual, bool monitoring, CGeometry *geometry, CConfig *config) {
+  
+  unsigned long iPoint, iVar, jVar;
+  double omega = 1.0, sum = 0.0;
+  int rank = MASTER_NODE;
+  
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+  
+  /*---  Check the number of iterations requested ---*/
+  
+  if (m < 1) {
+    if (rank == MASTER_NODE) cerr << "CSysMatrix::Jacobi_Smoother(): illegal value for smoothing iterations, m = " << m << endl;
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+  }
+  
+  /*--- Create vectors to hold the residual and the Matrix-Vector product
+   of the Jacobian matrix with the current solution (x^k). These must be
+   stored in order to perform multiple iterations of the smoother. ---*/
+  
+  CSysVector r(b);
+  CSysVector A_x(b);
+  
+  /*--- Calculate the initial residual, compute norm, and check
+   if system is already solved. Recall, r holds b initially. ---*/
+  
+  mat_vec(x, A_x);
+  r -= A_x;
+  double norm_r = r.norm();
+  double norm0  = b.norm();
+  if ( (norm_r < tol*norm0) || (norm_r < eps) ) {
+    if (rank == MASTER_NODE) cout << "CSysMatrix::Jacobi_Smoother(): system solved by initial guess." << endl;
+    return 0;
+  }
+  
+  /*--- Set the norm to the initial initial residual value ---*/
+  
+  norm0 = norm_r;
+  
+  /*--- Output header information including initial residual ---*/
+  
+  int i = 0;
+  if ((monitoring) && (rank == MASTER_NODE)) {
+    cout << "\n# " << "Jacobi Smoother" << " residual history" << endl;
+    cout << "# Residual tolerance target = " << tol << endl;
+    cout << "# Initial residual norm     = " << norm_r << endl;
+    cout << "     " << i << "     " << norm_r/norm0 << endl;
+  }
+  
+  /*---  Loop over all smoothing iterations ---*/
+  
+  for (i = 0; i < m; i++) {
+    
+    /*--- Apply the Jacobi smoother, i.e., multiply by the inverse of the
+     diagonal matrix of A, which was built in the preprocessing phase. Note
+     that we are directly updating the solution (x^k+1) during the loop. ---*/
+    
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      for (iVar = 0; iVar < nVar; iVar++) {
+        for (jVar = 0; jVar < nVar; jVar++)
+          x[(unsigned long)(iPoint*nVar+iVar)] +=
+          invM[(unsigned long)(iPoint*nVar*nVar+iVar*nVar+jVar)]*r[(unsigned long)(iPoint*nVar+jVar)];
+      }
+    }
+    
+    /*--- MPI Parallelization ---*/
+    
+    SendReceive_Solution(x, geometry, config);
+    
+    /*--- Update the residual (r^k+1 = b - A*x^k+1) with the new solution ---*/
+    
+    r = b;
+    mat_vec(x, A_x);
+    r -= A_x;
+    
+    /*--- Check if solution has converged, else output the relative
+     residual if necessary. ---*/
+    
+    norm_r = r.norm();
+    if (norm_r < tol*norm0) break;
+    if (((monitoring) && (rank == MASTER_NODE)) && ((i+1) % 5 == 0))
+      cout << "     " << i << "     " << norm_r/norm0 << endl;
+    
+  }
+  
+  if ((monitoring) && (rank == MASTER_NODE)) {
+    cout << "# Jacobi smoother final (true) residual:" << endl;
+    cout << "# Iteration = " << i << ": |res|/|res0| = "  << norm_r/norm0 << ".\n" << endl;
+  }
+  
+  return i;
+  
+}
+
 void CSysMatrix::ComputeILUPreconditioner(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config) {
   
   unsigned long index;
@@ -1299,7 +1399,7 @@ unsigned long CSysMatrix::ILU0_Smoother(const CSysVector & b, CSysVector & x, CM
   /*---  Check the number of iterations requested ---*/
   
   if (m < 1) {
-    if (rank == MASTER_NODE) cerr << "CSysMatrix::ComputeILUSmoother: illegal value for smoothing iterations, m = " << m << endl;
+    if (rank == MASTER_NODE) cerr << "CSysMatrix::ILU0_Smoother(): illegal value for smoothing iterations, m = " << m << endl;
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
 #else
@@ -1323,7 +1423,7 @@ unsigned long CSysMatrix::ILU0_Smoother(const CSysVector & b, CSysVector & x, CM
   double norm_r = r.norm();
   double norm0  = b.norm();
   if ( (norm_r < tol*norm0) || (norm_r < eps) ) {
-    if (rank == MASTER_NODE) cout << "CSysMatrix::ComputeILUSmoother(): system solved by initial guess." << endl;
+    if (rank == MASTER_NODE) cout << "CSysMatrix::ILU0_Smoother(): system solved by initial guess." << endl;
     return 0;
   }
   
@@ -1474,6 +1574,12 @@ void CSysMatrix::ComputeLU_SGSPreconditioner(const CSysVector & vec, CSysVector 
   /*--- MPI Parallelization ---*/
   
   SendReceive_Solution(prod, geometry, config);
+  
+}
+
+unsigned long CSysMatrix::LU_SGS_Smoother(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec, double tol, unsigned long m, double *residual, bool monitoring, CGeometry *geometry, CConfig *config) {
+  
+  return 0;
   
 }
 

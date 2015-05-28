@@ -380,6 +380,18 @@ public:
 	 */
 	void ComputeJacobiPreconditioner(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config);
   
+  /*!
+   * \brief Apply Jacobi as a classical iterative smoother
+   * \param[in] b - CSysVector containing the residual (b)
+   * \param[in] x - CSysVector containing the solution (x^k)
+   * \param[in] mat_vec - object that defines matrix-vector product
+   * \param[in] tol - tolerance with which to solve the system
+   * \param[in] m - maximum size of the search subspace
+   * \param[in] monitoring - turn on priting residuals from solver to screen.
+   * \param[out] x - CSysVector containing the result of the smoothing (x^k+1 = x^k + M^-1*(b - A*x^k).
+   */
+  unsigned long Jacobi_Smoother(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec, double tol, unsigned long m, double *residual, bool monitoring, CGeometry *geometry, CConfig *config);
+  
 	/*!
 	 * \brief Multiply CSysVector by the preconditioner
 	 * \param[in] vec - CSysVector to be multiplied by the preconditioner.
@@ -405,6 +417,18 @@ public:
 	 * \param[out] prod - Result of the product A*vec.
 	 */
 	void ComputeLU_SGSPreconditioner(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config);
+  
+  /*!
+   * \brief Apply LU_SGS as a classical iterative smoother
+   * \param[in] b - CSysVector containing the residual (b)
+   * \param[in] x - CSysVector containing the solution (x^k)
+   * \param[in] mat_vec - object that defines matrix-vector product
+   * \param[in] tol - tolerance with which to solve the system
+   * \param[in] m - maximum size of the search subspace
+   * \param[in] monitoring - turn on priting residuals from solver to screen.
+   * \param[out] x - CSysVector containing the result of the smoothing (x^k+1 = x^k + M^-1*(b - A*x^k).
+   */
+  unsigned long LU_SGS_Smoother(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec, double tol, unsigned long m, double *residual, bool monitoring, CGeometry *geometry, CConfig *config);
   
 	/*!
 	 * \brief Multiply CSysVector by the preconditioner
