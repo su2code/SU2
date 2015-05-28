@@ -670,8 +670,9 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
   else {
     switch (config->GetKind_Linear_Solver()) {
       case SMOOTHER_LUSGS:
-        Jacobian.ComputeLU_SGSPreconditioner(LinSysRes, LinSysSol, geometry, config);
-        IterLinSol = 1;
+        mat_vec = new CSysMatrixVectorProduct(Jacobian, geometry, config);
+        IterLinSol = Jacobian.LU_SGS_Smoother(LinSysRes, LinSysSol, *mat_vec, SolverTol, MaxIter, &Residual, false, geometry, config);
+        delete mat_vec;
         break;
       case SMOOTHER_JACOBI:
         mat_vec = new CSysMatrixVectorProduct(Jacobian, geometry, config);

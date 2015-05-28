@@ -68,9 +68,10 @@ private:
 	double *block_weight;             /*!< \brief Internal array to store a subblock of the matrix. */
   double *prod_block_vector; /*!< \brief Internal array to store the product of a subblock with a vector. */
 	double *prod_row_vector;   /*!< \brief Internal array to store the product of a matrix-by-blocks "row" with a vector. */
-	double *aux_vector;         /*!< \brief Auxilar array to store intermediate results. */
-  double *sum_vector;         /*!< \brief Auxilar array to store intermediate results. */
+	double *aux_vector;         /*!< \brief Auxiliary array to store intermediate results. */
+  double *sum_vector;         /*!< \brief Auxiliary array to store intermediate results. */
 	double *invM;              /*!< \brief Inverse of (Jacobi) preconditioner. */
+
 	bool *LineletBool;                          /*!< \brief Identify if a point belong to a linelet. */
 	vector<unsigned long> *LineletPoint;        /*!< \brief Linelet structure. */
 	unsigned long nLinelet;                     /*!< \brief Number of Linelets in the system. */
@@ -91,7 +92,6 @@ public:
 	 */
 	~CSysMatrix(void);
   
-  
   /*!
 	 * \brief Initializes space matrix system.
 	 * \param[in] nVar - Number of variables.
@@ -103,7 +103,7 @@ public:
                   bool EdgeConnect, CGeometry *geometry, CConfig *config);
   
   /*!
-	 * \brief Assings values to the sparse-matrix structure.
+	 * \brief Assigns values to the sparse-matrix structure.
 	 * \param[in] val_nPoint - Number of points in the nPoint x nPoint block structure
 	 * \param[in] val_nVar - Number of nVar x nVar variables in each subblock of the matrix-by-block structure.
    * \param[in] val_nEq - Number of nEqn x nVar variables in each subblock of the matrix-by-block structure.
@@ -360,18 +360,6 @@ public:
 	 * \brief Build the Jacobi preconditioner.
 	 */
 	void BuildJacobiPreconditioner(void);
-  
-	/*!
-	 * \brief Build the Jacobi preconditioner.
-	 */
-	void BuildILUPreconditioner(void);
-  
-	/*!
-	 * \brief Build the Linelet preconditioner.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	unsigned short BuildLineletPreconditioner(CGeometry *geometry, CConfig *config);
 	
 	/*!
 	 * \brief Multiply CSysVector by the preconditioner
@@ -391,6 +379,11 @@ public:
    * \param[out] x - CSysVector containing the result of the smoothing (x^k+1 = x^k + M^-1*(b - A*x^k).
    */
   unsigned long Jacobi_Smoother(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec, double tol, unsigned long m, double *residual, bool monitoring, CGeometry *geometry, CConfig *config);
+  
+  /*!
+   * \brief Build the ILU0 preconditioner.
+   */
+  void BuildILUPreconditioner(void);
   
 	/*!
 	 * \brief Multiply CSysVector by the preconditioner
@@ -429,6 +422,13 @@ public:
    * \param[out] x - CSysVector containing the result of the smoothing (x^k+1 = x^k + M^-1*(b - A*x^k).
    */
   unsigned long LU_SGS_Smoother(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec, double tol, unsigned long m, double *residual, bool monitoring, CGeometry *geometry, CConfig *config);
+  
+  /*!
+   * \brief Build the Linelet preconditioner.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  unsigned short BuildLineletPreconditioner(CGeometry *geometry, CConfig *config);
   
 	/*!
 	 * \brief Multiply CSysVector by the preconditioner
