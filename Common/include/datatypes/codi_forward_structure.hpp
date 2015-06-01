@@ -1,6 +1,6 @@
 /*!
- * \file adolc_reverse_structure.hpp
- * \brief Header for adolc reverse type definition.
+ * \file codi_forward_structure.hpp
+ * \brief Header for codi forward type definition.
  * \author T. Albring
  * \version 3.2.9 "eagle"
  *
@@ -30,11 +30,7 @@
  */
 #pragma once
 
-#include <adolc/adouble.h>
-#include <adolc/interfaces.h>
-#include <adolc/taping.h>
-#include <adolc/drivers/drivers.h>
+#include "codi.hpp"
 
-#include <vector>
+typedef codi::RealForward su2double;
 
-typedef adouble su2double;

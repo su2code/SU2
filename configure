@@ -812,14 +812,17 @@ enable_SOL
 enable_GEO
 enable_complex
 enable_normal
-enable_adolc_reverse
-enable_adolc_forward
 with_MPI
 enable_tecio
 enable_metis
 with_metis_cppflags
 enable_parmetis
 with_parmetis_cppflags
+enable_adolc_reverse
+enable_adolc_forward
+enable_codi_reverse
+enable_codi_forward
+with_codi_include
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1474,14 +1477,18 @@ Optional Features:
                           no)
   --disable-normal        build executables with normal datatype (default =
                           yes)
-  --enable-adolc-reverse  build executables with adolc reverse datatype
-                          (default = no)
-  --enable-adolc-forward  build executables with adolc forward datatype
-                          (default = no)
   --enable-tecio          build with Tecplot TecIO API support (from source)
   --enable-metis          build with Metis graph partitioning suppport
   --disable-parmetis      build without Parmetis parallel graph partitioning
                           suppport
+  --enable-adolc-reverse  build executables with adolc reverse datatype
+                          (default = no)
+  --enable-adolc-forward  build executables with adolc forward datatype
+                          (default = no)
+  --enable-codi-reverse   build executables with codi reverse datatype
+                          (default = no)
+  --enable-codi-forward   build executables with codi forward datatype
+                          (default = no)
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -1508,6 +1515,7 @@ Optional Packages:
                           Specific METIS C Preprocessor flags to use
   --with-parmetis-cppflags="..."
                           Specific PARMETIS C Preprocessor flags to use
+  --with-CODI-include=ARG CODI include directory, ARG = path to codi.hpp
 
 Some influential environment variables:
   CXX         C++ compiler command
@@ -2562,7 +2570,7 @@ test -n "$target_alias" &&
   test "$program_prefix$program_suffix$program_transform_name" = \
     NONENONEs,x,x, &&
   program_prefix=${target_alias}-
-am__api_version='1.14'
+am__api_version='1.15'
 
 # Find a good install program.  We prefer a C program (faster),
 # so one script is as good as another.  But avoid the broken or
@@ -2734,8 +2742,8 @@ test "$program_suffix" != NONE &&
 ac_script='s/[\\$]/&&/g;s/;s,x,x,$//'
 program_transform_name=`$as_echo "$program_transform_name" | sed "$ac_script"`
 
-# expand $ac_aux_dir to an absolute path
-am_aux_dir=`cd $ac_aux_dir && pwd`
+# Expand $ac_aux_dir to an absolute path.
+am_aux_dir=`cd "$ac_aux_dir" && pwd`
 
 if test x"${MISSING+set}" != xset; then
   case $am_aux_dir in
@@ -2754,7 +2762,7 @@ else
 $as_echo "$as_me: WARNING: 'missing' script is too old or missing" >&2;}
 fi
 
-if test x"${install_sh}" != xset; then
+if test x"${install_sh+set}" != xset; then
   case $am_aux_dir in
   *\ * | *\	*)
     install_sh="\${SHELL} '$am_aux_dir/install-sh'" ;;
@@ -3082,8 +3090,8 @@ MAKEINFO=${MAKEINFO-"${am_missing_run}makeinfo"}
 # <http://lists.gnu.org/archive/html/automake/2012-07/msg00014.html>
 mkdir_p='$(MKDIR_P)'
 
-# We need awk for the "check" target.  The system "awk" is bad on
-# some platforms.
+# We need awk for the "check" target (and possibly the TAP driver).  The
+# system "awk" is bad on some platforms.
 # Always define AMTAR for backward compatibility.  Yes, it's still used
 # in the wild :-(  We should find a proper way to deprecate it ...
 AMTAR='$${TAR-tar}'
@@ -3140,6 +3148,7 @@ END
     as_fn_error $? "Your 'rm' program is bad, sorry." "$LINENO" 5
   fi
 fi
+
 # Check whether --enable-silent-rules was given.
 if test "${enable_silent_rules+set}" = set; then :
   enableval=$enable_silent_rules;
@@ -5447,19 +5456,6 @@ else
   build_NORMAL="yes"
 fi
 
-# Check whether --enable-adolc-reverse was given.
-if test "${enable_adolc_reverse+set}" = set; then :
-  enableval=$enable_adolc_reverse; build_ADOLC_REVERSE="yes"
-else
-  build_ADOLC_REVERSE="no"
-fi
-
-# Check whether --enable-adolc-forward was given.
-if test "${enable_adolc_forward+set}" = set; then :
-  enableval=$enable_adolc_forward; build_ADOLC_FORWARD="yes"
-else
-  build_ADOLC_FORWARD="no"
-fi
 
 # Check for the old  MPI option so that we can throw an error
 
@@ -6214,21 +6210,36 @@ build_DIRECTDIFF=no
 DIRECTDIFF_CXX=
 DIRECTDIFF_LIBS=
 # reverse mode type
-ADOLC_REVERSE_CXX=
-ADOLC_FORWARD_CXX=
-ADOLC_LIBS=
 
-ADOLC_VERSION=
 
-if test "$have_MPI" == "yes" && test "$build_ADOLC_REVERSE" == "yes"
-then
-  ADOLC_VERSION="adolc_ampi = 2.5.3-trunk"
+    # Check whether --enable-adolc-reverse was given.
+if test "${enable_adolc_reverse+set}" = set; then :
+  enableval=$enable_adolc_reverse; build_ADOLC_REVERSE="yes"
 else
-  ADOLC_VERSION="adolc = 2.5.3-trunk"
+  build_ADOLC_REVERSE="no"
 fi
 
-if test "$build_ADOLC_REVERSE" == "yes" || test "$build_ADOLC_FORWARD" == "yes"
-then
+    # Check whether --enable-adolc-forward was given.
+if test "${enable_adolc_forward+set}" = set; then :
+  enableval=$enable_adolc_forward; build_ADOLC_FORWARD="yes"
+else
+  build_ADOLC_FORWARD="no"
+fi
+
+        ADOLC_REVERSE_CXX=
+        ADOLC_FORWARD_CXX=
+        ADOLC_LIBS=
+        ADOLC_VERSION=
+
+        if test "$have_MPI" == "yes" && test "$build_ADOLC_REVERSE" == "yes"
+        then
+          ADOLC_VERSION="adolc_ampi = 2.5.3-trunk"
+        else
+          ADOLC_VERSION="adolc = 2.5.3-trunk"
+        fi
+
+        if test "$build_ADOLC_REVERSE" == "yes" || test "$build_ADOLC_FORWARD" == "yes"
+        then
 
 pkg_failed=no
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for ADOLC" >&5
@@ -6300,28 +6311,111 @@ else
 $as_echo "yes" >&6; }
 	have_ADOLC='yes'
 fi
-  if test "$have_ADOLC" == "no"
-  then
-    as_fn_error $? "ADOLC requested but library file not found." "$LINENO" 5
-  fi
-fi
-ADOLC_FORWARD_CXX="-DADOLC_FORWARD_TYPE "$ADOLC_CFLAGS""
-ADOLC_REVERSE_CXX="-DADOLC_REVERSE_TYPE "$ADOLC_CFLAGS""
+          if test "$have_ADOLC" == "no"
+          then
+            as_fn_error $? "ADOLC requested but library file not found." "$LINENO" 5
+          fi
+        fi
 
-if test $build_ADOLC_FORWARD != "no"
-then
-   DIRECTDIFF_CXX=$ADOLC_FORWARD_CXX
-   DIRECTDIFF_LIBS=$ADOLC_LIBS
-   build_DIRECTDIFF=yes
-elif test $build_ADOLC_REVERSE != "no"
-then
-   REVERSE_CXX=$ADOLC_REVERSE_CXX
-   REVERSE_LIBS=$ADOLC_LIBS
-   build_REVERSE=yes
-elif test $build_COMPLEX != "no"
+        if test "$build_ADOLC_FORWARD" == "yes"
+        then
+           DIRECTDIFF_CXX="-std=c++11 -DADOLC_FORWARD_TYPE "$ADOLC_CFLAGS""
+           DIRECTDIFF_LIBS=$ADOLC_LIBS
+           build_DIRECTDIFF=yes
+           build_NORMAL=no
+        elif test "$build_ADOLC_REVERSE" == "yes"
+        then
+           REVERSE_CXX="-std=c++11 -DADOLC_REVERSE_TYPE "$ADOLC_CFLAGS""
+           REVERSE_LIBS=$ADOLC_LIBS
+           build_REVERSE=yes
+           build_NORMAL=no
+           else
+              build_REVERSE=no
+              build_DIRECTDIFF=no
+           fi
+
+
+    # Check whether --enable-codi-reverse was given.
+if test "${enable_codi_reverse+set}" = set; then :
+  enableval=$enable_codi_reverse; build_CODI_REVERSE="yes"
+else
+  build_CODI_REVERSE="no"
+fi
+
+    # Check whether --enable-codi-forward was given.
+if test "${enable_codi_forward+set}" = set; then :
+  enableval=$enable_codi_forward; build_CODI_FORWARD="yes"
+else
+  build_CODI_FORWARD="no"
+fi
+
+
+# Check whether --with-codi-include was given.
+if test "${with_codi_include+set}" = set; then :
+  withval=$with_codi_include; with_CODI_include=$withval
+else
+  with_CODI_include="no"
+fi
+
+        REVERSE_CXX=
+        FORWARD_CXX=
+        CODIheader=codi.hpp
+
+        if test "$build_CODI_REVERSE" == "yes" || test "$build_CODI_FORWARD" == "yes"
+        then
+          as_ac_File=`$as_echo "ac_cv_file_$with_CODI_include/$CODIheader" | $as_tr_sh`
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $with_CODI_include/$CODIheader" >&5
+$as_echo_n "checking for $with_CODI_include/$CODIheader... " >&6; }
+if eval \${$as_ac_File+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  test "$cross_compiling" = yes &&
+  as_fn_error $? "cannot check for file existence when cross compiling" "$LINENO" 5
+if test -r "$with_CODI_include/$CODIheader"; then
+  eval "$as_ac_File=yes"
+else
+  eval "$as_ac_File=no"
+fi
+fi
+eval ac_res=\$$as_ac_File
+	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+$as_echo "$ac_res" >&6; }
+if eval test \"x\$"$as_ac_File"\" = x"yes"; then :
+  have_CODI='yes'
+else
+  have_CODI='no'
+fi
+
+          if test "$have_CODI" == "no"
+          then
+            as_fn_error $? "CODI requested but header file not found." "$LINENO" 5
+          fi
+        fi
+
+        if test "$build_CODI_FORWARD" == "yes"
+        then
+           DIRECTDIFF_CXX="-std=c++11 -DCODI_FORWARD_TYPE -I"$with_CODI_include""
+           build_DIRECTDIFF=yes
+           build_REVERSE=no
+           build_NORMAL=no
+        elif test "$build_CODI_REVERSE" == "yes"
+        then
+           REVERSE_CXX="-std=c++11 -DCODI_REVERSE_TYPE -I"$with_CODI_include""
+           build_REVERSE=yes
+           build_DIRECTDIFF=no
+           build_NORMAL=no
+        else
+           build_REVERSE=no
+           build_DIRECTDIFF=no
+        fi
+
+
+if test $build_COMPLEX != "no"
 then
    DIRECTDIFF_CXX=$COMPLEX_CXX
    build_DIRECTDIFF=yes
+   build_REVERSE=no
+   build_NORMAL=no
 fi
 
 
@@ -6353,6 +6447,14 @@ else
   BUILD_REVERSE_FALSE=
 fi
 
+if test $build_NORMAL == "no"
+then
+  build_DOT=no
+  build_MSH=no
+  build_DEF=no
+  build_SOL=no
+  build_GEO=no
+fi
 ###########################
 
  if test $build_CFD != "no"; then

@@ -187,6 +187,10 @@ inline void sprintfOver(char * str, const char * format, const A001 &a001, const
 #include "datatypes/adolc_forward_structure.inl"
 #elif defined ADOLC_REVERSE_TYPE
 #include "datatypes/adolc_reverse_structure.inl"
+#elif defined CODI_REVERSE_TYPE
+#include "datatypes/codi_reverse_structure.inl"
+#elif defined CODI_FORWARD_TYPE
+#include "datatypes/codi_forward_structure.inl"
 #else
 #include "datatypes/primitive_structure.inl"
 #endif

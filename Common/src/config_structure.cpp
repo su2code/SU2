@@ -3126,7 +3126,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
   
   if (DirectDiff != NO_DERIVATIVE){
-#if !defined COMPLEX_TYPE && !defined ADOLC_FORWARD_TYPE
+#if !defined COMPLEX_TYPE && !defined ADOLC_FORWARD_TYPE && !defined CODI_FORWARD_TYPE
       if (Kind_SU2 == SU2_CFD){
         cout << "SU2_CFD: DIRECT_DIFF=YES requires forward or complex mode support!" << endl;
         cout << "Please use or compile correct executables." << endl;

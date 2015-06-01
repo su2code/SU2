@@ -1,6 +1,6 @@
 /*!
- * \file adolc_reverse_structure.hpp
- * \brief Header for adolc reverse type definition.
+ * \file codi_forward_structure.inl
+ * \brief Inline subroutines for <i>codi_forward_structure.hpp<i>.
  * \author T. Albring
  * \version 3.2.9 "eagle"
  *
@@ -30,11 +30,16 @@
  */
 #pragma once
 
-#include <adolc/adouble.h>
-#include <adolc/interfaces.h>
-#include <adolc/taping.h>
-#include <adolc/drivers/drivers.h>
+namespace SU2_TYPE{
+  inline void SetPrimary(su2double& data, const double &val){data.setValue(val);}
 
-#include <vector>
+  inline double GetPrimary(const su2double& data){return data.getValue();}
 
-typedef adouble su2double;
+  inline void SetSecondary(su2double& data, const double &val){data.setGradient(val);}
+
+  inline double GetSecondary(const su2double& data){return data.getGradient();}
+
+  inline double GetDerivative(const su2double& data){return data.getGradient();}
+
+  inline void SetDerivative(su2double& data, const double &val){data.setGradient(val);}
+}

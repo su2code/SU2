@@ -1,5 +1,5 @@
 /*!
- * \file adolc_r_structure.inl
+ * \file adolc_reverse_structure.inl
  * \brief Inline subroutines for <i>datatype_structure.hpp<i>.
  * \author T. Albring
  * \version 3.2.9 "eagle"
