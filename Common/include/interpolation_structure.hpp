@@ -52,6 +52,7 @@ using namespace std;
 class CInterpolator {
 protected:
   unsigned short nZone;
+  double ***Force;
 public:
   CGeometry** Geometry; /*! \brief Vector which stores n zones of geometry. */
   CSysTransferMatrix* TransferMatrix; /*! \brief Sparse matrix structure defining transfer from one mesh to another. */
@@ -74,17 +75,17 @@ public:
   /*!
    * \brief interpolate forces from one mesh to another
    */
-  void Interpolate_Force(unsigned short iZone_0, unsigned short iZone_1);
+  void Interpolate_Force(unsigned short iZone_0, unsigned short iZone_1, CConfig **config);
 
   /*!
    * \brief interpolate deformations from one mesh to another
    */
-  void Interpolate_Deformation(unsigned short iZone_0, unsigned short iZone_1);
+  void Interpolate_Deformation(unsigned short iZone_0, unsigned short iZone_1, CConfig **config);
 
   /*!
    * \brief Set up transfer matrix defining relation between two meshes
    */
-  void Set_TransferMatrix(unsigned short iZone_0, unsigned short iZone_1);
+  virtual void Set_TransferMatrix(unsigned short iZone_0, unsigned short iZone_1, CConfig **config);
 
 
 };
@@ -92,9 +93,20 @@ public:
 
 class CNearestNeighbor : public CInterpolator {
 public:
+
+  /*!
+   * \brief Constructor of the class.
+   */
+  CNearestNeighbor(CGeometry **geometry_container, CConfig **config, unsigned short nZone);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CNearestNeighbor(void);
+
   /*!
    * \brief Set up transfer matrix defining relation between two meshes
    */
-  void Set_TransferMatrix(unsigned short iZone_0, unsigned short iZone_1);
+  void Set_TransferMatrix(unsigned short iZone_0, unsigned short iZone_1, CConfig **config);
 
 };

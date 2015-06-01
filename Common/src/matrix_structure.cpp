@@ -1412,108 +1412,77 @@ CSysTransferMatrix::~CSysTransferMatrix(void) {
 
   if (row_ptr != NULL) delete [] row_ptr;
   if (col_ind != NULL) delete [] col_ind;
-  if (row_marker != NULL) delete [] row_marker;
-  if (row_vertex != NULL) delete [] row_vertex;
-  if (col_marker != NULL) delete [] col_marker;
-  if (col_vertex != NULL) delete [] col_vertex;
 
 }
 
 void CSysTransferMatrix::Initialize(CGeometry **geometry, CConfig **config) {
 
-  unsigned long iPoint, index, nnz, iVertex,jVertex;
+  unsigned long iPoint, jPoint, index, nnz, iVertex, jVertex;
 	double *Coord_Point, distance, last_distance;
-	unsigned short iDim;
-  unsigned short iNeigh, iElem, iNode, **nNeigh, iMarker,jMarker;
-  unsigned long **Neigh;
-  nVertex_flow=0; nVertex_fea=0;
+	unsigned short iDim, iMarker, jMarker;
+  unsigned short iNeigh, jElem, iNode, *nNeigh;
+  unsigned long *Neigh;
 
-  nNeigh = new unsigned short* [config[ZONE_0]->GetnMarker_All()]; /* number of nodes assc w/ nearest neighbor element*/
-  Neigh =  new unsigned long* [config[ZONE_1]->GetnMarker_All()]; /*Nearest neighbor element*/
 
-  /*--- Initialize the number of vertices that will be transferring information from the FLOW solution (assumes ZONE_0)---*/
-  for (iMarker = 0; iMarker < config[ZONE_0]->GetnMarker_All(); iMarker++)
-    if (config[ZONE_0]->GetMarker_All_FSIinterface(iMarker) == YES){
-      nVertex_flow += geometry[ZONE_0]->GetnVertex(iMarker);
-      nNeigh[iMarker] = new unsigned short [geometry[ZONE_0]->GetnVertex(iMarker)];
-      Neigh[iMarker] = new unsigned long [geometry[ZONE_0]->GetnVertex(iMarker)];
-    }
-  /*--- Initialize the number of vertices that will be transferring information from the FEA solution (assumes ZONE_1)---*/
-  for (iMarker = 0; iMarker < config[ZONE_1]->GetnMarker_All(); iMarker++)
-    if (config[ZONE_1]->GetMarker_All_FSIinterface(iMarker) == YES)
-      nVertex_fea += geometry[ZONE_0]->GetnVertex(iMarker);
-
+  nPoint = geometry[ZONE_0]->GetnPoint();
   nPoint_1 = geometry[ZONE_1]->GetnPoint();
   nElem_1 = geometry[ZONE_1]->GetnElem();
   nDim = geometry[ZONE_0]->GetnDim();
+
+  nNeigh = new unsigned short [nPoint]; /* number of nodes assc w/ nearest neighbor element*/
+  Neigh =  new unsigned long [nPoint]; /*Nearest neighbor element*/
+
   /*--- Compute the number of neighbors = nodes of the nearest element ---*/
+  /*---Loop through vertices in the FSIInterface markers from the flow solution side (Zone 0 ) ---*/
   for (iMarker = 0; iMarker < config[ZONE_0]->GetnMarker_All(); iMarker++){
     if (config[ZONE_0]->GetMarker_All_FSIinterface(iMarker) == YES){
       for (iVertex = 0; iVertex<geometry[ZONE_0]->GetnVertex(iMarker); iVertex++) {
         iPoint =geometry[ZONE_0]->vertex[iMarker][iVertex]->GetNode();
         Coord_Point = geometry[ZONE_0]->node[iPoint]->GetCoord();
-        /*--- Loop over elements of ZONE_1 (Assumed to be structures), find the one nearest ---*/
-        /*--- Brute force nearest neighbor by CG ->
-         * TODO: replace with nearest neigh by projected point on element
-         * ( a point near the edge of an element may be closer to the CG of a smaller element nearby)
-         * TODO: replace brute force search
-         * TODO: general for other types of interpolation (nearest NODE for example -> base on config option?)
-         * */
-        distance = 0.0; last_distance=-1.0; // distance will always be positive, so negative value provides flag for first point
-        for (jMarker=0; jMarker<config[ZONE_1]->GetnMarker_All(); jMarker++){
-          if (config[ZONE_1]->GetMarker_All_FSIinterface(iMarker) == YES){
-            for (jVertex = 0; jVertex<geometry[ZONE_1]->GetnVertex(iMarker); jVertex++) {
-              iElem = geometry[ZONE_1]->vertex[jMarker][jVertex]->GetDonorElem();
-              for (iDim=0; iDim<nDim; iDim++) distance += pow(geometry[ZONE_1]->elem[iElem]->GetCG(iDim)-Coord_Point[iDim],2.0);
-              if ((last_distance==-1.0) or (distance<last_distance)){
-                 Neigh[iMarker][iVertex] = iElem;
-                 nNeigh[iMarker][iVertex] = geometry[ZONE_1]->elem[iElem]->GetnNodes();
-                 last_distance = distance;
-               }
+        last_distance=-1.0; /*--- initialize to -1 as a flag---*/
+        /*--- Loop through elements in the structural mesh that touch FSIinterface --*/
+        for (jMarker = 0; iMarker < config[ZONE_1]->GetnMarker_All(); jMarker++){
+          if (config[ZONE_1]->GetMarker_All_FSIinterface(jMarker) == YES){
+            for (jVertex = 0; jVertex<geometry[ZONE_1]->GetnVertex(jMarker); jVertex++) {
+              jPoint = geometry[ZONE_1]->vertex[jMarker][jVertex]->GetNode();
+              for (unsigned int kElem = 0; kElem<geometry[ZONE_1]->node[jPoint]->GetnElem(); kElem++ ){
+                jElem = geometry[ZONE_1]->node[jPoint]->GetElem(kElem);
+                distance = 0.0;
+                for (iDim=0; iDim<nDim; iDim++) distance += pow(geometry[ZONE_1]->elem[jElem]->GetCG(iDim)-Coord_Point[iDim],2.0);
+                /*-- This element is stored as the nearest if it is the first one checked (last_distance=-1.0) or if the distance is smaller.---*/
+                if ((last_distance==-1.0) or (distance<last_distance)){
+                  Neigh[iPoint] = jElem;
+                  last_distance = distance;
+                  geometry[ZONE_0]->vertex[iMarker][iVertex]->SetDonorElem(jElem);
+                }
+              }
             }
           }
         }
+        nNeigh[iPoint] = geometry[ZONE_1]->elem[Neigh[iPoint]]->GetnNodes();
       }
     }
   }
 
   /*--- Create row_ptr structure, using the number of neighbors ---*/
-  row_ptr = new unsigned long [nVertex_flow+1];
-  row_marker = new unsigned long [nVertex_flow];
-  row_vertex = new unsigned long [nVertex_flow];
+
+  row_ptr = new unsigned long [nPoint+1];
   row_ptr[0] = 0;
-  jVertex = 0;
-  for (iMarker = 0; iMarker < config[ZONE_0]->GetnMarker_All(); iMarker++){
-    if (config[ZONE_0]->GetMarker_All_FSIinterface(iMarker) == YES){
-      for (iVertex = 0; iVertex<geometry[ZONE_0]->GetnVertex(iMarker); iVertex++) {
-        row_ptr[jVertex+1] = row_ptr[jVertex] + nNeigh[iMarker][iVertex];
-        row_marker[jVertex]=iMarker;
-        row_vertex[jVertex]=iVertex;
-        jVertex++;
-      }
-    }
-  }
-  nnz = row_ptr[nVertex_flow];
+  for (iPoint = 0; iPoint < nPoint; iPoint++)
+    row_ptr[iPoint+1] = row_ptr[iPoint] + nNeigh[iPoint];
+  nnz = row_ptr[nPoint];
 
   /*--- Create col_ind structure ---*/
 
   col_ind = new unsigned long [nnz];
-  col_vertex = new unsigned long [nnz];
-  col_marker = new unsigned long [nnz];
-  jVertex=0;
-  for (iMarker = 0; iMarker < config[ZONE_0]->GetnMarker_All(); iMarker++){
-    if (config[ZONE_0]->GetMarker_All_FSIinterface(iMarker) == YES){
-      for (iVertex = 0; iVertex<geometry[ZONE_0]->GetnVertex(iMarker); iVertex++) {
-        index = row_ptr[jVertex];
-        for (iNeigh = 0; iNeigh < nNeigh[iMarker][iVertex]; iNeigh++) {
-          col_ind[index] = geometry[ZONE_1]->elem[Neigh[iMarker][iVertex]]->GetNode(iNode); //vneighs[iNeigh];
-          col_vertex[index]=iVertex;
-          col_marker[index]=iMarker;
-          index++;
-        }
-        jVertex++;
-      }
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+
+    index = row_ptr[iPoint];
+    for (iNeigh = 0; iNeigh < nNeigh[iPoint]; iNeigh++) {
+      col_ind[index] = geometry[ZONE_1]->elem[Neigh[iPoint]]->GetNode(iNode); //vneighs[iNeigh];
+      index++;
     }
+
   }
 
   /*--- Set the indices in the in the sparse matrix structure, and memory allocation ---*/
@@ -1525,7 +1494,7 @@ void CSysTransferMatrix::Initialize(CGeometry **geometry, CConfig **config) {
   SetValZero();
 
   delete [] nNeigh;
-  delete [] Neigh;
+
 
 }
 
@@ -1536,10 +1505,15 @@ void CSysTransferMatrix::SetIndexes( unsigned long val_nnz, CConfig *config) {
 
   nnz = val_nnz;                    // Assign number of possible non zero blocks
 
-  matrix   = new double [nnz]; // Reserve memory for the values of the matrix
+  matrix            = new double [nnz*nDim]; // Reserve memory for the values of the matrix
+  aux_vector        = new double [nDim];
+  sum_vector        = new double [nDim];
 
   /*--- Memory initialization ---*/
 
-  for (iVar = 0; iVar < nnz; iVar++)         matrix[iVar] = 0.0;
+  for (iVar = 0; iVar < nnz*nDim; iVar++)         matrix[iVar] = 0.0;
+  for (iVar = 0; iDim < nDim; iVar++)             aux_vector[iDim] = 0.0;
+  for (iVar = 0; iDim < nDim; iVar++)             sum_vector[iDim] = 0.0;
+
 
 }

@@ -576,13 +576,7 @@ private:
 	unsigned long nPoint_1, nElem_1; /*\brief number of nodes, elements in ZONE_1 */
 	unsigned short nDim;
 	unsigned long *row_ptr,
-	*col_ind,
-	*row_vertex, /*\brief index to retrieve vertex[iMarker][iVertex] assc with the transfer matrix */
-	*col_vertex,
-  *row_marker, /*\brief index to retrieve vertex[iMarker][iVertex] assc with the transfer matrix */
-  *col_marker;
-  unsigned long nVertex_flow,
-  nVertex_fea;
+	*col_ind;
 public:
 
 	/*!
