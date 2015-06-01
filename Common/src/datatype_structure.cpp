@@ -31,7 +31,15 @@
 
 #include "../include/datatype_structure.hpp"
 
-#if defined ADOLC_REVERSE_TYPE
+#if defined CODI_REVERSE_TYPE
+namespace AD {
+  int adjointVectorPosition = 0;
+
+  std::vector<unsigned int> inputValues;
+
+  codi::ChunkTape<double, int>& globalTape = codi::RealReverse::globalTape;
+}
+#elif defined ADOLC_REVERSE_TYPE
 namespace AD{
   /* --- Stores a copy of the input variables (since they might be overwritten) --- */
 

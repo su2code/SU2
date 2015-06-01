@@ -44,6 +44,10 @@
 #include "datatypes/adolc_forward_structure.hpp"
 #elif defined ADOLC_REVERSE_TYPE
 #include "datatypes/adolc_reverse_structure.hpp"
+#elif defined CODI_REVERSE_TYPE
+#include "datatypes/codi_reverse_structure.hpp"
+#elif defined CODI_FORWARD_TYPE
+#include "datatypes/codi_forward_structure.hpp"
 #else
 #include "datatypes/primitive_structure.hpp"
 #endif

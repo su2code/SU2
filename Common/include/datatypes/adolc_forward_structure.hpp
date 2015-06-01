@@ -1,5 +1,5 @@
 /*!
- * \file adolc_f_structure.hpp
+ * \file adolc_forward_structure.hpp
  * \brief Headers for adolc forward type definition.
  * \author T. Albring
  * \version 3.2.9 "eagle"
