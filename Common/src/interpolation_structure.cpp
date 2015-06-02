@@ -32,8 +32,13 @@
 #include "../include/interpolation_structure.hpp"
 
 CInterpolator::CInterpolator(void){
+  Force = NULL;
+  TransferMatrix = NULL;
 
 }
+
+CInterpolator::~CInterpolator(void){}
+
 
 CInterpolator::CInterpolator(CGeometry **geometry_container, CConfig **config, unsigned short val_nZone){
   unsigned short nDim = geometry_container[ZONE_0]->GetnDim();
@@ -42,10 +47,13 @@ CInterpolator::CInterpolator(CGeometry **geometry_container, CConfig **config, u
 	nZone = val_nZone;
 
 	/*--- Set matching between zones ---*/
+	TransferMatrix = new CSysTransferMatrix();
 	/*---Create Transfer Matrix, find nearest neighbors, initialize memory---*/
 	TransferMatrix->Initialize(Geometry,config);
 	/*---Set the values of the transfer matrix---*/
 	Set_TransferMatrix(ZONE_0, ZONE_1,config);
+
+	/*--- Initialize force vectors to 0 ---*/
 	Force = new double**[val_nZone];
 	Force[ZONE_0] = new double*[Geometry[ZONE_0]->GetnPoint()];
 	Force[ZONE_1] = new double*[Geometry[ZONE_1]->GetnPoint()];
@@ -70,10 +78,13 @@ CInterpolator::CInterpolator(CGeometry **geometry_container, CConfig **config, u
 }
 
 
-CInterpolator::Interpolate_Force(unsigned short iZone_0, unsigned short iZone_1){
+void CInterpolator::Interpolate_Force(unsigned short iZone_0, unsigned short iZone_1){
   unsigned long iPoint, jPoint;
   unsigned short nDim = Geometry[ZONE_0]->GetnDim();
   double weight=0.0;
+
+  /*--- Loop through points, increment force by the weight in the transfer matrix ---*/
+
   /*Loop by i then by j to more efficiently call memory*/
   for (iPoint=0; iPoint<Geometry[iZone_0]->GetnPoint(); iPoint++){
     for (jPoint=0; jPoint<Geometry[iZone_1]->GetnPoint(); jPoint++){
@@ -89,7 +100,7 @@ CInterpolator::Interpolate_Force(unsigned short iZone_0, unsigned short iZone_1)
 
 }
 
-CInterpolator::Interpolate_Displacement(unsigned short iZone_0, unsigned short iZone_1, CConfig **config){
+void CInterpolator::Interpolate_Deformation(unsigned short iZone_0, unsigned short iZone_1, CConfig **config){
 
   unsigned long GlobalIndex, iPoint, i2Point, jPoint, j2Point, iVertex, jVertex;
   unsigned short iMarker, jMarker, iDim;
@@ -115,21 +126,22 @@ CInterpolator::Interpolate_Displacement(unsigned short iZone_0, unsigned short i
                   distance = {0.0,0.0,0.0};
                   for (iDim=0; iDim<nDim; iDim++){
                     NewVarCoord[iDim]+=VarCoord[iDim]*weight;
-                    distance[iDim] = Geometry[iZone_1]->vertex[jMarker][jVertex]->GetCoord(iDim)-Geometry[iZone_0]->vertex[iMarker][iVertex]->GetCoord(iDim);
+                    distance[iDim] = Geometry[iZone_0]->vertex[iMarker][iVertex]->GetCoord(iDim)-Geometry[iZone_1]->vertex[jMarker][jVertex]->GetCoord(iDim);
                   }
                   /*--- Add contribution of rotation ---*/
                   if (nDim==2){
-                    VarCoord[0]+=weight*(-distance[1]*VarRot[2]);
-                    VarCoord[1]+=weight*(distance[0]*VarRot[2]);
+                    NewVarCoord[0]+=weight*(-distance[1]*VarRot[2]);
+                    NewVarCoord[1]+=weight*(distance[0]*VarRot[2]);
                   }
                   if (nDim==3){
-                    VarCoord[0]+=weight*(distance[2]*VarRot[1]-distance[1]*VarRot[2]);
-                    VarCoord[1]+=weight*(distance[0]*VarRot[2]-distance[2]*VarRot[0]);
-                    VarCoord[2]+=weight*(distance[1]*VarRot[0]-distance[0]*VarRot[1]);
+                    NewVarCoord[0]+=weight*(distance[2]*VarRot[1]-distance[1]*VarRot[2]);
+                    NewVarCoord[1]+=weight*(distance[0]*VarRot[2]-distance[2]*VarRot[0]);
+                    NewVarCoord[2]+=weight*(distance[1]*VarRot[0]-distance[0]*VarRot[1]);
                   }
                 }
               }
           }
+          // Or introduce deformation vector that stores this.
           Geometry[iZone_0]->vertex[iMarker][iVertex]->SetVarCoord(NewVarCoord);
         }
       }
@@ -140,11 +152,31 @@ CInterpolator::Interpolate_Displacement(unsigned short iZone_0, unsigned short i
 
 }
 
-CInterpolator::Set_TransferMatrix(unsigned short iZone_0, unsigned short iZone_1, CConfig **config){
+void CInterpolator::Set_TransferMatrix(unsigned short iZone_0, unsigned short iZone_1, CConfig **config){
   cout<<"base class set transfer matrix: all zeros, no interpolation will be done."<<endl;
 }
 
-CInterpolator::~CInterpolator(void){}
+double CInterpolator::GetForce(unsigned short iZone, unsigned long iPoint, unsigned short iDim){
+  if (Force !=NULL)
+    return Force[iZone][iPoint][iDim];
+  else
+    return NULL;
+}
+
+double* CInterpolator::GetForce(unsigned short iZone, unsigned long iPoint){
+  if (Force !=NULL)
+    return Force[iZone][iPoint];
+  else
+    return NULL;
+}
+
+void CInterpolator::SetForce(unsigned short iZone, unsigned long iPoint, unsigned short iDim, double val){
+  if (Force !=NULL)
+    Force[iZone][iPoint][iDim]=val;
+  else
+    cout <<" CInterpolator object has not been initialized"<<endl;
+}
+
 
 /* Nearest Neighbor Interpolator */
 CNearestNeighbor::CNearestNeighbor(CGeometry **geometry_container, CConfig **config, unsigned short nZone) :
@@ -152,7 +184,7 @@ CNearestNeighbor::CNearestNeighbor(CGeometry **geometry_container, CConfig **con
 
 CNearestNeighbor::~CNearestNeighbor(){}
 
-CNearestNeighbor::Set_TransferMatrix(unsigned short iZone_0, unsigned short iZone_1, CConfig **config){
+void CNearestNeighbor::Set_TransferMatrix(unsigned short iZone_0, unsigned short iZone_1, CConfig **config){
   unsigned long iPoint, jPoint, iVertex, jVertex,nn;
   unsigned short iMarker, iDim, jMarker;
   unsigned short nDim = Geometry[iZone_0]->GetnDim();
