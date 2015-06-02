@@ -33,12 +33,17 @@
 #ifdef HAVE_MPI
   #include "mpi.h"
 #endif
-#include <ctime>
 
-#include "geometry_structure.hpp"
+#include <iostream>
+#include <cmath>
+#include <cstdlib>
+
 #include "config_structure.hpp"
+#include "geometry_structure.hpp"
+#include "vector_structure.hpp"
 
 using namespace std;
+
 
 
 
@@ -70,12 +75,12 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CInterpolator(void);
+  ~CInterpolator(void);
 
   /*!
    * \brief interpolate forces from one mesh to another
    */
-  void Interpolate_Force(unsigned short iZone_0, unsigned short iZone_1, CConfig **config);
+  void Interpolate_Force(unsigned short iZone_0, unsigned short iZone_1);
 
   /*!
    * \brief interpolate deformations from one mesh to another
@@ -85,7 +90,23 @@ public:
   /*!
    * \brief Set up transfer matrix defining relation between two meshes
    */
-  virtual void Set_TransferMatrix(unsigned short iZone_0, unsigned short iZone_1, CConfig **config);
+  void Set_TransferMatrix(unsigned short iZone_0, unsigned short iZone_1, CConfig **config);
+
+
+  /*!
+   * \brief Return the value of the force at the specified zone, point, and dimension.
+   */
+  double GetForce(unsigned short iZone, unsigned long iPoint, unsigned short iDim);
+
+  /*!
+   * \brief Return the value of the force vector at the specified zone and point.
+   */
+  double* GetForce(unsigned short iZone, unsigned long iPoint);
+
+  /*!
+   * \brief Set the value of the force at the specified zone, point, and dimension.
+   */
+  void SetForce(unsigned short iZone, unsigned long iPoint, unsigned short iDim, double val);
 
 
 };

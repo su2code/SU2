@@ -69,7 +69,8 @@ libSU2_a_SOURCES = \
 		../src/primal_grid_structure.cpp \
 	        ../src/vector_structure.cpp \
 		../src/matrix_structure.cpp \
-		../src/su2mpi.cpp 
+		../src/su2mpi.cpp\
+		../src/interpolation_structure.cpp 
 
 libSU2_a_CXXFLAGS =
 libSU2_a_LIBADD =
