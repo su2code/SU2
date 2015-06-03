@@ -59,6 +59,7 @@ libSU2_a_SOURCES = \
 	        ../include/matrix_structure.hpp \
 	        ../include/matrix_structure.inl \
 	    ../include/su2mpi.hpp \
+    ../include/interpolation_structure.hpp \
 		../src/config_structure.cpp \
 		../src/dual_grid_structure.cpp \
 		../src/geometry_structure.cpp \
@@ -68,7 +69,8 @@ libSU2_a_SOURCES = \
 		../src/primal_grid_structure.cpp \
 	        ../src/vector_structure.cpp \
 		../src/matrix_structure.cpp \
-		../src/su2mpi.cpp 
+		../src/su2mpi.cpp\
+		../src/interpolation_structure.cpp 
 
 libSU2_a_CXXFLAGS =
 libSU2_a_LIBADD =
