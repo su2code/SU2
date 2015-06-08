@@ -35,7 +35,7 @@ CDiscAdjVariable::CDiscAdjVariable() : CVariable(){
 }
 
 CDiscAdjVariable::CDiscAdjVariable(su2double* val_solution, unsigned short val_ndim,
-                               unsigned short val_nvar, unsigned short val_nextra_vars, CConfig *config) : CVariable(val_ndim, val_nvar, config){
+                               unsigned short val_nvar, CConfig *config) : CVariable(val_ndim, val_nvar, config){
 
   bool dual_time = (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
       || (config->GetUnsteady_Simulation() == DT_STEPPING_2ND);
@@ -46,18 +46,13 @@ CDiscAdjVariable::CDiscAdjVariable(su2double* val_solution, unsigned short val_n
   }
   Sensitivity = new su2double[nVar];
 
-  nExtraVar = val_nextra_vars;
-
-  AdjExtraVar = new su2double[nExtraVar];
 
   unsigned short iVar;
 
   for (iVar = 0; iVar < nVar; iVar++){
     Solution[iVar] = val_solution[iVar];
   }
-  for (iVar = 0; iVar < nExtraVar; iVar++){
-    AdjExtraVar[iVar] = 0.0;
-  }
+
 
   if (dual_time){
     for (iVar = 0; iVar < nVar; iVar++){

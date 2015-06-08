@@ -1152,40 +1152,6 @@ inline void CVariable::SetSensitivity(unsigned short iDim, su2double val){}
 
 inline su2double CVariable::GetSensitivity(unsigned short iDim){}
 
-inline void CVariable::RegisterExtraVariables(bool input){}
-
 inline void CDiscAdjVariable::SetSensitivity(unsigned short iDim, su2double val){Sensitivity[iDim] = val;}
 
 inline su2double CDiscAdjVariable::GetSensitivity(unsigned short iDim){return Sensitivity[iDim];}
-
-inline void CTurbVariable::RegisterExtraVariables(bool input){
-  if (input) {
-    AD::RegisterInput(muT);
-  }else{
-    AD::RegisterOutput(muT);
-  }
-}
-
-inline void CVariable::SetAdjointExtraVariables(su2double *adj_sol){}
-
-inline void CVariable::GetAdjointExtraVariables(su2double *adj_sol){}
-
-inline void CTurbVariable::SetAdjointExtraVariables(su2double *adj_sol){
-    SU2_TYPE::SetDerivative(muT, SU2_TYPE::GetPrimary(adj_sol[0]));
-}
-
-inline void CTurbVariable::GetAdjointExtraVariables(su2double *adj_sol){
-    adj_sol[0] = SU2_TYPE::GetDerivative(muT);
-}
-
-inline void CDiscAdjVariable::SetAdjointExtraVariables(su2double *adj_sol){
- for (unsigned short iVar = 0; iVar < nExtraVar; iVar++){
-   AdjExtraVar[iVar] = adj_sol[iVar];
- }
-}
-
-inline void CDiscAdjVariable::GetAdjointExtraVariables(su2double *adj_sol){
- for (unsigned short iVar = 0; iVar < nExtraVar; iVar++){
-   adj_sol[iVar] = AdjExtraVar[iVar];
- }
-}
