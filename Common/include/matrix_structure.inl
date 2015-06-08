@@ -51,6 +51,22 @@ inline void CSysMatrixVectorProduct::operator()(const CSysVector & u, CSysVector
   sparse_matrix->MatrixVectorProduct(u, v, geometry, config);
 }
 
+inline CSysMatrixVectorProductTransposed::CSysMatrixVectorProductTransposed(CSysMatrix & matrix_ref, CGeometry *geometry_ref, CConfig *config_ref) {
+  sparse_matrix = &matrix_ref;
+  geometry = geometry_ref;
+  config = config_ref;
+}
+
+inline void CSysMatrixVectorProductTransposed::operator()(const CSysVector & u, CSysVector & v) const {
+  if (sparse_matrix == NULL) {
+    cerr << "CSysMatrixVectorProduct::operator()(const CSysVector &, CSysVector &): " << endl;
+    cerr << "pointer to sparse matrix is NULL." << endl;
+    throw(-1);
+  }
+  sparse_matrix->MatrixVectorProductTransposed(u, v, geometry, config);
+}
+
+
 inline CJacobiPreconditioner::CJacobiPreconditioner(CSysMatrix & matrix_ref, CGeometry *geometry_ref, CConfig *config_ref) {
   sparse_matrix = &matrix_ref;
   geometry = geometry_ref;
@@ -87,6 +103,13 @@ inline CLU_SGSPreconditioner::CLU_SGSPreconditioner(CSysMatrix & matrix_ref, CGe
   config = config_ref;  
 }
 
+inline CLU_SGS_TransposedPreconditioner::CLU_SGS_TransposedPreconditioner(CSysMatrix & matrix_ref, CGeometry *geometry_ref, CConfig *config_ref, CSysVector &tmp_ref) {
+  sparse_matrix = &matrix_ref;
+      geometry = geometry_ref;
+  config = config_ref;
+  tmp = &tmp_ref;
+}
+
 inline void CLU_SGSPreconditioner::operator()(const CSysVector & u, CSysVector & v) const {
   if (sparse_matrix == NULL) {
     cerr << "CLU_SGSPreconditioner::operator()(const CSysVector &, CSysVector &): " << endl; 
@@ -94,6 +117,15 @@ inline void CLU_SGSPreconditioner::operator()(const CSysVector & u, CSysVector &
     throw(-1);
   }
   sparse_matrix->ComputeLU_SGSPreconditioner(u, v, geometry, config);
+}
+
+inline void CLU_SGS_TransposedPreconditioner::operator()(const CSysVector & u, CSysVector & v) const {
+  if (sparse_matrix == NULL) {
+    cerr << "CLU_SGSPreconditioner::operator()(const CSysVector &, CSysVector &): " << endl;
+    cerr << "pointer to sparse matrix is NULL." << endl;
+    throw(-1);
+  }
+  sparse_matrix->ComputeLU_SGS_TransposedPreconditioner(u, v, geometry, config, *tmp);
 }
 
 inline CLineletPreconditioner::CLineletPreconditioner(CSysMatrix & matrix_ref, CGeometry *geometry_ref, CConfig *config_ref) {

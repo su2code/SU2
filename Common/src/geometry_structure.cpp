@@ -12251,6 +12251,121 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
   delete[] Point2Vertex;
 }
 
+void CPhysicalGeometry::SetSensitivity(CConfig *config){
+
+    ifstream restart_file;
+    string filename = config->GetSolution_AdjFileName();
+    bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+    bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+    bool freesurface = (config->GetKind_Regime() == FREESURFACE);
+    bool sst = config->GetKind_Turb_Model() == SST;
+    bool sa = config->GetKind_Turb_Model() == SA;
+    bool grid_movement = config->GetGrid_Movement();
+    su2double Sens, total_T, delta_T, dull_val;
+
+    unsigned short nExtIter, iDim, iExtIter;
+    unsigned long iPoint, index;
+
+    Sensitivity = new su2double[nPoint*nDim];
+
+    if (config->GetUnsteady_Simulation()){
+        nExtIter = config->GetUnst_AdjointIter();
+    //    delta_T  = config->GetDelta_UnstTimeND();
+      delta_T  = 1.0;
+        total_T  = (su2double)nExtIter*delta_T;
+    }else{
+      total_T = 1.0;
+      nExtIter = 1;
+    }
+    int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+ #endif
+
+    unsigned short skipVar = nDim;
+
+    if (incompressible) { skipVar += nDim+1; }
+    if (freesurface)    { skipVar += nDim+2; }
+    if (compressible)   { skipVar += nDim+2; }
+    if (sst) 			{ skipVar += 2;}
+    if (sa)				{ skipVar += 1;}
+
+    if (grid_movement) {skipVar += nDim;}
+
+    /* --- Sensitivity in normal direction --- */
+
+    skipVar += 1;
+
+    /*--- In case this is a parallel simulation, we need to perform the
+     Global2Local index transformation first. ---*/
+    long *Global2Local = new long[Global_nPointDomain];
+
+    /*--- First, set all indices to a negative value by default ---*/
+    for(iPoint = 0; iPoint < Global_nPointDomain; iPoint++)
+      Global2Local[iPoint] = -1;
+
+    /*--- Now fill array with the transform values only for local points ---*/
+    for(iPoint = 0; iPoint < nPointDomain; iPoint++)
+      Global2Local[node[iPoint]->GetGlobalIndex()] = iPoint;
+
+    /*--- Read all lines in the restart file ---*/
+    long iPoint_Local; unsigned long iPoint_Global = 0; string text_line;
+
+
+    for (iPoint = 0; iPoint < nPoint; iPoint++){
+      for (iDim = 0; iDim < nDim; iDim++){
+        Sensitivity[iPoint*nDim+iDim] = 0.0;
+      }
+    }
+
+    for (iExtIter = 0; iExtIter < nExtIter; iExtIter++){
+
+      iPoint_Global = 0;
+
+      filename = config->GetSolution_AdjFileName();
+
+      filename = config->GetObjFunc_Extension(filename);
+
+      if (config->GetUnsteady_Simulation()){
+        filename = config->GetUnsteady_FileName(filename, iExtIter);
+      }
+
+      restart_file.open(filename.data(), ios::in);
+      if (restart_file.fail()) {
+        cout << "There is no adjoint restart file!! " << filename.data() << "."<< endl;
+        exit(EXIT_FAILURE);
+      }
+
+      if (rank == MASTER_NODE)
+        cout << "Reading in sensitivity at iteration " << iExtIter << "."<< endl;
+      /*--- The first line is the header ---*/
+      getline (restart_file, text_line);
+
+      while (getline (restart_file, text_line)) {
+        istringstream point_line(text_line);
+
+        /*--- Retrieve local index. If this node from the restart file lives
+             on a different processor, the value of iPoint_Local will be -1.
+             Otherwise, the local index for this node on the current processor
+             will be returned and used to instantiate the vars. ---*/
+        iPoint_Local = Global2Local[iPoint_Global];
+
+        if (iPoint_Local >= 0){
+          point_line >> index;
+          for (iDim = 0; iDim < skipVar; iDim++){ point_line >> dull_val;}
+          for (iDim = 0; iDim < nDim; iDim++){
+            point_line >> Sens;
+            //                	  Sensitivity[iPoint_Local*nDim+iDim] += Sens*delta_T/total_T;
+            Sensitivity[iPoint_Local*nDim+iDim] += Sens;
+
+          }
+        }
+        iPoint_Global++;
+      }
+      restart_file.close();
+  }
+}
+
 su2double CPhysicalGeometry::Compute_MaxThickness(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil, bool original_surface) {
   unsigned long iVertex, jVertex, n, Trailing_Point, Leading_Point;
   su2double Normal[3], Tangent[3], BiNormal[3], auxXCoord, auxYCoord, auxZCoord, zp1, zpn, MaxThickness_Value = 0, Thickness, Length, Xcoord_Trailing, Ycoord_Trailing, Zcoord_Trailing, ValCos, ValSin, XValue, ZValue, MaxDistance, Distance, AoA;

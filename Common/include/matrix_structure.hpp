@@ -229,9 +229,10 @@ public:
 	 * \brief Performs the Gauss Elimination algorithm to solve the linear subsystem of the (i, i) subblock and rhs.
 	 * \param[in] block_i - Index of the (i, i) subblock in the matrix-by-blocks structure.
 	 * \param[in] rhs - Right-hand-side of the linear system.
+   * \param[in] transposed - If true the transposed of the block is used (default = false).
 	 * \return Solution of the linear system (overwritten on rhs).
 	 */
-	void Gauss_Elimination(unsigned long block_i, su2double* rhs);
+  void Gauss_Elimination(unsigned long block_i, su2double* rhs, bool transposed = false);
   
 	/*!
 	 * \brief Performs the Gauss Elimination algorithm to solve the linear subsystem of the (i, i) subblock and rhs.
@@ -282,7 +283,40 @@ public:
 	 * \return prod Result of the product D(A)*vec (stored at *prod_row_vector).
 	 */
 	void DiagonalProduct(CSysVector & vec, unsigned long row_i);
-	
+
+  /*!
+   * \brief Performs the transposed product of the block (i, j) by vector vec.
+   * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
+   * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
+   * \param[in] vec - Vector to be multiplied by the block (i, j) of the sparse matrix A^T.
+   * \return Product of A^T(i, j) by vector *vec (stored at *prod_block_vector).
+   */
+  void ProdBlockTransposedVector(unsigned long block_i, unsigned long block_j, const CSysVector & vec);
+
+  /*!
+   * \brief Performs the product of i-th row of the upper part of a sparse transposed matrix by a vector.
+   * \param[in] vec - Vector to be multiplied by the upper part of the sparse matrix A^T.
+   * \param[in] row_i - Row of the matrix to be multiplied by vector vec.
+   * \param[out] prod - The partial result.
+   */
+  void UpperProductTransposed(CSysVector & vec, unsigned long row_i, CSysVector &prod);
+
+  /*!
+   * \brief Performs the product of i-th row of the lower part of a sparse transposed matrix by a vector.
+   * \param[in] vec - Vector to be multiplied by the lower part of the sparse matrix A^T.
+   * \param[in] row_i - Row of the matrix to be multiplied by vector vec.
+   * \param[out] prod - The partial result.
+   */
+  void LowerProductTransposed(CSysVector & vec, unsigned long row_i, CSysVector &prod);
+
+  /*!
+   * \brief Performs the product of i-th row of the diagonal part of a sparse transposed matrix by a vector.
+   * \param[in] vec - Vector to be multiplied by the diagonal part of the sparse matrix A^T.
+   * \param[in] row_i - Row of the matrix to be multiplied by vector vec.
+   * \return prod Result of the product D(A^T)*vec (stored at *prod_row_vector).
+   */
+  void DiagonalProductTransposed(CSysVector & vec, unsigned long row_i);
+
   /*!
 	 * \brief Send receive the solution using MPI.
 	 * \param[in] x - Solution..
@@ -314,6 +348,13 @@ public:
 	 */
 	void MatrixVectorProduct(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config);
 	
+  /*!
+   * \brief Performs the product of a sparse matrix by a CSysVector.
+   * \param[in] vec - CSysVector to be multiplied by the sparse matrix A.
+   * \param[out] prod - Result of the product.
+   */
+  void MatrixVectorProductTransposed(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config);
+
 	/*!
 	 * \brief Performs the product of two block matrices.
 	 */
@@ -393,6 +434,13 @@ public:
 	 */
 	void ComputeLU_SGSPreconditioner(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config);
   
+  /*!
+   * \brief Multiply CSysVector by the preconditioner
+   * \param[in] vec - CSysVector to be multiplied by the preconditioner.
+   * \param[out] prod - Result of the product A^T*vec.
+   */
+  void ComputeLU_SGS_TransposedPreconditioner(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config, CSysVector &tmp);
+
 	/*!
 	 * \brief Multiply CSysVector by the preconditioner
 	 * \param[in] vec - CSysVector to be multiplied by the preconditioner.
@@ -439,6 +487,37 @@ public:
 	 * \param[out] v - CSysVector that is the result of the product
 	 */
 	void operator()(const CSysVector & u, CSysVector & v) const;
+};
+
+/*!
+ * \class CSysMatrixVectorProduct
+ * \brief specialization of matrix-vector product that uses CSysMatrix class
+ */
+class CSysMatrixVectorProductTransposed : public CMatrixVectorProduct {
+private:
+  CSysMatrix* sparse_matrix; /*!< \brief pointer to matrix that defines the product. */
+  CGeometry* geometry; /*!< \brief pointer to matrix that defines the geometry. */
+  CConfig* config; /*!< \brief pointer to matrix that defines the config. */
+
+public:
+
+  /*!
+   * \brief constructor of the class
+   * \param[in] matrix_ref - matrix reference that will be used to define the products
+   */
+  CSysMatrixVectorProductTransposed(CSysMatrix & matrix_ref, CGeometry *geometry_ref, CConfig *config_ref);
+
+  /*!
+   * \brief destructor of the class
+   */
+  ~CSysMatrixVectorProductTransposed() {}
+
+  /*!
+   * \brief operator that defines the CSysMatrix-CSysVector product
+   * \param[in] u - CSysVector that is being multiplied by the sparse matrix
+   * \param[out] v - CSysVector that is the result of the product
+   */
+  void operator()(const CSysVector & u, CSysVector & v) const;
 };
 
 /*!
@@ -533,6 +612,38 @@ public:
 	 * \param[out] v - CSysVector that is the result of the preconditioning
 	 */
 	void operator()(const CSysVector & u, CSysVector & v) const;
+};
+
+/*!
+ * \class CLU_SGS_TransposedPreconditioner
+ * \brief specialization of preconditioner that uses CSysMatrix class
+ */
+class CLU_SGS_TransposedPreconditioner : public CPreconditioner {
+private:
+  CSysMatrix* sparse_matrix; /*!< \brief pointer to matrix that defines the preconditioner. */
+  CGeometry* geometry; /*!< \brief pointer to matrix that defines the geometry. */
+  CConfig* config; /*!< \brief pointer to matrix that defines the config. */
+  CSysVector* tmp;
+
+public:
+
+  /*!
+   * \brief constructor of the class
+   * \param[in] matrix_ref - matrix reference that will be used to define the preconditioner
+   */
+  CLU_SGS_TransposedPreconditioner(CSysMatrix & matrix_ref, CGeometry *geometry_ref, CConfig *config_ref, CSysVector & tmp_ref);
+
+  /*!
+   * \brief destructor of the class
+   */
+  ~CLU_SGS_TransposedPreconditioner() {}
+
+  /*!
+   * \brief operator that defines the preconditioner operation
+   * \param[in] u - CSysVector that is being preconditioned
+   * \param[out] v - CSysVector that is the result of the preconditioning
+   */
+  void operator()(const CSysVector & u, CSysVector & v) const;
 };
 
 /*!

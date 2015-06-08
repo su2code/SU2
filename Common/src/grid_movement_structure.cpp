@@ -104,6 +104,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
   su2double MinVolume, NumError, Tol_Factor, Residual = 0.0, Residual_Init = 0.0;
   bool Screen_Output;
   bool fsi=config->GetFSI_Simulation();
+  CSysVector LinSysTmp;
   
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -185,11 +186,28 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     StiffMatrix.SendReceive_Solution(LinSysSol, geometry, config);
     StiffMatrix.SendReceive_Solution(LinSysRes, geometry, config);
     
+    CMatrixVectorProduct* mat_vec = NULL;
+    CPreconditioner* precond = NULL;
+
     /*--- Definition of the preconditioner matrix vector multiplication, and linear solver ---*/
-    
-    CMatrixVectorProduct* mat_vec = new CSysMatrixVectorProduct(StiffMatrix, geometry, config);
-    CPreconditioner* precond      = new CLU_SGSPreconditioner(StiffMatrix, geometry, config);
-    CSysSolve *system             = new CSysSolve();
+
+    /*--- If we want no derivatives or the direct derivatives,
+     * we solve the system using the normal matrix vector product and preconditioner.
+     * For the mesh sensitivities using the discrete adjoint method we solve the system using the transposed matrix,
+     * hence we need the corresponding matrix vector product and the preconditioner.  ---*/
+    if (!Derivative || ((config->GetKind_SU2() == SU2_CFD) && Derivative)){
+
+      mat_vec = new CSysMatrixVectorProduct(StiffMatrix, geometry, config);
+      precond = new CLU_SGSPreconditioner(StiffMatrix, geometry, config);
+
+    } else if (Derivative && (config->GetKind_SU2() == SU2_DOT)) {
+
+      LinSysTmp.Initialize(nPoint, nPointDomain, nDim, 0.0);
+      mat_vec = new CSysMatrixVectorProductTransposed(StiffMatrix, geometry, config);
+      precond = new CLU_SGS_TransposedPreconditioner(StiffMatrix, geometry, config, LinSysTmp);
+
+    }
+    CSysSolve *system  = new CSysSolve();
     
     switch (config->GetDeform_Linear_Solver()) {
         
@@ -1803,14 +1821,15 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 		if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
         ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DEF)) ||
-         (config->GetDirectDiff() == D_DESIGN)) {
+         (config->GetDirectDiff() == D_DESIGN) ||
+         ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DOT))) {
 			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 				VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
 				for (iDim = 0; iDim < nDim; iDim++) {
 					total_index = iPoint*nDim + iDim;
-					LinSysRes[total_index] = VarCoord[iDim] * VarIncrement;
-					LinSysSol[total_index] = VarCoord[iDim] * VarIncrement;
+          LinSysRes[total_index] = SU2_TYPE::GetPrimary(VarCoord[iDim] * VarIncrement);
+          LinSysSol[total_index] = SU2_TYPE::GetPrimary(VarCoord[iDim] * VarIncrement);
           StiffMatrix.DeleteValsRowi(total_index);
 				}
 			}
@@ -1842,8 +1861,8 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
 				VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
 				for (iDim = 0; iDim < nDim; iDim++) {
 					total_index = iPoint*nDim + iDim;
-					LinSysRes[total_index] = VarCoord[iDim] * VarIncrement;
-					LinSysSol[total_index] = VarCoord[iDim] * VarIncrement;
+          LinSysRes[total_index] = SU2_TYPE::GetPrimary(VarCoord[iDim] * VarIncrement);
+          LinSysSol[total_index] = SU2_TYPE::GetPrimary(VarCoord[iDim] * VarIncrement);
 					StiffMatrix.DeleteValsRowi(total_index);
 				}
 			}
@@ -1854,45 +1873,73 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
 }
 
 void CVolumetricMovement::SetBoundaryDerivatives(CGeometry *geometry, CConfig *config){
-  unsigned short iDim, nDim = geometry->GetnDim(), iMarker;
+  unsigned short iDim, iMarker;
   unsigned long iPoint, total_index, iVertex;
 
+  su2double * VarCoord;
   unsigned short Kind_SU2 = config->GetKind_SU2();
-
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+  if ((config->GetDirectDiff() == D_DESIGN) && (Kind_SU2 == SU2_CFD)){
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
-          ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DEF)) ||
-           (config->GetDirectDiff() == D_DESIGN)) {
+      if ((config->GetMarker_All_DV(iMarker) == YES)) {
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
           for (iDim = 0; iDim < nDim; iDim++) {
             total_index = iPoint*nDim + iDim;
-            LinSysRes[total_index] = SU2_TYPE::GetDerivative(LinSysRes[total_index]);
-            LinSysSol[total_index] = SU2_TYPE::GetDerivative(LinSysSol[total_index]);
+            LinSysRes[total_index] = SU2_TYPE::GetDerivative(VarCoord[iDim]);
+            LinSysSol[total_index] = SU2_TYPE::GetDerivative(VarCoord[iDim]);
           }
         }
       }
     }
+    if (LinSysRes.norm() == 0.0) cout << "Warning: Derivatives are zero!" << endl;
+  } else if (Kind_SU2 == SU2_DOT) {
+
+    for (iPoint = 0; iPoint < nPoint; iPoint++){
+      for (iDim = 0; iDim < nDim; iDim++){
+        total_index = iPoint*nDim + iDim;
+        LinSysRes[total_index] = SU2_TYPE::GetPrimary(geometry->GetSensitivity(iPoint, iDim));
+        LinSysSol[total_index] = SU2_TYPE::GetPrimary(geometry->GetSensitivity(iPoint, iDim));
+      }
+    }
   }
-  if (LinSysRes.norm() == 0.0) cout << "Warning: Derivatives are zero!" << endl;
 }
 
 void CVolumetricMovement::UpdateGridCoord_Derivatives(CGeometry *geometry, CConfig *config){
-  unsigned short iDim;
-  unsigned long iPoint, total_index;
-  su2double new_coord[3];
+  unsigned short iDim, iMarker;
+  unsigned long iPoint, total_index, iVertex;
+  su2double new_coord[3], *Normal, Area, Prod;
+
+  unsigned short Kind_SU2 = config->GetKind_SU2();
 
   /*--- Update derivatives of the grid coordinates using the solution of the linear system
      after grid deformation (LinSysSol contains the derivatives of the x, y, z displacements). ---*/
-
-  for (iPoint = 0; iPoint < nPoint; iPoint++){
-    for (iDim = 0; iDim < nDim; iDim++) {
-      total_index = iPoint*nDim + iDim;
-      new_coord[iDim] = geometry->node[iPoint]->GetCoord(iDim);
-      SU2_TYPE::SetDerivative(new_coord[iDim], SU2_TYPE::GetPrimary(LinSysSol[total_index]));
+  if ((config->GetDirectDiff() == D_DESIGN) && (Kind_SU2 == SU2_CFD)){
+    for (iPoint = 0; iPoint < nPoint; iPoint++){
+      for (iDim = 0; iDim < nDim; iDim++) {
+        total_index = iPoint*nDim + iDim;
+        new_coord[iDim] = geometry->node[iPoint]->GetCoord(iDim);
+        SU2_TYPE::SetDerivative(new_coord[iDim], SU2_TYPE::GetPrimary(LinSysSol[total_index]));
+      }
+      geometry->node[iPoint]->SetCoord(new_coord);
     }
-    geometry->node[iPoint]->SetCoord(new_coord);
+  } else if (Kind_SU2 == SU2_DOT){
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (config->GetMarker_All_DV(iMarker) == YES) {
+        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+          Prod = 0.0;
+          Area = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++){
+            Prod += Normal[iDim]*LinSysSol[iPoint*nDim+iDim];
+            Area += Normal[iDim]*Normal[iDim];
+          }
+          Area = sqrt(Area);
+          geometry->vertex[iMarker][iVertex]->SetAuxVar(-Prod/Area);
+        }
+      }
+    }
   }
 }
 
