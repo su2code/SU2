@@ -460,7 +460,7 @@ void CSysMatrix::DeleteValsRowi(unsigned long i) {
   
 }
 
-void CSysMatrix::Gauss_Elimination(unsigned long block_i, su2double* rhs) {
+void CSysMatrix::Gauss_Elimination(unsigned long block_i, su2double* rhs, bool transposed) {
   
   short iVar, jVar, kVar; // This is important, otherwise some compilers optimizations will fail
   su2double weight, aux;
@@ -470,10 +470,15 @@ void CSysMatrix::Gauss_Elimination(unsigned long block_i, su2double* rhs) {
   /*--- Copy block matrix, note that the original matrix
    is modified by the algorithm---*/
   
-  for (iVar = 0; iVar < (short)nVar; iVar++)
-    for (jVar = 0; jVar < (short)nVar; jVar++)
-      block[iVar*nVar+jVar] = Block[iVar*nVar+jVar];
-  
+  if (!transposed){
+    for (iVar = 0; iVar < (short)nVar; iVar++)
+      for (jVar = 0; jVar < (short)nVar; jVar++)
+        block[iVar*nVar+jVar] = Block[iVar*nVar+jVar];
+  } else {
+    for (iVar = 0; iVar < (short)nVar; iVar++)
+      for (jVar = 0; jVar < (short)nVar; jVar++)
+        block[iVar*nVar+jVar] = Block[jVar*nVar+iVar];
+  }
   /*--- Gauss elimination ---*/
   
   if (nVar == 1) {
@@ -604,6 +609,22 @@ void CSysMatrix::ProdBlockVector(unsigned long block_i, unsigned long block_j, c
   
 }
 
+void CSysMatrix::ProdBlockTransposedVector(unsigned long block_i, unsigned long block_j, const CSysVector & vec) {
+  unsigned long j = block_i*nVar;
+  unsigned short iVar, jVar;
+
+  su2double *block = GetBlock(block_i, block_j);
+
+  for (iVar = 0; iVar < nVar; iVar++){
+    prod_block_vector[iVar] = 0;
+  }
+
+  for (iVar = 0; iVar < nVar; iVar++) {
+    for (jVar = 0; jVar < nVar; jVar++)
+      prod_block_vector[iVar] += block[jVar*nVar+iVar]*vec[j+jVar];
+  }
+}
+
 void CSysMatrix::UpperProduct(CSysVector & vec, unsigned long row_i) {
   
   unsigned long iVar, index;
@@ -621,6 +642,19 @@ void CSysMatrix::UpperProduct(CSysVector & vec, unsigned long row_i) {
   
 }
 
+void CSysMatrix::UpperProductTransposed(CSysVector & vec, unsigned long row_i, CSysVector &prod){
+  unsigned long iVar, index;
+
+  for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
+    if (col_ind[index] > row_i) {
+      ProdBlockTransposedVector(row_i, col_ind[index], vec);
+      for (iVar = 0; iVar < nVar; iVar++)
+       prod [col_ind[index]*nVar + iVar] += prod_block_vector[iVar];
+    }
+  }
+
+}
+
 void CSysMatrix::LowerProduct(CSysVector & vec, unsigned long row_i) {
   
   unsigned long iVar, index;
@@ -633,6 +667,19 @@ void CSysMatrix::LowerProduct(CSysVector & vec, unsigned long row_i) {
       ProdBlockVector(row_i, col_ind[index], vec);
       for (iVar = 0; iVar < nVar; iVar++)
         prod_row_vector[iVar] += prod_block_vector[iVar];
+    }
+  }
+
+}
+
+void CSysMatrix::LowerProductTransposed(CSysVector & vec, unsigned long row_i, CSysVector &prod){
+  unsigned long iVar, index;
+
+  for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
+    if (col_ind[index] < row_i) {
+      ProdBlockTransposedVector(row_i, col_ind[index], vec);
+      for (iVar = 0; iVar < nVar; iVar++)
+       prod [col_ind[index]*nVar + iVar] += prod_block_vector[iVar];
     }
   }
 
@@ -653,6 +700,23 @@ void CSysMatrix::DiagonalProduct(CSysVector & vec, unsigned long row_i) {
     }
   }
   
+}
+
+void CSysMatrix::DiagonalProductTransposed(CSysVector & vec, unsigned long row_i) {
+
+  unsigned long iVar, index;
+
+  for (iVar = 0; iVar < nVar; iVar++)
+    prod_row_vector[iVar] = 0;
+
+  for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
+    if (col_ind[index] == row_i) {
+      ProdBlockTransposedVector(row_i, col_ind[index], vec);
+      for (iVar = 0; iVar < nVar; iVar++)
+        prod_row_vector[iVar] += prod_block_vector[iVar];
+    }
+  }
+
 }
 
 void CSysMatrix::SendReceive_Solution(CSysVector & x, CGeometry *geometry, CConfig *config) {
@@ -803,6 +867,41 @@ void CSysMatrix::MatrixVectorProduct(const CSysVector & vec, CSysVector & prod, 
   /*--- MPI Parallelization ---*/
   SendReceive_Solution(prod, geometry, config);
   
+}
+
+void CSysMatrix::MatrixVectorProductTransposed(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config) {
+
+  unsigned long prod_begin, vec_begin, mat_begin, index, iVar, jVar , row_i;
+
+  /*--- Some checks for consistency between CSysMatrix and the CSysVectors ---*/
+  if ( (nVar != vec.GetNVar()) || (nVar != prod.GetNVar()) ) {
+    cerr << "CSysMatrix::MatrixVectorProductTransposed(const CSysVector&, CSysVector): "
+    << "nVar values incompatible." << endl;
+    throw(-1);
+  }
+  if ( (nPoint != vec.GetNBlk()) || (nPoint != prod.GetNBlk()) ) {
+    cerr << "CSysMatrix::MatrixVectorProductTransposed(const CSysVector&, CSysVector): "
+    << "nPoint and nBlk values incompatible." << endl;
+    throw(-1);
+  }
+
+  prod = su2double(0.0); // set all entries of prod to zero
+  for (row_i = 0; row_i < nPointDomain; row_i++) {
+    vec_begin = row_i*nVar; // offset to beginning of block col_ind[index]
+    for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
+      prod_begin = col_ind[index]*nVar; // offset to beginning of block row_i
+      mat_begin = (index*nVar*nVar); // offset to beginning of matrix block[row_i][col_ind[indx]]
+      for (iVar = 0; iVar < nVar; iVar++) {
+        for (jVar = 0; jVar < nVar; jVar++) {
+            prod[(unsigned long)(prod_begin+jVar)] += matrix[(unsigned long)(mat_begin+iVar*nVar+jVar)]*vec[(unsigned long)(vec_begin+iVar)];
+        }
+      }
+    }
+  }
+
+  /*--- MPI Parallelization ---*/
+  SendReceive_Solution(prod, geometry, config);
+
 }
 
 void CSysMatrix::GetMultBlockBlock(su2double *c, su2double *a, su2double *b) {
@@ -1263,6 +1362,57 @@ void CSysMatrix::ComputeLU_SGSPreconditioner(const CSysVector & vec, CSysVector 
   
   SendReceive_Solution(prod, geometry, config);
   
+}
+
+void CSysMatrix::ComputeLU_SGS_TransposedPreconditioner(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config, CSysVector & tmp){
+  unsigned long iPoint, iVar;
+
+  prod = su2double(0.0);
+  tmp = su2double(0.0);
+
+  /* --- Since looping over the columns of a matrix is extremely inefficient with the CRS format,
+   * we loop over the rows to compute the transposed product. The product will be finished once we have looped over all rows.
+   * Therefore we need a separate loop and a temporary vector. ---*/
+
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++){
+    LowerProductTransposed(prod, iPoint, tmp);
+  }
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++){
+    for (iVar = 0; iVar < nVar; iVar++)
+      aux_vector[iVar] = vec[iPoint*nVar+iVar] - tmp[iPoint*nVar + iVar]; // Compute aux_vector = b - L^T.x*
+    Gauss_Elimination(iPoint, aux_vector, true);
+    for (iVar = 0; iVar < nVar; iVar++)
+      prod[iPoint*nVar+iVar] = aux_vector[iVar];                       // Assesing x* = solution
+  }
+
+  /*--- MPI Parallelization ---*/
+
+  SendReceive_Solution(prod, geometry, config);
+
+  tmp = su2double(0.0);
+
+  for (iPoint = nPointDomain-1; (int)iPoint >= 0; iPoint--){
+    UpperProductTransposed(prod, iPoint, tmp);               // Compute U^T.x_(n+1)
+  }
+
+  for (iPoint = nPointDomain-1; (int)iPoint >= 0; iPoint--) {
+    DiagonalProductTransposed(prod, iPoint);                 // Compute D^T.x
+    for (iVar = 0; iVar < nVar; iVar++)
+      aux_vector[iVar] = prod_row_vector[iVar] - tmp[iPoint*nVar + iVar];   // Compute aux_vector = D^T.x*
+
+    Gauss_Elimination(iPoint, aux_vector, true);
+
+    for (iVar = 0; iVar < nVar; iVar++){
+      prod[iPoint*nVar + iVar] = aux_vector[iVar];
+    }
+
+  }
+
+  /*--- MPI Parallelization ---*/
+
+  SendReceive_Solution(prod, geometry, config);
+
+
 }
 
 void CSysMatrix::ComputeLineletPreconditioner(const CSysVector & vec, CSysVector & prod,
