@@ -852,6 +852,8 @@ void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config){
         geometry_container[iMesh]->SetCoord(geometry_container[iMesh-1]);
 
     }
+    if (config->GetKind_Solver() == DISC_ADJ_RANS)
+      geometry_container[MESH_0]->ComputeWall_Distance(config);
 }
 
 void CGeometry::ComputeSurf_Curvature(CConfig *config) {
@@ -8635,9 +8637,10 @@ void CPhysicalGeometry::Check_BoundElem_Orientation(CConfig *config) {
 
 void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
   
-  su2double *coord, dist2, dist;
+  su2double *coord, dist;
+  double dist2, diff, dist1;
   unsigned short iDim, iMarker;
-  unsigned long iPoint, iVertex, nVertex_SolidWall;
+  unsigned long iPoint, iVertex, nVertex_SolidWall, iVertex_nearestWall;
   
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -8692,13 +8695,31 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
   if (nVertex_SolidWall != 0) {
     for (iPoint = 0; iPoint < GetnPoint(); iPoint++) {
       coord = node[iPoint]->GetCoord();
-      dist = 1E20;
+      dist1 = 1E20;
       for (iVertex = 0; iVertex < nVertex_SolidWall; iVertex++) {
         dist2 = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          dist2 += (coord[iDim]-Coord_bound[iVertex][iDim])
-          *(coord[iDim]-Coord_bound[iVertex][iDim]);
-        if (dist2 < dist) dist = dist2;
+
+        /*--- The wall distance computation is done using the plain double datatype to just
+         *  determine the index of the closest vertex. Otherwise we are storing a lot of
+         *  unnecessary derivative information when using AD.---*/
+
+        for (iDim = 0; iDim < nDim; iDim++){
+          diff = (SU2_TYPE::GetPrimary(coord[iDim])
+                  -SU2_TYPE::GetPrimary(Coord_bound[iVertex][iDim]));
+          dist2 += diff*diff;
+        }
+        if (dist2 < dist1) {
+          iVertex_nearestWall = iVertex;
+          dist1 = dist2;
+        }
+      }
+      dist = 0.0;
+
+      /*--- Now we do the computation of the wall distance again using the general datatype.---*/
+
+      for (iDim = 0; iDim < nDim; iDim++){
+        dist += (coord[iDim] - Coord_bound[iVertex_nearestWall][iDim])*
+            (coord[iDim] - Coord_bound[iVertex_nearestWall][iDim]);
       }
       node[iPoint]->SetWall_Distance(sqrt(dist));
     }
@@ -8794,11 +8815,29 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
       for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
         for (iVertex = 0; iVertex < Buffer_Receive_nVertex[iProcessor]; iVertex++) {
           dist2 = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++)
-            dist2 += (coord[iDim]-Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_NS+iVertex)*nDim+iDim])*
-            (coord[iDim]-Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_NS+iVertex)*nDim+iDim]);
-          if (dist2 < dist) dist = dist2;
+
+          /*--- The wall distance computation is done using the plain double datatype to just
+           *  determine the index of the closest vertex. Otherwise we are storing a lot of
+           *  unnecessary derivative information when using AD.---*/
+
+          for (iDim = 0; iDim < nDim; iDim++){
+            diff = SU2_TYPE::GetPrimary(coord[iDim]) -
+                SU2_TYPE::GetPrimary(Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_NS+iVertex)*nDim+iDim]);
+            dist2 += diff*diff;
+          }
+          if (dist2 < dist) {
+            iVertex_nearestWall = iProcessor*MaxLocalVertex_NS+iVertex;
+            dist = dist2;
+          }
         }
+
+      /*--- Now we do the computation of the wall distance again using the general datatype.---*/
+
+      dist = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++){
+        dist += (coord[iDim] - Buffer_Receive_Coord[iVertex_nearestWall*nDim+iDim])*
+            (coord[iDim] - Buffer_Receive_Coord[iVertex_nearestWall*nDim+iDim]);
+      }
       node[iPoint]->SetWall_Distance(sqrt(dist));
     }
   }

@@ -41,7 +41,7 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config){
 
 CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *direct_solver, unsigned short Kind_Solver, unsigned short iMesh){
 
-  unsigned short iVar, iMarker, iDim, nZone, nExtraVar = 0;
+  unsigned short iVar, iMarker, iDim, nZone;
 
   bool restart = config->GetRestart();
 
@@ -62,19 +62,11 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
   nVar = direct_solver->GetnVar();
   nDim = geometry->GetnDim();
 
+
   /*-- Store some information about direct solver ---*/
   this->KindDirect_Solver = Kind_Solver;
   this->direct_solver = direct_solver;
 
-  if (Kind_Solver == SST || Kind_Solver == SA){
-    nExtraVar = 1;
-  }
-
-  if (nExtraVar != 0){
-    ExtraVars = new su2double[nExtraVar];
-  }else{
-    ExtraVars = NULL;
-  }
 
   nMarker      = config->GetnMarker_All();
   nPoint       = geometry->GetnPoint();
@@ -139,7 +131,7 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
 
     /*--- Restart the solution from zero ---*/
     for (iPoint = 0; iPoint < nPoint; iPoint++)
-      node[iPoint] = new CDiscAdjVariable(Solution, nDim, nVar, nExtraVar, config);
+      node[iPoint] = new CDiscAdjVariable(Solution, nDim, nVar, config);
 
   }
   else {
@@ -171,7 +163,15 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
     }
 
     /*--- Read all lines in the restart file ---*/
-    long iPoint_Local; unsigned long iPoint_Global = 0;
+    long iPoint_Local; unsigned long iPoint_Global = 0;\
+
+    /* --- Skip coordinates ---*/
+    unsigned short skipVars = nDim;
+
+    /*--- Skip flow adjoint variables ---*/
+    if (Kind_Solver == RUNTIME_TURB_SYS){
+      skipVars += nDim+2;
+    }
 
     /*--- The first line is the header ---*/
     getline (restart_file, text_line);
@@ -185,19 +185,10 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
        will be returned and used to instantiate the vars. ---*/
       iPoint_Local = Global2Local[iPoint_Global];
       if (iPoint_Local >= 0) {
-        if (compressible) {
-          if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-          if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
-        }
-        if (incompressible) {
-          if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2];
-          if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-        }
-        if (freesurface) {
-          if (nDim == 2) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2];
-          if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-        }
-        node[iPoint_Local] = new CAdjEulerVariable(Solution, nDim, nVar, config);
+        point_line >> index;
+        for (iVar = 0; iVar < skipVars; iVar++){ point_line >> dull_val;}
+        for (iVar = 0; iVar < nVar; iVar++){ point_line >> Solution[iVar];}
+        node[iPoint_Local] = new CDiscAdjVariable(Solution, nDim, nVar, config);
       }
       iPoint_Global++;
     }
@@ -206,7 +197,7 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
      at any halo/periodic nodes. The initial solution can be arbitrary,
      because a send/recv is performed immediately in the solver. ---*/
     for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
-      node[iPoint] = new CAdjEulerVariable(Solution, nDim, nVar, config);
+      node[iPoint] = new CDiscAdjVariable(Solution, nDim, nVar, config);
     }
 
     /*--- Close the restart file ---*/

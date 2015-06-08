@@ -516,6 +516,16 @@ void DiscAdjMeanFlowIteration(COutput *output, CIntegration ***integration_conta
     }
 
     /*--- One iteration of the flow solver ---*/
+
+    if (turbulent){
+
+      for (iZone = 0; iZone < nZone; iZone++){
+        for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++){
+          solver_container[iZone][iMesh][FLOW_SOL]->Preprocessing(geometry_container[iZone][iMesh], solver_container[iZone][iMesh], config_container[iZone], iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+          solver_container[iZone][iMesh][TURB_SOL]->Postprocessing(geometry_container[iZone][iMesh],solver_container[iZone][iMesh], config_container[iZone], iMesh);
+        }
+      }
+    }
     if (flow){
       MeanFlowIteration(output, integration_container, geometry_container,
                       solver_container, numerics_container, config_container,

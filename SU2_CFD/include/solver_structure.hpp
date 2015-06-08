@@ -8191,7 +8191,7 @@ private:
   su2double Total_Sens_Temp;    /*!< \brief Total farfield sensitivity to temperature. */
   su2double ObjFunc_Value;        /*!< \brief Value of the objective function. */
   unsigned long nMarker;				/*!< \brief Total number of markers using the grid information. */
-  su2double *ExtraVars;
+
 public:
 
   /*!
