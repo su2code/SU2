@@ -375,6 +375,9 @@ def get_objectiveSign( ObjFun_name ):
     if ObjFun_name == "EFFICIENCY"      : return -1.0
     if ObjFun_name == "THRUST"          : return -1.0
     if ObjFun_name == "FIGURE_OF_MERIT" : return -1.0
+    if ObjFun_name == "MASS_FLOW_RATE" : return -1.0
+    if ObjFun_name == "AVG_TOTAL_PRESSURE" : return -1.0
+    if ObjFun_name == "AVG_OUTLET_PRESSURE" : return -1.0
     
     # otherwise
     return 1.0
@@ -428,7 +431,7 @@ def get_adjointSuffix(objective_function=None):
                  "FIGURE_OF_MERIT"         : "merit"     ,
                  "AVG_TOTAL_PRESSURE"      : "pt"        ,
                  "AVG_OUTLET_PRESSURE"     : "pe"        ,
-                 "MASS_FLOW_RATE"          : "mfw"       ,
+                 "MASS_FLOW_RATE"          : "mfr"       ,
                  "FREE_SURFACE"            : "fs"        }
     
     # if none or false, return map
