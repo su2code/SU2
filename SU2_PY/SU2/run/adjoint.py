@@ -72,7 +72,11 @@ def adjoint( config ):
     konfig = copy.deepcopy(config)
     
     # setup problem    
-    konfig['MATH_PROBLEM']  = 'ADJOINT'
+    if konfig.get('GRADIENT_METHOD', 'ADJOINT') == 'DISCRETE_ADJOINT':
+        konfig['MATH_PROBLEM']  = 'DISCRETE_ADJOINT'
+    else:
+        konfig['MATH_PROBLEM']  = 'ADJOINT'
+
     konfig['CONV_FILENAME'] = konfig['CONV_FILENAME'] + '_adjoint'
     
     # Run Solution

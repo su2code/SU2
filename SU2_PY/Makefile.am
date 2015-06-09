@@ -43,7 +43,9 @@ bin_SCRIPTS = \
     shape_optimization.py \
     merge_solution.py \
     set_ffd_design_var.py \
-    compute_polar.py
+    compute_polar.py \
+    discrete_adjoint.py \
+    direct_differentiation.py
 
 
 mypkgdir = $(prefix)/bin
