@@ -1007,7 +1007,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("PITCH_NATURAL_FREQUENCY", PitchNaturalFrequency, 100);
   /* DESCRIPTION: The airfoil mass ratio. */
   addDoubleOption("AIRFOIL_MASS_RATIO", AirfoilMassRatio, 60);
-  /* DESCRIPTION: Distance in semichords by which the center of gravity lies behing the elastic axis. */
+  /* DESCRIPTION: Distance in semichords by which the center of gravity lies behind the elastic axis. */
   addDoubleOption("CG_LOCATION", CG_Location, 1.8);
   /* DESCRIPTION: The radius of gyration squared (expressed in semichords) of the typical section about the elastic axis. */
   addDoubleOption("RADIUS_GYRATION_SQUARED", RadiusGyrationSquared, 3.48);

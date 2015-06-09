@@ -2001,6 +2001,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
         if (free_stream_temp) {
           if (aeroelastic) {
             Temperature_FreeStream = TgammaR / (config->GetGas_Constant()*1.4);
+            config->SetTemperature_FreeStream(Temperature_FreeStream);
           }
           FluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
           Density_FreeStream = FluidModel->GetDensity();
