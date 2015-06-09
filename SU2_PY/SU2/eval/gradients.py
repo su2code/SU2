@@ -83,7 +83,7 @@ def gradient( func_name, method, config, state=None ):
     if not state['GRADIENTS'].has_key(func_name):
 
         # Adjoint Gradients
-        if method == 'ADJOINT':
+        if any([method == 'ADJOINT', method == 'DISCRETE_ADJOINT']):
 
             # Aerodynamics
             if func_name in su2io.optnames_aero:
@@ -103,6 +103,9 @@ def gradient( func_name, method, config, state=None ):
         # Finite Difference Gradients
         elif method == 'FINDIFF':
             grads = findiff( config, state )
+
+        elif method == 'DIRECTDIFF':
+            grad = directdiff (config , state )
 
         else:
             raise Exception , 'unrecognized gradient method'
@@ -668,4 +671,165 @@ def geometry( func_name, config, state=None ):
 
 #: def geometry()
 
+
+# ----------------------------------------------------------------------
+#  Finite Difference Gradients
+# ----------------------------------------------------------------------
+
+def directdiff( config, state=None ):
+    """ vals = SU2.eval.directdiff(config,state=None)
+
+        Evaluates the aerodynamics gradients using
+        direct differentiation with:
+            SU2.eval.func()
+            SU2.run.deform()
+            SU2.run.direct()
+
+        Assumptions:
+            Config is already setup for deformation.
+            Mesh may or may not be deformed.
+            Updates config and state by reference.
+            Gradient Redundancy if state.GRADIENTS has the key func_name.
+            Direct Redundancy if state.FUNCTIONS has key func_name.
+
+        Executes in:
+            ./DIRECTDIFF
+
+        Inputs:
+            config - an SU2 config
+            state  - optional, an SU2 state
+            step   - finite difference step size, as a float or
+                     list of floats of length n_DV
+
+        Outputs:
+            A Bunch() with keys of objective function names
+            and values of list of floats of gradient values
+    """
+
+    # ----------------------------------------------------
+    #  Initialize
+    # ----------------------------------------------------
+
+    # initialize
+    state = su2io.State(state)
+    special_cases = su2io.get_specialCases(config)
+    Definition_DV = config['DEFINITION_DV']
+
+    # console output
+    if config.get('CONSOLE','VERBOSE') in ['QUIET','CONCISE']:
+        log_directdiff = 'log_DirectDiff.out'
+    else:
+        log_directdiff = None
+
+    # ----------------------------------------------------
+    #  Redundancy Check
+    # ----------------------------------------------------
+
+    # master redundancy check
+    opt_names = su2io.optnames_aero + su2io.optnames_geo
+    directdiff_todo = all( [ state.GRADIENTS.has_key(key) for key in opt_names ] )
+    if directdiff_todo:
+        grads = state['GRADIENTS']
+        return copy.deepcopy(grads)
+
+    # ----------------------------------------------------
+    #  Plot Setup
+    # ----------------------------------------------------
+
+    grad_filename  = config['GRAD_OBJFUNC_FILENAME']
+    grad_filename  = os.path.splitext( grad_filename )[0]
+    output_format  = config['OUTPUT_FORMAT']
+    plot_extension = su2io.get_extension(output_format)
+    grad_filename  = grad_filename + '_directdiff' + plot_extension
+
+    # ----------------------------------------------------
+    # Direct Differentiation Evaluation
+    # ----------------------------------------------------
+
+    # local config
+    konfig = copy.deepcopy(config)
+
+    n_dv = len(Definition_DV['KIND'])
+
+    # initialize gradients
+    func_keys = su2io.grad_names_map.keys()
+    func_keys = ['VARIABLE'] + func_keys
+    grads = su2util.ordered_bunch.fromkeys(func_keys)
+    for key in grads.keys(): grads[key] = []
+
+    # files to pull
+    files = state['FILES']
+    pull = []; link = []
+    # files: mesh
+    name = files['MESH']
+    name = su2io.expand_part(name,konfig)
+    link.extend(name)
+    # files: direct solution
+    if files.has_key('DIRECT'):
+        name = files['DIRECT']
+        name = su2io.expand_time(name,config)
+        link.extend(name)
+
+    # files: target equivarea distribution
+    if 'EQUIV_AREA' in special_cases and 'TARGET_EA' in files:
+        pull.append(files['TARGET_EA'])
+
+    # files: target pressure distribution
+    if 'INV_DESIGN_CP' in special_cases and 'TARGET_CP' in files:
+        pull.append(files['TARGET_CP'])
+
+    # files: target heat flux distribution
+    if 'INV_DESIGN_HEATFLUX' in special_cases and 'TARGET_HEATFLUX' in files:
+        pull.append(files['TARGET_HEATFLUX'])
+
+    # output redirection
+    with redirect_folder('DIRECTDIFF',pull,link) as push:
+        with redirect_output(log_directdiff):
+
+            # iterate each dv
+            for i_dv in range(n_dv):
+
+                temp_config_name = 'config_DIRECTDIFF_%i.cfg' % i_dv
+
+                this_konfig = copy.deepcopy(konfig)
+
+                this_dvs = [0.0]*n_dv
+                this_dvs[i_dv] = 1.0
+                this_dvs_old = [0.0]*n_dv
+                this_dvs_old[i_dv] = 1.0
+                this_state = su2io.State()
+                this_state.FILES = copy.deepcopy( state.FILES )
+                this_konfig.unpack_dvs(this_dvs, this_dvs_old)
+
+                this_konfig.dump(temp_config_name)
+
+                # Direct Solution
+                func_step = function( 'ALL', this_konfig, this_state )
+
+                # store
+                for key in grads.keys():
+                    if key == 'VARIABLE':
+                        grads[key].append(i_dv)
+                    else:
+                        this_grad = func_step[su2io.grad_names_map[key]]
+                        grads[key].append(this_grad)
+                #: for each grad name
+
+                su2util.write_plot(grad_filename,output_format,grads)
+                os.remove(temp_config_name)
+
+            #: for each dv
+
+    #: with output redirection
+
+    # remove plot items
+    del grads['VARIABLE']
+    state.GRADIENTS.update(grads)
+    state.update(this_state)
+
+    # return results
+    grads = copy.deepcopy(grads)
+    return grads
+
+#: def findiff()
 

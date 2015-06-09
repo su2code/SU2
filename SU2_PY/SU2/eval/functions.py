@@ -81,7 +81,7 @@ def function( func_name, config, state=None ):
     if not state['FUNCTIONS'].has_key(func_name):
         
         # Aerodynamics
-        if func_name == 'ALL' or func_name in su2io.optnames_aero:
+        if func_name == 'ALL' or func_name in su2io.optnames_aero + su2io.grad_names_directdiff:
             aerodynamics( config, state )
             
         # Stability
@@ -246,7 +246,7 @@ def aerodynamics( config, state=None ):
 
     # return output 
     funcs = su2util.ordered_bunch()
-    for key in su2io.optnames_aero:
+    for key in su2io.optnames_aero + su2io.grad_names_directdiff:
         if state['FUNCTIONS'].has_key(key):
             funcs[key] = state['FUNCTIONS'][key]
     return funcs

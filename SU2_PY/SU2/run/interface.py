@@ -79,6 +79,8 @@ def CFD(config):
     
     direct_diff = not konfig.get('DIRECT_DIFF',"") in ["NONE", ""]
 
+    discrete_adjoint = konfig.MATH_PROBLEM == 'DISCRETE_ADJOINT'
+
     if direct_diff:
         tempname = 'config_CFD_DIRECTDIFF.cfg'
 
@@ -87,6 +89,15 @@ def CFD(config):
         processes = konfig['NUMBER_PART']
 
         the_Command = 'SU2_CFD_DIRECTDIFF ' + tempname
+
+    elif discrete_adjoint:
+        tempname = 'config_CFD_REVERSE.cfg'
+        konfig.dump(tempname)
+
+        processes = konfig['NUMBER_PART']
+
+        the_Command = 'SU2_CFD_REVERSE ' + tempname
+
     else:
         tempname = 'config_CFD.cfg'
         konfig.dump(tempname)
