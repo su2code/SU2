@@ -223,7 +223,6 @@ void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned
     
     if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation." << endl;
     geometry[iZone][MESH_0]->SetBoundVolume();
-    geometry[iZone][MESH_0]->Check_IntElem_Orientation(config[iZone]);
     geometry[iZone][MESH_0]->Check_BoundElem_Orientation(config[iZone]);
 
     /*--- Create the edge structure ---*/
