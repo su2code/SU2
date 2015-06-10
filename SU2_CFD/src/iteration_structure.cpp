@@ -515,10 +515,10 @@ void DiscAdjMeanFlowIteration(COutput *output, CIntegration ***integration_conta
       cout << "Begin direct solver to store computational graph (single iteration)." << endl;
     }
 
-    /*--- One iteration of the flow solver ---*/
 
+    /* --- Preprocessing of flow solver and postprocessing of turbulent solver.
+     * We need this to get the dependency of the flow variables on the eddy viscosity. ---*/
     if (turbulent){
-
       for (iZone = 0; iZone < nZone; iZone++){
         for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++){
           solver_container[iZone][iMesh][FLOW_SOL]->Preprocessing(geometry_container[iZone][iMesh], solver_container[iZone][iMesh], config_container[iZone], iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
@@ -526,6 +526,9 @@ void DiscAdjMeanFlowIteration(COutput *output, CIntegration ***integration_conta
         }
       }
     }
+
+    /*--- One iteration of the flow solver ---*/
+
     if (flow){
       MeanFlowIteration(output, integration_container, geometry_container,
                       solver_container, numerics_container, config_container,

@@ -371,6 +371,8 @@ void CDiscAdjSolver::SetAdjointInput(CGeometry *geometry, CConfig *config){
           AddRes_Max(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
       }
   }
+
+  SetResidual_RMS(geometry, config);
 }
 
 void CDiscAdjSolver::SetAdjointOutput(CGeometry *geometry, CConfig *config){

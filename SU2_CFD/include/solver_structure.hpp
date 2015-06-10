@@ -8269,6 +8269,11 @@ public:
    */
   void SetSensitivity(CGeometry *geometry, CConfig *config);
 
+  /*!
+   * \brief Set the objective function.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
   void SetAdj_ObjFunc(CGeometry *geometry, CConfig* config);
 
 
