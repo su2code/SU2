@@ -736,7 +736,7 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
       
       SurfAdj_file <<  "\"Point\",\"Sensitivity\",\"PsiRho\",\"Phi_x\",\"Phi_y\",\"Phi_z\",\"PsiE\",\"x_coord\",\"y_coord\",\"z_coord\"" << endl;
       if (config->GetDiscrete_Adjoint()){
-        SurfAdj_file << ",\" x_Sens\",\"y_Sens\",\"z_Sens\"";
+        SurfAdj_file << ",\"x_Sens\",\"y_Sens\",\"z_Sens\"";
       }
       SurfAdj_file << endl;
 
@@ -751,7 +751,7 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
           ", " << Buffer_Receive_PsiE[position] <<", "<< Buffer_Receive_Coord_x[position] <<
           ", "<< Buffer_Receive_Coord_y[position] <<", "<< Buffer_Receive_Coord_z[position];
           if (config->GetDiscrete_Adjoint()){
-            SurfAdj_file << ", " << Buffer_Receive_Sens_x << ", " << Buffer_Receive_Sens_y << ", " << Buffer_Send_Sens_y;
+            SurfAdj_file << ", " << Buffer_Receive_Sens_x[position] << ", " << Buffer_Receive_Sens_y[position] << ", " << Buffer_Receive_Sens_z[position];
           }
           SurfAdj_file << endl;
         }
@@ -1887,7 +1887,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   unsigned short iVar_GridVel = 0, iVar_PressCp = 0, iVar_Density = 0, iVar_Lam = 0, iVar_MachMean = 0,
   iVar_Tempv = 0, iVar_EF =0, iVar_Temp = 0, iVar_Mach = 0, iVar_Press = 0, iVar_TempLam = 0,
   iVar_ViscCoeffs = 0, iVar_Sens = 0, iVar_FEA = 0, iVar_Extra = 0, iVar_Eddy = 0, iVar_Sharp = 0,
-  iVar_FEA_Stress = 0, iVar_FEA_Stress_3D = 0, iVar_FEA_Extra = 0;
+  iVar_FEA_Stress = 0, iVar_FEA_Stress_3D = 0, iVar_FEA_Extra = 0, iVar_SensDim = 0;
   
   unsigned long iPoint = 0, jPoint = 0, iVertex = 0, iMarker = 0;
   su2double Gas_Constant, Mach2Vel, Mach_Motion, RefDensity, RefPressure = 0.0, factor = 0.0;
@@ -2055,7 +2055,8 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     if ((Kind_Solver == DISC_ADJ_EULER)         ||
         (Kind_Solver == DISC_ADJ_NAVIER_STOKES) ||
          (Kind_Solver == DISC_ADJ_RANS)){
-      iVar_Sens = nVar_Total; nVar_Total += nDim + 1;
+      iVar_Sens    = nVar_Total; nVar_Total += 1;
+      iVar_SensDim = nVar_Total; nVar_Total += nDim;
     }
     
     if (config->GetExtraOutput()) {
@@ -3207,10 +3208,12 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       
 #ifdef HAVE_MPI
       SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-      SU2_MPI::Gather(Buffer_Send_Res, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Res, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+      if (!config->GetDiscrete_Adjoint())
+        SU2_MPI::Gather(Buffer_Send_Res, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Res, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
 #else
       for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Var[iPoint] = Buffer_Send_Var[iPoint];
-      for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Res[iPoint] = Buffer_Send_Res[iPoint];
+      if (!config->GetDiscrete_Adjoint())
+        for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Res[iPoint] = Buffer_Send_Res[iPoint];
 #endif
       
       /*--- The master node unpacks and sorts this variable by global index ---*/
@@ -3224,7 +3227,8 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
             
             iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
             Data[iVar+0][iGlobal_Index] = Buffer_Recv_Var[jPoint];
-            Data[iVar+1][iGlobal_Index] = Buffer_Recv_Res[jPoint];
+            if (!config->GetDiscrete_Adjoint())
+              Data[iVar+1][iGlobal_Index] = Buffer_Recv_Res[jPoint];
             jPoint++;
           }
           
@@ -3274,7 +3278,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       /*--- The master node unpacks and sorts this variable by global index ---*/
 
       if (rank == MASTER_NODE) {
-        jPoint = 0; iVar = iVar_Sens + 1;
+        jPoint = 0; iVar = iVar_SensDim;
         for (iProcessor = 0; iProcessor < size; iProcessor++) {
           for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
 

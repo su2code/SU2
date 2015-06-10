@@ -1630,7 +1630,7 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
   
   /*--- Retrieve filename from config ---*/
   
-  if (config->GetAdjoint()) {
+  if (config->GetAdjoint() || config->GetDiscrete_Adjoint()) {
     filename = config->GetSolution_AdjFileName();
     filename = config->GetObjFunc_Extension(filename);
   } else {
