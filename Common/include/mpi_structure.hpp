@@ -44,9 +44,12 @@
 /* --- Depending on the datatype used, the correct MPI wrapper class is defined.
  * For the default (double type) case this results in using the normal MPI routines. --- */
 
-#if defined COMPLEX_TYPE  || defined ADOLC_FORWARD_TYPE
+#if defined COMPLEX_TYPE  || defined ADOLC_FORWARD_TYPE || defined CODI_FORWARD_TYPE
 class CAuxMPIWrapper;
 typedef CAuxMPIWrapper SU2_MPI;
+#elif defined CODI_REVERSE_TYPE
+class CAdjointMPIWrapper;
+typedef CAdjointMPIWrapper SU2_MPI;
 #else
 class CMPIWrapper;
 typedef CMPIWrapper SU2_MPI;
@@ -114,7 +117,7 @@ protected:
  * \author T. Albring
  * \version 3.2.9 "eagle"
  */
-#if defined COMPLEX_TYPE || defined ADOLC_FORWARD_TYPE
+#if defined COMPLEX_TYPE || defined ADOLC_FORWARD_TYPE || defined CODI_FORWARD_TYPE
 class CAuxMPIWrapper : public CMPIWrapper{
 public:
   static void Isend(void *buf, int count, MPI_Datatype datatype, int dest,
@@ -182,6 +185,64 @@ private:
   static std::map<MPI_Request*, CommInfo> CommInfoMap;
 
   static void FinalizeCommunication(std::map<MPI_Request*, CommInfo>::iterator &CommInfo);
+
+};
+#endif
+#ifdef CODI_REVERSE_TYPE
+#include "ampi_tape.hpp"
+
+/*!
+ * \class CAdjointMPIWrapper
+ * \brief Adjoint MPI wrapper functions.
+ * \author T. Albring
+ * \version 3.2.9 "eagle"
+ */
+
+class CAdjointMPIWrapper: public CMPIWrapper {
+public:
+  static void Init(int *argc, char***argv);
+
+  static void Isend(void *buf, int count, MPI_Datatype datatype, int dest,
+                    int tag, MPI_Comm comm, MPI_Request* request);
+
+  static void Irecv(void *buf, int count, MPI_Datatype datatype, int source,
+                    int tag, MPI_Comm comm, MPI_Request* request);
+
+  static void Wait(MPI_Request *request, MPI_Status *status);
+
+  static void Waitall(int nrequests, MPI_Request *request, MPI_Status *status);
+
+  static void Send(void *buf, int count, MPI_Datatype datatype, int dest,
+                   int tag, MPI_Comm comm);
+
+  static void Recv(void *buf, int count, MPI_Datatype datatype, int dest,
+                   int tag, MPI_Comm comm, MPI_Status *status);
+
+  static void Bcast(void *buf, int count, MPI_Datatype datatype, int root,
+                    MPI_Comm comm);
+
+  static void Bsend(void *buf, int count, MPI_Datatype datatype, int dest,
+                    int tag, MPI_Comm comm);
+
+  static void Reduce(void *sendbuf, void *recvbuf, int count,
+                     MPI_Datatype datatype, MPI_Op op, int root, MPI_Comm comm);
+
+  static void Allreduce(void *sendbuf, void *recvbuf, int count,
+                        MPI_Datatype datatype, MPI_Op op, MPI_Comm comm);
+
+  static void Gather(void *sendbuf, int sendcnt,MPI_Datatype sendtype,
+                     void *recvbuf, int recvcnt, MPI_Datatype recvtype, int root, MPI_Comm comm);
+
+  static void Allgather(void *sendbuf, int sendcnt, MPI_Datatype sendtype,
+                        void *recvbuf, int recvcnt, MPI_Datatype recvtype, MPI_Comm comm);
+
+  static void Sendrecv(void *sendbuf, int sendcnt, MPI_Datatype sendtype,
+                       int dest, int sendtag, void *recvbuf, int recvcnt,
+                       MPI_Datatype recvtype,int source, int recvtag,
+                       MPI_Comm comm, MPI_Status *status);
+
+protected:
+  static char* buff;
 
 };
 #endif

@@ -1045,8 +1045,6 @@ inline void CSolver::SetSensitivity(CGeometry *geometry, CConfig *config){}
 
 inline void CSolver::SetAdj_ObjFunc(CGeometry *geometry, CConfig *config){}
 
-inline void CDiscAdjSolver::SetAdj_ObjFunc(CGeometry *geometry, CConfig *config){SU2_TYPE::SetDerivative(ObjFunc_Value, 1.0);}
-
 inline su2double CDiscAdjSolver::GetTotal_Sens_Geo() { return Total_Sens_Geo; }
 
 inline su2double CDiscAdjSolver::GetTotal_Sens_Mach() { return Total_Sens_Mach; }
