@@ -34,7 +34,7 @@
 
 #ifdef HAVE_MPI
 
-#if defined COMPLEX_TYPE || defined ADOLC_FORWARD_TYPE
+#if defined COMPLEX_TYPE || defined ADOLC_FORWARD_TYPE || defined CODI_FORWARD_TYPE
 std::map<MPI_Request*, CAuxMPIWrapper::CommInfo>
 CAuxMPIWrapper::CommInfoMap;
 std::map<MPI_Request*, CAuxMPIWrapper::CommInfo>::iterator
@@ -444,5 +444,7 @@ void CAuxMPIWrapper::Bcast(void *buf, int count, MPI_Datatype datatype,
   }
 }
 #endif
-
+#ifdef CODI_REVERSE_TYPE
+#include "codi_ampi_interface_realreverse.cpp"
+#endif
 #endif

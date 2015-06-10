@@ -914,10 +914,10 @@ su2_cfd_ldadd = @su2_externals_LIBS@ @CGNS_LD@ @MUTATIONPP_LD@ \
 @BUILD_NORMAL_TRUE@___bin_SU2_CFD_LDADD = ../../Common/lib/libSU2.a ${su2_cfd_ldadd}
 @BUILD_DIRECTDIFF_TRUE@___bin_SU2_CFD_DIRECTDIFF_SOURCES = $(su2_cfd_sources)
 @BUILD_DIRECTDIFF_TRUE@___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS = @DIRECTDIFF_CXX@ ${su2_cfd_cxx_flags}
-@BUILD_DIRECTDIFF_TRUE@___bin_SU2_CFD_DIRECTDIFF_LDADD = ../../Common/lib/libSU2_DIRECTDIFF.a @DIRECTDIFF_LIBS@ ${su2_cfd_ldadd}
+@BUILD_DIRECTDIFF_TRUE@___bin_SU2_CFD_DIRECTDIFF_LDADD = @DIRECTDIFF_LIBS@ ../../Common/lib/libSU2_DIRECTDIFF.a ${su2_cfd_ldadd}
 @BUILD_REVERSE_TRUE@___bin_SU2_CFD_REVERSE_SOURCES = $(su2_cfd_sources)
 @BUILD_REVERSE_TRUE@___bin_SU2_CFD_REVERSE_CXXFLAGS = @REVERSE_CXX@ ${su2_cfd_cxx_flags}
-@BUILD_REVERSE_TRUE@___bin_SU2_CFD_REVERSE_LDADD = ../../Common/lib/libSU2_REVERSE.a @REVERSE_LIBS@ ${su2_cfd_ldadd}
+@BUILD_REVERSE_TRUE@___bin_SU2_CFD_REVERSE_LDADD = @REVERSE_LIBS@ ../../Common/lib/libSU2_REVERSE.a ${su2_cfd_ldadd}
 all: all-am
 
 .SUFFIXES:

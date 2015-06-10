@@ -173,11 +173,11 @@ endif
 if BUILD_DIRECTDIFF
 ___bin_SU2_CFD_DIRECTDIFF_SOURCES = $(su2_cfd_sources)
 ___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS = @DIRECTDIFF_CXX@ ${su2_cfd_cxx_flags}
-___bin_SU2_CFD_DIRECTDIFF_LDADD = ../../Common/lib/libSU2_DIRECTDIFF.a @DIRECTDIFF_LIBS@ ${su2_cfd_ldadd}
+___bin_SU2_CFD_DIRECTDIFF_LDADD = @DIRECTDIFF_LIBS@ ../../Common/lib/libSU2_DIRECTDIFF.a ${su2_cfd_ldadd}
 endif
 
 if BUILD_REVERSE
 ___bin_SU2_CFD_REVERSE_SOURCES = $(su2_cfd_sources)
 ___bin_SU2_CFD_REVERSE_CXXFLAGS = @REVERSE_CXX@ ${su2_cfd_cxx_flags}
-___bin_SU2_CFD_REVERSE_LDADD = ../../Common/lib/libSU2_REVERSE.a @REVERSE_LIBS@ ${su2_cfd_ldadd}
+___bin_SU2_CFD_REVERSE_LDADD = @REVERSE_LIBS@ ../../Common/lib/libSU2_REVERSE.a ${su2_cfd_ldadd}
 endif

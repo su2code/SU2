@@ -822,7 +822,6 @@ enable_adolc_reverse
 enable_adolc_forward
 enable_codi_reverse
 enable_codi_forward
-with_codi_include
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1515,7 +1514,6 @@ Optional Packages:
                           Specific METIS C Preprocessor flags to use
   --with-parmetis-cppflags="..."
                           Specific PARMETIS C Preprocessor flags to use
-  --with-CODI-include=ARG CODI include directory, ARG = path to codi.hpp
 
 Some influential environment variables:
   CXX         C++ compiler command
@@ -6350,57 +6348,33 @@ else
 fi
 
 
-# Check whether --with-codi-include was given.
-if test "${with_codi_include+set}" = set; then :
-  withval=$with_codi_include; with_CODI_include=$withval
-else
-  with_CODI_include="no"
-fi
-
         REVERSE_CXX=
         FORWARD_CXX=
         CODIheader=codi.hpp
 
-        if test "$build_CODI_REVERSE" == "yes" || test "$build_CODI_FORWARD" == "yes"
-        then
-          as_ac_File=`$as_echo "ac_cv_file_$with_CODI_include/$CODIheader" | $as_tr_sh`
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $with_CODI_include/$CODIheader" >&5
-$as_echo_n "checking for $with_CODI_include/$CODIheader... " >&6; }
-if eval \${$as_ac_File+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  test "$cross_compiling" = yes &&
-  as_fn_error $? "cannot check for file existence when cross compiling" "$LINENO" 5
-if test -r "$with_CODI_include/$CODIheader"; then
-  eval "$as_ac_File=yes"
-else
-  eval "$as_ac_File=no"
-fi
-fi
-eval ac_res=\$$as_ac_File
-	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
-$as_echo "$ac_res" >&6; }
-if eval test \"x\$"$as_ac_File"\" = x"yes"; then :
-  have_CODI='yes'
-else
-  have_CODI='no'
-fi
-
-          if test "$have_CODI" == "no"
-          then
-            as_fn_error $? "CODI requested but header file not found." "$LINENO" 5
-          fi
-        fi
+        #if test "$build_CODI_REVERSE" == "yes" || test "$build_CODI_FORWARD" == "yes"
+        #then
+          #AC_CHECK_FILE([externals/CoDi/include/$CODIheader],[have_CODI='yes'],[have_CODI='no'])
+          #if test "$have_CODI" == "no"
+          #then
+            #AC_MSG_ERROR([CODI header was not found in externals/CoDi/include.])
+          #fi
+        #fi
 
         if test "$build_CODI_FORWARD" == "yes"
         then
-           DIRECTDIFF_CXX="-std=c++11 -DCODI_FORWARD_TYPE -I"$with_CODI_include""
+           DIRECTDIFF_CXX="-std=c++11 -DCODI_FORWARD_TYPE -I\$(top_srcdir)/externals/CoDi/include"
            build_DIRECTDIFF=yes
            build_REVERSE=no
            build_NORMAL=no
         elif test "$build_CODI_REVERSE" == "yes"
         then
-           REVERSE_CXX="-std=c++11 -DCODI_REVERSE_TYPE -I"$with_CODI_include""
+           REVERSE_CXX="-std=c++11 -DCODI_REVERSE_TYPE -I\$(top_srcdir)/externals/CoDi/include"
+           if test "$enablempi" == "yes"
+           then
+              REVERSE_CXX=$REVERSE_CXX" -I\$(top_srcdir)/externals/adjointmpi/include"
+              REVERSE_LIBS="\$(top_srcdir)/externals/adjointmpi/libAMPI.a"
+           fi
            build_REVERSE=yes
            build_DIRECTDIFF=no
            build_NORMAL=no

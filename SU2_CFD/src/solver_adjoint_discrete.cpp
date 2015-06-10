@@ -250,6 +250,11 @@ void CDiscAdjSolver::RegisterOutput(CGeometry *geometry, CConfig *config){
 
 void CDiscAdjSolver::RegisterObj_Func(CConfig *config){
 
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
   /* --- Here we can add objective functions --- */
 
   switch (config->GetKind_ObjFunc()){
@@ -278,7 +283,23 @@ void CDiscAdjSolver::RegisterObj_Func(CConfig *config){
       ObjFunc_Value = direct_solver->GetTotal_CEquivArea();
       break;
   }
-  AD::RegisterOutput(ObjFunc_Value);
+  if (rank == MASTER_NODE){
+    AD::RegisterOutput(ObjFunc_Value);
+  }
+}
+
+
+void CDiscAdjSolver::SetAdj_ObjFunc(CGeometry *geometry, CConfig *config){
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  if (rank == MASTER_NODE){
+    SU2_TYPE::SetDerivative(ObjFunc_Value, 1.0);
+  } else {
+    SU2_TYPE::SetDerivative(ObjFunc_Value, 0.0);
+  }
 }
 
 void CDiscAdjSolver::SetAdjointInput(CGeometry *geometry, CConfig *config){
