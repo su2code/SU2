@@ -1,7 +1,7 @@
 /*!
  * \file matrix_structure.inl
  * \brief In-Line subroutines of the <i>matrix_structure.hpp</i> file.
- * \author F. Palacios, A. Bueno
+ * \author F. Palacios, A. Bueno, T. Economon
  * \version 3.2.9 "eagle"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
