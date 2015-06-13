@@ -324,7 +324,15 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void SendReceive_Solution(CSysVector & x, CGeometry *geometry, CConfig *config);
-  
+
+  /*!
+   * \brief Send receive the solution using MPI and the transposed structure of the matrix.
+   * \param[in] x - Solution..
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SendReceive_SolutionTransposed(CSysVector & x, CGeometry *geometry, CConfig *config);
+
   /*!
 	 * \brief Performs the product of i-th row of a sparse matrix by a vector.
 	 * \param[in] vec - Vector to be multiplied by the row of the sparse matrix A.
