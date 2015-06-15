@@ -69,7 +69,7 @@ public:
   /*!
  * \brief Constructor of the class.
  */
-  CInterpolator(CGeometry ***geometry_container, CConfig **config, unsigned short nZone);
+  CInterpolator(CGeometry ***geometry_container, CConfig **config, unsigned short zone0,unsigned short zone1, unsigned short nZone);
 
   /*!
    * \brief Destructor of the class.
@@ -117,7 +117,7 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CNearestNeighbor(CGeometry ***geometry_container, CConfig **config, unsigned short nZone);
+  CNearestNeighbor(CGeometry ***geometry_container, CConfig **config, unsigned short zone0,unsigned short zone1,unsigned short nZone);
 
   /*!
    * \brief Destructor of the class.
