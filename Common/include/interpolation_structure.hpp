@@ -94,7 +94,7 @@ public:
    * \param[in] config  - configuration information container
    * \param[in] solver_container  - solution container.
    */
-  void Interpolate_Solution(unsigned short iZone_dest, CConfig **config, CSolver **solver_container);
+//  void Interpolate_Solution(unsigned short iZone_dest, CConfig **config, CSolver **solver_container);
 
   /*!
    * \brief Set up transfer matrix defining relation between two meshes
