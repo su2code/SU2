@@ -349,3 +349,5 @@ inline double CVertex::GetDonorCoeff(unsigned short iDonor){ return Donor_Coeff[
 inline unsigned short CVertex::GetnDonorPoints(void){ return nDonor_Points;}
 
 inline void CVertex::SetnDonorPoints(unsigned short nDonor) {nDonor_Points = nDonor;}
+
+inline double* CVertex::getVarRot(void) {return VarRot;}

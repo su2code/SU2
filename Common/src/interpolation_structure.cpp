@@ -130,7 +130,7 @@ void CInterpolator::Interpolate_Deformation(unsigned short iZone_0, unsigned sho
             weight = Geometry[iZone_0]->vertex[iMarker][iVertex]->GetDonorCoeff(jDonor);
             /* Get translation and rotation from the solution */
             VarCoord = Geometry[iZone_1]->vertex[jMarker][jVertex]->GetVarCoord();
-            VarRot = Geometry[iZone_1]->vertex[jMarker][jVertex]->GetAuxVar(); // Use Aux var to store rotation vector.
+            VarRot = Geometry[iZone_1]->vertex[jMarker][jVertex]->GetVarRot();
             distance = {0.0,0.0,0.0};
             for (iDim=0; iDim<nDim; iDim++){
               NewVarCoord[iDim]+=VarCoord[iDim]*weight;
