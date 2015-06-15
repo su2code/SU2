@@ -567,51 +567,5 @@ public:
 	void operator()(const CSysVector & u, CSysVector & v) const;
 };
 
-/*!
- * \class CSysTransferMatrix
- * \brief Specialization of CSysMatrix to handle transfer coefficients between dissimilar meshes
- */
-class CSysTransferMatrix : public CSysMatrix {
-private:
-	unsigned long nPoint_1, nElem_1; /*\brief number of nodes, elements in ZONE_1 */
-	unsigned short nDim;
-	unsigned long *row_ptr,
-	*col_ind;
-public:
-
-	/*!
-	 * \brief constructor of the class
-	 */
-	CSysTransferMatrix(void);
-
-	/*!
-	 * \brief destructor of the class
-	 */
-	~CSysTransferMatrix(void);
-
-	  /*!
-		 * \brief Initializes space matrix system.
-		 * \param[in] nVar - Number of variables.
-		 * \param[in] nEqn - Number of equations.
-		 * \param[in] geometry - Geometrical definition of the problem.
-		 * \param[in] config - Definition of the particular problem.
-		 */
-	  void Initialize(CGeometry **geometry, CConfig **config);
-
-
-	  /*!
-	   * \brief Assings values to the sparse-matrix structure.
-	   * \param[in] val_nnz - Number of possible nonzero entries in the matrix.
-	   * \param[in] config - Definition of the particular problem.
-	   */
-	  void SetIndexes( unsigned long val_nnz, CConfig *config);
-
-	  /*!
-	   * \brief Sets to zero all the entries of the sparse matrix.
-	   */
-	  void SetValZero(void);
-
-
-};
 
 #include "matrix_structure.inl"

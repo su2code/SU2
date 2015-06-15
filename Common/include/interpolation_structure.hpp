@@ -57,10 +57,9 @@ using namespace std;
 class CInterpolator {
 protected:
   unsigned short nZone;
-  double ***Force;
+  double ***Data; /*!\brief container for some data to be interpolated */
 public:
   CGeometry** Geometry; /*! \brief Vector which stores n zones of geometry. */
-  CSysTransferMatrix* TransferMatrix; /*! \brief Sparse matrix structure defining transfer from one mesh to another. */
 
   /*!
    * \brief Constructor of the class.
@@ -78,14 +77,24 @@ public:
   ~CInterpolator(void);
 
   /*!
-   * \brief interpolate forces from one mesh to another
+   * \brief interpolate Data from one mesh to another
    */
-  void Interpolate_Force(unsigned short iZone_0, unsigned short iZone_1);
+  void Interpolate_Data(unsigned short iZone_0, unsigned short iZone_1, CConfig **config);
 
   /*!
    * \brief interpolate deformations from one mesh to another
    */
   void Interpolate_Deformation(unsigned short iZone_0, unsigned short iZone_1, CConfig **config);
+
+  /*!
+   * \brief interpolate data stored in the solution containers of two zones.
+   * Assumes that the data are of the format, aka two CFD solutions with the same nondimensionalization.
+   * Data in the solution container of the nodes in the interface of iZone_dest will be overwritten.
+   * \param[in] iZone_dest  - The zone which will be receiving the interpolated solution
+   * \param[in] config  - configuration information container
+   * \param[in] solver_container  - solution container.
+   */
+  void Interpolate_Solution(unsigned short iZone_dest, CConfig **config, CSolver **solver_container);
 
   /*!
    * \brief Set up transfer matrix defining relation between two meshes
@@ -94,19 +103,19 @@ public:
 
 
   /*!
-   * \brief Return the value of the force at the specified zone, point, and dimension.
+   * \brief Return the value of the Data at the specified zone, point, and dimension.
    */
-  double GetForce(unsigned short iZone, unsigned long iPoint, unsigned short iDim);
+  double GetData(unsigned short iZone, unsigned long iPoint, unsigned short iDim);
 
   /*!
-   * \brief Return the value of the force vector at the specified zone and point.
+   * \brief Return the value of the Data vector at the specified zone and point.
    */
-  double* GetForce(unsigned short iZone, unsigned long iPoint);
+  double* GetData(unsigned short iZone, unsigned long iPoint);
 
   /*!
-   * \brief Set the value of the force at the specified zone, point, and dimension.
+   * \brief Set the value of the Data at the specified zone, point, and dimension.
    */
-  void SetForce(unsigned short iZone, unsigned long iPoint, unsigned short iDim, double val);
+  void SetData(unsigned short iZone, unsigned long iPoint, unsigned short iDim, double val);
 
 
 };

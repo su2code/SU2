@@ -110,8 +110,3 @@ inline void CLineletPreconditioner::operator()(const CSysVector & u, CSysVector 
   }
   sparse_matrix->ComputeLineletPreconditioner(u, v, geometry, config);
 }
-
-inline void CSysTransferMatrix::SetValZero(void) {
-  for (unsigned long index = 0; index < nnz*nDim; index++)
-    matrix[index] = 0.0;
-}

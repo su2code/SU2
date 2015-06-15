@@ -880,6 +880,9 @@ private:
 	unsigned long Normal_Neighbor; /*!< \brief Index of the closest neighbor. */
   unsigned long Donor_Elem;   /*!< \brief Store the donor element for interpolation across zones/ */
   double Basis_Function[3]; /*!< \brief Basis function values for interpolation across zones. */
+  unsigned long **Donor_Info; /*!\brief Store a list of donor points (by global index) for interpolation across zones: zone,point,marker,vertex */
+  double *Donor_Coeff; /*!\brief Store a list of coefficients corresponding to the donor points. */
+  unsigned short nDonor_Points; /*!\brief Number of points in Donor_Points;*/
   
 public:
 
@@ -1084,6 +1087,58 @@ public:
 	 */
 	unsigned long GetNormal_Neighbor(void);
 	
+	/*!
+   * \brief Increment the number of donor points by 1.
+   */
+	void IncrementnDonor(void);
+
+	/*!
+   * \brief Set the value of nDonor_Points
+   * \param[in] nDonor - the number of donor points
+   */
+	void SetnDonorPoints(unsigned short nDonor);
+
+	/*!
+   * \brief Return the value of nDonor_Points
+   * \return nDonor - the number of donor points
+   */
+	unsigned short GetnDonorPoints(void);
+
+	/*!
+	 * \brief Set the values of a donor point.
+	 * \param[in] iDonor - Index of the donor point.
+	 * \param[in] val   - Pointer to the array of values to be set for the donor point. (zone, global point id, marker id, vertex within that marker)
+	 */
+	void SetDonorInfo(unsigned short iDonor, unsigned long*val);
+
+	/*!
+	 * \brief Return the values of a donor point.
+	 * \param[in] iDonor - Index of the donor point.
+	 * \param[in] it  - Index of the information to be returned.(zone, global point id, marker id, vertex within that marker)
+	 * \return    - the value stored at Donor_Info[iDonor][it].
+	 */
+	unsigned long GetDonorInfo(unsigned short iDonor, unsigned short it);
+
+
+	/*!
+   * \brief Set the coefficient value of a donor point.
+   * \param[in] iDonor - Index of the donor point.
+   * \param[in] val  - Value of the coefficent for point iDonor.
+   */
+	void SetDonorCoeff(unsigned short iDonor, double val);
+
+	/*!
+   * \brief Get the coefficient value of a donor point.
+   * \param[in] iDonor - Index of the donor point.
+   * \return  - Value of the coefficent for point iDonor.
+   */
+	double GetDonorCoeff(unsigned short iDonor);
+
+	/*!
+   * \brief Allocate memory based on how many donor points need to be stored.
+   * Uses nDonor_Points
+   */
+	void	Allocate_DonorInfo(void);
 };
 
 #include "dual_grid_structure.inl"
