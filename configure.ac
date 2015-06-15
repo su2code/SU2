@@ -52,6 +52,7 @@ SU2_SET_COMPILERS
 AM_PROG_CC_C_O
 AC_PROG_RANLIB
 AC_PROG_MKDIR_P
+AC_PROG_CXX
 
 # --------------------------------------------------------------
 # Check for important type sizes

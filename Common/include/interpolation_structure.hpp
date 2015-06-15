@@ -59,7 +59,7 @@ protected:
   unsigned short nZone;
   double ***Data; /*!\brief container for some data to be interpolated */
 public:
-  CGeometry** Geometry; /*! \brief Vector which stores n zones of geometry. */
+  CGeometry*** Geometry; /*! \brief Vector which stores n zones of geometry. */
 
   /*!
    * \brief Constructor of the class.
@@ -69,7 +69,7 @@ public:
   /*!
  * \brief Constructor of the class.
  */
-  CInterpolator(CGeometry **geometry_container, CConfig **config, unsigned short nZone);
+  CInterpolator(CGeometry ***geometry_container, CConfig **config, unsigned short nZone);
 
   /*!
    * \brief Destructor of the class.
@@ -94,7 +94,7 @@ public:
    * \param[in] config  - configuration information container
    * \param[in] solver_container  - solution container.
    */
-  void Interpolate_Solution(unsigned short iZone_dest, CConfig **config, CSolver **solver_container);
+//  void Interpolate_Solution(unsigned short iZone_dest, CConfig **config, CSolver **solver_container);
 
   /*!
    * \brief Set up transfer matrix defining relation between two meshes
@@ -127,7 +127,7 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CNearestNeighbor(CGeometry **geometry_container, CConfig **config, unsigned short nZone);
+  CNearestNeighbor(CGeometry ***geometry_container, CConfig **config, unsigned short nZone);
 
   /*!
    * \brief Destructor of the class.

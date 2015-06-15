@@ -1205,6 +1205,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Maximum number of iterations of the linear solver for the implicit formulation */
   addUnsignedLongOption("FSI_LINEAR_SOLVER_ITER_STRUC", Linear_Solver_Iter_FSI_Struc, 500);
 
+  /*  DESCRIPTION: Apply dead loads
+  *  Options: NO, YES \ingroup Config */
+  addBoolOption("MATCHING_MESH", MatchingMesh, true);
+
 
   /* CONFIG_CATEGORY: FSI solver */
   /*--- Options related to the FSI solver ---*/
@@ -1605,7 +1609,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     else Unst_nIntIter = 2;
   }
   
-  if ((Kind_Solver == LINEAR_ELASTICITY)) {
+  if (Kind_Solver == LINEAR_ELASTICITY) {
     nMGLevels = 0;
     if (Dynamic_Analysis == STATIC) 
 	nExtIter = 1;
@@ -1619,7 +1623,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       Kind_Regime == FREESURFACE) { Wrt_Unsteady = false; }
   else { Wrt_Unsteady = true; }
 
-  if ((Kind_Solver == LINEAR_ELASTICITY)) {
+  if (Kind_Solver == LINEAR_ELASTICITY) {
 
 	  if (Dynamic_Analysis == STATIC) { Wrt_Dynamic = false; }
 	  else { Wrt_Dynamic = true; }

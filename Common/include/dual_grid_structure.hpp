@@ -1147,6 +1147,7 @@ public:
    */
   double* getVarRot(void);
 
+
 };
 
 #include "dual_grid_structure.inl"
