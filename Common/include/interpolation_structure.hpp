@@ -87,19 +87,9 @@ public:
   void Interpolate_Deformation(unsigned short iZone_0, unsigned short iZone_1, CConfig **config);
 
   /*!
-   * \brief interpolate data stored in the solution containers of two zones.
-   * Assumes that the data are of the format, aka two CFD solutions with the same nondimensionalization.
-   * Data in the solution container of the nodes in the interface of iZone_dest will be overwritten.
-   * \param[in] iZone_dest  - The zone which will be receiving the interpolated solution
-   * \param[in] config  - configuration information container
-   * \param[in] solver_container  - solution container.
-   */
-//  void Interpolate_Solution(unsigned short iZone_dest, CConfig **config, CSolver **solver_container);
-
-  /*!
    * \brief Set up transfer matrix defining relation between two meshes
    */
-  void Set_TransferMatrix(unsigned short iZone_0, unsigned short iZone_1, CConfig **config);
+  void Set_TransferCoeff(unsigned short iZone_0, unsigned short iZone_1, CConfig **config);
 
 
   /*!
@@ -137,6 +127,6 @@ public:
   /*!
    * \brief Set up transfer matrix defining relation between two meshes
    */
-  void Set_TransferMatrix(unsigned short iZone_0, unsigned short iZone_1, CConfig **config);
+  void Set_TransferCoeff(unsigned short iZone_0, unsigned short iZone_1, CConfig **config);
 
 };
