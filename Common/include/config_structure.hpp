@@ -726,7 +726,8 @@ private:
   Gust_Begin_Loc;             /*!< \brief Location at which the gust begins. */
   long Visualize_CV; /*!< \brief Node number for the CV to be visualized */
   bool ExtraOutput;
-  bool DeadLoad; /*!< Application of dead loads to the FE analysis */
+  bool DeadLoad; 		/*!< Application of dead loads to the FE analysis */
+  bool MatchingMesh; 	/*!< Matching mesh (while implementing interpolation procedures). */
     double Newmark_alpha,			/*!< \brief Parameter alpha for Newmark method. */
       Newmark_delta;				/*!< \brief Parameter delta for Newmark method. */
     bool Gradual_Load,		/*!< \brief Apply the load gradually. */
@@ -5411,6 +5412,13 @@ public:
 	  */
 
 	bool GetDeadLoad(void);
+
+	/*!
+	  * \brief Identifies if the mesh is matching or not (temporary, while implementing interpolation procedures).
+	  * \return <code>TRUE</code> if the mesh is matching, <code>FALSE</code> otherwise.
+	  */
+
+	bool GetMatchingMesh(void);
 
 	/*!
 	 * \brief Provides information about the time integration of the structural analysis, and change the write in the output
