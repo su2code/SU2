@@ -350,4 +350,9 @@ inline unsigned short CVertex::GetnDonorPoints(void){ return nDonor_Points;}
 
 inline void CVertex::SetnDonorPoints(unsigned short nDonor) {nDonor_Points = nDonor;}
 
-inline double* CVertex::getVarRot(void) {return VarRot;}
+inline double *CVertex::GetVarRot(void) {return VarRot;}
+
+inline void CVertex::SetVarRot(double* val) {
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    VarRot[iDim] = val[iDim];
+}

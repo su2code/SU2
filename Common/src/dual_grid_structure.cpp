@@ -452,6 +452,9 @@ CVertex::CVertex(unsigned long val_point, unsigned short val_nDim) : CDualGrid(v
 	/*--- Set to zero the variation of the coordinates ---*/
 	VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
 
+	/*--- Set to NULL variation of the rotation  ---*/
+	VarRot = NULL;
+
 	/*--- Set to NULL donor arrays for interpolation ---*/
   Donor_Info = NULL;
   Donor_Coeff = NULL;
@@ -468,6 +471,9 @@ CVertex::~CVertex() {
     for (unsigned long iDonor=0; iDonor<nDonor_Points; iDonor++)
       delete[] Donor_Info[iDonor];
   if (Donor_Coeff != NULL) delete[] Donor_Coeff;
+
+  if (VarRot!=NULL)
+    delete[] VarRot;
 
 
 }
