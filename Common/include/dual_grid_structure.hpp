@@ -875,6 +875,7 @@ private:
 	double Aux_Var;			/*!< \brief Auxiliar variable defined only on the surface. */
 	double CartCoord[3];		/*!< \brief Vertex cartesians coordinates. */
 	double VarCoord[3];		/*!< \brief Used for storing the coordinate variation due to a surface modification. */
+	double VarRot[3];   /*!< \brief Used for storing the rotation variation due to a surface modification. */
 	long PeriodicPoint[2];			/*!< \brief Store the periodic point of a boundary (iProcessor, iPoint) */
 	short Rotation_Type;			/*!< \brief Type of rotation associated with the vertex (MPI and periodic) */
 	unsigned long Normal_Neighbor; /*!< \brief Index of the closest neighbor. */
@@ -1139,6 +1140,13 @@ public:
    * Uses nDonor_Points
    */
 	void	Allocate_DonorInfo(void);
+
+	/*!
+   * \brief Get the rotation variation
+   * \return  - pointer to the vector defining the rotation
+   */
+  double* getVarRot(void);
+
 };
 
 #include "dual_grid_structure.inl"
