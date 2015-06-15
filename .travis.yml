@@ -11,6 +11,7 @@ notifications:
         recipients:
             - padronas@stanford.edu
             - su2code-dev@lists.stanford.edu
+        on_success: never
         on_failure: always
   
 branches:
