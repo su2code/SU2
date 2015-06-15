@@ -8,8 +8,10 @@ compiler:
 
 notifications:
     email:
-        - padronas@stanford.edu
-        - economon@stanford.edu
+        recipients:
+            - padronas@stanford.edu
+            - su2code-dev@lists.stanford.edu
+        on_failure: always
   
 branches:
     only:
