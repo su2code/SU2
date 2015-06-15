@@ -385,11 +385,18 @@ void FSI_Disp_Transfer(COutput *output, CIntegration ***integration_container, C
 					     CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
 						 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox){
 
+	bool MatchingMesh = config_container[ZONE_0]->GetMatchingMesh();
+
 	/*--- Displacement transfer --  This will have to be modified for non-matching meshes ---*/
 
-	solver_container[ZONE_0][MESH_0][FLOW_SOL]->SetFlow_Displacement(geometry_container[ZONE_0], grid_movement[ZONE_0],
-																   config_container[ZONE_0], config_container[ZONE_1],
-																   geometry_container[ZONE_1], solver_container[ZONE_1]);
+	if (MatchingMesh){
+		solver_container[ZONE_0][MESH_0][FLOW_SOL]->SetFlow_Displacement(geometry_container[ZONE_0], grid_movement[ZONE_0],
+																   	   config_container[ZONE_0], config_container[ZONE_1],
+																   	   geometry_container[ZONE_1], solver_container[ZONE_1]);
+	}
+	else{
+		cout << "NonMatchingMesh" << endl;
+	}
 
 
 }
@@ -400,6 +407,8 @@ void FSI_Load_Transfer(COutput *output, CIntegration ***integration_container, C
 						 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox,
 						 unsigned long ExtIter){
 
+	bool MatchingMesh = config_container[ZONE_0]->GetMatchingMesh();
+
 	/*--- Load transfer --  This will have to be modified for non-matching meshes ---*/
 
 	unsigned short SolContainer_Position_fea = config_container[ZONE_1]->GetContainerPosition(RUNTIME_FEA_SYS);
@@ -408,8 +417,15 @@ void FSI_Load_Transfer(COutput *output, CIntegration ***integration_container, C
 
 	config_container[ZONE_1]->SetGlobalParam(LINEAR_ELASTICITY, RUNTIME_FEA_SYS, ExtIter);
 
-	solver_container[ZONE_1][MESH_0][FEA_SOL]->SetFEA_Load(solver_container[ZONE_0], geometry_container[ZONE_1], geometry_container[ZONE_0],
-														   config_container[ZONE_1], config_container[ZONE_0], numerics_container[ZONE_1][MESH_0][SolContainer_Position_fea][VISC_TERM]);
+	if (MatchingMesh){
+
+		solver_container[ZONE_1][MESH_0][FEA_SOL]->SetFEA_Load(solver_container[ZONE_0], geometry_container[ZONE_1], geometry_container[ZONE_0],
+															   config_container[ZONE_1], config_container[ZONE_0], numerics_container[ZONE_1][MESH_0][SolContainer_Position_fea][VISC_TERM]);
+
+	}
+	else{
+		cout << "NonMatchingMesh" << endl;
+	}
 
 
 }

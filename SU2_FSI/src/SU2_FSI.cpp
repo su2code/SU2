@@ -71,6 +71,7 @@ int main(int argc, char *argv[]) {
 	  CSurfaceMovement **surface_movement   = NULL;
 	  CVolumetricMovement **grid_movement   = NULL;
 	  CFreeFormDefBox*** FFDBox             = NULL;
+	  CInterpolator **interpolator_container= NULL;
 
 	  /*--- Load in the number of zones and spatial dimensions in the mesh file (If no config
 	   file is specified, default.cfg is used) ---*/
@@ -98,6 +99,7 @@ int main(int argc, char *argv[]) {
 	  surface_movement      = new CSurfaceMovement*[nZone];
 	  grid_movement         = new CVolumetricMovement*[nZone];
 	  FFDBox                = new CFreeFormDefBox**[nZone];
+	  interpolator_container= new CInterpolator*[nZone];
 
 	  for (iZone = 0; iZone < nZone; iZone++) {
 	    solver_container[iZone]       = NULL;
@@ -108,6 +110,7 @@ int main(int argc, char *argv[]) {
 	    surface_movement[iZone]       = NULL;
 	    grid_movement[iZone]          = NULL;
 	    FFDBox[iZone]                 = NULL;
+	    interpolator_container[iZone] = NULL;
 	  }
 
 	  /*--- Loop over all zones to initialize the various classes. In most
@@ -254,6 +257,8 @@ int main(int argc, char *argv[]) {
 	    }
 
 	  }
+
+	  interpolator_container[iZone] = new CNearestNeighbor(geometry_container,config_container,iZone);
 
 	  /*--- For the time-spectral solver, set the grid node velocities. ---*/
 

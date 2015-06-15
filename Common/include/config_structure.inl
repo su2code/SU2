@@ -1195,6 +1195,8 @@ inline double CConfig::GetAitkenDynMaxInit(void) { return AitkenDynMaxInit; }
 
 inline bool CConfig::GetDeadLoad(void) { return DeadLoad; }
 
+inline bool CConfig::GetMatchingMesh(void) { return MatchingMesh; }
+
 inline unsigned short CConfig::GetDynamic_Analysis(void) { return Dynamic_Analysis; }
 
 inline double CConfig::GetDelta_DynTime(void) { return Delta_DynTime; }

@@ -1138,7 +1138,7 @@ public:
    * \brief Allocate memory based on how many donor points need to be stored.
    * Uses nDonor_Points
    */
-	void	Allocate_DonorInfo(void);
+	void Allocate_DonorInfo(void);
 };
 
 #include "dual_grid_structure.inl"
