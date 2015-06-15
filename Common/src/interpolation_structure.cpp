@@ -38,58 +38,63 @@ CInterpolator::CInterpolator(void){
 CInterpolator::~CInterpolator(void){}
 
 
-CInterpolator::CInterpolator(CGeometry ***geometry_container, CConfig **config, unsigned short val_nZone){
-  unsigned short nDim = geometry_container[ZONE_0][MESH_0]->GetnDim();
+CInterpolator::CInterpolator(CGeometry ***geometry_container, CConfig **config, unsigned short zone0,unsigned short zone1, unsigned short val_nZone){
+  unsigned short nDim = geometry_container[zone0][MESH_0]->GetnDim();
   /* Store pointers*/
 	Geometry = geometry_container;
 	nZone = val_nZone;
 
+	/*--- Initialize transfer coefficients between the zones ---*/
+  Set_TransferCoeff(zone0,zone1,config);
+
+
 	/*--- Initialize Data vectors to 0 ---*/
 	Data = new double**[val_nZone];
-	Data[ZONE_0] = new double*[Geometry[ZONE_0][MESH_0]->GetnPoint()];
-	Data[ZONE_1] = new double*[Geometry[ZONE_1][MESH_0]->GetnPoint()];
+	Data[zone0] = new double*[Geometry[zone0][MESH_0]->GetnPoint()];
+	Data[zone1] = new double*[Geometry[zone1][MESH_0]->GetnPoint()];
 
-	for (unsigned long iPoint =0; iPoint< Geometry[ZONE_0][MESH_0]->GetnPoint(); iPoint++){
-	  Data[ZONE_0][iPoint] = new double[nDim];
+	for (unsigned long iPoint =0; iPoint< Geometry[zone0][MESH_0]->GetnPoint(); iPoint++){
+	  Data[zone0][iPoint] = new double[nDim];
 	  for (unsigned short iDim=0; iDim<nDim; iDim++){
-	    Data[ZONE_0][iPoint][iDim]=0.0;
+	    Data[zone0][iPoint][iDim]=0.0;
 	  }
 	}
 
-  for (unsigned long iPoint =0; iPoint< Geometry[ZONE_1][MESH_0]->GetnPoint(); iPoint++){
-    Data[ZONE_1][iPoint] = new double[nDim];
+  for (unsigned long iPoint =0; iPoint< Geometry[zone1][MESH_0]->GetnPoint(); iPoint++){
+    Data[zone1][iPoint] = new double[nDim];
     for (unsigned short iDim=0; iDim<nDim; iDim++){
-      Data[ZONE_1][iPoint][iDim]=0.0;
+      Data[zone1][iPoint][iDim]=0.0;
     }
   }
+
 }
 
 
 void CInterpolator::Interpolate_Data(unsigned short iZone_0, unsigned short iZone_1, CConfig **config){
   unsigned long iPoint, jPoint, jVertex, iMarker, iVertex;
-  unsigned short nDim = Geometry[ZONE_0][MESH_0]->GetnDim(), jMarker;
+  unsigned short nDim = Geometry[iZone_0][MESH_0]->GetnDim(), jMarker;
   double weight=0.0;
 
   /*--- Loop through points, increment Data by the weight in the transfer matrix ---*/
 
   /*Loop by i then by j to more efficiently call memory*/
   for (iMarker = 0; iMarker < config[iZone_0]->GetnMarker_All(); iMarker++){
-      if (config[iZone_0]->GetMarker_All_FSIinterface(iMarker) == YES){
-        for (iVertex = 0; iVertex<Geometry[iZone_0][MESH_0]->GetnVertex(iMarker); iVertex++) {
-          iPoint =Geometry[iZone_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
-          for (unsigned short jDonor = 0; jDonor< Geometry[iZone_0][MESH_0]->vertex[iMarker][iVertex]->GetnDonorPoints(); jDonor++){
-            /* Unpack info */
-            iZone_1 = Geometry[iZone_0][MESH_0]->vertex[iMarker][iVertex]->GetDonorInfo(jDonor,0);
-            jPoint = Geometry[iZone_0][MESH_0]->vertex[iMarker][iVertex]->GetDonorInfo(jDonor,1);
-            jMarker = Geometry[iZone_0][MESH_0]->vertex[iMarker][iVertex]->GetDonorInfo(jDonor,2);
-            jVertex = Geometry[iZone_0][MESH_0]->vertex[iMarker][iVertex]->GetDonorInfo(jDonor,3);
-            weight = Geometry[iZone_0][MESH_0]->vertex[iMarker][iVertex]->GetDonorCoeff(jDonor);
-            for (unsigned short iDim=0; iDim<nDim; iDim++){
-              Data[iZone_1][jPoint][iDim]+=Data[iZone_0][iPoint][iDim]*weight;
-            }
+    if (config[iZone_0]->GetMarker_All_FSIinterface(iMarker) == YES){
+      for (iVertex = 0; iVertex<Geometry[iZone_0][MESH_0]->GetnVertex(iMarker); iVertex++) {
+        iPoint =Geometry[iZone_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
+        for (unsigned short jDonor = 0; jDonor< Geometry[iZone_0][MESH_0]->vertex[iMarker][iVertex]->GetnDonorPoints(); jDonor++){
+          /* Unpack info */
+          iZone_1 = Geometry[iZone_0][MESH_0]->vertex[iMarker][iVertex]->GetDonorInfo(jDonor,0);
+          jPoint = Geometry[iZone_0][MESH_0]->vertex[iMarker][iVertex]->GetDonorInfo(jDonor,1);
+          jMarker = Geometry[iZone_0][MESH_0]->vertex[iMarker][iVertex]->GetDonorInfo(jDonor,2);
+          jVertex = Geometry[iZone_0][MESH_0]->vertex[iMarker][iVertex]->GetDonorInfo(jDonor,3);
+          weight = Geometry[iZone_0][MESH_0]->vertex[iMarker][iVertex]->GetDonorCoeff(jDonor);
+          for (unsigned short iDim=0; iDim<nDim; iDim++){
+            Data[iZone_1][jPoint][iDim]+=Data[iZone_0][iPoint][iDim]*weight;
           }
         }
       }
+    }
   }
 
 }
@@ -103,43 +108,43 @@ void CInterpolator::Interpolate_Deformation(unsigned short iZone_0, unsigned sho
   unsigned short nDim = Geometry[iZone_0][MESH_0]->GetnDim();
   /*--- Loop over vertices in the interface marker (zone 0) ---*/
   for (iMarker = 0; iMarker < config[iZone_0]->GetnMarker_All(); iMarker++){
-      if (config[iZone_0]->GetMarker_All_FSIinterface(iMarker) == YES){
-        for (iVertex = 0; iVertex<Geometry[iZone_0][MESH_0]->GetnVertex(iMarker); iVertex++) {
-          iPoint =Geometry[iZone_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
-          /*--- Set NewCoord to 0 ---*/
-          for (iDim=0; iDim<nDim; iDim++) NewVarCoord[iDim]=0.0;
-          /*--- Loop over vertices in the interface marker (zone 1) --*/
-          for (unsigned short jDonor = 0; jDonor< Geometry[iZone_0][MESH_0]->vertex[iMarker][iVertex]->GetnDonorPoints(); jDonor++){
-            iZone_1 = Geometry[iZone_0][MESH_0]->vertex[iMarker][iVertex]->GetDonorInfo(jDonor,0);
-            jPoint = Geometry[iZone_0][MESH_0]->vertex[iMarker][iVertex]->GetDonorInfo(jDonor,1);
-            jMarker = Geometry[iZone_0][MESH_0]->vertex[iMarker][iVertex]->GetDonorInfo(jDonor,2);
-            jVertex = Geometry[iZone_0][MESH_0]->vertex[iMarker][iVertex]->GetDonorInfo(jDonor,3);
-            weight = Geometry[iZone_0][MESH_0]->vertex[iMarker][iVertex]->GetDonorCoeff(jDonor);
-            /* Get translation and rotation from the solution */
-            VarCoord = Geometry[iZone_1][MESH_0]->vertex[jMarker][jVertex]->GetVarCoord();
-            VarRot =   Geometry[iZone_1][MESH_0]->vertex[jMarker][jVertex]->GetVarRot();
+    if (config[iZone_0]->GetMarker_All_FSIinterface(iMarker) == YES){
+      for (iVertex = 0; iVertex<Geometry[iZone_0][MESH_0]->GetnVertex(iMarker); iVertex++) {
+        iPoint =Geometry[iZone_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
+        /*--- Set NewCoord to 0 ---*/
+        for (iDim=0; iDim<nDim; iDim++) NewVarCoord[iDim]=0.0;
+        /*--- Loop over vertices in the interface marker (zone 1) --*/
+        for (unsigned short jDonor = 0; jDonor< Geometry[iZone_0][MESH_0]->vertex[iMarker][iVertex]->GetnDonorPoints(); jDonor++){
+          iZone_1 = Geometry[iZone_0][MESH_0]->vertex[iMarker][iVertex]->GetDonorInfo(jDonor,0);
+          jPoint = Geometry[iZone_0][MESH_0]->vertex[iMarker][iVertex]->GetDonorInfo(jDonor,1);
+          jMarker = Geometry[iZone_0][MESH_0]->vertex[iMarker][iVertex]->GetDonorInfo(jDonor,2);
+          jVertex = Geometry[iZone_0][MESH_0]->vertex[iMarker][iVertex]->GetDonorInfo(jDonor,3);
+          weight = Geometry[iZone_0][MESH_0]->vertex[iMarker][iVertex]->GetDonorCoeff(jDonor);
+          /* Get translation and rotation from the solution */
+          VarCoord = Geometry[iZone_1][MESH_0]->vertex[jMarker][jVertex]->GetVarCoord();
+          VarRot =   Geometry[iZone_1][MESH_0]->vertex[jMarker][jVertex]->GetVarRot();
 
-            for (iDim=0; iDim<nDim; iDim++) distance[iDim]=0.0;
+          for (iDim=0; iDim<nDim; iDim++) distance[iDim]=0.0;
 
-            for (iDim=0; iDim<nDim; iDim++){
-              NewVarCoord[iDim]+=VarCoord[iDim]*weight;
-              distance[iDim] = Geometry[iZone_0][MESH_0]->vertex[iMarker][iVertex]->GetCoord(iDim)-Geometry[iZone_1][MESH_0]->node[jPoint]->GetCoord(iDim);
-            }
-            /*--- Add contribution of rotation (cross product of donor point rotation and distance to donor point) ---*/
-            if (nDim==2){
-              NewVarCoord[0]+=weight*(-distance[1]*VarRot[2]);
-              NewVarCoord[1]+=weight*(distance[0]*VarRot[2]);
-            }
-            if (nDim==3){
-              NewVarCoord[0]+=weight*(distance[2]*VarRot[1]-distance[1]*VarRot[2]);
-              NewVarCoord[1]+=weight*(distance[0]*VarRot[2]-distance[2]*VarRot[0]);
-              NewVarCoord[2]+=weight*(distance[1]*VarRot[0]-distance[0]*VarRot[1]);
-            }
+          for (iDim=0; iDim<nDim; iDim++){
+            NewVarCoord[iDim]+=VarCoord[iDim]*weight;
+            distance[iDim] = Geometry[iZone_0][MESH_0]->vertex[iMarker][iVertex]->GetCoord(iDim)-Geometry[iZone_1][MESH_0]->node[jPoint]->GetCoord(iDim);
           }
-          // Or introduce deformation vector that stores this.
-          Geometry[iZone_0][MESH_0]->vertex[iMarker][iVertex]->SetVarCoord(NewVarCoord);
+          /*--- Add contribution of rotation (cross product of donor point rotation and distance to donor point) ---*/
+          if (nDim==2){
+            NewVarCoord[0]+=weight*(-distance[1]*VarRot[2]);
+            NewVarCoord[1]+=weight*(distance[0]*VarRot[2]);
+          }
+          if (nDim==3){
+            NewVarCoord[0]+=weight*(distance[2]*VarRot[1]-distance[1]*VarRot[2]);
+            NewVarCoord[1]+=weight*(distance[0]*VarRot[2]-distance[2]*VarRot[0]);
+            NewVarCoord[2]+=weight*(distance[1]*VarRot[0]-distance[0]*VarRot[1]);
+          }
         }
+        // Or introduce deformation vector that stores this.
+        Geometry[iZone_0][MESH_0]->vertex[iMarker][iVertex]->SetVarCoord(NewVarCoord);
       }
+    }
   }
 
   // must be called later:
@@ -174,10 +179,7 @@ void CInterpolator::SetData(unsigned short iZone, unsigned long iPoint, unsigned
 
 
 /* Nearest Neighbor Interpolator */
-CNearestNeighbor::CNearestNeighbor(CGeometry ***geometry_container, CConfig **config, unsigned short nZone) :
-    CInterpolator(geometry_container, config, nZone){
-
-	Set_TransferCoeff(ZONE_0, ZONE_1,config);
+CNearestNeighbor::CNearestNeighbor(CGeometry ***geometry_container, CConfig **config, unsigned short zone0,unsigned short zone1,unsigned short nZone) :  CInterpolator(geometry_container, config, zone0,zone1,nZone){
 
 }
 
