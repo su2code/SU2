@@ -90,7 +90,7 @@ void CInterpolator::Interpolate_Data(unsigned short iZone_0, unsigned short iZon
       if (config[iZone_0]->GetMarker_All_FSIinterface(iMarker) == YES){
         for (iVertex = 0; iVertex<Geometry[iZone_0]->GetnVertex(iMarker); iVertex++) {
           iPoint =Geometry[iZone_0]->vertex[iMarker][iVertex]->GetNode();
-          for (unsigned short jDonor = 0; jDonor< Geometry[iZone_0]->vertex[iMarker][iVertex]->GetnDonor(); jDonor++){
+          for (unsigned short jDonor = 0; jDonor< Geometry[iZone_0]->vertex[iMarker][iVertex]->GetnDonorPoints(); jDonor++){
             /* Unpack info */
             iZone_1 = Geometry[iZone_0]->vertex[iMarker][iVertex]->GetDonorInfo(jDonor,0);
             jPoint = Geometry[iZone_0]->vertex[iMarker][iVertex]->GetDonorInfo(jDonor,1);
@@ -111,7 +111,7 @@ void CInterpolator::Interpolate_Deformation(unsigned short iZone_0, unsigned sho
 
   unsigned long GlobalIndex, iPoint, i2Point, jPoint, j2Point, iVertex, jVertex;
   unsigned short iMarker, jMarker, iDim;
-  double *NewVarCoord = {0.0,0.0,0.0}, *VarCoord, *VarRot, *distance={0.0,0.0,0.0};
+  double *NewVarCoord = NULL, *VarCoord, *VarRot, *distance = NULL;
   double weight;
   unsigned short nDim = Geometry[iZone_0]->GetnDim();
   /*--- Loop over vertices in the interface marker (zone 0) ---*/
@@ -122,7 +122,7 @@ void CInterpolator::Interpolate_Deformation(unsigned short iZone_0, unsigned sho
           /*--- Set NewCoord to 0 ---*/
           for (iDim=0; iDim<nDim; iDim++) NewVarCoord[iDim]=0.0;
           /*--- Loop over vertices in the interface marker (zone 1) --*/
-          for (unsigned short jDonor = 0; jDonor< Geometry[iZone_0]->vertex[iMarker][iVertex]->GetnDonor(); jDonor++){
+          for (unsigned short jDonor = 0; jDonor< Geometry[iZone_0]->vertex[iMarker][iVertex]->GetnDonorPoints(); jDonor++){
             iZone_1 = Geometry[iZone_0]->vertex[iMarker][iVertex]->GetDonorInfo(jDonor,0);
             jPoint = Geometry[iZone_0]->vertex[iMarker][iVertex]->GetDonorInfo(jDonor,1);
             jMarker = Geometry[iZone_0]->vertex[iMarker][iVertex]->GetDonorInfo(jDonor,2);
@@ -130,8 +130,13 @@ void CInterpolator::Interpolate_Deformation(unsigned short iZone_0, unsigned sho
             weight = Geometry[iZone_0]->vertex[iMarker][iVertex]->GetDonorCoeff(jDonor);
             /* Get translation and rotation from the solution */
             VarCoord = Geometry[iZone_1]->vertex[jMarker][jVertex]->GetVarCoord();
-            VarRot = Geometry[iZone_1]->vertex[jMarker][jVertex]->GetAuxVar(); // Use Aux var to store rotation vector.
-            distance = {0.0,0.0,0.0};
+            // This is a fix so it compiles... But it still needs to be developed.
+            VarRot[0] = Geometry[iZone_1]->vertex[jMarker][jVertex]->GetAuxVar(); // Use Aux var to store rotation vector.
+            VarRot[1] = Geometry[iZone_1]->vertex[jMarker][jVertex]->GetAuxVar(); // Use Aux var to store rotation vector.
+            VarRot[2] = Geometry[iZone_1]->vertex[jMarker][jVertex]->GetAuxVar(); // Use Aux var to store rotation vector.
+            distance[0] = 0.0;
+            distance[1] = 0.0;
+            distance[2] = 0.0;
             for (iDim=0; iDim<nDim; iDim++){
               NewVarCoord[iDim]+=VarCoord[iDim]*weight;
               distance[iDim] = Geometry[iZone_0]->vertex[iMarker][iVertex]->GetCoord(iDim)-Geometry[iZone_1]->node[jPoint]->GetCoord(iDim);
@@ -158,36 +163,36 @@ void CInterpolator::Interpolate_Deformation(unsigned short iZone_0, unsigned sho
 
 }
 
-void CInterpolator::Interpolate_Solution( unsigned short iZone_dest, CConfig **config, CSolver **solver_container){
-  unsigned long iPoint, jPoint, jVertex, iMarker, iVertex;
-  unsigned short jMarker, iZone_source, nVar = solver_container[iZone_dest]->GetnVar();
-  double weight=0.0, dest_val=0.0, src_val=0.0;
-  /*--- Loop through the interface vertices in the destination zone ---*/
-  for (iMarker = 0; iMarker < config[iZone_dest]->GetnMarker_All(); iMarker++){
-    if (config[iZone_dest]->GetMarker_All_FSIinterface(iMarker) == YES){
-      for (iVertex = 0; iVertex<Geometry[iZone_dest]->GetnVertex(iMarker); iVertex++) {
-        /*--- Set the values at the interface point to 0 initially ---*/
-        iPoint =Geometry[iZone_dest]->vertex[iMarker][iVertex]->GetNode();
-        for (unsigned short iVar=0; iVar<nVar; iVar++)
-          solver_container[iZone_dest]->node[iPoint]->SetSolution(iVar,0.0);
-        /*--- Loop through donor points ---*/
-        for (unsigned short jDonor = 0; jDonor< Geometry[iZone_dest]->vertex[iMarker][iVertex]->GetnDonorPoints(); jDonor++){
-          /*--- unpack Donor Point info ---*/
-          iZone_source = Geometry[iZone_dest]->vertex[iMarker][iVertex]->GetDonorInfo(jDonor,0);
-          jPoint = Geometry[iZone_dest]->vertex[iMarker][iVertex]->GetDonorInfo(jDonor,1);
-          weight = Geometry[iZone_dest]->vertex[iMarker][iVertex]->GetDonorCoeff(jDonor);
-          for (unsigned short iVar=0; iVar<nVar; iVar++){
-            /*--- Increment the value of the solution ---*/
-            dest_val=solver_container[iZone_dest]->node[iPoint]->GetSolution(iVar);
-            dest_val+=solver_container[iZone_source]->node[jPoint]->GetSolution(iVar)*weight;
-            /*--- Set the value in the solution container ---*/
-            solver_container[iZone_dest]->node[iPoint]->SetSolution(iVar,dest_val);
-          }
-        }
-      }
-    }
-  }
-}
+//void CInterpolator::Interpolate_Solution( unsigned short iZone_dest, CConfig **config, CSolver **solver_container){
+//  unsigned long iPoint, jPoint, jVertex, iMarker, iVertex;
+//  unsigned short jMarker, iZone_source, nVar = solver_container[iZone_dest]->GetnVar();
+//  double weight=0.0, dest_val=0.0, src_val=0.0;
+//  /*--- Loop through the interface vertices in the destination zone ---*/
+//  for (iMarker = 0; iMarker < config[iZone_dest]->GetnMarker_All(); iMarker++){
+//    if (config[iZone_dest]->GetMarker_All_FSIinterface(iMarker) == YES){
+//      for (iVertex = 0; iVertex<Geometry[iZone_dest]->GetnVertex(iMarker); iVertex++) {
+//        /*--- Set the values at the interface point to 0 initially ---*/
+//        iPoint =Geometry[iZone_dest]->vertex[iMarker][iVertex]->GetNode();
+//        for (unsigned short iVar=0; iVar<nVar; iVar++)
+//          solver_container[iZone_dest]->node[iPoint]->SetSolution(iVar,0.0);
+//        /*--- Loop through donor points ---*/
+//        for (unsigned short jDonor = 0; jDonor< Geometry[iZone_dest]->vertex[iMarker][iVertex]->GetnDonorPoints(); jDonor++){
+//          /*--- unpack Donor Point info ---*/
+//          iZone_source = Geometry[iZone_dest]->vertex[iMarker][iVertex]->GetDonorInfo(jDonor,0);
+//          jPoint = Geometry[iZone_dest]->vertex[iMarker][iVertex]->GetDonorInfo(jDonor,1);
+//          weight = Geometry[iZone_dest]->vertex[iMarker][iVertex]->GetDonorCoeff(jDonor);
+//          for (unsigned short iVar=0; iVar<nVar; iVar++){
+//            /*--- Increment the value of the solution ---*/
+//            dest_val=solver_container[iZone_dest]->node[iPoint]->GetSolution(iVar);
+//            dest_val+=solver_container[iZone_source]->node[jPoint]->GetSolution(iVar)*weight;
+//            /*--- Set the value in the solution container ---*/
+//            solver_container[iZone_dest]->node[iPoint]->SetSolution(iVar,dest_val);
+//          }
+//        }
+//      }
+//    }
+//  }
+//}
 
 
 void CInterpolator::Set_TransferMatrix(unsigned short iZone_0, unsigned short iZone_1, CConfig **config){
@@ -198,7 +203,7 @@ double CInterpolator::GetData(unsigned short iZone, unsigned long iPoint, unsign
   if (Data !=NULL)
     return Data[iZone][iPoint][iDim];
   else
-    return NULL;
+    return 0.0; // Check this.
 }
 
 double* CInterpolator::GetData(unsigned short iZone, unsigned long iPoint){
@@ -227,7 +232,7 @@ void CNearestNeighbor::Set_TransferMatrix(unsigned short iZone_0, unsigned short
   unsigned short iMarker, iDim, jMarker;
   unsigned short nDim = Geometry[iZone_0]->GetnDim(), iDonor, jDonor;
   double distance = 0.0, last_distance=-1.0;
-  double *val = 1.0;
+//  double *val = 1.0;
   unsigned short int donorindex = 0;
   /*--- Loop through the vertices in Interface of both zones
    * for Nearest Neighbor each vertex has only one donor point, but for other types of
@@ -250,7 +255,11 @@ void CNearestNeighbor::Set_TransferMatrix(unsigned short iZone_0, unsigned short
                   distance+=pow(Geometry[iZone_1]->vertex[jMarker][jVertex]->GetCoord(iDim)-Geometry[iZone_0]->vertex[iMarker][iVertex]->GetCoord(iDim),2.0);
                 if ((last_distance==-1.0) or (distance<last_distance)){
                   last_distance=distance;
-                  nn ={iZone_1, jPoint,jMarker,jVertex};
+                  //nn ={iZone_1, jPoint,jMarker,jVertex};
+                  nn[0] = iZone_1;
+                  nn[1] = jPoint;
+                  nn[2] = jMarker;
+                  nn[3] = jVertex;
                 }
               }
             }
@@ -280,7 +289,11 @@ void CNearestNeighbor::Set_TransferMatrix(unsigned short iZone_0, unsigned short
                   distance+=pow(Geometry[iZone_0]->vertex[jMarker][jVertex]->GetCoord(iDim)-Geometry[iZone_1]->vertex[iMarker][iVertex]->GetCoord(iDim),2.0);
                 if ((last_distance==-1.0) or (distance<last_distance)){
                   last_distance=distance;
-                  nn ={iZone_1, jPoint,jMarker,jVertex};
+                  //nn ={iZone_1, jPoint,jMarker,jVertex};
+                  nn[0] = iZone_1;
+                  nn[1] = jPoint;
+                  nn[2] = jMarker;
+                  nn[3] = jVertex;
                 }
               }
             }
