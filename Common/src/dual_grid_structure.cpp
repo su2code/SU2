@@ -509,7 +509,7 @@ void CVertex::AddNormal(double *val_face_normal) {
 	if (nDim == 3) Normal[2] += val_face_normal[2];
 }
 
-inline void CVertex::Allocate_DonorInfo(void){
+void CVertex::Allocate_DonorInfo(void){
   Donor_Info = new unsigned long*[nDonor_Points];
   Donor_Coeff = new double[nDonor_Points];
   for (unsigned short iDonor=0; iDonor<nDonor_Points; iDonor++){
