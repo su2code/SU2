@@ -38,33 +38,44 @@ CInterpolator::CInterpolator(void){
 CInterpolator::~CInterpolator(void){}
 
 
-CInterpolator::CInterpolator(CGeometry ***geometry_container, CConfig **config, unsigned short zone0,unsigned short zone1, unsigned short val_nZone){
-  unsigned short nDim = geometry_container[zone0][MESH_0]->GetnDim();
+CInterpolator::CInterpolator(CGeometry ***geometry_container, CConfig **config, unsigned short iZone_0,unsigned short iZone_1, unsigned short val_nZone){
+
   /* Store pointers*/
 	Geometry = geometry_container;
 	nZone = val_nZone;
 
-	/*--- Initialize transfer coefficients between the zones ---*/
-  Set_TransferCoeff(zone0,zone1,config);
+  /*--- Initialize transfer coefficients between the zones ---*/
+	/* For all child classes, run Set_TransferCoeff within the constructor */
+  // Set_TransferCoeff(iZone_0,iZone_1,config);
 
+  /*--- Initialize Data vectors to 0, by default with length = nDim ---*/
+  //InitializeData(iZone_0,iZone_1,nDim);
+	Data = NULL;
 
-	/*--- Initialize Data vectors to 0 ---*/
-	Data = new double**[val_nZone];
-	Data[zone0] = new double*[Geometry[zone0][MESH_0]->GetnPoint()];
-	Data[zone1] = new double*[Geometry[zone1][MESH_0]->GetnPoint()];
+}
 
-	for (unsigned long iPoint =0; iPoint< Geometry[zone0][MESH_0]->GetnPoint(); iPoint++){
-	  Data[zone0][iPoint] = new double[nDim];
-	  for (unsigned short iDim=0; iDim<nDim; iDim++){
-	    Data[zone0][iPoint][iDim]=0.0;
-	  }
-	}
+void CInterpolator::InitializeData(unsigned short iZone_0, unsigned short iZone_1, unsigned short nVar){
+  if (nVar>0){
+    /*--- Initialize Data vectors to 0 ---*/
+    Data = new double**[nZone];
+    Data[iZone_0] = new double*[Geometry[iZone_0][MESH_0]->GetnPoint()];
+    Data[iZone_1] = new double*[Geometry[iZone_1][MESH_0]->GetnPoint()];
 
-  for (unsigned long iPoint =0; iPoint< Geometry[zone1][MESH_0]->GetnPoint(); iPoint++){
-    Data[zone1][iPoint] = new double[nDim];
-    for (unsigned short iDim=0; iDim<nDim; iDim++){
-      Data[zone1][iPoint][iDim]=0.0;
+    for (unsigned long iPoint =0; iPoint< Geometry[iZone_0][MESH_0]->GetnPoint(); iPoint++){
+      Data[iZone_0][iPoint] = new double[nVar];
+      for (unsigned short iVar=0; iVar<nVar; iVar++){
+        Data[iZone_0][iPoint][iVar]=0.0;
+      }
     }
+
+    for (unsigned long iPoint =0; iPoint< Geometry[iZone_1][MESH_0]->GetnPoint(); iPoint++){
+      Data[iZone_1][iPoint] = new double[nVar];
+      for (unsigned short iVar=0; iVar<nVar; iVar++){
+        Data[iZone_1][iPoint][iVar]=0.0;
+      }
+    }
+  }else{
+    Data = NULL;
   }
 
 }
@@ -179,8 +190,13 @@ void CInterpolator::SetData(unsigned short iZone, unsigned long iPoint, unsigned
 
 
 /* Nearest Neighbor Interpolator */
-CNearestNeighbor::CNearestNeighbor(CGeometry ***geometry_container, CConfig **config, unsigned short zone0,unsigned short zone1,unsigned short nZone) :  CInterpolator(geometry_container, config, zone0,zone1,nZone){
+CNearestNeighbor::CNearestNeighbor(CGeometry ***geometry_container, CConfig **config,  unsigned short iZone_0,unsigned short iZone_1,unsigned short nZone) :  CInterpolator(geometry_container, config, iZone_0,iZone_1,nZone){
+  unsigned short nDim = geometry_container[iZone_0][MESH_0]->GetnDim();
+  /*--- Initialize transfer coefficients between the zones ---*/
+  Set_TransferCoeff(iZone_0,iZone_1,config);
 
+  /*--- For fluid-structure interaction data interpolated with have nDim dimensions ---*/
+  InitializeData(iZone_0,iZone_1,nDim);
 }
 
 CNearestNeighbor::~CNearestNeighbor(){}
@@ -236,7 +252,7 @@ void CNearestNeighbor::Set_TransferCoeff(unsigned short iZone_0, unsigned short 
 		  for (jVertex = 0; jVertex<Geometry[iZone_1][MESH_0]->GetnVertex(markFEA); jVertex++) {
         jPoint =Geometry[iZone_1][MESH_0]->vertex[markFEA][jVertex]->GetNode();
         distance = 0.0;
-        for (iDim=0; iDim<nDim;iDim++)
+        for (iDim=0; iDim<nDim; iDim++)
           distance+=pow(Geometry[iZone_1][MESH_0]->vertex[markFEA][jVertex]->GetCoord(iDim)-Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->GetCoord(iDim),2.0);
         if ((last_distance==-1.0) or (distance<last_distance)){
           last_distance=distance;

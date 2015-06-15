@@ -69,12 +69,17 @@ public:
   /*!
  * \brief Constructor of the class.
  */
-  CInterpolator(CGeometry ***geometry_container, CConfig **config, unsigned short zone0,unsigned short zone1, unsigned short nZone);
+  CInterpolator(CGeometry ***geometry_container, CConfig **config,  unsigned short iZone_0,unsigned short iZone_1, unsigned short nZone);
 
   /*!
    * \brief Destructor of the class.
    */
   ~CInterpolator(void);
+
+  /*!
+     * \brief initialize the Data structure to the appropriate size.
+     */
+  void InitializeData(unsigned short iZone_0, unsigned short iZone_1, unsigned short nVar);
 
   /*!
    * \brief interpolate Data from one mesh to another
@@ -108,6 +113,8 @@ public:
   void SetData(unsigned short iZone, unsigned long iPoint, unsigned short iDim, double val);
 
 
+
+
 };
 
 
@@ -117,7 +124,7 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CNearestNeighbor(CGeometry ***geometry_container, CConfig **config, unsigned short zone0,unsigned short zone1,unsigned short nZone);
+  CNearestNeighbor(CGeometry ***geometry_container, CConfig **config,  unsigned short iZone_0,unsigned short iZone_1,unsigned short nZone);
 
   /*!
    * \brief Destructor of the class.
