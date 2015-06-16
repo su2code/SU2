@@ -265,7 +265,7 @@ void CNearestNeighbor::Set_TransferCoeff(unsigned short iZone_0, unsigned short 
 
       /*--- Set the information of the nearest neighbor (donorindex = 0)  ---*/
 		  /*--- Enable this to check that we are doing it fine ---*/
-      cout << "The distance from the vertex " << iVertex << " in the Flow marker " << markFlow << " to the vertex " << nn[3] << " in the FEA marker " << markFEA << " is " << last_distance << endl;
+      //cout << "The distance from the vertex " << iVertex << " in the Flow marker " << markFlow << " to the vertex " << nn[3] << " in the FEA marker " << markFEA << " is " << last_distance << endl;
 
       Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->SetDonorInfo(donorindex,nn);
       Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->SetDonorCoeff(donorindex,1.0);
@@ -294,7 +294,8 @@ void CNearestNeighbor::Set_TransferCoeff(unsigned short iZone_0, unsigned short 
           nn[3] = jVertex; /* vertex index within marker of the donor point */
         }
       }
-      cout << "The distance from the vertex " << iVertex << " in the FEA marker " << markFEA << " to the vertex " << nn[3] << " in the Flow marker " << markFlow << " is " << last_distance << endl;
+		  /*--- Enable this to check that we are doing it fine ---*/
+      //cout << "The distance from the vertex " << iVertex << " in the FEA marker " << markFEA << " to the vertex " << nn[3] << " in the Flow marker " << markFlow << " is " << last_distance << endl;
       /*--- Set the information of the nearest neighbor ---*/
       Geometry[iZone_1][MESH_0]->vertex[markFEA][iVertex]->SetDonorInfo(donorindex,nn);
       Geometry[iZone_1][MESH_0]->vertex[markFEA][iVertex]->SetDonorCoeff(donorindex,1.0);
