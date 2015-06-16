@@ -256,10 +256,10 @@ void CNearestNeighbor::Set_TransferCoeff(unsigned short iZone_0, unsigned short 
           distance+=pow(Geometry[iZone_1][MESH_0]->vertex[markFEA][jVertex]->GetCoord(iDim)-Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->GetCoord(iDim),2.0);
         if ((last_distance==-1.0) or (distance<last_distance)){
           last_distance=distance;
-          nn[0] = iZone_1;
-          nn[1] = jPoint;
-          nn[2] = markFEA;
-          nn[3] = jVertex;
+          nn[0] = iZone_1; /* Zone of the donor point */
+          nn[1] = jPoint; /* global index of the donor point */
+          nn[2] = markFEA; /* marker of the donor point */
+          nn[3] = jVertex; /* vertex index within marker of the donor point */
         }
 		  }
 
@@ -279,32 +279,26 @@ void CNearestNeighbor::Set_TransferCoeff(unsigned short iZone_0, unsigned short 
       /*--- Allocate memory with known number of donor points (1 for nearest neighbor) ---*/
       Geometry[iZone_1][MESH_0]->vertex[markFEA][iVertex]->SetnDonorPoints(1);
       Geometry[iZone_1][MESH_0]->vertex[markFEA][iVertex]->Allocate_DonorInfo();
-
       /*--- Loop over vertices in the interface marker (zone 0) --*/
-
+      Geometry[iZone_1][MESH_0]->vertex[markFEA][iVertex]->SetDonorInfo(donorindex,nn);
 		  for (jVertex = 0; jVertex<Geometry[iZone_0][MESH_0]->GetnVertex(markFlow); jVertex++) {
         jPoint =Geometry[iZone_0][MESH_0]->vertex[markFlow][jVertex]->GetNode();
         distance = 0.0;
-        for (iDim=0; iDim<nDim;iDim++)
+        for (iDim=0; iDim<nDim; iDim++)
           distance+=pow(Geometry[iZone_0][MESH_0]->vertex[markFlow][jVertex]->GetCoord(iDim)-Geometry[iZone_1][MESH_0]->vertex[markFEA][iVertex]->GetCoord(iDim),2.0);
-        if ((last_distance==-1.0) or (distance<last_distance)){
+        if ((jVertex==0) or (distance<last_distance)){
           last_distance=distance;
-          nn[0] = iZone_1;
-          nn[1] = jPoint;
-          nn[2] = jMarker;
-          nn[3] = jVertex;
+          nn[0] = iZone_0; /* Zone of the donor point */
+          nn[1] = jPoint; /* global index of the donor point */
+          nn[2] = markFlow; /* marker of the donor point */
+          nn[3] = jVertex; /* vertex index within marker of the donor point */
         }
-		  }
-
-      /*--- Set the information of the nearest neighbor ---*/
-		  /*--- Enable this to check that we are doing it fine ---*/
+      }
       cout << "The distance from the vertex " << iVertex << " in the FEA marker " << markFEA << " to the vertex " << nn[3] << " in the Flow marker " << markFlow << " is " << last_distance << endl;
-      Geometry[iZone_1][MESH_0]->vertex[iMarker][iVertex]->SetDonorInfo(donorindex,nn);
-      Geometry[iZone_1][MESH_0]->vertex[iMarker][iVertex]->SetDonorCoeff(donorindex,1.0);
+      /*--- Set the information of the nearest neighbor ---*/
+      Geometry[iZone_1][MESH_0]->vertex[markFEA][iVertex]->SetDonorInfo(donorindex,nn);
+      Geometry[iZone_1][MESH_0]->vertex[markFEA][iVertex]->SetDonorCoeff(donorindex,1.0);
     }
-
 	}
-
-
 }
 

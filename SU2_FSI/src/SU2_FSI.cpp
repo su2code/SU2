@@ -258,7 +258,8 @@ int main(int argc, char *argv[]) {
 
 	  }
 
-	  interpolator_container[iZone] = new CNearestNeighbor(geometry_container,config_container,ZONE_0,ZONE_1,nZone);
+	  if (!config_container[ZONE_0]->GetMatchingMesh())
+	    interpolator_container[iZone] = new CNearestNeighbor(geometry_container,config_container,ZONE_0,ZONE_1,nZone);
 
 	  /*--- For the time-spectral solver, set the grid node velocities. ---*/
 
