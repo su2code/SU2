@@ -452,13 +452,30 @@ CVertex::CVertex(unsigned long val_point, unsigned short val_nDim) : CDualGrid(v
 	/*--- Set to zero the variation of the coordinates ---*/
 	VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
 
+	/*--- Set to NULL variation of the rotation  ---*/
+	VarRot = NULL;
+
+	/*--- Set to NULL donor arrays for interpolation ---*/
+  Donor_Info = NULL;
+  Donor_Coeff = NULL;
+  nDonor_Points = 0;
 }
 
 CVertex::~CVertex() {
   
 	if (Normal != NULL) delete[] Normal;
 	if (Nodes != NULL) delete[] Nodes;
-  
+
+  /*---  donor arrays for interpolation ---*/
+  if (Donor_Info != NULL)
+    for (unsigned long iDonor=0; iDonor<nDonor_Points; iDonor++)
+      delete[] Donor_Info[iDonor];
+  if (Donor_Coeff != NULL) delete[] Donor_Coeff;
+
+  if (VarRot!=NULL)
+    delete[] VarRot;
+
+
 }
 
 void CVertex::SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG, double *val_coord_Elem_CG) {
@@ -496,4 +513,13 @@ void CVertex::AddNormal(double *val_face_normal) {
 	Normal[0] += val_face_normal[0]; 
 	Normal[1] += val_face_normal[1];
 	if (nDim == 3) Normal[2] += val_face_normal[2];
+}
+
+void CVertex::Allocate_DonorInfo(void){
+  Donor_Info = new unsigned long*[nDonor_Points];
+  Donor_Coeff = new double[nDonor_Points];
+  for (unsigned short iDonor=0; iDonor<nDonor_Points; iDonor++){
+    Donor_Info[iDonor]=new unsigned long[4];
+  }
+
 }

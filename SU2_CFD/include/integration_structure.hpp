@@ -62,6 +62,7 @@ protected:
 	double Old_Func,	/*!< \brief Old value of the objective function (the function which is monitored). */
 	New_Func;			/*!< \brief Current value of the objective function (the function which is monitored). */
 	bool Convergence,		/*!< \brief To indicate if the flow solver (direct, adjoint, or linearized) has converged or not. */
+	Convergence_FSI,		/*!< \brief To indicate if the FSI problem has converged or not. */
 	Convergence_FullMG;		/*!< \brief To indicate if the Full Multigrid has converged and it is necessary to add a new level. */
 	double InitResidual;	/*!< \brief Initial value of the residual to evaluate the convergence level. */
 
@@ -124,6 +125,16 @@ public:
 								unsigned long Iteration, double monitor, unsigned short iMesh);
 	
 	/*! 
+	 * \brief Do the convergence analysis to determine if the FSI problem has converged on the structural side.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] Iteration - Current iteration.
+	 * \param[in] monitor - Objective function that is use to study its convergence.
+	 */
+	void Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *fea_config, CSolver *fea_solver, unsigned long iFSIIter);
+
+
+	/*!
 	 * \brief Get the value of the convergence.
 	 * \return Level of convergence of the solution.
 	 */
@@ -137,12 +148,28 @@ public:
 	bool GetConvergence(void);
 	
 	/*! 
+	 * \brief Get the indicator of the convergence for the Fluid-Structure Interaction problem.
+	 * \return <code>TRUE</code> means that the convergence criteria is satisfied;
+	 *         otherwise <code>FALSE</code>.
+	 */
+	bool GetConvergence_FSI(void);
+
+	/*!
 	 * \brief Set the indicator of the convergence.
 	 * \param[in] value - <code>TRUE</code> means that the convergence criteria is satisfied; 
 	 *            otherwise <code>FALSE</code>.
 	 */
 	void SetConvergence(bool value);
 	
+
+	/*!
+	 * \brief Set the indicator of the convergence for FSI.
+	 * \param[in] valueFSI - <code>TRUE</code> means that the convergence criteria for FSI is satisfied;
+	 *            otherwise <code>FALSE</code>.
+	 */
+	void SetConvergence_FSI(bool valueFSI);
+
+
 	/*! 
 	 * \brief Get the indicator of the convergence for the full multigrid problem.
 	 * \return <code>TRUE</code> means that the convergence criteria is satisfied; 
@@ -159,6 +186,14 @@ public:
 	void SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CConfig *config, unsigned short iMesh);
 	
 	/*! 
+	 * \brief Save the structural solution at different time steps.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solution - Structural solution.
+   * \param[in] config - Definition of the particular problem.
+	 */
+	void SetStructural_Solver(CGeometry *geometry, CSolver *solver, CConfig *config, unsigned short iMesh);
+
+	/*!
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
@@ -296,6 +331,19 @@ public:
 	 */
 	virtual void SingleGrid_Iteration(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container,
 								  CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+	 * \param[in] Iteration - Current iteration.
+	 */
+	virtual void Structural_Iteration(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container,
+								  CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
+
 	
 	/*! 
 	 * \brief A virtual member.
@@ -552,6 +600,41 @@ public:
    * \param[in] InclSharedDomain - Include the shared domain in the interpolation.
    */
   void SetRestricted_EddyVisc(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
+ 
+};
+
+
+/*!
+ * \class CStructuralIntegration
+ * \brief Class for doing the numerical integration of the structural model.
+ * \author R. Sanchez.
+ * \version 3.2.9 "eagle"
+ */
+class CStructuralIntegration : public CIntegration {
+public:
+
+	/*!
+	 * \brief Constructor of the class.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CStructuralIntegration(CConfig *config);
+
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CStructuralIntegration(void);
+
+	/*!
+	 * \brief Do the numerical integration (implicit) of the structural solver.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+	 * \param[in] Iteration - Current iteration.
+	 */
+	void Structural_Iteration(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container,
+							 CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
 
 };
 

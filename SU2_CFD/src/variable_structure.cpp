@@ -266,6 +266,13 @@ void CVariable::SetSolution_Old(double *val_solution_old) {
   
 }
 
+void CVariable::SetSolution_time_n(double *val_solution_time_n) {
+
+	for (unsigned short iVar = 0; iVar < nVar; iVar++)
+		Solution_time_n[iVar] = val_solution_time_n[iVar];
+
+}
+
 void CVariable::AddResidual_Sum(double *val_residual) {
   
 	for (unsigned short iVar = 0; iVar < nVar; iVar++)

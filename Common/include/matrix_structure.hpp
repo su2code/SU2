@@ -53,7 +53,7 @@ using namespace std;
  * \version 3.2.9 "eagle"
  */
 class CSysMatrix {
-private:
+protected:
 	unsigned long nPoint,   /*!< \brief Number of points in the grid. */
 	nPointDomain,           /*!< \brief Number of points in the grid. */
 	nVar,                   /*!< \brief Number of variables. */
@@ -514,7 +514,7 @@ private:
 	CSysMatrix* sparse_matrix; /*!< \brief pointer to matrix that defines the preconditioner. */
   CGeometry* geometry; /*!< \brief pointer to matrix that defines the geometry. */
 	CConfig* config; /*!< \brief pointer to matrix that defines the config. */
-  
+
 public:
 	
 	/*!
@@ -566,5 +566,6 @@ public:
 	 */
 	void operator()(const CSysVector & u, CSysVector & v) const;
 };
+
 
 #include "matrix_structure.inl"

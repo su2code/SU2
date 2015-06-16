@@ -63,6 +63,8 @@ private:
   unsigned short iZone, nZone; /*!< \brief Number of zones in the mesh. */
 	double OrderMagResidual; /*!< \brief Order of magnitude reduction. */
 	double MinLogResidual; /*!< \brief Minimum value of the log residual. */
+	double OrderMagResidualFSI; /*!< \brief Order of magnitude reduction. */
+	double MinLogResidualFSI; /*!< \brief Minimum value of the log residual. */
 	double EA_ScaleFactor; /*!< \brief Equivalent Area scaling factor */
 	double* EA_IntLimit; /*!< \brief Integration limits of the Equivalent Area computation */
   double AdjointLimit; /*!< \brief Adjoint variable limit */
@@ -73,6 +75,7 @@ private:
   unsigned short nFFD_Iter; 	/*!< \brief Iteration for the point inversion problem. */
   double FFD_Tol;  	/*!< \brief Tolerance in the point inversion problem. */
   bool Viscous_Limiter_Flow, Viscous_Limiter_Turb;			/*!< \brief Viscous limiters. */
+  bool Write_Conv_FSI;			/*!< \brief Write convergence file for FSI problems. */
   bool Adjoint,			/*!< \brief Flag to know if the code is solving an adjoint problem. */
   Viscous,                /*!< \brief Flag to know if the code is solving a viscous problem. */
   EquivArea,				/*!< \brief Flag to know if the code is going to compute and plot the equivalent area. */
@@ -103,6 +106,7 @@ private:
 	double Position_Plane; /*!< \brief Position of the Near-Field (y coordinate 2D, and z coordinate 3D). */
 	double WeightCd; /*!< \brief Weight of the drag coefficient. */
 	unsigned short Unsteady_Simulation;	/*!< \brief Steady or unsteady (time stepping or dual time stepping) computation. */
+	unsigned short Dynamic_Analysis;	/*!< \brief Static or dynamic structural analysis. */
 	unsigned short nStartUpIter;	/*!< \brief Start up iterations using the fine grid. */
   double FixAzimuthalLine; /*!< \brief Fix an azimuthal line due to misalignments of the nearfield. */
 	double *DV_Value;		/*!< \brief Previous value of the design variable. */
@@ -128,6 +132,9 @@ private:
 	double New_Elem_Adapt;			/*!< \brief Elements to adapt in the numerical grid adaptation process. */
 	double Delta_UnstTime,			/*!< \brief Time step for unsteady computations. */
 	Delta_UnstTimeND;						/*!< \brief Time step for unsteady computations (non dimensional). */
+  double Delta_DynTime,		/*!< \brief Time step for dynamic structural computations. */
+	Total_DynTime,				/*!< \brief Total time for dynamic structural computations. */
+	Current_DynTime;			/*!< \brief Global time of the dynamic structural computations. */
 	double Total_UnstTime,						/*!< \brief Total time for unsteady computations. */
 	Total_UnstTimeND;								/*!< \brief Total time for unsteady computations (non dimensional). */
 	double Current_UnstTime,									/*!< \brief Global time of the unsteady simulation. */
@@ -158,8 +165,11 @@ private:
 	nMarker_EngineExhaust,					/*!< \brief Number of nacelle exhaust flow markers. */
 	nMarker_EngineInflow,					/*!< \brief Number of nacelle inflow flow markers. */
   nMarker_EngineBleed,					/*!< \brief Number of nacelle inflow flow markers. */
+  nMarker_Clamped,						/*!< \brief Number of clamped markers in the FEM. */
   nMarker_Displacement,					/*!< \brief Number of displacement surface markers. */
 	nMarker_Load,					/*!< \brief Number of load surface markers. */
+	nMarker_Load_Dir,					/*!< \brief Number of load surface markers defined by magnitude and direction. */
+	nMarker_Load_Sine,					/*!< \brief Number of load surface markers defined by magnitude and direction. */
 	nMarker_FlowLoad,					/*!< \brief Number of load surface markers. */
 	nMarker_Neumann,				/*!< \brief Number of Neumann flow markers. */
 	nMarker_Neumann_Elec,				/*!< \brief Number of Neumann flow markers. */
@@ -196,8 +206,11 @@ private:
 	*Marker_EngineInflow,					/*!< \brief Engine Inflow flow markers. */
   *Marker_EngineBleed,					/*!< \brief Engine Inflow flow markers. */
   *Marker_EngineExhaust,					/*!< \brief Engine Exhaust flow markers. */
+	*Marker_Clamped,						/*!< \brief Clamped markers. */
 	*Marker_Displacement,					/*!< \brief Displacement markers. */
 	*Marker_Load,					/*!< \brief Load markers. */
+	*Marker_Load_Dir,					/*!< \brief Load markers defined in cartesian coordinates. */
+	*Marker_Load_Sine,					/*!< \brief Sine-wave loaded markers defined in cartesian coordinates. */
 	*Marker_FlowLoad,					/*!< \brief Flow Load markers. */
 	*Marker_Neumann,					/*!< \brief Neumann flow markers. */
 	*Marker_Neumann_Elec,					/*!< \brief Neumann flow markers. */
@@ -231,6 +244,12 @@ private:
   double *Heat_FluxCatalytic;  /*!< \brief Specified wall heat fluxes. */
 	double *Displ_Value;    /*!< \brief Specified displacement for displacement boundaries. */
 	double *Load_Value;    /*!< \brief Specified force for load boundaries. */
+  double *Load_Dir_Value;    /*!< \brief Specified force for load boundaries defined in cartesian coordinates. */
+	double *Load_Dir_Multiplier;    /*!< \brief Specified multiplier for load boundaries defined in cartesian coordinates. */
+	double **Load_Dir;  /*!< \brief Specified flow direction vector (unit vector) for inlet boundaries. */
+	double *Load_Sine_Amplitude;    /*!< \brief Specified amplitude for a sine-wave load. */
+	double *Load_Sine_Frequency;    /*!< \brief Specified multiplier for load boundaries defined in cartesian coordinates. */
+	double **Load_Sine_Dir;  /*!< \brief Specified flow direction vector (unit vector) for inlet boundaries. */
 	double *FlowLoad_Value;    /*!< \brief Specified force for flow load boundaries. */
   double **ActDisk_Origin;
   double *ActDisk_RootRadius;
@@ -298,6 +317,7 @@ private:
 	Kind_Gradient_Method,		/*!< \brief Numerical method for computation of spatial gradients. */
 	Kind_Linear_Solver,		/*!< \brief Numerical solver for the implicit scheme. */
 	Kind_Linear_Solver_Prec,		/*!< \brief Preconditioner of the linear solver. */
+	Kind_Linear_Solver_Prec_FSI_Struc,		/*!< \brief Preconditioner of the linear solver for the structural part in FSI problems. */
 	Kind_AdjTurb_Linear_Solver,		/*!< \brief Numerical solver for the turbulent adjoint implicit scheme. */
 	Kind_AdjTurb_Linear_Prec,		/*!< \brief Preconditioner of the turbulent adjoint linear solver. */
 	Kind_SlopeLimit,				/*!< \brief Global slope limiter. */
@@ -352,6 +372,9 @@ private:
 	Kind_Upwind_Turb,			/*!< \brief Upwind scheme for the turbulence model. */
 	Kind_Upwind_AdjTurb,		/*!< \brief Upwind scheme for the adjoint turbulence model. */
 	Kind_Upwind_Template,			/*!< \brief Upwind scheme for the template model. */
+  Kind_Solver_Fluid_FSI,		/*!< \brief Kind of solver for the fluid in FSI applications. */
+	Kind_Solver_Struc_FSI,		/*!< \brief Kind of solver for the structure in FSI applications. */
+  Kind_BGS_RelaxMethod,				/*!< \brief Kind of relaxation method for Block Gauss Seidel method in FSI problems. */
   SpatialOrder,		/*!< \brief Order of the spatial numerical integration.*/
   SpatialOrder_Flow,		/*!< \brief Order of the spatial numerical integration.*/
 	SpatialOrder_Turb,		/*!< \brief Order of the spatial numerical integration.*/
@@ -360,6 +383,7 @@ private:
 	SpatialOrder_AdjTurb,		/*!< \brief Order of the spatial numerical integration.*/
 	SpatialOrder_AdjTNE2,     /*!< \brief Order of the spatial numerical integration.*/
   SpatialOrder_AdjLevelSet;		/*!< \brief Order of the spatial numerical integration.*/
+  bool FSI_Problem;			/*!< \brief Boolean to determine whether the simulation is FSI or not. */
 
   unsigned short Kind_Turb_Model;			/*!< \brief Turbulent model definition. */
   string ML_Turb_Model_File;  /*!< \brief File containing turbulence model. */
@@ -371,6 +395,7 @@ private:
 	Kind_Inlet, *Kind_Data_Riemann;           /*!< \brief Kind of inlet boundary treatment. */
 	double Linear_Solver_Error;		/*!< \brief Min error of the linear solver for the implicit formulation. */
 	unsigned long Linear_Solver_Iter;		/*!< \brief Max iterations of the linear solver for the implicit formulation. */
+	unsigned long Linear_Solver_Iter_FSI_Struc;		/*!< \brief Max iterations of the linear solver for FSI applications and structural solver. */
 	unsigned long Linear_Solver_Restart_Frequency;   /*!< \brief Restart frequency of the linear solver for the implicit formulation. */
   double Roe_Kappa;		/*!< \brief Relaxation of the Roe scheme. */
   double Relaxation_Factor_Flow;		/*!< \brief Relaxation coefficient of the linear solver mean flow. */
@@ -438,6 +463,7 @@ private:
 	Wrt_Con_Freq,				/*!< \brief Writing convergence history frequency. */
 	Wrt_Con_Freq_DualTime;				/*!< \brief Writing convergence history frequency. */
 	bool Wrt_Unsteady;  /*!< \brief Write unsteady data adding header and prefix. */
+  bool Wrt_Dynamic;  		/*!< \brief Write dynamic data adding header and prefix. */
 	bool LowFidelitySim;  /*!< \brief Compute a low fidelity simulation. */
 	bool Restart,	/*!< \brief Restart solution (for direct, adjoint, and linearized problems).*/
 	Restart_Flow;	/*!< \brief Restart flow solution for adjoint and linearized problems. */
@@ -445,17 +471,20 @@ private:
 	nMarker_Designing,					/*!< \brief Number of markers for the objective function. */
 	nMarker_GeoEval,					/*!< \brief Number of markers for the objective function. */
 	nMarker_Plotting,					/*!< \brief Number of markers to plot. */
+	nMarker_FSIinterface,					/*!< \brief Number of markers in the FSI interface. */
   nMarker_Moving,               /*!< \brief Number of markers in motion (DEFORMING, MOVING_WALL, or FLUID_STRUCTURE). */
 	nMarker_DV;               /*!< \brief Number of markers affected by the design variables. */
   string *Marker_Monitoring,     /*!< \brief Markers to monitor. */
   *Marker_Designing,         /*!< \brief Markers to plot. */
   *Marker_GeoEval,         /*!< \brief Markers to plot. */
   *Marker_Plotting,          /*!< \brief Markers to plot. */
+  *Marker_FSIinterface,          /*!< \brief Markers in the FSI interface. */
   *Marker_Moving,            /*!< \brief Markers in motion (DEFORMING, MOVING_WALL, or FLUID_STRUCTURE). */
   *Marker_DV;            /*!< \brief Markers affected by the design variables. */
   unsigned short  *Marker_All_Monitoring,        /*!< \brief Global index for monitoring using the grid information. */
   *Marker_All_GeoEval,       /*!< \brief Global index for geometrical evaluation. */
   *Marker_All_Plotting,        /*!< \brief Global index for plotting using the grid information. */
+  *Marker_All_FSIinterface,        /*!< \brief Global index for FSI interface markers using the grid information. */
   *Marker_All_DV,          /*!< \brief Global index for design variable markers using the grid information. */
   *Marker_All_Moving,          /*!< \brief Global index for moving surfaces using the grid information. */
   *Marker_All_Designing,         /*!< \brief Global index for moving using the grid information. */
@@ -464,6 +493,7 @@ private:
   *Marker_CfgFile_Designing,      /*!< \brief Global index for monitoring using the config information. */
   *Marker_CfgFile_GeoEval,      /*!< \brief Global index for monitoring using the config information. */
   *Marker_CfgFile_Plotting,     /*!< \brief Global index for plotting using the config information. */
+  *Marker_CfgFile_FSIinterface,     /*!< \brief Global index for FSI interface using the config information. */
   *Marker_CfgFile_Out_1D,      /*!< \brief Global index for plotting using the config information. */
   *Marker_CfgFile_Moving,       /*!< \brief Global index for moving surfaces using the config information. */
   *Marker_CfgFile_DV,       /*!< \brief Global index for design variable markers using the config information. */
@@ -505,6 +535,7 @@ private:
 	Residual_FileName,				/*!< \brief Residual variables output file. */
 	Conv_FileName,					/*!< \brief Convergence history output file. */
   Breakdown_FileName,			    /*!< \brief Breakdown output file. */
+  Conv_FileName_FSI,					/*!< \brief Convergence history output file. */
   Restart_FlowFileName,			/*!< \brief Restart file for flow variables. */
 	Restart_WaveFileName,			/*!< \brief Restart file for wave variables. */
 	Restart_HeatFileName,			/*!< \brief Restart file for heat variables. */
@@ -619,6 +650,10 @@ private:
 	double ElasticyMod,			/*!< \brief Young's modulus of elasticity. */
 	PoissonRatio,						/*!< \brief Poisson's ratio. */
 	MaterialDensity;								/*!< \brief Material density. */
+	unsigned short Kind_2DElasForm;			/*!< \brief Kind of bidimensional elasticity solver. */
+	unsigned short nIterFSI;	/*!< \brief Number of maximum number of subiterations in a FSI problem. */
+	double AitkenStatRelax;			/*!< \brief Aitken's relaxation factor (if set as static) */
+	double AitkenDynMaxInit;			/*!< \brief Aitken's maximum dynamic relaxation factor for the first iteration */
 	double Wave_Speed;			/*!< \brief Wave speed used in the wave solver. */
 	double Thermal_Diffusivity;			/*!< \brief Thermal diffusivity used in the heat solver. */
 	double Cyclic_Pitch,          /*!< \brief Cyclic pitch for rotorcraft simulations. */
@@ -691,6 +726,15 @@ private:
   Gust_Begin_Loc;             /*!< \brief Location at which the gust begins. */
   long Visualize_CV; /*!< \brief Node number for the CV to be visualized */
   bool ExtraOutput;
+  bool DeadLoad; 		/*!< Application of dead loads to the FE analysis */
+  bool MatchingMesh; 	/*!< Matching mesh (while implementing interpolation procedures). */
+    double Newmark_alpha,			/*!< \brief Parameter alpha for Newmark method. */
+      Newmark_delta;				/*!< \brief Parameter delta for Newmark method. */
+    bool Gradual_Load,		/*!< \brief Apply the load gradually. */
+      Ramp_Load;				/*!< \brief Apply the load with linear increases. */
+    double Ramp_Time;			/*!< \brief Time until the maximum load is applied. */
+    double Static_Time;			/*!< \brief Time while the structure is not loaded in FSI applications. */
+    unsigned short Pred_Order;  /*!< \brief Order of the predictor for FSI applications. */
   unsigned long Nonphys_Points, /*!< \brief Current number of non-physical points in the solution. */
   Nonphys_Reconstr;      /*!< \brief Current number of non-physical reconstructions for 2nd-order upwinding. */
   bool ParMETIS;      /*!< \brief Boolean for activating ParMETIS mode (while testing). */
@@ -1545,6 +1589,12 @@ public:
 	 * \return Value of the Young's modulus of elasticity.
 	 */
 	double GetElasticyMod(void);
+
+    /*!
+	 * \brief Formulation for 2D elasticity (plane stress - strain)
+	 * \return Flag to 2D elasticity model.
+	 */
+	unsigned short GetElas2D_Formulation(void);
 
 	/*!
 	 * \brief Get the Poisson's ratio.
@@ -2416,6 +2466,14 @@ public:
 	void SetMarker_All_Plotting(unsigned short val_marker, unsigned short val_plotting);
 
 	/*!
+	 * \brief Set if a marker <i>val_marker</i> is part of the FSI interface <i>val_plotting</i>
+	 *        (read from the config file).
+	 * \param[in] val_marker - Index of the marker in which we are interested.
+	 * \param[in] val_plotting - 0 or 1 depending if the the marker is part of the FSI interface.
+	 */
+	void SetMarker_All_FSIinterface(unsigned short val_marker, unsigned short val_fsiinterface);
+
+	/*!
 	 * \brief Set if a marker <i>val_marker</i> is going to be affected by design variables <i>val_moving</i>
 	 *        (read from the config file).
 	 * \param[in] val_marker - Index of the marker in which we are interested.
@@ -2491,6 +2549,21 @@ public:
 	unsigned short GetMarker_All_Plotting(unsigned short val_marker);
 
 	/*!
+	 * \brief Get the FSI interface information for a marker <i>val_marker</i>.
+	 * \param[in] val_marker - 0 or 1 depending if the the marker is going to be moved.
+	 * \return 0 or 1 depending if the marker is part of the FSI interface.
+	 */
+	unsigned short GetMarker_All_FSIinterface(unsigned short val_marker);
+
+
+	/*!
+	 * \brief Get the number of FSI interface markers <i>val_marker</i>.
+	 * \param[in] void.
+	 * \return Number of markers belonging to the FSI interface.
+	 */
+	unsigned short GetMarker_n_FSIinterface(void);
+
+	/*!
 	 * \brief Get the DV information for a marker <i>val_marker</i>.
 	 * \param[in] val_marker - 0 or 1 depending if the the marker is going to be affected by design variables.
 	 * \return 0 or 1 depending if the marker is going to be affected by design variables.
@@ -2531,6 +2604,15 @@ public:
 	 * \return Governing equation that we are solving.
 	 */
 	unsigned short GetKind_Solver(void);
+
+
+	/*!
+	 * \brief Governing equations of the flow (it can be different from the run time equation).
+	 * \param[in] val_zone - Zone where the soler is applied.
+	 * \return Governing equation that we are solving.
+	 */
+	void SetKind_Solver(unsigned short val_solver);
+
 
   /*!
 	 * \brief Governing equations of the flow (it can be different from the run time equation).
@@ -3472,6 +3554,12 @@ public:
   bool GetViscous_Limiter_Turb(void);
   
   /*!
+   * \brief Write convergence file for FSI problems
+   * \return <code>FALSE</code> means no file is written.
+   */
+  bool GetWrite_Conv_FSI(void);
+
+  /*!
 	 * \brief Provides information about if the sharp edges are going to be removed from the sensitivity.
 	 * \return <code>FALSE</code> means that the sharp edges will be removed from the sensitivity.
 	 */
@@ -3792,6 +3880,12 @@ public:
 	 * \return Name of the file with convergence history of the problem.
 	 */
 	string GetConv_FileName(void);
+
+	/*!
+	 * \brief Get the name of the file with the convergence history of the problem for FSI applications.
+	 * \return Name of the file with convergence history of the problem.
+	 */
+	string GetConv_FileName_FSI(void);
     
   /*!
    * \brief Get the name of the file with the forces breakdown of the problem.
@@ -4400,6 +4494,13 @@ public:
 	 */
 	unsigned short GetMarker_CfgFile_Plotting(string val_marker);
 
+
+	/*!
+	 * \brief Get the FSI interface information from the config definition for the marker <i>val_marker</i>.
+	 * \return Plotting information of the boundary in the config information for the marker <i>val_marker</i>.
+	 */
+	unsigned short GetMarker_CfgFile_FSIinterface(string val_marker);
+
   /*!
    * \brief Get the 1-D output (ie, averaged pressure) information from the config definition for the marker <i>val_marker</i>.
    * \return 1D output information of the boundary in the config information for the marker <i>val_marker</i>.
@@ -4454,6 +4555,18 @@ public:
 	 * \return Value of the minimum residual value (log10 scale).
 	 */
 	double GetMinLogResidual(void);
+
+	/*!
+	 * \brief Value of the order of magnitude reduction of the residual for FSI applications.
+	 * \return Value of the order of magnitude reduction of the residual.
+	 */
+	double GetOrderMagResidualFSI(void);
+
+	/*!
+	 * \brief Value of the minimum residual value for FSI applications (log10 scale).
+	 * \return Value of the minimum residual value (log10 scale).
+	 */
+	double GetMinLogResidualFSI(void);
   
   /*!
    * \brief Value of the damping factor for the engine inlet bc.
@@ -4954,6 +5067,48 @@ public:
 	double GetLoad_Value(string val_index);
 
 	/*!
+	 * \brief Get the force value at a load boundary defined in cartesian coordinates.
+	 * \param[in] val_index - Index corresponding to the load boundary.
+	 * \return The load value.
+	 */
+	double GetLoad_Dir_Value(string val_index);
+
+	/*!
+	 * \brief Get the force multiplier at a load boundary in cartesian coordinates.
+	 * \param[in] val_index - Index corresponding to the load boundary.
+	 * \return The load multiplier.
+	 */
+	double GetLoad_Dir_Multiplier(string val_index);
+
+	/*!
+	 * \brief Get the force direction at a loaded boundary in cartesian coordinates.
+	 * \param[in] val_index - Index corresponding to the load boundary.
+	 * \return The load direction.
+	 */
+	double* GetLoad_Dir(string val_index);
+
+	/*!
+	 * \brief Get the amplitude of the sine-wave at a load boundary defined in cartesian coordinates.
+	 * \param[in] val_index - Index corresponding to the load boundary.
+	 * \return The load value.
+	 */
+	double GetLoad_Sine_Amplitude(string val_index);
+
+	/*!
+	 * \brief Get the frequency of the sine-wave at a load boundary in cartesian coordinates.
+	 * \param[in] val_index - Index corresponding to the load boundary.
+	 * \return The load frequency.
+	 */
+	double GetLoad_Sine_Frequency(string val_index);
+
+	/*!
+	 * \brief Get the force direction at a sine-wave loaded boundary in cartesian coordinates.
+	 * \param[in] val_index - Index corresponding to the load boundary.
+	 * \return The load direction.
+	 */
+	double* GetLoad_Sine_Dir(string val_index);
+
+	/*!
 	 * \brief Get the force value at an load boundary.
 	 * \param[in] val_index - Index corresponding to the load boundary.
 	 * \return The load value.
@@ -5231,6 +5386,129 @@ public:
    * \return Verbosity level for the console output.
    */
   unsigned short GetConsole_Output_Verb(void);
+
+	/*!
+	 * \brief Get the number of fluid subiterations roblems.
+	 * \return Number of FSI subiters.
+	 */
+	unsigned short GetnIterFSI(void);
+
+	/*!
+	 * \brief Get Aitken's relaxation parameter for static relaxation cases.
+	 * \return Aitken's relaxation parameters.
+	 */
+	double GetAitkenStatRelax(void);
+
+	/*!
+	 * \brief Get Aitken's maximum relaxation parameter for dynamic relaxation cases and first iteration.
+	 * \return Aitken's relaxation parameters.
+	 */
+	double GetAitkenDynMaxInit(void);
+
+
+	/*!
+	  * \brief Decide whether to apply dead loads to the model.
+	  * \return <code>TRUE</code> if the dead loads are to be applied, <code>FALSE</code> otherwise.
+	  */
+
+	bool GetDeadLoad(void);
+
+	/*!
+	  * \brief Identifies if the mesh is matching or not (temporary, while implementing interpolation procedures).
+	  * \return <code>TRUE</code> if the mesh is matching, <code>FALSE</code> otherwise.
+	  */
+
+	bool GetMatchingMesh(void);
+
+	/*!
+	 * \brief Provides information about the time integration of the structural analysis, and change the write in the output
+	 *        files information about the iteration.
+	 * \return The kind of time integration: Static or dynamic analysis
+	 */
+	unsigned short GetDynamic_Analysis(void);
+
+	/*!
+	 * \brief If we are prforming an unsteady simulation, there is only
+	 *        one value of the time step for the complete simulation.
+	 * \return Value of the time step in an unsteady simulation (non dimensional).
+	 */
+	double GetDelta_DynTime(void);
+
+	/*!
+	 * \brief If we are prforming an unsteady simulation, there is only
+	 *        one value of the time step for the complete simulation.
+	 * \return Value of the time step in an unsteady simulation (non dimensional).
+	 */
+	double GetTotal_DynTime(void);
+
+	/*!
+	 * \brief If we are prforming an unsteady simulation, there is only
+	 *        one value of the time step for the complete simulation.
+	 * \return Value of the time step in an unsteady simulation (non dimensional).
+	 */
+	double GetCurrent_DynTime(void);
+
+	/*!
+	 * \brief Get information about writing dynamic structural analysis headers and file extensions.
+	 * \return 	<code>TRUE</code> means that dynamic structural analysis solution files will be written.
+	 */
+	bool GetWrt_Dynamic(void);
+
+	/*!
+	 * \brief Get Newmark alpha parameter.
+	 * \return Value of the Newmark alpha parameter.
+	 */
+	double GetNewmark_alpha(void);
+
+	/*!
+	 * \brief Get Newmark delta parameter.
+	 * \return Value of the Newmark delta parameter.
+	 */
+	double GetNewmark_delta(void);
+
+	/*!
+	 * \brief Check if the user wants to apply the load gradually.
+	 * \return 	<code>TRUE</code> means that the load is to be applied gradually.
+	 */
+	 bool GetGradual_Load(void);
+
+	/*!
+	 * \brief Check if the user wants to apply the load as a ramp.
+	 * \return 	<code>TRUE</code> means that the load is to be applied as a ramp.
+	 */
+	 bool GetRamp_Load(void);
+
+	/*!
+	 * \brief Get the maximum time of the ramp.
+	 * \return 	Value of the max time while the load is linearly increased
+	 */
+	 double GetRamp_Time(void);
+
+	/*!
+	 * \brief Get the maximum time of the ramp.
+	 * \return 	Value of the max time while the load is linearly increased
+	 */
+	double GetStatic_Time(void);
+
+	/*!
+	 * \brief Get the order of the predictor for FSI applications.
+	 * \return 	Order of predictor
+	 */
+	 unsigned short GetPredictorOrder(void);
+
+	/*!
+	 * \brief Check if the simulation we are running is a FSI simulation
+	 * \return Value of the physical time in an unsteady simulation.
+	 */
+	bool GetFSI_Simulation(void);
+
+	/*!
+	 * \brief Get the relaxation method chosen for the simulation
+	 * \return Value of the relaxation method
+	 */
+	unsigned short GetRelaxation_Method_FSI(void);
+
+
 
 };
 
