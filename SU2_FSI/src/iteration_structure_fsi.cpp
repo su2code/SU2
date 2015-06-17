@@ -424,7 +424,9 @@ void FSI_Load_Transfer(COutput *output, CIntegration ***integration_container, C
 
 	}
 	else{
-		cout << "NonMatchingMesh" << endl;
+		solver_container[ZONE_1][MESH_0][FEA_SOL]->SetFEA_Load_Int(solver_container[ZONE_0], geometry_container[ZONE_1], geometry_container[ZONE_0],
+															   config_container[ZONE_1], config_container[ZONE_0], numerics_container[ZONE_1][MESH_0][SolContainer_Position_fea][VISC_TERM]);
+
 	}
 
 
