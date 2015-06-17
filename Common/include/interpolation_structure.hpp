@@ -69,12 +69,17 @@ public:
   /*!
  * \brief Constructor of the class.
  */
-  CInterpolator(CGeometry ***geometry_container, CConfig **config, unsigned short nZone);
+  CInterpolator(CGeometry ***geometry_container, CConfig **config,  unsigned short iZone_0,unsigned short iZone_1, unsigned short nZone);
 
   /*!
    * \brief Destructor of the class.
    */
   ~CInterpolator(void);
+
+  /*!
+     * \brief initialize the Data structure to the appropriate size.
+     */
+  void InitializeData(unsigned short iZone_0, unsigned short iZone_1, unsigned short nVar);
 
   /*!
    * \brief interpolate Data from one mesh to another
@@ -87,19 +92,9 @@ public:
   void Interpolate_Deformation(unsigned short iZone_0, unsigned short iZone_1, CConfig **config);
 
   /*!
-   * \brief interpolate data stored in the solution containers of two zones.
-   * Assumes that the data are of the format, aka two CFD solutions with the same nondimensionalization.
-   * Data in the solution container of the nodes in the interface of iZone_dest will be overwritten.
-   * \param[in] iZone_dest  - The zone which will be receiving the interpolated solution
-   * \param[in] config  - configuration information container
-   * \param[in] solver_container  - solution container.
-   */
-//  void Interpolate_Solution(unsigned short iZone_dest, CConfig **config, CSolver **solver_container);
-
-  /*!
    * \brief Set up transfer matrix defining relation between two meshes
    */
-  void Set_TransferMatrix(unsigned short iZone_0, unsigned short iZone_1, CConfig **config);
+  void Set_TransferCoeff(unsigned short iZone_0, unsigned short iZone_1, CConfig **config);
 
 
   /*!
@@ -118,6 +113,8 @@ public:
   void SetData(unsigned short iZone, unsigned long iPoint, unsigned short iDim, double val);
 
 
+
+
 };
 
 
@@ -127,7 +124,7 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CNearestNeighbor(CGeometry ***geometry_container, CConfig **config, unsigned short nZone);
+  CNearestNeighbor(CGeometry ***geometry_container, CConfig **config,  unsigned short iZone_0,unsigned short iZone_1,unsigned short nZone);
 
   /*!
    * \brief Destructor of the class.
@@ -137,6 +134,6 @@ public:
   /*!
    * \brief Set up transfer matrix defining relation between two meshes
    */
-  void Set_TransferMatrix(unsigned short iZone_0, unsigned short iZone_1, CConfig **config);
+  void Set_TransferCoeff(unsigned short iZone_0, unsigned short iZone_1, CConfig **config);
 
 };
