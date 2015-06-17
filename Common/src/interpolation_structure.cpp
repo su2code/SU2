@@ -332,8 +332,8 @@ void CNearestNeighbor::Set_TransferMatrix(unsigned short iZone_0, unsigned short
 		  /*--- Enable this to check that we are doing it fine ---*/
 //     	  cout << "The distance from the vertex " << iVertex << " in the FEA marker " << markFEA << " to the vertex " << nn[3] << " in the Flow marker " << markFlow << " is " << last_distance << endl;
           /*--- Check what donorindex has to be... Vertex? Node? ---*/
-//          Geometry[iZone_1][MESH_0]->vertex[iMarker][iVertex]->SetDonorInfo(donorindex,nn);
-//          Geometry[iZone_1][MESH_0]->vertex[iMarker][iVertex]->SetDonorCoeff(donorindex,1.0);
+          Geometry[iZone_1][MESH_0]->vertex[markFEA][iVertex]->SetDonorInfo(donorindex,nn);
+          Geometry[iZone_1][MESH_0]->vertex[markFEA][iVertex]->SetDonorCoeff(donorindex,1.0);
         }
 
 	}

@@ -2086,6 +2086,16 @@ public:
 	virtual void SetFEA_Load(CSolver ***flow_solution, CGeometry **fea_geometry,
                            CGeometry **flow_geometry, CConfig *fea_config,
                            CConfig *flow_config, CNumerics *fea_numerics);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] fea_geometry - Geometrical definition of the problem.
+	 * \param[in] flow_solution - Container vector with all the solutions.
+	 * \param[in] fea_config - Definition of the particular problem.
+	 */
+	virtual void SetFEA_Load_Int(CSolver ***flow_solution, CGeometry **fea_geometry,
+                           CGeometry **flow_geometry, CConfig *fea_config,
+                           CConfig *flow_config, CNumerics *fea_numerics);
     
 	/*!
 	 * \brief A virtual member.
@@ -6280,13 +6290,21 @@ public:
   void GetSurface_Pressure(CGeometry *geometry, CConfig *config);
   
 	/*!
-	 * \brief Set the the pressure load in the FEA solver.
+	 * \brief Set the the tractions in the in the FEA solver (matching mesh).
 	 * \param[in] fea_geometry - Geometrical definition of the problem.
 	 * \param[in] flow_solution - Container vector with all the solutions.
 	 * \param[in] fea_config - Definition of the particular problem.
 	 */
 	void SetFEA_Load(CSolver ***flow_solution, CGeometry **fea_geometry, CGeometry **flow_geometry, CConfig *fea_config, CConfig *flow_config, CNumerics *fea_numerics);
-    
+
+	/*!
+	 * \brief Set the the tractions in the in the FEA solver (non-matching mesh).
+	 * \param[in] fea_geometry - Geometrical definition of the problem.
+	 * \param[in] flow_solution - Container vector with all the solutions.
+	 * \param[in] fea_config - Definition of the particular problem.
+	 */
+	void SetFEA_Load_Int(CSolver ***flow_solution, CGeometry **fea_geometry, CGeometry **flow_geometry, CConfig *fea_config, CConfig *flow_config, CNumerics *fea_numerics);
+
 	/*!
 	 * \brief Set the initial condition for the FEA Equations.
 	 * \param[in] geometry - Geometrical definition of the problem.

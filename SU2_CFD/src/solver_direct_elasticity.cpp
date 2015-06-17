@@ -2147,6 +2147,244 @@ void CFEASolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fea_geometry,
 
 }
 
+void CFEASolver::SetFEA_Load_Int(CSolver ***flow_solution, CGeometry **fea_geometry, CGeometry **flow_geometry,
+                             CConfig *fea_config, CConfig *flow_config, CNumerics *fea_numerics) {
+
+
+	unsigned short nVertexFEA, nVertexFlow, iVertex, nMarkerFSIint, iDim, jDim;
+	unsigned short markFEA, markFlow, iPoint, iMarkerFSIint;
+	unsigned short nMarkerFEA, nMarkerFlow, iMarkerFEA, iMarkerFlow;
+	unsigned long *nodeVertex, *donorVertex;
+	double *nodePress, *nodeShearStress, **normalsVertex, **normalsVertex_Unit, **tn_f, *tn_e;
+	double factorForces;
+	double Viscosity_Ref, Velocity_Ref, Density_Ref, Pressure_Ref;
+
+	double *Velocity_ND, Density_ND, *Velocity_Real, Density_Real, Velocity2_Real, Velocity2_ND;
+
+	bool compressible       = (flow_config->GetKind_Regime() == COMPRESSIBLE);
+	bool incompressible     = (flow_config->GetKind_Regime() == INCOMPRESSIBLE);
+//	bool freesurface        = (flow_config->GetKind_Regime() == FREESURFACE);
+
+	bool viscous_flow        = ((flow_config->GetKind_Solver() == NAVIER_STOKES) ||
+			(flow_config->GetKind_Solver() == RANS) );
+
+	double Pinf;
+
+
+	double ModAmpl;
+	double CurrentTime=fea_config->GetCurrent_DynTime();
+	double Static_Time=fea_config->GetStatic_Time();
+
+    bool Ramp_Load = fea_config->GetRamp_Load();
+	double Ramp_Time = fea_config->GetRamp_Time();
+
+	if (CurrentTime <= Static_Time){
+		ModAmpl=0.0;
+	}
+	else if((CurrentTime > Static_Time) &&
+			(CurrentTime <= (Static_Time + Ramp_Time)) &&
+			(Ramp_Load)){
+		ModAmpl=(CurrentTime-Static_Time)/Ramp_Time;
+		ModAmpl=max(ModAmpl,0.0);
+		ModAmpl=min(ModAmpl,1.0);
+	}
+	else{
+		ModAmpl=1.0;
+	}
+
+	/*--- Number of markers in the FSI interface ---*/
+	nMarkerFSIint = (fea_config->GetMarker_n_FSIinterface())/2;
+
+	/*--- Initialization of vectors of residuals ---*/
+	/*--- WATCH OUT! This Shouldn't be here I think... For the dead load */
+
+	for (iPoint = 0; iPoint < fea_geometry[MESH_0]->GetnPoint(); iPoint ++) {
+		LinSysRes.SetBlock_Zero(iPoint);
+	}
+
+  	/*--- Redimensionalize the pressure ---*/
+
+    Velocity_Real = flow_config->GetVelocity_FreeStream();
+    Density_Real = flow_config->GetDensity_FreeStream();
+
+    Velocity_ND = flow_config->GetVelocity_FreeStreamND();
+    Density_ND = flow_config->GetDensity_FreeStreamND();
+
+
+	Velocity2_Real = 0.0;
+	Velocity2_ND = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++){
+    	Velocity2_Real += Velocity_Real[iDim]*Velocity_Real[iDim];
+    	Velocity2_ND += Velocity_ND[iDim]*Velocity_ND[iDim];
+    }
+
+  	Velocity_Ref  = flow_config->GetVelocity_Ref();
+  	Viscosity_Ref = flow_config->GetViscosity_Ref();
+  	Density_Ref   = flow_solution[MESH_0][FLOW_SOL]->GetDensity_Inf();
+  	Pressure_Ref  = flow_config->GetPressure_Ref();
+
+    factorForces = Density_Real*Velocity2_Real/(Density_ND*Velocity2_ND);
+
+	/*--- Loop over all the markers on the interface ---*/
+
+	for (iMarkerFSIint=0; iMarkerFSIint < nMarkerFSIint; iMarkerFSIint++){
+
+		nMarkerFEA=fea_geometry[MESH_0]->GetnMarker();
+		nMarkerFlow=flow_geometry[MESH_0]->GetnMarker();
+
+		/*--- Identification of the markers ---*/
+
+		for (iMarkerFEA=0; iMarkerFEA < nMarkerFEA; iMarkerFEA++){
+			if ( fea_config->GetMarker_All_FSIinterface(iMarkerFEA) == (iMarkerFSIint+1)){
+				markFEA=iMarkerFEA;
+			}
+		}
+
+		for (iMarkerFlow=0; iMarkerFlow < nMarkerFlow; iMarkerFlow++){
+			if (flow_config->GetMarker_All_FSIinterface(iMarkerFlow) == (iMarkerFSIint+1)){
+				markFlow=iMarkerFlow;
+			}
+		}
+
+
+		nVertexFEA = fea_geometry[MESH_0]->GetnVertex(markFEA);
+		nVertexFlow = flow_geometry[MESH_0]->GetnVertex(markFlow);
+
+		nodeVertex = new unsigned long [nVertexFlow];
+		donorVertex = new unsigned long [nVertexFlow];
+
+		tn_e = new double [nVar*nDim];
+
+		tn_f = new double* [nVertexFlow];
+		for (iVertex = 0; iVertex < nVertexFlow; iVertex++) {
+			tn_f[iVertex] = new double[nDim];
+		}
+
+		normalsVertex = new double* [nVertexFlow];
+		for (iVertex = 0; iVertex < nVertexFlow; iVertex++) {
+			normalsVertex[iVertex] = new double[nDim];
+		}
+
+		normalsVertex_Unit = new double* [nVertexFlow];
+		for (iVertex = 0; iVertex < nVertexFlow; iVertex++) {
+			normalsVertex_Unit[iVertex] = new double[nDim];
+		}
+
+		double **Grad_PrimVar;
+		double Viscosity = 0.0, Density = 0.0;
+		double Tau[3][3];
+		double div_vel, Delta;
+		double Area;
+		double Pn;
+
+		/*--- Loop over the nodes in the fluid mesh, calculate the tf vector (unitary) ---*/
+		/*--- Here, we are looping over the fluid, and we find the pointer to the structure (donorVertex) ---*/
+		for (iVertex=0; iVertex < nVertexFlow; iVertex++){
+
+			// Node from the flow mesh
+			nodeVertex[iVertex]=flow_geometry[MESH_0]->vertex[markFlow][iVertex]->GetNode();
+
+			// Normals at the vertex: these normals go inside the fluid domain.
+			normalsVertex[iVertex]=flow_geometry[MESH_0]->vertex[markFlow][iVertex]->GetNormal();
+
+			// Unit normals
+	        Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) {
+	        	Area += normalsVertex[iVertex][iDim]*normalsVertex[iVertex][iDim];
+	        }
+	      	Area = sqrt(Area);
+
+	        for (iDim = 0; iDim < nDim; iDim++) {
+	          normalsVertex_Unit[iVertex][iDim] = normalsVertex[iVertex][iDim]/Area;
+	        }
+
+			// Corresponding node on the structural mesh
+			// donorVertex[iVertex]=flow_geometry[MESH_0]->vertex[markFlow][iVertex]->GetDonorPoint();
+	        donorVertex[iVertex]=flow_geometry[MESH_0]->vertex[markFlow][iVertex]->GetDonorInfo(0,1); // If point
+	        //donorVertex[iVertex]=flow_geometry[MESH_0]->vertex[markFlow][iVertex]->GetDonorInfo(0,3); // If vertex
+
+			// Retrieve the values of pressure, viscosity and density
+			if (incompressible){
+
+				Pn=flow_solution[MESH_0][FLOW_SOL]->node[nodeVertex[iVertex]]->GetPressureInc();
+				Pinf=flow_solution[MESH_0][FLOW_SOL]->GetPressure_Inf();
+
+				if (viscous_flow){
+
+					Grad_PrimVar = flow_solution[MESH_0][FLOW_SOL]->node[nodeVertex[iVertex]]->GetGradient_Primitive();
+					Viscosity = flow_solution[MESH_0][FLOW_SOL]->node[nodeVertex[iVertex]]->GetLaminarViscosityInc();
+					Density = flow_solution[MESH_0][FLOW_SOL]->node[nodeVertex[iVertex]]->GetDensityInc();
+
+				}
+			}
+			else if (compressible){
+
+				Pn=flow_solution[MESH_0][FLOW_SOL]->node[nodeVertex[iVertex]]->GetPressure();
+				Pinf=flow_solution[MESH_0][FLOW_SOL]->GetPressure_Inf();
+
+				if (viscous_flow){
+
+					Grad_PrimVar = flow_solution[MESH_0][FLOW_SOL]->node[nodeVertex[iVertex]]->GetGradient_Primitive();
+					Viscosity = flow_solution[MESH_0][FLOW_SOL]->node[nodeVertex[iVertex]]->GetLaminarViscosity();
+					Density = flow_solution[MESH_0][FLOW_SOL]->node[nodeVertex[iVertex]]->GetDensity();
+
+				}
+			}
+
+			// Calculate tn in the fluid nodes for the inviscid term --> Units of force (non-dimensional).
+			for (iDim = 0; iDim < nDim; iDim++) {
+				tn_f[iVertex][iDim] = -(Pn-Pinf)*normalsVertex[iVertex][iDim];
+			}
+
+			// Calculate tn in the fluid nodes for the viscous term
+
+			if (viscous_flow){
+
+				// Divergence of the velocity
+				div_vel = 0.0; for (iDim = 0; iDim < nDim; iDim++) div_vel += Grad_PrimVar[iDim+1][iDim];
+				if (incompressible) div_vel = 0.0;
+
+				for (iDim = 0; iDim < nDim; iDim++) {
+
+					for (jDim = 0 ; jDim < nDim; jDim++) {
+						// Dirac delta
+						Delta = 0.0; if (iDim == jDim) Delta = 1.0;
+
+						// Viscous stress
+						Tau[iDim][jDim] = Viscosity*(Grad_PrimVar[jDim+1][iDim] + Grad_PrimVar[iDim+1][jDim]) -
+								TWO3*Viscosity*div_vel*Delta;
+
+						// Viscous component in the tn vector --> Units of force (non-dimensional).
+						tn_f[iVertex][iDim] += Tau[iDim][jDim]*normalsVertex[iVertex][jDim];
+					}
+				}
+			}
+
+			// Rescale tn to SI units
+
+			for (iDim = 0; iDim < nDim; iDim++) {
+				tn_f[iVertex][iDim] = tn_f[iVertex][iDim]*factorForces;
+			}
+
+			// Apply time-dependent coefficient (static structure, ramp load, full load)
+
+			for (iDim = 0; iDim < nDim; iDim++) {
+				tn_f[iVertex][iDim] = tn_f[iVertex][iDim]*ModAmpl;
+			}
+
+			// This works only for matching meshes
+
+			for (iDim=0; iDim < nDim; iDim++){
+				Residual[iDim]=tn_f[iVertex][iDim];
+			}
+
+			LinSysRes.AddBlock(donorVertex[iVertex], Residual);
+
+		}
+
+	}
+
+}
+
 
 void CFEASolver::SetStruct_Displacement(CGeometry **fea_geometry, CConfig *fea_config, CSolver ***fea_solution) {
 
