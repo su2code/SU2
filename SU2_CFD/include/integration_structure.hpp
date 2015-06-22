@@ -4,7 +4,7 @@
  *        The subroutines and functions are in the <i>integration_structure.cpp</i>, 
  *        <i>integration_time.cpp</i>, and <i>integration_notime.cpp</i> files.
  * \author F. Palacios, T. Economon
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -51,7 +51,7 @@ using namespace std;
  * \brief Main class for doing the space integration, time integration, and monitoring 
  *        of a system of Partial Differential Equations (PDE).
  * \author F. Palacios
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  */
 class CIntegration {
 protected:
@@ -375,7 +375,7 @@ public:
  * \class CMultiGridIntegration
  * \brief Class for doing the numerical integration using a multigrid method.
  * \author F. Palacios
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  */
 class CMultiGridIntegration : public CIntegration {
 protected:
@@ -547,7 +547,7 @@ public:
  * \class CSingleGridIntegration
  * \brief Class for doing the numerical integration of the turbulence model.
  * \author A. Bueno.
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  */
 class CSingleGridIntegration : public CIntegration {
 public:
@@ -608,7 +608,7 @@ public:
  * \class CStructuralIntegration
  * \brief Class for doing the numerical integration of the structural model.
  * \author R. Sanchez.
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  */
 class CStructuralIntegration : public CIntegration {
 public:
