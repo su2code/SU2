@@ -1,8 +1,8 @@
 /*!
  * \file geometry_structure.cpp
  * \brief Main subroutines for creating the primal grid and multigrid structure.
- * \author F. Palacios
- * \version 3.2.9 "eagle"
+ * \author F. Palacios, T. Economon
+ * \version 4.0.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
