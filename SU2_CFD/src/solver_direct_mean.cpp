@@ -10027,6 +10027,50 @@ void CEulerSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetricMo
   //
 }
 
+void CEulerSolver::SetFlow_Displacement_Int(CGeometry **flow_geometry, CVolumetricMovement *flow_grid_movement,
+                                        CConfig *flow_config, CConfig *fea_config, CGeometry **fea_geometry, CSolver ***fea_solution) {
+    unsigned short iMarker, iDim;
+    unsigned long iVertex, iPoint;
+    double *Coord, VarCoord[3];
+
+    unsigned long iPoint_Donor;
+    double *CoordDonor, *DisplacementDonor, *DisplacementDonor_Prev;
+
+    for (iMarker = 0; iMarker < flow_config->GetnMarker_All(); iMarker++) {
+
+      if (flow_config->GetMarker_All_FSIinterface(iMarker) != 0) {
+
+        for(iVertex = 0; iVertex < flow_geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
+
+          iPoint = flow_geometry[MESH_0]->vertex[iMarker][iVertex]->GetNode();
+
+          iPoint_Donor = flow_geometry[MESH_0]->vertex[iMarker][iVertex]->GetDonorInfo(0,1);
+
+//          Coord = flow_geometry[MESH_0]->node[iPoint]->GetCoord();
+
+//          CoordDonor = fea_geometry[MESH_0]->node[iPoint_Donor]->GetCoord();
+
+          /*--- The displacements come from the predicted solution ---*/
+          DisplacementDonor = fea_solution[MESH_0][FEA_SOL]->node[iPoint_Donor]->GetSolution_Pred();
+
+          DisplacementDonor_Prev = fea_solution[MESH_0][FEA_SOL]->node[iPoint_Donor]->GetSolution_Pred_Old();
+
+          for (iDim = 0; iDim < nDim; iDim++)
+
+        	  VarCoord[iDim] = DisplacementDonor[iDim] - DisplacementDonor_Prev[iDim];
+
+//TODO Double check this to make sure the coordinates are updated as they should be
+
+            //VarCoord[iDim] = (CoordDonor[iDim]+DisplacementDonor[iDim])-Coord[iDim];
+
+          flow_geometry[MESH_0]->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
+        }
+      }
+    }
+    flow_grid_movement->SetVolume_Deformation(flow_geometry[MESH_0], flow_config, true);
+
+}
+
 void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter) {
 
   /*--- Restart the solution from file information ---*/

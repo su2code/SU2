@@ -2135,6 +2135,19 @@ public:
                                     CConfig *flow_config, CConfig *fea_config,
                                     CGeometry **fea_geometry,
                                     CSolver ***fea_solution);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] flow_geometry - Geometrical definition of the problem.
+	 * \param[in] flow_grid_movement - Geometrical definition of the problem.
+	 * \param[in] flow_config - Geometrical definition of the problem.
+	 * \param[in] fea_geometry - Definition of the particular problem.
+	 */
+	virtual void SetFlow_Displacement_Int(CGeometry **flow_geometry,
+                                    CVolumetricMovement *flow_grid_movement,
+                                    CConfig *flow_config, CConfig *fea_config,
+                                    CGeometry **fea_geometry,
+                                    CSolver ***fea_solution);
     
 	/*!
 	 * \brief A virtual member.
@@ -3705,6 +3718,16 @@ public:
 	 * \param[in] fea_geometry - Definition of the particular problem.
 	 */
 	void SetFlow_Displacement(CGeometry **flow_geometry, CVolumetricMovement *flow_grid_movement, CConfig *flow_config, CConfig *fea_config,
+                              CGeometry **fea_geometry, CSolver ***fea_solution);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] flow_geometry - Geometrical definition of the problem.
+	 * \param[in] flow_grid_movement - Geometrical definition of the problem.
+	 * \param[in] flow_config - Geometrical definition of the problem.
+	 * \param[in] fea_geometry - Definition of the particular problem.
+	 */
+	void SetFlow_Displacement_Int(CGeometry **flow_geometry, CVolumetricMovement *flow_grid_movement, CConfig *flow_config, CConfig *fea_config,
                               CGeometry **fea_geometry, CSolver ***fea_solution);
     
 	/*!
