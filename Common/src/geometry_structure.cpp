@@ -1,8 +1,8 @@
 /*!
  * \file geometry_structure.cpp
  * \brief Main subroutines for creating the primal grid and multigrid structure.
- * \author F. Palacios
- * \version 3.2.9 "eagle"
+ * \author F. Palacios, T. Economon
+ * \version 4.0.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -5834,6 +5834,7 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
       config->SetMarker_All_GeoEval(iMarker, config->GetMarker_CfgFile_GeoEval(Marker_Tag));
       config->SetMarker_All_Designing(iMarker, config->GetMarker_CfgFile_Designing(Marker_Tag));
       config->SetMarker_All_Plotting(iMarker, config->GetMarker_CfgFile_Plotting(Marker_Tag));
+      config->SetMarker_All_FSIinterface(iMarker, config->GetMarker_CfgFile_FSIinterface(Marker_Tag));
       config->SetMarker_All_DV(iMarker, config->GetMarker_CfgFile_DV(Marker_Tag));
       config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
       config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
@@ -5850,6 +5851,7 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
       config->SetMarker_All_GeoEval(iMarker, NO);
       config->SetMarker_All_Designing(iMarker, NO);
       config->SetMarker_All_Plotting(iMarker, NO);
+	  config->SetMarker_All_FSIinterface(iMarker, NO);
       config->SetMarker_All_DV(iMarker, NO);
       config->SetMarker_All_Moving(iMarker, NO);
       config->SetMarker_All_PerBound(iMarker, NO);
@@ -5905,6 +5907,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   int rank = MASTER_NODE, size = SINGLE_NODE;
   bool domain_flag = false;
   bool found_transform = false;
+  bool time_spectral = config->GetUnsteady_Simulation() == TIME_SPECTRAL;
   nZone = val_nZone;
   
   /*--- Initialize some additional counters for the parallel partitioning ---*/
@@ -5912,9 +5915,13 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   unsigned long total_pt_accounted = 0;
   unsigned long rem_points = 0;
   unsigned long element_count = 0;
+  unsigned long boundary_marker_count = 0;
   unsigned long node_count = 0;
   unsigned long loc_element_count = 0;
   bool elem_reqd = false;
+  
+  /*--- Initialize bool for FSI problems ---*/
+  bool fsi = config->GetFSI_Simulation();
   
   /*--- Initialize counters for local/global points & elements ---*/
 #ifdef HAVE_MPI
@@ -5960,6 +5967,27 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
 #endif
   }
   
+  /*--- If more than one, find the zone in the mesh file ---*/
+  
+  if (val_nZone > 1 || time_spectral) {
+    if (time_spectral) {
+      if (rank == MASTER_NODE) cout << "Reading time spectral instance " << val_iZone+1 << ":" << endl;
+    } else {
+      while (getline (mesh_file,text_line)) {
+        /*--- Search for the current domain ---*/
+        position = text_line.find ("IZONE=",0);
+        if (position != string::npos) {
+          text_line.erase (0,6);
+          unsigned short jDomain = atoi(text_line.c_str());
+          if (jDomain == val_iZone+1) {
+            if (rank == MASTER_NODE) cout << "Reading zone " << val_iZone+1 << " points:" << endl;
+            break;
+          }
+        }
+      }
+    }
+  }
+
   /*--- Read grid file with format SU2 ---*/
   
   while (getline (mesh_file, text_line)) {
@@ -6116,6 +6144,24 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   }
   
   mesh_file.open(cstr, ios::in);
+
+  /*--- If more than one, find the zone in the mesh file  ---*/
+  
+  if (val_nZone > 1 && !time_spectral) {
+      while (getline (mesh_file,text_line)) {
+        /*--- Search for the current domain ---*/
+        position = text_line.find ("IZONE=",0);
+        if (position != string::npos) {
+          text_line.erase (0,6);
+          unsigned short jDomain = atoi(text_line.c_str());
+          if (jDomain == val_iZone+1) {
+            if (rank == MASTER_NODE) cout << "Reading zone " << val_iZone+1 << " elements:" << endl;
+            break;
+          }
+        }
+      }
+  }
+
   while (getline (mesh_file, text_line)) {
     
     /*--- Read the information about inner elements ---*/
@@ -6305,6 +6351,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
         ielem_div++;
         element_count++;
       }
+      if (element_count == nElem) break;
     }
   }
   
@@ -6381,12 +6428,30 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
    In the future, this component will also be performed in parallel. ---*/
   
   mesh_file.open(cstr, ios::in);
+
+  /*--- If more than one, find the zone in the mesh file ---*/
   
+  if (val_nZone > 1 && !time_spectral) {
+      while (getline (mesh_file,text_line)) {
+        /*--- Search for the current domain ---*/
+        position = text_line.find ("IZONE=",0);
+        if (position != string::npos) {
+          text_line.erase (0,6);
+          unsigned short jDomain = atoi(text_line.c_str());
+          if (jDomain == val_iZone+1) {
+            if (rank == MASTER_NODE) cout << "Reading zone " << val_iZone+1 << " markers:" << endl;
+            break;
+          }
+        }
+      }
+  }
+
   if (rank == MASTER_NODE) {
     
     while (getline (mesh_file, text_line)) {
       /*--- Read number of markers ---*/
       position = text_line.find ("NMARK=",0);
+      boundary_marker_count = 0;
       if (position != string::npos) {
         text_line.erase (0,6); nMarker = atoi(text_line.c_str());
         if (rank == MASTER_NODE) cout << nMarker << " surface markers." << endl;
@@ -6468,6 +6533,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             config->SetMarker_All_GeoEval(iMarker, config->GetMarker_CfgFile_GeoEval(Marker_Tag));
             config->SetMarker_All_Designing(iMarker, config->GetMarker_CfgFile_Designing(Marker_Tag));
             config->SetMarker_All_Plotting(iMarker, config->GetMarker_CfgFile_Plotting(Marker_Tag));
+			      config->SetMarker_All_FSIinterface(iMarker, config->GetMarker_CfgFile_FSIinterface(Marker_Tag));
             config->SetMarker_All_DV(iMarker, config->GetMarker_CfgFile_DV(Marker_Tag));
             config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
             config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
@@ -6500,8 +6566,9 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             }
             
           }
-          
+          boundary_marker_count++;
         }
+        if ((boundary_marker_count == nMarker) && (fsi)) break;
       }
       
       /*--- Read periodic transformation info (center, rotation, translation) ---*/
@@ -8088,6 +8155,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
             config->SetMarker_All_GeoEval(iMarker, config->GetMarker_CfgFile_GeoEval(Marker_Tag));
             config->SetMarker_All_Designing(iMarker, config->GetMarker_CfgFile_Designing(Marker_Tag));
             config->SetMarker_All_Plotting(iMarker, config->GetMarker_CfgFile_Plotting(Marker_Tag));
+			config->SetMarker_All_FSIinterface(iMarker, config->GetMarker_CfgFile_FSIinterface(Marker_Tag));
             config->SetMarker_All_DV(iMarker, config->GetMarker_CfgFile_DV(Marker_Tag));
             config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
             config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
@@ -12061,11 +12129,8 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
         
         /*--- The sensitivity file uses the global numbering ---*/
-#ifndef HAVE_MPI
-        iPoint = vertex[iMarker][iVertex]->GetNode();
-#else
         iPoint = node[vertex[iMarker][iVertex]->GetNode()]->GetGlobalIndex();
-#endif
+
         if (vertex[iMarker][iVertex]->GetNode() < GetnPointDomain()) {
           Point2Vertex[iPoint][0] = iMarker;
           Point2Vertex[iPoint][1] = iVertex;
