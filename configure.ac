@@ -37,7 +37,7 @@
 # ParMETIS integration added by Ben Kirk & Thomas D. Economon, 2/3/2015
 ##########################
 
-AC_INIT([SU2], [3.2.9], [su2code-dev@lists.stanford.edu],
+AC_INIT([SU2], [4.0.0], [su2code-dev@lists.stanford.edu],
         [SU2], [https://github.com/su2code])
 AC_PREREQ([2.59])
 AC_CONFIG_MACRO_DIR([m4])
