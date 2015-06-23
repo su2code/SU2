@@ -395,7 +395,10 @@ void FSI_Disp_Transfer(COutput *output, CIntegration ***integration_container, C
 																   	   geometry_container[ZONE_1], solver_container[ZONE_1]);
 	}
 	else{
-		cout << "NonMatchingMesh" << endl;
+		solver_container[ZONE_0][MESH_0][FLOW_SOL]->SetFlow_Displacement_Int(geometry_container[ZONE_0], grid_movement[ZONE_0],
+																   	   config_container[ZONE_0], config_container[ZONE_1],
+																   	   geometry_container[ZONE_1], solver_container[ZONE_1]);
+
 	}
 
 
