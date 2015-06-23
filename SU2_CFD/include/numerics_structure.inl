@@ -2,7 +2,7 @@
  * \file numerics_structure.inl
  * \brief In-Line subroutines of the <i>numerics_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -35,9 +35,25 @@ inline double CNumerics::Determinant_3x3(double A00, double A01, double A02, dou
 	return A00*(A11*A22-A12*A21) - A01*(A10*A22-A12*A20) + A02*(A10*A21-A11*A20);
 }
 
-inline void CNumerics::SetFEA_StiffMatrix2D(double **StiffMatrix_Elem, double CoordCorners[8][3], unsigned short nNodes) { }
+inline void CNumerics::SetFEA_StiffMatrix2D(double **StiffMatrix_Elem, double CoordCorners[8][3], unsigned short nNodes, unsigned short form2d) { }
 
 inline void CNumerics::SetFEA_StiffMatrix3D(double **StiffMatrix_Elem, double CoordCorners[8][3], unsigned short nNodes) { }
+
+inline void CNumerics::SetFEA_StiffMassMatrix2D(double **StiffMatrix_Elem, double **MassMatrix_Elem, double CoordCorners[8][3], unsigned short nNodes, unsigned short form2d) { }
+
+inline void CNumerics::SetFEA_StiffMassMatrix3D(double **StiffMatrix_Elem, double **MassMatrix_Elem, double CoordCorners[8][3], unsigned short nNodes) { }
+
+inline void CNumerics::GetFEA_StressNodal2D(double StressVector[8][3], double DispElement[8], double CoordCorners[8][3], unsigned short nNodes, unsigned short form2d) { }
+
+inline void CNumerics::GetFEA_StressNodal3D(double StressVector[8][6], double DispElement[24], double CoordCorners[8][3], unsigned short nNodes) { }
+
+inline void CNumerics::SetFEA_DeadLoad2D(double *DeadLoadVector_Elem, double CoordCorners[8][3], unsigned short nNodes, double matDensity) { }
+
+inline void CNumerics::SetFEA_DeadLoad3D(double *DeadLoadVector_Elem, double CoordCorners[8][3], unsigned short nNodes, double matDensity) { }
+
+inline void CNumerics::PressInt_Linear(double CoordCorners[4][3], double *tn_e, double *Fnodal) { }
+
+inline void CNumerics::ViscTermInt_Linear(double CoordCorners[2][2], double Tau_0[3][3], double Tau_1[3][3], double FviscNodal[4]) { }
 
 inline void CNumerics::ComputeResidual(double *val_residual, CConfig *config) { }
 

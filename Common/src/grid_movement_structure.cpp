@@ -2,7 +2,7 @@
  * \file grid_movement_structure.cpp
  * \brief Subroutines for doing the grid movement using different strategies
  * \author F. Palacios, T. Economon, S. Padron
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -99,9 +99,11 @@ void CVolumetricMovement::UpdateMultiGrid(CGeometry **geometry, CConfig *config)
 
 void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *config, bool UpdateGeo) {
   
-	unsigned long IterLinSol = 0, Smoothing_Iter, iNonlinear_Iter, MaxIter = 0, RestartIter = 50, Tot_Iter = 0;
+  unsigned long IterLinSol = 0, Smoothing_Iter, iNonlinear_Iter, MaxIter = 0, RestartIter = 50, Tot_Iter = 0;
+  unsigned long iPoint, iDim;
   double MinVolume, NumError, Tol_Factor, Residual = 0.0, Residual_Init = 0.0;
   bool Screen_Output;
+  bool fsi=config->GetFSI_Simulation();
   
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -261,6 +263,46 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     
   }
   
+  if (fsi){
+	    /*--- Grid velocity (there is a function that does this -> Modify) ---*/
+
+	  /*--- Local variables ---*/
+
+	  double *Coord_nP1 = NULL, *Coord_n = NULL, *Coord_nM1 = NULL;
+	  double TimeStep, GridVel = 0.0;
+
+	  /*--- Compute the velocity of each node in the volume mesh ---*/
+
+	  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+
+	    /*--- Coordinates of the current point at n+1, n, & n-1 time levels ---*/
+
+	    Coord_nM1 = geometry->node[iPoint]->GetCoord_n1();
+	    Coord_n   = geometry->node[iPoint]->GetCoord_n();
+	    Coord_nP1 = geometry->node[iPoint]->GetCoord();
+
+	    /*--- Unsteady time step ---*/
+
+	    TimeStep = config->GetDelta_UnstTimeND();
+
+	    /*--- Compute mesh velocity with 1st or 2nd-order approximation ---*/
+
+	    for(iDim = 0; iDim < nDim; iDim++) {
+	      if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+	        GridVel = ( Coord_nP1[iDim] - Coord_n[iDim] ) / TimeStep;
+	      if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
+	        GridVel = ( 3.0*Coord_nP1[iDim] - 4.0*Coord_n[iDim]
+	                   + 1.0*Coord_nM1[iDim] ) / (2.0*TimeStep);
+
+	      /*--- Store grid velocity for this point ---*/
+
+	      geometry->node[iPoint]->SetGridVel(iDim, GridVel);
+	    }
+	  }
+
+  }
+
+
   /*--- Deallocate vectors for the linear system. ---*/
   
   LinSysSol.~CSysVector();
@@ -1772,6 +1814,24 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
 			}
     }
   }
+
+  /*--- Move the FSI interfaces ---*/
+
+	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+		if ((config->GetMarker_All_FSIinterface(iMarker) != 0) && (Kind_SU2 == SU2_CFD)) {
+			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+				VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
+				for (iDim = 0; iDim < nDim; iDim++) {
+					total_index = iPoint*nDim + iDim;
+					LinSysRes[total_index] = VarCoord[iDim] * VarIncrement;
+					LinSysSol[total_index] = VarCoord[iDim] * VarIncrement;
+					StiffMatrix.DeleteValsRowi(total_index);
+				}
+			}
+		}
+	}
+
 
 }
 
