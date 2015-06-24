@@ -992,7 +992,7 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
   for (iDim = 0; iDim < nDim; iDim++) {
     Gust[iDim] = 0.0;
   }
-  
+
   // Vortex variables
   unsigned long nVortex = 0;
   std::vector<double> x0, y0, vort_strenth, r_core; //vortex is positive in clockwise direction.
@@ -1019,15 +1019,15 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
     
     for (iPoint = 0; iPoint < geometry_container[iMGlevel]->GetnPoint(); iPoint++) {
       
-      /*--- eset the Grid Velocity to zero if there is no grid movement ---*/
-      if (Kind_Grid_Movement == NO_MOVEMENT) {
+      /*--- Reset the Grid Velocity to zero if there is no grid movement ---*/
+      if (Kind_Grid_Movement == GUST) {
         for (iDim = 0; iDim < nDim; iDim++)
           geometry_container[iMGlevel]->node[iPoint]->SetGridVel(iDim, 0.0);
       }
       
       /*--- initialize the gust and derivatives to zero everywhere ---*/
       
-      Gust[0] = 0.0; Gust[1] = 0.0; Gust[2] = 0.0;
+      Gust[0] = 0.0; Gust[1] = 0.0; //Gust[2] = 0.0;
       dgust_dx = 0.0; dgust_dy = 0.0; dgust_dt = 0.0;
       
       /*--- Begin applying the gust ---*/
@@ -1460,7 +1460,7 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
       
       break;
       
-    case NONE: default:
+    case NO_MOVEMENT: case GUST: default:
       
       /*--- There is no mesh motion specified for this zone. ---*/
       if (rank == MASTER_NODE)
