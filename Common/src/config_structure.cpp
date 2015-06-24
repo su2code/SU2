@@ -1728,6 +1728,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   if (Grid_Movement && (Kind_GridMovement[ZONE_0] != RIGID_MOTION) &&
       (Kind_GridMovement[ZONE_0] != ROTATING_FRAME) &&
+      (Kind_GridMovement[ZONE_0] != GUST) &&
       (nGridMovement != nMarker_Moving)) {
     cout << "Number of GRID_MOVEMENT_KIND must match number of MARKER_MOVING!!" << endl;
     exit(EXIT_FAILURE);
