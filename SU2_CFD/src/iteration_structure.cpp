@@ -1075,12 +1075,12 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
           case ONE_M_COSINE:
              // Check if we are in the region where the gust is active
              if (x_gust > 0 && x_gust < n) {
-               Gust[GustDir] = 0.5*gust_amp*(1-cos(2*PI_NUMBER*x_gust));
+               Gust[GustDir] = gust_amp*(1-cos(2*PI_NUMBER*x_gust));
 
                // Gust derivatives
-               //dgust_dx = 0.5*gust_amp*2*PI_NUMBER*(sin(2*PI_NUMBER*x_gust))/L;
+               //dgust_dx = gust_amp*2*PI_NUMBER*(sin(2*PI_NUMBER*x_gust))/L;
                //dgust_dy = 0;
-               //dgust_dt = 0.5*gust_amp*2*PI_NUMBER*(sin(2*PI_NUMBER*x_gust))*(-Uinf)/L;
+               //dgust_dt = gust_amp*2*PI_NUMBER*(sin(2*PI_NUMBER*x_gust))*(-Uinf)/L;
              }
              break;
 
