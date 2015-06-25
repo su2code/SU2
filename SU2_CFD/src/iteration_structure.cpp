@@ -954,12 +954,23 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
   
   // If a source term is included to account for the gust field, the method is described by Jones et al. as the Split Velocity Method in
   // Simulation of Airfoil Gust Responses Using Prescribed Velocities.
-  // In this routine the gust derivatives needed for the source term are calculated when applicable. The source term itself is implemented in the class CSourceWindGust
+  // In this routine the gust derivatives needed for the source term are calculated when applicable.
+  // If the gust derivatives are zero the source term is also zero.
+  // The source term itself is implemented in the class CSourceWindGust
   
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
+  
+  if (rank == MASTER_NODE)
+    cout << endl << "Running simulation with a Wind Gust." << endl;
+  unsigned short iDim, nDim = geometry_container[MESH_0]->GetnDim(); //We assume nDim = 2
+  if (nDim != 2) {
+    if (rank == MASTER_NODE) {
+      cout << endl << "WARNING - Wind Gust capability is only verified for 2 dimensional simulations." << endl;
+    }
+  }
   
   /*--- Gust Parameters from config ---*/
   unsigned short Gust_Type = config_container->GetGust_Type();
@@ -971,15 +982,13 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
   unsigned short GustDir = config_container->GetGust_Dir(); // Gust direction
 
   /*--- Variables needed to compute the gust ---*/
-  unsigned short iDim;
-  unsigned short nDim = geometry_container[MESH_0]->GetnDim();
+  unsigned short Kind_Grid_Movement = config_container->GetKind_GridMovement(ZONE_0);
   unsigned long iPoint;
   unsigned short iMGlevel, nMGlevel = config_container->GetnMGLevels();
 
   double x, y, x_gust, dgust_dx, dgust_dy, dgust_dt;
   double *Gust, *GridVel;
-  unsigned short Kind_Grid_Movement = config_container->GetKind_GridMovement(ZONE_0);
-  double NewGridVel[3] = {0.0,0.0,0.0};
+  double NewGridVel[2] = {0.0,0.0};
   double GustDer[3] = {0.0,0.0,0.0};
 
   double Physical_dt = config_container->GetDelta_UnstTime();
@@ -995,14 +1004,14 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
 
   // Vortex variables
   unsigned long nVortex = 0;
-  std::vector<double> x0, y0, vort_strenth, r_core; //vortex is positive in clockwise direction.
+  vector<double> x0, y0, vort_strenth, r_core; //vortex is positive in clockwise direction.
   if (Gust_Type == VORTEX) {
     InitializeVortexDistribution(nVortex, x0, y0, vort_strenth, r_core);
   }
   
   /*--- Check to make sure gust lenght is not zero or negative (vortex gust doesn't use this). ---*/
   if (L <= 0.0 && Gust_Type != VORTEX) {
-    cout << "ERROR: The gust length needs to be positive" << endl;
+    if (rank == MASTER_NODE) cout << "ERROR: The gust length needs to be positive" << endl;
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
 #else
@@ -1027,7 +1036,7 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
       
       /*--- initialize the gust and derivatives to zero everywhere ---*/
       
-      Gust[0] = 0.0; Gust[1] = 0.0; //Gust[2] = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) {Gust[iDim]=0.0;}
       dgust_dx = 0.0; dgust_dy = 0.0; dgust_dt = 0.0;
       
       /*--- Begin applying the gust ---*/
@@ -1057,9 +1066,9 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
               Gust[GustDir] = gust_amp*(sin(2*PI_NUMBER*x_gust));
 
               // Gust derivatives
-              dgust_dx = gust_amp*2*PI_NUMBER*(cos(2*PI_NUMBER*x_gust))/L;
-              dgust_dy = 0;
-              dgust_dt = gust_amp*2*PI_NUMBER*(cos(2*PI_NUMBER*x_gust))*(-Uinf)/L;
+              //dgust_dx = gust_amp*2*PI_NUMBER*(cos(2*PI_NUMBER*x_gust))/L;
+              //dgust_dy = 0;
+              //dgust_dt = gust_amp*2*PI_NUMBER*(cos(2*PI_NUMBER*x_gust))*(-Uinf)/L;
             }
             break;
 
@@ -1069,9 +1078,9 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
                Gust[GustDir] = 0.5*gust_amp*(1-cos(2*PI_NUMBER*x_gust));
 
                // Gust derivatives
-               dgust_dx = 0.5*gust_amp*2*PI_NUMBER*(sin(2*PI_NUMBER*x_gust))/L;
-               dgust_dy = 0;
-               dgust_dt = 0.5*gust_amp*2*PI_NUMBER*(sin(2*PI_NUMBER*x_gust))*(-Uinf)/L;
+               //dgust_dx = 0.5*gust_amp*2*PI_NUMBER*(sin(2*PI_NUMBER*x_gust))/L;
+               //dgust_dy = 0;
+               //dgust_dt = 0.5*gust_amp*2*PI_NUMBER*(sin(2*PI_NUMBER*x_gust))*(-Uinf)/L;
              }
              break;
 
@@ -1146,7 +1155,7 @@ void InitializeVortexDistribution(unsigned long &nVortex, vector<double>& x0, ve
   
   // Ignore line containing the header
   getline(file, line);
-  // Read in the information of the vortices (xloc, yloc, lambda(strenght), eta(size, gradient))
+  // Read in the information of the vortices (xloc, yloc, lambda(strength), eta(size, gradient))
   while (file.good())
   {
     getline(file, line);
