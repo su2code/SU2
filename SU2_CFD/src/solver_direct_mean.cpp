@@ -1964,7 +1964,8 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
   bool grid_movement      = config->GetGrid_Movement();
   bool gravity            = config->GetGravityForce();
   bool turbulent          = config->GetKind_Solver() == RANS;
-  bool tkeNeeded          = ((config->GetKind_Solver() == RANS) && (config->GetKind_Turb_Model() == SST));
+  bool tkeNeeded          = ((config->GetKind_Solver() == RANS) &&
+                             (config->GetKind_Turb_Model() == SST));
   bool free_stream_temp   = (config->GetKind_FreeStreamOption() == TEMPERATURE_FS);
   bool standard_air       = (config->GetKind_FluidModel() == STANDARD_AIR);
   bool reynolds_init      = (config->GetKind_InitOption() == REYNOLDS);
@@ -2189,30 +2190,31 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
   else {
     
     /*--- Reference length = 1 (by default)
-     Reference density = liquid density or freestream
+     Reference density   = liquid density or freestream
      Reference viscosity = liquid viscosity or freestream
-     Reference velocity = liquid velocity or freestream
-     Reference pressure = Reference density * Reference velocity * Reference velocity
+     Reference velocity  = liquid velocity or freestream
+     Reference pressure  = Reference density * Reference velocity * Reference velocity
      Reynolds number based on the liquid or reference viscosity ---*/
     
     Pressure_FreeStream = 0.0; config->SetPressure_FreeStream(Pressure_FreeStream);
     Density_FreeStream  = config->GetDensity_FreeStream();
-    ModVel_FreeStream = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++) ModVel_FreeStream += config->GetVelocity_FreeStream()[iDim]*config->GetVelocity_FreeStream()[iDim];
+    ModVel_FreeStream   = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++)
+      ModVel_FreeStream += config->GetVelocity_FreeStream()[iDim]*config->GetVelocity_FreeStream()[iDim];
     ModVel_FreeStream = sqrt(ModVel_FreeStream); config->SetModVel_FreeStream(ModVel_FreeStream);
     
     /*--- Additional reference values defined by Pref, Tref, Rho_ref. By definition,
      Lref is one because we have converted the grid to meters.---*/
     
-    Length_Ref = config->GetLength_Reynolds();                config->SetLength_Ref(Length_Ref);
-    Density_Ref = Density_FreeStream;                         config->SetDensity_Ref(Density_Ref);
+    Length_Ref   = config->GetLength_Reynolds();              config->SetLength_Ref(Length_Ref);
+    Density_Ref  = Density_FreeStream;                        config->SetDensity_Ref(Density_Ref);
     Velocity_Ref = ModVel_FreeStream;                         config->SetVelocity_Ref(Velocity_Ref);
     Pressure_Ref = Density_Ref*(Velocity_Ref*Velocity_Ref);   config->SetPressure_Ref(Pressure_Ref);
     
     if (viscous) {
       Viscosity_FreeStream = config->GetViscosity_FreeStream();
-      Reynolds = Density_Ref*Velocity_Ref*Length_Ref / Viscosity_FreeStream;  config->SetReynolds(Reynolds);
-      Viscosity_Ref = Viscosity_FreeStream * Reynolds;                        config->SetViscosity_Ref(Viscosity_Ref);
+      Reynolds = Density_Ref*Velocity_Ref*Length_Ref / Viscosity_FreeStream; config->SetReynolds(Reynolds);
+      Viscosity_Ref = Viscosity_FreeStream * Reynolds;                       config->SetViscosity_Ref(Viscosity_Ref);
     }
     
     /*--- Compute Mach number ---*/
@@ -7614,10 +7616,15 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
       }
       if (incompressible) {
 
-        /*--- The velocity is computed from the infinity values ---*/
+        /*--- Retrieve the specified velocity for the inlet. ---*/
+        
+        Vel_Mag  = config->GetInlet_Ptotal(Marker_Tag)/config->GetVelocity_Ref();
+        Flow_Dir = config->GetInlet_FlowDir(Marker_Tag);
+        
+        /*--- Store the velocity in the primitive variable vector ---*/
         
         for (iDim = 0; iDim < nDim; iDim++)
-          V_inlet[iDim+1] = GetVelocity_Inf(iDim);
+          V_inlet[iDim+1] = Vel_Mag*Flow_Dir[iDim];
 
         /*--- Neumann condition for pressure ---*/
         
