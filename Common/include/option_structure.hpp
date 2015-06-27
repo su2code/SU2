@@ -475,7 +475,8 @@ enum ENUM_GRIDMOVEMENT {
   MOVING_WALL = 7,    /*!< \brief Simulation with moving walls (translation/rotation). */
   ROTATING_FRAME = 8,    /*!< \brief Simulation in a rotating frame. */
   ELASTICITY = 9,    /*!< \brief Linear Elasticity. */
-  AEROELASTIC_RIGID_MOTION = 10 /*!< \brief Simulation with rotation and aeroelastic motion. */
+  AEROELASTIC_RIGID_MOTION = 10, /*!< \brief Simulation with rotation and aeroelastic motion. */
+  STEADY_TRANSLATION = 11    /*!< \brief Simulation in a steadily translating frame. */
 
 };
 static const map<string, ENUM_GRIDMOVEMENT> GridMovement_Map = CCreateMap<string, ENUM_GRIDMOVEMENT>
@@ -489,7 +490,8 @@ static const map<string, ENUM_GRIDMOVEMENT> GridMovement_Map = CCreateMap<string
 ("ROTATING_FRAME", ROTATING_FRAME)
 ("ELASTICITY", ELASTICITY)
 ("MOVING_WALL", MOVING_WALL)
-("AEROELASTIC_RIGID_MOTION", AEROELASTIC_RIGID_MOTION);
+("AEROELASTIC_RIGID_MOTION", AEROELASTIC_RIGID_MOTION)
+("STEADY_TRANSLATION", STEADY_TRANSLATION);
 
 /*!
  * \brief type of wind gusts

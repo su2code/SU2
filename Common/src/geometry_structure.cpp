@@ -11303,6 +11303,43 @@ void CPhysicalGeometry::SetRotationalVelocity(CConfig *config) {
   
 }
 
+void CPhysicalGeometry::SetTranslationalVelocity(CConfig *config) {
+  
+  unsigned short iDim;
+  unsigned long iPoint;
+  double xDot[3];
+  
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+  
+  /*--- Get the translational velocity vector from config ---*/
+  
+  xDot[0]   = config->GetTranslation_Rate_X(ZONE_0)/config->GetVelocity_Ref();
+  xDot[1]   = config->GetTranslation_Rate_Y(ZONE_0)/config->GetVelocity_Ref();
+  xDot[2]   = config->GetTranslation_Rate_Z(ZONE_0)/config->GetVelocity_Ref();
+  
+  /*--- Print some information to the console ---*/
+  
+  if (rank == MASTER_NODE) {
+    cout << " Non-dim. translational velocity: (" << xDot[0] << ", " << xDot[1];
+    cout << ", " << xDot[2] << ")." << endl;
+  }
+  
+  /*--- Loop over all nodes and set the translational velocity ---*/
+  
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    
+    /*--- Store the grid velocity at this node ---*/
+    
+    for (iDim = 0; iDim < nDim; iDim++)
+      node[iPoint]->SetGridVel(iDim,xDot[iDim]);
+  
+  }
+  
+}
+
 void CPhysicalGeometry::SetGridVelocity(CConfig *config, unsigned long iter) {
   
   /*--- Local variables ---*/
@@ -13965,6 +14002,31 @@ void CMultiGridGeometry::SetRotationalVelocity(CConfig *config) {
   }
   
   delete [] RotVel;
+  
+}
+
+void CMultiGridGeometry::SetTranslationalVelocity(CConfig *config) {
+  
+  unsigned iDim;
+  unsigned long iPoint_Coarse;
+  double xDot[3];
+  
+  /*--- Get the translational velocity vector from config ---*/
+  
+  xDot[0]   = config->GetTranslation_Rate_X(ZONE_0)/config->GetVelocity_Ref();
+  xDot[1]   = config->GetTranslation_Rate_Y(ZONE_0)/config->GetVelocity_Ref();
+  xDot[2]   = config->GetTranslation_Rate_Z(ZONE_0)/config->GetVelocity_Ref();
+  
+  /*--- Loop over all nodes and set the translational velocity ---*/
+  
+  for (iPoint_Coarse = 0; iPoint_Coarse < nPoint; iPoint_Coarse++) {
+    
+    /*--- Store the grid velocity at this node ---*/
+    
+    for (iDim = 0; iDim < nDim; iDim++)
+      node[iPoint_Coarse]->SetGridVel(iDim,xDot[iDim]);
+    
+  }
   
 }
 

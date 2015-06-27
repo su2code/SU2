@@ -572,6 +572,12 @@ public:
 	 */
 	virtual void SetRotationalVelocity(CConfig *config);
 
+    /*!
+     * \brief A virtual member.
+     * \param[in] config - Definition of the particular problem.
+     */
+    virtual void SetTranslationalVelocity(CConfig *config);
+    
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.
@@ -1136,6 +1142,12 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void SetRotationalVelocity(CConfig *config);
+    
+    /*!
+     * \brief Set the translational velocity at each node.
+     * \param[in] config - Definition of the particular problem.
+     */
+    void SetTranslationalVelocity(CConfig *config);
 
 	/*! 
 	 * \brief Set the grid velocity via finite differencing at each node.
@@ -1492,6 +1504,12 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void SetRotationalVelocity(CConfig *config);
+    
+    /*!
+     * \brief Set the translational velocity at each grid point on a coarse mesh.
+     * \param[in] config - Definition of the particular problem.
+     */
+    void SetTranslationalVelocity(CConfig *config);
 
 	/*!
 	 * \brief Set the grid velocity at each node in the coarse mesh level.

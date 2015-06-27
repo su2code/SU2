@@ -1235,6 +1235,26 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
       }
       
       break;
+            
+    case STEADY_TRANSLATION:
+      
+      /*--- Set the translational velocity and hold the grid fixed during
+       the calculation (similar to rotating frame, but there is no extra
+       source term for translation). ---*/
+      
+      if (ExtIter == 0) {
+        
+        if (rank == MASTER_NODE)
+          cout << endl << " Setting translational grid velocities." << endl;
+        
+          /*--- Set the translational velocity on all grid levels. ---*/
+          
+          for (iMGlevel = 0; iMGlevel <= nMGlevels; iMGlevel++)
+              geometry_container[iMGlevel]->SetTranslationalVelocity(config_container);
+        
+      }
+      
+      break;
       
     case RIGID_MOTION:
       

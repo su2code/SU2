@@ -81,6 +81,8 @@ inline void CGeometry::DivideConnectivity(CConfig *config, unsigned short Elem_T
 
 inline void CGeometry::SetRotationalVelocity(CConfig *config) { }
 
+inline void CGeometry::SetTranslationalVelocity(CConfig *config) { }
+
 inline void CGeometry::SetGridVelocity(CConfig *config, unsigned long iter) { }
 
 inline void CGeometry::SetRestricted_GridVelocity(CGeometry *fine_mesh, CConfig *config) { } 
