@@ -1706,7 +1706,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if ((Kind_SU2 == SU2_CFD || Kind_SU2 == SU2_SOL) &&
       (Unsteady_Simulation == STEADY) &&
       ((Kind_GridMovement[ZONE_0] != MOVING_WALL) &&
-       (Kind_GridMovement[ZONE_0] != ROTATING_FRAME)))
+       (Kind_GridMovement[ZONE_0] != ROTATING_FRAME) &&
+       (Kind_GridMovement[ZONE_0] != STEADY_TRANSLATION)))
     Grid_Movement = false;
   
   /*--- If it is not specified, set the mesh motion mach number
@@ -1726,8 +1727,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
    types provided (should be equal, except that rigid motion and rotating frame
    do not depend on surface specification). ---*/
   
-  if (Grid_Movement && (Kind_GridMovement[ZONE_0] != RIGID_MOTION) &&
+  if (Grid_Movement &&
+      (Kind_GridMovement[ZONE_0] != RIGID_MOTION) &&
       (Kind_GridMovement[ZONE_0] != ROTATING_FRAME) &&
+      (Kind_GridMovement[ZONE_0] != STEADY_TRANSLATION) &&
       (nGridMovement != nMarker_Moving)) {
     cout << "Number of GRID_MOVEMENT_KIND must match number of MARKER_MOVING!!" << endl;
     exit(EXIT_FAILURE);
