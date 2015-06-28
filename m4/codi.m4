@@ -7,8 +7,6 @@ AC_DEFUN([CONFIGURE_CODI],
         AS_HELP_STRING([--enable-codi-forward], [build executables with codi forward datatype (default = no)]),
         [build_CODI_FORWARD="yes"], [build_CODI_FORWARD="no"])
 
-        REVERSE_CXX=
-        FORWARD_CXX=
         CODIheader=codi.hpp
 
         #if test "$build_CODI_REVERSE" == "yes" || test "$build_CODI_FORWARD" == "yes"
@@ -37,8 +35,5 @@ AC_DEFUN([CONFIGURE_CODI],
            build_REVERSE=yes
            build_DIRECTDIFF=no
            build_NORMAL=no
-        else
-           build_REVERSE=no
-           build_DIRECTDIFF=no
         fi
 ])

@@ -130,12 +130,12 @@ endif
 if BUILD_DIRECTDIFF
 libSU2_DIRECTDIFF_a_SOURCES = $(lib_sources)
 libSU2_DIRECTDIFF_a_CXXFLAGS = @DIRECTDIFF_CXX@ ${lib_cxxflags}
-libSU2_DIRECTDIFF_a_LIBADD =  @DIRECTDIFF_LIBS@ ${lib_ldadd}
+libSU2_DIRECTDIFF_a_LIBADD =  ${lib_ldadd}
 endif
 
 if BUILD_REVERSE
 libSU2_REVERSE_a_SOURCES = $(lib_sources)
 libSU2_REVERSE_a_CXXFLAGS = @REVERSE_CXX@ ${lib_cxxflags}
-libSU2_REVERSE_a_LIBADD =  @REVERSE_LIBS@ ${lib_ldadd}
+libSU2_REVERSE_a_LIBADD =  ${lib_ldadd}
 endif
 

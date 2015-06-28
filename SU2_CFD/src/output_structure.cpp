@@ -725,7 +725,7 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
           ", " << Buffer_Receive_PsiE[position] << ", " << Buffer_Receive_Coord_x[position] <<
           ", "<< Buffer_Receive_Coord_y[position];
           if (config->GetDiscrete_Adjoint()){
-            SurfAdj_file << ", " << Buffer_Receive_Sens_x << ", " << Buffer_Receive_Sens_y;
+            SurfAdj_file << ", " << Buffer_Receive_Sens_x[position] << ", " << Buffer_Receive_Sens_y[position];
           }
           SurfAdj_file << endl;
         }
@@ -3288,7 +3288,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
             Data[iVar+0][iGlobal_Index] = Buffer_Recv_Var[jPoint];
             Data[iVar+1][iGlobal_Index] = Buffer_Recv_Res[jPoint];
             if (nDim == 3)
-              Data[iVar+2][iGlobal_Index] = Buffer_Send_Vol[jPoint];
+              Data[iVar+2][iGlobal_Index] = Buffer_Recv_Vol[jPoint];
             jPoint++;
           }
 
@@ -3555,7 +3555,10 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       ( Kind_Solver == ADJ_NAVIER_STOKES      ) ||
       ( Kind_Solver == ADJ_RANS               ) ||
       ( Kind_Solver == ADJ_TNE2_EULER         ) ||
-      ( Kind_Solver == ADJ_TNE2_NAVIER_STOKES )   ) {
+      ( Kind_Solver == ADJ_TNE2_NAVIER_STOKES ) ||
+      ( Kind_Solver == DISC_ADJ_EULER         ) ||
+      ( Kind_Solver == DISC_ADJ_NAVIER_STOKES ) ||
+      ( Kind_Solver == DISC_ADJ_RANS          )) {
     delete [] Aux_Sens;
   }
   
