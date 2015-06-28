@@ -11657,10 +11657,19 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
   vector<unsigned long> OldBoundaryElems[100];
   vector<unsigned long>::iterator IterNewElem[100];
 
-  /*--- It only create the mirror structure for the second boundary ---*/
-  bool CreateMirror[10];
-  CreateMirror[1] = false;
-  CreateMirror[2] = true;
+  /*--- We only create the mirror structure for the second boundary ---*/
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
+      /*--- Evaluate the number of periodic boundary conditions ---*/
+      nPeriodic++;
+    }
+  }
+  bool *CreateMirror = new bool[nPeriodic+1];
+  CreateMirror[0] = false;
+  for (iPeriodic = 1; iPeriodic <= nPeriodic; iPeriodic++) {
+    if (iPeriodic <= nPeriodic/2) CreateMirror[iPeriodic] = false;
+    else CreateMirror[iPeriodic] = true;
+  }
   
   /*--- Send an initial message to the console. ---*/
   cout << "Setting the periodic boundary conditions." << endl;
@@ -11668,10 +11677,6 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
   /*--- Loop through each marker to find any periodic boundaries. ---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
     if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
-      
-      /*--- Evaluate the number of periodic boundary conditions defined
-       in the geometry file ---*/
-      nPeriodic++;
       
       /*--- Get marker index of the periodic donor boundary. ---*/
       jMarker = config->GetMarker_Periodic_Donor(config->GetMarker_All_TagBound(iMarker));
@@ -11977,7 +11982,8 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
     }
   }
   
-  delete[] PeriodicBC;
+  delete [] PeriodicBC;
+  delete [] CreateMirror;
   
 }
 
@@ -14272,15 +14278,19 @@ CPeriodicGeometry::CPeriodicGeometry(CGeometry *geometry, CConfig *config) {
   dx, dy, dz, rotCoord[3], *Coord_i;
   unsigned short nMarker_Max = config->GetnMarker_Max();
 
-  /*--- It only create the mirror structure for the second boundary ---*/
-  bool CreateMirror[10];
-  CreateMirror[1] = false;
-  CreateMirror[2] = true;
-  
-  /*--- Compute the number of periodic bc on the geometry ---*/
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY)
+  /*--- We only create the mirror structure for the second boundary ---*/
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
+      /*--- Evaluate the number of periodic boundary conditions ---*/
       nPeriodic++;
+    }
+  }
+  bool *CreateMirror = new bool[nPeriodic+1];
+  CreateMirror[0] = false;
+  for (iPeriodic = 1; iPeriodic <= nPeriodic; iPeriodic++) {
+    if (iPeriodic <= nPeriodic/2) CreateMirror[iPeriodic] = false;
+    else CreateMirror[iPeriodic] = true;
+  }
   
   /*--- Write the number of dimensions of the problem ---*/
   nDim = geometry->GetnDim();
@@ -14577,7 +14587,8 @@ CPeriodicGeometry::CPeriodicGeometry(CGeometry *geometry, CConfig *config) {
     
   }
   
-  delete[] Index;
+  delete [] Index;
+  delete [] CreateMirror;
   
 }
 
