@@ -6208,7 +6208,8 @@ build_DIRECTDIFF=no
 DIRECTDIFF_CXX=
 DIRECTDIFF_LIBS=
 # reverse mode type
-
+REVERSE_CXX=
+FORWARD_CXX=
 
     # Check whether --enable-adolc-reverse was given.
 if test "${enable_adolc_reverse+set}" = set; then :
@@ -6348,8 +6349,6 @@ else
 fi
 
 
-        REVERSE_CXX=
-        FORWARD_CXX=
         CODIheader=codi.hpp
 
         #if test "$build_CODI_REVERSE" == "yes" || test "$build_CODI_FORWARD" == "yes"
@@ -6378,9 +6377,6 @@ fi
            build_REVERSE=yes
            build_DIRECTDIFF=no
            build_NORMAL=no
-        else
-           build_REVERSE=no
-           build_DIRECTDIFF=no
         fi
 
 
