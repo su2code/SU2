@@ -364,13 +364,13 @@ AC_MSG_RESULT([
 
 -------------------------------------------------------------------------
 |    ___ _   _ ___                                                      |
-|   / __| | | |_  )   Release 3.2.9 'eagle'                             |
+|   / __| | | |_  )   Release 4.0.0 'Cardinal'                          |
 |   \\__ \\ |_| |/ /                                                      |
 |   |___/\\___//___|   Suite                                             |
 |                                                                       |
 -------------------------------------------------------------------------
-| SU2 Lead Dev.: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).|
-|                Dr. Thomas D. Economon (economon@stanford.edu).        |
+| SU2 Lead Dev.: Dr. Francisco Palacios, Francisco.D.Palacios@boeing.com|
+|                Dr. Thomas D. Economon, economon@stanford.edu          |
 -------------------------------------------------------------------------
 | SU2 Developers:                                                       |
 | - Prof. Juan J. Alonso's group at Stanford University.                |

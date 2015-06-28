@@ -2,7 +2,7 @@
  * \file config_structure.inl
  * \brief In-Line subroutines of the <i>config_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -120,6 +120,8 @@ inline double CConfig::GetWaveSpeed(void) { return Wave_Speed; }
 inline double CConfig::GetThermalDiffusivity(void) { return Thermal_Diffusivity; }
 
 inline double CConfig::GetElasticyMod(void) { return ElasticyMod; }
+
+inline unsigned short CConfig::GetElas2D_Formulation(void) { return Kind_2DElasForm; }
 
 inline double CConfig::GetPoissonRatio(void) { return PoissonRatio; }
 
@@ -436,6 +438,8 @@ inline bool CConfig::GetLowFidelitySim(void) { return LowFidelitySim; }
 inline bool CConfig::GetIonization(void) { return ionization; }
 
 inline unsigned short CConfig::GetKind_Solver(void) { return Kind_Solver; }
+
+inline void CConfig::SetKind_Solver(unsigned short val_solver) { Kind_Solver = val_solver; }
 
 inline unsigned short CConfig::GetKind_Regime(void) { return Kind_Regime; }
 
@@ -853,6 +857,8 @@ inline void CConfig::SetMarker_All_Designing(unsigned short val_marker, unsigned
 
 inline void CConfig::SetMarker_All_Plotting(unsigned short val_marker, unsigned short val_plotting) { Marker_All_Plotting[val_marker] = val_plotting; }
 
+inline void CConfig::SetMarker_All_FSIinterface(unsigned short val_marker, unsigned short val_fsiinterface) { Marker_All_FSIinterface[val_marker] = val_fsiinterface; }
+
 inline void CConfig::SetMarker_All_DV(unsigned short val_marker, unsigned short val_DV) { Marker_All_DV[val_marker] = val_DV; }
 
 inline void CConfig::SetMarker_All_Moving(unsigned short val_marker, unsigned short val_moving) { Marker_All_Moving[val_marker] = val_moving; }
@@ -876,6 +882,10 @@ inline short CConfig::GetMarker_All_SendRecv(unsigned short val_marker) { return
 inline void CConfig::SetMarker_All_SendRecv(unsigned short val_marker, short val_index) { Marker_All_SendRecv[val_marker] = val_index; }
 
 inline unsigned short CConfig::GetMarker_All_Plotting(unsigned short val_marker) { return Marker_All_Plotting[val_marker]; }
+
+inline unsigned short CConfig::GetMarker_All_FSIinterface(unsigned short val_marker) { return Marker_All_FSIinterface[val_marker]; }
+
+inline unsigned short CConfig::GetMarker_n_FSIinterface(void) { return nMarker_FSIinterface; }
 
 inline unsigned short CConfig::GetMarker_All_DV(unsigned short val_marker) { return Marker_All_DV[val_marker]; }
 
@@ -914,6 +924,8 @@ inline unsigned short CConfig::GetMesh_FileFormat(void) { return Mesh_FileFormat
 inline unsigned short CConfig::GetOutput_FileFormat(void) { return Output_FileFormat; }
 
 inline string CConfig::GetConv_FileName(void) { return Conv_FileName; }
+
+inline string CConfig::GetConv_FileName_FSI(void) { return Conv_FileName_FSI; }
 
 inline string CConfig::GetBreakdown_FileName(void) { return Breakdown_FileName; }
 
@@ -1057,6 +1069,8 @@ inline bool CConfig::GetViscous_Limiter_Flow(void) { return Viscous_Limiter_Flow
 
 inline bool CConfig::GetViscous_Limiter_Turb(void) { return Viscous_Limiter_Turb; }
 
+inline bool CConfig::GetWrite_Conv_FSI(void) { return Write_Conv_FSI; }
+
 inline bool CConfig::GetHold_GridFixed(void) { return Hold_GridFixed; }
 
 inline unsigned short CConfig::GetnPeriodicIndex(void) { return nPeriodic_Index; }
@@ -1182,3 +1196,44 @@ inline void CConfig::SetNonphysical_Reconstr(unsigned long val_nonphys_reconstr)
 inline unsigned long CConfig::GetNonphysical_Reconstr(void) { return Nonphys_Reconstr; }
 
 inline unsigned short CConfig::GetConsole_Output_Verb(void) { return Console_Output_Verb; }
+
+inline unsigned short CConfig::GetnIterFSI(void) { return nIterFSI; }
+
+inline double CConfig::GetAitkenStatRelax(void) { return AitkenStatRelax; }
+
+inline double CConfig::GetAitkenDynMaxInit(void) { return AitkenDynMaxInit; }
+
+inline bool CConfig::GetDeadLoad(void) { return DeadLoad; }
+
+inline unsigned short CConfig::GetDynamic_Analysis(void) { return Dynamic_Analysis; }
+
+inline double CConfig::GetDelta_DynTime(void) { return Delta_DynTime; }
+
+inline double CConfig::GetTotal_DynTime(void) { return Total_DynTime; }
+
+inline double CConfig::GetCurrent_DynTime(void) { return Current_DynTime; }
+
+inline bool CConfig::GetWrt_Dynamic(void) { return Wrt_Dynamic; }
+
+inline double CConfig::GetNewmark_alpha(void) { return Newmark_alpha; }
+
+inline double CConfig::GetNewmark_delta(void) { return Newmark_delta; }
+
+inline bool CConfig::GetGradual_Load(void) { return Gradual_Load; }
+
+inline bool CConfig::GetRamp_Load(void) { return Ramp_Load; }
+
+inline double CConfig::GetRamp_Time(void) { return Ramp_Time; }
+
+inline double CConfig::GetStatic_Time(void) { return Static_Time; }
+
+inline unsigned short CConfig::GetPredictorOrder(void) { return Pred_Order; }
+
+inline bool CConfig::GetFSI_Simulation(void) { return FSI_Problem; }
+
+inline unsigned short CConfig::GetRelaxation_Method_FSI(void) { return Kind_BGS_RelaxMethod; }
+
+inline double CConfig::GetOrderMagResidualFSI(void) { return OrderMagResidualFSI; }
+
+inline double CConfig::GetMinLogResidualFSI(void) { return MinLogResidualFSI; }
+

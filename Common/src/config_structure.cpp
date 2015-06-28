@@ -2,7 +2,7 @@
  * \file config_structure.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -117,9 +117,11 @@ void CConfig::SetPointersNull(void) {
   Marker_IsothermalCatalytic=NULL; Marker_IsothermalNonCatalytic=NULL;
   Marker_HeatFluxNonCatalytic=NULL; Marker_HeatFluxCatalytic=NULL;
   Marker_EngineExhaust=NULL; Marker_Displacement=NULL;     Marker_Load=NULL;
+  Marker_Load_Dir=NULL;   	  Marker_Load_Sine=NULL; 		Marker_Clamped=NULL;
   Marker_FlowLoad=NULL;       Marker_Neumann=NULL;          Marker_Neumann_Elec=NULL;
   Marker_All_TagBound=NULL;        Marker_CfgFile_TagBound=NULL;       Marker_All_KindBC=NULL;
   Marker_CfgFile_KindBC=NULL;    Marker_All_SendRecv=NULL; Marker_All_PerBound=NULL;
+  Marker_FSIinterface=NULL;
 
   /*--- Boundary Condition settings ---*/
 
@@ -134,6 +136,9 @@ void CConfig::SetPointersNull(void) {
   FlowLoad_Value=NULL;        Periodic_RotCenter=NULL;      Periodic_RotAngles=NULL;
   Periodic_Translation=NULL;  Periodic_Center=NULL;         Periodic_Rotation=NULL;
   Periodic_Translate=NULL;    Wall_Catalycity=NULL;
+
+  Load_Dir=NULL;	          Load_Dir_Value=NULL;          Load_Dir_Multiplier=NULL;
+  Load_Sine_Dir=NULL;	      Load_Sine_Amplitude=NULL;     Load_Sine_Frequency=NULL;
 
   /*--- Miscellaneous/unsorted ---*/
 
@@ -398,6 +403,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addStringListOption("MARKER_NEARFIELD", nMarker_NearFieldBound, Marker_NearFieldBound);
   /*!\brief MARKER_INTERFACE\n DESCRIPTION: Zone interface boundary marker(s) \ingroup Config*/
   addStringListOption("MARKER_INTERFACE", nMarker_InterfaceBound, Marker_InterfaceBound);
+  /*!\brief MARKER_FSI_INTERFACE \n DESCRIPTION: FSI interface boundary marker(s) \ingroup Config*/
+  addStringListOption("MARKER_FSI_INTERFACE", nMarker_FSIinterface, Marker_FSIinterface);
   /*!\brief MARKER_DIRICHLET  \n DESCRIPTION: Dirichlet boundary marker(s) \ingroup Config*/
   addStringListOption("MARKER_DIRICHLET", nMarker_Dirichlet, Marker_Dirichlet);
   /* DESCRIPTION: Neumann boundary marker(s) */
@@ -479,10 +486,19 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Engine exhaust boundary marker(s)
    Format: (nacelle exhaust marker, total nozzle temp, total nozzle pressure, ... )*/
   addExhaustOption("MARKER_ENGINE_EXHAUST", nMarker_EngineExhaust, Marker_EngineExhaust, Exhaust_Temperature_Target, Exhaust_Pressure_Target);
+  /* DESCRIPTION: Clamped boundary marker(s) */
+  addStringListOption("MARKER_CLAMPED", nMarker_Clamped, Marker_Clamped);
   /* DESCRIPTION: Displacement boundary marker(s) */
   addStringDoubleListOption("MARKER_NORMAL_DISPL", nMarker_Displacement, Marker_Displacement, Displ_Value);
   /* DESCRIPTION: Load boundary marker(s) */
   addStringDoubleListOption("MARKER_NORMAL_LOAD", nMarker_Load, Marker_Load, Load_Value);
+  /* DESCRIPTION: Load boundary marker(s)
+   Format: (inlet marker, load, multiplier, dir_x, dir_y, dir_z, ... ), i.e. primitive variables specified. */
+  addInletOption("MARKER_LOAD", nMarker_Load_Dir, Marker_Load_Dir, Load_Dir_Value, Load_Dir_Multiplier, Load_Dir);
+  /* DESCRIPTION: Sine load boundary marker(s)
+   Format: (inlet marker, load, multiplier, dir_x, dir_y, dir_z, ... ), i.e. primitive variables specified. */
+  addInletOption("MARKER_SINE_LOAD", nMarker_Load_Sine, Marker_Load_Sine, Load_Sine_Amplitude, Load_Sine_Frequency, Load_Sine_Dir);
+
   /* DESCRIPTION: Flow load boundary marker(s) */
   addStringDoubleListOption("MARKER_FLOWLOAD", nMarker_FlowLoad, Marker_FlowLoad, FlowLoad_Value);
   /* DESCRIPTION: Damping factor for engine inlet condition */
@@ -557,7 +573,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Time discretization */
   addEnumOption("TIME_DISCRE_WAVE", Kind_TimeIntScheme_Wave, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
-  addEnumOption("TIME_DISCRE_FEA", Kind_TimeIntScheme_FEA, Time_Int_Map, EULER_IMPLICIT);
+  addEnumOption("TIME_DISCRE_FEA", Kind_TimeIntScheme_FEA, Time_Int_Map_FEA, NEWMARK_IMPLICIT);
   /* DESCRIPTION: Time discretization */
   addEnumOption("TIME_DISCRE_HEAT", Kind_TimeIntScheme_Heat, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
@@ -613,6 +629,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("RESIDUAL_REDUCTION", OrderMagResidual, 3.0);
   /* DESCRIPTION: Min value of the residual (log10 of the residual) */
   addDoubleOption("RESIDUAL_MINVAL", MinLogResidual, -8.0);
+  /* DESCRIPTION: Residual reduction (order of magnitude with respect to the initial value) */
+  addDoubleOption("RESIDUAL_REDUCTION_FSI", OrderMagResidualFSI, 3.0);
+  /* DESCRIPTION: Min value of the residual (log10 of the residual) */
+  addDoubleOption("RESIDUAL_MINVAL_FSI", MinLogResidualFSI, -5.0);
   /* DESCRIPTION: Flow functional for the Residual criteria */
   addEnumOption("RESIDUAL_FUNC_FLOW", Residual_Func_Flow, Residual_Map, RHO_RESIDUAL);
   /* DESCRIPTION: Iteration number to begin convergence monitoring */
@@ -816,6 +836,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addStringOption("CONV_FILENAME", Conv_FileName, string("history"));
   /*!\brief BREAKDOWN_FILENAME \n DESCRIPTION: Output file forces breakdown \ingroup Config*/
   addStringOption("BREAKDOWN_FILENAME", Breakdown_FileName, string("forces_breakdown.dat"));
+  /*!\brief CONV_FILENAME \n DESCRIPTION: Output file convergence history (w/o extension) \n Default: history \ingroup Config*/
+  addStringOption("CONV_FILENAME_FSI", Conv_FileName_FSI, string("historyFSI.csv"));
+  /* DESCRIPTION: Viscous limiter turbulent equations */
+  addBoolOption("WRITE_CONV_FILENAME_FSI", Write_Conv_FSI, false);
   /*!\brief SOLUTION_FLOW_FILENAME \n DESCRIPTION: Restart flow input file (the file output under the filename set by RESTART_FLOW_FILENAME) \n Default: solution_flow.dat \ingroup Config */
   addStringOption("SOLUTION_FLOW_FILENAME", Solution_FlowFileName, string("solution_flow.dat"));
   /*!\brief SOLUTION_LIN_FILENAME  \n DESCRIPTION: Restart linear flow input file \ingroup Config*/
@@ -1149,6 +1173,63 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("POISSON_RATIO", PoissonRatio, 0.30);
   /* DESCRIPTION: Material density */
   addDoubleOption("MATERIAL_DENSITY", MaterialDensity, 7854);
+  /* DESCRIPTION: Formulation for bidimensional elasticity solver */
+  addEnumOption("FORMULATION_ELASTICITY_2D", Kind_2DElasForm, ElasForm_2D, PLANE_STRESS);
+  /*  DESCRIPTION: Apply dead loads
+  *  Options: NO, YES \ingroup Config */
+  addBoolOption("DEAD_LOAD", DeadLoad, false);
+  /* DESCRIPTION: Dynamic or static structural analysis */
+  addEnumOption("DYNAMIC_ANALYSYS", Dynamic_Analysis, Dynamic_Map, STATIC);
+  /* DESCRIPTION: Time Step for dynamic analysis (s) */
+  addDoubleOption("DYN_TIMESTEP", Delta_DynTime, 0.0);
+  /* DESCRIPTION: Total Physical Time for dual time stepping simulations (s) */
+  addDoubleOption("DYN_TIME", Total_DynTime, 1.0);
+  /* DESCRIPTION: Parameter alpha for Newmark scheme (s) */
+  addDoubleOption("NEWMARK_ALPHA", Newmark_alpha, 0.25);
+  /* DESCRIPTION: Parameter delta for Newmark scheme (s) */
+  addDoubleOption("NEWMARK_DELTA", Newmark_delta, 0.5);
+  /* DESCRIPTION: Apply the load slowly or suddenly */
+  addBoolOption("SIGMOID_LOADING", Gradual_Load, false);
+  /* DESCRIPTION: Apply the load as a ramp */
+  addBoolOption("RAMP_LOADING", Ramp_Load, false);
+  /* DESCRIPTION: Time while the load is to be increased linearly */
+  addDoubleOption("RAMP_TIME", Ramp_Time, 1.0);
+
+  /* DESCRIPTION: Time while the structure is static */
+  addDoubleOption("STATIC_TIME", Static_Time, 1.0);
+
+  /* DESCRIPTION: Order of the predictor */
+  addUnsignedShortOption("PREDICTOR_ORDER", Pred_Order, 0);
+
+  /*!\par PHYSICAL_PROBLEM_FLUID_FSI
+   *  DESCRIPTION: Physical governing equations \n
+   *  Options: NONE (default),EULER, NAVIER_STOKES, RANS,
+   *  \ingroup Config*/
+  addEnumOption("FSI_FLUID_PROBLEM", Kind_Solver_Fluid_FSI, FSI_Fluid_Solver_Map, NO_SOLVER_FFSI);
+  /*!\par PHYSICAL_PROBLEM_STRUCTURAL_FSI
+   *  DESCRIPTION: Physical governing equations \n
+   *  Options: NONE (default), LINEAR_ELASTICITY, NONLINEAR_ELASTICITY
+   *  \ingroup Config*/
+  addEnumOption("FSI_STRUCTURAL_PROBLEM", Kind_Solver_Struc_FSI, FSI_Struc_Solver_Map, NO_SOLVER_SFSI);
+
+  /* DESCRIPTION: Preconditioner for the Krylov linear solvers */
+  addEnumOption("FSI_LINEAR_SOLVER_PREC_STRUC", Kind_Linear_Solver_Prec_FSI_Struc, Linear_Solver_Prec_Map, ILU);
+
+  /* DESCRIPTION: Maximum number of iterations of the linear solver for the implicit formulation */
+  addUnsignedLongOption("FSI_LINEAR_SOLVER_ITER_STRUC", Linear_Solver_Iter_FSI_Struc, 500);
+
+
+  /* CONFIG_CATEGORY: FSI solver */
+  /*--- Options related to the FSI solver ---*/
+  /* DESCRIPTION: Maximum number of FSI iterations */
+  addUnsignedShortOption("FSI_ITER", nIterFSI, 1);
+  /* DESCRIPTION: Aitken's static relaxation factor */
+  addDoubleOption("STAT_RELAX_PARAMETER", AitkenStatRelax, 0.4);
+  /* DESCRIPTION: Aitken's dynamic maximum relaxation factor for the first iteration */
+  addDoubleOption("AITKEN_DYN_MAX_INITIAL", AitkenDynMaxInit, 0.4);
+  /* DESCRIPTION: Type of gust */
+  addEnumOption("BGS_RELAXATION", Kind_BGS_RelaxMethod, AitkenForm_Map, NO_RELAXATION);
+
 
   /*!\par CONFIG_CATEGORY: Wave solver \ingroup Config*/
   /*--- options related to the wave solver ---*/
@@ -1489,6 +1570,21 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   if ((Adjoint && !MG_AdjointFlow) ||
       (Unsteady_Simulation == TIME_STEPPING)) { nMGLevels = 0; }
+
+  /*--- If Fluid Structure Interaction, set the solver for each zone.
+   *--- ZONE_0 is the zone of the fluid.
+   *--- All the other zones are structure.
+   *--- This will allow us to define multiple physics structural problems */
+
+  if (Kind_Solver == FLUID_STRUCTURE_INTERACTION){
+	  if (val_izone==0) {	Kind_Solver = Kind_Solver_Fluid_FSI; 		FSI_Problem = true;}
+
+	  else {			 	Kind_Solver = Kind_Solver_Struc_FSI;	  	FSI_Problem = true;
+	  	  	  	  	  	  	Kind_Linear_Solver_Prec = Kind_Linear_Solver_Prec_FSI_Struc;
+	  	  	  	  	  	  	Linear_Solver_Iter = Linear_Solver_Iter_FSI_Struc;}
+  }
+  else{ FSI_Problem = false; }
+
   
   /*--- Initialize non-physical points/reconstructions to zero ---*/
   
@@ -1514,14 +1610,20 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
   
   /*--- Set the number of external iterations to 1 for the steady state problem ---*/
-  
-  if ((Kind_Solver == LINEAR_ELASTICITY) || (Kind_Solver == HEAT_EQUATION) ||
+
+  if ((Kind_Solver == HEAT_EQUATION) ||
       (Kind_Solver == WAVE_EQUATION) || (Kind_Solver == POISSON_EQUATION)) {
     nMGLevels = 0;
     if (Unsteady_Simulation == STEADY) nExtIter = 1;
     else Unst_nIntIter = 2;
   }
   
+  if (Kind_Solver == LINEAR_ELASTICITY) {
+    nMGLevels = 0;
+    if (Dynamic_Analysis == STATIC) 
+	nExtIter = 1;
+  }
+
   /*--- Decide whether we should be writing unsteady solution files. ---*/
   
   if (Unsteady_Simulation == STEADY ||
@@ -1529,6 +1631,14 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       Unsteady_Simulation == TIME_SPECTRAL  ||
       Kind_Regime == FREESURFACE) { Wrt_Unsteady = false; }
   else { Wrt_Unsteady = true; }
+
+  if (Kind_Solver == LINEAR_ELASTICITY) {
+
+	  if (Dynamic_Analysis == STATIC) { Wrt_Dynamic = false; }
+	  else { Wrt_Dynamic = true; }
+
+  }
+
   
   
   /*--- Check for Measurement System ---*/
@@ -1631,6 +1741,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   if (Grid_Movement && (Kind_GridMovement[ZONE_0] != RIGID_MOTION) &&
       (Kind_GridMovement[ZONE_0] != ROTATING_FRAME) &&
+      (Kind_GridMovement[ZONE_0] != GUST) &&
       (nGridMovement != nMarker_Moving)) {
     cout << "Number of GRID_MOVEMENT_KIND must match number of MARKER_MOVING!!" << endl;
     exit(EXIT_FAILURE);
@@ -2117,14 +2228,12 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       Aeroelastic_plunge[iMarker] = 0.0;
     }
   }
-  
-  /*--- Fluid-Structure problems always have grid movement ---*/
-  
-  if (Kind_Solver == FLUID_STRUCTURE_EULER ||
-      Kind_Solver == FLUID_STRUCTURE_NAVIER_STOKES) {
-    if (Kind_Turb_Model != NONE)
-      Kind_Solver = FLUID_STRUCTURE_RANS;
-    Grid_Movement = true;
+
+  /*--- Fluid-Structure Interaction problems ---*/
+
+  if (FSI_Problem) {
+	  Kind_GridMovement[val_izone] = FLUID_STRUCTURE;
+	  Grid_Movement = true;
   }
   
   if (MGCycle == FULLMG_CYCLE) FinestMesh = nMGLevels;
@@ -3047,6 +3156,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   iMarker_Displacement, iMarker_Load, iMarker_FlowLoad, iMarker_Neumann,
   iMarker_Monitoring, iMarker_Designing, iMarker_GeoEval, iMarker_Plotting,
   iMarker_DV, iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet,
+  iMarker_Clamped, iMarker_FSIinterface, iMarker_Load_Dir, iMarker_Load_Sine,
   iMarker_ActDisk_Inlet, iMarker_ActDisk_Outlet, iMarker_Out_1D;
 
   int size = SINGLE_NODE;
@@ -3066,6 +3176,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   nMarker_HeatFluxCatalytic + nMarker_EngineInflow + nMarker_EngineBleed + nMarker_EngineExhaust +
   nMarker_Supersonic_Inlet + nMarker_Supersonic_Outlet + nMarker_Displacement + nMarker_Load +
   nMarker_FlowLoad + nMarker_Custom +
+  nMarker_Clamped + nMarker_Load_Sine + nMarker_Load_Dir +
   nMarker_ActDisk_Inlet + nMarker_ActDisk_Outlet + nMarker_Out_1D;
   
   /*--- Add the possible send/receive domains ---*/
@@ -3084,6 +3195,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   Marker_All_Monitoring = new unsigned short[nMarker_All];	// Store whether the boundary should be monitored.
   Marker_All_Designing  = new unsigned short[nMarker_All];  // Store whether the boundary should be designed.
   Marker_All_Plotting   = new unsigned short[nMarker_All];	// Store whether the boundary should be plotted.
+  Marker_All_FSIinterface   = new unsigned short[nMarker_All];	// Store whether the boundary is in the FSI interface.
   Marker_All_GeoEval    = new unsigned short[nMarker_All];	// Store whether the boundary should be geometry evaluation.
   Marker_All_DV         = new unsigned short[nMarker_All];	// Store whether the boundary should be affected by design variables.
   Marker_All_Moving     = new unsigned short[nMarker_All];	// Store whether the boundary should be in motion.
@@ -3098,6 +3210,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
     Marker_All_GeoEval[iMarker_All]    = 0;
     Marker_All_Designing[iMarker_All]  = 0;
     Marker_All_Plotting[iMarker_All]   = 0;
+    Marker_All_FSIinterface[iMarker_All]   = 0;
     Marker_All_DV[iMarker_All]         = 0;
     Marker_All_Moving[iMarker_All]     = 0;
     Marker_All_PerBound[iMarker_All]   = 0;
@@ -3112,6 +3225,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   Marker_CfgFile_Designing  = new unsigned short[nMarker_Config];
   Marker_CfgFile_Plotting   = new unsigned short[nMarker_Config];
   Marker_CfgFile_GeoEval    = new unsigned short[nMarker_Config];
+  Marker_CfgFile_FSIinterface	= new unsigned short[nMarker_Config];
   Marker_CfgFile_DV         = new unsigned short[nMarker_Config];
   Marker_CfgFile_Moving     = new unsigned short[nMarker_Config];
   Marker_CfgFile_PerBound   = new unsigned short[nMarker_Config];
@@ -3124,6 +3238,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
     Marker_CfgFile_GeoEval[iMarker_Config]    = 0;
     Marker_CfgFile_Designing[iMarker_Config]  = 0;
     Marker_CfgFile_Plotting[iMarker_Config]   = 0;
+    Marker_CfgFile_FSIinterface[iMarker_Config]   = 0;
     Marker_CfgFile_DV[iMarker_Config]         = 0;
     Marker_CfgFile_Moving[iMarker_Config]     = 0;
     Marker_CfgFile_PerBound[iMarker_Config]   = 0;
@@ -3307,6 +3422,12 @@ void CConfig::SetMarkers(unsigned short val_software) {
     iMarker_Config++;
   }
 
+  for (iMarker_Clamped = 0; iMarker_Clamped < nMarker_Clamped; iMarker_Clamped++) {
+    Marker_CfgFile_TagBound[iMarker_Config] = Marker_Clamped[iMarker_Clamped];
+    Marker_CfgFile_KindBC[iMarker_Config] = CLAMPED_BOUNDARY;
+    iMarker_Config++;
+  }
+
   for (iMarker_Displacement = 0; iMarker_Displacement < nMarker_Displacement; iMarker_Displacement++) {
     Marker_CfgFile_TagBound[iMarker_Config] = Marker_Displacement[iMarker_Displacement];
     Marker_CfgFile_KindBC[iMarker_Config] = DISPLACEMENT_BOUNDARY;
@@ -3318,6 +3439,19 @@ void CConfig::SetMarkers(unsigned short val_software) {
     Marker_CfgFile_KindBC[iMarker_Config] = LOAD_BOUNDARY;
     iMarker_Config++;
   }
+
+  for (iMarker_Load_Dir = 0; iMarker_Load_Dir < nMarker_Load_Dir; iMarker_Load_Dir++) {
+    Marker_CfgFile_TagBound[iMarker_Config] = Marker_Load_Dir[iMarker_Load_Dir];
+    Marker_CfgFile_KindBC[iMarker_Config] = LOAD_DIR_BOUNDARY;
+    iMarker_Config++;
+  }
+
+  for (iMarker_Load_Sine = 0; iMarker_Load_Sine < nMarker_Load_Sine; iMarker_Load_Sine++) {
+    Marker_CfgFile_TagBound[iMarker_Config] = Marker_Load_Sine[iMarker_Load_Sine];
+    Marker_CfgFile_KindBC[iMarker_Config] = LOAD_SINE_BOUNDARY;
+    iMarker_Config++;
+  }
+
 
   for (iMarker_FlowLoad = 0; iMarker_FlowLoad < nMarker_FlowLoad; iMarker_FlowLoad++) {
     Marker_CfgFile_TagBound[iMarker_Config] = Marker_FlowLoad[iMarker_FlowLoad];
@@ -3353,6 +3487,17 @@ void CConfig::SetMarkers(unsigned short val_software) {
         Marker_CfgFile_Plotting[iMarker_Config] = YES;
   }
 
+  /*--- Identification of Fluid-Structure interface markers ---*/
+
+  for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++) {
+	unsigned short indexMarker=0;
+    Marker_CfgFile_FSIinterface[iMarker_Config] = NO;
+    for (iMarker_FSIinterface = 0; iMarker_FSIinterface < nMarker_FSIinterface; iMarker_FSIinterface++)
+      if (Marker_CfgFile_TagBound[iMarker_Config] == Marker_FSIinterface[iMarker_FSIinterface])
+      	indexMarker=(int)(iMarker_FSIinterface/2+1);
+        Marker_CfgFile_FSIinterface[iMarker_Config] = indexMarker;
+  }
+
   for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++) {
     Marker_CfgFile_DV[iMarker_Config] = NO;
     for (iMarker_DV = 0; iMarker_DV < nMarker_DV; iMarker_DV++)
@@ -3386,6 +3531,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   iMarker_EngineInflow, iMarker_EngineBleed, iMarker_EngineExhaust, iMarker_Displacement,
   iMarker_Load, iMarker_FlowLoad,  iMarker_Neumann, iMarker_Monitoring,
   iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_DV,
+  iMarker_FSIinterface, iMarker_Load_Dir, iMarker_Load_Sine, iMarker_Clamped,
   iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet, iMarker_ActDisk_Inlet,
   iMarker_ActDisk_Outlet;
   
@@ -3394,7 +3540,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   cout << endl << "-------------------------------------------------------------------------" << endl;
   cout << "|    ___ _   _ ___                                                      |" << endl;
-  cout << "|   / __| | | |_  )   Release 3.2.9   \"eagle\"                           |" << endl;
+  cout << "|   / __| | | |_  )   Release 4.0.0  \"Cardinal\"                         |" << endl;
   cout << "|   \\__ \\ |_| |/ /                                                      |" << endl;
   switch (val_software) {
     case SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;
@@ -3408,8 +3554,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   cout << "|                                                                       |" << endl;
   cout << "|   Local date and time: " << dt << "                      |" << endl;
   cout <<"-------------------------------------------------------------------------" << endl;
-  cout << "| SU2 Lead Dev.: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).|" << endl;
-  cout << "|                Dr. Thomas D. Economon (economon@stanford.edu).        |" << endl;
+  cout << "| SU2 Lead Dev.: Dr. Francisco Palacios, Francisco.D.Palacios@boeing.com|" << endl;
+  cout << "|                Dr. Thomas D. Economon, economon@stanford.edu          |" << endl;
   cout <<"-------------------------------------------------------------------------" << endl;
   cout << "| SU2 Developers:                                                       |" << endl;
   cout << "| - Prof. Juan J. Alonso's group at Stanford University.                |" << endl;
@@ -3436,6 +3582,9 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   cout << endl <<"------------------------ Physical Case Definition -----------------------" << endl;
   if (val_software == SU2_CFD) {
+	if (FSI_Problem){
+	   cout << "Fluid-Structure Interaction." << endl;
+	}
     switch (Kind_Solver) {
       case EULER:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible Euler equations." << endl;
@@ -3481,7 +3630,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       case WAVE_EQUATION: cout << "Wave equation." << endl; break;
       case HEAT_EQUATION: cout << "Heat equation." << endl; break;
       case LINEAR_ELASTICITY: cout << "Linear elasticity solver." << endl; break;
-      case FLUID_STRUCTURE_EULER: case FLUID_STRUCTURE_NAVIER_STOKES: cout << "Fluid-structure interaction." << endl; break;
       case ADJ_EULER: cout << "Continuous Euler adjoint equations." << endl; break;
       case ADJ_NAVIER_STOKES:
         if (Frozen_Visc)
@@ -3593,6 +3741,14 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       else cout <<".";
     }
     cout<< endl;
+
+    cout << "Surface(s) belonging to the Fluid-Structure Interaction problem: ";
+    for (iMarker_FSIinterface = 0; iMarker_FSIinterface < nMarker_FSIinterface; iMarker_FSIinterface++) {
+      cout << Marker_FSIinterface[iMarker_FSIinterface];
+      if (iMarker_FSIinterface < nMarker_FSIinterface-1) cout << ", ";
+      else cout <<".";
+    }
+    cout<<endl;
 
     if (nMarker_DV != 0) {
       cout << "Surface(s) affected by the design variables: ";
@@ -4102,22 +4258,35 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
 
     cout << endl <<"---------------------- Time Numerical Integration -----------------------" << endl;
-    switch (Unsteady_Simulation) {
-      case NO:
-        cout << "Local time stepping (steady state simulation)." << endl; break;
-      case TIME_STEPPING:
-        cout << "Unsteady simulation using a time stepping strategy."<< endl;
-        if (Unst_CFL != 0.0) cout << "Time step computed by the code. Unsteady CFL number: " << Unst_CFL <<"."<< endl;
-        else cout << "Unsteady time step provided by the user (s): "<< Delta_UnstTime << "." << endl;
-        break;
-      case DT_STEPPING_1ST: case DT_STEPPING_2ND:
-        if (Unsteady_Simulation == DT_STEPPING_1ST) cout << "Unsteady simulation, dual time stepping strategy (first order in time)."<< endl;
-        if (Unsteady_Simulation == DT_STEPPING_2ND) cout << "Unsteady simulation, dual time stepping strategy (second order in time)."<< endl;
-        if (Unst_CFL != 0.0) cout << "Time step computed by the code. Unsteady CFL number: " << Unst_CFL <<"."<< endl;
-        else cout << "Unsteady time step provided by the user (s): "<< Delta_UnstTime << "." << endl;
-        cout << "Total number of internal Dual Time iterations: "<< Unst_nIntIter <<"." << endl;
-        break;
+
+    if ((Kind_Solver != LINEAR_ELASTICITY)) {
+		switch (Unsteady_Simulation) {
+		  case NO:
+			cout << "Local time stepping (steady state simulation)." << endl; break;
+		  case TIME_STEPPING:
+			cout << "Unsteady simulation using a time stepping strategy."<< endl;
+			if (Unst_CFL != 0.0) cout << "Time step computed by the code. Unsteady CFL number: " << Unst_CFL <<"."<< endl;
+			else cout << "Unsteady time step provided by the user (s): "<< Delta_UnstTime << "." << endl;
+			break;
+		  case DT_STEPPING_1ST: case DT_STEPPING_2ND:
+			if (Unsteady_Simulation == DT_STEPPING_1ST) cout << "Unsteady simulation, dual time stepping strategy (first order in time)."<< endl;
+			if (Unsteady_Simulation == DT_STEPPING_2ND) cout << "Unsteady simulation, dual time stepping strategy (second order in time)."<< endl;
+			if (Unst_CFL != 0.0) cout << "Time step computed by the code. Unsteady CFL number: " << Unst_CFL <<"."<< endl;
+			else cout << "Unsteady time step provided by the user (s): "<< Delta_UnstTime << "." << endl;
+			cout << "Total number of internal Dual Time iterations: "<< Unst_nIntIter <<"." << endl;
+			break;
+		}
     }
+	else {
+		switch (Dynamic_Analysis) {
+		  case NO:
+			cout << "Static structural analysis." << endl; break;
+		  case YES:
+			cout << "Dynamic structural analysis."<< endl;
+			cout << "Time step provided by the user for the dynamic analysis(s): "<< Delta_DynTime << "." << endl;
+			break;
+		}
+	}
 
     if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
       switch (Kind_TimeIntScheme_Flow) {
@@ -4706,6 +4875,15 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
   }
 
+  if (nMarker_Clamped != 0) {
+    cout << "Clamped boundary marker(s): ";
+    for (iMarker_Clamped = 0; iMarker_Clamped < nMarker_Clamped; iMarker_Clamped++) {
+      cout << Marker_Clamped[iMarker_Clamped];
+      if (iMarker_Clamped < nMarker_Clamped-1) cout << ", ";
+      else cout <<"."<<endl;
+    }
+  }
+
   if (nMarker_Displacement != 0) {
     cout << "Displacement boundary marker(s): ";
     for (iMarker_Displacement = 0; iMarker_Displacement < nMarker_Displacement; iMarker_Displacement++) {
@@ -4716,11 +4894,29 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   }
 
   if (nMarker_Load != 0) {
-    cout << "Load boundary marker(s): ";
+    cout << "Normal load boundary marker(s): ";
     for (iMarker_Load = 0; iMarker_Load < nMarker_Load; iMarker_Load++) {
       cout << Marker_Load[iMarker_Load];
       if (iMarker_Load < nMarker_Load-1) cout << ", ";
       else cout <<"."<< endl;
+    }
+  }
+
+  if (nMarker_Load_Dir != 0) {
+    cout << "Load boundary marker(s) in cartesian coordinates: ";
+    for (iMarker_Load_Dir = 0; iMarker_Load_Dir < nMarker_Load_Dir; iMarker_Load_Dir++) {
+      cout << Marker_Load_Dir[iMarker_Load_Dir];
+      if (iMarker_Load_Dir < nMarker_Load_Dir-1) cout << ", ";
+      else cout <<"."<<endl;
+    }
+  }
+
+  if (nMarker_Load_Sine != 0) {
+    cout << "Sine-Wave Load boundary marker(s): ";
+    for (iMarker_Load_Sine = 0; iMarker_Load_Sine < nMarker_Load_Sine; iMarker_Load_Sine++) {
+      cout << Marker_Load_Sine[iMarker_Load_Sine];
+      if (iMarker_Load_Sine < nMarker_Load_Sine-1) cout << ", ";
+      else cout <<"."<<endl;
     }
   }
 
@@ -5096,6 +5292,14 @@ unsigned short CConfig::GetMarker_CfgFile_Plotting(string val_marker) {
   return Marker_CfgFile_Plotting[iMarker_Config];
 }
 
+
+unsigned short CConfig::GetMarker_CfgFile_FSIinterface(string val_marker) {
+  unsigned short iMarker_Config;
+  for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++)
+    if (Marker_CfgFile_TagBound[iMarker_Config] == val_marker) break;
+  return Marker_CfgFile_FSIinterface[iMarker_Config];
+}
+
 unsigned short CConfig::GetMarker_CfgFile_Out_1D(string val_marker) {
   unsigned short iMarker_Config;
   for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++)
@@ -5263,7 +5467,9 @@ CConfig::~CConfig(void) {
   if (Marker_CfgFile_Designing!=NULL) delete[] Marker_CfgFile_Designing;
   if (Marker_All_Designing!=NULL)    delete[] Marker_All_Designing;
   if (Marker_CfgFile_Plotting!=NULL)  delete[] Marker_CfgFile_Plotting;
+  if (Marker_CfgFile_FSIinterface!=NULL)  delete[] Marker_CfgFile_FSIinterface;
   if (Marker_All_Plotting!=NULL)     delete[] Marker_All_Plotting;
+  if (Marker_All_FSIinterface!=NULL)     delete[] Marker_All_FSIinterface;
   if (Marker_CfgFile_DV!=NULL)        delete[] Marker_CfgFile_DV;
   if (Marker_All_DV!=NULL)           delete[] Marker_All_DV;
   if (Marker_CfgFile_Moving!=NULL)   delete[] Marker_CfgFile_Moving;
@@ -5277,6 +5483,7 @@ CConfig::~CConfig(void) {
   if (Marker_Designing!=NULL)       delete[] Marker_Designing;
   if (Marker_GeoEval!=NULL)         delete[] Marker_GeoEval;
   if (Marker_Plotting!=NULL)        delete[] Marker_Plotting;
+  if (Marker_FSIinterface!=NULL)        delete[] Marker_FSIinterface;
   if (Marker_All_SendRecv!=NULL)    delete[] Marker_All_SendRecv;
 
   if (EA_IntLimit!=NULL)    delete[] EA_IntLimit;
@@ -5310,6 +5517,11 @@ CConfig::~CConfig(void) {
   if (Heat_FluxCatalytic!=NULL)    delete[] Heat_FluxCatalytic;
   if (Displ_Value!=NULL)    delete[] Displ_Value;
   if (Load_Value!=NULL)    delete[] Load_Value;
+  if (Load_Dir!=NULL)    delete[] Load_Dir;
+  if (Load_Dir_Multiplier!=NULL)    delete[] Load_Dir_Multiplier;
+  if (Load_Dir_Value!=NULL)    delete[] Load_Dir_Value;
+  if (Load_Sine_Amplitude!=NULL)    delete[] Load_Sine_Amplitude;
+  if (Load_Sine_Frequency!=NULL)    delete[] Load_Sine_Frequency;
   if (FlowLoad_Value!=NULL)    delete[] FlowLoad_Value;
   if (Periodic_RotCenter!=NULL)    delete[] Periodic_RotCenter;
   if (Periodic_RotAngles!=NULL)    delete[] Periodic_RotAngles;
@@ -5353,6 +5565,8 @@ CConfig::~CConfig(void) {
   if (Marker_EngineExhaust!=NULL )     delete[] Marker_EngineExhaust;
   if (Marker_Displacement!=NULL )       delete[] Marker_Displacement;
   if (Marker_Load!=NULL )               delete[] Marker_Load;
+  if (Marker_Load_Dir!=NULL )               delete[] Marker_Load_Dir;
+  if (Marker_Load_Sine!=NULL )               delete[] Marker_Load_Sine;
   if (Marker_FlowLoad!=NULL )           delete[] Marker_FlowLoad;
   if (Marker_Neumann!=NULL )            delete[] Marker_Neumann;
   if (Marker_Neumann_Elec!=NULL )       delete[] Marker_Neumann_Elec;
@@ -5646,18 +5860,9 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
       }
       break;
     case LINEAR_ELASTICITY:
-      if (val_system == RUNTIME_FEA_SYS) {
-        SetKind_ConvNumScheme(NONE, NONE, NONE, NONE, NONE);
-        SetKind_TimeIntScheme(Kind_TimeIntScheme_FEA);
-      }
-      break;
-    case FLUID_STRUCTURE_EULER:
-      if (val_system == RUNTIME_FLOW_SYS) {
-        SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
-                              Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
-                              SpatialOrder_Flow);
-        SetKind_TimeIntScheme(Kind_TimeIntScheme_Flow);
-      }
+
+      Current_DynTime = static_cast<double>(val_extiter)*Delta_DynTime;
+
       if (val_system == RUNTIME_FEA_SYS) {
         SetKind_ConvNumScheme(NONE, NONE, NONE, NONE, NONE);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_FEA);
@@ -6046,6 +6251,49 @@ double CConfig::GetLoad_Value(string val_marker) {
   for (iMarker_Load = 0; iMarker_Load < nMarker_Load; iMarker_Load++)
     if (Marker_Load[iMarker_Load] == val_marker) break;
   return Load_Value[iMarker_Load];
+}
+
+double CConfig::GetLoad_Dir_Value(string val_marker) {
+  unsigned short iMarker_Load_Dir;
+  for (iMarker_Load_Dir = 0; iMarker_Load_Dir < nMarker_Load_Dir; iMarker_Load_Dir++)
+    if (Marker_Load_Dir[iMarker_Load_Dir] == val_marker) break;
+  return Load_Dir_Value[iMarker_Load_Dir];
+}
+
+double CConfig::GetLoad_Dir_Multiplier(string val_marker) {
+  unsigned short iMarker_Load_Dir;
+  for (iMarker_Load_Dir = 0; iMarker_Load_Dir < nMarker_Load_Dir; iMarker_Load_Dir++)
+    if (Marker_Load_Dir[iMarker_Load_Dir] == val_marker) break;
+  return Load_Dir_Multiplier[iMarker_Load_Dir];
+}
+
+double* CConfig::GetLoad_Dir(string val_marker) {
+  unsigned short iMarker_Load_Dir;
+  for (iMarker_Load_Dir = 0; iMarker_Load_Dir < nMarker_Load_Dir; iMarker_Load_Dir++)
+    if (Marker_Load_Dir[iMarker_Load_Dir] == val_marker) break;
+  return Load_Dir[iMarker_Load_Dir];
+}
+
+
+double CConfig::GetLoad_Sine_Amplitude(string val_marker) {
+  unsigned short iMarker_Load_Sine;
+  for (iMarker_Load_Sine = 0; iMarker_Load_Sine < nMarker_Load_Sine; iMarker_Load_Sine++)
+    if (Marker_Load_Sine[iMarker_Load_Sine] == val_marker) break;
+  return Load_Sine_Amplitude[iMarker_Load_Sine];
+}
+
+double CConfig::GetLoad_Sine_Frequency(string val_marker) {
+  unsigned short iMarker_Load_Sine;
+  for (iMarker_Load_Sine = 0; iMarker_Load_Sine < nMarker_Load_Sine; iMarker_Load_Sine++)
+    if (Marker_Load_Sine[iMarker_Load_Sine] == val_marker) break;
+  return Load_Sine_Frequency[iMarker_Load_Sine];
+}
+
+double* CConfig::GetLoad_Sine_Dir(string val_marker) {
+  unsigned short iMarker_Load_Sine;
+  for (iMarker_Load_Sine = 0; iMarker_Load_Sine < nMarker_Load_Sine; iMarker_Load_Sine++)
+    if (Marker_Load_Sine[iMarker_Load_Sine] == val_marker) break;
+  return Load_Sine_Dir[iMarker_Load_Sine];
 }
 
 double CConfig::GetFlowLoad_Value(string val_marker) {
