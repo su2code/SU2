@@ -31,12 +31,12 @@
 #pragma once
 
 #include "codi.hpp"
-#include "tools/DataStore.hpp"
+#include "tools/dataStore.hpp"
 
 typedef codi::RealReverse su2double;
 
 namespace AD{
-  typedef DataStore CheckpointHandler;
+  typedef codi::DataStore CheckpointHandler;
   struct TapePosition{
     typename codi::ChunkTape<double, int>::Position start;
     typename codi::ChunkTape<double, int>::Position end;

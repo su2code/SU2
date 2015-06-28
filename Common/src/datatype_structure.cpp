@@ -37,7 +37,7 @@ namespace AD {
 
   std::vector<unsigned int> inputValues;
 
-  codi::ChunkTape<double, int>& globalTape = codi::RealReverse::globalTape;
+  codi::ChunkTape<double, int>& globalTape = codi::RealReverse::getGlobalTape();
 }
 #elif defined ADOLC_REVERSE_TYPE
 namespace AD{
