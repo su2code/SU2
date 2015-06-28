@@ -2,7 +2,7 @@
  * \file iteration_structure.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -675,8 +675,8 @@ void FEAIteration(COutput *output, CIntegration ***integration_container, CGeome
 	double Physical_dt, Physical_t;
 	unsigned short iMesh, iZone;
 	unsigned short nZone = geometry_container[ZONE_0][MESH_0]->GetnZone();
-  unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
-  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
+	unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
+  	unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
   
 	for (iZone = 0; iZone < nZone; iZone++) {
     
@@ -687,8 +687,6 @@ void FEAIteration(COutput *output, CIntegration ***integration_container, CGeome
 		/*--- Set the value of the internal iteration ---*/
     
 		IntIter = ExtIter;
-		if ((config_container[iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-				(config_container[iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) IntIter = 0;
     
 		/*--- Set the initial condition at the first iteration ---*/
     
@@ -697,113 +695,255 @@ void FEAIteration(COutput *output, CIntegration ***integration_container, CGeome
 		/*--- FEA equations ---*/
     
 		config_container[iZone]->SetGlobalParam(LINEAR_ELASTICITY, RUNTIME_FEA_SYS, ExtIter);
-		integration_container[iZone][FEA_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
+
+		/*--- Run the iteration ---*/
+
+		integration_container[iZone][FEA_SOL]->Structural_Iteration(geometry_container, solver_container, numerics_container,
                                                                 config_container, RUNTIME_FEA_SYS, IntIter, iZone);
-    
-		/*--- Dual time stepping strategy ---*/
-		if ((config_container[iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-				(config_container[iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) {
-      
-			for (IntIter = 1; IntIter < config_container[iZone]->GetUnst_nIntIter(); IntIter++) {
-        output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, iZone);
-        config_container[iZone]->SetIntIter(IntIter);
-				integration_container[iZone][FEA_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
-                                                                    config_container, RUNTIME_FEA_SYS, IntIter, iZone);
-				if (integration_container[iZone][FEA_SOL]->GetConvergence()) break;
-			}
-      
-			/*--- Update dual time solver ---*/
-			for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++) {
-				integration_container[iZone][FEA_SOL]->SetDualTime_Solver(geometry_container[iZone][iMesh], solver_container[iZone][iMesh][FEA_SOL], config_container[iZone], iMesh);
-				integration_container[iZone][FEA_SOL]->SetConvergence(false);
-			}
-      
-			Physical_dt = config_container[iZone]->GetDelta_UnstTime(); Physical_t  = (ExtIter+1)*Physical_dt;
-			if (Physical_t >=  config_container[iZone]->GetTotal_UnstTime()) integration_container[iZone][FEA_SOL]->SetConvergence(true);
+
+		/*----------------- Update structural solver ----------------------*/
+
+		bool dynamic = (config_container[iZone]->GetDynamic_Analysis() == DYNAMIC);
+
+		if (dynamic){
+			integration_container[iZone][FEA_SOL]->SetStructural_Solver(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0][FEA_SOL], config_container[iZone], MESH_0);
 		}
-    
+
 	}
   
 }
 
 void FluidStructureIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
                              CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
-                             CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox) {
+                             CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox,
+                             unsigned long iFluidIt, unsigned long nFluidIt) {
+
 	double Physical_dt, Physical_t;
 	unsigned short iMesh;
-  unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
-  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
-  
-	/*--- Set the value of the internal iteration ---*/
-	IntIter = ExtIter;
-	if ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-			(config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) IntIter = 0;
-  
-	/*--- Euler equations ---*/
-	config_container[ZONE_0]->SetGlobalParam(FLUID_STRUCTURE_EULER, RUNTIME_FLOW_SYS, ExtIter);
-	integration_container[ZONE_0][FLOW_SOL]->MultiGrid_Iteration(geometry_container, solver_container, numerics_container,
-                                                               config_container, RUNTIME_FLOW_SYS, IntIter, ZONE_0);
-  
-	/*--- Update loads for the FEA model ---*/
-	solver_container[ZONE_1][MESH_0][FEA_SOL]->SetFEA_Load(solver_container[ZONE_0], geometry_container[ZONE_1], geometry_container[ZONE_0], config_container[ZONE_1], config_container[ZONE_0]);
-  
-	/*--- FEA model solution ---*/
-	config_container[ZONE_1]->SetGlobalParam(FLUID_STRUCTURE_EULER, RUNTIME_FEA_SYS, ExtIter);
-	integration_container[ZONE_1][FEA_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
-                                                               config_container, RUNTIME_FEA_SYS, IntIter, ZONE_1);
-  
-	/*--- Update the FEA geometry (ZONE 1), and the flow geometry (ZONE 0) --*/
-	solver_container[ZONE_0][MESH_0][FLOW_SOL]->SetFlow_Displacement(geometry_container[ZONE_0], grid_movement[ZONE_0],
-                                                                   config_container[ZONE_0], config_container[ZONE_1],
-                                                                   geometry_container[ZONE_1], solver_container[ZONE_1]);
-  
-	/*--- Dual time stepping strategy for the coupled system ---*/
-	if ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) {
-    
-		for (IntIter = 1; IntIter < config_container[ZONE_0]->GetUnst_nIntIter(); IntIter++) {
-      
-      /*--- Write the convergence history (only screen output) ---*/
-			output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_0);
-      
-      /*--- Set the value of the internal iteration ---*/
-      config_container[ZONE_0]->SetIntIter(IntIter);
-      
-			/*--- Euler equations ---*/
-			config_container[ZONE_0]->SetGlobalParam(FLUID_STRUCTURE_EULER, RUNTIME_FLOW_SYS, ExtIter);
-			integration_container[ZONE_0][FLOW_SOL]->MultiGrid_Iteration(geometry_container, solver_container, numerics_container,
-                                                                   config_container, RUNTIME_FLOW_SYS, IntIter, ZONE_0);
-      
-			/*--- Update loads for the FEA model ---*/
-			solver_container[ZONE_1][MESH_0][FEA_SOL]->SetFEA_Load(solver_container[ZONE_0], geometry_container[ZONE_1], geometry_container[ZONE_0], config_container[ZONE_1], config_container[ZONE_0]);
-      
-			/*--- FEA model solution ---*/
-			config_container[ZONE_1]->SetGlobalParam(FLUID_STRUCTURE_EULER, RUNTIME_FEA_SYS, ExtIter);
-			integration_container[ZONE_1][FEA_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
-                                                                   config_container, RUNTIME_FEA_SYS, IntIter, ZONE_1);
-      
-			/*--- Update the FEA geometry (ZONE 1), and the flow geometry (ZONE 0) --*/
-			solver_container[ZONE_0][MESH_0][FLOW_SOL]->SetFlow_Displacement(geometry_container[ZONE_0], grid_movement[ZONE_0],
-                                                                       config_container[ZONE_0], config_container[ZONE_1],
-                                                                       geometry_container[ZONE_1], solver_container[ZONE_1]);
-      
-			if (integration_container[ZONE_0][FLOW_SOL]->GetConvergence()) break;
+	unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
+	unsigned long IntIter_Struct = 0; config_container[ZONE_1]->SetIntIter(IntIter_Struct);
+	unsigned long iFSIIter = 0;
+	unsigned long nFSIIter = config_container[ZONE_0]->GetnIterFSI();
+	unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
+
+	unsigned short SolContainer_Position_fea = config_container[ZONE_1]->GetContainerPosition(RUNTIME_FEA_SYS);
+
+	/*------------- Structural predictor for displacements ------------*/
+
+	/*--- Predict structural displacement --*/
+	solver_container[ZONE_1][MESH_0][FEA_SOL]->PredictStruct_Displacement(geometry_container[ZONE_1], config_container[ZONE_1],
+																		  solver_container[ZONE_1]);
+
+
+	while (iFSIIter<nFSIIter){
+
+		/*------------------------ Mesh movement --------------------------*/
+
+		/*--- Update the the flow geometry (ZONE 0) --*/
+
+		solver_container[ZONE_0][MESH_0][FLOW_SOL]->SetFlow_Displacement(geometry_container[ZONE_0], grid_movement[ZONE_0],
+																	   config_container[ZONE_0], config_container[ZONE_1],
+																	   geometry_container[ZONE_1], solver_container[ZONE_1]);
+
+		/*---------------------- Fluid iteration --------------------------*/
+
+		/*--- Set the initial condition ---*/
+
+		solver_container[ZONE_0][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[ZONE_0], solver_container[ZONE_0], config_container[ZONE_0], ExtIter);
+
+		/*--- Apply a Wind Gust ---*/
+
+		if (config_container[ZONE_0]->GetWind_Gust()){
+			  SetWind_GustField(config_container[ZONE_0],geometry_container[ZONE_0],solver_container[ZONE_0]);
 		}
-    
-		/*--- Set convergence the global convergence criteria to false, and dual time solution ---*/
+
+		/*--- Set the value of the internal iteration ---*/
+
+		IntIter = ExtIter;
+
+		if ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+		   (config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) IntIter = 0;
+
+		/*--- Update global parameters ---*/
+
+		if (config_container[ZONE_0]->GetKind_Solver() == EULER){
+			config_container[ZONE_0]->SetGlobalParam(EULER, RUNTIME_FLOW_SYS, ExtIter);
+		}
+		if (config_container[ZONE_0]->GetKind_Solver() == NAVIER_STOKES){
+			config_container[ZONE_0]->SetGlobalParam(NAVIER_STOKES, RUNTIME_FLOW_SYS, ExtIter);
+		}
+		if (config_container[ZONE_0]->GetKind_Solver() == RANS){
+			config_container[ZONE_0]->SetGlobalParam(RANS, RUNTIME_FLOW_SYS, ExtIter);
+		 }
+
+		/*--- Solve the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes (RANS) equations (one iteration) ---*/
+
+		integration_container[ZONE_0][FLOW_SOL]->MultiGrid_Iteration(geometry_container, solver_container, numerics_container,
+																	config_container, RUNTIME_FLOW_SYS, IntIter, ZONE_0);
+
+		if (config_container[ZONE_0]->GetKind_Solver() == RANS) {
+
+			/*--- Solve the turbulence model ---*/
+
+			config_container[ZONE_0]->SetGlobalParam(RANS, RUNTIME_TURB_SYS, ExtIter);
+			integration_container[ZONE_0][TURB_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
+																		   config_container, RUNTIME_TURB_SYS, IntIter, ZONE_0);
+
+		/*--- Solve transition model ---*/
+
+			if (config_container[ZONE_0]->GetKind_Trans_Model() == LM) {
+				config_container[ZONE_0]->SetGlobalParam(RANS, RUNTIME_TRANS_SYS, ExtIter);
+				integration_container[ZONE_0][TRANS_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
+																			  config_container, RUNTIME_TRANS_SYS, IntIter, ZONE_0);
+			}
+
+		}
+
+		/*--- Dual time stepping strategy ---*/
+
+		if ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+		   (config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) {
+
+			for(IntIter = 1; IntIter < config_container[ZONE_0]->GetUnst_nIntIter(); IntIter++) {
+
+			/*--- Write the convergence history (only screen output) ---*/
+
+			output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_0);
+
+			/*--- Set the value of the internal iteration ---*/
+
+			config_container[ZONE_0]->SetIntIter(IntIter);
+
+			/*--- Pseudo-timestepping for the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes equations ---*/
+
+			if (config_container[ZONE_0]->GetKind_Solver() == EULER)
+				config_container[ZONE_0]->SetGlobalParam(EULER, RUNTIME_FLOW_SYS, ExtIter);
+			if (config_container[ZONE_0]->GetKind_Solver() == NAVIER_STOKES)
+				config_container[ZONE_0]->SetGlobalParam(NAVIER_STOKES, RUNTIME_FLOW_SYS, ExtIter);
+			if (config_container[ZONE_0]->GetKind_Solver() == RANS)
+				config_container[ZONE_0]->SetGlobalParam(RANS, RUNTIME_FLOW_SYS, ExtIter);
+
+			  /*--- Solve the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes (RANS) equations (one iteration) ---*/
+
+			integration_container[ZONE_0][FLOW_SOL]->MultiGrid_Iteration(geometry_container, solver_container, numerics_container,
+																			config_container, RUNTIME_FLOW_SYS, IntIter, ZONE_0);
+
+			/*--- Pseudo-timestepping the turbulence model ---*/
+
+			if (config_container[ZONE_0]->GetKind_Solver() == RANS) {
+
+				/*--- Solve the turbulence model ---*/
+
+				config_container[ZONE_0]->SetGlobalParam(RANS, RUNTIME_TURB_SYS, ExtIter);
+				integration_container[ZONE_0][TURB_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
+																			  config_container, RUNTIME_TURB_SYS, IntIter, ZONE_0);
+
+				/*--- Solve transition model ---*/
+
+					if (config_container[ZONE_0]->GetKind_Trans_Model() == LM) {
+						config_container[ZONE_0]->SetGlobalParam(RANS, RUNTIME_TRANS_SYS, ExtIter);
+						integration_container[ZONE_0][TRANS_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
+																				  config_container, RUNTIME_TRANS_SYS, IntIter, ZONE_0);
+					}
+			}
+
+		    if (integration_container[ZONE_0][FLOW_SOL]->GetConvergence()) break;
+
+		}
+
+		}
+
+		/*-------------------- Structural iteration -----------------------*/
+
+		/*--- Set the initial condition at the first iteration ---*/
+
+		// solver_container[ZONE_1][MESH_0][FEA_SOL]->SetInitialCondition(geometry_container[ZONE_1], solver_container[ZONE_1], config_container[ZONE_1], ExtIter);
+
+		/*--- Set the value of the internal iteration ---*/
+
+		IntIter_Struct = ExtIter;
+
+		/*--- FEA equations ---*/
+
+		config_container[ZONE_1]->SetGlobalParam(LINEAR_ELASTICITY, RUNTIME_FEA_SYS, ExtIter);
+
+		/*--- Update loads for the FEA model ---*/
+
+		solver_container[ZONE_1][MESH_0][FEA_SOL]->SetFEA_Load(solver_container[ZONE_0], geometry_container[ZONE_1], geometry_container[ZONE_0],
+															   config_container[ZONE_1], config_container[ZONE_0], numerics_container[ZONE_1][MESH_0][SolContainer_Position_fea][VISC_TERM]);
+
+		/*--- Run the iteration ---*/
+
+		integration_container[ZONE_1][FEA_SOL]->Structural_Iteration(geometry_container, solver_container, numerics_container,
+																	 config_container, RUNTIME_FEA_SYS, IntIter_Struct, ZONE_1);
+
+		/*-------------------- Aitken's relaxation ------------------------*/
+
+		solver_container[ZONE_1][MESH_0][FEA_SOL]->ComputeAitken_Coefficient(geometry_container[ZONE_1], config_container[ZONE_1],
+																		solver_container[ZONE_1], iFSIIter);
+
+
+		solver_container[ZONE_1][MESH_0][FEA_SOL]->SetAitken_Relaxation(geometry_container[ZONE_1], config_container[ZONE_1],
+																		solver_container[ZONE_1]);
+
+		/*-------------------- Check convergence --------------------------*/
+
+		integration_container[ZONE_1][FEA_SOL]->Convergence_Monitoring_FSI(geometry_container[ZONE_1][MESH_0], config_container[ZONE_1],
+																solver_container[ZONE_1][MESH_0][FEA_SOL], iFSIIter);
+
+		if (integration_container[ZONE_1][FEA_SOL]->GetConvergence_FSI()) break;
+
+		/*--------------------- Update iFSIIter ---------------------------*/
+
+		iFSIIter++;
+
+	}
+
+	if ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+	   (config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) {
+
+	  	/*-------------------- Update fluid solver ------------------------*/
+
+		/*--- Update dual time solver on all mesh levels ---*/
+
 		for (iMesh = 0; iMesh <= config_container[ZONE_0]->GetnMGLevels(); iMesh++) {
 			integration_container[ZONE_0][FLOW_SOL]->SetDualTime_Solver(geometry_container[ZONE_0][iMesh], solver_container[ZONE_0][iMesh][FLOW_SOL], config_container[ZONE_0], iMesh);
 			integration_container[ZONE_0][FLOW_SOL]->SetConvergence(false);
 		}
-    
-		integration_container[ZONE_1][FEA_SOL]->SetDualTime_Solver(geometry_container[ZONE_1][MESH_0], solver_container[ZONE_1][MESH_0][FEA_SOL], config_container[ZONE_1], MESH_0);
-		integration_container[ZONE_1][FEA_SOL]->SetConvergence(false);
-    
-		/*--- Set the value of the global convergence criteria ---*/
+
+		/*--- Update dual time solver for the turbulence model ---*/
+
+		if (config_container[ZONE_0]->GetKind_Solver() == RANS) {
+			integration_container[ZONE_0][TURB_SOL]->SetDualTime_Solver(geometry_container[ZONE_0][MESH_0], solver_container[ZONE_0][MESH_0][TURB_SOL], config_container[ZONE_0], MESH_0);
+			integration_container[ZONE_0][TURB_SOL]->SetConvergence(false);
+		}
+
+  /*--- Update dual time solver for the transition model ---*/
+
+		if (config_container[ZONE_0]->GetKind_Trans_Model() == LM) {
+			integration_container[ZONE_0][TRANS_SOL]->SetDualTime_Solver(geometry_container[ZONE_0][MESH_0], solver_container[ZONE_0][MESH_0][TRANS_SOL], config_container[ZONE_0], MESH_0);
+			integration_container[ZONE_0][TRANS_SOL]->SetConvergence(false);
+		}
+
+  /*--- Verify convergence criteria (based on total time) ---*/
+
 		Physical_dt = config_container[ZONE_0]->GetDelta_UnstTime();
 		Physical_t  = (ExtIter+1)*Physical_dt;
 		if (Physical_t >=  config_container[ZONE_0]->GetTotal_UnstTime())
 			integration_container[ZONE_0][FLOW_SOL]->SetConvergence(true);
+
 	}
+
+	/*----------------- Update structural solver ----------------------*/
+
+	integration_container[ZONE_1][FEA_SOL]->SetStructural_Solver(geometry_container[ZONE_1][MESH_0], solver_container[ZONE_1][MESH_0][FEA_SOL], config_container[ZONE_1], MESH_0);
+
+	/*-----------------------------------------------------------------*/
+	/*--------------- Update convergence parameter --------------------*/
+	/*-----------------------------------------------------------------*/
+
+	integration_container[ZONE_1][FEA_SOL]->SetConvergence_FSI(false);
+
   
 }
 
@@ -814,12 +954,23 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
   
   // If a source term is included to account for the gust field, the method is described by Jones et al. as the Split Velocity Method in
   // Simulation of Airfoil Gust Responses Using Prescribed Velocities.
-  // In this routine the gust derivatives needed for the source term are calculated when applicable. The source term itself is implemented in the class CSourceWindGust
+  // In this routine the gust derivatives needed for the source term are calculated when applicable.
+  // If the gust derivatives are zero the source term is also zero.
+  // The source term itself is implemented in the class CSourceWindGust
   
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
+  
+  if (rank == MASTER_NODE)
+    cout << endl << "Running simulation with a Wind Gust." << endl;
+  unsigned short iDim, nDim = geometry_container[MESH_0]->GetnDim(); //We assume nDim = 2
+  if (nDim != 2) {
+    if (rank == MASTER_NODE) {
+      cout << endl << "WARNING - Wind Gust capability is only verified for 2 dimensional simulations." << endl;
+    }
+  }
   
   /*--- Gust Parameters from config ---*/
   unsigned short Gust_Type = config_container->GetGust_Type();
@@ -831,15 +982,13 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
   unsigned short GustDir = config_container->GetGust_Dir(); // Gust direction
 
   /*--- Variables needed to compute the gust ---*/
-  unsigned short iDim;
-  unsigned short nDim = geometry_container[MESH_0]->GetnDim();
+  unsigned short Kind_Grid_Movement = config_container->GetKind_GridMovement(ZONE_0);
   unsigned long iPoint;
   unsigned short iMGlevel, nMGlevel = config_container->GetnMGLevels();
 
   double x, y, x_gust, dgust_dx, dgust_dy, dgust_dt;
   double *Gust, *GridVel;
-  unsigned short Kind_Grid_Movement = config_container->GetKind_GridMovement(ZONE_0);
-  double NewGridVel[3] = {0.0,0.0,0.0};
+  double NewGridVel[2] = {0.0,0.0};
   double GustDer[3] = {0.0,0.0,0.0};
 
   double Physical_dt = config_container->GetDelta_UnstTime();
@@ -852,17 +1001,17 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
   for (iDim = 0; iDim < nDim; iDim++) {
     Gust[iDim] = 0.0;
   }
-  
+
   // Vortex variables
   unsigned long nVortex = 0;
-  std::vector<double> x0, y0, vort_strenth, r_core; //vortex is positive in clockwise direction.
+  vector<double> x0, y0, vort_strenth, r_core; //vortex is positive in clockwise direction.
   if (Gust_Type == VORTEX) {
     InitializeVortexDistribution(nVortex, x0, y0, vort_strenth, r_core);
   }
   
   /*--- Check to make sure gust lenght is not zero or negative (vortex gust doesn't use this). ---*/
   if (L <= 0.0 && Gust_Type != VORTEX) {
-    cout << "ERROR: The gust length needs to be positive" << endl;
+    if (rank == MASTER_NODE) cout << "ERROR: The gust length needs to be positive" << endl;
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
 #else
@@ -879,15 +1028,15 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
     
     for (iPoint = 0; iPoint < geometry_container[iMGlevel]->GetnPoint(); iPoint++) {
       
-      /*--- eset the Grid Velocity to zero if there is no grid movement ---*/
-      if (Kind_Grid_Movement == NO_MOVEMENT) {
+      /*--- Reset the Grid Velocity to zero if there is no grid movement ---*/
+      if (Kind_Grid_Movement == GUST) {
         for (iDim = 0; iDim < nDim; iDim++)
           geometry_container[iMGlevel]->node[iPoint]->SetGridVel(iDim, 0.0);
       }
       
       /*--- initialize the gust and derivatives to zero everywhere ---*/
       
-      Gust[0] = 0.0; Gust[1] = 0.0; Gust[2] = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) {Gust[iDim]=0.0;}
       dgust_dx = 0.0; dgust_dy = 0.0; dgust_dt = 0.0;
       
       /*--- Begin applying the gust ---*/
@@ -917,21 +1066,21 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
               Gust[GustDir] = gust_amp*(sin(2*PI_NUMBER*x_gust));
 
               // Gust derivatives
-              dgust_dx = gust_amp*2*PI_NUMBER*(cos(2*PI_NUMBER*x_gust))/L;
-              dgust_dy = 0;
-              dgust_dt = gust_amp*2*PI_NUMBER*(cos(2*PI_NUMBER*x_gust))*(-Uinf)/L;
+              //dgust_dx = gust_amp*2*PI_NUMBER*(cos(2*PI_NUMBER*x_gust))/L;
+              //dgust_dy = 0;
+              //dgust_dt = gust_amp*2*PI_NUMBER*(cos(2*PI_NUMBER*x_gust))*(-Uinf)/L;
             }
             break;
 
           case ONE_M_COSINE:
              // Check if we are in the region where the gust is active
              if (x_gust > 0 && x_gust < n) {
-               Gust[GustDir] = 0.5*gust_amp*(1-cos(2*PI_NUMBER*x_gust));
+               Gust[GustDir] = gust_amp*(1-cos(2*PI_NUMBER*x_gust));
 
                // Gust derivatives
-               dgust_dx = 0.5*gust_amp*2*PI_NUMBER*(sin(2*PI_NUMBER*x_gust))/L;
-               dgust_dy = 0;
-               dgust_dt = 0.5*gust_amp*2*PI_NUMBER*(sin(2*PI_NUMBER*x_gust))*(-Uinf)/L;
+               //dgust_dx = gust_amp*2*PI_NUMBER*(sin(2*PI_NUMBER*x_gust))/L;
+               //dgust_dy = 0;
+               //dgust_dt = gust_amp*2*PI_NUMBER*(sin(2*PI_NUMBER*x_gust))*(-Uinf)/L;
              }
              break;
 
@@ -1006,7 +1155,7 @@ void InitializeVortexDistribution(unsigned long &nVortex, vector<double>& x0, ve
   
   // Ignore line containing the header
   getline(file, line);
-  // Read in the information of the vortices (xloc, yloc, lambda(strenght), eta(size, gradient))
+  // Read in the information of the vortices (xloc, yloc, lambda(strength), eta(size, gradient))
   while (file.good())
   {
     getline(file, line);
@@ -1321,7 +1470,7 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
       
       break;
       
-    case NONE: default:
+    case NO_MOVEMENT: case GUST: default:
       
       /*--- There is no mesh motion specified for this zone. ---*/
       if (rank == MASTER_NODE)
