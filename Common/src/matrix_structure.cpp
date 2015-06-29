@@ -330,7 +330,7 @@ void CSysMatrix::SubtractBlock(unsigned long block_i, unsigned long block_j, su2
     if (col_ind[index] == block_j) {
       for (iVar = 0; iVar < nVar; iVar++)
         for (jVar = 0; jVar < nEqn; jVar++)
-          matrix[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] -= val_block[iVar][jVar];
+          matrix[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] -= SU2_TYPE::GetPrimary(val_block[iVar][jVar]);
       break;
     }
   }
