@@ -56,7 +56,8 @@ using namespace std;
  */
 class CInterpolator {
 protected:
-  unsigned short nZone;
+  unsigned int nZone;
+  unsigned short nVar;
   double ***Data; /*!\brief container for some data to be interpolated */
 public:
   CGeometry*** Geometry; /*! \brief Vector which stores n zones of geometry. */
@@ -69,7 +70,7 @@ public:
   /*!
  * \brief Constructor of the class.
  */
-  CInterpolator(CGeometry ***geometry_container, CConfig **config,  unsigned short iZone_0,unsigned short iZone_1, unsigned short nZone);
+  CInterpolator(CGeometry ***geometry_container, CConfig **config,  unsigned int iZone_0,unsigned int iZone_1, unsigned int nZone);
 
   /*!
    * \brief Destructor of the class.
@@ -79,38 +80,40 @@ public:
   /*!
      * \brief initialize the Data structure to the appropriate size.
      */
-  void InitializeData(unsigned short iZone_0, unsigned short iZone_1, unsigned short nVar);
+  void InitializeData(unsigned int iZone_0, unsigned int iZone_1, unsigned short val_nVar);
 
   /*!
    * \brief interpolate Data from one mesh to another
+   * \param[in] iZone_0: zone to recieve interpolated data
+   * \param[in] config
    */
-  void Interpolate_Data(unsigned short iZone_0, unsigned short iZone_1, CConfig **config);
+  void Interpolate_Data(unsigned int iZone_0,  CConfig **config);
 
   /*!
    * \brief interpolate deformations from one mesh to another
    */
-  void Interpolate_Deformation(unsigned short iZone_0, unsigned short iZone_1, CConfig **config);
+  void Interpolate_Deformation(unsigned int iZone_0, unsigned int iZone_1, CConfig **config);
 
   /*!
    * \brief Set up transfer matrix defining relation between two meshes
    */
-  void Set_TransferCoeff(unsigned short iZone_0, unsigned short iZone_1, CConfig **config);
+  void Set_TransferCoeff(unsigned int iZone_0, unsigned int iZone_1, CConfig **config);
 
 
   /*!
    * \brief Return the value of the Data at the specified zone, point, and dimension.
    */
-  double GetData(unsigned short iZone, unsigned long iPoint, unsigned short iDim);
+  double GetData(unsigned int iZone, unsigned long iPoint, unsigned short iDim);
 
   /*!
    * \brief Return the value of the Data vector at the specified zone and point.
    */
-  double* GetData(unsigned short iZone, unsigned long iPoint);
+  double* GetData(unsigned int iZone, unsigned long iPoint);
 
   /*!
    * \brief Set the value of the Data at the specified zone, point, and dimension.
    */
-  void SetData(unsigned short iZone, unsigned long iPoint, unsigned short iDim, double val);
+  void SetData(unsigned int iZone, unsigned long iPoint, unsigned short iDim, double val);
 
 
 
@@ -124,7 +127,7 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CNearestNeighbor(CGeometry ***geometry_container, CConfig **config,  unsigned short iZone_0,unsigned short iZone_1,unsigned short nZone);
+  CNearestNeighbor(CGeometry ***geometry_container, CConfig **config,  unsigned int iZone_0,unsigned int iZone_1,unsigned int nZone);
 
   /*!
    * \brief Destructor of the class.
@@ -134,6 +137,6 @@ public:
   /*!
    * \brief Set up transfer matrix defining relation between two meshes
    */
-  void Set_TransferCoeff(unsigned short iZone_0, unsigned short iZone_1, CConfig **config);
+  void Set_TransferCoeff(unsigned int iZone_0, unsigned int iZone_1, CConfig **config);
 
 };
