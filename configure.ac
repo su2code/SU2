@@ -39,7 +39,7 @@
 # SU2_FSI integration added by Ruben Sanchez, 5/19/2015
 ##########################
 
-AC_INIT([SU2], [3.2.9], [su2code-dev@lists.stanford.edu],
+AC_INIT([SU2], [4.0.0], [su2code-dev@lists.stanford.edu],
         [SU2], [https://github.com/su2code])
 AC_PREREQ([2.59])
 AC_CONFIG_MACRO_DIR([m4])
@@ -372,13 +372,13 @@ AC_MSG_RESULT([
 
 -------------------------------------------------------------------------
 |    ___ _   _ ___                                                      |
-|   / __| | | |_  )   Release 3.2.9 'eagle'                             |
+|   / __| | | |_  )   Release 4.0.0 'Cardinal'                          |
 |   \\__ \\ |_| |/ /                                                      |
 |   |___/\\___//___|   Suite                                             |
 |                                                                       |
 -------------------------------------------------------------------------
-| SU2 Lead Dev.: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).|
-|                Dr. Thomas D. Economon (economon@stanford.edu).        |
+| SU2 Lead Dev.: Dr. Francisco Palacios, Francisco.D.Palacios@boeing.com|
+|                Dr. Thomas D. Economon, economon@stanford.edu          |
 -------------------------------------------------------------------------
 | SU2 Developers:                                                       |
 | - Prof. Juan J. Alonso's group at Stanford University.                |
