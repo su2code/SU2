@@ -38,7 +38,7 @@ CInterpolator::CInterpolator(void){
 CInterpolator::~CInterpolator(void){}
 
 
-CInterpolator::CInterpolator(CGeometry ***geometry_container, CConfig **config, unsigned short iZone_0,unsigned short iZone_1, unsigned short val_nZone){
+CInterpolator::CInterpolator(CGeometry ***geometry_container, CConfig **config, unsigned int iZone_0,unsigned int iZone_1, unsigned int val_nZone){
 
   /* Store pointers*/
 	Geometry = geometry_container;
@@ -54,7 +54,8 @@ CInterpolator::CInterpolator(CGeometry ***geometry_container, CConfig **config, 
 
 }
 
-void CInterpolator::InitializeData(unsigned short iZone_0, unsigned short iZone_1, unsigned short nVar){
+void CInterpolator::InitializeData(unsigned int iZone_0, unsigned int iZone_1, unsigned short val_nVar){
+  nVar=val_nVar;
   if (nVar>0){
     /*--- Initialize Data vectors to 0 ---*/
     Data = new double**[nZone];
@@ -81,18 +82,23 @@ void CInterpolator::InitializeData(unsigned short iZone_0, unsigned short iZone_
 }
 
 
-void CInterpolator::Interpolate_Data(unsigned short iZone_0, unsigned short iZone_1, CConfig **config){
+void CInterpolator::Interpolate_Data(unsigned int iZone_0, CConfig **config){
   unsigned long iPoint, jPoint, jVertex, iMarker, iVertex;
-  unsigned short nDim = Geometry[iZone_0][MESH_0]->GetnDim(), jMarker;
+  unsigned short jMarker;
   double weight=0.0;
 
-  /*--- Loop through points, increment Data by the weight in the transfer matrix ---*/
+  /*--- Loop through points, increment Data in the input zone by the weight in the transfer matrix ---*/
 
   /*Loop by i then by j to more efficiently call memory*/
   for (iMarker = 0; iMarker < config[iZone_0]->GetnMarker_All(); iMarker++){
     if (config[iZone_0]->GetMarker_All_FSIinterface(iMarker) == YES){
       for (iVertex = 0; iVertex<Geometry[iZone_0][MESH_0]->GetnVertex(iMarker); iVertex++) {
         iPoint =Geometry[iZone_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
+        /*--- Set Data to 0 before interpolation ---*/
+        for (unsigned short iVar=0; iVar<nVar; iVar++){
+          Data[iZone_0][iPoint][iVar]=0;
+        }
+        /*--- Interpolate ---*/
         for (unsigned short jDonor = 0; jDonor< Geometry[iZone_0][MESH_0]->vertex[iMarker][iVertex]->GetnDonorPoints(); jDonor++){
           /* Unpack info */
           iZone_1 = Geometry[iZone_0][MESH_0]->vertex[iMarker][iVertex]->GetDonorInfo(jDonor,0);
@@ -100,8 +106,8 @@ void CInterpolator::Interpolate_Data(unsigned short iZone_0, unsigned short iZon
           jMarker = Geometry[iZone_0][MESH_0]->vertex[iMarker][iVertex]->GetDonorInfo(jDonor,2);
           jVertex = Geometry[iZone_0][MESH_0]->vertex[iMarker][iVertex]->GetDonorInfo(jDonor,3);
           weight = Geometry[iZone_0][MESH_0]->vertex[iMarker][iVertex]->GetDonorCoeff(jDonor);
-          for (unsigned short iDim=0; iDim<nDim; iDim++){
-            Data[iZone_1][jPoint][iDim]+=Data[iZone_0][iPoint][iDim]*weight;
+          for (unsigned short iVar=0; iVar<nVar; iVar++){
+            Data[iZone_0][iPoint][iVar]+=Data[iZone_1][jPoint][iVar]*weight;
           }
         }
       }
@@ -110,7 +116,7 @@ void CInterpolator::Interpolate_Data(unsigned short iZone_0, unsigned short iZon
 
 }
 
-void CInterpolator::Interpolate_Deformation(unsigned short iZone_0, unsigned short iZone_1, CConfig **config){
+void CInterpolator::Interpolate_Deformation(unsigned int iZone_0, unsigned int iZone_1, CConfig **config){
 
   unsigned long GlobalIndex, iPoint, i2Point, jPoint, j2Point, iVertex, jVertex;
   unsigned short iMarker, jMarker, iDim;
@@ -163,25 +169,25 @@ void CInterpolator::Interpolate_Deformation(unsigned short iZone_0, unsigned sho
 
 }
 
-void CInterpolator::Set_TransferCoeff(unsigned short iZone_0, unsigned short iZone_1, CConfig **config){
+void CInterpolator::Set_TransferCoeff(unsigned int iZone_0, unsigned int iZone_1, CConfig **config){
   cout<<"base class set transfer matrix: all zeros, no interpolation will be done."<<endl;
 }
 
-double CInterpolator::GetData(unsigned short iZone, unsigned long iPoint, unsigned short iDim){
+double CInterpolator::GetData(unsigned int iZone, unsigned long iPoint, unsigned short iDim){
   if (Data !=NULL)
     return Data[iZone][iPoint][iDim];
   else
     return 0.0; // Check this.
 }
 
-double* CInterpolator::GetData(unsigned short iZone, unsigned long iPoint){
+double* CInterpolator::GetData(unsigned int iZone, unsigned long iPoint){
   if (Data !=NULL)
     return Data[iZone][iPoint];
   else
     return NULL;
 }
 
-void CInterpolator::SetData(unsigned short iZone, unsigned long iPoint, unsigned short iDim, double val){
+void CInterpolator::SetData(unsigned int iZone, unsigned long iPoint, unsigned short iDim, double val){
   if (Data !=NULL)
     Data[iZone][iPoint][iDim]=val;
   else
@@ -190,7 +196,7 @@ void CInterpolator::SetData(unsigned short iZone, unsigned long iPoint, unsigned
 
 
 /* Nearest Neighbor Interpolator */
-CNearestNeighbor::CNearestNeighbor(CGeometry ***geometry_container, CConfig **config,  unsigned short iZone_0,unsigned short iZone_1,unsigned short nZone) :  CInterpolator(geometry_container, config, iZone_0,iZone_1,nZone){
+CNearestNeighbor::CNearestNeighbor(CGeometry ***geometry_container, CConfig **config,  unsigned int iZone_0,unsigned int iZone_1,unsigned int nZone) :  CInterpolator(geometry_container, config, iZone_0,iZone_1,nZone){
   unsigned short nDim = geometry_container[iZone_0][MESH_0]->GetnDim();
   /*--- Initialize transfer coefficients between the zones ---*/
   Set_TransferCoeff(iZone_0,iZone_1,config);
@@ -201,7 +207,7 @@ CNearestNeighbor::CNearestNeighbor(CGeometry ***geometry_container, CConfig **co
 
 CNearestNeighbor::~CNearestNeighbor(){}
 
-void CNearestNeighbor::Set_TransferCoeff(unsigned short iZone_0, unsigned short iZone_1, CConfig **config){
+void CNearestNeighbor::Set_TransferCoeff(unsigned int iZone_0, unsigned int iZone_1, CConfig **config){
   unsigned long iPoint, jPoint, iVertex, jVertex,*nn;
   unsigned short iMarker, iDim, jMarker;
   unsigned short nDim = Geometry[iZone_0][MESH_0]->GetnDim(), iDonor, jDonor;
