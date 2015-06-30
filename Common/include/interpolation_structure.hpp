@@ -70,50 +70,59 @@ public:
   /*!
  * \brief Constructor of the class.
  */
-  CInterpolator(CGeometry ***geometry_container, CConfig **config,  unsigned int iZone_0,unsigned int iZone_1, unsigned int nZone);
+  CInterpolator(CGeometry ***geometry_container, CConfig **config,  unsigned int* Zones, unsigned int nZone);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CInterpolator(void);
+  virtual ~CInterpolator(void);
 
   /*!
      * \brief initialize the Data structure to the appropriate size.
      */
-  void InitializeData(unsigned int iZone_0, unsigned int iZone_1, unsigned short val_nVar);
+  void InitializeData(unsigned int* Zones, unsigned short val_nVar);
 
   /*!
-   * \brief interpolate Data from one mesh to another
-   * \param[in] iZone_0: zone to recieve interpolated data
+   * \brief interpolate Data from one mesh to another.
+   * The data for zone 0 will be overwritten. transfer coefficients must be defined with Set_TransferCoeff.
+   * \param[in] iZone_0 - zone to recieve interpolated data
    * \param[in] config
    */
-  void Interpolate_Data(unsigned int iZone_0,  CConfig **config);
+  void Interpolate_Data(unsigned int iZone,  CConfig **config);
 
   /*!
-   * \brief interpolate deformations from one mesh to another
+   * \brief interpolate deformations from one mesh to another.
+   * Uses information stored by the geometry class, updates values in VarCoord of iZone_0. Set_TransferCoeff must be run first.
+   * \param[in] iZone_0 - zone to recieve interpolated data.
+   * \param[in] config
    */
-  void Interpolate_Deformation(unsigned int iZone_0, unsigned int iZone_1, CConfig **config);
+  void Interpolate_Deformation(unsigned int iZone, CConfig **config);
 
   /*!
    * \brief Set up transfer matrix defining relation between two meshes
+   * \param[in] Zones - list of zones to set up interpolation for. This method must be overwritten in the child classes.
+   * \param[in] config
    */
-  void Set_TransferCoeff(unsigned int iZone_0, unsigned int iZone_1, CConfig **config);
+  virtual void Set_TransferCoeff(unsigned int* Zones, CConfig **config)=0;
 
 
   /*!
    * \brief Return the value of the Data at the specified zone, point, and dimension.
+   * \param[in] iZone - zone index
+   * \param[in] iPoint - point index
+   * \param[in[ iDim - index of the data
    */
-  double GetData(unsigned int iZone, unsigned long iPoint, unsigned short iDim);
+  double GetData(unsigned int iZone, unsigned long iPoint, unsigned short iVar);
 
   /*!
-   * \brief Return the value of the Data vector at the specified zone and point.
+   * \brief Return the pointer to the Data vector at the specified zone and point.
    */
   double* GetData(unsigned int iZone, unsigned long iPoint);
 
   /*!
-   * \brief Set the value of the Data at the specified zone, point, and dimension.
+   * \brief Set the value of the Data at the specified zone, point, and index.
    */
-  void SetData(unsigned int iZone, unsigned long iPoint, unsigned short iDim, double val);
+  void SetData(unsigned int iZone, unsigned long iPoint, unsigned short iVar, double val);
 
 
 
@@ -127,7 +136,7 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CNearestNeighbor(CGeometry ***geometry_container, CConfig **config,  unsigned int iZone_0,unsigned int iZone_1,unsigned int nZone);
+  CNearestNeighbor(CGeometry ***geometry_container, CConfig **config,  unsigned int* Zones,unsigned int nZone);
 
   /*!
    * \brief Destructor of the class.
@@ -137,6 +146,6 @@ public:
   /*!
    * \brief Set up transfer matrix defining relation between two meshes
    */
-  void Set_TransferCoeff(unsigned int iZone_0, unsigned int iZone_1, CConfig **config);
+  void Set_TransferCoeff(unsigned int* Zones, CConfig **config);
 
 };

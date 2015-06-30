@@ -258,8 +258,13 @@ int main(int argc, char *argv[]) {
 
 	  }
 
-	  if (!config_container[ZONE_0]->GetMatchingMesh())
-	    interpolator_container[iZone] = new CNearestNeighbor(geometry_container,config_container,ZONE_0,ZONE_1,nZone);
+	  if (!config_container[ZONE_0]->GetMatchingMesh()){
+	    unsigned int Zones[2];
+	    unsigned int nzn = 2; // temporary nZones for interpolation: 2 in the case of fluid-structure
+	    Zones[0]=ZONE_0;
+	    Zones[1]=ZONE_1;
+	    interpolator_container[iZone] = new CNearestNeighbor(geometry_container,config_container,Zones,nzn);
+	  }
 
 	  /*--- For the time-spectral solver, set the grid node velocities. ---*/
 
