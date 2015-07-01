@@ -129,7 +129,9 @@ public:
 
 };
 
-
+/*!
+ * \brief Nearest Neighbor interpolation
+ */
 class CNearestNeighbor : public CInterpolator {
 public:
 
@@ -142,6 +144,29 @@ public:
    * \brief Destructor of the class.
    */
   ~CNearestNeighbor(void);
+
+  /*!
+   * \brief Set up transfer matrix defining relation between two meshes
+   */
+  void Set_TransferCoeff(unsigned int* Zones, CConfig **config);
+
+};
+
+/*!
+ * \brief Consistent and Conservative interpolation
+ */
+class CConsistConserve : public CInterpolator {
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   */
+  CConsistConserve(CGeometry ***geometry_container, CConfig **config,  unsigned int* Zones,unsigned int nZone);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CConsistConserve(void);
 
   /*!
    * \brief Set up transfer matrix defining relation between two meshes
