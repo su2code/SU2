@@ -7,16 +7,18 @@ AC_DEFUN([CONFIGURE_CODI],
         AS_HELP_STRING([--enable-codi-forward], [build executables with codi forward datatype (default = no)]),
         [build_CODI_FORWARD="yes"], [build_CODI_FORWARD="no"])
 
-        CODIheader=codi.hpp
+        CODIheader=${srcdir}/externals/CoDi/include/codi.hpp
+        AMPIlib=${srcdir}/externals/adjointmpi/libAMPI.a
+        AMPIheader=${srcdir}/externals/adjointmpi/include/ampi.h
 
-        #if test "$build_CODI_REVERSE" == "yes" || test "$build_CODI_FORWARD" == "yes"
-        #then
-          #AC_CHECK_FILE([externals/CoDi/include/$CODIheader],[have_CODI='yes'],[have_CODI='no'])
-          #if test "$have_CODI" == "no"
-          #then
-            #AC_MSG_ERROR([CODI header was not found in externals/CoDi/include.])
-          #fi
-        #fi
+        if test "$build_CODI_REVERSE" == "yes" || test "$build_CODI_FORWARD" == "yes"
+        then
+          AC_CHECK_FILE([$CODIheader],[have_CODI='yes'],[have_CODI='no'])
+          if test "$have_CODI" == "no"
+          then
+            AC_MSG_ERROR([CODI header was not found in externals/CoDi/include. Use 'preconfigure.py --enable-reverse=CODI' to download it.])
+          fi
+        fi
 
         if test "$build_CODI_FORWARD" == "yes"
         then
@@ -29,6 +31,16 @@ AC_DEFUN([CONFIGURE_CODI],
            REVERSE_CXX="-std=c++11 -DCODI_REVERSE_TYPE -I\$(top_srcdir)/externals/CoDi/include"
            if test "$enablempi" == "yes"
            then
+              AC_CHECK_FILE([$AMPIlib], [have_AMPIlib='yes'], [have_AMPIlib='no'])
+              AC_CHECK_FILE([$AMPIheader], [have_AMPIheader='yes'], [have_AMPIheader='no'])
+              if test "$have_AMPIlib" == "no"
+              then
+                AC_MSG_ERROR([AMPI library not found in externals/adjointmpi. Use 'preconfigure.py --enable-reverse=CODI --enable-mpi' to download it.])
+              fi
+              if test "$have_AMPIheader" == "no"
+              then
+                AC_MSG_ERROR([AMPI header not found in externals/adjointmpi/include.  Use 'preconfigure.py --enable-reverse=CODI --enable-mpi' to download it.])
+              fi
               REVERSE_CXX=$REVERSE_CXX" -I\$(top_srcdir)/externals/adjointmpi/include"
               REVERSE_LIBS="\$(top_srcdir)/externals/adjointmpi/libAMPI.a"
            fi
