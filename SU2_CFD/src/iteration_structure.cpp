@@ -2,7 +2,7 @@
  * \file iteration_structure.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -954,12 +954,23 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
   
   // If a source term is included to account for the gust field, the method is described by Jones et al. as the Split Velocity Method in
   // Simulation of Airfoil Gust Responses Using Prescribed Velocities.
-  // In this routine the gust derivatives needed for the source term are calculated when applicable. The source term itself is implemented in the class CSourceWindGust
+  // In this routine the gust derivatives needed for the source term are calculated when applicable.
+  // If the gust derivatives are zero the source term is also zero.
+  // The source term itself is implemented in the class CSourceWindGust
   
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
+  
+  if (rank == MASTER_NODE)
+    cout << endl << "Running simulation with a Wind Gust." << endl;
+  unsigned short iDim, nDim = geometry_container[MESH_0]->GetnDim(); //We assume nDim = 2
+  if (nDim != 2) {
+    if (rank == MASTER_NODE) {
+      cout << endl << "WARNING - Wind Gust capability is only verified for 2 dimensional simulations." << endl;
+    }
+  }
   
   /*--- Gust Parameters from config ---*/
   unsigned short Gust_Type = config_container->GetGust_Type();
@@ -971,15 +982,13 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
   unsigned short GustDir = config_container->GetGust_Dir(); // Gust direction
 
   /*--- Variables needed to compute the gust ---*/
-  unsigned short iDim;
-  unsigned short nDim = geometry_container[MESH_0]->GetnDim();
+  unsigned short Kind_Grid_Movement = config_container->GetKind_GridMovement(ZONE_0);
   unsigned long iPoint;
   unsigned short iMGlevel, nMGlevel = config_container->GetnMGLevels();
 
   double x, y, x_gust, dgust_dx, dgust_dy, dgust_dt;
   double *Gust, *GridVel;
-  unsigned short Kind_Grid_Movement = config_container->GetKind_GridMovement(ZONE_0);
-  double NewGridVel[3] = {0.0,0.0,0.0};
+  double NewGridVel[2] = {0.0,0.0};
   double GustDer[3] = {0.0,0.0,0.0};
 
   double Physical_dt = config_container->GetDelta_UnstTime();
@@ -992,17 +1001,17 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
   for (iDim = 0; iDim < nDim; iDim++) {
     Gust[iDim] = 0.0;
   }
-  
+
   // Vortex variables
   unsigned long nVortex = 0;
-  std::vector<double> x0, y0, vort_strenth, r_core; //vortex is positive in clockwise direction.
+  vector<double> x0, y0, vort_strenth, r_core; //vortex is positive in clockwise direction.
   if (Gust_Type == VORTEX) {
     InitializeVortexDistribution(nVortex, x0, y0, vort_strenth, r_core);
   }
   
   /*--- Check to make sure gust lenght is not zero or negative (vortex gust doesn't use this). ---*/
   if (L <= 0.0 && Gust_Type != VORTEX) {
-    cout << "ERROR: The gust length needs to be positive" << endl;
+    if (rank == MASTER_NODE) cout << "ERROR: The gust length needs to be positive" << endl;
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
 #else
@@ -1019,15 +1028,15 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
     
     for (iPoint = 0; iPoint < geometry_container[iMGlevel]->GetnPoint(); iPoint++) {
       
-      /*--- eset the Grid Velocity to zero if there is no grid movement ---*/
-      if (Kind_Grid_Movement == NO_MOVEMENT) {
+      /*--- Reset the Grid Velocity to zero if there is no grid movement ---*/
+      if (Kind_Grid_Movement == GUST) {
         for (iDim = 0; iDim < nDim; iDim++)
           geometry_container[iMGlevel]->node[iPoint]->SetGridVel(iDim, 0.0);
       }
       
       /*--- initialize the gust and derivatives to zero everywhere ---*/
       
-      Gust[0] = 0.0; Gust[1] = 0.0; Gust[2] = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) {Gust[iDim]=0.0;}
       dgust_dx = 0.0; dgust_dy = 0.0; dgust_dt = 0.0;
       
       /*--- Begin applying the gust ---*/
@@ -1057,21 +1066,21 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
               Gust[GustDir] = gust_amp*(sin(2*PI_NUMBER*x_gust));
 
               // Gust derivatives
-              dgust_dx = gust_amp*2*PI_NUMBER*(cos(2*PI_NUMBER*x_gust))/L;
-              dgust_dy = 0;
-              dgust_dt = gust_amp*2*PI_NUMBER*(cos(2*PI_NUMBER*x_gust))*(-Uinf)/L;
+              //dgust_dx = gust_amp*2*PI_NUMBER*(cos(2*PI_NUMBER*x_gust))/L;
+              //dgust_dy = 0;
+              //dgust_dt = gust_amp*2*PI_NUMBER*(cos(2*PI_NUMBER*x_gust))*(-Uinf)/L;
             }
             break;
 
           case ONE_M_COSINE:
              // Check if we are in the region where the gust is active
              if (x_gust > 0 && x_gust < n) {
-               Gust[GustDir] = 0.5*gust_amp*(1-cos(2*PI_NUMBER*x_gust));
+               Gust[GustDir] = gust_amp*(1-cos(2*PI_NUMBER*x_gust));
 
                // Gust derivatives
-               dgust_dx = 0.5*gust_amp*2*PI_NUMBER*(sin(2*PI_NUMBER*x_gust))/L;
-               dgust_dy = 0;
-               dgust_dt = 0.5*gust_amp*2*PI_NUMBER*(sin(2*PI_NUMBER*x_gust))*(-Uinf)/L;
+               //dgust_dx = gust_amp*2*PI_NUMBER*(sin(2*PI_NUMBER*x_gust))/L;
+               //dgust_dy = 0;
+               //dgust_dt = gust_amp*2*PI_NUMBER*(sin(2*PI_NUMBER*x_gust))*(-Uinf)/L;
              }
              break;
 
@@ -1146,7 +1155,7 @@ void InitializeVortexDistribution(unsigned long &nVortex, vector<double>& x0, ve
   
   // Ignore line containing the header
   getline(file, line);
-  // Read in the information of the vortices (xloc, yloc, lambda(strenght), eta(size, gradient))
+  // Read in the information of the vortices (xloc, yloc, lambda(strength), eta(size, gradient))
   while (file.good())
   {
     getline(file, line);
@@ -1231,6 +1240,26 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
         
         for (iMGlevel = 0; iMGlevel <= nMGlevels; iMGlevel++)
           geometry_container[iMGlevel]->SetRotationalVelocity(config_container);
+        
+      }
+      
+      break;
+            
+    case STEADY_TRANSLATION:
+      
+      /*--- Set the translational velocity and hold the grid fixed during
+       the calculation (similar to rotating frame, but there is no extra
+       source term for translation). ---*/
+      
+      if (ExtIter == 0) {
+        
+        if (rank == MASTER_NODE)
+          cout << endl << " Setting translational grid velocities." << endl;
+        
+          /*--- Set the translational velocity on all grid levels. ---*/
+          
+          for (iMGlevel = 0; iMGlevel <= nMGlevels; iMGlevel++)
+              geometry_container[iMGlevel]->SetTranslationalVelocity(config_container);
         
       }
       
@@ -1460,7 +1489,7 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
       
       break;
       
-    case NONE: default:
+    case NO_MOVEMENT: case GUST: default:
       
       /*--- There is no mesh motion specified for this zone. ---*/
       if (rank == MASTER_NODE)

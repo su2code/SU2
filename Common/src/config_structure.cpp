@@ -2,7 +2,7 @@
  * \file config_structure.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -1706,7 +1706,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if ((Kind_SU2 == SU2_CFD || Kind_SU2 == SU2_SOL) &&
       (Unsteady_Simulation == STEADY) &&
       ((Kind_GridMovement[ZONE_0] != MOVING_WALL) &&
-       (Kind_GridMovement[ZONE_0] != ROTATING_FRAME)))
+       (Kind_GridMovement[ZONE_0] != ROTATING_FRAME) &&
+       (Kind_GridMovement[ZONE_0] != STEADY_TRANSLATION)))
     Grid_Movement = false;
   
   /*--- If it is not specified, set the mesh motion mach number
@@ -1726,8 +1727,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
    types provided (should be equal, except that rigid motion and rotating frame
    do not depend on surface specification). ---*/
   
-  if (Grid_Movement && (Kind_GridMovement[ZONE_0] != RIGID_MOTION) &&
+  if (Grid_Movement &&
+      (Kind_GridMovement[ZONE_0] != RIGID_MOTION) &&
       (Kind_GridMovement[ZONE_0] != ROTATING_FRAME) &&
+      (Kind_GridMovement[ZONE_0] != STEADY_TRANSLATION) &&
+      (Kind_GridMovement[ZONE_0] != GUST) &&
       (nGridMovement != nMarker_Moving)) {
     cout << "Number of GRID_MOVEMENT_KIND must match number of MARKER_MOVING!!" << endl;
     exit(EXIT_FAILURE);
@@ -3526,7 +3530,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   cout << endl << "-------------------------------------------------------------------------" << endl;
   cout << "|    ___ _   _ ___                                                      |" << endl;
-  cout << "|   / __| | | |_  )   Release 3.2.9   \"eagle\"                           |" << endl;
+  cout << "|   / __| | | |_  )   Release 4.0.0  \"Cardinal\"                         |" << endl;
   cout << "|   \\__ \\ |_| |/ /                                                      |" << endl;
   switch (val_software) {
     case SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;
@@ -3540,8 +3544,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   cout << "|                                                                       |" << endl;
   cout << "|   Local date and time: " << dt << "                      |" << endl;
   cout <<"-------------------------------------------------------------------------" << endl;
-  cout << "| SU2 Lead Dev.: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).|" << endl;
-  cout << "|                Dr. Thomas D. Economon (economon@stanford.edu).        |" << endl;
+  cout << "| SU2 Lead Dev.: Dr. Francisco Palacios, Francisco.D.Palacios@boeing.com|" << endl;
+  cout << "|                Dr. Thomas D. Economon, economon@stanford.edu          |" << endl;
   cout <<"-------------------------------------------------------------------------" << endl;
   cout << "| SU2 Developers:                                                       |" << endl;
   cout << "| - Prof. Juan J. Alonso's group at Stanford University.                |" << endl;

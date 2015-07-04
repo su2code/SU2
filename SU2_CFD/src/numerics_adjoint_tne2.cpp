@@ -1,8 +1,8 @@
 /*!
- * \file numerics_adjoint_mean.cpp
+ * \file numerics_adjoint_tne2.cpp
  * \brief This file contains all the convective term discretization.
  * \author S. Copeland
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
