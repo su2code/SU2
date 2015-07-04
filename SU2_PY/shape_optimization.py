@@ -3,7 +3,7 @@
 ## \file shape_optimization.py
 #  \brief Python script for performing the shape optimization.
 #  \author T. Economon, T. Lukaczyk, F. Palacios
-#  \version 3.2.9 "eagle"
+#  \version 4.0.0 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -61,13 +61,13 @@ def main():
     
     sys.stdout.write('\n-------------------------------------------------------------------------\n')
     sys.stdout.write('|    ___ _   _ ___                                                      |\n')
-    sys.stdout.write('|   / __| | | |_  )   Release 3.2.9 \"eagle\"                             |\n')
+    sys.stdout.write('|   / __| | | |_  )   Release 4.0.0 \"Cardinal\"                          |\n')
     sys.stdout.write('|   \\__ \\ |_| |/ /                                                      |\n')
     sys.stdout.write('|   |___/\\___//___|   Aerodynamic Shape Optimization Script             |\n')
     sys.stdout.write('|                                                                       |\n')
     sys.stdout.write('-------------------------------------------------------------------------\n')
-    sys.stdout.write('| SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com). |\n')
-    sys.stdout.write('|                      Dr. Thomas D. Economon (economon@stanford.edu).  |\n')
+    sys.stdout.write('| SU2 Lead Dev.: Dr. Francisco Palacios, Francisco.D.Palacios@boeing.com|\n')
+    sys.stdout.write('|                Dr. Thomas D. Economon, economon@stanford.edu          |\n')
     sys.stdout.write('-------------------------------------------------------------------------\n')
     sys.stdout.write('| SU2 Developers:                                                       |\n')
     sys.stdout.write('| - Prof. Juan J. Alonso\'s group at Stanford University.                |\n')
