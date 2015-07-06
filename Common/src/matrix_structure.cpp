@@ -1475,7 +1475,7 @@ void CSysMatrix::ComputeLU_SGS_TransposedPreconditioner(const CSysVector & vec, 
 
   /*--- MPI Parallelization ---*/
 
-  SendReceive_Solution(prod, geometry, config);
+  SendReceive_SolutionTransposed(prod, geometry, config);
 
   tmp = su2double(0.0);
 
@@ -1498,7 +1498,7 @@ void CSysMatrix::ComputeLU_SGS_TransposedPreconditioner(const CSysVector & vec, 
 
   /*--- MPI Parallelization ---*/
 
-  SendReceive_Solution(prod, geometry, config);
+  SendReceive_SolutionTransposed(prod, geometry, config);
 
 
 }

@@ -161,13 +161,26 @@ def DOT(config):
         partitions set by config.NUMBER_PART
     """    
     konfig = copy.deepcopy(config)
+
+    discrete_adjoint = konfig.MATH_PROBLEM == 'DISCRETE_ADJOINT'
+
+    if discrete_adjoint:
+
+        tempname = 'config_DOT_REVERSE.cfg'
+        konfig.dump(tempname)
+
+        processes = konfig['NUMBER_PART']
+
+        the_Command = 'SU2_DOT_REVERSE ' + tempname
+    else:
     
-    tempname = 'config_DOT.cfg'
-    konfig.dump(tempname)   
+        tempname = 'config_DOT.cfg'
+        konfig.dump(tempname)
     
-    processes = konfig['NUMBER_PART']
+        processes = konfig['NUMBER_PART']
     
-    the_Command = 'SU2_DOT ' + tempname
+        the_Command = 'SU2_DOT ' + tempname
+
     the_Command = build_command( the_Command , processes )
     run_command( the_Command )
     

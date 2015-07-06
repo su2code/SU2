@@ -878,6 +878,13 @@ public:
    */
   virtual su2double GetSensitivity(unsigned long iPoint, unsigned short iDim);
 
+  /*!
+   * \brief A virtual member.
+   * \param iPoint - Point
+   * \param iDim - Dimension
+   * \param val - Value of the sensitivity
+   */
+  virtual void SetSensitivity(unsigned long iPoint, unsigned short iDim, su2double val);
 };
 
 /*!
@@ -1410,10 +1417,18 @@ public:
   /*!
    * \brief Get the Sensitivity at a specific point.
    * \param[in] iPoint - The point where to get the sensitivity.
-   * \param[out] iDim - The component of the dim. vector.
+   * \param[in] iDim - The component of the dim. vector.
    * \returns The sensitivity at point iPoint and dim. iDim.
    */
   su2double GetSensitivity(unsigned long iPoint, unsigned short iDim);
+
+  /*!
+   * \brief Set the Sensitivity at a specific point.
+   * \param[in] iPoint - The point where to get the sensitivity.
+   * \param[in] iDim - The component of the dim. vector.
+   * \param[in] val - Value of the sensitivity.
+   */
+  void SetSensitivity(unsigned long iPoint, unsigned short iDim, su2double val);
 
 };
 

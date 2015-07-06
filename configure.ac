@@ -380,6 +380,11 @@ then
   build_SOL=no
   build_GEO=no
 fi
+
+if test $build_REVERSE == "yes"
+then
+  build_DOT=yes
+fi
 ###########################
 
 AM_CONDITIONAL([BUILD_CFD],[test $build_CFD != "no"])
