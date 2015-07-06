@@ -285,3 +285,7 @@ inline void CGeometry::SetSensitivity(CConfig* config){}
 inline su2double CGeometry::GetSensitivity(unsigned long iPoint, unsigned short iDim){return 0.0;}
 
 inline su2double CPhysicalGeometry::GetSensitivity(unsigned long iPoint, unsigned short iDim){return Sensitivity[iPoint*nDim+iDim];}
+
+inline void CGeometry::SetSensitivity(unsigned long iPoint, unsigned short iDim, su2double val){}
+
+inline void CPhysicalGeometry::SetSensitivity(unsigned long iPoint, unsigned short iDim, su2double val){Sensitivity[iPoint*nDim+iDim] = val;}

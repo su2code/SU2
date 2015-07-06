@@ -6503,6 +6503,11 @@ then
   build_SOL=no
   build_GEO=no
 fi
+
+if test $build_REVERSE == "yes"
+then
+  build_DOT=yes
+fi
 ###########################
 
  if test $build_CFD != "no"; then

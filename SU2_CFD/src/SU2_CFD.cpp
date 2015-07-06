@@ -268,7 +268,7 @@ int main(int argc, char *argv[]) {
 
       /*--- Update the multi-grid structure to propagate the derivative information to the coarser levels ---*/
 
-      grid_movement[iZone]->UpdateMultiGrid(geometry_container[iZone], config_container[iZone]);
+      geometry_container[iZone][MESH_0]->UpdateGeometry(geometry_container[iZone],config_container[iZone]);
 
       /*--- Set the derivative of the wall-distance with respect to the surface nodes ---*/
 
