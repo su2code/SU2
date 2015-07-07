@@ -2045,13 +2045,16 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
           FluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
           Density_FreeStream = FluidModel->GetDensity();
           config->SetDensity_FreeStream(Density_FreeStream);
-//          printf("Density_FreeStream = %f\n",Density_FreeStream);
+          printf("Density_FreeStream = %f\n",Density_FreeStream);
         }
         else {
           FluidModel->SetTDState_Prho(Pressure_FreeStream, Density_FreeStream );
           Temperature_FreeStream = FluidModel->GetTemperature();
           config->SetTemperature_FreeStream(Temperature_FreeStream);
-//          printf("Temperature_FreeStream = %f\n",Temperature_FreeStream);
+          //printf("Pressure_FreeStream = %f\n",Pressure_FreeStream);
+          //printf("Density_FreeStream = %f\n",Density_FreeStream);
+          //printf("Temperature_FreeStream = %f\n",Temperature_FreeStream);
+         // throw(-1);
         }
         break;
 #endif
@@ -2213,7 +2216,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
     Froude = ModVel_FreeStream/sqrt(STANDART_GRAVITY*Length_Ref);   config->SetFroude(Froude);
     Time_Ref = Length_Ref/Velocity_Ref;                             config->SetTime_Ref(Time_Ref);
     
-  }
+   }
   
   /*--- Divide by reference values, to compute the non-dimensional free-stream values ---*/
   
@@ -2280,6 +2283,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
                                   config->HasSinglePhaseOnly(), config->GetLookupTableName(), config->GetTemperature_Ref(), 
                                   config->GetPressure_Ref(), config->GetDensity_Ref());
       FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
+      printf("Density_FreeStreamND = %f\n",Density_FreeStreamND);
       break;
 #endif
 
@@ -6882,7 +6886,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 		unsigned short val_marker) {
 	unsigned short iDim, iVar, jVar, kVar;
 	unsigned long iVertex, iPoint, Point_Normal;
-	double P_Total, T_Total, P_static, T_static, Rho_static, *Mach, *Flow_Dir,
+	double P_Total, T_Total, Rho_Total, P_static, T_static, Rho_static, *Mach, *Flow_Dir,
 			Area, UnitNormal[3];
 	double *Velocity_b, Velocity2_b, Enthalpy_b, Energy_b, StaticEnergy_b,
 			Density_b, Kappa_b, Chi_b, Pressure_b, Temperature_b;
@@ -6961,7 +6965,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 				ProjVelocity_i += Velocity_i[iDim] * UnitNormal[iDim];
 			/*--- Build the external state u_e from boundary data and internal node ---*/
 			switch (config->GetKind_Data_Riemann(Marker_Tag)) {
-			case TOTAL_CONDITIONS_PT: //case TOTAL_SUPERSONIC_INFLOW:
+		case TOTAL_CONDITIONS_PT: //case TOTAL_SUPERSONIC_INFLOW:
 			/*--- Retrieve the specified total conditions for this boundary. ---*/
 				if (gravity)
 					P_Total = config->GetRiemann_Var1(Marker_Tag)
@@ -6975,7 +6979,8 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 				P_Total /= config->GetPressure_Ref();
 				T_Total /= config->GetTemperature_Ref();
 				/* --- Computes the total state --- */
-				FluidModel->SetTDState_PT(P_Total, T_Total);
+				//FluidModel->SetTDState_PT(P_Total, T_Total);
+				FluidModel->SetTDState_Prho(P_Total, T_Total);
 				Enthalpy_e = FluidModel->GetStaticEnergy()
 						+ FluidModel->GetPressure() / FluidModel->GetDensity();
 				Entropy_e = FluidModel->GetEntropy();
@@ -6992,6 +6997,47 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 // Velocity2_e += Velocity_e[iDim]*Velocity_e[iDim];
 // }
 // }
+				StaticEnthalpy_e = Enthalpy_e - 0.5 * Velocity2_e;
+				FluidModel->SetTDState_hs(StaticEnthalpy_e, Entropy_e);
+				Density_e = FluidModel->GetDensity();
+				StaticEnergy_e = FluidModel->GetStaticEnergy();
+				Energy_e = StaticEnergy_e + 0.5 * Velocity2_e;
+				if (tkeNeeded)
+					Energy_e += GetTke_Inf();
+				break;
+
+			case PRESSURE_DENSITY: //case TOTAL_SUPERSONIC_INFLOW:
+				/*--- Retrieve the specified total conditions for this boundary. ---*/
+				if (gravity)
+					P_Total = config->GetRiemann_Var1(Marker_Tag)
+							- geometry->node[iPoint]->GetCoord(nDim - 1)
+									* STANDART_GRAVITY; /// check in which case is true (only freesurface?)
+				else
+					P_Total = config->GetRiemann_Var1(Marker_Tag);
+				Rho_Total = config->GetRiemann_Var2(Marker_Tag);
+				Flow_Dir = config->GetRiemann_FlowDir(Marker_Tag);
+				/*--- Non-dim. the inputs if necessary. ---*/
+				P_Total /= config->GetPressure_Ref();
+				Rho_Total /= config->GetTemperature_Ref();
+				/* --- Computes the total state --- */
+				//FluidModel->SetTDState_PT(P_Total, T_Total);
+				FluidModel->SetTDState_Prho(P_Total, Rho_Total);
+				Enthalpy_e = FluidModel->GetStaticEnergy()
+						+ FluidModel->GetPressure() / FluidModel->GetDensity();
+				Entropy_e = FluidModel->GetEntropy();
+				/* --- Compute the boundary state u_e --- */
+				// if (config->GetKind_Data_Riemann(Marker_Tag) == TOTAL_CONDITIONS_PT) {
+				Velocity2_e = Velocity2_i;
+				for (iDim = 0; iDim < nDim; iDim++) {
+					Velocity_e[iDim] = sqrt(Velocity2_e) * Flow_Dir[iDim];
+				}
+				// } else{
+				// Velocity2_e = 0.0;
+				// for (iDim = 0; iDim < nDim; iDim++) {
+				// Velocity_e[iDim] = Flow_Dir[iDim]/config->GetVelocity_Ref();
+				// Velocity2_e += Velocity_e[iDim]*Velocity_e[iDim];
+				// }
+				// }
 				StaticEnthalpy_e = Enthalpy_e - 0.5 * Velocity2_e;
 				FluidModel->SetTDState_hs(StaticEnthalpy_e, Entropy_e);
 				Density_e = FluidModel->GetDensity();

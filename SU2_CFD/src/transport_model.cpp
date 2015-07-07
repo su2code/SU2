@@ -28,6 +28,8 @@
  */
 
 #include "../include/transport_model.hpp"
+#include "fluidprop.h"
+
 
 
 /* ------------------------------------------------- */
@@ -112,6 +114,14 @@ void CFluidPropViscosity::SetViscosity(double T, double rho) {
 
 	Mu = 0.0; //call_fluidprop;
 
+	const char* pair;
+//        if (SinglePhaseOnly)
+//           pair = "Td_1ph";
+//        else
+    pair = "Td_1ph";
+
+	Mu = fluidprop_viscosity ( pair, T, rho );
+
 }
 
 void CFluidPropViscosity::SetDerViscosity(double T, double rho)  {
@@ -194,6 +204,14 @@ CFluidPropConductivity::CFluidPropConductivity(double pr_const) : CConductivityM
 void CFluidPropConductivity::SetConductivity(double T, double rho, double mu, double cp) {
 
 	Kt = 0.0; //call_to_fluidprop
+
+	const char* pair;
+//        if (SinglePhaseOnly)
+//           pair = "Td_1ph";
+//        else
+    pair = "Td_1ph";
+
+	Kt = fluidprop_thermcond ( pair, T, rho );
 
 }
 
