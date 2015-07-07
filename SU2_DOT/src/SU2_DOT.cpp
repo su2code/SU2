@@ -266,6 +266,10 @@ int main(int argc, char *argv[]) {
     AD::ComputeAdjoint();
 
     for (iDV = 0; iDV  < config_container[ZONE_0]->GetnDV(); iDV++){
+
+      if (rank == MASTER_NODE)
+        cout << endl << "Design variable number "<< iDV <<"." << endl;
+
       my_Gradient = SU2_TYPE::GetDerivative(DV_Value);
 #ifdef HAVE_MPI
       SU2_MPI::Allreduce(&my_Gradient, &Gradient, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
