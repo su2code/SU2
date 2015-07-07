@@ -610,10 +610,10 @@ void CSysMatrix::ProdBlockVector(unsigned long block_i, unsigned long block_j, c
 }
 
 void CSysMatrix::ProdBlockTransposedVector(unsigned long block_i, unsigned long block_j, const CSysVector & vec) {
-  unsigned long j = block_i*nVar;
+  unsigned long j = block_j*nVar;
   unsigned short iVar, jVar;
 
-  su2double *block = GetBlock(block_i, block_j);
+  su2double *block = GetBlock(block_j, block_i);
 
   for (iVar = 0; iVar < nVar; iVar++){
     prod_block_vector[iVar] = 0;
