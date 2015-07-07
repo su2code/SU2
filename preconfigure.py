@@ -229,13 +229,18 @@ def find_all(text, dic):
 def build_codi(modes, mpi_support = False):
     ampi_log = open( 'preconf_ampi.log', 'w' )
     ampi_err = open( 'preconf_ampi.err', 'w' )
+    codi_log = open('preconf_codi.log', "w")
     os.chdir('externals')
     pkg_environ = os.environ
     if not os.path.exists('CoDi'):
 	try:
-            subprocess.check_call('git clone git@github.com:SciCompKL/CoDiPack.git CoDi', shell=True)
+            subprocess.check_call('git clone https://github.com/scicompkl/codipack.git CoDi', shell=True)
 	except subprocess.CalledProcessError:
-            print 'Error while git clone'
+            print 'Git command failed, trying wget'
+            subprocess.check_call('wget https://github.com/SciCompKL/CoDiPack/archive/master.zip', stdout = codi_log, shell=True)
+            subprocess.check_call('unzip master.zip', stdout = codi_log, shell=True)
+            subprocess.check_call('mv CoDiPack-master CoDi', stdout = codi_log, shell= True)
+            os.remove('master.zip')
             pass
  
     if mpi_support:

@@ -59,11 +59,10 @@ def main():
     options.compute     = options.compute.upper() == 'TRUE'
     options.validate    = options.validate.upper() == 'TRUE'
     
-    discrete_design( options.filename    ,
+    discrete_adjoint( options.filename    ,
                         options.partitions  ,
                         options.compute     ,
-                        options.step         ,
-                        options.validate)
+                        options.step         )
         
 #: def main()
 

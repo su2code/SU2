@@ -280,7 +280,7 @@ def SOL(config):
 def build_command( the_Command , processes=0 ):
     """ builds an mpi command for given number of processes """
     the_Command = base_Command % the_Command
-    if processes > 0:
+    if processes > 1:
         if not mpi_Command:
             raise RuntimeError , 'could not find an mpi interface'
         the_Command = mpi_Command % (processes,the_Command)
