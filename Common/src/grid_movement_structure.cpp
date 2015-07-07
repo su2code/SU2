@@ -3491,7 +3491,7 @@ void CSurfaceMovement::SetCartesianCoord(CGeometry *geometry, CConfig *config, C
       Diff = 0.0;
 			for (iDim = 0; iDim < nDim; iDim++) {
 				VarCoord[iDim] = CartCoordNew[iDim] - CartCoordOld[iDim];
-        if ((fabs(VarCoord[iDim]) <= EPS) && (config->GetDirectDiff() != D_DESIGN))
+        if ((fabs(VarCoord[iDim]) <= EPS) && (config->GetDirectDiff() != D_DESIGN) && (!config->GetDiscrete_Adjoint()))
           VarCoord[iDim] = 0.0;
         Diff += (VarCoord[iDim]*VarCoord[iDim]);
 			}
