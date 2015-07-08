@@ -106,7 +106,7 @@ def discrete_adjoint( filename           ,
     if compute:
         info = SU2.run.adjoint(config)
         state.update(info)
-        #SU2.io.restart2solution(config,state)
+        SU2.io.restart2solution(config,state)
     
     # Gradient Projection
     info = SU2.run.projection(config,step)
