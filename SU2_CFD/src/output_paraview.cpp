@@ -47,19 +47,20 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
   
 	bool grid_movement  = config->GetGrid_Movement();
 	bool adjoint = config->GetAdjoint();
-    
+  bool disc_adj = config->GetDiscrete_Adjoint();
+
 	char cstr[200], buffer[50];
 	string filename;
     
 	/*--- Write file name with extension ---*/
   if (surf_sol) {
-    if (adjoint)
+    if (adjoint || disc_adj)
       filename = config->GetSurfAdjCoeff_FileName();
     else
       filename = config->GetSurfFlowCoeff_FileName();
   }
   else {
-    if (adjoint)
+    if (adjoint || disc_adj)
       filename = config->GetAdj_FileName();
     else
       filename = config->GetFlow_FileName();
@@ -663,7 +664,10 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
     
     if (( Kind_Solver == ADJ_EULER         ) ||
         ( Kind_Solver == ADJ_NAVIER_STOKES ) ||
-        ( Kind_Solver == ADJ_RANS          )   ) {
+        ( Kind_Solver == ADJ_RANS          ) ||
+        ( Kind_Solver == DISC_ADJ_EULER         ) ||
+        ( Kind_Solver == DISC_ADJ_NAVIER_STOKES ) ||
+        ( Kind_Solver == DISC_ADJ_RANS          ) ) {
       
       Paraview_File << "\nSCALARS Surface_Sensitivity float 1\n";
       Paraview_File << "LOOKUP_TABLE default\n";
@@ -681,6 +685,43 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
       }
       VarCounter++;
       
+    }
+
+    if  (( Kind_Solver == DISC_ADJ_EULER        ) ||
+        ( Kind_Solver == DISC_ADJ_NAVIER_STOKES ) ||
+        ( Kind_Solver == DISC_ADJ_RANS          ) ) {
+
+      Paraview_File << "\nSCALARS Sensitivity_x float 1\n";
+      Paraview_File << "LOOKUP_TABLE default\n";
+
+      for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+        if (! surf_sol) {
+          Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
+        }
+      }
+      VarCounter++;
+
+      Paraview_File << "\nSCALARS Sensitivity_y float 1\n";
+      Paraview_File << "LOOKUP_TABLE default\n";
+
+      for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+        if (! surf_sol) {
+          Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
+        }
+      }
+      VarCounter++;
+
+      if (nDim == 3){
+        Paraview_File << "\nSCALARS Sensitivity_z float 1\n";
+        Paraview_File << "LOOKUP_TABLE default\n";
+
+        for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+          if (! surf_sol) {
+            Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
+          }
+        }
+        VarCounter++;
+      }
     }
 
     if ( Kind_Solver == LINEAR_ELASTICITY ) {
