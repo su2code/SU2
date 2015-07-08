@@ -182,7 +182,8 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
                            solver_container[iZone], config_container[iZone], iZone, IntIter, ExtIter);
           /*--- Apply a Wind Gust ---*/
           if (config_container[ZONE_0]->GetWind_Gust()) {
-            SetWind_GustField(config_container[iZone], geometry_container[iZone], solver_container[iZone]);
+            if (IntIter % config_container[iZone]->GetAeroelasticIter() ==0)
+              SetWind_GustField(config_container[iZone], geometry_container[iZone], solver_container[iZone]);
           }
         }
       }
