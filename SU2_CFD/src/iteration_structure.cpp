@@ -177,9 +177,14 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
 				}
         
 				/*--- Call Dynamic mesh update if AEROELASTIC motion was specified ---*/
-				if ((config_container[ZONE_0]->GetGrid_Movement()) && (config_container[ZONE_0]->GetAeroelastic_Simulation()))
+        if ((config_container[ZONE_0]->GetGrid_Movement()) && (config_container[ZONE_0]->GetAeroelastic_Simulation())) {
 					SetGrid_Movement(geometry_container[iZone], surface_movement[iZone], grid_movement[iZone], FFDBox[iZone],
                            solver_container[iZone], config_container[iZone], iZone, IntIter, ExtIter);
+          /*--- Apply a Wind Gust ---*/
+          if (config_container[ZONE_0]->GetWind_Gust()) {
+            SetWind_GustField(config_container[iZone], geometry_container[iZone], solver_container[iZone]);
+          }
+        }
       }
       
       if (integration_container[ZONE_0][FLOW_SOL]->GetConvergence()) break;

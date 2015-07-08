@@ -2974,19 +2974,6 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
       }
     }
   }
-
-  if (aeroelastic) {
-    
-    /*--- Reset the plunge and pitch value for the new unsteady step. ---*/
-    
-    unsigned short iMarker_Monitoring;
-    for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-      config->SetAeroelastic_pitch(iMarker_Monitoring,0.0);
-      config->SetAeroelastic_plunge(iMarker_Monitoring,0.0);
-    }
-    
-  }
-
 }
 
 void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
