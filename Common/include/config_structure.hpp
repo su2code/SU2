@@ -3,7 +3,7 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>config_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -53,7 +53,7 @@ using namespace std;
  * \brief Main class for defining the problem; basically this class reads the configuration file, and
  *        stores all the information.
  * \author F. Palacios
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  */
 
 class CConfig {
@@ -923,10 +923,10 @@ private:
   }
 
   void addStringDoubleListOption(const string name, unsigned short & list_size, string * & string_field,
-                        su2double* & su2double_field) {
+                        su2double* & double_field) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
-    COptionBase* val = new COptionStringDoubleList(name, list_size, string_field, su2double_field);
+    COptionBase* val = new COptionStringDoubleList(name, list_size, string_field, double_field);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
@@ -2612,7 +2612,7 @@ public:
 	 * \param[in] val_zone - Zone where the soler is applied.
 	 * \return Governing equation that we are solving.
 	 */
-	unsigned short SetKind_Solver(unsigned short val_solver);
+	void SetKind_Solver(unsigned short val_solver);
 
 
   /*!

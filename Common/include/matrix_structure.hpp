@@ -2,8 +2,8 @@
  * \file matrix_structure.hpp
  * \brief Headers of the main subroutines for creating the sparse matrices-by-blocks.
  *        The subroutines and functions are in the <i>matrix_structure.cpp</i> file.
- * \author F. Palacios, A. Bueno
- * \version 3.2.9 "eagle"
+ * \author F. Palacios, A. Bueno, T. Economon
+ * \version 4.0.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -49,7 +49,7 @@ using namespace std;
  * \brief Main class for defining sparse matrices-by-blocks
  with compressed row format.
  * \author A. Bueno, F. Palacios
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  */
 class CSysMatrix {
 private:
@@ -67,9 +67,10 @@ private:
 	su2double *block_weight;             /*!< \brief Internal array to store a subblock of the matrix. */
   su2double *prod_block_vector; /*!< \brief Internal array to store the product of a subblock with a vector. */
 	su2double *prod_row_vector;   /*!< \brief Internal array to store the product of a matrix-by-blocks "row" with a vector. */
-	su2double *aux_vector;         /*!< \brief Auxilar array to store intermediate results. */
-  su2double *sum_vector;         /*!< \brief Auxilar array to store intermediate results. */
+	su2double *aux_vector;         /*!< \brief Auxiliary array to store intermediate results. */
+  su2double *sum_vector;         /*!< \brief Auxiliary array to store intermediate results. */
 	su2double *invM;              /*!< \brief Inverse of (Jacobi) preconditioner. */
+
 	bool *LineletBool;                          /*!< \brief Identify if a point belong to a linelet. */
 	vector<unsigned long> *LineletPoint;        /*!< \brief Linelet structure. */
 	unsigned long nLinelet;                     /*!< \brief Number of Linelets in the system. */
@@ -90,7 +91,6 @@ public:
 	 */
 	~CSysMatrix(void);
   
-  
   /*!
 	 * \brief Initializes space matrix system.
 	 * \param[in] nVar - Number of variables.
@@ -102,7 +102,7 @@ public:
                   bool EdgeConnect, CGeometry *geometry, CConfig *config);
   
   /*!
-	 * \brief Assings values to the sparse-matrix structure.
+	 * \brief Assigns values to the sparse-matrix structure.
 	 * \param[in] val_nPoint - Number of points in the nPoint x nPoint block structure
 	 * \param[in] val_nVar - Number of nVar x nVar variables in each subblock of the matrix-by-block structure.
    * \param[in] val_nEq - Number of nEqn x nVar variables in each subblock of the matrix-by-block structure.
@@ -408,18 +408,6 @@ public:
 	 * \brief Build the Jacobi preconditioner.
 	 */
 	void BuildJacobiPreconditioner(void);
-  
-	/*!
-	 * \brief Build the Jacobi preconditioner.
-	 */
-	void BuildILUPreconditioner(void);
-  
-	/*!
-	 * \brief Build the Linelet preconditioner.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	unsigned short BuildLineletPreconditioner(CGeometry *geometry, CConfig *config);
 	
 	/*!
 	 * \brief Multiply CSysVector by the preconditioner
@@ -428,12 +416,41 @@ public:
 	 */
 	void ComputeJacobiPreconditioner(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config);
   
+  /*!
+   * \brief Apply Jacobi as a classical iterative smoother
+   * \param[in] b - CSysVector containing the residual (b)
+   * \param[in] x - CSysVector containing the solution (x^k)
+   * \param[in] mat_vec - object that defines matrix-vector product
+   * \param[in] tol - tolerance with which to solve the system
+   * \param[in] m - maximum size of the search subspace
+   * \param[in] monitoring - turn on priting residuals from solver to screen.
+   * \param[out] x - CSysVector containing the result of the smoothing (x^k+1 = x^k + M^-1*(b - A*x^k).
+   */
+  unsigned long Jacobi_Smoother(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec, su2double tol, unsigned long m, su2double *residual, bool monitoring, CGeometry *geometry, CConfig *config);
+  
+  /*!
+   * \brief Build the ILU0 preconditioner.
+   */
+  void BuildILUPreconditioner(void);
+  
 	/*!
 	 * \brief Multiply CSysVector by the preconditioner
 	 * \param[in] vec - CSysVector to be multiplied by the preconditioner.
 	 * \param[out] prod - Result of the product A*vec.
 	 */
 	void ComputeILUPreconditioner(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config);
+  
+  /*!
+   * \brief Apply ILU0 as a classical iterative smoother
+   * \param[in] b - CSysVector containing the residual (b)
+   * \param[in] x - CSysVector containing the solution (x^k)
+   * \param[in] mat_vec - object that defines matrix-vector product
+   * \param[in] tol - tolerance with which to solve the system
+   * \param[in] m - maximum size of the search subspace
+   * \param[in] monitoring - turn on priting residuals from solver to screen.
+   * \param[out] x - CSysVector containing the result of the smoothing (x^k+1 = x^k + M^-1*(b - A*x^k).
+   */
+  unsigned long ILU0_Smoother(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec, su2double tol, unsigned long m, su2double *residual, bool monitoring, CGeometry *geometry, CConfig *config);
 
   /*!
 	 * \brief Multiply CSysVector by the preconditioner
@@ -441,6 +458,25 @@ public:
 	 * \param[out] prod - Result of the product A*vec.
 	 */
 	void ComputeLU_SGSPreconditioner(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config);
+  
+/*!
+   * \brief Apply LU_SGS as a classical iterative smoother
+   * \param[in] b - CSysVector containing the residual (b)
+   * \param[in] x - CSysVector containing the solution (x^k)
+   * \param[in] mat_vec - object that defines matrix-vector product
+   * \param[in] tol - tolerance with which to solve the system
+   * \param[in] m - maximum size of the search subspace
+   * \param[in] monitoring - turn on priting residuals from solver to screen.
+   * \param[out] x - CSysVector containing the result of the smoothing (x^k+1 = x^k + M^-1*(b - A*x^k).
+   */
+  unsigned long LU_SGS_Smoother(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec, su2double tol, unsigned long m, su2double *residual, bool monitoring, CGeometry *geometry, CConfig *config);
+  
+  /*!
+   * \brief Build the Linelet preconditioner.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  unsigned short BuildLineletPreconditioner(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Multiply CSysVector by the preconditioner

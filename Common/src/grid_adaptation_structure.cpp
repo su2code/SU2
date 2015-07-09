@@ -2,7 +2,7 @@
  * \file grid_adaptation_structure.cpp
  * \brief Main subroutines for grid adaptation
  * \author F. Palacios
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -3307,7 +3307,7 @@ void CGridAdaptation::SetIndicator_Flow(CGeometry *geometry, CConfig *config, un
 
 	/*--- Initialization ---*/
 	nElem_new = 0;
-  max_elem_new = SU2_TYPE::Int(0.01*config->GetNew_Elem_Adapt()*su2double(geometry->GetnElem()));
+	max_elem_new = SU2_TYPE::Int(0.01*config->GetNew_Elem_Adapt()*su2double(geometry->GetnElem()));	
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem ++) {
 		geometry->elem[iElem]->SetDivide(false);
 	}
@@ -3371,7 +3371,7 @@ void CGridAdaptation::SetIndicator_Adj(CGeometry *geometry, CConfig *config, uns
 	
 	// Initialization
 	nElem_new = 0;
-  max_elem_new =SU2_TYPE::Int(0.01*config->GetNew_Elem_Adapt()*su2double(geometry->GetnElem()));
+	max_elem_new = SU2_TYPE::Int(0.01*config->GetNew_Elem_Adapt()*su2double(geometry->GetnElem()));	
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem ++) {
 		geometry->elem[iElem]->SetDivide(false);
 	}
@@ -3435,8 +3435,8 @@ void CGridAdaptation::SetIndicator_FlowAdj(CGeometry *geometry, CConfig *config)
 	su2double scale_area = config->GetDualVol_Power();
 	
 	// Initialization
-  max_elem_new_flow =SU2_TYPE::Int(0.5*0.01*config->GetNew_Elem_Adapt()*su2double(geometry->GetnElem()));
-  max_elem_new_adj = SU2_TYPE::Int(0.5*0.01*config->GetNew_Elem_Adapt()*su2double(geometry->GetnElem()));
+	max_elem_new_flow = SU2_TYPE::Int(0.5*0.01*config->GetNew_Elem_Adapt()*su2double(geometry->GetnElem()));
+	max_elem_new_adj =  SU2_TYPE::Int(0.5*0.01*config->GetNew_Elem_Adapt()*su2double(geometry->GetnElem()));
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem ++) {
 		geometry->elem[iElem]->SetDivide(false);
 	}
@@ -3528,7 +3528,7 @@ void CGridAdaptation::SetIndicator_Robust(CGeometry *geometry, CConfig *config) 
 		Index[iPoint] = pow(Dual_Area, scale_area)*sqrt(Index[iPoint]);
 	}
 	
-  max_elem_new_flow = SU2_TYPE::Int(0.5*0.01*config->GetNew_Elem_Adapt()*su2double(geometry->GetnElem()));
+	max_elem_new_flow = SU2_TYPE::Int(0.5*0.01*config->GetNew_Elem_Adapt()*su2double(geometry->GetnElem()));
 	SetSensorElem(geometry, config, max_elem_new_flow);
 
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
@@ -3540,7 +3540,7 @@ void CGridAdaptation::SetIndicator_Robust(CGeometry *geometry, CConfig *config) 
 		Index[iPoint] = pow(Dual_Area, scale_area)*sqrt(Index[iPoint]);
 	}
 	
-  max_elem_new_adj = SU2_TYPE::Int(0.5*0.01*config->GetNew_Elem_Adapt()*su2double(geometry->GetnElem()));
+	max_elem_new_adj = SU2_TYPE::Int(0.5*0.01*config->GetNew_Elem_Adapt()*su2double(geometry->GetnElem()));
 	SetSensorElem(geometry, config, max_elem_new_adj);
 
 }
@@ -3551,7 +3551,7 @@ void CGridAdaptation::SetIndicator_Computable(CGeometry *geometry, CConfig *conf
 	su2double Dual_Area;
 	su2double scale_area = config->GetDualVol_Power();
 	
-  max_elem_new = SU2_TYPE::Int(0.01*config->GetNew_Elem_Adapt()*su2double(geometry->GetnElem()));
+	max_elem_new = SU2_TYPE::Int(0.01*config->GetNew_Elem_Adapt()*su2double(geometry->GetnElem()));	
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem ++) {
 		geometry->elem[iElem]->SetDivide (false);
 	}
@@ -3576,7 +3576,7 @@ void CGridAdaptation::SetIndicator_Computable_Robust(CGeometry *geometry, CConfi
 	su2double scale_area = config->GetDualVol_Power();
 
 	/*--- Initializate the numerical grid for the adaptation ---*/
-  max_elem_new = SU2_TYPE::Int(0.01*config->GetNew_Elem_Adapt()*su2double(geometry->GetnElem()));
+	max_elem_new = SU2_TYPE::Int(0.01*config->GetNew_Elem_Adapt()*su2double(geometry->GetnElem()));	
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem ++) {
 		geometry->elem[iElem]->SetDivide (false);
 	}

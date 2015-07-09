@@ -2,7 +2,7 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  *
  * Many of the classes in this file are templated, and therefore must
  * be declared and defined here; to keep all elements together, there
@@ -482,9 +482,12 @@ enum ENUM_GRIDMOVEMENT {
   MOVING_WALL = 7,    /*!< \brief Simulation with moving walls (translation/rotation). */
   ROTATING_FRAME = 8,    /*!< \brief Simulation in a rotating frame. */
   ELASTICITY = 9,    /*!< \brief Linear Elasticity. */
-  AEROELASTIC_RIGID_MOTION = 10 /*!< \brief Simulation with rotation and aeroelastic motion. */
+  AEROELASTIC_RIGID_MOTION = 10, /*!< \brief Simulation with rotation and aeroelastic motion. */
+  STEADY_TRANSLATION = 11,    /*!< \brief Simulation in a steadily translating frame. */
+  GUST = 12 /*!< \brief Simulation on a static mesh with a gust. */
 
 };
+
 static const map<string, ENUM_GRIDMOVEMENT> GridMovement_Map = CCreateMap<string, ENUM_GRIDMOVEMENT>
 ("NONE", NO_MOVEMENT)
 ("DEFORMING", DEFORMING)
@@ -496,7 +499,9 @@ static const map<string, ENUM_GRIDMOVEMENT> GridMovement_Map = CCreateMap<string
 ("ROTATING_FRAME", ROTATING_FRAME)
 ("ELASTICITY", ELASTICITY)
 ("MOVING_WALL", MOVING_WALL)
-("AEROELASTIC_RIGID_MOTION", AEROELASTIC_RIGID_MOTION);
+("AEROELASTIC_RIGID_MOTION", AEROELASTIC_RIGID_MOTION)
+("STEADY_TRANSLATION", STEADY_TRANSLATION)
+("GUST", GUST);
 
 /*!
  * \brief type of wind gusts
@@ -2193,13 +2198,13 @@ class COptionStringDoubleList : public COptionBase{
   su2double* & d_f; // reference to the su2double fields
 
 public:
-  COptionStringDoubleList(string option_field_name, unsigned short & list_size, string * & string_field, su2double* & su2double_field) : size(list_size), s_f(string_field), d_f(su2double_field) {
+  COptionStringDoubleList(string option_field_name, unsigned short & list_size, string * & string_field, su2double* & double_field) : size(list_size), s_f(string_field), d_f(double_field) {
     this->name = option_field_name;
   }
 
   ~COptionStringDoubleList() {};
   string SetValue(vector<string> option_value) {
-    // There must be an even number of entries (same number of strings and su2doubles
+    // There must be an even number of entries (same number of strings and doubles
     unsigned long totalVals = option_value.size();
     if ((totalVals % 2) != 0) {
       if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {

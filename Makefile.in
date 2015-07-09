@@ -134,6 +134,12 @@ target_triplet = @target@
 @BUILD_SOL_TRUE@am__append_6 = SU2_SOL/obj
 @BUILD_GEO_TRUE@am__append_7 = SU2_GEO/obj
 subdir = .
+<<<<<<< HEAD
+=======
+DIST_COMMON = $(am__configure_deps) $(srcdir)/Makefile.am \
+	$(srcdir)/Makefile.in $(top_srcdir)/configure COPYING INSTALL \
+	compile config.guess config.sub depcomp install-sh missing
+>>>>>>> update
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/adolc.m4 \
 	$(top_srcdir)/m4/ax_tls.m4 $(top_srcdir)/m4/codi.m4 \

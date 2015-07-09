@@ -1,8 +1,8 @@
 /*!
  * \file linear_solvers_structure.cpp
  * \brief Main classes required for solving linear systems of equations
- * \author J. Hicken, F. Palacios
- * \version 3.2.9 "eagle"
+ * \author J. Hicken, F. Palacios, T. Economon
+ * \version 4.0.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -606,14 +606,15 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
   su2double SolverTol = config->GetLinear_Solver_Error(), Residual;
   unsigned long MaxIter = config->GetLinear_Solver_Iter();
   unsigned long IterLinSol = 0;
+  CMatrixVectorProduct *mat_vec;
   
   /*--- Solve the linear system using a Krylov subspace method ---*/
   
-  if (config->GetKind_Linear_Solver() == BCGSTAB || config->GetKind_Linear_Solver() == FGMRES
-      || config->GetKind_Linear_Solver() == RESTARTED_FGMRES) {
+  if (config->GetKind_Linear_Solver() == BCGSTAB ||
+      config->GetKind_Linear_Solver() == FGMRES ||
+      config->GetKind_Linear_Solver() == RESTARTED_FGMRES) {
     
-    CMatrixVectorProduct* mat_vec = new CSysMatrixVectorProduct(Jacobian, geometry, config);
-    
+    mat_vec = new CSysMatrixVectorProduct(Jacobian, geometry, config);
     CPreconditioner* precond = NULL;
     
     switch (config->GetKind_Linear_Solver_Prec()) {
@@ -669,21 +670,27 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
   else {
     switch (config->GetKind_Linear_Solver()) {
       case SMOOTHER_LUSGS:
-        Jacobian.ComputeLU_SGSPreconditioner(LinSysRes, LinSysSol, geometry, config);
+        mat_vec = new CSysMatrixVectorProduct(Jacobian, geometry, config);
+        IterLinSol = Jacobian.LU_SGS_Smoother(LinSysRes, LinSysSol, *mat_vec, SolverTol, MaxIter, &Residual, false, geometry, config);
+        delete mat_vec;
         break;
       case SMOOTHER_JACOBI:
+        mat_vec = new CSysMatrixVectorProduct(Jacobian, geometry, config);
         Jacobian.BuildJacobiPreconditioner();
-        Jacobian.ComputeJacobiPreconditioner(LinSysRes, LinSysSol, geometry, config);
+        IterLinSol = Jacobian.Jacobi_Smoother(LinSysRes, LinSysSol, *mat_vec, SolverTol, MaxIter, &Residual, false, geometry, config);
+        delete mat_vec;
         break;
       case SMOOTHER_ILU:
+        mat_vec = new CSysMatrixVectorProduct(Jacobian, geometry, config);
         Jacobian.BuildILUPreconditioner();
-        Jacobian.ComputeILUPreconditioner(LinSysRes, LinSysSol, geometry, config);
+        IterLinSol = Jacobian.ILU0_Smoother(LinSysRes, LinSysSol, *mat_vec, SolverTol, MaxIter, &Residual, false, geometry, config);
+        delete mat_vec;
         break;
       case SMOOTHER_LINELET:
         Jacobian.BuildJacobiPreconditioner();
         Jacobian.ComputeLineletPreconditioner(LinSysRes, LinSysSol, geometry, config);
-        break;
         IterLinSol = 1;
+        break;
     }
   }
   

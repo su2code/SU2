@@ -2,7 +2,7 @@
  * \file complex_structure.hpp
  * \brief Headers for complex datatype definition.
  * \author T. Albring
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -43,7 +43,7 @@ inline double real(const double& r);
  * \brief Class for defining the complex datatype for complex step gradient computation.
  * Based on complexify.h by Peter Sturdza.
  * \author T. Albring
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  */
 
 class CComplexType : public std::complex<double> {
