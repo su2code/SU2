@@ -2234,7 +2234,6 @@ public:
   * \param[in] ExtIter - Physical iteration number.
   */
 	void Aeroelastic(CSurfaceMovement *surface_movement, CGeometry *geometry, CConfig *config, unsigned long ExtIter);
-
     
   /*!
   * \brief Sets up the generalized eigenvectors and eigenvalues needed to solve the aeroelastic equations.
@@ -2242,7 +2241,7 @@ public:
   * \param[in] lambda - The eigenvalues of the generalized eigensystem.
   * \param[in] config - Definition of the particular problem.
   */
-  void SetUpTypicalSectionWingModel(double (&PHI)[2][2], double (&lambda)[2], CConfig *config);
+  void SetUpTypicalSectionWingModel(vector<vector<double> >& PHI, vector<double>& w, CConfig *config);
     
   /*!
   * \brief Solve the typical section wing model.
@@ -2253,8 +2252,9 @@ public:
   * \param[in] val_Marker - Surface that is being monitored.
   * \param[in] displacements - solution of typical section wing model.
 	*/
-  void SolveTypicalSectionWingModel(CGeometry *geometry, double Cl, double Cm, CConfig *config, unsigned short val_Marker, double (&displacements)[4]);
-
+  
+  void SolveTypicalSectionWingModel(CGeometry *geometry, double Cl, double Cm, CConfig *config, unsigned short val_Marker, vector<double>& displacements);
+  
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] Set value of interest: 0 - Initial value, 1 - Current value.
@@ -2342,7 +2342,6 @@ public:
 	 * \param[in] Value of the last Aitken relaxation factor in the previous time step.
 	 */
 	virtual void SetWAitken_Dyn_tn1(double waitk_tn1);
-
 
 };
 
