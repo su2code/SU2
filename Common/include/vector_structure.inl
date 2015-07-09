@@ -50,6 +50,6 @@ inline unsigned long CSysVector::GetNBlk() const { return nBlk; }
 
 inline unsigned long CSysVector::GetNBlkDomain() const { return nBlkDomain; }
 
-inline double & CSysVector::operator[](const unsigned long & i) { return vec_val[i]; }
+inline su2double & CSysVector::operator[](const unsigned long & i) { return vec_val[i]; }
 
-inline const double & CSysVector::operator[](const unsigned long & i) const { return vec_val[i]; }
+inline const su2double & CSysVector::operator[](const unsigned long & i) const { return vec_val[i]; }
