@@ -1,11 +1,9 @@
 /*!
  * \file grid_adaptation_structure.hpp
  * \brief Headers of the main subroutines for doing the numerical grid
- *        movement (including volumetric movement, surface movement and Free From
- *        technique definition). The subroutines and functions are in
- *        the <i>grid_movement_structure.cpp</i> file.
+ *        adaptation.
  * \author F. Palacios
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).

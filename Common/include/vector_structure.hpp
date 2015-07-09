@@ -3,7 +3,7 @@
  * \brief Headers for the classes related to linear solvers (CG, FGMRES, etc)
  *        The subroutines and functions are in the <i>linear_solvers_structure.cpp</i> file.
  * \author F. Palacios, J. Hicken
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -50,7 +50,7 @@ const su2double eps = numeric_limits<su2double>::epsilon(); /*!< \brief machine 
  * \class CSysVector
  * \brief Class for holding and manipulating vectors needed by linear solvers
  * \author J. Hicken.
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  *
  * We could use the STL vector as a base class here, but this gives us
  * more flexibility with the underlying data (e.g. we may decide to
@@ -342,7 +342,7 @@ public:
  * \class CMatrixVectorProduct
  * \brief abstract base class for defining matrix-vector products
  * \author J. Hicken.
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  *
  * The Krylov-subspace solvers require only matrix-vector products and
  * not the actual matrix/Jacobian.  We need some way to indicate which
@@ -367,7 +367,7 @@ inline CMatrixVectorProduct::~CMatrixVectorProduct() {}
  * \class CPreconditioner
  * \brief abstract base class for defining preconditioning operation
  * \author J. Hicken.
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  *
  * See the remarks regarding the CMatrixVectorProduct class.  The same
  * idea applies here to the preconditioning operation.

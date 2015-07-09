@@ -1,8 +1,8 @@
 /*!
  * \file geometry_structure.inl
  * \brief In-Line subroutines of the <i>geometry_structure.hpp</i> file.
- * \author F. Palacios
- * \version 3.2.9 "eagle"
+ * \author F. Palacios, T. Economon
+ * \version 4.0.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -80,6 +80,8 @@ inline void CGeometry::SetColorGrid_Parallel(CConfig *config) { }
 inline void CGeometry::DivideConnectivity(CConfig *config, unsigned short Elem_Type) { }
 
 inline void CGeometry::SetRotationalVelocity(CConfig *config) { }
+
+inline void CGeometry::SetTranslationalVelocity(CConfig *config) { }
 
 inline void CGeometry::SetGridVelocity(CConfig *config, unsigned long iter) { }
 

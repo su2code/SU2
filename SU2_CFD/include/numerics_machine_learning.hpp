@@ -5,7 +5,7 @@
  *        <i>numerics_convective.cpp</i>, <i>numerics_viscous.cpp</i>, and
  *        <i>numerics_source.cpp</i> files.
  * \author B. Tracey
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).

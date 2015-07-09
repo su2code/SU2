@@ -2,8 +2,8 @@
  * \file SU2_SOL.hpp
  * \brief Headers of the main subroutines of the code SU2_SOL.
  *        The subroutines and functions are in the <i>SU2_SOL.cpp</i> file.
- * \author F. Palacios
- * \version 3.2.9 "eagle"
+ * \author F. Palacios, T. Economon
+ * \version 4.0.0 "Cardinal"
  *
  * SU2 Project Leaders: Dr. Palacios (Francisco.D.Palacios@boeing.com)
  *                      Dr. Economon (economon@stanford.edu)

@@ -3,7 +3,7 @@
  * \brief Headers for generalized datatypes.
  *        The subroutines and functions are in the <i>datatype_structure.cpp</i> file.
  * \author T. Albring
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -60,7 +60,7 @@
  * \brief Namespace for defining the datatype wrapper routines; this class features as a base class for
  * type interfaces for non-primitive dataypes e.g. used by AD, complex etc.
  * \author T. Albring
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  */
 namespace SU2_TYPE{
   /*!

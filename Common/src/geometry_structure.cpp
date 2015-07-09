@@ -1,8 +1,8 @@
 /*!
  * \file geometry_structure.cpp
  * \brief Main subroutines for creating the primal grid and multigrid structure.
- * \author F. Palacios
- * \version 3.2.9 "eagle"
+ * \author F. Palacios, T. Economon
+ * \version 4.0.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -922,6 +922,7 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
               K[iPoint] = 1.0/radius;
               node[iPoint]->SetCurvature(K[iPoint]);
             }
+            
           }
           
         }
@@ -5941,6 +5942,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   int rank = MASTER_NODE, size = SINGLE_NODE;
   bool domain_flag = false;
   bool found_transform = false;
+  bool time_spectral = config->GetUnsteady_Simulation() == TIME_SPECTRAL;
   nZone = val_nZone;
   
   /*--- Initialize some additional counters for the parallel partitioning ---*/
@@ -5955,7 +5957,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   
   /*--- Initialize bool for FSI problems ---*/
   bool fsi = config->GetFSI_Simulation();
-
+  
   /*--- Initialize counters for local/global points & elements ---*/
 #ifdef HAVE_MPI
   unsigned long LocalIndex;
@@ -6002,7 +6004,10 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   
   /*--- If more than one, find the zone in the mesh file ---*/
   
-  if (val_nZone > 1) {
+  if (val_nZone > 1 || time_spectral) {
+    if (time_spectral) {
+      if (rank == MASTER_NODE) cout << "Reading time spectral instance " << val_iZone+1 << ":" << endl;
+    } else {
       while (getline (mesh_file,text_line)) {
         /*--- Search for the current domain ---*/
         position = text_line.find ("IZONE=",0);
@@ -6015,6 +6020,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
           }
         }
       }
+    }
   }
 
   /*--- Read grid file with format SU2 ---*/
@@ -6176,7 +6182,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
 
   /*--- If more than one, find the zone in the mesh file  ---*/
   
-  if (val_nZone > 1) {
+  if (val_nZone > 1 && !time_spectral) {
       while (getline (mesh_file,text_line)) {
         /*--- Search for the current domain ---*/
         position = text_line.find ("IZONE=",0);
@@ -6460,7 +6466,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
 
   /*--- If more than one, find the zone in the mesh file ---*/
   
-  if (val_nZone > 1) {
+  if (val_nZone > 1 && !time_spectral) {
       while (getline (mesh_file,text_line)) {
         /*--- Search for the current domain ---*/
         position = text_line.find ("IZONE=",0);
@@ -6562,7 +6568,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             config->SetMarker_All_GeoEval(iMarker, config->GetMarker_CfgFile_GeoEval(Marker_Tag));
             config->SetMarker_All_Designing(iMarker, config->GetMarker_CfgFile_Designing(Marker_Tag));
             config->SetMarker_All_Plotting(iMarker, config->GetMarker_CfgFile_Plotting(Marker_Tag));
-			config->SetMarker_All_FSIinterface(iMarker, config->GetMarker_CfgFile_FSIinterface(Marker_Tag));
+			      config->SetMarker_All_FSIinterface(iMarker, config->GetMarker_CfgFile_FSIinterface(Marker_Tag));
             config->SetMarker_All_DV(iMarker, config->GetMarker_CfgFile_DV(Marker_Tag));
             config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
             config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
@@ -11369,6 +11375,43 @@ void CPhysicalGeometry::SetRotationalVelocity(CConfig *config) {
   
 }
 
+void CPhysicalGeometry::SetTranslationalVelocity(CConfig *config) {
+  
+  unsigned short iDim;
+  unsigned long iPoint;
+  su2double xDot[3];
+  
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+  
+  /*--- Get the translational velocity vector from config ---*/
+  
+  xDot[0]   = config->GetTranslation_Rate_X(ZONE_0)/config->GetVelocity_Ref();
+  xDot[1]   = config->GetTranslation_Rate_Y(ZONE_0)/config->GetVelocity_Ref();
+  xDot[2]   = config->GetTranslation_Rate_Z(ZONE_0)/config->GetVelocity_Ref();
+  
+  /*--- Print some information to the console ---*/
+  
+  if (rank == MASTER_NODE) {
+    cout << " Non-dim. translational velocity: (" << xDot[0] << ", " << xDot[1];
+    cout << ", " << xDot[2] << ")." << endl;
+  }
+  
+  /*--- Loop over all nodes and set the translational velocity ---*/
+  
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    
+    /*--- Store the grid velocity at this node ---*/
+    
+    for (iDim = 0; iDim < nDim; iDim++)
+      node[iPoint]->SetGridVel(iDim,xDot[iDim]);
+  
+  }
+  
+}
+
 void CPhysicalGeometry::SetGridVelocity(CConfig *config, unsigned long iter) {
   
   /*--- Local variables ---*/
@@ -11686,10 +11729,19 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
   vector<unsigned long> OldBoundaryElems[100];
   vector<unsigned long>::iterator IterNewElem[100];
 
-  /*--- It only create the mirror structure for the second boundary ---*/
-  bool CreateMirror[10];
-  CreateMirror[1] = false;
-  CreateMirror[2] = true;
+  /*--- We only create the mirror structure for the second boundary ---*/
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
+      /*--- Evaluate the number of periodic boundary conditions ---*/
+      nPeriodic++;
+    }
+  }
+  bool *CreateMirror = new bool[nPeriodic+1];
+  CreateMirror[0] = false;
+  for (iPeriodic = 1; iPeriodic <= nPeriodic; iPeriodic++) {
+    if (iPeriodic <= nPeriodic/2) CreateMirror[iPeriodic] = false;
+    else CreateMirror[iPeriodic] = true;
+  }
   
   /*--- Send an initial message to the console. ---*/
   cout << "Setting the periodic boundary conditions." << endl;
@@ -11697,10 +11749,6 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
   /*--- Loop through each marker to find any periodic boundaries. ---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
     if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
-      
-      /*--- Evaluate the number of periodic boundary conditions defined
-       in the geometry file ---*/
-      nPeriodic++;
       
       /*--- Get marker index of the periodic donor boundary. ---*/
       jMarker = config->GetMarker_Periodic_Donor(config->GetMarker_All_TagBound(iMarker));
@@ -12006,7 +12054,8 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
     }
   }
   
-  delete[] PeriodicBC;
+  delete [] PeriodicBC;
+  delete [] CreateMirror;
   
 }
 
@@ -14149,6 +14198,31 @@ void CMultiGridGeometry::SetRotationalVelocity(CConfig *config) {
   
 }
 
+void CMultiGridGeometry::SetTranslationalVelocity(CConfig *config) {
+  
+  unsigned iDim;
+  unsigned long iPoint_Coarse;
+  su2double xDot[3];
+  
+  /*--- Get the translational velocity vector from config ---*/
+  
+  xDot[0]   = config->GetTranslation_Rate_X(ZONE_0)/config->GetVelocity_Ref();
+  xDot[1]   = config->GetTranslation_Rate_Y(ZONE_0)/config->GetVelocity_Ref();
+  xDot[2]   = config->GetTranslation_Rate_Z(ZONE_0)/config->GetVelocity_Ref();
+  
+  /*--- Loop over all nodes and set the translational velocity ---*/
+  
+  for (iPoint_Coarse = 0; iPoint_Coarse < nPoint; iPoint_Coarse++) {
+    
+    /*--- Store the grid velocity at this node ---*/
+    
+    for (iDim = 0; iDim < nDim; iDim++)
+      node[iPoint_Coarse]->SetGridVel(iDim,xDot[iDim]);
+    
+  }
+  
+}
+
 void CMultiGridGeometry::SetGridVelocity(CConfig *config, unsigned long iter) {
   
   /*--- Local variables ---*/
@@ -14391,15 +14465,19 @@ CPeriodicGeometry::CPeriodicGeometry(CGeometry *geometry, CConfig *config) {
   dx, dy, dz, rotCoord[3], *Coord_i;
   unsigned short nMarker_Max = config->GetnMarker_Max();
 
-  /*--- It only create the mirror structure for the second boundary ---*/
-  bool CreateMirror[10];
-  CreateMirror[1] = false;
-  CreateMirror[2] = true;
-  
-  /*--- Compute the number of periodic bc on the geometry ---*/
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY)
+  /*--- We only create the mirror structure for the second boundary ---*/
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
+      /*--- Evaluate the number of periodic boundary conditions ---*/
       nPeriodic++;
+    }
+  }
+  bool *CreateMirror = new bool[nPeriodic+1];
+  CreateMirror[0] = false;
+  for (iPeriodic = 1; iPeriodic <= nPeriodic; iPeriodic++) {
+    if (iPeriodic <= nPeriodic/2) CreateMirror[iPeriodic] = false;
+    else CreateMirror[iPeriodic] = true;
+  }
   
   /*--- Write the number of dimensions of the problem ---*/
   nDim = geometry->GetnDim();
@@ -14696,7 +14774,8 @@ CPeriodicGeometry::CPeriodicGeometry(CGeometry *geometry, CConfig *config) {
     
   }
   
-  delete[] Index;
+  delete [] Index;
+  delete [] CreateMirror;
   
 }
 

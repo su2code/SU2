@@ -2,7 +2,7 @@
  * \file adolc_reverse_structure.hpp
  * \brief Header for adolc reverse type definition.
  * \author T. Albring
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).

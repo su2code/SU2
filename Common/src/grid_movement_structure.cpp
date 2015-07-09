@@ -2,7 +2,7 @@
  * \file grid_movement_structure.cpp
  * \brief Subroutines for doing the grid movement using different strategies
  * \author F. Palacios, T. Economon, S. Padron
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -348,7 +348,6 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
   StiffMatrix.~CSysMatrix();
   
 }
-
 
 su2double CVolumetricMovement::Check_Grid(CGeometry *geometry) {
   
@@ -3648,7 +3647,7 @@ void CSurfaceMovement::SetFFDCPChange(CGeometry *geometry, CConfig *config, CFre
     index[0] = SU2_TYPE::Int(config->GetParamDV(iDV, 1));
     index[1] = SU2_TYPE::Int(config->GetParamDV(iDV, 2));
     index[2] = SU2_TYPE::Int(config->GetParamDV(iDV, 3));
-
+    
     /*--- Check that it is possible to move the control point ---*/
     
     for (iPlane = 0 ; iPlane < FFDBox->Get_nFix_IPlane(); iPlane++) {
@@ -3760,7 +3759,7 @@ void CSurfaceMovement::SetFFDCamber_2D(CGeometry *geometry, CConfig *config, CFr
 			else movement[1] = Ampl;
       movement[2] = 0.0;
       
-      index[0] = SU2_TYPE::Int(config->GetParamDV(iDV, 1)); index[1] = kIndex; index[2] = 0;
+			index[0] = SU2_TYPE::Int(config->GetParamDV(iDV, 1)); index[1] = kIndex; index[2] = 0;
 			FFDBox->SetControlPoints(index, movement);
       
       index[2] = 1;
@@ -3796,7 +3795,7 @@ void CSurfaceMovement::SetFFDThickness_2D(CGeometry *geometry, CConfig *config, 
 			else movement[1] = Ampl;
 			movement[2] = 0.0;
       
-      index[0] = SU2_TYPE::Int(config->GetParamDV(iDV, 1)); index[1] = kIndex; index[2] = 0;
+			index[0] = SU2_TYPE::Int(config->GetParamDV(iDV, 1)); index[1] = kIndex; index[2] = 0;
 			FFDBox->SetControlPoints(index, movement);
       
       index[2] = 1;
@@ -3827,8 +3826,8 @@ void CSurfaceMovement::SetFFDCamber(CGeometry *geometry, CConfig *config, CFreeF
 						
 			Ampl = config->GetDV_Value(iDV);
 						
-      index[0] = SU2_TYPE::Int(config->GetParamDV(iDV, 1));
-      index[1] = SU2_TYPE::Int(config->GetParamDV(iDV, 2));
+			index[0] = SU2_TYPE::Int(config->GetParamDV(iDV, 1));
+			index[1] = SU2_TYPE::Int(config->GetParamDV(iDV, 2)); 
 			index[2] = kIndex;
 			
 			movement[0] = 0.0; movement[1] = 0.0; 
@@ -3862,8 +3861,8 @@ void CSurfaceMovement::SetFFDThickness(CGeometry *geometry, CConfig *config, CFr
 			
 			Ampl = config->GetDV_Value(iDV);
 			
-      index[0] = SU2_TYPE::Int(config->GetParamDV(iDV, 1));
-      index[1] = SU2_TYPE::Int(config->GetParamDV(iDV, 2));
+			index[0] = SU2_TYPE::Int(config->GetParamDV(iDV, 1));
+			index[1] = SU2_TYPE::Int(config->GetParamDV(iDV, 2)); 
 			index[2] = kIndex;
 			
 			movement[0] = 0.0; movement[1] = 0.0; 
@@ -4138,7 +4137,7 @@ void CSurfaceMovement::SetHicksHenne(CGeometry *boundary, CConfig *config, unsig
   BumpLoc = 0.0, Coord[3] = {0.0,0.0,0.0}, Normal[3] = {0.0,0.0,0.0},
   xCoord, TPCoord[2] = {0.0, 0.0}, LPCoord[2] = {0.0, 0.0}, Distance, Chord, AoA, ValCos, ValSin;
   
-  bool upper = true, double_surface = false;
+	bool upper = true, double_surface = false;
 
 	/*--- Reset airfoil deformation if first deformation or if it required by the solver ---*/
   
@@ -4233,8 +4232,8 @@ void CSurfaceMovement::SetHicksHenne(CGeometry *boundary, CConfig *config, unsig
 	su2double xk = config->GetParamDV(iDV, 1);
 	const su2double t2 = 3.0;
   
-  if (config->GetParamDV(iDV, 0) == NO) { upper = false; double_surface = true; }
-  if (config->GetParamDV(iDV, 0) == YES) { upper = true; double_surface = true; }
+	if (config->GetParamDV(iDV, 0) == NO) { upper = false; double_surface = true; }
+	if (config->GetParamDV(iDV, 0) == YES) { upper = true; double_surface = true; }
   
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
@@ -4261,7 +4260,7 @@ void CSurfaceMovement::SetHicksHenne(CGeometry *boundary, CConfig *config, unsig
         
         /*--- Bump computation ---*/
         
-        if (double_surface) {
+				if (double_surface) {
 					ek = log10(0.5)/log10(xk);
 					fk = pow( sin( PI_NUMBER * pow(Coord[0], ek) ) , t2);
           

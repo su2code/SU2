@@ -2,7 +2,7 @@
  * \file config_structure.inl
  * \brief In-Line subroutines of the <i>config_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -439,7 +439,7 @@ inline bool CConfig::GetIonization(void) { return ionization; }
 
 inline unsigned short CConfig::GetKind_Solver(void) { return Kind_Solver; }
 
-inline unsigned short CConfig::SetKind_Solver(unsigned short val_solver) { Kind_Solver = val_solver; }
+inline void CConfig::SetKind_Solver(unsigned short val_solver) { Kind_Solver = val_solver; }
 
 inline unsigned short CConfig::GetKind_Regime(void) { return Kind_Regime; }
 

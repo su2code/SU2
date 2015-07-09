@@ -2,7 +2,7 @@
  * \file numerics_direct_mean.cpp
  * \brief This file contains all the convective term discretization.
  * \author F. Palacios, T. Economon
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -2003,7 +2003,7 @@ void CUpwGeneralRoe_Flow::ComputeResidual(su2double *val_residual, su2double **v
 
 void CUpwGeneralRoe_Flow::ComputeRoeAverage() {
 
-  su2double delta_rhoStaticEnergy, err_P, s, D;//, stateSeparationLimit;
+	su2double delta_rhoStaticEnergy, err_P, s, D;//, stateSeparationLimit;
 	// su2double tol = 10-6;
 	//
 	R = sqrt(fabs(Density_j/Density_i));
