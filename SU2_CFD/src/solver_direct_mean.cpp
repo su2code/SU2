@@ -1941,7 +1941,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
   Temperature_FreeStreamND = 0.0, Gas_ConstantND = 0.0,
   Velocity_FreeStreamND[3] = {0.0, 0.0, 0.0}, Viscosity_FreeStreamND = 0.0,
   Tke_FreeStreamND = 0.0, Energy_FreeStreamND = 0.0,
-  Total_UnstTimeND = 0.0, Delta_UnstTimeND = 0.0;
+  Total_UnstTimeND = 0.0, Delta_UnstTimeND = 0.0, TgammaR = 0.0;
   
   unsigned short iDim;
   
@@ -1969,6 +1969,17 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
   bool free_stream_temp   = (config->GetKind_FreeStreamOption() == TEMPERATURE_FS);
   bool standard_air       = (config->GetKind_FluidModel() == STANDARD_AIR);
   bool reynolds_init      = (config->GetKind_InitOption() == REYNOLDS);
+  bool aeroelastic        = config->GetAeroelastic_Simulation();
+  
+  /*--- Set temperature via the flutter speed index ---*/
+  if (aeroelastic) {
+    double vf             = config->GetAeroelastic_Flutter_Speed_Index();
+    double w_alpha        = config->GetAeroelastic_Frequency_Pitch();
+    double b              = config->GetLength_Reynolds()/2.0; // airfoil semichord, Reynolds length is by defaul 1.0
+    double mu             = config->GetAeroelastic_Airfoil_Mass_Ratio();
+    // The temperature times gamma times the gas constant. Depending on the FluidModel temp is calculated below.
+    TgammaR = ((vf*vf)*(b*b)*(w_alpha*w_alpha)*mu) / (Mach*Mach);
+  }
   
   /*--- Compressible non dimensionalization ---*/
 
@@ -1989,6 +2000,10 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
         
         FluidModel = new CIdealGas(1.4, config->GetGas_Constant());
         if (free_stream_temp) {
+          if (aeroelastic) {
+            Temperature_FreeStream = TgammaR / (config->GetGas_Constant()*1.4);
+            config->SetTemperature_FreeStream(Temperature_FreeStream);
+          }
           FluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
           Density_FreeStream = FluidModel->GetDensity();
           config->SetDensity_FreeStream(Density_FreeStream);
@@ -2961,19 +2976,6 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
       }
     }
   }
-
-  if (aeroelastic) {
-    
-    /*--- Reset the plunge and pitch value for the new unsteady step. ---*/
-    
-    unsigned short iMarker_Monitoring;
-    for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-      config->SetAeroelastic_pitch(iMarker_Monitoring,0.0);
-      config->SetAeroelastic_plunge(iMarker_Monitoring,0.0);
-    }
-    
-  }
-
 }
 
 void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
