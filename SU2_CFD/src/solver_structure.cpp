@@ -1314,7 +1314,7 @@ void CSolver::Aeroelastic(CSurfaceMovement *surface_movement, CGeometry *geometr
   
   double Cl, Cd, Cn, Ct, Cm, Cn_rot;
   double Alpha = config->GetAoA()*PI_NUMBER/180.0;
-  double structural_solution[4]; //contains solution of typical section wing model.
+  vector<double> structural_solution(4,0.0); //contains solution(displacements and rates) of typical section wing model.
   
   unsigned short iMarker, iMarker_Monitoring, Monitoring;
   string Marker_Tag, Monitoring_Tag;
@@ -1339,7 +1339,7 @@ void CSolver::Aeroelastic(CSurfaceMovement *surface_movement, CGeometry *geometr
           Cn = Cl*cos(Alpha) + Cd*sin(Alpha);
           Ct = -Cl*sin(Alpha) + Cd*cos(Alpha);
           
-          Cm = -1.0*GetSurface_CMz(iMarker_Monitoring);
+          Cm = GetSurface_CMz(iMarker_Monitoring);
           
           /*--- Calculate forces for the Typical Section Wing Model taking into account rotation ---*/
           
@@ -1371,11 +1371,8 @@ void CSolver::Aeroelastic(CSurfaceMovement *surface_movement, CGeometry *geometr
             Cn = Cn_rot;
           }
           
-          //          Can compare the Cn values here, with the values in post-processing.
-          //          std::cout << "Cn = " << Cn << endl;
-          //          std::cout << "Cm = " << Cm << endl;
-          
           /*--- Solve the aeroelastic equations for the particular marker(surface) ---*/
+          
           SolveTypicalSectionWingModel(geometry, Cn, Cm, config, iMarker_Monitoring, structural_solution);
           
           break;
@@ -1391,121 +1388,109 @@ void CSolver::Aeroelastic(CSurfaceMovement *surface_movement, CGeometry *geometr
   
 }
 
-void CSolver::SetUpTypicalSectionWingModel(double (&PHI)[2][2], double (&lambda)[2], CConfig *config) {
+void CSolver::SetUpTypicalSectionWingModel(vector<vector<double> >& Phi, vector<double>& omega, CConfig *config) {
   
   /*--- Retrieve values from the config file ---*/
   double w_h = config->GetAeroelastic_Frequency_Plunge();
   double w_a = config->GetAeroelastic_Frequency_Pitch();
-  
-  /*--- Geometrical Parameters */
-  double x_a = 1.8;
-  double r_a2 = 3.48;
+  double x_a = config->GetAeroelastic_CG_Location();
+  double r_a = sqrt(config->GetAeroelastic_Radius_Gyration_Squared());
+  double w = w_h/w_a;
   
   // Mass Matrix
-  // double M[2][2] = {{1,x_a},{x_a, r_a2}};
-  // Stiffness Matrix
-  double K[2][2] = {{(w_h/w_a)*(w_h/w_a),0},{0, r_a2}};
+  vector<vector<double> > M(2,vector<double>(2,0.0));
+  M[0][0] = 1;
+  M[0][1] = x_a;
+  M[1][0] = x_a;
+  M[1][1] = r_a*r_a;
   
+  // Stiffness Matrix
+  //  vector<vector<double> > K(2,vector<double>(2,0.0));
+  //  K[0][0] = (w_h/w_a)*(w_h/w_a);
+  //  K[0][1] = 0.0;
+  //  K[1][0] = 0.0;
+  //  K[1][1] = r_a*r_a;
   
   /* Eigenvector and Eigenvalue Matrices of the Generalized EigenValue Problem. */
   
-  double LAMBDA[2][2];
-  double y;
-  y = sqrt(r_a2*pow(w_a,4) - 2*r_a2*pow(w_a,2)*pow(w_h,2) + r_a2*pow(w_h,4) + 4*pow(w_a,2)*pow(w_h,2)*pow(x_a,2));
+  vector<vector<double> > Omega2(2,vector<double>(2,0.0));
+  double aux; // auxiliary variable
+  aux = sqrt(pow(r_a,2)*pow(w,4) - 2*pow(r_a,2)*pow(w,2) + pow(r_a,2) + 4*pow(x_a,2)*pow(w,2));
+  Phi[0][0] = (r_a * (r_a - r_a*pow(w,2) + aux)) / (2*x_a*pow(w, 2));
+  Phi[0][1] = (r_a * (r_a - r_a*pow(w,2) - aux)) / (2*x_a*pow(w, 2));
+  Phi[1][0] = 1.0;
+  Phi[1][1] = 1.0;
   
-  PHI[0][0] = (sqrt(r_a2)*y + r_a2*pow(w_a,2) - r_a2*pow(w_h,2))/(2*pow(w_h,2)*x_a);
-  PHI[0][1] = -(sqrt(r_a2)*y - r_a2*pow(w_a,2) + r_a2*pow(w_h,2))/(2*pow(w_h,2)*x_a);
-  PHI[1][0] = 1.0;
-  PHI[1][1] = 1.0;
+  Omega2[0][0] = (r_a * (r_a + r_a*pow(w,2) - aux)) / (2*(pow(r_a, 2) - pow(x_a, 2)));
+  Omega2[0][1] = 0;
+  Omega2[1][0] = 0;
+  Omega2[1][1] = (r_a * (r_a + r_a*pow(w,2) + aux)) / (2*(pow(r_a, 2) - pow(x_a, 2)));
   
-  LAMBDA[0][0] = (r_a2*pow(w_a,2) + r_a2*pow(w_h,2) - sqrt(r_a2)*y) / (2*pow(w_a,2)*(r_a2-pow(x_a,2)));
-  LAMBDA[0][1] = 0;
-  LAMBDA[1][0] = 0;
-  LAMBDA[1][1] = (r_a2*pow(w_a,2) + r_a2*pow(w_h,2) + sqrt(r_a2)*y) / (2*pow(w_a,2)*(r_a2-pow(x_a,2)));
+  /* Nondimesionalize the Eigenvectors such that Phi'*M*Phi = I and PHI'*K*PHI = Omega */
+  // Phi'*M*Phi = D
+  // D^(-1/2)*Phi'*M*Phi*D^(-1/2) = D^(-1/2)*D^(1/2)*D^(1/2)*D^(-1/2) = I,  D^(-1/2) = inv(sqrt(D))
+  // Phi = Phi*D^(-1/2)
   
-  /* Nondimesionalize the Eigenvectors such that PHI'*M*PHI = I and PHI'*K*PHI = LAMBDA */
-  double temp1[2][2], temp2[2][2];
+  vector<vector<double> > Aux(2,vector<double>(2,0.0));
+  vector<vector<double> > D(2,vector<double>(2,0.0));
+  // Aux = M*Phi
   for (int i=0; i<2; i++) {
     for (int j=0; j<2; j++) {
-      temp1[i][j] = 0;
+      Aux[i][j] = 0;
       for (int k=0; k<2; k++) {
-        temp1[i][j] += K[i][k]*PHI[k][j];
+        Aux[i][j] += M[i][k]*Phi[k][j];
       }
     }
   }
   
+  // D = Phi'*Aux
   for (int i=0; i<2; i++) {
     for (int j=0; j<2; j++) {
-      temp2[i][j] = 0;
+      D[i][j] = 0;
       for (int k=0; k<2; k++) {
-        temp2[i][j] += PHI[k][i]*temp1[k][j]; //PHI transpose
+        D[i][j] += Phi[k][i]*Aux[k][j]; //PHI transpose
       }
     }
   }
   
   //Modify the first column
-  PHI[0][0] = 1/sqrt(temp2[0][0]/LAMBDA[0][0])*PHI[0][0];
-  PHI[1][0] = 1/sqrt(temp2[0][0]/LAMBDA[0][0])*PHI[1][0];
+  Phi[0][0] = Phi[0][0] * 1/sqrt(D[0][0]);
+  Phi[1][0] = Phi[1][0] * 1/sqrt(D[0][0]);
   //Modify the second column
-  PHI[0][1] = 1/sqrt(temp2[1][1]/LAMBDA[1][1])*PHI[0][1];
-  PHI[1][1] = 1/sqrt(temp2[1][1]/LAMBDA[1][1])*PHI[1][1];
+  Phi[0][1] = Phi[0][1] * 1/sqrt(D[1][1]);
+  Phi[1][1] = Phi[1][1] * 1/sqrt(D[1][1]);
   
-  //Eigenvalues
-  lambda[0] = sqrt(LAMBDA[0][0]);
-  lambda[1] = sqrt(LAMBDA[1][1]);
+  // Sqrt of the eigenvalues (frequency of vibration of the modes)
+  omega[0] = sqrt(Omega2[0][0]);
+  omega[1] = sqrt(Omega2[1][1]);
   
 }
 
-void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, double Cl, double Cm, CConfig *config, unsigned short iMarker, double (&displacements)[4]) {
+void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, double Cl, double Cm, CConfig *config, unsigned short iMarker, vector<double>& displacements) {
   
   /*--- The aeroelastic model solved in this routine is the typical section wing model
-   The details of the implementation can be found in J.J. Alonso "Fully-Implicit Time-Marching Aeroelastic Solutions" 1994.
-   This routine is limited to 2 dimensional problems ---*/
-  
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-  
-  unsigned short nDim=geometry->GetnDim();
-  if (nDim != 2) {
-    if (rank == MASTER_NODE) {
-      printf("\n\n   !!! Error !!!\n");
-      printf("Grid movement kind Aeroelastic is only available in 2 dimensions.");
-      printf("Now exiting...\n\n");
-      exit(EXIT_FAILURE);
-    }
-  }
+   The details of the implementation are similar to those found in J.J. Alonso 
+   "Fully-Implicit Time-Marching Aeroelastic Solutions" 1994. ---*/
   
   /*--- Retrieve values from the config file ---*/
-  double w_a = config->GetAeroelastic_Frequency_Pitch();
-  double dt = config->GetDelta_UnstTime();
-  dt = dt*w_a; //Non-dimensionalize the structural time.
-  double Lref = config->GetLength_Ref();
-  double b = Lref/2.0;  // airfoil semichord
-  double Density_Inf  = config->GetDensity_FreeStreamND();
-  double P_Inf = config->GetPressure_FreeStreamND();
-  double Mach_Inf     = config->GetMach();
-  double gamma = config->GetGamma();
+  double w_alpha = config->GetAeroelastic_Frequency_Pitch();
+  double vf      = config->GetAeroelastic_Flutter_Speed_Index();
+  double b       = config->GetLength_Reynolds()/2.0; // airfoil semichord, Reynolds length is by defaul 1.0
+  double dt      = config->GetDelta_UnstTimeND();
+  dt = dt*w_alpha; //Non-dimensionalize the structural time.
   
-  /*--- airfoil mass ratio ---*/
-  double mu = 60;
   /*--- Structural Equation damping ---*/
-  double xi[2] = {0.0,0.0};
-  
-  /*--- Flutter Speep Index ---*/
-  double Vf = (Mach_Inf*sqrt(gamma*P_Inf/Density_Inf))/(b*w_a*sqrt(mu));
+  vector<double> xi(2,0.0);
   
   /*--- Eigenvectors and Eigenvalues of the Generalized EigenValue Problem. ---*/
-  double PHI[2][2];   // generalized eigenvectors.
-  double w[2];        //generalized eigenvalues.
-  SetUpTypicalSectionWingModel(PHI, w, config);
+  vector<vector<double> > Phi(2,vector<double>(2,0.0));   // generalized eigenvectors.
+  vector<double> w(2,0.0);        // sqrt of the generalized eigenvalues (frequency of vibration of the modes).
+  SetUpTypicalSectionWingModel(Phi, w, config);
   
   /*--- Solving the Decoupled Aeroelastic Problem with second order time discretization Eq (9) ---*/
   
   /*--- Solution variables description. //x[j][i], j-entry, i-equation. // Time (n+1)->np1, n->n, (n-1)->n1 ---*/
-  // This variable gets overwritten below. I'm just using this to initialize it.
-  vector<vector<double> > x_np1 = config->GetAeroelastic_np1(iMarker);
+  vector<vector<double> > x_np1(2,vector<double>(2,0.0));
   
   /*--- Values from previous movement of spring at true time step n+1
    We use this values because we are solving for delta changes not absolute changes ---*/
@@ -1516,22 +1501,25 @@ void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, double Cl, doubl
   vector<vector<double> > x_n1 = config->GetAeroelastic_n1(iMarker);
   
   /*--- Set up of variables used to solve the structural problem. ---*/
-  double Q[2];
-  double A_inv[2][2];
+  vector<double> f_tilde(2,0.0);
+  vector<vector<double> > A_inv(2,vector<double>(2,0.0));
   double detA;
-  double S1, S2;
-  double RHS[2];
-  double eta[2];
-  double eta_dot[2];
+  double s1, s2;
+  vector<double> rhs(2,0.0); //right hand side
+  vector<double> eta(2,0.0);
+  vector<double> eta_dot(2,0.0);
   
   /*--- Forcing Term ---*/
-  double cons = Vf*Vf/PI_NUMBER;
-  double F[2] = {cons*(-Cl), cons*(2*Cm)};
+  double cons = vf*vf/PI_NUMBER;
+  vector<double> f(2,0.0);
+  f[0] = cons*(-Cl);
+  f[1] = cons*(2*-Cm);
   
+  //f_tilde = Phi'*f
   for (int i=0; i<2; i++) {
-    Q[i] = 0;
+    f_tilde[i] = 0;
     for (int k=0; k<2; k++) {
-      Q[i] += PHI[k][i]*F[k]; //PHI transpose
+      f_tilde[i] += Phi[k][i]*f[k]; //PHI transpose
     }
   }
   
@@ -1539,44 +1527,44 @@ void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, double Cl, doubl
   for (int i=0; i<2; i++) {
     /* Matrix Inverse */
     detA = 9.0/(4.0*dt*dt) + 3*w[i]*xi[i]/(dt) + w[i]*w[i];
-    A_inv[0][0] = 1/detA * 3/(2.0*dt) + 2*xi[i]*w[i];
+    A_inv[0][0] = 1/detA * (3/(2.0*dt) + 2*xi[i]*w[i]);
     A_inv[0][1] = 1/detA * 1;
     A_inv[1][0] = 1/detA * -w[i]*w[i];
     A_inv[1][1] = 1/detA * 3/(2.0*dt);
     
     /* Source Terms from previous iterations */
-    S1 = (-4*x_n[0][i] + x_n1[0][i])/(2.0*dt);
-    S2 = (-4*x_n[1][i] + x_n1[1][i])/(2.0*dt);
+    s1 = (-4*x_n[0][i] + x_n1[0][i])/(2.0*dt);
+    s2 = (-4*x_n[1][i] + x_n1[1][i])/(2.0*dt);
     
     /* Problem Right Hand Side */
-    RHS[0] = -S1;
-    RHS[1] = Q[i]-S2;
+    rhs[0] = -s1;
+    rhs[1] = f_tilde[i]-s2;
     
     /* Solve the equations */
-    x_np1[0][i] = A_inv[0][0]*RHS[0] + A_inv[0][1]*RHS[1];
-    x_np1[1][i] = A_inv[1][0]*RHS[0] + A_inv[1][1]*RHS[1];
+    x_np1[0][i] = A_inv[0][0]*rhs[0] + A_inv[0][1]*rhs[1];
+    x_np1[1][i] = A_inv[1][0]*rhs[0] + A_inv[1][1]*rhs[1];
     
     eta[i] = x_np1[0][i]-x_np1_old[0][i];  // For displacements, the change(deltas) is used.
     eta_dot[i] = x_np1[1][i]; // For velocities, absolute values are used.
   }
   
-  /*--- Transform back from the generalized coordinates to get the actual displacements in plunge and pitch ---*/
-  double q[2];
-  double q_dot[2];
+  /*--- Transform back from the generalized coordinates to get the actual displacements in plunge and pitch  q = Phi*eta ---*/
+  vector<double> q(2,0.0);
+  vector<double> q_dot(2,0.0);
   for (int i=0; i<2; i++) {
     q[i] = 0;
     q_dot[i] = 0;
     for (int k=0; k<2; k++) {
-      q[i] += PHI[i][k]*eta[k];
-      q_dot[i] += PHI[i][k]*eta_dot[k];
+      q[i] += Phi[i][k]*eta[k];
+      q_dot[i] += Phi[i][k]*eta_dot[k];
     }
   }
   
   double dh = b*q[0];
   double dalpha = q[1];
   
-  double h_dot = w_a*b*q_dot[0];
-  double alpha_dot = w_a*q_dot[1];
+  double h_dot = w_alpha*b*q_dot[0];  //The w_a brings it back to actual time.
+  double alpha_dot = w_alpha*q_dot[1];
   
   /*--- Set the solution of the structural equations ---*/
   displacements[0] = dh;
