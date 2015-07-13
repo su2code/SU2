@@ -45,7 +45,7 @@
 #include <stdio.h>
 
 #include "fluid_model.hpp"
-#include "numerics_structure.hpp"z
+#include "numerics_structure.hpp"
 #include "variable_structure.hpp"
 #include "../../Common/include/geometry_structure.hpp"
 #include "../../Common/include/config_structure.hpp"
