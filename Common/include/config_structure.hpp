@@ -3,7 +3,7 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>config_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -53,7 +53,7 @@ using namespace std;
  * \brief Main class for defining the problem; basically this class reads the configuration file, and
  *        stores all the information.
  * \author F. Palacios
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  */
 
 class CConfig {
@@ -2610,7 +2610,7 @@ public:
 	 * \param[in] val_zone - Zone where the soler is applied.
 	 * \return Governing equation that we are solving.
 	 */
-	unsigned short SetKind_Solver(unsigned short val_solver);
+	void SetKind_Solver(unsigned short val_solver);
 
 
   /*!

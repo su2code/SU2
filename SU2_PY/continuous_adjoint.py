@@ -3,7 +3,7 @@
 ## \file continuous_adjoint.py
 #  \brief Python script for doing the continuous adjoint computation using the SU2 suite.
 #  \author F. Palacios, T. Economon, T. Lukaczyk
-#  \version 3.2.9 "eagle"
+#  \version 4.0.0 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -79,6 +79,9 @@ def continuous_adjoint( filename           ,
     
     # State
     state = SU2.io.State()
+    
+    # Force CSV output in order to compute gradients
+    config.WRT_CSV_SOL = 'YES'
     
     # check for existing files
     if not compute:

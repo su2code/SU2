@@ -1,8 +1,8 @@
 /*!
- * gas_model.hpp
+ * \file fluid_model.hpp
  * \brief Headers of the main thermodynamic subroutines of the SU2 solvers.
  * \author S. Vitale, G. Gori, M. Pini, A. Guardone, P. Colonna
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -50,7 +50,7 @@ using namespace std;
  * \brief Main class for defining the Thermo-Physical Model
  * a child class for each particular Model (Ideal-Gas, Van der Waals, etc.)
  * \author: S.Vitale, G.Gori, M.Pini
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  */
 class CFluidModel {
 protected:
@@ -252,7 +252,7 @@ public:
  * \class CIdealGas
  * \brief Child class for defining ideal gas model.
  * \author: S.Vitale, M.Pini.
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  */
 class CIdealGas : public CFluidModel {
 
@@ -341,7 +341,7 @@ public:
  * derived class CVanDerWaalsGas
  * \brief Child class for defining the Van der Waals model.
  * \author: S.Vitale, M.Pini
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  */
 class CVanDerWaalsGas : public CIdealGas {
 
@@ -419,7 +419,7 @@ public:
  * \derived class CPengRobinson
  * \brief Child class for defining the Peng-Robinson model.
  * \author: S.Vitale, G. Gori
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  */
 class CPengRobinson : public CIdealGas {
 

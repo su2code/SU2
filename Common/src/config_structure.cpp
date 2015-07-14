@@ -2,7 +2,7 @@
  * \file config_structure.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -1624,7 +1624,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     else Unst_nIntIter = 2;
   }
   
-  if ((Kind_Solver == LINEAR_ELASTICITY)) {
+  if (Kind_Solver == LINEAR_ELASTICITY) {
     nMGLevels = 0;
     if (Dynamic_Analysis == STATIC) 
 	nExtIter = 1;
@@ -1638,7 +1638,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       Kind_Regime == FREESURFACE) { Wrt_Unsteady = false; }
   else { Wrt_Unsteady = true; }
 
-  if ((Kind_Solver == LINEAR_ELASTICITY)) {
+  if (Kind_Solver == LINEAR_ELASTICITY) {
 
 	  if (Dynamic_Analysis == STATIC) { Wrt_Dynamic = false; }
 	  else { Wrt_Dynamic = true; }
@@ -3550,7 +3550,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   cout << endl << "-------------------------------------------------------------------------" << endl;
   cout << "|    ___ _   _ ___                                                      |" << endl;
-  cout << "|   / __| | | |_  )   Release 3.2.9   \"eagle\"                           |" << endl;
+  cout << "|   / __| | | |_  )   Release 4.0.0  \"Cardinal\"                         |" << endl;
   cout << "|   \\__ \\ |_| |/ /                                                      |" << endl;
   switch (val_software) {
     case SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;
@@ -3564,8 +3564,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   cout << "|                                                                       |" << endl;
   cout << "|   Local date and time: " << dt << "                      |" << endl;
   cout <<"-------------------------------------------------------------------------" << endl;
-  cout << "| SU2 Lead Dev.: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).|" << endl;
-  cout << "|                Dr. Thomas D. Economon (economon@stanford.edu).        |" << endl;
+  cout << "| SU2 Lead Dev.: Dr. Francisco Palacios, Francisco.D.Palacios@boeing.com|" << endl;
+  cout << "|                Dr. Thomas D. Economon, economon@stanford.edu          |" << endl;
   cout <<"-------------------------------------------------------------------------" << endl;
   cout << "| SU2 Developers:                                                       |" << endl;
   cout << "| - Prof. Juan J. Alonso's group at Stanford University.                |" << endl;
