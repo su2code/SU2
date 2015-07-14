@@ -2,8 +2,8 @@
  * \file linear_solvers_structure.hpp
  * \brief Headers for the classes related to linear solvers (CG, FGMRES, etc)
  *        The subroutines and functions are in the <i>linear_solvers_structure.cpp</i> file.
- * \author J. Hicken, F. Palacios
- * \version 3.2.9 "eagle"
+ * \author J. Hicken, F. Palacios, T. Economon
+ * \version 4.0.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -54,7 +54,7 @@ using namespace std;
  * \class CSysSolve
  * \brief Class for solving linear systems using classical and Krylov-subspace iterative methods
  * \author J. Hicken.
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  *
  * The individual solvers could be stand-alone subroutines, but by
  * creating CSysSolve objects we can more easily assign different

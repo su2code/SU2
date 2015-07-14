@@ -2,7 +2,7 @@
  * \file output_structure.cpp
  * \brief Main subroutines for output solver information
  * \author F. Palacios, T. Economon
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -477,7 +477,7 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
   
 #ifndef HAVE_MPI
   
-  unsigned long iPoint, iVertex;
+  unsigned long iPoint, iVertex, Global_Index;
   double *Solution, xCoord, yCoord, zCoord;
   unsigned short iMarker;
   unsigned short nDim = geometry->GetnDim();
@@ -514,6 +514,7 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
       if (config->GetMarker_All_Plotting(iMarker) == YES)
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          Global_Index = geometry->node[iPoint]->GetGlobalIndex();
           Solution = AdjSolver->node[iPoint]->GetSolution();
           xCoord = geometry->node[iPoint]->GetCoord(0);
           yCoord = geometry->node[iPoint]->GetCoord(1);
@@ -525,7 +526,7 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
             yCoord *= 12.0;
           }
           
-          SurfAdj_file << scientific << iPoint << ", " << AdjSolver->GetCSensitivity(iMarker, iVertex) << ", " << Solution[0] << ", "
+          SurfAdj_file << scientific << Global_Index << ", " << AdjSolver->GetCSensitivity(iMarker, iVertex) << ", " << Solution[0] << ", "
           << Solution[1] << ", " << Solution[2] << ", " << Solution[3] <<", " << xCoord <<", "<< yCoord << endl;
         }
     }
@@ -537,6 +538,7 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
       if (config->GetMarker_All_Plotting(iMarker) == YES)
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          Global_Index = geometry->node[iPoint]->GetGlobalIndex();
           Solution = AdjSolver->node[iPoint]->GetSolution();
           
           xCoord = geometry->node[iPoint]->GetCoord(0);
@@ -551,7 +553,7 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
             zCoord *= 12.0;
           }
           
-          SurfAdj_file << scientific << iPoint << ", " << AdjSolver->GetCSensitivity(iMarker, iVertex) << ", " << Solution[0] << ", "
+          SurfAdj_file << scientific << Global_Index << ", " << AdjSolver->GetCSensitivity(iMarker, iVertex) << ", " << Solution[0] << ", "
           << Solution[1] << ", " << Solution[2] << ", " << Solution[3] << ", " << Solution[4] << ", "<< xCoord <<", "<< yCoord <<", "<< zCoord << endl;
         }
     }
@@ -4060,7 +4062,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
       if (aeroelastic) ConvHist_file[0] << aeroelastic_coeff;
       if (output_per_surface) ConvHist_file[0] << monitoring_coeff;
       if (output_1d) ConvHist_file[0] << oneD_outputs;
-      if (output_massflow)  ConvHist_file[0]<< mass_flow_rate;
+      if (output_massflow and !output_1d)  ConvHist_file[0]<< mass_flow_rate;
       ConvHist_file[0] << end;
       if (freesurface) {
         ConvHist_file[0] << begin << flow_coeff << free_surface_coeff;
@@ -4148,7 +4150,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         break;
     }
   }
-  if (output_massflow) {
+  if (output_massflow and !output_1d) {
     switch (config[val_iZone]->GetKind_Solver()) {
       case EULER:                   case NAVIER_STOKES:                   case RANS:
       case ADJ_EULER:               case ADJ_NAVIER_STOKES:               case ADJ_RANS:
@@ -4712,7 +4714,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             if (output_1d) {
               sprintf( oneD_outputs, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", OneD_AvgStagPress, OneD_AvgMach, OneD_AvgTemp, OneD_MassFlowRate, OneD_FluxAvgPress, OneD_FluxAvgDensity, OneD_FluxAvgVelocity, OneD_FluxAvgEntalpy);
             }
-            if (output_massflow) {
+            if (output_massflow and !output_1d) {
               sprintf(massflow_outputs,", %12.10f", Total_Mdot);
             }
 
@@ -5132,7 +5134,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             if (aeroelastic) ConvHist_file[0] << aeroelastic_coeff;
             if (output_per_surface) ConvHist_file[0] << monitoring_coeff;
             if (output_1d) ConvHist_file[0] << oneD_outputs;
-            if (output_massflow) ConvHist_file[0] << massflow_outputs;
+            if (output_massflow and !output_1d) ConvHist_file[0] << massflow_outputs;
             ConvHist_file[0] << end;
             ConvHist_file[0].flush();
           }
@@ -5180,7 +5182,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             if (aeroelastic) ConvHist_file[0] << aeroelastic_coeff;
             if (output_per_surface) ConvHist_file[0] << monitoring_coeff;
             if (output_1d) ConvHist_file[0] << oneD_outputs;
-            if (output_massflow) ConvHist_file[0] << massflow_outputs;
+            if (output_massflow and !output_1d) ConvHist_file[0] << massflow_outputs;
             ConvHist_file[0] << end;
             ConvHist_file[0].flush();
           }
@@ -5662,14 +5664,14 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
     
     Breakdown_file << endl <<"-------------------------------------------------------------------------" << endl;
     Breakdown_file <<"|    ___ _   _ ___                                                      |" << endl;
-    Breakdown_file <<"|   / __| | | |_  )   Release 3.2.9   \"eagle\"                           |" << endl;
+    Breakdown_file <<"|   / __| | | |_  )   Release 4.0.0  \"Cardinal\"                         |" << endl;
     Breakdown_file <<"|   \\__ \\ |_| |/ /                                                      |" << endl;
     Breakdown_file <<"|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl;
     Breakdown_file << "|                                                                       |" << endl;
     Breakdown_file << "|   Local date and time: " << dt << "                      |" << endl;
     Breakdown_file <<"-------------------------------------------------------------------------" << endl;
-    Breakdown_file << "| SU2 Lead Dev.: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).|" << endl;
-    Breakdown_file << "|                Dr. Thomas D. Economon (economon@stanford.edu).        |" << endl;
+    Breakdown_file << "| SU2 Lead Dev.: Dr. Francisco Palacios, Francisco.D.Palacios@boeing.com|" << endl;
+    Breakdown_file << "|                Dr. Thomas D. Economon, economon@stanford.edu          |" << endl;
     Breakdown_file <<"-------------------------------------------------------------------------" << endl;
     Breakdown_file << "| SU2 Developers:                                                       |" << endl;
     Breakdown_file << "| - Prof. Juan J. Alonso's group at Stanford University.                |" << endl;
@@ -6775,16 +6777,17 @@ void COutput::SetMassFlowRate(CSolver *solver_container, CGeometry *geometry, CC
   double Vector[3], Total_Mdot=0.0;
   unsigned short nDim = geometry->GetnDim();
 
-  for (iMarker = 0; iMarker< config->GetnMarker_Monitoring(); iMarker++) {
+  for (iMarker = 0; iMarker< config->GetnMarker_All(); iMarker++) {
     iMarker_monitor = config->GetMarker_All_Monitoring(iMarker);
+    if (iMarker_monitor){
+      for (iVertex = 0; iVertex < geometry->nVertex[ iMarker ]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-    for (iVertex = 0; iVertex < geometry->nVertex[ iMarker_monitor ]; iVertex++) {
-      iPoint = geometry->vertex[iMarker_monitor][iVertex]->GetNode();
+        if (geometry->node[iPoint]->GetDomain()) {
+          geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
 
-      if (geometry->node[iPoint]->GetDomain()) {
-        geometry->vertex[iMarker_monitor][iVertex]->GetNormal(Vector);
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Total_Mdot += Vector[iDim]*(solver_container->node[iPoint]->GetSolution(iDim+1));
+          for (iDim = 0; iDim < nDim; iDim++)
+            Total_Mdot -= Vector[iDim]*(solver_container->node[iPoint]->GetSolution(iDim+1));
         }
       }
     }
