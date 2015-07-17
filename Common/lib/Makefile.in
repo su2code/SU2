@@ -178,9 +178,10 @@ am__libSU2_a_SOURCES_DIST =  \
 	../include/vector_structure.inl \
 	../include/matrix_structure.hpp \
 	../include/matrix_structure.inl ../include/su2mpi.hpp \
-	../mpi_structure.hpp ../mpi_structure.inl \
-	../datatype_structure.hpp ../datatype_structure.inl \
-	../complex_structure.hpp ../complex_structure.inl \
+	../include/mpi_structure.hpp ../include/mpi_structure.inl \
+	../include/datatype_structure.hpp \
+	../include/datatype_structure.inl \
+	../include/linear_solvers_structure_b.hpp \
 	../src/datatype_structure.cpp ../src/config_structure.cpp \
 	../src/dual_grid_structure.cpp ../src/geometry_structure.cpp \
 	../src/grid_adaptation_structure.cpp \
@@ -188,7 +189,7 @@ am__libSU2_a_SOURCES_DIST =  \
 	../src/linear_solvers_structure.cpp \
 	../src/primal_grid_structure.cpp ../src/vector_structure.cpp \
 	../src/matrix_structure.cpp ../src/su2mpi.cpp \
-	../src/mpi_structure.cpp
+	../src/mpi_structure.cpp ../src/linear_solvers_structure_b.cpp
 am__dirstamp = $(am__leading_dot)dirstamp
 am__objects_1 = ../src/libSU2_a-datatype_structure.$(OBJEXT) \
 	../src/libSU2_a-config_structure.$(OBJEXT) \
@@ -201,7 +202,8 @@ am__objects_1 = ../src/libSU2_a-datatype_structure.$(OBJEXT) \
 	../src/libSU2_a-vector_structure.$(OBJEXT) \
 	../src/libSU2_a-matrix_structure.$(OBJEXT) \
 	../src/libSU2_a-su2mpi.$(OBJEXT) \
-	../src/libSU2_a-mpi_structure.$(OBJEXT)
+	../src/libSU2_a-mpi_structure.$(OBJEXT) \
+	../src/libSU2_a-linear_solvers_structure_b.$(OBJEXT)
 @BUILD_NORMAL_TRUE@am_libSU2_a_OBJECTS = $(am__objects_1)
 libSU2_a_OBJECTS = $(am_libSU2_a_OBJECTS)
 libSU2_DIRECTDIFF_a_AR = $(AR) $(ARFLAGS)
@@ -235,9 +237,10 @@ am__libSU2_DIRECTDIFF_a_SOURCES_DIST =  \
 	../include/vector_structure.inl \
 	../include/matrix_structure.hpp \
 	../include/matrix_structure.inl ../include/su2mpi.hpp \
-	../mpi_structure.hpp ../mpi_structure.inl \
-	../datatype_structure.hpp ../datatype_structure.inl \
-	../complex_structure.hpp ../complex_structure.inl \
+	../include/mpi_structure.hpp ../include/mpi_structure.inl \
+	../include/datatype_structure.hpp \
+	../include/datatype_structure.inl \
+	../include/linear_solvers_structure_b.hpp \
 	../src/datatype_structure.cpp ../src/config_structure.cpp \
 	../src/dual_grid_structure.cpp ../src/geometry_structure.cpp \
 	../src/grid_adaptation_structure.cpp \
@@ -245,7 +248,7 @@ am__libSU2_DIRECTDIFF_a_SOURCES_DIST =  \
 	../src/linear_solvers_structure.cpp \
 	../src/primal_grid_structure.cpp ../src/vector_structure.cpp \
 	../src/matrix_structure.cpp ../src/su2mpi.cpp \
-	../src/mpi_structure.cpp
+	../src/mpi_structure.cpp ../src/linear_solvers_structure_b.cpp
 am__objects_2 =  \
 	../src/libSU2_DIRECTDIFF_a-datatype_structure.$(OBJEXT) \
 	../src/libSU2_DIRECTDIFF_a-config_structure.$(OBJEXT) \
@@ -258,7 +261,8 @@ am__objects_2 =  \
 	../src/libSU2_DIRECTDIFF_a-vector_structure.$(OBJEXT) \
 	../src/libSU2_DIRECTDIFF_a-matrix_structure.$(OBJEXT) \
 	../src/libSU2_DIRECTDIFF_a-su2mpi.$(OBJEXT) \
-	../src/libSU2_DIRECTDIFF_a-mpi_structure.$(OBJEXT)
+	../src/libSU2_DIRECTDIFF_a-mpi_structure.$(OBJEXT) \
+	../src/libSU2_DIRECTDIFF_a-linear_solvers_structure_b.$(OBJEXT)
 @BUILD_DIRECTDIFF_TRUE@am_libSU2_DIRECTDIFF_a_OBJECTS =  \
 @BUILD_DIRECTDIFF_TRUE@	$(am__objects_2)
 libSU2_DIRECTDIFF_a_OBJECTS = $(am_libSU2_DIRECTDIFF_a_OBJECTS)
@@ -293,9 +297,10 @@ am__libSU2_REVERSE_a_SOURCES_DIST =  \
 	../include/vector_structure.inl \
 	../include/matrix_structure.hpp \
 	../include/matrix_structure.inl ../include/su2mpi.hpp \
-	../mpi_structure.hpp ../mpi_structure.inl \
-	../datatype_structure.hpp ../datatype_structure.inl \
-	../complex_structure.hpp ../complex_structure.inl \
+	../include/mpi_structure.hpp ../include/mpi_structure.inl \
+	../include/datatype_structure.hpp \
+	../include/datatype_structure.inl \
+	../include/linear_solvers_structure_b.hpp \
 	../src/datatype_structure.cpp ../src/config_structure.cpp \
 	../src/dual_grid_structure.cpp ../src/geometry_structure.cpp \
 	../src/grid_adaptation_structure.cpp \
@@ -303,7 +308,7 @@ am__libSU2_REVERSE_a_SOURCES_DIST =  \
 	../src/linear_solvers_structure.cpp \
 	../src/primal_grid_structure.cpp ../src/vector_structure.cpp \
 	../src/matrix_structure.cpp ../src/su2mpi.cpp \
-	../src/mpi_structure.cpp
+	../src/mpi_structure.cpp ../src/linear_solvers_structure_b.cpp
 am__objects_3 = ../src/libSU2_REVERSE_a-datatype_structure.$(OBJEXT) \
 	../src/libSU2_REVERSE_a-config_structure.$(OBJEXT) \
 	../src/libSU2_REVERSE_a-dual_grid_structure.$(OBJEXT) \
@@ -315,7 +320,8 @@ am__objects_3 = ../src/libSU2_REVERSE_a-datatype_structure.$(OBJEXT) \
 	../src/libSU2_REVERSE_a-vector_structure.$(OBJEXT) \
 	../src/libSU2_REVERSE_a-matrix_structure.$(OBJEXT) \
 	../src/libSU2_REVERSE_a-su2mpi.$(OBJEXT) \
-	../src/libSU2_REVERSE_a-mpi_structure.$(OBJEXT)
+	../src/libSU2_REVERSE_a-mpi_structure.$(OBJEXT) \
+	../src/libSU2_REVERSE_a-linear_solvers_structure_b.$(OBJEXT)
 @BUILD_REVERSE_TRUE@am_libSU2_REVERSE_a_OBJECTS = $(am__objects_3)
 libSU2_REVERSE_a_OBJECTS = $(am_libSU2_REVERSE_a_OBJECTS)
 AM_V_P = $(am__v_P_@AM_V@)
@@ -558,12 +564,11 @@ lib_sources = \
           ../include/matrix_structure.hpp \
           ../include/matrix_structure.inl \
       ../include/su2mpi.hpp \
-    ../mpi_structure.hpp \
-    ../mpi_structure.inl \
-    ../datatype_structure.hpp \
-    ../datatype_structure.inl \
-    ../complex_structure.hpp \
-    ../complex_structure.inl \
+    ../include/mpi_structure.hpp \
+    ../include/mpi_structure.inl \
+    ../include/datatype_structure.hpp \
+    ../include/datatype_structure.inl \
+    ../include/linear_solvers_structure_b.hpp \
     ../src/datatype_structure.cpp \
     ../src/config_structure.cpp \
     ../src/dual_grid_structure.cpp \
@@ -575,7 +580,8 @@ lib_sources = \
           ../src/vector_structure.cpp \
     ../src/matrix_structure.cpp \
     ../src/su2mpi.cpp \
-    ../src/mpi_structure.cpp
+    ../src/mpi_structure.cpp \
+    ../src/linear_solvers_structure_b.cpp
 
 
 # always link to built dependencies from ./externals
@@ -667,6 +673,8 @@ clean-noinstLIBRARIES:
 	../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2_a-mpi_structure.$(OBJEXT): ../src/$(am__dirstamp) \
 	../src/$(DEPDIR)/$(am__dirstamp)
+../src/libSU2_a-linear_solvers_structure_b.$(OBJEXT):  \
+	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 
 libSU2.a: $(libSU2_a_OBJECTS) $(libSU2_a_DEPENDENCIES) $(EXTRA_libSU2_a_DEPENDENCIES) 
 	$(AM_V_at)-rm -f libSU2.a
@@ -695,6 +703,8 @@ libSU2.a: $(libSU2_a_OBJECTS) $(libSU2_a_DEPENDENCIES) $(EXTRA_libSU2_a_DEPENDEN
 ../src/libSU2_DIRECTDIFF_a-su2mpi.$(OBJEXT): ../src/$(am__dirstamp) \
 	../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2_DIRECTDIFF_a-mpi_structure.$(OBJEXT):  \
+	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
+../src/libSU2_DIRECTDIFF_a-linear_solvers_structure_b.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 
 libSU2_DIRECTDIFF.a: $(libSU2_DIRECTDIFF_a_OBJECTS) $(libSU2_DIRECTDIFF_a_DEPENDENCIES) $(EXTRA_libSU2_DIRECTDIFF_a_DEPENDENCIES) 
@@ -725,6 +735,8 @@ libSU2_DIRECTDIFF.a: $(libSU2_DIRECTDIFF_a_OBJECTS) $(libSU2_DIRECTDIFF_a_DEPEND
 	../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2_REVERSE_a-mpi_structure.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
+../src/libSU2_REVERSE_a-linear_solvers_structure_b.$(OBJEXT):  \
+	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 
 libSU2_REVERSE.a: $(libSU2_REVERSE_a_OBJECTS) $(libSU2_REVERSE_a_DEPENDENCIES) $(EXTRA_libSU2_REVERSE_a_DEPENDENCIES) 
 	$(AM_V_at)-rm -f libSU2_REVERSE.a
@@ -745,6 +757,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-grid_adaptation_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-grid_movement_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-linear_solvers_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-linear_solvers_structure_b.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-matrix_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-mpi_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-primal_grid_structure.Po@am__quote@
@@ -757,6 +770,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_REVERSE_a-grid_adaptation_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_REVERSE_a-grid_movement_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_REVERSE_a-linear_solvers_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_REVERSE_a-linear_solvers_structure_b.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_REVERSE_a-matrix_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_REVERSE_a-mpi_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_REVERSE_a-primal_grid_structure.Po@am__quote@
@@ -769,6 +783,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-grid_adaptation_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-grid_movement_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-linear_solvers_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-linear_solvers_structure_b.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-matrix_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-mpi_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-primal_grid_structure.Po@am__quote@
@@ -959,6 +974,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_a-mpi_structure.obj `if test -f '../src/mpi_structure.cpp'; then $(CYGPATH_W) '../src/mpi_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/mpi_structure.cpp'; fi`
 
+../src/libSU2_a-linear_solvers_structure_b.o: ../src/linear_solvers_structure_b.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_a-linear_solvers_structure_b.o -MD -MP -MF ../src/$(DEPDIR)/libSU2_a-linear_solvers_structure_b.Tpo -c -o ../src/libSU2_a-linear_solvers_structure_b.o `test -f '../src/linear_solvers_structure_b.cpp' || echo '$(srcdir)/'`../src/linear_solvers_structure_b.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_a-linear_solvers_structure_b.Tpo ../src/$(DEPDIR)/libSU2_a-linear_solvers_structure_b.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/linear_solvers_structure_b.cpp' object='../src/libSU2_a-linear_solvers_structure_b.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_a-linear_solvers_structure_b.o `test -f '../src/linear_solvers_structure_b.cpp' || echo '$(srcdir)/'`../src/linear_solvers_structure_b.cpp
+
+../src/libSU2_a-linear_solvers_structure_b.obj: ../src/linear_solvers_structure_b.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_a-linear_solvers_structure_b.obj -MD -MP -MF ../src/$(DEPDIR)/libSU2_a-linear_solvers_structure_b.Tpo -c -o ../src/libSU2_a-linear_solvers_structure_b.obj `if test -f '../src/linear_solvers_structure_b.cpp'; then $(CYGPATH_W) '../src/linear_solvers_structure_b.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/linear_solvers_structure_b.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_a-linear_solvers_structure_b.Tpo ../src/$(DEPDIR)/libSU2_a-linear_solvers_structure_b.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/linear_solvers_structure_b.cpp' object='../src/libSU2_a-linear_solvers_structure_b.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_a-linear_solvers_structure_b.obj `if test -f '../src/linear_solvers_structure_b.cpp'; then $(CYGPATH_W) '../src/linear_solvers_structure_b.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/linear_solvers_structure_b.cpp'; fi`
+
 ../src/libSU2_DIRECTDIFF_a-datatype_structure.o: ../src/datatype_structure.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_DIRECTDIFF_a-datatype_structure.o -MD -MP -MF ../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-datatype_structure.Tpo -c -o ../src/libSU2_DIRECTDIFF_a-datatype_structure.o `test -f '../src/datatype_structure.cpp' || echo '$(srcdir)/'`../src/datatype_structure.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-datatype_structure.Tpo ../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-datatype_structure.Po
@@ -1127,6 +1156,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_DIRECTDIFF_a-mpi_structure.obj `if test -f '../src/mpi_structure.cpp'; then $(CYGPATH_W) '../src/mpi_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/mpi_structure.cpp'; fi`
 
+../src/libSU2_DIRECTDIFF_a-linear_solvers_structure_b.o: ../src/linear_solvers_structure_b.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_DIRECTDIFF_a-linear_solvers_structure_b.o -MD -MP -MF ../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-linear_solvers_structure_b.Tpo -c -o ../src/libSU2_DIRECTDIFF_a-linear_solvers_structure_b.o `test -f '../src/linear_solvers_structure_b.cpp' || echo '$(srcdir)/'`../src/linear_solvers_structure_b.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-linear_solvers_structure_b.Tpo ../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-linear_solvers_structure_b.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/linear_solvers_structure_b.cpp' object='../src/libSU2_DIRECTDIFF_a-linear_solvers_structure_b.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_DIRECTDIFF_a-linear_solvers_structure_b.o `test -f '../src/linear_solvers_structure_b.cpp' || echo '$(srcdir)/'`../src/linear_solvers_structure_b.cpp
+
+../src/libSU2_DIRECTDIFF_a-linear_solvers_structure_b.obj: ../src/linear_solvers_structure_b.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_DIRECTDIFF_a-linear_solvers_structure_b.obj -MD -MP -MF ../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-linear_solvers_structure_b.Tpo -c -o ../src/libSU2_DIRECTDIFF_a-linear_solvers_structure_b.obj `if test -f '../src/linear_solvers_structure_b.cpp'; then $(CYGPATH_W) '../src/linear_solvers_structure_b.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/linear_solvers_structure_b.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-linear_solvers_structure_b.Tpo ../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-linear_solvers_structure_b.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/linear_solvers_structure_b.cpp' object='../src/libSU2_DIRECTDIFF_a-linear_solvers_structure_b.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_DIRECTDIFF_a-linear_solvers_structure_b.obj `if test -f '../src/linear_solvers_structure_b.cpp'; then $(CYGPATH_W) '../src/linear_solvers_structure_b.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/linear_solvers_structure_b.cpp'; fi`
+
 ../src/libSU2_REVERSE_a-datatype_structure.o: ../src/datatype_structure.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_REVERSE_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_REVERSE_a-datatype_structure.o -MD -MP -MF ../src/$(DEPDIR)/libSU2_REVERSE_a-datatype_structure.Tpo -c -o ../src/libSU2_REVERSE_a-datatype_structure.o `test -f '../src/datatype_structure.cpp' || echo '$(srcdir)/'`../src/datatype_structure.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_REVERSE_a-datatype_structure.Tpo ../src/$(DEPDIR)/libSU2_REVERSE_a-datatype_structure.Po
@@ -1294,6 +1337,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/mpi_structure.cpp' object='../src/libSU2_REVERSE_a-mpi_structure.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_REVERSE_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_REVERSE_a-mpi_structure.obj `if test -f '../src/mpi_structure.cpp'; then $(CYGPATH_W) '../src/mpi_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/mpi_structure.cpp'; fi`
+
+../src/libSU2_REVERSE_a-linear_solvers_structure_b.o: ../src/linear_solvers_structure_b.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_REVERSE_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_REVERSE_a-linear_solvers_structure_b.o -MD -MP -MF ../src/$(DEPDIR)/libSU2_REVERSE_a-linear_solvers_structure_b.Tpo -c -o ../src/libSU2_REVERSE_a-linear_solvers_structure_b.o `test -f '../src/linear_solvers_structure_b.cpp' || echo '$(srcdir)/'`../src/linear_solvers_structure_b.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_REVERSE_a-linear_solvers_structure_b.Tpo ../src/$(DEPDIR)/libSU2_REVERSE_a-linear_solvers_structure_b.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/linear_solvers_structure_b.cpp' object='../src/libSU2_REVERSE_a-linear_solvers_structure_b.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_REVERSE_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_REVERSE_a-linear_solvers_structure_b.o `test -f '../src/linear_solvers_structure_b.cpp' || echo '$(srcdir)/'`../src/linear_solvers_structure_b.cpp
+
+../src/libSU2_REVERSE_a-linear_solvers_structure_b.obj: ../src/linear_solvers_structure_b.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_REVERSE_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_REVERSE_a-linear_solvers_structure_b.obj -MD -MP -MF ../src/$(DEPDIR)/libSU2_REVERSE_a-linear_solvers_structure_b.Tpo -c -o ../src/libSU2_REVERSE_a-linear_solvers_structure_b.obj `if test -f '../src/linear_solvers_structure_b.cpp'; then $(CYGPATH_W) '../src/linear_solvers_structure_b.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/linear_solvers_structure_b.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_REVERSE_a-linear_solvers_structure_b.Tpo ../src/$(DEPDIR)/libSU2_REVERSE_a-linear_solvers_structure_b.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/linear_solvers_structure_b.cpp' object='../src/libSU2_REVERSE_a-linear_solvers_structure_b.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_REVERSE_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_REVERSE_a-linear_solvers_structure_b.obj `if test -f '../src/linear_solvers_structure_b.cpp'; then $(CYGPATH_W) '../src/linear_solvers_structure_b.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/linear_solvers_structure_b.cpp'; fi`
 
 ID: $(am__tagged_files)
 	$(am__define_uniq_tagged_files); mkid -fID $$unique

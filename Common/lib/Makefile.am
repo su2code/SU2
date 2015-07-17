@@ -79,12 +79,11 @@ lib_sources = \
           ../include/matrix_structure.hpp \
           ../include/matrix_structure.inl \
       ../include/su2mpi.hpp \
-    ../mpi_structure.hpp \
-    ../mpi_structure.inl \
-    ../datatype_structure.hpp \
-    ../datatype_structure.inl \
-    ../complex_structure.hpp \
-    ../complex_structure.inl \
+    ../include/mpi_structure.hpp \
+    ../include/mpi_structure.inl \
+    ../include/datatype_structure.hpp \
+    ../include/datatype_structure.inl \
+    ../include/linear_solvers_structure_b.hpp \
     ../src/datatype_structure.cpp \
     ../src/config_structure.cpp \
     ../src/dual_grid_structure.cpp \
@@ -96,7 +95,8 @@ lib_sources = \
           ../src/vector_structure.cpp \
     ../src/matrix_structure.cpp \
     ../src/su2mpi.cpp \
-    ../src/mpi_structure.cpp
+    ../src/mpi_structure.cpp \
+    ../src/linear_solvers_structure_b.cpp
 
 lib_cxxflags =
 lib_ldadd =

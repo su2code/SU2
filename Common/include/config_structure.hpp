@@ -320,6 +320,8 @@ private:
 	Kind_Linear_Solver_Prec_FSI_Struc,		/*!< \brief Preconditioner of the linear solver for the structural part in FSI problems. */
 	Kind_AdjTurb_Linear_Solver,		/*!< \brief Numerical solver for the turbulent adjoint implicit scheme. */
 	Kind_AdjTurb_Linear_Prec,		/*!< \brief Preconditioner of the turbulent adjoint linear solver. */
+  Kind_DiscAdj_Linear_Solver, /*!< \brief Linear solver for the discrete adjoint system. */
+  Kind_DiscAdj_Linear_Prec,  /*!< \brief Preconditioner of the discrete adjoint linear solver. */
 	Kind_SlopeLimit,				/*!< \brief Global slope limiter. */
 	Kind_SlopeLimit_Flow,		/*!< \brief Slope limiter for flow equations.*/
 	Kind_SlopeLimit_TNE2,		/*!< \brief Slope limiter for flow equations.*/
@@ -2825,6 +2827,18 @@ public:
 	 * \return Numerical preconditioner for implicit formulation (solving the linear system).
 	 */
 	unsigned short GetKind_AdjTurb_Linear_Prec(void);
+
+  /*!
+   * \brief Get the kind of solver for the implicit solver.
+   * \return Numerical solver for implicit formulation (solving the linear system).
+   */
+  unsigned short GetKind_DiscAdj_Linear_Solver(void);
+
+  /*!
+   * \brief Get the kind of preconditioner for the implicit solver.
+   * \return Numerical preconditioner for implicit formulation (solving the linear system).
+   */
+  unsigned short GetKind_DiscAdj_Linear_Prec(void);
 
 	/*!
 	 * \brief Set the kind of preconditioner for the implicit solver.
