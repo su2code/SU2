@@ -232,7 +232,8 @@ void CSysMatrix::SetIndexes(unsigned long val_nPoint, unsigned long val_nPointDo
   /*--- Set specific preconditioner matrices (ILU) ---*/
   
   if ((config->GetKind_Linear_Solver_Prec() == ILU) ||
-    (config->GetKind_Linear_Solver() == SMOOTHER_ILU)) {
+    (config->GetKind_Linear_Solver() == SMOOTHER_ILU) ||
+    (config->GetKind_DiscAdj_Linear_Prec() == ILU)) {
     
     /*--- Reserve memory for the ILU matrix. ---*/
     
@@ -245,7 +246,8 @@ void CSysMatrix::SetIndexes(unsigned long val_nPoint, unsigned long val_nPointDo
   if ((config->GetKind_Linear_Solver_Prec() == JACOBI) ||
       (config->GetKind_Linear_Solver_Prec() == LINELET) ||
       (config->GetKind_Linear_Solver() == SMOOTHER_JACOBI) ||
-      (config->GetKind_Linear_Solver() == SMOOTHER_LINELET))   {
+      (config->GetKind_Linear_Solver() == SMOOTHER_LINELET) ||
+      (config->GetKind_DiscAdj_Linear_Solver() == JACOBI))   {
     
     /*--- Reserve memory for the values of the inverse of the preconditioner. ---*/
     
@@ -369,6 +371,22 @@ void CSysMatrix::SetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j
     }
   }
   
+}
+
+void CSysMatrix::SetBlockTransposed_ILUMatrix(unsigned long block_i, unsigned long block_j, su2double *val_block) {
+
+  unsigned long iVar, jVar, index, step = 0;
+
+  for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
+    step++;
+    if (col_ind[index] == block_j) {
+      for (iVar = 0; iVar < nVar; iVar++)
+        for (jVar = 0; jVar < nEqn; jVar++)
+          ILU_matrix[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] = val_block[jVar*nVar+iVar];
+      break;
+    }
+  }
+
 }
 
 void CSysMatrix::SubtractBlock_ILUMatrix(unsigned long block_i, unsigned long block_j, su2double *val_block) {
@@ -615,22 +633,6 @@ void CSysMatrix::ProdBlockVector(unsigned long block_i, unsigned long block_j, c
   
 }
 
-void CSysMatrix::ProdBlockTransposedVector(unsigned long block_i, unsigned long block_j, const CSysVector & vec) {
-  unsigned long j = block_j*nVar;
-  unsigned short iVar, jVar;
-
-  su2double *block = GetBlock(block_j, block_i);
-
-  for (iVar = 0; iVar < nVar; iVar++){
-    prod_block_vector[iVar] = 0;
-  }
-
-  for (iVar = 0; iVar < nVar; iVar++) {
-    for (jVar = 0; jVar < nVar; jVar++)
-      prod_block_vector[iVar] += block[jVar*nVar+iVar]*vec[j+jVar];
-  }
-}
-
 void CSysMatrix::UpperProduct(CSysVector & vec, unsigned long row_i) {
   
   unsigned long iVar, index;
@@ -648,19 +650,6 @@ void CSysMatrix::UpperProduct(CSysVector & vec, unsigned long row_i) {
   
 }
 
-void CSysMatrix::UpperProductTransposed(CSysVector & vec, unsigned long row_i, CSysVector &prod){
-  unsigned long iVar, index;
-
-  for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
-    if (col_ind[index] > row_i) {
-      ProdBlockTransposedVector(row_i, col_ind[index], vec);
-      for (iVar = 0; iVar < nVar; iVar++)
-       prod [col_ind[index]*nVar + iVar] += prod_block_vector[iVar];
-    }
-  }
-
-}
-
 void CSysMatrix::LowerProduct(CSysVector & vec, unsigned long row_i) {
   
   unsigned long iVar, index;
@@ -673,19 +662,6 @@ void CSysMatrix::LowerProduct(CSysVector & vec, unsigned long row_i) {
       ProdBlockVector(row_i, col_ind[index], vec);
       for (iVar = 0; iVar < nVar; iVar++)
         prod_row_vector[iVar] += prod_block_vector[iVar];
-    }
-  }
-
-}
-
-void CSysMatrix::LowerProductTransposed(CSysVector & vec, unsigned long row_i, CSysVector &prod){
-  unsigned long iVar, index;
-
-  for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
-    if (col_ind[index] < row_i) {
-      ProdBlockTransposedVector(row_i, col_ind[index], vec);
-      for (iVar = 0; iVar < nVar; iVar++)
-       prod [col_ind[index]*nVar + iVar] += prod_block_vector[iVar];
     }
   }
 
@@ -706,23 +682,6 @@ void CSysMatrix::DiagonalProduct(CSysVector & vec, unsigned long row_i) {
     }
   }
   
-}
-
-void CSysMatrix::DiagonalProductTransposed(CSysVector & vec, unsigned long row_i) {
-
-  unsigned long iVar, index;
-
-  for (iVar = 0; iVar < nVar; iVar++)
-    prod_row_vector[iVar] = 0;
-
-  for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
-    if (col_ind[index] == row_i) {
-      ProdBlockTransposedVector(row_i, col_ind[index], vec);
-      for (iVar = 0; iVar < nVar; iVar++)
-        prod_row_vector[iVar] += prod_block_vector[iVar];
-    }
-  }
-
 }
 
 void CSysMatrix::SendReceive_Solution(CSysVector & x, CGeometry *geometry, CConfig *config) {
@@ -1060,7 +1019,7 @@ void CSysMatrix::InverseBlock(su2double *Block, su2double *invBlock) {
   
 }
 
-void CSysMatrix::InverseDiagonalBlock(unsigned long block_i, su2double *invBlock) {
+void CSysMatrix::InverseDiagonalBlock(unsigned long block_i, su2double *invBlock, bool transpose) {
   
   unsigned long iVar, jVar;
   
@@ -1071,12 +1030,13 @@ void CSysMatrix::InverseDiagonalBlock(unsigned long block_i, su2double *invBlock
     
     /*--- Compute the i-th column of the inverse matrix ---*/
     
-    Gauss_Elimination(block_i, aux_vector);
+    Gauss_Elimination(block_i, aux_vector, transpose);
     for (jVar = 0; jVar < nVar; jVar++)
       invBlock[jVar*nVar+iVar] = aux_vector[jVar];
   }
   
 }
+
 
 void CSysMatrix::InverseDiagonalBlock_ILUMatrix(unsigned long block_i, su2double *invBlock) {
   
@@ -1096,23 +1056,24 @@ void CSysMatrix::InverseDiagonalBlock_ILUMatrix(unsigned long block_i, su2double
   
 }
 
-void CSysMatrix::BuildJacobiPreconditioner(void) {
-  
+void CSysMatrix::BuildJacobiPreconditioner(bool transpose) {
+
   unsigned long iPoint, iVar, jVar;
-  
+
   /*--- Compute Jacobi Preconditioner ---*/
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    
+
     /*--- Compute the inverse of the diagonal block ---*/
-    InverseDiagonalBlock(iPoint, block_inverse);
-    
+    InverseDiagonalBlock(iPoint, block_inverse, transpose);
+
     /*--- Set the inverse of the matrix to the invM structure (which is a vector) ---*/
     for (iVar = 0; iVar < nVar; iVar++)
       for (jVar = 0; jVar < nVar; jVar++)
         invM[iPoint*nVar*nVar+iVar*nVar+jVar] = block_inverse[iVar*nVar+jVar];
   }
-  
+
 }
+
 
 void CSysMatrix::ComputeJacobiPreconditioner(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config) {
   
@@ -1232,7 +1193,7 @@ unsigned long CSysMatrix::Jacobi_Smoother(const CSysVector & b, CSysVector & x, 
   
 }
 
-void CSysMatrix::BuildILUPreconditioner(void) {
+void CSysMatrix::BuildILUPreconditioner(bool transposed) {
   
   unsigned long index, index_;
   su2double *Block_ij, *Block_jk;
@@ -1245,8 +1206,13 @@ void CSysMatrix::BuildILUPreconditioner(void) {
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     for (index = row_ptr[iPoint]; index < row_ptr[iPoint+1]; index++) {
       jPoint = col_ind[index];
-      Block_ij = GetBlock(iPoint, jPoint);
-      SetBlock_ILUMatrix(iPoint, jPoint, Block_ij);
+      if (transposed){
+        Block_ij = GetBlock(jPoint, iPoint);
+        SetBlockTransposed_ILUMatrix(iPoint, jPoint, Block_ij);
+      } else {
+        Block_ij = GetBlock(iPoint, jPoint);
+        SetBlock_ILUMatrix(iPoint, jPoint, Block_ij);
+      }
     }
   }
   
@@ -1892,57 +1858,6 @@ unsigned short CSysMatrix::BuildLineletPreconditioner(CGeometry *geometry, CConf
   
   return MeanPoints;
   
-}
-
-void CSysMatrix::ComputeLU_SGS_TransposedPreconditioner(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config, CSysVector & tmp){
-  unsigned long iPoint, iVar;
-
-  prod = su2double(0.0);
-  tmp = su2double(0.0);
-
-  /* --- Since looping over the columns of a matrix is extremely inefficient with the CRS format,
-   * we loop over the rows to compute the transposed product. The product will be finished once we have looped over all rows.
-   * Therefore we need a separate loop and a temporary vector. ---*/
-
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++){
-    LowerProductTransposed(prod, iPoint, tmp);
-  }
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++){
-    for (iVar = 0; iVar < nVar; iVar++)
-      aux_vector[iVar] = vec[iPoint*nVar+iVar] - tmp[iPoint*nVar + iVar]; // Compute aux_vector = b - L^T.x*
-    Gauss_Elimination(iPoint, aux_vector, true);
-    for (iVar = 0; iVar < nVar; iVar++)
-      prod[iPoint*nVar+iVar] = aux_vector[iVar];                       // Assesing x* = solution
-  }
-
-  /*--- MPI Parallelization ---*/
-
-  SendReceive_SolutionTransposed(prod, geometry, config);
-
-  tmp = su2double(0.0);
-
-  for (iPoint = nPointDomain-1; (int)iPoint >= 0; iPoint--){
-    UpperProductTransposed(prod, iPoint, tmp);               // Compute U^T.x_(n+1)
-  }
-
-  for (iPoint = nPointDomain-1; (int)iPoint >= 0; iPoint--) {
-    DiagonalProductTransposed(prod, iPoint);                 // Compute D^T.x
-    for (iVar = 0; iVar < nVar; iVar++)
-      aux_vector[iVar] = prod_row_vector[iVar] - tmp[iPoint*nVar + iVar];   // Compute aux_vector = D^T.x*
-
-    Gauss_Elimination(iPoint, aux_vector, true);
-
-    for (iVar = 0; iVar < nVar; iVar++){
-      prod[iPoint*nVar + iVar] = aux_vector[iVar];
-    }
-
-  }
-
-  /*--- MPI Parallelization ---*/
-
-  SendReceive_SolutionTransposed(prod, geometry, config);
-
-
 }
 
 void CSysMatrix::ComputeLineletPreconditioner(const CSysVector & vec, CSysVector & prod,

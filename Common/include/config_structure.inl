@@ -623,6 +623,10 @@ inline unsigned short CConfig::GetKind_AdjTurb_Linear_Solver(void) { return Kind
 
 inline unsigned short CConfig::GetKind_AdjTurb_Linear_Prec(void) { return Kind_AdjTurb_Linear_Prec; }
 
+inline unsigned short CConfig::GetKind_DiscAdj_Linear_Solver(void) { return Kind_DiscAdj_Linear_Solver; }
+
+inline unsigned short CConfig::GetKind_DiscAdj_Linear_Prec(void) { return Kind_DiscAdj_Linear_Prec; }
+
 inline void CConfig::SetKind_AdjTurb_Linear_Prec(unsigned short val_kind_prec) { Kind_AdjTurb_Linear_Prec = val_kind_prec; }
 
 inline su2double CConfig::GetAdjTurb_Linear_Error(void) { return AdjTurb_Linear_Error; }

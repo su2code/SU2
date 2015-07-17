@@ -104,7 +104,6 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
   su2double MinVolume, NumError, Tol_Factor, Residual = 0.0, Residual_Init = 0.0;
   bool Screen_Output;
   bool fsi=config->GetFSI_Simulation();
-  CSysVector LinSysTmp;
   
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -179,10 +178,15 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     if (config->GetHold_GridFixed())
       SetDomainDisplacements(geometry, config);
     
-
-    
     CMatrixVectorProduct* mat_vec = NULL;
     CPreconditioner* precond = NULL;
+
+    /*--- Communicate any prescribed boundary displacements via MPI,
+     so that all nodes have the same solution and r.h.s. entries
+     across all partitions. ---*/
+
+    StiffMatrix.SendReceive_Solution(LinSysSol, geometry, config);
+    StiffMatrix.SendReceive_Solution(LinSysRes, geometry, config);
 
     /*--- Definition of the preconditioner matrix vector multiplication, and linear solver ---*/
 
@@ -191,26 +195,17 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
      * For the mesh sensitivities using the discrete adjoint method we solve the system using the transposed matrix,
      * hence we need the corresponding matrix vector product and the preconditioner.  ---*/
     if (!Derivative || ((config->GetKind_SU2() == SU2_CFD) && Derivative)){
-
-      /*--- Communicate any prescribed boundary displacements via MPI,
-       so that all nodes have the same solution and r.h.s. entries
-       across all partitions. ---*/
-
-      StiffMatrix.SendReceive_Solution(LinSysSol, geometry, config);
-      StiffMatrix.SendReceive_Solution(LinSysRes, geometry, config);
       mat_vec = new CSysMatrixVectorProduct(StiffMatrix, geometry, config);
       precond = new CLU_SGSPreconditioner(StiffMatrix, geometry, config);
 
     } else if (Derivative && (config->GetKind_SU2() == SU2_DOT)) {
+      /* --- Build the ILU preconditioner for the transposed system --- */
 
-      LinSysTmp.Initialize(nPoint, nPointDomain, nDim, 0.0);
-
-      StiffMatrix.SendReceive_SolutionTransposed(LinSysSol, geometry, config);
-      StiffMatrix.SendReceive_SolutionTransposed(LinSysRes, geometry, config);
+      StiffMatrix.BuildILUPreconditioner(true);
       mat_vec = new CSysMatrixVectorProductTransposed(StiffMatrix, geometry, config);
-      precond = new CLU_SGS_TransposedPreconditioner(StiffMatrix, geometry, config, LinSysTmp);
-
+      precond = new CILUPreconditioner(StiffMatrix, geometry, config);
     }
+
     CSysSolve *system  = new CSysSolve();
     
     switch (config->GetDeform_Linear_Solver()) {
@@ -1931,9 +1926,11 @@ void CVolumetricMovement::UpdateGridCoord_Derivatives(CGeometry *geometry, CConf
       if (config->GetMarker_All_DV(iMarker) == YES) {
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          for (iDim = 0; iDim < nDim; iDim++) {
-            total_index = iPoint*nDim + iDim;
-            geometry->SetSensitivity(iPoint,iDim, LinSysSol[total_index]);
+          if (geometry->node[iPoint]->GetDomain()){
+            for (iDim = 0; iDim < nDim; iDim++) {
+              total_index = iPoint*nDim + iDim;
+              geometry->SetSensitivity(iPoint,iDim, LinSysSol[total_index]);
+            }
           }
         }
       }

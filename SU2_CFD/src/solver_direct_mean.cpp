@@ -3105,7 +3105,7 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 
   /*--- Initialize the Jacobian matrices ---*/
 
-  if (implicit) Jacobian.SetValZero();
+  if (implicit && !config->GetDiscrete_Adjoint()) Jacobian.SetValZero();
 
   /*--- Error message ---*/
   
@@ -11284,7 +11284,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   
   /*--- Initialize the Jacobian matrices ---*/
 
-  if (implicit) Jacobian.SetValZero();
+  if (implicit && !config->GetDiscrete_Adjoint()) Jacobian.SetValZero();
 
   /*--- Error message ---*/
   

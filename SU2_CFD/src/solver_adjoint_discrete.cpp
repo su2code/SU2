@@ -95,7 +95,7 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
 
   Solution   = new su2double[nVar];
 
-  for (iVar = 0; iVar < nVar; iVar++) Solution[iVar]   = 0.0;
+  for (iVar = 0; iVar < nVar; iVar++) Solution[iVar]   = 1e-16;
 
   /*--- Sensitivity definition and coefficient in all the markers ---*/
 
