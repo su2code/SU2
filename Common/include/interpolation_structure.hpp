@@ -170,7 +170,23 @@ public:
 
   /*!
    * \brief Set up transfer matrix defining relation between two meshes
+   * \param[in] Zones - list of zones to use for interpolation
+   * \param[in] config -
    */
   void Set_TransferCoeff(unsigned int* Zones, CConfig **config);
+
+  /*!
+   * \brief Calculate the isoparametric representation of point iVertex in marker iZone_0 by nodes of element donor_elem in marker jMarker of zone iZone_1.
+   * \param[out] isoparams - isoparametric coefficients. Must be allocated to size nNodes ahead of time.
+   * \param[in] iZone_0 - zone index of the point being interpolated
+   * \param[in] iMarker - marker index of the point being interpolated
+   * \param[in] iVertex - vertex index of the point being interpolated.
+   * \param[in] nDim - the dimension of the coordinates.
+   * \param[in] iZone_1 - zone index of the element to use for interpolation
+   * \param[in] jMarker - marker index of the element to use for interpolation
+   * \param[in] donor_elem - element index of the element to use for interpolation
+   * \param[in[ nDonorPoints - number of donor points in the element.
+   */
+  void Isoparametric(double* isoparams, unsigned int iZone_0, unsigned short iMarker, unsigned long iVertex, unsigned int nDim, unsigned int iZone_1, unsigned short jMarker, long donor_elem, unsigned int nDonorPoints, int* temp2);
 
 };
