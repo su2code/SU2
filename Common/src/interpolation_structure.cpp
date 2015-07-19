@@ -112,7 +112,6 @@ void CInterpolator::Interpolate_Data(unsigned int iZone, CConfig **config){
       }
     }
   }
-
 }
 
 void CInterpolator::Interpolate_Deformation(unsigned int iZone, CConfig **config){
@@ -158,7 +157,7 @@ void CInterpolator::Interpolate_Deformation(unsigned int iZone, CConfig **config
             NewVarCoord[2]+=weight*(distance[1]*VarRot[0]-distance[0]*VarRot[1]);
           }
         }
-        // Or introduce deformation vector that stores this.
+        /*--- Set the varcoord information ---*/
         Geometry[iZone][MESH_0]->vertex[iMarker][iVertex]->SetVarCoord(NewVarCoord);
       }
     }
@@ -312,53 +311,58 @@ void CNearestNeighbor::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
 
 
 CConsistConserve::CConsistConserve(CGeometry ***geometry_container, CConfig **config,  unsigned int* Zones,unsigned int nZone) :  CInterpolator(geometry_container, config, Zones,nZone){
+  cout <<"CC"<<endl;
   unsigned short nDim = geometry_container[Zones[0]][MESH_0]->GetnDim();
   /*--- Initialize transfer coefficients between the zones ---*/
   Set_TransferCoeff(Zones,config);
 
   /*--- For fluid-structure interaction data interpolated with have nDim dimensions ---*/
-  //InitializeData(Zones,nDim);
-
+  InitializeData(Zones,nDim);
+  cout <<"CC initialized"<<endl;
 }
 
 CConsistConserve::~CConsistConserve(){}
 
 void CConsistConserve::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
-  unsigned long iPoint, jPoint, iVertex, jVertex,*nn, inode, ivtx;
-  unsigned short iMarker, iDim, jMarker;
-  unsigned short nDim = Geometry[Zones[0]][MESH_0]->GetnDim(), iDonor, jDonor;
-  double distance = 0.0, last_distance=-1.0;
+  cout <<"set_TC"<<endl;
+  unsigned long iPoint, jPoint, iVertex, jVertex,*nn, inode, ivtx, jElem;
+  unsigned short iMarker, iDim, jMarker, it;
+  unsigned short nDim = Geometry[Zones[0]][MESH_0]->GetnDim();
+  unsigned short iDonor, jDonor;
+  double distance = 0.0, last_distance=-1.0, *Coord;
+  double* myCoeff;
+  double* myCoefftemp;
+  double* donorCoord;
+  double coeff;
+  long donor_elem=0, temp_donor;
 
   unsigned short int donorindex = 0;
   unsigned short nMarkerFSIint, nMarkerFEA, nMarkerFlow;
   unsigned short iMarkerFSIint, iMarkerFEA, iMarkerFlow;
   unsigned short markFEA, markFlow;
-
+  unsigned short index = 3; // index of the vertex info in the donorinfo array
+  unsigned int nNodes;
   /*--- Restricted to 2-zone fluid-structure for now ---*/
   unsigned int iZone_0 = Zones[0];
   unsigned int iZone_1 = Zones[1];
   unsigned int nDonor=0;
 
   nn = new unsigned long[4];
-
   /*--- Number of markers on the FSI interface ---*/
   nMarkerFSIint = (config[iZone_0]->GetMarker_n_FSIinterface())/2;
   nMarkerFEA  =  config[iZone_1]->GetnMarker_All();
   nMarkerFlow =  config[iZone_0]->GetnMarker_All();
-
   /*--- For the number of markers on the interface... ---*/
   for (iMarkerFSIint=0; iMarkerFSIint < nMarkerFSIint; iMarkerFSIint++){
-
     /*--- Procedure:
      * -Loop through vertices of the aero grid
      * -Find nearest element and allocate enough space in the aero grid donor point info
      *    -set the transfer coefficient values
      *    -increment nDonor for each of the element vertices
      * -Loop through vertices of the structure grid
-     * -Allocate enough space for the donor info
-     * -Loop through the aero vertices and set the donor info at the structure vertices
+     *    -Allocate enough space for the donor info
+     *    -Loop through the aero vertices and set the donor info at the structure vertices
      */
-
 
     /*--- ... the marker markFEA ... ---*/
     for (iMarkerFEA=0; iMarkerFEA < nMarkerFEA; iMarkerFEA++){
@@ -366,13 +370,16 @@ void CConsistConserve::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
         markFEA=iMarkerFEA;
       }
     }
+
     /*--- ... corresponds to the marker markFlow. ---*/
     for (iMarkerFlow=0; iMarkerFlow < nMarkerFlow; iMarkerFlow++){
       if (config[iZone_0]->GetMarker_All_FSIinterface(iMarkerFlow) == (iMarkerFSIint+1)){
         markFlow=iMarkerFlow;
       }
     }
-
+    /*--Same for all points: -*/
+    nn[0] = iZone_1; /* Zone of the donor point */
+    nn[2] = markFEA; /* marker of the donor point */
     /*--- For the markers on the fluid side ---*/
     /*--- Loop over the vertices on the marker ---*/
     for (iVertex = 0; iVertex<Geometry[iZone_0][MESH_0]->GetnVertex(markFlow); iVertex++) {
@@ -389,59 +396,271 @@ void CConsistConserve::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
           distance+=pow(Geometry[iZone_1][MESH_0]->vertex[markFEA][jVertex]->GetCoord(iDim)-Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->GetCoord(iDim),2.0);
         if ((last_distance==-1.0) or (distance<last_distance)){
           last_distance=distance;
-          nn[0] = iZone_1; /* Zone of the donor point */
+          //nn[0] = iZone_1; /* Zone of the donor point */
           nn[1] = jPoint; /* global index of the donor point */
-          nn[2] = markFEA; /* marker of the donor point */
-          nn[3] = jVertex; /* vertex index within marker of the donor point */
+          //nn[2] = markFEA; /* marker of the donor point */
+          //nn[3] = jVertex; /* vertex index within marker of the donor point */
         }
       }
-      long donor_elem=0;
+      donor_elem=0;
+      last_distance=-1;
       /*--- Now that we know the closest vertex, the closest face must be one of the ones connected to the vertex--*/
-      for (int jElem=0; jElem<Geometry[iZone_1][MESH_0]->node[nn[1]]->GetnElem(); jElem++){
-        long temp_donor = Geometry[iZone_1][MESH_0]->node[nn[1]]->GetElem(jElem);
-        /*--- Find nearest normal point to this element (may be a vertex) ---*/
-        /*--- check the distance to that point against previous distances ---*/
-        /*--- if jElem=0 or if closer than previous closest point, store as donor_elem ---*/
+      for (jElem=0; jElem<Geometry[iZone_1][MESH_0]->node[nn[1]]->GetnElem(); jElem++){
+        temp_donor = Geometry[iZone_1][MESH_0]->node[nn[1]]->GetElem(jElem);
+        nNodes = Geometry[iZone_1][MESH_0]->elem[temp_donor]->GetnNodes();
+        /*--- Determine nodes that are on a surface ---*/
+        int temp[nNodes];
+        it=0;
+        for (inode=0; inode<nNodes; inode++){
+          if ( Geometry[iZone_1][MESH_0]->node[inode]->GetVertex(markFEA) != -1 ){
+            temp[it]=inode;
+            it++;
+          }
+        }
+        nNodes=it;
+        int temp2[nNodes];
+        for (inode=0; inode<nNodes; inode++){
+          temp2[inode]=temp[inode];
+        }
 
+        /*--- use Isoparametric rep. to find distance to projected point on the surface ---*/
+        //delete[] myCoefftemp;
+        myCoefftemp = new double[nNodes];
+        Isoparametric( myCoefftemp, iZone_0,  markFlow, iVertex, nDim, iZone_1, markFEA, temp_donor, nNodes, temp2);
+        /*--- If closer than last closest projected point, save. ---*/
+        Coord = Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->GetCoord();
+        for (it=0; it< nNodes; it++){
+          inode = Geometry[iZone_1][MESH_0]->elem[donor_elem]->GetNode(temp2[it]);
+          donorCoord = Geometry[iZone_1][MESH_0]->node[inode]->GetCoord();
+          for (iDim=0; iDim<nDim; iDim++)
+            Coord[iDim]-=myCoefftemp[it]*donorCoord[iDim];
+        }
+        distance = 0;
+        for (iDim=0; iDim<nDim; iDim++)
+          distance+=Coord[iDim]*Coord[iDim];
+        /*--- If the distance is shorter than last shortest, update ---*/
+        if ((last_distance==-1) or (distance<last_distance )){
+          donor_elem = temp_donor;
+          //delete [] myCoeff;
+          myCoeff = new double[nNodes];
+          for (it=0; it< nNodes; it++)
+            myCoeff[it] = myCoefftemp[it];
+          Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->SetDonorElem(temp_donor);
+          Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->SetnDonorPoints(nNodes);
+        }
       }
-      /*--- if we get to the end and no normal distance is closer than the distance to the vertex, set as nearest neighbor ---*/
-      /*--- otherwise, loop over the vertices on the donor elem ---*/
+
+      //Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->SetDonorElem(donor_elem);
       /*--- Set the appropriate amount of memory ---*/
-      Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->SetnDonorPoints(Geometry[iZone_1][MESH_0]->elem[donor_elem]->GetnNodes());
+      //Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->SetnDonorPoints(Geometry[iZone_1][MESH_0]->elem[donor_elem]->GetnNodes());
       Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->Allocate_DonorInfo();
       /*--- Loop over vertices of the element ---*/
-      for (int it=0; it< Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->GetnDonorPoints(); it++){
+      for (it=0; it< Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->GetnDonorPoints(); it++){
+        /*--- Set the information on the matching vertices for markFEA ---*/
         inode = Geometry[iZone_1][MESH_0]->elem[donor_elem]->GetNode(it);
-        ivtx = Geometry[iZone_1][MESH_0]->node[inode]->GetVertex(markFEA);
-        Geometry[iZone_1][MESH_0]->vertex[markFEA][ivtx]->IncrementnDonor();
-        /*--- add coordinate info to an array for later calc of transfer coeff ---*/
-      }
-      /*--- calc transfer coeff here ---*/
-      /*--- loop through donor points again ---*/
-      for (int it=0; it< Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->GetnDonorPoints(); it++){
-        inode = Geometry[iZone_1][MESH_0]->elem[donor_elem]->GetNode(it);
-        ivtx  = Geometry[iZone_1][MESH_0]->node[inode]->GetVertex(markFEA);
-        //Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->SetDonorInfo(it,nn);
-        //Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->SetDonorCoeff(it,1.0);
+        if ( Geometry[iZone_1][MESH_0]->node[inode]->GetVertex(markFEA)!= -1 ){
+          ivtx = Geometry[iZone_1][MESH_0]->node[inode]->GetVertex(markFEA);
+          //nn[0] = iZone_1; /* Zone of the donor point */
+          nn[1] = inode; /* global index of the donor point */
+          //nn[2] = markFEA; /* marker of the donor point */
+          nn[3] = ivtx; /* vertex index within marker of the donor point */
+          Geometry[iZone_1][MESH_0]->vertex[markFEA][ivtx]->IncrementnDonor();
+          Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->SetDonorInfo(it,nn);
+          Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->SetDonorCoeff(it,myCoeff[it]);
+        }
       }
     }
     /*--- Now that all the transfer coefficients have been calculated, loop through the structure vertices
      * and set the same transfer coefficients
      */
+    index=3;
     for (jVertex = 0; jVertex<Geometry[iZone_1][MESH_0]->GetnVertex(markFEA); jVertex++) {
       ivtx=0;
       Geometry[iZone_1][MESH_0]->vertex[markFEA][jVertex]->Allocate_DonorInfo();
+      /*--- Loop over all aero points ---*/
       for (iVertex=0; iVertex<Geometry[iZone_0][MESH_0]->GetnVertex(markFlow); iVertex++){
+        /*--- Loop over the donor vertices for iVertex (flow vertex) ---*/
         for (inode=0; inode<Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->GetnDonorPoints(); inode++){
-          /*if donor point == jVertex*/
-          //double coeff = Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->GetDonorCoeff(inode);
-          //Geometry[iZone_1][MESH_0]->vertex[markFEA][jVertex]->SetDonorInfo(ivtx,nn);
-          //Geometry[iZone_1][MESH_0]->vertex[markFEA][jVertex]->SetDonorCoeff(ivtx,coeff);
+          /*--- If one of the donor points is the same as the FEA vertex, add information ---*/
+          if (Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]-> GetDonorInfo(inode,index) == jVertex){
+            iPoint =Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->GetNode();
+            nn[0] = iZone_0; /* Zone of the donor point */
+            nn[1] = iPoint; /* global index of the donor point */
+            nn[2] = markFlow; /* marker of the donor point */
+            nn[3] = iVertex; /* vertex index within marker of the donor point */
+            coeff = Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->GetDonorCoeff(inode);
+            Geometry[iZone_1][MESH_0]->vertex[markFEA][jVertex]->SetDonorInfo(ivtx,nn);
+            Geometry[iZone_1][MESH_0]->vertex[markFEA][jVertex]->SetDonorCoeff(ivtx,coeff);
+            ivtx++;
+          }
+          if (ivtx>=Geometry[iZone_1][MESH_0]->vertex[markFEA][jVertex]->GetnDonorPoints()-1){
+            break;
+          }
         }
+        if (ivtx>=Geometry[iZone_1][MESH_0]->vertex[markFEA][jVertex]->GetnDonorPoints()-1){
+          break;
+        }
+
       }
+      if (ivtx>=Geometry[iZone_1][MESH_0]->vertex[markFEA][jVertex]->GetnDonorPoints()-1){
+        break;
+      }
+    }
+  }
+  /*-- Delete locally allocated memory ---*/
+
+  if (myCoeff!=NULL)
+    delete[] myCoeff;
+  if (myCoefftemp!=NULL)
+    delete[] myCoefftemp;
+  cout <<"end_TC"<<endl;
+
+}
+
+void CConsistConserve::Isoparametric(double* isoparams, unsigned int iZone_0, unsigned short iMarker, unsigned long iVertex, unsigned int nDim, unsigned int iZone_1, unsigned short jMarker, long donor_elem, unsigned int nDonorPoints, int* temp2){
+  int i,j,k;
+  int n0 = nDim+1, n;
+  double tmp, tmp2, distance;
+  unsigned long jVertex, inode;
+
+  /*--- Number of neighbor points to interpolate between ---*/
+  unsigned int m0 =  nDonorPoints, m;
+  double x[m0], x_tmp[m0];
+  /*--- Q R matrix system ---*/
+  double Q[m0*m0], R[m0*m0], A[n0*m0];
+  bool test[n0];
+  bool testi[n0];
+
+  double x2[n0];
+  int offset;
+  /*--- n0: # of dimensions + 1. n: n0 less any degenerate rows ---*/
+  n=n0;
+  /*--- m0: # of donor points. m: correcting for req'm that n<=m ---*/
+  m = m0;
+  if (m<n){
+    offset = 0;
+    n--;
+    n0--;
+  }
+  else
+    offset = 1;
+
+  /*--- Create Matrix A: 1st row all 1's, 2nd row x coordinates, 3rd row y coordinates, etc ---*/
+  /*--- Right hand side is [1, vec{x}']'---*/
+  for (i=0; i<m*n; i++)
+      A[i]=0;
+  if (offset>0){
+    for (i=0; i<m; i++)
+      A[i]=1.0;
+  }
+
+  x[0]=1;
+  for (j=1; j<n0; j++)
+    x[j]=Geometry[iZone_0][MESH_0]->vertex[iMarker][iVertex]->GetCoord(j-1);
+
+  for (i=0; i<m0; i++){
+    inode = Geometry[iZone_1][MESH_0]->elem[donor_elem]->GetNode(temp2[i]);
+    for (j=offset; j<n0; j++){
+      // jth coordinate of the ith donor vertex
+      A[j*m+i] = Geometry[iZone_1][MESH_0]->node[inode]->GetCoord(j-offset);
+    }
+  }
+
+  /*--- IF m<n, instead: remove the 1st row (of 1s) - otherwise this will be overdefined ---*/
+  /*--- Eliminate degenerate rows:
+   * for example, if z constant including the zth row will make the system degenerate ---*/
+
+  test[0]=true; // always keep the 1st row
+  for (i=1; i<n0; i++){
+    // Test this row against all previous
+    test[i]=true; // Assume that it is not degenerate
+    for (k=0; k<i; k++){
+      tmp=0; tmp2=0;
+      for (j=0;j<m;j++){
+        tmp+= A[i*m+j]*A[i*m+j];
+        tmp2+=A[k*m+j]*A[k*m+j];
+      }
+      tmp  = pow(tmp,0.5);
+      tmp2 = pow(tmp2,0.5);
+      testi[k]=false;
+      for (j=0; j<m; j++){
+        // If at least one ratio is non-matching row i is not degenerate w/ row k
+        if (A[i*m+j]/tmp != A[k*m+j]/tmp2)
+          testi[k]=true;
+      }
+      // If any of testi (k<i) are false, row i is degenerate
+      test[i]=(test[i] and testi[k]);
+    }
+    if (!test[i]) n--;
+  }
+  double A2[n*m];
+
+
+  j=0;
+  /*--- Copy only the non-degenerate rows ---*/
+  if (n<n0){
+    for (i=0; i<n0; i++){
+      if (test[i]){
+        for (k=0;k<m;k++ )
+          A2[m*j+k]=A[m*i+k];
+
+        x2[j]=x[i];
+        j++;
+      }
+    }
+  }
+  else{
+    for (i=0; i<n*m; i++){
+      A2[i]=A[i];
+      x2[i]=x[i];
+    }
+  }
+  /*--- Initialize to 0 --*/
+  for (i=0; i<m*m; i++){
+    Q[i]=0;
+    R[i]=0;
+  }
+  /*--- Set up QR matrix system ---*/
+  for (i=0; i<m; i++){
+    tmp=0;
+    for (j=0; j<n; j++)
+      tmp += (A2[j*m+i])*(A2[j*m+i]);
+
+    R[i*n+i]= pow(tmp,0.5);
+    if (tmp>eps && i<n){
+      for (j=0; j<n; j++)
+        Q[j*m+i]=A2[j*m+i]/R[i*n+i];
+    }
+    else if (i>=n and tmp!=0){
+      for (j=0; j<n; j++)
+        Q[j*m+i]=A2[j*m+i]/tmp;
+    }
+    for (j=i+1; j<m; j++){
+      tmp=0;
+      for (k=0; k<n; k++)
+        tmp+=A2[k*m+j]*Q[k*m+i];
+
+      R[i*n+j]=tmp;
+
+      for (k=0; k<n; k++)
+        A2[k*m+j]=A2[k*m+j]-Q[k*m+i]*R[i*n+j];
+    }
+  }
+  /*--- x_tmp = Q^T * x2 ---*/
+  for (i=0; i<n; i++){
+    x_tmp[i]=0.0;
+    for (j=0; j<m; j++)
+      x_tmp[i]+=Q[i*m+j]*x2[j];
+  }
+  /*--- solve x_tmp = R*isoparams: upper triangular system ---*/
+  for (i=n-1; i>=0; i--){
+    if (R[i*n+i]>eps)
+      isoparams[i]=x_tmp[i]/R[i*n+i];
+    else
+      isoparams[i]=0;
+    for (j=0; j<i; j++){
+      x_tmp[j]=x_tmp[j]-R[j*n+i]*isoparams[i];
     }
   }
 
 }
-
-
