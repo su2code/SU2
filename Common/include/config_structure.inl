@@ -1223,6 +1223,8 @@ inline unsigned short CConfig::GetPredictorOrder(void) { return Pred_Order; }
 
 inline bool CConfig::GetFSI_Simulation(void) { return FSI_Problem; }
 
+inline unsigned short CConfig::GetKindInterpolation(void) { return Kind_Interpolation; }
+
 inline unsigned short CConfig::GetRelaxation_Method_FSI(void) { return Kind_BGS_RelaxMethod; }
 
 inline double CConfig::GetOrderMagResidualFSI(void) { return OrderMagResidualFSI; }

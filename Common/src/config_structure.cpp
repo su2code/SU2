@@ -1188,11 +1188,16 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Order of the predictor */
   addUnsignedShortOption("PREDICTOR_ORDER", Pred_Order, 0);
 
+
+  /* CONFIG_CATEGORY: FSI solver */
+  /*--- Options related to the FSI solver ---*/
+
   /*!\par PHYSICAL_PROBLEM_FLUID_FSI
    *  DESCRIPTION: Physical governing equations \n
    *  Options: NONE (default),EULER, NAVIER_STOKES, RANS,
    *  \ingroup Config*/
   addEnumOption("FSI_FLUID_PROBLEM", Kind_Solver_Fluid_FSI, FSI_Fluid_Solver_Map, NO_SOLVER_FFSI);
+
   /*!\par PHYSICAL_PROBLEM_STRUCTURAL_FSI
    *  DESCRIPTION: Physical governing equations \n
    *  Options: NONE (default), LINEAR_ELASTICITY, NONLINEAR_ELASTICITY
@@ -1209,9 +1214,12 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   *  Options: NO, YES \ingroup Config */
   addBoolOption("MATCHING_MESH", MatchingMesh, true);
 
+  /*!\par KIND_INTERPOLATION \n
+   * DESCRIPTION: Type of interpolation to use for multi-zone problems. \n OPTIONS: see \link Interpolator_Map \endlink
+   * Sets Kind_Interpolation \ingroup Config
+   */
+  addEnumOption("KIND_INTERPOLATION", Kind_Interpolation, Interpolator_Map, NEAREST_NEIGHBOR);
 
-  /* CONFIG_CATEGORY: FSI solver */
-  /*--- Options related to the FSI solver ---*/
   /* DESCRIPTION: Maximum number of FSI iterations */
   addUnsignedShortOption("FSI_ITER", nIterFSI, 1);
   /* DESCRIPTION: Aitken's static relaxation factor */

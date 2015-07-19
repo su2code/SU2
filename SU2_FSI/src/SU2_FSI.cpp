@@ -263,7 +263,10 @@ int main(int argc, char *argv[]) {
 	    unsigned int nzn = 2; // temporary nZones for interpolation: 2 in the case of fluid-structure
 	    Zones[0]=ZONE_0;
 	    Zones[1]=ZONE_1;
-	    interpolator_container[iZone] = new CNearestNeighbor(geometry_container,config_container,Zones,nzn);
+	    if (config_container[ZONE_0]->GetKindInterpolation()== NEAREST_NEIGHBOR )
+	      interpolator_container[iZone] = new CNearestNeighbor(geometry_container,config_container,Zones,nzn);
+	    if (config_container[ZONE_0]->GetKindInterpolation()== CONSISTENT_AND_CONSERVATIVE )
+        interpolator_container[iZone] = new CConsistConserve(geometry_container,config_container,Zones,nzn);
 	  }
 
 	  /*--- For the time-spectral solver, set the grid node velocities. ---*/
