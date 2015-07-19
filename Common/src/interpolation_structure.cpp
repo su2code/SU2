@@ -311,20 +311,17 @@ void CNearestNeighbor::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
 
 
 CConsistConserve::CConsistConserve(CGeometry ***geometry_container, CConfig **config,  unsigned int* Zones,unsigned int nZone) :  CInterpolator(geometry_container, config, Zones,nZone){
-  cout <<"CC"<<endl;
   unsigned short nDim = geometry_container[Zones[0]][MESH_0]->GetnDim();
   /*--- Initialize transfer coefficients between the zones ---*/
   Set_TransferCoeff(Zones,config);
 
   /*--- For fluid-structure interaction data interpolated with have nDim dimensions ---*/
   InitializeData(Zones,nDim);
-  cout <<"CC initialized"<<endl;
 }
 
 CConsistConserve::~CConsistConserve(){}
 
 void CConsistConserve::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
-  cout <<"set_TC"<<endl;
   unsigned long iPoint, jPoint, iVertex, jVertex,*nn, inode, ivtx, jElem;
   unsigned short iMarker, iDim, jMarker, it;
   unsigned short nDim = Geometry[Zones[0]][MESH_0]->GetnDim();
@@ -513,7 +510,6 @@ void CConsistConserve::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
     delete[] myCoeff;
   if (myCoefftemp!=NULL)
     delete[] myCoefftemp;
-  cout <<"end_TC"<<endl;
 
 }
 
