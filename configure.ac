@@ -344,7 +344,7 @@ AC_SUBST([LAPACK_LD])
 # Determine what versions of the code to build
 
 # Complex type
-COMPLEX_CXX="-DCOMPLEX_TYPE"
+COMPLEX_CXX="-std=gnu++11 -DCOMPLEX_TYPE"
 
 # direct differentation type
 build_DIRECTDIFF=no

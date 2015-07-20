@@ -40,19 +40,23 @@
  * the routines defined in the namespace SU2_TYPE below. ---*/
 #if defined COMPLEX_TYPE
 #include "datatypes/complex_structure.hpp"
+#define SPRINTF sprintfOver
 #elif defined ADOLC_FORWARD_TYPE
+#define SPRINTF sprintfOver
 #include "datatypes/adolc_forward_structure.hpp"
 #elif defined ADOLC_REVERSE_TYPE
+#define SPRINTF sprintfOver
 #include "datatypes/adolc_reverse_structure.hpp"
 #elif defined CODI_REVERSE_TYPE
+#define SPRINTF sprintfOver
 #include "datatypes/codi_reverse_structure.hpp"
 #elif defined CODI_FORWARD_TYPE
+#define SPRINTF sprintfOver
 #include "datatypes/codi_forward_structure.hpp"
 #else
+#define SPRINTF sprintf
 #include "datatypes/primitive_structure.hpp"
 #endif
-
-#define SPRINTF sprintfOver
 
 
 /*!

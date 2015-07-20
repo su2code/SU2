@@ -30,6 +30,9 @@
  */
 #pragma once
 
+
+/* --- Explicit cast functions --- */
+
 namespace SU2_TYPE{
   inline int Int(const su2double& data){
     return int(SU2_TYPE::GetPrimary(data));
@@ -42,7 +45,8 @@ namespace SU2_TYPE{
 
 /* --- Default implementation if reverse mode is disabled --- */
 
-#if !defined ADOLC_REVERSE_TYPE && !defined CODI_REVERSE_TYPE
+#if !defined ADOLC_REVERSE_TYPE && \
+    !defined CODI_REVERSE_TYPE
 namespace AD{
   inline void RegisterInput(su2double &data){}
 
@@ -58,16 +62,27 @@ namespace AD{
 }
 #endif
 
-/* --- Since the sprintf function is a variadic function,
- * we cannot simply overload it for general datatypes. Instead we define templates for
- * arbitrary combinations of inputs and for a certain number of arguments.  --- */
+
+/* --- Special handling of the sprint routine for non-primitive types. --- */
+
+#if  defined ADOLC_REVERSE_TYPE || \
+     defined ADOLC_FORWARD_TYPE || \
+     defined COMPLEX_TYPE       || \
+     defined CODI_REVERSE_TYPE  || \
+     defined CODI_FORWARD_TYPE
+
+/* --- This objective is used for primitive types,
+ * where the output type of the getValue coincides with the input type. --- */
 
 template< typename IN > struct Impl_getValue {
-  typedef IN OUT; // Default implementation has the same output type as input type
+  typedef IN OUT;
   static inline const OUT& getValue(const IN &value) {
     return value;
   }
 };
+
+/* --- This objective is used for non-primitive types,
+ * where the output type is double and the input type is su2double. --- */
 
 template<> struct Impl_getValue<su2double> {
   typedef double OUT;
@@ -76,110 +91,87 @@ template<> struct Impl_getValue<su2double> {
   }
 };
 
+/*--- Other objects are implemented in the corresponding header files of the datatypes.
+ *  For example there may be an expression in the argument. --- */
+
+
+/*--- Terminating definition of sprintfOver --- */
+
 inline void sprintfOver(char * str, const char * format) {
   sprintf(str, format);
 }
+
+
 template <class A001>
-inline void sprintfOver(char * str, const char * format, const A001 &a001) {
-  sprintf(str, format, Impl_getValue<A001 >::getValue(a001));
-}
-template <class A001, class A002>
-inline void sprintfOver(char * str, const char * format, const A001 &a001, const A002 &a002) {
-  sprintf(str, format, Impl_getValue<A001 >::getValue(a001), Impl_getValue<A002 >::getValue(a002));
-}
-template <class A001, class A002, class A003>
-inline void sprintfOver(char * str, const char * format, const A001 &a001, const A002 &a002, const A003 &a003) {
-  sprintf(str, format, Impl_getValue<A001 >::getValue(a001), Impl_getValue<A002 >::getValue(a002), Impl_getValue<A003 >::getValue(a003));
-}
-template <class A001, class A002, class A003, class A004>
-inline void sprintfOver(char * str, const char * format, const A001 &a001, const A002 &a002, const A003 &a003, const A004 &a004) {
-  sprintf(str, format, Impl_getValue<A001 >::getValue(a001), Impl_getValue<A002 >::getValue(a002), Impl_getValue<A003 >::getValue(a003), Impl_getValue<A004 >::getValue(a004));
-}
-template <class A001, class A002, class A003, class A004, class A005>
-inline void sprintfOver(char * str, const char * format, const A001 &a001, const A002 &a002, const A003 &a003, const A004 &a004, const A005 &a005) {
-  sprintf(str, format, Impl_getValue<A001 >::getValue(a001), Impl_getValue<A002 >::getValue(a002), Impl_getValue<A003 >::getValue(a003), Impl_getValue<A004 >::getValue(a004), Impl_getValue<A005 >::getValue(a005));
-}
-template <class A001, class A002, class A003, class A004, class A005, class A006>
-inline void sprintfOver(char * str, const char * format, const A001 &a001, const A002 &a002, const A003 &a003, const A004 &a004, const A005 &a005, const A006 &a006) {
-  sprintf(str, format, Impl_getValue<A001 >::getValue(a001), Impl_getValue<A002 >::getValue(a002), Impl_getValue<A003 >::getValue(a003), Impl_getValue<A004 >::getValue(a004), Impl_getValue<A005 >::getValue(a005), Impl_getValue<A006 >::getValue(a006));
-}
-template <class A001, class A002, class A003, class A004, class A005, class A006, class A007>
-inline void sprintfOver(char * str, const char * format, const A001 &a001, const A002 &a002, const A003 &a003, const A004 &a004, const A005 &a005, const A006 &a006, const A007 &a007) {
-  sprintf(str, format, Impl_getValue<A001 >::getValue(a001), Impl_getValue<A002 >::getValue(a002), Impl_getValue<A003 >::getValue(a003), Impl_getValue<A004 >::getValue(a004), Impl_getValue<A005 >::getValue(a005), Impl_getValue<A006 >::getValue(a006), Impl_getValue<A007 >::getValue(a007));
-}
-template <class A001, class A002, class A003, class A004, class A005, class A006, class A007, class A008>
-inline void sprintfOver(char * str, const char * format, const A001 &a001, const A002 &a002, const A003 &a003, const A004 &a004, const A005 &a005, const A006 &a006, const A007 &a007, const A008 &a008) {
-  sprintf(str, format, Impl_getValue<A001 >::getValue(a001), Impl_getValue<A002 >::getValue(a002), Impl_getValue<A003 >::getValue(a003), Impl_getValue<A004 >::getValue(a004), Impl_getValue<A005 >::getValue(a005), Impl_getValue<A006 >::getValue(a006), Impl_getValue<A007 >::getValue(a007), Impl_getValue<A008 >::getValue(a008));
-}
-template <class A001, class A002, class A003, class A004, class A005, class A006, class A007, class A008, class A009>
-inline void sprintfOver(char * str, const char * format, const A001 &a001, const A002 &a002, const A003 &a003, const A004 &a004, const A005 &a005, const A006 &a006, const A007 &a007, const A008 &a008, const A009 &a009) {
-  sprintf(str, format, Impl_getValue<A001 >::getValue(a001), Impl_getValue<A002 >::getValue(a002), Impl_getValue<A003 >::getValue(a003), Impl_getValue<A004 >::getValue(a004), Impl_getValue<A005 >::getValue(a005), Impl_getValue<A006 >::getValue(a006), Impl_getValue<A007 >::getValue(a007), Impl_getValue<A008 >::getValue(a008), Impl_getValue<A009 >::getValue(a009));
-}
-template <class A001, class A002, class A003, class A004, class A005, class A006, class A007, class A008, class A009, class A010>
-inline void sprintfOver(char * str, const char * format, const A001 &a001, const A002 &a002, const A003 &a003, const A004 &a004, const A005 &a005, const A006 &a006, const A007 &a007, const A008 &a008, const A009 &a009, const A010 &a010) {
-  sprintf(str, format, Impl_getValue<A001 >::getValue(a001), Impl_getValue<A002 >::getValue(a002), Impl_getValue<A003 >::getValue(a003), Impl_getValue<A004 >::getValue(a004), Impl_getValue<A005 >::getValue(a005), Impl_getValue<A006 >::getValue(a006), Impl_getValue<A007 >::getValue(a007), Impl_getValue<A008 >::getValue(a008), Impl_getValue<A009 >::getValue(a009), Impl_getValue<A010 >::getValue(a010));
-}
-template <class A001, class A002, class A003, class A004, class A005, class A006, class A007, class A008, class A009, class A010, class A011>
-inline void sprintfOver(char * str, const char * format, const A001 &a001, const A002 &a002, const A003 &a003, const A004 &a004, const A005 &a005, const A006 &a006, const A007 &a007, const A008 &a008, const A009 &a009, const A010 &a010, const A011 &a011) {
-  sprintf(str, format, Impl_getValue<A001 >::getValue(a001), Impl_getValue<A002 >::getValue(a002), Impl_getValue<A003 >::getValue(a003), Impl_getValue<A004 >::getValue(a004), Impl_getValue<A005 >::getValue(a005), Impl_getValue<A006 >::getValue(a006), Impl_getValue<A007 >::getValue(a007), Impl_getValue<A008 >::getValue(a008), Impl_getValue<A009 >::getValue(a009), Impl_getValue<A010 >::getValue(a010), Impl_getValue<A011 >::getValue(a011));
-}
-template <class A001, class A002, class A003, class A004, class A005, class A006, class A007, class A008, class A009, class A010, class A011, class A012>
-inline void sprintfOver(char * str, const char * format, const A001 &a001, const A002 &a002, const A003 &a003, const A004 &a004, const A005 &a005, const A006 &a006, const A007 &a007, const A008 &a008, const A009 &a009, const A010 &a010, const A011 &a011, const A012 &a012) {
-  sprintf(str, format, Impl_getValue<A001 >::getValue(a001), Impl_getValue<A002 >::getValue(a002), Impl_getValue<A003 >::getValue(a003), Impl_getValue<A004 >::getValue(a004), Impl_getValue<A005 >::getValue(a005), Impl_getValue<A006 >::getValue(a006), Impl_getValue<A007 >::getValue(a007), Impl_getValue<A008 >::getValue(a008), Impl_getValue<A009 >::getValue(a009), Impl_getValue<A010 >::getValue(a010), Impl_getValue<A011 >::getValue(a011), Impl_getValue<A012 >::getValue(a012));
-}
-template <class A001, class A002, class A003, class A004, class A005, class A006, class A007, class A008, class A009, class A010, class A011, class A012, class A013>
-inline void sprintfOver(char * str, const char * format, const A001 &a001, const A002 &a002, const A003 &a003, const A004 &a004, const A005 &a005, const A006 &a006, const A007 &a007, const A008 &a008, const A009 &a009, const A010 &a010, const A011 &a011, const A012 &a012, const A013 &a013) {
-  sprintf(str, format, Impl_getValue<A001 >::getValue(a001), Impl_getValue<A002 >::getValue(a002), Impl_getValue<A003 >::getValue(a003), Impl_getValue<A004 >::getValue(a004), Impl_getValue<A005 >::getValue(a005), Impl_getValue<A006 >::getValue(a006), Impl_getValue<A007 >::getValue(a007), Impl_getValue<A008 >::getValue(a008), Impl_getValue<A009 >::getValue(a009), Impl_getValue<A010 >::getValue(a010), Impl_getValue<A011 >::getValue(a011), Impl_getValue<A012 >::getValue(a012), Impl_getValue<A013 >::getValue(a013));
-}
-template <class A001, class A002, class A003, class A004, class A005, class A006, class A007, class A008, class A009, class A010, class A011, class A012, class A013, class A014>
-inline void sprintfOver(char * str, const char * format, const A001 &a001, const A002 &a002, const A003 &a003, const A004 &a004, const A005 &a005, const A006 &a006, const A007 &a007, const A008 &a008, const A009 &a009, const A010 &a010, const A011 &a011, const A012 &a012, const A013 &a013, const A014 &a014) {
-  sprintf(str, format, Impl_getValue<A001 >::getValue(a001), Impl_getValue<A002 >::getValue(a002), Impl_getValue<A003 >::getValue(a003), Impl_getValue<A004 >::getValue(a004), Impl_getValue<A005 >::getValue(a005), Impl_getValue<A006 >::getValue(a006), Impl_getValue<A007 >::getValue(a007), Impl_getValue<A008 >::getValue(a008), Impl_getValue<A009 >::getValue(a009), Impl_getValue<A010 >::getValue(a010), Impl_getValue<A011 >::getValue(a011), Impl_getValue<A012 >::getValue(a012), Impl_getValue<A013 >::getValue(a013), Impl_getValue<A014 >::getValue(a014));
-}
-template <class A001, class A002, class A003, class A004, class A005, class A006, class A007, class A008, class A009, class A010, class A011, class A012, class A013, class A014, class A015>
-inline void sprintfOver(char * str, const char * format, const A001 &a001, const A002 &a002, const A003 &a003, const A004 &a004, const A005 &a005, const A006 &a006, const A007 &a007, const A008 &a008, const A009 &a009, const A010 &a010, const A011 &a011, const A012 &a012, const A013 &a013, const A014 &a014, const A015 &a015) {
-  sprintf(str, format, Impl_getValue<A001 >::getValue(a001), Impl_getValue<A002 >::getValue(a002), Impl_getValue<A003 >::getValue(a003), Impl_getValue<A004 >::getValue(a004), Impl_getValue<A005 >::getValue(a005), Impl_getValue<A006 >::getValue(a006), Impl_getValue<A007 >::getValue(a007), Impl_getValue<A008 >::getValue(a008), Impl_getValue<A009 >::getValue(a009), Impl_getValue<A010 >::getValue(a010), Impl_getValue<A011 >::getValue(a011), Impl_getValue<A012 >::getValue(a012), Impl_getValue<A013 >::getValue(a013), Impl_getValue<A014 >::getValue(a014), Impl_getValue<A015 >::getValue(a015));
-}
-template <class A001, class A002, class A003, class A004, class A005, class A006, class A007, class A008, class A009, class A010, class A011, class A012, class A013, class A014, class A015, class A016>
-inline void sprintfOver(char * str, const char * format, const A001 &a001, const A002 &a002, const A003 &a003, const A004 &a004, const A005 &a005, const A006 &a006, const A007 &a007, const A008 &a008, const A009 &a009, const A010 &a010, const A011 &a011, const A012 &a012, const A013 &a013, const A014 &a014, const A015 &a015, const A016 &a016) {
-  sprintf(str, format, Impl_getValue<A001 >::getValue(a001), Impl_getValue<A002 >::getValue(a002), Impl_getValue<A003 >::getValue(a003), Impl_getValue<A004 >::getValue(a004), Impl_getValue<A005 >::getValue(a005), Impl_getValue<A006 >::getValue(a006), Impl_getValue<A007 >::getValue(a007), Impl_getValue<A008 >::getValue(a008), Impl_getValue<A009 >::getValue(a009), Impl_getValue<A010 >::getValue(a010), Impl_getValue<A011 >::getValue(a011), Impl_getValue<A012 >::getValue(a012), Impl_getValue<A013 >::getValue(a013), Impl_getValue<A014 >::getValue(a014), Impl_getValue<A015 >::getValue(a015), Impl_getValue<A016 >::getValue(a016));
-}
-template <class A001, class A002, class A003, class A004, class A005, class A006, class A007, class A008, class A009, class A010, class A011, class A012, class A013, class A014, class A015, class A016, class A017>
-inline void sprintfOver(char * str, const char * format, const A001 &a001, const A002 &a002, const A003 &a003, const A004 &a004, const A005 &a005, const A006 &a006, const A007 &a007, const A008 &a008, const A009 &a009, const A010 &a010, const A011 &a011, const A012 &a012, const A013 &a013, const A014 &a014, const A015 &a015, const A016 &a016, const A017 &a017) {
-  sprintf(str, format, Impl_getValue<A001 >::getValue(a001), Impl_getValue<A002 >::getValue(a002), Impl_getValue<A003 >::getValue(a003), Impl_getValue<A004 >::getValue(a004), Impl_getValue<A005 >::getValue(a005), Impl_getValue<A006 >::getValue(a006), Impl_getValue<A007 >::getValue(a007), Impl_getValue<A008 >::getValue(a008), Impl_getValue<A009 >::getValue(a009), Impl_getValue<A010 >::getValue(a010), Impl_getValue<A011 >::getValue(a011), Impl_getValue<A012 >::getValue(a012), Impl_getValue<A013 >::getValue(a013), Impl_getValue<A014 >::getValue(a014), Impl_getValue<A015 >::getValue(a015), Impl_getValue<A016 >::getValue(a016), Impl_getValue<A017 >::getValue(a017));
-}
-template <class A001, class A002, class A003, class A004, class A005, class A006, class A007, class A008, class A009, class A010, class A011, class A012, class A013, class A014, class A015, class A016, class A017, class A018>
-inline void sprintfOver(char * str, const char * format, const A001 &a001, const A002 &a002, const A003 &a003, const A004 &a004, const A005 &a005, const A006 &a006, const A007 &a007, const A008 &a008, const A009 &a009, const A010 &a010, const A011 &a011, const A012 &a012, const A013 &a013, const A014 &a014, const A015 &a015, const A016 &a016, const A017 &a017, const A018 &a018) {
-  sprintf(str, format, Impl_getValue<A001 >::getValue(a001), Impl_getValue<A002 >::getValue(a002), Impl_getValue<A003 >::getValue(a003), Impl_getValue<A004 >::getValue(a004), Impl_getValue<A005 >::getValue(a005), Impl_getValue<A006 >::getValue(a006), Impl_getValue<A007 >::getValue(a007), Impl_getValue<A008 >::getValue(a008), Impl_getValue<A009 >::getValue(a009), Impl_getValue<A010 >::getValue(a010), Impl_getValue<A011 >::getValue(a011), Impl_getValue<A012 >::getValue(a012), Impl_getValue<A013 >::getValue(a013), Impl_getValue<A014 >::getValue(a014), Impl_getValue<A015 >::getValue(a015), Impl_getValue<A016 >::getValue(a016), Impl_getValue<A017 >::getValue(a017), Impl_getValue<A018 >::getValue(a018));
-}
-template <class A001, class A002, class A003, class A004, class A005, class A006, class A007, class A008, class A009, class A010, class A011, class A012, class A013, class A014, class A015, class A016, class A017, class A018, class A019>
-inline void sprintfOver(char * str, const char * format, const A001 &a001, const A002 &a002, const A003 &a003, const A004 &a004, const A005 &a005, const A006 &a006, const A007 &a007, const A008 &a008, const A009 &a009, const A010 &a010, const A011 &a011, const A012 &a012, const A013 &a013, const A014 &a014, const A015 &a015, const A016 &a016, const A017 &a017, const A018 &a018, const A019 &a019) {
-  sprintf(str, format, Impl_getValue<A001 >::getValue(a001), Impl_getValue<A002 >::getValue(a002), Impl_getValue<A003 >::getValue(a003), Impl_getValue<A004 >::getValue(a004), Impl_getValue<A005 >::getValue(a005), Impl_getValue<A006 >::getValue(a006), Impl_getValue<A007 >::getValue(a007), Impl_getValue<A008 >::getValue(a008), Impl_getValue<A009 >::getValue(a009), Impl_getValue<A010 >::getValue(a010), Impl_getValue<A011 >::getValue(a011), Impl_getValue<A012 >::getValue(a012), Impl_getValue<A013 >::getValue(a013), Impl_getValue<A014 >::getValue(a014), Impl_getValue<A015 >::getValue(a015), Impl_getValue<A016 >::getValue(a016), Impl_getValue<A017 >::getValue(a017), Impl_getValue<A018 >::getValue(a018), Impl_getValue<A019 >::getValue(a019));
-}
-template <class A001, class A002, class A003, class A004, class A005, class A006, class A007, class A008, class A009, class A010, class A011, class A012, class A013, class A014, class A015, class A016, class A017, class A018, class A019, class A020>
-inline void sprintfOver(char * str, const char * format, const A001 &a001, const A002 &a002, const A003 &a003, const A004 &a004, const A005 &a005, const A006 &a006, const A007 &a007, const A008 &a008, const A009 &a009, const A010 &a010, const A011 &a011, const A012 &a012, const A013 &a013, const A014 &a014, const A015 &a015, const A016 &a016, const A017 &a017, const A018 &a018, const A019 &a019, const A020 &a020) {
-  sprintf(str, format, Impl_getValue<A001 >::getValue(a001), Impl_getValue<A002 >::getValue(a002), Impl_getValue<A003 >::getValue(a003), Impl_getValue<A004 >::getValue(a004), Impl_getValue<A005 >::getValue(a005), Impl_getValue<A006 >::getValue(a006), Impl_getValue<A007 >::getValue(a007), Impl_getValue<A008 >::getValue(a008), Impl_getValue<A009 >::getValue(a009), Impl_getValue<A010 >::getValue(a010), Impl_getValue<A011 >::getValue(a011), Impl_getValue<A012 >::getValue(a012), Impl_getValue<A013 >::getValue(a013), Impl_getValue<A014 >::getValue(a014), Impl_getValue<A015 >::getValue(a015), Impl_getValue<A016 >::getValue(a016), Impl_getValue<A017 >::getValue(a017), Impl_getValue<A018 >::getValue(a018), Impl_getValue<A019 >::getValue(a019), Impl_getValue<A020 >::getValue(a020));
-}
-template <class A001, class A002, class A003, class A004, class A005, class A006, class A007, class A008, class A009, class A010, class A011, class A012, class A013, class A014, class A015, class A016, class A017, class A018, class A019, class A020, class A021>
-inline void sprintfOver(char * str, const char * format, const A001 &a001, const A002 &a002, const A003 &a003, const A004 &a004, const A005 &a005, const A006 &a006, const A007 &a007, const A008 &a008, const A009 &a009, const A010 &a010, const A011 &a011, const A012 &a012, const A013 &a013, const A014 &a014, const A015 &a015, const A016 &a016, const A017 &a017, const A018 &a018, const A019 &a019, const A020 &a020, const A021 &a021) {
-  sprintf(str, format, Impl_getValue<A001 >::getValue(a001), Impl_getValue<A002 >::getValue(a002), Impl_getValue<A003 >::getValue(a003), Impl_getValue<A004 >::getValue(a004), Impl_getValue<A005 >::getValue(a005), Impl_getValue<A006 >::getValue(a006), Impl_getValue<A007 >::getValue(a007), Impl_getValue<A008 >::getValue(a008), Impl_getValue<A009 >::getValue(a009), Impl_getValue<A010 >::getValue(a010), Impl_getValue<A011 >::getValue(a011), Impl_getValue<A012 >::getValue(a012), Impl_getValue<A013 >::getValue(a013), Impl_getValue<A014 >::getValue(a014), Impl_getValue<A015 >::getValue(a015), Impl_getValue<A016 >::getValue(a016), Impl_getValue<A017 >::getValue(a017), Impl_getValue<A018 >::getValue(a018), Impl_getValue<A019 >::getValue(a019), Impl_getValue<A020 >::getValue(a020), Impl_getValue<A021 >::getValue(a021));
-}
-template <class A001, class A002, class A003, class A004, class A005, class A006, class A007, class A008, class A009, class A010, class A011, class A012, class A013, class A014, class A015, class A016, class A017, class A018, class A019, class A020, class A021, class A022>
-inline void sprintfOver(char * str, const char * format, const A001 &a001, const A002 &a002, const A003 &a003, const A004 &a004, const A005 &a005, const A006 &a006, const A007 &a007, const A008 &a008, const A009 &a009, const A010 &a010, const A011 &a011, const A012 &a012, const A013 &a013, const A014 &a014, const A015 &a015, const A016 &a016, const A017 &a017, const A018 &a018, const A019 &a019, const A020 &a020, const A021 &a021, const A022 &a022) {
-  sprintf(str, format, Impl_getValue<A001 >::getValue(a001), Impl_getValue<A002 >::getValue(a002), Impl_getValue<A003 >::getValue(a003), Impl_getValue<A004 >::getValue(a004), Impl_getValue<A005 >::getValue(a005), Impl_getValue<A006 >::getValue(a006), Impl_getValue<A007 >::getValue(a007), Impl_getValue<A008 >::getValue(a008), Impl_getValue<A009 >::getValue(a009), Impl_getValue<A010 >::getValue(a010), Impl_getValue<A011 >::getValue(a011), Impl_getValue<A012 >::getValue(a012), Impl_getValue<A013 >::getValue(a013), Impl_getValue<A014 >::getValue(a014), Impl_getValue<A015 >::getValue(a015), Impl_getValue<A016 >::getValue(a016), Impl_getValue<A017 >::getValue(a017), Impl_getValue<A018 >::getValue(a018), Impl_getValue<A019 >::getValue(a019), Impl_getValue<A020 >::getValue(a020), Impl_getValue<A021 >::getValue(a021), Impl_getValue<A022 >::getValue(a022));
-}
-template <class A001, class A002, class A003, class A004, class A005, class A006, class A007, class A008, class A009, class A010, class A011, class A012, class A013, class A014, class A015, class A016, class A017, class A018, class A019, class A020, class A021, class A022, class A023>
-inline void sprintfOver(char * str, const char * format, const A001 &a001, const A002 &a002, const A003 &a003, const A004 &a004, const A005 &a005, const A006 &a006, const A007 &a007, const A008 &a008, const A009 &a009, const A010 &a010, const A011 &a011, const A012 &a012, const A013 &a013, const A014 &a014, const A015 &a015, const A016 &a016, const A017 &a017, const A018 &a018, const A019 &a019, const A020 &a020, const A021 &a021, const A022 &a022, const A023 &a023) {
-  sprintf(str, format, Impl_getValue<A001 >::getValue(a001), Impl_getValue<A002 >::getValue(a002), Impl_getValue<A003 >::getValue(a003), Impl_getValue<A004 >::getValue(a004), Impl_getValue<A005 >::getValue(a005), Impl_getValue<A006 >::getValue(a006), Impl_getValue<A007 >::getValue(a007), Impl_getValue<A008 >::getValue(a008), Impl_getValue<A009 >::getValue(a009), Impl_getValue<A010 >::getValue(a010), Impl_getValue<A011 >::getValue(a011), Impl_getValue<A012 >::getValue(a012), Impl_getValue<A013 >::getValue(a013), Impl_getValue<A014 >::getValue(a014), Impl_getValue<A015 >::getValue(a015), Impl_getValue<A016 >::getValue(a016), Impl_getValue<A017 >::getValue(a017), Impl_getValue<A018 >::getValue(a018), Impl_getValue<A019 >::getValue(a019), Impl_getValue<A020 >::getValue(a020), Impl_getValue<A021 >::getValue(a021), Impl_getValue<A022 >::getValue(a022), Impl_getValue<A023 >::getValue(a023));
-}
-template <class A001, class A002, class A003, class A004, class A005, class A006, class A007, class A008, class A009, class A010, class A011, class A012, class A013, class A014, class A015, class A016, class A017, class A018, class A019, class A020, class A021, class A022, class A023, class A024>
-inline void sprintfOver(char * str, const char * format, const A001 &a001, const A002 &a002, const A003 &a003, const A004 &a004, const A005 &a005, const A006 &a006, const A007 &a007, const A008 &a008, const A009 &a009, const A010 &a010, const A011 &a011, const A012 &a012, const A013 &a013, const A014 &a014, const A015 &a015, const A016 &a016, const A017 &a017, const A018 &a018, const A019 &a019, const A020 &a020, const A021 &a021, const A022 &a022, const A023 &a023, const A024 &a024) {
-  sprintf(str, format, Impl_getValue<A001 >::getValue(a001), Impl_getValue<A002 >::getValue(a002), Impl_getValue<A003 >::getValue(a003), Impl_getValue<A004 >::getValue(a004), Impl_getValue<A005 >::getValue(a005), Impl_getValue<A006 >::getValue(a006), Impl_getValue<A007 >::getValue(a007), Impl_getValue<A008 >::getValue(a008), Impl_getValue<A009 >::getValue(a009), Impl_getValue<A010 >::getValue(a010), Impl_getValue<A011 >::getValue(a011), Impl_getValue<A012 >::getValue(a012), Impl_getValue<A013 >::getValue(a013), Impl_getValue<A014 >::getValue(a014), Impl_getValue<A015 >::getValue(a015), Impl_getValue<A016 >::getValue(a016), Impl_getValue<A017 >::getValue(a017), Impl_getValue<A018 >::getValue(a018), Impl_getValue<A019 >::getValue(a019), Impl_getValue<A020 >::getValue(a020), Impl_getValue<A021 >::getValue(a021), Impl_getValue<A022 >::getValue(a022), Impl_getValue<A023 >::getValue(a023), Impl_getValue<A024 >::getValue(a024));
-}
-template <class A001, class A002, class A003, class A004, class A005, class A006, class A007, class A008, class A009, class A010, class A011, class A012, class A013, class A014, class A015, class A016, class A017, class A018, class A019, class A020, class A021, class A022, class A023, class A024, class A025>
-inline void sprintfOver(char * str, const char * format, const A001 &a001, const A002 &a002, const A003 &a003, const A004 &a004, const A005 &a005, const A006 &a006, const A007 &a007, const A008 &a008, const A009 &a009, const A010 &a010, const A011 &a011, const A012 &a012, const A013 &a013, const A014 &a014, const A015 &a015, const A016 &a016, const A017 &a017, const A018 &a018, const A019 &a019, const A020 &a020, const A021 &a021, const A022 &a022, const A023 &a023, const A024 &a024, const A025 &a025) {
-  sprintf(str, format, Impl_getValue<A001 >::getValue(a001), Impl_getValue<A002 >::getValue(a002), Impl_getValue<A003 >::getValue(a003), Impl_getValue<A004 >::getValue(a004), Impl_getValue<A005 >::getValue(a005), Impl_getValue<A006 >::getValue(a006), Impl_getValue<A007 >::getValue(a007), Impl_getValue<A008 >::getValue(a008), Impl_getValue<A009 >::getValue(a009), Impl_getValue<A010 >::getValue(a010), Impl_getValue<A011 >::getValue(a011), Impl_getValue<A012 >::getValue(a012), Impl_getValue<A013 >::getValue(a013), Impl_getValue<A014 >::getValue(a014), Impl_getValue<A015 >::getValue(a015), Impl_getValue<A016 >::getValue(a016), Impl_getValue<A017 >::getValue(a017), Impl_getValue<A018 >::getValue(a018), Impl_getValue<A019 >::getValue(a019), Impl_getValue<A020 >::getValue(a020), Impl_getValue<A021 >::getValue(a021), Impl_getValue<A022 >::getValue(a022), Impl_getValue<A023 >::getValue(a023), Impl_getValue<A024 >::getValue(a024), Impl_getValue<A025 >::getValue(a025));
+inline int sprintfOver(char * str, const char * format, const A001 &a001) {
+  return sprintf(str, format, Impl_getValue<A001 >::getValue(a001));
 }
 
+template <class A001, class A002>
+inline int sprintfOver(char * str, const char * format, const A001 &a001, const A002 &a002) {
+  return sprintf(str, format, Impl_getValue<A001 >::getValue(a001), Impl_getValue<A002 >::getValue(a002));
+}
+
+template <class A001, class A002, class A003>
+inline int sprintfOver(char * str, const char * format, const A001 &a001, const A002 &a002, const A003 &a003) {
+  return sprintf(str, format, Impl_getValue<A001 >::getValue(a001), Impl_getValue<A002 >::getValue(a002), Impl_getValue<A003 >::getValue(a003));
+}
+
+template <class A001, class A002, class A003, class A004>
+inline int sprintfOver(char * str, const char * format, const A001 &a001, const A002 &a002, const A003 &a003, const A004 &a004) {
+  return sprintf(str, format, Impl_getValue<A001 >::getValue(a001), Impl_getValue<A002 >::getValue(a002), Impl_getValue<A003 >::getValue(a003), Impl_getValue<A004 >::getValue(a004));
+}
+
+template <class A001, class A002, class A003, class A004, class A005>
+inline int sprintfOver(char * str, const char * format, const A001 &a001, const A002 &a002, const A003 &a003, const A004 &a004, const A005 &a005) {
+  return sprintf(str, format, Impl_getValue<A001 >::getValue(a001), Impl_getValue<A002 >::getValue(a002), Impl_getValue<A003 >::getValue(a003), Impl_getValue<A004 >::getValue(a004), Impl_getValue<A005 >::getValue(a005));
+}
+
+template <class A001, class A002, class A003, class A004, class A005, class A006>
+inline int sprintfOver(char * str, const char * format, const A001 &a001, const A002 &a002, const A003 &a003, const A004 &a004, const A005 &a005, const A006 &a006) {
+  return sprintf(str, format, Impl_getValue<A001 >::getValue(a001), Impl_getValue<A002 >::getValue(a002), Impl_getValue<A003 >::getValue(a003), Impl_getValue<A004 >::getValue(a004), Impl_getValue<A005 >::getValue(a005), Impl_getValue<A006 >::getValue(a006));
+}
+
+template <class A001, class A002, class A003, class A004, class A005, class A006, class A007>
+inline int sprintfOver(char * str, const char * format, const A001 &a001, const A002 &a002, const A003 &a003, const A004 &a004, const A005 &a005, const A006 &a006, const A007 &a007) {
+  return sprintf(str, format, Impl_getValue<A001 >::getValue(a001), Impl_getValue<A002 >::getValue(a002), Impl_getValue<A003 >::getValue(a003), Impl_getValue<A004 >::getValue(a004), Impl_getValue<A005 >::getValue(a005), Impl_getValue<A006 >::getValue(a006), Impl_getValue<A007 >::getValue(a007));
+}
+
+template <class A001, class A002, class A003, class A004, class A005, class A006, class A007, class A008>
+inline int sprintfOver(char * str, const char * format, const A001 &a001, const A002 &a002, const A003 &a003, const A004 &a004, const A005 &a005, const A006 &a006, const A007 &a007, const A008 &a008) {
+  return sprintf(str, format, Impl_getValue<A001 >::getValue(a001), Impl_getValue<A002 >::getValue(a002), Impl_getValue<A003 >::getValue(a003), Impl_getValue<A004 >::getValue(a004), Impl_getValue<A005 >::getValue(a005), Impl_getValue<A006 >::getValue(a006), Impl_getValue<A007 >::getValue(a007), Impl_getValue<A008 >::getValue(a008));
+}
+
+template <class A001, class A002, class A003, class A004, class A005, class A006, class A007, class A008, class A009>
+inline int sprintfOver(char * str, const char * format, const A001 &a001, const A002 &a002, const A003 &a003, const A004 &a004, const A005 &a005, const A006 &a006, const A007 &a007, const A008 &a008, const A009 &a009) {
+  return sprintf(str, format, Impl_getValue<A001 >::getValue(a001), Impl_getValue<A002 >::getValue(a002), Impl_getValue<A003 >::getValue(a003), Impl_getValue<A004 >::getValue(a004), Impl_getValue<A005 >::getValue(a005), Impl_getValue<A006 >::getValue(a006), Impl_getValue<A007 >::getValue(a007), Impl_getValue<A008 >::getValue(a008), Impl_getValue<A009 >::getValue(a009));
+}
+
+template <class A001, class A002, class A003, class A004, class A005, class A006, class A007, class A008, class A009, class A010>
+inline int sprintfOver(char * str, const char * format, const A001 &a001, const A002 &a002, const A003 &a003, const A004 &a004, const A005 &a005, const A006 &a006, const A007 &a007, const A008 &a008, const A009 &a009, const A010 &a010) {
+  return sprintf(str, format, Impl_getValue<A001 >::getValue(a001), Impl_getValue<A002 >::getValue(a002), Impl_getValue<A003 >::getValue(a003), Impl_getValue<A004 >::getValue(a004), Impl_getValue<A005 >::getValue(a005), Impl_getValue<A006 >::getValue(a006), Impl_getValue<A007 >::getValue(a007), Impl_getValue<A008 >::getValue(a008), Impl_getValue<A009 >::getValue(a009), Impl_getValue<A010 >::getValue(a010));
+}
+
+template <class A001, class A002, class A003, class A004, class A005, class A006, class A007, class A008, class A009, class A010, class A011>
+inline int sprintfOver(char * str, const char * format, const A001 &a001, const A002 &a002, const A003 &a003, const A004 &a004, const A005 &a005, const A006 &a006, const A007 &a007, const A008 &a008, const A009 &a009, const A010 &a010, const A011 &a011) {
+  return sprintf(str, format, Impl_getValue<A001 >::getValue(a001), Impl_getValue<A002 >::getValue(a002), Impl_getValue<A003 >::getValue(a003), Impl_getValue<A004 >::getValue(a004), Impl_getValue<A005 >::getValue(a005), Impl_getValue<A006 >::getValue(a006), Impl_getValue<A007 >::getValue(a007), Impl_getValue<A008 >::getValue(a008), Impl_getValue<A009 >::getValue(a009), Impl_getValue<A010 >::getValue(a010), Impl_getValue<A011 >::getValue(a011));
+}
+
+template <class A001, class A002, class A003, class A004, class A005, class A006, class A007, class A008, class A009, class A010, class A011, class A012>
+inline int sprintfOver(char * str, const char * format, const A001 &a001, const A002 &a002, const A003 &a003, const A004 &a004, const A005 &a005, const A006 &a006, const A007 &a007, const A008 &a008, const A009 &a009, const A010 &a010, const A011 &a011, const A012 &a012) {
+  return sprintf(str, format, Impl_getValue<A001 >::getValue(a001), Impl_getValue<A002 >::getValue(a002), Impl_getValue<A003 >::getValue(a003), Impl_getValue<A004 >::getValue(a004), Impl_getValue<A005 >::getValue(a005), Impl_getValue<A006 >::getValue(a006), Impl_getValue<A007 >::getValue(a007), Impl_getValue<A008 >::getValue(a008), Impl_getValue<A009 >::getValue(a009), Impl_getValue<A010 >::getValue(a010), Impl_getValue<A011 >::getValue(a011), Impl_getValue<A012 >::getValue(a012));
+}
+
+template <class A001, class A002, class A003, class A004, class A005, class A006, class A007, class A008, class A009, class A010, class A011, class A012, class A013>
+inline int sprintfOver(char * str, const char * format, const A001 &a001, const A002 &a002, const A003 &a003, const A004 &a004, const A005 &a005, const A006 &a006, const A007 &a007, const A008 &a008, const A009 &a009, const A010 &a010, const A011 &a011, const A012 &a012, const A013 &a013) {
+  return sprintf(str, format, Impl_getValue<A001 >::getValue(a001), Impl_getValue<A002 >::getValue(a002), Impl_getValue<A003 >::getValue(a003), Impl_getValue<A004 >::getValue(a004), Impl_getValue<A005 >::getValue(a005), Impl_getValue<A006 >::getValue(a006), Impl_getValue<A007 >::getValue(a007), Impl_getValue<A008 >::getValue(a008), Impl_getValue<A009 >::getValue(a009), Impl_getValue<A010 >::getValue(a010), Impl_getValue<A011 >::getValue(a011), Impl_getValue<A012 >::getValue(a012), Impl_getValue<A013 >::getValue(a013));
+}
+
+template <class A001, class A002, class A003, class A004, class A005, class A006, class A007, class A008, class A009, class A010, class A011, class A012, class A013, class A014>
+inline int sprintfOver(char * str, const char * format, const A001 &a001, const A002 &a002, const A003 &a003, const A004 &a004, const A005 &a005, const A006 &a006, const A007 &a007, const A008 &a008, const A009 &a009, const A010 &a010, const A011 &a011, const A012 &a012, const A013 &a013, const A014 &a014) {
+  return sprintf(str, format, Impl_getValue<A001 >::getValue(a001), Impl_getValue<A002 >::getValue(a002), Impl_getValue<A003 >::getValue(a003), Impl_getValue<A004 >::getValue(a004), Impl_getValue<A005 >::getValue(a005), Impl_getValue<A006 >::getValue(a006), Impl_getValue<A007 >::getValue(a007), Impl_getValue<A008 >::getValue(a008), Impl_getValue<A009 >::getValue(a009), Impl_getValue<A010 >::getValue(a010), Impl_getValue<A011 >::getValue(a011), Impl_getValue<A012 >::getValue(a012), Impl_getValue<A013 >::getValue(a013), Impl_getValue<A014 >::getValue(a014));
+}
+#endif
 
 #if defined COMPLEX_TYPE
 #include "datatypes/complex_structure.inl"

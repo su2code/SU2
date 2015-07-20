@@ -44,7 +44,9 @@
 /* --- Depending on the datatype used, the correct MPI wrapper class is defined.
  * For the default (double type) case this results in using the normal MPI routines. --- */
 
-#if defined COMPLEX_TYPE  || defined ADOLC_FORWARD_TYPE || defined CODI_FORWARD_TYPE
+#if defined COMPLEX_TYPE  || \
+    defined ADOLC_FORWARD_TYPE || \
+    defined CODI_FORWARD_TYPE
 class CAuxMPIWrapper;
 typedef CAuxMPIWrapper SU2_MPI;
 #elif defined CODI_REVERSE_TYPE
@@ -117,7 +119,10 @@ protected:
  * \author T. Albring
  * \version 4.0.0 "Cardinal"
  */
-#if defined COMPLEX_TYPE || defined ADOLC_FORWARD_TYPE || defined CODI_FORWARD_TYPE
+#if defined COMPLEX_TYPE || \
+    defined ADOLC_FORWARD_TYPE || \
+    defined CODI_FORWARD_TYPE
+
 class CAuxMPIWrapper : public CMPIWrapper{
 public:
   static void Isend(void *buf, int count, MPI_Datatype datatype, int dest,
