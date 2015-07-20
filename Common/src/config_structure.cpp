@@ -3136,8 +3136,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if (DirectDiff != NO_DERIVATIVE){
 #if !defined COMPLEX_TYPE && !defined ADOLC_FORWARD_TYPE && !defined CODI_FORWARD_TYPE
       if (Kind_SU2 == SU2_CFD){
-        cout << "SU2_CFD: DIRECT_DIFF=YES requires forward or complex mode support!" << endl;
-        cout << "Please use or compile correct executables." << endl;
+        cout << "SU2_CFD: Config option DIRECT_DIFF= YES requires AD or complex support!" << endl;
+        cout << "Please use SU2_CFD_DIRECTDIFF (configuration/compilation is done using the preconfigure.py script)." << endl;
+        exit(EXIT_FAILURE);
         exit(EXIT_FAILURE);
       }
 #endif
@@ -3167,8 +3168,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if (DiscreteAdjoint){
 #if !defined ADOLC_REVERSE_TYPE && !defined CODI_REVERSE_TYPE
     if (Kind_SU2 == SU2_CFD){
-      cout << "SU2_CFD: MATH_PROBLEM= DISC_ADJOINT requires reverse mode support!" << endl;
-      cout << "Please use or compile correct executable." << endl;
+      cout << "SU2_CFD: Config option MATH_PROBLEM= DISCRETE_ADJOINT requires AD support!" << endl;
+      cout << "Please use SU2_CFD_REVERSE (configuration/compilation is done using the preconfigure.py script)." << endl;
       exit(EXIT_FAILURE);
     }
 #endif
@@ -3640,8 +3641,13 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 	if (FSI_Problem){
 	   cout << "Fluid-Structure Interaction." << endl;
 	}
+
+  if (DiscreteAdjoint){
+     cout <<"Discrete Adjoint equations using Algorithmic Differentiation " << endl;
+     cout <<"based on the physical case: ";
+  }
     switch (Kind_Solver) {
-      case EULER:
+      case EULER: case DISC_ADJ_EULER:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible Euler equations." << endl;
         if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible Euler equations." << endl;
         if (Kind_Regime == FREESURFACE) {
@@ -3650,7 +3656,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           cout << "The free surface is located at: " << FreeSurface_Zero <<", and its thickness is: " << FreeSurface_Thickness << "." << endl;
         }
         break;
-      case NAVIER_STOKES:
+      case NAVIER_STOKES: case DISC_ADJ_NAVIER_STOKES:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible Laminar Navier-Stokes' equations." << endl;
         if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible Laminar Navier-Stokes' equations." << endl;
         if (Kind_Regime == FREESURFACE) {
@@ -3659,7 +3665,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           cout << "The free surface is located at: " << FreeSurface_Zero <<", and its thickness is: " << FreeSurface_Thickness << "." << endl;
         }
         break;
-      case RANS:
+      case RANS: case DISC_ADJ_RANS:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible RANS equations." << endl;
         if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible RANS equations." << endl;
         if (Kind_Regime == FREESURFACE) {
@@ -4026,7 +4032,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
 		if (SmoothNumGrid) cout << "There are some smoothing iterations on the grid coordinates." << endl;
 
-		if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+    if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
+         (Kind_Solver == DISC_ADJ_EULER) || (Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) ) {
 
       if (Kind_ConvNumScheme_Flow == SPACE_CENTERED) {
         if (Kind_Centered_Flow == JST) {
@@ -4076,7 +4083,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
 		}
 
-    if (Kind_Solver == RANS) {
+    if ((Kind_Solver == RANS) || (Kind_Solver == DISC_ADJ_RANS)) {
       if (Kind_ConvNumScheme_Turb == SPACE_UPWIND) {
         if (Kind_Upwind_Turb == SCALAR_UPWIND) cout << "Scalar upwind solver (first order) for the turbulence model."<< endl;
         switch (SpatialOrder_Turb) {
@@ -4278,7 +4285,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     }
 
-    if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+    if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
+        (Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS)) {
         cout << "Average of gradients with correction (viscous flow terms)." << endl;
     }
 
@@ -4290,7 +4298,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       cout << "Average of gradients with correction (viscous adjoint terms)." << endl;
     }
 
-    if (Kind_Solver == RANS) {
+    if ((Kind_Solver == RANS) || (Kind_Solver == DISC_ADJ_RANS)) {
       cout << "Average of gradients with correction (viscous turbulence terms)." << endl;
     }
 
@@ -4343,7 +4351,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		}
 	}
 
-    if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+    if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
+        (Kind_Solver == DISC_ADJ_EULER) || (Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS)) {
       switch (Kind_TimeIntScheme_Flow) {
         case RUNGE_KUTTA_EXPLICIT:
           cout << "Runge-Kutta explicit method for the flow equations." << endl;
@@ -4511,7 +4520,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     }
 
-    if (Kind_Solver == RANS)
+    if ((Kind_Solver == RANS) || (Kind_Solver == DISC_ADJ_RANS))
       if (Kind_TimeIntScheme_Turb == EULER_IMPLICIT)
         cout << "Euler implicit time integration for the turbulence model." << endl;
   }
@@ -4523,7 +4532,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     cout << "Maximum number of iterations: " << nExtIter <<"."<< endl;
 
     if (ConvCriteria == CAUCHY) {
-      if (!Adjoint && !Linearized)
+      if (!Adjoint && !Linearized && !DiscreteAdjoint)
         switch (Cauchy_Func_Flow) {
           case LIFT_COEFFICIENT: cout << "Cauchy criteria for Lift using "
             << Cauchy_Elems << " elements and epsilon " <<Cauchy_Eps<< "."<< endl; break;
@@ -4531,7 +4540,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
             << Cauchy_Elems << " elements and epsilon " <<Cauchy_Eps<< "."<< endl; break;
         }
 
-      if (Adjoint)
+      if (Adjoint || DiscreteAdjoint)
         switch (Cauchy_Func_AdjFlow) {
           case SENS_GEOMETRY: cout << "Cauchy criteria for geo. sensitivity using "
             << Cauchy_Elems << " elements and epsilon " <<Cauchy_Eps<< "."<< endl; break;
@@ -4553,13 +4562,13 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
 
     if (ConvCriteria == RESIDUAL) {
-      if (!Adjoint && !Linearized) {
+      if (!Adjoint && !Linearized && !DiscreteAdjoint) {
         cout << "Reduce the density residual " << OrderMagResidual << " orders of magnitude."<< endl;
         cout << "The minimum bound for the density residual is 10^(" << MinLogResidual<< ")."<< endl;
         cout << "Start convergence criteria at iteration " << StartConv_Iter<< "."<< endl;
       }
 
-      if (Adjoint) {
+      if (Adjoint || DiscreteAdjoint) {
         cout << "Reduce the adjoint density residual " << OrderMagResidual << " orders of magnitude."<< endl;
         cout << "The minimum value for the adjoint density residual is 10^(" << MinLogResidual<< ")."<< endl;
       }
@@ -4633,7 +4642,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     cout << "Forces breakdown file name: " << Breakdown_FileName << "." << endl;
 
     if ((Kind_Solver != LINEAR_ELASTICITY) && (Kind_Solver != HEAT_EQUATION) && (Kind_Solver != WAVE_EQUATION)) {
-      if (!Linearized && !Adjoint) {
+      if (!Linearized && !Adjoint && !DiscreteAdjoint) {
         cout << "Surface flow coefficients file name: " << SurfFlowCoeff_FileName << "." << endl;
         cout << "Flow variables file name: " << Flow_FileName << "." << endl;
         cout << "Restart flow file name: " << Restart_FlowFileName << "." << endl;
@@ -4646,7 +4655,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         cout << "Surface linearized coefficients file name: " << SurfLinCoeff_FileName << "." << endl;
       }
 
-      if (Adjoint) {
+      if (Adjoint || DiscreteAdjoint) {
         cout << "Adjoint solution file name: " << Solution_AdjFileName << "." << endl;
         cout << "Restart adjoint file name: " << Restart_AdjFileName << "." << endl;
         cout << "Adjoint variables file name: " << Adj_FileName << "." << endl;
