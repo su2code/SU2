@@ -82,6 +82,10 @@ namespace AD{
   }
 }
 
+/* --- Object for the definition of getValue used in the printfOver definition.
+ * Necessary for cases where the argument of sprintfOver is an expression, e.g:
+ * SPRINTF("Residual: %d", log10(Residual)) ---*/
+
 template<class A> struct Impl_getValue<codi::Expression<double, A> > {
   typedef double OUT;
   static inline OUT getValue(const codi::Expression<double, A> &value) {

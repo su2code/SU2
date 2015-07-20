@@ -29,7 +29,7 @@ AC_DEFUN([CONFIGURE_ADOLC],
 
         if test "$build_ADOLC_FORWARD" == "yes"
         then
-           DIRECTDIFF_CXX="-std=c++11 -DADOLC_FORWARD_TYPE "$ADOLC_CFLAGS""
+           DIRECTDIFF_CXX="-std=gnu++11 -DADOLC_FORWARD_TYPE "$ADOLC_CFLAGS""
            DIRECTDIFF_LIBS=$ADOLC_LIBS
            build_DIRECTDIFF=yes
            build_NORMAL=no
