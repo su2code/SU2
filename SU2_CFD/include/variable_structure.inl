@@ -47,7 +47,7 @@ inline void CVariable::SetStress(unsigned short iVar, unsigned short jVar, doubl
 
 inline void CVariable::AddStress(unsigned short iVar, unsigned short jVar, double val_stress) { }
 
-inline double **CVariable::GetStress(void) { return 0; }
+inline double **CVariable::GetStress(void) { return NULL; }
 
 inline void CVariable::SetVonMises_Stress(double val_stress) { }
 
@@ -867,6 +867,8 @@ inline void CFEAVariable::Initialize_Connectivity(void) { nAttachedElements = 0;
 inline void CFEAVariable::Upgrade_Connectivity(void) { nAttachedElements += 1; }
 
 inline unsigned short CFEAVariable::Get_Connectivity(void) { return nAttachedElements; }
+
+inline double **CFEM_LElasVariable::GetStress(void) { return Stress; }
 
 inline void CFEABoundVariable::SetTraction(unsigned short iVar, unsigned short jVar, double val_traction) { Traction[iVar][jVar] = val_traction; }
 

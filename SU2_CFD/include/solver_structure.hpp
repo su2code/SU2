@@ -45,6 +45,8 @@
 #include <stdio.h>
 
 #include "fluid_model.hpp"
+#include "gauss_structure.hpp"
+#include "element_structure.hpp"
 #include "numerics_structure.hpp"
 #include "variable_structure.hpp"
 #include "../../Common/include/geometry_structure.hpp"
@@ -6491,6 +6493,65 @@ public:
 	void SetWAitken_Dyn_tn1(double waitk_tn1);
 
     
+};
+
+/*! \class CFEM_ElasticitySolver
+ *  \brief Main class for defining a FEM solver for elastic structural problems.
+ *  \author R. Sanchez.
+ *  \version 4.0.0 "Cardinal"
+ *  \date July 10, 2015.
+ */
+class CFEM_ElasticitySolver : public CSolver {
+private:
+
+	unsigned long nElement;
+	unsigned short nMarker;
+
+	double *GradN_X,
+	*GradN_x;
+
+public:
+
+	CElement** element_container; 	/*!< \brief Vector which the define the finite element structure for each problem. */
+
+	/*!
+	 * \brief Constructor of the class.
+	 */
+	CFEM_ElasticitySolver(void);
+
+	/*!
+	 * \overload
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CFEM_ElasticitySolver(CGeometry *geometry, CConfig *config);
+
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CFEM_ElasticitySolver(void);
+
+	/*!
+	 * \brief Set residuals to zero.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+     * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+	 */
+	void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, CNumerics **numerics, unsigned short iMesh, unsigned long Iteration, unsigned short RunTime_EqSystem, bool Output);
+
+	/*!
+	 * \brief Compute the time step for solving the FEM equations.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] iMesh - Index of the mesh in multigrid computations.
+	 * \param[in] Iteration - Index of the current iteration.
+	 */
+	void SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+                      unsigned short iMesh, unsigned long Iteration);
+
 };
 
 /*!

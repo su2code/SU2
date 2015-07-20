@@ -1879,6 +1879,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     case WAVE_EQUATION: FirstIndex = WAVE_SOL; SecondIndex = NONE; ThirdIndex = NONE; break;
     case HEAT_EQUATION: FirstIndex = HEAT_SOL; SecondIndex = NONE; ThirdIndex = NONE; break;
     case LINEAR_ELASTICITY: FirstIndex = FEA_SOL; SecondIndex = NONE; ThirdIndex = NONE; break;
+    case FEM_ELASTICITY: FirstIndex = FEA_SOL; SecondIndex = NONE; ThirdIndex = NONE; break;
     case ADJ_EULER : case ADJ_NAVIER_STOKES : FirstIndex = ADJFLOW_SOL; SecondIndex = NONE; ThirdIndex = NONE; break;
     case ADJ_TNE2_EULER : case ADJ_TNE2_NAVIER_STOKES : FirstIndex = ADJTNE2_SOL; SecondIndex = NONE; ThirdIndex = NONE; break;
     case ADJ_RANS : FirstIndex = ADJFLOW_SOL; if (config->GetFrozen_Visc()) SecondIndex = NONE; else SecondIndex = ADJTURB_SOL; ThirdIndex = NONE; break;
@@ -1965,7 +1966,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       iVar_Sens   = nVar_Total; nVar_Total += 2;
     }
     
-    if (Kind_Solver == LINEAR_ELASTICITY) {
+    if ((Kind_Solver == LINEAR_ELASTICITY) || (Kind_Solver == FEM_ELASTICITY))  {
       iVar_FEA_Stress  = nVar_Total; nVar_Total += 3;
 	  if (geometry->GetnDim() == 3) {iVar_FEA_Stress_3D = nVar_Total; nVar_Total += 3;}
       iVar_FEA_Extra = nVar_Total; nVar_Total += 2;
@@ -3146,7 +3147,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
 
     /*--- Communicate the Linear elasticity stresses (2D) ---*/
 
-    if (Kind_Solver == LINEAR_ELASTICITY) {
+    if ((Kind_Solver == LINEAR_ELASTICITY) || (Kind_Solver == FEM_ELASTICITY)) {
       
       /*--- Loop over this partition to collect the current variable ---*/
       
@@ -3207,7 +3208,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     
     /*--- Communicate the Linear elasticity stresses (3D) ---*/    
     
-    if ((Kind_Solver == LINEAR_ELASTICITY) && (geometry->GetnDim() == 3)) {
+    if (((Kind_Solver == LINEAR_ELASTICITY) || (Kind_Solver == FEM_ELASTICITY)) && (geometry->GetnDim() == 3)) {
       
       /*--- Loop over this partition to collect the current variable ---*/
       
@@ -3270,7 +3271,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     
     /*--- Communicate the Linear elasticity ---*/
     
-    if ( Kind_Solver == LINEAR_ELASTICITY ) {
+    if (( Kind_Solver == LINEAR_ELASTICITY ) || ( Kind_Solver == FEM_ELASTICITY )) {
       
       /*--- Loop over this partition to collect the current variable ---*/
       jPoint = 0;
@@ -3680,7 +3681,7 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
   }
   
   for (iVar = 0; iVar < nVar_Consv; iVar++) {
-	if ( Kind_Solver == LINEAR_ELASTICITY )
+	if (( Kind_Solver == LINEAR_ELASTICITY ) || ( Kind_Solver == FEM_ELASTICITY ))
     restart_file << "\t\"Displacement_" << iVar+1<<"\"";
 	else
     restart_file << "\t\"Conservative_" << iVar+1<<"\"";
@@ -3756,11 +3757,11 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
       restart_file << "\t\"Surface_Sensitivity\"\t\"Solution_Sensor\"";
     }
     
-    if ((Kind_Solver == LINEAR_ELASTICITY) && (geometry->GetnDim() == 2)) {
+    if (((Kind_Solver == LINEAR_ELASTICITY) || (Kind_Solver == FEM_ELASTICITY)) && (geometry->GetnDim() == 2)) {
       restart_file << "\t\"Sxx\"\t\"Syy\"\t\"Sxy\"\t\"Von_Mises_Stress\"\t\"Flow_Pressure\"";
     }
 
-    if ((Kind_Solver == LINEAR_ELASTICITY) && (geometry->GetnDim() == 3)) {
+    if (((Kind_Solver == LINEAR_ELASTICITY) || (Kind_Solver == FEM_ELASTICITY)) && (geometry->GetnDim() == 3)) {
       restart_file << "\t\"Sxx\"\t\"Syy\"\t\"Sxy\"\t\"Szz\"\t\"Sxz\"\t\"Syz\"\t\"Von_Mises_Stress\"\t\"Flow_Pressure\"";
     }
     
@@ -4051,6 +4052,11 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
       ConvHist_file[0] << begin << fea_coeff;
       ConvHist_file[0] << fea_resid << end;
       break;
+
+    case FEM_ELASTICITY:
+      ConvHist_file[0] << begin << fea_coeff;
+      ConvHist_file[0] << fea_resid << end;
+      break;
       
   }
   
@@ -4148,6 +4154,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     bool wave = (config[val_iZone]->GetKind_Solver() == WAVE_EQUATION);
     bool heat = (config[val_iZone]->GetKind_Solver() == HEAT_EQUATION);
     bool fea = (config[val_iZone]->GetKind_Solver() == LINEAR_ELASTICITY);
+    bool fem = (config[val_iZone]->GetKind_Solver() == FEM_ELASTICITY);
     bool TNE2 = ((config[val_iZone]->GetKind_Solver() == TNE2_EULER) || (config[val_iZone]->GetKind_Solver() == TNE2_NAVIER_STOKES) ||
                  (config[val_iZone]->GetKind_Solver() == ADJ_TNE2_EULER) || (config[val_iZone]->GetKind_Solver() == ADJ_TNE2_NAVIER_STOKES));
     bool flow = (config[val_iZone]->GetKind_Solver() == EULER) || (config[val_iZone]->GetKind_Solver() == NAVIER_STOKES) ||
@@ -4218,6 +4225,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     if (TNE2) nVar_TNE2 = config[val_iZone]->GetnSpecies()+nDim+2;
     if (wave) nVar_Wave = 2;
     if (fea) nVar_FEA = nDim;
+    if (fem) nVar_FEA = nDim;
     if (heat) nVar_Heat = 1;
     if (freesurface) nVar_LevelSet = 1;
     
@@ -4529,6 +4537,20 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         
         break;
         
+      case FEM_ELASTICITY:
+
+        /*--- FEA coefficients ---*/
+
+        Total_CFEA = solver_container[val_iZone][FinestMesh][FEA_SOL]->GetTotal_CFEA();
+
+        /*--- Plasma Residuals ---*/
+
+        for (iVar = 0; iVar < nVar_FEA; iVar++) {
+          residual_fea[iVar] = solver_container[val_iZone][FinestMesh][FEA_SOL]->GetRes_RMS(iVar);
+        }
+
+        break;
+
     }
     
     /*--- Header frequency ---*/
@@ -4771,6 +4793,13 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             
             break;
             
+          case FEM_ELASTICITY:
+
+            sprintf (direct_coeff, ", %12.10f", Total_CFEA);
+            sprintf (fea_resid, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", log10 (residual_fea[0]), dummy, dummy, dummy, dummy );
+
+            break;
+
         }
       }
       
@@ -4953,6 +4982,14 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             if (nDim == 3) cout << "    Res[Displx]" << "    Res[Disply]" << "    Res[Displz]" << "   CFEA(Total)"<<  endl;
             break;
             
+          case FEM_ELASTICITY :
+            if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
+            else cout << endl << " IntIter" << "  ExtIter";
+
+            if (nDim == 2) cout << "    Res[Displx]" << "    Res[Disply]" << "   CFEM(Total)"<<  endl;
+            if (nDim == 3) cout << "    Res[Displx]" << "    Res[Disply]" << "    Res[Displz]" << "   CFEM(Total)"<<  endl;
+            break;
+
           case ADJ_EULER :              case ADJ_NAVIER_STOKES :
             
             /*--- Visualize the maximum residual ---*/
@@ -5257,6 +5294,24 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           cout << endl;
           break;
           
+        case FEM_ELASTICITY:
+
+          if (!DualTime_Iteration) {
+            ConvHist_file[0] << begin << fea_coeff << fea_resid << end;
+            ConvHist_file[0].flush();
+          }
+
+          cout.precision(6);
+          cout.setf(ios::fixed, ios::floatfield);
+          cout.width(15); cout << log10(residual_fea[0]);
+          cout.width(15); cout << log10(residual_fea[1]);
+          if (nDim == 3) { cout.width(15); cout << log10(residual_fea[2]); }
+          cout.precision(4);
+          cout.setf(ios::scientific, ios::floatfield);
+          cout.width(14); cout << Total_CFEA;
+          cout << endl;
+          break;
+
         case ADJ_EULER :              case ADJ_NAVIER_STOKES :
           
           if (!DualTime_Iteration) {

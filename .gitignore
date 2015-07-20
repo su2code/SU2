@@ -45,3 +45,4 @@ log_make.txt
 log_make_install.txt
 SU2_FSI/bin/SU2_FSI
 SU2_FEM
+discardMod.sh

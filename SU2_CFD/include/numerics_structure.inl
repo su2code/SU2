@@ -55,6 +55,24 @@ inline void CNumerics::PressInt_Linear(double CoordCorners[4][3], double *tn_e, 
 
 inline void CNumerics::ViscTermInt_Linear(double CoordCorners[2][2], double Tau_0[3][3], double Tau_1[3][3], double FviscNodal[4]) { }
 
+inline void CNumerics::Compute_Tangent_Matrix(CElement *element_container){ }
+
+inline void CFEM_Elasticity::Compute_Tangent_Matrix(CElement *element_container){ }
+
+inline void CNumerics::Compute_Constitutive_Matrix(void){ }
+
+inline void CFEM_Elasticity::Compute_Constitutive_Matrix(void){ }
+
+inline void CFEM_NonlinearElasticity::Compute_Constitutive_Matrix(void){ }
+
+inline void CNumerics::Compute_Stress_Tensor(void){ }
+
+inline void CFEM_Elasticity::Compute_Stress_Tensor(void){ }
+
+inline void CFEM_LinearElasticity::Compute_Stress_Tensor(void){ }
+
+inline void CFEM_NonlinearElasticity::Compute_Stress_Tensor(void){ }
+
 inline void CNumerics::ComputeResidual(double *val_residual, CConfig *config) { }
 
 inline void CNumerics::ComputeResidual(double *val_residual_i, double *val_residual_j) { }

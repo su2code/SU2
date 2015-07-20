@@ -43,6 +43,8 @@
 #include <cstdlib>
 
 #include "../../Common/include/config_structure.hpp"
+#include "gauss_structure.hpp"
+#include "element_structure.hpp"
 #include "numerics_machine_learning.hpp"
 #include "numerics_machine_learning_turbulent.hpp"
 #include "variable_structure.hpp"
@@ -1646,11 +1648,29 @@ void GetViscousProjFlux(double *val_primvar, double **val_gradprimvar,
 	 */
 	virtual void ViscTermInt_Linear(double CoordCorners[2][2], double Tau_0[3][3], double Tau_1[3][3],  double FviscNodal[4]);
 
-  /*!
+	/*!
+	 * \brief A virtual member to compute the tangent matrix in structural problems
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	virtual void Compute_Tangent_Matrix(CElement *element_container);
+
+	/*!
+	 * \brief A virtual member to compute the constitutive matrix in an element for structural problems
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	virtual void Compute_Constitutive_Matrix(void);
+
+	/*!
+	 * \brief A virtual member to compute the stress tensor in an element for structural problems
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	virtual void Compute_Stress_Tensor(void);
+
+	/*!
 	 * \brief Computes a basis of orthogonal vectors from a suppled vector
 	 * \param[in] config - Normal vector
 	 */
-  void CreateBasis(double *val_Normal);
+	void CreateBasis(double *val_Normal);
     
 };
 
@@ -4358,6 +4378,159 @@ public:
 	void SetFEA_DeadLoad3D(double *DeadLoadVector_Elem, double CoordCorners[8][3], unsigned short nNodes, double matDensity);
 
 };
+
+/*!
+ * \class CFEM_Elasticity
+ * \brief Generic class for computing the tangent matrix and the residual for structural problems
+ * \ingroup FEM_Discr
+ * \author R.Sanchez
+ * \version 4.0.0 "Cardinal"
+ */
+class CFEM_Elasticity : public CNumerics {
+
+protected:
+
+	double E;				/*!< \brief Young's modulus of elasticity. */
+	double Nu;			/*!< \brief Poisson's ratio. */
+	double Rho_s;		/*!< \brief Structural density. */
+	double Mu;			/*!< \brief Lame's coeficient. */
+	double Lambda;		/*!< \brief Lame's coeficient. */
+
+	double **Ba_Mat,	 /*!< \brief Matrix B for node a - Auxiliary. */
+	**Bb_Mat;	 		 /*!< \brief Matrix B for node b - Auxiliary. */
+	double **D_Mat;		 /*!< \brief Constitutive matrix - Auxiliary. */
+	double **KAux_ab;	 /*!< \brief Node ab stiffness matrix - Auxiliary. */
+	double **GradNi_Mat;/*!< \brief Gradients of Ni - Auxiliary. */
+
+public:
+
+	/*!
+	 * \brief Constructor of the class.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
+	 * \param[in] val_nVar - Number of variables of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CFEM_Elasticity(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CFEM_Elasticity(void);
+
+
+	virtual void Compute_Tangent_Matrix(CElement *element_container);
+
+	virtual void Compute_Constitutive_Matrix(void);
+
+	virtual void Compute_Stress_Tensor(void);
+
+};
+
+/*!
+ * \class CFEM_LinearElasticity
+ * \brief Class for computing the stiffness matrix of a linear, elastic problem.
+ * \ingroup FEM_Discr
+ * \author R.Sanchez
+ * \version 4.0.0 "Cardinal"
+ */
+class CFEM_LinearElasticity : public CFEM_Elasticity {
+
+public:
+
+	/*!
+	 * \brief Constructor of the class.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
+	 * \param[in] val_nVar - Number of variables of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CFEM_LinearElasticity(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CFEM_LinearElasticity(void);
+
+	void Compute_Tangent_Matrix(CElement *element_container);
+
+	void Compute_Constitutive_Matrix(void);
+
+	virtual void Compute_Stress_Tensor(void);
+
+};
+
+/*!
+ * \class CFEM_LinearElasticity
+ * \brief Class for computing the stiffness matrix of a nonlinear, elastic problem.
+ * \ingroup FEM_Discr
+ * \author R.Sanchez
+ * \version 4.0.0 "Cardinal"
+ */
+class CFEM_NonlinearElasticity : public CFEM_Elasticity {
+
+protected:
+
+	double **F_Mat;	 /*!< \brief Deformation gradient. */
+	double **b_Mat;	 /*!< \brief Left Cauchy-Green Tensor. */
+	double **currentCoord;	 /*!< \brief Current coordinates. */
+	double **Stress_Tensor;			/*!< \brief Cauchy stress tensor */
+
+	double J_F;		 /*!< \brief Jacobian of the transformation (determinant of F) */
+
+public:
+
+	/*!
+	 * \brief Constructor of the class.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
+	 * \param[in] val_nVar - Number of variables of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CFEM_NonlinearElasticity(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CFEM_NonlinearElasticity(void);
+
+	void Compute_Tangent_Matrix(CElement *element_container);
+
+	virtual void Compute_Constitutive_Matrix(void);
+
+	virtual void Compute_Stress_Tensor(void);
+
+
+};
+
+/*!
+ * \class CFEM_NeoHookean
+ * \brief Class for computing the constitutive and stress tensors for a neo-Hookean material model.
+ * \ingroup FEM_Discr
+ * \author R.Sanchez
+ * \version 4.0.0 "Cardinal"
+ */
+class CFEM_NeoHookean_Comp : public CFEM_NonlinearElasticity {
+
+public:
+
+	/*!
+	 * \brief Constructor of the class.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
+	 * \param[in] val_nVar - Number of variables of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CFEM_NeoHookean_Comp(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CFEM_NeoHookean_Comp(void);
+
+	void Compute_Constitutive_Matrix(void);
+
+	void Compute_Stress_Tensor(void);
+
+};
+
+
 
 /*!
  * \class CSourceNothing

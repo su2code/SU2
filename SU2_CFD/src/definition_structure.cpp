@@ -332,7 +332,7 @@ void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry,
   lin_euler, lin_ns,
   tne2_euler, tne2_ns,
   adj_tne2_euler, adj_tne2_ns,
-  poisson, wave, fea, heat,
+  poisson, wave, fea, heat, fem,
   spalart_allmaras, neg_spalart_allmaras, menter_sst, machine_learning, transition,
   template_solver;
   
@@ -346,7 +346,7 @@ void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry,
   spalart_allmaras = false;  menter_sst      = false;   machine_learning = false;
   poisson          = false;  neg_spalart_allmaras = false;
   wave             = false;
-  fea              = false;
+  fea              = false;  fem = false;
   heat             = false;
   transition       = false;
   template_solver  = false;
@@ -364,6 +364,7 @@ void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry,
     case WAVE_EQUATION: wave = true; break;
     case HEAT_EQUATION: heat = true; break;
     case LINEAR_ELASTICITY: fea = true; break;
+    case FEM_ELASTICITY: fem = true; break;
     case ADJ_EULER : euler = true; adj_euler = true; break;
     case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
     case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
@@ -445,6 +446,9 @@ void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry,
     if (fea) {
       solver_container[iMGlevel][FEA_SOL] = new CFEASolver(geometry[iMGlevel], config);
     }
+    if (fem) {
+      solver_container[iMGlevel][FEA_SOL] = new CFEM_ElasticitySolver(geometry[iMGlevel], config);
+    }
     
     /*--- Allocate solution for adjoint problem ---*/
     if (adj_euler) {
@@ -485,7 +489,7 @@ void Integration_Preprocessing(CIntegration **integration_container,
   turbulent, adj_turb,
   tne2_euler, adj_tne2_euler,
   tne2_ns, adj_tne2_ns,
-  poisson, wave, fea, heat, template_solver, transition;
+  poisson, wave, fea, fem, heat, template_solver, transition;
   
   /*--- Initialize some useful booleans ---*/
   euler            = false; adj_euler        = false; lin_euler         = false;
@@ -496,7 +500,7 @@ void Integration_Preprocessing(CIntegration **integration_container,
   poisson          = false;
   wave             = false;
   heat             = false;
-  fea              = false;
+  fea              = false; fem = false;
   transition       = false;
   template_solver  = false;
   
@@ -512,6 +516,7 @@ void Integration_Preprocessing(CIntegration **integration_container,
     case WAVE_EQUATION: wave = true; break;
     case HEAT_EQUATION: heat = true; break;
     case LINEAR_ELASTICITY: fea = true; break;
+    case FEM_ELASTICITY: fem = true; break;
     case ADJ_EULER : euler = true; adj_euler = true; break;
     case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
     case ADJ_TNE2_EULER : tne2_euler = true; adj_tne2_euler = true; break;
@@ -534,6 +539,7 @@ void Integration_Preprocessing(CIntegration **integration_container,
   if (wave) integration_container[WAVE_SOL] = new CSingleGridIntegration(config);
   if (heat) integration_container[HEAT_SOL] = new CSingleGridIntegration(config);
   if (fea) integration_container[FEA_SOL] = new CStructuralIntegration(config);
+  if (fem) integration_container[FEA_SOL] = new CStructuralIntegration(config);
   
   /*--- Allocate solution for adjoint problem ---*/
   if (adj_euler) integration_container[ADJFLOW_SOL] = new CMultiGridIntegration(config);
@@ -568,6 +574,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
   nPrimVarGrad_Adj_TNE2 = 0,
   nVar_Poisson          = 0,
   nVar_FEA              = 0,
+  nVar_FEM				= 0,
   nVar_Wave             = 0,
   nVar_Heat             = 0,
   nVar_Lin_Flow         = 0;
@@ -583,7 +590,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
   spalart_allmaras, neg_spalart_allmaras, menter_sst, machine_learning,
   poisson,
   wave,
-  fea,
+  fea, fem,
   heat,
   transition,
   template_solver;
@@ -598,7 +605,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
   poisson          = false;
   adj_euler        = false;	  adj_ns           = false;	 adj_turb         = false;
   wave             = false;   heat             = false;   fea              = false;   spalart_allmaras = false; neg_spalart_allmaras = false;
-  tne2_euler       = false;   tne2_ns          = false;
+  tne2_euler       = false;   tne2_ns          = false;	fem				= false;
   adj_tne2_euler   = false;	  adj_tne2_ns      = false;
   lin_euler        = false;   menter_sst       = false;    machine_learning = false;
   transition       = false;
@@ -616,6 +623,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
     case WAVE_EQUATION: wave = true; break;
     case HEAT_EQUATION: heat = true; break;
     case LINEAR_ELASTICITY: fea = true; break;
+    case FEM_ELASTICITY: fem = true; break;
     case ADJ_EULER : euler = true; adj_euler = true; break;
     case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
     case ADJ_TNE2_EULER : tne2_euler = true; adj_tne2_euler = true; break;
@@ -654,6 +662,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
   
   if (wave)				nVar_Wave = solver_container[MESH_0][WAVE_SOL]->GetnVar();
   if (fea)				nVar_FEA = solver_container[MESH_0][FEA_SOL]->GetnVar();
+  if (fem)				nVar_FEM = solver_container[MESH_0][FEA_SOL]->GetnVar();
   if (heat)				nVar_Heat = solver_container[MESH_0][HEAT_SOL]->GetnVar();
   
   /*--- Number of variables for adjoint problem ---*/
@@ -1462,4 +1471,12 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
     
   }
   
+  /*--- Solver definition for the FEM problem ---*/
+  if (fem) {
+
+    /*--- Definition of the viscous scheme for each equation and mesh level ---*/
+    numerics_container[MESH_0][FEA_SOL][VISC_TERM] = new CFEM_LinearElasticity(nDim, nVar_FEM, config);
+
+  }
+
 }

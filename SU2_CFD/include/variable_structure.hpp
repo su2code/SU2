@@ -2451,6 +2451,48 @@ public:
 
 };
 
+/*!
+ * \class CFEM_LElasVariable
+ * \brief Main class for defining the variables of the FEM Linear Elastic structural problem.
+ * \ingroup Structural Finite Element Analysis Variables
+ * \author F. Palacios, R. Sanchez.
+ * \version 4.0.0 "Cardinal"
+ */
+class CFEM_LElasVariable : public CVariable {
+protected:
+
+	bool dynamicFEA;			/*!< \brief Bool which determines if the problem is dynamic. */
+
+	double **Stress;  			/*!< \brief Stress tensor. */
+
+public:
+
+	/*!
+	 * \brief Constructor of the class.
+	 */
+  	CFEM_LElasVariable(void);
+
+	/*!
+	 * \overload
+	 * \param[in] val_fea - Values of the fea solution (initialization value).
+	 * \param[in] val_nDim - Number of dimensions of the problem.
+	 * \param[in] val_nvar - Number of variables of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  	CFEM_LElasVariable(double *val_fea, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
+
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CFEM_LElasVariable(void);
+
+	/*!
+	* \brief Get the value of the stress.
+	* \return Value of the stress.
+	*/
+	double **GetStress(void);
+
+};
 
 /*!
  * \class CFEABoundVariable
