@@ -65,7 +65,7 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
       filename = config->GetFlow_FileName();
   }
   
-	if (Kind_Solver == LINEAR_ELASTICITY){
+	if ((Kind_Solver == LINEAR_ELASTICITY) || (Kind_Solver == FEM_ELASTICITY)) {
 		if (surf_sol)
 			filename = config->GetSurfStructure_FileName().c_str();
 		else
@@ -366,7 +366,7 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
     
     for (iVar = 0; iVar < nVar_Consv; iVar++) {
 
-    	if ( Kind_Solver == LINEAR_ELASTICITY )
+    	if ((Kind_Solver == LINEAR_ELASTICITY) || (Kind_Solver == FEM_ELASTICITY))
     		Paraview_File << "\nSCALARS Displacement_" << iVar+1 << " float 1\n";
     	else
     		Paraview_File << "\nSCALARS Conservative_" << iVar+1 << " float 1\n";
@@ -683,7 +683,7 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
       
     }
 
-    if ( Kind_Solver == LINEAR_ELASTICITY ) {
+    if ((Kind_Solver == LINEAR_ELASTICITY) || (Kind_Solver == FEM_ELASTICITY)) {
 
        Paraview_File << "\nSCALARS Sxx float 1\n";
        Paraview_File << "LOOKUP_TABLE default\n";
@@ -819,7 +819,7 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
     }
   }
   
-	if (Kind_Solver == LINEAR_ELASTICITY){
+	if ((Kind_Solver == LINEAR_ELASTICITY) || (Kind_Solver == FEM_ELASTICITY)){
 		if (surf_sol)
 			filename = config->GetSurfStructure_FileName().c_str();
 		else
@@ -1124,7 +1124,7 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
     
     for (iVar = 0; iVar < nVar_Consv; iVar++) {
 
-    	if ( Kind_Solver == LINEAR_ELASTICITY )
+    	if ((Kind_Solver == LINEAR_ELASTICITY) || (Kind_Solver == FEM_ELASTICITY))
     		Paraview_File << "\nSCALARS Displacement_" << iVar+1 << " float 1\n";
     	else
     		Paraview_File << "\nSCALARS Conservative_" << iVar+1 << " float 1\n";
@@ -1442,7 +1442,7 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
     }
     
 
-    if ( Kind_Solver == LINEAR_ELASTICITY ) {
+    if ((Kind_Solver == LINEAR_ELASTICITY) || (Kind_Solver == FEM_ELASTICITY)) {
 
        Paraview_File << "\nSCALARS Sxx float 1\n";
        Paraview_File << "LOOKUP_TABLE default\n";

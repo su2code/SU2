@@ -95,7 +95,7 @@ AC_ARG_ENABLE(CFD,
 	[build_CFD=$enableval], [build_CFD="yes"])
 AC_ARG_ENABLE(FSI,
    	AS_HELP_STRING([--disable-FSI], [build the SU2_FSI executable (default = yes)]),
-	[build_FSI=$enableval], [build_FSI="yes"])	
+	[build_FSI=$enableval], [build_FSI="yes"])
 AC_ARG_ENABLE(DOT,
    	AS_HELP_STRING([--disable-DOT], [build the SU2_DOT executable (default = yes)]),
 	[build_DOT=$enableval], [build_DOT="yes"])

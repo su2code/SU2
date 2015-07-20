@@ -261,7 +261,7 @@ void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_contai
 
   /*--- Fluid time integration schemes ---*/
 
-	if (KindSolver != LINEAR_ELASTICITY){
+	if ((KindSolver != LINEAR_ELASTICITY) && (KindSolver != FEM_ELASTICITY)) {
 
 	  switch (config->GetKind_TimeIntScheme()) {
 		case (RUNGE_KUTTA_EXPLICIT):
@@ -278,7 +278,7 @@ void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_contai
    /*--- Structural time integration schemes ---*/
   
 	}
-	else if (KindSolver == LINEAR_ELASTICITY){
+	else if ((KindSolver == LINEAR_ELASTICITY) || (KindSolver == FEM_ELASTICITY)) {
 
 	  switch (config->GetKind_TimeIntScheme_FEA()) {
 		case (CD_EXPLICIT):

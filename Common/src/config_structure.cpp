@@ -1615,6 +1615,12 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 	nExtIter = 1;
   }
 
+  if (Kind_Solver == FEM_ELASTICITY) {
+    nMGLevels = 0;
+    if (Dynamic_Analysis == STATIC)
+	nExtIter = 1;
+  }
+
   /*--- Decide whether we should be writing unsteady solution files. ---*/
   
   if (Unsteady_Simulation == STEADY ||
@@ -1623,7 +1629,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       Kind_Regime == FREESURFACE) { Wrt_Unsteady = false; }
   else { Wrt_Unsteady = true; }
 
-  if (Kind_Solver == LINEAR_ELASTICITY) {
+  if ((Kind_Solver == LINEAR_ELASTICITY) || (Kind_Solver == FEM_ELASTICITY)) {
 
 	  if (Dynamic_Analysis == STATIC) { Wrt_Dynamic = false; }
 	  else { Wrt_Dynamic = true; }
@@ -3620,6 +3626,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       case WAVE_EQUATION: cout << "Wave equation." << endl; break;
       case HEAT_EQUATION: cout << "Heat equation." << endl; break;
       case LINEAR_ELASTICITY: cout << "Linear elasticity solver." << endl; break;
+      case FEM_ELASTICITY: cout << "Elasticity solver." << endl; break;
       case ADJ_EULER: cout << "Continuous Euler adjoint equations." << endl; break;
       case ADJ_NAVIER_STOKES:
         if (Frozen_Visc)
@@ -3642,7 +3649,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     }
 
-    if ((Kind_Regime == COMPRESSIBLE) && (Kind_Solver != LINEAR_ELASTICITY) &&
+    if ((Kind_Regime == COMPRESSIBLE) && (Kind_Solver != LINEAR_ELASTICITY) && (Kind_Solver != FEM_ELASTICITY) &&
         (Kind_Solver != HEAT_EQUATION) && (Kind_Solver != WAVE_EQUATION)) {
       cout << "Mach number: " << Mach <<"."<< endl;
       cout << "Angle of attack (AoA): " << AoA <<" deg, and angle of sideslip (AoS): " << AoS <<" deg."<< endl;
@@ -4249,7 +4256,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     cout << endl <<"---------------------- Time Numerical Integration -----------------------" << endl;
 
-    if ((Kind_Solver != LINEAR_ELASTICITY)) {
+    if ((Kind_Solver != LINEAR_ELASTICITY) && (Kind_Solver != FEM_ELASTICITY) ) {
 		switch (Unsteady_Simulation) {
 		  case NO:
 			cout << "Local time stepping (steady state simulation)." << endl; break;
@@ -4398,7 +4405,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       cout << "Damping factor for the correction prolongation: " << Damp_Correc_Prolong <<"."<< endl;
     }
 
-    if ((Kind_Solver != LINEAR_ELASTICITY) && (Kind_Solver != HEAT_EQUATION) && (Kind_Solver != WAVE_EQUATION)) {
+    if ((Kind_Solver != LINEAR_ELASTICITY) && (Kind_Solver != FEM_ELASTICITY) && (Kind_Solver != HEAT_EQUATION) && (Kind_Solver != WAVE_EQUATION)) {
 
       if (CFL_AdaptParam[0] == 1.0) cout << "No CFL adaptation." << endl;
       else cout << "CFL adaptation. Factor down: "<< CFL_AdaptParam[0] <<", factor up: "<< CFL_AdaptParam[1]
@@ -4567,7 +4574,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     cout << "Forces breakdown file name: " << Breakdown_FileName << "." << endl;
 
-    if ((Kind_Solver != LINEAR_ELASTICITY) && (Kind_Solver != HEAT_EQUATION) && (Kind_Solver != WAVE_EQUATION)) {
+    if ((Kind_Solver != LINEAR_ELASTICITY) && (Kind_Solver != FEM_ELASTICITY) && (Kind_Solver != HEAT_EQUATION) && (Kind_Solver != WAVE_EQUATION)) {
       if (!Linearized && !Adjoint) {
         cout << "Surface flow coefficients file name: " << SurfFlowCoeff_FileName << "." << endl;
         cout << "Flow variables file name: " << Flow_FileName << "." << endl;
@@ -5850,6 +5857,15 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
       }
       break;
     case LINEAR_ELASTICITY:
+
+      Current_DynTime = static_cast<double>(val_extiter)*Delta_DynTime;
+
+      if (val_system == RUNTIME_FEA_SYS) {
+        SetKind_ConvNumScheme(NONE, NONE, NONE, NONE, NONE);
+        SetKind_TimeIntScheme(Kind_TimeIntScheme_FEA);
+      }
+      break;
+    case FEM_ELASTICITY:
 
       Current_DynTime = static_cast<double>(val_extiter)*Delta_DynTime;
 

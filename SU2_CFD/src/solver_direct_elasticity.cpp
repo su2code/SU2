@@ -523,6 +523,26 @@ void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CSolver **solver_conta
 
     }
 
+	double checkJacobian;
+	unsigned short iNode, jNode;
+
+	ofstream myfile;
+	myfile.open ("oldSolver.txt");
+
+	for (iNode = 0; iNode < nPoint; iNode++){
+		for (jNode = 0; jNode < nPoint; jNode++){
+			myfile << "Node " << iNode << " " << jNode << endl;
+			for (iVar = 0; iVar < nVar; iVar++){
+				for (jVar = 0; jVar < nVar; jVar++){
+					checkJacobian = StiffMatrixSpace.GetBlock(iNode, jNode, iVar, jVar);
+					myfile << checkJacobian << " " ;
+				}
+				myfile << endl;
+			}
+		}
+	}
+	myfile.close();
+
 }
 
 void CFEASolver::Compute_StiffMassMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config) {
