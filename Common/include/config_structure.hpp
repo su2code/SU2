@@ -728,13 +728,14 @@ private:
   bool ExtraOutput;
   bool DeadLoad; 		/*!< Application of dead loads to the FE analysis */
   bool MatchingMesh; 	/*!< Matching mesh (while implementing interpolation procedures). */
-    double Newmark_alpha,			/*!< \brief Parameter alpha for Newmark method. */
-      Newmark_delta;				/*!< \brief Parameter delta for Newmark method. */
-    bool Gradual_Load,		/*!< \brief Apply the load gradually. */
-      Ramp_Load;				/*!< \brief Apply the load with linear increases. */
-    double Ramp_Time;			/*!< \brief Time until the maximum load is applied. */
-    double Static_Time;			/*!< \brief Time while the structure is not loaded in FSI applications. */
-    unsigned short Pred_Order;  /*!< \brief Order of the predictor for FSI applications. */
+  double Newmark_alpha,			/*!< \brief Parameter alpha for Newmark method. */
+  Newmark_delta;				/*!< \brief Parameter delta for Newmark method. */
+  bool Gradual_Load,		/*!< \brief Apply the load gradually. */
+  Ramp_Load;				/*!< \brief Apply the load with linear increases. */
+  double Ramp_Time;			/*!< \brief Time until the maximum load is applied. */
+  double Static_Time;			/*!< \brief Time while the structure is not loaded in FSI applications. */
+  unsigned short Pred_Order;  /*!< \brief Order of the predictor for FSI applications. */
+  unsigned short Kind_Interpolation; /*!\brief type of interpolation to use for FSI applications. */
   unsigned long Nonphys_Points, /*!< \brief Current number of non-physical points in the solution. */
   Nonphys_Reconstr;      /*!< \brief Current number of non-physical reconstructions for 2nd-order upwinding. */
   bool ParMETIS;      /*!< \brief Boolean for activating ParMETIS mode (while testing). */
@@ -5508,6 +5509,10 @@ public:
 	 */
 	unsigned short GetRelaxation_Method_FSI(void);
 
+	/*!
+	 * \brief Get the interpolation method used for matching between zones.
+	 */
+	inline unsigned short GetKindInterpolation(void);
 
 
 };

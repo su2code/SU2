@@ -56,7 +56,8 @@ using namespace std;
  */
 class CInterpolator {
 protected:
-  unsigned short nZone;
+  unsigned int nZone;
+  unsigned short nVar;
   double ***Data; /*!\brief container for some data to be interpolated */
 public:
   CGeometry*** Geometry; /*! \brief Vector which stores n zones of geometry. */
@@ -69,62 +70,75 @@ public:
   /*!
  * \brief Constructor of the class.
  */
-  CInterpolator(CGeometry ***geometry_container, CConfig **config,  unsigned short iZone_0,unsigned short iZone_1, unsigned short nZone);
+  CInterpolator(CGeometry ***geometry_container, CConfig **config,  unsigned int* Zones, unsigned int nZone);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CInterpolator(void);
+  virtual ~CInterpolator(void);
 
   /*!
      * \brief initialize the Data structure to the appropriate size.
      */
-  void InitializeData(unsigned short iZone_0, unsigned short iZone_1, unsigned short nVar);
+  void InitializeData(unsigned int* Zones, unsigned short val_nVar);
 
   /*!
-   * \brief interpolate Data from one mesh to another
+   * \brief interpolate Data from one mesh to another.
+   * The data for zone 0 will be overwritten. transfer coefficients must be defined with Set_TransferCoeff.
+   * \param[in] iZone_0 - zone to recieve interpolated data
+   * \param[in] config
    */
-  void Interpolate_Data(unsigned short iZone_0, unsigned short iZone_1, CConfig **config);
+  void Interpolate_Data(unsigned int iZone,  CConfig **config);
 
   /*!
-   * \brief interpolate deformations from one mesh to another
+   * \brief interpolate deformations from one mesh to another.
+   * Uses information stored by the geometry class, updates values in VarCoord of iZone_0. Set_TransferCoeff must be run first.
+   * \param[in] iZone_0 - zone to recieve interpolated data.
+   * \param[in] config
    */
-  void Interpolate_Deformation(unsigned short iZone_0, unsigned short iZone_1, CConfig **config);
+  void Interpolate_Deformation(unsigned int iZone, CConfig **config);
 
   /*!
    * \brief Set up transfer matrix defining relation between two meshes
+   * \param[in] Zones - list of zones to set up interpolation for. This method must be overwritten in the child classes.
+   * \param[in] config
    */
-  void Set_TransferCoeff(unsigned short iZone_0, unsigned short iZone_1, CConfig **config);
+  virtual void Set_TransferCoeff(unsigned int* Zones, CConfig **config)=0;
 
 
   /*!
    * \brief Return the value of the Data at the specified zone, point, and dimension.
+   * \param[in] iZone - zone index
+   * \param[in] iPoint - point index
+   * \param[in[ iDim - index of the data
    */
-  double GetData(unsigned short iZone, unsigned long iPoint, unsigned short iDim);
+  double GetData(unsigned int iZone, unsigned long iPoint, unsigned short iVar);
 
   /*!
-   * \brief Return the value of the Data vector at the specified zone and point.
+   * \brief Return the pointer to the Data vector at the specified zone and point.
    */
-  double* GetData(unsigned short iZone, unsigned long iPoint);
+  double* GetData(unsigned int iZone, unsigned long iPoint);
 
   /*!
-   * \brief Set the value of the Data at the specified zone, point, and dimension.
+   * \brief Set the value of the Data at the specified zone, point, and index.
    */
-  void SetData(unsigned short iZone, unsigned long iPoint, unsigned short iDim, double val);
+  void SetData(unsigned int iZone, unsigned long iPoint, unsigned short iVar, double val);
 
 
 
 
 };
 
-
+/*!
+ * \brief Nearest Neighbor interpolation
+ */
 class CNearestNeighbor : public CInterpolator {
 public:
 
   /*!
    * \brief Constructor of the class.
    */
-  CNearestNeighbor(CGeometry ***geometry_container, CConfig **config,  unsigned short iZone_0,unsigned short iZone_1,unsigned short nZone);
+  CNearestNeighbor(CGeometry ***geometry_container, CConfig **config,  unsigned int* Zones,unsigned int nZone);
 
   /*!
    * \brief Destructor of the class.
@@ -134,6 +148,45 @@ public:
   /*!
    * \brief Set up transfer matrix defining relation between two meshes
    */
-  void Set_TransferCoeff(unsigned short iZone_0, unsigned short iZone_1, CConfig **config);
+  void Set_TransferCoeff(unsigned int* Zones, CConfig **config);
+
+};
+
+/*!
+ * \brief Consistent and Conservative interpolation
+ */
+class CConsistConserve : public CInterpolator {
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   */
+  CConsistConserve(CGeometry ***geometry_container, CConfig **config,  unsigned int* Zones,unsigned int nZone);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CConsistConserve(void);
+
+  /*!
+   * \brief Set up transfer matrix defining relation between two meshes
+   * \param[in] Zones - list of zones to use for interpolation
+   * \param[in] config -
+   */
+  void Set_TransferCoeff(unsigned int* Zones, CConfig **config);
+
+  /*!
+   * \brief Calculate the isoparametric representation of point iVertex in marker iZone_0 by nodes of element donor_elem in marker jMarker of zone iZone_1.
+   * \param[out] isoparams - isoparametric coefficients. Must be allocated to size nNodes ahead of time.
+   * \param[in] iZone_0 - zone index of the point being interpolated
+   * \param[in] iMarker - marker index of the point being interpolated
+   * \param[in] iVertex - vertex index of the point being interpolated.
+   * \param[in] nDim - the dimension of the coordinates.
+   * \param[in] iZone_1 - zone index of the element to use for interpolation
+   * \param[in] jMarker - marker index of the element to use for interpolation
+   * \param[in] donor_elem - element index of the element to use for interpolation
+   * \param[in[ nDonorPoints - number of donor points in the element.
+   */
+  void Isoparametric(double* isoparams, unsigned int iZone_0, unsigned short iMarker, unsigned long iVertex, unsigned int nDim, unsigned int iZone_1, unsigned short jMarker, long donor_elem, unsigned int nDonorPoints, int* temp2);
 
 };
