@@ -3,7 +3,7 @@
 ## \file configure.py
 #  \brief An extended configuration script.
 #  \author T. Albring
-#  \version 3.2.9 "eagle"
+#  \version 4.0.0 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -490,7 +490,7 @@ def header():
 
     print '-------------------------------------------------------------------------\n'\
           '|    ___ _   _ ___                                                      | \n'\
-          '|   / __| | | |_  )   Release 3.2.9 \'eagle\'                             | \n'\
+          '|   / __| | | |_  )   Release 4.0.0 \'Cardinal\'                        | \n'\
           '|   \__ \ |_| |/ /                                                      | \n'\
           '|   |___/\___//___|   Pre-configuration Script                          | \n'\
           '|                                                                       | \n'\
