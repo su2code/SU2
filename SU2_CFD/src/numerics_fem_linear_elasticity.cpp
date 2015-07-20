@@ -77,6 +77,8 @@ void CFEM_LinearElasticity::Compute_Tangent_Matrix(CElement *element){
 
 	element->clearElement(); 			/*--- Restarts the element: avoids adding over previous results in other elements --*/
 	element->ComputeGrad_Linear();
+	element->ComputeGrad_Pressure();
+// TODO: The line up here doesn't belong here, it's just for coding/debugging purposes.
 	nNode = element->GetnNodes();
 	nGauss = element->GetnGaussPoints();
 

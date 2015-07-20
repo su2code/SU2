@@ -41,10 +41,19 @@ CElement::CElement(void) {
 	GaussWeight = NULL;
 	GaussCoord = NULL;
 
+	GaussWeightP = NULL;
+	GaussCoordP = NULL;
+
 	GaussPoint = NULL;
+	GaussPointP = NULL;
 
 	nNodes = 0;
 	nGaussPoints = 0;
+	nGaussPointsP = 0;
+
+	Kab = NULL;
+	Ks_ab = NULL;
+	Kk_ab = NULL;
 
 }
 
@@ -59,16 +68,39 @@ CElement::CElement(unsigned short val_nDim, CConfig *config) {
 	GaussWeight = NULL;
 	GaussCoord = NULL;
 
+	GaussWeightP = NULL;
+	GaussCoordP = NULL;
+
+	GaussPoint = NULL;
+	GaussPointP = NULL;
+
+	nNodes = 0;
+	nGaussPoints = 0;
+	nGaussPointsP = 0;
+
+	Kab = NULL;
+	Ks_ab = NULL;
+	Kk_ab = NULL;
+
 }
 
 CElement::~CElement(void) {
 	unsigned short iVar;
 
-}
+	if (CurrentCoord       	!= NULL) delete [] CurrentCoord;
+	if (RefCoord           	!= NULL) delete [] RefCoord;
+	if (GaussWeight       	!= NULL) delete [] GaussWeight;
+	if (GaussCoord         	!= NULL) delete [] GaussCoord;
 
-double CElement::GetGradNi_X(unsigned short iNode, unsigned short iGauss, unsigned short iDim){
+	if (GaussWeightP       	!= NULL) delete [] GaussWeightP;
+	if (GaussCoordP        	!= NULL) delete [] GaussCoordP;
 
-	return GaussPoint[iGauss]->GetGradNi_Xj(iNode,iDim);
+	if (GaussPoint      	!= NULL) delete [] GaussPoint;
+	if (GaussPointP        	!= NULL) delete [] GaussPointP;
+
+	if (Kab            		!= NULL) delete [] Kab;
+	if (Ks_ab           	!= NULL) delete [] Ks_ab;
+	if (Kk_ab           	!= NULL) delete [] Kk_ab;
 
 }
 
@@ -94,6 +126,17 @@ void CElement::Add_Kab_T(double **val_Kab, unsigned short nodeA, unsigned short 
 	}
 }
 
+void CElement::Set_Kk_ab(double **val_Kk_ab, unsigned short nodeA, unsigned short nodeB){
+
+	unsigned short iDim, jDim;
+
+	for(iDim = 0; iDim < nDim; iDim++) {
+		for (jDim = 0; jDim < nDim; jDim++) {
+			Kk_ab[nodeA][nodeB][iDim*nDim+jDim] += val_Kk_ab[iDim][jDim];
+		}
+	}
+}
+
 void CElement::clearElement(void){
 
 	unsigned short iNode, jNode, iDim, nDimSq;
@@ -102,6 +145,7 @@ void CElement::clearElement(void){
 
 	for(iNode = 0; iNode < nNodes; iNode++) {
 		for (jNode = 0; jNode < nNodes; jNode++) {
+			Ks_ab[iNode][jNode] = 0.0;
 			for(iDim = 0; iDim < nDimSq; iDim++){
 				Kab[iNode][jNode][iDim] = 0.0;
 			}

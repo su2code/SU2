@@ -121,6 +121,8 @@ inline double CConfig::GetThermalDiffusivity(void) { return Thermal_Diffusivity;
 
 inline double CConfig::GetElasticyMod(void) { return ElasticyMod; }
 
+inline double CConfig::GetBulk_Modulus_Struct(void) { return Bulk_Modulus_Struct; }
+
 inline unsigned short CConfig::GetElas2D_Formulation(void) { return Kind_2DElasForm; }
 
 inline double CConfig::GetPoissonRatio(void) { return PoissonRatio; }

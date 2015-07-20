@@ -99,6 +99,8 @@ public:
 
 	double GetGradNi_Xj(unsigned short val_Ni, unsigned short val_iDim);
 
+	double GetGradNi_xj(unsigned short val_Ni, unsigned short val_iDim);
+
 	double GetJ_X(void);
 
 	double GetJ_x(void);

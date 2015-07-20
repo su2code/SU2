@@ -53,4 +53,31 @@ inline double CElement::GetWeight(unsigned short iGauss) { return GaussWeight[iG
 
 inline double CElement::GetJ_X(unsigned short iGauss) {return GaussPoint[iGauss]->GetJ_X();}
 
+inline double CElement::GetJ_x(unsigned short iGauss) {return GaussPoint[iGauss]->GetJ_x();}
+
+inline double CElement::GetJ_X_P(unsigned short iGauss) {return GaussPointP[iGauss]->GetJ_X();}
+
+inline double CElement::GetJ_x_P(unsigned short iGauss) {return GaussPointP[iGauss]->GetJ_x();}
+
 inline double *CElement::Get_Kab(unsigned short nodeA, unsigned short nodeB){ return Kab[nodeA][nodeB];}
+
+inline double *CElement::Get_Kk_ab(unsigned short nodeA, unsigned short nodeB){ return Kk_ab[nodeA][nodeB];}
+
+inline void CElement::Add_Ks_ab(double val_Ks_ab, unsigned short nodeA, unsigned short nodeB) { Ks_ab[nodeA][nodeB] += val_Ks_ab; }
+
+inline double CElement::Get_Ks_ab(unsigned short nodeA, unsigned short nodeB) { return Ks_ab[nodeA][nodeB]; }
+
+inline double CElement::GetGradNi_X(unsigned short iNode, unsigned short iGauss, unsigned short iDim) { return GaussPoint[iGauss]->GetGradNi_Xj(iNode,iDim);}
+
+inline double CElement::GetGradNi_x(unsigned short iNode, unsigned short iGauss, unsigned short iDim) { return GaussPoint[iGauss]->GetGradNi_xj(iNode,iDim);}
+
+inline double CElement::GetGradNi_x_P(unsigned short iNode, unsigned short iGaussP, unsigned short iDim) { return GaussPointP[iGaussP]->GetGradNi_xj(iNode,iDim);}
+
+inline double CElement::GetWeight_P(unsigned short iGaussP) { return GaussWeightP[iGaussP];}
+
+inline unsigned short CElement::GetnGaussPointsP(void) { return nGaussPointsP;}
+
+inline void CElement::ComputeGrad_Pressure(void){ }
+
+inline void CQUAD4::ComputeGrad_Pressure(void){ }
+

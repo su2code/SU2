@@ -38,6 +38,7 @@ CFEM_Elasticity::CFEM_Elasticity(unsigned short val_nDim, unsigned short val_nVa
 	Rho_s = config->GetMaterialDensity();
 	Mu = E / (2.0*(1.0 + Nu));
 	Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
+	Kappa = config->GetBulk_Modulus_Struct();
 
 	unsigned short i;
 
@@ -78,6 +79,39 @@ CFEM_Elasticity::CFEM_Elasticity(unsigned short val_nDim, unsigned short val_nVa
 }
 
 CFEM_Elasticity::~CFEM_Elasticity(void) {
+
+	unsigned short iVar, jVar;
+
+	for (iVar = 0; iVar < nDim; iVar++){
+		delete [] KAux_ab[iVar];
+	}
+
+	if (nDim == 2){
+		for (iVar = 0; iVar < 3; iVar++){
+			delete [] Ba_Mat[iVar];
+			delete [] Bb_Mat[iVar];
+			delete [] D_Mat[iVar];
+		}
+		for (iVar = 0; iVar < 4; iVar++){
+			delete [] GradNi_Mat[iVar];
+		}
+	}
+	else if (nDim == 3){
+		for (iVar = 0; iVar < 6; iVar++){
+			delete [] Ba_Mat[iVar];
+			delete [] Bb_Mat[iVar];
+			delete [] D_Mat[iVar];
+		}
+		for (iVar = 0; iVar < 8; iVar++){
+			delete [] GradNi_Mat[iVar];
+		}
+	}
+
+	delete [] KAux_ab;
+	delete [] Ba_Mat;
+	delete [] Bb_Mat;
+	delete [] D_Mat;
+	delete [] GradNi_Mat;
 
 }
 
