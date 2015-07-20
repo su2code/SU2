@@ -59,6 +59,12 @@ inline void CNumerics::Compute_Tangent_Matrix(CElement *element_container){ }
 
 inline void CFEM_Elasticity::Compute_Tangent_Matrix(CElement *element_container){ }
 
+inline void CNumerics::Compute_MeanDilatation_Term(CElement *element_container){ }
+
+inline void CFEM_Elasticity::Compute_MeanDilatation_Term(CElement *element_container){ }
+
+inline void CFEM_LinearElasticity::Compute_MeanDilatation_Term(CElement *element_container){ }
+
 inline void CNumerics::Compute_Constitutive_Matrix(void){ }
 
 inline void CFEM_Elasticity::Compute_Constitutive_Matrix(void){ }

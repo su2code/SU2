@@ -1650,9 +1650,15 @@ void GetViscousProjFlux(double *val_primvar, double **val_gradprimvar,
 
 	/*!
 	 * \brief A virtual member to compute the tangent matrix in structural problems
-	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] element_container - Element structure for the particular element integrated.
 	 */
 	virtual void Compute_Tangent_Matrix(CElement *element_container);
+
+	/*!
+	 * \brief A virtual member to compute the pressure term in incompressible or nearly-incompressible structural problems
+	 * \param[in] element_container - Definition of the particular problem.
+	 */
+	virtual void Compute_MeanDilatation_Term(CElement *element_container);
 
 	/*!
 	 * \brief A virtual member to compute the constitutive matrix in an element for structural problems
@@ -4395,6 +4401,7 @@ protected:
 	double Rho_s;		/*!< \brief Structural density. */
 	double Mu;			/*!< \brief Lame's coeficient. */
 	double Lambda;		/*!< \brief Lame's coeficient. */
+	double Kappa;		/*!< \brief Compressibility constant. */
 
 	double **Ba_Mat,	 /*!< \brief Matrix B for node a - Auxiliary. */
 	**Bb_Mat;	 		 /*!< \brief Matrix B for node b - Auxiliary. */
@@ -4423,6 +4430,8 @@ public:
 	virtual void Compute_Constitutive_Matrix(void);
 
 	virtual void Compute_Stress_Tensor(void);
+
+	virtual void Compute_MeanDilatation_Term(CElement *element_container);
 
 };
 
@@ -4456,6 +4465,8 @@ public:
 
 	virtual void Compute_Stress_Tensor(void);
 
+	virtual void Compute_MeanDilatation_Term(CElement *element_container);
+
 };
 
 /*!
@@ -4469,10 +4480,12 @@ class CFEM_NonlinearElasticity : public CFEM_Elasticity {
 
 protected:
 
-	double **F_Mat;	 /*!< \brief Deformation gradient. */
-	double **b_Mat;	 /*!< \brief Left Cauchy-Green Tensor. */
-	double **currentCoord;	 /*!< \brief Current coordinates. */
-	double **Stress_Tensor;			/*!< \brief Cauchy stress tensor */
+	double **F_Mat;	 			/*!< \brief Deformation gradient. */
+	double **b_Mat;	 			/*!< \brief Left Cauchy-Green Tensor. */
+	double **currentCoord;	 	/*!< \brief Current coordinates. */
+	double **Stress_Tensor;		/*!< \brief Cauchy stress tensor */
+
+	double **KAux_P_ab;			/*!< \brief Auxiliar matrix for the pressure term */
 
 	double J_F;		 /*!< \brief Jacobian of the transformation (determinant of F) */
 
@@ -4492,6 +4505,8 @@ public:
 	~CFEM_NonlinearElasticity(void);
 
 	void Compute_Tangent_Matrix(CElement *element_container);
+
+	void Compute_MeanDilatation_Term(CElement *element_container);
 
 	virtual void Compute_Constitutive_Matrix(void);
 

@@ -44,12 +44,17 @@ CFEM_NonlinearElasticity::CFEM_NonlinearElasticity(unsigned short val_nDim, unsi
 		Stress_Tensor[i] = new double [3];
 	}
 
+	KAux_P_ab = new double* [nDim];
+	for (i = 0; i < nDim; i++) {
+		KAux_P_ab[i] = new double[nDim];
+	}
+
 	if (nDim == 2){
 		currentCoord = new double* [4];	/*--- As of now, 4 is the maximum number of nodes for 2D problems ---*/
 		for (i = 0; i < 4; i++) currentCoord[i] = new double[nDim];
 	}
 	else if (nDim == 3){
-		currentCoord = new double* [8];	/*--- As of now, 4 is the maximum number of nodes for 3D problems ---*/
+		currentCoord = new double* [8];	/*--- As of now, 8 is the maximum number of nodes for 3D problems ---*/
 		for (i = 0; i < 8; i++) currentCoord[i] = new double[nDim];
 	}
 
@@ -60,6 +65,35 @@ CFEM_NonlinearElasticity::CFEM_NonlinearElasticity(unsigned short val_nDim, unsi
 
 CFEM_NonlinearElasticity::~CFEM_NonlinearElasticity(void) {
 
+	unsigned short iVar, jVar;
+
+	for (iVar = 0; iVar < 3; iVar++){
+		delete [] F_Mat[iVar];
+		delete [] b_Mat[iVar];
+		delete [] Stress_Tensor[iVar];
+	}
+
+	for (iVar = 0; iVar < nDim; iVar++){
+		delete [] KAux_P_ab[iVar];
+	}
+
+	if (nDim == 2){
+		for (iVar = 0; iVar < 4; iVar++){
+			delete [] currentCoord[iVar];
+		}
+	}
+	else if (nDim == 3){
+		for (iVar = 0; iVar < 8; iVar++){
+			delete [] currentCoord[iVar];
+		}
+	}
+
+	delete [] F_Mat;
+	delete [] b_Mat;
+	delete [] Stress_Tensor;
+	delete [] KAux_P_ab;
+	delete [] currentCoord;
+
 }
 
 
@@ -68,12 +102,14 @@ void CFEM_NonlinearElasticity::Compute_Tangent_Matrix(CElement *element){
 	unsigned short i, j, k;
 	unsigned short iGauss, nGauss;
 	unsigned short iNode, jNode, nNode;
-	unsigned short iDim;
-	unsigned short bDim;
+	unsigned short iDim, bDim;
 
-	double Weight, Jac_X;
+	double Ks_Aux_ab;
 
-	double AuxMatrix[6][3];
+	double Weight, Jac_X, Jac_x;
+
+	double AuxMatrixKc[6][3];
+	double AuxMatrixKs[3];
 
 	/*--- Initialize auxiliary matrices ---*/
 
@@ -89,9 +125,12 @@ void CFEM_NonlinearElasticity::Compute_Tangent_Matrix(CElement *element){
 
 	for (i = 0; i < 6; i++){
 		for (j = 0; j < 3; j++){
-			AuxMatrix[i][j] = 0.0;
-			AuxMatrix[i][j] = 0.0;
+			AuxMatrixKc[i][j] = 0.0;
 		}
+	}
+
+	for (i = 0; i < 3; i++){
+		AuxMatrixKs[i] = 0.0;
 	}
 
 	element->clearElement(); 			/*--- Restarts the element: avoids adding over previous results in other elements --*/
@@ -99,10 +138,13 @@ void CFEM_NonlinearElasticity::Compute_Tangent_Matrix(CElement *element){
 	nNode = element->GetnNodes();
 	nGauss = element->GetnGaussPoints();
 
+	/*--- Full integration of the constitutive and stress term ---*/
+
 	for (iGauss = 0; iGauss < nGauss; iGauss++){
 
 		Weight = element->GetWeight(iGauss);
 		Jac_X = element->GetJ_X(iGauss);
+		Jac_x = element->GetJ_x(iGauss);
 
 		/*--- Initialize the deformation gradient for each Gauss Point ---*/
 
@@ -187,10 +229,19 @@ void CFEM_NonlinearElasticity::Compute_Tangent_Matrix(CElement *element){
 
 			for (i = 0; i < nDim; i++){
 				for (j = 0; j < bDim; j++){
-					AuxMatrix[i][j] = 0.0;
+					AuxMatrixKc[i][j] = 0.0;
 					for (k = 0; k < bDim; k++){
-						AuxMatrix[i][j] += Ba_Mat[k][i]*D_Mat[k][j];
+						AuxMatrixKc[i][j] += Ba_Mat[k][i]*D_Mat[k][j];
 					}
+				}
+			}
+
+		    /*--- Compute the BT.D Matrix ---*/
+
+			for (i = 0; i < nDim; i++){
+				AuxMatrixKs[i] = 0.0;
+				for (j = 0; j < nDim; j++){
+					AuxMatrixKs[i] += GradNi_Mat[iNode][j]*Stress_Tensor[j][i]; // DOUBLE CHECK
 				}
 			}
 
@@ -203,33 +254,127 @@ void CFEM_NonlinearElasticity::Compute_Tangent_Matrix(CElement *element){
 					Bb_Mat[2][1] = GradNi_Mat[jNode][0];
 				}
 				else if (nDim ==3){
-					Bb_Mat[0][0] = GradNi_Mat[iNode][0];
-					Bb_Mat[1][1] = GradNi_Mat[iNode][1];
-					Bb_Mat[2][2] = GradNi_Mat[iNode][2];
-					Bb_Mat[3][0] = GradNi_Mat[iNode][1];
-					Bb_Mat[3][1] = GradNi_Mat[iNode][0];
-					Bb_Mat[4][0] = GradNi_Mat[iNode][2];
-					Bb_Mat[4][2] = GradNi_Mat[iNode][0];
-					Bb_Mat[5][1] = GradNi_Mat[iNode][2];
-					Bb_Mat[5][2] = GradNi_Mat[iNode][1];
+					Bb_Mat[0][0] = GradNi_Mat[jNode][0];
+					Bb_Mat[1][1] = GradNi_Mat[jNode][1];
+					Bb_Mat[2][2] = GradNi_Mat[jNode][2];
+					Bb_Mat[3][0] = GradNi_Mat[jNode][1];
+					Bb_Mat[3][1] = GradNi_Mat[jNode][0];
+					Bb_Mat[4][0] = GradNi_Mat[jNode][2];
+					Bb_Mat[4][2] = GradNi_Mat[jNode][0];
+					Bb_Mat[5][1] = GradNi_Mat[jNode][2];
+					Bb_Mat[5][2] = GradNi_Mat[jNode][1];
 				}
 
+				/*--- KAux_ab is the term for the constitutive part of the tangent matrix ---*/
 				for (i = 0; i < nDim; i++){
 					for (j = 0; j < nDim; j++){
 						KAux_ab[i][j] = 0.0;
 						for (k = 0; k < bDim; k++){
-							KAux_ab[i][j] += Weight * AuxMatrix[i][k] * Bb_Mat[k][j] * Jac_X;
+							KAux_ab[i][j] += Weight * AuxMatrixKc[i][k] * Bb_Mat[k][j] * Jac_X;
 						}
 					}
 				}
+//TODO: Modify the Jac_X --> If we are on the current configuration, the integration is on the current volume: Jac_x
+
+				/*--- Ks_Aux_ab is the term for the constitutive part of the tangent matrix ---*/
+				Ks_Aux_ab = 0.0;
+				for (i = 0; i < nDim; i++){
+					Ks_Aux_ab += Weight * AuxMatrixKs[i] * GradNi_Mat[jNode][i] * Jac_X;
+				}
 
 				element->Add_Kab(KAux_ab,iNode, jNode);
+				element->Add_Ks_ab(Ks_Aux_ab,iNode, jNode);
 				/*--- Symmetric terms --*/
 				if (iNode != jNode){
 					element->Add_Kab_T(KAux_ab, jNode, iNode);
+					element->Add_Ks_ab(Ks_Aux_ab,iNode, jNode);
 				}
 
 			}
+
+		}
+
+	}
+
+}
+
+void CFEM_NonlinearElasticity::Compute_MeanDilatation_Term(CElement *element){
+
+	unsigned short i, j, k;
+	unsigned short iGauss, nGauss;
+	unsigned short iNode, jNode, nNode;
+	double Weight, Jac_X, Jac_x;
+	unsigned short iDim ;
+
+	double GradNi_Mat_Term;
+	double Vol_current, Vol_reference;
+	double Avg_kappa;
+
+
+	/*--- Under integration of the pressure term, if the calculations assume incompressibility or near incompressibility ---*/
+
+	/*--- nGauss is here the number of Gaussian Points for the pressure term ---*/
+	nGauss = element->GetnGaussPointsP();
+	nNode = element->GetnNodes();
+
+	/*--- Initialize the Gradient auxiliary Matrix ---*/
+	for (iNode = 0; iNode < nNode; iNode++){
+		for (iDim = 0; iDim < nDim; iDim++){
+			GradNi_Mat[iNode][iDim] = 0.0;
+		}
+	}
+
+	Vol_current = 0.0;
+	Vol_reference = 0.0;
+
+	for (iGauss = 0; iGauss < nGauss; iGauss++){
+
+		Weight = element->GetWeight_P(iGauss);
+		Jac_X = element->GetJ_X_P(iGauss);
+		Jac_x = element->GetJ_x_P(iGauss);
+
+		/*--- Retrieve the values of the gradients of the shape functions for each node ---*/
+		/*--- This avoids repeated operations ---*/
+
+		/*--- We compute the average gradient ---*/
+		for (iNode = 0; iNode < nNode; iNode++){
+			for (iDim = 0; iDim < nDim; iDim++){
+				GradNi_Mat_Term = element->GetGradNi_x_P(iNode,iGauss,iDim);
+				GradNi_Mat[iNode][iDim] += Weight * GradNi_Mat_Term * Jac_x;
+			}
+		}
+
+		Vol_reference += Weight * Jac_X;
+		Vol_current += Weight * Jac_x;
+
+	}
+
+	if ((Vol_current != 0.0) && (Vol_reference != 0.0)) {
+
+		/*--- It is necessary to divide over the current volume to obtain the averaged gradients ---*/
+		/*--- TODO: Check this operation and add exit if the volumes are 0. ---*/
+		for (iNode = 0; iNode < nNode; iNode++){
+			for (iDim = 0; iDim < nDim; iDim++){
+				GradNi_Mat[iNode][iDim] = GradNi_Mat[iNode][iDim] / Vol_current;
+			}
+		}
+
+		Avg_kappa = Kappa * Vol_current / Vol_reference;
+
+	}
+
+	for (iNode = 0; iNode < nNode; iNode++){
+
+		for (jNode = 0; jNode < nNode; jNode++){
+
+			/*--- KAux_P_ab is the term for the incompressibility part of the tangent matrix ---*/
+			for (i = 0; i < nDim; i++){
+				for (j = 0; j < nDim; j++){
+					KAux_P_ab[i][j] = Avg_kappa * Vol_current * GradNi_Mat[iNode][i] * GradNi_Mat[jNode][j];
+				}
+			}
+
+			element->Set_Kk_ab(KAux_P_ab,iNode, jNode);
 
 		}
 

@@ -55,14 +55,20 @@ using namespace std;
 class CElement {
 protected:
 	unsigned short nGaussPoints;		/*!< \brief Number of gaussian points. */
+	unsigned short nGaussPointsP;		/*!< \brief Number of gaussian points for the pressure term. */
 	unsigned short nNodes;				/*!< \brief Number of gaussian points. */
 	static unsigned short nDim;		/*!< \brief Number of dimension of the problem. */
-	double **CurrentCoord,
-	**RefCoord,
-	**GaussCoord,
-	*GaussWeight;
-	CGaussVariable **GaussPoint;
-	double ***Kab;
+	double **CurrentCoord,				/*!< \brief Coordinates in the current frame. */
+	**RefCoord;							/*!< \brief Coordinates in the reference frame. */
+	double **GaussCoord,				/*!< \brief Parent coordinates of the Gaussian Points. */
+	*GaussWeight;						/*!< \brief Weight of the Gaussian Points for the integration. */
+	double	**GaussCoordP,				/*!< \brief Parent coordinates of the Gaussian Points for the pressure subintegration.. */
+	*GaussWeightP;						/*!< \brief Weight of the Gaussian Points for the pressure subintegration. */
+	CGaussVariable **GaussPoint;		/*!< \brief Structure for the Gaussian Points. */
+	CGaussVariable **GaussPointP;		/*!< \brief Structure for the Gaussian Points for the pressure subintegration. */
+	double ***Kab;						/*!< \brief Structure for the constitutive component of the tangent matrix. */
+	double **Ks_ab;						/*!< \brief Structure for the stress component of the tangent matrix. */
+	double ***Kk_ab;					/*!< \brief Structure for the pressure component of the tangent matrix. */
 
 public:
 	/*!
@@ -81,6 +87,24 @@ public:
 	 * \brief Destructor of the class.
 	 */
 	virtual ~CElement(void);
+
+	/*!
+	 * \brief Retrieve the number of nodes of the element.
+	 * \param[out] nNodes - Number of nodes of the element.
+	 */
+	unsigned short GetnNodes(void);
+
+	/*!
+	 * \brief Retrieve the number of nodes of the element.
+	 * \param[out] nGaussPoints - Number of Gaussian Points of the element.
+	 */
+	unsigned short GetnGaussPoints(void);
+
+	/*!
+	 * \brief Retrieve the number of nodes of the element.
+	 * \param[out] nGaussPointsP - Number of Gaussian Points for pressure underintegration.
+	 */
+	unsigned short GetnGaussPointsP(void);
 
 	/*!
 	 * \brief Set the value of the coordinate of the nodes in the reference configuration.
@@ -124,6 +148,13 @@ public:
 	double GetWeight(unsigned short iGauss);
 
 	/*!
+	 * \brief Get the weight of the corresponding Gaussian Point for pressure subintegration.
+	 * \param[in] iGaussP - index of the Gaussian point.
+	 * \param[out] Weight.
+	 */
+	double GetWeight_P(unsigned short iGaussP);
+
+	/*!
 	 * \brief Get the jacobian respect to the reference configuration for the Gaussian Point iGauss.
 	 * \param[in] iGauss - index of the Gaussian point.
 	 * \param[out] Weight.
@@ -131,7 +162,28 @@ public:
 	double GetJ_X(unsigned short iGauss);
 
 	/*!
-	 * \brief Add the value of a submatrix K relating nodes a and b.
+	 * \brief Get the jacobian respect to the current configuration for the Gaussian Point iGauss.
+	 * \param[in] iGauss - index of the Gaussian point.
+	 * \param[out] Weight.
+	 */
+	double GetJ_x(unsigned short iGauss);
+
+	/*!
+	 * \brief Get the jacobian respect to the reference configuration for the Gaussian Point iGauss and the pressure term.
+	 * \param[in] iGauss - index of the Gaussian point.
+	 * \param[out] Weight.
+	 */
+	double GetJ_X_P(unsigned short iGauss);
+
+	/*!
+	 * \brief Get the jacobian respect to the current configuration for the Gaussian Point iGauss and the pressure term.
+	 * \param[in] iGauss - index of the Gaussian point.
+	 * \param[out] Weight.
+	 */
+	double GetJ_x_P(unsigned short iGauss);
+
+	/*!
+	 * \brief Add the value of a submatrix K relating nodes a and b, for the constitutive term.
 	 * \param[in] nodeA - index of Node a.
 	 * \param[in] nodeB - index of Node b.
 	 * \param[in] val_Kab - value of the matrix K.
@@ -139,12 +191,29 @@ public:
 	void Add_Kab(double **val_Kab, unsigned short nodeA, unsigned short nodeB);
 
 	/*!
-	 * \brief Add the value of a submatrix K relating nodes a and b (symmetric terms need transpose)
+	 * \brief Add the value of a submatrix K relating nodes a and b, for the constitutive term (symmetric terms need transpose)
 	 * \param[in] nodeA - index of Node a.
 	 * \param[in] nodeB - index of Node b.
 	 * \param[in] val_Kab - value of the matrix K.
 	 */
 	void Add_Kab_T(double **val_Kab, unsigned short nodeA, unsigned short nodeB);
+
+
+	/*!
+	 * \brief Add the value of the diagonal term for the stress contribution to the stiffness of the system.
+	 * \param[in] nodeA - index of Node a.
+	 * \param[in] nodeB - index of Node b.
+	 * \param[in] val_Kab - value of the term that will constitute the diagonal of the stress contribution.
+	 */
+	void Add_Ks_ab(double val_Ks_ab, unsigned short nodeA, unsigned short nodeB);
+
+	/*!
+	 * \brief Set the value of a submatrix K relating nodes a and b, for the pressure term (this term is subintegrated).
+	 * \param[in] nodeA - index of Node a.
+	 * \param[in] nodeB - index of Node b.
+	 * \param[in] val_Kab - value of the matrix K.
+	 */
+	void Set_Kk_ab(double **val_Kk_ab, unsigned short nodeA, unsigned short nodeB);
 
 	/*!
 	 * \brief Restarts the values in the element.
@@ -158,6 +227,22 @@ public:
 	 * \param[out] val_Kab - value of the matrix K.
 	 */
 	double *Get_Kab(unsigned short nodeA, unsigned short nodeB);
+
+	/*!
+	 * \brief Return the value of the diagonal term for the stress contribution, relating nodes a and b.
+	 * \param[in] nodeA - index of Node a.
+	 * \param[in] nodeB - index of Node b.
+	 * \param[out] val_Kab - value of the matrix K.
+	 */
+	double Get_Ks_ab(unsigned short nodeA, unsigned short nodeB);
+
+	/*!
+	 * \brief Set the value of a submatrix K relating nodes a and b, for the pressure term (this term is subintegrated).
+	 * \param[in] nodeA - index of Node a.
+	 * \param[in] nodeB - index of Node b.
+	 * \param[in] val_Kab - value of the matrix K.
+	 */
+	double *Get_Kk_ab(unsigned short nodeA, unsigned short nodeB);
 
 	/*!
 	 * \brief Set the value of the gradient of the shape functions respect to the reference configuration.
@@ -182,22 +267,32 @@ public:
 	double GetGradNi_X(unsigned short iNode, unsigned short iGauss, unsigned short iDim);
 
 	/*!
-	 * \brief Retrieve the number of nodes of the element.
-	 * \param[out] nNodes - Number of nodes of the element.
+	 * \brief Retrieve the value of the gradient of the shape functions respect to the reference configuration.
+	 * \param[in] iNode - Index of the node.
+	 * \param[in] iNode - Index of the Gaussian Point.
+	 * \param[out] GradNi_X - Gradient of the shape function related to node iNode and evaluated at Gaussian Point iGauss
 	 */
-	unsigned short GetnNodes(void);
+	double GetGradNi_x(unsigned short iNode, unsigned short iGauss, unsigned short iDim);
 
 	/*!
-	 * \brief Retrieve the number of nodes of the element.
-	 * \param[out] nNodes - Number of nodes of the element.
+	 * \brief Retrieve the value of the gradient of the shape functions respect to the reference configuration.
+	 * \param[in] iNode - Index of the node.
+	 * \param[in] iNode - Index of the Gaussian Point.
+	 * \param[out] GradNi_x - Gradient of the shape function related to node iNode and evaluated at Gaussian Point iGauss
 	 */
-	unsigned short GetnGaussPoints(void);
+	double GetGradNi_x_P(unsigned short iNode, unsigned short iGaussP, unsigned short iDim);
 
 	/*!
 	 * \brief Retrieve the number of nodes of the element.
 	 * \param[out] nNodes - Number of nodes of the element.
 	 */
 	virtual void OutputGradN_X(CGeometry *geometry, CConfig *config);
+
+	/*!
+	 * \brief Virtual member
+	 */
+	virtual void ComputeGrad_Pressure(void);
+
 
 };
 
@@ -209,15 +304,8 @@ public:
  */
 
 class CTRIA1 : public CElement {
+
 protected:
-
-//	static unsigned short nGaussPoints;		/*!< \brief Number of gaussian points. */
-//	static unsigned short nNodes;				/*!< \brief Number of gaussian points. */
-
-//	static double GPi_ParentCoord[4][2];		/*!< \brief Parent coordinates of the Gaussian Points i. */
-//	static double GPi_Weight[4];				/*!< \brief Weights for Gaussian integration. */
-//	static double GPi_Nj[4][4];				/*!< \brief Value of N_j for Gaussian Point i */
-//	static double GPi_dNj_dxik[4][4][2];		/*!< \brief Derivative of N_j respect to Xi_k for Gaussian Point i. */
 
 public:
 
@@ -255,26 +343,6 @@ public:
 	void ComputeGrad_NonLinear(void);
 
 	/*!
-	 * \brief Retrieve the value of the gradient of the shape functions respect to the reference configuration.
-	 * \param[in] iNode - Index of the node.
-	 * \param[in] iNode - Index of the Gaussian Point.
-	 * \param[out] GradNi_X - Gradient of the shape function related to node iNode and evaluated at Gaussian Point iGauss
-	 */
-	double GetGradNi_X(unsigned short iNode, unsigned short iGauss, unsigned short iDim);
-
-	/*!
-	 * \brief Retrieve the number of nodes of the element.
-	 * \param[out] nNodes - Number of nodes of the element.
-	 */
-	unsigned short GetnNodes(void);
-
-	/*!
-	 * \brief Retrieve the number of nodes of the element.
-	 * \param[out] nNodes - Number of nodes of the element.
-	 */
-	unsigned short GetnGaussPoints(void);
-
-	/*!
 	 * \brief Set the value of the gradient of the shape functions respect to the reference configuration.
 	 * \param[in] val_solution - Solution of the problem.
 	 * \param[out] J_X - Jacobian of the element evaluated at the current Gauss Point respect to the reference configuration
@@ -292,15 +360,8 @@ public:
  */
 
 class CQUAD4 : public CElement {
+
 protected:
-
-//	static unsigned short nGaussPoints;		/*!< \brief Number of gaussian points. */
-//	static unsigned short nNodes;				/*!< \brief Number of gaussian points. */
-
-//	static double GPi_ParentCoord[4][2];		/*!< \brief Parent coordinates of the Gaussian Points i. */
-//	static double GPi_Weight[4];				/*!< \brief Weights for Gaussian integration. */
-//	static double GPi_Nj[4][4];				/*!< \brief Value of N_j for Gaussian Point i */
-//	static double GPi_dNj_dxik[4][4][2];		/*!< \brief Derivative of N_j respect to Xi_k for Gaussian Point i. */
 
 public:
 
@@ -338,31 +399,58 @@ public:
 	void ComputeGrad_NonLinear(void);
 
 	/*!
-	 * \brief Retrieve the value of the gradient of the shape functions respect to the reference configuration.
-	 * \param[in] iNode - Index of the node.
-	 * \param[in] iNode - Index of the Gaussian Point.
-	 * \param[out] GradNi_X - Gradient of the shape function related to node iNode and evaluated at Gaussian Point iGauss
-	 */
-	double GetGradNi_X(unsigned short iNode, unsigned short iGauss, unsigned short iDim);
-
-	/*!
-	 * \brief Retrieve the number of nodes of the element.
-	 * \param[out] nNodes - Number of nodes of the element.
-	 */
-	unsigned short GetnNodes(void);
-
-	/*!
-	 * \brief Retrieve the number of nodes of the element.
-	 * \param[out] nNodes - Number of nodes of the element.
-	 */
-	unsigned short GetnGaussPoints(void);
-
-	/*!
 	 * \brief Set the value of the gradient of the shape functions respect to the reference configuration.
 	 * \param[in] val_solution - Solution of the problem.
 	 * \param[out] J_X - Jacobian of the element evaluated at the current Gauss Point respect to the reference configuration
 	 */
 	void OutputGradN_X(CGeometry *geometry, CConfig *config);
+
+	/*!
+	 * \brief Virtual member.
+	 */
+	virtual void ComputeGrad_Pressure(void);
+
+
+};
+
+/*!
+ * \class CQUAD4P1
+ * \brief Quadrilateral element with 4 Gauss Points and 1 Gauss Point for pressure subintegration
+ * \author R. Sanchez
+ * \version 4.0.0 "Cardinal"
+ */
+
+class CQUAD4P1 : public CQUAD4 {
+
+protected:
+
+public:
+
+	/*!
+	 * \brief Constructor of the class.
+	 */
+	CQUAD4P1(void);
+
+	/*!
+	 * \overload
+	 * \param[in] val_fea - Values of the fea solution (initialization value).
+	 * \param[in] val_nDim - Number of dimensions of the problem.
+	 * \param[in] val_elID - Element ID.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CQUAD4P1(unsigned short val_nDim, unsigned long val_elID, CConfig *config);
+
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CQUAD4P1(void);
+
+	/*!
+	 * \brief Set the value of the gradient of the shape functions respect to the current configuration on 1 Gauss Point.
+	 * \param[in] val_solution - Solution of the problem.
+	 * \param[out] J_X - Jacobian of the element evaluated at the current Gauss Point respect to the reference configuration
+	 */
+	void ComputeGrad_Pressure(void);
 
 
 };

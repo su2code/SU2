@@ -45,6 +45,8 @@ inline double **CGaussVariable::GetGradNi_Xj(void) { return GradNi_Xj; }
 
 inline double CGaussVariable::GetGradNi_Xj(unsigned short val_Ni, unsigned short val_iDim) { return GradNi_Xj[val_Ni][val_iDim]; }
 
+inline double CGaussVariable::GetGradNi_xj(unsigned short val_Ni, unsigned short val_iDim) { return GradNi_xj[val_Ni][val_iDim]; }
+
 inline double CGaussVariable::GetJ_X(void) { return J_X; }
 
 inline double CGaussVariable::GetJ_x(void) { return J_x; }

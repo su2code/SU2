@@ -41,6 +41,11 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(void) : CSolver() {
 	element_container = NULL;
 	node = NULL;
 
+	GradN_X = NULL;
+	GradN_x = NULL;
+
+	Jacobian_s_ij = NULL;
+
 }
 
 CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *config) : CSolver() {
@@ -107,25 +112,68 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 			}
 	}
 
+	/*--- Term ij of the Jacobian (stress contribution) ---*/
+
+	Jacobian_s_ij = new double*[nVar];
+	for (iVar = 0; iVar < nVar; iVar++) {
+		Jacobian_s_ij[iVar] = new double [nVar];
+			for (jVar = 0; jVar < nVar; jVar++) {
+				Jacobian_s_ij[iVar][jVar] = 0.0;
+			}
+	}
+
 	Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, false, geometry, config);
 
 	/*--- Here is where we assign the kind of each element ---*/
 
-	for (iElem = 0; iElem < nElement; iElem++){
-
-		/*--- As of now, only QUAD4 elements ---*/
-		element_container[iElem] = new CQUAD4(nDim, iElem, config);
-
-	}
+//	for (iElem = 0; iElem < nElement; iElem++){
+//
+//		/*--- As of now, only QUAD4 elements ---*/
+//		element_container[iElem] = new CQUAD4(nDim, iElem, config);
+//
+//	}
 
 	if (nDim == 2){
 		element_container[EL_TRIA] = new CTRIA1(nDim, iElem, config);
-		element_container[EL_QUAD] = new CQUAD4(nDim, iElem, config);
+		element_container[EL_QUAD] = new CQUAD4P1(nDim, iElem, config);
 	}
 
 }
 
-CFEM_ElasticitySolver::~CFEM_ElasticitySolver(void) { }
+CFEM_ElasticitySolver::~CFEM_ElasticitySolver(void) {
+
+	unsigned short iVar, nKindElements = 2;
+	unsigned long iPoint;
+
+	for (iPoint = 0; iPoint < nPoint; iPoint++){
+		delete [] node[iPoint];
+	}
+
+	for (iVar = 0; iVar < nKindElements; iVar++){
+		delete [] element_container[iVar];
+	}
+
+	for (iVar = 0; iVar < nVar; iVar++){
+		delete [] Jacobian_s_ij[iVar];
+		delete [] Jacobian_ij[iVar];
+		delete [] Point_Max_Coord[iVar];
+	}
+
+	delete [] element_container;
+	delete [] node;
+	delete [] Jacobian_s_ij;
+	delete [] Jacobian_ij;
+	delete [] Solution;
+	delete [] GradN_X;
+	delete [] GradN_x;
+
+	delete [] Residual;
+	delete [] Residual_RMS;
+	delete [] Residual_Max;
+	delete [] Point_Max;
+	delete [] Point_Max_Coord;
+
+}
 
 void CFEM_ElasticitySolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, CNumerics **numerics, unsigned short iMesh, unsigned long Iteration, unsigned short RunTime_EqSystem, bool Output) {
 
@@ -135,7 +183,7 @@ void CFEM_ElasticitySolver::Preprocessing(CGeometry *geometry, CSolver **solver_
 	unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
 	double val_Coord, val_Sol;
 
-	double *Kab;
+	double *Kab, Ks_ab;
 	unsigned short NelNodes, jNode;
 
 	cout << nElement << endl;
@@ -156,8 +204,10 @@ void CFEM_ElasticitySolver::Preprocessing(CGeometry *geometry, CSolver **solver_
 
 		for (iNode = 0; iNode < nNodes; iNode++) {
 		  indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
+//		  cout << "Elem: " << iElem << " iNode (renum):" << indexNode[iNode] << endl;
 		  for (iDim = 0; iDim < nDim; iDim++) {
 			  val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
+//			  cout << "Coord[" << iDim << "]: " << val_Coord << endl;
 			  val_Sol = node[indexNode[iNode]]->GetSolution(iDim) + val_Coord;
 			  element_container[EL_QUAD]->SetRef_Coord(val_Coord, iNode, iDim);
 			  element_container[EL_QUAD]->SetCurr_Coord(val_Coord, iNode, iDim);
@@ -170,14 +220,18 @@ void CFEM_ElasticitySolver::Preprocessing(CGeometry *geometry, CSolver **solver_
 		for (iNode = 0; iNode < NelNodes; iNode++){
 			for (jNode = 0; jNode < NelNodes; jNode++){
 				Kab = element_container[EL_QUAD]->Get_Kab(iNode, jNode);
+				Ks_ab = element_container[EL_QUAD]->Get_Ks_ab(iNode,jNode);
 
 				for (iVar = 0; iVar < nVar; iVar++){
+					Jacobian_s_ij[iVar][iVar] = Ks_ab;
 					for (jVar = 0; jVar < nVar; jVar++){
 						Jacobian_ij[iVar][jVar] = Kab[iVar*nVar+jVar];
 					}
 				}
 
 				Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_ij);
+
+				Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_s_ij);
 
 			}
 

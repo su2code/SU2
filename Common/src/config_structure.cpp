@@ -1160,6 +1160,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("POISSON_RATIO", PoissonRatio, 0.30);
   /* DESCRIPTION: Material density */
   addDoubleOption("MATERIAL_DENSITY", MaterialDensity, 7854);
+  /*!\brief BULK_MODULUS_STRUCT \n DESCRIPTION: Value of the Bulk Modulus for a structural problem \n DEFAULT 160E9 */
+  /* This is a temporal definition */
+  addDoubleOption("BULK_MODULUS_STRUCT", Bulk_Modulus_Struct, 160E9);
+
   /* DESCRIPTION: Formulation for bidimensional elasticity solver */
   addEnumOption("FORMULATION_ELASTICITY_2D", Kind_2DElasForm, ElasForm_2D, PLANE_STRESS);
   /*  DESCRIPTION: Apply dead loads

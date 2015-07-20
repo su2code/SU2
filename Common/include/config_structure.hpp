@@ -649,7 +649,8 @@ private:
   ***Omega11;                  /*!< \brief Collision integrals (Omega(1,1)) */
 	double ElasticyMod,			/*!< \brief Young's modulus of elasticity. */
 	PoissonRatio,						/*!< \brief Poisson's ratio. */
-	MaterialDensity;								/*!< \brief Material density. */
+	MaterialDensity,								/*!< \brief Material density. */
+	Bulk_Modulus_Struct;				/*!< \brief Bulk modulus (on the structural side). */
 	unsigned short Kind_2DElasForm;			/*!< \brief Kind of bidimensional elasticity solver. */
 	unsigned short nIterFSI;	/*!< \brief Number of maximum number of subiterations in a FSI problem. */
 	double AitkenStatRelax;			/*!< \brief Aitken's relaxation factor (if set as static) */
@@ -1590,6 +1591,12 @@ public:
 	 * \return Value of the Young's modulus of elasticity.
 	 */
 	double GetElasticyMod(void);
+
+	/*!
+	 * \brief Get the value of the bulk modulus on the structural side.
+	 * \return Value of the bulk modulus on the structural side.
+	 */
+	double GetBulk_Modulus_Struct(void);
 
     /*!
 	 * \brief Formulation for 2D elasticity (plane stress - strain)

@@ -6510,6 +6510,8 @@ private:
 	double *GradN_X,
 	*GradN_x;
 
+	double **Jacobian_s_ij;			/*!< \brief Matrix to store the stress contribution of node ij (diagonal). */
+
 public:
 
 	CElement** element_container; 	/*!< \brief Vector which the define the finite element structure for each problem. */
