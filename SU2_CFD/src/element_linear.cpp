@@ -35,7 +35,7 @@ CTRIA1::CTRIA1(void) : CElement() {
 
 }
 
-CTRIA1::CTRIA1(unsigned short val_nDim, unsigned long val_elID, CConfig *config)
+CTRIA1::CTRIA1(unsigned short val_nDim, CConfig *config)
 : CElement(val_nDim, config) {
 
 	unsigned short iGaussPoint=0;
@@ -125,17 +125,11 @@ void CTRIA1::ComputeGrad_NonLinear(void){
 
 }
 
-
-void CTRIA1::OutputGradN_X(CGeometry *geometry, CConfig *config){
-
-}
-
-
 CQUAD4::CQUAD4(void) : CElement() {
 
 }
 
-CQUAD4::CQUAD4(unsigned short val_nDim, unsigned long val_elID, CConfig *config)
+CQUAD4::CQUAD4(unsigned short val_nDim, CConfig *config)
 : CElement(val_nDim, config) {
 
 	unsigned short iGaussPoint=0;
@@ -189,6 +183,11 @@ CQUAD4::CQUAD4(unsigned short val_nDim, unsigned long val_elID, CConfig *config)
 		Ks_ab[iNode] = new double [nNodes];
 	}
 
+	Kt_a = new double *[nNodes];
+	for (iNode = 0; iNode < nNodes; iNode++){
+		Kt_a[iNode] = new double [nDim];
+	}
+
 }
 
 CQUAD4::~CQUAD4(void) {
@@ -208,6 +207,7 @@ CQUAD4::~CQUAD4(void) {
 		delete [] RefCoord[iVar];
 		delete [] Kab[iVar];
 		delete [] Ks_ab[iVar];
+		delete [] Kt_a[iVar];
 	}
 
 	delete [] GaussCoord;
@@ -216,6 +216,7 @@ CQUAD4::~CQUAD4(void) {
 	delete [] RefCoord;
 	delete [] Kab;
 	delete [] Ks_ab;
+	delete [] Kt_a;
 	delete [] GaussWeight;
 
 }
@@ -352,9 +353,6 @@ void CQUAD4::ComputeGrad_NonLinear(void){
 			}
 		  }
 
-
-		  cout << detJac_Ref << " " << detJac_Curr << endl;
-
 		  /*--- Derivatives with respect to global coordinates ---*/
 
 		  for (iNode = 0; iNode < nNodes; iNode++) {
@@ -373,14 +371,6 @@ void CQUAD4::ComputeGrad_NonLinear(void){
 
 }
 
-void CQUAD4::OutputGradN_X(CGeometry *geometry, CConfig *config){
-
-	unsigned short iNode, iDim, iGauss, i, j;
-	double number;
-
-}
-
-
 CQUAD4P1::CQUAD4P1(void) : CQUAD4() {
 
 	GaussPointP = NULL;
@@ -391,8 +381,8 @@ CQUAD4P1::CQUAD4P1(void) : CQUAD4() {
 
 }
 
-CQUAD4P1::CQUAD4P1(unsigned short val_nDim, unsigned long val_elID, CConfig *config)
-: CQUAD4(val_nDim, val_elID, config) {
+CQUAD4P1::CQUAD4P1(unsigned short val_nDim, CConfig *config)
+: CQUAD4(val_nDim, config) {
 
 	unsigned short iGaussPoint=0;
 	unsigned short iNode, iGauss, jNode;
@@ -531,8 +521,65 @@ void CQUAD4P1::ComputeGrad_Pressure(void){
 
 }
 
+CTETRA1::CTETRA1(void) : CElement() {
+
+}
+
+CTETRA1::CTETRA1(unsigned short val_nDim, CConfig *config)
+: CElement(val_nDim, config) {
+
+}
+
+CTETRA1::~CTETRA1(void) {
+
+}
+
+void CTETRA1::ComputeGrad_Linear(void){
+
+}
+
+void CTETRA1::ComputeGrad_NonLinear(void){
+
+}
+
+CHEXA8::CHEXA8(void) : CElement() {
+
+}
+
+CHEXA8::CHEXA8(unsigned short val_nDim, CConfig *config)
+: CElement(val_nDim, config) {
+
+}
+
+CHEXA8::~CHEXA8(void) {
+
+}
+
+void CHEXA8::ComputeGrad_Linear(void){
+
+}
+
+void CHEXA8::ComputeGrad_NonLinear(void){
+
+}
 
 
+CHEXA8P1::CHEXA8P1(void) : CHEXA8() {
+
+}
+
+CHEXA8P1::CHEXA8P1(unsigned short val_nDim, CConfig *config)
+: CHEXA8(val_nDim, config) {
+
+}
+
+CHEXA8P1::~CHEXA8P1(void) {
+
+}
+
+void CHEXA8P1::ComputeGrad_Pressure(void){
+
+}
 
 
 

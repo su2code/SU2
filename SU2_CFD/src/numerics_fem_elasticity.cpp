@@ -52,28 +52,32 @@ CFEM_Elasticity::CFEM_Elasticity(unsigned short val_nDim, unsigned short val_nVa
 		Ba_Mat = new double* [3];
 		Bb_Mat = new double* [3];
 		D_Mat  = new double* [3];
-		GradNi_Mat = new double* [4];	/*--- As of now, 4 is the maximum number of nodes for 2D problems ---*/
+		GradNi_Ref_Mat = new double* [4];	/*--- As of now, 4 is the maximum number of nodes for 2D problems ---*/
+		GradNi_Curr_Mat = new double* [4];	/*--- As of now, 4 is the maximum number of nodes for 2D problems ---*/
 		for (i = 0; i < 3; i++) {
 			Ba_Mat[i]  		= new double[nDim];
 			Bb_Mat[i]  		= new double[nDim];
 			D_Mat[i]	   	= new double[3];
 		}
 		for (i = 0; i < 4; i++) {
-			GradNi_Mat[i] 	= new double[nDim];
+			GradNi_Ref_Mat[i] 	= new double[nDim];
+			GradNi_Curr_Mat[i] 	= new double[nDim];
 		}
 	}
 	else if (nDim == 3){
 		Ba_Mat = new double* [6];
 		Bb_Mat = new double* [6];
 		D_Mat  = new double* [6];
-		GradNi_Mat = new double* [8];	/*--- As of now, 4 is the maximum number of nodes for 3D problems ---*/
+		GradNi_Ref_Mat = new double* [8];	/*--- As of now, 8 is the maximum number of nodes for 3D problems ---*/
+		GradNi_Curr_Mat = new double* [8];	/*--- As of now, 8 is the maximum number of nodes for 3D problems ---*/
 		for (i = 0; i < 6; i++) {
 			Ba_Mat[i]  		= new double[nDim];
 			Bb_Mat[i]  		= new double[nDim];
 			D_Mat[i]      	= new double[6];
 		}
 		for (i = 0; i < 8; i++) {
-			GradNi_Mat[i] 	= new double[nDim];
+			GradNi_Ref_Mat[i] 	= new double[nDim];
+			GradNi_Curr_Mat[i] 	= new double[nDim];
 		}
 	}
 }
@@ -93,7 +97,8 @@ CFEM_Elasticity::~CFEM_Elasticity(void) {
 			delete [] D_Mat[iVar];
 		}
 		for (iVar = 0; iVar < 4; iVar++){
-			delete [] GradNi_Mat[iVar];
+			delete [] GradNi_Ref_Mat[iVar];
+			delete [] GradNi_Curr_Mat[iVar];
 		}
 	}
 	else if (nDim == 3){
@@ -103,7 +108,8 @@ CFEM_Elasticity::~CFEM_Elasticity(void) {
 			delete [] D_Mat[iVar];
 		}
 		for (iVar = 0; iVar < 8; iVar++){
-			delete [] GradNi_Mat[iVar];
+			delete [] GradNi_Ref_Mat[iVar];
+			delete [] GradNi_Curr_Mat[iVar];
 		}
 	}
 
@@ -111,7 +117,8 @@ CFEM_Elasticity::~CFEM_Elasticity(void) {
 	delete [] Ba_Mat;
 	delete [] Bb_Mat;
 	delete [] D_Mat;
-	delete [] GradNi_Mat;
+	delete [] GradNi_Ref_Mat;
+	delete [] GradNi_Curr_Mat;
 
 }
 

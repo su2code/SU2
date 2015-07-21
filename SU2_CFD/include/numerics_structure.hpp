@@ -1656,9 +1656,15 @@ void GetViscousProjFlux(double *val_primvar, double **val_gradprimvar,
 
 	/*!
 	 * \brief A virtual member to compute the pressure term in incompressible or nearly-incompressible structural problems
-	 * \param[in] element_container - Definition of the particular problem.
+	 * \param[in] element_container - Definition of the particular element integrated.
 	 */
 	virtual void Compute_MeanDilatation_Term(CElement *element_container);
+
+	/*!
+	 * \brief A virtual member to compute the nodal stress term in non-linear structural problems
+	 * \param[in] element_container - Definition of the particular element integrated.
+	 */
+	virtual void Compute_NodalStress_Term(CElement *element_container);
 
 	/*!
 	 * \brief A virtual member to compute the constitutive matrix in an element for structural problems
@@ -4407,7 +4413,8 @@ protected:
 	**Bb_Mat;	 		 /*!< \brief Matrix B for node b - Auxiliary. */
 	double **D_Mat;		 /*!< \brief Constitutive matrix - Auxiliary. */
 	double **KAux_ab;	 /*!< \brief Node ab stiffness matrix - Auxiliary. */
-	double **GradNi_Mat;/*!< \brief Gradients of Ni - Auxiliary. */
+	double **GradNi_Ref_Mat;/*!< \brief Gradients of Ni - Auxiliary. */
+	double **GradNi_Curr_Mat;/*!< \brief Gradients of Ni - Auxiliary. */
 
 public:
 
@@ -4427,11 +4434,13 @@ public:
 
 	virtual void Compute_Tangent_Matrix(CElement *element_container);
 
+	virtual void Compute_MeanDilatation_Term(CElement *element_container);
+
+	virtual void Compute_NodalStress_Term(CElement *element_container);
+
 	virtual void Compute_Constitutive_Matrix(void);
 
 	virtual void Compute_Stress_Tensor(void);
-
-	virtual void Compute_MeanDilatation_Term(CElement *element_container);
 
 };
 
@@ -4463,9 +4472,11 @@ public:
 
 	void Compute_Constitutive_Matrix(void);
 
-	virtual void Compute_Stress_Tensor(void);
+//	virtual void Compute_Stress_Tensor(void);
 
-	virtual void Compute_MeanDilatation_Term(CElement *element_container);
+//	virtual void Compute_MeanDilatation_Term(CElement *element_container);
+
+//	virtual void Compute_NodalStress_Term(CElement *element_container);
 
 };
 
@@ -4486,6 +4497,7 @@ protected:
 	double **Stress_Tensor;		/*!< \brief Cauchy stress tensor */
 
 	double **KAux_P_ab;			/*!< \brief Auxiliar matrix for the pressure term */
+	double *KAux_t_a;			/*!< \brief Auxiliar matrix for the pressure term */
 
 	double J_F;		 /*!< \brief Jacobian of the transformation (determinant of F) */
 
@@ -4508,6 +4520,8 @@ public:
 
 	void Compute_MeanDilatation_Term(CElement *element_container);
 
+	void Compute_NodalStress_Term(CElement *element_container);
+
 	virtual void Compute_Constitutive_Matrix(void);
 
 	virtual void Compute_Stress_Tensor(void);
@@ -4516,8 +4530,8 @@ public:
 };
 
 /*!
- * \class CFEM_NeoHookean
- * \brief Class for computing the constitutive and stress tensors for a neo-Hookean material model.
+ * \class CFEM_NeoHookean_Comp
+ * \brief Class for computing the constitutive and stress tensors for a neo-Hookean material model, compressible.
  * \ingroup FEM_Discr
  * \author R.Sanchez
  * \version 4.0.0 "Cardinal"
@@ -4538,6 +4552,36 @@ public:
 	 * \brief Destructor of the class.
 	 */
 	~CFEM_NeoHookean_Comp(void);
+
+	void Compute_Constitutive_Matrix(void);
+
+	void Compute_Stress_Tensor(void);
+
+};
+
+/*!
+ * \class CFEM_NeoHookean_Incomp
+ * \brief Class for computing the constitutive and stress tensors for a neo-Hookean material model, incompressible.
+ * \ingroup FEM_Discr
+ * \author R.Sanchez
+ * \version 4.0.0 "Cardinal"
+ */
+class CFEM_NeoHookean_Incomp : public CFEM_NonlinearElasticity {
+
+public:
+
+	/*!
+	 * \brief Constructor of the class.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
+	 * \param[in] val_nVar - Number of variables of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CFEM_NeoHookean_Incomp(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CFEM_NeoHookean_Incomp(void);
 
 	void Compute_Constitutive_Matrix(void);
 

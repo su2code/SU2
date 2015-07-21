@@ -35,8 +35,6 @@ inline void CElement::ComputeGrad_Linear(void) { }
 
 inline void CElement::ComputeGrad_NonLinear(void) { }
 
-inline void CElement::OutputGradN_X(CGeometry *geometry, CConfig *config) {  }
-
 inline unsigned short CElement::GetnNodes(void) { return nNodes;}
 
 inline unsigned short CElement::GetnGaussPoints(void) { return nGaussPoints;}
@@ -63,9 +61,11 @@ inline double *CElement::Get_Kab(unsigned short nodeA, unsigned short nodeB){ re
 
 inline double *CElement::Get_Kk_ab(unsigned short nodeA, unsigned short nodeB){ return Kk_ab[nodeA][nodeB];}
 
-inline void CElement::Add_Ks_ab(double val_Ks_ab, unsigned short nodeA, unsigned short nodeB) { Ks_ab[nodeA][nodeB] += val_Ks_ab; }
+inline double *CElement::Get_Kt_a(unsigned short nodeA){ return Kt_a[nodeA];}
 
 inline double CElement::Get_Ks_ab(unsigned short nodeA, unsigned short nodeB) { return Ks_ab[nodeA][nodeB]; }
+
+inline void CElement::Add_Ks_ab(double val_Ks_ab, unsigned short nodeA, unsigned short nodeB) { Ks_ab[nodeA][nodeB] += val_Ks_ab; }
 
 inline double CElement::GetGradNi_X(unsigned short iNode, unsigned short iGauss, unsigned short iDim) { return GaussPoint[iGauss]->GetGradNi_Xj(iNode,iDim);}
 
@@ -80,4 +80,6 @@ inline unsigned short CElement::GetnGaussPointsP(void) { return nGaussPointsP;}
 inline void CElement::ComputeGrad_Pressure(void){ }
 
 inline void CQUAD4::ComputeGrad_Pressure(void){ }
+
+inline void CHEXA8::ComputeGrad_Pressure(void){ }
 

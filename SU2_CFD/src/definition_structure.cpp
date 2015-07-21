@@ -1473,9 +1473,29 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
   
   /*--- Solver definition for the FEM problem ---*/
   if (fem) {
-
-    /*--- Definition of the viscous scheme for each equation and mesh level ---*/
-    numerics_container[MESH_0][FEA_SOL][VISC_TERM] = new CFEM_LinearElasticity(nDim, nVar_FEM, config);
+	switch (config->GetGeometricConditions()) {
+    	case SMALL_DEFORMATIONS :
+    		switch (config->GetMaterialModel()) {
+    			case LINEAR_ELASTIC: numerics_container[MESH_0][FEA_SOL][VISC_TERM] = new CFEM_LinearElasticity(nDim, nVar_FEM, config); break;
+    			case NEO_HOOKEAN : cout << "Material model does not correspond to geometric conditions." << endl; exit(EXIT_FAILURE); break;
+    			default: cout << "Material model not implemented." << endl; exit(EXIT_FAILURE); break;
+    		}
+    		break;
+    	case LARGE_DEFORMATIONS :
+    		switch (config->GetMaterialModel()) {
+				case LINEAR_ELASTIC: cout << "Material model does not correspond to geometric conditions." << endl; exit(EXIT_FAILURE); break;
+    			case NEO_HOOKEAN :
+    				switch (config->GetMaterialCompressibility()) {
+    					case COMPRESSIBLE_MAT : numerics_container[MESH_0][FEA_SOL][VISC_TERM] = new CFEM_NeoHookean_Comp(nDim, nVar_FEM, config); break;
+    					case INCOMPRESSIBLE_MAT : numerics_container[MESH_0][FEA_SOL][VISC_TERM] = new CFEM_NeoHookean_Incomp(nDim, nVar_FEM, config); break;
+    					default: cout << "Material model not implemented." << endl; exit(EXIT_FAILURE); break;
+    				}
+    				break;
+    			default: cout << "Material model not implemented." << endl; exit(EXIT_FAILURE); break;
+    		}
+    		break;
+    	default: cout << " Solver not implemented." << endl; exit(EXIT_FAILURE); break;
+	}
 
   }
 

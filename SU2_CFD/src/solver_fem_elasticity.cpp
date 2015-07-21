@@ -45,13 +45,21 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(void) : CSolver() {
 	GradN_x = NULL;
 
 	Jacobian_s_ij = NULL;
+	Jacobian_k_ij = NULL;
+
+	Res_Stress_i = NULL;
 
 }
 
 CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *config) : CSolver() {
 
-	unsigned long iPoint, iElem;
+	unsigned long iPoint, iElem = 0;
 	unsigned short iVar, jVar, iDim, NodesElement = 0, nKindElements;
+
+	int rank = MASTER_NODE;
+	#ifdef HAVE_MPI
+		MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	#endif
 
 	nElement      = geometry->GetnElem();
 	nDim          = geometry->GetnDim();
@@ -102,6 +110,10 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 
 	}
 
+
+
+	bool incompressible = (config->GetMaterialCompressibility() == INCOMPRESSIBLE_MAT);
+
 	/*--- Term ij of the Jacobian ---*/
 
 	Jacobian_ij = new double*[nVar];
@@ -122,21 +134,56 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 			}
 	}
 
+	/*--- Term ij of the Jacobian (incompressibility term) ---*/
+
+	if (incompressible){
+		Jacobian_k_ij = new double*[nVar];
+		for (iVar = 0; iVar < nVar; iVar++) {
+			Jacobian_k_ij[iVar] = new double [nVar];
+				for (jVar = 0; jVar < nVar; jVar++) {
+					Jacobian_k_ij[iVar][jVar] = 0.0;
+				}
+		}
+	}
+	else {
+		Jacobian_k_ij = NULL;
+	}
+
+	/*--- Stress contribution to the node i ---*/
+	Res_Stress_i = new double[nVar];
+
+
+	/*--- Initialization of matrix structures ---*/
+	if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (Non-Linear Elasticity)." << endl;
 	Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, false, geometry, config);
+
+	/*--- Initialization of linear solver structures ---*/
+	LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
+	LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
 
 	/*--- Here is where we assign the kind of each element ---*/
 
-//	for (iElem = 0; iElem < nElement; iElem++){
-//
-//		/*--- As of now, only QUAD4 elements ---*/
-//		element_container[iElem] = new CQUAD4(nDim, iElem, config);
-//
-//	}
-
 	if (nDim == 2){
-		element_container[EL_TRIA] = new CTRIA1(nDim, iElem, config);
-		element_container[EL_QUAD] = new CQUAD4P1(nDim, iElem, config);
+		if (incompressible){
+			element_container[EL_TRIA] = new CTRIA1(nDim, config);
+			element_container[EL_QUAD] = new CQUAD4P1(nDim, config);
+		}
+		else{
+			element_container[EL_TRIA] = new CTRIA1(nDim, config);
+			element_container[EL_QUAD] = new CQUAD4(nDim, config);
+		}
 	}
+	else if (nDim == 2){
+		if (incompressible){
+			element_container[EL_TETRA] = new CTETRA1(nDim, config);
+			element_container[EL_HEXA] = new CHEXA8P1(nDim, config);
+		}
+		else{
+			element_container[EL_TETRA] = new CTETRA1(nDim, config);
+			element_container[EL_HEXA] = new CHEXA8(nDim, config);
+		}
+	}
+
 
 }
 
@@ -163,6 +210,7 @@ CFEM_ElasticitySolver::~CFEM_ElasticitySolver(void) {
 	delete [] node;
 	delete [] Jacobian_s_ij;
 	delete [] Jacobian_ij;
+	delete [] Res_Stress_i;
 	delete [] Solution;
 	delete [] GradN_X;
 	delete [] GradN_x;
@@ -182,23 +230,27 @@ void CFEM_ElasticitySolver::Preprocessing(CGeometry *geometry, CSolver **solver_
 	unsigned short nNodes, nGauss;
 	unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
 	double val_Coord, val_Sol;
+	int EL_KIND;
 
-	double *Kab, Ks_ab;
+	double Ks_ab;
+	double *Kab = NULL;
+	double *Kk_ab = NULL;
+	double *Ta = NULL;
 	unsigned short NelNodes, jNode;
 
-	cout << nElement << endl;
+	bool incompressible = (config->GetMaterialCompressibility() == INCOMPRESSIBLE_MAT);
 
 	/*--- Loops over all the elements ---*/
 
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
 
-		if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     nNodes = 3;
-		if (geometry->elem[iElem]->GetVTK_Type() == RECTANGLE)    nNodes = 4;
+		if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     {nNodes = 3; EL_KIND = EL_TRIA;}
+		if (geometry->elem[iElem]->GetVTK_Type() == RECTANGLE)    {nNodes = 4; EL_KIND = EL_QUAD;}
 
-		if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  nNodes = 4;
-		if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      nNodes = 5;
-		if (geometry->elem[iElem]->GetVTK_Type() == PRISM)        nNodes = 6;
-		if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)   nNodes = 8;
+		if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  {nNodes = 4; EL_KIND = EL_TETRA;}
+		if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      {nNodes = 5; EL_KIND = EL_TRIA;}
+		if (geometry->elem[iElem]->GetVTK_Type() == PRISM)        {nNodes = 6; EL_KIND = EL_TRIA;}
+		if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)   {nNodes = 8; EL_KIND = EL_HEXA;}
 
 		/*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
 
@@ -209,23 +261,38 @@ void CFEM_ElasticitySolver::Preprocessing(CGeometry *geometry, CSolver **solver_
 			  val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
 //			  cout << "Coord[" << iDim << "]: " << val_Coord << endl;
 			  val_Sol = node[indexNode[iNode]]->GetSolution(iDim) + val_Coord;
-			  element_container[EL_QUAD]->SetRef_Coord(val_Coord, iNode, iDim);
-			  element_container[EL_QUAD]->SetCurr_Coord(val_Coord, iNode, iDim);
+			  element_container[EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
+			  element_container[EL_KIND]->SetCurr_Coord(val_Coord, iNode, iDim);
 		  }
 		}
 
-		numerics[VISC_TERM]->Compute_Tangent_Matrix(element_container[EL_QUAD]);
+		numerics[VISC_TERM]->Compute_Tangent_Matrix(element_container[EL_KIND]);
 
-		NelNodes = element_container[EL_QUAD]->GetnNodes();
+		if (incompressible) numerics[VISC_TERM]->Compute_MeanDilatation_Term(element_container[EL_KIND]);
+
+		/*--- I can do it separately, or together within Compute_Tangent_Matrix (more efficient) ---*/
+		//numerics[VISC_TERM]->Compute_NodalStress_Term(element_container[EL_KIND]);
+
+		NelNodes = element_container[EL_KIND]->GetnNodes();
+
 		for (iNode = 0; iNode < NelNodes; iNode++){
+
+			Ta = element_container[EL_KIND]->Get_Kt_a(iNode);
+			for (iVar = 0; iVar < nVar; iVar++) Res_Stress_i[iVar] = Ta[iVar];
+
+			LinSysRes.SubtractBlock(indexNode[iNode], Res_Stress_i);
+
 			for (jNode = 0; jNode < NelNodes; jNode++){
-				Kab = element_container[EL_QUAD]->Get_Kab(iNode, jNode);
-				Ks_ab = element_container[EL_QUAD]->Get_Ks_ab(iNode,jNode);
+
+				Kab = element_container[EL_KIND]->Get_Kab(iNode, jNode);
+				Ks_ab = element_container[EL_KIND]->Get_Ks_ab(iNode,jNode);
+				if (incompressible) Kk_ab = element_container[EL_KIND]->Get_Kk_ab(iNode,jNode);
 
 				for (iVar = 0; iVar < nVar; iVar++){
 					Jacobian_s_ij[iVar][iVar] = Ks_ab;
 					for (jVar = 0; jVar < nVar; jVar++){
 						Jacobian_ij[iVar][jVar] = Kab[iVar*nVar+jVar];
+						if (incompressible) Jacobian_k_ij[iVar][jVar] = Kk_ab[iVar*nVar+jVar];
 					}
 				}
 
@@ -233,11 +300,17 @@ void CFEM_ElasticitySolver::Preprocessing(CGeometry *geometry, CSolver **solver_
 
 				Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_s_ij);
 
+				if (incompressible) Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_k_ij);
+
 			}
 
 		}
 
 	}
+
+	if (Kab != NULL) 	delete [] Kab;
+	if (Kk_ab != NULL)	delete [] Kk_ab;
+	if (Ta != NULL)		delete [] Ta;
 
 	double checkJacobian;
 

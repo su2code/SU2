@@ -54,6 +54,7 @@ CElement::CElement(void) {
 	Kab = NULL;
 	Ks_ab = NULL;
 	Kk_ab = NULL;
+	Kt_a = NULL;
 
 }
 
@@ -81,6 +82,7 @@ CElement::CElement(unsigned short val_nDim, CConfig *config) {
 	Kab = NULL;
 	Ks_ab = NULL;
 	Kk_ab = NULL;
+	Kt_a = NULL;
 
 }
 
@@ -101,6 +103,7 @@ CElement::~CElement(void) {
 	if (Kab            		!= NULL) delete [] Kab;
 	if (Ks_ab           	!= NULL) delete [] Ks_ab;
 	if (Kk_ab           	!= NULL) delete [] Kk_ab;
+	if (Kt_a            	!= NULL) delete [] Kt_a;
 
 }
 
@@ -137,6 +140,17 @@ void CElement::Set_Kk_ab(double **val_Kk_ab, unsigned short nodeA, unsigned shor
 	}
 }
 
+void CElement::Add_Kt_a(double *val_Kt_a, unsigned short nodeA){
+
+	unsigned short iDim;
+
+	for(iDim = 0; iDim < nDim; iDim++) {
+		Kt_a[nodeA][iDim] += val_Kt_a[iDim];
+	}
+
+}
+
+
 void CElement::clearElement(void){
 
 	unsigned short iNode, jNode, iDim, nDimSq;
@@ -144,6 +158,9 @@ void CElement::clearElement(void){
 	nDimSq = nDim*nDim;
 
 	for(iNode = 0; iNode < nNodes; iNode++) {
+		for(iDim = 0; iDim < nDim; iDim++){
+			Kt_a[iNode][iDim] = 0.0;
+		}
 		for (jNode = 0; jNode < nNodes; jNode++) {
 			Ks_ab[iNode][jNode] = 0.0;
 			for(iDim = 0; iDim < nDimSq; iDim++){

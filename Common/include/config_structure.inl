@@ -129,6 +129,12 @@ inline double CConfig::GetPoissonRatio(void) { return PoissonRatio; }
 
 inline double CConfig::GetMaterialDensity(void) { return MaterialDensity; }
 
+inline unsigned short CConfig::GetMaterialCompressibility(void) { return Kind_Material_Compress; }
+
+inline unsigned short CConfig::GetMaterialModel(void) { return Kind_Material; }
+
+inline unsigned short CConfig::GetGeometricConditions(void) { return Kind_Struct_Solver; }
+
 inline double CConfig::GetRefLengthMoment(void) { return RefLengthMoment; }
 
 inline double CConfig::GetRefElemLength(void) { return RefElemLength; }

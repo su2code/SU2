@@ -384,6 +384,9 @@ private:
 	SpatialOrder_AdjTNE2,     /*!< \brief Order of the spatial numerical integration.*/
   SpatialOrder_AdjLevelSet;		/*!< \brief Order of the spatial numerical integration.*/
   bool FSI_Problem;			/*!< \brief Boolean to determine whether the simulation is FSI or not. */
+  unsigned short Kind_Material_Compress,	/*!< \brief Determines if the material is compressible or incompressible (structural analysis). */
+  Kind_Material,			/*!< \brief Determines the material model to be used (structural analysis). */
+  Kind_Struct_Solver;		/*!< \brief Determines the geometric condition (small or large deformations) for structural analysis. */
 
   unsigned short Kind_Turb_Model;			/*!< \brief Turbulent model definition. */
   string ML_Turb_Model_File;  /*!< \brief File containing turbulence model. */
@@ -1615,6 +1618,24 @@ public:
 	 * \return Value of the Material Density.
 	 */
 	double GetMaterialDensity(void);
+
+    /*!
+	 * \brief Compressibility/incompressibility of the solids analysed using the structural solver.
+	 * \return Compressible or incompressible.
+	 */
+	unsigned short GetMaterialCompressibility(void);
+
+    /*!
+	 * \brief Compressibility/incompressibility of the solids analysed using the structural solver.
+	 * \return Compressible or incompressible.
+	 */
+	unsigned short GetMaterialModel(void);
+
+    /*!
+	 * \brief Geometric conditions for the structural solver.
+	 * \return Small or large deformation structural analysis.
+	 */
+	unsigned short GetGeometricConditions(void);
 
 	/*!
 	 * \brief Get the reference length for computing moment (the default value is 1).

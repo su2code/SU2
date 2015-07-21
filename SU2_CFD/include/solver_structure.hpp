@@ -6511,6 +6511,8 @@ private:
 	*GradN_x;
 
 	double **Jacobian_s_ij;			/*!< \brief Matrix to store the stress contribution of node ij (diagonal). */
+	double **Jacobian_k_ij;			/*!< \brief Matrix to store the pressure contribution of node ij. */
+	double *Res_Stress_i;			/*!< \brief Matrix to store the nodal stress contribution of node i. */
 
 public:
 
