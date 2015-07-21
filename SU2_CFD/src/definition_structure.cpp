@@ -511,9 +511,6 @@ void Solver_Postprocessing(CSolver ***solver_container, CGeometry **geometry,
     case RANS : ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; break;
     case TNE2_EULER : tne2_euler = true; break;
     case TNE2_NAVIER_STOKES: tne2_ns = true; break;
-    case FLUID_STRUCTURE_EULER: euler = true; fea = true; break;
-    case FLUID_STRUCTURE_NAVIER_STOKES: ns = true; fea = true; break;
-    case FLUID_STRUCTURE_RANS: ns = true; turbulent = true; fea = true; break;
     case POISSON_EQUATION: poisson = true; break;
     case WAVE_EQUATION: wave = true; break;
     case HEAT_EQUATION: heat = true; break;
@@ -660,6 +657,71 @@ void Integration_Preprocessing(CIntegration **integration_container,
   if (lin_euler) integration_container[LINFLOW_SOL] = new CMultiGridIntegration(config);
   if (lin_ns) { cout <<"Equation not implemented." << endl; exit(EXIT_FAILURE); }
   
+}
+
+void Integration_Postprocessing(CIntegration **integration_container, CGeometry **geometry, CConfig *config, unsigned short iZone){
+  bool
+  euler, adj_euler, lin_euler,
+  ns, adj_ns, lin_ns,
+  turbulent, adj_turb,
+  tne2_euler, adj_tne2_euler,
+  tne2_ns, adj_tne2_ns,
+  poisson, wave, fea, heat, template_solver, transition;
+
+  /*--- Initialize some useful booleans ---*/
+  euler            = false; adj_euler        = false; lin_euler         = false;
+  ns               = false; adj_ns           = false; lin_ns            = false;
+  turbulent        = false; adj_turb         = false;
+  tne2_euler       = false; adj_tne2_euler   = false;
+  tne2_ns          = false; adj_tne2_ns      = false;
+  poisson          = false;
+  wave             = false;
+  heat             = false;
+  fea              = false;
+  transition       = false;
+  template_solver  = false;
+
+  /*--- Assign booleans ---*/
+  switch (config->GetKind_Solver()) {
+    case TEMPLATE_SOLVER: template_solver = true; break;
+    case EULER : euler = true; break;
+    case NAVIER_STOKES: ns = true; break;
+    case RANS : ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; break;
+    case TNE2_EULER : tne2_euler = true; break;
+    case TNE2_NAVIER_STOKES: tne2_ns = true; break;
+    case POISSON_EQUATION: poisson = true; break;
+    case WAVE_EQUATION: wave = true; break;
+    case HEAT_EQUATION: heat = true; break;
+    case LINEAR_ELASTICITY: fea = true; break;
+    case ADJ_EULER : euler = true; adj_euler = true; break;
+    case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
+    case ADJ_TNE2_EULER : tne2_euler = true; adj_tne2_euler = true; break;
+    case ADJ_TNE2_NAVIER_STOKES : tne2_ns = true; adj_tne2_ns = true; break;
+    case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
+    case LIN_EULER: euler = true; lin_euler = true; break;
+  }
+
+  /*--- Allocate solution for a template problem ---*/
+  if (template_solver) integration_container[TEMPLATE_SOL] = new CSingleGridIntegration(config);
+
+  /*--- Allocate solution for direct problem ---*/
+  if (euler or ns) delete integration_container[FLOW_SOL];
+  if (tne2_euler or tne2_ns) delete integration_container[TNE2_SOL];
+  if (turbulent) delete integration_container[TURB_SOL];
+  if (transition) delete integration_container[TRANS_SOL];
+  if (poisson) delete integration_container[POISSON_SOL];
+  if (wave) delete integration_container[WAVE_SOL];
+  if (heat) delete integration_container[HEAT_SOL];
+  if (fea) delete integration_container[FEA_SOL];
+
+  /*--- Allocate solution for adjoint problem ---*/
+  if (adj_euler or adj_ns) delete integration_container[ADJFLOW_SOL];
+  if (adj_tne2_euler or adj_tne2_ns) delete integration_container[ADJTNE2_SOL];
+  if (adj_turb) delete integration_container[ADJTURB_SOL];
+
+  /*--- Allocate solution for linear problem (at the moment we use the same scheme as the adjoint problem) ---*/
+  if (lin_euler) delete integration_container[LINFLOW_SOL];
+
 }
 
 void Numerics_Preprocessing(CNumerics ****numerics_container,
@@ -1626,9 +1688,6 @@ void Numerics_Postprocessing(CNumerics ****numerics_container,
     case RANS : ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; break;
     case TNE2_EULER : tne2_euler = true; break;
     case TNE2_NAVIER_STOKES: tne2_ns = true; break;
-    case FLUID_STRUCTURE_EULER: euler = true; fea = true; break;
-    case FLUID_STRUCTURE_NAVIER_STOKES: ns = true; fea = true; break;
-    case FLUID_STRUCTURE_RANS: ns = true; turbulent = true; fea = true; break;
     case POISSON_EQUATION: poisson = true; break;
     case WAVE_EQUATION: wave = true; break;
     case HEAT_EQUATION: heat = true; break;
