@@ -90,6 +90,16 @@ void Solver_Postprocessing(CSolver ***solver_container, CGeometry **geometry, CC
  */
 void Integration_Preprocessing(CIntegration **integration_container, CGeometry **geometry, CConfig *config, unsigned short iZone);
 
+/*!
+ * \brief Definition and allocation of all integration classes.
+ * \param[in] integration_container - Container vector with all the integration methods.
+ * \param[in] geometry - Geometrical definition of the problem.
+ * \param[in] config - Definition of the particular problem.
+ * \param[in] iZone - Index of the zone.
+ */
+void Integration_Postprocessing(CIntegration **integration_container, CGeometry **geometry, CConfig *config, unsigned short iZone);
+
+
 /*! 
  * \brief Definition and allocation of all solver classes.
  * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).

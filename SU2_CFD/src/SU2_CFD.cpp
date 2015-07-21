@@ -576,6 +576,9 @@ int main(int argc, char *argv[]) {
   
   /*--- Integration class deallocation ---*/
   for (iZone = 0; iZone < nZone; iZone++) {
+    Integration_Postprocessing(integration_container[iZone], geometry_container[iZone],
+                                  config_container[iZone], iZone);
+
     delete [] integration_container[iZone];
   }
   delete [] integration_container;
