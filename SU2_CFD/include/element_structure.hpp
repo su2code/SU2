@@ -69,6 +69,7 @@ protected:
 	double ***Kab;						/*!< \brief Structure for the constitutive component of the tangent matrix. */
 	double **Ks_ab;						/*!< \brief Structure for the stress component of the tangent matrix. */
 	double ***Kk_ab;					/*!< \brief Structure for the pressure component of the tangent matrix. */
+	double **Kt_a;						/*!< \brief Structure for the nodal stress term for the residual computation. */
 
 public:
 	/*!
@@ -203,9 +204,16 @@ public:
 	 * \brief Add the value of the diagonal term for the stress contribution to the stiffness of the system.
 	 * \param[in] nodeA - index of Node a.
 	 * \param[in] nodeB - index of Node b.
-	 * \param[in] val_Kab - value of the term that will constitute the diagonal of the stress contribution.
+	 * \param[in] val_Ks_ab - value of the term that will constitute the diagonal of the stress contribution.
 	 */
 	void Add_Ks_ab(double val_Ks_ab, unsigned short nodeA, unsigned short nodeB);
+
+	/*!
+	 * \brief Add the value of the nodal stress term for the computation of the residual.
+	 * \param[in] nodeA - index of Node a.
+	 * \param[in] val_Kt_a - value of the term that will constitute the diagonal of the stress contribution.
+	 */
+	void Add_Kt_a(double *val_Kt_a, unsigned short nodeA);
 
 	/*!
 	 * \brief Set the value of a submatrix K relating nodes a and b, for the pressure term (this term is subintegrated).
@@ -237,12 +245,19 @@ public:
 	double Get_Ks_ab(unsigned short nodeA, unsigned short nodeB);
 
 	/*!
-	 * \brief Set the value of a submatrix K relating nodes a and b, for the pressure term (this term is subintegrated).
+	 * \brief Return the value of a submatrix K relating nodes a and b, for the pressure term (this term is subintegrated).
 	 * \param[in] nodeA - index of Node a.
 	 * \param[in] nodeB - index of Node b.
 	 * \param[in] val_Kab - value of the matrix K.
 	 */
 	double *Get_Kk_ab(unsigned short nodeA, unsigned short nodeB);
+
+	/*!
+	 * \brief Return the value of the nodal stress component of the residual for node a.
+	 * \param[in] nodeA - index of Node a.
+	 * \param[out] val_Kt_a - value of the stress term.
+	 */
+	double *Get_Kt_a(unsigned short nodeA);
 
 	/*!
 	 * \brief Set the value of the gradient of the shape functions respect to the reference configuration.
@@ -283,12 +298,6 @@ public:
 	double GetGradNi_x_P(unsigned short iNode, unsigned short iGaussP, unsigned short iDim);
 
 	/*!
-	 * \brief Retrieve the number of nodes of the element.
-	 * \param[out] nNodes - Number of nodes of the element.
-	 */
-	virtual void OutputGradN_X(CGeometry *geometry, CConfig *config);
-
-	/*!
 	 * \brief Virtual member
 	 */
 	virtual void ComputeGrad_Pressure(void);
@@ -318,10 +327,9 @@ public:
 	 * \overload
 	 * \param[in] val_fea - Values of the fea solution (initialization value).
 	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_elID - Element ID.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CTRIA1(unsigned short val_nDim, unsigned long val_elID, CConfig *config);
+	CTRIA1(unsigned short val_nDim, CConfig *config);
 
 	/*!
 	 * \brief Destructor of the class.
@@ -341,13 +349,6 @@ public:
 	 * \param[out] J_x - Jacobian of the element evaluated at the current Gauss Point respect to the current configuration
 	 */
 	void ComputeGrad_NonLinear(void);
-
-	/*!
-	 * \brief Set the value of the gradient of the shape functions respect to the reference configuration.
-	 * \param[in] val_solution - Solution of the problem.
-	 * \param[out] J_X - Jacobian of the element evaluated at the current Gauss Point respect to the reference configuration
-	 */
-	void OutputGradN_X(CGeometry *geometry, CConfig *config);
 
 };
 
@@ -374,10 +375,9 @@ public:
 	 * \overload
 	 * \param[in] val_fea - Values of the fea solution (initialization value).
 	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_elID - Element ID.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CQUAD4(unsigned short val_nDim, unsigned long val_elID, CConfig *config);
+	CQUAD4(unsigned short val_nDim, CConfig *config);
 
 	/*!
 	 * \brief Destructor of the class.
@@ -397,13 +397,6 @@ public:
 	 * \param[out] J_x - Jacobian of the element evaluated at the current Gauss Point respect to the current configuration
 	 */
 	void ComputeGrad_NonLinear(void);
-
-	/*!
-	 * \brief Set the value of the gradient of the shape functions respect to the reference configuration.
-	 * \param[in] val_solution - Solution of the problem.
-	 * \param[out] J_X - Jacobian of the element evaluated at the current Gauss Point respect to the reference configuration
-	 */
-	void OutputGradN_X(CGeometry *geometry, CConfig *config);
 
 	/*!
 	 * \brief Virtual member.
@@ -435,15 +428,154 @@ public:
 	 * \overload
 	 * \param[in] val_fea - Values of the fea solution (initialization value).
 	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_elID - Element ID.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CQUAD4P1(unsigned short val_nDim, unsigned long val_elID, CConfig *config);
+	CQUAD4P1(unsigned short val_nDim, CConfig *config);
 
 	/*!
 	 * \brief Destructor of the class.
 	 */
 	~CQUAD4P1(void);
+
+	/*!
+	 * \brief Set the value of the gradient of the shape functions respect to the current configuration on 1 Gauss Point.
+	 * \param[in] val_solution - Solution of the problem.
+	 * \param[out] J_X - Jacobian of the element evaluated at the current Gauss Point respect to the reference configuration
+	 */
+	void ComputeGrad_Pressure(void);
+
+
+};
+
+/*!
+ * \class CTETRA1
+ * \brief Tetrahedral element with 1 Gauss Point
+ * \author R. Sanchez
+ * \version 4.0.0 "Cardinal"
+ */
+
+class CTETRA1 : public CElement {
+
+protected:
+
+public:
+
+	/*!
+	 * \brief Constructor of the class.
+	 */
+	CTETRA1(void);
+
+	/*!
+	 * \overload
+	 * \param[in] val_fea - Values of the fea solution (initialization value).
+	 * \param[in] val_nDim - Number of dimensions of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CTETRA1(unsigned short val_nDim, CConfig *config);
+
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CTETRA1(void);
+
+	/*!
+	 * \brief Set the value of the gradient of the shape functions respect to the reference configuration.
+	 * \param[in] val_solution - Solution of the problem.
+	 * \param[out] J_X - Jacobian of the element evaluated at the current Gauss Point respect to the reference configuration
+	 */
+	void ComputeGrad_Linear(void);
+
+	/*!
+	 * \brief Set the value of the gradient of the shape functions respect to the current configuration.
+	 * \param[in] val_solution - Solution of the problem.
+	 * \param[out] J_x - Jacobian of the element evaluated at the current Gauss Point respect to the current configuration
+	 */
+	void ComputeGrad_NonLinear(void);
+
+};
+
+/*!
+ * \class CHEXA8
+ * \brief Hexahedral element with 8 Gauss Points
+ * \author R. Sanchez
+ * \version 4.0.0 "Cardinal"
+ */
+
+class CHEXA8 : public CElement {
+
+protected:
+
+public:
+
+	/*!
+	 * \brief Constructor of the class.
+	 */
+	CHEXA8(void);
+
+	/*!
+	 * \overload
+	 * \param[in] val_fea - Values of the fea solution (initialization value).
+	 * \param[in] val_nDim - Number of dimensions of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CHEXA8(unsigned short val_nDim, CConfig *config);
+
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CHEXA8(void);
+
+	/*!
+	 * \brief Set the value of the gradient of the shape functions respect to the reference configuration.
+	 * \param[in] val_solution - Solution of the problem.
+	 * \param[out] J_X - Jacobian of the element evaluated at the current Gauss Point respect to the reference configuration
+	 */
+	void ComputeGrad_Linear(void);
+
+	/*!
+	 * \brief Set the value of the gradient of the shape functions respect to the current configuration.
+	 * \param[in] val_solution - Solution of the problem.
+	 * \param[out] J_x - Jacobian of the element evaluated at the current Gauss Point respect to the current configuration
+	 */
+	void ComputeGrad_NonLinear(void);
+
+	/*!
+	 * \brief Virtual member.
+	 */
+	virtual void ComputeGrad_Pressure(void);
+
+
+};
+
+/*!
+ * \class CHEXA8P1
+ * \brief Hexahedral element with 8 Gauss Points and 1 Gauss Point for pressure subintegration
+ * \author R. Sanchez
+ * \version 4.0.0 "Cardinal"
+ */
+
+class CHEXA8P1 : public CHEXA8 {
+
+protected:
+
+public:
+
+	/*!
+	 * \brief Constructor of the class.
+	 */
+	CHEXA8P1(void);
+
+	/*!
+	 * \overload
+	 * \param[in] val_nDim - Number of dimensions of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CHEXA8P1(unsigned short val_nDim, CConfig *config);
+
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CHEXA8P1(void);
 
 	/*!
 	 * \brief Set the value of the gradient of the shape functions respect to the current configuration on 1 Gauss Point.

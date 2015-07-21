@@ -77,8 +77,6 @@ void CFEM_LinearElasticity::Compute_Tangent_Matrix(CElement *element){
 
 	element->clearElement(); 			/*--- Restarts the element: avoids adding over previous results in other elements --*/
 	element->ComputeGrad_Linear();
-	element->ComputeGrad_Pressure();
-// TODO: The line up here doesn't belong here, it's just for coding/debugging purposes.
 	nNode = element->GetnNodes();
 	nGauss = element->GetnGaussPoints();
 
@@ -91,28 +89,28 @@ void CFEM_LinearElasticity::Compute_Tangent_Matrix(CElement *element){
 		/*--- This avoids repeated operations ---*/
 		for (iNode = 0; iNode < nNode; iNode++){
 			for (iDim = 0; iDim < nDim; iDim++){
-				GradNi_Mat[iNode][iDim] = element->GetGradNi_X(iNode,iGauss,iDim);
+				GradNi_Ref_Mat[iNode][iDim] = element->GetGradNi_X(iNode,iGauss,iDim);
 			}
 		}
 
 		for (iNode = 0; iNode < nNode; iNode++){
 
 			if (nDim == 2){
-				Ba_Mat[0][0] = GradNi_Mat[iNode][0];
-				Ba_Mat[1][1] = GradNi_Mat[iNode][1];
-				Ba_Mat[2][0] = GradNi_Mat[iNode][1];
-				Ba_Mat[2][1] = GradNi_Mat[iNode][0];
+				Ba_Mat[0][0] = GradNi_Ref_Mat[iNode][0];
+				Ba_Mat[1][1] = GradNi_Ref_Mat[iNode][1];
+				Ba_Mat[2][0] = GradNi_Ref_Mat[iNode][1];
+				Ba_Mat[2][1] = GradNi_Ref_Mat[iNode][0];
 			}
 			else if (nDim ==3){
-				Ba_Mat[0][0] = GradNi_Mat[iNode][0];
-				Ba_Mat[1][1] = GradNi_Mat[iNode][1];
-				Ba_Mat[2][2] = GradNi_Mat[iNode][2];
-				Ba_Mat[3][0] = GradNi_Mat[iNode][1];
-				Ba_Mat[3][1] = GradNi_Mat[iNode][0];
-				Ba_Mat[4][0] = GradNi_Mat[iNode][2];
-				Ba_Mat[4][2] = GradNi_Mat[iNode][0];
-				Ba_Mat[5][1] = GradNi_Mat[iNode][2];
-				Ba_Mat[5][2] = GradNi_Mat[iNode][1];					;
+				Ba_Mat[0][0] = GradNi_Ref_Mat[iNode][0];
+				Ba_Mat[1][1] = GradNi_Ref_Mat[iNode][1];
+				Ba_Mat[2][2] = GradNi_Ref_Mat[iNode][2];
+				Ba_Mat[3][0] = GradNi_Ref_Mat[iNode][1];
+				Ba_Mat[3][1] = GradNi_Ref_Mat[iNode][0];
+				Ba_Mat[4][0] = GradNi_Ref_Mat[iNode][2];
+				Ba_Mat[4][2] = GradNi_Ref_Mat[iNode][0];
+				Ba_Mat[5][1] = GradNi_Ref_Mat[iNode][2];
+				Ba_Mat[5][2] = GradNi_Ref_Mat[iNode][1];					;
 			}
 
 		    /*--- Compute the BT.D Matrix ---*/
@@ -129,21 +127,21 @@ void CFEM_LinearElasticity::Compute_Tangent_Matrix(CElement *element){
 			/*--- Assumming symmetry ---*/
 			for (jNode = iNode; jNode < nNode; jNode++){
 				if (nDim == 2){
-					Bb_Mat[0][0] = GradNi_Mat[jNode][0];
-					Bb_Mat[1][1] = GradNi_Mat[jNode][1];
-					Bb_Mat[2][0] = GradNi_Mat[jNode][1];
-					Bb_Mat[2][1] = GradNi_Mat[jNode][0];
+					Bb_Mat[0][0] = GradNi_Ref_Mat[jNode][0];
+					Bb_Mat[1][1] = GradNi_Ref_Mat[jNode][1];
+					Bb_Mat[2][0] = GradNi_Ref_Mat[jNode][1];
+					Bb_Mat[2][1] = GradNi_Ref_Mat[jNode][0];
 				}
 				else if (nDim ==3){
-					Bb_Mat[0][0] = GradNi_Mat[iNode][0];
-					Bb_Mat[1][1] = GradNi_Mat[iNode][1];
-					Bb_Mat[2][2] = GradNi_Mat[iNode][2];
-					Bb_Mat[3][0] = GradNi_Mat[iNode][1];
-					Bb_Mat[3][1] = GradNi_Mat[iNode][0];
-					Bb_Mat[4][0] = GradNi_Mat[iNode][2];
-					Bb_Mat[4][2] = GradNi_Mat[iNode][0];
-					Bb_Mat[5][1] = GradNi_Mat[iNode][2];
-					Bb_Mat[5][2] = GradNi_Mat[iNode][1];
+					Bb_Mat[0][0] = GradNi_Ref_Mat[iNode][0];
+					Bb_Mat[1][1] = GradNi_Ref_Mat[iNode][1];
+					Bb_Mat[2][2] = GradNi_Ref_Mat[iNode][2];
+					Bb_Mat[3][0] = GradNi_Ref_Mat[iNode][1];
+					Bb_Mat[3][1] = GradNi_Ref_Mat[iNode][0];
+					Bb_Mat[4][0] = GradNi_Ref_Mat[iNode][2];
+					Bb_Mat[4][2] = GradNi_Ref_Mat[iNode][0];
+					Bb_Mat[5][1] = GradNi_Ref_Mat[iNode][2];
+					Bb_Mat[5][2] = GradNi_Ref_Mat[iNode][1];
 				}
 
 				for (i = 0; i < nDim; i++){
@@ -171,13 +169,14 @@ void CFEM_LinearElasticity::Compute_Tangent_Matrix(CElement *element){
 
 void CFEM_LinearElasticity::Compute_Constitutive_Matrix(void){
 
+	/*--- Assuming plane strain ---*/
+
 	if (nDim == 2){
-		D_Mat[0][0] = E/(1-Nu*Nu);	  		D_Mat[0][1] = (E*Nu)/(1-Nu*Nu);  D_Mat[0][2] = 0.0;
-		D_Mat[1][0] = (E*Nu)/(1-Nu*Nu);    	D_Mat[1][1] = E/(1-Nu*Nu);   	 D_Mat[1][2] = 0.0;
-		D_Mat[2][0] = 0.0;               	D_Mat[2][1] = 0.0;               D_Mat[2][2] = ((1-Nu)*E)/(2*(1-Nu*Nu));
+		D_Mat[0][0] = Lambda + 2.0*Mu;	D_Mat[0][1] = Lambda;            D_Mat[0][2] = 0.0;
+		D_Mat[1][0] = Lambda;           D_Mat[1][1] = Lambda + 2.0*Mu;   D_Mat[1][2] = 0.0;
+		D_Mat[2][0] = 0.0;              D_Mat[2][1] = 0.0;               D_Mat[2][2] = Mu;
 	}
 	else if (nDim == 3){
-	    /*--- Compute the D Matrix (for plane strain and 3-D)---*/
 
 	    D_Mat[0][0] = Lambda + 2.0*Mu;	D_Mat[0][1] = Lambda;			D_Mat[0][2] = Lambda;			D_Mat[0][3] = 0.0;	D_Mat[0][4] = 0.0;	D_Mat[0][5] = 0.0;
 	    D_Mat[1][0] = Lambda;			D_Mat[1][1] = Lambda + 2.0*Mu;	D_Mat[1][2] = Lambda;			D_Mat[1][3] = 0.0;	D_Mat[1][4] = 0.0;	D_Mat[1][5] = 0.0;
