@@ -2,7 +2,7 @@
  * \file integration_structure.inl
  * \brief In-Line subroutines of the <i>integration_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -35,9 +35,13 @@ inline double CIntegration::GetCauchy_Value(void) { return Cauchy_Value; }
 
 inline bool CIntegration::GetConvergence(void) { return Convergence; }
 
+inline bool CIntegration::GetConvergence_FSI(void) { return Convergence_FSI; }
+
 inline bool CIntegration::GetConvergence_FullMG(void) { return Convergence_FullMG; }
 
 inline void CIntegration::SetConvergence(bool value) { Convergence = value; }
+
+inline void CIntegration::SetConvergence_FSI(bool valueFSI) { Convergence_FSI = valueFSI; }
 
 inline void CIntegration::MultiGrid_Iteration(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container, 
 											  CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone) { }
@@ -71,6 +75,9 @@ inline void CIntegration::SetForcing_Term(CSolver *sol_fine, CSolver *sol_coarse
 										  CConfig *config, unsigned short iMesh) { }
 
 inline void CIntegration::SingleGrid_Iteration(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container, 
+											  CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone) { }
+
+inline void CIntegration::Structural_Iteration(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container, 
 											  CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone) { }
 
 inline void CIntegration::SetPotential_Solver(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container, 

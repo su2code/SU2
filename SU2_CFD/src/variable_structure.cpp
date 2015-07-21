@@ -2,7 +2,7 @@
  * \file variable_structure.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, T. Economon
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -264,6 +264,13 @@ void CVariable::SetSolution_Old(double *val_solution_old) {
 	for (unsigned short iVar = 0; iVar < nVar; iVar++)
 		Solution_Old[iVar] = val_solution_old[iVar];
   
+}
+
+void CVariable::SetSolution_time_n(double *val_solution_time_n) {
+
+	for (unsigned short iVar = 0; iVar < nVar; iVar++)
+		Solution_time_n[iVar] = val_solution_time_n[iVar];
+
 }
 
 void CVariable::AddResidual_Sum(double *val_residual) {
