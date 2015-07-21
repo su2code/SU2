@@ -400,13 +400,22 @@ void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config){
 
   unsigned long iPoint;
   unsigned short iDim;
-  su2double *Coord, Sensitivity;
+  su2double *Coord, Sensitivity, eps;
 
   for (iPoint = 0; iPoint < nPoint; iPoint++){
     Coord = geometry->node[iPoint]->GetCoord();
 
     for (iDim = 0; iDim < nDim; iDim++){
+
       Sensitivity = SU2_TYPE::GetDerivative(Coord[iDim]);
+
+      /*--- If sharp edge, set the sensitivity to 0 on that region ---*/
+
+      if (config->GetSens_Remove_Sharp()) {
+        eps = config->GetLimiterCoeff()*config->GetRefElemLength();
+        if ( geometry->node[iPoint]->GetSharpEdge_Distance() < config->GetSharpEdgesCoeff()*eps )
+          Sensitivity = 0.0;
+      }
 
       node[iPoint]->SetSensitivity(iDim, Sensitivity);
     }
