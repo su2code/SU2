@@ -134,7 +134,6 @@ void CConfig::SetPointersNull(void) {
   Marker_CfgFile_KindBC=NULL;    Marker_All_SendRecv=NULL; Marker_All_PerBound=NULL;
   Marker_FSIinterface=NULL;
 
-
   /*--- Boundary Condition settings ---*/
 
   Heat_FluxNonCatalytic=NULL;  Heat_FluxCatalytic=NULL;
