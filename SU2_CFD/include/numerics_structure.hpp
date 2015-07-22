@@ -1770,11 +1770,11 @@ private:
 	double *Velocity_i, *Velocity_j, *RoeVelocity;
 	double *ProjFlux_i, *ProjFlux_j;
 	double *delta_wave, *delta_vel;
-	double *Lambda, *Epsilon;
+	double *Lambda, *Epsilon, MaxLambda, Delta;
 	double **P_Tensor, **invP_Tensor;
 	double sq_vel, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
-	Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoeDensity, RoeEnthalpy, RoeSoundSpeed,
-	ProjVelocity, ProjVelocity_i, ProjVelocity_j, proj_delta_vel, delta_p, delta_rho;
+	Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoeDensity, RoeEnthalpy, RoeSoundSpeed, RoeSoundSpeed2,
+	ProjVelocity, ProjVelocity_i, ProjVelocity_j, proj_delta_vel, delta_p, delta_rho, kappa;
 	unsigned short iDim, iVar, jVar, kVar;
 
 

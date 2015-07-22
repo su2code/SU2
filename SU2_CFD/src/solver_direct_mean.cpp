@@ -6881,8 +6881,6 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
   
   double *Normal;
   
-  /// Doesn't work for ALE
-  
   Normal = new double[nDim];
   
   Velocity_i = new double[nDim];
@@ -6989,20 +6987,11 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
           
           /* --- Compute the boundary state u_e --- */
           
-          //                if (config->GetKind_Data_Riemann(Marker_Tag) == TOTAL_CONDITIONS_PT) {
           Velocity2_e = Velocity2_i;
           
           for (iDim = 0; iDim < nDim; iDim++) {
             Velocity_e[iDim] = sqrt(Velocity2_e)*Flow_Dir[iDim];
           }
-          
-          //                } else{
-          //                	Velocity2_e = 0.0;
-          //                	for (iDim = 0; iDim < nDim; iDim++) {
-          //						Velocity_e[iDim] = Flow_Dir[iDim]/config->GetVelocity_Ref();
-          //						Velocity2_e += Velocity_e[iDim]*Velocity_e[iDim];
-          //                		}
-          //                }
           
           
           StaticEnthalpy_e = Enthalpy_e - 0.5 * Velocity2_e;
@@ -7143,7 +7132,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
       conv_numerics->GetPMatrix_inv(invP_Tensor, &Density_i, Velocity_i, &SoundSpeed_i, &Chi_i, &Kappa_i, UnitNormal);
       
 
-      /* gridvel component contribution to the eigenvalues*/
+      /*--- eigenvalues contribution due to grid motion ---*/
 
       if (grid_movement){
     	  gridVel = geometry->node[iPoint]->GetGridVel();
@@ -7221,7 +7210,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
       /*--- Compute the residuals ---*/
       conv_numerics->GetInviscidProjFlux(&Density_b, Velocity_b, &Pressure_b, &Enthalpy_b, Normal, Residual);
       
-      /*--- Gridvel contribution to the Residuals ---*/
+      /*--- Residual contribution due to grid motion ---*/
 
       if (grid_movement) {
         double projVelocity = 0.0;
@@ -7268,14 +7257,17 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
         /*--- Compute flux Jacobian in state b ---*/
         conv_numerics->GetInviscidProjJac(Velocity_b, &Enthalpy_b, &Chi_b, &Kappa_b, Normal, 1.0, Jacobian_b);
         
-        /*--- Gridvel contribution to the Jacobian ---*/
+        /*--- Jacobian contribution due to grid motion ---*/
         if (grid_movement)
         {
           double projVelocity = 0.0;
           for (iDim = 0; iDim < nDim; iDim++)
         	  projVelocity +=  gridVel[iDim]*Normal[iDim];
-          for (iVar = 0; iVar < nVar; iVar++)
-               Jacobian_b[iVar][iVar] -= projVelocity;
+          for (iVar = 0; iVar < nVar; iVar++){
+              Residual[iVar] -= projVelocity *(u_b[iVar]);
+              Jacobian_b[iVar][iVar] -= projVelocity;
+          }
+
         }
         /*--- Compute numerical flux Jacobian at node i ---*/
         
