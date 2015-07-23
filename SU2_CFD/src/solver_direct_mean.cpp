@@ -5312,7 +5312,7 @@ void CEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) {
 //
 //}
 
-void CEulerSolver::SetPreconditioner(CConfig *config, unsigned short iPoint) {
+void CEulerSolver::SetPreconditioner(CConfig *config, unsigned long iPoint) {
   unsigned short iDim, jDim, iVar, jVar;
   double Beta, local_Mach, Beta2, rho, enthalpy, soundspeed, sq_vel;
   double *U_i = NULL;

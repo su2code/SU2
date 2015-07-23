@@ -3801,7 +3801,7 @@ void CTNE2EulerSolver::SetSolution_Limiter(CGeometry *geometry,
   Set_MPI_Solution_Limiter(geometry, config);
 }
 
-void CTNE2EulerSolver::SetPreconditioner(CConfig *config, unsigned short iPoint) {
+void CTNE2EulerSolver::SetPreconditioner(CConfig *config, unsigned long iPoint) {
 	unsigned short iDim, jDim, iVar, jVar;
 	double Beta, local_Mach, Beta2, rho, enthalpy, soundspeed, sq_vel;
 	double *U_i = NULL;

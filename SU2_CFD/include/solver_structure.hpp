@@ -1086,7 +1086,7 @@ public:
 	 * \param[in] iPoint - Index of the grid point.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void SetPreconditioner(CConfig *config, unsigned short iPoint);
+	virtual void SetPreconditioner(CConfig *config, unsigned long iPoint);
     
 	/*!
 	 * \brief A virtual member.
@@ -2835,7 +2835,7 @@ public:
 	 * \param[in] iPoint - Index of the grid point
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void SetPreconditioner(CConfig *config, unsigned short iPoint);
+	void SetPreconditioner(CConfig *config, unsigned long iPoint);
     
 	/*!
 	 * \brief Compute the undivided laplacian for the solution, except the energy equation.
@@ -7163,7 +7163,7 @@ public:
 	 * \param[in] iPoint - Index of the grid point
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void SetPreconditioner(CConfig *config, unsigned short iPoint);
+	void SetPreconditioner(CConfig *config, unsigned long iPoint);
    
 	/*!
 	 * \brief Impose via the residual the Euler wall boundary condition.
