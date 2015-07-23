@@ -713,6 +713,17 @@ static const map<string, ENUM_TIME_INT_FEA> Time_Int_Map_FEA = CCreateMap<string
 ("GA_IMPLICIT", GA_IMPLICIT);
 
 /*!
+ * \brief type of time integration schemes
+ */
+enum ENUM_SPACE_ITE_FEA {
+  NEWTON_RAPHSON = 1,			/*!< \brief Full Newton-Rapshon method. */
+  MODIFIED_NEWTON_RAPHSON = 2   /*!< \brief Modified Newton-Raphson method. */
+};
+static const map<string, ENUM_SPACE_ITE_FEA> Space_Ite_Map_FEA = CCreateMap<string, ENUM_SPACE_ITE_FEA>
+("NEWTON_RAPHSON", NEWTON_RAPHSON)
+("MODIFIED_NEWTON_RAPHSON", MODIFIED_NEWTON_RAPHSON);
+
+/*!
  * \brief types of schemes to compute the flow gradient
  */
 enum ENUM_FLOW_GRADIENT {

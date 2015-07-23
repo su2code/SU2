@@ -260,20 +260,6 @@ public:
 	double *Get_Kt_a(unsigned short nodeA);
 
 	/*!
-	 * \brief Set the value of the gradient of the shape functions respect to the reference configuration.
-	 * \param[in] val_solution - Solution of the problem.
-	 * \param[out] J_X - Jacobian of the element evaluated at the current Gauss Point respect to the reference configuration
-	 */
-	virtual void ComputeGrad_Linear(void);
-
-	/*!
-	 * \brief Set the value of the gradient of the shape functions respect to the current configuration.
-	 * \param[in] val_solution - Solution of the problem.
-	 * \param[out] J_x - Jacobian of the element evaluated at the current Gauss Point respect to the current configuration
-	 */
-	virtual void ComputeGrad_NonLinear(void);
-
-	/*!
 	 * \brief Retrieve the value of the gradient of the shape functions respect to the reference configuration.
 	 * \param[in] iNode - Index of the node.
 	 * \param[in] iNode - Index of the Gaussian Point.
@@ -296,6 +282,20 @@ public:
 	 * \param[out] GradNi_x - Gradient of the shape function related to node iNode and evaluated at Gaussian Point iGauss
 	 */
 	double GetGradNi_x_P(unsigned short iNode, unsigned short iGaussP, unsigned short iDim);
+
+	/*!
+	 * \brief Set the value of the gradient of the shape functions respect to the reference configuration.
+	 * \param[in] val_solution - Solution of the problem.
+	 * \param[out] J_X - Jacobian of the element evaluated at the current Gauss Point respect to the reference configuration
+	 */
+	virtual void ComputeGrad_Linear(void);
+
+	/*!
+	 * \brief Set the value of the gradient of the shape functions respect to the current configuration.
+	 * \param[in] val_solution - Solution of the problem.
+	 * \param[out] J_x - Jacobian of the element evaluated at the current Gauss Point respect to the current configuration
+	 */
+	virtual void ComputeGrad_NonLinear(void);
 
 	/*!
 	 * \brief Virtual member

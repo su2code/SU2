@@ -55,6 +55,8 @@ inline void CNumerics::PressInt_Linear(double CoordCorners[4][3], double *tn_e, 
 
 inline void CNumerics::ViscTermInt_Linear(double CoordCorners[2][2], double Tau_0[3][3], double Tau_1[3][3], double FviscNodal[4]) { }
 
+inline void CNumerics::Compute_Mass_Matrix(CElement *element_container){ }
+
 inline void CNumerics::Compute_Tangent_Matrix(CElement *element_container){ }
 
 inline void CFEM_Elasticity::Compute_Tangent_Matrix(CElement *element_container){ }

@@ -341,6 +341,7 @@ private:
 	Kind_TimeIntScheme_Heat,	/*!< \brief Time integration for the wave equations. */
 	Kind_TimeIntScheme_Poisson,	/*!< \brief Time integration for the wave equations. */
 	Kind_TimeIntScheme_FEA,	/*!< \brief Time integration for the FEA equations. */
+	Kind_SpaceIteScheme_FEA,	/*!< \brief Iterative scheme for nonlinear structural analysis. */
 	Kind_ConvNumScheme,			/*!< \brief Global definition of the convective term. */
 	Kind_ConvNumScheme_Flow,	/*!< \brief Centered or upwind scheme for the flow equations. */
 	Kind_ConvNumScheme_Heat,	/*!< \brief Centered or upwind scheme for the flow equations. */
@@ -3157,6 +3158,15 @@ public:
 	 * \return Kind of integration scheme for the plasma equations.
 	 */
 	unsigned short GetKind_TimeIntScheme_Template(void);
+
+	/*!
+	 * \brief Get the kind of integration scheme (explicit or implicit)
+	 *        for the flow equations.
+	 * \note This value is obtained from the config file, and it is constant
+	 *       during the computation.
+	 * \return Kind of integration scheme for the plasma equations.
+	 */
+	unsigned short GetKind_SpaceIteScheme_FEA(void);
 
 	/*!
 	 * \brief Get the kind of convective numerical scheme for the flow

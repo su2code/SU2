@@ -91,6 +91,20 @@ public:
 	void Space_Integration(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config, 
 						   unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem);
 
+	/*!
+	 * \brief Do the space integration of the numerical system on a FEM framework.
+	 * \author R. Sanchez
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] iMesh - Index of the mesh in multigrid computations.
+	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+	 * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+	 */
+	void Space_Integration_FEM(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config,
+						   unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem);
+
 	/*! 
 	 * \brief Do the time integration (explicit or implicit) of the numerical system.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -104,6 +118,19 @@ public:
 						  unsigned short iRKStep, unsigned short RunTime_EqSystem, unsigned long Iteration);
 	
 	/*! 
+	 * \brief Do the time integration (explicit or implicit) of the numerical system on a FEM framework..
+	 * \author R. Sanchez
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+	 * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+	 * \param[in] Iteration - Current iteration.
+	 */
+	void Time_Integration_FEM(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+						  	  unsigned short iRKStep, unsigned short RunTime_EqSystem, unsigned long Iteration);
+
+	/*!
 	 * \brief Initialize the adjoint solution using the primal problem.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
@@ -342,6 +369,18 @@ public:
 	 * \param[in] Iteration - Current iteration.
 	 */
 	virtual void Structural_Iteration(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container,
+								  CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+	 * \param[in] Iteration - Current iteration.
+	 */
+	virtual void Structural_Iteration_FEM(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container,
 								  CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
 
 	
@@ -634,6 +673,18 @@ public:
 	 * \param[in] Iteration - Current iteration.
 	 */
 	void Structural_Iteration(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container,
+							 CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
+
+	/*!
+	 * \brief Do the numerical integration (implicit) of the structural solver.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+	 * \param[in] Iteration - Current iteration.
+	 */
+	void Structural_Iteration_FEM(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container,
 							 CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
 
 };
