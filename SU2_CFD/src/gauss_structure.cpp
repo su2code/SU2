@@ -38,6 +38,7 @@ CGaussVariable::CGaussVariable(void) {
 	J_X = 0.0;
 	J_x = 0.0;
 	iGaussPoint = 0;
+	Ni = NULL;
 
 }
 
@@ -56,11 +57,14 @@ CGaussVariable::CGaussVariable(unsigned short val_iGauss, unsigned short val_nDi
 
 	 iGaussPoint = val_iGauss;
 
+	 Ni = new double [val_nNodes];
+
 }
 
 CGaussVariable::~CGaussVariable(void) {
 
   if (GradNi_Xj            != NULL) delete [] GradNi_Xj;
   if (GradNi_xj            != NULL) delete [] GradNi_xj;
+  if (Ni            	   != NULL) delete [] Ni;
 
 }

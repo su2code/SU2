@@ -713,6 +713,50 @@ void FEAIteration(COutput *output, CIntegration ***integration_container, CGeome
   
 }
 
+void FEM_StructuralIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
+                  	  	  	  	 CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
+                  	  	  	  	 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox) {
+	double Physical_dt, Physical_t;
+	unsigned short iMesh, iZone;
+	unsigned short nZone = geometry_container[ZONE_0][MESH_0]->GetnZone();
+	unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
+  	unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
+
+	for (iZone = 0; iZone < nZone; iZone++) {
+
+    if (config_container[iZone]->GetGrid_Movement())
+      SetGrid_Movement(geometry_container[iZone], surface_movement[iZone],
+                       grid_movement[iZone], FFDBox[iZone], solver_container[iZone], config_container[iZone], iZone, IntIter, ExtIter);
+
+		/*--- Set the value of the internal iteration ---*/
+
+		IntIter = ExtIter;
+
+		/*--- Set the initial condition at the first iteration ---*/
+
+		solver_container[iZone][MESH_0][FEA_SOL]->SetInitialCondition(geometry_container[iZone], solver_container[iZone], config_container[iZone], ExtIter);
+
+		/*--- FEA equations ---*/
+
+		config_container[iZone]->SetGlobalParam(LINEAR_ELASTICITY, RUNTIME_FEA_SYS, ExtIter);
+
+		/*--- Run the iteration ---*/
+
+		integration_container[iZone][FEA_SOL]->Structural_Iteration_FEM(geometry_container, solver_container, numerics_container,
+                                                                		config_container, RUNTIME_FEA_SYS, IntIter, iZone);
+
+		/*----------------- Update structural solver ----------------------*/
+
+		bool dynamic = (config_container[iZone]->GetDynamic_Analysis() == DYNAMIC);
+
+		if (dynamic){
+			integration_container[iZone][FEA_SOL]->SetStructural_Solver(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0][FEA_SOL], config_container[iZone], MESH_0);
+		}
+
+	}
+
+}
+
 void FluidStructureIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
                              CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
                              CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox,

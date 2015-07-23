@@ -122,3 +122,7 @@ CFEM_Elasticity::~CFEM_Elasticity(void) {
 
 }
 
+void CFEM_Elasticity::Compute_Mass_Matrix(CElement *element_container){
+
+}
+

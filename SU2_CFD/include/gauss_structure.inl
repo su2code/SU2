@@ -35,6 +35,8 @@ inline void CGaussVariable::SetGradNi_Xj(double val_GradNi_Xj, unsigned short va
 
 inline void CGaussVariable::SetGradNi_xj(double val_GradNi_xj, unsigned short val_iDim, unsigned short val_Ni) { GradNi_xj[val_Ni][val_iDim] = val_GradNi_xj; }
 
+inline void CGaussVariable::SetNi(double val_ShapeNi, unsigned short val_Ni) { Ni[val_Ni] = val_ShapeNi; }
+
 inline void CGaussVariable::SetJ_X(double valJ_X) { J_X = valJ_X; }
 
 inline void CGaussVariable::SetJ_x(double valJ_x) { J_x = valJ_x; }
@@ -46,6 +48,8 @@ inline double **CGaussVariable::GetGradNi_Xj(void) { return GradNi_Xj; }
 inline double CGaussVariable::GetGradNi_Xj(unsigned short val_Ni, unsigned short val_iDim) { return GradNi_Xj[val_Ni][val_iDim]; }
 
 inline double CGaussVariable::GetGradNi_xj(unsigned short val_Ni, unsigned short val_iDim) { return GradNi_xj[val_Ni][val_iDim]; }
+
+inline double CGaussVariable::GetNi(unsigned short val_Ni) { return Ni[val_Ni]; }
 
 inline double CGaussVariable::GetJ_X(void) { return J_X; }
 

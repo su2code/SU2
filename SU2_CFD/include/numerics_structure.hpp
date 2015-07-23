@@ -1679,6 +1679,12 @@ void GetViscousProjFlux(double *val_primvar, double **val_gradprimvar,
 	virtual void Compute_Stress_Tensor(void);
 
 	/*!
+	 * \brief A virtual member to compute the mass matrix
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	virtual void Compute_Mass_Matrix(CElement *element_container);
+
+	/*!
 	 * \brief Computes a basis of orthogonal vectors from a suppled vector
 	 * \param[in] config - Normal vector
 	 */
@@ -4431,6 +4437,7 @@ public:
 	 */
 	~CFEM_Elasticity(void);
 
+	void Compute_Mass_Matrix(CElement *element_container);
 
 	virtual void Compute_Tangent_Matrix(CElement *element_container);
 

@@ -199,6 +199,25 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   
 }
 
+
+void CIntegration::Space_Integration_FEM(CGeometry *geometry,
+                                     CSolver **solver_container,
+                                     CNumerics **numerics,
+                                     CConfig *config, unsigned short iMesh,
+                                     unsigned short iRKStep,
+                                     unsigned short RunTime_EqSystem) {
+
+	  unsigned short iMarker;
+
+	  unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
+
+	  /*--- Compute Stiffness Matrix and Nodal Stress Term ---*/
+
+	  solver_container[MainSolver]->Compute_StiffMatrix_NodalStressRes(geometry, solver_container, numerics[VISC_TERM], config);
+
+
+}
+
 void CIntegration::Adjoint_Setup(CGeometry ***geometry, CSolver ****solver_container, CConfig **config,
                                  unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone) {
   
@@ -293,6 +312,29 @@ void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_contai
 	  }
 	}
   
+}
+
+void CIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep,
+                                    unsigned short RunTime_EqSystem, unsigned long Iteration) {
+
+	unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
+	unsigned short KindSolver = config->GetKind_Solver();
+
+  /*--- Perform the time integration ---*/
+
+	switch (config->GetKind_TimeIntScheme_FEA()) {
+		case (CD_EXPLICIT):
+		  solver_container[MainSolver]->ExplicitRK_Iteration(geometry, solver_container, config, iRKStep);
+		  break;
+		case (NEWMARK_IMPLICIT):
+		  solver_container[MainSolver]->ImplicitNewmark_Iteration(geometry, solver_container, config);
+		  break;
+		case (GA_IMPLICIT):
+		  solver_container[MainSolver]->ImplicitEuler_Iteration(geometry, solver_container, config);
+		  break;
+	  }
+
+
 }
 
 void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, unsigned long Iteration,

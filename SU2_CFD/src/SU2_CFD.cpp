@@ -388,9 +388,9 @@ int main(int argc, char *argv[]) {
         break;
         
       case FEM_ELASTICITY:
-        FEAIteration(output, integration_container, geometry_container,
-                     solver_container, numerics_container, config_container,
-                     surface_movement, grid_movement, FFDBox);
+        FEM_StructuralIteration(output, integration_container, geometry_container,
+                     	 	 	solver_container, numerics_container, config_container,
+                     	 	 	surface_movement, grid_movement, FFDBox);
         break;
 
       case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:

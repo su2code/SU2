@@ -55,7 +55,8 @@ class CGaussVariable {
 protected:
 
 	double **GradNi_Xj,		// Gradient of the shape functions N[i] respect to the reference configuration
-	**GradNi_xj;				// Gradient of the shape functions N[i] respect to the current configuration
+	**GradNi_xj;			// Gradient of the shape functions N[i] respect to the current configuration
+	double *Ni;				// Shape functions N[i] at the gaussian point
 	double J_X,				// Jacobian of the element evaluated at the current Gauss Point respect to the reference configuration
 	J_x;					// Jacobian of the element evaluated at the current Gauss Point respect to the current configuration
 	unsigned short iGaussPoint;	// Identifier of the Gauss point considered
@@ -91,6 +92,8 @@ public:
 
 	void SetGradNi_xj(double val_GradNi_xj, unsigned short val_iDim, unsigned short val_Ni);
 
+	void SetNi(double val_ShapeNi, unsigned short val_Ni);
+
 	void SetJ_X(double valJ_X);
 
 	void SetJ_x(double valJ_x);
@@ -100,6 +103,8 @@ public:
 	double GetGradNi_Xj(unsigned short val_Ni, unsigned short val_iDim);
 
 	double GetGradNi_xj(unsigned short val_Ni, unsigned short val_iDim);
+
+	double GetNi(unsigned short val_Ni);
 
 	double GetJ_X(void);
 
