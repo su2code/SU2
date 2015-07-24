@@ -506,7 +506,19 @@ inline void CSolver::BC_Dielec(CGeometry *geometry, CSolver **solver_container, 
 									 										  
 inline void CSolver::BC_Electrode(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, 
 									CConfig *config, unsigned short val_marker) { }
-            
+
+inline void CSolver::Mixing_Process(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short val_Marker){}
+
+inline void CSolver::MixedOut_Average (double val_init_pressure, double *val_Averaged_Flux, double *val_normal, double *pressure_mix, double *density_mix){}
+
+inline void CSolver::MixedOut_Root_Function(double *pressure, double *val_Averaged_Flux, double *val_normal, double *valfunc, double *density){}
+
+inline void CSolver::Boundary_Fourier(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+		                               unsigned short val_Marker, vector<std::complex<double> > &c4k,signed long &nboundaryvertex){}
+
+inline void CSolver::Boundary_Fourier(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short val_Marker,
+		                              vector<std::complex<double> >& c2k,vector<std::complex<double> >& c3k,signed long& nboundaryvertex) {}
+
 inline void CSolver::GetEngine_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) { }
 
 inline void CSolver::GetActuatorDisk_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) { }

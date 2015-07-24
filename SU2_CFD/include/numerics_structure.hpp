@@ -1181,6 +1181,25 @@ void GetViscousProjFlux(double *val_primvar, double **val_gradprimvar,
 	void GetRMatrix(double val_pressure, double val_soundspeed,
                   double val_density, double* val_velocity,
                   double** val_invR_invPe);
+	/*!
+	 * \brief Computation of the matrix R.
+	 * \param[in] val_soundspeed - value of the sound speed.
+	 * \param[in] val_density - value of the density.
+	 * \param[in] val_normal - value of the unit normal.
+	 * \param[out] R_Matrix - Pointer to the matrix of conversion from entropic to conserved variables.
+	 */
+	void GetRMatrix(double val_soundspeed, double val_density, double* val_normal, double **R_Matrix);
+
+
+
+	/*!
+	 * \brief Computation of the matrix R.
+	 * \param[in] val_soundspeed - value of the sound speed.
+	 * \param[in] val_density - value of the density.
+	 * \param[in] val_normal - value of the unit normal.
+	 * \param[out] L_Matrix - Pointer to the matrix of conversion from conserved to entropic variables.
+	 */
+	void GetLMatrix(double val_soundspeed, double val_density, double* val_normal, double **L_Matrix);
     
 	/*!
 	 * \brief Computation of the matrix Td, this matrix diagonalize the preconditioned conservative Jacobians
