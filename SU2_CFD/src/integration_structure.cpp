@@ -203,17 +203,73 @@ void CIntegration::Space_Integration(CGeometry *geometry,
 void CIntegration::Space_Integration_FEM(CGeometry *geometry,
                                      CSolver **solver_container,
                                      CNumerics **numerics,
-                                     CConfig *config, unsigned short iMesh,
-                                     unsigned short iRKStep,
-                                     unsigned short RunTime_EqSystem) {
+                                     CConfig *config,
+                                     unsigned short RunTime_EqSystem,
+                                     unsigned long Iteration) {
 
 	  unsigned short iMarker;
 
+	  bool initial_calc = (config->GetExtIter() == 0);								// Checks if it is the first calculation.
+	  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);					// Dynamic simulations.
+	  bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);	// Linear analysis.
+	  bool first_iter = (Iteration == 0);											// Checks if it is the first iteration
+	  unsigned short IterativeScheme = config->GetKind_SpaceIteScheme_FEA(); 		// Iterative schemes: NEWTON_RAPHSON, MODIFIED_NEWTON_RAPHSON
 	  unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
 
-	  /*--- Compute Stiffness Matrix and Nodal Stress Term ---*/
+	  /*--- Compute Mass Matrix ---*/
 
-	  solver_container[MainSolver]->Compute_StiffMatrix_NodalStressRes(geometry, solver_container, numerics[VISC_TERM], config);
+	  if ((initial_calc) && (dynamic) && (first_iter)){
+		  solver_container[MainSolver]->Compute_MassMatrix(geometry, solver_container, numerics[VISC_TERM], config);
+	  }
+
+	  if (linear_analysis){
+		  /*--- If the analysis is linear, only a the constitutive term of the stiffness matrix has to be computed ---*/
+		  solver_container[MainSolver]->Compute_StiffMatrix(geometry, solver_container, numerics[VISC_TERM], config);
+	  }
+	  else{
+		  /*--- If the analysis is nonlinear, also the stress terms need to be computed ---*/
+
+		  /*--- If the method is full Newton-Raphson, the stiffness matrix and the nodal term are updated every time ---*/
+		  /*--- It is done all together two avoid looping twice over the elements ---*/
+		  if (IterativeScheme == NEWTON_RAPHSON){
+			  /*--- TODO: The Jacobian has to be reinitialized every time... */
+			  solver_container[MainSolver]->Compute_StiffMatrix_NodalStressRes(geometry, solver_container, numerics[VISC_TERM], config);
+		  }
+
+		  else if (IterativeScheme == MODIFIED_NEWTON_RAPHSON){
+
+			  /*--- If the method is modified Newton-Raphson, the stiffness matrix is only computed once at the beginning of the time-step ---*/
+			  if (first_iter){
+				  solver_container[MainSolver]->Compute_StiffMatrix_NodalStressRes(geometry, solver_container, numerics[VISC_TERM], config);
+			  }
+
+			  else{
+				  solver_container[MainSolver]->Compute_NodalStressRes(geometry, solver_container, numerics[VISC_TERM], config);
+			  }
+
+		  }
+
+	  }
+
+	  /*--- Apply the NATURAL BOUNDARY CONDITIONS (loads). ---*/
+	  /*--- If there are FSI loads, they have to be previously applied at other level involving both zones. ---*/
+
+	  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+	    switch (config->GetMarker_All_KindBC(iMarker)) {
+	      case LOAD_BOUNDARY:
+	        solver_container[MainSolver]->BC_Normal_Load(geometry, solver_container, numerics[VISC_TERM], config, iMarker);
+	        break;
+	      case PRESSURE_BOUNDARY:
+	        solver_container[MainSolver]->BC_Pressure(geometry, solver_container, numerics[VISC_TERM], config, iMarker);
+	        break;
+	      case LOAD_DIR_BOUNDARY:
+			solver_container[MainSolver]->BC_Dir_Load(geometry, solver_container, numerics[VISC_TERM], config, iMarker);
+			break;
+	      case LOAD_SINE_BOUNDARY:
+			solver_container[MainSolver]->BC_Sine_Load(geometry, solver_container, numerics[VISC_TERM], config, iMarker);
+			break;
+	    }
+	  }
 
 
 }
@@ -314,17 +370,19 @@ void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_contai
   
 }
 
-void CIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep,
+void CIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config,
                                     unsigned short RunTime_EqSystem, unsigned long Iteration) {
+
+	unsigned short iMarker;
 
 	unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
 	unsigned short KindSolver = config->GetKind_Solver();
 
-  /*--- Perform the time integration ---*/
+	/*--- Set the Jacobian according to the different time integration methods ---*/
 
 	switch (config->GetKind_TimeIntScheme_FEA()) {
 		case (CD_EXPLICIT):
-		  solver_container[MainSolver]->ExplicitRK_Iteration(geometry, solver_container, config, iRKStep);
+		  solver_container[MainSolver]->ImplicitNewmark_Iteration(geometry, solver_container, config);
 		  break;
 		case (NEWMARK_IMPLICIT):
 		  solver_container[MainSolver]->ImplicitNewmark_Iteration(geometry, solver_container, config);
@@ -333,6 +391,22 @@ void CIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver **solver_co
 		  solver_container[MainSolver]->ImplicitEuler_Iteration(geometry, solver_container, config);
 		  break;
 	  }
+
+	/*--- Apply ESSENTIAL BOUNDARY CONDITIONS ---*/
+
+	  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+	    switch (config->GetMarker_All_KindBC(iMarker)) {
+	      case CLAMPED_BOUNDARY:
+			solver_container[MainSolver]->BC_Clamped(geometry, solver_container, numerics[VISC_TERM], config, iMarker);
+			break;
+	      case DISPLACEMENT_BOUNDARY:
+	        solver_container[MainSolver]->BC_Normal_Displacement(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
+	        break;
+	    }
+
+	/*--- Solver linearized system ---*/
+
+	  solver_container[MainSolver]->Solve_System(geometry, solver_container, config);
 
 
 }
@@ -563,6 +637,33 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
 }
 
 void CIntegration::SetStructural_Solver(CGeometry *geometry, CSolver *solver, CConfig *config, unsigned short iMesh) {
+
+	unsigned long iPoint;
+
+	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+
+		solver->node[iPoint]->SetSolution_time_n();
+		solver->node[iPoint]->SetSolution_Vel_time_n();
+		solver->node[iPoint]->SetSolution_Accel_time_n();
+
+	}
+
+	  bool fsi = config->GetFSI_Simulation();
+
+	  /*--- If FSI problem, save the last Aitken relaxation parameter of the previous time step ---*/
+
+	  if (fsi){
+
+		  double WAitk=0.0;
+
+		  WAitk = solver->GetWAitken_Dyn();
+		  solver->SetWAitken_Dyn_tn1(WAitk);
+
+	  }
+
+}
+
+void CIntegration::SetFEM_StructuralSolver(CGeometry *geometry, CSolver *solver, CConfig *config, unsigned short iMesh) {
 
 	unsigned long iPoint;
 

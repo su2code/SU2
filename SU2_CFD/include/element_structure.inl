@@ -57,6 +57,8 @@ inline double CElement::GetJ_X_P(unsigned short iGauss) {return GaussPointP[iGau
 
 inline double CElement::GetJ_x_P(unsigned short iGauss) {return GaussPointP[iGauss]->GetJ_x();}
 
+inline double CElement::Get_Mab(unsigned short nodeA, unsigned short nodeB) { return Mab[nodeA][nodeB]; }
+
 inline double *CElement::Get_Kab(unsigned short nodeA, unsigned short nodeB){ return Kab[nodeA][nodeB];}
 
 inline double *CElement::Get_Kk_ab(unsigned short nodeA, unsigned short nodeB){ return Kk_ab[nodeA][nodeB];}
@@ -65,7 +67,11 @@ inline double *CElement::Get_Kt_a(unsigned short nodeA){ return Kt_a[nodeA];}
 
 inline double CElement::Get_Ks_ab(unsigned short nodeA, unsigned short nodeB) { return Ks_ab[nodeA][nodeB]; }
 
+inline void CElement::Add_Mab(double val_Mab, unsigned short nodeA, unsigned short nodeB) { Mab[nodeA][nodeB] += val_Mab; }
+
 inline void CElement::Add_Ks_ab(double val_Ks_ab, unsigned short nodeA, unsigned short nodeB) { Ks_ab[nodeA][nodeB] += val_Ks_ab; }
+
+inline double CElement::GetNi(unsigned short iNode, unsigned short iGauss) { return GaussPoint[iGauss]->GetNi(iNode);}
 
 inline double CElement::GetGradNi_X(unsigned short iNode, unsigned short iGauss, unsigned short iDim) { return GaussPoint[iGauss]->GetGradNi_Xj(iNode,iDim);}
 

@@ -52,6 +52,7 @@ CFEM_Elasticity::CFEM_Elasticity(unsigned short val_nDim, unsigned short val_nVa
 		Ba_Mat = new double* [3];
 		Bb_Mat = new double* [3];
 		D_Mat  = new double* [3];
+		Ni_Vec  = new double [4];			/*--- As of now, 4 is the maximum number of nodes for 2D problems ---*/
 		GradNi_Ref_Mat = new double* [4];	/*--- As of now, 4 is the maximum number of nodes for 2D problems ---*/
 		GradNi_Curr_Mat = new double* [4];	/*--- As of now, 4 is the maximum number of nodes for 2D problems ---*/
 		for (i = 0; i < 3; i++) {
@@ -68,6 +69,7 @@ CFEM_Elasticity::CFEM_Elasticity(unsigned short val_nDim, unsigned short val_nVa
 		Ba_Mat = new double* [6];
 		Bb_Mat = new double* [6];
 		D_Mat  = new double* [6];
+		Ni_Vec  = new double [8];			/*--- As of now, 8 is the maximum number of nodes for 3D problems ---*/
 		GradNi_Ref_Mat = new double* [8];	/*--- As of now, 8 is the maximum number of nodes for 3D problems ---*/
 		GradNi_Curr_Mat = new double* [8];	/*--- As of now, 8 is the maximum number of nodes for 3D problems ---*/
 		for (i = 0; i < 6; i++) {
@@ -122,7 +124,53 @@ CFEM_Elasticity::~CFEM_Elasticity(void) {
 
 }
 
-void CFEM_Elasticity::Compute_Mass_Matrix(CElement *element_container){
+void CFEM_Elasticity::Compute_Mass_Matrix(CElement *element){
+
+	unsigned short i, j, k;
+	unsigned short iGauss, nGauss;
+	unsigned short iNode, jNode, nNode;
+	unsigned short iDim;
+	unsigned short bDim;
+
+	double Weight, Jac_X;
+
+	double val_Mab;
+
+	element->clearElement(); 			/*--- Restarts the element: avoids adding over previous results in other elements --*/
+	element->ComputeGrad_Linear();		/*--- Need to compute the gradients to obtain the Jacobian: TODO: this may be improved (another method only to compute J_X) ---*/
+
+	nNode = element->GetnNodes();
+	nGauss = element->GetnGaussPoints();
+
+	for (iGauss = 0; iGauss < nGauss; iGauss++){
+
+		Weight = element->GetWeight(iGauss);
+		Jac_X = element->GetJ_X(iGauss);			/*--- The mass matrix is computed in the reference configuration ---*/
+
+		/*--- Retrieve the values of the shape functions for each node ---*/
+		/*--- This avoids repeated operations ---*/
+		for (iNode = 0; iNode < nNode; iNode++){
+			Ni_Vec[iNode] = element->GetNi(iNode,iGauss);
+		}
+
+		for (iNode = 0; iNode < nNode; iNode++){
+
+			/*--- Assumming symmetry ---*/
+			for (jNode = iNode; jNode < nNode; jNode++){
+
+				val_Mab = Weight * Ni_Vec[iNode] * Ni_Vec[jNode] * Jac_X * Rho_s;
+
+				element->Add_Mab(val_Mab,iNode, jNode);
+				/*--- Symmetric terms --*/
+				if (iNode != jNode){
+					element->Add_Mab(val_Mab, jNode, iNode);
+				}
+
+			}
+
+		}
+
+	}
 
 }
 

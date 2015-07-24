@@ -1028,7 +1028,6 @@ void CStructuralIntegration::Structural_Iteration(CGeometry ***geometry, CSolver
 
 void CStructuralIntegration::Structural_Iteration_FEM(CGeometry ***geometry, CSolver ****solver_container,
                                                   CNumerics *****numerics_container, CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone) {
-  unsigned short iMesh;
   double monitor = 0.0;
 
   unsigned short SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
@@ -1038,16 +1037,15 @@ void CStructuralIntegration::Structural_Iteration_FEM(CGeometry ***geometry, CSo
   solver_container[iZone][MESH_0][SolContainer_Position]->Preprocessing(geometry[iZone][MESH_0], solver_container[iZone][MESH_0],
 		  config[iZone], numerics_container[iZone][MESH_0][SolContainer_Position], MESH_0, Iteration, RunTime_EqSystem, false);
 
-
   /*--- Space integration ---*/
 
   Space_Integration_FEM(geometry[iZone][MESH_0], solver_container[iZone][MESH_0], numerics_container[iZone][MESH_0][SolContainer_Position],
-                    config[iZone], MESH_0, NO_RK_ITER, RunTime_EqSystem);
+                    config[iZone], RunTime_EqSystem, Iteration);
 
   /*--- Time integration ---*/
 
-  Time_Integration_FEM(geometry[iZone][MESH_0], solver_container[iZone][MESH_0], config[iZone], NO_RK_ITER,
-                   RunTime_EqSystem, Iteration);
+  Time_Integration_FEM(geometry[iZone][MESH_0], solver_container[iZone][MESH_0], numerics_container[iZone][MESH_0][SolContainer_Position],
+		  	  	    config[iZone], RunTime_EqSystem, Iteration);
 
   /*--- Postprocessing ---*/
 

@@ -98,12 +98,11 @@ public:
 	 * \param[in] solver_container - Container vector with all the solutions.
 	 * \param[in] solver - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iMesh - Index of the mesh in multigrid computations.
-	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
 	 * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+	 * \param[in] Iteration - Current iteration.
 	 */
 	void Space_Integration_FEM(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config,
-						   unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem);
+						   unsigned short RunTime_EqSystem, unsigned long Iteration);
 
 	/*! 
 	 * \brief Do the time integration (explicit or implicit) of the numerical system.
@@ -118,17 +117,16 @@ public:
 						  unsigned short iRKStep, unsigned short RunTime_EqSystem, unsigned long Iteration);
 	
 	/*! 
-	 * \brief Do the time integration (explicit or implicit) of the numerical system on a FEM framework..
+	 * \brief Do the time integration (explicit or implicit) of the numerical system on a FEM framework.
 	 * \author R. Sanchez
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
 	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
 	 * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 * \param[in] Iteration - Current iteration.
 	 */
-	void Time_Integration_FEM(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-						  	  unsigned short iRKStep, unsigned short RunTime_EqSystem, unsigned long Iteration);
+	void Time_Integration_FEM(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config,
+						  	  unsigned short RunTime_EqSystem, unsigned long Iteration);
 
 	/*!
 	 * \brief Initialize the adjoint solution using the primal problem.
@@ -219,6 +217,14 @@ public:
    * \param[in] config - Definition of the particular problem.
 	 */
 	void SetStructural_Solver(CGeometry *geometry, CSolver *solver, CConfig *config, unsigned short iMesh);
+
+	/*!
+	 * \brief Save the structural solution at different time steps.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solution - Flow solution.
+   * \param[in] config - Definition of the particular problem.
+	 */
+	void SetFEM_StructuralSolver(CGeometry *geometry, CSolver *solver, CConfig *config, unsigned short iMesh);
 
 	/*!
 	 * \brief A virtual member.

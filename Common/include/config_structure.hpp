@@ -274,6 +274,7 @@ private:
 	unsigned long ExtIter;			/*!< \brief Current external iteration number. */
 	unsigned long IntIter;			/*!< \brief Current internal iteration number. */
 	unsigned long Unst_nIntIter;			/*!< \brief Number of internal iterations (Dual time Method). */
+	unsigned long Dyn_nIntIter;			/*!< \brief Number of internal iterations (Newton-Raphson Method for nonlinear structural analysis). */
   long Unst_RestartIter;			/*!< \brief Iteration number to restart an unsteady simulation (Dual time Method). */
   long Unst_AdjointIter;			/*!< \brief Iteration number to begin the reverse time integration in the direct solver for the unsteady adjoint. */
 	unsigned short nRKStep;			/*!< \brief Number of steps of the explicit Runge-Kutta method. */
@@ -2197,6 +2198,12 @@ public:
 	 * \return Number of internal iterations.
 	 */
 	unsigned long GetUnst_nIntIter(void);
+
+	/*!
+	 * \brief Get the number of internal iterations for the Newton-Raphson Method in nonlinear structural applications.
+	 * \return Number of internal iterations.
+	 */
+	unsigned long GetDyn_nIntIter(void);
 
   /*!
 	 * \brief Get the restart iteration number for unsteady simulations.
