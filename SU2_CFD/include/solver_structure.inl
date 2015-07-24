@@ -414,6 +414,8 @@ inline double CSolver::GetOneD_FluxAvgEntalpy(void) {return 0;}
 
 inline void CSolver::SetOneD_FluxAvgEntalpy(double EnthalpyRef) { }
 
+inline void CSolver::Solve_System(CGeometry *geometry, CSolver **solver_container, CConfig *config){ }
+
 inline void CSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
 									 unsigned short val_marker) { }
 

@@ -66,6 +66,7 @@ protected:
 	*GaussWeightP;						/*!< \brief Weight of the Gaussian Points for the pressure subintegration. */
 	CGaussVariable **GaussPoint;		/*!< \brief Structure for the Gaussian Points. */
 	CGaussVariable **GaussPointP;		/*!< \brief Structure for the Gaussian Points for the pressure subintegration. */
+	double **Mab;						/*!< \brief Structure for the nodal components of the mass matrix. */
 	double ***Kab;						/*!< \brief Structure for the constitutive component of the tangent matrix. */
 	double **Ks_ab;						/*!< \brief Structure for the stress component of the tangent matrix. */
 	double ***Kk_ab;					/*!< \brief Structure for the pressure component of the tangent matrix. */
@@ -184,6 +185,14 @@ public:
 	double GetJ_x_P(unsigned short iGauss);
 
 	/*!
+	 * \brief Add the value of the diagonal term for the mass matrix.
+	 * \param[in] nodeA - index of Node a.
+	 * \param[in] nodeB - index of Node b.
+	 * \param[in] val_Ks_ab - value of the term that will constitute the diagonal of the stress contribution.
+	 */
+	void Add_Mab(double val_Mab, unsigned short nodeA, unsigned short nodeB);
+
+	/*!
 	 * \brief Add the value of a submatrix K relating nodes a and b, for the constitutive term.
 	 * \param[in] nodeA - index of Node a.
 	 * \param[in] nodeB - index of Node b.
@@ -229,6 +238,14 @@ public:
 	void clearElement(void);
 
 	/*!
+	 * \brief Return the value of the diagonal term for the mass matrix, relating nodes a and b.
+	 * \param[in] nodeA - index of Node a.
+	 * \param[in] nodeB - index of Node b.
+	 * \param[out] val_Mab - value of the diagonal term of Mab.
+	 */
+	double Get_Mab(unsigned short nodeA, unsigned short nodeB);
+
+	/*!
 	 * \brief Return the value of the submatrix K relating nodes a and b.
 	 * \param[in] nodeA - index of Node a.
 	 * \param[in] nodeB - index of Node b.
@@ -258,6 +275,14 @@ public:
 	 * \param[out] val_Kt_a - value of the stress term.
 	 */
 	double *Get_Kt_a(unsigned short nodeA);
+
+	/*!
+	 * \brief Retrieve the value of the shape functions.
+	 * \param[in] iNode - Index of the node.
+	 * \param[in] iNode - Index of the Gaussian Point.
+	 * \param[out] GradNi_X - Gradient of the shape function related to node iNode and evaluated at Gaussian Point iGauss
+	 */
+	double GetNi(unsigned short iNode, unsigned short iGauss);
 
 	/*!
 	 * \brief Retrieve the value of the gradient of the shape functions respect to the reference configuration.

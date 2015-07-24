@@ -4417,6 +4417,7 @@ protected:
 
 	double **Ba_Mat,	 /*!< \brief Matrix B for node a - Auxiliary. */
 	**Bb_Mat;	 		 /*!< \brief Matrix B for node b - Auxiliary. */
+	double *Ni_Vec;	 	 /*!< \brief Vector of shape functions - Auxiliary. */
 	double **D_Mat;		 /*!< \brief Constitutive matrix - Auxiliary. */
 	double **KAux_ab;	 /*!< \brief Node ab stiffness matrix - Auxiliary. */
 	double **GradNi_Ref_Mat;/*!< \brief Gradients of Ni - Auxiliary. */

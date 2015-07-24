@@ -2351,6 +2351,15 @@ public:
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with the solutions.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	virtual void Solve_System(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
 	 * \param[in] solver - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
@@ -6538,10 +6547,13 @@ private:
 	double *GradN_X,
 	*GradN_x;
 
-	double **Jacobian_s_ij;			/*!< \brief Matrix to store the stress contribution of node ij (diagonal). */
-	double **Jacobian_k_ij;			/*!< \brief Matrix to store the pressure contribution of node ij. */
-	double **MassMatrix_ij;			/*!< \brief Matrix to store the term ij of the mass matrix. */
-	double *Res_Stress_i;			/*!< \brief Matrix to store the nodal stress contribution of node i. */
+	double **Jacobian_s_ij;			/*!< \brief Submatrix to store the stress contribution of node ij (diagonal). */
+	double **Jacobian_k_ij;			/*!< \brief Submatrix to store the pressure contribution of node ij. */
+	double **MassMatrix_ij;			/*!< \brief Submatrix to store the term ij of the mass matrix. */
+	double *Res_Stress_i;			/*!< \brief Submatrix to store the nodal stress contribution of node i. */
+
+	double **mZeros_Aux;			/*!< \brief Submatrix to make zeros and impose clamped boundary conditions. */
+	double **mId_Aux;				/*!< \brief Diagonal submatrix to impose clamped boundary conditions. */
 
 	CSysMatrix MassMatrix; 			/*!< \brief Sparse structure for storing the mass matrix. */
 
@@ -6624,6 +6636,15 @@ public:
 	void Compute_NodalStressRes(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
 
 	/*!
+	 * \brief Initializes the matrices/residuals in the solution process (avoids adding over previous values).
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void Initialize_SystemMatrix(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+
+	/*!
 	 * \brief Clamped boundary conditions.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
@@ -6631,6 +6652,79 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void BC_Clamped(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker);
+
+	/*!
+	 * \brief Impose a displacement (constraint) boundary condition.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] numerics - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
+	 */
+	void BC_Normal_Displacement(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+                         unsigned short val_marker);
+
+
+	/*!
+	 * \brief Impose a load boundary condition normal to the boundary.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] numerics - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
+	 */
+	void BC_Normal_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+                 unsigned short val_marker);
+
+	/*!
+	 * \brief Impose a load boundary condition in cartesian coordinates.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] numerics - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
+	 */
+	void BC_Dir_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+                 unsigned short val_marker);
+
+	/*!
+	 * \brief Impose a sine-wave load boundary condition in cartesian coordinates.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] numerics - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
+	 */
+	void BC_Sine_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+                 unsigned short val_marker);
+
+
+  /*!
+	 * \brief Impose a load boundary condition.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] numerics - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
+	 */
+	void BC_Pressure(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+                      unsigned short val_marker);
+
+	/*!
+	 * \brief Update the solution using an implicit solver.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+
+	/*!
+	 * \brief Update the solution using an implicit Newmark solver.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
 
 	/*!
 	 * \brief Postprocessing.
@@ -6641,6 +6735,14 @@ public:
 	 */
 	void Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,  CNumerics **numerics,
 			unsigned short iMesh);
+
+	/*!
+	 * \brief Routine to solve the Jacobian-Residual linearized system.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with the solutions.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void Solve_System(CGeometry *geometry, CSolver **solver_container, CConfig *config);
 
 };
 

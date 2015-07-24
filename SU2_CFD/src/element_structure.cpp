@@ -51,6 +51,7 @@ CElement::CElement(void) {
 	nGaussPoints = 0;
 	nGaussPointsP = 0;
 
+	Mab = NULL;
 	Kab = NULL;
 	Ks_ab = NULL;
 	Kk_ab = NULL;
@@ -79,6 +80,7 @@ CElement::CElement(unsigned short val_nDim, CConfig *config) {
 	nGaussPoints = 0;
 	nGaussPointsP = 0;
 
+	Mab = NULL;
 	Kab = NULL;
 	Ks_ab = NULL;
 	Kk_ab = NULL;
@@ -100,6 +102,7 @@ CElement::~CElement(void) {
 	if (GaussPoint      	!= NULL) delete [] GaussPoint;
 	if (GaussPointP        	!= NULL) delete [] GaussPointP;
 
+	if (Mab            		!= NULL) delete [] Mab;
 	if (Kab            		!= NULL) delete [] Kab;
 	if (Ks_ab           	!= NULL) delete [] Ks_ab;
 	if (Kk_ab           	!= NULL) delete [] Kk_ab;
@@ -159,12 +162,13 @@ void CElement::clearElement(void){
 
 	for(iNode = 0; iNode < nNodes; iNode++) {
 		for(iDim = 0; iDim < nDim; iDim++){
-			Kt_a[iNode][iDim] = 0.0;
+			if (Kt_a != NULL) Kt_a[iNode][iDim] = 0.0;
 		}
 		for (jNode = 0; jNode < nNodes; jNode++) {
-			Ks_ab[iNode][jNode] = 0.0;
+			if (Ks_ab != NULL) Ks_ab[iNode][jNode] = 0.0;
+			if (Mab != NULL) Mab[iNode][jNode] = 0.0;
 			for(iDim = 0; iDim < nDimSq; iDim++){
-				Kab[iNode][jNode][iDim] = 0.0;
+				if (Kab != NULL) Kab[iNode][jNode][iDim] = 0.0;
 			}
 		}
 	}

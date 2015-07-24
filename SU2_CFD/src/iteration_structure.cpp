@@ -716,44 +716,80 @@ void FEAIteration(COutput *output, CIntegration ***integration_container, CGeome
 void FEM_StructuralIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
                   	  	  	  	 CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
                   	  	  	  	 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox) {
+
 	double Physical_dt, Physical_t;
 	unsigned short iMesh, iZone;
 	unsigned short nZone = geometry_container[ZONE_0][MESH_0]->GetnZone();
 	unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
   	unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
 
-	for (iZone = 0; iZone < nZone; iZone++) {
+	bool dynamic = (config_container[iZone]->GetDynamic_Analysis() == DYNAMIC);					// Dynamic problems
+	bool nonlinear = (config_container[iZone]->GetGeometricConditions() == LARGE_DEFORMATIONS);	// Geometrically non-linear problems
 
-    if (config_container[iZone]->GetGrid_Movement())
-      SetGrid_Movement(geometry_container[iZone], surface_movement[iZone],
-                       grid_movement[iZone], FFDBox[iZone], solver_container[iZone], config_container[iZone], iZone, IntIter, ExtIter);
+#ifdef HAVE_MPI
+  int rank;
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+	/*--- Set the initial condition ---*/
+
+	for (iZone = 0; iZone < nZone; iZone++)
+		solver_container[iZone][MESH_0][FEA_SOL]->SetInitialCondition(geometry_container[iZone], solver_container[iZone], config_container[iZone], ExtIter);
+
+	for (iZone = 0; iZone < nZone; iZone++) {
 
 		/*--- Set the value of the internal iteration ---*/
 
 		IntIter = ExtIter;
-
-		/*--- Set the initial condition at the first iteration ---*/
-
-		solver_container[iZone][MESH_0][FEA_SOL]->SetInitialCondition(geometry_container[iZone], solver_container[iZone], config_container[iZone], ExtIter);
+		if (dynamic) IntIter = 0;
 
 		/*--- FEA equations ---*/
 
-		config_container[iZone]->SetGlobalParam(LINEAR_ELASTICITY, RUNTIME_FEA_SYS, ExtIter);
+		config_container[iZone]->SetGlobalParam(FEM_ELASTICITY, RUNTIME_FEA_SYS, ExtIter);
 
 		/*--- Run the iteration ---*/
 
 		integration_container[iZone][FEA_SOL]->Structural_Iteration_FEM(geometry_container, solver_container, numerics_container,
                                                                 		config_container, RUNTIME_FEA_SYS, IntIter, iZone);
 
-		/*----------------- Update structural solver ----------------------*/
 
-		bool dynamic = (config_container[iZone]->GetDynamic_Analysis() == DYNAMIC);
 
-		if (dynamic){
-			integration_container[iZone][FEA_SOL]->SetStructural_Solver(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0][FEA_SOL], config_container[iZone], MESH_0);
+	}
+
+	/*----------------- If the solver is non-linear, we need to subiterate using a Newton-Raphson approach ----------------------*/
+
+	if (nonlinear){
+		for (IntIter = 1; IntIter < config_container[ZONE_0]->GetDyn_nIntIter(); IntIter++){
+
+			for (iZone = 0; iZone < nZone; iZone++) {
+
+				integration_container[iZone][FEA_SOL]->Structural_Iteration_FEM(geometry_container, solver_container, numerics_container,
+		                                                                		config_container, RUNTIME_FEA_SYS, IntIter, iZone);
+
+			}
+
+			if (integration_container[ZONE_0][FEA_SOL]->GetConvergence()) break;
+
 		}
 
 	}
+
+	/*----------------- Update structural solver ----------------------*/
+
+	if (dynamic){
+		for (iZone = 0; iZone < nZone; iZone++) {
+			integration_container[iZone][FEA_SOL]->SetFEM_StructuralSolver(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0][FEA_SOL], config_container[iZone], MESH_0);
+			integration_container[iZone][FEA_SOL]->SetConvergence(false);
+		}
+
+	    /*--- Verify convergence criteria (based on total time) ---*/
+
+		Physical_dt = config_container[iZone]->GetDelta_DynTime();
+		Physical_t  = (ExtIter+1)*Physical_dt;
+		if (Physical_t >=  config_container[iZone]->GetTotal_DynTime())
+			integration_container[iZone][FLOW_SOL]->SetConvergence(true);
+	}
+
 
 }
 

@@ -47,6 +47,11 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(void) : CSolver() {
 	Jacobian_s_ij = NULL;
 	Jacobian_k_ij = NULL;
 
+	MassMatrix_ij = NULL;
+
+	mZeros_Aux = NULL;
+	mId_Aux = NULL;
+
 	Res_Stress_i = NULL;
 
 }
@@ -54,12 +59,14 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(void) : CSolver() {
 CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *config) : CSolver() {
 
 	unsigned long iPoint, iElem = 0;
-	unsigned short iVar, jVar, iDim, NodesElement = 0, nKindElements;
+	unsigned short iVar, jVar, iDim, jDim, NodesElement = 0, nKindElements;
 
 	int rank = MASTER_NODE;
 	#ifdef HAVE_MPI
 		MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	#endif
+
+	double E = config->GetElasticyMod();
 
 	nElement      = geometry->GetnElem();
 	nDim          = geometry->GetnDim();
@@ -114,6 +121,16 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 
 	bool incompressible = (config->GetMaterialCompressibility() == INCOMPRESSIBLE_MAT);
 
+	/*--- Term ij of the Mass Matrix ---*/
+
+	MassMatrix_ij = new double*[nVar];
+	for (iVar = 0; iVar < nVar; iVar++) {
+		MassMatrix_ij[iVar] = new double [nVar];
+			for (jVar = 0; jVar < nVar; jVar++) {
+				MassMatrix_ij[iVar][jVar] = 0.0;
+			}
+	}
+
 	/*--- Term ij of the Jacobian ---*/
 
 	Jacobian_ij = new double*[nVar];
@@ -151,6 +168,24 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 
 	/*--- Stress contribution to the node i ---*/
 	Res_Stress_i = new double[nVar];
+
+	/*--- Matrices to impose clamped boundary conditions (TODO: Initialize them conditionally). ---*/
+
+	mZeros_Aux = new double *[nDim];
+	for(iDim = 0; iDim < nDim; iDim++)
+		mZeros_Aux[iDim] = new double[nDim];
+
+	mId_Aux = new double *[nDim];
+	for(iDim = 0; iDim < nDim; iDim++)
+		mId_Aux[iDim] = new double[nDim];
+
+	for(iDim = 0; iDim < nDim; iDim++){
+		for (jDim = 0; jDim < nDim; jDim++){
+			mZeros_Aux[iDim][jDim] = 0.0;
+			mId_Aux[iDim][jDim] = 0.0;
+		}
+		mId_Aux[iDim][iDim] = E;		// TODO: This works for clamped boundary conditions...
+	}
 
 
 	/*--- Initialization of matrix structures ---*/
@@ -207,6 +242,8 @@ CFEM_ElasticitySolver::~CFEM_ElasticitySolver(void) {
 		delete [] Jacobian_s_ij[iVar];
 		delete [] Jacobian_ij[iVar];
 		delete [] Point_Max_Coord[iVar];
+		delete [] mZeros_Aux[iVar];
+		delete [] mId_Aux[iVar];
 	}
 
 	delete [] element_container;
@@ -224,118 +261,122 @@ CFEM_ElasticitySolver::~CFEM_ElasticitySolver(void) {
 	delete [] Point_Max;
 	delete [] Point_Max_Coord;
 
+	delete [] mZeros_Aux;
+	delete [] mId_Aux;
+
 }
 
 void CFEM_ElasticitySolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, CNumerics **numerics, unsigned short iMesh, unsigned long Iteration, unsigned short RunTime_EqSystem, bool Output) {
 
-//	unsigned long iPoint, iElem, iVar, jVar;
-//	unsigned short iNode, iGauss, iDim;
-//	unsigned short nNodes, nGauss;
-//	unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
-//	double val_Coord, val_Sol;
-//	int EL_KIND;
-//
-//	double Ks_ab;
-//	double *Kab = NULL;
-//	double *Kk_ab = NULL;
-//	double *Ta = NULL;
-//	unsigned short NelNodes, jNode;
-//
-//	bool incompressible = (config->GetMaterialCompressibility() == INCOMPRESSIBLE_MAT);
-//
-//	/*--- Loops over all the elements ---*/
-//
-//	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
-//
-//		if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     {nNodes = 3; EL_KIND = EL_TRIA;}
-//		if (geometry->elem[iElem]->GetVTK_Type() == RECTANGLE)    {nNodes = 4; EL_KIND = EL_QUAD;}
-//
-//		if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  {nNodes = 4; EL_KIND = EL_TETRA;}
-//		if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      {nNodes = 5; EL_KIND = EL_TRIA;}
-//		if (geometry->elem[iElem]->GetVTK_Type() == PRISM)        {nNodes = 6; EL_KIND = EL_TRIA;}
-//		if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)   {nNodes = 8; EL_KIND = EL_HEXA;}
-//
-//		/*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
-//
-//		for (iNode = 0; iNode < nNodes; iNode++) {
-//		  indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
-////		  cout << "Elem: " << iElem << " iNode (renum):" << indexNode[iNode] << endl;
-//		  for (iDim = 0; iDim < nDim; iDim++) {
-//			  val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
-////			  cout << "Coord[" << iDim << "]: " << val_Coord << endl;
-//			  val_Sol = node[indexNode[iNode]]->GetSolution(iDim) + val_Coord;
-//			  element_container[EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
-//			  element_container[EL_KIND]->SetCurr_Coord(val_Coord, iNode, iDim);
-//		  }
-//		}
-//
-//		numerics[VISC_TERM]->Compute_Tangent_Matrix(element_container[EL_KIND]);
-//
-//		if (incompressible) numerics[VISC_TERM]->Compute_MeanDilatation_Term(element_container[EL_KIND]);
-//
-//		/*--- I can do it separately, or together within Compute_Tangent_Matrix (more efficient) ---*/
-//		//numerics[VISC_TERM]->Compute_NodalStress_Term(element_container[EL_KIND]);
-//
-//		NelNodes = element_container[EL_KIND]->GetnNodes();
-//
-//		for (iNode = 0; iNode < NelNodes; iNode++){
-//
-//			Ta = element_container[EL_KIND]->Get_Kt_a(iNode);
-//			for (iVar = 0; iVar < nVar; iVar++) Res_Stress_i[iVar] = Ta[iVar];
-//
-//			LinSysRes.SubtractBlock(indexNode[iNode], Res_Stress_i);
-//
-//			for (jNode = 0; jNode < NelNodes; jNode++){
-//
-//				Kab = element_container[EL_KIND]->Get_Kab(iNode, jNode);
-//				Ks_ab = element_container[EL_KIND]->Get_Ks_ab(iNode,jNode);
-//				if (incompressible) Kk_ab = element_container[EL_KIND]->Get_Kk_ab(iNode,jNode);
-//
-//				for (iVar = 0; iVar < nVar; iVar++){
-//					Jacobian_s_ij[iVar][iVar] = Ks_ab;
-//					for (jVar = 0; jVar < nVar; jVar++){
-//						Jacobian_ij[iVar][jVar] = Kab[iVar*nVar+jVar];
-//						if (incompressible) Jacobian_k_ij[iVar][jVar] = Kk_ab[iVar*nVar+jVar];
-//					}
-//				}
-//
-//				Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_ij);
-//
-//				Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_s_ij);
-//
-//				if (incompressible) Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_k_ij);
-//
-//			}
-//
-//		}
-//
-//	}
-//
-//
-//	double checkJacobian;
-//
-//	ofstream myfile;
-//	myfile.open ("newSolver.txt");
-//
-//	for (iNode = 0; iNode < nPoint; iNode++){
-//		for (jNode = 0; jNode < nPoint; jNode++){
-//			myfile << "Node " << iNode << " " << jNode << endl;
-//			for (iVar = 0; iVar < nVar; iVar++){
-//				for (jVar = 0; jVar < nVar; jVar++){
-//					checkJacobian = Jacobian.GetBlock(iNode, jNode, iVar, jVar);
-//					myfile << checkJacobian << " " ;
-//				}
-//				myfile << endl;
-//			}
-//		}
-//	}
-//	myfile.close();
+
+	unsigned long iPoint;
+	bool initial_calc = (config->GetExtIter() == 0);									// Checks if it is the first calculation.
+	bool first_iter = (config->GetIntIter() == 0);										// Checks if it is the first iteration
+	bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);							// Dynamic simulations.
+	bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);	// Linear analysis.
+	bool newton_raphson = (config->GetKind_SpaceIteScheme_FEA() == NEWTON_RAPHSON);		// Newton-Raphson method
+
+	/*--- Set vector entries to zero ---*/
+
+	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
+		LinSysAux.SetBlock_Zero(iPoint);
+		LinSysRes.SetBlock_Zero(iPoint);
+	}
+
+	/*--- Set matrix entries to zero ---*/
+
+	if ((initial_calc) && (dynamic) && (first_iter)) 	MassMatrix.SetValZero();
+
+	if ((linear_analysis) || (newton_raphson) || (first_iter)) 	Jacobian.SetValZero();
+
 
 }
 
 void CFEM_ElasticitySolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned long Iteration) { }
 
-void CFEM_ElasticitySolver::Compute_StiffMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config) { }
+void CFEM_ElasticitySolver::Compute_StiffMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config) {
+
+	unsigned long iPoint, iElem, iVar, jVar;
+	unsigned short iNode, iGauss, iDim;
+	unsigned short nNodes, nGauss;
+	unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
+	double val_Coord, val_Sol;
+	int EL_KIND;
+
+	double Ks_ab;
+	double *Kab = NULL;
+	double *Kk_ab = NULL;
+	double *Ta = NULL;
+	unsigned short NelNodes, jNode;
+
+	/*--- Loops over all the elements ---*/
+
+	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
+
+		if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     {nNodes = 3; EL_KIND = EL_TRIA;}
+		if (geometry->elem[iElem]->GetVTK_Type() == RECTANGLE)    {nNodes = 4; EL_KIND = EL_QUAD;}
+
+		if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  {nNodes = 4; EL_KIND = EL_TETRA;}
+		if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      {nNodes = 5; EL_KIND = EL_TRIA;}
+		if (geometry->elem[iElem]->GetVTK_Type() == PRISM)        {nNodes = 6; EL_KIND = EL_TRIA;}
+		if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)   {nNodes = 8; EL_KIND = EL_HEXA;}
+
+		/*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
+
+		for (iNode = 0; iNode < nNodes; iNode++) {
+		  indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
+		  for (iDim = 0; iDim < nDim; iDim++) {
+			  val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
+			  val_Sol = node[indexNode[iNode]]->GetSolution(iDim) + val_Coord;
+			  element_container[EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
+		  }
+		}
+
+		numerics->Compute_Tangent_Matrix(element_container[EL_KIND]);
+
+		NelNodes = element_container[EL_KIND]->GetnNodes();
+
+		for (iNode = 0; iNode < NelNodes; iNode++){
+
+			for (jNode = 0; jNode < NelNodes; jNode++){
+
+				Kab = element_container[EL_KIND]->Get_Kab(iNode, jNode);
+
+				for (iVar = 0; iVar < nVar; iVar++){
+					for (jVar = 0; jVar < nVar; jVar++){
+						Jacobian_ij[iVar][jVar] = Kab[iVar*nVar+jVar];
+					}
+				}
+
+				Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_ij);
+
+			}
+
+		}
+
+	}
+
+	double checkJacobian;
+
+	ofstream myfile;
+	myfile.open ("newSolver_linear.txt");
+
+	for (iNode = 0; iNode < nPoint; iNode++){
+		for (jNode = 0; jNode < nPoint; jNode++){
+			myfile << "Node " << iNode << " " << jNode << endl;
+			for (iVar = 0; iVar < nVar; iVar++){
+				for (jVar = 0; jVar < nVar; jVar++){
+					checkJacobian = Jacobian.GetBlock(iNode, jNode, iVar, jVar);
+					myfile << checkJacobian << " " ;
+				}
+				myfile << endl;
+			}
+		}
+	}
+	myfile.close();
+
+
+}
 
 void CFEM_ElasticitySolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config) {
 
@@ -425,7 +466,7 @@ void CFEM_ElasticitySolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geomet
 	double checkJacobian;
 
 	ofstream myfile;
-	myfile.open ("newSolver_HOLA.txt");
+	myfile.open ("newSolver.txt");
 
 	for (iNode = 0; iNode < nPoint; iNode++){
 		for (jNode = 0; jNode < nPoint; jNode++){
@@ -453,13 +494,8 @@ void CFEM_ElasticitySolver::Compute_MassMatrix(CGeometry *geometry, CSolver **so
 	double val_Coord, val_Sol;
 	int EL_KIND;
 
-	double Ks_ab;
-	double *Kab = NULL;
-	double *Kk_ab = NULL;
-	double *Ta = NULL;
+	double Mab;
 	unsigned short NelNodes, jNode;
-
-	bool incompressible = (config->GetMaterialCompressibility() == INCOMPRESSIBLE_MAT);
 
 	/*--- Loops over all the elements ---*/
 
@@ -489,30 +525,15 @@ void CFEM_ElasticitySolver::Compute_MassMatrix(CGeometry *geometry, CSolver **so
 
 		for (iNode = 0; iNode < NelNodes; iNode++){
 
-			Ta = element_container[EL_KIND]->Get_Kt_a(iNode);
-			for (iVar = 0; iVar < nVar; iVar++) Res_Stress_i[iVar] = Ta[iVar];
-
-			LinSysRes.SubtractBlock(indexNode[iNode], Res_Stress_i);
-
 			for (jNode = 0; jNode < NelNodes; jNode++){
 
-				Kab = element_container[EL_KIND]->Get_Kab(iNode, jNode);
-				Ks_ab = element_container[EL_KIND]->Get_Ks_ab(iNode,jNode);
-				if (incompressible) Kk_ab = element_container[EL_KIND]->Get_Kk_ab(iNode,jNode);
+				Mab = element_container[EL_KIND]->Get_Mab(iNode, jNode);
 
 				for (iVar = 0; iVar < nVar; iVar++){
-					Jacobian_s_ij[iVar][iVar] = Ks_ab;
-					for (jVar = 0; jVar < nVar; jVar++){
-						Jacobian_ij[iVar][jVar] = Kab[iVar*nVar+jVar];
-						if (incompressible) Jacobian_k_ij[iVar][jVar] = Kk_ab[iVar*nVar+jVar];
-					}
+					MassMatrix_ij[iVar][iVar] = Mab;
 				}
 
-				MassMatrix.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_ij);
-
-				Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_s_ij);
-
-				if (incompressible) Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_k_ij);
+				MassMatrix.AddBlock(indexNode[iNode], indexNode[jNode], MassMatrix_ij);
 
 			}
 
@@ -530,7 +551,7 @@ void CFEM_ElasticitySolver::Compute_MassMatrix(CGeometry *geometry, CSolver **so
 			myfile << "Node " << iNode << " " << jNode << endl;
 			for (iVar = 0; iVar < nVar; iVar++){
 				for (jVar = 0; jVar < nVar; jVar++){
-					checkJacobian = Jacobian.GetBlock(iNode, jNode, iVar, jVar);
+					checkJacobian = MassMatrix.GetBlock(iNode, jNode, iVar, jVar);
 					myfile << checkJacobian << " " ;
 				}
 				myfile << endl;
@@ -541,11 +562,338 @@ void CFEM_ElasticitySolver::Compute_MassMatrix(CGeometry *geometry, CSolver **so
 
 }
 
-void CFEM_ElasticitySolver::Compute_NodalStressRes(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config) { }
+void CFEM_ElasticitySolver::Compute_NodalStressRes(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config) {
+
+
+}
+
+void CFEM_ElasticitySolver::Initialize_SystemMatrix(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+
+}
 
 void CFEM_ElasticitySolver::BC_Clamped(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                                        unsigned short val_marker) { }
+                                        unsigned short val_marker) {
+
+	unsigned long iPoint, iVertex;
+	unsigned short iVar, jVar;
+
+	bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
+
+	unsigned short iNode, jNode;
+	double checkJacobian;
+
+	ofstream myfile;
+	myfile.open ("jacobianPreClamped.txt");
+
+	for (iNode = 0; iNode < nPoint; iNode++){
+		for (jNode = 0; jNode < nPoint; jNode++){
+			myfile << "Node " << iNode << " " << jNode << endl;
+			for (iVar = 0; iVar < nVar; iVar++){
+				for (jVar = 0; jVar < nVar; jVar++){
+					checkJacobian = Jacobian.GetBlock(iNode, jNode, iVar, jVar);
+					myfile << checkJacobian << " " ;
+				}
+				myfile << endl;
+			}
+		}
+	}
+	myfile.close();
+
+	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+
+		/*--- Get node index ---*/
+
+		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+
+		if (nDim == 2) {
+			Solution[0] = 0.0;  Solution[1] = 0.0;
+			Residual[0] = 0.0;  Residual[1] = 0.0;
+		}
+		else {
+			Solution[0] = 0.0;  Solution[1] = 0.0;  Solution[2] = 0.0;
+			Residual[0] = 0.0;  Residual[1] = 0.0;  Residual[2] = 0.0;
+		}
+
+		node[iPoint]->SetSolution(Solution);
+
+		if (dynamic){
+			node[iPoint]->SetSolution_Vel(Solution);
+			node[iPoint]->SetSolution_Accel(Solution);
+		}
+
+		LinSysRes.SetBlock(iPoint, Residual);
+
+		/*--- STRONG ENFORCEMENT OF THE DISPLACEMENT BOUNDARY CONDITION ---*/
+
+		/*--- Delete the columns for a particular node ---*/
+
+		/*--- TODO: In order for the computations to be faster, it may be worthy to use a penalty factor ---*/
+		/*---       in the nodal term (maybe the same value that already exists in the Jacobian) ---*/
+
+		for (iVar = 0; iVar < nPoint; iVar++){
+			if (iVar==iPoint) {
+				Jacobian.SetBlock(iVar,iPoint,mId_Aux);
+			}
+			else {
+				Jacobian.SetBlock(iVar,iPoint,mZeros_Aux);
+			}
+		}
+
+		/*--- Delete the rows for a particular node ---*/
+		for (jVar = 0; jVar < nPoint; jVar++){
+			if (iPoint!=jVar) {
+				Jacobian.SetBlock(jVar,iPoint,mZeros_Aux);
+			}
+		}
+
+		/*--- If the problem is dynamic ---*/
+		/*--- Enforce that in the previous time step all nodes had 0 U, U', U'' ---*/
+
+		if(dynamic){
+
+			node[iPoint]->SetSolution_time_n(Solution);
+			node[iPoint]->SetSolution_Vel_time_n(Solution);
+			node[iPoint]->SetSolution_Accel_time_n(Solution);
+
+		}
+
+	}
+
+	myfile.open ("jacobianClamped.txt");
+
+	for (iNode = 0; iNode < nPoint; iNode++){
+		for (jNode = 0; jNode < nPoint; jNode++){
+			myfile << "Node " << iNode << " " << jNode << endl;
+			for (iVar = 0; iVar < nVar; iVar++){
+				for (jVar = 0; jVar < nVar; jVar++){
+					checkJacobian = Jacobian.GetBlock(iNode, jNode, iVar, jVar);
+					myfile << checkJacobian << " " ;
+				}
+				myfile << endl;
+			}
+		}
+	}
+	myfile.close();
+
+
+}
 
 void CFEM_ElasticitySolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,  CNumerics **numerics,
 		unsigned short iMesh) { }
 
+void CFEM_ElasticitySolver::BC_Normal_Displacement(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+                         unsigned short val_marker) { }
+
+void CFEM_ElasticitySolver::BC_Normal_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+        unsigned short val_marker) { }
+
+void CFEM_ElasticitySolver::BC_Dir_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+        unsigned short val_marker) {
+
+	double a[3], b[3], AC[3], BD[3];
+	unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0, Point_3=0;
+	double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL, *Coord_3= NULL;
+	double Length_Elem = 0.0, Area_Elem = 0.0, Normal_Elem[3] = {0.0, 0.0, 0.0};
+	unsigned short iDim;
+
+	double LoadDirVal = config->GetLoad_Dir_Value(config->GetMarker_All_TagBound(val_marker));
+	double LoadDirMult = config->GetLoad_Dir_Multiplier(config->GetMarker_All_TagBound(val_marker));
+	double *Load_Dir_Local= config->GetLoad_Dir(config->GetMarker_All_TagBound(val_marker));
+
+	double TotalLoad;
+
+  bool Gradual_Load = config->GetGradual_Load();
+	double CurrentTime=config->GetCurrent_DynTime();
+	double ModAmpl, NonModAmpl;
+
+  bool Ramp_Load = config->GetRamp_Load();
+	double Ramp_Time = config->GetRamp_Time();
+
+	if (Ramp_Load){
+		ModAmpl=LoadDirVal*LoadDirMult*CurrentTime/Ramp_Time;
+		NonModAmpl=LoadDirVal*LoadDirMult;
+		TotalLoad=min(ModAmpl,NonModAmpl);
+	}
+	else if (Gradual_Load){
+		ModAmpl=2*((1/(1+exp(-1*CurrentTime)))-0.5);
+		TotalLoad=ModAmpl*LoadDirVal*LoadDirMult;
+	}
+	else{
+		TotalLoad=LoadDirVal*LoadDirMult;
+	}
+
+	/*--- Compute the norm of the vector that was passed in the config file ---*/
+	double Norm;
+	if (nDim==2) Norm=sqrt(Load_Dir_Local[0]*Load_Dir_Local[0]+Load_Dir_Local[1]*Load_Dir_Local[1]);
+	if (nDim==3) Norm=sqrt(Load_Dir_Local[0]*Load_Dir_Local[0]+Load_Dir_Local[1]*Load_Dir_Local[1]+Load_Dir_Local[2]*Load_Dir_Local[2]);
+
+	for (iElem = 0; iElem < geometry->GetnElem_Bound(val_marker); iElem++) {
+
+		Point_0 = geometry->bound[val_marker][iElem]->GetNode(0);     Coord_0 = geometry->node[Point_0]->GetCoord();
+		Point_1 = geometry->bound[val_marker][iElem]->GetNode(1);     Coord_1 = geometry->node[Point_1]->GetCoord();
+		if (nDim == 3) {
+
+			Point_2 = geometry->bound[val_marker][iElem]->GetNode(2);	Coord_2 = geometry->node[Point_2]->GetCoord();
+		    if (geometry->bound[val_marker][iElem]->GetVTK_Type() == RECTANGLE){
+		    	Point_3 = geometry->bound[val_marker][iElem]->GetNode(3);	Coord_3 = geometry->node[Point_3]->GetCoord();
+		    }
+
+		}
+
+		/*--- Compute area (3D), and length of the surfaces (2D) ---*/
+
+		if (nDim == 2) {
+
+			for (iDim = 0; iDim < nDim; iDim++) a[iDim] = Coord_0[iDim]-Coord_1[iDim];
+
+			Length_Elem = sqrt(a[0]*a[0]+a[1]*a[1]);
+			Normal_Elem[0] =   a[1];
+			Normal_Elem[1] = -(a[0]);
+
+		}
+
+		if (nDim == 3) {
+
+			if (geometry->bound[val_marker][iElem]->GetVTK_Type() == TRIANGLE){
+
+				for (iDim = 0; iDim < nDim; iDim++) {
+					a[iDim] = Coord_1[iDim]-Coord_0[iDim];
+					b[iDim] = Coord_2[iDim]-Coord_0[iDim];
+				}
+
+				double Ni=0 , Nj=0, Nk=0;
+
+				Ni=a[1]*b[2]-a[2]*b[1];
+				Nj=-a[0]*b[2]+a[2]*b[0];
+				Nk=a[0]*b[1]-a[1]*b[0];
+
+				Area_Elem = 0.5*sqrt(Ni*Ni+Nj*Nj+Nk*Nk);
+
+
+				//Area_Elem = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
+
+			}
+
+			else if (geometry->bound[val_marker][iElem]->GetVTK_Type() == RECTANGLE){
+
+				for (iDim = 0; iDim < nDim; iDim++) {
+					AC[iDim] = Coord_2[iDim]-Coord_0[iDim];
+					BD[iDim] = Coord_3[iDim]-Coord_1[iDim];
+				}
+
+				double Ni=0 , Nj=0, Nk=0;
+
+				Ni=AC[1]*BD[2]-AC[2]*BD[1];
+				Nj=-AC[0]*BD[2]+AC[2]*BD[0];
+				Nk=AC[0]*BD[1]-AC[1]*BD[0];
+
+				Area_Elem = 0.5*sqrt(Ni*Ni+Nj*Nj+Nk*Nk);
+
+			}
+		}
+
+      if (nDim == 2) {
+
+        Residual[0] = (1.0/2.0)*Length_Elem*TotalLoad*Load_Dir_Local[0]/Norm;
+        Residual[1] = (1.0/2.0)*Length_Elem*TotalLoad*Load_Dir_Local[1]/Norm;
+
+        LinSysRes.AddBlock(Point_0, Residual);
+        LinSysRes.AddBlock(Point_1, Residual);
+
+      }
+
+      else {
+    	  if (geometry->bound[val_marker][iElem]->GetVTK_Type() == TRIANGLE){
+
+    		  Residual[0] = (1.0/3.0)*Area_Elem*TotalLoad*Load_Dir_Local[0]/Norm;
+    		  Residual[1] = (1.0/3.0)*Area_Elem*TotalLoad*Load_Dir_Local[1]/Norm;
+    		  Residual[2] = (1.0/3.0)*Area_Elem*TotalLoad*Load_Dir_Local[2]/Norm;
+
+    		  LinSysRes.AddBlock(Point_0, Residual);
+    		  LinSysRes.AddBlock(Point_1, Residual);
+    		  LinSysRes.AddBlock(Point_2, Residual);
+    	  }
+    	  else if (geometry->bound[val_marker][iElem]->GetVTK_Type() == RECTANGLE){
+
+    		  Residual[0] = (1.0/4.0)*Area_Elem*TotalLoad*Load_Dir_Local[0]/Norm;
+    		  Residual[1] = (1.0/4.0)*Area_Elem*TotalLoad*Load_Dir_Local[1]/Norm;
+    		  Residual[2] = (1.0/4.0)*Area_Elem*TotalLoad*Load_Dir_Local[2]/Norm;
+
+    		  LinSysRes.AddBlock(Point_0, Residual);
+    		  LinSysRes.AddBlock(Point_1, Residual);
+    		  LinSysRes.AddBlock(Point_2, Residual);
+    		  LinSysRes.AddBlock(Point_3, Residual);
+
+    	  }
+
+      }
+
+	}
+
+}
+
+void CFEM_ElasticitySolver::BC_Sine_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+        unsigned short val_marker) { }
+
+void CFEM_ElasticitySolver::BC_Pressure(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+        unsigned short val_marker) { }
+
+void CFEM_ElasticitySolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
+
+void CFEM_ElasticitySolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
+
+void CFEM_ElasticitySolver::Solve_System(CGeometry *geometry, CSolver **solver_container, CConfig *config){
+
+    unsigned short iVar;
+	unsigned long iPoint, total_index, IterLinSol;
+
+	CSysSolve femSystem;
+	IterLinSol = femSystem.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+
+	/*--- Update solution and (if dynamic) advance velocity and acceleration vectors in time ---*/
+
+	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+
+		for (iVar = 0; iVar < nVar; iVar++) {
+
+			/*--- Displacements component of the solution ---*/
+
+			/*--- TODO: If it's a NewtonRaphson, the result is the DELTA_U, not U itself ---*/
+
+			node[iPoint]->SetSolution(iVar, LinSysSol[iPoint*nVar+iVar]);
+
+		}
+
+	}
+
+	/*--- MPI solution ---*/
+
+	Set_MPI_Solution(geometry, config);
+
+	/*---  Compute the residual Ax-f ---*/
+
+	Jacobian.ComputeResidual(LinSysSol, LinSysRes, LinSysAux);
+
+	  /*--- Set maximum residual to zero ---*/
+
+		for (iVar = 0; iVar < nVar; iVar++) {
+			SetRes_RMS(iVar, 0.0);
+			SetRes_Max(iVar, 0.0, 0);
+		}
+
+	  /*--- Compute the residual ---*/
+
+		for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+			for (iVar = 0; iVar < nVar; iVar++) {
+				total_index = iPoint*nVar+iVar;
+				AddRes_RMS(iVar, LinSysAux[total_index]*LinSysAux[total_index]);
+				AddRes_Max(iVar, fabs(LinSysAux[total_index]), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
+			}
+		}
+
+	  /*--- Compute the root mean square residual ---*/
+
+	  SetResidual_RMS(geometry, config);
+
+
+}
