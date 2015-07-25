@@ -7455,13 +7455,8 @@ abs_prefix=$prefix #`(cd $prefix && pwd)`
 |   |___/\\___//___|   Suite                                             |
 |                                                                       |
 -------------------------------------------------------------------------
-<<<<<<< HEAD
-| SU2 Lead Dev.: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).|
-|                Dr. Thomas D. Economon (economon@stanford.edu).        |
-=======
 | SU2 Lead Dev.: Dr. Francisco Palacios, Francisco.D.Palacios@boeing.com|
 |                Dr. Thomas D. Economon, economon@stanford.edu          |
->>>>>>> develop
 -------------------------------------------------------------------------
 | SU2 Developers:                                                       |
 | - Prof. Juan J. Alonso's group at Stanford University.                |
@@ -7535,13 +7530,8 @@ $as_echo "
 |   |___/\\___//___|   Suite                                             |
 |                                                                       |
 -------------------------------------------------------------------------
-<<<<<<< HEAD
-| SU2 Lead Dev.: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).|
-|                Dr. Thomas D. Economon (economon@stanford.edu).        |
-=======
 | SU2 Lead Dev.: Dr. Francisco Palacios, Francisco.D.Palacios@boeing.com|
 |                Dr. Thomas D. Economon, economon@stanford.edu          |
->>>>>>> develop
 -------------------------------------------------------------------------
 | SU2 Developers:                                                       |
 | - Prof. Juan J. Alonso's group at Stanford University.                |

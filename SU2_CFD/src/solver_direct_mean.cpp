@@ -2649,7 +2649,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
                (config->GetKind_Solver() == ADJ_RANS));
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-  bool aeroelastic = config->GetAeroelastic_Simulation();
+
   bool gravity = (config->GetGravityForce() == YES);
   bool engine_intake = config->GetEngine_Intake();
   bool shock_tube = config->GetShock_Tube();
@@ -3165,6 +3165,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool grid_movement = config->GetGrid_Movement();
+  bool time_steping = config->GetUnsteady_Simulation() == TIME_STEPPING;
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
 
@@ -3336,7 +3337,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
   
   /*--- For exact time solution use the minimum delta time of the whole mesh ---*/
   
-  if (config->GetUnsteady_Simulation() == TIME_STEPPING) {
+  if (time_steping)  {
 #ifdef HAVE_MPI
     double rbuf_time, sbuf_time;
     sbuf_time = Global_Delta_Time;
@@ -3344,11 +3345,14 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
     MPI_Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
     Global_Delta_Time = rbuf_time;
 #endif
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++)
-      node[iPoint]->SetDelta_Time(Global_Delta_Time);
-      //node[iPoint]->SetDelta_Time(2.939E-6);
-      //cout<< "Time Step set to: "<< 2.939E-6<< endl;
-
+    /*--- if the unsteady CFL if not equal to 0 ---*/
+    if (config->GetUnst_CFL() != 0.0) {
+      for (iPoint = 0; iPoint < nPointDomain; iPoint++)
+        node[iPoint]->SetDelta_Time(Global_Delta_Time);
+    } else {
+      for (iPoint = 0; iPoint < nPointDomain; iPoint++)
+        node[iPoint]->SetDelta_Time(config->GetDelta_UnstTime());
+    }
   }
 
   /*--- Recompute the unsteady time step for the dual time strategy
