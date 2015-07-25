@@ -102,12 +102,12 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
-am__dirstamp = $(am__leading_dot)dirstamp
-am____bin_SU2_DOT_OBJECTS = ../src/___bin_SU2_DOT-SU2_DOT.$(OBJEXT)
+am____bin_SU2_DOT_OBJECTS = ___bin_SU2_DOT-SU2_DOT.$(OBJEXT)
 ___bin_SU2_DOT_OBJECTS = $(am____bin_SU2_DOT_OBJECTS)
 ___bin_SU2_DOT_DEPENDENCIES = ../../Common/lib/libSU2.a
 ___bin_SU2_DOT_LINK = $(CXXLD) $(___bin_SU2_DOT_CXXFLAGS) $(CXXFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
+am__dirstamp = $(am__leading_dot)dirstamp
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -379,14 +379,6 @@ uninstall-binPROGRAMS:
 
 clean-binPROGRAMS:
 	-test -z "$(bin_PROGRAMS)" || rm -f $(bin_PROGRAMS)
-../src/$(am__dirstamp):
-	@$(MKDIR_P) ../src
-	@: > ../src/$(am__dirstamp)
-../src/$(DEPDIR)/$(am__dirstamp):
-	@$(MKDIR_P) ../src/$(DEPDIR)
-	@: > ../src/$(DEPDIR)/$(am__dirstamp)
-../src/___bin_SU2_DOT-SU2_DOT.$(OBJEXT): ../src/$(am__dirstamp) \
-	../src/$(DEPDIR)/$(am__dirstamp)
 ../bin/$(am__dirstamp):
 	@$(MKDIR_P) ../bin
 	@: > ../bin/$(am__dirstamp)
@@ -396,42 +388,39 @@ clean-binPROGRAMS:
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
-	-rm -f ../src/*.$(OBJEXT)
 
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_DOT-SU2_DOT.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/___bin_SU2_DOT-SU2_DOT.Po@am__quote@
 
 .cpp.o:
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
-@am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
-@am__fastdepCXX_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXXCOMPILE) -c -o $@ $<
 
 .cpp.obj:
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.obj$$||'`;\
-@am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ `$(CYGPATH_W) '$<'` &&\
-@am__fastdepCXX_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXXCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
 
-../src/___bin_SU2_DOT-SU2_DOT.o: ../src/SU2_DOT.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_DOT_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_DOT-SU2_DOT.o -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_DOT-SU2_DOT.Tpo -c -o ../src/___bin_SU2_DOT-SU2_DOT.o `test -f '../src/SU2_DOT.cpp' || echo '$(srcdir)/'`../src/SU2_DOT.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/___bin_SU2_DOT-SU2_DOT.Tpo ../src/$(DEPDIR)/___bin_SU2_DOT-SU2_DOT.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/SU2_DOT.cpp' object='../src/___bin_SU2_DOT-SU2_DOT.o' libtool=no @AMDEPBACKSLASH@
+___bin_SU2_DOT-SU2_DOT.o: ../src/SU2_DOT.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_DOT_CXXFLAGS) $(CXXFLAGS) -MT ___bin_SU2_DOT-SU2_DOT.o -MD -MP -MF $(DEPDIR)/___bin_SU2_DOT-SU2_DOT.Tpo -c -o ___bin_SU2_DOT-SU2_DOT.o `test -f '../src/SU2_DOT.cpp' || echo '$(srcdir)/'`../src/SU2_DOT.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/___bin_SU2_DOT-SU2_DOT.Tpo $(DEPDIR)/___bin_SU2_DOT-SU2_DOT.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/SU2_DOT.cpp' object='___bin_SU2_DOT-SU2_DOT.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_DOT_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_DOT-SU2_DOT.o `test -f '../src/SU2_DOT.cpp' || echo '$(srcdir)/'`../src/SU2_DOT.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_DOT_CXXFLAGS) $(CXXFLAGS) -c -o ___bin_SU2_DOT-SU2_DOT.o `test -f '../src/SU2_DOT.cpp' || echo '$(srcdir)/'`../src/SU2_DOT.cpp
 
-../src/___bin_SU2_DOT-SU2_DOT.obj: ../src/SU2_DOT.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_DOT_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_DOT-SU2_DOT.obj -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_DOT-SU2_DOT.Tpo -c -o ../src/___bin_SU2_DOT-SU2_DOT.obj `if test -f '../src/SU2_DOT.cpp'; then $(CYGPATH_W) '../src/SU2_DOT.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/SU2_DOT.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/___bin_SU2_DOT-SU2_DOT.Tpo ../src/$(DEPDIR)/___bin_SU2_DOT-SU2_DOT.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/SU2_DOT.cpp' object='../src/___bin_SU2_DOT-SU2_DOT.obj' libtool=no @AMDEPBACKSLASH@
+___bin_SU2_DOT-SU2_DOT.obj: ../src/SU2_DOT.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_DOT_CXXFLAGS) $(CXXFLAGS) -MT ___bin_SU2_DOT-SU2_DOT.obj -MD -MP -MF $(DEPDIR)/___bin_SU2_DOT-SU2_DOT.Tpo -c -o ___bin_SU2_DOT-SU2_DOT.obj `if test -f '../src/SU2_DOT.cpp'; then $(CYGPATH_W) '../src/SU2_DOT.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/SU2_DOT.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/___bin_SU2_DOT-SU2_DOT.Tpo $(DEPDIR)/___bin_SU2_DOT-SU2_DOT.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/SU2_DOT.cpp' object='___bin_SU2_DOT-SU2_DOT.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_DOT_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_DOT-SU2_DOT.obj `if test -f '../src/SU2_DOT.cpp'; then $(CYGPATH_W) '../src/SU2_DOT.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/SU2_DOT.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_DOT_CXXFLAGS) $(CXXFLAGS) -c -o ___bin_SU2_DOT-SU2_DOT.obj `if test -f '../src/SU2_DOT.cpp'; then $(CYGPATH_W) '../src/SU2_DOT.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/SU2_DOT.cpp'; fi`
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \
@@ -563,8 +552,6 @@ distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
 	-test . = "$(srcdir)" || test -z "$(CONFIG_CLEAN_VPATH_FILES)" || rm -f $(CONFIG_CLEAN_VPATH_FILES)
 	-rm -f ../bin/$(am__dirstamp)
-	-rm -f ../src/$(DEPDIR)/$(am__dirstamp)
-	-rm -f ../src/$(am__dirstamp)
 
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
@@ -574,7 +561,7 @@ clean: clean-am
 clean-am: clean-binPROGRAMS clean-generic mostlyclean-am
 
 distclean: distclean-am
-	-rm -rf ../src/$(DEPDIR)
+	-rm -rf ./$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -620,7 +607,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-	-rm -rf ../src/$(DEPDIR)
+	-rm -rf ./$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
