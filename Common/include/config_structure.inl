@@ -2,7 +2,7 @@
  * \file config_structure.inl
  * \brief In-Line subroutines of the <i>config_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -1136,10 +1136,20 @@ inline void CConfig::SetAeroelastic_n1(void) {
 inline void CConfig::SetAeroelastic_n(void) {
         Aeroelastic_n = Aeroelastic_np1;
 }
-    
-inline double CConfig::GetAeroelastic_Frequency_Plunge(void) {return FreqPlungeAeroelastic; }
 
-inline double CConfig::GetAeroelastic_Frequency_Pitch(void) {return FreqPitchAeroelastic; }
+inline double CConfig::GetAeroelastic_Flutter_Speed_Index(void) {return FlutterSpeedIndex; }
+
+inline double CConfig::GetAeroelastic_Frequency_Plunge(void) {return PlungeNaturalFrequency; }
+
+inline double CConfig::GetAeroelastic_Frequency_Pitch(void) {return PitchNaturalFrequency; }
+
+inline double CConfig::GetAeroelastic_Airfoil_Mass_Ratio(void) {return AirfoilMassRatio; }
+
+inline double CConfig::GetAeroelastic_CG_Location(void) {return CG_Location; }
+
+inline double CConfig::GetAeroelastic_Radius_Gyration_Squared(void) {return RadiusGyrationSquared; }
+
+inline unsigned short CConfig::GetAeroelasticIter(void) {return AeroelasticIter; }
 
 inline bool CConfig::GetWind_Gust(void) { return Wind_Gust; }
 

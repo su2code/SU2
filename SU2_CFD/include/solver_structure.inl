@@ -2,7 +2,7 @@
  * \file solver_structure.inl
  * \brief In-Line subroutines of the <i>solver_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -118,7 +118,7 @@ inline void CSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) 
 
 //inline void CSolver::SetSecondary_Limiter(CGeometry *geometry, CConfig *config) { }
 
-inline void CSolver::SetPreconditioner(CConfig *config, unsigned short iPoint) { }
+inline void CSolver::SetPreconditioner(CConfig *config, unsigned long iPoint) { }
 
 inline void CSolver::SetDistance(CGeometry *geometry, CConfig *config) { };
 
