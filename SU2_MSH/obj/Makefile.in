@@ -14,8 +14,12 @@
 
 @SET_MAKE@
 
-# SU2 Makefile.am for SU2_MSH
-# SU2 v3.2.7 "eagle"
+################################################################################
+#
+# \file Makefile.am
+# \brief Makefile for SU2_MSH
+# \author M. Colonno, T. Economon, F. Palacios
+# \version 4.0.0 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -41,13 +45,7 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 #
-# Created: 		10/26/12
-# Last updated: 	3/12/13
-#
-# Created by: 		M. Colonno
-# Updated by: 		M. Colonno
-#
-######################################################################################
+################################################################################
 
 VPATH = @srcdir@
 am__make_dryrun = \
@@ -102,12 +100,12 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
-am__dirstamp = $(am__leading_dot)dirstamp
-am____bin_SU2_MSH_OBJECTS = ../src/___bin_SU2_MSH-SU2_MSH.$(OBJEXT)
+am____bin_SU2_MSH_OBJECTS = ___bin_SU2_MSH-SU2_MSH.$(OBJEXT)
 ___bin_SU2_MSH_OBJECTS = $(am____bin_SU2_MSH_OBJECTS)
 ___bin_SU2_MSH_DEPENDENCIES = ../../Common/lib/libSU2.a
 ___bin_SU2_MSH_LINK = $(CXXLD) $(___bin_SU2_MSH_CXXFLAGS) $(CXXFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
+am__dirstamp = $(am__leading_dot)dirstamp
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -285,11 +283,10 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-
-# AUTOMAKE_OPTIONS = subdir-objects
 ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS}
-___bin_SU2_MSH_SOURCES = ../include/SU2_MSH.hpp \
-		../src/SU2_MSH.cpp
+___bin_SU2_MSH_SOURCES = \
+  ../include/SU2_MSH.hpp \
+  ../src/SU2_MSH.cpp
 
 
 # always link to built dependencies from ./externals
@@ -379,14 +376,6 @@ uninstall-binPROGRAMS:
 
 clean-binPROGRAMS:
 	-test -z "$(bin_PROGRAMS)" || rm -f $(bin_PROGRAMS)
-../src/$(am__dirstamp):
-	@$(MKDIR_P) ../src
-	@: > ../src/$(am__dirstamp)
-../src/$(DEPDIR)/$(am__dirstamp):
-	@$(MKDIR_P) ../src/$(DEPDIR)
-	@: > ../src/$(DEPDIR)/$(am__dirstamp)
-../src/___bin_SU2_MSH-SU2_MSH.$(OBJEXT): ../src/$(am__dirstamp) \
-	../src/$(DEPDIR)/$(am__dirstamp)
 ../bin/$(am__dirstamp):
 	@$(MKDIR_P) ../bin
 	@: > ../bin/$(am__dirstamp)
@@ -396,42 +385,39 @@ clean-binPROGRAMS:
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
-	-rm -f ../src/*.$(OBJEXT)
 
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_MSH-SU2_MSH.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/___bin_SU2_MSH-SU2_MSH.Po@am__quote@
 
 .cpp.o:
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
-@am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
-@am__fastdepCXX_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXXCOMPILE) -c -o $@ $<
 
 .cpp.obj:
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.obj$$||'`;\
-@am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ `$(CYGPATH_W) '$<'` &&\
-@am__fastdepCXX_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXXCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
 
-../src/___bin_SU2_MSH-SU2_MSH.o: ../src/SU2_MSH.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_MSH_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_MSH-SU2_MSH.o -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_MSH-SU2_MSH.Tpo -c -o ../src/___bin_SU2_MSH-SU2_MSH.o `test -f '../src/SU2_MSH.cpp' || echo '$(srcdir)/'`../src/SU2_MSH.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/___bin_SU2_MSH-SU2_MSH.Tpo ../src/$(DEPDIR)/___bin_SU2_MSH-SU2_MSH.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/SU2_MSH.cpp' object='../src/___bin_SU2_MSH-SU2_MSH.o' libtool=no @AMDEPBACKSLASH@
+___bin_SU2_MSH-SU2_MSH.o: ../src/SU2_MSH.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_MSH_CXXFLAGS) $(CXXFLAGS) -MT ___bin_SU2_MSH-SU2_MSH.o -MD -MP -MF $(DEPDIR)/___bin_SU2_MSH-SU2_MSH.Tpo -c -o ___bin_SU2_MSH-SU2_MSH.o `test -f '../src/SU2_MSH.cpp' || echo '$(srcdir)/'`../src/SU2_MSH.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/___bin_SU2_MSH-SU2_MSH.Tpo $(DEPDIR)/___bin_SU2_MSH-SU2_MSH.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/SU2_MSH.cpp' object='___bin_SU2_MSH-SU2_MSH.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_MSH_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_MSH-SU2_MSH.o `test -f '../src/SU2_MSH.cpp' || echo '$(srcdir)/'`../src/SU2_MSH.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_MSH_CXXFLAGS) $(CXXFLAGS) -c -o ___bin_SU2_MSH-SU2_MSH.o `test -f '../src/SU2_MSH.cpp' || echo '$(srcdir)/'`../src/SU2_MSH.cpp
 
-../src/___bin_SU2_MSH-SU2_MSH.obj: ../src/SU2_MSH.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_MSH_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_MSH-SU2_MSH.obj -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_MSH-SU2_MSH.Tpo -c -o ../src/___bin_SU2_MSH-SU2_MSH.obj `if test -f '../src/SU2_MSH.cpp'; then $(CYGPATH_W) '../src/SU2_MSH.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/SU2_MSH.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/___bin_SU2_MSH-SU2_MSH.Tpo ../src/$(DEPDIR)/___bin_SU2_MSH-SU2_MSH.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/SU2_MSH.cpp' object='../src/___bin_SU2_MSH-SU2_MSH.obj' libtool=no @AMDEPBACKSLASH@
+___bin_SU2_MSH-SU2_MSH.obj: ../src/SU2_MSH.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_MSH_CXXFLAGS) $(CXXFLAGS) -MT ___bin_SU2_MSH-SU2_MSH.obj -MD -MP -MF $(DEPDIR)/___bin_SU2_MSH-SU2_MSH.Tpo -c -o ___bin_SU2_MSH-SU2_MSH.obj `if test -f '../src/SU2_MSH.cpp'; then $(CYGPATH_W) '../src/SU2_MSH.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/SU2_MSH.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/___bin_SU2_MSH-SU2_MSH.Tpo $(DEPDIR)/___bin_SU2_MSH-SU2_MSH.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/SU2_MSH.cpp' object='___bin_SU2_MSH-SU2_MSH.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_MSH_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_MSH-SU2_MSH.obj `if test -f '../src/SU2_MSH.cpp'; then $(CYGPATH_W) '../src/SU2_MSH.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/SU2_MSH.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_MSH_CXXFLAGS) $(CXXFLAGS) -c -o ___bin_SU2_MSH-SU2_MSH.obj `if test -f '../src/SU2_MSH.cpp'; then $(CYGPATH_W) '../src/SU2_MSH.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/SU2_MSH.cpp'; fi`
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \
@@ -563,8 +549,6 @@ distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
 	-test . = "$(srcdir)" || test -z "$(CONFIG_CLEAN_VPATH_FILES)" || rm -f $(CONFIG_CLEAN_VPATH_FILES)
 	-rm -f ../bin/$(am__dirstamp)
-	-rm -f ../src/$(DEPDIR)/$(am__dirstamp)
-	-rm -f ../src/$(am__dirstamp)
 
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
@@ -574,7 +558,7 @@ clean: clean-am
 clean-am: clean-binPROGRAMS clean-generic mostlyclean-am
 
 distclean: distclean-am
-	-rm -rf ../src/$(DEPDIR)
+	-rm -rf ./$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -620,7 +604,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-	-rm -rf ../src/$(DEPDIR)
+	-rm -rf ./$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
