@@ -1,5 +1,9 @@
-# SU2 Makefile.am for SU2_DOT
-# SU2 v3.2.7 "eagle"
+################################################################################
+#
+# \file Makefile.am
+# \brief Makefile for SU2_DOT
+# \author M. Colonno, T. Economon, F. Palacios
+# \version 3.2.9 "eagle"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -25,21 +29,15 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 #
-# Created: 		10/26/12
-# Last updated: 	3/12/13
-#
-# Created by: 		M. Colonno
-# Updated by: 		M. Colonno
-#
-######################################################################################
+################################################################################
 
-# AUTOMAKE_OPTIONS = subdir-objects
 ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS}
 
 bin_PROGRAMS = ../bin/SU2_DOT
 
-___bin_SU2_DOT_SOURCES = ../include/SU2_DOT.hpp \
-		../src/SU2_DOT.cpp
+___bin_SU2_DOT_SOURCES = \
+  ../include/SU2_DOT.hpp \
+  ../src/SU2_DOT.cpp
 
 ___bin_SU2_DOT_CXXFLAGS =
 ___bin_SU2_DOT_LDADD = ../../Common/lib/libSU2.a
