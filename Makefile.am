@@ -3,7 +3,7 @@
 # \file Makefile.am
 # \brief Global makefile for the SU2 project
 # \author M. Colonno, T. Economon, F. Palacios
-# \version 3.2.9 "eagle"
+# \version 4.0.0 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).

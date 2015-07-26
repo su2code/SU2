@@ -14,8 +14,12 @@
 
 @SET_MAKE@
 
-# SU2 Makefile.am for SU2_MSH
-# SU2 v3.2.7 "eagle"
+################################################################################
+#
+# \file Makefile.am
+# \brief Makefile for SU2_MSH
+# \author M. Colonno, T. Economon, F. Palacios
+# \version 4.0.0 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -41,13 +45,7 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 #
-# Created: 		10/26/12
-# Last updated: 	3/12/13
-#
-# Created by: 		M. Colonno
-# Updated by: 		M. Colonno
-#
-######################################################################################
+################################################################################
 
 VPATH = @srcdir@
 am__make_dryrun = \
@@ -285,11 +283,10 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-
-# AUTOMAKE_OPTIONS = subdir-objects
 ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS}
-___bin_SU2_MSH_SOURCES = ../include/SU2_MSH.hpp \
-		../src/SU2_MSH.cpp
+___bin_SU2_MSH_SOURCES = \
+  ../include/SU2_MSH.hpp \
+  ../src/SU2_MSH.cpp
 
 
 # always link to built dependencies from ./externals
