@@ -1,5 +1,9 @@
-# SU2 autoconf file
-# SU2 v3.2.9 "eagle"
+################################################################################
+#
+# \file configure.ac
+# \brief Main file for configuring the autoconf/automake build process
+# \author M. Colonno, T. Economon, F. Palacios, B. Kirk
+# \version 4.0.0 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -25,24 +29,21 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 #
-# Created: 		10/26/12
-# Last updated:         03/24/14
-#
-# Created by: 		M. Colonno  10/26/12
-# Updated by: 		T. Economon 	3/24/14
+################################################################################
 #
 # Major Changes/Contributions:
 # METIS & TECIO integration added by Ben Kirk, 3/24/2014
 # LAPACK connection added by Teus van der Stelt, 11/13/2014
 # ParMETIS integration added by Ben Kirk & Thomas D. Economon, 2/3/2015
-##########################
+#
+################################################################################
 
 AC_INIT([SU2], [4.0.0], [su2code-dev@lists.stanford.edu],
         [SU2], [https://github.com/su2code])
 AC_PREREQ([2.59])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CANONICAL_TARGET
-AM_INIT_AUTOMAKE([subdir-objects foreign])
+AM_INIT_AUTOMAKE([foreign])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES(yes)])
 
 # AC_CONFIG_HEADERS([config.h])
