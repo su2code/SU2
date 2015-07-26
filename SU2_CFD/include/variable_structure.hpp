@@ -1382,6 +1382,12 @@ public:
   
 	/*!
 	 * \brief A virtual member.
+
+	 */
+  virtual double *GetStress_FEM(void);
+
+	/*!
+	 * \brief A virtual member.
 	 */
   virtual void SetVonMises_Stress(double val_stress);
   
@@ -1433,6 +1439,21 @@ public:
 
 	 */
   virtual double **GetTraction(void);
+
+	/*!
+	 * \brief A virtual member.
+	 */
+	virtual void Add_SurfaceLoad_Res(double *val_surfForce);
+
+	/*!
+	 * \brief A virtual member.
+	 */
+	virtual double *Get_SurfaceLoad_Res(void);
+
+	/*!
+	 * \brief A virtual member.
+	 */
+	virtual void Clear_SurfaceLoad_Res(void);
 
 
 	/*!
@@ -2452,25 +2473,33 @@ public:
 };
 
 /*!
- * \class CFEM_LElasVariable
+ * \class CFEM_ElasVariable
  * \brief Main class for defining the variables of the FEM Linear Elastic structural problem.
  * \ingroup Structural Finite Element Analysis Variables
  * \author F. Palacios, R. Sanchez.
  * \version 4.0.0 "Cardinal"
  */
-class CFEM_LElasVariable : public CVariable {
+class CFEM_ElasVariable : public CVariable {
 protected:
 
 	bool dynamicFEA;			/*!< \brief Bool which determines if the problem is dynamic. */
 
-	double **Stress;  			/*!< \brief Stress tensor. */
+	double *Stress;  			/*!< \brief Stress tensor. */
+	double *FlowTraction;		/*!< \brief Traction from the fluid field. */
+
+//	double *Residual_Int;				/*!< \brief Internal stress term for the calculation of the residual */
+	double *Residual_Ext_Surf;			/*!< \brief Term of the residual due to external forces */
+	double *Residual_Ext_Body;			/*!< \brief Term of the residual due to body forces */
+
+	double VonMises_Stress; 				/*!< \brief Von Mises stress. */
+	unsigned short nConnectedElements; 	/*!< \brief Number of elements connected to the node. */
 
 public:
 
 	/*!
 	 * \brief Constructor of the class.
 	 */
-  	CFEM_LElasVariable(void);
+  	CFEM_ElasVariable(void);
 
 	/*!
 	 * \overload
@@ -2479,18 +2508,51 @@ public:
 	 * \param[in] val_nvar - Number of variables of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-  	CFEM_LElasVariable(double *val_fea, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
+  	CFEM_ElasVariable(double *val_fea, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
 
 	/*!
 	 * \brief Destructor of the class.
 	 */
-	~CFEM_LElasVariable(void);
+	~CFEM_ElasVariable(void);
 
 	/*!
 	* \brief Get the value of the stress.
 	* \return Value of the stress.
 	*/
-	double **GetStress(void);
+	double *GetStress_FEM(void);
+
+	/*!
+	 * \brief Initialize the value of the number of attached elements to a node.
+	 */
+	void Initialize_Connectivity(void);
+
+
+	/*!
+	 * \brief Add a 1 to the value of the number of attached elements to a node.
+	 */
+	void Upgrade_Connectivity(void);
+
+
+	/*!
+	 * \brief Number of attached elements to a node.
+	 * \return Returns the value of the number of attached elements to a node.
+	 */
+	unsigned short Get_Connectivity(void);
+
+	/*!
+	 * \brief Add surface load to the residual term
+	 */
+	void Add_SurfaceLoad_Res(double *val_surfForce);
+
+	/*!
+	 * \brief Get the residual term due to surface load
+	 */
+	double *Get_SurfaceLoad_Res(void);
+
+	/*!
+	 * \brief Clear the surface load residual
+	 */
+	void Clear_SurfaceLoad_Res(void);
 
 };
 

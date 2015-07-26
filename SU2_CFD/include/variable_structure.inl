@@ -49,6 +49,8 @@ inline void CVariable::AddStress(unsigned short iVar, unsigned short jVar, doubl
 
 inline double **CVariable::GetStress(void) { return NULL; }
 
+inline double *CVariable::GetStress_FEM(void) { return NULL; }
+
 inline void CVariable::SetVonMises_Stress(double val_stress) { }
 
 inline double CVariable::GetVonMises_Stress(void) { return 0; }
@@ -62,6 +64,12 @@ inline void CVariable::Initialize_Connectivity(void) { }
 inline void CVariable::Upgrade_Connectivity(void) { }
 
 inline unsigned short CVariable::Get_Connectivity(void) { return 0; }
+
+inline void CVariable::Add_SurfaceLoad_Res(double *val_surfForce) { }
+
+inline double *CVariable::Get_SurfaceLoad_Res(void) {return NULL;}
+
+inline void CVariable::Clear_SurfaceLoad_Res(void) { }
 
 inline double CVariable::GetBetaInc2(void) { return 0; }
 
@@ -868,7 +876,25 @@ inline void CFEAVariable::Upgrade_Connectivity(void) { nAttachedElements += 1; }
 
 inline unsigned short CFEAVariable::Get_Connectivity(void) { return nAttachedElements; }
 
-inline double **CFEM_LElasVariable::GetStress(void) { return Stress; }
+inline double *CFEM_ElasVariable::GetStress_FEM(void) { return Stress; }
+
+inline void CFEM_ElasVariable::Initialize_Connectivity(void) { nConnectedElements = 0; }
+
+inline void CFEM_ElasVariable::Upgrade_Connectivity(void) { nConnectedElements += 1; }
+
+inline unsigned short CFEM_ElasVariable::Get_Connectivity(void) { return nConnectedElements; }
+
+inline void CFEM_ElasVariable::Add_SurfaceLoad_Res(double *val_surfForce) {
+	for (unsigned short iVar = 0; iVar < nVar; iVar++)
+		Residual_Ext_Surf[iVar] += val_surfForce[iVar];
+}
+
+inline double *CFEM_ElasVariable::Get_SurfaceLoad_Res(void) {return Residual_Ext_Surf;}
+
+inline void CFEM_ElasVariable::Clear_SurfaceLoad_Res(void) {
+	for (unsigned short iVar = 0; iVar < nVar; iVar++)
+		Residual_Ext_Surf[iVar] = 0.0;
+}
 
 inline void CFEABoundVariable::SetTraction(unsigned short iVar, unsigned short jVar, double val_traction) { Traction[iVar][jVar] = val_traction; }
 

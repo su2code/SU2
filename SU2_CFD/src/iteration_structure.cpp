@@ -741,7 +741,7 @@ void FEM_StructuralIteration(COutput *output, CIntegration ***integration_contai
 		/*--- Set the value of the internal iteration ---*/
 
 		IntIter = ExtIter;
-		if (dynamic) IntIter = 0;
+		if (nonlinear) IntIter = 0;
 
 		/*--- FEA equations ---*/
 

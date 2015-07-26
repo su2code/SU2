@@ -31,21 +31,52 @@
 
 #include "../include/variable_structure.hpp"
 
-CFEM_LElasVariable::CFEM_LElasVariable(void) : CVariable() { }
+CFEM_ElasVariable::CFEM_ElasVariable(void) : CVariable() {
 
-CFEM_LElasVariable::CFEM_LElasVariable(double *val_fea, unsigned short val_nDim, unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
+	dynamicFEA = false;
+	VonMises_Stress = 0.0;
+
+	nConnectedElements = 0;
+
+	Stress 				= NULL;		// Nodal stress (for output purposes)
+	FlowTraction 		= NULL;		// Nodal traction due to the fluid (fsi)
+//	Residual_Int 		= NULL;		// Internal component of the residual
+	Residual_Ext_Surf 	= NULL;		// Residual component due to external surface forces
+	Residual_Ext_Body 	= NULL;		// Residual component due to body forces
+
+}
+
+CFEM_ElasVariable::CFEM_ElasVariable(double *val_fea, unsigned short val_nDim, unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
 
 	unsigned short iVar, iDim, jDim;
+	bool fsi = config->GetFSI_Simulation();
+	bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);	// Nonlinear analysis.
+	bool body_forces = false;		// Bool for adding body forces in the future.
+
+	nConnectedElements = 0;
+	VonMises_Stress = 0.0;
 
 	dynamicFEA = (config->GetDynamic_Analysis() == DYNAMIC);
 
-	/*--- Allocate residual structures ---*/
-	Residual_Sum = new double [nVar]; Residual_Old = new double [nVar];
+	if (nDim == 2) Stress = new double [3];
+	else if (nDim == 3) Stress = new double [6];
 
-	/*--- Allocate stress tensor ---*/
-	Stress = new double* [nDim];
-	for (iDim = 0; iDim < nDim; iDim++)
-		Stress[iDim] = new double [nDim];
+	if (fsi) FlowTraction = new double [nVar]; else FlowTraction = NULL;
+
+//	if (nonlinear_analysis) Residual_Int = new double [nVar];	else Residual_Int = NULL;
+	if (body_forces) Residual_Ext_Body = new double [nVar];	else Residual_Ext_Body = NULL;
+	Residual_Ext_Surf = new double [nVar];
+
+
 }
 
-CFEM_LElasVariable::~CFEM_LElasVariable(void) { }
+CFEM_ElasVariable::~CFEM_ElasVariable(void) {
+
+	delete [] Stress;
+
+	if (FlowTraction 		!= NULL) delete [] FlowTraction;
+//	if (Residual_Int 		!= NULL) delete [] Residual_Int;
+	if (Residual_Ext_Body 	!= NULL) delete [] Residual_Ext_Body;
+	if (Residual_Ext_Surf 	!= NULL) delete [] FlowTraction;
+
+}
