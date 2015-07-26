@@ -53,6 +53,7 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(void) : CSolver() {
 	mId_Aux = NULL;
 
 	Res_Stress_i = NULL;
+	Res_Ext_Surf = NULL;
 
 }
 
@@ -60,6 +61,13 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 
 	unsigned long iPoint, iElem = 0;
 	unsigned short iVar, jVar, iDim, jDim, NodesElement = 0, nKindElements;
+
+	bool initial_calc = (config->GetExtIter() == 0);									// Checks if it is the first calculation.
+	bool first_iter = (config->GetIntIter() == 0);										// Checks if it is the first iteration
+	bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);							// Dynamic simulations.
+	bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);	// Linear analysis.
+	bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);	// Nonlinear analysis.
+	bool newton_raphson = (config->GetKind_SpaceIteScheme_FEA() == NEWTON_RAPHSON);		// Newton-Raphson method
 
 	int rank = MASTER_NODE;
 	#ifdef HAVE_MPI
@@ -108,7 +116,7 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 	if (!restart) {
 		for (iPoint = 0; iPoint < nPoint; iPoint++) {
 			for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
-			node[iPoint] = new CFEM_LElasVariable(Solution, nDim, nVar, config);
+			node[iPoint] = new CFEM_ElasVariable(Solution, nDim, nVar, config);
 		}
 	}
 	else {
@@ -169,6 +177,9 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 	/*--- Stress contribution to the node i ---*/
 	Res_Stress_i = new double[nVar];
 
+	/*--- Contribution of the external surface forces to the residual (auxiliary vector) ---*/
+	Res_Ext_Surf = new double[nVar];
+
 	/*--- Matrices to impose clamped boundary conditions (TODO: Initialize them conditionally). ---*/
 
 	mZeros_Aux = new double *[nDim];
@@ -190,8 +201,10 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 
 	/*--- Initialization of matrix structures ---*/
 	if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (Non-Linear Elasticity)." << endl;
+
 	Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, false, geometry, config);
-	MassMatrix.Initialize(nPoint, nPointDomain, nVar, nVar, false, geometry, config);
+	if (dynamic) MassMatrix.Initialize(nPoint, nPointDomain, nVar, nVar, false, geometry, config);
+	if (nonlinear_analysis) StiffMatrix.Initialize(nPoint, nPointDomain, nVar, nVar, false, geometry, config);
 
 	/*--- Initialization of linear solver structures ---*/
 	LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
@@ -251,6 +264,7 @@ CFEM_ElasticitySolver::~CFEM_ElasticitySolver(void) {
 	delete [] Jacobian_s_ij;
 	delete [] Jacobian_ij;
 	delete [] Res_Stress_i;
+	delete [] Res_Ext_Surf;
 	delete [] Solution;
 	delete [] GradN_X;
 	delete [] GradN_x;
@@ -274,6 +288,7 @@ void CFEM_ElasticitySolver::Preprocessing(CGeometry *geometry, CSolver **solver_
 	bool first_iter = (config->GetIntIter() == 0);										// Checks if it is the first iteration
 	bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);							// Dynamic simulations.
 	bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);	// Linear analysis.
+	bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);	// Nonlinear analysis.
 	bool newton_raphson = (config->GetKind_SpaceIteScheme_FEA() == NEWTON_RAPHSON);		// Newton-Raphson method
 
 	/*--- Set vector entries to zero ---*/
@@ -285,9 +300,42 @@ void CFEM_ElasticitySolver::Preprocessing(CGeometry *geometry, CSolver **solver_
 
 	/*--- Set matrix entries to zero ---*/
 
-	if ((initial_calc) && (dynamic) && (first_iter)) 	MassMatrix.SetValZero();
+	/*
+	 * If the problem is linear, we only need one Jacobian matrix in the problem, because
+	 * it is going to be constant along the calculations. Therefore, we only initialize
+	 * the Jacobian matrix once, at the beginning of the simulation.
+	 *
+	 * We don't need first_iter, because there is only one iteration per time step in linear analysis.
+	 */
+	if ((initial_calc) && (linear_analysis)){
+		Jacobian.SetValZero();
+	}
 
-	if ((linear_analysis) || (newton_raphson) || (first_iter)) 	Jacobian.SetValZero();
+	/*
+	 * If the problem is dynamic, we need a mass matrix, which will be constant along the calculation
+	 * both for linear and nonlinear analysis. Only initialized once, at the first time step.
+	 *
+	 * We need first_iter, because in nonlinear problems there are more than one subiterations in the first time step.
+	 */
+	if ((dynamic) && (initial_calc) && (first_iter)) {
+		MassMatrix.SetValZero();
+	}
+
+	/*
+	 * If the problem is nonlinear, we need to initialize the Jacobian and the stiffness matrix at least at the beginning
+	 * of each time step. If the solution method is Newton Rapshon, we initialize it also at the beginning of each
+	 * iteration.
+	 */
+	if ((nonlinear_analysis) && ((newton_raphson) || (first_iter)))	{
+		Jacobian.SetValZero();
+		StiffMatrix.SetValZero();
+	}
+	/*
+	 * Some external forces may be considered constant over the time step.
+	 */
+	if (first_iter)	{
+		for (iPoint = 0; iPoint < nPoint; iPoint++) node[iPoint]->Clear_SurfaceLoad_Res();
+	}
 
 
 }
@@ -451,11 +499,11 @@ void CFEM_ElasticitySolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geomet
 					}
 				}
 
-				Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_ij);
+				StiffMatrix.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_ij);
 
-				Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_s_ij);
+				StiffMatrix.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_s_ij);
 
-				if (incompressible) Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_k_ij);
+				if (incompressible) StiffMatrix.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_k_ij);
 
 			}
 
@@ -473,7 +521,7 @@ void CFEM_ElasticitySolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geomet
 			myfile << "Node " << iNode << " " << jNode << endl;
 			for (iVar = 0; iVar < nVar; iVar++){
 				for (jVar = 0; jVar < nVar; jVar++){
-					checkJacobian = Jacobian.GetBlock(iNode, jNode, iVar, jVar);
+					checkJacobian = StiffMatrix.GetBlock(iNode, jNode, iVar, jVar);
 					myfile << checkJacobian << " " ;
 				}
 				myfile << endl;
@@ -563,6 +611,61 @@ void CFEM_ElasticitySolver::Compute_MassMatrix(CGeometry *geometry, CSolver **so
 }
 
 void CFEM_ElasticitySolver::Compute_NodalStressRes(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config) {
+
+
+	unsigned long iPoint, iElem, iVar, jVar;
+	unsigned short iNode, iGauss, iDim;
+	unsigned short nNodes, nGauss;
+	unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
+	double val_Coord, val_Sol;
+	int EL_KIND;
+
+	double Ks_ab;
+	double *Kab = NULL;
+	double *Kk_ab = NULL;
+	double *Ta = NULL;
+	unsigned short NelNodes, jNode;
+
+	bool incompressible = (config->GetMaterialCompressibility() == INCOMPRESSIBLE_MAT);
+
+	/*--- Loops over all the elements ---*/
+
+	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
+
+		if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     {nNodes = 3; EL_KIND = EL_TRIA;}
+		if (geometry->elem[iElem]->GetVTK_Type() == RECTANGLE)    {nNodes = 4; EL_KIND = EL_QUAD;}
+
+		if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  {nNodes = 4; EL_KIND = EL_TETRA;}
+		if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      {nNodes = 5; EL_KIND = EL_TRIA;}
+		if (geometry->elem[iElem]->GetVTK_Type() == PRISM)        {nNodes = 6; EL_KIND = EL_TRIA;}
+		if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)   {nNodes = 8; EL_KIND = EL_HEXA;}
+
+		/*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
+
+		for (iNode = 0; iNode < nNodes; iNode++) {
+		  indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
+		  for (iDim = 0; iDim < nDim; iDim++) {
+			  val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
+			  val_Sol = node[indexNode[iNode]]->GetSolution(iDim) + val_Coord;
+			  element_container[EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
+			  element_container[EL_KIND]->SetCurr_Coord(val_Coord, iNode, iDim);
+		  }
+		}
+
+		numerics->Compute_NodalStress_Term(element_container[EL_KIND]);
+
+		NelNodes = element_container[EL_KIND]->GetnNodes();
+
+		for (iNode = 0; iNode < NelNodes; iNode++){
+
+			Ta = element_container[EL_KIND]->Get_Kt_a(iNode);
+			for (iVar = 0; iVar < nVar; iVar++) Res_Stress_i[iVar] = Ta[iVar];
+
+			LinSysRes.SubtractBlock(indexNode[iNode], Res_Stress_i);
+
+		}
+
+	}
 
 
 }
@@ -797,8 +900,12 @@ void CFEM_ElasticitySolver::BC_Dir_Load(CGeometry *geometry, CSolver **solver_co
         Residual[0] = (1.0/2.0)*Length_Elem*TotalLoad*Load_Dir_Local[0]/Norm;
         Residual[1] = (1.0/2.0)*Length_Elem*TotalLoad*Load_Dir_Local[1]/Norm;
 
-        LinSysRes.AddBlock(Point_0, Residual);
-        LinSysRes.AddBlock(Point_1, Residual);
+//        LinSysRes.AddBlock(Point_0, Residual);
+//        LinSysRes.AddBlock(Point_1, Residual);
+
+        /*--- This will allow us to compute the boundary conditions only once ---*/
+        node[Point_0]->Add_SurfaceLoad_Res(Residual);
+        node[Point_1]->Add_SurfaceLoad_Res(Residual);
 
       }
 
@@ -809,9 +916,15 @@ void CFEM_ElasticitySolver::BC_Dir_Load(CGeometry *geometry, CSolver **solver_co
     		  Residual[1] = (1.0/3.0)*Area_Elem*TotalLoad*Load_Dir_Local[1]/Norm;
     		  Residual[2] = (1.0/3.0)*Area_Elem*TotalLoad*Load_Dir_Local[2]/Norm;
 
-    		  LinSysRes.AddBlock(Point_0, Residual);
-    		  LinSysRes.AddBlock(Point_1, Residual);
-    		  LinSysRes.AddBlock(Point_2, Residual);
+//    		  LinSysRes.AddBlock(Point_0, Residual);
+//    		  LinSysRes.AddBlock(Point_1, Residual);
+//    		  LinSysRes.AddBlock(Point_2, Residual);
+
+    	      /*--- This will allow us to compute the boundary conditions only once ---*/
+    	      node[Point_0]->Add_SurfaceLoad_Res(Residual);
+    	      node[Point_1]->Add_SurfaceLoad_Res(Residual);
+    	      node[Point_2]->Add_SurfaceLoad_Res(Residual);
+
     	  }
     	  else if (geometry->bound[val_marker][iElem]->GetVTK_Type() == RECTANGLE){
 
@@ -819,10 +932,17 @@ void CFEM_ElasticitySolver::BC_Dir_Load(CGeometry *geometry, CSolver **solver_co
     		  Residual[1] = (1.0/4.0)*Area_Elem*TotalLoad*Load_Dir_Local[1]/Norm;
     		  Residual[2] = (1.0/4.0)*Area_Elem*TotalLoad*Load_Dir_Local[2]/Norm;
 
-    		  LinSysRes.AddBlock(Point_0, Residual);
-    		  LinSysRes.AddBlock(Point_1, Residual);
-    		  LinSysRes.AddBlock(Point_2, Residual);
-    		  LinSysRes.AddBlock(Point_3, Residual);
+//    		  LinSysRes.AddBlock(Point_0, Residual);
+//    		  LinSysRes.AddBlock(Point_1, Residual);
+//    		  LinSysRes.AddBlock(Point_2, Residual);
+//    		  LinSysRes.AddBlock(Point_3, Residual);
+
+    	      /*--- This will allow us to compute the boundary conditions only once ---*/
+    	      node[Point_0]->Add_SurfaceLoad_Res(Residual);
+    	      node[Point_1]->Add_SurfaceLoad_Res(Residual);
+    	      node[Point_2]->Add_SurfaceLoad_Res(Residual);
+    	      node[Point_3]->Add_SurfaceLoad_Res(Residual);
+
 
     	  }
 
@@ -840,7 +960,30 @@ void CFEM_ElasticitySolver::BC_Pressure(CGeometry *geometry, CSolver **solver_co
 
 void CFEM_ElasticitySolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
-void CFEM_ElasticitySolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
+void CFEM_ElasticitySolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+
+	unsigned long iPoint;
+
+	bool initial_calc = (config->GetExtIter() == 0);									// Checks if it is the first calculation.
+	bool first_iter = (config->GetIntIter() == 0);										// Checks if it is the first iteration
+	bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);							// Dynamic simulations.
+	bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);	// Linear analysis.
+	bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);	// Nonlinear analysis.
+	bool newton_raphson = (config->GetKind_SpaceIteScheme_FEA() == NEWTON_RAPHSON);		// Newton-Raphson method
+
+
+	if (!dynamic){
+
+		for (iPoint = 0; iPoint < nPoint; iPoint++){
+			Res_Ext_Surf = node[iPoint]->Get_SurfaceLoad_Res();
+			LinSysRes.AddBlock(iPoint, Res_Ext_Surf);
+		}
+
+	}
+
+
+
+}
 
 void CFEM_ElasticitySolver::Solve_System(CGeometry *geometry, CSolver **solver_container, CConfig *config){
 

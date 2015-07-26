@@ -6552,6 +6552,8 @@ private:
 	double **MassMatrix_ij;			/*!< \brief Submatrix to store the term ij of the mass matrix. */
 	double *Res_Stress_i;			/*!< \brief Submatrix to store the nodal stress contribution of node i. */
 
+	double *Res_Ext_Surf;			/*!< \brief Auxiliary vector to store the surface load contribution to the residual */
+
 	double **mZeros_Aux;			/*!< \brief Submatrix to make zeros and impose clamped boundary conditions. */
 	double **mId_Aux;				/*!< \brief Diagonal submatrix to impose clamped boundary conditions. */
 

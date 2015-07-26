@@ -209,16 +209,16 @@ void CIntegration::Space_Integration_FEM(CGeometry *geometry,
 
 	  unsigned short iMarker;
 
-	  bool initial_calc = (config->GetExtIter() == 0);								// Checks if it is the first calculation.
-	  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);					// Dynamic simulations.
+	  bool initial_calc = (config->GetExtIter() == 0);									// Checks if it is the first calculation.
+	  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);						// Dynamic simulations.
 	  bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);	// Linear analysis.
-	  bool first_iter = (Iteration == 0);											// Checks if it is the first iteration
+	  bool first_iter = (Iteration == 0);												// Checks if it is the first iteration
 	  unsigned short IterativeScheme = config->GetKind_SpaceIteScheme_FEA(); 		// Iterative schemes: NEWTON_RAPHSON, MODIFIED_NEWTON_RAPHSON
 	  unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
 
 	  /*--- Compute Mass Matrix ---*/
 
-	  if ((initial_calc) && (dynamic) && (first_iter)){
+	  if ((dynamic) && (initial_calc) && (first_iter)){
 		  solver_container[MainSolver]->Compute_MassMatrix(geometry, solver_container, numerics[VISC_TERM], config);
 	  }
 
@@ -230,15 +230,16 @@ void CIntegration::Space_Integration_FEM(CGeometry *geometry,
 		  /*--- If the analysis is nonlinear, also the stress terms need to be computed ---*/
 
 		  /*--- If the method is full Newton-Raphson, the stiffness matrix and the nodal term are updated every time ---*/
-		  /*--- It is done all together two avoid looping twice over the elements ---*/
+		  /*--- They are calculated together to avoid looping twice over the elements ---*/
 		  if (IterativeScheme == NEWTON_RAPHSON){
-			  /*--- TODO: The Jacobian has to be reinitialized every time... */
+			  /*--- The Jacobian is reinitialized every time in Preprocessing (before calling Space_Integration_FEM) */
 			  solver_container[MainSolver]->Compute_StiffMatrix_NodalStressRes(geometry, solver_container, numerics[VISC_TERM], config);
 		  }
 
+		  /*--- If the method is modified Newton-Raphson, the stiffness matrix is only computed once at the beginning of the time-step ---*/
+		  /*--- Nevertheless, the Nodal Stress Term has to be computed for each iteration ---*/
 		  else if (IterativeScheme == MODIFIED_NEWTON_RAPHSON){
 
-			  /*--- If the method is modified Newton-Raphson, the stiffness matrix is only computed once at the beginning of the time-step ---*/
 			  if (first_iter){
 				  solver_container[MainSolver]->Compute_StiffMatrix_NodalStressRes(geometry, solver_container, numerics[VISC_TERM], config);
 			  }
@@ -254,6 +255,21 @@ void CIntegration::Space_Integration_FEM(CGeometry *geometry,
 	  /*--- Apply the NATURAL BOUNDARY CONDITIONS (loads). ---*/
 	  /*--- If there are FSI loads, they have to be previously applied at other level involving both zones. ---*/
 
+	  /*--- Some external loads may be considered constant over the time step ---*/
+	  if (first_iter){
+		  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+		    switch (config->GetMarker_All_KindBC(iMarker)) {
+		      case LOAD_DIR_BOUNDARY:
+				solver_container[MainSolver]->BC_Dir_Load(geometry, solver_container, numerics[VISC_TERM], config, iMarker);
+				break;
+		      case LOAD_SINE_BOUNDARY:
+				solver_container[MainSolver]->BC_Sine_Load(geometry, solver_container, numerics[VISC_TERM], config, iMarker);
+				break;
+		    }
+		  }
+	  }
+
+	  /*--- Others are not, because they depend on the geometry ---*/
 	  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 	    switch (config->GetMarker_All_KindBC(iMarker)) {
 	      case LOAD_BOUNDARY:
@@ -262,12 +278,6 @@ void CIntegration::Space_Integration_FEM(CGeometry *geometry,
 	      case PRESSURE_BOUNDARY:
 	        solver_container[MainSolver]->BC_Pressure(geometry, solver_container, numerics[VISC_TERM], config, iMarker);
 	        break;
-	      case LOAD_DIR_BOUNDARY:
-			solver_container[MainSolver]->BC_Dir_Load(geometry, solver_container, numerics[VISC_TERM], config, iMarker);
-			break;
-	      case LOAD_SINE_BOUNDARY:
-			solver_container[MainSolver]->BC_Sine_Load(geometry, solver_container, numerics[VISC_TERM], config, iMarker);
-			break;
 	    }
 	  }
 

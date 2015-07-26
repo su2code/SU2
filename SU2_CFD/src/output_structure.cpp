@@ -3145,9 +3145,9 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       }
     }
 
-    /*--- Communicate the Linear elasticity stresses (2D) ---*/
+    /*--- Communicate the Linear elasticity stresses (2D) - Legacy elasticity solver ---*/
 
-    if ((Kind_Solver == LINEAR_ELASTICITY) || (Kind_Solver == FEM_ELASTICITY)) {
+    if (Kind_Solver == LINEAR_ELASTICITY) {
       
       /*--- Loop over this partition to collect the current variable ---*/
       
@@ -3206,9 +3206,70 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       }
     }
     
-    /*--- Communicate the Linear elasticity stresses (3D) ---*/    
+    /*--- Communicate the Linear elasticity stresses (2D) - New elasticity solver---*/
+
+    if (Kind_Solver == FEM_ELASTICITY) {
+
+      /*--- Loop over this partition to collect the current variable ---*/
+
+      jPoint = 0; double *Stress;
+      for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+
+        /*--- Check for halos & write only if requested ---*/
+
+        if (!Local_Halo[iPoint] || Wrt_Halo) {
+
+          /*--- Load buffers with the three grid velocity components. ---*/
+
+          Stress = solver[FEA_SOL]->node[iPoint]->GetStress_FEM();
+          /*--- Sigma xx ---*/
+          Buffer_Send_Var[jPoint] = Stress[0];
+          /*--- Sigma yy ---*/
+          Buffer_Send_Res[jPoint] = Stress[1];
+          /*--- Sigma xy ---*/
+          Buffer_Send_Vol[jPoint] = Stress[2];
+          jPoint++;
+        }
+      }
+
+      /*--- Gather the data on the master node. ---*/
+
+#ifdef HAVE_MPI
+      MPI_Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+      MPI_Gather(Buffer_Send_Res, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Res, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+      MPI_Gather(Buffer_Send_Vol, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Vol, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+#else
+      for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Var[iPoint] = Buffer_Send_Var[iPoint];
+      for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Res[iPoint] = Buffer_Send_Res[iPoint];
+      for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Vol[iPoint] = Buffer_Send_Vol[iPoint];
+#endif
+
+      /*--- The master node unpacks and sorts this variable by global index ---*/
+
+      if (rank == MASTER_NODE) {
+        jPoint = 0; iVar = iVar_FEA_Stress;
+        for (iProcessor = 0; iProcessor < size; iProcessor++) {
+          for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
+
+            /*--- Get global index, then loop over each variable and store ---*/
+
+            iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
+            Data[iVar][iGlobal_Index]   = Buffer_Recv_Var[jPoint];
+            Data[iVar+1][iGlobal_Index] = Buffer_Recv_Res[jPoint];
+            Data[iVar+2][iGlobal_Index] = Buffer_Recv_Vol[jPoint];
+            jPoint++;
+          }
+
+          /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
+
+          jPoint = (iProcessor+1)*nBuffer_Scalar;
+        }
+      }
+    }
+
+    /*--- Communicate the Linear elasticity stresses (3D) - Legacy elasticity solver ---*/
     
-    if (((Kind_Solver == LINEAR_ELASTICITY) || (Kind_Solver == FEM_ELASTICITY)) && (geometry->GetnDim() == 3)) {
+    if ((Kind_Solver == LINEAR_ELASTICITY)  && (geometry->GetnDim() == 3)) {
       
       /*--- Loop over this partition to collect the current variable ---*/
       
@@ -3267,6 +3328,68 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         }
       }
     }    
+
+    /*--- Communicate the Linear elasticity stresses (3D) - New elasticity solver---*/
+
+    if ((Kind_Solver == FEM_ELASTICITY) && (geometry->GetnDim() == 3)) {
+
+      /*--- Loop over this partition to collect the current variable ---*/
+
+      jPoint = 0; double *Stress;
+      for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+
+        /*--- Check for halos & write only if requested ---*/
+
+        if (!Local_Halo[iPoint] || Wrt_Halo) {
+
+          /*--- Load buffers with the three grid velocity components. ---*/
+
+          Stress = solver[FEA_SOL]->node[iPoint]->GetStress_FEM();
+          /*--- Sigma zz ---*/
+          Buffer_Send_Var[jPoint] = Stress[3];
+          /*--- Sigma xz ---*/
+          Buffer_Send_Res[jPoint] = Stress[4];
+          /*--- Sigma yz ---*/
+          Buffer_Send_Vol[jPoint] = Stress[5];
+          jPoint++;
+        }
+      }
+
+      /*--- Gather the data on the master node. ---*/
+
+#ifdef HAVE_MPI
+      MPI_Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+      MPI_Gather(Buffer_Send_Res, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Res, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+      MPI_Gather(Buffer_Send_Vol, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Vol, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+#else
+      for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Var[iPoint] = Buffer_Send_Var[iPoint];
+      for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Res[iPoint] = Buffer_Send_Res[iPoint];
+      for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Vol[iPoint] = Buffer_Send_Vol[iPoint];
+
+#endif
+
+      /*--- The master node unpacks and sorts this variable by global index ---*/
+
+      if (rank == MASTER_NODE) {
+        jPoint = 0; iVar = iVar_FEA_Stress_3D;
+        for (iProcessor = 0; iProcessor < size; iProcessor++) {
+          for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
+
+            /*--- Get global index, then loop over each variable and store ---*/
+
+            iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
+            Data[iVar][iGlobal_Index]   = Buffer_Recv_Var[jPoint];
+            Data[iVar+1][iGlobal_Index] = Buffer_Recv_Res[jPoint];
+            Data[iVar+2][iGlobal_Index] = Buffer_Recv_Vol[jPoint];
+            jPoint++;
+          }
+
+          /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
+
+          jPoint = (iProcessor+1)*nBuffer_Scalar;
+        }
+      }
+    }
 
     
     /*--- Communicate the Linear elasticity ---*/
