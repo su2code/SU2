@@ -77,6 +77,21 @@ libSU2_a_CXXFLAGS += @CGNS_CXX@
 libSU2_a_LIBADD += @CGNS_LD@
 # endif
 
+# if BUILD_HDF5
+libSU2_a_CXXFLAGS += @HDF5_CXX@
+libSU2_a_LIBADD += @HDF5_LD@
+# endif
+
+# if BUILD_SZIP
+libSU2_a_CXXFLAGS += @SZIP_CXX@
+libSU2_a_LIBADD += @SZIP_LD@
+# endif
+
+# if BUILD_ZLIB
+libSU2_a_CXXFLAGS += @ZLIB_CXX@
+libSU2_a_LIBADD += @ZLIB_LD@
+# endif
+
 # if BUILD_MUTATIONPP
 libSU2_a_CXXFLAGS += @MUTATIONPP_CXX@
 libSU2_a_LIBADD += @MUTATIONPP_LD@

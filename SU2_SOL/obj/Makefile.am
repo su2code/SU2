@@ -62,6 +62,21 @@ ___bin_SU2_SOL_CXXFLAGS += @CGNS_CXX@
 ___bin_SU2_SOL_LDADD += @CGNS_LD@
 # endif
 
+# if BUILD_HDF5
+___bin_SU2_SOL_CXXFLAGS += @HDF5_CXX@
+___bin_SU2_SOL_LDADD += @HDF5_LD@
+# endif
+
+# if BUILD_SZIP
+___bin_SU2_SOL_CXXFLAGS += @SZIP_CXX@
+___bin_SU2_SOL_LDADD += @SZIP_LD@
+# endif
+
+# if BUILD_ZLIB
+___bin_SU2_SOL_CXXFLAGS += @ZLIB_CXX@
+___bin_SU2_SOL_LDADD += @ZLIB_LD@
+# endif
+
 # if BUILD_MUTATIONPP
 ___bin_SU2_SOL_CXXFLAGS += @MUTATIONPP_CXX@
 ___bin_SU2_SOL_LDADD += @MUTATIONPP_LD@
