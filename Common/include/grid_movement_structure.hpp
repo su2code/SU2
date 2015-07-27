@@ -71,7 +71,6 @@ public:
 	 */
 	~CGridMovement(void);
   
-  
   /*!
 	 * \brief A pure virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -975,6 +974,30 @@ public:
    * \param[in] iter - Physical time iteration number.
 	 */
 	void Rigid_Translation(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter);
+  
+  /*!
+   * \brief Scale the volume grid by a multiplicative factor.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] UpdateGeo - Update geometry.
+   */
+  void SetVolume_Scaling(CGeometry *geometry, CConfig *config, bool UpdateGeo);
+  
+  /*!
+   * \brief Translate the volume grid by a specified displacement vector.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] UpdateGeo - Update geometry.
+   */
+  void SetVolume_Translation(CGeometry *geometry, CConfig *config, bool UpdateGeo);
+  
+  /*!
+   * \brief Rotate the volume grid around a specified axis and angle.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] UpdateGeo - Update geometry.
+   */
+  void SetVolume_Rotation(CGeometry *geometry, CConfig *config, bool UpdateGeo);
   
   /*!
 	 * \brief Grid deformation using the spring analogy method.
