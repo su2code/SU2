@@ -763,6 +763,8 @@ void FEM_StructuralIteration(COutput *output, CIntegration ***integration_contai
 
 			for (iZone = 0; iZone < nZone; iZone++) {
 
+				config_container[iZone]->SetIntIter(IntIter);
+
 				integration_container[iZone][FEA_SOL]->Structural_Iteration_FEM(geometry_container, solver_container, numerics_container,
 		                                                                		config_container, RUNTIME_FEA_SYS, IntIter, iZone);
 

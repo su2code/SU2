@@ -310,7 +310,7 @@ void CFEM_NonlinearElasticity::Compute_Tangent_Matrix(CElement *element){
 				/*--- Symmetric terms --*/
 				if (iNode != jNode){
 					element->Add_Kab_T(KAux_ab, jNode, iNode);
-					element->Add_Ks_ab(Ks_Aux_ab,iNode, jNode);
+					element->Add_Ks_ab(Ks_Aux_ab,jNode, iNode);
 				}
 
 			}
