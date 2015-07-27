@@ -6547,17 +6547,24 @@ private:
 	double *GradN_X,
 	*GradN_x;
 
+	double **Jacobian_c_ij;			/*!< \brief Submatrix to store the constitutive term for node ij. */
 	double **Jacobian_s_ij;			/*!< \brief Submatrix to store the stress contribution of node ij (diagonal). */
 	double **Jacobian_k_ij;			/*!< \brief Submatrix to store the pressure contribution of node ij. */
 	double **MassMatrix_ij;			/*!< \brief Submatrix to store the term ij of the mass matrix. */
 	double *Res_Stress_i;			/*!< \brief Submatrix to store the nodal stress contribution of node i. */
 
 	double *Res_Ext_Surf;			/*!< \brief Auxiliary vector to store the surface load contribution to the residual */
+	double *Res_Time_Cont;			/*!< \brief Auxiliary vector to store the surface load contribution to the residual */
 
 	double **mZeros_Aux;			/*!< \brief Submatrix to make zeros and impose clamped boundary conditions. */
 	double **mId_Aux;				/*!< \brief Diagonal submatrix to impose clamped boundary conditions. */
 
+	double a_dt[8];					/*!< \brief Integration constants. */
+
 	CSysMatrix MassMatrix; 			/*!< \brief Sparse structure for storing the mass matrix. */
+	CSysVector TimeRes_Aux;			/*!< \brief Auxiliary vector for adding mass and damping contributions to the residual. */
+	CSysVector TimeRes;				/*!< \brief Vector for adding mass and damping contributions to the residual */
+
 
 public:
 
@@ -6647,6 +6654,15 @@ public:
 	void Initialize_SystemMatrix(CGeometry *geometry, CSolver **solver_container, CConfig *config);
 
 	/*!
+	 * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void Compute_IntegrationConstants(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
+
+	/*!
 	 * \brief Clamped boundary conditions.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
@@ -6654,6 +6670,17 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void BC_Clamped(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker);
+
+	/*!
+	 * \brief Enforce the solution to be 0 in the clamped nodes - Avoids accumulation of numerical error.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
+	 */
+	void BC_Clamped_Post(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+                         unsigned short val_marker);
 
 	/*!
 	 * \brief Impose a displacement (constraint) boundary condition.

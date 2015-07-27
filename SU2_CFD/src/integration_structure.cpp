@@ -418,6 +418,18 @@ void CIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver **solver_co
 
 	  solver_container[MainSolver]->Solve_System(geometry, solver_container, config);
 
+	/*--- Reinforce ESSENTIAL BOUNDARY CONDITIONS: avoids accumulation of numerical error ---*/
+
+	  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+		switch (config->GetMarker_All_KindBC(iMarker)) {
+		  case CLAMPED_BOUNDARY:
+			solver_container[MainSolver]->BC_Clamped_Post(geometry, solver_container, numerics[VISC_TERM], config, iMarker);
+			break;
+//		  case DISPLACEMENT_BOUNDARY:
+//			solver_container[MainSolver]->BC_Normal_Displacement(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
+//			break;
+		}
+
 
 }
 

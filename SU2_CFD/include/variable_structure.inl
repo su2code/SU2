@@ -89,6 +89,8 @@ inline double CVariable::GetNon_Physical(void) { return double(Non_Physical); }
 
 inline void CVariable::SetSolution(unsigned short val_var, double val_solution) { Solution[val_var] = val_solution; }
 
+inline void CVariable::Add_DeltaSolution(unsigned short val_var, double val_solution) { Solution[val_var] += val_solution; }
+
 inline void CVariable::SetUndivided_Laplacian(unsigned short val_var, double val_undivided_laplacian) { Undivided_Laplacian[val_var] = val_undivided_laplacian; }
 
 inline void CVariable::SetAuxVar(double val_auxvar) { AuxVar = val_auxvar; }

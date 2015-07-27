@@ -127,6 +127,13 @@ public:
 	 */
 	void SetSolution(unsigned short val_var, double val_solution);
 
+	/*!
+	 * \brief Add the value of the solution vector to the previous solution (incremental approach).
+	 * \param[in] val_var - Index of the variable.
+	 * \param[in] val_solution - Value of the solution for the index <i>val_var</i>.
+	 */
+	void Add_DeltaSolution(unsigned short val_var, double val_solution);
+
   /*!
    * \brief Set the value of the non-physical point.
    * \param[in] val_value - identification of the non-physical point.
@@ -2493,6 +2500,13 @@ protected:
 
 	double VonMises_Stress; 				/*!< \brief Von Mises stress. */
 	unsigned short nConnectedElements; 	/*!< \brief Number of elements connected to the node. */
+
+	double *Solution_Vel,					/*!< \brief Velocity of the nodes. */
+	*Solution_Vel_time_n;					/*!< \brief Velocity of the nodes at time n. */
+
+	double *Solution_Accel,				/*!< \brief Acceleration of the nodes. */
+	*Solution_Accel_time_n;				/*!< \brief Acceleration of the nodes at time n. */
+
 
 public:
 
