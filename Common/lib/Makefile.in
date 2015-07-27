@@ -197,6 +197,8 @@ ECHO_T = @ECHO_T@
 EGREP = @EGREP@
 EXEEXT = @EXEEXT@
 GREP = @GREP@
+HDF5_CXX = @HDF5_CXX@
+HDF5_LD = @HDF5_LD@
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
@@ -233,9 +235,13 @@ SHELL = @SHELL@
 STRIP = @STRIP@
 SU2_METIS_CPPFLAGS = @SU2_METIS_CPPFLAGS@
 SU2_PARMETIS_CPPFLAGS = @SU2_PARMETIS_CPPFLAGS@
+SZIP_CXX = @SZIP_CXX@
+SZIP_LD = @SZIP_LD@
 TECIO_CPPFLAGS = @TECIO_CPPFLAGS@
 TECIO_INCLUDE = @TECIO_INCLUDE@
 VERSION = @VERSION@
+ZLIB_CXX = @ZLIB_CXX@
+ZLIB_LD = @ZLIB_LD@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
 abs_top_builddir = @abs_top_builddir@
@@ -331,14 +337,24 @@ libSU2_a_SOURCES = \
 # if BUILD_CGNS
 # endif
 
+# if BUILD_HDF5
+# endif
+
+# if BUILD_SZIP
+# endif
+
+# if BUILD_ZLIB
+# endif
+
 # if BUILD_MUTATIONPP
 # endif
 
 # if BUILD_JSONCPP
-libSU2_a_CXXFLAGS = @su2_externals_INCLUDES@ @CGNS_CXX@ \
-	@MUTATIONPP_CXX@ @JSONCPP_CXX@ $(am__empty)
-libSU2_a_LIBADD = @su2_externals_LIBS@ @CGNS_LD@ @MUTATIONPP_LD@ \
-	@JSONCPP_LD@ $(am__empty)
+libSU2_a_CXXFLAGS = @su2_externals_INCLUDES@ @CGNS_CXX@ @HDF5_CXX@ \
+	@SZIP_CXX@ @ZLIB_CXX@ @MUTATIONPP_CXX@ @JSONCPP_CXX@ \
+	$(am__empty)
+libSU2_a_LIBADD = @su2_externals_LIBS@ @CGNS_LD@ @HDF5_LD@ @SZIP_LD@ \
+	@ZLIB_LD@ @MUTATIONPP_LD@ @JSONCPP_LD@ $(am__empty)
 all: all-am
 
 .SUFFIXES:
