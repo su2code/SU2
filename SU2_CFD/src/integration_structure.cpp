@@ -212,21 +212,22 @@ void CIntegration::Space_Integration_FEM(CGeometry *geometry,
 	  bool initial_calc = (config->GetExtIter() == 0);									// Checks if it is the first calculation.
 	  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);						// Dynamic simulations.
 	  bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);	// Linear analysis.
-	  bool first_iter = (Iteration == 0);												// Checks if it is the first iteration
+	  bool first_iter = (config->GetIntIter() == 0);									// Checks if it is the first iteration
 	  unsigned short IterativeScheme = config->GetKind_SpaceIteScheme_FEA(); 		// Iterative schemes: NEWTON_RAPHSON, MODIFIED_NEWTON_RAPHSON
 	  unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
 
 	  /*--- Compute Mass Matrix ---*/
-
+	  /*--- The mass matrix is computed only once, at the beginning of the calculation, no matter whether the ---*/
+	  /*--- problem is linear or nonlinear ---*/
 	  if ((dynamic) && (initial_calc) && (first_iter)){
 		  solver_container[MainSolver]->Compute_MassMatrix(geometry, solver_container, numerics[VISC_TERM], config);
 	  }
-
-	  if (linear_analysis){
-		  /*--- If the analysis is linear, only a the constitutive term of the stiffness matrix has to be computed ---*/
+	  /*--- If the analysis is linear, only a the constitutive term of the stiffness matrix has to be computed ---*/
+	  /*--- This is done only once, at the beginning of the calculation. From then on, K is constant ---*/
+	  if ((linear_analysis) && (initial_calc)){
 		  solver_container[MainSolver]->Compute_StiffMatrix(geometry, solver_container, numerics[VISC_TERM], config);
 	  }
-	  else{
+	  else if (!linear_analysis){
 		  /*--- If the analysis is nonlinear, also the stress terms need to be computed ---*/
 
 		  /*--- If the method is full Newton-Raphson, the stiffness matrix and the nodal term are updated every time ---*/

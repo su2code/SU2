@@ -33,35 +33,72 @@
 
 CFEM_ElasVariable::CFEM_ElasVariable(void) : CVariable() {
 
-	dynamicFEA = false;
-	VonMises_Stress = 0.0;
+	dynamic_analysis 		= false;
+	fsi_analysis 			= false;
 
-	nConnectedElements = 0;
+	VonMises_Stress 		= 0.0;
 
-	Stress 				= NULL;		// Nodal stress (for output purposes)
-	FlowTraction 		= NULL;		// Nodal traction due to the fluid (fsi)
-//	Residual_Int 		= NULL;		// Internal component of the residual
-	Residual_Ext_Surf 	= NULL;		// Residual component due to external surface forces
-	Residual_Ext_Body 	= NULL;		// Residual component due to body forces
+	nConnectedElements 		= 0;
+
+	Stress 					= NULL;		// Nodal stress (for output purposes)
+	FlowTraction 			= NULL;		// Nodal traction due to the fluid (fsi)
+//	Residual_Int 			= NULL;		// Internal component of the residual
+	Residual_Ext_Surf 		= NULL;		// Residual component due to external surface forces
+	Residual_Ext_Body 		= NULL;		// Residual component due to body forces
+
+	Solution_time_n			= NULL;		// Solution at the node at the previous subiteration
+
+	Solution_Vel			= NULL;		// Velocity at the node at time t+dt
+	Solution_Vel_time_n 	= NULL;		// Velocity at the node at time t
+
+	Solution_Accel			= NULL;		// Acceleration at the node at time t+dt
+	Solution_Accel_time_n 	= NULL;		// Acceleration at the node at time t
+
+	Solution_Pred			= NULL;		// Predictor of the solution at the current subiteration
+	Solution_Pred_Old		= NULL;		// Predictor of the solution at the previous subiteration
 
 }
 
 CFEM_ElasVariable::CFEM_ElasVariable(double *val_fea, unsigned short val_nDim, unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
 
 	unsigned short iVar, iDim, jDim;
-	bool fsi = config->GetFSI_Simulation();
 	bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);	// Nonlinear analysis.
 	bool body_forces = false;		// Bool for adding body forces in the future.
 
 	nConnectedElements = 0;
 	VonMises_Stress = 0.0;
 
-	dynamicFEA = (config->GetDynamic_Analysis() == DYNAMIC);
+	dynamic_analysis = (config->GetDynamic_Analysis() == DYNAMIC);
+	fsi_analysis = config->GetFSI_Simulation();
 
 	if (nDim == 2) Stress = new double [3];
 	else if (nDim == 3) Stress = new double [6];
 
-	if (fsi) FlowTraction = new double [nVar]; else FlowTraction = NULL;
+	if (dynamic_analysis){
+		Solution_time_n			=  new double [nVar];
+		Solution_Vel 			=  new double [nVar];
+		Solution_Vel_time_n		=  new double [nVar];
+		Solution_Accel 			=  new double [nVar];
+		Solution_Accel_time_n	=  new double [nVar];
+	}
+	else {
+		Solution_time_n			=  NULL;
+		Solution_Vel 			=  NULL;
+		Solution_Vel_time_n		=  NULL;
+		Solution_Accel 			=  NULL;
+		Solution_Accel_time_n	=  NULL;
+	}
+
+	if (fsi_analysis) {
+		FlowTraction 			=  new double [nVar];
+		Solution_Pred 			=  new double [nVar];
+		Solution_Pred_Old 		=  new double [nVar];
+	}
+	else {
+		FlowTraction 			=  NULL;
+		Solution_Pred 			=  NULL;
+		Solution_Pred_Old 		=  NULL;
+	}
 
 //	if (nonlinear_analysis) Residual_Int = new double [nVar];	else Residual_Int = NULL;
 	if (body_forces) Residual_Ext_Body = new double [nVar];	else Residual_Ext_Body = NULL;
@@ -72,11 +109,22 @@ CFEM_ElasVariable::CFEM_ElasVariable(double *val_fea, unsigned short val_nDim, u
 
 CFEM_ElasVariable::~CFEM_ElasVariable(void) {
 
-	delete [] Stress;
+	if (Stress 					!= NULL) delete [] Stress;
+	if (FlowTraction 			!= NULL) delete [] FlowTraction;
+//	if (Residual_Int 			!= NULL) delete [] Residual_Int;
+	if (Residual_Ext_Surf 		!= NULL) delete [] Residual_Ext_Surf;
+	if (Residual_Ext_Body 		!= NULL) delete [] Residual_Ext_Body;
 
-	if (FlowTraction 		!= NULL) delete [] FlowTraction;
-//	if (Residual_Int 		!= NULL) delete [] Residual_Int;
-	if (Residual_Ext_Body 	!= NULL) delete [] Residual_Ext_Body;
-	if (Residual_Ext_Surf 	!= NULL) delete [] FlowTraction;
+	if (Solution_time_n 		!= NULL) delete [] Solution_time_n;
+
+	if (Solution_Vel 			!= NULL) delete [] Solution_Vel;
+	if (Solution_Vel_time_n 	!= NULL) delete [] Solution_Vel_time_n;
+
+	if (Solution_Accel 			!= NULL) delete [] Solution_Accel;
+	if (Solution_Accel_time_n 	!= NULL) delete [] Solution_Accel_time_n;
+
+	if (Solution_Pred 			!= NULL) delete [] Solution_Pred;
+	if (Solution_Pred_Old 		!= NULL) delete [] Solution_Pred_Old;
 
 }
+

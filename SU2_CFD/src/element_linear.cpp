@@ -53,6 +53,7 @@ CTRIA1::CTRIA1(unsigned short val_nDim, CConfig *config)
 	}
 
 	/*--- Initialize structure for current and reference configuration ---*/
+	/*--- TODO: Initialize structures depending on the kind of problem ---*/
 
 	CurrentCoord = new double*[nNodes];
 	for (iNode = 0; iNode < nNodes; iNode++){

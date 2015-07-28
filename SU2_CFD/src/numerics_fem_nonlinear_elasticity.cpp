@@ -566,10 +566,6 @@ void CFEM_NeoHookean_Comp::Compute_Constitutive_Matrix(void) {
 	    D_Mat[5][0] = 0.0;					D_Mat[5][1] = 0.0;					D_Mat[5][2] = 0.0;					D_Mat[5][3] = 0.0;	D_Mat[5][4] = 0.0;	D_Mat[5][5] = Mu_p;
 	}
 
-//	cout << D_Mat[0][0] << " " << D_Mat[0][1] << " " << D_Mat[0][2] << endl;
-//	cout << D_Mat[1][0] << " " << D_Mat[1][1] << " " << D_Mat[1][2] << endl;
-//	cout << D_Mat[2][0] << " " << D_Mat[2][1] << " " << D_Mat[2][2] << endl;
-
 }
 
 void CFEM_NeoHookean_Comp::Compute_Stress_Tensor(void) {

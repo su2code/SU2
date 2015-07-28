@@ -2489,23 +2489,29 @@ public:
 class CFEM_ElasVariable : public CVariable {
 protected:
 
-	bool dynamicFEA;			/*!< \brief Bool which determines if the problem is dynamic. */
+	bool dynamic_analysis;					/*!< \brief Bool which determines if the problem is dynamic. */
+	bool fsi_analysis;						/*!< \brief Bool which determines if the problem is FSI. */
 
-	double *Stress;  			/*!< \brief Stress tensor. */
-	double *FlowTraction;		/*!< \brief Traction from the fluid field. */
+	double *Stress;  						/*!< \brief Stress tensor. */
+	double *FlowTraction;					/*!< \brief Traction from the fluid field. */
 
-//	double *Residual_Int;				/*!< \brief Internal stress term for the calculation of the residual */
-	double *Residual_Ext_Surf;			/*!< \brief Term of the residual due to external forces */
-	double *Residual_Ext_Body;			/*!< \brief Term of the residual due to body forces */
+//	double *Residual_Int;					/*!< \brief Internal stress term for the calculation of the residual */
+	double *Residual_Ext_Surf;				/*!< \brief Term of the residual due to external forces */
+	double *Residual_Ext_Body;				/*!< \brief Term of the residual due to body forces */
 
 	double VonMises_Stress; 				/*!< \brief Von Mises stress. */
 	unsigned short nConnectedElements; 	/*!< \brief Number of elements connected to the node. */
 
+	double *Solution_time_n;				/*!< \brief Displacement at the nodes at time n */
+
 	double *Solution_Vel,					/*!< \brief Velocity of the nodes. */
 	*Solution_Vel_time_n;					/*!< \brief Velocity of the nodes at time n. */
 
-	double *Solution_Accel,				/*!< \brief Acceleration of the nodes. */
-	*Solution_Accel_time_n;				/*!< \brief Acceleration of the nodes at time n. */
+	double *Solution_Accel,					/*!< \brief Acceleration of the nodes. */
+	*Solution_Accel_time_n;					/*!< \brief Acceleration of the nodes at time n. */
+
+	double *Solution_Pred,					/*!< \brief Predictor of the solution for FSI purposes */
+	*Solution_Pred_Old;						/*!< \brief Predictor of the solution at time n for FSI purposes */
 
 
 public:
@@ -2567,6 +2573,192 @@ public:
 	 * \brief Clear the surface load residual
 	 */
 	void Clear_SurfaceLoad_Res(void);
+
+	/*!
+	 * \brief Set the value of the old solution.
+	 * \param[in] val_solution_old - Pointer to the residual vector.
+	 */
+	void SetSolution_time_n(void);
+
+	/*!
+	 * \brief Set the value of the old solution.
+	 * \param[in] val_solution_old - Pointer to the residual vector.
+	 */
+	void SetSolution_time_n(double *val_solution_time_n);
+
+
+	/*!
+	 * \brief Set the value of the velocity (Structural Analysis).
+	 * \param[in] val_solution - Solution of the problem (velocity).
+	 */
+	void SetSolution_Vel(double *val_solution_vel);
+
+	/*!
+	 * \overload
+	 * \param[in] val_var - Index of the variable.
+	 * \param[in] val_solution - Value of the solution for the index <i>val_var</i>.
+	 */
+	void SetSolution_Vel(unsigned short val_var, double val_solution_vel);
+
+	/*!
+	 * \brief Set the value of the velocity (Structural Analysis) at time n.
+	 * \param[in] val_solution - Solution of the problem (acceleration).
+	 */
+	void SetSolution_Vel_time_n(void);
+
+	/*!
+	 * \brief Set the value of the velocity (Structural Analysis) at time n.
+	 * \param[in] val_solution_old - Pointer to the residual vector.
+	 */
+	void SetSolution_Vel_time_n(double *val_solution_vel_time_n);
+
+	/*!
+	 * \overload
+	 * \param[in] val_var - Index of the variable.
+	 * \param[in] val_solution_old - Value of the old solution for the index <i>val_var</i>.
+	 */
+	void SetSolution_Vel_time_n(unsigned short val_var, double val_solution_vel_time_n);
+
+	/*!
+	 * \brief Get the solution at time n.
+	 * \param[in] val_var - Index of the variable.
+	 * \return Value of the solution for the index <i>val_var</i>.
+	 */
+	double GetSolution_time_n(unsigned short val_var);
+
+	/*!
+	 * \brief Get the velocity (Structural Analysis).
+	 * \param[in] val_var - Index of the variable.
+	 * \return Value of the solution for the index <i>val_var</i>.
+	 */
+	double GetSolution_Vel(unsigned short val_var);
+
+	/*!
+	 * \brief Get the solution of the problem.
+	 * \return Pointer to the solution vector.
+	 */
+	double *GetSolution_Vel(void);
+
+	/*!
+	 * \brief Get the velocity of the nodes (Structural Analysis) at time n.
+	 * \param[in] val_var - Index of the variable.
+	 * \return Pointer to the old solution vector.
+	 */
+	double GetSolution_Vel_time_n(unsigned short val_var);
+
+	/*!
+	 * \brief Get the solution at time n.
+	 * \return Pointer to the solution (at time n) vector.
+	 */
+	double *GetSolution_Vel_time_n(void);
+
+	/*!
+	 * \brief Set the value of the acceleration (Structural Analysis).
+	 * \param[in] val_solution - Solution of the problem (acceleration).
+	 */
+	void SetSolution_Accel(double *val_solution_accel);
+
+	/*!
+	 * \overload
+	 * \param[in] val_var - Index of the variable.
+	 * \param[in] val_solution - Value of the solution for the index <i>val_var</i>.
+	 */
+	void SetSolution_Accel(unsigned short val_var, double val_solution_accel);
+
+	/*!
+	 * \brief Set the value of the acceleration (Structural Analysis) at time n.
+	 * \param[in] val_solution_old - Pointer to the residual vector.
+	 */
+	void SetSolution_Accel_time_n(double *val_solution_accel_time_n);
+
+	/*!
+	 * \brief Set the value of the acceleration (Structural Analysis) at time n.
+	 * \param[in] val_solution - Solution of the problem (acceleration).
+	 */
+	void SetSolution_Accel_time_n(void);
+
+	/*!
+	 * \overload
+	 * \param[in] val_var - Index of the variable.
+	 * \param[in] val_solution_old - Value of the old solution for the index <i>val_var</i>.
+	 */
+	void SetSolution_Accel_time_n(unsigned short val_var, double val_solution_accel_time_n);
+
+	/*!
+	 * \brief Get the acceleration (Structural Analysis).
+	 * \param[in] val_var - Index of the variable.
+	 * \return Value of the solution for the index <i>val_var</i>.
+	 */
+	double GetSolution_Accel(unsigned short val_var);
+
+	/*!
+	 * \brief Get the solution of the problem.
+	 * \return Pointer to the solution vector.
+	 */
+	double *GetSolution_Accel(void);
+
+	/*!
+	 * \brief Get the acceleration of the nodes (Structural Analysis) at time n.
+	 * \param[in] val_var - Index of the variable.
+	 * \return Pointer to the old solution vector.
+	 */
+	double GetSolution_Accel_time_n(unsigned short val_var);
+
+	/*!
+	 * \brief Get the solution at time n.
+	 * \return Pointer to the solution (at time n) vector.
+	 */
+	double *GetSolution_Accel_time_n(void);
+
+
+	/*!
+	 * \brief Set the value of the solution predictor.
+	 */
+	void SetSolution_Pred(void);
+
+	/*!
+	 * \brief Set the value of the old solution.
+	 * \param[in] val_solution_old - Pointer to the residual vector.
+	 */
+	void SetSolution_Pred(double *val_solution_pred);
+
+	/*!
+	 * \brief Get the value of the solution predictor.
+	 * \param[in] val_var - Index of the variable.
+	 * \return Pointer to the old solution vector.
+	 */
+	double GetSolution_Pred(unsigned short val_var);
+
+	/*!
+	 * \brief Get the solution at time n.
+	 * \return Pointer to the solution (at time n) vector.
+	 */
+	double *GetSolution_Pred(void);
+
+	/*!
+	 * \brief Set the value of the solution predictor.
+	 */
+	void SetSolution_Pred_Old(void);
+
+	/*!
+	 * \brief Set the value of the old solution.
+	 * \param[in] val_solution_old - Pointer to the residual vector.
+	 */
+	void SetSolution_Pred_Old(double *val_solution_pred_Old);
+
+	/*!
+	 * \brief Get the value of the solution predictor.
+	 * \param[in] val_var - Index of the variable.
+	 * \return Pointer to the old solution vector.
+	 */
+	double GetSolution_Pred_Old(unsigned short val_var);
+
+	/*!
+	 * \brief Get the solution at time n.
+	 * \return Pointer to the solution (at time n) vector.
+	 */
+	double *GetSolution_Pred_Old(void);
+
 
 };
 
