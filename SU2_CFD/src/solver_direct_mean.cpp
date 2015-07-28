@@ -3345,8 +3345,8 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
     MPI_Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
     Global_Delta_Time = rbuf_time;
 #endif
-    /*--- if the unsteady CFL if not equal to 0 ---*/
-    if (config->GetUnst_CFL() != 0.0) {
+    /*--- if the CFL if not equal to 0 ---*/
+    if (config->GetCFL(iMesh)!=0) {
       for (iPoint = 0; iPoint < nPointDomain; iPoint++)
         node[iPoint]->SetDelta_Time(Global_Delta_Time);
     } else {
