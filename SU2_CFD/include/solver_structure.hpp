@@ -2368,12 +2368,9 @@ public:
 
 	/*!
 	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void Compute_IntegrationConstants(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
+	virtual void Compute_IntegrationConstants(CConfig *config);
 
 	/*!
 	 * \brief A virtual member.
@@ -6497,7 +6494,7 @@ public:
 	 * \param[in] solver - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void Compute_IntegrationConstants(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
+	void Compute_IntegrationConstants(CConfig *config);
 
 	/*!
 	 * \brief Set the solution variables at time n to the current solution.
@@ -6655,12 +6652,9 @@ public:
 
 	/*!
 	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void Compute_IntegrationConstants(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
+	void Compute_IntegrationConstants(CConfig *config);
 
 	/*!
 	 * \brief Clamped boundary conditions.

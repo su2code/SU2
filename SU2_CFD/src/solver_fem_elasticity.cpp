@@ -316,7 +316,7 @@ void CFEM_ElasticitySolver::Preprocessing(CGeometry *geometry, CSolver **solver_
 
 	unsigned long iPoint;
 	bool initial_calc = (config->GetExtIter() == 0);									// Checks if it is the first calculation.
-	bool first_iter = (Iteration == 0);													// Checks if it is the first iteration
+	bool first_iter = (config->GetIntIter() == 0);													// Checks if it is the first iteration
 	bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);							// Dynamic simulations.
 	bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);	// Linear analysis.
 	bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);	// Nonlinear analysis.
@@ -348,10 +348,13 @@ void CFEM_ElasticitySolver::Preprocessing(CGeometry *geometry, CSolver **solver_
 	 * If the problem is dynamic, we need a mass matrix, which will be constant along the calculation
 	 * both for linear and nonlinear analysis. Only initialized once, at the first time step.
 	 *
+	 * The same with the integration constants, as for now we consider the time step to be constant.
+	 *
 	 * We need first_iter, because in nonlinear problems there are more than one subiterations in the first time step.
 	 */
 	if ((dynamic) && (initial_calc) && (first_iter)) {
 		MassMatrix.SetValZero();
+		Compute_IntegrationConstants(config);
 	}
 
 	/*
@@ -529,6 +532,26 @@ void CFEM_ElasticitySolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geomet
 
 	}
 
+//	double checkJacobian;
+//
+//	ofstream myfile;
+//	myfile.open ("Jacobian_assembled.txt");
+//
+//	for (iNode = 0; iNode < nPoint; iNode++){
+//		for (jNode = 0; jNode < nPoint; jNode++){
+//			myfile << "Node " << iNode << " " << jNode << endl;
+//			for (iVar = 0; iVar < nVar; iVar++){
+//				for (jVar = 0; jVar < nVar; jVar++){
+//					checkJacobian = Jacobian.GetBlock(iNode, jNode, iVar, jVar);
+//					myfile << checkJacobian << " " ;
+//				}
+//				myfile << endl;
+//			}
+//		}
+//	}
+//	myfile.close();
+
+
 }
 
 void CFEM_ElasticitySolver::Compute_MassMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config) {
@@ -587,24 +610,24 @@ void CFEM_ElasticitySolver::Compute_MassMatrix(CGeometry *geometry, CSolver **so
 
 	}
 
-	double checkJacobian;
-
-	ofstream myfile;
-	myfile.open ("massMatrix.txt");
-
-	for (iNode = 0; iNode < nPoint; iNode++){
-		for (jNode = 0; jNode < nPoint; jNode++){
-			myfile << "Node " << iNode << " " << jNode << endl;
-			for (iVar = 0; iVar < nVar; iVar++){
-				for (jVar = 0; jVar < nVar; jVar++){
-					checkJacobian = MassMatrix.GetBlock(iNode, jNode, iVar, jVar);
-					myfile << checkJacobian << " " ;
-				}
-				myfile << endl;
-			}
-		}
-	}
-	myfile.close();
+//	double checkJacobian;
+//
+//	ofstream myfile;
+//	myfile.open ("massMatrix.txt");
+//
+//	for (iNode = 0; iNode < nPoint; iNode++){
+//		for (jNode = 0; jNode < nPoint; jNode++){
+//			myfile << "Node " << iNode << " " << jNode << endl;
+//			for (iVar = 0; iVar < nVar; iVar++){
+//				for (jVar = 0; jVar < nVar; jVar++){
+//					checkJacobian = MassMatrix.GetBlock(iNode, jNode, iVar, jVar);
+//					myfile << checkJacobian << " " ;
+//				}
+//				myfile << endl;
+//			}
+//		}
+//	}
+//	myfile.close();
 
 }
 
@@ -668,24 +691,7 @@ void CFEM_ElasticitySolver::Compute_NodalStressRes(CGeometry *geometry, CSolver 
 	for (iDim = 0; iDim < nDim; iDim++) {
 		val_Coord = geometry->node[0]->GetCoord(iDim);
 		val_Sol = node[0]->GetSolution(iDim) + val_Coord;
-		cout << val_Coord << " " << val_Sol << "    ";
 	}
-	cout << endl;
-
-	double checkResidual;
-
-	ofstream myfile;
-	myfile.open ("residual_2.txt");
-
-	for (iNode = 0; iNode < nPoint; iNode++){
-			myfile << "Node " << iNode << endl;
-			for (iVar = 0; iVar < nVar; iVar++){
-					checkResidual = LinSysRes.GetBlock(iNode, iVar); myfile << checkResidual << endl;
-
-			}
-	}
-	myfile.close();
-
 
 }
 
@@ -693,7 +699,7 @@ void CFEM_ElasticitySolver::Initialize_SystemMatrix(CGeometry *geometry, CSolver
 
 }
 
-void CFEM_ElasticitySolver::Compute_IntegrationConstants(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config) {
+void CFEM_ElasticitySolver::Compute_IntegrationConstants(CConfig *config) {
 
 	double Delta_t= config->GetDelta_DynTime();
 	double delta = config->GetNewmark_delta(), alpha = config->GetNewmark_alpha();
@@ -722,23 +728,6 @@ void CFEM_ElasticitySolver::BC_Clamped(CGeometry *geometry, CSolver **solver_con
 
 	unsigned short iNode, jNode;
 	double checkJacobian;
-
-	ofstream myfile;
-	myfile.open ("jacobianPreClamped.txt");
-
-	for (iNode = 0; iNode < nPoint; iNode++){
-		for (jNode = 0; jNode < nPoint; jNode++){
-			myfile << "Node " << iNode << " " << jNode << endl;
-			for (iVar = 0; iVar < nVar; iVar++){
-				for (jVar = 0; jVar < nVar; jVar++){
-					checkJacobian = Jacobian.GetBlock(iNode, jNode, iVar, jVar);
-					myfile << checkJacobian << " " ;
-				}
-				myfile << endl;
-			}
-		}
-	}
-	myfile.close();
 
 	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
@@ -786,6 +775,7 @@ void CFEM_ElasticitySolver::BC_Clamped(CGeometry *geometry, CSolver **solver_con
 
 		/*--- If the problem is dynamic ---*/
 		/*--- Enforce that in the previous time step all nodes had 0 U, U', U'' ---*/
+		/*--- TODO: Do I really need to do this? ---*/
 
 		if(dynamic){
 
@@ -796,23 +786,6 @@ void CFEM_ElasticitySolver::BC_Clamped(CGeometry *geometry, CSolver **solver_con
 		}
 
 	}
-
-	myfile.open ("jacobianClamped.txt");
-
-	for (iNode = 0; iNode < nPoint; iNode++){
-		for (jNode = 0; jNode < nPoint; jNode++){
-			myfile << "Node " << iNode << " " << jNode << endl;
-			for (iVar = 0; iVar < nVar; iVar++){
-				for (jVar = 0; jVar < nVar; jVar++){
-					checkJacobian = Jacobian.GetBlock(iNode, jNode, iVar, jVar);
-					myfile << checkJacobian << " " ;
-				}
-				myfile << endl;
-			}
-		}
-	}
-	myfile.close();
-
 
 }
 
@@ -851,29 +824,6 @@ void CFEM_ElasticitySolver::Postprocessing(CGeometry *geometry, CSolver **solver
 
     unsigned short iVar;
 	unsigned long iPoint, total_index;
-
-	bool linear = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);		// Geometrically linear problems
-	bool nonlinear = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);	// Geometrically non-linear problems
-
-
-
-	/*--- Update solution and (if dynamic) advance velocity and acceleration vectors in time ---*/
-
-	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-
-		for (iVar = 0; iVar < nVar; iVar++) {
-
-			/*--- Displacements component of the solution ---*/
-
-			/*--- If it's a non-linear problem, the result is the DELTA_U, not U itself ---*/
-
-			if (linear) node[iPoint]->SetSolution(iVar, LinSysSol[iPoint*nVar+iVar]);
-
-			if (nonlinear)	node[iPoint]->Add_DeltaSolution(iVar, LinSysSol[iPoint*nVar+iVar]);
-
-		}
-
-	}
 
 	/*--- MPI solution ---*/
 
@@ -994,9 +944,6 @@ void CFEM_ElasticitySolver::BC_Dir_Load(CGeometry *geometry, CSolver **solver_co
 
 				Area_Elem = 0.5*sqrt(Ni*Ni+Nj*Nj+Nk*Nk);
 
-
-				//Area_Elem = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
-
 			}
 
 			else if (geometry->bound[val_marker][iElem]->GetVTK_Type() == RECTANGLE){
@@ -1022,10 +969,6 @@ void CFEM_ElasticitySolver::BC_Dir_Load(CGeometry *geometry, CSolver **solver_co
         Residual[0] = (1.0/2.0)*Length_Elem*TotalLoad*Load_Dir_Local[0]/Norm;
         Residual[1] = (1.0/2.0)*Length_Elem*TotalLoad*Load_Dir_Local[1]/Norm;
 
-//        LinSysRes.AddBlock(Point_0, Residual);
-//        LinSysRes.AddBlock(Point_1, Residual);
-
-        /*--- This will allow us to compute the boundary conditions only once ---*/
         node[Point_0]->Add_SurfaceLoad_Res(Residual);
         node[Point_1]->Add_SurfaceLoad_Res(Residual);
 
@@ -1038,11 +981,6 @@ void CFEM_ElasticitySolver::BC_Dir_Load(CGeometry *geometry, CSolver **solver_co
     		  Residual[1] = (1.0/3.0)*Area_Elem*TotalLoad*Load_Dir_Local[1]/Norm;
     		  Residual[2] = (1.0/3.0)*Area_Elem*TotalLoad*Load_Dir_Local[2]/Norm;
 
-//    		  LinSysRes.AddBlock(Point_0, Residual);
-//    		  LinSysRes.AddBlock(Point_1, Residual);
-//    		  LinSysRes.AddBlock(Point_2, Residual);
-
-    	      /*--- This will allow us to compute the boundary conditions only once ---*/
     	      node[Point_0]->Add_SurfaceLoad_Res(Residual);
     	      node[Point_1]->Add_SurfaceLoad_Res(Residual);
     	      node[Point_2]->Add_SurfaceLoad_Res(Residual);
@@ -1054,12 +992,6 @@ void CFEM_ElasticitySolver::BC_Dir_Load(CGeometry *geometry, CSolver **solver_co
     		  Residual[1] = (1.0/4.0)*Area_Elem*TotalLoad*Load_Dir_Local[1]/Norm;
     		  Residual[2] = (1.0/4.0)*Area_Elem*TotalLoad*Load_Dir_Local[2]/Norm;
 
-//    		  LinSysRes.AddBlock(Point_0, Residual);
-//    		  LinSysRes.AddBlock(Point_1, Residual);
-//    		  LinSysRes.AddBlock(Point_2, Residual);
-//    		  LinSysRes.AddBlock(Point_3, Residual);
-
-    	      /*--- This will allow us to compute the boundary conditions only once ---*/
     	      node[Point_0]->Add_SurfaceLoad_Res(Residual);
     	      node[Point_1]->Add_SurfaceLoad_Res(Residual);
     	      node[Point_2]->Add_SurfaceLoad_Res(Residual);
@@ -1098,6 +1030,8 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolv
 	if (!dynamic){
 
 		for (iPoint = 0; iPoint < nPoint; iPoint++){
+			/*--- Add the external contribution to the residual    ---*/
+			/*--- (the terms that are constant over the time step) ---*/
 			Res_Ext_Surf = node[iPoint]->Get_SurfaceLoad_Res();
 			LinSysRes.AddBlock(iPoint, Res_Ext_Surf);
 		}
@@ -1110,21 +1044,25 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolv
 
 		/*
 		 * If the problem is nonlinear, we need to add the Mass Matrix contribution to the Jacobian at the beginning
-		 * of each time step. If the solution method is Newton Rapshon, we initialize it also at the beginning of each
-		 * iteration.
+		 * of each time step. If the solution method is Newton Rapshon, we repeat this step at the beginning of each
+		 * iteration, as the Jacobian is recomputed
+		 *
+		 * If the problem is linear, we add the Mass Matrix contribution to the Jacobian at the first calculation.
+		 * From then on, the Jacobian is always the same matrix.
+		 *
 		 */
 
-		if ((nonlinear_analysis) && ((newton_raphson) || (first_iter))){
+		if (((nonlinear_analysis) && ((newton_raphson) || (first_iter)))||
+			((linear_analysis) && (initial_calc))) {
 			for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++){
 				for (jPoint = 0; jPoint < geometry->GetnPoint(); jPoint++){
 					for(iVar = 0; iVar < nVar; iVar++){
 						for (jVar = 0; jVar < nVar; jVar++){
-							Jacobian_ij[iVar][jVar] = MassMatrix.GetBlock(iPoint, jPoint, iVar, jVar);
+							Jacobian_ij[iVar][jVar] = a_dt[0] * MassMatrix.GetBlock(iPoint, jPoint, iVar, jVar);
 						}
 					}
+					Jacobian.AddBlock(iPoint, jPoint, Jacobian_ij);
 				}
-
-				Jacobian.AddBlock(iPoint, jPoint, Jacobian_ij);
 			}
 		}
 
@@ -1154,9 +1092,11 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolv
 		MassMatrix.MatrixVectorProduct(TimeRes_Aux,TimeRes,geometry,config);
 		/*--- Add the components of M*TimeRes_Aux to the residual R(t+dt) ---*/
 		for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+			/*--- Dynamic contribution ---*/
 			Res_Time_Cont = TimeRes.GetBlock(iPoint);
-			Res_Ext_Surf = node[iPoint]->Get_SurfaceLoad_Res();
 			LinSysRes.AddBlock(iPoint, Res_Time_Cont);
+			/*--- External surface load contribution ---*/
+			Res_Ext_Surf = node[iPoint]->Get_SurfaceLoad_Res();
 			LinSysRes.AddBlock(iPoint, Res_Ext_Surf);
 		}
 	}
@@ -1170,35 +1110,22 @@ void CFEM_ElasticitySolver::Solve_System(CGeometry *geometry, CSolver **solver_c
     unsigned short iVar;
 	unsigned long iPoint, total_index, IterLinSol;
 
+	bool linear = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);		// Geometrically linear problems
+	bool nonlinear = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);	// Geometrically non-linear problems
+
 	unsigned short iNode, jNode, jVar;
 
-	double checkJacobian;
-
-	ofstream myfile;
-	myfile.open ("Jacobian.txt");
-
-	for (iNode = 0; iNode < nPoint; iNode++){
-		for (jNode = 0; jNode < nPoint; jNode++){
-			myfile << "Node " << iNode << " " << jNode << endl;
-			for (iVar = 0; iVar < nVar; iVar++){
-				for (jVar = 0; jVar < nVar; jVar++){
-					checkJacobian = Jacobian.GetBlock(iNode, jNode, iVar, jVar);
-					myfile << checkJacobian << " " ;
-				}
-				myfile << endl;
-			}
-		}
-	}
-	myfile.close();
-
-//	myfile.open ("StiffMatrix.txt");
+//	double checkJacobian;
+//
+//	ofstream myfile;
+//	myfile.open ("Jacobian.txt");
 //
 //	for (iNode = 0; iNode < nPoint; iNode++){
 //		for (jNode = 0; jNode < nPoint; jNode++){
 //			myfile << "Node " << iNode << " " << jNode << endl;
 //			for (iVar = 0; iVar < nVar; iVar++){
 //				for (jVar = 0; jVar < nVar; jVar++){
-//					checkJacobian = StiffMatrix.GetBlock(iNode, jNode, iVar, jVar);
+//					checkJacobian = Jacobian.GetBlock(iNode, jNode, iVar, jVar);
 //					myfile << checkJacobian << " " ;
 //				}
 //				myfile << endl;
@@ -1206,8 +1133,38 @@ void CFEM_ElasticitySolver::Solve_System(CGeometry *geometry, CSolver **solver_c
 //		}
 //	}
 //	myfile.close();
+//
+//	myfile.open ("Residual.txt");
+//
+//	for (iNode = 0; iNode < nPoint; iNode++){
+//			myfile << "Node " << iNode << " " << jNode << endl;
+//			for (iVar = 0; iVar < nVar; iVar++){
+//					checkJacobian = LinSysRes.GetBlock(iNode, iVar);
+//					myfile << checkJacobian << " " ;
+//				myfile << endl;
+//			}
+//	}
+//	myfile.close();
 
 	CSysSolve femSystem;
 	IterLinSol = femSystem.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+
+	/*--- Update solution ---*/
+
+	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+
+		for (iVar = 0; iVar < nVar; iVar++) {
+
+			/*--- Displacements component of the solution ---*/
+
+			/*--- If it's a non-linear problem, the result is the DELTA_U, not U itself ---*/
+
+			if (linear) node[iPoint]->SetSolution(iVar, LinSysSol[iPoint*nVar+iVar]);
+
+			if (nonlinear)	node[iPoint]->Add_DeltaSolution(iVar, LinSysSol[iPoint*nVar+iVar]);
+
+		}
+
+	}
 
 }

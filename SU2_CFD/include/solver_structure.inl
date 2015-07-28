@@ -641,7 +641,7 @@ inline void CSolver::Compute_StiffMassDampMatrix(CGeometry *geometry, CSolver **
 
 inline void CSolver::Initialize_SystemMatrix(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }	
 
-inline void CSolver::Compute_IntegrationConstants(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config) { }
+inline void CSolver::Compute_IntegrationConstants(CConfig *config) { }
 
 inline void CSolver::SetSolution_time_n(CGeometry *geometry, CConfig *config) { }										  
 										  

@@ -368,7 +368,7 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
 	  }
 	  else if (dynamic){
 		  /*--- Compute the integration constants ---*/
-		  Compute_IntegrationConstants(geometry, solver_container, numerics[VISC_TERM], config);
+		  Compute_IntegrationConstants(config);
 
 		  /*--- Compute the stiffness and mass matrices ---*/
 		  Compute_StiffMassMatrix(geometry, solver_container, numerics[VISC_TERM], config);
@@ -450,7 +450,7 @@ void CFEASolver::Initialize_SystemMatrix(CGeometry *geometry, CSolver **solver_c
 
 }
 
-void CFEASolver::Compute_IntegrationConstants(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config) {
+void CFEASolver::Compute_IntegrationConstants(CConfig *config) {
 
 	double Delta_t= config->GetDelta_DynTime();
 	double delta = config->GetNewmark_delta(), alpha = config->GetNewmark_alpha();
