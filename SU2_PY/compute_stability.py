@@ -63,7 +63,7 @@ state.find_files(config)
 drag_alpha = SU2.eval.func('D_DRAG_D_ALPHA',config,state)
 moment_y_alpha= SU2.eval.func('D_MOMENT_Z_D_ALPHA',config,state)
 
-grad_moment_y_alpha= SU2.eval.grad('D_MOMENT_Z_D_ALPHA','ADJOINT',config,state)
+grad_moment_y_alpha= SU2.eval.grad('D_MOMENT_Z_D_ALPHA','CONTINUOUS_ADJOINT',config,state)
 
 print 'D_DRAG_D_ALPHA     =' , drag_alpha
 print 'D_MOMENT_Y_D_ALPHA =' , moment_y_alpha

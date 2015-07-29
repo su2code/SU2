@@ -72,7 +72,7 @@ def adjoint( config ):
     konfig = copy.deepcopy(config)
     
     # setup problem    
-    konfig['MATH_PROBLEM']  = 'ADJOINT'
+    konfig['MATH_PROBLEM']  = 'CONTINUOUS_ADJOINT'
     konfig['CONV_FILENAME'] = konfig['CONV_FILENAME'] + '_adjoint'
     
     # Run Solution
