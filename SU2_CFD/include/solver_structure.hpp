@@ -2615,6 +2615,7 @@ protected:
 
   CFluidModel  *FluidModel;  /*!< \brief fluid model used in the solver */
   double **AveragedVelocity,
+  	  	 **AveragedNormal,
   	  	  **AveragedFlux,
 		  *TotalMassFlux,
 		  *TotalMomtXFlux,
