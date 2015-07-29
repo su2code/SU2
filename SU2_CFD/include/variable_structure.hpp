@@ -2500,7 +2500,6 @@ protected:
 	double *Residual_Ext_Body;				/*!< \brief Term of the residual due to body forces */
 
 	double VonMises_Stress; 				/*!< \brief Von Mises stress. */
-	unsigned short nConnectedElements; 	/*!< \brief Number of elements connected to the node. */
 
 	double *Solution_time_n;				/*!< \brief Displacement at the nodes at time n */
 
@@ -2540,24 +2539,6 @@ public:
 	* \return Value of the stress.
 	*/
 	double *GetStress_FEM(void);
-
-	/*!
-	 * \brief Initialize the value of the number of attached elements to a node.
-	 */
-	void Initialize_Connectivity(void);
-
-
-	/*!
-	 * \brief Add a 1 to the value of the number of attached elements to a node.
-	 */
-	void Upgrade_Connectivity(void);
-
-
-	/*!
-	 * \brief Number of attached elements to a node.
-	 * \return Returns the value of the number of attached elements to a node.
-	 */
-	unsigned short Get_Connectivity(void);
 
 	/*!
 	 * \brief Add surface load to the residual term

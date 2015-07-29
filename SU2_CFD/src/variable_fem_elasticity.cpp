@@ -38,8 +38,6 @@ CFEM_ElasVariable::CFEM_ElasVariable(void) : CVariable() {
 
 	VonMises_Stress 		= 0.0;
 
-	nConnectedElements 		= 0;
-
 	Stress 					= NULL;		// Nodal stress (for output purposes)
 	FlowTraction 			= NULL;		// Nodal traction due to the fluid (fsi)
 //	Residual_Int 			= NULL;		// Internal component of the residual
@@ -65,7 +63,6 @@ CFEM_ElasVariable::CFEM_ElasVariable(double *val_fea, unsigned short val_nDim, u
 	bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);	// Nonlinear analysis.
 	bool body_forces = false;		// Bool for adding body forces in the future.
 
-	nConnectedElements = 0;
 	VonMises_Stress = 0.0;
 
 	dynamic_analysis = (config->GetDynamic_Analysis() == DYNAMIC);

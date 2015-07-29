@@ -71,6 +71,8 @@ inline void CElement::Add_Mab(double val_Mab, unsigned short nodeA, unsigned sho
 
 inline void CElement::Add_Ks_ab(double val_Ks_ab, unsigned short nodeA, unsigned short nodeB) { Ks_ab[nodeA][nodeB] += val_Ks_ab; }
 
+inline void CElement::Add_NodalStress(double val_Stress, unsigned short iNode, unsigned short iVar) { NodalStress[iNode][iVar] += val_Stress; }
+
 inline double CElement::GetNi(unsigned short iNode, unsigned short iGauss) { return GaussPoint[iGauss]->GetNi(iNode);}
 
 inline double CElement::GetGradNi_X(unsigned short iNode, unsigned short iGauss, unsigned short iDim) { return GaussPoint[iGauss]->GetGradNi_Xj(iNode,iDim);}
@@ -78,6 +80,10 @@ inline double CElement::GetGradNi_X(unsigned short iNode, unsigned short iGauss,
 inline double CElement::GetGradNi_x(unsigned short iNode, unsigned short iGauss, unsigned short iDim) { return GaussPoint[iGauss]->GetGradNi_xj(iNode,iDim);}
 
 inline double CElement::GetGradNi_x_P(unsigned short iNode, unsigned short iGaussP, unsigned short iDim) { return GaussPointP[iGaussP]->GetGradNi_xj(iNode,iDim);}
+
+inline double CElement::GetNi_Extrap(unsigned short iNode, unsigned short iGauss) { return NodalExtrap[iNode][iGauss]; }
+
+inline double CElement::Get_NodalStress(unsigned short iNode, unsigned short iVar) { return NodalStress[iNode][iVar]; }
 
 inline double CElement::GetWeight_P(unsigned short iGaussP) { return GaussWeightP[iGaussP];}
 

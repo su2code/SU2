@@ -522,7 +522,116 @@ void CFEM_NonlinearElasticity::Compute_NodalStress_Term(CElement *element){
 
 	}
 
+}
 
+void CFEM_NonlinearElasticity::Compute_Averaged_NodalStress(CElement *element){
+
+	unsigned short i, j, k;
+	unsigned short iGauss, nGauss;
+	unsigned short iNode, jNode, nNode;
+	unsigned short iDim, bDim;
+
+	double Ks_Aux_ab;
+
+	double Weight, Jac_X, Jac_x;
+
+	double AuxMatrixKt[3];
+
+	/*--- Initialize auxiliary matrices ---*/
+
+	for (i = 0; i < 3; i++){
+		AuxMatrixKt[i] = 0.0;
+	}
+
+	element->clearElement(); 			/*--- Restarts the element: avoids adding over previous results in other elements --*/
+	element->ComputeGrad_Linear();		/*--- Check if we can take this out... so we don't have to do it twice ---*/
+
+	nNode = element->GetnNodes();
+	nGauss = element->GetnGaussPoints();
+
+	/*--- Full integration of the nodal stress ---*/
+
+	for (iGauss = 0; iGauss < nGauss; iGauss++){
+
+		Weight = element->GetWeight(iGauss);
+		Jac_X = element->GetJ_X(iGauss);
+		Jac_x = element->GetJ_x(iGauss);
+
+		/*--- Initialize the deformation gradient for each Gauss Point ---*/
+
+		for (i = 0; i < 3; i++){
+			for (j = 0; j < 3; j++){
+				F_Mat[i][j] = 0.0;
+				b_Mat[i][j] = 0.0;
+			}
+		}
+
+		/*--- Retrieve the values of the gradients of the shape functions for each node ---*/
+		/*--- This avoids repeated operations ---*/
+
+		for (iNode = 0; iNode < nNode; iNode++){
+
+			for (iDim = 0; iDim < nDim; iDim++){
+				GradNi_Ref_Mat[iNode][iDim] = element->GetGradNi_X(iNode,iGauss,iDim);
+				currentCoord[iNode][iDim] = element->GetCurr_Coord(iNode, iDim);
+			}
+
+			/*--- Compute the deformation gradient ---*/
+
+			for (i = 0; i < nDim; i++){
+				for (j = 0; j < nDim; j++){
+					F_Mat[i][j] += currentCoord[iNode][i]*GradNi_Ref_Mat[iNode][j];
+				}
+			}
+
+			/*--- This implies plane strain --> Consider the possible implementation for plane stress --*/
+			if (nDim == 2){
+				F_Mat[2][2] = 1.0;
+			}
+
+		}
+
+		/*--- Determinant of F --> Jacobian of the transformation ---*/
+
+		J_F = 	F_Mat[0][0]*F_Mat[1][1]*F_Mat[2][2]+
+				F_Mat[0][1]*F_Mat[1][2]*F_Mat[2][0]+
+				F_Mat[0][2]*F_Mat[1][0]*F_Mat[2][1]-
+				F_Mat[0][2]*F_Mat[1][1]*F_Mat[2][0]-
+				F_Mat[1][2]*F_Mat[2][1]*F_Mat[0][0]-
+				F_Mat[2][2]*F_Mat[0][1]*F_Mat[1][0];
+
+		/*--- Compute the left Cauchy deformation tensor ---*/
+
+		for (i = 0; i < 3; i++){
+			for (j = 0; j < 3; j++){
+				for (k = 0; k < 3; k++){
+					b_Mat[i][j] += F_Mat[i][k]*F_Mat[j][k];
+				}
+			}
+		}
+
+		/*--- Compute the stress tensor ---*/
+
+		Compute_Stress_Tensor();
+
+
+//		for (iNode = 0; iNode < nNode; iNode++){
+//
+//		    /*--- Compute the nodal stress term for each gaussian point and for each node, ---*/
+//		    /*--- and add it to the element structure to be retrieved from the solver      ---*/
+//
+//			for (i = 0; i < nDim; i++){
+//				KAux_t_a[i] = 0.0;
+//				for (j = 0; j < nDim; j++){
+//					KAux_t_a[i] += Weight * Stress_Tensor[i][j] * GradNi_Curr_Mat[iNode][j] * Jac_x;
+//				}
+//			}
+//
+//			element->Add_Kt_a(KAux_t_a, iNode);
+//
+//		}
+
+	}
 
 
 }
