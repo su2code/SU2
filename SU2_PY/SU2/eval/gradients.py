@@ -65,7 +65,7 @@ def gradient( func_name, method, config, state=None ):
 
         Inputs:
             func_name - SU2 objective function name
-            method    - 'ADJOINT' or 'FINDIFF'
+            method    - 'CONTINUOUS_ADJOINT' or 'FINDIFF'
             config    - an SU2 config
             state     - optional, an SU2 state
 
@@ -83,7 +83,7 @@ def gradient( func_name, method, config, state=None ):
     if not state['GRADIENTS'].has_key(func_name):
 
         # Adjoint Gradients
-        if method == 'ADJOINT':
+        if method == 'CONTINUOUS_ADJOINT':
 
             # Aerodynamics
             if func_name in su2io.optnames_aero:
@@ -308,7 +308,7 @@ def stability( func_name, config, state=None, step=1e-2 ):
     # ----------------------------------------------------    
 
     # will run in ADJOINT/
-    grads_0 = gradient(base_name,'ADJOINT',config,state)
+    grads_0 = gradient(base_name,'CONTINUOUS_ADJOINT',config,state)
 
 
     # ----------------------------------------------------    
@@ -354,7 +354,7 @@ def stability( func_name, config, state=None, step=1e-2 ):
             #ztate.find_files(konfig)
 
             # the gradient
-            grads_1 = gradient(base_name,'ADJOINT',konfig,ztate)
+            grads_1 = gradient(base_name,'CONTINUOUS_ADJOINT',konfig,ztate)
 
             ## direct files to store
             #name = ztate.FILES[ADJ_NAME]
