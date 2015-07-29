@@ -188,3 +188,7 @@ void CFEM_LinearElasticity::Compute_Constitutive_Matrix(void){
 	}
 
 }
+
+void CFEM_LinearElasticity::Compute_Averaged_NodalStress(CElement *element){
+
+}

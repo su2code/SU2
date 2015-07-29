@@ -1685,6 +1685,12 @@ void GetViscousProjFlux(double *val_primvar, double **val_gradprimvar,
 	virtual void Compute_Mass_Matrix(CElement *element_container);
 
 	/*!
+	 * \brief A virtual member to compute the averaged nodal stresses
+	 * \param[in] element_container - Element structure for the particular element integrated.
+	 */
+	virtual void Compute_Averaged_NodalStress(CElement *element_container);
+
+	/*!
 	 * \brief Computes a basis of orthogonal vectors from a suppled vector
 	 * \param[in] config - Normal vector
 	 */
@@ -4446,6 +4452,8 @@ public:
 
 	virtual void Compute_NodalStress_Term(CElement *element_container);
 
+	virtual void Compute_Averaged_NodalStress(CElement *element_container);
+
 	virtual void Compute_Constitutive_Matrix(void);
 
 	virtual void Compute_Stress_Tensor(void);
@@ -4479,6 +4487,8 @@ public:
 	void Compute_Tangent_Matrix(CElement *element_container);
 
 	void Compute_Constitutive_Matrix(void);
+
+	void Compute_Averaged_NodalStress(CElement *element_container);
 
 //	virtual void Compute_Stress_Tensor(void);
 
@@ -4529,6 +4539,8 @@ public:
 	void Compute_MeanDilatation_Term(CElement *element_container);
 
 	void Compute_NodalStress_Term(CElement *element_container);
+
+	void Compute_Averaged_NodalStress(CElement *element_container);
 
 	virtual void Compute_Constitutive_Matrix(void);
 

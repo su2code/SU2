@@ -52,6 +52,16 @@ CTRIA1::CTRIA1(unsigned short val_nDim, CConfig *config)
 		GaussPoint[iGauss] = new CGaussVariable(iGauss, nDim, nNodes);
 	}
 
+	NodalExtrap = new double*[nNodes];
+	for (iNode = 0; iNode < nNodes; iNode++) {
+		NodalExtrap[iNode] = new double[nGaussPoints];
+	}
+
+	NodalStress = new double*[nNodes];
+	for (iNode = 0; iNode < nNodes; iNode++) {
+		NodalStress[iNode] = new double[3];
+	}
+
 	/*--- Initialize structure for current and reference configuration ---*/
 	/*--- TODO: Initialize structures depending on the kind of problem ---*/
 
@@ -113,6 +123,11 @@ CTRIA1::CTRIA1(unsigned short val_nDim, CConfig *config)
 		  GaussPoint[iGauss]->SetNi(val_Ni,2);
 	}
 
+	/*--- Shape functions evaluated at the nodes for extrapolation of the stresses at the Gaussian Points ---*/
+	/*--- The stress is constant at a TRIA element ---*/
+	NodalExtrap[0][0] = 1.0;
+	NodalExtrap[1][0] = 1.0;
+	NodalExtrap[2][0] = 1.0;
 
 }
 
@@ -135,6 +150,7 @@ CTRIA1::~CTRIA1(void) {
 		delete [] Kab[iVar];
 		delete [] Ks_ab[iVar];
 		delete [] Kt_a[iVar];
+		delete [] NodalExtrap[iVar];
 	}
 
 	delete [] GaussCoord;
@@ -146,6 +162,7 @@ CTRIA1::~CTRIA1(void) {
 	delete [] Ks_ab;
 	delete [] Kt_a;
 	delete [] GaussWeight;
+	delete [] NodalExtrap;
 
 }
 
@@ -318,6 +335,16 @@ CQUAD4::CQUAD4(unsigned short val_nDim, CConfig *config)
 		GaussPoint[iGauss] = new CGaussVariable(iGauss, nDim, nNodes);
 	}
 
+	NodalExtrap = new double*[nNodes];
+	for (iNode = 0; iNode < nNodes; iNode++) {
+		NodalExtrap[iNode] = new double[nGaussPoints];
+	}
+
+	NodalStress = new double*[nNodes];
+	for (iNode = 0; iNode < nNodes; iNode++) {
+		NodalStress[iNode] = new double[3];
+	}
+
 	/*--- Initialize structure for current and reference configuration ---*/
 
 	CurrentCoord = new double*[nNodes];
@@ -379,6 +406,30 @@ CQUAD4::CQUAD4(unsigned short val_nDim, CConfig *config)
 		  val_Ni = 0.25*(1.0-Xi)*(1.0+Eta);		GaussPoint[iGauss]->SetNi(val_Ni,3);
 	}
 
+//	/*--- Shape functions evaluated at the nodes for extrapolation of the stresses at the Gaussian Points ---*/
+//	NodalExtrap[0][0] = 1.86602540378444; 	NodalExtrap[0][1] = -0.500000000000000; NodalExtrap[0][2] = 0.133974596215561; 	NodalExtrap[0][3] = -0.500000000000000;
+//	NodalExtrap[1][0] = -0.500000000000000; NodalExtrap[1][1] = 1.86602540378444;  	NodalExtrap[1][2] = -0.500000000000000;	NodalExtrap[1][3] = 0.133974596215561;
+//	NodalExtrap[2][0] = 0.133974596215561; 	NodalExtrap[2][1] = -0.500000000000000; NodalExtrap[2][2] = 1.86602540378444;  	NodalExtrap[2][3] = -0.500000000000000;
+//	NodalExtrap[3][0] = -0.500000000000000; NodalExtrap[3][1] = 0.133974596215561;  NodalExtrap[3][2] = -0.500000000000000; NodalExtrap[3][3] = 1.86602540378444;
+
+	double ExtrapCoord[4][2];
+
+	ExtrapCoord[0][0] = -1.732050807568877;  ExtrapCoord[0][1] = -1.732050807568877;
+	ExtrapCoord[1][0] = 1.732050807568877;   ExtrapCoord[1][1] = -1.732050807568877;
+	ExtrapCoord[2][0] = 1.732050807568877;   ExtrapCoord[2][1] = 1.732050807568877;
+	ExtrapCoord[3][0] = -1.732050807568877;  ExtrapCoord[3][1] = 1.732050807568877;
+
+	/*--- Store the shape functions (they only need to be computed once) ---*/
+	for (iNode = 0; iNode < nNodes; iNode++){
+		  Xi = ExtrapCoord[iNode][0];
+		  Eta = ExtrapCoord[iNode][1];
+
+		  NodalExtrap[iNode][0] = 0.25*(1.0-Xi)*(1.0-Eta);
+		  NodalExtrap[iNode][1] = 0.25*(1.0+Xi)*(1.0-Eta);
+		  NodalExtrap[iNode][2] = 0.25*(1.0+Xi)*(1.0+Eta);
+		  NodalExtrap[iNode][3] = 0.25*(1.0-Xi)*(1.0+Eta);
+
+	}
 
 }
 
@@ -401,6 +452,7 @@ CQUAD4::~CQUAD4(void) {
 		delete [] Kab[iVar];
 		delete [] Ks_ab[iVar];
 		delete [] Kt_a[iVar];
+		delete [] NodalExtrap[iVar];
 	}
 
 	delete [] GaussCoord;
@@ -412,6 +464,7 @@ CQUAD4::~CQUAD4(void) {
 	delete [] Ks_ab;
 	delete [] Kt_a;
 	delete [] GaussWeight;
+	delete [] NodalExtrap;
 
 }
 
@@ -734,6 +787,16 @@ CTETRA1::CTETRA1(unsigned short val_nDim, CConfig *config)
 		GaussPoint[iGauss] = new CGaussVariable(iGauss, nDim, nNodes);
 	}
 
+	NodalExtrap = new double*[nNodes];
+	for (iNode = 0; iNode < nNodes; iNode++) {
+		NodalExtrap[iNode] = new double[nGaussPoints];
+	}
+
+	NodalStress = new double*[nNodes];
+	for (iNode = 0; iNode < nNodes; iNode++) {
+		NodalStress[iNode] = new double[6];
+	}
+
 	/*--- Initialize structure for current and reference configuration ---*/
 
 	CurrentCoord = new double*[nNodes];
@@ -793,6 +856,13 @@ CTETRA1::CTETRA1(unsigned short val_nDim, CConfig *config)
 		  val_Ni = Zeta;					GaussPoint[iGauss]->SetNi(val_Ni,3);
 	}
 
+	/*--- Shape functions evaluated at the nodes for extrapolation of the stresses at the Gaussian Points ---*/
+	/*--- The stress is constant at a TETRA element ---*/
+	NodalExtrap[0][0] = 1.0;
+	NodalExtrap[1][0] = 1.0;
+	NodalExtrap[2][0] = 1.0;
+	NodalExtrap[3][0] = 1.0;
+
 }
 
 CTETRA1::~CTETRA1(void) {
@@ -814,6 +884,7 @@ CTETRA1::~CTETRA1(void) {
 		delete [] Kab[iVar];
 		delete [] Ks_ab[iVar];
 		delete [] Kt_a[iVar];
+		delete [] NodalExtrap[iVar];
 	}
 
 	delete [] GaussCoord;
@@ -825,6 +896,7 @@ CTETRA1::~CTETRA1(void) {
 	delete [] Ks_ab;
 	delete [] Kt_a;
 	delete [] GaussWeight;
+	delete [] NodalExtrap;
 
 }
 
@@ -1016,6 +1088,16 @@ CHEXA8::CHEXA8(unsigned short val_nDim, CConfig *config)
 		GaussPoint[iGauss] = new CGaussVariable(iGauss, nDim, nNodes);
 	}
 
+	NodalExtrap = new double*[nNodes];
+	for (iNode = 0; iNode < nNodes; iNode++) {
+		NodalExtrap[iNode] = new double[nGaussPoints];
+	}
+
+	NodalStress = new double*[nNodes];
+	for (iNode = 0; iNode < nNodes; iNode++) {
+		NodalStress[iNode] = new double[6];
+	}
+
 	/*--- Initialize structure for current and reference configuration ---*/
 
 	CurrentCoord = new double*[nNodes];
@@ -1087,6 +1169,35 @@ CHEXA8::CHEXA8(unsigned short val_nDim, CConfig *config)
 		  val_Ni = 0.125*(1.0-Xi)*(1.0+Eta)*(1.0+Zeta);		GaussPoint[iGauss]->SetNi(val_Ni,7);
 	}
 
+
+	double ExtrapCoord[8][3];
+
+	ExtrapCoord[0][0] = -1.732050807568877;  ExtrapCoord[0][1] = -1.732050807568877;  	ExtrapCoord[0][2] = -1.732050807568877;
+	ExtrapCoord[1][0] = 1.732050807568877;   ExtrapCoord[1][1] = -1.732050807568877;  	ExtrapCoord[1][2] = -1.732050807568877;
+	ExtrapCoord[2][0] = 1.732050807568877;   ExtrapCoord[2][1] = 1.732050807568877;  	ExtrapCoord[2][2] = -1.732050807568877;
+	ExtrapCoord[3][0] = -1.732050807568877;  ExtrapCoord[3][1] = 1.732050807568877;  	ExtrapCoord[3][2] = -1.732050807568877;
+	ExtrapCoord[4][0] = -1.732050807568877;  ExtrapCoord[4][1] = -1.732050807568877;  	ExtrapCoord[4][2] = 1.732050807568877;
+	ExtrapCoord[5][0] = 1.732050807568877;   ExtrapCoord[5][1] = -1.732050807568877;  	ExtrapCoord[5][2] = 1.732050807568877;
+	ExtrapCoord[6][0] = 1.732050807568877;   ExtrapCoord[6][1] = 1.732050807568877;  	ExtrapCoord[6][2] = 1.732050807568877;
+	ExtrapCoord[7][0] = -1.732050807568877;  ExtrapCoord[7][1] = 1.732050807568877;  	ExtrapCoord[7][2] = 1.732050807568877;
+
+
+	/*--- Store the shape functions (they only need to be computed once) ---*/
+	for (iNode = 0; iNode < nNodes; iNode++){
+		  Xi = ExtrapCoord[iNode][0];
+		  Eta = ExtrapCoord[iNode][1];
+		  Zeta = ExtrapCoord[iNode][2];
+
+		  NodalExtrap[iNode][0] = 0.125*(1.0-Xi)*(1.0-Eta)*(1.0-Zeta);
+		  NodalExtrap[iNode][1] = 0.125*(1.0+Xi)*(1.0-Eta)*(1.0-Zeta);
+		  NodalExtrap[iNode][2] = 0.125*(1.0+Xi)*(1.0+Eta)*(1.0-Zeta);
+		  NodalExtrap[iNode][3] = 0.125*(1.0-Xi)*(1.0+Eta)*(1.0-Zeta);
+		  NodalExtrap[iNode][4] = 0.125*(1.0-Xi)*(1.0-Eta)*(1.0+Zeta);
+		  NodalExtrap[iNode][5] = 0.125*(1.0+Xi)*(1.0-Eta)*(1.0+Zeta);
+		  NodalExtrap[iNode][6] = 0.125*(1.0+Xi)*(1.0+Eta)*(1.0+Zeta);
+		  NodalExtrap[iNode][7] = 0.125*(1.0-Xi)*(1.0+Eta)*(1.0+Zeta);
+	}
+
 }
 
 CHEXA8::~CHEXA8(void) {
@@ -1108,6 +1219,7 @@ CHEXA8::~CHEXA8(void) {
 		delete [] Kab[iVar];
 		delete [] Ks_ab[iVar];
 		delete [] Kt_a[iVar];
+		delete [] NodalExtrap[iVar];
 	}
 
 	delete [] GaussCoord;
@@ -1119,6 +1231,7 @@ CHEXA8::~CHEXA8(void) {
 	delete [] Ks_ab;
 	delete [] Kt_a;
 	delete [] GaussWeight;
+	delete [] NodalExtrap;
 
 
 }

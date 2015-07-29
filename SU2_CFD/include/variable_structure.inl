@@ -880,12 +880,6 @@ inline unsigned short CFEAVariable::Get_Connectivity(void) { return nAttachedEle
 
 inline double *CFEM_ElasVariable::GetStress_FEM(void) { return Stress; }
 
-inline void CFEM_ElasVariable::Initialize_Connectivity(void) { nConnectedElements = 0; }
-
-inline void CFEM_ElasVariable::Upgrade_Connectivity(void) { nConnectedElements += 1; }
-
-inline unsigned short CFEM_ElasVariable::Get_Connectivity(void) { return nConnectedElements; }
-
 inline void CFEM_ElasVariable::Add_SurfaceLoad_Res(double *val_surfForce) {
 	for (unsigned short iVar = 0; iVar < nVar; iVar++)
 		Residual_Ext_Surf[iVar] += val_surfForce[iVar];

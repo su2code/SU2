@@ -223,6 +223,14 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 
 	Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, false, geometry, config);
 
+//	unsigned short nElAttached;
+//	for (iPoint = 0; iPoint < nPoint; iPoint++){
+//		nElAttached = geometry->node[iPoint]->GetnElem();
+//		cout << "Node " << iPoint << " has " << nElAttached << " elements attached. " << endl;
+//	}
+
+
+
 //	if (nonlinear_analysis) StiffMatrix.Initialize(nPoint, nPointDomain, nVar, nVar, false, geometry, config);
 
 	if (dynamic) {

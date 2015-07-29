@@ -73,6 +73,10 @@ inline void CFEM_Elasticity::Compute_NodalStress_Term(CElement *element_containe
 
 //inline void CFEM_LinearElasticity::Compute_NodalStress_Term(CElement *element_container){ }
 
+inline void CNumerics::Compute_Averaged_NodalStress(CElement *element_container){ }
+
+inline void CFEM_Elasticity::Compute_Averaged_NodalStress(CElement *element_container){ }
+
 inline void CNumerics::Compute_Constitutive_Matrix(void){ }
 
 inline void CFEM_Elasticity::Compute_Constitutive_Matrix(void){ }

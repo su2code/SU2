@@ -64,6 +64,8 @@ protected:
 	*GaussWeight;						/*!< \brief Weight of the Gaussian Points for the integration. */
 	double	**GaussCoordP,				/*!< \brief Parent coordinates of the Gaussian Points for the pressure subintegration.. */
 	*GaussWeightP;						/*!< \brief Weight of the Gaussian Points for the pressure subintegration. */
+	double **NodalExtrap;				/*!< \brief Coordinates of the nodal points for Gaussian extrapolation */
+	double **NodalStress;				/*!< \brief Stress at the nodes */
 	CGaussVariable **GaussPoint;		/*!< \brief Structure for the Gaussian Points. */
 	CGaussVariable **GaussPointP;		/*!< \brief Structure for the Gaussian Points for the pressure subintegration. */
 	double **Mab;						/*!< \brief Structure for the nodal components of the mass matrix. */
@@ -307,6 +309,30 @@ public:
 	 * \param[out] GradNi_x - Gradient of the shape function related to node iNode and evaluated at Gaussian Point iGauss
 	 */
 	double GetGradNi_x_P(unsigned short iNode, unsigned short iGaussP, unsigned short iDim);
+
+	/*!
+	 * \brief Retrieve the value of the gradient of the shape functions respect to the reference configuration.
+	 * \param[in] iNode - Index of the node.
+	 * \param[in] iGauss - Index of the Gaussian Point.
+	 * \param[out] val_Ni_Ext - Value of the shape function at the nodes for extrapolation purposes
+	 */
+	double GetNi_Extrap(unsigned short iNode, unsigned short iGauss);
+
+	/*!
+	 * \brief Add a value to the nodal stress for an element.
+	 * \param[in] iNode - Index of the node.
+	 * \param[in] iGauss - Index of the variable.
+	 * \param[in] val_Stress - Value of the stress added.
+	 */
+	void Add_NodalStress(double val_Stress, unsigned short iNode, unsigned short iVar);
+
+	/*!
+	 * \brief Retrieve the value of the nodal stress for an element.
+	 * \param[in] iNode - Index of the node.
+	 * \param[in] iGauss - Index of the variable.
+	 * \param[in] val_Stress - Value of the stress added.
+	 */
+	double Get_NodalStress(unsigned short iNode, unsigned short iVar);
 
 	/*!
 	 * \brief Set the value of the gradient of the shape functions respect to the reference configuration.
