@@ -425,6 +425,14 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 		  }
 	  }
 
+  AveragedNormal = new double* [nMarker];
+	  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+		  AveragedNormal[iMarker] = new double [nDim];
+		  for (iDim = 0; iDim < nDim; iDim++) {
+			  AveragedNormal[iMarker][iDim] = 0.0;
+		  }
+	  }
+
   AveragedFlux = new double* [nMarker];
       for (iMarker = 0; iMarker < nMarker; iMarker++) {
           AveragedFlux[iMarker] = new double [nVar];
@@ -7434,7 +7442,7 @@ void CEulerSolver::Mixing_Process(CGeometry *geometry, CSolver **solver_containe
 
     bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
 
-    double TotalDensity, TotalPressure, *TotalVelocity;
+    double TotalDensity, TotalPressure, *TotalVelocity, TotalNormal;
 
     /*-- Variables declaration and allocation ---*/
 
@@ -7447,36 +7455,42 @@ void CEulerSolver::Mixing_Process(CGeometry *geometry, CSolver **solver_containe
         TotalAreaVelocity[iDim]=0;
     }
 
+
+    TotalDensity = 0.0;
+    TotalPressure = 0.0;
+    TotalAreaPressure=0.0;
+    TotalAreaDensity=0.0;
+    TotalVelnormal=0.0;
+    TotalArea = 0.0;
+
+
     /*--- Loop over the Euler and Navier-Stokes markers ---*/
 
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+//    for (iMarker = 0; iMarker < nMarker; iMarker++) {
 
-        if ( iMarker == val_Marker  ) {
+//        if ( iMarker == val_Marker  ) {
 
             /*--- Forces initialization at each Marker ---*/
-            TotalMassFlux[iMarker] = 0.0;
-            TotalMomtXFlux[iMarker] = 0.0;
-            TotalMomtYFlux[iMarker] = 0.0;
-            TotalMomtZFlux[iMarker] = 0.0;
-            TotalEnergyFlux[iMarker] = 0.0;
-            AveragedPressure[iMarker] = 0.0;
-            AveragedEnthalpy[iMarker] = 0.0;
-            AveragedDensity[iMarker] = 0.0;
-            AveragedSoundSpeed[iMarker] = 0.0;
-            AveragedVelocity[iMarker][nDim] = 0.0;
+            TotalMassFlux[val_Marker] = 0.0;
+            TotalMomtXFlux[val_Marker] = 0.0;
+            TotalMomtYFlux[val_Marker] = 0.0;
+            TotalMomtZFlux[val_Marker] = 0.0;
+            TotalEnergyFlux[val_Marker] = 0.0;
+            AveragedPressure[val_Marker] = 0.0;
+            AveragedEnthalpy[val_Marker] = 0.0;
+            AveragedDensity[val_Marker] = 0.0;
+            AveragedSoundSpeed[val_Marker] = 0.0;
+            for (iDim=0;iDim < nDim;iDim++){
+            	AveragedVelocity[val_Marker][iDim] = 0.0;
+            	AveragedNormal[val_Marker][iDim] = 0.0;
+            }
 
-            TotalDensity = 0.0;
-            TotalPressure = 0.0;
-            TotalAreaPressure=0.0;
-            TotalAreaDensity=0.0;
-            TotalVelnormal=0.0;
-            TotalArea = 0.0;
 
             /*--- Loop over the vertices to compute the averaged quantities ---*/
 
-            for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+            for (iVertex = 0; iVertex < geometry->GetnVertex(val_Marker); iVertex++) {
 
-                iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+                iPoint = geometry->vertex[val_Marker][iVertex]->GetNode();
 //                cout<<"ivertex "<<iVertex<<endl;
                 /*--- Compute the integral fluxes for the boundaries ---*/
 
@@ -7502,7 +7516,7 @@ void CEulerSolver::Mixing_Process(CGeometry *geometry, CSolver **solver_containe
 //                    cout<<counter<<endl;
 
                     /*--- Normal vector for this vertex (negate for outward convention) ---*/
-                    Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+                    Normal = geometry->vertex[val_Marker][iVertex]->GetNormal();
                     for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
                     Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
                     double VelNormal = 0.0, VelSq = 0.0;
@@ -7517,13 +7531,16 @@ void CEulerSolver::Mixing_Process(CGeometry *geometry, CSolver **solver_containe
 
                     for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
 
+
                     /*--- Compute the integral fluxes for the boundaries of interest ---*/
 
                     if (nDim == 2) {
-                        TotalMassFlux[iMarker] += Area*(Density*VelNormal );
-                        TotalMomtXFlux[iMarker] += Area*(Density*VelNormal*Velocity[0] + Pressure*UnitNormal[0] );
-                        TotalMomtYFlux[iMarker] += Area*(Density*VelNormal*Velocity[1] + Pressure*UnitNormal[1] );
-                        TotalEnergyFlux[iMarker] += Area*(Density*VelNormal*(Enthalpy+VelSq/2) );
+                        TotalMassFlux[val_Marker] += Area*(Density*VelNormal );
+                        TotalMomtXFlux[val_Marker] += Area*(Density*VelNormal*Velocity[0] + Pressure*UnitNormal[0] );
+                        TotalMomtYFlux[val_Marker] += Area*(Density*VelNormal*Velocity[1] + Pressure*UnitNormal[1] );
+                        TotalEnergyFlux[val_Marker] += Area*(Density*VelNormal*(Enthalpy+VelSq/2) );
+                        AveragedNormal[val_Marker][0] +=Normal[0];
+                        AveragedNormal[val_Marker][1] +=Normal[1];
                         TotalArea += Area;
                         TotalAreaPressure += Area*Pressure;
                         TotalAreaDensity += Density * Area;
@@ -7540,11 +7557,14 @@ void CEulerSolver::Mixing_Process(CGeometry *geometry, CSolver **solver_containe
 
                     }
                     else {
-                        TotalMassFlux[iMarker] += Area*(Density*VelNormal);
-                        TotalMomtXFlux[iMarker] += Area*(Density*VelNormal*Velocity[0] + Pressure*UnitNormal[0] );
-                        TotalMomtYFlux[iMarker] += Area*(Density*VelNormal*Velocity[1] + Pressure*UnitNormal[1] );
-                        TotalMomtZFlux[iMarker] += Area*(Density*VelNormal*Velocity[2] + Pressure*UnitNormal[2] );
-                        TotalEnergyFlux[iMarker] += Area*(Density*VelNormal*(Enthalpy+VelSq/2) );
+                        TotalMassFlux[val_Marker] += Area*(Density*VelNormal);
+                        TotalMomtXFlux[val_Marker] += Area*(Density*VelNormal*Velocity[0] + Pressure*UnitNormal[0] );
+                        TotalMomtYFlux[val_Marker] += Area*(Density*VelNormal*Velocity[1] + Pressure*UnitNormal[1] );
+                        TotalMomtZFlux[val_Marker] += Area*(Density*VelNormal*Velocity[2] + Pressure*UnitNormal[2] );
+                        TotalEnergyFlux[val_Marker] += Area*(Density*VelNormal*(Enthalpy+VelSq/2) );
+                        AveragedNormal[val_Marker][0] +=Normal[0];
+                        AveragedNormal[val_Marker][1] +=Normal[1];
+                        AveragedNormal[val_Marker][2] +=Normal[2];
                         TotalArea += Area;
                         TotalAreaPressure += Area*Pressure;
 
@@ -7559,47 +7579,55 @@ void CEulerSolver::Mixing_Process(CGeometry *geometry, CSolver **solver_containe
 
 
             if (nDim == 2) {
-                AveragedFlux[iMarker][0] = TotalMassFlux[iMarker]/TotalArea;
-                AveragedFlux[iMarker][1] = TotalMomtXFlux[iMarker]/TotalArea;
-                AveragedFlux[iMarker][2] = TotalMomtYFlux[iMarker]/TotalArea;
-                AveragedFlux[iMarker][3] = TotalEnergyFlux[iMarker]/TotalArea;
+                AveragedFlux[val_Marker][0] = TotalMassFlux[val_Marker]/TotalArea;
+                AveragedFlux[val_Marker][1] = TotalMomtXFlux[val_Marker]/TotalArea;
+                AveragedFlux[val_Marker][2] = TotalMomtYFlux[val_Marker]/TotalArea;
+                AveragedFlux[val_Marker][3] = TotalEnergyFlux[val_Marker]/TotalArea;
+                AveragedNormal[val_Marker][0] /=geometry->nVertex[val_Marker];
+                AveragedNormal[val_Marker][1] /=geometry->nVertex[val_Marker];
+                TotalNormal=0.0;
+                for (iDim = 0; iDim < nDim; iDim++) {
+                	TotalNormal+= AveragedNormal[val_Marker][iDim]*AveragedNormal[val_Marker][iDim];
+                }
+                AveragedNormal[val_Marker][0] /=sqrt(TotalNormal);
+                AveragedNormal[val_Marker][1] /=sqrt(TotalNormal);
                 double val_init_pressure = TotalAreaPressure/TotalArea;
 
-                if (AveragedFlux[iMarker][0]==0) {
-//                    AveragedDensity[iMarker] = TotalDensity / TotalArea;
-//                    AveragedPressure[iMarker] = TotalPressure / TotalArea;
-//                    AveragedVelocity[iMarker][0] = TotalVelocity[0] / TotalArea;
-//                    AveragedVelocity[iMarker][1] = TotalVelocity[1] / TotalArea;
-                    AveragedDensity[iMarker] = TotalDensity / geometry->nVertex[iMarker];
-                    AveragedPressure[iMarker] = TotalPressure / geometry->nVertex[iMarker];
-                    AveragedVelocity[iMarker][0] = TotalVelocity[0] / geometry->nVertex[iMarker];
-                    AveragedVelocity[iMarker][1] = TotalVelocity[1] / geometry->nVertex[iMarker];
-                    FluidModel->SetTDState_Prho(AveragedPressure[iMarker], AveragedDensity[iMarker]);
-                    AveragedEnthalpy[iMarker] = FluidModel->GetStaticEnergy() + AveragedPressure[iMarker]/AveragedDensity[iMarker];
-                    AveragedSoundSpeed[iMarker] = FluidModel->GetSoundSpeed();
-                    AveragedEntropy[iMarker] = FluidModel->GetEntropy();
+                if (AveragedFlux[val_Marker][0]==0) {
+//                    AveragedDensity[val_Marker] = TotalDensity / TotalArea;
+//                    AveragedPressure[val_Marker] = TotalPressure / TotalArea;
+//                    AveragedVelocity[val_Marker][0] = TotalVelocity[0] / TotalArea;
+//                    AveragedVelocity[val_Marker][1] = TotalVelocity[1] / TotalArea;
+                    AveragedDensity[val_Marker] = TotalDensity / geometry->nVertex[val_Marker];
+                    AveragedPressure[val_Marker] = TotalPressure / geometry->nVertex[val_Marker];
+                    AveragedVelocity[val_Marker][0] = TotalVelocity[0] / geometry->nVertex[val_Marker];
+                    AveragedVelocity[val_Marker][1] = TotalVelocity[1] / geometry->nVertex[val_Marker];
+                    FluidModel->SetTDState_Prho(AveragedPressure[val_Marker], AveragedDensity[val_Marker]);
+                    AveragedEnthalpy[val_Marker] = FluidModel->GetStaticEnergy() + AveragedPressure[val_Marker]/AveragedDensity[val_Marker];
+                    AveragedSoundSpeed[val_Marker] = FluidModel->GetSoundSpeed();
+                    AveragedEntropy[val_Marker] = FluidModel->GetEntropy();
 
 
                 }
                 else {
 //
-                    MixedOut_Average (val_init_pressure, AveragedFlux[iMarker], UnitNormal, &AveragedPressure[iMarker], &AveragedDensity[iMarker]);
+                    MixedOut_Average (val_init_pressure, AveragedFlux[val_Marker], UnitNormal, &AveragedPressure[val_Marker], &AveragedDensity[val_Marker]);
 
-//                    AveragedDensity[iMarker] = TotalDensity / (geometry->nVertex[iMarker]-2);
-//                    AveragedPressure[iMarker] = TotalPressure / (geometry->nVertex[iMarker]-2);
-                    AveragedDensity[iMarker] = TotalAreaDensity / TotalArea;
-                    AveragedPressure[iMarker] = TotalAreaPressure / TotalArea;
+//                    AveragedDensity[val_Marker] = TotalDensity / (geometry->nVertex[val_Marker]-2);
+//                    AveragedPressure[val_Marker] = TotalPressure / (geometry->nVertex[val_Marker]-2);
+                    AveragedDensity[val_Marker] = TotalAreaDensity / TotalArea;
+                    AveragedPressure[val_Marker] = TotalAreaPressure / TotalArea;
 
 
-                    FluidModel->SetTDState_Prho(AveragedPressure[iMarker], AveragedDensity[iMarker]);
-                    AveragedVelocity[iMarker][0] = ( AveragedFlux[iMarker][1] - AveragedPressure[iMarker]*UnitNormal[0] ) / AveragedFlux[iMarker][0];
-                    AveragedVelocity[iMarker][1] = ( AveragedFlux[iMarker][2] - AveragedPressure[iMarker]*UnitNormal[1] ) / AveragedFlux[iMarker][0];
+                    FluidModel->SetTDState_Prho(AveragedPressure[val_Marker], AveragedDensity[val_Marker]);
+                    AveragedVelocity[val_Marker][0] = ( AveragedFlux[val_Marker][1] - AveragedPressure[val_Marker]*UnitNormal[0] ) / AveragedFlux[val_Marker][0];
+                    AveragedVelocity[val_Marker][1] = ( AveragedFlux[val_Marker][2] - AveragedPressure[val_Marker]*UnitNormal[1] ) / AveragedFlux[val_Marker][0];
 
-                    AveragedVelocity[iMarker][0] = TotalAreaVelocity[0] / TotalArea;
-                    AveragedVelocity[iMarker][1] = TotalAreaVelocity[1] / TotalArea;
-                    AveragedEnthalpy[iMarker] = FluidModel->GetStaticEnergy() + AveragedPressure[iMarker]/AveragedDensity[iMarker];
-                    AveragedSoundSpeed[iMarker] = FluidModel->GetSoundSpeed();
-                    AveragedEntropy[iMarker] = FluidModel->GetEntropy();
+                    AveragedVelocity[val_Marker][0] = TotalAreaVelocity[0] / TotalArea;
+                    AveragedVelocity[val_Marker][1] = TotalAreaVelocity[1] / TotalArea;
+                    AveragedEnthalpy[val_Marker] = FluidModel->GetStaticEnergy() + AveragedPressure[val_Marker]/AveragedDensity[val_Marker];
+                    AveragedSoundSpeed[val_Marker] = FluidModel->GetSoundSpeed();
+                    AveragedEntropy[val_Marker] = FluidModel->GetEntropy();
 
 
 //
@@ -7607,55 +7635,65 @@ void CEulerSolver::Mixing_Process(CGeometry *geometry, CSolver **solver_containe
 
 
 
-//                    cout<<"AveragedPressure_i " <<AveragedPressure[iMarker]<<" Density_i " <<AveragedDensity[iMarker]<<" Entropy "<<AveragedEntropy[iMarker]<<" enthalpy "<<AveragedEnthalpy[iMarker]<< " StaticEnergy_i "<<FluidModel->GetStaticEnergy()<<  " Velocity1 " <<AveragedVelocity[iMarker][0]<< " Velocity2 " <<AveragedVelocity[iMarker][1]<<endl;
+//                    cout<<"AveragedPressure_i " <<AveragedPressure[val_Marker]<<" Density_i " <<AveragedDensity[val_Marker]<<" Entropy "<<AveragedEntropy[val_Marker]<<" enthalpy "<<AveragedEnthalpy[val_Marker]<< " StaticEnergy_i "<<FluidModel->GetStaticEnergy()<<  " Velocity1 " <<AveragedVelocity[val_Marker][0]<< " Velocity2 " <<AveragedVelocity[val_Marker][1]<<endl;
 //                    cout<<endl;
                 }
             }
             else {
-                AveragedFlux[iMarker][0] = TotalMassFlux[iMarker]/TotalArea;
-                AveragedFlux[iMarker][1] = TotalMomtXFlux[iMarker]/TotalArea;
-                AveragedFlux[iMarker][2] = TotalMomtYFlux[iMarker]/TotalArea;
-                AveragedFlux[iMarker][3] = TotalMomtZFlux[iMarker]/TotalArea;
-                AveragedFlux[iMarker][4] = TotalEnergyFlux[iMarker]/TotalArea;
+                AveragedFlux[val_Marker][0] = TotalMassFlux[val_Marker]/TotalArea;
+                AveragedFlux[val_Marker][1] = TotalMomtXFlux[val_Marker]/TotalArea;
+                AveragedFlux[val_Marker][2] = TotalMomtYFlux[val_Marker]/TotalArea;
+                AveragedFlux[val_Marker][3] = TotalMomtZFlux[val_Marker]/TotalArea;
+                AveragedFlux[val_Marker][4] = TotalEnergyFlux[val_Marker]/TotalArea;
+                AveragedNormal[val_Marker][0] /=geometry->nVertex[val_Marker];
+                AveragedNormal[val_Marker][1] /=geometry->nVertex[val_Marker];
+                AveragedNormal[val_Marker][2] /=geometry->nVertex[val_Marker];
+                TotalNormal=0.0;
+                for (iDim = 0; iDim < nDim; iDim++) {
+                	TotalNormal+= AveragedNormal[val_Marker][iDim]*AveragedNormal[val_Marker][iDim];
+                }
+                AveragedNormal[val_Marker][0] /=sqrt(TotalNormal);
+                AveragedNormal[val_Marker][1] /=sqrt(TotalNormal);
+                AveragedNormal[val_Marker][2] /=sqrt(TotalNormal);
                 double val_init_pressure = TotalAreaPressure/TotalArea;
 
-                if (AveragedFlux[iMarker][0]==0) {
-                    AveragedDensity[iMarker] = TotalDensity / geometry->nVertex[iMarker];
-                    AveragedPressure[iMarker] = TotalPressure / geometry->nVertex[iMarker];
-                    AveragedVelocity[iMarker][0] = TotalVelocity[0] / geometry->nVertex[iMarker];
-                    AveragedVelocity[iMarker][1] = TotalVelocity[1] / geometry->nVertex[iMarker];
-                    AveragedVelocity[iMarker][2] = TotalVelocity[2] / geometry->nVertex[iMarker];
-                    FluidModel->SetTDState_Prho(AveragedPressure[iMarker], AveragedDensity[iMarker]);
-                    AveragedEnthalpy[iMarker] = FluidModel->GetStaticEnergy() + AveragedPressure[iMarker]/AveragedDensity[iMarker];
-                    AveragedSoundSpeed[iMarker] = FluidModel->GetSoundSpeed();
-                    AveragedEntropy[iMarker] = FluidModel->GetEntropy();
+                if (AveragedFlux[val_Marker][0]==0) {
+                    AveragedDensity[val_Marker] = TotalDensity / geometry->nVertex[val_Marker];
+                    AveragedPressure[val_Marker] = TotalPressure / geometry->nVertex[val_Marker];
+                    AveragedVelocity[val_Marker][0] = TotalVelocity[0] / geometry->nVertex[val_Marker];
+                    AveragedVelocity[val_Marker][1] = TotalVelocity[1] / geometry->nVertex[val_Marker];
+                    AveragedVelocity[val_Marker][2] = TotalVelocity[2] / geometry->nVertex[val_Marker];
+                    FluidModel->SetTDState_Prho(AveragedPressure[val_Marker], AveragedDensity[val_Marker]);
+                    AveragedEnthalpy[val_Marker] = FluidModel->GetStaticEnergy() + AveragedPressure[val_Marker]/AveragedDensity[val_Marker];
+                    AveragedSoundSpeed[val_Marker] = FluidModel->GetSoundSpeed();
+                    AveragedEntropy[val_Marker] = FluidModel->GetEntropy();
 
                 }
                 else {
 
-                MixedOut_Average (val_init_pressure, AveragedFlux[iMarker], UnitNormal, &AveragedPressure[iMarker], &AveragedDensity[iMarker]);
-                FluidModel->SetTDState_Prho(AveragedPressure[iMarker], AveragedDensity[iMarker]);
-                AveragedVelocity[iMarker][0] = ( AveragedFlux[iMarker][1] - AveragedPressure[iMarker]*UnitNormal[0] ) / AveragedFlux[iMarker][0];
-                AveragedVelocity[iMarker][1] = ( AveragedFlux[iMarker][2] - AveragedPressure[iMarker]*UnitNormal[1] ) / AveragedFlux[iMarker][0];
-                AveragedVelocity[iMarker][2] = ( AveragedFlux[iMarker][3] - AveragedPressure[iMarker]*UnitNormal[2] ) / AveragedFlux[iMarker][0];
-                AveragedEnthalpy[iMarker] = FluidModel->GetStaticEnergy() + AveragedPressure[iMarker]/AveragedDensity[iMarker];
-                AveragedSoundSpeed[iMarker] = FluidModel->GetSoundSpeed();
-                AveragedEntropy[iMarker] = FluidModel->GetEntropy();
-                FluidModel->SetTDState_rhoe(AveragedDensity[iMarker], FluidModel->GetStaticEnergy());
-                    AveragedEntropy[iMarker] = FluidModel->GetEntropy();
+                MixedOut_Average (val_init_pressure, AveragedFlux[val_Marker], UnitNormal, &AveragedPressure[val_Marker], &AveragedDensity[val_Marker]);
+                FluidModel->SetTDState_Prho(AveragedPressure[val_Marker], AveragedDensity[val_Marker]);
+                AveragedVelocity[val_Marker][0] = ( AveragedFlux[val_Marker][1] - AveragedPressure[val_Marker]*UnitNormal[0] ) / AveragedFlux[val_Marker][0];
+                AveragedVelocity[val_Marker][1] = ( AveragedFlux[val_Marker][2] - AveragedPressure[val_Marker]*UnitNormal[1] ) / AveragedFlux[val_Marker][0];
+                AveragedVelocity[val_Marker][2] = ( AveragedFlux[val_Marker][3] - AveragedPressure[val_Marker]*UnitNormal[2] ) / AveragedFlux[val_Marker][0];
+                AveragedEnthalpy[val_Marker] = FluidModel->GetStaticEnergy() + AveragedPressure[val_Marker]/AveragedDensity[val_Marker];
+                AveragedSoundSpeed[val_Marker] = FluidModel->GetSoundSpeed();
+                AveragedEntropy[val_Marker] = FluidModel->GetEntropy();
+                FluidModel->SetTDState_rhoe(AveragedDensity[val_Marker], FluidModel->GetStaticEnergy());
+                    AveragedEntropy[val_Marker] = FluidModel->GetEntropy();
 
                 }
             }//if-else nDim
-            if (isnan(AveragedDensity[iMarker]) or isnan(AveragedEnthalpy[iMarker])) {
+            if (isnan(AveragedDensity[val_Marker]) or isnan(AveragedEnthalpy[val_Marker])) {
                 cout<<"nan in mixing process"<<endl;
             }
-//            cout<<"averagedpressure"<<AveragedPressure[iMarker]<<endl;
-//            cout<<"averageddensity"<<AveragedDensity[iMarker]<<endl;
-//            cout<<"averagedvelocity[0]"<<AveragedVelocity[iMarker][0]<<endl;
-//            cout<<"averagedvelocity[1]"<<AveragedVelocity[iMarker][1]<<endl;
-        } /*if imarker */
+//            cout<<"averagedpressure"<<AveragedPressure[val_Marker]<<endl;
+//            cout<<"averageddensity"<<AveragedDensity[val_Marker]<<endl;
+//            cout<<"averagedvelocity[0]"<<AveragedVelocity[val_Marker][0]<<endl;
+//            cout<<"averagedvelocity[1]"<<AveragedVelocity[val_Marker][1]<<endl;
+//        } /*if imarker */
 
-    }/*for imarker */
+//    }/*for imarker */
 
 
 
@@ -8063,11 +8101,12 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
   std::vector<std::complex<double> > c3k ;//    std::complex<double> c3k[nVertex-OddEven]=0;
 
   double *deltaVelocity, deltaDensity, deltaPressure, AveragedMach, deltaTangVelocity, deltaNormalVelocity, cc,rhoc,c1j,c2j,c3j,c4j,
-  	  	 avg_c4,TangVelocity, NormalVelocity, AvgMachTang, AvgMachNorm, GilesBeta, c4js, dc4js, *delta_c, **R_Matrix, *deltaprim;
+  	  	 avg_c4,TangVelocity, NormalVelocity, AvgMachTang, AvgMachNorm, GilesBeta, c4js, dc4js, *delta_c, **R_Matrix, *deltaprim, *avgUnitNormal;
 
   deltaVelocity = new double[nDim];
   delta_c = new double[nVar];
   deltaprim = new double[nVar];
+  avgUnitNormal = new double[nVar];
   R_Matrix= new double*[nVar];
   for (iVar = 0; iVar < nVar; iVar++)
   {
@@ -8082,6 +8121,11 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
   /* --- Start implementation of NRBC ---*/
 
   /*--- Loop over all the vertices on this boundary marker ---*/
+
+  for (iDim = 0; iDim < nDim; iDim++){
+          avgUnitNormal[iDim] = -AveragedNormal[val_marker][iDim];
+	  //  	  	  cout << avgUnitNormal[iDim]<<endl;
+  }
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
     V_boundary= GetCharacPrimVar(val_marker, iVertex);
@@ -8231,6 +8275,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 			  AveragedMach += AveragedVelocity[val_marker][iDim]*AveragedVelocity[val_marker][iDim];
           }
           AveragedMach = sqrt(AveragedMach)/AveragedSoundSpeed[val_marker];
+	  //	  cout << AveragedMach<<endl;
           deltaTangVelocity= UnitNormal[1]*deltaVelocity[0]-UnitNormal[0]*deltaVelocity[1];
           deltaNormalVelocity= UnitNormal[0]*deltaVelocity[0]+UnitNormal[1]*deltaVelocity[1];
 
@@ -8243,8 +8288,8 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 
 		  avg_c4 = -2.0/rhoc*(AveragedPressure[val_marker]-Pressure_e);
 
-		  TangVelocity= UnitNormal[1]*AveragedVelocity[val_marker][0]-UnitNormal[0]*AveragedVelocity[val_marker][1];
-		  NormalVelocity= UnitNormal[0]*AveragedVelocity[val_marker][0]+UnitNormal[1]*AveragedVelocity[val_marker][1];
+		  TangVelocity= avgUnitNormal[1]*AveragedVelocity[val_marker][0]-avgUnitNormal[0]*AveragedVelocity[val_marker][1];
+		  NormalVelocity= avgUnitNormal[0]*AveragedVelocity[val_marker][0]+avgUnitNormal[1]*AveragedVelocity[val_marker][1];
 		  AvgMachTang = TangVelocity/AveragedSoundSpeed[val_marker];
 		  AvgMachNorm = NormalVelocity/AveragedSoundSpeed[val_marker];
 
@@ -8340,7 +8385,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
       }
 
 
-	  conv_numerics->GetRMatrix(AveragedSoundSpeed[val_marker], AveragedDensity[val_marker], UnitNormal, R_Matrix);
+	  conv_numerics->GetRMatrix(AveragedSoundSpeed[val_marker], AveragedDensity[val_marker], avgUnitNormal, R_Matrix);
 
 	  for (iVar = 0; iVar < nVar; iVar++)
 	  {
@@ -8421,6 +8466,15 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 		  Velocity2_b+= Velocity_b[iDim]*Velocity_b[iDim];
 	  }
 
+//	  Density_b = Density_i + deltaprim[0];
+//	  Pressure_b = Pressure_i + deltaprim[3];
+////                    Pressure_e /= config->GetPressure_Ref();
+//	  Velocity2_b = 0.0;
+//	  for (iDim = 0; iDim < nDim; iDim++) {
+//		  Velocity_b[iDim] = Velocity_i[iDim]+deltaprim[iDim+1];
+//		  Velocity2_b+= Velocity_b[iDim]*Velocity_b[iDim];
+//	  }
+	  // cout << Density_b << " "<< Pressure_b << endl;
 	  FluidModel->SetTDState_Prho(Pressure_b, Density_b);
 	  Energy_b = FluidModel->GetStaticEnergy() + 0.5*Velocity2_b;
 	  StaticEnergy_b = FluidModel->GetStaticEnergy();
@@ -12117,6 +12171,14 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 		  AveragedVelocity[iMarker] = new double [nDim];
 		  for (iDim = 0; iDim < nDim; iDim++) {
 			  AveragedVelocity[iMarker][iDim] = 0.0;
+		  }
+	  }
+
+  AveragedNormal = new double* [nMarker];
+	  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+		  AveragedNormal[iMarker] = new double [nDim];
+		  for (iDim = 0; iDim < nDim; iDim++) {
+			  AveragedNormal[iMarker][iDim] = 0.0;
 		  }
 	  }
 
