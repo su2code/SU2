@@ -83,7 +83,17 @@ inline su2double abs(const su2double&a){ return fabs(a);}
 
 inline su2double atanh(const su2double& a){return 0.5*log(1+a)/log(1-a);}
 
+typedef decltype(std::cout) cout_type;
 
+inline cout_type& operator << (cout_type& out, const adouble& data) {
+  out << data.value();
+  return out;
+}
+
+inline cout_type& operator << (cout_type& out, const adub& data) {
+  out << data.value();
+  return out;
+}
 template<> struct Impl_getValue<adub> {
   typedef double OUT; // Default implementation has the same output type as input type
   static inline OUT getValue(const adub &value) {
