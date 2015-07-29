@@ -201,7 +201,7 @@ class Config(ordered_bunch):
                     keys, each with values of a list of the different 
                     config values.
                 for example: 
-                config_diff.MATH_PROBLEM = ['DIRECT','ADJOINT']
+                config_diff.MATH_PROBLEM = ['DIRECT','CONTINUOUS_ADJOINT']
                 
         """
         

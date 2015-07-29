@@ -87,7 +87,7 @@ class Project(object):
             The following methods take an objective function name for input.
             func(func_name,config)        - function of specified name
             grad(func_name,method,config) - gradient of specified name,
-                                            where method is 'ADJOINT' or 'FINDIFF'
+                                            where method is 'CONTINUOUS_ADJOINT' or 'FINDIFF'
             setup config for given dvs with 
             config = project.unpack_dvs(dvs)
     """  
