@@ -47,8 +47,8 @@ def main():
                       help="try to restart from project file NAME", metavar="NAME")
     parser.add_option("-n", "--partitions", dest="partitions", default=1,
                       help="number of PARTITIONS", metavar="PARTITIONS")
-    parser.add_option("-g", "--gradient", dest="gradient", default="Adjoint",
-                      help="Method for computing the GRADIENT (ADJOINT, FINDIFF, NONE)", metavar="GRADIENT")
+    parser.add_option("-g", "--gradient", dest="gradient", default="CONTINUOUS_ADJOINT",
+                      help="Method for computing the GRADIENT (CONTINUOUS_ADJOINT, FINDIFF, NONE)", metavar="GRADIENT")
     parser.add_option("-q", "--quiet", dest="quiet", default="True",
                       help="True/False Quiet all SU2 output (optimizer output only)", metavar="QUIET")
     
@@ -103,7 +103,7 @@ def main():
 def shape_optimization( filename                , 
                         projectname = ''        ,
                         partitions  = 0         , 
-                        gradient    = 'ADJOINT' ,
+                        gradient    = 'CONTINUOUS_ADJOINT' ,
                         quiet       = False      ):
   
     # Config
