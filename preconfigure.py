@@ -342,7 +342,7 @@ def download_and_compile_adolc(configure_command, ampi_needed, pkg_name, pkg_ver
         os.chdir('adol-c')
 
         # Patch the stream operators
-        subprocess.call('patch -p1  --forward < ../../adolc_inout.patch', shell=True);
+        #subprocess.call('patch -p1  --forward < ../../adolc_inout.patch', shell=True);
 
         # Generate configure script if it does not exist
         if not os.path.exists('configure'):
