@@ -33,6 +33,17 @@
 CFEM_LinearElasticity::CFEM_LinearElasticity(unsigned short val_nDim, unsigned short val_nVar,
                                    CConfig *config) : CFEM_Elasticity(val_nDim, val_nVar, config) {
 
+	unsigned short i;
+
+	if (nDim == 2){
+		nodalDisplacement = new double* [4];	/*--- As of now, 4 is the maximum number of nodes for 2D problems ---*/
+		for (i = 0; i < 4; i++) nodalDisplacement[i] = new double[nDim];
+	}
+	else if (nDim == 3){
+		nodalDisplacement = new double* [8];	/*--- As of now, 8 is the maximum number of nodes for 3D problems ---*/
+		for (i = 0; i < 8; i++) nodalDisplacement[i] = new double[nDim];
+	}
+
 
 	/*--- If it is linear elasticity, D is constant along the calculations ---*/
 
@@ -190,5 +201,110 @@ void CFEM_LinearElasticity::Compute_Constitutive_Matrix(void){
 }
 
 void CFEM_LinearElasticity::Compute_Averaged_NodalStress(CElement *element){
+
+	unsigned short i, j, k;
+	unsigned short iGauss, nGauss;
+	unsigned short iNode, jNode, nNode;
+	unsigned short iDim;
+	unsigned short bDim;
+
+	double Weight, Jac_X;
+
+	/*--- Auxiliary vector ---*/
+	double Strain[6], Stress[6];
+
+	/*--- Initialize auxiliary matrices ---*/
+
+	if (nDim == 2) bDim = 3;
+	else if (nDim == 3) bDim = 6;
+
+	for (i = 0; i < bDim; i++){
+		for (j = 0; j < nDim; j++){
+			Ba_Mat[i][j] = 0.0;
+		}
+	}
+
+	element->clearStress(); 			/*--- Clears the stress in the element: avoids adding over previous results in other elements --*/
+	element->ComputeGrad_Linear();
+	nNode = element->GetnNodes();
+	nGauss = element->GetnGaussPoints();
+
+	for (iGauss = 0; iGauss < nGauss; iGauss++){
+
+		/*--- Retrieve the values of the gradients of the shape functions for each node ---*/
+		/*--- This avoids repeated operations ---*/
+		for (iNode = 0; iNode < nNode; iNode++){
+			for (iDim = 0; iDim < nDim; iDim++){
+				GradNi_Ref_Mat[iNode][iDim] = element->GetGradNi_X(iNode,iGauss,iDim);
+				nodalDisplacement[iNode][iDim] = element->GetCurr_Coord(iNode, iDim) - element->GetRef_Coord(iNode, iDim);
+			}
+		}
+
+		for (i = 0; i < bDim; i++){
+			Strain[i] = 0.0;
+		}
+
+		for (iNode = 0; iNode < nNode; iNode++){
+
+			/*--- Set matrix B ---*/
+			if (nDim == 2){
+				Ba_Mat[0][0] = GradNi_Ref_Mat[iNode][0];
+				Ba_Mat[1][1] = GradNi_Ref_Mat[iNode][1];
+				Ba_Mat[2][0] = GradNi_Ref_Mat[iNode][1];
+				Ba_Mat[2][1] = GradNi_Ref_Mat[iNode][0];
+			}
+			else if (nDim ==3){
+				Ba_Mat[0][0] = GradNi_Ref_Mat[iNode][0];
+				Ba_Mat[1][1] = GradNi_Ref_Mat[iNode][1];
+				Ba_Mat[2][2] = GradNi_Ref_Mat[iNode][2];
+				Ba_Mat[3][0] = GradNi_Ref_Mat[iNode][1];
+				Ba_Mat[3][1] = GradNi_Ref_Mat[iNode][0];
+				Ba_Mat[4][0] = GradNi_Ref_Mat[iNode][2];
+				Ba_Mat[4][2] = GradNi_Ref_Mat[iNode][0];
+				Ba_Mat[5][1] = GradNi_Ref_Mat[iNode][2];
+				Ba_Mat[5][2] = GradNi_Ref_Mat[iNode][1];
+			}
+
+		    /*--- Compute the Strain Vector as B*u ---*/
+
+			for (i = 0; i < bDim; i++){
+				for (j = 0; j < nDim; j++){
+					Strain[i] += Ba_Mat[i][j]*nodalDisplacement[iNode][j];
+				}
+			}
+
+		}
+
+	    /*--- Compute the Stress Vector as D*epsilon ---*/
+
+		for (i = 0; i < bDim; i++){
+			Stress[i] = 0.0;
+			for (j = 0; j < bDim; j++){
+				Stress[i] += D_Mat[i][j]*Strain[j];
+			}
+		}
+
+		for (iNode = 0; iNode < nNode; iNode++){
+			/*--- If nDim is 3 and we compute it this way, the 3rd component is the Szz, while in the ---*/
+			/*--- output it is the 4th component for practical reasons ---*/
+			if (nDim == 2){
+				element->Add_NodalStress(Stress[0] * element->GetNi_Extrap(iNode, iGauss), iNode, 0);
+				element->Add_NodalStress(Stress[1] * element->GetNi_Extrap(iNode, iGauss), iNode, 1);
+				element->Add_NodalStress(Stress[2] * element->GetNi_Extrap(iNode, iGauss), iNode, 2);
+			}
+			else if (nDim == 3){
+				element->Add_NodalStress(Stress[0] * element->GetNi_Extrap(iNode, iGauss), iNode, 0);
+				element->Add_NodalStress(Stress[1] * element->GetNi_Extrap(iNode, iGauss), iNode, 1);
+				element->Add_NodalStress(Stress[3] * element->GetNi_Extrap(iNode, iGauss), iNode, 2);
+				element->Add_NodalStress(Stress[2] * element->GetNi_Extrap(iNode, iGauss), iNode, 3);
+				element->Add_NodalStress(Stress[4] * element->GetNi_Extrap(iNode, iGauss), iNode, 4);
+				element->Add_NodalStress(Stress[5] * element->GetNi_Extrap(iNode, iGauss), iNode, 5);
+			}
+		}
+
+
+
+	}
+
 
 }

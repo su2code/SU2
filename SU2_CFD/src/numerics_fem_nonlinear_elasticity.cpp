@@ -535,14 +535,6 @@ void CFEM_NonlinearElasticity::Compute_Averaged_NodalStress(CElement *element){
 
 	double Weight, Jac_X, Jac_x;
 
-	double AuxMatrixKt[3];
-
-	/*--- Initialize auxiliary matrices ---*/
-
-	for (i = 0; i < 3; i++){
-		AuxMatrixKt[i] = 0.0;
-	}
-
 	element->clearStress();
 	element->ComputeGrad_Linear();
 
@@ -614,7 +606,6 @@ void CFEM_NonlinearElasticity::Compute_Averaged_NodalStress(CElement *element){
 
 		Compute_Stress_Tensor();
 
-		double val_Stress;
 		for (iNode = 0; iNode < nNode; iNode++){
 			element->Add_NodalStress(Stress_Tensor[0][0] * element->GetNi_Extrap(iNode, iGauss), iNode, 0);
 			element->Add_NodalStress(Stress_Tensor[1][1] * element->GetNi_Extrap(iNode, iGauss), iNode, 1);

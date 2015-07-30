@@ -715,21 +715,15 @@ void CFEM_ElasticitySolver::Compute_NodalStress(CGeometry *geometry, CSolver **s
 	if (nDim == 2) nStress = 3;
 	else if (nDim == 3) nStress = 6;
 
-	double *StressCheck = NULL;
 	unsigned short NelNodes;
 
 	/*--- Restart stress to avoid adding results from previous time steps ---*/
 
-//	 	for (iNode = 0; iNode < NelNodes; iNode++){
-//
-//			for (iStress = 0; iStress < nStress; iStress++){
-//				node[indexNode[iNode]]->AddStress_FEM(iStress,
-//						(element_container[EL_KIND]->Get_NodalStress(iNode, iStress) /
-//								geometry->node[indexNode[iNode]]->GetnElem()) );
-//			}
-//
-//		}
-
+	 for (iPoint = 0; iPoint < nPoint; iPoint++){
+		for (iStress = 0; iStress < nStress; iStress++){
+				node[iPoint]->SetStress_FEM(iStress, 0.0);
+		}
+	}
 
 	/*--- Loops over all the elements ---*/
 

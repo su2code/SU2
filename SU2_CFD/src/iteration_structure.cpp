@@ -793,8 +793,8 @@ void FEM_StructuralIteration(COutput *output, CIntegration ***integration_contai
 
 		Physical_dt = config_container[iZone]->GetDelta_DynTime();
 		Physical_t  = (ExtIter+1)*Physical_dt;
-		if (Physical_t >=  config_container[iZone]->GetTotal_DynTime())
-			integration_container[iZone][FLOW_SOL]->SetConvergence(true);
+//		if (Physical_t >=  config_container[iZone]->GetTotal_DynTime())
+//			integration_container[iZone][FEA_SOL]->SetConvergence(true);
 	}
 
 
