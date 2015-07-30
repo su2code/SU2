@@ -776,6 +776,11 @@ void FEM_StructuralIteration(COutput *output, CIntegration ***integration_contai
 
 	}
 
+	/*----------------- Compute averaged nodal stress ------------------------*/
+
+	for (iZone = 0; iZone < nZone; iZone++)
+		solver_container[iZone][MESH_0][FEA_SOL]->Compute_NodalStress(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0], numerics_container[iZone][MESH_0][FEA_SOL][VISC_TERM], config_container[iZone]);
+
 	/*----------------- Update structural solver ----------------------*/
 
 	if (dynamic){

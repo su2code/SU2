@@ -543,13 +543,13 @@ void CFEM_NonlinearElasticity::Compute_Averaged_NodalStress(CElement *element){
 		AuxMatrixKt[i] = 0.0;
 	}
 
-	element->clearElement(); 			/*--- Restarts the element: avoids adding over previous results in other elements --*/
-	element->ComputeGrad_Linear();		/*--- Check if we can take this out... so we don't have to do it twice ---*/
+	element->clearStress();
+	element->ComputeGrad_Linear();
 
 	nNode = element->GetnNodes();
 	nGauss = element->GetnGaussPoints();
 
-	/*--- Full integration of the nodal stress ---*/
+	/*--- Computation of the deformation gradient ---*/
 
 	for (iGauss = 0; iGauss < nGauss; iGauss++){
 
@@ -614,22 +614,17 @@ void CFEM_NonlinearElasticity::Compute_Averaged_NodalStress(CElement *element){
 
 		Compute_Stress_Tensor();
 
-
-//		for (iNode = 0; iNode < nNode; iNode++){
-//
-//		    /*--- Compute the nodal stress term for each gaussian point and for each node, ---*/
-//		    /*--- and add it to the element structure to be retrieved from the solver      ---*/
-//
-//			for (i = 0; i < nDim; i++){
-//				KAux_t_a[i] = 0.0;
-//				for (j = 0; j < nDim; j++){
-//					KAux_t_a[i] += Weight * Stress_Tensor[i][j] * GradNi_Curr_Mat[iNode][j] * Jac_x;
-//				}
-//			}
-//
-//			element->Add_Kt_a(KAux_t_a, iNode);
-//
-//		}
+		double val_Stress;
+		for (iNode = 0; iNode < nNode; iNode++){
+			element->Add_NodalStress(Stress_Tensor[0][0] * element->GetNi_Extrap(iNode, iGauss), iNode, 0);
+			element->Add_NodalStress(Stress_Tensor[1][1] * element->GetNi_Extrap(iNode, iGauss), iNode, 1);
+			element->Add_NodalStress(Stress_Tensor[0][1] * element->GetNi_Extrap(iNode, iGauss), iNode, 2);
+			if (nDim == 3){
+				element->Add_NodalStress(Stress_Tensor[2][2] * element->GetNi_Extrap(iNode, iGauss), iNode, 3);
+				element->Add_NodalStress(Stress_Tensor[0][2] * element->GetNi_Extrap(iNode, iGauss), iNode, 4);
+				element->Add_NodalStress(Stress_Tensor[1][2] * element->GetNi_Extrap(iNode, iGauss), iNode, 5);
+			}
+		}
 
 	}
 

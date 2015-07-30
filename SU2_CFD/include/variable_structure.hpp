@@ -1383,15 +1383,26 @@ public:
 
 	/*!
 	 * \brief A virtual member.
-   
 	 */
-  virtual double **GetStress(void);
-  
+  virtual void SetStress_FEM(unsigned short iVar, double val_stress);
+
+	/*!
+	 * \brief A virtual member.
+	 */
+  virtual void AddStress_FEM(unsigned short iVar, double val_stress);
+
 	/*!
 	 * \brief A virtual member.
 
 	 */
   virtual double *GetStress_FEM(void);
+
+	/*!
+	 * \brief A virtual member.
+   
+	 */
+  virtual double **GetStress(void);
+  
 
 	/*!
 	 * \brief A virtual member.
@@ -2539,6 +2550,21 @@ public:
 	* \return Value of the stress.
 	*/
 	double *GetStress_FEM(void);
+
+	/*!
+	 * \brief Set the value of the stress at the node
+	 * \param[in] iVar - index of the stress term
+	 * \param[in] val_stress - value of the stress
+	 */
+    void SetStress_FEM(unsigned short iVar, double val_stress);
+
+	/*!
+	 * \brief Add a certain value to the value of the stress at the node
+	 * \param[in] iVar - index of the stress term
+	 * \param[in] val_stress - value of the stress
+	 */
+    void AddStress_FEM(unsigned short iVar, double val_stress);
+
 
 	/*!
 	 * \brief Add surface load to the residual term
