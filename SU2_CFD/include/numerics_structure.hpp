@@ -4469,6 +4469,8 @@ public:
  */
 class CFEM_LinearElasticity : public CFEM_Elasticity {
 
+	double **nodalDisplacement;
+
 public:
 
 	/*!
