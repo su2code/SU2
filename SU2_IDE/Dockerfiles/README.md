@@ -9,7 +9,7 @@ sudo apt-get install -y docker
 ```
 sudo docker build -t krishna/scfd-su2 .
 ```
-* Open Docker file and go to line 21 thru 26 and change /home/krishna to your <HOME_DIR>
+* Create a folder called su2-binaries under /tmp folder
 * Run docker run command
 ```
 sudo docker run -v /tmp/su2-binaries/.:/tmp/su2-binaries/. -t krishna/scfd-su2
