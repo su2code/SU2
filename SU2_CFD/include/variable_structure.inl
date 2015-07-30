@@ -49,6 +49,10 @@ inline void CVariable::AddStress(unsigned short iVar, unsigned short jVar, doubl
 
 inline double **CVariable::GetStress(void) { return NULL; }
 
+inline void CVariable::SetStress_FEM(unsigned short iVar, double val_stress) { }
+
+inline void CVariable::AddStress_FEM(unsigned short iVar, double val_stress) { }
+
 inline double *CVariable::GetStress_FEM(void) { return NULL; }
 
 inline void CVariable::SetVonMises_Stress(double val_stress) { }
@@ -877,6 +881,10 @@ inline void CFEAVariable::Initialize_Connectivity(void) { nAttachedElements = 0;
 inline void CFEAVariable::Upgrade_Connectivity(void) { nAttachedElements += 1; }
 
 inline unsigned short CFEAVariable::Get_Connectivity(void) { return nAttachedElements; }
+
+inline void CFEM_ElasVariable::SetStress_FEM(unsigned short iVar, double val_stress) { Stress[iVar] = val_stress; }
+
+inline void CFEM_ElasVariable::AddStress_FEM(unsigned short iVar, double val_stress) { Stress[iVar] += val_stress; }
 
 inline double *CFEM_ElasVariable::GetStress_FEM(void) { return Stress; }
 

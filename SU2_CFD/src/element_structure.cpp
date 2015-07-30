@@ -174,3 +174,18 @@ void CElement::clearElement(void){
 	}
 }
 
+void CElement::clearStress(void){
+
+	unsigned short iNode, iStress, nStress;
+
+	if (nDim == 2) nStress = 3;
+	else if (nDim == 3) nStress = 6;
+
+	for(iNode = 0; iNode < nNodes; iNode++) {
+		for (iStress = 0; iStress < nStress; iStress++){
+			NodalStress[iNode][iStress] = 0.0;
+		}
+	}
+
+}
+

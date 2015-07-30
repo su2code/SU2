@@ -240,6 +240,11 @@ public:
 	void clearElement(void);
 
 	/*!
+	 * \brief Restarts the values of stress in the element.
+	 */
+	void clearStress(void);
+
+	/*!
 	 * \brief Return the value of the diagonal term for the mass matrix, relating nodes a and b.
 	 * \param[in] nodeA - index of Node a.
 	 * \param[in] nodeB - index of Node b.

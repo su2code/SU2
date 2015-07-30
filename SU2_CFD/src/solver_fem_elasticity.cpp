@@ -703,6 +703,81 @@ void CFEM_ElasticitySolver::Compute_NodalStressRes(CGeometry *geometry, CSolver 
 
 }
 
+void CFEM_ElasticitySolver::Compute_NodalStress(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config) {
+
+	unsigned long iPoint, iElem, iVar, jVar;
+	unsigned short iNode, iDim, iStress;
+	unsigned short nNodes, nStress;
+	unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
+	double val_Coord, val_Sol;
+	int EL_KIND;
+
+	if (nDim == 2) nStress = 3;
+	else if (nDim == 3) nStress = 6;
+
+	double *StressCheck = NULL;
+	unsigned short NelNodes;
+
+	/*--- Restart stress to avoid adding results from previous time steps ---*/
+
+//	 	for (iNode = 0; iNode < NelNodes; iNode++){
+//
+//			for (iStress = 0; iStress < nStress; iStress++){
+//				node[indexNode[iNode]]->AddStress_FEM(iStress,
+//						(element_container[EL_KIND]->Get_NodalStress(iNode, iStress) /
+//								geometry->node[indexNode[iNode]]->GetnElem()) );
+//			}
+//
+//		}
+
+
+	/*--- Loops over all the elements ---*/
+
+	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
+
+		if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     {nNodes = 3; EL_KIND = EL_TRIA;}
+		if (geometry->elem[iElem]->GetVTK_Type() == RECTANGLE)    {nNodes = 4; EL_KIND = EL_QUAD;}
+
+		if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  {nNodes = 4; EL_KIND = EL_TETRA;}
+		if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      {nNodes = 5; EL_KIND = EL_TRIA;}
+		if (geometry->elem[iElem]->GetVTK_Type() == PRISM)        {nNodes = 6; EL_KIND = EL_TRIA;}
+		if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)   {nNodes = 8; EL_KIND = EL_HEXA;}
+
+		/*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
+
+		for (iNode = 0; iNode < nNodes; iNode++) {
+		  indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
+		  for (iDim = 0; iDim < nDim; iDim++) {
+			  val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
+			  val_Sol = node[indexNode[iNode]]->GetSolution(iDim) + val_Coord;
+			  element_container[EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
+			  element_container[EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
+		  }
+		}
+
+		numerics->Compute_Averaged_NodalStress(element_container[EL_KIND]);
+
+		NelNodes = element_container[EL_KIND]->GetnNodes();
+
+		for (iNode = 0; iNode < NelNodes; iNode++){
+
+			for (iStress = 0; iStress < nStress; iStress++){
+				node[indexNode[iNode]]->AddStress_FEM(iStress,
+						(element_container[EL_KIND]->Get_NodalStress(iNode, iStress) /
+								geometry->node[indexNode[iNode]]->GetnElem()) );
+			}
+
+		}
+
+	}
+
+//	for (iDim = 0; iDim < nDim; iDim++) {
+//		val_Coord = geometry->node[0]->GetCoord(iDim);
+//		val_Sol = node[0]->GetSolution(iDim) + val_Coord;
+//	}
+
+}
+
 void CFEM_ElasticitySolver::Initialize_SystemMatrix(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 
 }
