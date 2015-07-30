@@ -8056,10 +8056,10 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
   double P_Total, T_Total, P_static, T_static, Rho_static, *Mach, *Flow_Dir, Area, UnitNormal[3];
 
   double *Velocity_b, Velocity2_b, Enthalpy_b, Energy_b, StaticEnergy_b, Density_b, Kappa_b, Chi_b, Pressure_b, Temperature_b;
-  double *Velocity_e, Velocity2_e, VelMag_e, Enthalpy_e, Entropy_e, Energy_e = 0.0, StaticEnthalpy_e, StaticEnergy_e, Density_e = 0.0, Pressure_e;
   double *Velocity_i, Velocity2_i, Enthalpy_i, Energy_i, StaticEnergy_i, Density_i, Kappa_i, Chi_i, Pressure_i, SoundSpeed_i;
+  double Pressure_e;
   double ProjGridVel, ProjVelocity_i, ProjVelocity_b;
-  double **P_Tensor, **invP_Tensor, *Lambda_i, **Jacobian_b, **DubDu, *dw, *u_e, *u_i, *u_b;
+  double **P_Tensor, **invP_Tensor, *Lambda_i, **Jacobian_b, **DubDu, *dw, *u_b;
   double *gridVel;
   double *V_boundary, *V_domain, *S_boundary, *S_domain;
 
@@ -8076,11 +8076,10 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 
   Velocity_i = new double[nDim];
   Velocity_b = new double[nDim];
-  Velocity_e = new double[nDim];
+
 
   Lambda_i = new double[nVar];
-  u_i = new double[nVar];
-  u_e = new double[nVar];
+
   u_b = new double[nVar];
   dw = new double[nVar];
 
@@ -8186,87 +8185,11 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
       switch(config->GetKind_Data_NRBC(Marker_Tag))
       {
 
-//        case TOTAL_CONDITIONS_PT: //case TOTAL_SUPERSONIC_INFLOW:
-//
-//          /*--- Retrieve the specified total conditions for this boundary. ---*/
-//
-//          if (gravity) P_Total = config->GetNRBC_Var1(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDART_GRAVITY;/// check in which case is true (only freesurface?)
-//          else P_Total  = config->GetNRBC_Var1(Marker_Tag);
-//          T_Total  = config->GetNRBC_Var2(Marker_Tag);
-//          Flow_Dir = config->GetNRBC_FlowDir(Marker_Tag);
-//
-//          /*--- Non-dim. the inputs if necessary. ---*/
-//          P_Total /= config->GetPressure_Ref();
-//          T_Total /= config->GetTemperature_Ref();
-//
-//          /* --- Computes the total state --- */
-//
-//          FluidModel->SetTDState_PT(P_Total, T_Total);
-//
-//          Enthalpy_e = FluidModel->GetStaticEnergy()+ FluidModel->GetPressure()/FluidModel->GetDensity();
-//
-//          Entropy_e = FluidModel->GetEntropy();
-//
-//          /* --- Compute the boundary state u_e --- */
-//
-//          Velocity2_e = Velocity2_i;
-//
-//          for (iDim = 0; iDim < nDim; iDim++) {
-//            Velocity_e[iDim] = sqrt(Velocity2_e)*Flow_Dir[iDim];
-//          }
-//
-//
-//          StaticEnthalpy_e = Enthalpy_e - 0.5 * Velocity2_e;
-//
-//          FluidModel->SetTDState_hs(StaticEnthalpy_e, Entropy_e);
-//
-//          Density_e = FluidModel->GetDensity();
-//          StaticEnergy_e = FluidModel->GetStaticEnergy();
-//
-//          Energy_e = StaticEnergy_e + 0.5 * Velocity2_e;
-//
-//          if (tkeNeeded) Energy_e += GetTke_Inf();
-//
-//          break;
-//
-//        case DENSITY_VELOCITY:
-//
-//          /*--- Retrieve the specified density and velocity magnitude ---*/
-//          Density_e  = config->GetNRBC_Var1(Marker_Tag);
-//          VelMag_e   = config->GetNRBC_Var2(Marker_Tag);
-//          Flow_Dir = config->GetNRBC_FlowDir(Marker_Tag);
-//
-//          /*--- Non-dim. the inputs if necessary. ---*/
-//          Density_e /= config->GetDensity_Ref();
-//          VelMag_e /= config->GetVelocity_Ref();
-//
-//          for (iDim = 0; iDim < nDim; iDim++)
-//            Velocity_e[iDim] = VelMag_e*Flow_Dir[iDim];
-//
-//          Energy_e = Energy_i;
-//
-//          FluidModel->SetTDState_rhoe(Density_e, Energy_e);
-//
-//          break;
-
         case STATIC_PRESSURE:
 
           Pressure_e = config->GetNRBC_Var1(Marker_Tag);
           Pressure_e /= config->GetPressure_Ref();
-//
-//          Density_e = Density_i;
-//
-//          FluidModel->SetTDState_Prho(Pressure_e, Density_e);
-//
-//          Velocity2_e = 0.0;
-//          for (iDim = 0; iDim < nDim; iDim++) {
-//            Velocity_e[iDim] = Velocity_i[iDim];
-//            Velocity2_e += Velocity_e[iDim]*Velocity_e[iDim];
-//          }
-//
-//          Energy_e = FluidModel->GetStaticEnergy() + 0.5*Velocity2_e;
-//
-//          break;
+
           deltaDensity = Density_i - AveragedDensity[val_marker];
           deltaPressure = Pressure_i - AveragedPressure[val_marker];
           AveragedMach = 0.0;
@@ -8305,75 +8228,6 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 
           break;
 
-
-
-//        case STATIC_SUPERSONIC_INFLOW_PT:
-//
-//          /*--- Retrieve the specified total conditions for this boundary. ---*/
-//
-//          if (gravity) P_static = config->GetNRBC_Var1(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDART_GRAVITY;/// check in which case is true (only freesurface?)
-//          else P_static  = config->GetNRBC_Var1(Marker_Tag);
-//          T_static  = config->GetNRBC_Var2(Marker_Tag);
-//          Mach = config->GetNRBC_FlowDir(Marker_Tag);
-//
-//          /*--- Non-dim. the inputs if necessary. ---*/
-//          P_static /= config->GetPressure_Ref();
-//          T_static /= config->GetTemperature_Ref();
-//
-//          /* --- Computes the total state --- */
-//
-//          FluidModel->SetTDState_PT(P_static, T_static);
-//
-//          /* --- Compute the boundary state u_e --- */
-//
-//          Velocity2_e = 0.0;
-//          for (iDim = 0; iDim < nDim; iDim++) {
-//            Velocity_e[iDim] = Mach[iDim]*FluidModel->GetSoundSpeed();
-//            Velocity2_e += Velocity_e[iDim]*Velocity_e[iDim];
-//          }
-//
-//          Density_e = FluidModel->GetDensity();
-//          StaticEnergy_e = FluidModel->GetStaticEnergy();
-//
-//          Energy_e = StaticEnergy_e + 0.5 * Velocity2_e;
-//
-//          if (tkeNeeded) Energy_e += GetTke_Inf();
-//
-//          break;
-//
-//        case STATIC_SUPERSONIC_INFLOW_PD:
-//
-//          /*--- Retrieve the specified total conditions for this boundary. ---*/
-//
-//          if (gravity) P_static = config->GetNRBC_Var1(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDART_GRAVITY;/// check in which case is true (only freesurface?)
-//          else P_static  = config->GetNRBC_Var1(Marker_Tag);
-//          Rho_static  = config->GetNRBC_Var2(Marker_Tag);
-//          Mach = config->GetNRBC_FlowDir(Marker_Tag);
-//
-//          /*--- Non-dim. the inputs if necessary. ---*/
-//          P_static /= config->GetPressure_Ref();
-//          Rho_static /= config->GetDensity_Ref();
-//
-//          /* --- Computes the total state --- */
-//
-//          FluidModel->SetTDState_Prho(P_static, Rho_static);
-//          /* --- Compute the boundary state u_e --- */
-//
-//          Velocity2_e = 0.0;
-//          for (iDim = 0; iDim < nDim; iDim++) {
-//            Velocity_e[iDim] = Mach[iDim]*FluidModel->GetSoundSpeed();
-//            Velocity2_e += Velocity_e[iDim]*Velocity_e[iDim];
-//          }
-//
-//
-//          Density_e = FluidModel->GetDensity();
-//          StaticEnergy_e = FluidModel->GetStaticEnergy();
-//
-//          Energy_e = StaticEnergy_e + 0.5 * Velocity2_e;
-//
-//          if (tkeNeeded) Energy_e += GetTke_Inf();
-//
-//          break;
 
 
         default:
@@ -8421,42 +8275,6 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
       Lambda_i[nVar-2] = ProjVelocity_i + SoundSpeed_i;
       Lambda_i[nVar-1] = ProjVelocity_i - SoundSpeed_i;
 
-//      u_e[0] = Density_e;
-//      for (iDim = 0; iDim < nDim; iDim++)
-//        u_e[iDim+1] = Velocity_e[iDim]*Density_e;
-//      u_e[nVar-1] = Energy_e*Density_e;
-//
-//      u_i[0] = Density_i;
-//      for (iDim = 0; iDim < nDim; iDim++)
-//        u_i[iDim+1] = Velocity_i[iDim]*Density_i;
-//      u_i[nVar-1] = Energy_i*Density_i;
-//
-//      /*--- Compute the characteristic jumps ---*/
-//
-//      for (iVar = 0; iVar < nVar; iVar++)
-//      {
-//        dw[iVar] = 0;
-//        for (jVar = 0; jVar < nVar; jVar++)
-//          dw[iVar] += invP_Tensor[iVar][jVar] * (u_e[jVar] - u_i[jVar]);
-//
-//      }
-//
-//      /*--- Compute the boundary state u_b using characteristics ---*/
-//
-//      for (iVar = 0; iVar < nVar; iVar++)
-//      {
-//        u_b[iVar] = u_i[iVar];
-//
-//        for (jVar = 0; jVar < nVar; jVar++)
-//        {
-//          if (Lambda_i[jVar] < 0)
-//          {
-//            u_b[iVar] += P_Tensor[iVar][jVar]*dw[jVar];
-//
-//          }
-//        }
-//      }
-
 	  Density_b = AveragedDensity[val_marker] + deltaprim[0];
 	  Pressure_b = AveragedPressure[val_marker] + deltaprim[3];
 //                    Pressure_e /= config->GetPressure_Ref();
@@ -8466,15 +8284,6 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 		  Velocity2_b+= Velocity_b[iDim]*Velocity_b[iDim];
 	  }
 
-//	  Density_b = Density_i + deltaprim[0];
-//	  Pressure_b = Pressure_i + deltaprim[3];
-////                    Pressure_e /= config->GetPressure_Ref();
-//	  Velocity2_b = 0.0;
-//	  for (iDim = 0; iDim < nDim; iDim++) {
-//		  Velocity_b[iDim] = Velocity_i[iDim]+deltaprim[iDim+1];
-//		  Velocity2_b+= Velocity_b[iDim]*Velocity_b[iDim];
-//	  }
-	  // cout << Density_b << " "<< Pressure_b << endl;
 	  FluidModel->SetTDState_Prho(Pressure_b, Density_b);
 	  Energy_b = FluidModel->GetStaticEnergy() + 0.5*Velocity2_b;
 	  StaticEnergy_b = FluidModel->GetStaticEnergy();
@@ -8487,21 +8296,6 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 	  u_b[3]=Energy_b*Density_b;
 
 
-//      Density_b = u_b[0];
-//
-//      Velocity2_b = 0;
-//      for (iDim = 0; iDim < nDim; iDim++)
-//      {
-//        Velocity_b[iDim] = u_b[iDim+1]/Density_b;
-//        Velocity2_b += Velocity_b[iDim]*Velocity_b[iDim];
-//      }
-//
-//      Energy_b = u_b[nVar-1]/Density_b;
-//      StaticEnergy_b = Energy_b - 0.5*Velocity2_b;
-
-//      FluidModel->SetTDState_rhoe(Density_b, StaticEnergy_b);
-
-//      Pressure_b = FluidModel->GetPressure();
       Enthalpy_b = Energy_b + Pressure_b/Density_b;
 
       Kappa_b = FluidModel->GetdPde_rho() / Density_b;
@@ -8669,14 +8463,12 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 
   /*--- Free locally allocated memory ---*/
   delete [] Normal;
-  delete [] Velocity_e;
+
   delete [] Velocity_b;
   delete [] Velocity_i;
 
   delete [] S_boundary;
   delete [] Lambda_i;
-  delete [] u_i;
-  delete [] u_e;
   delete [] u_b;
   delete [] dw;
 
