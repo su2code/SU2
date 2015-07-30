@@ -6568,9 +6568,11 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
           }
           boundary_marker_count++;
         }
-        if ((boundary_marker_count == nMarker) && (fsi)) break;
+        if ((boundary_marker_count == nMarker)) break;
       }
-      
+    }
+
+    while (getline (mesh_file, text_line)) {
       /*--- Read periodic transformation info (center, rotation, translation) ---*/
       
       position = text_line.find ("NPERIODIC=",0);
