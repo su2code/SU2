@@ -2575,6 +2575,177 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
   
 }
 
+void CVolumetricMovement::SetVolume_Scaling(CGeometry *geometry, CConfig *config, bool UpdateGeo) {
+  
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+  
+  unsigned short iDim;
+  unsigned long iPoint;
+  su2double newCoord[3] = {0.0,0.0,0.0}, *Coord;
+  
+  /*--- The scaling factor is the only input to this option. Currently, 
+   the mesh must be scaled the same amount in all three directions. ---*/
+  su2double Scale = config->GetDV_Value(0);
+  if (rank == MASTER_NODE) {
+    cout << "Scaling the mesh by a constant factor of " << Scale << "." << endl;
+  }
+  
+  /*--- Loop over and move each node in the volume mesh ---*/
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+    
+    /*--- Coordinates of the current point ---*/
+    Coord = geometry->node[iPoint]->GetCoord();
+    
+    /*--- Scale the node position by the specified factor. ---*/
+    for (iDim = 0; iDim < nDim; iDim++)
+      newCoord[iDim] = Scale*Coord[iDim];
+    
+    /*--- Store the new node location. ---*/
+    for (iDim = 0; iDim < nDim; iDim++) {
+      geometry->node[iPoint]->SetCoord(iDim, newCoord[iDim]);
+    }
+  }
+
+  /*--- After moving all nodes, update geometry class ---*/
+  if (UpdateGeo) UpdateDualGrid(geometry, config);
+  
+}
+
+void CVolumetricMovement::SetVolume_Translation(CGeometry *geometry, CConfig *config, bool UpdateGeo)  {
+  
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+  
+  unsigned short iDim;
+  unsigned long iPoint;
+  su2double *Coord, deltaX[3] = {0.0,0.0,0.0}, newCoord[3] = {0.0,0.0,0.0};
+  
+  /*--- Get the unit vector and magnitude of displacement. Note that we
+   assume this is the first DV entry since it is for mesh translation.
+   Create the displacement vector from the magnitude and direction. ---*/
+  
+  su2double Ampl = config->GetDV_Value(0);
+  su2double length = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++) {
+    deltaX[iDim] = config->GetParamDV(0, iDim);
+    length += deltaX[iDim]*deltaX[iDim];
+  }
+  length = sqrt(length);
+  for (iDim = 0; iDim < nDim; iDim++)
+    deltaX[iDim] = Ampl*deltaX[iDim]/length;
+  if (rank == MASTER_NODE) {
+    cout << "Translational displacement: (" << deltaX[0] << ", ";
+    cout  << deltaX[1] << ", " << deltaX[2] << ")." << endl;
+  }
+  
+  /*--- Loop over and move each node in the volume mesh ---*/
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+    
+    /*--- Coordinates of the current point ---*/
+    Coord = geometry->node[iPoint]->GetCoord();
+    
+    /*--- Increment the node position using the delta values. ---*/
+    for (iDim = 0; iDim < nDim; iDim++)
+      newCoord[iDim] = Coord[iDim] + deltaX[iDim];
+    
+    /*--- Store new node location. ---*/
+    for (iDim = 0; iDim < nDim; iDim++) {
+      geometry->node[iPoint]->SetCoord(iDim, newCoord[iDim]);
+    }
+  }
+  
+  /*--- After moving all nodes, update geometry class ---*/
+  if (UpdateGeo) UpdateDualGrid(geometry, config);
+  
+}
+
+void CVolumetricMovement::SetVolume_Rotation(CGeometry *geometry, CConfig *config, bool UpdateGeo) {
+  
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+  
+  unsigned short iDim;
+  unsigned long iPoint;
+  su2double x, y, z;
+  su2double *Coord, deltaX[3] = {0.0,0.0,0.0}, newCoord[3] = {0.0,0.0,0.0};
+
+  /*--- xyz-coordinates of a point on the line of rotation. */
+  su2double a = config->GetParamDV(0, 0);
+  su2double b = config->GetParamDV(0, 1);
+  su2double c = 0.0;
+  if (geometry->GetnDim() == 3) c = config->GetParamDV(0,2);
+  
+  /*--- xyz-coordinate of the line's direction vector. ---*/
+  su2double u = config->GetParamDV(0, 3)-config->GetParamDV(0, 0);
+  su2double v = config->GetParamDV(0, 4)-config->GetParamDV(0, 1);
+  su2double w = 1.0;
+  if (geometry->GetnDim() == 3)
+    w = config->GetParamDV(0, 5)-config->GetParamDV(0, 2);
+  
+  /*--- The angle of rotation. ---*/
+  su2double theta = config->GetDV_Value(0)*PI_NUMBER/180.0;
+  
+  /*--- Print to the console. ---*/
+  if (rank == MASTER_NODE) {
+    cout << "Rotation axis vector: (" << u << ", ";
+    cout << v << ", " << w << ")." << endl;
+    cout << "Angle of rotation: " << config->GetDV_Value(0);
+    cout << " degrees." << endl;
+  }
+  
+  /*--- Intermediate values used in computations. ---*/
+    su2double u2=u*u; su2double v2=v*v; su2double w2=w*w;
+  su2double cosT = cos(theta); su2double sinT = sin(theta);
+  su2double l2 = u2 + v2 + w2; su2double l = sqrt(l2);
+  
+  /*--- Loop over and move each node in the volume mesh ---*/
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+    
+    /*--- Coordinates of the current point ---*/
+    Coord = geometry->node[iPoint]->GetCoord();
+    
+    /*--- Displacement for this point due to the rotation. ---*/
+    x = Coord[0]; y = Coord[1]; z = 0.0;
+    if (geometry->GetnDim() == 3) z = Coord[2];
+    
+    deltaX[0] = a*(v2 + w2) + u*(-b*v - c*w + u*x + v*y + w*z)
+    + (-a*(v2 + w2) + u*(b*v + c*w - v*y - w*z) + (v2 + w2)*x)*cosT
+    + l*(-c*v + b*w - w*y + v*z)*sinT;
+    deltaX[0] = deltaX[0]/l2 - x;
+    
+    deltaX[1] = b*(u2 + w2) + v*(-a*u - c*w + u*x + v*y + w*z)
+    + (-b*(u2 + w2) + v*(a*u + c*w - u*x - w*z) + (u2 + w2)*y)*cosT
+    + l*(c*u - a*w + w*x - u*z)*sinT;
+    deltaX[1] = deltaX[1]/l2 - y;
+    
+    deltaX[2] = c*(u2 + v2) + w*(-a*u - b*v + u*x + v*y + w*z)
+    + (-c*(u2 + v2) + w*(a*u + b*v - u*x - v*y) + (u2 + v2)*z)*cosT
+    + l*(-b*u + a*v - v*x + u*y)*sinT;
+    if (geometry->GetnDim() == 3) deltaX[2] = deltaX[2]/l2 - z;
+    else deltaX[2] = 0.0;
+    
+    /*--- Increment the node position using the delta values. ---*/
+    for (iDim = 0; iDim < nDim; iDim++)
+      newCoord[iDim] = Coord[iDim] + deltaX[iDim];
+    
+    /*--- Store new node location. ---*/
+    for (iDim = 0; iDim < nDim; iDim++) {
+      geometry->node[iPoint]->SetCoord(iDim, newCoord[iDim]);
+    }
+  }
+ 
+  /*--- After moving all nodes, update geometry class ---*/
+  if (UpdateGeo) UpdateDualGrid(geometry, config);
+  
+}
+
 CSurfaceMovement::CSurfaceMovement(void) : CGridMovement() {
 	nFFDBox = 0;
   nLevel = 0;
@@ -2850,12 +3021,9 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
     
   }
   
-  /*--- General 2D airfoil deformations ---*/
+  /*--- 2D airfoil Hicks-Henne bump functions ---*/
 
-  else if ((config->GetDesign_Variable(0) == ROTATION) ||
-           (config->GetDesign_Variable(0) == TRANSLATION) ||
-           (config->GetDesign_Variable(0) == SCALE) ||
-           (config->GetDesign_Variable(0) == HICKS_HENNE) ) {
+  else if (config->GetDesign_Variable(0) == HICKS_HENNE) {
     
     /*--- Apply rotation, displacement and stretching design variables (this
      should be done before the bump function design variables) ---*/
@@ -2897,6 +3065,15 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
       cout << "No surface deformation (setting FFD)." << endl;
   }
 
+  /*--- Scale, Translate, and Rotate will be done with rigid mesh transforms. ---*/
+  
+  else if ((config->GetDesign_Variable(0) == ROTATION) ||
+           (config->GetDesign_Variable(0) == TRANSLATION) ||
+           (config->GetDesign_Variable(0) == SCALE)) {
+    if (rank == MASTER_NODE)
+      cout << "No surface deformation (scaling, rotation, or translation)." << endl;
+  }
+  
   /*--- Design variable not implement ---*/
 
   else {
@@ -5131,7 +5308,7 @@ void CSurfaceMovement::Surface_Rotating(CGeometry *geometry, CConfig *config,
   }
 }
 
-void CSurfaceMovement::AeroelasticDeform(CGeometry *geometry, CConfig *config, unsigned long ExtIter, unsigned short iMarker, unsigned short iMarker_Monitoring, su2double displacements[4]) {
+void CSurfaceMovement::AeroelasticDeform(CGeometry *geometry, CConfig *config, unsigned long ExtIter, unsigned short iMarker, unsigned short iMarker_Monitoring, vector<su2double>& displacements) {
   
   /* The sign conventions of these are those of the Typical Section Wing Model, below the signs are corrected */
   su2double dh = -displacements[0];           // relative plunge

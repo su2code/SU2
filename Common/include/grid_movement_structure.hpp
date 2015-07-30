@@ -70,7 +70,6 @@ public:
 	 */
 	~CGridMovement(void);
   
-  
   /*!
 	 * \brief A pure virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -976,6 +975,30 @@ public:
 	void Rigid_Translation(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter);
   
   /*!
+   * \brief Scale the volume grid by a multiplicative factor.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] UpdateGeo - Update geometry.
+   */
+  void SetVolume_Scaling(CGeometry *geometry, CConfig *config, bool UpdateGeo);
+  
+  /*!
+   * \brief Translate the volume grid by a specified displacement vector.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] UpdateGeo - Update geometry.
+   */
+  void SetVolume_Translation(CGeometry *geometry, CConfig *config, bool UpdateGeo);
+  
+  /*!
+   * \brief Rotate the volume grid around a specified axis and angle.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] UpdateGeo - Update geometry.
+   */
+  void SetVolume_Rotation(CGeometry *geometry, CConfig *config, bool UpdateGeo);
+  
+  /*!
 	 * \brief Grid deformation using the spring analogy method.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
@@ -1143,7 +1166,7 @@ public:
    * \param[in] iMarker_Monitoring - Marker we are monitoring.
    * \param[in] displacements - solution of typical section wing model.
 	 */
-    void AeroelasticDeform(CGeometry *geometry, CConfig *config, unsigned long ExtIter, unsigned short iMarker, unsigned short iMarker_Monitoring, su2double displacements[4]);
+    void AeroelasticDeform(CGeometry *geometry, CConfig *config, unsigned long ExtIter, unsigned short iMarker, unsigned short iMarker_Monitoring, vector<su2double>& displacements);
     
    /*!
 	 * \brief Deforms a 3-D flutter/pitching surface during an unsteady simulation.

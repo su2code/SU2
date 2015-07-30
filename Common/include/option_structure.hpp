@@ -350,16 +350,16 @@ const int VISC_BOUND_TERM = 5;       /*!< \brief Position of the viscous boundar
  * \brief types of mathematical problem to solve
  */
 enum ENUM_MATH_PROBLEM {
-  DIRECT_PROBLEM = 0,		/*!< \brief Direct problem */
-  ADJOINT_PROBLEM = 1,		/*!< \brief Adjoint problem */
-  LINEARIZED_PROBLEM = 2, /*< \brief Linearized numerical method */
-  ADJOINT_AD_PROBLEM = 3, /*< \brief AD-based adjoint problem */
+  DIRECT = 0,		/*!< \brief Direct problem */
+  CONTINUOUS_ADJOINT = 1,		/*!< \brief Continuous adjoint problem */
+  LINEARIZED = 2, /*< \brief Linearized numerical method */
+  DISCRETE_ADJOINT = 3, /*< \brief AD-based discrete adjoint problem. */
 };
 static const map<string, ENUM_MATH_PROBLEM> Math_Problem_Map = CCreateMap<string, ENUM_MATH_PROBLEM>
-("DIRECT", DIRECT_PROBLEM)
-("ADJOINT", ADJOINT_PROBLEM)
-("LINEARIZED", LINEARIZED_PROBLEM)
-("DISCRETE_ADJOINT", ADJOINT_AD_PROBLEM);
+("DIRECT", DIRECT)
+("CONTINUOUS_ADJOINT", CONTINUOUS_ADJOINT)
+("LINEARIZED", LINEARIZED)
+("DISCRETE_ADJOINT", DISCRETE_ADJOINT);
 
 /*!
  * \brief types of spatial discretizations
@@ -1823,6 +1823,9 @@ public:
     if (out.compare("") != 0) {
       return out;
     }
+    if (option_value[0] == "ADJOINT") {
+      return badValue(option_value, "math problem (try CONTINUOUS_ADJOINT)", this->name);
+    }
     if (Math_Problem_Map.find(option_value[0]) == Math_Problem_Map.end()) {
       return badValue(option_value, "math problem", this->name);
     }
@@ -1833,7 +1836,7 @@ public:
       this->disc_adjoint = false;
       return "";
     }
-    if (option_value[0] == "ADJOINT") {
+    if (option_value[0] == "CONTINUOUS_ADJOINT") {
       this->adjoint= true;
       this->restart= true;
       this->linearized = false;

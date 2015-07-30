@@ -7,4 +7,4 @@ Common/include/complex_structure.inl
 Common/include/mpi_structure.inl
 Common/src/mpi_structure.cpp
 SU2_CFD/src/output_tecplot.cpp:953,1414,1906,2206
-Common/src/geometry_structure.cpp:8641,8702,8819
+Common/src/geometry_structure.cpp:8647,8708,8825

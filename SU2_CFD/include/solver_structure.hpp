@@ -1085,7 +1085,7 @@ public:
 	 * \param[in] iPoint - Index of the grid point.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void SetPreconditioner(CConfig *config, unsigned short iPoint);
+	virtual void SetPreconditioner(CConfig *config, unsigned long iPoint);
     
 	/*!
 	 * \brief A virtual member.
@@ -2233,7 +2233,6 @@ public:
   * \param[in] ExtIter - Physical iteration number.
   */
 	void Aeroelastic(CSurfaceMovement *surface_movement, CGeometry *geometry, CConfig *config, unsigned long ExtIter);
-
     
   /*!
   * \brief Sets up the generalized eigenvectors and eigenvalues needed to solve the aeroelastic equations.
@@ -2241,7 +2240,7 @@ public:
   * \param[in] lambda - The eigenvalues of the generalized eigensystem.
   * \param[in] config - Definition of the particular problem.
   */
-  void SetUpTypicalSectionWingModel(su2double (&PHI)[2][2], su2double (&lambda)[2], CConfig *config);
+  void SetUpTypicalSectionWingModel(vector<vector<su2double> >& PHI, vector<su2double>& w, CConfig *config);
     
   /*!
   * \brief Solve the typical section wing model.
@@ -2252,7 +2251,8 @@ public:
   * \param[in] val_Marker - Surface that is being monitored.
   * \param[in] displacements - solution of typical section wing model.
 	*/
-  void SolveTypicalSectionWingModel(CGeometry *geometry, su2double Cl, su2double Cm, CConfig *config, unsigned short val_Marker, su2double (&displacements)[4]);
+  
+  void SolveTypicalSectionWingModel(CGeometry *geometry, su2double Cl, su2double Cm, CConfig *config, unsigned short val_Marker, vector<su2double>& displacements);
 
   /*!
    * \brief A virtual member.
@@ -2886,7 +2886,7 @@ public:
 	 * \param[in] iPoint - Index of the grid point
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void SetPreconditioner(CConfig *config, unsigned short iPoint);
+	void SetPreconditioner(CConfig *config, unsigned long iPoint);
     
 	/*!
 	 * \brief Compute the undivided laplacian for the solution, except the energy equation.
@@ -7214,7 +7214,7 @@ public:
 	 * \param[in] iPoint - Index of the grid point
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void SetPreconditioner(CConfig *config, unsigned short iPoint);
+	void SetPreconditioner(CConfig *config, unsigned long iPoint);
    
 	/*!
 	 * \brief Impose via the residual the Euler wall boundary condition.

@@ -1142,10 +1142,20 @@ inline void CConfig::SetAeroelastic_n1(void) {
 inline void CConfig::SetAeroelastic_n(void) {
         Aeroelastic_n = Aeroelastic_np1;
 }
-    
-inline su2double CConfig::GetAeroelastic_Frequency_Plunge(void) {return FreqPlungeAeroelastic; }
 
-inline su2double CConfig::GetAeroelastic_Frequency_Pitch(void) {return FreqPitchAeroelastic; }
+inline su2double CConfig::GetAeroelastic_Flutter_Speed_Index(void) {return FlutterSpeedIndex; }
+
+inline su2double CConfig::GetAeroelastic_Frequency_Plunge(void) {return PlungeNaturalFrequency; }
+
+inline su2double CConfig::GetAeroelastic_Frequency_Pitch(void) {return PitchNaturalFrequency; }
+
+inline su2double CConfig::GetAeroelastic_Airfoil_Mass_Ratio(void) {return AirfoilMassRatio; }
+
+inline su2double CConfig::GetAeroelastic_CG_Location(void) {return CG_Location; }
+
+inline su2double CConfig::GetAeroelastic_Radius_Gyration_Squared(void) {return RadiusGyrationSquared; }
+
+inline unsigned short CConfig::GetAeroelasticIter(void) {return AeroelasticIter; }
 
 inline bool CConfig::GetWind_Gust(void) { return Wind_Gust; }
 

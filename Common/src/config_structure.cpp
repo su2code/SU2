@@ -1008,10 +1008,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addUShortListOption("MOVE_MOTION_ORIGIN", nMoveMotion_Origin, MoveMotion_Origin);
   /* DESCRIPTION:  */
   addStringOption("MOTION_FILENAME", Motion_Filename, string("mesh_motion.dat"));
-  /* DESCRIPTION: Uncoupled Aeroelastic Frequency Plunge. */
-  addDoubleOption("FREQ_PLUNGE_AEROELASTIC", FreqPlungeAeroelastic, 100);
-  /* DESCRIPTION: Uncoupled Aeroelastic Frequency Pitch. */
-  addDoubleOption("FREQ_PITCH_AEROELASTIC", FreqPitchAeroelastic, 100);
 
   /*!\par CONFIG_CATEGORY: Grid adaptation \ingroup Config*/
   /*--- Options related to grid adaptation ---*/
@@ -1029,6 +1025,23 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Adapt the boundary elements */
   addBoolOption("ADAPT_BOUNDARY", AdaptBoundary, true);
 
+  /*!\par CONFIG_CATEGORY: Aeroelastic Simulation (Typical Section Model) \ingroup Config*/
+  /*--- Options related to aeroelastic simulations using the Typical Section Model) ---*/
+  /* DESCRIPTION: The flutter speed index (modifies the freestream condition) */
+  addDoubleOption("FLUTTER_SPEED_INDEX", FlutterSpeedIndex, 0.6);
+  /* DESCRIPTION: Natural frequency of the spring in the plunging direction (rad/s). */
+  addDoubleOption("PLUNGE_NATURAL_FREQUENCY", PlungeNaturalFrequency, 100);
+  /* DESCRIPTION: Natural frequency of the spring in the pitching direction (rad/s). */
+  addDoubleOption("PITCH_NATURAL_FREQUENCY", PitchNaturalFrequency, 100);
+  /* DESCRIPTION: The airfoil mass ratio. */
+  addDoubleOption("AIRFOIL_MASS_RATIO", AirfoilMassRatio, 60);
+  /* DESCRIPTION: Distance in semichords by which the center of gravity lies behind the elastic axis. */
+  addDoubleOption("CG_LOCATION", CG_Location, 1.8);
+  /* DESCRIPTION: The radius of gyration squared (expressed in semichords) of the typical section about the elastic axis. */
+  addDoubleOption("RADIUS_GYRATION_SQUARED", RadiusGyrationSquared, 3.48);
+  /* DESCRIPTION: Solve the aeroelastic equations every given number of internal iterations. */
+  addUnsignedShortOption("AEROELASTIC_ITER", AeroelasticIter, 3);
+  
   /*!\par CONFIG_CATEGORY: Wind Gust \ingroup Config*/
   /*--- Options related to wind gust simulations ---*/
 
