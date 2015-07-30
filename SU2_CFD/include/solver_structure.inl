@@ -118,7 +118,7 @@ inline void CSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) 
 
 //inline void CSolver::SetSecondary_Limiter(CGeometry *geometry, CConfig *config) { }
 
-inline void CSolver::SetPreconditioner(CConfig *config, unsigned short iPoint) { }
+inline void CSolver::SetPreconditioner(CConfig *config, unsigned long iPoint) { }
 
 inline void CSolver::SetDistance(CGeometry *geometry, CConfig *config) { };
 

@@ -1968,7 +1968,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
   Temperature_FreeStreamND = 0.0, Gas_ConstantND = 0.0,
   Velocity_FreeStreamND[3] = {0.0, 0.0, 0.0}, Viscosity_FreeStreamND = 0.0,
   Tke_FreeStreamND = 0.0, Energy_FreeStreamND = 0.0,
-  Total_UnstTimeND = 0.0, Delta_UnstTimeND = 0.0;
+  Total_UnstTimeND = 0.0, Delta_UnstTimeND = 0.0, TgammaR = 0.0;
   
   unsigned short iDim;
   
@@ -1995,6 +1995,17 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
   bool free_stream_temp   = (config->GetKind_FreeStreamOption() == TEMPERATURE_FS);
   bool standard_air       = (config->GetKind_FluidModel() == STANDARD_AIR);
   bool reynolds_init      = (config->GetKind_InitOption() == REYNOLDS);
+  bool aeroelastic        = config->GetAeroelastic_Simulation();
+  
+  /*--- Set temperature via the flutter speed index ---*/
+  if (aeroelastic) {
+    su2double vf             = config->GetAeroelastic_Flutter_Speed_Index();
+    su2double w_alpha        = config->GetAeroelastic_Frequency_Pitch();
+    su2double b              = config->GetLength_Reynolds()/2.0; // airfoil semichord, Reynolds length is by defaul 1.0
+    su2double mu             = config->GetAeroelastic_Airfoil_Mass_Ratio();
+    // The temperature times gamma times the gas constant. Depending on the FluidModel temp is calculated below.
+    TgammaR = ((vf*vf)*(b*b)*(w_alpha*w_alpha)*mu) / (Mach*Mach);
+  }
   
   /*--- Compressible non dimensionalization ---*/
 
@@ -2015,6 +2026,10 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
         
         FluidModel = new CIdealGas(1.4, config->GetGas_Constant());
         if (free_stream_temp) {
+          if (aeroelastic) {
+            Temperature_FreeStream = TgammaR / (config->GetGas_Constant()*1.4);
+            config->SetTemperature_FreeStream(Temperature_FreeStream);
+          }
           FluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
           Density_FreeStream = FluidModel->GetDensity();
           config->SetDensity_FreeStream(Density_FreeStream);
@@ -2988,19 +3003,6 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
       }
     }
   }
-
-  if (aeroelastic) {
-    
-    /*--- Reset the plunge and pitch value for the new unsteady step. ---*/
-    
-    unsigned short iMarker_Monitoring;
-    for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-      config->SetAeroelastic_pitch(iMarker_Monitoring,0.0);
-      config->SetAeroelastic_plunge(iMarker_Monitoring,0.0);
-    }
-    
-  }
-
 }
 
 void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
@@ -5336,7 +5338,7 @@ void CEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) {
 //
 //}
 
-void CEulerSolver::SetPreconditioner(CConfig *config, unsigned short iPoint) {
+void CEulerSolver::SetPreconditioner(CConfig *config, unsigned long iPoint) {
   unsigned short iDim, jDim, iVar, jVar;
   su2double Beta, local_Mach, Beta2, rho, enthalpy, soundspeed, sq_vel;
   su2double *U_i = NULL;
@@ -6895,7 +6897,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
   su2double *Velocity_i, Velocity2_i, Enthalpy_i, Energy_i, StaticEnergy_i, Density_i, Kappa_i, Chi_i, Pressure_i, SoundSpeed_i;
   su2double ProjGridVel, ProjVelocity_i, ProjVelocity_b;
   su2double **P_Tensor, **invP_Tensor, *Lambda_i, **Jacobian_b, **DubDu, *dw, *u_e, *u_i, *u_b;
-  
+  su2double *gridVel;
   su2double *V_boundary, *V_domain, *S_boundary, *S_domain;
   
   bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
@@ -6905,9 +6907,9 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
   bool gravity = (config->GetGravityForce());
   bool tkeNeeded = (((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
                     (config->GetKind_Turb_Model() == SST));
+
   su2double *Normal;
   
-  /// Doesn't work for ALE
   
   Normal = new su2double[nDim];
   
@@ -7015,20 +7017,11 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
           
           /* --- Compute the boundary state u_e --- */
           
-          //                if (config->GetKind_Data_Riemann(Marker_Tag) == TOTAL_CONDITIONS_PT) {
           Velocity2_e = Velocity2_i;
           
           for (iDim = 0; iDim < nDim; iDim++) {
             Velocity_e[iDim] = sqrt(Velocity2_e)*Flow_Dir[iDim];
           }
-          
-          //                } else{
-          //                	Velocity2_e = 0.0;
-          //                	for (iDim = 0; iDim < nDim; iDim++) {
-          //						Velocity_e[iDim] = Flow_Dir[iDim]/config->GetVelocity_Ref();
-          //						Velocity2_e += Velocity_e[iDim]*Velocity_e[iDim];
-          //                		}
-          //                }
           
           
           StaticEnthalpy_e = Enthalpy_e - 0.5 * Velocity2_e;
@@ -7168,6 +7161,18 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
       
       conv_numerics->GetPMatrix_inv(invP_Tensor, &Density_i, Velocity_i, &SoundSpeed_i, &Chi_i, &Kappa_i, UnitNormal);
       
+
+      /*--- eigenvalues contribution due to grid motion ---*/
+
+      if (grid_movement){
+    	  gridVel = geometry->node[iPoint]->GetGridVel();
+    	  su2double ProjGridVel = 0.0;
+    	  for (iDim = 0; iDim < nDim; iDim++)
+    	  	   ProjGridVel   += gridVel[iDim]*UnitNormal[iDim];
+    	  ProjVelocity_i -= ProjGridVel;
+      }
+
+
       /*--- Flow eigenvalues ---*/
       for (iDim = 0; iDim < nDim; iDim++)
         Lambda_i[iDim] = ProjVelocity_i;
@@ -7235,6 +7240,16 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
       /*--- Compute the residuals ---*/
       conv_numerics->GetInviscidProjFlux(&Density_b, Velocity_b, &Pressure_b, &Enthalpy_b, Normal, Residual);
       
+      /*--- Residual contribution due to grid motion ---*/
+
+      if (grid_movement) {
+        su2double projVelocity = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          projVelocity +=  gridVel[iDim]*Normal[iDim];
+        for (iVar = 0; iVar < nVar; iVar++)
+        	Residual[iVar] -= projVelocity *(u_b[iVar]);
+      }
+
       if (implicit) {
         
         Jacobian_b = new su2double*[nVar];
@@ -7270,18 +7285,20 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
         
         
         /*--- Compute flux Jacobian in state b ---*/
-        //             cout << Enthalpy_b << " " << Chi_b<< " " << Kappa_b <<" "<< endl;
         conv_numerics->GetInviscidProjJac(Velocity_b, &Enthalpy_b, &Chi_b, &Kappa_b, Normal, 1.0, Jacobian_b);
-        /// check ALE
         
+        /*--- Jacobian contribution due to grid motion ---*/
         if (grid_movement)
         {
-          Jacobian_b[nVar-1][0] += 0.5*ProjGridVel*ProjGridVel;
-          
+          su2double projVelocity = 0.0;
           for (iDim = 0; iDim < nDim; iDim++)
-            Jacobian_b[nVar-1][iDim+1] -= ProjVelocity_b * UnitNormal[iDim];
+        	  projVelocity +=  gridVel[iDim]*Normal[iDim];
+          for (iVar = 0; iVar < nVar; iVar++){
+              Residual[iVar] -= projVelocity *(u_b[iVar]);
+              Jacobian_b[iVar][iVar] -= projVelocity;
+          }
+
         }
-        
         /*--- Compute numerical flux Jacobian at node i ---*/
         
         for (iVar=0; iVar<nVar; iVar++) {
@@ -7290,13 +7307,9 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
               Jacobian_i[iVar][jVar] += Jacobian_b[iVar][kVar] * DubDu[kVar][jVar];
             }
           }
-          //              cout << Jacobian_i[iVar][0] << " " << Jacobian_i[iVar][1] << " " << Jacobian_i[iVar][2]<< " " << Jacobian_i[iVar][3]<< " " << endl;
+
         }
-        
-        
-        //              Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-        
-        
+
         for (iVar = 0; iVar < nVar; iVar++) {
           delete [] Jacobian_b[iVar];
           delete [] DubDu[iVar];

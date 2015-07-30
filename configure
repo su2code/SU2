@@ -661,6 +661,18 @@ MUTATIONPP_LD
 MUTATIONPP_CXX
 BUILD_MUTATIONPP_FALSE
 BUILD_MUTATIONPP_TRUE
+ZLIB_LD
+ZLIB_CXX
+BUILD_ZLIB_FALSE
+BUILD_ZLIB_TRUE
+SZIP_LD
+SZIP_CXX
+BUILD_SZIP_FALSE
+BUILD_SZIP_TRUE
+HDF5_LD
+HDF5_CXX
+BUILD_HDF5_FALSE
+BUILD_HDF5_TRUE
 CGNS_LD
 CGNS_CXX
 BUILD_CGNS_FALSE
@@ -798,6 +810,12 @@ enable_dependency_tracking
 with_cc
 with_CGNS_lib
 with_CGNS_include
+with_HDF5_lib
+with_HDF5_include
+with_SZIP_lib
+with_SZIP_include
+with_ZLIB_lib
+with_ZLIB_include
 with_Mutationpp_lib
 with_Mutationpp_include
 with_Jsoncpp_lib
@@ -1496,6 +1514,12 @@ Optional Packages:
   --with-cc=CC            C compiler to use
   --with-CGNS-lib=ARG     CGNS library directory, ARG = path to libcgns.a
   --with-CGNS-include=ARG CGNS include directory, ARG = path to cgnslib.h
+  --with-HDF5-lib=ARG     HDF5 library directory, ARG = path to libhdf5.a
+  --with-HDF5-include=ARG HDF5 include directory, ARG = path to hdf5.h
+  --with-SZIP-lib=ARG     SZIP library directory, ARG = path to libsz.a
+  --with-SZIP-include=ARG SZIP include directory, ARG = path to szlib.h
+  --with-ZLIB-lib=ARG     ZLIB library directory, ARG = path to libz.a
+  --with-ZLIB-include=ARG ZLIB include directory, ARG = path to zlib.h
   --with-Mutationpp-lib=ARG
                           Mutation++ library directory, ARG = path to
                           libmutation++.dylib
@@ -5351,6 +5375,58 @@ else
 fi
 
 
+
+# Check whether --with-HDF5-lib was given.
+if test "${with_HDF5_lib+set}" = set; then :
+  withval=$with_HDF5_lib; with_HDF5_lib=$withval
+else
+  with_HDF5_lib="no"
+fi
+
+
+# Check whether --with-HDF5-include was given.
+if test "${with_HDF5_include+set}" = set; then :
+  withval=$with_HDF5_include; with_HDF5_include=$withval
+else
+  with_HDF5_include="no"
+fi
+
+
+
+# Check whether --with-SZIP-lib was given.
+if test "${with_SZIP_lib+set}" = set; then :
+  withval=$with_SZIP_lib; with_SZIP_lib=$withval
+else
+  with_SZIP_lib="no"
+fi
+
+
+# Check whether --with-SZIP-include was given.
+if test "${with_SZIP_include+set}" = set; then :
+  withval=$with_SZIP_include; with_SZIP_include=$withval
+else
+  with_SZIP_include="no"
+fi
+
+
+
+# Check whether --with-ZLIB-lib was given.
+if test "${with_ZLIB_lib+set}" = set; then :
+  withval=$with_ZLIB_lib; with_ZLIB_lib=$withval
+else
+  with_ZLIB_lib="no"
+fi
+
+
+# Check whether --with-ZLIB-include was given.
+if test "${with_ZLIB_include+set}" = set; then :
+  withval=$with_ZLIB_include; with_ZLIB_include=$withval
+else
+  with_ZLIB_include="no"
+fi
+
+
+
 # Check whether --with-Mutationpp-lib was given.
 if test "${with_Mutationpp_lib+set}" = set; then :
   withval=$with_Mutationpp_lib; with_Mutationpp_lib=$withval
@@ -5610,6 +5686,11 @@ else
   enablemetis=yes
 fi
 
+
+  # Trump --enable-parmetis with --disable-mpi
+  if (test "x$enablempi" = xno); then
+    enablemetis=no
+  fi
 
   # The METIS API is distributed with SU2, so we don't have to guess
   # where it might be installed...
@@ -5887,6 +5968,312 @@ fi
 
 	CGNS_CXX=
 	CGNS_LD=
+fi
+
+
+
+##########################
+
+# check for lib
+HDF5lib=libhdf5.a
+HDF5header=hdf5.h
+have_HDF5="no"
+
+if test "$with_HDF5_lib" != "no"
+then
+as_ac_File=`$as_echo "ac_cv_file_$with_HDF5_lib/$HDF5lib" | $as_tr_sh`
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $with_HDF5_lib/$HDF5lib" >&5
+$as_echo_n "checking for $with_HDF5_lib/$HDF5lib... " >&6; }
+if eval \${$as_ac_File+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  test "$cross_compiling" = yes &&
+  as_fn_error $? "cannot check for file existence when cross compiling" "$LINENO" 5
+if test -r "$with_HDF5_lib/$HDF5lib"; then
+  eval "$as_ac_File=yes"
+else
+  eval "$as_ac_File=no"
+fi
+fi
+eval ac_res=\$$as_ac_File
+	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+$as_echo "$ac_res" >&6; }
+if eval test \"x\$"$as_ac_File"\" = x"yes"; then :
+  have_HDF5="yes"
+else
+  have_HDF5="no"
+fi
+
+if test "$have_HDF5" == "no"
+then
+as_fn_error $? "HDF5 requested but library file not found." "$LINENO" 5
+fi
+fi
+
+# check for header
+if test "$have_HDF5" != "no"
+then
+if test "$with_HDF5_include" != "no"
+then
+as_ac_File=`$as_echo "ac_cv_file_$with_HDF5_include/$HDF5header" | $as_tr_sh`
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $with_HDF5_include/$HDF5header" >&5
+$as_echo_n "checking for $with_HDF5_include/$HDF5header... " >&6; }
+if eval \${$as_ac_File+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  test "$cross_compiling" = yes &&
+  as_fn_error $? "cannot check for file existence when cross compiling" "$LINENO" 5
+if test -r "$with_HDF5_include/$HDF5header"; then
+  eval "$as_ac_File=yes"
+else
+  eval "$as_ac_File=no"
+fi
+fi
+eval ac_res=\$$as_ac_File
+	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+$as_echo "$ac_res" >&6; }
+if eval test \"x\$"$as_ac_File"\" = x"yes"; then :
+  have_HDF5='yes'
+else
+  have_HDF5='no'
+fi
+
+if test "$have_HDF5" == "no"
+then
+as_fn_error $? "HDF5 requested but header file not found." "$LINENO" 5
+fi
+else
+have_HDF5="no"
+fi
+fi
+
+if test "$have_HDF5" != "no"
+then
+ if true; then
+  BUILD_HDF5_TRUE=
+  BUILD_HDF5_FALSE='#'
+else
+  BUILD_HDF5_TRUE='#'
+  BUILD_HDF5_FALSE=
+fi
+
+HDF5_CXX="-DHAVE_HDF5 -I"$with_HDF5_include""
+HDF5_LD="$with_HDF5_lib"/$HDF5lib
+else
+ if false; then
+  BUILD_HDF5_TRUE=
+  BUILD_HDF5_FALSE='#'
+else
+  BUILD_HDF5_TRUE='#'
+  BUILD_HDF5_FALSE=
+fi
+
+HDF5_CXX=
+HDF5_LD=
+fi
+
+
+
+##########################
+
+# check for lib
+SZIPlib=libsz.a
+SZIPheader=szlib.h
+have_SZIP="no"
+
+if test "$with_SZIP_lib" != "no"
+then
+as_ac_File=`$as_echo "ac_cv_file_$with_SZIP_lib/$SZIPlib" | $as_tr_sh`
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $with_SZIP_lib/$SZIPlib" >&5
+$as_echo_n "checking for $with_SZIP_lib/$SZIPlib... " >&6; }
+if eval \${$as_ac_File+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  test "$cross_compiling" = yes &&
+  as_fn_error $? "cannot check for file existence when cross compiling" "$LINENO" 5
+if test -r "$with_SZIP_lib/$SZIPlib"; then
+  eval "$as_ac_File=yes"
+else
+  eval "$as_ac_File=no"
+fi
+fi
+eval ac_res=\$$as_ac_File
+	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+$as_echo "$ac_res" >&6; }
+if eval test \"x\$"$as_ac_File"\" = x"yes"; then :
+  have_SZIP="yes"
+else
+  have_SZIP="no"
+fi
+
+if test "$have_SZIP" == "no"
+then
+as_fn_error $? "SZIP requested but library file not found." "$LINENO" 5
+fi
+fi
+
+# check for header
+if test "$have_SZIP" != "no"
+then
+if test "$with_SZIP_include" != "no"
+then
+as_ac_File=`$as_echo "ac_cv_file_$with_SZIP_include/$SZIPheader" | $as_tr_sh`
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $with_SZIP_include/$SZIPheader" >&5
+$as_echo_n "checking for $with_SZIP_include/$SZIPheader... " >&6; }
+if eval \${$as_ac_File+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  test "$cross_compiling" = yes &&
+  as_fn_error $? "cannot check for file existence when cross compiling" "$LINENO" 5
+if test -r "$with_SZIP_include/$SZIPheader"; then
+  eval "$as_ac_File=yes"
+else
+  eval "$as_ac_File=no"
+fi
+fi
+eval ac_res=\$$as_ac_File
+	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+$as_echo "$ac_res" >&6; }
+if eval test \"x\$"$as_ac_File"\" = x"yes"; then :
+  have_SZIP='yes'
+else
+  have_SZIP='no'
+fi
+
+if test "$have_SZIP" == "no"
+then
+as_fn_error $? "SZIP requested but header file not found." "$LINENO" 5
+fi
+else
+have_SZIP="no"
+fi
+fi
+
+if test "$have_SZIP" != "no"
+then
+ if true; then
+  BUILD_SZIP_TRUE=
+  BUILD_SZIP_FALSE='#'
+else
+  BUILD_SZIP_TRUE='#'
+  BUILD_SZIP_FALSE=
+fi
+
+SZIP_CXX="-DHAVE_SZIP -I"$with_SZIP_include""
+SZIP_LD="$with_SZIP_lib"/$SZIPlib
+else
+ if false; then
+  BUILD_SZIP_TRUE=
+  BUILD_SZIP_FALSE='#'
+else
+  BUILD_SZIP_TRUE='#'
+  BUILD_SZIP_FALSE=
+fi
+
+SZIP_CXX=
+SZIP_LD=
+fi
+
+
+
+##########################
+
+# check for lib
+ZLIBlib=libz.a
+ZLIBheader=zlib.h
+have_ZLIB="no"
+
+if test "$with_ZLIB_lib" != "no"
+then
+as_ac_File=`$as_echo "ac_cv_file_$with_ZLIB_lib/$ZLIBlib" | $as_tr_sh`
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $with_ZLIB_lib/$ZLIBlib" >&5
+$as_echo_n "checking for $with_ZLIB_lib/$ZLIBlib... " >&6; }
+if eval \${$as_ac_File+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  test "$cross_compiling" = yes &&
+  as_fn_error $? "cannot check for file existence when cross compiling" "$LINENO" 5
+if test -r "$with_ZLIB_lib/$ZLIBlib"; then
+  eval "$as_ac_File=yes"
+else
+  eval "$as_ac_File=no"
+fi
+fi
+eval ac_res=\$$as_ac_File
+	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+$as_echo "$ac_res" >&6; }
+if eval test \"x\$"$as_ac_File"\" = x"yes"; then :
+  have_ZLIB="yes"
+else
+  have_ZLIB="no"
+fi
+
+if test "$have_ZLIB" == "no"
+then
+as_fn_error $? "ZLIB requested but library file not found." "$LINENO" 5
+fi
+fi
+
+# check for header
+if test "$have_ZLIB" != "no"
+then
+if test "$with_ZLIB_include" != "no"
+then
+as_ac_File=`$as_echo "ac_cv_file_$with_ZLIB_include/$ZLIBheader" | $as_tr_sh`
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $with_ZLIB_include/$ZLIBheader" >&5
+$as_echo_n "checking for $with_ZLIB_include/$ZLIBheader... " >&6; }
+if eval \${$as_ac_File+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  test "$cross_compiling" = yes &&
+  as_fn_error $? "cannot check for file existence when cross compiling" "$LINENO" 5
+if test -r "$with_ZLIB_include/$ZLIBheader"; then
+  eval "$as_ac_File=yes"
+else
+  eval "$as_ac_File=no"
+fi
+fi
+eval ac_res=\$$as_ac_File
+	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+$as_echo "$ac_res" >&6; }
+if eval test \"x\$"$as_ac_File"\" = x"yes"; then :
+  have_ZLIB='yes'
+else
+  have_ZLIB='no'
+fi
+
+if test "$have_ZLIB" == "no"
+then
+as_fn_error $? "ZLIB requested but header file not found." "$LINENO" 5
+fi
+else
+have_ZLIB="no"
+fi
+fi
+
+if test "$have_ZLIB" != "no"
+then
+ if true; then
+  BUILD_ZLIB_TRUE=
+  BUILD_ZLIB_FALSE='#'
+else
+  BUILD_ZLIB_TRUE='#'
+  BUILD_ZLIB_FALSE=
+fi
+
+ZLIB_CXX="-DHAVE_ZLIB -I"$with_ZLIB_include""
+ZLIB_LD="$with_ZLIB_lib"/$ZLIBlib
+else
+ if false; then
+  BUILD_ZLIB_TRUE=
+  BUILD_ZLIB_FALSE='#'
+else
+  BUILD_ZLIB_TRUE='#'
+  BUILD_ZLIB_FALSE=
+fi
+
+ZLIB_CXX=
+ZLIB_LD=
 fi
 
 
@@ -6754,6 +7141,30 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${BUILD_CGNS_TRUE}" && test -z "${BUILD_CGNS_FALSE}"; then
   as_fn_error $? "conditional \"BUILD_CGNS\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${BUILD_HDF5_TRUE}" && test -z "${BUILD_HDF5_FALSE}"; then
+  as_fn_error $? "conditional \"BUILD_HDF5\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${BUILD_HDF5_TRUE}" && test -z "${BUILD_HDF5_FALSE}"; then
+  as_fn_error $? "conditional \"BUILD_HDF5\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${BUILD_SZIP_TRUE}" && test -z "${BUILD_SZIP_FALSE}"; then
+  as_fn_error $? "conditional \"BUILD_SZIP\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${BUILD_SZIP_TRUE}" && test -z "${BUILD_SZIP_FALSE}"; then
+  as_fn_error $? "conditional \"BUILD_SZIP\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${BUILD_ZLIB_TRUE}" && test -z "${BUILD_ZLIB_FALSE}"; then
+  as_fn_error $? "conditional \"BUILD_ZLIB\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${BUILD_ZLIB_TRUE}" && test -z "${BUILD_ZLIB_FALSE}"; then
+  as_fn_error $? "conditional \"BUILD_ZLIB\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${BUILD_MUTATIONPP_TRUE}" && test -z "${BUILD_MUTATIONPP_FALSE}"; then
@@ -8013,11 +8424,14 @@ Build Configuration Summary:
     Preprocessor flags:   ${CPPFLAGS}
     Compiler flags:       ${CXXFLAGS}
     Linker flags:         ${LDFLAGS}
-    CGNS support:         $have_CGNS
     MPI support:          $have_MPI
     Metis support:        $enablemetis
     Parmetis support:     $enableparmetis
     TecIO support:        $enabletecio
+    CGNS support:         $have_CGNS
+    HDF5 support:         $have_HDF5
+    SZIP support:         $have_SZIP
+    ZLIB support:         $have_ZLIB
     Mutation++ support:   $have_Mutationpp
     Jsoncpp support: 	  $have_Jsoncpp
     LAPACK support:       $have_LAPACK
@@ -8093,11 +8507,14 @@ Build Configuration Summary:
     Preprocessor flags:   ${CPPFLAGS}
     Compiler flags:       ${CXXFLAGS}
     Linker flags:         ${LDFLAGS}
-    CGNS support:         $have_CGNS
     MPI support:          $have_MPI
     Metis support:        $enablemetis
     Parmetis support:     $enableparmetis
     TecIO support:        $enabletecio
+    CGNS support:         $have_CGNS
+    HDF5 support:         $have_HDF5
+    SZIP support:         $have_SZIP
+    ZLIB support:         $have_ZLIB
     Mutation++ support:   $have_Mutationpp
     Jsoncpp support: 	  $have_Jsoncpp
     LAPACK support:       $have_LAPACK

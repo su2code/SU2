@@ -916,7 +916,7 @@ def restart2solution(config,state={}):
         if state: state.FILES.DIRECT = solution
         
     # adjoint solution
-    elif any([config.MATH_PROBLEM == 'ADJOINT', config.MATH_PROBLEM == 'DISCRETE_ADJOINT']):
+    elif any([config.MATH_PROBLEM == 'CONTINUOUS_ADJOINT', config.MATH_PROBLEM == 'DISCRETE_ADJOINT']):
         restart  = config.RESTART_ADJ_FILENAME
         solution = config.SOLUTION_ADJ_FILENAME           
         # add suffix

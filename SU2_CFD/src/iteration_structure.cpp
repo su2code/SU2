@@ -188,9 +188,15 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
 				}
         
 				/*--- Call Dynamic mesh update if AEROELASTIC motion was specified ---*/
-				if ((config_container[ZONE_0]->GetGrid_Movement()) && (config_container[ZONE_0]->GetAeroelastic_Simulation()))
+        if ((config_container[ZONE_0]->GetGrid_Movement()) && (config_container[ZONE_0]->GetAeroelastic_Simulation())) {
 					SetGrid_Movement(geometry_container[iZone], surface_movement[iZone], grid_movement[iZone], FFDBox[iZone],
                            solver_container[iZone], config_container[iZone], iZone, IntIter, ExtIter);
+          /*--- Apply a Wind Gust ---*/
+          if (config_container[ZONE_0]->GetWind_Gust()) {
+            if (IntIter % config_container[iZone]->GetAeroelasticIter() ==0)
+              SetWind_GustField(config_container[iZone], geometry_container[iZone], solver_container[iZone]);
+          }
+        }
       }
       
       if (integration_container[ZONE_0][FLOW_SOL]->GetConvergence()) break;
@@ -1624,7 +1630,8 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
       }
       
       /*--- Use the if statement to move the grid only at selected dual time step iterations. ---*/
-      else if (IntIter % 3 ==0) {
+      else if (IntIter % config_container->GetAeroelasticIter() ==0) {
+
         if (rank == MASTER_NODE)
           cout << endl << " Solving aeroelastic equations and updating surface positions." << endl;
         

@@ -1748,7 +1748,7 @@ CUpwGeneralRoe_Flow::CUpwGeneralRoe_Flow(unsigned short val_nDim, unsigned short
 
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   grid_movement = config->GetGrid_Movement();
-
+  kappa = config->GetRoe_Kappa(); // 1 is unstable
 
   Diff_U = new su2double [nVar];
   Velocity_i = new su2double [nDim];
@@ -1858,6 +1858,18 @@ void CUpwGeneralRoe_Flow::ComputeResidual(su2double *val_residual, su2double **v
 
     ComputeRoeAverage();
 
+    if (RoeSoundSpeed2 <= 0.0) {
+		for (iVar = 0; iVar < nVar; iVar++) {
+		  val_residual[iVar] = 0.0;
+		  for (jVar = 0; jVar < nVar; jVar++) {
+			val_Jacobian_i[iVar][iVar] = 0.0;
+			val_Jacobian_j[iVar][iVar] = 0.0;
+		  }
+		}
+      return;
+    }
+
+    RoeSoundSpeed = sqrt(RoeSoundSpeed2);
 
 	/*--- Compute ProjFlux_i ---*/
 	GetInviscidProjFlux(&Density_i, Velocity_i, &Pressure_i, &Enthalpy_i, Normal, ProjFlux_i);
@@ -1894,6 +1906,15 @@ void CUpwGeneralRoe_Flow::ComputeResidual(su2double *val_residual, su2double **v
 	Lambda[nVar-2] = ProjVelocity + RoeSoundSpeed;
 	Lambda[nVar-1] = ProjVelocity - RoeSoundSpeed;
 
+	/*--- Compute absolute value with Mavriplis' entropy correction ---*/
+
+	MaxLambda = fabs(ProjVelocity) + RoeSoundSpeed;
+	Delta = config->GetEntropyFix_Coeff();
+
+	for (iVar = 0; iVar < nVar; iVar++) {
+		Lambda[iVar] = max(fabs(Lambda[iVar]), Delta*MaxLambda);
+	 }
+
 //	/*--- Harten and Hyman (1983) entropy correction ---*/
 //	for (iDim = 0; iDim < nDim; iDim++)
 //		Epsilon[iDim] = 4.0*max(0.0, max(Lambda[iDim]-ProjVelocity_i, ProjVelocity_j-Lambda[iDim]));
@@ -1907,8 +1928,8 @@ void CUpwGeneralRoe_Flow::ComputeResidual(su2double *val_residual, su2double **v
 //		else
 //			Lambda[iVar] = fabs(Lambda[iVar]);
 
-	for (iVar = 0; iVar < nVar; iVar++)
-		Lambda[iVar] = fabs(Lambda[iVar]);
+//	for (iVar = 0; iVar < nVar; iVar++)
+//		Lambda[iVar] = fabs(Lambda[iVar]);
 
 	if (!implicit) {
 
@@ -1958,11 +1979,12 @@ void CUpwGeneralRoe_Flow::ComputeResidual(su2double *val_residual, su2double **v
 
 		GetPMatrix_inv(invP_Tensor, &RoeDensity, RoeVelocity, &RoeSoundSpeed, &RoeChi , &RoeKappa, UnitNormal);
 
-		/*--- Jacobians of the inviscid flux, scaled by
-        0.5 because val_resconv ~ 0.5*(fc_i+fc_j)*Normal ---*/
-		GetInviscidProjJac(Velocity_i, &Enthalpy_i, &Chi_i, &Kappa_i, Normal, 0.5, val_Jacobian_i);
+		 /*--- Jacobians of the inviscid flux, scaled by
+		  kappa because val_resconv ~ kappa*(fc_i+fc_j)*Normal ---*/
 
-		GetInviscidProjJac(Velocity_j, &Enthalpy_j, &Chi_j, &Kappa_j, Normal, 0.5, val_Jacobian_j);
+		GetInviscidProjJac(Velocity_i, &Enthalpy_i, &Chi_i, &Kappa_i, Normal, kappa, val_Jacobian_i);
+
+		GetInviscidProjJac(Velocity_j, &Enthalpy_j, &Chi_j, &Kappa_j, Normal, kappa, val_Jacobian_j);
 
 
 		/*--- Diference variables iPoint and jPoint ---*/
@@ -1971,15 +1993,18 @@ void CUpwGeneralRoe_Flow::ComputeResidual(su2double *val_residual, su2double **v
 
 		/*--- Roe's Flux approximation ---*/
 		for (iVar = 0; iVar < nVar; iVar++) {
-			val_residual[iVar] = 0.5*(ProjFlux_i[iVar]+ProjFlux_j[iVar]);
+			val_residual[iVar] = kappa*(ProjFlux_i[iVar]+ProjFlux_j[iVar]);
 			for (jVar = 0; jVar < nVar; jVar++) {
 				Proj_ModJac_Tensor_ij = 0.0;
+
 				/*--- Compute |Proj_ModJac_Tensor| = P x |Lambda| x inverse P ---*/
+
 				for (kVar = 0; kVar < nVar; kVar++)
 					Proj_ModJac_Tensor_ij += P_Tensor[iVar][kVar]*Lambda[kVar]*invP_Tensor[kVar][jVar];
-				val_residual[iVar] -= 0.5*Proj_ModJac_Tensor_ij*Diff_U[jVar]*Area;
-				val_Jacobian_i[iVar][jVar] += 0.5*Proj_ModJac_Tensor_ij*Area;
-				val_Jacobian_j[iVar][jVar] -= 0.5*Proj_ModJac_Tensor_ij*Area;
+
+				val_residual[iVar] -= (1.0-kappa)*Proj_ModJac_Tensor_ij*Diff_U[jVar]*Area;
+				val_Jacobian_i[iVar][jVar] += (1.0-kappa)*Proj_ModJac_Tensor_ij*Area;
+				val_Jacobian_j[iVar][jVar] -= (1.0-kappa)*Proj_ModJac_Tensor_ij*Area;
 			}
 		}
 
@@ -2038,7 +2063,8 @@ void CUpwGeneralRoe_Flow::ComputeRoeAverage() {
 
 	}
 
-	RoeSoundSpeed = sqrt(RoeChi + RoeKappa*(RoeEnthalpy-0.5*sq_vel));
+	RoeSoundSpeed2 = RoeChi + RoeKappa*(RoeEnthalpy-0.5*sq_vel);
+
 }
 
 CUpwMSW_Flow::CUpwMSW_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {

@@ -715,10 +715,15 @@ private:
   vector<vector<vector<su2double> > > Aeroelastic_np1, /*!< \brief Aeroelastic solution at time level n+1. */
   Aeroelastic_n, /*!< \brief Aeroelastic solution at time level n. */
 	Aeroelastic_n1; /*!< \brief Aeroelastic solution at time level n-1. */
-  su2double FreqPlungeAeroelastic, /*!< \brief Plunging natural frequency for Aeroelastic. */
-	FreqPitchAeroelastic; /*!< \brief Pitch natural frequency for Aeroelastic. */
+  su2double FlutterSpeedIndex, /*!< \brief The flutter speed index. */
+  PlungeNaturalFrequency, /*!< \brief Plunging natural frequency for Aeroelastic. */
+  PitchNaturalFrequency, /*!< \brief Pitch natural frequency for Aeroelastic. */
+  AirfoilMassRatio, /*!< \brief The airfoil mass ratio for Aeroelastic. */
+  CG_Location, /*!< \brief Center of gravity location for Aeroelastic. */
+  RadiusGyrationSquared; /*!< \brief The radius of gyration squared for Aeroelastic. */
   su2double *Aeroelastic_plunge, /*!< \brief Value of plunging coordinate at the end of an external iteration. */
 	*Aeroelastic_pitch; /*!< \brief Value of pitching coordinate at the end of an external iteration. */
+  unsigned short AeroelasticIter; /*!< \brief Solve the aeroelastic equations every given number of internal iterations. */
   unsigned short Gust_Type,	/*!< \brief Type of Gust. */
   Gust_Dir;   /*!< \brief Direction of the gust */
   su2double Gust_WaveLength,     /*!< \brief The gust wavelength. */
@@ -5220,6 +5225,11 @@ public:
 	 */
 	void SetAeroelastic_n1(void);
 
+  /*!
+   * \brief Aeroelastic Flutter Speed Index.
+   */
+  su2double GetAeroelastic_Flutter_Speed_Index(void);
+  
 	/*!
 	 * \brief Uncoupled Aeroelastic Frequency Plunge.
 	 */
@@ -5230,6 +5240,26 @@ public:
 	 */
 	su2double GetAeroelastic_Frequency_Pitch(void);
 
+  /*!
+   * \brief Aeroelastic Airfoil Mass Ratio.
+   */
+  su2double GetAeroelastic_Airfoil_Mass_Ratio(void);
+
+  /*!
+   * \brief Aeroelastic center of gravity location.
+   */
+  su2double GetAeroelastic_CG_Location(void);
+
+  /*!
+   * \brief Aeroelastic radius of gyration squared.
+   */
+  su2double GetAeroelastic_Radius_Gyration_Squared(void);
+
+  /*!
+   * \brief Aeroelastic solve every x inner iteration.
+   */
+  unsigned short GetAeroelasticIter(void);
+  
 	/*!
 	 * \brief Value of plunging coordinate.
      * \param[in] val_marker - the marker we are monitoring.
