@@ -778,18 +778,6 @@ static const map<string, RIEMANN_TYPE> Riemann_Map = CCreateMap<string, RIEMANN_
 ("STATIC_SUPERSONIC_INFLOW_PD", STATIC_SUPERSONIC_INFLOW_PD);
 
 
-///*!
-// * \brief Riemann inlet boundary treatments
-// */
-//enum NRBC_TYPE {
-//  TOTAL_CONDITIONS_PT = 1,		/*!< \brief User specifies total pressure, total temperature, and flow direction. */
-//  DENSITY_VELOCITY = 2,         /*!< \brief User specifies density and velocity, and flow direction. */
-//  STATIC_PRESSURE = 3,           /*!< \brief User specifies static pressure. */
-//  TOTAL_SUPERSONIC_INFLOW = 4,	/*!< \brief User specifies total pressure, total temperature and Velocity components. */
-//  STATIC_SUPERSONIC_INFLOW_PT = 5, /*!< \brief User specifies static pressure, static temperature, and Mach components. */
-//  STATIC_SUPERSONIC_INFLOW_PD = 6 /*!< \brief User specifies static pressure, static temperature, and Mach components. */
-//};
-
 static const map<string, RIEMANN_TYPE> NRBC_Map = CCreateMap<string, RIEMANN_TYPE>
 ("TOTAL_CONDITIONS_PT", TOTAL_CONDITIONS_PT)
 ("DENSITY_VELOCITY", DENSITY_VELOCITY)
@@ -797,6 +785,21 @@ static const map<string, RIEMANN_TYPE> NRBC_Map = CCreateMap<string, RIEMANN_TYP
 ("TOTAL_SUPERSONIC_INFLOW", TOTAL_SUPERSONIC_INFLOW)
 ("STATIC_SUPERSONIC_INFLOW_PT", STATIC_SUPERSONIC_INFLOW_PT)
 ("STATIC_SUPERSONIC_INFLOW_PD", STATIC_SUPERSONIC_INFLOW_PD);
+
+
+/*!
+ * \brief types of mixing process for averaging quantities at the boundaries.
+ */
+enum MIXINGPROCESS_TYPE {
+  ALGEBRAIC_AVERAGE = 1,		/*!< \brief an algebraic average is computed at the boundary of interest. */
+  AREA_AVERAGE = 2,           /*!< \brief an area average is computed at the boundary of interest. */
+  MIXEDOUT_AVERAGE = 3		 /*!< \brief an mixed-out average is computed at the boundary of interest. */
+};
+
+static const map<string, MIXINGPROCESS_TYPE> MixingProcess_Map = CCreateMap<string, MIXINGPROCESS_TYPE>
+("ALGEBRAIC_AVERAGE", ALGEBRAIC_AVERAGE)
+("AREA_AVERAGE", AREA_AVERAGE)
+("MIXEDOUT_AVERAGE",  MIXEDOUT_AVERAGE);
 
 /*!
  * \brief types inlet boundary treatments
@@ -808,6 +811,7 @@ enum INLET_TYPE {
 static const map<string, INLET_TYPE> Inlet_Map = CCreateMap<string, INLET_TYPE>
 ("TOTAL_CONDITIONS", TOTAL_CONDITIONS)
 ("MASS_FLOW", MASS_FLOW);
+
 
 /*!
  * \brief types of geometric entities based on VTK nomenclature
