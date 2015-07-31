@@ -2,7 +2,7 @@
  * \file config_structure.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -225,7 +225,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   
   /*!\brief PHYSICAL_PROBLEM \n DESCRIPTION: Physical governing equations \n Options: see \link Solver_Map \endlink \n Default: NO_SOLVER \ingroup Config*/
   addEnumOption("PHYSICAL_PROBLEM", Kind_Solver, Solver_Map, NO_SOLVER);
-  /*!\brief MATH_PROBLEM  \n DESCRIPTION: Mathematical problem \n  Options: DIRECT, ADJOINT \ingroup Config*/
+  /*!\brief MATH_PROBLEM  \n DESCRIPTION: Mathematical problem \n  Options: DIRECT, CONTINUOUS_ADJOINT \ingroup Config*/
   addMathProblemOption("MATH_PROBLEM" , Adjoint, false , Linearized, false, Restart_Flow, false);
   /*!\brief KIND_TURB_MODEL \n DESCRIPTION: Specify turbulence model \n Options: see \link Turb_Model_Map \endlink \n Default: NO_TURB_MODEL \ingroup Config*/
   addEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, NO_TURB_MODEL);
@@ -1004,10 +1004,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addUShortListOption("MOVE_MOTION_ORIGIN", nMoveMotion_Origin, MoveMotion_Origin);
   /* DESCRIPTION:  */
   addStringOption("MOTION_FILENAME", Motion_Filename, string("mesh_motion.dat"));
-  /* DESCRIPTION: Uncoupled Aeroelastic Frequency Plunge. */
-  addDoubleOption("FREQ_PLUNGE_AEROELASTIC", FreqPlungeAeroelastic, 100);
-  /* DESCRIPTION: Uncoupled Aeroelastic Frequency Pitch. */
-  addDoubleOption("FREQ_PITCH_AEROELASTIC", FreqPitchAeroelastic, 100);
 
   /*!\par CONFIG_CATEGORY: Grid adaptation \ingroup Config*/
   /*--- Options related to grid adaptation ---*/
@@ -1025,6 +1021,23 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Adapt the boundary elements */
   addBoolOption("ADAPT_BOUNDARY", AdaptBoundary, true);
 
+  /*!\par CONFIG_CATEGORY: Aeroelastic Simulation (Typical Section Model) \ingroup Config*/
+  /*--- Options related to aeroelastic simulations using the Typical Section Model) ---*/
+  /* DESCRIPTION: The flutter speed index (modifies the freestream condition) */
+  addDoubleOption("FLUTTER_SPEED_INDEX", FlutterSpeedIndex, 0.6);
+  /* DESCRIPTION: Natural frequency of the spring in the plunging direction (rad/s). */
+  addDoubleOption("PLUNGE_NATURAL_FREQUENCY", PlungeNaturalFrequency, 100);
+  /* DESCRIPTION: Natural frequency of the spring in the pitching direction (rad/s). */
+  addDoubleOption("PITCH_NATURAL_FREQUENCY", PitchNaturalFrequency, 100);
+  /* DESCRIPTION: The airfoil mass ratio. */
+  addDoubleOption("AIRFOIL_MASS_RATIO", AirfoilMassRatio, 60);
+  /* DESCRIPTION: Distance in semichords by which the center of gravity lies behind the elastic axis. */
+  addDoubleOption("CG_LOCATION", CG_Location, 1.8);
+  /* DESCRIPTION: The radius of gyration squared (expressed in semichords) of the typical section about the elastic axis. */
+  addDoubleOption("RADIUS_GYRATION_SQUARED", RadiusGyrationSquared, 3.48);
+  /* DESCRIPTION: Solve the aeroelastic equations every given number of internal iterations. */
+  addUnsignedShortOption("AEROELASTIC_ITER", AeroelasticIter, 3);
+  
   /*!\par CONFIG_CATEGORY: Wind Gust \ingroup Config*/
   /*--- Options related to wind gust simulations ---*/
 
@@ -1706,7 +1719,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if ((Kind_SU2 == SU2_CFD || Kind_SU2 == SU2_SOL) &&
       (Unsteady_Simulation == STEADY) &&
       ((Kind_GridMovement[ZONE_0] != MOVING_WALL) &&
-       (Kind_GridMovement[ZONE_0] != ROTATING_FRAME)))
+       (Kind_GridMovement[ZONE_0] != ROTATING_FRAME) &&
+       (Kind_GridMovement[ZONE_0] != STEADY_TRANSLATION)))
     Grid_Movement = false;
   
   /*--- If it is not specified, set the mesh motion mach number
@@ -1726,8 +1740,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
    types provided (should be equal, except that rigid motion and rotating frame
    do not depend on surface specification). ---*/
   
-  if (Grid_Movement && (Kind_GridMovement[ZONE_0] != RIGID_MOTION) &&
+  if (Grid_Movement &&
+      (Kind_GridMovement[ZONE_0] != RIGID_MOTION) &&
       (Kind_GridMovement[ZONE_0] != ROTATING_FRAME) &&
+      (Kind_GridMovement[ZONE_0] != STEADY_TRANSLATION) &&
+      (Kind_GridMovement[ZONE_0] != GUST) &&
       (nGridMovement != nMarker_Moving)) {
     cout << "Number of GRID_MOVEMENT_KIND must match number of MARKER_MOVING!!" << endl;
     exit(EXIT_FAILURE);
@@ -3521,7 +3538,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   cout << endl << "-------------------------------------------------------------------------" << endl;
   cout << "|    ___ _   _ ___                                                      |" << endl;
-  cout << "|   / __| | | |_  )   Release 3.2.9   \"eagle\"                           |" << endl;
+  cout << "|   / __| | | |_  )   Release 4.0.0  \"Cardinal\"                         |" << endl;
   cout << "|   \\__ \\ |_| |/ /                                                      |" << endl;
   switch (val_software) {
     case SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;
@@ -3535,8 +3552,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   cout << "|                                                                       |" << endl;
   cout << "|   Local date and time: " << dt << "                      |" << endl;
   cout <<"-------------------------------------------------------------------------" << endl;
-  cout << "| SU2 Lead Dev.: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).|" << endl;
-  cout << "|                Dr. Thomas D. Economon (economon@stanford.edu).        |" << endl;
+  cout << "| SU2 Lead Dev.: Dr. Francisco Palacios, Francisco.D.Palacios@boeing.com|" << endl;
+  cout << "|                Dr. Thomas D. Economon, economon@stanford.edu          |" << endl;
   cout <<"-------------------------------------------------------------------------" << endl;
   cout << "| SU2 Developers:                                                       |" << endl;
   cout << "| - Prof. Juan J. Alonso's group at Stanford University.                |" << endl;

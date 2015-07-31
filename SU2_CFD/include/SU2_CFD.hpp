@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines of the code SU2_CFD.
  *        The subroutines and functions are in the <i>SU2_CFD.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).

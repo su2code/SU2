@@ -2,8 +2,8 @@
  * \file geometry_structure.hpp
  * \brief Headers of the main subroutines for creating the geometrical structure.
  *        The subroutines and functions are in the <i>geometry_structure.cpp</i> file.
- * \author F. Palacios
- * \version 3.2.9 "eagle"
+ * \author F. Palacios, T. Economon
+ * \version 4.0.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -64,7 +64,7 @@ using namespace std;
  * \brief Parent class for defining the geometry of the problem (complete geometry, 
  *        multigrid agglomerated geometry, only boundary geometry, etc..)
  * \author F. Palacios
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  */
 class CGeometry {
 protected:
@@ -573,6 +573,12 @@ public:
 	 */
 	virtual void SetRotationalVelocity(CConfig *config, unsigned short val_iZone);
 
+    /*!
+     * \brief A virtual member.
+     * \param[in] config - Definition of the particular problem.
+     */
+    virtual void SetTranslationalVelocity(CConfig *config);
+    
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.
@@ -861,7 +867,7 @@ public:
  * \brief Class for reading a defining the primal grid which is read from the 
  *        grid file in .su2 format.
  * \author F. Palacios
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  */
 class CPhysicalGeometry : public CGeometry {
 
@@ -1138,6 +1144,12 @@ public:
    * \param[in] val_iZone - Index of the current zone.
 	 */
 	void SetRotationalVelocity(CConfig *config, unsigned short val_iZone);
+    
+    /*!
+     * \brief Set the translational velocity at each node.
+     * \param[in] config - Definition of the particular problem.
+     */
+    void SetTranslationalVelocity(CConfig *config);
 
 	/*! 
 	 * \brief Set the grid velocity via finite differencing at each node.
@@ -1383,7 +1395,7 @@ public:
  * \brief Class for defining the multigrid geometry, the main delicated part is the 
  *        agglomeration stage, which is done in the declaration.
  * \author F. Palacios
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  */
 class CMultiGridGeometry : public CGeometry {
 
@@ -1495,6 +1507,12 @@ public:
    * \param[in] val_iZone - Index of the current zone.
 	 */
 	void SetRotationalVelocity(CConfig *config, unsigned short val_iZone);
+    
+    /*!
+     * \brief Set the translational velocity at each grid point on a coarse mesh.
+     * \param[in] config - Definition of the particular problem.
+     */
+    void SetTranslationalVelocity(CConfig *config);
 
 	/*!
 	 * \brief Set the grid velocity at each node in the coarse mesh level.
@@ -1553,7 +1571,7 @@ public:
  * \class CPeriodicGeometry
  * \brief Class for defining a periodic boundary condition.
  * \author T. Economon, F. Palacios
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  */
 class CPeriodicGeometry : public CGeometry {
 	CPrimalGrid*** newBoundPer;            /*!< \brief Boundary vector for new periodic elements (primal grid information). */
@@ -1599,7 +1617,7 @@ public:
  * \struct CMultiGridQueue
  * \brief Class for a multigrid queue system
  * \author F. Palacios
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  * \date Aug 12, 2012
  */
 class CMultiGridQueue {

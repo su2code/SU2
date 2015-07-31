@@ -14,8 +14,12 @@
 
 @SET_MAKE@
 
-# SU2 global Makefile.am
-# SU2 v3.2.7 "eagle"
+################################################################################
+#
+# \file Makefile.am
+# \brief Global makefile for the SU2 project
+# \author M. Colonno, T. Economon, F. Palacios
+# \version 4.0.0 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -41,16 +45,7 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 #
-# Created: 		10/26/12
-# Last updated: 	03/24/14
-#
-# Created by: 		M. Colonno
-# Updated by: 		T. Economon
-#
-# Major Changes/Contributions:
-# METIS & TECIO integration added by Ben Kirk, 3/24/2014
-#
-######################################################################################
+################################################################################
 VPATH = @srcdir@
 am__make_dryrun = \
   { \
@@ -88,6 +83,8 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
+
+# Build each of the SU2 C++ modules
 @BUILD_CFD_TRUE@am__append_1 = SU2_CFD/obj
 @BUILD_DOT_TRUE@am__append_2 = SU2_DOT/obj
 @BUILD_MSH_TRUE@am__append_3 = SU2_MSH/obj
@@ -95,7 +92,7 @@ target_triplet = @target@
 @BUILD_SOL_TRUE@am__append_5 = SU2_SOL/obj
 @BUILD_GEO_TRUE@am__append_6 = SU2_GEO/obj
 subdir = .
-DIST_COMMON = README $(am__configure_deps) $(srcdir)/Makefile.am \
+DIST_COMMON = $(am__configure_deps) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(top_srcdir)/configure COPYING INSTALL \
 	compile config.guess config.sub depcomp install-sh missing
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -214,6 +211,8 @@ ECHO_T = @ECHO_T@
 EGREP = @EGREP@
 EXEEXT = @EXEEXT@
 GREP = @GREP@
+HDF5_CXX = @HDF5_CXX@
+HDF5_LD = @HDF5_LD@
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
@@ -250,9 +249,13 @@ SHELL = @SHELL@
 STRIP = @STRIP@
 SU2_METIS_CPPFLAGS = @SU2_METIS_CPPFLAGS@
 SU2_PARMETIS_CPPFLAGS = @SU2_PARMETIS_CPPFLAGS@
+SZIP_CXX = @SZIP_CXX@
+SZIP_LD = @SZIP_LD@
 TECIO_CPPFLAGS = @TECIO_CPPFLAGS@
 TECIO_INCLUDE = @TECIO_INCLUDE@
 VERSION = @VERSION@
+ZLIB_CXX = @ZLIB_CXX@
+ZLIB_LD = @ZLIB_LD@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
 abs_top_builddir = @abs_top_builddir@
@@ -310,11 +313,13 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-
-# AUTOMAKE_OPTIONS = subdir-objects
 ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS} -I m4
 
-# build third-party optional dependencies first
+# Build third-party optional dependencies first
+
+# Build the SU2 C++ common library
+
+# Install the SU2 Python scripts to the proper location
 SUBDIRS = externals Common/lib SU2_PY $(am__append_1) $(am__append_2) \
 	$(am__append_3) $(am__append_4) $(am__append_5) \
 	$(am__append_6)

@@ -2,7 +2,7 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  *
  * Many of the classes in this file are templated, and therefore must
  * be declared and defined here; to keep all elements together, there
@@ -345,14 +345,14 @@ const int VISC_BOUND_TERM = 5;       /*!< \brief Position of the viscous boundar
  * \brief types of mathematical problem to solve
  */
 enum ENUM_MATH_PROBLEM {
-  DIRECT_PROBLEM = 0,		/*!< \brief Direct problem */
-  ADJOINT_PROBLEM = 1,		/*!< \brief Adjoint problem */
-  LINEARIZED_PROBLEM = 2 /*< \brief Linearized numerical method */
+  DIRECT = 0,		/*!< \brief Direct problem */
+  CONTINUOUS_ADJOINT = 1,		/*!< \brief Continuous adjoint problem */
+  LINEARIZED = 2 /*< \brief Linearized numerical method */
 };
 static const map<string, ENUM_MATH_PROBLEM> Math_Problem_Map = CCreateMap<string, ENUM_MATH_PROBLEM>
-("DIRECT", DIRECT_PROBLEM)
-("ADJOINT", ADJOINT_PROBLEM)
-("LINEARIZED", LINEARIZED_PROBLEM);
+("DIRECT", DIRECT)
+("CONTINUOUS_ADJOINT", CONTINUOUS_ADJOINT)
+("LINEARIZED", LINEARIZED);
 
 /*!
  * \brief types of spatial discretizations
@@ -475,9 +475,12 @@ enum ENUM_GRIDMOVEMENT {
   MOVING_WALL = 7,    /*!< \brief Simulation with moving walls (translation/rotation). */
   ROTATING_FRAME = 8,    /*!< \brief Simulation in a rotating frame. */
   ELASTICITY = 9,    /*!< \brief Linear Elasticity. */
-  AEROELASTIC_RIGID_MOTION = 10 /*!< \brief Simulation with rotation and aeroelastic motion. */
+  AEROELASTIC_RIGID_MOTION = 10, /*!< \brief Simulation with rotation and aeroelastic motion. */
+  STEADY_TRANSLATION = 11,    /*!< \brief Simulation in a steadily translating frame. */
+  GUST = 12 /*!< \brief Simulation on a static mesh with a gust. */
 
 };
+
 static const map<string, ENUM_GRIDMOVEMENT> GridMovement_Map = CCreateMap<string, ENUM_GRIDMOVEMENT>
 ("NONE", NO_MOVEMENT)
 ("DEFORMING", DEFORMING)
@@ -489,7 +492,9 @@ static const map<string, ENUM_GRIDMOVEMENT> GridMovement_Map = CCreateMap<string
 ("ROTATING_FRAME", ROTATING_FRAME)
 ("ELASTICITY", ELASTICITY)
 ("MOVING_WALL", MOVING_WALL)
-("AEROELASTIC_RIGID_MOTION", AEROELASTIC_RIGID_MOTION);
+("AEROELASTIC_RIGID_MOTION", AEROELASTIC_RIGID_MOTION)
+("STEADY_TRANSLATION", STEADY_TRANSLATION)
+("GUST", GUST);
 
 /*!
  * \brief type of wind gusts
@@ -1780,6 +1785,9 @@ public:
     if (out.compare("") != 0) {
       return out;
     }
+    if (option_value[0] == "ADJOINT") {
+      return badValue(option_value, "math problem (try CONTINUOUS_ADJOINT)", this->name);
+    }
     if (Math_Problem_Map.find(option_value[0]) == Math_Problem_Map.end()) {
       return badValue(option_value, "math problem", this->name);
     }
@@ -1789,7 +1797,7 @@ public:
       this->restart = false;
       return "";
     }
-    if (option_value[0] == "ADJOINT") {
+    if (option_value[0] == "CONTINUOUS_ADJOINT") {
       this->adjoint= true;
       this->restart= true;
       this->linearized = false;
