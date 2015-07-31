@@ -59,7 +59,8 @@ using namespace std;
 class CConfig {
 private:
 	unsigned short Kind_SU2; /*!< \brief Kind of SU2 software component.*/
-  unsigned short Ref_NonDim; /*!< \brief Kind of of non dimensionalization.*/
+  unsigned short Ref_NonDim; /*!< \brief Kind of non dimensionalization.*/
+  unsigned short Kind_MixingProcess; /*!< \brief Kind of mixing process.*/
   unsigned short iZone, nZone; /*!< \brief Number of zones in the mesh. */
 	double OrderMagResidual; /*!< \brief Order of magnitude reduction. */
 	double MinLogResidual; /*!< \brief Minimum value of the log residual. */
@@ -3586,6 +3587,13 @@ public:
 	 * \return Kind of inlet boundary condition.
 	 */
 	unsigned short GetKind_Inlet(void);
+
+
+	/*!
+	 * \brief Get the kind of mixing process for averaging quantities at the boundaries.
+	 * \return Kind of mixing process.
+	 */
+	unsigned short GetKind_MixingProcess(void);
 
   /*!
 	 * \brief Get the number of sections.
