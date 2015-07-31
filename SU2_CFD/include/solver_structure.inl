@@ -567,6 +567,8 @@ inline void CSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
 
 inline void CSolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
+inline void CSolver::ImplicitNewmark_Update(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
+
 inline void CSolver::Compute_Residual(CGeometry *geometry, CSolver **solver_container, CConfig *config, 
 										unsigned short iMesh) { }
 
@@ -588,6 +590,8 @@ inline void CSolver::AddRes_Max(unsigned short val_var, double val_residual, uns
 }
 
 inline double CSolver::GetRes_Max(unsigned short val_var) { return Residual_Max[val_var]; }
+
+inline double CSolver::GetRes_FEM(unsigned short val_var) { }
 
 inline unsigned long CSolver::GetPoint_Max(unsigned short val_var) { return Point_Max[val_var]; }
 
@@ -925,6 +929,8 @@ inline void CFEASolver::SetWAitken_Dyn_tn1(double waitk_tn1) { WAitken_Dyn_tn1 =
 inline void CFEASolver::SetFSI_ConvValue(unsigned short val_index, double val_criteria) { FSI_Conv[val_index] = val_criteria; }
 
 inline double CFEASolver::GetFSI_ConvValue(unsigned short val_index){ return FSI_Conv[val_index]; }
+
+inline double CFEM_ElasticitySolver::GetRes_FEM(unsigned short val_var) { return Conv_Check[val_var]; }
 
 inline double CWaveSolver::GetTotal_CWave() { return Total_CWave; }
 

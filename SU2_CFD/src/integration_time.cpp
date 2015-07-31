@@ -1057,7 +1057,6 @@ void CStructuralIntegration::Structural_Iteration_FEM(CGeometry ***geometry, CSo
   monitor = log10(solver_container[iZone][MESH_0][FEA_SOL]->GetRes_RMS(0));
 
   /*--- Convergence strategy ---*/
-  Convergence_Monitoring(geometry[iZone][MESH_0], config[iZone], Iteration, monitor, MESH_0);
-
+  Convergence_Monitoring_FEM(geometry[iZone][MESH_0], config[iZone], solver_container[iZone][MESH_0][SolContainer_Position], Iteration);
 
 }

@@ -902,34 +902,78 @@ void CFEM_ElasticitySolver::Postprocessing(CGeometry *geometry, CSolver **solver
     unsigned short iVar;
 	unsigned long iPoint, total_index;
 
-	/*--- MPI solution ---*/
+	bool first_iter = (config->GetIntIter() == 0);
+	bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);		// Nonlinear analysis.
 
-	Set_MPI_Solution(geometry, config);
+	double solNorm = 0.0, tempCheck[3];
 
-	/*---  Compute the residual Ax-f ---*/
+	if (nonlinear_analysis){
 
-	Jacobian.ComputeResidual(LinSysSol, LinSysRes, LinSysAux);
+		/*--- If the problem is nonlinear, we have 3 convergence criteria ---*/
 
-	  /*--- Set maximum residual to zero ---*/
+		/*--- UTOL = norm(Delta_U(k)) / norm(U(k)) --------------------------*/
+		/*--- RTOL = norm(Residual(k)) / norm(Residual(0)) ------------------*/
+		/*--- ETOL = Delta_U(k) * Residual(k) / Delta_U(0) * Residual(0) ----*/
 
-		for (iVar = 0; iVar < nVar; iVar++) {
-			SetRes_RMS(iVar, 0.0);
-			SetRes_Max(iVar, 0.0, 0);
+		if (first_iter){
+			Conv_Ref[0] = 1.0;											// Position for the norm of the solution
+			Conv_Ref[1] = max(LinSysRes.norm(), EPS);					// Position for the norm of the residual
+			Conv_Ref[2] = max(dotProd(LinSysSol, LinSysRes), EPS);		// Position for the energy tolerance
+
+			/*--- Make sure the computation runs at least 2 iterations ---*/
+			Conv_Check[0] = 1.0;
+			Conv_Check[1] = 1.0;
+			Conv_Check[2] = 1.0;
 		}
-
-	  /*--- Compute the residual ---*/
-
-		for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-			for (iVar = 0; iVar < nVar; iVar++) {
-				total_index = iPoint*nVar+iVar;
-				AddRes_RMS(iVar, LinSysAux[total_index]*LinSysAux[total_index]);
-				AddRes_Max(iVar, fabs(LinSysAux[total_index]), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
+		else {
+			/*--- Compute the norm of the solution vector Uk ---*/
+			for (iPoint = 0; iPoint < nPoint; iPoint++){
+				for (iVar = 0; iVar < nVar; iVar++){
+					solNorm += node[iPoint]->GetSolution(iVar) * node[iPoint]->GetSolution(iVar);
+				}
 			}
+			Conv_Ref[0] = max(sqrt(solNorm), EPS);							// Norm of the solution vector
+
+			Conv_Check[0] = LinSysSol.norm() / Conv_Ref[0];					// Norm of the delta-solution vector
+			Conv_Check[1] = LinSysRes.norm() / Conv_Ref[1];					// Norm of the residual
+			Conv_Check[2] = dotProd(LinSysSol, LinSysRes) / Conv_Ref[2];	// Position for the energy tolerance
 		}
 
-	  /*--- Compute the root mean square residual ---*/
+	}
+	else{
 
-	  SetResidual_RMS(geometry, config);
+			/*--- If the problem is linear, the only check we do is the RMS of the displacements ---*/
+
+			/*---  Compute the residual Ax-f ---*/
+
+			Jacobian.ComputeResidual(LinSysSol, LinSysRes, LinSysAux);
+
+			  /*--- Set maximum residual to zero ---*/
+
+				for (iVar = 0; iVar < nVar; iVar++) {
+					SetRes_RMS(iVar, 0.0);
+					SetRes_Max(iVar, 0.0, 0);
+				}
+
+			  /*--- Compute the residual ---*/
+
+				for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+					for (iVar = 0; iVar < nVar; iVar++) {
+						total_index = iPoint*nVar+iVar;
+						AddRes_RMS(iVar, LinSysAux[total_index]*LinSysAux[total_index]);
+						AddRes_Max(iVar, fabs(LinSysAux[total_index]), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
+					}
+				}
+
+
+			  /*--- MPI solution ---*/
+
+			  Set_MPI_Solution(geometry, config);
+
+			  /*--- Compute the root mean square residual ---*/
+
+			  SetResidual_RMS(geometry, config);
+	}
 
 }
 
@@ -1182,15 +1226,82 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolv
 
 }
 
-void CFEM_ElasticitySolver::Solve_System(CGeometry *geometry, CSolver **solver_container, CConfig *config){
+void CFEM_ElasticitySolver::ImplicitNewmark_Update(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 
     unsigned short iVar;
-	unsigned long iPoint, total_index, IterLinSol;
+	unsigned long iPoint, total_index;
 
 	bool linear = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);		// Geometrically linear problems
 	bool nonlinear = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);	// Geometrically non-linear problems
+	bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);							// Dynamic simulations.
 
 	unsigned short iNode, jNode, jVar;
+
+	/*--- Update solution ---*/
+
+	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+
+		for (iVar = 0; iVar < nVar; iVar++) {
+
+			/*--- Displacements component of the solution ---*/
+
+			/*--- If it's a non-linear problem, the result is the DELTA_U, not U itself ---*/
+
+			if (linear) node[iPoint]->SetSolution(iVar, LinSysSol[iPoint*nVar+iVar]);
+
+			if (nonlinear)	node[iPoint]->Add_DeltaSolution(iVar, LinSysSol[iPoint*nVar+iVar]);
+
+		}
+
+	}
+
+	if (dynamic){
+
+		for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+
+			for (iVar = 0; iVar < nVar; iVar++) {
+
+				/*--- Acceleration component of the solution ---*/
+				/*--- U''(t+dt) = a0*(U(t+dt)-U(t))+a2*(U'(t))+a3*(U''(t)) ---*/
+
+
+
+				Solution[iVar]=a_dt[0]*(node[iPoint]->GetSolution(iVar) -
+										node[iPoint]->GetSolution_time_n(iVar)) -
+							   a_dt[2]* node[iPoint]->GetSolution_Vel_time_n(iVar) -
+							   a_dt[3]* node[iPoint]->GetSolution_Accel_time_n(iVar);
+
+			}
+
+			/*--- Set the acceleration in the node structure ---*/
+
+			node[iPoint]->SetSolution_Accel(Solution);
+
+			for (iVar = 0; iVar < nVar; iVar++) {
+
+				/*--- Velocity component of the solution ---*/
+				/*--- U'(t+dt) = U'(t)+ a6*(U''(t)) + a7*(U''(t+dt)) ---*/
+
+				Solution[iVar]=node[iPoint]->GetSolution_Vel_time_n(iVar)+
+							   a_dt[6]* node[iPoint]->GetSolution_Accel_time_n(iVar) +
+							   a_dt[7]* node[iPoint]->GetSolution_Accel(iVar);
+
+			}
+
+			/*--- Set the velocity in the node structure ---*/
+
+			node[iPoint]->SetSolution_Vel(Solution);
+
+		}
+
+	}
+
+
+}
+
+void CFEM_ElasticitySolver::Solve_System(CGeometry *geometry, CSolver **solver_container, CConfig *config){
+
+	unsigned long IterLinSol;
 
 //	double checkJacobian;
 //
@@ -1226,22 +1337,5 @@ void CFEM_ElasticitySolver::Solve_System(CGeometry *geometry, CSolver **solver_c
 	CSysSolve femSystem;
 	IterLinSol = femSystem.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
 
-	/*--- Update solution ---*/
-
-	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-
-		for (iVar = 0; iVar < nVar; iVar++) {
-
-			/*--- Displacements component of the solution ---*/
-
-			/*--- If it's a non-linear problem, the result is the DELTA_U, not U itself ---*/
-
-			if (linear) node[iPoint]->SetSolution(iVar, LinSysSol[iPoint*nVar+iVar]);
-
-			if (nonlinear)	node[iPoint]->Add_DeltaSolution(iVar, LinSysSol[iPoint*nVar+iVar]);
-
-		}
-
-	}
 
 }

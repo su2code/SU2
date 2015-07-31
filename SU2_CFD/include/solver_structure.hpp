@@ -321,6 +321,13 @@ public:
 	 * \return Value of the biggest residual for the variable in the position <i>val_var</i>.
 	 */
 	double GetRes_Max(unsigned short val_var);
+
+	/*!
+	 * \brief Get the residual for FEM structural analysis.
+	 * \param[in] val_var - Index of the variable.
+	 * \return Value of the residual for the variable in the position <i>val_var</i>.
+	 */
+	virtual double GetRes_FEM(unsigned short val_var);
     
     /*!
 	 * \brief Get the maximal residual, this is useful for the convergence history.
@@ -980,6 +987,14 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	virtual void ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	virtual void ImplicitNewmark_Update(CGeometry *geometry, CSolver **solver_container, CConfig *config);
     
 	/*!
 	 * \brief A virtual member.
@@ -6568,6 +6583,9 @@ private:
 
 	double a_dt[8];					/*!< \brief Integration constants. */
 
+	double Conv_Ref[3];				/*!< \brief Reference values for convergence check: DTOL, RTOL, ETOL */
+	double Conv_Check[3];			/*!< \brief Current values for convergence check: DTOL, RTOL, ETOL */
+
 	CSysMatrix MassMatrix; 			/*!< \brief Sparse structure for storing the mass matrix. */
 	CSysVector TimeRes_Aux;			/*!< \brief Auxiliary vector for adding mass and damping contributions to the residual. */
 	CSysVector TimeRes;				/*!< \brief Vector for adding mass and damping contributions to the residual */
@@ -6763,12 +6781,20 @@ public:
 	void ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
 
 	/*!
-	 * \brief Update the solution using an implicit Newmark solver.
+	 * \brief Iterate using an implicit Newmark solver.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+
+	/*!
+	 * \brief Update the solution using an implicit Newmark solver.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void ImplicitNewmark_Update(CGeometry *geometry, CSolver **solver_container, CConfig *config);
 
 	/*!
 	 * \brief Postprocessing.
@@ -6787,6 +6813,14 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void Solve_System(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+
+	/*!
+	 * \brief Get the residual for FEM structural analysis.
+	 * \param[in] val_var - Index of the variable.
+	 * \return Value of the residual for the variable in the position <i>val_var</i>.
+	 */
+	double GetRes_FEM(unsigned short val_var);
+
 
 };
 

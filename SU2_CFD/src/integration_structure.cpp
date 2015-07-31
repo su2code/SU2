@@ -419,6 +419,22 @@ void CIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver **solver_co
 
 	  solver_container[MainSolver]->Solve_System(geometry, solver_container, config);
 
+	/*--- Update solution ---*/
+
+		switch (config->GetKind_TimeIntScheme_FEA()) {
+			case (CD_EXPLICIT):
+			  solver_container[MainSolver]->ImplicitNewmark_Update(geometry, solver_container, config);
+			  break;
+			case (NEWMARK_IMPLICIT):
+			  solver_container[MainSolver]->ImplicitNewmark_Update(geometry, solver_container, config);
+			  break;
+			case (GA_IMPLICIT):
+			  solver_container[MainSolver]->ImplicitNewmark_Update(geometry, solver_container, config);
+			  break;
+		  }
+
+
+
 	/*--- Reinforce ESSENTIAL BOUNDARY CONDITIONS: avoids accumulation of numerical error ---*/
 
 	  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
@@ -574,6 +590,7 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
   
 }
 
+
 void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CConfig *config, unsigned short iMesh) {
 	unsigned long iPoint;
   
@@ -710,6 +727,35 @@ void CIntegration::SetFEM_StructuralSolver(CGeometry *geometry, CSolver *solver,
 		  solver->SetWAitken_Dyn_tn1(WAitk);
 
 	  }
+
+}
+
+void CIntegration::Convergence_Monitoring_FEM(CGeometry *geometry, CConfig *config, CSolver *solver, unsigned long iFSIIter) {
+
+	double Reference_UTOL, Reference_RTOL, Reference_ETOL;
+	double Residual_UTOL, Residual_RTOL, Residual_ETOL;
+
+    bool Already_Converged = Convergence;
+
+	Reference_UTOL = config->GetResidual_FEM_UTOL();
+	Reference_RTOL = config->GetResidual_FEM_RTOL();
+	Reference_ETOL = config->GetResidual_FEM_ETOL();
+
+	Residual_UTOL = log10(solver->GetRes_FEM(0));
+	Residual_RTOL = log10(solver->GetRes_FEM(1));
+	Residual_ETOL = log10(solver->GetRes_FEM(2));
+
+//	cout << "Reference - UTOL: " << Reference_UTOL << " ETOL: " << Reference_ETOL << " RTOL: " << Reference_RTOL << endl;
+//	cout << "Residual - UTOL: " << Residual_UTOL << " ETOL: " << Residual_ETOL << " RTOL: " << Residual_RTOL << endl;
+
+	if ((Residual_UTOL <= Reference_UTOL) &&
+		(Residual_ETOL <= Reference_ETOL) &&
+		(Residual_RTOL <= Reference_RTOL)){
+		Convergence = true;
+	}
+
+    if (Already_Converged) Convergence = true;
+
 
 }
 
