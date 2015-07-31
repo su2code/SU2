@@ -7538,7 +7538,7 @@ void CEulerSolver::Mixing_Process(CGeometry *geometry, CSolver **solver_containe
                         TotalMassFlux[val_Marker] += Area*(Density*VelNormal );
                         TotalMomtXFlux[val_Marker] += Area*(Density*VelNormal*Velocity[0] + Pressure*UnitNormal[0] );
                         TotalMomtYFlux[val_Marker] += Area*(Density*VelNormal*Velocity[1] + Pressure*UnitNormal[1] );
-                        TotalEnergyFlux[val_Marker] += Area*(Density*VelNormal*(Enthalpy+VelSq/2) );
+                        TotalEnergyFlux[val_Marker] += Area*(Density*VelNormal*Enthalpy );
                         AveragedNormal[val_Marker][0] +=Normal[0];
                         AveragedNormal[val_Marker][1] +=Normal[1];
                         TotalArea += Area;
@@ -7561,7 +7561,7 @@ void CEulerSolver::Mixing_Process(CGeometry *geometry, CSolver **solver_containe
                         TotalMomtXFlux[val_Marker] += Area*(Density*VelNormal*Velocity[0] + Pressure*UnitNormal[0] );
                         TotalMomtYFlux[val_Marker] += Area*(Density*VelNormal*Velocity[1] + Pressure*UnitNormal[1] );
                         TotalMomtZFlux[val_Marker] += Area*(Density*VelNormal*Velocity[2] + Pressure*UnitNormal[2] );
-                        TotalEnergyFlux[val_Marker] += Area*(Density*VelNormal*(Enthalpy+VelSq/2) );
+                        TotalEnergyFlux[val_Marker] += Area*(Density*VelNormal*Enthalpy);
                         AveragedNormal[val_Marker][0] +=Normal[0];
                         AveragedNormal[val_Marker][1] +=Normal[1];
                         AveragedNormal[val_Marker][2] +=Normal[2];
