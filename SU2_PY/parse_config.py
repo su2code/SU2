@@ -3,7 +3,7 @@
 ## \file parse_config.py
 #  \brief Builds a worksheet of all SU2.cpp options
 #  \author A. Aranake, F. Palacios
-#  \version 3.2.9 "eagle"
+#  \version 4.0.0 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -137,7 +137,7 @@ def parse_config(config_cpp, config_hpp):
             print "enum_options: ",enum_options
             sys.exit(1)
         elif option_type=='AddMathProblem':
-          values = ['DIRECT','ADJOINT','LINEARIZED']
+          values = ['DIRECT','CONTINUOUS_ADJOINT','LINEARIZED']
         elif option_type=='AddScalarOption':
           values = ['A scalar constant']
         elif option_type in ('AddMarkerOption', 'AddMarkerPeriodic', 'AddMarkerDirichlet', 'AddMarkerInlet', 'AddMarkerOutlet', 'AddMarkerDisplacement', 'AddMarkerLoad', 'AddMarkerFlowLoad'):

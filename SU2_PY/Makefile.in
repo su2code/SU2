@@ -14,8 +14,12 @@
 
 @SET_MAKE@
 
-# SU2 Makefile.am for Python scripts
-# SU2 v3.2.7 "eagle"
+################################################################################
+#
+# \file Makefile.am
+# \brief Makefile for the SU2 Python framework
+# \author M. Colonno, T. Economon, F. Palacios, T. Lukaczyk
+# \version 4.0.0 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -41,13 +45,7 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 #
-# Created: 	4/4/2013
-# Last updated: 	12/31/2014
-#
-# Created by: 		T. Lukaczyk
-# Updated by: 		F. Palacios
-#
-######################################################################################
+################################################################################
 
 
 VPATH = @srcdir@
@@ -176,6 +174,8 @@ ECHO_T = @ECHO_T@
 EGREP = @EGREP@
 EXEEXT = @EXEEXT@
 GREP = @GREP@
+HDF5_CXX = @HDF5_CXX@
+HDF5_LD = @HDF5_LD@
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
@@ -212,9 +212,13 @@ SHELL = @SHELL@
 STRIP = @STRIP@
 SU2_METIS_CPPFLAGS = @SU2_METIS_CPPFLAGS@
 SU2_PARMETIS_CPPFLAGS = @SU2_PARMETIS_CPPFLAGS@
+SZIP_CXX = @SZIP_CXX@
+SZIP_LD = @SZIP_LD@
 TECIO_CPPFLAGS = @TECIO_CPPFLAGS@
 TECIO_INCLUDE = @TECIO_INCLUDE@
 VERSION = @VERSION@
+ZLIB_CXX = @ZLIB_CXX@
+ZLIB_LD = @ZLIB_LD@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
 abs_top_builddir = @abs_top_builddir@

@@ -3,7 +3,7 @@
 ## \file compute_stability.py
 #  \brief Python script for performing the shape optimization.
 #  \author T. Lukaczyk, F. Palacios
-#  \version 3.2.9 "eagle"
+#  \version 4.0.0 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -63,7 +63,7 @@ state.find_files(config)
 drag_alpha = SU2.eval.func('D_DRAG_D_ALPHA',config,state)
 moment_y_alpha= SU2.eval.func('D_MOMENT_Z_D_ALPHA',config,state)
 
-grad_moment_y_alpha= SU2.eval.grad('D_MOMENT_Z_D_ALPHA','ADJOINT',config,state)
+grad_moment_y_alpha= SU2.eval.grad('D_MOMENT_Z_D_ALPHA','CONTINUOUS_ADJOINT',config,state)
 
 print 'D_DRAG_D_ALPHA     =' , drag_alpha
 print 'D_MOMENT_Y_D_ALPHA =' , moment_y_alpha

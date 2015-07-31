@@ -3,7 +3,7 @@
 ## \file tools.py
 #  \brief file i/o functions
 #  \author T. Lukaczyk, F. Palacios
-#  \version 3.2.9 "eagle"
+#  \version 4.0.0 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -885,7 +885,7 @@ def restart2solution(config,state={}):
         if state: state.FILES.DIRECT = solution
         
     # adjoint solution
-    elif config.MATH_PROBLEM == 'ADJOINT':
+    elif config.MATH_PROBLEM == 'CONTINUOUS_ADJOINT':
         restart  = config.RESTART_ADJ_FILENAME
         solution = config.SOLUTION_ADJ_FILENAME           
         # add suffix

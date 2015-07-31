@@ -5,7 +5,7 @@
  *        technique definition). The subroutines and functions are in 
  *        the <i>grid_movement_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, S. Padron
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -56,7 +56,7 @@ using namespace std;
  * \brief Class for moving the surface and volumetric 
  *        numerical grid (2D and 3D problems).
  * \author F. Palacios
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  */
 class CGridMovement {
 public:
@@ -71,7 +71,6 @@ public:
 	 */
 	~CGridMovement(void);
   
-  
   /*!
 	 * \brief A pure virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -85,7 +84,7 @@ public:
  * \class CFreeFormDefBox
  * \brief Class for defining the free form FFDBox structure.
  * \author F. Palacios & A. Galdran.
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  */
 class CFreeFormDefBox : public CGridMovement {
 public:
@@ -739,7 +738,7 @@ public:
  * \class CVolumetricMovement
  * \brief Class for moving the volumetric numerical grid.
  * \author F. Palacios, A. Bueno, T. Economon, S. Padron.
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  */
 class CVolumetricMovement : public CGridMovement {
 protected:
@@ -977,6 +976,30 @@ public:
 	void Rigid_Translation(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter);
   
   /*!
+   * \brief Scale the volume grid by a multiplicative factor.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] UpdateGeo - Update geometry.
+   */
+  void SetVolume_Scaling(CGeometry *geometry, CConfig *config, bool UpdateGeo);
+  
+  /*!
+   * \brief Translate the volume grid by a specified displacement vector.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] UpdateGeo - Update geometry.
+   */
+  void SetVolume_Translation(CGeometry *geometry, CConfig *config, bool UpdateGeo);
+  
+  /*!
+   * \brief Rotate the volume grid around a specified axis and angle.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] UpdateGeo - Update geometry.
+   */
+  void SetVolume_Rotation(CGeometry *geometry, CConfig *config, bool UpdateGeo);
+  
+  /*!
 	 * \brief Grid deformation using the spring analogy method.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
@@ -1006,7 +1029,7 @@ public:
  * \class CSurfaceMovement
  * \brief Class for moving the surface numerical grid.
  * \author F. Palacios, T. Economon.
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  */
 class CSurfaceMovement : public CGridMovement {
 protected:
@@ -1129,7 +1152,7 @@ public:
    * \param[in] iMarker_Monitoring - Marker we are monitoring.
    * \param[in] displacements - solution of typical section wing model.
 	 */
-    void AeroelasticDeform(CGeometry *geometry, CConfig *config, unsigned long ExtIter, unsigned short iMarker, unsigned short iMarker_Monitoring, double displacements[4]);
+    void AeroelasticDeform(CGeometry *geometry, CConfig *config, unsigned long ExtIter, unsigned short iMarker, unsigned short iMarker_Monitoring, vector<double>& displacements);
     
    /*!
 	 * \brief Deforms a 3-D flutter/pitching surface during an unsteady simulation.

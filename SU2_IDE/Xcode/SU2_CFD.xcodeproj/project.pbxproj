@@ -82,7 +82,6 @@
 		05F1089C1978D2AE00F2F288 /* fluid_model_pvdw.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05F108981978D2AE00F2F288 /* fluid_model_pvdw.cpp */; };
 		05F1089D1978D2AE00F2F288 /* fluid_model.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05F108991978D2AE00F2F288 /* fluid_model.cpp */; };
 		05F108A41978D2F200F2F288 /* transport_model.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05F108A31978D2F200F2F288 /* transport_model.cpp */; };
-		C6B325C118F7B9DE00C0E798 /* su2mpi.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C6B325C018F7B9DE00C0E798 /* su2mpi.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -213,8 +212,6 @@
 		05F108A01978D2D700F2F288 /* fluid_model.inl */ = {isa = PBXFileReference; lastKnownFileType = text; name = fluid_model.inl; path = ../../SU2_CFD/include/fluid_model.inl; sourceTree = "<group>"; };
 		05F108A11978D2D700F2F288 /* transport_model.inl */ = {isa = PBXFileReference; lastKnownFileType = text; name = transport_model.inl; path = ../../SU2_CFD/include/transport_model.inl; sourceTree = "<group>"; };
 		05F108A31978D2F200F2F288 /* transport_model.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = transport_model.cpp; path = ../../SU2_CFD/src/transport_model.cpp; sourceTree = "<group>"; };
-		C6B325BF18F7832900C0E798 /* su2mpi.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = su2mpi.hpp; path = ../../Common/include/su2mpi.hpp; sourceTree = "<group>"; };
-		C6B325C018F7B9DE00C0E798 /* su2mpi.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = su2mpi.cpp; path = ../../Common/src/su2mpi.cpp; sourceTree = "<group>"; };
 		E97B6C8117F941800008255B /* config_template.cfg */ = {isa = PBXFileReference; lastKnownFileType = text; name = config_template.cfg; path = ../../config_template.cfg; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -367,7 +364,6 @@
 				05E6DBB717EB627400FA1F7E /* numerics_structure.hpp */,
 				05DF0B0D18CFB29E00DC3CFE /* numerics_machine_learning.hpp */,
 				05DF0B0C18CFB29800DC3CFE /* numerics_machine_learning_turbulent.hpp */,
-				C6B325BF18F7832900C0E798 /* su2mpi.hpp */,
 			);
 			name = Include;
 			sourceTree = "<group>";
@@ -436,7 +432,6 @@
 				05E6DB8917EB61E600FA1F7E /* config_structure.cpp */,
 				05E6DBBC17EB62A000FA1F7E /* definition_structure.cpp */,
 				05E6DBC017EB62A100FA1F7E /* iteration_structure.cpp */,
-				C6B325C018F7B9DE00C0E798 /* su2mpi.cpp */,
 				0530E57417FDF9CC00733CE8 /* LinearSolver */,
 				0530E57317FDF97F00733CE8 /* Geometry */,
 				052D51AB17A22E24003BE8B2 /* Output */,
@@ -528,7 +523,6 @@
 				05E6DC0417EB62A100FA1F7E /* integration_time.cpp in Sources */,
 				05F1089B1978D2AE00F2F288 /* fluid_model_ppr.cpp in Sources */,
 				0530E57217FDF7D800733CE8 /* numerics_direct_poisson.cpp in Sources */,
-				C6B325C118F7B9DE00C0E798 /* su2mpi.cpp in Sources */,
 				05E6DC0517EB62A100FA1F7E /* iteration_structure.cpp in Sources */,
 				05E6DC0717EB62A100FA1F7E /* numerics_adjoint_levelset.cpp in Sources */,
 				05E6DC0817EB62A100FA1F7E /* numerics_adjoint_mean.cpp in Sources */,
@@ -611,7 +605,7 @@
 				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = NO;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 3.2.9;
+				CURRENT_PROJECT_VERSION = 4.0.0;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 3;
@@ -675,7 +669,7 @@
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = NO;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CURRENT_PROJECT_VERSION = 3.2.9;
+				CURRENT_PROJECT_VERSION = 4.0.0;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 3;
