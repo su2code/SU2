@@ -65,6 +65,9 @@ private:
 	double MinLogResidual; /*!< \brief Minimum value of the log residual. */
 	double OrderMagResidualFSI; /*!< \brief Order of magnitude reduction. */
 	double MinLogResidualFSI; /*!< \brief Minimum value of the log residual. */
+	double Res_FEM_UTOL; 		/*!< \brief UTOL criteria for structural FEM. */
+	double Res_FEM_RTOL; 		/*!< \brief RTOL criteria for structural FEM. */
+	double Res_FEM_ETOL; 		/*!< \brief ETOL criteria for structural FEM. */
 	double EA_ScaleFactor; /*!< \brief Equivalent Area scaling factor */
 	double* EA_IntLimit; /*!< \brief Integration limits of the Equivalent Area computation */
   double AdjointLimit; /*!< \brief Adjoint variable limit */
@@ -4613,6 +4616,24 @@ public:
 	 * \return Value of the minimum residual value (log10 scale).
 	 */
 	double GetMinLogResidualFSI(void);
+
+	/*!
+	 * \brief Value of the displacement tolerance UTOL for FEM structural analysis (log10 scale).
+	 * \return Value of Res_FEM_UTOL (log10 scale).
+	 */
+	double GetResidual_FEM_UTOL(void);
+
+	/*!
+	 * \brief Value of the displacement tolerance UTOL for FEM structural analysis (log10 scale).
+	 * \return Value of Res_FEM_UTOL (log10 scale).
+	 */
+	double GetResidual_FEM_RTOL(void);
+
+	/*!
+	 * \brief Value of the displacement tolerance UTOL for FEM structural analysis (log10 scale).
+	 * \return Value of Res_FEM_UTOL (log10 scale).
+	 */
+	double GetResidual_FEM_ETOL(void);
   
   /*!
    * \brief Value of the damping factor for the engine inlet bc.

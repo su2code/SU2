@@ -1243,3 +1243,10 @@ inline double CConfig::GetOrderMagResidualFSI(void) { return OrderMagResidualFSI
 
 inline double CConfig::GetMinLogResidualFSI(void) { return MinLogResidualFSI; }
 
+inline double CConfig::GetResidual_FEM_UTOL(void) { return Res_FEM_UTOL; }
+
+inline double CConfig::GetResidual_FEM_RTOL(void) { return Res_FEM_RTOL; }
+
+inline double CConfig::GetResidual_FEM_ETOL(void) { return Res_FEM_ETOL; }
+
+

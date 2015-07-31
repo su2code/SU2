@@ -633,6 +633,12 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("RESIDUAL_REDUCTION_FSI", OrderMagResidualFSI, 3.0);
   /* DESCRIPTION: Min value of the residual (log10 of the residual) */
   addDoubleOption("RESIDUAL_MINVAL_FSI", MinLogResidualFSI, -5.0);
+  /* DESCRIPTION: FEM: UTOL = norm(Delta_U(k)) / norm(U(k)) */
+  addDoubleOption("RESIDUAL_FEM_UTOL", Res_FEM_UTOL, -9.0);
+  /* DESCRIPTION: FEM: RTOL = norm(Residual(k)) / norm(Residual(0)) */
+  addDoubleOption("RESIDUAL_FEM_RTOL", Res_FEM_RTOL, -9.0);
+  /* DESCRIPTION: FEM: ETOL = Delta_U(k) * Residual(k) / Delta_U(0) * Residual(0) */
+  addDoubleOption("RESIDUAL_FEM_ETOL", Res_FEM_ETOL, -9.0);
   /* DESCRIPTION: Flow functional for the Residual criteria */
   addEnumOption("RESIDUAL_FUNC_FLOW", Residual_Func_Flow, Residual_Map, RHO_RESIDUAL);
   /* DESCRIPTION: Iteration number to begin convergence monitoring */
