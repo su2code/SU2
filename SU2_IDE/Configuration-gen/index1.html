@@ -1,0 +1,33 @@
+<html>
+ <head>
+<script type="text/javascript" language="javascript" src="jquery-2.1.1.min.js"></script>
+
+<script type="text/javascript">
+
+function load(){
+$.get('option_structure.hpp', function(data) {
+
+            var lines = data.split("\n");
+
+			var start = false;
+			var end = false;
+            $.each(lines, function(n, elem) {
+                if(start && !end){
+                	$('#result').append('<div>' + elem + '</div>');
+                }
+                if(elem.indexOf("BEGIN_CONFIG_ENUMS") > -1){
+                	start = true;
+                }
+                if(elem.indexOf("END_CONFIG_ENUMS") > -1){
+                	end = true;
+                }
+
+            });
+        }, "text");
+}
+</script>
+</head>
+<body onload='load()'>
+<div id="result" />
+</body>
+</html>
