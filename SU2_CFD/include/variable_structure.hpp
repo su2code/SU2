@@ -2766,6 +2766,18 @@ public:
 	 */
 	double *GetSolution_Pred_Old(void);
 
+	/*!
+	 * \brief Set the value of the Von Mises stress.
+	 * \param[in] val_stress - Value of the Von Mises stress.
+	 */
+	 void SetVonMises_Stress(double val_stress);
+
+	/*!
+	 * \brief Get the value of the Von Mises stress.
+	 * \return Value of the Von Mises stress.
+	 */
+     double GetVonMises_Stress(void);
+
 
 };
 

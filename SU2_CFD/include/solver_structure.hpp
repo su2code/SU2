@@ -6563,6 +6563,9 @@ public:
 class CFEM_ElasticitySolver : public CSolver {
 private:
 
+	double  Total_CFEA;				/*!< \brief Total FEA coefficient for all the boundaries. */
+									/*!< We maintain the name to avoid defining a new function... */
+
 	unsigned long nElement;
 	unsigned short nMarker;
 
@@ -6820,6 +6823,18 @@ public:
 	 * \return Value of the residual for the variable in the position <i>val_var</i>.
 	 */
 	double GetRes_FEM(unsigned short val_var);
+
+	/*!
+	 * \brief Provide the maximum Von Mises Stress for structural analysis.
+	 * \return Value of the maximum Von Mises Stress.
+	 */
+	double GetTotal_CFEA(void);
+
+	/*!
+	 * \brief Set the value of the FEA coefficient.
+	 * \param[in] val_cfea - Value of the FEA coefficient.
+	 */
+	void SetTotal_CFEA(double val_cfea);
 
 
 };
