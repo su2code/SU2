@@ -932,6 +932,10 @@ inline double CFEASolver::GetFSI_ConvValue(unsigned short val_index){ return FSI
 
 inline double CFEM_ElasticitySolver::GetRes_FEM(unsigned short val_var) { return Conv_Check[val_var]; }
 
+inline double CFEM_ElasticitySolver::GetTotal_CFEA() { return Total_CFEA; }
+
+inline void CFEM_ElasticitySolver::SetTotal_CFEA(double cfea) { Total_CFEA = cfea; }
+
 inline double CWaveSolver::GetTotal_CWave() { return Total_CWave; }
 
 inline double CHeatSolver::GetTotal_CHeat() { return Total_CHeat; }

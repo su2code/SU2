@@ -38,6 +38,8 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(void) : CSolver() {
 	nPoint = 0;
 	nPointDomain = 0;
 
+	Total_CFEA = 0.0;
+
 	element_container = NULL;
 	node = NULL;
 
@@ -91,6 +93,8 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 
 	GradN_X = new double [nDim];
 	GradN_x = new double [nDim];
+
+	Total_CFEA = 0.0;
 
 	nVar = nDim;
 
@@ -494,9 +498,11 @@ void CFEM_ElasticitySolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geomet
 		  }
 		}
 
-		numerics->Compute_Tangent_Matrix(element_container[EL_KIND]);
+		/*--- If incompressible, we compute the Mean Dilatation term first so the volume is already computed ---*/
 
 		if (incompressible) numerics->Compute_MeanDilatation_Term(element_container[EL_KIND]);
+
+		numerics->Compute_Tangent_Matrix(element_container[EL_KIND]);
 
 		NelNodes = element_container[EL_KIND]->GetnNodes();
 
@@ -765,10 +771,72 @@ void CFEM_ElasticitySolver::Compute_NodalStress(CGeometry *geometry, CSolver **s
 
 	}
 
-//	for (iDim = 0; iDim < nDim; iDim++) {
-//		val_Coord = geometry->node[0]->GetCoord(iDim);
-//		val_Sol = node[0]->GetSolution(iDim) + val_Coord;
-//	}
+	/*--- Computation of Von Mises Stress ---*/
+
+	  double *Stress;
+	  double VonMises_Stress, MaxVonMises_Stress = 0.0;
+	  double Sxx,Syy,Szz,Sxy,Sxz,Syz,S1,S2;
+
+	 /* --- For the number of nodes in the mesh ---*/
+	  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+
+		  /* --- Get the stresses, added up from all the elements that connect to the node ---*/
+
+		  Stress  = node[iPoint]->GetStress_FEM();
+
+
+		  /* --- Compute the stress averaged from all the elements connecting to the node and the Von Mises stress ---*/
+
+		  if (geometry->GetnDim() == 2) {
+
+			  Sxx=Stress[0];
+			  Syy=Stress[1];
+			  Sxy=Stress[2];
+
+			  S1=(Sxx+Syy)/2+sqrt(((Sxx-Syy)/2)*((Sxx-Syy)/2)+Sxy*Sxy);
+			  S2=(Sxx+Syy)/2-sqrt(((Sxx-Syy)/2)*((Sxx-Syy)/2)+Sxy*Sxy);
+
+			  VonMises_Stress = sqrt(S1*S1+S2*S2-2*S1*S2);
+
+		  }
+		  else if (geometry->GetnDim() == 3) {
+
+			  Sxx = Stress[0];
+			  Syy = Stress[1];
+			  Szz = Stress[3];
+
+			  Sxy = Stress[2];
+			  Sxz = Stress[4];
+			  Syz = Stress[5];
+
+			  VonMises_Stress = sqrt(0.5*(   pow(Sxx - Syy, 2.0)
+											+ pow(Syy - Szz, 2.0)
+											+ pow(Szz - Sxx, 2.0)
+											+ 6.0*(Sxy*Sxy+Sxz*Sxz+Syz*Syz)
+											));
+
+		  }
+
+		  node[iPoint]->SetVonMises_Stress(VonMises_Stress);
+
+		  /*--- Compute the maximum value of the Von Mises Stress ---*/
+
+		  MaxVonMises_Stress = max(MaxVonMises_Stress, VonMises_Stress);
+
+	  }
+
+		#ifdef HAVE_MPI
+
+		  /*--- Compute MaxVonMises_Stress using all the nodes ---*/
+
+		  double MyMaxVonMises_Stress = MaxVonMises_Stress; MaxVonMises_Stress = 0.0;
+		  MPI_Allreduce(&MyMaxVonMises_Stress, &MaxVonMises_Stress, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+
+		#endif
+
+		  /*--- Set the value of the MaxVonMises_Stress as the CFEA coeffient ---*/
+
+	  Total_CFEA = MaxVonMises_Stress;
 
 }
 

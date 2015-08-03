@@ -763,6 +763,10 @@ void FEM_StructuralIteration(COutput *output, CIntegration ***integration_contai
 
 			for (iZone = 0; iZone < nZone; iZone++) {
 
+				/*--- Write the convergence history (only screen output) ---*/
+
+				output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_0);
+
 				config_container[iZone]->SetIntIter(IntIter);
 
 				integration_container[iZone][FEA_SOL]->Structural_Iteration_FEM(geometry_container, solver_container, numerics_container,
@@ -791,10 +795,10 @@ void FEM_StructuralIteration(COutput *output, CIntegration ***integration_contai
 
 	    /*--- Verify convergence criteria (based on total time) ---*/
 
-		Physical_dt = config_container[iZone]->GetDelta_DynTime();
+		Physical_dt = config_container[ZONE_0]->GetDelta_DynTime();
 		Physical_t  = (ExtIter+1)*Physical_dt;
-//		if (Physical_t >=  config_container[iZone]->GetTotal_DynTime())
-//			integration_container[iZone][FEA_SOL]->SetConvergence(true);
+		if (Physical_t >=  config_container[iZone]->GetTotal_DynTime())
+			integration_container[iZone][FEA_SOL]->SetConvergence(true);
 	}
 
 

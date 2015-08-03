@@ -977,6 +977,10 @@ inline double *CFEM_ElasVariable::GetSolution_Pred_Old(void){ return Solution_Pr
 
 inline double CFEM_ElasVariable::GetSolution_Pred_Old(unsigned short val_var){ return Solution_Pred_Old[val_var]; }
 
+inline void CFEM_ElasVariable::SetVonMises_Stress(double val_stress) { VonMises_Stress = val_stress; }
+
+inline double CFEM_ElasVariable::GetVonMises_Stress(void) { return VonMises_Stress; }
+
 inline void CFEABoundVariable::SetTraction(unsigned short iVar, unsigned short jVar, double val_traction) { Traction[iVar][jVar] = val_traction; }
 
 inline void CFEABoundVariable::AddTraction(unsigned short iVar, unsigned short jVar, double val_traction) { Traction[iVar][jVar] += val_traction; }

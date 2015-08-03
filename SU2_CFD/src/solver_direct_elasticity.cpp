@@ -2464,11 +2464,11 @@ void CFEASolver::PredictStruct_Displacement(CGeometry **fea_geometry, CConfig *f
     unsigned long nPoint, nDim;
     double *solDisp, *solVel, *solVel_tn, *valPred, *checkPred;
 
-    solDisp=new double [iDim];
-    solVel=new double [iDim];
-    solVel_tn=new double [iDim];
-    valPred=new double [iDim];
-    checkPred=new double [iDim];
+//    solDisp=new double [iDim];
+//    solVel=new double [iDim];
+//    solVel_tn=new double [iDim];
+//    valPred=new double [iDim];
+//    checkPred=new double [iDim];
 
     nPoint = fea_geometry[MESH_0]->GetnPoint();
     nDim = fea_geometry[MESH_0]->GetnDim();
@@ -2528,10 +2528,10 @@ void CFEASolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, CConfig *fe
 
     WAitken=fea_config->GetAitkenStatRelax();
 
-    dispPred	=new double [iDim];
-    dispPred_Old=new double [iDim];
-    dispCalc	=new double [iDim];
-    dispCalc_Old=new double [iDim];
+//    dispPred	=new double [iDim];
+//    dispPred_Old=new double [iDim];
+//    dispCalc	=new double [iDim];
+//    dispCalc_Old=new double [iDim];
 
 	numAitk = 0.0;
 	denAitk = 0.0;
@@ -2631,8 +2631,8 @@ void CFEASolver::SetAitken_Relaxation(CGeometry **fea_geometry, CConfig *fea_con
 	double CurrentTime=fea_config->GetCurrent_DynTime();
 	double Static_Time=fea_config->GetStatic_Time();
 
-    dispPred=new double [iDim];
-    dispCalc=new double [iDim];
+//    dispPred=new double [iDim];
+//    dispCalc=new double [iDim];
 
     nPoint = fea_geometry[MESH_0]->GetnPoint();
     nDim = fea_geometry[MESH_0]->GetnDim();
@@ -2691,8 +2691,8 @@ void CFEASolver::Update_StructSolution(CGeometry **fea_geometry, CConfig *fea_co
     unsigned long nPoint, nDim;
     double *valSolutionPred, *valSolution;
 
-    valSolutionPred=new double [iDim];
-    valSolution=new double [iDim];
+//    valSolutionPred=new double [iDim];
+//    valSolution=new double [iDim];
 
     nPoint = fea_geometry[MESH_0]->GetnPoint();
     nDim = fea_geometry[MESH_0]->GetnDim();
