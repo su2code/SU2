@@ -82,8 +82,12 @@
   </head>
   <body ng-controller="AppCtrl" ng-cloak="">
 
-    <dynamic-form class="col-md-6" template-url="form-template.json" ng-submit="processForm()" ng-model="urlFormData">
+    <!--<dynamic-form class="col-md-6" template-url="form-template.json" ng-submit="processForm()" ng-model="urlFormData">
+	</dynamic-form>-->
+	<dynamic-form class="col-md-6" template="stdFormTemplate" ng-submit="processForm()" ng-model="urlFormData">
+		<legend>template= test</legend>
 	</dynamic-form>
+
 
     <div class="col-md-4">
       <div class="fixed col-md-6">
@@ -92,8 +96,10 @@
       </div>
     </div>
     <!-- Load scripts at the end for performance. -->
+    <script type="text/javascript" language="javascript" src="jquery-2.1.1.min.js"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.0.8/angular.min.js"></script>
     <script src="./dynamic-forms.js"></script>
+    <script src="load.js"></script>
     <script src="app.js"></script>
   </body>
 </html>
