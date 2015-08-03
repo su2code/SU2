@@ -173,49 +173,6 @@ def GEO(config):
     #os.remove(tempname)
     
     return
-
-def SMC(config):
-    """ run SU2_SMC
-        partitions set by config.NUMBER_PART
-    """    
-    konfig = copy.deepcopy(config)    
-    
-    tempname = 'config_SMC.cfg'
-    konfig.dump(tempname)   
-    
-    # must run with rank 1
-    processes = konfig['NUMBER_PART']
-    processes = min([1,processes])       
-    
-    the_Command = 'SU2_SMC ' + tempname
-    the_Command = build_command( the_Command , processes )
-    run_command( the_Command )
-    
-    #os.remove(tempname)
-    
-    return
-
-def PBC(config):
-    """ run SU2_MSH
-        partitions set by config.NUMBER_PART
-        currently forced to run serially
-    """    
-    konfig = copy.deepcopy(config)
-    
-    tempname = 'config_PBC.cfg'
-    konfig.dump(tempname)
-    
-    # must run with rank 1
-    processes = konfig['NUMBER_PART']
-    processes = min([1,processes])      
-    
-    the_Command = 'SU2_MSH ' + tempname
-    the_Command = build_command( the_Command , processes )
-    run_command( the_Command )
-    
-    #os.remove(tempname)
-    
-    return
         
 def SOL(config):
     """ run SU2_SOL
