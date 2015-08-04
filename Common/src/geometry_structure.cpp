@@ -11318,7 +11318,7 @@ void CPhysicalGeometry::GetQualityStatistics(su2double *statistics) {
   
 }
 
-void CPhysicalGeometry::SetRotationalVelocity(CConfig *config) {
+void CPhysicalGeometry::SetRotationalVelocity(CConfig *config, unsigned short val_iZone) {
   
   unsigned long iPoint;
   su2double RotVel[3], Distance[3], *Coord, Center[3], Omega[3], L_Ref;
@@ -11330,12 +11330,12 @@ void CPhysicalGeometry::SetRotationalVelocity(CConfig *config) {
   
   /*--- Center of rotation & angular velocity vector from config ---*/
   
-  Center[0] = config->GetMotion_Origin_X(ZONE_0);
-  Center[1] = config->GetMotion_Origin_Y(ZONE_0);
-  Center[2] = config->GetMotion_Origin_Z(ZONE_0);
-  Omega[0]  = config->GetRotation_Rate_X(ZONE_0)/config->GetOmega_Ref();
-  Omega[1]  = config->GetRotation_Rate_Y(ZONE_0)/config->GetOmega_Ref();
-  Omega[2]  = config->GetRotation_Rate_Z(ZONE_0)/config->GetOmega_Ref();
+  Center[0] = config->GetMotion_Origin_X(val_iZone);
+  Center[1] = config->GetMotion_Origin_Y(val_iZone);
+  Center[2] = config->GetMotion_Origin_Z(val_iZone);
+  Omega[0]  = config->GetRotation_Rate_X(val_iZone)/config->GetOmega_Ref();
+  Omega[1]  = config->GetRotation_Rate_Y(val_iZone)/config->GetOmega_Ref();
+  Omega[2]  = config->GetRotation_Rate_Z(val_iZone)/config->GetOmega_Ref();
   L_Ref     = config->GetLength_Ref();
   
   /*--- Print some information to the console ---*/
@@ -14151,21 +14151,21 @@ void CMultiGridGeometry::SetCoord(CGeometry *geometry) {
   delete[] Coordinates;
 }
 
-void CMultiGridGeometry::SetRotationalVelocity(CConfig *config) {
+void CMultiGridGeometry::SetRotationalVelocity(CConfig *config, unsigned short val_iZone) {
   
   unsigned long iPoint_Coarse;
-  su2double *RotVel, Distance[3] = {0.0,0.0,0.0}, *Coord, Center[3] = {0.0,0.0,0.0}, Omega[3] = {0.0,0.0,0.0}, L_Ref;
-  
+  su2double *RotVel, Distance[3] = {0.0,0.0,0.0}, *Coord;
+  su2double Center[3] = {0.0,0.0,0.0}, Omega[3] = {0.0,0.0,0.0}, L_Ref;
   RotVel = new su2double [3];
   
   /*--- Center of rotation & angular velocity vector from config. ---*/
   
-  Center[0] = config->GetMotion_Origin_X(ZONE_0);
-  Center[1] = config->GetMotion_Origin_Y(ZONE_0);
-  Center[2] = config->GetMotion_Origin_Z(ZONE_0);
-  Omega[0]  = config->GetRotation_Rate_X(ZONE_0)/config->GetOmega_Ref();
-  Omega[1]  = config->GetRotation_Rate_Y(ZONE_0)/config->GetOmega_Ref();
-  Omega[2]  = config->GetRotation_Rate_Z(ZONE_0)/config->GetOmega_Ref();
+  Center[0] = config->GetMotion_Origin_X(val_iZone);
+  Center[1] = config->GetMotion_Origin_Y(val_iZone);
+  Center[2] = config->GetMotion_Origin_Z(val_iZone);
+  Omega[0]  = config->GetRotation_Rate_X(val_iZone)/config->GetOmega_Ref();
+  Omega[1]  = config->GetRotation_Rate_Y(val_iZone)/config->GetOmega_Ref();
+  Omega[2]  = config->GetRotation_Rate_Z(val_iZone)/config->GetOmega_Ref();
   L_Ref     = config->GetLength_Ref();
   
   /*--- Loop over all nodes and set the rotational velocity. ---*/
