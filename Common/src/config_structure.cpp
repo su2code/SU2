@@ -1768,11 +1768,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     cout << "Can not support more than one type of rigid motion in GRID_MOVEMENT_KIND!!" << endl;
     exit(EXIT_FAILURE);
   }
-  if (Grid_Movement && (Kind_GridMovement[ZONE_0] == ROTATING_FRAME) &&
-      (nGridMovement > 1)) {
-    cout << "Can not support more than one rotating frame in GRID_MOVEMENT_KIND!!" << endl;
-    exit(EXIT_FAILURE);
-  }
   
   /*--- In case the grid movement parameters have not been declared in the
    config file, set them equal to zero for safety. Also check to make sure

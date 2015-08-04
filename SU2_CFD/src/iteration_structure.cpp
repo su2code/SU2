@@ -1425,14 +1425,16 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
       
       if (ExtIter == 0) {
         
-        if (rank == MASTER_NODE)
-          cout << endl << " Setting rotating frame grid velocities." << endl;
+        if (rank == MASTER_NODE) {
+          cout << endl << " Setting rotating frame grid velocities";
+          cout << " for zone " << iZone << "." << endl;
+        }
         
         /*--- Set the grid velocities on all multigrid levels for a steadily
          rotating reference frame. ---*/
         
         for (iMGlevel = 0; iMGlevel <= nMGlevels; iMGlevel++)
-          geometry_container[iMGlevel]->SetRotationalVelocity(config_container);
+          geometry_container[iMGlevel]->SetRotationalVelocity(config_container, iZone);
         
       }
       
