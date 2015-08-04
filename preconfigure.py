@@ -246,7 +246,7 @@ def build_codi(modes, mpi_support = False):
     if mpi_support:
         if not os.path.exists('adjointmpi'):
             print '\nDownloading AMPI...'
-            subprocess.check_call('git clone git@gitlab.com:Albring/adjointmpi.git',stdout = ampi_log, stderr = ampi_err, shell=True)
+            subprocess.check_call('git clone -b scicompVersion https://github.com/michel2323/AdjointMPI.git adjointmpi',stdout = ampi_log, stderr = ampi_err, shell=True)
         os.chdir('adjointmpi')
         if not os.path.exists('libAMPI.a'):
             print '\nConfiguring and building AMPI...'
