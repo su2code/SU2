@@ -6433,6 +6433,7 @@ build_DIRECTDIFF=no
 DIRECTDIFF_CXX=
 DIRECTDIFF_LIBS=
 # reverse mode type
+build_REVERSE=no
 REVERSE_CXX=
 FORWARD_CXX=
 #CONFIGURE_ADOLC
@@ -8237,8 +8238,8 @@ Build Configuration Summary:
     Datatype support:
         double              $build_NORMAL
         complex             $build_COMPLEX
-        adolc_reverse       $build_ADOLC_REVERSE
-        adolc_forward       $build_ADOLC_FORWARD
+        codi_reverse        $build_CODI_REVERSE
+        codi_forward        $build_CODI_FORWARD
 
     External includes:    $su2_externals_INCLUDES
     External libs:        $su2_externals_LIBS
