@@ -75,15 +75,37 @@ def CFD(config):
     """ run SU2_CFD
         partitions set by config.NUMBER_PART
     """
-    
     konfig = copy.deepcopy(config)
     
-    tempname = 'config_CFD.cfg'
-    konfig.dump(tempname)
+    direct_diff = not konfig.get('DIRECT_DIFF',"") in ["NONE", ""]
+
+    discrete_adjoint = konfig.MATH_PROBLEM == 'DISCRETE_ADJOINT'
+
+    if direct_diff:
+        tempname = 'config_CFD_DIRECTDIFF.cfg'
+
+        konfig.dump(tempname)
+
+        processes = konfig['NUMBER_PART']
+
+        the_Command = 'SU2_CFD_DIRECTDIFF ' + tempname
+
+    elif discrete_adjoint:
+        tempname = 'config_CFD_REVERSE.cfg'
+        konfig.dump(tempname)
+
+        processes = konfig['NUMBER_PART']
+
+        the_Command = 'SU2_CFD_REVERSE ' + tempname
+
+    else:
+        tempname = 'config_CFD.cfg'
+        konfig.dump(tempname)
     
-    processes = konfig['NUMBER_PART']
+        processes = konfig['NUMBER_PART']
     
-    the_Command = 'SU2_CFD ' + tempname
+        the_Command = 'SU2_CFD ' + tempname
+
     the_Command = build_command( the_Command , processes )
     run_command( the_Command )
     
@@ -139,13 +161,26 @@ def DOT(config):
         partitions set by config.NUMBER_PART
     """    
     konfig = copy.deepcopy(config)
+
+    discrete_adjoint = konfig.MATH_PROBLEM == 'DISCRETE_ADJOINT'
+
+    if discrete_adjoint:
+
+        tempname = 'config_DOT_REVERSE.cfg'
+        konfig.dump(tempname)
+
+        processes = konfig['NUMBER_PART']
+
+        the_Command = 'SU2_DOT_REVERSE ' + tempname
+    else:
     
-    tempname = 'config_DOT.cfg'
-    konfig.dump(tempname)   
+        tempname = 'config_DOT.cfg'
+        konfig.dump(tempname)
     
-    processes = konfig['NUMBER_PART']
+        processes = konfig['NUMBER_PART']
     
-    the_Command = 'SU2_DOT ' + tempname
+        the_Command = 'SU2_DOT ' + tempname
+
     the_Command = build_command( the_Command , processes )
     run_command( the_Command )
     
@@ -202,7 +237,7 @@ def SOL(config):
 def build_command( the_Command , processes=0 ):
     """ builds an mpi command for given number of processes """
     the_Command = base_Command % the_Command
-    if processes > 0:
+    if processes > 1:
         if not mpi_Command:
             raise RuntimeError , 'could not find an mpi interface'
         the_Command = mpi_Command % (processes,the_Command)

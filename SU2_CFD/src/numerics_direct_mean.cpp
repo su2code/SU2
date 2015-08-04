@@ -45,12 +45,12 @@ CCentJST_Flow::CCentJST_Flow(unsigned short val_nDim, unsigned short val_nVar, C
   Param_Kappa_4 = config->GetKappa_4th_Flow();
   
   /*--- Allocate some structures ---*/
-  Diff_U = new double [nVar];
-  Diff_Lapl = new double [nVar];
-  Velocity_i = new double [nDim];
-  Velocity_j = new double [nDim];
-  MeanVelocity = new double [nDim];
-  ProjFlux = new double [nVar];
+  Diff_U = new su2double [nVar];
+  Diff_Lapl = new su2double [nVar];
+  Velocity_i = new su2double [nDim];
+  Velocity_j = new su2double [nDim];
+  MeanVelocity = new su2double [nDim];
+  ProjFlux = new su2double [nVar];
   
 }
 
@@ -63,10 +63,10 @@ CCentJST_Flow::~CCentJST_Flow(void) {
   delete [] ProjFlux;
 }
 
-void CCentJST_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j,
+void CCentJST_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j,
                                     CConfig *config) {
   
-  double U_i[5] = {0.0,0.0,0.0,0.0,0.0}, U_j[5] = {0.0,0.0,0.0,0.0,0.0};
+  su2double U_i[5] = {0.0,0.0,0.0,0.0,0.0}, U_j[5] = {0.0,0.0,0.0,0.0,0.0};
 
   /*--- Pressure, density, enthalpy, energy, and velocity at points i and j ---*/
   
@@ -171,7 +171,7 @@ void CCentJST_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_
   Phi_j = pow(Lambda_j/(4.0*MeanLambda), Param_p);
   StretchingFactor = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j);
   
-  sc2 = 3.0*(double(Neighbor_i)+double(Neighbor_j))/(double(Neighbor_i)*double(Neighbor_j));
+  sc2 = 3.0*(su2double(Neighbor_i)+su2double(Neighbor_j))/(su2double(Neighbor_i)*su2double(Neighbor_j));
   sc4 = sc2*sc2/4.0;
   
   Epsilon_2 = Param_Kappa_2*0.5*(Sensor_i+Sensor_j)*sc2;
@@ -186,8 +186,8 @@ void CCentJST_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_
   
   if (implicit) {
     
-    cte_0 = (Epsilon_2 + Epsilon_4*double(Neighbor_i+1))*StretchingFactor*MeanLambda;
-    cte_1 = (Epsilon_2 + Epsilon_4*double(Neighbor_j+1))*StretchingFactor*MeanLambda;
+    cte_0 = (Epsilon_2 + Epsilon_4*su2double(Neighbor_i+1))*StretchingFactor*MeanLambda;
+    cte_1 = (Epsilon_2 + Epsilon_4*su2double(Neighbor_j+1))*StretchingFactor*MeanLambda;
     
     for (iVar = 0; iVar < (nVar-1); iVar++) {
       val_Jacobian_i[iVar][iVar] += cte_0;
@@ -227,12 +227,12 @@ CCentJST_KE_Flow::CCentJST_KE_Flow(unsigned short val_nDim, unsigned short val_n
   Param_Kappa_4 = config->GetKappa_4th_Flow();
 
   /*--- Allocate some structures ---*/
-  Diff_U = new double [nVar];
-  Diff_Lapl = new double [nVar];
-  Velocity_i = new double [nDim];
-  Velocity_j = new double [nDim];
-  MeanVelocity = new double [nDim];
-  ProjFlux = new double [nVar];
+  Diff_U = new su2double [nVar];
+  Diff_Lapl = new su2double [nVar];
+  Velocity_i = new su2double [nDim];
+  Velocity_j = new su2double [nDim];
+  MeanVelocity = new su2double [nDim];
+  ProjFlux = new su2double [nVar];
 
 }
 
@@ -245,10 +245,10 @@ CCentJST_KE_Flow::~CCentJST_KE_Flow(void) {
   delete [] ProjFlux;
 }
 
-void CCentJST_KE_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j,
+void CCentJST_KE_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j,
                                     CConfig *config) {
 
-  double U_i[5] = {0.0,0.0,0.0,0.0,0.0}, U_j[5] = {0.0,0.0,0.0,0.0,0.0};
+  su2double U_i[5] = {0.0,0.0,0.0,0.0,0.0}, U_j[5] = {0.0,0.0,0.0,0.0,0.0};
 
   /*--- Pressure, density, enthalpy, energy, and velocity at points i and j ---*/
 
@@ -352,7 +352,7 @@ void CCentJST_KE_Flow::ComputeResidual(double *val_residual, double **val_Jacobi
   Phi_j = pow(Lambda_j/(4.0*MeanLambda), Param_p);
   StretchingFactor = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j);
 
-  sc2 = 3.0*(double(Neighbor_i)+double(Neighbor_j))/(double(Neighbor_i)*double(Neighbor_j));
+  sc2 = 3.0*(su2double(Neighbor_i)+su2double(Neighbor_j))/(su2double(Neighbor_i)*su2double(Neighbor_j));
   sc4 = sc2*sc2/4.0;
 
   Epsilon_2 = Param_Kappa_2*0.5*(Sensor_i+Sensor_j)*sc2;
@@ -405,11 +405,11 @@ CCentLax_Flow::CCentLax_Flow(unsigned short val_nDim, unsigned short val_nVar, C
   Param_Kappa_0 = config->GetKappa_1st_Flow();
   
   /*--- Allocate some structures ---*/
-  Diff_U = new double [nVar];
-  Velocity_i = new double [nDim];
-  Velocity_j = new double [nDim];
-  MeanVelocity = new double [nDim];
-  ProjFlux = new double [nVar];
+  Diff_U = new su2double [nVar];
+  Velocity_i = new su2double [nDim];
+  Velocity_j = new su2double [nDim];
+  MeanVelocity = new su2double [nDim];
+  ProjFlux = new su2double [nVar];
   
 }
 
@@ -422,10 +422,10 @@ CCentLax_Flow::~CCentLax_Flow(void) {
   
 }
 
-void CCentLax_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j,
+void CCentLax_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j,
                                     CConfig *config) {
   
-  double U_i[5] = {0.0,0.0,0.0,0.0,0.0}, U_j[5] = {0.0,0.0,0.0,0.0,0.0};
+  su2double U_i[5] = {0.0,0.0,0.0,0.0,0.0}, U_j[5] = {0.0,0.0,0.0,0.0,0.0};
 
   /*--- Pressure, density, enthalpy, energy, and velocity at points i and j ---*/
   
@@ -527,8 +527,8 @@ void CCentLax_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_
   Phi_j = pow(Lambda_j/(4.0*MeanLambda), Param_p);
   StretchingFactor = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j);
   
-  sc0 = 3.0*(double(Neighbor_i)+double(Neighbor_j))/(double(Neighbor_i)*double(Neighbor_j));
-  Epsilon_0 = Param_Kappa_0*sc0*double(nDim)/3.0;
+  sc0 = 3.0*(su2double(Neighbor_i)+su2double(Neighbor_j))/(su2double(Neighbor_i)*su2double(Neighbor_j));
+  Epsilon_0 = Param_Kappa_0*sc0*su2double(nDim)/3.0;
   
   /*--- Compute viscous part of the residual ---*/
   
@@ -572,17 +572,17 @@ CUpwCUSP_Flow::CUpwCUSP_Flow(unsigned short val_nDim, unsigned short val_nVar, C
   grid_movement = config->GetGrid_Movement();
   
   /*--- Allocate some structures ---*/
-  Diff_U = new double [nVar];
-  Diff_Flux = new double [nVar];
-  Velocity_i = new double [nDim];
-  Velocity_j = new double [nDim];
-  MeanVelocity = new double [nDim];
-  ProjFlux = new double [nVar];
-  ProjFlux_i = new double [nVar];
-  ProjFlux_j = new double [nVar];
-  Jacobian = new double* [nVar];
+  Diff_U = new su2double [nVar];
+  Diff_Flux = new su2double [nVar];
+  Velocity_i = new su2double [nDim];
+  Velocity_j = new su2double [nDim];
+  MeanVelocity = new su2double [nDim];
+  ProjFlux = new su2double [nVar];
+  ProjFlux_i = new su2double [nVar];
+  ProjFlux_j = new su2double [nVar];
+  Jacobian = new su2double* [nVar];
   for (iVar = 0; iVar < nVar; iVar++) {
-    Jacobian[iVar] = new double [nVar];
+    Jacobian[iVar] = new su2double [nVar];
   }
 }
 
@@ -600,7 +600,7 @@ CUpwCUSP_Flow::~CUpwCUSP_Flow(void) {
   }
 }
 
-void CUpwCUSP_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j,
+void CUpwCUSP_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j,
                                      CConfig *config) {
   
   /*--- Pressure, density, enthalpy, energy, and velocity at points i and j ---*/
@@ -758,21 +758,21 @@ CUpwAUSM_Flow::CUpwAUSM_Flow(unsigned short val_nDim, unsigned short val_nVar, C
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
   
-  Diff_U = new double [nVar];
-  Velocity_i = new double [nDim];
-  Velocity_j = new double [nDim];
-  RoeVelocity = new double [nDim];
-  delta_vel  = new double [nDim];
-  delta_wave = new double [nVar];
-  ProjFlux_i = new double [nVar];
-  ProjFlux_j = new double [nVar];
-  Lambda = new double [nVar];
-  Epsilon = new double [nVar];
-  P_Tensor = new double* [nVar];
-  invP_Tensor = new double* [nVar];
+  Diff_U = new su2double [nVar];
+  Velocity_i = new su2double [nDim];
+  Velocity_j = new su2double [nDim];
+  RoeVelocity = new su2double [nDim];
+  delta_vel  = new su2double [nDim];
+  delta_wave = new su2double [nVar];
+  ProjFlux_i = new su2double [nVar];
+  ProjFlux_j = new su2double [nVar];
+  Lambda = new su2double [nVar];
+  Epsilon = new su2double [nVar];
+  P_Tensor = new su2double* [nVar];
+  invP_Tensor = new su2double* [nVar];
   for (iVar = 0; iVar < nVar; iVar++) {
-    P_Tensor[iVar] = new double [nVar];
-    invP_Tensor[iVar] = new double [nVar];
+    P_Tensor[iVar] = new su2double [nVar];
+    invP_Tensor[iVar] = new su2double [nVar];
   }
 }
 
@@ -797,7 +797,7 @@ CUpwAUSM_Flow::~CUpwAUSM_Flow(void) {
   
 }
 
-void CUpwAUSM_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+void CUpwAUSM_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
   
   /*--- Face area (norm or the normal vector) ---*/
   Area = 0.0;
@@ -927,21 +927,21 @@ CUpwHLLC_Flow::CUpwHLLC_Flow(unsigned short val_nDim, unsigned short val_nVar, C
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
   
-  Diff_U = new double [nVar];
-  Velocity_i = new double [nDim];
-  Velocity_j = new double [nDim];
-  RoeVelocity = new double [nDim];
-  delta_vel  = new double [nDim];
-  delta_wave = new double [nVar];
-  ProjFlux_i = new double [nVar];
-  ProjFlux_j = new double [nVar];
-  Lambda = new double [nVar];
-  Epsilon = new double [nVar];
-  P_Tensor = new double* [nVar];
-  invP_Tensor = new double* [nVar];
+  Diff_U = new su2double [nVar];
+  Velocity_i = new su2double [nDim];
+  Velocity_j = new su2double [nDim];
+  RoeVelocity = new su2double [nDim];
+  delta_vel  = new su2double [nDim];
+  delta_wave = new su2double [nVar];
+  ProjFlux_i = new su2double [nVar];
+  ProjFlux_j = new su2double [nVar];
+  Lambda = new su2double [nVar];
+  Epsilon = new su2double [nVar];
+  P_Tensor = new su2double* [nVar];
+  invP_Tensor = new su2double* [nVar];
   for (iVar = 0; iVar < nVar; iVar++) {
-    P_Tensor[iVar] = new double [nVar];
-    invP_Tensor[iVar] = new double [nVar];
+    P_Tensor[iVar] = new su2double [nVar];
+    invP_Tensor[iVar] = new su2double [nVar];
   }
   
 }
@@ -967,7 +967,7 @@ CUpwHLLC_Flow::~CUpwHLLC_Flow(void) {
   
 }
 
-void CUpwHLLC_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+void CUpwHLLC_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
   
   /*--- Face area (norm or the normal vector) ---*/
   
@@ -1155,55 +1155,55 @@ void CUpwHLLC_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_
 
 #ifdef CHECK
 
-int UgpWithCvCompFlow::calcEulerFluxMatrices_HLLC(double (*val_Jacobian_i)[5], double (*val_Jacobian_j)[5], double (*val_Jacobian_i_Scal)[6], double (*val_Jacobian_j_Scal)[6],
-                                                  const double Density_i, const double *uL, const double pL, const double TL, const double h0, const double RL, const double gammaL, const double *scalL, const double kL,
-                                                  const double Density_j, const double *uR, const double pR, const double TR, const double h1, const double RR, const double gammaR, const double *scalR, const double kR,
-                                                  const double area, const double *nVec, const int nScal, const double surfVeloc)
+int UgpWithCvCompFlow::calcEulerFluxMatrices_HLLC(su2double (*val_Jacobian_i)[5], su2double (*val_Jacobian_j)[5], su2double (*val_Jacobian_i_Scal)[6], su2double (*val_Jacobian_j_Scal)[6],
+                                                  const su2double Density_i, const su2double *uL, const su2double pL, const su2double TL, const su2double h0, const su2double RL, const su2double gammaL, const su2double *scalL, const su2double kL,
+                                                  const su2double Density_j, const su2double *uR, const su2double pR, const su2double TR, const su2double h1, const su2double RR, const su2double gammaR, const su2double *scalR, const su2double kR,
+                                                  const su2double area, const su2double *nVec, const int nScal, const su2double surfVeloc)
 {
 
-  double unL  = vecDotVec3d(uL, nVec);
-  double uLuL = vecDotVec3d(uL, uL);
-  double cL   = sqrt(gammaL*pL/Density_i);
-  double hL   = gammaL/(gammaL-1.0)*pL/Density_i + 0.5*uLuL + kL;
-  //  double hL   = h0 + 0.5*uLuL + kL;
-  double eL   = hL*Density_i-pL;
+  su2double unL  = vecDotVec3d(uL, nVec);
+  su2double uLuL = vecDotVec3d(uL, uL);
+  su2double cL   = sqrt(gammaL*pL/Density_i);
+  su2double hL   = gammaL/(gammaL-1.0)*pL/Density_i + 0.5*uLuL + kL;
+  //  su2double hL   = h0 + 0.5*uLuL + kL;
+  su2double eL   = hL*Density_i-pL;
   
-  double unR  = vecDotVec3d(uR, nVec);
-  double uRuR = vecDotVec3d(uR, uR);
-  double cR   = sqrt(gammaR*pR/Density_j);
-  double hR   = gammaR/(gammaR-1.0)*pR/Density_j + 0.5*uRuR + kR;
-  //  double hR   = h1 + 0.5*uRuR + kR;
-  double eR   = hR*Density_j-pR;
+  su2double unR  = vecDotVec3d(uR, nVec);
+  su2double uRuR = vecDotVec3d(uR, uR);
+  su2double cR   = sqrt(gammaR*pR/Density_j);
+  su2double hR   = gammaR/(gammaR-1.0)*pR/Density_j + 0.5*uRuR + kR;
+  //  su2double hR   = h1 + 0.5*uRuR + kR;
+  su2double eR   = hR*Density_j-pR;
   
   
   // Roe's aveaging
-  double Rrho = sqrt(Density_j/Density_i);
-  double tmp = 1.0/(1.0+Rrho);
-  double velRoe[3];
+  su2double Rrho = sqrt(Density_j/Density_i);
+  su2double tmp = 1.0/(1.0+Rrho);
+  su2double velRoe[3];
   for (int i=0; i<3; i++)
     velRoe[i] = tmp*(uL[i] + uR[i]*Rrho);
-  double uRoe  = vecDotVec3d(velRoe, nVec);
-  double hRoe = tmp*(hL + hR*Rrho);
+  su2double uRoe  = vecDotVec3d(velRoe, nVec);
+  su2double hRoe = tmp*(hL + hR*Rrho);
   
-  //  double cRoe  = sqrt((gammaL-1.0)*(hRoe- 0.5*vecDotVec3d(velRoe, velRoe)));
-  double gamPdivRho = tmp*((gammaL*pL/Density_i+0.5*(gammaL-1.0)*uLuL) + (gammaR*pR/Density_j+0.5*(gammaR-1.0)*uRuR)*Rrho);
-  double cRoe  = sqrt(gamPdivRho - ((gammaL+gammaR)*0.5-1.0)*0.5*vecDotVec3d(velRoe, velRoe));
+  //  su2double cRoe  = sqrt((gammaL-1.0)*(hRoe- 0.5*vecDotVec3d(velRoe, velRoe)));
+  su2double gamPdivRho = tmp*((gammaL*pL/Density_i+0.5*(gammaL-1.0)*uLuL) + (gammaR*pR/Density_j+0.5*(gammaR-1.0)*uRuR)*Rrho);
+  su2double cRoe  = sqrt(gamPdivRho - ((gammaL+gammaR)*0.5-1.0)*0.5*vecDotVec3d(velRoe, velRoe));
   
   // speed of sound at L and R
-  double sL = min(uRoe-cRoe, unL-cL);
-  double sR = max(uRoe+cRoe, unR+cR);
+  su2double sL = min(uRoe-cRoe, unL-cL);
+  su2double sR = max(uRoe+cRoe, unR+cR);
   
   // speed of contact surface
-  double sM = (pL-pR-Density_i*unL*(sL-unL)+Density_j*unR*(sR-unR))/(Density_j*(sR-unR)-Density_i*(sL-unL));
+  su2double sM = (pL-pR-Density_i*unL*(sL-unL)+Density_j*unR*(sR-unR))/(Density_j*(sR-unR)-Density_i*(sL-unL));
   
   // pressure at right and left (pR=pL) side of contact surface
-  double pStar = Density_j*(unR-sR)*(unR-sM)+pR;
+  su2double pStar = Density_j*(unR-sR)*(unR-sM)+pR;
   
   if (sM >= 0.0) {
     
     if (sL > 0.0) {
       
-      double nVecArea[3];
+      su2double nVecArea[3];
       for (int i=0; i<3; i++) nVecArea[i] = nVec[i]*area;
       
       calcJacobianA(val_Jacobian_i, uL, pL, Density_i, nVecArea, 0.5*(gammaL+gammaR), 0.0);
@@ -1215,21 +1215,21 @@ int UgpWithCvCompFlow::calcEulerFluxMatrices_HLLC(double (*val_Jacobian_i)[5], d
     }
     else {
       
-      double invSLmSs = 1.0/(sL-sM);
-      double sLmuL = sL-unL;
-      double rhoSL = Density_i*sLmuL*invSLmSs;
-      double rhouSL[3];
+      su2double invSLmSs = 1.0/(sL-sM);
+      su2double sLmuL = sL-unL;
+      su2double rhoSL = Density_i*sLmuL*invSLmSs;
+      su2double rhouSL[3];
       
       for (int i=0; i<3; i++)
         rhouSL[i] = (Density_i*uL[i]*sLmuL+(pStar-pL)*nVec[i])*invSLmSs;
       
-      double eSL = (sLmuL*eL-pL*unL+pStar*sM)*invSLmSs;
-      double gammaLM1 = (gammaL-1.0);
-      double gammaRM1 = (gammaR-1.0);
-      double invrhotld = 1.0/(Density_j*(sR-unR)-Density_i*(sL-unL));
+      su2double eSL = (sLmuL*eL-pL*unL+pStar*sM)*invSLmSs;
+      su2double gammaLM1 = (gammaL-1.0);
+      su2double gammaRM1 = (gammaR-1.0);
+      su2double invrhotld = 1.0/(Density_j*(sR-unR)-Density_i*(sL-unL));
       
-      double dSMdUL[5], dSMdUR[5];
-      double dpsdUL[5], dpsdUR[5];
+      su2double dSMdUL[5], dSMdUR[5];
+      su2double dpsdUL[5], dpsdUR[5];
       
       dSMdUL[0] = -unL*unL + uLuL*gammaLM1/2.0 + sM*sL;
       dSMdUL[1] =  nVec[0]*(2.0*unL-sL-sM) - gammaLM1*uL[0];
@@ -1287,19 +1287,19 @@ int UgpWithCvCompFlow::calcEulerFluxMatrices_HLLC(double (*val_Jacobian_i)[5], d
     
     if (sR >= 0.0) {
       
-      double invSRmSs = 1.0/(sR-sM);
-      double sRmuR = sR-unR;
-      double rhoSR = Density_j*sRmuR*invSRmSs;
-      double rhouSR[3];
+      su2double invSRmSs = 1.0/(sR-sM);
+      su2double sRmuR = sR-unR;
+      su2double rhoSR = Density_j*sRmuR*invSRmSs;
+      su2double rhouSR[3];
       for (int i=0; i<3; i++)
         rhouSR[i] = (Density_j*uR[i]*sRmuR+(pStar-pR)*nVec[i])*invSRmSs;
-      double eSR = (sRmuR*eR-pR*unR+pStar*sM)*invSRmSs;
-      double gammaLM1 = (gammaL-1.0);
-      double gammaRM1 = (gammaR-1.0);
-      double invrhotld = 1.0/(Density_j*(sR-unR)-Density_i*(sL-unL));
+      su2double eSR = (sRmuR*eR-pR*unR+pStar*sM)*invSRmSs;
+      su2double gammaLM1 = (gammaL-1.0);
+      su2double gammaRM1 = (gammaR-1.0);
+      su2double invrhotld = 1.0/(Density_j*(sR-unR)-Density_i*(sL-unL));
       
-      double dSMdUL[5], dSMdUR[5];
-      double dpsdUL[5], dpsdUR[5];
+      su2double dSMdUL[5], dSMdUR[5];
+      su2double dpsdUL[5], dpsdUR[5];
       
       dSMdUL[0] = -unL*unL + uLuL*gammaLM1/2.0 + sM*sL;
       dSMdUL[1] =  nVec[0]*(2.0*unL-sL-sM) - gammaLM1*uL[0];
@@ -1352,7 +1352,7 @@ int UgpWithCvCompFlow::calcEulerFluxMatrices_HLLC(double (*val_Jacobian_i)[5], d
     
     else {
       
-      double nVecArea[3];
+      su2double nVecArea[3];
       for (int i=0; i<3; i++)        nVecArea[i] = nVec[i]*area;
       calcJacobianA(val_Jacobian_j, uR, pR, Density_j, nVecArea, 0.5*(gammaL+gammaR), 0.0);
       
@@ -1366,15 +1366,15 @@ int UgpWithCvCompFlow::calcEulerFluxMatrices_HLLC(double (*val_Jacobian_i)[5], d
   
 }
 
-void UgpWithCvCompFlow::calcSubSonicJacobeanHLLC(double (*AL)[5], double (*AR)[5],
-                                                 double Density_i, const double *uL, double pL, double eL, double qL, double psiL, double SL,
-                                                 double rhoSL, double *rhouSL, double eSL,
-                                                 double *dSMdUL, double *dSMdUR, double *dpsdUL, double *dpsdUR, double SM, double pS,
-                                                 double gamma, const double *nV) // nV is not normalized
+void UgpWithCvCompFlow::calcSubSonicJacobeanHLLC(su2double (*AL)[5], su2double (*AR)[5],
+                                                 su2double Density_i, const su2double *uL, su2double pL, su2double eL, su2double qL, su2double psiL, su2double SL,
+                                                 su2double rhoSL, su2double *rhouSL, su2double eSL,
+                                                 su2double *dSMdUL, su2double *dSMdUR, su2double *dpsdUL, su2double *dpsdUR, su2double SM, su2double pS,
+                                                 su2double gamma, const su2double *nV) // nV is not normalized
 {
   
-  double gammaMinus1 = (gamma-1.0);
-  double omL = 1.0/(SL-SM);
+  su2double gammaMinus1 = (gamma-1.0);
+  su2double omL = 1.0/(SL-SM);
   
   AL[0][0] =  SL    + rhoSL*dSMdUL[0];
   AL[0][1] = -nV[0] + rhoSL*dSMdUL[1];
@@ -1418,19 +1418,19 @@ void UgpWithCvCompFlow::calcSubSonicJacobeanHLLC(double (*AL)[5], double (*AR)[5
   
 }
 
-void UgpWithCvCompFlow::calcJacobianA(double (*A)[5], const double *vel, double pp, double rrho, const double *nV, double gamma, double surfVeloc) // nV is not normalized
+void UgpWithCvCompFlow::calcJacobianA(su2double (*A)[5], const su2double *vel, su2double pp, su2double rrho, const su2double *nV, su2double gamma, su2double surfVeloc) // nV is not normalized
 {
  
-  double kapm1 = (gamma - 1.0);
+  su2double kapm1 = (gamma - 1.0);
   
-  double nVel[3];
+  su2double nVel[3];
   nVel[0] = vel[0]*nV[0];
   nVel[1] = vel[1]*nV[1];
   nVel[2] = vel[2]*nV[2];
-  double U_k = nVel[0]+nVel[1]+nVel[2];
-  double vSquHlf = 0.5*vecDotVec3d(vel, vel);
-  double c = sqrt(gamma*pp/rrho);
-  double inv_kap_m1 = 1.0/kapm1;
+  su2double U_k = nVel[0]+nVel[1]+nVel[2];
+  su2double vSquHlf = 0.5*vecDotVec3d(vel, vel);
+  su2double c = sqrt(gamma*pp/rrho);
+  su2double inv_kap_m1 = 1.0/kapm1;
   
   A[0][0] =-surfVeloc;
   A[0][1] = nV[0];
@@ -1477,21 +1477,21 @@ CUpwRoe_Flow::CUpwRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, CCo
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
   
-  Diff_U = new double [nVar];
-  Velocity_i = new double [nDim];
-  Velocity_j = new double [nDim];
-  RoeVelocity = new double [nDim];
-  delta_vel  = new double [nDim];
-  delta_wave = new double [nVar];
-  ProjFlux_i = new double [nVar];
-  ProjFlux_j = new double [nVar];
-  Lambda = new double [nVar];
-  Epsilon = new double [nVar];
-  P_Tensor = new double* [nVar];
-  invP_Tensor = new double* [nVar];
+  Diff_U = new su2double [nVar];
+  Velocity_i = new su2double [nDim];
+  Velocity_j = new su2double [nDim];
+  RoeVelocity = new su2double [nDim];
+  delta_vel  = new su2double [nDim];
+  delta_wave = new su2double [nVar];
+  ProjFlux_i = new su2double [nVar];
+  ProjFlux_j = new su2double [nVar];
+  Lambda = new su2double [nVar];
+  Epsilon = new su2double [nVar];
+  P_Tensor = new su2double* [nVar];
+  invP_Tensor = new su2double* [nVar];
   for (iVar = 0; iVar < nVar; iVar++) {
-    P_Tensor[iVar] = new double [nVar];
-    invP_Tensor[iVar] = new double [nVar];
+    P_Tensor[iVar] = new su2double [nVar];
+    invP_Tensor[iVar] = new su2double [nVar];
   }
 }
 
@@ -1516,10 +1516,10 @@ CUpwRoe_Flow::~CUpwRoe_Flow(void) {
   
 }
 
-void CUpwRoe_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+void CUpwRoe_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
   
-  double U_i[5] = {0.0,0.0,0.0,0.0,0.0}, U_j[5] = {0.0,0.0,0.0,0.0,0.0};
-  double ProjGridVel = 0.0;
+  su2double U_i[5] = {0.0,0.0,0.0,0.0,0.0}, U_j[5] = {0.0,0.0,0.0,0.0,0.0};
+  su2double ProjGridVel = 0.0;
   
   /*--- Face area (norm or the normal vector) ---*/
   
@@ -1750,21 +1750,21 @@ CUpwGeneralRoe_Flow::CUpwGeneralRoe_Flow(unsigned short val_nDim, unsigned short
   grid_movement = config->GetGrid_Movement();
   kappa = config->GetRoe_Kappa(); // 1 is unstable
 
-  Diff_U = new double [nVar];
-  Velocity_i = new double [nDim];
-  Velocity_j = new double [nDim];
-  RoeVelocity = new double [nDim];
-  delta_vel  = new double [nDim];
-  delta_wave = new double [nVar];
-  ProjFlux_i = new double [nVar];
-  ProjFlux_j = new double [nVar];
-  Lambda = new double [nVar];
-  Epsilon = new double [nVar];
-  P_Tensor = new double* [nVar];
-  invP_Tensor = new double* [nVar];
+  Diff_U = new su2double [nVar];
+  Velocity_i = new su2double [nDim];
+  Velocity_j = new su2double [nDim];
+  RoeVelocity = new su2double [nDim];
+  delta_vel  = new su2double [nDim];
+  delta_wave = new su2double [nVar];
+  ProjFlux_i = new su2double [nVar];
+  ProjFlux_j = new su2double [nVar];
+  Lambda = new su2double [nVar];
+  Epsilon = new su2double [nVar];
+  P_Tensor = new su2double* [nVar];
+  invP_Tensor = new su2double* [nVar];
   for (iVar = 0; iVar < nVar; iVar++) {
-    P_Tensor[iVar] = new double [nVar];
-    invP_Tensor[iVar] = new double [nVar];
+    P_Tensor[iVar] = new su2double [nVar];
+    invP_Tensor[iVar] = new su2double [nVar];
   }
 }
 
@@ -1789,9 +1789,9 @@ CUpwGeneralRoe_Flow::~CUpwGeneralRoe_Flow(void) {
 
 }
 
-void CUpwGeneralRoe_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+void CUpwGeneralRoe_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
 
-  double U_i[5] = {0.0,0.0,0.0,0.0,0.0}, U_j[5] = {0.0,0.0,0.0,0.0,0.0};
+  su2double U_i[5] = {0.0,0.0,0.0,0.0,0.0}, U_j[5] = {0.0,0.0,0.0,0.0,0.0};
 
 	/*--- Face area (norm or the normal vector) ---*/
 
@@ -1890,7 +1890,7 @@ void CUpwGeneralRoe_Flow::ComputeResidual(double *val_residual, double **val_Jac
 
 	/*--- Projected velocity adjustment due to mesh motion ---*/
 	if (grid_movement) {
-		double ProjGridVel = 0.0;
+		su2double ProjGridVel = 0.0;
 		for (iDim = 0; iDim < nDim; iDim++) {
 			ProjGridVel   += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*UnitNormal[iDim];
 		}
@@ -2028,8 +2028,8 @@ void CUpwGeneralRoe_Flow::ComputeResidual(double *val_residual, double **val_Jac
 
 void CUpwGeneralRoe_Flow::ComputeRoeAverage() {
 
-	double delta_rhoStaticEnergy, err_P, s, D;//, stateSeparationLimit;
-	// double tol = 10-6;
+	su2double delta_rhoStaticEnergy, err_P, s, D;//, stateSeparationLimit;
+	// su2double tol = 10-6;
 	//
 	R = sqrt(fabs(Density_j/Density_i));
 	RoeDensity = R*Density_i;
@@ -2073,29 +2073,29 @@ CUpwMSW_Flow::CUpwMSW_Flow(unsigned short val_nDim, unsigned short val_nVar, CCo
 	implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
   
   /*--- Allocate arrays ---*/
-	Diff_U   = new double [nVar];
-  Fc_i	   = new double [nVar];
-	Fc_j	   = new double [nVar];
-	Lambda_i = new double [nVar];
-  Lambda_j = new double [nVar];
+	Diff_U   = new su2double [nVar];
+  Fc_i	   = new su2double [nVar];
+	Fc_j	   = new su2double [nVar];
+	Lambda_i = new su2double [nVar];
+  Lambda_j = new su2double [nVar];
   
-	u_i		   = new double [nDim];
-	u_j		   = new double [nDim];
-  ust_i    = new double [nDim];
-  ust_j    = new double [nDim];
-  Vst_i    = new double [nPrimVar];
-  Vst_j    = new double [nPrimVar];
-  Ust_i    = new double [nVar];
-  Ust_j    = new double [nVar];
+	u_i		   = new su2double [nDim];
+	u_j		   = new su2double [nDim];
+  ust_i    = new su2double [nDim];
+  ust_j    = new su2double [nDim];
+  Vst_i    = new su2double [nPrimVar];
+  Vst_j    = new su2double [nPrimVar];
+  Ust_i    = new su2double [nVar];
+  Ust_j    = new su2double [nVar];
   
-  Velst_i    = new double [nDim];
-  Velst_j    = new double [nDim];
+  Velst_i    = new su2double [nDim];
+  Velst_j    = new su2double [nDim];
   
-	P_Tensor		= new double* [nVar];
-	invP_Tensor	= new double* [nVar];
+	P_Tensor		= new su2double* [nVar];
+	invP_Tensor	= new su2double* [nVar];
 	for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-		P_Tensor[iVar]    = new double [nVar];
-		invP_Tensor[iVar] = new double [nVar];
+		P_Tensor[iVar]    = new su2double [nVar];
+		invP_Tensor[iVar] = new su2double [nVar];
 	}
   
 }
@@ -2128,16 +2128,16 @@ CUpwMSW_Flow::~CUpwMSW_Flow(void) {
 
 }
 
-void CUpwMSW_Flow::ComputeResidual(double *val_residual,
-                                   double **val_Jacobian_i,
-                                   double **val_Jacobian_j, CConfig *config) {
+void CUpwMSW_Flow::ComputeResidual(su2double *val_residual,
+                                   su2double **val_Jacobian_i,
+                                   su2double **val_Jacobian_j, CConfig *config) {
   
 	unsigned short iDim, iVar, jVar, kVar;
-  double P_i, P_j;
-  double ProjVel_i, ProjVel_j, ProjVelst_i, ProjVelst_j;
-  double sqvel_i, sqvel_j;
-	double alpha, w, dp, onemw;
-  double Proj_ModJac_Tensor_i, Proj_ModJac_Tensor_j;
+  su2double P_i, P_j;
+  su2double ProjVel_i, ProjVel_j, ProjVelst_i, ProjVelst_j;
+  su2double sqvel_i, sqvel_j;
+	su2double alpha, w, dp, onemw;
+  su2double Proj_ModJac_Tensor_i, Proj_ModJac_Tensor_j;
   
   /*--- Set parameters in the numerical method ---*/
   alpha = 6.0;
@@ -2291,25 +2291,25 @@ CUpwTurkel_Flow::CUpwTurkel_Flow(unsigned short val_nDim, unsigned short val_nVa
   Beta_min = config->GetminTurkelBeta();
   Beta_max = config->GetmaxTurkelBeta();
   
-  Diff_U = new double [nVar];
-  Velocity_i = new double [nDim];
-  Velocity_j = new double [nDim];
-  RoeVelocity = new double [nDim];
-  ProjFlux_i = new double [nVar];
-  ProjFlux_j = new double [nVar];
-  Lambda = new double [nVar];
-  Epsilon = new double [nVar];
-  absPeJac = new double* [nVar];
-  invRinvPe = new double* [nVar];
-  R_Tensor  = new double* [nVar];
-  Matrix    = new double* [nVar];
-  Art_Visc  = new double* [nVar];
+  Diff_U = new su2double [nVar];
+  Velocity_i = new su2double [nDim];
+  Velocity_j = new su2double [nDim];
+  RoeVelocity = new su2double [nDim];
+  ProjFlux_i = new su2double [nVar];
+  ProjFlux_j = new su2double [nVar];
+  Lambda = new su2double [nVar];
+  Epsilon = new su2double [nVar];
+  absPeJac = new su2double* [nVar];
+  invRinvPe = new su2double* [nVar];
+  R_Tensor  = new su2double* [nVar];
+  Matrix    = new su2double* [nVar];
+  Art_Visc  = new su2double* [nVar];
   for (iVar = 0; iVar < nVar; iVar++) {
-    absPeJac[iVar] = new double [nVar];
-    invRinvPe[iVar] = new double [nVar];
-    Matrix[iVar] = new double [nVar];
-    Art_Visc[iVar] = new double [nVar];
-    R_Tensor[iVar] = new double [nVar];
+    absPeJac[iVar] = new su2double [nVar];
+    invRinvPe[iVar] = new su2double [nVar];
+    Matrix[iVar] = new su2double [nVar];
+    Art_Visc[iVar] = new su2double [nVar];
+    R_Tensor[iVar] = new su2double [nVar];
   }
 }
 
@@ -2338,9 +2338,9 @@ CUpwTurkel_Flow::~CUpwTurkel_Flow(void) {
   
 }
 
-void CUpwTurkel_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+void CUpwTurkel_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
   
-  double U_i[5] = {0.0,0.0,0.0,0.0,0.0}, U_j[5] = {0.0,0.0,0.0,0.0,0.0};
+  su2double U_i[5] = {0.0,0.0,0.0,0.0,0.0}, U_j[5] = {0.0,0.0,0.0,0.0,0.0};
 
   /*--- Face area (norm or the normal vector) ---*/
   
@@ -2410,7 +2410,7 @@ void CUpwTurkel_Flow::ComputeResidual(double *val_residual, double **val_Jacobia
   
   /*--- Projected velocity adjustment due to mesh motion ---*/
   if (grid_movement) {
-    double ProjGridVel = 0.0;
+    su2double ProjGridVel = 0.0;
     for (iDim = 0; iDim < nDim; iDim++) {
       ProjGridVel   += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*UnitNormal[iDim];
     }
@@ -2515,20 +2515,20 @@ CUpwArtComp_Flow::CUpwArtComp_Flow(unsigned short val_nDim, unsigned short val_n
   gravity = config->GetGravityForce();
   Froude = config->GetFroude();
   
-  Diff_U = new double [nVar];
-  Velocity_i = new double [nDim];
-  Velocity_j = new double [nDim];
-  MeanVelocity = new double [nDim];
-  ProjFlux_i = new double [nVar];
-  ProjFlux_j = new double [nVar];
-  Lambda = new double [nVar];
-  Epsilon = new double [nVar];
-  P_Tensor = new double* [nVar];
-  invP_Tensor = new double* [nVar];
+  Diff_U = new su2double [nVar];
+  Velocity_i = new su2double [nDim];
+  Velocity_j = new su2double [nDim];
+  MeanVelocity = new su2double [nDim];
+  ProjFlux_i = new su2double [nVar];
+  ProjFlux_j = new su2double [nVar];
+  Lambda = new su2double [nVar];
+  Epsilon = new su2double [nVar];
+  P_Tensor = new su2double* [nVar];
+  invP_Tensor = new su2double* [nVar];
   
   for (iVar = 0; iVar < nVar; iVar++) {
-    P_Tensor[iVar] = new double [nVar];
-    invP_Tensor[iVar] = new double [nVar];
+    P_Tensor[iVar] = new su2double [nVar];
+    invP_Tensor[iVar] = new su2double [nVar];
   }
   
 }
@@ -2553,7 +2553,7 @@ CUpwArtComp_Flow::~CUpwArtComp_Flow(void) {
   
 }
 
-void CUpwArtComp_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+void CUpwArtComp_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
   
   /*--- Face area (norm or the normal vector) ---*/
   
@@ -2662,20 +2662,20 @@ CUpwArtComp_FreeSurf_Flow::CUpwArtComp_FreeSurf_Flow(unsigned short val_nDim, un
   gravity = config->GetGravityForce();
   Froude = config->GetFroude();
   
-  Diff_U = new double [nVar];
-  Velocity_i = new double [nDim];
-  Velocity_j = new double [nDim];
-  MeanVelocity = new double [nDim];
-  ProjFlux_i = new double [nVar];
-  ProjFlux_j = new double [nVar];
-  Lambda = new double [nVar];
-  Epsilon = new double [nVar];
-  P_Tensor = new double* [nVar];
-  invP_Tensor = new double* [nVar];
+  Diff_U = new su2double [nVar];
+  Velocity_i = new su2double [nDim];
+  Velocity_j = new su2double [nDim];
+  MeanVelocity = new su2double [nDim];
+  ProjFlux_i = new su2double [nVar];
+  ProjFlux_j = new su2double [nVar];
+  Lambda = new su2double [nVar];
+  Epsilon = new su2double [nVar];
+  P_Tensor = new su2double* [nVar];
+  invP_Tensor = new su2double* [nVar];
   
   for (iVar = 0; iVar < nVar; iVar++) {
-    P_Tensor[iVar] = new double [nVar];
-    invP_Tensor[iVar] = new double [nVar];
+    P_Tensor[iVar] = new su2double [nVar];
+    invP_Tensor[iVar] = new su2double [nVar];
   }
   
 }
@@ -2700,7 +2700,7 @@ CUpwArtComp_FreeSurf_Flow::~CUpwArtComp_FreeSurf_Flow(void) {
   
 }
 
-void CUpwArtComp_FreeSurf_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+void CUpwArtComp_FreeSurf_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
   
   /*--- Compute face area ---*/
   
@@ -2733,7 +2733,7 @@ void CUpwArtComp_FreeSurf_Flow::ComputeResidual(double *val_residual, double **v
     ProjVelocity += MeanVelocity[iDim]*Normal[iDim];
   }
   
-  double epsilon = config->GetFreeSurface_Thickness(), Delta = 0.0;
+  su2double epsilon = config->GetFreeSurface_Thickness(), Delta = 0.0;
   if (LevelSet_i < -epsilon) Delta = 0.0;
   if (fabs(LevelSet_i) <= epsilon) Delta = 0.5*(1.0+cos(PI_NUMBER*LevelSet_i/epsilon))/epsilon;
   if (LevelSet_i > epsilon) Delta = 0.0;
@@ -2766,8 +2766,8 @@ void CUpwArtComp_FreeSurf_Flow::ComputeResidual(double *val_residual, double **v
   
   /*--- Flow eigenvalues ---*/
   
-  double a = MeanBetaInc2/MeanDensityInc, b = MeanLevelSet/MeanDensityInc, c = dMeanDensityInc;
-  double e = (2.0 - b*c)*ProjVelocity, f = sqrt(4.0*a*Area*Area + e*e);
+  su2double a = MeanBetaInc2/MeanDensityInc, b = MeanLevelSet/MeanDensityInc, c = dMeanDensityInc;
+  su2double e = (2.0 - b*c)*ProjVelocity, f = sqrt(4.0*a*Area*Area + e*e);
   
   if (nDim == 2) {
     Lambda[0] = ProjVelocity;
@@ -2840,12 +2840,12 @@ CCentJSTArtComp_Flow::CCentJSTArtComp_Flow(unsigned short val_nDim, unsigned sho
   Param_Kappa_4 = config->GetKappa_4th_Flow();
   
   /*--- Allocate some structures ---*/
-  Diff_U = new double [nVar];
-  Diff_Lapl = new double [nVar];
-  Velocity_i = new double [nDim];
-  Velocity_j = new double [nDim];
-  MeanVelocity = new double [nDim];
-  ProjFlux = new double [nVar];
+  Diff_U = new su2double [nVar];
+  Diff_Lapl = new su2double [nVar];
+  Velocity_i = new su2double [nDim];
+  Velocity_j = new su2double [nDim];
+  MeanVelocity = new su2double [nDim];
+  ProjFlux = new su2double [nVar];
   
 }
 
@@ -2860,10 +2860,10 @@ CCentJSTArtComp_Flow::~CCentJSTArtComp_Flow(void) {
   
 }
 
-void CCentJSTArtComp_Flow::ComputeResidual(double *val_residual,
-                                           double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+void CCentJSTArtComp_Flow::ComputeResidual(su2double *val_residual,
+                                           su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
   
-  double U_i[4] = {0.0,0.0,0.0,0.0}, U_j[4] = {0.0,0.0,0.0,0.0};
+  su2double U_i[4] = {0.0,0.0,0.0,0.0}, U_j[4] = {0.0,0.0,0.0,0.0};
 
   /*--- Primitive variables at point i and j ---*/
   
@@ -2937,7 +2937,7 @@ void CCentJSTArtComp_Flow::ComputeResidual(double *val_residual,
   Phi_j = pow(Lambda_j/(4.0*MeanLambda), Param_p);
   StretchingFactor = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j);
   
-  sc2 = 3.0*(double(Neighbor_i)+double(Neighbor_j))/(double(Neighbor_i)*double(Neighbor_j));
+  sc2 = 3.0*(su2double(Neighbor_i)+su2double(Neighbor_j))/(su2double(Neighbor_i)*su2double(Neighbor_j));
   sc4 = sc2*sc2/4.0;
   
   Epsilon_2 = Param_Kappa_2*0.5*(Sensor_i+Sensor_j)*sc2;
@@ -2949,8 +2949,8 @@ void CCentJSTArtComp_Flow::ComputeResidual(double *val_residual,
     val_residual[iVar] += (Epsilon_2*Diff_U[iVar] - Epsilon_4*Diff_Lapl[iVar])*StretchingFactor*MeanLambda;
   
   if (implicit) {
-    cte_0 = (Epsilon_2 + Epsilon_4*double(Neighbor_i+1))*StretchingFactor*MeanLambda;
-    cte_1 = (Epsilon_2 + Epsilon_4*double(Neighbor_j+1))*StretchingFactor*MeanLambda;
+    cte_0 = (Epsilon_2 + Epsilon_4*su2double(Neighbor_i+1))*StretchingFactor*MeanLambda;
+    cte_1 = (Epsilon_2 + Epsilon_4*su2double(Neighbor_j+1))*StretchingFactor*MeanLambda;
     
     for (iVar = 0; iVar < nVar; iVar++) {
       val_Jacobian_i[iVar][iVar] += cte_0;
@@ -2975,11 +2975,11 @@ CCentLaxArtComp_Flow::CCentLaxArtComp_Flow(unsigned short val_nDim, unsigned sho
   Param_Kappa_0 = config->GetKappa_1st_Flow();
   
   /*--- Allocate some structures ---*/
-  Diff_U = new double [nVar];
-  Velocity_i = new double [nDim];
-  Velocity_j = new double [nDim];
-  MeanVelocity = new double [nDim];
-  ProjFlux = new double [nVar];
+  Diff_U = new su2double [nVar];
+  Velocity_i = new su2double [nDim];
+  Velocity_j = new su2double [nDim];
+  MeanVelocity = new su2double [nDim];
+  ProjFlux = new su2double [nVar];
   
 }
 
@@ -2993,10 +2993,10 @@ CCentLaxArtComp_Flow::~CCentLaxArtComp_Flow(void) {
   
 }
 
-void CCentLaxArtComp_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j,
+void CCentLaxArtComp_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j,
                                            CConfig *config) {
   
-  double U_i[4] = {0.0,0.0,0.0,0.0}, U_j[4] = {0.0,0.0,0.0,0.0};
+  su2double U_i[4] = {0.0,0.0,0.0,0.0}, U_j[4] = {0.0,0.0,0.0,0.0};
 
   /*--- Conservative variables at point i and j ---*/
   
@@ -3070,8 +3070,8 @@ void CCentLaxArtComp_Flow::ComputeResidual(double *val_residual, double **val_Ja
   Phi_j = pow(Lambda_j/(4.0*MeanLambda), Param_p);
   StretchingFactor = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j);
   
-  sc0 = 3.0*(double(Neighbor_i)+double(Neighbor_j))/(double(Neighbor_i)*double(Neighbor_j));
-  Epsilon_0 = Param_Kappa_0*sc0*double(nDim)/3.0;
+  sc0 = 3.0*(su2double(Neighbor_i)+su2double(Neighbor_j))/(su2double(Neighbor_i)*su2double(Neighbor_j));
+  Epsilon_0 = Param_Kappa_0*sc0*su2double(nDim)/3.0;
   
   /*--- Compute viscous part of the residual ---*/
   for (iVar = 0; iVar < nVar; iVar++)
@@ -3090,13 +3090,13 @@ CAvgGrad_Flow::CAvgGrad_Flow(unsigned short val_nDim, unsigned short val_nVar, C
 
 	implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
-	PrimVar_i = new double [nDim+3];
-	PrimVar_j = new double [nDim+3];
-	Mean_PrimVar = new double [nDim+3];
+	PrimVar_i = new su2double [nDim+3];
+	PrimVar_j = new su2double [nDim+3];
+	Mean_PrimVar = new su2double [nDim+3];
   
-	Mean_GradPrimVar = new double* [nDim+1];
+	Mean_GradPrimVar = new su2double* [nDim+1];
 	for (iVar = 0; iVar < nDim+1; iVar++)
-		Mean_GradPrimVar[iVar] = new double [nDim];
+		Mean_GradPrimVar[iVar] = new su2double [nDim];
   
 }
 
@@ -3111,7 +3111,7 @@ CAvgGrad_Flow::~CAvgGrad_Flow(void) {
   
 }
 
-void CAvgGrad_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+void CAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
 
 	/*--- Normalized normal vector ---*/
   
@@ -3188,15 +3188,15 @@ CGeneralAvgGrad_Flow::CGeneralAvgGrad_Flow(unsigned short val_nDim, unsigned sho
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   
   /*--- Compressible flow, primitive variables nDim+3, (vx, vy, vz, P, rho, h) ---*/
-  PrimVar_i = new double [nDim+4];
-  PrimVar_j = new double [nDim+4];
-  Mean_PrimVar = new double [nDim+4];
-  Mean_SecVar = new double [2];
+  PrimVar_i = new su2double [nDim+4];
+  PrimVar_j = new su2double [nDim+4];
+  Mean_PrimVar = new su2double [nDim+4];
+  Mean_SecVar = new su2double [2];
   
   /*--- Compressible flow, primitive gradient variables nDim+3, (T, vx, vy, vz) ---*/
-  Mean_GradPrimVar = new double* [nDim+1];
+  Mean_GradPrimVar = new su2double* [nDim+1];
   for (iVar = 0; iVar < nDim+1; iVar++)
-    Mean_GradPrimVar[iVar] = new double [nDim];
+    Mean_GradPrimVar[iVar] = new su2double [nDim];
 }
 
 CGeneralAvgGrad_Flow::~CGeneralAvgGrad_Flow(void) {
@@ -3213,7 +3213,7 @@ CGeneralAvgGrad_Flow::~CGeneralAvgGrad_Flow(void) {
   
 }
 
-void CGeneralAvgGrad_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+void CGeneralAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
   
   /*--- Normalized normal vector ---*/
   Area = 0.0;
@@ -3297,12 +3297,12 @@ CAvgGradArtComp_Flow::CAvgGradArtComp_Flow(unsigned short val_nDim, unsigned sho
   
   /*--- Incompressible flow, primitive variables nDim+1, (P, vx, vy, vz) ---*/
   
-  Mean_GradPrimVar = new double* [nVar];
+  Mean_GradPrimVar = new su2double* [nVar];
   
   /*--- Incompressible flow, gradient primitive variables nDim+1, (P, vx, vy, vz) ---*/
   
   for (iVar = 0; iVar < nVar; iVar++)
-    Mean_GradPrimVar[iVar] = new double [nDim];
+    Mean_GradPrimVar[iVar] = new su2double [nDim];
   
 }
 
@@ -3314,8 +3314,8 @@ CAvgGradArtComp_Flow::~CAvgGradArtComp_Flow(void) {
   
 }
 
-void CAvgGradArtComp_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i,
-                                           double **val_Jacobian_j, CConfig *config) {
+void CAvgGradArtComp_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i,
+                                           su2double **val_Jacobian_j, CConfig *config) {
   
   /*--- Normalized normal vector ---*/
   
@@ -3383,15 +3383,15 @@ CAvgGradCorrected_Flow::CAvgGradCorrected_Flow(unsigned short val_nDim, unsigned
 	implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   limiter = config->GetViscous_Limiter_Flow();
 
-	PrimVar_i = new double [nDim+3];
-	PrimVar_j = new double [nDim+3];
-	Mean_PrimVar = new double [nDim+3];
+	PrimVar_i = new su2double [nDim+3];
+	PrimVar_j = new su2double [nDim+3];
+	Mean_PrimVar = new su2double [nDim+3];
   
-	Proj_Mean_GradPrimVar_Edge = new double [nDim+1];
-	Mean_GradPrimVar = new double* [nDim+1];
+	Proj_Mean_GradPrimVar_Edge = new su2double [nDim+1];
+	Mean_GradPrimVar = new su2double* [nDim+1];
 	for (iVar = 0; iVar < nDim+1; iVar++)
-		Mean_GradPrimVar[iVar] = new double [nDim];
-	Edge_Vector = new double [nDim];
+		Mean_GradPrimVar[iVar] = new su2double [nDim];
+	Edge_Vector = new su2double [nDim];
   
 }
 CAvgGradCorrected_Flow::~CAvgGradCorrected_Flow(void) {
@@ -3406,7 +3406,7 @@ CAvgGradCorrected_Flow::~CAvgGradCorrected_Flow(void) {
 	delete [] Mean_GradPrimVar;
   
 }
-void CAvgGradCorrected_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+void CAvgGradCorrected_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
 
 	/*--- Normalized normal vector ---*/
   
@@ -3505,18 +3505,18 @@ void CAvgGradCorrected_Flow::ComputeResidual(double *val_residual, double **val_
 //  implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 //
 //  /*--- Compressible flow, primitive variables nDim+3, (T, vx, vy, vz, P, rho) ---*/
-//  PrimVar_i = new double [nDim+3];
-//  PrimVar_j = new double [nDim+3];
-//  Mean_PrimVar = new double [nDim+3];
-//  Mean_SecVar = new double [8];
+//  PrimVar_i = new su2double [nDim+3];
+//  PrimVar_j = new su2double [nDim+3];
+//  Mean_PrimVar = new su2double [nDim+3];
+//  Mean_SecVar = new su2double [8];
 //
 //  /*--- Compressible flow, primitive gradient variables nDim+1, (T, vx, vy, vz) ---*/
-//  Proj_Mean_GradPrimVar_Edge = new double [nDim+1];
-//  Mean_GradPrimVar = new double* [nDim+1];
+//  Proj_Mean_GradPrimVar_Edge = new su2double [nDim+1];
+//  Mean_GradPrimVar = new su2double* [nDim+1];
 //  for (iVar = 0; iVar < nDim+1; iVar++)
-//    Mean_GradPrimVar[iVar] = new double [nDim];
+//    Mean_GradPrimVar[iVar] = new su2double [nDim];
 //
-//  Edge_Vector = new double [nDim];
+//  Edge_Vector = new su2double [nDim];
 //
 //}
 //
@@ -3535,7 +3535,7 @@ void CAvgGradCorrected_Flow::ComputeResidual(double *val_residual, double **val_
 //
 //}
 //
-//void CGeneralAvgGradCorrected_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+//void CGeneralAvgGradCorrected_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
 //
 //  /*--- Normalized normal vector ---*/
 //
@@ -3635,18 +3635,18 @@ CGeneralAvgGradCorrected_Flow::CGeneralAvgGradCorrected_Flow(unsigned short val_
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   
   /*--- Compressible flow, primitive variables nDim+3, (vx, vy, vz, P, rho, h) ---*/
-  PrimVar_i = new double [nDim+4];
-  PrimVar_j = new double [nDim+4];
-  Mean_PrimVar = new double [nDim+4];
-  Mean_SecVar = new double [2];
+  PrimVar_i = new su2double [nDim+4];
+  PrimVar_j = new su2double [nDim+4];
+  Mean_PrimVar = new su2double [nDim+4];
+  Mean_SecVar = new su2double [2];
   
   /*--- Compressible flow, primitive gradient variables nDim+1, (T, vx, vy, vz) ---*/
-  Proj_Mean_GradPrimVar_Edge = new double [nDim+1];
-  Mean_GradPrimVar = new double* [nDim+1];
+  Proj_Mean_GradPrimVar_Edge = new su2double [nDim+1];
+  Mean_GradPrimVar = new su2double* [nDim+1];
   for (iVar = 0; iVar < nDim+1; iVar++)
-    Mean_GradPrimVar[iVar] = new double [nDim];
+    Mean_GradPrimVar[iVar] = new su2double [nDim];
   
-  Edge_Vector = new double [nDim];
+  Edge_Vector = new su2double [nDim];
   
 }
 
@@ -3665,7 +3665,7 @@ CGeneralAvgGradCorrected_Flow::~CGeneralAvgGradCorrected_Flow(void) {
   
 }
 
-void CGeneralAvgGradCorrected_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+void CGeneralAvgGradCorrected_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
   
   /*--- Normalized normal vector ---*/
   
@@ -3764,14 +3764,14 @@ CAvgGradCorrectedArtComp_Flow::CAvgGradCorrectedArtComp_Flow(unsigned short val_
   
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   
-  PrimVar_i = new double [nVar];
-  PrimVar_j = new double [nVar];
-  Proj_Mean_GradPrimVar_Edge = new double [nVar];
-  Edge_Vector = new double [nDim];
+  PrimVar_i = new su2double [nVar];
+  PrimVar_j = new su2double [nVar];
+  Proj_Mean_GradPrimVar_Edge = new su2double [nVar];
+  Edge_Vector = new su2double [nDim];
   
-  Mean_GradPrimVar = new double* [nVar];
+  Mean_GradPrimVar = new su2double* [nVar];
   for (iVar = 0; iVar < nVar; iVar++)
-    Mean_GradPrimVar[iVar] = new double [nDim];
+    Mean_GradPrimVar[iVar] = new su2double [nDim];
   
 }
 
@@ -3788,7 +3788,7 @@ CAvgGradCorrectedArtComp_Flow::~CAvgGradCorrectedArtComp_Flow(void) {
   
 }
 
-void CAvgGradCorrectedArtComp_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+void CAvgGradCorrectedArtComp_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
   
   /*--- Normalized normal vector ---*/
   
@@ -3880,7 +3880,7 @@ CSourceGravity::CSourceGravity(unsigned short val_nDim, unsigned short val_nVar,
 
 CSourceGravity::~CSourceGravity(void) { }
 
-void CSourceGravity::ComputeResidual(double *val_residual, CConfig *config) {
+void CSourceGravity::ComputeResidual(su2double *val_residual, CConfig *config) {
   unsigned short iVar;
   
   for (iVar = 0; iVar < nVar; iVar++)
@@ -3913,10 +3913,10 @@ CSourceRotatingFrame_Flow::CSourceRotatingFrame_Flow(unsigned short val_nDim, un
 
 CSourceRotatingFrame_Flow::~CSourceRotatingFrame_Flow(void) { }
 
-void CSourceRotatingFrame_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i, CConfig *config) {
+void CSourceRotatingFrame_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config) {
   
   unsigned short iDim, iVar, jVar;
-  double Omega[3] = {0,0,0}, Momentum[3] = {0,0,0};
+  su2double Omega[3] = {0,0,0}, Momentum[3] = {0,0,0};
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   
   /*--- Retrieve the angular velocity vector from config. ---*/
@@ -3975,9 +3975,9 @@ CSourceAxisymmetric_Flow::CSourceAxisymmetric_Flow(unsigned short val_nDim, unsi
 
 CSourceAxisymmetric_Flow::~CSourceAxisymmetric_Flow(void) { }
 
-void CSourceAxisymmetric_Flow::ComputeResidual(double *val_residual, double **Jacobian_i, CConfig *config) {
+void CSourceAxisymmetric_Flow::ComputeResidual(su2double *val_residual, su2double **Jacobian_i, CConfig *config) {
   
-  double yinv, Pressure_i, Enthalpy_i, Velocity_i, sq_vel;
+  su2double yinv, Pressure_i, Enthalpy_i, Velocity_i, sq_vel;
   unsigned short iDim;
   
   bool implicit = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
@@ -4044,9 +4044,9 @@ CSourceWindGust::CSourceWindGust(unsigned short val_nDim, unsigned short val_nVa
 
 CSourceWindGust::~CSourceWindGust(void) { }
 
-void CSourceWindGust::ComputeResidual(double *val_residual, double **val_Jacobian_i, CConfig *config) {
+void CSourceWindGust::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config) {
   
-  double u_gust, v_gust, du_gust_dx, du_gust_dy, du_gust_dt, dv_gust_dx, dv_gust_dy, dv_gust_dt, smx, smy, se, rho, u, v, p;
+  su2double u_gust, v_gust, du_gust_dx, du_gust_dy, du_gust_dt, dv_gust_dx, dv_gust_dy, dv_gust_dt, smx, smy, se, rho, u, v, p;
   unsigned short GustDir = config->GetGust_Dir(); //Gust direction
   
   u_gust = WindGust_i[0];

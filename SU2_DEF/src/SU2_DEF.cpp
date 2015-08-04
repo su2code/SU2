@@ -35,7 +35,7 @@ using namespace std;
 int main(int argc, char *argv[]) {
   
   unsigned short iZone, nZone = SINGLE_ZONE;
-  double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
+  su2double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
   char config_file_name[MAX_STRING_SIZE];
   int rank = MASTER_NODE, size = SINGLE_NODE;
   string str;
@@ -43,7 +43,7 @@ int main(int argc, char *argv[]) {
   /*--- MPI initialization ---*/
 
 #ifdef HAVE_MPI
-  MPI_Init(&argc,&argv);
+  SU2_MPI::Init(&argc,&argv);
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);
   MPI_Comm_size(MPI_COMM_WORLD,&size);
 #endif
@@ -122,7 +122,7 @@ int main(int argc, char *argv[]) {
 #ifdef HAVE_MPI
   StartTime = MPI_Wtime();
 #else
-  StartTime = double(clock())/double(CLOCKS_PER_SEC);
+  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #endif
   
   /*--- Computational grid preprocesing ---*/
@@ -161,7 +161,7 @@ int main(int argc, char *argv[]) {
     output->SetMesh_Files(geometry_container, config_container, SINGLE_ZONE, true, false);
 
 //    if (rank == MASTER_NODE) cout << "Writing an STL file of the surface mesh." << endl;
-//    if (size > 1) sprintf (buffer_char, "_%d.stl", rank+1); else sprintf (buffer_char, ".stl");
+//    if (size > 1) SPRINTF (buffer_char, "_%d.stl", rank+1); else SPRINTF (buffer_char, ".stl");
 //    strcpy (out_file, "Surface_Grid"); strcat(out_file, buffer_char); geometry[ZONE_0]->SetBoundSTL(out_file, true, config[ZONE_0]);
     
   }
@@ -248,7 +248,7 @@ int main(int argc, char *argv[]) {
 #ifdef HAVE_MPI
   StopTime = MPI_Wtime();
 #else
-  StopTime = double(clock())/double(CLOCKS_PER_SEC);
+  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #endif
   
   /*--- Compute/print the total time for performance benchmarking. ---*/
