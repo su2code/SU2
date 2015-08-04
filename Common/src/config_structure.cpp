@@ -196,10 +196,10 @@ void CConfig::SetRunTime_Options(void) {
 
 void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZone) {
   
-  double default_vec_3d[3];
-  double default_vec_4d[4];
-  double default_vec_2d[2];
-  double default_vec_6d[6];
+  su2double default_vec_3d[3];
+  su2double default_vec_4d[4];
+  su2double default_vec_2d[2];
+  su2double default_vec_6d[6];
   
   nZone = val_nZone;
   iZone = val_iZone;
@@ -225,8 +225,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   
   /*!\brief PHYSICAL_PROBLEM \n DESCRIPTION: Physical governing equations \n Options: see \link Solver_Map \endlink \n Default: NO_SOLVER \ingroup Config*/
   addEnumOption("PHYSICAL_PROBLEM", Kind_Solver, Solver_Map, NO_SOLVER);
-  /*!\brief MATH_PROBLEM  \n DESCRIPTION: Mathematical problem \n  Options: DIRECT, CONTINUOUS_ADJOINT \ingroup Config*/
-  addMathProblemOption("MATH_PROBLEM" , Adjoint, false , Linearized, false, Restart_Flow, false);
+  /*!\brief MATH_PROBLEM  \n DESCRIPTION: Mathematical problem \n  Options: DIRECT, ADJOINT \ingroup Config*/
+  addMathProblemOption("MATH_PROBLEM" , Adjoint, false , Linearized, false, Restart_Flow, false, DiscreteAdjoint, false);
   /*!\brief KIND_TURB_MODEL \n DESCRIPTION: Specify turbulence model \n Options: see \link Turb_Model_Map \endlink \n Default: NO_TURB_MODEL \ingroup Config*/
   addEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, NO_TURB_MODEL);
 
@@ -618,6 +618,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addUnsignedShortOption("ADJTURB_LIN_ITER", AdjTurb_Linear_Iter, 10);
   /* DESCRIPTION: Entropy fix factor */
   addDoubleOption("ENTROPY_FIX_COEFF", EntropyFix_Coeff, 0.001);
+  /* DESCRIPTION: Linear solver for the discete adjoint systems */
+  addEnumOption("DISCADJ_LIN_SOLVER", Kind_DiscAdj_Linear_Solver, Linear_Solver_Map, FGMRES);
+  /* DESCRIPTION: Preconditioner for the discrete adjoint Krylov linear solvers */
+  addEnumOption("DISCADJ_LIN_PREC", Kind_DiscAdj_Linear_Prec, Linear_Solver_Prec_Map, ILU);
   
   /*!\par CONFIG_CATEGORY: Convergence\ingroup Config*/
   /*--- Options related to convergence ---*/
@@ -1291,6 +1295,12 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Surface continuity at the intersection with the FFD */
   addEnumOption("FFD_CONTINUITY", FFD_Continuity, Continuity_Map, DERIVATIVE_2ND);
 
+  /*--- Options for the direct differentiation methods ---*/
+  /*!\par CONFIG_CATEGORY: Direct Differentation options\ingroup Config*/
+
+  /* DESCRIPTION: Direct differentiation mode */
+  addEnumOption("DIRECT_DIFF", DirectDiff, DirectDiff_Var_Map, NO_DERIVATIVE);
+
   /*--- options that are used in the python optimization scripts. These have no effect on the c++ toolsuite ---*/
   /*!\par CONFIG_CATEGORY:Python Options\ingroup Config*/
 
@@ -1770,7 +1780,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Motion Origin: ---*/
   
   if (Motion_Origin_X == NULL) {
-    Motion_Origin_X = new double[nMoving];
+    Motion_Origin_X = new su2double[nMoving];
     for (iZone = 0; iZone < nMoving; iZone++ )
       Motion_Origin_X[iZone] = 0.0;
   } else {
@@ -1781,7 +1791,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
   
   if (Motion_Origin_Y == NULL) {
-    Motion_Origin_Y = new double[nMoving];
+    Motion_Origin_Y = new su2double[nMoving];
     for (iZone = 0; iZone < nMoving; iZone++ )
       Motion_Origin_Y[iZone] = 0.0;
   } else {
@@ -1792,7 +1802,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
   
   if (Motion_Origin_Z == NULL) {
-    Motion_Origin_Z = new double[nMoving];
+    Motion_Origin_Z = new su2double[nMoving];
     for (iZone = 0; iZone < nMoving; iZone++ )
       Motion_Origin_Z[iZone] = 0.0;
   } else {
@@ -1816,7 +1826,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Translation: ---*/
   
   if (Translation_Rate_X == NULL) {
-    Translation_Rate_X = new double[nMoving];
+    Translation_Rate_X = new su2double[nMoving];
     for (iZone = 0; iZone < nMoving; iZone++ )
       Translation_Rate_X[iZone] = 0.0;
   } else {
@@ -1827,7 +1837,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
   
   if (Translation_Rate_Y == NULL) {
-    Translation_Rate_Y = new double[nMoving];
+    Translation_Rate_Y = new su2double[nMoving];
     for (iZone = 0; iZone < nMoving; iZone++ )
       Translation_Rate_Y[iZone] = 0.0;
   } else {
@@ -1838,7 +1848,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
   
   if (Translation_Rate_Z == NULL) {
-    Translation_Rate_Z = new double[nMoving];
+    Translation_Rate_Z = new su2double[nMoving];
     for (iZone = 0; iZone < nMoving; iZone++ )
       Translation_Rate_Z[iZone] = 0.0;
   } else {
@@ -1851,7 +1861,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Rotation: ---*/
   
   if (Rotation_Rate_X == NULL) {
-    Rotation_Rate_X = new double[nMoving];
+    Rotation_Rate_X = new su2double[nMoving];
     for (iZone = 0; iZone < nMoving; iZone++ )
       Rotation_Rate_X[iZone] = 0.0;
   } else {
@@ -1862,7 +1872,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
   
   if (Rotation_Rate_Y == NULL) {
-    Rotation_Rate_Y = new double[nMoving];
+    Rotation_Rate_Y = new su2double[nMoving];
     for (iZone = 0; iZone < nMoving; iZone++ )
       Rotation_Rate_Y[iZone] = 0.0;
   } else {
@@ -1873,7 +1883,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
   
   if (Rotation_Rate_Z == NULL) {
-    Rotation_Rate_Z = new double[nMoving];
+    Rotation_Rate_Z = new su2double[nMoving];
     for (iZone = 0; iZone < nMoving; iZone++ )
       Rotation_Rate_Z[iZone] = 0.0;
   } else {
@@ -1886,7 +1896,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Pitching: ---*/
   
   if (Pitching_Omega_X == NULL) {
-    Pitching_Omega_X = new double[nMoving];
+    Pitching_Omega_X = new su2double[nMoving];
     for (iZone = 0; iZone < nMoving; iZone++ )
       Pitching_Omega_X[iZone] = 0.0;
   } else {
@@ -1897,7 +1907,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
   
   if (Pitching_Omega_Y == NULL) {
-    Pitching_Omega_Y = new double[nMoving];
+    Pitching_Omega_Y = new su2double[nMoving];
     for (iZone = 0; iZone < nMoving; iZone++ )
       Pitching_Omega_Y[iZone] = 0.0;
   } else {
@@ -1908,7 +1918,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
   
   if (Pitching_Omega_Z == NULL) {
-    Pitching_Omega_Z = new double[nMoving];
+    Pitching_Omega_Z = new su2double[nMoving];
     for (iZone = 0; iZone < nMoving; iZone++ )
       Pitching_Omega_Z[iZone] = 0.0;
   } else {
@@ -1921,7 +1931,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Pitching Amplitude: ---*/
   
   if (Pitching_Ampl_X == NULL) {
-    Pitching_Ampl_X = new double[nMoving];
+    Pitching_Ampl_X = new su2double[nMoving];
     for (iZone = 0; iZone < nMoving; iZone++ )
       Pitching_Ampl_X[iZone] = 0.0;
   } else {
@@ -1932,7 +1942,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
   
   if (Pitching_Ampl_Y == NULL) {
-    Pitching_Ampl_Y = new double[nMoving];
+    Pitching_Ampl_Y = new su2double[nMoving];
     for (iZone = 0; iZone < nMoving; iZone++ )
       Pitching_Ampl_Y[iZone] = 0.0;
   } else {
@@ -1943,7 +1953,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
   
   if (Pitching_Ampl_Z == NULL) {
-    Pitching_Ampl_Z = new double[nMoving];
+    Pitching_Ampl_Z = new su2double[nMoving];
     for (iZone = 0; iZone < nMoving; iZone++ )
       Pitching_Ampl_Z[iZone] = 0.0;
   } else {
@@ -1956,7 +1966,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Pitching Phase: ---*/
   
   if (Pitching_Phase_X == NULL) {
-    Pitching_Phase_X = new double[nMoving];
+    Pitching_Phase_X = new su2double[nMoving];
     for (iZone = 0; iZone < nMoving; iZone++ )
       Pitching_Phase_X[iZone] = 0.0;
   } else {
@@ -1967,7 +1977,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
   
   if (Pitching_Phase_Y == NULL) {
-    Pitching_Phase_Y = new double[nMoving];
+    Pitching_Phase_Y = new su2double[nMoving];
     for (iZone = 0; iZone < nMoving; iZone++ )
       Pitching_Phase_Y[iZone] = 0.0;
   } else {
@@ -1978,7 +1988,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
   
   if (Pitching_Phase_Z == NULL) {
-    Pitching_Phase_Z = new double[nMoving];
+    Pitching_Phase_Z = new su2double[nMoving];
     for (iZone = 0; iZone < nMoving; iZone++ )
       Pitching_Phase_Z[iZone] = 0.0;
   } else {
@@ -1991,7 +2001,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Plunging: ---*/
   
   if (Plunging_Omega_X == NULL) {
-    Plunging_Omega_X = new double[nMoving];
+    Plunging_Omega_X = new su2double[nMoving];
     for (iZone = 0; iZone < nMoving; iZone++ )
       Plunging_Omega_X[iZone] = 0.0;
   } else {
@@ -2002,7 +2012,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
   
   if (Plunging_Omega_Y == NULL) {
-    Plunging_Omega_Y = new double[nMoving];
+    Plunging_Omega_Y = new su2double[nMoving];
     for (iZone = 0; iZone < nMoving; iZone++ )
       Plunging_Omega_Y[iZone] = 0.0;
   } else {
@@ -2013,7 +2023,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
   
   if (Plunging_Omega_Z == NULL) {
-    Plunging_Omega_Z = new double[nMoving];
+    Plunging_Omega_Z = new su2double[nMoving];
     for (iZone = 0; iZone < nMoving; iZone++ )
       Plunging_Omega_Z[iZone] = 0.0;
   } else {
@@ -2026,7 +2036,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Plunging Amplitude: ---*/
   
   if (Plunging_Ampl_X == NULL) {
-    Plunging_Ampl_X = new double[nMoving];
+    Plunging_Ampl_X = new su2double[nMoving];
     for (iZone = 0; iZone < nMoving; iZone++ )
       Plunging_Ampl_X[iZone] = 0.0;
   } else {
@@ -2037,7 +2047,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
   
   if (Plunging_Ampl_Y == NULL) {
-    Plunging_Ampl_Y = new double[nMoving];
+    Plunging_Ampl_Y = new su2double[nMoving];
     for (iZone = 0; iZone < nMoving; iZone++ )
       Plunging_Ampl_Y[iZone] = 0.0;
   } else {
@@ -2048,7 +2058,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
   
   if (Plunging_Ampl_Z == NULL) {
-    Plunging_Ampl_Z = new double[nMoving];
+    Plunging_Ampl_Z = new su2double[nMoving];
     for (iZone = 0; iZone < nMoving; iZone++ )
       Plunging_Ampl_Z[iZone] = 0.0;
   } else {
@@ -2065,12 +2075,12 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if (Unsteady_Simulation == TIME_SPECTRAL) {
     
     unsigned short N_MOTION_TYPES = 3;
-    double *periods;
-    periods = new double[N_MOTION_TYPES];
+    su2double *periods;
+    periods = new su2double[N_MOTION_TYPES];
     
     /*--- rotation: ---*/
     
-    double Omega_mag_rot = sqrt(pow(Rotation_Rate_X[ZONE_0],2)+pow(Rotation_Rate_Y[ZONE_0],2)+pow(Rotation_Rate_Z[ZONE_0],2));
+    su2double Omega_mag_rot = sqrt(pow(Rotation_Rate_X[ZONE_0],2)+pow(Rotation_Rate_Y[ZONE_0],2)+pow(Rotation_Rate_Z[ZONE_0],2));
     if (Omega_mag_rot > 0)
       periods[0] = 2*PI_NUMBER/Omega_mag_rot;
     else
@@ -2078,7 +2088,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     
     /*--- pitching: ---*/
     
-    double Omega_mag_pitch = sqrt(pow(Pitching_Omega_X[ZONE_0],2)+pow(Pitching_Omega_Y[ZONE_0],2)+pow(Pitching_Omega_Z[ZONE_0],2));
+    su2double Omega_mag_pitch = sqrt(pow(Pitching_Omega_X[ZONE_0],2)+pow(Pitching_Omega_Y[ZONE_0],2)+pow(Pitching_Omega_Z[ZONE_0],2));
     if (Omega_mag_pitch > 0)
       periods[1] = 2*PI_NUMBER/Omega_mag_pitch;
     else
@@ -2086,7 +2096,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     
     /*--- plunging: ---*/
     
-    double Omega_mag_plunge = sqrt(pow(Plunging_Omega_X[ZONE_0],2)+pow(Plunging_Omega_Y[ZONE_0],2)+pow(Plunging_Omega_Z[ZONE_0],2));
+    su2double Omega_mag_plunge = sqrt(pow(Plunging_Omega_X[ZONE_0],2)+pow(Plunging_Omega_Y[ZONE_0],2)+pow(Plunging_Omega_Z[ZONE_0],2));
     if (Omega_mag_plunge > 0)
       periods[2] = 2*PI_NUMBER/Omega_mag_plunge;
     else
@@ -2108,7 +2118,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Initialize the RefOriginMoment Pointer ---*/
   
   RefOriginMoment = NULL;
-  RefOriginMoment = new double[3];
+  RefOriginMoment = new su2double[3];
   RefOriginMoment[0] = 0.0; RefOriginMoment[1] = 0.0; RefOriginMoment[2] = 0.0;
   
   /*--- In case the moment origin coordinates have not been declared in the
@@ -2125,15 +2135,15 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
   
   if (RefOriginMoment_X == NULL) {
-    RefOriginMoment_X = new double[nMarker_Monitoring];
+    RefOriginMoment_X = new su2double[nMarker_Monitoring];
     for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ )
       RefOriginMoment_X[iMarker] = 0.0;
   } else {
     if (nRefOriginMoment_X == 1) {
       
-      double aux_RefOriginMoment_X = RefOriginMoment_X[0];
+      su2double aux_RefOriginMoment_X = RefOriginMoment_X[0];
       delete [] RefOriginMoment_X;
-      RefOriginMoment_X = new double[nMarker_Monitoring];
+      RefOriginMoment_X = new su2double[nMarker_Monitoring];
       nRefOriginMoment_X = nMarker_Monitoring;
       
       for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ )
@@ -2146,15 +2156,15 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
   
   if (RefOriginMoment_Y == NULL) {
-    RefOriginMoment_Y = new double[nMarker_Monitoring];
+    RefOriginMoment_Y = new su2double[nMarker_Monitoring];
     for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ )
       RefOriginMoment_Y[iMarker] = 0.0;
   } else {
     if (nRefOriginMoment_Y == 1) {
       
-      double aux_RefOriginMoment_Y = RefOriginMoment_Y[0];
+      su2double aux_RefOriginMoment_Y = RefOriginMoment_Y[0];
       delete [] RefOriginMoment_Y;
-      RefOriginMoment_Y = new double[nMarker_Monitoring];
+      RefOriginMoment_Y = new su2double[nMarker_Monitoring];
       nRefOriginMoment_Y = nMarker_Monitoring;
       
       for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ )
@@ -2167,15 +2177,15 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
   
   if (RefOriginMoment_Z == NULL) {
-    RefOriginMoment_Z = new double[nMarker_Monitoring];
+    RefOriginMoment_Z = new su2double[nMarker_Monitoring];
     for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ )
       RefOriginMoment_Z[iMarker] = 0.0;
   } else {
     if (nRefOriginMoment_Z == 1) {
       
-      double aux_RefOriginMoment_Z = RefOriginMoment_Z[0];
+      su2double aux_RefOriginMoment_Z = RefOriginMoment_Z[0];
       delete [] RefOriginMoment_Z;
-      RefOriginMoment_Z = new double[nMarker_Monitoring];
+      RefOriginMoment_Z = new su2double[nMarker_Monitoring];
       nRefOriginMoment_Z = nMarker_Monitoring;
       
       for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ )
@@ -2219,8 +2229,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Allocate memory for the plunge and pitch and initialized them to zero ---*/
   
   if (Grid_Movement && Aeroelastic_Simulation) {
-    Aeroelastic_pitch = new double[nMarker_Monitoring];
-    Aeroelastic_plunge = new double[nMarker_Monitoring];
+    Aeroelastic_pitch = new su2double[nMarker_Monitoring];
+    Aeroelastic_plunge = new su2double[nMarker_Monitoring];
     for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ ) {
       Aeroelastic_pitch[iMarker] = 0.0;
       Aeroelastic_plunge[iMarker] = 0.0;
@@ -2380,7 +2390,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
   
   nCFL = nMGLevels+1;
-  CFL = new double[nCFL];
+  CFL = new su2double[nCFL];
   CFL[0] = CFLFineGrid;
   if (Adjoint){
     CFL[0] = CFL[0] * CFLRedCoeff_AdjFlow;
@@ -2393,7 +2403,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   if (nRKStep == 0) {
     nRKStep = 1;
-    RK_Alpha_Step = new double[1]; RK_Alpha_Step[0] = 1.0;
+    RK_Alpha_Step = new su2double[1]; RK_Alpha_Step[0] = 1.0;
   }
   
   if ((Kind_SU2 == SU2_CFD) && (Kind_Solver == NO_SOLVER)) {
@@ -2482,17 +2492,17 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         ionization  = false;
         
         /*--- Allocate vectors for gas properties ---*/
-        Molar_Mass         = new double[nSpecies];
-        CharVibTemp        = new double[nSpecies];
-        RotationModes      = new double[nSpecies];
-        Enthalpy_Formation = new double[nSpecies];
-        Wall_Catalycity    = new double[nSpecies];
-        Ref_Temperature    = new double[nSpecies];
+        Molar_Mass         = new su2double[nSpecies];
+        CharVibTemp        = new su2double[nSpecies];
+        RotationModes      = new su2double[nSpecies];
+        Enthalpy_Formation = new su2double[nSpecies];
+        Wall_Catalycity    = new su2double[nSpecies];
+        Ref_Temperature    = new su2double[nSpecies];
         nElStates          = new unsigned short[nSpecies];
         
         
         
-        MassFrac_FreeStream = new double[nSpecies];
+        MassFrac_FreeStream = new su2double[nSpecies];
         MassFrac_FreeStream[0] = 1.0;
         
         /*--- Assign gas properties ---*/
@@ -2509,12 +2519,12 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         Ref_Temperature[0] = 0.0;
         
         /*        nElStates[0] = 0;
-         CharElTemp   = new double *[nSpecies];
-         degen        = new double *[nSpecies];
+         CharElTemp   = new su2double *[nSpecies];
+         degen        = new su2double *[nSpecies];
          
-         OSPthetae    = new double[nElStates[0]];
+         OSPthetae    = new su2double[nElStates[0]];
          OSPthetae[0] = 1.0;
-         OSPg         = new double[nElStates[0]];
+         OSPg         = new su2double[nElStates[0]];
          OSPg[0]      = 1.0;
          
          CharElTemp[0] = OSPthetae;
@@ -2530,20 +2540,20 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         ionization  = false;
         
         /*--- Allocate vectors for gas properties ---*/
-        Wall_Catalycity      = new double[nSpecies];
-        Molar_Mass           = new double[nSpecies];
-        CharVibTemp          = new double[nSpecies];
-        RotationModes        = new double[nSpecies];
-        Enthalpy_Formation   = new double[nSpecies];
-        Ref_Temperature      = new double[nSpecies];
-        Diss                 = new double[nSpecies];
-        ArrheniusCoefficient = new double[nReactions];
-        ArrheniusEta         = new double[nReactions];
-        ArrheniusTheta       = new double[nReactions];
-        Tcf_a                = new double[nReactions];
-        Tcf_b                = new double[nReactions];
-        Tcb_a                = new double[nReactions];
-        Tcb_b                = new double[nReactions];
+        Wall_Catalycity      = new su2double[nSpecies];
+        Molar_Mass           = new su2double[nSpecies];
+        CharVibTemp          = new su2double[nSpecies];
+        RotationModes        = new su2double[nSpecies];
+        Enthalpy_Formation   = new su2double[nSpecies];
+        Ref_Temperature      = new su2double[nSpecies];
+        Diss                 = new su2double[nSpecies];
+        ArrheniusCoefficient = new su2double[nReactions];
+        ArrheniusEta         = new su2double[nReactions];
+        ArrheniusTheta       = new su2double[nReactions];
+        Tcf_a                = new su2double[nReactions];
+        Tcf_b                = new su2double[nReactions];
+        Tcb_a                = new su2double[nReactions];
+        Tcb_b                = new su2double[nReactions];
         nElStates            = new unsigned short[nSpecies];
         Reactions = new int**[nReactions];
         for (unsigned short iRxn = 0; iRxn < nReactions; iRxn++) {
@@ -2553,18 +2563,18 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         }
         
         // Omega[iSpecies][jSpecies][iCoeff]
-        Omega00 = new double**[nSpecies];
-        Omega11 = new double**[nSpecies];
+        Omega00 = new su2double**[nSpecies];
+        Omega11 = new su2double**[nSpecies];
         for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-          Omega00[iSpecies] = new double*[nSpecies];
-          Omega11[iSpecies] = new double*[nSpecies];
+          Omega00[iSpecies] = new su2double*[nSpecies];
+          Omega11[iSpecies] = new su2double*[nSpecies];
           for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
-            Omega00[iSpecies][jSpecies] = new double[4];
-            Omega11[iSpecies][jSpecies] = new double[4];
+            Omega00[iSpecies][jSpecies] = new su2double[4];
+            Omega11[iSpecies][jSpecies] = new su2double[4];
           }
         }
         
-        MassFrac_FreeStream = new double[nSpecies];
+        MassFrac_FreeStream = new su2double[nSpecies];
         MassFrac_FreeStream[0] = 0.99;
         MassFrac_FreeStream[1] = 0.01;
         
@@ -2601,11 +2611,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
           maxEl = max(maxEl, nElStates[iSpecies]);
         
         /*--- Allocate electron data arrays ---*/
-        CharElTemp = new double*[nSpecies];
-        degen      = new double*[nSpecies];
+        CharElTemp = new su2double*[nSpecies];
+        degen      = new su2double*[nSpecies];
         for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-          CharElTemp[iSpecies] = new double[maxEl];
-          degen[iSpecies]      = new double[maxEl];
+          CharElTemp[iSpecies] = new su2double[maxEl];
+          degen[iSpecies]      = new su2double[maxEl];
         }
         
         /*--- Initialize the arrays ---*/
@@ -2715,19 +2725,19 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         ionization  = false;
         
         /*--- Allocate vectors for gas properties ---*/
-        Wall_Catalycity      = new double[nSpecies];
-        Molar_Mass           = new double[nSpecies];
-        CharVibTemp          = new double[nSpecies];
-        RotationModes        = new double[nSpecies];
-        Enthalpy_Formation   = new double[nSpecies];
-        Ref_Temperature      = new double[nSpecies];
-        ArrheniusCoefficient = new double[nReactions];
-        ArrheniusEta         = new double[nReactions];
-        ArrheniusTheta       = new double[nReactions];
-        Tcf_a                = new double[nReactions];
-        Tcf_b                = new double[nReactions];
-        Tcb_a                = new double[nReactions];
-        Tcb_b                = new double[nReactions];
+        Wall_Catalycity      = new su2double[nSpecies];
+        Molar_Mass           = new su2double[nSpecies];
+        CharVibTemp          = new su2double[nSpecies];
+        RotationModes        = new su2double[nSpecies];
+        Enthalpy_Formation   = new su2double[nSpecies];
+        Ref_Temperature      = new su2double[nSpecies];
+        ArrheniusCoefficient = new su2double[nReactions];
+        ArrheniusEta         = new su2double[nReactions];
+        ArrheniusTheta       = new su2double[nReactions];
+        Tcf_a                = new su2double[nReactions];
+        Tcf_b                = new su2double[nReactions];
+        Tcb_a                = new su2double[nReactions];
+        Tcb_b                = new su2double[nReactions];
         nElStates            = new unsigned short[nSpecies];
         Reactions            = new int**[nReactions];
         for (unsigned short iRxn = 0; iRxn < nReactions; iRxn++) {
@@ -2737,14 +2747,14 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         }
         
         // Omega[iSpecies][jSpecies][iCoeff]
-        Omega00 = new double**[nSpecies];
-        Omega11 = new double**[nSpecies];
+        Omega00 = new su2double**[nSpecies];
+        Omega11 = new su2double**[nSpecies];
         for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-          Omega00[iSpecies] = new double*[nSpecies];
-          Omega11[iSpecies] = new double*[nSpecies];
+          Omega00[iSpecies] = new su2double*[nSpecies];
+          Omega11[iSpecies] = new su2double*[nSpecies];
           for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
-            Omega00[iSpecies][jSpecies] = new double[4];
-            Omega11[iSpecies][jSpecies] = new double[4];
+            Omega00[iSpecies][jSpecies] = new su2double[4];
+            Omega11[iSpecies][jSpecies] = new su2double[4];
           }
         }
         
@@ -2756,7 +2766,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         Wall_Catalycity[4] = 0.05;
         
         // Free stream mass fractions
-        MassFrac_FreeStream = new double[nSpecies];
+        MassFrac_FreeStream = new su2double[nSpecies];
         MassFrac_FreeStream[0] = 0.78;
         MassFrac_FreeStream[1] = 0.19;
         MassFrac_FreeStream[2] = 0.01;
@@ -2811,11 +2821,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
           maxEl = max(maxEl, nElStates[iSpecies]);
         
         /*--- Allocate electron data arrays ---*/
-        CharElTemp = new double*[nSpecies];
-        degen      = new double*[nSpecies];
+        CharElTemp = new su2double*[nSpecies];
+        degen      = new su2double*[nSpecies];
         for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-          CharElTemp[iSpecies] = new double[maxEl];
-          degen[iSpecies]      = new double[maxEl];
+          CharElTemp[iSpecies] = new su2double[maxEl];
+          degen[iSpecies]      = new su2double[maxEl];
         }
         
         /*--- Initialize the arrays ---*/
@@ -3131,6 +3141,62 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     
   }
   
+  if (DirectDiff != NO_DERIVATIVE){
+#if !defined COMPLEX_TYPE && !defined ADOLC_FORWARD_TYPE && !defined CODI_FORWARD_TYPE
+      if (Kind_SU2 == SU2_CFD){
+        cout << "SU2_CFD: Config option DIRECT_DIFF= YES requires AD or complex support!" << endl;
+        cout << "Please use SU2_CFD_DIRECTDIFF (configuration/compilation is done using the preconfigure.py script)." << endl;
+        exit(EXIT_FAILURE);
+        exit(EXIT_FAILURE);
+      }
+#endif
+    /*--- Initialize the derivative values --- */
+    switch (DirectDiff) {
+      case D_MACH:
+        SU2_TYPE::SetDerivative(Mach, 1.0);
+        break;
+      case D_AOA:
+        SU2_TYPE::SetDerivative(AoA, 1.0);
+        break;
+      case D_SIDESLIP:
+        SU2_TYPE::SetDerivative(AoS, 1.0);
+        break;
+      case D_REYNOLDS:
+        SU2_TYPE::SetDerivative(Reynolds, 1.0);
+        break;
+      case D_TURB2LAM:
+       SU2_TYPE::SetDerivative(Turb2LamViscRatio_FreeStream, 1.0);
+        break;
+      default:
+        /*--- All other cases are handled in the specific solver ---*/
+        break;
+      }
+  }
+
+  if (DiscreteAdjoint){
+#if !defined ADOLC_REVERSE_TYPE && !defined CODI_REVERSE_TYPE
+    if (Kind_SU2 == SU2_CFD){
+      cout << "SU2_CFD: Config option MATH_PROBLEM= DISCRETE_ADJOINT requires AD support!" << endl;
+      cout << "Please use SU2_CFD_REVERSE (configuration/compilation is done using the preconfigure.py script)." << endl;
+      exit(EXIT_FAILURE);
+    }
+#endif
+    switch(Kind_Solver){
+      case EULER:
+        Kind_Solver = DISC_ADJ_EULER;
+        break;
+      case RANS:
+        Kind_Solver = DISC_ADJ_RANS;
+        Frozen_Visc = false;
+        break;
+      case NAVIER_STOKES:
+        Kind_Solver = DISC_ADJ_NAVIER_STOKES;
+        break;
+      default:
+        break;
+    }
+  }
+
   /*--- Check for 2nd order w/ limiting for JST and correct ---*/
   
   if ((Kind_ConvNumScheme_Flow == SPACE_CENTERED) && (Kind_Centered_Flow == JST) && (SpatialOrder_Flow == SECOND_ORDER_LIMITER))
@@ -3319,8 +3385,8 @@ void CConfig::SetMarkers(unsigned short val_software) {
     iMarker_Config++;
   }
 
-  Inflow_Mach = new double[nMarker_EngineInflow];
-  Inflow_Pressure = new double[nMarker_EngineInflow];
+  Inflow_Mach = new su2double[nMarker_EngineInflow];
+  Inflow_Pressure = new su2double[nMarker_EngineInflow];
 
   for (iMarker_EngineInflow = 0; iMarker_EngineInflow < nMarker_EngineInflow; iMarker_EngineInflow++) {
     Marker_CfgFile_TagBound[iMarker_Config] = Marker_EngineInflow[iMarker_EngineInflow];
@@ -3330,9 +3396,9 @@ void CConfig::SetMarkers(unsigned short val_software) {
     iMarker_Config++;
   }
   
-  Bleed_MassFlow = new double[nMarker_EngineBleed];
-  Bleed_Temperature = new double[nMarker_EngineBleed];
-  Bleed_Pressure = new double[nMarker_EngineBleed];
+  Bleed_MassFlow = new su2double[nMarker_EngineBleed];
+  Bleed_Temperature = new su2double[nMarker_EngineBleed];
+  Bleed_Pressure = new su2double[nMarker_EngineBleed];
 
   for (iMarker_EngineBleed = 0; iMarker_EngineBleed < nMarker_EngineBleed; iMarker_EngineBleed++) {
     Marker_CfgFile_TagBound[iMarker_Config] = Marker_EngineBleed[iMarker_EngineBleed];
@@ -3343,8 +3409,8 @@ void CConfig::SetMarkers(unsigned short val_software) {
     iMarker_Config++;
   }
 
-  Exhaust_Pressure = new double[nMarker_EngineExhaust];
-  Exhaust_Temperature = new double[nMarker_EngineExhaust];
+  Exhaust_Pressure = new su2double[nMarker_EngineExhaust];
+  Exhaust_Temperature = new su2double[nMarker_EngineExhaust];
 
   for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++) {
     Marker_CfgFile_TagBound[iMarker_Config] = Marker_EngineExhaust[iMarker_EngineExhaust];
@@ -3583,8 +3649,13 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 	if (FSI_Problem){
 	   cout << "Fluid-Structure Interaction." << endl;
 	}
+
+  if (DiscreteAdjoint){
+     cout <<"Discrete Adjoint equations using Algorithmic Differentiation " << endl;
+     cout <<"based on the physical case: ";
+  }
     switch (Kind_Solver) {
-      case EULER:
+      case EULER: case DISC_ADJ_EULER:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible Euler equations." << endl;
         if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible Euler equations." << endl;
         if (Kind_Regime == FREESURFACE) {
@@ -3593,7 +3664,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           cout << "The free surface is located at: " << FreeSurface_Zero <<", and its thickness is: " << FreeSurface_Thickness << "." << endl;
         }
         break;
-      case NAVIER_STOKES:
+      case NAVIER_STOKES: case DISC_ADJ_NAVIER_STOKES:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible Laminar Navier-Stokes' equations." << endl;
         if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible Laminar Navier-Stokes' equations." << endl;
         if (Kind_Regime == FREESURFACE) {
@@ -3602,7 +3673,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           cout << "The free surface is located at: " << FreeSurface_Zero <<", and its thickness is: " << FreeSurface_Thickness << "." << endl;
         }
         break;
-      case RANS:
+      case RANS: case DISC_ADJ_RANS:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible RANS equations." << endl;
         if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible RANS equations." << endl;
         if (Kind_Regime == FREESURFACE) {
@@ -3969,7 +4040,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
 		if (SmoothNumGrid) cout << "There are some smoothing iterations on the grid coordinates." << endl;
 
-		if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+    if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
+         (Kind_Solver == DISC_ADJ_EULER) || (Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) ) {
 
       if (Kind_ConvNumScheme_Flow == SPACE_CENTERED) {
         if (Kind_Centered_Flow == JST) {
@@ -4019,7 +4091,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
 		}
 
-    if (Kind_Solver == RANS) {
+    if ((Kind_Solver == RANS) || (Kind_Solver == DISC_ADJ_RANS)) {
       if (Kind_ConvNumScheme_Turb == SPACE_UPWIND) {
         if (Kind_Upwind_Turb == SCALAR_UPWIND) cout << "Scalar upwind solver (first order) for the turbulence model."<< endl;
         switch (SpatialOrder_Turb) {
@@ -4221,7 +4293,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     }
 
-    if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+    if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
+        (Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS)) {
         cout << "Average of gradients with correction (viscous flow terms)." << endl;
     }
 
@@ -4233,7 +4306,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       cout << "Average of gradients with correction (viscous adjoint terms)." << endl;
     }
 
-    if (Kind_Solver == RANS) {
+    if ((Kind_Solver == RANS) || (Kind_Solver == DISC_ADJ_RANS)) {
       cout << "Average of gradients with correction (viscous turbulence terms)." << endl;
     }
 
@@ -4286,7 +4359,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		}
 	}
 
-    if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+    if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
+        (Kind_Solver == DISC_ADJ_EULER) || (Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS)) {
       switch (Kind_TimeIntScheme_Flow) {
         case RUNGE_KUTTA_EXPLICIT:
           cout << "Runge-Kutta explicit method for the flow equations." << endl;
@@ -4454,7 +4528,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     }
 
-    if (Kind_Solver == RANS)
+    if ((Kind_Solver == RANS) || (Kind_Solver == DISC_ADJ_RANS))
       if (Kind_TimeIntScheme_Turb == EULER_IMPLICIT)
         cout << "Euler implicit time integration for the turbulence model." << endl;
   }
@@ -4466,7 +4540,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     cout << "Maximum number of iterations: " << nExtIter <<"."<< endl;
 
     if (ConvCriteria == CAUCHY) {
-      if (!Adjoint && !Linearized)
+      if (!Adjoint && !Linearized && !DiscreteAdjoint)
         switch (Cauchy_Func_Flow) {
           case LIFT_COEFFICIENT: cout << "Cauchy criteria for Lift using "
             << Cauchy_Elems << " elements and epsilon " <<Cauchy_Eps<< "."<< endl; break;
@@ -4474,7 +4548,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
             << Cauchy_Elems << " elements and epsilon " <<Cauchy_Eps<< "."<< endl; break;
         }
 
-      if (Adjoint)
+      if (Adjoint || DiscreteAdjoint)
         switch (Cauchy_Func_AdjFlow) {
           case SENS_GEOMETRY: cout << "Cauchy criteria for geo. sensitivity using "
             << Cauchy_Elems << " elements and epsilon " <<Cauchy_Eps<< "."<< endl; break;
@@ -4496,13 +4570,13 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
 
     if (ConvCriteria == RESIDUAL) {
-      if (!Adjoint && !Linearized) {
+      if (!Adjoint && !Linearized && !DiscreteAdjoint) {
         cout << "Reduce the density residual " << OrderMagResidual << " orders of magnitude."<< endl;
         cout << "The minimum bound for the density residual is 10^(" << MinLogResidual<< ")."<< endl;
         cout << "Start convergence criteria at iteration " << StartConv_Iter<< "."<< endl;
       }
 
-      if (Adjoint) {
+      if (Adjoint || DiscreteAdjoint) {
         cout << "Reduce the adjoint density residual " << OrderMagResidual << " orders of magnitude."<< endl;
         cout << "The minimum value for the adjoint density residual is 10^(" << MinLogResidual<< ")."<< endl;
       }
@@ -4576,7 +4650,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     cout << "Forces breakdown file name: " << Breakdown_FileName << "." << endl;
 
     if ((Kind_Solver != LINEAR_ELASTICITY) && (Kind_Solver != HEAT_EQUATION) && (Kind_Solver != WAVE_EQUATION)) {
-      if (!Linearized && !Adjoint) {
+      if (!Linearized && !Adjoint && !DiscreteAdjoint) {
         cout << "Surface flow coefficients file name: " << SurfFlowCoeff_FileName << "." << endl;
         cout << "Flow variables file name: " << Flow_FileName << "." << endl;
         cout << "Restart flow file name: " << Restart_FlowFileName << "." << endl;
@@ -4589,7 +4663,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         cout << "Surface linearized coefficients file name: " << SurfLinCoeff_FileName << "." << endl;
       }
 
-      if (Adjoint) {
+      if (Adjoint || DiscreteAdjoint) {
         cout << "Adjoint solution file name: " << Solution_AdjFileName << "." << endl;
         cout << "Restart adjoint file name: " << Restart_AdjFileName << "." << endl;
         cout << "Adjoint variables file name: " << Adj_FileName << "." << endl;
@@ -4957,7 +5031,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 }
 
 
-void CConfig::GetChemistryEquilConstants(double **RxnConstantTable, unsigned short iReaction) {
+void CConfig::GetChemistryEquilConstants(su2double **RxnConstantTable, unsigned short iReaction) {
   switch (Kind_GasModel) {
     case O2:
       //O2 + M -> 2O + M
@@ -5591,11 +5665,11 @@ string CConfig::GetUnsteady_FileName(string val_filename, int val_iter) {
   if ((Wrt_Unsteady) || (Unsteady_Simulation == TIME_SPECTRAL)) {
     unsigned short lastindex = UnstFilename.find_last_of(".");
     UnstFilename = UnstFilename.substr(0, lastindex);
-    if ((val_iter >= 0)    && (val_iter < 10))    sprintf (buffer, "_0000%d.dat", val_iter);
-    if ((val_iter >= 10)   && (val_iter < 100))   sprintf (buffer, "_000%d.dat",  val_iter);
-    if ((val_iter >= 100)  && (val_iter < 1000))  sprintf (buffer, "_00%d.dat",   val_iter);
-    if ((val_iter >= 1000) && (val_iter < 10000)) sprintf (buffer, "_0%d.dat",    val_iter);
-    if (val_iter >= 10000) sprintf (buffer, "_%d.dat", val_iter);
+    if ((val_iter >= 0)    && (val_iter < 10))    SPRINTF (buffer, "_0000%d.dat", val_iter);
+    if ((val_iter >= 10)   && (val_iter < 100))   SPRINTF (buffer, "_000%d.dat",  val_iter);
+    if ((val_iter >= 100)  && (val_iter < 1000))  SPRINTF (buffer, "_00%d.dat",   val_iter);
+    if ((val_iter >= 1000) && (val_iter < 10000)) SPRINTF (buffer, "_0%d.dat",    val_iter);
+    if (val_iter >= 10000) SPRINTF (buffer, "_%d.dat", val_iter);
     string UnstExt = string(buffer);
     UnstFilename.append(UnstExt);
   }
@@ -5607,7 +5681,7 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
 
   string AdjExt, Filename = val_filename;
 
-  if (Adjoint) {
+  if (Adjoint || DiscreteAdjoint) {
 
     /*--- Remove filename extension (.dat) ---*/
     unsigned short lastindex = Filename.find_last_of(".");
@@ -5687,8 +5761,8 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
                              unsigned long val_extiter) {
 
   /*--- Set the simulation global time ---*/
-  Current_UnstTime = static_cast<double>(val_extiter)*Delta_UnstTime;
-  Current_UnstTimeND = static_cast<double>(val_extiter)*Delta_UnstTimeND;
+  Current_UnstTime = static_cast<su2double>(val_extiter)*Delta_UnstTime;
+  Current_UnstTimeND = static_cast<su2double>(val_extiter)*Delta_UnstTimeND;
 
   /*--- Set the solver methods ---*/
   switch (val_solver) {
@@ -5859,7 +5933,7 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
       break;
     case LINEAR_ELASTICITY:
 
-      Current_DynTime = static_cast<double>(val_extiter)*Delta_DynTime;
+      Current_DynTime = static_cast<su2double>(val_extiter)*Delta_DynTime;
 
       if (val_system == RUNTIME_FEA_SYS) {
         SetKind_ConvNumScheme(NONE, NONE, NONE, NONE, NONE);
@@ -5869,21 +5943,21 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
   }
 }
 
-double* CConfig::GetPeriodicRotCenter(string val_marker) {
+su2double* CConfig::GetPeriodicRotCenter(string val_marker) {
   unsigned short iMarker_PerBound;
   for (iMarker_PerBound = 0; iMarker_PerBound < nMarker_PerBound; iMarker_PerBound++)
     if (Marker_PerBound[iMarker_PerBound] == val_marker) break;
   return Periodic_RotCenter[iMarker_PerBound];
 }
 
-double* CConfig::GetPeriodicRotAngles(string val_marker) {
+su2double* CConfig::GetPeriodicRotAngles(string val_marker) {
   unsigned short iMarker_PerBound;
   for (iMarker_PerBound = 0; iMarker_PerBound < nMarker_PerBound; iMarker_PerBound++)
     if (Marker_PerBound[iMarker_PerBound] == val_marker) break;
   return Periodic_RotAngles[iMarker_PerBound];
 }
 
-double* CConfig::GetPeriodicTranslation(string val_marker) {
+su2double* CConfig::GetPeriodicTranslation(string val_marker) {
   unsigned short iMarker_PerBound;
   for (iMarker_PerBound = 0; iMarker_PerBound < nMarker_PerBound; iMarker_PerBound++)
     if (Marker_PerBound[iMarker_PerBound] == val_marker) break;
@@ -5908,7 +5982,7 @@ unsigned short CConfig::GetMarker_Periodic_Donor(string val_marker) {
   return kMarker_All;
 }
 
-double* CConfig::GetActDisk_Origin(string val_marker) {
+su2double* CConfig::GetActDisk_Origin(string val_marker) {
   unsigned short iMarker_ActDisk;
   for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDisk_Inlet; iMarker_ActDisk++)
     if ((Marker_ActDisk_Inlet[iMarker_ActDisk] == val_marker) ||
@@ -5916,7 +5990,7 @@ double* CConfig::GetActDisk_Origin(string val_marker) {
   return ActDisk_Origin[iMarker_ActDisk];
 }
 
-double CConfig::GetActDisk_RootRadius(string val_marker) {
+su2double CConfig::GetActDisk_RootRadius(string val_marker) {
   unsigned short iMarker_ActDisk;
   for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDisk_Inlet; iMarker_ActDisk++)
     if ((Marker_ActDisk_Inlet[iMarker_ActDisk] == val_marker) ||
@@ -5924,7 +5998,7 @@ double CConfig::GetActDisk_RootRadius(string val_marker) {
   return ActDisk_RootRadius[iMarker_ActDisk];
 }
 
-double CConfig::GetActDisk_TipRadius(string val_marker) {
+su2double CConfig::GetActDisk_TipRadius(string val_marker) {
   unsigned short iMarker_ActDisk;
   for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDisk_Inlet; iMarker_ActDisk++)
     if ((Marker_ActDisk_Inlet[iMarker_ActDisk] == val_marker) ||
@@ -5932,7 +6006,7 @@ double CConfig::GetActDisk_TipRadius(string val_marker) {
   return ActDisk_TipRadius[iMarker_ActDisk];
 }
 
-double CConfig::GetActDisk_PressJump(string val_marker) {
+su2double CConfig::GetActDisk_PressJump(string val_marker) {
   unsigned short iMarker_ActDisk;
   for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDisk_Inlet; iMarker_ActDisk++)
     if ((Marker_ActDisk_Inlet[iMarker_ActDisk] == val_marker) ||
@@ -5940,7 +6014,7 @@ double CConfig::GetActDisk_PressJump(string val_marker) {
   return ActDisk_PressJump[iMarker_ActDisk];
 }
 
-double CConfig::GetActDisk_TempJump(string val_marker) {
+su2double CConfig::GetActDisk_TempJump(string val_marker) {
   unsigned short iMarker_ActDisk;
   for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDisk_Inlet; iMarker_ActDisk++)
     if ((Marker_ActDisk_Inlet[iMarker_ActDisk] == val_marker) ||
@@ -5948,7 +6022,7 @@ double CConfig::GetActDisk_TempJump(string val_marker) {
   return ActDisk_TempJump[iMarker_ActDisk];
 }
 
-double CConfig::GetActDisk_Omega(string val_marker) {
+su2double CConfig::GetActDisk_Omega(string val_marker) {
   unsigned short iMarker_ActDisk;
   for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDisk_Inlet; iMarker_ActDisk++)
     if ((Marker_ActDisk_Inlet[iMarker_ActDisk] == val_marker) ||
@@ -5986,9 +6060,9 @@ void CConfig::SetnPeriodicIndex(unsigned short val_index) {
   nPeriodic_Index = val_index;
 
   /*--- Allocate memory for centers, angles, translations. ---*/
-  Periodic_Center    = new double*[nPeriodic_Index];
-  Periodic_Rotation  = new double*[nPeriodic_Index];
-  Periodic_Translate = new double*[nPeriodic_Index];
+  Periodic_Center    = new su2double*[nPeriodic_Index];
+  Periodic_Rotation  = new su2double*[nPeriodic_Index];
+  Periodic_Translate = new su2double*[nPeriodic_Index];
 
 }
 
@@ -6002,7 +6076,7 @@ unsigned short CConfig::GetMarker_Moving(string val_marker) {
   return iMarker_Moving;
 }
 
-double CConfig::GetDirichlet_Value(string val_marker) {
+su2double CConfig::GetDirichlet_Value(string val_marker) {
   unsigned short iMarker_Dirichlet;
   for (iMarker_Dirichlet = 0; iMarker_Dirichlet < nMarker_Dirichlet_Elec; iMarker_Dirichlet++)
     if (Marker_Dirichlet_Elec[iMarker_Dirichlet] == val_marker) break;
@@ -6020,84 +6094,84 @@ bool CConfig::GetDirichlet_Boundary(string val_marker) {
   return Dirichlet;
 }
 
-double CConfig::GetExhaust_Temperature_Target(string val_marker) {
+su2double CConfig::GetExhaust_Temperature_Target(string val_marker) {
   unsigned short iMarker_EngineExhaust;
   for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++)
     if (Marker_EngineExhaust[iMarker_EngineExhaust] == val_marker) break;
   return Exhaust_Temperature_Target[iMarker_EngineExhaust];
 }
 
-double CConfig::GetExhaust_Pressure_Target(string val_marker) {
+su2double CConfig::GetExhaust_Pressure_Target(string val_marker) {
   unsigned short iMarker_EngineExhaust;
   for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++)
     if (Marker_EngineExhaust[iMarker_EngineExhaust] == val_marker) break;
   return Exhaust_Pressure_Target[iMarker_EngineExhaust];
 }
 
-double CConfig::GetInlet_Ttotal(string val_marker) {
+su2double CConfig::GetInlet_Ttotal(string val_marker) {
   unsigned short iMarker_Inlet;
   for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_Inlet; iMarker_Inlet++)
     if (Marker_Inlet[iMarker_Inlet] == val_marker) break;
   return Inlet_Ttotal[iMarker_Inlet];
 }
 
-double CConfig::GetInlet_Ptotal(string val_marker) {
+su2double CConfig::GetInlet_Ptotal(string val_marker) {
   unsigned short iMarker_Inlet;
   for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_Inlet; iMarker_Inlet++)
     if (Marker_Inlet[iMarker_Inlet] == val_marker) break;
   return Inlet_Ptotal[iMarker_Inlet];
 }
 
-double* CConfig::GetInlet_FlowDir(string val_marker) {
+su2double* CConfig::GetInlet_FlowDir(string val_marker) {
   unsigned short iMarker_Inlet;
   for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_Inlet; iMarker_Inlet++)
     if (Marker_Inlet[iMarker_Inlet] == val_marker) break;
   return Inlet_FlowDir[iMarker_Inlet];
 }
 
-double CConfig::GetInlet_Temperature(string val_marker) {
+su2double CConfig::GetInlet_Temperature(string val_marker) {
   unsigned short iMarker_Supersonic_Inlet;
   for (iMarker_Supersonic_Inlet = 0; iMarker_Supersonic_Inlet < nMarker_Supersonic_Inlet; iMarker_Supersonic_Inlet++)
     if (Marker_Supersonic_Inlet[iMarker_Supersonic_Inlet] == val_marker) break;
   return Inlet_Temperature[iMarker_Supersonic_Inlet];
 }
 
-double CConfig::GetInlet_Pressure(string val_marker) {
+su2double CConfig::GetInlet_Pressure(string val_marker) {
   unsigned short iMarker_Supersonic_Inlet;
   for (iMarker_Supersonic_Inlet = 0; iMarker_Supersonic_Inlet < nMarker_Supersonic_Inlet; iMarker_Supersonic_Inlet++)
     if (Marker_Supersonic_Inlet[iMarker_Supersonic_Inlet] == val_marker) break;
   return Inlet_Pressure[iMarker_Supersonic_Inlet];
 }
 
-double* CConfig::GetInlet_Velocity(string val_marker) {
+su2double* CConfig::GetInlet_Velocity(string val_marker) {
   unsigned short iMarker_Supersonic_Inlet;
   for (iMarker_Supersonic_Inlet = 0; iMarker_Supersonic_Inlet < nMarker_Supersonic_Inlet; iMarker_Supersonic_Inlet++)
     if (Marker_Supersonic_Inlet[iMarker_Supersonic_Inlet] == val_marker) break;
   return Inlet_Velocity[iMarker_Supersonic_Inlet];
 }
 
-double CConfig::GetOutlet_Pressure(string val_marker) {
+su2double CConfig::GetOutlet_Pressure(string val_marker) {
   unsigned short iMarker_Outlet;
   for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++)
     if (Marker_Outlet[iMarker_Outlet] == val_marker) break;
   return Outlet_Pressure[iMarker_Outlet];
 }
 
-double CConfig::GetRiemann_Var1(string val_marker) {
+su2double CConfig::GetRiemann_Var1(string val_marker) {
   unsigned short iMarker_Riemann;
   for (iMarker_Riemann = 0; iMarker_Riemann < nMarker_Riemann; iMarker_Riemann++)
     if (Marker_Riemann[iMarker_Riemann] == val_marker) break;
   return Riemann_Var1[iMarker_Riemann];
 }
 
-double CConfig::GetRiemann_Var2(string val_marker) {
+su2double CConfig::GetRiemann_Var2(string val_marker) {
   unsigned short iMarker_Riemann;
   for (iMarker_Riemann = 0; iMarker_Riemann < nMarker_Riemann; iMarker_Riemann++)
     if (Marker_Riemann[iMarker_Riemann] == val_marker) break;
   return Riemann_Var2[iMarker_Riemann];
 }
 
-double* CConfig::GetRiemann_FlowDir(string val_marker) {
+su2double* CConfig::GetRiemann_FlowDir(string val_marker) {
   unsigned short iMarker_Riemann;
   for (iMarker_Riemann = 0; iMarker_Riemann < nMarker_Riemann; iMarker_Riemann++)
     if (Marker_Riemann[iMarker_Riemann] == val_marker) break;
@@ -6111,7 +6185,7 @@ unsigned short CConfig::GetKind_Data_Riemann(string val_marker) {
   return Kind_Data_Riemann[iMarker_Riemann];
 }
 
-double CConfig::GetIsothermal_Temperature(string val_marker) {
+su2double CConfig::GetIsothermal_Temperature(string val_marker) {
   unsigned short iMarker_Isothermal = 0;
 
   if ((nMarker_Isothermal*nMarker_IsothermalCatalytic             != 0) ||
@@ -6139,7 +6213,7 @@ double CConfig::GetIsothermal_Temperature(string val_marker) {
   return Isothermal_Temperature[iMarker_Isothermal];
 }
 
-double CConfig::GetWall_HeatFlux(string val_marker) {
+su2double CConfig::GetWall_HeatFlux(string val_marker) {
   unsigned short iMarker_HeatFlux = 0;
 
   if ((nMarker_HeatFlux*nMarker_HeatFluxCatalytic             != 0) ||
@@ -6167,105 +6241,105 @@ double CConfig::GetWall_HeatFlux(string val_marker) {
   return Heat_Flux[iMarker_HeatFlux];
 }
 
-double CConfig::GetInflow_Mach_Target(string val_marker) {
+su2double CConfig::GetInflow_Mach_Target(string val_marker) {
   unsigned short iMarker_EngineInflow;
   for (iMarker_EngineInflow = 0; iMarker_EngineInflow < nMarker_EngineInflow; iMarker_EngineInflow++)
     if (Marker_EngineInflow[iMarker_EngineInflow] == val_marker) break;
   return Inflow_Mach_Target[iMarker_EngineInflow];
 }
 
-double CConfig::GetBleed_MassFlow_Target(string val_marker) {
+su2double CConfig::GetBleed_MassFlow_Target(string val_marker) {
   unsigned short iMarker_EngineBleed;
   for (iMarker_EngineBleed = 0; iMarker_EngineBleed < nMarker_EngineBleed; iMarker_EngineBleed++)
     if (Marker_EngineBleed[iMarker_EngineBleed] == val_marker) break;
   return Bleed_MassFlow_Target[iMarker_EngineBleed];
 }
 
-double CConfig::GetBleed_Temperature_Target(string val_marker) {
+su2double CConfig::GetBleed_Temperature_Target(string val_marker) {
   unsigned short iMarker_EngineBleed;
   for (iMarker_EngineBleed = 0; iMarker_EngineBleed < nMarker_EngineBleed; iMarker_EngineBleed++)
     if (Marker_EngineBleed[iMarker_EngineBleed] == val_marker) break;
   return Bleed_Temperature_Target[iMarker_EngineBleed];
 }
 
-double CConfig::GetInflow_Pressure(string val_marker) {
+su2double CConfig::GetInflow_Pressure(string val_marker) {
   unsigned short iMarker_EngineInflow;
   for (iMarker_EngineInflow = 0; iMarker_EngineInflow < nMarker_EngineInflow; iMarker_EngineInflow++)
     if (Marker_EngineInflow[iMarker_EngineInflow] == val_marker) break;
   return Inflow_Pressure[iMarker_EngineInflow];
 }
 
-double CConfig::GetBleed_Pressure(string val_marker) {
+su2double CConfig::GetBleed_Pressure(string val_marker) {
   unsigned short iMarker_EngineBleed;
   for (iMarker_EngineBleed = 0; iMarker_EngineBleed < nMarker_EngineBleed; iMarker_EngineBleed++)
     if (Marker_EngineBleed[iMarker_EngineBleed] == val_marker) break;
   return Bleed_Pressure[iMarker_EngineBleed];
 }
 
-double CConfig::GetExhaust_Pressure(string val_marker) {
+su2double CConfig::GetExhaust_Pressure(string val_marker) {
   unsigned short iMarker_EngineExhaust;
   for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++)
   if (Marker_EngineExhaust[iMarker_EngineExhaust] == val_marker) break;
   return Exhaust_Pressure[iMarker_EngineExhaust];
 }
 
-double CConfig::GetExhaust_Temperature(string val_marker) {
+su2double CConfig::GetExhaust_Temperature(string val_marker) {
   unsigned short iMarker_EngineExhaust;
   for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++)
   if (Marker_EngineExhaust[iMarker_EngineExhaust] == val_marker) break;
   return Exhaust_Temperature[iMarker_EngineExhaust];
 }
 
-double CConfig::GetInflow_Mach(string val_marker) {
+su2double CConfig::GetInflow_Mach(string val_marker) {
   unsigned short iMarker_EngineInflow;
   for (iMarker_EngineInflow = 0; iMarker_EngineInflow < nMarker_EngineInflow; iMarker_EngineInflow++)
     if (Marker_EngineInflow[iMarker_EngineInflow] == val_marker) break;
   return Inflow_Mach[iMarker_EngineInflow];
 }
 
-double CConfig::GetBleed_MassFlow(string val_marker) {
+su2double CConfig::GetBleed_MassFlow(string val_marker) {
   unsigned short iMarker_EngineBleed;
   for (iMarker_EngineBleed = 0; iMarker_EngineBleed < nMarker_EngineBleed; iMarker_EngineBleed++)
     if (Marker_EngineBleed[iMarker_EngineBleed] == val_marker) break;
   return Bleed_MassFlow[iMarker_EngineBleed];
 }
 
-double CConfig::GetBleed_Temperature(string val_marker) {
+su2double CConfig::GetBleed_Temperature(string val_marker) {
   unsigned short iMarker_EngineBleed;
   for (iMarker_EngineBleed = 0; iMarker_EngineBleed < nMarker_EngineBleed; iMarker_EngineBleed++)
     if (Marker_EngineBleed[iMarker_EngineBleed] == val_marker) break;
   return Bleed_Temperature[iMarker_EngineBleed];
 }
 
-double CConfig::GetDispl_Value(string val_marker) {
+su2double CConfig::GetDispl_Value(string val_marker) {
   unsigned short iMarker_Displacement;
   for (iMarker_Displacement = 0; iMarker_Displacement < nMarker_Displacement; iMarker_Displacement++)
     if (Marker_Displacement[iMarker_Displacement] == val_marker) break;
   return Displ_Value[iMarker_Displacement];
 }
 
-double CConfig::GetLoad_Value(string val_marker) {
+su2double CConfig::GetLoad_Value(string val_marker) {
   unsigned short iMarker_Load;
   for (iMarker_Load = 0; iMarker_Load < nMarker_Load; iMarker_Load++)
     if (Marker_Load[iMarker_Load] == val_marker) break;
   return Load_Value[iMarker_Load];
 }
 
-double CConfig::GetLoad_Dir_Value(string val_marker) {
+su2double CConfig::GetLoad_Dir_Value(string val_marker) {
   unsigned short iMarker_Load_Dir;
   for (iMarker_Load_Dir = 0; iMarker_Load_Dir < nMarker_Load_Dir; iMarker_Load_Dir++)
     if (Marker_Load_Dir[iMarker_Load_Dir] == val_marker) break;
   return Load_Dir_Value[iMarker_Load_Dir];
 }
 
-double CConfig::GetLoad_Dir_Multiplier(string val_marker) {
+su2double CConfig::GetLoad_Dir_Multiplier(string val_marker) {
   unsigned short iMarker_Load_Dir;
   for (iMarker_Load_Dir = 0; iMarker_Load_Dir < nMarker_Load_Dir; iMarker_Load_Dir++)
     if (Marker_Load_Dir[iMarker_Load_Dir] == val_marker) break;
   return Load_Dir_Multiplier[iMarker_Load_Dir];
 }
 
-double* CConfig::GetLoad_Dir(string val_marker) {
+su2double* CConfig::GetLoad_Dir(string val_marker) {
   unsigned short iMarker_Load_Dir;
   for (iMarker_Load_Dir = 0; iMarker_Load_Dir < nMarker_Load_Dir; iMarker_Load_Dir++)
     if (Marker_Load_Dir[iMarker_Load_Dir] == val_marker) break;
@@ -6273,39 +6347,39 @@ double* CConfig::GetLoad_Dir(string val_marker) {
 }
 
 
-double CConfig::GetLoad_Sine_Amplitude(string val_marker) {
+su2double CConfig::GetLoad_Sine_Amplitude(string val_marker) {
   unsigned short iMarker_Load_Sine;
   for (iMarker_Load_Sine = 0; iMarker_Load_Sine < nMarker_Load_Sine; iMarker_Load_Sine++)
     if (Marker_Load_Sine[iMarker_Load_Sine] == val_marker) break;
   return Load_Sine_Amplitude[iMarker_Load_Sine];
 }
 
-double CConfig::GetLoad_Sine_Frequency(string val_marker) {
+su2double CConfig::GetLoad_Sine_Frequency(string val_marker) {
   unsigned short iMarker_Load_Sine;
   for (iMarker_Load_Sine = 0; iMarker_Load_Sine < nMarker_Load_Sine; iMarker_Load_Sine++)
     if (Marker_Load_Sine[iMarker_Load_Sine] == val_marker) break;
   return Load_Sine_Frequency[iMarker_Load_Sine];
 }
 
-double* CConfig::GetLoad_Sine_Dir(string val_marker) {
+su2double* CConfig::GetLoad_Sine_Dir(string val_marker) {
   unsigned short iMarker_Load_Sine;
   for (iMarker_Load_Sine = 0; iMarker_Load_Sine < nMarker_Load_Sine; iMarker_Load_Sine++)
     if (Marker_Load_Sine[iMarker_Load_Sine] == val_marker) break;
   return Load_Sine_Dir[iMarker_Load_Sine];
 }
 
-double CConfig::GetFlowLoad_Value(string val_marker) {
+su2double CConfig::GetFlowLoad_Value(string val_marker) {
   unsigned short iMarker_FlowLoad;
   for (iMarker_FlowLoad = 0; iMarker_FlowLoad < nMarker_FlowLoad; iMarker_FlowLoad++)
     if (Marker_FlowLoad[iMarker_FlowLoad] == val_marker) break;
   return FlowLoad_Value[iMarker_FlowLoad];
 }
 
-void CConfig::SetSpline(vector<double> &x, vector<double> &y, unsigned long n, double yp1, double ypn, vector<double> &y2) {
+void CConfig::SetSpline(vector<su2double> &x, vector<su2double> &y, unsigned long n, su2double yp1, su2double ypn, vector<su2double> &y2) {
   unsigned long i, k;
-  double p, qn, sig, un, *u;
+  su2double p, qn, sig, un, *u;
 
-  u = new double [n];
+  u = new su2double [n];
 
   if (yp1 > 0.99e30)			// The lower boundary condition is set either to be "nat
     y2[0]=u[0]=0.0;			  // -ural"
@@ -6336,9 +6410,9 @@ void CConfig::SetSpline(vector<double> &x, vector<double> &y, unsigned long n, d
 
 }
 
-double CConfig::GetSpline(vector<double>&xa, vector<double>&ya, vector<double>&y2a, unsigned long n, double x) {
+su2double CConfig::GetSpline(vector<su2double>&xa, vector<su2double>&ya, vector<su2double>&y2a, unsigned long n, su2double x) {
   unsigned long klo, khi, k;
-  double h, b, a, y;
+  su2double h, b, a, y;
 
   klo=1;										// We will find the right place in the table by means of
   khi=n;										// bisection. This is optimal if sequential calls to this

@@ -204,7 +204,17 @@ def get_headerMap():
                  "Avg_TotalPress"  : "AVG_TOTAL_PRESSURE"      ,
                  "FluxAvg_Pressure": "AVG_OUTLET_PRESSURE"     ,
                  "MassFlowRate"    : "MASS_FLOW_RATE"          ,
-                 "Time(min)"       : "TIME"         }
+                 "Time(min)"       : "TIME"                    ,
+                 "D(CLift)"        : "D_LIFT"                  ,
+                 "D(CDrag)"        : "D_DRAG"                  ,
+                 "D(CSideForce)"   : "D_SIDEFORCE"             ,
+                 "D(CMx)"          : "D_MOMENT_X"              ,
+                 "D(CMy)"          : "D_MOMENT_Y"              ,
+                 "D(CMz)"          : "D_MOMENT_Z"              ,
+                 "D(CFx)"          : "D_FORCE_X"               ,
+                 "D(CFy)"          : "D_FORCE_Y"               ,
+                 "D(CFz)"          : "D_FORCE_Z"               ,
+                 "D(CL/CD)"        : "D_EFFICIENCY"}
     
     return map_dict
 
@@ -307,6 +317,27 @@ optnames_geo = [ "MAX_THICKNESS"      ,
                  "VOLUME"              ]
 #: optnames_geo
 
+grad_names_directdiff = ["D_LIFT"                  ,
+                         "D_DRAG"                  ,
+                         "D_SIDEFORCE"             ,
+                         "D_MOMENT_X"              ,
+                         "D_MOMENT_Y"              ,
+                         "D_MOMENT_Z"              ,
+                         "D_FORCE_X"               ,
+                         "D_FORCE_Y"               ,
+                         "D_FORCE_Z"               ,
+                         "D_EFFICIENCY"]
+
+grad_names_map = { "LIFT"      : "D_LIFT"           ,
+                   "DRAG"      : "D_DRAG"           ,
+                   "SIDEFORCE" : "D_SIDEFORCE" ,
+                   "MOMENT_X"  : "D_MOMENT_X"   ,
+                   "MOMENT_Y"  : "D_MOMENT_Y"   ,
+                   "MOMENT_Z"  : "D_MOMENT_Z"   ,
+                   "FORCE_X"   : "D_FORCE_X"     ,
+                   "FORCE_Y"   : "D_FORCE_Y"     ,
+                   "FORCE_Z"   : "D_FORCE_Z"     ,
+                   "EFFICIENCY" : "D_EFFICIENCY"}
 # -------------------------------------------------------------------
 #  Read Aerodynamic Function Values from History File
 # -------------------------------------------------------------------
@@ -325,7 +356,7 @@ def read_aerodynamics( History_filename , special_cases=[], final_avg=0 ):
     history_data = read_history(History_filename)
     
     # list of functions to pull
-    func_names = optnames_aero
+    func_names = optnames_aero + grad_names_directdiff
 
     # pull only these functions
     Func_Values = ordered_bunch()
@@ -885,7 +916,7 @@ def restart2solution(config,state={}):
         if state: state.FILES.DIRECT = solution
         
     # adjoint solution
-    elif config.MATH_PROBLEM == 'CONTINUOUS_ADJOINT':
+    elif any([config.MATH_PROBLEM == 'CONTINUOUS_ADJOINT', config.MATH_PROBLEM == 'DISCRETE_ADJOINT']):
         restart  = config.RESTART_ADJ_FILENAME
         solution = config.SOLUTION_ADJ_FILENAME           
         # add suffix

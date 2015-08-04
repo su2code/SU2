@@ -43,13 +43,13 @@ CGalerkin_FEA::CGalerkin_FEA(unsigned short val_nDim, unsigned short val_nVar, C
 CGalerkin_FEA::~CGalerkin_FEA(void) { }
 
 
-void CGalerkin_FEA::PressInt_Linear(double CoordCorners[4][3], double *tn_e, double Fnodal[12]) {
+void CGalerkin_FEA::PressInt_Linear(su2double CoordCorners[4][3], su2double *tn_e, su2double Fnodal[12]) {
 
 	if (nDim == 2){
 
-		double a[3], b[3], Length_Elem, GaussPoint[2];
+		su2double a[3], b[3], Length_Elem, GaussPoint[2];
 		unsigned short iDim, iGauss, nGP=2;
-		double N1, N2, Weight, Jacobian, PX_1, PX_2, PY_1, PY_2;
+		su2double N1, N2, Weight, Jacobian, PX_1, PX_2, PY_1, PY_2;
 
 		for (iDim = 0; iDim < nDim; iDim++) {
 			a[iDim] = CoordCorners[0][iDim]-CoordCorners[1][iDim];
@@ -87,11 +87,11 @@ void CGalerkin_FEA::PressInt_Linear(double CoordCorners[4][3], double *tn_e, dou
 
 }
 
-void CGalerkin_FEA::ViscTermInt_Linear(double CoordCorners[2][2], double Tau_0[3][3], double Tau_1[3][3],  double FviscNodal[4]) {
+void CGalerkin_FEA::ViscTermInt_Linear(su2double CoordCorners[2][2], su2double Tau_0[3][3], su2double Tau_1[3][3],  su2double FviscNodal[4]) {
 
-	  double a[3], Length_Elem, Normal_Elem[2], Normal_Elem_Unit[2], GaussPoint[2];
-	  double TauElem_0[3], TauElem_1[3];
-	  double N1, N2, Weight, Jacobian, PX_1, PX_2, PY_1, PY_2;
+	  su2double a[3], Length_Elem, Normal_Elem[2], Normal_Elem_Unit[2], GaussPoint[2];
+	  su2double TauElem_0[3], TauElem_1[3];
+	  su2double N1, N2, Weight, Jacobian, PX_1, PX_2, PY_1, PY_2;
 	  unsigned short iDim, jDim, iGauss, nGP=2;
 
 	  for (iDim = 0; iDim < nDim; iDim++) {
@@ -148,11 +148,11 @@ void CGalerkin_FEA::ViscTermInt_Linear(double CoordCorners[2][2], double Tau_0[3
 
 
 
-double CGalerkin_FEA::ShapeFunc_Triangle(double Xi, double Eta, double CoordCorners[8][3], double DShapeFunction[8][4]) {
+su2double CGalerkin_FEA::ShapeFunc_Triangle(su2double Xi, su2double Eta, su2double CoordCorners[8][3], su2double DShapeFunction[8][4]) {
   
   int i, j, k;
-  double c0, c1, xsj;
-  double xs[3][3], ad[3][3];
+  su2double c0, c1, xsj;
+  su2double xs[3][3], ad[3][3];
   
   /*--- Shape functions ---*/
 
@@ -209,11 +209,11 @@ double CGalerkin_FEA::ShapeFunc_Triangle(double Xi, double Eta, double CoordCorn
   
 }
 
-double CGalerkin_FEA::ShapeFunc_Rectangle(double Xi, double Eta, double CoordCorners[8][3], double DShapeFunction[8][4]) {
+su2double CGalerkin_FEA::ShapeFunc_Rectangle(su2double Xi, su2double Eta, su2double CoordCorners[8][3], su2double DShapeFunction[8][4]) {
   
   int i, j, k;
-  double c0, c1, xsj;
-  double xs[3][3], ad[3][3];
+  su2double c0, c1, xsj;
+  su2double xs[3][3], ad[3][3];
   
   /*--- Shape functions ---*/
   
@@ -272,11 +272,11 @@ double CGalerkin_FEA::ShapeFunc_Rectangle(double Xi, double Eta, double CoordCor
   
 }
 
-double CGalerkin_FEA::ShapeFunc_Tetra(double Xi, double Eta, double Zeta, double CoordCorners[8][3], double DShapeFunction[8][4]) {
+su2double CGalerkin_FEA::ShapeFunc_Tetra(su2double Xi, su2double Eta, su2double Zeta, su2double CoordCorners[8][3], su2double DShapeFunction[8][4]) {
   
   int i, j, k;
-  double c0, c1, c2, xsj;
-  double xs[3][3], ad[3][3];
+  su2double c0, c1, c2, xsj;
+  su2double xs[3][3], ad[3][3];
   
   /*--- Shape functions ---*/
   
@@ -342,15 +342,15 @@ double CGalerkin_FEA::ShapeFunc_Tetra(double Xi, double Eta, double Zeta, double
   
 }
 
-double CGalerkin_FEA::ShapeFunc_Pyram(double Xi, double Eta, double Zeta, double CoordCorners[8][3], double DShapeFunction[8][4]) {
+su2double CGalerkin_FEA::ShapeFunc_Pyram(su2double Xi, su2double Eta, su2double Zeta, su2double CoordCorners[8][3], su2double DShapeFunction[8][4]) {
   
   int i, j, k;
-  double c0, c1, c2, xsj;
-  double xs[3][3], ad[3][3];
+  su2double c0, c1, c2, xsj;
+  su2double xs[3][3], ad[3][3];
   
   /*--- Shape functions ---*/
   
-  double Den = 4.0*(1.0 - Zeta);
+  su2double Den = 4.0*(1.0 - Zeta);
   
   DShapeFunction[0][3] = (-Xi+Eta+Zeta-1.0)*(-Xi-Eta+Zeta-1.0)/Den;
   DShapeFunction[1][3] = (-Xi-Eta+Zeta-1.0)*(Xi-Eta+Zeta-1.0)/Den;
@@ -430,11 +430,11 @@ double CGalerkin_FEA::ShapeFunc_Pyram(double Xi, double Eta, double Zeta, double
   
 }
 
-double CGalerkin_FEA::ShapeFunc_Prism(double Xi, double Eta, double Zeta, double CoordCorners[8][3], double DShapeFunction[8][4]) {
+su2double CGalerkin_FEA::ShapeFunc_Prism(su2double Xi, su2double Eta, su2double Zeta, su2double CoordCorners[8][3], su2double DShapeFunction[8][4]) {
   
   int i, j, k;
-  double c0, c1, c2, xsj;
-  double xs[3][3], ad[3][3];
+  su2double c0, c1, c2, xsj;
+  su2double xs[3][3], ad[3][3];
   
   /*--- Shape functions ---*/
   
@@ -504,11 +504,11 @@ double CGalerkin_FEA::ShapeFunc_Prism(double Xi, double Eta, double Zeta, double
   
 }
 
-double CGalerkin_FEA::ShapeFunc_Hexa(double Xi, double Eta, double Zeta, double CoordCorners[8][3], double DShapeFunction[8][4]) {
+su2double CGalerkin_FEA::ShapeFunc_Hexa(su2double Xi, su2double Eta, su2double Zeta, su2double CoordCorners[8][3], su2double DShapeFunction[8][4]) {
   
   int i, j, k;
-  double c0, c1, c2, xsj;
-  double xs[3][3], ad[3][3];
+  su2double c0, c1, c2, xsj;
+  su2double xs[3][3], ad[3][3];
 
 
   /*--- Shape functions ---*/
@@ -605,14 +605,14 @@ double CGalerkin_FEA::ShapeFunc_Hexa(double Xi, double Eta, double Zeta, double 
   
 }
 
-void CGalerkin_FEA::SetFEA_StiffMatrix2D(double **StiffMatrix_Elem, double CoordCorners[8][3], unsigned short nNodes, unsigned short form2d) {
+void CGalerkin_FEA::SetFEA_StiffMatrix2D(su2double **StiffMatrix_Elem, su2double CoordCorners[8][3], unsigned short nNodes, unsigned short form2d) {
   
-  double B_Matrix[3][8], D_Matrix[3][3], Aux_Matrix[8][3];
-  double Xi = 0.0, Eta = 0.0, Det = 0.0;
+  su2double B_Matrix[3][8], D_Matrix[3][3], Aux_Matrix[8][3];
+  su2double Xi = 0.0, Eta = 0.0, Det = 0.0;
   unsigned short iNode, iVar, jVar, kVar, iGauss, nGauss = 0;
-  double DShapeFunction[8][4] = {{0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0},
+  su2double DShapeFunction[8][4] = {{0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0},
     {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}};
-  double Location[4][3], Weight[4];
+  su2double Location[4][3], Weight[4];
   unsigned short nVar = 2;
 
   for (iVar = 0; iVar < nNodes*nVar; iVar++) {
@@ -704,14 +704,14 @@ void CGalerkin_FEA::SetFEA_StiffMatrix2D(double **StiffMatrix_Elem, double Coord
   
 }
 
-void CGalerkin_FEA::SetFEA_StiffMatrix3D(double **StiffMatrix_Elem, double CoordCorners[8][3], unsigned short nNodes) {
+void CGalerkin_FEA::SetFEA_StiffMatrix3D(su2double **StiffMatrix_Elem, su2double CoordCorners[8][3], unsigned short nNodes) {
   
-  double B_Matrix[6][24], D_Matrix[6][6], Aux_Matrix[24][6];
-  double Xi = 0.0, Eta = 0.0, Zeta = 0.0, Det = 0.0;
+  su2double B_Matrix[6][24], D_Matrix[6][6], Aux_Matrix[24][6];
+  su2double Xi = 0.0, Eta = 0.0, Zeta = 0.0, Det = 0.0;
   unsigned short iNode, iVar, jVar, kVar, iGauss, nGauss = 0;
-  double DShapeFunction[8][4] = {{0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0},
+  su2double DShapeFunction[8][4] = {{0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0},
     {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}};
-  double Location[8][3], Weight[8];
+  su2double Location[8][3], Weight[8];
   
   unsigned short nVar = 3;
   
@@ -831,15 +831,15 @@ void CGalerkin_FEA::SetFEA_StiffMatrix3D(double **StiffMatrix_Elem, double Coord
   
 }
 
-void CGalerkin_FEA::SetFEA_StiffMassMatrix2D(double **StiffMatrix_Elem, double **MassMatrix_Elem, double CoordCorners[8][3], unsigned short nNodes, unsigned short form2d) {
+void CGalerkin_FEA::SetFEA_StiffMassMatrix2D(su2double **StiffMatrix_Elem, su2double **MassMatrix_Elem, su2double CoordCorners[8][3], unsigned short nNodes, unsigned short form2d) {
 
 
-	  double B_Matrix[3][8], D_Matrix[3][3], N_Matrix[2][8], Aux_Matrix[8][3];
-	  double Xi = 0.0, Eta = 0.0, Det = 0.0;
+	  su2double B_Matrix[3][8], D_Matrix[3][3], N_Matrix[2][8], Aux_Matrix[8][3];
+	  su2double Xi = 0.0, Eta = 0.0, Det = 0.0;
 	  unsigned short iNode, iVar, jVar, kVar, iGauss, nGauss = 0;
-	  double DShapeFunction[8][4] = {{0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0},
+	  su2double DShapeFunction[8][4] = {{0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0},
 	    {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}};
-	  double Location[4][3], Weight[4];
+	  su2double Location[4][3], Weight[4];
 	  unsigned short nVar = 2;
 
 	  for (iVar = 0; iVar < nNodes*nVar; iVar++) {
@@ -942,15 +942,15 @@ void CGalerkin_FEA::SetFEA_StiffMassMatrix2D(double **StiffMatrix_Elem, double *
 
 }
 
-void CGalerkin_FEA::SetFEA_StiffMassMatrix3D(double **StiffMatrix_Elem, double **MassMatrix_Elem, double CoordCorners[8][3], unsigned short nNodes) {
+void CGalerkin_FEA::SetFEA_StiffMassMatrix3D(su2double **StiffMatrix_Elem, su2double **MassMatrix_Elem, su2double CoordCorners[8][3], unsigned short nNodes) {
 
 
-	  double B_Matrix[6][24], D_Matrix[6][6], N_Matrix[3][24], Aux_Matrix[24][6];
-	  double Xi = 0.0, Eta = 0.0, Zeta = 0.0, Det = 0.0;
+	  su2double B_Matrix[6][24], D_Matrix[6][6], N_Matrix[3][24], Aux_Matrix[24][6];
+	  su2double Xi = 0.0, Eta = 0.0, Zeta = 0.0, Det = 0.0;
 	  unsigned short iNode, iVar, jVar, kVar, iGauss, nGauss = 0;
-	  double DShapeFunction[8][4] = {{0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0},
+	  su2double DShapeFunction[8][4] = {{0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0},
 	    {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}};
-	  double Location[8][3], Weight[8];
+	  su2double Location[8][3], Weight[8];
 
 	  unsigned short nVar = 3;
 
@@ -1096,17 +1096,17 @@ void CGalerkin_FEA::SetFEA_StiffMassMatrix3D(double **StiffMatrix_Elem, double *
 }
 
 
-void CGalerkin_FEA::SetFEA_DeadLoad2D(double *DeadLoadVector_Elem, double CoordCorners[8][3], unsigned short nNodes, double matDensity){
+void CGalerkin_FEA::SetFEA_DeadLoad2D(su2double *DeadLoadVector_Elem, su2double CoordCorners[8][3], unsigned short nNodes, su2double matDensity){
 
-	  double N_Matrix[2][8], Aux_Vector[2], DeadLoad_Elem[80];
-	  double Xi = 0.0, Eta = 0.0, Det = 0.0;
+	  su2double N_Matrix[2][8], Aux_Vector[2], DeadLoad_Elem[80];
+	  su2double Xi = 0.0, Eta = 0.0, Det = 0.0;
 	  unsigned short iNode, iVar, jVar, kVar, iGauss, nGauss = 0;
-	  double DShapeFunction[8][4] = {{0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0},
+	  su2double DShapeFunction[8][4] = {{0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0},
 	    {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}};
-	  double Location[4][3], Weight[4];
+	  su2double Location[4][3], Weight[4];
 	  unsigned short nVar2D = 2;
 
-	  double gravity;
+	  su2double gravity;
 
 	  gravity=9.80665;
 
@@ -1174,20 +1174,20 @@ void CGalerkin_FEA::SetFEA_DeadLoad2D(double *DeadLoadVector_Elem, double CoordC
 
 }
 
-void CGalerkin_FEA::SetFEA_DeadLoad3D(double *DeadLoadVector_Elem, double CoordCorners[8][3], unsigned short nNodes, double matDensity){
+void CGalerkin_FEA::SetFEA_DeadLoad3D(su2double *DeadLoadVector_Elem, su2double CoordCorners[8][3], unsigned short nNodes, su2double matDensity){
 
 }
 
 
-void CGalerkin_FEA::GetFEA_StressNodal2D(double StressNodal[8][3], double DispElement[8], double CoordCorners[8][3], unsigned short nNodes, unsigned short form2d) {
+void CGalerkin_FEA::GetFEA_StressNodal2D(su2double StressNodal[8][3], su2double DispElement[8], su2double CoordCorners[8][3], unsigned short nNodes, unsigned short form2d) {
 
 
-	  double B_Matrix[3][8], D_Matrix[3][3], StrainVector[3];
-	  double Xi = 0.0, Eta = 0.0, Det = 0.0;
+	  su2double B_Matrix[3][8], D_Matrix[3][3], StrainVector[3];
+	  su2double Xi = 0.0, Eta = 0.0, Det = 0.0;
 	  unsigned short iNode, iVar, jVar, kVar, iNodal, nNodal = 0;
-	  double DShapeFunction[8][4] = {{0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0},
+	  su2double DShapeFunction[8][4] = {{0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0},
 	    {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}};
-	  double Location[4][3];
+	  su2double Location[4][3];
 	  unsigned short nVar = 2;
 
 	  /*--- Triangle. Nodes of numerical integration at 1 point (order 1). ---*/
@@ -1276,15 +1276,15 @@ void CGalerkin_FEA::GetFEA_StressNodal2D(double StressNodal[8][3], double DispEl
 
 }
 
-void CGalerkin_FEA::GetFEA_StressNodal3D(double StressNodal[8][6], double DispElement[24], double CoordCorners[8][3], unsigned short nNodes) {
+void CGalerkin_FEA::GetFEA_StressNodal3D(su2double StressNodal[8][6], su2double DispElement[24], su2double CoordCorners[8][3], unsigned short nNodes) {
 
 
-	  double B_Matrix[6][24], D_Matrix[6][6], StrainVector[6];
-	  double Xi = 0.0, Eta = 0.0, Zeta=0.0, Det = 0.0;
+	  su2double B_Matrix[6][24], D_Matrix[6][6], StrainVector[6];
+	  su2double Xi = 0.0, Eta = 0.0, Zeta=0.0, Det = 0.0;
 	  unsigned short iNode, iVar, jVar, kVar, iNodal, nNodal = 0;
-	  double DShapeFunction[8][4] = {{0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0},
+	  su2double DShapeFunction[8][4] = {{0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0},
 	    {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}};
-	  double Location[8][3];
+	  su2double Location[8][3];
 
 	  unsigned short nVar = 3;
 
