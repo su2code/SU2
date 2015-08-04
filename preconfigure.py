@@ -250,7 +250,7 @@ def build_codi(modes, mpi_support = False):
         os.chdir('adjointmpi')
         if not os.path.exists('libAMPI.a'):
             print '\nConfiguring and building AMPI...'
-            subprocess.check_call('./bootstrap.sh && ./configure CFLAGS=-O2 --prefix=$PWD && make', stdout = ampi_log, stderr = ampi_err, shell=True)
+            subprocess.check_call('./configure CFLAGS=-O2 --prefix=$PWD && make', stdout = ampi_log, stderr = ampi_err, shell=True)
 
         os.chdir(os.pardir)
 
