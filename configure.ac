@@ -51,7 +51,8 @@ SU2_SET_COMPILERS
 AM_PROG_CC_C_O
 AC_PROG_RANLIB
 AC_PROG_MKDIR_P
-PKG_PROG_PKG_CONFIG
+#PKG_PROG_PKG_CONFIG
+
 # --------------------------------------------------------------
 # Check for important type sizes
 # --------------------------------------------------------------
@@ -508,7 +509,7 @@ DIRECTDIFF_LIBS=
 # reverse mode type
 REVERSE_CXX=
 FORWARD_CXX=
-CONFIGURE_ADOLC
+#CONFIGURE_ADOLC
 CONFIGURE_CODI
 
 if test $build_COMPLEX != "no"
