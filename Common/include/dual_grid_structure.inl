@@ -342,19 +342,19 @@ inline void CVertex::SetDonorInfo(unsigned short iDonor, unsigned long *val){
   for ( unsigned short it =0; it<4; it++) Donor_Info[iDonor][it]=val[it];
 }
 
-inline void CVertex::SetDonorCoeff(unsigned short iDonor, double val){ Donor_Coeff[iDonor] = val; }
+inline void CVertex::SetDonorCoeff(unsigned short iDonor, su2double val){ Donor_Coeff[iDonor] = val; }
 
 inline unsigned long CVertex::GetDonorInfo(unsigned short iDonor, unsigned short it){ return Donor_Info[iDonor][it];}
 
-inline double CVertex::GetDonorCoeff(unsigned short iDonor){ return Donor_Coeff[iDonor];}
+inline su2double CVertex::GetDonorCoeff(unsigned short iDonor){ return Donor_Coeff[iDonor];}
 
 inline unsigned short CVertex::GetnDonorPoints(void){ return nDonor_Points;}
 
 inline void CVertex::SetnDonorPoints(unsigned short nDonor) {nDonor_Points = nDonor;}
 
-inline double *CVertex::GetVarRot(void) {return VarRot;}
+inline su2double *CVertex::GetVarRot(void) {return VarRot;}
 
-inline void CVertex::SetVarRot(double* val) {
+inline void CVertex::SetVarRot(su2double* val) {
   for (unsigned short iDim = 0; iDim < nDim; iDim++)
     VarRot[iDim] = val[iDim];
 }

@@ -1125,14 +1125,14 @@ public:
    * \param[in] iDonor - Index of the donor point.
    * \param[in] val  - Value of the coefficent for point iDonor.
    */
-	void SetDonorCoeff(unsigned short iDonor, double val);
+	void SetDonorCoeff(unsigned short iDonor, su2double val);
 
 	/*!
    * \brief Get the coefficient value of a donor point.
    * \param[in] iDonor - Index of the donor point.
    * \return  - Value of the coefficent for point iDonor.
    */
-	double GetDonorCoeff(unsigned short iDonor);
+	su2double GetDonorCoeff(unsigned short iDonor);
 
 	/*!
    * \brief Allocate memory based on how many donor points need to be stored.
@@ -1144,13 +1144,13 @@ public:
    * \brief Get the rotation variation
    * \return  - pointer to the vector defining the rotation
    */
-  double *GetVarRot(void);
+  su2double *GetVarRot(void);
 
   /*!
    * \brief Set the rotation variation
    * \return  - pointer to the vector defining the rotation
    */
-  void SetVarRot(double* val);
+  void SetVarRot(su2double* val);
 
 };
 

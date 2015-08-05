@@ -61,12 +61,12 @@ void CInterpolator::InitializeData(unsigned int* Zones, unsigned short val_nVar)
   unsigned short it;
   if (nVar>0){
     /*--- Initialize Data vectors to 0 ---*/
-    Data = new double**[nZone];
+    Data = new su2double**[nZone];
     for (it=0; it<nZone; it++){
       iZone = Zones[it];
-      Data[iZone] = new double*[Geometry[iZone][MESH_0]->GetnPoint()];
+      Data[iZone] = new su2double*[Geometry[iZone][MESH_0]->GetnPoint()];
       for (unsigned long iPoint =0; iPoint< Geometry[iZone][MESH_0]->GetnPoint(); iPoint++){
-        Data[iZone][iPoint] = new double[nVar];
+        Data[iZone][iPoint] = new su2double[nVar];
         for (unsigned short iVar=0; iVar<nVar; iVar++){
           Data[iZone][iPoint][iVar]=0.0;
         }
@@ -83,7 +83,7 @@ void CInterpolator::Interpolate_Data(unsigned int iZone, CConfig **config){
   unsigned long iPoint, jPoint, jVertex, iMarker, iVertex;
   unsigned short jMarker;
   unsigned int iZone_1;
-  double weight=0.0;
+  su2double weight=0.0;
 
   /*--- Loop through points, increment Data in the input zone by the weight in the transfer matrix ---*/
 
@@ -119,8 +119,8 @@ void CInterpolator::Interpolate_Deformation(unsigned int iZone, CConfig **config
   unsigned long GlobalIndex, iPoint, i2Point, jPoint, j2Point, iVertex, jVertex;
   unsigned short iMarker, jMarker, iDim;
   unsigned int iZone_1;
-  double *NewVarCoord = NULL, *VarCoord, *VarRot, *distance = NULL;
-  double weight;
+  su2double *NewVarCoord = NULL, *VarCoord, *VarRot, *distance = NULL;
+  su2double weight;
   unsigned short nDim = Geometry[iZone][MESH_0]->GetnDim();
   /*--- Loop over vertices in the interface marker (zone 0) ---*/
   for (iMarker = 0; iMarker < config[iZone]->GetnMarker_All(); iMarker++){
@@ -168,21 +168,21 @@ void CInterpolator::Interpolate_Deformation(unsigned int iZone, CConfig **config
 
 }
 
-double CInterpolator::GetData(unsigned int iZone, unsigned long iPoint, unsigned short iVar){
+su2double CInterpolator::GetData(unsigned int iZone, unsigned long iPoint, unsigned short iVar){
   if (Data !=NULL)
     return Data[iZone][iPoint][iVar];
   else
     return 0.0; // Check this.
 }
 
-double* CInterpolator::GetData(unsigned int iZone, unsigned long iPoint){
+su2double* CInterpolator::GetData(unsigned int iZone, unsigned long iPoint){
   if (Data !=NULL)
     return Data[iZone][iPoint];
   else
     return NULL;
 }
 
-void CInterpolator::SetData(unsigned int iZone, unsigned long iPoint, unsigned short iVar, double val){
+void CInterpolator::SetData(unsigned int iZone, unsigned long iPoint, unsigned short iVar, su2double val){
   if (Data !=NULL)
     Data[iZone][iPoint][iVar]=val;
   else
@@ -207,7 +207,7 @@ void CNearestNeighbor::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
   unsigned long iPoint, jPoint, iVertex, jVertex,*nn;
   unsigned short iMarker, iDim, jMarker;
   unsigned short nDim = Geometry[Zones[0]][MESH_0]->GetnDim(), iDonor, jDonor;
-  double distance = 0.0, last_distance=-1.0;
+  su2double distance = 0.0, last_distance=-1.0;
 
   unsigned short int donorindex = 0;
   unsigned short nMarkerFSIint, nMarkerFEA, nMarkerFlow;
@@ -326,11 +326,11 @@ void CConsistConserve::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
   unsigned short iMarker, iDim, jMarker, it;
   unsigned short nDim = Geometry[Zones[0]][MESH_0]->GetnDim();
   unsigned short iDonor, jDonor;
-  double distance = 0.0, last_distance=-1.0, *Coord;
-  double* myCoeff;
-  double* myCoefftemp;
-  double* donorCoord;
-  double coeff;
+  su2double distance = 0.0, last_distance=-1.0, *Coord;
+  su2double* myCoeff;
+  su2double* myCoefftemp;
+  su2double* donorCoord;
+  su2double coeff;
   long donor_elem=0, temp_donor;
 
   unsigned short int donorindex = 0;
@@ -422,7 +422,7 @@ void CConsistConserve::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
 
         /*--- use Isoparametric rep. to find distance to projected point on the surface ---*/
         //delete[] myCoefftemp;
-        myCoefftemp = new double[nNodes];
+        myCoefftemp = new su2double[nNodes];
         Isoparametric( myCoefftemp, iZone_0,  markFlow, iVertex, nDim, iZone_1, markFEA, temp_donor, nNodes, temp2);
         /*--- If closer than last closest projected point, save. ---*/
         Coord = Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->GetCoord();
@@ -439,7 +439,7 @@ void CConsistConserve::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
         if ((last_distance==-1) or (distance<last_distance )){
           donor_elem = temp_donor;
           //delete [] myCoeff;
-          myCoeff = new double[nNodes];
+          myCoeff = new su2double[nNodes];
           for (it=0; it< nNodes; it++)
             myCoeff[it] = myCoefftemp[it];
           Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->SetDonorElem(temp_donor);
@@ -513,21 +513,21 @@ void CConsistConserve::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
 
 }
 
-void CConsistConserve::Isoparametric(double* isoparams, unsigned int iZone_0, unsigned short iMarker, unsigned long iVertex, unsigned int nDim, unsigned int iZone_1, unsigned short jMarker, long donor_elem, unsigned int nDonorPoints, int* temp2){
+void CConsistConserve::Isoparametric(su2double* isoparams, unsigned int iZone_0, unsigned short iMarker, unsigned long iVertex, unsigned int nDim, unsigned int iZone_1, unsigned short jMarker, long donor_elem, unsigned int nDonorPoints, int* temp2){
   int i,j,k;
   int n0 = nDim+1, n;
-  double tmp, tmp2, distance;
+  su2double tmp, tmp2, distance;
   unsigned long jVertex, inode;
 
   /*--- Number of neighbor points to interpolate between ---*/
   unsigned int m0 =  nDonorPoints, m;
-  double x[m0], x_tmp[m0];
+  su2double x[m0], x_tmp[m0];
   /*--- Q R matrix system ---*/
-  double Q[m0*m0], R[m0*m0], A[n0*m0];
+  su2double Q[m0*m0], R[m0*m0], A[n0*m0];
   bool test[n0];
   bool testi[n0];
 
-  double x2[n0];
+  su2double x2[n0];
   int offset;
   /*--- n0: # of dimensions + 1. n: n0 less any degenerate rows ---*/
   n=n0;
@@ -589,7 +589,7 @@ void CConsistConserve::Isoparametric(double* isoparams, unsigned int iZone_0, un
     }
     if (!test[i]) n--;
   }
-  double A2[n*m];
+  su2double A2[n*m];
 
 
   j=0;
