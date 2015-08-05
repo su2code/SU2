@@ -33,14 +33,19 @@ Makefile
 *~
 
 # installed autotools
-contrib/autotools/bin
-contrib/autotools/include
-contrib/autotools/share
-.cproject
-.project
-.settings/
-Debug/
-go.sh
-log_make.txt
-log_make_install.txt
-SU2_FSI/bin/SU2_FSI
+externals/autotools/bin
+externals/autotools/include
+externals/autotools/share
+
+# externally downloaded tools
+externals/CoDi
+externals/adjointmpi
+
+#logs and errors
+*.log
+*.err
+
+# configuration sets
+REVERSE/
+NORMAL/
+DIRECTDIFF/

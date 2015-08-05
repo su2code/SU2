@@ -1,5 +1,9 @@
-# SU2 global Makefile.am
-# SU2 v3.2.7 "eagle"
+################################################################################
+#
+# \file Makefile.am
+# \brief Global makefile for the SU2 project
+# \author M. Colonno, T. Economon, F. Palacios
+# \version 4.0.0 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -38,16 +42,21 @@
 #
 ######################################################################################
 
-# AUTOMAKE_OPTIONS = subdir-objects
+
 ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS} -I m4
 
-# build third-party optional dependencies first
+# Build third-party optional dependencies first
 SUBDIRS = externals
 
+# Build the SU2 C++ common library
 SUBDIRS += Common/lib
 
+# Install the SU2 Python scripts to the proper location
+if BUILD_NORMAL
 SUBDIRS += SU2_PY
+endif
 
+# Build each of the SU2 C++ modules
 if BUILD_CFD
 SUBDIRS +=SU2_CFD/obj
 endif
