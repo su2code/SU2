@@ -73,6 +73,7 @@ protected:
 	double **Ks_ab;						/*!< \brief Structure for the stress component of the tangent matrix. */
 	double ***Kk_ab;					/*!< \brief Structure for the pressure component of the tangent matrix. */
 	double **Kt_a;						/*!< \brief Structure for the nodal stress term for the residual computation. */
+	double el_Pressure;					/*!< \brief Pressure in the element */
 
 public:
 	/*!
@@ -125,6 +126,12 @@ public:
 	 * \param[in] iDim - Dimension
 	 */
 	void SetCurr_Coord(double val_CoordCurr, unsigned short iNode, unsigned short iDim);
+
+	/*!
+	 * \brief Set the value of the pressure in the element for incompressible materials.
+	 * \param[in] val_ElPressure - Value of the pressure.
+	 */
+	void SetElement_Pressure(double val_ElPressure);
 
 	/*!
 	 * \brief Set the value of the coordinate of the nodes in the reference configuration.
@@ -185,6 +192,12 @@ public:
 	 * \param[out] Weight.
 	 */
 	double GetJ_x_P(unsigned short iGauss);
+
+	/*!
+	 * \brief Retrieve the value of the pressure in the element for incompressible materials.
+	 * \param[out] Value of the pressure.
+	 */
+	double GetElement_Pressure(void);
 
 	/*!
 	 * \brief Add the value of the diagonal term for the mass matrix.

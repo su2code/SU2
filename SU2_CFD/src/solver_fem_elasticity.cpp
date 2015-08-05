@@ -527,6 +527,20 @@ void CFEM_ElasticitySolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geomet
 					}
 				}
 
+//				cout << "Jacobian_s_ij: " << endl;
+//				cout << Jacobian_s_ij[0][0] << " " << Jacobian_s_ij[0][1] << endl;
+//				cout << Jacobian_s_ij[1][0] << " " << Jacobian_s_ij[1][1] << endl;
+//
+//				cout << "Jacobian_c_ij: " << endl;
+//				cout << Jacobian_c_ij[0][0] << " " << Jacobian_c_ij[0][1] << endl;
+//				cout << Jacobian_c_ij[1][0] << " " << Jacobian_c_ij[1][1] << endl;
+//
+//				if (incompressible){
+//				cout << "Jacobian_k_ij: " << endl;
+//				cout << Jacobian_k_ij[0][0] << " " << Jacobian_k_ij[0][1] << endl;
+//				cout << Jacobian_k_ij[1][0] << " " << Jacobian_k_ij[1][1] << endl;
+//				}
+
 				/*--- If the problem is dynamic, the jacobian of the problem will be a combination of the ---*/
 				/*--- StiffMatrix and the Mass Matrix; otherwise, the Jacobian can be computed straight away ---*/
 //				if (dynamic){
