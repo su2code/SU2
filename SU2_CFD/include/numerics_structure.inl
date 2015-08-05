@@ -77,19 +77,19 @@ inline void CNumerics::Compute_Averaged_NodalStress(CElement *element_container)
 
 inline void CFEM_Elasticity::Compute_Averaged_NodalStress(CElement *element_container){ }
 
-inline void CNumerics::Compute_Constitutive_Matrix(void){ }
+inline void CNumerics::Compute_Constitutive_Matrix(CElement *element_container){ }
 
-inline void CFEM_Elasticity::Compute_Constitutive_Matrix(void){ }
+inline void CFEM_Elasticity::Compute_Constitutive_Matrix(CElement *element_container){ }
 
-inline void CFEM_NonlinearElasticity::Compute_Constitutive_Matrix(void){ }
+inline void CFEM_NonlinearElasticity::Compute_Constitutive_Matrix(CElement *element_container){ }
 
-inline void CNumerics::Compute_Stress_Tensor(void){ }
+inline void CNumerics::Compute_Stress_Tensor(CElement *element_container){ }
 
-inline void CFEM_Elasticity::Compute_Stress_Tensor(void){ }
+inline void CFEM_Elasticity::Compute_Stress_Tensor(CElement *element_container){ }
 
 //inline void CFEM_LinearElasticity::Compute_Stress_Tensor(void){ }
 
-inline void CFEM_NonlinearElasticity::Compute_Stress_Tensor(void){ }
+inline void CFEM_NonlinearElasticity::Compute_Stress_Tensor(CElement *element_container){ }
 
 inline void CNumerics::ComputeResidual(double *val_residual, CConfig *config) { }
 

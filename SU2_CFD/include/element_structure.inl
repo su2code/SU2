@@ -43,6 +43,8 @@ inline void CElement::SetRef_Coord(double val_CoordRef, unsigned short iNode, un
 
 inline void CElement::SetCurr_Coord(double val_CoordCurr, unsigned short iNode, unsigned short iDim) { CurrentCoord[iNode][iDim] = val_CoordCurr;}
 
+inline void CElement::SetElement_Pressure(double val_ElPressure) {el_Pressure = val_ElPressure;}
+
 inline double CElement::GetRef_Coord(unsigned short iNode, unsigned short iDim) { return RefCoord[iNode][iDim];}
 
 inline double CElement::GetCurr_Coord(unsigned short iNode, unsigned short iDim) { return CurrentCoord[iNode][iDim];}
@@ -56,6 +58,8 @@ inline double CElement::GetJ_x(unsigned short iGauss) {return GaussPoint[iGauss]
 inline double CElement::GetJ_X_P(unsigned short iGauss) {return GaussPointP[iGauss]->GetJ_X();}
 
 inline double CElement::GetJ_x_P(unsigned short iGauss) {return GaussPointP[iGauss]->GetJ_x();}
+
+inline double CElement::GetElement_Pressure(void) {return el_Pressure;}
 
 inline double CElement::Get_Mab(unsigned short nodeA, unsigned short nodeB) { return Mab[nodeA][nodeB]; }
 

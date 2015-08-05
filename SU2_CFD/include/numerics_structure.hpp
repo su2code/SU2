@@ -1670,13 +1670,13 @@ void GetViscousProjFlux(double *val_primvar, double **val_gradprimvar,
 	 * \brief A virtual member to compute the constitutive matrix in an element for structural problems
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void Compute_Constitutive_Matrix(void);
+	virtual void Compute_Constitutive_Matrix(CElement *element_container);
 
 	/*!
 	 * \brief A virtual member to compute the stress tensor in an element for structural problems
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void Compute_Stress_Tensor(void);
+	virtual void Compute_Stress_Tensor(CElement *element_container);
 
 	/*!
 	 * \brief A virtual member to compute the mass matrix
@@ -4454,9 +4454,9 @@ public:
 
 	virtual void Compute_Averaged_NodalStress(CElement *element_container);
 
-	virtual void Compute_Constitutive_Matrix(void);
+	virtual void Compute_Constitutive_Matrix(CElement *element_container);
 
-	virtual void Compute_Stress_Tensor(void);
+	virtual void Compute_Stress_Tensor(CElement *element_container);
 
 };
 
@@ -4544,9 +4544,9 @@ public:
 
 	void Compute_Averaged_NodalStress(CElement *element_container);
 
-	virtual void Compute_Constitutive_Matrix(void);
+	virtual void Compute_Constitutive_Matrix(CElement *element_container);
 
-	virtual void Compute_Stress_Tensor(void);
+	virtual void Compute_Stress_Tensor(CElement *element_container);
 
 
 };
@@ -4575,9 +4575,9 @@ public:
 	 */
 	~CFEM_NeoHookean_Comp(void);
 
-	void Compute_Constitutive_Matrix(void);
+	void Compute_Constitutive_Matrix(CElement *element_container);
 
-	void Compute_Stress_Tensor(void);
+	void Compute_Stress_Tensor(CElement *element_container);
 
 };
 
@@ -4605,9 +4605,9 @@ public:
 	 */
 	~CFEM_NeoHookean_Incomp(void);
 
-	void Compute_Constitutive_Matrix(void);
+	void Compute_Constitutive_Matrix(CElement *element_container);
 
-	void Compute_Stress_Tensor(void);
+	void Compute_Stress_Tensor(CElement *element_container);
 
 };
 

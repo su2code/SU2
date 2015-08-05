@@ -206,8 +206,8 @@ void CFEM_NonlinearElasticity::Compute_Tangent_Matrix(CElement *element){
 
 		/*--- Compute the constitutive matrix ---*/
 
-		Compute_Constitutive_Matrix();
-		Compute_Stress_Tensor();
+		Compute_Constitutive_Matrix(element);
+		Compute_Stress_Tensor(element);
 
 
 		for (iNode = 0; iNode < nNode; iNode++){
@@ -332,6 +332,7 @@ void CFEM_NonlinearElasticity::Compute_MeanDilatation_Term(CElement *element){
 	double GradNi_Mat_Term;
 	double Vol_current, Vol_reference;
 	double Avg_kappa;
+	double el_Pressure;
 
 
 	/*--- Under integration of the pressure term, if the calculations assume incompressibility or near incompressibility ---*/
@@ -389,6 +390,12 @@ void CFEM_NonlinearElasticity::Compute_MeanDilatation_Term(CElement *element){
 		}
 
 		Avg_kappa = Kappa * Vol_current / Vol_reference;
+
+		el_Pressure = Kappa * ((Vol_current / Vol_reference) - 1);
+
+		element->SetElement_Pressure(el_Pressure);
+
+//		cout << "ELEMENT PRESSURE: " << el_Pressure << endl;
 
 	}
 
@@ -501,7 +508,7 @@ void CFEM_NonlinearElasticity::Compute_NodalStress_Term(CElement *element){
 
 		/*--- Compute the stress tensor ---*/
 
-		Compute_Stress_Tensor();
+		Compute_Stress_Tensor(element);
 
 
 		for (iNode = 0; iNode < nNode; iNode++){
@@ -604,7 +611,7 @@ void CFEM_NonlinearElasticity::Compute_Averaged_NodalStress(CElement *element){
 
 		/*--- Compute the stress tensor ---*/
 
-		Compute_Stress_Tensor();
+		Compute_Stress_Tensor(element);
 
 		for (iNode = 0; iNode < nNode; iNode++){
 			element->Add_NodalStress(Stress_Tensor[0][0] * element->GetNi_Extrap(iNode, iGauss), iNode, 0);
@@ -633,7 +640,7 @@ CFEM_NeoHookean_Comp::~CFEM_NeoHookean_Comp(void) {
 
 }
 
-void CFEM_NeoHookean_Comp::Compute_Constitutive_Matrix(void) {
+void CFEM_NeoHookean_Comp::Compute_Constitutive_Matrix(CElement *element) {
 
 	unsigned short i,j;
 	double Mu_p, Lambda_p;
@@ -648,22 +655,22 @@ void CFEM_NeoHookean_Comp::Compute_Constitutive_Matrix(void) {
 	/*--- Assuming plane strain ---*/
 
 	if (nDim == 2){
-	    D_Mat[0][0] = Lambda_p + 2 * Mu_p;	D_Mat[0][1] = Lambda_p;				D_Mat[0][2] = 0.0;
-	    D_Mat[1][0] = Lambda_p;				D_Mat[1][1] = Lambda_p + 2 * Mu_p;	D_Mat[1][2] = 0.0;
-	    D_Mat[2][0] = 0.0;					D_Mat[2][1] = 0.0;					D_Mat[2][2] = Mu_p;
+	    D_Mat[0][0] = Lambda_p + 2.0 * Mu_p;	D_Mat[0][1] = Lambda_p;					D_Mat[0][2] = 0.0;
+	    D_Mat[1][0] = Lambda_p;					D_Mat[1][1] = Lambda_p + 2.0 * Mu_p;	D_Mat[1][2] = 0.0;
+	    D_Mat[2][0] = 0.0;						D_Mat[2][1] = 0.0;						D_Mat[2][2] = Mu_p;
 	}
 	else if (nDim == 3){
-	    D_Mat[0][0] = Lambda_p + 2 * Mu_p;	D_Mat[0][1] = Lambda_p;				D_Mat[0][2] = Lambda_p;				D_Mat[0][3] = 0.0;	D_Mat[0][4] = 0.0;	D_Mat[0][5] = 0.0;
-	    D_Mat[1][0] = Lambda_p;				D_Mat[1][1] = Lambda_p + 2 * Mu_p;	D_Mat[1][2] = Lambda_p;				D_Mat[1][3] = 0.0;	D_Mat[1][4] = 0.0;	D_Mat[1][5] = 0.0;
-	    D_Mat[2][0] = Lambda_p;				D_Mat[2][1] = Lambda_p;				D_Mat[2][2] = Lambda_p + 2 * Mu_p;	D_Mat[2][3] = 0.0;	D_Mat[2][4] = 0.0;	D_Mat[2][5] = 0.0;
-	    D_Mat[3][0] = 0.0;					D_Mat[3][1] = 0.0;					D_Mat[3][2] = 0.0;					D_Mat[3][3] = Mu_p;	D_Mat[3][4] = 0.0;	D_Mat[3][5] = 0.0;
-	    D_Mat[4][0] = 0.0;					D_Mat[4][1] = 0.0;					D_Mat[4][2] = 0.0;					D_Mat[4][3] = 0.0;	D_Mat[4][4] = Mu_p;	D_Mat[4][5] = 0.0;
-	    D_Mat[5][0] = 0.0;					D_Mat[5][1] = 0.0;					D_Mat[5][2] = 0.0;					D_Mat[5][3] = 0.0;	D_Mat[5][4] = 0.0;	D_Mat[5][5] = Mu_p;
+	    D_Mat[0][0] = Lambda_p + 2.0 * Mu_p;	D_Mat[0][1] = Lambda_p;					D_Mat[0][2] = Lambda_p;				D_Mat[0][3] = 0.0;	D_Mat[0][4] = 0.0;	D_Mat[0][5] = 0.0;
+	    D_Mat[1][0] = Lambda_p;					D_Mat[1][1] = Lambda_p + 2.0 * Mu_p;	D_Mat[1][2] = Lambda_p;				D_Mat[1][3] = 0.0;	D_Mat[1][4] = 0.0;	D_Mat[1][5] = 0.0;
+	    D_Mat[2][0] = Lambda_p;					D_Mat[2][1] = Lambda_p;					D_Mat[2][2] = Lambda_p + 2.0 * Mu_p;	D_Mat[2][3] = 0.0;	D_Mat[2][4] = 0.0;	D_Mat[2][5] = 0.0;
+	    D_Mat[3][0] = 0.0;						D_Mat[3][1] = 0.0;						D_Mat[3][2] = 0.0;					D_Mat[3][3] = Mu_p;	D_Mat[3][4] = 0.0;	D_Mat[3][5] = 0.0;
+	    D_Mat[4][0] = 0.0;						D_Mat[4][1] = 0.0;						D_Mat[4][2] = 0.0;					D_Mat[4][3] = 0.0;	D_Mat[4][4] = Mu_p;	D_Mat[4][5] = 0.0;
+	    D_Mat[5][0] = 0.0;						D_Mat[5][1] = 0.0;						D_Mat[5][2] = 0.0;					D_Mat[5][3] = 0.0;	D_Mat[5][4] = 0.0;	D_Mat[5][5] = Mu_p;
 	}
 
 }
 
-void CFEM_NeoHookean_Comp::Compute_Stress_Tensor(void) {
+void CFEM_NeoHookean_Comp::Compute_Stress_Tensor(CElement *element) {
 
 	unsigned short i,j;
 	double Mu_J, Lambda_J;
@@ -695,48 +702,128 @@ CFEM_NeoHookean_Incomp::~CFEM_NeoHookean_Incomp(void) {
 
 }
 
-void CFEM_NeoHookean_Incomp::Compute_Constitutive_Matrix(void) {
+void CFEM_NeoHookean_Incomp::Compute_Constitutive_Matrix(CElement *element) {
 
 	unsigned short i,j;
-	double Mu_p, Lambda_p;
-	double dij;
+	double dij, el_P;
+	double Ib = 0.0, Jft;
 
-	/*--- This can be done in a better way ---*/
-	if (J_F != 0.0){
-		Mu_p = (Mu - Lambda*log(J_F))/J_F;
-		Lambda_p = Lambda/J_F;
+	/*--- First invariant of b -> Ib = tr(b) ---*/
+	for (i = 0; i < 3; i++){
+		Ib += b_Mat[i][i];
 	}
 
-//    D_Mat[0][0] = Lambda_p + 2 * Mu_p;	D_Mat[0][1] = Lambda_p;				D_Mat[0][2] = Lambda_p;				D_Mat[0][3] = 0.0;	D_Mat[0][4] = 0.0;	D_Mat[0][5] = 0.0;
-//    D_Mat[1][0] = Lambda_p;				D_Mat[1][1] = Lambda_p + 2 * Mu_p;	D_Mat[1][2] = Lambda_p;				D_Mat[1][3] = 0.0;	D_Mat[1][4] = 0.0;	D_Mat[1][5] = 0.0;
-//    D_Mat[2][0] = Lambda_p;				D_Mat[2][1] = Lambda_p;				D_Mat[2][2] = Lambda_p + 2 * Mu_p;	D_Mat[2][3] = 0.0;	D_Mat[2][4] = 0.0;	D_Mat[2][5] = 0.0;
-//    D_Mat[3][0] = 0.0;					D_Mat[3][1] = 0.0;					D_Mat[3][2] = 0.0;					D_Mat[3][3] = Mu_p;	D_Mat[3][4] = 0.0;	D_Mat[3][5] = 0.0;
-//    D_Mat[4][0] = 0.0;					D_Mat[4][1] = 0.0;					D_Mat[4][2] = 0.0;					D_Mat[4][3] = 0.0;	D_Mat[4][4] = Mu_p;	D_Mat[4][5] = 0.0;
-//    D_Mat[5][0] = 0.0;					D_Mat[5][1] = 0.0;					D_Mat[5][2] = 0.0;					D_Mat[5][3] = 0.0;	D_Mat[5][4] = 0.0;	D_Mat[5][5] = Mu_p;
+	/*--- Retrieve element pressure ---*/
+
+	el_P = element->GetElement_Pressure();
+
+	/*--- J^(-5/3) ---*/
+	Jft = pow(J_F, -1.666666666666667);
+
+	if (nDim == 2){
+
+		/*--- Diagonal terms ---*/
+		D_Mat[0][0] = 2.0 * Mu * Jft * ((4.0 / 9.0) * Ib - (2.0 / 3.0) * b_Mat[0][0]) - el_P;
+		D_Mat[1][1] = 2.0 * Mu * Jft * ((4.0 / 9.0) * Ib - (2.0 / 3.0) * b_Mat[1][1]) - el_P;
+
+		D_Mat[2][2] = (1.0 / 3.0) * Mu * Jft * Ib - el_P;
+
+		/*--- Q2 off diagonal terms (and symmetric) ---*/
+
+		D_Mat[0][1] = (-2.0 / 3.0) * Mu * Jft * b_Mat[0][1];
+		D_Mat[1][0] = (-2.0 / 3.0) * Mu * Jft * b_Mat[0][1];
+
+		D_Mat[0][2] = 0.0;
+		D_Mat[2][0] = 0.0;
+
+	}
+	else if (nDim == 3){
+
+		/*--- Diagonal terms ---*/
+		D_Mat[0][0] = 2.0 * Mu * Jft * ((4.0 / 9.0) * Ib - (2.0 / 3.0) * b_Mat[0][0]) - el_P;
+		D_Mat[1][1] = 2.0 * Mu * Jft * ((4.0 / 9.0) * Ib - (2.0 / 3.0) * b_Mat[1][1]) - el_P;
+		D_Mat[2][2] = 2.0 * Mu * Jft * ((4.0 / 9.0) * Ib - (2.0 / 3.0) * b_Mat[2][2]) - el_P;
+
+		D_Mat[3][3] = (1.0 / 3.0) * Mu * Jft * Ib - el_P;
+		D_Mat[4][4] = (1.0 / 3.0) * Mu * Jft * Ib - el_P;
+		D_Mat[5][5] = (1.0 / 3.0) * Mu * Jft * Ib - el_P;
+
+		/*--- Q1 off diagonal terms (and symmetric) ---*/
+
+		D_Mat[0][1] = 2.0 * Mu * Jft * ((1.0 / 9.0) * Ib - (1.0 / 3.0) * b_Mat[0][0] - (1.0 / 3.0) * b_Mat[1][1]) + el_P;
+		D_Mat[0][2] = 2.0 * Mu * Jft * ((1.0 / 9.0) * Ib - (1.0 / 3.0) * b_Mat[0][0] - (1.0 / 3.0) * b_Mat[2][2]) + el_P;
+		D_Mat[1][2] = 2.0 * Mu * Jft * ((1.0 / 9.0) * Ib - (1.0 / 3.0) * b_Mat[1][1] - (1.0 / 3.0) * b_Mat[2][2]) + el_P;
+
+		D_Mat[1][0] = 2.0 * Mu * Jft * ((1.0 / 9.0) * Ib - (1.0 / 3.0) * b_Mat[0][0] - (1.0 / 3.0) * b_Mat[1][1]) + el_P;
+		D_Mat[2][0] = 2.0 * Mu * Jft * ((1.0 / 9.0) * Ib - (1.0 / 3.0) * b_Mat[0][0] - (1.0 / 3.0) * b_Mat[2][2]) + el_P;
+		D_Mat[2][1] = 2.0 * Mu * Jft * ((1.0 / 9.0) * Ib - (1.0 / 3.0) * b_Mat[1][1] - (1.0 / 3.0) * b_Mat[2][2]) + el_P;
+
+		/*--- Q2 off diagonal terms (and symmetric) ---*/
+
+		D_Mat[0][3] = (-2.0 / 3.0) * Mu * Jft * b_Mat[0][1];
+		D_Mat[1][3] = (-2.0 / 3.0) * Mu * Jft * b_Mat[0][1];
+		D_Mat[2][3] = (-2.0 / 3.0) * Mu * Jft * b_Mat[0][1];
+
+		D_Mat[0][4] = (-2.0 / 3.0) * Mu * Jft * b_Mat[0][2];
+		D_Mat[1][4] = (-2.0 / 3.0) * Mu * Jft * b_Mat[0][2];
+		D_Mat[2][4] = (-2.0 / 3.0) * Mu * Jft * b_Mat[0][2];
+
+		D_Mat[0][5] = (-2.0 / 3.0) * Mu * Jft * b_Mat[1][2];
+		D_Mat[1][5] = (-2.0 / 3.0) * Mu * Jft * b_Mat[1][2];
+		D_Mat[2][5] = (-2.0 / 3.0) * Mu * Jft * b_Mat[1][2];
 
 
+		D_Mat[3][0] = (-2.0 / 3.0) * Mu * Jft * b_Mat[0][1];
+		D_Mat[3][1] = (-2.0 / 3.0) * Mu * Jft * b_Mat[0][1];
+		D_Mat[3][2] = (-2.0 / 3.0) * Mu * Jft * b_Mat[0][1];
+
+		D_Mat[4][0] = (-2.0 / 3.0) * Mu * Jft * b_Mat[0][2];
+		D_Mat[4][1] = (-2.0 / 3.0) * Mu * Jft * b_Mat[0][2];
+		D_Mat[4][2] = (-2.0 / 3.0) * Mu * Jft * b_Mat[0][2];
+
+		D_Mat[5][0] = (-2.0 / 3.0) * Mu * Jft * b_Mat[1][2];
+		D_Mat[5][1] = (-2.0 / 3.0) * Mu * Jft * b_Mat[1][2];
+		D_Mat[5][2] = (-2.0 / 3.0) * Mu * Jft * b_Mat[1][2];
+
+		/*--- Q3 off diagonal terms (and symmetric) are all zeros ---*/
+
+		D_Mat[3][4] = 0.0;
+		D_Mat[3][5] = 0.0;
+		D_Mat[4][5] = 0.0;
+
+		D_Mat[4][3] = 0.0;
+		D_Mat[5][3] = 0.0;
+		D_Mat[5][4] = 0.0;
+
+	}
 
 }
 
-void CFEM_NeoHookean_Incomp::Compute_Stress_Tensor(void) {
+void CFEM_NeoHookean_Incomp::Compute_Stress_Tensor(CElement *element) {
 
 	unsigned short i,j;
-	double Mu_J, Lambda_J;
-	double dij;
+	double dij, el_P;
+	double Ib = 0.0, Jft;
 
-	/*--- This can be done in a better way ---*/
-	if (J_F != 0.0){
-		Mu_J = Mu/J_F;
-		Lambda_J = Lambda/J_F;
+	/*--- First invariant of b -> Ib = tr(b) ---*/
+	for (i = 0; i < 3; i++){
+		Ib += b_Mat[i][i];
 	}
 
-//	for (i = 0; i < 3; i++){
-//		for (j = 0; j < 3; j++){
-//			if (i == j) dij = 1.0;
-//			else if (i != j) dij = 0.0;
-//			Stress_Tensor[i][j] = Mu_J * (b_Mat[i][j] - dij) + Lambda_J * log(J_F) * dij;
-//		}
-//	}
+	/*--- Retrieve element pressure ---*/
+
+	el_P = element->GetElement_Pressure();
+
+	/*--- J^(-5/3) ---*/
+	Jft = pow(J_F, -1.666666666666667);
+
+	for (i = 0; i < 3; i++){
+		for (j = 0; j < 3; j++){
+			if (i == j) dij = 1.0;
+			else if (i != j) dij = 0.0;
+			Stress_Tensor[i][j] = Mu *  Jft * (b_Mat[i][j] - ((1.0 / 3.0) * Ib * dij )) + el_P * dij;
+		}
+	}
 
 
 }

@@ -47,9 +47,14 @@ CElement::CElement(void) {
 	GaussPoint = NULL;
 	GaussPointP = NULL;
 
+	NodalStress = NULL;
+	NodalExtrap = NULL;
+
 	nNodes = 0;
 	nGaussPoints = 0;
 	nGaussPointsP = 0;
+
+	el_Pressure = 0.0;
 
 	Mab = NULL;
 	Kab = NULL;
@@ -76,9 +81,14 @@ CElement::CElement(unsigned short val_nDim, CConfig *config) {
 	GaussPoint = NULL;
 	GaussPointP = NULL;
 
+	NodalStress = NULL;
+	NodalExtrap = NULL;
+
 	nNodes = 0;
 	nGaussPoints = 0;
 	nGaussPointsP = 0;
+
+	el_Pressure = 0.0;
 
 	Mab = NULL;
 	Kab = NULL;
