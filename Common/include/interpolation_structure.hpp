@@ -58,7 +58,7 @@ class CInterpolator {
 protected:
   unsigned int nZone;
   unsigned short nVar;
-  double ***Data; /*!\brief container for some data to be interpolated */
+  su2double ***Data; /*!\brief container for some data to be interpolated */
 public:
   CGeometry*** Geometry; /*! \brief Vector which stores n zones of geometry. */
 
@@ -112,17 +112,17 @@ public:
    * \param[in] iPoint - point index
    * \param[in[ iDim - index of the data
    */
-  double GetData(unsigned int iZone, unsigned long iPoint, unsigned short iVar);
+  su2double GetData(unsigned int iZone, unsigned long iPoint, unsigned short iVar);
 
   /*!
    * \brief Return the pointer to the Data vector at the specified zone and point.
    */
-  double* GetData(unsigned int iZone, unsigned long iPoint);
+  su2double* GetData(unsigned int iZone, unsigned long iPoint);
 
   /*!
    * \brief Set the value of the Data at the specified zone, point, and index.
    */
-  void SetData(unsigned int iZone, unsigned long iPoint, unsigned short iVar, double val);
+  void SetData(unsigned int iZone, unsigned long iPoint, unsigned short iVar, su2double val);
 
 
 
@@ -187,6 +187,6 @@ public:
    * \param[in] donor_elem - element index of the element to use for interpolation
    * \param[in[ nDonorPoints - number of donor points in the element.
    */
-  void Isoparametric(double* isoparams, unsigned int iZone_0, unsigned short iMarker, unsigned long iVertex, unsigned int nDim, unsigned int iZone_1, unsigned short jMarker, long donor_elem, unsigned int nDonorPoints, int* temp2);
+  void Isoparametric(su2double* isoparams, unsigned int iZone_0, unsigned short iMarker, unsigned long iVertex, unsigned int nDim, unsigned int iZone_1, unsigned short jMarker, long donor_elem, unsigned int nDonorPoints, int* temp2);
 
 };
