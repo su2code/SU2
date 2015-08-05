@@ -7430,7 +7430,7 @@ void CEulerSolver::Mixing_Process(CGeometry *geometry, CSolver **solver_containe
     unsigned long iVertex, iPoint, nVert;
     unsigned short iDim, iVar, iMarker, counter = 0;
     unsigned short mixing_process = config->GetKind_MixingProcess();
-    double Pressure = 0.0, Density = 0.0, Enthalpy = 0.0,  *Velocity = NULL, *Normal = NULL,
+    double Pressure = 0.0, Density = 0.0, Enthalpy = 0.0,  *Velocity = NULL, *Normal,
 		  Area, TotalArea, TotalAreaPressure, TotalAreaDensity, *TotalAreaVelocity, UnitNormal[3];
     string Marker_Tag, Monitoring_Tag;
     double val_init_pressure;
@@ -7441,6 +7441,7 @@ void CEulerSolver::Mixing_Process(CGeometry *geometry, CSolver **solver_containe
     /*-- Variables declaration and allocation ---*/
 
     Velocity = new double[nDim];
+    Normal = new double[nDim];
     TotalVelocity = new double[nDim];
     TotalAreaVelocity = new double[nDim];
 
@@ -7495,7 +7496,7 @@ void CEulerSolver::Mixing_Process(CGeometry *geometry, CSolver **solver_containe
 		if ( (geometry->node[iPoint]->GetDomain())  ) {
 			nVert++;
 			/*--- Normal vector for this vertex (negate for outward convention) ---*/
-			Normal = geometry->vertex[val_Marker][iVertex]->GetNormal();
+			geometry->vertex[val_Marker][iVertex]->GetNormal(Normal);
 			for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
 			Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
 			double VelNormal = 0.0, VelSq = 0.0;
@@ -7533,9 +7534,8 @@ void CEulerSolver::Mixing_Process(CGeometry *geometry, CSolver **solver_containe
 
 
 			}
-			for (iDim = 0; iDim < nDim; iDim++)
-				AveragedNormal[val_Marker][iDim] +=Normal[iDim];
-
+			for (iDim = 0; iDim < nDim; iDim++) AveragedNormal[val_Marker][iDim] +=Normal[iDim];
+				
 		}
 	}
 
@@ -7589,9 +7589,11 @@ void CEulerSolver::Mixing_Process(CGeometry *geometry, CSolver **solver_containe
 	AveragedEnthalpy[val_Marker] = FluidModel->GetStaticEnergy() + AveragedPressure[val_Marker]/AveragedDensity[val_Marker];
 	AveragedSoundSpeed[val_Marker] = FluidModel->GetSoundSpeed();
 	AveragedEntropy[val_Marker] = FluidModel->GetEntropy();
-
+       
 	for (iDim = 0; iDim < nDim; iDim++){
+	  // cout<<AveragedNormal[val_Marker][iDim]<<endl;  
 	AveragedNormal[val_Marker][iDim] /=nVert;
+	//cout<<AveragedNormal[val_Marker][iDim]<<endl;
 	TotalNormal+= AveragedNormal[val_Marker][iDim]*AveragedNormal[val_Marker][iDim];
 	}
 
@@ -8018,8 +8020,9 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
   Mixing_Process(geometry, solver_container,  config, val_marker);
 //  Boundary_Fourier(geometry, solver_container, config, val_marker, c4k, nboundaryvertex);
 //  Boundary_Fourier(geometry, solver_container, config, val_marker, c2k,c3k,nboundaryvertex);
-  cout<<"AveragedPressure_i " <<AveragedPressure[val_marker]<<" Density_i " <<AveragedDensity[val_marker]<<" Entropy "<<AveragedEntropy[val_marker]<<endl;
-  cout<<"AveragedNormal_0 " <<AveragedNormal[val_marker][0]<<" AveragedNormal_1 " <<AveragedNormal[val_marker][1]<<endl;
+  //cout<<"AveragedPressure_i " <<AveragedPressure[val_marker]<<" Density_i " <<AveragedDensity[val_marker]<<" Entropy "<<AveragedEntropy[val_marker]<<endl;
+  //cout<<"AveragedNormal_0 " <<AveragedNormal[val_marker][0]<<" AveragedNormal_1 " <<AveragedNormal[val_marker][1]<<endl;
+  //cout<<"AveragedVelocity_0 " <<AveragedVelocity[val_marker][0]<<" AveragedVelocity_1 " <<AveragedVelocity[val_marker][1]<<endl;
 
   /* --- Start implementation of NRBC ---*/
 
@@ -8098,7 +8101,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 			  AveragedMach += AveragedVelocity[val_marker][iDim]*AveragedVelocity[val_marker][iDim];
           }
           AveragedMach = sqrt(AveragedMach)/AveragedSoundSpeed[val_marker];
-	  	  cout << AveragedMach<<endl;
+	  //	  cout << AveragedMach<<endl;
           deltaTangVelocity= UnitNormal[1]*deltaVelocity[0]-UnitNormal[0]*deltaVelocity[1];
           deltaNormalVelocity= UnitNormal[0]*deltaVelocity[0]+UnitNormal[1]*deltaVelocity[1];
 
