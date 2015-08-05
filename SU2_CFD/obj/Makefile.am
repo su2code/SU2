@@ -33,9 +33,23 @@
 
 ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS}
 
-bin_PROGRAMS = ../bin/SU2_CFD
+bin_PROGRAMS =
 
-___bin_SU2_CFD_SOURCES = \
+if BUILD_NORMAL
+bin_PROGRAMS += ../bin/SU2_CFD
+endif
+
+if BUILD_DIRECTDIFF
+bin_PROGRAMS += ../bin/SU2_CFD_DIRECTDIFF
+endif
+
+if BUILD_REVERSE
+bin_PROGRAMS += ../bin/SU2_CFD_REVERSE
+endif
+
+
+
+su2_cfd_sources = \
   ../include/definition_structure.hpp \
   ../include/fluid_model.hpp \
   ../include/fluid_model.inl \
@@ -91,6 +105,7 @@ ___bin_SU2_CFD_SOURCES = \
   ../src/solver_adjoint_mean.cpp \
   ../src/solver_adjoint_tne2.cpp \
   ../src/solver_adjoint_turbulent.cpp \
+  ../src/solver_adjoint_discrete.cpp \
   ../src/solver_direct_poisson.cpp \
   ../src/solver_direct_elasticity.cpp \
   ../src/solver_direct_heat.cpp \
@@ -109,6 +124,7 @@ ___bin_SU2_CFD_SOURCES = \
   ../src/variable_adjoint_mean.cpp \
   ../src/variable_adjoint_tne2.cpp \
   ../src/variable_adjoint_turbulent.cpp \
+  ../src/variable_adjoint_discrete.cpp \
   ../src/variable_direct_poisson.cpp \
   ../src/variable_direct_elasticity.cpp \
   ../src/variable_direct_heat.cpp \
@@ -122,39 +138,57 @@ ___bin_SU2_CFD_SOURCES = \
   ../src/variable_structure.cpp \
   ../src/variable_template.cpp
 
-___bin_SU2_CFD_CXXFLAGS =
-___bin_SU2_CFD_LDADD = ../../Common/lib/libSU2.a
+su2_cfd_cxx_flags =
+su2_cfd_ldadd =
 
 # always link to built dependencies from ./externals
-___bin_SU2_CFD_CXXFLAGS += @su2_externals_INCLUDES@
-___bin_SU2_CFD_LDADD += @su2_externals_LIBS@
+su2_cfd_cxx_flags += @su2_externals_INCLUDES@
+su2_cfd_ldadd += @su2_externals_LIBS@
 
 # if BUILD_CGNS
-___bin_SU2_CFD_CXXFLAGS += @CGNS_CXX@
-___bin_SU2_CFD_LDADD += @CGNS_LD@
-# endif
-
-# if BUILD_HDF5
-___bin_SU2_CFD_CXXFLAGS += @HDF5_CXX@
-___bin_SU2_CFD_LDADD += @HDF5_LD@
-# endif
-
-# if BUILD_SZIP
-___bin_SU2_CFD_CXXFLAGS += @SZIP_CXX@
-___bin_SU2_CFD_LDADD += @SZIP_LD@
-# endif
-
-# if BUILD_ZLIB
-___bin_SU2_CFD_CXXFLAGS += @ZLIB_CXX@
-___bin_SU2_CFD_LDADD += @ZLIB_LD@
+su2_cfd_cxx_flags += @CGNS_CXX@
+su2_cfd_ldadd += @CGNS_LD@
 # endif
 
 # if BUILD_MUTATIONPP
-___bin_SU2_CFD_CXXFLAGS += @MUTATIONPP_CXX@
-___bin_SU2_CFD_LDADD += @MUTATIONPP_LD@
+su2_cfd_cxx_flags += @MUTATIONPP_CXX@
+su2_cfd_ldadd += @MUTATIONPP_LD@
 # endif
 
 # if BUILD_JSONCPP
-___bin_SU2_CFD_CXXFLAGS += @JSONCPP_CXX@
-___bin_SU2_CFD_LDADD += @JSONCPP_LD@
+su2_cfd_cxx_flags += @JSONCPP_CXX@
+su2_cfd_ldadd += @JSONCPP_LD@
 # endif
+
+# if BUILD_HDF5
+su2_cfd_cxx_flags += @HDF5_CXX@
+su2_cfd_ldadd += @HDF5_LD@
+# endif
+
+# if BUILD_SZIP
+su2_cfd_cxx_flags += @SZIP_CXX@
+su2_cfd_ldadd += @SZIP_LD@
+# endif
+
+# if BUILD_ZLIB
+su2_cfd_cxx_flags += @ZLIB_CXX@
+su2_cfd_ldadd += @ZLIB_LD@
+# endif
+
+if BUILD_NORMAL
+___bin_SU2_CFD_SOURCES = $(su2_cfd_sources)
+___bin_SU2_CFD_CXXFLAGS = ${su2_cfd_cxx_flags}
+___bin_SU2_CFD_LDADD = ../../Common/lib/libSU2.a ${su2_cfd_ldadd}
+endif
+
+if BUILD_DIRECTDIFF
+___bin_SU2_CFD_DIRECTDIFF_SOURCES = $(su2_cfd_sources)
+___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS = @DIRECTDIFF_CXX@ ${su2_cfd_cxx_flags}
+___bin_SU2_CFD_DIRECTDIFF_LDADD = @DIRECTDIFF_LIBS@ ../../Common/lib/libSU2_DIRECTDIFF.a ${su2_cfd_ldadd}
+endif
+
+if BUILD_REVERSE
+___bin_SU2_CFD_REVERSE_SOURCES = $(su2_cfd_sources)
+___bin_SU2_CFD_REVERSE_CXXFLAGS = @REVERSE_CXX@ ${su2_cfd_cxx_flags}
+___bin_SU2_CFD_REVERSE_LDADD = @REVERSE_LIBS@ ../../Common/lib/libSU2_REVERSE.a ${su2_cfd_ldadd}
+endif

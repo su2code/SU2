@@ -51,6 +51,7 @@ SU2_SET_COMPILERS
 AM_PROG_CC_C_O
 AC_PROG_RANLIB
 AC_PROG_MKDIR_P
+#PKG_PROG_PKG_CONFIG
 
 # --------------------------------------------------------------
 # Check for important type sizes
@@ -128,6 +129,12 @@ AC_ARG_ENABLE(SOL,
 AC_ARG_ENABLE(GEO,
    	AS_HELP_STRING([--disable-GEO], [build the SU2_GEO executable (default = yes)]),
 	[build_GEO=$enableval], [build_GEO="yes"])
+AC_ARG_ENABLE(complex,
+    AS_HELP_STRING([--enable-complex], [build executables with complex datatype (default = no)]),
+    [build_COMPLEX="yes"], [build_COMPLEX="no"])
+AC_ARG_ENABLE(normal,
+    AS_HELP_STRING([--disable-normal], [build executables with normal datatype (default = yes)]),
+    [build_NORMAL=$enableval], [build_NORMAL="yes"])
 
 # Check for the old  MPI option so that we can throw an error
 AC_ARG_WITH(MPI,
@@ -490,6 +497,52 @@ AC_SUBST([LAPACK_CXX])
 AC_SUBST([LAPACK_LD])
 
 ###########################
+# Determine what versions of the code to build
+
+# Complex type
+COMPLEX_CXX="-std=gnu++11 -DCOMPLEX_TYPE"
+
+# direct differentation type
+build_DIRECTDIFF=no
+DIRECTDIFF_CXX=
+DIRECTDIFF_LIBS=
+# reverse mode type
+build_REVERSE=no
+REVERSE_CXX=
+FORWARD_CXX=
+#CONFIGURE_ADOLC
+CONFIGURE_CODI
+
+if test $build_COMPLEX != "no"
+then 
+   DIRECTDIFF_CXX=$COMPLEX_CXX
+   build_DIRECTDIFF=yes
+   build_REVERSE=no
+   build_NORMAL=no
+fi
+
+AC_SUBST([DIRECTDIFF_CXX])
+AC_SUBST([DIRECTDIFF_LIBS])
+AC_SUBST([REVERSE_CXX])
+AC_SUBST([REVERSE_LIBS])
+# Set the variables
+AM_CONDITIONAL([BUILD_NORMAL], [test $build_NORMAL != "no"])
+AM_CONDITIONAL([BUILD_DIRECTDIFF], [test $build_DIRECTDIFF != "no"])
+AM_CONDITIONAL([BUILD_REVERSE], [test $build_REVERSE != "no"])
+if test $build_NORMAL == "no"
+then
+  build_DOT=no
+  build_MSH=no
+  build_DEF=no
+  build_SOL=no
+  build_GEO=no
+fi
+
+if test $build_REVERSE == "yes"
+then
+  build_DOT=yes
+fi
+###########################
 
 AM_CONDITIONAL([BUILD_CFD],[test $build_CFD != "no"])
 AM_CONDITIONAL([BUILD_DOT],[test $build_DOT != "no"])
@@ -571,6 +624,11 @@ Build Configuration Summary:
     Mutation++ support:   $have_Mutationpp
     Jsoncpp support: 	  $have_Jsoncpp
     LAPACK support:       $have_LAPACK
+    Datatype support:
+        double              $build_NORMAL
+        complex             $build_COMPLEX
+        codi_reverse        $build_CODI_REVERSE
+        codi_forward        $build_CODI_FORWARD
 
     External includes:    $su2_externals_INCLUDES
     External libs:        $su2_externals_LIBS
