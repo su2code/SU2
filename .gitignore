@@ -36,3 +36,16 @@ Makefile
 contrib/autotools/bin
 contrib/autotools/include
 contrib/autotools/share
+
+# externally downloaded tools
+externals/CoDi
+externals/adjointmpi
+
+#logs and errors
+*.log
+*.err
+
+# configuration sets
+REVERSE/
+NORMAL/
+DIRECTDIFF/
