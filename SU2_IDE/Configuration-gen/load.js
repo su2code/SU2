@@ -10,7 +10,7 @@ function load(){
 			var end = false;
 			var blockStart = false;
 			var blockEnd = false;
-			var content = '\"FormBuilder\" : { \"type\": \"fieldset\", \"label\": \"fieldset\", \"fields\" : {';
+			var content = '\"FormBuilder\" : { \"type\": \"fieldset\", \"label\": \"FormBuilder\", \"fields\" : {';
             $.each(lines, function(n, elem) {
                 if(start && !end){
                 	if(blockStartFn(elem)) {
@@ -25,7 +25,7 @@ function load(){
                 			groupName = res[2].trim();
                 			groupName = groupName.substring(0, groupName.length - 1);
 
-	                		content += '\"list_' + groupName + '\" : { \"label\" : \"' + groupName + '\", \"type\" : \"select\", \"options\" : {';
+	                		content += '\"' + groupName + '\" : { \"label\" : \"' + groupName + '\", \"type\" : \"select\", \"options\" : {';
                 		} else {
                 			var res1 = elem.split(",");
                 			listValue = res1[1].trim();
