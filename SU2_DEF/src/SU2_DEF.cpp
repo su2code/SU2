@@ -35,7 +35,7 @@ using namespace std;
 int main(int argc, char *argv[]) {
   
   unsigned short iZone, nZone = SINGLE_ZONE, iMarker;
-  double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
+  su2double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
   char config_file_name[MAX_STRING_SIZE];
   int rank = MASTER_NODE, size = SINGLE_NODE;
   string str;
