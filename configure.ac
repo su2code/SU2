@@ -51,7 +51,8 @@ SU2_SET_COMPILERS
 AM_PROG_CC_C_O
 AC_PROG_RANLIB
 AC_PROG_MKDIR_P
-PKG_PROG_PKG_CONFIG
+#PKG_PROG_PKG_CONFIG
+
 # --------------------------------------------------------------
 # Check for important type sizes
 # --------------------------------------------------------------
@@ -506,9 +507,10 @@ build_DIRECTDIFF=no
 DIRECTDIFF_CXX=
 DIRECTDIFF_LIBS=
 # reverse mode type
+build_REVERSE=no
 REVERSE_CXX=
 FORWARD_CXX=
-CONFIGURE_ADOLC
+#CONFIGURE_ADOLC
 CONFIGURE_CODI
 
 if test $build_COMPLEX != "no"
@@ -625,8 +627,8 @@ Build Configuration Summary:
     Datatype support:
         double              $build_NORMAL
         complex             $build_COMPLEX
-        adolc_reverse       $build_ADOLC_REVERSE
-        adolc_forward       $build_ADOLC_FORWARD
+        codi_reverse        $build_CODI_REVERSE
+        codi_forward        $build_CODI_FORWARD
 
     External includes:    $su2_externals_INCLUDES
     External libs:        $su2_externals_LIBS
