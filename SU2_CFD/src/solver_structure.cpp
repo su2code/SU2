@@ -1684,7 +1684,7 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
    restart file (without including the PointID) ---*/
   
   nVar = config->fields.size() - 1;
-  su2double Solution[nVar];
+  su2double *Solution = new su2double[nVar];
   
   /*--- Read all lines in the restart file ---*/
   
@@ -1729,6 +1729,7 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
   /*--- Free memory needed for the transformation ---*/
   
   delete [] Global2Local;
+  delete [] Solution;
   
   /*--- MPI solution ---*/
   
@@ -1942,7 +1943,7 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   /*--- Set the number of variables, one per field in the
    restart file (without including the PointID) ---*/
   nVar = config->fields.size() - 1;
-  su2double Solution[nVar];
+  su2double *Solution = new su2double[nVar];
   
   /*--- In case this is a parallel simulation, we need to perform the
    Global2Local index transformation first. ---*/
@@ -1993,6 +1994,7 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   
   /*--- Free memory needed for the transformation ---*/
   delete [] Global2Local;
+  delete [] Solution;
   
 }
 
