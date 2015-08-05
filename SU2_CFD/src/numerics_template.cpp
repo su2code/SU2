@@ -38,21 +38,21 @@ CConvective_Template::CConvective_Template(unsigned short val_nDim, unsigned sho
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
   
-  Diff_U = new double [nVar];
-  Velocity_i = new double [nDim];
-  Velocity_j = new double [nDim];
-  RoeVelocity = new double [nDim];
-  delta_vel  = new double [nDim];
-  delta_wave = new double [nVar];
-  ProjFlux_i = new double [nVar];
-  ProjFlux_j = new double [nVar];
-  Lambda = new double [nVar];
-  Epsilon = new double [nVar];
-  P_Tensor = new double* [nVar];
-  invP_Tensor = new double* [nVar];
+  Diff_U = new su2double [nVar];
+  Velocity_i = new su2double [nDim];
+  Velocity_j = new su2double [nDim];
+  RoeVelocity = new su2double [nDim];
+  delta_vel  = new su2double [nDim];
+  delta_wave = new su2double [nVar];
+  ProjFlux_i = new su2double [nVar];
+  ProjFlux_j = new su2double [nVar];
+  Lambda = new su2double [nVar];
+  Epsilon = new su2double [nVar];
+  P_Tensor = new su2double* [nVar];
+  invP_Tensor = new su2double* [nVar];
   for (iVar = 0; iVar < nVar; iVar++) {
-    P_Tensor[iVar] = new double [nVar];
-    invP_Tensor[iVar] = new double [nVar];
+    P_Tensor[iVar] = new su2double [nVar];
+    invP_Tensor[iVar] = new su2double [nVar];
   }
 }
 
@@ -77,7 +77,7 @@ CConvective_Template::~CConvective_Template(void) {
   delete [] invP_Tensor;
 }
 
-void CConvective_Template::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+void CConvective_Template::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
   
   Area = 0;
   for (iDim = 0; iDim < nDim; iDim++)
@@ -225,10 +225,10 @@ CSource_Template::~CSource_Template(void) {
   
 }
 
-void CSource_Template::ComputeResidual(double *val_residual, double **val_Jacobian_i, CConfig *config) {}
+void CSource_Template::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config) {}
 
 CViscous_Template::CViscous_Template(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) { }
 
 CViscous_Template::~CViscous_Template(void) { }
 
-void CViscous_Template::ComputeResidual(double *val_residual, double **Jacobian_i, double **Jacobian_j, CConfig *config) { }
+void CViscous_Template::ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config) { }

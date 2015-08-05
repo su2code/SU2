@@ -11,7 +11,7 @@ notifications:
         recipients:
             - padronas@stanford.edu
             - su2code-dev@lists.stanford.edu
-        on_success: never
+        on_success: change
         on_failure: always
   
 branches:
@@ -56,4 +56,5 @@ before_script:
 script:
     # run the tests
     python $TEST_SCRIPT
+
 

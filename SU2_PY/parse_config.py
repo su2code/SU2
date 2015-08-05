@@ -137,7 +137,7 @@ def parse_config(config_cpp, config_hpp):
             print "enum_options: ",enum_options
             sys.exit(1)
         elif option_type=='AddMathProblem':
-          values = ['DIRECT','ADJOINT','LINEARIZED']
+          values = ['DIRECT','CONTINUOUS_ADJOINT','LINEARIZED']
         elif option_type=='AddScalarOption':
           values = ['A scalar constant']
         elif option_type in ('AddMarkerOption', 'AddMarkerPeriodic', 'AddMarkerDirichlet', 'AddMarkerInlet', 'AddMarkerOutlet', 'AddMarkerDisplacement', 'AddMarkerLoad', 'AddMarkerFlowLoad'):

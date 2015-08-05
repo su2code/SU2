@@ -38,9 +38,9 @@ CGalerkin_Flow::CGalerkin_Flow(unsigned short val_nDim, unsigned short val_nVar,
 
 CGalerkin_Flow::~CGalerkin_Flow(void) { }
 
-void CGalerkin_Flow::ComputeResidual(double **val_stiffmatrix_elem, CConfig *config) {
+void CGalerkin_Flow::ComputeResidual(su2double **val_stiffmatrix_elem, CConfig *config) {
   
-	double a[4], b[4], c[4], d[4], Area, B_Matrix[4][4];
+	su2double a[4], b[4], c[4], d[4], Area, B_Matrix[4][4];
 	unsigned short iVar, jVar;
   
 	if (nDim == 2) {
@@ -77,7 +77,7 @@ void CGalerkin_Flow::ComputeResidual(double **val_stiffmatrix_elem, CConfig *con
 	}
   
 	if (nDim == 3) {
-		double Volume = 0.0;
+		su2double Volume = 0.0;
 		Volume -= Determinant_3x3(Coord_1[0], Coord_1[1], Coord_1[2], Coord_2[0], Coord_2[1], Coord_2[2], Coord_3[0], Coord_3[1], Coord_3[2]);
 		Volume += Determinant_3x3(Coord_0[0], Coord_0[1], Coord_0[2], Coord_2[0], Coord_2[1], Coord_2[2], Coord_3[0], Coord_3[1], Coord_3[2]);
 		Volume -= Determinant_3x3(Coord_0[0], Coord_0[1], Coord_0[2], Coord_1[0], Coord_1[1], Coord_1[2], Coord_3[0], Coord_3[1], Coord_3[2]);
