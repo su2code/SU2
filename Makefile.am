@@ -40,7 +40,9 @@ SUBDIRS = externals
 SUBDIRS += Common/lib
 
 # Install the SU2 Python scripts to the proper location
+if BUILD_NORMAL
 SUBDIRS += SU2_PY
+endif
 
 # Build each of the SU2 C++ modules
 if BUILD_CFD

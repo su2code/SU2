@@ -33,9 +33,30 @@
 
 ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS}
 
-noinst_LIBRARIES = libSU2.a
+noinst_LIBRARIES =
 
-libSU2_a_SOURCES = \
+if BUILD_NORMAL
+noinst_LIBRARIES += libSU2.a
+endif
+
+if BUILD_DIRECTDIFF
+noinst_LIBRARIES += libSU2_DIRECTDIFF.a
+endif
+
+if BUILD_REVERSE
+noinst_LIBRARIES += libSU2_REVERSE.a
+endif
+
+lib_sources = \
+  ../include/datatypes/adolc_f_structure.hpp \
+  ../include/datatypes/adolc_f_structure.inl \
+  ../include/datatypes/adolc_r_structure.hpp \
+  ../include/datatypes/adolc_r_structure.inl \
+  ../include/datatypes/primitive_structure.hpp \
+  ../include/datatypes/primitive_structure.inl \
+  ../include/datatypes/complex_structure.hpp \
+  ../include/datatypes/complex_structure.inl \
+  ../include/config_structure.hpp \
   ../include/config_structure.hpp \
   ../include/config_structure.inl \
   ../include/dual_grid_structure.hpp \
@@ -48,6 +69,7 @@ libSU2_a_SOURCES = \
   ../include/grid_movement_structure.inl \
   ../include/linear_solvers_structure.hpp \
   ../include/linear_solvers_structure.inl \
+  ../include/linear_solvers_structure_b.hpp \
   ../include/option_structure.hpp \
   ../include/primal_grid_structure.hpp \
   ../include/primal_grid_structure.inl \
@@ -55,6 +77,10 @@ libSU2_a_SOURCES = \
   ../include/vector_structure.inl \
   ../include/matrix_structure.hpp \
   ../include/matrix_structure.inl \
+  ../include/mpi_structure.hpp \
+  ../include/mpi_structure.inl \
+  ../include/datatype_structure.hpp \
+  ../include/datatype_structure.inl \
   ../src/config_structure.cpp \
   ../src/dual_grid_structure.cpp \
   ../src/geometry_structure.cpp \
@@ -63,41 +89,63 @@ libSU2_a_SOURCES = \
   ../src/linear_solvers_structure.cpp \
   ../src/primal_grid_structure.cpp \
   ../src/vector_structure.cpp \
-  ../src/matrix_structure.cpp
+  ../src/matrix_structure.cpp \
+  ../src/mpi_structure.cpp \
+  ../src/linear_solvers_structure_b.cpp \
+  ../src/datatype_structure.cpp 
 
-libSU2_a_CXXFLAGS =
-libSU2_a_LIBADD =
+lib_cxxflags =
+lib_ldadd =
 
 # always link to built dependencies from ./externals
-libSU2_a_CXXFLAGS += @su2_externals_INCLUDES@
-libSU2_a_LIBADD += @su2_externals_LIBS@
+lib_cxxflags += @su2_externals_INCLUDES@
+lib_ldadd += @su2_externals_LIBS@
 
 # if BUILD_CGNS
-libSU2_a_CXXFLAGS += @CGNS_CXX@
-libSU2_a_LIBADD += @CGNS_LD@
+lib_cxxflags += @CGNS_CXX@
+lib_ldadd += @CGNS_LD@
 # endif
 
 # if BUILD_HDF5
-libSU2_a_CXXFLAGS += @HDF5_CXX@
-libSU2_a_LIBADD += @HDF5_LD@
+lib_cxxflags += @HDF5_CXX@
+lib_ldadd += @HDF5_LD@
 # endif
 
 # if BUILD_SZIP
-libSU2_a_CXXFLAGS += @SZIP_CXX@
-libSU2_a_LIBADD += @SZIP_LD@
+lib_cxxflags += @SZIP_CXX@
+lib_ldadd += @SZIP_LD@
 # endif
 
 # if BUILD_ZLIB
-libSU2_a_CXXFLAGS += @ZLIB_CXX@
-libSU2_a_LIBADD += @ZLIB_LD@
+lib_cxxflags += @ZLIB_CXX@
+lib_ldadd += @ZLIB_LD@
 # endif
 
 # if BUILD_MUTATIONPP
-libSU2_a_CXXFLAGS += @MUTATIONPP_CXX@
-libSU2_a_LIBADD += @MUTATIONPP_LD@
+lib_cxxflags += @MUTATIONPP_CXX@
+lib_ldadd += @MUTATIONPP_LD@
 # endif
 
 # if BUILD_JSONCPP
-libSU2_a_CXXFLAGS += @JSONCPP_CXX@
-libSU2_a_LIBADD += @JSONCPP_LD@
+lib_cxxflags += @JSONCPP_CXX@
+lib_ldadd += @JSONCPP_LD@
 # endif
+
+if BUILD_NORMAL
+libSU2_a_SOURCES = $(lib_sources)
+libSU2_a_CXXFLAGS = ${lib_cxxflags}
+libSU2_a_LIBADD = ${lib_ldadd}
+endif
+
+if BUILD_DIRECTDIFF
+libSU2_DIRECTDIFF_a_SOURCES = $(lib_sources)
+libSU2_DIRECTDIFF_a_CXXFLAGS = @DIRECTDIFF_CXX@ ${lib_cxxflags}
+libSU2_DIRECTDIFF_a_LIBADD =  ${lib_ldadd}
+endif
+
+if BUILD_REVERSE
+libSU2_REVERSE_a_SOURCES = $(lib_sources)
+libSU2_REVERSE_a_CXXFLAGS = @REVERSE_CXX@ ${lib_cxxflags}
+libSU2_REVERSE_a_LIBADD =  ${lib_ldadd}
+endif
+
