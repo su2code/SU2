@@ -10,7 +10,7 @@ function load(){
 			var end = false;
 			var blockStart = false;
 			var blockEnd = false;
-			var content = '\"FormBuilder\" : { \"fields\" : {';
+			var content = '\"FormBuilder\" : { \"type\": \"fieldset\", \"label\": \"fieldset\", \"fields\" : {';
             $.each(lines, function(n, elem) {
                 if(start && !end){
                 	if(blockStartFn(elem)) {
@@ -60,7 +60,7 @@ function load(){
             content = content.substring(0, content.length-1);
 			resultJson = '{' + content + '}}}';
         }, "text");
-        return resultJson;
+        return JSON.parse(resultJson);
 }
 
 function blockStartFn(elem) {

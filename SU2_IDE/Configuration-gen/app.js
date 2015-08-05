@@ -2,31 +2,10 @@ angular.module('app', ['dynform'])
     .controller('AppCtrl', ['$scope', '$http', function ($scope, $http) {
 
     $scope.urlFormData = {};   // JavaScript needs an object to put our form's models into.
-	$scope.stdFormTemplate = load1();
+	$scope.stdFormTemplate = load();
 
 	$scope.status={};
 	$scope.status.message="";
-
-	function load1(){
-		var returnVal = '';
-		jQuery.ajaxSetup({async:false});
-		$.get('option_structure.hpp', function(data) {
-			returnVal = {
-      			"fieldset": {
-        			"type": "fieldset",
-        			"label": "fieldset",
-        			"fields": {
-        				"textIn": {
-            				"type": "text",
-            				"label": "textIn",
-            				"placeholder": "text"
-          				}
-        			}
-     			}
-    		};
-		}, 'text');
-		return returnVal;
-    }
 
         $scope.processForm = function () {
             alert ($scope.urlFormData.MACH_NUMBER);
