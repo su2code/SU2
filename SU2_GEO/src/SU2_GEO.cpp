@@ -35,11 +35,11 @@ using namespace std;
 int main(int argc, char *argv[]) {
   
   unsigned short iZone, nZone = SINGLE_ZONE;
-  double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
+  su2double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
 	unsigned short iDV, iFFDBox, iPlane, nPlane, iVar;
-	double *ObjectiveFunc, *ObjectiveFunc_New, *Gradient, delta_eps, MinPlane, MaxPlane, MinXCoord, MaxXCoord,
+	su2double *ObjectiveFunc, *ObjectiveFunc_New, *Gradient, delta_eps, MinPlane, MaxPlane, MinXCoord, MaxXCoord,
   **Plane_P0, **Plane_Normal, Volume, Volume_New, Volume_Grad;
-  vector<double> *Xcoord_Airfoil, *Ycoord_Airfoil, *Zcoord_Airfoil, *Variable_Airfoil;
+  vector<su2double> *Xcoord_Airfoil, *Ycoord_Airfoil, *Zcoord_Airfoil, *Variable_Airfoil;
   char config_file_name[MAX_STRING_SIZE];
  	char *cstr;
 	ofstream Gradient_file, ObjFunc_file;
@@ -49,7 +49,7 @@ int main(int argc, char *argv[]) {
   /*--- MPI initialization ---*/
 
 #ifdef HAVE_MPI
-	MPI_Init(&argc,&argv);
+	SU2_MPI::Init(&argc,&argv);
 	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
   MPI_Comm_size(MPI_COMM_WORLD,&size);
 #endif
@@ -125,7 +125,7 @@ int main(int argc, char *argv[]) {
 #ifdef HAVE_MPI
   StartTime = MPI_Wtime();
 #else
-  StartTime = double(clock())/double(CLOCKS_PER_SEC);
+  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #endif
   
   /*--- Evaluation of the objective function ---*/
@@ -138,21 +138,21 @@ int main(int argc, char *argv[]) {
   if (geometry_container[ZONE_0]->GetnDim() == 2) nPlane = 1;
   else nPlane = config_container[ZONE_0]->GetnSections();
 
-  Xcoord_Airfoil = new vector<double>[nPlane];
-  Ycoord_Airfoil = new vector<double>[nPlane];
-  Zcoord_Airfoil = new vector<double>[nPlane];
-  Variable_Airfoil = new vector<double>[nPlane];
+  Xcoord_Airfoil = new vector<su2double>[nPlane];
+  Ycoord_Airfoil = new vector<su2double>[nPlane];
+  Zcoord_Airfoil = new vector<su2double>[nPlane];
+  Variable_Airfoil = new vector<su2double>[nPlane];
 
-  Plane_P0 = new double*[nPlane];
-  Plane_Normal = new double*[nPlane];
+  Plane_P0 = new su2double*[nPlane];
+  Plane_Normal = new su2double*[nPlane];
   for(iPlane = 0; iPlane < nPlane; iPlane++ ) {
-    Plane_P0[iPlane] = new double[3];
-    Plane_Normal[iPlane] = new double[3];
+    Plane_P0[iPlane] = new su2double[3];
+    Plane_Normal[iPlane] = new su2double[3];
   }
   
-  ObjectiveFunc = new double[nPlane*20];
-  ObjectiveFunc_New = new double[nPlane*20];
-  Gradient = new double[nPlane*20];
+  ObjectiveFunc = new su2double[nPlane*20];
+  ObjectiveFunc_New = new su2double[nPlane*20];
+  Gradient = new su2double[nPlane*20];
 
   for (iVar = 0; iVar < nPlane*20; iVar++) {
     ObjectiveFunc[iVar] = 0.0;
@@ -192,7 +192,7 @@ int main(int argc, char *argv[]) {
   geometry_container[ZONE_0]->ComputeSurf_Curvature(config_container[ZONE_0]);
   
 //  if (rank == MASTER_NODE) cout << "Writing a Tecplot file of the surface curvature." << endl;
-//  if (size > 1) sprintf (buffer_char, "_%d.plt", rank+1); else sprintf (buffer_char, ".plt");
+//  if (size > 1) SPRINTF (buffer_char, "_%d.plt", rank+1); else SPRINTF (buffer_char, ".plt");
 //  strcpy (out_file, "Surface_Curvature"); strcat(out_file, buffer_char); geometry_container[ZONE_0]->SetBoundTecPlot(out_file, true, config);
   
 	/*--- Create plane structure ---*/
@@ -212,7 +212,7 @@ int main(int argc, char *argv[]) {
       Plane_Normal[iPlane][1] = 0.0;    Plane_P0[iPlane][1] = 0.0;
       Plane_Normal[iPlane][2] = 0.0;    Plane_P0[iPlane][2] = 0.0;
       Plane_Normal[iPlane][config_container[ZONE_0]->GetAxis_Orientation()] = 1.0;
-      Plane_P0[iPlane][config_container[ZONE_0]->GetAxis_Orientation()] = MinPlane + iPlane*(MaxPlane - MinPlane)/double(nPlane-1);
+      Plane_P0[iPlane][config_container[ZONE_0]->GetAxis_Orientation()] = MinPlane + iPlane*(MaxPlane - MinPlane)/su2double(nPlane-1);
     }
   }
 
@@ -610,7 +610,7 @@ int main(int argc, char *argv[]) {
 #ifdef HAVE_MPI
   StopTime = MPI_Wtime();
 #else
-  StopTime = double(clock())/double(CLOCKS_PER_SEC);
+  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #endif
   
   /*--- Compute/print the total time for performance benchmarking. ---*/

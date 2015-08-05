@@ -32,9 +32,8 @@
 
 #pragma once
 
-#ifdef HAVE_MPI
-  #include "mpi.h"
-#endif
+#include "./mpi_structure.hpp"
+
 #include <iostream>
 #include <vector>
 #include <cstdlib>
@@ -54,8 +53,8 @@ class CPrimalGrid {
 protected:
 	unsigned long *Nodes;         /*!< \brief Vector to store the global nodes of an element. */
 	long *Neighbor_Elements;      /*!< \brief Vector to store the elements surronding an element. */
-	double *Coord_CG;             /*!< \brief Coordinates of the center-of-gravity of the element. */
-	double **Coord_FaceElems_CG;	/*!< \brief Coordinates of the center-of-gravity of the face of the
+	su2double *Coord_CG;             /*!< \brief Coordinates of the center-of-gravity of the element. */
+	su2double **Coord_FaceElems_CG;	/*!< \brief Coordinates of the center-of-gravity of the face of the
                                  elements. */
 	static unsigned short nDim;		/*!< \brief Dimension of the element (2D or 3D) useful for triangles,
                                  rectangles and edges. */
@@ -102,14 +101,14 @@ public:
 	 * \brief Set the center of gravity of an element (including edges).
 	 * \param[in] val_coord - Coordinates of the element.
 	 */
-	void SetCG(double **val_coord);
+	void SetCG(su2double **val_coord);
 	
 	/*!
 	 * \brief Get the center of gravity of an element (including edges).
 	 * \param[in] val_dim - Coordinate of the center of gravity.
 	 * \return Coordinates of the center of gravity.
 	 */
-	double GetCG(unsigned short val_dim);
+	su2double GetCG(unsigned short val_dim);
 	
 	/*!
 	 * \brief Get the CG of a face of an element.
@@ -117,7 +116,7 @@ public:
 	 * \param[in] val_dim - Coordinate of the center of gravity.
 	 * \return Coordinates of the center of gravity.
 	 */
-	double GetFaceCG(unsigned short val_face, unsigned short val_dim);
+	su2double GetFaceCG(unsigned short val_face, unsigned short val_dim);
 	
 	/*!
 	 * \brief Get all the neighbors of an element.
