@@ -7470,6 +7470,8 @@ void CEulerSolver::Mixing_Process(CGeometry *geometry, CSolver **solver_containe
 		AveragedNormal[val_Marker][iDim] = 0.0;
 	}
 
+	for (iVar=0;iVar<nVar;iVar++)
+		TotalFlux[val_Marker][iVar]= 0.0;
 
 	/*--- Loop over the vertices to compute the averaged quantities ---*/
 	nVert = 0;
@@ -7540,7 +7542,16 @@ void CEulerSolver::Mixing_Process(CGeometry *geometry, CSolver **solver_containe
 	}
 
 	/*--- Compute the averaged value for the boundary of interest ---*/
+
+	for (iDim = 0; iDim < nDim; iDim++){
+		AveragedNormal[val_Marker][iDim] /=nVert;
+		TotalNormal+= AveragedNormal[val_Marker][iDim]*AveragedNormal[val_Marker][iDim];
+		}
+	for (iDim = 0; iDim < nDim; iDim++) AveragedNormal[val_Marker][iDim] /=sqrt(TotalNormal);
+
+
 	switch(mixing_process){
+
 
 		case ALGEBRAIC_AVERAGE:
 			AveragedDensity[val_Marker] = TotalDensity / nVert;
@@ -7570,9 +7581,9 @@ void CEulerSolver::Mixing_Process(CGeometry *geometry, CSolver **solver_containe
 					AveragedVelocity[val_Marker][iDim] = TotalAreaVelocity[iDim] / TotalArea;
 
 			}else {
-				MixedOut_Average (val_init_pressure, AveragedFlux[val_Marker], UnitNormal, &AveragedPressure[val_Marker], &AveragedDensity[val_Marker]);
+				MixedOut_Average (val_init_pressure, AveragedFlux[val_Marker], AveragedNormal[val_Marker], &AveragedPressure[val_Marker], &AveragedDensity[val_Marker]);
 				for (iDim = 1; iDim < nDim +1;iDim++)
-					AveragedVelocity[val_Marker][iDim-1]= ( AveragedFlux[val_Marker][iDim] - AveragedPressure[val_Marker]*UnitNormal[iDim-1] ) / AveragedFlux[val_Marker][0];
+					AveragedVelocity[val_Marker][iDim-1]= ( AveragedFlux[val_Marker][iDim] - AveragedPressure[val_Marker]*AveragedNormal[val_Marker][iDim-1] ) / AveragedFlux[val_Marker][0];
 			}
 			break;
 
@@ -7589,20 +7600,17 @@ void CEulerSolver::Mixing_Process(CGeometry *geometry, CSolver **solver_containe
 	AveragedEnthalpy[val_Marker] = FluidModel->GetStaticEnergy() + AveragedPressure[val_Marker]/AveragedDensity[val_Marker];
 	AveragedSoundSpeed[val_Marker] = FluidModel->GetSoundSpeed();
 	AveragedEntropy[val_Marker] = FluidModel->GetEntropy();
-       
-	for (iDim = 0; iDim < nDim; iDim++){
-	  // cout<<AveragedNormal[val_Marker][iDim]<<endl;  
-	AveragedNormal[val_Marker][iDim] /=nVert;
-	//cout<<AveragedNormal[val_Marker][iDim]<<endl;
-	TotalNormal+= AveragedNormal[val_Marker][iDim]*AveragedNormal[val_Marker][iDim];
-	}
 
-	for (iDim = 0; iDim < nDim; iDim++)
-		AveragedNormal[val_Marker][iDim] /=sqrt(TotalNormal);
 
 	if (isnan(AveragedDensity[val_Marker]) or isnan(AveragedEnthalpy[val_Marker]))
 	cout<<"nan in mixing process"<<endl;
 
+
+	/*--- Free locally allocated memory ---*/
+	delete [] Velocity;
+	delete [] Normal;
+	delete [] TotalVelocity;
+	delete [] TotalAreaVelocity;
 }
 
 void CEulerSolver::MixedOut_Average (double val_init_pressure, double *val_Averaged_Flux, double *val_normal,
@@ -7617,7 +7625,6 @@ void CEulerSolver::MixedOut_Average (double val_init_pressure, double *val_Avera
     double deltaP, *p_mix = new double, *p_mix_right = new double, *p_mix_left = new double;
 
     *pressure_mix = val_init_pressure;
-//    cout << " val_Averaged_Flux[0]: " << val_Averaged_Flux[0] << endl;
 
     /*--- Newton-Raphson's method with central difference formula ---*/
 
@@ -7629,34 +7636,31 @@ void CEulerSolver::MixedOut_Average (double val_init_pressure, double *val_Avera
         *p_mix_right = *pressure_mix+deltaP/2;
         *p_mix_left = *pressure_mix-deltaP/2;
         *p_mix = *pressure_mix;
-//        cout<<"p_mix: " << *p_mix << endl;
         MixedOut_Root_Function(p_mix_right,val_Averaged_Flux,val_normal,val_right_func,density_mix);
         MixedOut_Root_Function(p_mix_left,val_Averaged_Flux,val_normal,val_left_func,density_mix);
         MixedOut_Root_Function(p_mix,val_Averaged_Flux,val_normal,val_func,density_mix);
         double der_func = (*val_right_func-*val_left_func) / deltaP;
         deltaP = -*val_func/der_func;
-//        cout<<"val_func_right: " << *val_right_func << endl;
-//        cout<<"val_func_left: " << *val_left_func << endl;
-//        cout<<"val_func: " << *val_func << endl;
-//        cout<<"deltaP: " << deltaP << endl;
         resdl = deltaP/val_init_pressure;
         *pressure_mix += relax_factor*(deltaP);
 
         iter += 1;
-
-//        		cout << "iter: " << iter << " val_func: " << *val_func  << " resdl: " << resdl << " toll: " << toll << " pressure_mix: " << *pressure_mix << endl;
-
         if ( abs(resdl) <= toll ) {
             break;
         }
 
     }
 
-//    	cout << " pressure_mix        : " << *pressure_mix << endl;
-//    	cout << " density_mix         : " << *density_mix << endl;
-//    	cout << " val_func: " << *val_func << endl;
-
     MixedOut_Root_Function(pressure_mix,val_Averaged_Flux,val_normal,val_func,density_mix);
+
+    /*--- Free locally allocated memory ---*/
+
+    delete val_func;
+    delete val_right_func;
+    delete val_left_func;
+    delete p_mix;
+    delete p_mix_right;
+    delete p_mix_left;
 
 }
 
@@ -7676,284 +7680,29 @@ void CEulerSolver::MixedOut_Root_Function(double *pressure, double *val_Averaged
 
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
         vel[iDim]  = (val_Averaged_Flux[iDim+1] - (*pressure)*val_normal[iDim]) / val_Averaged_Flux[0];
-//        cout << " vel: " << vel[iDim] << endl;
         velnormal += val_normal[iDim]*vel[iDim];
-//        cout << " valnormal: " << val_normal[iDim] << endl;
         velsq += vel[iDim]*vel[iDim];
     }
     *density = val_Averaged_Flux[0] / velnormal;
-    if (*density <= 0) {
-//        getchar();
-    }
-//        cout << " val_Averaged_Flux[0]: " << val_Averaged_Flux[0] << endl;
-//        cout << " density: " << *density << endl;
-//        cout << " pressure: " << *pressure << endl;
+    if (*density <= 0) cout << " desnity in mixedout routine negative : " << endl;
     FluidModel->SetTDState_Prho(*pressure, *density);
     double enthalpy = FluidModel->GetStaticEnergy() + (*pressure)/(*density);
     *valfunc = val_Averaged_Flux[nDim+1]/val_Averaged_Flux[0] - enthalpy - velsq/2;
-    if (isnan(*valfunc)) {
-//        getchar();
-    }
+    if (isnan(*valfunc)) cout << " mixedout root func gives nan: " << endl;
+
+
+    /*--- Free locally allocated memory ---*/
+    delete [] vel;
 
 }
 
 void CEulerSolver::Boundary_Fourier(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short val_Marker, vector<std::complex<double> >& c4k,signed long& nboundaryvertex) {
-
-    unsigned long iVertex, iPoint, iFourier, nVertex;
-    unsigned short iDim,OddEven;
-    double *Velocity_i, Velocity2_i, Energy_i, StaticEnergy_i, Density_i, Pressure_i;
-    double deltaPressure, AveragedMach, *deltaVelocity, *Mvec;
-    double c2, c3, rhoc,iVertexd,nVertexd,k;
-    complex<double> I,c4ktemp,c2kloc, c3kloc, GBloc,c0;
-
-    nVertex=geometry->nVertex[val_Marker];
-
-    I=complex<double>(0,1.0);
-
-    std::vector<std::vector< double > > sortdata;
-    Velocity_i = new double [nDim];
-    deltaVelocity = new double [nDim];
-    Mvec = new double [nDim];
-
-    AveragedMach = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++) {
-        Mvec[iDim] = AveragedVelocity[val_Marker][iDim]/AveragedSoundSpeed[val_Marker];
-        AveragedMach += Mvec[iDim]*Mvec[iDim];
-    }
-    AveragedMach = sqrt(AveragedMach);
-
-
-//    --- Loop over all the vertices on this boundary marker ---
-    for (iVertex = 0; iVertex < nVertex; iVertex++) {
-
-        iVertexd=iVertex;
-        iPoint = geometry->vertex[val_Marker][iVertex]->GetNode(); /* go to node with index ivertrex on boundary val_marker*/
-
-//        --- Check if the node belongs to the domain (i.e., not a halo node) ---
-        if (geometry->node[iPoint]->GetDomain()) {
-
-            Velocity2_i = 0;
-            for (iDim=0; iDim < nDim; iDim++)
-            {
-                Velocity_i[iDim] = node[iPoint]->GetVelocity(iDim);
-                Velocity2_i += Velocity_i[iDim]*Velocity_i[iDim]; /*total velocity squared*/
-            }
-
-            Density_i = node[iPoint]->GetDensity();
-            Energy_i = node[iPoint]->GetEnergy();
-            StaticEnergy_i = Energy_i - 0.5*Velocity2_i;
-            FluidModel->SetTDState_rhoe(Density_i, StaticEnergy_i);
-            Pressure_i = FluidModel->GetPressure();
-
-            deltaPressure = Pressure_i - AveragedPressure[val_Marker];
-
-            for (iDim = 0; iDim < nDim; iDim++) {
-                deltaVelocity[iDim] = Velocity_i[iDim]-AveragedVelocity[val_Marker][iDim];
-            }
-
-            rhoc=AveragedDensity[val_Marker]*AveragedSoundSpeed[val_Marker];
-            c2 = rhoc * deltaVelocity[1];
-            c3 = rhoc * deltaVelocity[0] + deltaPressure;
-
-            std::vector< double > tempRow;
-            tempRow.push_back(geometry->node[iPoint]->GetCoord(1));
-//            cout<<val_Marker<<" "<< geometry->node[iPoint]->GetCoord(1)<<endl;
-            tempRow.push_back(c2);
-            tempRow.push_back(c3);
-            sortdata.push_back(tempRow);
-
-        }
-    }
-//    cout<<"first element is: y= " <<sortdata[0][0]<<" c2= " <<sortdata[0][1]<<" c3= " <<sortdata[0][2]<<endl;
-    std::sort(sortdata.begin(), sortdata.end(), Compareval);
-//    cout<<"first element after sort is: y= " <<sortdata[0][0]<<" c2= " <<sortdata[0][1]<<" c3= " <<sortdata[0][2]<<endl;
-    nboundaryvertex=sortdata.size();
-//    for (iFourier=0; iFourier<sortdata.size(); iFourier++) {
-//        cout<<sortdata[iFourier][0]<<endl;
-//    }
-
-
-    if ((nboundaryvertex) % 2){
-        OddEven = 1;
-    }
-    else{
-        OddEven = 2;
-    }
-
-    c4k.resize((nboundaryvertex-OddEven)/2);
-    std::vector<std::complex<double> > c2k ((nboundaryvertex-OddEven)/2);
-    std::vector<std::complex<double> > c3k ((nboundaryvertex-OddEven)/2);
-    std::vector<std::complex<double> > GilesBeta ((nboundaryvertex-OddEven)/2);
-
-    for (iFourier = 0; iFourier <= (nboundaryvertex-OddEven)/2-1; iFourier++ ){
-        c2k[iFourier]=complex<double>(0,0);
-        c3k[iFourier]=complex<double>(0,0);
-        c4k[iFourier]=0;
-        GilesBeta[iFourier]=0;
-    }
-
-    for (iFourier = 0; iFourier <= (nboundaryvertex-OddEven)/2-1; iFourier++ ){
-        k=iFourier+1;
-        for (iVertex=0;iVertex<sortdata.size();iVertex++){
-            iVertexd=iVertex;
-            nVertexd=nboundaryvertex;
-            c2kloc= 1.0/(nVertexd)*sortdata[iVertex][1] *exp(-I*PI_NUMBER*2.0*(iVertexd+1)*k/nVertexd);
-            c3kloc= 1.0/(nVertexd)*sortdata[iVertex][2] *exp(-I*PI_NUMBER*2.0*(iVertexd+1)*k/nVertexd);
-//            cout<<iVertex<<" "<<(iVertexd+1)/nVertexd<<" "<<(sortdata[iVertex][0])/0.8<<endl;
-//            c2kloc= 1.0/(nVertexd)*sortdata[iVertex][1] *exp(-I*PI_NUMBER*2.0*(sortdata[iVertex][0])*k/0.8);
-//            c3kloc= 1.0/(nVertexd)*sortdata[iVertex][2] *exp(-I*PI_NUMBER*2.0*(sortdata[iVertex][0])*k/0.8);
-            c2k[iFourier]+=c2kloc;
-            c3k[iFourier]+=c3kloc;
-            GilesBeta[iFourier]=complex<double>(0,sqrt(1.0-AveragedMach*AveragedMach));
-            GBloc=complex<double>(0,sqrt(1.0-AveragedMach*AveragedMach));
-            c4k[iFourier]+=(2*Mvec[0])/(GBloc-Mvec[1])*c2kloc-(GBloc+Mvec[1])/(GBloc-Mvec[1])*c3kloc;
-        }
-    }
-    nboundaryvertex=nboundaryvertex;
-
-//    for (iFourier = 0; iFourier <= (nboundaryvertex-OddEven)/2-1; iFourier++ ){
-//        cout << "c4k for k= "<< iFourier << " is " << c4k[iFourier] << endl;
-//    }
-//
-//    for (iFourier = 0; iFourier <= (nboundaryvertex-OddEven)/2-1; iFourier++ ){
-//        c4k[iFourier]=(2*Mvec[0])/(GilesBeta[iFourier]-Mvec[1])*c2k[iFourier]-(GilesBeta[iFourier]+Mvec[1])/(GilesBeta[iFourier]-Mvec[1])*c3k[iFourier];
-//        cout << "c4k for k= "<< iFourier+1 << " is " << c4k[iFourier] << endl;
-//    }
-//    for (iFourier = 0; iFourier <= (nVertex-OddEven); iFourier++ ){
-//        ////        cout << "c2k for k= "<< iFourier+1 << " is " << c2k[iFourier] << endl;
-//        ////        cout << "c3k for k= "<< iFourier+1 << " is " << c3k[iFourier] << endl;
-//        cout << "c4k for k= "<< (nVertexd-OddEven)/2-(nVertexd-OddEven)+iFourier << " is " << c4kcheck[iFourier] << endl;
-//        //        cout << "c4kcheck for k= "<< iFourier+1 << " is " << c4kcheck[iFourier] << endl;
-//    }
-    iFourier=1;
+	/* Implementation of Fuorier Transformations for non-regfelcting BC will come soon */
 }
 
 void CEulerSolver::Boundary_Fourier(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short val_Marker, vector<std::complex<double> >& c2k,vector<std::complex<double> >& c3k,signed long& nboundaryvertex) {
-
-    unsigned long iVertex, iPoint, iFourier, nVertex;
-    unsigned short iDim,OddEven;
-    double *Velocity_i, Velocity2_i, Energy_i, StaticEnergy_i, Density_i, Pressure_i;
-    double deltaPressure, AveragedMach, *deltaVelocity, *Mvec;
-    double c4, rhoc,iVertexd,nVertexd,k;
-    complex<double> I,c4ktemp,c4kloc, GBloc,c0;
-
-    nVertex=geometry->nVertex[val_Marker];
-
-    I=complex<double>(0,1.0);
-
-    std::vector<std::vector< double > > sortdata;
-    Velocity_i = new double [nDim];
-    deltaVelocity = new double [nDim];
-    Mvec = new double [nDim];
-
-    AveragedMach = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++) {
-        Mvec[iDim] = AveragedVelocity[val_Marker][iDim]/AveragedSoundSpeed[val_Marker];
-        AveragedMach += Mvec[iDim]*Mvec[iDim];
-    }
-    AveragedMach = sqrt(AveragedMach);
-
-
-    //    --- Loop over all the vertices on this boundary marker ---
-    for (iVertex = 0; iVertex < nVertex; iVertex++) {
-
-        iVertexd=iVertex;
-        iPoint = geometry->vertex[val_Marker][iVertex]->GetNode(); /* go to node with index ivertrex on boundary val_marker*/
-
-        //        --- Check if the node belongs to the domain (i.e., not a halo node) ---
-        if (geometry->node[iPoint]->GetDomain()) {
-
-            Velocity2_i = 0;
-            for (iDim=0; iDim < nDim; iDim++)
-            {
-                Velocity_i[iDim] = node[iPoint]->GetVelocity(iDim);
-                Velocity2_i += Velocity_i[iDim]*Velocity_i[iDim]; /*total velocity squared*/
-            }
-
-            Density_i = node[iPoint]->GetDensity();
-            Energy_i = node[iPoint]->GetEnergy();
-            StaticEnergy_i = Energy_i - 0.5*Velocity2_i;
-            FluidModel->SetTDState_rhoe(Density_i, StaticEnergy_i);
-            Pressure_i = FluidModel->GetPressure();
-
-            deltaPressure = Pressure_i - AveragedPressure[val_Marker];
-
-            for (iDim = 0; iDim < nDim; iDim++) {
-                deltaVelocity[iDim] = Velocity_i[iDim]-AveragedVelocity[val_Marker][iDim];
-            }
-
-            rhoc=AveragedDensity[val_Marker]*AveragedSoundSpeed[val_Marker];
-            c4 = - rhoc * deltaVelocity[0] + deltaPressure;
-
-            std::vector< double > tempRow;
-            tempRow.push_back(geometry->node[iPoint]->GetCoord(1));
-            tempRow.push_back(c4);
-            sortdata.push_back(tempRow);
-
-        }
-    }
-    //    cout<<"first element is: y= " <<sortdata[0][0]<<" c2= " <<sortdata[0][1]<<" c3= " <<sortdata[0][2]<<endl;
-    std::sort(sortdata.begin(), sortdata.end(), Compareval);
-    //    cout<<"first element after sort is: y= " <<sortdata[0][0]<<" c2= " <<sortdata[0][1]<<" c3= " <<sortdata[0][2]<<endl;
-    nboundaryvertex=sortdata.size();
-    //    for (iFourier=0; iFourier<sortdata.size(); iFourier++) {
-    //        cout<<sortdata[iFourier][0]<<endl;
-    //    }
-
-
-    if ((nboundaryvertex) % 2){
-        OddEven = 1;
-    }
-    else{
-        OddEven = 2;
-    }
-
-    c2k.resize((nboundaryvertex-OddEven)/2);
-    c3k.resize((nVertex-OddEven)/2);
-    std::vector<std::complex<double> > c4k ((nboundaryvertex-OddEven)/2);
-    std::vector<std::complex<double> > GilesBeta ((nboundaryvertex-OddEven)/2);
-
-    for (iFourier = 0; iFourier <= (nboundaryvertex-OddEven)/2-1; iFourier++ ){
-        c2k[iFourier]=complex<double>(0,0);
-        c3k[iFourier]=complex<double>(0,0);
-        c4k[iFourier]=0;
-        GilesBeta[iFourier]=0;
-    }
-
-    for (iFourier = 0; iFourier <= (nboundaryvertex-OddEven)/2-1; iFourier++ ){
-        k=iFourier+1;
-        for (iVertex=0;iVertex<sortdata.size();iVertex++){
-            iVertexd=iVertex;
-            nVertexd=nboundaryvertex;
-            c4kloc= 1.0/(nVertexd)*sortdata[iVertex][1] *exp(-I*PI_NUMBER*2.0*(iVertexd+1)*k/nVertexd);
-            c4k[iFourier]+=c4kloc;
-            GilesBeta[iFourier]=complex<double>(0,sqrt(1.0-AveragedMach*AveragedMach));
-            GBloc=complex<double>(0,sqrt(1.0-AveragedMach*AveragedMach));
-            c2k[iFourier]+=-(GBloc+Mvec[1])/(1+Mvec[0])*c4kloc;
-            c3k[iFourier]+=(GBloc+Mvec[1])/(1+Mvec[0])*(GBloc+Mvec[1])/(1+Mvec[0])*c4kloc;
-        }
-    }
-    nboundaryvertex = nboundaryvertex;
-
-    //    for (iFourier = 0; iFourier <= (nboundaryvertex-OddEven)/2-1; iFourier++ ){
-    //        cout << "c4k for k= "<< iFourier << " is " << c4k[iFourier] << endl;
-    //    }
-    //
-    //    for (iFourier = 0; iFourier <= (nboundaryvertex-OddEven)/2-1; iFourier++ ){
-    //        c4k[iFourier]=(2*Mvec[0])/(GilesBeta[iFourier]-Mvec[1])*c2k[iFourier]-(GilesBeta[iFourier]+Mvec[1])/(GilesBeta[iFourier]-Mvec[1])*c3k[iFourier];
-    //        cout << "c4k for k= "<< iFourier+1 << " is " << c4k[iFourier] << endl;
-    //    }
-    //    for (iFourier = 0; iFourier <= (nVertex-OddEven); iFourier++ ){
-    //        ////        cout << "c2k for k= "<< iFourier+1 << " is " << c2k[iFourier] << endl;
-    //        ////        cout << "c3k for k= "<< iFourier+1 << " is " << c3k[iFourier] << endl;
-    //        cout << "c4k for k= "<< (nVertexd-OddEven)/2-(nVertexd-OddEven)+iFourier << " is " << c4kcheck[iFourier] << endl;
-    //        //        cout << "c4kcheck for k= "<< iFourier+1 << " is " << c4kcheck[iFourier] << endl;
-    //    }
-    iFourier=1;
+	/* Implementation of Fuorier Transformations for non-regfelcting BC will come soon */
 }
-
-bool CEulerSolver::Compareval(std::vector<double> a,std::vector<double> b){return a[0]<b[0];}
-
 
 void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_container,
                               CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
@@ -8020,9 +7769,9 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
   Mixing_Process(geometry, solver_container,  config, val_marker);
 //  Boundary_Fourier(geometry, solver_container, config, val_marker, c4k, nboundaryvertex);
 //  Boundary_Fourier(geometry, solver_container, config, val_marker, c2k,c3k,nboundaryvertex);
-  //cout<<"AveragedPressure_i " <<AveragedPressure[val_marker]<<" Density_i " <<AveragedDensity[val_marker]<<" Entropy "<<AveragedEntropy[val_marker]<<endl;
-  //cout<<"AveragedNormal_0 " <<AveragedNormal[val_marker][0]<<" AveragedNormal_1 " <<AveragedNormal[val_marker][1]<<endl;
-  //cout<<"AveragedVelocity_0 " <<AveragedVelocity[val_marker][0]<<" AveragedVelocity_1 " <<AveragedVelocity[val_marker][1]<<endl;
+//  cout<<"AveragedPressure_i " <<AveragedPressure[val_marker]<<" Density_i " <<AveragedDensity[val_marker]<<" Entropy "<<AveragedEntropy[val_marker]<<endl;
+//  cout<<"AveragedNormal_0 " <<AveragedNormal[val_marker][0]<<" AveragedNormal_1 " <<AveragedNormal[val_marker][1]<<endl;
+//  cout<<"AveragedVelocity_0 " <<AveragedVelocity[val_marker][0]<<" AveragedVelocity_1 " <<AveragedVelocity[val_marker][1]<<endl;
 
   /* --- Start implementation of NRBC ---*/
 
@@ -8101,7 +7850,6 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 			  AveragedMach += AveragedVelocity[val_marker][iDim]*AveragedVelocity[val_marker][iDim];
           }
           AveragedMach = sqrt(AveragedMach)/AveragedSoundSpeed[val_marker];
-	  //	  cout << AveragedMach<<endl;
           deltaTangVelocity= UnitNormal[1]*deltaVelocity[0]-UnitNormal[0]*deltaVelocity[1];
           deltaNormalVelocity= UnitNormal[0]*deltaVelocity[0]+UnitNormal[1]*deltaVelocity[1];
 
@@ -8152,15 +7900,14 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 			  deltaprim[iVar] +=  R_Matrix[iVar][jVar]*delta_c[jVar];
 		  }
 	  }
-//      /*--- Compute P (matrix of right eigenvectors) ---*/
-//
+      /*--- Compute P (matrix of right eigenvectors) ---*/
+
       conv_numerics->GetPMatrix(&Density_i, Velocity_i, &SoundSpeed_i, &Enthalpy_i, &Chi_i, &Kappa_i, UnitNormal, P_Tensor);
-//
-//      /*--- Compute inverse P (matrix of left eigenvectors)---*/
-//
+
+      /*--- Compute inverse P (matrix of left eigenvectors)---*/
+
       conv_numerics->GetPMatrix_inv(invP_Tensor, &Density_i, Velocity_i, &SoundSpeed_i, &Chi_i, &Kappa_i, UnitNormal);
-//
-//
+
       /*--- eigenvalues contribution due to grid motion ---*/
 
       if (grid_movement){
