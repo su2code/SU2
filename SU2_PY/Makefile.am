@@ -1,5 +1,9 @@
-# SU2 Makefile.am for Python scripts
-# SU2 v3.2.7 "eagle"
+################################################################################
+#
+# \file Makefile.am
+# \brief Makefile for the SU2 Python framework
+# \author M. Colonno, T. Economon, F. Palacios, T. Lukaczyk
+# \version 4.0.0 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -25,13 +29,7 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 #
-# Created: 	4/4/2013
-# Last updated: 	12/31/2014
-#
-# Created by: 		T. Lukaczyk
-# Updated by: 		F. Palacios
-#
-######################################################################################
+################################################################################
 
 bin_SCRIPTS = \
     continuous_adjoint.py \
@@ -43,7 +41,9 @@ bin_SCRIPTS = \
     shape_optimization.py \
     merge_solution.py \
     set_ffd_design_var.py \
-    compute_polar.py
+    compute_polar.py \
+    discrete_adjoint.py \
+    direct_differentiation.py
 
 
 mypkgdir = $(prefix)/bin

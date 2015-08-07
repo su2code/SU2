@@ -30,9 +30,8 @@
 
 #pragma once
 
-#ifdef HAVE_MPI
-  #include "mpi.h"
-#endif
+#include "./mpi_structure.hpp"
+
 #include <climits>
 #include <limits>
 #include <cmath>
@@ -74,7 +73,7 @@ private:
    * so, feel free to delete this and replace it as needed with the
    * appropriate global function
    */
-  double Sign(const double & x, const double & y) const;
+  su2double Sign(const su2double & x, const su2double & y) const;
   
   /*!
    * \brief applys a Givens rotation to a 2-vector
@@ -83,7 +82,7 @@ private:
    * \param[in, out] h1 - first element of 2x1 vector being transformed
    * \param[in, out] h2 - second element of 2x1 vector being transformed
    */
-  void ApplyGivens(const double & s, const double & c, double & h1, double & h2);
+  void ApplyGivens(const su2double & s, const su2double & c, su2double & h1, su2double & h2);
   
   /*!
    * \brief generates the Givens rotation matrix for a given 2-vector
@@ -95,7 +94,7 @@ private:
    * Based on givens() of SPARSKIT, which is based on p.202 of
    * "Matrix Computations" by Golub and van Loan.
    */
-  void GenerateGivens(double & dx, double & dy, double & s, double & c);
+  void GenerateGivens(su2double & dx, su2double & dy, su2double & s, su2double & c);
   
   /*!
    * \brief finds the solution of the upper triangular system Hsbg*x = rhs
@@ -108,8 +107,8 @@ private:
    * \pre the upper Hessenberg matrix has been transformed into a
    * triangular matrix.
    */
-  void SolveReduced(const int & n, const vector<vector<double> > & Hsbg,
-                    const vector<double> & rhs, vector<double> & x);
+  void SolveReduced(const int & n, const vector<vector<su2double> > & Hsbg,
+                    const vector<su2double> & rhs, vector<su2double> & x);
   
   /*!
    * \brief Modified Gram-Schmidt orthogonalization
@@ -129,7 +128,7 @@ private:
    * vector is kept in nrm0 and updated after operating with each vector
    *
    */
-  void ModGramSchmidt(int i, vector<vector<double> > & Hsbg, vector<CSysVector> & w);
+  void ModGramSchmidt(int i, vector<vector<su2double> > & Hsbg, vector<CSysVector> & w);
   
   /*!
    * \brief writes header information for a CSysSolve residual history
@@ -140,7 +139,7 @@ private:
    *
    * \pre the ostream object os should be open
    */
-  void WriteHeader(const string & solver, const double & restol, const double & resinit);
+  void WriteHeader(const string & solver, const su2double & restol, const su2double & resinit);
   
   /*!
    * \brief writes residual convergence data for one iteration to a stream
@@ -150,7 +149,7 @@ private:
    *
    * \pre the ostream object os should be open
    */
-  void WriteHistory(const int & iter, const double & res, const double & resinit);
+  void WriteHistory(const int & iter, const su2double & res, const su2double & resinit);
   
 public:
   
@@ -164,7 +163,7 @@ public:
    * \param[in] monitoring - turn on priting residuals from solver to screen.
    */
   unsigned long CG_LinSolver(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
-                                  CPreconditioner & precond, double tol,
+                                  CPreconditioner & precond, su2double tol,
                                   unsigned long m, bool monitoring);
 	
   /*!
@@ -178,8 +177,8 @@ public:
    * \param[in] monitoring - turn on priting residuals from solver to screen.
    */
   unsigned long FGMRES_LinSolver(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
-                      CPreconditioner & precond, double tol,
-                      unsigned long m, double *residual, bool monitoring);
+                      CPreconditioner & precond, su2double tol,
+                      unsigned long m, su2double *residual, bool monitoring);
 	
 	/*!
    * \brief Biconjugate Gradient Stabilized Method (BCGSTAB)
@@ -192,8 +191,8 @@ public:
    * \param[in] monitoring - turn on priting residuals from solver to screen.
    */
   unsigned long BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
-                        CPreconditioner & precond, double tol,
-                        unsigned long m, double *residual, bool monitoring);
+                        CPreconditioner & precond, su2double tol,
+                        unsigned long m, su2double *residual, bool monitoring);
   
   /*!
    * \brief Solve the linear system using a Krylov subspace method
@@ -205,6 +204,17 @@ public:
    */
   unsigned long Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CSysVector & LinSysSol, CGeometry *geometry, CConfig *config);
   
+
+  /*!
+   * \brief Prepare the linear solve during the reverse interpretation of the AD tape.
+   * \param[in] Jacobian - Jacobian Matrix for the linear system
+   * \param[in] LinSysRes - Linear system residual
+   * \param[in] LinSysSol - Linear system solution
+   * \param[in] geometry -  Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetExternalSolve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CSysVector & LinSysSol, CGeometry *geometry, CConfig *config);
+
 };
 
 #include "linear_solvers_structure.inl"

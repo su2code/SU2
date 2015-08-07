@@ -29,10 +29,12 @@
 
 #pragma once
 
-inline double CSysSolve::Sign(const double & x, const double & y) const {
+inline su2double CSysSolve::Sign(const su2double & x, const su2double & y) const {
   if (y == 0.0)
     return 0.0;
   else {
-    return (y < 0 ? -fabs(x) : fabs(x));
+//    return (y < 0 ? -fabs(x) : fabs(x));
+    if (y < 0) return -fabs(x);
+    else return fabs(x);
   }
 }
