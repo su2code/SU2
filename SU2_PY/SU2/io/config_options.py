@@ -53,7 +53,7 @@ class MathProblem(Option):
 
     def __init__(self,*args,**kwarg):
         super(MathProblem,self).__init__(*args,**kwarg)
-        self.validoptions = ['DIRECT','ADJOINT','LINEARIZED']
+        self.validoptions = ['DIRECT','CONTINUOUS_ADJOINT','LINEARIZED']
 
     def __set__(self,newval):
         if not self.newval in self.validoptions:

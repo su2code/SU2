@@ -178,12 +178,12 @@ def level2():
         
         with SU2.io.redirect_folder(folder='JOB_001',link='mesh_NACA0012.su2'):
             func  = SU2.eval.func( 'LIFT', config, state )
-            grads = SU2.eval.grad( 'LIFT', 'ADJOINT', config, state )
+            grads = SU2.eval.grad( 'LIFT', 'CONTINUOUS_ADJOINT', config, state )
         
         with SU2.io.redirect_folder(folder='JOB_001',link='mesh_NACA0012.su2'):
             func  = SU2.eval.func( 'DRAG', config, state ) # will not run direct
-            grads = SU2.eval.grad( 'LIFT', 'ADJOINT', config, state ) # will not run adjoint
-            grads = SU2.eval.grad( 'DRAG', 'ADJOINT', config, state ) # will run adjoint
+            grads = SU2.eval.grad( 'LIFT', 'CONTINUOUS_ADJOINT', config, state ) # will not run adjoint
+            grads = SU2.eval.grad( 'DRAG', 'CONTINUOUS_ADJOINT', config, state ) # will run adjoint
     
     wait = 0
     
@@ -213,7 +213,7 @@ def level3():
         vals = design.con_cieq(dv_new)
         vals = design.con_dcieq(dv_new)
         vals = design.func('LIFT')
-        vals = design.grad('LIFT','ADJOINT')
+        vals = design.grad('LIFT','CONTINUOUS_ADJOINT')
         
         SU2.io.save_data('design.pkl',design)
         data = SU2.io.load_data('design.pkl')
