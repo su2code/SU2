@@ -455,7 +455,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
    the farfield values bc the solver will immediately interpolate
    the solution from the finest mesh to the coarser levels. ---*/
   
-  if (!restart || (iMesh != MESH_0) || nZone > 1) {
+  if (!restart || (iMesh != MESH_0) /*|| nZone > 1*/) {
 
     /*--- Restart the solution from the free-stream state ---*/
     
@@ -10927,7 +10927,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh,
    the farfield values bc the solver will immediately interpolate
    the solution from the finest mesh to the coarser levels. ---*/
   
-  if (!restart || (iMesh != MESH_0) || nZone > 1) {
+  if (!restart || (iMesh != MESH_0) /*|| nZone > 1*/) {
     
     /*--- Restart the solution from the free-stream state ---*/
     
