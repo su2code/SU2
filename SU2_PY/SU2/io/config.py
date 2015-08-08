@@ -377,6 +377,7 @@ def read_config(filename):
             if case("AoA")                    : pass
             if case("FIN_DIFF_STEP")          : pass
             if case("CFL_NUMBER")             : pass
+            if case("TIMESPECTRAL_PERIOD")    : pass
             if case("WRT_SOL_FREQ")           :
                 data_dict[this_param] = float(this_value)
                 break   

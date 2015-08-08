@@ -89,7 +89,7 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
 
 }
 
-CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
+CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh, unsigned short val_iZone) : CSolver() {
 
   unsigned long iPoint, index, counter_local = 0, counter_global = 0, iVertex;
   unsigned short iVar, iDim, iMarker, nLineLets;
@@ -98,12 +98,14 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   ifstream restart_file;
 
   unsigned short nZone = geometry->GetnZone();
+  iZone = val_iZone;
   bool restart = (config->GetRestart() || config->GetRestart_Flow());
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool time_spectral  = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
   bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
   bool adjoint = config->GetAdjoint();
   string filename = config->GetSolution_FlowFileName();
@@ -475,6 +477,10 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
         Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
       
       filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
+    }
+      
+    else if (time_spectral) {
+        filename = config->GetUnsteady_FileName(filename, iZone);
     }
 
     /*--- Open the restart file, throw an error if this fails. ---*/
@@ -10504,7 +10510,7 @@ CNSSolver::CNSSolver(void) : CEulerSolver() {
 
 }
 
-CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CEulerSolver() {
+CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh, unsigned short val_iZone) : CEulerSolver() {
   
   unsigned long iPoint, index, counter_local = 0, counter_global = 0, iVertex;
   unsigned short iVar, iDim, iMarker, nLineLets;
@@ -10513,12 +10519,14 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   ifstream restart_file;
 
   unsigned short nZone = geometry->GetnZone();
+  iZone = val_iZone;
   bool restart = (config->GetRestart() || config->GetRestart_Flow());
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool time_spectral  = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
   bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
   bool adjoint = config->GetAdjoint();
   string filename = config->GetSolution_FlowFileName();
@@ -10942,6 +10950,10 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
         Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
       
       filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
+    }
+      
+    else if (time_spectral) {
+        filename = config->GetUnsteady_FileName(filename, iZone);
     }
     
     /*--- Open the restart file, throw an error if this fails. ---*/

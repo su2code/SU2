@@ -1725,7 +1725,7 @@ void SetTimeSpectral(CGeometry ***geometry_container, CSolver ****solver_contain
   
   /*--- Compute period of oscillation ---*/
   su2double period = config_container[ZONE_0]->GetTimeSpectral_Period();
-  
+  cout << "Period = " << period << endl;
   /*--- allocate dynamic memory for D ---*/
   su2double **D = new su2double*[nZone];
   for (kZone = 0; kZone < nZone; kZone++) {
@@ -1734,32 +1734,6 @@ void SetTimeSpectral(CGeometry ***geometry_container, CSolver ****solver_contain
   
   /*--- Build the time-spectral operator matrix ---*/
   ComputeTimeSpectral_Operator(D, period, nZone);
-//  for (kZone = 0; kZone < nZone; kZone++) {
-//    for (jZone = 0; jZone < nZone; jZone++) {
-//      
-//      if (nZone%2 == 0) {
-//        
-//        /*--- For an even number of time instances ---*/
-//        if (kZone == jZone) {
-//          D[kZone][jZone] = 0.0;
-//        } 
-//        else {
-//          D[kZone][jZone] = (PI_NUMBER/period)*pow(-1.0,(kZone-jZone))*(1/tan(PI_NUMBER*(kZone-jZone)/nZone));
-//        }
-//      }
-//      else {
-//        
-//        /*--- For an odd number of time instances ---*/
-//        if (kZone == jZone) {
-//          D[kZone][jZone] = 0.0;
-//        } 
-//        else {
-//          D[kZone][jZone] = (PI_NUMBER/period)*pow(-1.0,(kZone-jZone))*(1/sin(PI_NUMBER*(kZone-jZone)/nZone));
-//        }
-//      }
-//
-//    }
-//  }
   
   /*--- Compute various source terms for explicit direct, implicit direct, and adjoint problems ---*/
   /*--- Loop over all grid levels ---*/
@@ -1816,28 +1790,6 @@ void SetTimeSpectral(CGeometry ***geometry_container, CSolver ****solver_contain
     }
   }
   
-	//	/*--- Loop over all grid levels ---*/
-	//	for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetnMGLevels(); iMGlevel++) {
-	//
-	//		/*--- Loop over each node in the volume mesh ---*/
-	//		for (iPoint = 0; iPoint < geometry_container[ZONE_0][iMGlevel]->GetnPoint(); iPoint++) {
-	//
-	//			for (iZone = 0; iZone < nZone; iZone++) {
-	//				for (iVar = 0; iVar < nVar; iVar++) Source[iVar] = 0.0;
-	//				for (jZone = 0; jZone < nZone; jZone++) {
-	//
-	//					/*--- Retrieve solution at this node in current zone ---*/
-	//					for (iVar = 0; iVar < nVar; iVar++) {
-	//						U[iVar] = solver_container[jZone][iMGlevel][FLOW_SOL]->node[iPoint]->GetSolution(iVar);
-	//						Source[iVar] += U[iVar]*D[iZone][jZone];
-	//					}
-	//				}
-	//				/*--- Store sources for current iZone ---*/
-	//				for (iVar = 0; iVar < nVar; iVar++)
-	//					solver_container[iZone][iMGlevel][FLOW_SOL]->node[iPoint]->SetTimeSpectral_Source(iVar, Source[iVar]);
-	//			}
-	//		}
-	//	}
   
   /*--- Source term for a turbulence model ---*/
   if (config_container[ZONE_0]->GetKind_Solver() == RANS) {

@@ -65,6 +65,7 @@ using namespace std;
  */
 class CSolver {
 protected:
+    unsigned short iZone;
 	unsigned short IterLinSolver;	/*!< \brief Linear solver iterations. */
 	unsigned short nVar,					/*!< \brief Number of variables of the problem. */
   nPrimVar,                     /*!< \brief Number of primitive variables of the problem. */
@@ -2615,7 +2616,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh);
+	CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh, unsigned short val_iZone);
     
 	/*!
 	 * \brief Destructor of the class.
@@ -3844,7 +3845,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh);
+	CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh, unsigned short val_iZone);
     
 	/*!
 	 * \brief Destructor of the class.
@@ -4190,7 +4191,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned short iMesh, CFluidModel* FluidModel);
+	CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned short iMesh, unsigned short val_iZone, CFluidModel* FluidModel);
     
 	/*!
 	 * \brief Destructor of the class.
@@ -4721,7 +4722,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh);
+	CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh, unsigned short val_iZone);
     
 	/*!
 	 * \brief Destructor of the class.
