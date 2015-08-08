@@ -1725,7 +1725,7 @@ void SetTimeSpectral(CGeometry ***geometry_container, CSolver ****solver_contain
   
   /*--- Compute period of oscillation ---*/
   su2double period = config_container[ZONE_0]->GetTimeSpectral_Period();
-  cout << "Period = " << period << endl;
+  
   /*--- allocate dynamic memory for D ---*/
   su2double **D = new su2double*[nZone];
   for (kZone = 0; kZone < nZone; kZone++) {
