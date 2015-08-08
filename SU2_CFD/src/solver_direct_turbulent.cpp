@@ -980,11 +980,12 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
 
 CTurbSASolver::CTurbSASolver(void) : CTurbSolver() { }
 
-CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned short iMesh, CFluidModel* FluidModel) : CTurbSolver() {
+CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned short iMesh, unsigned short val_iZone, CFluidModel* FluidModel) : CTurbSolver() {
   unsigned short iVar, iDim, nLineLets;
   unsigned long iPoint, index;
   su2double Density_Inf, Viscosity_Inf, Factor_nu_Inf, Factor_nu_Engine, dull_val;
-
+  iZone = val_iZone;
+    
   bool restart = (config->GetRestart() || config->GetRestart_Flow());
   bool adjoint = config->GetAdjoint();
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
@@ -992,6 +993,7 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool time_spectral  = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
   
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -1149,6 +1151,10 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
       filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
     }
     
+    else if (time_spectral) {
+        filename = config->GetUnsteady_FileName(filename, iZone);
+    }
+      
     /*--- Open the restart file, throw an error if this fails. ---*/
     restart_file.open(filename.data(), ios::in);
     if (restart_file.fail()) {
@@ -2457,12 +2463,13 @@ CTurbSSTSolver::CTurbSSTSolver(void) : CTurbSolver() {
   
 }
 
-CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CTurbSolver() {
+CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh, unsigned short val_iZone) : CTurbSolver() {
   unsigned short iVar, iDim, nLineLets;
   unsigned long iPoint, index;
   su2double dull_val;
   ifstream restart_file;
   string text_line;
+  iZone = val_iZone;
   
   bool restart = (config->GetRestart() || config->GetRestart_Flow());
   bool adjoint = config->GetAdjoint();
@@ -2471,6 +2478,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool time_spectral  = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
   
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -2631,6 +2639,10 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
       else
       Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
       filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
+    }
+      
+    else if (time_spectral) {
+        filename = config->GetUnsteady_FileName(filename, iZone);
     }
     
     /*--- Open the restart file, throw an error if this fails. ---*/
