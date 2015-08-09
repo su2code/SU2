@@ -7698,11 +7698,11 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
 #ifdef HAVE_MPI
           int number = nSends;
           for (int ii = 0; ii < nSends; ii++)
-            MPI_Waitany(number, send_req, &ind, &status);
+            SU2_MPI::Waitany(number, send_req, &ind, &status);
           
           number = nRecvs;
           for (int ii = 0; ii < nRecvs; ii++)
-            MPI_Waitany(number, recv_req, &ind, &status);
+            SU2_MPI::Waitany(number, recv_req, &ind, &status);
           
           delete [] send_req;
           delete [] recv_req;
