@@ -393,10 +393,8 @@ void CConsistConserve::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
           distance+=pow(Geometry[iZone_1][MESH_0]->vertex[markFEA][jVertex]->GetCoord(iDim)-Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->GetCoord(iDim),2.0);
         if ((last_distance==-1.0) or (distance<last_distance)){
           last_distance=distance;
-          //nn[0] = iZone_1; /* Zone of the donor point */
+          /*--- Info stored at the node: zone, point, marker, vertex ---*/
           nn[1] = jPoint; /* global index of the donor point */
-          //nn[2] = markFEA; /* marker of the donor point */
-          //nn[3] = jVertex; /* vertex index within marker of the donor point */
         }
       }
       donor_elem=0;
@@ -421,7 +419,6 @@ void CConsistConserve::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
         }
 
         /*--- use Isoparametric rep. to find distance to projected point on the surface ---*/
-        //delete[] myCoefftemp;
         myCoefftemp = new su2double[nNodes];
         Isoparametric( myCoefftemp, iZone_0,  markFlow, iVertex, nDim, iZone_1, markFEA, temp_donor, nNodes, temp2);
         /*--- If closer than last closest projected point, save. ---*/
@@ -438,7 +435,6 @@ void CConsistConserve::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
         /*--- If the distance is shorter than last shortest, update ---*/
         if ((last_distance==-1) or (distance<last_distance )){
           donor_elem = temp_donor;
-          //delete [] myCoeff;
           myCoeff = new su2double[nNodes];
           for (it=0; it< nNodes; it++)
             myCoeff[it] = myCoefftemp[it];
@@ -446,10 +442,7 @@ void CConsistConserve::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
           Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->SetnDonorPoints(nNodes);
         }
       }
-
-      //Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->SetDonorElem(donor_elem);
       /*--- Set the appropriate amount of memory ---*/
-      //Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->SetnDonorPoints(Geometry[iZone_1][MESH_0]->elem[donor_elem]->GetnNodes());
       Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->Allocate_DonorInfo();
       /*--- Loop over vertices of the element ---*/
       for (it=0; it< Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->GetnDonorPoints(); it++){
@@ -457,9 +450,7 @@ void CConsistConserve::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
         inode = Geometry[iZone_1][MESH_0]->elem[donor_elem]->GetNode(it);
         if ( Geometry[iZone_1][MESH_0]->node[inode]->GetVertex(markFEA)!= -1 ){
           ivtx = Geometry[iZone_1][MESH_0]->node[inode]->GetVertex(markFEA);
-          //nn[0] = iZone_1; /* Zone of the donor point */
           nn[1] = inode; /* global index of the donor point */
-          //nn[2] = markFEA; /* marker of the donor point */
           nn[3] = ivtx; /* vertex index within marker of the donor point */
           Geometry[iZone_1][MESH_0]->vertex[markFEA][ivtx]->IncrementnDonor();
           Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->SetDonorInfo(it,nn);
@@ -648,7 +639,7 @@ void CConsistConserve::Isoparametric(su2double* isoparams, unsigned int iZone_0,
     for (j=0; j<m; j++)
       x_tmp[i]+=Q[i*m+j]*x2[j];
   }
-  /*--- solve x_tmp = R*isoparams: upper triangular system ---*/
+  /*--- solve x_tmp = R*isoparams for isoparams: upper triangular system ---*/
   for (i=n-1; i>=0; i--){
     if (R[i*n+i]>eps)
       isoparams[i]=x_tmp[i]/R[i*n+i];
@@ -658,5 +649,8 @@ void CConsistConserve::Isoparametric(su2double* isoparams, unsigned int iZone_0,
       x_tmp[j]=x_tmp[j]-R[j*n+i]*isoparams[i];
     }
   }
-
+  cout << "";
+  for (j=0; j<i; j++)
+    cout<< x_tmp[j] << " " ;
+  cout << endl;
 }
