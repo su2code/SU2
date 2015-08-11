@@ -228,31 +228,63 @@ def find_all(text, dic):
     return False
 
 def build_codi(modes, mpi_support = False):
-    ampi_log = open( 'preconf_ampi.log', 'w' )
-    ampi_err = open( 'preconf_ampi.err', 'w' )
-    codi_log = open('preconf_codi.log', "w")
-    os.chdir('externals')
+
+    modules_failed = True
+    
+    # This information of the modules is used if projects was not cloned using git
+    # The sha tag must be maintained manually to point to the correct commit
+    sha_version_codi = '3f668b0f5764b11ea592379f1842b41e6f1d489f'
+    github_repo_codi = 'https://github.com/scicompkl/CoDiPack'
+    sha_version_ampi = '8ab63005c646d5b6a2910521f9c0180ce7076f38'
+    github_repo_ampi = 'https://github.com/michel2323/AdjointMPI'
+
+    # Some log and error files
+    log = open( 'preconf.log', 'w' )
+    err = open( 'preconf.err', 'w' )
     pkg_environ = os.environ
-    if not os.path.exists('CoDi'):
+
+    # If project was cloned using git, we can use the 
+    # submodule feature of git to initialize the packages
+    if all([os.path.exists('.gitmodules')]):
 	try:
-            subprocess.check_call('git clone https://github.com/scicompkl/codipack.git CoDi', shell=True)
-	except subprocess.CalledProcessError:
-            print 'Git command failed, trying wget'
-            subprocess.check_call('wget https://github.com/SciCompKL/CoDiPack/archive/master.zip', stdout = codi_log, shell=True)
-            subprocess.check_call('unzip master.zip', stdout = codi_log, shell=True)
-            subprocess.check_call('mv CoDiPack-master CoDi', stdout = codi_log, shell= True)
-            os.remove('master.zip')
-            pass
- 
+            print "Update submodules using git..."
+            subprocess.check_call('git submodule update --init', stdout = log, stderr = err, shell = True)
+            modules_failed = False
+        except subprocess.CalledProcessError: 
+            print 'Module initialization failed using git.'
+            modules_failed = True
+    
+    os.chdir('externals')
+    
+    # If modules still dont exists, use wget to download zip
+    if all([not os.path.exists('CoDi/' + sha_version_codi), modules_failed]):
+        if all([os.path.exists('CoDi'), not os.path.exists('CoDi/' + sha_version_codi)]):
+            print 'Found an older or unspecified version of CoDiPack in externals/CoDi.\nPlease (re)move this folder and try again'
+	    sys.exit()
+
+        print 'Initializing CoDi...'
+        subprocess.check_call('wget '  + github_repo_codi + '/archive/' + sha_version_codi + '.zip', stdout = log, stderr = err, shell=True)
+        subprocess.check_call('unzip ' + sha_version_codi + '.zip', stdout = log, stderr = err, shell=True)
+        subprocess.check_call('mv CoDiPack-' + sha_version_codi + ' CoDi && touch CoDi/' + sha_version_codi, stdout = log, stderr = err, shell= True)
+        os.remove(sha_version_codi + '.zip')
+         
+    if all([not os.path.exists('adjointmpi/' + sha_version_ampi), mpi_support, modules_failed]):
+        if all([os.path.exists('adjointmpi'), not os.path.exists('adjointmpi/' + sha_version_ampi)]):
+            print 'Found an older or unspecified version of AdjointMPI in externals/adjointmpi.\nPlease (re)move this folder and try again.'
+	    sys.exit()
+
+        print 'Initializing AdjointMPI...'
+        subprocess.check_call('wget '  + github_repo_ampi + '/archive/' + sha_version_ampi + '.zip', stdout = log, stderr = err, shell=True)  
+        subprocess.check_call('unzip ' + sha_version_ampi + '.zip' , stdout = log, stderr = err, shell=True)
+        subprocess.check_call('mv AdjointMPI-' + sha_version_ampi + ' adjointmpi && touch adjointmpi/' + sha_version_ampi, stdout = log, stderr = err, shell = True)
+        os.remove(sha_version_ampi + '.zip')
+        
+
     if mpi_support:
-        if not os.path.exists('adjointmpi'):
-            print '\nDownloading AMPI...'
-            subprocess.check_call('git clone -b scicompVersion https://github.com/michel2323/AdjointMPI.git adjointmpi',stdout = ampi_log, stderr = ampi_err, shell=True)
         os.chdir('adjointmpi')
         if not os.path.exists('libAMPI.a'):
-            print '\nConfiguring and building AMPI...'
-            subprocess.check_call('./configure CFLAGS=-O2 --prefix=$PWD && make', stdout = ampi_log, stderr = ampi_err, shell=True)
-
+             print '\nConfiguring and building AMPI...'
+             subprocess.check_call('./configure CFLAGS=-O2 --prefix=$PWD && make', stdout = log, stderr = err, shell=True)
         os.chdir(os.pardir)
 
     os.chdir(os.pardir)
