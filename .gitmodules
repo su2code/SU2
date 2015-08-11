@@ -1,0 +1,6 @@
+[submodule "externals/CoDi"]
+	path = externals/CoDi
+	url = https://github.com/SciCompKL/CoDiPack.git
+[submodule "externals/adjointmpi"]
+	path = externals/adjointmpi
+	url = https://github.com/michel2323/AdjointMPI.git
