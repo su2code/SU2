@@ -17,3 +17,5 @@
 *.IGS 
 *.cgns 
 *.tgz
+COPYING
+README.md
