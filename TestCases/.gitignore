@@ -11,6 +11,7 @@
 # Things appearing in TestCases/ repo to ignore:
 *.su2 
 *.dat 
+*.csv
 *.plt 
 *.pw 
 *.IGS 
