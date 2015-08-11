@@ -79,6 +79,9 @@ public:
 
   static void Waitall(int nrequests, MPI_Request *request, MPI_Status *status);
 
+  static void Waitany(int nrequests, MPI_Request *request,
+                      int *index, MPI_Status *status);
+  
   static void Send(void *buf, int count, MPI_Datatype datatype, int dest,
                    int tag, MPI_Comm comm);
 
@@ -134,6 +137,9 @@ public:
   static void Wait(MPI_Request *request, MPI_Status *status);
 
   static void Waitall(int nrequests, MPI_Request *request, MPI_Status *status);
+
+  static void Waitany(int nrequests, MPI_Request *request,
+                      int *index, MPI_Status *status);
 
   static void Send(void *buf, int count, MPI_Datatype datatype, int dest,
                    int tag, MPI_Comm comm);
@@ -216,6 +222,9 @@ public:
   static void Wait(MPI_Request *request, MPI_Status *status);
 
   static void Waitall(int nrequests, MPI_Request *request, MPI_Status *status);
+
+  static void Waitany(int nrequests, MPI_Request *request,
+                      int *index, MPI_Status *status);
 
   static void Send(void *buf, int count, MPI_Datatype datatype, int dest,
                    int tag, MPI_Comm comm);

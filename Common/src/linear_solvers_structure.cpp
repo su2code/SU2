@@ -729,12 +729,13 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
 
 void CSysSolve::SetExternalSolve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CSysVector & LinSysSol, CGeometry *geometry, CConfig *config){
 
+#ifdef CODI_REVERSE_TYPE
+  
   unsigned long size = LinSysRes.GetLocSize();
   unsigned long i, nBlk = LinSysRes.GetNBlk(),
                 nVar = LinSysRes.GetNVar(),
                 nBlkDomain = LinSysRes.GetNBlkDomain();
 
-#ifdef CODI_REVERSE_TYPE
   /*--- Arrays to store the indices of the input/output of the linear solver.
      * Note: They will be deleted in the CSysSolve_b::Delete_b routine. ---*/
 

@@ -33,9 +33,9 @@ Makefile
 *~
 
 # installed autotools
-contrib/autotools/bin
-contrib/autotools/include
-contrib/autotools/share
+externals/autotools/bin
+externals/autotools/include
+externals/autotools/share
 
 # externally downloaded tools
 externals/CoDi

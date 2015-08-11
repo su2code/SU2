@@ -105,10 +105,12 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
   for (iVar = 0; iVar < nPrimVarGrad; iVar++)
     Limiter_Primitive[iVar] = 0.0;
   
-  Limiter_Secondary = new su2double [nSecondaryVarGrad];
-  for (iVar = 0; iVar < nSecondaryVarGrad; iVar++)
-    Limiter_Secondary[iVar] = 0.0;
-  
+  if(compressible){ 
+    Limiter_Secondary = new su2double [nSecondaryVarGrad];
+    for (iVar = 0; iVar < nSecondaryVarGrad; iVar++)
+      Limiter_Secondary[iVar] = 0.0;
+  }  
+
   Limiter = new su2double [nVar];
   for (iVar = 0; iVar < nVar; iVar++)
     Limiter[iVar] = 0.0;
@@ -189,8 +191,10 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
   Primitive = new su2double [nPrimVar];
   for (iVar = 0; iVar < nPrimVar; iVar++) Primitive[iVar] = 0.0;
   
-  Secondary = new su2double [nSecondaryVar];
-  for (iVar = 0; iVar < nSecondaryVar; iVar++) Secondary[iVar] = 0.0;
+  if (compressible){ 
+    Secondary = new su2double [nSecondaryVar];
+    for (iVar = 0; iVar < nSecondaryVar; iVar++) Secondary[iVar] = 0.0;
+  }
 
   /*--- Incompressible flow, gradients primitive variables nDim+2, (P, vx, vy, vz, rho),
         FreeSurface Incompressible flow, primitive variables nDim+3, (P, vx, vy, vz, rho, beta, dist),
@@ -203,14 +207,15 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
     for (iDim = 0; iDim < nDim; iDim++)
       Gradient_Primitive[iVar][iDim] = 0.0;
   }
-  
-  Gradient_Secondary = new su2double* [nSecondaryVarGrad];
-  for (iVar = 0; iVar < nSecondaryVarGrad; iVar++) {
-    Gradient_Secondary[iVar] = new su2double [nDim];
-    for (iDim = 0; iDim < nDim; iDim++)
-      Gradient_Secondary[iVar][iDim] = 0.0;
+
+  if (compressible){  
+    Gradient_Secondary = new su2double* [nSecondaryVarGrad];
+    for (iVar = 0; iVar < nSecondaryVarGrad; iVar++) {
+      Gradient_Secondary[iVar] = new su2double [nDim];
+      for (iDim = 0; iDim < nDim; iDim++)
+        Gradient_Secondary[iVar][iDim] = 0.0;
+    }
   }
-  
 }
 
 CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim, unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
@@ -266,10 +271,12 @@ CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim,
   Limiter_Primitive = new su2double [nPrimVarGrad];
   for (iVar = 0; iVar < nPrimVarGrad; iVar++)
     Limiter_Primitive[iVar] = 0.0;
-  
-  Limiter_Secondary = new su2double [nSecondaryVarGrad];
-  for (iVar = 0; iVar < nSecondaryVarGrad; iVar++)
-    Limiter_Secondary[iVar] = 0.0;
+ 
+  if (compressible){ 
+    Limiter_Secondary = new su2double [nSecondaryVarGrad];
+    for (iVar = 0; iVar < nSecondaryVarGrad; iVar++)
+      Limiter_Secondary[iVar] = 0.0;
+  }
 
   Limiter = new su2double [nVar];
   for (iVar = 0; iVar < nVar; iVar++)
@@ -320,8 +327,10 @@ CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim,
   Primitive = new su2double [nPrimVar];
   for (iVar = 0; iVar < nPrimVar; iVar++) Primitive[iVar] = 0.0;
   
-  Secondary = new su2double [nSecondaryVar];
-  for (iVar = 0; iVar < nSecondaryVar; iVar++) Secondary[iVar] = 0.0;
+  if (compressible){ 
+    Secondary = new su2double [nSecondaryVar];
+    for (iVar = 0; iVar < nSecondaryVar; iVar++) Secondary[iVar] = 0.0;
+  }
 
   /*--- Incompressible flow, gradients primitive variables nDim+2, (P, vx, vy, vz, rho),
         FreeSurface Incompressible flow, primitive variables nDim+4, (P, vx, vy, vz, rho, beta, dist),
@@ -333,12 +342,14 @@ CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim,
     for (iDim = 0; iDim < nDim; iDim++)
       Gradient_Primitive[iVar][iDim] = 0.0;
   }
-  
-  Gradient_Secondary = new su2double* [nSecondaryVarGrad];
-  for (iVar = 0; iVar < nSecondaryVarGrad; iVar++) {
-    Gradient_Secondary[iVar] = new su2double [nDim];
-    for (iDim = 0; iDim < nDim; iDim++)
-      Gradient_Secondary[iVar][iDim] = 0.0;
+
+  if (compressible){  
+    Gradient_Secondary = new su2double* [nSecondaryVarGrad];
+    for (iVar = 0; iVar < nSecondaryVarGrad; iVar++) {
+      Gradient_Secondary[iVar] = new su2double [nDim];
+      for (iDim = 0; iDim < nDim; iDim++)
+        Gradient_Secondary[iVar][iDim] = 0.0;
+    }
   }
   
 }

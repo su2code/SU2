@@ -198,6 +198,20 @@ void CAuxMPIWrapper::Waitall(int nrequests, MPI_Request *request,
   }
 }
 
+void CAuxMPIWrapper::Waitany(int nrequests, MPI_Request *request,
+                             int *index, MPI_Status *status){
+
+  /* --- Wait for any normal request to finish ---*/
+
+  MPI_Waitany(nrequests, request, index, status);
+
+  /* --- Wait for particular aux. request and finish communication --- */
+
+  if((CommInfoIterator = CommInfoMap.find(&request[*index])) != CommInfoMap.end()) {
+    FinalizeCommunication(CommInfoIterator);
+  }
+
+}
 void CAuxMPIWrapper::Send(void *buf, int count, MPI_Datatype datatype,
                               int dest, int tag, MPI_Comm comm) {
   if (datatype != MPI_DOUBLE) {
