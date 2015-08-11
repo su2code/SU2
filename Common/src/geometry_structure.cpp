@@ -5955,9 +5955,6 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   unsigned long loc_element_count = 0;
   bool elem_reqd = false;
   
-  /*--- Initialize bool for FSI problems ---*/
-  bool fsi = config->GetFSI_Simulation();
-  
   /*--- Initialize counters for local/global points & elements ---*/
 #ifdef HAVE_MPI
   unsigned long LocalIndex;
@@ -6603,7 +6600,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
           }
           boundary_marker_count++;
         }
-        if ((boundary_marker_count == nMarker)) break;
+        if (boundary_marker_count == nMarker) break;
       }
     }
 
@@ -8646,7 +8643,7 @@ void CPhysicalGeometry::Check_BoundElem_Orientation(CConfig *config) {
 void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
   
   su2double *coord, dist;
-  double dist2, diff, dist1;
+  su2double dist2, diff, dist1;
   unsigned short iDim, iMarker;
   unsigned long iPoint, iVertex, nVertex_SolidWall, iVertex_nearestWall;
   
@@ -8707,7 +8704,7 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
       for (iVertex = 0; iVertex < nVertex_SolidWall; iVertex++) {
         dist2 = 0.0;
 
-        /*--- The wall distance computation is done using the plain double datatype to just
+        /*--- The wall distance computation is done using the plain su2double datatype to just
          *  determine the index of the closest vertex. Otherwise we are storing a lot of
          *  unnecessary derivative information when using AD.---*/
 
@@ -8824,7 +8821,7 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
         for (iVertex = 0; iVertex < Buffer_Receive_nVertex[iProcessor]; iVertex++) {
           dist2 = 0.0;
 
-          /*--- The wall distance computation is done using the plain double datatype to just
+          /*--- The wall distance computation is done using the plain su2double datatype to just
            *  determine the index of the closest vertex. Otherwise we are storing a lot of
            *  unnecessary derivative information when using AD.---*/
 
