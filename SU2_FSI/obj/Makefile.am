@@ -92,6 +92,7 @@ ___bin_SU2_FSI_SOURCES = ../include/SU2_FSI.hpp \
     ../../SU2_CFD/src/output_su2.cpp \
     ../../SU2_CFD/src/output_paraview.cpp \
 		../../SU2_CFD/src/solver_adjoint_levelset.cpp \
+		../../SU2_CFD/src/solver_adjoint_discrete.cpp \
 		../../SU2_CFD/src/solver_adjoint_mean.cpp \
 		../../SU2_CFD/src/solver_adjoint_tne2.cpp \
 		../../SU2_CFD/src/solver_adjoint_turbulent.cpp \
@@ -109,6 +110,7 @@ ___bin_SU2_FSI_SOURCES = ../include/SU2_FSI.hpp \
 		../../SU2_CFD/src/solver_template.cpp \
     ../../SU2_CFD/src/transport_model.cpp \
 		../../SU2_CFD/src/variable_adjoint_levelset.cpp \
+		../../SU2_CFD/src/variable_adjoint_discrete.cpp \
 		../../SU2_CFD/src/variable_adjoint_mean.cpp \
 		../../SU2_CFD/src/variable_adjoint_tne2.cpp \
 		../../SU2_CFD/src/variable_adjoint_turbulent.cpp \

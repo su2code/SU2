@@ -42,7 +42,7 @@
 #
 ######################################################################################
 
-
+# AUTOMAKE_OPTIONS = [subdir-objects foreign]
 ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS} -I m4
 
 # Build third-party optional dependencies first
