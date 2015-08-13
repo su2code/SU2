@@ -317,6 +317,10 @@ inline void CVertex::SetDonorElem(long val_donorelem) { Donor_Elem = val_donorel
 
 inline long CVertex::GetDonorElem(void) { return Donor_Elem; }
 
+inline void CVertex::SetDonorFace(unsigned short val_donorface) { Donor_Face = val_donorface; }
+
+inline unsigned short CVertex::GetDonorFace(void) { return Donor_Face; }
+
 inline long CVertex::GetDonorPoint(void) { return PeriodicPoint[0]; }
 
 inline long CVertex::GetDonorProcessor(void) { return PeriodicPoint[1]; }
