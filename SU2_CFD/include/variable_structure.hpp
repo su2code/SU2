@@ -1473,6 +1473,21 @@ public:
 	 */
 	virtual void Clear_SurfaceLoad_Res(void);
 
+	/*!
+	 * \brief A virtual member.
+	 */
+	virtual void Set_FlowTraction(double *val_flowTraction);
+
+	/*!
+	 * \brief A virtual member.
+	 */
+	virtual double *Get_FlowTraction(void);
+
+	/*!
+	 * \brief A virtual member.
+	 */
+	virtual void Clear_FlowTraction(void);
+
 
 	/*!
 	 * \brief A virtual member.
@@ -2580,6 +2595,21 @@ public:
 	 * \brief Clear the surface load residual
 	 */
 	void Clear_SurfaceLoad_Res(void);
+
+	/*!
+	 * \brief Set the flow traction at a node on the structural side
+	 */
+	void Set_FlowTraction(double *val_flowTraction);
+
+	/*!
+	 * \brief Get the residual term due to the flow traction
+	 */
+	double *Get_FlowTraction(void);
+
+	/*!
+	 * \brief Clear the flow traction residual
+	 */
+	void Clear_FlowTraction(void);
 
 	/*!
 	 * \brief Set the value of the old solution.

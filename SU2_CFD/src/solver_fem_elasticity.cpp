@@ -39,6 +39,8 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(void) : CSolver() {
 	nPointDomain = 0;
 
 	Total_CFEA = 0.0;
+	WAitken_Dyn = 0.0;
+	WAitken_Dyn_tn1 = 0.0;
 
 	element_container = NULL;
 	node = NULL;
@@ -58,6 +60,14 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(void) : CSolver() {
 	Res_Stress_i = NULL;
 	Res_Ext_Surf = NULL;
 	Res_Time_Cont = NULL;
+	Res_FSI_Cont = NULL;
+
+	nodeReactions = NULL;
+
+	solutionPredictor = NULL;
+
+	normalVertex = NULL;
+	stressTensor = NULL;
 
 }
 
@@ -71,6 +81,7 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 	bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);	// Linear analysis.
 	bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);	// Nonlinear analysis.
 	bool newton_raphson = (config->GetKind_SpaceIteScheme_FEA() == NEWTON_RAPHSON);		// Newton-Raphson method
+	bool fsi = config->GetFSI_Simulation();												// FSI simulation
 
 	int rank = MASTER_NODE;
 	#ifdef HAVE_MPI
@@ -94,7 +105,12 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 	GradN_X = new double [nDim];
 	GradN_x = new double [nDim];
 
-	Total_CFEA = 0.0;
+	Total_CFEA			= 0.0;
+	WAitken_Dyn      	= 0.0;
+	WAitken_Dyn_tn1  	= 0.0;
+
+  	SetFSI_ConvValue(0,0.0);
+  	SetFSI_ConvValue(1,0.0);
 
 	nVar = nDim;
 
@@ -113,6 +129,8 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 	/*--- Define some auxiliary vectors related to the solution ---*/
 
 	Solution   = new double[nVar];  for (iVar = 0; iVar < nVar; iVar++) Solution[iVar]   = 0.0;
+
+	nodeReactions = new double[nVar];  for (iVar = 0; iVar < nVar; iVar++) nodeReactions[iVar]   = 0.0;
 
 	bool restart = (config->GetRestart() || config->GetRestart_Flow());
 
@@ -195,6 +213,15 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 	/*--- Contribution of the external surface forces to the residual (auxiliary vector) ---*/
 	Res_Ext_Surf = new double[nVar];
 
+	/*--- Contribution of the fluid tractions to the residual (auxiliary vector) ---*/
+	if (fsi){
+		Res_FSI_Cont = new double[nVar];
+	}
+	else {
+		Res_FSI_Cont = NULL;
+	}
+
+
 	/*--- Time integration contribution to the residual ---*/
 	if (dynamic) {
 		Res_Time_Cont = new double [nVar];
@@ -227,16 +254,6 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 
 	Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, false, geometry, config);
 
-//	unsigned short nElAttached;
-//	for (iPoint = 0; iPoint < nPoint; iPoint++){
-//		nElAttached = geometry->node[iPoint]->GetnElem();
-//		cout << "Node " << iPoint << " has " << nElAttached << " elements attached. " << endl;
-//	}
-
-
-
-//	if (nonlinear_analysis) StiffMatrix.Initialize(nPoint, nPointDomain, nVar, nVar, false, geometry, config);
-
 	if (dynamic) {
 		MassMatrix.Initialize(nPoint, nPointDomain, nVar, nVar, false, geometry, config);
 		TimeRes_Aux.Initialize(nPoint, nPointDomain, nVar, 0.0);
@@ -249,6 +266,8 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 	LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
 
 	LinSysAux.Initialize(nPoint, nPointDomain, nVar, 0.0);
+
+	LinSysReact.Initialize(nPoint, nPointDomain, nVar, 0.0);
 
 	/*--- Here is where we assign the kind of each element ---*/
 
@@ -273,6 +292,18 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 		}
 	}
 
+	/*--- Initialize the auxiliary vector and matrix for the computation of the nodal Reactions ---*/
+
+	normalVertex = new double [nDim];
+
+	stressTensor = new double* [nDim];
+	for (iVar = 0; iVar < nVar; iVar++){
+		stressTensor[iVar] = new double [nDim];
+	}
+
+	/*---- Initialize the auxiliary vector for the solution predictor ---*/
+
+	solutionPredictor = new double [nVar];
 
 }
 
@@ -297,6 +328,7 @@ CFEM_ElasticitySolver::~CFEM_ElasticitySolver(void) {
 		delete [] Point_Max_Coord[iVar];
 		delete [] mZeros_Aux[iVar];
 		delete [] mId_Aux[iVar];
+		delete [] stressTensor[iVar];
 	}
 
 	delete [] element_container;
@@ -320,6 +352,11 @@ CFEM_ElasticitySolver::~CFEM_ElasticitySolver(void) {
 
 	delete [] mZeros_Aux;
 	delete [] mId_Aux;
+
+	delete [] nodeReactions;
+
+	delete [] normalVertex;
+	delete [] stressTensor;
 
 }
 
@@ -527,58 +564,15 @@ void CFEM_ElasticitySolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geomet
 					}
 				}
 
-//				cout << "Jacobian_s_ij: " << endl;
-//				cout << Jacobian_s_ij[0][0] << " " << Jacobian_s_ij[0][1] << endl;
-//				cout << Jacobian_s_ij[1][0] << " " << Jacobian_s_ij[1][1] << endl;
-//
-//				cout << "Jacobian_c_ij: " << endl;
-//				cout << Jacobian_c_ij[0][0] << " " << Jacobian_c_ij[0][1] << endl;
-//				cout << Jacobian_c_ij[1][0] << " " << Jacobian_c_ij[1][1] << endl;
-//
-//				if (incompressible){
-//				cout << "Jacobian_k_ij: " << endl;
-//				cout << Jacobian_k_ij[0][0] << " " << Jacobian_k_ij[0][1] << endl;
-//				cout << Jacobian_k_ij[1][0] << " " << Jacobian_k_ij[1][1] << endl;
-//				}
-
-				/*--- If the problem is dynamic, the jacobian of the problem will be a combination of the ---*/
-				/*--- StiffMatrix and the Mass Matrix; otherwise, the Jacobian can be computed straight away ---*/
-//				if (dynamic){
-//					StiffMatrix.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_c_ij);
-//					StiffMatrix.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_s_ij);
-//					if (incompressible) StiffMatrix.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_k_ij);
-//				}
-//				else{
 				Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_c_ij);
 				Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_s_ij);
 				if (incompressible) Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_k_ij);
-//				}
 
 			}
 
 		}
 
 	}
-
-//	double checkJacobian;
-//
-//	ofstream myfile;
-//	myfile.open ("Jacobian_assembled.txt");
-//
-//	for (iNode = 0; iNode < nPoint; iNode++){
-//		for (jNode = 0; jNode < nPoint; jNode++){
-//			myfile << "Node " << iNode << " " << jNode << endl;
-//			for (iVar = 0; iVar < nVar; iVar++){
-//				for (jVar = 0; jVar < nVar; jVar++){
-//					checkJacobian = Jacobian.GetBlock(iNode, jNode, iVar, jVar);
-//					myfile << checkJacobian << " " ;
-//				}
-//				myfile << endl;
-//			}
-//		}
-//	}
-//	myfile.close();
-
 
 }
 
@@ -638,25 +632,6 @@ void CFEM_ElasticitySolver::Compute_MassMatrix(CGeometry *geometry, CSolver **so
 
 	}
 
-//	double checkJacobian;
-//
-//	ofstream myfile;
-//	myfile.open ("massMatrix.txt");
-//
-//	for (iNode = 0; iNode < nPoint; iNode++){
-//		for (jNode = 0; jNode < nPoint; jNode++){
-//			myfile << "Node " << iNode << " " << jNode << endl;
-//			for (iVar = 0; iVar < nVar; iVar++){
-//				for (jVar = 0; jVar < nVar; jVar++){
-//					checkJacobian = MassMatrix.GetBlock(iNode, jNode, iVar, jVar);
-//					myfile << checkJacobian << " " ;
-//				}
-//				myfile << endl;
-//			}
-//		}
-//	}
-//	myfile.close();
-
 }
 
 void CFEM_ElasticitySolver::Compute_NodalStressRes(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config) {
@@ -711,6 +686,8 @@ void CFEM_ElasticitySolver::Compute_NodalStressRes(CGeometry *geometry, CSolver 
 			for (iVar = 0; iVar < nVar; iVar++) Res_Stress_i[iVar] = Ta[iVar];
 
 			LinSysRes.SubtractBlock(indexNode[iNode], Res_Stress_i);
+
+//			LinSysReact.AddBlock(indexNode[iNode], Res_Stress_i);
 
 		}
 
@@ -785,8 +762,6 @@ void CFEM_ElasticitySolver::Compute_NodalStress(CGeometry *geometry, CSolver **s
 
 	}
 
-	/*--- Computation of Von Mises Stress ---*/
-
 	  double *Stress;
 	  double VonMises_Stress, MaxVonMises_Stress = 0.0;
 	  double Sxx,Syy,Szz,Sxy,Sxz,Syz,S1,S2;
@@ -797,7 +772,6 @@ void CFEM_ElasticitySolver::Compute_NodalStress(CGeometry *geometry, CSolver **s
 		  /* --- Get the stresses, added up from all the elements that connect to the node ---*/
 
 		  Stress  = node[iPoint]->GetStress_FEM();
-
 
 		  /* --- Compute the stress averaged from all the elements connecting to the node and the Von Mises stress ---*/
 
@@ -838,6 +812,46 @@ void CFEM_ElasticitySolver::Compute_NodalStress(CGeometry *geometry, CSolver **s
 		  MaxVonMises_Stress = max(MaxVonMises_Stress, VonMises_Stress);
 
 	  }
+
+	  unsigned short iMarker;
+	  unsigned long iVertex;
+
+	  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+	    switch (config->GetMarker_All_KindBC(iMarker)) {
+	      case CLAMPED_BOUNDARY:
+	    		for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+
+	    			/*--- Get node index ---*/
+
+	    			iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+	    			/*--- Get normal at point ---*/
+	    			/*--- The direction is to the INTERIOR of the material ---*/
+	    			normalVertex = geometry->vertex[iMarker][iVertex]->GetNormal();
+
+	    			/*--- Get stress ---*/
+
+	    			Stress  = node[iPoint]->GetStress_FEM();
+
+	    			  if (geometry->GetnDim() == 2) {
+
+	    				  stressTensor[0][0] = Stress[0];
+	    				  stressTensor[0][1] = Stress[2];
+	    				  stressTensor[1][0] = Stress[2];
+	    				  stressTensor[1][1] = Stress[1];
+
+	    			  }
+
+	    			  for (iVar = 0; iVar < nVar; iVar++){
+	    				  nodeReactions[iVar] = 0.0;
+	    				  for (jVar = 0; jVar < nVar; jVar++){
+	    					  nodeReactions[iVar] += stressTensor[iVar][jVar] * normalVertex[jVar];
+	    				  }
+	    			  }
+
+	    		}
+	    	  break;
+	    }
 
 		#ifdef HAVE_MPI
 
@@ -883,10 +897,12 @@ void CFEM_ElasticitySolver::BC_Clamped(CGeometry *geometry, CSolver **solver_con
 	unsigned long iPoint, iVertex;
 	unsigned short iVar, jVar;
 
+	double tempCoord;
+
 	bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
 
 	unsigned short iNode, jNode;
-	double checkJacobian;
+
 
 	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
@@ -910,6 +926,12 @@ void CFEM_ElasticitySolver::BC_Clamped(CGeometry *geometry, CSolver **solver_con
 			node[iPoint]->SetSolution_Accel(Solution);
 		}
 
+		for (iVar = 0; iVar < nVar; iVar++){
+			nodeReactions[iVar] = - 1.0 * LinSysRes.GetBlock(iPoint, iVar);
+		}
+
+		LinSysReact.SetBlock(iPoint,nodeReactions);
+
 		LinSysRes.SetBlock(iPoint, Residual);
 
 		/*--- STRONG ENFORCEMENT OF THE DISPLACEMENT BOUNDARY CONDITION ---*/
@@ -928,7 +950,7 @@ void CFEM_ElasticitySolver::BC_Clamped(CGeometry *geometry, CSolver **solver_con
 		/*--- Delete the rows for a particular node ---*/
 		for (jVar = 0; jVar < nPoint; jVar++){
 			if (iPoint!=jVar) {
-				Jacobian.SetBlock(jVar,iPoint,mZeros_Aux);
+				Jacobian.SetBlock(iPoint,jVar,mZeros_Aux);
 			}
 		}
 
@@ -1228,6 +1250,7 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolv
 	bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);	// Linear analysis.
 	bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);	// Nonlinear analysis.
 	bool newton_raphson = (config->GetKind_SpaceIteScheme_FEA() == NEWTON_RAPHSON);		// Newton-Raphson method
+	bool fsi = config->GetFSI_Simulation();												// FSI simulation.
 
 
 	if (!dynamic){
@@ -1301,6 +1324,12 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolv
 			/*--- External surface load contribution ---*/
 			Res_Ext_Surf = node[iPoint]->Get_SurfaceLoad_Res();
 			LinSysRes.AddBlock(iPoint, Res_Ext_Surf);
+			/*--- Add FSI contribution ---*/
+			if (fsi) {
+				/*--- It may be worthy restricting the flow traction to the boundary elements... ---*/
+				Res_FSI_Cont = node[iPoint]->Get_FlowTraction();
+				LinSysRes.AddBlock(iPoint, Res_FSI_Cont);
+			}
 		}
 	}
 
@@ -1346,8 +1375,6 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Update(CGeometry *geometry, CSolver 
 				/*--- Acceleration component of the solution ---*/
 				/*--- U''(t+dt) = a0*(U(t+dt)-U(t))+a2*(U'(t))+a3*(U''(t)) ---*/
 
-
-
 				Solution[iVar]=a_dt[0]*(node[iPoint]->GetSolution(iVar) -
 										node[iPoint]->GetSolution_time_n(iVar)) -
 							   a_dt[2]* node[iPoint]->GetSolution_Vel_time_n(iVar) -
@@ -1385,39 +1412,437 @@ void CFEM_ElasticitySolver::Solve_System(CGeometry *geometry, CSolver **solver_c
 
 	unsigned long IterLinSol;
 
-//	double checkJacobian;
-//
-//	ofstream myfile;
-//	myfile.open ("Jacobian.txt");
-//
-//	for (iNode = 0; iNode < nPoint; iNode++){
-//		for (jNode = 0; jNode < nPoint; jNode++){
-//			myfile << "Node " << iNode << " " << jNode << endl;
-//			for (iVar = 0; iVar < nVar; iVar++){
-//				for (jVar = 0; jVar < nVar; jVar++){
-//					checkJacobian = Jacobian.GetBlock(iNode, jNode, iVar, jVar);
-//					myfile << checkJacobian << " " ;
-//				}
-//				myfile << endl;
-//			}
-//		}
-//	}
-//	myfile.close();
-//
-//	myfile.open ("Residual.txt");
-//
-//	for (iNode = 0; iNode < nPoint; iNode++){
-//			myfile << "Node " << iNode << " " << jNode << endl;
-//			for (iVar = 0; iVar < nVar; iVar++){
-//					checkJacobian = LinSysRes.GetBlock(iNode, iVar);
-//					myfile << checkJacobian << " " ;
-//				myfile << endl;
-//			}
-//	}
-//	myfile.close();
-
 	CSysSolve femSystem;
 	IterLinSol = femSystem.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
 
+}
+
+
+
+void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fea_geometry,
+											CGeometry **flow_geometry, CConfig *fea_config,
+											CConfig *flow_config, CNumerics *fea_numerics) {
+
+
+
+	unsigned short nMarkerFSIint, nMarkerFEA, nMarkerFlow;		// Number of markers on FSI problem, FEA and Flow side
+	unsigned short iMarkerFSIint, iMarkerFEA, iMarkerFlow;		// Variables for iteration over markers
+	unsigned short markFEA, markFlow;
+
+	unsigned long nVertexFEA, nVertexFlow;						// Number of vertices on FEA and Flow side
+	unsigned long iVertex, iPoint;								// Variables for iteration over vertices and nodes
+
+	unsigned short iDim, jDim;
+
+	// Check the kind of fluid problem
+	bool compressible       = (flow_config->GetKind_Regime() == COMPRESSIBLE);
+	bool incompressible     = (flow_config->GetKind_Regime() == INCOMPRESSIBLE);
+	bool viscous_flow       = ((flow_config->GetKind_Solver() == NAVIER_STOKES) ||
+								(flow_config->GetKind_Solver() == RANS) );
+
+	unsigned long nodeVertex, donorVertex;
+	double *normalsVertex;
+
+	double *tn_f;
+	tn_f 				= new double [nVar];			// Fluid traction
+
+  	/*--- Redimensionalize the pressure ---*/
+
+	double *Velocity_ND, *Velocity_Real;
+	double Density_ND,  Density_Real, Velocity2_Real, Velocity2_ND;
+	double factorForces;
+
+    Velocity_Real = flow_config->GetVelocity_FreeStream();
+    Density_Real = flow_config->GetDensity_FreeStream();
+
+    Velocity_ND = flow_config->GetVelocity_FreeStreamND();
+    Density_ND = flow_config->GetDensity_FreeStreamND();
+
+	Velocity2_Real = 0.0;
+	Velocity2_ND = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++){
+    	Velocity2_Real += Velocity_Real[iDim]*Velocity_Real[iDim];
+    	Velocity2_ND += Velocity_ND[iDim]*Velocity_ND[iDim];
+    }
+
+    factorForces = Density_Real*Velocity2_Real/(Density_ND*Velocity2_ND);
+
+	/*--- Apply a ramp to the transfer of the fluid loads ---*/
+
+	double ModAmpl;
+	double CurrentTime=fea_config->GetCurrent_DynTime();
+	double Static_Time=fea_config->GetStatic_Time();
+
+	bool Ramp_Load = fea_config->GetRamp_Load();
+	double Ramp_Time = fea_config->GetRamp_Time();
+
+	if (CurrentTime <= Static_Time){ ModAmpl=0.0; }
+	else if((CurrentTime > Static_Time) &&
+			(CurrentTime <= (Static_Time + Ramp_Time)) &&
+			(Ramp_Load)){
+		ModAmpl=(CurrentTime-Static_Time)/Ramp_Time;
+		ModAmpl=max(ModAmpl,0.0);
+		ModAmpl=min(ModAmpl,1.0);
+	}
+	else{ ModAmpl=1.0; }
+
+	// Parameters for the calculations
+	// Pn: Pressure
+	// Pinf: Pressure_infinite
+	// div_vel: Velocity divergence
+	// Dij: Dirac delta
+	double Pn = 0.0, Pinf = 0.0, div_vel = 0.0, Dij = 0.0;
+	double Viscosity = 0.0, Density = 0.0;
+	double **Grad_PrimVar;
+	double Tau[3][3];
+
+	/*--- Number of markers in the FSI interface ---*/
+	nMarkerFSIint = (fea_config->GetMarker_n_FSIinterface())/2;
+
+	nMarkerFEA  = fea_geometry[MESH_0]->GetnMarker();		// Retrieve total number of markers on FEA side
+	nMarkerFlow = flow_geometry[MESH_0]->GetnMarker();		// Retrieve total number of markers on Fluid side
+
+	/*--- Loop over all the markers on the interface ---*/
+
+	for (iMarkerFSIint=0; iMarkerFSIint < nMarkerFSIint; iMarkerFSIint++){
+
+		/*--- Identification of the markers ---*/
+
+		/*--- Current structural marker ---*/
+		for (iMarkerFEA=0; iMarkerFEA < nMarkerFEA; iMarkerFEA++){
+			if ( fea_config->GetMarker_All_FSIinterface(iMarkerFEA) == (iMarkerFSIint+1)){
+				markFEA=iMarkerFEA;
+			}
+		}
+
+		/*--- Current fluid marker ---*/
+		for (iMarkerFlow=0; iMarkerFlow < nMarkerFlow; iMarkerFlow++){
+			if (flow_config->GetMarker_All_FSIinterface(iMarkerFlow) == (iMarkerFSIint+1)){
+				markFlow=iMarkerFlow;
+			}
+		}
+
+		nVertexFEA = fea_geometry[MESH_0]->GetnVertex(markFEA);		// Retrieve total number of vertices on FEA marker
+		nVertexFlow = flow_geometry[MESH_0]->GetnVertex(markFlow);  // Retrieve total number of vertices on Fluid marker
+
+		/*--- Loop over the nodes in the structural mesh, calculate the tf vector (unitary) ---*/
+		/*--- Here, we are looping over the fluid, and we find the pointer to the structure (donorVertex) ---*/
+		for (iVertex=0; iVertex < nVertexFlow; iVertex++){
+
+			// Node from the flow mesh
+			nodeVertex=flow_geometry[MESH_0]->vertex[markFlow][iVertex]->GetNode();
+
+			// Normals at the vertex: these normals go inside the fluid domain.
+			normalsVertex = flow_geometry[MESH_0]->vertex[markFlow][iVertex]->GetNormal();
+
+			// Corresponding node on the structural mesh
+			donorVertex = flow_geometry[MESH_0]->vertex[markFlow][iVertex]->GetDonorPoint();
+
+			// Retrieve the values of pressure, viscosity and density
+			if (incompressible){
+
+				Pn=flow_solution[MESH_0][FLOW_SOL]->node[nodeVertex]->GetPressureInc();
+				Pinf=flow_solution[MESH_0][FLOW_SOL]->GetPressure_Inf();
+
+				if (viscous_flow){
+
+					Grad_PrimVar = flow_solution[MESH_0][FLOW_SOL]->node[nodeVertex]->GetGradient_Primitive();
+					Viscosity = flow_solution[MESH_0][FLOW_SOL]->node[nodeVertex]->GetLaminarViscosityInc();
+					Density = flow_solution[MESH_0][FLOW_SOL]->node[nodeVertex]->GetDensityInc();
+
+				}
+			}
+			else if (compressible){
+
+				Pn=flow_solution[MESH_0][FLOW_SOL]->node[nodeVertex]->GetPressure();
+				Pinf=flow_solution[MESH_0][FLOW_SOL]->GetPressure_Inf();
+
+				if (viscous_flow){
+
+					Grad_PrimVar = flow_solution[MESH_0][FLOW_SOL]->node[nodeVertex]->GetGradient_Primitive();
+					Viscosity = flow_solution[MESH_0][FLOW_SOL]->node[nodeVertex]->GetLaminarViscosity();
+					Density = flow_solution[MESH_0][FLOW_SOL]->node[nodeVertex]->GetDensity();
+
+				}
+			}
+
+			// Calculate tn in the fluid nodes for the inviscid term --> Units of force (non-dimensional).
+			for (iDim = 0; iDim < nDim; iDim++) {
+				tn_f[iDim] = -(Pn-Pinf)*normalsVertex[iDim];
+			}
+
+			// Calculate tn in the fluid nodes for the viscous term
+
+			if (viscous_flow){
+
+				// Divergence of the velocity
+				div_vel = 0.0; for (iDim = 0; iDim < nDim; iDim++) div_vel += Grad_PrimVar[iDim+1][iDim];
+				if (incompressible) div_vel = 0.0;
+
+				for (iDim = 0; iDim < nDim; iDim++) {
+
+					for (jDim = 0 ; jDim < nDim; jDim++) {
+						// Dirac delta
+						Dij = 0.0; if (iDim == jDim) Dij = 1.0;
+
+						// Viscous stress
+						Tau[iDim][jDim] = Viscosity*(Grad_PrimVar[jDim+1][iDim] + Grad_PrimVar[iDim+1][jDim]) -
+								TWO3*Viscosity*div_vel*Dij;
+
+						// Viscous component in the tn vector --> Units of force (non-dimensional).
+						tn_f[iDim] += Tau[iDim][jDim]*normalsVertex[jDim];
+					}
+				}
+			}
+
+			// Rescale tn to SI units and apply time-dependent coefficient (static structure, ramp load, full load)
+
+			for (iDim = 0; iDim < nDim; iDim++) {
+				Residual[iDim] = tn_f[iDim]*factorForces*ModAmpl;
+			}
+
+			/*--- Set the Flow traction ---*/
+			node[donorVertex]->Set_FlowTraction(Residual);
+
+		}
+
+	}
+
 
 }
+
+void CFEM_ElasticitySolver::SetFEA_Load_Int(CSolver ***flow_solution, CGeometry **fea_geometry,
+											CGeometry **flow_geometry, CConfig *fea_config,
+											CConfig *flow_config, CNumerics *fea_numerics){ }
+
+void CFEM_ElasticitySolver::PredictStruct_Displacement(CGeometry **fea_geometry,
+                            				CConfig *fea_config, CSolver ***fea_solution){
+
+    unsigned short predOrder = fea_config->GetPredictorOrder();
+	double Delta_t = fea_config->GetDelta_DynTime();
+    unsigned long iPoint, iDim;
+    unsigned long nPoint, nDim;
+    double *solDisp, *solVel, *solVel_tn, *valPred;
+    double *DisplacementDonor, *SolutionDonor;
+
+    nPoint = fea_geometry[MESH_0]->GetnPoint();
+    nDim = fea_geometry[MESH_0]->GetnDim();
+
+
+    for (iPoint=0; iPoint < nPoint; iPoint++){
+    	if (predOrder==0) fea_solution[MESH_0][FEA_SOL]->node[iPoint]->SetSolution_Pred();
+    	else if (predOrder==1) {
+
+    		solDisp = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution();
+    		solVel = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Vel();
+    		valPred = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Pred();
+
+    		for (iDim=0; iDim<nDim; iDim++){
+    			valPred[iDim] = solDisp[iDim] + Delta_t*solVel[iDim];
+    		}
+
+    	}
+    	else if (predOrder==2) {
+
+    		solDisp = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution();
+    		solVel = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Vel();
+    		solVel_tn = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Vel_time_n();
+    		valPred = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Pred();
+
+    		for (iDim=0; iDim<nDim; iDim++){
+    			valPred[iDim] = solDisp[iDim] + 0.5*Delta_t*(3*solVel[iDim]-solVel_tn[iDim]);
+    		}
+
+    	}
+    	else {
+    		cout<< "Higher order predictor not implemented. Solving with order 0." << endl;
+    		fea_solution[MESH_0][FEA_SOL]->node[iPoint]->SetSolution_Pred();
+    	}
+    }
+
+
+}
+
+void CFEM_ElasticitySolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, CConfig *fea_config,
+        				  CSolver ***fea_solution, unsigned long iFSIIter){
+
+    unsigned long iPoint, iDim;
+    unsigned long nPoint, nDim;
+    double *dispPred, *dispCalc, *dispPred_Old, *dispCalc_Old;
+    double deltaU[3] = {0.0, 0.0, 0.0}, deltaU_p1[3] = {0.0, 0.0, 0.0};
+    double delta_deltaU[3] = {0.0, 0.0, 0.0};
+    double numAitk, denAitk, WAitken;
+	double CurrentTime=fea_config->GetCurrent_DynTime();
+	double Static_Time=fea_config->GetStatic_Time();
+	double WAitkDyn_tn1, WAitkDyn_Max, WAitkDyn;
+
+    nPoint = fea_geometry[MESH_0]->GetnPoint();
+    nDim = fea_geometry[MESH_0]->GetnDim();
+
+    WAitken=fea_config->GetAitkenStatRelax();
+
+	numAitk = 0.0;
+	denAitk = 0.0;
+
+	ofstream historyFile_FSI;
+	bool writeHistFSI = fea_config->GetWrite_Conv_FSI();
+	if (writeHistFSI){
+		char cstrFSI[200];
+		string filenameHistFSI = fea_config->GetConv_FileName_FSI();
+		strcpy (cstrFSI, filenameHistFSI.data());
+		historyFile_FSI.open (cstrFSI, std::ios_base::app);
+	}
+
+
+	/*--- Only when there is movement, and a dynamic coefficient is requested, it makes sense to compute the Aitken's coefficient ---*/
+
+	if (CurrentTime > Static_Time) {
+
+		if (iFSIIter == 0){
+
+			WAitkDyn_tn1 = GetWAitken_Dyn_tn1();
+			WAitkDyn_Max = fea_config->GetAitkenDynMaxInit();
+
+			WAitkDyn = min(WAitkDyn_tn1, WAitkDyn_Max);
+
+			/*--- Temporal fix, only for now ---*/
+			WAitkDyn = max(WAitkDyn, 0.1);
+
+			SetWAitken_Dyn(WAitkDyn);
+			if (writeHistFSI){
+				historyFile_FSI << " " << endl ;
+				historyFile_FSI << setiosflags(ios::fixed) << setprecision(4) << CurrentTime << "," ;
+				historyFile_FSI << setiosflags(ios::fixed) << setprecision(1) << iFSIIter << "," ;
+				historyFile_FSI << setiosflags(ios::scientific) << setprecision(4) << WAitkDyn ;
+			}
+
+		}
+		else{
+
+			for (iPoint=0; iPoint<nPoint; iPoint++){
+
+				dispPred = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Pred();
+				dispPred_Old = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Pred_Old();
+				dispCalc = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution();
+				dispCalc_Old = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Old();
+
+				for (iDim=0; iDim < nDim; iDim++){
+
+					/*--- Compute the deltaU and deltaU_n+1 ---*/
+					deltaU[iDim] = dispCalc_Old[iDim] - dispPred_Old[iDim];
+					deltaU_p1[iDim] = dispCalc[iDim] - dispPred[iDim];
+
+					/*--- Compute the difference ---*/
+					delta_deltaU[iDim] = deltaU_p1[iDim] - deltaU[iDim];
+
+					/*--- Add numerator and denominator ---*/
+					numAitk += deltaU[iDim] * delta_deltaU[iDim];
+					denAitk += delta_deltaU[iDim] * delta_deltaU[iDim];
+
+				}
+
+			}
+
+				WAitkDyn = GetWAitken_Dyn();
+
+			if (denAitk > 1E-8){
+				WAitkDyn = - 1.0 * WAitkDyn * numAitk / denAitk ;
+			}
+
+				WAitkDyn = max(WAitkDyn, 0.1);
+				WAitkDyn = min(WAitkDyn, 1.0);
+
+				SetWAitken_Dyn(WAitkDyn);
+
+				if (writeHistFSI){
+					historyFile_FSI << setiosflags(ios::fixed) << setprecision(4) << CurrentTime << "," ;
+					historyFile_FSI << setiosflags(ios::fixed) << setprecision(1) << iFSIIter << "," ;
+					historyFile_FSI << setiosflags(ios::scientific) << setprecision(4) << WAitkDyn << "," ;
+				}
+
+		}
+
+	}
+
+	if (writeHistFSI){historyFile_FSI.close();}
+
+}
+
+void CFEM_ElasticitySolver::SetAitken_Relaxation(CGeometry **fea_geometry,
+        				  CConfig *fea_config, CSolver ***fea_solution){
+
+    unsigned long iPoint, iDim;
+    unsigned long nPoint, nDim;
+    unsigned short RelaxMethod_FSI;
+    double *dispPred, *dispCalc;
+    double WAitken;
+	double CurrentTime=fea_config->GetCurrent_DynTime();
+	double Static_Time=fea_config->GetStatic_Time();
+
+    nPoint = fea_geometry[MESH_0]->GetnPoint();
+    nDim = fea_geometry[MESH_0]->GetnDim();
+
+    RelaxMethod_FSI = fea_config->GetRelaxation_Method_FSI();
+
+	/*--- Only when there is movement it makes sense to update the solutions... ---*/
+
+	if (CurrentTime > Static_Time) {
+
+		if (RelaxMethod_FSI == NO_RELAXATION){
+			WAitken = 1.0;
+		}
+		else if (RelaxMethod_FSI == FIXED_PARAMETER){
+			WAitken = fea_config->GetAitkenStatRelax();
+		}
+		else if (RelaxMethod_FSI == AITKEN_DYNAMIC){
+			WAitken = GetWAitken_Dyn();
+		}
+		else {
+			WAitken = 1.0;
+			cout << "No relaxation parameter used. " << endl;
+		}
+
+
+		for (iPoint=0; iPoint<nPoint; iPoint++){
+
+			/*--- Retrieve pointers to the predicted and calculated solutions ---*/
+			dispPred = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Pred();
+			dispCalc = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution();
+
+			/*--- Set predicted solution as the old predicted solution ---*/
+			fea_solution[MESH_0][FEA_SOL]->node[iPoint]->SetSolution_Pred_Old();
+
+			/*--- Set calculated solution as the old solution (needed for dynamic Aitken relaxation) ---*/
+			fea_solution[MESH_0][FEA_SOL]->node[iPoint]->SetSolution_Old(dispCalc);
+
+			/*--- Apply the Aitken relaxation ---*/
+			for (iDim=0; iDim < nDim; iDim++){
+				dispPred[iDim] = (1.0 - WAitken)*dispPred[iDim] + WAitken*dispCalc[iDim];
+			}
+
+		}
+
+	}
+
+}
+
+void CFEM_ElasticitySolver::Update_StructSolution(CGeometry **fea_geometry,
+        				  CConfig *fea_config, CSolver ***fea_solution){
+
+    unsigned long iPoint, iDim;
+    unsigned long nPoint, nDim;
+    double *valSolutionPred, *valSolution;
+
+    nPoint = fea_geometry[MESH_0]->GetnPoint();
+    nDim = fea_geometry[MESH_0]->GetnDim();
+
+    for (iPoint=0; iPoint<nPoint; iPoint++){
+
+    	valSolutionPred = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Pred();
+
+		fea_solution[MESH_0][FEA_SOL]->node[iPoint]->SetSolution(valSolutionPred);
+
+    }
+
+}
+

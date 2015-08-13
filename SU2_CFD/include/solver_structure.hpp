@@ -6580,6 +6580,14 @@ private:
 
 	double *Res_Ext_Surf;			/*!< \brief Auxiliary vector to store the surface load contribution to the residual */
 	double *Res_Time_Cont;			/*!< \brief Auxiliary vector to store the surface load contribution to the residual */
+	double *Res_FSI_Cont;			/*!< \brief Auxiliary vector to store the surface load contribution to the residual */
+
+	double *solutionPredictor;		/*!< \brief Auxiliary vector to store the solution predictor */
+
+	double *nodeReactions;			/*!< \brief Auxiliary vector to store the reactions */
+
+	double *normalVertex;			/*!< \brief Auxiliary vector to store the normals to a certain vertex */
+	double **stressTensor;			/*!< \brief Auxiliary matrix to rebuild the stress tensor and compute reactions */
 
 	double **mZeros_Aux;			/*!< \brief Submatrix to make zeros and impose clamped boundary conditions. */
 	double **mId_Aux;				/*!< \brief Diagonal submatrix to impose clamped boundary conditions. */
@@ -6588,10 +6596,15 @@ private:
 
 	double Conv_Ref[3];				/*!< \brief Reference values for convergence check: DTOL, RTOL, ETOL */
 	double Conv_Check[3];			/*!< \brief Current values for convergence check: DTOL, RTOL, ETOL */
+	double FSI_Conv[2];				/*!< \brief Values to check the convergence of the FSI problem. */
+
+	double WAitken_Dyn;				/*!< \brief Aitken's dynamic coefficient */
+	double WAitken_Dyn_tn1;			/*!< \brief Aitken's dynamic coefficient in the previous iteration */
 
 	CSysMatrix MassMatrix; 			/*!< \brief Sparse structure for storing the mass matrix. */
 	CSysVector TimeRes_Aux;			/*!< \brief Auxiliary vector for adding mass and damping contributions to the residual. */
 	CSysVector TimeRes;				/*!< \brief Vector for adding mass and damping contributions to the residual */
+	CSysVector LinSysReact;			/*!< \brief Vector to store the residual before applying the BCs */
 
 
 public:
@@ -6835,6 +6848,101 @@ public:
 	 * \param[in] val_cfea - Value of the FEA coefficient.
 	 */
 	void SetTotal_CFEA(double val_cfea);
+
+	/*!
+	 * \brief Set the the tractions in the in the FEA solver (matching mesh).
+	 * \param[in] fea_geometry - Geometrical definition of the problem.
+	 * \param[in] flow_solution - Container vector with all the solutions.
+	 * \param[in] fea_config - Definition of the particular problem.
+	 */
+	void SetFEA_Load(CSolver ***flow_solution, CGeometry **fea_geometry, CGeometry **flow_geometry, CConfig *fea_config, CConfig *flow_config, CNumerics *fea_numerics);
+
+	/*!
+	 * \brief Set the the tractions in the in the FEA solver (non-matching mesh).
+	 * \param[in] fea_geometry - Geometrical definition of the problem.
+	 * \param[in] flow_solution - Container vector with all the solutions.
+	 * \param[in] fea_config - Definition of the particular problem.
+	 */
+	void SetFEA_Load_Int(CSolver ***flow_solution, CGeometry **fea_geometry, CGeometry **flow_geometry, CConfig *fea_config, CConfig *flow_config, CNumerics *fea_numerics);
+
+	/*!
+	 * \brief Predictor for structural displacements based on previous iterations
+	 * \param[in] fea_geometry - Geometrical definition of the problem.
+	 * \param[in] fea_grid_movement - Geometrical definition of the problem.
+	 * \param[in] fea_config - Geometrical definition of the problem.
+	 * \param[in] flow_geometry - Definition of the particular problem.
+	 */
+	void PredictStruct_Displacement(CGeometry **fea_geometry,
+                                	CConfig *fea_config,
+                                	CSolver ***fea_solution);
+
+	/*!
+	 * \brief Computation of Aitken's coefficient.
+	 * \param[in] fea_geometry - Geometrical definition of the problem.
+	 * \param[in] fea_config - Geometrical definition of the problem.
+	 * \param[in] fea_geometry - Definition of the particular problem.
+	 */
+	void ComputeAitken_Coefficient(CGeometry **fea_geometry,
+            				  CConfig *fea_config,
+            				  CSolver ***fea_solution,
+            				  unsigned long iFSIIter);
+
+	/*!
+	 * \brief Aitken's relaxation of the solution.
+	 * \param[in] fea_geometry - Geometrical definition of the problem.
+	 * \param[in] fea_config - Geometrical definition of the problem.
+	 * \param[in] fea_geometry - Definition of the particular problem.
+	 */
+	void SetAitken_Relaxation(CGeometry **fea_geometry,
+            				  CConfig *fea_config,
+            				  CSolver ***fea_solution);
+
+	/*!
+	 * \brief Aitken's relaxation of the solution.
+	 * \param[in] fea_geometry - Geometrical definition of the problem.
+	 * \param[in] fea_config - Geometrical definition of the problem.
+	 * \param[in] fea_geometry - Definition of the particular problem.
+	 */
+	void Update_StructSolution(CGeometry **fea_geometry,
+            				  CConfig *fea_config,
+            				  CSolver ***fea_solution);
+
+	/*!
+	 * \brief Get the value of the FSI convergence.
+	 * \param[in] Set value of interest: 0 - Initial value, 1 - Current value.
+	 */
+	void SetFSI_ConvValue(unsigned short val_index, double val_criteria);
+
+	/*!
+	 * \brief Get the value of the FSI convergence.
+	 * \param[in]  Value of interest: 0 - Initial value, 1 - Current value.
+	 * \return Values to compare
+	 */
+	double GetFSI_ConvValue(unsigned short val_index);
+
+	/*!
+	 * \brief Retrieve the value of the dynamic Aitken relaxation factor.
+	 * \return Value of the dynamic Aitken relaxation factor.
+	 */
+	double GetWAitken_Dyn(void);
+
+	/*!
+	 * \brief Retrieve the value of the last Aitken relaxation factor in the previous time step.
+	 * \return Value of the last Aitken relaxation factor in the previous time step.
+	 */
+	double GetWAitken_Dyn_tn1(void);
+
+	/*!
+	 * \brief Set the value of the dynamic Aitken relaxation factor
+	 * \param[in] Value of the dynamic Aitken relaxation factor
+	 */
+	void SetWAitken_Dyn(double waitk);
+
+	/*!
+	 * \brief Set the value of the last Aitken relaxation factor in the current time step.
+	 * \param[in] Value of the last Aitken relaxation factor in the current time step.
+	 */
+	void SetWAitken_Dyn_tn1(double waitk_tn1);
 
 
 };

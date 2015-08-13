@@ -936,6 +936,18 @@ inline double CFEM_ElasticitySolver::GetTotal_CFEA() { return Total_CFEA; }
 
 inline void CFEM_ElasticitySolver::SetTotal_CFEA(double cfea) { Total_CFEA = cfea; }
 
+inline double CFEM_ElasticitySolver::GetWAitken_Dyn(void) { return WAitken_Dyn; }
+
+inline double CFEM_ElasticitySolver::GetWAitken_Dyn_tn1(void) { return WAitken_Dyn_tn1; }
+
+inline void CFEM_ElasticitySolver::SetWAitken_Dyn(double waitk) { WAitken_Dyn = waitk; }
+
+inline void CFEM_ElasticitySolver::SetWAitken_Dyn_tn1(double waitk_tn1) { WAitken_Dyn_tn1 = waitk_tn1; }
+
+inline void CFEM_ElasticitySolver::SetFSI_ConvValue(unsigned short val_index, double val_criteria) { FSI_Conv[val_index] = val_criteria; }
+
+inline double CFEM_ElasticitySolver::GetFSI_ConvValue(unsigned short val_index){ return FSI_Conv[val_index]; }
+
 inline double CWaveSolver::GetTotal_CWave() { return Total_CWave; }
 
 inline double CHeatSolver::GetTotal_CHeat() { return Total_CHeat; }
