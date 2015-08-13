@@ -90,12 +90,18 @@ CFEM_ElasVariable::CFEM_ElasVariable(double *val_fea, unsigned short val_nDim, u
 		FlowTraction 			=  new double [nVar];
 		Solution_Pred 			=  new double [nVar];
 		Solution_Pred_Old 		=  new double [nVar];
+		for (iVar = 0; iVar < nVar; iVar++){
+			FlowTraction[iVar] = val_fea[iVar];
+			Solution_Pred[iVar] = val_fea[iVar];
+			Solution_Pred_Old[iVar] =val_fea[iVar];
+		}
 	}
 	else {
 		FlowTraction 			=  NULL;
 		Solution_Pred 			=  NULL;
 		Solution_Pred_Old 		=  NULL;
 	}
+
 
 //	if (nonlinear_analysis) Residual_Int = new double [nVar];	else Residual_Int = NULL;
 	if (body_forces) Residual_Ext_Body = new double [nVar];	else Residual_Ext_Body = NULL;
@@ -124,4 +130,3 @@ CFEM_ElasVariable::~CFEM_ElasVariable(void) {
 	if (Solution_Pred_Old 		!= NULL) delete [] Solution_Pred_Old;
 
 }
-

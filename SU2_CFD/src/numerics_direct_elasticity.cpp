@@ -899,12 +899,24 @@ void CGalerkin_FEA::SetFEA_StiffMassMatrix2D(double **StiffMatrix_Elem, double *
 	    }
 
 
+	    if (form2d==0){
+
 	    /*--- Compute the D Matrix (for plane stress and 2-D)---*/
 
 		D_Matrix[0][0] = E/(1-Nu*Nu);	  		D_Matrix[0][1] = (E*Nu)/(1-Nu*Nu);  D_Matrix[0][2] = 0.0;
 		D_Matrix[1][0] = (E*Nu)/(1-Nu*Nu);    	D_Matrix[1][1] = E/(1-Nu*Nu);   	D_Matrix[1][2] = 0.0;
 		D_Matrix[2][0] = 0.0;               	D_Matrix[2][1] = 0.0;               D_Matrix[2][2] = ((1-Nu)*E)/(2*(1-Nu*Nu));
 
+	    }
+	    else if (form2d==1){
+
+	    /*--- Compute the D Matrix (for plane strain and 2-D) as a function of Mu and Lambda---*/
+
+	    D_Matrix[0][0] = Lambda + 2.0*Mu;	D_Matrix[0][1] = Lambda;            D_Matrix[0][2] = 0.0;
+	    D_Matrix[1][0] = Lambda;            D_Matrix[1][1] = Lambda + 2.0*Mu;   D_Matrix[1][2] = 0.0;
+	    D_Matrix[2][0] = 0.0;               D_Matrix[2][1] = 0.0;               D_Matrix[2][2] = Mu;
+
+	    }
 	    /*--- Compute the BT.D Matrix ---*/
 
 	    for (iVar = 0; iVar < nNodes*nVar; iVar++) {
@@ -936,7 +948,6 @@ void CGalerkin_FEA::SetFEA_StiffMassMatrix2D(double **StiffMatrix_Elem, double *
 	        }
 	      }
 	    }
-
 
 	  }
 

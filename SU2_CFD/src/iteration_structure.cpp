@@ -723,8 +723,8 @@ void FEM_StructuralIteration(COutput *output, CIntegration ***integration_contai
 	unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
   	unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
 
-	bool dynamic = (config_container[iZone]->GetDynamic_Analysis() == DYNAMIC);					// Dynamic problems
-	bool nonlinear = (config_container[iZone]->GetGeometricConditions() == LARGE_DEFORMATIONS);	// Geometrically non-linear problems
+	bool dynamic = (config_container[ZONE_0]->GetDynamic_Analysis() == DYNAMIC);					// Dynamic problems
+	bool nonlinear = (config_container[ZONE_0]->GetGeometricConditions() == LARGE_DEFORMATIONS);	// Geometrically non-linear problems
 
 #ifdef HAVE_MPI
   int rank;

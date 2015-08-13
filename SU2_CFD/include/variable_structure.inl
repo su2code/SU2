@@ -75,6 +75,12 @@ inline double *CVariable::Get_SurfaceLoad_Res(void) {return NULL;}
 
 inline void CVariable::Clear_SurfaceLoad_Res(void) { }
 
+inline void CVariable::Set_FlowTraction(double *val_flowTraction) { }
+
+inline double *CVariable::Get_FlowTraction(void) {return NULL;}
+
+inline void CVariable::Clear_FlowTraction(void) { }
+
 inline double CVariable::GetBetaInc2(void) { return 0; }
 
 inline double CVariable::GetDiffLevelSet(void) { return 0; }
@@ -899,6 +905,17 @@ inline void CFEM_ElasVariable::Clear_SurfaceLoad_Res(void) {
 	for (unsigned short iVar = 0; iVar < nVar; iVar++)	Residual_Ext_Surf[iVar] = 0.0;
 }
 
+inline void CFEM_ElasVariable::Set_FlowTraction(double *val_flowTraction) {
+	for (unsigned short iVar = 0; iVar < nVar; iVar++)
+		FlowTraction[iVar] = val_flowTraction[iVar];
+}
+
+inline double *CFEM_ElasVariable::Get_FlowTraction(void) {return FlowTraction;}
+
+inline void CFEM_ElasVariable::Clear_FlowTraction(void) {
+	for (unsigned short iVar = 0; iVar < nVar; iVar++)	FlowTraction[iVar] = 0.0;
+}
+
 inline void CFEM_ElasVariable::SetSolution_time_n(void) {
 	for (unsigned short iVar = 0; iVar < nVar; iVar++)	Solution_time_n[iVar] = Solution[iVar];
 }
@@ -942,14 +959,15 @@ inline void CFEM_ElasVariable::SetSolution_Accel_time_n(double *val_solution_acc
 inline void CFEM_ElasVariable::SetSolution_Pred(double *val_solution_pred){ Solution_Pred = val_solution_pred;  }
 
 inline void CFEM_ElasVariable::SetSolution_Pred(void){
-	for (unsigned short iVar = 0; iVar < nVar; iVar++)	Solution_Pred[iVar] = Solution[iVar];
+	for (unsigned short iVar = 0; iVar < nVar; iVar++) Solution_Pred[iVar] = Solution[iVar];
 }
 
 inline void CFEM_ElasVariable::SetSolution_Pred_Old(double *val_solution_pred_Old){ Solution_Pred_Old = val_solution_pred_Old;  }
 
 inline void CFEM_ElasVariable::SetSolution_Pred_Old(void){
-	for (unsigned short iVar = 0; iVar < nVar; iVar++)	Solution_Pred_Old[iVar] = Solution_Pred[iVar];
+	for (unsigned short iVar = 0; iVar < nVar; iVar++) Solution_Pred_Old[iVar] = Solution_Pred[iVar];
 }
+
 
 inline double CFEM_ElasVariable::GetSolution_time_n(unsigned short val_var) { return Solution_time_n[val_var]; }
 

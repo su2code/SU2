@@ -249,12 +249,12 @@ static const map<string, ENUM_FSI_FLUID_PROBLEM> FSI_Fluid_Solver_Map = CCreateM
 enum ENUM_FSI_STRUC_PROBLEM {
   NO_SOLVER_SFSI = 0,				/*!< \brief Definition of no solver. */
   LINEAR_ELASTICITY_SFSI = 11,		/*!< \brief Linear elasticity equations for the FSI problem */
-  NONLINEAR_ELASTICITY_SFSI = 2,		/*!< \brief Nonlinear elasticity equations for the FSI problem */
+  FEM_ELASTICITY_SFSI = 13,		/*!< \brief Nonlinear elasticity equations for the FSI problem */
 };
 static const map<string, ENUM_FSI_STRUC_PROBLEM> FSI_Struc_Solver_Map = CCreateMap<string, ENUM_FSI_STRUC_PROBLEM>
 ("NONE", NO_SOLVER_SFSI)
 ("LINEAR_ELASTICITY", LINEAR_ELASTICITY_SFSI)
-("NONLINEAR_ELASTICITY", NONLINEAR_ELASTICITY_SFSI);
+("FEM_ELASTICITY", FEM_ELASTICITY_SFSI);
 
 /*!
  * \brief Material geometric conditions
