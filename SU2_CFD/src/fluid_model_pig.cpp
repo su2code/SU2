@@ -2,9 +2,9 @@
  * fluid_model_pig.cpp
  * \brief Source of the ideal gas model.
  * \author S. Vitale, G. Gori, M. Pini, A. Guardone, P. Colonna
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
+ * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
@@ -38,7 +38,7 @@ CIdealGas::CIdealGas() : CFluidModel() {
 }
 
 
-CIdealGas::CIdealGas(double gamma, double R ) : CFluidModel() {
+CIdealGas::CIdealGas(su2double gamma, su2double R ) : CFluidModel() {
 	Gamma = gamma;
 	Gamma_Minus_One = Gamma - 1.0;
 	Gas_Constant = R;
@@ -50,7 +50,7 @@ CIdealGas::~CIdealGas(void) {
 
 }
 
-void CIdealGas::SetTDState_rhoe (double rho, double e ) {
+void CIdealGas::SetTDState_rhoe (su2double rho, su2double e ) {
   
 	Density = rho;
 	StaticEnergy = e;
@@ -65,37 +65,37 @@ void CIdealGas::SetTDState_rhoe (double rho, double e ) {
 
 }
 
-void CIdealGas::SetTDState_PT (double P, double T ) {
-	double e = T*Gas_Constant/Gamma_Minus_One;
-	double rho = P/(T*Gas_Constant);
+void CIdealGas::SetTDState_PT (su2double P, su2double T ) {
+	su2double e = T*Gas_Constant/Gamma_Minus_One;
+	su2double rho = P/(T*Gas_Constant);
 	SetTDState_rhoe(rho, e);
 
 }
 
-void CIdealGas::SetTDState_Prho (double P, double rho ) {
-	double e = P/(Gamma_Minus_One*rho);
+void CIdealGas::SetTDState_Prho (su2double P, su2double rho ) {
+	su2double e = P/(Gamma_Minus_One*rho);
 	SetTDState_rhoe(rho, e);
 
 }
 
-void CIdealGas::SetEnergy_Prho (double P, double rho ) {
+void CIdealGas::SetEnergy_Prho (su2double P, su2double rho ) {
 	StaticEnergy = P/(rho*Gamma_Minus_One);
 
 }
 
-void CIdealGas::SetTDState_hs (double h, double s ) {
+void CIdealGas::SetTDState_hs (su2double h, su2double s ) {
 
-	double T = h*Gamma_Minus_One/Gas_Constant/Gamma;
-	double e = h/Gamma;
-	double v = exp(-1/Gamma_Minus_One*log(T) + s/Gas_Constant);
+	su2double T = h*Gamma_Minus_One/Gas_Constant/Gamma;
+	su2double e = h/Gamma;
+	su2double v = exp(-1/Gamma_Minus_One*log(T) + s/Gas_Constant);
 
 	SetTDState_rhoe(1/v, e);
 
 }
 
-void CIdealGas::SetTDState_rhoT (double rho, double T ) {
+void CIdealGas::SetTDState_rhoT (su2double rho, su2double T ) {
 
-	double e = T*Gas_Constant/Gamma_Minus_One;
+	su2double e = T*Gas_Constant/Gamma_Minus_One;
 	SetTDState_rhoe(rho, e);
 
 }

@@ -3,9 +3,9 @@
 ## \file interface.py
 #  \brief python package interfacing with the SU2 suite
 #  \author T. Lukaczyk, F. Palacios
-#  \version 3.2.9 "eagle"
+#  \version 4.0.0 "Cardinal"
 #
-# SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
+# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
 #
 # SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
@@ -75,15 +75,37 @@ def CFD(config):
     """ run SU2_CFD
         partitions set by config.NUMBER_PART
     """
-    
     konfig = copy.deepcopy(config)
     
-    tempname = 'config_CFD.cfg'
-    konfig.dump(tempname)
+    direct_diff = not konfig.get('DIRECT_DIFF',"") in ["NONE", ""]
+
+    discrete_adjoint = konfig.MATH_PROBLEM == 'DISCRETE_ADJOINT'
+
+    if direct_diff:
+        tempname = 'config_CFD_DIRECTDIFF.cfg'
+
+        konfig.dump(tempname)
+
+        processes = konfig['NUMBER_PART']
+
+        the_Command = 'SU2_CFD_DIRECTDIFF ' + tempname
+
+    elif discrete_adjoint:
+        tempname = 'config_CFD_REVERSE.cfg'
+        konfig.dump(tempname)
+
+        processes = konfig['NUMBER_PART']
+
+        the_Command = 'SU2_CFD_REVERSE ' + tempname
+
+    else:
+        tempname = 'config_CFD.cfg'
+        konfig.dump(tempname)
     
-    processes = konfig['NUMBER_PART']
+        processes = konfig['NUMBER_PART']
     
-    the_Command = 'SU2_CFD ' + tempname
+        the_Command = 'SU2_CFD ' + tempname
+
     the_Command = build_command( the_Command , processes )
     run_command( the_Command )
     
@@ -139,13 +161,26 @@ def DOT(config):
         partitions set by config.NUMBER_PART
     """    
     konfig = copy.deepcopy(config)
+
+    discrete_adjoint = konfig.MATH_PROBLEM == 'DISCRETE_ADJOINT'
+
+    if discrete_adjoint:
+
+        tempname = 'config_DOT_REVERSE.cfg'
+        konfig.dump(tempname)
+
+        processes = konfig['NUMBER_PART']
+
+        the_Command = 'SU2_DOT_REVERSE ' + tempname
+    else:
     
-    tempname = 'config_DOT.cfg'
-    konfig.dump(tempname)   
+        tempname = 'config_DOT.cfg'
+        konfig.dump(tempname)
     
-    processes = konfig['NUMBER_PART']
+        processes = konfig['NUMBER_PART']
     
-    the_Command = 'SU2_DOT ' + tempname
+        the_Command = 'SU2_DOT ' + tempname
+
     the_Command = build_command( the_Command , processes )
     run_command( the_Command )
     
@@ -167,49 +202,6 @@ def GEO(config):
     processes = konfig['NUMBER_PART']
         
     the_Command = 'SU2_GEO ' + tempname
-    the_Command = build_command( the_Command , processes )
-    run_command( the_Command )
-    
-    #os.remove(tempname)
-    
-    return
-
-def SMC(config):
-    """ run SU2_SMC
-        partitions set by config.NUMBER_PART
-    """    
-    konfig = copy.deepcopy(config)    
-    
-    tempname = 'config_SMC.cfg'
-    konfig.dump(tempname)   
-    
-    # must run with rank 1
-    processes = konfig['NUMBER_PART']
-    processes = min([1,processes])       
-    
-    the_Command = 'SU2_SMC ' + tempname
-    the_Command = build_command( the_Command , processes )
-    run_command( the_Command )
-    
-    #os.remove(tempname)
-    
-    return
-
-def PBC(config):
-    """ run SU2_MSH
-        partitions set by config.NUMBER_PART
-        currently forced to run serially
-    """    
-    konfig = copy.deepcopy(config)
-    
-    tempname = 'config_PBC.cfg'
-    konfig.dump(tempname)
-    
-    # must run with rank 1
-    processes = konfig['NUMBER_PART']
-    processes = min([1,processes])      
-    
-    the_Command = 'SU2_MSH ' + tempname
     the_Command = build_command( the_Command , processes )
     run_command( the_Command )
     
@@ -245,7 +237,7 @@ def SOL(config):
 def build_command( the_Command , processes=0 ):
     """ builds an mpi command for given number of processes """
     the_Command = base_Command % the_Command
-    if processes > 0:
+    if processes > 1:
         if not mpi_Command:
             raise RuntimeError , 'could not find an mpi interface'
         the_Command = mpi_Command % (processes,the_Command)

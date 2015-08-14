@@ -2,9 +2,9 @@
  * \file primal_grid_structure.cpp
  * \brief Main classes for defining the primal grid elements
  * \author F. Palacios
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
+ * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
@@ -51,13 +51,13 @@ CPrimalGrid::~CPrimalGrid() {
    
 }
 
-void CPrimalGrid::SetCG(double **val_coord) {
+void CPrimalGrid::SetCG(su2double **val_coord) {
 	unsigned short iDim, iNode, NodeFace, iFace;
 	
 	for (iDim = 0; iDim < nDim; iDim++) {
 		Coord_CG[iDim] = 0.0;
 		for (iNode = 0; iNode < GetnNodes();  iNode++)
-			Coord_CG[iDim] += val_coord[iNode][iDim]/double(GetnNodes());
+			Coord_CG[iDim] += val_coord[iNode][iDim]/su2double(GetnNodes());
 	}
 	
 	for (iFace = 0; iFace < GetnFaces();  iFace++)
@@ -65,7 +65,7 @@ void CPrimalGrid::SetCG(double **val_coord) {
 			Coord_FaceElems_CG[iFace][iDim] = 0.0;
 			for (iNode = 0; iNode < GetnNodesFace(iFace); iNode++) {
 				NodeFace = GetFaces(iFace, iNode);
-				Coord_FaceElems_CG[iFace][iDim] += val_coord[NodeFace][iDim]/double(GetnNodesFace(iFace));
+				Coord_FaceElems_CG[iFace][iDim] += val_coord[NodeFace][iDim]/su2double(GetnNodesFace(iFace));
 			}
 		}
 }
@@ -94,7 +94,7 @@ CVertexMPI::CVertexMPI(unsigned long val_point, unsigned short val_nDim) : CPrim
 	
 	/*--- Allocate CG coordinates ---*/
 	nDim = val_nDim;
-	Coord_CG = new double[nDim];
+	Coord_CG = new su2double[nDim];
 	for (iDim = 0; iDim < nDim; iDim++) Coord_CG[iDim] = 0.0;
 	
 	/*--- Allocate and define face structure of the element ---*/
@@ -142,12 +142,12 @@ CLine::CLine(unsigned long val_point_0, unsigned long val_point_1,
 	/*--- Allocate CG coordinates ---*/
   
 	nDim = val_nDim;
-	Coord_CG = new double[nDim];
+	Coord_CG = new su2double[nDim];
 	for (iDim = 0; iDim < nDim; iDim++)
 		Coord_CG[iDim] = 0.0;
-	Coord_FaceElems_CG = new double* [nFaces];
+	Coord_FaceElems_CG = new su2double* [nFaces];
 	for (iFace = 0; iFace < nFaces; iFace++) {
-		Coord_FaceElems_CG[iFace] = new double [nDim];
+		Coord_FaceElems_CG[iFace] = new su2double [nDim];
 		for (iDim = 0; iDim < nDim; iDim++)
 			Coord_FaceElems_CG[iFace][iDim] = 0.0;
 	}
@@ -202,12 +202,12 @@ CTriangle::CTriangle(unsigned long val_point_0, unsigned long val_point_1,
 
 	/*--- Allocate CG coordinates ---*/
 	nDim = val_nDim;
-	Coord_CG = new double[nDim];
+	Coord_CG = new su2double[nDim];
 	for (iDim = 0; iDim < nDim; iDim++)
 		Coord_CG[iDim] = 0.0;
-	Coord_FaceElems_CG = new double* [nFaces];
+	Coord_FaceElems_CG = new su2double* [nFaces];
 	for (iFace = 0; iFace < nFaces; iFace++) {
-		Coord_FaceElems_CG[iFace] = new double [nDim];
+		Coord_FaceElems_CG[iFace] = new su2double [nDim];
 		for (iDim = 0; iDim < nDim; iDim++)
 			Coord_FaceElems_CG[iFace][iDim] = 0.0;
 	}
@@ -269,12 +269,12 @@ CRectangle::CRectangle(unsigned long val_point_0, unsigned long val_point_1,
 
 	/*--- Allocate CG coordinates ---*/
 	nDim = val_nDim;
-	Coord_CG = new double[nDim];
+	Coord_CG = new su2double[nDim];
 	for (iDim = 0; iDim < nDim; iDim++)
 		Coord_CG[iDim] = 0.0;
-	Coord_FaceElems_CG = new double* [nFaces];
+	Coord_FaceElems_CG = new su2double* [nFaces];
 	for (iFace = 0; iFace < nFaces; iFace++) {
-		Coord_FaceElems_CG[iFace] = new double [nDim];
+		Coord_FaceElems_CG[iFace] = new su2double [nDim];
 		for (iDim = 0; iDim < nDim; iDim++)
 			Coord_FaceElems_CG[iFace][iDim] = 0.0;
 	}
@@ -337,12 +337,12 @@ CTetrahedron::CTetrahedron(unsigned long val_point_0, unsigned long val_point_1,
 
 	/*--- Allocate CG coordinates ---*/
 	nDim = 3;
-	Coord_CG = new double[nDim];
+	Coord_CG = new su2double[nDim];
 	for (iDim = 0; iDim < nDim; iDim++)
 		Coord_CG[iDim] = 0.0;
-	Coord_FaceElems_CG = new double* [nFaces];
+	Coord_FaceElems_CG = new su2double* [nFaces];
 	for (iFace = 0; iFace < nFaces; iFace++) {
-		Coord_FaceElems_CG[iFace] = new double [nDim];
+		Coord_FaceElems_CG[iFace] = new su2double [nDim];
 		for (iDim = 0; iDim < nDim; iDim++)
 			Coord_FaceElems_CG[iFace][iDim] = 0.0;
 	}
@@ -407,12 +407,12 @@ CHexahedron::CHexahedron(unsigned long val_point_0, unsigned long val_point_1,
 
 	/*--- Allocate center-of-gravity coordinates ---*/
 	nDim = 3;
-	Coord_CG = new double[nDim];
+	Coord_CG = new su2double[nDim];
 	for (iDim = 0; iDim < nDim; iDim++)
 		Coord_CG[iDim] = 0.0;
-	Coord_FaceElems_CG = new double* [nFaces];
+	Coord_FaceElems_CG = new su2double* [nFaces];
 	for (iFace = 0; iFace < nFaces; iFace++) {
-		Coord_FaceElems_CG[iFace] = new double [nDim];
+		Coord_FaceElems_CG[iFace] = new su2double [nDim];
 		for (iDim = 0; iDim < nDim; iDim++)
 			Coord_FaceElems_CG[iFace][iDim] = 0.0;
 	}
@@ -489,12 +489,12 @@ CPrism::CPrism(unsigned long val_point_0, unsigned long val_point_1,
 
 	/*--- Allocate CG coordinates ---*/
 	nDim = 3;
-	Coord_CG = new double[nDim];
+	Coord_CG = new su2double[nDim];
 	for (iDim = 0; iDim < nDim; iDim++) Coord_CG[iDim] = 0.0;
 	
-	Coord_FaceElems_CG = new double* [nFaces];
+	Coord_FaceElems_CG = new su2double* [nFaces];
 	for (iFace = 0; iFace < nFaces; iFace++) {
-		Coord_FaceElems_CG[iFace] = new double [nDim];
+		Coord_FaceElems_CG[iFace] = new su2double [nDim];
 		for (iDim = 0; iDim < nDim; iDim++)
 			Coord_FaceElems_CG[iFace][iDim] = 0.0;
 	}
@@ -565,12 +565,12 @@ CPyramid::CPyramid(unsigned long val_point_0, unsigned long val_point_1,
 
 	/*--- Allocate CG coordinates ---*/
 	nDim = 3;
-	Coord_CG = new double[nDim];
+	Coord_CG = new su2double[nDim];
 	for (iDim = 0; iDim < nDim; iDim++)
 		Coord_CG[iDim] = 0.0;
-	Coord_FaceElems_CG = new double* [nFaces];
+	Coord_FaceElems_CG = new su2double* [nFaces];
 	for (iFace = 0; iFace < nFaces; iFace++) {
-		Coord_FaceElems_CG[iFace] = new double [nDim];
+		Coord_FaceElems_CG[iFace] = new su2double [nDim];
 		for (iDim = 0; iDim < nDim; iDim++)
 			Coord_FaceElems_CG[iFace][iDim] = 0.0;
 	}

@@ -3,9 +3,9 @@
 ## \file project.py
 #  \brief package for optimization projects
 #  \author T. Lukaczyk, F. Palacios
-#  \version 3.2.9 "eagle"
+#  \version 4.0.0 "Cardinal"
 #
-# SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
+# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
 #
 # SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
@@ -87,7 +87,7 @@ class Project(object):
             The following methods take an objective function name for input.
             func(func_name,config)        - function of specified name
             grad(func_name,method,config) - gradient of specified name,
-                                            where method is 'ADJOINT' or 'FINDIFF'
+                                            where method is 'CONTINUOUS_ADJOINT' or 'FINDIFF'
             setup config for given dvs with 
             config = project.unpack_dvs(dvs)
     """  

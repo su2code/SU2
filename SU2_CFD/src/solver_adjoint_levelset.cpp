@@ -2,9 +2,9 @@
  * \file solution_adjoint_levelset.cpp
  * \brief Main subrotuines for solving the level set problem.
  * \author F. Palacios
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
+ * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
@@ -34,7 +34,7 @@
 CAdjLevelSetSolver::CAdjLevelSetSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
 	unsigned short iVar, iDim, nLineLets;
 	unsigned long iPoint, index;
-	double dull_val;
+	su2double dull_val;
 	ifstream restart_file;
 	string text_line, mesh_filename, filename, AdjExt;
 	
@@ -56,31 +56,31 @@ CAdjLevelSetSolver::CAdjLevelSetSolver(CGeometry *geometry, CConfig *config, uns
 	if (iMesh == MESH_0) {
 	
     /*--- Define some auxiliar vector related with the residual ---*/
-    Residual      = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual[iVar]      = 0.0;
-    Residual_RMS  = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 0.0;
-    Residual_Max  = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_Max[iVar]  = 0.0;
+    Residual      = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual[iVar]      = 0.0;
+    Residual_RMS  = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 0.0;
+    Residual_Max  = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_Max[iVar]  = 0.0;
     Point_Max  = new unsigned long[nVar]; for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar]  = 0;
-    Point_Max_Coord = new double*[nVar];
+    Point_Max_Coord = new su2double*[nVar];
     for (iVar = 0; iVar < nVar; iVar++) {
-      Point_Max_Coord[iVar] = new double[nDim];
+      Point_Max_Coord[iVar] = new su2double[nDim];
       for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
     }
-    Residual_i    = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_i[iVar]    = 0.0;
-    Residual_j    = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_j[iVar]    = 0.0;
+    Residual_i    = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_i[iVar]    = 0.0;
+    Residual_j    = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_j[iVar]    = 0.0;
 	
     /*--- Define some auxiliar vector related with the solution ---*/
-    Solution    = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Solution[iVar]    = 0.0;
-    Solution_i  = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Solution_i[iVar]  = 0.0;
-    Solution_j  = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Solution_j[iVar]  = 0.0;
+    Solution    = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Solution[iVar]    = 0.0;
+    Solution_i  = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Solution_i[iVar]  = 0.0;
+    Solution_j  = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Solution_j[iVar]  = 0.0;
     
     /*--- Define some auxiliar vector related with the geometry ---*/
-    Vector    = new double[nDim]; for (iDim = 0; iDim < nDim; iDim++) Vector[iDim]    = 0.0;
-    Vector_i  = new double[nDim]; for (iDim = 0; iDim < nDim; iDim++) Vector_i[iDim]  = 0.0;
-    Vector_j  = new double[nDim]; for (iDim = 0; iDim < nDim; iDim++) Vector_j[iDim]  = 0.0;
+    Vector    = new su2double[nDim]; for (iDim = 0; iDim < nDim; iDim++) Vector[iDim]    = 0.0;
+    Vector_i  = new su2double[nDim]; for (iDim = 0; iDim < nDim; iDim++) Vector_i[iDim]  = 0.0;
+    Vector_j  = new su2double[nDim]; for (iDim = 0; iDim < nDim; iDim++) Vector_j[iDim]  = 0.0;
 	
     /*--- Define some auxiliar vector related with the flow solution ---*/
-    FlowSolution_i = new double[nDim+1]; for (iVar = 0; iVar < nDim+1; iVar++) FlowSolution_i[iVar]  = 0.0;
-    FlowSolution_j = new double[nDim+1]; for (iVar = 0; iVar < nDim+1; iVar++) FlowSolution_j[iVar]  = 0.0;
+    FlowSolution_i = new su2double[nDim+1]; for (iVar = 0; iVar < nDim+1; iVar++) FlowSolution_i[iVar]  = 0.0;
+    FlowSolution_j = new su2double[nDim+1]; for (iVar = 0; iVar < nDim+1; iVar++) FlowSolution_j[iVar]  = 0.0;
 	
     /*--- Solution and residual vectors ---*/
     LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
@@ -90,22 +90,22 @@ CAdjLevelSetSolver::CAdjLevelSetSolver(CGeometry *geometry, CConfig *config, uns
     if (config->GetKind_TimeIntScheme_AdjLevelSet() == EULER_IMPLICIT) {
       
       /*--- Point to point Jacobians ---*/
-      Jacobian_i = new double* [nVar];
-      Jacobian_j = new double* [nVar];
+      Jacobian_i = new su2double* [nVar];
+      Jacobian_j = new su2double* [nVar];
       for (iVar = 0; iVar < nVar; iVar++) {
-        Jacobian_i[iVar] = new double [nVar];
-        Jacobian_j[iVar] = new double [nVar];
+        Jacobian_i[iVar] = new su2double [nVar];
+        Jacobian_j[iVar] = new su2double [nVar];
       }
       
-      Jacobian_ii = new double* [nVar];
-      Jacobian_ij = new double* [nVar];
-      Jacobian_ji = new double* [nVar];
-      Jacobian_jj = new double* [nVar];
+      Jacobian_ii = new su2double* [nVar];
+      Jacobian_ij = new su2double* [nVar];
+      Jacobian_ji = new su2double* [nVar];
+      Jacobian_jj = new su2double* [nVar];
       for (iVar = 0; iVar < nVar; iVar++) {
-        Jacobian_ii[iVar] = new double [nVar];
-        Jacobian_ij[iVar] = new double [nVar];
-        Jacobian_ji[iVar] = new double [nVar];
-        Jacobian_jj[iVar] = new double [nVar];
+        Jacobian_ii[iVar] = new su2double [nVar];
+        Jacobian_ij[iVar] = new su2double [nVar];
+        Jacobian_ji[iVar] = new su2double [nVar];
+        Jacobian_jj[iVar] = new su2double [nVar];
       }
       
       /*--- Initialization of the structure of the whole Jacobian ---*/
@@ -123,13 +123,13 @@ CAdjLevelSetSolver::CAdjLevelSetSolver(CGeometry *geometry, CConfig *config, uns
     /*--- Computation of gradients by least squares ---*/
     if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
       /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
-      Smatrix = new double* [nDim];
+      Smatrix = new su2double* [nDim];
       for (iDim = 0; iDim < nDim; iDim++)
-        Smatrix[iDim] = new double [nDim];
+        Smatrix[iDim] = new su2double [nDim];
       /*--- c vector := transpose(WA)*(Wb) ---*/
-      cvector = new double* [nVar];
+      cvector = new su2double* [nVar];
       for (iVar = 0; iVar < nVar; iVar++)
-        cvector[iVar] = new double [nDim];
+        cvector[iVar] = new su2double [nDim];
     }
     
   }
@@ -220,7 +220,7 @@ CAdjLevelSetSolver::~CAdjLevelSetSolver(void) { }
 void CAdjLevelSetSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
 	unsigned short iVar, iMarker, iPeriodic_Index, MarkerS, MarkerR;
 	unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
-	double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi, *Buffer_Receive_U = NULL, *Buffer_Send_U = NULL;
+	su2double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi, *Buffer_Receive_U = NULL, *Buffer_Send_U = NULL;
   
 #ifdef HAVE_MPI
   int send_to, receive_from;
@@ -243,8 +243,8 @@ void CAdjLevelSetSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) 
 			nBufferS_Vector = nVertexS*nVar;        nBufferR_Vector = nVertexR*nVar;
       
       /*--- Allocate Receive and send buffers  ---*/
-      Buffer_Receive_U = new double [nBufferR_Vector];
-      Buffer_Send_U = new double[nBufferS_Vector];
+      Buffer_Receive_U = new su2double [nBufferR_Vector];
+      Buffer_Send_U = new su2double[nBufferS_Vector];
       
       /*--- Copy the solution that should be sended ---*/
       for (iVertex = 0; iVertex < nVertexS; iVertex++) {
@@ -255,7 +255,7 @@ void CAdjLevelSetSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) 
       
 #ifdef HAVE_MPI
       /*--- Send/Receive information using Sendrecv ---*/
-	  MPI_Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
+	  SU2_MPI::Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
                                Buffer_Receive_U, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
 #else
       
@@ -334,7 +334,7 @@ void CAdjLevelSetSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) 
 void CAdjLevelSetSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config) {
 	unsigned short iVar, iMarker, iPeriodic_Index, MarkerS, MarkerR;
 	unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
-	double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi,
+	su2double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi,
   *Buffer_Receive_Limit = NULL, *Buffer_Send_Limit = NULL;
   
 #ifdef HAVE_MPI
@@ -358,8 +358,8 @@ void CAdjLevelSetSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *
 			nBufferS_Vector = nVertexS*nVar;        nBufferR_Vector = nVertexR*nVar;
       
       /*--- Allocate Receive and send buffers  ---*/
-      Buffer_Receive_Limit = new double [nBufferR_Vector];
-      Buffer_Send_Limit = new double[nBufferS_Vector];
+      Buffer_Receive_Limit = new su2double [nBufferR_Vector];
+      Buffer_Send_Limit = new su2double[nBufferS_Vector];
       
       /*--- Copy the solution old that should be sended ---*/
       for (iVertex = 0; iVertex < nVertexS; iVertex++) {
@@ -370,7 +370,7 @@ void CAdjLevelSetSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *
       
 #ifdef HAVE_MPI
 		/*--- Send/Receive information using Sendrecv ---*/
-	  MPI_Sendrecv(Buffer_Send_Limit, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
+	  SU2_MPI::Sendrecv(Buffer_Send_Limit, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
                                Buffer_Receive_Limit, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
 #else
       
@@ -448,7 +448,7 @@ void CAdjLevelSetSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *
 void CAdjLevelSetSolver::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *config) {
 	unsigned short iVar, iDim, iMarker, iPeriodic_Index, MarkerS, MarkerR;
 	unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
-	double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi,
+	su2double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi,
   *Buffer_Receive_Gradient = NULL, *Buffer_Send_Gradient = NULL;
 
 #ifdef HAVE_MPI
@@ -456,9 +456,9 @@ void CAdjLevelSetSolver::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig 
   MPI_Status status;
 #endif
   
-  double **Gradient = new double* [nVar];
+  su2double **Gradient = new su2double* [nVar];
   for (iVar = 0; iVar < nVar; iVar++)
-    Gradient[iVar] = new double[nDim];
+    Gradient[iVar] = new su2double[nDim];
   
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     
@@ -476,8 +476,8 @@ void CAdjLevelSetSolver::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig 
 			nBufferS_Vector = nVertexS*nVar*nDim;        nBufferR_Vector = nVertexR*nVar*nDim;
       
       /*--- Allocate Receive and send buffers  ---*/
-      Buffer_Receive_Gradient = new double [nBufferR_Vector];
-      Buffer_Send_Gradient = new double[nBufferS_Vector];
+      Buffer_Receive_Gradient = new su2double [nBufferR_Vector];
+      Buffer_Send_Gradient = new su2double[nBufferS_Vector];
       
       /*--- Copy the solution old that should be sended ---*/
       for (iVertex = 0; iVertex < nVertexS; iVertex++) {
@@ -489,7 +489,7 @@ void CAdjLevelSetSolver::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig 
       
 #ifdef HAVE_MPI
       /*--- Send/Receive information using Sendrecv ---*/
-	  MPI_Sendrecv(Buffer_Send_Gradient, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
+	  SU2_MPI::Sendrecv(Buffer_Send_Gradient, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
                                Buffer_Receive_Gradient, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
 #else
       
@@ -587,7 +587,7 @@ void CAdjLevelSetSolver::Preprocessing(CGeometry *geometry, CSolver **solver_con
 }
 
 void CAdjLevelSetSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short iMesh) {
-	double *LevelSet_var_i, *LevelSet_var_j, *U_i, *U_j, **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j, DensityInc_i, DensityInc_j;
+	su2double *LevelSet_var_i, *LevelSet_var_j, *U_i, *U_j, **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j, DensityInc_i, DensityInc_j;
 	unsigned long iEdge, iPoint, jPoint;
 	unsigned short iDim, iVar;
 	
@@ -658,10 +658,10 @@ void CAdjLevelSetSolver::Source_Residual(CGeometry *geometry, CSolver **solver_c
 																								 CConfig *config, unsigned short iMesh) {
 //	unsigned short iVar, iDim;
 //	unsigned long iPoint;
-//  double epsilon, DeltaDirac, lambda, dRho_dPhi, dMud_Phi, Vol, DiffLevelSet, LevelSet, *AdjMeanFlow, **AdjLevelSetGradient, **AdjMeanFlowGradient,
+//  su2double epsilon, DeltaDirac, lambda, dRho_dPhi, dMud_Phi, Vol, DiffLevelSet, LevelSet, *AdjMeanFlow, **AdjLevelSetGradient, **AdjMeanFlowGradient,
 //  Density, Velocity[3] = {0.0,0.0,0.0}, ProjAdj, dFc_dRho[3][4], ProjFlux;
 //  
-//	double Froude2 = config->GetFroude()*config->GetFroude();
+//	su2double Froude2 = config->GetFroude()*config->GetFroude();
 //  
 //	for (iVar = 0; iVar < nVar; iVar++)
 //		Residual[iVar] = 0;
@@ -744,14 +744,14 @@ void CAdjLevelSetSolver::Source_Template(CGeometry *geometry, CSolver **solver_c
 void CAdjLevelSetSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
 	unsigned long iPoint, iVertex, Point_Normal;
 	unsigned short iVar, iDim;
-	double *U_domain, *U_wall, *LevelSet_domain, *LevelSet_wall;
+	su2double *U_domain, *U_wall, *LevelSet_domain, *LevelSet_wall;
 	
 	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 	
-	U_domain = new double[solver_container[FLOW_SOL]->GetnVar()]; 
-	U_wall = new double[solver_container[FLOW_SOL]->GetnVar()];
-	LevelSet_domain = new double[1];
-	LevelSet_wall = new double[1];
+	U_domain = new su2double[solver_container[FLOW_SOL]->GetnVar()]; 
+	U_wall = new su2double[solver_container[FLOW_SOL]->GetnVar()];
+	LevelSet_domain = new su2double[1];
+	LevelSet_wall = new su2double[1];
 	
 	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     
@@ -791,14 +791,14 @@ void CAdjLevelSetSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_cont
                                         CConfig *config, unsigned short val_marker) {
 	unsigned long iPoint, iVertex, Point_Normal;
 	unsigned short iVar, iDim;
-	double *U_domain, *U_wall, *LevelSet_domain, *LevelSet_wall;
+	su2double *U_domain, *U_wall, *LevelSet_domain, *LevelSet_wall;
 	
 	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 	
-	U_domain = new double[solver_container[FLOW_SOL]->GetnVar()];
-	U_wall = new double[solver_container[FLOW_SOL]->GetnVar()];
-	LevelSet_domain = new double[1];
-	LevelSet_wall = new double[1];
+	U_domain = new su2double[solver_container[FLOW_SOL]->GetnVar()];
+	U_wall = new su2double[solver_container[FLOW_SOL]->GetnVar()];
+	LevelSet_domain = new su2double[1];
+	LevelSet_wall = new su2double[1];
 	
 	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     
@@ -837,14 +837,14 @@ void CAdjLevelSetSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_cont
 void CAdjLevelSetSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 	unsigned long iPoint, iVertex, Point_Normal;
 	unsigned short iVar, iDim;
-	double *U_domain, *U_wall, *LevelSet_domain, *LevelSet_wall;
+	su2double *U_domain, *U_wall, *LevelSet_domain, *LevelSet_wall;
 	
 	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 	
-	U_domain = new double[solver_container[FLOW_SOL]->GetnVar()];
-	U_wall = new double[solver_container[FLOW_SOL]->GetnVar()];
-	LevelSet_domain = new double[1];
-	LevelSet_wall = new double[1];
+	U_domain = new su2double[solver_container[FLOW_SOL]->GetnVar()];
+	U_wall = new su2double[solver_container[FLOW_SOL]->GetnVar()];
+	LevelSet_domain = new su2double[1];
+	LevelSet_wall = new su2double[1];
 	
 	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     
@@ -883,14 +883,14 @@ void CAdjLevelSetSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_
 void CAdjLevelSetSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 	unsigned long iPoint, iVertex, Point_Normal;
 	unsigned short iVar, iDim;
-	double *U_domain, *U_wall, *LevelSet_domain, *LevelSet_wall;
+	su2double *U_domain, *U_wall, *LevelSet_domain, *LevelSet_wall;
 	
 	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 	
-	U_domain = new double[solver_container[FLOW_SOL]->GetnVar()];
-	U_wall = new double[solver_container[FLOW_SOL]->GetnVar()];
-	LevelSet_domain = new double[1];
-	LevelSet_wall = new double[1];
+	U_domain = new su2double[solver_container[FLOW_SOL]->GetnVar()];
+	U_wall = new su2double[solver_container[FLOW_SOL]->GetnVar()];
+	LevelSet_domain = new su2double[1];
+	LevelSet_wall = new su2double[1];
 	
 	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     
@@ -929,14 +929,14 @@ void CAdjLevelSetSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_cont
 void CAdjLevelSetSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 	unsigned long iPoint, iVertex, Point_Normal;
 	unsigned short iVar, iDim;
-	double *U_domain, *U_wall, *LevelSet_domain, *LevelSet_wall;
+	su2double *U_domain, *U_wall, *LevelSet_domain, *LevelSet_wall;
 	
 	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 	
-	U_domain = new double[solver_container[FLOW_SOL]->GetnVar()];
-	U_wall = new double[solver_container[FLOW_SOL]->GetnVar()];
-	LevelSet_domain = new double[1];
-	LevelSet_wall = new double[1];
+	U_domain = new su2double[solver_container[FLOW_SOL]->GetnVar()];
+	U_wall = new su2double[solver_container[FLOW_SOL]->GetnVar()];
+	LevelSet_domain = new su2double[1];
+	LevelSet_wall = new su2double[1];
 	
 	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     
@@ -995,7 +995,7 @@ void CAdjLevelSetSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_contain
 void CAdjLevelSetSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
   
 	unsigned long iPoint;
-	double Delta = 0.0, Vol;
+	su2double Delta = 0.0, Vol;
 	
 	/*--- Set maximum residual to zero ---*/
   
@@ -1054,7 +1054,7 @@ void CAdjLevelSetSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **
 
 void CAdjLevelSetSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem) {
 	unsigned long iPoint;
-	double *U_time_nM1, *U_time_n, *U_time_nP1, Volume_nM1, Volume_n, Volume_nP1, TimeStep;
+	su2double *U_time_nM1, *U_time_n, *U_time_nP1, Volume_nM1, Volume_n, Volume_nP1, TimeStep;
 	
 	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 	bool Grid_Movement = config->GetGrid_Movement();

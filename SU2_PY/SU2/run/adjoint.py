@@ -3,9 +3,9 @@
 ## \file adjoint.py
 #  \brief python package for running adjoint problems 
 #  \author T. Lukaczyk, F. Palacios
-#  \version 3.2.9 "eagle"
+#  \version 4.0.0 "Cardinal"
 #
-# SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
+# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
 #
 # SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
@@ -72,7 +72,11 @@ def adjoint( config ):
     konfig = copy.deepcopy(config)
     
     # setup problem    
-    konfig['MATH_PROBLEM']  = 'ADJOINT'
+    if konfig.get('GRADIENT_METHOD', 'CONTINUOUS_ADJOINT') == 'DISCRETE_ADJOINT':
+        konfig['MATH_PROBLEM']  = 'DISCRETE_ADJOINT'
+    else:
+        konfig['MATH_PROBLEM']  = 'CONTINUOUS_ADJOINT'
+
     konfig['CONV_FILENAME'] = konfig['CONV_FILENAME'] + '_adjoint'
     
     # Run Solution

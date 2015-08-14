@@ -1,10 +1,10 @@
 /*!
  * \file geometry_structure.inl
  * \brief In-Line subroutines of the <i>geometry_structure.hpp</i> file.
- * \author F. Palacios
- * \version 3.2.9 "eagle"
+ * \author F. Palacios, T. Economon
+ * \version 4.0.0 "Cardinal"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
+ * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
@@ -79,7 +79,9 @@ inline void CGeometry::SetColorGrid_Parallel(CConfig *config) { }
 
 inline void CGeometry::DivideConnectivity(CConfig *config, unsigned short Elem_Type) { }
 
-inline void CGeometry::SetRotationalVelocity(CConfig *config) { }
+inline void CGeometry::SetRotationalVelocity(CConfig *config, unsigned short val_iZone) { }
+
+inline void CGeometry::SetTranslationalVelocity(CConfig *config) { }
 
 inline void CGeometry::SetGridVelocity(CConfig *config, unsigned long iter) { }
 
@@ -105,7 +107,7 @@ inline void CGeometry::SetPoint_Connectivity(void) { }
 
 inline void CGeometry::SetRCM_Ordering(CConfig *config) { }
 
-inline void CGeometry::SetCoord_Smoothing (unsigned short val_nSmooth, double val_smooth_coeff, CConfig *config) { }
+inline void CGeometry::SetCoord_Smoothing (unsigned short val_nSmooth, su2double val_smooth_coeff, CConfig *config) { }
 
 inline void CGeometry::SetCoord(CGeometry *geometry) { }
 
@@ -189,17 +191,17 @@ inline void CGeometry::SetBoundTecPlot(char mesh_filename[MAX_STRING_SIZE], bool
 
 inline void CGeometry::SetBoundSTL(char mesh_filename[MAX_STRING_SIZE], bool new_file, CConfig *config) { }
 
-inline double CGeometry::Compute_MaxThickness(double *Plane_P0, double *Plane_Normal, unsigned short iSection, CConfig *config, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface) { return 0; }
+inline su2double CGeometry::Compute_MaxThickness(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil, bool original_surface) { return 0; }
 
-inline double CGeometry::Compute_AoA(double *Plane_P0, double *Plane_Normal, unsigned short iSection, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface) { return 0; }
+inline su2double CGeometry::Compute_AoA(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil, bool original_surface) { return 0; }
   
-inline double CGeometry::Compute_Chord(double *Plane_P0, double *Plane_Normal, unsigned short iSection, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface) { return 0; }
+inline su2double CGeometry::Compute_Chord(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil, bool original_surface) { return 0; }
 
-inline double CGeometry::Compute_Thickness(double *Plane_P0, double *Plane_Normal, unsigned short iSection, double Location, CConfig *config, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface) { return 0; }
+inline su2double CGeometry::Compute_Thickness(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, su2double Location, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil, bool original_surface) { return 0; }
 
-inline double CGeometry::Compute_Area(double *Plane_P0, double *Plane_Normal, unsigned short iSection, CConfig *config, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface) { return 0; }
+inline su2double CGeometry::Compute_Area(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil, bool original_surface) { return 0; }
 
-inline double CGeometry::Compute_Volume(CConfig *config, bool original_surface) { return 0; }
+inline su2double CGeometry::Compute_Volume(CConfig *config, bool original_surface) { return 0; }
 
 inline void CGeometry::FindNormal_Neighbor(CConfig *config) { }
 
@@ -249,29 +251,29 @@ inline unsigned long CPhysicalGeometry::GetnElemPyra(void) { return nelem_pyrami
 
 inline void CGeometry::SetGeometryPlanes(CConfig *config) {}
 
-inline vector<double> CGeometry::GetGeometryPlanes() { return XCoordList; }
+inline vector<su2double> CGeometry::GetGeometryPlanes() { return XCoordList; }
 
-inline vector<double> CPhysicalGeometry::GetGeometryPlanes() { return XCoordList; }
+inline vector<su2double> CPhysicalGeometry::GetGeometryPlanes() { return XCoordList; }
 
-inline vector<double> CMultiGridGeometry::GetGeometryPlanes() { return XCoordList; }
+inline vector<su2double> CMultiGridGeometry::GetGeometryPlanes() { return XCoordList; }
 
-inline vector<vector<double> > CGeometry::GetXCoord() { return Xcoord_plane; }
+inline vector<vector<su2double> > CGeometry::GetXCoord() { return Xcoord_plane; }
 
-inline vector<vector<double> > CPhysicalGeometry::GetXCoord() { return Xcoord_plane; }
+inline vector<vector<su2double> > CPhysicalGeometry::GetXCoord() { return Xcoord_plane; }
 
-inline vector<vector<double> > CMultiGridGeometry::GetXCoord() { return Xcoord_plane; }
+inline vector<vector<su2double> > CMultiGridGeometry::GetXCoord() { return Xcoord_plane; }
 
-inline vector<vector<double> > CGeometry::GetYCoord() { return Ycoord_plane; }
+inline vector<vector<su2double> > CGeometry::GetYCoord() { return Ycoord_plane; }
 
-inline vector<vector<double> > CPhysicalGeometry::GetYCoord() { return Ycoord_plane; }
+inline vector<vector<su2double> > CPhysicalGeometry::GetYCoord() { return Ycoord_plane; }
 
-inline vector<vector<double> > CMultiGridGeometry::GetYCoord() { return Ycoord_plane; }
+inline vector<vector<su2double> > CMultiGridGeometry::GetYCoord() { return Ycoord_plane; }
 
-inline vector<vector<double> > CGeometry::GetZCoord() { return Zcoord_plane; }
+inline vector<vector<su2double> > CGeometry::GetZCoord() { return Zcoord_plane; }
 
-inline vector<vector<double> > CPhysicalGeometry::GetZCoord() { return Zcoord_plane; }
+inline vector<vector<su2double> > CPhysicalGeometry::GetZCoord() { return Zcoord_plane; }
 
-inline vector<vector<double> > CMultiGridGeometry::GetZCoord() { return Zcoord_plane; }
+inline vector<vector<su2double> > CMultiGridGeometry::GetZCoord() { return Zcoord_plane; }
 
 
 inline vector<vector<unsigned long> > CGeometry::GetPlanarPoints() { return Plane_points; }
@@ -280,3 +282,12 @@ inline vector<vector<unsigned long> > CPhysicalGeometry::GetPlanarPoints() { ret
 
 inline vector<vector<unsigned long> > CMultiGridGeometry::GetPlanarPoints() { return Plane_points; }
 
+inline void CGeometry::SetSensitivity(CConfig* config){}
+
+inline su2double CGeometry::GetSensitivity(unsigned long iPoint, unsigned short iDim){return 0.0;}
+
+inline su2double CPhysicalGeometry::GetSensitivity(unsigned long iPoint, unsigned short iDim){return Sensitivity[iPoint*nDim+iDim];}
+
+inline void CGeometry::SetSensitivity(unsigned long iPoint, unsigned short iDim, su2double val){}
+
+inline void CPhysicalGeometry::SetSensitivity(unsigned long iPoint, unsigned short iDim, su2double val){Sensitivity[iPoint*nDim+iDim] = val;}

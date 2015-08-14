@@ -2,9 +2,9 @@
  * \file numerics_machine_learning_direct_turbulent.hpp
  * \brief Header for caller functions of the turbulence models.
  * \author B. Tracey
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
+ * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
@@ -29,9 +29,8 @@
 
 #pragma once
 
-#ifdef HAVE_MPI
-  #include "mpi.h"
-#endif
+#include "../../Common/include/mpi_structure.hpp"
+
 #include <cmath>
 #include <iostream>
 
@@ -41,18 +40,18 @@ class SpalartAllmarasOtherOutputs{
 public:
   SpalartAllmarasOtherOutputs();
   ~SpalartAllmarasOtherOutputs();
-  double fw;
-  double mul_production; // multiplier of OmegaNu
-  double mul_destruction; // multiplier of (Nu/ d)^2
-  double mul_crossproduction; // multiplier of dnuhat_i / dx_i
-  double Omega; // Sqrt vorticity
+  su2double fw;
+  su2double mul_production; // multiplier of OmegaNu
+  su2double mul_destruction; // multiplier of (Nu/ d)^2
+  su2double mul_crossproduction; // multiplier of dnuhat_i / dx_i
+  su2double Omega; // Sqrt vorticity
 };
 
 class SpalartAllmarasConstants{
 public:
   SpalartAllmarasConstants();
   ~SpalartAllmarasConstants();
-  double  cv1_3,
+  su2double  cv1_3,
           k2,
           cb1,
           cw2,
@@ -66,33 +65,33 @@ public:
 class SpalartAllmarasInputs{
 private:
   int  nDim;
-  double limiter; // How close to the wall should the turbulence model be turned off
-  double**  DUiDXj;  // Mean flow derivative
-  double* DTurb_Kin_Visc_DXj; // D NuTilde D X
-  void init(int nDim, double limiter);
+  su2double limiter; // How close to the wall should the turbulence model be turned off
+  su2double**  DUiDXj;  // Mean flow derivative
+  su2double* DTurb_Kin_Visc_DXj; // D NuTilde D X
+  void init(int nDim, su2double limiter);
 public:
   SpalartAllmarasInputs(int nDim);
-  SpalartAllmarasInputs(int nDim, double limiter);
+  SpalartAllmarasInputs(int nDim, su2double limiter);
   ~SpalartAllmarasInputs();
-  void Set(double** DUiDXj, double* DTurb_Kin_Visc_DXj, bool rotating_frame, bool transition, double dist, double Laminar_Viscosity, double Density, double Turbulent_Kinematic_Viscosity, double intermittency);
+  void Set(su2double** DUiDXj, su2double* DTurb_Kin_Visc_DXj, bool rotating_frame, bool transition, su2double dist, su2double Laminar_Viscosity, su2double Density, su2double Turbulent_Kinematic_Viscosity, su2double intermittency);
   int GetNumDim();
-  double GetLimiter();
-  double** GetMeanFlowGradient();
-  double* GetTurbKinViscGradient();
+  su2double GetLimiter();
+  su2double** GetMeanFlowGradient();
+  su2double* GetTurbKinViscGradient();
   bool rotating_frame;
   bool transition;
-  double Omega;
-  double dist; // Wall distance
-  double Laminar_Viscosity;
-  double Density;
-  double Turbulent_Kinematic_Viscosity;
-  double intermittency; // Used for transition
+  su2double Omega;
+  su2double dist; // Wall distance
+  su2double Laminar_Viscosity;
+  su2double Density;
+  su2double Turbulent_Kinematic_Viscosity;
+  su2double intermittency; // Used for transition
 };
 
 /* \brief computes spalart allmaras source term. See
   numerics_machine_learning_direct_turbulent.cpp */
-void SpalartAllmarasSourceTerm(SpalartAllmarasInputs* inputs, SpalartAllmarasConstants* constants, double* output_residual, double* output_jacobian, SpalartAllmarasOtherOutputs* otherOutput);
+void SpalartAllmarasSourceTerm(SpalartAllmarasInputs* inputs, SpalartAllmarasConstants* constants, su2double* output_residual, su2double* output_jacobian, SpalartAllmarasOtherOutputs* otherOutput);
 
 /* \brief Computes the vorticity from the velocity gradient
  tensor */
-double ComputeVorticity(int nDim, double** DUiDXj);
+su2double ComputeVorticity(int nDim, su2double** DUiDXj);

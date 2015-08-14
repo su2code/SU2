@@ -1,10 +1,10 @@
 /*!
  * \file matrix_structure.inl
  * \brief In-Line subroutines of the <i>matrix_structure.hpp</i> file.
- * \author F. Palacios, A. Bueno
- * \version 3.2.9 "eagle"
+ * \author F. Palacios, A. Bueno, T. Economon
+ * \version 4.0.0 "Cardinal"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
+ * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
@@ -51,6 +51,22 @@ inline void CSysMatrixVectorProduct::operator()(const CSysVector & u, CSysVector
   sparse_matrix->MatrixVectorProduct(u, v, geometry, config);
 }
 
+inline CSysMatrixVectorProductTransposed::CSysMatrixVectorProductTransposed(CSysMatrix & matrix_ref, CGeometry *geometry_ref, CConfig *config_ref) {
+  sparse_matrix = &matrix_ref;
+  geometry = geometry_ref;
+  config = config_ref;
+}
+
+inline void CSysMatrixVectorProductTransposed::operator()(const CSysVector & u, CSysVector & v) const {
+  if (sparse_matrix == NULL) {
+    cerr << "CSysMatrixVectorProduct::operator()(const CSysVector &, CSysVector &): " << endl;
+    cerr << "pointer to sparse matrix is NULL." << endl;
+    throw(-1);
+  }
+  sparse_matrix->MatrixVectorProductTransposed(u, v, geometry, config);
+}
+
+
 inline CJacobiPreconditioner::CJacobiPreconditioner(CSysMatrix & matrix_ref, CGeometry *geometry_ref, CConfig *config_ref) {
   sparse_matrix = &matrix_ref;
   geometry = geometry_ref;
@@ -84,7 +100,7 @@ inline void CILUPreconditioner::operator()(const CSysVector & u, CSysVector & v)
 inline CLU_SGSPreconditioner::CLU_SGSPreconditioner(CSysMatrix & matrix_ref, CGeometry *geometry_ref, CConfig *config_ref) {
   sparse_matrix = &matrix_ref;
       geometry = geometry_ref;
-  config = config_ref;  
+  config = config_ref;
 }
 
 inline void CLU_SGSPreconditioner::operator()(const CSysVector & u, CSysVector & v) const {

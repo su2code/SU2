@@ -1,11 +1,11 @@
 #!/usr/bin/env python 
 
 ## \file change_version_number.py
-#  \brief Python script for doing the continuous adjoint computation using the SU2 suite.
+#  \brief Python script for updating the version number of the SU2 suite.
 #  \author A. Aranake
-#  \version 3.2.9 "eagle"
+#  \version 4.0.0 "Cardinal"
 #
-# SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
+# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
 #
 # SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
@@ -32,8 +32,8 @@
 # Run the script from the base directory (ie $SU2HOME). Grep will search directories recursively for matches in version number
 import os,sys
 
-oldvers = '2.0.5'
-newvers = '2.0.5'
+oldvers = '3.2.9 "eagle"'
+newvers = '4.0.0 "Cardinal"'
 
 os.system('rm -rf version.txt')
 

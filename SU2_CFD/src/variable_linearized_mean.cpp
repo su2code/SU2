@@ -2,9 +2,9 @@
  * \file variable_linearized_mean.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
+ * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
@@ -39,7 +39,7 @@ CLinEulerVariable::CLinEulerVariable(void) : CVariable() {
   
 }
 
-CLinEulerVariable::CLinEulerVariable(double *val_solution, unsigned short val_nDim, unsigned short val_nvar, CConfig *config)
+CLinEulerVariable::CLinEulerVariable(su2double *val_solution, unsigned short val_nDim, unsigned short val_nvar, CConfig *config)
 : CVariable(val_nDim, val_nvar, config) {
 	
   /*--- Array initialization ---*/
@@ -47,22 +47,22 @@ CLinEulerVariable::CLinEulerVariable(double *val_solution, unsigned short val_nD
   ForceProj_Vector = NULL;
   
 	/*--- Allocate structures ---*/
-	Residual_Sum = new double [nVar];
-	Residual_Old = new double [nVar];
+	Residual_Sum = new su2double [nVar];
+	Residual_Old = new su2double [nVar];
 	
-	Undivided_Laplacian = new double [nVar];
-	Limiter = new double [nVar];
+	Undivided_Laplacian = new su2double [nVar];
+	Limiter = new su2double [nVar];
 	
-	Grad_AuxVar = new double [nDim];
-	Solution_time_n = new double [nVar];
-	Solution_time_n1 = new double [nVar];
+	Grad_AuxVar = new su2double [nDim];
+	Solution_time_n = new su2double [nVar];
+	Solution_time_n1 = new su2double [nVar];
 	
-	Res_TruncError = new double [nVar];
+	Res_TruncError = new su2double [nVar];
 	for (unsigned short iVar = 0; iVar < nVar; iVar++)
 		Res_TruncError[iVar] = 0.0;
 	
 	/*--- Initialization of variables ---*/
-	ForceProj_Vector = new double [nDim];
+	ForceProj_Vector = new su2double [nDim];
 	for (unsigned short iDim = 0; iDim < nDim; iDim++)
 		ForceProj_Vector[iDim] = 0.0;
 	
@@ -72,8 +72,8 @@ CLinEulerVariable::CLinEulerVariable(double *val_solution, unsigned short val_nD
 	}
 }
 
-CLinEulerVariable::CLinEulerVariable(double val_deltarho, double *val_deltavel,
-                                     double val_deltae, unsigned short val_nDim, unsigned short val_nvar, CConfig *config)
+CLinEulerVariable::CLinEulerVariable(su2double val_deltarho, su2double *val_deltavel,
+                                     su2double val_deltae, unsigned short val_nDim, unsigned short val_nvar, CConfig *config)
 : CVariable(val_nDim, val_nvar, config) {
 	
   /*--- Array initialization ---*/
@@ -81,22 +81,22 @@ CLinEulerVariable::CLinEulerVariable(double val_deltarho, double *val_deltavel,
   ForceProj_Vector = NULL;
   
 	/*--- Allocate structures ---*/
-	Residual_Sum = new double [nVar];
-	Residual_Old = new double [nVar];
+	Residual_Sum = new su2double [nVar];
+	Residual_Old = new su2double [nVar];
 	
-	Undivided_Laplacian = new double [nVar];
-	Limiter = new double [nVar];
+	Undivided_Laplacian = new su2double [nVar];
+	Limiter = new su2double [nVar];
 	
-	Grad_AuxVar = new double [nDim];
-	Solution_time_n = new double [nVar];
-	Solution_time_n1 = new double [nVar];
+	Grad_AuxVar = new su2double [nDim];
+	Solution_time_n = new su2double [nVar];
+	Solution_time_n1 = new su2double [nVar];
 	
-	Res_TruncError = new double [nVar];
+	Res_TruncError = new su2double [nVar];
 	for (unsigned short iVar = 0; iVar < nVar; iVar++)
 		Res_TruncError[iVar] = 0.0;
 	
 	/*--- Initialization of variables ---*/
-	ForceProj_Vector = new double [nDim];
+	ForceProj_Vector = new su2double [nDim];
 	Solution[0] = val_deltarho; 	Solution_Old[0] = val_deltarho;
 	Solution[nVar-1] = val_deltae; Solution_Old[nVar-1] = val_deltae;
 	
@@ -113,10 +113,10 @@ CLinEulerVariable::~CLinEulerVariable(void) {
   
 }
 
-void CLinEulerVariable::SetDeltaPressure(double *val_velocity, double Gamma) {
+void CLinEulerVariable::SetDeltaPressure(su2double *val_velocity, su2double Gamma) {
 	
-	double Mod_Vel = 0.0;
-	double Vel_dot_DeltaRhoVel = 0.0;
+	su2double Mod_Vel = 0.0;
+	su2double Vel_dot_DeltaRhoVel = 0.0;
 	for (unsigned short iDim = 0; iDim < nDim; iDim++) {
 		Mod_Vel += val_velocity[iDim] * val_velocity[iDim];
 		Vel_dot_DeltaRhoVel += val_velocity[iDim] * Solution[iDim+1];

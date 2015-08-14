@@ -14,10 +14,14 @@
 
 @SET_MAKE@
 
-# SU2 Makefile.am for common library
-# SU2 v3.2.7 "eagle"
+################################################################################
 #
-# SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
+# \file Makefile.am
+# \brief Makefile for the SU2 common library
+# \author M. Colonno, T. Economon, F. Palacios
+# \version 4.0.0 "Cardinal"
+#
+# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
 #
 # SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
@@ -41,13 +45,7 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 #
-# Created: 		10/26/12
-# Last updated: 	3/12/13
-#
-# Created by: 		M. Colonno
-# Updated by: 		M. Colonno
-#
-######################################################################################
+################################################################################
 
 VPATH = @srcdir@
 am__is_gnu_make = { \
@@ -124,12 +122,15 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
+@BUILD_NORMAL_TRUE@am__append_1 = libSU2.a
+@BUILD_DIRECTDIFF_TRUE@am__append_2 = libSU2_DIRECTDIFF.a
+@BUILD_REVERSE_TRUE@am__append_3 = libSU2_REVERSE.a
 subdir = Common/lib
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/ax_tls.m4 \
-	$(top_srcdir)/m4/compiler.m4 $(top_srcdir)/m4/metis.m4 \
-	$(top_srcdir)/m4/parmetis.m4 $(top_srcdir)/m4/tecio.m4 \
-	$(top_srcdir)/configure.ac
+	$(top_srcdir)/m4/codi.m4 $(top_srcdir)/m4/compiler.m4 \
+	$(top_srcdir)/m4/metis.m4 $(top_srcdir)/m4/parmetis.m4 \
+	$(top_srcdir)/m4/tecio.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 DIST_COMMON = $(srcdir)/Makefile.am $(am__DIST_COMMON)
@@ -144,19 +145,174 @@ am__v_AR_ = $(am__v_AR_@AM_DEFAULT_V@)
 am__v_AR_0 = @echo "  AR      " $@;
 am__v_AR_1 = 
 libSU2_a_AR = $(AR) $(ARFLAGS)
-libSU2_a_DEPENDENCIES =
-am__dirstamp = $(am__leading_dot)dirstamp
-am_libSU2_a_OBJECTS = ../src/libSU2_a-config_structure.$(OBJEXT) \
-	../src/libSU2_a-dual_grid_structure.$(OBJEXT) \
-	../src/libSU2_a-geometry_structure.$(OBJEXT) \
-	../src/libSU2_a-grid_adaptation_structure.$(OBJEXT) \
-	../src/libSU2_a-grid_movement_structure.$(OBJEXT) \
-	../src/libSU2_a-linear_solvers_structure.$(OBJEXT) \
-	../src/libSU2_a-primal_grid_structure.$(OBJEXT) \
-	../src/libSU2_a-vector_structure.$(OBJEXT) \
-	../src/libSU2_a-matrix_structure.$(OBJEXT) \
-	../src/libSU2_a-su2mpi.$(OBJEXT)
+am__DEPENDENCIES_1 =
+@BUILD_NORMAL_TRUE@libSU2_a_DEPENDENCIES = $(am__DEPENDENCIES_1)
+am__libSU2_a_SOURCES_DIST =  \
+	../include/datatypes/adolc_f_structure.hpp \
+	../include/datatypes/adolc_f_structure.inl \
+	../include/datatypes/adolc_r_structure.hpp \
+	../include/datatypes/adolc_r_structure.inl \
+	../include/datatypes/primitive_structure.hpp \
+	../include/datatypes/primitive_structure.inl \
+	../include/datatypes/complex_structure.hpp \
+	../include/datatypes/complex_structure.inl \
+	../include/config_structure.hpp \
+	../include/config_structure.inl \
+	../include/dual_grid_structure.hpp \
+	../include/dual_grid_structure.inl \
+	../include/geometry_structure.hpp \
+	../include/geometry_structure.inl \
+	../include/grid_adaptation_structure.hpp \
+	../include/grid_adaptation_structure.inl \
+	../include/grid_movement_structure.hpp \
+	../include/grid_movement_structure.inl \
+	../include/linear_solvers_structure.hpp \
+	../include/linear_solvers_structure.inl \
+	../include/linear_solvers_structure_b.hpp \
+	../include/option_structure.hpp \
+	../include/primal_grid_structure.hpp \
+	../include/primal_grid_structure.inl \
+	../include/vector_structure.hpp \
+	../include/vector_structure.inl \
+	../include/matrix_structure.hpp \
+	../include/matrix_structure.inl ../include/mpi_structure.hpp \
+	../include/mpi_structure.inl ../include/datatype_structure.hpp \
+	../include/datatype_structure.inl ../src/config_structure.cpp \
+	../src/dual_grid_structure.cpp ../src/geometry_structure.cpp \
+	../src/grid_adaptation_structure.cpp \
+	../src/grid_movement_structure.cpp \
+	../src/linear_solvers_structure.cpp \
+	../src/primal_grid_structure.cpp ../src/vector_structure.cpp \
+	../src/matrix_structure.cpp ../src/mpi_structure.cpp \
+	../src/linear_solvers_structure_b.cpp \
+	../src/datatype_structure.cpp
+am__objects_1 = libSU2_a-config_structure.$(OBJEXT) \
+	libSU2_a-dual_grid_structure.$(OBJEXT) \
+	libSU2_a-geometry_structure.$(OBJEXT) \
+	libSU2_a-grid_adaptation_structure.$(OBJEXT) \
+	libSU2_a-grid_movement_structure.$(OBJEXT) \
+	libSU2_a-linear_solvers_structure.$(OBJEXT) \
+	libSU2_a-primal_grid_structure.$(OBJEXT) \
+	libSU2_a-vector_structure.$(OBJEXT) \
+	libSU2_a-matrix_structure.$(OBJEXT) \
+	libSU2_a-mpi_structure.$(OBJEXT) \
+	libSU2_a-linear_solvers_structure_b.$(OBJEXT) \
+	libSU2_a-datatype_structure.$(OBJEXT)
+@BUILD_NORMAL_TRUE@am_libSU2_a_OBJECTS = $(am__objects_1)
 libSU2_a_OBJECTS = $(am_libSU2_a_OBJECTS)
+libSU2_DIRECTDIFF_a_AR = $(AR) $(ARFLAGS)
+@BUILD_DIRECTDIFF_TRUE@libSU2_DIRECTDIFF_a_DEPENDENCIES =  \
+@BUILD_DIRECTDIFF_TRUE@	$(am__DEPENDENCIES_1)
+am__libSU2_DIRECTDIFF_a_SOURCES_DIST =  \
+	../include/datatypes/adolc_f_structure.hpp \
+	../include/datatypes/adolc_f_structure.inl \
+	../include/datatypes/adolc_r_structure.hpp \
+	../include/datatypes/adolc_r_structure.inl \
+	../include/datatypes/primitive_structure.hpp \
+	../include/datatypes/primitive_structure.inl \
+	../include/datatypes/complex_structure.hpp \
+	../include/datatypes/complex_structure.inl \
+	../include/config_structure.hpp \
+	../include/config_structure.inl \
+	../include/dual_grid_structure.hpp \
+	../include/dual_grid_structure.inl \
+	../include/geometry_structure.hpp \
+	../include/geometry_structure.inl \
+	../include/grid_adaptation_structure.hpp \
+	../include/grid_adaptation_structure.inl \
+	../include/grid_movement_structure.hpp \
+	../include/grid_movement_structure.inl \
+	../include/linear_solvers_structure.hpp \
+	../include/linear_solvers_structure.inl \
+	../include/linear_solvers_structure_b.hpp \
+	../include/option_structure.hpp \
+	../include/primal_grid_structure.hpp \
+	../include/primal_grid_structure.inl \
+	../include/vector_structure.hpp \
+	../include/vector_structure.inl \
+	../include/matrix_structure.hpp \
+	../include/matrix_structure.inl ../include/mpi_structure.hpp \
+	../include/mpi_structure.inl ../include/datatype_structure.hpp \
+	../include/datatype_structure.inl ../src/config_structure.cpp \
+	../src/dual_grid_structure.cpp ../src/geometry_structure.cpp \
+	../src/grid_adaptation_structure.cpp \
+	../src/grid_movement_structure.cpp \
+	../src/linear_solvers_structure.cpp \
+	../src/primal_grid_structure.cpp ../src/vector_structure.cpp \
+	../src/matrix_structure.cpp ../src/mpi_structure.cpp \
+	../src/linear_solvers_structure_b.cpp \
+	../src/datatype_structure.cpp
+am__objects_2 = libSU2_DIRECTDIFF_a-config_structure.$(OBJEXT) \
+	libSU2_DIRECTDIFF_a-dual_grid_structure.$(OBJEXT) \
+	libSU2_DIRECTDIFF_a-geometry_structure.$(OBJEXT) \
+	libSU2_DIRECTDIFF_a-grid_adaptation_structure.$(OBJEXT) \
+	libSU2_DIRECTDIFF_a-grid_movement_structure.$(OBJEXT) \
+	libSU2_DIRECTDIFF_a-linear_solvers_structure.$(OBJEXT) \
+	libSU2_DIRECTDIFF_a-primal_grid_structure.$(OBJEXT) \
+	libSU2_DIRECTDIFF_a-vector_structure.$(OBJEXT) \
+	libSU2_DIRECTDIFF_a-matrix_structure.$(OBJEXT) \
+	libSU2_DIRECTDIFF_a-mpi_structure.$(OBJEXT) \
+	libSU2_DIRECTDIFF_a-linear_solvers_structure_b.$(OBJEXT) \
+	libSU2_DIRECTDIFF_a-datatype_structure.$(OBJEXT)
+@BUILD_DIRECTDIFF_TRUE@am_libSU2_DIRECTDIFF_a_OBJECTS =  \
+@BUILD_DIRECTDIFF_TRUE@	$(am__objects_2)
+libSU2_DIRECTDIFF_a_OBJECTS = $(am_libSU2_DIRECTDIFF_a_OBJECTS)
+libSU2_REVERSE_a_AR = $(AR) $(ARFLAGS)
+@BUILD_REVERSE_TRUE@libSU2_REVERSE_a_DEPENDENCIES =  \
+@BUILD_REVERSE_TRUE@	$(am__DEPENDENCIES_1)
+am__libSU2_REVERSE_a_SOURCES_DIST =  \
+	../include/datatypes/adolc_f_structure.hpp \
+	../include/datatypes/adolc_f_structure.inl \
+	../include/datatypes/adolc_r_structure.hpp \
+	../include/datatypes/adolc_r_structure.inl \
+	../include/datatypes/primitive_structure.hpp \
+	../include/datatypes/primitive_structure.inl \
+	../include/datatypes/complex_structure.hpp \
+	../include/datatypes/complex_structure.inl \
+	../include/config_structure.hpp \
+	../include/config_structure.inl \
+	../include/dual_grid_structure.hpp \
+	../include/dual_grid_structure.inl \
+	../include/geometry_structure.hpp \
+	../include/geometry_structure.inl \
+	../include/grid_adaptation_structure.hpp \
+	../include/grid_adaptation_structure.inl \
+	../include/grid_movement_structure.hpp \
+	../include/grid_movement_structure.inl \
+	../include/linear_solvers_structure.hpp \
+	../include/linear_solvers_structure.inl \
+	../include/linear_solvers_structure_b.hpp \
+	../include/option_structure.hpp \
+	../include/primal_grid_structure.hpp \
+	../include/primal_grid_structure.inl \
+	../include/vector_structure.hpp \
+	../include/vector_structure.inl \
+	../include/matrix_structure.hpp \
+	../include/matrix_structure.inl ../include/mpi_structure.hpp \
+	../include/mpi_structure.inl ../include/datatype_structure.hpp \
+	../include/datatype_structure.inl ../src/config_structure.cpp \
+	../src/dual_grid_structure.cpp ../src/geometry_structure.cpp \
+	../src/grid_adaptation_structure.cpp \
+	../src/grid_movement_structure.cpp \
+	../src/linear_solvers_structure.cpp \
+	../src/primal_grid_structure.cpp ../src/vector_structure.cpp \
+	../src/matrix_structure.cpp ../src/mpi_structure.cpp \
+	../src/linear_solvers_structure_b.cpp \
+	../src/datatype_structure.cpp
+am__objects_3 = libSU2_REVERSE_a-config_structure.$(OBJEXT) \
+	libSU2_REVERSE_a-dual_grid_structure.$(OBJEXT) \
+	libSU2_REVERSE_a-geometry_structure.$(OBJEXT) \
+	libSU2_REVERSE_a-grid_adaptation_structure.$(OBJEXT) \
+	libSU2_REVERSE_a-grid_movement_structure.$(OBJEXT) \
+	libSU2_REVERSE_a-linear_solvers_structure.$(OBJEXT) \
+	libSU2_REVERSE_a-primal_grid_structure.$(OBJEXT) \
+	libSU2_REVERSE_a-vector_structure.$(OBJEXT) \
+	libSU2_REVERSE_a-matrix_structure.$(OBJEXT) \
+	libSU2_REVERSE_a-mpi_structure.$(OBJEXT) \
+	libSU2_REVERSE_a-linear_solvers_structure_b.$(OBJEXT) \
+	libSU2_REVERSE_a-datatype_structure.$(OBJEXT)
+@BUILD_REVERSE_TRUE@am_libSU2_REVERSE_a_OBJECTS = $(am__objects_3)
+libSU2_REVERSE_a_OBJECTS = $(am_libSU2_REVERSE_a_OBJECTS)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -202,8 +358,11 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(libSU2_a_SOURCES)
-DIST_SOURCES = $(libSU2_a_SOURCES)
+SOURCES = $(libSU2_a_SOURCES) $(libSU2_DIRECTDIFF_a_SOURCES) \
+	$(libSU2_REVERSE_a_SOURCES)
+DIST_SOURCES = $(am__libSU2_a_SOURCES_DIST) \
+	$(am__libSU2_DIRECTDIFF_a_SOURCES_DIST) \
+	$(am__libSU2_REVERSE_a_SOURCES_DIST)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -250,12 +409,16 @@ CXXFLAGS = @CXXFLAGS@
 CYGPATH_W = @CYGPATH_W@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
+DIRECTDIFF_CXX = @DIRECTDIFF_CXX@
+DIRECTDIFF_LIBS = @DIRECTDIFF_LIBS@
 ECHO_C = @ECHO_C@
 ECHO_N = @ECHO_N@
 ECHO_T = @ECHO_T@
 EGREP = @EGREP@
 EXEEXT = @EXEEXT@
 GREP = @GREP@
+HDF5_CXX = @HDF5_CXX@
+HDF5_LD = @HDF5_LD@
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
@@ -287,14 +450,20 @@ PARMETIS_INCLUDE = @PARMETIS_INCLUDE@
 PARMETIS_LIB = @PARMETIS_LIB@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 RANLIB = @RANLIB@
+REVERSE_CXX = @REVERSE_CXX@
+REVERSE_LIBS = @REVERSE_LIBS@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STRIP = @STRIP@
 SU2_METIS_CPPFLAGS = @SU2_METIS_CPPFLAGS@
 SU2_PARMETIS_CPPFLAGS = @SU2_PARMETIS_CPPFLAGS@
+SZIP_CXX = @SZIP_CXX@
+SZIP_LD = @SZIP_LD@
 TECIO_CPPFLAGS = @TECIO_CPPFLAGS@
 TECIO_INCLUDE = @TECIO_INCLUDE@
 VERSION = @VERSION@
+ZLIB_CXX = @ZLIB_CXX@
+ZLIB_LD = @ZLIB_LD@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
 abs_top_builddir = @abs_top_builddir@
@@ -352,41 +521,54 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-
-# AUTOMAKE_OPTIONS = subdir-objects
 ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS}
-noinst_LIBRARIES = libSU2.a
-libSU2_a_SOURCES = \
-                ../include/config_structure.hpp \
-		../include/config_structure.inl \
-		../include/dual_grid_structure.hpp \
-		../include/dual_grid_structure.inl \
-		../include/geometry_structure.hpp \
-		../include/geometry_structure.inl \
-		../include/grid_adaptation_structure.hpp \
-		../include/grid_adaptation_structure.inl \
-		../include/grid_movement_structure.hpp \
-		../include/grid_movement_structure.inl \
-		../include/linear_solvers_structure.hpp \
-		../include/linear_solvers_structure.inl \
-		../include/option_structure.hpp \
-		../include/primal_grid_structure.hpp \
-		../include/primal_grid_structure.inl \
-		../include/vector_structure.hpp \
-		../include/vector_structure.inl \
-	        ../include/matrix_structure.hpp \
-	        ../include/matrix_structure.inl \
-	    ../include/su2mpi.hpp \
-		../src/config_structure.cpp \
-		../src/dual_grid_structure.cpp \
-		../src/geometry_structure.cpp \
-		../src/grid_adaptation_structure.cpp \
-		../src/grid_movement_structure.cpp \
-		../src/linear_solvers_structure.cpp \
-		../src/primal_grid_structure.cpp \
-	        ../src/vector_structure.cpp \
-		../src/matrix_structure.cpp \
-		../src/su2mpi.cpp 
+noinst_LIBRARIES = $(am__append_1) $(am__append_2) $(am__append_3)
+lib_sources = \
+  ../include/datatypes/adolc_f_structure.hpp \
+  ../include/datatypes/adolc_f_structure.inl \
+  ../include/datatypes/adolc_r_structure.hpp \
+  ../include/datatypes/adolc_r_structure.inl \
+  ../include/datatypes/primitive_structure.hpp \
+  ../include/datatypes/primitive_structure.inl \
+  ../include/datatypes/complex_structure.hpp \
+  ../include/datatypes/complex_structure.inl \
+  ../include/config_structure.hpp \
+  ../include/config_structure.hpp \
+  ../include/config_structure.inl \
+  ../include/dual_grid_structure.hpp \
+  ../include/dual_grid_structure.inl \
+  ../include/geometry_structure.hpp \
+  ../include/geometry_structure.inl \
+  ../include/grid_adaptation_structure.hpp \
+  ../include/grid_adaptation_structure.inl \
+  ../include/grid_movement_structure.hpp \
+  ../include/grid_movement_structure.inl \
+  ../include/linear_solvers_structure.hpp \
+  ../include/linear_solvers_structure.inl \
+  ../include/linear_solvers_structure_b.hpp \
+  ../include/option_structure.hpp \
+  ../include/primal_grid_structure.hpp \
+  ../include/primal_grid_structure.inl \
+  ../include/vector_structure.hpp \
+  ../include/vector_structure.inl \
+  ../include/matrix_structure.hpp \
+  ../include/matrix_structure.inl \
+  ../include/mpi_structure.hpp \
+  ../include/mpi_structure.inl \
+  ../include/datatype_structure.hpp \
+  ../include/datatype_structure.inl \
+  ../src/config_structure.cpp \
+  ../src/dual_grid_structure.cpp \
+  ../src/geometry_structure.cpp \
+  ../src/grid_adaptation_structure.cpp \
+  ../src/grid_movement_structure.cpp \
+  ../src/linear_solvers_structure.cpp \
+  ../src/primal_grid_structure.cpp \
+  ../src/vector_structure.cpp \
+  ../src/matrix_structure.cpp \
+  ../src/mpi_structure.cpp \
+  ../src/linear_solvers_structure_b.cpp \
+  ../src/datatype_structure.cpp 
 
 
 # always link to built dependencies from ./externals
@@ -394,14 +576,34 @@ libSU2_a_SOURCES = \
 # if BUILD_CGNS
 # endif
 
+# if BUILD_HDF5
+# endif
+
+# if BUILD_SZIP
+# endif
+
+# if BUILD_ZLIB
+# endif
+
 # if BUILD_MUTATIONPP
 # endif
 
 # if BUILD_JSONCPP
-libSU2_a_CXXFLAGS = @su2_externals_INCLUDES@ @CGNS_CXX@ \
-	@MUTATIONPP_CXX@ @JSONCPP_CXX@ $(am__empty)
-libSU2_a_LIBADD = @su2_externals_LIBS@ @CGNS_LD@ @MUTATIONPP_LD@ \
-	@JSONCPP_LD@ $(am__empty)
+lib_cxxflags = @su2_externals_INCLUDES@ @CGNS_CXX@ @HDF5_CXX@ \
+	@SZIP_CXX@ @ZLIB_CXX@ @MUTATIONPP_CXX@ @JSONCPP_CXX@ \
+	$(am__empty)
+lib_ldadd = @su2_externals_LIBS@ @CGNS_LD@ @HDF5_LD@ @SZIP_LD@ \
+	@ZLIB_LD@ @MUTATIONPP_LD@ @JSONCPP_LD@ $(am__empty)
+# endif
+@BUILD_NORMAL_TRUE@libSU2_a_SOURCES = $(lib_sources)
+@BUILD_NORMAL_TRUE@libSU2_a_CXXFLAGS = ${lib_cxxflags}
+@BUILD_NORMAL_TRUE@libSU2_a_LIBADD = ${lib_ldadd}
+@BUILD_DIRECTDIFF_TRUE@libSU2_DIRECTDIFF_a_SOURCES = $(lib_sources)
+@BUILD_DIRECTDIFF_TRUE@libSU2_DIRECTDIFF_a_CXXFLAGS = @DIRECTDIFF_CXX@ ${lib_cxxflags}
+@BUILD_DIRECTDIFF_TRUE@libSU2_DIRECTDIFF_a_LIBADD = ${lib_ldadd}
+@BUILD_REVERSE_TRUE@libSU2_REVERSE_a_SOURCES = $(lib_sources)
+@BUILD_REVERSE_TRUE@libSU2_REVERSE_a_CXXFLAGS = @REVERSE_CXX@ ${lib_cxxflags}
+@BUILD_REVERSE_TRUE@libSU2_REVERSE_a_LIBADD = ${lib_ldadd}
 all: all-am
 
 .SUFFIXES:
@@ -438,6 +640,7 @@ $(am__aclocal_m4_deps):
 
 clean-noinstLIBRARIES:
 	-test -z "$(noinst_LIBRARIES)" || rm -f $(noinst_LIBRARIES)
+<<<<<<< HEAD
 ../src/$(am__dirstamp):
 	@$(MKDIR_P) ../src
 	@: > ../src/$(am__dirstamp)
@@ -465,184 +668,581 @@ clean-noinstLIBRARIES:
 ../src/libSU2_a-su2mpi.$(OBJEXT): ../src/$(am__dirstamp) \
 	../src/$(DEPDIR)/$(am__dirstamp)
 
+=======
+>>>>>>> develop
 libSU2.a: $(libSU2_a_OBJECTS) $(libSU2_a_DEPENDENCIES) $(EXTRA_libSU2_a_DEPENDENCIES) 
 	$(AM_V_at)-rm -f libSU2.a
 	$(AM_V_AR)$(libSU2_a_AR) libSU2.a $(libSU2_a_OBJECTS) $(libSU2_a_LIBADD)
 	$(AM_V_at)$(RANLIB) libSU2.a
+libSU2_DIRECTDIFF.a: $(libSU2_DIRECTDIFF_a_OBJECTS) $(libSU2_DIRECTDIFF_a_DEPENDENCIES) $(EXTRA_libSU2_DIRECTDIFF_a_DEPENDENCIES) 
+	$(AM_V_at)-rm -f libSU2_DIRECTDIFF.a
+	$(AM_V_AR)$(libSU2_DIRECTDIFF_a_AR) libSU2_DIRECTDIFF.a $(libSU2_DIRECTDIFF_a_OBJECTS) $(libSU2_DIRECTDIFF_a_LIBADD)
+	$(AM_V_at)$(RANLIB) libSU2_DIRECTDIFF.a
+libSU2_REVERSE.a: $(libSU2_REVERSE_a_OBJECTS) $(libSU2_REVERSE_a_DEPENDENCIES) $(EXTRA_libSU2_REVERSE_a_DEPENDENCIES) 
+	$(AM_V_at)-rm -f libSU2_REVERSE.a
+	$(AM_V_AR)$(libSU2_REVERSE_a_AR) libSU2_REVERSE.a $(libSU2_REVERSE_a_OBJECTS) $(libSU2_REVERSE_a_LIBADD)
+	$(AM_V_at)$(RANLIB) libSU2_REVERSE.a
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
-	-rm -f ../src/*.$(OBJEXT)
 
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-config_structure.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-dual_grid_structure.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-geometry_structure.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-grid_adaptation_structure.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-grid_movement_structure.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-linear_solvers_structure.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-matrix_structure.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-primal_grid_structure.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-su2mpi.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-vector_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_DIRECTDIFF_a-config_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_DIRECTDIFF_a-datatype_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_DIRECTDIFF_a-dual_grid_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_DIRECTDIFF_a-geometry_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_DIRECTDIFF_a-grid_adaptation_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_DIRECTDIFF_a-grid_movement_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_DIRECTDIFF_a-linear_solvers_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_DIRECTDIFF_a-linear_solvers_structure_b.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_DIRECTDIFF_a-matrix_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_DIRECTDIFF_a-mpi_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_DIRECTDIFF_a-primal_grid_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_DIRECTDIFF_a-vector_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_REVERSE_a-config_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_REVERSE_a-datatype_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_REVERSE_a-dual_grid_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_REVERSE_a-geometry_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_REVERSE_a-grid_adaptation_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_REVERSE_a-grid_movement_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_REVERSE_a-linear_solvers_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_REVERSE_a-linear_solvers_structure_b.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_REVERSE_a-matrix_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_REVERSE_a-mpi_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_REVERSE_a-primal_grid_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_REVERSE_a-vector_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_a-config_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_a-datatype_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_a-dual_grid_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_a-geometry_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_a-grid_adaptation_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_a-grid_movement_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_a-linear_solvers_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_a-linear_solvers_structure_b.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_a-matrix_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_a-mpi_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_a-primal_grid_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_a-vector_structure.Po@am__quote@
 
 .cpp.o:
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
-@am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
-@am__fastdepCXX_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXXCOMPILE) -c -o $@ $<
 
 .cpp.obj:
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.obj$$||'`;\
-@am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ `$(CYGPATH_W) '$<'` &&\
-@am__fastdepCXX_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXXCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
 
-../src/libSU2_a-config_structure.o: ../src/config_structure.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_a-config_structure.o -MD -MP -MF ../src/$(DEPDIR)/libSU2_a-config_structure.Tpo -c -o ../src/libSU2_a-config_structure.o `test -f '../src/config_structure.cpp' || echo '$(srcdir)/'`../src/config_structure.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_a-config_structure.Tpo ../src/$(DEPDIR)/libSU2_a-config_structure.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/config_structure.cpp' object='../src/libSU2_a-config_structure.o' libtool=no @AMDEPBACKSLASH@
+libSU2_a-config_structure.o: ../src/config_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_a-config_structure.o -MD -MP -MF $(DEPDIR)/libSU2_a-config_structure.Tpo -c -o libSU2_a-config_structure.o `test -f '../src/config_structure.cpp' || echo '$(srcdir)/'`../src/config_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_a-config_structure.Tpo $(DEPDIR)/libSU2_a-config_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/config_structure.cpp' object='libSU2_a-config_structure.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_a-config_structure.o `test -f '../src/config_structure.cpp' || echo '$(srcdir)/'`../src/config_structure.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_a-config_structure.o `test -f '../src/config_structure.cpp' || echo '$(srcdir)/'`../src/config_structure.cpp
 
-../src/libSU2_a-config_structure.obj: ../src/config_structure.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_a-config_structure.obj -MD -MP -MF ../src/$(DEPDIR)/libSU2_a-config_structure.Tpo -c -o ../src/libSU2_a-config_structure.obj `if test -f '../src/config_structure.cpp'; then $(CYGPATH_W) '../src/config_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/config_structure.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_a-config_structure.Tpo ../src/$(DEPDIR)/libSU2_a-config_structure.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/config_structure.cpp' object='../src/libSU2_a-config_structure.obj' libtool=no @AMDEPBACKSLASH@
+libSU2_a-config_structure.obj: ../src/config_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_a-config_structure.obj -MD -MP -MF $(DEPDIR)/libSU2_a-config_structure.Tpo -c -o libSU2_a-config_structure.obj `if test -f '../src/config_structure.cpp'; then $(CYGPATH_W) '../src/config_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/config_structure.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_a-config_structure.Tpo $(DEPDIR)/libSU2_a-config_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/config_structure.cpp' object='libSU2_a-config_structure.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_a-config_structure.obj `if test -f '../src/config_structure.cpp'; then $(CYGPATH_W) '../src/config_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/config_structure.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_a-config_structure.obj `if test -f '../src/config_structure.cpp'; then $(CYGPATH_W) '../src/config_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/config_structure.cpp'; fi`
 
-../src/libSU2_a-dual_grid_structure.o: ../src/dual_grid_structure.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_a-dual_grid_structure.o -MD -MP -MF ../src/$(DEPDIR)/libSU2_a-dual_grid_structure.Tpo -c -o ../src/libSU2_a-dual_grid_structure.o `test -f '../src/dual_grid_structure.cpp' || echo '$(srcdir)/'`../src/dual_grid_structure.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_a-dual_grid_structure.Tpo ../src/$(DEPDIR)/libSU2_a-dual_grid_structure.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/dual_grid_structure.cpp' object='../src/libSU2_a-dual_grid_structure.o' libtool=no @AMDEPBACKSLASH@
+libSU2_a-dual_grid_structure.o: ../src/dual_grid_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_a-dual_grid_structure.o -MD -MP -MF $(DEPDIR)/libSU2_a-dual_grid_structure.Tpo -c -o libSU2_a-dual_grid_structure.o `test -f '../src/dual_grid_structure.cpp' || echo '$(srcdir)/'`../src/dual_grid_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_a-dual_grid_structure.Tpo $(DEPDIR)/libSU2_a-dual_grid_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/dual_grid_structure.cpp' object='libSU2_a-dual_grid_structure.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_a-dual_grid_structure.o `test -f '../src/dual_grid_structure.cpp' || echo '$(srcdir)/'`../src/dual_grid_structure.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_a-dual_grid_structure.o `test -f '../src/dual_grid_structure.cpp' || echo '$(srcdir)/'`../src/dual_grid_structure.cpp
 
-../src/libSU2_a-dual_grid_structure.obj: ../src/dual_grid_structure.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_a-dual_grid_structure.obj -MD -MP -MF ../src/$(DEPDIR)/libSU2_a-dual_grid_structure.Tpo -c -o ../src/libSU2_a-dual_grid_structure.obj `if test -f '../src/dual_grid_structure.cpp'; then $(CYGPATH_W) '../src/dual_grid_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/dual_grid_structure.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_a-dual_grid_structure.Tpo ../src/$(DEPDIR)/libSU2_a-dual_grid_structure.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/dual_grid_structure.cpp' object='../src/libSU2_a-dual_grid_structure.obj' libtool=no @AMDEPBACKSLASH@
+libSU2_a-dual_grid_structure.obj: ../src/dual_grid_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_a-dual_grid_structure.obj -MD -MP -MF $(DEPDIR)/libSU2_a-dual_grid_structure.Tpo -c -o libSU2_a-dual_grid_structure.obj `if test -f '../src/dual_grid_structure.cpp'; then $(CYGPATH_W) '../src/dual_grid_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/dual_grid_structure.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_a-dual_grid_structure.Tpo $(DEPDIR)/libSU2_a-dual_grid_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/dual_grid_structure.cpp' object='libSU2_a-dual_grid_structure.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_a-dual_grid_structure.obj `if test -f '../src/dual_grid_structure.cpp'; then $(CYGPATH_W) '../src/dual_grid_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/dual_grid_structure.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_a-dual_grid_structure.obj `if test -f '../src/dual_grid_structure.cpp'; then $(CYGPATH_W) '../src/dual_grid_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/dual_grid_structure.cpp'; fi`
 
-../src/libSU2_a-geometry_structure.o: ../src/geometry_structure.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_a-geometry_structure.o -MD -MP -MF ../src/$(DEPDIR)/libSU2_a-geometry_structure.Tpo -c -o ../src/libSU2_a-geometry_structure.o `test -f '../src/geometry_structure.cpp' || echo '$(srcdir)/'`../src/geometry_structure.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_a-geometry_structure.Tpo ../src/$(DEPDIR)/libSU2_a-geometry_structure.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/geometry_structure.cpp' object='../src/libSU2_a-geometry_structure.o' libtool=no @AMDEPBACKSLASH@
+libSU2_a-geometry_structure.o: ../src/geometry_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_a-geometry_structure.o -MD -MP -MF $(DEPDIR)/libSU2_a-geometry_structure.Tpo -c -o libSU2_a-geometry_structure.o `test -f '../src/geometry_structure.cpp' || echo '$(srcdir)/'`../src/geometry_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_a-geometry_structure.Tpo $(DEPDIR)/libSU2_a-geometry_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/geometry_structure.cpp' object='libSU2_a-geometry_structure.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_a-geometry_structure.o `test -f '../src/geometry_structure.cpp' || echo '$(srcdir)/'`../src/geometry_structure.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_a-geometry_structure.o `test -f '../src/geometry_structure.cpp' || echo '$(srcdir)/'`../src/geometry_structure.cpp
 
-../src/libSU2_a-geometry_structure.obj: ../src/geometry_structure.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_a-geometry_structure.obj -MD -MP -MF ../src/$(DEPDIR)/libSU2_a-geometry_structure.Tpo -c -o ../src/libSU2_a-geometry_structure.obj `if test -f '../src/geometry_structure.cpp'; then $(CYGPATH_W) '../src/geometry_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/geometry_structure.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_a-geometry_structure.Tpo ../src/$(DEPDIR)/libSU2_a-geometry_structure.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/geometry_structure.cpp' object='../src/libSU2_a-geometry_structure.obj' libtool=no @AMDEPBACKSLASH@
+libSU2_a-geometry_structure.obj: ../src/geometry_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_a-geometry_structure.obj -MD -MP -MF $(DEPDIR)/libSU2_a-geometry_structure.Tpo -c -o libSU2_a-geometry_structure.obj `if test -f '../src/geometry_structure.cpp'; then $(CYGPATH_W) '../src/geometry_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/geometry_structure.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_a-geometry_structure.Tpo $(DEPDIR)/libSU2_a-geometry_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/geometry_structure.cpp' object='libSU2_a-geometry_structure.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_a-geometry_structure.obj `if test -f '../src/geometry_structure.cpp'; then $(CYGPATH_W) '../src/geometry_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/geometry_structure.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_a-geometry_structure.obj `if test -f '../src/geometry_structure.cpp'; then $(CYGPATH_W) '../src/geometry_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/geometry_structure.cpp'; fi`
 
-../src/libSU2_a-grid_adaptation_structure.o: ../src/grid_adaptation_structure.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_a-grid_adaptation_structure.o -MD -MP -MF ../src/$(DEPDIR)/libSU2_a-grid_adaptation_structure.Tpo -c -o ../src/libSU2_a-grid_adaptation_structure.o `test -f '../src/grid_adaptation_structure.cpp' || echo '$(srcdir)/'`../src/grid_adaptation_structure.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_a-grid_adaptation_structure.Tpo ../src/$(DEPDIR)/libSU2_a-grid_adaptation_structure.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/grid_adaptation_structure.cpp' object='../src/libSU2_a-grid_adaptation_structure.o' libtool=no @AMDEPBACKSLASH@
+libSU2_a-grid_adaptation_structure.o: ../src/grid_adaptation_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_a-grid_adaptation_structure.o -MD -MP -MF $(DEPDIR)/libSU2_a-grid_adaptation_structure.Tpo -c -o libSU2_a-grid_adaptation_structure.o `test -f '../src/grid_adaptation_structure.cpp' || echo '$(srcdir)/'`../src/grid_adaptation_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_a-grid_adaptation_structure.Tpo $(DEPDIR)/libSU2_a-grid_adaptation_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/grid_adaptation_structure.cpp' object='libSU2_a-grid_adaptation_structure.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_a-grid_adaptation_structure.o `test -f '../src/grid_adaptation_structure.cpp' || echo '$(srcdir)/'`../src/grid_adaptation_structure.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_a-grid_adaptation_structure.o `test -f '../src/grid_adaptation_structure.cpp' || echo '$(srcdir)/'`../src/grid_adaptation_structure.cpp
 
-../src/libSU2_a-grid_adaptation_structure.obj: ../src/grid_adaptation_structure.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_a-grid_adaptation_structure.obj -MD -MP -MF ../src/$(DEPDIR)/libSU2_a-grid_adaptation_structure.Tpo -c -o ../src/libSU2_a-grid_adaptation_structure.obj `if test -f '../src/grid_adaptation_structure.cpp'; then $(CYGPATH_W) '../src/grid_adaptation_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/grid_adaptation_structure.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_a-grid_adaptation_structure.Tpo ../src/$(DEPDIR)/libSU2_a-grid_adaptation_structure.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/grid_adaptation_structure.cpp' object='../src/libSU2_a-grid_adaptation_structure.obj' libtool=no @AMDEPBACKSLASH@
+libSU2_a-grid_adaptation_structure.obj: ../src/grid_adaptation_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_a-grid_adaptation_structure.obj -MD -MP -MF $(DEPDIR)/libSU2_a-grid_adaptation_structure.Tpo -c -o libSU2_a-grid_adaptation_structure.obj `if test -f '../src/grid_adaptation_structure.cpp'; then $(CYGPATH_W) '../src/grid_adaptation_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/grid_adaptation_structure.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_a-grid_adaptation_structure.Tpo $(DEPDIR)/libSU2_a-grid_adaptation_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/grid_adaptation_structure.cpp' object='libSU2_a-grid_adaptation_structure.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_a-grid_adaptation_structure.obj `if test -f '../src/grid_adaptation_structure.cpp'; then $(CYGPATH_W) '../src/grid_adaptation_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/grid_adaptation_structure.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_a-grid_adaptation_structure.obj `if test -f '../src/grid_adaptation_structure.cpp'; then $(CYGPATH_W) '../src/grid_adaptation_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/grid_adaptation_structure.cpp'; fi`
 
-../src/libSU2_a-grid_movement_structure.o: ../src/grid_movement_structure.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_a-grid_movement_structure.o -MD -MP -MF ../src/$(DEPDIR)/libSU2_a-grid_movement_structure.Tpo -c -o ../src/libSU2_a-grid_movement_structure.o `test -f '../src/grid_movement_structure.cpp' || echo '$(srcdir)/'`../src/grid_movement_structure.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_a-grid_movement_structure.Tpo ../src/$(DEPDIR)/libSU2_a-grid_movement_structure.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/grid_movement_structure.cpp' object='../src/libSU2_a-grid_movement_structure.o' libtool=no @AMDEPBACKSLASH@
+libSU2_a-grid_movement_structure.o: ../src/grid_movement_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_a-grid_movement_structure.o -MD -MP -MF $(DEPDIR)/libSU2_a-grid_movement_structure.Tpo -c -o libSU2_a-grid_movement_structure.o `test -f '../src/grid_movement_structure.cpp' || echo '$(srcdir)/'`../src/grid_movement_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_a-grid_movement_structure.Tpo $(DEPDIR)/libSU2_a-grid_movement_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/grid_movement_structure.cpp' object='libSU2_a-grid_movement_structure.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_a-grid_movement_structure.o `test -f '../src/grid_movement_structure.cpp' || echo '$(srcdir)/'`../src/grid_movement_structure.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_a-grid_movement_structure.o `test -f '../src/grid_movement_structure.cpp' || echo '$(srcdir)/'`../src/grid_movement_structure.cpp
 
-../src/libSU2_a-grid_movement_structure.obj: ../src/grid_movement_structure.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_a-grid_movement_structure.obj -MD -MP -MF ../src/$(DEPDIR)/libSU2_a-grid_movement_structure.Tpo -c -o ../src/libSU2_a-grid_movement_structure.obj `if test -f '../src/grid_movement_structure.cpp'; then $(CYGPATH_W) '../src/grid_movement_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/grid_movement_structure.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_a-grid_movement_structure.Tpo ../src/$(DEPDIR)/libSU2_a-grid_movement_structure.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/grid_movement_structure.cpp' object='../src/libSU2_a-grid_movement_structure.obj' libtool=no @AMDEPBACKSLASH@
+libSU2_a-grid_movement_structure.obj: ../src/grid_movement_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_a-grid_movement_structure.obj -MD -MP -MF $(DEPDIR)/libSU2_a-grid_movement_structure.Tpo -c -o libSU2_a-grid_movement_structure.obj `if test -f '../src/grid_movement_structure.cpp'; then $(CYGPATH_W) '../src/grid_movement_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/grid_movement_structure.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_a-grid_movement_structure.Tpo $(DEPDIR)/libSU2_a-grid_movement_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/grid_movement_structure.cpp' object='libSU2_a-grid_movement_structure.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_a-grid_movement_structure.obj `if test -f '../src/grid_movement_structure.cpp'; then $(CYGPATH_W) '../src/grid_movement_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/grid_movement_structure.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_a-grid_movement_structure.obj `if test -f '../src/grid_movement_structure.cpp'; then $(CYGPATH_W) '../src/grid_movement_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/grid_movement_structure.cpp'; fi`
 
-../src/libSU2_a-linear_solvers_structure.o: ../src/linear_solvers_structure.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_a-linear_solvers_structure.o -MD -MP -MF ../src/$(DEPDIR)/libSU2_a-linear_solvers_structure.Tpo -c -o ../src/libSU2_a-linear_solvers_structure.o `test -f '../src/linear_solvers_structure.cpp' || echo '$(srcdir)/'`../src/linear_solvers_structure.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_a-linear_solvers_structure.Tpo ../src/$(DEPDIR)/libSU2_a-linear_solvers_structure.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/linear_solvers_structure.cpp' object='../src/libSU2_a-linear_solvers_structure.o' libtool=no @AMDEPBACKSLASH@
+libSU2_a-linear_solvers_structure.o: ../src/linear_solvers_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_a-linear_solvers_structure.o -MD -MP -MF $(DEPDIR)/libSU2_a-linear_solvers_structure.Tpo -c -o libSU2_a-linear_solvers_structure.o `test -f '../src/linear_solvers_structure.cpp' || echo '$(srcdir)/'`../src/linear_solvers_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_a-linear_solvers_structure.Tpo $(DEPDIR)/libSU2_a-linear_solvers_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/linear_solvers_structure.cpp' object='libSU2_a-linear_solvers_structure.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_a-linear_solvers_structure.o `test -f '../src/linear_solvers_structure.cpp' || echo '$(srcdir)/'`../src/linear_solvers_structure.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_a-linear_solvers_structure.o `test -f '../src/linear_solvers_structure.cpp' || echo '$(srcdir)/'`../src/linear_solvers_structure.cpp
 
-../src/libSU2_a-linear_solvers_structure.obj: ../src/linear_solvers_structure.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_a-linear_solvers_structure.obj -MD -MP -MF ../src/$(DEPDIR)/libSU2_a-linear_solvers_structure.Tpo -c -o ../src/libSU2_a-linear_solvers_structure.obj `if test -f '../src/linear_solvers_structure.cpp'; then $(CYGPATH_W) '../src/linear_solvers_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/linear_solvers_structure.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_a-linear_solvers_structure.Tpo ../src/$(DEPDIR)/libSU2_a-linear_solvers_structure.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/linear_solvers_structure.cpp' object='../src/libSU2_a-linear_solvers_structure.obj' libtool=no @AMDEPBACKSLASH@
+libSU2_a-linear_solvers_structure.obj: ../src/linear_solvers_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_a-linear_solvers_structure.obj -MD -MP -MF $(DEPDIR)/libSU2_a-linear_solvers_structure.Tpo -c -o libSU2_a-linear_solvers_structure.obj `if test -f '../src/linear_solvers_structure.cpp'; then $(CYGPATH_W) '../src/linear_solvers_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/linear_solvers_structure.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_a-linear_solvers_structure.Tpo $(DEPDIR)/libSU2_a-linear_solvers_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/linear_solvers_structure.cpp' object='libSU2_a-linear_solvers_structure.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_a-linear_solvers_structure.obj `if test -f '../src/linear_solvers_structure.cpp'; then $(CYGPATH_W) '../src/linear_solvers_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/linear_solvers_structure.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_a-linear_solvers_structure.obj `if test -f '../src/linear_solvers_structure.cpp'; then $(CYGPATH_W) '../src/linear_solvers_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/linear_solvers_structure.cpp'; fi`
 
-../src/libSU2_a-primal_grid_structure.o: ../src/primal_grid_structure.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_a-primal_grid_structure.o -MD -MP -MF ../src/$(DEPDIR)/libSU2_a-primal_grid_structure.Tpo -c -o ../src/libSU2_a-primal_grid_structure.o `test -f '../src/primal_grid_structure.cpp' || echo '$(srcdir)/'`../src/primal_grid_structure.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_a-primal_grid_structure.Tpo ../src/$(DEPDIR)/libSU2_a-primal_grid_structure.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/primal_grid_structure.cpp' object='../src/libSU2_a-primal_grid_structure.o' libtool=no @AMDEPBACKSLASH@
+libSU2_a-primal_grid_structure.o: ../src/primal_grid_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_a-primal_grid_structure.o -MD -MP -MF $(DEPDIR)/libSU2_a-primal_grid_structure.Tpo -c -o libSU2_a-primal_grid_structure.o `test -f '../src/primal_grid_structure.cpp' || echo '$(srcdir)/'`../src/primal_grid_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_a-primal_grid_structure.Tpo $(DEPDIR)/libSU2_a-primal_grid_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/primal_grid_structure.cpp' object='libSU2_a-primal_grid_structure.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_a-primal_grid_structure.o `test -f '../src/primal_grid_structure.cpp' || echo '$(srcdir)/'`../src/primal_grid_structure.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_a-primal_grid_structure.o `test -f '../src/primal_grid_structure.cpp' || echo '$(srcdir)/'`../src/primal_grid_structure.cpp
 
-../src/libSU2_a-primal_grid_structure.obj: ../src/primal_grid_structure.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_a-primal_grid_structure.obj -MD -MP -MF ../src/$(DEPDIR)/libSU2_a-primal_grid_structure.Tpo -c -o ../src/libSU2_a-primal_grid_structure.obj `if test -f '../src/primal_grid_structure.cpp'; then $(CYGPATH_W) '../src/primal_grid_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/primal_grid_structure.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_a-primal_grid_structure.Tpo ../src/$(DEPDIR)/libSU2_a-primal_grid_structure.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/primal_grid_structure.cpp' object='../src/libSU2_a-primal_grid_structure.obj' libtool=no @AMDEPBACKSLASH@
+libSU2_a-primal_grid_structure.obj: ../src/primal_grid_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_a-primal_grid_structure.obj -MD -MP -MF $(DEPDIR)/libSU2_a-primal_grid_structure.Tpo -c -o libSU2_a-primal_grid_structure.obj `if test -f '../src/primal_grid_structure.cpp'; then $(CYGPATH_W) '../src/primal_grid_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/primal_grid_structure.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_a-primal_grid_structure.Tpo $(DEPDIR)/libSU2_a-primal_grid_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/primal_grid_structure.cpp' object='libSU2_a-primal_grid_structure.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_a-primal_grid_structure.obj `if test -f '../src/primal_grid_structure.cpp'; then $(CYGPATH_W) '../src/primal_grid_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/primal_grid_structure.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_a-primal_grid_structure.obj `if test -f '../src/primal_grid_structure.cpp'; then $(CYGPATH_W) '../src/primal_grid_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/primal_grid_structure.cpp'; fi`
 
-../src/libSU2_a-vector_structure.o: ../src/vector_structure.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_a-vector_structure.o -MD -MP -MF ../src/$(DEPDIR)/libSU2_a-vector_structure.Tpo -c -o ../src/libSU2_a-vector_structure.o `test -f '../src/vector_structure.cpp' || echo '$(srcdir)/'`../src/vector_structure.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_a-vector_structure.Tpo ../src/$(DEPDIR)/libSU2_a-vector_structure.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/vector_structure.cpp' object='../src/libSU2_a-vector_structure.o' libtool=no @AMDEPBACKSLASH@
+libSU2_a-vector_structure.o: ../src/vector_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_a-vector_structure.o -MD -MP -MF $(DEPDIR)/libSU2_a-vector_structure.Tpo -c -o libSU2_a-vector_structure.o `test -f '../src/vector_structure.cpp' || echo '$(srcdir)/'`../src/vector_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_a-vector_structure.Tpo $(DEPDIR)/libSU2_a-vector_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/vector_structure.cpp' object='libSU2_a-vector_structure.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_a-vector_structure.o `test -f '../src/vector_structure.cpp' || echo '$(srcdir)/'`../src/vector_structure.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_a-vector_structure.o `test -f '../src/vector_structure.cpp' || echo '$(srcdir)/'`../src/vector_structure.cpp
 
-../src/libSU2_a-vector_structure.obj: ../src/vector_structure.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_a-vector_structure.obj -MD -MP -MF ../src/$(DEPDIR)/libSU2_a-vector_structure.Tpo -c -o ../src/libSU2_a-vector_structure.obj `if test -f '../src/vector_structure.cpp'; then $(CYGPATH_W) '../src/vector_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/vector_structure.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_a-vector_structure.Tpo ../src/$(DEPDIR)/libSU2_a-vector_structure.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/vector_structure.cpp' object='../src/libSU2_a-vector_structure.obj' libtool=no @AMDEPBACKSLASH@
+libSU2_a-vector_structure.obj: ../src/vector_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_a-vector_structure.obj -MD -MP -MF $(DEPDIR)/libSU2_a-vector_structure.Tpo -c -o libSU2_a-vector_structure.obj `if test -f '../src/vector_structure.cpp'; then $(CYGPATH_W) '../src/vector_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/vector_structure.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_a-vector_structure.Tpo $(DEPDIR)/libSU2_a-vector_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/vector_structure.cpp' object='libSU2_a-vector_structure.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_a-vector_structure.obj `if test -f '../src/vector_structure.cpp'; then $(CYGPATH_W) '../src/vector_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/vector_structure.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_a-vector_structure.obj `if test -f '../src/vector_structure.cpp'; then $(CYGPATH_W) '../src/vector_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/vector_structure.cpp'; fi`
 
-../src/libSU2_a-matrix_structure.o: ../src/matrix_structure.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_a-matrix_structure.o -MD -MP -MF ../src/$(DEPDIR)/libSU2_a-matrix_structure.Tpo -c -o ../src/libSU2_a-matrix_structure.o `test -f '../src/matrix_structure.cpp' || echo '$(srcdir)/'`../src/matrix_structure.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_a-matrix_structure.Tpo ../src/$(DEPDIR)/libSU2_a-matrix_structure.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/matrix_structure.cpp' object='../src/libSU2_a-matrix_structure.o' libtool=no @AMDEPBACKSLASH@
+libSU2_a-matrix_structure.o: ../src/matrix_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_a-matrix_structure.o -MD -MP -MF $(DEPDIR)/libSU2_a-matrix_structure.Tpo -c -o libSU2_a-matrix_structure.o `test -f '../src/matrix_structure.cpp' || echo '$(srcdir)/'`../src/matrix_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_a-matrix_structure.Tpo $(DEPDIR)/libSU2_a-matrix_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/matrix_structure.cpp' object='libSU2_a-matrix_structure.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_a-matrix_structure.o `test -f '../src/matrix_structure.cpp' || echo '$(srcdir)/'`../src/matrix_structure.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_a-matrix_structure.o `test -f '../src/matrix_structure.cpp' || echo '$(srcdir)/'`../src/matrix_structure.cpp
 
-../src/libSU2_a-matrix_structure.obj: ../src/matrix_structure.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_a-matrix_structure.obj -MD -MP -MF ../src/$(DEPDIR)/libSU2_a-matrix_structure.Tpo -c -o ../src/libSU2_a-matrix_structure.obj `if test -f '../src/matrix_structure.cpp'; then $(CYGPATH_W) '../src/matrix_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/matrix_structure.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_a-matrix_structure.Tpo ../src/$(DEPDIR)/libSU2_a-matrix_structure.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/matrix_structure.cpp' object='../src/libSU2_a-matrix_structure.obj' libtool=no @AMDEPBACKSLASH@
+libSU2_a-matrix_structure.obj: ../src/matrix_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_a-matrix_structure.obj -MD -MP -MF $(DEPDIR)/libSU2_a-matrix_structure.Tpo -c -o libSU2_a-matrix_structure.obj `if test -f '../src/matrix_structure.cpp'; then $(CYGPATH_W) '../src/matrix_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/matrix_structure.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_a-matrix_structure.Tpo $(DEPDIR)/libSU2_a-matrix_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/matrix_structure.cpp' object='libSU2_a-matrix_structure.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_a-matrix_structure.obj `if test -f '../src/matrix_structure.cpp'; then $(CYGPATH_W) '../src/matrix_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/matrix_structure.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_a-matrix_structure.obj `if test -f '../src/matrix_structure.cpp'; then $(CYGPATH_W) '../src/matrix_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/matrix_structure.cpp'; fi`
 
-../src/libSU2_a-su2mpi.o: ../src/su2mpi.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_a-su2mpi.o -MD -MP -MF ../src/$(DEPDIR)/libSU2_a-su2mpi.Tpo -c -o ../src/libSU2_a-su2mpi.o `test -f '../src/su2mpi.cpp' || echo '$(srcdir)/'`../src/su2mpi.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_a-su2mpi.Tpo ../src/$(DEPDIR)/libSU2_a-su2mpi.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/su2mpi.cpp' object='../src/libSU2_a-su2mpi.o' libtool=no @AMDEPBACKSLASH@
+libSU2_a-mpi_structure.o: ../src/mpi_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_a-mpi_structure.o -MD -MP -MF $(DEPDIR)/libSU2_a-mpi_structure.Tpo -c -o libSU2_a-mpi_structure.o `test -f '../src/mpi_structure.cpp' || echo '$(srcdir)/'`../src/mpi_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_a-mpi_structure.Tpo $(DEPDIR)/libSU2_a-mpi_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/mpi_structure.cpp' object='libSU2_a-mpi_structure.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_a-su2mpi.o `test -f '../src/su2mpi.cpp' || echo '$(srcdir)/'`../src/su2mpi.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_a-mpi_structure.o `test -f '../src/mpi_structure.cpp' || echo '$(srcdir)/'`../src/mpi_structure.cpp
 
-../src/libSU2_a-su2mpi.obj: ../src/su2mpi.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_a-su2mpi.obj -MD -MP -MF ../src/$(DEPDIR)/libSU2_a-su2mpi.Tpo -c -o ../src/libSU2_a-su2mpi.obj `if test -f '../src/su2mpi.cpp'; then $(CYGPATH_W) '../src/su2mpi.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/su2mpi.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_a-su2mpi.Tpo ../src/$(DEPDIR)/libSU2_a-su2mpi.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/su2mpi.cpp' object='../src/libSU2_a-su2mpi.obj' libtool=no @AMDEPBACKSLASH@
+libSU2_a-mpi_structure.obj: ../src/mpi_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_a-mpi_structure.obj -MD -MP -MF $(DEPDIR)/libSU2_a-mpi_structure.Tpo -c -o libSU2_a-mpi_structure.obj `if test -f '../src/mpi_structure.cpp'; then $(CYGPATH_W) '../src/mpi_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/mpi_structure.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_a-mpi_structure.Tpo $(DEPDIR)/libSU2_a-mpi_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/mpi_structure.cpp' object='libSU2_a-mpi_structure.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_a-su2mpi.obj `if test -f '../src/su2mpi.cpp'; then $(CYGPATH_W) '../src/su2mpi.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/su2mpi.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_a-mpi_structure.obj `if test -f '../src/mpi_structure.cpp'; then $(CYGPATH_W) '../src/mpi_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/mpi_structure.cpp'; fi`
+
+libSU2_a-linear_solvers_structure_b.o: ../src/linear_solvers_structure_b.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_a-linear_solvers_structure_b.o -MD -MP -MF $(DEPDIR)/libSU2_a-linear_solvers_structure_b.Tpo -c -o libSU2_a-linear_solvers_structure_b.o `test -f '../src/linear_solvers_structure_b.cpp' || echo '$(srcdir)/'`../src/linear_solvers_structure_b.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_a-linear_solvers_structure_b.Tpo $(DEPDIR)/libSU2_a-linear_solvers_structure_b.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/linear_solvers_structure_b.cpp' object='libSU2_a-linear_solvers_structure_b.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_a-linear_solvers_structure_b.o `test -f '../src/linear_solvers_structure_b.cpp' || echo '$(srcdir)/'`../src/linear_solvers_structure_b.cpp
+
+libSU2_a-linear_solvers_structure_b.obj: ../src/linear_solvers_structure_b.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_a-linear_solvers_structure_b.obj -MD -MP -MF $(DEPDIR)/libSU2_a-linear_solvers_structure_b.Tpo -c -o libSU2_a-linear_solvers_structure_b.obj `if test -f '../src/linear_solvers_structure_b.cpp'; then $(CYGPATH_W) '../src/linear_solvers_structure_b.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/linear_solvers_structure_b.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_a-linear_solvers_structure_b.Tpo $(DEPDIR)/libSU2_a-linear_solvers_structure_b.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/linear_solvers_structure_b.cpp' object='libSU2_a-linear_solvers_structure_b.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_a-linear_solvers_structure_b.obj `if test -f '../src/linear_solvers_structure_b.cpp'; then $(CYGPATH_W) '../src/linear_solvers_structure_b.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/linear_solvers_structure_b.cpp'; fi`
+
+libSU2_a-datatype_structure.o: ../src/datatype_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_a-datatype_structure.o -MD -MP -MF $(DEPDIR)/libSU2_a-datatype_structure.Tpo -c -o libSU2_a-datatype_structure.o `test -f '../src/datatype_structure.cpp' || echo '$(srcdir)/'`../src/datatype_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_a-datatype_structure.Tpo $(DEPDIR)/libSU2_a-datatype_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/datatype_structure.cpp' object='libSU2_a-datatype_structure.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_a-datatype_structure.o `test -f '../src/datatype_structure.cpp' || echo '$(srcdir)/'`../src/datatype_structure.cpp
+
+libSU2_a-datatype_structure.obj: ../src/datatype_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_a-datatype_structure.obj -MD -MP -MF $(DEPDIR)/libSU2_a-datatype_structure.Tpo -c -o libSU2_a-datatype_structure.obj `if test -f '../src/datatype_structure.cpp'; then $(CYGPATH_W) '../src/datatype_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/datatype_structure.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_a-datatype_structure.Tpo $(DEPDIR)/libSU2_a-datatype_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/datatype_structure.cpp' object='libSU2_a-datatype_structure.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_a-datatype_structure.obj `if test -f '../src/datatype_structure.cpp'; then $(CYGPATH_W) '../src/datatype_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/datatype_structure.cpp'; fi`
+
+libSU2_DIRECTDIFF_a-config_structure.o: ../src/config_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_DIRECTDIFF_a-config_structure.o -MD -MP -MF $(DEPDIR)/libSU2_DIRECTDIFF_a-config_structure.Tpo -c -o libSU2_DIRECTDIFF_a-config_structure.o `test -f '../src/config_structure.cpp' || echo '$(srcdir)/'`../src/config_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_DIRECTDIFF_a-config_structure.Tpo $(DEPDIR)/libSU2_DIRECTDIFF_a-config_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/config_structure.cpp' object='libSU2_DIRECTDIFF_a-config_structure.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_DIRECTDIFF_a-config_structure.o `test -f '../src/config_structure.cpp' || echo '$(srcdir)/'`../src/config_structure.cpp
+
+libSU2_DIRECTDIFF_a-config_structure.obj: ../src/config_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_DIRECTDIFF_a-config_structure.obj -MD -MP -MF $(DEPDIR)/libSU2_DIRECTDIFF_a-config_structure.Tpo -c -o libSU2_DIRECTDIFF_a-config_structure.obj `if test -f '../src/config_structure.cpp'; then $(CYGPATH_W) '../src/config_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/config_structure.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_DIRECTDIFF_a-config_structure.Tpo $(DEPDIR)/libSU2_DIRECTDIFF_a-config_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/config_structure.cpp' object='libSU2_DIRECTDIFF_a-config_structure.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_DIRECTDIFF_a-config_structure.obj `if test -f '../src/config_structure.cpp'; then $(CYGPATH_W) '../src/config_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/config_structure.cpp'; fi`
+
+libSU2_DIRECTDIFF_a-dual_grid_structure.o: ../src/dual_grid_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_DIRECTDIFF_a-dual_grid_structure.o -MD -MP -MF $(DEPDIR)/libSU2_DIRECTDIFF_a-dual_grid_structure.Tpo -c -o libSU2_DIRECTDIFF_a-dual_grid_structure.o `test -f '../src/dual_grid_structure.cpp' || echo '$(srcdir)/'`../src/dual_grid_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_DIRECTDIFF_a-dual_grid_structure.Tpo $(DEPDIR)/libSU2_DIRECTDIFF_a-dual_grid_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/dual_grid_structure.cpp' object='libSU2_DIRECTDIFF_a-dual_grid_structure.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_DIRECTDIFF_a-dual_grid_structure.o `test -f '../src/dual_grid_structure.cpp' || echo '$(srcdir)/'`../src/dual_grid_structure.cpp
+
+libSU2_DIRECTDIFF_a-dual_grid_structure.obj: ../src/dual_grid_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_DIRECTDIFF_a-dual_grid_structure.obj -MD -MP -MF $(DEPDIR)/libSU2_DIRECTDIFF_a-dual_grid_structure.Tpo -c -o libSU2_DIRECTDIFF_a-dual_grid_structure.obj `if test -f '../src/dual_grid_structure.cpp'; then $(CYGPATH_W) '../src/dual_grid_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/dual_grid_structure.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_DIRECTDIFF_a-dual_grid_structure.Tpo $(DEPDIR)/libSU2_DIRECTDIFF_a-dual_grid_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/dual_grid_structure.cpp' object='libSU2_DIRECTDIFF_a-dual_grid_structure.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_DIRECTDIFF_a-dual_grid_structure.obj `if test -f '../src/dual_grid_structure.cpp'; then $(CYGPATH_W) '../src/dual_grid_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/dual_grid_structure.cpp'; fi`
+
+libSU2_DIRECTDIFF_a-geometry_structure.o: ../src/geometry_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_DIRECTDIFF_a-geometry_structure.o -MD -MP -MF $(DEPDIR)/libSU2_DIRECTDIFF_a-geometry_structure.Tpo -c -o libSU2_DIRECTDIFF_a-geometry_structure.o `test -f '../src/geometry_structure.cpp' || echo '$(srcdir)/'`../src/geometry_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_DIRECTDIFF_a-geometry_structure.Tpo $(DEPDIR)/libSU2_DIRECTDIFF_a-geometry_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/geometry_structure.cpp' object='libSU2_DIRECTDIFF_a-geometry_structure.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_DIRECTDIFF_a-geometry_structure.o `test -f '../src/geometry_structure.cpp' || echo '$(srcdir)/'`../src/geometry_structure.cpp
+
+libSU2_DIRECTDIFF_a-geometry_structure.obj: ../src/geometry_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_DIRECTDIFF_a-geometry_structure.obj -MD -MP -MF $(DEPDIR)/libSU2_DIRECTDIFF_a-geometry_structure.Tpo -c -o libSU2_DIRECTDIFF_a-geometry_structure.obj `if test -f '../src/geometry_structure.cpp'; then $(CYGPATH_W) '../src/geometry_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/geometry_structure.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_DIRECTDIFF_a-geometry_structure.Tpo $(DEPDIR)/libSU2_DIRECTDIFF_a-geometry_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/geometry_structure.cpp' object='libSU2_DIRECTDIFF_a-geometry_structure.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_DIRECTDIFF_a-geometry_structure.obj `if test -f '../src/geometry_structure.cpp'; then $(CYGPATH_W) '../src/geometry_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/geometry_structure.cpp'; fi`
+
+libSU2_DIRECTDIFF_a-grid_adaptation_structure.o: ../src/grid_adaptation_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_DIRECTDIFF_a-grid_adaptation_structure.o -MD -MP -MF $(DEPDIR)/libSU2_DIRECTDIFF_a-grid_adaptation_structure.Tpo -c -o libSU2_DIRECTDIFF_a-grid_adaptation_structure.o `test -f '../src/grid_adaptation_structure.cpp' || echo '$(srcdir)/'`../src/grid_adaptation_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_DIRECTDIFF_a-grid_adaptation_structure.Tpo $(DEPDIR)/libSU2_DIRECTDIFF_a-grid_adaptation_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/grid_adaptation_structure.cpp' object='libSU2_DIRECTDIFF_a-grid_adaptation_structure.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_DIRECTDIFF_a-grid_adaptation_structure.o `test -f '../src/grid_adaptation_structure.cpp' || echo '$(srcdir)/'`../src/grid_adaptation_structure.cpp
+
+libSU2_DIRECTDIFF_a-grid_adaptation_structure.obj: ../src/grid_adaptation_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_DIRECTDIFF_a-grid_adaptation_structure.obj -MD -MP -MF $(DEPDIR)/libSU2_DIRECTDIFF_a-grid_adaptation_structure.Tpo -c -o libSU2_DIRECTDIFF_a-grid_adaptation_structure.obj `if test -f '../src/grid_adaptation_structure.cpp'; then $(CYGPATH_W) '../src/grid_adaptation_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/grid_adaptation_structure.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_DIRECTDIFF_a-grid_adaptation_structure.Tpo $(DEPDIR)/libSU2_DIRECTDIFF_a-grid_adaptation_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/grid_adaptation_structure.cpp' object='libSU2_DIRECTDIFF_a-grid_adaptation_structure.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_DIRECTDIFF_a-grid_adaptation_structure.obj `if test -f '../src/grid_adaptation_structure.cpp'; then $(CYGPATH_W) '../src/grid_adaptation_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/grid_adaptation_structure.cpp'; fi`
+
+libSU2_DIRECTDIFF_a-grid_movement_structure.o: ../src/grid_movement_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_DIRECTDIFF_a-grid_movement_structure.o -MD -MP -MF $(DEPDIR)/libSU2_DIRECTDIFF_a-grid_movement_structure.Tpo -c -o libSU2_DIRECTDIFF_a-grid_movement_structure.o `test -f '../src/grid_movement_structure.cpp' || echo '$(srcdir)/'`../src/grid_movement_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_DIRECTDIFF_a-grid_movement_structure.Tpo $(DEPDIR)/libSU2_DIRECTDIFF_a-grid_movement_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/grid_movement_structure.cpp' object='libSU2_DIRECTDIFF_a-grid_movement_structure.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_DIRECTDIFF_a-grid_movement_structure.o `test -f '../src/grid_movement_structure.cpp' || echo '$(srcdir)/'`../src/grid_movement_structure.cpp
+
+libSU2_DIRECTDIFF_a-grid_movement_structure.obj: ../src/grid_movement_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_DIRECTDIFF_a-grid_movement_structure.obj -MD -MP -MF $(DEPDIR)/libSU2_DIRECTDIFF_a-grid_movement_structure.Tpo -c -o libSU2_DIRECTDIFF_a-grid_movement_structure.obj `if test -f '../src/grid_movement_structure.cpp'; then $(CYGPATH_W) '../src/grid_movement_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/grid_movement_structure.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_DIRECTDIFF_a-grid_movement_structure.Tpo $(DEPDIR)/libSU2_DIRECTDIFF_a-grid_movement_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/grid_movement_structure.cpp' object='libSU2_DIRECTDIFF_a-grid_movement_structure.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_DIRECTDIFF_a-grid_movement_structure.obj `if test -f '../src/grid_movement_structure.cpp'; then $(CYGPATH_W) '../src/grid_movement_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/grid_movement_structure.cpp'; fi`
+
+libSU2_DIRECTDIFF_a-linear_solvers_structure.o: ../src/linear_solvers_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_DIRECTDIFF_a-linear_solvers_structure.o -MD -MP -MF $(DEPDIR)/libSU2_DIRECTDIFF_a-linear_solvers_structure.Tpo -c -o libSU2_DIRECTDIFF_a-linear_solvers_structure.o `test -f '../src/linear_solvers_structure.cpp' || echo '$(srcdir)/'`../src/linear_solvers_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_DIRECTDIFF_a-linear_solvers_structure.Tpo $(DEPDIR)/libSU2_DIRECTDIFF_a-linear_solvers_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/linear_solvers_structure.cpp' object='libSU2_DIRECTDIFF_a-linear_solvers_structure.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_DIRECTDIFF_a-linear_solvers_structure.o `test -f '../src/linear_solvers_structure.cpp' || echo '$(srcdir)/'`../src/linear_solvers_structure.cpp
+
+libSU2_DIRECTDIFF_a-linear_solvers_structure.obj: ../src/linear_solvers_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_DIRECTDIFF_a-linear_solvers_structure.obj -MD -MP -MF $(DEPDIR)/libSU2_DIRECTDIFF_a-linear_solvers_structure.Tpo -c -o libSU2_DIRECTDIFF_a-linear_solvers_structure.obj `if test -f '../src/linear_solvers_structure.cpp'; then $(CYGPATH_W) '../src/linear_solvers_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/linear_solvers_structure.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_DIRECTDIFF_a-linear_solvers_structure.Tpo $(DEPDIR)/libSU2_DIRECTDIFF_a-linear_solvers_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/linear_solvers_structure.cpp' object='libSU2_DIRECTDIFF_a-linear_solvers_structure.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_DIRECTDIFF_a-linear_solvers_structure.obj `if test -f '../src/linear_solvers_structure.cpp'; then $(CYGPATH_W) '../src/linear_solvers_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/linear_solvers_structure.cpp'; fi`
+
+libSU2_DIRECTDIFF_a-primal_grid_structure.o: ../src/primal_grid_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_DIRECTDIFF_a-primal_grid_structure.o -MD -MP -MF $(DEPDIR)/libSU2_DIRECTDIFF_a-primal_grid_structure.Tpo -c -o libSU2_DIRECTDIFF_a-primal_grid_structure.o `test -f '../src/primal_grid_structure.cpp' || echo '$(srcdir)/'`../src/primal_grid_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_DIRECTDIFF_a-primal_grid_structure.Tpo $(DEPDIR)/libSU2_DIRECTDIFF_a-primal_grid_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/primal_grid_structure.cpp' object='libSU2_DIRECTDIFF_a-primal_grid_structure.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_DIRECTDIFF_a-primal_grid_structure.o `test -f '../src/primal_grid_structure.cpp' || echo '$(srcdir)/'`../src/primal_grid_structure.cpp
+
+libSU2_DIRECTDIFF_a-primal_grid_structure.obj: ../src/primal_grid_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_DIRECTDIFF_a-primal_grid_structure.obj -MD -MP -MF $(DEPDIR)/libSU2_DIRECTDIFF_a-primal_grid_structure.Tpo -c -o libSU2_DIRECTDIFF_a-primal_grid_structure.obj `if test -f '../src/primal_grid_structure.cpp'; then $(CYGPATH_W) '../src/primal_grid_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/primal_grid_structure.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_DIRECTDIFF_a-primal_grid_structure.Tpo $(DEPDIR)/libSU2_DIRECTDIFF_a-primal_grid_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/primal_grid_structure.cpp' object='libSU2_DIRECTDIFF_a-primal_grid_structure.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_DIRECTDIFF_a-primal_grid_structure.obj `if test -f '../src/primal_grid_structure.cpp'; then $(CYGPATH_W) '../src/primal_grid_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/primal_grid_structure.cpp'; fi`
+
+libSU2_DIRECTDIFF_a-vector_structure.o: ../src/vector_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_DIRECTDIFF_a-vector_structure.o -MD -MP -MF $(DEPDIR)/libSU2_DIRECTDIFF_a-vector_structure.Tpo -c -o libSU2_DIRECTDIFF_a-vector_structure.o `test -f '../src/vector_structure.cpp' || echo '$(srcdir)/'`../src/vector_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_DIRECTDIFF_a-vector_structure.Tpo $(DEPDIR)/libSU2_DIRECTDIFF_a-vector_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/vector_structure.cpp' object='libSU2_DIRECTDIFF_a-vector_structure.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_DIRECTDIFF_a-vector_structure.o `test -f '../src/vector_structure.cpp' || echo '$(srcdir)/'`../src/vector_structure.cpp
+
+libSU2_DIRECTDIFF_a-vector_structure.obj: ../src/vector_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_DIRECTDIFF_a-vector_structure.obj -MD -MP -MF $(DEPDIR)/libSU2_DIRECTDIFF_a-vector_structure.Tpo -c -o libSU2_DIRECTDIFF_a-vector_structure.obj `if test -f '../src/vector_structure.cpp'; then $(CYGPATH_W) '../src/vector_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/vector_structure.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_DIRECTDIFF_a-vector_structure.Tpo $(DEPDIR)/libSU2_DIRECTDIFF_a-vector_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/vector_structure.cpp' object='libSU2_DIRECTDIFF_a-vector_structure.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_DIRECTDIFF_a-vector_structure.obj `if test -f '../src/vector_structure.cpp'; then $(CYGPATH_W) '../src/vector_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/vector_structure.cpp'; fi`
+
+libSU2_DIRECTDIFF_a-matrix_structure.o: ../src/matrix_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_DIRECTDIFF_a-matrix_structure.o -MD -MP -MF $(DEPDIR)/libSU2_DIRECTDIFF_a-matrix_structure.Tpo -c -o libSU2_DIRECTDIFF_a-matrix_structure.o `test -f '../src/matrix_structure.cpp' || echo '$(srcdir)/'`../src/matrix_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_DIRECTDIFF_a-matrix_structure.Tpo $(DEPDIR)/libSU2_DIRECTDIFF_a-matrix_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/matrix_structure.cpp' object='libSU2_DIRECTDIFF_a-matrix_structure.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_DIRECTDIFF_a-matrix_structure.o `test -f '../src/matrix_structure.cpp' || echo '$(srcdir)/'`../src/matrix_structure.cpp
+
+libSU2_DIRECTDIFF_a-matrix_structure.obj: ../src/matrix_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_DIRECTDIFF_a-matrix_structure.obj -MD -MP -MF $(DEPDIR)/libSU2_DIRECTDIFF_a-matrix_structure.Tpo -c -o libSU2_DIRECTDIFF_a-matrix_structure.obj `if test -f '../src/matrix_structure.cpp'; then $(CYGPATH_W) '../src/matrix_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/matrix_structure.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_DIRECTDIFF_a-matrix_structure.Tpo $(DEPDIR)/libSU2_DIRECTDIFF_a-matrix_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/matrix_structure.cpp' object='libSU2_DIRECTDIFF_a-matrix_structure.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_DIRECTDIFF_a-matrix_structure.obj `if test -f '../src/matrix_structure.cpp'; then $(CYGPATH_W) '../src/matrix_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/matrix_structure.cpp'; fi`
+
+libSU2_DIRECTDIFF_a-mpi_structure.o: ../src/mpi_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_DIRECTDIFF_a-mpi_structure.o -MD -MP -MF $(DEPDIR)/libSU2_DIRECTDIFF_a-mpi_structure.Tpo -c -o libSU2_DIRECTDIFF_a-mpi_structure.o `test -f '../src/mpi_structure.cpp' || echo '$(srcdir)/'`../src/mpi_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_DIRECTDIFF_a-mpi_structure.Tpo $(DEPDIR)/libSU2_DIRECTDIFF_a-mpi_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/mpi_structure.cpp' object='libSU2_DIRECTDIFF_a-mpi_structure.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_DIRECTDIFF_a-mpi_structure.o `test -f '../src/mpi_structure.cpp' || echo '$(srcdir)/'`../src/mpi_structure.cpp
+
+libSU2_DIRECTDIFF_a-mpi_structure.obj: ../src/mpi_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_DIRECTDIFF_a-mpi_structure.obj -MD -MP -MF $(DEPDIR)/libSU2_DIRECTDIFF_a-mpi_structure.Tpo -c -o libSU2_DIRECTDIFF_a-mpi_structure.obj `if test -f '../src/mpi_structure.cpp'; then $(CYGPATH_W) '../src/mpi_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/mpi_structure.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_DIRECTDIFF_a-mpi_structure.Tpo $(DEPDIR)/libSU2_DIRECTDIFF_a-mpi_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/mpi_structure.cpp' object='libSU2_DIRECTDIFF_a-mpi_structure.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_DIRECTDIFF_a-mpi_structure.obj `if test -f '../src/mpi_structure.cpp'; then $(CYGPATH_W) '../src/mpi_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/mpi_structure.cpp'; fi`
+
+libSU2_DIRECTDIFF_a-linear_solvers_structure_b.o: ../src/linear_solvers_structure_b.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_DIRECTDIFF_a-linear_solvers_structure_b.o -MD -MP -MF $(DEPDIR)/libSU2_DIRECTDIFF_a-linear_solvers_structure_b.Tpo -c -o libSU2_DIRECTDIFF_a-linear_solvers_structure_b.o `test -f '../src/linear_solvers_structure_b.cpp' || echo '$(srcdir)/'`../src/linear_solvers_structure_b.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_DIRECTDIFF_a-linear_solvers_structure_b.Tpo $(DEPDIR)/libSU2_DIRECTDIFF_a-linear_solvers_structure_b.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/linear_solvers_structure_b.cpp' object='libSU2_DIRECTDIFF_a-linear_solvers_structure_b.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_DIRECTDIFF_a-linear_solvers_structure_b.o `test -f '../src/linear_solvers_structure_b.cpp' || echo '$(srcdir)/'`../src/linear_solvers_structure_b.cpp
+
+libSU2_DIRECTDIFF_a-linear_solvers_structure_b.obj: ../src/linear_solvers_structure_b.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_DIRECTDIFF_a-linear_solvers_structure_b.obj -MD -MP -MF $(DEPDIR)/libSU2_DIRECTDIFF_a-linear_solvers_structure_b.Tpo -c -o libSU2_DIRECTDIFF_a-linear_solvers_structure_b.obj `if test -f '../src/linear_solvers_structure_b.cpp'; then $(CYGPATH_W) '../src/linear_solvers_structure_b.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/linear_solvers_structure_b.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_DIRECTDIFF_a-linear_solvers_structure_b.Tpo $(DEPDIR)/libSU2_DIRECTDIFF_a-linear_solvers_structure_b.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/linear_solvers_structure_b.cpp' object='libSU2_DIRECTDIFF_a-linear_solvers_structure_b.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_DIRECTDIFF_a-linear_solvers_structure_b.obj `if test -f '../src/linear_solvers_structure_b.cpp'; then $(CYGPATH_W) '../src/linear_solvers_structure_b.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/linear_solvers_structure_b.cpp'; fi`
+
+libSU2_DIRECTDIFF_a-datatype_structure.o: ../src/datatype_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_DIRECTDIFF_a-datatype_structure.o -MD -MP -MF $(DEPDIR)/libSU2_DIRECTDIFF_a-datatype_structure.Tpo -c -o libSU2_DIRECTDIFF_a-datatype_structure.o `test -f '../src/datatype_structure.cpp' || echo '$(srcdir)/'`../src/datatype_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_DIRECTDIFF_a-datatype_structure.Tpo $(DEPDIR)/libSU2_DIRECTDIFF_a-datatype_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/datatype_structure.cpp' object='libSU2_DIRECTDIFF_a-datatype_structure.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_DIRECTDIFF_a-datatype_structure.o `test -f '../src/datatype_structure.cpp' || echo '$(srcdir)/'`../src/datatype_structure.cpp
+
+libSU2_DIRECTDIFF_a-datatype_structure.obj: ../src/datatype_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_DIRECTDIFF_a-datatype_structure.obj -MD -MP -MF $(DEPDIR)/libSU2_DIRECTDIFF_a-datatype_structure.Tpo -c -o libSU2_DIRECTDIFF_a-datatype_structure.obj `if test -f '../src/datatype_structure.cpp'; then $(CYGPATH_W) '../src/datatype_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/datatype_structure.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_DIRECTDIFF_a-datatype_structure.Tpo $(DEPDIR)/libSU2_DIRECTDIFF_a-datatype_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/datatype_structure.cpp' object='libSU2_DIRECTDIFF_a-datatype_structure.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_DIRECTDIFF_a-datatype_structure.obj `if test -f '../src/datatype_structure.cpp'; then $(CYGPATH_W) '../src/datatype_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/datatype_structure.cpp'; fi`
+
+libSU2_REVERSE_a-config_structure.o: ../src/config_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_REVERSE_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_REVERSE_a-config_structure.o -MD -MP -MF $(DEPDIR)/libSU2_REVERSE_a-config_structure.Tpo -c -o libSU2_REVERSE_a-config_structure.o `test -f '../src/config_structure.cpp' || echo '$(srcdir)/'`../src/config_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_REVERSE_a-config_structure.Tpo $(DEPDIR)/libSU2_REVERSE_a-config_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/config_structure.cpp' object='libSU2_REVERSE_a-config_structure.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_REVERSE_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_REVERSE_a-config_structure.o `test -f '../src/config_structure.cpp' || echo '$(srcdir)/'`../src/config_structure.cpp
+
+libSU2_REVERSE_a-config_structure.obj: ../src/config_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_REVERSE_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_REVERSE_a-config_structure.obj -MD -MP -MF $(DEPDIR)/libSU2_REVERSE_a-config_structure.Tpo -c -o libSU2_REVERSE_a-config_structure.obj `if test -f '../src/config_structure.cpp'; then $(CYGPATH_W) '../src/config_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/config_structure.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_REVERSE_a-config_structure.Tpo $(DEPDIR)/libSU2_REVERSE_a-config_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/config_structure.cpp' object='libSU2_REVERSE_a-config_structure.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_REVERSE_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_REVERSE_a-config_structure.obj `if test -f '../src/config_structure.cpp'; then $(CYGPATH_W) '../src/config_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/config_structure.cpp'; fi`
+
+libSU2_REVERSE_a-dual_grid_structure.o: ../src/dual_grid_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_REVERSE_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_REVERSE_a-dual_grid_structure.o -MD -MP -MF $(DEPDIR)/libSU2_REVERSE_a-dual_grid_structure.Tpo -c -o libSU2_REVERSE_a-dual_grid_structure.o `test -f '../src/dual_grid_structure.cpp' || echo '$(srcdir)/'`../src/dual_grid_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_REVERSE_a-dual_grid_structure.Tpo $(DEPDIR)/libSU2_REVERSE_a-dual_grid_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/dual_grid_structure.cpp' object='libSU2_REVERSE_a-dual_grid_structure.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_REVERSE_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_REVERSE_a-dual_grid_structure.o `test -f '../src/dual_grid_structure.cpp' || echo '$(srcdir)/'`../src/dual_grid_structure.cpp
+
+libSU2_REVERSE_a-dual_grid_structure.obj: ../src/dual_grid_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_REVERSE_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_REVERSE_a-dual_grid_structure.obj -MD -MP -MF $(DEPDIR)/libSU2_REVERSE_a-dual_grid_structure.Tpo -c -o libSU2_REVERSE_a-dual_grid_structure.obj `if test -f '../src/dual_grid_structure.cpp'; then $(CYGPATH_W) '../src/dual_grid_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/dual_grid_structure.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_REVERSE_a-dual_grid_structure.Tpo $(DEPDIR)/libSU2_REVERSE_a-dual_grid_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/dual_grid_structure.cpp' object='libSU2_REVERSE_a-dual_grid_structure.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_REVERSE_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_REVERSE_a-dual_grid_structure.obj `if test -f '../src/dual_grid_structure.cpp'; then $(CYGPATH_W) '../src/dual_grid_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/dual_grid_structure.cpp'; fi`
+
+libSU2_REVERSE_a-geometry_structure.o: ../src/geometry_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_REVERSE_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_REVERSE_a-geometry_structure.o -MD -MP -MF $(DEPDIR)/libSU2_REVERSE_a-geometry_structure.Tpo -c -o libSU2_REVERSE_a-geometry_structure.o `test -f '../src/geometry_structure.cpp' || echo '$(srcdir)/'`../src/geometry_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_REVERSE_a-geometry_structure.Tpo $(DEPDIR)/libSU2_REVERSE_a-geometry_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/geometry_structure.cpp' object='libSU2_REVERSE_a-geometry_structure.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_REVERSE_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_REVERSE_a-geometry_structure.o `test -f '../src/geometry_structure.cpp' || echo '$(srcdir)/'`../src/geometry_structure.cpp
+
+libSU2_REVERSE_a-geometry_structure.obj: ../src/geometry_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_REVERSE_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_REVERSE_a-geometry_structure.obj -MD -MP -MF $(DEPDIR)/libSU2_REVERSE_a-geometry_structure.Tpo -c -o libSU2_REVERSE_a-geometry_structure.obj `if test -f '../src/geometry_structure.cpp'; then $(CYGPATH_W) '../src/geometry_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/geometry_structure.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_REVERSE_a-geometry_structure.Tpo $(DEPDIR)/libSU2_REVERSE_a-geometry_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/geometry_structure.cpp' object='libSU2_REVERSE_a-geometry_structure.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_REVERSE_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_REVERSE_a-geometry_structure.obj `if test -f '../src/geometry_structure.cpp'; then $(CYGPATH_W) '../src/geometry_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/geometry_structure.cpp'; fi`
+
+libSU2_REVERSE_a-grid_adaptation_structure.o: ../src/grid_adaptation_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_REVERSE_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_REVERSE_a-grid_adaptation_structure.o -MD -MP -MF $(DEPDIR)/libSU2_REVERSE_a-grid_adaptation_structure.Tpo -c -o libSU2_REVERSE_a-grid_adaptation_structure.o `test -f '../src/grid_adaptation_structure.cpp' || echo '$(srcdir)/'`../src/grid_adaptation_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_REVERSE_a-grid_adaptation_structure.Tpo $(DEPDIR)/libSU2_REVERSE_a-grid_adaptation_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/grid_adaptation_structure.cpp' object='libSU2_REVERSE_a-grid_adaptation_structure.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_REVERSE_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_REVERSE_a-grid_adaptation_structure.o `test -f '../src/grid_adaptation_structure.cpp' || echo '$(srcdir)/'`../src/grid_adaptation_structure.cpp
+
+libSU2_REVERSE_a-grid_adaptation_structure.obj: ../src/grid_adaptation_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_REVERSE_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_REVERSE_a-grid_adaptation_structure.obj -MD -MP -MF $(DEPDIR)/libSU2_REVERSE_a-grid_adaptation_structure.Tpo -c -o libSU2_REVERSE_a-grid_adaptation_structure.obj `if test -f '../src/grid_adaptation_structure.cpp'; then $(CYGPATH_W) '../src/grid_adaptation_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/grid_adaptation_structure.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_REVERSE_a-grid_adaptation_structure.Tpo $(DEPDIR)/libSU2_REVERSE_a-grid_adaptation_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/grid_adaptation_structure.cpp' object='libSU2_REVERSE_a-grid_adaptation_structure.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_REVERSE_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_REVERSE_a-grid_adaptation_structure.obj `if test -f '../src/grid_adaptation_structure.cpp'; then $(CYGPATH_W) '../src/grid_adaptation_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/grid_adaptation_structure.cpp'; fi`
+
+libSU2_REVERSE_a-grid_movement_structure.o: ../src/grid_movement_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_REVERSE_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_REVERSE_a-grid_movement_structure.o -MD -MP -MF $(DEPDIR)/libSU2_REVERSE_a-grid_movement_structure.Tpo -c -o libSU2_REVERSE_a-grid_movement_structure.o `test -f '../src/grid_movement_structure.cpp' || echo '$(srcdir)/'`../src/grid_movement_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_REVERSE_a-grid_movement_structure.Tpo $(DEPDIR)/libSU2_REVERSE_a-grid_movement_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/grid_movement_structure.cpp' object='libSU2_REVERSE_a-grid_movement_structure.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_REVERSE_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_REVERSE_a-grid_movement_structure.o `test -f '../src/grid_movement_structure.cpp' || echo '$(srcdir)/'`../src/grid_movement_structure.cpp
+
+libSU2_REVERSE_a-grid_movement_structure.obj: ../src/grid_movement_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_REVERSE_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_REVERSE_a-grid_movement_structure.obj -MD -MP -MF $(DEPDIR)/libSU2_REVERSE_a-grid_movement_structure.Tpo -c -o libSU2_REVERSE_a-grid_movement_structure.obj `if test -f '../src/grid_movement_structure.cpp'; then $(CYGPATH_W) '../src/grid_movement_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/grid_movement_structure.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_REVERSE_a-grid_movement_structure.Tpo $(DEPDIR)/libSU2_REVERSE_a-grid_movement_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/grid_movement_structure.cpp' object='libSU2_REVERSE_a-grid_movement_structure.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_REVERSE_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_REVERSE_a-grid_movement_structure.obj `if test -f '../src/grid_movement_structure.cpp'; then $(CYGPATH_W) '../src/grid_movement_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/grid_movement_structure.cpp'; fi`
+
+libSU2_REVERSE_a-linear_solvers_structure.o: ../src/linear_solvers_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_REVERSE_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_REVERSE_a-linear_solvers_structure.o -MD -MP -MF $(DEPDIR)/libSU2_REVERSE_a-linear_solvers_structure.Tpo -c -o libSU2_REVERSE_a-linear_solvers_structure.o `test -f '../src/linear_solvers_structure.cpp' || echo '$(srcdir)/'`../src/linear_solvers_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_REVERSE_a-linear_solvers_structure.Tpo $(DEPDIR)/libSU2_REVERSE_a-linear_solvers_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/linear_solvers_structure.cpp' object='libSU2_REVERSE_a-linear_solvers_structure.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_REVERSE_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_REVERSE_a-linear_solvers_structure.o `test -f '../src/linear_solvers_structure.cpp' || echo '$(srcdir)/'`../src/linear_solvers_structure.cpp
+
+libSU2_REVERSE_a-linear_solvers_structure.obj: ../src/linear_solvers_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_REVERSE_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_REVERSE_a-linear_solvers_structure.obj -MD -MP -MF $(DEPDIR)/libSU2_REVERSE_a-linear_solvers_structure.Tpo -c -o libSU2_REVERSE_a-linear_solvers_structure.obj `if test -f '../src/linear_solvers_structure.cpp'; then $(CYGPATH_W) '../src/linear_solvers_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/linear_solvers_structure.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_REVERSE_a-linear_solvers_structure.Tpo $(DEPDIR)/libSU2_REVERSE_a-linear_solvers_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/linear_solvers_structure.cpp' object='libSU2_REVERSE_a-linear_solvers_structure.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_REVERSE_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_REVERSE_a-linear_solvers_structure.obj `if test -f '../src/linear_solvers_structure.cpp'; then $(CYGPATH_W) '../src/linear_solvers_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/linear_solvers_structure.cpp'; fi`
+
+libSU2_REVERSE_a-primal_grid_structure.o: ../src/primal_grid_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_REVERSE_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_REVERSE_a-primal_grid_structure.o -MD -MP -MF $(DEPDIR)/libSU2_REVERSE_a-primal_grid_structure.Tpo -c -o libSU2_REVERSE_a-primal_grid_structure.o `test -f '../src/primal_grid_structure.cpp' || echo '$(srcdir)/'`../src/primal_grid_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_REVERSE_a-primal_grid_structure.Tpo $(DEPDIR)/libSU2_REVERSE_a-primal_grid_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/primal_grid_structure.cpp' object='libSU2_REVERSE_a-primal_grid_structure.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_REVERSE_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_REVERSE_a-primal_grid_structure.o `test -f '../src/primal_grid_structure.cpp' || echo '$(srcdir)/'`../src/primal_grid_structure.cpp
+
+libSU2_REVERSE_a-primal_grid_structure.obj: ../src/primal_grid_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_REVERSE_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_REVERSE_a-primal_grid_structure.obj -MD -MP -MF $(DEPDIR)/libSU2_REVERSE_a-primal_grid_structure.Tpo -c -o libSU2_REVERSE_a-primal_grid_structure.obj `if test -f '../src/primal_grid_structure.cpp'; then $(CYGPATH_W) '../src/primal_grid_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/primal_grid_structure.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_REVERSE_a-primal_grid_structure.Tpo $(DEPDIR)/libSU2_REVERSE_a-primal_grid_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/primal_grid_structure.cpp' object='libSU2_REVERSE_a-primal_grid_structure.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_REVERSE_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_REVERSE_a-primal_grid_structure.obj `if test -f '../src/primal_grid_structure.cpp'; then $(CYGPATH_W) '../src/primal_grid_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/primal_grid_structure.cpp'; fi`
+
+libSU2_REVERSE_a-vector_structure.o: ../src/vector_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_REVERSE_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_REVERSE_a-vector_structure.o -MD -MP -MF $(DEPDIR)/libSU2_REVERSE_a-vector_structure.Tpo -c -o libSU2_REVERSE_a-vector_structure.o `test -f '../src/vector_structure.cpp' || echo '$(srcdir)/'`../src/vector_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_REVERSE_a-vector_structure.Tpo $(DEPDIR)/libSU2_REVERSE_a-vector_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/vector_structure.cpp' object='libSU2_REVERSE_a-vector_structure.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_REVERSE_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_REVERSE_a-vector_structure.o `test -f '../src/vector_structure.cpp' || echo '$(srcdir)/'`../src/vector_structure.cpp
+
+libSU2_REVERSE_a-vector_structure.obj: ../src/vector_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_REVERSE_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_REVERSE_a-vector_structure.obj -MD -MP -MF $(DEPDIR)/libSU2_REVERSE_a-vector_structure.Tpo -c -o libSU2_REVERSE_a-vector_structure.obj `if test -f '../src/vector_structure.cpp'; then $(CYGPATH_W) '../src/vector_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/vector_structure.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_REVERSE_a-vector_structure.Tpo $(DEPDIR)/libSU2_REVERSE_a-vector_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/vector_structure.cpp' object='libSU2_REVERSE_a-vector_structure.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_REVERSE_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_REVERSE_a-vector_structure.obj `if test -f '../src/vector_structure.cpp'; then $(CYGPATH_W) '../src/vector_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/vector_structure.cpp'; fi`
+
+libSU2_REVERSE_a-matrix_structure.o: ../src/matrix_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_REVERSE_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_REVERSE_a-matrix_structure.o -MD -MP -MF $(DEPDIR)/libSU2_REVERSE_a-matrix_structure.Tpo -c -o libSU2_REVERSE_a-matrix_structure.o `test -f '../src/matrix_structure.cpp' || echo '$(srcdir)/'`../src/matrix_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_REVERSE_a-matrix_structure.Tpo $(DEPDIR)/libSU2_REVERSE_a-matrix_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/matrix_structure.cpp' object='libSU2_REVERSE_a-matrix_structure.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_REVERSE_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_REVERSE_a-matrix_structure.o `test -f '../src/matrix_structure.cpp' || echo '$(srcdir)/'`../src/matrix_structure.cpp
+
+libSU2_REVERSE_a-matrix_structure.obj: ../src/matrix_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_REVERSE_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_REVERSE_a-matrix_structure.obj -MD -MP -MF $(DEPDIR)/libSU2_REVERSE_a-matrix_structure.Tpo -c -o libSU2_REVERSE_a-matrix_structure.obj `if test -f '../src/matrix_structure.cpp'; then $(CYGPATH_W) '../src/matrix_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/matrix_structure.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_REVERSE_a-matrix_structure.Tpo $(DEPDIR)/libSU2_REVERSE_a-matrix_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/matrix_structure.cpp' object='libSU2_REVERSE_a-matrix_structure.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_REVERSE_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_REVERSE_a-matrix_structure.obj `if test -f '../src/matrix_structure.cpp'; then $(CYGPATH_W) '../src/matrix_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/matrix_structure.cpp'; fi`
+
+libSU2_REVERSE_a-mpi_structure.o: ../src/mpi_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_REVERSE_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_REVERSE_a-mpi_structure.o -MD -MP -MF $(DEPDIR)/libSU2_REVERSE_a-mpi_structure.Tpo -c -o libSU2_REVERSE_a-mpi_structure.o `test -f '../src/mpi_structure.cpp' || echo '$(srcdir)/'`../src/mpi_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_REVERSE_a-mpi_structure.Tpo $(DEPDIR)/libSU2_REVERSE_a-mpi_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/mpi_structure.cpp' object='libSU2_REVERSE_a-mpi_structure.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_REVERSE_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_REVERSE_a-mpi_structure.o `test -f '../src/mpi_structure.cpp' || echo '$(srcdir)/'`../src/mpi_structure.cpp
+
+libSU2_REVERSE_a-mpi_structure.obj: ../src/mpi_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_REVERSE_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_REVERSE_a-mpi_structure.obj -MD -MP -MF $(DEPDIR)/libSU2_REVERSE_a-mpi_structure.Tpo -c -o libSU2_REVERSE_a-mpi_structure.obj `if test -f '../src/mpi_structure.cpp'; then $(CYGPATH_W) '../src/mpi_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/mpi_structure.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_REVERSE_a-mpi_structure.Tpo $(DEPDIR)/libSU2_REVERSE_a-mpi_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/mpi_structure.cpp' object='libSU2_REVERSE_a-mpi_structure.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_REVERSE_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_REVERSE_a-mpi_structure.obj `if test -f '../src/mpi_structure.cpp'; then $(CYGPATH_W) '../src/mpi_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/mpi_structure.cpp'; fi`
+
+libSU2_REVERSE_a-linear_solvers_structure_b.o: ../src/linear_solvers_structure_b.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_REVERSE_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_REVERSE_a-linear_solvers_structure_b.o -MD -MP -MF $(DEPDIR)/libSU2_REVERSE_a-linear_solvers_structure_b.Tpo -c -o libSU2_REVERSE_a-linear_solvers_structure_b.o `test -f '../src/linear_solvers_structure_b.cpp' || echo '$(srcdir)/'`../src/linear_solvers_structure_b.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_REVERSE_a-linear_solvers_structure_b.Tpo $(DEPDIR)/libSU2_REVERSE_a-linear_solvers_structure_b.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/linear_solvers_structure_b.cpp' object='libSU2_REVERSE_a-linear_solvers_structure_b.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_REVERSE_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_REVERSE_a-linear_solvers_structure_b.o `test -f '../src/linear_solvers_structure_b.cpp' || echo '$(srcdir)/'`../src/linear_solvers_structure_b.cpp
+
+libSU2_REVERSE_a-linear_solvers_structure_b.obj: ../src/linear_solvers_structure_b.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_REVERSE_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_REVERSE_a-linear_solvers_structure_b.obj -MD -MP -MF $(DEPDIR)/libSU2_REVERSE_a-linear_solvers_structure_b.Tpo -c -o libSU2_REVERSE_a-linear_solvers_structure_b.obj `if test -f '../src/linear_solvers_structure_b.cpp'; then $(CYGPATH_W) '../src/linear_solvers_structure_b.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/linear_solvers_structure_b.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_REVERSE_a-linear_solvers_structure_b.Tpo $(DEPDIR)/libSU2_REVERSE_a-linear_solvers_structure_b.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/linear_solvers_structure_b.cpp' object='libSU2_REVERSE_a-linear_solvers_structure_b.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_REVERSE_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_REVERSE_a-linear_solvers_structure_b.obj `if test -f '../src/linear_solvers_structure_b.cpp'; then $(CYGPATH_W) '../src/linear_solvers_structure_b.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/linear_solvers_structure_b.cpp'; fi`
+
+libSU2_REVERSE_a-datatype_structure.o: ../src/datatype_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_REVERSE_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_REVERSE_a-datatype_structure.o -MD -MP -MF $(DEPDIR)/libSU2_REVERSE_a-datatype_structure.Tpo -c -o libSU2_REVERSE_a-datatype_structure.o `test -f '../src/datatype_structure.cpp' || echo '$(srcdir)/'`../src/datatype_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_REVERSE_a-datatype_structure.Tpo $(DEPDIR)/libSU2_REVERSE_a-datatype_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/datatype_structure.cpp' object='libSU2_REVERSE_a-datatype_structure.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_REVERSE_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_REVERSE_a-datatype_structure.o `test -f '../src/datatype_structure.cpp' || echo '$(srcdir)/'`../src/datatype_structure.cpp
+
+libSU2_REVERSE_a-datatype_structure.obj: ../src/datatype_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_REVERSE_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_REVERSE_a-datatype_structure.obj -MD -MP -MF $(DEPDIR)/libSU2_REVERSE_a-datatype_structure.Tpo -c -o libSU2_REVERSE_a-datatype_structure.obj `if test -f '../src/datatype_structure.cpp'; then $(CYGPATH_W) '../src/datatype_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/datatype_structure.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_REVERSE_a-datatype_structure.Tpo $(DEPDIR)/libSU2_REVERSE_a-datatype_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/datatype_structure.cpp' object='libSU2_REVERSE_a-datatype_structure.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_REVERSE_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_REVERSE_a-datatype_structure.obj `if test -f '../src/datatype_structure.cpp'; then $(CYGPATH_W) '../src/datatype_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/datatype_structure.cpp'; fi`
 
 ID: $(am__tagged_files)
 	$(am__define_uniq_tagged_files); mkid -fID $$unique
@@ -756,8 +1356,6 @@ clean-generic:
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
 	-test . = "$(srcdir)" || test -z "$(CONFIG_CLEAN_VPATH_FILES)" || rm -f $(CONFIG_CLEAN_VPATH_FILES)
-	-rm -f ../src/$(DEPDIR)/$(am__dirstamp)
-	-rm -f ../src/$(am__dirstamp)
 
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
@@ -767,7 +1365,7 @@ clean: clean-am
 clean-am: clean-generic clean-noinstLIBRARIES mostlyclean-am
 
 distclean: distclean-am
-	-rm -rf ../src/$(DEPDIR)
+	-rm -rf ./$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -813,7 +1411,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-	-rm -rf ../src/$(DEPDIR)
+	-rm -rf ./$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
@@ -846,9 +1444,12 @@ uninstall-am:
 	mostlyclean-generic pdf pdf-am ps ps-am tags tags-am uninstall \
 	uninstall-am
 
+<<<<<<< HEAD
 .PRECIOUS: Makefile
 
 # endif
+=======
+>>>>>>> develop
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

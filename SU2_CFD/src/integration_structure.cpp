@@ -2,9 +2,9 @@
  * \file integration_structure.cpp
  * \brief This subroutine includes the space and time integration structure
  * \author F. Palacios, T. Economon
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
+ * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
@@ -36,8 +36,10 @@ CIntegration::CIntegration(CConfig *config) {
 	New_Func = 0;
 	Cauchy_Counter = 0;
 	Convergence = false;
+	Convergence_FSI = false;
 	Convergence_FullMG = false;
-	Cauchy_Serie = new double [config->GetCauchy_Elems()+1];
+	Cauchy_Serie = new su2double [config->GetCauchy_Elems()+1];
+	InitResidual = 0.0;
 }
 
 CIntegration::~CIntegration(void) {
@@ -154,6 +156,12 @@ void CIntegration::Space_Integration(CGeometry *geometry,
       case NEUMANN:
         solver_container[MainSolver]->BC_Neumann(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
         break;
+      case LOAD_DIR_BOUNDARY:
+		solver_container[MainSolver]->BC_Dir_Load(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
+		break;
+      case LOAD_SINE_BOUNDARY:
+		solver_container[MainSolver]->BC_Sine_Load(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
+		break;
     }
   }
   
@@ -182,6 +190,9 @@ void CIntegration::Space_Integration(CGeometry *geometry,
       case DIRICHLET:
         solver_container[MainSolver]->BC_Dirichlet(geometry, solver_container, config, iMarker);
         break;
+      case CLAMPED_BOUNDARY:
+		solver_container[MainSolver]->BC_Clamped(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
+		break;
       case CUSTOM_BOUNDARY:
         solver_container[MainSolver]->BC_Custom(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
         break;
@@ -245,25 +256,48 @@ void CIntegration::Adjoint_Setup(CGeometry ***geometry, CSolver ****solver_conta
 void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep,
                                     unsigned short RunTime_EqSystem, unsigned long Iteration) {
 	unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
+	unsigned short KindSolver = config->GetKind_Solver();
   
   /*--- Perform the time integration ---*/
+
+  /*--- Fluid time integration schemes ---*/
+
+	if (KindSolver != LINEAR_ELASTICITY){
+
+	  switch (config->GetKind_TimeIntScheme()) {
+		case (RUNGE_KUTTA_EXPLICIT):
+		  solver_container[MainSolver]->ExplicitRK_Iteration(geometry, solver_container, config, iRKStep);
+		  break;
+		case (EULER_EXPLICIT):
+		  solver_container[MainSolver]->ExplicitEuler_Iteration(geometry, solver_container, config);
+		  break;
+		case (EULER_IMPLICIT):
+		  solver_container[MainSolver]->ImplicitEuler_Iteration(geometry, solver_container, config);
+		  break;
+	  }
+
+   /*--- Structural time integration schemes ---*/
   
-  switch (config->GetKind_TimeIntScheme()) {
-    case (RUNGE_KUTTA_EXPLICIT):
-      solver_container[MainSolver]->ExplicitRK_Iteration(geometry, solver_container, config, iRKStep);
-      break;
-    case (EULER_EXPLICIT):
-      solver_container[MainSolver]->ExplicitEuler_Iteration(geometry, solver_container, config);
-      break;
-    case (EULER_IMPLICIT):
-      solver_container[MainSolver]->ImplicitEuler_Iteration(geometry, solver_container, config);
-      break;
-  }
+	}
+	else if (KindSolver == LINEAR_ELASTICITY){
+
+	  switch (config->GetKind_TimeIntScheme_FEA()) {
+		case (CD_EXPLICIT):
+		  solver_container[MainSolver]->ExplicitRK_Iteration(geometry, solver_container, config, iRKStep);
+		  break;
+		case (NEWMARK_IMPLICIT):
+		  solver_container[MainSolver]->ImplicitNewmark_Iteration(geometry, solver_container, config);
+		  break;
+		case (GA_IMPLICIT):
+		  solver_container[MainSolver]->ImplicitEuler_Iteration(geometry, solver_container, config);
+		  break;
+	  }
+	}
   
 }
 
 void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, unsigned long Iteration,
-                                          double monitor, unsigned short iMesh) {
+                                          su2double monitor, unsigned short iMesh) {
   
   unsigned short iCounter;
   int rank = MASTER_NODE;
@@ -364,7 +398,7 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
     /*--- Convergence criteria ---*/
     
     sbuf_conv[0] = Convergence;
-    MPI_Reduce(sbuf_conv, rbuf_conv, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Reduce(sbuf_conv, rbuf_conv, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
     
     /*-- Compute global convergence criteria in the master node --*/
     
@@ -374,7 +408,7 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
       else sbuf_conv[0] = 0;
     }
     
-    MPI_Bcast(sbuf_conv, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Bcast(sbuf_conv, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
     
     if (sbuf_conv[0] == 1) { Convergence = true; Convergence_FullMG = true; }
     else { Convergence = false; Convergence_FullMG = false; }
@@ -426,7 +460,7 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
     
     /*--- Also communicate plunge and pitch to the master node. Needed for output in case of parallel run ---*/
 #ifdef HAVE_MPI
-    double plunge, pitch, *plunge_all = NULL, *pitch_all = NULL;
+    su2double plunge, pitch, *plunge_all = NULL, *pitch_all = NULL;
     unsigned short iMarker, iMarker_Monitoring;
     unsigned long iProcessor, owner, *owner_all = NULL;
     
@@ -438,8 +472,8 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
 
     /*--- Only if mater node allocate memory ---*/
     if (rank == MASTER_NODE) {
-      plunge_all = new double[nProcessor];
-      pitch_all  = new double[nProcessor];
+      plunge_all = new su2double[nProcessor];
+      pitch_all  = new su2double[nProcessor];
       owner_all  = new unsigned long[nProcessor];
     }
     
@@ -460,9 +494,9 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
       pitch  = config->GetAeroelastic_pitch(iMarker_Monitoring);
       
       /*--- Gather the data on the master node. ---*/
-      MPI_Gather(&plunge, 1, MPI_DOUBLE, plunge_all, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-      MPI_Gather(&pitch, 1, MPI_DOUBLE, pitch_all, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-      MPI_Gather(&owner, 1, MPI_UNSIGNED_LONG, owner_all, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+      SU2_MPI::Gather(&plunge, 1, MPI_DOUBLE, plunge_all, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+      SU2_MPI::Gather(&pitch, 1, MPI_DOUBLE, pitch_all, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+      SU2_MPI::Gather(&owner, 1, MPI_UNSIGNED_LONG, owner_all, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
       
       /*--- Set plunge and pitch on the master node ---*/
       if (rank == MASTER_NODE) {
@@ -486,3 +520,136 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
   }
   
 }
+
+void CIntegration::SetStructural_Solver(CGeometry *geometry, CSolver *solver, CConfig *config, unsigned short iMesh) {
+
+	unsigned long iPoint;
+
+	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+
+		solver->node[iPoint]->SetSolution_time_n();
+		solver->node[iPoint]->SetSolution_Vel_time_n();
+		solver->node[iPoint]->SetSolution_Accel_time_n();
+
+	}
+
+	  bool fsi = config->GetFSI_Simulation();
+
+	  /*--- If FSI problem, save the last Aitken relaxation parameter of the previous time step ---*/
+
+	  if (fsi){
+
+		  su2double WAitk=0.0;
+
+		  WAitk = solver->GetWAitken_Dyn();
+		  solver->SetWAitken_Dyn_tn1(WAitk);
+
+	  }
+
+}
+
+
+void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *fea_config, CSolver *fea_solver, unsigned long iFSIIter) {
+
+	unsigned short iCounter;
+	su2double FEA_check[2] = {0.0, 0.0};
+	su2double magResidualFSI, logResidualFSI_initial, logResidualFSI;
+	su2double magResidualFSI_criteria, logResidualFSI_criteria;
+
+    unsigned long iPoint, iDim;
+    unsigned long nPoint, nDim;
+    su2double *dispPred, *dispPred_Old;
+	su2double CurrentTime=fea_config->GetCurrent_DynTime();
+	su2double Static_Time=fea_config->GetStatic_Time();
+    su2double deltaU, deltaURad, deltaURes;
+
+   	magResidualFSI_criteria = fea_config->GetOrderMagResidualFSI();
+   	logResidualFSI_criteria = fea_config->GetMinLogResidualFSI();
+
+    deltaURes = 0.0;
+
+	ofstream historyFile_FSI;
+	bool writeHistFSI = fea_config->GetWrite_Conv_FSI();
+	if (writeHistFSI){
+		char cstrFSI[200];
+		string filenameHistFSI = fea_config->GetConv_FileName_FSI();
+		strcpy (cstrFSI, filenameHistFSI.data());
+		historyFile_FSI.open (cstrFSI, std::ios_base::app);
+	}
+
+	/*--- Only when there is movement it makes sense to check convergence (otherwise, it is always converged...) ---*/
+	/*--- The same with the first iteration, if we are doing strongly coupled we need at least two. ---*/
+
+	if ((CurrentTime > Static_Time) && (iFSIIter == 0)) {
+		/*--- Set the convergence values to 0.0 --*/
+		fea_solver->SetFSI_ConvValue(0,0.0);
+		fea_solver->SetFSI_ConvValue(1,0.0);
+
+		if (writeHistFSI){
+		historyFile_FSI << endl;
+		}
+
+	}
+	else if ((CurrentTime > Static_Time) && (iFSIIter > 0)) {
+
+		nPoint = fea_geometry->GetnPoint();
+		nDim = fea_geometry->GetnDim();
+
+		for (iPoint=0; iPoint < nPoint; iPoint++){
+
+		deltaU = 0.0;
+		deltaURad = 0.0;
+
+		dispPred = fea_solver->node[iPoint]->GetSolution_Pred();
+		dispPred_Old = fea_solver->node[iPoint]->GetSolution_Pred_Old();
+
+			for (iDim=0; iDim < nDim; iDim++){
+
+				/*--- Compute the deltaU, and add deltaU2 to deltaURad ---*/
+				deltaU = dispPred[iDim] - dispPred_Old[iDim];
+				deltaURad += deltaU * deltaU;
+
+			}
+
+			/*--- The residual is the maximum of the values of sqrt(deltaURad) computed ---*/
+			deltaURad = sqrt(deltaURad);
+			deltaURes = max(deltaURes, deltaURad);
+
+		}
+
+		if (writeHistFSI){ historyFile_FSI << setiosflags(ios::scientific) << setprecision(4) << deltaURes << "," ;}
+
+		if (iFSIIter == 1){
+			fea_solver->SetFSI_ConvValue(0,deltaURes);
+			logResidualFSI_initial = log10(deltaURes);
+
+			if (logResidualFSI_initial < logResidualFSI_criteria) Convergence_FSI = true;
+
+			if (writeHistFSI){ historyFile_FSI << setiosflags(ios::fixed) << setprecision(4) << logResidualFSI_initial;}
+
+		}
+		else {
+			fea_solver->SetFSI_ConvValue(1,deltaURes);
+			FEA_check[0] = fea_solver->GetFSI_ConvValue(0);
+			logResidualFSI_initial = log10(FEA_check[0]);
+			logResidualFSI = log10(deltaURes);
+
+			magResidualFSI=fabs(logResidualFSI-logResidualFSI_initial);
+
+			if (writeHistFSI){
+			historyFile_FSI << setiosflags(ios::fixed) << setprecision(4) << logResidualFSI << "," ;
+			historyFile_FSI << setiosflags(ios::fixed) << setprecision(4) << magResidualFSI ;
+			}
+
+			if ((logResidualFSI < logResidualFSI_criteria) || (magResidualFSI > magResidualFSI_criteria)) Convergence_FSI = true;
+		}
+
+		if (writeHistFSI){ historyFile_FSI << endl;}
+
+	}
+
+	if (writeHistFSI){ historyFile_FSI.close();}
+
+}
+
+

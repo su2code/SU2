@@ -2,9 +2,9 @@
  * \file variable_adjoint_levelset.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
+ * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
@@ -39,15 +39,15 @@ CAdjLevelSetVariable::CAdjLevelSetVariable(unsigned short val_nDim, unsigned sho
 	
 	/*--- Allocate residual structures ---*/
   
-	Residual_Sum = new double [nVar]; Residual_Old = new double [nVar];
+	Residual_Sum = new su2double [nVar]; Residual_Old = new su2double [nVar];
 	
 	/*--- Allocate limiter (upwind)---*/
   
-	if (config->GetSpatialOrder() == SECOND_ORDER_LIMITER) Limiter = new double [nVar];
+	if (config->GetSpatialOrder() == SECOND_ORDER_LIMITER) Limiter = new su2double [nVar];
 	
 }
 
-CAdjLevelSetVariable::CAdjLevelSetVariable(double val_levelset, unsigned short val_nDim, unsigned short val_nvar, CConfig *config)
+CAdjLevelSetVariable::CAdjLevelSetVariable(su2double val_levelset, unsigned short val_nDim, unsigned short val_nvar, CConfig *config)
 : CVariable(val_nDim, val_nvar, config) {
 	
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
@@ -55,11 +55,11 @@ CAdjLevelSetVariable::CAdjLevelSetVariable(double val_levelset, unsigned short v
   
 	/*--- Allocate residual structures ---*/
   
-	Residual_Sum = new double [nVar]; Residual_Old = new double [nVar];
+	Residual_Sum = new su2double [nVar]; Residual_Old = new su2double [nVar];
 	
 	/*--- Allocate limiter (upwind)---*/
   
-	if (config->GetSpatialOrder() == SECOND_ORDER_LIMITER) Limiter = new double [nVar];
+	if (config->GetSpatialOrder() == SECOND_ORDER_LIMITER) Limiter = new su2double [nVar];
 	
 	/*--- Solution and old solution initialization ---*/
   

@@ -3,9 +3,9 @@
  * \brief Headers of the main subroutines for storing the primal grid structure.
  *        The subroutines and functions are in the <i>primal_grid_structure.cpp</i> file.
  * \author F. Palacios
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
+ * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
@@ -32,9 +32,8 @@
 
 #pragma once
 
-#ifdef HAVE_MPI
-  #include "mpi.h"
-#endif
+#include "./mpi_structure.hpp"
+
 #include <iostream>
 #include <vector>
 #include <cstdlib>
@@ -48,14 +47,14 @@ using namespace std;
  * \class CPrimalGrid
  * \brief Class to define the numerical primal grid.
  * \author F. Palacios
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  */
 class CPrimalGrid {
 protected:
 	unsigned long *Nodes;         /*!< \brief Vector to store the global nodes of an element. */
 	long *Neighbor_Elements;      /*!< \brief Vector to store the elements surronding an element. */
-	double *Coord_CG;             /*!< \brief Coordinates of the center-of-gravity of the element. */
-	double **Coord_FaceElems_CG;	/*!< \brief Coordinates of the center-of-gravity of the face of the
+	su2double *Coord_CG;             /*!< \brief Coordinates of the center-of-gravity of the element. */
+	su2double **Coord_FaceElems_CG;	/*!< \brief Coordinates of the center-of-gravity of the face of the
                                  elements. */
 	static unsigned short nDim;		/*!< \brief Dimension of the element (2D or 3D) useful for triangles,
                                  rectangles and edges. */
@@ -102,14 +101,14 @@ public:
 	 * \brief Set the center of gravity of an element (including edges).
 	 * \param[in] val_coord - Coordinates of the element.
 	 */
-	void SetCG(double **val_coord);
+	void SetCG(su2double **val_coord);
 	
 	/*!
 	 * \brief Get the center of gravity of an element (including edges).
 	 * \param[in] val_dim - Coordinate of the center of gravity.
 	 * \return Coordinates of the center of gravity.
 	 */
-	double GetCG(unsigned short val_dim);
+	su2double GetCG(unsigned short val_dim);
 	
 	/*!
 	 * \brief Get the CG of a face of an element.
@@ -117,7 +116,7 @@ public:
 	 * \param[in] val_dim - Coordinate of the center of gravity.
 	 * \return Coordinates of the center of gravity.
 	 */
-	double GetFaceCG(unsigned short val_face, unsigned short val_dim);
+	su2double GetFaceCG(unsigned short val_face, unsigned short val_dim);
 	
 	/*!
 	 * \brief Get all the neighbors of an element.
@@ -248,7 +247,7 @@ public:
  * \brief Class for vertex element definition. This kind
  *        of element is used in the parallelization stuff.
  * \author F. Palacios
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  */
 class CVertexMPI : public CPrimalGrid {
 private:
@@ -365,7 +364,7 @@ public:
  * \class CLine
  * \brief Class for line element definition.
  * \author F. Palacios
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  */
 class CLine : public CPrimalGrid {
 private:
@@ -491,7 +490,7 @@ public:
  * \class CTriangle
  * \brief Class for triangle element definition.
  * \author F. Palacios
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  */
 class CTriangle : public CPrimalGrid {
 private:
@@ -619,7 +618,7 @@ public:
  * \class CRectangle
  * \brief Class for rectangle element definition.
  * \author F. Palacios
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  */
 class CRectangle : public CPrimalGrid {
 private:
@@ -747,7 +746,7 @@ public:
  * \class CTetrahedron
  * \brief Class for tetrahedron element definition.
  * \author F. Palacios
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  */
 class CTetrahedron : public CPrimalGrid {
 private:
@@ -862,7 +861,7 @@ public:
  * \class CHexahedron
  * \brief Class for hexahedron element definition.
  * \author F. Palacios
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  */
 class CHexahedron : public CPrimalGrid {
 private:
@@ -984,7 +983,7 @@ public:
  * \class CPrism
  * \brief Class for prism element definition.
  * \author F. Palacios
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  */
 class CPrism : public CPrimalGrid {
 private:
@@ -1102,7 +1101,7 @@ public:
  * \class CPyramid
  * \brief Class for pyramid element definition.
  * \author F. Palacios
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  */
 class CPyramid : public CPrimalGrid {
 private:

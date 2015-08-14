@@ -3,9 +3,9 @@
 ## \file config.py
 #  \brief python package for config 
 #  \author T. Lukaczyk, F. Palacios
-#  \version 3.2.9 "eagle"
+#  \version 4.0.0 "Cardinal"
 #
-# SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
+# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
 #
 # SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
@@ -97,8 +97,11 @@ class Config(ordered_bunch):
         if filename:
             try:
                 self.read(filename)
-            except:
-                raise IOError , 'Could not find config file: %s' % filename
+            except IOError:
+                print 'Could not find config file: %s' % filename
+	    except:
+		print 'Unexpected error: ',sys.exc_info()[0]
+		raise
         
         self._filename = filename
     
@@ -198,7 +201,7 @@ class Config(ordered_bunch):
                     keys, each with values of a list of the different 
                     config values.
                 for example: 
-                config_diff.MATH_PROBLEM = ['DIRECT','ADJOINT']
+                config_diff.MATH_PROBLEM = ['DIRECT','CONTINUOUS_ADJOINT']
                 
         """
         

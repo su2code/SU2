@@ -3,9 +3,9 @@
  * \brief Headers of the main subroutines used by SU2_CFD.
  *        The subroutines and functions are in the <i>definition_structure.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
+ * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
@@ -30,9 +30,8 @@
 
 #pragma once
 
-#ifdef HAVE_MPI
-  #include "mpi.h"
-#endif
+#include "../../Common/include/mpi_structure.hpp"
+
 #include <ctime>
 
 #include "solver_structure.hpp"
@@ -80,7 +79,8 @@ void TNE2Iteration(COutput *output, CIntegration ***integration_container, CGeom
                    CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox);
 
 /*! 
- * \brief ________________________.
+ * \brief Iteration function for Fluid-Structure Interaction applications.
+ * \author F. Palacios, R. Sanchez.
  * \param[in] output - Pointer to the COutput class.
  * \param[in] integration_container - Container vector with all the integration methods.
  * \param[in] geometry_container - Geometrical definition of the problem.
@@ -91,10 +91,12 @@ void TNE2Iteration(COutput *output, CIntegration ***integration_container, CGeom
  * \param[in] grid_movement - Volume grid movement classes of the problem.
  * \param[in] FFDBox - FFD FFDBoxes of the problem.
  * \param[in] ExtIter - Current physical time iteration number.
+ * \param[in] nFluidIt - Number of fluid iterations within a fixed time step.
  */
 void FluidStructureIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container, 
 														 CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container, 
-														 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox);
+														 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox,
+														 unsigned long iFluidIt, unsigned long nFluidIt);
 
 /*! 
  * \brief ________________________.
@@ -204,6 +206,23 @@ void AdjTNE2Iteration(COutput *output, CIntegration ***integration_container,
                       CFreeFormDefBox*** FFDBox);
 
 /*!
+ * \brief ________________________.
+ * \param[in] output - Pointer to the COutput class.
+ * \param[in] integration_container - Container vector with all the integration methods.
+ * \param[in] geometry_container - Geometrical definition of the problem.
+ * \param[in] solver_container - Container vector with all the solutions.
+ * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
+ * \param[in] config_container - Definition of the particular problem.
+ * \param[in] surface_movement - Surface movement classes of the problem.
+ * \param[in] grid_movement - Volume grid movement classes of the problem.
+ * \param[in] FFDBox - FFD FFDBoxes of the problem.
+ * \param[in] ExtIter - Current physical time iteration number.
+ */
+void DiscAdjMeanFlowIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
+                       CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
+                       CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox);
+
+/*!
  * \brief Imposes a gust via the grid velocities.
  * \author S. Padron
  * \param[in] config_container - Definition of the particular problem.
@@ -221,7 +240,7 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
  * \param[in] vort_strength - Vector of vortex strengths.
  * \param[in] r_core - Vector of vortex core size.
  */
-void InitializeVortexDistribution(unsigned long &nVortex, vector<double>& x0, vector<double>& y0, vector<double>& vort_strength, vector<double>& r_core);
+void InitializeVortexDistribution(unsigned long &nVortex, vector<su2double>& x0, vector<su2double>& y0, vector<su2double>& vort_strength, vector<su2double>& r_core);
 
 /*!
  * \brief Updates the positions and grid velocities for dynamic meshes between physical time steps.
@@ -255,10 +274,10 @@ void SetTimeSpectral(CGeometry ***geometry_container, CSolver ****solver_contain
 /*!
  * \brief Computation of the Time-Spectral operator matrix.
  * \author K. Naik
- * \param[in] D - double pointer to the operator matrix.
+ * \param[in] D - su2double pointer to the operator matrix.
  * \param[in] nZone - Total number of zones (periodic instances).
  */
-void ComputeTimeSpectral_Operator(double **D, double period, unsigned short nZone);
+void ComputeTimeSpectral_Operator(su2double **D, su2double period, unsigned short nZone);
 
 /*!
  * \brief Computation and storage of the time-spectral mesh velocities.

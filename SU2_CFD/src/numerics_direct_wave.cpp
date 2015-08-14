@@ -1,10 +1,10 @@
 /*!
  * \file numerics_direct_wave.cpp
  * \brief This file contains all the convective term discretization.
- * \author T. Economon
- * \version 3.2.9 "eagle"
+ * \author T. Economon, F. Palacios
+ * \version 4.0.0 "Cardinal"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
+ * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.

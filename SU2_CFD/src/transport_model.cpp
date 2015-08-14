@@ -2,9 +2,9 @@
  * transport_model.cpp
  * \brief Source of the main transport properties subroutines of the SU2 solvers.
  * \author S. Vitale, M. Pini, G. Gori, A. Guardone, P. Colonna
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
+ * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
@@ -49,7 +49,7 @@ CViscosityModel::~CViscosityModel(void) { }
 
 CConstantViscosity::CConstantViscosity(void) : CViscosityModel() { }
 
-CConstantViscosity::CConstantViscosity(double mu_const) : CViscosityModel() {
+CConstantViscosity::CConstantViscosity(su2double mu_const) : CViscosityModel() {
 
   /*--- Attributes initialization ---*/
 
@@ -71,7 +71,7 @@ CSutherland::CSutherland(void) : CViscosityModel() {
 
 }
 
-CSutherland::CSutherland(double mu_ref, double t_ref, double s) : CViscosityModel() {
+CSutherland::CSutherland(su2double mu_ref, su2double t_ref, su2double s) : CViscosityModel() {
 
 	Mu_ref = mu_ref;
 	T_ref = t_ref;
@@ -81,13 +81,13 @@ CSutherland::CSutherland(double mu_ref, double t_ref, double s) : CViscosityMode
 CSutherland::~CSutherland(void) { }
 
 
-void CSutherland::SetViscosity(double T, double rho) {
+void CSutherland::SetViscosity(su2double T, su2double rho) {
 
 	Mu = Mu_ref*pow((T/T_ref),(3.0/2.0))*((T_ref + S)/(T + S));
 
 }
 
-void CSutherland::SetDerViscosity(double T, double rho) {
+void CSutherland::SetDerViscosity(su2double T, su2double rho) {
 
 	dmudrho_T = 0.0;
 	dmudT_rho = Mu_ref*( (3.0/2.0)*pow( (T/T_ref),(1.0/2.0) )*( (T_ref + S)/(T + S) )
@@ -114,7 +114,7 @@ CConductivityModel::~CConductivityModel(void) { }
 
 CConstantConductivity::CConstantConductivity(void) : CConductivityModel() { }
 
-CConstantConductivity::CConstantConductivity(double kt_const) : CConductivityModel() {
+CConstantConductivity::CConstantConductivity(su2double kt_const) : CConductivityModel() {
 
   /*--- Attributes initialization ---*/
 
@@ -129,7 +129,7 @@ CConstantConductivity::~CConstantConductivity(void) { }
 
 CConstantPrandtl::CConstantPrandtl(void) : CConductivityModel() { }
 
-CConstantPrandtl::CConstantPrandtl(double pr_const) : CConductivityModel() {
+CConstantPrandtl::CConstantPrandtl(su2double pr_const) : CConductivityModel() {
 
   /*--- Attributes initialization ---*/
 
@@ -137,13 +137,13 @@ CConstantPrandtl::CConstantPrandtl(double pr_const) : CConductivityModel() {
 
 }
 
-void CConstantPrandtl::SetConductivity(double T, double rho, double mu, double cp) {
+void CConstantPrandtl::SetConductivity(su2double T, su2double rho, su2double mu, su2double cp) {
 
 	Kt = mu*cp/Pr_const;
 
 }
 
-void CConstantPrandtl::SetDerConductivity(double T, double rho, double dmudrho_T, double dmudT_rho, double cp) {
+void CConstantPrandtl::SetDerConductivity(su2double T, su2double rho, su2double dmudrho_T, su2double dmudT_rho, su2double cp) {
 
 	dktdrho_T = dmudrho_T*cp/Pr_const;
 	dktdT_rho = dmudT_rho*cp/Pr_const;

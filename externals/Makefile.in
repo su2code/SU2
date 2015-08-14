@@ -13,6 +13,39 @@
 # PARTICULAR PURPOSE.
 
 @SET_MAKE@
+
+################################################################################
+#
+# \file Makefile.am
+# \brief Makefile for external libraries
+# \author B. Kirk, T. Economon, F. Palacios
+# \version 4.0.0 "Cardinal"
+#
+# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
+#                      Dr. Thomas D. Economon (economon@stanford.edu).
+#
+# SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+#                 Prof. Piero Colonna's group at Delft University of Technology.
+#                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+#                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+#                 Prof. Rafael Palacios' group at Imperial College London.
+#
+# Copyright (C) 2012-2015 SU2, the open-source CFD code.
+#
+# SU2 is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
+#
+# SU2 is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public
+# License along with SU2. If not, see <http://www.gnu.org/licenses/>.
+#
+################################################################################
 VPATH = @srcdir@
 am__is_gnu_make = { \
   if test -z '$(MAKELEVEL)'; then \
@@ -93,7 +126,8 @@ target_triplet = @target@
 @BUILD_METIS_TRUE@@BUILD_PARMETIS_TRUE@am__append_3 = parmetis
 subdir = externals
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/m4/ax_tls.m4 \
+am__aclocal_m4_deps = $(top_srcdir)/m4/adolc.m4 \
+	$(top_srcdir)/m4/ax_tls.m4 $(top_srcdir)/m4/codi.m4 \
 	$(top_srcdir)/m4/compiler.m4 $(top_srcdir)/m4/metis.m4 \
 	$(top_srcdir)/m4/parmetis.m4 $(top_srcdir)/m4/tecio.m4 \
 	$(top_srcdir)/configure.ac
@@ -186,6 +220,8 @@ am__relativize = \
   done; \
   reldir="$$dir2"
 ACLOCAL = @ACLOCAL@
+ADOLC_CFLAGS = @ADOLC_CFLAGS@
+ADOLC_LIBS = @ADOLC_LIBS@
 AMTAR = @AMTAR@
 AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
 AUTOCONF = @AUTOCONF@
@@ -205,12 +241,16 @@ CXXFLAGS = @CXXFLAGS@
 CYGPATH_W = @CYGPATH_W@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
+DIRECTDIFF_CXX = @DIRECTDIFF_CXX@
+DIRECTDIFF_LIBS = @DIRECTDIFF_LIBS@
 ECHO_C = @ECHO_C@
 ECHO_N = @ECHO_N@
 ECHO_T = @ECHO_T@
 EGREP = @EGREP@
 EXEEXT = @EXEEXT@
 GREP = @GREP@
+HDF5_CXX = @HDF5_CXX@
+HDF5_LD = @HDF5_LD@
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
@@ -236,20 +276,26 @@ PACKAGE_BUGREPORT = @PACKAGE_BUGREPORT@
 PACKAGE_NAME = @PACKAGE_NAME@
 PACKAGE_STRING = @PACKAGE_STRING@
 PACKAGE_TARNAME = @PACKAGE_TARNAME@
-PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PARMETIS_INCLUDE = @PARMETIS_INCLUDE@
 PARMETIS_LIB = @PARMETIS_LIB@
 PATH_SEPARATOR = @PATH_SEPARATOR@
+PKG_CONFIG = @PKG_CONFIG@
 RANLIB = @RANLIB@
+REVERSE_CXX = @REVERSE_CXX@
+REVERSE_LIBS = @REVERSE_LIBS@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STRIP = @STRIP@
 SU2_METIS_CPPFLAGS = @SU2_METIS_CPPFLAGS@
 SU2_PARMETIS_CPPFLAGS = @SU2_PARMETIS_CPPFLAGS@
+SZIP_CXX = @SZIP_CXX@
+SZIP_LD = @SZIP_LD@
 TECIO_CPPFLAGS = @TECIO_CPPFLAGS@
 TECIO_INCLUDE = @TECIO_INCLUDE@
 VERSION = @VERSION@
+ZLIB_CXX = @ZLIB_CXX@
+ZLIB_LD = @ZLIB_LD@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
 abs_top_builddir = @abs_top_builddir@
@@ -307,6 +353,8 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
+
+# Build any requested libraries from the provided source
 SUBDIRS = $(am__append_1) $(am__append_2) $(am__append_3)
 all: all-recursive
 

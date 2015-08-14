@@ -3,9 +3,9 @@
 ## \file design.py
 #  \brief python package for designs
 #  \author T. Lukaczyk, F. Palacios
-#  \version 3.2.9 "eagle"
+#  \version 4.0.0 "Cardinal"
 #
-# SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
+# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
 #
 # SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
@@ -80,7 +80,7 @@ class Design(object):
             Fucntional Interface
             The following methods take an objective function name for input.
             func(func_name)                  - function of specified name
-            grad(func_name,method='ADJOINT') - gradient of specified name
+            grad(func_name,method='CONTINUOUS_ADJOINT') - gradient of specified name
     """
     
     def __init__(self, config, state=None, folder='DESIGNS/DSN_*'):
@@ -180,7 +180,7 @@ class Design(object):
         """ Evaluates SU2 Design Functions by Name """
         return self._eval(su2func,func_name)
     
-    def grad(self,func_name,method='ADJOINT'):
+    def grad(self,func_name,method='CONTINUOUS_ADJOINT'):
         """ Evaluates SU2 Design Gradients by Name """
         return self._eval(su2grad,func_name,method)
     
@@ -267,7 +267,7 @@ def obj_df(dvs,config,state=None):
     # unpack config and state
     config.unpack_dvs(dvs)
     state = su2io.State(state)
-    grad_method = config.get('GRADIENT_METHOD','ADJOINT')
+    grad_method = config.get('GRADIENT_METHOD','CONTINUOUS_ADJOINT')
     
     def_objs = config['OPT_OBJECTIVE']
     objectives = def_objs.keys()
@@ -363,7 +363,7 @@ def con_dceq(dvs,config,state=None):
     # unpack state and config
     config.unpack_dvs(dvs)
     state = su2io.State(state)
-    grad_method = config.get('GRADIENT_METHOD','ADJOINT')
+    grad_method = config.get('GRADIENT_METHOD','CONTINUOUS_ADJOINT')
     
     def_cons = config['OPT_CONSTRAINT']['EQUALITY']
     constraints = def_cons.keys()
@@ -461,7 +461,7 @@ def con_dcieq(dvs,config,state=None):
     # unpack state and config
     config.unpack_dvs(dvs)
     state = su2io.State(state)
-    grad_method = config.get('GRADIENT_METHOD','ADJOINT')
+    grad_method = config.get('GRADIENT_METHOD','CONTINUOUS_ADJOINT')
     
     def_cons = config['OPT_CONSTRAINT']['INEQUALITY']
     constraints = def_cons.keys()

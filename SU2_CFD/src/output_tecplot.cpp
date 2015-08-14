@@ -2,9 +2,9 @@
  * \file output_tecplot.cpp
  * \brief Main subroutines for output solver information.
  * \author F. Palacios, T. Economon, M. Colonno
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
+ * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
@@ -43,7 +43,7 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
   bool *SurfacePoint = NULL;
   
   bool grid_movement  = config->GetGrid_Movement();
-  bool adjoint = config->GetAdjoint();
+  bool adjoint = config->GetAdjoint() || config->GetDiscrete_Adjoint();
 
   char cstr[200], buffer[50];
   string filename;
@@ -85,9 +85,10 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
   /*--- Special cases where a number needs to be appended to the file name. ---*/
   
   if ((Kind_Solver == EULER || Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS ||
-       Kind_Solver == ADJ_EULER || Kind_Solver == ADJ_NAVIER_STOKES || Kind_Solver == ADJ_RANS) &&
+       Kind_Solver == ADJ_EULER || Kind_Solver == ADJ_NAVIER_STOKES || Kind_Solver == ADJ_RANS ||
+       Kind_Solver == DISC_ADJ_EULER || Kind_Solver == DISC_ADJ_NAVIER_STOKES || Kind_Solver == DISC_ADJ_RANS) &&
       (val_nZone > 1) && (config->GetUnsteady_Simulation() != TIME_SPECTRAL)) {
-    sprintf (buffer, "_%d", int(val_iZone));
+    SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
     strcat(cstr, buffer);
   }
   
@@ -95,21 +96,21 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
     
     if (config->GetKind_SU2() == SU2_SOL) { val_iZone = iExtIter; }
     
-    if (int(val_iZone) < 10) sprintf (buffer, "_0000%d.dat", int(val_iZone));
-    if ((int(val_iZone) >= 10) && (int(val_iZone) < 100)) sprintf (buffer, "_000%d.dat", int(val_iZone));
-    if ((int(val_iZone) >= 100) && (int(val_iZone) < 1000)) sprintf (buffer, "_00%d.dat", int(val_iZone));
-    if ((int(val_iZone) >= 1000) && (int(val_iZone) < 10000)) sprintf (buffer, "_0%d.dat", int(val_iZone));
-    if (int(val_iZone) >= 10000) sprintf (buffer, "_%d.dat", int(val_iZone));
+    if (SU2_TYPE::Int(val_iZone) < 10) SPRINTF (buffer, "_0000%d.dat", SU2_TYPE::Int(val_iZone));
+    if ((SU2_TYPE::Int(val_iZone) >= 10) && (SU2_TYPE::Int(val_iZone) < 100)) SPRINTF (buffer, "_000%d.dat", SU2_TYPE::Int(val_iZone));
+    if ((SU2_TYPE::Int(val_iZone) >= 100) && (SU2_TYPE::Int(val_iZone) < 1000)) SPRINTF (buffer, "_00%d.dat", SU2_TYPE::Int(val_iZone));
+    if ((SU2_TYPE::Int(val_iZone) >= 1000) && (SU2_TYPE::Int(val_iZone) < 10000)) SPRINTF (buffer, "_0%d.dat", SU2_TYPE::Int(val_iZone));
+    if (SU2_TYPE::Int(val_iZone) >= 10000) SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(val_iZone));
     
   }
   else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
-    if (int(iExtIter) < 10) sprintf (buffer, "_0000%d.dat", int(iExtIter));
-    if ((int(iExtIter) >= 10) && (int(iExtIter) < 100)) sprintf (buffer, "_000%d.dat", int(iExtIter));
-    if ((int(iExtIter) >= 100) && (int(iExtIter) < 1000)) sprintf (buffer, "_00%d.dat", int(iExtIter));
-    if ((int(iExtIter) >= 1000) && (int(iExtIter) < 10000)) sprintf (buffer, "_0%d.dat", int(iExtIter));
-    if (int(iExtIter) >= 10000) sprintf (buffer, "_%d.dat", int(iExtIter));
+    if (SU2_TYPE::Int(iExtIter) < 10) SPRINTF (buffer, "_0000%d.dat", SU2_TYPE::Int(iExtIter));
+    if ((SU2_TYPE::Int(iExtIter) >= 10) && (SU2_TYPE::Int(iExtIter) < 100)) SPRINTF (buffer, "_000%d.dat", SU2_TYPE::Int(iExtIter));
+    if ((SU2_TYPE::Int(iExtIter) >= 100) && (SU2_TYPE::Int(iExtIter) < 1000)) SPRINTF (buffer, "_00%d.dat", SU2_TYPE::Int(iExtIter));
+    if ((SU2_TYPE::Int(iExtIter) >= 1000) && (SU2_TYPE::Int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d.dat", SU2_TYPE::Int(iExtIter));
+    if (SU2_TYPE::Int(iExtIter) >= 10000) SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(iExtIter));
   }
-  else { sprintf (buffer, ".dat"); }
+  else { SPRINTF (buffer, ".dat"); }
   
   strcat(cstr, buffer);
   
@@ -215,6 +216,15 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
           ( Kind_Solver == ADJ_TNE2_NAVIER_STOKES )   ) {
         Tecplot_File << ", \"Surface_Sensitivity\", \"Solution_Sensor\"";
       }
+
+      if (( Kind_Solver == DISC_ADJ_EULER              ) ||
+          ( Kind_Solver == DISC_ADJ_NAVIER_STOKES      ) ||
+          ( Kind_Solver == DISC_ADJ_RANS               )) {
+        Tecplot_File << ", \"Surface_Sensitivity\", \"Sensitivity_x\", \"Sensitivity_y\"";
+        if (geometry->GetnDim() == 3){
+          Tecplot_File << ",\"Sensitivity_z\"";
+        }
+      }
       
       if (Kind_Solver == LINEAR_ELASTICITY) {
         Tecplot_File << ", \"Von_Mises_Stress\", \"Flow_Pressure\"";
@@ -280,12 +290,12 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
   /*--- Write the header ---*/
   Tecplot_File << "ZONE ";
   if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
-    Tecplot_File << "STRANDID="<<int(iExtIter+1)<<", SOLUTIONTIME="<<config->GetDelta_UnstTime()*iExtIter<<", ";
+    Tecplot_File << "STRANDID="<<SU2_TYPE::Int(iExtIter+1)<<", SOLUTIONTIME="<<config->GetDelta_UnstTime()*iExtIter<<", ";
   } else if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
     /*--- Compute period of oscillation & compute time interval using nTimeInstances ---*/
-    double period = config->GetTimeSpectral_Period();
-    double deltaT = period/(double)(config->GetnTimeInstances());
-    Tecplot_File << "STRANDID="<<int(iExtIter+1)<<", SOLUTIONTIME="<<deltaT*iExtIter<<", ";
+    su2double period = config->GetTimeSpectral_Period();
+    su2double deltaT = period/(su2double)(config->GetnTimeInstances());
+    Tecplot_File << "STRANDID="<<SU2_TYPE::Int(iExtIter+1)<<", SOLUTIONTIME="<<deltaT*iExtIter<<", ";
   }
   
   if (nDim == 2) {
@@ -503,6 +513,15 @@ void COutput::SetTecplotASCII_LowMemory(CConfig *config, CGeometry *geometry, CS
       if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS) ) {
         Tecplot_File << ", \"Surface_Sensitivity\", \"Solution_Sensor\"";
       }
+
+      if (( Kind_Solver == DISC_ADJ_EULER              ) ||
+          ( Kind_Solver == DISC_ADJ_NAVIER_STOKES      ) ||
+          ( Kind_Solver == DISC_ADJ_RANS               )) {
+        Tecplot_File << ", \"Surface_Sensitivity\", \"Sensitivity_x\", \"Sensitivity_y\"";
+        if (geometry->GetnDim() == 3){
+          Tecplot_File << ",\"Sensitivity_z\"";
+        }
+      }
       
     }
     
@@ -700,7 +719,7 @@ void COutput::SetTecplotASCII_LowMemory(CConfig *config, CGeometry *geometry, CS
     }
     
     strcpy(mesh_filename, filename.c_str());
-    sprintf (buffer_char, ".dat");
+    SPRINTF (buffer_char, ".dat");
     strcat(mesh_filename, buffer_char);
     
     Tecplot_File.open(mesh_filename, ios::out);
@@ -717,7 +736,7 @@ void COutput::SetTecplotASCII_LowMemory(CConfig *config, CGeometry *geometry, CS
       }
       
       strcpy(out_file, filename.c_str());
-      sprintf (buffer_char, "_%i.dat", iRank+1);
+      SPRINTF (buffer_char, "_%i.dat", iRank+1);
       strcat(out_file, buffer_char);
       ifstream Tecplot_File_;
       Tecplot_File_.open(out_file, ios::in);
@@ -1409,7 +1428,7 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
   Debug						= 0;
   IsDouble					= 1;
   NPts						= (INTEGER4)nGlobal_Poin;
-  t							= iExtIter*config->GetDelta_UnstTime();
+  t							= SU2_TYPE::GetPrimary(iExtIter*config->GetDelta_UnstTime());
   KMax						= 0;
   ICellMax					= 0;
   JCellMax					= 0;
@@ -1946,9 +1965,9 @@ void COutput::SetTecplotBinary_SurfaceMesh(CConfig *config, CGeometry *geometry,
     
     /*--- Collect surface coordinates into one array as well ---*/
     /*--- Note the -1 in the Coords/Data array in order to undo the 1-based indexing ---*/
-    double **Surf_Coords = new double*[dims];
+    su2double **Surf_Coords = new su2double*[dims];
     for (iDim = 0; iDim < dims; iDim++)
-      Surf_Coords[iDim] = new double[nSurf_Poin];
+      Surf_Coords[iDim] = new su2double[nSurf_Poin];
     
     unsigned long iSurf_Poin = 0;
     for (iPoint = 0; iPoint < nGlobal_Poin+1; iPoint++) {
@@ -2256,11 +2275,11 @@ void COutput::SetTecplotBinary_SurfaceSolution(CConfig *config, CGeometry *geome
   
   /*--- Collect surface coordinates into one array as well ---*/
   /*--- Note the -1 in the Coords/Data array in order to undo the 1-based indexing ---*/
-  double **Surf_Coords;
+  su2double **Surf_Coords;
   if (Wrt_Unsteady && GridMovement) {
-    Surf_Coords = new double*[dims];
+    Surf_Coords = new su2double*[dims];
     for (iDim = 0; iDim < dims; iDim++)
-    Surf_Coords[iDim] = new double[nSurf_Poin];
+    Surf_Coords[iDim] = new su2double[nSurf_Poin];
     
     iSurf_Poin = 0;
     for (iPoint = 0; iPoint < nGlobal_Poin+1; iPoint++) {
@@ -2278,9 +2297,9 @@ void COutput::SetTecplotBinary_SurfaceSolution(CConfig *config, CGeometry *geome
   
   /*--- Collect surface data into one array for the surface as well ---*/
   /*--- Note the -1 in the Coords/Data array in order to undo the 1-based indexing ---*/
-  double **Surf_Data = new double*[nVar_Total];
+  su2double **Surf_Data = new su2double*[nVar_Total];
   for (iVar = 0; iVar < nVar_Total; iVar++)
-  Surf_Data[iVar] = new double[nSurf_Poin];
+  Surf_Data[iVar] = new su2double[nSurf_Poin];
   
   iSurf_Poin = 0;
   for (iPoint = 0; iPoint < nGlobal_Poin+1; iPoint++) {
@@ -2302,7 +2321,7 @@ void COutput::SetTecplotBinary_SurfaceSolution(CConfig *config, CGeometry *geome
   Debug						= 0;
   IsDouble					= 1;
   NPts						= (INTEGER4)nSurf_Poin;
-  t							= iExtIter*config->GetDelta_UnstTime();
+  t							= SU2_TYPE::GetPrimary(iExtIter*config->GetDelta_UnstTime());
   KMax						= 0;
   ICellMax					= 0;
   JCellMax					= 0;

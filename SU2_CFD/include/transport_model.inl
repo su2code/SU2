@@ -2,9 +2,9 @@
  * \file transport_model.inl
  * \brief In-Line subroutines of the <i>solver_structure.hpp</i> file.
  * \author S. Vitale, M. Pini, G. Gori, A. Guardone, P. Colonna
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
+ * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
@@ -29,14 +29,14 @@
 
 #pragma once
 
-inline double CViscosityModel::GetViscosity() { return Mu; }
-inline double CViscosityModel::Getdmudrho_T () { return dmudrho_T; }
-inline double CViscosityModel::GetdmudT_rho() { return dmudT_rho; }
-inline void CViscosityModel::SetViscosity(double T, double rho) {}
-inline void CViscosityModel::SetDerViscosity(double T, double rho) {}
+inline su2double CViscosityModel::GetViscosity() { return Mu; }
+inline su2double CViscosityModel::Getdmudrho_T () { return dmudrho_T; }
+inline su2double CViscosityModel::GetdmudT_rho() { return dmudT_rho; }
+inline void CViscosityModel::SetViscosity(su2double T, su2double rho) {}
+inline void CViscosityModel::SetDerViscosity(su2double T, su2double rho) {}
 
-inline double CConductivityModel::GetConductivity() { return Kt; }
-inline double CConductivityModel::Getdktdrho_T () { return dktdrho_T; }
-inline double CConductivityModel::GetdktdT_rho () { return dktdT_rho; }
-inline void CConductivityModel::SetConductivity(double T, double rho, double mu, double cp) {}
-inline void CConductivityModel::SetDerConductivity(double T, double rho, double dmudrho_T, double dmudT_rho, double cp) {}
+inline su2double CConductivityModel::GetConductivity() { return Kt; }
+inline su2double CConductivityModel::Getdktdrho_T () { return dktdrho_T; }
+inline su2double CConductivityModel::GetdktdT_rho () { return dktdT_rho; }
+inline void CConductivityModel::SetConductivity(su2double T, su2double rho, su2double mu, su2double cp) {}
+inline void CConductivityModel::SetDerConductivity(su2double T, su2double rho, su2double dmudrho_T, su2double dmudT_rho, su2double cp) {}

@@ -1,7 +1,11 @@
-# SU2 Makefile.am for SU2_GEO
-# SU2 v3.2.7 "eagle"
+################################################################################
 #
-# SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
+# \file Makefile.am
+# \brief Makefile for SU2_GEO
+# \author M. Colonno, T. Economon, F. Palacios
+# \version 4.0.0 "Cardinal"
+#
+# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
 #
 # SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
@@ -25,20 +29,15 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 #
-# Created: 		3/16/13
-# Last updated: 	4/09/13
-#
-# Created by: 	M. Colonno
-# Updated by: 	T. Economon
-#
-######################################################################################
+################################################################################
 
 ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS}
 
 bin_PROGRAMS = ../bin/SU2_GEO
 
-___bin_SU2_GEO_SOURCES = ../include/SU2_GEO.hpp \
-		../src/SU2_GEO.cpp
+___bin_SU2_GEO_SOURCES = \
+  ../include/SU2_GEO.hpp \
+  ../src/SU2_GEO.cpp
 
 ___bin_SU2_GEO_CXXFLAGS =
 ___bin_SU2_GEO_LDADD = ../../Common/lib/libSU2.a
@@ -50,6 +49,21 @@ ___bin_SU2_GEO_LDADD += @su2_externals_LIBS@
 # if BUILD_CGNS
 ___bin_SU2_GEO_CXXFLAGS += @CGNS_CXX@
 ___bin_SU2_GEO_LDADD += @CGNS_LD@
+# endif
+
+# if BUILD_HDF5
+___bin_SU2_GEO_CXXFLAGS += @HDF5_CXX@
+___bin_SU2_GEO_LDADD += @HDF5_LD@
+# endif
+
+# if BUILD_SZIP
+___bin_SU2_GEO_CXXFLAGS += @SZIP_CXX@
+___bin_SU2_GEO_LDADD += @SZIP_LD@
+# endif
+
+# if BUILD_ZLIB
+___bin_SU2_GEO_CXXFLAGS += @ZLIB_CXX@
+___bin_SU2_GEO_LDADD += @ZLIB_LD@
 # endif
 
 # if BUILD_MUTATIONPP

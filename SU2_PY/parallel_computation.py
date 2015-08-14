@@ -3,9 +3,9 @@
 ## \file parallel_computation.py
 #  \brief Python script for doing the continuous adjoint computation using the SU2 suite.
 #  \author T. Economon, T. Lukaczyk, F. Palacios
-#  \version 3.2.9 "eagle"
+#  \version 4.0.0 "Cardinal"
 #
-# SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
+# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
 #
 # SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
@@ -91,7 +91,7 @@ def parallel_computation( filename           ,
     # Solution merging
     if config.MATH_PROBLEM == 'DIRECT':
         config.SOLUTION_FLOW_FILENAME = config.RESTART_FLOW_FILENAME
-    elif config.MATH_PROBLEM == 'ADJOINT':
+    elif config.MATH_PROBLEM == 'CONTINUOUS_ADJOINT':
         config.SOLUTION_ADJ_FILENAME = config.RESTART_ADJ_FILENAME
     info = SU2.run.merge(config)
     state.update(info)
