@@ -3346,6 +3346,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
     Global_Delta_Time = rbuf_time;
 #endif
     /*--- if the CFL if not equal to 0 ---*/
+    config->SetCFL(iMesh,config->GetUnst_CFL());
     if (config->GetCFL(iMesh)!=0) {
       for (iPoint = 0; iPoint < nPointDomain; iPoint++)
         node[iPoint]->SetDelta_Time(Global_Delta_Time);

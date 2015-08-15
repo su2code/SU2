@@ -4535,7 +4535,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     /*--- Header frequency ---*/
     
     bool Unsteady = ((config[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                     (config[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+                     (config[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND) /*||
+										 (config[val_iZone]->GetUnsteady_Simulation() == TIME_STEPPING)*/);
     bool In_NoDualTime = (!DualTime_Iteration && (iExtIter % config[val_iZone]->GetWrt_Con_Freq() == 0));
     bool In_DualTime_0 = (DualTime_Iteration && (iIntIter % config[val_iZone]->GetWrt_Con_Freq_DualTime() == 0));
     bool In_DualTime_1 = (!DualTime_Iteration && Unsteady);
@@ -4778,7 +4779,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
       /*--- Write the screen header---*/
       if ((write_heads) && !(!DualTime_Iteration && Unsteady)) {
         
-        if (!Unsteady) {
+        if (!Unsteady && (config[val_iZone]->GetUnsteady_Simulation() != TIME_STEPPING)) {
           switch (config[val_iZone]->GetKind_Solver()) {
             case EULER : case NAVIER_STOKES: case RANS:
             case ADJ_EULER : case ADJ_NAVIER_STOKES: case ADJ_RANS:
@@ -4799,14 +4800,18 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               cout << endl << "Min Delta Time: " << solver_container[val_iZone][MESH_0][TNE2_SOL]->GetMin_Delta_Time()<< ". Max Delta Time: " << solver_container[val_iZone][MESH_0][TNE2_SOL]->GetMax_Delta_Time() << ".";
               break;
           }
-        }
-        else {
-          if (flow) {
-            cout << endl << "Min DT: " << solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetMin_Delta_Time()<<
-            ".Max DT: " << solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetMax_Delta_Time() <<
-            ".Dual Time step: " << config[val_iZone]->GetDelta_UnstTimeND() << ".";
-          }
-          else {
+        } else {
+					if (flow) {
+						if (config[val_iZone]->GetUnsteady_Simulation() == TIME_STEPPING){
+							cout << endl << "Min DT: " << solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetMin_Delta_Time()<<
+							".Max DT: " << solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetMax_Delta_Time() <<
+							". Time step: " << solver_container[val_iZone][config[val_iZone]->GetFinestMesh()][FLOW_SOL]->GetMin_Delta_Time() << ".";
+						} else {
+							cout << endl << "Min DT: " << solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetMin_Delta_Time()<<
+							".Max DT: " << solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetMax_Delta_Time() <<
+							". Dual Time step: " << config[val_iZone]->GetDelta_UnstTimeND() << ".";
+						}
+          } else {
             cout << endl << "Dual Time step: " << config[val_iZone]->GetDelta_UnstTimeND() << ".";
           }
         }

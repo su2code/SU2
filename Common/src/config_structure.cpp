@@ -1644,8 +1644,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 	  else { Wrt_Dynamic = true; }
 
   }
-
-  
   
   /*--- Check for Measurement System ---*/
   
@@ -4431,11 +4429,15 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         cout << endl;
       }
 
-      cout << "Courant-Friedrichs-Lewy number:   ";
+			/*--- Show CFL value on a separate line only when is not using time stepping ---*/
+			if (Unsteady_Simulation != TIME_STEPPING){
+			cout << "Courant-Friedrichs-Lewy number:   ";
       cout.precision(3);
-      cout.width(6); cout << CFL[0];
+      cout.width(6);
+			cout << CFL[0];
       cout << endl;
-
+			}
+			
       if (nMGLevels !=0) {
         cout.precision(3);
         cout << "MG PreSmooth coefficients:        ";
