@@ -79,7 +79,7 @@ def main():
         if any([modes["REVERSE"] == 'ADOLC', modes["DIRECTDIFF"] == 'ADOLC']):
             conf_environ, made_adolc = build_adolc(modes,options.mpi_enabled)
         if any([modes["REVERSE"] == 'CODI',  modes["DIRECTDIFF"] == 'CODI']):
-            conf_environ, made_codi  = build_codi(modes,options.mpi_enabled)
+            conf_environ, made_codi  = init_codi(modes,options.mpi_enabled)
 
         configure(options.config_options,
                   options.install_path,
@@ -227,7 +227,7 @@ def find_all(text, dic):
             return True
     return False
 
-def build_codi(modes, mpi_support = False):
+def init_codi(modes, mpi_support = False):
 
     modules_failed = True
     
@@ -238,6 +238,12 @@ def build_codi(modes, mpi_support = False):
     sha_version_ampi = '8ab63005c646d5b6a2910521f9c0180ce7076f38'
     github_repo_ampi = 'https://github.com/michel2323/AdjointMPI'
 
+    ampi_name = 'AdjointMPI'
+    codi_name = 'CoDiPack'
+
+    alt_name_ampi = 'adjointmpi'
+    alt_name_codi = 'CoDi'
+
     # Some log and error files
     log = open( 'preconf.log', 'w' )
     err = open( 'preconf.err', 'w' )
@@ -246,12 +252,12 @@ def build_codi(modes, mpi_support = False):
     # If project was cloned using git, we can use the 
     # submodule feature of git to initialize the packages
     if all([os.path.exists('.gitmodules')]):
-	try:
-            print "Update submodules using git..."
+        try:
+            print "Updating submodules using git..."
             subprocess.check_call('git submodule update --init', stdout = log, stderr = err, shell = True)
             modules_failed = False
         except subprocess.CalledProcessError: 
-            print 'Module initialization failed using git.'
+            print 'Module initialization using git failed. Using fall-back option ...'
             modules_failed = True
     
     os.chdir('externals')
@@ -259,26 +265,18 @@ def build_codi(modes, mpi_support = False):
     # If modules still dont exists, use wget to download zip
     if all([not os.path.exists('CoDi/' + sha_version_codi), modules_failed]):
         if all([os.path.exists('CoDi'), not os.path.exists('CoDi/' + sha_version_codi)]):
-            print 'Found an older or unspecified version of CoDiPack in externals/CoDi.\nPlease (re)move this folder and try again'
-	    sys.exit()
+            print 'Found an old or unspecified version of CoDiPack in externals/CoDi.\nPlease (re)move this folder and try again'
+            sys.exit()
 
-        print 'Initializing CoDi...'
-        subprocess.check_call('wget '  + github_repo_codi + '/archive/' + sha_version_codi + '.zip', stdout = log, stderr = err, shell=True)
-        subprocess.check_call('unzip ' + sha_version_codi + '.zip', stdout = log, stderr = err, shell=True)
-        subprocess.check_call('mv CoDiPack-' + sha_version_codi + ' CoDi && touch CoDi/' + sha_version_codi, stdout = log, stderr = err, shell= True)
-        os.remove(sha_version_codi + '.zip')
+        download_module(codi_name, alt_name_codi, github_repo_codi, sha_version_codi, log, err)
+
          
     if all([not os.path.exists('adjointmpi/' + sha_version_ampi), mpi_support, modules_failed]):
         if all([os.path.exists('adjointmpi'), not os.path.exists('adjointmpi/' + sha_version_ampi)]):
-            print 'Found an older or unspecified version of AdjointMPI in externals/adjointmpi.\nPlease (re)move this folder and try again.'
-	    sys.exit()
+            print 'Found an old or unspecified version of AdjointMPI in externals/adjointmpi.\nPlease (re)move this folder and try again.'
+            sys.exit()
 
-        print 'Initializing AdjointMPI...'
-        subprocess.check_call('wget '  + github_repo_ampi + '/archive/' + sha_version_ampi + '.zip', stdout = log, stderr = err, shell=True)  
-        subprocess.check_call('unzip ' + sha_version_ampi + '.zip' , stdout = log, stderr = err, shell=True)
-        subprocess.check_call('mv AdjointMPI-' + sha_version_ampi + ' adjointmpi && touch adjointmpi/' + sha_version_ampi, stdout = log, stderr = err, shell = True)
-        os.remove(sha_version_ampi + '.zip')
-        
+        download_module(ampi_name, alt_name_ampi, github_repo_ampi, sha_version_ampi, log, err)
 
     if mpi_support:
         os.chdir('adjointmpi')
@@ -290,6 +288,31 @@ def build_codi(modes, mpi_support = False):
     os.chdir(os.pardir)
 
     return pkg_environ, True
+
+def download_module(name, alt_name, git_repo, commit_sha, logfile, errorfile):
+
+    print 'Initializing ' + name + '...'
+   
+    # Download package
+    try:
+        subprocess.check_call('wget ' + git_repo + '/archive/' + commit_sha + '.zip', stdout = logfile, stderr = errorfile, shell = True )
+    except subprocess.CalledProcessError:
+        print 'Download of module ' + name + ' failed. See preconf.err for more information.'
+        sys.exit()
+    
+    # Extract zip archive
+    try:
+        subprocess.check_call('unzip -u ' + commit_sha + '.zip', stdout = logfile, stderr = errorfile, shell=True)
+    except subprocess.CalledProcessError:
+        print 'Extraction of module ' + name + ' failed. See preconf.err for more information.'
+        sys.exit()
+
+    # Rename folder and create a file to identify the version
+    try:
+        subprocess.check_call('mv '+ name + '-' + commit_sha + ' ' + alt_name + ' && touch ' + alt_name + '/' + commit_sha, stdout = logfile, stderr = errorfile, shell = True)
+    except subprocess.CalledProcessError:
+        print 'Renaming of module ' + name + ' failed. See preconf.err for more information.'
+        sys.exit()
 
 def build_adolc(modes, mpi_support = False):
 
@@ -309,8 +332,8 @@ def build_adolc(modes, mpi_support = False):
 
     # If necessary build adolc_ampi
     if all([mpi_support, modes['REVERSE']]):
-	print 'MPI currently not supported when using ADOLC.'
-	sys.exit()
+        print 'MPI currently not supported when using ADOLC.'
+        sys.exit()
         #ampi_path = subprocess.check_output("pwd").rstrip() +  "/AdjoinableMPI"
         #pkg_name = "adolc_ampi"
         #pkg_version = "2.5.3-trunk"
@@ -325,7 +348,7 @@ def build_adolc(modes, mpi_support = False):
 def download_and_compile_adolc(configure_command, ampi_needed, pkg_name, pkg_version, pkg_environ):
 
     ampi_clone = 'hg clone http://mercurial.mcs.anl.gov/ad/AdjoinableMPI'
-    adolc_clone = 'git clone git@gitlab.com:adol-c/adol-c.git'
+    adolc_clone = 'git clone --depth 1 git@gitlab.com:adol-c/adol-c.git'
     adolc_download = 'wget https://gitlab.com/adol-c/adol-c/repository/archive.zip'
 
     pkg_call = "pkg-config --exists --print-errors ' " + pkg_name + " = " + pkg_version + " ' "
@@ -434,16 +457,7 @@ def configure(config_options,
     print '\nPre-configuration Summary:\n' \
            '=====================================================================\n'\
           '\tConfiguration sets: '+ build_dirs + '\n'
-
-    if made_adolc:
-        if mpi_support:
-            print '\tSuccessfully built or found AdjoinableMPI\n'
-        print '\tSuccessfully built or found ADOL-C\n'
-    if made_codi:
-        if mpi_support:
-            print '\tBuilt or found AdjointMPI\n'
-        print '\tSuccessfully downloaded or found CODI\n'
-
+    
     print '\tUse "make <install>" to compile (and install) all configured binaries:\n'
     if modes['NORMAL']:
         print '\tSU2_CFD            -> General solver for direct, cont. adjoint and linearized equations.\n' \
