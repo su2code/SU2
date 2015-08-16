@@ -4546,12 +4546,6 @@ public:
 	~CTransLMSolver(void);
     
 	/*!
-	 * \brief Correlation function to relate turbulence intensity to transition onset reynolds number
-	 * \param[in]  tu - turbulence intensity
-	 */
-	su2double REthCorrelation(su2double tu);
-    
-	/*!
 	 * \brief Restart residual and compute gradients.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
