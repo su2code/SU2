@@ -443,6 +443,8 @@ void CFEM_ElasticitySolver::Compute_StiffMatrix(CGeometry *geometry, CSolver **s
 	double *Ta = NULL;
 	unsigned short NelNodes, jNode;
 
+	double checkJacobian, *checkCoord;
+
 	/*--- Loops over all the elements ---*/
 
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
@@ -458,7 +460,9 @@ void CFEM_ElasticitySolver::Compute_StiffMatrix(CGeometry *geometry, CSolver **s
 		/*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
 
 		for (iNode = 0; iNode < nNodes; iNode++) {
+
 		  indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
+
 		  for (iDim = 0; iDim < nDim; iDim++) {
 			  val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
 			  val_Sol = node[indexNode[iNode]]->GetSolution(iDim) + val_Coord;
@@ -1252,6 +1256,7 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolv
 	bool newton_raphson = (config->GetKind_SpaceIteScheme_FEA() == NEWTON_RAPHSON);		// Newton-Raphson method
 	bool fsi = config->GetFSI_Simulation();												// FSI simulation.
 
+	double *checkCoord;
 
 	if (!dynamic){
 
@@ -1324,9 +1329,10 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolv
 			/*--- External surface load contribution ---*/
 			Res_Ext_Surf = node[iPoint]->Get_SurfaceLoad_Res();
 			LinSysRes.AddBlock(iPoint, Res_Ext_Surf);
+			checkCoord = geometry->node[iPoint]->GetCoord();
 			/*--- Add FSI contribution ---*/
 			if (fsi) {
-				/*--- It may be worthy restricting the flow traction to the boundary elements... ---*/
+				/*--- TODO: It may be worthy restricting the flow traction to the boundary elements... ---*/
 				Res_FSI_Cont = node[iPoint]->Get_FlowTraction();
 				LinSysRes.AddBlock(iPoint, Res_FSI_Cont);
 			}
@@ -1431,6 +1437,13 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
 
 	unsigned long nVertexFEA, nVertexFlow;						// Number of vertices on FEA and Flow side
 	unsigned long iVertex, iPoint;								// Variables for iteration over vertices and nodes
+
+
+	/*--- TODO: We have to clear the traction before applying it, because we are "adding" to node and not "setting" ---*/
+	/*--- This may be improved ---*/
+	for (iPoint = 0; iPoint < nPoint; iPoint++){
+		node[iPoint]->Clear_FlowTraction();
+	}
 
 	unsigned short iDim, jDim;
 
@@ -1602,8 +1615,9 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
 			}
 
 			/*--- Set the Flow traction ---*/
-			node[donorVertex]->Set_FlowTraction(Residual);
-
+			//node[donorVertex]->Set_FlowTraction(Residual);
+			/*--- Add to the Flow traction (to add values to corners...) ---*/
+			node[donorVertex]->Add_FlowTraction(Residual);
 		}
 
 	}

@@ -1593,6 +1593,39 @@ void CFEASolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver
 
 			}
 
+//			double checkJacobian;
+//			unsigned long iNode, jNode;
+//			unsigned short jVar;
+//
+//			ofstream myfile;
+//			myfile.open ("oldJacobian.txt");
+//
+//			for (iNode = 0; iNode < nPoint; iNode++){
+//				for (jNode = 0; jNode < nPoint; jNode++){
+//					myfile << "Node " << iNode << " " << jNode << endl;
+//					for (iVar = 0; iVar < nVar; iVar++){
+//						for (jVar = 0; jVar < nVar; jVar++){
+//							checkJacobian = StiffMatrixTime.GetBlock(iNode, jNode, iVar, jVar);
+//							myfile << checkJacobian << " " ;
+//						}
+//						myfile << endl;
+//					}
+//				}
+//			}
+//			myfile.close();
+//
+//			myfile.open ("oldResidual.txt");
+//
+//			for (iNode = 0; iNode < nPoint; iNode++){
+//					myfile << "Node " << iNode << endl;
+//					for (iVar = 0; iVar < nVar; iVar++){
+//							checkJacobian = LinSysRes.GetBlock(iNode, iVar);
+//							myfile << checkJacobian << " " ;
+//						myfile << endl;
+//					}
+//			}
+//			myfile.close();
+
 
 			/*--- Solve the linear dynamic system ---*/
 

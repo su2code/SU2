@@ -1481,6 +1481,11 @@ public:
 	/*!
 	 * \brief A virtual member.
 	 */
+	virtual void Add_FlowTraction(double *val_flowTraction);
+
+	/*!
+	 * \brief A virtual member.
+	 */
 	virtual double *Get_FlowTraction(void);
 
 	/*!
@@ -2600,6 +2605,11 @@ public:
 	 * \brief Set the flow traction at a node on the structural side
 	 */
 	void Set_FlowTraction(double *val_flowTraction);
+
+	/*!
+	 * \brief Add a value to the flow traction at a node on the structural side
+	 */
+	void Add_FlowTraction(double *val_flowTraction);
 
 	/*!
 	 * \brief Get the residual term due to the flow traction

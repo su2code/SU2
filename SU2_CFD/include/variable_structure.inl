@@ -77,6 +77,8 @@ inline void CVariable::Clear_SurfaceLoad_Res(void) { }
 
 inline void CVariable::Set_FlowTraction(double *val_flowTraction) { }
 
+inline void CVariable::Add_FlowTraction(double *val_flowTraction) { }
+
 inline double *CVariable::Get_FlowTraction(void) {return NULL;}
 
 inline void CVariable::Clear_FlowTraction(void) { }
@@ -908,6 +910,11 @@ inline void CFEM_ElasVariable::Clear_SurfaceLoad_Res(void) {
 inline void CFEM_ElasVariable::Set_FlowTraction(double *val_flowTraction) {
 	for (unsigned short iVar = 0; iVar < nVar; iVar++)
 		FlowTraction[iVar] = val_flowTraction[iVar];
+}
+
+inline void CFEM_ElasVariable::Add_FlowTraction(double *val_flowTraction) {
+	for (unsigned short iVar = 0; iVar < nVar; iVar++)
+		FlowTraction[iVar] += val_flowTraction[iVar];
 }
 
 inline double *CFEM_ElasVariable::Get_FlowTraction(void) {return FlowTraction;}
