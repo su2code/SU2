@@ -401,9 +401,16 @@ int main(int argc, char *argv[]) {
 	    runtime = new CConfig(runtime_file_name, config_container[ZONE_0]);
 
 	    /*--- Update the convergence history file (serial and parallel computations). ---*/
+	    /*--- This is temporal and for practical purposes. ---*/
+	    cout << "---------------------------------------------------------------------------" << endl;
+	    for (iZone = 0; iZone < nZone; iZone++){
+	    	if (iZone == 0) cout << "Fluid convergence: " << endl;
+	    	else if (iZone == 1) cout << "Structural convergence: " << endl;
+	    	output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container,
+	                                	config_container, integration_container, false, UsedTime, iZone);
+	    }
 
-	    output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container,
-	                                config_container, integration_container, false, UsedTime, ZONE_0);
+	    cout << "---------------------------------------------------------------------------" << endl;
 
 	    /*--- Evaluate the new CFL number (adaptive). ---*/
 

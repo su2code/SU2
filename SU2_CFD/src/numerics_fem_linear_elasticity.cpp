@@ -33,15 +33,15 @@
 CFEM_LinearElasticity::CFEM_LinearElasticity(unsigned short val_nDim, unsigned short val_nVar,
                                    CConfig *config) : CFEM_Elasticity(val_nDim, val_nVar, config) {
 
-	unsigned short i;
+	unsigned short iVar;
 
 	if (nDim == 2){
 		nodalDisplacement = new double* [4];	/*--- As of now, 4 is the maximum number of nodes for 2D problems ---*/
-		for (i = 0; i < 4; i++) nodalDisplacement[i] = new double[nDim];
+		for (iVar = 0; iVar < 4; iVar++) nodalDisplacement[iVar] = new double[nDim];
 	}
 	else if (nDim == 3){
 		nodalDisplacement = new double* [8];	/*--- As of now, 8 is the maximum number of nodes for 3D problems ---*/
-		for (i = 0; i < 8; i++) nodalDisplacement[i] = new double[nDim];
+		for (iVar = 0; iVar < 8; iVar++) nodalDisplacement[iVar] = new double[nDim];
 	}
 
 
@@ -57,7 +57,7 @@ CFEM_LinearElasticity::~CFEM_LinearElasticity(void) {
 
 void CFEM_LinearElasticity::Compute_Tangent_Matrix(CElement *element){
 
-	unsigned short i, j, k;
+	unsigned short iVar, jVar, kVar;
 	unsigned short iGauss, nGauss;
 	unsigned short iNode, jNode, nNode;
 	unsigned short iDim;
@@ -65,24 +65,23 @@ void CFEM_LinearElasticity::Compute_Tangent_Matrix(CElement *element){
 
 	double Weight, Jac_X;
 
-	double AuxMatrix[6][3];
+	double AuxMatrix[3][6];
 
 	/*--- Initialize auxiliary matrices ---*/
 
 	if (nDim == 2) bDim = 3;
 	else if (nDim == 3) bDim = 6;
 
-	for (i = 0; i < bDim; i++){
-		for (j = 0; j < nDim; j++){
-			Ba_Mat[i][j] = 0.0;
-			Bb_Mat[i][j] = 0.0;
+	for (iVar = 0; iVar < bDim; iVar++){
+		for (jVar = 0; jVar < nDim; jVar++){
+			Ba_Mat[iVar][jVar] = 0.0;
+			Bb_Mat[iVar][jVar] = 0.0;
 		}
 	}
 
-	for (i = 0; i < 6; i++){
-		for (j = 0; j < 3; j++){
-			AuxMatrix[i][j] = 0.0;
-			AuxMatrix[i][j] = 0.0;
+	for (iVar = 0; iVar < 3; iVar++){
+		for (jVar = 0; jVar < 6; jVar++){
+			AuxMatrix[iVar][jVar] = 0.0;
 		}
 	}
 
@@ -112,7 +111,7 @@ void CFEM_LinearElasticity::Compute_Tangent_Matrix(CElement *element){
 				Ba_Mat[2][0] = GradNi_Ref_Mat[iNode][1];
 				Ba_Mat[2][1] = GradNi_Ref_Mat[iNode][0];
 			}
-			else if (nDim ==3){
+			else if (nDim == 3){
 				Ba_Mat[0][0] = GradNi_Ref_Mat[iNode][0];
 				Ba_Mat[1][1] = GradNi_Ref_Mat[iNode][1];
 				Ba_Mat[2][2] = GradNi_Ref_Mat[iNode][2];
@@ -121,16 +120,16 @@ void CFEM_LinearElasticity::Compute_Tangent_Matrix(CElement *element){
 				Ba_Mat[4][0] = GradNi_Ref_Mat[iNode][2];
 				Ba_Mat[4][2] = GradNi_Ref_Mat[iNode][0];
 				Ba_Mat[5][1] = GradNi_Ref_Mat[iNode][2];
-				Ba_Mat[5][2] = GradNi_Ref_Mat[iNode][1];					;
+				Ba_Mat[5][2] = GradNi_Ref_Mat[iNode][1];
 			}
 
 		    /*--- Compute the BT.D Matrix ---*/
 
-			for (i = 0; i < nDim; i++){
-				for (j = 0; j < bDim; j++){
-					AuxMatrix[i][j] = 0.0;
-					for (k = 0; k < bDim; k++){
-						AuxMatrix[i][j] += Ba_Mat[k][i]*D_Mat[k][j];
+			for (iVar = 0; iVar < nDim; iVar++){
+				for (jVar = 0; jVar < bDim; jVar++){
+					AuxMatrix[iVar][jVar] = 0.0;
+					for (kVar = 0; kVar < bDim; kVar++){
+						AuxMatrix[iVar][jVar] += Ba_Mat[kVar][iVar]*D_Mat[kVar][jVar];
 					}
 				}
 			}
@@ -144,22 +143,22 @@ void CFEM_LinearElasticity::Compute_Tangent_Matrix(CElement *element){
 					Bb_Mat[2][1] = GradNi_Ref_Mat[jNode][0];
 				}
 				else if (nDim ==3){
-					Bb_Mat[0][0] = GradNi_Ref_Mat[iNode][0];
-					Bb_Mat[1][1] = GradNi_Ref_Mat[iNode][1];
-					Bb_Mat[2][2] = GradNi_Ref_Mat[iNode][2];
-					Bb_Mat[3][0] = GradNi_Ref_Mat[iNode][1];
-					Bb_Mat[3][1] = GradNi_Ref_Mat[iNode][0];
-					Bb_Mat[4][0] = GradNi_Ref_Mat[iNode][2];
-					Bb_Mat[4][2] = GradNi_Ref_Mat[iNode][0];
-					Bb_Mat[5][1] = GradNi_Ref_Mat[iNode][2];
-					Bb_Mat[5][2] = GradNi_Ref_Mat[iNode][1];
+					Bb_Mat[0][0] = GradNi_Ref_Mat[jNode][0];
+					Bb_Mat[1][1] = GradNi_Ref_Mat[jNode][1];
+					Bb_Mat[2][2] = GradNi_Ref_Mat[jNode][2];
+					Bb_Mat[3][0] = GradNi_Ref_Mat[jNode][1];
+					Bb_Mat[3][1] = GradNi_Ref_Mat[jNode][0];
+					Bb_Mat[4][0] = GradNi_Ref_Mat[jNode][2];
+					Bb_Mat[4][2] = GradNi_Ref_Mat[jNode][0];
+					Bb_Mat[5][1] = GradNi_Ref_Mat[jNode][2];
+					Bb_Mat[5][2] = GradNi_Ref_Mat[jNode][1];
 				}
 
-				for (i = 0; i < nDim; i++){
-					for (j = 0; j < nDim; j++){
-						KAux_ab[i][j] = 0.0;
-						for (k = 0; k < bDim; k++){
-							KAux_ab[i][j] += Weight * AuxMatrix[i][k] * Bb_Mat[k][j] * Jac_X;
+				for (iVar = 0; iVar < nDim; iVar++){
+					for (jVar = 0; jVar < nDim; jVar++){
+						KAux_ab[iVar][jVar] = 0.0;
+						for (kVar = 0; kVar < bDim; kVar++){
+							KAux_ab[iVar][jVar] += Weight * AuxMatrix[iVar][kVar] * Bb_Mat[kVar][jVar] * Jac_X;
 						}
 					}
 				}
@@ -202,7 +201,7 @@ void CFEM_LinearElasticity::Compute_Constitutive_Matrix(void){
 
 void CFEM_LinearElasticity::Compute_Averaged_NodalStress(CElement *element){
 
-	unsigned short i, j, k;
+	unsigned short iVar, jVar;
 	unsigned short iGauss, nGauss;
 	unsigned short iNode, jNode, nNode;
 	unsigned short iDim;
@@ -218,9 +217,9 @@ void CFEM_LinearElasticity::Compute_Averaged_NodalStress(CElement *element){
 	if (nDim == 2) bDim = 3;
 	else if (nDim == 3) bDim = 6;
 
-	for (i = 0; i < bDim; i++){
-		for (j = 0; j < nDim; j++){
-			Ba_Mat[i][j] = 0.0;
+	for (iVar = 0; iVar < bDim; iVar++){
+		for (jVar = 0; jVar < nDim; jVar++){
+			Ba_Mat[iVar][jVar] = 0.0;
 		}
 	}
 
@@ -240,8 +239,8 @@ void CFEM_LinearElasticity::Compute_Averaged_NodalStress(CElement *element){
 			}
 		}
 
-		for (i = 0; i < bDim; i++){
-			Strain[i] = 0.0;
+		for (iVar = 0; iVar < bDim; iVar++){
+			Strain[iVar] = 0.0;
 		}
 
 		for (iNode = 0; iNode < nNode; iNode++){
@@ -267,9 +266,9 @@ void CFEM_LinearElasticity::Compute_Averaged_NodalStress(CElement *element){
 
 		    /*--- Compute the Strain Vector as B*u ---*/
 
-			for (i = 0; i < bDim; i++){
-				for (j = 0; j < nDim; j++){
-					Strain[i] += Ba_Mat[i][j]*nodalDisplacement[iNode][j];
+			for (iVar = 0; iVar < bDim; iVar++){
+				for (jVar = 0; jVar < nDim; jVar++){
+					Strain[iVar] += Ba_Mat[iVar][jVar]*nodalDisplacement[iNode][jVar];
 				}
 			}
 
@@ -277,10 +276,10 @@ void CFEM_LinearElasticity::Compute_Averaged_NodalStress(CElement *element){
 
 	    /*--- Compute the Stress Vector as D*epsilon ---*/
 
-		for (i = 0; i < bDim; i++){
-			Stress[i] = 0.0;
-			for (j = 0; j < bDim; j++){
-				Stress[i] += D_Mat[i][j]*Strain[j];
+		for (iVar = 0; iVar < bDim; iVar++){
+			Stress[iVar] = 0.0;
+			for (jVar = 0; jVar < bDim; jVar++){
+				Stress[iVar] += D_Mat[iVar][jVar]*Strain[jVar];
 			}
 		}
 

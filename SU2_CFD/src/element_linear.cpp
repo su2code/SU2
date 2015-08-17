@@ -1121,10 +1121,10 @@ CHEXA8::CHEXA8(unsigned short val_nDim, CConfig *config)
 	GaussCoord[1][0] = 0.577350269189626;   GaussCoord[1][1] = -0.577350269189626;  GaussCoord[1][2] = -0.577350269189626;  GaussWeight[1] = 1.0;
 	GaussCoord[2][0] = 0.577350269189626;   GaussCoord[2][1] = 0.577350269189626;  	GaussCoord[2][2] = -0.577350269189626;  GaussWeight[2] = 1.0;
 	GaussCoord[3][0] = -0.577350269189626;  GaussCoord[3][1] = 0.577350269189626;  	GaussCoord[3][2] = -0.577350269189626;  GaussWeight[3] = 1.0;
-	GaussCoord[4][0] = -0.577350269189626;  GaussCoord[4][1] = -0.577350269189626;  GaussCoord[4][2] = 0.577350269189626;  	GaussWeight[0] = 1.0;
-	GaussCoord[5][0] = 0.577350269189626;   GaussCoord[5][1] = -0.577350269189626;  GaussCoord[5][2] = 0.577350269189626;  	GaussWeight[1] = 1.0;
-	GaussCoord[6][0] = 0.577350269189626;   GaussCoord[6][1] = 0.577350269189626;  	GaussCoord[6][2] = 0.577350269189626;  	GaussWeight[2] = 1.0;
-	GaussCoord[7][0] = -0.577350269189626;  GaussCoord[7][1] = 0.577350269189626;  	GaussCoord[7][2] = 0.577350269189626;  	GaussWeight[3] = 1.0;
+	GaussCoord[4][0] = -0.577350269189626;  GaussCoord[4][1] = -0.577350269189626;  GaussCoord[4][2] = 0.577350269189626;  	GaussWeight[4] = 1.0;
+	GaussCoord[5][0] = 0.577350269189626;   GaussCoord[5][1] = -0.577350269189626;  GaussCoord[5][2] = 0.577350269189626;  	GaussWeight[5] = 1.0;
+	GaussCoord[6][0] = 0.577350269189626;   GaussCoord[6][1] = 0.577350269189626;  	GaussCoord[6][2] = 0.577350269189626;  	GaussWeight[6] = 1.0;
+	GaussCoord[7][0] = -0.577350269189626;  GaussCoord[7][1] = 0.577350269189626;  	GaussCoord[7][2] = 0.577350269189626;  	GaussWeight[7] = 1.0;
 
 	//TODO: this structure should only be initialized if the problem is dynamic
 	Mab = new double *[nNodes];

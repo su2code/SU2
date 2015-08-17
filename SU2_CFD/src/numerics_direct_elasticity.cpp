@@ -826,7 +826,7 @@ void CGalerkin_FEA::SetFEA_StiffMatrix3D(double **StiffMatrix_Elem, double Coord
         }
       }
     }
-    
+	 
   }
   
 }

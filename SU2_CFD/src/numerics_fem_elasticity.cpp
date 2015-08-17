@@ -40,11 +40,11 @@ CFEM_Elasticity::CFEM_Elasticity(unsigned short val_nDim, unsigned short val_nVa
 	Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
 	Kappa = config->GetBulk_Modulus_Struct();
 
-	unsigned short i;
+	unsigned short iVar;
 
 	KAux_ab = new double* [nDim];
-	for (i = 0; i < nDim; i++) {
-		KAux_ab[i] = new double[nDim];
+	for (iVar = 0; iVar < nDim; iVar++) {
+		KAux_ab[iVar] = new double[nDim];
 	}
 
 
@@ -55,14 +55,14 @@ CFEM_Elasticity::CFEM_Elasticity(unsigned short val_nDim, unsigned short val_nVa
 		Ni_Vec  = new double [4];			/*--- As of now, 4 is the maximum number of nodes for 2D problems ---*/
 		GradNi_Ref_Mat = new double* [4];	/*--- As of now, 4 is the maximum number of nodes for 2D problems ---*/
 		GradNi_Curr_Mat = new double* [4];	/*--- As of now, 4 is the maximum number of nodes for 2D problems ---*/
-		for (i = 0; i < 3; i++) {
-			Ba_Mat[i]  		= new double[nDim];
-			Bb_Mat[i]  		= new double[nDim];
-			D_Mat[i]	   	= new double[3];
+		for (iVar = 0; iVar < 3; iVar++) {
+			Ba_Mat[iVar]  		= new double[nDim];
+			Bb_Mat[iVar]  		= new double[nDim];
+			D_Mat[iVar]	   	= new double[3];
 		}
-		for (i = 0; i < 4; i++) {
-			GradNi_Ref_Mat[i] 	= new double[nDim];
-			GradNi_Curr_Mat[i] 	= new double[nDim];
+		for (iVar = 0; iVar < 4; iVar++) {
+			GradNi_Ref_Mat[iVar] 	= new double[nDim];
+			GradNi_Curr_Mat[iVar] 	= new double[nDim];
 		}
 	}
 	else if (nDim == 3){
@@ -72,14 +72,14 @@ CFEM_Elasticity::CFEM_Elasticity(unsigned short val_nDim, unsigned short val_nVa
 		Ni_Vec  = new double [8];			/*--- As of now, 8 is the maximum number of nodes for 3D problems ---*/
 		GradNi_Ref_Mat = new double* [8];	/*--- As of now, 8 is the maximum number of nodes for 3D problems ---*/
 		GradNi_Curr_Mat = new double* [8];	/*--- As of now, 8 is the maximum number of nodes for 3D problems ---*/
-		for (i = 0; i < 6; i++) {
-			Ba_Mat[i]  		= new double[nDim];
-			Bb_Mat[i]  		= new double[nDim];
-			D_Mat[i]      	= new double[6];
+		for (iVar = 0; iVar < 6; iVar++) {
+			Ba_Mat[iVar]  		= new double[nDim];
+			Bb_Mat[iVar]  		= new double[nDim];
+			D_Mat[iVar]      	= new double[6];
 		}
-		for (i = 0; i < 8; i++) {
-			GradNi_Ref_Mat[i] 	= new double[nDim];
-			GradNi_Curr_Mat[i] 	= new double[nDim];
+		for (iVar = 0; iVar < 8; iVar++) {
+			GradNi_Ref_Mat[iVar] 	= new double[nDim];
+			GradNi_Curr_Mat[iVar] 	= new double[nDim];
 		}
 	}
 }
@@ -126,7 +126,6 @@ CFEM_Elasticity::~CFEM_Elasticity(void) {
 
 void CFEM_Elasticity::Compute_Mass_Matrix(CElement *element){
 
-	unsigned short i, j, k;
 	unsigned short iGauss, nGauss;
 	unsigned short iNode, jNode, nNode;
 	unsigned short iDim;
