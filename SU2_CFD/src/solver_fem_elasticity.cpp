@@ -691,8 +691,6 @@ void CFEM_ElasticitySolver::Compute_NodalStressRes(CGeometry *geometry, CSolver 
 
 			LinSysRes.SubtractBlock(indexNode[iNode], Res_Stress_i);
 
-//			LinSysReact.AddBlock(indexNode[iNode], Res_Stress_i);
-
 		}
 
 	}
@@ -713,8 +711,12 @@ void CFEM_ElasticitySolver::Compute_NodalStress(CGeometry *geometry, CSolver **s
 	double val_Coord, val_Sol;
 	int EL_KIND;
 
+	bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
+
 	if (nDim == 2) nStress = 3;
 	else if (nDim == 3) nStress = 6;
+
+	double *Ta = NULL;
 
 	unsigned short NelNodes;
 
@@ -755,6 +757,12 @@ void CFEM_ElasticitySolver::Compute_NodalStress(CGeometry *geometry, CSolver **s
 		NelNodes = element_container[EL_KIND]->GetnNodes();
 
 		for (iNode = 0; iNode < NelNodes; iNode++){
+
+			/*--- This only works if the problem is nonlinear ---*/
+			Ta = element_container[EL_KIND]->Get_Kt_a(iNode);
+			for (iVar = 0; iVar < nVar; iVar++) Res_Stress_i[iVar] = Ta[iVar];
+
+			LinSysReact.AddBlock(indexNode[iNode], Res_Stress_i);
 
 			for (iStress = 0; iStress < nStress; iStress++){
 				node[indexNode[iNode]]->AddStress_FEM(iStress,
@@ -817,45 +825,140 @@ void CFEM_ElasticitySolver::Compute_NodalStress(CGeometry *geometry, CSolver **s
 
 	  }
 
-	  unsigned short iMarker;
-	  unsigned long iVertex;
+  	double checkJacobian;
+  	unsigned long jNode;
 
-	  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-	    switch (config->GetMarker_All_KindBC(iMarker)) {
-	      case CLAMPED_BOUNDARY:
-	    		for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+  	ofstream myfile;
+  	myfile.open ("Reactions.txt");
 
-	    			/*--- Get node index ---*/
+  	unsigned short iMarker;
+  	unsigned long iVertex;
+  	double val_Reaction;
 
-	    			iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+	bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);	// Linear analysis.
+	bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);	// Nonlinear analysis.
 
-	    			/*--- Get normal at point ---*/
-	    			/*--- The direction is to the INTERIOR of the material ---*/
-	    			normalVertex = geometry->vertex[iMarker][iVertex]->GetNormal();
+  	if (!dynamic){
+  		/*--- Loop over all the markers  ---*/
+		for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+			switch (config->GetMarker_All_KindBC(iMarker)) {
 
-	    			/*--- Get stress ---*/
+				/*--- If it corresponds to a clamped boundary  ---*/
 
-	    			Stress  = node[iPoint]->GetStress_FEM();
+				case CLAMPED_BOUNDARY:
 
-	    			  if (geometry->GetnDim() == 2) {
+				myfile << "MARKER " << iMarker << ":" << endl;
 
-	    				  stressTensor[0][0] = Stress[0];
-	    				  stressTensor[0][1] = Stress[2];
-	    				  stressTensor[1][0] = Stress[2];
-	    				  stressTensor[1][1] = Stress[1];
+					/*--- Loop over all the vertices  ---*/
+					for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 
-	    			  }
+					/*--- Get node index ---*/
+					iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-	    			  for (iVar = 0; iVar < nVar; iVar++){
-	    				  nodeReactions[iVar] = 0.0;
-	    				  for (jVar = 0; jVar < nVar; jVar++){
-	    					  nodeReactions[iVar] += stressTensor[iVar][jVar] * normalVertex[jVar];
-	    				  }
-	    			  }
+					myfile << "Node " << iPoint << "." << " \t ";
 
-	    		}
-	    	  break;
-	    }
+					for (iDim = 0; iDim < nDim; iDim++){
+						/*--- Retrieve coordinate ---*/
+						val_Coord = geometry->node[iPoint]->GetCoord(iDim);
+						myfile << "X" << iDim + 1 << ": " << val_Coord << " \t " ;
+					}
+
+					for (iVar = 0; iVar < nVar; iVar++){
+						/*--- Retrieve reaction ---*/
+						val_Reaction = LinSysReact.GetBlock(iPoint, iVar);
+						myfile << "F" << iVar + 1 << ": " << val_Reaction << " \t " ;
+					}
+
+					myfile << endl;
+				}
+			  myfile << endl;
+			  break;
+		}
+  	}
+  	else if (dynamic){
+
+  		switch (config->GetKind_TimeIntScheme_FEA()) {
+  			case (CD_EXPLICIT):
+  					  cout << "NOT IMPLEMENTED YET" << endl;
+  			  break;
+  			case (NEWMARK_IMPLICIT):
+
+				/*--- Loop over all points, and set aux vector TimeRes_Aux = a0*U+a2*U'+a3*U'' ---*/
+				if (linear_analysis){
+					for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+						for (iVar = 0; iVar < nVar; iVar++){
+							Residual[iVar] = a_dt[0]*node[iPoint]->GetSolution_time_n(iVar)+		//a0*U(t)
+										 	 a_dt[2]*node[iPoint]->GetSolution_Vel_time_n(iVar)+	//a2*U'(t)
+										 	 a_dt[3]*node[iPoint]->GetSolution_Accel_time_n(iVar);	//a3*U''(t)
+						}
+						TimeRes_Aux.SetBlock(iPoint, Residual);
+					}
+				}
+				else if (nonlinear_analysis){
+					for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+						for (iVar = 0; iVar < nVar; iVar++){
+							Residual[iVar] =   a_dt[0]*node[iPoint]->GetSolution_time_n(iVar)  			//a0*U(t)
+											 - a_dt[0]*node[iPoint]->GetSolution(iVar) 					//a0*U(t+dt)(k-1)
+										 	 + a_dt[2]*node[iPoint]->GetSolution_Vel_time_n(iVar)		//a2*U'(t)
+										 	 + a_dt[3]*node[iPoint]->GetSolution_Accel_time_n(iVar);	//a3*U''(t)
+						}
+						TimeRes_Aux.SetBlock(iPoint, Residual);
+					}
+				}
+				/*--- Once computed, compute M*TimeRes_Aux ---*/
+				MassMatrix.MatrixVectorProduct(TimeRes_Aux,TimeRes,geometry,config);
+
+  		  		/*--- Loop over all the markers  ---*/
+  				for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+  					switch (config->GetMarker_All_KindBC(iMarker)) {
+
+  						/*--- If it corresponds to a clamped boundary  ---*/
+
+  						case CLAMPED_BOUNDARY:
+
+  						myfile << "MARKER " << iMarker << ":" << endl;
+
+  							/*--- Loop over all the vertices  ---*/
+  							for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+
+  							/*--- Get node index ---*/
+  							iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+  							myfile << "Node " << iPoint << "." << " \t ";
+
+  							for (iDim = 0; iDim < nDim; iDim++){
+  								/*--- Retrieve coordinate ---*/
+  								val_Coord = geometry->node[iPoint]->GetCoord(iDim);
+  								myfile << "X" << iDim + 1 << ": " << val_Coord << " \t " ;
+  							}
+
+  							/*--- Retrieve the time contribution ---*/
+  							Res_Time_Cont = TimeRes.GetBlock(iPoint);
+
+  							for (iVar = 0; iVar < nVar; iVar++){
+  								/*--- Retrieve reaction ---*/
+  								val_Reaction = LinSysReact.GetBlock(iPoint, iVar) + Res_Time_Cont[iVar];
+  								myfile << "F" << iVar + 1 << ": " << val_Reaction << " \t " ;
+  							}
+
+  							myfile << endl;
+  						}
+  					  myfile << endl;
+  					  break;
+  				}
+
+
+  			  break;
+  			case (GA_IMPLICIT):
+  		  			  cout << "NOT IMPLEMENTED YET" << endl;
+  			  break;
+  		  }
+
+  	}
+
+
+
+	myfile.close();
 
 		#ifdef HAVE_MPI
 
@@ -930,11 +1033,15 @@ void CFEM_ElasticitySolver::BC_Clamped(CGeometry *geometry, CSolver **solver_con
 			node[iPoint]->SetSolution_Accel(Solution);
 		}
 
-		for (iVar = 0; iVar < nVar; iVar++){
-			nodeReactions[iVar] = - 1.0 * LinSysRes.GetBlock(iPoint, iVar);
-		}
+//		for (iVar = 0; iVar < nVar; iVar++){
+//			nodeReactions[iVar] = - 1.0 * LinSysRes.GetBlock(iPoint, iVar);
+//		}
+//
+//		LinSysReact.SetBlock(iPoint,nodeReactions);
 
-		LinSysReact.SetBlock(iPoint,nodeReactions);
+		/*--- Initialize the reaction vector ---*/
+		LinSysReact.SetBlock(iPoint, Residual);
+
 
 		LinSysRes.SetBlock(iPoint, Residual);
 

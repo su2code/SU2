@@ -780,7 +780,7 @@ void FEM_StructuralIteration(COutput *output, CIntegration ***integration_contai
 
 	}
 
-	/*----------------- Compute averaged nodal stress ------------------------*/
+	/*----------------- Compute averaged nodal stress and reactions ------------------------*/
 
 	for (iZone = 0; iZone < nZone; iZone++)
 		solver_container[iZone][MESH_0][FEA_SOL]->Compute_NodalStress(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0], numerics_container[iZone][MESH_0][FEA_SOL][VISC_TERM], config_container[iZone]);
@@ -795,10 +795,10 @@ void FEM_StructuralIteration(COutput *output, CIntegration ***integration_contai
 
 	    /*--- Verify convergence criteria (based on total time) ---*/
 
-		Physical_dt = config_container[ZONE_0]->GetDelta_DynTime();
-		Physical_t  = (ExtIter+1)*Physical_dt;
-		if (Physical_t >=  config_container[iZone]->GetTotal_DynTime())
-			integration_container[iZone][FEA_SOL]->SetConvergence(true);
+//		Physical_dt = config_container[ZONE_0]->GetDelta_DynTime();
+//		Physical_t  = (ExtIter+1)*Physical_dt;
+//		if (Physical_t >=  config_container[iZone]->GetTotal_DynTime())
+//			integration_container[iZone][FEA_SOL]->SetConvergence(true);
 	}
 
 

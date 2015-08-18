@@ -126,8 +126,8 @@ void CFEM_NonlinearElasticity::Compute_Tangent_Matrix(CElement *element){
 		}
 	}
 
-	for (iVar = 0; iVar < 6; iVar++){
-		for (jVar = 0; jVar < 3; jVar++){
+	for (iVar = 0; iVar < 3; iVar++){
+		for (jVar = 0; jVar < 6; jVar++){
 			AuxMatrixKc[iVar][jVar] = 0.0;
 		}
 	}
@@ -542,8 +542,9 @@ void CFEM_NonlinearElasticity::Compute_Averaged_NodalStress(CElement *element){
 
 	double Weight, Jac_X, Jac_x;
 
-	element->clearStress();
-	element->ComputeGrad_Linear();
+	element->clearStress();				/*--- TODO: put these two together ---*/
+	element->clearElement(); 			/*--- Restarts the element: avoids adding over previous results in other elements --*/
+	element->ComputeGrad_NonLinear();
 
 	nNode = element->GetnNodes();
 	nGauss = element->GetnGaussPoints();
@@ -572,6 +573,7 @@ void CFEM_NonlinearElasticity::Compute_Averaged_NodalStress(CElement *element){
 
 			for (iDim = 0; iDim < nDim; iDim++){
 				GradNi_Ref_Mat[iNode][iDim] = element->GetGradNi_X(iNode,iGauss,iDim);
+				GradNi_Curr_Mat[iNode][iDim] = element->GetGradNi_x(iNode,iGauss,iDim);
 				currentCoord[iNode][iDim] = element->GetCurr_Coord(iNode, iDim);
 			}
 
@@ -614,6 +616,22 @@ void CFEM_NonlinearElasticity::Compute_Averaged_NodalStress(CElement *element){
 		Compute_Stress_Tensor(element);
 
 		for (iNode = 0; iNode < nNode; iNode++){
+
+
+		    /*--- Compute the nodal stress term for each gaussian point and for each node, ---*/
+		    /*--- and add it to the element structure to be retrieved from the solver      ---*/
+
+			for (iVar = 0; iVar < nDim; iVar++){
+				KAux_t_a[iVar] = 0.0;
+				for (jVar = 0; jVar < nDim; jVar++){
+					KAux_t_a[iVar] += Weight * Stress_Tensor[iVar][jVar] * GradNi_Curr_Mat[iNode][jVar] * Jac_x;
+				}
+			}
+
+			element->Add_Kt_a(KAux_t_a, iNode);
+
+		    /*--- Compute the average nodal stresses for each node ---*/
+
 			element->Add_NodalStress(Stress_Tensor[0][0] * element->GetNi_Extrap(iNode, iGauss), iNode, 0);
 			element->Add_NodalStress(Stress_Tensor[1][1] * element->GetNi_Extrap(iNode, iGauss), iNode, 1);
 			element->Add_NodalStress(Stress_Tensor[0][1] * element->GetNi_Extrap(iNode, iGauss), iNode, 2);
@@ -622,6 +640,7 @@ void CFEM_NonlinearElasticity::Compute_Averaged_NodalStress(CElement *element){
 				element->Add_NodalStress(Stress_Tensor[0][2] * element->GetNi_Extrap(iNode, iGauss), iNode, 4);
 				element->Add_NodalStress(Stress_Tensor[1][2] * element->GetNi_Extrap(iNode, iGauss), iNode, 5);
 			}
+
 		}
 
 	}
