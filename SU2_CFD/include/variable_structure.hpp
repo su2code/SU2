@@ -3042,12 +3042,6 @@ public:
 	 * \param[in] Value of the low Mach preconditioner variable Beta
 	 */
 	void SetPreconditioner_Beta(su2double val_Beta);
-
-	/*!
-	 * \brief Set the value of the magnetic field
-	 * \param[in] Value of the magnetic field
-	 */
-	void SetMagneticField(su2double* val_B);
     
     /*!
 	 * \brief Get the value of the wind gust
@@ -3522,40 +3516,6 @@ public:
 	su2double GetCrossDiff(void);
 };
 
-/*!
- * \class CAdjPotentialVariable
- * \brief Main class for defining the variables of the adjoint potential solver.
- * \ingroup Potential_Flow_Equation
- * \author F. Palacios
- * \version 4.0.0 "Cardinal"
- */
-class CAdjPotentialVariable : public CVariable {
-private:
-	su2double Psi;			/*!< \brief Value of the adjoint variable. */
-	su2double *ForceProj_Vector;	/*!< \brief Vector d. */
-
-public:
-
-	/*!
-	 * \brief Constructor of the class. 
-	 */
-	CAdjPotentialVariable(void);
-
-	/*!
-	 * \overload
-	 * \param[in] val_psi - Potential adjoint variable value (initialization value).
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_nvar - Number of variables of the problem.
-	 * \param[in] config - Definition of the particular problem.	 
-	 */	
-	CAdjPotentialVariable(su2double val_psi, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
-
-	/*!
-	 * \brief Destructor of the class. 
-	 */
-
-	~CAdjPotentialVariable(void);
-};
 
 /*! 
  * \class CAdjEulerVariable
