@@ -137,7 +137,6 @@ am__libSU2_a_SOURCES_DIST =  \
 	../include/primal_grid_structure.inl \
 	../include/vector_structure.hpp \
 	../include/vector_structure.inl \
-	../include/interpolation_structure.hpp \
 	../include/matrix_structure.hpp \
 	../include/matrix_structure.inl ../include/mpi_structure.hpp \
 	../include/mpi_structure.inl ../include/datatype_structure.hpp \
@@ -146,7 +145,6 @@ am__libSU2_a_SOURCES_DIST =  \
 	../src/grid_adaptation_structure.cpp \
 	../src/grid_movement_structure.cpp \
 	../src/linear_solvers_structure.cpp \
-	../src/interpolation_structure.cpp \
 	../src/primal_grid_structure.cpp ../src/vector_structure.cpp \
 	../src/matrix_structure.cpp ../src/mpi_structure.cpp \
 	../src/linear_solvers_structure_b.cpp \
