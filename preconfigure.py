@@ -144,6 +144,7 @@ def prepare_source(replace = False, remove = False, revert = False):
                         'MPI_Send'      : 'SU2_MPI::Send',
                         'MPI_Wait'      : 'SU2_MPI::Wait',
                         'MPI_Waitall'   : 'SU2_MPI::Waitall',
+			'MPI_Waitany'   : 'SU2_MPI::Waitany',
                         'MPI_Bcast'     : 'SU2_MPI::Bcast',
                         'MPI_Sendrecv'  : 'SU2_MPI::Sendrecv',
                         'MPI_Init'      : 'SU2_MPI::Init',
@@ -250,7 +251,7 @@ def build_codi(modes, mpi_support = False):
         os.chdir('adjointmpi')
         if not os.path.exists('libAMPI.a'):
             print '\nConfiguring and building AMPI...'
-            subprocess.check_call('./bootstrap.sh && ./configure CFLAGS=-O2 --prefix=$PWD && make', stdout = ampi_log, stderr = ampi_err, shell=True)
+            subprocess.check_call('./configure CFLAGS=-O2 --prefix=$PWD && make', stdout = ampi_log, stderr = ampi_err, shell=True)
 
         os.chdir(os.pardir)
 

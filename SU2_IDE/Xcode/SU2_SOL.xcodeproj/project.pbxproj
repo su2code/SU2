@@ -25,6 +25,9 @@
 		05E6DC6C17EB658F00FA1F7E /* output_paraview.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05E6DC6817EB658F00FA1F7E /* output_paraview.cpp */; };
 		05E6DC6D17EB658F00FA1F7E /* output_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05E6DC6917EB658F00FA1F7E /* output_structure.cpp */; };
 		05E6DC6E17EB658F00FA1F7E /* output_tecplot.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05E6DC6A17EB658F00FA1F7E /* output_tecplot.cpp */; };
+		E941BC0C1B71DC05005C6C06 /* datatype_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E941BC091B71DC05005C6C06 /* datatype_structure.cpp */; };
+		E941BC0D1B71DC05005C6C06 /* linear_solvers_structure_b.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E941BC0A1B71DC05005C6C06 /* linear_solvers_structure_b.cpp */; };
+		E941BC0E1B71DC05005C6C06 /* mpi_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E941BC0B1B71DC05005C6C06 /* mpi_structure.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -84,6 +87,26 @@
 		05E6DC6817EB658F00FA1F7E /* output_paraview.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = output_paraview.cpp; path = ../../SU2_CFD/src/output_paraview.cpp; sourceTree = "<group>"; };
 		05E6DC6917EB658F00FA1F7E /* output_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = output_structure.cpp; path = ../../SU2_CFD/src/output_structure.cpp; sourceTree = "<group>"; };
 		05E6DC6A17EB658F00FA1F7E /* output_tecplot.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = output_tecplot.cpp; path = ../../SU2_CFD/src/output_tecplot.cpp; sourceTree = "<group>"; };
+		E941BC091B71DC05005C6C06 /* datatype_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = datatype_structure.cpp; path = ../../Common/src/datatype_structure.cpp; sourceTree = "<group>"; };
+		E941BC0A1B71DC05005C6C06 /* linear_solvers_structure_b.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = linear_solvers_structure_b.cpp; path = ../../Common/src/linear_solvers_structure_b.cpp; sourceTree = "<group>"; };
+		E941BC0B1B71DC05005C6C06 /* mpi_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = mpi_structure.cpp; path = ../../Common/src/mpi_structure.cpp; sourceTree = "<group>"; };
+		E941BC0F1B71DC2F005C6C06 /* datatype_structure.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = datatype_structure.inl; path = ../../Common/include/datatype_structure.inl; sourceTree = "<group>"; };
+		E941BC101B71DC2F005C6C06 /* mpi_structure.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = mpi_structure.inl; path = ../../Common/include/mpi_structure.inl; sourceTree = "<group>"; };
+		E941BC111B71DC4C005C6C06 /* datatype_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = datatype_structure.hpp; path = ../../Common/include/datatype_structure.hpp; sourceTree = "<group>"; };
+		E941BC131B71DC4C005C6C06 /* adolc_forward_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = adolc_forward_structure.hpp; sourceTree = "<group>"; };
+		E941BC141B71DC4C005C6C06 /* adolc_forward_structure.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = adolc_forward_structure.inl; sourceTree = "<group>"; };
+		E941BC151B71DC4C005C6C06 /* adolc_reverse_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = adolc_reverse_structure.hpp; sourceTree = "<group>"; };
+		E941BC161B71DC4C005C6C06 /* adolc_reverse_structure.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = adolc_reverse_structure.inl; sourceTree = "<group>"; };
+		E941BC171B71DC4C005C6C06 /* codi_forward_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = codi_forward_structure.hpp; sourceTree = "<group>"; };
+		E941BC181B71DC4C005C6C06 /* codi_forward_structure.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = codi_forward_structure.inl; sourceTree = "<group>"; };
+		E941BC191B71DC4C005C6C06 /* codi_reverse_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = codi_reverse_structure.hpp; sourceTree = "<group>"; };
+		E941BC1A1B71DC4C005C6C06 /* codi_reverse_structure.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = codi_reverse_structure.inl; sourceTree = "<group>"; };
+		E941BC1B1B71DC4C005C6C06 /* complex_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = complex_structure.hpp; sourceTree = "<group>"; };
+		E941BC1C1B71DC4C005C6C06 /* complex_structure.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = complex_structure.inl; sourceTree = "<group>"; };
+		E941BC1D1B71DC4C005C6C06 /* primitive_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = primitive_structure.hpp; sourceTree = "<group>"; };
+		E941BC1E1B71DC4C005C6C06 /* primitive_structure.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = primitive_structure.inl; sourceTree = "<group>"; };
+		E941BC1F1B71DC4C005C6C06 /* linear_solvers_structure_b.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = linear_solvers_structure_b.hpp; path = ../../Common/include/linear_solvers_structure_b.hpp; sourceTree = "<group>"; };
+		E941BC201B71DC4C005C6C06 /* mpi_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = mpi_structure.hpp; path = ../../Common/include/mpi_structure.hpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -100,9 +123,9 @@
 		0593D53B16F2A810007C1809 = {
 			isa = PBXGroup;
 			children = (
+				0593D55216F2A85E007C1809 /* Source */,
 				0593D55116F2A852007C1809 /* InLine */,
 				0593D55016F2A84B007C1809 /* Include */,
-				0593D55216F2A85E007C1809 /* Source */,
 				0593D54516F2A810007C1809 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -128,10 +151,14 @@
 				05E6DABE17EB607A00FA1F7E /* grid_adaptation_structure.hpp */,
 				05E6DABF17EB607A00FA1F7E /* grid_movement_structure.hpp */,
 				05E6DAC017EB607A00FA1F7E /* linear_solvers_structure.hpp */,
+				E941BC1F1B71DC4C005C6C06 /* linear_solvers_structure_b.hpp */,
 				05E6DAC117EB607A00FA1F7E /* matrix_structure.hpp */,
 				05E6DAC217EB607A00FA1F7E /* option_structure.hpp */,
 				05E6DAC317EB607A00FA1F7E /* primal_grid_structure.hpp */,
 				05E6DAC417EB607A00FA1F7E /* vector_structure.hpp */,
+				E941BC111B71DC4C005C6C06 /* datatype_structure.hpp */,
+				E941BC121B71DC4C005C6C06 /* datatypes */,
+				E941BC201B71DC4C005C6C06 /* mpi_structure.hpp */,
 			);
 			name = Include;
 			sourceTree = "<group>";
@@ -150,6 +177,8 @@
 				05E6DAAE17EB605C00FA1F7E /* matrix_structure.inl */,
 				05E6DAAF17EB605C00FA1F7E /* primal_grid_structure.inl */,
 				05E6DAB017EB605C00FA1F7E /* vector_structure.inl */,
+				E941BC0F1B71DC2F005C6C06 /* datatype_structure.inl */,
+				E941BC101B71DC2F005C6C06 /* mpi_structure.inl */,
 			);
 			name = InLine;
 			sourceTree = "<group>";
@@ -172,11 +201,34 @@
 				05E6DB9E17EB61EC00FA1F7E /* grid_adaptation_structure.cpp */,
 				05E6DB9F17EB61EC00FA1F7E /* grid_movement_structure.cpp */,
 				05E6DBA017EB61EC00FA1F7E /* linear_solvers_structure.cpp */,
+				E941BC0A1B71DC05005C6C06 /* linear_solvers_structure_b.cpp */,
 				05E6DBA117EB61EC00FA1F7E /* matrix_structure.cpp */,
 				05E6DBA217EB61EC00FA1F7E /* primal_grid_structure.cpp */,
 				05E6DBA317EB61EC00FA1F7E /* vector_structure.cpp */,
+				E941BC091B71DC05005C6C06 /* datatype_structure.cpp */,
+				E941BC0B1B71DC05005C6C06 /* mpi_structure.cpp */,
 			);
 			name = Source;
+			sourceTree = "<group>";
+		};
+		E941BC121B71DC4C005C6C06 /* datatypes */ = {
+			isa = PBXGroup;
+			children = (
+				E941BC131B71DC4C005C6C06 /* adolc_forward_structure.hpp */,
+				E941BC141B71DC4C005C6C06 /* adolc_forward_structure.inl */,
+				E941BC151B71DC4C005C6C06 /* adolc_reverse_structure.hpp */,
+				E941BC161B71DC4C005C6C06 /* adolc_reverse_structure.inl */,
+				E941BC171B71DC4C005C6C06 /* codi_forward_structure.hpp */,
+				E941BC181B71DC4C005C6C06 /* codi_forward_structure.inl */,
+				E941BC191B71DC4C005C6C06 /* codi_reverse_structure.hpp */,
+				E941BC1A1B71DC4C005C6C06 /* codi_reverse_structure.inl */,
+				E941BC1B1B71DC4C005C6C06 /* complex_structure.hpp */,
+				E941BC1C1B71DC4C005C6C06 /* complex_structure.inl */,
+				E941BC1D1B71DC4C005C6C06 /* primitive_structure.hpp */,
+				E941BC1E1B71DC4C005C6C06 /* primitive_structure.inl */,
+			);
+			name = datatypes;
+			path = ../../Common/include/datatypes;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -232,8 +284,10 @@
 			files = (
 				05E6DBA417EB61EC00FA1F7E /* config_structure.cpp in Sources */,
 				05E6DBA517EB61EC00FA1F7E /* dual_grid_structure.cpp in Sources */,
+				E941BC0E1B71DC05005C6C06 /* mpi_structure.cpp in Sources */,
 				05E6DBA617EB61EC00FA1F7E /* geometry_structure.cpp in Sources */,
 				05E6DBA717EB61EC00FA1F7E /* grid_adaptation_structure.cpp in Sources */,
+				E941BC0D1B71DC05005C6C06 /* linear_solvers_structure_b.cpp in Sources */,
 				05E6DBA817EB61EC00FA1F7E /* grid_movement_structure.cpp in Sources */,
 				05E6DBA917EB61EC00FA1F7E /* linear_solvers_structure.cpp in Sources */,
 				05E6DBAA17EB61EC00FA1F7E /* matrix_structure.cpp in Sources */,
@@ -243,6 +297,7 @@
 				05E6DC6417EB657400FA1F7E /* solver_structure.cpp in Sources */,
 				05E6DC6617EB657B00FA1F7E /* variable_structure.cpp in Sources */,
 				05E6DC6B17EB658F00FA1F7E /* output_cgns.cpp in Sources */,
+				E941BC0C1B71DC05005C6C06 /* datatype_structure.cpp in Sources */,
 				05E6DC6C17EB658F00FA1F7E /* output_paraview.cpp in Sources */,
 				0506980C1AA61B4500FF4F07 /* output_fieldview.cpp in Sources */,
 				05E6DC6D17EB658F00FA1F7E /* output_structure.cpp in Sources */,
