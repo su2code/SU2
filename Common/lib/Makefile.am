@@ -79,7 +79,6 @@ lib_sources = \
   ../include/matrix_structure.inl \
   ../include/mpi_structure.hpp \
   ../include/mpi_structure.inl \
-  ../include/interpolation_structure.hpp \
   ../include/datatype_structure.hpp \
   ../include/datatype_structure.inl \
   ../src/config_structure.cpp \
@@ -92,7 +91,6 @@ lib_sources = \
   ../src/vector_structure.cpp \
   ../src/matrix_structure.cpp \
   ../src/mpi_structure.cpp \
-  ../src/interpolation_structure.cpp \
   ../src/linear_solvers_structure_b.cpp \
   ../src/datatype_structure.cpp 
 
