@@ -101,6 +101,12 @@ inline void CMPIWrapper::Sendrecv(void *sendbuf, int sendcnt, MPI_Datatype sendt
                                   MPI_Comm comm, MPI_Status *status){
   MPI_Sendrecv(sendbuf,sendcnt,sendtype,dest,sendtag,recvbuf,recvcnt,recvtype,source,recvtag,comm,status);
 }
+
+inline void CMPIWrapper::Waitany(int nrequests, MPI_Request *request,
+                                 int *index, MPI_Status *status){
+  MPI_Waitany(nrequests, request, index, status);
+}
+  
 #if defined COMPLEX_TYPE || defined ADOLC_FORWARD_TYPE || defined CODI_FORWARD_TYPE
 inline void CAuxMPIWrapper::Allgather(void *sendbuf, int sendcnt, MPI_Datatype sendtype, void *recvbuf, int recvcnt, MPI_Datatype recvtype, MPI_Comm comm){
   if (sendtype != MPI_DOUBLE){
@@ -236,6 +242,11 @@ inline void CAdjointMPIWrapper::Sendrecv(void *sendbuf, int sendcnt, MPI_Datatyp
   } else {
     AMPI_Sendrecv(sendbuf,sendcnt,sendtype,dest,sendtag,recvbuf,recvcnt,recvtype,source,recvtag,comm,status);
   }
+}
+
+inline void CAdjointMPIWrapper::Waitany(int nrequests, MPI_Request *request,
+                                        int *index, MPI_Status *status){
+  AMPI_Waitany(nrequests, request, index, status);
 }
 #endif
 #endif

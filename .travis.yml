@@ -9,10 +9,7 @@ compiler:
 notifications:
     email:
         recipients:
-            - padronas@stanford.edu
             - su2code-dev@lists.stanford.edu
-        on_success: change
-        on_failure: always
   
 branches:
     only:
@@ -49,9 +46,14 @@ install:
 
 before_script:
     # Get the test cases
-    - git clone https://github.com/su2code/TestCases.git
-    - cd TestCases/
+    - git clone https://github.com/su2code/TestCases.git ./TestData
+    - cd TestData/
     - git checkout develop
+    # Go back to SU2 root and copy the test data into the folder structure
+    - cd $TRAVIS_BUILD_DIR
+    - cp -R ./TestData/* ./TestCases/
+    # Enter the SU2/TestCases/ directory, which is now ready to run
+    - cd TestCases/
 
 script:
     # run the tests
