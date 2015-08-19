@@ -828,8 +828,10 @@ void CFEM_ElasticitySolver::Compute_NodalStress(CGeometry *geometry, CSolver **s
   	double checkJacobian;
   	unsigned long jNode;
 
+  	bool outputReactions = false;
+
   	ofstream myfile;
-  	myfile.open ("Reactions.txt");
+  	if (outputReactions) myfile.open ("Reactions.txt");
 
   	unsigned short iMarker;
   	unsigned long iVertex;
@@ -847,7 +849,7 @@ void CFEM_ElasticitySolver::Compute_NodalStress(CGeometry *geometry, CSolver **s
 
 				case CLAMPED_BOUNDARY:
 
-				myfile << "MARKER " << iMarker << ":" << endl;
+				  	if (outputReactions) myfile << "MARKER " << iMarker << ":" << endl;
 
 					/*--- Loop over all the vertices  ---*/
 					for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
@@ -855,23 +857,23 @@ void CFEM_ElasticitySolver::Compute_NodalStress(CGeometry *geometry, CSolver **s
 					/*--- Get node index ---*/
 					iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-					myfile << "Node " << iPoint << "." << " \t ";
+					if (outputReactions) myfile << "Node " << iPoint << "." << " \t ";
 
 					for (iDim = 0; iDim < nDim; iDim++){
 						/*--- Retrieve coordinate ---*/
 						val_Coord = geometry->node[iPoint]->GetCoord(iDim);
-						myfile << "X" << iDim + 1 << ": " << val_Coord << " \t " ;
+						if (outputReactions) myfile << "X" << iDim + 1 << ": " << val_Coord << " \t " ;
 					}
 
 					for (iVar = 0; iVar < nVar; iVar++){
 						/*--- Retrieve reaction ---*/
 						val_Reaction = LinSysReact.GetBlock(iPoint, iVar);
-						myfile << "F" << iVar + 1 << ": " << val_Reaction << " \t " ;
+						if (outputReactions) myfile << "F" << iVar + 1 << ": " << val_Reaction << " \t " ;
 					}
 
-					myfile << endl;
+					if (outputReactions) myfile << endl;
 				}
-			  myfile << endl;
+			  if (outputReactions) myfile << endl;
 			  break;
 		}
   	}
@@ -916,7 +918,7 @@ void CFEM_ElasticitySolver::Compute_NodalStress(CGeometry *geometry, CSolver **s
 
   						case CLAMPED_BOUNDARY:
 
-  						myfile << "MARKER " << iMarker << ":" << endl;
+  						if (outputReactions) myfile << "MARKER " << iMarker << ":" << endl;
 
   							/*--- Loop over all the vertices  ---*/
   							for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
@@ -924,12 +926,12 @@ void CFEM_ElasticitySolver::Compute_NodalStress(CGeometry *geometry, CSolver **s
   							/*--- Get node index ---*/
   							iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-  							myfile << "Node " << iPoint << "." << " \t ";
+  							if (outputReactions) myfile << "Node " << iPoint << "." << " \t ";
 
   							for (iDim = 0; iDim < nDim; iDim++){
   								/*--- Retrieve coordinate ---*/
   								val_Coord = geometry->node[iPoint]->GetCoord(iDim);
-  								myfile << "X" << iDim + 1 << ": " << val_Coord << " \t " ;
+  								if (outputReactions) myfile << "X" << iDim + 1 << ": " << val_Coord << " \t " ;
   							}
 
   							/*--- Retrieve the time contribution ---*/
@@ -938,12 +940,12 @@ void CFEM_ElasticitySolver::Compute_NodalStress(CGeometry *geometry, CSolver **s
   							for (iVar = 0; iVar < nVar; iVar++){
   								/*--- Retrieve reaction ---*/
   								val_Reaction = LinSysReact.GetBlock(iPoint, iVar) + Res_Time_Cont[iVar];
-  								myfile << "F" << iVar + 1 << ": " << val_Reaction << " \t " ;
+  								if (outputReactions) myfile << "F" << iVar + 1 << ": " << val_Reaction << " \t " ;
   							}
 
-  							myfile << endl;
+  							if (outputReactions) myfile << endl;
   						}
-  					  myfile << endl;
+  					  if (outputReactions) myfile << endl;
   					  break;
   				}
 
@@ -958,7 +960,7 @@ void CFEM_ElasticitySolver::Compute_NodalStress(CGeometry *geometry, CSolver **s
 
 
 
-	myfile.close();
+  	if (outputReactions) myfile.close();
 
 		#ifdef HAVE_MPI
 
