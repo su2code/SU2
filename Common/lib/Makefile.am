@@ -81,6 +81,7 @@ lib_sources = \
   ../include/mpi_structure.inl \
   ../include/datatype_structure.hpp \
   ../include/datatype_structure.inl \
+  ../include/interpolation_structure.hpp \
   ../src/config_structure.cpp \
   ../src/dual_grid_structure.cpp \
   ../src/geometry_structure.cpp \
@@ -92,7 +93,8 @@ lib_sources = \
   ../src/matrix_structure.cpp \
   ../src/mpi_structure.cpp \
   ../src/linear_solvers_structure_b.cpp \
-  ../src/datatype_structure.cpp 
+  ../src/datatype_structure.cpp \
+  ../src/interpolation_structure.cpp
 
 lib_cxxflags =
 lib_ldadd =
