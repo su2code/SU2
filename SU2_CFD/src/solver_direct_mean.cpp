@@ -2040,7 +2040,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
 #ifdef HAVE_FluidProp
       case FLUIDPROP:
         FluidModel = new CFluidProp(config->GetFluidSubLib(), config->GetnComp(), config->GetCompNames(), config->GetMoleFracs(),
-                                    config->HasSinglePhaseOnly(), config->GetLookupTableName(), 1., 1., 1.);
+                                    config->HasSinglePhaseOnly(), config->GetLookupTableName(), 1., 1., 1., config->GetErrorLevel());
         if(fs_temperature) {
           FluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
           Density_FreeStream = FluidModel->GetDensity();
@@ -2051,10 +2051,10 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
           FluidModel->SetTDState_Prho(Pressure_FreeStream, Density_FreeStream );
           Temperature_FreeStream = FluidModel->GetTemperature();
           config->SetTemperature_FreeStream(Temperature_FreeStream);
-          //printf("Pressure_FreeStream = %f\n",Pressure_FreeStream);
-          //printf("Density_FreeStream = %f\n",Density_FreeStream);
+          //printf("Pressure_FreeStream    = %f\n",Pressure_FreeStream);
+          //printf("Density_FreeStream     = %f\n",Density_FreeStream);
           //printf("Temperature_FreeStream = %f\n",Temperature_FreeStream);
-         // throw(-1);
+          //throw(-1);
         }
         break;
 #endif
@@ -2281,7 +2281,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
    case FLUIDPROP:
       FluidModel = new CFluidProp(config->GetFluidSubLib(), config->GetnComp(), config->GetCompNames(), config->GetMoleFracs(),
                                   config->HasSinglePhaseOnly(), config->GetLookupTableName(), config->GetTemperature_Ref(), 
-                                  config->GetPressure_Ref(), config->GetDensity_Ref());
+                                  config->GetPressure_Ref(), config->GetDensity_Ref(), config->GetErrorLevel());
       FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
       printf("Density_FreeStreamND = %f\n",Density_FreeStreamND);
       break;
@@ -7060,11 +7060,13 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 									Velocity_e[iDim] = Velocity_i[iDim];
 									Velocity2_e += Velocity_e[iDim] * Velocity_e[iDim];
 				}
-				if (sqrt(Velocity2_e) / SoundSpeed_i > 1) {
-				Pressure_e = Pressure_i;
-				}
+				//if (sqrt(Velocity2_e) / SoundSpeed_i > 1) {
+				//Pressure_e = Pressure_i;
+				//}
+				//printf("P_i %f Rho_e %f\n", Pressure_i, Density_e);
 				FluidModel->SetTDState_Prho(Pressure_e, Density_e);
 				Energy_e = FluidModel->GetStaticEnergy() + 0.5 * Velocity2_e;
+				//printf("Energy_e %f\n", Energy_e);
 				break;
 			case STATIC_SUPERSONIC_INFLOW_PT:
 				/*--- Retrieve the specified total conditions for this boundary. ---*/

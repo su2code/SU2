@@ -526,6 +526,8 @@ protected:
     double* Conc;         /*!< \brief Concentrations. */
     bool SinglePhaseOnly; /*!< \brief Single phase only: indicates that no phase equilibria are considered. */
     string TableName;     /*!< \brief Name of look-up table. */
+
+    int ErrorLevel;       /*!< \brief Error level diagnostics flag. */
     
     double P_ref;
     double v_ref;
@@ -552,7 +554,7 @@ public:
      * \brief Constructor of the class.
      */
     CFluidProp(string thermolib, int ncomp, string* comp, double* conc, bool SinglePhaseOnly, 
-               string TableName, double T_ref, double P_ref, double rho_ref);
+               string TableName, double T_ref, double P_ref, double rho_ref, int ErrorLevel);
     
     /*!
      * \brief Destructor of the class.

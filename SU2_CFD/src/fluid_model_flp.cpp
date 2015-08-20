@@ -28,13 +28,14 @@
 #define LEN_FLUIDNAMES 256
 #define LEN_COMPONENTS 32
 
-bool debug = false;
+//int ErrorLevel = 2;
+long i = 0;
 
 CFluidProp::CFluidProp() : CFluidModel() {
 
 }
 
-CFluidProp::CFluidProp( string thermolib, int ncomp, string* comp, double* conc, bool HasSinglePhaseOnly, string tablename, double T_ref, double P_ref, double rho_ref ) : CFluidModel() {
+CFluidProp::CFluidProp( string thermolib, int ncomp, string* comp, double* conc, bool HasSinglePhaseOnly, string tablename, double T_ref, double P_ref, double rho_ref, int ErrorLevel ) : CFluidModel() {
 
         // Copy fluid data to CFluidProp object
   	ThermoLib = thermolib;
@@ -43,6 +44,8 @@ CFluidProp::CFluidProp( string thermolib, int ncomp, string* comp, double* conc,
 	Conc = conc;
         SinglePhaseOnly = HasSinglePhaseOnly;
         TableName = tablename;
+
+        this->ErrorLevel = ErrorLevel;
 
 	// Prepare composition array's for fluidprop_setfluid 
 	char LocalComp[20][LEN_COMPONENTS];
@@ -76,6 +79,7 @@ CFluidProp::CFluidProp( string thermolib, int ncomp, string* comp, double* conc,
         bool LuT = ThermoLib.substr(0,3) == "LuT";
         if (LuT) printf("UseTable...\n");
         if (LuT) fluidprop_usetable( TableName.c_str());
+        //if (LuT) fluidprop_setfluid( ThermoLib.c_str(), nComp, LocalComp[0], LEN_COMPONENTS, LocalConc );
         if (LuT) printf("UseTable finished!\n");
 
         if (strcmp( fluidprop_geterror(), "No errors")) {
@@ -128,65 +132,6 @@ CFluidProp::CFluidProp( string thermolib, int ncomp, string* comp, double* conc,
 }
 
 
-/*CFluidProp::CFluidProp( string thermolib, int ncomp, string* comp, double* conc, bool HasSinglePhaseOnly, double T_ref, double P_ref, double rho_ref ) : CFluidModel() {
-
-        // Copy fluid data to CFluidProp object
-  	ThermoLib = thermolib;
-	nComp = ncomp;
-	Comp= comp;
-	Conc = conc;
-        SinglePhaseOnly = HasSinglePhaseOnly;
-
-	string  libraryName[10];
-
-	libraryName[0] = "freeStanMix";
-	libraryName[1] = "IF97";
-	libraryName[2] = "GasMix";
-	libraryName[3] = "PCP-SAFT";
-	libraryName[4] = "RefProp";
-	libraryName[5] = "ScalingLaws";
-	libraryName[6] = "StanMix";
-	libraryName[7] = "TPSI";
-	libraryName[8] = "vThermo";
-	libraryName[9] = "LuTEoS";
-
-	cout << " " << "\n";
-
-	init_fluidprop();
-	
-        fluidprop_setunits( "SI", " ", " ", " ");
-
-	cout << "------- CHECK FLUIDPROP LIBRARIES -------" << "\n";
-
-	int i;
-	for ( i=0; i<=9; i++ )
-	  {
-	  int  version[4];
-	  if ( fluidprop_getversion( libraryName[i].c_str(), version ) )
-	  {
-	    printf( "%s version %d.%d.%d.%d available\n", libraryName[i].c_str(), version[0], version[1], version[2], version[3] );
-	  }
-	  else
-	  {
-	    printf( "%s library not detected\n", libraryName[i].c_str());
-	    throw(-1);
-	  }
-
-	}
-
-	cout << "-----------------------------------------" << "\n";
-	cout << " " << "\n";
-
-	// Store the remaining referenced properties
-	h_ref = e_ref;
-	s_ref = e_ref/T_ref;
-	dPdrho_e_ref = e_ref;
-	dPde_rho_ref = rho_ref;
-	dTdrho_e_ref = rho_ref/T_ref;
-	dTde_rho_ref = e_ref/T_ref;
- }*/
-
-
 CFluidProp::~CFluidProp(void) {
 
 }
@@ -206,7 +151,9 @@ void CFluidProp::SetTDState_rhoe (double rho, double e ){
 
         struct fluidstate_t output;
         double x[20], y[20];
+        if (ErrorLevel > 1) printf( "%ld.  rho = %f, u = %f: ", i++, rho, e);
 	fluidprop_allprops( pair, v, e, &output, x, y); 
+        if (ErrorLevel > 1) printf( "P = %f, T = %f, h = %f, s = %f, c = %f, cp = %f \n", output.P, output.T, output.h, output.s, output.c, output.cp);
         Pressure = output.P;
         Temperature = output.T;
 	SoundSpeed2 = pow( output.c, 2);
@@ -216,7 +163,7 @@ void CFluidProp::SetTDState_rhoe (double rho, double e ){
 	dTdrho_e = Temperature * dPde_rho * pow(v,2);
 	dTde_rho = 1. / output.cv;
 
-        if (debug && strcmp( fluidprop_geterror(), "No errors")) {
+        if (ErrorLevel > 0 && strcmp( fluidprop_geterror(), "No errors")) {
            printf( "FluidProp error message: %s\n", fluidprop_geterror());
 	   printf( "rho = %f, u = %f\n",rho, e);
         }
@@ -236,7 +183,11 @@ void CFluidProp::SetTDState_PT (double P, double T ){
 
         struct fluidstate_t output;
         double x[20], y[20];
+
+        if (ErrorLevel > 1) printf( "%ld.  P = %f, T = %f: ", i++, P, T);
         fluidprop_allprops( pair, P, T, &output, x, y); 
+        if (ErrorLevel > 1) printf( "rho = %f, h = %f, u = %f, s = %f, c = %f \n", output.d, output.h, output.u, output.s, output.c);
+
         Density = output.d;
 	StaticEnergy = output.u;
 	SoundSpeed2 = pow( output.c, 2);
@@ -246,7 +197,8 @@ void CFluidProp::SetTDState_PT (double P, double T ){
 	dTdrho_e = Temperature * dPde_rho * pow(output.v,2);
 	dTde_rho = 1. / output.cv;
 	
-        if (debug && strcmp( fluidprop_geterror(), "No errors")) {
+        
+        if (ErrorLevel > 0  && strcmp( fluidprop_geterror(), "No errors")) {
            printf( "FluidProp error message: %s\n", fluidprop_geterror());
 	   printf( "P = %f, T = %f, u = %f\n", P, T, output.u);
         }
@@ -266,7 +218,9 @@ void CFluidProp::SetTDState_Prho (double P, double rho ){
 
         struct fluidstate_t output;
         double x[20], y[20];
+        if (ErrorLevel > 1) printf( "%ld.  P = %f, rho = %f: ", i++, P, rho);
         fluidprop_allprops( pair, P, rho, &output, x, y); 
+        if (ErrorLevel > 1) printf( "T = %f, h = %f, u = %f, s = %f, c = %f \n", output.T, output.h, output.u, output.s, output.c);
 	Temperature = output.T;
 	StaticEnergy = output.u;
 	SoundSpeed2 = pow( output.c, 2);
@@ -275,12 +229,12 @@ void CFluidProp::SetTDState_Prho (double P, double rho ){
 	dPde_rho = output.beta;
 	dTdrho_e = Temperature * dPde_rho * pow(output.v,2);
 	dTde_rho = 1. / output.cv;
+
 	
-        //if (debug && strcmp( fluidprop_geterror(), "No errors")) {
-        //    if (strcmp( fluidprop_geterror(), "No errors")) {
-       //         printf( "FluidProp error message: %s\n", fluidprop_geterror());
-	  // printf( "P = %f, rho = %f, u = %f, T = %f\n", P, rho, output.u, output.T);
-        //}
+        if (ErrorLevel > 0 && strcmp( fluidprop_geterror(), "No errors")) {
+           printf( "FluidProp error message: %s\n", fluidprop_geterror());
+	   printf( "P = %f, rho = %.16lf, u = %f, T = %f\n", P, rho, output.u, output.T);
+        }
 
 }
 
@@ -292,9 +246,11 @@ void CFluidProp::SetEnergy_Prho (double P, double rho ){
         else
            pair = "Pd";       
 
+        if (ErrorLevel > 1) printf( "%ld.  P = %f, rho = %f: ", i++, P, rho);
 	StaticEnergy = fluidprop_intenergy ( pair, P, rho );
+        if (ErrorLevel > 1) printf( "StaticEnergy = %f\n", StaticEnergy);
 
-        if (debug && strcmp( fluidprop_geterror(), "No errors")) {
+        if (ErrorLevel > 0 && strcmp( fluidprop_geterror(), "No errors")) {
            printf( "FluidProp error message: %s\n", fluidprop_geterror());
 	   printf( "P = %f, rho = %f, u = %f\n", P, rho, StaticEnergy);
         }
@@ -312,7 +268,9 @@ void CFluidProp::SetTDState_hs (double h, double s ){
 
         struct fluidstate_t output;
         double x[20], y[20];
+        if (ErrorLevel > 1) printf( "%ld.  h = %f, s = %f: ", i++, h, s);
         fluidprop_allprops( pair, h, s, &output, x, y); 
+        if (ErrorLevel > 1) printf( "P = %f, rho = %f, T = %f, u = %f, c = %f \n", output.P, output.d, output.T, output.u, output.c);
         Pressure = output.P;
 	Temperature = output.T;
         Density = output.d;
@@ -322,8 +280,9 @@ void CFluidProp::SetTDState_hs (double h, double s ){
 	dPde_rho = output.beta;
 	dTdrho_e = Temperature * dPde_rho * pow(output.v,2);
 	dTde_rho = 1. / output.cv;
+
 	
-        if (debug && strcmp( fluidprop_geterror(), "No errors")) {
+        if (ErrorLevel > 0 && strcmp( fluidprop_geterror(), "No errors")) {
            printf( "FluidProp error message: %s\n", fluidprop_geterror());
 	   printf( "h = %f, s = %f, u = %f\n", h, s, output.u);
         }
@@ -343,7 +302,9 @@ void CFluidProp::SetTDState_rhoT (double rho, double T ){
     
         struct fluidstate_t output;
         double x[20], y[20];
+        if (ErrorLevel > 1) printf( "%ld.  T = %f, rho = %f: ", i++, T, rho);
         fluidprop_allprops( pair, T, rho, &output, x, y); 
+        if (ErrorLevel > 1) printf( "P = %f, h = %f, u = %f, s = %f, c = %f \n", output.P, output.h, output.u, output.s, output.c);
         Pressure = output.P;
 	Temperature = output.T;
 	SoundSpeed2 = pow( output.c, 2);
@@ -353,7 +314,7 @@ void CFluidProp::SetTDState_rhoT (double rho, double T ){
 	dTdrho_e = Temperature * dPde_rho * pow(output.v,2);
 	dTde_rho = 1. / output.cv;
 	
-        if (debug && strcmp( fluidprop_geterror(), "No errors")) {
+        if (ErrorLevel > 0 && strcmp( fluidprop_geterror(), "No errors")) {
            printf( "FluidProp error message: %s\n", fluidprop_geterror());
 	   printf( "rho = %f, T = %f, u = %f\n", rho, T, output.u);
         }

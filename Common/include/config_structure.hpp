@@ -693,10 +693,11 @@ private:
   
   string FluidSubLib;         /*!< \brief Name of fluid thermodynamic sub-library.  */
   unsigned short nComp;       /*!< \brief Number of components in the fluid.  */
-  string* CompNames;           /*!< \brief Names of fluid components.  */
-  double *MoleFracs;            /*!< \brief Mole fractions of fluid components.  */
+  string* CompNames;          /*!< \brief Names of fluid components.  */
+  double *MoleFracs;          /*!< \brief Mole fractions of fluid components.  */
   bool SinglePhaseOnly;       /*!< \brief Single phase only: no phase equilibria are considered.  */
   string LookupTable;         /*!< \brief Name of fluid thermodynamic look-up table.  */
+  unsigned short ErrorLevel;  /*!< \brief Error level diagnostics.  */
 
   /*!< \brief param is a map from the option name (config file string) to a pointer to an option child class */
 //	map<string, CAnyOptionRef*> param;
@@ -2612,6 +2613,12 @@ public:
 	 * \return Look-up table name for fluid thermodynamic sub-library.
 	 */
 	string GetLookupTableName(void);
+	
+	/*!
+	 * \brief Get error level diagnostics for fluid thermodynamic sub-library.
+	 * \return Error level diagnostics for fluid thermodynamic sub-library.
+	 */
+	unsigned short  GetErrorLevel(void);
 	
 	/*!
 	 * \brief Get the value of the critical temperature.

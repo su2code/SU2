@@ -258,6 +258,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleListOption("FLUID_MOLE_FRACS", nComp, MoleFracs);
   addBoolOption("FLUID_SINGLE_PHASE_ONLY", SinglePhaseOnly, false);
   addStringOption("FLUID_LOOKUP_TABLE", LookupTable, string("xxxxxxxx"));
+  addUnsignedShortOption("FLUID_ERROR_LEVEL", ErrorLevel, 1);
   
   /* CONFIG_CATEGORY: Freestream Conditions */
   /*--- Options related to freestream specification ---*/
