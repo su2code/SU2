@@ -7886,8 +7886,13 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
           deltaTangVelocity= UnitNormal[1]*deltaVelocity[0]-UnitNormal[0]*deltaVelocity[1];
           deltaNormalVelocity= UnitNormal[0]*deltaVelocity[0]+UnitNormal[1]*deltaVelocity[1];
 
-          cc = AveragedSoundSpeed[val_marker]*AveragedSoundSpeed[val_marker];
-          rhoc = AveragedSoundSpeed[val_marker]*AveragedDensity[val_marker];
+//          cc = AveragedSoundSpeed[val_marker]*AveragedSoundSpeed[val_marker];
+//          rhoc = AveragedSoundSpeed[val_marker]*AveragedDensity[val_marker];
+
+//          cc = AveragedSoundSpeed[val_marker]*AveragedSoundSpeed[val_marker];
+          cc =SoundSpeed_i*SoundSpeed_i;
+//          rhoc = AveragedSoundSpeed[val_marker]*AveragedDensity[val_marker];
+          rhoc = SoundSpeed_i*Density_i;
           c1j= deltaDensity -deltaPressure/cc;
 		  c2j=deltaTangVelocity;
 		  c3j=deltaNormalVelocity + deltaPressure/rhoc;
@@ -7923,7 +7928,8 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
       }
 
 
-	  conv_numerics->GetRMatrix(AveragedSoundSpeed[val_marker], AveragedDensity[val_marker], AveragedNormal[val_marker], R_Matrix);
+//	  conv_numerics->GetRMatrix(AveragedSoundSpeed[val_marker], AveragedDensity[val_marker], AveragedNormal[val_marker], R_Matrix);
+	  conv_numerics->GetRMatrix(SoundSpeed_i, Density_i, UnitNormal, R_Matrix);
 
 	  for (iVar = 0; iVar < nVar; iVar++)
 	  {
