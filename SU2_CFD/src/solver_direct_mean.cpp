@@ -7463,7 +7463,7 @@ void CEulerSolver::Mixing_Process(CGeometry *geometry, CSolver **solver_containe
     unsigned long iVertex, iPoint, nVert;
     unsigned short iDim, iVar, iMarker, counter = 0;
     unsigned short mixing_process = config->GetKind_MixingProcess();
-    su2double Pressure = 0.0, Density = 0.0, Enthalpy = 0.0,  *Velocity = NULL, *Normal,
+    su2double Pressure = 0.0, Density = 0.0, Enthalpy = 0.0,  *Velocity = NULL, *Normal, *GridVel,
 		  Area, TotalArea, TotalAreaPressure, TotalAreaDensity, *TotalAreaVelocity, UnitNormal[3];
     string Marker_Tag, Monitoring_Tag;
     su2double val_init_pressure;
@@ -7638,7 +7638,6 @@ void CEulerSolver::Mixing_Process(CGeometry *geometry, CSolver **solver_containe
 	if (isnan(AveragedDensity[val_Marker]) or isnan(AveragedEnthalpy[val_Marker]))
 	cout<<"nan in mixing process"<<endl;
 
-
 	/*--- Free locally allocated memory ---*/
 	delete [] Velocity;
 	delete [] Normal;
@@ -7757,7 +7756,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
   bool viscous              = config->GetViscous();
   bool gravity = (config->GetGravityForce());
   bool tkeNeeded = ((config->GetKind_Solver() == RANS) && (config->GetKind_Turb_Model() == SST));
-
+  bool count;
   su2double *Normal;
 
   Normal = new su2double[nDim];
@@ -7800,7 +7799,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
   }
 
 
-  su2double AvgTangVelocity, AvgNormalVelocity;
+  su2double AvgTangVelocity, AvgNormalVelocity, PeripheralVelocity;
 
   Mixing_Process(geometry, solver_container,  config, val_marker);
 
@@ -7812,11 +7811,48 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
   AveragedMach = sqrt(AveragedMach)/AveragedSoundSpeed[val_marker];
   AvgTangVelocity= AveragedNormal[val_marker][1]*AveragedVelocity[val_marker][0]-AveragedNormal[val_marker][0]*AveragedVelocity[val_marker][1];
   AvgNormalVelocity= AveragedNormal[val_marker][0]*AveragedVelocity[val_marker][0]+AveragedNormal[val_marker][1]*AveragedVelocity[val_marker][1];
-  AvgMachTang = AvgTangVelocity/AveragedSoundSpeed[val_marker];
-  AvgMachNorm = AvgNormalVelocity/AveragedSoundSpeed[val_marker];
   cc = AveragedSoundSpeed[val_marker]*AveragedSoundSpeed[val_marker];
   rhoc = AveragedSoundSpeed[val_marker]*AveragedDensity[val_marker];
 
+  if(grid_movement){
+	  count = true;
+	  /* --- compute the average peripheral velocity ---*/
+	  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+
+	      V_boundary= GetCharacPrimVar(val_marker, iVertex);
+
+	      iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+
+	      /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
+	      if (geometry->node[iPoint]->GetDomain() && count) {
+	    	  count = false;
+	    	  gridVel = geometry->node[iPoint]->GetGridVel();
+	    	  PeripheralVelocity  = 0.0;
+	    	  for (iDim = 0; iDim < nDim; iDim++)
+	    		  PeripheralVelocity    += gridVel[iDim]*gridVel[iDim];
+	    	  PeripheralVelocity = sqrt(PeripheralVelocity);
+
+	      }else{
+	    	  break;
+	      }
+
+	  }
+	  AveragedMach = sqrt(AvgNormalVelocity*AvgNormalVelocity + (AvgTangVelocity + PeripheralVelocity)*(AvgTangVelocity +PeripheralVelocity));
+	  AveragedMach /= AveragedSoundSpeed[val_marker];
+	  AvgMachTang = (AvgTangVelocity + PeripheralVelocity)/AveragedSoundSpeed[val_marker];
+
+
+  }else{
+	  AveragedMach = 0.0;
+	  for (iDim = 0; iDim < nDim; iDim++) {
+		  AveragedMach += AveragedVelocity[val_marker][iDim]*AveragedVelocity[val_marker][iDim];
+	  }
+	  AveragedMach = sqrt(AveragedMach)/AveragedSoundSpeed[val_marker];
+	  AvgMachTang = AvgTangVelocity/AveragedSoundSpeed[val_marker];
+
+  }
+
+  AvgMachNorm = AvgNormalVelocity/AveragedSoundSpeed[val_marker];
   conv_numerics->GetRMatrix(AveragedSoundSpeed[val_marker], AveragedDensity[val_marker], AveragedNormal[val_marker], R_Matrix);
 
 //  Boundary_Fourier(geometry, solver_container, config, val_marker, c4k, nboundaryvertex);
