@@ -7799,7 +7799,26 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 	  R_Matrix[iVar] = new su2double[nVar];
   }
 
+
+  su2double AvgTangVelocity, AvgNormalVelocity;
+
   Mixing_Process(geometry, solver_container,  config, val_marker);
+
+  /* --- compute averaged state ---*/
+  AveragedMach = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++) {
+	  AveragedMach += AveragedVelocity[val_marker][iDim]*AveragedVelocity[val_marker][iDim];
+  }
+  AveragedMach = sqrt(AveragedMach)/AveragedSoundSpeed[val_marker];
+  AvgTangVelocity= AveragedNormal[val_marker][1]*AveragedVelocity[val_marker][0]-AveragedNormal[val_marker][0]*AveragedVelocity[val_marker][1];
+  AvgNormalVelocity= AveragedNormal[val_marker][0]*AveragedVelocity[val_marker][0]+AveragedNormal[val_marker][1]*AveragedVelocity[val_marker][1];
+  AvgMachTang = AvgTangVelocity/AveragedSoundSpeed[val_marker];
+  AvgMachNorm = AvgNormalVelocity/AveragedSoundSpeed[val_marker];
+  cc = AveragedSoundSpeed[val_marker]*AveragedSoundSpeed[val_marker];
+  rhoc = AveragedSoundSpeed[val_marker]*AveragedDensity[val_marker];
+
+  conv_numerics->GetRMatrix(AveragedSoundSpeed[val_marker], AveragedDensity[val_marker], AveragedNormal[val_marker], R_Matrix);
+
 //  Boundary_Fourier(geometry, solver_container, config, val_marker, c4k, nboundaryvertex);
 //  Boundary_Fourier(geometry, solver_container, config, val_marker, c2k,c3k,nboundaryvertex);
 //  cout<<"AveragedPressure_i " <<AveragedPressure[val_marker]<<" Density_i " <<AveragedDensity[val_marker]<<" Entropy "<<AveragedEntropy[val_marker]<<endl;
@@ -7877,38 +7896,20 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 
           deltaDensity = Density_i - AveragedDensity[val_marker];
           deltaPressure = Pressure_i - AveragedPressure[val_marker];
-          AveragedMach = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++) {
-			  deltaVelocity[iDim] = Velocity_i[iDim]-AveragedVelocity[val_marker][iDim];
-			  AveragedMach += AveragedVelocity[val_marker][iDim]*AveragedVelocity[val_marker][iDim];
-          }
-          AveragedMach = sqrt(AveragedMach)/AveragedSoundSpeed[val_marker];
-          deltaTangVelocity= UnitNormal[1]*deltaVelocity[0]-UnitNormal[0]*deltaVelocity[1];
-          deltaNormalVelocity= UnitNormal[0]*deltaVelocity[0]+UnitNormal[1]*deltaVelocity[1];
+          TangVelocity= UnitNormal[1]*Velocity_i[0] - UnitNormal[0]*Velocity_i[1];
+          NormalVelocity= UnitNormal[0]*Velocity_i[0] + UnitNormal[1]*Velocity_i[1];
+          deltaTangVelocity= TangVelocity - AvgTangVelocity;
+          deltaNormalVelocity= NormalVelocity - AvgNormalVelocity;
 
-//          cc = AveragedSoundSpeed[val_marker]*AveragedSoundSpeed[val_marker];
-//          rhoc = AveragedSoundSpeed[val_marker]*AveragedDensity[val_marker];
+          c1j= -cc*deltaDensity +deltaPressure;
+		  c2j= rhoc*deltaTangVelocity;
+		  c3j=rhoc*deltaNormalVelocity + deltaPressure;
+		  c4j=-rhoc*deltaNormalVelocity + deltaPressure;
 
-//          cc = AveragedSoundSpeed[val_marker]*AveragedSoundSpeed[val_marker];
-          cc =SoundSpeed_i*SoundSpeed_i;
-//          rhoc = AveragedSoundSpeed[val_marker]*AveragedDensity[val_marker];
-          rhoc = SoundSpeed_i*Density_i;
-          c1j= deltaDensity -deltaPressure/cc;
-		  c2j=deltaTangVelocity;
-		  c3j=deltaNormalVelocity + deltaPressure/rhoc;
-		  c4j=-deltaNormalVelocity + deltaPressure/rhoc;
-
-		  avg_c4 = -2.0/rhoc*(AveragedPressure[val_marker]-Pressure_e);
-
-		  TangVelocity= AveragedNormal[val_marker][1]*AveragedVelocity[val_marker][0]-AveragedNormal[val_marker][0]*AveragedVelocity[val_marker][1];
-		  NormalVelocity= AveragedNormal[val_marker][0]*AveragedVelocity[val_marker][0]+AveragedNormal[val_marker][1]*AveragedVelocity[val_marker][1];
-		  AvgMachTang = TangVelocity/AveragedSoundSpeed[val_marker];
-		  AvgMachNorm = NormalVelocity/AveragedSoundSpeed[val_marker];
-
-		  GilesBeta = -copysign(1.0, TangVelocity)*sqrt(pow(AveragedMach,2)-1);
-
+		  avg_c4 = -2.0*(AveragedPressure[val_marker]-Pressure_e);
+		  GilesBeta = -copysign(1.0, AvgTangVelocity)*sqrt(pow(AveragedMach,2)-1.0);
 		  c4js= (2.0 * AvgMachNorm)/(GilesBeta - AvgMachTang)*c2j - (GilesBeta+AvgMachTang)/(GilesBeta-AvgMachTang)*c3j;
-		  dc4js = c4js -c4j;
+		  dc4js = c4js;
 
 		  delta_c[0] = c1j;
 		  delta_c[1] = c2j;
@@ -7927,9 +7928,6 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 
       }
 
-
-//	  conv_numerics->GetRMatrix(AveragedSoundSpeed[val_marker], AveragedDensity[val_marker], AveragedNormal[val_marker], R_Matrix);
-	  conv_numerics->GetRMatrix(SoundSpeed_i, Density_i, UnitNormal, R_Matrix);
 
 	  for (iVar = 0; iVar < nVar; iVar++)
 	  {
@@ -7966,12 +7964,17 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 
 	  Density_b = AveragedDensity[val_marker] + deltaprim[0];
 	  Pressure_b = AveragedPressure[val_marker] + deltaprim[3];
-//                    Pressure_e /= config->GetPressure_Ref();
+
+	  NormalVelocity = AvgNormalVelocity + deltaprim[1];
+	  TangVelocity = AvgTangVelocity + deltaprim[2];
+	  Velocity_b[0] = NormalVelocity*UnitNormal[0] + TangVelocity*UnitNormal[1];
+	  Velocity_b[1]	= NormalVelocity*UnitNormal[1] - TangVelocity*UnitNormal[0];
+
 	  Velocity2_b = 0.0;
 	  for (iDim = 0; iDim < nDim; iDim++) {
-		  Velocity_b[iDim] = AveragedVelocity[val_marker][iDim]+deltaprim[iDim+1];
 		  Velocity2_b+= Velocity_b[iDim]*Velocity_b[iDim];
 	  }
+
 
 	  FluidModel->SetTDState_Prho(Pressure_b, Density_b);
 	  Energy_b = FluidModel->GetStaticEnergy() + 0.5*Velocity2_b;

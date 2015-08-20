@@ -1372,25 +1372,50 @@ void CNumerics::GetRMatrix(su2double val_soundspeed, su2double val_density, su2d
 
 
 
-		R_Matrix[0][0] = 1.0;
+//		R_Matrix[0][0] = 1.0;
+//		R_Matrix[0][1] = 0.0;
+//		R_Matrix[0][2] = 0.5*val_density/val_soundspeed;
+//		R_Matrix[0][3] = 0.5*val_density/val_soundspeed;
+//
+//		R_Matrix[1][0] = 0.0;
+//		R_Matrix[1][1] = val_normal[1];
+//		R_Matrix[1][2] = 0.5*val_normal[0];
+//		R_Matrix[1][3] = -0.5*val_normal[0];
+//
+//		R_Matrix[2][0] = 0.0;
+//		R_Matrix[2][1] = -val_normal[0];
+//		R_Matrix[2][2] = 0.5*val_normal[1];
+//		R_Matrix[2][3] = -0.5*val_normal[1];
+//
+//		R_Matrix[3][0] = 0.0;
+//		R_Matrix[3][1] = 0.0;
+//		R_Matrix[3][2] = 0.5*val_density*val_soundspeed;
+//		R_Matrix[3][3] = 0.5*val_density*val_soundspeed;
+
+		su2double cc, rhoc;
+		cc = val_soundspeed*val_soundspeed;
+		rhoc = val_density/val_soundspeed;
+
+		R_Matrix[0][0] = -1.0/cc;
 		R_Matrix[0][1] = 0.0;
-		R_Matrix[0][2] = 0.5*val_density/val_soundspeed;
-		R_Matrix[0][3] = 0.5*val_density/val_soundspeed;
+		R_Matrix[0][2] = 0.5/cc;
+		R_Matrix[0][3] = 0.5/cc;
 
 		R_Matrix[1][0] = 0.0;
-		R_Matrix[1][1] = val_normal[1];
-		R_Matrix[1][2] = 0.5*val_normal[0];
-		R_Matrix[1][3] = -0.5*val_normal[0];
+		R_Matrix[1][1] = 0.0;
+		R_Matrix[1][2] = 0.5/rhoc;
+		R_Matrix[1][3] = -0.5/rhoc;
 
 		R_Matrix[2][0] = 0.0;
-		R_Matrix[2][1] = -val_normal[0];
-		R_Matrix[2][2] = 0.5*val_normal[1];
-		R_Matrix[2][3] = -0.5*val_normal[1];
+		R_Matrix[2][1] = 1.0/rhoc;
+		R_Matrix[2][2] = 0.0;
+		R_Matrix[2][3] = 0.0;
 
 		R_Matrix[3][0] = 0.0;
 		R_Matrix[3][1] = 0.0;
-		R_Matrix[3][2] = 0.5*val_density*val_soundspeed;
-		R_Matrix[3][3] = 0.5*val_density*val_soundspeed;
+		R_Matrix[3][2] = 0.5;
+		R_Matrix[3][3] = 0.5;
+
 	}
 	else {
 
