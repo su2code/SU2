@@ -2427,6 +2427,12 @@ public:
 	 */
 	virtual void SetWAitken_Dyn_tn1(double waitk_tn1);
 
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] Value of the load increment for nonlinear structural analysis
+	 */
+	virtual void SetLoad_Increment(double val_loadIncrement);
+
 
 };
 
@@ -6598,6 +6604,8 @@ private:
 	double Conv_Check[3];			/*!< \brief Current values for convergence check: DTOL, RTOL, ETOL */
 	double FSI_Conv[2];				/*!< \brief Values to check the convergence of the FSI problem. */
 
+	double loadIncrement;			/*!< \brief Coefficient that determines the amount of load which is applied */
+
 	double WAitken_Dyn;				/*!< \brief Aitken's dynamic coefficient */
 	double WAitken_Dyn_tn1;			/*!< \brief Aitken's dynamic coefficient in the previous iteration */
 
@@ -6943,6 +6951,12 @@ public:
 	 * \param[in] Value of the last Aitken relaxation factor in the current time step.
 	 */
 	void SetWAitken_Dyn_tn1(double waitk_tn1);
+
+	/*!
+	 * \brief Set the value of the load increment for nonlinear structural analysis
+	 * \param[in] Value of the coefficient
+	 */
+	void SetLoad_Increment(double val_loadIncrement);
 
 
 };

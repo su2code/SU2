@@ -1233,6 +1233,10 @@ inline double CConfig::GetStatic_Time(void) { return Static_Time; }
 
 inline unsigned short CConfig::GetPredictorOrder(void) { return Pred_Order; }
 
+inline bool CConfig::GetIncrementalLoad(void) { return IncrementalLoad; }
+
+inline unsigned long CConfig::GetNumberIncrements(void) { return IncLoad_Nincrements; }
+
 inline bool CConfig::GetFSI_Simulation(void) { return FSI_Problem; }
 
 inline unsigned short CConfig::GetKindInterpolation(void) { return Kind_Interpolation; }
