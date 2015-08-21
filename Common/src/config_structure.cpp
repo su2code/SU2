@@ -1204,6 +1204,12 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Time while the load is to be increased linearly */
   addDoubleOption("RAMP_TIME", Ramp_Time, 1.0);
 
+
+  /*  DESCRIPTION: Apply dead loads. Options: NO, YES \ingroup Config */
+  addBoolOption("INCREMENTAL_LOAD", IncrementalLoad, false);
+  /* DESCRIPTION: Maximum number of increments of the  */
+  addUnsignedLongOption("NUMBER_INCREMENTS", IncLoad_Nincrements, 10);
+
   /* DESCRIPTION: Time while the structure is static */
   addDoubleOption("STATIC_TIME", Static_Time, 1.0);
 

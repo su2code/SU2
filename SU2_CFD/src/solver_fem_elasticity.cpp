@@ -41,6 +41,7 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(void) : CSolver() {
 	Total_CFEA = 0.0;
 	WAitken_Dyn = 0.0;
 	WAitken_Dyn_tn1 = 0.0;
+	loadIncrement = 0.0;
 
 	element_container = NULL;
 	node = NULL;
@@ -108,6 +109,7 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 	Total_CFEA			= 0.0;
 	WAitken_Dyn      	= 0.0;
 	WAitken_Dyn_tn1  	= 0.0;
+	loadIncrement 		= 0.0;
 
   	SetFSI_ConvValue(0,0.0);
   	SetFSI_ConvValue(1,0.0);

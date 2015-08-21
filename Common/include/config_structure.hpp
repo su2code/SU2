@@ -741,6 +741,8 @@ private:
   Newmark_delta;				/*!< \brief Parameter delta for Newmark method. */
   bool Gradual_Load,		/*!< \brief Apply the load gradually. */
   Ramp_Load;				/*!< \brief Apply the load with linear increases. */
+  bool IncrementalLoad;		/*!< \brief Apply the load in increments (for nonlinear structural analysis). */
+  unsigned long IncLoad_Nincrements; /*!< \brief Number of increments. */
   double Ramp_Time;			/*!< \brief Time until the maximum load is applied. */
   double Static_Time;			/*!< \brief Time while the structure is not loaded in FSI applications. */
   unsigned short Pred_Order;  /*!< \brief Order of the predictor for FSI applications. */
@@ -5556,7 +5558,7 @@ public:
 	 * \return 	Value of the max time while the load is linearly increased
 	 */
 	double GetStatic_Time(void);
-
+	
 	/*!
 	 * \brief Get the order of the predictor for FSI applications.
 	 * \return 	Order of predictor
@@ -5567,7 +5569,19 @@ public:
 	 * \brief Check if the simulation we are running is a FSI simulation
 	 * \return Value of the physical time in an unsteady simulation.
 	 */
-	bool GetFSI_Simulation(void);
+	 bool GetFSI_Simulation(void);
+
+	/*!
+	 * \brief Check if we want to apply an incremental load to the nonlinear structural simulation
+	 * \return <code>TRUE</code> means that the load is to be applied in increments.
+	 */
+	 bool GetIncrementalLoad(void);
+
+	/*!
+	 * \brief Get the number of increments for an incremental load.
+	 * \return 	Number of increments.
+	 */
+	 unsigned long GetNumberIncrements(void);
 
 	/*!
 	 * \brief Get the relaxation method chosen for the simulation
