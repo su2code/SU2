@@ -444,14 +444,14 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   /*--- Initializate quantities for the mixing process*/
 
-  AveragedVelocity = new double* [nMarker];
-  AveragedNormal = new double* [nMarker];
-  AveragedFlux = new double* [nMarker];
-  TotalFlux = new double* [nMarker];
+  AveragedVelocity = new su2double* [nMarker];
+  AveragedNormal = new su2double* [nMarker];
+  AveragedFlux = new su2double* [nMarker];
+  TotalFlux = new su2double* [nMarker];
 
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-	  AveragedVelocity[iMarker] = new double [nDim];
-	  AveragedNormal[iMarker] = new double [nDim];
+	  AveragedVelocity[iMarker] = new su2double [nDim];
+	  AveragedNormal[iMarker] = new su2double [nDim];
 	  for (iDim = 0; iDim < nDim; iDim++) {
 		  AveragedVelocity[iMarker][iDim] = 0.0;
 		  AveragedNormal[iMarker][iDim] = 0.0;
@@ -459,8 +459,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   }
 
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-	  AveragedFlux[iMarker] = new double [nVar];
-	  TotalFlux[iMarker] = new double [nVar];
+	  AveragedFlux[iMarker] = new su2double [nVar];
+	  TotalFlux[iMarker] = new su2double [nVar];
 	  for (iVar = 0; iVar < nVar; iVar++) {
 		  AveragedFlux[iMarker][iVar] = 0.0;
 		  TotalFlux[iMarker][iVar] = 0.0;
@@ -468,11 +468,11 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   }
 
 
-  AveragedEnthalpy  = new double[nMarker];
-  AveragedPressure  = new double[nMarker];
-  AveragedDensity   = new double[nMarker];
-  AveragedSoundSpeed= new double[nMarker];
-  AveragedEntropy   = new double[nMarker];
+  AveragedEnthalpy  = new su2double[nMarker];
+  AveragedPressure  = new su2double[nMarker];
+  AveragedDensity   = new su2double[nMarker];
+  AveragedSoundSpeed= new su2double[nMarker];
+  AveragedEntropy   = new su2double[nMarker];
 
   /*--- Initialize the cauchy critera array for fixed CL mode ---*/
 
@@ -11719,14 +11719,14 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 
   /*--- Initializate quantities for the mixing process*/
 
-  AveragedVelocity = new double* [nMarker];
-  AveragedNormal = new double* [nMarker];
-  AveragedFlux = new double* [nMarker];
-  TotalFlux = new double* [nMarker];
+  AveragedVelocity = new su2double* [nMarker];
+  AveragedNormal = new su2double* [nMarker];
+  AveragedFlux = new su2double* [nMarker];
+  TotalFlux = new su2double* [nMarker];
 
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-	  AveragedVelocity[iMarker] = new double [nDim];
-	  AveragedNormal[iMarker] = new double [nDim];
+	  AveragedVelocity[iMarker] = new su2double [nDim];
+	  AveragedNormal[iMarker] = new su2double [nDim];
 	  for (iDim = 0; iDim < nDim; iDim++) {
 		  AveragedVelocity[iMarker][iDim] = 0.0;
 		  AveragedNormal[iMarker][iDim] = 0.0;
@@ -11734,8 +11734,8 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   }
 
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-	  AveragedFlux[iMarker] = new double [nVar];
-	  TotalFlux[iMarker] = new double [nVar];
+	  AveragedFlux[iMarker] = new su2double [nVar];
+	  TotalFlux[iMarker] = new su2double [nVar];
 	  for (iVar = 0; iVar < nVar; iVar++) {
 		  AveragedFlux[iMarker][iVar] = 0.0;
 		  TotalFlux[iMarker][iVar] = 0.0;
@@ -11743,11 +11743,11 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   }
 
 
-  AveragedEnthalpy  = new double[nMarker];
-  AveragedPressure  = new double[nMarker];
-  AveragedDensity   = new double[nMarker];
-  AveragedSoundSpeed= new double[nMarker];
-  AveragedEntropy   = new double[nMarker];
+  AveragedEnthalpy  = new su2double[nMarker];
+  AveragedPressure  = new su2double[nMarker];
+  AveragedDensity   = new su2double[nMarker];
+  AveragedSoundSpeed= new su2double[nMarker];
+  AveragedEntropy   = new su2double[nMarker];
 
 
   /*--- Initialize the cauchy critera array for fixed CL mode ---*/

@@ -2467,12 +2467,12 @@ class COptionNRBC : public COptionBase{
   string name; // identifier for the option
   unsigned short & size;
   string * & marker;
-  double * & var1;
-  double * & var2;
-  double ** & flowdir;
+  su2double * & var1;
+  su2double * & var2;
+  su2double ** & flowdir;
 
 public:
-  COptionNRBC(string option_field_name, unsigned short & nMarker_NRBC, string* & Marker_NRBC, unsigned short* & option_field, const map<string, Tenum> m, double* & var1, double* & var2, double** & FlowDir) : size(nMarker_NRBC),
+  COptionNRBC(string option_field_name, unsigned short & nMarker_NRBC, string* & Marker_NRBC, unsigned short* & option_field, const map<string, Tenum> m, su2double* & var1, su2double* & var2, su2double** & FlowDir) : size(nMarker_NRBC),
   	  	  	  	  marker(Marker_NRBC), field(option_field), var1(var1), var2(var2), flowdir(FlowDir) {
     this->name = option_field_name;
     this->m = m;
@@ -2508,13 +2508,13 @@ public:
     unsigned long nVals = totalVals / 7;
     this->size = nVals;
     this->marker = new string[nVals];
-    this->var1 = new double[nVals];
-    this->var2 = new double[nVals];
-    this->flowdir = new double*[nVals];
+    this->var1 = new su2double[nVals];
+    this->var2 = new su2double[nVals];
+    this->flowdir = new su2double*[nVals];
     this->field = new unsigned short[nVals];
 
     for (int i = 0; i < nVals; i++) {
-      this->flowdir[i] = new double[3];
+      this->flowdir[i] = new su2double[3];
     }
 
     for (int i = 0; i < nVals; i++) {

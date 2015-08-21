@@ -2665,7 +2665,7 @@ protected:
   su2double AoA_old;  /*!< \brief Old value of the angle of attack (monitored). */
 
   CFluidModel  *FluidModel;  /*!< \brief fluid model used in the solver */
-  double **AveragedVelocity,
+  su2double **AveragedVelocity,
   	  	 **AveragedNormal,
   	  	  **AveragedFlux,
 		  **TotalFlux,
