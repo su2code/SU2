@@ -446,15 +446,18 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   AveragedVelocity = new su2double* [nMarker];
   AveragedNormal = new su2double* [nMarker];
+  AveragedGridVel = new su2double* [nMarker];
   AveragedFlux = new su2double* [nMarker];
   TotalFlux = new su2double* [nMarker];
 
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
 	  AveragedVelocity[iMarker] = new su2double [nDim];
 	  AveragedNormal[iMarker] = new su2double [nDim];
+	  AveragedGridVel[iMarker] = new su2double [nDim];
 	  for (iDim = 0; iDim < nDim; iDim++) {
 		  AveragedVelocity[iMarker][iDim] = 0.0;
 		  AveragedNormal[iMarker][iDim] = 0.0;
+		  AveragedGridVel [iMarker][iDim] = 0.0;
 	  }
   }
 
@@ -7463,12 +7466,12 @@ void CEulerSolver::Mixing_Process(CGeometry *geometry, CSolver **solver_containe
     unsigned long iVertex, iPoint, nVert;
     unsigned short iDim, iVar, iMarker, counter = 0;
     unsigned short mixing_process = config->GetKind_MixingProcess();
-    su2double Pressure = 0.0, Density = 0.0, Enthalpy = 0.0,  *Velocity = NULL, *Normal, *GridVel,
+    su2double Pressure = 0.0, Density = 0.0, Enthalpy = 0.0,  *Velocity = NULL, *Normal, *gridVel,
 		  Area, TotalArea, TotalAreaPressure, TotalAreaDensity, *TotalAreaVelocity, UnitNormal[3];
     string Marker_Tag, Monitoring_Tag;
     su2double val_init_pressure;
     bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-
+    bool grid_movement        = config->GetGrid_Movement();
     su2double TotalDensity, TotalPressure, *TotalVelocity, TotalNormal;
 
     /*-- Variables declaration and allocation ---*/
@@ -7501,6 +7504,7 @@ void CEulerSolver::Mixing_Process(CGeometry *geometry, CSolver **solver_containe
 	for (iDim=0;iDim < nDim;iDim++){
 		AveragedVelocity[val_Marker][iDim] = 0.0;
 		AveragedNormal[val_Marker][iDim] = 0.0;
+		AveragedGridVel[val_Marker][iDim] = 0.0;
 	}
 
 	for (iVar=0;iVar<nVar;iVar++)
@@ -7570,7 +7574,11 @@ void CEulerSolver::Mixing_Process(CGeometry *geometry, CSolver **solver_containe
 
 			}
 			for (iDim = 0; iDim < nDim; iDim++) AveragedNormal[val_Marker][iDim] +=Normal[iDim];
-				
+			if (grid_movement){
+				gridVel = geometry->node[iPoint]->GetGridVel();
+				for (iDim = 0; iDim < nDim; iDim++)
+					AveragedGridVel[val_Marker][iDim] +=gridVel[iDim];
+			}
 		}
 	}
 
@@ -7581,7 +7589,10 @@ void CEulerSolver::Mixing_Process(CGeometry *geometry, CSolver **solver_containe
 		TotalNormal+= AveragedNormal[val_Marker][iDim]*AveragedNormal[val_Marker][iDim];
 		}
 	for (iDim = 0; iDim < nDim; iDim++) AveragedNormal[val_Marker][iDim] /=sqrt(TotalNormal);
-
+	if (grid_movement){
+		for (iDim = 0; iDim < nDim; iDim++)
+			AveragedGridVel[val_Marker][iDim] /=nVert;
+	}
 
 	switch(mixing_process){
 
@@ -7801,6 +7812,9 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 
   su2double AvgTangVelocity, AvgNormalVelocity, PeripheralVelocity;
 
+
+
+
   Mixing_Process(geometry, solver_container,  config, val_marker);
 
   /* --- compute averaged state ---*/
@@ -7815,31 +7829,10 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
   rhoc = AveragedSoundSpeed[val_marker]*AveragedDensity[val_marker];
 
   if(grid_movement){
-	  count = true;
-	  /* --- compute the average peripheral velocity ---*/
-	  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-
-	      V_boundary= GetCharacPrimVar(val_marker, iVertex);
-
-	      iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-
-	      /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
-	      if (geometry->node[iPoint]->GetDomain() && count) {
-	    	  count = false;
-	    	  gridVel = geometry->node[iPoint]->GetGridVel();
-	    	  PeripheralVelocity  = 0.0;
-	    	  for (iDim = 0; iDim < nDim; iDim++)
-	    		  PeripheralVelocity    += gridVel[iDim]*gridVel[iDim];
-	    	  PeripheralVelocity = sqrt(PeripheralVelocity);
-
-	      }else{
-	    	  break;
-	      }
-
-	  }
-	  AveragedMach = sqrt(AvgNormalVelocity*AvgNormalVelocity + (AvgTangVelocity + PeripheralVelocity)*(AvgTangVelocity +PeripheralVelocity));
+	  PeripheralVelocity = AveragedNormal[val_marker][1]*AveragedGridVel[val_marker][0]-AveragedNormal[val_marker][0]*AveragedGridVel[val_marker][1];
+	  AveragedMach = sqrt(AvgNormalVelocity*AvgNormalVelocity + (AvgTangVelocity - PeripheralVelocity)*(AvgTangVelocity - PeripheralVelocity));
 	  AveragedMach /= AveragedSoundSpeed[val_marker];
-	  AvgMachTang = (AvgTangVelocity + PeripheralVelocity)/AveragedSoundSpeed[val_marker];
+	  AvgMachTang = (AvgTangVelocity - PeripheralVelocity)/AveragedSoundSpeed[val_marker];
 
 
   }else{
@@ -7943,6 +7936,10 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 		  c4j=-rhoc*deltaNormalVelocity + deltaPressure;
 
 		  avg_c4 = -2.0*(AveragedPressure[val_marker]-Pressure_e);
+
+		  /* --- avoid numerical issue for Mach number lower than one ---*/
+		  if (AveragedMach < 1.01)AveragedMach = 1.01;
+
 		  GilesBeta = -copysign(1.0, AvgTangVelocity)*sqrt(pow(AveragedMach,2)-1.0);
 		  c4js= (2.0 * AvgMachNorm)/(GilesBeta - AvgMachTang)*c2j - (GilesBeta+AvgMachTang)/(GilesBeta-AvgMachTang)*c3j;
 		  dc4js = c4js;
@@ -11721,15 +11718,18 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 
   AveragedVelocity = new su2double* [nMarker];
   AveragedNormal = new su2double* [nMarker];
+  AveragedGridVel = new su2double* [nMarker];
   AveragedFlux = new su2double* [nMarker];
   TotalFlux = new su2double* [nMarker];
 
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
 	  AveragedVelocity[iMarker] = new su2double [nDim];
 	  AveragedNormal[iMarker] = new su2double [nDim];
+	  AveragedGridVel[iMarker] = new su2double [nDim];
 	  for (iDim = 0; iDim < nDim; iDim++) {
 		  AveragedVelocity[iMarker][iDim] = 0.0;
 		  AveragedNormal[iMarker][iDim] = 0.0;
+		  AveragedGridVel[iMarker][iDim] = 0.0;
 	  }
   }
 

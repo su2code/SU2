@@ -2667,6 +2667,7 @@ protected:
   CFluidModel  *FluidModel;  /*!< \brief fluid model used in the solver */
   su2double **AveragedVelocity,
   	  	 **AveragedNormal,
+		 **AveragedGridVel,
   	  	  **AveragedFlux,
 		  **TotalFlux,
 		  *AveragedEnthalpy,
@@ -2674,6 +2675,7 @@ protected:
 		  *AveragedDensity,
 		  *AveragedSoundSpeed,
 		  *AveragedEntropy;
+
 
 public:
 
