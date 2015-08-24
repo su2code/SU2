@@ -799,6 +799,8 @@ inline unsigned short CConfig::GetKind_Upwind_AdjTurb(void) { return Kind_Upwind
 
 inline unsigned short CConfig::GetKind_Inlet(void) { return Kind_Inlet; }
 
+inline unsigned short CConfig::GetKind_MixingProcess(void) { return Kind_MixingProcess; }
+
 inline unsigned short CConfig::GetnSections(void) { return nSections; }
 
 inline unsigned short CConfig::GetnVolSections(void) { return nVolSections; }

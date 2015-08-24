@@ -42,6 +42,7 @@
 #include <iostream>
 #include <stdlib.h>
 #include <stdio.h>
+#include <complex>
 
 #include "fluid_model.hpp"
 #include "numerics_structure.hpp"
@@ -829,6 +830,18 @@ public:
 	 */
 	virtual void BC_Riemann(CGeometry *geometry, CSolver **solver_container,
                             CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
+	 */
+	virtual void BC_NonReflecting(CGeometry *geometry, CSolver **solver_container,
+                            CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
 		
 	/*!
 	 * \brief A virtual member.
@@ -943,7 +956,58 @@ public:
 	 */
 	virtual void BC_Electrode(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                               CConfig *config, unsigned short val_marker);
-    
+	/*!
+	 * \brief It avarage the fluxes value along a boundary.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+     * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
+	 */
+	virtual void Mixing_Process(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short val_Marker);
+
+	/*!
+	 * \brief it performs a mixed out average of the nodes of a boundary.
+	 * \param[in] val_init_pressure -  initial pressure value
+	 * \param[in] val_Averaged_Flux - flux averaged values.
+     * \param[in] val_normal - normal vector.
+     * \param[in] pressure_mix - value of the mixed-out avaraged pressure.
+	 * \param[in] density_miz - value of the mixed-out avaraged density.
+	 */
+	virtual void MixedOut_Average (su2double val_init_pressure, su2double *val_Averaged_Flux, su2double *val_normal, su2double *pressure_mix, su2double *density_mix);
+
+	/*!
+	 * \brief it finds the root of an implicit equation that relates pressure and density.
+	 * \param[in] pressure - pressure value
+	 * \param[in] val_Averaged_Flux - flux averaged values.
+     * \param[in] val_normal - normal vector.
+     * \param[in] valfunc - Description of the numerical method.
+	 * \param[in] density - value of the mixed-out avaraged density.
+	 */
+	virtual void MixedOut_Root_Function(su2double *pressure, su2double *val_Averaged_Flux, su2double *val_normal, su2double *valfunc, su2double *density);
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
+	 * \param[in]  c4k - Fourier transformation coefficients.
+	 * \param[in]  nboundaryvertex - pithcwise ordered vertex.
+	 */
+
+	virtual void Boundary_Fourier(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short val_Marker, vector<std::complex<su2double> > &c4k,signed long &nboundaryvertex);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
+	 * \param[in]  c2k - Fourier transformation coefficients.
+	 * \param[in]  c3k - Fourier transformation coefficients.
+	 * \param[in]  nboundaryvertex - pithcwise ordered vertex.
+	 */
+	virtual void Boundary_Fourier(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short val_Marker, vector<std::complex<su2double> >& c2k,vector<std::complex<su2double> >& c3k,signed long& nboundaryvertex);
+
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -2601,6 +2665,17 @@ protected:
   su2double AoA_old;  /*!< \brief Old value of the angle of attack (monitored). */
 
   CFluidModel  *FluidModel;  /*!< \brief fluid model used in the solver */
+  su2double **AveragedVelocity,
+  	  	 **AveragedNormal,
+		 **AveragedGridVel,
+  	  	  **AveragedFlux,
+		  **TotalFlux,
+		  *AveragedEnthalpy,
+		  *AveragedPressure,
+		  *AveragedDensity,
+		  *AveragedSoundSpeed,
+		  *AveragedEntropy;
+
 
 public:
 
@@ -3010,6 +3085,21 @@ public:
                             CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
 
 	/*!
+	 * \author: G.Gori, S.Vitale, M.Pini, A.Guardone, P.Colonna
+	 *
+	 * \brief Impose the boundary condition using characteristic recostruction.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
+	 */
+	void BC_NonReflecting(CGeometry *geometry, CSolver **solver_container,
+                            CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
+
+
+	/*!
 	 * \brief Impose a subsonic inlet boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
@@ -3081,15 +3171,15 @@ public:
 	void BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                           CConfig *config, unsigned short val_marker);
   
-  /*!
-   * \brief Impose the nacelle bleed boundary condition.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] conv_numerics - Description of the numerical method.
-   * \param[in] visc_numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
+   /*!
+    * \brief Impose the nacelle bleed boundary condition.
+    * \param[in] geometry - Geometrical definition of the problem.
+    * \param[in] solver_container - Container vector with all the solutions.
+    * \param[in] conv_numerics - Description of the numerical method.
+    * \param[in] visc_numerics - Description of the numerical method.
+    * \param[in] config - Definition of the particular problem.
+    * \param[in] val_marker - Surface marker where the boundary condition is applied.
+    */
   void BC_Engine_Bleed(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                         CConfig *config, unsigned short val_marker);
   
@@ -3097,14 +3187,73 @@ public:
 	 * \brief Impose the ancelle exhaust boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] conv_numerics - Description of the numerical method.
-   * \param[in] visc_numerics - Description of the numerical method.
+     * \param[in] conv_numerics - Description of the numerical method.
+     * \param[in] visc_numerics - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
 	void BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                            CConfig *config, unsigned short val_marker);
-    
+
+	/*!
+	 * \brief It avarage the fluxes value along a boundary.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+     * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
+	 */
+	void Mixing_Process(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short val_Marker);
+
+	/*!
+	 * \brief it performs a mixed out average of the nodes of a boundary.
+	 * \param[in] val_init_pressure -  initial pressure value
+	 * \param[in] val_Averaged_Flux - flux averaged values.
+     * \param[in] val_normal - normal vector.
+     * \param[in] pressure_mix - value of the mixed-out avaraged pressure.
+	 * \param[in] density_miz - value of the mixed-out avaraged density.
+	 */
+	void MixedOut_Average (su2double val_init_pressure, su2double *val_Averaged_Flux, su2double *val_normal, su2double *pressure_mix, su2double *density_mix);
+
+	/*!
+	 * \brief it finds the root of an implicit equation that relates pressure and density.
+	 * \param[in] pressure - pressure value
+	 * \param[in] val_Averaged_Flux - flux averaged values.
+     * \param[in] val_normal - normal vector.
+     * \param[in] valfunc - Description of the numerical method.
+	 * \param[in] density - value of the mixed-out avaraged density.
+	 */
+	void MixedOut_Root_Function(su2double *pressure, su2double *val_Averaged_Flux, su2double *val_normal, su2double *valfunc, su2double *density);
+
+	/*!
+	 * \brief it performs a fourier transformation of a characteristic value.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
+	 * \param[in]  c4k - Fourier transformation coefficients.
+	 * \param[in]  nboundaryvertex - pithcwise ordered vertex.
+	 */
+	void Boundary_Fourier(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short val_Marker, vector<std::complex<su2double> > &c4k,signed long &nboundaryvertex);
+
+	/*!
+	 * \brief it performs a fourier transformation of a characteristic value.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
+	 * \param[in]  c2k - Fourier transformation coefficients.
+	 * \param[in]  c3k - Fourier transformation coefficients.
+	 * \param[in]  nboundaryvertex - pithcwise ordered vertex.
+	 */
+	void Boundary_Fourier(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short val_Marker, vector<std::complex<su2double> >& c2k,vector<std::complex<su2double> >& c3k,signed long& nboundaryvertex);
+
+	/*!
+	 * \brief compare to values.
+	 * \param[in] a - value 1.
+	 * \param[in] b - value 2.
+	 */
+
+	 static bool Compareval(std::vector<su2double> a,std::vector<su2double> b);
 	/*!
 	 * \brief Update the solution using a Runge-Kutta scheme.
 	 * \param[in] geometry - Geometrical definition of the problem.

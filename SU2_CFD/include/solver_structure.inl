@@ -473,7 +473,10 @@ inline void CSolver::BC_Custom(CGeometry *geometry, CSolver **solver_container, 
 
 inline void CSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, 
 										 CConfig *config, unsigned short val_marker) { }
-										 
+
+inline void CSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_container,
+                            CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker){ }
+
 inline void CSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, 
 										 CConfig *config, unsigned short val_marker) { }
                      
@@ -503,6 +506,18 @@ inline void CSolver::BC_Dielec(CGeometry *geometry, CSolver **solver_container, 
 									 										  
 inline void CSolver::BC_Electrode(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, 
 									CConfig *config, unsigned short val_marker) { }
+
+inline void CSolver::Mixing_Process(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short val_Marker){}
+
+inline void CSolver::MixedOut_Average (su2double val_init_pressure, su2double *val_Averaged_Flux, su2double *val_normal, su2double *pressure_mix, su2double *density_mix){}
+
+inline void CSolver::MixedOut_Root_Function(su2double *pressure, su2double *val_Averaged_Flux, su2double *val_normal, su2double *valfunc, su2double *density){}
+
+inline void CSolver::Boundary_Fourier(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+		                               unsigned short val_Marker, vector<std::complex<su2double> > &c4k,signed long &nboundaryvertex){}
+
+inline void CSolver::Boundary_Fourier(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short val_Marker,
+		                              vector<std::complex<su2double> >& c2k,vector<std::complex<su2double> >& c3k,signed long& nboundaryvertex) {}
             
 inline void CSolver::GetEngine_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) { }
 

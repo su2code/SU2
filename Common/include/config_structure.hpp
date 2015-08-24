@@ -59,7 +59,8 @@ using namespace std;
 class CConfig {
 private:
 	unsigned short Kind_SU2; /*!< \brief Kind of SU2 software component.*/
-  unsigned short Ref_NonDim; /*!< \brief Kind of of non dimensionalization.*/
+  unsigned short Ref_NonDim; /*!< \brief Kind of non dimensionalization.*/
+  unsigned short Kind_MixingProcess; /*!< \brief Kind of mixing process.*/
   unsigned short iZone, nZone; /*!< \brief Number of zones in the mesh. */
 	su2double OrderMagResidual; /*!< \brief Order of magnitude reduction. */
 	su2double MinLogResidual; /*!< \brief Minimum value of the log residual. */
@@ -152,6 +153,7 @@ private:
 	nMarker_Dirichlet_Elec,				/*!< \brief Number of interface boundary markers. */
 	nMarker_Inlet,					/*!< \brief Number of inlet flow markers. */
 	nMarker_Riemann,					/*!< \brief Number of Riemann flow markers. */
+	nMarker_NRBC,					/*!< \brief Number of NRBC flow markers. */
 	nMarker_Supersonic_Inlet,					/*!< \brief Number of supersonic inlet flow markers. */
   nMarker_Supersonic_Outlet,					/*!< \brief Number of supersonic outlet flow markers. */
   nMarker_Outlet,					/*!< \brief Number of outlet flow markers. */
@@ -193,6 +195,7 @@ private:
 	*Marker_Dirichlet_Elec,				/*!< \brief Interface boundaries markers. */
 	*Marker_Inlet,					/*!< \brief Inlet flow markers. */
 	*Marker_Riemann,					/*!< \brief Riemann markers. */
+	*Marker_NRBC,					/*!< \brief NRBC markers. */
 	*Marker_Supersonic_Inlet,					/*!< \brief Supersonic inlet flow markers. */
   *Marker_Supersonic_Outlet,					/*!< \brief Supersonic outlet flow markers. */
   *Marker_Outlet,					/*!< \brief Outlet flow markers. */
@@ -221,6 +224,8 @@ private:
 	su2double *Inlet_Ttotal;    /*!< \brief Specified total temperatures for inlet boundaries. */
 	su2double *Riemann_Var1, *Riemann_Var2;    /*!< \brief Specified values for Riemann boundary. */
 	su2double **Riemann_FlowDir;  /*!< \brief Specified flow direction vector (unit vector) for Riemann boundaries. */
+	su2double *NRBC_Var1, *NRBC_Var2;    /*!< \brief Specified values for NRBC boundary. */
+	su2double **NRBC_FlowDir;  /*!< \brief Specified flow direction vector (unit vector) for NRBC boundaries. */
 	su2double *Inlet_Ptotal;    /*!< \brief Specified total pressures for inlet boundaries. */
 	su2double **Inlet_FlowDir;  /*!< \brief Specified flow direction vector (unit vector) for inlet boundaries. */
 	su2double *Inlet_Temperature;    /*!< \brief Specified temperatures for a supersonic inlet boundaries. */
@@ -394,7 +399,7 @@ private:
   unsigned short nML_Turb_Model_Extra; /*!<\brief number of strings there */
 
   unsigned short Kind_Trans_Model,			/*!< \brief Transition model definition. */
-	Kind_Inlet, *Kind_Data_Riemann;           /*!< \brief Kind of inlet boundary treatment. */
+	Kind_Inlet, *Kind_Data_Riemann, *Kind_Data_NRBC;           /*!< \brief Kind of inlet boundary treatment. */
 	su2double Linear_Solver_Error;		/*!< \brief Min error of the linear solver for the implicit formulation. */
 	unsigned long Linear_Solver_Iter;		/*!< \brief Max iterations of the linear solver for the implicit formulation. */
 	unsigned long Linear_Solver_Iter_FSI_Struc;		/*!< \brief Max iterations of the linear solver for FSI applications and structural solver. */
@@ -950,6 +955,14 @@ private:
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
     COptionBase* val = new COptionRiemann<Tenum>(name, nMarker_Riemann, Marker_Riemann, option_field, enum_map, var1, var2, FlowDir);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+  template <class Tenum>
+  void addNRBCOption(const string name, unsigned short & nMarker_NRBC, string * & Marker_NRBC, unsigned short* & option_field, const map<string, Tenum> & enum_map,
+                                 su2double* & var1, su2double* & var2, su2double** & FlowDir) {
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string, bool>(name, true));
+    COptionBase* val = new COptionNRBC<Tenum>(name, nMarker_NRBC, Marker_NRBC, option_field, enum_map, var1, var2, FlowDir);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
@@ -3549,6 +3562,13 @@ public:
 	 */
 	unsigned short GetKind_Inlet(void);
 
+
+	/*!
+	 * \brief Get the kind of mixing process for averaging quantities at the boundaries.
+	 * \return Kind of mixing process.
+	 */
+	unsigned short GetKind_MixingProcess(void);
+
   /*!
 	 * \brief Get the number of sections.
 	 * \return Number of sections
@@ -4843,6 +4863,35 @@ public:
 	 * \return Kind data
 	 */
 	unsigned short GetKind_Data_Riemann(string val_marker);
+
+	/*!
+	 * \brief Get the var 1 at NRBC boundary.
+	 * \param[in] val_marker - Index corresponding to the NRBC boundary.
+	 * \return The var1
+	 */
+	su2double GetNRBC_Var1(string val_marker);
+
+	/*!
+	 * \brief Get the var 2 at NRBC boundary.
+	 * \param[in] val_marker - Index corresponding to the NRBC boundary.
+	 * \return The var2
+	 */
+
+	su2double GetNRBC_Var2(string val_marker);
+
+	/*!
+	 * \brief Get the Flowdir at NRBC boundary.
+	 * \param[in] val_marker - Index corresponding to the NRBC boundary.
+	 * \return The Flowdir
+	 */
+	su2double* GetNRBC_FlowDir(string val_marker);
+
+	/*!
+	 * \brief Get Kind Data of NRBC boundary.
+	 * \param[in] val_marker - Index corresponding to the NRBC boundary.
+	 * \return Kind data
+	 */
+	unsigned short GetKind_Data_NRBC(string val_marker);
 
 	/*!
 	 * \brief Get the wall temperature (static) at an isothermal boundary.

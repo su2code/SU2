@@ -1135,43 +1135,63 @@ public:
   void GetinvRinvPe(su2double Beta2, su2double val_enthalpy, su2double val_soundspeed,
                     su2double val_density, su2double* val_velocity,
                     su2double** val_invR_invPe);
-  
-  /*!
-   * \brief Computation of the matrix R.
-   * \param[in] val_pressure - value of the pressure.
-   * \param[in] val_soundspeed - value of the sound speed.
-   * \param[in] val_density - value of the density.
-   * \param[in] val_velocity - value of the velocity.
-   * \param[out] val_invR_invPe - Pointer to the matrix of conversion from entropic to conserved variables.
-   */
-  void GetRMatrix(su2double val_pressure, su2double val_soundspeed,
+    
+	/*!
+	 * \brief Computation of the matrix R.
+	 * \param[in] val_pressure - value of the pressure.
+	 * \param[in] val_soundspeed - value of the sound speed.
+	 * \param[in] val_density - value of the density.
+	 * \param[in] val_velocity - value of the velocity.
+	 * \param[out] val_invR_invPe - Pointer to the matrix of conversion from entropic to conserved variables.
+	 */
+
+	void GetRMatrix(su2double val_pressure, su2double val_soundspeed,
                   su2double val_density, su2double* val_velocity,
                   su2double** val_invR_invPe);
-  
-  /*!
-   * \brief Computation of the matrix Td, this matrix diagonalize the preconditioned conservative Jacobians
-   *        in the form $Tg |Lambda| Td = Pc{-1}|Pc (A.Normal)|$.
-   * \param[in] Beta2 - A variable in used to define absPeJacobian matrix.
-   * \param[in] r_hat - A variable in used to define absPeJacobian matrix.
-   * \param[in] s_hat - A variable in used to define absPeJacobian matrix.
-   * \param[in] t_hat - A variable in used to define absPeJacobian matrix.
-   * \param[in] rB2a2 - A variable in used to define absPeJacobian matrix.
-   * \param[in] val_Lambda - Eigenvalues of the Preconditioned Jacobian.
-   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-   * \param[out] val_absPeJac - Pointer to the Preconditioned Jacobian matrix.
-   */
-  void GetPrecondJacobian(su2double Beta2, su2double r_hat, su2double s_hat, su2double t_hat, su2double rB2a2, su2double* val_Lambda, su2double* val_normal, su2double** val_absPeJac);
-  
-  /*!
-   * \brief Computation of the matrix P (artificial compresibility), this matrix diagonalize the conservative Jacobians in
-   *        the form $P^{-1}(A.Normal)P=Lambda$.
-   * \param[in] val_density - Value of the density.
-   * \param[in] val_velocity - Value of the velocity.
-   * \param[in] val_betainv2 - Value of the compresibility factor.
-   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-   * \param[out] val_p_tensor - Pointer to the P matrix.
-   */
-  void GetPArtCompMatrix(su2double *val_density, su2double *val_velocity,
+	/*!
+	 * \brief Computation of the matrix R.
+	 * \param[in] val_soundspeed - value of the sound speed.
+	 * \param[in] val_density - value of the density.
+	 * \param[in] val_normal - value of the unit normal.
+	 * \param[out] R_Matrix - Pointer to the matrix of conversion from entropic to conserved variables.
+	 */
+	void GetRMatrix(su2double val_soundspeed, su2double val_density, su2double* val_normal, su2double **R_Matrix);
+
+
+
+	/*!
+	 * \brief Computation of the matrix R.
+	 * \param[in] val_soundspeed - value of the sound speed.
+	 * \param[in] val_density - value of the density.
+	 * \param[in] val_normal - value of the unit normal.
+	 * \param[out] L_Matrix - Pointer to the matrix of conversion from conserved to entropic variables.
+	 */
+	void GetLMatrix(su2double val_soundspeed, su2double val_density, su2double* val_normal, su2double **L_Matrix);
+
+	/*!
+	 * \brief Computation of the matrix Td, this matrix diagonalize the preconditioned conservative Jacobians
+	 *        in the form $Tg |Lambda| Td = Pc{-1}|Pc (A.Normal)|$.
+	 * \param[in] Beta2 - A variable in used to define absPeJacobian matrix.
+	 * \param[in] r_hat - A variable in used to define absPeJacobian matrix.
+	 * \param[in] s_hat - A variable in used to define absPeJacobian matrix.
+	 * \param[in] t_hat - A variable in used to define absPeJacobian matrix.
+	 * \param[in] rB2a2 - A variable in used to define absPeJacobian matrix.
+	 * \param[in] val_Lambda - Eigenvalues of the Preconditioned Jacobian.
+	 * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
+	 * \param[out] val_absPeJac - Pointer to the Preconditioned Jacobian matrix.
+	 */
+	void GetPrecondJacobian(su2double Beta2, su2double r_hat, su2double s_hat, su2double t_hat, su2double rB2a2, su2double* val_Lambda, su2double* val_normal, su2double** val_absPeJac);
+    
+	/*!
+	 * \brief Computation of the matrix P (artificial compresibility), this matrix diagonalize the conservative Jacobians in
+	 *        the form $P^{-1}(A.Normal)P=Lambda$.
+	 * \param[in] val_density - Value of the density.
+	 * \param[in] val_velocity - Value of the velocity.
+	 * \param[in] val_betainv2 - Value of the compresibility factor.
+	 * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
+	 * \param[out] val_p_tensor - Pointer to the P matrix.
+	 */
+	void GetPArtCompMatrix(su2double *val_density, su2double *val_velocity,
                          su2double *val_betainv2, su2double *val_normal,
                          su2double **val_p_tensor);
   
@@ -1717,22 +1737,25 @@ public:
  */
 class CUpwGeneralRoe_Flow : public CNumerics {
 private:
-  bool implicit, grid_movement;
-  su2double *Diff_U;
-  su2double *Velocity_i, *Velocity_j, *RoeVelocity;
-  su2double *ProjFlux_i, *ProjFlux_j;
-  su2double *delta_wave, *delta_vel;
-  su2double *Lambda, *Epsilon, MaxLambda, Delta;
-  su2double **P_Tensor, **invP_Tensor;
-  su2double sq_vel, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
-  Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoeDensity, RoeEnthalpy, RoeSoundSpeed, RoeSoundSpeed2,
-  ProjVelocity, ProjVelocity_i, ProjVelocity_j, proj_delta_vel, delta_p, delta_rho, kappa;
-  unsigned short iDim, iVar, jVar, kVar;
-  
-  
-  su2double StaticEnthalpy_i, StaticEnergy_i, StaticEnthalpy_j, StaticEnergy_j, Kappa_i, Kappa_j, Chi_i, Chi_j, Velocity2_i, Velocity2_j;
-  su2double RoeKappa, RoeChi, RoeKappaStaticEnthalpy;
-  
+
+	bool implicit, grid_movement;
+
+	su2double *Diff_U;
+	su2double *Velocity_i, *Velocity_j, *RoeVelocity;
+	su2double *ProjFlux_i, *ProjFlux_j;
+	su2double *delta_wave, *delta_vel;
+	su2double *Lambda, *Epsilon, MaxLambda, Delta;
+	su2double **P_Tensor, **invP_Tensor;
+	su2double sq_vel, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
+
+	Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoeDensity, RoeEnthalpy, RoeSoundSpeed, RoeSoundSpeed2,
+	ProjVelocity, ProjVelocity_i, ProjVelocity_j, proj_delta_vel, delta_p, delta_rho, kappa;
+	unsigned short iDim, iVar, jVar, kVar;
+
+
+	su2double StaticEnthalpy_i, StaticEnergy_i, StaticEnthalpy_j, StaticEnergy_j, Kappa_i, Kappa_j, Chi_i, Chi_j, Velocity2_i, Velocity2_j;
+	su2double RoeKappa, RoeChi, RoeKappaStaticEnthalpy;
+
 public:
   
   /*!
