@@ -43,10 +43,6 @@ ___bin_SU2_FSI_SOURCES = ../include/SU2_FSI.hpp \
 	../include/iteration_structure_fsi.hpp \
 		../src/iteration_structure_fsi.cpp \
     ../../SU2_CFD/include/fluid_model.hpp \
-    ../../SU2_CFD/include/gauss_structure.hpp \
-    	../../SU2_CFD/include/gauss_structure.inl \
-    ../../SU2_CFD/include/element_structure.hpp \
-    	../../SU2_CFD/include/element_structure.inl \
     ../../SU2_CFD/include/fluid_model.inl \
 		../../SU2_CFD/include/integration_structure.hpp \
 		../../SU2_CFD/include/integration_structure.inl \
@@ -68,9 +64,6 @@ ___bin_SU2_FSI_SOURCES = ../include/SU2_FSI.hpp \
     ../../SU2_CFD/src/fluid_model_pig.cpp \
     ../../SU2_CFD/src/fluid_model_pvdw.cpp \
     ../../SU2_CFD/src/fluid_model_ppr.cpp \
-    ../../SU2_CFD/src/gauss_structure.cpp \
-    ../../SU2_CFD/src/element_linear.cpp \
-    	../../SU2_CFD/src/element_structure.cpp \
 		../../SU2_CFD/src/integration_structure.cpp \
 		../../SU2_CFD/src/integration_time.cpp \
 		../../SU2_CFD/src/iteration_structure.cpp \
@@ -89,9 +82,6 @@ ___bin_SU2_FSI_SOURCES = ../include/SU2_FSI.hpp \
 		../../SU2_CFD/src/numerics_machine_learning.cpp \
 		../../SU2_CFD/src/numerics_linearized_mean.cpp \
 		../../SU2_CFD/src/numerics_linearized_turbulent.cpp \
-		../../SU2_CFD/src/numerics_fem_nonlinear_elasticity.cpp \
-		../../SU2_CFD/src/numerics_fem_linear_elasticity.cpp \
-		../../SU2_CFD/src/numerics_fem_elasticity.cpp \
 		../../SU2_CFD/src/numerics_structure.cpp \
 		../../SU2_CFD/src/numerics_machine_learning_turbulent.cpp \
 		../../SU2_CFD/src/numerics_template.cpp \
@@ -115,7 +105,6 @@ ___bin_SU2_FSI_SOURCES = ../include/SU2_FSI.hpp \
 		../../SU2_CFD/src/solver_direct_wave.cpp \
 		../../SU2_CFD/src/solver_linearized_mean.cpp \
 		../../SU2_CFD/src/solver_linearized_turbulent.cpp \
-		../../SU2_CFD/src/solver_fem_elasticity.cpp \
 		../../SU2_CFD/src/solver_structure.cpp \
 		../../SU2_CFD/src/solver_template.cpp \
     ../../SU2_CFD/src/transport_model.cpp \
@@ -133,8 +122,9 @@ ___bin_SU2_FSI_SOURCES = ../include/SU2_FSI.hpp \
 		../../SU2_CFD/src/variable_direct_wave.cpp \
 		../../SU2_CFD/src/variable_linearized_mean.cpp \
 		../../SU2_CFD/src/variable_linearized_turbulent.cpp \
-		../../SU2_CFD/src/variable_fem_elasticity.cpp \
 		../../SU2_CFD/src/variable_structure.cpp \
+		../../SU2_CFD/src/solver_adjoint_discrete.cpp \
+		../../SU2_CFD/src/variable_adjoint_discrete.cpp \
 		../../SU2_CFD/src/variable_template.cpp
 
 ___bin_SU2_FSI_CXXFLAGS =
