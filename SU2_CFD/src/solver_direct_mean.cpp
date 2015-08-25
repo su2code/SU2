@@ -7825,7 +7825,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
   std::vector<std::complex<su2double> > c3k ;//    std::complex<su2double> c3k[nVertex-OddEven]=0;
 
   su2double  deltaDensity, deltaPressure, AvgMach, deltaTangVelocity, deltaNormalVelocity, cc,rhoc,c1j,c2j,c3j,c4j,
-  	  	 avg_c4,TangVelocity, NormalVelocity, GilesBeta, c4js, dc4js, *delta_c, **R_Matrix, *deltaprim;
+  	  	  	 avg_c1, avg_c2, avg_c3, avg_c4,TangVelocity, NormalVelocity, GilesBeta, c4js, dc4js, *delta_c, **R_Matrix, *deltaprim;
 
 
   delta_c = new su2double[nVar];
@@ -7915,6 +7915,56 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 
       switch(config->GetKind_Data_NRBC(Marker_Tag))
       {
+        case MIXING_IN:
+
+    	  deltaDensity = AveragedDensity[val_marker] - AveragedDensity[val_extMarker];
+      	  deltaPressure = AveragedPressure[val_marker] - AveragedPressure[val_extMarker];
+
+		  NormalVelocity= UnitNormal[0]*Velocity_i[0] + UnitNormal[1]*Velocity_i[1];
+		  deltaTangVelocity= AveragedTangVelocity[val_marker] - AveragedTangVelocity[val_extMarker];
+		  deltaNormalVelocity= AveragedNormalVelocity[val_marker] - AveragedNormalVelocity[val_extMarker];
+
+		  avg_c1= -cc*deltaDensity +deltaPressure;
+		  avg_c2= rhoc*deltaTangVelocity;
+		  avg_c3=rhoc*deltaNormalVelocity + deltaPressure;
+		  c4j=-rhoc*(NormalVelocity - AveragedNormalVelocity[val_marker]) + (Pressure_i - AveragedPressure[val_marker]);
+
+		  delta_c[0] = avg_c1;
+		  delta_c[1] = avg_c2;
+		  delta_c[2] = avg_c3;
+		  delta_c[3] = c4j;
+
+          break;
+
+        case MIXING_OUT:
+
+		  deltaDensity = Density_i - AveragedDensity[val_marker];
+		  deltaPressure = Pressure_i - AveragedPressure[val_marker];
+		  TangVelocity= UnitNormal[1]*Velocity_i[0] - UnitNormal[0]*Velocity_i[1];
+		  NormalVelocity= UnitNormal[0]*Velocity_i[0] + UnitNormal[1]*Velocity_i[1];
+		  deltaTangVelocity= TangVelocity - AveragedTangVelocity[val_marker];
+		  deltaNormalVelocity= NormalVelocity - AveragedNormalVelocity[val_marker];
+
+		  c1j= -cc*deltaDensity +deltaPressure;
+		  c2j= rhoc*deltaTangVelocity;
+		  c3j=rhoc*deltaNormalVelocity + deltaPressure;
+		  c4j=-rhoc*deltaNormalVelocity + deltaPressure;
+
+		  avg_c4 = -rhoc*(AveragedNormalVelocity[val_marker]- AveragedNormalVelocity[val_extMarker]) + (AveragedPressure[val_marker] - AveragedPressure[val_extMarker]);
+
+		  /* --- avoid numerical issue for Mach number lower than one ---*/
+		  if (AveragedMach < 1.01)AveragedMach = 1.01;
+
+		  GilesBeta = -copysign(1.0, AveragedTangVelocity[val_marker])*sqrt(pow(AvgMach,2)-1.0);
+		  c4js= (2.0 * AveragedNormalMach[val_marker])/(GilesBeta - AveragedTangMach[val_marker])*c2j - (GilesBeta+AveragedTangMach[val_marker])/(GilesBeta-AveragedTangMach[val_marker])*c3j;
+		  dc4js = c4js;
+
+		  delta_c[0] = c1j;
+		  delta_c[1] = c2j;
+		  delta_c[2] = c3j;
+		  delta_c[3] = avg_c4 + dc4js;
+
+          break;
 
         case STATIC_PRESSURE:
 
