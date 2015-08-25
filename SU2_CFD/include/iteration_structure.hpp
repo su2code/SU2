@@ -243,7 +243,7 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
  * \param[in] vort_strength - Vector of vortex strengths.
  * \param[in] r_core - Vector of vortex core size.
  */
-void InitializeVortexDistribution(unsigned long &nVortex, vector<double>& x0, vector<double>& y0, vector<double>& vort_strength, vector<double>& r_core);
+void InitializeVortexDistribution(unsigned long &nVortex, vector<su2double>& x0, vector<su2double>& y0, vector<su2double>& vort_strength, vector<su2double>& r_core);
 
 /*!
  * \brief Updates the positions and grid velocities for dynamic meshes between physical time steps.
@@ -277,10 +277,10 @@ void SetTimeSpectral(CGeometry ***geometry_container, CSolver ****solver_contain
 /*!
  * \brief Computation of the Time-Spectral operator matrix.
  * \author K. Naik
- * \param[in] D - double pointer to the operator matrix.
+ * \param[in] D - su2double pointer to the operator matrix.
  * \param[in] nZone - Total number of zones (periodic instances).
  */
-void ComputeTimeSpectral_Operator(double **D, double period, unsigned short nZone);
+void ComputeTimeSpectral_Operator(su2double **D, su2double period, unsigned short nZone);
 
 /*!
  * \brief Computation and storage of the time-spectral mesh velocities.

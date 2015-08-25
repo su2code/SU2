@@ -55,16 +55,16 @@ using namespace std;
  */
 class CIntegration {
 protected:
-	double Cauchy_Value,	/*!< \brief Summed value of the convergence indicator. */
+	su2double Cauchy_Value,	/*!< \brief Summed value of the convergence indicator. */
 	Cauchy_Func;			/*!< \brief Current value of the convergence indicator at one iteration. */
 	unsigned short Cauchy_Counter;	/*!< \brief Number of elements of the Cauchy serial. */
-	double *Cauchy_Serie;			/*!< \brief Complete Cauchy serial. */
-	double Old_Func,	/*!< \brief Old value of the objective function (the function which is monitored). */
+	su2double *Cauchy_Serie;			/*!< \brief Complete Cauchy serial. */
+	su2double Old_Func,	/*!< \brief Old value of the objective function (the function which is monitored). */
 	New_Func;			/*!< \brief Current value of the objective function (the function which is monitored). */
 	bool Convergence,		/*!< \brief To indicate if the flow solver (direct, adjoint, or linearized) has converged or not. */
 	Convergence_FSI,		/*!< \brief To indicate if the FSI problem has converged or not. */
 	Convergence_FullMG;		/*!< \brief To indicate if the Full Multigrid has converged and it is necessary to add a new level. */
-	double InitResidual;	/*!< \brief Initial value of the residual to evaluate the convergence level. */
+	su2double InitResidual;	/*!< \brief Initial value of the residual to evaluate the convergence level. */
 
 public:
 	
@@ -147,7 +147,7 @@ public:
 	 * \param[in] monitor - Objective function that is use to study its convergence.
 	 */
 	void Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
-								unsigned long Iteration, double monitor, unsigned short iMesh);
+								unsigned long Iteration, su2double monitor, unsigned short iMesh);
 	
 	/*! 
 	 * \brief Do the convergence analysis to determine if the structural FEM analysis has converged.
@@ -174,7 +174,7 @@ public:
 	 * \brief Get the value of the convergence.
 	 * \return Level of convergence of the solution.
 	 */
-	double GetCauchy_Value(void);
+	su2double GetCauchy_Value(void);
 	
 	/*! 
 	 * \brief Get the indicator of the convergence for the direct, adjoint and linearized problem.
@@ -275,7 +275,7 @@ public:
 	 */
 	virtual void NonDimensional_Parameters(CGeometry **geometry, CSolver ***solver_container, CNumerics ****numerics_container, 
 																				 CConfig *config, unsigned short FinestMesh, unsigned short RunTime_EqSystem, unsigned long Iteration, 
-																				 double *monitor);
+																				 su2double *monitor);
 	
 	/*! 
 	 * \brief A virtual member.
@@ -423,7 +423,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	virtual void Smooth_Solution(unsigned short RunTime_EqSystem, CSolver *solver, CGeometry *geometry,
-                       unsigned short val_nSmooth, double val_smooth_coeff, CConfig *config);
+                       unsigned short val_nSmooth, su2double val_smooth_coeff, CConfig *config);
 
 };
 
@@ -487,7 +487,7 @@ public:
 	 */
 	void NonDimensional_Parameters(CGeometry **geometry, CSolver ***solver_container, CNumerics ****numerics_container, 
 																 CConfig *config, unsigned short FinestMesh, unsigned short RunTime_EqSystem, unsigned long Iteration, 
-																 double *monitor);
+																 su2double *monitor);
 
 	/*! 
 	 * \brief Compute the fine solution from a coarse solution. 
@@ -522,7 +522,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void SmoothProlongated_Correction(unsigned short RunTime_EqSystem, CSolver *solver, CGeometry *geometry,
-																		 unsigned short val_nSmooth, double val_smooth_coeff, CConfig *config);
+																		 unsigned short val_nSmooth, su2double val_smooth_coeff, CConfig *config);
   
   /*!
 	 * \brief Do an implicit smoothing of the solution.
@@ -534,7 +534,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void Smooth_Solution(unsigned short RunTime_EqSystem, CSolver *solver, CGeometry *geometry,
-                                    unsigned short val_nSmooth, double val_smooth_coeff, CConfig *config);
+                                    unsigned short val_nSmooth, su2double val_smooth_coeff, CConfig *config);
 
 	/*!
 	 * \brief Set the value of the corrected fine grid solution.

@@ -55,50 +55,50 @@ class CScaler{
 public:
 	CScaler();
   virtual ~CScaler();
-	virtual void Scale(double *) = 0;
-	virtual void Unscale(double *) = 0;
+	virtual void Scale(su2double *) = 0;
+	virtual void Unscale(su2double *) = 0;
 };
 
 class CNormalScaler: public CScaler{
 private:
-	double * mu;
-	double * sigma;
+	su2double * mu;
+	su2double * sigma;
 	int dim;
 
 public:
 	CNormalScaler();
-	CNormalScaler(int, double*, double*);
+	CNormalScaler(int, su2double*, su2double*);
 #ifdef HAVE_JSONCPP
   CNormalScaler(Json::Value);
 #endif
 	~CNormalScaler();
-	void Scale(double *);
-	void Unscale(double *);
+	void Scale(su2double *);
+	void Unscale(su2double *);
 };
 
 class CMulInputScaler : public CScaler{
 public:
-  double MulScale;
+  su2double MulScale;
   CScaler* InnerScaler;
   CMulInputScaler();
 #ifdef HAVE_JSONCPP
   CMulInputScaler(Json::Value);
 #endif
   ~CMulInputScaler();
-  void Scale(double *);
-	void Unscale(double *);
+  void Scale(su2double *);
+	void Unscale(su2double *);
 };
 
 class CMulOutputScaler : public CScaler{
 public:
-  double MulScale;
+  su2double MulScale;
   CMulOutputScaler();
 #ifdef HAVE_JSONCPP
   CMulOutputScaler(Json::Value);
 #endif
   ~CMulOutputScaler();
-  void Scale(double *);
-	void Unscale(double *);
+  void Scale(su2double *);
+	void Unscale(su2double *);
   
 };
 
@@ -106,7 +106,7 @@ class CActivator{
 public:
 	CActivator();
 	~CActivator();
-	virtual double Activate(double combination) {cout<< "IN BASE ACTIVATOR THIS IS BAD" << endl; return 0;};
+	virtual su2double Activate(su2double combination) {cout<< "IN BASE ACTIVATOR THIS IS BAD" << endl; return 0;};
 };
 
 class CTanhActivator : public CActivator{
@@ -116,7 +116,7 @@ public:
   CTanhActivator(Json::Value);
 #endif
 	~CTanhActivator();
-	double Activate(double combination);
+	su2double Activate(su2double combination);
 };
 
 class CLinearActivator : public CActivator{
@@ -126,15 +126,15 @@ public:
   CLinearActivator(Json::Value);
 #endif
 	~CLinearActivator();
-	double Activate(double combination);
+	su2double Activate(su2double combination);
 };
 
 class CNeuron{
 public:
   CNeuron();
   ~CNeuron();
-  virtual double Activate(double combination) {cout << "In base neuron. Bad";return 0;};
-  virtual double Combine(double * parameters, int nParameters, double *inputs, int nInputs) {cout << "In base neuron. Bad";return 0;};
+  virtual su2double Activate(su2double combination) {cout << "In base neuron. Bad";return 0;};
+  virtual su2double Combine(su2double * parameters, int nParameters, su2double *inputs, int nInputs) {cout << "In base neuron. Bad";return 0;};
 };
 
 class CSumNeuron : public CNeuron{
@@ -148,8 +148,8 @@ public:
 #endif
 	~CSumNeuron();
 	//Activator* GetActivator(void);
-	double Combine(double * parameters, int nParameters, double * inputs, int nInputs);
-  double Activate(double combination);
+	su2double Combine(su2double * parameters, int nParameters, su2double * inputs, int nInputs);
+  su2double Activate(su2double combination);
 };
 
 
@@ -160,7 +160,7 @@ protected:
 public:
   CPredictor();
   virtual  ~CPredictor();
-  virtual void Predict(double *, double *) {cout << "In base Predict, this is bad";};
+  virtual void Predict(su2double *, su2double *) {cout << "In base Predict, this is bad";};
   int InputDim();
   int OutputDim();
 };
@@ -174,7 +174,7 @@ public:
   CScaler *InputScaler;
   CScaler *OutputScaler;
 public:
-  void Predict(double *inputs, double *outputs);
+  void Predict(su2double *inputs, su2double *outputs);
   // Need to add predict method
 };
 
@@ -186,7 +186,7 @@ public:
 #endif
   ~CMulPredictor();
   CPredictor* Inner;
-  void Predict(double *, double *);
+  void Predict(su2double *, su2double *);
   
 };
 
@@ -199,7 +199,7 @@ private:
   int** nParameters; // Number of parameters for the neuron
 //  int inputDim;
   
-  void processLayer(double *, int, CNeuron **, double **, int, int * , double *);
+  void processLayer(su2double *, int, CNeuron **, su2double **, int, int * , su2double *);
   
   //----
 //	int outputDim;
@@ -212,8 +212,8 @@ public:
 	~CNeurNet();
 //	int InputDim();
 //	int OutputDim();
-	void Predict(double *, double *);
-    double*** parameters; // Array of parameters for each neuron
+	void Predict(su2double *, su2double *);
+    su2double*** parameters; // Array of parameters for each neuron
 };
 
 class CSANondimInputs{
@@ -223,16 +223,16 @@ public:
   CSANondimInputs(int);
   ~CSANondimInputs();
   void Set(SpalartAllmarasInputs*);
-  void NondimensionalizeSource(int, double*);
-  void DimensionalizeSource(int, double*);
-  double Chi;
-  double OmegaNondim;
-  double OmegaBar;
-  double SourceNondim;
-  double NuGradNondim;
-  double * DNuHatDXBar;
-  double NuHatGradNorm;
-  double NuHatGradNormBar;
+  void NondimensionalizeSource(int, su2double*);
+  void DimensionalizeSource(int, su2double*);
+  su2double Chi;
+  su2double OmegaNondim;
+  su2double OmegaBar;
+  su2double SourceNondim;
+  su2double NuGradNondim;
+  su2double * DNuHatDXBar;
+  su2double NuHatGradNorm;
+  su2double NuHatGradNormBar;
 };
 
 #include "numerics_machine_learning.inl"

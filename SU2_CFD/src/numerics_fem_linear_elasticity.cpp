@@ -36,12 +36,12 @@ CFEM_LinearElasticity::CFEM_LinearElasticity(unsigned short val_nDim, unsigned s
 	unsigned short iVar;
 
 	if (nDim == 2){
-		nodalDisplacement = new double* [4];	/*--- As of now, 4 is the maximum number of nodes for 2D problems ---*/
-		for (iVar = 0; iVar < 4; iVar++) nodalDisplacement[iVar] = new double[nDim];
+		nodalDisplacement = new su2double* [4];	/*--- As of now, 4 is the maximum number of nodes for 2D problems ---*/
+		for (iVar = 0; iVar < 4; iVar++) nodalDisplacement[iVar] = new su2double[nDim];
 	}
 	else if (nDim == 3){
-		nodalDisplacement = new double* [8];	/*--- As of now, 8 is the maximum number of nodes for 3D problems ---*/
-		for (iVar = 0; iVar < 8; iVar++) nodalDisplacement[iVar] = new double[nDim];
+		nodalDisplacement = new su2double* [8];	/*--- As of now, 8 is the maximum number of nodes for 3D problems ---*/
+		for (iVar = 0; iVar < 8; iVar++) nodalDisplacement[iVar] = new su2double[nDim];
 	}
 
 
@@ -63,9 +63,9 @@ void CFEM_LinearElasticity::Compute_Tangent_Matrix(CElement *element){
 	unsigned short iDim;
 	unsigned short bDim;
 
-	double Weight, Jac_X;
+	su2double Weight, Jac_X;
 
-	double AuxMatrix[3][6];
+	su2double AuxMatrix[3][6];
 
 	/*--- Initialize auxiliary matrices ---*/
 
@@ -207,10 +207,10 @@ void CFEM_LinearElasticity::Compute_Averaged_NodalStress(CElement *element){
 	unsigned short iDim;
 	unsigned short bDim;
 
-	double Weight, Jac_X;
+	su2double Weight, Jac_X;
 
 	/*--- Auxiliary vector ---*/
-	double Strain[6], Stress[6];
+	su2double Strain[6], Stress[6];
 
 	/*--- Initialize auxiliary matrices ---*/
 

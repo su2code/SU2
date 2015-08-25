@@ -35,29 +35,29 @@ CFEM_NonlinearElasticity::CFEM_NonlinearElasticity(unsigned short val_nDim, unsi
 
 	unsigned short iVar;
 
-	F_Mat = new double *[3];
-	b_Mat = new double *[3];
-	Stress_Tensor = new double *[3];
+	F_Mat = new su2double *[3];
+	b_Mat = new su2double *[3];
+	Stress_Tensor = new su2double *[3];
 	for (iVar = 0; iVar < 3; iVar++){
-		F_Mat[iVar] = new double [3];
-		b_Mat[iVar] = new double [3];
-		Stress_Tensor[iVar] = new double [3];
+		F_Mat[iVar] = new su2double [3];
+		b_Mat[iVar] = new su2double [3];
+		Stress_Tensor[iVar] = new su2double [3];
 	}
 
-	KAux_t_a = new double [nDim];
+	KAux_t_a = new su2double [nDim];
 
-	KAux_P_ab = new double* [nDim];
+	KAux_P_ab = new su2double* [nDim];
 	for (iVar = 0; iVar < nDim; iVar++) {
-		KAux_P_ab[iVar] = new double[nDim];
+		KAux_P_ab[iVar] = new su2double[nDim];
 	}
 
 	if (nDim == 2){
-		currentCoord = new double* [4];	/*--- As of now, 4 is the maximum number of nodes for 2D problems ---*/
-		for (iVar = 0; iVar < 4; iVar++) currentCoord[iVar] = new double[nDim];
+		currentCoord = new su2double* [4];	/*--- As of now, 4 is the maximum number of nodes for 2D problems ---*/
+		for (iVar = 0; iVar < 4; iVar++) currentCoord[iVar] = new su2double[nDim];
 	}
 	else if (nDim == 3){
-		currentCoord = new double* [8];	/*--- As of now, 8 is the maximum number of nodes for 3D problems ---*/
-		for (iVar = 0; iVar < 8; iVar++) currentCoord[iVar] = new double[nDim];
+		currentCoord = new su2double* [8];	/*--- As of now, 8 is the maximum number of nodes for 3D problems ---*/
+		for (iVar = 0; iVar < 8; iVar++) currentCoord[iVar] = new su2double[nDim];
 	}
 
 	J_F = 0.0;
@@ -107,12 +107,12 @@ void CFEM_NonlinearElasticity::Compute_Tangent_Matrix(CElement *element){
 	unsigned short iNode, jNode, nNode;
 	unsigned short iDim, bDim;
 
-	double Ks_Aux_ab;
+	su2double Ks_Aux_ab;
 
-	double Weight, Jac_X, Jac_x;
+	su2double Weight, Jac_X, Jac_x;
 
-	double AuxMatrixKc[3][6];
-	double AuxMatrixKs[3];
+	su2double AuxMatrixKc[3][6];
+	su2double AuxMatrixKs[3];
 
 	/*--- Initialize auxiliary matrices ---*/
 
@@ -326,13 +326,13 @@ void CFEM_NonlinearElasticity::Compute_MeanDilatation_Term(CElement *element){
 	unsigned short iVar, jVar;
 	unsigned short iGauss, nGauss;
 	unsigned short iNode, jNode, nNode;
-	double Weight, Jac_X, Jac_x;
+	su2double Weight, Jac_X, Jac_x;
 	unsigned short iDim ;
 
-	double GradNi_Mat_Term;
-	double Vol_current, Vol_reference;
-	double Avg_kappa;
-	double el_Pressure;
+	su2double GradNi_Mat_Term;
+	su2double Vol_current, Vol_reference;
+	su2double Avg_kappa;
+	su2double el_Pressure;
 
 
 	/*--- Under integration of the pressure term, if the calculations assume incompressibility or near incompressibility ---*/
@@ -426,11 +426,11 @@ void CFEM_NonlinearElasticity::Compute_NodalStress_Term(CElement *element){
 	unsigned short iNode, jNode, nNode;
 	unsigned short iDim, bDim;
 
-	double Ks_Aux_ab;
+	su2double Ks_Aux_ab;
 
-	double Weight, Jac_X, Jac_x;
+	su2double Weight, Jac_X, Jac_x;
 
-	double AuxMatrixKt[3];
+	su2double AuxMatrixKt[3];
 
 	/*--- Initialize auxiliary matrices ---*/
 
@@ -538,9 +538,9 @@ void CFEM_NonlinearElasticity::Compute_Averaged_NodalStress(CElement *element){
 	unsigned short iNode, jNode, nNode;
 	unsigned short iDim, bDim;
 
-	double Ks_Aux_ab;
+	su2double Ks_Aux_ab;
 
-	double Weight, Jac_X, Jac_x;
+	su2double Weight, Jac_X, Jac_x;
 
 	element->clearStress();				/*--- TODO: put these two together ---*/
 	element->clearElement(); 			/*--- Restarts the element: avoids adding over previous results in other elements --*/
@@ -661,8 +661,8 @@ CFEM_NeoHookean_Comp::~CFEM_NeoHookean_Comp(void) {
 
 void CFEM_NeoHookean_Comp::Compute_Constitutive_Matrix(CElement *element) {
 
-	double Mu_p, Lambda_p;
-	double dij;
+	su2double Mu_p, Lambda_p;
+	su2double dij;
 
 	/*--- This can be done in a better way ---*/
 	if (J_F != 0.0){
@@ -691,8 +691,8 @@ void CFEM_NeoHookean_Comp::Compute_Constitutive_Matrix(CElement *element) {
 void CFEM_NeoHookean_Comp::Compute_Stress_Tensor(CElement *element) {
 
 	unsigned short iVar,jVar;
-	double Mu_J, Lambda_J;
-	double dij;
+	su2double Mu_J, Lambda_J;
+	su2double dij;
 
 	/*--- This can be done in a better way ---*/
 	if (J_F != 0.0){
@@ -723,8 +723,8 @@ CFEM_NeoHookean_Incomp::~CFEM_NeoHookean_Incomp(void) {
 void CFEM_NeoHookean_Incomp::Compute_Constitutive_Matrix(CElement *element) {
 
 	unsigned short iVar;
-	double dij, el_P;
-	double Ib = 0.0, Jft;
+	su2double dij, el_P;
+	su2double Ib = 0.0, Jft;
 
 	/*--- First invariant of b -> Ib = tr(b) ---*/
 	for (iVar = 0; iVar < 3; iVar++){
@@ -820,8 +820,8 @@ void CFEM_NeoHookean_Incomp::Compute_Constitutive_Matrix(CElement *element) {
 void CFEM_NeoHookean_Incomp::Compute_Stress_Tensor(CElement *element) {
 
 	unsigned short iDim,jDim;
-	double dij, el_P;
-	double Ib = 0.0, Jft;
+	su2double dij, el_P;
+	su2double Ib = 0.0, Jft;
 
 	/*--- First invariant of b -> Ib = tr(b) ---*/
 	for (iDim = 0; iDim < 3; iDim++){

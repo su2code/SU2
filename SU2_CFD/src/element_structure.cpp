@@ -120,7 +120,7 @@ CElement::~CElement(void) {
 
 }
 
-void CElement::Add_Kab(double **val_Kab, unsigned short nodeA, unsigned short nodeB){
+void CElement::Add_Kab(su2double **val_Kab, unsigned short nodeA, unsigned short nodeB){
 
 	unsigned short iDim, jDim;
 
@@ -131,7 +131,7 @@ void CElement::Add_Kab(double **val_Kab, unsigned short nodeA, unsigned short no
 	}
 }
 
-void CElement::Add_Kab_T(double **val_Kab, unsigned short nodeA, unsigned short nodeB){
+void CElement::Add_Kab_T(su2double **val_Kab, unsigned short nodeA, unsigned short nodeB){
 
 	unsigned short iDim, jDim;
 
@@ -142,7 +142,7 @@ void CElement::Add_Kab_T(double **val_Kab, unsigned short nodeA, unsigned short 
 	}
 }
 
-void CElement::Set_Kk_ab(double **val_Kk_ab, unsigned short nodeA, unsigned short nodeB){
+void CElement::Set_Kk_ab(su2double **val_Kk_ab, unsigned short nodeA, unsigned short nodeB){
 
 	unsigned short iDim, jDim;
 
@@ -153,7 +153,7 @@ void CElement::Set_Kk_ab(double **val_Kk_ab, unsigned short nodeA, unsigned shor
 	}
 }
 
-void CElement::Add_Kt_a(double *val_Kt_a, unsigned short nodeA){
+void CElement::Add_Kt_a(su2double *val_Kt_a, unsigned short nodeA){
 
 	unsigned short iDim;
 
