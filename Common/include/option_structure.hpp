@@ -773,7 +773,9 @@ enum RIEMANN_TYPE {
   STATIC_PRESSURE = 3,           /*!< \brief User specifies static pressure. */
   TOTAL_SUPERSONIC_INFLOW = 4,	/*!< \brief User specifies total pressure, total temperature and Velocity components. */
   STATIC_SUPERSONIC_INFLOW_PT = 5, /*!< \brief User specifies static pressure, static temperature, and Mach components. */
-  STATIC_SUPERSONIC_INFLOW_PD = 6 /*!< \brief User specifies static pressure, static temperature, and Mach components. */
+  STATIC_SUPERSONIC_INFLOW_PD = 6, /*!< \brief User specifies static pressure, static temperature, and Mach components. */
+  MIXING_IN = 7, /*!< \brief User does not specify anything information are retrieved from the other domain */
+  MIXING_OUT = 8 /*!< \brief User does not specify anything information are retrieved from the other domain */
 };
 
 static const map<string, RIEMANN_TYPE> Riemann_Map = CCreateMap<string, RIEMANN_TYPE>
@@ -782,7 +784,9 @@ static const map<string, RIEMANN_TYPE> Riemann_Map = CCreateMap<string, RIEMANN_
 ("STATIC_PRESSURE", STATIC_PRESSURE)
 ("TOTAL_SUPERSONIC_INFLOW", TOTAL_SUPERSONIC_INFLOW)
 ("STATIC_SUPERSONIC_INFLOW_PT", STATIC_SUPERSONIC_INFLOW_PT)
-("STATIC_SUPERSONIC_INFLOW_PD", STATIC_SUPERSONIC_INFLOW_PD);
+("STATIC_SUPERSONIC_INFLOW_PD", STATIC_SUPERSONIC_INFLOW_PD)
+("MIXING_IN", MIXING_IN)
+("MIXING_OUT", MIXING_OUT);
 
 
 static const map<string, RIEMANN_TYPE> NRBC_Map = CCreateMap<string, RIEMANN_TYPE>
