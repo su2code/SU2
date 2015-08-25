@@ -52,65 +52,65 @@ CTRIA1::CTRIA1(unsigned short val_nDim, CConfig *config)
 		GaussPoint[iGauss] = new CGaussVariable(iGauss, nDim, nNodes);
 	}
 
-	NodalExtrap = new double*[nNodes];
+	NodalExtrap = new su2double*[nNodes];
 	for (iNode = 0; iNode < nNodes; iNode++) {
-		NodalExtrap[iNode] = new double[nGaussPoints];
+		NodalExtrap[iNode] = new su2double[nGaussPoints];
 	}
 
-	NodalStress = new double*[nNodes];
+	NodalStress = new su2double*[nNodes];
 	for (iNode = 0; iNode < nNodes; iNode++) {
-		NodalStress[iNode] = new double[3];
+		NodalStress[iNode] = new su2double[3];
 	}
 
 	/*--- Initialize structure for current and reference configuration ---*/
 	/*--- TODO: Initialize structures depending on the kind of problem ---*/
 
-	CurrentCoord = new double*[nNodes];
+	CurrentCoord = new su2double*[nNodes];
 	for (iNode = 0; iNode < nNodes; iNode++){
-		CurrentCoord [iNode] = new double[nDim];
+		CurrentCoord [iNode] = new su2double[nDim];
 	}
 
-	RefCoord = new double*[nNodes];
+	RefCoord = new su2double*[nNodes];
 	for (iNode = 0; iNode < nNodes; iNode++){
-		RefCoord [iNode] = new double[nDim];
+		RefCoord [iNode] = new su2double[nDim];
 	}
 
-	GaussWeight = new double [nGaussPoints];
+	GaussWeight = new su2double [nGaussPoints];
 
-	GaussCoord = new double*[nGaussPoints];
+	GaussCoord = new su2double*[nGaussPoints];
 	for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
-		GaussCoord [iGauss] = new double[nDim];
+		GaussCoord [iGauss] = new su2double[nDim];
 	}
 
 	GaussCoord[0][0] = 0.333333333333333;  GaussCoord[0][1] = 0.333333333333333;  GaussWeight[0] = 0.5;
 
 	//TODO: Check if all of these structures may be moved to the common structure (avoids repetition).
 	//TODO: this structure should only be initialized if the problem is dynamic
-	Mab = new double *[nNodes];
+	Mab = new su2double *[nNodes];
 	for (iNode = 0; iNode < nNodes; iNode++){
-		Mab[iNode] = new double [nNodes];
+		Mab[iNode] = new su2double [nNodes];
 	}
 
-	Kab = new double **[nNodes];
+	Kab = new su2double **[nNodes];
 	for (iNode = 0; iNode < nNodes; iNode++){
-		Kab [iNode] = new double*[nNodes];
+		Kab [iNode] = new su2double*[nNodes];
 		for (jNode = 0; jNode < nNodes; jNode++){
-			Kab [iNode][jNode] = new double[nDimSq];
+			Kab [iNode][jNode] = new su2double[nDimSq];
 		}
 	}
 
 	//TODO: these structures should only be initialized if the problem is nonlinear
-	Ks_ab = new double *[nNodes];
+	Ks_ab = new su2double *[nNodes];
 	for (iNode = 0; iNode < nNodes; iNode++){
-		Ks_ab[iNode] = new double [nNodes];
+		Ks_ab[iNode] = new su2double [nNodes];
 	}
 
-	Kt_a = new double *[nNodes];
+	Kt_a = new su2double *[nNodes];
 	for (iNode = 0; iNode < nNodes; iNode++){
-		Kt_a[iNode] = new double [nDim];
+		Kt_a[iNode] = new su2double [nDim];
 	}
 
-	double Xi, Eta, val_Ni;
+	su2double Xi, Eta, val_Ni;
 	for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
 		  Xi = GaussCoord[iGauss][0];
 		  Eta = GaussCoord[iGauss][1];
@@ -168,10 +168,10 @@ CTRIA1::~CTRIA1(void) {
 
 void CTRIA1::ComputeGrad_Linear(void){
 
-	  double Xi, Eta;
-	  double Jacobian[2][2], dNiXj[3][2];
-	  double detJac, GradNi_Xj;
-	  double ad[2][2];
+	  su2double Xi, Eta;
+	  su2double Jacobian[2][2], dNiXj[3][2];
+	  su2double detJac, GradNi_Xj;
+	  su2double ad[2][2];
 	  unsigned short iNode, iDim, jDim, iGauss;
 
 	  for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
@@ -235,10 +235,10 @@ void CTRIA1::ComputeGrad_Linear(void){
 
 void CTRIA1::ComputeGrad_NonLinear(void){
 
-	  double Xi, Eta;
-	  double Jac_Ref[2][2], Jac_Curr[2][2], dNiXj[3][2];
-	  double detJac_Ref, detJac_Curr, GradNi_Xj_Ref, GradNi_Xj_Curr;
-	  double ad_Ref[2][2], ad_Curr[2][2];
+	  su2double Xi, Eta;
+	  su2double Jac_Ref[2][2], Jac_Curr[2][2], dNiXj[3][2];
+	  su2double detJac_Ref, detJac_Curr, GradNi_Xj_Ref, GradNi_Xj_Curr;
+	  su2double ad_Ref[2][2], ad_Curr[2][2];
 	  unsigned short iNode, iDim, jDim, iGauss;
 
 	  for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
@@ -335,33 +335,33 @@ CQUAD4::CQUAD4(unsigned short val_nDim, CConfig *config)
 		GaussPoint[iGauss] = new CGaussVariable(iGauss, nDim, nNodes);
 	}
 
-	NodalExtrap = new double*[nNodes];
+	NodalExtrap = new su2double*[nNodes];
 	for (iNode = 0; iNode < nNodes; iNode++) {
-		NodalExtrap[iNode] = new double[nGaussPoints];
+		NodalExtrap[iNode] = new su2double[nGaussPoints];
 	}
 
-	NodalStress = new double*[nNodes];
+	NodalStress = new su2double*[nNodes];
 	for (iNode = 0; iNode < nNodes; iNode++) {
-		NodalStress[iNode] = new double[3];
+		NodalStress[iNode] = new su2double[3];
 	}
 
 	/*--- Initialize structure for current and reference configuration ---*/
 
-	CurrentCoord = new double*[nNodes];
+	CurrentCoord = new su2double*[nNodes];
 	for (iNode = 0; iNode < nNodes; iNode++){
-		CurrentCoord [iNode] = new double[nDim];
+		CurrentCoord [iNode] = new su2double[nDim];
 	}
 
-	RefCoord = new double*[nNodes];
+	RefCoord = new su2double*[nNodes];
 	for (iNode = 0; iNode < nNodes; iNode++){
-		RefCoord [iNode] = new double[nDim];
+		RefCoord [iNode] = new su2double[nDim];
 	}
 
-	GaussWeight = new double [nGaussPoints];
+	GaussWeight = new su2double [nGaussPoints];
 
-	GaussCoord = new double*[nGaussPoints];
+	GaussCoord = new su2double*[nGaussPoints];
 	for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
-		GaussCoord [iGauss] = new double[nDim];
+		GaussCoord [iGauss] = new su2double[nDim];
 	}
 
 	GaussCoord[0][0] = -0.577350269189626;  GaussCoord[0][1] = -0.577350269189626;  GaussWeight[0] = 1.0;
@@ -370,32 +370,32 @@ CQUAD4::CQUAD4(unsigned short val_nDim, CConfig *config)
 	GaussCoord[3][0] = -0.577350269189626;  GaussCoord[3][1] = 0.577350269189626;   GaussWeight[3] = 1.0;
 
 	//TODO: this structure should only be initialized if the problem is dynamic
-	Mab = new double *[nNodes];
+	Mab = new su2double *[nNodes];
 	for (iNode = 0; iNode < nNodes; iNode++){
-		Mab[iNode] = new double [nNodes];
+		Mab[iNode] = new su2double [nNodes];
 	}
 
-	Kab = new double **[nNodes];
+	Kab = new su2double **[nNodes];
 	for (iNode = 0; iNode < nNodes; iNode++){
-		Kab [iNode] = new double*[nNodes];
+		Kab [iNode] = new su2double*[nNodes];
 		for (jNode = 0; jNode < nNodes; jNode++){
-			Kab [iNode][jNode] = new double[nDimSq];
+			Kab [iNode][jNode] = new su2double[nDimSq];
 		}
 	}
 
 	//TODO: these structures should only be initialized if the problem is nonlinear
-	Ks_ab = new double *[nNodes];
+	Ks_ab = new su2double *[nNodes];
 	for (iNode = 0; iNode < nNodes; iNode++){
-		Ks_ab[iNode] = new double [nNodes];
+		Ks_ab[iNode] = new su2double [nNodes];
 	}
 
-	Kt_a = new double *[nNodes];
+	Kt_a = new su2double *[nNodes];
 	for (iNode = 0; iNode < nNodes; iNode++){
-		Kt_a[iNode] = new double [nDim];
+		Kt_a[iNode] = new su2double [nDim];
 	}
 
 	/*--- Store the shape functions (they only need to be computed once) ---*/
-	double Xi, Eta, val_Ni;
+	su2double Xi, Eta, val_Ni;
 	for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
 		  Xi = GaussCoord[iGauss][0];
 		  Eta = GaussCoord[iGauss][1];
@@ -412,7 +412,7 @@ CQUAD4::CQUAD4(unsigned short val_nDim, CConfig *config)
 //	NodalExtrap[2][0] = 0.133974596215561; 	NodalExtrap[2][1] = -0.500000000000000; NodalExtrap[2][2] = 1.86602540378444;  	NodalExtrap[2][3] = -0.500000000000000;
 //	NodalExtrap[3][0] = -0.500000000000000; NodalExtrap[3][1] = 0.133974596215561;  NodalExtrap[3][2] = -0.500000000000000; NodalExtrap[3][3] = 1.86602540378444;
 
-	double ExtrapCoord[4][2];
+	su2double ExtrapCoord[4][2];
 
 	ExtrapCoord[0][0] = -1.732050807568877;  ExtrapCoord[0][1] = -1.732050807568877;
 	ExtrapCoord[1][0] = 1.732050807568877;   ExtrapCoord[1][1] = -1.732050807568877;
@@ -470,10 +470,10 @@ CQUAD4::~CQUAD4(void) {
 
 void CQUAD4::ComputeGrad_Linear(void){
 
-	  double Xi, Eta;
-	  double Jacobian[2][2], dNiXj[4][2];
-	  double detJac, GradNi_Xj;
-	  double ad[2][2];
+	  su2double Xi, Eta;
+	  su2double Jacobian[2][2], dNiXj[4][2];
+	  su2double detJac, GradNi_Xj;
+	  su2double ad[2][2];
 	  unsigned short iNode, iDim, jDim, iGauss;
 
 	  for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
@@ -538,10 +538,10 @@ void CQUAD4::ComputeGrad_Linear(void){
 
 void CQUAD4::ComputeGrad_NonLinear(void){
 
-	  double Xi, Eta;
-	  double Jac_Ref[2][2], Jac_Curr[2][2], dNiXj[4][2];
-	  double detJac_Ref, detJac_Curr, GradNi_Xj_Ref, GradNi_Xj_Curr;
-	  double ad_Ref[2][2], ad_Curr[2][2];
+	  su2double Xi, Eta;
+	  su2double Jac_Ref[2][2], Jac_Curr[2][2], dNiXj[4][2];
+	  su2double detJac_Ref, detJac_Curr, GradNi_Xj_Ref, GradNi_Xj_Curr;
+	  su2double ad_Ref[2][2], ad_Curr[2][2];
 	  unsigned short iNode, iDim, jDim, iGauss;
 
 	  for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
@@ -642,20 +642,20 @@ CQUAD4P1::CQUAD4P1(unsigned short val_nDim, CConfig *config)
 	for (iGauss = 0; iGauss < nGaussPointsP; iGauss++) {
 		GaussPointP[iGauss] = new CGaussVariable(iGauss, nDim, nNodes);
 	}
-	GaussWeightP = new double [nGaussPointsP];
+	GaussWeightP = new su2double [nGaussPointsP];
 
-	GaussCoordP = new double*[nGaussPointsP];
+	GaussCoordP = new su2double*[nGaussPointsP];
 	for (iGauss = 0; iGauss < nGaussPointsP; iGauss++){
-		GaussCoordP [iGauss] = new double[nDim];
+		GaussCoordP [iGauss] = new su2double[nDim];
 	}
 
 	GaussCoordP[0][0] = 0.0;  GaussCoordP[0][1] = 0.0;  GaussWeightP[0] = 4.0;
 
-	Kk_ab = new double **[nNodes];
+	Kk_ab = new su2double **[nNodes];
 	for (iNode = 0; iNode < nNodes; iNode++){
-		Kk_ab [iNode] = new double*[nNodes];
+		Kk_ab [iNode] = new su2double*[nNodes];
 		for (jNode = 0; jNode < nNodes; jNode++){
-			Kk_ab [iNode][jNode] = new double[nDimSq];
+			Kk_ab [iNode][jNode] = new su2double[nDimSq];
 		}
 	}
 
@@ -687,10 +687,10 @@ CQUAD4P1::~CQUAD4P1(void) {
 
 void CQUAD4P1::ComputeGrad_Pressure(void){
 
-	  double Xi, Eta;
-	  double Jac_Ref[2][2], Jac_Curr[2][2], dNiXj[4][2];
-	  double detJac_Ref, detJac_Curr, GradNi_Xj_Ref, GradNi_Xj_Curr;
-	  double ad_Ref[2][2], ad_Curr[2][2];
+	  su2double Xi, Eta;
+	  su2double Jac_Ref[2][2], Jac_Curr[2][2], dNiXj[4][2];
+	  su2double detJac_Ref, detJac_Curr, GradNi_Xj_Ref, GradNi_Xj_Curr;
+	  su2double ad_Ref[2][2], ad_Curr[2][2];
 	  unsigned short iNode, iDim, jDim, iGauss;
 
 	  for (iGauss = 0; iGauss < nGaussPointsP; iGauss++){
@@ -787,64 +787,64 @@ CTETRA1::CTETRA1(unsigned short val_nDim, CConfig *config)
 		GaussPoint[iGauss] = new CGaussVariable(iGauss, nDim, nNodes);
 	}
 
-	NodalExtrap = new double*[nNodes];
+	NodalExtrap = new su2double*[nNodes];
 	for (iNode = 0; iNode < nNodes; iNode++) {
-		NodalExtrap[iNode] = new double[nGaussPoints];
+		NodalExtrap[iNode] = new su2double[nGaussPoints];
 	}
 
-	NodalStress = new double*[nNodes];
+	NodalStress = new su2double*[nNodes];
 	for (iNode = 0; iNode < nNodes; iNode++) {
-		NodalStress[iNode] = new double[6];
+		NodalStress[iNode] = new su2double[6];
 	}
 
 	/*--- Initialize structure for current and reference configuration ---*/
 
-	CurrentCoord = new double*[nNodes];
+	CurrentCoord = new su2double*[nNodes];
 	for (iNode = 0; iNode < nNodes; iNode++){
-		CurrentCoord [iNode] = new double[nDim];
+		CurrentCoord [iNode] = new su2double[nDim];
 	}
 
-	RefCoord = new double*[nNodes];
+	RefCoord = new su2double*[nNodes];
 	for (iNode = 0; iNode < nNodes; iNode++){
-		RefCoord [iNode] = new double[nDim];
+		RefCoord [iNode] = new su2double[nDim];
 	}
 
-	GaussWeight = new double [nGaussPoints];
+	GaussWeight = new su2double [nGaussPoints];
 
-	GaussCoord = new double*[nGaussPoints];
+	GaussCoord = new su2double*[nGaussPoints];
 	for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
-		GaussCoord [iGauss] = new double[nDim];
+		GaussCoord [iGauss] = new su2double[nDim];
 	}
 
 	GaussCoord[0][0] = 0.25;  GaussCoord[0][1] = 0.25; GaussCoord[0][2] = 0.25;  GaussWeight[0] = 0.166666666666666;
 
 	//TODO: this structure should only be initialized if the problem is dynamic
-	Mab = new double *[nNodes];
+	Mab = new su2double *[nNodes];
 	for (iNode = 0; iNode < nNodes; iNode++){
-		Mab[iNode] = new double [nNodes];
+		Mab[iNode] = new su2double [nNodes];
 	}
 
-	Kab = new double **[nNodes];
+	Kab = new su2double **[nNodes];
 	for (iNode = 0; iNode < nNodes; iNode++){
-		Kab [iNode] = new double*[nNodes];
+		Kab [iNode] = new su2double*[nNodes];
 		for (jNode = 0; jNode < nNodes; jNode++){
-			Kab [iNode][jNode] = new double[nDimSq];
+			Kab [iNode][jNode] = new su2double[nDimSq];
 		}
 	}
 
 	//TODO: these structures should only be initialized if the problem is nonlinear
-	Ks_ab = new double *[nNodes];
+	Ks_ab = new su2double *[nNodes];
 	for (iNode = 0; iNode < nNodes; iNode++){
-		Ks_ab[iNode] = new double [nNodes];
+		Ks_ab[iNode] = new su2double [nNodes];
 	}
 
-	Kt_a = new double *[nNodes];
+	Kt_a = new su2double *[nNodes];
 	for (iNode = 0; iNode < nNodes; iNode++){
-		Kt_a[iNode] = new double [nDim];
+		Kt_a[iNode] = new su2double [nDim];
 	}
 
 	/*--- Store the shape functions (they only need to be computed once) ---*/
-	double Xi, Eta, Zeta, val_Ni;
+	su2double Xi, Eta, Zeta, val_Ni;
 	for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
 		  Xi = GaussCoord[iGauss][0];
 		  Eta = GaussCoord[iGauss][1];
@@ -902,10 +902,10 @@ CTETRA1::~CTETRA1(void) {
 
 void CTETRA1::ComputeGrad_Linear(void){
 
-	  double Xi, Eta, Zeta;
-	  double Jacobian[3][3], dNiXj[4][3];
-	  double detJac, GradNi_Xj;
-	  double ad[3][3];
+	  su2double Xi, Eta, Zeta;
+	  su2double Jacobian[3][3], dNiXj[4][3];
+	  su2double detJac, GradNi_Xj;
+	  su2double ad[3][3];
 	  unsigned short iNode, iDim, jDim, iGauss;
 
 	  for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
@@ -976,10 +976,10 @@ void CTETRA1::ComputeGrad_Linear(void){
 
 void CTETRA1::ComputeGrad_NonLinear(void){
 
-	  double Xi, Eta, Zeta;
-	  double Jac_Ref[3][3], Jac_Curr[3][3], dNiXj[4][3];
-	  double detJac_Ref, detJac_Curr, GradNi_Xj_Ref, GradNi_Xj_Curr;
-	  double ad_Ref[3][3], ad_Curr[3][3];
+	  su2double Xi, Eta, Zeta;
+	  su2double Jac_Ref[3][3], Jac_Curr[3][3], dNiXj[4][3];
+	  su2double detJac_Ref, detJac_Curr, GradNi_Xj_Ref, GradNi_Xj_Curr;
+	  su2double ad_Ref[3][3], ad_Curr[3][3];
 	  unsigned short iNode, iDim, jDim, iGauss;
 
 	  for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
@@ -1088,33 +1088,33 @@ CHEXA8::CHEXA8(unsigned short val_nDim, CConfig *config)
 		GaussPoint[iGauss] = new CGaussVariable(iGauss, nDim, nNodes);
 	}
 
-	NodalExtrap = new double*[nNodes];
+	NodalExtrap = new su2double*[nNodes];
 	for (iNode = 0; iNode < nNodes; iNode++) {
-		NodalExtrap[iNode] = new double[nGaussPoints];
+		NodalExtrap[iNode] = new su2double[nGaussPoints];
 	}
 
-	NodalStress = new double*[nNodes];
+	NodalStress = new su2double*[nNodes];
 	for (iNode = 0; iNode < nNodes; iNode++) {
-		NodalStress[iNode] = new double[6];
+		NodalStress[iNode] = new su2double[6];
 	}
 
 	/*--- Initialize structure for current and reference configuration ---*/
 
-	CurrentCoord = new double*[nNodes];
+	CurrentCoord = new su2double*[nNodes];
 	for (iNode = 0; iNode < nNodes; iNode++){
-		CurrentCoord [iNode] = new double[nDim];
+		CurrentCoord [iNode] = new su2double[nDim];
 	}
 
-	RefCoord = new double*[nNodes];
+	RefCoord = new su2double*[nNodes];
 	for (iNode = 0; iNode < nNodes; iNode++){
-		RefCoord [iNode] = new double[nDim];
+		RefCoord [iNode] = new su2double[nDim];
 	}
 
-	GaussWeight = new double [nGaussPoints];
+	GaussWeight = new su2double [nGaussPoints];
 
-	GaussCoord = new double*[nGaussPoints];
+	GaussCoord = new su2double*[nGaussPoints];
 	for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
-		GaussCoord [iGauss] = new double[nDim];
+		GaussCoord [iGauss] = new su2double[nDim];
 	}
 
 	GaussCoord[0][0] = -0.577350269189626;  GaussCoord[0][1] = -0.577350269189626;  GaussCoord[0][2] = -0.577350269189626;	GaussWeight[0] = 1.0;
@@ -1127,33 +1127,33 @@ CHEXA8::CHEXA8(unsigned short val_nDim, CConfig *config)
 	GaussCoord[7][0] = -0.577350269189626;  GaussCoord[7][1] = 0.577350269189626;  	GaussCoord[7][2] = 0.577350269189626;  	GaussWeight[7] = 1.0;
 
 	//TODO: this structure should only be initialized if the problem is dynamic
-	Mab = new double *[nNodes];
+	Mab = new su2double *[nNodes];
 	for (iNode = 0; iNode < nNodes; iNode++){
-		Mab[iNode] = new double [nNodes];
+		Mab[iNode] = new su2double [nNodes];
 	}
 
-	Kab = new double **[nNodes];
+	Kab = new su2double **[nNodes];
 	for (iNode = 0; iNode < nNodes; iNode++){
-		Kab [iNode] = new double*[nNodes];
+		Kab [iNode] = new su2double*[nNodes];
 		for (jNode = 0; jNode < nNodes; jNode++){
-			Kab [iNode][jNode] = new double[nDimSq];
+			Kab [iNode][jNode] = new su2double[nDimSq];
 		}
 	}
 
 	//TODO: these structures should only be initialized if the problem is nonlinear
-	Ks_ab = new double *[nNodes];
+	Ks_ab = new su2double *[nNodes];
 	for (iNode = 0; iNode < nNodes; iNode++){
-		Ks_ab[iNode] = new double [nNodes];
+		Ks_ab[iNode] = new su2double [nNodes];
 	}
 
-	Kt_a = new double *[nNodes];
+	Kt_a = new su2double *[nNodes];
 	for (iNode = 0; iNode < nNodes; iNode++){
-		Kt_a[iNode] = new double [nDim];
+		Kt_a[iNode] = new su2double [nDim];
 	}
 
 
 	/*--- Store the shape functions (they only need to be computed once) ---*/
-	double Xi, Eta, Zeta, val_Ni;
+	su2double Xi, Eta, Zeta, val_Ni;
 	for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
 		  Xi = GaussCoord[iGauss][0];
 		  Eta = GaussCoord[iGauss][1];
@@ -1170,7 +1170,7 @@ CHEXA8::CHEXA8(unsigned short val_nDim, CConfig *config)
 	}
 
 
-	double ExtrapCoord[8][3];
+	su2double ExtrapCoord[8][3];
 
 	ExtrapCoord[0][0] = -1.732050807568877;  ExtrapCoord[0][1] = -1.732050807568877;  	ExtrapCoord[0][2] = -1.732050807568877;
 	ExtrapCoord[1][0] = 1.732050807568877;   ExtrapCoord[1][1] = -1.732050807568877;  	ExtrapCoord[1][2] = -1.732050807568877;
@@ -1238,10 +1238,10 @@ CHEXA8::~CHEXA8(void) {
 
 void CHEXA8::ComputeGrad_Linear(void){
 
-	  double Xi, Eta, Zeta;
-	  double Jacobian[3][3], dNiXj[8][3];
-	  double detJac, GradNi_Xj;
-	  double ad[3][3];
+	  su2double Xi, Eta, Zeta;
+	  su2double Jacobian[3][3], dNiXj[8][3];
+	  su2double detJac, GradNi_Xj;
+	  su2double ad[3][3];
 	  unsigned short iNode, iDim, jDim, iGauss;
 
 	  for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
@@ -1340,10 +1340,10 @@ void CHEXA8::ComputeGrad_Linear(void){
 
 void CHEXA8::ComputeGrad_NonLinear(void){
 
-	  double Xi, Eta, Zeta;
-	  double Jac_Ref[3][3], Jac_Curr[3][3], dNiXj[8][3];
-	  double detJac_Ref, detJac_Curr, GradNi_Xj_Ref, GradNi_Xj_Curr;
-	  double ad_Ref[3][3], ad_Curr[3][3];
+	  su2double Xi, Eta, Zeta;
+	  su2double Jac_Ref[3][3], Jac_Curr[3][3], dNiXj[8][3];
+	  su2double detJac_Ref, detJac_Curr, GradNi_Xj_Ref, GradNi_Xj_Curr;
+	  su2double ad_Ref[3][3], ad_Curr[3][3];
 	  unsigned short iNode, iDim, jDim, iGauss;
 
 	  for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
@@ -1480,20 +1480,20 @@ CHEXA8P1::CHEXA8P1(unsigned short val_nDim, CConfig *config)
 	for (iGauss = 0; iGauss < nGaussPointsP; iGauss++) {
 		GaussPointP[iGauss] = new CGaussVariable(iGauss, nDim, nNodes);
 	}
-	GaussWeightP = new double [nGaussPointsP];
+	GaussWeightP = new su2double [nGaussPointsP];
 
-	GaussCoordP = new double*[nGaussPointsP];
+	GaussCoordP = new su2double*[nGaussPointsP];
 	for (iGauss = 0; iGauss < nGaussPointsP; iGauss++){
-		GaussCoordP [iGauss] = new double[nDim];
+		GaussCoordP [iGauss] = new su2double[nDim];
 	}
 
 	GaussCoordP[0][0] = 0.0;  GaussCoordP[0][1] = 0.0;  GaussCoordP[0][1] = 0.0;  GaussWeightP[0] = 8.0;
 
-	Kk_ab = new double **[nNodes];
+	Kk_ab = new su2double **[nNodes];
 	for (iNode = 0; iNode < nNodes; iNode++){
-		Kk_ab [iNode] = new double*[nNodes];
+		Kk_ab [iNode] = new su2double*[nNodes];
 		for (jNode = 0; jNode < nNodes; jNode++){
-			Kk_ab [iNode][jNode] = new double[nDimSq];
+			Kk_ab [iNode][jNode] = new su2double[nDimSq];
 		}
 	}
 
@@ -1524,10 +1524,10 @@ CHEXA8P1::~CHEXA8P1(void) {
 
 void CHEXA8P1::ComputeGrad_Pressure(void){
 
-	  double Xi, Eta, Zeta;
-	  double Jac_Ref[3][3], Jac_Curr[3][3], dNiXj[8][3];
-	  double detJac_Ref, detJac_Curr, GradNi_Xj_Ref, GradNi_Xj_Curr;
-	  double ad_Ref[3][3], ad_Curr[3][3];
+	  su2double Xi, Eta, Zeta;
+	  su2double Jac_Ref[3][3], Jac_Curr[3][3], dNiXj[8][3];
+	  su2double detJac_Ref, detJac_Curr, GradNi_Xj_Ref, GradNi_Xj_Curr;
+	  su2double ad_Ref[3][3], ad_Curr[3][3];
 	  unsigned short iNode, iDim, jDim, iGauss;
 
 	  for (iGauss = 0; iGauss < nGaussPointsP; iGauss++){

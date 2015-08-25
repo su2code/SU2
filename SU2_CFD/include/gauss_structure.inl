@@ -31,26 +31,26 @@
  
 #pragma once
 
-inline void CGaussVariable::SetGradNi_Xj(double val_GradNi_Xj, unsigned short val_iDim, unsigned short val_Ni) { GradNi_Xj[val_Ni][val_iDim] = val_GradNi_Xj; }
+inline void CGaussVariable::SetGradNi_Xj(su2double val_GradNi_Xj, unsigned short val_iDim, unsigned short val_Ni) { GradNi_Xj[val_Ni][val_iDim] = val_GradNi_Xj; }
 
-inline void CGaussVariable::SetGradNi_xj(double val_GradNi_xj, unsigned short val_iDim, unsigned short val_Ni) { GradNi_xj[val_Ni][val_iDim] = val_GradNi_xj; }
+inline void CGaussVariable::SetGradNi_xj(su2double val_GradNi_xj, unsigned short val_iDim, unsigned short val_Ni) { GradNi_xj[val_Ni][val_iDim] = val_GradNi_xj; }
 
-inline void CGaussVariable::SetNi(double val_ShapeNi, unsigned short val_Ni) { Ni[val_Ni] = val_ShapeNi; }
+inline void CGaussVariable::SetNi(su2double val_ShapeNi, unsigned short val_Ni) { Ni[val_Ni] = val_ShapeNi; }
 
-inline void CGaussVariable::SetJ_X(double valJ_X) { J_X = valJ_X; }
+inline void CGaussVariable::SetJ_X(su2double valJ_X) { J_X = valJ_X; }
 
-inline void CGaussVariable::SetJ_x(double valJ_x) { J_x = valJ_x; }
+inline void CGaussVariable::SetJ_x(su2double valJ_x) { J_x = valJ_x; }
 
 inline unsigned short CGaussVariable::Get_iGauss(void) { return iGaussPoint; }
 
-inline double **CGaussVariable::GetGradNi_Xj(void) { return GradNi_Xj; }
+inline su2double **CGaussVariable::GetGradNi_Xj(void) { return GradNi_Xj; }
 
-inline double CGaussVariable::GetGradNi_Xj(unsigned short val_Ni, unsigned short val_iDim) { return GradNi_Xj[val_Ni][val_iDim]; }
+inline su2double CGaussVariable::GetGradNi_Xj(unsigned short val_Ni, unsigned short val_iDim) { return GradNi_Xj[val_Ni][val_iDim]; }
 
-inline double CGaussVariable::GetGradNi_xj(unsigned short val_Ni, unsigned short val_iDim) { return GradNi_xj[val_Ni][val_iDim]; }
+inline su2double CGaussVariable::GetGradNi_xj(unsigned short val_Ni, unsigned short val_iDim) { return GradNi_xj[val_Ni][val_iDim]; }
 
-inline double CGaussVariable::GetNi(unsigned short val_Ni) { return Ni[val_Ni]; }
+inline su2double CGaussVariable::GetNi(unsigned short val_Ni) { return Ni[val_Ni]; }
 
-inline double CGaussVariable::GetJ_X(void) { return J_X; }
+inline su2double CGaussVariable::GetJ_X(void) { return J_X; }
 
-inline double CGaussVariable::GetJ_x(void) { return J_x; }
+inline su2double CGaussVariable::GetJ_x(void) { return J_x; }

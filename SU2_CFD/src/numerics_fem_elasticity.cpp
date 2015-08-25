@@ -42,44 +42,44 @@ CFEM_Elasticity::CFEM_Elasticity(unsigned short val_nDim, unsigned short val_nVa
 
 	unsigned short iVar;
 
-	KAux_ab = new double* [nDim];
+	KAux_ab = new su2double* [nDim];
 	for (iVar = 0; iVar < nDim; iVar++) {
-		KAux_ab[iVar] = new double[nDim];
+		KAux_ab[iVar] = new su2double[nDim];
 	}
 
 
 	if (nDim == 2){
-		Ba_Mat = new double* [3];
-		Bb_Mat = new double* [3];
-		D_Mat  = new double* [3];
-		Ni_Vec  = new double [4];			/*--- As of now, 4 is the maximum number of nodes for 2D problems ---*/
-		GradNi_Ref_Mat = new double* [4];	/*--- As of now, 4 is the maximum number of nodes for 2D problems ---*/
-		GradNi_Curr_Mat = new double* [4];	/*--- As of now, 4 is the maximum number of nodes for 2D problems ---*/
+		Ba_Mat = new su2double* [3];
+		Bb_Mat = new su2double* [3];
+		D_Mat  = new su2double* [3];
+		Ni_Vec  = new su2double [4];			/*--- As of now, 4 is the maximum number of nodes for 2D problems ---*/
+		GradNi_Ref_Mat = new su2double* [4];	/*--- As of now, 4 is the maximum number of nodes for 2D problems ---*/
+		GradNi_Curr_Mat = new su2double* [4];	/*--- As of now, 4 is the maximum number of nodes for 2D problems ---*/
 		for (iVar = 0; iVar < 3; iVar++) {
-			Ba_Mat[iVar]  		= new double[nDim];
-			Bb_Mat[iVar]  		= new double[nDim];
-			D_Mat[iVar]	   	= new double[3];
+			Ba_Mat[iVar]  		= new su2double[nDim];
+			Bb_Mat[iVar]  		= new su2double[nDim];
+			D_Mat[iVar]	   	= new su2double[3];
 		}
 		for (iVar = 0; iVar < 4; iVar++) {
-			GradNi_Ref_Mat[iVar] 	= new double[nDim];
-			GradNi_Curr_Mat[iVar] 	= new double[nDim];
+			GradNi_Ref_Mat[iVar] 	= new su2double[nDim];
+			GradNi_Curr_Mat[iVar] 	= new su2double[nDim];
 		}
 	}
 	else if (nDim == 3){
-		Ba_Mat = new double* [6];
-		Bb_Mat = new double* [6];
-		D_Mat  = new double* [6];
-		Ni_Vec  = new double [8];			/*--- As of now, 8 is the maximum number of nodes for 3D problems ---*/
-		GradNi_Ref_Mat = new double* [8];	/*--- As of now, 8 is the maximum number of nodes for 3D problems ---*/
-		GradNi_Curr_Mat = new double* [8];	/*--- As of now, 8 is the maximum number of nodes for 3D problems ---*/
+		Ba_Mat = new su2double* [6];
+		Bb_Mat = new su2double* [6];
+		D_Mat  = new su2double* [6];
+		Ni_Vec  = new su2double [8];			/*--- As of now, 8 is the maximum number of nodes for 3D problems ---*/
+		GradNi_Ref_Mat = new su2double* [8];	/*--- As of now, 8 is the maximum number of nodes for 3D problems ---*/
+		GradNi_Curr_Mat = new su2double* [8];	/*--- As of now, 8 is the maximum number of nodes for 3D problems ---*/
 		for (iVar = 0; iVar < 6; iVar++) {
-			Ba_Mat[iVar]  		= new double[nDim];
-			Bb_Mat[iVar]  		= new double[nDim];
-			D_Mat[iVar]      	= new double[6];
+			Ba_Mat[iVar]  		= new su2double[nDim];
+			Bb_Mat[iVar]  		= new su2double[nDim];
+			D_Mat[iVar]      	= new su2double[6];
 		}
 		for (iVar = 0; iVar < 8; iVar++) {
-			GradNi_Ref_Mat[iVar] 	= new double[nDim];
-			GradNi_Curr_Mat[iVar] 	= new double[nDim];
+			GradNi_Ref_Mat[iVar] 	= new su2double[nDim];
+			GradNi_Curr_Mat[iVar] 	= new su2double[nDim];
 		}
 	}
 }
@@ -131,9 +131,9 @@ void CFEM_Elasticity::Compute_Mass_Matrix(CElement *element){
 	unsigned short iDim;
 	unsigned short bDim;
 
-	double Weight, Jac_X;
+	su2double Weight, Jac_X;
 
-	double val_Mab;
+	su2double val_Mab;
 
 	element->clearElement(); 			/*--- Restarts the element: avoids adding over previous results in other elements --*/
 	element->ComputeGrad_Linear();		/*--- Need to compute the gradients to obtain the Jacobian: TODO: this may be improved (another method only to compute J_X) ---*/

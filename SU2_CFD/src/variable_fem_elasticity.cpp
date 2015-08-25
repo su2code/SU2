@@ -57,7 +57,7 @@ CFEM_ElasVariable::CFEM_ElasVariable(void) : CVariable() {
 
 }
 
-CFEM_ElasVariable::CFEM_ElasVariable(double *val_fea, unsigned short val_nDim, unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
+CFEM_ElasVariable::CFEM_ElasVariable(su2double *val_fea, unsigned short val_nDim, unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
 
 	unsigned short iVar, iDim, jDim;
 	bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);	// Nonlinear analysis.
@@ -68,15 +68,15 @@ CFEM_ElasVariable::CFEM_ElasVariable(double *val_fea, unsigned short val_nDim, u
 	dynamic_analysis = (config->GetDynamic_Analysis() == DYNAMIC);
 	fsi_analysis = config->GetFSI_Simulation();
 
-	if (nDim == 2) Stress = new double [3];
-	else if (nDim == 3) Stress = new double [6];
+	if (nDim == 2) Stress = new su2double [3];
+	else if (nDim == 3) Stress = new su2double [6];
 
 	if (dynamic_analysis){
-		Solution_time_n			=  new double [nVar];
-		Solution_Vel 			=  new double [nVar];
-		Solution_Vel_time_n		=  new double [nVar];
-		Solution_Accel 			=  new double [nVar];
-		Solution_Accel_time_n	=  new double [nVar];
+		Solution_time_n			=  new su2double [nVar];
+		Solution_Vel 			=  new su2double [nVar];
+		Solution_Vel_time_n		=  new su2double [nVar];
+		Solution_Accel 			=  new su2double [nVar];
+		Solution_Accel_time_n	=  new su2double [nVar];
 		for (iVar = 0; iVar < nVar; iVar++){
 			Solution_time_n[iVar] 		= val_fea[iVar];
 			Solution_Vel[iVar] 			= val_fea[iVar];
@@ -94,9 +94,9 @@ CFEM_ElasVariable::CFEM_ElasVariable(double *val_fea, unsigned short val_nDim, u
 	}
 
 	if (fsi_analysis) {
-		FlowTraction 			=  new double [nVar];
-		Solution_Pred 			=  new double [nVar];
-		Solution_Pred_Old 		=  new double [nVar];
+		FlowTraction 			=  new su2double [nVar];
+		Solution_Pred 			=  new su2double [nVar];
+		Solution_Pred_Old 		=  new su2double [nVar];
 		for (iVar = 0; iVar < nVar; iVar++){
 			FlowTraction[iVar] = val_fea[iVar];
 			Solution_Pred[iVar] = val_fea[iVar];
@@ -110,9 +110,9 @@ CFEM_ElasVariable::CFEM_ElasVariable(double *val_fea, unsigned short val_nDim, u
 	}
 
 
-//	if (nonlinear_analysis) Residual_Int = new double [nVar];	else Residual_Int = NULL;
-	if (body_forces) Residual_Ext_Body = new double [nVar];	else Residual_Ext_Body = NULL;
-	Residual_Ext_Surf = new double [nVar];
+//	if (nonlinear_analysis) Residual_Int = new su2double [nVar];	else Residual_Int = NULL;
+	if (body_forces) Residual_Ext_Body = new su2double [nVar];	else Residual_Ext_Body = NULL;
+	Residual_Ext_Surf = new su2double [nVar];
 
 }
 

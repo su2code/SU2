@@ -39,57 +39,57 @@ inline unsigned short CElement::GetnNodes(void) { return nNodes;}
 
 inline unsigned short CElement::GetnGaussPoints(void) { return nGaussPoints;}
 
-inline void CElement::SetRef_Coord(double val_CoordRef, unsigned short iNode, unsigned short iDim) { RefCoord[iNode][iDim] = val_CoordRef;}
+inline void CElement::SetRef_Coord(su2double val_CoordRef, unsigned short iNode, unsigned short iDim) { RefCoord[iNode][iDim] = val_CoordRef;}
 
-inline void CElement::SetCurr_Coord(double val_CoordCurr, unsigned short iNode, unsigned short iDim) { CurrentCoord[iNode][iDim] = val_CoordCurr;}
+inline void CElement::SetCurr_Coord(su2double val_CoordCurr, unsigned short iNode, unsigned short iDim) { CurrentCoord[iNode][iDim] = val_CoordCurr;}
 
-inline void CElement::SetElement_Pressure(double val_ElPressure) {el_Pressure = val_ElPressure;}
+inline void CElement::SetElement_Pressure(su2double val_ElPressure) {el_Pressure = val_ElPressure;}
 
-inline double CElement::GetRef_Coord(unsigned short iNode, unsigned short iDim) { return RefCoord[iNode][iDim];}
+inline su2double CElement::GetRef_Coord(unsigned short iNode, unsigned short iDim) { return RefCoord[iNode][iDim];}
 
-inline double CElement::GetCurr_Coord(unsigned short iNode, unsigned short iDim) { return CurrentCoord[iNode][iDim];}
+inline su2double CElement::GetCurr_Coord(unsigned short iNode, unsigned short iDim) { return CurrentCoord[iNode][iDim];}
 
-inline double CElement::GetWeight(unsigned short iGauss) { return GaussWeight[iGauss];}
+inline su2double CElement::GetWeight(unsigned short iGauss) { return GaussWeight[iGauss];}
 
-inline double CElement::GetJ_X(unsigned short iGauss) {return GaussPoint[iGauss]->GetJ_X();}
+inline su2double CElement::GetJ_X(unsigned short iGauss) {return GaussPoint[iGauss]->GetJ_X();}
 
-inline double CElement::GetJ_x(unsigned short iGauss) {return GaussPoint[iGauss]->GetJ_x();}
+inline su2double CElement::GetJ_x(unsigned short iGauss) {return GaussPoint[iGauss]->GetJ_x();}
 
-inline double CElement::GetJ_X_P(unsigned short iGauss) {return GaussPointP[iGauss]->GetJ_X();}
+inline su2double CElement::GetJ_X_P(unsigned short iGauss) {return GaussPointP[iGauss]->GetJ_X();}
 
-inline double CElement::GetJ_x_P(unsigned short iGauss) {return GaussPointP[iGauss]->GetJ_x();}
+inline su2double CElement::GetJ_x_P(unsigned short iGauss) {return GaussPointP[iGauss]->GetJ_x();}
 
-inline double CElement::GetElement_Pressure(void) {return el_Pressure;}
+inline su2double CElement::GetElement_Pressure(void) {return el_Pressure;}
 
-inline double CElement::Get_Mab(unsigned short nodeA, unsigned short nodeB) { return Mab[nodeA][nodeB]; }
+inline su2double CElement::Get_Mab(unsigned short nodeA, unsigned short nodeB) { return Mab[nodeA][nodeB]; }
 
-inline double *CElement::Get_Kab(unsigned short nodeA, unsigned short nodeB){ return Kab[nodeA][nodeB];}
+inline su2double *CElement::Get_Kab(unsigned short nodeA, unsigned short nodeB){ return Kab[nodeA][nodeB];}
 
-inline double *CElement::Get_Kk_ab(unsigned short nodeA, unsigned short nodeB){ return Kk_ab[nodeA][nodeB];}
+inline su2double *CElement::Get_Kk_ab(unsigned short nodeA, unsigned short nodeB){ return Kk_ab[nodeA][nodeB];}
 
-inline double *CElement::Get_Kt_a(unsigned short nodeA){ return Kt_a[nodeA];}
+inline su2double *CElement::Get_Kt_a(unsigned short nodeA){ return Kt_a[nodeA];}
 
-inline double CElement::Get_Ks_ab(unsigned short nodeA, unsigned short nodeB) { return Ks_ab[nodeA][nodeB]; }
+inline su2double CElement::Get_Ks_ab(unsigned short nodeA, unsigned short nodeB) { return Ks_ab[nodeA][nodeB]; }
 
-inline void CElement::Add_Mab(double val_Mab, unsigned short nodeA, unsigned short nodeB) { Mab[nodeA][nodeB] += val_Mab; }
+inline void CElement::Add_Mab(su2double val_Mab, unsigned short nodeA, unsigned short nodeB) { Mab[nodeA][nodeB] += val_Mab; }
 
-inline void CElement::Add_Ks_ab(double val_Ks_ab, unsigned short nodeA, unsigned short nodeB) { Ks_ab[nodeA][nodeB] += val_Ks_ab; }
+inline void CElement::Add_Ks_ab(su2double val_Ks_ab, unsigned short nodeA, unsigned short nodeB) { Ks_ab[nodeA][nodeB] += val_Ks_ab; }
 
-inline void CElement::Add_NodalStress(double val_Stress, unsigned short iNode, unsigned short iVar) { NodalStress[iNode][iVar] += val_Stress; }
+inline void CElement::Add_NodalStress(su2double val_Stress, unsigned short iNode, unsigned short iVar) { NodalStress[iNode][iVar] += val_Stress; }
 
-inline double CElement::GetNi(unsigned short iNode, unsigned short iGauss) { return GaussPoint[iGauss]->GetNi(iNode);}
+inline su2double CElement::GetNi(unsigned short iNode, unsigned short iGauss) { return GaussPoint[iGauss]->GetNi(iNode);}
 
-inline double CElement::GetGradNi_X(unsigned short iNode, unsigned short iGauss, unsigned short iDim) { return GaussPoint[iGauss]->GetGradNi_Xj(iNode,iDim);}
+inline su2double CElement::GetGradNi_X(unsigned short iNode, unsigned short iGauss, unsigned short iDim) { return GaussPoint[iGauss]->GetGradNi_Xj(iNode,iDim);}
 
-inline double CElement::GetGradNi_x(unsigned short iNode, unsigned short iGauss, unsigned short iDim) { return GaussPoint[iGauss]->GetGradNi_xj(iNode,iDim);}
+inline su2double CElement::GetGradNi_x(unsigned short iNode, unsigned short iGauss, unsigned short iDim) { return GaussPoint[iGauss]->GetGradNi_xj(iNode,iDim);}
 
-inline double CElement::GetGradNi_x_P(unsigned short iNode, unsigned short iGaussP, unsigned short iDim) { return GaussPointP[iGaussP]->GetGradNi_xj(iNode,iDim);}
+inline su2double CElement::GetGradNi_x_P(unsigned short iNode, unsigned short iGaussP, unsigned short iDim) { return GaussPointP[iGaussP]->GetGradNi_xj(iNode,iDim);}
 
-inline double CElement::GetNi_Extrap(unsigned short iNode, unsigned short iGauss) { return NodalExtrap[iNode][iGauss]; }
+inline su2double CElement::GetNi_Extrap(unsigned short iNode, unsigned short iGauss) { return NodalExtrap[iNode][iGauss]; }
 
-inline double CElement::Get_NodalStress(unsigned short iNode, unsigned short iVar) { return NodalStress[iNode][iVar]; }
+inline su2double CElement::Get_NodalStress(unsigned short iNode, unsigned short iVar) { return NodalStress[iNode][iVar]; }
 
-inline double CElement::GetWeight_P(unsigned short iGaussP) { return GaussWeightP[iGaussP];}
+inline su2double CElement::GetWeight_P(unsigned short iGaussP) { return GaussWeightP[iGaussP];}
 
 inline unsigned short CElement::GetnGaussPointsP(void) { return nGaussPointsP;}
 

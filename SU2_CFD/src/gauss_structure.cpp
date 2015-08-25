@@ -44,20 +44,20 @@ CGaussVariable::CGaussVariable(void) {
 
 CGaussVariable::CGaussVariable(unsigned short val_iGauss, unsigned short val_nDim, unsigned short val_nNodes) {
 
-	 GradNi_Xj = new double* [val_nNodes];
+	 GradNi_Xj = new su2double* [val_nNodes];
 	 for (unsigned short iNode = 0; iNode < val_nNodes; iNode++)
-		 GradNi_Xj[iNode] = new double [val_nDim];
+		 GradNi_Xj[iNode] = new su2double [val_nDim];
 
-	 GradNi_xj = new double* [val_nNodes];
+	 GradNi_xj = new su2double* [val_nNodes];
 	 for (unsigned short iNode = 0; iNode < val_nNodes; iNode++)
-		 GradNi_xj[iNode] = new double [val_nDim];
+		 GradNi_xj[iNode] = new su2double [val_nDim];
 
 	 J_X = 0.0;
 	 J_x = 0.0;
 
 	 iGaussPoint = val_iGauss;
 
-	 Ni = new double [val_nNodes];
+	 Ni = new su2double [val_nNodes];
 
 }
 

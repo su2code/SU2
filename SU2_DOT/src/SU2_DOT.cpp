@@ -33,10 +33,10 @@ using namespace std;
 int main(int argc, char *argv[]) {	
   
   unsigned short iZone, nZone = SINGLE_ZONE;
-  double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
+  su2double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
 	unsigned short iMarker, iDim, iDV, iFFDBox;
 	unsigned long iVertex, iPoint;
-	double delta_eps, my_Gradient, Gradient, *Normal, dS, *VarCoord, Sensitivity,
+	su2double delta_eps, my_Gradient, Gradient, *Normal, dS, *VarCoord, Sensitivity,
   dalpha[3], deps[3], dalpha_deps;
 	char config_file_name[MAX_STRING_SIZE], *cstr;
 	ofstream Gradient_file, Jacobian_file;
@@ -47,7 +47,7 @@ int main(int argc, char *argv[]) {
   /*--- MPI initialization, and buffer setting ---*/
 
 #ifdef HAVE_MPI
-	MPI_Init(&argc,&argv);
+	SU2_MPI::Init(&argc,&argv);
 	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 	MPI_Comm_size(MPI_COMM_WORLD,&size);
 #endif
@@ -123,7 +123,7 @@ int main(int argc, char *argv[]) {
 #ifdef HAVE_MPI
   StartTime = MPI_Wtime();
 #else
-  StartTime = double(clock())/double(CLOCKS_PER_SEC);
+  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #endif
   
 	if (rank == MASTER_NODE)
@@ -408,7 +408,7 @@ int main(int argc, char *argv[]) {
     }
     
 #ifdef HAVE_MPI
-		MPI_Allreduce(&my_Gradient, &Gradient, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+		SU2_MPI::Allreduce(&my_Gradient, &Gradient, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 #else
 		Gradient = my_Gradient;
 #endif
@@ -512,7 +512,7 @@ int main(int argc, char *argv[]) {
 #ifdef HAVE_MPI
     StopTime = MPI_Wtime();
 #else
-    StopTime = double(clock())/double(CLOCKS_PER_SEC);
+    StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #endif
     
     /*--- Compute/print the total time for performance benchmarking. ---*/
