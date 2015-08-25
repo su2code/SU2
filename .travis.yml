@@ -9,7 +9,10 @@ compiler:
 notifications:
     email:
         recipients:
-            - su2code-dev@lists.stanford.edu
+           # - su2code-dev@lists.stanford.edu
+            - economon@stanford.edu
+            - padronas@stanford.edu
+            - tim.albring@scicomp.uni-kl.de
   
 branches:
     only:
