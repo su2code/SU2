@@ -1,5 +1,9 @@
-# SU2 Makefile.am for SU2_FSI
-# SU2 v3.2.9 "eagle"
+################################################################################
+#
+# \file Makefile.am
+# \brief Makefile for SU2_FSI
+# \author M. Colonno, T. Economon, F. Palacios, R. Sanchez
+# \version 4.0.0 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -25,51 +29,45 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 #
-# Created: 		05/18/15
-# Last updated: 	05/19/15
-#
-# Created by: 		R. Sanchez
-# Updated by: 		R. Sanchez
-#
-######################################################################################
+################################################################################
 
-# AUTOMAKE_OPTIONS = subdir-objects
+AUTOMAKE_OPTIONS = subdir-objects
 ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS}
 
 bin_PROGRAMS = ../bin/SU2_FSI
 
-___bin_SU2_FSI_SOURCES = ../include/SU2_FSI.hpp \
+su2_fsi_sources = ../include/SU2_FSI.hpp \
 		../src/SU2_FSI.cpp \
-	../include/iteration_structure_fsi.hpp \
+		../include/iteration_structure_fsi.hpp \
 		../src/iteration_structure_fsi.cpp \
-    ../../SU2_CFD/include/fluid_model.hpp \
-    ../../SU2_CFD/include/gauss_structure.hpp \
+    	../../SU2_CFD/include/fluid_model.hpp \
+    	../../SU2_CFD/include/gauss_structure.hpp \
     	../../SU2_CFD/include/gauss_structure.inl \
-    ../../SU2_CFD/include/element_structure.hpp \
+    	../../SU2_CFD/include/element_structure.hpp \
     	../../SU2_CFD/include/element_structure.inl \
-    ../../SU2_CFD/include/fluid_model.inl \
+    	../../SU2_CFD/include/fluid_model.inl \
 		../../SU2_CFD/include/integration_structure.hpp \
 		../../SU2_CFD/include/integration_structure.inl \
 		../../SU2_CFD/include/iteration_structure.hpp \
 		../../SU2_CFD/include/numerics_structure.hpp \
-   	../../SU2_CFD/include/numerics_machine_learning.hpp \
+   		../../SU2_CFD/include/numerics_machine_learning.hpp \
 		../../SU2_CFD/include/numerics_machine_learning.inl \
 		../../SU2_CFD/include/numerics_machine_learning_turbulent.hpp \
 		../../SU2_CFD/include/numerics_structure.inl \
 		../../SU2_CFD/include/output_structure.hpp \
 		../../SU2_CFD/include/solver_structure.hpp \
 		../../SU2_CFD/include/solver_structure.inl \
-    ../../SU2_CFD/include/transport_model.hpp \
-    ../../SU2_CFD/include/transport_model.inl \
+   		../../SU2_CFD/include/transport_model.hpp \
+    	../../SU2_CFD/include/transport_model.inl \
 		../../SU2_CFD/include/variable_structure.hpp \
 		../../SU2_CFD/include/variable_structure.inl \
 		../../SU2_CFD/src/definition_structure.cpp \
 		../../SU2_CFD/src/fluid_model.cpp \
-    ../../SU2_CFD/src/fluid_model_pig.cpp \
-    ../../SU2_CFD/src/fluid_model_pvdw.cpp \
-    ../../SU2_CFD/src/fluid_model_ppr.cpp \
-    ../../SU2_CFD/src/gauss_structure.cpp \
-    ../../SU2_CFD/src/element_linear.cpp \
+    	../../SU2_CFD/src/fluid_model_pig.cpp \
+    	../../SU2_CFD/src/fluid_model_pvdw.cpp \
+    	../../SU2_CFD/src/fluid_model_ppr.cpp \
+    	../../SU2_CFD/src/gauss_structure.cpp \
+    	../../SU2_CFD/src/element_linear.cpp \
     	../../SU2_CFD/src/element_structure.cpp \
 		../../SU2_CFD/src/integration_structure.cpp \
 		../../SU2_CFD/src/integration_time.cpp \
@@ -98,13 +96,14 @@ ___bin_SU2_FSI_SOURCES = ../include/SU2_FSI.hpp \
 		../../SU2_CFD/src/output_cgns.cpp \
 		../../SU2_CFD/src/output_structure.cpp \
 		../../SU2_CFD/src/output_tecplot.cpp \
-    ../../SU2_CFD/src/output_fieldview.cpp \
-    ../../SU2_CFD/src/output_su2.cpp \
-    ../../SU2_CFD/src/output_paraview.cpp \
+    	../../SU2_CFD/src/output_fieldview.cpp \
+    	../../SU2_CFD/src/output_su2.cpp \
+    	../../SU2_CFD/src/output_paraview.cpp \
 		../../SU2_CFD/src/solver_adjoint_levelset.cpp \
 		../../SU2_CFD/src/solver_adjoint_mean.cpp \
 		../../SU2_CFD/src/solver_adjoint_tne2.cpp \
 		../../SU2_CFD/src/solver_adjoint_turbulent.cpp \
+		../../SU2_CFD/src/solver_adjoint_discrete.cpp \
 		../../SU2_CFD/src/solver_direct_poisson.cpp \
 		../../SU2_CFD/src/solver_direct_elasticity.cpp \
 		../../SU2_CFD/src/solver_direct_heat.cpp \
@@ -118,11 +117,12 @@ ___bin_SU2_FSI_SOURCES = ../include/SU2_FSI.hpp \
 		../../SU2_CFD/src/solver_fem_elasticity.cpp \
 		../../SU2_CFD/src/solver_structure.cpp \
 		../../SU2_CFD/src/solver_template.cpp \
-    ../../SU2_CFD/src/transport_model.cpp \
+    	../../SU2_CFD/src/transport_model.cpp \
 		../../SU2_CFD/src/variable_adjoint_levelset.cpp \
 		../../SU2_CFD/src/variable_adjoint_mean.cpp \
 		../../SU2_CFD/src/variable_adjoint_tne2.cpp \
 		../../SU2_CFD/src/variable_adjoint_turbulent.cpp \
+		../../SU2_CFD/src/variable_adjoint_discrete.cpp \
 		../../SU2_CFD/src/variable_direct_poisson.cpp \
 		../../SU2_CFD/src/variable_direct_elasticity.cpp \
 		../../SU2_CFD/src/variable_direct_heat.cpp \
@@ -137,24 +137,45 @@ ___bin_SU2_FSI_SOURCES = ../include/SU2_FSI.hpp \
 		../../SU2_CFD/src/variable_structure.cpp \
 		../../SU2_CFD/src/variable_template.cpp
 
-___bin_SU2_FSI_CXXFLAGS =
-___bin_SU2_FSI_LDADD = ../../Common/lib/libSU2.a
+su2_fsi_cxx_flags =
+su2_fsi_ldadd =
 
 # always link to built dependencies from ./externals
-___bin_SU2_FSI_CXXFLAGS += @su2_externals_INCLUDES@
-___bin_SU2_FSI_LDADD += @su2_externals_LIBS@
+su2_fsi_cxx_flags += @su2_externals_INCLUDES@
+su2_fsi_ldadd += @su2_externals_LIBS@
 
 # if BUILD_CGNS
-___bin_SU2_FSI_CXXFLAGS += @CGNS_CXX@
-___bin_SU2_FSI_LDADD += @CGNS_LD@
+su2_fsi_cxx_flags += @CGNS_CXX@
+su2_fsi_ldadd += @CGNS_LD@
 # endif
 
 # if BUILD_MUTATIONPP
-___bin_SU2_FSI_CXXFLAGS += @MUTATIONPP_CXX@
-___bin_SU2_FSI_LDADD += @MUTATIONPP_LD@
+su2_fsi_cxx_flags += @MUTATIONPP_CXX@
+su2_fsi_ldadd += @MUTATIONPP_LD@
 # endif
 
 # if BUILD_JSONCPP
-___bin_SU2_FSI_CXXFLAGS += @JSONCPP_CXX@
-___bin_SU2_FSI_LDADD += @JSONCPP_LD@
+su2_fsi_cxx_flags += @JSONCPP_CXX@
+su2_fsi_ldadd += @JSONCPP_LD@
 # endif
+
+# if BUILD_HDF5
+su2_fsi_cxx_flags += @HDF5_CXX@
+su2_fsi_ldadd += @HDF5_LD@
+# endif
+
+# if BUILD_SZIP
+su2_fsi_cxx_flags += @SZIP_CXX@
+su2_fsi_ldadd += @SZIP_LD@
+# endif
+
+# if BUILD_ZLIB
+su2_fsi_cxx_flags += @ZLIB_CXX@
+su2_fsi_ldadd += @ZLIB_LD@
+# endif
+
+if BUILD_NORMAL
+___bin_SU2_FSI_SOURCES = $(su2_fsi_sources)
+___bin_SU2_FSI_CXXFLAGS = ${su2_fsi_cxx_flags}
+___bin_SU2_FSI_LDADD = ../../Common/lib/libSU2.a ${su2_fsi_ldadd}
+endif

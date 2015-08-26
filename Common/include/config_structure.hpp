@@ -30,9 +30,8 @@
 
 #pragma once
 
-#ifdef HAVE_MPI
-  #include "mpi.h"
-#endif
+#include "./mpi_structure.hpp"
+
 #include <iostream>
 #include <cstdlib>
 #include <fstream>
@@ -45,6 +44,7 @@
 #include <assert.h>
 
 #include "./option_structure.hpp"
+#include "./datatype_structure.hpp"
 
 using namespace std;
 
@@ -324,6 +324,8 @@ private:
 	Kind_Linear_Solver_Prec_FSI_Struc,		/*!< \brief Preconditioner of the linear solver for the structural part in FSI problems. */
 	Kind_AdjTurb_Linear_Solver,		/*!< \brief Numerical solver for the turbulent adjoint implicit scheme. */
 	Kind_AdjTurb_Linear_Prec,		/*!< \brief Preconditioner of the turbulent adjoint linear solver. */
+  Kind_DiscAdj_Linear_Solver, /*!< \brief Linear solver for the discrete adjoint system. */
+  Kind_DiscAdj_Linear_Prec,  /*!< \brief Preconditioner of the discrete adjoint linear solver. */
 	Kind_SlopeLimit,				/*!< \brief Global slope limiter. */
 	Kind_SlopeLimit_Flow,		/*!< \brief Slope limiter for flow equations.*/
 	Kind_SlopeLimit_TNE2,		/*!< \brief Slope limiter for flow equations.*/
@@ -583,7 +585,6 @@ private:
   *Diss;                /*!< \brief Dissociation potential. */
 	unsigned short nMass,                 /*!< \brief No of particle masses */
 	nTemp;						/*!< \brief No of freestream temperatures specified */
-	bool Inlet_Outlet_Defined; /*!< \brief  that inlet and outlet conditions are defined for each species*/
   su2double *Particle_Mass,         /*!< \brief Mass of all particles present in the plasma */
   *Molar_Mass,               /*!< \brief Molar mass of species in the plasma [kg/kmol] */
   Mixture_Molar_mass,       /*!< \brief Molar mass of the multi-species fluid [kg/kmol] */
@@ -722,10 +723,15 @@ private:
   vector<vector<vector<su2double> > > Aeroelastic_np1, /*!< \brief Aeroelastic solution at time level n+1. */
   Aeroelastic_n, /*!< \brief Aeroelastic solution at time level n. */
 	Aeroelastic_n1; /*!< \brief Aeroelastic solution at time level n-1. */
-  su2double FreqPlungeAeroelastic, /*!< \brief Plunging natural frequency for Aeroelastic. */
-	FreqPitchAeroelastic; /*!< \brief Pitch natural frequency for Aeroelastic. */
+  su2double FlutterSpeedIndex, /*!< \brief The flutter speed index. */
+  PlungeNaturalFrequency, /*!< \brief Plunging natural frequency for Aeroelastic. */
+  PitchNaturalFrequency, /*!< \brief Pitch natural frequency for Aeroelastic. */
+  AirfoilMassRatio, /*!< \brief The airfoil mass ratio for Aeroelastic. */
+  CG_Location, /*!< \brief Center of gravity location for Aeroelastic. */
+  RadiusGyrationSquared; /*!< \brief The radius of gyration squared for Aeroelastic. */
   su2double *Aeroelastic_plunge, /*!< \brief Value of plunging coordinate at the end of an external iteration. */
 	*Aeroelastic_pitch; /*!< \brief Value of pitching coordinate at the end of an external iteration. */
+  unsigned short AeroelasticIter; /*!< \brief Solve the aeroelastic equations every given number of internal iterations. */
   unsigned short Gust_Type,	/*!< \brief Type of Gust. */
   Gust_Dir;   /*!< \brief Direction of the gust */
   su2double Gust_WaveLength,     /*!< \brief The gust wavelength. */
@@ -750,7 +756,8 @@ private:
   unsigned long Nonphys_Points, /*!< \brief Current number of non-physical points in the solution. */
   Nonphys_Reconstr;      /*!< \brief Current number of non-physical reconstructions for 2nd-order upwinding. */
   bool ParMETIS;      /*!< \brief Boolean for activating ParMETIS mode (while testing). */
-  
+  unsigned short DirectDiff; /*!< \brief Direct Differentation mode. */
+  bool DiscreteAdjoint; /*!< \brief AD-based discrete adjoint mode. */
   /*!< \brief param is a map from the option name (config file string) to a pointer to an option child class */
 //	map<string, CAnyOptionRef*> param;
 
@@ -904,10 +911,11 @@ private:
 
   void addMathProblemOption(const string name, bool & Adjoint, const bool & Adjoint_default,
                       bool & Linearized, const bool & Linearized_default,
-                            bool & Restart_Flow, const bool & Restart_Flow_default) {
+                            bool & Restart_Flow, const bool & Restart_Flow_default,
+                            bool &DiscreteAdjoint, const bool & DiscreteAdjoint_default) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
-    COptionBase* val = new COptionMathProblem(name, Adjoint, Adjoint_default, Linearized, Linearized_default, Restart_Flow, Restart_Flow_default);
+    COptionBase* val = new COptionMathProblem(name, Adjoint, Adjoint_default, Linearized, Linearized_default, Restart_Flow, Restart_Flow_default, DiscreteAdjoint, DiscreteAdjoint_default);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
@@ -1203,20 +1211,6 @@ public:
 	 * \return Value of the constant: Gamma
 	 */
 	su2double GetGamma(void);
-
-	/*!
-	 * \brief Get the value of the Gamma of fluid (ratio of specific heats) for a particular species.
-	 * \param[in] - val_Species: Index of desired species specific heat ratio.
-	 * \return Value of the constant: Species_Gamma[iSpecies]
-	 */
-	su2double GetSpecies_Gamma(unsigned short val_Species);
-
-	/*!
-	 * \brief Get the value of the charge number for a particular species (1 for ions, -1 for electrons, 0 for neutral).
-	 * \param[in] - val_Species: Index of desired species charge number.
-	 * \return Value of the constant: Charge_Number[val_Species]
-	 */
-	int GetCharge_Number(unsigned short val_Species);
   
   /*!
    * \brief Get the values of the CFL adapation.
@@ -1261,18 +1255,6 @@ public:
 	su2double GetBulk_Modulus(void);
 
 	/*!
-	 * \brief Get the value of the Gamma of fluid (ratio of specific heats) for monatomic species.
-	 * \return Value of the constant: GammaMonatomic
-	 */
-	su2double GetGammaMonatomic(void);
-
-	/*!
-	 * \brief Get the value of the Gamma of fluid (ratio of specific heats) for diatomic species.
-	 * \return Value of the constant: Gamma
-	 */
-	su2double GetGammaDiatomic(void);
-
-	/*!
 	 * \brief Get the artificial compresibility factor.
 	 * \return Value of the artificial compresibility factor.
 	 */
@@ -1301,13 +1283,6 @@ public:
 	 * \return Value of the constant: Gamma
 	 */
 	su2double GetGas_ConstantND(void);
-
-	/*!
-	 * \brief Get the value of specific gas constant for a particular species.
-	 * \param[in] val_Species - Index of desired species gas constant.
-	 * \return Value of the constant: R
-	 */
-	su2double GetSpecies_Gas_Constant(unsigned short val_Species);
 
 	/*!
 	 * \brief Get the coefficients of the Blottner viscosity model
@@ -2030,14 +2005,6 @@ public:
 	 * \return CFL number for each grid.
 	 */
 	void SetCFL(unsigned short val_mesh, su2double val_cfl);
-
-	/*!
-	 * \brief Get the Courant Friedrich Levi number for each grid, for each species
-	 * \param[in] val_mesh - Index of the mesh were the CFL is applied.
-	 * \param[in] val_Species - Index of the chemical species
-	 * \return CFL number for each grid.
-	 */
-	su2double GetCFL(unsigned short val_mesh, unsigned short val_Species);
 
 	/*!
 	 * \brief Get the Courant Friedrich Levi number for unsteady simulations.
@@ -2866,6 +2833,18 @@ public:
 	 * \return Numerical preconditioner for implicit formulation (solving the linear system).
 	 */
 	unsigned short GetKind_AdjTurb_Linear_Prec(void);
+
+  /*!
+   * \brief Get the kind of solver for the implicit solver.
+   * \return Numerical solver for implicit formulation (solving the linear system).
+   */
+  unsigned short GetKind_DiscAdj_Linear_Solver(void);
+
+  /*!
+   * \brief Get the kind of preconditioner for the implicit solver.
+   * \return Numerical preconditioner for implicit formulation (solving the linear system).
+   */
+  unsigned short GetKind_DiscAdj_Linear_Prec(void);
 
 	/*!
 	 * \brief Set the kind of preconditioner for the implicit solver.
@@ -3802,12 +3781,6 @@ public:
 	 */
 	su2double GetInitial_Gas_Composition(unsigned short iSpecies);
 
-	/*!
-	 * \brief Retrieves the multi-species fluid mixture molar mass.
-	 * \return: Molar mass of the fluid mixture
-	 */
-	su2double GetMixtureMolar_Mass();
-
   /*!
 	 * \brief Provides the formation enthalpy of the specified species at standard conditions
 	 * \return: Enthalpy of formation
@@ -4175,6 +4148,13 @@ public:
 	 * \return Design variable step.
 	 */
 	su2double GetDV_Value(unsigned short val_dv);
+
+  /*!
+   * \brief Set the value of the design variable step, we use this value in design problems.
+   * \param[in] val_dv - Number of the design variable that we want to read.
+   * \param[in] val    - Value of the design variable.
+   */
+  void SetDV_Value(unsigned short val_dv, su2double val);
 
 	/*!
 	 * \brief Get information about the grid movement.
@@ -4636,7 +4616,7 @@ public:
 	 * \return Value of Res_FEM_UTOL (log10 scale).
 	 */
 	su2double GetResidual_FEM_ETOL(void);
-  
+
   /*!
    * \brief Value of the damping factor for the engine inlet bc.
    * \return Value of the damping factor.
@@ -4884,54 +4864,6 @@ public:
 	 * \return The total pressure.
 	 */
 	su2double GetExhaust_Pressure_Target(string val_index);
-
-	/*!
-	 * \brief If inlet and outlet conditions are defined for multi species
-	 * \return true/false
-	 */
-	bool GetInletConditionsDefined();
-
-	/*!
-	 * \brief Get the temperature at an inlet boundary.
-	 * \param[in] iSpecies - Index of the species
-	 * \return The total temperature.
-	 */
-	su2double GetInlet_Species_Temperature(unsigned short iSpecies);
-
-	/*!
-	 * \brief Get the temperature at an outlet boundary.
-	 * \param[in] iSpecies - Index of the species
-	 * \return The total temperature.
-	 */
-	su2double GetOutlet_Species_Temperature(unsigned short iSpecies);
-
-	/*!
-	 * \brief Get the pressure at an inlet boundary.
-	 * \param[in] iSpecies - Index of the species
-	 * \return The total temperature.
-	 */
-	su2double GetInlet_Species_Pressure(unsigned short iSpecies);
-
-	/*!
-	 * \brief Get the pressure at an outlet boundary.
-	 * \param[in] iSpecies - Index of the species
-	 * \return The total temperature.
-	 */
-	su2double GetOutlet_Species_Pressure(unsigned short iSpecies);
-
-	/*!
-	 * \brief Get the velocity at an inlet boundary.
-	 * \param[in] iSpecies - Index of the species
-	 * \return The total temperature.
-	 */
-	su2double GetInlet_Species_Velocity(unsigned short iSpecies);
-
-	/*!
-	 * \brief Get the velocity at an outlet boundary.
-	 * \param[in] iSpecies - Index of the species
-	 * \return The total temperature.
-	 */
-	su2double GetOutlet_Species_Velocity(unsigned short iSpecies);
 
   /*!
 	 * \brief Value of the CFL reduction in LevelSet problems.
@@ -5267,6 +5199,11 @@ public:
 	 */
 	void SetAeroelastic_n1(void);
 
+  /*!
+   * \brief Aeroelastic Flutter Speed Index.
+   */
+  su2double GetAeroelastic_Flutter_Speed_Index(void);
+  
 	/*!
 	 * \brief Uncoupled Aeroelastic Frequency Plunge.
 	 */
@@ -5277,6 +5214,26 @@ public:
 	 */
 	su2double GetAeroelastic_Frequency_Pitch(void);
 
+  /*!
+   * \brief Aeroelastic Airfoil Mass Ratio.
+   */
+  su2double GetAeroelastic_Airfoil_Mass_Ratio(void);
+
+  /*!
+   * \brief Aeroelastic center of gravity location.
+   */
+  su2double GetAeroelastic_CG_Location(void);
+
+  /*!
+   * \brief Aeroelastic radius of gyration squared.
+   */
+  su2double GetAeroelastic_Radius_Gyration_Squared(void);
+
+  /*!
+   * \brief Aeroelastic solve every x inner iteration.
+   */
+  unsigned short GetAeroelasticIter(void);
+  
 	/*!
 	 * \brief Value of plunging coordinate.
      * \param[in] val_marker - the marker we are monitoring.
@@ -5456,6 +5413,19 @@ public:
    */
   unsigned short GetConsole_Output_Verb(void);
 
+  /*!
+   *
+   * \brief Get the direct differentation method.
+   * \return direct differentiation method.
+   */
+  unsigned short GetDirectDiff();
+
+  /*!
+   * \brief Get the indicator whether we are solving an discrete adjoint problem.
+   * \return the discrete adjoint indicator.
+  */
+  bool GetDiscrete_Adjoint(void);
+
 	/*!
 	 * \brief Get the number of fluid subiterations roblems.
 	 * \return Number of FSI subiters.
@@ -5558,7 +5528,7 @@ public:
 	 * \return 	Value of the max time while the load is linearly increased
 	 */
 	su2double GetStatic_Time(void);
-	
+
 	/*!
 	 * \brief Get the order of the predictor for FSI applications.
 	 * \return 	Order of predictor

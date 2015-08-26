@@ -30,9 +30,8 @@
 
 #pragma once
 
-#ifdef HAVE_MPI
-  #include "mpi.h"
-#endif
+#include "./mpi_structure.hpp"
+
 #ifdef HAVE_METIS
   #include "metis.h"
 #endif
@@ -569,9 +568,16 @@ public:
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.
+   * \param[in] val_iZone - Index of the current zone.
 	 */
-	virtual void SetRotationalVelocity(CConfig *config);
+	virtual void SetRotationalVelocity(CConfig *config, unsigned short val_iZone);
 
+    /*!
+     * \brief A virtual member.
+     * \param[in] config - Definition of the particular problem.
+     */
+    virtual void SetTranslationalVelocity(CConfig *config);
+    
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.
@@ -853,6 +859,39 @@ public:
   bool SegmentIntersectsTriangle(su2double point0[3], su2double point1[3],
                                  su2double vert0[3], su2double vert1[3], su2double vert2[3]);
 
+  /*!
+   * \brief Register the coordinates of the mesh nodes.
+   * \param[in] config
+   */
+  void RegisterCoordinates(CConfig *config);
+
+  /*!
+   * \brief Update the multi-grid structure and the wall-distance.
+   * \param geometry_container - Geometrical definition.
+   * \param config - Config
+   */
+  void UpdateGeometry(CGeometry **geometry_container, CConfig *config);
+
+  /*!
+   * \brief A virtual member.
+   * \param config - Config
+   */
+  virtual void SetSensitivity(CConfig *config);
+
+  /*!
+   * \brief A virtual member.
+   * \param iPoint - Point
+   * \param iDim - Dimension
+   */
+  virtual su2double GetSensitivity(unsigned long iPoint, unsigned short iDim);
+
+  /*!
+   * \brief A virtual member.
+   * \param iPoint - Point
+   * \param iDim - Dimension
+   * \param val - Value of the sensitivity
+   */
+  virtual void SetSensitivity(unsigned long iPoint, unsigned short iDim, su2double val);
 };
 
 /*!
@@ -870,7 +909,8 @@ class CPhysicalGeometry : public CGeometry {
 	unsigned short *Global_to_Local_Marker;	/*!< \brief Global to Local marker. */
     unsigned long *adj_counter; /*!< \brief Adjacency counter. */
     unsigned long **adjacent_elem; /*!< \brief Adjacency element list. */
-  
+  su2double* Sensitivity; /*! <\brief Vector holding the sensitivities at each point. */
+
 public:
   
 	/*!
@@ -1134,8 +1174,15 @@ public:
 	/*!
 	 * \brief Set the rotational velocity at each node.
 	 * \param[in] config - Definition of the particular problem.
+   * \param[in] val_iZone - Index of the current zone.
 	 */
-	void SetRotationalVelocity(CConfig *config);
+	void SetRotationalVelocity(CConfig *config, unsigned short val_iZone);
+    
+    /*!
+     * \brief Set the translational velocity at each node.
+     * \param[in] config - Definition of the particular problem.
+     */
+    void SetTranslationalVelocity(CConfig *config);
 
 	/*! 
 	 * \brief Set the grid velocity via finite differencing at each node.
@@ -1374,6 +1421,29 @@ public:
    */
   su2double Compute_Volume(CConfig *config, bool original_surface);
   
+
+  /*!
+   * \brief Read the sensitivity from adjoint solution file and store it.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetSensitivity(CConfig *config);
+
+  /*!
+   * \brief Get the Sensitivity at a specific point.
+   * \param[in] iPoint - The point where to get the sensitivity.
+   * \param[in] iDim - The component of the dim. vector.
+   * \returns The sensitivity at point iPoint and dim. iDim.
+   */
+  su2double GetSensitivity(unsigned long iPoint, unsigned short iDim);
+
+  /*!
+   * \brief Set the Sensitivity at a specific point.
+   * \param[in] iPoint - The point where to get the sensitivity.
+   * \param[in] iDim - The component of the dim. vector.
+   * \param[in] val - Value of the sensitivity.
+   */
+  void SetSensitivity(unsigned long iPoint, unsigned short iDim, su2double val);
+
 };
 
 /*! 
@@ -1490,8 +1560,15 @@ public:
 	/*!
 	 * \brief Set the rotational velocity at each grid point on a coarse mesh.
 	 * \param[in] config - Definition of the particular problem.
+   * \param[in] val_iZone - Index of the current zone.
 	 */
-	void SetRotationalVelocity(CConfig *config);
+	void SetRotationalVelocity(CConfig *config, unsigned short val_iZone);
+    
+    /*!
+     * \brief Set the translational velocity at each grid point on a coarse mesh.
+     * \param[in] config - Definition of the particular problem.
+     */
+    void SetTranslationalVelocity(CConfig *config);
 
 	/*!
 	 * \brief Set the grid velocity at each node in the coarse mesh level.

@@ -118,14 +118,14 @@ CGeometry::~CGeometry(void) {
   
   if (edge != NULL) {
     for (iEdge = 0; iEdge < nEdge; iEdge ++)
-      if (edge[iEdge] != NULL) delete edge[iEdge];
+      if (edge[iEdge] != NULL) delete [] edge[iEdge];
     delete[] edge;
   }
   
   if (vertex != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-        if (vertex[iMarker][iVertex] != NULL) delete vertex[iMarker][iVertex];
+        if (vertex[iMarker][iVertex] != NULL) delete [] vertex[iMarker][iVertex];
       }
     }
     delete[] vertex;
@@ -134,7 +134,7 @@ CGeometry::~CGeometry(void) {
   if (newBound != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
-        if (newBound[iMarker][iElem_Bound] != NULL) delete newBound[iMarker][iElem_Bound];
+        if (newBound[iMarker][iElem_Bound] != NULL) delete [] newBound[iMarker][iElem_Bound];
       }
     }
     delete[] newBound;
@@ -823,6 +823,39 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
   
 }
 
+
+void CGeometry::RegisterCoordinates(CConfig *config){
+  unsigned short iDim;
+  unsigned long iPoint;
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+    for (iDim = 0; iDim < nDim; iDim++){
+      AD::RegisterInput(node[iPoint]->GetCoord()[iDim]);
+    }
+  }
+}
+
+void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config){
+
+    unsigned short iMesh;
+    geometry_container[MESH_0]->Set_MPI_Coord(config);
+
+    geometry_container[MESH_0]->SetCG();
+    geometry_container[MESH_0]->SetControlVolume(config, UPDATE);
+    geometry_container[MESH_0]->SetBoundControlVolume(config, UPDATE);
+
+    for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++){
+        /*--- Update the control volume structures ---*/
+
+        geometry_container[iMesh]->SetControlVolume(config,geometry_container[iMesh-1], UPDATE);
+        geometry_container[iMesh]->SetBoundControlVolume(config,geometry_container[iMesh-1], UPDATE);
+        geometry_container[iMesh]->SetCoord(geometry_container[iMesh-1]);
+
+    }
+    if (config->GetKind_Solver() == DISC_ADJ_RANS)
+      geometry_container[MESH_0]->ComputeWall_Distance(config);
+}
+
 void CGeometry::ComputeSurf_Curvature(CConfig *config) {
   unsigned short iMarker, iNeigh_Point, iDim, iNode, iNeighbor_Nodes, Neighbor_Node;
   unsigned long Neighbor_Point, iVertex, iPoint, jPoint, iElem_Bound, iEdge, nLocalVertex, MaxLocalVertex , *Buffer_Send_nVertex, *Buffer_Receive_nVertex, TotalnPointDomain;
@@ -841,6 +874,8 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
   
   /*--- Allocate surface curvature ---*/
   K = new su2double [nPoint];
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++) K[iPoint] = 0.0;
   
   if (nDim == 2) {
     
@@ -883,7 +918,7 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
               radius = sqrt(((X2-X1)*(X2-X1) + (Y2-Y1)*(Y2-Y1))*
                             ((X2-X3)*(X2-X3) + (Y2-Y3)*(Y2-Y3))*
                             ((X3-X1)*(X3-X1) + (Y3-Y1)*(Y3-Y1)))/
-              (2.0*fabs(X1*Y2+X2*Y3+X3*Y1-X1*Y3-X2*Y1-X3*Y2));
+              (2.0*fabs(X1*Y2+X2*Y3+X3*Y1-X1*Y3-X2*Y1-X3*Y2)+EPS);
               
               K[iPoint] = 1.0/radius;
               node[iPoint]->SetCurvature(K[iPoint]);
@@ -1050,7 +1085,7 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
     delete [] Check_Edge;
     
     for (iPoint = 0; iPoint < nPoint; iPoint++)
-      delete NormalMeanK[iPoint];
+      delete [] NormalMeanK[iPoint];
     delete [] NormalMeanK;
     
   }
@@ -1201,7 +1236,8 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
           Dist += (Coord[iDim]-Buffer_Receive_Coord[(iProcessor*MaxLocalVertex+iVertex)*nDim+iDim])*
           (Coord[iDim]-Buffer_Receive_Coord[(iProcessor*MaxLocalVertex+iVertex)*nDim+iDim]);
         }
-        Dist = sqrt(Dist);
+        if (Dist!=0.0) Dist = sqrt(Dist);
+        else Dist = 0.0;
         if (Dist < MinDist) MinDist = Dist;
       }
     }
@@ -2520,7 +2556,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
     delete[] Global2Local_Point;
     
     for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
-      delete VertexIn[iMarker];
+      delete [] VertexIn[iMarker];
     delete[] VertexIn;
     
   }
@@ -5398,7 +5434,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
     delete [] Marker_All_TagBound_Copy;
     delete [] PointIn;
     for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
-      delete VertexIn[iMarker];
+      delete [] VertexIn[iMarker];
     delete[] VertexIn;
   }
   
@@ -5788,19 +5824,19 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
   
   delete [] DomainSendCount;
   for (iDomain = 0; iDomain < nDomain; iDomain++)
-    delete DomainSendMarkers[iDomain];
+    delete [] DomainSendMarkers[iDomain];
   delete[] DomainSendMarkers;
   
   delete [] DomainReceiveCount;
   for (iDomain = 0; iDomain < nDomain; iDomain++)
-    delete DomainReceiveMarkers[iDomain];
+    delete [] DomainReceiveMarkers[iDomain];
   delete[] DomainReceiveMarkers;
   
   /*--- Deallocate the bound variables ---*/
   
   for (iMarker = 0; iMarker < nMarker; iMarker++)
-    delete bound[iMarker];
-  delete bound;
+    delete [] bound[iMarker];
+  delete [] bound;
   
   /*--- Allocate the new bound variables, and set the number of markers ---*/
   
@@ -5919,9 +5955,6 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   unsigned long node_count = 0;
   unsigned long loc_element_count = 0;
   bool elem_reqd = false;
-  
-  /*--- Initialize bool for FSI problems ---*/
-  bool fsi = config->GetFSI_Simulation();
   
   /*--- Initialize counters for local/global points & elements ---*/
 #ifdef HAVE_MPI
@@ -6568,7 +6601,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
           }
           boundary_marker_count++;
         }
-        if ((boundary_marker_count == nMarker)) break;
+        if (boundary_marker_count == nMarker) break;
       }
     }
 
@@ -8610,9 +8643,10 @@ void CPhysicalGeometry::Check_BoundElem_Orientation(CConfig *config) {
 
 void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
   
-  su2double *coord, dist2, dist;
+  su2double *coord, dist;
+  su2double dist2, diff, dist1;
   unsigned short iDim, iMarker;
-  unsigned long iPoint, iVertex, nVertex_SolidWall;
+  unsigned long iPoint, iVertex, nVertex_SolidWall, iVertex_nearestWall;
   
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -8667,13 +8701,31 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
   if (nVertex_SolidWall != 0) {
     for (iPoint = 0; iPoint < GetnPoint(); iPoint++) {
       coord = node[iPoint]->GetCoord();
-      dist = 1E20;
+      dist1 = 1E20;
       for (iVertex = 0; iVertex < nVertex_SolidWall; iVertex++) {
         dist2 = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          dist2 += (coord[iDim]-Coord_bound[iVertex][iDim])
-          *(coord[iDim]-Coord_bound[iVertex][iDim]);
-        if (dist2 < dist) dist = dist2;
+
+        /*--- The wall distance computation is done using the plain su2double datatype to just
+         *  determine the index of the closest vertex. Otherwise we are storing a lot of
+         *  unnecessary derivative information when using AD.---*/
+
+        for (iDim = 0; iDim < nDim; iDim++){
+          diff = (SU2_TYPE::GetPrimary(coord[iDim])
+                  -SU2_TYPE::GetPrimary(Coord_bound[iVertex][iDim]));
+          dist2 += diff*diff;
+        }
+        if (dist2 < dist1) {
+          iVertex_nearestWall = iVertex;
+          dist1 = dist2;
+        }
+      }
+      dist = 0.0;
+
+      /*--- Now we do the computation of the wall distance again using the general datatype.---*/
+
+      for (iDim = 0; iDim < nDim; iDim++){
+        dist += (coord[iDim] - Coord_bound[iVertex_nearestWall][iDim])*
+            (coord[iDim] - Coord_bound[iVertex_nearestWall][iDim]);
       }
       node[iPoint]->SetWall_Distance(sqrt(dist));
     }
@@ -8769,11 +8821,29 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
       for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
         for (iVertex = 0; iVertex < Buffer_Receive_nVertex[iProcessor]; iVertex++) {
           dist2 = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++)
-            dist2 += (coord[iDim]-Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_NS+iVertex)*nDim+iDim])*
-            (coord[iDim]-Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_NS+iVertex)*nDim+iDim]);
-          if (dist2 < dist) dist = dist2;
+
+          /*--- The wall distance computation is done using the plain su2double datatype to just
+           *  determine the index of the closest vertex. Otherwise we are storing a lot of
+           *  unnecessary derivative information when using AD.---*/
+
+          for (iDim = 0; iDim < nDim; iDim++){
+            diff = SU2_TYPE::GetPrimary(coord[iDim]) -
+                SU2_TYPE::GetPrimary(Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_NS+iVertex)*nDim+iDim]);
+            dist2 += diff*diff;
+          }
+          if (dist2 < dist) {
+            iVertex_nearestWall = iProcessor*MaxLocalVertex_NS+iVertex;
+            dist = dist2;
+          }
         }
+
+      /*--- Now we do the computation of the wall distance again using the general datatype.---*/
+
+      dist = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++){
+        dist += (coord[iDim] - Buffer_Receive_Coord[iVertex_nearestWall*nDim+iDim])*
+            (coord[iDim] - Buffer_Receive_Coord[iVertex_nearestWall*nDim+iDim]);
+      }
       node[iPoint]->SetWall_Distance(sqrt(dist));
     }
   }
@@ -11248,7 +11318,7 @@ void CPhysicalGeometry::GetQualityStatistics(su2double *statistics) {
   
 }
 
-void CPhysicalGeometry::SetRotationalVelocity(CConfig *config) {
+void CPhysicalGeometry::SetRotationalVelocity(CConfig *config, unsigned short val_iZone) {
   
   unsigned long iPoint;
   su2double RotVel[3], Distance[3], *Coord, Center[3], Omega[3], L_Ref;
@@ -11260,12 +11330,12 @@ void CPhysicalGeometry::SetRotationalVelocity(CConfig *config) {
   
   /*--- Center of rotation & angular velocity vector from config ---*/
   
-  Center[0] = config->GetMotion_Origin_X(ZONE_0);
-  Center[1] = config->GetMotion_Origin_Y(ZONE_0);
-  Center[2] = config->GetMotion_Origin_Z(ZONE_0);
-  Omega[0]  = config->GetRotation_Rate_X(ZONE_0)/config->GetOmega_Ref();
-  Omega[1]  = config->GetRotation_Rate_Y(ZONE_0)/config->GetOmega_Ref();
-  Omega[2]  = config->GetRotation_Rate_Z(ZONE_0)/config->GetOmega_Ref();
+  Center[0] = config->GetMotion_Origin_X(val_iZone);
+  Center[1] = config->GetMotion_Origin_Y(val_iZone);
+  Center[2] = config->GetMotion_Origin_Z(val_iZone);
+  Omega[0]  = config->GetRotation_Rate_X(val_iZone)/config->GetOmega_Ref();
+  Omega[1]  = config->GetRotation_Rate_Y(val_iZone)/config->GetOmega_Ref();
+  Omega[2]  = config->GetRotation_Rate_Z(val_iZone)/config->GetOmega_Ref();
   L_Ref     = config->GetLength_Ref();
   
   /*--- Print some information to the console ---*/
@@ -11301,6 +11371,43 @@ void CPhysicalGeometry::SetRotationalVelocity(CConfig *config) {
     
     node[iPoint]->SetGridVel(RotVel);
     
+  }
+  
+}
+
+void CPhysicalGeometry::SetTranslationalVelocity(CConfig *config) {
+  
+  unsigned short iDim;
+  unsigned long iPoint;
+  su2double xDot[3];
+  
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+  
+  /*--- Get the translational velocity vector from config ---*/
+  
+  xDot[0]   = config->GetTranslation_Rate_X(ZONE_0)/config->GetVelocity_Ref();
+  xDot[1]   = config->GetTranslation_Rate_Y(ZONE_0)/config->GetVelocity_Ref();
+  xDot[2]   = config->GetTranslation_Rate_Z(ZONE_0)/config->GetVelocity_Ref();
+  
+  /*--- Print some information to the console ---*/
+  
+  if (rank == MASTER_NODE) {
+    cout << " Non-dim. translational velocity: (" << xDot[0] << ", " << xDot[1];
+    cout << ", " << xDot[2] << ")." << endl;
+  }
+  
+  /*--- Loop over all nodes and set the translational velocity ---*/
+  
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    
+    /*--- Store the grid velocity at this node ---*/
+    
+    for (iDim = 0; iDim < nDim; iDim++)
+      node[iPoint]->SetGridVel(iDim,xDot[iDim]);
+  
   }
   
 }
@@ -11622,10 +11729,19 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
   vector<unsigned long> OldBoundaryElems[100];
   vector<unsigned long>::iterator IterNewElem[100];
 
-  /*--- It only create the mirror structure for the second boundary ---*/
-  bool CreateMirror[10];
-  CreateMirror[1] = false;
-  CreateMirror[2] = true;
+  /*--- We only create the mirror structure for the second boundary ---*/
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
+      /*--- Evaluate the number of periodic boundary conditions ---*/
+      nPeriodic++;
+    }
+  }
+  bool *CreateMirror = new bool[nPeriodic+1];
+  CreateMirror[0] = false;
+  for (iPeriodic = 1; iPeriodic <= nPeriodic; iPeriodic++) {
+    if (iPeriodic <= nPeriodic/2) CreateMirror[iPeriodic] = false;
+    else CreateMirror[iPeriodic] = true;
+  }
   
   /*--- Send an initial message to the console. ---*/
   cout << "Setting the periodic boundary conditions." << endl;
@@ -11633,10 +11749,6 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
   /*--- Loop through each marker to find any periodic boundaries. ---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
     if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
-      
-      /*--- Evaluate the number of periodic boundary conditions defined
-       in the geometry file ---*/
-      nPeriodic++;
       
       /*--- Get marker index of the periodic donor boundary. ---*/
       jMarker = config->GetMarker_Periodic_Donor(config->GetMarker_All_TagBound(iMarker));
@@ -11942,7 +12054,8 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
     }
   }
   
-  delete[] PeriodicBC;
+  delete [] PeriodicBC;
+  delete [] CreateMirror;
   
 }
 
@@ -12224,6 +12337,121 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
   }
   
   delete[] Point2Vertex;
+}
+
+void CPhysicalGeometry::SetSensitivity(CConfig *config){
+
+    ifstream restart_file;
+    string filename = config->GetSolution_AdjFileName();
+    bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+    bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+    bool freesurface = (config->GetKind_Regime() == FREESURFACE);
+    bool sst = config->GetKind_Turb_Model() == SST;
+    bool sa = config->GetKind_Turb_Model() == SA;
+    bool grid_movement = config->GetGrid_Movement();
+    su2double Sens, total_T, delta_T, dull_val;
+
+    unsigned short nExtIter, iDim, iExtIter;
+    unsigned long iPoint, index;
+
+    Sensitivity = new su2double[nPoint*nDim];
+
+    if (config->GetUnsteady_Simulation()){
+        nExtIter = config->GetUnst_AdjointIter();
+    //    delta_T  = config->GetDelta_UnstTimeND();
+      delta_T  = 1.0;
+        total_T  = (su2double)nExtIter*delta_T;
+    }else{
+      total_T = 1.0;
+      nExtIter = 1;
+    }
+    int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+ #endif
+
+    unsigned short skipVar = nDim;
+
+    if (incompressible) { skipVar += nDim+1; }
+    if (freesurface)    { skipVar += nDim+2; }
+    if (compressible)   { skipVar += nDim+2; }
+    if (sst) 			{ skipVar += 2;}
+    if (sa)				{ skipVar += 1;}
+
+    if (grid_movement) {skipVar += nDim;}
+
+    /* --- Sensitivity in normal direction --- */
+
+    skipVar += 1;
+
+    /*--- In case this is a parallel simulation, we need to perform the
+     Global2Local index transformation first. ---*/
+    long *Global2Local = new long[Global_nPointDomain];
+
+    /*--- First, set all indices to a negative value by default ---*/
+    for(iPoint = 0; iPoint < Global_nPointDomain; iPoint++)
+      Global2Local[iPoint] = -1;
+
+    /*--- Now fill array with the transform values only for local points ---*/
+    for(iPoint = 0; iPoint < nPointDomain; iPoint++)
+      Global2Local[node[iPoint]->GetGlobalIndex()] = iPoint;
+
+    /*--- Read all lines in the restart file ---*/
+    long iPoint_Local; unsigned long iPoint_Global = 0; string text_line;
+
+
+    for (iPoint = 0; iPoint < nPoint; iPoint++){
+      for (iDim = 0; iDim < nDim; iDim++){
+        Sensitivity[iPoint*nDim+iDim] = 0.0;
+      }
+    }
+
+    for (iExtIter = 0; iExtIter < nExtIter; iExtIter++){
+
+      iPoint_Global = 0;
+
+      filename = config->GetSolution_AdjFileName();
+
+      filename = config->GetObjFunc_Extension(filename);
+
+      if (config->GetUnsteady_Simulation()){
+        filename = config->GetUnsteady_FileName(filename, iExtIter);
+      }
+
+      restart_file.open(filename.data(), ios::in);
+      if (restart_file.fail()) {
+        cout << "There is no adjoint restart file!! " << filename.data() << "."<< endl;
+        exit(EXIT_FAILURE);
+      }
+
+      if (rank == MASTER_NODE)
+        cout << "Reading in sensitivity at iteration " << iExtIter << "."<< endl;
+      /*--- The first line is the header ---*/
+      getline (restart_file, text_line);
+
+      while (getline (restart_file, text_line)) {
+        istringstream point_line(text_line);
+
+        /*--- Retrieve local index. If this node from the restart file lives
+             on a different processor, the value of iPoint_Local will be -1.
+             Otherwise, the local index for this node on the current processor
+             will be returned and used to instantiate the vars. ---*/
+        iPoint_Local = Global2Local[iPoint_Global];
+
+        if (iPoint_Local >= 0){
+          point_line >> index;
+          for (iDim = 0; iDim < skipVar; iDim++){ point_line >> dull_val;}
+          for (iDim = 0; iDim < nDim; iDim++){
+            point_line >> Sens;
+            //                	  Sensitivity[iPoint_Local*nDim+iDim] += Sens*delta_T/total_T;
+            Sensitivity[iPoint_Local*nDim+iDim] += Sens;
+
+          }
+        }
+        iPoint_Global++;
+      }
+      restart_file.close();
+  }
 }
 
 su2double CPhysicalGeometry::Compute_MaxThickness(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil, bool original_surface) {
@@ -13923,21 +14151,21 @@ void CMultiGridGeometry::SetCoord(CGeometry *geometry) {
   delete[] Coordinates;
 }
 
-void CMultiGridGeometry::SetRotationalVelocity(CConfig *config) {
+void CMultiGridGeometry::SetRotationalVelocity(CConfig *config, unsigned short val_iZone) {
   
   unsigned long iPoint_Coarse;
-  su2double *RotVel, Distance[3] = {0.0,0.0,0.0}, *Coord, Center[3] = {0.0,0.0,0.0}, Omega[3] = {0.0,0.0,0.0}, L_Ref;
-  
+  su2double *RotVel, Distance[3] = {0.0,0.0,0.0}, *Coord;
+  su2double Center[3] = {0.0,0.0,0.0}, Omega[3] = {0.0,0.0,0.0}, L_Ref;
   RotVel = new su2double [3];
   
   /*--- Center of rotation & angular velocity vector from config. ---*/
   
-  Center[0] = config->GetMotion_Origin_X(ZONE_0);
-  Center[1] = config->GetMotion_Origin_Y(ZONE_0);
-  Center[2] = config->GetMotion_Origin_Z(ZONE_0);
-  Omega[0]  = config->GetRotation_Rate_X(ZONE_0)/config->GetOmega_Ref();
-  Omega[1]  = config->GetRotation_Rate_Y(ZONE_0)/config->GetOmega_Ref();
-  Omega[2]  = config->GetRotation_Rate_Z(ZONE_0)/config->GetOmega_Ref();
+  Center[0] = config->GetMotion_Origin_X(val_iZone);
+  Center[1] = config->GetMotion_Origin_Y(val_iZone);
+  Center[2] = config->GetMotion_Origin_Z(val_iZone);
+  Omega[0]  = config->GetRotation_Rate_X(val_iZone)/config->GetOmega_Ref();
+  Omega[1]  = config->GetRotation_Rate_Y(val_iZone)/config->GetOmega_Ref();
+  Omega[2]  = config->GetRotation_Rate_Z(val_iZone)/config->GetOmega_Ref();
   L_Ref     = config->GetLength_Ref();
   
   /*--- Loop over all nodes and set the rotational velocity. ---*/
@@ -13967,6 +14195,31 @@ void CMultiGridGeometry::SetRotationalVelocity(CConfig *config) {
   }
   
   delete [] RotVel;
+  
+}
+
+void CMultiGridGeometry::SetTranslationalVelocity(CConfig *config) {
+  
+  unsigned iDim;
+  unsigned long iPoint_Coarse;
+  su2double xDot[3];
+  
+  /*--- Get the translational velocity vector from config ---*/
+  
+  xDot[0]   = config->GetTranslation_Rate_X(ZONE_0)/config->GetVelocity_Ref();
+  xDot[1]   = config->GetTranslation_Rate_Y(ZONE_0)/config->GetVelocity_Ref();
+  xDot[2]   = config->GetTranslation_Rate_Z(ZONE_0)/config->GetVelocity_Ref();
+  
+  /*--- Loop over all nodes and set the translational velocity ---*/
+  
+  for (iPoint_Coarse = 0; iPoint_Coarse < nPoint; iPoint_Coarse++) {
+    
+    /*--- Store the grid velocity at this node ---*/
+    
+    for (iDim = 0; iDim < nDim; iDim++)
+      node[iPoint_Coarse]->SetGridVel(iDim,xDot[iDim]);
+    
+  }
   
 }
 
@@ -14212,15 +14465,19 @@ CPeriodicGeometry::CPeriodicGeometry(CGeometry *geometry, CConfig *config) {
   dx, dy, dz, rotCoord[3], *Coord_i;
   unsigned short nMarker_Max = config->GetnMarker_Max();
 
-  /*--- It only create the mirror structure for the second boundary ---*/
-  bool CreateMirror[10];
-  CreateMirror[1] = false;
-  CreateMirror[2] = true;
-  
-  /*--- Compute the number of periodic bc on the geometry ---*/
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY)
+  /*--- We only create the mirror structure for the second boundary ---*/
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
+      /*--- Evaluate the number of periodic boundary conditions ---*/
       nPeriodic++;
+    }
+  }
+  bool *CreateMirror = new bool[nPeriodic+1];
+  CreateMirror[0] = false;
+  for (iPeriodic = 1; iPeriodic <= nPeriodic; iPeriodic++) {
+    if (iPeriodic <= nPeriodic/2) CreateMirror[iPeriodic] = false;
+    else CreateMirror[iPeriodic] = true;
+  }
   
   /*--- Write the number of dimensions of the problem ---*/
   nDim = geometry->GetnDim();
@@ -14517,7 +14774,8 @@ CPeriodicGeometry::CPeriodicGeometry(CGeometry *geometry, CConfig *config) {
     
   }
   
-  delete[] Index;
+  delete [] Index;
+  delete [] CreateMirror;
   
 }
 
@@ -14527,7 +14785,7 @@ CPeriodicGeometry::~CPeriodicGeometry(void) {
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
-      if (newBoundPer[iMarker][iElem_Bound] != NULL) delete newBoundPer[iMarker][iElem_Bound];
+      if (newBoundPer[iMarker][iElem_Bound] != NULL) delete [] newBoundPer[iMarker][iElem_Bound];
     }
   }
   if (newBoundPer != NULL) delete[] newBoundPer;

@@ -122,7 +122,7 @@ inline void CSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) 
 
 //inline void CSolver::SetSecondary_Limiter(CGeometry *geometry, CConfig *config) { }
 
-inline void CSolver::SetPreconditioner(CConfig *config, unsigned short iPoint) { }
+inline void CSolver::SetPreconditioner(CConfig *config, unsigned long iPoint) { }
 
 inline void CSolver::SetDistance(CGeometry *geometry, CConfig *config) { };
 
@@ -1069,3 +1069,30 @@ inline su2double CAdjTNE2EulerSolver::GetTotal_Sens_Press() { return Total_Sens_
 
 inline su2double CAdjTNE2EulerSolver::GetTotal_Sens_Temp() { return Total_Sens_Temp; }
 
+inline void CSolver::RegisterInput(CGeometry *geometry_container, CConfig *config){}
+
+inline void CSolver::RegisterOutput(CGeometry *geometry_container, CConfig *config){}
+
+inline void CSolver::SetAdjointOutput(CGeometry *geometry, CConfig *config){}
+
+inline void CSolver::SetAdjointInput(CGeometry *geometry, CConfig *config){}
+
+inline void CSolver::RegisterObj_Func(CConfig *config){}
+
+inline void CSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config){}
+
+inline void CSolver::SetSensitivity(CGeometry *geometry, CConfig *config){}
+
+inline void CSolver::SetAdj_ObjFunc(CGeometry *geometry, CConfig *config){}
+
+inline su2double CDiscAdjSolver::GetTotal_Sens_Geo() { return Total_Sens_Geo; }
+
+inline su2double CDiscAdjSolver::GetTotal_Sens_Mach() { return Total_Sens_Mach; }
+
+inline su2double CDiscAdjSolver::GetTotal_Sens_AoA() { return Total_Sens_AoA; }
+
+inline su2double CDiscAdjSolver::GetTotal_Sens_Press() { return Total_Sens_Press; }
+
+inline su2double CDiscAdjSolver::GetTotal_Sens_Temp() { return Total_Sens_Temp; }
+
+inline su2double CDiscAdjSolver::GetCSensitivity(unsigned short val_marker, unsigned long val_vertex) { return CSensitivity[val_marker][val_vertex]; }

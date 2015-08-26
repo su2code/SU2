@@ -33,6 +33,7 @@ Makefile
 *~
 
 # installed autotools
+<<<<<<< HEAD
 contrib/autotools/bin
 contrib/autotools/include
 contrib/autotools/share
@@ -46,3 +47,21 @@ log_make_install.txt
 SU2_FSI/bin/SU2_FSI
 SU2_FEM
 discardMod.sh
+=======
+externals/autotools/bin
+externals/autotools/include
+externals/autotools/share
+
+# externally downloaded tools
+externals/CoDi
+externals/adjointmpi
+
+#logs and errors
+*.log
+*.err
+
+# configuration sets
+REVERSE/
+NORMAL/
+DIRECTDIFF/
+>>>>>>> develop

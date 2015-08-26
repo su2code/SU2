@@ -28,6 +28,7 @@
  */
 
 #include "../include/linear_solvers_structure.hpp"
+#include "../include/linear_solvers_structure_b.hpp"
 
 void CSysSolve::ApplyGivens(const su2double & s, const su2double & c, su2double & h1, su2double & h2) {
   
@@ -549,7 +550,7 @@ unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x,
     
 		precond(p, phat);
 		mat_vec(phat, v);
-    
+
 		/*--- Calculate step-length alpha ---*/
     
     su2double r_0_v = dotProd(r_0, v);
@@ -607,7 +608,23 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
   unsigned long MaxIter = config->GetLinear_Solver_Iter();
   unsigned long IterLinSol = 0;
   CMatrixVectorProduct *mat_vec;
-  
+
+  bool TapeActive = NO;
+
+  if (config->GetDiscrete_Adjoint()){
+#ifdef CODI_REVERSE_TYPE
+
+   /* --- Check whether the tape is active, i.e. if it is recording and store the status --- */
+
+    TapeActive = AD::globalTape.isActive();
+
+
+    /* --- Stop the recording for the linear solver --- */
+
+    AD::StopRecording();
+#endif
+  }
+
   /*--- Solve the linear system using a Krylov subspace method ---*/
   
   if (config->GetKind_Linear_Solver() == BCGSTAB ||
@@ -693,7 +710,83 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
         break;
     }
   }
-  
+
+
+  if(TapeActive){
+
+    /* --- Prepare the externally differentiated linear solver --- */
+
+    SetExternalSolve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+
+    /* --- Start recording if it was stopped for the linear solver --- */
+
+    AD::StartRecording();
+  }
+
   return IterLinSol;
   
+}
+
+void CSysSolve::SetExternalSolve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CSysVector & LinSysSol, CGeometry *geometry, CConfig *config){
+
+#ifdef CODI_REVERSE_TYPE
+  
+  unsigned long size = LinSysRes.GetLocSize();
+  unsigned long i, nBlk = LinSysRes.GetNBlk(),
+                nVar = LinSysRes.GetNVar(),
+                nBlkDomain = LinSysRes.GetNBlkDomain();
+
+  /*--- Arrays to store the indices of the input/output of the linear solver.
+     * Note: They will be deleted in the CSysSolve_b::Delete_b routine. ---*/
+
+  int *LinSysRes_Indices = new int[size];
+  int *LinSysSol_Indices = new int[size];
+
+  for (i = 0; i < size; i++){
+
+    /*--- Register the solution of the linear system (could already be registered when using multigrid) ---*/
+
+    if (LinSysSol[i].getGradientData() == 0){
+      AD::globalTape.registerInput(LinSysSol[i]);
+    }
+
+    /*--- Store the indices ---*/
+
+    LinSysRes_Indices[i] = LinSysRes[i].getGradientData();
+    LinSysSol_Indices[i] = LinSysSol[i].getGradientData();
+  }
+
+  /*--- Push the data to the checkpoint handler for access in the reverse sweep --- */
+
+  AD::CheckpointHandler* dataHandler = new AD::CheckpointHandler;
+
+  dataHandler->addData(LinSysRes_Indices);
+  dataHandler->addData(LinSysSol_Indices);
+  dataHandler->addData(size);
+  dataHandler->addData(nBlk);
+  dataHandler->addData(nVar);
+  dataHandler->addData(nBlkDomain);
+  dataHandler->addData(&Jacobian);
+  dataHandler->addData(geometry);
+  dataHandler->addData(config);
+
+  /* --- Build preconditioner for the transposed Jacobian ---*/
+
+  switch(config->GetKind_DiscAdj_Linear_Prec()){
+    case ILU:
+      Jacobian.BuildILUPreconditioner(true);
+      break;
+    case JACOBI:
+      Jacobian.BuildJacobiPreconditioner(true);
+      break;
+    default:
+      cout << "The specified preconditioner is not yet implemented for the discrete adjoint method." << endl;
+      exit(EXIT_FAILURE);
+  }
+
+  /* --- Push the external function to the AD tape --- */
+
+  AD::globalTape.pushExternalFunction(&CSysSolve_b::Solve_b, dataHandler, &CSysSolve_b::Delete_b);
+
+#endif
 }

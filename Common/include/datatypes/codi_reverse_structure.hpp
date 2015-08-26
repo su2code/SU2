@@ -1,10 +1,10 @@
 /*!
- * \file numerics_machine_learning_direct_turbulent.hpp
- * \brief Header for caller functions of the turbulence models.
- * \author B. Tracey
+ * \file codi_reverse_structure.hpp
+ * \brief Header for codi reverse type definition.
+ * \author T. Albring
  * \version 4.0.0 "Cardinal"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
+ * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
@@ -12,6 +12,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *
+ * Copyright (C) 2012-2015 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,20 +28,17 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
 
-/*
-#include <string>
-#include <iostream>
+#include "codi.hpp"
+#include "tools/dataStore.hpp"
 
-#ifdef HAVE_MPI
-  #include "mpi.h"
-#endif
+typedef codi::RealReverse su2double;
 
-namespace SU2MPI{
-  void FinalizeAndExit1();
-  void PrintAndFinalize(std::string);
-  int Rank();
+namespace AD{
+  typedef codi::DataStore CheckpointHandler;
+  struct TapePosition{
+    typename codi::ChunkTape<double, int>::Position start;
+    typename codi::ChunkTape<double, int>::Position end;
+  };
 }
-*/

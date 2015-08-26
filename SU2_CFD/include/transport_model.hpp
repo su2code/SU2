@@ -43,6 +43,8 @@
 #include "stdio.h"
 #include "math.h"
 
+#include "../../Common/include/datatype_structure.hpp"
+
 using namespace std;
 
 
