@@ -1826,8 +1826,8 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
 				VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
 				for (iDim = 0; iDim < nDim; iDim++) {
 					total_index = iPoint*nDim + iDim;
-          LinSysRes[total_index] = SU2_TYPE::GetPrimary(VarCoord[iDim] * VarIncrement);
-          LinSysSol[total_index] = SU2_TYPE::GetPrimary(VarCoord[iDim] * VarIncrement);
+          LinSysRes[total_index] = SU2_TYPE::GetValue(VarCoord[iDim] * VarIncrement);
+          LinSysSol[total_index] = SU2_TYPE::GetValue(VarCoord[iDim] * VarIncrement);
           StiffMatrix.DeleteValsRowi(total_index);
 				}
 			}
@@ -1859,8 +1859,8 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
 				VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
 				for (iDim = 0; iDim < nDim; iDim++) {
 					total_index = iPoint*nDim + iDim;
-          LinSysRes[total_index] = SU2_TYPE::GetPrimary(VarCoord[iDim] * VarIncrement);
-          LinSysSol[total_index] = SU2_TYPE::GetPrimary(VarCoord[iDim] * VarIncrement);
+          LinSysRes[total_index] = SU2_TYPE::GetValue(VarCoord[iDim] * VarIncrement);
+          LinSysSol[total_index] = SU2_TYPE::GetValue(VarCoord[iDim] * VarIncrement);
 					StiffMatrix.DeleteValsRowi(total_index);
 				}
 			}
@@ -1896,8 +1896,8 @@ void CVolumetricMovement::SetBoundaryDerivatives(CGeometry *geometry, CConfig *c
     for (iPoint = 0; iPoint < nPoint; iPoint++){
       for (iDim = 0; iDim < nDim; iDim++){
         total_index = iPoint*nDim + iDim;
-        LinSysRes[total_index] = SU2_TYPE::GetPrimary(geometry->GetSensitivity(iPoint, iDim));
-        LinSysSol[total_index] = SU2_TYPE::GetPrimary(geometry->GetSensitivity(iPoint, iDim));
+        LinSysRes[total_index] = SU2_TYPE::GetValue(geometry->GetSensitivity(iPoint, iDim));
+        LinSysSol[total_index] = SU2_TYPE::GetValue(geometry->GetSensitivity(iPoint, iDim));
       }
     }
   }
@@ -1917,7 +1917,7 @@ void CVolumetricMovement::UpdateGridCoord_Derivatives(CGeometry *geometry, CConf
       for (iDim = 0; iDim < nDim; iDim++) {
         total_index = iPoint*nDim + iDim;
         new_coord[iDim] = geometry->node[iPoint]->GetCoord(iDim);
-        SU2_TYPE::SetDerivative(new_coord[iDim], SU2_TYPE::GetPrimary(LinSysSol[total_index]));
+        SU2_TYPE::SetDerivative(new_coord[iDim], SU2_TYPE::GetValue(LinSysSol[total_index]));
       }
       geometry->node[iPoint]->SetCoord(new_coord);
     }

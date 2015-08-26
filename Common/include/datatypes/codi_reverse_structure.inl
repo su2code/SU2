@@ -48,9 +48,9 @@ namespace AD{
 
 
 namespace SU2_TYPE{
-  inline void SetPrimary(su2double& data, const double &val){data.setValue(val);}
+  inline void SetValue(su2double& data, const double &val){data.setValue(val);}
 
-  inline double GetPrimary(const su2double& data){return data.getValue();}
+  inline double GetValue(const su2double& data){return data.getValue();}
 
   inline void SetSecondary(su2double& data, const double &val){data.setGradient(val);}
 
