@@ -30,9 +30,8 @@
 
 #pragma once
 
-#ifdef HAVE_MPI
-  #include "mpi.h"
-#endif
+#include "../../Common/include/mpi_structure.hpp"
+
 #ifdef HAVE_CGNS
   #include "cgnslib.h"
 #endif

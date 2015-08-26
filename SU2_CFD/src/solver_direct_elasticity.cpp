@@ -654,7 +654,8 @@ void CFEASolver::BC_Clamped(CGeometry *geometry, CSolver **solver_container, CNu
 
 	bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
 
-	// TODO: Improve this bit (memory leak)
+	// TODO: Improve this bit
+
 	su2double **mIdentity, **mZeros;  // Variables to delete blocks in the jacobian
 
 	mIdentity = new su2double *[nDim]; // Number of rows, allocate memory for each
@@ -831,6 +832,7 @@ void CFEASolver::BC_Normal_Displacement(CGeometry *geometry, CSolver **solver_co
                                         unsigned short val_marker) {
 	unsigned long iPoint, iVertex, total_index;
 	unsigned short iVar, iDim;
+
     su2double *Normal, Area, UnitaryNormal[3];
 	
 	su2double TotalDispl = config->GetDispl_Value(config->GetMarker_All_TagBound(val_marker));
@@ -1103,6 +1105,7 @@ void CFEASolver::BC_Sine_Load(CGeometry *geometry, CSolver **solver_container, C
 	unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0, Point_3=0;
 	su2double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL, *Coord_3= NULL;
 	su2double Length_Elem = 0.0, Area_Elem = 0.0, Normal_Elem[3] = {0.0, 0.0, 0.0};
+
 	unsigned short iDim;
 
 	su2double LoadAmplitude = config->GetLoad_Sine_Amplitude(config->GetMarker_All_TagBound(val_marker));
@@ -1385,6 +1388,7 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
 
   /* --- Variable to store the number of elements connected to each node ---*/
 
+
   unsigned short nElPerNode=0;
 
   /* --- For the number of nodes in the mesh ---*/
@@ -1592,40 +1596,6 @@ void CFEASolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver
 				LinSysRes.AddBlock(iPoint, PointTimeRes);
 
 			}
-
-//			su2double checkJacobian;
-//			unsigned long iNode, jNode;
-//			unsigned short jVar;
-//
-//			ofstream myfile;
-//			myfile.open ("oldJacobian.txt");
-//
-//			for (iNode = 0; iNode < nPoint; iNode++){
-//				for (jNode = 0; jNode < nPoint; jNode++){
-//					myfile << "Node " << iNode << " " << jNode << endl;
-//					for (iVar = 0; iVar < nVar; iVar++){
-//						for (jVar = 0; jVar < nVar; jVar++){
-//							checkJacobian = StiffMatrixTime.GetBlock(iNode, jNode, iVar, jVar);
-//							myfile << checkJacobian << " " ;
-//						}
-//						myfile << endl;
-//					}
-//				}
-//			}
-//			myfile.close();
-//
-//			myfile.open ("oldResidual.txt");
-//
-//			for (iNode = 0; iNode < nPoint; iNode++){
-//					myfile << "Node " << iNode << endl;
-//					for (iVar = 0; iVar < nVar; iVar++){
-//							checkJacobian = LinSysRes.GetBlock(iNode, iVar);
-//							myfile << checkJacobian << " " ;
-//						myfile << endl;
-//					}
-//			}
-//			myfile.close();
-
 
 			/*--- Solve the linear dynamic system ---*/
 
@@ -1950,6 +1920,7 @@ void CFEASolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fea_geometry,
 	unsigned long *nodeVertex, *donorVertex;
 	su2double *nodePress, *nodeShearStress, **normalsVertex, **normalsVertex_Unit, **tn_f, *tn_e;
 	su2double factorForces;
+
 	su2double Viscosity_Ref, Velocity_Ref, Density_Ref, Pressure_Ref;
 
 	su2double *Velocity_ND, Density_ND, *Velocity_Real, Density_Real, Velocity2_Real, Velocity2_ND;
@@ -2454,12 +2425,6 @@ void CFEASolver::PredictStruct_Displacement(CGeometry **fea_geometry, CConfig *f
     unsigned long nPoint, nDim;
     su2double *solDisp, *solVel, *solVel_tn, *valPred, *checkPred;
 
-//    solDisp=new su2double [iDim];
-//    solVel=new su2double [iDim];
-//    solVel_tn=new su2double [iDim];
-//    valPred=new su2double [iDim];
-//    checkPred=new su2double [iDim];
-
     nPoint = fea_geometry[MESH_0]->GetnPoint();
     nDim = fea_geometry[MESH_0]->GetnDim();
 
@@ -2508,6 +2473,7 @@ void CFEASolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, CConfig *fe
     su2double *dispPred, *dispCalc, *dispPred_Old, *dispCalc_Old;
     su2double deltaU[3] = {0.0, 0.0, 0.0}, deltaU_p1[3] = {0.0, 0.0, 0.0};
     su2double delta_deltaU[3] = {0.0, 0.0, 0.0};
+
     su2double numAitk, denAitk, WAitken;
 	su2double CurrentTime=fea_config->GetCurrent_DynTime();
 	su2double Static_Time=fea_config->GetStatic_Time();
@@ -2517,11 +2483,6 @@ void CFEASolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, CConfig *fe
     nDim = fea_geometry[MESH_0]->GetnDim();
 
     WAitken=fea_config->GetAitkenStatRelax();
-
-//    dispPred	=new su2double [iDim];
-//    dispPred_Old=new su2double [iDim];
-//    dispCalc	=new su2double [iDim];
-//    dispCalc_Old=new su2double [iDim];
 
 	numAitk = 0.0;
 	denAitk = 0.0;
@@ -2621,9 +2582,6 @@ void CFEASolver::SetAitken_Relaxation(CGeometry **fea_geometry, CConfig *fea_con
 	su2double CurrentTime=fea_config->GetCurrent_DynTime();
 	su2double Static_Time=fea_config->GetStatic_Time();
 
-//    dispPred=new su2double [iDim];
-//    dispCalc=new su2double [iDim];
-
     nPoint = fea_geometry[MESH_0]->GetnPoint();
     nDim = fea_geometry[MESH_0]->GetnDim();
 
@@ -2680,9 +2638,6 @@ void CFEASolver::Update_StructSolution(CGeometry **fea_geometry, CConfig *fea_co
     unsigned long iPoint, iDim;
     unsigned long nPoint, nDim;
     su2double *valSolutionPred, *valSolution;
-
-//    valSolutionPred=new su2double [iDim];
-//    valSolution=new su2double [iDim];
 
     nPoint = fea_geometry[MESH_0]->GetnPoint();
     nDim = fea_geometry[MESH_0]->GetnDim();

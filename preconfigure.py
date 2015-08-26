@@ -144,6 +144,7 @@ def prepare_source(replace = False, remove = False, revert = False):
                         'MPI_Send'      : 'SU2_MPI::Send',
                         'MPI_Wait'      : 'SU2_MPI::Wait',
                         'MPI_Waitall'   : 'SU2_MPI::Waitall',
+			'MPI_Waitany'   : 'SU2_MPI::Waitany',
                         'MPI_Bcast'     : 'SU2_MPI::Bcast',
                         'MPI_Sendrecv'  : 'SU2_MPI::Sendrecv',
                         'MPI_Init'      : 'SU2_MPI::Init',

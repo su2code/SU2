@@ -129,6 +129,7 @@ inline unsigned short CConfig::GetElas2D_Formulation(void) { return Kind_2DElasF
 
 inline su2double CConfig::GetPoissonRatio(void) { return PoissonRatio; }
 
+
 inline su2double CConfig::GetMaterialDensity(void) { return MaterialDensity; }
 
 inline unsigned short CConfig::GetMaterialCompressibility(void) { return Kind_Material_Compress; }
@@ -633,6 +634,10 @@ inline unsigned short CConfig::GetKind_AdjTurb_Linear_Solver(void) { return Kind
 
 inline unsigned short CConfig::GetKind_AdjTurb_Linear_Prec(void) { return Kind_AdjTurb_Linear_Prec; }
 
+inline unsigned short CConfig::GetKind_DiscAdj_Linear_Solver(void) { return Kind_DiscAdj_Linear_Solver; }
+
+inline unsigned short CConfig::GetKind_DiscAdj_Linear_Prec(void) { return Kind_DiscAdj_Linear_Prec; }
+
 inline void CConfig::SetKind_AdjTurb_Linear_Prec(unsigned short val_kind_prec) { Kind_AdjTurb_Linear_Prec = val_kind_prec; }
 
 inline su2double CConfig::GetAdjTurb_Linear_Error(void) { return AdjTurb_Linear_Error; }
@@ -1017,6 +1022,8 @@ inline bool CConfig::GetEngine_Intake(void) { return Engine_Intake; }
 
 inline su2double CConfig::GetDV_Value(unsigned short val_dv) { return DV_Value[val_dv]; }
 
+inline void CConfig::SetDV_Value(unsigned short val_dv, su2double val) { DV_Value[val_dv] = val; }
+
 inline su2double CConfig::GetOrderMagResidual(void) { return OrderMagResidual; }
 
 inline su2double CConfig::GetMinLogResidual(void) { return MinLogResidual; }
@@ -1052,8 +1059,6 @@ inline bool CConfig::GetAdaptBoundary(void) { return AdaptBoundary; }
 inline bool CConfig::GetPoissonSolver(void) { return PoissonSolver; }
 
 inline bool CConfig::Low_Mach_Preconditioning(void) { return Low_Mach_Precon; }
-
-inline bool CConfig::GetInletConditionsDefined(void) { return Inlet_Outlet_Defined; }
 
 inline bool CConfig::GetGravityForce(void) { return GravityForce; }
 
@@ -1148,10 +1153,20 @@ inline void CConfig::SetAeroelastic_n1(void) {
 inline void CConfig::SetAeroelastic_n(void) {
         Aeroelastic_n = Aeroelastic_np1;
 }
-    
-inline su2double CConfig::GetAeroelastic_Frequency_Plunge(void) {return FreqPlungeAeroelastic; }
 
-inline su2double CConfig::GetAeroelastic_Frequency_Pitch(void) {return FreqPitchAeroelastic; }
+inline su2double CConfig::GetAeroelastic_Flutter_Speed_Index(void) {return FlutterSpeedIndex; }
+
+inline su2double CConfig::GetAeroelastic_Frequency_Plunge(void) {return PlungeNaturalFrequency; }
+
+inline su2double CConfig::GetAeroelastic_Frequency_Pitch(void) {return PitchNaturalFrequency; }
+
+inline su2double CConfig::GetAeroelastic_Airfoil_Mass_Ratio(void) {return AirfoilMassRatio; }
+
+inline su2double CConfig::GetAeroelastic_CG_Location(void) {return CG_Location; }
+
+inline su2double CConfig::GetAeroelastic_Radius_Gyration_Squared(void) {return RadiusGyrationSquared; }
+
+inline unsigned short CConfig::GetAeroelasticIter(void) {return AeroelasticIter; }
 
 inline bool CConfig::GetWind_Gust(void) { return Wind_Gust; }
 
@@ -1253,4 +1268,6 @@ inline su2double CConfig::GetResidual_FEM_RTOL(void) { return Res_FEM_RTOL; }
 
 inline su2double CConfig::GetResidual_FEM_ETOL(void) { return Res_FEM_ETOL; }
 
+inline unsigned short CConfig::GetDirectDiff(){ return DirectDiff;}
 
+inline bool CConfig::GetDiscrete_Adjoint() {return DiscreteAdjoint;}

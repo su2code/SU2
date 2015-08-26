@@ -79,7 +79,9 @@ inline void CGeometry::SetColorGrid_Parallel(CConfig *config) { }
 
 inline void CGeometry::DivideConnectivity(CConfig *config, unsigned short Elem_Type) { }
 
-inline void CGeometry::SetRotationalVelocity(CConfig *config) { }
+inline void CGeometry::SetRotationalVelocity(CConfig *config, unsigned short val_iZone) { }
+
+inline void CGeometry::SetTranslationalVelocity(CConfig *config) { }
 
 inline void CGeometry::SetGridVelocity(CConfig *config, unsigned long iter) { }
 
@@ -280,3 +282,12 @@ inline vector<vector<unsigned long> > CPhysicalGeometry::GetPlanarPoints() { ret
 
 inline vector<vector<unsigned long> > CMultiGridGeometry::GetPlanarPoints() { return Plane_points; }
 
+inline void CGeometry::SetSensitivity(CConfig* config){}
+
+inline su2double CGeometry::GetSensitivity(unsigned long iPoint, unsigned short iDim){return 0.0;}
+
+inline su2double CPhysicalGeometry::GetSensitivity(unsigned long iPoint, unsigned short iDim){return Sensitivity[iPoint*nDim+iDim];}
+
+inline void CGeometry::SetSensitivity(unsigned long iPoint, unsigned short iDim, su2double val){}
+
+inline void CPhysicalGeometry::SetSensitivity(unsigned long iPoint, unsigned short iDim, su2double val){Sensitivity[iPoint*nDim+iDim] = val;}

@@ -1737,8 +1737,8 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
   bool viscous            = config->GetViscous();
   bool grid_movement      = config->GetGrid_Movement();
   bool gravity            = config->GetGravityForce();
-  bool turbulent          = config->GetKind_Solver() == RANS;
-  bool tkeNeeded          = ((config->GetKind_Solver() == RANS) && (config->GetKind_Turb_Model() == SST));
+  bool turbulent          = (config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS);
+  bool tkeNeeded          = ((turbulent) && (config->GetKind_Turb_Model() == SST));
   
   if (compressible) {
     
@@ -3801,7 +3801,7 @@ void CTNE2EulerSolver::SetSolution_Limiter(CGeometry *geometry,
   Set_MPI_Solution_Limiter(geometry, config);
 }
 
-void CTNE2EulerSolver::SetPreconditioner(CConfig *config, unsigned short iPoint) {
+void CTNE2EulerSolver::SetPreconditioner(CConfig *config, unsigned long iPoint) {
 	unsigned short iDim, jDim, iVar, jVar;
 	su2double Beta, local_Mach, Beta2, rho, enthalpy, soundspeed, sq_vel;
 	su2double *U_i = NULL;

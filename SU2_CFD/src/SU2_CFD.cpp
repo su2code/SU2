@@ -172,7 +172,8 @@ int main(int argc, char *argv[]) {
     /*--- Computation of wall distances for turbulence modeling ---*/
     
     if ( (config_container[iZone]->GetKind_Solver() == RANS) ||
-        (config_container[iZone]->GetKind_Solver() == ADJ_RANS) )
+        (config_container[iZone]->GetKind_Solver() == ADJ_RANS) ||
+         (config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS))
       geometry_container[iZone][MESH_0]->ComputeWall_Distance(config_container[iZone]);
     
     /*--- Computation of positive surface area in the z-plane which is used for
@@ -239,7 +240,8 @@ int main(int argc, char *argv[]) {
      flows on dynamic meshes, including rigid mesh transformations, dynamically
      deforming meshes, and time-spectral preprocessing. ---*/
     
-    if (config_container[iZone]->GetGrid_Movement()) {
+    if (config_container[iZone]->GetGrid_Movement() ||
+        (config_container[iZone]->GetDirectDiff() == D_DESIGN)) {
       if (rank == MASTER_NODE)
         cout << "Setting dynamic mesh structure." << endl;
       grid_movement[iZone] = new CVolumetricMovement(geometry_container[iZone][MESH_0]);
@@ -250,7 +252,33 @@ int main(int argc, char *argv[]) {
         SetGrid_Movement(geometry_container[iZone], surface_movement[iZone], grid_movement[iZone],
                          FFDBox[iZone], solver_container[iZone], config_container[iZone], iZone, 0, 0);
     }
-    
+
+    if (config_container[iZone]->GetDirectDiff() == D_DESIGN){
+      if (rank == MASTER_NODE)
+        cout << "Setting surface/volume derivatives." << endl;
+
+      /*--- Set the surface derivatives, i.e. the derivative of the surface mesh nodes with respect to the design variables ---*/
+
+      surface_movement[iZone]->SetSurface_Derivative(geometry_container[iZone][MESH_0],config_container[iZone]);
+
+      /*--- Call the volume deformation routine with derivative mode enabled.
+       This computes the derivative of the volume mesh with respect to the surface nodes ---*/
+
+      grid_movement[iZone]->SetVolume_Deformation(geometry_container[iZone][MESH_0],config_container[iZone], true, true);
+
+      /*--- Update the multi-grid structure to propagate the derivative information to the coarser levels ---*/
+
+      geometry_container[iZone][MESH_0]->UpdateGeometry(geometry_container[iZone],config_container[iZone]);
+
+      /*--- Set the derivative of the wall-distance with respect to the surface nodes ---*/
+
+      if ( (config_container[iZone]->GetKind_Solver() == RANS) ||
+          (config_container[iZone]->GetKind_Solver() == ADJ_RANS) ||
+           (config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS))
+        geometry_container[iZone][MESH_0]->ComputeWall_Distance(config_container[iZone]);
+    }
+
+
   }
   
   /*--- For the time-spectral solver, set the grid node velocities. ---*/
@@ -347,7 +375,6 @@ int main(int argc, char *argv[]) {
 	}
 
 	else {
-
     switch (config_container[ZONE_0]->GetKind_Solver()) {
         
       case EULER: case NAVIER_STOKES: case RANS:
@@ -404,6 +431,14 @@ int main(int argc, char *argv[]) {
                          solver_container, numerics_container, config_container,
                          surface_movement, grid_movement, FFDBox);
         break;
+
+      case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES:case DISC_ADJ_RANS:
+        DiscAdjMeanFlowIteration(output, integration_container, geometry_container,
+                                 solver_container, numerics_container, config_container,
+                                 surface_movement, grid_movement, FFDBox);
+        break;
+
+
     }
 	}
     
@@ -464,6 +499,7 @@ int main(int argc, char *argv[]) {
 //	        StopCalc = integration_container[ZONE_0][FEA_SOL]->GetConvergence(); break;
 	    	StopCalc = false; break;
 	      case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
+              case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
 	        StopCalc = integration_container[ZONE_0][ADJFLOW_SOL]->GetConvergence(); break;
 	      case ADJ_TNE2_EULER: case ADJ_TNE2_NAVIER_STOKES:
 	        StopCalc = integration_container[ZONE_0][ADJTNE2_SOL]->GetConvergence(); break;

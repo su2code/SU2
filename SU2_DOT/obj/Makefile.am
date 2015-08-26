@@ -1,5 +1,9 @@
-# SU2 Makefile.am for SU2_DOT
-# SU2 v3.2.7 "eagle"
+################################################################################
+#
+# \file Makefile.am
+# \brief Makefile for SU2_DOT
+# \author M. Colonno, T. Economon, F. Palacios
+# \version 4.0.0 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -25,40 +29,69 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 #
-# Created: 		10/26/12
-# Last updated: 	3/12/13
-#
-# Created by: 		M. Colonno
-# Updated by: 		M. Colonno
-#
-######################################################################################
+################################################################################
 
-# AUTOMAKE_OPTIONS = subdir-objects
+AUTOMAKE_OPTIONS = subdir-objects
 ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS}
 
-bin_PROGRAMS = ../bin/SU2_DOT
+bin_PROGRAMS = 
 
-___bin_SU2_DOT_SOURCES = ../include/SU2_DOT.hpp \
+if BUILD_NORMAL
+bin_PROGRAMS += ../bin/SU2_DOT
+endif
+
+if BUILD_REVERSE
+bin_PROGRAMS += ../bin/SU2_DOT_REVERSE
+endif
+
+su2_dot_sources = ../include/SU2_DOT.hpp \
 		../src/SU2_DOT.cpp
 
-___bin_SU2_DOT_CXXFLAGS =
-___bin_SU2_DOT_LDADD = ../../Common/lib/libSU2.a
+su2_dot_cxx_flags = 
+su2_dot_ldadd =
 
 # always link to built dependencies from ./externals
-___bin_SU2_DOT_CXXFLAGS += @su2_externals_INCLUDES@
-___bin_SU2_DOT_LDADD += @su2_externals_LIBS@
+su2_dot_cxx_flags += @su2_externals_INCLUDES@
+su2_dot_ldadd += @su2_externals_LIBS@
 
 # if BUILD_CGNS
-___bin_SU2_DOT_CXXFLAGS += @CGNS_CXX@
-___bin_SU2_DOT_LDADD += @CGNS_LD@
+su2_dot_cxx_flags += @CGNS_CXX@
+su2_dot_ldadd += @CGNS_LD@
 # endif
 
 # if BUILD_MUTATIONPP
-___bin_SU2_DOT_CXXFLAGS += @MUTATIONPP_CXX@
-___bin_SU2_DOT_LDADD += @MUTATIONPP_LD@
+su2_dot_cxx_flags += @MUTATIONPP_CXX@
+su2_dot_ldadd += @MUTATIONPP_LD@
 # endif
 
 # if BUILD_JSONCPP
-___bin_SU2_DOT_CXXFLAGS += @JSONCPP_CXX@
-___bin_SU2_DOT_LDADD += @JSONCPP_LD@
+su2_dot_cxx_flags += @JSONCPP_CXX@
+su2_dot_ldadd += @JSONCPP_LD@
 # endif
+
+# if BUILD_HDF5
+su2_dot_cxx_flags += @HDF5_CXX@
+su2_dot_ldadd += @HDF5_LD@
+# endif
+
+# if BUILD_SZIP
+su2_dot_cxx_flags += @SZIP_CXX@
+su2_dot_ldadd += @SZIP_LD@
+# endif
+
+# if BUILD_ZLIB
+su2_dot_cxx_flags += @ZLIB_CXX@
+su2_dot_ldadd += @ZLIB_LD@
+# endif
+
+if BUILD_NORMAL
+___bin_SU2_DOT_SOURCES = ${su2_dot_sources}
+___bin_SU2_DOT_CXXFLAGS = ${su2_dot_cxx_flags}
+___bin_SU2_DOT_LDADD = ../../Common/lib/libSU2.a ${su2_dot_ldadd}
+endif
+
+if BUILD_REVERSE
+___bin_SU2_DOT_REVERSE_SOURCES = ${su2_dot_sources}
+___bin_SU2_DOT_REVERSE_CXXFLAGS = @REVERSE_CXX@ ${su2_dot_cxx_flags} 
+___bin_SU2_DOT_REVERSE_LDADD = @REVERSE_LIBS@ ../../Common/lib/libSU2_REVERSE.a ${su2_dot_ldadd}
+endif

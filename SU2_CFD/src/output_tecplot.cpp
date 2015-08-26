@@ -43,7 +43,7 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
   bool *SurfacePoint = NULL;
   
   bool grid_movement  = config->GetGrid_Movement();
-  bool adjoint = config->GetAdjoint();
+  bool adjoint = config->GetAdjoint() || config->GetDiscrete_Adjoint();
 
   char cstr[200], buffer[50];
   string filename;
@@ -85,7 +85,8 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
   /*--- Special cases where a number needs to be appended to the file name. ---*/
   
   if ((Kind_Solver == EULER || Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS ||
-       Kind_Solver == ADJ_EULER || Kind_Solver == ADJ_NAVIER_STOKES || Kind_Solver == ADJ_RANS) &&
+       Kind_Solver == ADJ_EULER || Kind_Solver == ADJ_NAVIER_STOKES || Kind_Solver == ADJ_RANS ||
+       Kind_Solver == DISC_ADJ_EULER || Kind_Solver == DISC_ADJ_NAVIER_STOKES || Kind_Solver == DISC_ADJ_RANS) &&
       (val_nZone > 1) && (config->GetUnsteady_Simulation() != TIME_SPECTRAL)) {
     SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
     strcat(cstr, buffer);
@@ -214,6 +215,15 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
           ( Kind_Solver == ADJ_TNE2_EULER         ) ||
           ( Kind_Solver == ADJ_TNE2_NAVIER_STOKES )   ) {
         Tecplot_File << ", \"Surface_Sensitivity\", \"Solution_Sensor\"";
+      }
+
+      if (( Kind_Solver == DISC_ADJ_EULER              ) ||
+          ( Kind_Solver == DISC_ADJ_NAVIER_STOKES      ) ||
+          ( Kind_Solver == DISC_ADJ_RANS               )) {
+        Tecplot_File << ", \"Surface_Sensitivity\", \"Sensitivity_x\", \"Sensitivity_y\"";
+        if (geometry->GetnDim() == 3){
+          Tecplot_File << ",\"Sensitivity_z\"";
+        }
       }
       
       if (Kind_Solver == LINEAR_ELASTICITY) {
@@ -502,6 +512,15 @@ void COutput::SetTecplotASCII_LowMemory(CConfig *config, CGeometry *geometry, CS
       
       if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS) ) {
         Tecplot_File << ", \"Surface_Sensitivity\", \"Solution_Sensor\"";
+      }
+
+      if (( Kind_Solver == DISC_ADJ_EULER              ) ||
+          ( Kind_Solver == DISC_ADJ_NAVIER_STOKES      ) ||
+          ( Kind_Solver == DISC_ADJ_RANS               )) {
+        Tecplot_File << ", \"Surface_Sensitivity\", \"Sensitivity_x\", \"Sensitivity_y\"";
+        if (geometry->GetnDim() == 3){
+          Tecplot_File << ",\"Sensitivity_z\"";
+        }
       }
       
     }
@@ -1409,7 +1428,7 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
   Debug						= 0;
   IsDouble					= 1;
   NPts						= (INTEGER4)nGlobal_Poin;
-  t							= iExtIter*config->GetDelta_UnstTime();
+  t							= SU2_TYPE::GetPrimary(iExtIter*config->GetDelta_UnstTime());
   KMax						= 0;
   ICellMax					= 0;
   JCellMax					= 0;
@@ -2302,7 +2321,7 @@ void COutput::SetTecplotBinary_SurfaceSolution(CConfig *config, CGeometry *geome
   Debug						= 0;
   IsDouble					= 1;
   NPts						= (INTEGER4)nSurf_Poin;
-  t							= iExtIter*config->GetDelta_UnstTime();
+  t							= SU2_TYPE::GetPrimary(iExtIter*config->GetDelta_UnstTime());
   KMax						= 0;
   ICellMax					= 0;
   JCellMax					= 0;

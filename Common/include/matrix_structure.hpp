@@ -32,9 +32,8 @@
 
 #pragma once
 
-#ifdef HAVE_MPI
-  #include "mpi.h"
-#endif
+#include "./mpi_structure.hpp"
+
 #include <iostream>
 #include <cmath>
 #include <cstdlib>
@@ -180,6 +179,15 @@ public:
 	 */
 	void SetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j, su2double *val_block);
   
+
+  /*!
+   * \brief Set the transposed value of a block in the sparse matrix.
+   * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
+   * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
+   * \param[in] **val_block - Block to set to A(i, j).
+   */
+  void SetBlockTransposed_ILUMatrix(unsigned long block_i, unsigned long block_j, su2double *val_block);
+
 	/*!
 	 * \brief Subtracts the specified block to the sparse matrix.
 	 * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
@@ -230,9 +238,11 @@ public:
 	 * \brief Performs the Gauss Elimination algorithm to solve the linear subsystem of the (i, i) subblock and rhs.
 	 * \param[in] block_i - Index of the (i, i) subblock in the matrix-by-blocks structure.
 	 * \param[in] rhs - Right-hand-side of the linear system.
+   * \param[in] transposed - If true the transposed of the block is used (default = false).
 	 * \return Solution of the linear system (overwritten on rhs).
 	 */
-	void Gauss_Elimination(unsigned long block_i, su2double* rhs);
+  void Gauss_Elimination(unsigned long block_i, su2double* rhs, bool transposed = false);
+
   
 	/*!
 	 * \brief Performs the Gauss Elimination algorithm to solve the linear subsystem of the (i, i) subblock and rhs.
@@ -283,7 +293,7 @@ public:
 	 * \return prod Result of the product D(A)*vec (stored at *prod_row_vector).
 	 */
 	void DiagonalProduct(CSysVector & vec, unsigned long row_i);
-	
+
   /*!
 	 * \brief Send receive the solution using MPI.
 	 * \param[in] x - Solution..
@@ -291,7 +301,15 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void SendReceive_Solution(CSysVector & x, CGeometry *geometry, CConfig *config);
-  
+
+  /*!
+   * \brief Send receive the solution using MPI and the transposed structure of the matrix.
+   * \param[in] x - Solution..
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SendReceive_SolutionTransposed(CSysVector & x, CGeometry *geometry, CConfig *config);
+
   /*!
 	 * \brief Performs the product of i-th row of a sparse matrix by a vector.
 	 * \param[in] vec - Vector to be multiplied by the row of the sparse matrix A.
@@ -315,6 +333,13 @@ public:
 	 */
 	void MatrixVectorProduct(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config);
 	
+  /*!
+   * \brief Performs the product of a sparse matrix by a CSysVector.
+   * \param[in] vec - CSysVector to be multiplied by the sparse matrix A.
+   * \param[out] prod - Result of the product.
+   */
+  void MatrixVectorProductTransposed(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config);
+
 	/*!
 	 * \brief Performs the product of two block matrices.
 	 */
@@ -337,10 +362,10 @@ public:
   
 	/*!
 	 * \brief Inverse diagonal block.
-	 * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
+   * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
 	 * \param[out] invBlock - Inverse block.
 	 */
-	void InverseDiagonalBlock(unsigned long block_i, su2double *invBlock);
+  void InverseDiagonalBlock(unsigned long block_i, su2double *invBlock, bool transpose = false);
   
  	/*!
 	 * \brief Inverse diagonal block.
@@ -359,7 +384,7 @@ public:
 	/*!
 	 * \brief Build the Jacobi preconditioner.
 	 */
-	void BuildJacobiPreconditioner(void);
+  void BuildJacobiPreconditioner(bool transpose = false);
 	
 	/*!
 	 * \brief Multiply CSysVector by the preconditioner
@@ -382,8 +407,9 @@ public:
   
   /*!
    * \brief Build the ILU0 preconditioner.
+   * \param[in] transposed - Flag to use the transposed matrix to construct the preconditioner.
    */
-  void BuildILUPreconditioner(void);
+  void BuildILUPreconditioner(bool transposed = false);
   
 	/*!
 	 * \brief Multiply CSysVector by the preconditioner
@@ -411,7 +437,7 @@ public:
 	 */
 	void ComputeLU_SGSPreconditioner(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config);
   
-  /*!
+/*!
    * \brief Apply LU_SGS as a classical iterative smoother
    * \param[in] b - CSysVector containing the residual (b)
    * \param[in] x - CSysVector containing the solution (x^k)
@@ -429,7 +455,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   unsigned short BuildLineletPreconditioner(CGeometry *geometry, CConfig *config);
-  
+
 	/*!
 	 * \brief Multiply CSysVector by the preconditioner
 	 * \param[in] vec - CSysVector to be multiplied by the preconditioner.
@@ -479,6 +505,37 @@ public:
 };
 
 /*!
+ * \class CSysMatrixVectorProduct
+ * \brief specialization of matrix-vector product that uses CSysMatrix class
+ */
+class CSysMatrixVectorProductTransposed : public CMatrixVectorProduct {
+private:
+  CSysMatrix* sparse_matrix; /*!< \brief pointer to matrix that defines the product. */
+  CGeometry* geometry; /*!< \brief pointer to matrix that defines the geometry. */
+  CConfig* config; /*!< \brief pointer to matrix that defines the config. */
+
+public:
+
+  /*!
+   * \brief constructor of the class
+   * \param[in] matrix_ref - matrix reference that will be used to define the products
+   */
+  CSysMatrixVectorProductTransposed(CSysMatrix & matrix_ref, CGeometry *geometry_ref, CConfig *config_ref);
+
+  /*!
+   * \brief destructor of the class
+   */
+  ~CSysMatrixVectorProductTransposed() {}
+
+  /*!
+   * \brief operator that defines the CSysMatrix-CSysVector product
+   * \param[in] u - CSysVector that is being multiplied by the sparse matrix
+   * \param[out] v - CSysVector that is the result of the product
+   */
+  void operator()(const CSysVector & u, CSysVector & v) const;
+};
+
+/*!
  * \class CJacobiPreconditioner
  * \brief specialization of preconditioner that uses CSysMatrix class
  */
@@ -509,6 +566,36 @@ public:
 	void operator()(const CSysVector & u, CSysVector & v) const;
 };
 
+/*!
+ * \class CJacobiTransposedPreconditioner
+ * \brief specialization of preconditioner that uses CSysMatrix class
+ */
+class CJacobiTransposedPreconditioner : public CPreconditioner {
+private:
+  CSysMatrix* sparse_matrix; /*!< \brief pointer to matrix that defines the preconditioner. */
+  CGeometry* geometry; /*!< \brief pointer to matrix that defines the geometry. */
+  CConfig* config; /*!< \brief pointer to matrix that defines the config. */
+
+public:
+
+  /*!
+   * \brief constructor of the class
+   * \param[in] matrix_ref - matrix reference that will be used to define the preconditioner
+   */
+  CJacobiTransposedPreconditioner(CSysMatrix & matrix_ref, CGeometry *geometry_ref, CConfig *config_ref);
+
+  /*!
+   * \brief destructor of the class
+   */
+  ~CJacobiTransposedPreconditioner() {}
+
+  /*!
+   * \brief operator that defines the preconditioner operation
+   * \param[in] u - CSysVector that is being preconditioned
+   * \param[out] v - CSysVector that is the result of the preconditioning
+   */
+  void operator()(const CSysVector & u, CSysVector & v) const;
+};
 
 /*!
  * \class CILUPreconditioner

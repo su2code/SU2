@@ -30,9 +30,7 @@
 
 #pragma once
 
-#ifdef HAVE_MPI
-  #include "mpi.h"
-#endif
+
 #include <climits>
 #include <limits>
 #include <cmath>
@@ -41,6 +39,8 @@
 #include <iomanip>
 #include <string>
 #include <cstdlib>
+
+#include "./mpi_structure.hpp"
 
 using namespace std;
 

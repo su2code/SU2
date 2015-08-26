@@ -1278,7 +1278,7 @@ void CAdjEulerSolver::SetIntBoundary_Jump(CGeometry *geometry, CSolver **solver_
                 
                 if ((AngleDouble >= FixAzimuthalLine - 0.1) && (AngleDouble <= FixAzimuthalLine + 0.1)) AngleDouble = FixAzimuthalLine - 0.1;
                 
-                AngleInt = (short) floor(AngleDouble + 0.5);
+                AngleInt = SU2_TYPE::Short(floor(AngleDouble + 0.5));
                 if (AngleInt < 0) AngleInt = 180 + AngleInt;
                 
               }
@@ -3685,7 +3685,7 @@ void CAdjEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solve
               for (iVar = 0; iVar < nVar; iVar++)
                 Buffer_Send_Psi[iVar] = node[iPoint]->GetSolution(iVar);
               
-              MPI_Bsend(Buffer_Send_Psi, nVar, MPI_DOUBLE, jProcessor, iPoint, MPI_COMM_WORLD);
+              SU2_MPI::Bsend(Buffer_Send_Psi, nVar, MPI_DOUBLE, jProcessor, iPoint, MPI_COMM_WORLD);
               
               //          SU2_MPI::Isend(Buffer_Send_Psi, nVar, MPI_DOUBLE, jProcessor, iPoint, MPI_COMM_WORLD, &send_req[0]);
               

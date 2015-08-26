@@ -33,9 +33,8 @@
 
 #pragma once
 
-#ifdef HAVE_MPI
-  #include "mpi.h"
-#endif
+#include "../../Common/include/mpi_structure.hpp"
+
 #include <cmath>
 #include <iostream>
 #include <cstdlib>
@@ -192,6 +191,16 @@ public:
 	 * \brief Set the variable solution at time n-1.
 	 */	
 	void Set_Solution_time_n1(void);
+
+  /*!
+   * \brief Set the variable solution at time n.
+   */
+  void Set_Solution_time_n(su2double* val_sol);
+
+  /*!
+   * \brief Set the variable solution at time n-1.
+   */
+  void Set_Solution_time_n1(su2double* val_sol);
 
 	/*!
 	 * \brief Set to zero the velocity components of the solution.
@@ -1493,7 +1502,6 @@ public:
 	 */
 	virtual void Clear_FlowTraction(void);
 
-
 	/*!
 	 * \brief A virtual member.
 	 */		
@@ -2037,10 +2045,80 @@ public:
 	 * \return Pointer to the solution (at time n) vector.
 	 */
 	virtual su2double *GetSolution_Pred_Old(void);
-
-
-
   
+  /*!
+   * \brief Register the variables in the solution array as input/output variable.
+   * \param[in] input - input or output variables.
+   */
+  void RegisterSolution(bool input);
+
+  /*!
+   * \brief Register the variables in the solution_time_n array as input/output variable.
+   */
+  void RegisterSolution_time_n();
+
+  /*!
+   * \brief Register the variables in the solution_time_n1 array as input/output variable.
+   */
+  void RegisterSolution_time_n1();
+
+  /*!
+   * \brief Set the adjoint values of the solution.
+   * \param[in] adj_sol - The adjoint values of the solution.
+   */
+  void SetAdjointSolution(su2double *adj_sol);
+
+  /*!
+   * \brief Get the adjoint values of the solution.
+   * \param[in] adj_sol - The adjoint values of the solution.
+   */
+  void GetAdjointSolution(su2double *adj_sol);
+
+  /*!
+   * \brief Set the adjoint values of the solution at time n.
+   * \param[in] adj_sol - The adjoint values of the solution.
+   */
+  void SetAdjointSolution_time_n(su2double *adj_sol);
+
+  /*!
+   * \brief Get the adjoint values of the solution at time n.
+   * \param[in] adj_sol - The adjoint values of the solution.
+   */
+  void GetAdjointSolution_time_n(su2double *adj_sol);
+
+  /*!
+   * \brief Set the adjoint values of the solution at time n-1.
+   * \param[in] adj_sol - The adjoint values of the solution.
+   */
+  void SetAdjointSolution_time_n1(su2double *adj_sol);
+
+  /*!
+   * \brief Get the adjoint values of the solution at time n-1.
+   * \param[in] adj_sol - The adjoint values of the solution.
+   */
+  void GetAdjointSolution_time_n1(su2double *adj_sol);
+
+  /*!
+   * \brief Set the sensitivity at the node
+   * \param[in] iDim - spacial component
+   * \param[in] val - value of the Sensitivity
+   */
+  virtual void SetSensitivity(unsigned short iDim, su2double val);
+
+  /*!
+   * \brief Get the Sensitivity at the node
+   * \param[in] iDim - spacial component
+   * \return value of the Sensitivity
+   */
+  virtual su2double GetSensitivity(unsigned short iDim);
+
+  virtual void SetDual_Time_Derivative(unsigned short iVar, su2double der);
+
+  virtual void SetDual_Time_Derivative_n(unsigned short iVar, su2double der);
+
+  virtual su2double GetDual_Time_Derivative(unsigned short iVar);
+
+  virtual su2double GetDual_Time_Derivative_n(unsigned short iVar);
 };
 
 /*!
@@ -3332,12 +3410,6 @@ public:
 	 * \param[in] Value of the low Mach preconditioner variable Beta
 	 */
 	void SetPreconditioner_Beta(su2double val_Beta);
-
-	/*!
-	 * \brief Set the value of the magnetic field
-	 * \param[in] Value of the magnetic field
-	 */
-	void SetMagneticField(su2double* val_B);
     
     /*!
 	 * \brief Get the value of the wind gust
@@ -3812,40 +3884,6 @@ public:
 	su2double GetCrossDiff(void);
 };
 
-/*!
- * \class CAdjPotentialVariable
- * \brief Main class for defining the variables of the adjoint potential solver.
- * \ingroup Potential_Flow_Equation
- * \author F. Palacios
- * \version 4.0.0 "Cardinal"
- */
-class CAdjPotentialVariable : public CVariable {
-private:
-	su2double Psi;			/*!< \brief Value of the adjoint variable. */
-	su2double *ForceProj_Vector;	/*!< \brief Vector d. */
-
-public:
-
-	/*!
-	 * \brief Constructor of the class. 
-	 */
-	CAdjPotentialVariable(void);
-
-	/*!
-	 * \overload
-	 * \param[in] val_psi - Potential adjoint variable value (initialization value).
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_nvar - Number of variables of the problem.
-	 * \param[in] config - Definition of the particular problem.	 
-	 */	
-	CAdjPotentialVariable(su2double val_psi, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
-
-	/*!
-	 * \brief Destructor of the class. 
-	 */
-
-	~CAdjPotentialVariable(void);
-};
 
 /*! 
  * \class CAdjEulerVariable
@@ -5027,5 +5065,66 @@ public:
 	 */	
 	~CTemplateVariable(void);
 };
+
+/*!
+ * \class CDiscAdjVariable
+ * \brief Main class for defining the variables of the adjoint solver.
+ * \ingroup Discrete_Adjoint
+ * \author T. Albring.
+ * \version 4.0.0 "Cardinal"
+ */
+class CDiscAdjVariable : public CVariable {
+private:
+    su2double* Sensitivity; /* Vector holding the derivative of target functional with respect to the coordinates at this node*/
+    su2double* DualTime_Derivative;
+    su2double* DualTime_Derivative_n;
+
+public:
+    /*!
+     * \brief Constructor of the class.
+     */
+    CDiscAdjVariable(void);
+
+    /*!
+     * \brief Destructor of the class.
+     */
+    ~CDiscAdjVariable(void);
+
+    /*!
+     * \overload
+     * \param[in] val_solution - Pointer to the adjoint value (initialization value).
+     * \param[in] val_ndim - Number of dimensions of the problem.
+     * \param[in] val_nvar - Number of variables of the problem.
+     * \param[in] config - Definition of the particular problem.
+     */
+    CDiscAdjVariable(su2double *val_solution, unsigned short val_ndim, unsigned short val_nvar, CConfig *config);
+
+    /*!
+     * \brief Set the sensitivity at the node
+     * \param[in] iDim - spacial component
+     * \param[in] val - value of the Sensitivity
+     */
+    void SetSensitivity(unsigned short iDim, su2double val);
+
+    /*!
+     * \brief Get the Sensitivity at the node
+     * \param[in] iDim - spacial component
+     * \return value of the Sensitivity
+     */
+    su2double GetSensitivity(unsigned short iDim);
+
+    void SetDual_Time_Derivative(unsigned short iVar, su2double der);
+
+    void SetDual_Time_Derivative_n(unsigned short iVar, su2double der);
+
+    su2double GetDual_Time_Derivative(unsigned short iVar);
+
+    su2double GetDual_Time_Derivative_n(unsigned short iVar);
+
+    void SetAdjointExtraVariables(su2double *adj_sol);
+
+    void GetAdjointExtraVariables(su2double *adj_sol);
+};
+
 
 #include "variable_structure.inl"

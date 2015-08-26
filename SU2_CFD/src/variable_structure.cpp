@@ -238,6 +238,20 @@ void CVariable::Set_Solution_time_n1(void) {
   
 }
 
+void CVariable::Set_Solution_time_n(su2double *val_sol) {
+
+  for (unsigned short iVar = 0; iVar < nVar; iVar++)
+    Solution_time_n[iVar] = val_sol[iVar];
+
+}
+
+void CVariable::Set_Solution_time_n1(su2double *val_sol) {
+
+  for (unsigned short iVar = 0; iVar < nVar; iVar++)
+    Solution_time_n1[iVar] = val_sol[iVar];
+
+}
+
 void CVariable::AddRes_TruncError(su2double *val_truncation_error) {
   
 	for (unsigned short iVar = 0; iVar < nVar; iVar++)
