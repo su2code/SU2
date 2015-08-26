@@ -254,7 +254,7 @@ int main(int argc, char *argv[]) {
           iPoint = geometry_container[ZONE_0]->vertex[iMarker][iVertex]->GetNode();
           for (iDim = 0; iDim < geometry_container[ZONE_0]->GetnDim(); iDim++){
             SU2_TYPE::SetDerivative(geometry_container[ZONE_0]->vertex[iMarker][iVertex]->GetVarCoord()[iDim],
-                                  SU2_TYPE::GetPrimary(geometry_container[ZONE_0]->GetSensitivity(iPoint, iDim)));
+                                  SU2_TYPE::GetValue(geometry_container[ZONE_0]->GetSensitivity(iPoint, iDim)));
 
           }
         }
