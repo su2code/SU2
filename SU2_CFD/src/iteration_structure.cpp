@@ -1034,8 +1034,8 @@ void FEM_StructuralIteration(COutput *output, CIntegration ***integration_contai
 		}
 
 		bool meetCriteria;
-		double Residual_UTOL, Residual_RTOL, Residual_ETOL;
-		double Criteria_UTOL, Criteria_RTOL, Criteria_ETOL;
+		su2double Residual_UTOL, Residual_RTOL, Residual_ETOL;
+		su2double Criteria_UTOL, Criteria_RTOL, Criteria_ETOL;
 
 		Criteria_UTOL = config_container[ZONE_0]->GetIncLoad_Criteria(0);
 		Criteria_RTOL = config_container[ZONE_0]->GetIncLoad_Criteria(1);
