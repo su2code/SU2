@@ -390,7 +390,7 @@ def main():
     sine_gust.cfg_dir   = "gust"
     sine_gust.cfg_file  = "inv_gust_NACA0012.cfg"
     sine_gust.test_iter = 5
-    sine_gust.test_vals = [-1.977531, 3.481790, -0.006226, -0.000973] #last 4 columns
+    sine_gust.test_vals = [-1.977531, 3.481790, -0.006222, -0.001342] #last 4 columns
     sine_gust.su2_exec  = "SU2_CFD"
     sine_gust.timeout   = 1600
     sine_gust.tol       = 0.00001
@@ -402,7 +402,7 @@ def main():
     aeroelastic.cfg_dir   = "aeroelastic"
     aeroelastic.cfg_file  = "aeroelastic_NACA64A010.cfg"
     aeroelastic.test_iter = 2
-    aeroelastic.test_vals = [0.077099, 0.036442, -1.684915e-03, -1.131746e-04] #last 4 columns
+    aeroelastic.test_vals = [0.077106, 0.036449, -1.684915e-03, -1.131746e-04] #last 4 columns
     aeroelastic.su2_exec  = "SU2_CFD"
     aeroelastic.timeout   = 1600
     aeroelastic.tol       = 0.000001
