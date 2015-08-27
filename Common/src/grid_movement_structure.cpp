@@ -507,7 +507,6 @@ void CVolumetricMovement::ComputeDeforming_Wall_Distance(CGeometry *geometry, CC
   /*--- Variables and buffers needed for MPI ---*/
   
   int iProcessor, nProcessor;
-  su2double local_min_dist;
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
   
   unsigned long nLocalVertex_NS = 0, nGlobalVertex_NS = 0, MaxLocalVertex_NS = 0;
@@ -4338,7 +4337,6 @@ void CSurfaceMovement::SetHicksHenne(CGeometry *boundary, CConfig *config, unsig
   
 #ifdef HAVE_MPI
 
-  unsigned long *Buffer_Send_nVertex, *Buffer_Receive_nVertex;
 	int iProcessor, nProcessor;
 	su2double *Buffer_Send_Coord, *Buffer_Receive_Coord;
 

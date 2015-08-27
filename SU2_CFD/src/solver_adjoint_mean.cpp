@@ -3646,8 +3646,9 @@ void CAdjEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solve
 #else
   
   int rank, jProcessor;
-  MPI_Status send_stat[1], recv_stat[1], status;
-  MPI_Request send_req[1], recv_req[1];
+  MPI_Status status;
+  //MPI_Status send_stat[1], recv_stat[1];
+  //MPI_Request send_req[1], recv_req[1];
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   
   bool compute;
@@ -4018,6 +4019,7 @@ void CAdjEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_
       /*--- Viscous residual contribution, it doesn't work ---*/
 
       if (config->GetViscous()) {
+        
         /*--- Index of the closest interior node ---*/
 
         Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
@@ -4138,10 +4140,14 @@ void CAdjEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver
       if (implicit)
       Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
       
-      /*--- Viscous residual contribution, it doesn't work ---*/
+      /*--- Viscous residual contribution (check again, Point_Normal was not being initialized before) ---*/
 
       if (config->GetViscous()) {
 
+        /*--- Index of the closest interior node ---*/
+        
+        Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+        
         /*--- Points in edge, coordinates and normal vector---*/
 
         visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());

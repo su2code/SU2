@@ -3026,7 +3026,7 @@ void CTNE2EulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
   su2double MyAllBound_CDrag_Inv        = AllBound_CDrag_Inv;        AllBound_CDrag_Inv = 0.0;
 	su2double MyAllBound_CLift_Inv        = AllBound_CLift_Inv;        AllBound_CLift_Inv = 0.0;
 	su2double MyAllBound_CSideForce_Inv   = AllBound_CSideForce_Inv;   AllBound_CSideForce_Inv = 0.0;
-	su2double MyAllBound_CEff_Inv         = AllBound_CEff_Inv;         AllBound_CEff_Inv = 0.0;
+	AllBound_CEff_Inv = 0.0;
 	su2double MyAllBound_CMx_Inv          = AllBound_CMx_Inv;          AllBound_CMx_Inv = 0.0;
 	su2double MyAllBound_CMy_Inv          = AllBound_CMy_Inv;          AllBound_CMy_Inv = 0.0;
 	su2double MyAllBound_CMz_Inv          = AllBound_CMz_Inv;          AllBound_CMz_Inv = 0.0;
@@ -6062,7 +6062,6 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
   
   su2double MyAllBound_CDrag_Visc    = AllBound_CDrag_Visc;
   su2double MyAllBound_CLift_Visc    = AllBound_CLift_Visc;
-  su2double MyAllBound_CEff_Visc     = AllBound_CEff_Visc;
   su2double MyAllBound_CMx_Visc      = AllBound_CMx_Visc;
   su2double MyAllBound_CMy_Visc      = AllBound_CMy_Visc;
   su2double MyAllBound_CMz_Visc      = AllBound_CMz_Visc;
