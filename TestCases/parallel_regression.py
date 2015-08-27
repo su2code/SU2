@@ -395,7 +395,7 @@ def main():
     aeroelastic.test_vals = [0.077319, 0.036428, -1.685289e-03, -1.129111e-04] #last 4 columns
     aeroelastic.su2_exec  = "parallel_computation.py -f"
     aeroelastic.timeout   = 1600
-    aeroelastic.tol       = 0.00000001
+    aeroelastic.tol       = 0.000001
     aeroelastic.unsteady  = True
     test_list.append(aeroelastic) 
 
