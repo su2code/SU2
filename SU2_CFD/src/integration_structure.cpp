@@ -551,7 +551,6 @@ void CIntegration::SetStructural_Solver(CGeometry *geometry, CSolver *solver, CC
 
 void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *fea_config, CSolver *fea_solver, unsigned long iFSIIter) {
 
-	unsigned short iCounter;
 	su2double FEA_check[2] = {0.0, 0.0};
 	su2double magResidualFSI, logResidualFSI_initial, logResidualFSI;
 	su2double magResidualFSI_criteria, logResidualFSI_criteria;
