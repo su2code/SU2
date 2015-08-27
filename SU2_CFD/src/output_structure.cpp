@@ -982,7 +982,7 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
   
   unsigned long Buffer_Send_nPoin[1], *Buffer_Recv_nPoin = NULL;
   unsigned long nLocalPoint = 0, MaxLocalPoint = 0;
-  unsigned long iGlobal_Index = 0, nBuffer_Scalar = 0, periodicNodes = 0;
+  unsigned long iGlobal_Index = 0, nBuffer_Scalar = 0;
   
   if (rank == MASTER_NODE) Buffer_Recv_nPoin = new unsigned long[nProcessor];
   

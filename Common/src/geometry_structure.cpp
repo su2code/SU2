@@ -1434,7 +1434,6 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   
   /*--- MPI initialization ---*/
   
-  MPI_Status status;
   MPI_Comm_size(MPI_COMM_WORLD, &size);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   
@@ -2820,8 +2819,6 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   
 #ifdef HAVE_MPI
   
-  unsigned long temp_element_count = 0;
-
   su2double        *Buffer_Receive_Coord = NULL;
   unsigned long *Buffer_Receive_Color = NULL;
   unsigned long *Buffer_Receive_GlobalPointIndex = NULL;
@@ -2917,7 +2914,6 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
     }
   }
 
-  unsigned long*recv_buffer;
   for (iDomain=0; iDomain<size-1; iDomain++) {
     MPI_Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status2);
     source = status2.MPI_SOURCE;
@@ -5960,14 +5956,9 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   
   /*--- Initialize counters for local/global points & elements ---*/
 #ifdef HAVE_MPI
-  unsigned long LocalIndex;
-  unsigned long Local_nPoint, Local_nPointDomain;
-  unsigned long Local_nElem;
-  unsigned long Local_nElemTri, Local_nElemQuad, Local_nElemTet;
-  unsigned long Local_nElemHex, Local_nElemPrism, Local_nElemPyramid;
-  
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
+  unsigned long LocalIndex;
 #endif
   Global_nPoint  = 0; Global_nPointDomain   = 0; Global_nElem = 0;
   nelem_edge     = 0; Global_nelem_edge     = 0;
@@ -8646,7 +8637,7 @@ void CPhysicalGeometry::Check_BoundElem_Orientation(CConfig *config) {
 void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
   
   su2double *coord, dist;
-  su2double dist2, diff, dist1;
+  su2double dist2, diff;
   unsigned short iDim, iMarker;
   unsigned long iPoint, iVertex, nVertex_SolidWall, iVertex_nearestWall = 0;
   
@@ -8700,6 +8691,7 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
    of the no-slip boundary nodes. Store the minimum distance to the wall for
    each interior mesh node. ---*/
   
+  su2double dist1 = 0.0;
   if (nVertex_SolidWall != 0) {
     for (iPoint = 0; iPoint < GetnPoint(); iPoint++) {
       coord = node[iPoint]->GetCoord();
@@ -11001,7 +10993,6 @@ void CPhysicalGeometry::SetColorGrid(CConfig *config) {
   
   unsigned long iPoint, iElem, iElem_Triangle, iElem_Tetrahedron, nElem_Triangle,
   nElem_Tetrahedron;
-  unsigned short iNode;
   idx_t ne = 0, nn, *elmnts = NULL, etype, *epart = NULL, *npart = NULL, numflag, nparts, edgecut, *eptr;
   int rank, size;
   
@@ -11194,7 +11185,7 @@ void CPhysicalGeometry::SetColorGrid_Parallel(CConfig *config) {
     
   /*--- Create some structures that ParMETIS needs for partitioning. ---*/
 
-  idx_t numflag, nparts, edgecut, vwgt, adjwgt, wgtflag, ncon, ncommonnodes;
+  idx_t numflag, nparts, edgecut, wgtflag, ncon;
   idx_t *vtxdist     = new idx_t[size+1];
   idx_t *xadj_l      = new idx_t[xadj_size];
   idx_t *adjacency_l = new idx_t[adjacency_size];

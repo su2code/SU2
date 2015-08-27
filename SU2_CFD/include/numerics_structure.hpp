@@ -1619,21 +1619,16 @@ private:
   unsigned short iDim, iVar, jVar; /*!< \brief Iteration on dimension and variables. */
   su2double *Diff_U, *Diff_Flux, /*!< \brief Diference of conservative variables and undivided laplacians. */
   *Velocity_i, *Velocity_j, /*!< \brief Velocity at node 0 and 1. */
-  *MeanVelocity, ProjVelocity, ProjVelocity_i, ProjVelocity_j,  /*!< \brief Mean and projected velocities. */
+  *MeanVelocity, ProjVelocity,  /*!< \brief Mean and projected velocities. */
   Density_i, Density_j, Energy_i, Energy_j,  /*!< \brief Mean Density and energies. */
   sq_vel_i, sq_vel_j,   /*!< \brief Modulus of the velocity and the normal vector. */
   MeanDensity, MeanPressure, MeanEnthalpy, MeanEnergy, /*!< \brief Mean values of primitive variables. */
-  Param_p, Param_Kappa_2, Param_Kappa_4, /*!< \brief Artificial dissipation parameters. */
-  Local_Lambda_i, Local_Lambda_j, MeanLambda, /*!< \brief Local eingenvalues. */
-  Phi_i, Phi_j, sc2, sc4, StretchingFactor, /*!< \brief Streching parameters. */
   *ProjFlux, *ProjFlux_i, *ProjFlux_j,  /*!< \brief Projected inviscid flux tensor. */
-  Epsilon_2, Epsilon_4, cte_0, cte_1, /*!< \brief Artificial dissipation values. */
-  LamdaNeg, LamdaPos, ModVelocity, Beta, Nu_c, U_i[5], U_j[5], MeanSoundSpeed, Mach,
-  ProjGridVel_i, ProjGridVel_j, ProjGridVel, **Jacobian;  /*!< \brief Projected grid velocity. */
+  cte_0, cte_1, /*!< \brief Artificial dissipation values. */
+  LamdaNeg, LamdaPos, Beta, Nu_c, U_i[5], U_j[5], MeanSoundSpeed, Mach,
+  **Jacobian;  /*!< \brief Projected grid velocity. */
   bool implicit, /*!< \brief Implicit calculation. */
-  grid_movement, /*!< \brief Modification for grid movement. */
-  stretching; /*!< \brief Stretching factor. */
-  
+  grid_movement; /*!< \brief Modification for grid movement. */
   
 public:
   
@@ -1675,7 +1670,7 @@ private:
   su2double *Velocity_i, *Velocity_j, *RoeVelocity;
   su2double *ProjFlux_i, *ProjFlux_j;
   su2double *delta_wave, *delta_vel;
-  su2double *Lambda, *Epsilon, MaxLambda, Delta, sign;
+  su2double *Lambda, *Epsilon, MaxLambda, Delta;
   su2double **P_Tensor, **invP_Tensor;
   su2double sq_vel, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
   Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoeDensity, RoeEnthalpy, RoeSoundSpeed,
@@ -1780,10 +1775,10 @@ private:
   su2double *u_i, *u_j, *ust_i, *ust_j;
   su2double *Fc_i, *Fc_j;
   su2double *Lambda_i, *Lambda_j;
-  su2double rhos_i, rhos_j, rhosst_i, rhosst_j;
+  su2double rhos_i, rhos_j;
   su2double *Ust_i, *Ust_j, *Vst_i, *Vst_j, *Velst_i, *Velst_j;
   su2double **P_Tensor, **invP_Tensor;
-  unsigned short nPrimVar, nPrimVarGrad, nVar, nDim;
+  unsigned short nPrimVar, nVar, nDim;
   
 public:
   
@@ -1826,7 +1821,7 @@ private:
   su2double *ProjFlux_i, *ProjFlux_j;
   su2double *Lambda, *Epsilon;
   su2double **absPeJac, **invRinvPe, **R_Tensor, **Matrix, **Art_Visc;
-  su2double sq_vel, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
+  su2double sq_vel, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
   Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoePressure, RoeDensity, RoeEnthalpy, RoeSoundSpeed,
   ProjVelocity, ProjVelocity_i, ProjVelocity_j;
   unsigned short iDim, iVar, jVar, kVar;
@@ -1883,9 +1878,9 @@ private:
   su2double *ProjFlux_i, *ProjFlux_j;
   su2double *Lambda, *Epsilon;
   su2double **P_Tensor, **invP_Tensor;
-  su2double sq_vel, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
-  Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, MeanDensity, MeanEnthalpy, MeanSoundSpeed, MeanPressure, MeanBetaInc2,
-  ProjVelocity, ProjVelocity_i, ProjVelocity_j, proj_delta_vel, delta_p, delta_rho, vn;
+  su2double Proj_ModJac_Tensor_ij, Pressure_i,
+  Pressure_j, MeanDensity, MeanSoundSpeed, MeanPressure, MeanBetaInc2,
+  ProjVelocity;
   unsigned short iDim, iVar, jVar, kVar;
   
 public:
@@ -1930,10 +1925,10 @@ private:
   su2double *ProjFlux_i, *ProjFlux_j;
   su2double *Lambda, *Epsilon;
   su2double **P_Tensor, **invP_Tensor;
-  su2double sq_vel, Proj_ModJac_Tensor_ij, Density_i, Pressure_i, LevelSet_i, dDensityInc_i, dDensityInc_j,
-  Density_j, Pressure_j, LevelSet_j, MeanDensityInc, dMeanDensityInc, MeanPressure, MeanLevelSet, MeanBetaInc2,
-  ProjVelocity, ProjVelocity_i, ProjVelocity_j, proj_delta_vel, Distance_i, Distance_j;
-  unsigned short iDim, jDim, iVar, jVar, kVar;
+  su2double Proj_ModJac_Tensor_ij, Pressure_i, LevelSet_i, dDensityInc_i, dDensityInc_j,
+  Pressure_j, LevelSet_j, MeanDensityInc, dMeanDensityInc, MeanPressure, MeanLevelSet, MeanBetaInc2,
+  ProjVelocity, Distance_i, Distance_j;
+  unsigned short iDim, iVar, jVar, kVar;
   
 public:
   
@@ -2074,7 +2069,7 @@ private:
   su2double **P_Tensor, **invP_Tensor;
   su2double sq_vel, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
   Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoeDensity, RoeEnthalpy, RoeSoundSpeed,
-  ProjVelocity, ProjVelocity_i, ProjVelocity_j, proj_delta_vel, delta_p, delta_rho;
+  ProjVelocity, ProjVelocity_i, ProjVelocity_j;
   unsigned short iDim, iVar, jVar, kVar;
   su2double mL, mR, mLP, mRM, mF, pLP, pRM, pF, Phi;
   
@@ -2121,7 +2116,7 @@ private:
   su2double **P_Tensor, **invP_Tensor;
   su2double sq_vel, sq_vel_i, sq_vel_j, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
   Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoeDensity, RoeEnthalpy, RoeSoundSpeed,
-  ProjVelocity, ProjVelocity_i, ProjVelocity_j, proj_delta_vel, delta_p, delta_rho;
+  ProjVelocity, ProjVelocity_i, ProjVelocity_j;
   unsigned short iDim, iVar, jVar, kVar;
   su2double Rrho, tmp, velRoe[3], uRoe, gamPdivRho, sq_velRoe, cRoe, sL, sR, sM, pStar, invSLmSs, sLmuL, rhoSL, rhouSL[3],
   eSL, invSRmSs, sRmuR, rhoSR, rhouSR[3], eSR;
@@ -2280,7 +2275,7 @@ class CUpwSca_TurbSA : public CNumerics {
 private:
   su2double *Velocity_i, *Velocity_j;
   bool implicit, grid_movement, incompressible;
-  su2double Density_i, Density_j, q_ij, a0, a1;
+  su2double q_ij, a0, a1;
   unsigned short iDim;
   
 public:
@@ -2319,7 +2314,7 @@ class CUpwSca_TurbML : public CNumerics {
 private:
   su2double *Velocity_i, *Velocity_j;
   bool implicit, grid_movement, incompressible;
-  su2double Density_i, Density_j, q_ij, a0, a1;
+  su2double q_ij, a0, a1;
   unsigned short iDim;
   
 public:
@@ -2399,9 +2394,7 @@ class CUpwSca_TransLM : public CNumerics {
 private:
   su2double *Velocity_i, *Velocity_j;
   bool implicit, grid_movement;
-  su2double Density_i, Density_j,
-  q_ij,
-  a0, a1;
+  su2double q_ij, a0, a1;
   unsigned short iDim;
   
 public:
@@ -2490,11 +2483,10 @@ private:
   Local_Lambda_i, Local_Lambda_j, MeanLambda, /*!< \brief Local eingenvalues. */
   Phi_i, Phi_j, sc2, sc4, StretchingFactor, /*!< \brief Streching parameters. */
   *ProjFlux,  /*!< \brief Projected inviscid flux tensor. */
-  Epsilon_2, Epsilon_4, cte_0, cte_1, /*!< \brief Artificial dissipation values. */
-  ProjGridVel_i, ProjGridVel_j, ProjGridVel;  /*!< \brief Projected grid velocity. */
+  Epsilon_2, cte_0, cte_1, /*!< \brief Artificial dissipation values. */
+  ProjGridVel;  /*!< \brief Projected grid velocity. */
   bool implicit, /*!< \brief Implicit calculation. */
-  grid_movement, /*!< \brief Modification for grid movement. */
-  stretching; /*!< \brief Stretching factor. */
+  grid_movement; /*!< \brief Modification for grid movement. */
   
   
 public:
@@ -2546,10 +2538,9 @@ private:
   Phi_i, Phi_j, sc2, sc4, StretchingFactor, /*!< \brief Streching parameters. */
   *ProjFlux,  /*!< \brief Projected inviscid flux tensor. */
   Epsilon_2, Epsilon_4, cte_0, cte_1, /*!< \brief Artificial dissipation values. */
-  ProjGridVel_i, ProjGridVel_j, ProjGridVel;  /*!< \brief Projected grid velocity. */
+  ProjGridVel;  /*!< \brief Projected grid velocity. */
   bool implicit, /*!< \brief Implicit calculation. */
-  grid_movement, /*!< \brief Modification for grid movement. */
-  stretching; /*!< \brief Stretching factor. */
+  grid_movement; /*!< \brief Modification for grid movement. */
   
   
 public:
@@ -2592,9 +2583,9 @@ private:
   unsigned short iDim, iVar, jVar; /*!< \brief Iteration on dimension and variables. */
   su2double *Diff_U, *Diff_Lapl, /*!< \brief Diference of conservative variables and undivided laplacians. */
   *Velocity_i, *Velocity_j, /*!< \brief Velocity at node 0 and 1. */
-  *MeanVelocity, ProjVelocity, ProjVelocity_i, ProjVelocity_j,  /*!< \brief Mean and projected velocities. */
+  *MeanVelocity, ProjVelocity_i, ProjVelocity_j,  /*!< \brief Mean and projected velocities. */
   sq_vel_i, sq_vel_j,   /*!< \brief Modulus of the velocity and the normal vector. */
-  MeanGravityForce, MeanDensity, MeanPressure, MeanEnthalpy, MeanEnergy, MeanBetaInc2, /*!< \brief Mean values of primitive variables. */
+  MeanDensity, MeanPressure, MeanBetaInc2, /*!< \brief Mean values of primitive variables. */
   Param_p, Param_Kappa_2, Param_Kappa_4, /*!< \brief Artificial dissipation parameters. */
   Local_Lambda_i, Local_Lambda_j, MeanLambda, /*!< \brief Local eingenvalues. */
   Phi_i, Phi_j, sc2, sc4, StretchingFactor, /*!< \brief Streching parameters. */
@@ -2602,7 +2593,6 @@ private:
   Epsilon_2, Epsilon_4, cte_0, cte_1; /*!< \brief Artificial dissipation values. */
   bool implicit, /*!< \brief Implicit calculation. */
   grid_movement, /*!< \brief Modification for grid movement. */
-  stretching, /*!< \brief Stretching factor. */
   gravity; /*!< \brief computation with gravity force. */
   su2double Froude; /*!< \brief Froude number. */
   
@@ -2649,7 +2639,7 @@ private:
   su2double Residual, ProjVelocity_i, ProjVelocity_j, ProjPhi, ProjPhi_Vel, sq_vel, phis1, phis2;
   su2double MeanPsiRho, MeanPsiE, Param_p, Param_Kappa_4, Param_Kappa_2, Local_Lambda_i, Local_Lambda_j, MeanLambda;
   su2double Phi_i, Phi_j, sc4, StretchingFactor, Epsilon_4, Epsilon_2;
-  bool implicit, stretching, grid_movement;
+  bool implicit, grid_movement;
   
 public:
   
@@ -2694,12 +2684,12 @@ class CCentJSTArtComp_AdjFlow : public CNumerics {
 private:
   su2double sc2, *Diff_Psi, *Diff_Lapl;
   su2double *Velocity_i, *Velocity_j;
-  su2double *MeanPhi, **Proj_Jac_Tensor_i, **Proj_Jac_Tensor_j;
-  unsigned short iDim, jDim, iVar, jVar;
-  su2double Residual, ProjVelocity_i, ProjVelocity_j, ProjPhi, ProjPhi_Vel, sq_vel, phis1, phis2;
-  su2double MeanPsiRho, MeanPsiE, Param_p, Param_Kappa_4, Param_Kappa_2, Local_Lambda_i, Local_Lambda_j, MeanLambda;
+  su2double **Proj_Jac_Tensor_i, **Proj_Jac_Tensor_j;
+  unsigned short iDim, iVar, jVar;
+  su2double Residual, ProjVelocity_i, ProjVelocity_j;
+  su2double Param_p, Param_Kappa_4, Param_Kappa_2, Local_Lambda_i, Local_Lambda_j, MeanLambda;
   su2double Phi_i, Phi_j, sc4, StretchingFactor, Epsilon_4, Epsilon_2;
-  bool implicit, stretching, grid_movement;
+  bool implicit;
   
 public:
   
@@ -2752,7 +2742,6 @@ private:
   Pressure_j, Param_p, Param_Kappa_4, Local_Lambda_i, Local_Lambda_j, MeanLambda, sc4, StretchingFactor,
   Epsilon_4, MeanDeltaRho, MeanDeltaE, ProjVelocity_i, ProjVelocity_j, MeanDensity, MeanPressure,
   MeanEnthalpy, MeanEnergy, Phi_i, Phi_j;
-  bool stretching;
   
   
 public:
@@ -2804,8 +2793,7 @@ private:
   Phi_i, Phi_j, sc0, StretchingFactor, /*!< \brief Streching parameters. */
   Epsilon_0, cte; /*!< \brief Artificial dissipation values. */
   bool implicit, /*!< \brief Implicit calculation. */
-  grid_movement, /*!< \brief Modification for grid movement. */
-  stretching;
+  grid_movement; /*!< \brief Modification for grid movement. */
   su2double ProjGridVel;
   
 public:
@@ -2847,18 +2835,17 @@ private:
   unsigned short iDim, iVar, jVar; /*!< \brief Iteration on dimension and variables. */
   su2double *Diff_U, /*!< \brief Difference of conservative variables. */
   *Velocity_i, *Velocity_j, /*!< \brief Velocity at node 0 and 1. */
-  *MeanVelocity, ProjVelocity, ProjVelocity_i, ProjVelocity_j,  /*!< \brief Mean and projected velocities. */
+  *MeanVelocity, ProjVelocity_i, ProjVelocity_j,  /*!< \brief Mean and projected velocities. */
   *ProjFlux,  /*!< \brief Projected inviscid flux tensor. */
   sq_vel_i, sq_vel_j,   /*!< \brief Modulus of the velocity and the normal vector. */
-  MeanGravityForce, MeanDensity, MeanPressure, MeanEnthalpy, MeanEnergy, MeanBetaInc2, /*!< \brief Mean values of primitive variables. */
+  MeanDensity, MeanPressure, MeanBetaInc2, /*!< \brief Mean values of primitive variables. */
   Param_p, Param_Kappa_0, /*!< \brief Artificial dissipation parameters. */
   Local_Lambda_i, Local_Lambda_j, MeanLambda, /*!< \brief Local eingenvalues. */
   Phi_i, Phi_j, sc0, StretchingFactor, /*!< \brief Streching parameters. */
-  Epsilon_0, cte; /*!< \brief Artificial dissipation values. */
+  Epsilon_0; /*!< \brief Artificial dissipation values. */
   bool implicit, /*!< \brief Implicit calculation. */
   grid_movement, /*!< \brief Modification for grid movement. */
   gravity; /*!< \brief Modification for for gravity force. */
-  bool stretching;
   su2double Froude;
   
 public:
@@ -2903,8 +2890,8 @@ private:
   unsigned short iDim, jDim, iVar, jVar;
   su2double Residual, ProjVelocity_i, ProjVelocity_j, ProjPhi, ProjPhi_Vel, sq_vel, phis1, phis2,
   MeanPsiRho, MeanPsiE, Param_p, Param_Kappa_0, Local_Lambda_i, Local_Lambda_j, MeanLambda,
-  Phi_i, Phi_j, sc2, StretchingFactor, Epsilon_0, cte_0;
-  bool implicit, stretching, grid_movement;
+  Phi_i, Phi_j, sc2, StretchingFactor, Epsilon_0;
+  bool implicit, grid_movement;
   
 public:
   
@@ -2950,11 +2937,11 @@ private:
   su2double *Diff_Psi;
   su2double *Velocity_i, *Velocity_j;
   su2double *MeanPhi, **Proj_Jac_Tensor_i, **Proj_Jac_Tensor_j;
-  unsigned short iDim, jDim, iVar, jVar;
-  su2double Residual, ProjVelocity_i, ProjVelocity_j, ProjPhi, ProjPhi_Vel, sq_vel, phis1, phis2,
-  MeanPsiRho, MeanPsiE, Param_p, Param_Kappa_0, Local_Lambda_i, Local_Lambda_j, MeanLambda,
-  Phi_i, Phi_j, sc2, StretchingFactor, Epsilon_0, cte_0;
-  bool implicit, stretching;
+  unsigned short iDim, iVar, jVar;
+  su2double Residual, ProjVelocity_i, ProjVelocity_j, Param_p, Param_Kappa_0,
+  Local_Lambda_i, Local_Lambda_j, MeanLambda,
+  Phi_i, Phi_j, sc2, StretchingFactor, Epsilon_0;
+  bool implicit;
   
 public:
   
@@ -3006,12 +2993,11 @@ private:
   unsigned short iDim, iVar, jVar;
   su2double sq_vel, Density_i, DensityEnergy_i, Energy_i, Pressure_i, Density_j,
   DensityEnergy_j, Energy_j, Pressure_j, Param_p, Param_Kappa_0,
-  Local_Lambda_i, Local_Lambda_j, MeanLambda, cte_0, StretchingFactor,
+  Local_Lambda_i, Local_Lambda_j, MeanLambda, StretchingFactor,
   Epsilon_i, MeanDeltaRho, MeanDeltaE, ProjVelocity_i, ProjVelocity_j,
-  dS, MeanDensity, MeanPressure,
+  MeanDensity, MeanPressure,
   MeanEnthalpy, MeanEnergy, Phi_i, Phi_j,
   sc2;
-  bool stretching;
   
 public:
   
@@ -3054,10 +3040,7 @@ private:
   **Mean_GradPrimVar,					   /*!< \brief Mean value of the gradient. */
   Mean_Laminar_Viscosity,                /*!< \brief Mean value of the viscosity. */
   Mean_Eddy_Viscosity,                   /*!< \brief Mean value of the eddy viscosity. */
-  Mean_Thermal_Conductivity,             /*!< \brief Mean value of the thermal conductivity. */
-  Mean_Cp,                               /*!< \brief Mean value of the Cp. */
   Mean_turb_ke,				/*!< \brief Mean value of the turbulent kinetic energy. */
-  *ProjFlux,	/*!< \brief Projection of the viscous fluxes. */
   dist_ij;						/*!< \brief Length of the edge and face. */
   bool implicit; /*!< \brief Implicit calculus. */
   
@@ -3106,7 +3089,6 @@ private:
   Mean_Thermal_Conductivity,             /*!< \brief Mean value of the thermal conductivity. */
   Mean_Cp,                               /*!< \brief Mean value of the Cp. */
   Mean_turb_ke,				/*!< \brief Mean value of the turbulent kinetic energy. */
-  *ProjFlux,	/*!< \brief Projection of the viscous fluxes. */
   dist_ij;						/*!< \brief Length of the edge and face. */
   bool implicit; /*!< \brief Implicit calculus. */
   
@@ -3147,7 +3129,6 @@ private:
   unsigned short iDim, iVar, jVar;	/*!< \brief Iterators in dimension an variable. */
   su2double **Mean_GradPrimVar,					/*!< \brief Mean value of the gradient. */
   Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, /*!< \brief Mean value of the viscosity. */
-  *ProjFlux,		/*!< \brief Projection of the viscous fluxes. */
   dist_ij;							/*!< \brief Length of the edge and face. */
   bool implicit;				/*!< \brief Implicit calculus. */
   
@@ -3194,8 +3175,6 @@ private:
   su2double dist_ij_2;
   su2double proj_vector_ij;
   unsigned short iVar, iDim;
-  su2double nu_hat_i;
-  su2double nu_hat_j;
   
 public:
   
@@ -3242,8 +3221,6 @@ private:
   su2double dist_ij_2;
   su2double proj_vector_ij;
   unsigned short iVar, iDim;
-  su2double nu_hat_i;
-  su2double nu_hat_j;
   
 public:
   
@@ -3288,8 +3265,6 @@ private:
   su2double dist_ij_2;
   su2double proj_vector_ij;
   unsigned short iVar, iDim;
-  su2double nu_hat_i;
-  su2double nu_hat_j;
   
 public:
   
@@ -3330,12 +3305,9 @@ private:
   su2double *Edge_Vector;
   bool implicit, incompressible;
   su2double sigma;
-  su2double nu_i, nu_j, nu_e;
   su2double dist_ij_2;
   su2double proj_vector_ij;
   unsigned short iVar, iDim;
-  su2double nu_hat_i;
-  su2double nu_hat_j;
   
 public:
   
@@ -3416,7 +3388,6 @@ private:
   unsigned short iDim, iVar, jVar;	/*!< \brief Iterators in dimension an variable. */
   su2double **Mean_GradPsiVar,					/*!< \brief Mean value of the gradient. */
   Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, /*!< \brief Mean value of the viscosity. */
-  *ProjFlux,		/*!< \brief Projection of the viscous fluxes. */
   dist_ij;							/*!< \brief Length of the edge and face. */
   bool implicit;				/*!< \brief Implicit calculus. */
   
@@ -3461,11 +3432,8 @@ private:
   **Mean_GradPrimVar, *Proj_Mean_GradPrimVar_Edge,	/*!< \brief Mean value of the gradient. */
   Mean_Laminar_Viscosity,      /*!< \brief Mean value of the laminar viscosity. */
   Mean_Eddy_Viscosity,         /*!< \brief Mean value of the eddy viscosity. */
-  Mean_Thermal_Conductivity,   /*!< \brief Mean value of the thermal conductivity. */
-  Mean_Cp,                     /*!< \brief Mean value of the specific heat. */
   Mean_turb_ke,				 /*!< \brief Mean value of the turbulent kinetic energy. */
-  dist_ij_2,					 /*!< \brief Length of the edge and face. */
-  *ProjFlux;	/*!< \brief Projection of the viscous fluxes. */
+  dist_ij_2;					 /*!< \brief Length of the edge and face. */
   bool implicit;			/*!< \brief Implicit calculus. */
   bool limiter;			/*!< \brief Viscous limiter. */
   
@@ -3515,8 +3483,7 @@ private:
   Mean_Thermal_Conductivity,   /*!< \brief Mean value of the thermal conductivity. */
   Mean_Cp,                     /*!< \brief Mean value of the specific heat. */
   Mean_turb_ke,				 /*!< \brief Mean value of the turbulent kinetic energy. */
-  dist_ij_2,					 /*!< \brief Length of the edge and face. */
-  *ProjFlux;	/*!< \brief Projection of the viscous fluxes. */
+  dist_ij_2;					 /*!< \brief Length of the edge and face. */
   bool implicit;			/*!< \brief Implicit calculus. */
   
 public:
@@ -3558,8 +3525,7 @@ private:
   *Edge_Vector,								/*!< \brief Vector form point i to point j. */
   **Mean_GradPrimVar, *Proj_Mean_GradPrimVar_Edge,	/*!< \brief Mean value of the gradient. */
   Mean_Laminar_Viscosity, Mean_Eddy_Viscosity,			/*!< \brief Mean value of the viscosity. */
-  dist_ij_2,					/*!< \brief Length of the edge and face. */
-  *ProjFlux;	/*!< \brief Projection of the viscous fluxes. */
+  dist_ij_2;					/*!< \brief Length of the edge and face. */
   bool implicit;			/*!< \brief Implicit calculus. */
   
 public:
@@ -3600,7 +3566,7 @@ private:
   su2double *Proj_Mean_GradTurbVar_Kappa, *Proj_Mean_GradTurbVar_Edge, *Proj_Mean_GradTurbVar_Corrected;
   su2double *Edge_Vector;
   bool implicit, incompressible;
-  su2double sigma, nu_i, nu_j, nu_e, dist_ij_2, proj_vector_ij, nu_hat_i, nu_hat_j;
+  su2double sigma, nu_i, nu_j, nu_e, dist_ij_2, proj_vector_ij;
   unsigned short iVar, iDim;
   
 public:
@@ -3645,7 +3611,7 @@ private:
   su2double cn1, fn, Xi;
   su2double nu_ij, nu_tilde_ij;
   bool implicit, incompressible;
-  su2double nu_i, nu_j, nu_e, dist_ij_2, proj_vector_ij, nu_hat_i, nu_hat_j;
+  su2double nu_i, nu_j, nu_e, dist_ij_2, proj_vector_ij;
   unsigned short iVar, iDim;
   
 public:
@@ -3686,7 +3652,7 @@ private:
   su2double *Proj_Mean_GradTurbVar_Kappa, *Proj_Mean_GradTurbVar_Edge, *Proj_Mean_GradTurbVar_Corrected;
   su2double *Edge_Vector;
   bool implicit, incompressible;
-  su2double sigma, nu_i, nu_j, nu_e, dist_ij_2, proj_vector_ij, nu_hat_i, nu_hat_j;
+  su2double sigma, nu_i, nu_j, nu_e, dist_ij_2, proj_vector_ij;
   unsigned short iVar, iDim;
   
 public:
@@ -3727,8 +3693,7 @@ private:
   su2double *Proj_Mean_GradTurbVar_Kappa, *Proj_Mean_GradTurbVar_Edge, *Proj_Mean_GradTurbVar_Corrected;
   su2double *Edge_Vector;
   bool implicit, incompressible;
-  su2double sigma, nu_i, nu_j, nu_e, dist_ij_2, proj_vector_ij, nu_hat_i, nu_hat_j;
-  unsigned short iVar, iDim;
+  su2double sigma;
   
 public:
   
@@ -3941,8 +3906,7 @@ private:
   *Edge_Vector,								/*!< \brief Vector form point i to point j. */
   **Mean_GradPsiVar, *Proj_Mean_GradPsiVar_Edge,	/*!< \brief Mean value of the gradient. */
   Mean_Laminar_Viscosity, Mean_Eddy_Viscosity,			/*!< \brief Mean value of the viscosity. */
-  dist_ij_2,					/*!< \brief Length of the edge and face. */
-  *ProjFlux;	/*!< \brief Projection of the viscous fluxes. */
+  dist_ij_2;					/*!< \brief Length of the edge and face. */
   bool implicit;			/*!< \brief Implicit calculus. */
   
 public:
@@ -4117,12 +4081,13 @@ public:
  * \version 4.0.0 "Cardinal"
  */
 class CGalerkin_FEA : public CNumerics {
+  
   su2double E;				/*!< \brief Young's modulus of elasticity. */
   su2double Nu;			/*!< \brief Poisson's ratio. */
   su2double Rho_s;		/*!< \brief Structural density. */
   su2double Mu;			/*!< \brief Lame's coeficient. */
   su2double Lambda;	/*!< \brief Lame's coeficient. */
-  su2double Density;	/*!< \brief Material density. */
+
 public:
   
   /*!
@@ -4316,32 +4281,17 @@ private:
   su2double sigma;
   su2double cb2;
   su2double cw1;
-  su2double DivVelocity;
   unsigned short iDim;
   su2double nu, Ji, fv1, fv2, ft2, Omega, S, Shat, inv_Shat, dist_i_2, Ji_2, Ji_3, inv_k2_d2;
   su2double r, g, g_6, glim, fw;
   su2double norm2_Grad;
   su2double dfv1, dfv2, dShat;
   su2double dr, dg, dfw;
-  su2double nu_hat_i;
-  su2double grad_nu_hat;
-  su2double prod_grads;
   bool incompressible;
-  bool transition;
   bool rotating_frame;
-  su2double div;
-  su2double beta, gamma_sep, gamma_eff, intermittency;
-  su2double Freattach, r_t, s1;
+  su2double intermittency;
   su2double Production, Destruction, CrossProduction;
   
-  SpalartAllmarasInputs* SAInputs;
-  SpalartAllmarasConstants* SAConstants;
-  int nResidual;
-  int nJacobian;
-  su2double* testResidual;
-  su2double* testJacobian;
-  su2double** DUiDXj;
-  su2double* DNuhatDXj;
 public:
   
   /*!
@@ -4426,32 +4376,16 @@ private:
   su2double sigma;
   su2double cb2;
   su2double cw1;
-  su2double DivVelocity;
   unsigned short iDim;
   su2double nu, Ji, fv1, fv2, ft2, Omega, S, Shat, inv_Shat, dist_i_2, Ji_2, Ji_3, inv_k2_d2;
   su2double r, g, g_6, glim, fw;
   su2double norm2_Grad;
   su2double dfv1, dfv2, dShat;
   su2double dr, dg, dfw;
-  su2double nu_hat_i;
-  su2double grad_nu_hat;
-  su2double prod_grads;
   bool incompressible;
-  bool transition;
   bool rotating_frame;
-  su2double div;
-  su2double beta, gamma_sep, gamma_eff, intermittency;
-  su2double Freattach, r_t, s1;
+  su2double intermittency;
   su2double Production, Destruction, CrossProduction;
-  
-  SpalartAllmarasInputs* SAInputs;
-  SpalartAllmarasConstants* SAConstants;
-  int nResidual;
-  int nJacobian;
-  su2double* testResidual;
-  su2double* testJacobian;
-  su2double** DUiDXj;
-  su2double* DNuhatDXj;
   
 public:
   
@@ -4526,36 +4460,14 @@ public:
  */
 class CSourcePieceWise_TurbML : public CNumerics {
 private:
-  su2double cv1_3;
-  su2double k2;
-  su2double cb1;
-  su2double cw2;
-  su2double cw3_6;
-  su2double cb2_sigma;
-  su2double sigma;
-  su2double cb2;
-  su2double cw1;
-  su2double DivVelocity, Vorticity;
-  unsigned short iDim;
-  su2double nu, Ji, fv1, fv2, Omega, S, Shat, inv_Shat, dist_i_2, Ji_2, Ji_3, inv_k2_d2;
-  su2double r, g, g_6, glim;
-  su2double norm2_Grad;
-  su2double dfv1, dfv2, dShat;
-  su2double dr, dg, dfw;
-  su2double nu_hat_i;
-  su2double grad_nu_hat;
-  su2double prod_grads;
   bool incompressible;
   bool transition;
   bool rotating_frame;
-  su2double div, StrainMag;
-  su2double beta, gamma_sep, gamma_eff, intermittency;
-  su2double Freattach, r_t, s1;
+  su2double intermittency;
   su2double Production, Destruction, CrossProduction;
   CScalePredictor* MLModel;
   
   su2double uInfinity;
-  
   
   SpalartAllmarasInputs* SAInputs;
   SpalartAllmarasConstants* SAConstants;
@@ -4564,9 +4476,7 @@ private:
   int nJacobian;
   
   string featureset;
-  
-  //su2double* testResidual;
-  //su2double* testJacobian;
+
   su2double** DUiDXj;
   su2double* DNuhatDXj;
   
@@ -4685,21 +4595,12 @@ private:
   su2double s1;
   su2double c_theta;
   su2double sigmat;
-  su2double REth_Inf;
   
   /*-- Correlation constants --*/
   su2double flen_global;
   su2double alpha_global;
-  su2double DivVelocity, Vorticity;
-  unsigned short iDim;
-  su2double nu, Ji, fv1, fv2, Omega, Shat, dist_0_2, Ji_2, Ji_3;
-  su2double r, g, g_6, glim, fw;
-  su2double norm2_Grad;
-  su2double dfv1, dfv2, dShat;
-  su2double dr, dg, dfw;
-  su2double nu_hat_i;
-  su2double grad_nu_hat;
-  su2double prod_grads;
+  su2double Vorticity;
+
   bool implicit;
   
 public:
@@ -4753,8 +4654,7 @@ private:
   beta_star,
   a1;
   
-  su2double CDkw_i, CDkw_j,
-  norm2_Grad;
+  su2double CDkw_i, CDkw_j;
   
   bool incompressible;
   
@@ -5081,9 +4981,6 @@ public:
  * \version 4.0.0 "Cardinal"
  */
 class CSourceAxisymmetric_Flow : public CNumerics {
-private:
-  bool compressible, incompressible, freesurface;
-  
 public:
   
   /*!
@@ -5137,10 +5034,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeResidual(su2double *val_residual, su2double **Jacobian_i, CConfig *config);
-  
-  
-private:
-  bool incompressible;
 };
 
 /*!
@@ -5312,7 +5205,6 @@ private:
   su2double Proj_ModJac_Tensor_ij, R;
   su2double *RoedPdU;
   unsigned short nSpecies, nPrimVar, nPrimVarGrad, nVar, nDim;
-  //  CVariable *var;
   
 public:
   
@@ -5363,8 +5255,6 @@ private:
   su2double **P_Tensor, **invP_Tensor;
   unsigned short nSpecies, nPrimVar, nPrimVarGrad, nVar, nDim;
   
-  //  CVariable *var;
-  
 public:
   
   /*!
@@ -5412,7 +5302,6 @@ private:
   su2double *rhos_j, *u_j;
   su2double a_i, P_i, h_i, ProjVel_i;
   su2double a_j, P_j, h_j, ProjVel_j;
-  su2double sq_vel, Proj_ModJac_Tensor_ij;
   unsigned short nSpecies, nVar, nDim;
   
 public:
@@ -5497,7 +5386,7 @@ public:
  */
 class CCentLax_TNE2 : public CNumerics {
 private:
-  unsigned short iDim, iVar, jVar; /*!< \brief Iteration on dimension and variables. */
+  unsigned short jVar; /*!< \brief Iteration on dimension and variables. */
   su2double *Diff_U; /*!< \brief Difference of conservative variables. */
   su2double *MeanU, *MeanV;
   su2double *MeandPdU;
@@ -5506,13 +5395,9 @@ private:
   su2double Local_Lambda_i, Local_Lambda_j, MeanLambda; /*!< \brief Local eigenvalues. */
   su2double Phi_i, Phi_j, sc0, StretchingFactor; /*!< \brief Streching parameters. */
   su2double Epsilon_0, cte; /*!< \brief Artificial dissipation values. */
-  //    su2double *dPdrhos, dPdrhoE, dPdrhoEve; /*!< \brief Partial derivative of pressure w.r.t. conserved quantities. */
   bool implicit; /*!< \brief Implicit time integration. */
   bool ionization;  /*!< \brief Charged species with the mixture. */
-  bool stretching;
   unsigned short nSpecies, nVar, nPrimVar, nPrimVarGrad, nDim;
-  
-  //  CVariable *var;
   
 public:
   
@@ -5560,8 +5445,6 @@ private:
   Mean_Laminar_Viscosity, /*!< \brief Mean value of the viscosity. */
   Mean_Thermal_Conductivity, /*!< \brief Mean value of the thermal conductivity. */
   Mean_Thermal_Conductivity_ve, /*!< \brief Mean value of the vib-el. thermal conductivity. */
-  
-  *ProjFlux,	/*!< \brief Projection of the viscous fluxes. */
   dist_ij;						/*!< \brief Length of the edge and face. */
   bool implicit; /*!< \brief Implicit calculus. */
   
@@ -5619,9 +5502,7 @@ private:
   Mean_Laminar_Viscosity, /*!< \brief Mean value of the viscosity. */
   Mean_Thermal_Conductivity, /*!< \brief Mean value of the thermal conductivity. */
   Mean_Thermal_Conductivity_ve, /*!< \brief Mean value of the vib-el. thermal conductivity. */
-  
-  *ProjFlux,	/*!< \brief Projection of the viscous fluxes. */
-  dist_ij;						/*!< \brief Length of the edge and face. */
+    dist_ij;						/*!< \brief Length of the edge and face. */
   bool implicit; /*!< \brief Implicit calculus. */
   
 public:
@@ -5846,7 +5727,7 @@ private:
   su2double Residual, ProjVelocity_i, ProjVelocity_j, ProjPhi, ProjPhi_Vel, sq_vel, phis1, phis2;
   su2double MeanPsiRho, MeanPsiE, Param_p, Param_Kappa_4, Param_Kappa_2, Local_Lambda_i, Local_Lambda_j, MeanLambda;
   su2double Phi_i, Phi_j, sc4, StretchingFactor, Epsilon_4, Epsilon_2;
-  bool implicit, stretching, grid_movement, rotating_frame;
+  bool implicit, grid_movement, rotating_frame;
   
 public:
   
@@ -5945,7 +5826,6 @@ private:
   su2double *Mean_GradPsiE;	/*!< \brief Mean gradient in the adjoint  energy between nodes i and j. */
   su2double *Mean_GradPsiEve; /*!< \brief Mean gradient in the adjoint vibrational energy between nodes i and j. */
   su2double **Mean_GradPhi;	/*!< \brief Counter for dimensions of the problem. */
-  su2double **Mean_GPsi;  /*!< \brief Mean gradient of the adjoint variables. */
   su2double *Edge_Vector;	/*!< \brief Vector going from node i to node j. */
   su2double **SigmaPhi;
   su2double **SigmaPsiE;

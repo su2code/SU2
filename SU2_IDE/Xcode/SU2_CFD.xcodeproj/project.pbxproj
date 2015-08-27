@@ -1554,6 +1554,7 @@
 				INSTALL_PATH = /usr/local/bin;
 				MACOSX_DEPLOYMENT_TARGET = 10.8;
 				PRODUCT_NAME = SU2_CFD;
+				WARNING_CFLAGS = "-Wall";
 			};
 			name = Debug;
 		};
@@ -1600,6 +1601,7 @@
 				INSTALL_PATH = /usr/local/bin;
 				MACOSX_DEPLOYMENT_TARGET = 10.8;
 				PRODUCT_NAME = SU2_CFD;
+				WARNING_CFLAGS = "-Wall";
 			};
 			name = Release;
 		};

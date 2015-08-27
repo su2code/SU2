@@ -7233,6 +7233,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
       FluidModel->SetTDState_rhoe(Density_b, StaticEnergy_b);
       
       Pressure_b = FluidModel->GetPressure();
+      Temperature_b = FluidModel->GetTemperature();
       Enthalpy_b = Energy_b + Pressure_b/Density_b;
       
       Kappa_b = FluidModel->GetdPde_rho() / Density_b;
@@ -9050,8 +9051,9 @@ void CEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_c
 #else
   
   int rank, jProcessor;
-  MPI_Status send_stat[1], recv_stat[1], status;
-  MPI_Request send_req[1], recv_req[1];
+  MPI_Status status;
+  //MPI_Status send_stat[1], recv_stat[1];
+  //MPI_Request send_req[1], recv_req[1];
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   
   bool compute;
@@ -9253,12 +9255,13 @@ void CEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_c
 #else
   
   int rank, jProcessor;
-  MPI_Status send_stat[1], recv_stat[1], status;
-  MPI_Request send_req[1], recv_req[1];
+  MPI_Status status;
+  //MPI_Status send_stat[1], recv_stat[1];
+  //MPI_Request send_req[1], recv_req[1];
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   
   bool compute;
-  su2double *Buffer_Send_V = new su2double [nPrimVar];
+  su2double *Buffer_Send_V    = new su2double [nPrimVar];
   su2double *Buffer_Receive_V = new su2double [nPrimVar];
   
   /*--- Do the send process, by the moment we are sending each
@@ -9421,8 +9424,9 @@ void CEulerSolver::BC_ActDisk_Boundary(CGeometry *geometry, CSolver **solver_con
 #ifndef HAVE_MPI
     iProcessor = MASTER_NODE;
 #else
-    MPI_Status send_stat[1], recv_stat[1], status;
-    MPI_Request send_req[1], recv_req[1];
+    MPI_Status status;
+    //MPI_Status send_stat[1], recv_stat[1];
+    //MPI_Request send_req[1], recv_req[1];
     MPI_Comm_rank(MPI_COMM_WORLD, &iProcessor);
 #endif
 

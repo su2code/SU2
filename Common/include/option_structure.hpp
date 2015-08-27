@@ -252,7 +252,7 @@ static const map<string, ENUM_FSI_FLUID_PROBLEM> FSI_Fluid_Solver_Map = CCreateM
 enum ENUM_FSI_STRUC_PROBLEM {
   NO_SOLVER_SFSI = 0,				/*!< \brief Definition of no solver. */
   LINEAR_ELASTICITY_SFSI = 11,		/*!< \brief Linear elasticity equations for the FSI problem */
-  NONLINEAR_ELASTICITY_SFSI = 2,		/*!< \brief Nonlinear elasticity equations for the FSI problem */
+  NONLINEAR_ELASTICITY_SFSI = 2		/*!< \brief Nonlinear elasticity equations for the FSI problem */
 };
 static const map<string, ENUM_FSI_STRUC_PROBLEM> FSI_Struc_Solver_Map = CCreateMap<string, ENUM_FSI_STRUC_PROBLEM>
 ("NONE", NO_SOLVER_SFSI)
@@ -292,7 +292,7 @@ static const map<string, ENUM_KIND_NONDIM> NonDim_Map = CCreateMap<string, ENUM_
  */
 enum ENUM_MEASUREMENTS {
   SI = 0,			/*!< \brief Definition of compressible solver. */
-  US = 1,				/*!< \brief Definition of incompressible solver. */
+  US = 1				/*!< \brief Definition of incompressible solver. */
 };
 static const map<string, ENUM_MEASUREMENTS> Measurements_Map = CCreateMap<string, ENUM_MEASUREMENTS>
 ("SI", SI)
@@ -353,7 +353,7 @@ enum ENUM_MATH_PROBLEM {
   DIRECT = 0,		/*!< \brief Direct problem */
   CONTINUOUS_ADJOINT = 1,		/*!< \brief Continuous adjoint problem */
   LINEARIZED = 2, /*< \brief Linearized numerical method */
-  DISCRETE_ADJOINT = 3, /*< \brief AD-based discrete adjoint problem. */
+  DISCRETE_ADJOINT = 3 /*< \brief AD-based discrete adjoint problem. */
 };
 static const map<string, ENUM_MATH_PROBLEM> Math_Problem_Map = CCreateMap<string, ENUM_MATH_PROBLEM>
 ("DIRECT", DIRECT)
@@ -732,7 +732,7 @@ enum BC_TYPE {
   CLAMPED_BOUNDARY = 34,		/*!< \brief Clamped Boundary definition. */
   LOAD_DIR_BOUNDARY = 35,		/*!< \brief Boundary Load definition. */
   LOAD_SINE_BOUNDARY = 36,		/*!< \brief Sine-waveBoundary Load definition. */
-  SEND_RECEIVE = 99,		/*!< \brief Boundary send-receive definition. */
+  SEND_RECEIVE = 99		/*!< \brief Boundary send-receive definition. */
 };
 
 
@@ -741,7 +741,7 @@ enum BC_TYPE {
  */
 enum ENUM_2DFORM {
   PLANE_STRESS = 0,			/*!< \brief Definition of plane stress solver. */
-  PLANE_STRAIN = 1,			/*!< \brief Definition of plane strain solver. */
+  PLANE_STRAIN = 1			/*!< \brief Definition of plane strain solver. */
 };
 static const map<string, ENUM_2DFORM> ElasForm_2D = CCreateMap<string, ENUM_2DFORM>
 ("PLANE_STRESS", PLANE_STRESS)
@@ -754,7 +754,7 @@ static const map<string, ENUM_2DFORM> ElasForm_2D = CCreateMap<string, ENUM_2DFO
 enum ENUM_AITKEN {
   NO_RELAXATION = 0,			/*!< \brief No relaxation in the strongly coupled approach. */
   FIXED_PARAMETER = 1,			/*!< \brief Relaxation with a fixed parameter. */
-  AITKEN_DYNAMIC = 2,			/*!< \brief Relaxation using Aitken's dynamic parameter. */
+  AITKEN_DYNAMIC = 2			/*!< \brief Relaxation using Aitken's dynamic parameter. */
 };
 static const map<string, ENUM_AITKEN> AitkenForm_Map = CCreateMap<string, ENUM_AITKEN>
 ("NONE", NO_RELAXATION)
@@ -993,7 +993,7 @@ static const map<string, ENUM_OUTPUT> Output_Map = CCreateMap<string, ENUM_OUTPU
 enum MG_CYCLE {
   V_CYCLE = 0,  		/*!< \brief V cycle. */
   W_CYCLE = 1,			/*!< \brief W cycle. */
-  FULLMG_CYCLE = 2,			/*!< \brief FullMG cycle. */
+  FULLMG_CYCLE = 2  /*!< \brief FullMG cycle. */
 };
 static const map<string, MG_CYCLE> MG_Cycle_Map = CCreateMap<string, MG_CYCLE>
 ("V_CYCLE", V_CYCLE)
@@ -1047,7 +1047,7 @@ enum ENUM_PARAM {
   PARABOLIC = 15,		         /*!< \brief Parabolic airfoil definition as design variables. */
   NACA_4DIGITS = 16,	         /*!< \brief The four digits NACA airfoil family as design variables. */
   AIRFOIL = 17,		           /*!< \brief Airfoil definition as design variables. */
-  SURFACE_FILE = 18,		     /*!< Nodal coordinates set using a surface file. */
+  SURFACE_FILE = 18		     /*!< Nodal coordinates set using a surface file. */
 };
 static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("FFD_SETTING", FFD_SETTING)
@@ -1246,7 +1246,7 @@ static const map<string, ENUM_DIRECTDIFF_VAR> DirectDiff_Var_Map = CCreateMap<st
  */
 enum ENUM_DYNAMIC {
   STATIC = 0,             /*!< \brief A static structural computation. */
-  DYNAMIC = 1,		      /*!< \brief Use a time stepping strategy for dynamic computations. */
+  DYNAMIC = 1		      /*!< \brief Use a time stepping strategy for dynamic computations. */
 };
 static const map<string, ENUM_DYNAMIC> Dynamic_Map = CCreateMap<string, ENUM_DYNAMIC>
 ("NO", STATIC)
@@ -2331,10 +2331,10 @@ template <class Tenum>
 class COptionRiemann : public COptionBase{
 
   map<string, Tenum> m;
-  unsigned short* & field; // Reference to the feildname
   string name; // identifier for the option
   unsigned short & size;
   string * & marker;
+  unsigned short* & field; // Reference to the field name
   su2double * & var1;
   su2double * & var2;
   su2double ** & flowdir;

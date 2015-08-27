@@ -5576,8 +5576,6 @@ private:
 	su2double DeltaRho_Inf,	/*!< \brief Linearized density variable at the infinity. */
 	DeltaE_Inf,				/*!< \brief Linearized energy at the infinity. */
 	*DeltaVel_Inf;			/*!< \brief Linearized velocity vector at the infinity. */
-	su2double *iPoint_UndLapl,	/*!< \brief Undivided Laplacians for centered scheme. */
-	*jPoint_UndLapl;			/*!< \brief Undivided Laplacians for centered scheme. */
 	su2double *CDeltaDrag_Inv, /*!< \brief Linearized drag coefficient (inviscid contribution) for each boundary. */
 	*CDeltaLift_Inv,		/*!< \brief Linearized lift coefficient (inviscid contribution) for each boundary. */
 	*DeltaForceInviscid;	/*!< \brief Linearized inviscid force for each boundary. */
@@ -5698,15 +5696,9 @@ public:
  */
 class CPoissonSolver : public CSolver {
 private:
-	su2double Total_CCharge;			/*!< \brief Total charge coefficient for all the domain. */
-	su2double *Source_Vector;		/*!< \brief Auxiliary vector for storing element source vector. */
-    
-    su2double Gamma;									/*!< \brief Fluid's Gamma constant (ratio of specific heats). */
-	su2double Gamma_Minus_One;				/*!< \brief Fluids's Gamma - 1.0  . */
-    
-    su2double **StiffMatrix_Elem,			/*!< \brief Auxiliary matrices for storing point to point Stiffness Matrices. */
-	**StiffMatrix_Node;							/*!< \brief Auxiliary matrices for storing point to point Stiffness Matrices. */
-    
+	su2double *Source_Vector;		  /*!< \brief Auxiliary vector for storing element source vector. */
+  su2double **StiffMatrix_Elem; /*!< \brief Auxiliary matrices for storing point to point Stiffness Matrices. */
+	su2double **StiffMatrix_Node;	/*!< \brief Auxiliary matrices for storing point to point Stiffness Matrices. */
     
 public:
     
@@ -5989,15 +5981,14 @@ public:
  */
 class CHeatSolver : public CSolver {
 private:
-	su2double *CHeat;	/*!< \brief Heat strength for each boundary. */
-	su2double AllBound_CHeat;	/*!< \brief Total Heat strength for all the boundaries. */
+	su2double *CHeat;	     /*!< \brief Heat strength for each boundary. */
 	su2double Total_CHeat; /*!< \brief Total Heat strength for all the boundaries. */
     
   CSysMatrix StiffMatrixSpace; /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations. */
-	CSysMatrix StiffMatrixTime;	/*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations. */
+	CSysMatrix StiffMatrixTime;	 /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations. */
     
-  su2double **StiffMatrix_Elem,			/*!< \brief Auxiliary matrices for storing point to point Stiffness Matrices. */
-	**StiffMatrix_Node;							/*!< \brief Auxiliary matrices for storing point to point Stiffness Matrices. */
+  su2double **StiffMatrix_Elem; /*!< \brief Auxiliary matrices for storing point to point Stiffness Matrices. */
+	su2double **StiffMatrix_Node;	 /*!< \brief Auxiliary matrices for storing point to point Stiffness Matrices. */
     
 public:
     

@@ -104,7 +104,7 @@ public:
 class CActivator{
 public:
 	CActivator();
-	~CActivator();
+	virtual ~CActivator();
 	virtual su2double Activate(su2double combination) {cout<< "IN BASE ACTIVATOR THIS IS BAD" << endl; return 0;};
 };
 
@@ -202,7 +202,6 @@ private:
   
   //----
 //	int outputDim;
-	int totalNumParameters;
 public:
 	CNeurNet();
 #ifdef HAVE_JSONCPP

@@ -2,7 +2,7 @@
  * \file vector_structure.hpp
  * \brief Headers for the classes related to linear solvers (CG, FGMRES, etc)
  *        The subroutines and functions are in the <i>linear_solvers_structure.cpp</i> file.
- * \author F. Palacios, J. Hicken
+ * \author F. Palacios, J. Hicken, T. Economon
  * \version 4.0.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
@@ -63,7 +63,9 @@ private:
   
 	unsigned long nElm; /*!< \brief total number of elements (or number elements on this processor) */
 	unsigned long nElmDomain; /*!< \brief total number of elements (or number elements on this processor without Ghost cells) */
+#ifdef HAVE_MPI
   unsigned long nElmGlobal; /*!< \brief total number of elements over all processors */
+#endif
 	unsigned short nVar; /*!< \brief number of elements in a block */
 	unsigned long nBlk; /*!< \brief number of blocks (or number of blocks on this processor) */
 	unsigned long nBlkDomain; /*!< \brief number of blocks (or number of blocks on this processor without Ghost cells) */
