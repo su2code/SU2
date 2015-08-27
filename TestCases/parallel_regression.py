@@ -79,7 +79,7 @@ def main():
     # ONERA M6 Wing
     oneram6           = TestCase('oneram6')
     oneram6.cfg_dir   = "euler/oneram6"
-    oneram6.cfg_file  = "inv_ONERAM6_JST.cfg"
+    oneram6.cfg_file  = "inv_ONERAM6.cfg"
     oneram6.test_iter = 10
     oneram6.test_vals = [-2.154358, 3.309590, 0.270257, 0.019095] #last 4 columns
     oneram6.su2_exec  = "parallel_computation.py -f"
@@ -162,22 +162,22 @@ def main():
     turb_oneram6.tol       = 0.00001
     test_list.append(turb_oneram6)
 
-    # NACA0012 (SA, FUN3D results: CL=1.0983, CD=0.01242)
+    # NACA0012 (SA, FUN3D finest grid results: CL=1.0983, CD=0.01242)
     turb_naca0012_sa           = TestCase('turb_naca0012_sa')
     turb_naca0012_sa.cfg_dir   = "rans/naca0012"
     turb_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
-    turb_naca0012_sa.test_iter = 20
+    turb_naca0012_sa.test_iter = 10
     turb_naca0012_sa.test_vals = [-6.607223, -9.778334, 1.098508, 0.012417] #last 4 columns
     turb_naca0012_sa.su2_exec  = "parallel_computation.py -f"
     turb_naca0012_sa.timeout   = 3200
     turb_naca0012_sa.tol       = 0.00001
     test_list.append(turb_naca0012_sa)
     
-    # NACA0012 (SST, FUN3D results: CL=1.0840, CD=0.01253)
+    # NACA0012 (SST, FUN3D finest grid results: CL=1.0840, CD=0.01253)
     turb_naca0012_sst           = TestCase('turb_naca0012_sst')
     turb_naca0012_sst.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
-    turb_naca0012_sst.test_iter = 20
+    turb_naca0012_sst.test_iter = 10
     turb_naca0012_sst.test_vals = [-8.290782, -1.743121, 1.084189, 0.012583] #last 4 columns
     turb_naca0012_sst.su2_exec  = "parallel_computation.py -f"
     turb_naca0012_sst.timeout   = 3200
@@ -218,13 +218,12 @@ def main():
     contadj_oneram6           = TestCase('contadj_oneram6')
     contadj_oneram6.cfg_dir   = "cont_adj_euler/oneram6"
     contadj_oneram6.cfg_file  = "inv_ONERAM6.cfg"
-    contadj_oneram6.test_iter = 5
+    contadj_oneram6.test_iter = 10
     contadj_oneram6.test_vals = [-6.001400, -6.242615, -0.105160, 0.149240] #last 4 columns
     contadj_oneram6.su2_exec  = "parallel_computation.py -f"
     contadj_oneram6.timeout   = 1600
     contadj_oneram6.tol       = 0.00001
-    #test_list.append(contadj_oneram6)
-    test_list.insert(0,contadj_oneram6) # This case requires a lot of memory. It is better for it to run first on TravisCI.
+    test_list.append(contadj_oneram6)
 
     ###################################
     ### Cont. adj. compressible N-S ###

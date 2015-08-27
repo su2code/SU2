@@ -5478,7 +5478,8 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
   unsigned short Counter_Send, Counter_Receive, iMarkerSend, iMarkerReceive;
   unsigned long iVertex, LocalNode;
   unsigned short nMarker_Max = config->GetnMarker_Max();
-  unsigned long  nVertexDomain[nMarker_Max], iPoint, jPoint, iElem;
+  unsigned long  iPoint, jPoint, iElem;
+  unsigned long *nVertexDomain = new unsigned long[nMarker_Max];
   unsigned short nDomain, iNode, iDomain, jDomain, jNode;
   vector<unsigned long>::iterator it;
   
@@ -5631,7 +5632,9 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
       iMarkerReceive++;
     }
   }
-  
+ 
+  /*--- Free memory ---*/
+  delete [] nVertexDomain;
 }
 
 
@@ -8645,7 +8648,7 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
   su2double *coord, dist;
   su2double dist2, diff, dist1;
   unsigned short iDim, iMarker;
-  unsigned long iPoint, iVertex, nVertex_SolidWall, iVertex_nearestWall;
+  unsigned long iPoint, iVertex, nVertex_SolidWall, iVertex_nearestWall = 0;
   
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -14865,7 +14868,7 @@ void CPeriodicGeometry::SetMeshFile(CGeometry *geometry, CConfig *config, string
   /*--- Change the numbering to guarantee that the all the receive
    points are at the end of the file ---*/
   unsigned long OldnPoint = geometry->GetnPoint();
-  unsigned long NewSort[nPoint];
+  unsigned long *NewSort = new unsigned long[nPoint];
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     NewSort[iPoint] = iPoint;
   }
@@ -14978,6 +14981,9 @@ void CPeriodicGeometry::SetMeshFile(CGeometry *geometry, CConfig *config, string
   
   
   output_file.close();
+  
+  /*--- Free memory ---*/
+  delete [] NewSort;
   
 }
 
