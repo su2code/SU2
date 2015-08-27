@@ -73,6 +73,8 @@ inline void CVariable::Add_SurfaceLoad_Res(su2double *val_surfForce) { }
 
 inline su2double *CVariable::Get_SurfaceLoad_Res(void) {return NULL;}
 
+inline su2double CVariable::Get_SurfaceLoad_Res(unsigned short iVar) {return 0.0;}
+
 inline void CVariable::Clear_SurfaceLoad_Res(void) { }
 
 inline void CVariable::Set_FlowTraction(su2double *val_flowTraction) { }
@@ -80,6 +82,8 @@ inline void CVariable::Set_FlowTraction(su2double *val_flowTraction) { }
 inline void CVariable::Add_FlowTraction(su2double *val_flowTraction) { }
 
 inline su2double *CVariable::Get_FlowTraction(void) {return NULL;}
+
+inline su2double CVariable::Get_FlowTraction(unsigned short iVar) {return 0.0;}
 
 inline void CVariable::Clear_FlowTraction(void) { }
 
@@ -903,6 +907,8 @@ inline void CFEM_ElasVariable::Add_SurfaceLoad_Res(su2double *val_surfForce) {
 
 inline su2double *CFEM_ElasVariable::Get_SurfaceLoad_Res(void) {return Residual_Ext_Surf;}
 
+inline su2double CFEM_ElasVariable::Get_SurfaceLoad_Res(unsigned short iVar) {return Residual_Ext_Surf[iVar];}
+
 inline void CFEM_ElasVariable::Clear_SurfaceLoad_Res(void) {
 	for (unsigned short iVar = 0; iVar < nVar; iVar++)	Residual_Ext_Surf[iVar] = 0.0;
 }
@@ -918,6 +924,8 @@ inline void CFEM_ElasVariable::Add_FlowTraction(su2double *val_flowTraction) {
 }
 
 inline su2double *CFEM_ElasVariable::Get_FlowTraction(void) {return FlowTraction;}
+
+inline su2double CFEM_ElasVariable::Get_FlowTraction(unsigned short iVar) {return FlowTraction[iVar];}
 
 inline void CFEM_ElasVariable::Clear_FlowTraction(void) {
 	for (unsigned short iVar = 0; iVar < nVar; iVar++)	FlowTraction[iVar] = 0.0;

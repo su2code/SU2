@@ -925,6 +925,8 @@ void FEM_StructuralIteration(COutput *output, CIntegration ***integration_contai
 
 	bool incremental_load = config_container[ZONE_0]->GetIncrementalLoad();							// If an incremental load is applied
 
+	/*--- TODO: Convergence only checked for ZONE_0 ---*/
+
 	/*--- This is to prevent problems when running a linear solver ---*/
 	if (!nonlinear) incremental_load = false;
 
@@ -940,8 +942,8 @@ void FEM_StructuralIteration(COutput *output, CIntegration ***integration_contai
 
 		/*--- Set the initial condition ---*/
 
-		for (iZone = 0; iZone < nZone; iZone++)
-			solver_container[iZone][MESH_0][FEA_SOL]->SetInitialCondition(geometry_container[iZone], solver_container[iZone], config_container[iZone], ExtIter);
+//		for (iZone = 0; iZone < nZone; iZone++)
+//			solver_container[iZone][MESH_0][FEA_SOL]->SetInitialCondition(geometry_container[iZone], solver_container[iZone], config_container[iZone], ExtIter);
 
 		for (iZone = 0; iZone < nZone; iZone++) {
 
@@ -991,16 +993,16 @@ void FEM_StructuralIteration(COutput *output, CIntegration ***integration_contai
 	/*--- The incremental load is only used in nonlinear cases ---*/
 	else if (incremental_load){
 
-		bool meetCriteria = false;
-
-		cout << "INCREMENTAL LOAD, " << nIncrements << " INCREMENTS. " << endl;
-
-		/*--- Set the initial condition ---*/
+		/*--- Set the initial condition: store the current solution as Solution_Old ---*/
 
 		for (iZone = 0; iZone < nZone; iZone++)
 			solver_container[iZone][MESH_0][FEA_SOL]->SetInitialCondition(geometry_container[iZone], solver_container[iZone], config_container[iZone], ExtIter);
 
 		for (iZone = 0; iZone < nZone; iZone++) {
+
+				/*--- The load increment is 1.0 ---*/
+				loadIncrement = 1.0;
+				solver_container[iZone][MESH_0][FEA_SOL]->SetLoad_Increment(loadIncrement);
 
 				/*--- Set the value of the internal iteration ---*/
 
@@ -1031,6 +1033,22 @@ void FEM_StructuralIteration(COutput *output, CIntegration ***integration_contai
 
 		}
 
+		bool meetCriteria;
+		double Residual_UTOL, Residual_RTOL, Residual_ETOL;
+		double Criteria_UTOL, Criteria_RTOL, Criteria_ETOL;
+
+		Criteria_UTOL = config_container[ZONE_0]->GetIncLoad_Criteria(0);
+		Criteria_RTOL = config_container[ZONE_0]->GetIncLoad_Criteria(1);
+		Criteria_ETOL = config_container[ZONE_0]->GetIncLoad_Criteria(2);
+
+		Residual_UTOL = log10(solver_container[ZONE_0][MESH_0][FEA_SOL]->GetRes_FEM(0));
+		Residual_RTOL = log10(solver_container[ZONE_0][MESH_0][FEA_SOL]->GetRes_FEM(1));
+		Residual_ETOL = log10(solver_container[ZONE_0][MESH_0][FEA_SOL]->GetRes_FEM(2));
+
+		meetCriteria = ( ( Residual_UTOL <  Criteria_UTOL ) &&
+				 	 	 ( Residual_RTOL <  Criteria_RTOL ) &&
+						 ( Residual_ETOL <  Criteria_ETOL ) );
+
 		/*--- If the criteria is met and the load is not "too big", do the regular calculation ---*/
 		if (meetCriteria){
 
@@ -1060,14 +1078,22 @@ void FEM_StructuralIteration(COutput *output, CIntegration ***integration_contai
 		else {
 
 			/*--- Here we have to restart the solution to the original one of the iteration ---*/
+			/*--- Retrieve the Solution_Old as the current solution before subiterating ---*/
 
+			for (iZone = 0; iZone < nZone; iZone++)
+				solver_container[iZone][MESH_0][FEA_SOL]->ResetInitialCondition(geometry_container[iZone], solver_container[iZone], config_container[iZone], ExtIter);
+
+			/*--- For the number of increments ---*/
 			for (iIncrement = 0; iIncrement < nIncrements; iIncrement++){
 
 				loadIncrement = (iIncrement + 1.0) * (1.0 / nIncrements);
 
-				/*--- Set the load increment and the initial condition, and output the parameters of UTOL, RTOL, ETOL ---*/
+				/*--- Set the load increment and the initial condition, and output the parameters of UTOL, RTOL, ETOL for the previous iteration ---*/
 
 				for (iZone = 0; iZone < nZone; iZone++){
+
+					/*--- Set the convergence monitor to false, to force se solver to converge every subiteration ---*/
+					integration_container[iZone][FEA_SOL]->SetConvergence(false);
 
 					output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_0);
 
@@ -1077,13 +1103,16 @@ void FEM_StructuralIteration(COutput *output, CIntegration ***integration_contai
 
 
 					solver_container[iZone][MESH_0][FEA_SOL]->SetLoad_Increment(loadIncrement);
-					solver_container[iZone][MESH_0][FEA_SOL]->SetInitialCondition(geometry_container[iZone], solver_container[iZone], config_container[iZone], ExtIter);
 				}
+
+				cout << endl;
+				cout << "-- Incremental load: increment " << iIncrement + 1 << " ------------------------------------------" << endl;
 
 				for (iZone = 0; iZone < nZone; iZone++) {
 
 					/*--- Set the value of the internal iteration ---*/
 					IntIter = 0;
+					config_container[iZone]->SetIntIter(IntIter);
 
 					/*--- FEA equations ---*/
 

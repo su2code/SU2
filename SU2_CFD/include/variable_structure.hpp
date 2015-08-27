@@ -1480,6 +1480,11 @@ public:
 	/*!
 	 * \brief A virtual member.
 	 */
+	virtual su2double Get_SurfaceLoad_Res(unsigned short iVar);
+
+	/*!
+	 * \brief A virtual member.
+	 */
 	virtual void Clear_SurfaceLoad_Res(void);
 
 	/*!
@@ -1496,6 +1501,11 @@ public:
 	 * \brief A virtual member.
 	 */
 	virtual su2double *Get_FlowTraction(void);
+
+	/*!
+	 * \brief A virtual member.
+	 */
+	virtual su2double Get_FlowTraction(unsigned short iVar);
 
 	/*!
 	 * \brief A virtual member.
@@ -2675,6 +2685,11 @@ public:
 	su2double *Get_SurfaceLoad_Res(void);
 
 	/*!
+	 * \brief Get the residual term due to surface load
+	 */
+	su2double Get_SurfaceLoad_Res(unsigned short iVar);
+
+	/*!
 	 * \brief Clear the surface load residual
 	 */
 	void Clear_SurfaceLoad_Res(void);
@@ -2693,6 +2708,11 @@ public:
 	 * \brief Get the residual term due to the flow traction
 	 */
 	su2double *Get_FlowTraction(void);
+
+	/*!
+	 * \brief Get the residual term due to the flow traction
+	 */
+	su2double Get_FlowTraction(unsigned short iVar);
 
 	/*!
 	 * \brief Clear the flow traction residual
