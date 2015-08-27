@@ -749,6 +749,7 @@ private:
   Ramp_Load;				/*!< \brief Apply the load with linear increases. */
   bool IncrementalLoad;		/*!< \brief Apply the load in increments (for nonlinear structural analysis). */
   unsigned long IncLoad_Nincrements; /*!< \brief Number of increments. */
+  su2double *IncLoad_Criteria;	/*!< \brief Criteria for the application of incremental loading. */
   su2double Ramp_Time;			/*!< \brief Time until the maximum load is applied. */
   su2double Static_Time;			/*!< \brief Time while the structure is not loaded in FSI applications. */
   unsigned short Pred_Order;  /*!< \brief Order of the predictor for FSI applications. */
@@ -5552,6 +5553,12 @@ public:
 	 * \return 	Number of increments.
 	 */
 	 unsigned long GetNumberIncrements(void);
+
+	/*!
+	 * \brief Get the value of the criteria for applying incremental loading.
+	 * \return Value of the log10 of the residual.
+	 */
+	 su2double GetIncLoad_Criteria(unsigned short val_var);
 
 	/*!
 	 * \brief Get the relaxation method chosen for the simulation

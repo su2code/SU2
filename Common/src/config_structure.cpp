@@ -150,7 +150,7 @@ void CConfig::SetPointersNull(void) {
   PlaneTag=NULL;
   Kappa_Flow=NULL;    Kappa_AdjFlow=NULL;  Kappa_TNE2=NULL;
   Kappa_AdjTNE2=NULL;  Kappa_LinFlow=NULL;
-  Section_Location=NULL;
+  Section_Location=NULL;	IncLoad_Criteria=NULL;
   U_FreeStreamND=NULL;
 
   /*--- Moving mesh pointers ---*/
@@ -1226,6 +1226,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("INCREMENTAL_LOAD", IncrementalLoad, false);
   /* DESCRIPTION: Maximum number of increments of the  */
   addUnsignedLongOption("NUMBER_INCREMENTS", IncLoad_Nincrements, 10);
+
+  default_vec_3d[0] = 0.0; default_vec_3d[1] = 0.0; default_vec_3d[2] = 0.0;
+  /* DESCRIPTION: Definition of the  UTOL RTOL ETOL*/
+  addDoubleArrayOption("INCREMENTAL_CRITERIA", 3, IncLoad_Criteria, default_vec_3d);
 
   /* DESCRIPTION: Time while the structure is static */
   addDoubleOption("STATIC_TIME", Static_Time, 1.0);
@@ -5660,6 +5664,7 @@ CConfig::~CConfig(void) {
   if (ParamDV!=NULL  )    delete[] ParamDV;
   if (MG_CorrecSmooth!=NULL    )    delete[] MG_CorrecSmooth;
   if (Section_Location!=NULL)    delete[] Section_Location;
+  if (IncLoad_Criteria!=NULL)    delete[] IncLoad_Criteria;
   if (Kappa_Flow!=NULL      )    delete[] Kappa_Flow;
   if (Kappa_AdjFlow!=NULL             )    delete[] Kappa_AdjFlow;
   if (Kappa_TNE2!=NULL   )    delete[] Kappa_TNE2;

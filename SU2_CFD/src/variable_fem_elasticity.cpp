@@ -62,6 +62,7 @@ CFEM_ElasVariable::CFEM_ElasVariable(su2double *val_fea, unsigned short val_nDim
 	unsigned short iVar, iDim, jDim;
 	bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);	// Nonlinear analysis.
 	bool body_forces = false;		// Bool for adding body forces in the future.
+	bool incremental_load = config->GetIncrementalLoad();
 
 	VonMises_Stress = 0.0;
 
@@ -109,6 +110,10 @@ CFEM_ElasVariable::CFEM_ElasVariable(su2double *val_fea, unsigned short val_nDim
 		Solution_Pred_Old 		=  NULL;
 	}
 
+	/*--- If we are going to use incremental analysis, we need a way to store the old solution ---*/
+	if (incremental_load && nonlinear_analysis){
+		Solution_Old 			=  new su2double [nVar];
+	}
 
 //	if (nonlinear_analysis) Residual_Int = new su2double [nVar];	else Residual_Int = NULL;
 	if (body_forces) Residual_Ext_Body = new su2double [nVar];	else Residual_Ext_Body = NULL;

@@ -2131,13 +2131,25 @@ public:
     
 	/*!
 	 * \brief A virtual member.
-	 * \param[in] fea_geometry - Geometrical definition of the problem.
-	 * \param[in] flow_solution - Container vector with all the solutions.
-	 * \param[in] fea_config - Definition of the particular problem.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container with all the solutions.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] ExtIter - External iteration.
 	 */
 	virtual void SetInitialCondition(CGeometry **geometry,
                                    CSolver ***solver_container,
                                    CConfig *config, unsigned long ExtIter);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container with all the solutions.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] ExtIter - External iteration.
+	 */
+	virtual void ResetInitialCondition(CGeometry **geometry,
+                                   	   CSolver ***solver_container,
+									   CConfig *config, unsigned long ExtIter);
     
 	/*!
 	 * \brief A virtual member.
@@ -6688,6 +6700,25 @@ public:
      * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 */
 	void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, CNumerics **numerics, unsigned short iMesh, unsigned long Iteration, unsigned short RunTime_EqSystem, bool Output);
+
+
+	/*!
+	 * \brief Set the initial condition for the FEM structural problem.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container with all the solutions.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] ExtIter - External iteration.
+	 */
+	void SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter);
+
+	/*!
+	 * \brief Reset the initial condition for the FEM structural problem.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container with all the solutions.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] ExtIter - External iteration.
+	 */
+	void ResetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter);
 
 	/*!
 	 * \brief Compute the time step for solving the FEM equations.

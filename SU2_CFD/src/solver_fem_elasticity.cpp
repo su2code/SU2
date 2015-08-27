@@ -430,6 +430,46 @@ void CFEM_ElasticitySolver::Preprocessing(CGeometry *geometry, CSolver **solver_
 
 void CFEM_ElasticitySolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned long Iteration) { }
 
+void CFEM_ElasticitySolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter) {
+
+	unsigned long iPoint, nPoint;
+	bool incremental_load = config->GetIncrementalLoad();							// If an incremental load is applied
+
+	nPoint = geometry[MESH_0]->GetnPoint();
+
+	/*--- We store the current solution as "Solution Old", for the case that we need to retrieve it ---*/
+
+	if (incremental_load){
+		for (iPoint = 0; iPoint < nPoint; iPoint++) node[iPoint]->Set_OldSolution();
+
+		// This is the operation
+		// for (unsigned short iVar = 0; iVar < nVar; iVar++)
+		//	  Solution_Old[iVar] = Solution[iVar];
+
+	}
+
+
+}
+
+void CFEM_ElasticitySolver::ResetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter) {
+
+	unsigned long iPoint, nPoint;
+	bool incremental_load = config->GetIncrementalLoad();							// If an incremental load is applied
+
+	nPoint = geometry[MESH_0]->GetnPoint();
+
+	/*--- We store the current solution as "Solution Old", for the case that we need to retrieve it ---*/
+
+	if (incremental_load){
+		for (iPoint = 0; iPoint < nPoint; iPoint++) node[iPoint]->Set_Solution();
+
+		// This is the operation
+		// for (unsigned short iVar = 0; iVar < nVar; iVar++)
+		//	  Solution[iVar] = Solution_Old[iVar];
+	}
+
+}
+
 void CFEM_ElasticitySolver::Compute_StiffMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config) {
 
 	unsigned long iPoint, iElem, iVar, jVar;
@@ -1367,14 +1407,22 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolv
 	bool newton_raphson = (config->GetKind_SpaceIteScheme_FEA() == NEWTON_RAPHSON);		// Newton-Raphson method
 	bool fsi = config->GetFSI_Simulation();												// FSI simulation.
 
-	su2double *checkCoord;
+	bool incremental_load = config->GetIncrementalLoad();
 
 	if (!dynamic){
 
 		for (iPoint = 0; iPoint < nPoint; iPoint++){
 			/*--- Add the external contribution to the residual    ---*/
 			/*--- (the terms that are constant over the time step) ---*/
-			Res_Ext_Surf = node[iPoint]->Get_SurfaceLoad_Res();
+			if (incremental_load){
+				for (iVar = 0; iVar < nVar; iVar++){
+					Res_Ext_Surf[iVar] = loadIncrement * node[iPoint]->Get_SurfaceLoad_Res(iVar);
+				}
+			}
+			else {
+				Res_Ext_Surf = node[iPoint]->Get_SurfaceLoad_Res();
+			}
+
 			LinSysRes.AddBlock(iPoint, Res_Ext_Surf);
 		}
 
@@ -1435,16 +1483,31 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolv
 		/*--- Add the components of M*TimeRes_Aux to the residual R(t+dt) ---*/
 		for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
 			/*--- Dynamic contribution ---*/
+			/*--- TODO: Do I have to scale this one? I don't think so... ---*/
 			Res_Time_Cont = TimeRes.GetBlock(iPoint);
 			LinSysRes.AddBlock(iPoint, Res_Time_Cont);
 			/*--- External surface load contribution ---*/
-			Res_Ext_Surf = node[iPoint]->Get_SurfaceLoad_Res();
+			if (incremental_load){
+				for (iVar = 0; iVar < nVar; iVar++){
+					Res_Ext_Surf[iVar] = loadIncrement * node[iPoint]->Get_SurfaceLoad_Res(iVar);
+				}
+			}
+			else {
+				Res_Ext_Surf = node[iPoint]->Get_SurfaceLoad_Res();
+			}
 			LinSysRes.AddBlock(iPoint, Res_Ext_Surf);
-			checkCoord = geometry->node[iPoint]->GetCoord();
+
 			/*--- Add FSI contribution ---*/
 			if (fsi) {
 				/*--- TODO: It may be worthy restricting the flow traction to the boundary elements... ---*/
-				Res_FSI_Cont = node[iPoint]->Get_FlowTraction();
+				if (incremental_load){
+					for (iVar = 0; iVar < nVar; iVar++){
+						Res_FSI_Cont[iVar] = loadIncrement * node[iPoint]->Get_FlowTraction(iVar);
+					}
+				}
+				else {
+					Res_FSI_Cont = node[iPoint]->Get_FlowTraction();
+				}
 				LinSysRes.AddBlock(iPoint, Res_FSI_Cont);
 			}
 		}
