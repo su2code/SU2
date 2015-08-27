@@ -2678,7 +2678,6 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
                (config->GetKind_Solver() == DISC_ADJ_RANS));
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-  bool aeroelastic = config->GetAeroelastic_Simulation();
   bool gravity = (config->GetGravityForce() == YES);
   bool engine_intake = config->GetEngine_Intake();
   
@@ -6897,7 +6896,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
   su2double *Velocity_b, Velocity2_b, Enthalpy_b, Energy_b, StaticEnergy_b, Density_b, Kappa_b, Chi_b, Pressure_b, Temperature_b;
   su2double *Velocity_e, Velocity2_e, VelMag_e, Enthalpy_e, Entropy_e, Energy_e = 0.0, StaticEnthalpy_e, StaticEnergy_e, Density_e = 0.0, Pressure_e;
   su2double *Velocity_i, Velocity2_i, Enthalpy_i, Energy_i, StaticEnergy_i, Density_i, Kappa_i, Chi_i, Pressure_i, SoundSpeed_i;
-  su2double ProjGridVel, ProjVelocity_i, ProjVelocity_b;
+  su2double ProjVelocity_i;
   su2double **P_Tensor, **invP_Tensor, *Lambda_i, **Jacobian_b, **DubDu, *dw, *u_e, *u_i, *u_b;
   su2double *gridVel;
   su2double *V_boundary, *V_domain, *S_boundary, *S_domain;
@@ -7245,6 +7244,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
       /*--- Residual contribution due to grid motion ---*/
 
       if (grid_movement) {
+        gridVel = geometry->node[iPoint]->GetGridVel();
         su2double projVelocity = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)
           projVelocity +=  gridVel[iDim]*Normal[iDim];
@@ -7292,6 +7292,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
         /*--- Jacobian contribution due to grid motion ---*/
         if (grid_movement)
         {
+          gridVel = geometry->node[iPoint]->GetGridVel();
           su2double projVelocity = 0.0;
           for (iDim = 0; iDim < nDim; iDim++)
         	  projVelocity +=  gridVel[iDim]*Normal[iDim];

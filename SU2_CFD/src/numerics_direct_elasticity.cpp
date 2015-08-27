@@ -47,7 +47,7 @@ void CGalerkin_FEA::PressInt_Linear(su2double CoordCorners[4][3], su2double *tn_
 
 	if (nDim == 2){
 
-		su2double a[3], b[3], Length_Elem, GaussPoint[2];
+		su2double a[3], Length_Elem, GaussPoint[2];
 		unsigned short iDim, iGauss, nGP=2;
 		su2double N1, N2, Weight, Jacobian, PX_1, PX_2, PY_1, PY_2;
 
@@ -1100,7 +1100,7 @@ void CGalerkin_FEA::SetFEA_DeadLoad2D(su2double *DeadLoadVector_Elem, su2double 
 
 	  su2double N_Matrix[2][8], Aux_Vector[2], DeadLoad_Elem[80];
 	  su2double Xi = 0.0, Eta = 0.0, Det = 0.0;
-	  unsigned short iNode, iVar, jVar, kVar, iGauss, nGauss = 0;
+	  unsigned short iNode, iVar, jVar, iGauss, nGauss = 0;
 	  su2double DShapeFunction[8][4] = {{0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0},
 	    {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}};
 	  su2double Location[4][3], Weight[4];
@@ -1184,7 +1184,7 @@ void CGalerkin_FEA::GetFEA_StressNodal2D(su2double StressNodal[8][3], su2double 
 
 	  su2double B_Matrix[3][8], D_Matrix[3][3], StrainVector[3];
 	  su2double Xi = 0.0, Eta = 0.0, Det = 0.0;
-	  unsigned short iNode, iVar, jVar, kVar, iNodal, nNodal = 0;
+	  unsigned short iNode, iVar, jVar, kVar, iNodal;
 	  su2double DShapeFunction[8][4] = {{0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0},
 	    {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}};
 	  su2double Location[4][3];

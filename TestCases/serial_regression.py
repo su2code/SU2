@@ -79,9 +79,9 @@ def main():
     # ONERA M6 Wing
     oneram6           = TestCase('oneram6')
     oneram6.cfg_dir   = "euler/oneram6"
-    oneram6.cfg_file  = "inv_ONERAM6_JST.cfg"
+    oneram6.cfg_file  = "inv_ONERAM6.cfg"
     oneram6.test_iter = 10
-    oneram6.test_vals = [-2.157425, 3.304595, 0.271678, 0.018869] #last 4 columns
+    oneram6.test_vals = [-13.393130, -12.928941, 0.282557, 0.012706] #last 4 columns
     oneram6.su2_exec  = "SU2_CFD"
     oneram6.timeout   = 9600
     oneram6.tol       = 0.00001
@@ -160,24 +160,24 @@ def main():
     turb_oneram6.timeout   = 3200
     turb_oneram6.tol       = 0.00001
     test_list.append(turb_oneram6)
-    
-    # NACA0012 (SA, FUN3D results: CL=1.0983, CD=0.01242)
+
+    # NACA0012 (SA, FUN3D results for finest grid: CL=1.0983, CD=0.01242)
     turb_naca0012_sa           = TestCase('turb_naca0012_sa')
     turb_naca0012_sa.cfg_dir   = "rans/naca0012"
     turb_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
-    turb_naca0012_sa.test_iter = 20
-    turb_naca0012_sa.test_vals = [-6.607227, -9.778334, 1.098508, 0.012417] #last 4 columns
+    turb_naca0012_sa.test_iter = 10
+    turb_naca0012_sa.test_vals = [-12.000763, -9.145363, 1.070528, 0.019417] #last 4 columns
     turb_naca0012_sa.su2_exec  = "SU2_CFD"
     turb_naca0012_sa.timeout   = 3200
     turb_naca0012_sa.tol       = 0.00001
     test_list.append(turb_naca0012_sa)
     
-    # NACA0012 (SST, FUN3D results: CL=1.0840, CD=0.01253)
+    # NACA0012 (SST, FUN3D results for finest grid: CL=1.0840, CD=0.01253)
     turb_naca0012_sst           = TestCase('turb_naca0012_sst')
     turb_naca0012_sst.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
-    turb_naca0012_sst.test_iter = 20
-    turb_naca0012_sst.test_vals = [-8.290782, -1.743121, 1.084189, 0.012583] #last 4 columns
+    turb_naca0012_sst.test_iter = 10
+    turb_naca0012_sst.test_vals = [-15.039675, -7.219913, 1.059622, 0.019138] #last 4 columns
     turb_naca0012_sst.su2_exec  = "SU2_CFD"
     turb_naca0012_sst.timeout   = 3200
     turb_naca0012_sst.tol       = 0.00001
@@ -217,13 +217,12 @@ def main():
     contadj_oneram6           = TestCase('contadj_oneram6')
     contadj_oneram6.cfg_dir   = "cont_adj_euler/oneram6"
     contadj_oneram6.cfg_file  = "inv_ONERAM6.cfg"
-    contadj_oneram6.test_iter = 5
-    contadj_oneram6.test_vals = [-6.009929, -6.251311, -0.106940, 0.149230] #last 4 columns
+    contadj_oneram6.test_iter = 10
+    contadj_oneram6.test_vals = [-12.133352, -12.707213, 6.8590e-01, 1.4092e-01] #last 4 columns
     contadj_oneram6.su2_exec  = "SU2_CFD"
     contadj_oneram6.timeout   = 1600
     contadj_oneram6.tol       = 0.00001
-    #test_list.append(contadj_oneram6)
-    test_list.insert(0,contadj_oneram6) # This case requires a lot of memory. It is better for it to run first on TravisCI.
+    test_list.append(contadj_oneram6)
 
     ###################################
     ### Cont. adj. compressible N-S ###
@@ -390,7 +389,7 @@ def main():
     sine_gust.cfg_dir   = "gust"
     sine_gust.cfg_file  = "inv_gust_NACA0012.cfg"
     sine_gust.test_iter = 5
-    sine_gust.test_vals = [-1.977531, 3.481790, -0.006226, -0.000973] #last 4 columns
+    sine_gust.test_vals = [-1.977531, 3.481790, -0.006222, -0.001342] #last 4 columns
     sine_gust.su2_exec  = "SU2_CFD"
     sine_gust.timeout   = 1600
     sine_gust.tol       = 0.00001
@@ -402,7 +401,7 @@ def main():
     aeroelastic.cfg_dir   = "aeroelastic"
     aeroelastic.cfg_file  = "aeroelastic_NACA64A010.cfg"
     aeroelastic.test_iter = 2
-    aeroelastic.test_vals = [0.077099, 0.036442, -1.684915e-03, -1.131746e-04] #last 4 columns
+    aeroelastic.test_vals = [0.077106, 0.036449, -1.684915e-03, -1.131746e-04] #last 4 columns
     aeroelastic.su2_exec  = "SU2_CFD"
     aeroelastic.timeout   = 1600
     aeroelastic.tol       = 0.000001
