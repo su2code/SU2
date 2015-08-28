@@ -1888,8 +1888,9 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   unsigned short iVar_GridVel = 0, iVar_PressCp = 0, iVar_Density = 0, iVar_Lam = 0, iVar_MachMean = 0,
   iVar_Tempv = 0, iVar_EF =0, iVar_Temp = 0, iVar_Mach = 0, iVar_Press = 0, iVar_TempLam = 0,
   iVar_ViscCoeffs = 0, iVar_Sens = 0, iVar_FEA = 0, iVar_Extra = 0, iVar_Eddy = 0, iVar_Sharp = 0,
-  iVar_FEA_Stress = 0, iVar_FEA_Stress_3D = 0, iVar_FEA_Extra = 0, iVar_SensDim = 0;
-  
+  iVar_FEA_Vel = 0, iVar_FEA_Accel = 0, iVar_FEA_Stress = 0, iVar_FEA_Stress_3D = 0, iVar_FEA_Extra = 0,
+  iVar_SensDim = 0;
+
   unsigned long iPoint = 0, jPoint = 0, iVertex = 0, iMarker = 0;
   su2double Gas_Constant, Mach2Vel, Mach_Motion, RefDensity, RefPressure = 0.0, factor = 0.0;
   
@@ -2048,10 +2049,27 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       iVar_Sens   = nVar_Total; nVar_Total += 2;
     }
     
-    if ((Kind_Solver == LINEAR_ELASTICITY) || (Kind_Solver == FEM_ELASTICITY))  {
+    if (Kind_Solver == LINEAR_ELASTICITY)  {
       iVar_FEA_Stress  = nVar_Total; nVar_Total += 3;
 	  if (geometry->GetnDim() == 3) {iVar_FEA_Stress_3D = nVar_Total; nVar_Total += 3;}
       iVar_FEA_Extra = nVar_Total; nVar_Total += 2;
+    }
+
+    if (Kind_Solver == FEM_ELASTICITY)  {
+      /*--- If the analysis is dynamic... ---*/
+      if (config->GetDynamic_Analysis() == DYNAMIC){
+    	  /*--- Velocities ---*/
+    	  iVar_FEA_Vel = nVar_Total;
+          if (geometry->GetnDim() == 2) nVar_Total += 2;
+          else if (geometry->GetnDim() == 3) nVar_Total += 3;
+    	  /*--- Accelerations ---*/
+          iVar_FEA_Accel = nVar_Total;
+          if (geometry->GetnDim() == 2) nVar_Total += 2;
+          else if (geometry->GetnDim() == 3) nVar_Total += 3;
+      }
+      iVar_FEA_Stress  = nVar_Total; nVar_Total += 3;
+	  	  if (geometry->GetnDim() == 3) {iVar_FEA_Stress_3D = nVar_Total; nVar_Total += 3;}
+      iVar_FEA_Extra = nVar_Total; nVar_Total += 1;
     }
 
     if ((Kind_Solver == DISC_ADJ_EULER)         ||
@@ -3302,6 +3320,133 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     }
 
 
+	/*--- Communicate the Velocities for dynamic FEM problem ---*/
+
+    if ((Kind_Solver == FEM_ELASTICITY) && (config->GetDynamic_Analysis() == DYNAMIC)) {
+
+        /*--- Loop over this partition to collect the current variable ---*/
+
+        jPoint = 0; su2double *Node_Vel;
+        for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+
+          /*--- Check for halos & write only if requested ---*/
+
+          if (!Local_Halo[iPoint] || Wrt_Halo) {
+
+            /*--- Load buffers with the three grid velocity components. ---*/
+
+        	Node_Vel = solver[CurrentIndex]->node[iPoint]->GetSolution_Vel();
+            Buffer_Send_Var[jPoint] = Node_Vel[0];
+            Buffer_Send_Res[jPoint] = Node_Vel[1];
+            if (geometry->GetnDim() == 3) Buffer_Send_Vol[jPoint] = Node_Vel[2];
+            jPoint++;
+          }
+        }
+
+        /*--- Gather the data on the master node. ---*/
+
+  #ifdef HAVE_MPI
+        SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+        SU2_MPI::Gather(Buffer_Send_Res, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Res, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+        if (geometry->GetnDim() == 3) {
+          SU2_MPI::Gather(Buffer_Send_Vol, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Vol, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+        }
+  #else
+        for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Var[iPoint] = Buffer_Send_Var[iPoint];
+        for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Res[iPoint] = Buffer_Send_Res[iPoint];
+        if (geometry->GetnDim() == 3) {
+          for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Vol[iPoint] = Buffer_Send_Vol[iPoint];
+        }
+  #endif
+
+        /*--- The master node unpacks and sorts this variable by global index ---*/
+
+        if (rank == MASTER_NODE) {
+          jPoint = 0; iVar = iVar_FEA_Vel;
+          for (iProcessor = 0; iProcessor < size; iProcessor++) {
+            for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
+
+              /*--- Get global index, then loop over each variable and store ---*/
+
+              iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
+              Data[iVar][iGlobal_Index]   = Buffer_Recv_Var[jPoint];
+              Data[iVar+1][iGlobal_Index] = Buffer_Recv_Res[jPoint];
+              if (geometry->GetnDim() == 3)
+                Data[iVar+2][iGlobal_Index] = Buffer_Recv_Vol[jPoint];
+              jPoint++;
+            }
+
+            /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
+
+            jPoint = (iProcessor+1)*nBuffer_Scalar;
+          }
+       }
+    }
+
+	/*--- Communicate the Accelerations for dynamic FEM problem ---*/
+
+    if ((Kind_Solver == FEM_ELASTICITY) && (config->GetDynamic_Analysis() == DYNAMIC)) {
+
+        /*--- Loop over this partition to collect the current variable ---*/
+
+        jPoint = 0; su2double *Node_Accel;
+        for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+
+          /*--- Check for halos & write only if requested ---*/
+
+          if (!Local_Halo[iPoint] || Wrt_Halo) {
+
+            /*--- Load buffers with the three grid velocity components. ---*/
+
+        	Node_Accel = solver[CurrentIndex]->node[iPoint]->GetSolution_Accel();
+            Buffer_Send_Var[jPoint] = Node_Accel[0];
+            Buffer_Send_Res[jPoint] = Node_Accel[1];
+            if (geometry->GetnDim() == 3) Buffer_Send_Vol[jPoint] = Node_Accel[2];
+            jPoint++;
+          }
+        }
+
+        /*--- Gather the data on the master node. ---*/
+
+  #ifdef HAVE_MPI
+        SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+        SU2_MPI::Gather(Buffer_Send_Res, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Res, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+        if (geometry->GetnDim() == 3) {
+          SU2_MPI::Gather(Buffer_Send_Vol, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Vol, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+        }
+  #else
+        for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Var[iPoint] = Buffer_Send_Var[iPoint];
+        for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Res[iPoint] = Buffer_Send_Res[iPoint];
+        if (geometry->GetnDim() == 3) {
+          for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Vol[iPoint] = Buffer_Send_Vol[iPoint];
+        }
+  #endif
+
+        /*--- The master node unpacks and sorts this variable by global index ---*/
+
+        if (rank == MASTER_NODE) {
+          jPoint = 0; iVar = iVar_FEA_Accel;
+          for (iProcessor = 0; iProcessor < size; iProcessor++) {
+            for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
+
+              /*--- Get global index, then loop over each variable and store ---*/
+
+              iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
+              Data[iVar][iGlobal_Index]   = Buffer_Recv_Var[jPoint];
+              Data[iVar+1][iGlobal_Index] = Buffer_Recv_Res[jPoint];
+              if (geometry->GetnDim() == 3)
+                Data[iVar+2][iGlobal_Index] = Buffer_Recv_Vol[jPoint];
+              jPoint++;
+            }
+
+            /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
+
+            jPoint = (iProcessor+1)*nBuffer_Scalar;
+          }
+       }
+    }
+
+
 	/*--- Communicate the Linear elasticity stresses (2D) - Legacy elasticity solver ---*/
 
     if (Kind_Solver == LINEAR_ELASTICITY) {
@@ -3363,7 +3508,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       }
     }
     
-    /*--- Communicate the Linear elasticity stresses (2D) - New elasticity solver---*/
+    /*--- Communicate the FEM elasticity stresses (2D) - New elasticity solver---*/
 
     if (Kind_Solver == FEM_ELASTICITY) {
 
@@ -3486,7 +3631,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       }
     }    
 
-    /*--- Communicate the Linear elasticity stresses (3D) - New elasticity solver---*/
+    /*--- Communicate the FEM elasticity stresses (3D) - New elasticity solver---*/
 
     if ((Kind_Solver == FEM_ELASTICITY) && (geometry->GetnDim() == 3)) {
 
@@ -3564,7 +3709,6 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
           /*--- Load buffers with the temperature and laminar viscosity variables. ---*/
           
           Buffer_Send_Var[jPoint] = solver[FEA_SOL]->node[iPoint]->GetVonMises_Stress();
-          Buffer_Send_Res[jPoint] = solver[FEA_SOL]->node[iPoint]->GetFlow_Pressure();
           jPoint++;
         }
       }
@@ -3588,7 +3732,6 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
             
             iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
             Data[iVar][iGlobal_Index] = Buffer_Recv_Var[jPoint];
-            Data[iVar+1][iGlobal_Index] = Buffer_Recv_Res[jPoint];
             jPoint++;
           }
           
@@ -3926,6 +4069,7 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
   unsigned short iVar, iDim, nDim = geometry->GetnDim();
   unsigned long iPoint, iExtIter = config->GetExtIter();
   bool grid_movement = config->GetGrid_Movement();
+  bool dynamic_fem = (config->GetDynamic_Analysis() == DYNAMIC);
   ofstream restart_file;
   string filename;
   
@@ -4048,14 +4192,34 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
       }
     }
     
-    if (((Kind_Solver == LINEAR_ELASTICITY) || (Kind_Solver == FEM_ELASTICITY)) && (geometry->GetnDim() == 2)) {
+    if (Kind_Solver == LINEAR_ELASTICITY) {
       restart_file << "\t\"Sxx\"\t\"Syy\"\t\"Sxy\"\t\"Von_Mises_Stress\"\t\"Flow_Pressure\"";
     }
 
-    if (((Kind_Solver == LINEAR_ELASTICITY) || (Kind_Solver == FEM_ELASTICITY)) && (geometry->GetnDim() == 3)) {
+    if (Kind_Solver == LINEAR_ELASTICITY) {
       restart_file << "\t\"Sxx\"\t\"Syy\"\t\"Sxy\"\t\"Szz\"\t\"Sxz\"\t\"Syz\"\t\"Von_Mises_Stress\"\t\"Flow_Pressure\"";
     }
     
+    if (Kind_Solver == FEM_ELASTICITY) {
+    	if (!dynamic_fem) {
+    		if (geometry->GetnDim() == 2)
+    			restart_file << "\t\"Sxx\"\t\"Syy\"\t\"Sxy\"\t\"Von_Mises_Stress\"";
+    		if (geometry->GetnDim() == 3)
+    			restart_file << "\t\"Sxx\"\t\"Syy\"\t\"Sxy\"\t\"Szz\"\t\"Sxz\"\t\"Syz\"\t\"Von_Mises_Stress\"";
+    	}
+    	else if (dynamic_fem) {
+    		if (geometry->GetnDim() == 2){
+    			restart_file << "\t\"Velocity_1\"\t\"Velocity_2\"\t\"Acceleration_1\"\t\"Acceleration_2\"";
+    			restart_file << "\t\"Sxx\"\t\"Syy\"\t\"Sxy\"\t\"Von_Mises_Stress\"";
+    		}
+        	if (geometry->GetnDim() == 3){
+        		restart_file << "\t\"Velocity_1\"\t\"Velocity_2\"\t\"Velocity_3\"\t\"Acceleration_1\"\t\"Acceleration_2\"\t\"Acceleration_3\"";
+        		restart_file << "\t\"Sxx\"\t\"Syy\"\t\"Sxy\"\t\"Szz\"\t\"Sxz\"\t\"Syz\"\t\"Von_Mises_Stress\"";
+        	}
+    	}
+    }
+
+
     if (config->GetExtraOutput()) {
       string *headings = NULL;
       //if (Kind_Solver == RANS) {
