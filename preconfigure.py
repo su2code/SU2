@@ -29,14 +29,33 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
-from optparse import OptionParser
+from optparse import OptionParser, BadOptionError
 import sys,time, os, subprocess, os.path, glob, re, shutil, fileinput
 import commands
 from subprocess import call
-# Command Line Options
+
+# "Pass-through" option parsing -- an OptionParser that ignores
+# unknown options and lets them pile up in the leftover argument
+# list.  Useful to pass unknown arguments to the automake configure.
+class PassThroughOptionParser(OptionParser):
+
+    def _process_long_opt(self, rargs, values):
+        try:
+            OptionParser._process_long_opt(self, rargs, values)
+        except BadOptionError, err:
+            self.largs.append(err.opt_str)
+
+    def _process_short_opts(self, rargs, values):
+        try:
+            OptionParser._process_short_opts(self, rargs, values)
+        except BadOptionError, err:
+            self.largs.append(err.opt_str)
 
 def main():
-    parser=OptionParser()
+
+    # Command Line Options
+
+    parser = PassThroughOptionParser()
 
     parser.add_option("--enable-directdiff", action="store", type = "string",
                       help="Enable direct differentiation mode support", dest="directdiff_mode", default="")
@@ -46,11 +65,6 @@ def main():
                       help="Enable mpi support", dest="mpi_enabled", default=False)
     parser.add_option("--disable-normal", action="store_true",
                       help="Disable normal mode support", dest="normal_mode", default=False)
-    parser.add_option("-p", "--pass", action="store", type="string",
-                      help="Pass arguments to the automake configure script",dest="config_options", default = "")
-    parser.add_option("-i","--install", type="string",
-                      help ="Install path for SU2", dest="install_path", default=subprocess.check_output('pwd').rstrip())
-
     parser.add_option("-c" , "--check", action="store_true",
                       help="Check the source code for potential problems", dest="check", default=False)
     parser.add_option("-r" , "--replace", action="store_true",
@@ -63,7 +77,6 @@ def main():
 
     options.directdiff_mode = options.directdiff_mode.upper()
     options.reverse_mode    = options.reverse_mode.upper()
-
     conf_environ = os.environ
 
     made_adolc = False
@@ -81,8 +94,7 @@ def main():
         if any([modes["REVERSE"] == 'CODI',  modes["DIRECTDIFF"] == 'CODI']):
             conf_environ, made_codi  = init_codi(modes,options.mpi_enabled)
 
-        configure(options.config_options,
-                  options.install_path,
+        configure(args,
                   conf_environ,
                   options.mpi_enabled,
                   modes,
@@ -408,22 +420,33 @@ def download_and_compile_adolc(configure_command, ampi_needed, pkg_name, pkg_ver
         os.chdir(os.pardir)
 
 
-def configure(config_options,
-              install_path,
+def configure(args,
               conf_environ,
               mpi_support,
               modes,
               made_adolc,
               made_codi):
 
+    # Set the base command for running configure
+    configure_base = '../configure'
 
-    configure_base = '../configure --prefix=' + install_path + " " + config_options
+    # Create a dictionary from the arguments
+    argument_dict = dict(zip(args[::2],args[1::2]))
+
+    # Set the default installation path (if not set with --prefix)
+    argument_dict['--prefix'] = argument_dict.get('--prefix', subprocess.check_output('pwd').rstrip())
+
+    # Add the arguments to the configure command
+    for arg in argument_dict:
+        configure_base = configure_base + " " + arg + "=" + argument_dict[arg]
+
     configure_mode = ''
     if mpi_support:
         configure_base = configure_base + ' --enable-mpi'
 
     build_dirs = ''
 
+    # Create the commands for the different configurations and run configure
     for key in modes:
         if modes[key]:
             print '\nRunning configure in folder ' + key,
@@ -477,7 +500,7 @@ def configure(config_options,
            '\n' \
            '\tBased on the input to this configuration, add these lines to your .bashrc file: \n' \
            '\n' \
-           '\texport SU2_RUN="'+install_path+'/bin"\n' \
+           '\texport SU2_RUN="'+argument_dict['--prefix']+'/bin"\n' \
            '\texport SU2_HOME="'+subprocess.check_output('pwd').rstrip()+'"\n' \
            '\texport PATH=$PATH:$SU2_RUN\n' \
            '\texport PYTHONPATH=$PYTHONPATH:$SU2_RUN\n'
@@ -534,7 +557,7 @@ def header():
 
     print '-------------------------------------------------------------------------\n'\
           '|    ___ _   _ ___                                                      | \n'\
-          '|   / __| | | |_  )   Release 4.0.0 \'Cardinal\'                        | \n'\
+          '|   / __| | | |_  )   Release 4.0.0 \'Cardinal\'                          | \n'\
           '|   \__ \ |_| |/ /                                                      | \n'\
           '|   |___/\___//___|   Pre-configuration Script                          | \n'\
           '|                                                                       | \n'\
