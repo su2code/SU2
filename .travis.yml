@@ -23,7 +23,7 @@ env:
         - CONFIGURE_COMMAND="./preconfigure.py --prefix=$TRAVIS_BUILD_DIR --enable-reverse=CODI"
           TEST_SCRIPT=serial_regression.py
         # Parallel build and test
-        - CONFIGURE_COMMAND="./preconfigure.py --enable-mpi --with-cc=mpicc --with-cxx=mpicxx --prefix=$TRAVIS_BUILD_DIR"
+        - CONFIGURE_COMMAND="./preconfigure.py --enable-mpi --with-cc=mpicc --with-cxx=mpicxx --prefix=$TRAVIS_BUILD_DIR --enable-reverse=CODI"
           TEST_SCRIPT=parallel_regression.py
 
 before_install:
