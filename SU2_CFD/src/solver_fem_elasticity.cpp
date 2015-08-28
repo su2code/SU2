@@ -362,6 +362,125 @@ CFEM_ElasticitySolver::~CFEM_ElasticitySolver(void) {
 
 }
 
+void CFEM_ElasticitySolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
+
+	//TODO: clean unused variables here.
+  unsigned short iVar, iMarker, iPeriodic_Index, MarkerS, MarkerR;
+  unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
+  su2double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi, *Buffer_Receive_U = NULL, *Buffer_Send_U = NULL;
+
+#ifdef HAVE_MPI
+  int send_to, receive_from;
+  MPI_Status status;
+#endif
+
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+
+    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
+        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
+
+      MarkerS = iMarker;  MarkerR = iMarker+1;
+
+#ifdef HAVE_MPI
+      send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
+      receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
+#endif
+
+      nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
+      nBufferS_Vector = nVertexS*nVar;        nBufferR_Vector = nVertexR*nVar;
+
+      /*--- Allocate Receive and send buffers  ---*/
+      Buffer_Receive_U = new su2double [nBufferR_Vector];
+      Buffer_Send_U = new su2double[nBufferS_Vector];
+
+      /*--- Copy the solution that should be sended ---*/
+      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
+        iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
+        for (iVar = 0; iVar < nVar; iVar++)
+          Buffer_Send_U[iVar*nVertexS+iVertex] = node[iPoint]->GetSolution(iVar);
+      }
+
+#ifdef HAVE_MPI
+
+      /*--- Send/Receive information using Sendrecv ---*/
+      SU2_MPI::Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
+                   Buffer_Receive_U, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
+
+#else
+
+      /*--- Receive information without MPI ---*/
+      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+        for (iVar = 0; iVar < nVar; iVar++)
+          Buffer_Receive_U[iVar*nVertexR+iVertex] = Buffer_Send_U[iVar*nVertexR+iVertex];
+      }
+
+#endif
+
+      /*--- Deallocate send buffer ---*/
+      delete [] Buffer_Send_U;
+
+      /*--- Do the coordinate transformation ---*/
+      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+
+        /*--- Find point and its type of transformation ---*/
+        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
+//        iPeriodic_Index = geometry->vertex[MarkerR][iVertex]->GetRotation_Type();
+//
+//        /*--- Retrieve the supplied periodic information. ---*/
+//        angles = config->GetPeriodicRotation(iPeriodic_Index);
+//
+//        /*--- Store angles separately for clarity. ---*/
+//        theta    = angles[0];   phi    = angles[1];     psi    = angles[2];
+//        cosTheta = cos(theta);  cosPhi = cos(phi);      cosPsi = cos(psi);
+//        sinTheta = sin(theta);  sinPhi = sin(phi);      sinPsi = sin(psi);
+//
+//        /*--- Compute the rotation matrix. Note that the implicit
+//         ordering is rotation about the x-axis, y-axis,
+//         then z-axis. Note that this is the transpose of the matrix
+//         used during the preprocessing stage. ---*/
+//        rotMatrix[0][0] = cosPhi*cosPsi;    rotMatrix[1][0] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;     rotMatrix[2][0] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
+//        rotMatrix[0][1] = cosPhi*sinPsi;    rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;     rotMatrix[2][1] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
+//        rotMatrix[0][2] = -sinPhi;          rotMatrix[1][2] = sinTheta*cosPhi;                              rotMatrix[2][2] = cosTheta*cosPhi;
+
+        /*--- Copy conserved variables before performing transformation. ---*/
+        for (iVar = 0; iVar < nVar; iVar++)
+          Solution[iVar] = Buffer_Receive_U[iVar*nVertexR+iVertex];
+
+//        /*--- Rotate the momentum components. ---*/
+//        if (nDim == 2) {
+//          Solution[1] = rotMatrix[0][0]*Buffer_Receive_U[1*nVertexR+iVertex] +
+//          rotMatrix[0][1]*Buffer_Receive_U[2*nVertexR+iVertex];
+//          Solution[2] = rotMatrix[1][0]*Buffer_Receive_U[1*nVertexR+iVertex] +
+//          rotMatrix[1][1]*Buffer_Receive_U[2*nVertexR+iVertex];
+//        }
+//        else {
+//          Solution[1] = rotMatrix[0][0]*Buffer_Receive_U[1*nVertexR+iVertex] +
+//          rotMatrix[0][1]*Buffer_Receive_U[2*nVertexR+iVertex] +
+//          rotMatrix[0][2]*Buffer_Receive_U[3*nVertexR+iVertex];
+//          Solution[2] = rotMatrix[1][0]*Buffer_Receive_U[1*nVertexR+iVertex] +
+//          rotMatrix[1][1]*Buffer_Receive_U[2*nVertexR+iVertex] +
+//          rotMatrix[1][2]*Buffer_Receive_U[3*nVertexR+iVertex];
+//          Solution[3] = rotMatrix[2][0]*Buffer_Receive_U[1*nVertexR+iVertex] +
+//          rotMatrix[2][1]*Buffer_Receive_U[2*nVertexR+iVertex] +
+//          rotMatrix[2][2]*Buffer_Receive_U[3*nVertexR+iVertex];
+//        }
+
+        /*--- Copy transformed conserved variables back into buffer. ---*/
+        for (iVar = 0; iVar < nVar; iVar++)
+          node[iPoint]->SetSolution(iVar, Solution[iVar]);
+
+      }
+
+      /*--- Deallocate receive buffer ---*/
+      delete [] Buffer_Receive_U;
+
+    }
+
+  }
+
+}
+
+
 void CFEM_ElasticitySolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, CNumerics **numerics, unsigned short iMesh, unsigned long Iteration, unsigned short RunTime_EqSystem, bool Output) {
 
 
@@ -375,7 +494,7 @@ void CFEM_ElasticitySolver::Preprocessing(CGeometry *geometry, CSolver **solver_
 
 
 	/*--- Set vector entries to zero ---*/
-
+    //TODO: nPoint or nPointDomain
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
 		LinSysAux.SetBlock_Zero(iPoint);
 		LinSysRes.SetBlock_Zero(iPoint);
@@ -594,6 +713,7 @@ void CFEM_ElasticitySolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geomet
 			Ta = element_container[EL_KIND]->Get_Kt_a(iNode);
 			for (iVar = 0; iVar < nVar; iVar++) Res_Stress_i[iVar] = Ta[iVar];
 
+			/*--- Check if this is my node or not ---*/
 			LinSysRes.SubtractBlock(indexNode[iNode], Res_Stress_i);
 
 			for (jNode = 0; jNode < NelNodes; jNode++){
@@ -1590,10 +1710,28 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Update(CGeometry *geometry, CSolver 
 
 void CFEM_ElasticitySolver::Solve_System(CGeometry *geometry, CSolver **solver_container, CConfig *config){
 
-	unsigned long IterLinSol;
+
+	unsigned long IterLinSol, iPoint, total_index;
+	unsigned short iVar;
+
+	/*--- Initialize residual and solution at the ghost points ---*/
+
+	for (iPoint = geometry->GetnPointDomain(); iPoint < geometry->GetnPoint(); iPoint++) {
+
+		for (iVar = 0; iVar < nVar; iVar++) {
+		  total_index = iPoint*nVar + iVar;
+		  LinSysRes[total_index] = 0.0;
+		  LinSysSol[total_index] = 0.0;
+		}
+
+	 }
 
 	CSysSolve femSystem;
 	IterLinSol = femSystem.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+
+	/*--- Perform the MPI communication of the solution ---*/
+
+	Set_MPI_Solution(geometry, config);
 
 }
 
@@ -1816,7 +1954,7 @@ void CFEM_ElasticitySolver::PredictStruct_Displacement(CGeometry **fea_geometry,
     nPoint = fea_geometry[MESH_0]->GetnPoint();
     nDim = fea_geometry[MESH_0]->GetnDim();
 
-
+    //TODO: nPoint or nPointDomain
     for (iPoint=0; iPoint < nPoint; iPoint++){
     	if (predOrder==0) fea_solution[MESH_0][FEA_SOL]->node[iPoint]->SetSolution_Pred();
     	else if (predOrder==1) {
@@ -1906,8 +2044,8 @@ void CFEM_ElasticitySolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, 
 
 		}
 		else{
-
-			for (iPoint=0; iPoint<nPoint; iPoint++){
+		    //TODO: nPoint or nPointDomain
+			for (iPoint=0; iPoint < nPoint; iPoint++){
 
 				dispPred = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Pred();
 				dispPred_Old = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Pred_Old();
@@ -1990,8 +2128,8 @@ void CFEM_ElasticitySolver::SetAitken_Relaxation(CGeometry **fea_geometry,
 			cout << "No relaxation parameter used. " << endl;
 		}
 
-
-		for (iPoint=0; iPoint<nPoint; iPoint++){
+	    //TODO: nPoint or nPointDomain
+		for (iPoint=0; iPoint < nPoint; iPoint++){
 
 			/*--- Retrieve pointers to the predicted and calculated solutions ---*/
 			dispPred = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Pred();
@@ -2023,8 +2161,8 @@ void CFEM_ElasticitySolver::Update_StructSolution(CGeometry **fea_geometry,
 
     nPoint = fea_geometry[MESH_0]->GetnPoint();
     nDim = fea_geometry[MESH_0]->GetnDim();
-
-    for (iPoint=0; iPoint<nPoint; iPoint++){
+    //TODO: nPoint or nPointDomain
+    for (iPoint=0; iPoint < nPoint; iPoint++){
 
     	valSolutionPred = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Pred();
 

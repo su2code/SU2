@@ -930,8 +930,8 @@ void FEM_StructuralIteration(COutput *output, CIntegration ***integration_contai
 	/*--- This is to prevent problems when running a linear solver ---*/
 	if (!nonlinear) incremental_load = false;
 
+	int rank = MASTER_NODE;
 #ifdef HAVE_MPI
-  int rank;
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
@@ -1105,8 +1105,10 @@ void FEM_StructuralIteration(COutput *output, CIntegration ***integration_contai
 					solver_container[iZone][MESH_0][FEA_SOL]->SetLoad_Increment(loadIncrement);
 				}
 
-				cout << endl;
-				cout << "-- Incremental load: increment " << iIncrement + 1 << " ------------------------------------------" << endl;
+				if (rank == MASTER_NODE){
+					cout << endl;
+					cout << "-- Incremental load: increment " << iIncrement + 1 << " ------------------------------------------" << endl;
+				}
 
 				for (iZone = 0; iZone < nZone; iZone++) {
 
