@@ -23,7 +23,7 @@ env:
         - CONFIGURE_COMMAND="./preconfigure.py --install=$TRAVIS_BUILD_DIR --enable-reverse=CODI"
           TEST_SCRIPT=serial_regression.py
         # Parallel build and test
-        - CONFIGURE_COMMAND="./preconfigure.py --enable-mpi -p "--with-cc=mpicc --with-cxx=mpicxx" --install=$TRAVIS_BUILD_DIR"
+        - CONFIGURE_COMMAND="./preconfigure.py --enable-mpi -p '--with-cc=mpicc --with-cxx=mpicxx' --install=$TRAVIS_BUILD_DIR"
           TEST_SCRIPT=parallel_regression.py
 
 before_install:
@@ -33,6 +33,7 @@ before_install:
     - sudo apt-get install -qq python-numpy mpich2
     - if [ "$CXX" = "g++" ]; then sudo apt-get install -qq g++-4.8; fi
     - if [ "$CXX" = "g++" ]; then export CXX="g++-4.8" CC="gcc-4.8"; fi
+    - if [ "$CXX" = "g++" ]; then export MPICH_CXX=$CXX MPI_CC=$CC; fi   
 
 install:
     - echo $TRAVIS_BUILD_DIR
