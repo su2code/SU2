@@ -2965,7 +2965,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
 
   /*--- The value of the solution for the first iteration of the dual time ---*/
 
-  if (dual_time && (ExtIter == 0 || (restart && ExtIter == config->GetUnst_RestartIter()))) {
+  if (dual_time && (ExtIter == 0 || (restart && (long)ExtIter == config->GetUnst_RestartIter()))) {
 
     /*--- Push back the initial condition to previous solution containers
      for a 1st-order restart or when simply intitializing to freestream. ---*/
@@ -2981,7 +2981,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
       }
     }
 
-    if ((restart && ExtIter == config->GetUnst_RestartIter()) &&
+    if ((restart && (long)ExtIter == config->GetUnst_RestartIter()) &&
         (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)) {
 
       /*--- Load an additional restart file for a 2nd-order restart ---*/
@@ -9503,7 +9503,7 @@ void CEulerSolver::BC_ActDisk_Boundary(CGeometry *geometry, CSolver **solver_con
 
             /*--- Receive the information, using jPoint as the ID for the message ---*/
 
-            if (jProcessor != iProcessor) {
+            if ((int)jProcessor != iProcessor) {
 #ifdef HAVE_MPI
               
               SU2_MPI::Recv(Buffer_Receive_V, nPrimVar, MPI_DOUBLE, jProcessor, jPoint, MPI_COMM_WORLD, &status);
