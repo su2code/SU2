@@ -9,21 +9,21 @@ compiler:
 notifications:
     email:
         recipients:
-            - su2code-dev@lists.stanford.edu
+            - tim.albring@scicomp.uni-kl.de
   
 branches:
     only:
-        - develop
+        - feature_AD
 
 env:
     global:
         CXXFLAGS=-O3
     matrix:
         # Serial build and test
-        - CONFIGURE_COMMAND="./configure --prefix=$TRAVIS_BUILD_DIR"
+        - CONFIGURE_COMMAND="./preconfigure.py --install=$TRAVIS_BUILD_DIR --enable-reverse=CODI"
           TEST_SCRIPT=serial_regression.py
         # Parallel build and test
-        - CONFIGURE_COMMAND="./configure --enable-mpi --with-cc=mpicc --with-cxx=mpicxx --prefix=$TRAVIS_BUILD_DIR"
+        - CONFIGURE_COMMAND="./preconfigure.py --enable-mpi -p "--with-cc=mpicc --with-cxx=mpicxx" --install=$TRAVIS_BUILD_DIR"
           TEST_SCRIPT=parallel_regression.py
 
 before_install:
