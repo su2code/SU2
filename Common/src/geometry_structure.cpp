@@ -3105,7 +3105,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
     
     /*--- A rank does not communicate with itself through MPI ---*/
     
-    if (rank != iDomain) {
+    if ((unsigned long)rank != iDomain) {
       
 #ifdef HAVE_MPI
       
@@ -3201,13 +3201,13 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
      iDomain up above, so only iDomain needs to perform the recv here from
      all other ranks. ---*/
     
-    if (rank == iDomain) {
+    if ((unsigned long)rank == iDomain) {
       
-      for (jDomain = 0; jDomain < size; jDomain++) {
+      for (jDomain = 0; jDomain < (unsigned long)size; jDomain++) {
         
         /*--- A rank does not communicate with itself through MPI ---*/
         
-        if (rank != jDomain) {
+        if ((unsigned long)rank != jDomain) {
           
 #ifdef HAVE_MPI
           
@@ -3468,7 +3468,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
     
     /*--- Send the buffers with the geometrical information ---*/
     
-    if (iDomain != rank) {
+    if (iDomain != (unsigned long)rank) {
       
 #ifdef HAVE_MPI
       
@@ -3665,9 +3665,9 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   
   /*--- First, we recv all of the point data ---*/
   
-  for (iDomain = 0; iDomain < size; iDomain++) {
+  for (iDomain = 0; iDomain < (unsigned long)size; iDomain++) {
     
-    if (rank != iDomain) {
+    if ((unsigned long)rank != iDomain) {
       
 #ifdef HAVE_MPI
       
@@ -3818,7 +3818,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
       unsigned long index = 0;
       for (iPoint = 0; iPoint < nPointTotal_r[iDomain]; iPoint++) {
         
-        if (Buffer_Receive_Color_loc[iPoint]==rank) {
+        if (Buffer_Receive_Color_loc[iPoint] == (unsigned long)rank) {
         
           /*--- If iDomain owns the point, it must be either an interior
            node (iPoint < nPointDomain) or a periodic node. ---*/
@@ -3899,9 +3899,9 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   /*--- Recv all of the element data. First decide which elements we need to own on each proc ---*/
   
   iElem = 0;
-  for (iDomain = 0; iDomain < size; iDomain++) {
+  for (iDomain = 0; iDomain < (unsigned long)size; iDomain++) {
     
-    if (rank != iDomain) {
+    if ((unsigned long)rank != iDomain) {
       
 #ifdef HAVE_MPI
 
@@ -4089,9 +4089,9 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   
   /*--- Now recv all of the element connectivity data ---*/
   
-  for (iDomain = 0; iDomain < size; iDomain++) {
+  for (iDomain = 0; iDomain < (unsigned long)size; iDomain++) {
     
-    if (rank != iDomain) {
+    if ((unsigned long)rank != iDomain) {
       
 #ifdef HAVE_MPI
 
@@ -4781,7 +4781,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
     
     /*--- Each rank now begins to receive information from the master ---*/
     
-    if (rank == iDomain) {
+    if ((unsigned long)rank == iDomain) {
       
       /*--- First, receive the size of buffers before receiving the data ---*/
       
@@ -5162,7 +5162,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
     
     //cout << " Rank " << rank << " about to recv of bound elems " << endl;
     
-    if (rank == iDomain) {
+    if ((unsigned long)rank == iDomain) {
       
       if (rank != MASTER_NODE) {
         
@@ -5551,7 +5551,7 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
    number of points in the simulation  ---*/
   Max_GlobalPoint = 0;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    if (Local_to_Global_Point[iPoint] > Max_GlobalPoint)
+    if (Local_to_Global_Point[iPoint] > (long)Max_GlobalPoint)
       Max_GlobalPoint = Local_to_Global_Point[iPoint];
   }
   Global_to_Local_Point =  new long[Max_GlobalPoint+1]; // +1 to include the bigger point.
@@ -6091,7 +6091,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
        balancing for any remainder points. ---*/
       
       total_pt_accounted = 0;
-      for (unsigned long i=0; i<size; i++) {
+      for (unsigned long i=0; i < (unsigned long)size; i++) {
         npoint_procs[i] = nPoint/size;
         total_pt_accounted = total_pt_accounted + npoint_procs[i];
       }
@@ -6106,7 +6106,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
       local_node = npoint_procs[rank];
       starting_node[0] = 0;
       ending_node[0]   = starting_node[0] + npoint_procs[0];
-      for (unsigned long i = 1; i < size; i++) {
+      for (unsigned long i = 1; i < (unsigned long)size; i++) {
         starting_node[i] = ending_node[i-1];
         ending_node[i]   = starting_node[i] + npoint_procs[i] ;
       }
@@ -6205,7 +6205,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
       /*--- Allocate space for elements ---*/
       
       elem = new CPrimalGrid*[nElem];
-      for (int iElem = 0; iElem < nElem; iElem++) elem[iElem] = NULL;
+      for (unsigned long iElem = 0; iElem < nElem; iElem++) elem[iElem] = NULL;
 
       
       /*--- Set up the global to local element mapping. ---*/
@@ -10181,7 +10181,7 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
   
   /*--- Update values of faces of the edge ---*/
   if (action != ALLOCATE) {
-    for (iEdge = 0; iEdge < nEdge; iEdge++)
+    for (iEdge = 0; iEdge < (long)nEdge; iEdge++)
       edge[iEdge]->SetZeroValues();
     for (iPoint = 0; iPoint < nPoint; iPoint++)
       node[iPoint]->SetVolume (0.0);
@@ -10257,7 +10257,7 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
     }
   
   /*--- Check if there is a normal with null area ---*/
-  for (iEdge = 0; iEdge < nEdge; iEdge++) {
+  for (iEdge = 0; iEdge < (long)nEdge; iEdge++) {
     NormalFace = edge[iEdge]->GetNormal();
     Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += NormalFace[iDim]*NormalFace[iDim];
     Area = sqrt(Area);

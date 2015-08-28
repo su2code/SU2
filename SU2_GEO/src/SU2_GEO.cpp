@@ -38,7 +38,7 @@ int main(int argc, char *argv[]) {
   su2double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
 	unsigned short iDV, iFFDBox, iPlane, nPlane, iVar;
 	su2double *ObjectiveFunc, *ObjectiveFunc_New, *Gradient, delta_eps, MinPlane, MaxPlane, MinXCoord, MaxXCoord,
-  **Plane_P0, **Plane_Normal, Volume, Volume_New, Volume_Grad;
+  **Plane_P0, **Plane_Normal, Volume = 0.0, Volume_New = 0.0, Volume_Grad = 0.0;
   vector<su2double> *Xcoord_Airfoil, *Ycoord_Airfoil, *Zcoord_Airfoil, *Variable_Airfoil;
   char config_file_name[MAX_STRING_SIZE];
  	char *cstr;

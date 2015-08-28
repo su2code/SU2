@@ -1601,7 +1601,7 @@ public:
   ~COptionDoubleArray() {};
   string SetValue(vector<string> option_value) {
     // Check that the size is correct
-    if (option_value.size() != this->size) {
+    if (option_value.size() != (unsigned long)this->size) {
       string newstring;
       newstring.append(this->name);
       newstring.append(": wrong number of arguments: ");
@@ -1658,7 +1658,7 @@ public:
 
     // Parse all of the options
     su2double * vals = new su2double[option_size];
-    for (int i  = 0; i < option_size; i++) {
+    for (unsigned long i  = 0; i < option_size; i++) {
       istringstream is(option_value[i]);
       su2double val;
       if (!(is >> val)) {
@@ -1699,7 +1699,7 @@ public:
 
     // Parse all of the options
     unsigned short * vals = new unsigned short[option_size];
-    for (int i  = 0; i < option_size; i++) {
+    for (unsigned long i  = 0; i < option_size; i++) {
       istringstream is(option_value[i]);
       unsigned short val;
       if (!(is >> val)) {
@@ -1739,7 +1739,7 @@ public:
 
     // Parse all of the options
     string * vals = new string[option_size];
-    for (int i  = 0; i < option_size; i++) {
+    for (unsigned long i  = 0; i < option_size; i++) {
       vals[i].assign(option_value[i]);
     }
     this->field = vals;
@@ -2225,7 +2225,7 @@ public:
     this->s_f = new string[nVals];
     this->d_f = new su2double[nVals];
 
-    for (int i = 0; i < nVals; i++) {
+    for (unsigned long i = 0; i < nVals; i++) {
       this->s_f[i].assign(option_value[2*i]); // 2 because have su2double and string
       istringstream is(option_value[2*i + 1]);
       su2double val;
@@ -2287,11 +2287,11 @@ public:
     this->ttotal = new su2double[nVals];
     this->ptotal = new su2double[nVals];
     this->flowdir = new su2double*[nVals];
-    for (int i = 0; i < nVals; i++) {
+    for (unsigned long i = 0; i < nVals; i++) {
       this->flowdir[i] = new su2double[3];
     }
 
-    for (int i = 0; i < nVals; i++) {
+    for (unsigned long i = 0; i < nVals; i++) {
       this->marker[i].assign(option_value[6*i]);
       istringstream ss_1st(option_value[6*i + 1]);
       if (!(ss_1st >> this->ttotal[i])) {
@@ -2381,11 +2381,11 @@ public:
     this->flowdir = new su2double*[nVals];
     this->field = new unsigned short[nVals];
 
-    for (int i = 0; i < nVals; i++) {
+    for (unsigned long i = 0; i < nVals; i++) {
       this->flowdir[i] = new su2double[3];
     }
 
-    for (int i = 0; i < nVals; i++) {
+    for (unsigned long i = 0; i < nVals; i++) {
       this->marker[i].assign(option_value[7*i]);
         // Check to see if the enum value is in the map
     if (this->m.find(option_value[7*i + 1]) == m.end()) {
@@ -2476,7 +2476,7 @@ public:
     this->ttotal = new su2double[nVals];
     this->ptotal = new su2double[nVals];
 
-    for (int i = 0; i < nVals; i++) {
+    for (unsigned long i = 0; i < nVals; i++) {
       this->marker[i].assign(option_value[3*i]);
       istringstream ss_1st(option_value[3*i + 1]);
       if (!(ss_1st >> this->ttotal[i]))
@@ -2541,7 +2541,7 @@ public:
     this->massflow_target = new su2double[nVals];
     this->temp_target = new su2double[nVals];
     
-    for (int i = 0; i < nVals; i++) {
+    for (unsigned long i = 0; i < nVals; i++) {
       this->marker[i].assign(option_value[3*i]);
       istringstream ss_1st(option_value[3*i + 1]);
       if (!(ss_1st >> this->massflow_target[i]))
@@ -2615,7 +2615,7 @@ public:
     this->rot_center = new su2double*[nVals];
     this->rot_angles = new su2double*[nVals];
     this->translation = new su2double*[nVals];
-    for (int i = 0; i < nVals; i++) {
+    for (unsigned long i = 0; i < nVals; i++) {
       this->rot_center[i] = new su2double[3];
       this->rot_angles[i] = new su2double[3];
       this->translation[i] = new su2double[3];
@@ -2623,7 +2623,7 @@ public:
 
     su2double deg2rad = PI_NUMBER/180.0;
 
-    for (int i = 0; i < (nVals/2); i++) {
+    for (unsigned long i = 0; i < (nVals/2); i++) {
       this->marker_bound[i].assign(option_value[mod_num*i]);
       this->marker_donor[i].assign(option_value[mod_num*i+1]);
       istringstream ss_1st(option_value[mod_num*i + 2]);
