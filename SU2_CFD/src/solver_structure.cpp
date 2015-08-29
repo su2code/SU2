@@ -1604,6 +1604,7 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
   unsigned short iField, iVar;
   string Tag, text_line, AdjExt, UnstExt;
   unsigned long iExtIter = config->GetExtIter();
+  bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
   
   /*--- Define geometry constants in the solver structure ---*/
   
@@ -1623,14 +1624,18 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
   if (config->GetAdjoint() || config->GetDiscrete_Adjoint()) {
     filename = config->GetSolution_AdjFileName();
     filename = config->GetObjFunc_Extension(filename);
+  } else if (fem){
+	filename = config->GetRestart_FEMFileName();
   } else {
-    filename = config->GetSolution_FlowFileName();
+	filename = config->GetRestart_FlowFileName();
   }
   
   /*--- Unsteady problems require an iteration number to be appended. ---*/
   
   if (config->GetWrt_Unsteady() || config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
+  } else if (config->GetWrt_Dynamic()) {
+	filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   }
   
   /*--- Open the restart file ---*/
@@ -1914,18 +1919,23 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   ifstream solution_file;
   unsigned short iField;
   unsigned long iExtIter = config->GetExtIter();
+  bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
   
   /*--- Retrieve filename from config ---*/
   if (config->GetAdjoint()) {
     filename = config->GetSolution_AdjFileName();
     filename = config->GetObjFunc_Extension(filename);
+  } else if (fem){
+	filename = config->GetRestart_FEMFileName();
   } else {
-    filename = config->GetSolution_FlowFileName();
+	filename = config->GetRestart_FlowFileName();
   }
   
   /*--- Unsteady problems require an iteration number to be appended. ---*/
   if (config->GetWrt_Unsteady() || config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
+  } else if (config->GetWrt_Dynamic()) {
+	filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   }
   
   /*--- Open the restart file ---*/

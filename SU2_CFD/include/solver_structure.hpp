@@ -6645,6 +6645,8 @@ private:
 
 	su2double *solutionPredictor;		/*!< \brief Auxiliary vector to store the solution predictor */
 
+	su2double *SolRest;			/*!< \brief Auxiliary vector to restart the solution */
+
 	su2double *nodeReactions;			/*!< \brief Auxiliary vector to store the reactions */
 
 	su2double *normalVertex;			/*!< \brief Auxiliary vector to store the normals to a certain vertex */

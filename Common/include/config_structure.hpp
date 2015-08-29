@@ -280,7 +280,8 @@ private:
 	unsigned long Dyn_nIntIter;			/*!< \brief Number of internal iterations (Newton-Raphson Method for nonlinear structural analysis). */
   long Unst_RestartIter;			/*!< \brief Iteration number to restart an unsteady simulation (Dual time Method). */
   long Unst_AdjointIter;			/*!< \brief Iteration number to begin the reverse time integration in the direct solver for the unsteady adjoint. */
-	unsigned short nRKStep;			/*!< \brief Number of steps of the explicit Runge-Kutta method. */
+  long Dyn_RestartIter;			/*!< \brief Iteration number to restart a dynamic structural analysis. */
+  unsigned short nRKStep;			/*!< \brief Number of steps of the explicit Runge-Kutta method. */
 	su2double *RK_Alpha_Step;			/*!< \brief Runge-Kutta beta coefficients. */
 	unsigned short nMGLevels;		/*!< \brief Number of multigrid levels (coarse levels). */
 	unsigned short nCFL;			/*!< \brief Number of CFL, one for each multigrid level. */
@@ -534,6 +535,7 @@ private:
 	Solution_FlowFileName,			/*!< \brief Flow solution input file. */
 	Solution_LinFileName,			/*!< \brief Linearized flow solution input file. */
 	Solution_AdjFileName,			/*!< \brief Adjoint solution input file for drag functional. */
+	Solution_FEMFileName,			/*!< \brief Adjoint solution input file for drag functional. */
 	Flow_FileName,					/*!< \brief Flow variables output file. */
 	Structure_FileName,					/*!< \brief Structure variables output file. */
 	SurfStructure_FileName,					/*!< \brief Surface structure variables output file. */
@@ -551,6 +553,7 @@ private:
 	Restart_HeatFileName,			/*!< \brief Restart file for heat variables. */
 	Restart_LinFileName,			/*!< \brief Restart file for linearized flow variables. */
 	Restart_AdjFileName,			/*!< \brief Restart file for adjoint variables, drag functional. */
+	Restart_FEMFileName,			/*!< \brief Restart file for FEM elasticity. */
 	Adj_FileName,					/*!< \brief Output file with the adjoint variables. */
 	Lin_FileName,					/*!< \brief Output file with the linearized variables. */
 	ObjFunc_Grad_FileName,			/*!< \brief Gradient of the objective function. */
@@ -2189,6 +2192,12 @@ public:
 	 * \return Starting direct iteration number for the unsteady adjoint.
 	 */
   long GetUnst_AdjointIter(void);
+
+  /*!
+	 * \brief Get the restart iteration number for dynamic structural simulations.
+	 * \return Restart iteration number for dynamic structural simulations.
+	 */
+  long GetDyn_RestartIter(void);
 
 	/*!
 	 * \brief Retrieves the number of periodic time instances for Time Spectral.
@@ -3883,6 +3892,12 @@ public:
 	string GetSolution_AdjFileName(void);
 
 	/*!
+	 * \brief Get the name of the file with the solution of the structural problem.
+	 * \return Name of the file with the solution of the structural problem.
+	 */
+	string GetSolution_FEMFileName(void);
+
+	/*!
 	 * \brief Get the name of the file with the residual of the problem.
 	 * \return Name of the file with the residual of the problem.
 	 */
@@ -3995,6 +4010,12 @@ public:
 	 * \return Name of the restart file for the adjoint variables (drag objective function).
 	 */
 	string GetRestart_AdjFileName(void);
+
+	/*!
+	 * \brief Get the name of the restart file for the flow variables.
+	 * \return Name of the restart file for the flow variables.
+	 */
+	string GetRestart_FEMFileName(void);
 
 	/*!
 	 * \brief Get the name of the file with the adjoint variables.

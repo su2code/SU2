@@ -72,6 +72,11 @@ CFEM_ElasVariable::CFEM_ElasVariable(su2double *val_fea, unsigned short val_nDim
 	if (nDim == 2) Stress = new su2double [3];
 	else if (nDim == 3) Stress = new su2double [6];
 
+	/*--- Initialization of variables ---*/
+	for (iVar = 0; iVar < nVar; iVar++) {
+		Solution[iVar] = val_fea[iVar];
+	}
+
 	if (dynamic_analysis){
 		Solution_time_n			=  new su2double [nVar];
 		Solution_Vel 			=  new su2double [nVar];
@@ -80,10 +85,10 @@ CFEM_ElasVariable::CFEM_ElasVariable(su2double *val_fea, unsigned short val_nDim
 		Solution_Accel_time_n	=  new su2double [nVar];
 		for (iVar = 0; iVar < nVar; iVar++){
 			Solution_time_n[iVar] 		= val_fea[iVar];
-			Solution_Vel[iVar] 			= val_fea[iVar];
-			Solution_Vel_time_n[iVar] 	= val_fea[iVar];
-			Solution_Accel[iVar] 		= val_fea[iVar];
-			Solution_Accel_time_n[iVar] = val_fea[iVar];
+			Solution_Vel[iVar] 			= val_fea[iVar+nVar];
+			Solution_Vel_time_n[iVar] 	= val_fea[iVar+nVar];
+			Solution_Accel[iVar] 		= val_fea[iVar+2*nVar];
+			Solution_Accel_time_n[iVar] = val_fea[iVar+2*nVar];
 		}
 	}
 	else {
@@ -99,7 +104,7 @@ CFEM_ElasVariable::CFEM_ElasVariable(su2double *val_fea, unsigned short val_nDim
 		Solution_Pred 			=  new su2double [nVar];
 		Solution_Pred_Old 		=  new su2double [nVar];
 		for (iVar = 0; iVar < nVar; iVar++){
-			FlowTraction[iVar] = val_fea[iVar];
+			FlowTraction[iVar] = 0.0;
 			Solution_Pred[iVar] = val_fea[iVar];
 			Solution_Pred_Old[iVar] = val_fea[iVar];
 		}
@@ -118,6 +123,10 @@ CFEM_ElasVariable::CFEM_ElasVariable(su2double *val_fea, unsigned short val_nDim
 //	if (nonlinear_analysis) Residual_Int = new su2double [nVar];	else Residual_Int = NULL;
 	if (body_forces) Residual_Ext_Body = new su2double [nVar];	else Residual_Ext_Body = NULL;
 	Residual_Ext_Surf = new su2double [nVar];
+
+	for (iVar = 0; iVar < nVar; iVar++){
+		Residual_Ext_Surf[iVar] = 0.0;
+	}
 
 }
 

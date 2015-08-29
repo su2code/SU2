@@ -67,6 +67,8 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(void) : CSolver() {
 
 	solutionPredictor = NULL;
 
+	SolRest = NULL;
+
 	normalVertex = NULL;
 	stressTensor = NULL;
 
@@ -83,6 +85,8 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 	bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);	// Nonlinear analysis.
 	bool newton_raphson = (config->GetKind_SpaceIteScheme_FEA() == NEWTON_RAPHSON);		// Newton-Raphson method
 	bool fsi = config->GetFSI_Simulation();												// FSI simulation
+
+	string filename = config->GetSolution_FEMFileName();
 
 	int rank = MASTER_NODE;
 	#ifdef HAVE_MPI
@@ -130,27 +134,125 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 
 	/*--- Define some auxiliary vectors related to the solution ---*/
 
-	Solution   = new su2double[nVar];  for (iVar = 0; iVar < nVar; iVar++) Solution[iVar]   = 0.0;
+	Solution   = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
 
 	nodeReactions = new su2double[nVar];  for (iVar = 0; iVar < nVar; iVar++) nodeReactions[iVar]   = 0.0;
+
+	/*--- The length of the solution vector depends on whether the problem is static or dynamic ---*/
+
+
+	unsigned short nSolVar;
+
+	if (dynamic) nSolVar = 3 * nVar;
+	else nSolVar = nVar;
+
+	SolRest = new su2double[nSolVar];
 
 	bool restart = (config->GetRestart() || config->GetRestart_Flow());
 
 	/*--- Check for a restart, initialize from zero otherwise ---*/
 
 	if (!restart) {
+		for (iVar = 0; iVar < nSolVar; iVar++) SolRest[iVar] = 0.0;
 		for (iPoint = 0; iPoint < nPoint; iPoint++) {
-			for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
-			node[iPoint] = new CFEM_ElasVariable(Solution, nDim, nVar, config);
+			node[iPoint] = new CFEM_ElasVariable(SolRest, nDim, nVar, config);
 		}
 	}
 	else {
+		unsigned long index;
+		string text_line, filename;
+		ifstream restart_file;
+		su2double dull_val;
+		long Dyn_RestartIter;
 
-		/* The restart from a file needs to be implemented */
+		/*--- Restart the solution from file information ---*/
+
+		filename = config->GetSolution_FEMFileName();
+
+	    if (dynamic) {
+
+	      Dyn_RestartIter = SU2_TYPE::Int(config->GetDyn_RestartIter())-1;
+
+	      filename = config->GetUnsteady_FileName(filename, Dyn_RestartIter);
+	    }
+
+		restart_file.open(filename.data(), ios::in);
+
+		/*--- In case there is no file ---*/
+
+		if (restart_file.fail()) {
+			cout << "There is no FEM restart file!!" << endl;
+			exit(EXIT_FAILURE);
+		}
+
+		/*--- In case this is a parallel simulation, we need to perform the
+     	 Global2Local index transformation first. ---*/
+
+		long *Global2Local;
+		Global2Local = new long[geometry->GetGlobal_nPointDomain()];
+
+		/*--- First, set all indices to a negative value by default ---*/
+
+		for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
+			Global2Local[iPoint] = -1;
+		}
+
+		/*--- Now fill array with the transform values only for local points ---*/
+
+		for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+			Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
+		}
+
+		/*--- Read all lines in the restart file ---*/
+
+		long iPoint_Local; unsigned long iPoint_Global = 0;
+
+		/*--- The first line is the header ---*/
+
+		getline (restart_file, text_line);
+
+		while (getline (restart_file, text_line)) {
+				istringstream point_line(text_line);
+
+		/*--- Retrieve local index. If this node from the restart file lives
+       	   on a different processor, the value of iPoint_Local will be -1.
+       	   Otherwise, the local index for this node on the current processor
+       	   will be returned and used to instantiate the vars. ---*/
+
+		iPoint_Local = Global2Local[iPoint_Global];
+			if (iPoint_Local >= 0) {
+				if (dynamic){
+					if (nDim == 2) point_line >> index >> dull_val >> dull_val >> SolRest[0] >> SolRest[1] >> SolRest[2] >> SolRest[3] >> SolRest[4] >> SolRest[5];
+					if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> SolRest[0] >> SolRest[1] >> SolRest[2] >> SolRest[3] >> SolRest[4] >> SolRest[5] >> SolRest[6] >> SolRest[7] >> SolRest[8];
+				}
+				else {
+					if (nDim == 2) point_line >> index >> dull_val >> dull_val >> SolRest[0] >> Solution[1];
+					if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> SolRest[0] >> SolRest[1] >> SolRest[2];
+				}
+
+				node[iPoint_Local] = new CFEM_ElasVariable(SolRest, nDim, nVar, config);
+			}
+			iPoint_Global++;
+		}
+
+		/*--- Instantiate the variable class with an arbitrary solution
+     	 at any halo/periodic nodes. The initial solution can be arbitrary,
+     	 because a send/recv is performed immediately in the solver (Set_MPI_Solution()). ---*/
+
+		for (iVar = 0; iVar < nSolVar; iVar++) SolRest[iVar] = 0.0;
+		for (iPoint = geometry->GetnPointDomain(); iPoint < geometry->GetnPoint(); iPoint++) {
+			node[iPoint] = new CFEM_ElasVariable(SolRest, nDim, nVar, config);
+		}
+
+		/*--- Close the restart file ---*/
+
+		restart_file.close();
+
+		/*--- Free memory needed for the transformation ---*/
+
+		delete [] Global2Local;
 
 	}
-
-
 
 	bool incompressible = (config->GetMaterialCompressibility() == INCOMPRESSIBLE_MAT);
 
@@ -307,6 +409,10 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 
 	solutionPredictor = new su2double [nVar];
 
+	/*--- Perform the MPI communication of the solution ---*/
+
+	Set_MPI_Solution(geometry, config);
+
 }
 
 CFEM_ElasticitySolver::~CFEM_ElasticitySolver(void) {
@@ -343,6 +449,7 @@ CFEM_ElasticitySolver::~CFEM_ElasticitySolver(void) {
 	delete [] Res_Ext_Surf;
 	if (Res_Time_Cont != NULL) delete[] Res_Time_Cont;
 	delete [] Solution;
+	delete [] SolRest;
 	delete [] GradN_X;
 	delete [] GradN_x;
 
@@ -424,46 +531,10 @@ void CFEM_ElasticitySolver::Set_MPI_Solution(CGeometry *geometry, CConfig *confi
 
         /*--- Find point and its type of transformation ---*/
         iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
-//        iPeriodic_Index = geometry->vertex[MarkerR][iVertex]->GetRotation_Type();
-//
-//        /*--- Retrieve the supplied periodic information. ---*/
-//        angles = config->GetPeriodicRotation(iPeriodic_Index);
-//
-//        /*--- Store angles separately for clarity. ---*/
-//        theta    = angles[0];   phi    = angles[1];     psi    = angles[2];
-//        cosTheta = cos(theta);  cosPhi = cos(phi);      cosPsi = cos(psi);
-//        sinTheta = sin(theta);  sinPhi = sin(phi);      sinPsi = sin(psi);
-//
-//        /*--- Compute the rotation matrix. Note that the implicit
-//         ordering is rotation about the x-axis, y-axis,
-//         then z-axis. Note that this is the transpose of the matrix
-//         used during the preprocessing stage. ---*/
-//        rotMatrix[0][0] = cosPhi*cosPsi;    rotMatrix[1][0] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;     rotMatrix[2][0] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
-//        rotMatrix[0][1] = cosPhi*sinPsi;    rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;     rotMatrix[2][1] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
-//        rotMatrix[0][2] = -sinPhi;          rotMatrix[1][2] = sinTheta*cosPhi;                              rotMatrix[2][2] = cosTheta*cosPhi;
 
         /*--- Copy conserved variables before performing transformation. ---*/
         for (iVar = 0; iVar < nVar; iVar++)
           Solution[iVar] = Buffer_Receive_U[iVar*nVertexR+iVertex];
-
-//        /*--- Rotate the momentum components. ---*/
-//        if (nDim == 2) {
-//          Solution[1] = rotMatrix[0][0]*Buffer_Receive_U[1*nVertexR+iVertex] +
-//          rotMatrix[0][1]*Buffer_Receive_U[2*nVertexR+iVertex];
-//          Solution[2] = rotMatrix[1][0]*Buffer_Receive_U[1*nVertexR+iVertex] +
-//          rotMatrix[1][1]*Buffer_Receive_U[2*nVertexR+iVertex];
-//        }
-//        else {
-//          Solution[1] = rotMatrix[0][0]*Buffer_Receive_U[1*nVertexR+iVertex] +
-//          rotMatrix[0][1]*Buffer_Receive_U[2*nVertexR+iVertex] +
-//          rotMatrix[0][2]*Buffer_Receive_U[3*nVertexR+iVertex];
-//          Solution[2] = rotMatrix[1][0]*Buffer_Receive_U[1*nVertexR+iVertex] +
-//          rotMatrix[1][1]*Buffer_Receive_U[2*nVertexR+iVertex] +
-//          rotMatrix[1][2]*Buffer_Receive_U[3*nVertexR+iVertex];
-//          Solution[3] = rotMatrix[2][0]*Buffer_Receive_U[1*nVertexR+iVertex] +
-//          rotMatrix[2][1]*Buffer_Receive_U[2*nVertexR+iVertex] +
-//          rotMatrix[2][2]*Buffer_Receive_U[3*nVertexR+iVertex];
-//        }
 
         /*--- Copy transformed conserved variables back into buffer. ---*/
         for (iVar = 0; iVar < nVar; iVar++)
@@ -491,7 +562,8 @@ void CFEM_ElasticitySolver::Preprocessing(CGeometry *geometry, CSolver **solver_
 	bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);	// Linear analysis.
 	bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);	// Nonlinear analysis.
 	bool newton_raphson = (config->GetKind_SpaceIteScheme_FEA() == NEWTON_RAPHSON);		// Newton-Raphson method
-
+	bool restart = config->GetRestart();
+	bool initial_calc_restart = (config->GetExtIter() == config->GetDyn_RestartIter());
 
 	/*--- Set vector entries to zero ---*/
     //TODO: nPoint or nPointDomain
@@ -510,7 +582,8 @@ void CFEM_ElasticitySolver::Preprocessing(CGeometry *geometry, CSolver **solver_
 	 *
 	 * We don't need first_iter, because there is only one iteration per time step in linear analysis.
 	 */
-	if ((initial_calc) && (linear_analysis)){
+	if ((initial_calc && linear_analysis)||
+		(restart && initial_calc_restart)){
 		Jacobian.SetValZero();
 	}
 
@@ -522,7 +595,8 @@ void CFEM_ElasticitySolver::Preprocessing(CGeometry *geometry, CSolver **solver_
 	 *
 	 * We need first_iter, because in nonlinear problems there are more than one subiterations in the first time step.
 	 */
-	if ((dynamic) && (initial_calc) && (first_iter)) {
+	if ((dynamic && initial_calc && first_iter) ||
+		(restart && initial_calc_restart && first_iter)) {
 		MassMatrix.SetValZero();
 		Compute_IntegrationConstants(config);
 	}
@@ -544,6 +618,7 @@ void CFEM_ElasticitySolver::Preprocessing(CGeometry *geometry, CSolver **solver_
 	if (first_iter)	{
 		for (iPoint = 0; iPoint < nPoint; iPoint++) node[iPoint]->Clear_SurfaceLoad_Res();
 	}
+
 
 }
 
@@ -1679,12 +1754,18 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Update(CGeometry *geometry, CSolver 
 										node[iPoint]->GetSolution_time_n(iVar)) -
 							   a_dt[2]* node[iPoint]->GetSolution_Vel_time_n(iVar) -
 							   a_dt[3]* node[iPoint]->GetSolution_Accel_time_n(iVar);
-
 			}
 
 			/*--- Set the acceleration in the node structure ---*/
 
 			node[iPoint]->SetSolution_Accel(Solution);
+
+			if (iPoint == 650) cout << node[iPoint]->GetSolution(0) << " " << node[iPoint]->GetSolution(1) << endl;
+			if (iPoint == 650) cout << node[iPoint]->GetSolution_time_n(0) << " " << node[iPoint]->GetSolution_time_n(1) << endl;
+			if (iPoint == 650) cout << node[iPoint]->GetSolution_Vel_time_n(0) << " " << node[iPoint]->GetSolution_Vel_time_n(1) << endl;
+			if (iPoint == 650) cout << node[iPoint]->GetSolution_Accel_time_n(0) << " " << node[iPoint]->GetSolution_Accel_time_n(1) << endl;
+
+			if (iPoint == 650) cout << Solution[0] << " " << Solution[1] << endl;
 
 			for (iVar = 0; iVar < nVar; iVar++) {
 

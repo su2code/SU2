@@ -4070,6 +4070,7 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
   unsigned long iPoint, iExtIter = config->GetExtIter();
   bool grid_movement = config->GetGrid_Movement();
   bool dynamic_fem = (config->GetDynamic_Analysis() == DYNAMIC);
+  bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
   ofstream restart_file;
   string filename;
   
@@ -4078,8 +4079,10 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
   if ((config->GetAdjoint()) || (config->GetDiscrete_Adjoint())) {
     filename = config->GetRestart_AdjFileName();
     filename = config->GetObjFunc_Extension(filename);
+  } else if (fem){
+    filename = config->GetRestart_FEMFileName();
   } else {
-    filename = config->GetRestart_FlowFileName();
+	filename = config->GetRestart_FlowFileName();
   }
   
   /*--- Unsteady problems require an iteration number to be appended. ---*/
@@ -4088,6 +4091,8 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(val_iZone));
   } else if (config->GetWrt_Unsteady()) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
+  } else if (config->GetWrt_Dynamic()) {
+	filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   }
   
   /*--- Open the restart file and write the solution. ---*/
