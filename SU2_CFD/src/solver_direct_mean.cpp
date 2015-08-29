@@ -9453,7 +9453,7 @@ void CEulerSolver::BC_ActDisk_Boundary(CGeometry *geometry, CSolver **solver_con
 
             /*--- We only send the information that belong to other boundary, using jPoint as the ID for the message  ---*/
 
-            if (jProcessor != iProcessor) {
+            if ((int)jProcessor != iProcessor) {
 
               /*--- Copy the primitive variables ---*/
 

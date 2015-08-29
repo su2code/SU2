@@ -146,14 +146,14 @@ const int MASTER_NODE = 0;			/*!< \brief Master node for MPI parallelization. */
 const int SINGLE_NODE = 1;			/*!< \brief There is only a node in the MPI parallelization. */
 const int SINGLE_ZONE = 1;			/*!< \brief There is only a zone. */
 
-const unsigned int N_ELEM_TYPES = 7;           /*!< \brief General output & CGNS defines. */
-const unsigned int N_POINTS_LINE = 2;          /*!< \brief General output & CGNS defines. */
-const unsigned int N_POINTS_TRIANGLE = 3;      /*!< \brief General output & CGNS defines. */
-const unsigned int N_POINTS_QUADRILATERAL = 4; /*!< \brief General output & CGNS defines. */
-const unsigned int N_POINTS_TETRAHEDRON = 4;   /*!< \brief General output & CGNS defines. */
-const unsigned int N_POINTS_HEXAHEDRON = 8;    /*!< \brief General output & CGNS defines. */
-const unsigned int N_POINTS_PYRAMID = 5;       /*!< \brief General output & CGNS defines. */
-const unsigned int N_POINTS_PRISM = 6;         /*!< \brief General output & CGNS defines. */
+const int N_ELEM_TYPES = 7;           /*!< \brief General output & CGNS defines. */
+const int N_POINTS_LINE = 2;          /*!< \brief General output & CGNS defines. */
+const int N_POINTS_TRIANGLE = 3;      /*!< \brief General output & CGNS defines. */
+const int N_POINTS_QUADRILATERAL = 4; /*!< \brief General output & CGNS defines. */
+const int N_POINTS_TETRAHEDRON = 4;   /*!< \brief General output & CGNS defines. */
+const int N_POINTS_HEXAHEDRON = 8;    /*!< \brief General output & CGNS defines. */
+const int N_POINTS_PYRAMID = 5;       /*!< \brief General output & CGNS defines. */
+const int N_POINTS_PRISM = 6;         /*!< \brief General output & CGNS defines. */
 
 /*!
  * \brief Boolean answers
@@ -2740,7 +2740,7 @@ public:
   }
   ~COptionPython() {};
   // No checking happens with python options
-  string SetValue(vector<string> option_value) {
+  string SetValue(vector<string>) {
     return "";
   }
   // No defaults with python options

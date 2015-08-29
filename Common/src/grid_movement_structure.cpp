@@ -5772,6 +5772,7 @@ void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
   char AirfoilFile[256], AirfoilFormat[15], MeshOrientation[15], AirfoilClose[15];
   ifstream airfoil_file;
   string text_line;
+  int ierr = 0;
 
   unsigned short nDim = boundary->GetnDim();
   
@@ -5795,23 +5796,23 @@ void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
   /*--- Open the restart file, throw an error if this fails. ---*/
   
   cout << "Enter the name of file with the airfoil information: ";
-  scanf ("%s", AirfoilFile);
+  ierr = scanf("%s", AirfoilFile);
   airfoil_file.open(AirfoilFile, ios::in);
   if (airfoil_file.fail()) {
     cout << "There is no airfoil file!! "<< endl;
     exit(EXIT_FAILURE);
   }
   cout << "Enter the format of the airfoil (Selig or Lednicer): ";
-  scanf ("%s", AirfoilFormat);
+  ierr = scanf("%s", AirfoilFormat);
 
   cout << "Thickness scaling (1.0 means no scaling)?: ";
-  scanf ("%lf", &AirfoilScale);
+  ierr = scanf("%lf", &AirfoilScale);
   
   cout << "Close the airfoil (Yes or No)?: ";
-  scanf ("%s", AirfoilClose);
+  ierr = scanf("%s", AirfoilClose);
   
   cout << "Surface mesh orientation (clockwise, or anticlockwise): ";
-  scanf ("%s", MeshOrientation);
+  ierr = scanf("%s", MeshOrientation);
   
   /*--- The first line is the header ---*/
   

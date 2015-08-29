@@ -1556,7 +1556,8 @@
 				PRODUCT_NAME = SU2_CFD;
 				WARNING_CFLAGS = (
 					"-Wall",
-					"-Wsign-compare",
+					"-Wextra",
+					"-Wno-unused-parameter",
 				);
 			};
 			name = Debug;
@@ -1606,7 +1607,8 @@
 				PRODUCT_NAME = SU2_CFD;
 				WARNING_CFLAGS = (
 					"-Wall",
-					"-Wsign-compare",
+					"-Wextra",
+					"-Wno-unused-parameter",
 				);
 			};
 			name = Release;
