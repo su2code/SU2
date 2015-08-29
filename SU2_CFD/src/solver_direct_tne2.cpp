@@ -2875,7 +2875,8 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
 void CTNE2EulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
 	unsigned long iVertex, iPoint;
 	unsigned short iDim, iMarker, Boundary, Monitoring;
-	su2double Pressure, *Normal = NULL, dist[3], *Coord, Face_Area, PressInviscid;
+  su2double Pressure, *Normal = NULL, dist[3]= {0.0,0.0,0.0};
+  su2double *Coord, Face_Area, PressInviscid;
 	su2double factor, NFPressOF, RefVel2, RefDensity, RefPressure;
   
 	su2double Alpha           = config->GetAoA()*PI_NUMBER/180.0;

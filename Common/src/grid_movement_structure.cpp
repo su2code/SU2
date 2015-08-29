@@ -4474,8 +4474,8 @@ void CSurfaceMovement::SetHicksHenne(CGeometry *boundary, CConfig *config, unsig
 void CSurfaceMovement::SetRotation(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef) {
 	unsigned long iVertex;
 	unsigned short iMarker;
-	su2double VarCoord[3], *Coord;
-	su2double  movement[3], x, y, z;
+  su2double VarCoord[3] = {0.0,0.0,0.0}, *Coord;
+	su2double movement[3] = {0.0,0.0,0.0}, x, y, z;
   
   /*--- Reset airfoil deformation if first deformation or if it required by the solver ---*/
   
@@ -4928,7 +4928,8 @@ void CSurfaceMovement::Surface_Pitching(CGeometry *geometry, CConfig *config,
                                         unsigned long iter, unsigned short iZone) {
 	
 	su2double deltaT, time_new, time_old, Lref, *Coord;
-  su2double Center[3], VarCoord[3], Omega[3], Ampl[3], Phase[3], rotCoord[3], r[3];
+  su2double Center[3], VarCoord[3], Omega[3], Ampl[3], Phase[3];
+  su2double rotCoord[3], r[3] = {0.0,0.0,0.0};
   su2double rotMatrix[3][3] = {{0.0,0.0,0.0}, {0.0,0.0,0.0}, {0.0,0.0,0.0}};
   su2double dtheta, dphi, dpsi, cosTheta, sinTheta;
   su2double cosPhi, sinPhi, cosPsi, sinPsi;
@@ -5053,16 +5054,16 @@ void CSurfaceMovement::Surface_Pitching(CGeometry *geometry, CConfig *config,
             /*--- Compute transformed point coordinates ---*/
             
             rotCoord[0] = rotMatrix[0][0]*r[0]
-            + rotMatrix[0][1]*r[1]
-            + rotMatrix[0][2]*r[2] + Center[0];
+                        + rotMatrix[0][1]*r[1]
+                        + rotMatrix[0][2]*r[2] + Center[0];
             
             rotCoord[1] = rotMatrix[1][0]*r[0]
-            + rotMatrix[1][1]*r[1]
-            + rotMatrix[1][2]*r[2] + Center[1];
+                        + rotMatrix[1][1]*r[1]
+                        + rotMatrix[1][2]*r[2] + Center[1];
             
             rotCoord[2] = rotMatrix[2][0]*r[0]
-            + rotMatrix[2][1]*r[1]
-            + rotMatrix[2][2]*r[2] + Center[2];
+                        + rotMatrix[2][1]*r[1]
+                        + rotMatrix[2][2]*r[2] + Center[2];
             
             /*--- Calculate delta change in the x, y, & z directions ---*/
             for (iDim = 0; iDim < nDim; iDim++)

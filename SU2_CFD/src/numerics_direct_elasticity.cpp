@@ -607,7 +607,8 @@ su2double CGalerkin_FEA::ShapeFunc_Hexa(su2double Xi, su2double Eta, su2double Z
 
 void CGalerkin_FEA::SetFEA_StiffMatrix2D(su2double **StiffMatrix_Elem, su2double CoordCorners[8][3], unsigned short nNodes, unsigned short form2d) {
   
-  su2double B_Matrix[3][8], D_Matrix[3][3], Aux_Matrix[8][3];
+  su2double B_Matrix[3][8], Aux_Matrix[8][3];
+  su2double D_Matrix[3][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
   su2double Xi = 0.0, Eta = 0.0, Det = 0.0;
   unsigned short iNode, iVar, jVar, kVar, iGauss, nGauss = 0;
   su2double DShapeFunction[8][4] = {{0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0},
@@ -1182,7 +1183,8 @@ void CGalerkin_FEA::SetFEA_DeadLoad3D(su2double *DeadLoadVector_Elem, su2double 
 void CGalerkin_FEA::GetFEA_StressNodal2D(su2double StressNodal[8][3], su2double DispElement[8], su2double CoordCorners[8][3], unsigned short nNodes, unsigned short form2d) {
 
 
-	  su2double B_Matrix[3][8], D_Matrix[3][3], StrainVector[3];
+	  su2double B_Matrix[3][8], StrainVector[3];
+  su2double D_Matrix[3][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
 	  su2double Xi = 0.0, Eta = 0.0, Det = 0.0;
 	  unsigned short iNode, iVar, jVar, kVar, iNodal;
 	  su2double DShapeFunction[8][4] = {{0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0},
