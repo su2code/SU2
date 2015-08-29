@@ -3532,8 +3532,9 @@ void CSurfaceMovement::CheckFFDIntersections(CGeometry *geometry, CConfig *confi
 void CSurfaceMovement::UpdateParametricCoord(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox) {
 	unsigned short iMarker, iDim;
 	unsigned long iVertex, iPoint, iSurfacePoints;
-	su2double CartCoord[3], *CartCoordNew, *CartCoordOld, *ParamCoord, *var_coord, ParamCoordGuess[3], MaxDiff, 
-	my_MaxDiff = 0.0, Diff;
+  su2double CartCoord[3] = {0.0,0.0,0.0}, *CartCoordNew, *CartCoordOld;
+  su2double *ParamCoord, *var_coord, ParamCoordGuess[3] = {0.0,0.0,0.0};
+  su2double MaxDiff, my_MaxDiff = 0.0, Diff;
 	int rank;
 	
 #ifdef HAVE_MPI
@@ -3693,7 +3694,7 @@ void CSurfaceMovement::SetCartesianCoord(CGeometry *geometry, CConfig *config, C
 void CSurfaceMovement::SetFFDCPChange_2D(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox,
                                          unsigned short iDV, bool ResetDef) {
   
-  su2double movement[3], Ampl;
+  su2double movement[3] = {0.0,0.0,0.0}, Ampl;
   unsigned short index[3], i, j;
   string design_FFDBox;
   
@@ -3796,7 +3797,7 @@ void CSurfaceMovement::SetFFDCPChange_2D(CGeometry *geometry, CConfig *config, C
 void CSurfaceMovement::SetFFDCPChange(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox,
 																			unsigned short iDV, bool ResetDef) {
 	
-	su2double movement[3], Ampl;
+	su2double movement[3] = {0.0,0.0,0.0}, Ampl;
 	unsigned short index[3], i, j, k, iPlane;
 	string design_FFDBox;
 
@@ -3910,7 +3911,7 @@ void CSurfaceMovement::SetFFDCPChange(CGeometry *geometry, CConfig *config, CFre
 
 void CSurfaceMovement::SetFFDCamber_2D(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox,
 																		unsigned short iDV, bool ResetDef) {
-	su2double Ampl, movement[3];
+	su2double Ampl, movement[3] = {0.0,0.0,0.0};
 	unsigned short index[3], kIndex;
 	string design_FFDBox;
   
@@ -3946,7 +3947,7 @@ void CSurfaceMovement::SetFFDCamber_2D(CGeometry *geometry, CConfig *config, CFr
 
 void CSurfaceMovement::SetFFDThickness_2D(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox,
 																			 unsigned short iDV, bool ResetDef) {
-	su2double Ampl, movement[3];
+	su2double Ampl, movement[3]= {0.0,0.0,0.0};
 	unsigned short index[3], kIndex;
 	string design_FFDBox;
   
@@ -3982,7 +3983,7 @@ void CSurfaceMovement::SetFFDThickness_2D(CGeometry *geometry, CConfig *config, 
 
 void CSurfaceMovement::SetFFDCamber(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox,
 																		unsigned short iDV, bool ResetDef) {
-	su2double Ampl, movement[3];
+	su2double Ampl, movement[3] = {0.0,0.0,0.0};
 	unsigned short index[3], kIndex;
 	string design_FFDBox;
   
@@ -4017,7 +4018,7 @@ void CSurfaceMovement::SetFFDCamber(CGeometry *geometry, CConfig *config, CFreeF
 
 void CSurfaceMovement::SetFFDThickness(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox,
 																			 unsigned short iDV, bool ResetDef) {
-	su2double Ampl, movement[3];
+	su2double Ampl, movement[3] = {0.0,0.0,0.0};
 	unsigned short index[3], kIndex;
 	string design_FFDBox;
   
@@ -4054,7 +4055,7 @@ void CSurfaceMovement::SetFFDThickness(CGeometry *geometry, CConfig *config, CFr
 void CSurfaceMovement::SetFFDDihedralAngle(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox,
 																					 unsigned short iDV, bool ResetDef) {
 	unsigned short iOrder, jOrder, kOrder, index[3];
-	su2double movement[3], theta;
+	su2double movement[3] = {0.0,0.0,0.0}, theta;
 	string design_FFDBox;
   
   /*--- Set control points to its original value (even if the
@@ -4088,7 +4089,7 @@ void CSurfaceMovement::SetFFDDihedralAngle(CGeometry *geometry, CConfig *config,
 void CSurfaceMovement::SetFFDTwistAngle(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox,
 																				unsigned short iDV, bool ResetDef) {
 	unsigned short iOrder, jOrder, kOrder;
-	su2double  x, y, z, movement[3];
+	su2double  x, y, z, movement[3] = {0.0,0.0,0.0};
 	unsigned short index[3];
 	string design_FFDBox;
   
@@ -4170,7 +4171,7 @@ void CSurfaceMovement::SetFFDTwistAngle(CGeometry *geometry, CConfig *config, CF
 void CSurfaceMovement::SetFFDRotation(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox,
 																			unsigned short iDV, bool ResetDef) {
 	unsigned short iOrder, jOrder, kOrder;
-	su2double  movement[3], x, y, z;
+	su2double movement[3] = {0.0,0.0,0.0}, x, y, z;
 	unsigned short index[3];
 	string design_FFDBox;
   
@@ -4238,7 +4239,7 @@ void CSurfaceMovement::SetFFDRotation(CGeometry *geometry, CConfig *config, CFre
 void CSurfaceMovement::SetFFDControl_Surface(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox,
 																			unsigned short iDV, bool ResetDef) {
 	unsigned short iOrder, jOrder, kOrder;
-	su2double  movement[3], x, y, z;
+	su2double movement[3] = {0.0,0.0,0.0}, x, y, z;
 	unsigned short index[3];
 	string design_FFDBox;
   
@@ -4546,7 +4547,7 @@ void CSurfaceMovement::SetRotation(CGeometry *boundary, CConfig *config, unsigne
 void CSurfaceMovement::SetTranslation(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef) {
   unsigned long iVertex;
   unsigned short iMarker;
-  su2double VarCoord[3];
+  su2double VarCoord[3] = {0.0,0.0,0.0};
   su2double Ampl = config->GetDV_Value(iDV);
   
   /*--- Reset airfoil deformation if first deformation or if it required by the solver ---*/
