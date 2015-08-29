@@ -83,6 +83,8 @@ inline long CConfig::GetUnst_RestartIter(void) { return Unst_RestartIter; }
 
 inline long CConfig::GetUnst_AdjointIter(void) { return Unst_AdjointIter; }
 
+inline long CConfig::GetDyn_RestartIter(void) { return Dyn_RestartIter; }
+
 inline string CConfig::GetPlaneTag(unsigned short index) { return PlaneTag[index]; }
 
 inline su2double CConfig::GetEA_IntLimit(unsigned short index) { return EA_IntLimit[index]; }
@@ -952,6 +954,8 @@ inline string CConfig::GetSolution_LinFileName(void) { return Solution_LinFileNa
 
 inline string CConfig::GetSolution_AdjFileName(void) { return Solution_AdjFileName; }
 
+inline string CConfig::GetSolution_FEMFileName(void) { return Solution_FEMFileName; }
+
 inline string CConfig::GetFlow_FileName(void) { return Flow_FileName; }
 
 inline string CConfig::GetStructure_FileName(void) { return Structure_FileName; }
@@ -977,6 +981,8 @@ inline string CConfig::GetRestart_HeatFileName(void) { return Restart_HeatFileNa
 inline string CConfig::GetRestart_LinFileName(void) { return Restart_LinFileName; }
 
 inline string CConfig::GetRestart_AdjFileName(void) { return Restart_AdjFileName; }
+
+inline string CConfig::GetRestart_FEMFileName(void) { return Restart_FEMFileName; }
 
 inline string CConfig::GetAdj_FileName(void) { return Adj_FileName; }
 
