@@ -4580,7 +4580,7 @@ void CSurfaceMovement::SetTranslation(CGeometry *boundary, CConfig *config, unsi
 void CSurfaceMovement::SetScale(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef) {
 	unsigned long iVertex;
   unsigned short iMarker;
-	su2double VarCoord[3], x, y, z, *Coord;
+	su2double VarCoord[3] = {0.0,0.0,0.0}, x, y, z, *Coord;
 	su2double Ampl = config->GetDV_Value(iDV);
 	
   /*--- Reset airfoil deformation if first deformation or if it required by the solver ---*/
@@ -4692,7 +4692,8 @@ void CSurfaceMovement::Surface_Translating(CGeometry *geometry, CConfig *config,
                                         unsigned long iter, unsigned short iZone) {
   
 	su2double deltaT, time_new, time_old;
-  su2double Center[3], VarCoord[3], xDot[3];
+  su2double Center[3] = {0.0,0.0,0.0}, VarCoord[3] = {0.0,0.0,0.0};
+  su2double xDot[3] = {0.0,0.0,0.0};
   unsigned short iMarker, jMarker, Moving;
   unsigned long iVertex;
   string Marker_Tag, Moving_Tag;
