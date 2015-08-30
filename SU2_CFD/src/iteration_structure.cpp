@@ -35,7 +35,7 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
                        CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
                        CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox) {
   
-	double Physical_dt, Physical_t;
+	su2double Physical_dt, Physical_t;
 	unsigned short iMesh, iZone;
   
 	bool time_spectral = (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_SPECTRAL);
@@ -83,13 +83,16 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
     
 		/*--- Update global parameters ---*/
     
-		if (config_container[iZone]->GetKind_Solver() == EULER) {
+    if ((config_container[iZone]->GetKind_Solver() == EULER) ||
+        (config_container[iZone]->GetKind_Solver() == DISC_ADJ_EULER)) {
       config_container[iZone]->SetGlobalParam(EULER, RUNTIME_FLOW_SYS, ExtIter);
     }
-		if (config_container[iZone]->GetKind_Solver() == NAVIER_STOKES) {
+    if ((config_container[iZone]->GetKind_Solver() == NAVIER_STOKES) ||
+        (config_container[iZone]->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES)) {
       config_container[iZone]->SetGlobalParam(NAVIER_STOKES, RUNTIME_FLOW_SYS, ExtIter);
     }
-		if (config_container[iZone]->GetKind_Solver() == RANS) {
+    if ((config_container[iZone]->GetKind_Solver() == RANS) ||
+        (config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS)) {
       config_container[iZone]->SetGlobalParam(RANS, RUNTIME_FLOW_SYS, ExtIter);
     }
     
@@ -98,7 +101,8 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
 		integration_container[iZone][FLOW_SOL]->MultiGrid_Iteration(geometry_container, solver_container, numerics_container,
                                                                 config_container, RUNTIME_FLOW_SYS, IntIter, iZone);
     
-		if (config_container[iZone]->GetKind_Solver() == RANS) {
+    if ((config_container[iZone]->GetKind_Solver() == RANS) ||
+        (config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS)) {
       
       /*--- Solve the turbulence model ---*/
       
@@ -144,12 +148,18 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
         
 				/*--- Pseudo-timestepping for the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes equations ---*/
         
-				if (config_container[iZone]->GetKind_Solver() == EULER)
+        if ((config_container[iZone]->GetKind_Solver() == EULER) ||
+            (config_container[iZone]->GetKind_Solver() == DISC_ADJ_EULER)) {
           config_container[iZone]->SetGlobalParam(EULER, RUNTIME_FLOW_SYS, ExtIter);
-				if (config_container[iZone]->GetKind_Solver() == NAVIER_STOKES)
+        }
+        if ((config_container[iZone]->GetKind_Solver() == NAVIER_STOKES) ||
+            (config_container[iZone]->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES)) {
           config_container[iZone]->SetGlobalParam(NAVIER_STOKES, RUNTIME_FLOW_SYS, ExtIter);
-				if (config_container[iZone]->GetKind_Solver() == RANS)
+        }
+        if ((config_container[iZone]->GetKind_Solver() == RANS) ||
+            (config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS)) {
           config_container[iZone]->SetGlobalParam(RANS, RUNTIME_FLOW_SYS, ExtIter);
+        }
         
         /*--- Solve the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes (RANS) equations (one iteration) ---*/
         
@@ -158,7 +168,8 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
         
 				/*--- Pseudo-timestepping the turbulence model ---*/
         
-				if (config_container[iZone]->GetKind_Solver() == RANS) {
+        if ((config_container[iZone]->GetKind_Solver() == RANS) ||
+            (config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS)) {
           
           /*--- Solve the turbulence model ---*/
           
@@ -177,9 +188,15 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
 				}
         
 				/*--- Call Dynamic mesh update if AEROELASTIC motion was specified ---*/
-				if ((config_container[ZONE_0]->GetGrid_Movement()) && (config_container[ZONE_0]->GetAeroelastic_Simulation()))
+        if ((config_container[ZONE_0]->GetGrid_Movement()) && (config_container[ZONE_0]->GetAeroelastic_Simulation())) {
 					SetGrid_Movement(geometry_container[iZone], surface_movement[iZone], grid_movement[iZone], FFDBox[iZone],
                            solver_container[iZone], config_container[iZone], iZone, IntIter, ExtIter);
+          /*--- Apply a Wind Gust ---*/
+          if (config_container[ZONE_0]->GetWind_Gust()) {
+            if (IntIter % config_container[iZone]->GetAeroelasticIter() ==0)
+              SetWind_GustField(config_container[iZone], geometry_container[iZone], solver_container[iZone]);
+          }
+        }
       }
       
       if (integration_container[ZONE_0][FLOW_SOL]->GetConvergence()) break;
@@ -197,7 +214,8 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
       
 			/*--- Update dual time solver for the turbulence model ---*/
       
-			if (config_container[iZone]->GetKind_Solver() == RANS) {
+      if ((config_container[iZone]->GetKind_Solver() == RANS) ||
+          (config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS)) {
 				integration_container[iZone][TURB_SOL]->SetDualTime_Solver(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0][TURB_SOL], config_container[iZone], MESH_0);
 				integration_container[iZone][TURB_SOL]->SetConvergence(false);
 			}
@@ -226,7 +244,7 @@ void AdjMeanFlowIteration(COutput *output, CIntegration ***integration_container
                           CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
                           CSurfaceMovement **surface_movement, CVolumetricMovement **volume_grid_movement, CFreeFormDefBox*** FFDBox) {
   
-	double Physical_dt, Physical_t;
+	su2double Physical_dt, Physical_t;
 	unsigned short iMesh, iZone;
   
 	bool time_spectral = (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_SPECTRAL);
@@ -245,7 +263,7 @@ void AdjMeanFlowIteration(COutput *output, CIntegration ***integration_container
   
 	for (iZone = 0; iZone < nZone; iZone++) {
 		if (((grid_movement && ExtIter == 0) || config_container[ZONE_0]->GetUnsteady_Simulation()) && !time_spectral) {
-      int Direct_Iter = int(config_container[iZone]->GetUnst_AdjointIter()) - int(ExtIter) - 1;
+      int Direct_Iter = SU2_TYPE::Int(config_container[iZone]->GetUnst_AdjointIter()) - SU2_TYPE::Int(ExtIter) - 1;
       if (rank == MASTER_NODE && iZone == ZONE_0 && config_container[iZone]->GetUnsteady_Simulation())
         cout << endl << " Loading flow solution from direct iteration " << Direct_Iter << "." << endl;
       solver_container[iZone][MESH_0][FLOW_SOL]->LoadRestart(geometry_container[iZone], solver_container[iZone], config_container[iZone], Direct_Iter);
@@ -447,6 +465,181 @@ void TNE2Iteration(COutput *output, CIntegration ***integration_container, CGeom
   
 }
 
+void DiscAdjMeanFlowIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
+                          CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
+                          CSurfaceMovement **surface_movement, CVolumetricMovement **volume_grid_movement, CFreeFormDefBox*** FFDBox) {
+
+  unsigned short iZone, iMesh, ExtIter = config_container[ZONE_0]->GetExtIter();
+  unsigned short nZone = config_container[ZONE_0]->GetnZone();
+
+  bool turbulent = false, flow = false;
+
+  switch(config_container[ZONE_0]->GetKind_Solver()){
+    case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: flow = true; break;
+    case DISC_ADJ_RANS: flow = true; turbulent = true; break;
+  }
+
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  if (ExtIter == 0){
+
+    /*--- Start the recording of all operations ---*/
+
+    AD::StartRecording();
+
+    /*--- Register all necessary variables on the tape ---*/
+    for (iZone = 0; iZone < nZone; iZone++){
+
+      /*--- Register the node coordinates as input of the iteration ---*/
+
+      geometry_container[iZone][MESH_0]->RegisterCoordinates(config_container[iZone]);
+
+      for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++){
+
+        /*--- Register the conservative variables as input of the iteration ---*/
+        if (flow){
+          solver_container[iZone][iMesh][ADJFLOW_SOL]->RegisterInput(geometry_container[iZone][iMesh],
+                                                                     config_container[iZone]);
+        }
+        if (turbulent){
+          solver_container[iZone][iMesh][ADJTURB_SOL]->RegisterInput(geometry_container[iZone][iMesh],
+                                                                     config_container[iZone]);
+        }
+      }
+    }
+
+    /*--- Update the mesh structure to get the influence of node coordinates ---*/
+
+    for (iZone = 0; iZone < nZone; iZone++){
+      geometry_container[iZone][MESH_0]->UpdateGeometry(geometry_container[iZone],config_container[iZone]);
+    }
+
+    if (rank == MASTER_NODE){
+      cout << "Begin direct solver to store computational graph (single iteration)." << endl;
+    }
+
+
+    /* --- Preprocessing of flow solver and postprocessing of turbulent solver.
+     * We need this to get the dependency of the flow variables on the eddy viscosity. ---*/
+    if (turbulent){
+      for (iZone = 0; iZone < nZone; iZone++){
+        for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++){
+          solver_container[iZone][iMesh][FLOW_SOL]->Preprocessing(geometry_container[iZone][iMesh], solver_container[iZone][iMesh], config_container[iZone], iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+          solver_container[iZone][iMesh][TURB_SOL]->Postprocessing(geometry_container[iZone][iMesh],solver_container[iZone][iMesh], config_container[iZone], iMesh);
+        }
+      }
+    }
+
+    /*--- One iteration of the flow solver ---*/
+
+    if (flow){
+      MeanFlowIteration(output, integration_container, geometry_container,
+                      solver_container, numerics_container, config_container,
+                      surface_movement, volume_grid_movement, FFDBox);
+    }
+
+    if (rank == MASTER_NODE){
+      if(flow){
+        cout << "log10[RMS Density]: " << log10(solver_container[ZONE_0][MESH_0][FLOW_SOL]->GetRes_RMS(0))
+             <<", Drag: "<< solver_container[ZONE_0][MESH_0][FLOW_SOL]->GetTotal_CDrag()
+            <<", Lift: "<< solver_container[ZONE_0][MESH_0][FLOW_SOL]->GetTotal_CLift() << "." << endl;
+      }
+      if (turbulent){
+        cout << "log10[RMS k]: " << log10(solver_container[ZONE_0][MESH_0][TURB_SOL]->GetRes_RMS(0)) << std::endl;
+      }
+    }
+
+    for (iZone = 0; iZone < nZone; iZone++){
+      /*--- Register objective function as output of the iteration ---*/
+      if (flow){
+        solver_container[iZone][MESH_0][ADJFLOW_SOL]->RegisterObj_Func(config_container[iZone]);
+      }
+      for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++){
+
+        /*--- Register conservative variables as output of the iteration ---*/
+        if (flow){
+          solver_container[iZone][iMesh][ADJFLOW_SOL]->RegisterOutput(geometry_container[iZone][iMesh],
+                                                                      config_container[iZone]);
+        }
+        if (turbulent){
+          solver_container[iZone][iMesh][ADJTURB_SOL]->RegisterOutput(geometry_container[iZone][iMesh],
+                                                                      config_container[iZone]);
+        }
+      }
+    }
+
+    /*--- Stop the recording ---*/
+
+    AD::StopRecording();
+
+  }
+  for (iZone = 0; iZone < nZone; iZone++){
+
+    /*--- Initialize the adjoint of the objective function (typically with 1.0) ---*/
+    if (flow){
+      solver_container[iZone][MESH_0][ADJFLOW_SOL]->SetAdj_ObjFunc(geometry_container[iZone][MESH_0], config_container[iZone]);
+    }
+    for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++){
+
+      /*--- Initialize the adjoints the conservative variables ---*/
+      if (flow){
+        solver_container[iZone][iMesh][ADJFLOW_SOL]->SetAdjointOutput(geometry_container[iZone][iMesh],
+                                                                      config_container[iZone]);
+      }
+      if (turbulent){
+        solver_container[iZone][iMesh][ADJTURB_SOL]->SetAdjointOutput(geometry_container[iZone][iMesh],
+                                                                      config_container[iZone]);
+      }
+    }
+  }
+
+  /*--- Run the adjoint computation ---*/
+
+  AD::ComputeAdjoint();
+
+  for (iZone = 0; iZone < nZone; iZone++){
+
+    /*--- Set the sensitivities by extracting the adjoints of the node coordinates ---*/
+    if (flow){
+      solver_container[iZone][MESH_0][ADJFLOW_SOL]->SetSensitivity(geometry_container[iZone][MESH_0],config_container[iZone]);
+    }
+    for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++){
+
+      /*--- Extract the adjoints of the conservative input variables and store them for the next iteration ---*/
+      if (flow){
+        solver_container[iZone][iMesh][ADJFLOW_SOL]->SetAdjointInput(geometry_container[iZone][iMesh],
+                                                                     config_container[iZone]);
+      }
+      if (turbulent){
+        solver_container[iZone][iMesh][ADJTURB_SOL]->SetAdjointInput(geometry_container[iZone][iMesh],
+                                                                     config_container[iZone]);
+      }
+    }
+  }
+
+  /*--- Clear all adjoints to re-use the stored computational graph in the next iteration ---*/
+
+  AD::ClearAdjoints();
+
+  /*--- Set the convergence criteria ---*/
+
+  if (config_container[ZONE_0]->GetConvCriteria() == RESIDUAL){
+    if (flow){
+      integration_container[ZONE_0][ADJFLOW_SOL]->Convergence_Monitoring(geometry_container[ZONE_0][MESH_0],config_container[ZONE_0],
+                                                                         ExtIter,log10(solver_container[ZONE_0][MESH_0][ADJFLOW_SOL]->GetRes_RMS(0)), MESH_0);
+    }
+  }
+  else if (config_container[ZONE_0]->GetConvCriteria() == CAUCHY){
+    if (flow){
+      integration_container[ZONE_0][ADJFLOW_SOL]->Convergence_Monitoring(geometry_container[ZONE_0][MESH_0],config_container[ZONE_0],
+                                                                         ExtIter,solver_container[ZONE_0][MESH_0][ADJFLOW_SOL]->GetTotal_Sens_Geo(), MESH_0);
+    }
+  }
+}
+
 void AdjTNE2Iteration(COutput *output, CIntegration ***integration_container,
                       CGeometry ***geometry_container,
                       CSolver ****solver_container,
@@ -554,7 +747,7 @@ void WaveIteration(COutput *output, CIntegration ***integration_container, CGeom
                    CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
                    CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox) {
   
-	double Physical_dt, Physical_t;
+	su2double Physical_dt, Physical_t;
 	unsigned short iMesh, iZone;
 	unsigned short nZone = geometry_container[ZONE_0][MESH_0]->GetnZone();
   unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
@@ -601,7 +794,7 @@ void HeatIteration(COutput *output, CIntegration ***integration_container, CGeom
                    CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
                    CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox) {
   
-	double Physical_dt, Physical_t;
+	su2double Physical_dt, Physical_t;
 	unsigned short iMesh, iZone;
 	unsigned short nZone = geometry_container[ZONE_0][MESH_0]->GetnZone();
   unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
@@ -672,8 +865,8 @@ void PoissonIteration(COutput *output, CIntegration ***integration_container, CG
 void FEAIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
                   CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
                   CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox) {
-	double Physical_dt, Physical_t;
-	unsigned short iMesh, iZone;
+  
+	unsigned short iZone;
 	unsigned short nZone = geometry_container[ZONE_0][MESH_0]->GetnZone();
 	unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
   	unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
@@ -718,7 +911,7 @@ void FluidStructureIteration(COutput *output, CIntegration ***integration_contai
                              CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox,
                              unsigned long iFluidIt, unsigned long nFluidIt) {
 
-	double Physical_dt, Physical_t;
+	su2double Physical_dt, Physical_t;
 	unsigned short iMesh;
 	unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
 	unsigned long IntIter_Struct = 0; config_container[ZONE_1]->SetIntIter(IntIter_Struct);
@@ -954,55 +1147,64 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
   
   // If a source term is included to account for the gust field, the method is described by Jones et al. as the Split Velocity Method in
   // Simulation of Airfoil Gust Responses Using Prescribed Velocities.
-  // In this routine the gust derivatives needed for the source term are calculated when applicable. The source term itself is implemented in the class CSourceWindGust
+  // In this routine the gust derivatives needed for the source term are calculated when applicable.
+  // If the gust derivatives are zero the source term is also zero.
+  // The source term itself is implemented in the class CSourceWindGust
   
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
+  if (rank == MASTER_NODE)
+    cout << endl << "Running simulation with a Wind Gust." << endl;
+  unsigned short iDim, nDim = geometry_container[MESH_0]->GetnDim(); //We assume nDim = 2
+  if (nDim != 2) {
+    if (rank == MASTER_NODE) {
+      cout << endl << "WARNING - Wind Gust capability is only verified for 2 dimensional simulations." << endl;
+    }
+  }
+  
   /*--- Gust Parameters from config ---*/
   unsigned short Gust_Type = config_container->GetGust_Type();
-  double xbegin = config_container->GetGust_Begin_Loc();    // Location at which the gust begins.
-  double L = config_container->GetGust_WaveLength();        // Gust size
-  double tbegin = config_container->GetGust_Begin_Time();   // Physical time at which the gust begins.
-  double gust_amp = config_container->GetGust_Ampl();       // Gust amplitude
-  double n = config_container->GetGust_Periods();           // Number of gust periods
+  su2double xbegin = config_container->GetGust_Begin_Loc();    // Location at which the gust begins.
+  su2double L = config_container->GetGust_WaveLength();        // Gust size
+  su2double tbegin = config_container->GetGust_Begin_Time();   // Physical time at which the gust begins.
+  su2double gust_amp = config_container->GetGust_Ampl();       // Gust amplitude
+  su2double n = config_container->GetGust_Periods();           // Number of gust periods
   unsigned short GustDir = config_container->GetGust_Dir(); // Gust direction
 
   /*--- Variables needed to compute the gust ---*/
-  unsigned short iDim;
-  unsigned short nDim = geometry_container[MESH_0]->GetnDim();
+  unsigned short Kind_Grid_Movement = config_container->GetKind_GridMovement(ZONE_0);
   unsigned long iPoint;
   unsigned short iMGlevel, nMGlevel = config_container->GetnMGLevels();
 
-  double x, y, x_gust, dgust_dx, dgust_dy, dgust_dt;
-  double *Gust, *GridVel;
-  unsigned short Kind_Grid_Movement = config_container->GetKind_GridMovement(ZONE_0);
-  double NewGridVel[3] = {0.0,0.0,0.0};
-  double GustDer[3] = {0.0,0.0,0.0};
+  su2double x, y, x_gust, dgust_dx, dgust_dy, dgust_dt;
+  su2double *Gust, *GridVel;
+  su2double NewGridVel[2] = {0.0,0.0};
+  su2double GustDer[3] = {0.0,0.0,0.0};
 
-  double Physical_dt = config_container->GetDelta_UnstTime();
+  su2double Physical_dt = config_container->GetDelta_UnstTime();
   unsigned long ExtIter = config_container->GetExtIter();
-  double Physical_t = ExtIter*Physical_dt;
+  su2double Physical_t = ExtIter*Physical_dt;
   
-  double Uinf = solver_container[MESH_0][FLOW_SOL]->GetVelocity_Inf(0); // Assumption gust moves at infinity velocity
+  su2double Uinf = solver_container[MESH_0][FLOW_SOL]->GetVelocity_Inf(0); // Assumption gust moves at infinity velocity
   
-  Gust = new double [nDim];
+  Gust = new su2double [nDim];
   for (iDim = 0; iDim < nDim; iDim++) {
     Gust[iDim] = 0.0;
   }
-  
+
   // Vortex variables
   unsigned long nVortex = 0;
-  std::vector<double> x0, y0, vort_strenth, r_core; //vortex is positive in clockwise direction.
+  vector<su2double> x0, y0, vort_strenth, r_core; //vortex is positive in clockwise direction.
   if (Gust_Type == VORTEX) {
     InitializeVortexDistribution(nVortex, x0, y0, vort_strenth, r_core);
   }
   
   /*--- Check to make sure gust lenght is not zero or negative (vortex gust doesn't use this). ---*/
   if (L <= 0.0 && Gust_Type != VORTEX) {
-    cout << "ERROR: The gust length needs to be positive" << endl;
+    if (rank == MASTER_NODE) cout << "ERROR: The gust length needs to be positive" << endl;
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
 #else
@@ -1019,15 +1221,15 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
     
     for (iPoint = 0; iPoint < geometry_container[iMGlevel]->GetnPoint(); iPoint++) {
       
-      /*--- eset the Grid Velocity to zero if there is no grid movement ---*/
-      if (Kind_Grid_Movement == NO_MOVEMENT) {
+      /*--- Reset the Grid Velocity to zero if there is no grid movement ---*/
+      if (Kind_Grid_Movement == GUST) {
         for (iDim = 0; iDim < nDim; iDim++)
           geometry_container[iMGlevel]->node[iPoint]->SetGridVel(iDim, 0.0);
       }
       
       /*--- initialize the gust and derivatives to zero everywhere ---*/
       
-      Gust[0] = 0.0; Gust[1] = 0.0; Gust[2] = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) {Gust[iDim]=0.0;}
       dgust_dx = 0.0; dgust_dy = 0.0; dgust_dt = 0.0;
       
       /*--- Begin applying the gust ---*/
@@ -1057,21 +1259,21 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
               Gust[GustDir] = gust_amp*(sin(2*PI_NUMBER*x_gust));
 
               // Gust derivatives
-              dgust_dx = gust_amp*2*PI_NUMBER*(cos(2*PI_NUMBER*x_gust))/L;
-              dgust_dy = 0;
-              dgust_dt = gust_amp*2*PI_NUMBER*(cos(2*PI_NUMBER*x_gust))*(-Uinf)/L;
+              //dgust_dx = gust_amp*2*PI_NUMBER*(cos(2*PI_NUMBER*x_gust))/L;
+              //dgust_dy = 0;
+              //dgust_dt = gust_amp*2*PI_NUMBER*(cos(2*PI_NUMBER*x_gust))*(-Uinf)/L;
             }
             break;
 
           case ONE_M_COSINE:
              // Check if we are in the region where the gust is active
              if (x_gust > 0 && x_gust < n) {
-               Gust[GustDir] = 0.5*gust_amp*(1-cos(2*PI_NUMBER*x_gust));
+               Gust[GustDir] = gust_amp*(1-cos(2*PI_NUMBER*x_gust));
 
                // Gust derivatives
-               dgust_dx = 0.5*gust_amp*2*PI_NUMBER*(sin(2*PI_NUMBER*x_gust))/L;
-               dgust_dy = 0;
-               dgust_dt = 0.5*gust_amp*2*PI_NUMBER*(sin(2*PI_NUMBER*x_gust))*(-Uinf)/L;
+               //dgust_dx = gust_amp*2*PI_NUMBER*(sin(2*PI_NUMBER*x_gust))/L;
+               //dgust_dy = 0;
+               //dgust_dt = gust_amp*2*PI_NUMBER*(sin(2*PI_NUMBER*x_gust))*(-Uinf)/L;
              }
              break;
 
@@ -1087,9 +1289,9 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
              /*--- Use vortex distribution ---*/
              // Algebraic vortex equation.
              for (unsigned long i=0; i<nVortex; i++) {
-               double r2 = pow(x-(x0[i]+Uinf*(Physical_t-tbegin)), 2) + pow(y-y0[i], 2);
-               double r = sqrt(r2);
-               double v_theta = vort_strenth[i]/(2*PI_NUMBER) * r/(r2+pow(r_core[i],2));
+               su2double r2 = pow(x-(x0[i]+Uinf*(Physical_t-tbegin)), 2) + pow(y-y0[i], 2);
+               su2double r = sqrt(r2);
+               su2double v_theta = vort_strenth[i]/(2*PI_NUMBER) * r/(r2+pow(r_core[i],2));
                Gust[0] = Gust[0] + v_theta*(y-y0[i])/r;
                Gust[1] = Gust[1] - v_theta*(x-(x0[i]+Uinf*(Physical_t-tbegin)))/r;
              }
@@ -1131,11 +1333,11 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
   
 }
 
-void InitializeVortexDistribution(unsigned long &nVortex, vector<double>& x0, vector<double>& y0, vector<double>& vort_strength, vector<double>& r_core) {
+void InitializeVortexDistribution(unsigned long &nVortex, vector<su2double>& x0, vector<su2double>& y0, vector<su2double>& vort_strength, vector<su2double>& r_core) {
   /*--- Read in Vortex Distribution ---*/
   std::string line;
   std::ifstream file;
-  double x_temp, y_temp, vort_strength_temp, r_core_temp;
+  su2double x_temp, y_temp, vort_strength_temp, r_core_temp;
   file.open("vortex_distribution.txt");
   /*--- In case there is no vortex file ---*/
   if (file.fail()) {
@@ -1146,7 +1348,7 @@ void InitializeVortexDistribution(unsigned long &nVortex, vector<double>& x0, ve
   
   // Ignore line containing the header
   getline(file, line);
-  // Read in the information of the vortices (xloc, yloc, lambda(strenght), eta(size, gradient))
+  // Read in the information of the vortices (xloc, yloc, lambda(strength), eta(size, gradient))
   while (file.good())
   {
     getline(file, line);
@@ -1223,14 +1425,36 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
       
       if (ExtIter == 0) {
         
-        if (rank == MASTER_NODE)
-          cout << endl << " Setting rotating frame grid velocities." << endl;
+        if (rank == MASTER_NODE) {
+          cout << endl << " Setting rotating frame grid velocities";
+          cout << " for zone " << iZone << "." << endl;
+        }
         
         /*--- Set the grid velocities on all multigrid levels for a steadily
          rotating reference frame. ---*/
         
         for (iMGlevel = 0; iMGlevel <= nMGlevels; iMGlevel++)
-          geometry_container[iMGlevel]->SetRotationalVelocity(config_container);
+          geometry_container[iMGlevel]->SetRotationalVelocity(config_container, iZone);
+        
+      }
+      
+      break;
+            
+    case STEADY_TRANSLATION:
+      
+      /*--- Set the translational velocity and hold the grid fixed during
+       the calculation (similar to rotating frame, but there is no extra
+       source term for translation). ---*/
+      
+      if (ExtIter == 0) {
+        
+        if (rank == MASTER_NODE)
+          cout << endl << " Setting translational grid velocities." << endl;
+        
+          /*--- Set the translational velocity on all grid levels. ---*/
+          
+          for (iMGlevel = 0; iMGlevel <= nMGlevels; iMGlevel++)
+              geometry_container[iMGlevel]->SetTranslationalVelocity(config_container);
         
       }
       
@@ -1408,7 +1632,8 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
       }
       
       /*--- Use the if statement to move the grid only at selected dual time step iterations. ---*/
-      else if (IntIter % 3 ==0) {
+      else if (IntIter % config_container->GetAeroelasticIter() ==0) {
+
         if (rank == MASTER_NODE)
           cout << endl << " Solving aeroelastic equations and updating surface positions." << endl;
         
@@ -1448,8 +1673,8 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
         /*--- Update the coordinates of the grid using the linear elasticity solution. ---*/
         for (iPoint = 0; iPoint < geometry_container[MESH_0]->GetnPoint(); iPoint++) {
           
-          double *U_time_nM1 = solver_container[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_time_n1();
-          double *U_time_n   = solver_container[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_time_n();
+          su2double *U_time_nM1 = solver_container[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_time_n1();
+          su2double *U_time_n   = solver_container[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_time_n();
           
           for (iDim = 0; iDim < geometry_container[MESH_0]->GetnDim(); iDim++)
             geometry_container[MESH_0]->node[iPoint]->AddCoord(iDim, U_time_n[iDim] - U_time_nM1[iDim]);
@@ -1460,7 +1685,7 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
       
       break;
       
-    case NONE: default:
+    case NO_MOVEMENT: case GUST: default:
       
       /*--- There is no mesh motion specified for this zone. ---*/
       if (rank == MASTER_NODE)
@@ -1491,20 +1716,20 @@ void SetTimeSpectral(CGeometry ***geometry_container, CSolver ****solver_contain
   }
   
   /*--- Retrieve values from the config file ---*/
-  double *U = new double[nVar];
-  double *U_old = new double[nVar];
-  double *Psi = new double[nVar];
-  double *Psi_old = new double[nVar];
-  double *Source = new double[nVar];
-  double deltaU, deltaPsi;
+  su2double *U = new su2double[nVar];
+  su2double *U_old = new su2double[nVar];
+  su2double *Psi = new su2double[nVar];
+  su2double *Psi_old = new su2double[nVar];
+  su2double *Source = new su2double[nVar];
+  su2double deltaU, deltaPsi;
   
   /*--- Compute period of oscillation ---*/
-  double period = config_container[ZONE_0]->GetTimeSpectral_Period();
+  su2double period = config_container[ZONE_0]->GetTimeSpectral_Period();
   
   /*--- allocate dynamic memory for D ---*/
-  double **D = new double*[nZone];
+  su2double **D = new su2double*[nZone];
   for (kZone = 0; kZone < nZone; kZone++) {
-    D[kZone] = new double[nZone];
+    D[kZone] = new su2double[nZone];
   }
   
   /*--- Build the time-spectral operator matrix ---*/
@@ -1619,8 +1844,8 @@ void SetTimeSpectral(CGeometry ***geometry_container, CSolver ****solver_contain
     
     /*--- Extra variables needed if we have a turbulence model. ---*/
     unsigned short nVar_Turb = solver_container[ZONE_0][MESH_0][TURB_SOL]->GetnVar();
-    double *U_Turb = new double[nVar_Turb];
-    double *Source_Turb = new double[nVar_Turb];
+    su2double *U_Turb = new su2double[nVar_Turb];
+    su2double *Source_Turb = new su2double[nVar_Turb];
     
     /*--- Loop over only the finest mesh level (turbulence is always solved
           on the original grid only). ---*/
@@ -1660,22 +1885,22 @@ void SetTimeSpectral(CGeometry ***geometry_container, CSolver ****solver_contain
   ofstream mean_TS_Flow_file;
   
   /*--- MPI Send/Recv buffers ---*/
-  double *sbuf_force = NULL,  *rbuf_force = NULL;
+  su2double *sbuf_force = NULL,  *rbuf_force = NULL;
   
   /*--- Other variables ---*/
   unsigned short nVar_Force = 8;
   unsigned long current_iter = config_container[ZONE_0]->GetExtIter();
   
   /*--- Allocate memory for send buffer ---*/
-  sbuf_force = new double[nVar_Force];
+  sbuf_force = new su2double[nVar_Force];
   
-  double *averages = new double[nVar_Force];
+  su2double *averages = new su2double[nVar_Force];
   for (iVar = 0; iVar < nVar_Force; iVar++)
     averages[iVar] = 0;
   
   /*--- Allocate memory for receive buffer ---*/
   if (rank == MASTER_NODE) {
-    rbuf_force = new double[nVar_Force];
+    rbuf_force = new su2double[nVar_Force];
     
     TS_Flow_file.precision(15);
     TS_Flow_file.open("TS_force_coefficients.csv", ios::out);
@@ -1720,7 +1945,7 @@ void SetTimeSpectral(CGeometry ***geometry_container, CSolver ****solver_contain
       
       /*--- Increment the total contributions from each zone, dividing by nZone as you go ---*/
       for (iVar = 0; iVar < nVar_Force; iVar++) {
-        averages[iVar] += (1.0/double(nZone))*rbuf_force[iVar];
+        averages[iVar] += (1.0/su2double(nZone))*rbuf_force[iVar];
       }
     }
   }
@@ -1747,7 +1972,7 @@ void SetTimeSpectral(CGeometry ***geometry_container, CSolver ****solver_contain
   
 }
 
-void ComputeTimeSpectral_Operator(double **D, double period, unsigned short nZone) {
+void ComputeTimeSpectral_Operator(su2double **D, su2double period, unsigned short nZone) {
   
   unsigned short kZone, jZone;
 
@@ -1787,38 +2012,38 @@ void SetTimeSpectral_Velocities(CGeometry ***geometry_container,
 	unsigned short iZone, jDegree, iDim, iMGlevel;
 	unsigned short nDim = geometry_container[ZONE_0][MESH_0]->GetnDim();
   
-	double angular_interval = 2.0*PI_NUMBER/(double)(nZone);
-	double *Coord;
+	su2double angular_interval = 2.0*PI_NUMBER/(su2double)(nZone);
+	su2double *Coord;
 	unsigned long iPoint;
   
   
 	/*--- Compute period of oscillation & compute time interval using nTimeInstances ---*/
-	double period = config_container[ZONE_0]->GetTimeSpectral_Period();
-	double deltaT = period/(double)(config_container[ZONE_0]->GetnTimeInstances());
+	su2double period = config_container[ZONE_0]->GetTimeSpectral_Period();
+	su2double deltaT = period/(su2double)(config_container[ZONE_0]->GetnTimeInstances());
   
 	/*--- allocate dynamic memory for angular positions (these are the abscissas) ---*/
-	double *angular_positions = new double [nZone];
+	su2double *angular_positions = new su2double [nZone];
 	for (iZone = 0; iZone < nZone; iZone++) {
 		angular_positions[iZone] = iZone*angular_interval;
 	}
   
 	/*--- find the highest-degree trigonometric polynomial allowed by the Nyquist criterion---*/
-	double high_degree = (nZone-1)/2.0;
-	int highest_degree = (int)(high_degree);
+	su2double high_degree = (nZone-1)/2.0;
+  int highest_degree = SU2_TYPE::Int(high_degree);
   
 	/*--- allocate dynamic memory for a given point's coordinates ---*/
-	double **coords = new double *[nZone];
+	su2double **coords = new su2double *[nZone];
 	for (iZone = 0; iZone < nZone; iZone++) {
-		coords[iZone] = new double [nDim];
+		coords[iZone] = new su2double [nDim];
 	}
   
 	/*--- allocate dynamic memory for vectors of Fourier coefficients ---*/
-	double *a_coeffs = new double [highest_degree+1];
-	double *b_coeffs = new double [highest_degree+1];
+	su2double *a_coeffs = new su2double [highest_degree+1];
+	su2double *b_coeffs = new su2double [highest_degree+1];
   
 	/*--- allocate dynamic memory for the interpolated positions and velocities ---*/
-	double *fitted_coords = new double [nZone];
-	double *fitted_velocities = new double [nZone];
+	su2double *fitted_coords = new su2double [nZone];
+	su2double *fitted_velocities = new su2double [nZone];
   
 	/*--- Loop over all grid levels ---*/
 	for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetnMGLevels(); iMGlevel++) {
@@ -1847,8 +2072,8 @@ void SetTimeSpectral_Velocities(CGeometry ***geometry_container,
 					a_coeffs[jDegree] = 0;
 					b_coeffs[jDegree] = 0;
 					for (iZone = 0; iZone < nZone; iZone++) {
-						a_coeffs[jDegree] = a_coeffs[jDegree] + (2.0/(double)nZone)*cos(jDegree*angular_positions[iZone])*coords[iZone][iDim];
-						b_coeffs[jDegree] = b_coeffs[jDegree] + (2.0/(double)nZone)*sin(jDegree*angular_positions[iZone])*coords[iZone][iDim];
+						a_coeffs[jDegree] = a_coeffs[jDegree] + (2.0/(su2double)nZone)*cos(jDegree*angular_positions[iZone])*coords[iZone][iDim];
+						b_coeffs[jDegree] = b_coeffs[jDegree] + (2.0/(su2double)nZone)*sin(jDegree*angular_positions[iZone])*coords[iZone][iDim];
 					}
 				}
         
