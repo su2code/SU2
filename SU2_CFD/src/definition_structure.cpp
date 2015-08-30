@@ -246,7 +246,7 @@ void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned
     /*--- Visualize a dual control volume if requested ---*/
     
     if ((config[iZone]->GetVisualize_CV() >= 0) &&
-        (config[iZone]->GetVisualize_CV() < geometry[iZone][MESH_0]->GetnPointDomain()))
+        (config[iZone]->GetVisualize_CV() < (long)geometry[iZone][MESH_0]->GetnPointDomain()))
       geometry[iZone][MESH_0]->VisualizeControlVolume(config[iZone], UPDATE);
     
     /*--- Identify closest normal neighbor ---*/

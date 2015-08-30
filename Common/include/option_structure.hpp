@@ -146,14 +146,14 @@ const int MASTER_NODE = 0;			/*!< \brief Master node for MPI parallelization. */
 const int SINGLE_NODE = 1;			/*!< \brief There is only a node in the MPI parallelization. */
 const int SINGLE_ZONE = 1;			/*!< \brief There is only a zone. */
 
-const unsigned int N_ELEM_TYPES = 7;           /*!< \brief General output & CGNS defines. */
-const unsigned int N_POINTS_LINE = 2;          /*!< \brief General output & CGNS defines. */
-const unsigned int N_POINTS_TRIANGLE = 3;      /*!< \brief General output & CGNS defines. */
-const unsigned int N_POINTS_QUADRILATERAL = 4; /*!< \brief General output & CGNS defines. */
-const unsigned int N_POINTS_TETRAHEDRON = 4;   /*!< \brief General output & CGNS defines. */
-const unsigned int N_POINTS_HEXAHEDRON = 8;    /*!< \brief General output & CGNS defines. */
-const unsigned int N_POINTS_PYRAMID = 5;       /*!< \brief General output & CGNS defines. */
-const unsigned int N_POINTS_PRISM = 6;         /*!< \brief General output & CGNS defines. */
+const int N_ELEM_TYPES = 7;           /*!< \brief General output & CGNS defines. */
+const int N_POINTS_LINE = 2;          /*!< \brief General output & CGNS defines. */
+const int N_POINTS_TRIANGLE = 3;      /*!< \brief General output & CGNS defines. */
+const int N_POINTS_QUADRILATERAL = 4; /*!< \brief General output & CGNS defines. */
+const int N_POINTS_TETRAHEDRON = 4;   /*!< \brief General output & CGNS defines. */
+const int N_POINTS_HEXAHEDRON = 8;    /*!< \brief General output & CGNS defines. */
+const int N_POINTS_PYRAMID = 5;       /*!< \brief General output & CGNS defines. */
+const int N_POINTS_PRISM = 6;         /*!< \brief General output & CGNS defines. */
 
 /*!
  * \brief Boolean answers
@@ -252,7 +252,7 @@ static const map<string, ENUM_FSI_FLUID_PROBLEM> FSI_Fluid_Solver_Map = CCreateM
 enum ENUM_FSI_STRUC_PROBLEM {
   NO_SOLVER_SFSI = 0,				/*!< \brief Definition of no solver. */
   LINEAR_ELASTICITY_SFSI = 11,		/*!< \brief Linear elasticity equations for the FSI problem */
-  NONLINEAR_ELASTICITY_SFSI = 2,		/*!< \brief Nonlinear elasticity equations for the FSI problem */
+  NONLINEAR_ELASTICITY_SFSI = 2		/*!< \brief Nonlinear elasticity equations for the FSI problem */
 };
 static const map<string, ENUM_FSI_STRUC_PROBLEM> FSI_Struc_Solver_Map = CCreateMap<string, ENUM_FSI_STRUC_PROBLEM>
 ("NONE", NO_SOLVER_SFSI)
@@ -305,7 +305,7 @@ static const map<string, ENUM_KIND_NONDIM> NonDim_Map = CCreateMap<string, ENUM_
  */
 enum ENUM_MEASUREMENTS {
   SI = 0,			/*!< \brief Definition of compressible solver. */
-  US = 1,				/*!< \brief Definition of incompressible solver. */
+  US = 1				/*!< \brief Definition of incompressible solver. */
 };
 static const map<string, ENUM_MEASUREMENTS> Measurements_Map = CCreateMap<string, ENUM_MEASUREMENTS>
 ("SI", SI)
@@ -366,7 +366,7 @@ enum ENUM_MATH_PROBLEM {
   DIRECT = 0,		/*!< \brief Direct problem */
   CONTINUOUS_ADJOINT = 1,		/*!< \brief Continuous adjoint problem */
   LINEARIZED = 2, /*< \brief Linearized numerical method */
-  DISCRETE_ADJOINT = 3, /*< \brief AD-based discrete adjoint problem. */
+  DISCRETE_ADJOINT = 3 /*< \brief AD-based discrete adjoint problem. */
 };
 static const map<string, ENUM_MATH_PROBLEM> Math_Problem_Map = CCreateMap<string, ENUM_MATH_PROBLEM>
 ("DIRECT", DIRECT)
@@ -745,7 +745,7 @@ enum BC_TYPE {
   CLAMPED_BOUNDARY = 34,		/*!< \brief Clamped Boundary definition. */
   LOAD_DIR_BOUNDARY = 35,		/*!< \brief Boundary Load definition. */
   LOAD_SINE_BOUNDARY = 36,		/*!< \brief Sine-waveBoundary Load definition. */
-  SEND_RECEIVE = 99,		/*!< \brief Boundary send-receive definition. */
+  SEND_RECEIVE = 99		/*!< \brief Boundary send-receive definition. */
 };
 
 
@@ -754,7 +754,7 @@ enum BC_TYPE {
  */
 enum ENUM_2DFORM {
   PLANE_STRESS = 0,			/*!< \brief Definition of plane stress solver. */
-  PLANE_STRAIN = 1,			/*!< \brief Definition of plane strain solver. */
+  PLANE_STRAIN = 1			/*!< \brief Definition of plane strain solver. */
 };
 static const map<string, ENUM_2DFORM> ElasForm_2D = CCreateMap<string, ENUM_2DFORM>
 ("PLANE_STRESS", PLANE_STRESS)
@@ -767,7 +767,7 @@ static const map<string, ENUM_2DFORM> ElasForm_2D = CCreateMap<string, ENUM_2DFO
 enum ENUM_AITKEN {
   NO_RELAXATION = 0,			/*!< \brief No relaxation in the strongly coupled approach. */
   FIXED_PARAMETER = 1,			/*!< \brief Relaxation with a fixed parameter. */
-  AITKEN_DYNAMIC = 2,			/*!< \brief Relaxation using Aitken's dynamic parameter. */
+  AITKEN_DYNAMIC = 2			/*!< \brief Relaxation using Aitken's dynamic parameter. */
 };
 static const map<string, ENUM_AITKEN> AitkenForm_Map = CCreateMap<string, ENUM_AITKEN>
 ("NONE", NO_RELAXATION)
@@ -1006,7 +1006,7 @@ static const map<string, ENUM_OUTPUT> Output_Map = CCreateMap<string, ENUM_OUTPU
 enum MG_CYCLE {
   V_CYCLE = 0,  		/*!< \brief V cycle. */
   W_CYCLE = 1,			/*!< \brief W cycle. */
-  FULLMG_CYCLE = 2,			/*!< \brief FullMG cycle. */
+  FULLMG_CYCLE = 2  /*!< \brief FullMG cycle. */
 };
 static const map<string, MG_CYCLE> MG_Cycle_Map = CCreateMap<string, MG_CYCLE>
 ("V_CYCLE", V_CYCLE)
@@ -1060,7 +1060,7 @@ enum ENUM_PARAM {
   PARABOLIC = 15,		         /*!< \brief Parabolic airfoil definition as design variables. */
   NACA_4DIGITS = 16,	         /*!< \brief The four digits NACA airfoil family as design variables. */
   AIRFOIL = 17,		           /*!< \brief Airfoil definition as design variables. */
-  SURFACE_FILE = 18,		     /*!< Nodal coordinates set using a surface file. */
+  SURFACE_FILE = 18		     /*!< Nodal coordinates set using a surface file. */
 };
 static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("FFD_SETTING", FFD_SETTING)
@@ -1259,7 +1259,7 @@ static const map<string, ENUM_DIRECTDIFF_VAR> DirectDiff_Var_Map = CCreateMap<st
  */
 enum ENUM_DYNAMIC {
   STATIC = 0,             /*!< \brief A static structural computation. */
-  DYNAMIC = 1,		      /*!< \brief Use a time stepping strategy for dynamic computations. */
+  DYNAMIC = 1		      /*!< \brief Use a time stepping strategy for dynamic computations. */
 };
 static const map<string, ENUM_DYNAMIC> Dynamic_Map = CCreateMap<string, ENUM_DYNAMIC>
 ("NO", STATIC)
@@ -1614,7 +1614,7 @@ public:
   ~COptionDoubleArray() {};
   string SetValue(vector<string> option_value) {
     // Check that the size is correct
-    if (option_value.size() != this->size) {
+    if (option_value.size() != (unsigned long)this->size) {
       string newstring;
       newstring.append(this->name);
       newstring.append(": wrong number of arguments: ");
@@ -1671,7 +1671,7 @@ public:
 
     // Parse all of the options
     su2double * vals = new su2double[option_size];
-    for (int i  = 0; i < option_size; i++) {
+    for (unsigned long i  = 0; i < option_size; i++) {
       istringstream is(option_value[i]);
       su2double val;
       if (!(is >> val)) {
@@ -1712,7 +1712,7 @@ public:
 
     // Parse all of the options
     unsigned short * vals = new unsigned short[option_size];
-    for (int i  = 0; i < option_size; i++) {
+    for (unsigned long i  = 0; i < option_size; i++) {
       istringstream is(option_value[i]);
       unsigned short val;
       if (!(is >> val)) {
@@ -1752,7 +1752,7 @@ public:
 
     // Parse all of the options
     string * vals = new string[option_size];
-    for (int i  = 0; i < option_size; i++) {
+    for (unsigned long i  = 0; i < option_size; i++) {
       vals[i].assign(option_value[i]);
     }
     this->field = vals;
@@ -2238,7 +2238,7 @@ public:
     this->s_f = new string[nVals];
     this->d_f = new su2double[nVals];
 
-    for (int i = 0; i < nVals; i++) {
+    for (unsigned long i = 0; i < nVals; i++) {
       this->s_f[i].assign(option_value[2*i]); // 2 because have su2double and string
       istringstream is(option_value[2*i + 1]);
       su2double val;
@@ -2300,11 +2300,11 @@ public:
     this->ttotal = new su2double[nVals];
     this->ptotal = new su2double[nVals];
     this->flowdir = new su2double*[nVals];
-    for (int i = 0; i < nVals; i++) {
+    for (unsigned long i = 0; i < nVals; i++) {
       this->flowdir[i] = new su2double[3];
     }
 
-    for (int i = 0; i < nVals; i++) {
+    for (unsigned long i = 0; i < nVals; i++) {
       this->marker[i].assign(option_value[6*i]);
       istringstream ss_1st(option_value[6*i + 1]);
       if (!(ss_1st >> this->ttotal[i])) {
@@ -2344,10 +2344,10 @@ template <class Tenum>
 class COptionRiemann : public COptionBase{
 
   map<string, Tenum> m;
-  unsigned short* & field; // Reference to the feildname
   string name; // identifier for the option
   unsigned short & size;
   string * & marker;
+  unsigned short* & field; // Reference to the field name
   su2double * & var1;
   su2double * & var2;
   su2double ** & flowdir;
@@ -2394,11 +2394,11 @@ public:
     this->flowdir = new su2double*[nVals];
     this->field = new unsigned short[nVals];
 
-    for (int i = 0; i < nVals; i++) {
+    for (unsigned long i = 0; i < nVals; i++) {
       this->flowdir[i] = new su2double[3];
     }
 
-    for (int i = 0; i < nVals; i++) {
+    for (unsigned long i = 0; i < nVals; i++) {
       this->marker[i].assign(option_value[7*i]);
         // Check to see if the enum value is in the map
     if (this->m.find(option_value[7*i + 1]) == m.end()) {
@@ -2489,7 +2489,7 @@ public:
     this->ttotal = new su2double[nVals];
     this->ptotal = new su2double[nVals];
 
-    for (int i = 0; i < nVals; i++) {
+    for (unsigned long i = 0; i < nVals; i++) {
       this->marker[i].assign(option_value[3*i]);
       istringstream ss_1st(option_value[3*i + 1]);
       if (!(ss_1st >> this->ttotal[i]))
@@ -2554,7 +2554,7 @@ public:
     this->massflow_target = new su2double[nVals];
     this->temp_target = new su2double[nVals];
     
-    for (int i = 0; i < nVals; i++) {
+    for (unsigned long i = 0; i < nVals; i++) {
       this->marker[i].assign(option_value[3*i]);
       istringstream ss_1st(option_value[3*i + 1]);
       if (!(ss_1st >> this->massflow_target[i]))
@@ -2628,7 +2628,7 @@ public:
     this->rot_center = new su2double*[nVals];
     this->rot_angles = new su2double*[nVals];
     this->translation = new su2double*[nVals];
-    for (int i = 0; i < nVals; i++) {
+    for (unsigned long i = 0; i < nVals; i++) {
       this->rot_center[i] = new su2double[3];
       this->rot_angles[i] = new su2double[3];
       this->translation[i] = new su2double[3];
@@ -2636,7 +2636,7 @@ public:
 
     su2double deg2rad = PI_NUMBER/180.0;
 
-    for (int i = 0; i < (nVals/2); i++) {
+    for (unsigned long i = 0; i < (nVals/2); i++) {
       this->marker_bound[i].assign(option_value[mod_num*i]);
       this->marker_donor[i].assign(option_value[mod_num*i+1]);
       istringstream ss_1st(option_value[mod_num*i + 2]);
@@ -2753,7 +2753,7 @@ public:
   }
   ~COptionPython() {};
   // No checking happens with python options
-  string SetValue(vector<string> option_value) {
+  string SetValue(vector<string>) {
     return "";
   }
   // No defaults with python options

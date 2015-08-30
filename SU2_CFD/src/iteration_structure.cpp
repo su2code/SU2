@@ -865,8 +865,8 @@ void PoissonIteration(COutput *output, CIntegration ***integration_container, CG
 void FEAIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
                   CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
                   CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox) {
-	su2double Physical_dt, Physical_t;
-	unsigned short iMesh, iZone;
+  
+	unsigned short iZone;
 	unsigned short nZone = geometry_container[ZONE_0][MESH_0]->GetnZone();
 	unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
   	unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
