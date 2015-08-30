@@ -33,14 +33,14 @@
 
 CFEAVariable::CFEAVariable(void) : CVariable() { }
 
-CFEAVariable::CFEAVariable(double *val_fea, unsigned short val_nDim, unsigned short val_nvar, CConfig *config)
+CFEAVariable::CFEAVariable(su2double *val_fea, unsigned short val_nDim, unsigned short val_nvar, CConfig *config)
 : CVariable(val_nDim, val_nvar, config) {
 	unsigned short iVar, iDim, jDim;
 
 	dynamicFEA = (config->GetDynamic_Analysis() == DYNAMIC);
   
 	/*--- Allocate residual structures ---*/
-	Residual_Sum = new double [nVar]; Residual_Old = new double [nVar];
+	Residual_Sum = new su2double [nVar]; Residual_Old = new su2double [nVar];
   
 	/*--- Initialization of variables ---*/
 	for (iVar = 0; iVar < nVar; iVar++) {
@@ -51,13 +51,13 @@ CFEAVariable::CFEAVariable(double *val_fea, unsigned short val_nDim, unsigned sh
 	if (dynamicFEA){
 
 		/*--- Allocate solution structures ---*/
-		Solution_Pred =  new double [nVar];
-		Solution_Pred_Old =  new double [nVar];
-		Solution_time_n = new double [nVar];
-		Solution_Vel = new double [nVar];
-		Solution_Vel_time_n = new double [nVar];
-		Solution_Accel = new double [nVar];
-		Solution_Accel_time_n = new double [nVar];
+		Solution_Pred =  new su2double [nVar];
+		Solution_Pred_Old =  new su2double [nVar];
+		Solution_time_n = new su2double [nVar];
+		Solution_Vel = new su2double [nVar];
+		Solution_Vel_time_n = new su2double [nVar];
+		Solution_Accel = new su2double [nVar];
+		Solution_Accel_time_n = new su2double [nVar];
 
 		/*--- Initialization of variables for dynamic problem ---*/
 		for (iVar = 0; iVar < nVar; iVar++) {
@@ -74,9 +74,9 @@ CFEAVariable::CFEAVariable(double *val_fea, unsigned short val_nDim, unsigned sh
 
   
   /*--- Allocate stress tensor ---*/
-	Stress = new double* [nDim];
+	Stress = new su2double* [nDim];
 	for (iDim = 0; iDim < nDim; iDim++)
-		Stress[iDim] = new double [nDim];
+		Stress[iDim] = new su2double [nDim];
 
   /*--- Initialize stress tensor---*/
 	for (iDim = 0; iDim < nDim; iDim++){
@@ -117,21 +117,21 @@ void CFEAVariable::SetSolution_time_n(void) {
 
 }
 
-void CFEAVariable::SetSolution_time_n(double *val_solution_time_n) {
+void CFEAVariable::SetSolution_time_n(su2double *val_solution_time_n) {
 
 	for (unsigned short iVar = 0; iVar < nVar; iVar++)
 		Solution_time_n[iVar] = val_solution_time_n[iVar];
 
 }
 
-void CFEAVariable::SetSolution_Vel(double *val_solution_vel) {
+void CFEAVariable::SetSolution_Vel(su2double *val_solution_vel) {
 
 	for (unsigned short iVar = 0; iVar < nVar; iVar++)
 		Solution_Vel[iVar] = val_solution_vel[iVar];
 
 }
 
-void CFEAVariable::SetSolution_Vel_time_n(double *val_solution_vel_time_n) {
+void CFEAVariable::SetSolution_Vel_time_n(su2double *val_solution_vel_time_n) {
 
 	for (unsigned short iVar = 0; iVar < nVar; iVar++)
 		Solution_Vel_time_n[iVar] = val_solution_vel_time_n[iVar];
@@ -145,14 +145,14 @@ void CFEAVariable::SetSolution_Vel_time_n(void) {
 
 }
 
-void CFEAVariable::SetSolution_Accel(double *val_solution_accel) {
+void CFEAVariable::SetSolution_Accel(su2double *val_solution_accel) {
 
 	for (unsigned short iVar = 0; iVar < nVar; iVar++)
 		Solution_Accel[iVar] = val_solution_accel[iVar];
 
 }
 
-void CFEAVariable::SetSolution_Accel_time_n(double *val_solution_accel_time_n) {
+void CFEAVariable::SetSolution_Accel_time_n(su2double *val_solution_accel_time_n) {
 
 	for (unsigned short iVar = 0; iVar < nVar; iVar++)
 		Solution_Accel_time_n[iVar] = val_solution_accel_time_n[iVar];
@@ -185,22 +185,22 @@ CFEABoundVariable::CFEABoundVariable(void) : CVariable() { }
 
 CFEABoundVariable::CFEABoundVariable(unsigned short val_nDim, unsigned short val_nvar, unsigned short val_nElBound, CConfig *config)
 : CVariable(val_nDim, val_nvar, config) {
-	unsigned short iVar, iDim, jDim;
+	unsigned short iDim, jDim;
 
 	/*--- Allocate residual structures ---*/
-	Residual_Sum = new double [nVar]; Residual_Old = new double [nVar];
+	Residual_Sum = new su2double [nVar]; Residual_Old = new su2double [nVar];
 
 	/*--- Allocate stress tensor ---*/
 	if (nDim == 2){
-		Traction = new double* [2*nDim];
+		Traction = new su2double* [2*nDim];
 		for (iDim = 0; iDim < 2*nDim ; iDim++)
-			Traction[iDim] = new double [val_nElBound];
+			Traction[iDim] = new su2double [val_nElBound];
 	}
 	else if (nDim == 3){
 		/*--- Allocate stress tensor ---*/
-		Traction = new double* [4*nDim];
+		Traction = new su2double* [4*nDim];
 		for (iDim = 0; iDim < 4*nDim ; iDim++)
-			Traction[iDim] = new double [val_nElBound];
+			Traction[iDim] = new su2double [val_nElBound];
 	}
 
 	/*--- Initialize stress tensor ---*/

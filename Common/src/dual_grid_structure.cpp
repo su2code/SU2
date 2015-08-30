@@ -51,9 +51,9 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
 	GridVel = NULL; GridVel_Grad = NULL;
 
 	/*--- Volume (0 -> Vol_nP1, 1-> Vol_n, 2 -> Vol_nM1 ) and coordinates of the control volume ---*/
-	if (config->GetUnsteady_Simulation() == NO) { Volume = new double[1]; Volume[0] = 0.0; }
-	else { Volume = new double[3]; Volume[0] = 0.0; Volume[1] = 0.0; Volume[2] = 0.0; }
-	coord = new double[nDim];
+	if (config->GetUnsteady_Simulation() == NO) { Volume = new su2double[1]; Volume[0] = 0.0; }
+	else { Volume = new su2double[3]; Volume[0] = 0.0; Volume[1] = 0.0; Volume[2] = 0.0; }
+	coord = new su2double[nDim];
 
 	/*--- Indicator if the control volume has been agglomerated ---*/
 	Agglomerate = false;
@@ -80,20 +80,20 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
 
 	/*--- For smoothing the numerical grid coordinates ---*/
 	if (config->GetSmoothNumGrid()) {
-		Coord_old = new double[nDim];
-		Coord_sum = new double[nDim];
+		Coord_old = new su2double[nDim];
+		Coord_sum = new su2double[nDim];
 	}
 	
 	/*--- Storage of grid velocities for dynamic meshes ---*/
 	if (config->GetGrid_Movement()) {
-		GridVel  = new double[nDim];
+		GridVel  = new su2double[nDim];
 			for (iDim = 0; iDim < nDim; iDim ++) 
 		GridVel[iDim] = 0.0;
     
     /*--- Gradient of the grid velocity ---*/
-    GridVel_Grad = new double*[nDim];
+    GridVel_Grad = new su2double*[nDim];
     for (iDim = 0; iDim < nDim; iDim++) {
-      GridVel_Grad[iDim] = new double[nDim];
+      GridVel_Grad[iDim] = new su2double[nDim];
       for (jDim = 0; jDim < nDim; jDim++)
         GridVel_Grad[iDim][jDim] = 0.0;
     }
@@ -101,9 +101,9 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
     /*--- Structures for storing old node coordinates for computing grid 
      velocities via finite differencing with dynamically deforming meshes. ---*/
     if (config->GetUnsteady_Simulation() != NO) {
-      Coord_p1 = new double[nDim];
-      Coord_n  = new double[nDim];
-      Coord_n1 = new double[nDim];
+      Coord_p1 = new su2double[nDim];
+      Coord_n  = new su2double[nDim];
+      Coord_n1 = new su2double[nDim];
     }
 	}
   
@@ -112,7 +112,7 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
 
 }
 
-CPoint::CPoint(double val_coord_0, double val_coord_1, unsigned long val_globalindex, CConfig *config) : CDualGrid(2) {
+CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, unsigned long val_globalindex, CConfig *config) : CDualGrid(2) {
 	unsigned short iDim, jDim;
 
 	/*--- Element, point and edge structures initialization ---*/
@@ -126,9 +126,9 @@ CPoint::CPoint(double val_coord_0, double val_coord_1, unsigned long val_globali
 	GridVel = NULL; GridVel_Grad = NULL;
 
 	/*--- Volume (0 -> Vol_nP1, 1-> Vol_n, 2 -> Vol_nM1 ) and coordinates of the control volume ---*/
-	if (config->GetUnsteady_Simulation() == NO) { Volume = new double[1]; Volume[0] = 0.0; }
-	else { Volume = new double[3]; Volume[0] = 0.0; Volume[1] = 0.0; Volume[2] = 0.0; }
-	coord = new double[nDim]; coord[0] = val_coord_0; coord[1] = val_coord_1;
+	if (config->GetUnsteady_Simulation() == NO) { Volume = new su2double[1]; Volume[0] = 0.0; }
+	else { Volume = new su2double[3]; Volume[0] = 0.0; Volume[1] = 0.0; Volume[2] = 0.0; }
+	coord = new su2double[nDim]; coord[0] = val_coord_0; coord[1] = val_coord_1;
 	
 	/*--- Indicator if the control volume has been agglomerated ---*/
 	Agglomerate = false;
@@ -155,20 +155,20 @@ CPoint::CPoint(double val_coord_0, double val_coord_1, unsigned long val_globali
 	
 	/*--- For smoothing the numerical grid coordinates ---*/
 	if (config->GetSmoothNumGrid()) {
-		Coord_old = new double[nDim];
-		Coord_sum = new double[nDim];
+		Coord_old = new su2double[nDim];
+		Coord_sum = new su2double[nDim];
 	}
 	
 	/*--- Storage of grid velocities for dynamic meshes ---*/
 	if (config->GetGrid_Movement()) {
-		GridVel  = new double[nDim];
+		GridVel  = new su2double[nDim];
     for (iDim = 0; iDim < nDim; iDim ++)
       GridVel[iDim] = 0.0;
     
     /*--- Gradient of the grid velocity ---*/
-    GridVel_Grad = new double*[nDim];
+    GridVel_Grad = new su2double*[nDim];
     for (iDim = 0; iDim < nDim; iDim++) {
-      GridVel_Grad[iDim] = new double[nDim];
+      GridVel_Grad[iDim] = new su2double[nDim];
       for (jDim = 0; jDim < nDim; jDim++)
         GridVel_Grad[iDim][jDim] = 0.0;
     }
@@ -176,9 +176,9 @@ CPoint::CPoint(double val_coord_0, double val_coord_1, unsigned long val_globali
     /*--- Structures for storing old node coordinates for computing grid
      velocities via finite differencing with dynamically deforming meshes. ---*/
     if (config->GetUnsteady_Simulation() != NO) {
-      Coord_p1 = new double[nDim];
-      Coord_n  = new double[nDim];
-      Coord_n1 = new double[nDim];
+      Coord_p1 = new su2double[nDim];
+      Coord_n  = new su2double[nDim];
+      Coord_n1 = new su2double[nDim];
       for (iDim = 0; iDim < nDim; iDim ++) {
         Coord_p1[iDim] = coord[iDim];
         Coord_n[iDim]  = coord[iDim];
@@ -192,7 +192,7 @@ CPoint::CPoint(double val_coord_0, double val_coord_1, unsigned long val_globali
   
 }
 
-CPoint::CPoint(double val_coord_0, double val_coord_1, double val_coord_2, unsigned long val_globalindex, CConfig *config) : CDualGrid(3) {
+CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, su2double val_coord_2, unsigned long val_globalindex, CConfig *config) : CDualGrid(3) {
 	unsigned short iDim, jDim;
 
 	/*--- Element, point and edge structures initialization ---*/
@@ -206,9 +206,9 @@ CPoint::CPoint(double val_coord_0, double val_coord_1, double val_coord_2, unsig
 	GridVel = NULL; GridVel_Grad = NULL;
   
 	/*--- Volume (0 -> Vol_nP1, 1-> Vol_n, 2 -> Vol_nM1 ) and coordinates of the control volume ---*/
-	if (config->GetUnsteady_Simulation() == NO) { Volume = new double[1]; Volume[0] = 0.0; }
-	else { Volume = new double[3]; Volume[0] = 0.0; Volume[1] = 0.0; Volume[2] = 0.0; }
-	coord = new double[nDim]; coord[0] = val_coord_0; coord[1] = val_coord_1; coord[2] = val_coord_2;
+	if (config->GetUnsteady_Simulation() == NO) { Volume = new su2double[1]; Volume[0] = 0.0; }
+	else { Volume = new su2double[3]; Volume[0] = 0.0; Volume[1] = 0.0; Volume[2] = 0.0; }
+	coord = new su2double[nDim]; coord[0] = val_coord_0; coord[1] = val_coord_1; coord[2] = val_coord_2;
 
 	/*--- Indicator if the control volume has been agglomerated ---*/
 	Agglomerate = false;
@@ -235,20 +235,20 @@ CPoint::CPoint(double val_coord_0, double val_coord_1, double val_coord_2, unsig
 	
 	/*--- For smoothing the numerical grid coordinates ---*/
 	if (config->GetSmoothNumGrid()) {
-		Coord_old = new double[nDim];
-		Coord_sum = new double[nDim];
+		Coord_old = new su2double[nDim];
+		Coord_sum = new su2double[nDim];
 	}
 	
 	/*--- Storage of grid velocities for dynamic meshes ---*/
 	if (config->GetGrid_Movement()) {
-		GridVel = new double[nDim];
+		GridVel = new su2double[nDim];
     for (iDim = 0; iDim < nDim; iDim ++)
       GridVel[iDim] = 0.0;
     
     /*--- Gradient of the grid velocity ---*/
-    GridVel_Grad = new double*[nDim];
+    GridVel_Grad = new su2double*[nDim];
     for (iDim = 0; iDim < nDim; iDim++) {
-      GridVel_Grad[iDim] = new double[nDim];
+      GridVel_Grad[iDim] = new su2double[nDim];
       for (jDim = 0; jDim < nDim; jDim++)
         GridVel_Grad[iDim][jDim] = 0.0;
     }
@@ -256,9 +256,9 @@ CPoint::CPoint(double val_coord_0, double val_coord_1, double val_coord_2, unsig
     /*--- Structures for storing old node coordinates for computing grid
      velocities via finite differencing with dynamically deforming meshes. ---*/
     if (config->GetUnsteady_Simulation() != NO) {
-      Coord_p1 = new double[nDim];
-      Coord_n  = new double[nDim];
-      Coord_n1 = new double[nDim];
+      Coord_p1 = new su2double[nDim];
+      Coord_n  = new su2double[nDim];
+      Coord_n1 = new su2double[nDim];
       for (iDim = 0; iDim < nDim; iDim ++) {
         Coord_p1[iDim] = coord[iDim];
         Coord_n[iDim]  = coord[iDim];
@@ -333,9 +333,9 @@ CEdge::CEdge(unsigned long val_iPoint, unsigned long val_jPoint, unsigned short 
 	Nodes = NULL;
   
 	/*--- Allocate center of gravity coordinates, nodes, and face normal ---*/
-	Coord_CG = new double[nDim];
+	Coord_CG = new su2double[nDim];
 	Nodes = new unsigned long[2];
-	Normal = new double [nDim];
+	Normal = new su2double [nDim];
 
 	/*--- Initializate the structure ---*/
 	for (iDim = 0; iDim < nDim; iDim++) {
@@ -356,7 +356,7 @@ CEdge::~CEdge() {
   
 }
 
-void CEdge::SetCG(double **val_coord) {
+void CEdge::SetCG(su2double **val_coord) {
 	unsigned short iDim, iNode;
 	
 	for (iDim = 0; iDim < nDim; iDim++) {
@@ -366,9 +366,9 @@ void CEdge::SetCG(double **val_coord) {
 	}
 }
 
-double CEdge::GetVolume(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG, double *val_coord_Elem_CG, double *val_coord_Point) {
+su2double CEdge::GetVolume(su2double *val_coord_Edge_CG, su2double *val_coord_FaceElem_CG, su2double *val_coord_Elem_CG, su2double *val_coord_Point) {
 	unsigned short iDim;
-  double vec_a[3] = {0.0,0.0,0.0}, vec_b[3] = {0.0,0.0,0.0}, vec_c[3] = {0.0,0.0,0.0}, vec_d[3] = {0.0,0.0,0.0}, Local_Volume;
+  su2double vec_a[3] = {0.0,0.0,0.0}, vec_b[3] = {0.0,0.0,0.0}, vec_c[3] = {0.0,0.0,0.0}, vec_d[3] = {0.0,0.0,0.0}, Local_Volume;
 
 	for (iDim = 0; iDim < nDim; iDim++) {
 		vec_a[iDim] = val_coord_Edge_CG[iDim]-val_coord_Point[iDim];
@@ -385,9 +385,9 @@ double CEdge::GetVolume(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG
 	return Local_Volume;
 }
 
-double CEdge::GetVolume(double *val_coord_Edge_CG, double *val_coord_Elem_CG, double *val_coord_Point) {
+su2double CEdge::GetVolume(su2double *val_coord_Edge_CG, su2double *val_coord_Elem_CG, su2double *val_coord_Point) {
 	unsigned short iDim;
-	double vec_a[2] = {0.0,0.0}, vec_b[2] = {0.0,0.0}, Local_Volume;
+	su2double vec_a[2] = {0.0,0.0}, vec_b[2] = {0.0,0.0}, Local_Volume;
 
 	for (iDim = 0; iDim < nDim; iDim++) {
 		vec_a[iDim] = val_coord_Elem_CG[iDim]-val_coord_Point[iDim];
@@ -399,9 +399,9 @@ double CEdge::GetVolume(double *val_coord_Edge_CG, double *val_coord_Elem_CG, do
 	return Local_Volume;
 }
 
-void CEdge::SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG, double *val_coord_Elem_CG) {
+void CEdge::SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_FaceElem_CG, su2double *val_coord_Elem_CG) {
 	unsigned short iDim;
-	double vec_a[3] = {0.0,0.0,0.0}, vec_b[3] = {0.0,0.0,0.0}, Dim_Normal[3];
+	su2double vec_a[3] = {0.0,0.0,0.0}, vec_b[3] = {0.0,0.0,0.0}, Dim_Normal[3];
 
 	for (iDim = 0; iDim < nDim; iDim++) {
 		vec_a[iDim] = val_coord_Elem_CG[iDim]-val_coord_Edge_CG[iDim];
@@ -418,8 +418,8 @@ void CEdge::SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceElem
   
 }
 
-void CEdge::SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_Elem_CG) {
-	double Dim_Normal[2];
+void CEdge::SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_Elem_CG) {
+	su2double Dim_Normal[2];
 
 	Dim_Normal[0] = val_coord_Elem_CG[1]-val_coord_Edge_CG[1];
 	Dim_Normal[1] = -(val_coord_Elem_CG[0]-val_coord_Edge_CG[0]);
@@ -438,7 +438,7 @@ CVertex::CVertex(unsigned long val_point, unsigned short val_nDim) : CDualGrid(v
   
 	/*--- Allocate node, and face normal ---*/
 	Nodes = new unsigned long[1]; 
-	Normal = new double [nDim];
+	Normal = new su2double [nDim];
 
 	/*--- Initializate the structure ---*/
 	Nodes[0] = val_point;
@@ -456,8 +456,8 @@ CVertex::~CVertex() {
   
 }
 
-void CVertex::SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG, double *val_coord_Elem_CG) {
-  double vec_a[3] = {0.0,0.0,0.0}, vec_b[3] = {0.0,0.0,0.0}, Dim_Normal[3] = {0.0,0.0,0.0};
+void CVertex::SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_FaceElem_CG, su2double *val_coord_Elem_CG) {
+  su2double vec_a[3] = {0.0,0.0,0.0}, vec_b[3] = {0.0,0.0,0.0}, Dim_Normal[3] = {0.0,0.0,0.0};
 	unsigned short iDim;
 
 	for (iDim = 0; iDim < nDim; iDim++) {
@@ -475,8 +475,8 @@ void CVertex::SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceEl
   
 }
 
-void CVertex::SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_Elem_CG) {
-	double Dim_Normal[2];
+void CVertex::SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_Elem_CG) {
+	su2double Dim_Normal[2];
 
 	Dim_Normal[0] = val_coord_Elem_CG[1]-val_coord_Edge_CG[1];
 	Dim_Normal[1] = -(val_coord_Elem_CG[0]-val_coord_Edge_CG[0]);
@@ -486,7 +486,7 @@ void CVertex::SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_Elem_C
   
 }
 
-void CVertex::AddNormal(double *val_face_normal) {
+void CVertex::AddNormal(su2double *val_face_normal) {
 
 	Normal[0] += val_face_normal[0]; 
 	Normal[1] += val_face_normal[1];
