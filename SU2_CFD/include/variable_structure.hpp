@@ -2810,7 +2810,8 @@ public:
 	 * \brief Set all the primitive variables for compressible flows.
 	 */
 	bool SetPrimVar_Compressible(CFluidModel *FluidModel);
-
+  using CVariable::SetPrimVar_Compressible;
+  
 	/*!
 	 * \brief A virtual member.
 	 */
@@ -2820,12 +2821,14 @@ public:
 	 * \brief Set all the primitive variables for incompressible flows.
 	 */
 	bool SetPrimVar_Incompressible(su2double Density_Inf, CConfig *config);
+  using CVariable::SetPrimVar_Incompressible;
   
   /*!
 	 * \brief Set all the primitive variables for incompressible flows.
 	 */
 	bool SetPrimVar_FreeSurface(CConfig *config);
-	
+	using CVariable::SetPrimVar_FreeSurface;
+  
 	/*!
 	 * \brief Get the primitive variables.
 	 * \param[in] val_var - Index of the variable.
@@ -3248,7 +3251,8 @@ public:
    * \brief Set all the primitive variables for compressible flows
    */
   bool SetPrimVar_Compressible(su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel);
-
+  using CVariable::SetPrimVar_Compressible;
+  
 	/*!
 	 * \brief Set all the secondary variables (partial derivatives) for compressible flows
 	 */
@@ -3258,11 +3262,14 @@ public:
 	 * \brief Set all the primitive variables for incompressible flows
 	 */
 	bool SetPrimVar_Incompressible(su2double Density_Inf, su2double Viscosity_Inf, su2double eddy_visc, su2double turb_ke, CConfig *config);
+  using CVariable::SetPrimVar_Incompressible;
   
   /*!
 	 * \brief Set all the primitive variables for incompressible flows
 	 */
 	bool SetPrimVar_FreeSurface(su2double eddy_visc, su2double turb_ke, CConfig *config);
+  using CVariable::SetPrimVar_FreeSurface;
+  
 };
 
 /*! 
@@ -3568,16 +3575,19 @@ public:
 	 * \brief Set all the primitive variables for compressible flows.
 	 */
 	bool SetPrimVar_Compressible(su2double SharpEdge_Distance, bool check, CConfig *config);
+  using CVariable::SetPrimVar_Compressible;
   
   /*!
 	 * \brief Set all the primitive variables for compressible flows.
 	 */
 	bool SetPrimVar_Incompressible(su2double SharpEdge_Distance, bool check, CConfig *config);
+  using CVariable::SetPrimVar_Incompressible;
   
   /*!
 	 * \brief Set all the primitive variables for compressible flows.
 	 */
 	bool SetPrimVar_FreeSurface(su2double SharpEdge_Distance, bool check, CConfig *config);
+  using CVariable::SetPrimVar_FreeSurface;
   
 	/*!
 	 * \brief Set the value of the adjoint velocity.
@@ -4110,6 +4120,7 @@ public:
 	 * \brief Set all the primitive variables for compressible flows.
 	 */
 	bool SetPrimVar_Compressible(CConfig *config);
+  using CVariable::SetPrimVar_Compressible;
   
   /*!
 	 * \brief Set all the conserved variables.
@@ -4486,6 +4497,7 @@ public:
 	 * \brief Set all the primitive variables for compressible flows
 	 */
 	bool SetPrimVar_Compressible(CConfig *config);
+  using CVariable::SetPrimVar_Compressible;
   
 };
 
@@ -4549,6 +4561,7 @@ public:
 	bool SetPrimVar_Compressible(su2double SharpEdge_Distance,
                                bool check,
                                CConfig *config);
+  using CVariable::SetPrimVar_Compressible;
   
 	/*!
 	 * \brief Set the value of the adjoint velocity.

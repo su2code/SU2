@@ -49,9 +49,6 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
   string text_line, mesh_filename;
   ifstream restart_file;
   string filename, AdjExt;
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   su2double dull_val;
 
   int rank = MASTER_NODE;
