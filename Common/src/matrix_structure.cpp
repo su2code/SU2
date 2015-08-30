@@ -515,7 +515,7 @@ void CSysMatrix::Gauss_Elimination(unsigned long block_i, su2double* rhs, bool t
     for (iVar = 1; iVar < (short)nVar; iVar++) {
       for (jVar = 0; jVar < iVar; jVar++) {
         weight = block[iVar*nVar+jVar] / block[jVar*nVar+jVar];
-        for (kVar = jVar; kVar < nVar; kVar++)
+        for (kVar = jVar; kVar < (short)nVar; kVar++)
           block[iVar*nVar+kVar] -= weight*block[jVar*nVar+kVar];
         rhs[iVar] -= weight*rhs[jVar];
       }
@@ -559,7 +559,7 @@ void CSysMatrix::Gauss_Elimination_ILUMatrix(unsigned long block_i, su2double* r
     for (iVar = 1; iVar < (short)nVar; iVar++) {
       for (jVar = 0; jVar < iVar; jVar++) {
         weight = block[iVar*nVar+jVar] / block[jVar*nVar+jVar];
-        for (kVar = jVar; kVar < nVar; kVar++)
+        for (kVar = jVar; kVar < (short)nVar; kVar++)
           block[iVar*nVar+kVar] -= weight*block[jVar*nVar+kVar];
         rhs[iVar] -= weight*rhs[jVar];
       }
@@ -599,7 +599,7 @@ void CSysMatrix::Gauss_Elimination(su2double* Block, su2double* rhs) {
     for (iVar = 1; iVar < (short)nVar; iVar++) {
       for (jVar = 0; jVar < iVar; jVar++) {
         weight = block[iVar*nVar+jVar] / block[jVar*nVar+jVar];
-        for (kVar = jVar; kVar < nVar; kVar++)
+        for (kVar = jVar; kVar < (short)nVar; kVar++)
           block[iVar*nVar+kVar] -= weight*block[jVar*nVar+kVar];
         rhs[iVar] -= weight*rhs[jVar];
       }
@@ -1150,7 +1150,7 @@ unsigned long CSysMatrix::Jacobi_Smoother(const CSysVector & b, CSysVector & x, 
   
   /*---  Loop over all smoothing iterations ---*/
   
-  for (i = 0; i < m; i++) {
+  for (i = 0; i < (int)m; i++) {
     
     /*--- Apply the Jacobi smoother, i.e., multiply by the inverse of the
      diagonal matrix of A, which was built in the preprocessing phase. Note
@@ -1203,7 +1203,7 @@ void CSysMatrix::BuildILUPreconditioner(bool transposed) {
    is modified by the algorithm, so that we have the factorization stored
    in the ILUMatrix at the end of this preprocessing. ---*/
   
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  for (iPoint = 0; iPoint < (long)nPointDomain; iPoint++) {
     for (index = row_ptr[iPoint]; index < row_ptr[iPoint+1]; index++) {
       jPoint = col_ind[index];
       if (transposed){
@@ -1218,7 +1218,7 @@ void CSysMatrix::BuildILUPreconditioner(bool transposed) {
   
   /*--- Transform system in Upper Matrix ---*/
   
-  for (iPoint = 1; iPoint < nPointDomain; iPoint++) {
+  for (iPoint = 1; iPoint < (long)nPointDomain; iPoint++) {
     
     /*--- For each row (unknown), loop over all entries in A on this row
      row_ptr[iPoint+1] will have the index for the first entry on the next
@@ -1232,7 +1232,7 @@ void CSysMatrix::BuildILUPreconditioner(bool transposed) {
       
       /*--- Check that this column is in the lower triangular portion ---*/
       
-      if ((jPoint < iPoint) && (jPoint < nPointDomain)) {
+      if ((jPoint < iPoint) && (jPoint < (long)nPointDomain)) {
         
         /*--- If we're in the lower triangle, get the pointer to this block,
          invert it, and then right multiply against the original block ---*/
@@ -1253,7 +1253,7 @@ void CSysMatrix::BuildILUPreconditioner(bool transposed) {
            upper triangular part, then multiply and modify the matrix.
            Here, Aik' = Aik - Aij*inv(Ajj)*Ajk. ---*/
           
-          if (kPoint < nPointDomain) {
+          if (kPoint < (long)nPointDomain) {
             Block_jk = GetBlock_ILUMatrix(jPoint, kPoint);
             if (kPoint >= jPoint) {
               
@@ -1288,7 +1288,7 @@ void CSysMatrix::ComputeILUPreconditioner(const CSysVector & vec, CSysVector & p
   /*--- Copy block matrix, note that the original matrix
    is modified by the algorithm---*/
   
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  for (iPoint = 0; iPoint < (long)nPointDomain; iPoint++) {
     for (iVar = 0; iVar < nVar; iVar++) {
       prod[iPoint*nVar+iVar] = vec[iPoint*nVar+iVar];
     }
@@ -1296,10 +1296,10 @@ void CSysMatrix::ComputeILUPreconditioner(const CSysVector & vec, CSysVector & p
   
   /*--- Transform system in Upper Matrix ---*/
   
-  for (iPoint = 1; iPoint < nPointDomain; iPoint++) {
+  for (iPoint = 1; iPoint < (long)nPointDomain; iPoint++) {
     for (index = row_ptr[iPoint]; index < row_ptr[iPoint+1]; index++) {
       jPoint = col_ind[index];
-      if ((jPoint < iPoint) && (jPoint < nPointDomain)) {
+      if ((jPoint < iPoint) && (jPoint < (long)nPointDomain)) {
         Block_ij = GetBlock_ILUMatrix(iPoint, jPoint);
         MatrixVectorProduct(Block_ij, &prod[jPoint*nVar], aux_vector);
         for (iVar = 0; iVar < nVar; iVar++)
@@ -1321,9 +1321,9 @@ void CSysMatrix::ComputeILUPreconditioner(const CSysVector & vec, CSysVector & p
     for (iVar = 0; iVar < nVar; iVar++) sum_vector[iVar] = 0.0;
     for (index = row_ptr[iPoint]; index < row_ptr[iPoint+1]; index++) {
       jPoint = col_ind[index];
-      if (jPoint < nPointDomain) {
+      if (jPoint < (long)nPointDomain) {
         Block_ij = GetBlock_ILUMatrix(iPoint, jPoint);
-        if ((jPoint >= iPoint+1) && (jPoint < nPointDomain)) {
+        if ((jPoint >= iPoint+1) && (jPoint < (long)nPointDomain)) {
           MatrixVectorProduct(Block_ij, &prod[jPoint*nVar], aux_vector);
           for (iVar = 0; iVar < nVar; iVar++) sum_vector[iVar] += aux_vector[iVar];
         }
@@ -1401,13 +1401,13 @@ unsigned long CSysMatrix::ILU0_Smoother(const CSysVector & b, CSysVector & x, CM
   
   /*---  Loop over all smoothing iterations ---*/
   
-  for (i = 0; i < m; i++) {
+  for (i = 0; i < (int)m; i++) {
     
     /*--- Forward solve the system using the lower matrix entries that
      were computed and stored during the ILU0 preprocessing. Note
      that we are overwriting the residual vector as we go. ---*/
     
-    for (iPoint = 1; iPoint < nPointDomain; iPoint++) {
+    for (iPoint = 1; iPoint < (long)nPointDomain; iPoint++) {
       
       /*--- For each row (unknown), loop over all entries in A on this row
        row_ptr[iPoint+1] will have the index for the first entry on the next
@@ -1421,7 +1421,7 @@ unsigned long CSysMatrix::ILU0_Smoother(const CSysVector & b, CSysVector & x, CM
         
         /*--- Check that this column is in the lower triangular portion ---*/
         
-        if ((jPoint < iPoint) && (jPoint < nPointDomain)) {
+        if ((jPoint < iPoint) && (jPoint < (long)nPointDomain)) {
           
           /*--- Lastly, get Aij*inv(Ajj) from the lower triangular part, which
            was calculated in the preprocessing, and apply to r. ---*/
@@ -1447,9 +1447,9 @@ unsigned long CSysMatrix::ILU0_Smoother(const CSysVector & b, CSysVector & x, CM
       for (iVar = 0; iVar < nVar; iVar++) sum_vector[iVar] = 0.0;
       for (index = row_ptr[iPoint]; index < row_ptr[iPoint+1]; index++) {
         jPoint = col_ind[index];
-        if (jPoint < nPointDomain) {
+        if (jPoint < (long)nPointDomain) {
           Block_ij = GetBlock_ILUMatrix(iPoint, jPoint);
-          if ((jPoint >= iPoint+1) && (jPoint < nPointDomain)) {
+          if ((jPoint >= iPoint+1) && (jPoint < (long)nPointDomain)) {
             MatrixVectorProduct(Block_ij, &r[jPoint*nVar], aux_vector);
             for (iVar = 0; iVar < nVar; iVar++) sum_vector[iVar] += aux_vector[iVar];
           }
@@ -1593,7 +1593,7 @@ unsigned long CSysMatrix::LU_SGS_Smoother(const CSysVector & b, CSysVector & x, 
   
   /*---  Loop over all smoothing iterations ---*/
   
-  for (i = 0; i < m; i++) {
+  for (i = 0; i < (int)m; i++) {
 
     /*--- First part of the symmetric iteration: (D+L).x* = b ---*/
     

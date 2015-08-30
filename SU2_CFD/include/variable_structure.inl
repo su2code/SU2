@@ -1150,7 +1150,7 @@ inline su2double CDiscAdjVariable::GetDual_Time_Derivative_n(unsigned short iVar
 
 inline void CVariable::SetSensitivity(unsigned short iDim, su2double val){}
 
-inline su2double CVariable::GetSensitivity(unsigned short iDim){}
+inline su2double CVariable::GetSensitivity(unsigned short iDim){ return 0.0; }
 
 inline void CDiscAdjVariable::SetSensitivity(unsigned short iDim, su2double val){Sensitivity[iDim] = val;}
 

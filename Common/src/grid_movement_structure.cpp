@@ -507,7 +507,6 @@ void CVolumetricMovement::ComputeDeforming_Wall_Distance(CGeometry *geometry, CC
   /*--- Variables and buffers needed for MPI ---*/
   
   int iProcessor, nProcessor;
-  su2double local_min_dist;
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
   
   unsigned long nLocalVertex_NS = 0, nGlobalVertex_NS = 0, MaxLocalVertex_NS = 0;
@@ -3533,8 +3532,9 @@ void CSurfaceMovement::CheckFFDIntersections(CGeometry *geometry, CConfig *confi
 void CSurfaceMovement::UpdateParametricCoord(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox) {
 	unsigned short iMarker, iDim;
 	unsigned long iVertex, iPoint, iSurfacePoints;
-	su2double CartCoord[3], *CartCoordNew, *CartCoordOld, *ParamCoord, *var_coord, ParamCoordGuess[3], MaxDiff, 
-	my_MaxDiff = 0.0, Diff;
+  su2double CartCoord[3] = {0.0,0.0,0.0}, *CartCoordNew, *CartCoordOld;
+  su2double *ParamCoord, *var_coord, ParamCoordGuess[3] = {0.0,0.0,0.0};
+  su2double MaxDiff, my_MaxDiff = 0.0, Diff;
 	int rank;
 	
 #ifdef HAVE_MPI
@@ -3694,7 +3694,7 @@ void CSurfaceMovement::SetCartesianCoord(CGeometry *geometry, CConfig *config, C
 void CSurfaceMovement::SetFFDCPChange_2D(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox,
                                          unsigned short iDV, bool ResetDef) {
   
-  su2double movement[3], Ampl;
+  su2double movement[3] = {0.0,0.0,0.0}, Ampl;
   unsigned short index[3], i, j;
   string design_FFDBox;
   
@@ -3797,7 +3797,7 @@ void CSurfaceMovement::SetFFDCPChange_2D(CGeometry *geometry, CConfig *config, C
 void CSurfaceMovement::SetFFDCPChange(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox,
 																			unsigned short iDV, bool ResetDef) {
 	
-	su2double movement[3], Ampl;
+	su2double movement[3] = {0.0,0.0,0.0}, Ampl;
 	unsigned short index[3], i, j, k, iPlane;
 	string design_FFDBox;
 
@@ -3911,7 +3911,7 @@ void CSurfaceMovement::SetFFDCPChange(CGeometry *geometry, CConfig *config, CFre
 
 void CSurfaceMovement::SetFFDCamber_2D(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox,
 																		unsigned short iDV, bool ResetDef) {
-	su2double Ampl, movement[3];
+	su2double Ampl, movement[3] = {0.0,0.0,0.0};
 	unsigned short index[3], kIndex;
 	string design_FFDBox;
   
@@ -3947,7 +3947,7 @@ void CSurfaceMovement::SetFFDCamber_2D(CGeometry *geometry, CConfig *config, CFr
 
 void CSurfaceMovement::SetFFDThickness_2D(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox,
 																			 unsigned short iDV, bool ResetDef) {
-	su2double Ampl, movement[3];
+	su2double Ampl, movement[3]= {0.0,0.0,0.0};
 	unsigned short index[3], kIndex;
 	string design_FFDBox;
   
@@ -3983,7 +3983,7 @@ void CSurfaceMovement::SetFFDThickness_2D(CGeometry *geometry, CConfig *config, 
 
 void CSurfaceMovement::SetFFDCamber(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox,
 																		unsigned short iDV, bool ResetDef) {
-	su2double Ampl, movement[3];
+	su2double Ampl, movement[3] = {0.0,0.0,0.0};
 	unsigned short index[3], kIndex;
 	string design_FFDBox;
   
@@ -4018,7 +4018,7 @@ void CSurfaceMovement::SetFFDCamber(CGeometry *geometry, CConfig *config, CFreeF
 
 void CSurfaceMovement::SetFFDThickness(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox,
 																			 unsigned short iDV, bool ResetDef) {
-	su2double Ampl, movement[3];
+	su2double Ampl, movement[3] = {0.0,0.0,0.0};
 	unsigned short index[3], kIndex;
 	string design_FFDBox;
   
@@ -4055,7 +4055,7 @@ void CSurfaceMovement::SetFFDThickness(CGeometry *geometry, CConfig *config, CFr
 void CSurfaceMovement::SetFFDDihedralAngle(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox,
 																					 unsigned short iDV, bool ResetDef) {
 	unsigned short iOrder, jOrder, kOrder, index[3];
-	su2double movement[3], theta;
+	su2double movement[3] = {0.0,0.0,0.0}, theta;
 	string design_FFDBox;
   
   /*--- Set control points to its original value (even if the
@@ -4089,7 +4089,7 @@ void CSurfaceMovement::SetFFDDihedralAngle(CGeometry *geometry, CConfig *config,
 void CSurfaceMovement::SetFFDTwistAngle(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox,
 																				unsigned short iDV, bool ResetDef) {
 	unsigned short iOrder, jOrder, kOrder;
-	su2double  x, y, z, movement[3];
+	su2double  x, y, z, movement[3] = {0.0,0.0,0.0};
 	unsigned short index[3];
 	string design_FFDBox;
   
@@ -4171,7 +4171,7 @@ void CSurfaceMovement::SetFFDTwistAngle(CGeometry *geometry, CConfig *config, CF
 void CSurfaceMovement::SetFFDRotation(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox,
 																			unsigned short iDV, bool ResetDef) {
 	unsigned short iOrder, jOrder, kOrder;
-	su2double  movement[3], x, y, z;
+	su2double movement[3] = {0.0,0.0,0.0}, x, y, z;
 	unsigned short index[3];
 	string design_FFDBox;
   
@@ -4239,7 +4239,7 @@ void CSurfaceMovement::SetFFDRotation(CGeometry *geometry, CConfig *config, CFre
 void CSurfaceMovement::SetFFDControl_Surface(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox,
 																			unsigned short iDV, bool ResetDef) {
 	unsigned short iOrder, jOrder, kOrder;
-	su2double  movement[3], x, y, z;
+	su2double movement[3] = {0.0,0.0,0.0}, x, y, z;
 	unsigned short index[3];
 	string design_FFDBox;
   
@@ -4338,7 +4338,6 @@ void CSurfaceMovement::SetHicksHenne(CGeometry *boundary, CConfig *config, unsig
   
 #ifdef HAVE_MPI
 
-  unsigned long *Buffer_Send_nVertex, *Buffer_Receive_nVertex;
 	int iProcessor, nProcessor;
 	su2double *Buffer_Send_Coord, *Buffer_Receive_Coord;
 
@@ -4476,8 +4475,8 @@ void CSurfaceMovement::SetHicksHenne(CGeometry *boundary, CConfig *config, unsig
 void CSurfaceMovement::SetRotation(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef) {
 	unsigned long iVertex;
 	unsigned short iMarker;
-	su2double VarCoord[3], *Coord;
-	su2double  movement[3], x, y, z;
+  su2double VarCoord[3] = {0.0,0.0,0.0}, *Coord;
+	su2double movement[3] = {0.0,0.0,0.0}, x, y, z;
   
   /*--- Reset airfoil deformation if first deformation or if it required by the solver ---*/
   
@@ -4548,7 +4547,7 @@ void CSurfaceMovement::SetRotation(CGeometry *boundary, CConfig *config, unsigne
 void CSurfaceMovement::SetTranslation(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef) {
   unsigned long iVertex;
   unsigned short iMarker;
-  su2double VarCoord[3];
+  su2double VarCoord[3] = {0.0,0.0,0.0};
   su2double Ampl = config->GetDV_Value(iDV);
   
   /*--- Reset airfoil deformation if first deformation or if it required by the solver ---*/
@@ -4582,7 +4581,7 @@ void CSurfaceMovement::SetTranslation(CGeometry *boundary, CConfig *config, unsi
 void CSurfaceMovement::SetScale(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef) {
 	unsigned long iVertex;
   unsigned short iMarker;
-	su2double VarCoord[3], x, y, z, *Coord;
+	su2double VarCoord[3] = {0.0,0.0,0.0}, x, y, z, *Coord;
 	su2double Ampl = config->GetDV_Value(iDV);
 	
   /*--- Reset airfoil deformation if first deformation or if it required by the solver ---*/
@@ -4694,7 +4693,8 @@ void CSurfaceMovement::Surface_Translating(CGeometry *geometry, CConfig *config,
                                         unsigned long iter, unsigned short iZone) {
   
 	su2double deltaT, time_new, time_old;
-  su2double Center[3], VarCoord[3], xDot[3];
+  su2double Center[3] = {0.0,0.0,0.0}, VarCoord[3] = {0.0,0.0,0.0};
+  su2double xDot[3] = {0.0,0.0,0.0};
   unsigned short iMarker, jMarker, Moving;
   unsigned long iVertex;
   string Marker_Tag, Moving_Tag;
@@ -4930,7 +4930,8 @@ void CSurfaceMovement::Surface_Pitching(CGeometry *geometry, CConfig *config,
                                         unsigned long iter, unsigned short iZone) {
 	
 	su2double deltaT, time_new, time_old, Lref, *Coord;
-  su2double Center[3], VarCoord[3], Omega[3], Ampl[3], Phase[3], rotCoord[3], r[3];
+  su2double Center[3], VarCoord[3], Omega[3], Ampl[3], Phase[3];
+  su2double rotCoord[3], r[3] = {0.0,0.0,0.0};
   su2double rotMatrix[3][3] = {{0.0,0.0,0.0}, {0.0,0.0,0.0}, {0.0,0.0,0.0}};
   su2double dtheta, dphi, dpsi, cosTheta, sinTheta;
   su2double cosPhi, sinPhi, cosPsi, sinPsi;
@@ -5055,16 +5056,16 @@ void CSurfaceMovement::Surface_Pitching(CGeometry *geometry, CConfig *config,
             /*--- Compute transformed point coordinates ---*/
             
             rotCoord[0] = rotMatrix[0][0]*r[0]
-            + rotMatrix[0][1]*r[1]
-            + rotMatrix[0][2]*r[2] + Center[0];
+                        + rotMatrix[0][1]*r[1]
+                        + rotMatrix[0][2]*r[2] + Center[0];
             
             rotCoord[1] = rotMatrix[1][0]*r[0]
-            + rotMatrix[1][1]*r[1]
-            + rotMatrix[1][2]*r[2] + Center[1];
+                        + rotMatrix[1][1]*r[1]
+                        + rotMatrix[1][2]*r[2] + Center[1];
             
             rotCoord[2] = rotMatrix[2][0]*r[0]
-            + rotMatrix[2][1]*r[1]
-            + rotMatrix[2][2]*r[2] + Center[2];
+                        + rotMatrix[2][1]*r[1]
+                        + rotMatrix[2][2]*r[2] + Center[2];
             
             /*--- Calculate delta change in the x, y, & z directions ---*/
             for (iDim = 0; iDim < nDim; iDim++)
@@ -5774,6 +5775,7 @@ void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
   char AirfoilFile[256], AirfoilFormat[15], MeshOrientation[15], AirfoilClose[15];
   ifstream airfoil_file;
   string text_line;
+  int ierr = 0;
 
   unsigned short nDim = boundary->GetnDim();
   
@@ -5797,23 +5799,23 @@ void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
   /*--- Open the restart file, throw an error if this fails. ---*/
   
   cout << "Enter the name of file with the airfoil information: ";
-  scanf ("%s", AirfoilFile);
+  ierr = scanf("%s", AirfoilFile);
   airfoil_file.open(AirfoilFile, ios::in);
   if (airfoil_file.fail()) {
     cout << "There is no airfoil file!! "<< endl;
     exit(EXIT_FAILURE);
   }
   cout << "Enter the format of the airfoil (Selig or Lednicer): ";
-  scanf ("%s", AirfoilFormat);
+  ierr = scanf("%s", AirfoilFormat);
 
   cout << "Thickness scaling (1.0 means no scaling)?: ";
-  scanf ("%lf", &AirfoilScale);
+  ierr = scanf("%lf", &AirfoilScale);
   
   cout << "Close the airfoil (Yes or No)?: ";
-  scanf ("%s", AirfoilClose);
+  ierr = scanf("%s", AirfoilClose);
   
   cout << "Surface mesh orientation (clockwise, or anticlockwise): ";
-  scanf ("%s", MeshOrientation);
+  ierr = scanf("%s", MeshOrientation);
   
   /*--- The first line is the header ---*/
   

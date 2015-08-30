@@ -39,6 +39,7 @@ CIntegration::CIntegration(CConfig *config) {
 	Convergence_FSI = false;
 	Convergence_FullMG = false;
 	Cauchy_Serie = new su2double [config->GetCauchy_Elems()+1];
+	InitResidual = 0.0;
 }
 
 CIntegration::~CIntegration(void) {
@@ -499,7 +500,7 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
       
       /*--- Set plunge and pitch on the master node ---*/
       if (rank == MASTER_NODE) {
-        for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+        for (iProcessor = 0; iProcessor < (unsigned long)nProcessor; iProcessor++) {
           if (owner_all[iProcessor] == 1) {
             config->SetAeroelastic_plunge(iMarker_Monitoring, plunge_all[iProcessor]);
             config->SetAeroelastic_pitch(iMarker_Monitoring, pitch_all[iProcessor]);
@@ -550,7 +551,6 @@ void CIntegration::SetStructural_Solver(CGeometry *geometry, CSolver *solver, CC
 
 void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *fea_config, CSolver *fea_solver, unsigned long iFSIIter) {
 
-	unsigned short iCounter;
 	su2double FEA_check[2] = {0.0, 0.0};
 	su2double magResidualFSI, logResidualFSI_initial, logResidualFSI;
 	su2double magResidualFSI_criteria, logResidualFSI_criteria;

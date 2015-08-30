@@ -256,7 +256,7 @@ int rank = 0;
   }
   
   /*---  Loop over all search directions ---*/
-  for (i = 0; i < m; i++) {
+  for (i = 0; i < (int)m; i++) {
     
     /*--- Apply matrix to p to build Krylov subspace ---*/
     mat_vec(p, A_p);
@@ -400,7 +400,7 @@ int rank = 0;
   
   /*---  Loop over all search directions ---*/
   
-  for (i = 0; i < m; i++) {
+  for (i = 0; i < (int)m; i++) {
     
     /*---  Check if solution has converged ---*/
     
@@ -526,7 +526,7 @@ unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x,
 	
   /*---  Loop over all search directions ---*/
   
-  for (i = 0; i < m; i++) {
+  for (i = 0; i < (int)m; i++) {
 		
 		/*--- Compute rho_prime ---*/
     
@@ -729,12 +729,13 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
 
 void CSysSolve::SetExternalSolve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CSysVector & LinSysSol, CGeometry *geometry, CConfig *config){
 
+#ifdef CODI_REVERSE_TYPE
+  
   unsigned long size = LinSysRes.GetLocSize();
   unsigned long i, nBlk = LinSysRes.GetNBlk(),
                 nVar = LinSysRes.GetNVar(),
                 nBlkDomain = LinSysRes.GetNBlkDomain();
 
-#ifdef CODI_REVERSE_TYPE
   /*--- Arrays to store the indices of the input/output of the linear solver.
      * Note: They will be deleted in the CSysSolve_b::Delete_b routine. ---*/
 

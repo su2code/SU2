@@ -145,13 +145,13 @@ namespace AD{
 
   /*!
    * \brief Registers the variable as an input. I.e. as a leaf of the computational graph.
-   * \param[in] The variable to be registered as input.
+   * \param[in] data - The variable to be registered as input.
    */
   void RegisterInput(su2double &data);
 
   /*!
    * \brief Registers the variable as an output. I.e. as the root of the computational graph.
-   * \param[in] The variable to be registered as output.
+   * \param[in] data - The variable to be registered as output.
    */
   void RegisterOutput(su2double &data);
 

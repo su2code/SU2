@@ -155,8 +155,12 @@ CAvgGrad_TransLM::~CAvgGrad_TransLM(void) {
 
 void CAvgGrad_TransLM::ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config) {
   
-  su2double Density_Grad_i[nDim], Density_Grad_j[nDim], Conservative_Grad_i[nDim], Conservative_Grad_j[nDim];
-  su2double Primitive_Grad_i[nDim], Primitive_Grad_j[nDim];
+  su2double *Density_Grad_i      = new su2double[nDim];
+  su2double *Density_Grad_j      = new su2double[nDim];
+  su2double *Conservative_Grad_i = new su2double[nDim];
+  su2double *Conservative_Grad_j = new su2double[nDim];
+  su2double *Primitive_Grad_i    = new su2double[nDim];
+  su2double *Primitive_Grad_j    = new su2double[nDim];
   
   /*--- Intermediate values for combining viscosities ---*/
   su2double Inter_Viscosity_i, Inter_Viscosity_j, REth_Viscosity_i, REth_Viscosity_j, Inter_Viscosity_Mean, REth_Viscosity_Mean;
@@ -216,6 +220,15 @@ void CAvgGrad_TransLM::ComputeResidual(su2double *val_residual, su2double **Jaco
 		Jacobian_i[1][1] = (0.5*Proj_Mean_GradTransVar_Kappa[1]-REth_Viscosity_Mean*proj_vector_ij);
 		Jacobian_j[1][1] = (0.5*Proj_Mean_GradTransVar_Kappa[1]+REth_Viscosity_Mean*proj_vector_ij);
 	}
+  
+  /*--- Free locally allocated memory. For efficiency, these arrays
+   should really be allocated/deallocated in the constructor/destructor. ---*/
+  delete [] Density_Grad_i;
+  delete [] Density_Grad_j;
+  delete [] Conservative_Grad_i;
+  delete [] Conservative_Grad_j;
+  delete [] Primitive_Grad_i;
+  delete [] Primitive_Grad_j;
   
 }
 
@@ -689,10 +702,7 @@ void CSourcePieceWise_TransLM::CSourcePieceWise_TransLM__ComputeResidual_TransLM
           result1 = pow(tu - 0.5658, -0.671);
           re_theta = 331.5*f_lambda*result1;
         }
-        if (re_theta < re_theta_lim)
-          re_theta = re_theta_lim;
-        else
-          re_theta = re_theta;
+        if (re_theta < re_theta_lim) re_theta = re_theta_lim;
         theta = re_theta*Laminar_Viscosity_i/(U_i[0]*Velocity_Mag);
         lambda = U_i[0]*theta*theta*du_ds/Laminar_Viscosity_i;
         if (-0.1 < lambda)
