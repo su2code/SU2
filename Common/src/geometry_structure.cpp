@@ -1273,7 +1273,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
   string text_line, Marker_Tag;
   ifstream mesh_file;
   unsigned short iDim, iMarker, iNodes;
-  unsigned long iPoint, LocaNodes, iElem_Bound;
+  unsigned long iPoint, LocaNodes = 0, iElem_Bound;
   su2double *NewCoord;
   nZone = val_nZone;
   ofstream boundary_file;
@@ -1434,7 +1434,6 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   
   /*--- MPI initialization ---*/
   
-  MPI_Status status;
   MPI_Comm_size(MPI_COMM_WORLD, &size);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   
@@ -2579,12 +2578,13 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
 
 CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int option) {
   
-  Global_to_Local_Point = NULL;
-  Local_to_Global_Point = NULL;
+  Global_to_Local_Point  = NULL;
+  Local_to_Global_Point  = NULL;
   Local_to_Global_Marker = NULL;
   Global_to_Local_Marker = NULL;
   
   unsigned long iter,  iPoint, jPoint, iElem, iVertex;
+  
   unsigned long nElemTotal = 0, nPointTotal = 0, nPointDomainTotal = 0, nPointGhost = 0, nPointPeriodic = 0, nElemTriangle = 0, nElemRectangle = 0, nElemTetrahedron = 0, nElemHexahedron = 0, nElemPrism = 0, nElemPyramid = 0;
   unsigned long iElemTotal, iPointTotal, iPointGhost, iPointDomain, iPointPeriodic, iElemTriangle, iElemRectangle, iElemTetrahedron, iElemHexahedron, iElemPrism, iElemPyramid, iPointCurrent;
   unsigned long nBoundLineTotal = 0, iBoundLineTotal;
@@ -2820,8 +2820,6 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   
 #ifdef HAVE_MPI
   
-  unsigned long temp_element_count = 0;
-
   su2double        *Buffer_Receive_Coord = NULL;
   unsigned long *Buffer_Receive_Color = NULL;
   unsigned long *Buffer_Receive_GlobalPointIndex = NULL;
@@ -2909,16 +2907,15 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
 #ifdef HAVE_MPI
 
   int comm_counter=0;
-    for (iDomain=0; iDomain<size; iDomain++) {
-    if (iDomain!=rank) {
+    for (iDomain=0; iDomain < (unsigned long)size; iDomain++) {
+    if (iDomain != (unsigned long)rank) {
       SU2_MPI::Isend(local_colour_temp, geometry->ending_node[rank]-geometry->starting_node[rank],
                 MPI_UNSIGNED_LONG, iDomain, iDomain,  MPI_COMM_WORLD, &send_req[comm_counter]);
       comm_counter++;
     }
   }
 
-  unsigned long*recv_buffer;
-  for (iDomain=0; iDomain<size-1; iDomain++) {
+  for (iDomain=0; iDomain < (unsigned long)size-1; iDomain++) {
     MPI_Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status2);
     source = status2.MPI_SOURCE;
     MPI_Get_count(&status2, MPI_UNSIGNED_LONG, &recv_count);
@@ -3109,7 +3106,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
     
     /*--- A rank does not communicate with itself through MPI ---*/
     
-    if (rank != iDomain) {
+    if ((unsigned long)rank != iDomain) {
       
 #ifdef HAVE_MPI
       
@@ -3205,13 +3202,13 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
      iDomain up above, so only iDomain needs to perform the recv here from
      all other ranks. ---*/
     
-    if (rank == iDomain) {
+    if ((unsigned long)rank == iDomain) {
       
-      for (jDomain = 0; jDomain < size; jDomain++) {
+      for (jDomain = 0; jDomain < (unsigned long)size; jDomain++) {
         
         /*--- A rank does not communicate with itself through MPI ---*/
         
-        if (rank != jDomain) {
+        if ((unsigned long)rank != jDomain) {
           
 #ifdef HAVE_MPI
           
@@ -3297,7 +3294,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
     /*--- Wait for the non-blocking sends to complete. ---*/
     
 #ifdef HAVE_MPI
-    if (rank != iDomain) SU2_MPI::Waitall(13, send_req, send_stat);
+    if ((unsigned long)rank != iDomain) SU2_MPI::Waitall(13, send_req, send_stat);
     MPI_Barrier(MPI_COMM_WORLD);
 #endif
       //cout << " ==== Rank " << rank << " finished sending counts " << endl;
@@ -3472,7 +3469,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
     
     /*--- Send the buffers with the geometrical information ---*/
     
-    if (iDomain != rank) {
+    if (iDomain != (unsigned long)rank) {
       
 #ifdef HAVE_MPI
       
@@ -3669,9 +3666,9 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   
   /*--- First, we recv all of the point data ---*/
   
-  for (iDomain = 0; iDomain < size; iDomain++) {
+  for (iDomain = 0; iDomain < (unsigned long)size; iDomain++) {
     
-    if (rank != iDomain) {
+    if ((unsigned long)rank != iDomain) {
       
 #ifdef HAVE_MPI
       
@@ -3714,7 +3711,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
         
         /*--- If this rank owns the current point ---*/
         
-        if (Buffer_Receive_Color[iPoint] == rank) {
+        if (Buffer_Receive_Color[iPoint] == (unsigned long)rank) {
         
           /*--- If iDomain owns the point, it must be either an interior
            node (iPoint < nPointDomain) or a periodic node. ---*/
@@ -3822,7 +3819,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
       unsigned long index = 0;
       for (iPoint = 0; iPoint < nPointTotal_r[iDomain]; iPoint++) {
         
-        if (Buffer_Receive_Color_loc[iPoint]==rank) {
+        if (Buffer_Receive_Color_loc[iPoint] == (unsigned long)rank) {
         
           /*--- If iDomain owns the point, it must be either an interior
            node (iPoint < nPointDomain) or a periodic node. ---*/
@@ -3903,9 +3900,9 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   /*--- Recv all of the element data. First decide which elements we need to own on each proc ---*/
   
   iElem = 0;
-  for (iDomain = 0; iDomain < size; iDomain++) {
+  for (iDomain = 0; iDomain < (unsigned long)size; iDomain++) {
     
-    if (rank != iDomain) {
+    if ((unsigned long)rank != iDomain) {
       
 #ifdef HAVE_MPI
 
@@ -4093,9 +4090,9 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   
   /*--- Now recv all of the element connectivity data ---*/
   
-  for (iDomain = 0; iDomain < size; iDomain++) {
+  for (iDomain = 0; iDomain < (unsigned long)size; iDomain++) {
     
-    if (rank != iDomain) {
+    if ((unsigned long)rank != iDomain) {
       
 #ifdef HAVE_MPI
 
@@ -4348,8 +4345,8 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   }
   
 #ifdef HAVE_MPI
-  for (iDomain = 0; iDomain < size; iDomain++) {
-    if (rank != iDomain) SU2_MPI::Waitall(16, send_req, send_stat);
+  for (iDomain = 0; iDomain < (unsigned long)size; iDomain++) {
+    if ((unsigned long)rank != iDomain) SU2_MPI::Waitall(16, send_req, send_stat);
   }
   MPI_Barrier(MPI_COMM_WORLD);
 #endif
@@ -4785,7 +4782,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
     
     /*--- Each rank now begins to receive information from the master ---*/
     
-    if (rank == iDomain) {
+    if ((unsigned long)rank == iDomain) {
       
       /*--- First, receive the size of buffers before receiving the data ---*/
       
@@ -5166,7 +5163,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
     
     //cout << " Rank " << rank << " about to recv of bound elems " << endl;
     
-    if (rank == iDomain) {
+    if ((unsigned long)rank == iDomain) {
       
       if (rank != MASTER_NODE) {
         
@@ -5478,7 +5475,8 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
   unsigned short Counter_Send, Counter_Receive, iMarkerSend, iMarkerReceive;
   unsigned long iVertex, LocalNode;
   unsigned short nMarker_Max = config->GetnMarker_Max();
-  unsigned long  nVertexDomain[nMarker_Max], iPoint, jPoint, iElem;
+  unsigned long  iPoint, jPoint, iElem;
+  unsigned long *nVertexDomain = new unsigned long[nMarker_Max];
   unsigned short nDomain, iNode, iDomain, jDomain, jNode;
   vector<unsigned long>::iterator it;
   
@@ -5554,7 +5552,7 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
    number of points in the simulation  ---*/
   Max_GlobalPoint = 0;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    if (Local_to_Global_Point[iPoint] > Max_GlobalPoint)
+    if (Local_to_Global_Point[iPoint] > (long)Max_GlobalPoint)
       Max_GlobalPoint = Local_to_Global_Point[iPoint];
   }
   Global_to_Local_Point =  new long[Max_GlobalPoint+1]; // +1 to include the bigger point.
@@ -5631,7 +5629,9 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
       iMarkerReceive++;
     }
   }
-  
+ 
+  /*--- Free memory ---*/
+  delete [] nVertexDomain;
 }
 
 
@@ -5957,14 +5957,9 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   
   /*--- Initialize counters for local/global points & elements ---*/
 #ifdef HAVE_MPI
-  unsigned long LocalIndex;
-  unsigned long Local_nPoint, Local_nPointDomain;
-  unsigned long Local_nElem;
-  unsigned long Local_nElemTri, Local_nElemQuad, Local_nElemTet;
-  unsigned long Local_nElemHex, Local_nElemPrism, Local_nElemPyramid;
-  
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
+  unsigned long LocalIndex;
 #endif
   Global_nPoint  = 0; Global_nPointDomain   = 0; Global_nElem = 0;
   nelem_edge     = 0; Global_nelem_edge     = 0;
@@ -6097,7 +6092,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
        balancing for any remainder points. ---*/
       
       total_pt_accounted = 0;
-      for (unsigned long i=0; i<size; i++) {
+      for (unsigned long i=0; i < (unsigned long)size; i++) {
         npoint_procs[i] = nPoint/size;
         total_pt_accounted = total_pt_accounted + npoint_procs[i];
       }
@@ -6112,7 +6107,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
       local_node = npoint_procs[rank];
       starting_node[0] = 0;
       ending_node[0]   = starting_node[0] + npoint_procs[0];
-      for (unsigned long i = 1; i < size; i++) {
+      for (unsigned long i = 1; i < (unsigned long)size; i++) {
         starting_node[i] = ending_node[i-1];
         ending_node[i]   = starting_node[i] + npoint_procs[i] ;
       }
@@ -6211,7 +6206,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
       /*--- Allocate space for elements ---*/
       
       elem = new CPrimalGrid*[nElem];
-      for (int iElem = 0; iElem < nElem; iElem++) elem[iElem] = NULL;
+      for (unsigned long iElem = 0; iElem < nElem; iElem++) elem[iElem] = NULL;
 
       
       /*--- Set up the global to local element mapping. ---*/
@@ -6702,8 +6697,8 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   
   /*--- Local variables needed when calling the CGNS mid-level API. ---*/
   
-  unsigned long vnodes_cgns[8];
-  su2double Coord_cgns[3];
+  unsigned long vnodes_cgns[8] = {0,0,0,0,0,0,0,0};
+  su2double Coord_cgns[3] = {0.0,0.0,0.0};
   int fn, nbases = 0, nzones = 0, ngrids = 0, ncoords = 0, nsections = 0;
   int *vertices = NULL, *cells = NULL, nMarkers = 0, *boundVerts = NULL, npe;
   int interiorElems = 0, totalVerts = 0;
@@ -6724,7 +6719,6 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   int** elemBegin = NULL;
   int** elemEnd = NULL;
   int** nElems = NULL;
-  int indexMax, elemMax; indexMax = elemMax = 0;
   cgsize_t**** connElems = NULL;
   cgsize_t* connElemCGNS = NULL;
   cgsize_t* connElemTemp = NULL;
@@ -6733,6 +6727,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   int** dataSize = NULL;
   bool** isInternal = NULL;
   char*** sectionNames = NULL;
+  //int indexMax; // check memory issue
   
   /*--- Initialize counters for local/global points & elements ---*/
   
@@ -6765,7 +6760,6 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   unsigned long total_pt_accounted = 0;
   unsigned long rem_points         = 0;
   unsigned long element_count      = 0;
-  unsigned long loc_element_count  = 0;
   unsigned long element_remainder  = 0;
   unsigned long total_elems        = 0;
   
@@ -6971,7 +6965,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
       /*--- Get the number of remainder points after the even division ---*/
       
       rem_points = vertices[j-1]-total_pt_accounted;
-      for (int ii = 0; ii < rem_points; ii++) {
+      for (unsigned long ii = 0; ii < rem_points; ii++) {
         npoint_procs[ii]++;
       }
       
@@ -7042,7 +7036,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
         /*--- Copy these coords into the array for storage until
          writing the SU2 mesh. ---*/
         
-        for (int m = 0; m < local_node; m++ ) {
+        for (unsigned long m = 0; m < local_node; m++ ) {
           gridCoords[j-1][k-1][m] = coordArray[j-1][m];
         }
         
@@ -7112,7 +7106,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
         /*--- Get the number of remainder elements after even division ---*/
         
         element_remainder = element_count-total_elems;
-        for (int ii = 0; ii < element_remainder; ii++) {
+        for (unsigned long ii = 0; ii < element_remainder; ii++) {
           nElem_Linear[ii]++;
         }
         
@@ -7125,7 +7119,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
         
         elemB[0] = startE;
         elemE[0] = startE + nElem_Linear[0] - 1;
-        for (unsigned long ii = 1; ii < size; ii++) {
+        for (unsigned long ii = 1; ii < (unsigned long)size; ii++) {
           elemB[ii] = elemE[ii-1]+1;
           elemE[ii] = elemB[ii] + nElem_Linear[ii] - 1;
         }
@@ -7529,7 +7523,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
               /*--- Search for the processor that owns this point ---*/
               
               iProcessor = iPoint/npoint_procs[0];
-              if (iProcessor >= size) iProcessor = size-1;
+              if (iProcessor >= (unsigned long)size) iProcessor = (unsigned long)size-1;
               if (iPoint >= nPoint_Linear[iProcessor])
                 while(iPoint >= nPoint_Linear[iProcessor+1]) iProcessor++;
               else
@@ -7603,7 +7597,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
               /*--- Search for the processor that owns this point ---*/
               
               iProcessor = iPoint/npoint_procs[0];
-              if (iProcessor >= size) iProcessor = size-1;
+              if (iProcessor >= (unsigned long)size) iProcessor = (unsigned long)size-1;
               if (iPoint >= nPoint_Linear[iProcessor])
                 while(iPoint >= nPoint_Linear[iProcessor+1]) iProcessor++;
               else
@@ -7801,8 +7795,8 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
    elements globally, but we will only instantiate our local set. ---*/
   
   elem = new CPrimalGrid*[nElem];
-  for (int iElem = 0; iElem < nElem; iElem++) elem[iElem] = NULL;
-  loc_element_count=0; ielem = 0;
+  for (unsigned long iElem = 0; iElem < nElem; iElem++) elem[iElem] = NULL;
+  ielem = 0;
   unsigned long global_id = 0;
   
   /*--- Loop over all the internal, local volumetric elements. ---*/
@@ -8049,9 +8043,9 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   iPoint = 0;
   node = new CPoint*[local_node];
   GlobalIndex = starting_node[rank];
-  for ( int k = 0; k < nzones; k++ ) {
-    for ( int i = 0; i < local_node; i++ ) {
-      for ( int j = 0; j < cell_dim; j++ ) Coord_cgns[j] = gridCoords[k][j][i];
+  for (int k = 0; k < nzones; k++ ) {
+    for (unsigned long i = 0; i < local_node; i++ ) {
+      for (int j = 0; j < cell_dim; j++ ) Coord_cgns[j] = gridCoords[k][j][i];
       switch(nDim) {
         case 2:
           node[iPoint] = new CPoint(Coord_cgns[0], Coord_cgns[1], GlobalIndex, config);
@@ -8643,9 +8637,9 @@ void CPhysicalGeometry::Check_BoundElem_Orientation(CConfig *config) {
 void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
   
   su2double *coord, dist;
-  su2double dist2, diff, dist1;
+  su2double dist2, diff;
   unsigned short iDim, iMarker;
-  unsigned long iPoint, iVertex, nVertex_SolidWall, iVertex_nearestWall;
+  unsigned long iPoint, iVertex, nVertex_SolidWall, iVertex_nearestWall = 0;
   
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -8697,6 +8691,7 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
    of the no-slip boundary nodes. Store the minimum distance to the wall for
    each interior mesh node. ---*/
   
+  su2double dist1 = 0.0;
   if (nVertex_SolidWall != 0) {
     for (iPoint = 0; iPoint < GetnPoint(); iPoint++) {
       coord = node[iPoint]->GetCoord();
@@ -10186,7 +10181,7 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
   
   /*--- Update values of faces of the edge ---*/
   if (action != ALLOCATE) {
-    for (iEdge = 0; iEdge < nEdge; iEdge++)
+    for (iEdge = 0; iEdge < (long)nEdge; iEdge++)
       edge[iEdge]->SetZeroValues();
     for (iPoint = 0; iPoint < nPoint; iPoint++)
       node[iPoint]->SetVolume (0.0);
@@ -10262,7 +10257,7 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
     }
   
   /*--- Check if there is a normal with null area ---*/
-  for (iEdge = 0; iEdge < nEdge; iEdge++) {
+  for (iEdge = 0; iEdge < (long)nEdge; iEdge++) {
     NormalFace = edge[iEdge]->GetNormal();
     Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += NormalFace[iDim]*NormalFace[iDim];
     Area = sqrt(Area);
@@ -10993,13 +10988,11 @@ void CPhysicalGeometry::SetBoundSTL(char mesh_filename[MAX_STRING_SIZE], bool ne
 void CPhysicalGeometry::SetColorGrid(CConfig *config) {
   
 #ifdef HAVE_MPI
-  
 #ifdef HAVE_METIS
   
   unsigned long iPoint, iElem, iElem_Triangle, iElem_Tetrahedron, nElem_Triangle,
   nElem_Tetrahedron;
-  unsigned short iNode;
-  idx_t ne = 0, nn, *elmnts = NULL, etype, *epart = NULL, *npart = NULL, numflag, nparts, edgecut, *eptr;
+  idx_t ne = 0, nn, *elmnts = NULL, *epart = NULL, *npart = NULL, nparts, edgecut, *eptr;
   int rank, size;
   
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -11013,27 +11006,24 @@ void CPhysicalGeometry::SetColorGrid(CConfig *config) {
   nElem_Triangle = 0;
   nElem_Tetrahedron = 0;
   for (iElem = 0; iElem < GetnElem(); iElem++) {
-    if (elem[iElem]->GetVTK_Type() == TRIANGLE) nElem_Triangle = nElem_Triangle + 1;
-    if (elem[iElem]->GetVTK_Type() == RECTANGLE) nElem_Triangle = nElem_Triangle + 2;
+    if (elem[iElem]->GetVTK_Type() == TRIANGLE)    nElem_Triangle = nElem_Triangle + 1;
+    if (elem[iElem]->GetVTK_Type() == RECTANGLE)   nElem_Triangle = nElem_Triangle + 2;
     if (elem[iElem]->GetVTK_Type() == TETRAHEDRON) nElem_Tetrahedron = nElem_Tetrahedron + 1;
-    if (elem[iElem]->GetVTK_Type() == HEXAHEDRON) nElem_Tetrahedron = nElem_Tetrahedron + 5;
-    if (elem[iElem]->GetVTK_Type() == PYRAMID) nElem_Tetrahedron = nElem_Tetrahedron + 2;
-    if (elem[iElem]->GetVTK_Type() == PRISM) nElem_Tetrahedron = nElem_Tetrahedron + 3;
+    if (elem[iElem]->GetVTK_Type() == HEXAHEDRON)  nElem_Tetrahedron = nElem_Tetrahedron + 5;
+    if (elem[iElem]->GetVTK_Type() == PYRAMID)     nElem_Tetrahedron = nElem_Tetrahedron + 2;
+    if (elem[iElem]->GetVTK_Type() == PRISM)       nElem_Tetrahedron = nElem_Tetrahedron + 3;
   }
   
   if (GetnDim() == 2) {
     ne = nElem_Triangle;
     elmnts = new idx_t [ne*3];
-    etype = 1;
   }
   if (GetnDim() == 3) {
     ne = nElem_Tetrahedron;
     elmnts = new idx_t [ne*4];
-    etype = 2;
   }
   
   nn = nPoint;
-  numflag = 0;
   nparts = nDomain;
   epart = new idx_t [ne];
   npart = new idx_t [nn];
@@ -11171,7 +11161,8 @@ void CPhysicalGeometry::SetColorGrid_Parallel(CConfig *config) {
   
   /*--- Initialize the color vector ---*/
   
-  for (unsigned long iPoint = 0; iPoint < local_node; iPoint++) node[iPoint]->SetColor(0);
+  for (unsigned long iPoint = 0; iPoint < local_node; iPoint++)
+    node[iPoint]->SetColor(0);
   
   /*--- This routine should only ever be called if we have parallel support
    with MPI and have the ParMETIS library compiled and linked. ---*/
@@ -11191,7 +11182,7 @@ void CPhysicalGeometry::SetColorGrid_Parallel(CConfig *config) {
     
   /*--- Create some structures that ParMETIS needs for partitioning. ---*/
 
-  idx_t numflag, nparts, edgecut, vwgt, adjwgt, wgtflag, ncon, ncommonnodes;
+  idx_t numflag, nparts, edgecut, wgtflag, ncon;
   idx_t *vtxdist     = new idx_t[size+1];
   idx_t *xadj_l      = new idx_t[xadj_size];
   idx_t *adjacency_l = new idx_t[adjacency_size];
@@ -11212,7 +11203,9 @@ void CPhysicalGeometry::SetColorGrid_Parallel(CConfig *config) {
   METIS_SetDefaultOptions(options);
   options[1] = 0;
     
-    /*--- Fill the necessary ParMETIS data arrays ---*/
+    /*--- Fill the necessary ParMETIS data arrays. Note that xadj_size and
+     adjacency_size are class data members that have been defined and set
+     earlier in the partitioning process. ---*/
     
     for (int i = 0; i < size; i++) {
       tpwgts[i] = 1.0/((real_t)size);
@@ -11223,11 +11216,11 @@ void CPhysicalGeometry::SetColorGrid_Parallel(CConfig *config) {
       vtxdist[i+1] = (idx_t)ending_node[i];
     }
 
-    for (int i = 0; i < xadj_size; i++) {
+    for (unsigned long i = 0; i < xadj_size; i++) {
       xadj_l[i] = (idx_t)xadj[i];
     }
     
-    for (int i = 0; i < adjacency_size; i++) {
+    for (unsigned long i = 0; i < adjacency_size; i++) {
       adjacency_l[i] = (idx_t)adjacency[i];
     }
     
@@ -12339,117 +12332,117 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
 }
 
 void CPhysicalGeometry::SetSensitivity(CConfig *config){
-
-    ifstream restart_file;
-    string filename = config->GetSolution_AdjFileName();
-    bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-    bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-    bool freesurface = (config->GetKind_Regime() == FREESURFACE);
-    bool sst = config->GetKind_Turb_Model() == SST;
-    bool sa = config->GetKind_Turb_Model() == SA;
-    bool grid_movement = config->GetGrid_Movement();
-    su2double Sens, total_T, delta_T, dull_val;
-
-    unsigned short nExtIter, iDim, iExtIter;
-    unsigned long iPoint, index;
-
-    Sensitivity = new su2double[nPoint*nDim];
-
-    if (config->GetUnsteady_Simulation()){
-        nExtIter = config->GetUnst_AdjointIter();
+  
+  ifstream restart_file;
+  string filename = config->GetSolution_AdjFileName();
+  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
+  bool sst = config->GetKind_Turb_Model() == SST;
+  bool sa = config->GetKind_Turb_Model() == SA;
+  bool grid_movement = config->GetGrid_Movement();
+  su2double Sens, delta_T, dull_val;
+  //su2double total_T;
+  unsigned short nExtIter, iDim, iExtIter;
+  unsigned long iPoint, index;
+  
+  Sensitivity = new su2double[nPoint*nDim];
+  
+  if (config->GetUnsteady_Simulation()){
+    nExtIter = config->GetUnst_AdjointIter();
     //    delta_T  = config->GetDelta_UnstTimeND();
-      delta_T  = 1.0;
-        total_T  = (su2double)nExtIter*delta_T;
-    }else{
-      total_T = 1.0;
-      nExtIter = 1;
-    }
-    int rank = MASTER_NODE;
+    delta_T  = 1.0;
+    //total_T  = (su2double)nExtIter*delta_T;
+  }else{
+    //total_T = 1.0;
+    nExtIter = 1;
+  }
+  int rank = MASTER_NODE;
 #ifdef HAVE_MPI
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
- #endif
-
-    unsigned short skipVar = nDim;
-
-    if (incompressible) { skipVar += nDim+1; }
-    if (freesurface)    { skipVar += nDim+2; }
-    if (compressible)   { skipVar += nDim+2; }
-    if (sst) 			{ skipVar += 2;}
-    if (sa)				{ skipVar += 1;}
-
-    if (grid_movement) {skipVar += nDim;}
-
-    /* --- Sensitivity in normal direction --- */
-
-    skipVar += 1;
-
-    /*--- In case this is a parallel simulation, we need to perform the
-     Global2Local index transformation first. ---*/
-    long *Global2Local = new long[Global_nPointDomain];
-
-    /*--- First, set all indices to a negative value by default ---*/
-    for(iPoint = 0; iPoint < Global_nPointDomain; iPoint++)
-      Global2Local[iPoint] = -1;
-
-    /*--- Now fill array with the transform values only for local points ---*/
-    for(iPoint = 0; iPoint < nPointDomain; iPoint++)
-      Global2Local[node[iPoint]->GetGlobalIndex()] = iPoint;
-
-    /*--- Read all lines in the restart file ---*/
-    long iPoint_Local; unsigned long iPoint_Global = 0; string text_line;
-
-
-    for (iPoint = 0; iPoint < nPoint; iPoint++){
-      for (iDim = 0; iDim < nDim; iDim++){
-        Sensitivity[iPoint*nDim+iDim] = 0.0;
-      }
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+  
+  unsigned short skipVar = nDim;
+  
+  if (incompressible) { skipVar += nDim+1; }
+  if (freesurface)    { skipVar += nDim+2; }
+  if (compressible)   { skipVar += nDim+2; }
+  if (sst) 			{ skipVar += 2;}
+  if (sa)				{ skipVar += 1;}
+  
+  if (grid_movement) {skipVar += nDim;}
+  
+  /* --- Sensitivity in normal direction --- */
+  
+  skipVar += 1;
+  
+  /*--- In case this is a parallel simulation, we need to perform the
+   Global2Local index transformation first. ---*/
+  long *Global2Local = new long[Global_nPointDomain];
+  
+  /*--- First, set all indices to a negative value by default ---*/
+  for(iPoint = 0; iPoint < Global_nPointDomain; iPoint++)
+    Global2Local[iPoint] = -1;
+  
+  /*--- Now fill array with the transform values only for local points ---*/
+  for(iPoint = 0; iPoint < nPointDomain; iPoint++)
+    Global2Local[node[iPoint]->GetGlobalIndex()] = iPoint;
+  
+  /*--- Read all lines in the restart file ---*/
+  long iPoint_Local; unsigned long iPoint_Global = 0; string text_line;
+  
+  
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+    for (iDim = 0; iDim < nDim; iDim++){
+      Sensitivity[iPoint*nDim+iDim] = 0.0;
     }
-
-    for (iExtIter = 0; iExtIter < nExtIter; iExtIter++){
-
-      iPoint_Global = 0;
-
-      filename = config->GetSolution_AdjFileName();
-
-      filename = config->GetObjFunc_Extension(filename);
-
-      if (config->GetUnsteady_Simulation()){
-        filename = config->GetUnsteady_FileName(filename, iExtIter);
-      }
-
-      restart_file.open(filename.data(), ios::in);
-      if (restart_file.fail()) {
-        cout << "There is no adjoint restart file!! " << filename.data() << "."<< endl;
-        exit(EXIT_FAILURE);
-      }
-
-      if (rank == MASTER_NODE)
-        cout << "Reading in sensitivity at iteration " << iExtIter << "."<< endl;
-      /*--- The first line is the header ---*/
-      getline (restart_file, text_line);
-
-      while (getline (restart_file, text_line)) {
-        istringstream point_line(text_line);
-
-        /*--- Retrieve local index. If this node from the restart file lives
-             on a different processor, the value of iPoint_Local will be -1.
-             Otherwise, the local index for this node on the current processor
-             will be returned and used to instantiate the vars. ---*/
-        iPoint_Local = Global2Local[iPoint_Global];
-
-        if (iPoint_Local >= 0){
-          point_line >> index;
-          for (iDim = 0; iDim < skipVar; iDim++){ point_line >> dull_val;}
-          for (iDim = 0; iDim < nDim; iDim++){
-            point_line >> Sens;
-            //                	  Sensitivity[iPoint_Local*nDim+iDim] += Sens*delta_T/total_T;
-            Sensitivity[iPoint_Local*nDim+iDim] += Sens;
-
-          }
+  }
+  
+  for (iExtIter = 0; iExtIter < nExtIter; iExtIter++){
+    
+    iPoint_Global = 0;
+    
+    filename = config->GetSolution_AdjFileName();
+    
+    filename = config->GetObjFunc_Extension(filename);
+    
+    if (config->GetUnsteady_Simulation()){
+      filename = config->GetUnsteady_FileName(filename, iExtIter);
+    }
+    
+    restart_file.open(filename.data(), ios::in);
+    if (restart_file.fail()) {
+      cout << "There is no adjoint restart file!! " << filename.data() << "."<< endl;
+      exit(EXIT_FAILURE);
+    }
+    
+    if (rank == MASTER_NODE)
+      cout << "Reading in sensitivity at iteration " << iExtIter << "."<< endl;
+    /*--- The first line is the header ---*/
+    getline (restart_file, text_line);
+    
+    while (getline (restart_file, text_line)) {
+      istringstream point_line(text_line);
+      
+      /*--- Retrieve local index. If this node from the restart file lives
+       on a different processor, the value of iPoint_Local will be -1.
+       Otherwise, the local index for this node on the current processor
+       will be returned and used to instantiate the vars. ---*/
+      iPoint_Local = Global2Local[iPoint_Global];
+      
+      if (iPoint_Local >= 0){
+        point_line >> index;
+        for (iDim = 0; iDim < skipVar; iDim++){ point_line >> dull_val;}
+        for (iDim = 0; iDim < nDim; iDim++){
+          point_line >> Sens;
+          //                	  Sensitivity[iPoint_Local*nDim+iDim] += Sens*delta_T/total_T;
+          Sensitivity[iPoint_Local*nDim+iDim] += Sens;
+          
         }
-        iPoint_Global++;
       }
-      restart_file.close();
+      iPoint_Global++;
+    }
+    restart_file.close();
   }
 }
 
@@ -14865,7 +14858,7 @@ void CPeriodicGeometry::SetMeshFile(CGeometry *geometry, CConfig *config, string
   /*--- Change the numbering to guarantee that the all the receive
    points are at the end of the file ---*/
   unsigned long OldnPoint = geometry->GetnPoint();
-  unsigned long NewSort[nPoint];
+  unsigned long *NewSort = new unsigned long[nPoint];
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     NewSort[iPoint] = iPoint;
   }
@@ -14978,6 +14971,9 @@ void CPeriodicGeometry::SetMeshFile(CGeometry *geometry, CConfig *config, string
   
   
   output_file.close();
+  
+  /*--- Free memory ---*/
+  delete [] NewSort;
   
 }
 

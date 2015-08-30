@@ -76,7 +76,7 @@ protected:
 	unsigned long nLinelet;                     /*!< \brief Number of Linelets in the system. */
   su2double **UBlock, **invUBlock, **LBlock,
   **yVector, **zVector, **rVector, *LFBlock,
-  *LyVector, *FzVector, *AuxVector;           /*!< \brief Arrays of the Linelet preconditioner methodology. */
+  *LyVector, *FzVector;           /*!< \brief Arrays of the Linelet preconditioner methodology. */
   unsigned long max_nElem;
   
 public:

@@ -236,7 +236,7 @@ public:
 	
   /*!
 	 * \brief Set the value of the curvature at a surface node.
-	 * \param[in] val_distance - Value of the curvature.
+	 * \param[in] val_curvature - Value of the curvature.
 	 */
 	void SetCurvature(su2double val_curvature);
 	
