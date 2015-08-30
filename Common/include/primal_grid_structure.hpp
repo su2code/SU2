@@ -57,7 +57,7 @@ protected:
 	su2double **Coord_FaceElems_CG;	/*!< \brief Coordinates of the center-of-gravity of the face of the
                                  elements. */
 	static unsigned short nDim;		/*!< \brief Dimension of the element (2D or 3D) useful for triangles,
-                                 rectangles and edges. */
+                                 quadrilateral and edges. */
 	unsigned long DomainElement;	/*!< \brief Only for boundaries, in this variable the 3D elements which
                                  correspond with a boundary element is stored. */
 	bool Divide;                  /*!< \brief Marker used to know if we are going to divide this element
@@ -615,12 +615,12 @@ public:
 };
 
 /*!
- * \class CRectangle
- * \brief Class for rectangle element definition.
+ * \class CQuadrilateral
+ * \brief Class for quadrilateral element definition.
  * \author F. Palacios
  * \version 4.0.0 "Cardinal"
  */
-class CRectangle : public CPrimalGrid {
+class CQuadrilateral : public CPrimalGrid {
 private:
 	static unsigned short Faces[4][2];			/*!< \brief Matrix to store the local nodes of all the faces. */
 	static unsigned short Neighbor_Nodes[4][2];	/*!< \brief Neighbor to a nodes in the element. */
@@ -642,17 +642,17 @@ public:
 	 * \param[in] val_point_3 - Index of the 4th point read from the grid file.
 	 * \param[in] val_nDim - Number of dimension of the problem (2D or 3D).
 	 */
-	CRectangle(unsigned long val_point_0, unsigned long val_point_1,
+	CQuadrilateral(unsigned long val_point_0, unsigned long val_point_1,
              unsigned long val_point_2, unsigned long val_point_3, unsigned short val_nDim);
   
   /*!
 	 * \brief Destructor of the class.
 	 */
-	~CRectangle(void);
+	~CQuadrilateral(void);
   
 	/*!
 	 * \brief Get the nodes shared by the triangle.
-	 * \param[in] val_node - Local (to the rectangle) index of the node (a rectangle has 4 nodes).
+	 * \param[in] val_node - Local (to the quadrilateral) index of the node (a quadrilateral has 4 nodes).
 	 * \return Global index of the triangle node.
 	 */
 	unsigned long GetNode(unsigned short val_node);
@@ -668,7 +668,7 @@ public:
 	 * \brief Get the face index of and element.
 	 * \param[in] val_face - Local index of the face.
 	 * \param[in] val_index - Local (to the face) index of the nodes that compose the face.
-	 * \return Local (to the rectangle) index of the nodes that compose the face.
+	 * \return Local (to the quadrilateral) index of the nodes that compose the face.
 	 */
 	unsigned short GetFaces(unsigned short val_face, unsigned short val_index);
   
@@ -676,7 +676,7 @@ public:
 	 * \brief Get the local index of the neighbors to a node (given the local index).
 	 * \param[in] val_node - Local (to the element) index of a node.
 	 * \param[in] val_index - Local (to the neighbor nodes of val_node) index of the nodes that are neighbor to val_node.
-	 * \return Local (to the rectangle) index of the nodes that are neighbor to val_node.
+	 * \return Local (to the quadrilateral) index of the nodes that are neighbor to val_node.
 	 */
 	unsigned short GetNeighbor_Nodes(unsigned short val_node, unsigned short val_index);
   

@@ -829,8 +829,8 @@ void COutput::MergeConnectivity(CConfig *config, CGeometry *geometry, unsigned s
       MergeVolumetricConnectivity(config, geometry, TRIANGLE    );
       
       if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Quad != 0))
-        cout <<"Merging volumetric rectangle grid connectivity." << endl;
-      MergeVolumetricConnectivity(config, geometry, RECTANGLE   );
+        cout <<"Merging volumetric quadrilateral grid connectivity." << endl;
+      MergeVolumetricConnectivity(config, geometry, QUADRILATERAL   );
       
       if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Tetr != 0))
         cout <<"Merging volumetric tetrahedron grid connectivity." << endl;
@@ -863,8 +863,8 @@ void COutput::MergeConnectivity(CConfig *config, CGeometry *geometry, unsigned s
       MergeSurfaceConnectivity(config, geometry, TRIANGLE);
       
       if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_BoundQuad != 0))
-        cout <<"Merging surface rectangle grid connectivity." << endl;
-      MergeSurfaceConnectivity(config, geometry, RECTANGLE);
+        cout <<"Merging surface quadrilateral grid connectivity." << endl;
+      MergeSurfaceConnectivity(config, geometry, QUADRILATERAL);
       
     }
     
@@ -1189,7 +1189,7 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
       nLocalElem = geometry->GetnElemTria();
       NODES_PER_ELEMENT = N_POINTS_TRIANGLE;
       break;
-    case RECTANGLE:
+    case QUADRILATERAL:
       nLocalElem = geometry->GetnElemQuad();
       NODES_PER_ELEMENT = N_POINTS_QUADRILATERAL;
       break;
@@ -1488,7 +1488,7 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
         nGlobal_Tria = nElem_Total;
         if (nGlobal_Tria > 0) Conn_Tria = Conn_Elem;
         break;
-      case RECTANGLE:
+      case QUADRILATERAL:
         nGlobal_Quad = nElem_Total;
         if (nGlobal_Quad > 0) Conn_Quad = Conn_Elem;
         break;
@@ -1575,7 +1575,7 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
     case TRIANGLE:
       NODES_PER_ELEMENT = N_POINTS_TRIANGLE;
       break;
-    case RECTANGLE:
+    case QUADRILATERAL:
       NODES_PER_ELEMENT = N_POINTS_QUADRILATERAL;
       break;
     default:
@@ -1862,7 +1862,7 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
         nGlobal_BoundTria = nElem_Total;
         if (nGlobal_BoundTria > 0) Conn_BoundTria = Conn_Elem;
         break;
-      case RECTANGLE:
+      case QUADRILATERAL:
         nGlobal_BoundQuad = nElem_Total;
         if (nGlobal_BoundQuad > 0) Conn_BoundQuad = Conn_Elem;
         break;
