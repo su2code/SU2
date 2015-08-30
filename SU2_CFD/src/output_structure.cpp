@@ -540,7 +540,7 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
   
   unsigned short nDim = geometry->GetnDim(), iMarker;
-  su2double *Solution, *Normal, *d, *Coord;
+  su2double *Solution, *Coord;
   unsigned long Buffer_Send_nVertex[1], iVertex, iPoint, nVertex_Surface = 0, nLocalVertex_Surface = 0,
   MaxLocalVertex_Surface = 0, nBuffer_Scalar;
   unsigned long *Buffer_Receive_nVertex = NULL;
@@ -574,7 +574,7 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
   su2double *Buffer_Send_Phi_z= new su2double[MaxLocalVertex_Surface];
   su2double *Buffer_Send_PsiE= new su2double[MaxLocalVertex_Surface];
 
-  su2double *Buffer_Send_Sens_x, *Buffer_Send_Sens_y, *Buffer_Send_Sens_z;
+  su2double *Buffer_Send_Sens_x = NULL, *Buffer_Send_Sens_y = NULL, *Buffer_Send_Sens_z = NULL;
 
   if (config->GetDiscrete_Adjoint()){
     Buffer_Send_Sens_x = new su2double[MaxLocalVertex_Surface];
@@ -591,9 +591,9 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         if (geometry->node[iPoint]->GetDomain()) {
           Solution = AdjSolver->node[iPoint]->GetSolution();
-          Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+          //Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
           Coord = geometry->node[iPoint]->GetCoord();
-          d = AdjSolver->node[iPoint]->GetForceProj_Vector();
+          //d = AdjSolver->node[iPoint]->GetForceProj_Vector();
           Buffer_Send_GlobalPoint[nVertex_Surface] = geometry->node[iPoint]->GetGlobalIndex();
           Buffer_Send_Coord_x[nVertex_Surface] = Coord[0];
           Buffer_Send_Coord_y[nVertex_Surface] = Coord[1];
@@ -790,13 +790,9 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
   delete [] Buffer_Send_Phi_y;
   delete [] Buffer_Send_Phi_z;
   delete [] Buffer_Send_PsiE;
-  if (config->GetDiscrete_Adjoint()){
-    delete [] Buffer_Send_Sens_x;
-    delete [] Buffer_Send_Sens_y;
-    if (nDim == 3){
-      delete [] Buffer_Send_Sens_z;
-    }
-  }
+  if (Buffer_Send_Sens_x != NULL) delete [] Buffer_Send_Sens_x;
+  if (Buffer_Send_Sens_y != NULL) delete [] Buffer_Send_Sens_y;
+  if (Buffer_Send_Sens_z != NULL) delete [] Buffer_Send_Sens_z;
   
   SurfAdj_file.close();
   
@@ -978,11 +974,11 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
   
   unsigned long iVertex, iMarker;
   
-  int SendRecv, RecvFrom;
+  int SendRecv;
   
   unsigned long Buffer_Send_nPoin[1], *Buffer_Recv_nPoin = NULL;
   unsigned long nLocalPoint = 0, MaxLocalPoint = 0;
-  unsigned long iGlobal_Index = 0, nBuffer_Scalar = 0, periodicNodes = 0;
+  unsigned long iGlobal_Index = 0, nBuffer_Scalar = 0;
   
   if (rank == MASTER_NODE) Buffer_Recv_nPoin = new unsigned long[nProcessor];
   
@@ -1000,7 +996,6 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
         SendRecv = config->GetMarker_All_SendRecv(iMarker);
-        RecvFrom = abs(SendRecv)-1;
         
         /*--- Checking for less than or equal to the rank, because there may
          be some periodic halo nodes that send info to the same rank. ---*/
@@ -1044,7 +1039,7 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
   su2double *Buffer_Send_Y = new su2double[MaxLocalPoint];
   su2double *Buffer_Recv_Y = NULL;
   
-  su2double *Buffer_Send_Z, *Buffer_Recv_Z = NULL;
+  su2double *Buffer_Send_Z = NULL, *Buffer_Recv_Z = NULL;
   if (nDim == 3) Buffer_Send_Z = new su2double[MaxLocalPoint];
   
   unsigned long *Buffer_Send_GlobalIndex = new unsigned long[MaxLocalPoint];
@@ -1139,12 +1134,12 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
   delete [] Local_Halo;
   delete [] Buffer_Send_X;
   delete [] Buffer_Send_Y;
-  if (nDim == 3) delete [] Buffer_Send_Z;
+  if (Buffer_Send_Z != NULL) delete [] Buffer_Send_Z;
   delete [] Buffer_Send_GlobalIndex;
   if (rank == MASTER_NODE) {
     delete [] Buffer_Recv_X;
     delete [] Buffer_Recv_Y;
-    if (nDim == 3)  delete [] Buffer_Recv_Z;
+    if (Buffer_Recv_Z != NULL)  delete [] Buffer_Recv_Z;
     delete [] Buffer_Recv_GlobalIndex;
     delete [] Buffer_Recv_nPoin;
   }
@@ -1885,8 +1880,8 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   unsigned short iVar = 0, jVar = 0, FirstIndex = NONE, SecondIndex = NONE, ThirdIndex = NONE;
   unsigned short nVar_First = 0, nVar_Second = 0, nVar_Third = 0;
   unsigned short iVar_GridVel = 0, iVar_PressCp = 0, iVar_Density = 0, iVar_Lam = 0, iVar_MachMean = 0,
-  iVar_Tempv = 0, iVar_EF =0, iVar_Temp = 0, iVar_Mach = 0, iVar_Press = 0, iVar_TempLam = 0,
-  iVar_ViscCoeffs = 0, iVar_Sens = 0, iVar_FEA = 0, iVar_Extra = 0, iVar_Eddy = 0, iVar_Sharp = 0,
+  iVar_Tempv = 0, iVar_Temp = 0, iVar_Mach = 0, iVar_Press = 0, iVar_TempLam = 0,
+  iVar_ViscCoeffs = 0, iVar_Sens = 0, iVar_Extra = 0, iVar_Eddy = 0, iVar_Sharp = 0,
   iVar_FEA_Stress = 0, iVar_FEA_Stress_3D = 0, iVar_FEA_Extra = 0, iVar_SensDim = 0;
   
   unsigned long iPoint = 0, jPoint = 0, iVertex = 0, iMarker = 0;
@@ -1895,7 +1890,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   su2double *Aux_Frict = NULL, *Aux_Heat = NULL, *Aux_yPlus = NULL, *Aux_Sens = NULL;
   
   unsigned short CurrentIndex;
-  int SendRecv, RecvFrom, *Local_Halo;
+  int SendRecv, *Local_Halo;
   unsigned long Buffer_Send_nPoint[1], *Buffer_Recv_nPoint = NULL;
   unsigned long nLocalPoint = 0, MaxLocalPoint = 0;
   unsigned long iGlobal_Index = 0, nBuffer_Scalar = 0;
@@ -2036,9 +2031,9 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       iVar_TempLam = nVar_Total; nVar_Total += config->GetnSpecies()+3;
     }
     
-    if (Kind_Solver == POISSON_EQUATION) {
-      iVar_EF = nVar_Total; nVar_Total += geometry->GetnDim();
-    }
+    //if (Kind_Solver == POISSON_EQUATION) {
+    //  iVar_EF = nVar_Total; nVar_Total += geometry->GetnDim();
+    //}
     
     if (( Kind_Solver == ADJ_EULER              ) || ( Kind_Solver == ADJ_NAVIER_STOKES      ) ||
         ( Kind_Solver == ADJ_RANS               ) || ( Kind_Solver == ADJ_TNE2_EULER         ) ||
@@ -2084,7 +2079,6 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
         SendRecv = config->GetMarker_All_SendRecv(iMarker);
-        RecvFrom = abs(SendRecv)-1;
         
         /*--- Checking for less than or equal to the rank, because there may
          be some periodic halo nodes that send info to the same rank. ---*/
@@ -3649,7 +3643,7 @@ void COutput::MergeBaselineSolution(CConfig *config, CGeometry *geometry, CSolve
   
   unsigned long iVertex, iMarker;
   
-  int SendRecv, RecvFrom;
+  int SendRecv;
   
   unsigned long Buffer_Send_nPoint[1], *Buffer_Recv_nPoint = NULL;
   unsigned long nLocalPoint = 0, MaxLocalPoint = 0;
@@ -3671,7 +3665,6 @@ void COutput::MergeBaselineSolution(CConfig *config, CGeometry *geometry, CSolve
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
         SendRecv = config->GetMarker_All_SendRecv(iMarker);
-        RecvFrom = abs(SendRecv)-1;
         
         /*--- Checking for less than or equal to the rank, because there may
          be some periodic halo nodes that send info to the same rank. ---*/
@@ -4058,7 +4051,6 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   bool output_per_surface = false;
   bool output_massflow = (config->GetKind_ObjFunc() == MASS_FLOW_RATE);
   if (config->GetnMarker_Monitoring() > 1) output_per_surface = true;
-  bool disc_adjoint = config->GetDiscrete_Adjoint();
   
   unsigned short direct_diff = config->GetDirectDiff();
 
@@ -4317,7 +4309,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     bool turbulent = ((config[val_iZone]->GetKind_Solver() == RANS) || (config[val_iZone]->GetKind_Solver() == ADJ_RANS) ||
                       (config[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS));
     bool adjoint = config[val_iZone]->GetAdjoint() || config[val_iZone]->GetDiscrete_Adjoint();
-    bool fluid_structure = (config[val_iZone]->GetFSI_Simulation());
     bool wave = (config[val_iZone]->GetKind_Solver() == WAVE_EQUATION);
     bool heat = (config[val_iZone]->GetKind_Solver() == HEAT_EQUATION);
     bool fea = (config[val_iZone]->GetKind_Solver() == LINEAR_ELASTICITY);
@@ -4346,10 +4337,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     su2double Total_Sens_Press = 0.0, Total_Sens_Temp = 0.0;
     
     /*--- Initialize variables to store information from all domains (direct differentiation) ---*/
-    su2double D_Total_CLift = 0.0, D_Total_CDrag = 0.0, D_Total_CSideForce = 0.0, D_Total_CMx = 0.0, D_Total_CMy = 0.0, D_Total_CMz = 0.0, D_Total_CEff = 0.0,
-    D_Total_CEquivArea = 0.0, D_Total_CNearFieldOF = 0.0, D_Total_CFx = 0.0, D_Total_CFy = 0.0, D_Total_CFz = 0.0, D_Total_CMerit = 0.0,
-    D_Total_CT = 0.0, D_Total_CQ = 0.0, D_Total_CFreeSurface = 0.0, D_Total_CWave = 0.0, D_Total_CHeat = 0.0, D_Total_CpDiff = 0.0, D_Total_HeatFluxDiff = 0.0,
-    D_Total_CFEA = 0.0, D_Total_Heat = 0.0, D_Total_MaxHeat = 0.0, D_Total_Mdot = 0.0;
+    su2double D_Total_CLift = 0.0, D_Total_CDrag = 0.0, D_Total_CSideForce = 0.0, D_Total_CMx = 0.0, D_Total_CMy = 0.0, D_Total_CMz = 0.0, D_Total_CEff = 0.0, D_Total_CFx = 0.0, D_Total_CFy = 0.0, D_Total_CFz = 0.0;
 
     /*--- Residual arrays ---*/
     su2double *residual_flow         = NULL,

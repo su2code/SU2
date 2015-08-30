@@ -185,7 +185,7 @@ CFEABoundVariable::CFEABoundVariable(void) : CVariable() { }
 
 CFEABoundVariable::CFEABoundVariable(unsigned short val_nDim, unsigned short val_nvar, unsigned short val_nElBound, CConfig *config)
 : CVariable(val_nDim, val_nvar, config) {
-	unsigned short iVar, iDim, jDim;
+	unsigned short iDim, jDim;
 
 	/*--- Allocate residual structures ---*/
 	Residual_Sum = new su2double [nVar]; Residual_Old = new su2double [nVar];
