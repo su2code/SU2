@@ -31,9 +31,10 @@ before_install:
     - sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
     - sudo apt-get update -qq
     - sudo apt-get install -qq python-numpy mpich2
-    - if [ "$CXX" = "g++" ]; then sudo apt-get install -qq g++-4.8; fi
-    - if [ "$CXX" = "g++" ]; then export CXX="g++-4.8" CC="gcc-4.8"; fi
-    - if [ "$CXX" = "g++" ]; then export MPICH_CXX=$CXX MPI_CC=$CC; fi   
+    # the default g++ in travis is g++-4.6, we need at least 4.7 for some c++11 features
+    - sudo apt-get install -qq g++-4.8
+    - export CXX="g++-4.8" CC="gcc-4.8"
+    - export MPICH_CXX=$CXX MPICH_CC=$CC  
 
 install:
     - echo $TRAVIS_BUILD_DIR
