@@ -294,7 +294,7 @@ def init_codi(modes, mpi_support = False):
         os.chdir('adjointmpi')
         if not os.path.exists('libAMPI.a'):
              print '\nConfiguring and building AMPI...'
-             subprocess.check_call('./configure CFLAGS=-O2 --prefix=$PWD && make', stdout = log, stderr = err, shell=True)
+             subprocess.check_call('./configure CFLAGS=-O2 --prefix=$PWD && make',  shell=True)
         os.chdir(os.pardir)
 
     os.chdir(os.pardir)
