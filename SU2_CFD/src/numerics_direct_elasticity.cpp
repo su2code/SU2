@@ -1196,23 +1196,22 @@ void CGalerkin_FEA::GetFEA_StressNodal2D(su2double StressNodal[8][3], su2double 
   su2double DShapeFunction[8][4] = {{0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0},
     {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0},
     {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}};
-  su2double Location[4][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0},
-    {0.0, 0.0, 0.0}};
+//  su2double Location[4][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
   unsigned short nVar = 2;
   
   /*--- Triangle. Nodes of numerical integration at 1 point (order 1). ---*/
   
-  if (nNodes == 3) {
-    Location[0][0] = 1.0;  Location[0][1] = 0.0;
-    Location[0][0] = 0.0;  Location[0][1] = 1.0;
-    Location[0][0] = 0.0;  Location[0][1] = 0.0;
-  } else {
-    /*--- Rectangle. Nodes of numerical integration at 4 points (order 2). ---*/
-    Location[0][0] = -1.0;  Location[0][1] = -1.0;
-    Location[1][0] = 1.0;   Location[1][1] = -1.0;
-    Location[2][0] = 1.0;   Location[2][1] = 1.0;
-    Location[3][0] = -1.0;  Location[3][1] = 1.0;
-  }
+//  if (nNodes == 3) {
+//    Location[0][0] = 1.0;  Location[0][1] = 0.0;
+//    Location[0][0] = 0.0;  Location[0][1] = 1.0;
+//    Location[0][0] = 0.0;  Location[0][1] = 0.0;
+//  } else {
+//    /*--- Rectangle. Nodes of numerical integration at 4 points (order 2). ---*/
+//    Location[0][0] = -1.0;  Location[0][1] = -1.0;
+//    Location[1][0] = 1.0;   Location[1][1] = -1.0;
+//    Location[2][0] = 1.0;   Location[2][1] = 1.0;
+//    Location[3][0] = -1.0;  Location[3][1] = 1.0;
+//  }
   
   for (iNodal = 0; iNodal < nNodes; iNodal++) {
     
@@ -1291,9 +1290,10 @@ void CGalerkin_FEA::GetFEA_StressNodal3D(su2double StressNodal[8][6], su2double 
   su2double B_Matrix[6][24], D_Matrix[6][6], StrainVector[6];
 //  su2double Xi = 0.0, Eta = 0.0, Zeta=0.0, Det = 0.0;
   unsigned short iNode, iVar, jVar, kVar, iNodal, nNodal = 0;
-  su2double DShapeFunction[8][4] = {{0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0},
-    {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}};
-  su2double Location[8][3];
+  su2double DShapeFunction[8][4] = {{0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0},
+    {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0},
+    {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}};
+//  su2double Location[8][3];
   
   unsigned short nVar = 3;
   
@@ -1301,47 +1301,47 @@ void CGalerkin_FEA::GetFEA_StressNodal3D(su2double StressNodal[8][6], su2double 
   
   if (nNodes == 4) {
     nNodal = 4;
-    Location[0][0] = 1.0;  Location[0][1] = 0.0;  Location[0][2] = 0.0;
-    Location[1][0] = 0.0;  Location[1][1] = 1.0;  Location[1][2] = 0.0;
-    Location[2][0] = 0.0;  Location[2][1] = 0.0;  Location[2][2] = 0.0;
-    Location[3][0] = 0.0;  Location[3][1] = 0.0;  Location[3][2] = 1.0;
+//    Location[0][0] = 1.0;  Location[0][1] = 0.0;  Location[0][2] = 0.0;
+//    Location[1][0] = 0.0;  Location[1][1] = 1.0;  Location[1][2] = 0.0;
+//    Location[2][0] = 0.0;  Location[2][1] = 0.0;  Location[2][2] = 0.0;
+//    Location[3][0] = 0.0;  Location[3][1] = 0.0;  Location[3][2] = 1.0;
   }
   
   /*--- Pyramids. Nodes numerical integration at 5 points. ---*/
   
   if (nNodes == 5) {
     nNodal = 5;
-    Location[0][0] = 0.5;   Location[0][1] = 0.0;   Location[0][2] = 0.1531754163448146;
-    Location[1][0] = 0.0;   Location[1][1] = 0.5;   Location[1][2] = 0.1531754163448146;
-    Location[2][0] = -0.5;  Location[2][1] = 0.0;   Location[2][2] = 0.1531754163448146;
-    Location[3][0] = 0.0;   Location[3][1] = -0.5;  Location[3][2] = 0.1531754163448146;
-    Location[4][0] = 0.0;   Location[4][1] = 0.0;   Location[4][2] = 0.6372983346207416;
+//    Location[0][0] = 0.5;   Location[0][1] = 0.0;   Location[0][2] = 0.1531754163448146;
+//    Location[1][0] = 0.0;   Location[1][1] = 0.5;   Location[1][2] = 0.1531754163448146;
+//    Location[2][0] = -0.5;  Location[2][1] = 0.0;   Location[2][2] = 0.1531754163448146;
+//    Location[3][0] = 0.0;   Location[3][1] = -0.5;  Location[3][2] = 0.1531754163448146;
+//    Location[4][0] = 0.0;   Location[4][1] = 0.0;   Location[4][2] = 0.6372983346207416;
   }
   
   /*--- Prism. Nodes of numerical integration at 6 points (order 3 in Xi, order 2 in Eta and Mu ). ---*/
   
   if (nNodes == 6) {
     nNodal = 6;
-    Location[0][0] = 0.5;                 Location[0][1] = 0.5;                 Location[0][2] = -0.577350269189626;
-    Location[1][0] = -0.577350269189626;  Location[1][1] = 0.0;                 Location[1][2] = 0.5;
-    Location[2][0] = 0.5;                 Location[2][1] = -0.577350269189626;  Location[2][2] = 0.0;
-    Location[3][0] = 0.5;                 Location[3][1] = 0.5;                 Location[3][2] = 0.577350269189626;
-    Location[4][0] = 0.577350269189626;   Location[4][1] = 0.0;                 Location[4][2] = 0.5;
-    Location[5][0] = 0.5;                 Location[5][1] = 0.577350269189626;   Location[5][2] = 0.0;
+//    Location[0][0] = 0.5;                 Location[0][1] = 0.5;                 Location[0][2] = -0.577350269189626;
+//    Location[1][0] = -0.577350269189626;  Location[1][1] = 0.0;                 Location[1][2] = 0.5;
+//    Location[2][0] = 0.5;                 Location[2][1] = -0.577350269189626;  Location[2][2] = 0.0;
+//    Location[3][0] = 0.5;                 Location[3][1] = 0.5;                 Location[3][2] = 0.577350269189626;
+//    Location[4][0] = 0.577350269189626;   Location[4][1] = 0.0;                 Location[4][2] = 0.5;
+//    Location[5][0] = 0.5;                 Location[5][1] = 0.577350269189626;   Location[5][2] = 0.0;
   }
   
   /*--- Hexahedrons. Nodes of numerical integration at 6 points (order 3). ---*/
   
   if (nNodes == 8) {
     nNodal = 8;
-    Location[0][0] = -1.0;  Location[0][1] = -1.0;  Location[0][2] = -1.0;
-    Location[1][0] = 1.0;  	Location[1][1] = -1.0;  Location[1][2] = -1.0;
-    Location[2][0] = 1.0;  	Location[2][1] = 1.0;   Location[2][2] = -1.0;
-    Location[3][0] = -1.0;  Location[3][1] = 1.0;   Location[3][2] = -1.0;
-    Location[4][0] = -1.0;  Location[4][1] = -1.0;  Location[4][2] = 1.0;
-    Location[5][0] = 1.0;   Location[5][1] = -1.0;  Location[5][2] = 1.0;
-    Location[6][0] = 1.0;   Location[6][1] = 1.0;   Location[6][2] = 1.0;
-    Location[7][0] = -1.0;  Location[7][1] = 1.0;   Location[7][2] = 1.0;
+//    Location[0][0] = -1.0;  Location[0][1] = -1.0;  Location[0][2] = -1.0;
+//    Location[1][0] = 1.0;  	Location[1][1] = -1.0;  Location[1][2] = -1.0;
+//    Location[2][0] = 1.0;  	Location[2][1] = 1.0;   Location[2][2] = -1.0;
+//    Location[3][0] = -1.0;  Location[3][1] = 1.0;   Location[3][2] = -1.0;
+//    Location[4][0] = -1.0;  Location[4][1] = -1.0;  Location[4][2] = 1.0;
+//    Location[5][0] = 1.0;   Location[5][1] = -1.0;  Location[5][2] = 1.0;
+//    Location[6][0] = 1.0;   Location[6][1] = 1.0;   Location[6][2] = 1.0;
+//    Location[7][0] = -1.0;  Location[7][1] = 1.0;   Location[7][2] = 1.0;
   }
   
   for (iNodal = 0; iNodal < nNodal; iNodal++) {

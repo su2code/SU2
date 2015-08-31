@@ -321,7 +321,8 @@ void COutput::SetCGNS_Solution(CConfig *config, CGeometry *geometry, unsigned sh
 #ifdef HAVE_CGNS
   
 	/*--- local CGNS variables ---*/
-	int cgns_file, cgns_flow, cgns_field, element_dims, cgns_err;
+	int cgns_file, cgns_flow, cgns_field, cgns_err;
+//  int element_dims;
 	unsigned long jVar, iVar, iExtIter = config->GetExtIter();
 	string base_file, buffer, elements_name;
 	stringstream name, results_file;
@@ -355,7 +356,7 @@ void COutput::SetCGNS_Solution(CConfig *config, CGeometry *geometry, unsigned sh
       cgns_err = cg_open((char *)base_file.c_str(), CG_MODE_MODIFY, &cgns_file);
       if (cgns_err) cg_error_print();
       
-      element_dims = geometry->GetnDim();		// Currently (release 2.0) only all-2D or all-3D zones permitted
+//      element_dims = geometry->GetnDim();		// Currently (release 2.0) only all-2D or all-3D zones permitted
       
       /*--- write CGNS descriptor data ---*/
       cgns_err = cg_goto(cgns_file, cgns_base,"end");
@@ -380,8 +381,8 @@ void COutput::SetCGNS_Solution(CConfig *config, CGeometry *geometry, unsigned sh
     
 		cgns_err = cg_open((char *)results_file.str().c_str(), CG_MODE_MODIFY, &cgns_file);
     
-		element_dims = geometry->GetnDim();		// Currently (release 2.0) only all-2D or all-3D zones permitted
-    
+//		element_dims = geometry->GetnDim();		// Currently (release 2.0) only all-2D or all-3D zones permitted
+//    
 //		/*--- write CGNS base data (one base assumed as of version 4.0.0 "Cardinal") ---*/
 //		cgns_err = cg_base_write(cgns_file,"SU2 Base", element_dims, physical_dims, &cgns_base);
 //		if (cgns_err) cg_error_print();

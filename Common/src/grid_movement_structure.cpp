@@ -5398,7 +5398,7 @@ void CSurfaceMovement::SetBoundary_Flutter3D(CGeometry *geometry, CConfig *confi
 	su2double omega, deltaT;
   su2double alpha, alpha_new, alpha_old;
   su2double time_new, time_old;
-  su2double Center[3], Omega[3], Ampl[3], Phase[3];
+  su2double Omega[3], Ampl[3];
   su2double DEG2RAD = PI_NUMBER/180.0;
   int rank;
   bool adjoint = config->GetAdjoint();
@@ -5415,18 +5415,12 @@ void CSurfaceMovement::SetBoundary_Flutter3D(CGeometry *geometry, CConfig *confi
   
   /*--- Pitching origin, frequency, and amplitude from config. ---*/
   
-  Center[0] = config->GetMotion_Origin_X(iZone);
-  Center[1] = config->GetMotion_Origin_Y(iZone);
-  Center[2] = config->GetMotion_Origin_Z(iZone);
   Omega[0]  = (config->GetPitching_Omega_X(iZone)/config->GetOmega_Ref());
   Omega[1]  = (config->GetPitching_Omega_Y(iZone)/config->GetOmega_Ref());
   Omega[2]  = (config->GetPitching_Omega_Z(iZone)/config->GetOmega_Ref());
   Ampl[0]   = config->GetPitching_Ampl_X(iZone)*DEG2RAD;
   Ampl[1]   = config->GetPitching_Ampl_Y(iZone)*DEG2RAD;
   Ampl[2]   = config->GetPitching_Ampl_Z(iZone)*DEG2RAD;
-  Phase[0]   = config->GetPitching_Phase_X(iZone)*DEG2RAD;
-  Phase[1]   = config->GetPitching_Phase_Y(iZone)*DEG2RAD;
-  Phase[2]   = config->GetPitching_Phase_Z(iZone)*DEG2RAD;
   
   /*--- Compute delta time based on physical time step ---*/
   

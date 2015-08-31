@@ -765,11 +765,12 @@ void CNumerics::SetPastVolume (su2double val_volume_nM1, su2double val_volume_n,
 void CNumerics::GetPMatrix(su2double *val_density, su2double *val_velocity,
                            su2double *val_soundspeed, su2double *val_normal, su2double **val_p_tensor) {
   
-  su2double sqvel, rhooc, rhoxc, c2;
+  su2double sqvel, rhooc, rhoxc;
+  //su2double c2;
   
-  rhooc = *val_density / *val_soundspeed,
-  rhoxc = *val_density * *val_soundspeed,
-  c2 = *val_soundspeed * *val_soundspeed;
+  rhooc = *val_density / *val_soundspeed;
+  rhoxc = *val_density * *val_soundspeed;
+  //c2 = *val_soundspeed * *val_soundspeed;
   
   if (nDim == 2) {
     
@@ -837,11 +838,12 @@ void CNumerics::GetPMatrix(su2double *val_density, su2double *val_velocity,
 void CNumerics::GetPMatrix(su2double *val_density, su2double *val_velocity,
 		su2double *val_soundspeed, su2double *val_enthalpy, su2double *val_chi, su2double *val_kappa, su2double *val_normal, su2double **val_p_tensor) {
 
-	su2double sqvel, rhooc, rhoxc, c2, zeta;
-
-	rhooc = *val_density / *val_soundspeed,
-			rhoxc = *val_density * *val_soundspeed,
-			c2 = *val_soundspeed * *val_soundspeed;
+  su2double sqvel, rhooc, zeta;
+  //su2double rhoxc, c2;
+  
+  rhooc = *val_density / *val_soundspeed;
+  //rhoxc = *val_density * *val_soundspeed;
+  //c2 = *val_soundspeed * *val_soundspeed;
 
 	if (nDim == 2) {
 		sqvel = val_velocity[0]*val_velocity[0]+val_velocity[1]*val_velocity[1];
