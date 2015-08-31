@@ -4138,7 +4138,7 @@ public:
    * \param[in] CoordCorners[8][3] - Coordiantes of the corners.
    * \param[in] shp[8][4] - Shape function information
    */
-  su2double ShapeFunc_Rectangle(su2double Xi, su2double Eta, su2double CoordCorners[8][3], su2double DShapeFunction[8][4]);
+  su2double ShapeFunc_Quadrilateral(su2double Xi, su2double Eta, su2double CoordCorners[8][3], su2double DShapeFunction[8][4]);
   
   /*!
    * \brief Shape functions and derivative of the shape functions

@@ -175,7 +175,7 @@ private:
 	nMarker_Neumann_Elec,				/*!< \brief Number of Neumann flow markers. */
 	nMarker_All,					/*!< \brief Total number of markers using the grid information. */
   nMarker_Max,					/*!< \brief Max number of number of markers using the grid information. */
-  nMarker_Config;					/*!< \brief Total number of markers using the config file
+  nMarker_CfgFile;					/*!< \brief Total number of markers using the config file
 									(note that using parallel computation this number can be different
 									from nMarker_All). */
 	string *Marker_Euler,			/*!< \brief Euler wall markers. */
