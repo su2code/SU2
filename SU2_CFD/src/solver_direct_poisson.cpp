@@ -243,7 +243,7 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 //				LinSysRes.AddBlock(Point_1, &Source_Vector[1]);
 //				LinSysRes.AddBlock(Point_2, &Source_Vector[2]);
 //        
-//				if (geometry->elem[iElem]->GetVTK_Type() == RECTANGLE) {
+//				if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) {
 //          
 //					Point_0 = geometry->elem[iElem]->GetNode(3);
 //					Point_1 = geometry->elem[iElem]->GetNode(0);

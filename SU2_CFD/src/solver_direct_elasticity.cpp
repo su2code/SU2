@@ -483,7 +483,7 @@ void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CSolver **solver_conta
   for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
     
     if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     nNodes = 3;
-    if (geometry->elem[iElem]->GetVTK_Type() == RECTANGLE)    nNodes = 4;
+    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL)    nNodes = 4;
     if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  nNodes = 4;
     if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      nNodes = 5;
     if (geometry->elem[iElem]->GetVTK_Type() == PRISM)        nNodes = 6;
@@ -540,7 +540,7 @@ void CFEASolver::Compute_StiffMassMatrix(CGeometry *geometry, CSolver **solver_c
   for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
     
     if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     nNodes = 3;
-    if (geometry->elem[iElem]->GetVTK_Type() == RECTANGLE)    nNodes = 4;
+    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL)    nNodes = 4;
     if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  nNodes = 4;
     if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      nNodes = 5;
     if (geometry->elem[iElem]->GetVTK_Type() == PRISM)        nNodes = 6;
@@ -1030,7 +1030,7 @@ void CFEASolver::BC_Dir_Load(CGeometry *geometry, CSolver **solver_container, CN
         
         //Area_Elem = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
         
-      } else if (geometry->bound[val_marker][iElem]->GetVTK_Type() == RECTANGLE){
+      } else if (geometry->bound[val_marker][iElem]->GetVTK_Type() == QUADRILATERAL){
         
         Point_3 = geometry->bound[val_marker][iElem]->GetNode(3);
         Coord_3 = geometry->node[Point_3]->GetCoord();
@@ -1072,7 +1072,7 @@ void CFEASolver::BC_Dir_Load(CGeometry *geometry, CSolver **solver_container, CN
         LinSysRes.AddBlock(Point_1, Residual);
         LinSysRes.AddBlock(Point_2, Residual);
       }
-      else if (geometry->bound[val_marker][iElem]->GetVTK_Type() == RECTANGLE){
+      else if (geometry->bound[val_marker][iElem]->GetVTK_Type() == QUADRILATERAL){
         
         Residual[0] = (1.0/4.0)*Area_Elem*TotalLoad*Load_Dir_Local[0]/Norm;
         Residual[1] = (1.0/4.0)*Area_Elem*TotalLoad*Load_Dir_Local[1]/Norm;
@@ -1152,7 +1152,7 @@ void CFEASolver::BC_Sine_Load(CGeometry *geometry, CSolver **solver_container, C
         
         //Area_Elem = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
         
-      } else if (geometry->bound[val_marker][iElem]->GetVTK_Type() == RECTANGLE){
+      } else if (geometry->bound[val_marker][iElem]->GetVTK_Type() == QUADRILATERAL){
         
         Point_3 = geometry->bound[val_marker][iElem]->GetNode(3);
         Coord_3 = geometry->node[Point_3]->GetCoord();
@@ -1196,7 +1196,7 @@ void CFEASolver::BC_Sine_Load(CGeometry *geometry, CSolver **solver_container, C
         
         
       }
-      else if (geometry->bound[val_marker][iElem]->GetVTK_Type() == RECTANGLE){
+      else if (geometry->bound[val_marker][iElem]->GetVTK_Type() == QUADRILATERAL){
         
         Residual[0] = (1.0/4.0)*Area_Elem*TotalLoad*Load_Dir_Local[0]/Norm;
         Residual[1] = (1.0/4.0)*Area_Elem*TotalLoad*Load_Dir_Local[1]/Norm;
@@ -1214,8 +1214,6 @@ void CFEASolver::BC_Sine_Load(CGeometry *geometry, CSolver **solver_container, C
   }
   
 }
-
-
 
 void CFEASolver::BC_Pressure(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
                              unsigned short val_marker) { }
@@ -1266,7 +1264,7 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
   for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
     
     if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE){     nNodes = 3;}
-    if (geometry->elem[iElem]->GetVTK_Type() == RECTANGLE){    nNodes = 4;}
+    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL){    nNodes = 4;}
     if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON){  nNodes = 4;}
     if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID){      nNodes = 5;}
     if (geometry->elem[iElem]->GetVTK_Type() == PRISM){        nNodes = 6;}
