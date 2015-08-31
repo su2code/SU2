@@ -1905,14 +1905,15 @@ void CVolumetricMovement::SetBoundaryDerivatives(CGeometry *geometry, CConfig *c
 void CVolumetricMovement::UpdateGridCoord_Derivatives(CGeometry *geometry, CConfig *config){
   unsigned short iDim, iMarker;
   unsigned long iPoint, total_index, iVertex;
-  su2double new_coord[3];
+  su2double *new_coord = new su2double[3];
 
   unsigned short Kind_SU2 = config->GetKind_SU2();
 
   /*--- Update derivatives of the grid coordinates using the solution of the linear system
      after grid deformation (LinSysSol contains the derivatives of the x, y, z displacements). ---*/
   if ((config->GetDirectDiff() == D_DESIGN) && (Kind_SU2 == SU2_CFD)){
-    for (iPoint = 0; iPoint < nPoint; iPoint++){
+    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++){
+      new_coord[0] = 0.0; new_coord[1] = 0.0; new_coord[2] = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
         total_index = iPoint*nDim + iDim;
         new_coord[iDim] = geometry->node[iPoint]->GetCoord(iDim);
@@ -1935,6 +1936,8 @@ void CVolumetricMovement::UpdateGridCoord_Derivatives(CGeometry *geometry, CConf
       }
     }
   }
+  
+  delete [] new_coord;
 }
 
 void CVolumetricMovement::SetDomainDisplacements(CGeometry *geometry, CConfig *config) {
@@ -1991,7 +1994,9 @@ void CVolumetricMovement::Rigid_Rotation(CGeometry *geometry, CConfig *config,
 	/*--- Local variables ---*/
 	unsigned short iDim, nDim; 
 	unsigned long iPoint;
-	su2double r[3] = {0.0,0.0,0.0}, rotCoord[3] = {0.0,0.0,0.0}, *Coord, Center[3] = {0.0,0.0,0.0}, Omega[3] = {0.0,0.0,0.0}, Lref, dt, Center_Moment[3] = {0.0,0.0,0.0};
+  su2double r[3] = {0.0,0.0,0.0}, rotCoord[3] = {0.0,0.0,0.0}, *Coord;
+  su2double Center[3] = {0.0,0.0,0.0}, Omega[3] = {0.0,0.0,0.0}, Lref;
+  su2double dt, Center_Moment[3] = {0.0,0.0,0.0};
   su2double *GridVel, newGridVel[3] = {0.0,0.0,0.0};
 	su2double rotMatrix[3][3] = {{0.0,0.0,0.0}, {0.0,0.0,0.0}, {0.0,0.0,0.0}};
 	su2double dtheta, dphi, dpsi, cosTheta, sinTheta;
@@ -2075,9 +2080,9 @@ void CVolumetricMovement::Rigid_Rotation(CGeometry *geometry, CConfig *config,
     GridVel = geometry->node[iPoint]->GetGridVel();
     
     /*--- Calculate non-dim. position from rotation center ---*/
-    for (iDim = 0; iDim < nDim; iDim++)
-      r[iDim] = (Coord[iDim]-Center[iDim])/Lref;
-    if (nDim == 2) r[nDim] = 0.0;
+    r[0] = (Coord[0]-Center[0])/Lref;
+    r[1] = (Coord[1]-Center[1])/Lref;
+    if (nDim == 3) r[2] = (Coord[2]-Center[2])/Lref;
     
     /*--- Compute transformed point coordinates ---*/
     rotCoord[0] = rotMatrix[0][0]*r[0] 
@@ -4396,7 +4401,7 @@ void CSurfaceMovement::SetHicksHenne(CGeometry *boundary, CConfig *config, unsig
   
 #endif
   
-  AoA = atan((LPCoord[1] - TPCoord[1]) / (TPCoord[0] - LPCoord[0]))*180/PI_NUMBER;
+  //AoA = atan((LPCoord[1] - TPCoord[1]) / (TPCoord[0] - LPCoord[0]))*180/PI_NUMBER;
   AoA = 0.0;
 
 	/*--- Perform multiple airfoil deformation ---*/
@@ -5800,6 +5805,7 @@ void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
   
   cout << "Enter the name of file with the airfoil information: ";
   ierr = scanf("%s", AirfoilFile);
+  if (ierr == 0) { cout << "No input read!! "<< endl; exit(EXIT_FAILURE); }
   airfoil_file.open(AirfoilFile, ios::in);
   if (airfoil_file.fail()) {
     cout << "There is no airfoil file!! "<< endl;
@@ -5807,16 +5813,20 @@ void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
   }
   cout << "Enter the format of the airfoil (Selig or Lednicer): ";
   ierr = scanf("%s", AirfoilFormat);
+  if (ierr == 0) { cout << "No input read!! "<< endl; exit(EXIT_FAILURE); }
 
   cout << "Thickness scaling (1.0 means no scaling)?: ";
   ierr = scanf("%lf", &AirfoilScale);
-  
+  if (ierr == 0) { cout << "No input read!! "<< endl; exit(EXIT_FAILURE); }
+
   cout << "Close the airfoil (Yes or No)?: ";
   ierr = scanf("%s", AirfoilClose);
-  
+  if (ierr == 0) { cout << "No input read!! "<< endl; exit(EXIT_FAILURE); }
+
   cout << "Surface mesh orientation (clockwise, or anticlockwise): ";
   ierr = scanf("%s", MeshOrientation);
-  
+  if (ierr == 0) { cout << "No input read!! "<< endl; exit(EXIT_FAILURE); }
+
   /*--- The first line is the header ---*/
   
   getline (airfoil_file, text_line);

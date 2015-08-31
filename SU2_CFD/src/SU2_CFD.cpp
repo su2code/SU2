@@ -120,7 +120,6 @@ int main(int argc, char *argv[]) {
     
     config_container[iZone] = new CConfig(config_file_name, SU2_CFD, iZone, nZone, nDim, VERB_HIGH);
     
-    
     /*--- Definition of the geometry class to store the primal grid in the
      partitioning process. ---*/
     

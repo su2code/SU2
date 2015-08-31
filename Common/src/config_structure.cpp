@@ -95,7 +95,7 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], CConfig *config) {
   
   runtime_file = SetRunTime_Parsing(case_filename);
   
-  /*--- Update config file ---*/
+  /*--- Update original config file ---*/
   
   if (runtime_file) {
     config->SetnExtIter(nExtIter);

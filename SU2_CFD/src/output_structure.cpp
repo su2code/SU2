@@ -1890,7 +1890,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   su2double *Aux_Frict = NULL, *Aux_Heat = NULL, *Aux_yPlus = NULL, *Aux_Sens = NULL;
   
   unsigned short CurrentIndex;
-  int SendRecv, *Local_Halo;
+  int *Local_Halo;
   unsigned long Buffer_Send_nPoint[1], *Buffer_Recv_nPoint = NULL;
   unsigned long nLocalPoint = 0, MaxLocalPoint = 0;
   unsigned long iGlobal_Index = 0, nBuffer_Scalar = 0;
@@ -2078,7 +2078,6 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   } else {
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
-        SendRecv = config->GetMarker_All_SendRecv(iMarker);
         
         /*--- Checking for less than or equal to the rank, because there may
          be some periodic halo nodes that send info to the same rank. ---*/
@@ -5671,9 +5670,9 @@ void COutput::SetCFL_Number(CSolver ****solver_container, CConfig **config, unsi
   
   /*--- Compute MG factor ---*/
   
-  MGFactor[MESH_0] = 1.0;
-  for (iMesh = 1; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
-    MGFactor[iMesh] = MGFactor[iMesh-1] * config[val_iZone]->GetCFL(iMesh)/config[val_iZone]->GetCFL(iMesh-1);
+  for (iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
+    if (iMesh == MESH_0) MGFactor[iMesh] = 1.0;
+    else MGFactor[iMesh] = MGFactor[iMesh-1] * config[val_iZone]->GetCFL(iMesh)/config[val_iZone]->GetCFL(iMesh-1);
   }
   
   if (Div < 1.0) power = config[val_iZone]->GetCFL_AdaptParam(0);

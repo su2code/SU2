@@ -4475,9 +4475,9 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
             /*--- Compute (Vn - Ubn).n term for use in the BC. ---*/
 
             /*--- Compute the new fictious state at the outlet ---*/
-            Density    = pow(P_Exit/Entropy,1.0/Gamma);
             Pressure   = P_Exit;
-            SoundSpeed = sqrt(Gamma*P_Exit/Density);
+            Density    = pow(Pressure/Entropy,1.0/Gamma);
+            SoundSpeed = sqrt(Gamma*Pressure/Density);
             Vn_Exit    = Riemann - 2.0*SoundSpeed/Gamma_Minus_One;
             Velocity2  = 0.0;
             for (iDim = 0; iDim < nDim; iDim++) {
