@@ -209,7 +209,7 @@ su2double CGalerkin_FEA::ShapeFunc_Triangle(su2double Xi, su2double Eta, su2doub
   
 }
 
-su2double CGalerkin_FEA::ShapeFunc_Rectangle(su2double Xi, su2double Eta, su2double CoordCorners[8][3], su2double DShapeFunction[8][4]) {
+su2double CGalerkin_FEA::ShapeFunc_Quadrilateral(su2double Xi, su2double Eta, su2double CoordCorners[8][3], su2double DShapeFunction[8][4]) {
   
   int i, j, k;
   su2double c0, c1, xsj;
@@ -629,7 +629,7 @@ void CGalerkin_FEA::SetFEA_StiffMatrix2D(su2double **StiffMatrix_Elem, su2double
     Location[0][0] = 0.333333333333333;  Location[0][1] = 0.333333333333333;  Weight[0] = 0.5; // Note: W=1, A=1/2
   }
   
-  /*--- Rectangle. Nodes of numerical integration at 4 points (order 2). ---*/
+  /*--- Quadrilateral. Nodes of numerical integration at 4 points (order 2). ---*/
   
   if (nNodes == 4) {
     nGauss = 4;
@@ -644,7 +644,7 @@ void CGalerkin_FEA::SetFEA_StiffMatrix2D(su2double **StiffMatrix_Elem, su2double
     Xi = Location[iGauss][0]; Eta = Location[iGauss][1];
     
     if (nNodes == 3) Det = ShapeFunc_Triangle(Xi, Eta, CoordCorners, DShapeFunction);
-    if (nNodes == 4) Det = ShapeFunc_Rectangle(Xi, Eta, CoordCorners, DShapeFunction);
+    if (nNodes == 4) Det = ShapeFunc_Quadrilateral(Xi, Eta, CoordCorners, DShapeFunction);
     
     /*--- Compute the B Matrix ---*/
     
@@ -857,7 +857,7 @@ void CGalerkin_FEA::SetFEA_StiffMassMatrix2D(su2double **StiffMatrix_Elem, su2do
 	    Location[0][0] = 0.333333333333333;  Location[0][1] = 0.333333333333333;  Weight[0] = 0.5; // Note: W=1, A=1/2
 	  }
 
-	  /*--- Rectangle. Nodes of numerical integration at 4 points (order 2). ---*/
+	  /*--- Quadrilateral. Nodes of numerical integration at 4 points (order 2). ---*/
 
 	  if (nNodes == 4) {
 	    nGauss = 4;
@@ -872,7 +872,7 @@ void CGalerkin_FEA::SetFEA_StiffMassMatrix2D(su2double **StiffMatrix_Elem, su2do
 	    Xi = Location[iGauss][0]; Eta = Location[iGauss][1];
 
 	    if (nNodes == 3) Det = ShapeFunc_Triangle(Xi, Eta, CoordCorners, DShapeFunction);
-	    if (nNodes == 4) Det = ShapeFunc_Rectangle(Xi, Eta, CoordCorners, DShapeFunction);
+	    if (nNodes == 4) Det = ShapeFunc_Quadrilateral(Xi, Eta, CoordCorners, DShapeFunction);
 
 	    /*--- Compute the N Matrix ---*/
 
@@ -1125,7 +1125,7 @@ void CGalerkin_FEA::SetFEA_DeadLoad2D(su2double *DeadLoadVector_Elem, su2double 
 	    Location[0][0] = 0.333333333333333;  Location[0][1] = 0.333333333333333;  Weight[0] = 0.5; // Note: W=1, A=1/2
 	  }
 
-	  /*--- Rectangle. Nodes of numerical integration at 4 points (order 2). ---*/
+	  /*--- Quadrilateral. Nodes of numerical integration at 4 points (order 2). ---*/
 
 	  if (nNodes == 4) {
 	    nGauss = 4;
@@ -1140,7 +1140,7 @@ void CGalerkin_FEA::SetFEA_DeadLoad2D(su2double *DeadLoadVector_Elem, su2double 
 	    Xi = Location[iGauss][0]; Eta = Location[iGauss][1];
 
 	    if (nNodes == 3) Det = ShapeFunc_Triangle(Xi, Eta, CoordCorners, DShapeFunction);
-	    if (nNodes == 4) Det = ShapeFunc_Rectangle(Xi, Eta, CoordCorners, DShapeFunction);
+	    if (nNodes == 4) Det = ShapeFunc_Quadrilateral(Xi, Eta, CoordCorners, DShapeFunction);
 
 	    /*--- Compute the B Matrix ---*/
 
@@ -1200,7 +1200,7 @@ void CGalerkin_FEA::GetFEA_StressNodal2D(su2double StressNodal[8][3], su2double 
 	    Location[0][0] = 0.0;  Location[0][1] = 0.0;
 	  }
 
-	  /*--- Rectangle. Nodes of numerical integration at 4 points (order 2). ---*/
+	  /*--- Quadrilateral. Nodes of numerical integration at 4 points (order 2). ---*/
 
 	  if (nNodes == 4) {
 	    Location[0][0] = -1.0;  Location[0][1] = -1.0;
@@ -1214,7 +1214,7 @@ void CGalerkin_FEA::GetFEA_StressNodal2D(su2double StressNodal[8][3], su2double 
 	    Xi = Location[iNodal][0]; Eta = Location[iNodal][1];
 
 	    if (nNodes == 3) Det = ShapeFunc_Triangle(Xi, Eta, CoordCorners, DShapeFunction);
-	    if (nNodes == 4) Det = ShapeFunc_Rectangle(Xi, Eta, CoordCorners, DShapeFunction);
+	    if (nNodes == 4) Det = ShapeFunc_Quadrilateral(Xi, Eta, CoordCorners, DShapeFunction);
 
 	    /*--- Compute the B Matrix ---*/
 

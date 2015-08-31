@@ -864,7 +864,7 @@ public:
 	 * \param[in] CoordCorners - Coordiantes of the corners.
    * \param[in] DShapeFunction - Shape function information
 	 */
-  su2double ShapeFunc_Rectangle(su2double Xi, su2double Eta, su2double CoordCorners[8][3], su2double DShapeFunction[8][4]);
+  su2double ShapeFunc_Quadrilateral(su2double Xi, su2double Eta, su2double CoordCorners[8][3], su2double DShapeFunction[8][4]);
   
   /*!
 	 * \brief Compute the shape functions for hexahedron
@@ -900,7 +900,7 @@ public:
 	 * \brief Compute the shape functions for hexahedron
 	 * \param[in] CoordCorners - coordinates of the cornes of the hexahedron.
 	 */
-  su2double GetRectangle_Area(su2double CoordCorners[8][3]);
+  su2double GetQuadrilateral_Area(su2double CoordCorners[8][3]);
     
   /*!
 	 * \brief Add the stiffness matrix for a 2-D triangular element to the global stiffness matrix for the entire mesh (node-based).
