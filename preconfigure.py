@@ -247,7 +247,7 @@ def init_codi(modes, mpi_support = False):
     # The sha tag must be maintained manually to point to the correct commit
     sha_version_codi = '3f668b0f5764b11ea592379f1842b41e6f1d489f'
     github_repo_codi = 'https://github.com/scicompkl/CoDiPack'
-    sha_version_ampi = '8ab63005c646d5b6a2910521f9c0180ce7076f38'
+    sha_version_ampi = '31b2267c3a55a391a37d830369f2e0dba09008d1'
     github_repo_ampi = 'https://github.com/michel2323/AdjointMPI'
 
     ampi_name = 'AdjointMPI'
