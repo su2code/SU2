@@ -801,7 +801,7 @@ enum GEO_TYPE {
   VERTEX = 1,   		/*!< \brief VTK nomenclature for defining a vertex element. */
   LINE = 3,			/*!< \brief VTK nomenclature for defining a line element. */
   TRIANGLE = 5, 		/*!< \brief VTK nomenclature for defining a triangle element. */
-  RECTANGLE = 9,		/*!< \brief VTK nomenclature for defining a rectangle element. */
+  QUADRILATERAL = 9,		/*!< \brief VTK nomenclature for defining a quadrilateral element. */
   TETRAHEDRON = 10,     	/*!< \brief VTK nomenclature for defining a tetrahedron element. */
   HEXAHEDRON = 12,      	/*!< \brief VTK nomenclature for defining a hexahedron element. */
   PRISM = 13,     		/*!< \brief VTK nomenclature for defining a prism element. */
