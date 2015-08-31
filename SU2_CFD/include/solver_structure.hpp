@@ -1010,6 +1010,42 @@ public:
 
 	/*!
 	 * \brief A virtual member.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] intMarker - internal marker.
+	 * \param[in] extMarker - external marker.
+	 */
+	 virtual void SetExtAveragedValue(CSolver *solver_container, unsigned short intMarker,  unsigned short extMarker);
+
+	 /*!
+	  * \brief A virtual member.
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Average Density on the surface <i>val_marker</i>.
+	  */
+	 virtual su2double GetAverageDensity(unsigned short valMarker);
+
+	 /*!
+	  * \brief A virtual member.
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  */
+	 virtual su2double GetAveragePressure(unsigned short valMarker);
+
+	 /*!
+	  * \brief A virtual member.
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Average Normal Velocity on the surface <i>val_marker</i>.
+	  */
+	 virtual su2double GetAverageNormalVelocity(unsigned short valMarker);
+
+	 /*!
+	  * \brief A virtual member.
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Average Tangent Velocity on the surface <i>val_marker</i>.
+	  */
+	 virtual su2double GetAverageTangVelocity(unsigned short valMarker);
+
+	/*!
+	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
 	 * \param[in] config - Definition of the particular problem.
@@ -2671,16 +2707,21 @@ protected:
   	  	  **AveragedFlux,
 		  **TotalFlux,
 		  *AveragedNormalVelocity,
+		  *ExtAveragedNormalVelocity,
 		  *AveragedTangVelocity,
+		  *ExtAveragedTangVelocity,
 		  *AveragedTangGridVelocity,
 		  *AveragedMach,
 		  *AveragedNormalMach,
 		  *AveragedTangMach,
 		  *AveragedEnthalpy,
 		  *AveragedPressure,
+		  *ExtAveragedPressure,
 		  *AveragedDensity,
+		  *ExtAveragedDensity,
 		  *AveragedSoundSpeed,
 		  *AveragedEntropy;
+
 
 
 public:
@@ -3254,13 +3295,49 @@ public:
 	void Boundary_Fourier(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short val_Marker, vector<std::complex<su2double> >& c2k,vector<std::complex<su2double> >& c3k,signed long& nboundaryvertex);
 
 	/*!
+	 * \brief A virtual member.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] intMarker - internal marker.
+	 * \param[in] extMarker - external marker.
+	 */
+	 void SetExtAveragedValue(CSolver *solver_container, unsigned short intMarker,  unsigned short extMarker);
+
+	 /*!
+	  * \brief Provide the average density at the boundary of interest.
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Average Density on the surface <i>val_marker</i>.
+	  */
+	 su2double GetAverageDensity(unsigned short valMarker);
+
+	 /*!
+	  * \brief Provide the average pressure at the boundary of interest.
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  */
+	 su2double GetAveragePressure(unsigned short valMarker);
+
+	 /*!
+	  * \brief Provide the Average Normal Velocity at the boundary of interest.
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Average Normal Velocity on the surface <i>val_marker</i>.
+	  */
+	 su2double GetAverageNormalVelocity(unsigned short valMarker);
+
+	 /*!
+	  * \brief Provide the Tangent Velocity at the boundary of interest.
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Average Tangent Velocity on the surface <i>val_marker</i>.
+	  */
+	 su2double GetAverageTangVelocity(unsigned short valMarker);
+
+	 /*!
 	 * \brief compare to values.
 	 * \param[in] a - value 1.
 	 * \param[in] b - value 2.
 	 */
+     static bool Compareval(std::vector<su2double> a,std::vector<su2double> b);
 
-	 static bool Compareval(std::vector<su2double> a,std::vector<su2double> b);
-	/*!
+     /*!
 	 * \brief Update the solution using a Runge-Kutta scheme.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.

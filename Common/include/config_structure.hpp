@@ -146,6 +146,7 @@ private:
 	nMarker_SymWall,				/*!< \brief Number of symmetry wall markers. */
   nMarker_Pressure,				/*!< \brief Number of pressure wall markers. */
 	nMarker_PerBound,				/*!< \brief Number of periodic boundary markers. */
+	nMarker_MixBound,				/*!< \brief Number of mixing boundary markers. */
 	nMarker_NearFieldBound,				/*!< \brief Number of near field boundary markers. */
   nMarker_ActDisk_Inlet, nMarker_ActDisk_Outlet,
 	nMarker_InterfaceBound,				/*!< \brief Number of interface boundary markers. */
@@ -187,6 +188,8 @@ private:
   *Marker_Pressure,				/*!< \brief Pressure boundary markers. */
 	*Marker_PerBound,				/*!< \brief Periodic boundary markers. */
 	*Marker_PerDonor,				/*!< \brief Rotationally periodic boundary donor markers. */
+	*Marker_MixBound,				/*!< \brief MixingPlane boundary markers. */
+	*Marker_MixDonor,				/*!< \brief MixingPlane boundary donor markers. */
 	*Marker_NearFieldBound,				/*!< \brief Near Field boundaries markers. */
 	*Marker_InterfaceBound,				/*!< \brief Interface boundaries markers. */
   *Marker_ActDisk_Inlet,
@@ -988,6 +991,14 @@ private:
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
     COptionBase* val = new COptionPeriodic(name, nMarker_PerBound, Marker_PerBound, Marker_PerDonor, RotCenter, RotAngles, Translation);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+
+  void addMixingPlaneOption(const string & name, unsigned short & nMarker_MixBound,
+                    string* & Marker_MixBound, string* & Marker_MixDonor){
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string, bool>(name, true));
+    COptionBase* val = new COptionMixingPlane(name, nMarker_MixBound, Marker_MixBound, Marker_MixDonor);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
@@ -3569,7 +3580,33 @@ public:
 	 */
 	unsigned short GetKind_MixingProcess(void);
 
-  /*!
+	/*!
+     * \brief Verify if there is mixing plane interface specified from config file.
+	 * \return boolean.
+	 */
+
+	bool GetBoolMixingPlane(void);
+
+	/*!
+	 * \brief number mixing plane interface specified from config file.
+	 * \return number of bound.
+	 */
+    unsigned short Get_nMarkerMixingPlane(void);
+
+    /*!
+	 * \brief get bounds name of mixing plane interface.
+	 * \return name of the bound.
+	 */
+    string GetMarker_MixingPlane_Bound(unsigned short val_marker);
+
+
+    /*!
+	 * \brief get bounds name of mixing plane interface.
+	 * \return name of the bound.
+	 */
+    string GetMarker_MixingPlane_Donor(unsigned short val_marker);
+
+    /*!
 	 * \brief Get the number of sections.
 	 * \return Number of sections
 	 */

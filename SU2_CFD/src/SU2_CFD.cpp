@@ -349,8 +349,7 @@ int main(int argc, char *argv[]) {
   while (ExtIter < config_container[ZONE_0]->GetnExtIter()) {
     
     /*--- Set the value of the external iteration. ---*/
-    
-    config_container[ZONE_0]->SetExtIter(ExtIter);
+	for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetExtIter(ExtIter);
     
     /*--- Read the target pressure ---*/
     

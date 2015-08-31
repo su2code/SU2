@@ -801,6 +801,14 @@ inline unsigned short CConfig::GetKind_Inlet(void) { return Kind_Inlet; }
 
 inline unsigned short CConfig::GetKind_MixingProcess(void) { return Kind_MixingProcess; }
 
+inline bool CConfig::GetBoolMixingPlane(void) { return (nMarker_MixBound !=0);}
+
+inline string CConfig::GetMarker_MixingPlane_Bound(unsigned short val_marker) {return Marker_MixBound[val_marker];}
+
+inline string CConfig::GetMarker_MixingPlane_Donor(unsigned short val_marker) {return Marker_MixDonor[val_marker];}
+
+inline unsigned short CConfig::Get_nMarkerMixingPlane(void) { return nMarker_MixBound;}
+
 inline unsigned short CConfig::GetnSections(void) { return nSections; }
 
 inline unsigned short CConfig::GetnVolSections(void) { return nVolSections; }
