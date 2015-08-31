@@ -6597,10 +6597,10 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
   unsigned long iVertex, iPoint, Point_Normal;
 
   su2double *GridVel;
-  su2double Area, UnitNormal[3];
-  su2double Density, Pressure, Velocity[3], Energy;
-  su2double Density_Bound, Pressure_Bound, Vel_Bound[3];
-  su2double Density_Infty, Pressure_Infty, Vel_Infty[3];
+  su2double Area, UnitNormal[3] = {0.0,0.0,0.0};
+  su2double Density, Pressure, Energy,  Velocity[3] = {0.0,0.0,0.0};
+  su2double Density_Bound, Pressure_Bound, Vel_Bound[3] = {0.0,0.0,0.0};
+  su2double Density_Infty, Pressure_Infty, Vel_Infty[3] = {0.0,0.0,0.0};
   su2double SoundSpeed, Entropy, Velocity2, Vn;
   su2double SoundSpeed_Bound, Entropy_Bound, Vel2_Bound, Vn_Bound;
   su2double SoundSpeed_Infty, Entropy_Infty, Vel2_Infty, Vn_Infty, Qn_Infty;
@@ -6609,13 +6609,14 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
   su2double Gas_Constant     = config->GetGas_ConstantND();
 
-  bool implicit         = config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT;
-  bool grid_movement    = config->GetGrid_Movement();
-  bool compressible     = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible   = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface      = (config->GetKind_Regime() == FREESURFACE);
-  bool viscous          = config->GetViscous();
-  bool tkeNeeded = (((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS))
+  bool implicit       = config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT;
+  bool grid_movement  = config->GetGrid_Movement();
+  bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
+  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool freesurface    = (config->GetKind_Regime() == FREESURFACE);
+  bool viscous        = config->GetViscous();
+  bool tkeNeeded = (((config->GetKind_Solver() == RANS ) ||
+                     (config->GetKind_Solver() == DISC_ADJ_RANS))
                     && (config->GetKind_Turb_Model() == SST));
 
   su2double *Normal = new su2double[nDim];
@@ -8486,34 +8487,34 @@ void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_conta
   unsigned short iDim;
   unsigned long iVertex, iPoint, Point_Normal;
   su2double Exhaust_Pressure, Exhaust_Temperature, Velocity[3], Velocity2, H_Exhaust, Temperature, Riemann, Area, UnitNormal[3], Pressure, Density, Energy, Mach2, SoundSpeed2, SoundSpeed_Exhaust2, Vel_Mag, alpha, aa, bb, cc, dd, Flow_Dir[3];
-  su2double *V_exhaust, *V_domain, Target_Exhaust_Pressure, Exhaust_Pressure_old, Exhaust_Pressure_inc;
-  
+  su2double *V_exhaust, *V_domain;
   su2double Gas_Constant = config->GetGas_ConstantND();
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool viscous = config->GetViscous();
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   bool tkeNeeded = (((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
                     (config->GetKind_Turb_Model() == SST));
-  su2double DampingFactor = config->GetDamp_Engine_Exhaust();
-  su2double Baseline_Press = 0.75 * config->GetPressure_FreeStreamND();
+//  su2double Target_Exhaust_Pressure, Exhaust_Pressure_old, Exhaust_Pressure_inc;
+//  su2double DampingFactor = config->GetDamp_Engine_Exhaust();
+//  su2double Baseline_Press = 0.75 * config->GetPressure_FreeStreamND();
 
   su2double *Normal = new su2double[nDim];
 
   /*--- Retrieve the specified exhaust pressure in the engine (non-dimensional). ---*/
   
-  Target_Exhaust_Pressure = config->GetExhaust_Pressure_Target(Marker_Tag) / config->GetPressure_Ref();
+//  Target_Exhaust_Pressure = config->GetExhaust_Pressure_Target(Marker_Tag) / config->GetPressure_Ref();
   
   /*--- Retrieve the old exhaust pressure in the engine exhaust (this has been computed in a preprocessing). ---*/
   
-  Exhaust_Pressure_old = config->GetExhaust_Pressure(Marker_Tag);
+//  Exhaust_Pressure_old = config->GetExhaust_Pressure(Marker_Tag);
   
   /*--- Compute the Pressure increment ---*/
   
-  Exhaust_Pressure_inc = (1.0 - (Exhaust_Pressure_old/Target_Exhaust_Pressure)) * Baseline_Press;
+//  Exhaust_Pressure_inc = (1.0 - (Exhaust_Pressure_old/Target_Exhaust_Pressure)) * Baseline_Press;
   
   /*--- Estimate the new exhaust pressure ---*/
-  
-  Exhaust_Pressure = (1.0 - DampingFactor) * Exhaust_Pressure_old + DampingFactor * (Exhaust_Pressure_old + Exhaust_Pressure_inc);
+
+//  Exhaust_Pressure = (1.0 - DampingFactor) * Exhaust_Pressure_old + DampingFactor * (Exhaust_Pressure_old + Exhaust_Pressure_inc);
   
   /*--- The temperature is given (no iteration is required) ---*/
   
@@ -8521,6 +8522,7 @@ void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_conta
   Exhaust_Temperature /= config->GetTemperature_Ref();
   
   /*--- The pressure is given (no iteration is required) ---*/
+  /*--- CHECK: the above iterative process is overwritten on the next line. ---*/
   
   Exhaust_Pressure  = config->GetExhaust_Pressure_Target(Marker_Tag);
   Exhaust_Pressure /= config->GetPressure_Ref();
@@ -9526,7 +9528,7 @@ void CEulerSolver::BC_ActDisk_Boundary(CGeometry *geometry, CSolver **solver_con
 
             if (boundary == ACTDISK_INLET) {
 
-              Pin = iPoint; Pout = jPoint;
+              Pin = iPoint;
 
               for (iVar = 0; iVar < nPrimVar; iVar++) {
                 PrimVar_out[iVar] = Buffer_Receive_V[iVar];
@@ -9536,7 +9538,7 @@ void CEulerSolver::BC_ActDisk_Boundary(CGeometry *geometry, CSolver **solver_con
             }
             if (boundary == ACTDISK_OUTLET) {
 
-              Pout = iPoint; Pin = jPoint;
+              Pout = iPoint;
 
               for (iVar = 0; iVar < nPrimVar; iVar++) {
                 PrimVar_out[iVar] = node[Pout]->GetPrimitive(iVar);

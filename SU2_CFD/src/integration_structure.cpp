@@ -596,7 +596,6 @@ void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *
 
 		for (iPoint=0; iPoint < nPoint; iPoint++){
 
-		deltaU = 0.0;
 		deltaURad = 0.0;
 
 		dispPred = fea_solver->node[iPoint]->GetSolution_Pred();
