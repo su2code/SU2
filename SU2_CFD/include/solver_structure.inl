@@ -410,6 +410,14 @@ inline su2double CSolver::GetOneD_FluxAvgEntalpy(void) {return 0;}
 
 inline void CSolver::SetOneD_FluxAvgEntalpy(su2double EnthalpyRef) { }
 
+inline su2double CSolver::GetAverageDensity(unsigned short valMarker){ return 0;}
+
+inline su2double CSolver::GetAveragePressure(unsigned short valMarker){ return 0;}
+
+inline su2double CSolver::GetAverageNormalVelocity(unsigned short valMarker){ return 0;}
+
+inline su2double CSolver::GetAverageTangVelocity(unsigned short valMarker){ return 0;}
+
 inline void CSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
 									 unsigned short val_marker) { }
 
@@ -518,7 +526,8 @@ inline void CSolver::Boundary_Fourier(CGeometry *geometry, CSolver **solver_cont
 
 inline void CSolver::Boundary_Fourier(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short val_Marker,
 		                              vector<std::complex<su2double> >& c2k,vector<std::complex<su2double> >& c3k,signed long& nboundaryvertex) {}
-            
+inline void CSolver::SetExtAveragedValue(CSolver *solver_container, unsigned short intMarker,  unsigned short extMarker){ }
+
 inline void CSolver::GetEngine_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) { }
 
 inline void CSolver::GetActuatorDisk_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) { }
@@ -850,6 +859,23 @@ inline void CEulerSolver::SetOneD_FluxAvgVelocity(su2double VelocityRef) {OneD_V
 inline su2double CEulerSolver::GetOneD_FluxAvgEntalpy(void) {return OneD_EnthalpyRef;}
 
 inline void CEulerSolver::SetOneD_FluxAvgEntalpy(su2double EnthalpyRef) {OneD_EnthalpyRef = EnthalpyRef; }
+
+inline su2double CEulerSolver::GetAverageDensity(unsigned short valMarker){return AveragedDensity[valMarker];}
+
+inline su2double CEulerSolver::GetAveragePressure(unsigned short valMarker){return AveragedPressure[valMarker];}
+
+inline su2double CEulerSolver::GetAverageNormalVelocity(unsigned short valMarker){return AveragedNormalVelocity[valMarker];}
+
+inline su2double CEulerSolver::GetAverageTangVelocity(unsigned short valMarker){return AveragedTangVelocity[valMarker];}
+
+
+inline void CEulerSolver::SetExtAveragedValue(CSolver *solver_container, unsigned short intMarker,  unsigned short extMarker){
+	ExtAveragedDensity[extMarker]= solver_container->GetAverageDensity(intMarker);
+    ExtAveragedPressure[extMarker]= solver_container->GetAveragePressure(intMarker);
+    ExtAveragedNormalVelocity[extMarker]= solver_container->GetAverageNormalVelocity(intMarker);
+    ExtAveragedTangVelocity[extMarker]= solver_container->GetAverageTangVelocity(intMarker);
+}
+
 
 inline su2double CNSSolver::GetViscosity_Inf(void) { return Viscosity_Inf; }
 

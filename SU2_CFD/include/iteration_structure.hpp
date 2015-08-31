@@ -288,3 +288,15 @@ void ComputeTimeSpectral_Operator(su2double **D, su2double period, unsigned shor
  */
 void SetTimeSpectral_Velocities(CGeometry ***geometry_container,
 		CConfig **config_container, unsigned short nZone);
+
+
+/*!
+ * \brief Computation and storage of the average value at the mixing plane interfaces.
+ * \author S. Vitale
+ * \param[in] geometry - Geometrical definition of the problem.
+ * \param[in] CSolver - Definition of the particular problem.
+ * \param[in] config - Definition of the particular problem.
+ * \param[in] nZone - Total number of zones (periodic instances).
+ * \param[in] iZone - Total number of zones (periodic instances).
+ */
+void SetMixingPlane(CGeometry ***geometry_container, CSolver ****solver_container, CConfig **config_container, unsigned short nZone, unsigned short iZone);

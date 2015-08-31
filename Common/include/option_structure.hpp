@@ -795,7 +795,9 @@ static const map<string, RIEMANN_TYPE> NRBC_Map = CCreateMap<string, RIEMANN_TYP
 ("STATIC_PRESSURE", STATIC_PRESSURE)
 ("TOTAL_SUPERSONIC_INFLOW", TOTAL_SUPERSONIC_INFLOW)
 ("STATIC_SUPERSONIC_INFLOW_PT", STATIC_SUPERSONIC_INFLOW_PT)
-("STATIC_SUPERSONIC_INFLOW_PD", STATIC_SUPERSONIC_INFLOW_PD);
+("STATIC_SUPERSONIC_INFLOW_PD", STATIC_SUPERSONIC_INFLOW_PD)
+("MIXING_IN", MIXING_IN)
+("MIXING_OUT", MIXING_OUT);
 
 
 /*!
@@ -2872,6 +2874,71 @@ public:
     this->translation = NULL;
   }
 };
+
+
+class COptionMixingPlane : public COptionBase{
+  string name; // identifier for the option
+  unsigned short & size;
+  string * & marker_bound;
+  string * & marker_donor;
+
+public:
+  COptionMixingPlane(const string option_field_name, unsigned short & nMarker_MixBound,
+                  string* & Marker_MixBound, string* & Marker_MixDonor) : size(nMarker_MixBound), marker_bound(Marker_MixBound), marker_donor(Marker_MixDonor) {
+    this->name = option_field_name;
+  }
+
+  ~COptionMixingPlane() {};
+  string SetValue(vector<string> option_value) {
+
+    const int mod_num = 2;
+
+    unsigned long totalVals = option_value.size();
+    if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
+      this->size = 0;
+      this->marker_bound = NULL;
+      this->marker_donor = NULL;
+      return "";
+    }
+
+    if (totalVals % mod_num != 0) {
+      string newstring;
+      newstring.append(this->name);
+      newstring.append(": must have a number of entries divisible by 11");
+      this->size = 0;
+      this->marker_bound = NULL;
+      this->marker_donor = NULL;
+      return newstring;
+    }
+
+    unsigned long nVals = 2 * (totalVals / mod_num); // To account for periodic and donor
+    this->size = nVals;
+    this->marker_bound = new string[nVals];
+    this->marker_donor = new string[nVals];
+
+
+    for (int i = 0; i < (nVals/2); i++) {
+      this->marker_bound[i].assign(option_value[mod_num*i]);
+      this->marker_donor[i].assign(option_value[mod_num*i+1]);
+     }
+
+    for (unsigned long i = (nVals/2); i < nVals; i++) {
+      this->marker_bound[i].assign(option_value[mod_num*(i-nVals/2)+1]);
+      this->marker_donor[i].assign(option_value[mod_num*(i-nVals/2)]);
+      }
+
+
+
+    return "";
+  }
+
+  void SetDefault() {
+    this->size = 0;
+    this->marker_bound = NULL;
+    this->marker_donor = NULL;
+  }
+};
+
 
 class COptionPython : public COptionBase{
   string name;

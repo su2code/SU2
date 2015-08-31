@@ -71,6 +71,11 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
     if (config_container[ZONE_0]->GetWind_Gust()) {
       SetWind_GustField(config_container[iZone], geometry_container[iZone], solver_container[iZone]);
     }
+
+    /*--- Calcualte and set Mixing Plane averaged quantities at interfaces ---*/
+
+		if(config_container[iZone]->GetBoolMixingPlane())
+			SetMixingPlane(geometry_container, solver_container, config_container,nZone, iZone);
 	}
   
 	for (iZone = 0; iZone < nZone; iZone++) {
@@ -2110,3 +2115,78 @@ void SetTimeSpectral_Velocities(CGeometry ***geometry_container,
 	delete [] coords;
   
 }
+
+
+void SetMixingPlane(CGeometry ***geometry_container, CSolver ****solver_container, CConfig **config_container, unsigned short nZone, unsigned short iZone) {
+
+	unsigned short mixing_zone, ass_mixing_zone, jZone;
+	unsigned short nDim = geometry_container[ZONE_0][MESH_0]->GetnDim();
+	unsigned short nVar = solver_container[ZONE_0][MESH_0][FLOW_SOL]->GetnVar();
+	int intMarker, extMarker, intMarkerMix;
+	string intMarker_Tag, extMarker_Tag;
+	double *averaged_flux, *ext_averaged_flux;
+//	averaged_flux = new double [nVar];
+//	ext_averaged_flux = new double [nVar];
+
+
+	/*-- Loop on all the boundary to find MIXING_PLANE boundary --*/
+	for (intMarker = 0; intMarker < config_container[iZone]->GetnMarker_All(); intMarker++) {
+		for (intMarkerMix=0; intMarkerMix < config_container[iZone]->Get_nMarkerMixingPlane(); intMarkerMix++)
+			if (config_container[iZone]->GetMarker_All_TagBound(intMarker) == config_container[iZone]->GetMarker_MixingPlane_Bound(intMarkerMix) ) {
+				solver_container[iZone][MESH_0][FLOW_SOL]->Mixing_Process(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0], config_container[iZone], intMarker);
+				extMarker_Tag = config_container[iZone]->GetMarker_MixingPlane_Donor(intMarkerMix);
+				for (jZone = 0; jZone < nZone; jZone++){
+					for (extMarker = 0; extMarker < config_container[jZone]->GetnMarker_All(); extMarker++)
+						if (config_container[jZone]->GetMarker_All_TagBound(extMarker) == extMarker_Tag){
+					    solver_container[jZone][MESH_0][FLOW_SOL]->SetExtAveragedValue(solver_container[iZone][MESH_0][FLOW_SOL], intMarker, extMarker);
+						}
+				}
+
+		}
+//		cout << config_container[ZONE_0]->GetMarker_All_KindBC(intMarker)<< endl;
+//		cout << config_container[ZONE_1]->GetMarker_All_TagBound(intMarker) << " " << iZone + 1 << endl;
+
+
+//			if (config_container[iZone]->GetMarker_All_TagBound(intMarker) ==  ) {
+//
+//			/*-- Get the marker of the boundary --*/
+//			intMarker_Tag   = config_container[iZone]->GetMarker_All_TagBound(intMarker);
+//			/*-- Get the zone of this boundary --*/
+////			mixing_zone = config_container[iZone]->GetZone_MixingPlane(intMarker_Tag);
+//
+//			/*-- Get the marker of the associated face to this mixing boundary --*/
+//			extMarker_Tag = config_container[iZone]->GetMarker_AssFace_MixingPlane(intMarker_Tag);
+//
+//
+//			/*-- Get the zone of the associated face to this mixing boundary --*/
+////			ass_mixing_zone = config_container[iZone]->GetZone_AssFace_MixingPlane(intMarker_Tag);
+////			cout << config_container[iZone]->GetMarker_All_TagBound(intMarker) << " " << iZone << endl;
+//			/*-- Evaluate averaged flux on the mixing boundary --*/
+//			solver_container[iZone][MESH_0][FLOW_SOL]->Mixing_Process(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0],
+//																		  config_container[iZone], intMarker);
+//
+//			/*-- Get the averaged flux calculated above --*/
+//			averaged_flux= solver_container[iZone][MESH_0][FLOW_SOL]->GetAveragedFlux(intMarker);
+//
+//			/*-- Loop again on all the boundary to find the associated face of this MIXING_PLANE boundary --*/
+//			for (jZone = 0; jZone < nZone; jZone++){
+//				for (extMarker = 0; extMarker < config_container[jZone]->GetnMarker_All(); extMarker++) {
+//					if(config_container[jZone]->GetMarker_All_TagBound(extMarker) == extMarker_Tag){
+//
+////						cout << config_container[jZone]->GetMarker_All_TagBound(extMarker) << " " << jZone << endl;
+//						/*-- Set the averaged fluxes of the Mixing Plane boundary on the associated face  --*/
+//						solver_container[jZone][MESH_0][FLOW_SOL]->SetExtAveragedFlux(extMarker, averaged_flux);
+////						ext_averaged_flux = solver_container[jZone][MESH_0][FLOW_SOL]->GetExtAveragedFlux(extMarker);
+////						cout << ext_averaged_flux[0] << " " << averaged_flux[0] << endl;
+////						getchar();
+//
+//					}
+//				}
+//			}
+//		}
+//
+	}
+
+}
+
+
