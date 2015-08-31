@@ -958,7 +958,8 @@ void CFEASolver::BC_Dir_Load(CGeometry *geometry, CSolver **solver_container, CN
   su2double AC[3] = {0.0, 0.0, 0.0}, BD[3] = {0.0, 0.0, 0.0};
   unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0, Point_3=0;
   su2double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL, *Coord_3= NULL;
-  su2double Length_Elem = 0.0, Area_Elem = 0.0, Normal_Elem[3] = {0.0, 0.0, 0.0};
+  su2double Length_Elem = 0.0, Area_Elem = 0.0;
+//  su2double Normal_Elem[3] = {0.0, 0.0, 0.0};
   unsigned short iDim;
   
   su2double LoadDirVal = config->GetLoad_Dir_Value(config->GetMarker_All_TagBound(val_marker));
@@ -1004,8 +1005,8 @@ void CFEASolver::BC_Dir_Load(CGeometry *geometry, CSolver **solver_container, CN
       for (iDim = 0; iDim < nDim; iDim++) a[iDim] = Coord_0[iDim]-Coord_1[iDim];
       
       Length_Elem = sqrt(a[0]*a[0]+a[1]*a[1]);
-      Normal_Elem[0] =   a[1];
-      Normal_Elem[1] = -(a[0]);
+//      Normal_Elem[0] =   a[1];
+//      Normal_Elem[1] = -(a[0]);
       
     } else {
       
@@ -1026,7 +1027,6 @@ void CFEASolver::BC_Dir_Load(CGeometry *geometry, CSolver **solver_container, CN
         Nk=a[0]*b[1]-a[1]*b[0];
         
         Area_Elem = 0.5*sqrt(Ni*Ni+Nj*Nj+Nk*Nk);
-        
         
         //Area_Elem = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
         
@@ -1098,7 +1098,8 @@ void CFEASolver::BC_Sine_Load(CGeometry *geometry, CSolver **solver_container, C
   su2double AC[3] = {0.0, 0.0, 0.0}, BD[3] = {0.0, 0.0, 0.0};
   unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0, Point_3=0;
   su2double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL, *Coord_3= NULL;
-  su2double Length_Elem = 0.0, Area_Elem = 0.0, Normal_Elem[3] = {0.0, 0.0, 0.0};
+  su2double Length_Elem = 0.0, Area_Elem = 0.0;
+//  su2double Normal_Elem[3] = {0.0, 0.0, 0.0};
   unsigned short iDim;
   
   su2double LoadAmplitude = config->GetLoad_Sine_Amplitude(config->GetMarker_All_TagBound(val_marker));
@@ -1126,8 +1127,8 @@ void CFEASolver::BC_Sine_Load(CGeometry *geometry, CSolver **solver_container, C
       for (iDim = 0; iDim < nDim; iDim++) a[iDim] = Coord_0[iDim]-Coord_1[iDim];
       
       Length_Elem = sqrt(a[0]*a[0]+a[1]*a[1]);
-      Normal_Elem[0] =   a[1];
-      Normal_Elem[1] = -(a[0]);
+//      Normal_Elem[0] =   a[1];
+//      Normal_Elem[1] = -(a[0]);
       
     } else { // 3D
       
@@ -1229,7 +1230,8 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
   
   unsigned long PointCorners[8];
   unsigned short nNodes=0, iNodes, iDim, jDim, form2d;
-  su2double CoordCorners[8][3], CoordGauss[8][3];
+  su2double CoordCorners[8][3];
+//  su2double CoordGauss[8][3];
   
   /*--- Container of the shape functions ---*/
   CNumerics *numerics;
@@ -1283,7 +1285,7 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
         CoordCorners[iNodes][iDim] = geometry->node[PointCorners[iNodes]]->GetCoord(iDim);
         
         /*--- Initialization of the gauss coordinate matrix ---*/
-        CoordGauss[iNodes][iDim] = 0.0;
+//        CoordGauss[iNodes][iDim] = 0.0;
       }
     }
     

@@ -85,7 +85,15 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
 
 CConfig::CConfig(char case_filename[MAX_STRING_SIZE], CConfig *config) {
   
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
   bool runtime_file = false;
+  
+  /*--- Initialize pointers to Null---*/
+  
+  SetPointersNull();
   
   /*--- Reading config options  ---*/
   
@@ -98,6 +106,8 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], CConfig *config) {
   /*--- Update original config file ---*/
   
   if (runtime_file) {
+    if (rank == MASTER_NODE)
+      cout << endl << "Runtime file detected. Setting max. external iterations to " << nExtIter << "." << endl << endl;
     config->SetnExtIter(nExtIter);
   }
 

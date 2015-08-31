@@ -1825,7 +1825,8 @@ void CAdjTNE2EulerSolver::Inviscid_Sensitivity(CGeometry *geometry,
 //  su2double rhoE, rhoEve;
   su2double conspsi, Area;
   su2double Mach_Inf;
-  su2double **PrimVar_Grad, **ConsVar_Grad, *ConsPsi_Grad;
+  su2double **PrimVar_Grad, *ConsPsi_Grad;
+//  su2double **ConsVar_Grad;
   su2double ConsPsi, d_press, grad_v, v_gradconspsi;
   
   /*--- Initialization ---*/
@@ -1835,7 +1836,7 @@ void CAdjTNE2EulerSolver::Inviscid_Sensitivity(CGeometry *geometry,
   U            = NULL;
   USens        = NULL;
   PrimVar_Grad = NULL;
-  ConsVar_Grad = NULL;
+//  ConsVar_Grad = NULL;
   ConsPsi_Grad = NULL;
   
   /*--- Allocate arrays ---*/
@@ -3076,11 +3077,12 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
   // Adjoint problem declarations
   su2double vartheta, dnPsiE, dnPsiEve, div_phi, GPsiEdotVel;
   su2double B1, B21, B22, B23, B24, B31, B32, B33, B34;
-  su2double *Psi, *d;
+  su2double *Psi;
+  //su2double *d;
   su2double **GradPsi, **SigmaPhi, **SigmaPsiE;
   
   Psi     = NULL;
-  d       = NULL;
+  //d       = NULL;
   GradPsi = NULL;
   
   SigmaPhi = new su2double *[nDim];
