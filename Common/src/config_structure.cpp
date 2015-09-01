@@ -106,8 +106,6 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], CConfig *config) {
   /*--- Update original config file ---*/
   
   if (runtime_file) {
-    if (rank == MASTER_NODE)
-      cout << endl << "Runtime file detected. Setting max. external iterations to " << nExtIter << "." << endl << endl;
     config->SetnExtIter(nExtIter);
   }
 

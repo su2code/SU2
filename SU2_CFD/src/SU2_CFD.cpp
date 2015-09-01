@@ -460,7 +460,7 @@ int main(int argc, char *argv[]) {
     CConfig *runtime = NULL;
     strcpy(runtime_file_name, "runtime.dat");
     runtime = new CConfig(runtime_file_name, config_container[ZONE_0]);
-    //delete [] runtime;
+    runtime->SetExtIter(ExtIter);
     
     /*--- Update the convergence history file (serial and parallel computations). ---*/
     
