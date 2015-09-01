@@ -1021,28 +1021,40 @@ public:
 	  * \param[in] val_marker - bound marker.
 	  * \return Value of the Average Density on the surface <i>val_marker</i>.
 	  */
-	 virtual su2double GetAverageDensity(unsigned short valMarker);
+	 virtual su2double GetAveragedDensity(unsigned short valMarker);
 
 	 /*!
 	  * \brief A virtual member.
 	  * \param[in] val_marker - bound marker.
 	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
 	  */
-	 virtual su2double GetAveragePressure(unsigned short valMarker);
+	 virtual su2double GetAveragedPressure(unsigned short valMarker);
+	 /*!
+	  * \brief A virtual member.
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Average Density on the surface <i>val_marker</i>.
+	  */
+	 virtual su2double GetAveragedTotTemperature(unsigned short valMarker);
 
+	 /*!
+	  * \brief A virtual member.
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  */
+	 virtual su2double GetAveragedTotPressure(unsigned short valMarker);
 	 /*!
 	  * \brief A virtual member.
 	  * \param[in] val_marker - bound marker.
 	  * \return Value of the Average Normal Velocity on the surface <i>val_marker</i>.
 	  */
-	 virtual su2double GetAverageNormalVelocity(unsigned short valMarker);
+	 virtual su2double GetAveragedNormalVelocity(unsigned short valMarker);
 
 	 /*!
 	  * \brief A virtual member.
 	  * \param[in] val_marker - bound marker.
 	  * \return Value of the Average Tangent Velocity on the surface <i>val_marker</i>.
 	  */
-	 virtual su2double GetAverageTangVelocity(unsigned short valMarker);
+	 virtual su2double GetAveragedTangVelocity(unsigned short valMarker);
 
 	/*!
 	 * \brief A virtual member.
@@ -2716,7 +2728,11 @@ protected:
 		  *AveragedTangMach,
 		  *AveragedEnthalpy,
 		  *AveragedPressure,
+		  *AveragedTotTemperature,
+		  *AveragedTotPressure,
 		  *ExtAveragedPressure,
+		  *ExtAveragedTotTemperature,
+		  *ExtAveragedTotPressure,
 		  *AveragedDensity,
 		  *ExtAveragedDensity,
 		  *AveragedSoundSpeed,
@@ -3307,28 +3323,41 @@ public:
 	  * \param[in] val_marker - bound marker.
 	  * \return Value of the Average Density on the surface <i>val_marker</i>.
 	  */
-	 su2double GetAverageDensity(unsigned short valMarker);
+	 su2double GetAveragedDensity(unsigned short valMarker);
 
 	 /*!
 	  * \brief Provide the average pressure at the boundary of interest.
 	  * \param[in] val_marker - bound marker.
 	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
 	  */
-	 su2double GetAveragePressure(unsigned short valMarker);
+	 su2double GetAveragedTotPressure(unsigned short valMarker);
 
+	 /*!
+	  * \brief Provide the average density at the boundary of interest.
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Average Density on the surface <i>val_marker</i>.
+	  */
+	 su2double GetAveragedTotTemperature(unsigned short valMarker);
+
+	 /*!
+	  * \brief Provide the average pressure at the boundary of interest.
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  */
+	 su2double GetAveragedPressure(unsigned short valMarker);
 	 /*!
 	  * \brief Provide the Average Normal Velocity at the boundary of interest.
 	  * \param[in] val_marker - bound marker.
 	  * \return Value of the Average Normal Velocity on the surface <i>val_marker</i>.
 	  */
-	 su2double GetAverageNormalVelocity(unsigned short valMarker);
+	 su2double GetAveragedNormalVelocity(unsigned short valMarker);
 
 	 /*!
 	  * \brief Provide the Tangent Velocity at the boundary of interest.
 	  * \param[in] val_marker - bound marker.
 	  * \return Value of the Average Tangent Velocity on the surface <i>val_marker</i>.
 	  */
-	 su2double GetAverageTangVelocity(unsigned short valMarker);
+	 su2double GetAveragedTangVelocity(unsigned short valMarker);
 
 	 /*!
 	 * \brief compare to values.

@@ -476,6 +476,10 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   ExtAveragedTangVelocity = new su2double[nMarker];
   AveragedEnthalpy  = new su2double[nMarker];
   AveragedPressure  = new su2double[nMarker];
+  AveragedTotPressure  = new su2double[nMarker];
+  AveragedTotTemperature  = new su2double[nMarker];
+  ExtAveragedTotPressure  = new su2double[nMarker];
+  ExtAveragedTotTemperature  = new su2double[nMarker];
   AveragedDensity   = new su2double[nMarker];
   ExtAveragedPressure  = new su2double[nMarker];
   ExtAveragedDensity   = new su2double[nMarker];
@@ -6953,14 +6957,14 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
   bool tkeNeeded = (((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
                     (config->GetKind_Turb_Model() == SST));
 
-  su2double *Normal;
+  su2double *Normal, *FlowDirMix;
   Normal = new su2double[nDim];
 
   
   Velocity_i = new su2double[nDim];
   Velocity_b = new su2double[nDim];
   Velocity_e = new su2double[nDim];
-  
+  FlowDirMix = new su2double[nDim];
   Lambda_i = new su2double[nVar];
   u_i = new su2double[nVar];
   u_e = new su2double[nVar];
@@ -7081,48 +7085,54 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
           
           break;
           
-//        case MIXING_IN: //case TOTAL_SUPERSONIC_INFLOW:
+        case MIXING_IN: //case TOTAL_SUPERSONIC_INFLOW:
+
+          /*--- Retrieve the specified total conditions for this boundary. ---*/
+
+
 //
-//                  /*--- Retrieve the specified total conditions for this boundary. ---*/
-//
-//                  if (gravity) P_Total = config->GetRiemann_Var1(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDART_GRAVITY;/// check in which case is true (only freesurface?)
-//                  else P_Total  = config->GetRiemann_Var1(Marker_Tag);
-//                  T_Total  = config->GetRiemann_Var2(Marker_Tag);
-//                  Flow_Dir = config->GetRiemann_FlowDir(Marker_Tag);
-//
-//                  /*--- Non-dim. the inputs if necessary. ---*/
-//                  P_Total /= config->GetPressure_Ref();
-//                  T_Total /= config->GetTemperature_Ref();
-//
-//                  /* --- Computes the total state --- */
-//
-//                  FluidModel->SetTDState_PT(P_Total, T_Total);
-//
-//                  Enthalpy_e = FluidModel->GetStaticEnergy()+ FluidModel->GetPressure()/FluidModel->GetDensity();
-//
-//                  Entropy_e = FluidModel->GetEntropy();
-//
-//                  /* --- Compute the boundary state u_e --- */
-//
-//                  Velocity2_e = Velocity2_i;
-//
-//                  for (iDim = 0; iDim < nDim; iDim++) {
-//                    Velocity_e[iDim] = sqrt(Velocity2_e)*Flow_Dir[iDim];
-//                  }
-//
-//
-//                  StaticEnthalpy_e = Enthalpy_e - 0.5 * Velocity2_e;
-//
-//                  FluidModel->SetTDState_hs(StaticEnthalpy_e, Entropy_e);
-//
-//                  Density_e = FluidModel->GetDensity();
-//                  StaticEnergy_e = FluidModel->GetStaticEnergy();
-//
-//                  Energy_e = StaticEnergy_e + 0.5 * Velocity2_e;
-//
-//                  if (tkeNeeded) Energy_e += GetTke_Inf();
-//
-//                  break;
+//          /*--- Non-dim. the inputs if necessary. ---*/
+          P_Total = ExtAveragedTotPressure[val_marker];
+          T_Total = ExtAveragedTotTemperature[val_marker];
+          double ext_flow_angle;
+          ext_flow_angle = atan(-ExtAveragedTangVelocity[val_marker]/ExtAveragedNormalVelocity[val_marker]);
+//          cout << "Avg_Normal_zone2 "<< AveragedNormal[val_marker][0] <<endl;
+//          cout << "Avg_Tang_zone2 "<< AveragedNormal[val_marker][1] <<endl;
+//          cout << "Tot_Pressure "<< P_Total <<endl;
+//          cout << "Tot_Temp "<< T_Total <<endl;
+//          cout << "ang "<< ext_flow_angle <<endl;
+          FlowDirMix[0] = cos(ext_flow_angle);
+          FlowDirMix[1] = sin(ext_flow_angle);
+          /* --- Computes the total state --- */
+
+          FluidModel->SetTDState_PT(P_Total, T_Total);
+
+          Enthalpy_e = FluidModel->GetStaticEnergy()+ FluidModel->GetPressure()/FluidModel->GetDensity();
+
+          Entropy_e = FluidModel->GetEntropy();
+
+          /* --- Compute the boundary state u_e --- */
+
+          Velocity2_e = Velocity2_i;
+
+          for (iDim = 0; iDim < nDim; iDim++) {
+            Velocity_e[iDim] = sqrt(Velocity2_e)*FlowDirMix[iDim];
+          }
+
+
+          StaticEnthalpy_e = Enthalpy_e - 0.5 * Velocity2_e;
+
+          FluidModel->SetTDState_hs(StaticEnthalpy_e, Entropy_e);
+
+          Density_e = FluidModel->GetDensity();
+          StaticEnergy_e = FluidModel->GetStaticEnergy();
+
+          Energy_e = StaticEnergy_e + 0.5 * Velocity2_e;
+
+          if (tkeNeeded) Energy_e += GetTke_Inf();
+
+          break;
+
 
         case DENSITY_VELOCITY:
           
@@ -7144,6 +7154,25 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
           
           break;
           
+        case MIXING_OUT:
+
+          Pressure_e = ExtAveragedPressure[val_marker];
+          Density_e = Density_i;
+//          cout << "Stat_Pressure "<< Pressure_e <<endl;
+//          cout << "Avg_Normal_zone1 "<< AveragedNormalVelocity[val_marker] <<endl;
+//          cout << "Avg_Tang_zone1 "<< AveragedTangVelocity[val_marker] <<endl;
+          FluidModel->SetTDState_Prho(Pressure_e, Density_e);
+
+          Velocity2_e = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) {
+            Velocity_e[iDim] = Velocity_i[iDim];
+            Velocity2_e += Velocity_e[iDim]*Velocity_e[iDim];
+          }
+
+          Energy_e = FluidModel->GetStaticEnergy() + 0.5*Velocity2_e;
+
+          break;
+
         case STATIC_PRESSURE:
           
           Pressure_e = config->GetRiemann_Var1(Marker_Tag);
@@ -7162,6 +7191,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
           Energy_e = FluidModel->GetStaticEnergy() + 0.5*Velocity2_e;
           
           break;
+
           
         case STATIC_SUPERSONIC_INFLOW_PT:
           
@@ -7493,6 +7523,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
   delete [] Velocity_e;
   delete [] Velocity_b;
   delete [] Velocity_i;
+  delete [] FlowDirMix;
   
   delete [] S_boundary;
   delete [] Lambda_i;
@@ -7524,7 +7555,7 @@ void CEulerSolver::Mixing_Process(CGeometry *geometry, CSolver **solver_containe
     su2double val_init_pressure;
     bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
     bool grid_movement        = config->GetGrid_Movement();
-    su2double TotalDensity, TotalPressure, *TotalVelocity, TotalNormal;
+    su2double TotalDensity, TotalPressure, *TotalVelocity, TotalNormal, avgVel2, avgTotalEnthaply;
 
     /*-- Variables declaration and allocation ---*/
 
@@ -7667,8 +7698,10 @@ void CEulerSolver::Mixing_Process(CGeometry *geometry, CSolver **solver_containe
 
 
 		case MIXEDOUT_AVERAGE:
-			for (iVar = 0; iVar<nVar; iVar++)
+			for (iVar = 0; iVar<nVar; iVar++){
 				AveragedFlux[val_Marker][iVar] = TotalFlux[val_Marker][iVar]/TotalArea;
+//				cout<<"Fluxes  "<< AveragedFlux[val_Marker][iVar]<<endl;
+			}
 			val_init_pressure = TotalAreaPressure/TotalArea;
 
 			if (abs(AveragedFlux[val_Marker][0])<(10.0e-9)*TotalAreaDensity) {
@@ -7700,6 +7733,15 @@ void CEulerSolver::Mixing_Process(CGeometry *geometry, CSolver **solver_containe
 	AveragedEntropy[val_Marker] = FluidModel->GetEntropy();
 	AveragedNormalVelocity[val_Marker]= AveragedNormal[val_Marker][0]*AveragedVelocity[val_Marker][0] + AveragedNormal[val_Marker][1]*AveragedVelocity[val_Marker][1];
 	AveragedTangVelocity[val_Marker]= AveragedNormal[val_Marker][1]*AveragedVelocity[val_Marker][0] - AveragedNormal[val_Marker][0]*AveragedVelocity[val_Marker][1];
+
+	/* --- compure total averaged quantities ---*/
+	avgVel2 = 0.0;
+	for (iDim = 0; iDim < nDim; iDim++) avgVel2 += AveragedVelocity[val_Marker][iDim]*AveragedVelocity[val_Marker][iDim];
+
+	avgTotalEnthaply = AveragedEnthalpy[val_Marker] + 0.5*avgVel2;
+	FluidModel->SetTDState_hs(avgTotalEnthaply,AveragedEntropy[val_Marker]);
+	AveragedTotTemperature[val_Marker] = FluidModel->GetTemperature();
+	AveragedTotPressure[val_Marker] = FluidModel->GetPressure();
 
 	if(grid_movement){
 	  AveragedTangGridVelocity[val_Marker] = AveragedNormal[val_Marker][1]*AveragedGridVel[val_Marker][0]-AveragedNormal[val_Marker][0]*AveragedGridVel[val_Marker][1];
@@ -8102,7 +8144,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
       double sigma;
       if (config->GetExtIter()< 3000)sigma = 0.2;
       else if(config->GetExtIter()< 6000) sigma = min(0.4, 0.2 + 0.20*(config->GetExtIter()- 3000)/(3000));
-      else sigma = min(0.9, 0.4 + 0.5*(config->GetExtIter()- 6000)/(30000));
+      else sigma = min(0.7, 0.4 + 0.5*(config->GetExtIter()- 6000)/(30000));
       Density_b = AveragedDensity[val_marker] + sigma*deltaprim[0];
       Pressure_b = AveragedPressure[val_marker] + sigma*deltaprim[3];
       NormalVelocity = AveragedNormalVelocity[val_marker] + sigma*deltaprim[1];
@@ -11882,6 +11924,10 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   ExtAveragedTangVelocity = new su2double[nMarker];
   AveragedEnthalpy  = new su2double[nMarker];
   AveragedPressure  = new su2double[nMarker];
+  AveragedTotPressure  = new su2double[nMarker];
+  AveragedTotTemperature  = new su2double[nMarker];
+  ExtAveragedTotPressure  = new su2double[nMarker];
+  ExtAveragedTotTemperature  = new su2double[nMarker];
   ExtAveragedPressure  = new su2double[nMarker];
   AveragedDensity   = new su2double[nMarker];
   ExtAveragedDensity   = new su2double[nMarker];
