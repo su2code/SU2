@@ -61,6 +61,7 @@ private:
 	unsigned short Kind_SU2; /*!< \brief Kind of SU2 software component.*/
   unsigned short Ref_NonDim; /*!< \brief Kind of non dimensionalization.*/
   unsigned short Kind_MixingProcess; /*!< \brief Kind of mixing process.*/
+  unsigned short Kind_TurboPerformance; /*!< \brief Kind of Turbomachinery performance calculation.*/
   unsigned short iZone, nZone; /*!< \brief Number of zones in the mesh. */
 	su2double OrderMagResidual; /*!< \brief Order of magnitude reduction. */
 	su2double MinLogResidual; /*!< \brief Minimum value of the log residual. */
@@ -147,6 +148,7 @@ private:
   nMarker_Pressure,				/*!< \brief Number of pressure wall markers. */
 	nMarker_PerBound,				/*!< \brief Number of periodic boundary markers. */
 	nMarker_MixBound,				/*!< \brief Number of mixing boundary markers. */
+	nMarker_TurboPerf,				/*!< \brief Number of mixing boundary markers. */
 	nMarker_NearFieldBound,				/*!< \brief Number of near field boundary markers. */
   nMarker_ActDisk_Inlet, nMarker_ActDisk_Outlet,
 	nMarker_InterfaceBound,				/*!< \brief Number of interface boundary markers. */
@@ -190,6 +192,8 @@ private:
 	*Marker_PerDonor,				/*!< \brief Rotationally periodic boundary donor markers. */
 	*Marker_MixBound,				/*!< \brief MixingPlane boundary markers. */
 	*Marker_MixDonor,				/*!< \brief MixingPlane boundary donor markers. */
+	*Marker_TurboBoundIn,				/*!< \brief Turbomachinery performance boundary markers. */
+	*Marker_TurboBoundOut,				/*!< \brief Turbomachinery performance boundary donor markers. */
 	*Marker_NearFieldBound,				/*!< \brief Near Field boundaries markers. */
 	*Marker_InterfaceBound,				/*!< \brief Interface boundaries markers. */
   *Marker_ActDisk_Inlet,
@@ -999,6 +1003,14 @@ private:
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
     COptionBase* val = new COptionMixingPlane(name, nMarker_MixBound, Marker_MixBound, Marker_MixDonor);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+  template <class Tenum>
+  void addTurboPerfOption(const string & name, unsigned short & nMarker_TurboPerf,
+                    string* & Marker_TurboBoundIn, string* & Marker_TurboBoundOut,  unsigned short & Kind_TurboPerformance, const map<string, Tenum> & TurboPerformance_Map){
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string, bool>(name, true));
+    COptionBase* val = new COptionTurboPerformance<Tenum>(name, nMarker_TurboPerf, Marker_TurboBoundIn, Marker_TurboBoundOut, Kind_TurboPerformance, TurboPerformance_Map );
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
@@ -3584,7 +3596,6 @@ public:
      * \brief Verify if there is mixing plane interface specified from config file.
 	 * \return boolean.
 	 */
-
 	bool GetBoolMixingPlane(void);
 
 	/*!
@@ -3597,14 +3608,37 @@ public:
 	 * \brief get bounds name of mixing plane interface.
 	 * \return name of the bound.
 	 */
-    string GetMarker_MixingPlane_Bound(unsigned short val_marker);
+    string GetMarker_MixingPlane_Bound(unsigned short index);
 
 
     /*!
 	 * \brief get bounds name of mixing plane interface.
 	 * \return name of the bound.
 	 */
-    string GetMarker_MixingPlane_Donor(unsigned short val_marker);
+    string GetMarker_MixingPlane_Donor(unsigned short index);
+
+    /*!
+     * \brief Verify if there is Turbomachinery performance option specified from config file.
+	 * \return boolean.
+	 */
+	bool GetBoolTurboPerf(void);
+    /*!
+	 * \brief number Turbomachinery performance option specified from config file.
+	 * \return number of bound.
+	 */
+	unsigned short Get_nMarkerTurboPerf(void);
+
+    /*!
+	 * \brief get inlet bounds name for Turbomachinery performance calculation.
+	 * \return name of the bound.
+	 */
+	string GetMarker_TurboPerf_BoundIn(unsigned short index);
+
+	/*!
+	 * \brief get outlet bounds name for Turbomachinery performance calculation.
+	 * \return name of the bound.
+	 */
+	string GetMarker_TurboPerf_BoundOut(unsigned short index);
 
     /*!
 	 * \brief Get the number of sections.
