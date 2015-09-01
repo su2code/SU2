@@ -410,13 +410,17 @@ inline su2double CSolver::GetOneD_FluxAvgEntalpy(void) {return 0;}
 
 inline void CSolver::SetOneD_FluxAvgEntalpy(su2double EnthalpyRef) { }
 
-inline su2double CSolver::GetAverageDensity(unsigned short valMarker){ return 0;}
+inline su2double CSolver::GetAveragedDensity(unsigned short valMarker){ return 0;}
 
-inline su2double CSolver::GetAveragePressure(unsigned short valMarker){ return 0;}
+inline su2double CSolver::GetAveragedPressure(unsigned short valMarker){ return 0;}
 
-inline su2double CSolver::GetAverageNormalVelocity(unsigned short valMarker){ return 0;}
+inline su2double CSolver::GetAveragedNormalVelocity(unsigned short valMarker){ return 0;}
 
-inline su2double CSolver::GetAverageTangVelocity(unsigned short valMarker){ return 0;}
+inline su2double CSolver::GetAveragedTangVelocity(unsigned short valMarker){ return 0;}
+
+inline su2double CSolver::GetAveragedTotTemperature(unsigned short valMarker){return 0;}
+
+inline su2double CSolver::GetAveragedTotPressure(unsigned short valMarker){return 0;}
 
 inline void CSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
 									 unsigned short val_marker) { }
@@ -860,20 +864,26 @@ inline su2double CEulerSolver::GetOneD_FluxAvgEntalpy(void) {return OneD_Enthalp
 
 inline void CEulerSolver::SetOneD_FluxAvgEntalpy(su2double EnthalpyRef) {OneD_EnthalpyRef = EnthalpyRef; }
 
-inline su2double CEulerSolver::GetAverageDensity(unsigned short valMarker){return AveragedDensity[valMarker];}
+inline su2double CEulerSolver::GetAveragedDensity(unsigned short valMarker){return AveragedDensity[valMarker];}
 
-inline su2double CEulerSolver::GetAveragePressure(unsigned short valMarker){return AveragedPressure[valMarker];}
+inline su2double CEulerSolver::GetAveragedPressure(unsigned short valMarker){return AveragedPressure[valMarker];}
 
-inline su2double CEulerSolver::GetAverageNormalVelocity(unsigned short valMarker){return AveragedNormalVelocity[valMarker];}
+inline su2double CEulerSolver::GetAveragedNormalVelocity(unsigned short valMarker){return AveragedNormalVelocity[valMarker];}
 
-inline su2double CEulerSolver::GetAverageTangVelocity(unsigned short valMarker){return AveragedTangVelocity[valMarker];}
+inline su2double CEulerSolver::GetAveragedTangVelocity(unsigned short valMarker){return AveragedTangVelocity[valMarker];}
+
+inline su2double CEulerSolver::GetAveragedTotTemperature(unsigned short valMarker){return AveragedTotTemperature[valMarker];}
+
+inline su2double CEulerSolver::GetAveragedTotPressure(unsigned short valMarker){return AveragedTotPressure[valMarker];}
 
 
 inline void CEulerSolver::SetExtAveragedValue(CSolver *solver_container, unsigned short intMarker,  unsigned short extMarker){
-	ExtAveragedDensity[extMarker]= solver_container->GetAverageDensity(intMarker);
-    ExtAveragedPressure[extMarker]= solver_container->GetAveragePressure(intMarker);
-    ExtAveragedNormalVelocity[extMarker]= solver_container->GetAverageNormalVelocity(intMarker);
-    ExtAveragedTangVelocity[extMarker]= solver_container->GetAverageTangVelocity(intMarker);
+	ExtAveragedDensity[extMarker]= solver_container->GetAveragedDensity(intMarker);
+    ExtAveragedPressure[extMarker]= solver_container->GetAveragedPressure(intMarker);
+    ExtAveragedNormalVelocity[extMarker]= solver_container->GetAveragedNormalVelocity(intMarker);
+    ExtAveragedTangVelocity[extMarker]= solver_container->GetAveragedTangVelocity(intMarker);
+    ExtAveragedTotTemperature[extMarker]= solver_container->GetAveragedTotTemperature(intMarker);
+    ExtAveragedTotPressure[extMarker]= solver_container->GetAveragedTotPressure(intMarker);
 }
 
 
