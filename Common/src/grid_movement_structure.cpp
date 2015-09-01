@@ -2760,9 +2760,10 @@ CSurfaceMovement::~CSurfaceMovement(void) {}
 
 void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *config) {
   
-  unsigned short iFFDBox, iDV, iLevel, iChild, iParent, jFFDBox;
+  unsigned short iFFDBox, iDV, iLevel, iChild, iParent, jFFDBox, iMarker;
 	int rank = MASTER_NODE;
 	string FFDBoxTag;
+	bool allmoving;
   
 #ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -3074,8 +3075,26 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
   else if ((config->GetDesign_Variable(0) == ROTATION) ||
            (config->GetDesign_Variable(0) == TRANSLATION) ||
            (config->GetDesign_Variable(0) == SCALE)) {
-    if (rank == MASTER_NODE)
-      cout << "No surface deformation (scaling, rotation, or translation)." << endl;
+    /*--- If all markers are deforming, use volume method. If only some are deforming, use surface method ---*/
+    allmoving = true;
+    /*--- Loop over markers ---*/
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
+      if (config->GetMarker_All_DV(iMarker) == NO)
+        allmoving = false;
+    }
+    if (!allmoving){
+      /*---Only some markers are moving, use the surface method ---*/
+      if (config->GetDesign_Variable(0) == ROTATION)
+        SetRotation(geometry, config,  iDV, false);
+      if (config->GetDesign_Variable(0) == SCALE)
+        SetScale(geometry, config,  iDV, false);
+      if (config->GetDesign_Variable(0) == TRANSLATION)
+        SetTranslation(geometry, config,  iDV, false);
+    }
+    else{
+      if (rank == MASTER_NODE)
+        cout << "No surface deformation (scaling, rotation, or translation)." << endl;
+    }
   }
   
   /*--- Design variable not implement ---*/
