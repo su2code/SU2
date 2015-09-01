@@ -245,6 +245,16 @@ public:
 		 */
 		virtual void SetTDState_rhoT (su2double rho, su2double T );
 
+
+		/*!
+		 * \brief virtual member that would be different for each gas model implemented
+		 * \param[in] InputSpec - Input pair for FLP calls ("Pv").
+		 * \param[in] th1 - first thermodynamic variable (P).
+		 * \param[in] th2 - second thermodynamic variable (s).
+		 */
+
+		virtual void SetTDState_Ps (su2double P, su2double s );
+
 };
 
 
@@ -281,8 +291,7 @@ public:
 		virtual ~CIdealGas(void);
 
 		/*!
-		 * \brief virtual member that would be different for each gas model implemented
-		 * \param[in] InputSpec - Input pair for FLP calls ("e, rho").
+		 * \brief Set the Dimensionless State using Density and Internal Energy
 		 * \param[in] rho - first thermodynamic variable.
 		 * \param[in] e - second thermodynamic variable.
 		 */
@@ -290,8 +299,7 @@ public:
 		void SetTDState_rhoe (su2double rho, su2double e );
 
 		/*!
-		 * \brief virtual member that would be different for each gas model implemented
-		 * \param[in] InputSpec - Input pair for FLP calls ("PT").
+		 * \brief Set the Dimensionless State using Pressure  and Temperature
 		 * \param[in] P - first thermodynamic variable.
 		 * \param[in] T - second thermodynamic variable.
 		 */
@@ -299,8 +307,7 @@ public:
 		void SetTDState_PT (su2double P, su2double T );
 
 		/*!
-		 * \brief virtual member that would be different for each gas model implemented
-		 * \param[in] InputSpec - Input pair for FLP calls ("Prho").
+		 * \brief Set the Dimensionless State using Pressure and Density
 		 * \param[in] P - first thermodynamic variable.
 		 * \param[in] rho - second thermodynamic variable.
 		 */
@@ -308,8 +315,7 @@ public:
 		void SetTDState_Prho (su2double P, su2double rho );
 
 		/*!
-		 * \brief virtual member that would be different for each gas model implemented
-		 * \param[in] InputSpec - Input pair for FLP calls ("Prho").
+		 * \brief Set the Dimensionless Internal Energy using Pressure and Density
 		 * \param[in] P - first thermodynamic variable.
 		 * \param[in] rho - second thermodynamic variable.
 		 */
@@ -317,8 +323,7 @@ public:
 		void SetEnergy_Prho (su2double P, su2double rho );
 
 		/*!
-		 * \brief virtual member that would be different for each gas model implemented
-		 * \param[in] InputSpec - Input pair for FLP calls ("hs").
+		 * \brief Set the Dimensionless State using Enthalpy and Entropy
 		 * \param[in] th1 - first thermodynamic variable (h).
 		 * \param[in] th2 - second thermodynamic variable (s).
 		 *
@@ -327,13 +332,20 @@ public:
 
 
 		/*!
-		 * \brief virtual member that would be different for each gas model implemented
-		 * \param[in] InputSpec - Input pair for FLP calls ("rhoT").
+		 * \brief Set the Dimensionless State using Density and Temperature
 		 * \param[in] th1 - first thermodynamic variable (rho).
 		 * \param[in] th2 - second thermodynamic variable (T).
 		 *
 		 */
 		void SetTDState_rhoT (su2double rho, su2double T );
+
+		/*!
+		 * \brief Set the Dimensionless State using Pressure and Entropy
+		 * \param[in] th1 - first thermodynamic variable (P).
+		 * \param[in] th2 - second thermodynamic variable (s).
+		 */
+
+		void SetTDState_Ps (su2double P, su2double s );
 };
 
 
@@ -389,14 +401,14 @@ public:
 		void SetTDState_Prho (su2double P, su2double rho );
 
 		/*!
-		 * \brief Set the Dimensionless Energy using Pressure and Density
+		 * \brief Set the Dimensionless Internal Energy using Pressure and Density
 		 * \param[in] P - first thermodynamic variable.
 		 * \param[in] rho - second thermodynamic variable.
 		 */
 		void SetEnergy_Prho (su2double P, su2double rho );
 
 		/*!
-		 * \brief virtual member that would be different for each gas model implemented
+		 * \brief Set the Dimensionless state using Enthalpy and Entropy
 		 * \param[in] h - first thermodynamic variable (h).
 		 * \param[in] s - second thermodynamic variable (s).
 		 *
@@ -405,12 +417,20 @@ public:
 
 
 		/*!
-		 * \brief virtual member that would be different for each gas model implemented
+		 * \brief Set the Dimensionless state using Density and Temperature
 		 * \param[in] rho - first thermodynamic variable (rho).
 		 * \param[in] T - second thermodynamic variable (T).
 		 *
 		 */
 		void SetTDState_rhoT (su2double rho, su2double T );
+
+		/*!
+		 * \brief Set the Dimensionless State using Pressure and Entropy
+		 * \param[in] th1 - first thermodynamic variable (P).
+		 * \param[in] th2 - second thermodynamic variable (s).
+		 */
+
+		void SetTDState_Ps (su2double P, su2double s );
 
 };
 
@@ -439,9 +459,15 @@ private:
 
 
 	   /*!
-		* \brief Internal model parameter.
+		* \brief Internal function for the implicit call hs.
 		*/
 		su2double  T_v_h (su2double v, su2double h);
+		/*!
+		* \brief Internal function for the implicit call Ps.
+		*/
+		su2double T_P_rho(su2double P, su2double rho);
+
+
 
 public:
 
@@ -504,6 +530,14 @@ public:
 		 *
 		 */
 		void SetTDState_rhoT (su2double rho, su2double T );
+
+		/*!
+		 * \brief Set the Dimensionless State using Pressure and Entropy
+		 * \param[in] th1 - first thermodynamic variable (P).
+		 * \param[in] th2 - second thermodynamic variable (s).
+		 */
+
+		void SetTDState_Ps (su2double P, su2double s );
 
 };
 

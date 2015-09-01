@@ -83,3 +83,4 @@ inline void CFluidModel::SetTDState_Prho (su2double P, su2double rho ) { }
 inline void CFluidModel::SetTDState_hs (su2double h, su2double s ) { }
 inline void CFluidModel::SetTDState_rhoT (su2double rho, su2double T ) { }
 inline void CFluidModel::SetEnergy_Prho (su2double P, su2double rho ) { }
+inline void CFluidModel::SetTDState_Ps (su2double P, su2double s ) { }

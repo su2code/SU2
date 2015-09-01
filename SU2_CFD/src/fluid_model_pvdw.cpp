@@ -223,7 +223,82 @@ void CVanDerWaalsGas::SetTDState_rhoT (su2double rho, su2double T) {
 
 }
 
+void CVanDerWaalsGas::SetTDState_Ps (su2double P, su2double s) {
 
+	su2double T, rho, v, cons_P, cons_s;
+	su2double x1,x2, fx1, fx2,f, fmid, T1,T2, rtb, dx, xmid;
+	su2double toll = 1e-5, FACTOR=0.2;
+	unsigned short count=0, NTRY=10, ITMAX=100;
+
+	T   = exp(Gamma_Minus_One/Gamma* (s/Gas_Constant +log(P) -log(Gas_Constant)) );
+    rho = P/(T*Gas_Constant);
+
+    if(Zed<0.9999){
+    	x1 = rho;
+    	x2 = rho/Zed;
+
+    }else{
+    	x1 = rho;
+    	x2 = rho/0.5;
+    }
+    T1 = (P+x1*x1*a)*((1-x1*b)/(x1*Gas_Constant));
+    fx1 = Gas_Constant *( log(T1)/Gamma_Minus_One + log(1/x1 - b)) - s;
+    T2 = (P+x2*x2*a)*((1-x2*b)/(x2*Gas_Constant));
+    fx2 = Gas_Constant *( log(T2)/Gamma_Minus_One + log(1/x2 - b)) - s;
+
+    // zbrac algorithm NR
+
+    for (int j=1;j<=NTRY;j++) {
+    	if (fx1*fx2 > 0.0){
+    		if (fabs(fx1) < fabs(fx2)){
+    			x1 += FACTOR*(x1-x2);
+    			T1 = (P+x1*x1*a)*((1-x1*b)/(x1*Gas_Constant));
+    			fx1 = Gas_Constant *( log(T1)/Gamma_Minus_One + log(1/x1 - b)) - s;
+    		}else{
+    			x2 += FACTOR*(x2-x1);
+    		    T2 = (P+x2*x2*a)*((1-x2*b)/(x2*Gas_Constant));
+    		    fx2 = Gas_Constant *( log(T2)/Gamma_Minus_One + log(1/x2 - b)) - s;
+    			}
+    	}
+    }
+
+
+    // rtbis algorithm NR
+
+	f=fx1;
+	fmid=fx2;
+	if (f*fmid >= 0.0){
+		cout<< "Root must be bracketed for bisection in rtbis"<< endl;
+		SetTDState_rhoT(Density, Temperature);
+	}
+	rtb = f < 0.0 ? (dx=x2-x1,x1) : (dx=x1-x2,x2);
+	do{
+		xmid=rtb+(dx *= 0.5);
+		T = (P+xmid*xmid*a)*((1-xmid*b)/(xmid*Gas_Constant));
+		fmid = Gas_Constant *( log(T)/Gamma_Minus_One + log(1/xmid - b)) - s;
+		if (fmid <= 0.0) rtb=xmid;
+		count++;
+		}while(abs(fmid) > toll && count<ITMAX);
+
+		if(count==ITMAX){
+			cout <<"Too many bisections in rtbis" << endl;
+		}
+
+
+	rho = xmid;
+	T= (P+rho*rho*a)*((1-rho*b)/(rho*Gas_Constant));
+	SetTDState_rhoT(rho, T);
+
+	cons_P= abs((Pressure -P)/P);
+	cons_s= abs((Entropy-s)/s);
+
+	if(cons_P >1e-3 or cons_s >1e-3){
+		cout<< "TD consistency not verified in hs call"<< endl;
+	}
+
+
+
+}
 
 
 

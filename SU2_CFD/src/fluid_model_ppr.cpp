@@ -75,6 +75,22 @@ su2double CPengRobinson::T_v_h(su2double v, su2double h) {
 	return T*T;
 }
 
+su2double CPengRobinson::T_P_rho(su2double P, su2double rho){
+	su2double A, B, C, T, vb1, vb2;
+	vb1 = (1/rho -b);
+	vb2 = (1/rho/rho + 2*b/rho - b*b);
+
+	A =   Gas_Constant/vb1 - a*k*k/TstarCrit/vb2;
+
+	B =   2*a*k*(k+1)/sqrt(TstarCrit)/vb2;
+
+	C = - P - a*(1+k)*(1+k)/vb2;
+
+	T = ( -B + sqrt(B*B - 4*A*C) ) / (2*A);
+	T *= T;
+	return T;
+}
+
 void CPengRobinson::SetTDState_rhoe (su2double rho, su2double e ) {
 
     su2double DpDd_T, DpDT_d, DeDd_T, Cv;
@@ -304,6 +320,84 @@ void CPengRobinson::SetTDState_rhoT (su2double rho, su2double T) {
 	SetTDState_rhoe(rho, e);
 }
 
+void CPengRobinson::SetTDState_Ps (su2double P, su2double s){
 
+	su2double T, rho, v, cons_P, cons_s, fv, A;
+	su2double x1,x2, fx1, fx2,f, fmid, T1,T2, rtb, dx, xmid, sqrt2=sqrt(2.0);
+	su2double toll = 1e-5, FACTOR=0.2;
+	unsigned short count=0, NTRY=10, ITMAX=100;
+
+	A = Gas_Constant / Gamma_Minus_One;
+	T   = exp(Gamma_Minus_One/Gamma* (s/Gas_Constant +log(P) -log(Gas_Constant)) );
+	v = (T*Gas_Constant)/P;
+
+	if(Zed<0.9999){
+		x1 = Zed*v;
+		x2 = v;
+
+	}else{
+		x1 = 0.2*v;
+		x2 = v;
+	}
+	T = T_P_rho(P,1.0/x1);
+	fv = atanh( b*sqrt2 / (x1 + b));
+	fx1 = A*log(T) + Gas_Constant*log(x1 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
+	T = T_P_rho(P,1.0/x2);
+	fv = atanh( b*sqrt2 / (x2 + b));
+	fx2 = A*log(T) + Gas_Constant*log(x2 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
+
+	// zbrac algorithm NR
+
+	for (int j=1;j<=NTRY;j++) {
+		if (fx1*fx2 > 0.0){
+			if (fabs(fx1) < fabs(fx2)){
+				x1 += FACTOR*(x1-x2);
+				T = T_P_rho(P,1.0/x1);
+				fv = atanh( b*sqrt2 / (x1 + b));
+				fx1 = A*log(T) + Gas_Constant*log(x1 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
+			}else{
+				T = T_P_rho(P,1.0/x2);
+				fv = atanh( b*sqrt2 / (x2 + b));
+				fx2 = A*log(T) + Gas_Constant*log(x2 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
+				}
+		}
+	}
+
+
+	// rtbis algorithm NR
+
+	f=fx1;
+	fmid=fx2;
+	if (f*fmid >= 0.0){
+		cout<< "Root must be bracketed for bisection in rtbis"<< endl;
+		SetTDState_rhoT(Density, Temperature);
+	}
+	rtb = f < 0.0 ? (dx=x2-x1,x1) : (dx=x1-x2,x2);
+	do{
+		xmid=rtb+(dx *= 0.5);
+		T = T_P_rho(P,1.0/xmid);
+		fv = atanh( b*sqrt2 / (xmid + b));
+		fmid = A*log(T) + Gas_Constant*log(xmid - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
+		if (fmid <= 0.0) rtb=xmid;
+		count++;
+		}while(abs(fmid) > toll && count<ITMAX);
+
+		if(count==ITMAX){
+			cout <<"Too many bisections in rtbis" << endl;
+		}
+
+	rho = 1.0/xmid;
+	T= T = T_P_rho(P, rho);
+	SetTDState_rhoT(rho, T);
+//	cout << xmid << " "<< T<< " "<< Pressure<< " "<< P << " "<< Entropy << " "<< s <<endl;
+
+	cons_P= abs((Pressure -P)/P);
+	cons_s= abs((Entropy-s)/s);
+
+	if(cons_P >1e-3 or cons_s >1e-3){
+		cout<< "TD consistency not verified in hs call"<< endl;
+	}
+
+}
 
 

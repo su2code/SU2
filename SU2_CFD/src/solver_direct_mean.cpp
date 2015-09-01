@@ -7081,6 +7081,49 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
           
           break;
           
+//        case MIXING_IN: //case TOTAL_SUPERSONIC_INFLOW:
+//
+//                  /*--- Retrieve the specified total conditions for this boundary. ---*/
+//
+//                  if (gravity) P_Total = config->GetRiemann_Var1(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDART_GRAVITY;/// check in which case is true (only freesurface?)
+//                  else P_Total  = config->GetRiemann_Var1(Marker_Tag);
+//                  T_Total  = config->GetRiemann_Var2(Marker_Tag);
+//                  Flow_Dir = config->GetRiemann_FlowDir(Marker_Tag);
+//
+//                  /*--- Non-dim. the inputs if necessary. ---*/
+//                  P_Total /= config->GetPressure_Ref();
+//                  T_Total /= config->GetTemperature_Ref();
+//
+//                  /* --- Computes the total state --- */
+//
+//                  FluidModel->SetTDState_PT(P_Total, T_Total);
+//
+//                  Enthalpy_e = FluidModel->GetStaticEnergy()+ FluidModel->GetPressure()/FluidModel->GetDensity();
+//
+//                  Entropy_e = FluidModel->GetEntropy();
+//
+//                  /* --- Compute the boundary state u_e --- */
+//
+//                  Velocity2_e = Velocity2_i;
+//
+//                  for (iDim = 0; iDim < nDim; iDim++) {
+//                    Velocity_e[iDim] = sqrt(Velocity2_e)*Flow_Dir[iDim];
+//                  }
+//
+//
+//                  StaticEnthalpy_e = Enthalpy_e - 0.5 * Velocity2_e;
+//
+//                  FluidModel->SetTDState_hs(StaticEnthalpy_e, Entropy_e);
+//
+//                  Density_e = FluidModel->GetDensity();
+//                  StaticEnergy_e = FluidModel->GetStaticEnergy();
+//
+//                  Energy_e = StaticEnergy_e + 0.5 * Velocity2_e;
+//
+//                  if (tkeNeeded) Energy_e += GetTke_Inf();
+//
+//                  break;
+
         case DENSITY_VELOCITY:
           
           /*--- Retrieve the specified density and velocity magnitude ---*/
@@ -8057,9 +8100,9 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
       Lambda_i[nVar-2] = ProjVelocity_i + SoundSpeed_i;
       Lambda_i[nVar-1] = ProjVelocity_i - SoundSpeed_i;
       double sigma;
-      if (config->GetExtIter()< 3000)sigma = 0.05;
-      else if(config->GetExtIter()< 10000) sigma = min(0.05, 0.05 + 1.50*(config->GetExtIter()- 3000)/(3000));
-      else sigma = min(0.05, 0.71 + 0.05*(config->GetExtIter()- 5000)/(5000));
+      if (config->GetExtIter()< 3000)sigma = 0.2;
+      else if(config->GetExtIter()< 6000) sigma = min(0.4, 0.2 + 0.20*(config->GetExtIter()- 3000)/(3000));
+      else sigma = min(0.9, 0.4 + 0.5*(config->GetExtIter()- 6000)/(30000));
       Density_b = AveragedDensity[val_marker] + sigma*deltaprim[0];
       Pressure_b = AveragedPressure[val_marker] + sigma*deltaprim[3];
       NormalVelocity = AveragedNormalVelocity[val_marker] + sigma*deltaprim[1];
