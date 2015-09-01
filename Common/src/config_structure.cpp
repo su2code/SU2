@@ -2,7 +2,7 @@
  * \file config_structure.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -85,10 +85,6 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
 
 CConfig::CConfig(char case_filename[MAX_STRING_SIZE], CConfig *config) {
   
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
   bool runtime_file = false;
   
   /*--- Initialize pointers to Null---*/
@@ -3155,7 +3151,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         cout << "SU2_CFD: Config option DIRECT_DIFF= YES requires AD or complex support!" << endl;
         cout << "Please use SU2_CFD_DIRECTDIFF (configuration/compilation is done using the preconfigure.py script)." << endl;
         exit(EXIT_FAILURE);
-        exit(EXIT_FAILURE);
       }
 #endif
     /*--- Initialize the derivative values --- */
@@ -3612,7 +3607,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   cout << endl << "-------------------------------------------------------------------------" << endl;
   cout << "|    ___ _   _ ___                                                      |" << endl;
-  cout << "|   / __| | | |_  )   Release 4.0.0  \"Cardinal\"                         |" << endl;
+  cout << "|   / __| | | |_  )   Release 4.0.1  \"Cardinal\"                         |" << endl;
   cout << "|   \\__ \\ |_| |/ /                                                      |" << endl;
   switch (val_software) {
     case SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;
