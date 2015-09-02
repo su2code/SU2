@@ -6957,7 +6957,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
   bool tkeNeeded = (((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
                     (config->GetKind_Turb_Model() == SST));
 
-  su2double *Normal, *FlowDirMix;
+  su2double *Normal, *FlowDirMix, TangVelocity, NormalVelocity;
   Normal = new su2double[nDim];
 
   
@@ -7067,9 +7067,16 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
           
           Velocity2_e = Velocity2_i;
           
-          for (iDim = 0; iDim < nDim; iDim++) {
-            Velocity_e[iDim] = sqrt(Velocity2_e)*Flow_Dir[iDim];
-          }
+          if (nDim == 2){
+        	  NormalVelocity= -sqrt(Velocity2_e)*Flow_Dir[0];
+        	  TangVelocity= -sqrt(Velocity2_e)*Flow_Dir[1];
+        	  Velocity_e[0]= UnitNormal[0]*NormalVelocity - UnitNormal[1]*TangVelocity;
+			  Velocity_e[1]= UnitNormal[1]*NormalVelocity + UnitNormal[0]*TangVelocity;
+
+          }else
+        	  for (iDim = 0; iDim < nDim; iDim++)
+        		  Velocity_e[iDim] = sqrt(Velocity2_e)*Flow_Dir[iDim];
+
           
           
           StaticEnthalpy_e = Enthalpy_e - 0.5 * Velocity2_e;
@@ -7115,9 +7122,16 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
           Velocity2_e = Velocity2_i;
 
-          for (iDim = 0; iDim < nDim; iDim++) {
-            Velocity_e[iDim] = sqrt(Velocity2_e)*FlowDirMix[iDim];
-          }
+          if (nDim == 2){
+        	  NormalVelocity= -sqrt(Velocity2_e)*FlowDirMix[0];
+        	  TangVelocity= -sqrt(Velocity2_e)*FlowDirMix[1];
+        	  Velocity_e[0]= UnitNormal[0]*NormalVelocity - UnitNormal[1]*TangVelocity;
+			  Velocity_e[1]= UnitNormal[1]*NormalVelocity + UnitNormal[0]*TangVelocity;
+
+          }else
+        	  for (iDim = 0; iDim < nDim; iDim++)
+        		  Velocity_e[iDim] = sqrt(Velocity2_e)*FlowDirMix[iDim];
+
 
 
           StaticEnthalpy_e = Enthalpy_e - 0.5 * Velocity2_e;
@@ -7733,9 +7747,9 @@ void CEulerSolver::Mixing_Process(CGeometry *geometry, CSolver **solver_containe
 	AveragedEntropy[val_Marker] = FluidModel->GetEntropy();
 	AveragedNormalVelocity[val_Marker]= AveragedNormal[val_Marker][0]*AveragedVelocity[val_Marker][0] + AveragedNormal[val_Marker][1]*AveragedVelocity[val_Marker][1];
 	AveragedTangVelocity[val_Marker]= AveragedNormal[val_Marker][0]*AveragedVelocity[val_Marker][1] - AveragedNormal[val_Marker][1]*AveragedVelocity[val_Marker][0];
-	for(iDim = 0; iDim<nDim; iDim++) cout <<"Vel " << AveragedVelocity[val_Marker][iDim]<<" "<<iDim<<endl;
-	cout <<"VelNorm " << AveragedNormalVelocity[val_Marker]<<" "<<endl;
-	cout <<"VelTang " << AveragedTangVelocity[val_Marker]<<" "<<endl;
+//	for(iDim = 0; iDim<nDim; iDim++) cout <<"Vel " << AveragedVelocity[val_Marker][iDim]<<" "<<iDim<<endl;
+//	cout <<"VelNorm " << AveragedNormalVelocity[val_Marker]<<" "<<endl;
+//	cout <<"VelTang " << AveragedTangVelocity[val_Marker]<<" "<<endl;
 	/* --- compure total averaged quantities ---*/
 	avgVel2 = 0.0;
 	for (iDim = 0; iDim < nDim; iDim++) avgVel2 += AveragedVelocity[val_Marker][iDim]*AveragedVelocity[val_Marker][iDim];
@@ -7930,7 +7944,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 
 
 
-//  Mixing_Process(geometry, solver_container,  config, val_marker);
+  Mixing_Process(geometry, solver_container,  config, val_marker);
 
   cc = AveragedSoundSpeed[val_marker]*AveragedSoundSpeed[val_marker];
   rhoc = AveragedSoundSpeed[val_marker]*AveragedDensity[val_marker];
@@ -7941,10 +7955,10 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 //  Boundary_Fourier(geometry, solver_container, config, val_marker, c4k, nboundaryvertex);
 //  Boundary_Fourier(geometry, solver_container, config, val_marker, c2k,c3k,nboundaryvertex);
 
-  cout<<"IntPressure" <<AveragedPressure[val_marker]<<" ExtPressure " <<ExtAveragedPressure[val_marker]<<endl;
-  cout<<"IntDensity" <<AveragedDensity[val_marker]<<" ExtDensity " <<ExtAveragedDensity[val_marker]<<endl;
-  cout<<"IntNormalVelocity " <<AveragedNormalVelocity[val_marker]<<" ExtNormalVelocity " <<ExtAveragedNormalVelocity[val_marker]<<endl;
-  cout<<"IntTangVelocity " <<AveragedTangVelocity[val_marker]<<" ExtTangVelocity " <<ExtAveragedTangVelocity[val_marker]<<endl;
+//  cout<<"IntPressure" <<AveragedPressure[val_marker]<<" ExtPressure " <<ExtAveragedPressure[val_marker]<<endl;
+//  cout<<"IntDensity" <<AveragedDensity[val_marker]<<" ExtDensity " <<ExtAveragedDensity[val_marker]<<endl;
+//  cout<<"IntNormalVelocity " <<AveragedNormalVelocity[val_marker]<<" ExtNormalVelocity " <<ExtAveragedNormalVelocity[val_marker]<<endl;
+//  cout<<"IntTangVelocity " <<AveragedTangVelocity[val_marker]<<" ExtTangVelocity " <<ExtAveragedTangVelocity[val_marker]<<endl;
 //  cout<<"AveragedVelocity_0 " <<AveragedVelocity[val_marker][0]<<" AveragedVelocity_1 " <<AveragedVelocity[val_marker][1]<<endl;
 
   /* --- Start implementation of NRBC ---*/
@@ -7995,7 +8009,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
       FluidModel->SetTDState_rhoe(Density_i, StaticEnergy_i);
 
       Pressure_i = FluidModel->GetPressure();
-      cout << "loacal pressure "<<  Pressure_i << endl;
+//      cout << "loacal pressure "<<  Pressure_i << endl;
       Enthalpy_i = Energy_i + Pressure_i/Density_i;
 
       SoundSpeed_i = FluidModel->GetSoundSpeed();
@@ -8144,9 +8158,10 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
       Lambda_i[nVar-2] = ProjVelocity_i + SoundSpeed_i;
       Lambda_i[nVar-1] = ProjVelocity_i - SoundSpeed_i;
       double sigma;
-      if (config->GetExtIter()< 3000)sigma = 0.3;
-      else if(config->GetExtIter()< 6000) sigma = min(0.6, 0.3 + 0.30*(config->GetExtIter()- 3000)/(3000));
-      else sigma = min(0.9, 0.6 + 0.2*(config->GetExtIter()- 6000)/(3000));
+      sigma = 1.0;
+//      if (config->GetExtIter()< 3000)sigma = 0.3;
+//      else if(config->GetExtIter()< 6000) sigma = min(0.6, 0.3 + 0.30*(config->GetExtIter()- 3000)/(3000));
+//      else sigma = min(0.9, 0.6 + 0.2*(config->GetExtIter()- 6000)/(3000));
       Density_b = AveragedDensity[val_marker] + sigma*deltaprim[0];
       Pressure_b = AveragedPressure[val_marker] + sigma*deltaprim[3];
       NormalVelocity = AveragedNormalVelocity[val_marker] + sigma*deltaprim[1];
@@ -8178,7 +8193,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 	  Velocity_b[1]	= NormalVelocity*UnitNormal[1] + TangVelocity*UnitNormal[0];
 
 //	  cout<<"density b  "<< Density_b<<endl;
-	  cout <<"delta press b  "<< deltaprim[3]<<endl;
+//	  cout <<"delta press b  "<< deltaprim[3]<<endl;
 //	  cout <<"velx b  "<< Velocity_b[0]<<endl;
 //	  cout <<"vely b  "<< Velocity_b[1]<<endl;
 	  Velocity2_b = 0.0;
