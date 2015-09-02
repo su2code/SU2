@@ -2107,7 +2107,7 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
 	su2double Tau[3][3];
 
 	unsigned long Point_Flow, Point_Struct;
-	su2double *Normal_Flow;
+	su2double *Normal_Flow, *Normal_Struct;
 
 	su2double *tn_f;
 	tn_f 				= new su2double [nVar];			// Fluid traction
@@ -2238,6 +2238,8 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
     su2double *Buffer_Send_Residual = new su2double [nDim];
     su2double *Buffer_Receive_Residual = new su2double [nDim];
 
+    su2double *nodeCoord = new su2double [nDim];
+
     /*--- Processor which hosts the fluid data and the structural data ---*/
     int Processor_Flow, Processor_Struct;
 
@@ -2247,259 +2249,138 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
 		node[iPoint]->Clear_FlowTraction();
 	}
 
-	/*--- Loop over all the markers on the interface ---*/
-	/*--- TODO: check if it may be a potential problem to put the communication inside the loop. ---*/
+    /*--- Do the send process, by the moment we are sending each
+     node individually, this must be changed ---*/
+    for (iMarkerFlow = 0; iMarkerFlow < flow_config->GetnMarker_All(); iMarkerFlow++) {
 
-	for (iMarkerFSIint = 0; iMarkerFSIint < nMarkerFSIint; iMarkerFSIint++){
+      if (flow_config->GetMarker_All_FSIinterface(iMarkerFlow) != 0) {
 
-		/*--- Identification of the markers ---*/
-
-		/*--- Current structural marker ---*/
-		for (iMarkerFEA = 0; iMarkerFEA < nMarkerFEA; iMarkerFEA++){
-			if (fea_config->GetMarker_All_FSIinterface(iMarkerFEA) == (iMarkerFSIint+1)){
-				markFEA = iMarkerFEA;
-			}
-		}
-
-		/*--- Current fluid marker ---*/
-		for (iMarkerFlow = 0; iMarkerFlow < nMarkerFlow; iMarkerFlow++){
-			if (flow_config->GetMarker_All_FSIinterface(iMarkerFlow) == (iMarkerFSIint+1)){
-				markFlow = iMarkerFlow;
-			}
-		}
-
-		nVertexFEA = fea_geometry[MESH_0]->GetnVertex(markFEA);		// Retrieve total number of vertices on FEA marker
-		nVertexFlow = flow_geometry[MESH_0]->GetnVertex(markFlow);  // Retrieve total number of vertices on Fluid marker
-
-		/*--- Loop over the nodes in the fluid mesh, calculate the tf vector (unitary) and send it, if necessary ---*/
-		/*--- Here, we are looping over the fluid, and we find the pointer to the structure (Point_Struct) ---*/
-		for (iVertex = 0; iVertex < nVertexFlow; iVertex++){
+        for (iVertex= 0; iVertex < flow_geometry[MESH_0]->nVertex[iMarkerFlow]; iVertex++) {
 
 			// Node from the flow mesh
-			Point_Flow = flow_geometry[MESH_0]->vertex[markFlow][iVertex]->GetNode();
+			Point_Flow = flow_geometry[MESH_0]->vertex[iMarkerFlow][iVertex]->GetNode();
 
 			// We check if the processor "rank" owns this node so it makes sense to make the calculations
 	        if (flow_geometry[MESH_0]->node[Point_Flow]->GetDomain()) {
 
 				// Get the donor point (on the structural mesh)
-				Point_Struct = flow_geometry[MESH_0]->vertex[markFlow][iVertex]->GetDonorPoint();
+				Point_Struct = flow_geometry[MESH_0]->vertex[iMarkerFlow][iVertex]->GetDonorPoint();
 
 				// Get the donor processor to which the message will be sent (on the structural mesh)
-				Processor_Struct = flow_geometry[MESH_0]->vertex[markFlow][iVertex]->GetDonorProcessor();
+				Processor_Struct = flow_geometry[MESH_0]->vertex[iMarkerFlow][iVertex]->GetDonorProcessor();
 
-				// We check if the processor "rank" is equal to the structural; if so, we don't need to send the message
-				if (Processor_Struct != rank) {
+				// Get the normal at the vertex: this normal goes inside the fluid domain.
+				Normal_Flow = flow_geometry[MESH_0]->vertex[iMarkerFlow][iVertex]->GetNormal();
 
-					// Get the normal at the vertex: this normal goes inside the fluid domain.
-					Normal_Flow = flow_geometry[MESH_0]->vertex[markFlow][iVertex]->GetNormal();
+				// Retrieve the values of pressure, viscosity and density
+				if (incompressible){
 
-					// Retrieve the values of pressure, viscosity and density
-					if (incompressible){
-
-						Pn = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetPressureInc();
-						// TODO: This can be taken out (one thing at a time!)
-						Pinf = flow_solution[MESH_0][FLOW_SOL]->GetPressure_Inf();
-
-						if (viscous_flow){
-
-							Grad_PrimVar = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetGradient_Primitive();
-							Viscosity = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetLaminarViscosityInc();
-							Density = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetDensityInc();
-
-						}
-					}
-					else if (compressible){
-
-						Pn = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetPressure();
-						// TODO: This can be taken out (one thing at a time!)
-						Pinf = flow_solution[MESH_0][FLOW_SOL]->GetPressure_Inf();
-
-						if (viscous_flow){
-
-							Grad_PrimVar = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetGradient_Primitive();
-							Viscosity = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetLaminarViscosity();
-							Density = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetDensity();
-
-						}
-					}
-
-					// Calculate tn in the fluid nodes for the inviscid term --> Units of force (non-dimensional).
-					for (iDim = 0; iDim < nDim; iDim++) {
-						tn_f[iDim] = -(Pn-Pinf)*Normal_Flow[iDim];
-					}
-
-					// Calculate tn in the fluid nodes for the viscous term
+					Pn = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetPressureInc();
+					// TODO: This can be taken out (one thing at a time!)
+					Pinf = flow_solution[MESH_0][FLOW_SOL]->GetPressure_Inf();
 
 					if (viscous_flow){
 
-						// Divergence of the velocity
-						div_vel = 0.0; for (iDim = 0; iDim < nDim; iDim++) div_vel += Grad_PrimVar[iDim+1][iDim];
-						if (incompressible) div_vel = 0.0;
+						Grad_PrimVar = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetGradient_Primitive();
+						Viscosity = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetLaminarViscosityInc();
+						Density = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetDensityInc();
 
-						for (iDim = 0; iDim < nDim; iDim++) {
-
-							for (jDim = 0 ; jDim < nDim; jDim++) {
-								// Dirac delta
-								Dij = 0.0; if (iDim == jDim) Dij = 1.0;
-
-								// Viscous stress
-								Tau[iDim][jDim] = Viscosity*(Grad_PrimVar[jDim+1][iDim] + Grad_PrimVar[iDim+1][jDim]) -
-										TWO3*Viscosity*div_vel*Dij;
-
-								// Viscous component in the tn vector --> Units of force (non-dimensional).
-								tn_f[iDim] += Tau[iDim][jDim]*Normal_Flow[jDim];
-							}
-						}
 					}
+				}
+				else if (compressible){
 
-					// Rescale tn to SI units and apply time-dependent coefficient (static structure, ramp load, full load)
-					// Store in the Buffer_Send_Residual
+					Pn = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetPressure();
+					// TODO: This can be taken out (one thing at a time!)
+					Pinf = flow_solution[MESH_0][FLOW_SOL]->GetPressure_Inf();
 
-					for (iDim = 0; iDim < nDim; iDim++) {
-						Buffer_Send_Residual[iDim] = tn_f[iDim]*factorForces*ModAmpl;
+					if (viscous_flow){
+
+						Grad_PrimVar = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetGradient_Primitive();
+						Viscosity = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetLaminarViscosity();
+						Density = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetDensity();
+
 					}
-
-					// Send the message
-		            SU2_MPI::Bsend(Buffer_Send_Residual, nDim, MPI_DOUBLE, Processor_Struct, Point_Struct, MPI_COMM_WORLD);
-
 				}
 
+				// Calculate tn in the fluid nodes for the inviscid term --> Units of force (non-dimensional).
+				for (iDim = 0; iDim < nDim; iDim++) {
+					tn_f[iDim] = -(Pn-Pinf)*Normal_Flow[iDim];
+				}
+
+				// Calculate tn in the fluid nodes for the viscous term
+
+				if (viscous_flow){
+
+					// Divergence of the velocity
+					div_vel = 0.0; for (iDim = 0; iDim < nDim; iDim++) div_vel += Grad_PrimVar[iDim+1][iDim];
+					if (incompressible) div_vel = 0.0;
+
+					for (iDim = 0; iDim < nDim; iDim++) {
+
+						for (jDim = 0 ; jDim < nDim; jDim++) {
+							// Dirac delta
+							Dij = 0.0; if (iDim == jDim) Dij = 1.0;
+
+							// Viscous stress
+							Tau[iDim][jDim] = Viscosity*(Grad_PrimVar[jDim+1][iDim] + Grad_PrimVar[iDim+1][jDim]) -
+									TWO3*Viscosity*div_vel*Dij;
+
+							// Viscous component in the tn vector --> Units of force (non-dimensional).
+							tn_f[iDim] += Tau[iDim][jDim]*Normal_Flow[jDim];
+						}
+					}
+				}
+
+				// Rescale tn to SI units and apply time-dependent coefficient (static structure, ramp load, full load)
+				// Store in the Buffer_Send_Residual
+
+				for (iDim = 0; iDim < nDim; iDim++) {
+					Buffer_Send_Residual[iDim] = tn_f[iDim]*factorForces*ModAmpl;
+				}
+
+				// Send the message
+				SU2_MPI::Bsend(Buffer_Send_Residual, nDim, MPI_DOUBLE, Processor_Struct, Point_Struct, MPI_COMM_WORLD);
+
 			}
 
-		}
+        }
 
-	}
+      }
 
-	/*--- Loop over all the markers on the interface ---*/
-	/*--- TODO: check if it may be a potential problem to put the communication inside the loop. ---*/
+    }
 
-	for (iMarkerFSIint = 0; iMarkerFSIint < nMarkerFSIint; iMarkerFSIint++){
+    /*--- Do the send process, by the moment we are sending each
+     node individually, this must be changed ---*/
+    for (iMarkerFEA = 0; iMarkerFEA < fea_config->GetnMarker_All(); iMarkerFEA++) {
 
-		/*--- Identification of the markers ---*/
+      if (fea_config->GetMarker_All_FSIinterface(iMarkerFEA) != 0) {
 
-		/*--- Current structural marker ---*/
-		for (iMarkerFEA = 0; iMarkerFEA < nMarkerFEA; iMarkerFEA++){
-			if (fea_config->GetMarker_All_FSIinterface(iMarkerFEA) == (iMarkerFSIint+1)){
-				markFEA = iMarkerFEA;
-			}
-		}
-
-		/*--- Current fluid marker ---*/
-		for (iMarkerFlow = 0; iMarkerFlow < nMarkerFlow; iMarkerFlow++){
-			if (flow_config->GetMarker_All_FSIinterface(iMarkerFlow) == (iMarkerFSIint+1)){
-				markFlow = iMarkerFlow;
-			}
-		}
-
-		nVertexFEA = fea_geometry[MESH_0]->GetnVertex(markFEA);		// Retrieve total number of vertices on FEA marker
-		nVertexFlow = flow_geometry[MESH_0]->GetnVertex(markFlow);  // Retrieve total number of vertices on Fluid marker
-
-		/*--- Now we loop over the nodes on the structural side ---*/
-		/*--- We check whether we need to receive a message or recompute tn ---*/
-		for (iVertex = 0; iVertex < nVertexFEA; iVertex++){
+        for (iVertex= 0; iVertex < fea_geometry[MESH_0]->nVertex[iMarkerFEA]; iVertex++) {
 
 			// Node from the flow mesh
-			Point_Struct = fea_geometry[MESH_0]->vertex[markFEA][iVertex]->GetNode();
+			Point_Struct = fea_geometry[MESH_0]->vertex[iMarkerFEA][iVertex]->GetNode();
 
 			// We check if the processor "rank" owns this node so it makes sense to make the calculations
 	        if (fea_geometry[MESH_0]->node[Point_Struct]->GetDomain()) {
 
 				// Get the donor point (on the fluid mesh)
-				Point_Flow = fea_geometry[MESH_0]->vertex[markFEA][iVertex]->GetDonorPoint();
+				Point_Flow = fea_geometry[MESH_0]->vertex[iMarkerFEA][iVertex]->GetDonorPoint();
 
 				// Get the donor processor from which the message will be received (on the fluid mesh)
-				Processor_Flow = fea_geometry[MESH_0]->vertex[markFEA][iVertex]->GetDonorProcessor();
+				Processor_Flow = fea_geometry[MESH_0]->vertex[iMarkerFEA][iVertex]->GetDonorProcessor();
 
-				// We check if the processor "rank" is equal to the structural; if so, we need to receive the message
-				if (Processor_Flow != rank) {
-					SU2_MPI::Recv(Buffer_Receive_Residual, nDim, MPI_DOUBLE, Processor_Flow, Point_Struct, MPI_COMM_WORLD, &status);
-				}
-				// Otherwise, we need to compute the tractions
-				else {
-
-					// Get the normals at the vertex: these normals go inside the fluid domain.
-					// We need to search for the normal corresponding to the particular Point_Flow
-					for (jVertex = 0; jVertex < nVertexFlow; jVertex++){
-						if (flow_geometry[MESH_0]->vertex[markFlow][jVertex]->GetNode() == Point_Flow)
-							Normal_Flow = flow_geometry[MESH_0]->vertex[markFlow][jVertex]->GetNormal();
-					}
-
-					// Retrieve the values of pressure, viscosity and density
-					if (incompressible){
-
-						Pn = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetPressureInc();
-						// TODO: This can be taken out (one thing at a time!)
-						Pinf = flow_solution[MESH_0][FLOW_SOL]->GetPressure_Inf();
-
-						if (viscous_flow){
-
-							Grad_PrimVar = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetGradient_Primitive();
-							Viscosity = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetLaminarViscosityInc();
-							Density = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetDensityInc();
-
-						}
-					}
-					else if (compressible){
-
-						Pn = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetPressure();
-						// TODO: This can be taken out (one thing at a time!)
-						Pinf = flow_solution[MESH_0][FLOW_SOL]->GetPressure_Inf();
-
-						if (viscous_flow){
-
-							Grad_PrimVar = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetGradient_Primitive();
-							Viscosity = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetLaminarViscosity();
-							Density = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetDensity();
-
-						}
-					}
-
-					// Calculate tn in the fluid nodes for the inviscid term --> Units of force (non-dimensional).
-					for (iDim = 0; iDim < nDim; iDim++) {
-						tn_f[iDim] = -(Pn-Pinf)*Normal_Flow[iDim];
-					}
-
-					// Calculate tn in the fluid nodes for the viscous term
-
-					if (viscous_flow){
-
-						// Divergence of the velocity
-						div_vel = 0.0; for (iDim = 0; iDim < nDim; iDim++) div_vel += Grad_PrimVar[iDim+1][iDim];
-						if (incompressible) div_vel = 0.0;
-
-						for (iDim = 0; iDim < nDim; iDim++) {
-
-							for (jDim = 0 ; jDim < nDim; jDim++) {
-								// Dirac delta
-								Dij = 0.0; if (iDim == jDim) Dij = 1.0;
-
-								// Viscous stress
-								Tau[iDim][jDim] = Viscosity*(Grad_PrimVar[jDim+1][iDim] + Grad_PrimVar[iDim+1][jDim]) -
-										TWO3*Viscosity*div_vel*Dij;
-
-								// Viscous component in the tn vector --> Units of force (non-dimensional).
-								tn_f[iDim] += Tau[iDim][jDim]*Normal_Flow[jDim];
-							}
-						}
-					}
-
-					// Rescale tn to SI units and apply time-dependent coefficient (static structure, ramp load, full load)
-					// Store in the Buffer_Send_Residual
-
-					for (iDim = 0; iDim < nDim; iDim++) {
-						Buffer_Receive_Residual[iDim] = tn_f[iDim]*factorForces*ModAmpl;
-					}
-
-				}
+				SU2_MPI::Recv(Buffer_Receive_Residual, nDim, MPI_DOUBLE, Processor_Flow, Point_Struct, MPI_COMM_WORLD, &status);
 
 				/*--- Add to the Flow traction (to add values to corners...) ---*/
 				node[Point_Struct]->Add_FlowTraction(Buffer_Receive_Residual);
 
 			}
 
-		}
+        }
 
-	}
+      }
+
+    }
 
 	/*--- Deallocate the memory ---*/
     delete[] Buffer_Send_Residual;
