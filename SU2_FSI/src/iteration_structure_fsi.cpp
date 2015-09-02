@@ -76,7 +76,6 @@ void FSI_BGS_Iteration(COutput *output, CIntegration ***integration_container, C
 
 		output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_0);
 
-
 		/*-----------------------------------------------------------------*/
 		/*------------------- Set FEA loads from fluid --------------------*/
 		/*-----------------------------------------------------------------*/
@@ -84,7 +83,6 @@ void FSI_BGS_Iteration(COutput *output, CIntegration ***integration_container, C
         FSI_Load_Transfer(output, integration_container, geometry_container,
 	                 	 solver_container, numerics_container, config_container,
 	                 	 surface_movement, grid_movement, FFDBox, ExtIter);
-
 
 		/*-----------------------------------------------------------------*/
 		/*------------------ Structural subiteration ----------------------*/
@@ -155,7 +153,6 @@ void FSI_BGS_Iteration(COutput *output, CIntegration ***integration_container, C
 	/*-----------------------------------------------------------------*/
 
 	integration_container[ZONE_1][FEA_SOL]->SetConvergence_FSI(false);
-
 
 }
 
@@ -804,6 +801,10 @@ void FSI_Disp_Relaxation(COutput *output, CGeometry ***geometry_container, CSolv
 
 	}
 
+	for (iZone = nFluidZone; iZone < nTotalZone; iZone++) {
+		solver_container[iZone][MESH_0][FEA_SOL]->Set_MPI_Solution_Pred_Old(geometry_container[iZone][MESH_0], config_container[iZone]);
+	}
+
 }
 
 void FSI_Load_Relaxation(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
@@ -818,8 +819,25 @@ void FSI_Disp_Predictor(COutput *output, CIntegration ***integration_container, 
 					     CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
 						 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox){
 
-	solver_container[ZONE_1][MESH_0][FEA_SOL]->PredictStruct_Displacement(geometry_container[ZONE_1], config_container[ZONE_1],
-																		  solver_container[ZONE_1]);
+
+	/*--- Only one zone allowed for the fluid as for now ---*/
+	unsigned short nFluidZone = 1, nStrucZone=1, nTotalZone;
+	unsigned short iZone;
+
+	nTotalZone = nFluidZone + nStrucZone;
+
+	for (iZone = nFluidZone; iZone < nTotalZone; iZone++) {
+
+		solver_container[iZone][MESH_0][FEA_SOL]->PredictStruct_Displacement(geometry_container[iZone], config_container[iZone],
+																		  solver_container[iZone]);
+
+	}
+
+	/*--- For parallel simulations we need to communicate the predicted solution before updating the fluid mesh ---*/
+
+	for (iZone = nFluidZone; iZone < nTotalZone; iZone++) {
+		solver_container[iZone][MESH_0][FEA_SOL]->Set_MPI_Solution_Pred(geometry_container[iZone][MESH_0], config_container[iZone]);
+	}
 
 }
 

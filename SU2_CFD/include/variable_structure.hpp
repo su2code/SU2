@@ -2020,6 +2020,12 @@ public:
 	virtual void SetSolution_Pred(su2double *val_solution_pred);
 
 	/*!
+	 * \brief  A virtual member. Set the value of the solution predicted.
+	 * \param[in] val_solution_old - Pointer to the residual vector.
+	 */
+	virtual void SetSolution_Pred(unsigned short val_var, su2double val_solution_pred);
+
+	/*!
 	 * \brief  A virtual member. Get the value of the solution predictor.
 	 * \param[in] val_var - Index of the variable.
 	 * \return Pointer to the old solution vector.
@@ -2042,6 +2048,12 @@ public:
 	 * \param[in] val_solution_old - Pointer to the residual vector.
 	 */
 	virtual void SetSolution_Pred_Old(su2double *val_solution_pred_Old);
+
+	/*!
+	 * \brief  A virtual member. Set the value of the old solution predicted.
+	 * \param[in] val_solution_pred_old - Pointer to the residual vector.
+	 */
+	virtual void SetSolution_Pred_Old(unsigned short val_var, su2double val_solution_pred_old);
 
 	/*!
 	 * \brief  A virtual member. Get the value of the solution predictor.
@@ -2868,6 +2880,13 @@ public:
 	void SetSolution_Pred(su2double *val_solution_pred);
 
 	/*!
+	 * \brief  Set the value of the predicted solution.
+	 * \param[in] val_var - Index of the variable
+	 * \param[in] val_solution_pred - Value of the predicted solution.
+	 */
+	void SetSolution_Pred(unsigned short val_var, su2double val_solution_pred);
+
+	/*!
 	 * \brief Get the value of the solution predictor.
 	 * \param[in] val_var - Index of the variable.
 	 * \return Pointer to the old solution vector.
@@ -2890,6 +2909,13 @@ public:
 	 * \param[in] val_solution_old - Pointer to the residual vector.
 	 */
 	void SetSolution_Pred_Old(su2double *val_solution_pred_Old);
+
+	/*!
+	 * \brief  A virtual member. Set the value of the old solution predicted.
+	 * \param[in] val_var - Index of the variable
+	 * \param[in] val_solution_pred_old - Value of the old predicted solution.
+	 */
+	void SetSolution_Pred_Old(unsigned short val_var, su2double val_solution_pred_old);
 
 	/*!
 	 * \brief Get the value of the solution predictor.

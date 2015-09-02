@@ -45,6 +45,10 @@ inline void CSolver::Set_MPI_Primitive(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config) { }
 
+inline void CSolver::Set_MPI_Solution_Pred(CGeometry *geometry, CConfig *config) { }
+
+inline void CSolver::Set_MPI_Solution_Pred_Old(CGeometry *geometry, CConfig *config) { }
+
 inline void CSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::Set_MPI_Primitive_Limiter(CGeometry *geometry, CConfig *config) { }

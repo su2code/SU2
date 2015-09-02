@@ -9984,7 +9984,7 @@ void CEulerSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetricMo
     unsigned long iVertex, iPoint;
     su2double *Coord, VarCoord[3];
 
-  //#ifndef HAVE_MPI
+  #ifndef HAVE_MPI
     unsigned long iPoint_Donor;
     su2double *CoordDonor, *DisplacementDonor;
 
@@ -10013,80 +10013,109 @@ void CEulerSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetricMo
         }
       }
     }
+
+  #else
+
+    int rank = MASTER_NODE;
+    MPI_Status send_stat[1], recv_stat[1], status;
+    MPI_Request send_req[1], recv_req[1];
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+    /*--- Initialize buffers: we need to communicate coord + solution from the structure ---*/
+    su2double *Buffer_Send_CoordDonor = new su2double [nDim];
+    su2double *Buffer_Receive_CoordDonor = new su2double [nDim];
+    su2double *Buffer_Send_DisplacementDonor = new su2double [nDim];
+    su2double *Buffer_Receive_DisplacementDonor = new su2double [nDim];
+
+    /*--- Processor which hosts the fluid data and the structural data ---*/
+    int Processor_Flow, Processor_Struct;
+    unsigned long Point_Flow, Point_Struct;
+
+    /*--- Do the send process, by the moment we are sending each
+     node individually, this must be changed ---*/
+    for (iMarker = 0; iMarker < fea_config->GetnMarker_All(); iMarker++) {
+
+      if (fea_config->GetMarker_All_FSIinterface(iMarker) != 0) {
+
+        for (iVertex = 0; iVertex < fea_geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
+
+          Point_Struct = fea_geometry[MESH_0]->vertex[iMarker][iVertex]->GetNode();
+
+          if (fea_geometry[MESH_0]->node[Point_Struct]->GetDomain()) {
+
+            /*--- Find the associate pair to the original node (index and processor) ---*/
+        	Point_Flow = fea_geometry[MESH_0]->vertex[iMarker][iVertex]->GetDonorPoint();
+
+        	Processor_Flow = fea_geometry[MESH_0]->vertex[iMarker][iVertex]->GetDonorProcessor();
+
+            /*--- We send coordinates and displacements from the structure to the fluid ---*/
+            if (Processor_Flow != rank) {
+
+              for (iDim = 0; iDim < nDim; iDim++){
+            	  Buffer_Send_CoordDonor[iDim] = fea_geometry[MESH_0]->node[Point_Struct]->GetCoord(iDim);
+            	  Buffer_Send_DisplacementDonor[iDim] = fea_solution[MESH_0][FEA_SOL]->node[Point_Struct]->GetSolution_Pred(iDim);
+              }
+
+              SU2_MPI::Bsend(Buffer_Send_CoordDonor, nDim, MPI_DOUBLE, Processor_Flow, Point_Flow, MPI_COMM_WORLD);
+              SU2_MPI::Bsend(Buffer_Send_DisplacementDonor, nDim, MPI_DOUBLE, Processor_Flow, Point_Flow, MPI_COMM_WORLD);
+
+            }
+
+          }
+        }
+      }
+    }
+
+    /*--- Now the loop is over the flow points ---*/
+    for (iMarker = 0; iMarker < flow_config->GetnMarker_All(); iMarker++) {
+
+      if (flow_config->GetMarker_All_FSIinterface(iMarker) != 0) {
+
+        for (iVertex = 0; iVertex < flow_geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
+
+          Point_Flow = flow_geometry[MESH_0]->vertex[iMarker][iVertex]->GetNode();
+
+          if (flow_geometry[MESH_0]->node[Point_Flow]->GetDomain()) {
+
+            /*--- Find the associate pair to the original node ---*/
+        	Point_Struct = flow_geometry[MESH_0]->vertex[iMarker][iVertex]->GetDonorPoint();
+
+        	Processor_Struct = flow_geometry[MESH_0]->vertex[iMarker][iVertex]->GetDonorProcessor();
+
+            /*--- We only receive the information that belong to other boundary ---*/
+            if (Processor_Struct != rank){
+                SU2_MPI::Recv(Buffer_Receive_CoordDonor, nDim, MPI_DOUBLE, Processor_Struct, Point_Flow, MPI_COMM_WORLD, &status);
+                SU2_MPI::Recv(Buffer_Receive_DisplacementDonor, nDim, MPI_DOUBLE, Processor_Struct, Point_Flow, MPI_COMM_WORLD, &status);
+            }
+            else {
+              for (iDim = 0; iDim < nDim; iDim++){
+                  Buffer_Receive_CoordDonor[iDim] = fea_geometry[MESH_0]->node[Point_Struct]->GetCoord(iDim);
+                  Buffer_Receive_DisplacementDonor[iDim] = fea_solution[MESH_0][FEA_SOL]->node[Point_Struct]->GetSolution_Pred(iDim);
+              }
+            }
+
+            Coord = flow_geometry[MESH_0]->node[Point_Flow]->GetCoord();
+
+            for (iDim = 0; iDim < nDim; iDim++)
+
+              VarCoord[iDim] = (Buffer_Receive_CoordDonor[iDim]+Buffer_Receive_DisplacementDonor[iDim])-Coord[iDim];
+
+            flow_geometry[MESH_0]->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
+
+          }
+        }
+      }
+    }
+
+    delete[] Buffer_Send_CoordDonor;
+    delete[] Buffer_Receive_CoordDonor;
+    delete[] Buffer_Send_DisplacementDonor;
+    delete[] Buffer_Receive_DisplacementDonor;
+
+  #endif
+
     flow_grid_movement->SetVolume_Deformation(flow_geometry[MESH_0], flow_config, true);
 
-
-  //#else
-  //
-  //  int rank = MPI::COMM_WORLD.Get_rank(), jProcessor;
-  //  su2double *Buffer_Send_Coord = new su2double [nDim];
-  //  su2double *Buffer_Receive_Coord = new su2double [nDim];
-  //  unsigned long jPoint;
-  //
-  //  /*--- Do the send process, by the moment we are sending each
-  //   node individually, this must be changed ---*/
-  //  for (iMarker = 0; iMarker < fea_config->GetnMarker_All(); iMarker++) {
-  //    if (fea_config->GetMarker_All_KindBC(iMarker) == LOAD_BOUNDARY) {
-  //      for (iVertex = 0; iVertex < fea_geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
-  //        iPoint = fea_geometry[MESH_0]->vertex[iMarker][iVertex]->GetNode();
-  //
-  //        if (fea_geometry[MESH_0]->node[iPoint]->GetDomain()) {
-  //
-  //          /*--- Find the associate pair to the original node (index and processor) ---*/
-  //          jPoint = fea_geometry[MESH_0]->vertex[iMarker][iVertex]->GetPeriodicPointDomain()[0];
-  //          jProcessor = fea_geometry[MESH_0]->vertex[iMarker][iVertex]->GetPeriodicPointDomain()[1];
-  //
-  //          /*--- We only send the pressure that belong to other boundary ---*/
-  //          if (jProcessor != rank) {
-  //            for (iDim = 0; iDim < nDim; iDim++)
-  //              Buffer_Send_Coord[iDim] = fea_geometry[MESH_0]->node[iPoint]->GetCoord(iDim);
-  //
-  //            MPI::COMM_WORLD.Bsend(Buffer_Send_Coord, nDim, MPI::DOUBLE, jProcessor, iPoint);
-  //          }
-  //
-  //        }
-  //      }
-  //    }
-  //  }
-  //
-  //  /*--- Now the loop is over the fea points ---*/
-  //  for (iMarker = 0; iMarker < flow_config->GetnMarker_All(); iMarker++) {
-  //    if ((flow_config->GetMarker_All_KindBC(iMarker) == EULER_WALL) &&
-  //        (flow_config->GetMarker_All_Moving(iMarker) == YES)) {
-  //      for (iVertex = 0; iVertex < flow_geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
-  //        iPoint = flow_geometry[MESH_0]->vertex[iMarker][iVertex]->GetNode();
-  //        if (flow_geometry[MESH_0]->node[iPoint]->GetDomain()) {
-  //
-  //          /*--- Find the associate pair to the original node ---*/
-  //          jPoint = flow_geometry[MESH_0]->vertex[iMarker][iVertex]->GetPeriodicPointDomain()[0];
-  //          jProcessor = flow_geometry[MESH_0]->vertex[iMarker][iVertex]->GetPeriodicPointDomain()[1];
-  //
-  //          /*--- We only receive the information that belong to other boundary ---*/
-  //          if (jProcessor != rank)
-  //            MPI::COMM_WORLD.Recv(Buffer_Receive_Coord, nDim, MPI::DOUBLE, jProcessor, jPoint);
-  //          else {
-  //            for (iDim = 0; iDim < nDim; iDim++)
-  //              Buffer_Send_Coord[iDim] = fea_geometry[MESH_0]->node[jPoint]->GetCoord(iDim);
-  //          }
-  //
-  //          /*--- Store the solution for both points ---*/
-  //          Coord = flow_geometry[MESH_0]->node[iPoint]->GetCoord();
-  //
-  //          for (iDim = 0; iDim < nDim; iDim++)
-  //            VarCoord[iDim] = Buffer_Send_Coord[iDim]-Coord[iDim];
-  //
-  //          flow_geometry[MESH_0]->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
-  //
-  //
-  //        }
-  //      }
-  //    }
-  //  }
-  //  delete[] Buffer_Send_Coord;
-  //  delete[] Buffer_Receive_Coord;
-  //
-  //#endif
-  //
 }
 
 void CEulerSolver::SetFlow_Displacement_Int(CGeometry **flow_geometry, CVolumetricMovement *flow_grid_movement,
