@@ -3,7 +3,7 @@
 # \file Makefile.am
 # \brief Makefile for the SU2 Python framework
 # \author M. Colonno, T. Economon, F. Palacios, T. Lukaczyk
-# \version 4.0.0 "Cardinal"
+# \version 4.0.1 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).

@@ -2,7 +2,7 @@
  * \file output_cgns.cpp
  * \brief Main subroutines for output solver information
  * \author T. Economon, M. Colonno
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -105,10 +105,10 @@ void COutput::SetCGNS_Coordinates(CConfig *config, CGeometry *geometry, unsigned
     
 		cgns_err = cg_open((char *)results_file.str().c_str(), CG_MODE_WRITE, &cgns_file);
 
-		element_dims = geometry->GetnDim();		// Currently (release 4.0.0 "Cardinal") only all-2D or all-3D zones permitted
+		element_dims = geometry->GetnDim();		// Currently (release 4.0.1 "Cardinal") only all-2D or all-3D zones permitted
 		physical_dims = element_dims;
 
-    /*--- write CGNS base data (one base assumed as of version 4.0.0 "Cardinal") ---*/
+    /*--- write CGNS base data (one base assumed as of version 4.0.1 "Cardinal") ---*/
 		cgns_err = cg_base_write(cgns_file,"SU2 Base", element_dims, physical_dims, &cgns_base_results);
 		if (cgns_err) cg_error_print();
 
@@ -212,7 +212,7 @@ void COutput::SetCGNS_Connectivity(CConfig *config, CGeometry *geometry, unsigne
 		element_dims = geometry->GetnDim();		// Currently (release 2.0) only all-2D or all-3D zones permitted
 		physical_dims = element_dims;
     
-		/*--- write CGNS base data (one base assumed as of version 4.0.0 "Cardinal") ---*/
+		/*--- write CGNS base data (one base assumed as of version 4.0.1 "Cardinal") ---*/
 		cgns_err = cg_base_write(cgns_file,"SU2 Base", element_dims, physical_dims, &cgns_base);
 		if (cgns_err) cg_error_print();
     
@@ -242,7 +242,7 @@ void COutput::SetCGNS_Connectivity(CConfig *config, CGeometry *geometry, unsigne
 		else cgns_err = cg_simulation_type_write(cgns_file, cgns_base, NonTimeAccurate);
 		if (cgns_err) cg_error_print();
     
-		cgns_err = cg_descriptor_write("Solver Information","SU2 version 4.0.0 \"Cardinal\"");
+		cgns_err = cg_descriptor_write("Solver Information","SU2 version 4.0.1 \"Cardinal\"");
 		if (cgns_err) cg_error_print();
 		
 		isize[0][0] = (cgsize_t)geometry->GetGlobal_nPointDomain(); //;				// vertex size
@@ -321,7 +321,8 @@ void COutput::SetCGNS_Solution(CConfig *config, CGeometry *geometry, unsigned sh
 #ifdef HAVE_CGNS
   
 	/*--- local CGNS variables ---*/
-	int cgns_file, cgns_flow, cgns_field, element_dims, cgns_err;
+	int cgns_file, cgns_flow, cgns_field, cgns_err;
+//  int element_dims;
 	unsigned long jVar, iVar, iExtIter = config->GetExtIter();
 	string base_file, buffer, elements_name;
 	stringstream name, results_file;
@@ -355,7 +356,7 @@ void COutput::SetCGNS_Solution(CConfig *config, CGeometry *geometry, unsigned sh
       cgns_err = cg_open((char *)base_file.c_str(), CG_MODE_MODIFY, &cgns_file);
       if (cgns_err) cg_error_print();
       
-      element_dims = geometry->GetnDim();		// Currently (release 2.0) only all-2D or all-3D zones permitted
+//      element_dims = geometry->GetnDim();		// Currently (release 2.0) only all-2D or all-3D zones permitted
       
       /*--- write CGNS descriptor data ---*/
       cgns_err = cg_goto(cgns_file, cgns_base,"end");
@@ -380,9 +381,9 @@ void COutput::SetCGNS_Solution(CConfig *config, CGeometry *geometry, unsigned sh
     
 		cgns_err = cg_open((char *)results_file.str().c_str(), CG_MODE_MODIFY, &cgns_file);
     
-		element_dims = geometry->GetnDim();		// Currently (release 2.0) only all-2D or all-3D zones permitted
-    
-//		/*--- write CGNS base data (one base assumed as of version 4.0.0 "Cardinal") ---*/
+//		element_dims = geometry->GetnDim();		// Currently (release 2.0) only all-2D or all-3D zones permitted
+//    
+//		/*--- write CGNS base data (one base assumed as of version 4.0.1 "Cardinal") ---*/
 //		cgns_err = cg_base_write(cgns_file,"SU2 Base", element_dims, physical_dims, &cgns_base);
 //		if (cgns_err) cg_error_print();
     

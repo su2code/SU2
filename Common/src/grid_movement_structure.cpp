@@ -2,7 +2,7 @@
  * \file grid_movement_structure.cpp
  * \brief Subroutines for doing the grid movement using different strategies
  * \author F. Palacios, T. Economon, S. Padron
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -362,7 +362,7 @@ su2double CVolumetricMovement::Check_Grid(CGeometry *geometry) {
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
     
     if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     nNodes = 3;
-    if (geometry->elem[iElem]->GetVTK_Type() == RECTANGLE)    nNodes = 4;
+    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL)    nNodes = 4;
     if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  nNodes = 4;
     if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      nNodes = 5;
     if (geometry->elem[iElem]->GetVTK_Type() == PRISM)        nNodes = 6;
@@ -380,7 +380,7 @@ su2double CVolumetricMovement::Check_Grid(CGeometry *geometry) {
     if (nDim == 2) {
       
       if (nNodes == 3) Area = GetTriangle_Area(CoordCorners);
-      if (nNodes == 4) Area = GetRectangle_Area(CoordCorners);
+      if (nNodes == 4) Area = GetQuadrilateral_Area(CoordCorners);
       
       if (Area >= -EPS) RightVol = true;
       else RightVol = false;;
@@ -593,7 +593,7 @@ su2double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometr
   su2double *Coord_0, *Coord_1, Length, MinLength = 1E10, **StiffMatrix_Elem = NULL, Scale, CoordCorners[8][3];
   su2double *Edge_Vector = new su2double [nDim];
   
-  /*--- Allocate maximum size (rectangle and hexahedron) ---*/
+  /*--- Allocate maximum size (quadrilateral and hexahedron) ---*/
   
   if (nDim == 2) StiffMatrix_nElem = 8;
   else StiffMatrix_nElem = 24;
@@ -641,7 +641,7 @@ su2double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometr
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
     
     if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     nNodes = 3;
-    if (geometry->elem[iElem]->GetVTK_Type() == RECTANGLE)    nNodes = 4;
+    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL)    nNodes = 4;
     if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  nNodes = 4;
     if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      nNodes = 5;
     if (geometry->elem[iElem]->GetVTK_Type() == PRISM)        nNodes = 6;
@@ -746,7 +746,7 @@ su2double CVolumetricMovement::ShapeFunc_Triangle(su2double Xi, su2double Eta, s
   
 }
 
-su2double CVolumetricMovement::ShapeFunc_Rectangle(su2double Xi, su2double Eta, su2double CoordCorners[8][3], su2double DShapeFunction[8][4]) {
+su2double CVolumetricMovement::ShapeFunc_Quadrilateral(su2double Xi, su2double Eta, su2double CoordCorners[8][3], su2double DShapeFunction[8][4]) {
   
   int i, j, k;
   su2double c0, c1, xsj;
@@ -1162,7 +1162,7 @@ su2double CVolumetricMovement::GetTriangle_Area(su2double CoordCorners[8][3]) {
   
 }
 
-su2double CVolumetricMovement::GetRectangle_Area(su2double CoordCorners[8][3]) {
+su2double CVolumetricMovement::GetQuadrilateral_Area(su2double CoordCorners[8][3]) {
   
   unsigned short iDim;
   su2double a[3] = {0.0,0.0,0.0}, b[3] = {0.0,0.0,0.0};
@@ -1453,7 +1453,7 @@ void CVolumetricMovement::SetFEA_StiffMatrix2D(CGeometry *geometry, CConfig *con
     Location[0][0] = 0.333333333333333;  Location[0][1] = 0.333333333333333;  Weight[0] = 0.5;
   }
   
-  /*--- Rectangle. Nodes of numerical integration at 4 points (order 2). ---*/
+  /*--- Quadrilateral. Nodes of numerical integration at 4 points (order 2). ---*/
   
   if (nNodes == 4) {
     nGauss = 4;
@@ -1468,7 +1468,7 @@ void CVolumetricMovement::SetFEA_StiffMatrix2D(CGeometry *geometry, CConfig *con
     Xi = Location[iGauss][0]; Eta = Location[iGauss][1];
     
     if (nNodes == 3) Det = ShapeFunc_Triangle(Xi, Eta, CoordCorners, DShapeFunction);
-    if (nNodes == 4) Det = ShapeFunc_Rectangle(Xi, Eta, CoordCorners, DShapeFunction);
+    if (nNodes == 4) Det = ShapeFunc_Quadrilateral(Xi, Eta, CoordCorners, DShapeFunction);
     
     /*--- Compute the B Matrix ---*/
     
@@ -1905,14 +1905,15 @@ void CVolumetricMovement::SetBoundaryDerivatives(CGeometry *geometry, CConfig *c
 void CVolumetricMovement::UpdateGridCoord_Derivatives(CGeometry *geometry, CConfig *config){
   unsigned short iDim, iMarker;
   unsigned long iPoint, total_index, iVertex;
-  su2double new_coord[3];
+  su2double *new_coord = new su2double[3];
 
   unsigned short Kind_SU2 = config->GetKind_SU2();
 
   /*--- Update derivatives of the grid coordinates using the solution of the linear system
      after grid deformation (LinSysSol contains the derivatives of the x, y, z displacements). ---*/
   if ((config->GetDirectDiff() == D_DESIGN) && (Kind_SU2 == SU2_CFD)){
-    for (iPoint = 0; iPoint < nPoint; iPoint++){
+    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++){
+      new_coord[0] = 0.0; new_coord[1] = 0.0; new_coord[2] = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
         total_index = iPoint*nDim + iDim;
         new_coord[iDim] = geometry->node[iPoint]->GetCoord(iDim);
@@ -1935,6 +1936,8 @@ void CVolumetricMovement::UpdateGridCoord_Derivatives(CGeometry *geometry, CConf
       }
     }
   }
+  
+  delete [] new_coord;
 }
 
 void CVolumetricMovement::SetDomainDisplacements(CGeometry *geometry, CConfig *config) {
@@ -1991,7 +1994,9 @@ void CVolumetricMovement::Rigid_Rotation(CGeometry *geometry, CConfig *config,
 	/*--- Local variables ---*/
 	unsigned short iDim, nDim; 
 	unsigned long iPoint;
-	su2double r[3] = {0.0,0.0,0.0}, rotCoord[3] = {0.0,0.0,0.0}, *Coord, Center[3] = {0.0,0.0,0.0}, Omega[3] = {0.0,0.0,0.0}, Lref, dt, Center_Moment[3] = {0.0,0.0,0.0};
+  su2double r[3] = {0.0,0.0,0.0}, rotCoord[3] = {0.0,0.0,0.0}, *Coord;
+  su2double Center[3] = {0.0,0.0,0.0}, Omega[3] = {0.0,0.0,0.0}, Lref;
+  su2double dt, Center_Moment[3] = {0.0,0.0,0.0};
   su2double *GridVel, newGridVel[3] = {0.0,0.0,0.0};
 	su2double rotMatrix[3][3] = {{0.0,0.0,0.0}, {0.0,0.0,0.0}, {0.0,0.0,0.0}};
 	su2double dtheta, dphi, dpsi, cosTheta, sinTheta;
@@ -2075,9 +2080,9 @@ void CVolumetricMovement::Rigid_Rotation(CGeometry *geometry, CConfig *config,
     GridVel = geometry->node[iPoint]->GetGridVel();
     
     /*--- Calculate non-dim. position from rotation center ---*/
-    for (iDim = 0; iDim < nDim; iDim++)
-      r[iDim] = (Coord[iDim]-Center[iDim])/Lref;
-    if (nDim == 2) r[nDim] = 0.0;
+    r[0] = (Coord[0]-Center[0])/Lref;
+    r[1] = (Coord[1]-Center[1])/Lref;
+    if (nDim == 3) r[2] = (Coord[2]-Center[2])/Lref;
     
     /*--- Compute transformed point coordinates ---*/
     rotCoord[0] = rotMatrix[0][0]*r[0] 
@@ -4415,7 +4420,7 @@ void CSurfaceMovement::SetHicksHenne(CGeometry *boundary, CConfig *config, unsig
   
 #endif
   
-  AoA = atan((LPCoord[1] - TPCoord[1]) / (TPCoord[0] - LPCoord[0]))*180/PI_NUMBER;
+  //AoA = atan((LPCoord[1] - TPCoord[1]) / (TPCoord[0] - LPCoord[0]))*180/PI_NUMBER;
   AoA = 0.0;
 
 	/*--- Perform multiple airfoil deformation ---*/
@@ -5412,7 +5417,7 @@ void CSurfaceMovement::SetBoundary_Flutter3D(CGeometry *geometry, CConfig *confi
 	su2double omega, deltaT;
   su2double alpha, alpha_new, alpha_old;
   su2double time_new, time_old;
-  su2double Center[3], Omega[3], Ampl[3], Phase[3];
+  su2double Omega[3], Ampl[3];
   su2double DEG2RAD = PI_NUMBER/180.0;
   int rank;
   bool adjoint = config->GetAdjoint();
@@ -5429,18 +5434,12 @@ void CSurfaceMovement::SetBoundary_Flutter3D(CGeometry *geometry, CConfig *confi
   
   /*--- Pitching origin, frequency, and amplitude from config. ---*/
   
-  Center[0] = config->GetMotion_Origin_X(iZone);
-  Center[1] = config->GetMotion_Origin_Y(iZone);
-  Center[2] = config->GetMotion_Origin_Z(iZone);
   Omega[0]  = (config->GetPitching_Omega_X(iZone)/config->GetOmega_Ref());
   Omega[1]  = (config->GetPitching_Omega_Y(iZone)/config->GetOmega_Ref());
   Omega[2]  = (config->GetPitching_Omega_Z(iZone)/config->GetOmega_Ref());
   Ampl[0]   = config->GetPitching_Ampl_X(iZone)*DEG2RAD;
   Ampl[1]   = config->GetPitching_Ampl_Y(iZone)*DEG2RAD;
   Ampl[2]   = config->GetPitching_Ampl_Z(iZone)*DEG2RAD;
-  Phase[0]   = config->GetPitching_Phase_X(iZone)*DEG2RAD;
-  Phase[1]   = config->GetPitching_Phase_Y(iZone)*DEG2RAD;
-  Phase[2]   = config->GetPitching_Phase_Z(iZone)*DEG2RAD;
   
   /*--- Compute delta time based on physical time step ---*/
   
@@ -5819,6 +5818,7 @@ void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
   
   cout << "Enter the name of file with the airfoil information: ";
   ierr = scanf("%s", AirfoilFile);
+  if (ierr == 0) { cout << "No input read!! "<< endl; exit(EXIT_FAILURE); }
   airfoil_file.open(AirfoilFile, ios::in);
   if (airfoil_file.fail()) {
     cout << "There is no airfoil file!! "<< endl;
@@ -5826,16 +5826,20 @@ void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
   }
   cout << "Enter the format of the airfoil (Selig or Lednicer): ";
   ierr = scanf("%s", AirfoilFormat);
+  if (ierr == 0) { cout << "No input read!! "<< endl; exit(EXIT_FAILURE); }
 
   cout << "Thickness scaling (1.0 means no scaling)?: ";
   ierr = scanf("%lf", &AirfoilScale);
-  
+  if (ierr == 0) { cout << "No input read!! "<< endl; exit(EXIT_FAILURE); }
+
   cout << "Close the airfoil (Yes or No)?: ";
   ierr = scanf("%s", AirfoilClose);
-  
+  if (ierr == 0) { cout << "No input read!! "<< endl; exit(EXIT_FAILURE); }
+
   cout << "Surface mesh orientation (clockwise, or anticlockwise): ";
   ierr = scanf("%s", MeshOrientation);
-  
+  if (ierr == 0) { cout << "No input read!! "<< endl; exit(EXIT_FAILURE); }
+
   /*--- The first line is the header ---*/
   
   getline (airfoil_file, text_line);
