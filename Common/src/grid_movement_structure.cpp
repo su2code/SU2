@@ -3080,11 +3080,11 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
     if (!allmoving){
       /*---Only some markers are moving, use the surface method ---*/
       if (config->GetDesign_Variable(0) == ROTATION)
-        SetRotation(geometry, config,  iDV, false);
+        SetRotation(geometry, config,  0, false);
       if (config->GetDesign_Variable(0) == SCALE)
-        SetScale(geometry, config,  iDV, false);
+        SetScale(geometry, config,  0, false);
       if (config->GetDesign_Variable(0) == TRANSLATION)
-        SetTranslation(geometry, config,  iDV, false);
+        SetTranslation(geometry, config,  0, false);
     }
     else{
       if (rank == MASTER_NODE)
