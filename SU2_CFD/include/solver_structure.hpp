@@ -170,6 +170,20 @@ public:
 	 * \param[in] val_iterlinsolver - Number of linear iterations.
 	 */
 	virtual void Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config);
+
+	/*!
+	 * \brief Impose the send-receive boundary condition for predicted FSI structural solutions.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	virtual void Set_MPI_Solution_Pred(CGeometry *geometry, CConfig *config);
+
+	/*!
+	 * \brief Impose the send-receive boundary condition for old predicted FSI structural solutions.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	virtual void Set_MPI_Solution_Pred_Old(CGeometry *geometry, CConfig *config);
     
   /*!
 	 * \brief Impose the send-receive boundary condition.
@@ -6699,6 +6713,20 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void Set_MPI_Solution(CGeometry *geometry, CConfig *config);
+
+	/*!
+	 * \brief Impose the send-receive boundary condition for predicted FSI structural solutions.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void Set_MPI_Solution_Pred(CGeometry *geometry, CConfig *config);
+
+	/*!
+	 * \brief Impose the send-receive boundary condition for old predicted FSI structural solutions.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void Set_MPI_Solution_Pred_Old(CGeometry *geometry, CConfig *config);
 
 	/*!
 	 * \brief Set residuals to zero.

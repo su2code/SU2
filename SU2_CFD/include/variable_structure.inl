@@ -589,6 +589,8 @@ inline su2double CVariable::GetSolution_Accel_time_n(unsigned short val_var) { r
 
 inline su2double *CVariable::GetSolution_Accel_time_n(void) { return NULL; }
 
+inline void CVariable::SetSolution_Pred(unsigned short val_var, su2double val_solution_pred){  }
+
 inline void CVariable::SetSolution_Pred(su2double *val_solution_pred){  }
 
 inline void CVariable::SetSolution_Pred(void){ }
@@ -596,6 +598,8 @@ inline void CVariable::SetSolution_Pred(void){ }
 inline su2double CVariable::GetSolution_Pred(unsigned short val_var){ return 0.0; }
 
 inline su2double *CVariable::GetSolution_Pred(void){ return NULL; }
+
+inline void CVariable::SetSolution_Pred_Old(unsigned short val_var, su2double val_solution_pred_old){  }
 
 inline void CVariable::SetSolution_Pred_Old(su2double *val_solution_pred_Old){  }
 
@@ -971,11 +975,15 @@ inline void CFEM_ElasVariable::SetSolution_Accel_time_n(su2double *val_solution_
 	for (unsigned short iVar = 0; iVar < nVar; iVar++)	Solution_Accel_time_n[iVar] = val_solution_accel_time_n[iVar];
 }
 
+inline void CFEM_ElasVariable::SetSolution_Pred(unsigned short val_var, su2double val_solution_pred){ Solution_Pred[val_var] = val_solution_pred;  }
+
 inline void CFEM_ElasVariable::SetSolution_Pred(su2double *val_solution_pred){ Solution_Pred = val_solution_pred;  }
 
 inline void CFEM_ElasVariable::SetSolution_Pred(void){
 	for (unsigned short iVar = 0; iVar < nVar; iVar++) Solution_Pred[iVar] = Solution[iVar];
 }
+
+inline void CFEM_ElasVariable::SetSolution_Pred_Old(unsigned short val_var, su2double val_solution_pred_old){ Solution_Pred_Old[val_var] = val_solution_pred_old;  }
 
 inline void CFEM_ElasVariable::SetSolution_Pred_Old(su2double *val_solution_pred_Old){ Solution_Pred_Old = val_solution_pred_Old;  }
 

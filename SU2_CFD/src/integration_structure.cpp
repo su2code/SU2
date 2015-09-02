@@ -214,18 +214,23 @@ void CIntegration::Space_Integration_FEM(CGeometry *geometry,
 	  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);						// Dynamic simulations.
 	  bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);	// Linear analysis.
 	  bool first_iter = (config->GetIntIter() == 0);									// Checks if it is the first iteration
-	  unsigned short IterativeScheme = config->GetKind_SpaceIteScheme_FEA(); 		// Iterative schemes: NEWTON_RAPHSON, MODIFIED_NEWTON_RAPHSON
+	  unsigned short IterativeScheme = config->GetKind_SpaceIteScheme_FEA(); 			// Iterative schemes: NEWTON_RAPHSON, MODIFIED_NEWTON_RAPHSON
 	  unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
+
+	  bool restart = config->GetRestart();													// Restart solution
+	  bool initial_calc_restart = (config->GetExtIter() == config->GetDyn_RestartIter());	// Restart iteration
 
 	  /*--- Compute Mass Matrix ---*/
 	  /*--- The mass matrix is computed only once, at the beginning of the calculation, no matter whether the ---*/
 	  /*--- problem is linear or nonlinear ---*/
-	  if ((dynamic) && (initial_calc) && (first_iter)){
+	  if ((dynamic && initial_calc && first_iter) ||
+		  (dynamic && restart && initial_calc_restart && first_iter)){
 		  solver_container[MainSolver]->Compute_MassMatrix(geometry, solver_container, numerics[VISC_TERM], config);
 	  }
 	  /*--- If the analysis is linear, only a the constitutive term of the stiffness matrix has to be computed ---*/
 	  /*--- This is done only once, at the beginning of the calculation. From then on, K is constant ---*/
-	  if ((linear_analysis) && (initial_calc)){
+	  if ((linear_analysis && initial_calc) ||
+		  (linear_analysis && restart && initial_calc_restart)){
 		  solver_container[MainSolver]->Compute_StiffMatrix(geometry, solver_container, numerics[VISC_TERM], config);
 	  }
 	  else if (!linear_analysis){
@@ -447,6 +452,9 @@ void CIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver **solver_co
 //			solver_container[MainSolver]->BC_Normal_Displacement(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
 //			break;
 		}
+
+	  /*--- Perform the MPI communication of the solution ---*/
+	  solver_container[MainSolver]->Set_MPI_Solution(geometry, config);
 
 
 }
@@ -702,12 +710,14 @@ void CIntegration::SetStructural_Solver(CGeometry *geometry, CSolver *solver, CC
 
 	  }
 
+
 }
 
 void CIntegration::SetFEM_StructuralSolver(CGeometry *geometry, CSolver *solver, CConfig *config, unsigned short iMesh) {
 
 	unsigned long iPoint;
 
+	/*--- Update the solution only at the local points ---*/
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
 
 		solver->node[iPoint]->SetSolution_time_n();

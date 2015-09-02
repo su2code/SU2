@@ -86,8 +86,6 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 	bool newton_raphson = (config->GetKind_SpaceIteScheme_FEA() == NEWTON_RAPHSON);		// Newton-Raphson method
 	bool fsi = config->GetFSI_Simulation();												// FSI simulation
 
-	string filename = config->GetSolution_FEMFileName();
-
 	int rank = MASTER_NODE;
 	#ifdef HAVE_MPI
 		MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -142,6 +140,11 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 
 
 	unsigned short nSolVar;
+	unsigned long index;
+	string text_line, filename;
+	ifstream restart_file;
+	su2double dull_val;
+	long Dyn_RestartIter;
 
 	if (dynamic) nSolVar = 3 * nVar;
 	else nSolVar = nVar;
@@ -159,11 +162,6 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 		}
 	}
 	else {
-		unsigned long index;
-		string text_line, filename;
-		ifstream restart_file;
-		su2double dull_val;
-		long Dyn_RestartIter;
 
 		/*--- Restart the solution from file information ---*/
 
@@ -181,6 +179,7 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 		/*--- In case there is no file ---*/
 
 		if (restart_file.fail()) {
+		    if (rank == MASTER_NODE)
 			cout << "There is no FEM restart file!!" << endl;
 			exit(EXIT_FAILURE);
 		}
@@ -188,61 +187,86 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 		/*--- In case this is a parallel simulation, we need to perform the
      	 Global2Local index transformation first. ---*/
 
-		long *Global2Local;
-		Global2Local = new long[geometry->GetGlobal_nPointDomain()];
+		long *Global2Local = new long[geometry->GetGlobal_nPointDomain()];
 
 		/*--- First, set all indices to a negative value by default ---*/
 
-		for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
-			Global2Local[iPoint] = -1;
-		}
+	    for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++)
+	      Global2Local[iPoint] = -1;
 
 		/*--- Now fill array with the transform values only for local points ---*/
 
-		for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
-			Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
-		}
+	    for (iPoint = 0; iPoint < nPointDomain; iPoint++)
+	      Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
 
-		/*--- Read all lines in the restart file ---*/
+	    /*--- Read all lines in the restart file ---*/
 
-		long iPoint_Local; unsigned long iPoint_Global = 0;
+	    long iPoint_Local;
+	    unsigned long iPoint_Global_Local = 0, iPoint_Global = 0; string text_line;
+	    unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
 
 		/*--- The first line is the header ---*/
 
 		getline (restart_file, text_line);
 
 		while (getline (restart_file, text_line)) {
-				istringstream point_line(text_line);
+		   istringstream point_line(text_line);
 
 		/*--- Retrieve local index. If this node from the restart file lives
        	   on a different processor, the value of iPoint_Local will be -1.
        	   Otherwise, the local index for this node on the current processor
        	   will be returned and used to instantiate the vars. ---*/
 
-		iPoint_Local = Global2Local[iPoint_Global];
+		   iPoint_Local = Global2Local[iPoint_Global];
+
 			if (iPoint_Local >= 0) {
 				if (dynamic){
 					if (nDim == 2) point_line >> index >> dull_val >> dull_val >> SolRest[0] >> SolRest[1] >> SolRest[2] >> SolRest[3] >> SolRest[4] >> SolRest[5];
 					if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> SolRest[0] >> SolRest[1] >> SolRest[2] >> SolRest[3] >> SolRest[4] >> SolRest[5] >> SolRest[6] >> SolRest[7] >> SolRest[8];
 				}
 				else {
-					if (nDim == 2) point_line >> index >> dull_val >> dull_val >> SolRest[0] >> Solution[1];
+					if (nDim == 2) point_line >> index >> dull_val >> dull_val >> SolRest[0] >> SolRest[1];
 					if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> SolRest[0] >> SolRest[1] >> SolRest[2];
 				}
 
 				node[iPoint_Local] = new CFEM_ElasVariable(SolRest, nDim, nVar, config);
+				iPoint_Global_Local++;
 			}
 			iPoint_Global++;
 		}
+
+	    /*--- Detect a wrong solution file ---*/
+
+	    if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
+
+		#ifndef HAVE_MPI
+	    	rbuf_NotMatching = sbuf_NotMatching;
+		#else
+	    	SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
+		#endif
+
+	    if (rbuf_NotMatching != 0) {
+	      if (rank == MASTER_NODE) {
+	        cout << endl << "The solution file " << filename.data() << " doesn't match with the mesh file!" << endl;
+	        cout << "It could be empty lines at the end of the file." << endl << endl;
+	      }
+		#ifndef HAVE_MPI
+	      	  exit(EXIT_FAILURE);
+		#else
+	      	  MPI_Barrier(MPI_COMM_WORLD);
+	      	  MPI_Abort(MPI_COMM_WORLD,1);
+	      	  MPI_Finalize();
+		#endif
+	    }
 
 		/*--- Instantiate the variable class with an arbitrary solution
      	 at any halo/periodic nodes. The initial solution can be arbitrary,
      	 because a send/recv is performed immediately in the solver (Set_MPI_Solution()). ---*/
 
-		for (iVar = 0; iVar < nSolVar; iVar++) SolRest[iVar] = 0.0;
-		for (iPoint = geometry->GetnPointDomain(); iPoint < geometry->GetnPoint(); iPoint++) {
+		for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
 			node[iPoint] = new CFEM_ElasVariable(SolRest, nDim, nVar, config);
 		}
+
 
 		/*--- Close the restart file ---*/
 
@@ -471,83 +495,277 @@ CFEM_ElasticitySolver::~CFEM_ElasticitySolver(void) {
 
 void CFEM_ElasticitySolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
 
-	//TODO: clean unused variables here.
-  unsigned short iVar, iMarker, iPeriodic_Index, MarkerS, MarkerR;
-  unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
-  su2double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi, *Buffer_Receive_U = NULL, *Buffer_Send_U = NULL;
 
-#ifdef HAVE_MPI
-  int send_to, receive_from;
-  MPI_Status status;
-#endif
+	  unsigned short iVar, iMarker, iPeriodic_Index, MarkerS, MarkerR;
+	  unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
+	  su2double *Buffer_Receive_U = NULL, *Buffer_Send_U = NULL;
 
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+	  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);							// Dynamic simulations.
 
-    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
-        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
+	  unsigned short nSolVar;
 
-      MarkerS = iMarker;  MarkerR = iMarker+1;
+	  if (dynamic) nSolVar = 3 * nVar;
+	  else nSolVar = nVar;
 
-#ifdef HAVE_MPI
-      send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
-      receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
-#endif
+	#ifdef HAVE_MPI
+	  int send_to, receive_from;
+	  MPI_Status status;
+	#endif
 
-      nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
-      nBufferS_Vector = nVertexS*nVar;        nBufferR_Vector = nVertexR*nVar;
+	  for (iMarker = 0; iMarker < nMarker; iMarker++) {
 
-      /*--- Allocate Receive and send buffers  ---*/
-      Buffer_Receive_U = new su2double [nBufferR_Vector];
-      Buffer_Send_U = new su2double[nBufferS_Vector];
+	    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
+	        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
 
-      /*--- Copy the solution that should be sended ---*/
-      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
-        iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
-        for (iVar = 0; iVar < nVar; iVar++)
-          Buffer_Send_U[iVar*nVertexS+iVertex] = node[iPoint]->GetSolution(iVar);
-      }
+	      MarkerS = iMarker;  MarkerR = iMarker+1;
 
-#ifdef HAVE_MPI
+	#ifdef HAVE_MPI
+	      send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
+	      receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
+	#endif
 
-      /*--- Send/Receive information using Sendrecv ---*/
-      SU2_MPI::Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
-                   Buffer_Receive_U, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
+	      nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
+	      nBufferS_Vector = nVertexS*nSolVar;     nBufferR_Vector = nVertexR*nSolVar;
 
-#else
+	      /*--- Allocate Receive and send buffers  ---*/
+	      Buffer_Receive_U = new su2double [nBufferR_Vector];
+	      Buffer_Send_U = new su2double[nBufferS_Vector];
 
-      /*--- Receive information without MPI ---*/
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-        for (iVar = 0; iVar < nVar; iVar++)
-          Buffer_Receive_U[iVar*nVertexR+iVertex] = Buffer_Send_U[iVar*nVertexR+iVertex];
-      }
+	      /*--- Copy the solution that should be sent ---*/
+	      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
+	        iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
+	        for (iVar = 0; iVar < nVar; iVar++)
+	          Buffer_Send_U[iVar*nVertexS+iVertex] = node[iPoint]->GetSolution(iVar);
+	        if (dynamic){
+	            for (iVar = 0; iVar < nVar; iVar++){
+	            	Buffer_Send_U[(iVar+nVar)*nVertexS+iVertex] = node[iPoint]->GetSolution_Vel(iVar);
+	            	Buffer_Send_U[(iVar+2*nVar)*nVertexS+iVertex] = node[iPoint]->GetSolution_Accel(iVar);
+	            }
+	        }
+	      }
 
-#endif
+	#ifdef HAVE_MPI
 
-      /*--- Deallocate send buffer ---*/
-      delete [] Buffer_Send_U;
+	      /*--- Send/Receive information using Sendrecv ---*/
+	      SU2_MPI::Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
+	                   Buffer_Receive_U, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
 
-      /*--- Do the coordinate transformation ---*/
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+	#else
 
-        /*--- Find point and its type of transformation ---*/
-        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
+	      /*--- Receive information without MPI ---*/
+	      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+	        for (iVar = 0; iVar < nVar; iVar++)
+	          Buffer_Receive_U[iVar*nVertexR+iVertex] = Buffer_Send_U[iVar*nVertexR+iVertex];
+	        if (dynamic){
+	            for (iVar = nVar; iVar < 3*nVar; iVar++)
+	            	Buffer_Receive_U[iVar*nVertexR+iVertex] = Buffer_Send_U[iVar*nVertexR+iVertex];
+	        }
+	      }
 
-        /*--- Copy conserved variables before performing transformation. ---*/
-        for (iVar = 0; iVar < nVar; iVar++)
-          Solution[iVar] = Buffer_Receive_U[iVar*nVertexR+iVertex];
+	#endif
 
-        /*--- Copy transformed conserved variables back into buffer. ---*/
-        for (iVar = 0; iVar < nVar; iVar++)
-          node[iPoint]->SetSolution(iVar, Solution[iVar]);
+	      /*--- Deallocate send buffer ---*/
+	      delete [] Buffer_Send_U;
 
-      }
+	      /*--- Do the coordinate transformation ---*/
+	      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
 
-      /*--- Deallocate receive buffer ---*/
-      delete [] Buffer_Receive_U;
+	        /*--- Find point and its type of transformation ---*/
+	        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
 
-    }
+	        /*--- Copy solution variables. ---*/
+	        for (iVar = 0; iVar < nSolVar; iVar++)
+	        	SolRest[iVar] = Buffer_Receive_U[iVar*nVertexR+iVertex];
 
-  }
+	        /*--- Store received values back into the variable. ---*/
+	        for (iVar = 0; iVar < nVar; iVar++)
+	          node[iPoint]->SetSolution(iVar, SolRest[iVar]);
+
+	        if (dynamic){
+
+	            for (iVar = 0; iVar < nVar; iVar++){
+	            	node[iPoint]->SetSolution_Vel(iVar, SolRest[iVar+nVar]);
+	            	node[iPoint]->SetSolution_Accel(iVar, SolRest[iVar+2*nVar]);
+	            }
+
+	        }
+
+	      }
+
+	      /*--- Deallocate receive buffer ---*/
+	      delete [] Buffer_Receive_U;
+
+	    }
+
+	  }
+
+}
+
+void CFEM_ElasticitySolver::Set_MPI_Solution_Pred(CGeometry *geometry, CConfig *config) {
+
+
+	  unsigned short iVar, iMarker, iPeriodic_Index, MarkerS, MarkerR;
+	  unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
+	  su2double *Buffer_Receive_U = NULL, *Buffer_Send_U = NULL;
+
+	#ifdef HAVE_MPI
+	  int send_to, receive_from;
+	  MPI_Status status;
+	#endif
+
+	  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+
+	    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
+	        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
+
+	      MarkerS = iMarker;  MarkerR = iMarker+1;
+
+	#ifdef HAVE_MPI
+	      send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
+	      receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
+	#endif
+
+	      nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
+	      nBufferS_Vector = nVertexS*nVar;     nBufferR_Vector = nVertexR*nVar;
+
+	      /*--- Allocate Receive and send buffers  ---*/
+	      Buffer_Receive_U = new su2double [nBufferR_Vector];
+	      Buffer_Send_U = new su2double[nBufferS_Vector];
+
+	      /*--- Copy the solution that should be sent ---*/
+	      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
+	        iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
+	        for (iVar = 0; iVar < nVar; iVar++)
+	          Buffer_Send_U[iVar*nVertexS+iVertex] = node[iPoint]->GetSolution_Pred(iVar);
+	      }
+
+	#ifdef HAVE_MPI
+
+	      /*--- Send/Receive information using Sendrecv ---*/
+	      SU2_MPI::Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
+	                   Buffer_Receive_U, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
+
+	#else
+
+	      /*--- Receive information without MPI ---*/
+	      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+	        for (iVar = 0; iVar < nVar; iVar++)
+	          Buffer_Receive_U[iVar*nVertexR+iVertex] = Buffer_Send_U[iVar*nVertexR+iVertex];
+	      }
+
+	#endif
+
+	      /*--- Deallocate send buffer ---*/
+	      delete [] Buffer_Send_U;
+
+	      /*--- Do the coordinate transformation ---*/
+	      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+
+	        /*--- Find point and its type of transformation ---*/
+	        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
+
+	        /*--- Copy predicted solution variables back into the variables. ---*/
+	        for (iVar = 0; iVar < nVar; iVar++)
+	          node[iPoint]->SetSolution_Pred(iVar, Buffer_Receive_U[iVar*nVertexR+iVertex]);
+
+	      }
+
+	      /*--- Deallocate receive buffer ---*/
+	      delete [] Buffer_Receive_U;
+
+	    }
+
+	  }
+
+}
+
+void CFEM_ElasticitySolver::Set_MPI_Solution_Pred_Old(CGeometry *geometry, CConfig *config) {
+
+	  /*--- We are communicating the solution predicted, current and old, and the old solution ---*/
+	  /*--- necessary for the Aitken relaxation ---*/
+
+	  unsigned short iVar, iMarker, iPeriodic_Index, MarkerS, MarkerR;
+	  unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
+	  su2double *Buffer_Receive_U = NULL, *Buffer_Send_U = NULL;
+
+	  /*--- Analogous to the dynamic solution, in this case we need 3 * nVar variables per node ---*/
+	  unsigned short nSolVar;
+	  nSolVar = 3 * nVar;
+
+	#ifdef HAVE_MPI
+	  int send_to, receive_from;
+	  MPI_Status status;
+	#endif
+
+	  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+
+	    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
+	        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
+
+	      MarkerS = iMarker;  MarkerR = iMarker+1;
+
+	#ifdef HAVE_MPI
+	      send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
+	      receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
+	#endif
+
+	      nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
+	      nBufferS_Vector = nVertexS*nSolVar;     nBufferR_Vector = nVertexR*nSolVar;
+
+	      /*--- Allocate Receive and send buffers  ---*/
+	      Buffer_Receive_U = new su2double [nBufferR_Vector];
+	      Buffer_Send_U = new su2double[nBufferS_Vector];
+
+	      /*--- Copy the solution that should be sent ---*/
+	      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
+	        iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
+	        for (iVar = 0; iVar < nVar; iVar++){
+	        	Buffer_Send_U[iVar*nVertexS+iVertex] = node[iPoint]->GetSolution_Old(iVar);
+	        	Buffer_Send_U[(iVar+nVar)*nVertexS+iVertex] = node[iPoint]->GetSolution_Pred(iVar);
+	        	Buffer_Send_U[(iVar+2*nVar)*nVertexS+iVertex] = node[iPoint]->GetSolution_Pred_Old(iVar);
+	        }
+	      }
+
+	#ifdef HAVE_MPI
+
+	      /*--- Send/Receive information using Sendrecv ---*/
+	      SU2_MPI::Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
+	                   Buffer_Receive_U, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
+
+	#else
+
+	      /*--- Receive information without MPI ---*/
+	      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+	        for (iVar = 0; iVar < nSolVar; iVar++)
+	          Buffer_Receive_U[iVar*nVertexR+iVertex] = Buffer_Send_U[iVar*nVertexR+iVertex];
+	      }
+
+	#endif
+
+	      /*--- Deallocate send buffer ---*/
+	      delete [] Buffer_Send_U;
+
+	      /*--- Do the coordinate transformation ---*/
+	      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+
+	        /*--- Find point and its type of transformation ---*/
+	        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
+
+	        /*--- Store received values back into the variable. ---*/
+	        for (iVar = 0; iVar < nVar; iVar++){
+	        	node[iPoint]->SetSolution_Old(iVar, Buffer_Receive_U[iVar*nVertexR+iVertex]);
+	        	node[iPoint]->SetSolution_Pred(iVar, Buffer_Receive_U[(iVar+nVar)*nVertexR+iVertex]);
+	        	node[iPoint]->SetSolution_Pred_Old(iVar, Buffer_Receive_U[(iVar+2*nVar)*nVertexR+iVertex]);
+	        }
+
+	      }
+
+	      /*--- Deallocate receive buffer ---*/
+	      delete [] Buffer_Receive_U;
+
+	    }
+
+	  }
 
 }
 
@@ -562,8 +780,8 @@ void CFEM_ElasticitySolver::Preprocessing(CGeometry *geometry, CSolver **solver_
 	bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);	// Linear analysis.
 	bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);	// Nonlinear analysis.
 	bool newton_raphson = (config->GetKind_SpaceIteScheme_FEA() == NEWTON_RAPHSON);		// Newton-Raphson method
-	bool restart = config->GetRestart();
-	bool initial_calc_restart = (config->GetExtIter() == config->GetDyn_RestartIter());
+	bool restart = config->GetRestart();												// Restart analysis
+	bool initial_calc_restart = (config->GetExtIter() == config->GetDyn_RestartIter()); // Initial calculation for restart
 
 	/*--- Set vector entries to zero ---*/
     //TODO: nPoint or nPointDomain
@@ -583,7 +801,7 @@ void CFEM_ElasticitySolver::Preprocessing(CGeometry *geometry, CSolver **solver_
 	 * We don't need first_iter, because there is only one iteration per time step in linear analysis.
 	 */
 	if ((initial_calc && linear_analysis)||
-		(restart && initial_calc_restart)){
+		(restart && initial_calc_restart && linear_analysis)){
 		Jacobian.SetValZero();
 	}
 
@@ -596,7 +814,7 @@ void CFEM_ElasticitySolver::Preprocessing(CGeometry *geometry, CSolver **solver_
 	 * We need first_iter, because in nonlinear problems there are more than one subiterations in the first time step.
 	 */
 	if ((dynamic && initial_calc && first_iter) ||
-		(restart && initial_calc_restart && first_iter)) {
+		(dynamic && restart && initial_calc_restart && first_iter)) {
 		MassMatrix.SetValZero();
 		Compute_IntegrationConstants(config);
 	}
@@ -635,11 +853,6 @@ void CFEM_ElasticitySolver::SetInitialCondition(CGeometry **geometry, CSolver **
 
 	if (incremental_load){
 		for (iPoint = 0; iPoint < nPoint; iPoint++) node[iPoint]->Set_OldSolution();
-
-		// This is the operation
-		// for (unsigned short iVar = 0; iVar < nVar; iVar++)
-		//	  Solution_Old[iVar] = Solution[iVar];
-
 	}
 
 
@@ -656,10 +869,6 @@ void CFEM_ElasticitySolver::ResetInitialCondition(CGeometry **geometry, CSolver 
 
 	if (incremental_load){
 		for (iPoint = 0; iPoint < nPoint; iPoint++) node[iPoint]->Set_Solution();
-
-		// This is the operation
-		// for (unsigned short iVar = 0; iVar < nVar; iVar++)
-		//	  Solution[iVar] = Solution_Old[iVar];
 	}
 
 }
@@ -828,6 +1037,8 @@ void CFEM_ElasticitySolver::Compute_MassMatrix(CGeometry *geometry, CSolver **so
 
 	su2double Mab;
 	unsigned short NelNodes, jNode;
+
+	cout << "NUMBER OF ELEMENTS: " << geometry->GetnElem() << endl;
 
 	/*--- Loops over all the elements ---*/
 
@@ -1067,137 +1278,141 @@ void CFEM_ElasticitySolver::Compute_NodalStress(CGeometry *geometry, CSolver **s
 
   	bool outputReactions = false;
 
-  	ofstream myfile;
-  	if (outputReactions) myfile.open ("Reactions.txt");
+	if (outputReactions) {
 
-  	unsigned short iMarker;
-  	unsigned long iVertex;
-  	su2double val_Reaction;
+	  	ofstream myfile;
+	  	myfile.open ("Reactions.txt");
 
-	bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);	// Linear analysis.
-	bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);	// Nonlinear analysis.
+		unsigned short iMarker;
+		unsigned long iVertex;
+		su2double val_Reaction;
 
-  	if (!dynamic){
-  		/*--- Loop over all the markers  ---*/
-		for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-			switch (config->GetMarker_All_KindBC(iMarker)) {
+		bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);	// Linear analysis.
+		bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);	// Nonlinear analysis.
 
-				/*--- If it corresponds to a clamped boundary  ---*/
+		if (!dynamic){
+			/*--- Loop over all the markers  ---*/
+			for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+				switch (config->GetMarker_All_KindBC(iMarker)) {
 
-				case CLAMPED_BOUNDARY:
+					/*--- If it corresponds to a clamped boundary  ---*/
 
-				  	if (outputReactions) myfile << "MARKER " << iMarker << ":" << endl;
+					case CLAMPED_BOUNDARY:
 
-					/*--- Loop over all the vertices  ---*/
-					for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+						myfile << "MARKER " << iMarker << ":" << endl;
 
-					/*--- Get node index ---*/
-					iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+						/*--- Loop over all the vertices  ---*/
+						for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 
-					if (outputReactions) myfile << "Node " << iPoint << "." << " \t ";
+						/*--- Get node index ---*/
+						iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-					for (iDim = 0; iDim < nDim; iDim++){
-						/*--- Retrieve coordinate ---*/
-						val_Coord = geometry->node[iPoint]->GetCoord(iDim);
-						if (outputReactions) myfile << "X" << iDim + 1 << ": " << val_Coord << " \t " ;
+						myfile << "Node " << iPoint << "." << " \t ";
+
+						for (iDim = 0; iDim < nDim; iDim++){
+							/*--- Retrieve coordinate ---*/
+							val_Coord = geometry->node[iPoint]->GetCoord(iDim);
+							myfile << "X" << iDim + 1 << ": " << val_Coord << " \t " ;
+						}
+
+						for (iVar = 0; iVar < nVar; iVar++){
+							/*--- Retrieve reaction ---*/
+							val_Reaction = LinSysReact.GetBlock(iPoint, iVar);
+							myfile << "F" << iVar + 1 << ": " << val_Reaction << " \t " ;
+						}
+
+						myfile << endl;
 					}
-
-					for (iVar = 0; iVar < nVar; iVar++){
-						/*--- Retrieve reaction ---*/
-						val_Reaction = LinSysReact.GetBlock(iPoint, iVar);
-						if (outputReactions) myfile << "F" << iVar + 1 << ": " << val_Reaction << " \t " ;
-					}
-
-					if (outputReactions) myfile << endl;
-				}
-			  if (outputReactions) myfile << endl;
-			  break;
+				  myfile << endl;
+				  break;
+			}
 		}
-  	}
-  	else if (dynamic){
+		else if (dynamic){
 
-  		switch (config->GetKind_TimeIntScheme_FEA()) {
-  			case (CD_EXPLICIT):
-  					  cout << "NOT IMPLEMENTED YET" << endl;
-  			  break;
-  			case (NEWMARK_IMPLICIT):
+			switch (config->GetKind_TimeIntScheme_FEA()) {
+				case (CD_EXPLICIT):
+						  cout << "NOT IMPLEMENTED YET" << endl;
+				  break;
+				case (NEWMARK_IMPLICIT):
 
-				/*--- Loop over all points, and set aux vector TimeRes_Aux = a0*U+a2*U'+a3*U'' ---*/
-				if (linear_analysis){
-					for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-						for (iVar = 0; iVar < nVar; iVar++){
-							Residual[iVar] = a_dt[0]*node[iPoint]->GetSolution_time_n(iVar)+		//a0*U(t)
-										 	 a_dt[2]*node[iPoint]->GetSolution_Vel_time_n(iVar)+	//a2*U'(t)
-										 	 a_dt[3]*node[iPoint]->GetSolution_Accel_time_n(iVar);	//a3*U''(t)
+					/*--- Loop over all points, and set aux vector TimeRes_Aux = a0*U+a2*U'+a3*U'' ---*/
+					if (linear_analysis){
+						for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+							for (iVar = 0; iVar < nVar; iVar++){
+								Residual[iVar] = a_dt[0]*node[iPoint]->GetSolution_time_n(iVar)+		//a0*U(t)
+												 a_dt[2]*node[iPoint]->GetSolution_Vel_time_n(iVar)+	//a2*U'(t)
+												 a_dt[3]*node[iPoint]->GetSolution_Accel_time_n(iVar);	//a3*U''(t)
+							}
+							TimeRes_Aux.SetBlock(iPoint, Residual);
 						}
-						TimeRes_Aux.SetBlock(iPoint, Residual);
 					}
-				}
-				else if (nonlinear_analysis){
-					for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-						for (iVar = 0; iVar < nVar; iVar++){
-							Residual[iVar] =   a_dt[0]*node[iPoint]->GetSolution_time_n(iVar)  			//a0*U(t)
-											 - a_dt[0]*node[iPoint]->GetSolution(iVar) 					//a0*U(t+dt)(k-1)
-										 	 + a_dt[2]*node[iPoint]->GetSolution_Vel_time_n(iVar)		//a2*U'(t)
-										 	 + a_dt[3]*node[iPoint]->GetSolution_Accel_time_n(iVar);	//a3*U''(t)
+					else if (nonlinear_analysis){
+						for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+							for (iVar = 0; iVar < nVar; iVar++){
+								Residual[iVar] =   a_dt[0]*node[iPoint]->GetSolution_time_n(iVar)  			//a0*U(t)
+												 - a_dt[0]*node[iPoint]->GetSolution(iVar) 					//a0*U(t+dt)(k-1)
+												 + a_dt[2]*node[iPoint]->GetSolution_Vel_time_n(iVar)		//a2*U'(t)
+												 + a_dt[3]*node[iPoint]->GetSolution_Accel_time_n(iVar);	//a3*U''(t)
+							}
+							TimeRes_Aux.SetBlock(iPoint, Residual);
 						}
-						TimeRes_Aux.SetBlock(iPoint, Residual);
 					}
-				}
-				/*--- Once computed, compute M*TimeRes_Aux ---*/
-				MassMatrix.MatrixVectorProduct(TimeRes_Aux,TimeRes,geometry,config);
+					/*--- Once computed, compute M*TimeRes_Aux ---*/
+					MassMatrix.MatrixVectorProduct(TimeRes_Aux,TimeRes,geometry,config);
 
-  		  		/*--- Loop over all the markers  ---*/
-  				for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-  					switch (config->GetMarker_All_KindBC(iMarker)) {
+					/*--- Loop over all the markers  ---*/
+					for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+						switch (config->GetMarker_All_KindBC(iMarker)) {
 
-  						/*--- If it corresponds to a clamped boundary  ---*/
+							/*--- If it corresponds to a clamped boundary  ---*/
 
-  						case CLAMPED_BOUNDARY:
+							case CLAMPED_BOUNDARY:
 
-  						if (outputReactions) myfile << "MARKER " << iMarker << ":" << endl;
+							myfile << "MARKER " << iMarker << ":" << endl;
 
-  							/*--- Loop over all the vertices  ---*/
-  							for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+								/*--- Loop over all the vertices  ---*/
+								for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 
-  							/*--- Get node index ---*/
-  							iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+								/*--- Get node index ---*/
+								iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-  							if (outputReactions) myfile << "Node " << iPoint << "." << " \t ";
+								myfile << "Node " << iPoint << "." << " \t ";
 
-  							for (iDim = 0; iDim < nDim; iDim++){
-  								/*--- Retrieve coordinate ---*/
-  								val_Coord = geometry->node[iPoint]->GetCoord(iDim);
-  								if (outputReactions) myfile << "X" << iDim + 1 << ": " << val_Coord << " \t " ;
-  							}
+								for (iDim = 0; iDim < nDim; iDim++){
+									/*--- Retrieve coordinate ---*/
+									val_Coord = geometry->node[iPoint]->GetCoord(iDim);
+									myfile << "X" << iDim + 1 << ": " << val_Coord << " \t " ;
+								}
 
-  							/*--- Retrieve the time contribution ---*/
-  							Res_Time_Cont = TimeRes.GetBlock(iPoint);
+								/*--- Retrieve the time contribution ---*/
+								Res_Time_Cont = TimeRes.GetBlock(iPoint);
 
-  							for (iVar = 0; iVar < nVar; iVar++){
-  								/*--- Retrieve reaction ---*/
-  								val_Reaction = LinSysReact.GetBlock(iPoint, iVar) + Res_Time_Cont[iVar];
-  								if (outputReactions) myfile << "F" << iVar + 1 << ": " << val_Reaction << " \t " ;
-  							}
+								for (iVar = 0; iVar < nVar; iVar++){
+									/*--- Retrieve reaction ---*/
+									val_Reaction = LinSysReact.GetBlock(iPoint, iVar) + Res_Time_Cont[iVar];
+									myfile << "F" << iVar + 1 << ": " << val_Reaction << " \t " ;
+								}
 
-  							if (outputReactions) myfile << endl;
-  						}
-  					  if (outputReactions) myfile << endl;
-  					  break;
-  				}
-
-
-  			  break;
-  			case (GA_IMPLICIT):
-  		  			  cout << "NOT IMPLEMENTED YET" << endl;
-  			  break;
-  		  }
-
-  	}
+								myfile << endl;
+							}
+						  myfile << endl;
+						  break;
+					}
 
 
+				  break;
+				case (GA_IMPLICIT):
+						  cout << "NOT IMPLEMENTED YET" << endl;
+				  break;
+			  }
 
-  	if (outputReactions) myfile.close();
+		}
+
+
+
+		myfile.close();
+
+	}
 
 		#ifdef HAVE_MPI
 
@@ -1381,7 +1596,7 @@ void CFEM_ElasticitySolver::Postprocessing(CGeometry *geometry, CSolver **solver
 		}
 		else {
 			/*--- Compute the norm of the solution vector Uk ---*/
-			for (iPoint = 0; iPoint < nPoint; iPoint++){
+			for (iPoint = 0; iPoint < nPointDomain; iPoint++){
 				for (iVar = 0; iVar < nVar; iVar++){
 					solNorm += node[iPoint]->GetSolution(iVar) * node[iPoint]->GetSolution(iVar);
 				}
@@ -1602,11 +1817,14 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolv
 	bool newton_raphson = (config->GetKind_SpaceIteScheme_FEA() == NEWTON_RAPHSON);		// Newton-Raphson method
 	bool fsi = config->GetFSI_Simulation();												// FSI simulation.
 
+	bool restart = config->GetRestart();													// Restart solution
+	bool initial_calc_restart = (config->GetExtIter() == config->GetDyn_RestartIter());	// Restart iteration
+
 	bool incremental_load = config->GetIncrementalLoad();
 
 	if (!dynamic){
 
-		for (iPoint = 0; iPoint < nPoint; iPoint++){
+		for (iPoint = 0; iPoint < nPointDomain; iPoint++){
 			/*--- Add the external contribution to the residual    ---*/
 			/*--- (the terms that are constant over the time step) ---*/
 			if (incremental_load){
@@ -1637,10 +1855,11 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolv
 		 *
 		 */
 
-		if (((nonlinear_analysis) && ((newton_raphson) || (first_iter)))||
-			((linear_analysis) && (initial_calc))) {
-			for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++){
-				for (jPoint = 0; jPoint < geometry->GetnPoint(); jPoint++){
+		if ((nonlinear_analysis && (newton_raphson || first_iter)) ||
+			(linear_analysis && initial_calc) ||
+			(linear_analysis && restart && initial_calc_restart)) {
+			for (iPoint = 0; iPoint < nPointDomain; iPoint++){
+				for (jPoint = 0; jPoint < nPointDomain; jPoint++){
 					for(iVar = 0; iVar < nVar; iVar++){
 						for (jVar = 0; jVar < nVar; jVar++){
 							Jacobian_ij[iVar][jVar] = a_dt[0] * MassMatrix.GetBlock(iPoint, jPoint, iVar, jVar);
@@ -1653,7 +1872,7 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolv
 
 		/*--- Loop over all points, and set aux vector TimeRes_Aux = a0*U+a2*U'+a3*U'' ---*/
 		if (linear_analysis){
-			for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+			for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 				for (iVar = 0; iVar < nVar; iVar++){
 					Residual[iVar] = a_dt[0]*node[iPoint]->GetSolution_time_n(iVar)+		//a0*U(t)
 								 	 a_dt[2]*node[iPoint]->GetSolution_Vel_time_n(iVar)+	//a2*U'(t)
@@ -1663,7 +1882,7 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolv
 			}
 		}
 		else if (nonlinear_analysis){
-			for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+			for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 				for (iVar = 0; iVar < nVar; iVar++){
 					Residual[iVar] =   a_dt[0]*node[iPoint]->GetSolution_time_n(iVar)  			//a0*U(t)
 									 - a_dt[0]*node[iPoint]->GetSolution(iVar) 					//a0*U(t+dt)(k-1)
@@ -1676,7 +1895,7 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolv
 		/*--- Once computed, compute M*TimeRes_Aux ---*/
 		MassMatrix.MatrixVectorProduct(TimeRes_Aux,TimeRes,geometry,config);
 		/*--- Add the components of M*TimeRes_Aux to the residual R(t+dt) ---*/
-		for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+		for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 			/*--- Dynamic contribution ---*/
 			/*--- TODO: Do I have to scale this one? I don't think so... ---*/
 			Res_Time_Cont = TimeRes.GetBlock(iPoint);
@@ -1709,7 +1928,6 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolv
 	}
 
 
-
 }
 
 void CFEM_ElasticitySolver::ImplicitNewmark_Update(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
@@ -1725,7 +1943,7 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Update(CGeometry *geometry, CSolver 
 
 	/*--- Update solution ---*/
 
-	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+	for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
 		for (iVar = 0; iVar < nVar; iVar++) {
 
@@ -1743,7 +1961,7 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Update(CGeometry *geometry, CSolver 
 
 	if (dynamic){
 
-		for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+		for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
 			for (iVar = 0; iVar < nVar; iVar++) {
 
@@ -1759,13 +1977,6 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Update(CGeometry *geometry, CSolver 
 			/*--- Set the acceleration in the node structure ---*/
 
 			node[iPoint]->SetSolution_Accel(Solution);
-
-			if (iPoint == 650) cout << node[iPoint]->GetSolution(0) << " " << node[iPoint]->GetSolution(1) << endl;
-			if (iPoint == 650) cout << node[iPoint]->GetSolution_time_n(0) << " " << node[iPoint]->GetSolution_time_n(1) << endl;
-			if (iPoint == 650) cout << node[iPoint]->GetSolution_Vel_time_n(0) << " " << node[iPoint]->GetSolution_Vel_time_n(1) << endl;
-			if (iPoint == 650) cout << node[iPoint]->GetSolution_Accel_time_n(0) << " " << node[iPoint]->GetSolution_Accel_time_n(1) << endl;
-
-			if (iPoint == 650) cout << Solution[0] << " " << Solution[1] << endl;
 
 			for (iVar = 0; iVar < nVar; iVar++) {
 
@@ -1785,6 +1996,10 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Update(CGeometry *geometry, CSolver 
 		}
 
 	}
+
+	/*--- Perform the MPI communication of the solution ---*/
+
+//	Set_MPI_Solution(geometry, config);
 
 
 }
@@ -1810,10 +2025,6 @@ void CFEM_ElasticitySolver::Solve_System(CGeometry *geometry, CSolver **solver_c
 	CSysSolve femSystem;
 	IterLinSol = femSystem.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
 
-	/*--- Perform the MPI communication of the solution ---*/
-
-	Set_MPI_Solution(geometry, config);
-
 }
 
 
@@ -1822,21 +2033,13 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
 											CGeometry **flow_geometry, CConfig *fea_config,
 											CConfig *flow_config, CNumerics *fea_numerics) {
 
-
-
 	unsigned short nMarkerFSIint, nMarkerFEA, nMarkerFlow;		// Number of markers on FSI problem, FEA and Flow side
 	unsigned short iMarkerFSIint, iMarkerFEA, iMarkerFlow;		// Variables for iteration over markers
 	unsigned short markFEA, markFlow;
 
 	unsigned long nVertexFEA, nVertexFlow;						// Number of vertices on FEA and Flow side
 	unsigned long iVertex, iPoint;								// Variables for iteration over vertices and nodes
-
-
-	/*--- TODO: We have to clear the traction before applying it, because we are "adding" to node and not "setting" ---*/
-	/*--- This may be improved ---*/
-	for (iPoint = 0; iPoint < nPoint; iPoint++){
-		node[iPoint]->Clear_FlowTraction();
-	}
+	unsigned long jVertex;										// Variables for iteration over vertices and nodes
 
 	unsigned short iDim, jDim;
 
@@ -1845,12 +2048,6 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
 	bool incompressible     = (flow_config->GetKind_Regime() == INCOMPRESSIBLE);
 	bool viscous_flow       = ((flow_config->GetKind_Solver() == NAVIER_STOKES) ||
 								(flow_config->GetKind_Solver() == RANS) );
-
-	unsigned long nodeVertex, donorVertex;
-	su2double *normalsVertex;
-
-	su2double *tn_f;
-	tn_f 				= new su2double [nVar];			// Fluid traction
 
   	/*--- Redimensionalize the pressure ---*/
 
@@ -1876,8 +2073,8 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
 	/*--- Apply a ramp to the transfer of the fluid loads ---*/
 
 	su2double ModAmpl;
-	su2double CurrentTime=fea_config->GetCurrent_DynTime();
-	su2double Static_Time=fea_config->GetStatic_Time();
+	su2double CurrentTime = fea_config->GetCurrent_DynTime();
+	su2double Static_Time = fea_config->GetStatic_Time();
 
 	bool Ramp_Load = fea_config->GetRamp_Load();
 	su2double Ramp_Time = fea_config->GetRamp_Time();
@@ -1886,11 +2083,18 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
 	else if((CurrentTime > Static_Time) &&
 			(CurrentTime <= (Static_Time + Ramp_Time)) &&
 			(Ramp_Load)){
-		ModAmpl=(CurrentTime-Static_Time)/Ramp_Time;
-		ModAmpl=max(ModAmpl,0.0);
-		ModAmpl=min(ModAmpl,1.0);
+		ModAmpl = (CurrentTime-Static_Time) / Ramp_Time;
+		ModAmpl = max(ModAmpl,0.0);
+		ModAmpl = min(ModAmpl,1.0);
 	}
-	else{ ModAmpl=1.0; }
+	else{ ModAmpl = 1.0; }
+
+	/*--- Number of markers on the FSI interface ---*/
+
+	nMarkerFSIint = (fea_config->GetMarker_n_FSIinterface())/2;
+
+	nMarkerFEA  = fea_geometry[MESH_0]->GetnMarker();		// Retrieve total number of markers on FEA side
+	nMarkerFlow = flow_geometry[MESH_0]->GetnMarker();		// Retrieve total number of markers on Fluid side
 
 	// Parameters for the calculations
 	// Pn: Pressure
@@ -1902,79 +2106,87 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
 	su2double **Grad_PrimVar;
 	su2double Tau[3][3];
 
-	/*--- Number of markers in the FSI interface ---*/
-	nMarkerFSIint = (fea_config->GetMarker_n_FSIinterface())/2;
+	unsigned long Point_Flow, Point_Struct;
+	su2double *Normal_Flow;
 
-	nMarkerFEA  = fea_geometry[MESH_0]->GetnMarker();		// Retrieve total number of markers on FEA side
-	nMarkerFlow = flow_geometry[MESH_0]->GetnMarker();		// Retrieve total number of markers on Fluid side
+	su2double *tn_f;
+	tn_f 				= new su2double [nVar];			// Fluid traction
+
+#ifndef HAVE_MPI
+
+	/*--- TODO: We have to clear the traction before applying it, because we are "adding" to node and not "setting" ---*/
+	/*--- This may be improved ---*/
+	for (iPoint = 0; iPoint < nPoint; iPoint++){
+		node[iPoint]->Clear_FlowTraction();
+	}
 
 	/*--- Loop over all the markers on the interface ---*/
 
-	for (iMarkerFSIint=0; iMarkerFSIint < nMarkerFSIint; iMarkerFSIint++){
+	for (iMarkerFSIint = 0; iMarkerFSIint < nMarkerFSIint; iMarkerFSIint++){
 
 		/*--- Identification of the markers ---*/
 
 		/*--- Current structural marker ---*/
-		for (iMarkerFEA=0; iMarkerFEA < nMarkerFEA; iMarkerFEA++){
+		for (iMarkerFEA = 0; iMarkerFEA < nMarkerFEA; iMarkerFEA++){
 			if ( fea_config->GetMarker_All_FSIinterface(iMarkerFEA) == (iMarkerFSIint+1)){
-				markFEA=iMarkerFEA;
+				markFEA = iMarkerFEA;
 			}
 		}
 
 		/*--- Current fluid marker ---*/
-		for (iMarkerFlow=0; iMarkerFlow < nMarkerFlow; iMarkerFlow++){
+		for (iMarkerFlow = 0; iMarkerFlow < nMarkerFlow; iMarkerFlow++){
 			if (flow_config->GetMarker_All_FSIinterface(iMarkerFlow) == (iMarkerFSIint+1)){
-				markFlow=iMarkerFlow;
+				markFlow = iMarkerFlow;
 			}
 		}
 
 		nVertexFEA = fea_geometry[MESH_0]->GetnVertex(markFEA);		// Retrieve total number of vertices on FEA marker
 		nVertexFlow = flow_geometry[MESH_0]->GetnVertex(markFlow);  // Retrieve total number of vertices on Fluid marker
 
-		/*--- Loop over the nodes in the structural mesh, calculate the tf vector (unitary) ---*/
-		/*--- Here, we are looping over the fluid, and we find the pointer to the structure (donorVertex) ---*/
-		for (iVertex=0; iVertex < nVertexFlow; iVertex++){
+		/*--- Loop over the nodes in the fluid mesh, calculate the tf vector (unitary) ---*/
+		/*--- Here, we are looping over the fluid, and we find the pointer to the structure (Point_Struct) ---*/
+		for (iVertex = 0; iVertex < nVertexFlow; iVertex++){
 
 			// Node from the flow mesh
-			nodeVertex=flow_geometry[MESH_0]->vertex[markFlow][iVertex]->GetNode();
+			Point_Flow = flow_geometry[MESH_0]->vertex[markFlow][iVertex]->GetNode();
 
 			// Normals at the vertex: these normals go inside the fluid domain.
-			normalsVertex = flow_geometry[MESH_0]->vertex[markFlow][iVertex]->GetNormal();
+			Normal_Flow = flow_geometry[MESH_0]->vertex[markFlow][iVertex]->GetNormal();
 
 			// Corresponding node on the structural mesh
-			donorVertex = flow_geometry[MESH_0]->vertex[markFlow][iVertex]->GetDonorPoint();
+			Point_Struct = flow_geometry[MESH_0]->vertex[markFlow][iVertex]->GetDonorPoint();
 
 			// Retrieve the values of pressure, viscosity and density
 			if (incompressible){
 
-				Pn=flow_solution[MESH_0][FLOW_SOL]->node[nodeVertex]->GetPressureInc();
-				Pinf=flow_solution[MESH_0][FLOW_SOL]->GetPressure_Inf();
+				Pn = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetPressureInc();
+				Pinf = flow_solution[MESH_0][FLOW_SOL]->GetPressure_Inf();
 
 				if (viscous_flow){
 
-					Grad_PrimVar = flow_solution[MESH_0][FLOW_SOL]->node[nodeVertex]->GetGradient_Primitive();
-					Viscosity = flow_solution[MESH_0][FLOW_SOL]->node[nodeVertex]->GetLaminarViscosityInc();
-					Density = flow_solution[MESH_0][FLOW_SOL]->node[nodeVertex]->GetDensityInc();
+					Grad_PrimVar = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetGradient_Primitive();
+					Viscosity = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetLaminarViscosityInc();
+					Density = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetDensityInc();
 
 				}
 			}
 			else if (compressible){
 
-				Pn=flow_solution[MESH_0][FLOW_SOL]->node[nodeVertex]->GetPressure();
-				Pinf=flow_solution[MESH_0][FLOW_SOL]->GetPressure_Inf();
+				Pn = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetPressure();
+				Pinf = flow_solution[MESH_0][FLOW_SOL]->GetPressure_Inf();
 
 				if (viscous_flow){
 
-					Grad_PrimVar = flow_solution[MESH_0][FLOW_SOL]->node[nodeVertex]->GetGradient_Primitive();
-					Viscosity = flow_solution[MESH_0][FLOW_SOL]->node[nodeVertex]->GetLaminarViscosity();
-					Density = flow_solution[MESH_0][FLOW_SOL]->node[nodeVertex]->GetDensity();
+					Grad_PrimVar = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetGradient_Primitive();
+					Viscosity = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetLaminarViscosity();
+					Density = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetDensity();
 
 				}
 			}
 
 			// Calculate tn in the fluid nodes for the inviscid term --> Units of force (non-dimensional).
 			for (iDim = 0; iDim < nDim; iDim++) {
-				tn_f[iDim] = -(Pn-Pinf)*normalsVertex[iDim];
+				tn_f[iDim] = -(Pn-Pinf)*Normal_Flow[iDim];
 			}
 
 			// Calculate tn in the fluid nodes for the viscous term
@@ -1996,7 +2208,7 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
 								TWO3*Viscosity*div_vel*Dij;
 
 						// Viscous component in the tn vector --> Units of force (non-dimensional).
-						tn_f[iDim] += Tau[iDim][jDim]*normalsVertex[jDim];
+						tn_f[iDim] += Tau[iDim][jDim]*Normal_Flow[jDim];
 					}
 				}
 			}
@@ -2008,12 +2220,295 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
 			}
 
 			/*--- Set the Flow traction ---*/
-			//node[donorVertex]->Set_FlowTraction(Residual);
+			//node[Point_Struct]->Set_FlowTraction(Residual);
 			/*--- Add to the Flow traction (to add values to corners...) ---*/
-			node[donorVertex]->Add_FlowTraction(Residual);
+			node[Point_Struct]->Add_FlowTraction(Residual);
 		}
 
 	}
+
+#else
+
+    int rank = MASTER_NODE;
+    MPI_Status send_stat[1], recv_stat[1], status;
+    MPI_Request send_req[1], recv_req[1];
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+    /*--- Initialize buffers: we need to communicate the tractions from the fluid side: Residual ---*/
+    su2double *Buffer_Send_Residual = new su2double [nDim];
+    su2double *Buffer_Receive_Residual = new su2double [nDim];
+
+    /*--- Processor which hosts the fluid data and the structural data ---*/
+    int Processor_Flow, Processor_Struct;
+
+	/*--- TODO: We have to clear the traction before applying it, because we are "adding" to node and not "setting" ---*/
+	/*--- This may be improved ---*/
+	for (iPoint = 0; iPoint < nPointDomain; iPoint++){
+		node[iPoint]->Clear_FlowTraction();
+	}
+
+	/*--- Loop over all the markers on the interface ---*/
+	/*--- TODO: check if it may be a potential problem to put the communication inside the loop. ---*/
+
+	for (iMarkerFSIint = 0; iMarkerFSIint < nMarkerFSIint; iMarkerFSIint++){
+
+		/*--- Identification of the markers ---*/
+
+		/*--- Current structural marker ---*/
+		for (iMarkerFEA = 0; iMarkerFEA < nMarkerFEA; iMarkerFEA++){
+			if (fea_config->GetMarker_All_FSIinterface(iMarkerFEA) == (iMarkerFSIint+1)){
+				markFEA = iMarkerFEA;
+			}
+		}
+
+		/*--- Current fluid marker ---*/
+		for (iMarkerFlow = 0; iMarkerFlow < nMarkerFlow; iMarkerFlow++){
+			if (flow_config->GetMarker_All_FSIinterface(iMarkerFlow) == (iMarkerFSIint+1)){
+				markFlow = iMarkerFlow;
+			}
+		}
+
+		nVertexFEA = fea_geometry[MESH_0]->GetnVertex(markFEA);		// Retrieve total number of vertices on FEA marker
+		nVertexFlow = flow_geometry[MESH_0]->GetnVertex(markFlow);  // Retrieve total number of vertices on Fluid marker
+
+		/*--- Loop over the nodes in the fluid mesh, calculate the tf vector (unitary) and send it, if necessary ---*/
+		/*--- Here, we are looping over the fluid, and we find the pointer to the structure (Point_Struct) ---*/
+		for (iVertex = 0; iVertex < nVertexFlow; iVertex++){
+
+			// Node from the flow mesh
+			Point_Flow = flow_geometry[MESH_0]->vertex[markFlow][iVertex]->GetNode();
+
+			// We check if the processor "rank" owns this node so it makes sense to make the calculations
+	        if (flow_geometry[MESH_0]->node[Point_Flow]->GetDomain()) {
+
+				// Get the donor point (on the structural mesh)
+				Point_Struct = flow_geometry[MESH_0]->vertex[markFlow][iVertex]->GetDonorPoint();
+
+				// Get the donor processor to which the message will be sent (on the structural mesh)
+				Processor_Struct = flow_geometry[MESH_0]->vertex[markFlow][iVertex]->GetDonorProcessor();
+
+				// We check if the processor "rank" is equal to the structural; if so, we don't need to send the message
+				if (Processor_Struct != rank) {
+
+					// Get the normal at the vertex: this normal goes inside the fluid domain.
+					Normal_Flow = flow_geometry[MESH_0]->vertex[markFlow][iVertex]->GetNormal();
+
+					// Retrieve the values of pressure, viscosity and density
+					if (incompressible){
+
+						Pn = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetPressureInc();
+						// TODO: This can be taken out (one thing at a time!)
+						Pinf = flow_solution[MESH_0][FLOW_SOL]->GetPressure_Inf();
+
+						if (viscous_flow){
+
+							Grad_PrimVar = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetGradient_Primitive();
+							Viscosity = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetLaminarViscosityInc();
+							Density = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetDensityInc();
+
+						}
+					}
+					else if (compressible){
+
+						Pn = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetPressure();
+						// TODO: This can be taken out (one thing at a time!)
+						Pinf = flow_solution[MESH_0][FLOW_SOL]->GetPressure_Inf();
+
+						if (viscous_flow){
+
+							Grad_PrimVar = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetGradient_Primitive();
+							Viscosity = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetLaminarViscosity();
+							Density = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetDensity();
+
+						}
+					}
+
+					// Calculate tn in the fluid nodes for the inviscid term --> Units of force (non-dimensional).
+					for (iDim = 0; iDim < nDim; iDim++) {
+						tn_f[iDim] = -(Pn-Pinf)*Normal_Flow[iDim];
+					}
+
+					// Calculate tn in the fluid nodes for the viscous term
+
+					if (viscous_flow){
+
+						// Divergence of the velocity
+						div_vel = 0.0; for (iDim = 0; iDim < nDim; iDim++) div_vel += Grad_PrimVar[iDim+1][iDim];
+						if (incompressible) div_vel = 0.0;
+
+						for (iDim = 0; iDim < nDim; iDim++) {
+
+							for (jDim = 0 ; jDim < nDim; jDim++) {
+								// Dirac delta
+								Dij = 0.0; if (iDim == jDim) Dij = 1.0;
+
+								// Viscous stress
+								Tau[iDim][jDim] = Viscosity*(Grad_PrimVar[jDim+1][iDim] + Grad_PrimVar[iDim+1][jDim]) -
+										TWO3*Viscosity*div_vel*Dij;
+
+								// Viscous component in the tn vector --> Units of force (non-dimensional).
+								tn_f[iDim] += Tau[iDim][jDim]*Normal_Flow[jDim];
+							}
+						}
+					}
+
+					// Rescale tn to SI units and apply time-dependent coefficient (static structure, ramp load, full load)
+					// Store in the Buffer_Send_Residual
+
+					for (iDim = 0; iDim < nDim; iDim++) {
+						Buffer_Send_Residual[iDim] = tn_f[iDim]*factorForces*ModAmpl;
+					}
+
+					// Send the message
+		            SU2_MPI::Bsend(Buffer_Send_Residual, nDim, MPI_DOUBLE, Processor_Struct, Point_Struct, MPI_COMM_WORLD);
+
+				}
+
+			}
+
+		}
+
+	}
+
+	/*--- Loop over all the markers on the interface ---*/
+	/*--- TODO: check if it may be a potential problem to put the communication inside the loop. ---*/
+
+	for (iMarkerFSIint = 0; iMarkerFSIint < nMarkerFSIint; iMarkerFSIint++){
+
+		/*--- Identification of the markers ---*/
+
+		/*--- Current structural marker ---*/
+		for (iMarkerFEA = 0; iMarkerFEA < nMarkerFEA; iMarkerFEA++){
+			if (fea_config->GetMarker_All_FSIinterface(iMarkerFEA) == (iMarkerFSIint+1)){
+				markFEA = iMarkerFEA;
+			}
+		}
+
+		/*--- Current fluid marker ---*/
+		for (iMarkerFlow = 0; iMarkerFlow < nMarkerFlow; iMarkerFlow++){
+			if (flow_config->GetMarker_All_FSIinterface(iMarkerFlow) == (iMarkerFSIint+1)){
+				markFlow = iMarkerFlow;
+			}
+		}
+
+		nVertexFEA = fea_geometry[MESH_0]->GetnVertex(markFEA);		// Retrieve total number of vertices on FEA marker
+		nVertexFlow = flow_geometry[MESH_0]->GetnVertex(markFlow);  // Retrieve total number of vertices on Fluid marker
+
+		/*--- Now we loop over the nodes on the structural side ---*/
+		/*--- We check whether we need to receive a message or recompute tn ---*/
+		for (iVertex = 0; iVertex < nVertexFEA; iVertex++){
+
+			// Node from the flow mesh
+			Point_Struct = fea_geometry[MESH_0]->vertex[markFEA][iVertex]->GetNode();
+
+			// We check if the processor "rank" owns this node so it makes sense to make the calculations
+	        if (fea_geometry[MESH_0]->node[Point_Struct]->GetDomain()) {
+
+				// Get the donor point (on the fluid mesh)
+				Point_Flow = fea_geometry[MESH_0]->vertex[markFEA][iVertex]->GetDonorPoint();
+
+				// Get the donor processor from which the message will be received (on the fluid mesh)
+				Processor_Flow = fea_geometry[MESH_0]->vertex[markFEA][iVertex]->GetDonorProcessor();
+
+				// We check if the processor "rank" is equal to the structural; if so, we need to receive the message
+				if (Processor_Flow != rank) {
+					SU2_MPI::Recv(Buffer_Receive_Residual, nDim, MPI_DOUBLE, Processor_Flow, Point_Struct, MPI_COMM_WORLD, &status);
+				}
+				// Otherwise, we need to compute the tractions
+				else {
+
+					// Get the normals at the vertex: these normals go inside the fluid domain.
+					// We need to search for the normal corresponding to the particular Point_Flow
+					for (jVertex = 0; jVertex < nVertexFlow; jVertex++){
+						if (flow_geometry[MESH_0]->vertex[markFlow][jVertex]->GetNode() == Point_Flow)
+							Normal_Flow = flow_geometry[MESH_0]->vertex[markFlow][jVertex]->GetNormal();
+					}
+
+					// Retrieve the values of pressure, viscosity and density
+					if (incompressible){
+
+						Pn = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetPressureInc();
+						// TODO: This can be taken out (one thing at a time!)
+						Pinf = flow_solution[MESH_0][FLOW_SOL]->GetPressure_Inf();
+
+						if (viscous_flow){
+
+							Grad_PrimVar = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetGradient_Primitive();
+							Viscosity = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetLaminarViscosityInc();
+							Density = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetDensityInc();
+
+						}
+					}
+					else if (compressible){
+
+						Pn = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetPressure();
+						// TODO: This can be taken out (one thing at a time!)
+						Pinf = flow_solution[MESH_0][FLOW_SOL]->GetPressure_Inf();
+
+						if (viscous_flow){
+
+							Grad_PrimVar = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetGradient_Primitive();
+							Viscosity = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetLaminarViscosity();
+							Density = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetDensity();
+
+						}
+					}
+
+					// Calculate tn in the fluid nodes for the inviscid term --> Units of force (non-dimensional).
+					for (iDim = 0; iDim < nDim; iDim++) {
+						tn_f[iDim] = -(Pn-Pinf)*Normal_Flow[iDim];
+					}
+
+					// Calculate tn in the fluid nodes for the viscous term
+
+					if (viscous_flow){
+
+						// Divergence of the velocity
+						div_vel = 0.0; for (iDim = 0; iDim < nDim; iDim++) div_vel += Grad_PrimVar[iDim+1][iDim];
+						if (incompressible) div_vel = 0.0;
+
+						for (iDim = 0; iDim < nDim; iDim++) {
+
+							for (jDim = 0 ; jDim < nDim; jDim++) {
+								// Dirac delta
+								Dij = 0.0; if (iDim == jDim) Dij = 1.0;
+
+								// Viscous stress
+								Tau[iDim][jDim] = Viscosity*(Grad_PrimVar[jDim+1][iDim] + Grad_PrimVar[iDim+1][jDim]) -
+										TWO3*Viscosity*div_vel*Dij;
+
+								// Viscous component in the tn vector --> Units of force (non-dimensional).
+								tn_f[iDim] += Tau[iDim][jDim]*Normal_Flow[jDim];
+							}
+						}
+					}
+
+					// Rescale tn to SI units and apply time-dependent coefficient (static structure, ramp load, full load)
+					// Store in the Buffer_Send_Residual
+
+					for (iDim = 0; iDim < nDim; iDim++) {
+						Buffer_Receive_Residual[iDim] = tn_f[iDim]*factorForces*ModAmpl;
+					}
+
+				}
+
+				/*--- Add to the Flow traction (to add values to corners...) ---*/
+				node[Point_Struct]->Add_FlowTraction(Buffer_Receive_Residual);
+
+			}
+
+		}
+
+	}
+
+	/*--- Deallocate the memory ---*/
+    delete[] Buffer_Send_Residual;
+    delete[] Buffer_Receive_Residual;
+
+
+#endif
+
+	delete[] tn_f;
 
 
 }
@@ -2035,8 +2530,8 @@ void CFEM_ElasticitySolver::PredictStruct_Displacement(CGeometry **fea_geometry,
     nPoint = fea_geometry[MESH_0]->GetnPoint();
     nDim = fea_geometry[MESH_0]->GetnDim();
 
-    //TODO: nPoint or nPointDomain
-    for (iPoint=0; iPoint < nPoint; iPoint++){
+    //To nPointDomain: we need to communicate the predicted solution after setting it
+    for (iPoint=0; iPoint < nPointDomain; iPoint++){
     	if (predOrder==0) fea_solution[MESH_0][FEA_SOL]->node[iPoint]->SetSolution_Pred();
     	else if (predOrder==1) {
 
@@ -2125,15 +2620,15 @@ void CFEM_ElasticitySolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, 
 
 		}
 		else{
-		    //TODO: nPoint or nPointDomain
-			for (iPoint=0; iPoint < nPoint; iPoint++){
+		    // To nPointDomain; we need to have communicated Solution, Solution_Old, Solution_Pred and Solution_Pred_Old beforehand
+			for (iPoint = 0; iPoint < nPointDomain; iPoint++){
 
 				dispPred = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Pred();
 				dispPred_Old = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Pred_Old();
 				dispCalc = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution();
 				dispCalc_Old = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Old();
 
-				for (iDim=0; iDim < nDim; iDim++){
+				for (iDim = 0; iDim < nDim; iDim++){
 
 					/*--- Compute the deltaU and deltaU_n+1 ---*/
 					deltaU[iDim] = dispCalc_Old[iDim] - dispPred_Old[iDim];
@@ -2209,8 +2704,8 @@ void CFEM_ElasticitySolver::SetAitken_Relaxation(CGeometry **fea_geometry,
 			cout << "No relaxation parameter used. " << endl;
 		}
 
-	    //TODO: nPoint or nPointDomain
-		for (iPoint=0; iPoint < nPoint; iPoint++){
+	    // To nPointDomain; we need to communicate the solutions (predicted, old and old predicted) after this routine
+		for (iPoint=0; iPoint < nPointDomain; iPoint++){
 
 			/*--- Retrieve pointers to the predicted and calculated solutions ---*/
 			dispPred = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Pred();
@@ -2240,10 +2735,12 @@ void CFEM_ElasticitySolver::Update_StructSolution(CGeometry **fea_geometry,
     unsigned long nPoint, nDim;
     su2double *valSolutionPred, *valSolution;
 
+    /*--- TODO: I don't think I'm using this routine right now, but I may need to use it after SetAitken_Relaxation... ---*/
+
     nPoint = fea_geometry[MESH_0]->GetnPoint();
     nDim = fea_geometry[MESH_0]->GetnDim();
     //TODO: nPoint or nPointDomain
-    for (iPoint=0; iPoint < nPoint; iPoint++){
+    for (iPoint=0; iPoint < nPointDomain; iPoint++){
 
     	valSolutionPred = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Pred();
 
