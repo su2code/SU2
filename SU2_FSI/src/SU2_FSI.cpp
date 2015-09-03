@@ -35,8 +35,6 @@ using namespace std;
 
 int main(int argc, char *argv[]) {
 
-	  cout << endl <<"------------------------- Start running SU2_FSI -------------------------" << endl;
-
 	  bool StopCalc = false;
 	  double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
 	  unsigned long ExtIter = 0;
@@ -56,6 +54,10 @@ int main(int argc, char *argv[]) {
 	  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	  MPI_Comm_size(MPI_COMM_WORLD, &size);
 	#endif
+
+	    if (rank == MASTER_NODE)
+		  cout << endl <<"------------------------- Start running SU2_FSI -------------------------" << endl;
+
 
 	  /*--- Create pointers to all of the classes that may be used throughout
 	   the SU2_FSI code. In general, the pointers are instantiated down a
@@ -402,15 +404,15 @@ int main(int argc, char *argv[]) {
 
 	    /*--- Update the convergence history file (serial and parallel computations). ---*/
 	    /*--- This is temporal and for practical purposes. ---*/
-	    cout << "---------------------------------------------------------------------------" << endl;
+	    if (rank == MASTER_NODE) cout << "---------------------------------------------------------------------------" << endl;
 	    for (iZone = 0; iZone < nZone; iZone++){
-	    	if (iZone == 0) cout << "Fluid convergence: " << endl;
-	    	else if (iZone == 1) cout << "Structural convergence: " << endl;
+	    	if (iZone == 0 && rank == MASTER_NODE) cout << "Fluid convergence: " << endl;
+	    	else if (iZone == 1 && rank == MASTER_NODE) cout << "Structural convergence: " << endl;
 	    	output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container,
 	                                	config_container, integration_container, false, UsedTime, iZone);
 	    }
 
-	    cout << "---------------------------------------------------------------------------" << endl;
+	    if (rank == MASTER_NODE)cout << "---------------------------------------------------------------------------" << endl;
 
 	    /*--- Evaluate the new CFL number (adaptive). ---*/
 

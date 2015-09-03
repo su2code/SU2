@@ -718,7 +718,7 @@ void CIntegration::SetFEM_StructuralSolver(CGeometry *geometry, CSolver *solver,
 	unsigned long iPoint;
 
 	/*--- Update the solution only at the local points ---*/
-	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
 
 		solver->node[iPoint]->SetSolution_time_n();
 		solver->node[iPoint]->SetSolution_Vel_time_n();
@@ -746,6 +746,13 @@ void CIntegration::Convergence_Monitoring_FEM(CGeometry *geometry, CConfig *conf
 	su2double Reference_UTOL, Reference_RTOL, Reference_ETOL;
 	su2double Residual_UTOL, Residual_RTOL, Residual_ETOL;
 
+	int rank = MASTER_NODE;
+	#ifdef HAVE_MPI
+    	int size;
+    	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    	MPI_Comm_size(MPI_COMM_WORLD, &size);
+	#endif
+
     bool Already_Converged = Convergence;
 
 	Reference_UTOL = config->GetResidual_FEM_UTOL();
@@ -768,10 +775,48 @@ void CIntegration::Convergence_Monitoring_FEM(CGeometry *geometry, CConfig *conf
     if (Already_Converged) Convergence = true;
 
 
+    /*--- Apply the same convergence criteria to all the processors ---*/
+
+#ifdef HAVE_MPI
+
+    unsigned short *sbuf_conv = NULL, *rbuf_conv = NULL;
+    sbuf_conv = new unsigned short[1]; sbuf_conv[0] = 0;
+    rbuf_conv = new unsigned short[1]; rbuf_conv[0] = 0;
+
+    /*--- Convergence criteria ---*/
+
+    sbuf_conv[0] = Convergence;
+    SU2_MPI::Reduce(sbuf_conv, rbuf_conv, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+
+    /*-- Compute global convergence criteria in the master node --*/
+
+    sbuf_conv[0] = 0;
+    if (rank == MASTER_NODE) {
+      if (rbuf_conv[0] == size) sbuf_conv[0] = 1;
+      else sbuf_conv[0] = 0;
+    }
+
+    SU2_MPI::Bcast(sbuf_conv, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
+
+    if (sbuf_conv[0] == 1) { Convergence = true; }
+    else { Convergence = false; }
+
+    delete [] sbuf_conv;
+    delete [] rbuf_conv;
+
+#endif
+
 }
 
 
 void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *fea_config, CSolver *fea_solver, unsigned long iFSIIter) {
+
+	int rank = MASTER_NODE;
+	#ifdef HAVE_MPI
+    	int size;
+    	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    	MPI_Comm_size(MPI_COMM_WORLD, &size);
+	#endif
 
 	unsigned short iCounter;
 	su2double FEA_check[2] = {0.0, 0.0};
@@ -871,6 +916,37 @@ void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *
 	}
 
 	if (writeHistFSI){ historyFile_FSI.close();}
+
+    /*--- Apply the same convergence criteria to all the processors ---*/
+
+#ifdef HAVE_MPI
+
+    unsigned short *sbuf_conv = NULL, *rbuf_conv = NULL;
+    sbuf_conv = new unsigned short[1]; sbuf_conv[0] = 0;
+    rbuf_conv = new unsigned short[1]; rbuf_conv[0] = 0;
+
+    /*--- Convergence criteria ---*/
+
+    sbuf_conv[0] = Convergence_FSI;
+    SU2_MPI::Reduce(sbuf_conv, rbuf_conv, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+
+    /*-- Compute global convergence criteria in the master node --*/
+
+    sbuf_conv[0] = 0;
+    if (rank == MASTER_NODE) {
+      if (rbuf_conv[0] == size) sbuf_conv[0] = 1;
+      else sbuf_conv[0] = 0;
+    }
+
+    SU2_MPI::Bcast(sbuf_conv, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
+
+    if (sbuf_conv[0] == 1) { Convergence_FSI = true; }
+    else { Convergence_FSI = false; }
+
+    delete [] sbuf_conv;
+    delete [] rbuf_conv;
+
+#endif
 
 }
 

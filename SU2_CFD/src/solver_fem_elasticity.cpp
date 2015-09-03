@@ -1038,8 +1038,6 @@ void CFEM_ElasticitySolver::Compute_MassMatrix(CGeometry *geometry, CSolver **so
 	su2double Mab;
 	unsigned short NelNodes, jNode;
 
-	cout << "NUMBER OF ELEMENTS: " << geometry->GetnElem() << endl;
-
 	/*--- Loops over all the elements ---*/
 
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
@@ -1170,7 +1168,7 @@ void CFEM_ElasticitySolver::Compute_NodalStress(CGeometry *geometry, CSolver **s
 
 	/*--- Restart stress to avoid adding results from previous time steps ---*/
 
-	 for (iPoint = 0; iPoint < nPoint; iPoint++){
+	 for (iPoint = 0; iPoint < nPointDomain; iPoint++){
 		for (iStress = 0; iStress < nStress; iStress++){
 				node[iPoint]->SetStress_FEM(iStress, 0.0);
 		}
@@ -1227,7 +1225,7 @@ void CFEM_ElasticitySolver::Compute_NodalStress(CGeometry *geometry, CSolver **s
 	  su2double Sxx,Syy,Szz,Sxy,Sxz,Syz,S1,S2;
 
 	 /* --- For the number of nodes in the mesh ---*/
-	  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+	  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
 		  /* --- Get the stresses, added up from all the elements that connect to the node ---*/
 
@@ -1414,14 +1412,14 @@ void CFEM_ElasticitySolver::Compute_NodalStress(CGeometry *geometry, CSolver **s
 
 	}
 
-		#ifdef HAVE_MPI
+	#ifdef HAVE_MPI
 
-		  /*--- Compute MaxVonMises_Stress using all the nodes ---*/
+	  /*--- Compute MaxVonMises_Stress using all the nodes ---*/
 
-		  su2double MyMaxVonMises_Stress = MaxVonMises_Stress; MaxVonMises_Stress = 0.0;
-		  SU2_MPI::Allreduce(&MyMaxVonMises_Stress, &MaxVonMises_Stress, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+	  su2double MyMaxVonMises_Stress = MaxVonMises_Stress; MaxVonMises_Stress = 0.0;
+	  SU2_MPI::Allreduce(&MyMaxVonMises_Stress, &MaxVonMises_Stress, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 
-		#endif
+	#endif
 
 		  /*--- Set the value of the MaxVonMises_Stress as the CFEA coeffient ---*/
 
@@ -1999,7 +1997,7 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Update(CGeometry *geometry, CSolver 
 
 	/*--- Perform the MPI communication of the solution ---*/
 
-//	Set_MPI_Solution(geometry, config);
+	Set_MPI_Solution(geometry, config);
 
 
 }
