@@ -19,7 +19,7 @@
 # \file Makefile.am
 # \brief Global makefile for the SU2 project
 # \author M. Colonno, T. Economon, F. Palacios
-# \version 4.0.0 "Cardinal"
+# \version 4.0.1 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -97,8 +97,7 @@ target_triplet = @target@
 subdir = .
 DIST_COMMON = $(am__configure_deps) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(top_srcdir)/configure COPYING INSTALL \
-	ar-lib compile config.guess config.sub depcomp install-sh \
-	missing
+	compile config.guess config.sub depcomp install-sh missing
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/ax_tls.m4 \
 	$(top_srcdir)/m4/codi.m4 $(top_srcdir)/m4/compiler.m4 \

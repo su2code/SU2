@@ -3,7 +3,7 @@
 ## \file configure.py
 #  \brief An extended configuration script.
 #  \author T. Albring
-#  \version 4.0.0 "Cardinal"
+#  \version 4.0.1 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -264,7 +264,7 @@ def init_codi(modes, mpi_support = False):
     # If project was cloned using git, we can use the 
     # submodule feature of git to initialize the packages
     if all([os.path.exists('.gitmodules')]):
-        try:
+	try:
             print "Updating submodules using git..."
             subprocess.check_call('git submodule update --init', stdout = log, stderr = err, shell = True)
             modules_failed = False
@@ -289,11 +289,11 @@ def init_codi(modes, mpi_support = False):
             sys.exit()
 
         download_module(ampi_name, alt_name_ampi, github_repo_ampi, sha_version_ampi, log, err)
-
+ 
     if mpi_support:
         os.chdir('adjointmpi')
         if not os.path.exists('libAMPI.a'):
-             print '\nConfiguring and building AMPI...'
+            print '\nConfiguring and building AMPI...'
              subprocess.check_call('./configure CFLAGS=-O2 --prefix=$PWD && make',  shell=True)
         os.chdir(os.pardir)
 
@@ -344,8 +344,8 @@ def build_adolc(modes, mpi_support = False):
 
     # If necessary build adolc_ampi
     if all([mpi_support, modes['REVERSE']]):
-        print 'MPI currently not supported when using ADOLC.'
-        sys.exit()
+	print 'MPI currently not supported when using ADOLC.'
+	sys.exit()
         #ampi_path = subprocess.check_output("pwd").rstrip() +  "/AdjoinableMPI"
         #pkg_name = "adolc_ampi"
         #pkg_version = "2.5.3-trunk"
@@ -480,7 +480,7 @@ def configure(args,
     print '\nPre-configuration Summary:\n' \
            '=====================================================================\n'\
           '\tConfiguration sets: '+ build_dirs + '\n'
-    
+
     print '\tUse "make <install>" to compile (and install) all configured binaries:\n'
     if modes['NORMAL']:
         print '\tSU2_CFD            -> General solver for direct, cont. adjoint and linearized equations.\n' \
@@ -557,7 +557,7 @@ def header():
 
     print '-------------------------------------------------------------------------\n'\
           '|    ___ _   _ ___                                                      | \n'\
-          '|   / __| | | |_  )   Release 4.0.0 \'Cardinal\'                          | \n'\
+          '|   / __| | | |_  )   Release 4.0.1 \'Cardinal\'                          | \n'\
           '|   \__ \ |_| |/ /                                                      | \n'\
           '|   |___/\___//___|   Pre-configuration Script                          | \n'\
           '|                                                                       | \n'\

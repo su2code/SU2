@@ -2,7 +2,7 @@
  * \file SU2_SOL.cpp
  * \brief Main file for the solution export/conversion code (SU2_SOL).
  * \author F. Palacios, T. Economon
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -179,7 +179,7 @@ int main(int argc, char *argv[]) {
           
           /*--- Either instantiate the solution class or load a restart file. ---*/
           if (SolutionInstantiated == false && (iExtIter == 0 ||
-              (config_container[ZONE_0]->GetRestart() && (iExtIter == config_container[ZONE_0]->GetUnst_RestartIter() ||
+              (config_container[ZONE_0]->GetRestart() && ((long)iExtIter == config_container[ZONE_0]->GetUnst_RestartIter() ||
                                                 iExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0 ||
                                                 iExtIter+1 == config_container[ZONE_0]->GetnExtIter())))) {
             solver_container[iZone] = new CBaselineSolver(geometry_container[iZone], config_container[iZone], MESH_0);

@@ -2,7 +2,7 @@
  * \file SU2_CFD.cpp
  * \brief Main file of the Computational Fluid Dynamics code
  * \author F. Palacios, T. Economon
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -119,7 +119,6 @@ int main(int argc, char *argv[]) {
      read and stored. ---*/
     
     config_container[iZone] = new CConfig(config_file_name, SU2_CFD, iZone, nZone, nDim, VERB_HIGH);
-    
     
     /*--- Definition of the geometry class to store the primal grid in the
      partitioning process. ---*/
@@ -461,6 +460,7 @@ int main(int argc, char *argv[]) {
     CConfig *runtime = NULL;
     strcpy(runtime_file_name, "runtime.dat");
     runtime = new CConfig(runtime_file_name, config_container[ZONE_0]);
+    runtime->SetExtIter(ExtIter);
     
     /*--- Update the convergence history file (serial and parallel computations). ---*/
     

@@ -2,7 +2,7 @@
  * \file solution_adjoint_mean.cpp
  * \brief Main subrotuines for solving adjoint problems (Euler, Navier-Stokes, etc.).
  * \author F. Palacios, T. Economon
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -3646,8 +3646,9 @@ void CAdjEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solve
 #else
   
   int rank, jProcessor;
-  MPI_Status send_stat[1], recv_stat[1], status;
-  MPI_Request send_req[1], recv_req[1];
+  MPI_Status status;
+  //MPI_Status send_stat[1], recv_stat[1];
+  //MPI_Request send_req[1], recv_req[1];
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   
   bool compute;
@@ -3939,7 +3940,6 @@ void CAdjEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_
     CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   unsigned short iVar, iDim;
   unsigned long iVertex, iPoint, Point_Normal;
-  su2double Area, UnitNormal[3];
   su2double *V_inlet, *V_domain, *Normal, *Psi_domain, *Psi_inlet;
 
   bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
@@ -3963,14 +3963,6 @@ void CAdjEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
       for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
       conv_numerics->SetNormal(Normal);
-
-      Area = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        Area += Normal[iDim]*Normal[iDim];
-      Area = sqrt (Area);
-
-      for (iDim = 0; iDim < nDim; iDim++)
-        UnitNormal[iDim] = Normal[iDim]/Area;
 
       /*--- Allocate the value at the inlet ---*/
 
@@ -4018,6 +4010,7 @@ void CAdjEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_
       /*--- Viscous residual contribution, it doesn't work ---*/
 
       if (config->GetViscous()) {
+        
         /*--- Index of the closest interior node ---*/
 
         Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
@@ -4062,7 +4055,6 @@ void CAdjEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver
                                           CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   unsigned short iVar, iDim;
   unsigned long iVertex, iPoint, Point_Normal;
-  su2double Area, UnitNormal[3];
   su2double *V_outlet, *V_domain, *Normal, *Psi_domain, *Psi_outlet;
   
   bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
@@ -4086,14 +4078,6 @@ void CAdjEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
       for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
       conv_numerics->SetNormal(Normal);
-      
-      Area = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-      Area += Normal[iDim]*Normal[iDim];
-      Area = sqrt (Area);
-      
-      for (iDim = 0; iDim < nDim; iDim++)
-      UnitNormal[iDim] = Normal[iDim]/Area;
       
       /*--- Allocate the value at the inlet ---*/
       
@@ -4138,10 +4122,14 @@ void CAdjEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver
       if (implicit)
       Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
       
-      /*--- Viscous residual contribution, it doesn't work ---*/
+      /*--- Viscous residual contribution (check again, Point_Normal was not being initialized before) ---*/
 
       if (config->GetViscous()) {
 
+        /*--- Index of the closest interior node ---*/
+        
+        Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+        
         /*--- Points in edge, coordinates and normal vector---*/
 
         visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
@@ -4469,9 +4457,9 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
             /*--- Compute (Vn - Ubn).n term for use in the BC. ---*/
 
             /*--- Compute the new fictious state at the outlet ---*/
-            Density    = pow(P_Exit/Entropy,1.0/Gamma);
             Pressure   = P_Exit;
-            SoundSpeed = sqrt(Gamma*P_Exit/Density);
+            Density    = pow(Pressure/Entropy,1.0/Gamma);
+            SoundSpeed = sqrt(Gamma*Pressure/Density);
             Vn_Exit    = Riemann - 2.0*SoundSpeed/Gamma_Minus_One;
             Velocity2  = 0.0;
             for (iDim = 0; iDim < nDim; iDim++) {
@@ -4677,7 +4665,9 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
 void CAdjEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   
-  su2double *Normal, *V_domain, *V_inflow, *Psi_domain, *Psi_inflow, P_Fan, Velocity[3], Velocity2, Density, Vn, UnitNormal[3], Area, a1;
+  su2double *Normal, *V_domain, *V_inflow, *Psi_domain, *Psi_inflow, P_Fan;
+  su2double Velocity[3] = {0.0,0.0,0.0}, Velocity2, Density, Vn;
+  su2double UnitNormal[3] = {0.0,0.0,0.0}, Area, a1;
   unsigned short iVar, iDim;
   unsigned long iVertex, iPoint;
   
@@ -4778,7 +4768,9 @@ void CAdjEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_con
 
 void CAdjEulerSolver::BC_Engine_Bleed(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   
-  su2double *Normal, *V_domain, *V_inflow, *Psi_domain, *Psi_inflow, P_Fan, Velocity[3], Velocity2, Density, Vn, UnitNormal[3], Area, a1;
+  su2double *Normal, *V_domain, *V_inflow, *Psi_domain, *Psi_inflow, P_Fan;
+  su2double Velocity[3] = {0.0,0.0,0.0}, Velocity2, Density, Vn;
+  su2double UnitNormal[3] = {0.0,0.0,0.0}, Area, a1;
   unsigned short iVar, iDim;
   unsigned long iVertex, iPoint;
   
@@ -4880,7 +4872,7 @@ void CAdjEulerSolver::BC_Engine_Bleed(CGeometry *geometry, CSolver **solver_cont
 void CAdjEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   
   unsigned long iVertex, iPoint, Point_Normal;
-  su2double Area, UnitNormal[3], *Normal, *V_domain, *V_exhaust, *Psi_domain, *Psi_exhaust;
+  su2double *Normal, *V_domain, *V_exhaust, *Psi_domain, *Psi_exhaust;
   unsigned short iVar, iDim;
   
   bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
@@ -4903,14 +4895,6 @@ void CAdjEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_co
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
       for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
       conv_numerics->SetNormal(Normal);
-
-      Area = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        Area += Normal[iDim]*Normal[iDim];
-      Area = sqrt (Area);
-      
-      for (iDim = 0; iDim < nDim; iDim++)
-        UnitNormal[iDim] = Normal[iDim]/Area;
       
       /*--- Index of the closest interior node ---*/
       
@@ -5595,7 +5579,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
   unsigned long iVertex, iPoint;
   unsigned short iDim, jDim, iMarker, iPos, jPos;
   su2double *d = NULL, **PsiVar_Grad = NULL, **PrimVar_Grad = NULL, div_phi, *Normal = NULL, Area,
-  normal_grad_psi5, normal_grad_T, sigma_partial, Laminar_Viscosity = 0.0, heat_flux_factor, LevelSet, Target_LevelSet, temp_sens = 0.0, *Psi = NULL, *U = NULL, Enthalpy, **GridVel_Grad, gradPsi5_v, psi5_tau_partial, psi5_tau_grad_vel, source_v_1, Density, Pressure = 0.0, div_vel, val_turb_ke, vartheta, vartheta_partial, psi5_p_div_vel, Omega[3], rho_v[3], CrossProduct[3], delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}}, r, ru, rv, rw, rE, p, T, dp_dr, dp_dru, dp_drv, dp_drw, dp_drE, dH_dr, dH_dru, dH_drv, dH_drw, dH_drE, H, D[3][3], Dd[3], Mach_Inf, eps, scale = 1.0;
+  normal_grad_psi5, normal_grad_T, sigma_partial, Laminar_Viscosity = 0.0, heat_flux_factor, LevelSet, Target_LevelSet, temp_sens = 0.0, *Psi = NULL, *U = NULL, Enthalpy, **GridVel_Grad, gradPsi5_v, psi5_tau_partial, psi5_tau_grad_vel, source_v_1, Density, Pressure = 0.0, div_vel, val_turb_ke, vartheta, vartheta_partial, psi5_p_div_vel, Omega[3], rho_v[3] = {0.0,0.0,0.0}, CrossProduct[3], delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}}, r, ru, rv, rw, rE, p, T, dp_dr, dp_dru, dp_drv, dp_drw, dp_drE, dH_dr, dH_dru, dH_drv, dH_drw, dH_drE, H, D[3][3], Dd[3], Mach_Inf, eps, scale = 1.0;
   su2double RefVel2, RefDensity, Mach2Vel, *Velocity_Inf, factor;
 
   su2double *USens = new su2double[nVar];
