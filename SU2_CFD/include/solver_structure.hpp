@@ -2252,6 +2252,16 @@ public:
 	 */
 	virtual void LoadRestart(CGeometry **geometry, CSolver ***solver,
                            CConfig *config, int val_iter);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+     * \param[in] solver - Container vector with all of the solvers.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_iter - Current external iteration number.
+	 */
+	virtual void LoadRestart_FSI(CGeometry *geometry, CSolver ***solver,
+                           	   CConfig *config, int val_iter);
     
 	/*!
 	 * \brief Gauss method for solving a linear system.
@@ -2547,7 +2557,16 @@ public:
 	 * \param[in] val_iter - Current external iteration number.
 	 */
 	void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter);
-  
+
+	/*!
+	 * \brief Load a FSI solution from a restart file.
+	 * \param[in] geometry - Geometrical definition of the problem.
+     * \param[in] solver - Container vector with all of the solvers.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_iter - Current external iteration number.
+	 */
+	void LoadRestart_FSI(CGeometry *geometry, CSolver ***solver, CConfig *config, int val_iter);
+
 	/*!
 	 * \brief Destructor of the class.
 	 */

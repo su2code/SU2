@@ -154,8 +154,6 @@ int main(int argc, char *argv[]) {
 		bool StopCalc = false;
 		bool SolutionInstantiatedFlow = false, SolutionInstantiatedFEM = false;
 
-		cout << "LA LIO 1" << endl;
-
 		/*--- Check for an unsteady restart. Update ExtIter if necessary. ---*/
 		if (config_container[ZONE_0]->GetRestart()){
 			iExtIterFlow = config_container[ZONE_0]->GetUnst_RestartIter();
@@ -169,13 +167,11 @@ int main(int argc, char *argv[]) {
 			}
 		}
 
-		cout << "LA LIO 2" << endl;
+
 
 		while (iExtIter < config_container[ZONE_0]->GetnExtIter()) {
 
 		  /*--- Check several conditions in order to merge the correct time step files. ---*/
-
-			cout << "LA LIO 3" << endl;
 
 		  Physical_dt = config_container[ZONE_0]->GetDelta_UnstTime();
 		  Physical_t  = (iExtIter+1)*Physical_dt;
@@ -195,8 +191,9 @@ int main(int argc, char *argv[]) {
 			 &&
 
 			 ((iExtIter+1 == config_container[ZONE_1]->GetnExtIter()) ||
-			 ((iExtIter % config_container[ZONE_1]->GetWrt_Sol_Freq() == 0) && (iExtIter != 0)) ||
-			 (StopCalc))
+			  (StopCalc) ||
+			  ((config_container[ZONE_1]->GetDynamic_Analysis() == DYNAMIC) &&
+			  ((iExtIter == 0) || (iExtIter % config_container[ZONE_1]->GetWrt_Sol_Freq_DualTime() == 0))))
 
 			 ){
 
@@ -216,8 +213,7 @@ int main(int argc, char *argv[]) {
 					SolutionInstantiatedFlow = true;
 				}
 				else{
-					cout << "LA LIO 4" << endl;
-					solver_container[ZONE_0]->LoadRestart(geometry_container, &solver_container, config_container[ZONE_0], SU2_TYPE::Int(MESH_0));
+					solver_container[ZONE_0]->LoadRestart_FSI(geometry_container[ZONE_0], &solver_container, config_container[ZONE_0], SU2_TYPE::Int(MESH_0));
 				}
 
 
@@ -232,8 +228,7 @@ int main(int argc, char *argv[]) {
 					SolutionInstantiatedFEM = true;
 				}
 				else {
-					cout << "LA LIO 4b" << endl;
-					solver_container[ZONE_1]->LoadRestart(geometry_container, &solver_container, config_container[ZONE_1], SU2_TYPE::Int(MESH_0));
+					solver_container[ZONE_1]->LoadRestart_FSI(geometry_container[ZONE_1], &solver_container, config_container[ZONE_1], SU2_TYPE::Int(MESH_0));
 				}
 
 				if (rank == MASTER_NODE) cout << "Writing the volume solution for time step " << iExtIter << "." << endl;
@@ -265,8 +260,6 @@ int main(int argc, char *argv[]) {
 
 		  /*--- Check several conditions in order to merge the correct time step files. ---*/
 
-
-		  /*--- If the solver is structural, the total and delta_t are obtained from different functions. ---*/
 		  Physical_dt = config_container[ZONE_0]->GetDelta_UnstTime();
 		  Physical_t  = (iExtIter+1)*Physical_dt;
 		  if (Physical_t >=  config_container[ZONE_0]->GetTotal_UnstTime())
@@ -364,8 +357,9 @@ int main(int argc, char *argv[]) {
 				  StopCalc = true;
 
 			  if ((iExtIter+1 == config_container[ZONE_0]->GetnExtIter()) ||
-				  ((iExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq() == 0) && (iExtIter != 0)) ||
-				  (StopCalc)) {
+				  (StopCalc) ||
+				  ((config_container[ZONE_0]->GetDynamic_Analysis() == DYNAMIC) &&
+				  ((iExtIter == 0) || (iExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0)))) {
 
 				/*--- Set the current iteration number in the config class. ---*/
 				config_container[ZONE_0]->SetExtIter(iExtIter);

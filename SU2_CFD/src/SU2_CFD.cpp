@@ -501,7 +501,7 @@ int main(int argc, char *argv[]) {
 	    	StopCalc = false; break;
 	      case FEM_ELASTICITY:
 	    	// This is a temporal fix, while we code the non-linear solver
-//	        StopCalc = integration_container[ZONE_0][FEA_SOL]->GetConvergence(); break;
+	        StopCalc = integration_container[ZONE_0][FEA_SOL]->GetConvergence(); break;
 	    	StopCalc = false; break;
 	      case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
               case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
@@ -530,7 +530,10 @@ int main(int argc, char *argv[]) {
                              ((ExtIter-1) % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0)))) ||
 
         ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) && (fsi) &&
-        ((ExtIter == 0) || ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))))) {
+        ((ExtIter == 0) || ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0)))) ||
+
+		(((config_container[ZONE_0]->GetDynamic_Analysis() == DYNAMIC) &&
+		 ((ExtIter == 0) || (ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))))) {
           
           /*--- Low-fidelity simulations (using a coarser multigrid level
            approximation to the solution) require an interpolation back to the
