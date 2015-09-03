@@ -46,6 +46,11 @@ void FSI_BGS_Iteration(COutput *output, CIntegration ***integration_container, C
 
 	bool fem_solver = (config_container[ZONE_1]->GetKind_Solver() == FEM_ELASTICITY);
 
+	int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
 	/*-----------------------------------------------------------------*/
 	/*---------------- Predict structural displacements ---------------*/
 	/*-----------------------------------------------------------------*/
@@ -151,7 +156,6 @@ void FSI_BGS_Iteration(COutput *output, CIntegration ***integration_container, C
 	/*-----------------------------------------------------------------*/
 	/*--------------- Update convergence parameter --------------------*/
 	/*-----------------------------------------------------------------*/
-
 	integration_container[ZONE_1][FEA_SOL]->SetConvergence_FSI(false);
 
 }
@@ -293,6 +297,12 @@ void Flow_Update(COutput *output, CIntegration ***integration_container, CGeomet
                        CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox,
                        unsigned long ExtIter) {
 
+	#ifdef HAVE_MPI
+		int rank;
+			MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	#endif
+
+
 	double Physical_dt, Physical_t;
 	unsigned short iMesh, iZone;
 
@@ -344,6 +354,12 @@ void FEA_Update(COutput *output, CIntegration ***integration_container, CGeometr
                   CSolver ****solver_container, CConfig **config_container,
                   unsigned long ExtIter) {
 
+	#ifdef HAVE_MPI
+		int rank;
+			MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	#endif
+
+
 	/*--- Only one zone allowed for the structure as for now ---*/
 	unsigned short nFluidZone = 1, nStrucZone=1, nTotalZone;
 	unsigned short iZone;
@@ -365,6 +381,11 @@ void FEA_Update(COutput *output, CIntegration ***integration_container, CGeometr
 void FEM_Update(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
                   CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
                   unsigned long ExtIter) {
+
+	int rank = MASTER_NODE;
+	#ifdef HAVE_MPI
+			MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	#endif
 
 	/*--- Only one zone allowed for the structure as for now ---*/
 	double Physical_dt, Physical_t;
@@ -392,7 +413,6 @@ void FEM_Update(COutput *output, CIntegration ***integration_container, CGeometr
 		}
 
 	    /*--- Verify convergence criteria (based on total time) ---*/
-
 		Physical_dt = config_container[ZONE_STRUC]->GetDelta_DynTime();
 		Physical_t  = (ExtIter+1)*Physical_dt;
 		if (Physical_t >=  config_container[ZONE_STRUC]->GetTotal_DynTime())
@@ -411,6 +431,11 @@ void FEA_Subiteration(COutput *output, CIntegration ***integration_container, CG
 	unsigned short nZone = geometry_container[ZONE_0][MESH_0]->GetnZone();
 	unsigned long IntIter_Struct = 0; //config_container[ZONE_0]->SetIntIter(IntIter);
   	unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
+
+#ifdef HAVE_MPI
+	int rank;
+		MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
 
 	/*--- Only one zone allowed for the fluid as for now ---*/
 	unsigned short nFluidZone = 1, nStrucZone=1, nTotalZone;
@@ -445,6 +470,11 @@ void FEM_Subiteration(COutput *output, CIntegration ***integration_container, CG
                   CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox) {
 
 
+	#ifdef HAVE_MPI
+		int rank;
+			MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	#endif
+
 	/*--- Only one zone allowed for the fluid as for now ---*/
 	unsigned short nFluidZone = 1, nStrucZone=1, nTotalZone;
 
@@ -472,11 +502,6 @@ void FEM_Subiteration(COutput *output, CIntegration ***integration_container, CG
 	bool statTime = (CurrentTime <= Static_Time);
 
 	bool incremental_load = config_container[ZONE_STRUC]->GetIncrementalLoad();							// If an incremental load is applied
-
-#ifdef HAVE_MPI
-  int rank;
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
 	/*--- Set the convergence monitor to false, to prevent the solver to stop in intermediate FSI subiterations ---*/
 	integration_container[ZONE_STRUC][FEA_SOL]->SetConvergence(false);
@@ -725,6 +750,12 @@ void FSI_Disp_Transfer(COutput *output, CIntegration ***integration_container, C
 					     CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
 						 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox){
 
+
+	#ifdef HAVE_MPI
+		int rank;
+			MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	#endif
+
 	bool MatchingMesh = config_container[ZONE_0]->GetMatchingMesh();
 
 	/*--- Displacement transfer --  This will have to be modified for non-matching meshes ---*/
@@ -749,6 +780,11 @@ void FSI_Load_Transfer(COutput *output, CIntegration ***integration_container, C
 					     CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
 						 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox,
 						 unsigned long ExtIter){
+
+	#ifdef HAVE_MPI
+		int rank;
+			MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	#endif
 
 	bool MatchingMesh = config_container[ZONE_0]->GetMatchingMesh();
 
@@ -778,6 +814,11 @@ void FSI_Load_Transfer(COutput *output, CIntegration ***integration_container, C
 
 void FSI_Disp_Relaxation(COutput *output, CGeometry ***geometry_container, CSolver ****solver_container,
 							CConfig **config_container, unsigned long iFSIIter) {
+
+	#ifdef HAVE_MPI
+		int rank;
+			MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	#endif
 
 	/*-------------------- Aitken's relaxation ------------------------*/
 
@@ -819,6 +860,10 @@ void FSI_Disp_Predictor(COutput *output, CIntegration ***integration_container, 
 					     CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
 						 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox){
 
+	#ifdef HAVE_MPI
+		int rank;
+			MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	#endif
 
 	/*--- Only one zone allowed for the fluid as for now ---*/
 	unsigned short nFluidZone = 1, nStrucZone=1, nTotalZone;

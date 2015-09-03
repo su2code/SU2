@@ -1923,6 +1923,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
                          ( config->GetKind_Solver() == ADJ_EULER         ) ||
                          ( config->GetKind_Solver() == ADJ_NAVIER_STOKES ) ||
                          ( config->GetKind_Solver() == ADJ_RANS          )   );
+  bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
   
   unsigned short iDim;
   unsigned short nDim = geometry->GetnDim();
@@ -1987,8 +1988,9 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     if (config->GetWrt_Residuals()) nVar_Total += nVar_Consv;
     
     /*--- Add the grid velocity to the restart file for the unsteady adjoint ---*/
+    /*--- Avoid adding it if the zone is a fem zone ---*/
     
-    if (grid_movement) {
+    if (grid_movement && !fem) {
       iVar_GridVel = nVar_Total;
       if (geometry->GetnDim() == 2) nVar_Total += 2;
       else if (geometry->GetnDim() == 3) nVar_Total += 3;
@@ -2326,7 +2328,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
      Also, in the future more routines like this could be used to write
      an arbitrary number of additional variables to the file. ---*/
     
-    if (grid_movement) {
+    if (grid_movement && !fem) {
       
       /*--- Loop over this partition to collect the current variable ---*/
       
@@ -4134,7 +4136,7 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
     
     /*--- Mesh velocities for dynamic mesh cases ---*/
     
-    if (grid_movement) {
+    if (grid_movement && !fem) {
       if (nDim == 2) {
         restart_file << "\t\"Grid_Velx\"\t\"Grid_Vely\"";
       } else {
