@@ -1,5 +1,5 @@
 -----------------------------------------------------------
-  SU2 (ver. 4.0.0 "Cardinal"): The Open-Source CFD Code
+  SU2 (ver. 4.0.1 "Cardinal"): The Open-Source CFD Code
 -----------------------------------------------------------
 
 Computational analysis tools have revolutionized the way we design aerospace systems, but most established codes are proprietary, unavailable, or prohibitively expensive for many users. The SU2 team is changing this, making computational analysis and design freely available as open-source software and involving everyone in its creation and development. 
@@ -50,7 +50,7 @@ Thanks for building, and happy optimizing!
   SU2 DEVELOPERS
 ----------------------------------------------------------
 
-SU2 is being developed by individuals and organized teams around the world. 
+SU2 is being developed by individuals and organized teams all around the world. 
 
 The SU2 Lead Developers are:
 

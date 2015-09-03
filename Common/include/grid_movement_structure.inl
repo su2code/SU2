@@ -2,7 +2,7 @@
  * \file grid_movement_structure.inl
  * \brief In-Line subroutines of the <i>grid_movement_structure.hpp</i> file.
  * \author F. Palacios, T. Economon, S. Padron
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).

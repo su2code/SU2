@@ -3,7 +3,7 @@
 ## \file TestCase.py
 #  \brief Python class for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 4.0.0 "Cardinal"
+#  \version 4.0.1 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).

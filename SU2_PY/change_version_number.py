@@ -3,7 +3,7 @@
 ## \file change_version_number.py
 #  \brief Python script for updating the version number of the SU2 suite.
 #  \author A. Aranake
-#  \version 4.0.0 "Cardinal"
+#  \version 4.0.1 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -32,8 +32,8 @@
 # Run the script from the base directory (ie $SU2HOME). Grep will search directories recursively for matches in version number
 import os,sys
 
-oldvers = '3.2.9 "eagle"'
-newvers = '4.0.0 "Cardinal"'
+oldvers = '4.0.0 "Cardinal"'
+newvers = '4.0.1 "Cardinal"'
 
 os.system('rm -rf version.txt')
 

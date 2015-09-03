@@ -2,7 +2,7 @@
  * \file grid_adaptation_structure.cpp
  * \brief Main subroutines for grid adaptation
  * \author F. Palacios
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -1704,7 +1704,7 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 			TriangleEdgeIndex[iElem][1] = geometry->FindEdge(ip_1, ip_2); TriangleEdgeCode[iElem][1] = false; TriangleEdgeNode[iElem][1] = -1;
 			TriangleEdgeIndex[iElem][2] = geometry->FindEdge(ip_2, ip_0); TriangleEdgeCode[iElem][2] = false; TriangleEdgeNode[iElem][2] = -1;
 		}
-		if (geometry->elem[iElem]->GetVTK_Type() == RECTANGLE) {
+		if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) {
 			ip_0 = geometry->elem[iElem]->GetNode(0);
 			ip_1 = geometry->elem[iElem]->GetNode(1);
 			ip_2 = geometry->elem[iElem]->GetNode(2);
@@ -1741,7 +1741,7 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 					TriangleEdgeCode[iElem][iIndex] = true;
 				}
 			}
-			if (geometry->elem[iElem]->GetVTK_Type() == RECTANGLE) {
+			if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) {
 				for (int iIndex = 0; iIndex < 4; iIndex++) {
 					DivEdge[RectEdgeIndex[iElem][iIndex]] = true;
 					RectEdgeCode[iElem][iIndex] = true;
@@ -1783,7 +1783,7 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 				}
 			}
 		}
-		if (geometry->elem[iElem]->GetVTK_Type() == RECTANGLE) {
+		if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) {
 			for (int iIndex = 0; iIndex < 4; iIndex++) {
 				if (DivEdge[RectEdgeIndex[iElem][iIndex]] == true) {
 					RectEdgeCode[iElem][iIndex] = true;
@@ -1799,7 +1799,7 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 		if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE) {
 			TriangleAdaptCode[iElem] = CheckTriangleCode(TriangleEdgeCode[iElem]);
 		}
-		if (geometry->elem[iElem]->GetVTK_Type() == RECTANGLE) {
+		if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) {
 			RectAdaptCode[iElem] = CheckRectCode(RectEdgeCode[iElem]);
 			
 			/*--- Set the RectAdaptCode ---*/
@@ -1890,7 +1890,7 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 				}
 			}
 		}
-		if (geometry->elem[iElem]->GetVTK_Type() == RECTANGLE) {
+		if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) {
 			
 			ip_0 = geometry->elem[iElem]->GetNode(0);
 			ip_1 = geometry->elem[iElem]->GetNode(1);
@@ -1963,16 +1963,16 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 	}
 
 	
-	/*--- if Rectangle adapt code equals 0, then a semidivision is applied  ---*/
+	/*--- if Quadrilateral adapt code equals 0, then a semidivision is applied  ---*/
 	long nSemiDivided = 0;
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem ++) {
-		if (geometry->elem[iElem]->GetVTK_Type() == RECTANGLE) {
+		if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) {
 			if (RectAdaptCode[iElem] == 0)
 				nSemiDivided++;
 		}
 	}
 	
-	/*--- If semidivision, then divide add a new point, divide the rectangle into triangles,
+	/*--- If semidivision, then divide add a new point, divide the quadrilateral into triangles,
    and find the right combination, it also create the new node (hexa).  ---*/
 	long nRectExt = nSemiDivided;
 	
@@ -2001,14 +2001,14 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 	}
 	
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem ++) {
-		if (geometry->elem[iElem]->GetVTK_Type() == RECTANGLE) {
+		if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) {
 			RectRectExtIndex[iElem] = new long [1];
 		}
 	}
 	
 	nRectExt = 0;
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem ++) {
-		if (geometry->elem[iElem]->GetVTK_Type() == RECTANGLE) {
+		if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) {
 			if (RectAdaptCode[iElem] == 0) {
 				
 				/*--- Write the edge combination on the base. ---*/
@@ -2060,7 +2060,7 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 			if (TriangleAdaptCode[iElem] == 6) nElem_new = nElem_new + 1;
 			if (TriangleAdaptCode[iElem] == 7) nElem_new = nElem_new + 1;
 		}
-		if (geometry->elem[iElem]->GetVTK_Type() == RECTANGLE) {
+		if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) {
 			if (RectAdaptCode[iElem] == 1) nElem_new = nElem_new + 3;
 			if (RectAdaptCode[iElem] == 2) nElem_new = nElem_new + 1;
 			if (RectAdaptCode[iElem] == 3) nElem_new = nElem_new + 1;
@@ -2106,9 +2106,9 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 				iElemNew++;
 			}
 		}
-		if (geometry->elem[iElem]->GetVTK_Type() == RECTANGLE) {
+		if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) {
 			if (RectAdaptCode[iElem] == -1) {
-				geo_adapt->elem[iElemNew] = new CRectangle(geometry->elem[iElem]->GetNode(0),
+				geo_adapt->elem[iElemNew] = new CQuadrilateral(geometry->elem[iElem]->GetNode(0),
 																								geometry->elem[iElem]->GetNode(1),
 																								geometry->elem[iElem]->GetNode(2),
 																								geometry->elem[iElem]->GetNode(3), 2);
@@ -2154,10 +2154,10 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 						iElemNew++;
 					}
 					
-					/*--- Rectangle case ---*/
+					/*--- Quadrilateral case ---*/
           
 					if (Division[iPart][0] == 5) {
-						geo_adapt->elem[iElemNew] = new CRectangle(Division[iPart][1], 
+						geo_adapt->elem[iElemNew] = new CQuadrilateral(Division[iPart][1], 
 																											 Division[iPart][2], 
 																											 Division[iPart][3], 
 																											 Division[iPart][4], 2);
@@ -2166,7 +2166,7 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 				}
 			}
 		}
-		if (geometry->elem[iElem]->GetVTK_Type() == RECTANGLE) {
+		if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) {
       
 			/*--- Rect elements... ---*/
       
@@ -2188,7 +2188,7 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 				
 				RectDivision(RectAdaptCode[iElem], nodes, Division, &nPart);
 				for (long iPart = 0; iPart < nPart; iPart++) {
-					geo_adapt->elem[iElemNew] = new CRectangle(Division[iPart][1], 
+					geo_adapt->elem[iElemNew] = new CQuadrilateral(Division[iPart][1], 
 																										 Division[iPart][2], 
 																										 Division[iPart][3], 
 																										 Division[iPart][4], 2);
@@ -2227,10 +2227,10 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 						iElemNew++;
 					}
 					
-					/*--- Rectangle case ---*/
+					/*--- Quadrilateral case ---*/
           
 					if (Division[iPart][0] == 5) {
-						geo_adapt->elem[iElemNew] = new CRectangle(Division[iPart][1], 
+						geo_adapt->elem[iElemNew] = new CQuadrilateral(Division[iPart][1], 
 																											 Division[iPart][2], 
 																											 Division[iPart][3], 
 																											 Division[iPart][4], 2);
@@ -3260,7 +3260,7 @@ void CGridAdaptation::SetHomothetic_Adaptation3D(CGeometry *geometry, CPhysicalG
 			ip_2 = geometry->bound[iMarker][iVertex]->GetNode(2); geo_adapt->node[ip_2]->SetBoundary(geometry->GetnMarker());
 			if (nNodesBound == 4) {
 				ip_3 = geometry->bound[iMarker][iVertex]->GetNode(3); geo_adapt->node[ip_3]->SetBoundary(geometry->GetnMarker());
-				geo_adapt->bound[iMarker][nNewBCcv] = new CRectangle(ip_0, ip_1, ip_2, ip_3, 3);
+				geo_adapt->bound[iMarker][nNewBCcv] = new CQuadrilateral(ip_0, ip_1, ip_2, ip_3, 3);
 				nNewBCcv++;
 			}
 			else {
@@ -3710,7 +3710,7 @@ void CGridAdaptation::SetSensorElem(CGeometry *geometry, CConfig *config, unsign
 		ip_1 = geometry->elem[iElem]->GetNode(1);
 		ip_2 = geometry->elem[iElem]->GetNode(2);
 		Sensor[iElem] = (Index[ip_0]+Index[ip_1]+Index[ip_2])/3.0;
-		if ((geometry->elem[iElem]->GetVTK_Type() == RECTANGLE) ||
+		if ((geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) ||
 			(geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)) {
 			ip_3 = geometry->elem[iElem]->GetNode(2);
 			Sensor[iElem] = (Index[ip_0]+Index[ip_1]+Index[ip_2]+Index[ip_3])/4.0;
@@ -3730,7 +3730,7 @@ void CGridAdaptation::SetSensorElem(CGeometry *geometry, CConfig *config, unsign
 		for (iElem = 0; iElem < geometry->GetnElem(); iElem ++)
 			if ( Sensor[iElem] >= threshold && !geometry->elem[iElem]->GetDivide() ) {
 				if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE) nElem_real = nElem_real + 3;	
-				if (geometry->elem[iElem]->GetVTK_Type() == RECTANGLE) nElem_real = nElem_real + 3;	
+				if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) nElem_real = nElem_real + 3;	
 				if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON) nElem_real = nElem_real + 7;
 				geometry->elem[iElem]->SetDivide(true);
 				if (nElem_real >= max_elem) break;

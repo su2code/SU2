@@ -3,7 +3,7 @@
 ## \file interface.py
 #  \brief python package interfacing with the SU2 suite
 #  \author T. Lukaczyk, F. Palacios
-#  \version 4.0.0 "Cardinal"
+#  \version 4.0.1 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
