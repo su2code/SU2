@@ -496,6 +496,12 @@ void FEM_Subiteration(COutput *output, CIntegration ***integration_container, CG
 	bool nonlinear = (config_container[ZONE_STRUC]->GetGeometricConditions() == LARGE_DEFORMATIONS);	// Geometrically non-linear problems
 	bool linear = (config_container[ZONE_STRUC]->GetGeometricConditions() == SMALL_DEFORMATIONS);	// Geometrically non-linear problems
 
+	bool initial_calc = config_container[ZONE_STRUC]->GetExtIter() == 0;				// Checks if it is the first calculation.
+	bool first_iter = config_container[ZONE_STRUC]->GetIntIter() == 0;				// Checks if it is the first iteration
+	bool restart = config_container[ZONE_STRUC]->GetRestart();												// Restart analysis
+	bool initial_calc_restart = (config_container[ZONE_STRUC]->GetExtIter() == config_container[ZONE_STRUC]->GetDyn_RestartIter()); // Initial calculation for restart
+
+
 	double CurrentTime = config_container[ZONE_STRUC]->GetCurrent_DynTime();
 	double Static_Time = config_container[ZONE_STRUC]->GetStatic_Time();
 
@@ -526,7 +532,7 @@ void FEM_Subiteration(COutput *output, CIntegration ***integration_container, CG
 		}
 
 	}
-	/*--- If the structure is held static and the solver is nonlinear, we don't need to solve for static time ---*/
+	/*--- If the structure is held static and the solver is nonlinear, we don't need to solve for static time, but we need to compute Mass Matrix and Integration constants ---*/
 	else if ((nonlinear) && (!statTime)){
 
 		/*--- THIS IS THE DIRECT APPROACH (NO INCREMENTAL LOAD APPLIED) ---*/
@@ -740,8 +746,15 @@ void FEM_Subiteration(COutput *output, CIntegration ***integration_container, CG
 
 
 	}
+	else if ( (nonlinear && statTime) &&
+			  ((first_iter && initial_calc) || (restart && initial_calc_restart))
+			){
 
-
+		/*--- We need to do the preprocessing to compute the Mass Matrix and integration constants ---*/
+		for (iZone = nFluidZone; iZone < nTotalZone; iZone++)
+			  solver_container[iZone][MESH_0][FEA_SOL]->Preprocessing(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0],
+					  config_container[iZone], numerics_container[iZone][MESH_0][FEA_SOL], MESH_0, 0, RUNTIME_FEA_SYS, false);
+	}
 
 }
 
