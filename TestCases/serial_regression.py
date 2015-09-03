@@ -224,22 +224,6 @@ def main():
     contadj_oneram6.tol       = 0.00001
     test_list.append(contadj_oneram6)
 
-
-    #####################################
-    ### Disc. adj. compressible Euler ###
-    #####################################
-
-    # Inviscid NACA0012
-    discadj_naca0012           = TestCase('discadj_naca0012')
-    discadj_naca0012.cfg_dir   = "cont_adj_euler/naca0012"
-    discadj_naca0012.cfg_file  = "inv_NACA0012_discadj.cfg"
-    discadj_naca0012.test_iter = 100
-    discadj_naca0012.test_vals = [-3.606839,-9.035212,1.5060e-02,0.0000e+00] #last 4 columns
-    discadj_naca0012.su2_exec  = "SU2_CFD_REVERSE"
-    discadj_naca0012.timeout   = 1600
-    discadj_naca0012.tol       = 0.00001
-    test_list.append(discadj_naca0012)
-
     ###################################
     ### Cont. adj. compressible N-S ###
     ###################################
@@ -277,21 +261,6 @@ def main():
     contadj_ns_naca0012_trans.tol       = 0.00001
     test_list.append(contadj_ns_naca0012_trans)
 
-    ###################################
-    ### Disc. adj. compressible N-S ###
-    ###################################
-
-    # Adjoint laminar cylinder
-    discadj_ns_cylinder           = TestCase('discadj_ns_cylinder')
-    discadj_ns_cylinder.cfg_dir   = "cont_adj_navierstokes/cylinder"
-    discadj_ns_cylinder.cfg_file  = "lam_cylinder_discadj.cfg"
-    discadj_ns_cylinder.test_iter = 10
-    discadj_ns_cylinder.test_vals = [ 3.542909,-1.856710,1.7049e-01,0.0000e+00] #last 4 columns
-    discadj_ns_cylinder.su2_exec  = "SU2_CFD_REVERSE"
-    discadj_ns_cylinder.timeout   = 1600
-    discadj_ns_cylinder.tol       = 0.00001
-    test_list.append(discadj_ns_cylinder)
-
     #######################################################
     ### Cont. adj. compressible RANS (frozen viscosity) ###
     #######################################################
@@ -317,22 +286,47 @@ def main():
     contadj_rans_rae2822.timeout   = 1600
     contadj_rans_rae2822.tol       = 0.00001
     test_list.append(contadj_rans_rae2822)
-    
+
+    #####################################
+    ### Disc. adj. compressible Euler ###
+    #####################################
+
+    # Inviscid NACA0012
+    discadj_naca0012           = TestCase('discadj_naca0012')
+    discadj_naca0012.cfg_dir   = "cont_adj_euler/naca0012"
+    discadj_naca0012.cfg_file  = "inv_NACA0012_discadj.cfg"
+    discadj_naca0012.test_iter = 100
+    discadj_naca0012.test_vals = [-3.606839,-9.035212,1.5060e-02,0.0000e+00] #last 4 columns
+    discadj_naca0012.su2_exec  = "SU2_CFD_REVERSE"
+    discadj_naca0012.timeout   = 1600
+    discadj_naca0012.tol       = 0.00001
+    test_list.append(discadj_naca0012)
 
     #######################################################
     ### Disc. adj. compressible RANS                    ###
     #######################################################
     
-    # Adjoint turbulent RAE2822
-    discadj_rans_rae2822           = TestCase('discadj_rans_rae2822')
-    discadj_rans_rae2822.cfg_dir   = "cont_adj_rans/rae2822"
-    discadj_rans_rae2822.cfg_file  = "turb_SA_RAE2822_discadj.cfg"
-    discadj_rans_rae2822.test_iter = 10
-    discadj_rans_rae2822.test_vals = [-4.227631,-3.611212,5.4208e-01,0.0000e+00] #last 4 columns
-    discadj_rans_rae2822.su2_exec  = "SU2_CFD_REVERSE"
-    discadj_rans_rae2822.timeout   = 1600
-    discadj_rans_rae2822.tol       = 0.00001
-    test_list.append(discadj_rans_rae2822)
+    # Adjoint turbulent NACA0012 SA
+    discadj_rans_naca0012_sa           = TestCase('discadj_rans_naca0012_sa')
+    discadj_rans_naca0012_sa.cfg_dir   = "disc_adj_rans/naca0012"
+    discadj_rans_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
+    discadj_rans_naca0012_sa.test_iter = 10
+    discadj_rans_naca0012_sa.test_vals = [-1.751947,0.485758,6.0497e+00,0.0000e+00] #last 4 columns
+    discadj_rans_naca0012_sa.su2_exec  = "SU2_CFD_REVERSE"
+    discadj_rans_naca0012_sa.timeout   = 1600
+    discadj_rans_naca0012_sa.tol       = 0.00001
+    test_list.append(discadj_rans_naca0012_sa)
+
+    # Adjoint turbulent NACA0012 SST
+    discadj_rans_naca0012_sst           = TestCase('discadj_rans_naca0012_sst')
+    discadj_rans_naca0012_sst.cfg_dir   = "disc_adj_rans/naca0012"
+    discadj_rans_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
+    discadj_rans_naca0012_sst.test_iter = 10
+    discadj_rans_naca0012_sst.test_vals = [ -1.658566,-0.487694,5.0409e+00,0.0000e+00] #last 4 columns
+    discadj_rans_naca0012_sst.su2_exec  = "SU2_CFD_REVERSE"
+    discadj_rans_naca0012_sst.timeout   = 1600
+    discadj_rans_naca0012_sst.tol       = 0.00001
+    test_list.append(discadj_rans_naca0012_sst)
 
     #######################################
     ### Cont. adj. incompressible Euler ###
