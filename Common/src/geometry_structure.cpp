@@ -8724,8 +8724,8 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
          *  unnecessary derivative information when using AD.---*/
 
         for (iDim = 0; iDim < nDim; iDim++){
-          diff = (SU2_TYPE::GetPrimary(coord[iDim])
-                  -SU2_TYPE::GetPrimary(Coord_bound[iVertex][iDim]));
+          diff = (SU2_TYPE::GetValue(coord[iDim])
+                  -SU2_TYPE::GetValue(Coord_bound[iVertex][iDim]));
           dist2 += diff*diff;
         }
         if (dist2 < dist1) {
@@ -8841,8 +8841,8 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
            *  unnecessary derivative information when using AD.---*/
 
           for (iDim = 0; iDim < nDim; iDim++){
-            diff = SU2_TYPE::GetPrimary(coord[iDim]) -
-                SU2_TYPE::GetPrimary(Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_NS+iVertex)*nDim+iDim]);
+            diff = SU2_TYPE::GetValue(coord[iDim]) -
+                SU2_TYPE::GetValue(Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_NS+iVertex)*nDim+iDim]);
             dist2 += diff*diff;
           }
           if (dist2 < dist) {
