@@ -297,7 +297,7 @@ def main():
     discadj_naca0012.cfg_file  = "inv_NACA0012_discadj.cfg"
     discadj_naca0012.test_iter = 100
     discadj_naca0012.test_vals = [-3.606839,-9.035212,1.5060e-02,0.0000e+00] #last 4 columns
-    discadj_naca0012.su2_exec  = "SU2_CFD_REVERSE"
+    discadj_naca0012.su2_exec  = "SU2_CFD_AD"
     discadj_naca0012.timeout   = 1600
     discadj_naca0012.tol       = 0.00001
     test_list.append(discadj_naca0012)
@@ -312,7 +312,7 @@ def main():
     discadj_rans_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     discadj_rans_naca0012_sa.test_iter = 10
     discadj_rans_naca0012_sa.test_vals = [-1.751947,0.485758,6.0497e+00,0.0000e+00] #last 4 columns
-    discadj_rans_naca0012_sa.su2_exec  = "SU2_CFD_REVERSE"
+    discadj_rans_naca0012_sa.su2_exec  = "SU2_CFD_AD"
     discadj_rans_naca0012_sa.timeout   = 1600
     discadj_rans_naca0012_sa.tol       = 0.00001
     test_list.append(discadj_rans_naca0012_sa)
@@ -323,7 +323,7 @@ def main():
     discadj_rans_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     discadj_rans_naca0012_sst.test_iter = 10
     discadj_rans_naca0012_sst.test_vals = [ -1.658566,-0.487694,5.0409e+00,0.0000e+00] #last 4 columns
-    discadj_rans_naca0012_sst.su2_exec  = "SU2_CFD_REVERSE"
+    discadj_rans_naca0012_sst.su2_exec  = "SU2_CFD_AD"
     discadj_rans_naca0012_sst.timeout   = 1600
     discadj_rans_naca0012_sst.tol       = 0.00001
     test_list.append(discadj_rans_naca0012_sst)
