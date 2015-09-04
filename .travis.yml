@@ -40,7 +40,7 @@ install:
     - echo $TRAVIS_BUILD_DIR
     - echo $CONFIGURE_COMMAND
     - $CONFIGURE_COMMAND
-    - make -j 8
+    - make -j 2
     - make install
 
     # Add environmental variables according to the configure step
