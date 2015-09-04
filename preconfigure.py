@@ -55,12 +55,15 @@ def main():
 
     # Command Line Options
 
-    parser = PassThroughOptionParser()
+    usage = './preconfigure.py [options] \nNote: Options not listed below are passed to the automake configure.'
 
-    parser.add_option("--enable-directdiff", action="store", type = "string",
-                      help="Enable direct differentiation mode support", dest="directdiff_mode", default="")
-    parser.add_option("--enable-reverse", action="store", type = "string",
-                      help="Enable reverse mode support", dest="reverse_mode", default="")
+    parser = PassThroughOptionParser(usage = usage)
+
+    parser.add_option("--enable-direct-diff", action="store_true",
+                      help="Enable direct differentiation mode support", dest="directdiff", default=False)
+    parser.add_option("--enable-autodiff", action="store_true",
+                      help="Enable Automatic Differentiation support", dest="ad_support", default=False)
+    parser.add_option("--with-ad", action="store",  type = "string",  help="AD Tool, CODI/ADOLC", default="CODI", dest="adtool")
     parser.add_option("--enable-mpi", action="store_true",
                       help="Enable mpi support", dest="mpi_enabled", default=False)
     parser.add_option("--disable-normal", action="store_true",
@@ -68,15 +71,24 @@ def main():
     parser.add_option("-c" , "--check", action="store_true",
                       help="Check the source code for potential problems", dest="check", default=False)
     parser.add_option("-r" , "--replace", action="store_true",
-                      help="Do a search and replace of necessary symbols. Does a back up source files.", dest="replace", default=False)
+                      help="Do a search and replace of necessary symbols. Creates back up of source files.", dest="replace", default=False)
     parser.add_option("-d" , "--delete", action="store_true",
                       help="Removes the back up files.", dest="remove", default=False)
     parser.add_option("-v" , "--revert", action="store_true",
                       help="Revert files to original state.", dest="revert", default=False)
     (options, args)=parser.parse_args()
 
-    options.directdiff_mode = options.directdiff_mode.upper()
-    options.reverse_mode    = options.reverse_mode.upper()
+    options.adtool = options.adtool.upper()
+
+    if options.directdiff == False:
+        adtool_dd = ""
+    else:
+        adtool_dd = options.adtool
+    if options.ad_support == False:
+        adtool_da = ""
+    else:
+        adtool_da = options.adtool
+
     conf_environ = os.environ
 
     made_adolc = False
@@ -84,14 +96,14 @@ def main():
 
     header()
 
-    modes =  {'NORMAL'     : not options.normal_mode == True,
-              'DIRECTDIFF' : options.directdiff_mode,
-              'REVERSE'    : options.reverse_mode}
+    modes =  {'SU2_BASE'     : not options.normal_mode == True,
+              'SU2_DIRECTDIFF' : adtool_dd ,
+              'SU2_AD'    : adtool_da }
 
     if not options.check:
-        if any([modes["REVERSE"] == 'ADOLC', modes["DIRECTDIFF"] == 'ADOLC']):
+        if any([modes["SU2_AD"] == 'ADOLC', modes["SU2_DIRECTDIFF"] == 'ADOLC']):
             conf_environ, made_adolc = build_adolc(modes,options.mpi_enabled)
-        if any([modes["REVERSE"] == 'CODI',  modes["DIRECTDIFF"] == 'CODI']):
+        if any([modes["SU2_AD"] == 'CODI',  modes["SU2_DIRECTDIFF"] == 'CODI']):
             conf_environ, made_codi  = init_codi(modes,options.mpi_enabled)
 
         configure(args,
@@ -165,7 +177,8 @@ def prepare_source(replace = False, remove = False, revert = False):
                         'MPI_Send'      : 'SU2_MPI::Send',
                         'MPI_Wait'      : 'SU2_MPI::Wait',
                         'MPI_Waitall'   : 'SU2_MPI::Waitall',
-			'MPI_Waitany'   : 'SU2_MPI::Waitany',
+                        'MPI_Waitany'   : 'SU2_MPI::Waitany',
+                        'MPI_Bsend'     : 'SU2_MPI::Bsend' ,
                         'MPI_Bcast'     : 'SU2_MPI::Bcast',
                         'MPI_Sendrecv'  : 'SU2_MPI::Sendrecv',
                         'MPI_Init'      : 'SU2_MPI::Init',
@@ -345,14 +358,14 @@ def build_adolc(modes, mpi_support = False):
     configure_command = "./configure --prefix=$PWD"
 
     # Build adolc
-    if any([modes['DIRECTDIFF'], all([modes['REVERSE'], not mpi_support])]):
+    if any([modes['SU2_DIRECTDIFF'], all([modes['SU2_AD'], not mpi_support])]):
         pkg_name = "adolc"
         pkg_version = "2.5.3-trunk"
 
         download_and_compile_adolc(configure_command, False, pkg_name, pkg_version, pkg_environ)
 
     # If necessary build adolc_ampi
-    if all([mpi_support, modes['REVERSE']]):
+    if all([mpi_support, modes['SU2_AD']]):
 	print 'MPI currently not supported when using ADOLC.'
 	sys.exit()
         #ampi_path = subprocess.check_output("pwd").rstrip() +  "/AdjoinableMPI"
@@ -460,15 +473,15 @@ def configure(args,
         if modes[key]:
             print '\nRunning configure in folder ' + key,
             if modes[key] == 'CODI':
-                if key == 'DIRECTDIFF':
+                if key == 'SU2_DIRECTDIFF':
                     configure_mode = '--enable-codi-forward'
-                if key == 'REVERSE':
+                if key == 'SU2_AD':
                     configure_mode = '--enable-codi-reverse'
                 print 'using ' + modes[key]
             elif modes[key] == 'ADOLC':
-                if key == 'DIRECTDIFF':
+                if key == 'SU2_DIRECTDIFF':
                     configure_mode = '--enable-adolc-forward'
-                if key == 'REVERSE':
+                if key == 'SU2_AD':
                     configure_mode = '--enable-adolc-reverse'
                 print 'using ' + modes[key]
             elif modes[key] == 'COMPLEX':
@@ -491,16 +504,17 @@ def configure(args,
           '\tConfiguration sets: '+ build_dirs + '\n'
 
     print '\tUse "make <install>" to compile (and install) all configured binaries:\n'
-    if modes['NORMAL']:
+    if modes['SU2_BASE']:
         print '\tSU2_CFD            -> General solver for direct, cont. adjoint and linearized equations.\n' \
               '\tSU2_DOT            -> Gradient Projection Code.\n' \
               '\tSU2_DEF            -> Mesh Deformation Code.\n'  \
               '\tSU2_MSH            -> Mesh Adaption Code.\n' \
               '\tSU2_SOL            -> Solution Export Code.\n' \
               '\tSU2_GEO            -> Geometry Definition Code.\n'
-    if modes['REVERSE']:
-        print '\tSU2_CFD_REVERSE    -> AD-based Discrete Adjoint Solver.'
-    if modes['DIRECTDIFF']:
+    if modes['SU2_AD']:
+        print '\tSU2_CFD_AD   -> Discrete Adjoint Solver and general AD support.'
+        print '\tSU2_DOT_AD   -> Mesh sensitivity computation and general AD support.'
+    if modes['SU2_DIRECTDIFF']:
         print '\tSU2_CFD_DIRECTDIFF -> Direct Differentation Mode.'
 
     print '\n'
