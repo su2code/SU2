@@ -58,6 +58,8 @@
 #include "datatypes/primitive_structure.hpp"
 #endif
 
+/* --- This type can be used for (rare) compatiblity cases or for computations that are intended to be (always) passive. --- */
+typedef double passivedouble;
 
 /*!
  * \namespace SU2_TYPE
