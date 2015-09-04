@@ -86,7 +86,7 @@ host_triplet = @host@
 target_triplet = @target@
 bin_PROGRAMS = $(am__EXEEXT_1) $(am__EXEEXT_2)
 @BUILD_NORMAL_TRUE@am__append_1 = ../bin/SU2_DOT
-@BUILD_REVERSE_TRUE@am__append_2 = ../bin/SU2_DOT_REVERSE
+@BUILD_REVERSE_TRUE@am__append_2 = ../bin/SU2_DOT_AD
 subdir = SU2_DOT/obj
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(top_srcdir)/depcomp
@@ -101,7 +101,7 @@ mkinstalldirs = $(install_sh) -d
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 @BUILD_NORMAL_TRUE@am__EXEEXT_1 = ../bin/SU2_DOT$(EXEEXT)
-@BUILD_REVERSE_TRUE@am__EXEEXT_2 = ../bin/SU2_DOT_REVERSE$(EXEEXT)
+@BUILD_REVERSE_TRUE@am__EXEEXT_2 = ../bin/SU2_DOT_AD$(EXEEXT)
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am_____bin_SU2_DOT_SOURCES_DIST = ../include/SU2_DOT.hpp \
@@ -116,18 +116,16 @@ am__DEPENDENCIES_1 =
 ___bin_SU2_DOT_LINK = $(CXXLD) $(___bin_SU2_DOT_CXXFLAGS) $(CXXFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
 am__dirstamp = $(am__leading_dot)dirstamp
-am_____bin_SU2_DOT_REVERSE_SOURCES_DIST = ../include/SU2_DOT.hpp \
+am_____bin_SU2_DOT_AD_SOURCES_DIST = ../include/SU2_DOT.hpp \
 	../src/SU2_DOT.cpp
-am__objects_2 = ___bin_SU2_DOT_REVERSE-SU2_DOT.$(OBJEXT)
-@BUILD_REVERSE_TRUE@am____bin_SU2_DOT_REVERSE_OBJECTS =  \
-@BUILD_REVERSE_TRUE@	$(am__objects_2)
-___bin_SU2_DOT_REVERSE_OBJECTS = $(am____bin_SU2_DOT_REVERSE_OBJECTS)
-@BUILD_REVERSE_TRUE@___bin_SU2_DOT_REVERSE_DEPENDENCIES =  \
-@BUILD_REVERSE_TRUE@	../../Common/lib/libSU2_REVERSE.a \
+am__objects_2 = ___bin_SU2_DOT_AD-SU2_DOT.$(OBJEXT)
+@BUILD_REVERSE_TRUE@am____bin_SU2_DOT_AD_OBJECTS = $(am__objects_2)
+___bin_SU2_DOT_AD_OBJECTS = $(am____bin_SU2_DOT_AD_OBJECTS)
+@BUILD_REVERSE_TRUE@___bin_SU2_DOT_AD_DEPENDENCIES =  \
+@BUILD_REVERSE_TRUE@	../../Common/lib/libSU2_AD.a \
 @BUILD_REVERSE_TRUE@	$(am__DEPENDENCIES_1)
-___bin_SU2_DOT_REVERSE_LINK = $(CXXLD) \
-	$(___bin_SU2_DOT_REVERSE_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
-	$(LDFLAGS) -o $@
+___bin_SU2_DOT_AD_LINK = $(CXXLD) $(___bin_SU2_DOT_AD_CXXFLAGS) \
+	$(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -173,9 +171,9 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(___bin_SU2_DOT_SOURCES) $(___bin_SU2_DOT_REVERSE_SOURCES)
+SOURCES = $(___bin_SU2_DOT_SOURCES) $(___bin_SU2_DOT_AD_SOURCES)
 DIST_SOURCES = $(am_____bin_SU2_DOT_SOURCES_DIST) \
-	$(am_____bin_SU2_DOT_REVERSE_SOURCES_DIST)
+	$(am_____bin_SU2_DOT_AD_SOURCES_DIST)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -348,9 +346,9 @@ su2_dot_ldadd = @su2_externals_LIBS@ @CGNS_LD@ @MUTATIONPP_LD@ \
 @BUILD_NORMAL_TRUE@___bin_SU2_DOT_SOURCES = ${su2_dot_sources}
 @BUILD_NORMAL_TRUE@___bin_SU2_DOT_CXXFLAGS = ${su2_dot_cxx_flags}
 @BUILD_NORMAL_TRUE@___bin_SU2_DOT_LDADD = ../../Common/lib/libSU2.a ${su2_dot_ldadd}
-@BUILD_REVERSE_TRUE@___bin_SU2_DOT_REVERSE_SOURCES = ${su2_dot_sources}
-@BUILD_REVERSE_TRUE@___bin_SU2_DOT_REVERSE_CXXFLAGS = @REVERSE_CXX@ ${su2_dot_cxx_flags} 
-@BUILD_REVERSE_TRUE@___bin_SU2_DOT_REVERSE_LDADD = @REVERSE_LIBS@ ../../Common/lib/libSU2_REVERSE.a ${su2_dot_ldadd}
+@BUILD_REVERSE_TRUE@___bin_SU2_DOT_AD_SOURCES = ${su2_dot_sources}
+@BUILD_REVERSE_TRUE@___bin_SU2_DOT_AD_CXXFLAGS = @REVERSE_CXX@ ${su2_dot_cxx_flags} 
+@BUILD_REVERSE_TRUE@___bin_SU2_DOT_AD_LDADD = @REVERSE_LIBS@ ../../Common/lib/libSU2_AD.a ${su2_dot_ldadd}
 all: all-am
 
 .SUFFIXES:
@@ -431,9 +429,9 @@ clean-binPROGRAMS:
 ../bin/SU2_DOT$(EXEEXT): $(___bin_SU2_DOT_OBJECTS) $(___bin_SU2_DOT_DEPENDENCIES) $(EXTRA____bin_SU2_DOT_DEPENDENCIES) ../bin/$(am__dirstamp)
 	@rm -f ../bin/SU2_DOT$(EXEEXT)
 	$(AM_V_CXXLD)$(___bin_SU2_DOT_LINK) $(___bin_SU2_DOT_OBJECTS) $(___bin_SU2_DOT_LDADD) $(LIBS)
-../bin/SU2_DOT_REVERSE$(EXEEXT): $(___bin_SU2_DOT_REVERSE_OBJECTS) $(___bin_SU2_DOT_REVERSE_DEPENDENCIES) $(EXTRA____bin_SU2_DOT_REVERSE_DEPENDENCIES) ../bin/$(am__dirstamp)
-	@rm -f ../bin/SU2_DOT_REVERSE$(EXEEXT)
-	$(AM_V_CXXLD)$(___bin_SU2_DOT_REVERSE_LINK) $(___bin_SU2_DOT_REVERSE_OBJECTS) $(___bin_SU2_DOT_REVERSE_LDADD) $(LIBS)
+../bin/SU2_DOT_AD$(EXEEXT): $(___bin_SU2_DOT_AD_OBJECTS) $(___bin_SU2_DOT_AD_DEPENDENCIES) $(EXTRA____bin_SU2_DOT_AD_DEPENDENCIES) ../bin/$(am__dirstamp)
+	@rm -f ../bin/SU2_DOT_AD$(EXEEXT)
+	$(AM_V_CXXLD)$(___bin_SU2_DOT_AD_LINK) $(___bin_SU2_DOT_AD_OBJECTS) $(___bin_SU2_DOT_AD_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -442,7 +440,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/___bin_SU2_DOT-SU2_DOT.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/___bin_SU2_DOT_REVERSE-SU2_DOT.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/___bin_SU2_DOT_AD-SU2_DOT.Po@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -472,19 +470,19 @@ ___bin_SU2_DOT-SU2_DOT.obj: ../src/SU2_DOT.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_DOT_CXXFLAGS) $(CXXFLAGS) -c -o ___bin_SU2_DOT-SU2_DOT.obj `if test -f '../src/SU2_DOT.cpp'; then $(CYGPATH_W) '../src/SU2_DOT.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/SU2_DOT.cpp'; fi`
 
-___bin_SU2_DOT_REVERSE-SU2_DOT.o: ../src/SU2_DOT.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_DOT_REVERSE_CXXFLAGS) $(CXXFLAGS) -MT ___bin_SU2_DOT_REVERSE-SU2_DOT.o -MD -MP -MF $(DEPDIR)/___bin_SU2_DOT_REVERSE-SU2_DOT.Tpo -c -o ___bin_SU2_DOT_REVERSE-SU2_DOT.o `test -f '../src/SU2_DOT.cpp' || echo '$(srcdir)/'`../src/SU2_DOT.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/___bin_SU2_DOT_REVERSE-SU2_DOT.Tpo $(DEPDIR)/___bin_SU2_DOT_REVERSE-SU2_DOT.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/SU2_DOT.cpp' object='___bin_SU2_DOT_REVERSE-SU2_DOT.o' libtool=no @AMDEPBACKSLASH@
+___bin_SU2_DOT_AD-SU2_DOT.o: ../src/SU2_DOT.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_DOT_AD_CXXFLAGS) $(CXXFLAGS) -MT ___bin_SU2_DOT_AD-SU2_DOT.o -MD -MP -MF $(DEPDIR)/___bin_SU2_DOT_AD-SU2_DOT.Tpo -c -o ___bin_SU2_DOT_AD-SU2_DOT.o `test -f '../src/SU2_DOT.cpp' || echo '$(srcdir)/'`../src/SU2_DOT.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/___bin_SU2_DOT_AD-SU2_DOT.Tpo $(DEPDIR)/___bin_SU2_DOT_AD-SU2_DOT.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/SU2_DOT.cpp' object='___bin_SU2_DOT_AD-SU2_DOT.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_DOT_REVERSE_CXXFLAGS) $(CXXFLAGS) -c -o ___bin_SU2_DOT_REVERSE-SU2_DOT.o `test -f '../src/SU2_DOT.cpp' || echo '$(srcdir)/'`../src/SU2_DOT.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_DOT_AD_CXXFLAGS) $(CXXFLAGS) -c -o ___bin_SU2_DOT_AD-SU2_DOT.o `test -f '../src/SU2_DOT.cpp' || echo '$(srcdir)/'`../src/SU2_DOT.cpp
 
-___bin_SU2_DOT_REVERSE-SU2_DOT.obj: ../src/SU2_DOT.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_DOT_REVERSE_CXXFLAGS) $(CXXFLAGS) -MT ___bin_SU2_DOT_REVERSE-SU2_DOT.obj -MD -MP -MF $(DEPDIR)/___bin_SU2_DOT_REVERSE-SU2_DOT.Tpo -c -o ___bin_SU2_DOT_REVERSE-SU2_DOT.obj `if test -f '../src/SU2_DOT.cpp'; then $(CYGPATH_W) '../src/SU2_DOT.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/SU2_DOT.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/___bin_SU2_DOT_REVERSE-SU2_DOT.Tpo $(DEPDIR)/___bin_SU2_DOT_REVERSE-SU2_DOT.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/SU2_DOT.cpp' object='___bin_SU2_DOT_REVERSE-SU2_DOT.obj' libtool=no @AMDEPBACKSLASH@
+___bin_SU2_DOT_AD-SU2_DOT.obj: ../src/SU2_DOT.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_DOT_AD_CXXFLAGS) $(CXXFLAGS) -MT ___bin_SU2_DOT_AD-SU2_DOT.obj -MD -MP -MF $(DEPDIR)/___bin_SU2_DOT_AD-SU2_DOT.Tpo -c -o ___bin_SU2_DOT_AD-SU2_DOT.obj `if test -f '../src/SU2_DOT.cpp'; then $(CYGPATH_W) '../src/SU2_DOT.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/SU2_DOT.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/___bin_SU2_DOT_AD-SU2_DOT.Tpo $(DEPDIR)/___bin_SU2_DOT_AD-SU2_DOT.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/SU2_DOT.cpp' object='___bin_SU2_DOT_AD-SU2_DOT.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_DOT_REVERSE_CXXFLAGS) $(CXXFLAGS) -c -o ___bin_SU2_DOT_REVERSE-SU2_DOT.obj `if test -f '../src/SU2_DOT.cpp'; then $(CYGPATH_W) '../src/SU2_DOT.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/SU2_DOT.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_DOT_AD_CXXFLAGS) $(CXXFLAGS) -c -o ___bin_SU2_DOT_AD-SU2_DOT.obj `if test -f '../src/SU2_DOT.cpp'; then $(CYGPATH_W) '../src/SU2_DOT.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/SU2_DOT.cpp'; fi`
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \
