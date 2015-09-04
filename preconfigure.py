@@ -123,25 +123,34 @@ def prepare_source(replace = False, remove = False, revert = False):
 
     exclude_file_name = 'preconf.exclude'
 
-    # Build the dictionaries for line and file excludes that
-    # are defined in the exlude file 'preconf.exclude'.
-    # Syntax:
-    # PathTo/File[:Line1,Line2,...]
-    if os.path.exists(exclude_file_name):
-        print 'Reading \'' + exclude_file_name + '\' ...'
-        with open(exclude_file_name, 'r') as exclude:
-            for line in exclude:
-                exclude_line  = line.split(':')
-                exclude_file = exclude_line[0].rstrip()
-                if len(exclude_line) > 1:
-                    exclude_lines = exclude_line[1].split(',')
-                    for index,item in enumerate(exclude_lines):
-                        exclude_lines[index] = int(item.rstrip())
-                    exclude_dic_lines[exclude_line[0].rstrip()] = exclude_lines
-                else:
-                    exclude_dic_files[exclude_line[0].rstrip()] = [-1]
-    else:
-        print 'Exclude file \'' + exclude_file_name + '\' not found. Checking all files.'
+#    # Build the dictionaries for line and file excludes that
+#    # are defined in the exlude file 'preconf.exclude'.
+#    # Syntax:
+#    # PathTo/File[:Line1,Line2,...]
+#    if os.path.exists(exclude_file_name):
+#        print 'Reading \'' + exclude_file_name + '\' ...'
+#        with open(exclude_file_name, 'r') as exclude:
+#            for line in exclude:
+#                exclude_line  = line.split(':')
+#                exclude_file = exclude_line[0].rstrip()
+#                if len(exclude_line) > 1:
+#                    exclude_lines = exclude_line[1].split(',')
+#                    for index,item in enumerate(exclude_lines):
+#                        exclude_lines[index] = int(item.rstrip())
+#                    exclude_dic_lines[exclude_line[0].rstrip()] = exclude_lines
+#                else:
+#                    exclude_dic_files[exclude_line[0].rstrip()] = [-1]
+#    else:
+#        print 'Exclude file \'' + exclude_file_name + '\' not found. Checking all files.'
+
+
+    # Hardcoded files that will be skipped
+    exclude_dic_files = { 'Common/include/datatype_structure.hpp' : [-1],
+                          'Common/include/datatype_structure.inl' : [-1],
+                          'Common/include/mpi_structure.hpp' : [-1],
+                          'Common/include/mpi_structure.inl' : [-1],
+                          'Common/src/datatype_structure.cpp': [-1],
+                          'Common/src/mpi_structure.cpp' : [-1] }
 
     str_double = 'double'
 
