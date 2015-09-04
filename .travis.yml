@@ -9,11 +9,11 @@ compiler:
 notifications:
     email:
         recipients:
-            - tim.albring@scicomp.uni-kl.de
+            - su2code-dev@lists.stanford.edu
   
 branches:
     only:
-        - feature_AD
+        - develop
 
 env:
     global:
@@ -40,7 +40,7 @@ install:
     - echo $TRAVIS_BUILD_DIR
     - echo $CONFIGURE_COMMAND
     - $CONFIGURE_COMMAND
-    - make -j 2
+    - make -j 4
     - make install
 
     # Add environmental variables according to the configure step
