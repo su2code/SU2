@@ -1,5 +1,9 @@
-# SU2 global Makefile.am
-# SU2 v3.2.7 "eagle"
+################################################################################
+#
+# \file Makefile.am
+# \brief Global makefile for the SU2 project
+# \author M. Colonno, T. Economon, F. Palacios
+# \version 4.0.1 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -39,7 +43,7 @@
 ######################################################################################
 
 # AUTOMAKE_OPTIONS = subdir-objects
-ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS} -I m4
+ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS} -I m4 
 
 # build third-party optional dependencies first
 SUBDIRS = externals
