@@ -2,7 +2,7 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  *
  * Many of the classes in this file are templated, and therefore must
  * be declared and defined here; to keep all elements together, there
@@ -814,7 +814,7 @@ enum GEO_TYPE {
   VERTEX = 1,   		/*!< \brief VTK nomenclature for defining a vertex element. */
   LINE = 3,			/*!< \brief VTK nomenclature for defining a line element. */
   TRIANGLE = 5, 		/*!< \brief VTK nomenclature for defining a triangle element. */
-  RECTANGLE = 9,		/*!< \brief VTK nomenclature for defining a rectangle element. */
+  QUADRILATERAL = 9,		/*!< \brief VTK nomenclature for defining a quadrilateral element. */
   TETRAHEDRON = 10,     	/*!< \brief VTK nomenclature for defining a tetrahedron element. */
   HEXAHEDRON = 12,      	/*!< \brief VTK nomenclature for defining a hexahedron element. */
   PRISM = 13,     		/*!< \brief VTK nomenclature for defining a prism element. */

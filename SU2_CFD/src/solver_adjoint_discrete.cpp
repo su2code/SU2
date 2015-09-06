@@ -2,7 +2,7 @@
  * \file solver_adjoint_discrete.cpp
  * \brief Main subroutines for solving the discrete adjoint problem.
  * \author T. Albring
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -41,7 +41,7 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config){
 
 CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *direct_solver, unsigned short Kind_Solver, unsigned short iMesh){
 
-  unsigned short iVar, iMarker, iDim, nZone;
+  unsigned short iVar, iMarker, iDim;
 
   bool restart = config->GetRestart();
 
@@ -55,7 +55,6 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-  nZone = geometry->GetnZone();
   nVar = direct_solver->GetnVar();
   nDim = geometry->GetnDim();
 
@@ -423,7 +422,7 @@ void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config){
 void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config){
   unsigned short iMarker,iDim;
   unsigned long iVertex, iPoint;
-  su2double *Normal, Area, Prod, Sens = 0.0, SensDim;
+  su2double *Normal, Prod, Sens = 0.0, SensDim;
   su2double Total_Sens_Geo_local = 0.0;
   Total_Sens_Geo = 0.0;
 
@@ -439,16 +438,13 @@ void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
         Prod = 0.0;
-        Area = 0.0;
         for (iDim = 0; iDim < nDim; iDim++){
           /* --- retrieve the gradient calculated with AD -- */
           SensDim = node[iPoint]->GetSensitivity(iDim);
 
           /* --- calculate scalar product for projection onto the normal vector ---*/
           Prod += Normal[iDim]*SensDim;
-          Area += Normal[iDim]*Normal[iDim];
         }
-        Area = sqrt(Area);
 
         /* --- projection of the gradient
          *     calculated with AD onto the normal
