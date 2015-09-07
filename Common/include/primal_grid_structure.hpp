@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for storing the primal grid structure.
  *        The subroutines and functions are in the <i>primal_grid_structure.cpp</i> file.
  * \author F. Palacios
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -47,7 +47,7 @@ using namespace std;
  * \class CPrimalGrid
  * \brief Class to define the numerical primal grid.
  * \author F. Palacios
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  */
 class CPrimalGrid {
 protected:
@@ -57,7 +57,7 @@ protected:
 	su2double **Coord_FaceElems_CG;	/*!< \brief Coordinates of the center-of-gravity of the face of the
                                  elements. */
 	static unsigned short nDim;		/*!< \brief Dimension of the element (2D or 3D) useful for triangles,
-                                 rectangles and edges. */
+                                 quadrilateral and edges. */
 	unsigned long DomainElement;	/*!< \brief Only for boundaries, in this variable the 3D elements which
                                  correspond with a boundary element is stored. */
 	bool Divide;                  /*!< \brief Marker used to know if we are going to divide this element
@@ -247,7 +247,7 @@ public:
  * \brief Class for vertex element definition. This kind
  *        of element is used in the parallelization stuff.
  * \author F. Palacios
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  */
 class CVertexMPI : public CPrimalGrid {
 private:
@@ -364,7 +364,7 @@ public:
  * \class CLine
  * \brief Class for line element definition.
  * \author F. Palacios
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  */
 class CLine : public CPrimalGrid {
 private:
@@ -490,7 +490,7 @@ public:
  * \class CTriangle
  * \brief Class for triangle element definition.
  * \author F. Palacios
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  */
 class CTriangle : public CPrimalGrid {
 private:
@@ -615,12 +615,12 @@ public:
 };
 
 /*!
- * \class CRectangle
- * \brief Class for rectangle element definition.
+ * \class CQuadrilateral
+ * \brief Class for quadrilateral element definition.
  * \author F. Palacios
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  */
-class CRectangle : public CPrimalGrid {
+class CQuadrilateral : public CPrimalGrid {
 private:
 	static unsigned short Faces[4][2];			/*!< \brief Matrix to store the local nodes of all the faces. */
 	static unsigned short Neighbor_Nodes[4][2];	/*!< \brief Neighbor to a nodes in the element. */
@@ -642,17 +642,17 @@ public:
 	 * \param[in] val_point_3 - Index of the 4th point read from the grid file.
 	 * \param[in] val_nDim - Number of dimension of the problem (2D or 3D).
 	 */
-	CRectangle(unsigned long val_point_0, unsigned long val_point_1,
+	CQuadrilateral(unsigned long val_point_0, unsigned long val_point_1,
              unsigned long val_point_2, unsigned long val_point_3, unsigned short val_nDim);
   
   /*!
 	 * \brief Destructor of the class.
 	 */
-	~CRectangle(void);
+	~CQuadrilateral(void);
   
 	/*!
 	 * \brief Get the nodes shared by the triangle.
-	 * \param[in] val_node - Local (to the rectangle) index of the node (a rectangle has 4 nodes).
+	 * \param[in] val_node - Local (to the quadrilateral) index of the node (a quadrilateral has 4 nodes).
 	 * \return Global index of the triangle node.
 	 */
 	unsigned long GetNode(unsigned short val_node);
@@ -668,7 +668,7 @@ public:
 	 * \brief Get the face index of and element.
 	 * \param[in] val_face - Local index of the face.
 	 * \param[in] val_index - Local (to the face) index of the nodes that compose the face.
-	 * \return Local (to the rectangle) index of the nodes that compose the face.
+	 * \return Local (to the quadrilateral) index of the nodes that compose the face.
 	 */
 	unsigned short GetFaces(unsigned short val_face, unsigned short val_index);
   
@@ -676,7 +676,7 @@ public:
 	 * \brief Get the local index of the neighbors to a node (given the local index).
 	 * \param[in] val_node - Local (to the element) index of a node.
 	 * \param[in] val_index - Local (to the neighbor nodes of val_node) index of the nodes that are neighbor to val_node.
-	 * \return Local (to the rectangle) index of the nodes that are neighbor to val_node.
+	 * \return Local (to the quadrilateral) index of the nodes that are neighbor to val_node.
 	 */
 	unsigned short GetNeighbor_Nodes(unsigned short val_node, unsigned short val_index);
   
@@ -746,7 +746,7 @@ public:
  * \class CTetrahedron
  * \brief Class for tetrahedron element definition.
  * \author F. Palacios
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  */
 class CTetrahedron : public CPrimalGrid {
 private:
@@ -861,7 +861,7 @@ public:
  * \class CHexahedron
  * \brief Class for hexahedron element definition.
  * \author F. Palacios
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  */
 class CHexahedron : public CPrimalGrid {
 private:
@@ -983,7 +983,7 @@ public:
  * \class CPrism
  * \brief Class for prism element definition.
  * \author F. Palacios
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  */
 class CPrism : public CPrimalGrid {
 private:
@@ -1101,7 +1101,7 @@ public:
  * \class CPyramid
  * \brief Class for pyramid element definition.
  * \author F. Palacios
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  */
 class CPyramid : public CPrimalGrid {
 private:
