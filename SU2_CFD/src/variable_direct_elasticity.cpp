@@ -2,7 +2,7 @@
  * \file variable_direct_elasticity.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, R. Sanchez
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
