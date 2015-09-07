@@ -2,7 +2,7 @@
  * \file output_su2.cpp
  * \brief Main subroutines for output solver information.
  * \author F. Palacios, T. Economon, M. Colonno
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -180,7 +180,7 @@ void COutput::SetSU2_MeshASCII(CConfig *config, CGeometry *geometry) {
                 bound_line >> vnodes_triangle[0]; bound_line >> vnodes_triangle[1]; bound_line >> vnodes_triangle[2];
                 output_file << "\t" << vnodes_triangle[0] << "\t" << vnodes_triangle[1] << "\t" << vnodes_triangle[2] << endl;
                 break;
-              case RECTANGLE:
+              case QUADRILATERAL:
                 bound_line >> vnodes_quad[0]; bound_line >> vnodes_quad[1]; bound_line >> vnodes_quad[2]; bound_line >> vnodes_quad[3];
                 output_file << "\t" << vnodes_quad[0] << "\t" << vnodes_quad[1] << "\t" << vnodes_quad[2] << "\t" << vnodes_quad[3] << endl;
                 break;

@@ -2,7 +2,7 @@
  * \file numerics_direct_heat.cpp
  * \brief This file contains all the convective term discretization.
  * \author F. Palacios, T. Economon
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).

@@ -2,7 +2,7 @@
  * \file output_structure.cpp
  * \brief Main subroutines for output solver information
  * \author F. Palacios, T. Economon
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -829,8 +829,8 @@ void COutput::MergeConnectivity(CConfig *config, CGeometry *geometry, unsigned s
       MergeVolumetricConnectivity(config, geometry, TRIANGLE    );
       
       if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Quad != 0))
-        cout <<"Merging volumetric rectangle grid connectivity." << endl;
-      MergeVolumetricConnectivity(config, geometry, RECTANGLE   );
+        cout <<"Merging volumetric quadrilateral grid connectivity." << endl;
+      MergeVolumetricConnectivity(config, geometry, QUADRILATERAL   );
       
       if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Tetr != 0))
         cout <<"Merging volumetric tetrahedron grid connectivity." << endl;
@@ -863,8 +863,8 @@ void COutput::MergeConnectivity(CConfig *config, CGeometry *geometry, unsigned s
       MergeSurfaceConnectivity(config, geometry, TRIANGLE);
       
       if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_BoundQuad != 0))
-        cout <<"Merging surface rectangle grid connectivity." << endl;
-      MergeSurfaceConnectivity(config, geometry, RECTANGLE);
+        cout <<"Merging surface quadrilateral grid connectivity." << endl;
+      MergeSurfaceConnectivity(config, geometry, QUADRILATERAL);
       
     }
     
@@ -973,9 +973,6 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
   /*--- Local variables needed for merging the geometry with MPI. ---*/
   
   unsigned long iVertex, iMarker;
-  
-  int SendRecv;
-  
   unsigned long Buffer_Send_nPoin[1], *Buffer_Recv_nPoin = NULL;
   unsigned long nLocalPoint = 0, MaxLocalPoint = 0;
   unsigned long iGlobal_Index = 0, nBuffer_Scalar = 0;
@@ -995,7 +992,6 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
   } else {
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
-        SendRecv = config->GetMarker_All_SendRecv(iMarker);
         
         /*--- Checking for less than or equal to the rank, because there may
          be some periodic halo nodes that send info to the same rank. ---*/
@@ -1189,7 +1185,7 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
       nLocalElem = geometry->GetnElemTria();
       NODES_PER_ELEMENT = N_POINTS_TRIANGLE;
       break;
-    case RECTANGLE:
+    case QUADRILATERAL:
       nLocalElem = geometry->GetnElemQuad();
       NODES_PER_ELEMENT = N_POINTS_QUADRILATERAL;
       break;
@@ -1488,7 +1484,7 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
         nGlobal_Tria = nElem_Total;
         if (nGlobal_Tria > 0) Conn_Tria = Conn_Elem;
         break;
-      case RECTANGLE:
+      case QUADRILATERAL:
         nGlobal_Quad = nElem_Total;
         if (nGlobal_Quad > 0) Conn_Quad = Conn_Elem;
         break;
@@ -1575,7 +1571,7 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
     case TRIANGLE:
       NODES_PER_ELEMENT = N_POINTS_TRIANGLE;
       break;
-    case RECTANGLE:
+    case QUADRILATERAL:
       NODES_PER_ELEMENT = N_POINTS_QUADRILATERAL;
       break;
     default:
@@ -1862,7 +1858,7 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
         nGlobal_BoundTria = nElem_Total;
         if (nGlobal_BoundTria > 0) Conn_BoundTria = Conn_Elem;
         break;
-      case RECTANGLE:
+      case QUADRILATERAL:
         nGlobal_BoundQuad = nElem_Total;
         if (nGlobal_BoundQuad > 0) Conn_BoundQuad = Conn_Elem;
         break;
@@ -1890,7 +1886,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   su2double *Aux_Frict = NULL, *Aux_Heat = NULL, *Aux_yPlus = NULL, *Aux_Sens = NULL;
   
   unsigned short CurrentIndex;
-  int SendRecv, *Local_Halo;
+  int *Local_Halo;
   unsigned long Buffer_Send_nPoint[1], *Buffer_Recv_nPoint = NULL;
   unsigned long nLocalPoint = 0, MaxLocalPoint = 0;
   unsigned long iGlobal_Index = 0, nBuffer_Scalar = 0;
@@ -2078,7 +2074,6 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   } else {
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
-        SendRecv = config->GetMarker_All_SendRecv(iMarker);
         
         /*--- Checking for less than or equal to the rank, because there may
          be some periodic halo nodes that send info to the same rank. ---*/
@@ -3642,9 +3637,6 @@ void COutput::MergeBaselineSolution(CConfig *config, CGeometry *geometry, CSolve
   /*--- Local variables needed for merging with MPI ---*/
   
   unsigned long iVertex, iMarker;
-  
-  int SendRecv;
-  
   unsigned long Buffer_Send_nPoint[1], *Buffer_Recv_nPoint = NULL;
   unsigned long nLocalPoint = 0, MaxLocalPoint = 0;
   unsigned long iGlobal_Index = 0, nBuffer_Scalar = 0;
@@ -3664,7 +3656,6 @@ void COutput::MergeBaselineSolution(CConfig *config, CGeometry *geometry, CSolve
   } else {
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
-        SendRecv = config->GetMarker_All_SendRecv(iMarker);
         
         /*--- Checking for less than or equal to the rank, because there may
          be some periodic halo nodes that send info to the same rank. ---*/
@@ -5671,9 +5662,9 @@ void COutput::SetCFL_Number(CSolver ****solver_container, CConfig **config, unsi
   
   /*--- Compute MG factor ---*/
   
-  MGFactor[MESH_0] = 1.0;
-  for (iMesh = 1; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
-    MGFactor[iMesh] = MGFactor[iMesh-1] * config[val_iZone]->GetCFL(iMesh)/config[val_iZone]->GetCFL(iMesh-1);
+  for (iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
+    if (iMesh == MESH_0) MGFactor[iMesh] = 1.0;
+    else MGFactor[iMesh] = MGFactor[iMesh-1] * config[val_iZone]->GetCFL(iMesh)/config[val_iZone]->GetCFL(iMesh-1);
   }
   
   if (Div < 1.0) power = config[val_iZone]->GetCFL_AdaptParam(0);
@@ -5847,7 +5838,7 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
     
     Breakdown_file << endl <<"-------------------------------------------------------------------------" << endl;
     Breakdown_file <<"|    ___ _   _ ___                                                      |" << endl;
-    Breakdown_file <<"|   / __| | | |_  )   Release 4.0.0  \"Cardinal\"                         |" << endl;
+    Breakdown_file <<"|   / __| | | |_  )   Release 4.0.1  \"Cardinal\"                         |" << endl;
     Breakdown_file <<"|   \\__ \\ |_| |/ /                                                      |" << endl;
     Breakdown_file <<"|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl;
     Breakdown_file << "|                                                                       |" << endl;
@@ -6989,7 +6980,7 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
   
   unsigned long iVertex, iPoint;
   unsigned short iDim, iMarker, Out1D;
-  su2double *Normal = NULL, Area = 0.0, OverArea = 0.0, UnitaryNormal[3],
+  su2double *Normal = NULL, Area = 0.0, OverArea = 0.0, UnitNormal[3],
   Stag_Pressure, Mach, Temperature, Pressure = 0.0, Density = 0.0, Velocity2, Enthalpy, RhoU, U,// local values at each node (Velocity2 = V^2). U = normal velocity
   SumPressure = 0.0, SumStagPressure = 0.0, SumArea = 0.0, SumMach = 0.0, SumTemperature = 0.0, SumForUref = 0.0, SumRhoU = 0.0, SumEnthalpy = 0.0,// sum of (local value ) * (dA) (integral)
   AveragePressure = 0.0, AverageMach = 0.0, AverageTemperature = 0.0, MassFlowRate = 0.0, // Area Averaged value ( sum / A )
@@ -7025,7 +7016,7 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
           /*--- Compute area, and unitary normal ---*/
           Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
           Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
-          for (iDim = 0; iDim < nDim; iDim++) UnitaryNormal[iDim] = -Normal[iDim]/Area;
+          for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = -Normal[iDim]/Area;
           
           if (compressible) {
             Pressure = solver_container->node[iPoint]->GetPressure();
@@ -7040,7 +7031,7 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
           
           U = 0.0;
           for (iDim = 0; iDim < geometry->GetnDim(); iDim++) {
-            U += UnitaryNormal[iDim]*solver_container->node[iPoint]->GetVelocity(iDim);
+            U += UnitNormal[iDim]*solver_container->node[iPoint]->GetVelocity(iDim);
           }
           
           Enthalpy = solver_container->node[iPoint]->GetEnthalpy();

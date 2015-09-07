@@ -2,7 +2,7 @@
  * \file numerics_direct_tne2.cpp
  * \brief This file contains all the convective term discretization.
  * \author S. Copeland
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -476,9 +476,10 @@ void CUpwAUSM_TNE2::ComputeResidual(su2double *val_residual,
                                     CConfig *config         ) {
 
   unsigned short iDim, iVar, jVar, iSpecies, nHeavy, nEl;
-  su2double rho_i, rho_j, rhoCvtr_i, rhoCvtr_j, rhoCvve_i, rhoCvve_j;
+  su2double rho_i, rho_j, rhoCvtr_i, rhoCvtr_j;
   su2double Cvtrs;
-  su2double Ru, rho_el_i, rho_el_j, *Ms, *xi;
+  su2double Ru, *Ms, *xi;
+//  su2double rho_el_i, rho_el_j, rhoCvve_i, rhoCvve_j;
 //  su2double dPdrhoE_i, dPdrhoE_j, dPdrhoEve_i, dPdrhoEve_j;
   su2double e_ve_i, e_ve_j;
   
@@ -499,13 +500,13 @@ void CUpwAUSM_TNE2::ComputeResidual(su2double *val_residual,
   if (ionization) {
     nHeavy = nSpecies-1;
     nEl = 1;
-    rho_el_i = V_i[nSpecies-1];
-    rho_el_j = V_j[nSpecies-1];
+    //rho_el_i = V_i[nSpecies-1];
+    //rho_el_j = V_j[nSpecies-1];
   } else {
     nHeavy = nSpecies;
     nEl = 0;
-    rho_el_i = 0.0;
-    rho_el_j = 0.0;
+    //rho_el_i = 0.0;
+    //rho_el_j = 0.0;
   }
   
   /*--- Pull stored primitive variables ---*/
@@ -530,8 +531,8 @@ void CUpwAUSM_TNE2::ComputeResidual(su2double *val_residual,
   e_ve_j    = U_j[nSpecies+nDim+1] / rho_j;
   rhoCvtr_i = V_i[RHOCVTR_INDEX];
   rhoCvtr_j = V_j[RHOCVTR_INDEX];
-  rhoCvve_i = V_i[RHOCVVE_INDEX];
-  rhoCvve_j = V_j[RHOCVVE_INDEX];
+  //rhoCvve_i = V_i[RHOCVVE_INDEX];
+  //rhoCvve_j = V_j[RHOCVVE_INDEX];
   
 	/*--- Projected velocities ---*/
 	ProjVel_i = 0.0; ProjVel_j = 0.0;
@@ -900,15 +901,19 @@ void CUpwAUSMPWplus_TNE2::ComputeResidual(su2double *val_residual,
   
   // NOTE: OSCILLATOR DAMPER "f" NOT IMPLEMENTED!!!
   
-  unsigned short iDim, jDim, iVar, jVar, iSpecies, nHeavy, nEl;
+  unsigned short iDim, iVar, jVar, iSpecies, nHeavy;
+  //unsigned short jDim, nEl;
   su2double rho_i, rho_j, rhoEve_i, rhoEve_j, P_i, P_j, h_i, h_j;
   su2double rhoCvtr_i, rhoCvtr_j, rhoCvve_i, rhoCvve_j;
   su2double aij, atl, gtl_i, gtl_j, sqVi, sqVj, Hnorm;
   su2double ProjVel_i, ProjVel_j;
-  su2double rhoRi, rhoRj, Ru, rho_el_i, rho_el_j, *Ms, *xi;
+  su2double rhoRi, rhoRj, *Ms, Ru;
+  //su2double rho_el_i, rho_el_j, *xi;
   su2double w, fL, fR, alpha;
   su2double mL, mR, mLP, mRM, mF, mbLP, mbRM, pLP, pRM, ps;
-  su2double fact, gam, dV2L, dV2R;
+  su2double fact, gam;
+  
+  //su2double dV2L, dV2R;
   
   alpha = 3.0/16.0;
   
@@ -926,20 +931,20 @@ void CUpwAUSMPWplus_TNE2::ComputeResidual(su2double *val_residual,
   
   /*--- Read from config ---*/
   Ms = config->GetMolar_Mass();
-  xi = config->GetRotationModes();
+  //xi = config->GetRotationModes();
   Ru = UNIVERSAL_GAS_CONSTANT;
   
   /*--- Determine the number of heavy particle species ---*/
   if (ionization) {
     nHeavy = nSpecies-1;
-    nEl = 1;
-    rho_el_i = V_i[nSpecies-1];
-    rho_el_j = V_j[nSpecies-1];
+    //nEl = 1;
+    //rho_el_i = V_i[nSpecies-1];
+    //rho_el_j = V_j[nSpecies-1];
   } else {
     nHeavy = nSpecies;
-    nEl = 0;
-    rho_el_i = 0.0;
-    rho_el_j = 0.0;
+    //nEl = 0;
+    //rho_el_i = 0.0;
+    //rho_el_j = 0.0;
   }
   
   /*--- Pull stored primitive variables ---*/
@@ -1076,14 +1081,14 @@ void CUpwAUSMPWplus_TNE2::ComputeResidual(su2double *val_residual,
       dHnR[iSpecies] = 0.5*(dPdU_j[iSpecies] /*+ sqVj/rho_j*/);
     }
     for (iDim = 0; iDim < nDim; iDim++) {
-      dV2L = 0.0;
-      dV2R = 0.0;
-      for (jDim = 0; jDim < nDim; jDim++) {
-        dV2L += 2.0/rho_i*(u_i[jDim]-ProjVel_i*UnitNormal[jDim]*(-UnitNormal[iDim]*UnitNormal[jDim]));
-        dV2R += 2.0/rho_j*(u_j[jDim]-ProjVel_j*UnitNormal[jDim]*(-UnitNormal[iDim]*UnitNormal[jDim]));
-      }
-      dV2L += 2.0/rho_i*(u_i[iDim]-ProjVel_i*UnitNormal[iDim] - sqVi);
-      dV2R += 2.0/rho_j*(u_j[iDim]-ProjVel_j*UnitNormal[iDim] - sqVj);
+//      dV2L = 0.0;
+//      dV2R = 0.0;
+//      for (jDim = 0; jDim < nDim; jDim++) {
+//        dV2L += 2.0/rho_i*(u_i[jDim]-ProjVel_i*UnitNormal[jDim]*(-UnitNormal[iDim]*UnitNormal[jDim]));
+//        dV2R += 2.0/rho_j*(u_j[jDim]-ProjVel_j*UnitNormal[jDim]*(-UnitNormal[iDim]*UnitNormal[jDim]));
+//      }
+//      dV2L += 2.0/rho_i*(u_i[iDim]-ProjVel_i*UnitNormal[iDim] - sqVi);
+//      dV2R += 2.0/rho_j*(u_j[iDim]-ProjVel_j*UnitNormal[iDim] - sqVj);
       dHnL[nSpecies+iDim] = 0.5*(dPdU_i[nSpecies+iDim] /*- 0.5*(dV2L)*/);
       dHnR[nSpecies+iDim] = 0.5*(dPdU_j[nSpecies+iDim] /*- 0.5*(dV2R)*/);
     }
@@ -1357,7 +1362,7 @@ void CCentLax_TNE2::ComputeResidual(su2double *val_resconv,
   
   unsigned short iDim, iSpecies, iVar;
   su2double rho_i, rho_j, h_i, h_j, a_i, a_j;
-  su2double ProjVel_i, ProjVel_j, Ru;
+  su2double ProjVel_i, ProjVel_j;
   
   /*--- Calculate geometrical quantities ---*/
 	Area = 0;
@@ -1374,7 +1379,6 @@ void CCentLax_TNE2::ComputeResidual(su2double *val_resconv,
   h_j   = V_j[H_INDEX];
   a_i   = V_i[A_INDEX];
   a_j   = V_j[A_INDEX];
-  Ru    = UNIVERSAL_GAS_CONSTANT;
   
   /*--- Compute mean quantities for the variables ---*/
   for (iVar = 0; iVar < nVar; iVar++)
@@ -1808,14 +1812,15 @@ void CSource_TNE2::ComputeChemistry(su2double *val_residual,
   
   /*--- Nonequilibrium chemistry ---*/
   unsigned short iSpecies, jSpecies, ii, iReaction, nReactions, iVar, jVar;
-  unsigned short *nElStates, nHeavy, nEl, nEve;
+//  unsigned short *nElStates, nHeavy, nEl;
+  unsigned short nEve;
   int ***RxnMap;
   su2double T_min, epsilon;
   su2double T, Tve, Thf, Thb, Trxnf, Trxnb, Keq, Cf, eta, theta, kf, kb;
-  su2double rho, u, v, w, rhoCvtr, rhoCvve, P;
-  su2double *Ms, *thetav, **thetae, **g, fwdRxn, bkwRxn, alpha, Ru;
+//  su2double rho, u, v, w, rhoCvtr, rhoCvve, P;
+  su2double *Ms,  fwdRxn, bkwRxn;
   su2double *Tcf_a, *Tcf_b, *Tcb_a, *Tcb_b;
-  su2double *hf, *Tref, *xi;
+//  su2double *hf, *Tref, *xi, *thetav, **thetae, **g, alpha, Ru;
   su2double af, bf, ab, bb, coeff;
   su2double dThf, dThb;
   
@@ -1842,23 +1847,23 @@ void CSource_TNE2::ComputeChemistry(su2double *val_residual,
   epsilon = 80;
   
   /*--- Define preferential dissociation coefficient ---*/
-  alpha = 0.3;
+//  alpha = 0.3;
   
   /*--- Determine the number of heavy particle species ---*/
-  if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
-  else            { nHeavy = nSpecies;   nEl = 0; }
+//  if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
+//  else            { nHeavy = nSpecies;   nEl = 0; }
   
   /*--- Rename for convenience ---*/
-  Ru      = UNIVERSAL_GAS_CONSTANT;
-  rho     = V_i[RHO_INDEX];
-  P       = V_i[P_INDEX];
+//  Ru      = UNIVERSAL_GAS_CONSTANT;
+//  rho     = V_i[RHO_INDEX];
+//  P       = V_i[P_INDEX];
   T       = V_i[T_INDEX];
   Tve     = V_i[TVE_INDEX];
-  u       = V_i[VEL_INDEX];
-  v       = V_i[VEL_INDEX+1];
-  w       = V_i[VEL_INDEX+2];
-  rhoCvtr = V_i[RHOCVTR_INDEX];
-  rhoCvve = V_i[RHOCVVE_INDEX];
+//  u       = V_i[VEL_INDEX];
+//  v       = V_i[VEL_INDEX+1];
+//  w       = V_i[VEL_INDEX+2];
+//  rhoCvtr = V_i[RHOCVTR_INDEX];
+//  rhoCvve = V_i[RHOCVVE_INDEX];
   
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     eves[iSpecies] = var->CalcEve(V_i, config, iSpecies);
@@ -1868,13 +1873,13 @@ void CSource_TNE2::ComputeChemistry(su2double *val_residual,
   nReactions = config->GetnReactions();
   Ms         = config->GetMolar_Mass();
   RxnMap     = config->GetReaction_Map();
-  thetav     = config->GetCharVibTemp();
-  thetae     = config->GetCharElTemp();
-  g          = config->GetElDegeneracy();
-  nElStates  = config->GetnElStates();
-  hf         = config->GetEnthalpy_Formation();
-  xi         = config->GetRotationModes();
-  Tref       = config->GetRefTemperature();
+//  thetav     = config->GetCharVibTemp();
+//  thetae     = config->GetCharElTemp();
+//  g          = config->GetElDegeneracy();
+//  nElStates  = config->GetnElStates();
+//  hf         = config->GetEnthalpy_Formation();
+//  xi         = config->GetRotationModes();
+//  Tref       = config->GetRefTemperature();
   Tcf_a      = config->GetRxnTcf_a();
   Tcf_b      = config->GetRxnTcf_b();
   Tcb_a      = config->GetRxnTcb_a();
@@ -2066,14 +2071,19 @@ void CSource_TNE2::ComputeVibRelaxation(su2double *val_residual,
   // Note: Millikan & White relaxation time (requires P in Atm.)
 	// Note: Park limiting cross section
   unsigned short iSpecies, jSpecies, iVar, jVar;
-  unsigned short nEv, nHeavy, nEl, *nElStates;
-  su2double rhos, evib, P, T, Tve, u, v, w, rhoCvtr, rhoCvve, Ru, conc, N;
-  su2double Qtv, estar, tau, tauMW, tauP;
+  unsigned short nEv;
+
+  su2double rhos, evib, P, T, Tve, Ru, conc, N;
+  su2double estar, tau, tauMW, tauP;
   su2double tau_sr, mu, A_sr, B_sr, num, denom;
   su2double thoTve, exptv;
   su2double thoT, expt, Cvvs, Cvvst;
   su2double sigma, ws;
-  su2double *Ms, *thetav, **thetae, **g, *Tref, *hf, *xi;
+  su2double *Ms, *thetav;
+  
+  //su2double **thetae, **g, *Tref, *hf, *xi;
+  //su2double nHeavy, nEl, *nElStates;
+  //su2double Qtv, u, v, w, rhoCvtr, rhoCvve;
   
   /*--- Initialize residual and Jacobian arrays ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -2086,19 +2096,19 @@ void CSource_TNE2::ComputeVibRelaxation(su2double *val_residual,
   }
 
   /*--- Determine the number of heavy particle species ---*/
-  if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
-  else            { nHeavy = nSpecies;   nEl = 0; }
+//  if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
+//  else            { nHeavy = nSpecies;   nEl = 0; }
   
   /*--- Rename for convenience ---*/
   Ru      = UNIVERSAL_GAS_CONSTANT;
   P       = V_i[P_INDEX];
   T       = V_i[T_INDEX];
   Tve     = V_i[TVE_INDEX];
-  u       = V_i[VEL_INDEX];
-  v       = V_i[VEL_INDEX+1];
-  w       = V_i[VEL_INDEX+2];
-  rhoCvtr = V_i[RHOCVTR_INDEX];
-  rhoCvve = V_i[RHOCVVE_INDEX];
+  //u       = V_i[VEL_INDEX];
+  //v       = V_i[VEL_INDEX+1];
+  //w       = V_i[VEL_INDEX+2];
+  //rhoCvtr = V_i[RHOCVTR_INDEX];
+  //rhoCvve = V_i[RHOCVVE_INDEX];
   nEv     = nSpecies+nDim+1;
   
   /*--- Clip temperatures to prevent NaNs ---*/
@@ -2112,12 +2122,12 @@ void CSource_TNE2::ComputeVibRelaxation(su2double *val_residual,
   /*--- Read from CConfig ---*/
   Ms        = config->GetMolar_Mass();
   thetav    = config->GetCharVibTemp();
-  thetae    = config->GetCharElTemp();
-  g         = config->GetElDegeneracy();
-  nElStates = config->GetnElStates();
-  Tref      = config->GetRefTemperature();
-  hf        = config->GetEnthalpy_Formation();
-  xi        = config->GetRotationModes();
+  //thetae    = config->GetCharElTemp();
+  //g         = config->GetElDegeneracy();
+  //nElStates = config->GetnElStates();
+  //Tref      = config->GetRefTemperature();
+  //hf        = config->GetEnthalpy_Formation();
+  ///xi        = config->GetRotationModes();
   
   /*--- Calculate mole fractions ---*/
   N    = 0.0;
@@ -2130,7 +2140,7 @@ void CSource_TNE2::ComputeVibRelaxation(su2double *val_residual,
     X[iSpecies] = (V_i[RHOS_INDEX+iSpecies] / Ms[iSpecies]) / conc;
 
   /*--- Loop over species to calculate source term --*/
-  Qtv = 0.0;
+  //Qtv = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     if (thetav[iSpecies] != 0.0) {
       /*--- Rename ---*/

@@ -2,7 +2,7 @@
  * \file output_fieldview.cpp
  * \brief Main subroutines for output solver information.
  * \author F. Palacios, T. Economon, M. Colonno
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
