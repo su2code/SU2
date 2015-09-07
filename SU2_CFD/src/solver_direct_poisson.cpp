@@ -2,7 +2,7 @@
  * \file solution_direct_poisson.cpp
  * \brief Main subrotuines for solving direct problems
  * \author F. Palacios
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -243,7 +243,7 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 //				LinSysRes.AddBlock(Point_1, &Source_Vector[1]);
 //				LinSysRes.AddBlock(Point_2, &Source_Vector[2]);
 //        
-//				if (geometry->elem[iElem]->GetVTK_Type() == RECTANGLE) {
+//				if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) {
 //          
 //					Point_0 = geometry->elem[iElem]->GetNode(3);
 //					Point_1 = geometry->elem[iElem]->GetNode(0);

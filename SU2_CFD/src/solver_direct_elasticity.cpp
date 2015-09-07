@@ -2,7 +2,7 @@
  * \file solution_direct_elasticity.cpp
  * \brief Main subrotuines for solving the linear elasticity equation.
  * \author F. Palacios, R. Sanchez
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -38,7 +38,6 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
   unsigned long iPoint;
   unsigned short iVar, jVar, NodesElement = 0, nLineLets;
   unsigned short iDim;
-  unsigned long nMarker, nElem;
   su2double dull_val;
   
   int rank = MASTER_NODE;
@@ -48,9 +47,7 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
   
   nPoint        = geometry->GetnPoint();
   nPointDomain  = geometry->GetnPointDomain();
-  nElem         = geometry->GetnElem();
   nDim          = geometry->GetnDim();
-  nMarker       = geometry->GetnMarker();
   node          = new CVariable*[nPoint];
   
   
@@ -486,7 +483,7 @@ void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CSolver **solver_conta
   for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
     
     if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     nNodes = 3;
-    if (geometry->elem[iElem]->GetVTK_Type() == RECTANGLE)    nNodes = 4;
+    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL)    nNodes = 4;
     if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  nNodes = 4;
     if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      nNodes = 5;
     if (geometry->elem[iElem]->GetVTK_Type() == PRISM)        nNodes = 6;
@@ -543,7 +540,7 @@ void CFEASolver::Compute_StiffMassMatrix(CGeometry *geometry, CSolver **solver_c
   for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
     
     if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     nNodes = 3;
-    if (geometry->elem[iElem]->GetVTK_Type() == RECTANGLE)    nNodes = 4;
+    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL)    nNodes = 4;
     if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  nNodes = 4;
     if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      nNodes = 5;
     if (geometry->elem[iElem]->GetVTK_Type() == PRISM)        nNodes = 6;
@@ -833,7 +830,7 @@ void CFEASolver::BC_Normal_Displacement(CGeometry *geometry, CSolver **solver_co
                                         unsigned short val_marker) {
   unsigned long iPoint, iVertex, total_index;
   unsigned short iVar, iDim;
-  su2double *Normal, Area, UnitaryNormal[3];
+  su2double *Normal, Area, UnitaryNormal[3] = {0.0,0.0,0.0};
   
   su2double TotalDispl = config->GetDispl_Value(config->GetMarker_All_TagBound(val_marker));
   
@@ -891,7 +888,8 @@ void CFEASolver::BC_Normal_Load(CGeometry *geometry, CSolver **solver_container,
   su2double a[3], b[3];
   unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0;
   su2double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL;
-  su2double Length_Elem = 0.0, Area_Elem = 0.0, Normal_Elem[3] = {0.0, 0.0, 0.0};
+  su2double Normal_Elem[3] = {0.0, 0.0, 0.0};
+  //su2double Length_Elem = 0.0, Area_Elem = 0.0;
   unsigned short iDim;
   
   su2double TotalLoad = config->GetLoad_Value(config->GetMarker_All_TagBound(val_marker));
@@ -908,7 +906,7 @@ void CFEASolver::BC_Normal_Load(CGeometry *geometry, CSolver **solver_container,
       
       for (iDim = 0; iDim < nDim; iDim++) a[iDim] = Coord_0[iDim]-Coord_1[iDim];
       
-      Length_Elem = sqrt(a[0]*a[0]+a[1]*a[1]);
+      //Length_Elem = sqrt(a[0]*a[0]+a[1]*a[1]);
       Normal_Elem[0] =   a[1];
       Normal_Elem[1] = -(a[0]);
       
@@ -921,7 +919,7 @@ void CFEASolver::BC_Normal_Load(CGeometry *geometry, CSolver **solver_container,
         b[iDim] = Coord_1[iDim]-Coord_2[iDim];
       }
       
-      Area_Elem = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
+      //Area_Elem = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
       
       Normal_Elem[0] = -(0.5*(a[1]*b[2]-a[2]*b[1]));
       Normal_Elem[1] = -(-0.5*(a[0]*b[2]-a[2]*b[0]));
@@ -956,10 +954,12 @@ void CFEASolver::BC_Normal_Load(CGeometry *geometry, CSolver **solver_container,
 void CFEASolver::BC_Dir_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
                              unsigned short val_marker) {
   
-  su2double a[3], b[3], AC[3], BD[3];
+  su2double a[3] = {0.0, 0.0, 0.0}, b[3] = {0.0, 0.0, 0.0};
+  su2double AC[3] = {0.0, 0.0, 0.0}, BD[3] = {0.0, 0.0, 0.0};
   unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0, Point_3=0;
   su2double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL, *Coord_3= NULL;
-  su2double Length_Elem = 0.0, Area_Elem = 0.0, Normal_Elem[3] = {0.0, 0.0, 0.0};
+  su2double Length_Elem = 0.0, Area_Elem = 0.0;
+//  su2double Normal_Elem[3] = {0.0, 0.0, 0.0};
   unsigned short iDim;
   
   su2double LoadDirVal = config->GetLoad_Dir_Value(config->GetMarker_All_TagBound(val_marker));
@@ -997,14 +997,6 @@ void CFEASolver::BC_Dir_Load(CGeometry *geometry, CSolver **solver_container, CN
     
     Point_0 = geometry->bound[val_marker][iElem]->GetNode(0);     Coord_0 = geometry->node[Point_0]->GetCoord();
     Point_1 = geometry->bound[val_marker][iElem]->GetNode(1);     Coord_1 = geometry->node[Point_1]->GetCoord();
-    if (nDim == 3) {
-      
-      Point_2 = geometry->bound[val_marker][iElem]->GetNode(2);	Coord_2 = geometry->node[Point_2]->GetCoord();
-      if (geometry->bound[val_marker][iElem]->GetVTK_Type() == RECTANGLE){
-        Point_3 = geometry->bound[val_marker][iElem]->GetNode(3);	Coord_3 = geometry->node[Point_3]->GetCoord();
-      }
-      
-    }
     
     /*--- Compute area (3D), and length of the surfaces (2D) ---*/
     
@@ -1013,12 +1005,13 @@ void CFEASolver::BC_Dir_Load(CGeometry *geometry, CSolver **solver_container, CN
       for (iDim = 0; iDim < nDim; iDim++) a[iDim] = Coord_0[iDim]-Coord_1[iDim];
       
       Length_Elem = sqrt(a[0]*a[0]+a[1]*a[1]);
-      Normal_Elem[0] =   a[1];
-      Normal_Elem[1] = -(a[0]);
+//      Normal_Elem[0] =   a[1];
+//      Normal_Elem[1] = -(a[0]);
       
-    }
-    
-    if (nDim == 3) {
+    } else {
+      
+      Point_2 = geometry->bound[val_marker][iElem]->GetNode(2);
+      Coord_2 = geometry->node[Point_2]->GetCoord();
       
       if (geometry->bound[val_marker][iElem]->GetVTK_Type() == TRIANGLE){
         
@@ -1035,12 +1028,12 @@ void CFEASolver::BC_Dir_Load(CGeometry *geometry, CSolver **solver_container, CN
         
         Area_Elem = 0.5*sqrt(Ni*Ni+Nj*Nj+Nk*Nk);
         
-        
         //Area_Elem = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
         
-      }
-      
-      else if (geometry->bound[val_marker][iElem]->GetVTK_Type() == RECTANGLE){
+      } else if (geometry->bound[val_marker][iElem]->GetVTK_Type() == QUADRILATERAL){
+        
+        Point_3 = geometry->bound[val_marker][iElem]->GetNode(3);
+        Coord_3 = geometry->node[Point_3]->GetCoord();
         
         for (iDim = 0; iDim < nDim; iDim++) {
           AC[iDim] = Coord_2[iDim]-Coord_0[iDim];
@@ -1079,7 +1072,7 @@ void CFEASolver::BC_Dir_Load(CGeometry *geometry, CSolver **solver_container, CN
         LinSysRes.AddBlock(Point_1, Residual);
         LinSysRes.AddBlock(Point_2, Residual);
       }
-      else if (geometry->bound[val_marker][iElem]->GetVTK_Type() == RECTANGLE){
+      else if (geometry->bound[val_marker][iElem]->GetVTK_Type() == QUADRILATERAL){
         
         Residual[0] = (1.0/4.0)*Area_Elem*TotalLoad*Load_Dir_Local[0]/Norm;
         Residual[1] = (1.0/4.0)*Area_Elem*TotalLoad*Load_Dir_Local[1]/Norm;
@@ -1101,10 +1094,12 @@ void CFEASolver::BC_Dir_Load(CGeometry *geometry, CSolver **solver_container, CN
 void CFEASolver::BC_Sine_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
                               unsigned short val_marker) {
   
-  su2double a[3], b[3], AC[3], BD[3];
+  su2double a[3] = {0.0, 0.0, 0.0}, b[3] = {0.0, 0.0, 0.0};
+  su2double AC[3] = {0.0, 0.0, 0.0}, BD[3] = {0.0, 0.0, 0.0};
   unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0, Point_3=0;
   su2double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL, *Coord_3= NULL;
-  su2double Length_Elem = 0.0, Area_Elem = 0.0, Normal_Elem[3] = {0.0, 0.0, 0.0};
+  su2double Length_Elem = 0.0, Area_Elem = 0.0;
+//  su2double Normal_Elem[3] = {0.0, 0.0, 0.0};
   unsigned short iDim;
   
   su2double LoadAmplitude = config->GetLoad_Sine_Amplitude(config->GetMarker_All_TagBound(val_marker));
@@ -1124,14 +1119,6 @@ void CFEASolver::BC_Sine_Load(CGeometry *geometry, CSolver **solver_container, C
     
     Point_0 = geometry->bound[val_marker][iElem]->GetNode(0);     Coord_0 = geometry->node[Point_0]->GetCoord();
     Point_1 = geometry->bound[val_marker][iElem]->GetNode(1);     Coord_1 = geometry->node[Point_1]->GetCoord();
-    if (nDim == 3) {
-      
-      Point_2 = geometry->bound[val_marker][iElem]->GetNode(2);	Coord_2 = geometry->node[Point_2]->GetCoord();
-      if (geometry->bound[val_marker][iElem]->GetVTK_Type() == RECTANGLE){
-        Point_3 = geometry->bound[val_marker][iElem]->GetNode(3);	Coord_3 = geometry->node[Point_3]->GetCoord();
-      }
-      
-    }
     
     /*--- Compute area (3D), and length of the surfaces (2D) ---*/
     
@@ -1140,12 +1127,13 @@ void CFEASolver::BC_Sine_Load(CGeometry *geometry, CSolver **solver_container, C
       for (iDim = 0; iDim < nDim; iDim++) a[iDim] = Coord_0[iDim]-Coord_1[iDim];
       
       Length_Elem = sqrt(a[0]*a[0]+a[1]*a[1]);
-      Normal_Elem[0] =   a[1];
-      Normal_Elem[1] = -(a[0]);
+//      Normal_Elem[0] =   a[1];
+//      Normal_Elem[1] = -(a[0]);
       
-    }
-    
-    if (nDim == 3) {
+    } else { // 3D
+      
+      Point_2 = geometry->bound[val_marker][iElem]->GetNode(2);
+      Coord_2 = geometry->node[Point_2]->GetCoord();
       
       if (geometry->bound[val_marker][iElem]->GetVTK_Type() == TRIANGLE){
         
@@ -1165,9 +1153,10 @@ void CFEASolver::BC_Sine_Load(CGeometry *geometry, CSolver **solver_container, C
         
         //Area_Elem = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
         
-      }
-      
-      else if (geometry->bound[val_marker][iElem]->GetVTK_Type() == RECTANGLE){
+      } else if (geometry->bound[val_marker][iElem]->GetVTK_Type() == QUADRILATERAL){
+        
+        Point_3 = geometry->bound[val_marker][iElem]->GetNode(3);
+        Coord_3 = geometry->node[Point_3]->GetCoord();
         
         for (iDim = 0; iDim < nDim; iDim++) {
           AC[iDim] = Coord_2[iDim]-Coord_0[iDim];
@@ -1208,7 +1197,7 @@ void CFEASolver::BC_Sine_Load(CGeometry *geometry, CSolver **solver_container, C
         
         
       }
-      else if (geometry->bound[val_marker][iElem]->GetVTK_Type() == RECTANGLE){
+      else if (geometry->bound[val_marker][iElem]->GetVTK_Type() == QUADRILATERAL){
         
         Residual[0] = (1.0/4.0)*Area_Elem*TotalLoad*Load_Dir_Local[0]/Norm;
         Residual[1] = (1.0/4.0)*Area_Elem*TotalLoad*Load_Dir_Local[1]/Norm;
@@ -1227,8 +1216,6 @@ void CFEASolver::BC_Sine_Load(CGeometry *geometry, CSolver **solver_container, C
   
 }
 
-
-
 void CFEASolver::BC_Pressure(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
                              unsigned short val_marker) { }
 
@@ -1243,7 +1230,8 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
   
   unsigned long PointCorners[8];
   unsigned short nNodes=0, iNodes, iDim, jDim, form2d;
-  su2double CoordCorners[8][3], CoordGauss[8][3];
+  su2double CoordCorners[8][3];
+//  su2double CoordGauss[8][3];
   
   /*--- Container of the shape functions ---*/
   CNumerics *numerics;
@@ -1278,7 +1266,7 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
   for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
     
     if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE){     nNodes = 3;}
-    if (geometry->elem[iElem]->GetVTK_Type() == RECTANGLE){    nNodes = 4;}
+    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL){    nNodes = 4;}
     if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON){  nNodes = 4;}
     if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID){      nNodes = 5;}
     if (geometry->elem[iElem]->GetVTK_Type() == PRISM){        nNodes = 6;}
@@ -1297,7 +1285,7 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
         CoordCorners[iNodes][iDim] = geometry->node[PointCorners[iNodes]]->GetCoord(iDim);
         
         /*--- Initialization of the gauss coordinate matrix ---*/
-        CoordGauss[iNodes][iDim] = 0.0;
+//        CoordGauss[iNodes][iDim] = 0.0;
       }
     }
     
@@ -1512,7 +1500,7 @@ void CFEASolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver
     
     CSysSolve femSystem;
     IterLinSol = femSystem.Solve(MassMatrix, LinSysRes, LinSysSol, geometry, config);
-    
+    SetIterLinSolver(IterLinSol);
     
     /*--- Update solution and (if dynamic) advance velocity and acceleration vectors in time ---*/
     
@@ -1602,7 +1590,7 @@ void CFEASolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver
       
       CSysSolve femSystem;
       IterLinSol = femSystem.Solve(StiffMatrixTime, LinSysRes, LinSysSol, geometry, config);
-      
+      SetIterLinSolver(IterLinSol);
     }
     else {
       
@@ -1610,7 +1598,7 @@ void CFEASolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver
       
       CSysSolve femSystem;
       IterLinSol = femSystem.Solve(StiffMatrixSpace, LinSysRes, LinSysSol, geometry, config);
-      
+      SetIterLinSolver(IterLinSol);
     }
     
     
@@ -1738,6 +1726,7 @@ void CFEASolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_c
   
   CSysSolve system;
   IterLinSol = system.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+  SetIterLinSolver(IterLinSol);
   
   /*--- MPI solution ---*/
   
@@ -1746,7 +1735,6 @@ void CFEASolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_c
   /*---  Compute the residual Ax-f ---*/
   
   Jacobian.ComputeResidual(LinSysSol, LinSysRes, LinSysAux);
-  
   
   /*--- Set maximum residual to zero ---*/
   
@@ -1912,14 +1900,18 @@ void CFEASolver::GetSurface_Pressure(CGeometry *geometry, CConfig *config) {
 void CFEASolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fea_geometry, CGeometry **flow_geometry,
                              CConfig *fea_config, CConfig *flow_config, CNumerics *fea_numerics) {
   
+  // Unused variables
+  //unsigned short nVertexFEA;
+  //su2double *nodePress, *nodeShearStress, *tn_e;
+  //su2double Viscosity_Ref, Velocity_Ref, Density_Ref, Pressure_Ref;
+  //unsigned short markFEA, nMarkerFEA, iMarkerFEA;
   
-  unsigned short nVertexFEA, nVertexFlow, iVertex, nMarkerFSIint, iDim, jDim;
-  unsigned short markFEA, markFlow, iPoint, iMarkerFSIint;
-  unsigned short nMarkerFEA, nMarkerFlow, iMarkerFEA, iMarkerFlow;
+  unsigned short nVertexFlow, iVertex, nMarkerFSIint, iDim, jDim;
+  unsigned short markFlow, iPoint, iMarkerFSIint;
+  unsigned short nMarkerFlow, iMarkerFlow;
   unsigned long *nodeVertex, *donorVertex;
-  su2double *nodePress, *nodeShearStress, **normalsVertex, **normalsVertex_Unit, **tn_f, *tn_e;
+  su2double **normalsVertex, **normalsVertex_Unit, **tn_f;
   su2double factorForces;
-  su2double Viscosity_Ref, Velocity_Ref, Density_Ref, Pressure_Ref;
   
   su2double *Velocity_ND, Density_ND, *Velocity_Real, Density_Real, Velocity2_Real, Velocity2_ND;
   
@@ -1978,10 +1970,11 @@ void CFEASolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fea_geometry,
     Velocity2_ND += Velocity_ND[iDim]*Velocity_ND[iDim];
   }
   
-  Velocity_Ref  = flow_config->GetVelocity_Ref();
-  Viscosity_Ref = flow_config->GetViscosity_Ref();
-  Density_Ref   = flow_solution[MESH_0][FLOW_SOL]->GetDensity_Inf();
-  Pressure_Ref  = flow_config->GetPressure_Ref();
+  /*--- Unused Vars ---*/
+  //Velocity_Ref  = flow_config->GetVelocity_Ref();
+  //Viscosity_Ref = flow_config->GetViscosity_Ref();
+  //Density_Ref   = flow_solution[MESH_0][FLOW_SOL]->GetDensity_Inf();
+  //Pressure_Ref  = flow_config->GetPressure_Ref();
   
   factorForces = Density_Real*Velocity2_Real/(Density_ND*Velocity2_ND);
   
@@ -1989,17 +1982,17 @@ void CFEASolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fea_geometry,
   
   for (iMarkerFSIint=0; iMarkerFSIint < nMarkerFSIint; iMarkerFSIint++){
     
-    nMarkerFEA=fea_geometry[MESH_0]->GetnMarker();
+    //nMarkerFEA=fea_geometry[MESH_0]->GetnMarker();
     nMarkerFlow=flow_geometry[MESH_0]->GetnMarker();
     
     /*--- Identification of the markers ---*/
     
-    markFEA = 0;
-    for (iMarkerFEA=0; iMarkerFEA < nMarkerFEA; iMarkerFEA++){
-      if ( fea_config->GetMarker_All_FSIinterface(iMarkerFEA) == (iMarkerFSIint+1)){
-        markFEA=iMarkerFEA;
-      }
-    }
+    //    markFEA = 0;
+    //    for (iMarkerFEA=0; iMarkerFEA < nMarkerFEA; iMarkerFEA++){
+    //      if ( fea_config->GetMarker_All_FSIinterface(iMarkerFEA) == (iMarkerFSIint+1)){
+    //        markFEA=iMarkerFEA;
+    //      }
+    //    }
     
     markFlow = 0;
     for (iMarkerFlow=0; iMarkerFlow < nMarkerFlow; iMarkerFlow++){
@@ -2009,15 +2002,15 @@ void CFEASolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fea_geometry,
     }
     
     
-    nVertexFEA = fea_geometry[MESH_0]->GetnVertex(markFEA);
+    //nVertexFEA = fea_geometry[MESH_0]->GetnVertex(markFEA);
     nVertexFlow = flow_geometry[MESH_0]->GetnVertex(markFlow);
     
-    nodePress = new su2double [nVertexFlow];
-    nodeShearStress = new su2double [nVertexFlow];
+    //nodePress = new su2double [nVertexFlow];
+    //nodeShearStress = new su2double [nVertexFlow];
     nodeVertex = new unsigned long [nVertexFlow];
     donorVertex = new unsigned long [nVertexFlow];
     
-    tn_e = new su2double [nVar*nDim];
+    //tn_e = new su2double [nVar*nDim];
     
     tn_f = new su2double* [nVertexFlow];
     for (iVertex = 0; iVertex < nVertexFlow; iVertex++) {
@@ -2035,7 +2028,8 @@ void CFEASolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fea_geometry,
     }
     
     su2double **Grad_PrimVar = NULL;
-    su2double Viscosity = 0.0, Density = 0.0;
+    su2double Viscosity = 0.0;
+    //su2double Density = 0.0;
     su2double Tau[3][3];
     
     su2double div_vel, Delta;
@@ -2077,7 +2071,7 @@ void CFEASolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fea_geometry,
           
           Grad_PrimVar = flow_solution[MESH_0][FLOW_SOL]->node[nodeVertex[iVertex]]->GetGradient_Primitive();
           Viscosity = flow_solution[MESH_0][FLOW_SOL]->node[nodeVertex[iVertex]]->GetLaminarViscosityInc();
-          Density = flow_solution[MESH_0][FLOW_SOL]->node[nodeVertex[iVertex]]->GetDensityInc();
+          //Density = flow_solution[MESH_0][FLOW_SOL]->node[nodeVertex[iVertex]]->GetDensityInc();
           
         }
       }
@@ -2090,7 +2084,7 @@ void CFEASolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fea_geometry,
           
           Grad_PrimVar = flow_solution[MESH_0][FLOW_SOL]->node[nodeVertex[iVertex]]->GetGradient_Primitive();
           Viscosity = flow_solution[MESH_0][FLOW_SOL]->node[nodeVertex[iVertex]]->GetLaminarViscosity();
-          Density = flow_solution[MESH_0][FLOW_SOL]->node[nodeVertex[iVertex]]->GetDensity();
+          //Density = flow_solution[MESH_0][FLOW_SOL]->node[nodeVertex[iVertex]]->GetDensity();
           
         }
       }
@@ -2250,7 +2244,7 @@ void CFEASolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, CConfig *fe
   su2double *dispPred, *dispCalc, *dispPred_Old, *dispCalc_Old;
   su2double deltaU[3] = {0.0, 0.0, 0.0}, deltaU_p1[3] = {0.0, 0.0, 0.0};
   su2double delta_deltaU[3] = {0.0, 0.0, 0.0};
-  su2double numAitk, denAitk, WAitken;
+  su2double numAitk, denAitk;
   su2double CurrentTime=fea_config->GetCurrent_DynTime();
   su2double Static_Time=fea_config->GetStatic_Time();
   su2double WAitkDyn_tn1, WAitkDyn_Max, WAitkDyn;
@@ -2258,7 +2252,7 @@ void CFEASolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, CConfig *fe
   nPoint = fea_geometry[MESH_0]->GetnPoint();
   nDim = fea_geometry[MESH_0]->GetnDim();
   
-  WAitken=fea_config->GetAitkenStatRelax();
+  //su2double WAitken=fea_config->GetAitkenStatRelax();
   
   dispPred	=new su2double [nDim];
   dispPred_Old=new su2double [nDim];
@@ -2426,16 +2420,9 @@ void CFEASolver::SetAitken_Relaxation(CGeometry **fea_geometry, CConfig *fea_con
 
 void CFEASolver::Update_StructSolution(CGeometry **fea_geometry, CConfig *fea_config, CSolver ***fea_solution) {
   
-  unsigned long iPoint;
-  su2double *valSolutionPred, *valSolution;
-
-  unsigned long nPoint = fea_geometry[MESH_0]->GetnPoint();
-  unsigned short nDim = fea_geometry[MESH_0]->GetnDim();
+  su2double *valSolutionPred;
   
-  valSolutionPred=new su2double [nDim];
-  valSolution=new su2double [nDim];
-  
-  for (iPoint=0; iPoint<nPoint; iPoint++){
+  for (unsigned long iPoint=0; iPoint<fea_geometry[MESH_0]->GetnPoint(); iPoint++){
     
     valSolutionPred = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Pred();
     

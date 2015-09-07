@@ -2,7 +2,7 @@
  * \file codi_forward_structure.inl
  * \brief Inline subroutines for <i>codi_forward_structure.hpp<i>.
  * \author T. Albring
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
