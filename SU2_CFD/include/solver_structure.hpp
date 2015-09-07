@@ -1109,6 +1109,14 @@ public:
 
 	/*!
 	 * \brief A virtual member.
+	 * \param[in] solver - solver containing the outlet information.
+	 * \param[in] inMarker - marker related to the inlet.
+	 * \param[in] outMarker - marker related to the outlet.
+	 */
+	virtual void TurboPerformance(CSolver *solver,  CConfig *config, unsigned short inMarker,  unsigned short outMarker);
+
+	/*!
+	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
 	 * \param[in] config - Definition of the particular problem.
@@ -3423,6 +3431,14 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void Inviscid_Forces(CGeometry *geometry, CConfig *config);
+
+	/*!
+	 * \brief Compute turbomachinery performance.
+	 * \param[in] solver - solver containing the outlet information.
+	 * \param[in] inMarker - marker related to the inlet.
+	 * \param[in] outMarker - marker related to the outlet.
+	 */
+	void TurboPerformance(CSolver *solver,  CConfig *config, unsigned short inMarker,  unsigned short outMarker);
 
 	/*!
 	 * \brief Provide the non dimensional lift coefficient (inviscid contribution).

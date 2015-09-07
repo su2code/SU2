@@ -4510,6 +4510,25 @@ void CEulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
 
 }
 
+void CEulerSolver::TurboPerformance(CSolver *solver, CConfig *config, unsigned short inMarker,  unsigned short outMarker){
+
+	su2double eta_ts;
+	su2double avgVel2, avgTotalEnthaply= 0.0, avgDensityOut, avgPressureOut, avgEntropyIn, avgEnthalpyOut, avgEnthalpyOutIs;
+	unsigned short iDim;
+	for (iDim = 0; iDim < nDim; iDim++) avgVel2 += AveragedVelocity[inMarker][iDim]*AveragedVelocity[inMarker][iDim];
+
+	avgTotalEnthaply = AveragedEnthalpy[inMarker] + 0.5*avgVel2;
+	avgEntropyIn = AveragedEntropy[inMarker];
+	avgDensityOut= solver->GetAveragedDensity(outMarker);
+	avgPressureOut= solver->GetAveragedPressure(outMarker);
+	FluidModel->SetTDState_Prho(avgPressureOut,avgDensityOut);
+	avgEnthalpyOut = FluidModel->GetStaticEnergy() + avgPressureOut/avgDensityOut;
+	FluidModel->SetTDState_Ps(avgPressureOut, avgEntropyIn);
+	avgEnthalpyOutIs = FluidModel->GetStaticEnergy() + avgPressureOut/FluidModel->GetDensity();
+	eta_ts = (avgTotalEnthaply - avgEnthalpyOut)/(avgTotalEnthaply - avgEnthalpyOutIs);
+	cout << "eta_ts "<< eta_ts<<endl;
+}
+
 void CEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container,
                                         CConfig *config, unsigned short iRKStep) {
   su2double *Residual, *Res_TruncError, Vol, Delta, Res;
@@ -7733,9 +7752,9 @@ void CEulerSolver::Mixing_Process(CGeometry *geometry, CSolver **solver_containe
 	AveragedEntropy[val_Marker] = FluidModel->GetEntropy();
 	AveragedNormalVelocity[val_Marker]= AveragedNormal[val_Marker][0]*AveragedVelocity[val_Marker][0] + AveragedNormal[val_Marker][1]*AveragedVelocity[val_Marker][1];
 	AveragedTangVelocity[val_Marker]= AveragedNormal[val_Marker][0]*AveragedVelocity[val_Marker][1] - AveragedNormal[val_Marker][1]*AveragedVelocity[val_Marker][0];
-	for(iDim = 0; iDim<nDim; iDim++) cout <<"Vel " << AveragedVelocity[val_Marker][iDim]<<" "<<iDim<<endl;
-	cout <<"VelNorm " << AveragedNormalVelocity[val_Marker]<<" "<<endl;
-	cout <<"VelTang " << AveragedTangVelocity[val_Marker]<<" "<<endl;
+//	for(iDim = 0; iDim<nDim; iDim++) cout <<"Vel " << AveragedVelocity[val_Marker][iDim]<<" "<<iDim<<endl;
+//	cout <<"VelNorm " << AveragedNormalVelocity[val_Marker]<<" "<<endl;
+//	cout <<"VelTang " << AveragedTangVelocity[val_Marker]<<" "<<endl;
 	/* --- compure total averaged quantities ---*/
 	avgVel2 = 0.0;
 	for (iDim = 0; iDim < nDim; iDim++) avgVel2 += AveragedVelocity[val_Marker][iDim]*AveragedVelocity[val_Marker][iDim];
