@@ -3075,13 +3075,21 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
   else if ((config->GetDesign_Variable(0) == ROTATION) ||
            (config->GetDesign_Variable(0) == TRANSLATION) ||
            (config->GetDesign_Variable(0) == SCALE)) {
-    /*--- If all markers are deforming, use volume method. If only some are deforming, use surface method ---*/
+    
+    /*--- If all markers are deforming, use volume method. 
+     If only some are deforming, use surface method ---*/
+    
+    /*--- iDV was uninitialized, so hard-coding to one. Check intended
+     behavior (might want to loop over all iDV in case we have trans & rotate. ---*/
+    iDV = 0;
     allmoving = true;
+    
     /*--- Loop over markers ---*/
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
       if (config->GetMarker_All_DV(iMarker) == NO)
         allmoving = false;
     }
+    
     if (!allmoving){
       /*---Only some markers are moving, use the surface method ---*/
       if (config->GetDesign_Variable(0) == ROTATION)
