@@ -825,7 +825,7 @@ enum TURBO_PERFORMANCE_TYPE {
 };
 
 static const map<string, TURBO_PERFORMANCE_TYPE> TurboPerformance_Map = CCreateMap<string, TURBO_PERFORMANCE_TYPE>
-("TOT_PRESSURE_LOSS", TOT_PRESSURE_LOSS,)
+("TOT_PRESSURE_LOSS", TOT_PRESSURE_LOSS)
 ("KINETIC_ENERGY_LOSS", KINETIC_ENERGY_LOSS)
 ("ETA_TS", ETA_TS)
 ("ETA_TT", ETA_TT);
@@ -2954,6 +2954,7 @@ public:
     this->marker_donor = NULL;
   }
 };
+
 template <class Tenum>
 class COptionTurboPerformance : public COptionBase{
   string name; // identifier for the option
@@ -2961,11 +2962,11 @@ class COptionTurboPerformance : public COptionBase{
   string * & marker_turboIn;
   string * & marker_turboOut;
   map<string, Tenum> m;
-  unsigned short & field; // Reference to the fieldname
+  unsigned short* & field; // Reference to the fieldname
 
 public:
   COptionTurboPerformance(const string option_field_name, unsigned short & nMarker_TurboPerf,
-                  string* & Marker_TurboBoundIn, string* & Marker_TurboBoundOut, const map<string, Tenum> m, unsigned short & option_field) : size(nMarker_TurboPerf), marker_turboIn(Marker_TurboBoundIn), marker_turboOut(Marker_TurboBoundOut), field(option_field) {
+                  string* & Marker_TurboBoundIn, string* & Marker_TurboBoundOut, unsigned short* & option_field, const map<string, Tenum> m) : size(nMarker_TurboPerf), marker_turboIn(Marker_TurboBoundIn), marker_turboOut(Marker_TurboBoundOut), field(option_field) {
     this->name = option_field_name;
     this->m = m;
   }
@@ -3028,23 +3029,6 @@ public:
   }
 };
 
-
-class COptionPython : public COptionBase{
-  string name;
-public:
-  COptionPython(const string name) {
-    this->name = name;
-  }
-  ~COptionPython() {};
-  // No checking happens with python options
-  string SetValue(vector<string> option_value) {
-    return "";
-  }
-  // No defaults with python options
-  void SetDefault() {
-    return;
-  };
-};
 
 class COptionPython : public COptionBase{
   string name;
