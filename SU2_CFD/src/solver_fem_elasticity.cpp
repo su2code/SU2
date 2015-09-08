@@ -2005,7 +2005,7 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Update(CGeometry *geometry, CSolver 
 void CFEM_ElasticitySolver::Solve_System(CGeometry *geometry, CSolver **solver_container, CConfig *config){
 
 
-	unsigned long IterLinSol, iPoint, total_index;
+	unsigned long IterLinSol, iPoint, jPoint, total_index;
 	unsigned short iVar;
 
 	/*--- Initialize residual and solution at the ghost points ---*/

@@ -106,6 +106,9 @@ public:
   static void Allgather(void *sendbuf, int sendcnt, MPI_Datatype sendtype,
                         void *recvbuf, int recvcnt, MPI_Datatype recvtype, MPI_Comm comm);
 
+  static void Scatter(void *sendbuf, int sendcnt,MPI_Datatype sendtype,
+                      void *recvbuf, int recvcnt, MPI_Datatype recvtype, int root, MPI_Comm comm);
+
   static void Sendrecv(void *sendbuf, int sendcnt, MPI_Datatype sendtype,
                        int dest, int sendtag, void *recvbuf, int recvcnt,
                        MPI_Datatype recvtype,int source, int recvtag,

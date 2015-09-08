@@ -66,6 +66,17 @@ int main(int argc, char *argv[]) {
 	  nZone = atoi(argv[2]);}
   else { strcpy(config_file_name, "default.cfg"); }
 
+  /*--- TODO: Need to link it to definition structure to be able to use this ---*/
+
+//  /*--- Read the name and format of the input mesh file to get from the mesh
+//   file the number of zones and dimensions from the numerical grid (required
+//   for variables allocation)  ---*/
+//
+//    CConfig *config = NULL;
+//    config = new CConfig(config_file_name, SU2_SOL);
+//
+//    nZone = GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
+
 	/*--- Definition of the containers per zones ---*/
   
 	solver_container = new CSolver*[nZone];
