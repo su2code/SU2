@@ -95,6 +95,12 @@ inline void CMPIWrapper::Allgather(void *sendbuf, int sendcnt, MPI_Datatype send
   MPI_Allgather(sendbuf,sendcnt,sendtype, recvbuf, recvcnt, recvtype, comm);
 }
 
+inline void CMPIWrapper::Scatter(void *sendbuf, int sendcnt,MPI_Datatype sendtype,
+                                void *recvbuf, int recvcnt, MPI_Datatype recvtype, int root, MPI_Comm comm){
+  MPI_Scatter(sendbuf,sendcnt,sendtype,recvbuf,recvcnt,recvtype,root,comm);
+}
+
+
 inline void CMPIWrapper::Sendrecv(void *sendbuf, int sendcnt, MPI_Datatype sendtype,
                                   int dest, int sendtag, void *recvbuf, int recvcnt,
                                   MPI_Datatype recvtype,int source, int recvtag,
