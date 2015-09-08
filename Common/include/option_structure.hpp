@@ -190,6 +190,7 @@ enum ENUM_SOLVER {
   HEAT_EQUATION = 29,					/*!< \brief Definition of the heat solver. */
   LINEAR_ELASTICITY = 11,				/*!< \brief Definition of the FEA solver. */
   FLUID_STRUCTURE_INTERACTION = 12,		/*!< \brief Definition of a FSI solver. */
+  FEM_ELASTICITY = 13,					/*!< \brief Definition of a FEM solver. */
   ADJ_EULER = 18,						/*!< \brief Definition of the continuous adjoint Euler's solver. */
   ADJ_NAVIER_STOKES = 19,				/*!< \brief Definition of the continuous adjoint Navier-Stokes' solver. */
   ADJ_RANS = 20,						/*!< \brief Definition of the continuous adjoint Reynolds-averaged Navier-Stokes' (RANS) solver. */
@@ -223,6 +224,7 @@ static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVE
 ("WAVE_EQUATION", WAVE_EQUATION)
 ("HEAT_EQUATION", HEAT_EQUATION)
 ("LINEAR_ELASTICITY", LINEAR_ELASTICITY)
+("FEM_ELASTICITY", FEM_ELASTICITY)
 ("DISC_ADJ_EULER", DISC_ADJ_EULER)
 ("DISC_ADJ_RANS", DISC_ADJ_RANS)
 ("DISC_ADJ_NAVIERSTOKES", DISC_ADJ_EULER)
@@ -252,12 +254,48 @@ static const map<string, ENUM_FSI_FLUID_PROBLEM> FSI_Fluid_Solver_Map = CCreateM
 enum ENUM_FSI_STRUC_PROBLEM {
   NO_SOLVER_SFSI = 0,				/*!< \brief Definition of no solver. */
   LINEAR_ELASTICITY_SFSI = 11,		/*!< \brief Linear elasticity equations for the FSI problem */
-  NONLINEAR_ELASTICITY_SFSI = 2		/*!< \brief Nonlinear elasticity equations for the FSI problem */
+  FEM_ELASTICITY_SFSI = 13,		/*!< \brief Nonlinear elasticity equations for the FSI problem */
 };
 static const map<string, ENUM_FSI_STRUC_PROBLEM> FSI_Struc_Solver_Map = CCreateMap<string, ENUM_FSI_STRUC_PROBLEM>
 ("NONE", NO_SOLVER_SFSI)
 ("LINEAR_ELASTICITY", LINEAR_ELASTICITY_SFSI)
-("NONLINEAR_ELASTICITY", NONLINEAR_ELASTICITY_SFSI);
+("FEM_ELASTICITY", FEM_ELASTICITY_SFSI);
+
+/*!
+ * \brief Material geometric conditions
+ */
+enum ENUM_STRUCT_SOLVER {
+	SMALL_DEFORMATIONS = 0,			/*!< \brief Definition of linear elastic material. */
+	LARGE_DEFORMATIONS = 1,			/*!< \brief Definition of Neo-Hookean material. */
+};
+static const map<string, ENUM_STRUCT_SOLVER> Struct_Map = CCreateMap<string, ENUM_STRUCT_SOLVER>
+("SMALL_DEFORMATIONS", SMALL_DEFORMATIONS)
+("LARGE_DEFORMATIONS", LARGE_DEFORMATIONS);
+
+
+/*!
+ * \brief Material model
+ */
+enum ENUM_MATERIAL_MODEL {
+	LINEAR_ELASTIC = 0,			/*!< \brief Definition of linear elastic material. */
+	NEO_HOOKEAN = 1,			/*!< \brief Definition of Neo-Hookean material. */
+};
+static const map<string, ENUM_MATERIAL_MODEL> Material_Map = CCreateMap<string, ENUM_MATERIAL_MODEL>
+("LINEAR_ELASTIC", LINEAR_ELASTIC)
+("NEO_HOOKEAN", NEO_HOOKEAN);
+
+/*!
+ * \brief Material compressibility
+ */
+enum ENUM_MAT_COMPRESS {
+  COMPRESSIBLE_MAT = 0,			/*!< \brief Definition of compressible material. */
+  INCOMPRESSIBLE_MAT = 1,		/*!< \brief Definition of incompressible material. */
+};
+static const map<string, ENUM_MAT_COMPRESS> MatComp_Map = CCreateMap<string, ENUM_MAT_COMPRESS>
+("COMPRESSIBLE", COMPRESSIBLE_MAT)
+("INCOMPRESSIBLE", INCOMPRESSIBLE_MAT);
+
+
 
 /*!
  * \brief types of interpolators
@@ -358,6 +396,17 @@ const int SOURCE_FIRST_TERM = 2;        /*!< \brief Position of the first source
 const int SOURCE_SECOND_TERM = 3;   /*!< \brief Position of the second source term in the numerics container array. */
 const int CONV_BOUND_TERM = 4;       /*!< \brief Position of the convective boundary terms in the numerics container array. */
 const int VISC_BOUND_TERM = 5;       /*!< \brief Position of the viscous boundary terms in the numerics container array. */
+
+/*!
+ * \brief types of finite elements (in 2D or 3D)
+ */
+
+const int EL_TRIA = 0;		/*!< \brief Elements of three nodes (2D). */
+const int EL_QUAD = 1;		/*!< \brief Elements of four nodes (2D). */
+
+const int EL_TETRA = 0;	/*!< \brief Elements of four nodes (3D). */
+const int EL_HEXA = 1;		/*!< \brief Elements of eight nodes (3D). */
+
 
 /*!
  * \brief types of mathematical problem to solve
@@ -674,6 +723,17 @@ static const map<string, ENUM_TIME_INT_FEA> Time_Int_Map_FEA = CCreateMap<string
 ("CD_EXPLICIT", CD_EXPLICIT)
 ("NEWMARK_IMPLICIT", NEWMARK_IMPLICIT)
 ("GA_IMPLICIT", GA_IMPLICIT);
+
+/*!
+ * \brief type of time integration schemes
+ */
+enum ENUM_SPACE_ITE_FEA {
+  NEWTON_RAPHSON = 1,			/*!< \brief Full Newton-Rapshon method. */
+  MODIFIED_NEWTON_RAPHSON = 2   /*!< \brief Modified Newton-Raphson method. */
+};
+static const map<string, ENUM_SPACE_ITE_FEA> Space_Ite_Map_FEA = CCreateMap<string, ENUM_SPACE_ITE_FEA>
+("NEWTON_RAPHSON", NEWTON_RAPHSON)
+("MODIFIED_NEWTON_RAPHSON", MODIFIED_NEWTON_RAPHSON);
 
 /*!
  * \brief types of schemes to compute the flow gradient

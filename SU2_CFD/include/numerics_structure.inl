@@ -55,6 +55,36 @@ inline void CNumerics::PressInt_Linear(su2double CoordCorners[4][3], su2double *
 
 inline void CNumerics::ViscTermInt_Linear(su2double CoordCorners[2][2], su2double Tau_0[3][3], su2double Tau_1[3][3], su2double FviscNodal[4]) { }
 
+inline void CNumerics::Compute_Mass_Matrix(CElement *element_container){ }
+
+inline void CNumerics::Compute_Tangent_Matrix(CElement *element_container){ }
+
+inline void CFEM_Elasticity::Compute_Tangent_Matrix(CElement *element_container){ }
+
+inline void CNumerics::Compute_MeanDilatation_Term(CElement *element_container){ }
+
+inline void CFEM_Elasticity::Compute_MeanDilatation_Term(CElement *element_container){ }
+
+inline void CNumerics::Compute_NodalStress_Term(CElement *element_container){ }
+
+inline void CFEM_Elasticity::Compute_NodalStress_Term(CElement *element_container){ }
+
+inline void CNumerics::Compute_Averaged_NodalStress(CElement *element_container){ }
+
+inline void CFEM_Elasticity::Compute_Averaged_NodalStress(CElement *element_container){ }
+
+inline void CNumerics::Compute_Constitutive_Matrix(CElement *element_container){ }
+
+inline void CFEM_Elasticity::Compute_Constitutive_Matrix(CElement *element_container){ }
+
+inline void CFEM_NonlinearElasticity::Compute_Constitutive_Matrix(CElement *element_container){ }
+
+inline void CNumerics::Compute_Stress_Tensor(CElement *element_container){ }
+
+inline void CFEM_Elasticity::Compute_Stress_Tensor(CElement *element_container){ }
+
+inline void CFEM_NonlinearElasticity::Compute_Stress_Tensor(CElement *element_container){ }
+
 inline void CNumerics::ComputeResidual(su2double *val_residual, CConfig *config) { }
 
 inline void CNumerics::ComputeResidual(su2double *val_residual_i, su2double *val_residual_j) { }

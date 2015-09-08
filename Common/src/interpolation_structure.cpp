@@ -282,7 +282,7 @@ void CNearestNeighbor::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
       Geometry[iZone_1][MESH_0]->vertex[markFEA][iVertex]->Allocate_DonorInfo();
       /*--- Loop over vertices in the interface marker (zone 0) --*/
       Geometry[iZone_1][MESH_0]->vertex[markFEA][iVertex]->SetDonorInfo(donorindex,nn);
-		  for (jVertex = 0; jVertex<Geometry[iZone_0][MESH_0]->GetnVertex(markFlow); jVertex++) {
+	  for (jVertex = 0; jVertex<Geometry[iZone_0][MESH_0]->GetnVertex(markFlow); jVertex++) {
         jPoint =Geometry[iZone_0][MESH_0]->vertex[markFlow][jVertex]->GetNode();
         distance = 0.0;
         for (iDim=0; iDim<nDim; iDim++)
@@ -557,19 +557,22 @@ void CConsistConserve::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
 
 }
 
-void CConsistConserve::Isoparametric(su2double* isoparams, unsigned int iZone_0,
-  unsigned short iMarker, unsigned long iVertex, unsigned int nDim, unsigned int iZone_1,
-  unsigned short jMarker, long donor_elem,  unsigned short iFace, unsigned int nDonorPoints){
+void CConsistConserve::Isoparametric(su2double* isoparams, unsigned int iZone_0, unsigned short iMarker, unsigned long iVertex, unsigned int nDim, unsigned int iZone_1, unsigned short jMarker, long donor_elem, unsigned int nDonorPoints, int* temp2){
   int i,j,k;
   int n0 = nDim+1, n;
-  int m =  nDonorPoints, m0;
-  unsigned long jVertex, jPoint;
   su2double tmp, tmp2, distance;
-  su2double x[m], x_tmp[m];
-  su2double Q[m*m], R[m*m], A[n0*m];
-  su2double x2[n0];
-  bool test[n0], testi[n0],on_marker[m];
+  unsigned long jVertex, inode;
 
+  /*--- Number of neighbor points to interpolate between ---*/
+  unsigned int m0 =  nDonorPoints, m;
+  su2double x[m0], x_tmp[m0];
+  /*--- Q R matrix system ---*/
+  su2double Q[m0*m0], R[m0*m0], A[n0*m0];
+  bool test[n0];
+  bool testi[n0];
+
+  su2double x2[n0];
+  int offset;
   /*--- n0: # of dimensions + 1. n: n0 less any degenerate rows ---*/
   n=n0;
   m0=m;

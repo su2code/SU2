@@ -42,6 +42,8 @@
 #include <cstdlib>
 
 #include "../../Common/include/config_structure.hpp"
+#include "gauss_structure.hpp"
+#include "element_structure.hpp"
 #include "numerics_machine_learning.hpp"
 #include "numerics_machine_learning_turbulent.hpp"
 #include "variable_structure.hpp"
@@ -386,7 +388,6 @@ public:
    */
   void SetPrimVarLimiter(su2double *val_primvar_lim_i,
                          su2double *val_primvar_lim_j);
-  
   /*!
    * \brief Set the value of the adjoint variable.
    * \param[in] val_psi_i - Value of the adjoint variable at point i.
@@ -1599,11 +1600,53 @@ public:
   virtual void ViscTermInt_Linear(su2double CoordCorners[2][2], su2double Tau_0[3][3], su2double Tau_1[3][3],  su2double FviscNodal[4]);
   
   /*!
+   * \brief A virtual member to compute the tangent matrix in structural problems
+   * \param[in] element_container - Element structure for the particular element integrated.
+   */
+  virtual void Compute_Tangent_Matrix(CElement *element_container);
+
+  /*!
+   * \brief A virtual member to compute the pressure term in incompressible or nearly-incompressible structural problems
+   * \param[in] element_container - Definition of the particular element integrated.
+   */
+  virtual void Compute_MeanDilatation_Term(CElement *element_container);
+
+  /*!
+   * \brief A virtual member to compute the nodal stress term in non-linear structural problems
+   * \param[in] element_container - Definition of the particular element integrated.
+   */
+  virtual void Compute_NodalStress_Term(CElement *element_container);
+
+  /*!
+   * \brief A virtual member to compute the constitutive matrix in an element for structural problems
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void Compute_Constitutive_Matrix(CElement *element_container);
+
+  /*!
+   * \brief A virtual member to compute the stress tensor in an element for structural problems
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void Compute_Stress_Tensor(CElement *element_container);
+
+  /*!
+   * \brief A virtual member to compute the mass matrix
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void Compute_Mass_Matrix(CElement *element_container);
+
+  /*!
+   * \brief A virtual member to compute the averaged nodal stresses
+   * \param[in] element_container - Element structure for the particular element integrated.
+   */
+  virtual void Compute_Averaged_NodalStress(CElement *element_container);
+
+  /*!
    * \brief Computes a basis of orthogonal vectors from a suppled vector
    * \param[in] config - Normal vector
    */
   void CreateBasis(su2double *val_Normal);
-  
+
 };
 
 /*!
@@ -3648,6 +3691,7 @@ public:
  */
 class CAvgGradCorrected_TurbML : public CNumerics {
 private:
+
   su2double **Mean_GradTurbVar;
   su2double *Proj_Mean_GradTurbVar_Kappa, *Proj_Mean_GradTurbVar_Edge, *Proj_Mean_GradTurbVar_Corrected;
   su2double *Edge_Vector;
@@ -3678,6 +3722,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config);
+
 };
 
 /*!
@@ -3689,6 +3734,7 @@ public:
  */
 class CAvgGradCorrected_TransLM : public CNumerics {
 private:
+
   su2double **Mean_GradTurbVar;
   su2double *Proj_Mean_GradTurbVar_Kappa, *Proj_Mean_GradTurbVar_Edge, *Proj_Mean_GradTurbVar_Corrected;
   su2double *Edge_Vector;
@@ -3718,6 +3764,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config);
+
 };
 
 /*!
@@ -3729,6 +3776,7 @@ public:
  */
 class CAvgGrad_TurbSST : public CNumerics {
 private:
+
   su2double sigma_k1,                     /*!< \brief Constants for the viscous terms, k-w (1), k-eps (2)*/
   sigma_k2,
   sigma_om1,
@@ -3791,6 +3839,7 @@ public:
  */
 class CAvgGradCorrected_TurbSST : public CNumerics {
 private:
+
   su2double sigma_k1,                     /*!< \brief Constants for the viscous terms, k-w (1), k-eps (2)*/
   sigma_k2,
   sigma_om1,
@@ -3901,6 +3950,7 @@ public:
  */
 class CAvgGradCorrectedArtComp_AdjFlow : public CNumerics {
 private:
+
   unsigned short iDim, iVar, jVar;	/*!< \brief Iterators in dimension an variable. */
   su2double *PsiVar_i, *PsiVar_j,			/*!< \brief Primitives variables at point i and 1. */
   *Edge_Vector,								/*!< \brief Vector form point i to point j. */
@@ -3947,6 +3997,7 @@ public:
  */
 class CAvgGradCorrected_AdjTurb : public CNumerics {
 private:
+
   su2double **Mean_GradTurbPsi;
   su2double *Proj_Mean_GradTurbPsi_Kappa, *Proj_Mean_GradTurbPsi_Edge, *Proj_Mean_GradTurbPsi_Corrected;
   su2double *Edge_Vector;
@@ -3999,6 +4050,7 @@ public:
  */
 class CAvgGrad_AdjTurb : public CNumerics {
 private:
+
   su2double **Mean_GradTurbPsi;
   su2double *Proj_Mean_GradTurbPsi_Kappa, *Proj_Mean_GradTurbPsi_Edge, *Proj_Mean_GradTurbPsi_Corrected;
   su2double *Edge_Vector;
@@ -4119,7 +4171,7 @@ public:
    * \param[in] CoordCorners[2][2] - Coordiantes of the corners.
    */
   void ViscTermInt_Linear(su2double CoordCorners[2][2], su2double Tau_0[3][3], su2double Tau_1[3][3],  su2double FviscNodal[4]);
-  
+
   /*!
    * \brief Shape functions and derivative of the shape functions
    * \param[in] Xi - Local coordinates.
@@ -4128,6 +4180,7 @@ public:
    * \param[in] CoordCorners[8][3] - Coordiantes of the corners.
    * \param[in] shp[8][4] - Shape function information
    */
+
   su2double ShapeFunc_Triangle(su2double Xi, su2double Eta, su2double CoordCorners[8][3], su2double DShapeFunction[8][4]);
   
   /*!
@@ -4180,62 +4233,272 @@ public:
    */
   su2double ShapeFunc_Hexa(su2double Xi, su2double Eta, su2double Mu, su2double CoordCorners[8][3], su2double DShapeFunction[8][4]);
   
-  /*!
-   * \brief Computing stiffness matrix of the Galerkin method.
-   * \param[out] val_stiffmatrix_elem - Stiffness matrix for Galerkin computation.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetFEA_StiffMatrix2D(su2double **StiffMatrix_Elem, su2double CoordCorners[8][3], unsigned short nNodes, unsigned short form2d);
+	/*!
+	 * \brief Computing stiffness matrix of the Galerkin method.
+	 * \param[out] val_stiffmatrix_elem - Stiffness matrix for Galerkin computation.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void SetFEA_StiffMatrix2D(su2double **StiffMatrix_Elem, su2double CoordCorners[8][3], unsigned short nNodes, unsigned short form2d);
   
   /*!
-   * \brief Computing stiffness matrix of the Galerkin method.
-   * \param[out] val_stiffmatrix_elem - Stiffness matrix for Galerkin computation.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetFEA_StiffMatrix3D(su2double **StiffMatrix_Elem, su2double CoordCorners[8][3], unsigned short nNodes);
-  
+	 * \brief Computing stiffness matrix of the Galerkin method.
+	 * \param[out] val_stiffmatrix_elem - Stiffness matrix for Galerkin computation.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void SetFEA_StiffMatrix3D(su2double **StiffMatrix_Elem, su2double CoordCorners[8][3], unsigned short nNodes);
+
   /*!
-   * \brief Computing mass matrix of the Galerkin method.
-   * \param[out] val_stiffmatrix_elem - Stiffness matrix for Galerkin computation.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetFEA_StiffMassMatrix2D(su2double **StiffMatrix_Elem, su2double **MassMatrix_Elem, su2double CoordCorners[8][3], unsigned short nNodes, unsigned short form2d);
-  
+	 * \brief Computing mass matrix of the Galerkin method.
+	 * \param[out] val_stiffmatrix_elem - Stiffness matrix for Galerkin computation.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void SetFEA_StiffMassMatrix2D(su2double **StiffMatrix_Elem, su2double **MassMatrix_Elem, su2double CoordCorners[8][3], unsigned short nNodes, unsigned short form2d);
+
   /*!
-   * \brief Computing mass matrix of the Galerkin method.
-   * \param[out] val_stiffmatrix_elem - Stiffness matrix for Galerkin computation.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetFEA_StiffMassMatrix3D(su2double **StiffMatrix_Elem, su2double **MassMatrix_Elem, su2double CoordCorners[8][3], unsigned short nNodes);
-  
+	 * \brief Computing mass matrix of the Galerkin method.
+	 * \param[out] val_stiffmatrix_elem - Stiffness matrix for Galerkin computation.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void SetFEA_StiffMassMatrix3D(su2double **StiffMatrix_Elem, su2double **MassMatrix_Elem, su2double CoordCorners[8][3], unsigned short nNodes);
+
   /*!
-   * \brief Computing stresses in FEA method at the nodes.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void GetFEA_StressNodal2D(su2double StressVector[8][3], su2double DispElement[8], su2double CoordCorners[8][3], unsigned short nNodes, unsigned short form2d);
-  
-  
+	 * \brief Computing stresses in FEA method at the nodes.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void GetFEA_StressNodal2D(su2double StressVector[8][3], su2double DispElement[8], su2double CoordCorners[8][3], unsigned short nNodes, unsigned short form2d);
+
+
   /*!
-   * \brief Computing stresses in FEA method at the nodes.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void GetFEA_StressNodal3D(su2double StressVector[8][6], su2double DispElement[24], su2double CoordCorners[8][3], unsigned short nNodes);
-  
+	 * \brief Computing stresses in FEA method at the nodes.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void GetFEA_StressNodal3D(su2double StressVector[8][6], su2double DispElement[24], su2double CoordCorners[8][3], unsigned short nNodes);
+
   /*!
-   * \brief Computing dead load vector of the Galerkin method.
-   * \param[out] val_deadloadvector_elem - Dead load at the nodes for Galerkin computation.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetFEA_DeadLoad2D(su2double *DeadLoadVector_Elem, su2double CoordCorners[8][3], unsigned short nNodes, su2double matDensity);
-  
+	 * \brief Computing dead load vector of the Galerkin method.
+	 * \param[out] val_deadloadvector_elem - Dead load at the nodes for Galerkin computation.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void SetFEA_DeadLoad2D(su2double *DeadLoadVector_Elem, su2double CoordCorners[8][3], unsigned short nNodes, su2double matDensity);
+
   /*!
-   * \brief Computing stiffness matrix of the Galerkin method.
-   * \param[out] val_deadloadvector_elem - Dead load at the nodes for Galerkin computation.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetFEA_DeadLoad3D(su2double *DeadLoadVector_Elem, su2double CoordCorners[8][3], unsigned short nNodes, su2double matDensity);
-  
+	 * \brief Computing stiffness matrix of the Galerkin method.
+	 * \param[out] val_deadloadvector_elem - Dead load at the nodes for Galerkin computation.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void SetFEA_DeadLoad3D(su2double *DeadLoadVector_Elem, su2double CoordCorners[8][3], unsigned short nNodes, su2double matDensity);
+
 };
+
+/*!
+ * \class CFEM_Elasticity
+ * \brief Generic class for computing the tangent matrix and the residual for structural problems
+ * \ingroup FEM_Discr
+ * \author R.Sanchez
+ * \version 4.0.0 "Cardinal"
+ */
+class CFEM_Elasticity : public CNumerics {
+
+protected:
+
+	su2double E;				/*!< \brief Young's modulus of elasticity. */
+	su2double Nu;			/*!< \brief Poisson's ratio. */
+	su2double Rho_s;		/*!< \brief Structural density. */
+	su2double Mu;			/*!< \brief Lame's coeficient. */
+	su2double Lambda;		/*!< \brief Lame's coeficient. */
+	su2double Kappa;		/*!< \brief Compressibility constant. */
+
+	su2double **Ba_Mat,	 /*!< \brief Matrix B for node a - Auxiliary. */
+	**Bb_Mat;	 		 /*!< \brief Matrix B for node b - Auxiliary. */
+	su2double *Ni_Vec;	 	 /*!< \brief Vector of shape functions - Auxiliary. */
+	su2double **D_Mat;		 /*!< \brief Constitutive matrix - Auxiliary. */
+	su2double **KAux_ab;	 /*!< \brief Node ab stiffness matrix - Auxiliary. */
+	su2double **GradNi_Ref_Mat;/*!< \brief Gradients of Ni - Auxiliary. */
+	su2double **GradNi_Curr_Mat;/*!< \brief Gradients of Ni - Auxiliary. */
+
+public:
+
+	/*!
+	 * \brief Constructor of the class.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
+	 * \param[in] val_nVar - Number of variables of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CFEM_Elasticity(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CFEM_Elasticity(void);
+
+	void Compute_Mass_Matrix(CElement *element_container);
+
+	virtual void Compute_Tangent_Matrix(CElement *element_container);
+
+	virtual void Compute_MeanDilatation_Term(CElement *element_container);
+
+	virtual void Compute_NodalStress_Term(CElement *element_container);
+
+	virtual void Compute_Averaged_NodalStress(CElement *element_container);
+
+	virtual void Compute_Constitutive_Matrix(CElement *element_container);
+
+	virtual void Compute_Stress_Tensor(CElement *element_container);
+
+};
+
+/*!
+ * \class CFEM_LinearElasticity
+ * \brief Class for computing the stiffness matrix of a linear, elastic problem.
+ * \ingroup FEM_Discr
+ * \author R.Sanchez
+ * \version 4.0.0 "Cardinal"
+ */
+class CFEM_LinearElasticity : public CFEM_Elasticity {
+
+	su2double **nodalDisplacement;
+
+public:
+
+	/*!
+	 * \brief Constructor of the class.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
+	 * \param[in] val_nVar - Number of variables of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CFEM_LinearElasticity(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CFEM_LinearElasticity(void);
+
+	void Compute_Tangent_Matrix(CElement *element_container);
+
+	void Compute_Constitutive_Matrix(void);
+
+	void Compute_Averaged_NodalStress(CElement *element_container);
+
+//	virtual void Compute_Stress_Tensor(void);
+
+//	virtual void Compute_MeanDilatation_Term(CElement *element_container);
+
+//	virtual void Compute_NodalStress_Term(CElement *element_container);
+
+};
+
+/*!
+ * \class CFEM_LinearElasticity
+ * \brief Class for computing the stiffness matrix of a nonlinear, elastic problem.
+ * \ingroup FEM_Discr
+ * \author R.Sanchez
+ * \version 4.0.0 "Cardinal"
+ */
+class CFEM_NonlinearElasticity : public CFEM_Elasticity {
+
+protected:
+
+	su2double **F_Mat;	 			/*!< \brief Deformation gradient. */
+	su2double **b_Mat;	 			/*!< \brief Left Cauchy-Green Tensor. */
+	su2double **currentCoord;	 	/*!< \brief Current coordinates. */
+	su2double **Stress_Tensor;		/*!< \brief Cauchy stress tensor */
+
+	su2double **KAux_P_ab;			/*!< \brief Auxiliar matrix for the pressure term */
+	su2double *KAux_t_a;			/*!< \brief Auxiliar matrix for the pressure term */
+
+	su2double J_F;		 /*!< \brief Jacobian of the transformation (determinant of F) */
+
+public:
+
+	/*!
+	 * \brief Constructor of the class.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
+	 * \param[in] val_nVar - Number of variables of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CFEM_NonlinearElasticity(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CFEM_NonlinearElasticity(void);
+
+	void Compute_Tangent_Matrix(CElement *element_container);
+
+	void Compute_MeanDilatation_Term(CElement *element_container);
+
+	void Compute_NodalStress_Term(CElement *element_container);
+
+	void Compute_Averaged_NodalStress(CElement *element_container);
+
+	virtual void Compute_Constitutive_Matrix(CElement *element_container);
+
+	virtual void Compute_Stress_Tensor(CElement *element_container);
+
+
+};
+
+/*!
+ * \class CFEM_NeoHookean_Comp
+ * \brief Class for computing the constitutive and stress tensors for a neo-Hookean material model, compressible.
+ * \ingroup FEM_Discr
+ * \author R.Sanchez
+ * \version 4.0.0 "Cardinal"
+ */
+class CFEM_NeoHookean_Comp : public CFEM_NonlinearElasticity {
+
+public:
+
+	/*!
+	 * \brief Constructor of the class.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
+	 * \param[in] val_nVar - Number of variables of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CFEM_NeoHookean_Comp(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CFEM_NeoHookean_Comp(void);
+
+	void Compute_Constitutive_Matrix(CElement *element_container);
+
+	void Compute_Stress_Tensor(CElement *element_container);
+
+};
+
+/*!
+ * \class CFEM_NeoHookean_Incomp
+ * \brief Class for computing the constitutive and stress tensors for a neo-Hookean material model, incompressible.
+ * \ingroup FEM_Discr
+ * \author R.Sanchez
+ * \version 4.0.0 "Cardinal"
+ */
+class CFEM_NeoHookean_Incomp : public CFEM_NonlinearElasticity {
+
+public:
+
+	/*!
+	 * \brief Constructor of the class.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
+	 * \param[in] val_nVar - Number of variables of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CFEM_NeoHookean_Incomp(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CFEM_NeoHookean_Incomp(void);
+
+	void Compute_Constitutive_Matrix(CElement *element_container);
+
+	void Compute_Stress_Tensor(CElement *element_container);
+
+};
+
+
 
 /*!
  * \class CSourceNothing
@@ -4786,7 +5049,7 @@ private:
   su2double **tau, *Velocity;
   
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
@@ -4808,6 +5071,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+
 };
 
 /*!
@@ -5034,6 +5298,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeResidual(su2double *val_residual, su2double **Jacobian_i, CConfig *config);
+<<<<<<< HEAD
+=======
+  
+private:
+  bool incompressible;
+>>>>>>> upstream/feature_FSI_FEA
 };
 
 /*!
@@ -5556,8 +5826,7 @@ private:
   su2double **RxnConstantTable;
   su2double *dkf, *dkb, *dRfok, *dRbok, *A;
   su2double *eves, *Cvvs, *Cves;
-  //  CVariable *var;
-  
+
 public:
   
   /*!
@@ -5776,7 +6045,7 @@ private:
   su2double *DiffPsi, *MeanPsi;
   su2double Param_p, Param_Kappa_0;
   su2double **Proj_Jac_Tensor_i, **Proj_Jac_Tensor_j;
-  
+
 public:
   
   /*!
@@ -5826,7 +6095,12 @@ private:
   su2double *Mean_GradPsiE;	/*!< \brief Mean gradient in the adjoint  energy between nodes i and j. */
   su2double *Mean_GradPsiEve; /*!< \brief Mean gradient in the adjoint vibrational energy between nodes i and j. */
   su2double **Mean_GradPhi;	/*!< \brief Counter for dimensions of the problem. */
+<<<<<<< HEAD
   su2double *Edge_Vector;	/*!< \brief Vector going from node i to node j. */
+=======
+  su2double **Mean_GPsi;  /*!< \brief Mean gradient of the adjoint variables. */
+  su2double *Edge_Vector;	/*!< \brief Vector going from node i to node j. */
+>>>>>>> upstream/feature_FSI_FEA
   su2double **SigmaPhi;
   su2double **SigmaPsiE;
   bool implicit;			/*!< \brief Implicit calculus. */

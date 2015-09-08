@@ -44,6 +44,13 @@ void FSI_BGS_Iteration(COutput *output, CIntegration ***integration_container, C
 	unsigned long nFSIIter = config_container[ZONE_0]->GetnIterFSI();
 	unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
 
+	bool fem_solver = (config_container[ZONE_1]->GetKind_Solver() == FEM_ELASTICITY);
+
+	int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
 	/*-----------------------------------------------------------------*/
 	/*---------------- Predict structural displacements ---------------*/
 	/*-----------------------------------------------------------------*/
@@ -70,6 +77,10 @@ void FSI_BGS_Iteration(COutput *output, CIntegration ***integration_container, C
                           solver_container, numerics_container, config_container,
                           surface_movement, grid_movement, FFDBox);
 
+		/*--- Write the convergence history for the fluid (only screen output) ---*/
+
+		output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_0);
+
 		/*-----------------------------------------------------------------*/
 		/*------------------- Set FEA loads from fluid --------------------*/
 		/*-----------------------------------------------------------------*/
@@ -78,15 +89,24 @@ void FSI_BGS_Iteration(COutput *output, CIntegration ***integration_container, C
 	                 	 solver_container, numerics_container, config_container,
 	                 	 surface_movement, grid_movement, FFDBox, ExtIter);
 
-
 		/*-----------------------------------------------------------------*/
 		/*------------------ Structural subiteration ----------------------*/
 		/*-----------------------------------------------------------------*/
 
-	    FEA_Subiteration(output, integration_container, geometry_container,
-	                 	 solver_container, numerics_container, config_container,
-	                 	 surface_movement, grid_movement, FFDBox);
+        if (fem_solver){
+    	    FEM_Subiteration(output, integration_container, geometry_container,
+    	                 	 solver_container, numerics_container, config_container,
+    	                 	 surface_movement, grid_movement, FFDBox);
+        }
+        else{
+    	    FEA_Subiteration(output, integration_container, geometry_container,
+    	                 	 solver_container, numerics_container, config_container,
+    	                 	 surface_movement, grid_movement, FFDBox);
+        }
 
+		/*--- Write the convergence history for the structure (only screen output) ---*/
+
+		output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_1);
 
 		/*-----------------------------------------------------------------*/
 		/*----------------- Displacements relaxation ----------------------*/
@@ -123,16 +143,20 @@ void FSI_BGS_Iteration(COutput *output, CIntegration ***integration_container, C
   	/*----------------- Update structural solver ----------------------*/
 	/*-----------------------------------------------------------------*/
 
-    FEA_Update(output, integration_container, geometry_container,
-                solver_container, config_container, ExtIter);
+    if (fem_solver){
+    	FEM_Update(output, integration_container, geometry_container,
+                	solver_container, numerics_container, config_container, ExtIter);
+    }
+    else{
+    	FEA_Update(output, integration_container, geometry_container,
+                	solver_container, config_container, ExtIter);
+    }
 
 
 	/*-----------------------------------------------------------------*/
 	/*--------------- Update convergence parameter --------------------*/
 	/*-----------------------------------------------------------------*/
-
 	integration_container[ZONE_1][FEA_SOL]->SetConvergence_FSI(false);
-
 
 }
 
@@ -273,6 +297,12 @@ void Flow_Update(COutput *output, CIntegration ***integration_container, CGeomet
                        CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox,
                        unsigned long ExtIter) {
 
+	#ifdef HAVE_MPI
+		int rank;
+			MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	#endif
+
+
 	double Physical_dt, Physical_t;
 	unsigned short iMesh, iZone;
 
@@ -324,7 +354,13 @@ void FEA_Update(COutput *output, CIntegration ***integration_container, CGeometr
                   CSolver ****solver_container, CConfig **config_container,
                   unsigned long ExtIter) {
 
-	/*--- Only one zone allowed for the fluid as for now ---*/
+	#ifdef HAVE_MPI
+		int rank;
+			MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	#endif
+
+
+	/*--- Only one zone allowed for the structure as for now ---*/
 	unsigned short nFluidZone = 1, nStrucZone=1, nTotalZone;
 	unsigned short iZone;
 
@@ -342,6 +378,50 @@ void FEA_Update(COutput *output, CIntegration ***integration_container, CGeometr
 
 }
 
+void FEM_Update(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
+                  CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
+                  unsigned long ExtIter) {
+
+	int rank = MASTER_NODE;
+	#ifdef HAVE_MPI
+			MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	#endif
+
+	/*--- Only one zone allowed for the structure as for now ---*/
+	double Physical_dt, Physical_t;
+	unsigned short nFluidZone = 1, nStrucZone=1, nTotalZone;
+	unsigned short iZone;
+	unsigned int ZONE_STRUC = nFluidZone;
+
+	nTotalZone = nFluidZone + nStrucZone;
+
+	bool dynamic = (config_container[ZONE_STRUC]->GetDynamic_Analysis() == DYNAMIC);					// Dynamic problems
+	bool nonlinear = (config_container[ZONE_STRUC]->GetGeometricConditions() == LARGE_DEFORMATIONS);	// Geometrically non-linear problems
+
+
+	/*----------------- Compute averaged nodal stress ------------------------*/
+
+	for (iZone = nFluidZone; iZone < nTotalZone; iZone++)
+		solver_container[iZone][MESH_0][FEA_SOL]->Compute_NodalStress(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0], numerics_container[iZone][MESH_0][FEA_SOL][VISC_TERM], config_container[iZone]);
+
+	/*----------------- Update structural solver ----------------------*/
+
+	if (dynamic){
+		for (iZone = nFluidZone; iZone < nTotalZone; iZone++) {
+			integration_container[iZone][FEA_SOL]->SetFEM_StructuralSolver(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0][FEA_SOL], config_container[iZone], MESH_0);
+			integration_container[iZone][FEA_SOL]->SetConvergence(false);
+		}
+
+	    /*--- Verify convergence criteria (based on total time) ---*/
+		Physical_dt = config_container[ZONE_STRUC]->GetDelta_DynTime();
+		Physical_t  = (ExtIter+1)*Physical_dt;
+		if (Physical_t >=  config_container[ZONE_STRUC]->GetTotal_DynTime())
+			integration_container[ZONE_STRUC][FEA_SOL]->SetConvergence(true);
+	}
+
+
+}
+
 
 void FEA_Subiteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
                   CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
@@ -351,6 +431,11 @@ void FEA_Subiteration(COutput *output, CIntegration ***integration_container, CG
 	unsigned short nZone = geometry_container[ZONE_0][MESH_0]->GetnZone();
 	unsigned long IntIter_Struct = 0; //config_container[ZONE_0]->SetIntIter(IntIter);
   	unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
+
+#ifdef HAVE_MPI
+	int rank;
+		MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
 
 	/*--- Only one zone allowed for the fluid as for now ---*/
 	unsigned short nFluidZone = 1, nStrucZone=1, nTotalZone;
@@ -380,10 +465,309 @@ void FEA_Subiteration(COutput *output, CIntegration ***integration_container, CG
 
 }
 
+void FEM_Subiteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
+                  CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
+                  CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox) {
+
+
+	#ifdef HAVE_MPI
+		int rank;
+			MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	#endif
+
+	/*--- Only one zone allowed for the fluid as for now ---*/
+	unsigned short nFluidZone = 1, nStrucZone=1, nTotalZone;
+
+	nTotalZone = nFluidZone + nStrucZone;
+
+	unsigned int ZONE_STRUC = nFluidZone;
+
+	double Physical_dt, Physical_t;
+	double loadIncrement;
+	unsigned short iMesh, iZone;
+	unsigned short nZone = geometry_container[ZONE_0][MESH_0]->GetnZone();
+	unsigned long IntIter = 0; config_container[ZONE_STRUC]->SetIntIter(IntIter);
+  	unsigned long ExtIter = config_container[ZONE_STRUC]->GetExtIter();
+
+  	unsigned long iIncrement;
+  	unsigned long nIncrements = config_container[ZONE_STRUC]->GetNumberIncrements();
+
+	bool dynamic = (config_container[ZONE_STRUC]->GetDynamic_Analysis() == DYNAMIC);					// Dynamic problems
+	bool nonlinear = (config_container[ZONE_STRUC]->GetGeometricConditions() == LARGE_DEFORMATIONS);	// Geometrically non-linear problems
+	bool linear = (config_container[ZONE_STRUC]->GetGeometricConditions() == SMALL_DEFORMATIONS);	// Geometrically non-linear problems
+
+	bool initial_calc = config_container[ZONE_STRUC]->GetExtIter() == 0;				// Checks if it is the first calculation.
+	bool first_iter = config_container[ZONE_STRUC]->GetIntIter() == 0;				// Checks if it is the first iteration
+	bool restart = config_container[ZONE_STRUC]->GetRestart();												// Restart analysis
+	bool initial_calc_restart = (config_container[ZONE_STRUC]->GetExtIter() == config_container[ZONE_STRUC]->GetDyn_RestartIter()); // Initial calculation for restart
+
+
+	double CurrentTime = config_container[ZONE_STRUC]->GetCurrent_DynTime();
+	double Static_Time = config_container[ZONE_STRUC]->GetStatic_Time();
+
+	bool statTime = (CurrentTime <= Static_Time);
+
+	bool incremental_load = config_container[ZONE_STRUC]->GetIncrementalLoad();							// If an incremental load is applied
+
+	/*--- Set the convergence monitor to false, to prevent the solver to stop in intermediate FSI subiterations ---*/
+	integration_container[ZONE_STRUC][FEA_SOL]->SetConvergence(false);
+
+	if (linear){
+
+		for (iZone = nFluidZone; iZone < nTotalZone; iZone++) {
+
+			/*--- Set the value of the internal iteration ---*/
+
+			IntIter = ExtIter;
+
+			/*--- FEA equations ---*/
+
+			config_container[iZone]->SetGlobalParam(FEM_ELASTICITY, RUNTIME_FEA_SYS, ExtIter);
+
+			/*--- Run the iteration ---*/
+
+			integration_container[iZone][FEA_SOL]->Structural_Iteration_FEM(geometry_container, solver_container, numerics_container,
+																			config_container, RUNTIME_FEA_SYS, IntIter, iZone);
+
+		}
+
+	}
+	/*--- If the structure is held static and the solver is nonlinear, we don't need to solve for static time, but we need to compute Mass Matrix and Integration constants ---*/
+	else if ((nonlinear) && (!statTime)){
+
+		/*--- THIS IS THE DIRECT APPROACH (NO INCREMENTAL LOAD APPLIED) ---*/
+
+		if (!incremental_load){
+
+			for (iZone = nFluidZone; iZone < nTotalZone; iZone++) {
+
+				/*--- Set the value of the internal iteration ---*/
+
+				IntIter = 0;
+
+				/*--- FEA equations ---*/
+
+				config_container[iZone]->SetGlobalParam(FEM_ELASTICITY, RUNTIME_FEA_SYS, ExtIter);
+
+				/*--- Run the iteration ---*/
+
+				integration_container[iZone][FEA_SOL]->Structural_Iteration_FEM(geometry_container, solver_container, numerics_container,
+		                                                                		config_container, RUNTIME_FEA_SYS, IntIter, iZone);
+
+
+
+			}
+
+			/*----------------- If the solver is non-linear, we need to subiterate using a Newton-Raphson approach ----------------------*/
+
+			for (IntIter = 1; IntIter < config_container[ZONE_STRUC]->GetDyn_nIntIter(); IntIter++){
+
+				for (iZone = nFluidZone; iZone < nTotalZone; iZone++) {
+
+					/*--- Write the convergence history (only screen output) ---*/
+
+					output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_STRUC);
+
+					config_container[iZone]->SetIntIter(IntIter);
+
+					integration_container[iZone][FEA_SOL]->Structural_Iteration_FEM(geometry_container, solver_container, numerics_container,
+																					config_container, RUNTIME_FEA_SYS, IntIter, iZone);
+
+				}
+
+				if (integration_container[ZONE_STRUC][FEA_SOL]->GetConvergence()) break;
+
+			}
+
+		}
+		/*--- The incremental load is only used in nonlinear cases ---*/
+		else if (incremental_load){
+
+			/*--- Set the initial condition: store the current solution as Solution_Old ---*/
+
+			for (iZone = nFluidZone; iZone < nTotalZone; iZone++)
+				solver_container[iZone][MESH_0][FEA_SOL]->SetInitialCondition(geometry_container[iZone], solver_container[iZone], config_container[iZone], ExtIter);
+
+			for (iZone = nFluidZone; iZone < nTotalZone; iZone++) {
+
+					/*--- The load increment is 1.0: all the load applied ---*/
+					loadIncrement = 1.0;
+					solver_container[iZone][MESH_0][FEA_SOL]->SetLoad_Increment(loadIncrement);
+
+					/*--- Set the value of the internal iteration ---*/
+
+					IntIter = 0;
+
+					/*--- FEA equations ---*/
+
+					config_container[iZone]->SetGlobalParam(FEM_ELASTICITY, RUNTIME_FEA_SYS, ExtIter);
+
+					/*--- Run the first iteration ---*/
+
+					integration_container[iZone][FEA_SOL]->Structural_Iteration_FEM(geometry_container, solver_container, numerics_container,
+			                                                                		config_container, RUNTIME_FEA_SYS, IntIter, iZone);
+
+
+					/*--- Write the convergence history (only screen output) ---*/
+
+					output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_STRUC);
+
+					/*--- Run the second iteration ---*/
+
+					IntIter = 1;
+
+					config_container[iZone]->SetIntIter(IntIter);
+
+					integration_container[iZone][FEA_SOL]->Structural_Iteration_FEM(geometry_container, solver_container, numerics_container,
+			                                                                		config_container, RUNTIME_FEA_SYS, IntIter, iZone);
+
+			}
+
+			bool meetCriteria;
+			double Residual_UTOL, Residual_RTOL, Residual_ETOL;
+			double Criteria_UTOL, Criteria_RTOL, Criteria_ETOL;
+
+			Criteria_UTOL = config_container[ZONE_STRUC]->GetIncLoad_Criteria(0);
+			Criteria_RTOL = config_container[ZONE_STRUC]->GetIncLoad_Criteria(1);
+			Criteria_ETOL = config_container[ZONE_STRUC]->GetIncLoad_Criteria(2);
+
+			Residual_UTOL = log10(solver_container[ZONE_STRUC][MESH_0][FEA_SOL]->GetRes_FEM(0));
+			Residual_RTOL = log10(solver_container[ZONE_STRUC][MESH_0][FEA_SOL]->GetRes_FEM(1));
+			Residual_ETOL = log10(solver_container[ZONE_STRUC][MESH_0][FEA_SOL]->GetRes_FEM(2));
+
+			meetCriteria = ( ( Residual_UTOL <  Criteria_UTOL ) &&
+					 	 	 ( Residual_RTOL <  Criteria_RTOL ) &&
+							 ( Residual_ETOL <  Criteria_ETOL ) );
+
+			/*--- If the criteria is met and the load is not "too big", do the regular calculation ---*/
+			if (meetCriteria){
+
+				for (IntIter = 2; IntIter < config_container[ZONE_STRUC]->GetDyn_nIntIter(); IntIter++){
+
+					for (iZone = nFluidZone; iZone < nTotalZone; iZone++) {
+
+					/*--- Write the convergence history (only screen output) ---*/
+
+					output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_STRUC);
+
+					config_container[iZone]->SetIntIter(IntIter);
+
+					integration_container[iZone][FEA_SOL]->Structural_Iteration_FEM(geometry_container, solver_container, numerics_container,
+																					config_container, RUNTIME_FEA_SYS, IntIter, iZone);
+
+					}
+
+					if (integration_container[ZONE_STRUC][FEA_SOL]->GetConvergence()) break;
+
+				}
+
+			}
+
+			/*--- If the criteria is not met, a whole set of subiterations for the different loads must be done ---*/
+
+			else {
+
+				/*--- Here we have to restart the solution to the original one of the iteration ---*/
+				/*--- Retrieve the Solution_Old as the current solution before subiterating ---*/
+
+				for (iZone = nFluidZone; iZone < nTotalZone; iZone++)
+					solver_container[iZone][MESH_0][FEA_SOL]->ResetInitialCondition(geometry_container[iZone], solver_container[iZone], config_container[iZone], ExtIter);
+
+				/*--- For the number of increments ---*/
+				for (iIncrement = 0; iIncrement < nIncrements; iIncrement++){
+
+					loadIncrement = (iIncrement + 1.0) * (1.0 / nIncrements);
+
+					/*--- Set the load increment and the initial condition, and output the parameters of UTOL, RTOL, ETOL for the previous iteration ---*/
+
+					for (iZone = nFluidZone; iZone < nTotalZone; iZone++){
+
+						/*--- Set the convergence monitor to false, to force se solver to converge every subiteration ---*/
+						integration_container[iZone][FEA_SOL]->SetConvergence(false);
+
+						output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_STRUC);
+
+						/*--- FEA equations ---*/
+
+						config_container[iZone]->SetGlobalParam(FEM_ELASTICITY, RUNTIME_FEA_SYS, ExtIter);
+
+
+						solver_container[iZone][MESH_0][FEA_SOL]->SetLoad_Increment(loadIncrement);
+					}
+
+					cout << endl;
+					cout << "-- Incremental load: increment " << iIncrement + 1 << " ------------------------------------------" << endl;
+
+					for (iZone = nFluidZone; iZone < nTotalZone; iZone++) {
+
+						/*--- Set the value of the internal iteration ---*/
+						IntIter = 0;
+						config_container[iZone]->SetIntIter(IntIter);
+
+						/*--- FEA equations ---*/
+
+						config_container[iZone]->SetGlobalParam(FEM_ELASTICITY, RUNTIME_FEA_SYS, ExtIter);
+
+						/*--- Run the iteration ---*/
+
+						integration_container[iZone][FEA_SOL]->Structural_Iteration_FEM(geometry_container, solver_container, numerics_container,
+				                                                                		config_container, RUNTIME_FEA_SYS, IntIter, iZone);
+
+
+
+					}
+
+					/*----------------- If the solver is non-linear, we need to subiterate using a Newton-Raphson approach ----------------------*/
+
+					for (IntIter = 1; IntIter < config_container[ZONE_STRUC]->GetDyn_nIntIter(); IntIter++){
+
+						for (iZone = nFluidZone; iZone < nTotalZone; iZone++) {
+
+							/*--- Write the convergence history (only screen output) ---*/
+
+							output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_STRUC);
+
+							config_container[iZone]->SetIntIter(IntIter);
+
+							integration_container[iZone][FEA_SOL]->Structural_Iteration_FEM(geometry_container, solver_container, numerics_container,
+						                                                                		config_container, RUNTIME_FEA_SYS, IntIter, iZone);
+
+						}
+
+						if (integration_container[ZONE_STRUC][FEA_SOL]->GetConvergence()) break;
+
+					}
+
+				}
+
+			}
+
+		}
+
+
+	}
+	else if ( (nonlinear && statTime) &&
+			  ((first_iter && initial_calc) || (restart && initial_calc_restart))
+			){
+
+		/*--- We need to do the preprocessing to compute the Mass Matrix and integration constants ---*/
+		for (iZone = nFluidZone; iZone < nTotalZone; iZone++)
+			  solver_container[iZone][MESH_0][FEA_SOL]->Preprocessing(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0],
+					  config_container[iZone], numerics_container[iZone][MESH_0][FEA_SOL], MESH_0, 0, RUNTIME_FEA_SYS, false);
+	}
+
+}
+
 
 void FSI_Disp_Transfer(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
 					     CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
 						 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox){
+
+
+	#ifdef HAVE_MPI
+		int rank;
+			MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	#endif
 
 	bool MatchingMesh = config_container[ZONE_0]->GetMatchingMesh();
 
@@ -395,7 +779,10 @@ void FSI_Disp_Transfer(COutput *output, CIntegration ***integration_container, C
 																   	   geometry_container[ZONE_1], solver_container[ZONE_1]);
 	}
 	else{
-		cout << "NonMatchingMesh" << endl;
+		solver_container[ZONE_0][MESH_0][FLOW_SOL]->SetFlow_Displacement_Int(geometry_container[ZONE_0], grid_movement[ZONE_0],
+																   	   config_container[ZONE_0], config_container[ZONE_1],
+																   	   geometry_container[ZONE_1], solver_container[ZONE_1]);
+
 	}
 
 
@@ -406,6 +793,11 @@ void FSI_Load_Transfer(COutput *output, CIntegration ***integration_container, C
 					     CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
 						 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox,
 						 unsigned long ExtIter){
+
+	#ifdef HAVE_MPI
+		int rank;
+			MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	#endif
 
 	bool MatchingMesh = config_container[ZONE_0]->GetMatchingMesh();
 
@@ -424,7 +816,9 @@ void FSI_Load_Transfer(COutput *output, CIntegration ***integration_container, C
 
 	}
 	else{
-		cout << "NonMatchingMesh" << endl;
+		solver_container[ZONE_1][MESH_0][FEA_SOL]->SetFEA_Load_Int(solver_container[ZONE_0], geometry_container[ZONE_1], geometry_container[ZONE_0],
+															   config_container[ZONE_1], config_container[ZONE_0], numerics_container[ZONE_1][MESH_0][SolContainer_Position_fea][VISC_TERM]);
+
 	}
 
 
@@ -433,6 +827,11 @@ void FSI_Load_Transfer(COutput *output, CIntegration ***integration_container, C
 
 void FSI_Disp_Relaxation(COutput *output, CGeometry ***geometry_container, CSolver ****solver_container,
 							CConfig **config_container, unsigned long iFSIIter) {
+
+	#ifdef HAVE_MPI
+		int rank;
+			MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	#endif
 
 	/*-------------------- Aitken's relaxation ------------------------*/
 
@@ -456,6 +855,10 @@ void FSI_Disp_Relaxation(COutput *output, CGeometry ***geometry_container, CSolv
 
 	}
 
+	for (iZone = nFluidZone; iZone < nTotalZone; iZone++) {
+		solver_container[iZone][MESH_0][FEA_SOL]->Set_MPI_Solution_Pred_Old(geometry_container[iZone][MESH_0], config_container[iZone]);
+	}
+
 }
 
 void FSI_Load_Relaxation(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
@@ -470,8 +873,29 @@ void FSI_Disp_Predictor(COutput *output, CIntegration ***integration_container, 
 					     CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
 						 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox){
 
-	solver_container[ZONE_1][MESH_0][FEA_SOL]->PredictStruct_Displacement(geometry_container[ZONE_1], config_container[ZONE_1],
-																		  solver_container[ZONE_1]);
+	#ifdef HAVE_MPI
+		int rank;
+			MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	#endif
+
+	/*--- Only one zone allowed for the fluid as for now ---*/
+	unsigned short nFluidZone = 1, nStrucZone=1, nTotalZone;
+	unsigned short iZone;
+
+	nTotalZone = nFluidZone + nStrucZone;
+
+	for (iZone = nFluidZone; iZone < nTotalZone; iZone++) {
+
+		solver_container[iZone][MESH_0][FEA_SOL]->PredictStruct_Displacement(geometry_container[iZone], config_container[iZone],
+																		  solver_container[iZone]);
+
+	}
+
+	/*--- For parallel simulations we need to communicate the predicted solution before updating the fluid mesh ---*/
+
+	for (iZone = nFluidZone; iZone < nTotalZone; iZone++) {
+		solver_container[iZone][MESH_0][FEA_SOL]->Set_MPI_Solution_Pred(geometry_container[iZone][MESH_0], config_container[iZone]);
+	}
 
 }
 

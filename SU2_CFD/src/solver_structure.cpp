@@ -1466,6 +1466,7 @@ void CSolver::SetUpTypicalSectionWingModel(vector<vector<su2double> >& Phi, vect
   
 }
 
+
 void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, su2double Cl, su2double Cm, CConfig *config, unsigned short iMarker, vector<su2double>& displacements) {
   
   /*--- The aeroelastic model solved in this routine is the typical section wing model
@@ -1551,6 +1552,7 @@ void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, su2double Cl, su
   /*--- Transform back from the generalized coordinates to get the actual displacements in plunge and pitch  q = Phi*eta ---*/
   vector<su2double> q(2,0.0);
   vector<su2double> q_dot(2,0.0);
+
   for (int i=0; i<2; i++) {
     q[i] = 0;
     q_dot[i] = 0;
@@ -1602,6 +1604,7 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
   unsigned short iField, iVar;
   string Tag, text_line, AdjExt, UnstExt;
   unsigned long iExtIter = config->GetExtIter();
+  bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
   
   /*--- Define geometry constants in the solver structure ---*/
   
@@ -1621,14 +1624,18 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
   if (config->GetAdjoint() || config->GetDiscrete_Adjoint()) {
     filename = config->GetSolution_AdjFileName();
     filename = config->GetObjFunc_Extension(filename);
+  } else if (fem){
+	filename = config->GetRestart_FEMFileName();
   } else {
-    filename = config->GetSolution_FlowFileName();
+	filename = config->GetRestart_FlowFileName();
   }
   
   /*--- Unsteady problems require an iteration number to be appended. ---*/
   
   if (config->GetWrt_Unsteady() || config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
+  } else if (config->GetWrt_Dynamic()) {
+	filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   }
   
   /*--- Open the restart file ---*/
@@ -1684,6 +1691,7 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
    restart file (without including the PointID) ---*/
   
   nVar = config->fields.size() - 1;
+
   su2double *Solution = new su2double[nVar];
   
   /*--- Read all lines in the restart file ---*/
@@ -1911,18 +1919,23 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   ifstream solution_file;
   unsigned short iField;
   unsigned long iExtIter = config->GetExtIter();
+  bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
   
   /*--- Retrieve filename from config ---*/
   if (config->GetAdjoint()) {
     filename = config->GetSolution_AdjFileName();
     filename = config->GetObjFunc_Extension(filename);
+  } else if (fem){
+	filename = config->GetRestart_FEMFileName();
   } else {
-    filename = config->GetSolution_FlowFileName();
+	filename = config->GetRestart_FlowFileName();
   }
   
   /*--- Unsteady problems require an iteration number to be appended. ---*/
   if (config->GetWrt_Unsteady() || config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
+  } else if (config->GetWrt_Dynamic()) {
+	filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   }
   
   /*--- Open the restart file ---*/
@@ -1943,6 +1956,7 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   /*--- Set the number of variables, one per field in the
    restart file (without including the PointID) ---*/
   nVar = config->fields.size() - 1;
+
   su2double *Solution = new su2double[nVar];
   
   /*--- In case this is a parallel simulation, we need to perform the
@@ -1996,6 +2010,113 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   delete [] Global2Local;
   delete [] Solution;
   
+}
+
+void CBaselineSolver::LoadRestart_FSI(CGeometry *geometry, CSolver ***solver, CConfig *config, int val_iter) {
+
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  /*--- Restart the solution from file information ---*/
+  string filename;
+  unsigned long iPoint, index;
+  string UnstExt, text_line, AdjExt;
+  ifstream solution_file;
+  unsigned short iField;
+  unsigned long iExtIter = config->GetExtIter();
+  bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
+
+  /*--- Retrieve filename from config ---*/
+  if (config->GetAdjoint()) {
+    filename = config->GetSolution_AdjFileName();
+    filename = config->GetObjFunc_Extension(filename);
+  } else if (fem){
+	filename = config->GetRestart_FEMFileName();
+  } else {
+	filename = config->GetRestart_FlowFileName();
+  }
+
+  /*--- Unsteady problems require an iteration number to be appended. ---*/
+  if (config->GetWrt_Unsteady() || config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
+  } else if (config->GetWrt_Dynamic()) {
+	filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
+  }
+
+  /*--- Open the restart file ---*/
+  solution_file.open(filename.data(), ios::in);
+
+  /*--- In case there is no file ---*/
+  if (solution_file.fail()) {
+    if (rank == MASTER_NODE)
+      cout << "There is no SU2 restart file!!" << endl;
+    exit(EXIT_FAILURE);
+  }
+
+  /*--- Output the file name to the console. ---*/
+  if (rank == MASTER_NODE)
+    cout << "Reading and storing the solution from " << filename
+    << "." << endl;
+
+  /*--- Set the number of variables, one per field in the
+   restart file (without including the PointID) ---*/
+  nVar = config->fields.size() - 1;
+
+  su2double *Solution = new su2double[nVar];
+
+  /*--- In case this is a parallel simulation, we need to perform the
+   Global2Local index transformation first. ---*/
+  long *Global2Local = NULL;
+  Global2Local = new long[geometry->GetGlobal_nPointDomain()];
+  /*--- First, set all indices to a negative value by default ---*/
+  for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
+    Global2Local[iPoint] = -1;
+  }
+
+  /*--- Now fill array with the transform values only for local points ---*/
+  for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+    Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
+  }
+
+  /*--- Read all lines in the restart file ---*/
+  long iPoint_Local = 0; unsigned long iPoint_Global = 0;
+
+  /*--- The first line is the header ---*/
+  getline (solution_file, text_line);
+
+  while (getline (solution_file, text_line)) {
+    istringstream point_line(text_line);
+
+    /*--- Retrieve local index. If this node from the restart file lives
+     on a different processor, the value of iPoint_Local will be -1, as
+     initialized above. Otherwise, the local index for this node on the
+     current processor will be returned and used to instantiate the vars. ---*/
+    iPoint_Local = Global2Local[iPoint_Global];
+    if (iPoint_Local >= 0) {
+
+      /*--- The PointID is not stored --*/
+      point_line >> index;
+
+      /*--- Store the solution (starting with node coordinates) --*/
+      for (iField = 0; iField < nVar; iField++)
+        point_line >> Solution[iField];
+
+      node[iPoint_Local]->SetSolution(Solution);
+
+
+    }
+    iPoint_Global++;
+  }
+
+  /*--- Close the restart file ---*/
+  solution_file.close();
+
+  /*--- Free memory needed for the transformation ---*/
+  delete [] Global2Local;
+  delete [] Solution;
+
 }
 
 CBaselineSolver::~CBaselineSolver(void) { }

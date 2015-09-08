@@ -1037,7 +1037,6 @@ void CSysMatrix::InverseDiagonalBlock(unsigned long block_i, su2double *invBlock
   
 }
 
-
 void CSysMatrix::InverseDiagonalBlock_ILUMatrix(unsigned long block_i, su2double *invBlock) {
   
   unsigned long iVar, jVar;

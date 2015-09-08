@@ -36,8 +36,7 @@
 # LAPACK connection added by Teus van der Stelt, 11/13/2014
 # ParMETIS integration added by Ben Kirk & Thomas D. Economon, 2/3/2015
 # SU2_FSI integration added by Ruben Sanchez, 5/19/2015
-#
-################################################################################
+##########################
 
 AC_INIT([SU2], [4.0.1], [su2code-dev@lists.stanford.edu],
         [SU2], [https://github.com/su2code])
@@ -52,6 +51,8 @@ SU2_SET_COMPILERS
 AM_PROG_CC_C_O
 AC_PROG_RANLIB
 AC_PROG_MKDIR_P
+AC_PROG_CXX
+
 #PKG_PROG_PKG_CONFIG
 
 # --------------------------------------------------------------
@@ -116,9 +117,8 @@ AC_ARG_ENABLE(CFD,
    	AS_HELP_STRING([--disable-CFD], [build the SU2_CFD executable (default = yes)]),
 	[build_CFD=$enableval], [build_CFD="yes"])
 AC_ARG_ENABLE(FSI,
-   AS_HELP_STRING([--disable-FSI], [build the SU2_FSI executable (default = yes)]),
-   [build_FSI=$enableval], [build_FSI="yes"])
-	
+   	AS_HELP_STRING([--disable-FSI], [build the SU2_FSI executable (default = yes)]),
+	[build_FSI=$enableval], [build_FSI="yes"])
 AC_ARG_ENABLE(DOT,
    	AS_HELP_STRING([--disable-DOT], [build the SU2_DOT executable (default = yes)]),
 	[build_DOT=$enableval], [build_DOT="yes"])

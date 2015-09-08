@@ -874,6 +874,7 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
   
   /*--- Allocate surface curvature ---*/
   K = new su2double [nPoint];
+
   for (iPoint = 0; iPoint < nPoint; iPoint++) K[iPoint] = 0.0;
   
   if (nDim == 2) {
