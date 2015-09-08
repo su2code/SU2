@@ -37,10 +37,6 @@ externals/autotools/bin
 externals/autotools/include
 externals/autotools/share
 
-# externally downloaded tools
-externals/CoDi
-externals/adjointmpi
-
 #logs and errors
 *.log
 *.err
