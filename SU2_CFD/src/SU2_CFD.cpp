@@ -2,7 +2,7 @@
  * \file SU2_CFD.cpp
  * \brief Main file of the Computational Fluid Dynamics code
  * \author F. Palacios, T. Economon
- * \version 4.0.1 "Cardinal"
+ * \version 4.0.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -119,6 +119,7 @@ int main(int argc, char *argv[]) {
      read and stored. ---*/
     
     config_container[iZone] = new CConfig(config_file_name, SU2_CFD, iZone, nZone, nDim, VERB_HIGH);
+    
     
     /*--- Definition of the geometry class to store the primal grid in the
      partitioning process. ---*/
@@ -312,6 +313,11 @@ int main(int argc, char *argv[]) {
   if (config_container[ZONE_0]->GetWrt_Unsteady() && config_container[ZONE_0]->GetRestart())
     ExtIter = config_container[ZONE_0]->GetUnst_RestartIter();
   
+  /*--- Check for an dynamic restart (structural analysis). Update ExtIter if necessary. ---*/
+  if (config_container[ZONE_0]->GetKind_Solver() == FEM_ELASTICITY
+		  && config_container[ZONE_0]->GetWrt_Dynamic() && config_container[ZONE_0]->GetRestart())
+	  	  ExtIter = config_container[ZONE_0]->GetDyn_RestartIter();
+
   /*--- Main external loop of the solver. Within this loop, each iteration ---*/
   
   if (rank == MASTER_NODE)
@@ -374,7 +380,6 @@ int main(int argc, char *argv[]) {
 	}
 
 	else {
-
     switch (config_container[ZONE_0]->GetKind_Solver()) {
         
       case EULER: case NAVIER_STOKES: case RANS:
@@ -414,6 +419,12 @@ int main(int argc, char *argv[]) {
                      surface_movement, grid_movement, FFDBox);
         break;
         
+      case FEM_ELASTICITY:
+        FEM_StructuralIteration(output, integration_container, geometry_container,
+                     	 	 	solver_container, numerics_container, config_container,
+                     	 	 	surface_movement, grid_movement, FFDBox);
+        break;
+
       case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
         AdjMeanFlowIteration(output, integration_container, geometry_container,
                              solver_container, numerics_container, config_container,
@@ -460,7 +471,6 @@ int main(int argc, char *argv[]) {
     CConfig *runtime = NULL;
     strcpy(runtime_file_name, "runtime.dat");
     runtime = new CConfig(runtime_file_name, config_container[ZONE_0]);
-    runtime->SetExtIter(ExtIter);
     
     /*--- Update the convergence history file (serial and parallel computations). ---*/
     
@@ -489,6 +499,10 @@ int main(int argc, char *argv[]) {
 	    	// This is a temporal fix, while we code the non-linear solver 
 //	        StopCalc = integration_container[ZONE_0][FEA_SOL]->GetConvergence(); break;
 	    	StopCalc = false; break;
+	      case FEM_ELASTICITY:
+	    	// This is a temporal fix, while we code the non-linear solver
+	        StopCalc = integration_container[ZONE_0][FEA_SOL]->GetConvergence(); break;
+	    	StopCalc = false; break;
 	      case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
               case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
 	        StopCalc = integration_container[ZONE_0][ADJFLOW_SOL]->GetConvergence(); break;
@@ -516,7 +530,10 @@ int main(int argc, char *argv[]) {
                              ((ExtIter-1) % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0)))) ||
 
         ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) && (fsi) &&
-        ((ExtIter == 0) || ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))))) {
+        ((ExtIter == 0) || ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0)))) ||
+
+		(((config_container[ZONE_0]->GetDynamic_Analysis() == DYNAMIC) &&
+		 ((ExtIter == 0) || (ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))))) {
           
           /*--- Low-fidelity simulations (using a coarser multigrid level
            approximation to the solution) require an interpolation back to the

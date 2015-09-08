@@ -833,118 +833,130 @@ void CGalerkin_FEA::SetFEA_StiffMatrix3D(su2double **StiffMatrix_Elem, su2double
         }
       }
     }
-    
+	 
   }
   
 }
 
 void CGalerkin_FEA::SetFEA_StiffMassMatrix2D(su2double **StiffMatrix_Elem, su2double **MassMatrix_Elem, su2double CoordCorners[8][3], unsigned short nNodes, unsigned short form2d) {
 
-  su2double B_Matrix[3][8], D_Matrix[3][3], N_Matrix[2][8], Aux_Matrix[8][3];
-  su2double Xi = 0.0, Eta = 0.0, Det = 0.0;
-  unsigned short iNode, iVar, jVar, kVar, iGauss, nGauss = 0;
-  su2double DShapeFunction[8][4] = {{0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0},
-    {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}};
-  su2double Location[4][3], Weight[4];
-  unsigned short nVar = 2;
-  
-  for (iVar = 0; iVar < nNodes*nVar; iVar++) {
-    for (jVar = 0; jVar < nNodes*nVar; jVar++) {
-      MassMatrix_Elem[iVar][jVar] = 0.0;
-      StiffMatrix_Elem[iVar][jVar] = 0.0;
-    }
-  }
-  
-  /*--- Triangle. Nodes of numerical integration at 1 point (order 1). ---*/
-  
-  if (nNodes == 3) {
-    nGauss = 1;
-    Location[0][0] = 0.333333333333333;  Location[0][1] = 0.333333333333333;  Weight[0] = 0.5; // Note: W=1, A=1/2
-  }
-  
-  /*--- Rectangle. Nodes of numerical integration at 4 points (order 2). ---*/
-  
-  if (nNodes == 4) {
-    nGauss = 4;
-    Location[0][0] = -0.577350269189626;  Location[0][1] = -0.577350269189626;  Weight[0] = 1.0;
-    Location[1][0] = 0.577350269189626;   Location[1][1] = -0.577350269189626;  Weight[1] = 1.0;
-    Location[2][0] = 0.577350269189626;   Location[2][1] = 0.577350269189626;   Weight[2] = 1.0;
-    Location[3][0] = -0.577350269189626;  Location[3][1] = 0.577350269189626;   Weight[3] = 1.0;
-  }
-  
-  for (iGauss = 0; iGauss < nGauss; iGauss++) {
-    
-    Xi = Location[iGauss][0]; Eta = Location[iGauss][1];
-    
-    if (nNodes == 3) Det = ShapeFunc_Triangle(Xi, Eta, CoordCorners, DShapeFunction);
-    if (nNodes == 4) Det = ShapeFunc_Quadrilateral(Xi, Eta, CoordCorners, DShapeFunction);
-    
-    /*--- Compute the N Matrix ---*/
-    
-    for (iVar = 0; iVar < 2; iVar++)
-      for (jVar = 0; jVar < nNodes*nVar; jVar++)
-        N_Matrix[iVar][jVar] = 0.0;
-    
-    for (iNode = 0; iNode < nNodes; iNode++) {
-      N_Matrix[0][0+iNode*nVar] = DShapeFunction[iNode][3];
-      N_Matrix[1][1+iNode*nVar] = DShapeFunction[iNode][3];
-    }
-    
-    /*--- Compute the B Matrix ---*/
-    
-    for (iVar = 0; iVar < 3; iVar++)
-      for (jVar = 0; jVar < nNodes*nVar; jVar++)
-        B_Matrix[iVar][jVar] = 0.0;
-    
-    for (iNode = 0; iNode < nNodes; iNode++) {
-      B_Matrix[0][0+iNode*nVar] = DShapeFunction[iNode][0];
-      B_Matrix[1][1+iNode*nVar] = DShapeFunction[iNode][1];
-      
-      B_Matrix[2][0+iNode*nVar] = DShapeFunction[iNode][1];
-      B_Matrix[2][1+iNode*nVar] = DShapeFunction[iNode][0];
-    }
-    
-    
-    /*--- Compute the D Matrix (for plane stress and 2-D)---*/
-    
-    D_Matrix[0][0] = E/(1-Nu*Nu);	  		D_Matrix[0][1] = (E*Nu)/(1-Nu*Nu);  D_Matrix[0][2] = 0.0;
-    D_Matrix[1][0] = (E*Nu)/(1-Nu*Nu);    	D_Matrix[1][1] = E/(1-Nu*Nu);   	D_Matrix[1][2] = 0.0;
-    D_Matrix[2][0] = 0.0;               	D_Matrix[2][1] = 0.0;               D_Matrix[2][2] = ((1-Nu)*E)/(2*(1-Nu*Nu));
-    
-    /*--- Compute the BT.D Matrix ---*/
-    
-    for (iVar = 0; iVar < nNodes*nVar; iVar++) {
-      for (jVar = 0; jVar < 3; jVar++) {
-        Aux_Matrix[iVar][jVar] = 0.0;
-        for (kVar = 0; kVar < 3; kVar++)
-          Aux_Matrix[iVar][jVar] += B_Matrix[kVar][iVar]*D_Matrix[kVar][jVar];
-      }
-    }
-    
-    /*--- Compute the BT.D.B Matrix (stiffness matrix), and add to the original
-     matrix using Gauss integration ---*/
-    
-    for (iVar = 0; iVar < nNodes*nVar; iVar++) {
-      for (jVar = 0; jVar < nNodes*nVar; jVar++) {
-        for (kVar = 0; kVar < 3; kVar++) {
-          StiffMatrix_Elem[iVar][jVar] += Weight[iGauss] * Aux_Matrix[iVar][kVar]*B_Matrix[kVar][jVar] * Det;
-        }
-      }
-    }
-    
-    /*--- Compute the NT.N Matrix (mass matrix), and add to the original
-     matrix using Gauss integration ---*/
-    
-    for (iVar = 0; iVar < nNodes*nVar; iVar++) {
-      for (jVar = 0; jVar < nNodes*nVar; jVar++) {
-        for (kVar = 0; kVar < 2; kVar++) {
-          MassMatrix_Elem[iVar][jVar] += Weight[iGauss] * N_Matrix[kVar][iVar] * N_Matrix[kVar][jVar] * Det * Rho_s;
-        }
-      }
-    }
-    
-    
-  }
+
+	  su2double B_Matrix[3][8], D_Matrix[3][3], N_Matrix[2][8], Aux_Matrix[8][3];
+	  su2double Xi = 0.0, Eta = 0.0, Det = 0.0;
+	  unsigned short iNode, iVar, jVar, kVar, iGauss, nGauss = 0;
+	  su2double DShapeFunction[8][4] = {{0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0},
+	    {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}};
+	  su2double Location[4][3], Weight[4];
+	  unsigned short nVar = 2;
+
+	  for (iVar = 0; iVar < nNodes*nVar; iVar++) {
+	    for (jVar = 0; jVar < nNodes*nVar; jVar++) {
+	      MassMatrix_Elem[iVar][jVar] = 0.0;
+	      StiffMatrix_Elem[iVar][jVar] = 0.0;
+	    }
+	  }
+
+	  /*--- Triangle. Nodes of numerical integration at 1 point (order 1). ---*/
+
+	  if (nNodes == 3) {
+	    nGauss = 1;
+	    Location[0][0] = 0.333333333333333;  Location[0][1] = 0.333333333333333;  Weight[0] = 0.5; // Note: W=1, A=1/2
+	  }
+
+	  /*--- Rectangle. Nodes of numerical integration at 4 points (order 2). ---*/
+
+	  if (nNodes == 4) {
+	    nGauss = 4;
+	    Location[0][0] = -0.577350269189626;  Location[0][1] = -0.577350269189626;  Weight[0] = 1.0;
+	    Location[1][0] = 0.577350269189626;   Location[1][1] = -0.577350269189626;  Weight[1] = 1.0;
+	    Location[2][0] = 0.577350269189626;   Location[2][1] = 0.577350269189626;   Weight[2] = 1.0;
+	    Location[3][0] = -0.577350269189626;  Location[3][1] = 0.577350269189626;   Weight[3] = 1.0;
+	  }
+
+	  for (iGauss = 0; iGauss < nGauss; iGauss++) {
+
+	    Xi = Location[iGauss][0]; Eta = Location[iGauss][1];
+
+	    if (nNodes == 3) Det = ShapeFunc_Triangle(Xi, Eta, CoordCorners, DShapeFunction);
+	    if (nNodes == 4) Det = ShapeFunc_Rectangle(Xi, Eta, CoordCorners, DShapeFunction);
+
+	    /*--- Compute the N Matrix ---*/
+
+	    for (iVar = 0; iVar < 2; iVar++)
+	      for (jVar = 0; jVar < nNodes*nVar; jVar++)
+	        N_Matrix[iVar][jVar] = 0.0;
+
+	    for (iNode = 0; iNode < nNodes; iNode++) {
+	      N_Matrix[0][0+iNode*nVar] = DShapeFunction[iNode][3];
+	      N_Matrix[1][1+iNode*nVar] = DShapeFunction[iNode][3];
+	    }
+
+	    /*--- Compute the B Matrix ---*/
+
+	    for (iVar = 0; iVar < 3; iVar++)
+	      for (jVar = 0; jVar < nNodes*nVar; jVar++)
+	        B_Matrix[iVar][jVar] = 0.0;
+
+	    for (iNode = 0; iNode < nNodes; iNode++) {
+	      B_Matrix[0][0+iNode*nVar] = DShapeFunction[iNode][0];
+	      B_Matrix[1][1+iNode*nVar] = DShapeFunction[iNode][1];
+
+	      B_Matrix[2][0+iNode*nVar] = DShapeFunction[iNode][1];
+	      B_Matrix[2][1+iNode*nVar] = DShapeFunction[iNode][0];
+	    }
+
+
+	    if (form2d==0){
+
+	    /*--- Compute the D Matrix (for plane stress and 2-D)---*/
+
+		D_Matrix[0][0] = E/(1-Nu*Nu);	  		D_Matrix[0][1] = (E*Nu)/(1-Nu*Nu);  D_Matrix[0][2] = 0.0;
+		D_Matrix[1][0] = (E*Nu)/(1-Nu*Nu);    	D_Matrix[1][1] = E/(1-Nu*Nu);   	D_Matrix[1][2] = 0.0;
+		D_Matrix[2][0] = 0.0;               	D_Matrix[2][1] = 0.0;               D_Matrix[2][2] = ((1-Nu)*E)/(2*(1-Nu*Nu));
+
+	    }
+	    else if (form2d==1){
+
+	    /*--- Compute the D Matrix (for plane strain and 2-D) as a function of Mu and Lambda---*/
+
+	    D_Matrix[0][0] = Lambda + 2.0*Mu;	D_Matrix[0][1] = Lambda;            D_Matrix[0][2] = 0.0;
+	    D_Matrix[1][0] = Lambda;            D_Matrix[1][1] = Lambda + 2.0*Mu;   D_Matrix[1][2] = 0.0;
+	    D_Matrix[2][0] = 0.0;               D_Matrix[2][1] = 0.0;               D_Matrix[2][2] = Mu;
+
+	    }
+	    /*--- Compute the BT.D Matrix ---*/
+
+	    for (iVar = 0; iVar < nNodes*nVar; iVar++) {
+	      for (jVar = 0; jVar < 3; jVar++) {
+	        Aux_Matrix[iVar][jVar] = 0.0;
+	        for (kVar = 0; kVar < 3; kVar++)
+	          Aux_Matrix[iVar][jVar] += B_Matrix[kVar][iVar]*D_Matrix[kVar][jVar];
+	      }
+	    }
+
+	    /*--- Compute the BT.D.B Matrix (stiffness matrix), and add to the original
+	     matrix using Gauss integration ---*/
+
+	    for (iVar = 0; iVar < nNodes*nVar; iVar++) {
+	      for (jVar = 0; jVar < nNodes*nVar; jVar++) {
+	        for (kVar = 0; kVar < 3; kVar++) {
+	          StiffMatrix_Elem[iVar][jVar] += Weight[iGauss] * Aux_Matrix[iVar][kVar]*B_Matrix[kVar][jVar] * Det;
+	        }
+	      }
+	    }
+
+	    /*--- Compute the NT.N Matrix (mass matrix), and add to the original
+	     matrix using Gauss integration ---*/
+
+	    for (iVar = 0; iVar < nNodes*nVar; iVar++) {
+	      for (jVar = 0; jVar < nNodes*nVar; jVar++) {
+	        for (kVar = 0; kVar < 2; kVar++) {
+	        	MassMatrix_Elem[iVar][jVar] += Weight[iGauss] * N_Matrix[kVar][iVar] * N_Matrix[kVar][jVar] * Det * Rho_s;
+	        }
+	      }
+	    }
+
+	  }
 
 }
 

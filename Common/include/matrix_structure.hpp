@@ -242,6 +242,7 @@ public:
 	 * \return Solution of the linear system (overwritten on rhs).
 	 */
   void Gauss_Elimination(unsigned long block_i, su2double* rhs, bool transposed = false);
+
   
 	/*!
 	 * \brief Performs the Gauss Elimination algorithm to solve the linear subsystem of the (i, i) subblock and rhs.

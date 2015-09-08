@@ -562,7 +562,9 @@ int main(int argc, char *argv[]) {
       }
 
 #ifdef HAVE_MPI
+
       SU2_MPI::Allreduce(&my_Gradient, &Gradient, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
 #else
       Gradient = my_Gradient;
 #endif

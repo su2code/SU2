@@ -29,21 +29,10 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 #
-# Created: 		10/26/12
-# Last updated: 	05/18/15
-#
-# Created by: 		M. Colonno
-# Updated by: 		T. Economon
-# Last updated by: 		R. Sanchez
-#
-# Major Changes/Contributions:
-# METIS & TECIO integration added by Ben Kirk, 3/24/2014
-# SU2_FSI integration added by Ruben Sanchez, 5/18/2015
-#
-######################################################################################
+################################################################################
 
-# AUTOMAKE_OPTIONS = subdir-objects
-ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS} -I m4 
+AUTOMAKE_OPTIONS = subdir-objects
+ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS} -I m4
 
 # build third-party optional dependencies first
 SUBDIRS = externals

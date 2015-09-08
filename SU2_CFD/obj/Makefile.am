@@ -31,6 +31,7 @@
 #
 ################################################################################
 
+AUTOMAKE_OPTIONS = subdir-objects
 ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS}
 
 bin_PROGRAMS =
@@ -48,11 +49,14 @@ bin_PROGRAMS += ../bin/SU2_CFD_REVERSE
 endif
 
 
-
 su2_cfd_sources = \
   ../include/definition_structure.hpp \
   ../include/fluid_model.hpp \
   ../include/fluid_model.inl \
+  ../include/gauss_structure.hpp \
+  ../include/gauss_structure.inl \
+  ../include/element_structure.hpp \
+  ../include/element_structure.inl \
   ../include/integration_structure.hpp \
   ../include/integration_structure.inl \
   ../include/iteration_structure.hpp \
@@ -74,6 +78,9 @@ su2_cfd_sources = \
   ../src/fluid_model_pig.cpp \
   ../src/fluid_model_pvdw.cpp \
   ../src/fluid_model_ppr.cpp \
+  ../src/gauss_structure.cpp \
+  ../src/element_linear.cpp \
+  ../src/element_structure.cpp \
   ../src/integration_structure.cpp \
   ../src/integration_time.cpp \
   ../src/iteration_structure.cpp \
@@ -92,6 +99,9 @@ su2_cfd_sources = \
   ../src/numerics_machine_learning.cpp \
   ../src/numerics_linearized_mean.cpp \
   ../src/numerics_linearized_turbulent.cpp \
+  ../src/numerics_fem_nonlinear_elasticity.cpp \
+  ../src/numerics_fem_linear_elasticity.cpp \
+  ../src/numerics_fem_elasticity.cpp \
   ../src/numerics_structure.cpp \
   ../src/numerics_machine_learning_turbulent.cpp \
   ../src/numerics_template.cpp \
@@ -116,6 +126,7 @@ su2_cfd_sources = \
   ../src/solver_direct_wave.cpp \
   ../src/solver_linearized_mean.cpp \
   ../src/solver_linearized_turbulent.cpp \
+  ../src/solver_fem_elasticity.cpp \
   ../src/solver_structure.cpp \
   ../src/solver_template.cpp \
   ../src/SU2_CFD.cpp \
@@ -135,6 +146,7 @@ su2_cfd_sources = \
   ../src/variable_direct_wave.cpp \
   ../src/variable_linearized_mean.cpp \
   ../src/variable_linearized_turbulent.cpp \
+  ../src/variable_fem_elasticity.cpp \
   ../src/variable_structure.cpp \
   ../src/variable_template.cpp
 
