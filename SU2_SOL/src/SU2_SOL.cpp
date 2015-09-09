@@ -160,6 +160,11 @@ int main(int argc, char *argv[]) {
 
 	if (fsi){
 
+		if (nZone == 1){
+			cout << "For multizone computations, please add the number of zones as a second argument for SU2_SOL. " << endl;
+			exit(EXIT_FAILURE);
+		}
+
 		su2double Physical_dt, Physical_t;
 		unsigned long iExtIter = 0, iExtIterFlow = 0, iExtIterFEM = 0;
 		bool StopCalc = false;
