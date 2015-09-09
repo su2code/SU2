@@ -4510,23 +4510,61 @@ void CEulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
 
 }
 
-void CEulerSolver::TurboPerformance(CSolver *solver, CConfig *config, unsigned short inMarker,  unsigned short outMarker){
+void CEulerSolver::TurboPerformance(CSolver *solver, CConfig *config, unsigned short inMarker,  unsigned short outMarker, unsigned short Kind_TurboPerf){
 
-	su2double eta_ts;
-	su2double avgVel2, avgTotalEnthaply= 0.0, avgDensityOut, avgPressureOut, avgEntropyIn, avgEnthalpyOut, avgEnthalpyOutIs;
+	su2double eta_tt, //Total-Total efficiency
+			  eta_ts, //Total-Static efficiency
+			  y,      //Total pressure loss coefficient
+			  zeta;   //Kinetic energy loss coefficient
+	su2double avgVel2In, avgVel2Out, avgTotalEnthalpyIn= 0.0, avgTotalEnthalpyOut= 0.0, avgTotalEnthalpyOutIs=0.0,avgEnthalpyOut, avgEnthalpyOutIs,
+			  avgPressureIn, avgPressureOut, avgTotalPressureIn, avgTotalPressureOut, avgDensityOut, avgEntropyIn;
 	unsigned short iDim;
-	for (iDim = 0; iDim < nDim; iDim++) avgVel2 += AveragedVelocity[inMarker][iDim]*AveragedVelocity[inMarker][iDim];
+	for (iDim = 0; iDim < nDim; iDim++) avgVel2In += AveragedVelocity[inMarker][iDim]*AveragedVelocity[inMarker][iDim];
+	for (iDim = 0; iDim < nDim; iDim++) avgVel2Out += AveragedVelocity[outMarker][iDim]*AveragedVelocity[outMarker][iDim];
 
-	avgTotalEnthaply = AveragedEnthalpy[inMarker] + 0.5*avgVel2;
+	avgTotalEnthalpyIn = AveragedEnthalpy[inMarker] + 0.5*avgVel2In;
+	avgTotalEnthalpyOut = AveragedEnthalpy[outMarker] + 0.5*avgVel2Out;
 	avgEntropyIn = AveragedEntropy[inMarker];
 	avgDensityOut= solver->GetAveragedDensity(outMarker);
+	avgPressureIn= solver->GetAveragedPressure(inMarker);
 	avgPressureOut= solver->GetAveragedPressure(outMarker);
+    avgTotalPressureIn  = avgPressureIn  + 0.5*solver->GetAveragedDensity(inMarker)*avgVel2In;
+    avgTotalPressureOut = avgPressureOut + 0.5*solver->GetAveragedDensity(out:Marker)*avgVel2Out;
 	FluidModel->SetTDState_Prho(avgPressureOut,avgDensityOut);
 	avgEnthalpyOut = FluidModel->GetStaticEnergy() + avgPressureOut/avgDensityOut;
 	FluidModel->SetTDState_Ps(avgPressureOut, avgEntropyIn);
 	avgEnthalpyOutIs = FluidModel->GetStaticEnergy() + avgPressureOut/FluidModel->GetDensity();
-	eta_ts = (avgTotalEnthaply - avgEnthalpyOut)/(avgTotalEnthaply - avgEnthalpyOutIs);
-	cout << "eta_ts "<< eta_ts<<endl;
+	avgTotalEnthalpyOutIs = avgEnthalpyOutIs + 0.5*avgVel2Out;
+
+    switch(Kind_TurboPerf){
+    	case TOT_PRESSURE_LOSS:
+    	    y = (avgTotalPressureIn - avgTotalPressureOut)/(avgTotalPressureOut - avgPressureOut) ;
+    		cout << "total_pressure_loss "<< y <<endl;
+    	    break;
+    	case KINETIC_ENERGY_LOSS:
+    	    zeta = (AveragedEnthalpy[outMarker] - avgEnthalpyOutIs)/(avgTotalEnthalpyOut - AveragedEnthalpy[outMarker]);
+    		cout << "kin_energy_loss "<< zeta<<endl;
+    	    break;
+    	case ETA_TT: //Total-Total efficiency
+    		eta_tt = (avgTotalEnthalpyIn - avgTotalEnthalpyOut)/(avgTotalEnthalpyIn - avgTotalEnthalpyOutIs);
+    		cout << "eta_tt "<< eta_tt<<endl;
+    		break;
+    	case ETA_TS: //Total-Static efficiency
+    	    eta_ts = (avgTotalEnthalpyIn - avgEnthalpyOut)/(avgTotalEnthalpyIn - avgEnthalpyOutIs);
+    		cout << "eta_ts "<< eta_ts<<endl;
+    	    break;
+//    	case MASSFLOW_DIFF: //mass flow rate in-out difference
+//    	    eta_ts = (avgTotalEnthalpyIn - avgEnthalpyOut)/(avgTotalEnthalpyIn - avgEnthalpyOutIs);
+//    		cout << "eta_ts "<< eta_ts<<endl;
+//    	    break;
+    	default:
+    		cout << "Warning! Invalid Turbo Performance option!" << endl;
+    		exit(EXIT_FAILURE);
+    		break;
+    }
+
+
+
 }
 
 void CEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container,

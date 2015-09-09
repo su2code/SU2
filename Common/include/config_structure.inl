@@ -817,6 +817,8 @@ inline string CConfig::GetMarker_TurboPerf_BoundIn(unsigned short index) {return
 
 inline string CConfig::GetMarker_TurboPerf_BoundOut(unsigned short index) {return Marker_TurboBoundOut[index];}
 
+inline unsigned short CConfig::GetKind_TurboPerf(unsigned short index) {return Kind_TurboPerformance[index];}
+
 inline unsigned short CConfig::GetnSections(void) { return nSections; }
 
 inline unsigned short CConfig::GetnVolSections(void) { return nVolSections; }
