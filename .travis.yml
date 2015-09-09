@@ -30,7 +30,7 @@ env:
           TEST_SCRIPT=serial_regression_AD.py
         # Parallel build and test for AD
         - CONFIGURE_COMMAND="./preconfigure.py --enable-mpi --with-cc=mpicc --with-cxx=mpicxx --prefix=$TRAVIS_BUILD_DIR --enable-autodiff"
-          TEST_SCRIPT=parallel_regression.py
+          TEST_SCRIPT=parallel_regression_AD.py
 
 
 
