@@ -572,7 +572,7 @@ inline void CSolver::Set_MPI_MaxEigenvalue(CGeometry *geometry, CConfig *config)
 
 inline void CSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) { }
 
-inline void CSolver::TurboPerformance(CSolver *solver, CConfig *config, unsigned short inMarker,  unsigned short outMarker){ }
+inline void CSolver::TurboPerformance(CSolver *solver, CConfig *config, unsigned short inMarker,  unsigned short outMarker, unsigned short Kind_TurboPerf){ }
 
 inline void CSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) { }
 

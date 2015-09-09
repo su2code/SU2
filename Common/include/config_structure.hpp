@@ -3640,6 +3640,12 @@ public:
 	 */
 	string GetMarker_TurboPerf_BoundOut(unsigned short index);
 
+	/*!
+	 * \brief get marker kind for Turbomachinery performance calculation.
+	 * \return kind index.
+	 */
+	unsigned short GetKind_TurboPerf(unsigned short index);
+
     /*!
 	 * \brief Get the number of sections.
 	 * \return Number of sections

@@ -1113,7 +1113,7 @@ public:
 	 * \param[in] inMarker - marker related to the inlet.
 	 * \param[in] outMarker - marker related to the outlet.
 	 */
-	virtual void TurboPerformance(CSolver *solver,  CConfig *config, unsigned short inMarker,  unsigned short outMarker);
+	virtual void TurboPerformance(CSolver *solver,  CConfig *config, unsigned short inMarker,  unsigned short outMarker, unsigned short Kind_TurboPerf);
 
 	/*!
 	 * \brief A virtual member.
@@ -3438,7 +3438,7 @@ public:
 	 * \param[in] inMarker - marker related to the inlet.
 	 * \param[in] outMarker - marker related to the outlet.
 	 */
-	void TurboPerformance(CSolver *solver,  CConfig *config, unsigned short inMarker,  unsigned short outMarker);
+	void TurboPerformance(CSolver *solver,  CConfig *config, unsigned short inMarker,  unsigned short outMarker, unsigned short );
 
 	/*!
 	 * \brief Provide the non dimensional lift coefficient (inviscid contribution).
