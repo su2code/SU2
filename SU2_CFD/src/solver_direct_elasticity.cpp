@@ -2,7 +2,7 @@
  * \file solution_direct_elasticity.cpp
  * \brief Main subrotuines for solving the linear elasticity equation.
  * \author F. Palacios, R. Sanchez
- * \version 4.0.1 "Cardinal"
+ * \version 4.0.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -35,33 +35,35 @@ CFEASolver::CFEASolver(void) : CSolver() { }
 
 CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
   
-  unsigned long iPoint;
-  unsigned short iVar, jVar, NodesElement = 0, nLineLets;
-  unsigned short iDim;
+	unsigned long iPoint;
+	unsigned short iVar, jVar, iDim, NodesElement = 0, nLineLets;
+	unsigned long nMarker, nElem;
   su2double dull_val;
   
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
-  nPoint        = geometry->GetnPoint();
-  nPointDomain  = geometry->GetnPointDomain();
-  nDim          = geometry->GetnDim();
-  node          = new CVariable*[nPoint];
+	nPoint        = geometry->GetnPoint();
+	nPointDomain  = geometry->GetnPointDomain();
+	nElem         = geometry->GetnElem();
+	nDim          = geometry->GetnDim();
+	nMarker       = geometry->GetnMarker();
+	node          = new CVariable*[nPoint];
+
+
+	WAitken_Dyn       = 0.0;
+	WAitken_Dyn_tn1   = 0.0;
+
+  	SetFSI_ConvValue(0,0.0);
+  	SetFSI_ConvValue(1,0.0);
+
+	nVar = nDim;
   
-  
-  WAitken_Dyn       = 0.0;
-  WAitken_Dyn_tn1   = 0.0;
-  
-  SetFSI_ConvValue(0,0.0);
-  SetFSI_ConvValue(1,0.0);
-  
-  nVar = nDim;
-  
-  if (nDim == 2) NodesElement = 4;
-  if (nDim == 3) NodesElement = 8;
-  
+	if (nDim == 2) NodesElement = 4;
+	if (nDim == 3) NodesElement = 8;
+	
   /*--- Define some auxiliary vectors related to the residual ---*/
   
   Residual = new su2double[nVar];          for (iVar = 0; iVar < nVar; iVar++) Residual[iVar]      = 0.0;
@@ -76,111 +78,109 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
   
   /*--- Define some auxiliary vectors related to the solution ---*/
   
-  Solution   = new su2double[nVar];  for (iVar = 0; iVar < nVar; iVar++) Solution[iVar]   = 0.0;
+	Solution   = new su2double[nVar];  for (iVar = 0; iVar < nVar; iVar++) Solution[iVar]   = 0.0;
   
-  /*--- Element aux stiffness matrix definition ---*/
+	/*--- Element aux stiffness matrix definition ---*/
   
-  StiffMatrix_Elem = new su2double*[NodesElement*nDim];
-  for (iVar = 0; iVar < NodesElement*nDim; iVar++) {
-    StiffMatrix_Elem[iVar] = new su2double [NodesElement*nDim];
+	StiffMatrix_Elem = new su2double*[NodesElement*nDim];
+	for (iVar = 0; iVar < NodesElement*nDim; iVar++) {
+		StiffMatrix_Elem[iVar] = new su2double [NodesElement*nDim];
     for (jVar = 0; jVar < NodesElement*nDim; jVar++) {
       StiffMatrix_Elem[iVar][jVar] = 0.0;
     }
-  }
+	}
+	
+	/*--- Node aux stiffness matrix definition ---*/
   
-  /*--- Node aux stiffness matrix definition ---*/
-  
-  StiffMatrix_Node = new su2double*[nVar];
-  for (iVar = 0; iVar < nVar; iVar++) {
-    StiffMatrix_Node[iVar] = new su2double [nVar];
+	StiffMatrix_Node = new su2double*[nVar];
+	for (iVar = 0; iVar < nVar; iVar++) {
+		StiffMatrix_Node[iVar] = new su2double [nVar];
     for (jVar = 0; jVar < nVar; jVar++) {
       StiffMatrix_Node[iVar][jVar] = 0.0;
     }
-  }
-  
-  /*--- Element aux mass matrix definition ---*/
-  
-  MassMatrix_Elem = new su2double*[NodesElement*nDim];
-  for (iVar = 0; iVar < NodesElement*nDim; iVar++) {
-    MassMatrix_Elem[iVar] = new su2double [NodesElement*nDim];
+	}
+
+	/*--- Element aux mass matrix definition ---*/
+
+	MassMatrix_Elem = new su2double*[NodesElement*nDim];
+	for (iVar = 0; iVar < NodesElement*nDim; iVar++) {
+		MassMatrix_Elem[iVar] = new su2double [NodesElement*nDim];
     for (jVar = 0; jVar < NodesElement*nDim; jVar++) {
       MassMatrix_Elem[iVar][jVar] = 0.0;
     }
-  }
-  
-  /*--- Node aux mass matrix definition ---*/
-  
-  MassMatrix_Node = new su2double*[nVar];
-  for (iVar = 0; iVar < nVar; iVar++) {
-    MassMatrix_Node[iVar] = new su2double [nVar];
+	}
+
+	/*--- Node aux mass matrix definition ---*/
+
+	MassMatrix_Node = new su2double*[nVar];
+	for (iVar = 0; iVar < nVar; iVar++) {
+		MassMatrix_Node[iVar] = new su2double [nVar];
     for (jVar = 0; jVar < nVar; jVar++) {
       MassMatrix_Node[iVar][jVar] = 0.0;
     }
-  }
-  
-  /*--- Node aux mass matrix definition ---*/
-  
-  MassMatrix_Node_Int = new su2double*[nVar];
-  for (iVar = 0; iVar < nVar; iVar++) {
-    MassMatrix_Node_Int[iVar] = new su2double [nVar];
+	}
+
+	/*--- Node aux mass matrix definition ---*/
+
+	MassMatrix_Node_Int = new su2double*[nVar];
+	for (iVar = 0; iVar < nVar; iVar++) {
+		MassMatrix_Node_Int[iVar] = new su2double [nVar];
     for (jVar = 0; jVar < nVar; jVar++) {
       MassMatrix_Node_Int[iVar][jVar] = 0.0;
     }
-  }
-  
-  /*--- Element aux damping matrix definition ---*/
-  
-  DampMatrix_Elem = new su2double*[NodesElement*nDim];
-  for (iVar = 0; iVar < NodesElement*nDim; iVar++) {
-    DampMatrix_Elem[iVar] = new su2double [NodesElement*nDim];
+	}
+
+	/*--- Element aux damping matrix definition ---*/
+
+	DampMatrix_Elem = new su2double*[NodesElement*nDim];
+	for (iVar = 0; iVar < NodesElement*nDim; iVar++) {
+		DampMatrix_Elem[iVar] = new su2double [NodesElement*nDim];
     for (jVar = 0; jVar < NodesElement*nDim; jVar++) {
       DampMatrix_Elem[iVar][jVar] = 0.0;
     }
-  }
-  
-  /*--- Node aux damping matrix definition ---*/
-  
-  DampMatrix_Node = new su2double*[nVar];
-  for (iVar = 0; iVar < nVar; iVar++) {
-    DampMatrix_Node[iVar] = new su2double [nVar];
+	}
+
+	/*--- Node aux damping matrix definition ---*/
+
+	DampMatrix_Node = new su2double*[nVar];
+	for (iVar = 0; iVar < nVar; iVar++) {
+		DampMatrix_Node[iVar] = new su2double [nVar];
     for (jVar = 0; jVar < nVar; jVar++) {
       DampMatrix_Node[iVar][jVar] = 0.0;
     }
-  }
+	}
+
+	/*--- Initialization of integration constants ---*/
+
+	for (iVar = 0; iVar < 8; iVar++){
+		a_dt[iVar]=0.0;
+	}
+
+	/*--- DESTRUCT THIS! ---*/
+
+	/*--- Element aux dead load vector definition ---*/
+	DeadLoadVector_Elem = new su2double [NodesElement*nDim];
+
+	/*--- Node aux dead load vector definition ---*/
+	DeadLoadVector_Node = new su2double [nVar];
+
   
-  /*--- Initialization of integration constants ---*/
-  
-  for (iVar = 0; iVar < 8; iVar++){
-    a_dt[iVar]=0.0;
-  }
-  
-  
-  
-  /*--- DESTRUCT THIS! ---*/
-  
-  /*--- Element aux dead load vector definition ---*/
-  DeadLoadVector_Elem = new su2double [NodesElement*nDim];
-  
-  /*--- Node aux dead load vector definition ---*/
-  DeadLoadVector_Node = new su2double [nVar];
-  
-  
-  /*--- Initialization of matrix structures ---*/
+	/*--- Initialization of matrix structures ---*/
   
   if (rank == MASTER_NODE) cout << "Initialize Stiffness structure (Linear Elasticity)." << endl;
-  
+
   if (nDim==2){
-    unsigned short form2d;
-    form2d=config->GetElas2D_Formulation();
-    if (form2d==0) cout << "Plane stress model for 2D structural analysis (Linear Elasticity)." << endl;
-    if (form2d==1) cout << "Plane strain model for 2D structural analysis (Linear Elasticity)." << endl;
+	  unsigned short form2d;
+	  form2d=config->GetElas2D_Formulation();
+	  if (form2d==0) cout << "Plane stress model for 2D structural analysis (Linear Elasticity)." << endl;
+	  if (form2d==1) cout << "Plane strain model for 2D structural analysis (Linear Elasticity)." << endl;
   }
-  
+
   StiffMatrixSpace.Initialize(nPoint, nPointDomain, nVar, nVar, false, geometry, config);
   StiffMatrixTime.Initialize(nPoint, nPointDomain, nVar, nVar, false, geometry, config);
   MassMatrix.Initialize(nPoint, nPointDomain, nVar, nVar, false, geometry, config);
   DampMatrix.Initialize(nPoint, nPointDomain, nVar, nVar, false, geometry, config);
-  
+
   if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (Linear Elasticity)." << endl;
   Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, false, geometry, config);
   
@@ -198,44 +198,44 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
   
   TimeRes_Aux.Initialize(nPoint, nPointDomain, nVar, 0.0);
   TimeRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
+
+
+	/*--- Computation of gradients by least squares ---*/
   
+	Smatrix = new su2double* [nDim];
+	for (unsigned short iDim = 0; iDim < nDim; iDim++)
+		Smatrix[iDim] = new su2double [nDim];
   
-  /*--- Computation of gradients by least squares ---*/
-  
-  Smatrix = new su2double* [nDim];
-  for (unsigned short iDim = 0; iDim < nDim; iDim++)
-    Smatrix[iDim] = new su2double [nDim];
-  
-  cvector = new su2double* [nVar];
-  for (unsigned short iVar = 0; iVar < nVar; iVar++)
-    cvector[iVar] = new su2double [nDim];
+	cvector = new su2double* [nVar];
+	for (unsigned short iVar = 0; iVar < nVar; iVar++)
+		cvector[iVar] = new su2double [nDim];
   
   /*--- Check for a restart, initialize from zero otherwise ---*/
   
-  bool restart = (config->GetRestart() || config->GetRestart_Flow());
-  
-  if (!restart) {
-    for (iPoint = 0; iPoint < nPoint; iPoint++) {
-      for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
-      node[iPoint] = new CFEAVariable(Solution, nDim, nVar, config);
+	bool restart = (config->GetRestart() || config->GetRestart_Flow());
+	
+	if (!restart) {
+		for (iPoint = 0; iPoint < nPoint; iPoint++) {
+			for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
+			node[iPoint] = new CFEAVariable(Solution, nDim, nVar, config);
     }
-  }
-  else {
-    unsigned long index;
-    string text_line, mesh_filename;
-    ifstream restart_file;
+	}
+	else {
+		unsigned long index;
+		string text_line, mesh_filename;
+		ifstream restart_file;
     
-    /*--- Restart the solution from file information ---*/
+		/*--- Restart the solution from file information ---*/
     
-    mesh_filename = config->GetSolution_FlowFileName();
+		mesh_filename = config->GetSolution_FlowFileName();
     restart_file.open(mesh_filename.data(), ios::in);
-    
+		
     /*--- In case there is no file ---*/
     
-    if (restart_file.fail()) {
-      cout << "There is no fea restart file!!" << endl;
-      exit(EXIT_FAILURE);
-    }
+		if (restart_file.fail()) {
+			cout << "There is no fea restart file!!" << endl;
+			exit(EXIT_FAILURE);
+		}
     
     /*--- In case this is a parallel simulation, we need to perform the
      Global2Local index transformation first. ---*/
@@ -255,7 +255,7 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
       Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
     }
     
-    /*--- Read all lines in the restart file ---*/
+		/*--- Read all lines in the restart file ---*/
     
     long iPoint_Local; unsigned long iPoint_Global = 0;
     
@@ -264,7 +264,7 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
     getline (restart_file, text_line);
     
     while (getline (restart_file, text_line)) {
-      istringstream point_line(text_line);
+			istringstream point_line(text_line);
       
       /*--- Retrieve local index. If this node from the restart file lives
        on a different processor, the value of iPoint_Local will be -1.
@@ -288,14 +288,14 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
       node[iPoint] = new CFEAVariable(Solution, nDim, nVar, config);
     }
     
-    /*--- Close the restart file ---*/
+		/*--- Close the restart file ---*/
     
-    restart_file.close();
+		restart_file.close();
     
     /*--- Free memory needed for the transformation ---*/
     
     delete [] Global2Local;
-  }
+	}
   
 }
 
@@ -303,47 +303,21 @@ CFEASolver::~CFEASolver(void) {
   
 	unsigned short iVar, iDim, NodesElement = 0;
   
-  if (nDim == 2) NodesElement = 4;
-  if (nDim == 3) NodesElement = 8;
+	if (nDim == 2) NodesElement = 4;
+	if (nDim == 3) NodesElement = 8;
   
-  delete [] Residual;
-  delete [] Residual_Max;
-  delete [] Solution;
+	delete [] Residual;
+	delete [] Residual_Max;
+	delete [] Solution;
   
-  for (iVar = 0; iVar < NodesElement*nDim; iVar++)
-    delete [] StiffMatrix_Elem[iVar];
+	for (iVar = 0; iVar < NodesElement*nDim; iVar++)
+		delete [] StiffMatrix_Elem[iVar];
   
-  for (iVar = 0; iVar < nVar; iVar++)
-    delete [] StiffMatrix_Node[iVar];
-  
-  for (iVar = 0; iVar < NodesElement*nDim; iVar++)
-    delete [] MassMatrix_Elem[iVar];
-  
-  for (iVar = 0; iVar < nVar; iVar++)
-    delete [] MassMatrix_Elem[iVar];
-  
-  for (iVar = 0; iVar < NodesElement*nDim; iVar++)
-    delete [] DampMatrix_Elem[iVar];
-  
-  for (iVar = 0; iVar < nVar; iVar++)
-    delete [] DampMatrix_Elem[iVar];
-  
-  delete [] StiffMatrix_Elem;
-  delete [] StiffMatrix_Node;
-  delete [] MassMatrix_Elem;
-  delete [] MassMatrix_Node;
-  delete [] DampMatrix_Elem;
-  delete [] DampMatrix_Node;
-  
-  /*--- Computation of gradients by least-squares ---*/
-  
-  for (iDim = 0; iDim < nDim; iDim++)
-    delete [] Smatrix[iDim];
-  delete [] Smatrix;
-  
-  for (iVar = 0; iVar < nVar; iVar++)
-    delete [] cvector[iVar];
-  delete [] cvector;
+	for (iVar = 0; iVar < nVar; iVar++)
+		delete [] StiffMatrix_Node[iVar];
+
+	for (iVar = 0; iVar < NodesElement*nDim; iVar++)
+		delete [] MassMatrix_Elem[iVar];
   
 	for (iVar = 0; iVar < nVar; iVar++)
 		delete [] MassMatrix_Elem[iVar];
@@ -376,16 +350,17 @@ CFEASolver::~CFEASolver(void) {
 
 
 void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, CNumerics **numerics, unsigned short iMesh, unsigned long Iteration, unsigned short RunTime_EqSystem, bool Output) {
+
   GetSurface_Pressure(geometry, config);
   
   unsigned long ExtIter = config->GetExtIter();
-  
+
   /*--- Set residuals and auxiliar variables to zero ---*/
-  
+
   Initialize_SystemMatrix(geometry, solver_container, config);
-  
+
   bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
-  
+
   if (ExtIter == 0){
 
 	  if (!dynamic){
@@ -506,48 +481,48 @@ void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CSolver **solver_conta
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
 
     if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     nNodes = 3;
-    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL)    nNodes = 4;
+    if (geometry->elem[iElem]->GetVTK_Type() == RECTANGLE)    nNodes = 4;
     if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  nNodes = 4;
     if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      nNodes = 5;
     if (geometry->elem[iElem]->GetVTK_Type() == PRISM)        nNodes = 6;
     if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)   nNodes = 8;
-    
-    /*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
-    
+
+	/*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
+
     for (iNodes = 0; iNodes < nNodes; iNodes++) {
       PointCorners[iNodes] = geometry->elem[iElem]->GetNode(iNodes);
       for (iDim = 0; iDim < nDim; iDim++) {
         CoordCorners[iNodes][iDim] = geometry->node[PointCorners[iNodes]]->GetCoord(iDim);
       }
     }
-    
+
     /*--- We set the element stiffness matrix ---*/
-    
+
     if (nDim == 2) numerics->SetFEA_StiffMatrix2D(StiffMatrix_Elem, CoordCorners, nNodes, form2d);
     if (nDim == 3) numerics->SetFEA_StiffMatrix3D(StiffMatrix_Elem, CoordCorners, nNodes);
-    
+
     /*--- Initialization of the auxiliar matrix ---*/
-    
+
     for (iVar = 0; iVar < nVar; iVar++)
       for (jVar = 0; jVar < nVar; jVar++)
         StiffMatrix_Node[iVar][jVar] = 0.0;
-    
-    /*--- Transform the stiffness matrix into the
-     contributions for the individual nodes relative to each other. ---*/
-    
-    for (iVar = 0; iVar < nNodes; iVar++) {
-      for (jVar = 0; jVar < nNodes; jVar++) {
-        for (iDim = 0; iDim < nVar; iDim++) {
-          for (jDim = 0; jDim < nVar; jDim++) {
-            StiffMatrix_Node[iDim][jDim] = StiffMatrix_Elem[(iVar*nDim)+iDim][(jVar*nDim)+jDim];
+
+      /*--- Transform the stiffness matrix into the
+       contributions for the individual nodes relative to each other. ---*/
+
+      for (iVar = 0; iVar < nNodes; iVar++) {
+        for (jVar = 0; jVar < nNodes; jVar++) {
+          for (iDim = 0; iDim < nVar; iDim++) {
+            for (jDim = 0; jDim < nVar; jDim++) {
+              StiffMatrix_Node[iDim][jDim] = StiffMatrix_Elem[(iVar*nDim)+iDim][(jVar*nDim)+jDim];
+            }
           }
+          StiffMatrixSpace.AddBlock(PointCorners[iVar], PointCorners[jVar], StiffMatrix_Node);
         }
-        StiffMatrixSpace.AddBlock(PointCorners[iVar], PointCorners[jVar], StiffMatrix_Node);
       }
+
     }
-    
-  }
-  
+
 }
 
 void CFEASolver::Compute_StiffMassMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config) {
@@ -563,53 +538,54 @@ void CFEASolver::Compute_StiffMassMatrix(CGeometry *geometry, CSolver **solver_c
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
 
     if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     nNodes = 3;
-    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL)    nNodes = 4;
+    if (geometry->elem[iElem]->GetVTK_Type() == RECTANGLE)    nNodes = 4;
     if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  nNodes = 4;
     if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      nNodes = 5;
     if (geometry->elem[iElem]->GetVTK_Type() == PRISM)        nNodes = 6;
     if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)   nNodes = 8;
-    
-    /*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
-    
+
+	/*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
+
     for (iNodes = 0; iNodes < nNodes; iNodes++) {
       PointCorners[iNodes] = geometry->elem[iElem]->GetNode(iNodes);
       for (iDim = 0; iDim < nDim; iDim++) {
         CoordCorners[iNodes][iDim] = geometry->node[PointCorners[iNodes]]->GetCoord(iDim);
       }
     }
-    
+
     /*--- We set the element stiffness matrix ---*/
-    
+
     /*--- This solves the problem but... why? ---*/
-    for (iVar = 0; iVar < nNodes*nDim; iVar++) {
-      StiffMatrix_Elem[iVar] = new su2double [nNodes*nDim];
-      for (jVar = 0; jVar < nNodes*nDim; jVar++) {
-        StiffMatrix_Elem[iVar][jVar] = 0.0;
-      }
-    }
-    
+	for (iVar = 0; iVar < nNodes*nDim; iVar++) {
+		StiffMatrix_Elem[iVar] = new su2double [nNodes*nDim];
+		for (jVar = 0; jVar < nNodes*nDim; jVar++) {
+    		StiffMatrix_Elem[iVar][jVar] = 0.0;
+    	}
+	}
+
     if (nDim == 2) numerics->SetFEA_StiffMassMatrix2D(StiffMatrix_Elem, MassMatrix_Elem, CoordCorners, nNodes, form2d);
     if (nDim == 3) numerics->SetFEA_StiffMassMatrix3D(StiffMatrix_Elem, MassMatrix_Elem, CoordCorners, nNodes);
-    
+
     /*--- Initialization of the auxiliar matrix ---*/
-    
+
     for (iVar = 0; iVar < nVar; iVar++){
       for (jVar = 0; jVar < nVar; jVar++){
         StiffMatrix_Node[iVar][jVar] = 0.0;
         MassMatrix_Node[iVar][jVar] = 0.0;
       }
     }
-    
-    /*--- Transform the stiffness and mass matrices into the
-     contributions for the individual nodes relative to each other. ---*/
-    
-    for (iVar = 0; iVar < nNodes; iVar++) {
-      for (jVar = 0; jVar < nNodes; jVar++) {
-        for (iDim = 0; iDim < nVar; iDim++) {
-          for (jDim = 0; jDim < nVar; jDim++) {
-            StiffMatrix_Node[iDim][jDim] = StiffMatrix_Elem[(iVar*nDim)+iDim][(jVar*nDim)+jDim];
-            MassMatrix_Node[iDim][jDim] = MassMatrix_Elem[(iVar*nDim)+iDim][(jVar*nDim)+jDim];
-            MassMatrix_Node_Int[iDim][jDim] = a_dt[0] * MassMatrix_Elem[(iVar*nDim)+iDim][(jVar*nDim)+jDim];
+
+      /*--- Transform the stiffness and mass matrices into the
+       contributions for the individual nodes relative to each other. ---*/
+
+      for (iVar = 0; iVar < nNodes; iVar++) {
+        for (jVar = 0; jVar < nNodes; jVar++) {
+          for (iDim = 0; iDim < nVar; iDim++) {
+            for (jDim = 0; jDim < nVar; jDim++) {
+              StiffMatrix_Node[iDim][jDim] = StiffMatrix_Elem[(iVar*nDim)+iDim][(jVar*nDim)+jDim];
+              MassMatrix_Node[iDim][jDim] = MassMatrix_Elem[(iVar*nDim)+iDim][(jVar*nDim)+jDim];
+              MassMatrix_Node_Int[iDim][jDim] = a_dt[0] * MassMatrix_Elem[(iVar*nDim)+iDim][(jVar*nDim)+jDim];
+            }
           }
 
           /*--- Modified MassMatrix ---*/
@@ -617,35 +593,31 @@ void CFEASolver::Compute_StiffMassMatrix(CGeometry *geometry, CSolver **solver_c
           StiffMatrixTime.AddBlock(PointCorners[iVar], PointCorners[jVar], StiffMatrix_Node);
           StiffMatrixTime.AddBlock(PointCorners[iVar], PointCorners[jVar], MassMatrix_Node_Int);
         }
-        MassMatrix.AddBlock(PointCorners[iVar], PointCorners[jVar], MassMatrix_Node);
-        StiffMatrixTime.AddBlock(PointCorners[iVar], PointCorners[jVar], StiffMatrix_Node);
-        StiffMatrixTime.AddBlock(PointCorners[iVar], PointCorners[jVar], MassMatrix_Node_Int);
       }
+
     }
-    
-  }
-  
+
 }
 
 void CFEASolver::Compute_StiffMassDampMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config) {
-  
-  cout << "Here we will compute the damping matrix." << endl;
+
+	cout << "Here we will compute the damping matrix." << endl;
 }
 
 
 void CFEASolver::SetSolution_time_n(CGeometry *geometry, CConfig *config) {
-  
-  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
-  
-  if (dynamic){
-    for(unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-      // The loop is over nPoints so the boundaries are also updated
-      node[iPoint]->SetSolution_time_n();
-      node[iPoint]->SetSolution_Vel_time_n();
-      node[iPoint]->SetSolution_Accel_time_n();
-    }
-  }
-  
+
+	bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
+
+	if (dynamic){
+		for(unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+			// The loop is over nPoints so the boundaries are also updated
+			node[iPoint]->SetSolution_time_n();
+			node[iPoint]->SetSolution_Vel_time_n();
+			node[iPoint]->SetSolution_Accel_time_n();
+		}
+	}
+
 }
 
 
@@ -654,18 +626,18 @@ void CFEASolver::SetSolution_time_n(CGeometry *geometry, CConfig *config) {
 
 void CFEASolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
                                  CConfig *config, unsigned short iMesh) {
-  
-  /*--- Compute body forces load vector ---*/
-  
-  
-  
-  /*--- Compute initial stresses effect ---*/
-  
-  
+
+	/*--- Compute body forces load vector ---*/
+
+
+
+	/*--- Compute initial stresses effect ---*/
+
+
 }
 
 void CFEASolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                  CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+                                 CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
   
 }
 
@@ -850,9 +822,9 @@ void CFEASolver::BC_Clamped_Post(CGeometry *geometry, CSolver **solver_container
 
     /*--- Re-set the displacement condition ---*/
     LinSysRes.SetBlock(iPoint, Residual);
-    
-  }
-  
+
+	}
+
 }
 
 
@@ -871,7 +843,7 @@ void CFEASolver::BC_Normal_Displacement(CGeometry *geometry, CSolver **solver_co
     
     /*--- Compute area, and unitary normal ---*/
     
-    Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+		Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
     for (iDim = 0; iDim < nDim; iDim++) UnitaryNormal[iDim] = Normal[iDim]/Area;
     
     if (config->GetUnsteady_Simulation() == STEADY) {
@@ -898,9 +870,9 @@ void CFEASolver::BC_Normal_Displacement(CGeometry *geometry, CSolver **solver_co
         Residual[3] = 0.0;                          Residual[4] = 0.0;                          Residual[5] = 0.0;
       }
     }
-    
-    node[iPoint]->SetSolution(Solution);
-    node[iPoint]->SetSolution_Old(Solution);
+		
+		node[iPoint]->SetSolution(Solution);
+		node[iPoint]->SetSolution_Old(Solution);
     
     LinSysRes.SetBlock(iPoint, Residual);
     
@@ -910,75 +882,74 @@ void CFEASolver::BC_Normal_Displacement(CGeometry *geometry, CSolver **solver_co
       Jacobian.DeleteValsRowi(total_index);
     }
     
-  }
+	}
 }
 
 void CFEASolver::BC_Normal_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
                                 unsigned short val_marker) {
-  
-  su2double a[3], b[3];
-  unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0;
-  su2double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL;
-  su2double Normal_Elem[3] = {0.0, 0.0, 0.0};
-  //su2double Length_Elem = 0.0, Area_Elem = 0.0;
-  unsigned short iDim;
-  
-  su2double TotalLoad = config->GetLoad_Value(config->GetMarker_All_TagBound(val_marker));
-  
-  for (iElem = 0; iElem < geometry->GetnElem_Bound(val_marker); iElem++) {
+	
+	su2double a[3], b[3];
+	unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0;
+	su2double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL;
+	su2double Length_Elem = 0.0, Area_Elem = 0.0, Normal_Elem[3] = {0.0, 0.0, 0.0};
+	unsigned short iDim;
+
+	su2double TotalLoad = config->GetLoad_Value(config->GetMarker_All_TagBound(val_marker));
+	
+	for (iElem = 0; iElem < geometry->GetnElem_Bound(val_marker); iElem++) {
     
-    Point_0 = geometry->bound[val_marker][iElem]->GetNode(0);                   Coord_0 = geometry->node[Point_0]->GetCoord();
-    Point_1 = geometry->bound[val_marker][iElem]->GetNode(1);                   Coord_1 = geometry->node[Point_1]->GetCoord();
-    if (nDim == 3) { Point_2 = geometry->bound[val_marker][iElem]->GetNode(2);	Coord_2 = geometry->node[Point_2]->GetCoord(); }
+		Point_0 = geometry->bound[val_marker][iElem]->GetNode(0);                   Coord_0 = geometry->node[Point_0]->GetCoord();
+		Point_1 = geometry->bound[val_marker][iElem]->GetNode(1);                   Coord_1 = geometry->node[Point_1]->GetCoord();
+		if (nDim == 3) { Point_2 = geometry->bound[val_marker][iElem]->GetNode(2);	Coord_2 = geometry->node[Point_2]->GetCoord(); }
     
-    /*--- Compute area (3D), and length of the surfaces (2D) ---*/
+		/*--- Compute area (3D), and length of the surfaces (2D) ---*/
     
-    if (nDim == 2) {
+		if (nDim == 2) {
       
-      for (iDim = 0; iDim < nDim; iDim++) a[iDim] = Coord_0[iDim]-Coord_1[iDim];
+			for (iDim = 0; iDim < nDim; iDim++) a[iDim] = Coord_0[iDim]-Coord_1[iDim];
+
+			Length_Elem = sqrt(a[0]*a[0]+a[1]*a[1]);
+			Normal_Elem[0] =   a[1];
+			Normal_Elem[1] = -(a[0]);
       
-      //Length_Elem = sqrt(a[0]*a[0]+a[1]*a[1]);
-      Normal_Elem[0] =   a[1];
-      Normal_Elem[1] = -(a[0]);
+		}
+
+		if (nDim == 3) {
       
-    }
-    
-    if (nDim == 3) {
+			for (iDim = 0; iDim < nDim; iDim++) {
+				a[iDim] = Coord_0[iDim]-Coord_2[iDim];
+				b[iDim] = Coord_1[iDim]-Coord_2[iDim];
+			}
+
+			Area_Elem = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
       
-      for (iDim = 0; iDim < nDim; iDim++) {
-        a[iDim] = Coord_0[iDim]-Coord_2[iDim];
-        b[iDim] = Coord_1[iDim]-Coord_2[iDim];
+      		Normal_Elem[0] = -(0.5*(a[1]*b[2]-a[2]*b[1]));
+			Normal_Elem[1] = -(-0.5*(a[0]*b[2]-a[2]*b[0]));
+			Normal_Elem[2] = -(0.5*(a[0]*b[1]-a[1]*b[0]));
+      
+		}
+		
+
+      if (nDim == 2) {
+        Residual[0] = (1.0/2.0)*TotalLoad*Normal_Elem[0]; Residual[1] = (1.0/2.0)*TotalLoad*Normal_Elem[1];
+        LinSysRes.AddBlock(Point_0, Residual);
+        Residual[0] = (1.0/2.0)*TotalLoad*Normal_Elem[0]; Residual[1] = (1.0/2.0)*TotalLoad*Normal_Elem[1];
+        LinSysRes.AddBlock(Point_1, Residual);
       }
       
-      //Area_Elem = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
-      
-      Normal_Elem[0] = -(0.5*(a[1]*b[2]-a[2]*b[1]));
-      Normal_Elem[1] = -(-0.5*(a[0]*b[2]-a[2]*b[0]));
-      Normal_Elem[2] = -(0.5*(a[0]*b[1]-a[1]*b[0]));
-      
-    }
-    
-    
-    if (nDim == 2) {
-      Residual[0] = (1.0/2.0)*TotalLoad*Normal_Elem[0]; Residual[1] = (1.0/2.0)*TotalLoad*Normal_Elem[1];
-      LinSysRes.AddBlock(Point_0, Residual);
-      Residual[0] = (1.0/2.0)*TotalLoad*Normal_Elem[0]; Residual[1] = (1.0/2.0)*TotalLoad*Normal_Elem[1];
-      LinSysRes.AddBlock(Point_1, Residual);
-    }
-    
-    else {
-      Residual[0] = (1.0/3.0)*TotalLoad*Normal_Elem[0]; Residual[1] = (1.0/3.0)*TotalLoad*Normal_Elem[1]; Residual[2] = (1.0/3.0)*TotalLoad*Normal_Elem[2];
-      LinSysRes.AddBlock(Point_0, Residual);
-      
-      Residual[0] = (1.0/3.0)*TotalLoad*Normal_Elem[0]; Residual[1] = (1.0/3.0)*TotalLoad*Normal_Elem[1]; Residual[2] = (1.0/3.0)*TotalLoad*Normal_Elem[2];
-      LinSysRes.AddBlock(Point_1, Residual);
-      
-      Residual[0] = (1.0/3.0)*TotalLoad*Normal_Elem[0]; Residual[1] = (1.0/3.0)*TotalLoad*Normal_Elem[1]; Residual[2] = (1.0/3.0)*TotalLoad*Normal_Elem[2];
-      LinSysRes.AddBlock(Point_2, Residual);
-    }
-    
-  }
-  
+      else {
+        Residual[0] = (1.0/3.0)*TotalLoad*Normal_Elem[0]; Residual[1] = (1.0/3.0)*TotalLoad*Normal_Elem[1]; Residual[2] = (1.0/3.0)*TotalLoad*Normal_Elem[2];
+        LinSysRes.AddBlock(Point_0, Residual);
+        
+        Residual[0] = (1.0/3.0)*TotalLoad*Normal_Elem[0]; Residual[1] = (1.0/3.0)*TotalLoad*Normal_Elem[1]; Residual[2] = (1.0/3.0)*TotalLoad*Normal_Elem[2];
+        LinSysRes.AddBlock(Point_1, Residual);
+        
+        Residual[0] = (1.0/3.0)*TotalLoad*Normal_Elem[0]; Residual[1] = (1.0/3.0)*TotalLoad*Normal_Elem[1]; Residual[2] = (1.0/3.0)*TotalLoad*Normal_Elem[2];
+        LinSysRes.AddBlock(Point_2, Residual);
+      }
+		
+	}
+	
 }
 
 
@@ -998,126 +969,133 @@ void CFEASolver::BC_Dir_Load(CGeometry *geometry, CSolver **solver_container, CN
 	su2double TotalLoad;
 
   bool Gradual_Load = config->GetGradual_Load();
-  su2double CurrentTime=config->GetCurrent_DynTime();
-  su2double ModAmpl, NonModAmpl;
-  
+	su2double CurrentTime=config->GetCurrent_DynTime();
+	su2double ModAmpl, NonModAmpl;
+
   bool Ramp_Load = config->GetRamp_Load();
-  su2double Ramp_Time = config->GetRamp_Time();
-  
-  if (Ramp_Load){
-    ModAmpl=LoadDirVal*LoadDirMult*CurrentTime/Ramp_Time;
-    NonModAmpl=LoadDirVal*LoadDirMult;
-    TotalLoad=min(ModAmpl,NonModAmpl);
-  }
-  else if (Gradual_Load){
-    ModAmpl=2*((1/(1+exp(-1*CurrentTime)))-0.5);
-    TotalLoad=ModAmpl*LoadDirVal*LoadDirMult;
-  }
-  else{
-    TotalLoad=LoadDirVal*LoadDirMult;
-  }
-  
-  /*--- Compute the norm of the vector that was passed in the config file ---*/
-  su2double Norm = 0.0;
-  if (nDim==2) Norm=sqrt(Load_Dir_Local[0]*Load_Dir_Local[0]+Load_Dir_Local[1]*Load_Dir_Local[1]);
-  if (nDim==3) Norm=sqrt(Load_Dir_Local[0]*Load_Dir_Local[0]+Load_Dir_Local[1]*Load_Dir_Local[1]+Load_Dir_Local[2]*Load_Dir_Local[2]);
-  
-  for (iElem = 0; iElem < geometry->GetnElem_Bound(val_marker); iElem++) {
-    
-    Point_0 = geometry->bound[val_marker][iElem]->GetNode(0);     Coord_0 = geometry->node[Point_0]->GetCoord();
-    Point_1 = geometry->bound[val_marker][iElem]->GetNode(1);     Coord_1 = geometry->node[Point_1]->GetCoord();
-    
-    /*--- Compute area (3D), and length of the surfaces (2D) ---*/
-    
-    if (nDim == 2) {
-      
-      for (iDim = 0; iDim < nDim; iDim++) a[iDim] = Coord_0[iDim]-Coord_1[iDim];
-      
-      Length_Elem = sqrt(a[0]*a[0]+a[1]*a[1]);
-//      Normal_Elem[0] =   a[1];
-//      Normal_Elem[1] = -(a[0]);
-      
-    } else {
-      
-      Point_2 = geometry->bound[val_marker][iElem]->GetNode(2);
-      Coord_2 = geometry->node[Point_2]->GetCoord();
-      
-      if (geometry->bound[val_marker][iElem]->GetVTK_Type() == TRIANGLE){
-        
-        for (iDim = 0; iDim < nDim; iDim++) {
-          a[iDim] = Coord_1[iDim]-Coord_0[iDim];
-          b[iDim] = Coord_2[iDim]-Coord_0[iDim];
-        }
-        
-        su2double Ni=0 , Nj=0, Nk=0;
-        
-        Ni=a[1]*b[2]-a[2]*b[1];
-        Nj=-a[0]*b[2]+a[2]*b[0];
-        Nk=a[0]*b[1]-a[1]*b[0];
-        
-        Area_Elem = 0.5*sqrt(Ni*Ni+Nj*Nj+Nk*Nk);
-        
-        //Area_Elem = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
-        
-      } else if (geometry->bound[val_marker][iElem]->GetVTK_Type() == QUADRILATERAL){
-        
-        Point_3 = geometry->bound[val_marker][iElem]->GetNode(3);
-        Coord_3 = geometry->node[Point_3]->GetCoord();
-        
-        for (iDim = 0; iDim < nDim; iDim++) {
-          AC[iDim] = Coord_2[iDim]-Coord_0[iDim];
-          BD[iDim] = Coord_3[iDim]-Coord_1[iDim];
-        }
-        
-        su2double Ni=0 , Nj=0, Nk=0;
-        
-        Ni=AC[1]*BD[2]-AC[2]*BD[1];
-        Nj=-AC[0]*BD[2]+AC[2]*BD[0];
-        Nk=AC[0]*BD[1]-AC[1]*BD[0];
-        
-        Area_Elem = 0.5*sqrt(Ni*Ni+Nj*Nj+Nk*Nk);
-        
-      }
-    }
-    
-    if (nDim == 2) {
-      
-      Residual[0] = (1.0/2.0)*Length_Elem*TotalLoad*Load_Dir_Local[0]/Norm;
-      Residual[1] = (1.0/2.0)*Length_Elem*TotalLoad*Load_Dir_Local[1]/Norm;
-      
-      LinSysRes.AddBlock(Point_0, Residual);
-      LinSysRes.AddBlock(Point_1, Residual);
-      
-    }
-    
-    else {
-      if (geometry->bound[val_marker][iElem]->GetVTK_Type() == TRIANGLE){
-        
-        Residual[0] = (1.0/3.0)*Area_Elem*TotalLoad*Load_Dir_Local[0]/Norm;
-        Residual[1] = (1.0/3.0)*Area_Elem*TotalLoad*Load_Dir_Local[1]/Norm;
-        Residual[2] = (1.0/3.0)*Area_Elem*TotalLoad*Load_Dir_Local[2]/Norm;
-        
+	su2double Ramp_Time = config->GetRamp_Time();
+
+	if (Ramp_Load){
+		ModAmpl=LoadDirVal*LoadDirMult*CurrentTime/Ramp_Time;
+		NonModAmpl=LoadDirVal*LoadDirMult;
+		TotalLoad=min(ModAmpl,NonModAmpl);
+	}
+	else if (Gradual_Load){
+		ModAmpl=2*((1/(1+exp(-1*CurrentTime)))-0.5);
+		TotalLoad=ModAmpl*LoadDirVal*LoadDirMult;
+	}
+	else{
+		TotalLoad=LoadDirVal*LoadDirMult;
+	}
+
+	/*--- Compute the norm of the vector that was passed in the config file ---*/
+	su2double Norm;
+	if (nDim==2) Norm=sqrt(Load_Dir_Local[0]*Load_Dir_Local[0]+Load_Dir_Local[1]*Load_Dir_Local[1]);
+	if (nDim==3) Norm=sqrt(Load_Dir_Local[0]*Load_Dir_Local[0]+Load_Dir_Local[1]*Load_Dir_Local[1]+Load_Dir_Local[2]*Load_Dir_Local[2]);
+
+	for (iElem = 0; iElem < geometry->GetnElem_Bound(val_marker); iElem++) {
+
+		Point_0 = geometry->bound[val_marker][iElem]->GetNode(0);     Coord_0 = geometry->node[Point_0]->GetCoord();
+		Point_1 = geometry->bound[val_marker][iElem]->GetNode(1);     Coord_1 = geometry->node[Point_1]->GetCoord();
+		if (nDim == 3) {
+
+			Point_2 = geometry->bound[val_marker][iElem]->GetNode(2);	Coord_2 = geometry->node[Point_2]->GetCoord();
+		    if (geometry->bound[val_marker][iElem]->GetVTK_Type() == RECTANGLE){
+		    	Point_3 = geometry->bound[val_marker][iElem]->GetNode(3);	Coord_3 = geometry->node[Point_3]->GetCoord();
+		    }
+
+		}
+
+		/*--- Compute area (3D), and length of the surfaces (2D) ---*/
+
+		if (nDim == 2) {
+
+			for (iDim = 0; iDim < nDim; iDim++) a[iDim] = Coord_0[iDim]-Coord_1[iDim];
+
+			Length_Elem = sqrt(a[0]*a[0]+a[1]*a[1]);
+			Normal_Elem[0] =   a[1];
+			Normal_Elem[1] = -(a[0]);
+
+		}
+
+		if (nDim == 3) {
+
+			if (geometry->bound[val_marker][iElem]->GetVTK_Type() == TRIANGLE){
+
+				for (iDim = 0; iDim < nDim; iDim++) {
+					a[iDim] = Coord_1[iDim]-Coord_0[iDim];
+					b[iDim] = Coord_2[iDim]-Coord_0[iDim];
+				}
+
+				su2double Ni=0 , Nj=0, Nk=0;
+
+				Ni=a[1]*b[2]-a[2]*b[1];
+				Nj=-a[0]*b[2]+a[2]*b[0];
+				Nk=a[0]*b[1]-a[1]*b[0];
+
+				Area_Elem = 0.5*sqrt(Ni*Ni+Nj*Nj+Nk*Nk);
+
+
+				//Area_Elem = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
+
+			}
+
+			else if (geometry->bound[val_marker][iElem]->GetVTK_Type() == RECTANGLE){
+
+				for (iDim = 0; iDim < nDim; iDim++) {
+					AC[iDim] = Coord_2[iDim]-Coord_0[iDim];
+					BD[iDim] = Coord_3[iDim]-Coord_1[iDim];
+				}
+
+				su2double Ni=0 , Nj=0, Nk=0;
+
+				Ni=AC[1]*BD[2]-AC[2]*BD[1];
+				Nj=-AC[0]*BD[2]+AC[2]*BD[0];
+				Nk=AC[0]*BD[1]-AC[1]*BD[0];
+
+				Area_Elem = 0.5*sqrt(Ni*Ni+Nj*Nj+Nk*Nk);
+
+			}
+		}
+
+      if (nDim == 2) {
+
+        Residual[0] = (1.0/2.0)*Length_Elem*TotalLoad*Load_Dir_Local[0]/Norm;
+        Residual[1] = (1.0/2.0)*Length_Elem*TotalLoad*Load_Dir_Local[1]/Norm;
+
         LinSysRes.AddBlock(Point_0, Residual);
         LinSysRes.AddBlock(Point_1, Residual);
-        LinSysRes.AddBlock(Point_2, Residual);
+
       }
-      else if (geometry->bound[val_marker][iElem]->GetVTK_Type() == QUADRILATERAL){
-        
-        Residual[0] = (1.0/4.0)*Area_Elem*TotalLoad*Load_Dir_Local[0]/Norm;
-        Residual[1] = (1.0/4.0)*Area_Elem*TotalLoad*Load_Dir_Local[1]/Norm;
-        Residual[2] = (1.0/4.0)*Area_Elem*TotalLoad*Load_Dir_Local[2]/Norm;
-        
-        LinSysRes.AddBlock(Point_0, Residual);
-        LinSysRes.AddBlock(Point_1, Residual);
-        LinSysRes.AddBlock(Point_2, Residual);
-        LinSysRes.AddBlock(Point_3, Residual);
-        
+
+      else {
+    	  if (geometry->bound[val_marker][iElem]->GetVTK_Type() == TRIANGLE){
+
+    		  Residual[0] = (1.0/3.0)*Area_Elem*TotalLoad*Load_Dir_Local[0]/Norm;
+    		  Residual[1] = (1.0/3.0)*Area_Elem*TotalLoad*Load_Dir_Local[1]/Norm;
+    		  Residual[2] = (1.0/3.0)*Area_Elem*TotalLoad*Load_Dir_Local[2]/Norm;
+
+    		  LinSysRes.AddBlock(Point_0, Residual);
+    		  LinSysRes.AddBlock(Point_1, Residual);
+    		  LinSysRes.AddBlock(Point_2, Residual);
+    	  }
+    	  else if (geometry->bound[val_marker][iElem]->GetVTK_Type() == RECTANGLE){
+
+    		  Residual[0] = (1.0/4.0)*Area_Elem*TotalLoad*Load_Dir_Local[0]/Norm;
+    		  Residual[1] = (1.0/4.0)*Area_Elem*TotalLoad*Load_Dir_Local[1]/Norm;
+    		  Residual[2] = (1.0/4.0)*Area_Elem*TotalLoad*Load_Dir_Local[2]/Norm;
+
+    		  LinSysRes.AddBlock(Point_0, Residual);
+    		  LinSysRes.AddBlock(Point_1, Residual);
+    		  LinSysRes.AddBlock(Point_2, Residual);
+    		  LinSysRes.AddBlock(Point_3, Residual);
+
+    	  }
+
       }
-      
-    }
-    
-  }
-  
+
+	}
+
 }
 
 void CFEASolver::BC_Sine_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
@@ -1217,35 +1195,23 @@ void CFEASolver::BC_Sine_Load(CGeometry *geometry, CSolver **solver_container, C
 
         LinSysRes.AddBlock(Point_0, Residual);
         LinSysRes.AddBlock(Point_1, Residual);
-        LinSysRes.AddBlock(Point_2, Residual);
-        
-        
+
       }
-      else if (geometry->bound[val_marker][iElem]->GetVTK_Type() == QUADRILATERAL){
-        
-        Residual[0] = (1.0/4.0)*Area_Elem*TotalLoad*Load_Dir_Local[0]/Norm;
-        Residual[1] = (1.0/4.0)*Area_Elem*TotalLoad*Load_Dir_Local[1]/Norm;
-        Residual[2] = (1.0/4.0)*Area_Elem*TotalLoad*Load_Dir_Local[2]/Norm;
-        
-        LinSysRes.AddBlock(Point_0, Residual);
-        LinSysRes.AddBlock(Point_1, Residual);
-        LinSysRes.AddBlock(Point_2, Residual);
-        LinSysRes.AddBlock(Point_3, Residual);
-        
-      }
-      
-    }
-    
-  }
-  
-}
 
-void CFEASolver::BC_Pressure(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                             unsigned short val_marker) { }
+      else {
+    	  if (geometry->bound[val_marker][iElem]->GetVTK_Type() == TRIANGLE){
 
-void CFEASolver::BC_Flow_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                              unsigned short val_marker) { }
+    		  Residual[0] = (1.0/3.0)*Area_Elem*TotalLoad*Load_Dir_Local[0]/Norm;
+    		  Residual[1] = (1.0/3.0)*Area_Elem*TotalLoad*Load_Dir_Local[1]/Norm;
+    		  Residual[2] = (1.0/3.0)*Area_Elem*TotalLoad*Load_Dir_Local[2]/Norm;
 
+    		  LinSysRes.AddBlock(Point_0, Residual);
+    		  LinSysRes.AddBlock(Point_1, Residual);
+    		  LinSysRes.AddBlock(Point_2, Residual);
+
+
+    	  }
+    	  else if (geometry->bound[val_marker][iElem]->GetVTK_Type() == RECTANGLE){
 
     		  Residual[0] = (1.0/4.0)*Area_Elem*TotalLoad*Load_Dir_Local[0]/Norm;
     		  Residual[1] = (1.0/4.0)*Area_Elem*TotalLoad*Load_Dir_Local[1]/Norm;
@@ -1286,33 +1252,33 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
   /*--- Container of the shape functions ---*/
   CNumerics *numerics;
   numerics=numerics_container[VISC_TERM];
-  
+
   /*--- Enforcement of displacement boundary conditions ---*/
   unsigned short MainSolver = config->GetContainerPosition(RUNTIME_FEA_SYS);
   unsigned int iMarker;
-  
+
   form2d=config->GetElas2D_Formulation();
-  
+
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    switch (config->GetMarker_All_KindBC(iMarker)) {
-      case CLAMPED_BOUNDARY:
-        solver_container[MainSolver]->BC_Clamped(geometry, solver_container, numerics_container[CONV_BOUND_TERM], config, iMarker);
-        break;
-    }
+	  switch (config->GetMarker_All_KindBC(iMarker)) {
+	  case CLAMPED_BOUNDARY:
+		  solver_container[MainSolver]->BC_Clamped(geometry, solver_container, numerics_container[CONV_BOUND_TERM], config, iMarker);
+		  break;
+	  }
   }
-  
+
   /* --- Initialize the stress and the number of elements connected to each node ---*/
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    node[iPoint]->Initialize_Connectivity();
-    for (iDim = 0; iDim < nDim; iDim++){
-      for (jDim = 0; jDim < nDim; jDim++){
-        node[iPoint]->SetStress(iDim, jDim, 0);
-      }
-    }
+	  node[iPoint]->Initialize_Connectivity();
+	  for (iDim = 0; iDim < nDim; iDim++){
+		  for (jDim = 0; jDim < nDim; jDim++){
+			  node[iPoint]->SetStress(iDim, jDim, 0);
+		  }
+	  }
   }
-  
+
   /*--- Loops over all the elements ---*/
-  
+
   for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
 
 		if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE){     nNodes = 3;}
@@ -1418,8 +1384,8 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
 		}
 
   }
-  
-  
+
+
   /* --- Variable to store the number of elements connected to each node ---*/
 
 
@@ -1427,78 +1393,78 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
 
   /* --- For the number of nodes in the mesh ---*/
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    
-    /* --- Get the stresses, added up from all the elements that connect to the node ---*/
-    
-    Stress     = node[iPoint]->GetStress();
-    nElPerNode = node[iPoint]->Get_Connectivity();
-    
-    /* --- Compute the stress averaged from all the elements connecting to the node and the Von Mises stress ---*/
-    
-    if (geometry->GetnDim() == 2) {
-      
-      Sxx=Stress[0][0]/nElPerNode;
-      Syy=Stress[1][1]/nElPerNode;
-      Sxy=Stress[0][1]/nElPerNode;
-      
-      S1=(Sxx+Syy)/2+sqrt(((Sxx-Syy)/2)*((Sxx-Syy)/2)+Sxy*Sxy);
-      S2=(Sxx+Syy)/2-sqrt(((Sxx-Syy)/2)*((Sxx-Syy)/2)+Sxy*Sxy);
-      
-      VonMises_Stress = sqrt(S1*S1+S2*S2-2*S1*S2);
-      
-    }
-    else if (geometry->GetnDim() == 3) {
-      
-      Sxx = Stress[0][0]/nElPerNode;
-      Syy = Stress[1][1]/nElPerNode;
-      Szz = Stress[2][2]/nElPerNode;
-      
-      Sxy = Stress[0][1]/nElPerNode;
-      Sxz = Stress[0][2]/nElPerNode;
-      Syz = Stress[1][2]/nElPerNode;
-      
-      VonMises_Stress = sqrt(0.5*(    pow(Sxx - Syy, 2.0)
-                                  + pow(Syy - Szz, 2.0)
-                                  + pow(Szz - Sxx, 2.0)
-                                  + 6.0*(Sxy*Sxy+Sxz*Sxz+Syz*Syz)
-                                  ));
-      
-    }
-    
-    node[iPoint]->SetVonMises_Stress(VonMises_Stress);
-    
-    /*--- Compute the maximum value of the Von Mises Stress ---*/
-    
-    MaxVonMises_Stress = max(MaxVonMises_Stress, VonMises_Stress);
-    
-    /*--- Set the new value of the stress, averaged from the number of elements ---*/
-    
-    node[iPoint]->SetStress(0, 0, Sxx);
-    node[iPoint]->SetStress(1, 1, Syy);
-    node[iPoint]->SetStress(0, 1, Sxy);
-    node[iPoint]->SetStress(1, 0, Sxy);
-    
-    if (geometry->GetnDim() == 3) {
-      node[iPoint]->SetStress(2, 2, Szz);
-      node[iPoint]->SetStress(0, 2, Sxz);
-      node[iPoint]->SetStress(2, 0, Sxz);
-      node[iPoint]->SetStress(1, 2, Syz);
-      node[iPoint]->SetStress(2, 1, Syz);
-    }
-    
+
+	  /* --- Get the stresses, added up from all the elements that connect to the node ---*/
+
+	  Stress     = node[iPoint]->GetStress();
+	  nElPerNode = node[iPoint]->Get_Connectivity();
+
+	  /* --- Compute the stress averaged from all the elements connecting to the node and the Von Mises stress ---*/
+
+	  if (geometry->GetnDim() == 2) {
+
+		  Sxx=Stress[0][0]/nElPerNode;
+		  Syy=Stress[1][1]/nElPerNode;
+		  Sxy=Stress[0][1]/nElPerNode;
+
+		  S1=(Sxx+Syy)/2+sqrt(((Sxx-Syy)/2)*((Sxx-Syy)/2)+Sxy*Sxy);
+		  S2=(Sxx+Syy)/2-sqrt(((Sxx-Syy)/2)*((Sxx-Syy)/2)+Sxy*Sxy);
+
+		  VonMises_Stress = sqrt(S1*S1+S2*S2-2*S1*S2);
+
+	  }
+	  else if (geometry->GetnDim() == 3) {
+
+		  Sxx = Stress[0][0]/nElPerNode;
+		  Syy = Stress[1][1]/nElPerNode;
+		  Szz = Stress[2][2]/nElPerNode;
+
+		  Sxy = Stress[0][1]/nElPerNode;
+		  Sxz = Stress[0][2]/nElPerNode;
+		  Syz = Stress[1][2]/nElPerNode;
+
+		  VonMises_Stress = sqrt(0.5*(    pow(Sxx - Syy, 2.0)
+										+ pow(Syy - Szz, 2.0)
+										+ pow(Szz - Sxx, 2.0)
+										+ 6.0*(Sxy*Sxy+Sxz*Sxz+Syz*Syz)
+										));
+
+	  }
+
+	  node[iPoint]->SetVonMises_Stress(VonMises_Stress);
+
+	  /*--- Compute the maximum value of the Von Mises Stress ---*/
+
+	  MaxVonMises_Stress = max(MaxVonMises_Stress, VonMises_Stress);
+
+	  /*--- Set the new value of the stress, averaged from the number of elements ---*/
+
+	  node[iPoint]->SetStress(0, 0, Sxx);
+	  node[iPoint]->SetStress(1, 1, Syy);
+	  node[iPoint]->SetStress(0, 1, Sxy);
+	  node[iPoint]->SetStress(1, 0, Sxy);
+
+	  if (geometry->GetnDim() == 3) {
+		  node[iPoint]->SetStress(2, 2, Szz);
+		  node[iPoint]->SetStress(0, 2, Sxz);
+		  node[iPoint]->SetStress(2, 0, Sxz);
+		  node[iPoint]->SetStress(1, 2, Syz);
+		  node[iPoint]->SetStress(2, 1, Syz);
+	  }
+
   }
-  
-#ifdef HAVE_MPI
-  
-  /*--- Compute MaxVonMises_Stress using all the nodes ---*/
-  
-  su2double MyMaxVonMises_Stress = MaxVonMises_Stress; MaxVonMises_Stress = 0.0;
-  SU2_MPI::Allreduce(&MyMaxVonMises_Stress, &MaxVonMises_Stress, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-  
-#endif
-  
-  /*--- Set the value of the MaxVonMises_Stress as the CFEA coeffient ---*/
-  
+
+	#ifdef HAVE_MPI
+
+	  /*--- Compute MaxVonMises_Stress using all the nodes ---*/
+
+	  su2double MyMaxVonMises_Stress = MaxVonMises_Stress; MaxVonMises_Stress = 0.0;
+	  SU2_MPI::Allreduce(&MyMaxVonMises_Stress, &MaxVonMises_Stress, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+
+	#endif
+
+	  /*--- Set the value of the MaxVonMises_Stress as the CFEA coeffient ---*/
+
   Total_CFEA = MaxVonMises_Stress;
   
 }
@@ -1744,21 +1710,21 @@ void CFEASolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver
 }
 
 void CFEASolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+
+    unsigned short iVar;
+	unsigned long iPoint, total_index, IterLinSol;
+	
+	/*--- Build implicit system ---*/
   
-  unsigned short iVar;
-  unsigned long iPoint, total_index, IterLinSol;
-  
-  /*--- Build implicit system ---*/
-  
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
     
-    /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
-    for (iVar = 0; iVar < nVar; iVar++) {
-      total_index = iPoint*nVar+iVar;
-      LinSysSol[total_index] = 0.0;
-    }
+		/*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
+		for (iVar = 0; iVar < nVar; iVar++) {
+			total_index = iPoint*nVar+iVar;
+			LinSysSol[total_index] = 0.0;
+		}
     
-  }
+	}
   
   /*--- Initialize residual and solution at the ghost points ---*/
   for (iPoint = geometry->GetnPointDomain(); iPoint < geometry->GetnPoint(); iPoint++) {
@@ -1768,37 +1734,37 @@ void CFEASolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_c
       LinSysSol[total_index] = 0.0;
     }
   }
-  
+	
   /*--- Solve or smooth the linear system ---*/
   
   CSysSolve system;
   IterLinSol = system.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
-  SetIterLinSolver(IterLinSol);
-  
+
   /*--- MPI solution ---*/
   
   Set_MPI_Solution(geometry, config);
-  
+
   /*---  Compute the residual Ax-f ---*/
-  
-  Jacobian.ComputeResidual(LinSysSol, LinSysRes, LinSysAux);
-  
+
+	Jacobian.ComputeResidual(LinSysSol, LinSysRes, LinSysAux);
+
+
   /*--- Set maximum residual to zero ---*/
   
-  for (iVar = 0; iVar < nVar; iVar++) {
-    SetRes_RMS(iVar, 0.0);
-    SetRes_Max(iVar, 0.0, 0);
-  }
+	for (iVar = 0; iVar < nVar; iVar++) {
+		SetRes_RMS(iVar, 0.0);
+		SetRes_Max(iVar, 0.0, 0);
+	}
   
   /*--- Compute the residual ---*/
   
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    for (iVar = 0; iVar < nVar; iVar++) {
-      total_index = iPoint*nVar+iVar;
-      AddRes_RMS(iVar, LinSysAux[total_index]*LinSysAux[total_index]);
+	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+		for (iVar = 0; iVar < nVar; iVar++) {
+			total_index = iPoint*nVar+iVar;
+			AddRes_RMS(iVar, LinSysAux[total_index]*LinSysAux[total_index]);
       AddRes_Max(iVar, fabs(LinSysAux[total_index]), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
-    }
-  }
+		}
+	}
   
   /*--- Compute the root mean square residual ---*/
   
@@ -1807,19 +1773,19 @@ void CFEASolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_c
 }
 
 void CFEASolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter) {
-  unsigned long iPoint;
+	unsigned long iPoint;
   
-  bool restart = (config->GetRestart() || config->GetRestart_Flow());
+	bool restart = (config->GetRestart() || config->GetRestart_Flow());
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   
-  /*--- Problem dimension and physical time step ---*/
-  unsigned short nDim = geometry[MESH_0]->GetnDim();
-  
-  for (iPoint = 0; iPoint < geometry[MESH_0]->GetnPoint(); iPoint++) {
-    
-    /*--- Set initial boundary condition at the first iteration ---*/
-    if ((ExtIter == 0) && (!restart)) {
+	/*--- Problem dimension and physical time step ---*/
+	unsigned short nDim = geometry[MESH_0]->GetnDim();
+	
+	for (iPoint = 0; iPoint < geometry[MESH_0]->GetnPoint(); iPoint++) {
+		
+		/*--- Set initial boundary condition at the first iteration ---*/
+		if ((ExtIter == 0) && (!restart)) {
       
       if (config->GetUnsteady_Simulation() == STEADY) {
         if (nDim == 2) { Solution[0] = 0.0;	Solution[1] = 0.0; }
@@ -1829,16 +1795,16 @@ void CFEASolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_con
         if (nDim == 2) { Solution[0] = 0.0;	Solution[1] = 0.0; Solution[2] = 0.0;	Solution[3] = 0.0; }
         else { Solution[0] = 0.0;	Solution[1] = 0.0;	Solution[2] = 0.0; Solution[3] = 0.0;	Solution[4] = 0.0;	Solution[5] = 0.0; }
       }
+			
+			node[iPoint]->SetSolution(Solution);
       
-      node[iPoint]->SetSolution(Solution);
-      
-      if (dual_time) {
-        node[iPoint]->Set_Solution_time_n();
-        node[iPoint]->Set_Solution_time_n1();
-      }
-      
-    }
-  }
+			if (dual_time) {
+				node[iPoint]->Set_Solution_time_n();
+				node[iPoint]->Set_Solution_time_n1();
+			}
+			
+		}
+	}
 }
 
 void CFEASolver::GetSurface_Pressure(CGeometry *geometry, CConfig *config) {
@@ -1861,13 +1827,13 @@ void CFEASolver::GetSurface_Pressure(CGeometry *geometry, CConfig *config) {
   
   /*--- Reset the value of the Flow_Pressure ---*/
   
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
+	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
     node[iPoint]->SetFlow_Pressure(0.0);
-  
+
   for (iExtIter = 0; iExtIter < config->GetnExtIter(); iExtIter++) {
     
     /*--- Prepare to read surface sensitivity files (CSV) ---*/
-    
+
     string surfadj_filename = config->GetSurfFlowCoeff_FileName();
     
     /*--- Remove the domain number from the surface csv filename ---*/
@@ -1946,6 +1912,7 @@ void CFEASolver::GetSurface_Pressure(CGeometry *geometry, CConfig *config) {
 
 void CFEASolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fea_geometry, CGeometry **flow_geometry,
                              CConfig *fea_config, CConfig *flow_config, CNumerics *fea_numerics) {
+
 
 	unsigned short nVertexFEA, nVertexFlow, iVertex, nMarkerFSIint, iDim, jDim;
 	unsigned short markFEA, markFlow, iPoint, iMarkerFSIint;
@@ -2422,31 +2389,31 @@ void CFEASolver::SetFEA_Load_Int(CSolver ***flow_solution, CGeometry **fea_geome
 
 
 void CFEASolver::SetStruct_Displacement(CGeometry **fea_geometry, CConfig *fea_config, CSolver ***fea_solution) {
-  
-  
-  unsigned long iPoint, iDim;
-  unsigned long nPoint, nDim;
-  su2double *Coord, *VarCoord, *Displacement;
-  
-  
-  nPoint = fea_geometry[MESH_0]->GetnPoint();
-  nDim = fea_geometry[MESH_0]->GetnDim();
-  
-  VarCoord = new su2double [nDim];
-  
-  for (iPoint=0; iPoint < nPoint; iPoint++){
-    
-    Coord = fea_geometry[MESH_0]->node[iPoint]->GetCoord();
-    
-    Displacement = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution();
-    
-    for (iDim = 0; iDim < nDim; iDim++)
-      VarCoord[iDim] = (Coord[iDim]+Displacement[iDim]);
-    
-    fea_geometry[MESH_0]->node[iPoint]->SetCoord(VarCoord);
-    
-  }
-  
+
+
+    unsigned long iPoint, iDim;
+    unsigned long nPoint, nDim;
+    su2double *Coord, *VarCoord, *Displacement;
+
+
+    nPoint = fea_geometry[MESH_0]->GetnPoint();
+    nDim = fea_geometry[MESH_0]->GetnDim();
+
+    VarCoord = new su2double [nDim];
+
+    for (iPoint=0; iPoint < nPoint; iPoint++){
+
+    	Coord = fea_geometry[MESH_0]->node[iPoint]->GetCoord();
+
+    	Displacement = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution();
+
+    	for (iDim = 0; iDim < nDim; iDim++)
+        	VarCoord[iDim] = (Coord[iDim]+Displacement[iDim]);
+
+    	fea_geometry[MESH_0]->node[iPoint]->SetCoord(VarCoord);
+
+    }
+
 }
 
 
@@ -2496,32 +2463,7 @@ void CFEASolver::PredictStruct_Displacement(CGeometry **fea_geometry, CConfig *f
     		fea_solution[MESH_0][FEA_SOL]->node[iPoint]->SetSolution_Pred();
     	}
     }
-    else if (predOrder==2) {
-      
-      solDisp = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution();
-      solVel = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Vel();
-      solVel_tn = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Vel_time_n();
-      valPred = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Pred();
-      
-      for (iDim=0; iDim<nDim; iDim++){
-        valPred[iDim] = solDisp[iDim] + 0.5*Delta_t*(3*solVel[iDim]-solVel_tn[iDim]);
-      }
-      
-      //			fea_solution[MESH_0][FEA_SOL]->node[iPoint]->SetSolution_Pred(valPred);
-      
-    }
-    else {
-      cout<< "Higher order predictor not implemented. Solving with order 0." << endl;
-      fea_solution[MESH_0][FEA_SOL]->node[iPoint]->SetSolution_Pred();
-    }
-  }
-  
-  delete [] solDisp;
-  delete [] solVel;
-  delete [] solVel_tn;
-  delete [] valPred;
-  delete [] checkPred;
-  
+
 }
 
 void CFEASolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, CConfig *fea_config, CSolver ***fea_solution, unsigned long iFSIIter) {
@@ -2701,47 +2643,13 @@ void CFEASolver::Update_StructSolution(CGeometry **fea_geometry, CConfig *fea_co
     nDim = fea_geometry[MESH_0]->GetnDim();
 
     for (iPoint=0; iPoint<nPoint; iPoint++){
-      
-      /*--- Retrieve pointers to the predicted and calculated solutions ---*/
-      dispPred = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Pred();
-      dispCalc = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution();
-      
-      /*--- Set predicted solution as the old predicted solution ---*/
-      fea_solution[MESH_0][FEA_SOL]->node[iPoint]->SetSolution_Pred_Old();
-      
-      /*--- Set calculated solution as the old solution (needed for dynamic Aitken relaxation) ---*/
-      fea_solution[MESH_0][FEA_SOL]->node[iPoint]->SetSolution_Old(dispCalc);
-      
-      /*--- Apply the Aitken relaxation ---*/
-      for (iDim=0; iDim < nDim; iDim++){
-        dispPred[iDim] = (1.0 - WAitken)*dispPred[iDim] + WAitken*dispCalc[iDim];
-      }
-      
-      /*--- Set obtained solution as the new predicted solution ---*/
-      /*--- As dispPred is the pointer to the solution_Pred, we don't need to do this... ---*/
-      //fea_solution[MESH_0][FEA_SOL]->node[iPoint]->SetSolution_Pred(dispPred);
-      
-    }
-    
-  }
-  
-  delete [] dispCalc;
-  delete [] dispPred;
-  
-}
 
-void CFEASolver::Update_StructSolution(CGeometry **fea_geometry, CConfig *fea_config, CSolver ***fea_solution) {
-  
-  su2double *valSolutionPred;
-  
-  for (unsigned long iPoint=0; iPoint<fea_geometry[MESH_0]->GetnPoint(); iPoint++){
-    
-    valSolutionPred = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Pred();
-    
-    fea_solution[MESH_0][FEA_SOL]->node[iPoint]->SetSolution(valSolutionPred);
-    
-  }
-  
+    	valSolutionPred = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Pred();
+
+		fea_solution[MESH_0][FEA_SOL]->node[iPoint]->SetSolution(valSolutionPred);
+
+    }
+
 }
 
 
