@@ -268,6 +268,11 @@ void CNearestNeighbor::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
           nn[3] = jVertex; /* vertex index within marker of the donor point */
         }
 		  }
+
+      /*--- Set the information of the nearest neighbor (donorindex = 0)  ---*/
+		  /*--- Enable this to check that we are doing it fine ---*/
+      //cout << "The distance from the vertex " << iVertex << " in the Flow marker " << markFlow << " to the vertex " << nn[3] << " in the FEA marker " << markFEA << " is " << last_distance << endl;
+
       Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->SetDonorInfo(donorindex,nn);
       Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->SetDonorCoeff(donorindex,1.0);
     }
@@ -282,7 +287,7 @@ void CNearestNeighbor::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
       Geometry[iZone_1][MESH_0]->vertex[markFEA][iVertex]->Allocate_DonorInfo();
       /*--- Loop over vertices in the interface marker (zone 0) --*/
       Geometry[iZone_1][MESH_0]->vertex[markFEA][iVertex]->SetDonorInfo(donorindex,nn);
-	  for (jVertex = 0; jVertex<Geometry[iZone_0][MESH_0]->GetnVertex(markFlow); jVertex++) {
+		  for (jVertex = 0; jVertex<Geometry[iZone_0][MESH_0]->GetnVertex(markFlow); jVertex++) {
         jPoint =Geometry[iZone_0][MESH_0]->vertex[markFlow][jVertex]->GetNode();
         distance = 0.0;
         for (iDim=0; iDim<nDim; iDim++)
@@ -295,6 +300,8 @@ void CNearestNeighbor::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
           nn[3] = jVertex; /* vertex index within marker of the donor point */
         }
       }
+		  /*--- Enable this to check that we are doing it fine ---*/
+      //cout << "The distance from the vertex " << iVertex << " in the FEA marker " << markFEA << " to the vertex " << nn[3] << " in the Flow marker " << markFlow << " is " << last_distance << endl;
       /*--- Set the information of the nearest neighbor ---*/
       Geometry[iZone_1][MESH_0]->vertex[markFEA][iVertex]->SetDonorInfo(donorindex,nn);
       Geometry[iZone_1][MESH_0]->vertex[markFEA][iVertex]->SetDonorCoeff(donorindex,1.0);
@@ -369,6 +376,7 @@ void CConsistConserve::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
         markFlow=iMarkerFlow;
       }
     }
+    //cout <<"markers: " << markFEA << " " << markFlow << endl;
     /*--Same for all points: -*/
     nn[0] = iZone_1; /* Zone of the donor point */
     nn[2] = markFEA; /* marker of the donor point */
@@ -378,7 +386,9 @@ void CConsistConserve::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
       iPoint =Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->GetNode();
       last_distance=-1.0;
       nDonor = 0;
+      //cout << "Vertex i: "<< iVertex << endl;
       /*--- Loop over the vertices in the corresponding interface marker (zone 1), find the closest vertex --*/
+
       for (jVertex = 0; jVertex<Geometry[iZone_1][MESH_0]->GetnVertex(markFEA); jVertex++) {
         jPoint =Geometry[iZone_1][MESH_0]->vertex[markFEA][jVertex]->GetNode();
         distance = 0.0;
@@ -396,6 +406,8 @@ void CConsistConserve::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
       /*--- Now that we know the closest vertex, the closest element must be one of the ones connected to the vertex--*/
       for (jElem=0; jElem<Geometry[iZone_1][MESH_0]->node[nn[1]]->GetnElem(); jElem++){
         temp_donor = Geometry[iZone_1][MESH_0]->node[nn[1]]->GetElem(jElem);
+        //cout <<" element j "<< temp_donor;
+
         unsigned int nFaces=1; //For 2D cases, we want to look at edges, not faces, as the 'interface'
         if (nDim==3)
           nFaces = Geometry[iZone_1][MESH_0]->elem[temp_donor]->GetnFaces();
@@ -461,6 +473,7 @@ void CConsistConserve::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
         nNodes=1;
         Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->SetnDonorPoints(nNodes);
         donor_elem = -1;
+        //cout <<" NN" << iVertex << endl;
         myCoeff = new su2double[1];
         myCoeff[0] = 1;
       }
@@ -478,36 +491,65 @@ void CConsistConserve::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
       /*--- Set the appropriate amount of memory ---*/
       Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->Allocate_DonorInfo();
       iFace = Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->GetDonorFace();
-      unsigned int it2=0; // offset introduced to reject points not on the marker
       /*--- Loop over vertices of the element ---*/
-      for (it=0; it< Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->GetnDonorPoints(); it++){
-        if (donor_elem!=-1){
-          //Important: jPoint is set to the nearest neighbor above. Be careful not to overwrite it.
-          if (nDim==3)
+      if (nDim==3){
+        unsigned int it2=0;
+        for (it=0; it< Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->GetnDonorPoints(); it++){
+          if (donor_elem!=-1){
+            //Important: jPoint is set to the nearest neighbor above. Be careful not to overwrite it.
             jPoint = Geometry[iZone_1][MESH_0]->elem[donor_elem]->GetFaces(iFace,it);
-          else
+          }
+          else{
+            jPoint = nn[1];
+          }
+          ivtx = Geometry[iZone_1][MESH_0]->node[jPoint]->GetVertex(markFEA);
+          if (ivtx!=-1){
+            nn[1] = jPoint; /* global index of the donor point */
+            nn[3] = ivtx; /* vertex index within marker of the donor point */
+            Geometry[iZone_1][MESH_0]->vertex[markFEA][ivtx]->IncrementnDonor();
+            Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->SetDonorInfo(it-it2,nn);
+            Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->SetDonorCoeff(it-it2,myCoeff[it]);
+          }
+          else{
+            /*---If this node of the element is not a vertex of markFEA GetVertex will return -1
+            and we should neglect this point (TODO: make sure this is also taken into account in isoparam)
+            Reduce the number of donor points --*/
+            Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->SetnDonorPoints(
+                Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->GetnDonorPoints()-1);
+            if (abs(myCoeff[it])>1e-12)
+              cout <<"Warning: interior pt assigned nonzero coeff."<< endl;
+            it2++;
+          }
+        }
+      }
+      else{
+        unsigned int it2=0;
+        for (it=0; it< Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->GetnDonorPoints(); it++){
+          if (donor_elem!=-1){
+            //Important: jPoint is set to the nearest neighbor above. Be careful not to overwrite it.
             jPoint = Geometry[iZone_1][MESH_0]->elem[donor_elem]->GetNode(it);
-        }
-        else{
-          jPoint = nn[1];
-        }
-        ivtx = Geometry[iZone_1][MESH_0]->node[jPoint]->GetVertex(markFEA);
-        if (ivtx!=-1){
-          nn[1] = jPoint; /* global index of the donor point */
-          nn[3] = ivtx; /* vertex index within marker of the donor point */
-          Geometry[iZone_1][MESH_0]->vertex[markFEA][ivtx]->IncrementnDonor();
-          Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->SetDonorInfo(it-it2,nn);
-          Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->SetDonorCoeff(it-it2,myCoeff[it]);
-        }
-        else{
-          /*---If this node of the element is not a vertex of markFEA GetVertex will return -1
-          and we should neglect this point (TODO: make sure this is also taken into account in isoparam)
-          Reduce the number of donor points --*/
-          Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->SetnDonorPoints(
-              Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->GetnDonorPoints()-1);
-          if (abs(myCoeff[it])>1e-12)
-            cout <<"Warning: interior pt assigned nonzero coeff."<< endl;
-          it2++;
+          }
+          else{
+            jPoint = nn[1];
+          }
+          ivtx = Geometry[iZone_1][MESH_0]->node[jPoint]->GetVertex(markFEA);
+          if (ivtx!=-1){
+            nn[1] = jPoint; /* global index of the donor point */
+            nn[3] = ivtx; /* vertex index within marker of the donor point */
+            Geometry[iZone_1][MESH_0]->vertex[markFEA][ivtx]->IncrementnDonor();
+            Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->SetDonorInfo(it-it2,nn);
+            Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->SetDonorCoeff(it-it2,myCoeff[it]);
+          }
+          else {
+            /*---If this node of the element is not a vertex of markFEA GetVertex will return -1
+            and we should neglect this point (TODO: make sure this is also taken into account in isoparam)
+            Reduce the number of donor points --*/
+            Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->SetnDonorPoints(
+                Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->GetnDonorPoints()-1);
+            if (abs(myCoeff[it])>1e-12)
+              cout <<"Warning: interior pt assigned nonzero coeff."<< endl;
+            it2++;
+          }
         }
       }
     }
@@ -557,22 +599,19 @@ void CConsistConserve::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
 
 }
 
-void CConsistConserve::Isoparametric(su2double* isoparams, unsigned int iZone_0, unsigned short iMarker, unsigned long iVertex, unsigned int nDim, unsigned int iZone_1, unsigned short jMarker, long donor_elem, unsigned int nDonorPoints, int* temp2){
+void CConsistConserve::Isoparametric(su2double* isoparams, unsigned int iZone_0,
+  unsigned short iMarker, unsigned long iVertex, unsigned int nDim, unsigned int iZone_1,
+  unsigned short jMarker, long donor_elem,  unsigned short iFace, unsigned int nDonorPoints){
   int i,j,k;
   int n0 = nDim+1, n;
+  int m =  nDonorPoints, m0;
+  unsigned long jVertex, jPoint;
   su2double tmp, tmp2, distance;
-  unsigned long jVertex, inode;
-
-  /*--- Number of neighbor points to interpolate between ---*/
-  unsigned int m0 =  nDonorPoints, m;
-  su2double x[m0], x_tmp[m0];
-  /*--- Q R matrix system ---*/
-  su2double Q[m0*m0], R[m0*m0], A[n0*m0];
-  bool test[n0];
-  bool testi[n0];
-
+  su2double x[m], x_tmp[m];
+  su2double Q[m*m], R[m*m], A[n0*m];
   su2double x2[n0];
-  int offset;
+  bool test[n0], testi[n0],on_marker[m];
+
   /*--- n0: # of dimensions + 1. n: n0 less any degenerate rows ---*/
   n=n0;
   m0=m;
