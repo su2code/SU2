@@ -155,18 +155,18 @@ public:
 /*!
  * \brief Consistent and Conservative interpolation
  */
-class CConsistConserve : public CInterpolator {
+class CIsoparametric : public CInterpolator {
 public:
 
   /*!
    * \brief Constructor of the class.
    */
-  CConsistConserve(CGeometry ***geometry_container, CConfig **config,  unsigned int* Zones,unsigned int nZone);
+  CIsoparametric(CGeometry ***geometry_container, CConfig **config,  unsigned int* Zones,unsigned int nZone);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CConsistConserve(void);
+  ~CIsoparametric(void);
 
   /*!
    * \brief Set up transfer matrix defining relation between two meshes
@@ -187,6 +187,6 @@ public:
    * \param[in] donor_elem - element index of the element to use for interpolation
    * \param[in[ nDonorPoints - number of donor points in the element.
    */
-  void Isoparametric(su2double* isoparams, unsigned int iZone_0, unsigned short iMarker, unsigned long iVertex, unsigned int nDim, unsigned int iZone_1, unsigned short jMarker, long donor_elem,  unsigned short iFace, unsigned int nDonorPoints);
+  void Isoparameters(su2double* isoparams, unsigned int iZone_0, unsigned short iMarker, unsigned long iVertex, unsigned int nDim, unsigned int iZone_1, unsigned short jMarker, long donor_elem,  unsigned short iFace, unsigned int nDonorPoints);
 
 };

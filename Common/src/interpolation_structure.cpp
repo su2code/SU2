@@ -192,12 +192,12 @@ void CInterpolator::SetData(unsigned int iZone, unsigned long iPoint, unsigned s
 
 /* Nearest Neighbor Interpolator */
 CNearestNeighbor::CNearestNeighbor(CGeometry ***geometry_container, CConfig **config,  unsigned int* Zones,unsigned int nZone) :  CInterpolator(geometry_container, config, Zones,nZone){
-  unsigned short nDim = geometry_container[Zones[0]][MESH_0]->GetnDim();
+  //unsigned short nDim = geometry_container[Zones[0]][MESH_0]->GetnDim();
   /*--- Initialize transfer coefficients between the zones ---*/
   Set_TransferCoeff(Zones,config);
 
   /*--- For fluid-structure interaction data interpolated with have nDim dimensions ---*/
-  InitializeData(Zones,nDim);
+  //InitializeData(Zones,nDim);
 
 }
 
@@ -310,7 +310,7 @@ void CNearestNeighbor::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
 }
 
 
-CConsistConserve::CConsistConserve(CGeometry ***geometry_container, CConfig **config,  unsigned int* Zones,unsigned int nZone) :  CInterpolator(geometry_container, config, Zones,nZone){
+CIsoparametric::CIsoparametric(CGeometry ***geometry_container, CConfig **config,  unsigned int* Zones,unsigned int nZone) :  CInterpolator(geometry_container, config, Zones,nZone){
   unsigned short nDim = geometry_container[Zones[0]][MESH_0]->GetnDim();
   /*--- Initialize transfer coefficients between the zones ---*/
   Set_TransferCoeff(Zones,config);
@@ -319,9 +319,9 @@ CConsistConserve::CConsistConserve(CGeometry ***geometry_container, CConfig **co
   InitializeData(Zones,nDim);
 }
 
-CConsistConserve::~CConsistConserve(){}
+CIsoparametric::~CIsoparametric(){}
 
-void CConsistConserve::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
+void CIsoparametric::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
   unsigned long iPoint, jPoint, iVertex, jVertex,*nn, inode, jElem;
   long ivtx;
   unsigned short iMarker, iDim, jMarker, it;
@@ -599,7 +599,7 @@ void CConsistConserve::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
 
 }
 
-void CConsistConserve::Isoparametric(su2double* isoparams, unsigned int iZone_0,
+void CIsoparametric::Isoparameters(su2double* isoparams, unsigned int iZone_0,
   unsigned short iMarker, unsigned long iVertex, unsigned int nDim, unsigned int iZone_1,
   unsigned short jMarker, long donor_elem,  unsigned short iFace, unsigned int nDonorPoints){
   int i,j,k;
