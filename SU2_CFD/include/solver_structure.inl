@@ -414,6 +414,12 @@ inline su2double CSolver::GetAveragedDensity(unsigned short valMarker){ return 0
 
 inline su2double CSolver::GetAveragedPressure(unsigned short valMarker){ return 0;}
 
+inline su2double CSolver::GetAveragedEnthalpy(unsigned short valMarker){ return 0;}
+
+inline su2double CSolver::GetAveragedEntropy(unsigned short valMarker){ return 0;}
+
+inline su2double* CSolver::GetAveragedVelocity(unsigned short valMarker){ return 0;}
+
 inline su2double CSolver::GetAveragedNormalVelocity(unsigned short valMarker){ return 0;}
 
 inline su2double CSolver::GetAveragedTangVelocity(unsigned short valMarker){ return 0;}
@@ -869,6 +875,12 @@ inline void CEulerSolver::SetOneD_FluxAvgEntalpy(su2double EnthalpyRef) {OneD_En
 inline su2double CEulerSolver::GetAveragedDensity(unsigned short valMarker){return AveragedDensity[valMarker];}
 
 inline su2double CEulerSolver::GetAveragedPressure(unsigned short valMarker){return AveragedPressure[valMarker];}
+
+inline su2double CEulerSolver::GetAveragedEnthalpy(unsigned short valMarker){return AveragedEnthalpy[valMarker];}
+
+inline su2double CEulerSolver::GetAveragedEntropy(unsigned short valMarker){return AveragedEntropy[valMarker];}
+
+inline su2double* CEulerSolver::GetAveragedVelocity(unsigned short valMarker){return AveragedVelocity[valMarker];}
 
 inline su2double CEulerSolver::GetAveragedNormalVelocity(unsigned short valMarker){return AveragedNormalVelocity[valMarker];}
 
