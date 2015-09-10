@@ -2031,9 +2031,9 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
 											CGeometry **flow_geometry, CConfig *fea_config,
 											CConfig *flow_config, CNumerics *fea_numerics) {
 
-	unsigned short nMarkerFSIint, nMarkerFEA, nMarkerFlow;		// Number of markers on FSI problem, FEA and Flow side
-	unsigned short iMarkerFSIint, iMarkerFEA, iMarkerFlow;		// Variables for iteration over markers
-	unsigned short markFEA, markFlow;
+	unsigned short nMarkerFSI, nMarkerStruct, nMarkerFlow;		// Number of markers on FSI problem, FEA and Flow side
+	unsigned short iMarkerFSI, iMarkerStruct, iMarkerFlow;		// Variables for iteration over markers
+	int Marker_Flow = -1, Marker_Struct = -1;
 
 	unsigned long nVertexFEA, nVertexFlow;						// Number of vertices on FEA and Flow side
 	unsigned long iVertex, iPoint;								// Variables for iteration over vertices and nodes
@@ -2089,9 +2089,9 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
 
 	/*--- Number of markers on the FSI interface ---*/
 
-	nMarkerFSIint = (fea_config->GetMarker_n_FSIinterface())/2;
+	nMarkerFSI = (fea_config->GetMarker_n_FSIinterface())/2;
 
-	nMarkerFEA  = fea_geometry[MESH_0]->GetnMarker();		// Retrieve total number of markers on FEA side
+	nMarkerStruct  = fea_geometry[MESH_0]->GetnMarker();		// Retrieve total number of markers on FEA side
 	nMarkerFlow = flow_geometry[MESH_0]->GetnMarker();		// Retrieve total number of markers on Fluid side
 
 	// Parameters for the calculations
@@ -2120,39 +2120,39 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
 
 	/*--- Loop over all the markers on the interface ---*/
 
-	for (iMarkerFSIint = 0; iMarkerFSIint < nMarkerFSIint; iMarkerFSIint++){
+	for (iMarkerFSI = 0; iMarkerFSI < nMarkerFSI; iMarkerFSI++){
 
 		/*--- Identification of the markers ---*/
 
 		/*--- Current structural marker ---*/
-		for (iMarkerFEA = 0; iMarkerFEA < nMarkerFEA; iMarkerFEA++){
-			if ( fea_config->GetMarker_All_FSIinterface(iMarkerFEA) == (iMarkerFSIint+1)){
-				markFEA = iMarkerFEA;
+		for (iMarkerStruct = 0; iMarkerStruct < nMarkerStruct; iMarkerStruct++){
+			if ( fea_config->GetMarker_All_FSIinterface(iMarkerStruct) == (iMarkerFSI+1)){
+				Marker_Struct = iMarkerStruct;
 			}
 		}
 
 		/*--- Current fluid marker ---*/
 		for (iMarkerFlow = 0; iMarkerFlow < nMarkerFlow; iMarkerFlow++){
-			if (flow_config->GetMarker_All_FSIinterface(iMarkerFlow) == (iMarkerFSIint+1)){
-				markFlow = iMarkerFlow;
+			if (flow_config->GetMarker_All_FSIinterface(iMarkerFlow) == (iMarkerFSI+1)){
+				Marker_Flow = iMarkerFlow;
 			}
 		}
 
-		nVertexFEA = fea_geometry[MESH_0]->GetnVertex(markFEA);		// Retrieve total number of vertices on FEA marker
-		nVertexFlow = flow_geometry[MESH_0]->GetnVertex(markFlow);  // Retrieve total number of vertices on Fluid marker
+		nVertexFEA = fea_geometry[MESH_0]->GetnVertex(Marker_Struct);		// Retrieve total number of vertices on FEA marker
+		nVertexFlow = flow_geometry[MESH_0]->GetnVertex(Marker_Flow);  // Retrieve total number of vertices on Fluid marker
 
 		/*--- Loop over the nodes in the fluid mesh, calculate the tf vector (unitary) ---*/
 		/*--- Here, we are looping over the fluid, and we find the pointer to the structure (Point_Struct) ---*/
 		for (iVertex = 0; iVertex < nVertexFlow; iVertex++){
 
 			// Node from the flow mesh
-			Point_Flow = flow_geometry[MESH_0]->vertex[markFlow][iVertex]->GetNode();
+			Point_Flow = flow_geometry[MESH_0]->vertex[Marker_Flow][iVertex]->GetNode();
 
 			// Normals at the vertex: these normals go inside the fluid domain.
-			Normal_Flow = flow_geometry[MESH_0]->vertex[markFlow][iVertex]->GetNormal();
+			Normal_Flow = flow_geometry[MESH_0]->vertex[Marker_Flow][iVertex]->GetNormal();
 
 			// Corresponding node on the structural mesh
-			Point_Struct = flow_geometry[MESH_0]->vertex[markFlow][iVertex]->GetDonorPoint();
+			Point_Struct = flow_geometry[MESH_0]->vertex[Marker_Flow][iVertex]->GetDonorPoint();
 
 			// Retrieve the values of pressure, viscosity and density
 			if (incompressible){
@@ -2228,47 +2228,173 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
 #else
 
     int rank = MASTER_NODE;
-    MPI_Status send_stat[1], recv_stat[1], status;
-    MPI_Request send_req[1], recv_req[1];
+    int size = SINGLE_NODE;
+
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-    /*--- Initialize buffers: we need to communicate the tractions from the fluid side: Residual ---*/
-    su2double *Buffer_Send_Residual = new su2double [nDim];
-    su2double *Buffer_Receive_Residual = new su2double [nDim];
+    unsigned long nLocalVertexStruct = 0, nLocalVertexFlow = 0;
+    unsigned long iVertexFlow = 0;
+    unsigned long nPoint_Total = 0;
 
-    su2double *nodeCoord = new su2double [nDim];
+	unsigned long MaxLocalVertexStruct = 0, MaxLocalVertexFlow = 0;
 
-    /*--- Processor which hosts the fluid data and the structural data ---*/
-    int Processor_Flow, Processor_Struct;
+	unsigned long nBuffer_FlowTraction = 0, nBuffer_StructTraction = 0;
+	unsigned long nBuffer_DonorIndices = 0, nBuffer_SetIndex = 0;
+
+	unsigned long Processor_Flow, Processor_Struct;
+
+	int iProcessor, nProcessor = 0;
+
+	/*--- Number of markers on the FSI interface ---*/
+
+	nMarkerFSI     = (flow_config->GetMarker_n_FSIinterface())/2;
+	nMarkerStruct  = fea_geometry[MESH_0]->GetnMarker();
+	nMarkerFlow    = flow_geometry[MESH_0]->GetnMarker();
+
+	nProcessor = size;
 
 	/*--- TODO: We have to clear the traction before applying it, because we are "adding" to node and not "setting" ---*/
 	/*--- This may be improved ---*/
-	for (iPoint = 0; iPoint < nPointDomain; iPoint++){
+	for (iPoint = 0; iPoint < nPoint; iPoint++){
 		node[iPoint]->Clear_FlowTraction();
 	}
 
-    /*--- Do the send process, by the moment we are sending each
-     node individually, this must be changed ---*/
-    for (iMarkerFlow = 0; iMarkerFlow < flow_config->GetnMarker_All(); iMarkerFlow++) {
+	/*--- Outer loop over the markers on the FSI interface: compute one by one ---*/
+	/*--- The tags are always an integer greater than 1: loop from 1 to nMarkerFSI ---*/
 
-      if (flow_config->GetMarker_All_FSIinterface(iMarkerFlow) != 0) {
+	for (iMarkerFSI = 1; iMarkerFSI <= nMarkerFSI; iMarkerFSI++){
 
-        for (iVertex= 0; iVertex < flow_geometry[MESH_0]->nVertex[iMarkerFlow]; iVertex++) {
+		Marker_Struct = -1;
+		Marker_Flow = -1;
 
-			// Node from the flow mesh
-			Point_Flow = flow_geometry[MESH_0]->vertex[iMarkerFlow][iVertex]->GetNode();
+		/*--- Initialize pointer buffers inside the loop, so we can delete for each marker. ---*/
+		unsigned long Buffer_Send_nVertexStruct[1], *Buffer_Recv_nVertexStruct = NULL;
+		unsigned long Buffer_Send_nVertexFlow[1], *Buffer_Recv_nVertexFlow = NULL;
 
-			// We check if the processor "rank" owns this node so it makes sense to make the calculations
-	        if (flow_geometry[MESH_0]->node[Point_Flow]->GetDomain()) {
+		/*--- The markers on the fluid and structural side are tagged with the same index.
+		 *--- This is independent of the MPI domain decomposition.
+		 *--- We need to loop over all markers on both sides and get the number of nodes
+		 *--- that belong to each FSI marker for each processor ---*/
 
-				// Get the donor point (on the structural mesh)
-				Point_Struct = flow_geometry[MESH_0]->vertex[iMarkerFlow][iVertex]->GetDonorPoint();
+		/*--- On the structural side ---*/
 
-				// Get the donor processor to which the message will be sent (on the structural mesh)
-				Processor_Struct = flow_geometry[MESH_0]->vertex[iMarkerFlow][iVertex]->GetDonorProcessor();
+		for (iMarkerStruct = 0; iMarkerStruct < nMarkerStruct; iMarkerStruct++){
+			/*--- If the tag GetMarker_All_FSIinterface(iMarkerStruct) equals the index we are looping at ---*/
+			if ( fea_config->GetMarker_All_FSIinterface(iMarkerStruct) == iMarkerFSI ){
+				/*--- We have identified the local index of the FEA marker ---*/
+				/*--- Store the number of local points that belong to Marker_Struct on each processor ---*/
+				/*--- This includes the halo nodes ---*/
+				nLocalVertexStruct = fea_geometry[MESH_0]->GetnVertex(iMarkerStruct);
+				/*--- Store the identifier for the structural marker ---*/
+				Marker_Struct = iMarkerStruct;
+				/*--- Exit the for loop: we have found the local index for iMarkerFSI on the FEA side ---*/
+				break;
+			}
+			else {
+				/*--- If the tag hasn't matched any tag within the FEA markers ---*/
+				nLocalVertexStruct = 0;
+				Marker_Struct = -1;
+			}
+		}
+
+		/*--- On the fluid side ---*/
+
+		for (iMarkerFlow = 0; iMarkerFlow < nMarkerFlow; iMarkerFlow++){
+			/*--- If the tag GetMarker_All_FSIinterface(iMarkerFlow) equals the index we are looping at ---*/
+			if ( flow_config->GetMarker_All_FSIinterface(iMarkerFlow) == iMarkerFSI ){
+				/*--- We have identified the local index of the Flow marker ---*/
+				/*--- Store the number of local points that belong to Marker_Flow on each processor ---*/
+				/*--- This includes the halo nodes ---*/
+				nLocalVertexFlow = flow_geometry[MESH_0]->GetnVertex(iMarkerFlow);
+				/*--- Store the identifier for the fluid marker ---*/
+				Marker_Flow = iMarkerFlow;
+				/*--- Exit the for loop: we have found the local index for iMarkerFSI on the FEA side ---*/
+				break;
+			}
+			else {
+				/*--- If the tag hasn't matched any tag within the Flow markers ---*/
+				nLocalVertexFlow = 0;
+				Marker_Flow = -1;
+			}
+		}
+
+		Buffer_Send_nVertexStruct[0] = nLocalVertexStruct;							    // Retrieve total number of vertices on FEA marker
+		Buffer_Send_nVertexFlow[0] = nLocalVertexFlow;								    // Retrieve total number of vertices on Flow marker
+		if (rank == MASTER_NODE) Buffer_Recv_nVertexStruct = new unsigned long[size];   // Allocate memory to receive how many vertices are on each rank on the structural side
+		if (rank == MASTER_NODE) Buffer_Recv_nVertexFlow = new unsigned long[size];     // Allocate memory to receive how many vertices are on each rank on the fluid side
+
+		/*--- We receive MaxLocalVertexFEA as the maximum number of vertices in one single processor on the structural side---*/
+		SU2_MPI::Allreduce(&nLocalVertexStruct, &MaxLocalVertexStruct, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
+		/*--- We receive MaxLocalVertexFlow as the maximum number of vertices in one single processor on the fluid side ---*/
+		SU2_MPI::Allreduce(&nLocalVertexFlow, &MaxLocalVertexFlow, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
+
+		/*--- We gather a vector in MASTER_NODE that determines how many elements are there on each processor on the structural side ---*/
+		SU2_MPI::Gather(&Buffer_Send_nVertexStruct, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nVertexStruct, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+		/*--- We gather a vector in MASTER_NODE that determines how many elements are there on each processor on the fluid side ---*/
+		SU2_MPI::Gather(&Buffer_Send_nVertexFlow, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nVertexFlow, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+
+		/*--- We will be gathering the structural coordinates into the master node ---*/
+		/*--- Then we will distribute them using a scatter operation into the appropriate fluid processor ---*/
+		nBuffer_FlowTraction = MaxLocalVertexFlow * nDim;
+		nBuffer_StructTraction = MaxLocalVertexStruct * nDim;
+
+		/*--- We will be gathering donor index and donor processor (for flow -> donor = structure) ---*/
+		/*--- Then we will pass on to the structural side the index (fea point) to the appropriate processor ---*/
+		nBuffer_DonorIndices = 2 * MaxLocalVertexFlow;
+		nBuffer_SetIndex = MaxLocalVertexStruct;
+
+		/*--- Send and Recv buffers ---*/
+
+		/*--- Buffers to send and receive the structural coordinates ---*/
+		su2double *Buffer_Send_FlowTraction = new su2double[nBuffer_FlowTraction];
+		su2double *Buffer_Recv_FlowTraction = NULL;
+
+		/*--- Buffers to send and receive the donor index and processor ---*/
+		long *Buffer_Send_DonorIndices = new long[nBuffer_DonorIndices];
+		long *Buffer_Recv_DonorIndices = NULL;
+
+		/*--- Buffers to send and receive the new fluid coordinates ---*/
+		su2double *Buffer_Send_StructTraction = NULL;
+		su2double *Buffer_Recv_StructTraction = new su2double[nBuffer_StructTraction];
+
+		/*--- Buffers to send and receive the fluid index ---*/
+		long *Buffer_Send_SetIndex = NULL;
+		long *Buffer_Recv_SetIndex = new long[nBuffer_SetIndex];
+
+		/*--- Prepare the receive buffers (1st step) and send buffers (2nd step) on the master node only. ---*/
+
+		if (rank == MASTER_NODE) {
+			Buffer_Recv_FlowTraction  = new su2double[size*nBuffer_FlowTraction];
+			Buffer_Recv_DonorIndices = new long[size*nBuffer_DonorIndices];
+			Buffer_Send_StructTraction = new su2double[size*nBuffer_StructTraction];
+			Buffer_Send_SetIndex     = new long[size*nBuffer_SetIndex];
+		}
+
+		/*--- On the fluid side ---*/
+
+		/*--- If this processor owns the marker we are looping at on the structural side ---*/
+
+		/*--- First we initialize all of the indices and processors to -1 ---*/
+		/*--- This helps on identifying halo nodes and avoids setting wrong values ---*/
+		for (iVertex = 0; iVertex < nBuffer_DonorIndices; iVertex++)
+			Buffer_Send_DonorIndices[iVertex] = -1;
+
+		if (Marker_Flow >= 0){
+
+			/*--- We have identified the local index of the FEA marker ---*/
+			/*--- We loop over all the vertices in that marker and in that particular processor ---*/
+
+			for (iVertex = 0; iVertex < nLocalVertexFlow; iVertex++){
+
+		        Point_Flow = flow_geometry[MESH_0]->vertex[Marker_Flow][iVertex]->GetNode();
+
+		        Point_Struct = flow_geometry[MESH_0]->vertex[Marker_Flow][iVertex]->GetDonorPoint();
+
+		        Processor_Struct = flow_geometry[MESH_0]->vertex[Marker_Flow][iVertex]->GetDonorProcessor();
 
 				// Get the normal at the vertex: this normal goes inside the fluid domain.
-				Normal_Flow = flow_geometry[MESH_0]->vertex[iMarkerFlow][iVertex]->GetNormal();
+				Normal_Flow = flow_geometry[MESH_0]->vertex[Marker_Flow][iVertex]->GetNormal();
 
 				// Retrieve the values of pressure, viscosity and density
 				if (incompressible){
@@ -2329,61 +2455,201 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
 					}
 				}
 
-				// Rescale tn to SI units and apply time-dependent coefficient (static structure, ramp load, full load)
-				// Store in the Buffer_Send_Residual
-
-				for (iDim = 0; iDim < nDim; iDim++) {
-					Buffer_Send_Residual[iDim] = tn_f[iDim]*factorForces*ModAmpl;
+				for (iDim = 0; iDim < nDim; iDim++){
+					Buffer_Send_FlowTraction[iVertex*nDim+iDim] = tn_f[iDim]*factorForces*ModAmpl;
+				}
+				/*--- If this processor owns the node ---*/
+				if (flow_geometry[MESH_0]->node[Point_Flow]->GetDomain()){
+					Buffer_Send_DonorIndices[2*iVertex]     = Point_Struct;
+					Buffer_Send_DonorIndices[2*iVertex + 1] = Processor_Struct;
+				}
+				else{
+					/*--- We set the values to be -1 to be able to identify them later as halo nodes ---*/
+					Buffer_Send_DonorIndices[2*iVertex]     = -1;
+					Buffer_Send_DonorIndices[2*iVertex + 1] = -1;
 				}
 
-				// Send the message
-				SU2_MPI::Bsend(Buffer_Send_Residual, nDim, MPI_DOUBLE, Processor_Struct, Point_Struct, MPI_COMM_WORLD);
+			}
+		}
+
+		/*--- Once all the messages have been sent, we gather them all into the MASTER_NODE ---*/
+		SU2_MPI::Gather(Buffer_Send_FlowTraction, nBuffer_FlowTraction, MPI_DOUBLE, Buffer_Recv_FlowTraction, nBuffer_FlowTraction, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+		SU2_MPI::Gather(Buffer_Send_DonorIndices, nBuffer_DonorIndices, MPI_LONG, Buffer_Recv_DonorIndices, nBuffer_DonorIndices, MPI_LONG, MASTER_NODE, MPI_COMM_WORLD);
+
+//		if (rank == MASTER_NODE){
+//			cout << endl << "-----------------------------------------------------------" << endl;
+//			cout << "For tag " << iMarkerFSI << ":" << endl;
+//			for (iProcessor = 0; iProcessor < nProcessor; iProcessor++){
+//				cout << "The processor " << iProcessor << " has " << Buffer_Recv_nVertexStruct[iProcessor] << " nodes on the structural side and ";
+//				cout << Buffer_Recv_nVertexFlow[iProcessor] << " nodes on the fluid side " << endl;
+//			}
+//			cout << "The max number of vertices is " << MaxLocalVertexStruct << " on the structural side and ";
+//			cout << MaxLocalVertexFlow << " on the fluid side." << endl;
+//
+//			cout << "---------------- Check received buffers ---------------------" << endl;
+//			for (iProcessor = 0; iProcessor < nProcessor; iProcessor++){
+//				long initialIndex, initialIndex2;
+//				initialIndex = iProcessor*nBuffer_FlowTraction;
+//				initialIndex2 = iProcessor*nBuffer_DonorIndices;
+//				for (long iCheck = 0; iCheck < Buffer_Recv_nVertexStruct[iProcessor]; iCheck++){
+//					cout << "From processor " << iProcessor << " we get coordinates (";
+//						for (iDim = 0; iDim < nDim; iDim++)
+//							cout << Buffer_Recv_FlowTraction[initialIndex+iCheck*nDim+iDim] << ",";
+//					cout << "), the donor index for the flow " << Buffer_Recv_DonorIndices[initialIndex2+iCheck*2] ;
+//					cout << " and the donor processor " << Buffer_Recv_DonorIndices[initialIndex2+iCheck*2+1] << endl;
+//
+//				}
+//			}
+//
+//		}
+
+		/*--- Counter to determine where in the array we have to set the information ---*/
+		long *Counter_Processor_Struct = NULL;
+		long iProcessor_Flow = 0, iIndex_Flow = 0;
+		long iProcessor_Struct = 0, iPoint_Struct = 0, iIndex_Struct = 0;
+
+		/*--- Now we pack the information to send it over to the different processors ---*/
+
+		if (rank == MASTER_NODE){
+
+			/*--- We set the counter to 0 ---*/
+			Counter_Processor_Struct = new long[nProcessor];
+			for (iProcessor = 0; iProcessor < nProcessor; iProcessor++){
+				Counter_Processor_Struct[iProcessor] = 0;
+			}
+
+			/*--- First we initialize the index vector to -1 ---*/
+			/*--- This helps on identifying halo nodes and avoids setting wrong values ---*/
+			for (iVertex = 0; iVertex < nProcessor*nBuffer_SetIndex; iVertex++)
+				Buffer_Send_SetIndex[iVertex] = -2;
+
+			/*--- As of now we do the loop over the flow points ---*/
+			/*--- The number of points for flow and structure does not necessarily have to match ---*/
+			/*--- In fact, it's possible that a processor asks for nStruct nodes and there are only ---*/
+			/*--- nFlow < nStruct available; this is due to halo nodes ---*/
+
+			/*--- For every processor from which we have received information ---*/
+			/*--- (This is, for every processor on the structural side) ---*/
+			for (iProcessor = 0; iProcessor < nProcessor; iProcessor++){
+
+				/*--- This is the initial index on the coordinates buffer for that particular processor on the structural side ---*/
+				iProcessor_Flow = iProcessor*nBuffer_FlowTraction;
+				/*--- This is the initial index on the donor index/processor buffer for that particular processor on the structural side ---*/
+				iIndex_Flow = iProcessor*nBuffer_DonorIndices;
+
+				/*--- For every vertex in the information retreived from iProcessor ---*/
+				for (iVertex = 0; iVertex < Buffer_Recv_nVertexFlow[iProcessor]; iVertex++) {
+
+					/*--- The processor and index for the flow are: ---*/
+					Processor_Struct = Buffer_Recv_DonorIndices[iIndex_Flow+iVertex*2+1];
+					Point_Struct     = Buffer_Recv_DonorIndices[iIndex_Flow+iVertex*2];
+
+					/*--- Load the buffer at the appropriate position ---*/
+					/*--- This is determined on the fluid side by:
+					 *--- Processor_Flow*nBuffer_StructTraction -> Initial position of the processor array (fluid side)
+					 *--- +
+					 *--- Counter_Processor_Struct*nDim -> Initial position of the nDim array for the particular point on the fluid side
+					 *--- +
+					 *--- iDim -> Position within the nDim array that corresponds to a point
+					 *---
+					 *--- While on the structural side is:
+					 *--- iProcessor*nBuffer_FlowTraction -> Initial position on the processor array (structural side)
+					 *--- +
+					 *--- iVertex*nDim -> Initial position of the nDim array for the particular point on the structural side
+					 */
+
+					/*--- We check that we are not setting the value for a halo node ---*/
+					if (Point_Struct != -1){
+						iProcessor_Struct = Processor_Struct*nBuffer_StructTraction;
+						iIndex_Struct = Processor_Struct*nBuffer_SetIndex;
+						iPoint_Struct = Counter_Processor_Struct[Processor_Struct]*nDim;
+
+						for (iDim = 0; iDim < nDim; iDim++)
+							Buffer_Send_StructTraction[iProcessor_Struct + iPoint_Struct + iDim] = Buffer_Recv_FlowTraction[iProcessor_Flow + iVertex*nDim + iDim];
+
+						/*--- We set the fluid index at an appropriate position matching the coordinates ---*/
+						Buffer_Send_SetIndex[iIndex_Struct + Counter_Processor_Struct[Processor_Struct]] = Point_Struct;
+
+						Counter_Processor_Struct[Processor_Struct]++;
+					}
+
+				}
 
 			}
 
-        }
+//			cout << "---------------- Check send buffers ---------------------" << endl;
+//
+//			for (iProcessor = 0; iProcessor < nProcessor; iProcessor++){
+//				long initialIndex, initialIndex2;
+//				initialIndex = iProcessor*nBuffer_StructTraction;
+//				initialIndex2 = iProcessor*nBuffer_SetIndex;
+//				for (long iCheck = 0; iCheck < Buffer_Recv_nVertexFlow[iProcessor]; iCheck++){
+//					cout << "Processor " << iProcessor << " will receive the node " ;
+//					cout << Buffer_Send_SetIndex[initialIndex2+iCheck] << " which corresponds to the coordinates ";
+//					for (iDim = 0; iDim < nDim; iDim++)
+//						cout << "x" << iDim << "=" << Buffer_Send_StructTraction[initialIndex + iCheck*nDim + iDim] << ", ";
+//					cout << endl;
+//				}
+//
+//			}
 
-      }
+		}
 
-    }
+		/*--- Once all the messages have been prepared, we scatter them all from the MASTER_NODE ---*/
+		SU2_MPI::Scatter(Buffer_Send_StructTraction, nBuffer_StructTraction, MPI_DOUBLE, Buffer_Recv_StructTraction, nBuffer_StructTraction, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+		SU2_MPI::Scatter(Buffer_Send_SetIndex, nBuffer_SetIndex, MPI_LONG, Buffer_Recv_SetIndex, nBuffer_SetIndex, MPI_LONG, MASTER_NODE, MPI_COMM_WORLD);
 
-    /*--- Do the send process, by the moment we are sending each
-     node individually, this must be changed ---*/
-    for (iMarkerFEA = 0; iMarkerFEA < fea_config->GetnMarker_All(); iMarkerFEA++) {
+		long indexPoint_iVertex, Point_Struct_Check;
 
-      if (fea_config->GetMarker_All_FSIinterface(iMarkerFEA) != 0) {
+		/*--- For the flow marker we are studying ---*/
+		if (Marker_Struct >= 0){
 
-        for (iVertex= 0; iVertex < fea_geometry[MESH_0]->nVertex[iMarkerFEA]; iVertex++) {
+			/*--- We have identified the local index of the Structural marker ---*/
+			/*--- We loop over all the vertices in that marker and in that particular processor ---*/
 
-			// Node from the flow mesh
-			Point_Struct = fea_geometry[MESH_0]->vertex[iMarkerFEA][iVertex]->GetNode();
+			for (iVertex = 0; iVertex < nLocalVertexStruct; iVertex++){
 
-			// We check if the processor "rank" owns this node so it makes sense to make the calculations
-	        if (fea_geometry[MESH_0]->node[Point_Struct]->GetDomain()) {
+				Point_Struct = fea_geometry[MESH_0]->vertex[Marker_Struct][iVertex]->GetNode();
 
-				// Get the donor point (on the fluid mesh)
-				Point_Flow = fea_geometry[MESH_0]->vertex[iMarkerFEA][iVertex]->GetDonorPoint();
+				if (fea_geometry[MESH_0]->node[Point_Struct]->GetDomain()){
+					/*--- Find the index of the point Point_Struct in the buffer Buffer_Recv_SetIndex ---*/
+					indexPoint_iVertex = std::distance(Buffer_Recv_SetIndex, std::find(Buffer_Recv_SetIndex, Buffer_Recv_SetIndex + MaxLocalVertexStruct, Point_Struct));
 
-				// Get the donor processor from which the message will be received (on the fluid mesh)
-				Processor_Flow = fea_geometry[MESH_0]->vertex[iMarkerFEA][iVertex]->GetDonorProcessor();
+					Point_Struct_Check = Buffer_Recv_SetIndex[indexPoint_iVertex];
 
-				SU2_MPI::Recv(Buffer_Receive_Residual, nDim, MPI_DOUBLE, Processor_Flow, Point_Struct, MPI_COMM_WORLD, &status);
+					if (Point_Struct_Check < 0) {
+						cout << "WARNING: A nonphysical point is being considered for traction transfer." << endl;
+						exit(EXIT_FAILURE);
+					}
 
-				/*--- Add to the Flow traction (to add values to corners...) ---*/
-				node[Point_Struct]->Add_FlowTraction(Buffer_Receive_Residual);
+					for (iDim = 0; iDim < nDim; iDim++)
+						Residual[iDim] = Buffer_Recv_StructTraction[indexPoint_iVertex*nDim+iDim];
+
+					/*--- Add to the Flow traction ---*/
+					node[Point_Struct]->Add_FlowTraction(Residual);
+
+				}
 
 			}
 
-        }
+		}
 
-      }
+		delete [] Buffer_Send_FlowTraction;
+		delete [] Buffer_Send_DonorIndices;
+		delete [] Buffer_Recv_StructTraction;
+		delete [] Buffer_Recv_SetIndex;
 
-    }
+		if (rank == MASTER_NODE) {
+			delete [] Buffer_Recv_nVertexStruct;
+			delete [] Buffer_Recv_nVertexFlow;
+			delete [] Buffer_Recv_FlowTraction;
+			delete [] Buffer_Recv_DonorIndices;
+			delete [] Buffer_Send_StructTraction;
+			delete [] Buffer_Send_SetIndex;
+			delete [] Counter_Processor_Struct;
+		}
 
-	/*--- Deallocate the memory ---*/
-    delete[] Buffer_Send_Residual;
-    delete[] Buffer_Receive_Residual;
-
+	}
 
 #endif
 
