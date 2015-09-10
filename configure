@@ -6490,13 +6490,13 @@ fi
 
         if test "$build_CODI_FORWARD" == "yes"
         then
-           DIRECTDIFF_CXX="-std=c++11 -DCODI_FORWARD_TYPE -I\$(top_srcdir)/externals/CoDi/include"
+           DIRECTDIFF_CXX="-std=c++0x -DCODI_FORWARD_TYPE -I\$(top_srcdir)/externals/CoDi/include"
            build_DIRECTDIFF=yes
            build_REVERSE=no
            build_NORMAL=no
         elif test "$build_CODI_REVERSE" == "yes"
         then
-           REVERSE_CXX="-std=c++11 -DCODI_REVERSE_TYPE -I\$(top_srcdir)/externals/CoDi/include"
+           REVERSE_CXX="-std=c++0x -DCODI_REVERSE_TYPE -I\$(top_srcdir)/externals/CoDi/include"
            if test "$enablempi" == "yes"
            then
               as_ac_File=`$as_echo "ac_cv_file_$AMPIlib" | $as_tr_sh`
