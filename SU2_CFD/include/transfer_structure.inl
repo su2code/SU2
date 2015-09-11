@@ -1,9 +1,8 @@
 /*!
- * \file SU2_FSI.hpp
- * \brief Headers of the main subroutines of the code SU2_FSI.
- *        The subroutines and functions are in the <i>SU2_FSI.cpp</i> file.
- * \author R. Sanchez, F. Palacios, T. Economon
- * \version 3.2.9 "eagle"
+ * \file transfer_structure.inl
+ * \brief In-Line subroutines of the <i>transfer_structure.hpp</i> file.
+ * \author R. Sanchez
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -30,27 +29,14 @@
 
 #pragma once
 
-#ifdef HAVE_MPI
-  #include "mpi.h"
-#endif
-#include <cstdlib>
-#include <iostream>
-#include <iomanip>
-#include <cmath>
+inline void CTransfer::GetPhysical_Constants(CSolver *donor_solution, CSolver *target_solution,
+	   	   	   	   	   	   	   	   	   	     CGeometry *donor_geometry, CGeometry *target_geometry,
+											 CConfig *donor_config, CConfig *target_config) { }
 
-#include "../../SU2_CFD/include/solver_structure.hpp"
-#include "../../SU2_CFD/include/output_structure.hpp"
-#include "../../SU2_CFD/include/integration_structure.hpp"
-#include "../../SU2_CFD/include/numerics_structure.hpp"
-#include "../../SU2_CFD/include/definition_structure.hpp"
-#include "../../SU2_CFD/include/iteration_structure.hpp"
-#include "../../SU2_CFD/include/transfer_structure.hpp"
+inline void CTransfer::GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry, 
+								   	     CConfig *donor_config, unsigned long Marker_Donor, 
+										 unsigned long Vertex_Donor, unsigned long Point_Donor) { }
 
-#include "../../Common/include/geometry_structure.hpp"
-#include "../../Common/include/config_structure.hpp"
-#include "../../Common/include/grid_movement_structure.hpp"
-#include "../../Common/include/interpolation_structure.hpp"
-
-#include "../include/iteration_structure_fsi.hpp"
-
-using namespace std;
+inline void CTransfer::SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry,
+										  CConfig *target_config, unsigned long Marker_Target,
+										  unsigned long Vertex_Target, unsigned long Point_Target) { }

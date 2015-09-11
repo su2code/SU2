@@ -882,7 +882,7 @@ private:
   su2double Basis_Function[3]; /*!< \brief Basis function values for interpolation across zones. */
   unsigned long **Donor_Info; /*!\brief Store a list of donor points (by global index) for interpolation across zones: zone,point,marker,vertex */
   su2double *Donor_Coeff; /*!\brief Store a list of coefficients corresponding to the donor points. */
-  unsigned short nDonor_Points; /*!\brief Number of points in Donor_Points;*/
+  unsigned short nDonor_Points; /*!\brief Number of points in Donor_Points; at least there will be one donor point (if the mesh is matching)*/
   
 public:
 

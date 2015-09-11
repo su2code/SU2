@@ -36,9 +36,9 @@ using namespace std;
 int main(int argc, char *argv[]) {
 
 	  bool StopCalc = false;
-	  double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
+	  su2double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
 	  unsigned long ExtIter = 0;
-	  unsigned short iMesh, iZone, iSol, nZone, nDim;
+	  unsigned short iMesh, iZone, jZone, iSol, nZone, nDim;
 	  char config_file_name[MAX_STRING_SIZE];
 	  char runtime_file_name[MAX_STRING_SIZE];
 	  ofstream ConvHist_file;
@@ -74,6 +74,7 @@ int main(int argc, char *argv[]) {
 	  CVolumetricMovement **grid_movement   = NULL;
 	  CFreeFormDefBox*** FFDBox             = NULL;
 	  CInterpolator **interpolator_container= NULL;
+	  CTransfer ***transfer_container       = NULL;
 
 	  /*--- Load in the number of zones and spatial dimensions in the mesh file (If no config
 	   file is specified, default.cfg is used) ---*/
@@ -102,6 +103,7 @@ int main(int argc, char *argv[]) {
 	  grid_movement         = new CVolumetricMovement*[nZone];
 	  FFDBox                = new CFreeFormDefBox**[nZone];
 	  interpolator_container= new CInterpolator*[nZone];
+	  transfer_container    = new CTransfer**[nZone];
 
 	  for (iZone = 0; iZone < nZone; iZone++) {
 	    solver_container[iZone]       = NULL;
@@ -113,6 +115,7 @@ int main(int argc, char *argv[]) {
 	    grid_movement[iZone]          = NULL;
 	    FFDBox[iZone]                 = NULL;
 	    interpolator_container[iZone] = NULL;
+	    transfer_container[iZone]     = NULL;
 	  }
 
 	  /*--- Loop over all zones to initialize the various classes. In most
@@ -260,15 +263,33 @@ int main(int argc, char *argv[]) {
 
 	  }
 
+//	  if (!config_container[ZONE_0]->GetMatchingMesh()){
+//	    unsigned int Zones[2];
+//	    unsigned int nzn = 2; // temporary nZones for interpolation: 2 in the case of fluid-structure
+//	    Zones[0]=ZONE_0;
+//	    Zones[1]=ZONE_1;
+//	    if (config_container[ZONE_0]->GetKindInterpolation()== NEAREST_NEIGHBOR )
+//	      interpolator_container[iZone] = new CNearestNeighbor(geometry_container,config_container,Zones,nzn);
+//	    if (config_container[ZONE_0]->GetKindInterpolation()== CONSISTENT_AND_CONSERVATIVE )
+//        interpolator_container[iZone] = new CConsistConserve(geometry_container,config_container,Zones,nzn);
+//	  }
+
 	  if (!config_container[ZONE_0]->GetMatchingMesh()){
-	    unsigned int Zones[2];
-	    unsigned int nzn = 2; // temporary nZones for interpolation: 2 in the case of fluid-structure
-	    Zones[0]=ZONE_0;
-	    Zones[1]=ZONE_1;
-	    if (config_container[ZONE_0]->GetKindInterpolation()== NEAREST_NEIGHBOR )
-	      interpolator_container[iZone] = new CNearestNeighbor(geometry_container,config_container,Zones,nzn);
-	    if (config_container[ZONE_0]->GetKindInterpolation()== CONSISTENT_AND_CONSERVATIVE )
-        interpolator_container[iZone] = new CConsistConserve(geometry_container,config_container,Zones,nzn);
+
+		  for (iZone = 0; iZone < nZone; iZone++){
+		    transfer_container[iZone] = new CTransfer*[nZone];
+		   }
+		  for (iZone = 0; iZone < nZone; iZone++){
+			  for (jZone = 0; jZone < nZone; jZone++){
+				  transfer_container[iZone][jZone] = NULL;
+			  }
+		  }
+
+		  unsigned short nVarTransferFlow = 0, nVarTrasferStruct = 0;
+
+		  transfer_container[ZONE_0][ZONE_1] = new CTransfer_FlowTraction(nDim, nVarTransferFlow, config_container[ZONE_0]);
+		  transfer_container[ZONE_1][ZONE_0] = new CTransfer_StructuralDisplacements(nDim, nVarTrasferStruct, config_container[ZONE_1]);
+
 	  }
 
 	  /*--- For the time-spectral solver, set the grid node velocities. ---*/
@@ -311,7 +332,7 @@ int main(int argc, char *argv[]) {
 	  /*--- Set up a timer for performance benchmarking (preprocessing time is not included) ---*/
 
 	#ifndef HAVE_MPI
-	  StartTime = double(clock())/double(CLOCKS_PER_SEC);
+	  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 	#else
 	  StartTime = MPI_Wtime();
 	#endif
@@ -360,7 +381,7 @@ int main(int argc, char *argv[]) {
 		    config_container[ZONE_1]->SetExtIter(ExtIter);
 		    FSI_BGS_Iteration(output, integration_container, geometry_container,
 		    	                		solver_container, numerics_container, config_container,
-		    	                		surface_movement, grid_movement, FFDBox,
+		    	                		surface_movement, grid_movement, FFDBox, transfer_container,
 		    	                		iFluidIt, nFluidIt);
 		}
 
@@ -382,7 +403,7 @@ int main(int argc, char *argv[]) {
 	     wall clock time required. ---*/
 
 	#ifndef HAVE_MPI
-	    StopTime = double(clock())/double(CLOCKS_PER_SEC);
+	    StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 	#else
 	    StopTime = MPI_Wtime();
 	#endif
@@ -537,7 +558,7 @@ int main(int argc, char *argv[]) {
 	   wall clock time required. ---*/
 
 	#ifndef HAVE_MPI
-	  StopTime = double(clock())/double(CLOCKS_PER_SEC);
+	  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 	#else
 	  StopTime = MPI_Wtime();
 	#endif
