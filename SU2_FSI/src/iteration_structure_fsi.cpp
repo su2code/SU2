@@ -34,9 +34,9 @@
 void FSI_BGS_Iteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
                              CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
                              CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox,
-                             unsigned long iFluidIt, unsigned long nFluidIt) {
+							 CTransfer*** transfer_container, unsigned long iFluidIt, unsigned long nFluidIt) {
 
-	double Physical_dt, Physical_t;
+	su2double Physical_dt, Physical_t;
 	unsigned short iMesh;
 	unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
 	unsigned long IntIter_Struct = 0; config_container[ZONE_1]->SetIntIter(IntIter_Struct);
@@ -67,7 +67,7 @@ void FSI_BGS_Iteration(COutput *output, CIntegration ***integration_container, C
 
         FSI_Disp_Transfer(output, integration_container, geometry_container,
                           solver_container, numerics_container, config_container,
-                          surface_movement, grid_movement, FFDBox);
+                          surface_movement, grid_movement, FFDBox, transfer_container);
 
 		/*-----------------------------------------------------------------*/
 		/*-------------------- Fluid subiteration -------------------------*/
@@ -87,7 +87,7 @@ void FSI_BGS_Iteration(COutput *output, CIntegration ***integration_container, C
 
         FSI_Load_Transfer(output, integration_container, geometry_container,
 	                 	 solver_container, numerics_container, config_container,
-	                 	 surface_movement, grid_movement, FFDBox, ExtIter);
+	                 	 surface_movement, grid_movement, FFDBox, transfer_container, ExtIter);
 
 		/*-----------------------------------------------------------------*/
 		/*------------------ Structural subiteration ----------------------*/
@@ -303,7 +303,7 @@ void Flow_Update(COutput *output, CIntegration ***integration_container, CGeomet
 	#endif
 
 
-	double Physical_dt, Physical_t;
+	su2double Physical_dt, Physical_t;
 	unsigned short iMesh, iZone;
 
 	/*--- Only one zone allowed for the fluid as for now ---*/
@@ -388,7 +388,7 @@ void FEM_Update(COutput *output, CIntegration ***integration_container, CGeometr
 	#endif
 
 	/*--- Only one zone allowed for the structure as for now ---*/
-	double Physical_dt, Physical_t;
+	su2double Physical_dt, Physical_t;
 	unsigned short nFluidZone = 1, nStrucZone=1, nTotalZone;
 	unsigned short iZone;
 	unsigned int ZONE_STRUC = nFluidZone;
@@ -426,7 +426,7 @@ void FEM_Update(COutput *output, CIntegration ***integration_container, CGeometr
 void FEA_Subiteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
                   CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
                   CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox) {
-	double Physical_dt, Physical_t;
+	su2double Physical_dt, Physical_t;
 	unsigned short iMesh, iZone;
 	unsigned short nZone = geometry_container[ZONE_0][MESH_0]->GetnZone();
 	unsigned long IntIter_Struct = 0; //config_container[ZONE_0]->SetIntIter(IntIter);
@@ -482,8 +482,8 @@ void FEM_Subiteration(COutput *output, CIntegration ***integration_container, CG
 
 	unsigned int ZONE_STRUC = nFluidZone;
 
-	double Physical_dt, Physical_t;
-	double loadIncrement;
+	su2double Physical_dt, Physical_t;
+	su2double loadIncrement;
 	unsigned short iMesh, iZone;
 	unsigned short nZone = geometry_container[ZONE_0][MESH_0]->GetnZone();
 	unsigned long IntIter = 0; config_container[ZONE_STRUC]->SetIntIter(IntIter);
@@ -502,8 +502,8 @@ void FEM_Subiteration(COutput *output, CIntegration ***integration_container, CG
 	bool initial_calc_restart = (config_container[ZONE_STRUC]->GetExtIter() == config_container[ZONE_STRUC]->GetDyn_RestartIter()); // Initial calculation for restart
 
 
-	double CurrentTime = config_container[ZONE_STRUC]->GetCurrent_DynTime();
-	double Static_Time = config_container[ZONE_STRUC]->GetStatic_Time();
+	su2double CurrentTime = config_container[ZONE_STRUC]->GetCurrent_DynTime();
+	su2double Static_Time = config_container[ZONE_STRUC]->GetStatic_Time();
 
 	bool statTime = (CurrentTime <= Static_Time);
 
@@ -624,8 +624,8 @@ void FEM_Subiteration(COutput *output, CIntegration ***integration_container, CG
 			}
 
 			bool meetCriteria;
-			double Residual_UTOL, Residual_RTOL, Residual_ETOL;
-			double Criteria_UTOL, Criteria_RTOL, Criteria_ETOL;
+			su2double Residual_UTOL, Residual_RTOL, Residual_ETOL;
+			su2double Criteria_UTOL, Criteria_RTOL, Criteria_ETOL;
 
 			Criteria_UTOL = config_container[ZONE_STRUC]->GetIncLoad_Criteria(0);
 			Criteria_RTOL = config_container[ZONE_STRUC]->GetIncLoad_Criteria(1);
@@ -761,7 +761,8 @@ void FEM_Subiteration(COutput *output, CIntegration ***integration_container, CG
 
 void FSI_Disp_Transfer(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
 					     CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
-						 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox){
+						 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox,
+						 CTransfer*** transfer_container){
 
 
 	#ifdef HAVE_MPI
@@ -779,9 +780,14 @@ void FSI_Disp_Transfer(COutput *output, CIntegration ***integration_container, C
 																   	   geometry_container[ZONE_1], solver_container[ZONE_1]);
 	}
 	else{
-		solver_container[ZONE_0][MESH_0][FLOW_SOL]->SetFlow_Displacement_Int(geometry_container[ZONE_0], grid_movement[ZONE_0],
-																   	   config_container[ZONE_0], config_container[ZONE_1],
-																   	   geometry_container[ZONE_1], solver_container[ZONE_1]);
+
+		/*--- Transfer the information scattered (this is, each processor only receives the information it needs ---*/
+		transfer_container[ZONE_1][ZONE_0]->Scatter_InterfaceData_Matching(solver_container[ZONE_1][MESH_0][FEA_SOL],solver_container[ZONE_0][MESH_0][FLOW_SOL],
+																		   geometry_container[ZONE_1][MESH_0],geometry_container[ZONE_0][MESH_0],
+																		   config_container[ZONE_1], config_container[ZONE_0]);
+
+		/*--- Set the volume deformation for the fluid zone ---*/
+		grid_movement[ZONE_0]->SetVolume_Deformation(geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], true);
 
 	}
 
@@ -792,7 +798,7 @@ void FSI_Disp_Transfer(COutput *output, CIntegration ***integration_container, C
 void FSI_Load_Transfer(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
 					     CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
 						 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox,
-						 unsigned long ExtIter){
+						 CTransfer*** transfer_container, unsigned long ExtIter){
 
 	#ifdef HAVE_MPI
 		int rank;
@@ -816,8 +822,12 @@ void FSI_Load_Transfer(COutput *output, CIntegration ***integration_container, C
 
 	}
 	else{
-		solver_container[ZONE_1][MESH_0][FEA_SOL]->SetFEA_Load_Int(solver_container[ZONE_0], geometry_container[ZONE_1], geometry_container[ZONE_0],
-															   config_container[ZONE_1], config_container[ZONE_0], numerics_container[ZONE_1][MESH_0][SolContainer_Position_fea][VISC_TERM]);
+//		solver_container[ZONE_1][MESH_0][FEA_SOL]->SetFEA_Load_Int(solver_container[ZONE_0], geometry_container[ZONE_1], geometry_container[ZONE_0],
+//															   config_container[ZONE_1], config_container[ZONE_0], numerics_container[ZONE_1][MESH_0][SolContainer_Position_fea][VISC_TERM]);
+
+		transfer_container[ZONE_0][ZONE_1]->Scatter_InterfaceData_Matching(solver_container[ZONE_0][MESH_0][FLOW_SOL],solver_container[ZONE_1][MESH_0][FEA_SOL],
+																		   geometry_container[ZONE_0][MESH_0],geometry_container[ZONE_1][MESH_0],
+																		   config_container[ZONE_0], config_container[ZONE_1]);
 
 	}
 

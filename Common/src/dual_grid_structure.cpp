@@ -458,7 +458,7 @@ CVertex::CVertex(unsigned long val_point, unsigned short val_nDim) : CDualGrid(v
 	/*--- Set to NULL donor arrays for interpolation ---*/
   Donor_Info = NULL;
   Donor_Coeff = NULL;
-  nDonor_Points = 0;
+  nDonor_Points = 1;
 }
 
 CVertex::~CVertex() {

@@ -39,6 +39,8 @@
 #include "../../SU2_CFD/include/integration_structure.hpp"
 #include "../../SU2_CFD/include/output_structure.hpp"
 #include "../../SU2_CFD/include/numerics_structure.hpp"
+#include "../../SU2_CFD/include/transfer_structure.hpp"
+
 #include "../../Common/include/geometry_structure.hpp"
 #include "../../Common/include/grid_movement_structure.hpp"
 #include "../../Common/include/config_structure.hpp"
@@ -63,7 +65,7 @@ using namespace std;
 void FSI_BGS_Iteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
 						  CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
 						  CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox,
-						  unsigned long iFluidIt, unsigned long nFluidIt);
+						  CTransfer*** transfer_container, unsigned long iFluidIt, unsigned long nFluidIt);
 
 /*!
  * \brief CFD Subiteration function for Fluid-Structure Interaction applications.
@@ -154,7 +156,8 @@ void FEM_Subiteration(COutput *output, CIntegration ***integration_container, CG
  */
 void FSI_Disp_Transfer(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
 					     CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
-						 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox);
+						 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox,
+						 CTransfer*** transfer_container);
 
 /*!
  * \brief Load transfer function for Fluid-Structure Interaction applications.
@@ -173,7 +176,7 @@ void FSI_Disp_Transfer(COutput *output, CIntegration ***integration_container, C
 void FSI_Load_Transfer(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
 					     CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
 						 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox,
-						 unsigned long ExtIter);
+						 CTransfer*** transfer_container, unsigned long ExtIter);
 
 
 /*!

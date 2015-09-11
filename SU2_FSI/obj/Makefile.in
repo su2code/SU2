@@ -152,6 +152,8 @@ am_____bin_SU2_FSI_SOURCES_DIST = ../include/SU2_FSI.hpp \
 	../../SU2_CFD/include/transport_model.inl \
 	../../SU2_CFD/include/variable_structure.hpp \
 	../../SU2_CFD/include/variable_structure.inl \
+	../../SU2_CFD/include/transfer_structure.hpp \
+	../../SU2_CFD/include/transfer_structure.inl \
 	../../SU2_CFD/src/definition_structure.cpp \
 	../../SU2_CFD/src/fluid_model.cpp \
 	../../SU2_CFD/src/fluid_model_pig.cpp \
@@ -208,6 +210,7 @@ am_____bin_SU2_FSI_SOURCES_DIST = ../include/SU2_FSI.hpp \
 	../../SU2_CFD/src/solver_fem_elasticity.cpp \
 	../../SU2_CFD/src/solver_structure.cpp \
 	../../SU2_CFD/src/solver_template.cpp \
+	../../SU2_CFD/src/transfer_structure.cpp \
 	../../SU2_CFD/src/transport_model.cpp \
 	../../SU2_CFD/src/variable_adjoint_levelset.cpp \
 	../../SU2_CFD/src/variable_adjoint_mean.cpp \
@@ -286,6 +289,7 @@ am__objects_1 = ../src/___bin_SU2_FSI-SU2_FSI.$(OBJEXT) \
 	../../SU2_CFD/src/___bin_SU2_FSI-solver_fem_elasticity.$(OBJEXT) \
 	../../SU2_CFD/src/___bin_SU2_FSI-solver_structure.$(OBJEXT) \
 	../../SU2_CFD/src/___bin_SU2_FSI-solver_template.$(OBJEXT) \
+	../../SU2_CFD/src/___bin_SU2_FSI-transfer_structure.$(OBJEXT) \
 	../../SU2_CFD/src/___bin_SU2_FSI-transport_model.$(OBJEXT) \
 	../../SU2_CFD/src/___bin_SU2_FSI-variable_adjoint_levelset.$(OBJEXT) \
 	../../SU2_CFD/src/___bin_SU2_FSI-variable_adjoint_mean.$(OBJEXT) \
@@ -544,6 +548,8 @@ su2_fsi_sources = ../include/SU2_FSI.hpp \
     	../../SU2_CFD/include/transport_model.inl \
 		../../SU2_CFD/include/variable_structure.hpp \
 		../../SU2_CFD/include/variable_structure.inl \
+		../../SU2_CFD/include/transfer_structure.hpp \
+		../../SU2_CFD/include/transfer_structure.inl \
 		../../SU2_CFD/src/definition_structure.cpp \
 		../../SU2_CFD/src/fluid_model.cpp \
     	../../SU2_CFD/src/fluid_model_pig.cpp \
@@ -600,6 +606,7 @@ su2_fsi_sources = ../include/SU2_FSI.hpp \
 		../../SU2_CFD/src/solver_fem_elasticity.cpp \
 		../../SU2_CFD/src/solver_structure.cpp \
 		../../SU2_CFD/src/solver_template.cpp \
+		../../SU2_CFD/src/transfer_structure.cpp \
     	../../SU2_CFD/src/transport_model.cpp \
 		../../SU2_CFD/src/variable_adjoint_levelset.cpp \
 		../../SU2_CFD/src/variable_adjoint_mean.cpp \
@@ -908,6 +915,9 @@ clean-binPROGRAMS:
 ../../SU2_CFD/src/___bin_SU2_FSI-solver_template.$(OBJEXT):  \
 	../../SU2_CFD/src/$(am__dirstamp) \
 	../../SU2_CFD/src/$(DEPDIR)/$(am__dirstamp)
+../../SU2_CFD/src/___bin_SU2_FSI-transfer_structure.$(OBJEXT):  \
+	../../SU2_CFD/src/$(am__dirstamp) \
+	../../SU2_CFD/src/$(DEPDIR)/$(am__dirstamp)
 ../../SU2_CFD/src/___bin_SU2_FSI-transport_model.$(OBJEXT):  \
 	../../SU2_CFD/src/$(am__dirstamp) \
 	../../SU2_CFD/src/$(DEPDIR)/$(am__dirstamp)
@@ -1037,6 +1047,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../../SU2_CFD/src/$(DEPDIR)/___bin_SU2_FSI-solver_linearized_turbulent.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../../SU2_CFD/src/$(DEPDIR)/___bin_SU2_FSI-solver_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../../SU2_CFD/src/$(DEPDIR)/___bin_SU2_FSI-solver_template.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../../SU2_CFD/src/$(DEPDIR)/___bin_SU2_FSI-transfer_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../../SU2_CFD/src/$(DEPDIR)/___bin_SU2_FSI-transport_model.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../../SU2_CFD/src/$(DEPDIR)/___bin_SU2_FSI-variable_adjoint_discrete.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../../SU2_CFD/src/$(DEPDIR)/___bin_SU2_FSI-variable_adjoint_levelset.Po@am__quote@
@@ -1886,6 +1897,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../../SU2_CFD/src/solver_template.cpp' object='../../SU2_CFD/src/___bin_SU2_FSI-solver_template.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_FSI_CXXFLAGS) $(CXXFLAGS) -c -o ../../SU2_CFD/src/___bin_SU2_FSI-solver_template.obj `if test -f '../../SU2_CFD/src/solver_template.cpp'; then $(CYGPATH_W) '../../SU2_CFD/src/solver_template.cpp'; else $(CYGPATH_W) '$(srcdir)/../../SU2_CFD/src/solver_template.cpp'; fi`
+
+../../SU2_CFD/src/___bin_SU2_FSI-transfer_structure.o: ../../SU2_CFD/src/transfer_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_FSI_CXXFLAGS) $(CXXFLAGS) -MT ../../SU2_CFD/src/___bin_SU2_FSI-transfer_structure.o -MD -MP -MF ../../SU2_CFD/src/$(DEPDIR)/___bin_SU2_FSI-transfer_structure.Tpo -c -o ../../SU2_CFD/src/___bin_SU2_FSI-transfer_structure.o `test -f '../../SU2_CFD/src/transfer_structure.cpp' || echo '$(srcdir)/'`../../SU2_CFD/src/transfer_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../../SU2_CFD/src/$(DEPDIR)/___bin_SU2_FSI-transfer_structure.Tpo ../../SU2_CFD/src/$(DEPDIR)/___bin_SU2_FSI-transfer_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../../SU2_CFD/src/transfer_structure.cpp' object='../../SU2_CFD/src/___bin_SU2_FSI-transfer_structure.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_FSI_CXXFLAGS) $(CXXFLAGS) -c -o ../../SU2_CFD/src/___bin_SU2_FSI-transfer_structure.o `test -f '../../SU2_CFD/src/transfer_structure.cpp' || echo '$(srcdir)/'`../../SU2_CFD/src/transfer_structure.cpp
+
+../../SU2_CFD/src/___bin_SU2_FSI-transfer_structure.obj: ../../SU2_CFD/src/transfer_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_FSI_CXXFLAGS) $(CXXFLAGS) -MT ../../SU2_CFD/src/___bin_SU2_FSI-transfer_structure.obj -MD -MP -MF ../../SU2_CFD/src/$(DEPDIR)/___bin_SU2_FSI-transfer_structure.Tpo -c -o ../../SU2_CFD/src/___bin_SU2_FSI-transfer_structure.obj `if test -f '../../SU2_CFD/src/transfer_structure.cpp'; then $(CYGPATH_W) '../../SU2_CFD/src/transfer_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../../SU2_CFD/src/transfer_structure.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../../SU2_CFD/src/$(DEPDIR)/___bin_SU2_FSI-transfer_structure.Tpo ../../SU2_CFD/src/$(DEPDIR)/___bin_SU2_FSI-transfer_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../../SU2_CFD/src/transfer_structure.cpp' object='../../SU2_CFD/src/___bin_SU2_FSI-transfer_structure.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_FSI_CXXFLAGS) $(CXXFLAGS) -c -o ../../SU2_CFD/src/___bin_SU2_FSI-transfer_structure.obj `if test -f '../../SU2_CFD/src/transfer_structure.cpp'; then $(CYGPATH_W) '../../SU2_CFD/src/transfer_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../../SU2_CFD/src/transfer_structure.cpp'; fi`
 
 ../../SU2_CFD/src/___bin_SU2_FSI-transport_model.o: ../../SU2_CFD/src/transport_model.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_FSI_CXXFLAGS) $(CXXFLAGS) -MT ../../SU2_CFD/src/___bin_SU2_FSI-transport_model.o -MD -MP -MF ../../SU2_CFD/src/$(DEPDIR)/___bin_SU2_FSI-transport_model.Tpo -c -o ../../SU2_CFD/src/___bin_SU2_FSI-transport_model.o `test -f '../../SU2_CFD/src/transport_model.cpp' || echo '$(srcdir)/'`../../SU2_CFD/src/transport_model.cpp

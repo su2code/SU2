@@ -61,6 +61,8 @@ su2_fsi_sources = ../include/SU2_FSI.hpp \
     	../../SU2_CFD/include/transport_model.inl \
 		../../SU2_CFD/include/variable_structure.hpp \
 		../../SU2_CFD/include/variable_structure.inl \
+		../../SU2_CFD/include/transfer_structure.hpp \
+		../../SU2_CFD/include/transfer_structure.inl \
 		../../SU2_CFD/src/definition_structure.cpp \
 		../../SU2_CFD/src/fluid_model.cpp \
     	../../SU2_CFD/src/fluid_model_pig.cpp \
@@ -117,6 +119,7 @@ su2_fsi_sources = ../include/SU2_FSI.hpp \
 		../../SU2_CFD/src/solver_fem_elasticity.cpp \
 		../../SU2_CFD/src/solver_structure.cpp \
 		../../SU2_CFD/src/solver_template.cpp \
+		../../SU2_CFD/src/transfer_structure.cpp \
     	../../SU2_CFD/src/transport_model.cpp \
 		../../SU2_CFD/src/variable_adjoint_levelset.cpp \
 		../../SU2_CFD/src/variable_adjoint_mean.cpp \
