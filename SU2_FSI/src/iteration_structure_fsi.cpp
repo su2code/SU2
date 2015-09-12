@@ -782,7 +782,7 @@ void FSI_Disp_Transfer(COutput *output, CIntegration ***integration_container, C
 	else{
 
 		/*--- Transfer the information scattered (this is, each processor only receives the information it needs ---*/
-		transfer_container[ZONE_1][ZONE_0]->Scatter_InterfaceData_Matching(solver_container[ZONE_1][MESH_0][FEA_SOL],solver_container[ZONE_0][MESH_0][FLOW_SOL],
+		transfer_container[ZONE_1][ZONE_0]->Broadcast_InterfaceData_Matching(solver_container[ZONE_1][MESH_0][FEA_SOL],solver_container[ZONE_0][MESH_0][FLOW_SOL],
 																		   geometry_container[ZONE_1][MESH_0],geometry_container[ZONE_0][MESH_0],
 																		   config_container[ZONE_1], config_container[ZONE_0]);
 
@@ -813,7 +813,7 @@ void FSI_Load_Transfer(COutput *output, CIntegration ***integration_container, C
 
 	/*--- FEA equations -- Necessary as the SetFEA_Load routine is as of now contained in the structural solver ---*/
 
-	config_container[ZONE_1]->SetGlobalParam(LINEAR_ELASTICITY, RUNTIME_FEA_SYS, ExtIter);
+	config_container[ZONE_1]->SetGlobalParam(FEM_ELASTICITY, RUNTIME_FEA_SYS, ExtIter);
 
 	if (MatchingMesh){
 
@@ -825,7 +825,7 @@ void FSI_Load_Transfer(COutput *output, CIntegration ***integration_container, C
 //		solver_container[ZONE_1][MESH_0][FEA_SOL]->SetFEA_Load_Int(solver_container[ZONE_0], geometry_container[ZONE_1], geometry_container[ZONE_0],
 //															   config_container[ZONE_1], config_container[ZONE_0], numerics_container[ZONE_1][MESH_0][SolContainer_Position_fea][VISC_TERM]);
 
-		transfer_container[ZONE_0][ZONE_1]->Scatter_InterfaceData_Matching(solver_container[ZONE_0][MESH_0][FLOW_SOL],solver_container[ZONE_1][MESH_0][FEA_SOL],
+		transfer_container[ZONE_0][ZONE_1]->Broadcast_InterfaceData_Matching(solver_container[ZONE_0][MESH_0][FLOW_SOL],solver_container[ZONE_1][MESH_0][FEA_SOL],
 																		   geometry_container[ZONE_0][MESH_0],geometry_container[ZONE_1][MESH_0],
 																		   config_container[ZONE_0], config_container[ZONE_1]);
 

@@ -10029,7 +10029,7 @@ void CPhysicalGeometry::MatchZone(CConfig *config, CGeometry *geometry_donor, CC
 #ifndef HAVE_MPI
   
   unsigned short iMarker, jMarker;
-  unsigned long iVertex, iPoint, jVertex, jPoint = 0, pPoint = 0;
+  unsigned long iVertex, iPoint, jVertex, jPoint = 0, pPoint = 0, pGlobalPoint = 0;
   su2double *Coord_i, *Coord_j, dist = 0.0, mindist, maxdist;
   
   if (val_iZone == ZONE_0) cout << "Set zone boundary conditions (if any)." << endl;
@@ -10047,11 +10047,11 @@ void CPhysicalGeometry::MatchZone(CConfig *config, CGeometry *geometry_donor, CC
           Coord_j = geometry_donor->node[jPoint]->GetCoord();
           if (nDim == 2) dist = sqrt(pow(Coord_j[0]-Coord_i[0],2.0) + pow(Coord_j[1]-Coord_i[1],2.0));
           if (nDim == 3) dist = sqrt(pow(Coord_j[0]-Coord_i[0],2.0) + pow(Coord_j[1]-Coord_i[1],2.0) + pow(Coord_j[2]-Coord_i[2],2.0));
-          if (dist < mindist) { mindist = dist; pPoint = jPoint; }
+          if (dist < mindist) { mindist = dist; pPoint = jPoint; pGlobalPoint = node[jPoint]->GetGlobalIndex();}
         }
       
       maxdist = max(maxdist, mindist);
-      vertex[iMarker][iVertex]->SetDonorPoint(pPoint, MASTER_NODE);
+      vertex[iMarker][iVertex]->SetDonorPoint(pPoint, MASTER_NODE, pGlobalPoint);
       
     }
   }
@@ -10059,7 +10059,7 @@ void CPhysicalGeometry::MatchZone(CConfig *config, CGeometry *geometry_donor, CC
 #else
   
   unsigned short iMarker, iDim;
-  unsigned long iVertex, iPoint, pPoint = 0, jVertex, jPoint;
+  unsigned long iVertex, iPoint, pPoint = 0, jVertex, jPoint, jGlobalPoint = 0, pGlobalPoint = 0;
   su2double *Coord_i, Coord_j[3], dist = 0.0, mindist, maxdist;
   int iProcessor, pProcessor = 0;
   unsigned long nLocalVertex_Zone = 0, nGlobalVertex_Zone = 0, MaxLocalVertex_Zone = 0;
@@ -10090,15 +10090,19 @@ void CPhysicalGeometry::MatchZone(CConfig *config, CGeometry *geometry_donor, CC
   
   su2double *Buffer_Send_Coord = new su2double [MaxLocalVertex_Zone*nDim];
   unsigned long *Buffer_Send_Point = new unsigned long [MaxLocalVertex_Zone];
+  unsigned long *Buffer_Send_GlobalPoint = new unsigned long [MaxLocalVertex_Zone];
   
   su2double *Buffer_Receive_Coord = new su2double [nProcessor*MaxLocalVertex_Zone*nDim];
   unsigned long *Buffer_Receive_Point = new unsigned long [nProcessor*MaxLocalVertex_Zone];
+  unsigned long *Buffer_Receive_GlobalPoint = new unsigned long [nProcessor*MaxLocalVertex_Zone];
   
   unsigned long nBuffer_Coord = MaxLocalVertex_Zone*nDim;
   unsigned long nBuffer_Point = MaxLocalVertex_Zone;
   
+
   for (iVertex = 0; iVertex < MaxLocalVertex_Zone; iVertex++) {
     Buffer_Send_Point[iVertex] = 0;
+    Buffer_Send_GlobalPoint[iVertex] = 0;
     for (iDim = 0; iDim < nDim; iDim++)
       Buffer_Send_Coord[iVertex*nDim+iDim] = 0.0;
   }
@@ -10110,6 +10114,7 @@ void CPhysicalGeometry::MatchZone(CConfig *config, CGeometry *geometry_donor, CC
       iPoint = geometry_donor->vertex[iMarker][iVertex]->GetNode();
       if (geometry_donor->node[iPoint]->GetDomain()) {
         Buffer_Send_Point[nLocalVertex_Zone] = iPoint;
+        Buffer_Send_GlobalPoint[nLocalVertex_Zone] = geometry_donor->node[iPoint]->GetGlobalIndex();
         for (iDim = 0; iDim < nDim; iDim++)
           Buffer_Send_Coord[nLocalVertex_Zone*nDim+iDim] = geometry_donor->node[iPoint]->GetCoord(iDim);
         nLocalVertex_Zone++;
@@ -10118,7 +10123,8 @@ void CPhysicalGeometry::MatchZone(CConfig *config, CGeometry *geometry_donor, CC
   
   SU2_MPI::Allgather(Buffer_Send_Coord, nBuffer_Coord, MPI_DOUBLE, Buffer_Receive_Coord, nBuffer_Coord, MPI_DOUBLE, MPI_COMM_WORLD);
   SU2_MPI::Allgather(Buffer_Send_Point, nBuffer_Point, MPI_UNSIGNED_LONG, Buffer_Receive_Point, nBuffer_Point, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-  
+  SU2_MPI::Allgather(Buffer_Send_GlobalPoint, nBuffer_Point, MPI_UNSIGNED_LONG, Buffer_Receive_GlobalPoint, nBuffer_Point, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+
   /*--- Compute the closest point to a Near-Field boundary point ---*/
   maxdist = 0.0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -10134,7 +10140,8 @@ void CPhysicalGeometry::MatchZone(CConfig *config, CGeometry *geometry_donor, CC
         for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
           for (jVertex = 0; jVertex < Buffer_Receive_nVertex[iProcessor]; jVertex++) {
             jPoint = Buffer_Receive_Point[iProcessor*MaxLocalVertex_Zone+jVertex];
-            
+            jGlobalPoint = Buffer_Receive_GlobalPoint[iProcessor*MaxLocalVertex_Zone+jVertex];
+
             /*--- Compute the distance ---*/
             dist = 0.0; for (iDim = 0; iDim < nDim; iDim++) {
               Coord_j[iDim] = Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_Zone+jVertex)*nDim+iDim];
@@ -10144,12 +10151,13 @@ void CPhysicalGeometry::MatchZone(CConfig *config, CGeometry *geometry_donor, CC
             if (((dist < mindist) && (iProcessor != rank)) ||
                 ((dist < mindist) && (iProcessor == rank) && (jPoint != iPoint))) {
               mindist = dist; pProcessor = iProcessor; pPoint = jPoint;
+              pGlobalPoint = jGlobalPoint;
             }
           }
         
         /*--- Store the value of the pair ---*/
         maxdist = max(maxdist, mindist);
-        vertex[iMarker][iVertex]->SetDonorPoint(pPoint, pProcessor);
+        vertex[iMarker][iVertex]->SetDonorPoint(pPoint, pProcessor, pGlobalPoint);
         
         
       }
@@ -10158,9 +10166,11 @@ void CPhysicalGeometry::MatchZone(CConfig *config, CGeometry *geometry_donor, CC
   
   delete[] Buffer_Send_Coord;
   delete[] Buffer_Send_Point;
+  delete[] Buffer_Send_GlobalPoint;
   
   delete[] Buffer_Receive_Coord;
   delete[] Buffer_Receive_Point;
+  delete[] Buffer_Receive_GlobalPoint;
   
   delete[] Buffer_Send_nVertex;
   delete[] Buffer_Receive_nVertex;
