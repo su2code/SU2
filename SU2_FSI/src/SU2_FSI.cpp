@@ -285,7 +285,7 @@ int main(int argc, char *argv[]) {
 			  }
 		  }
 
-		  unsigned short nVarTransferFlow = 0, nVarTrasferStruct = 0;
+		  unsigned short nVarTransferFlow = 0, nVarTrasferStruct = 2;
 
 		  transfer_container[ZONE_0][ZONE_1] = new CTransfer_FlowTraction(nDim, nVarTransferFlow, config_container[ZONE_0]);
 		  transfer_container[ZONE_1][ZONE_0] = new CTransfer_StructuralDisplacements(nDim, nVarTrasferStruct, config_container[ZONE_1]);
