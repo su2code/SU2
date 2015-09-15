@@ -55,7 +55,10 @@ def main():
 
     # Command Line Options
 
-    usage = './preconfigure.py [options] \nNote: Options not listed below are passed to the automake configure.'
+    usage = './preconfigure.py [options]' \
+            '\nNote: Options not listed below are passed to the automake configure.' \
+            '\n      Compiler flags must be set with \'export CFLAGS=...\' or \'export CXXFLAGS=...\' ' \
+            '\n      before calling this script.'
 
     parser = PassThroughOptionParser(usage = usage)
 
@@ -76,6 +79,8 @@ def main():
                       help="Removes the back up files.", dest="remove", default=False)
     parser.add_option("-v" , "--revert", action="store_true",
                       help="Revert files to original state.", dest="revert", default=False)
+    parser.add_option("-u", "--update", action="store_true",
+                      help="Update and recompile submodules.", dest="update", default=False)
     (options, args)=parser.parse_args()
 
     options.adtool = options.adtool.upper()
@@ -100,13 +105,19 @@ def main():
               'SU2_DIRECTDIFF' : adtool_dd ,
               'SU2_AD'    : adtool_da }
 
-    if not options.check:
-        if any([modes["SU2_AD"] == 'ADOLC', modes["SU2_DIRECTDIFF"] == 'ADOLC']):
-            conf_environ, made_adolc = build_adolc(modes,options.mpi_enabled)
-        if any([modes["SU2_AD"] == 'CODI',  modes["SU2_DIRECTDIFF"] == 'CODI']):
-            conf_environ, made_codi  = init_codi(modes,options.mpi_enabled)
 
-        configure(args,
+    # Create a dictionary from the arguments
+    argument_dict = dict(zip(args[::2],args[1::2]))
+
+    # Set the default installation path (if not set with --prefix)
+    argument_dict['--prefix'] = argument_dict.get('--prefix', check_output('pwd').rstrip())
+
+
+    if not options.check:
+        if any([modes["SU2_AD"] == 'CODI',  modes["SU2_DIRECTDIFF"] == 'CODI']):
+            conf_environ, made_codi  = init_codi(argument_dict,modes,options.mpi_enabled, options.update)
+
+        configure(argument_dict,
                   conf_environ,
                   options.mpi_enabled,
                   modes,
@@ -261,7 +272,7 @@ def find_all(text, dic):
             return True
     return False
 
-def init_codi(modes, mpi_support = False):
+def init_codi(argument_dict, modes, mpi_support = False, update = False):
 
     modules_failed = True
     
@@ -276,39 +287,55 @@ def init_codi(modes, mpi_support = False):
     codi_name = 'CoDiPack'
 
     alt_name_ampi = 'adjointmpi'
-    alt_name_codi = 'CoDi'
+    alt_name_codi = 'codi'
 
     # Some log and error files
     log = open( 'preconf.log', 'w' )
     err = open( 'preconf.err', 'w' )
     pkg_environ = os.environ
 
+    codi_status = False
+    ampi_status = False
+
+    print "Checking the status of submodules"
+    print '====================================================================='
+    # Remove modules if update is requested
+    if update:
+        if os.path.exists('externals/'+alt_name_codi):
+            print 'Removing' + ' externals/' + alt_name_codi
+            shutil.rmtree('externals/'+alt_name_codi)
+        if os.path.exists('externals/'+alt_name_ampi):
+            print 'Removing' + ' externals/' + alt_name_ampi
+            shutil.rmtree('externals/'+alt_name_ampi)
+
+
     # If project was cloned using git, we can use the 
     # submodule feature of git to initialize the packages
     if all([os.path.exists('.gitmodules')]):
-        try:
-            print "Updating submodules using git..."
-            subprocess.check_call('git submodule update --init', stdout = log, stderr = err, shell = True)
-            modules_failed = False
-        except subprocess.CalledProcessError: 
-            print 'Module initialization using git failed. Using fall-back option ...'
-            modules_failed = True
-    
+        codi_status = submodule_status('externals/'+alt_name_codi, update)
+        if mpi_support:
+            ampi_status = submodule_status('externals/'+alt_name_ampi, update)
+            modules_failed =  not all([codi_status, ampi_status])
+        else:
+            modules_failed = not codi_status
+    else:
+        print '.gitmodules not found, using fall-back method...'
+
     os.chdir('externals')
     
     # If modules still dont exists, use wget to download zip
-    if all([not os.path.exists('CoDi/' + sha_version_codi), modules_failed]):
-        if all([os.path.exists('CoDi'), not os.path.exists('CoDi/' + sha_version_codi)]):
-            print 'Found an old or unspecified version of CoDiPack in externals/CoDi.\nPlease (re)move this folder and try again'
+    if all([any([not os.path.exists('codi/' + sha_version_codi), update]), modules_failed]):
+        if all([os.path.exists('codi'), not os.path.exists('codi/' + sha_version_codi)]):
+            print 'Found an old or unspecified version of CoDiPack in externals/codi.\nUse -u to reset module.'
             sys.exit()
 
         download_module(codi_name, alt_name_codi, github_repo_codi, sha_version_codi, log, err)
     elif modules_failed:
-        print 'Found correct version of CoDi in externals/CoDi.'
+        print 'Found correct version of CoDiPack in externals/codi.'
          
-    if all([not os.path.exists('adjointmpi/' + sha_version_ampi), mpi_support, modules_failed]):
+    if all([any([not os.path.exists('adjointmpi/' + sha_version_ampi), update]), mpi_support, modules_failed]):
         if all([os.path.exists('adjointmpi'), not os.path.exists('adjointmpi/' + sha_version_ampi)]):
-            print 'Found an old or unspecified version of AdjointMPI in externals/adjointmpi.\nPlease (re)move this folder and try again.'
+            print 'Found an old or unspecified version of AdjointMPI in externals/adjointmpi.\nUse -u to reset module.'
             sys.exit()
 
         download_module(ampi_name, alt_name_ampi, github_repo_ampi, sha_version_ampi, log, err)
@@ -316,24 +343,52 @@ def init_codi(modes, mpi_support = False):
     elif modules_failed:
         print 'Found correct version of AdjointMPI in externals/adjointmpi.'
 
+
+    # Build AdjointMPI if MPI Support is requested. If a C compiler was specified as an argument use it here.
     if mpi_support:
         os.chdir('adjointmpi')
-        if not os.path.exists('libAMPI.a'):
-            print '\nConfiguring and building AMPI...'
-            subprocess.check_call('./configure CFLAGS=-O2 --prefix=$PWD && make',  shell=True)
+        configure_ampi = './configure --prefix=' + check_output('pwd').rstrip()
+        if any([not os.path.exists('libAMPI.a'), update]):
+            if not argument_dict.get('--with-cc', ' ') == ' ':
+                configure_ampi = configure_ampi + ' --with-mpicc=' + argument_dict['--with-cc']
+            print '\nConfiguring and building AdjointMPI in externals/' + alt_name_ampi
+            print '====================================================================='
+            run_command(configure_ampi + ' && make clean && make', check_output('pwd').rstrip() + '/preconf_ampi.log', check_output('pwd').rstrip() + '/preconf_ampi.err', os.environ)
         os.chdir(os.pardir)
 
     os.chdir(os.pardir)
 
     return pkg_environ, True
 
+def submodule_status(path, update):
+
+    try:
+        status = check_output('gidt submodule status ' + path)
+    except RuntimeError:
+        return False
+
+
+    status_indicator = status[0][0]
+
+    if status_indicator == '+':
+        sys.stderr.write('WARNING: the currently checked out submodule commit in ' + path + ' does not match the SHA-1 found in the index.\n')
+        sys.stderr.write('Use \'git submodule update --init '+ path + '\' to reset the module if necessary.\n')
+    elif any([status_indicator == '-', update]):
+        print 'Initialize submodule ' + path + ' using git ... '
+        subprocess.check_call('git submodule update --init ' + path, shell = True)
+    elif status_indicator == ' ':
+        print 'Found submodule ' + path + '.'
+
+    return True
+
 def download_module(name, alt_name, git_repo, commit_sha, logfile, errorfile):
 
-    print 'Initializing ' + name + '...'
-   
+    print '\nInitializing ' + name + ' \'' + commit_sha + '\''
+    print '====================================================================='
     # Download package
     try:
-        subprocess.check_call('wget ' + git_repo + '/archive/' + commit_sha + '.zip', stdout = logfile, stderr = errorfile, shell = True )
+        print 'Downloading module from ' + git_repo
+        subprocess.check_call('wget -N ' + git_repo + '/archive/' + commit_sha + '.zip', stdout = logfile, stderr = errorfile, shell = True )
     except subprocess.CalledProcessError:
         print 'Download of module ' + name + ' failed. See preconf.err for more information.'
         print 'To download it manually, perform the following steps:'
@@ -345,6 +400,7 @@ def download_module(name, alt_name, git_repo, commit_sha, logfile, errorfile):
     
     # Extract zip archive
     try:
+        print 'Extracting archive ...'
         subprocess.check_call('unzip -u ' + commit_sha + '.zip', stdout = logfile, stderr = errorfile, shell=True)
     except subprocess.CalledProcessError:
         print 'Extraction of module ' + name + ' failed. See preconf.err for more information.'
@@ -352,6 +408,7 @@ def download_module(name, alt_name, git_repo, commit_sha, logfile, errorfile):
 
     # Rename folder and create a file to identify the version
     try:
+        print 'Creating identifier ...'
         subprocess.check_call('mv '+ name + '-' + commit_sha + ' ' + alt_name + ' && touch ' + alt_name + '/' + commit_sha, stdout = logfile, stderr = errorfile, shell = True)
     except subprocess.CalledProcessError:
         print 'Renaming of module ' + name + ' failed. See preconf.err for more information.'
@@ -360,101 +417,7 @@ def download_module(name, alt_name, git_repo, commit_sha, logfile, errorfile):
     # Remove archive
     subprocess.check_call('rm ' + commit_sha + '.zip', shell=True)
 
-def build_adolc(modes, mpi_support = False):
-
-    os.chdir('externals')
-
-    pkg_environ = os.environ
-    pkg_environ["PKG_CONFIG_PATH"] = pkg_environ.get("PKG_CONFIG_PATH","") + ":" + check_output("pwd").rstrip() + "/adol-c/lib64/pkgconfig"
-
-    configure_command = "./configure --prefix=$PWD"
-
-    # Build adolc
-    if any([modes['SU2_DIRECTDIFF'], all([modes['SU2_AD'], not mpi_support])]):
-        pkg_name = "adolc"
-        pkg_version = "2.5.3-trunk"
-
-        download_and_compile_adolc(configure_command, False, pkg_name, pkg_version, pkg_environ)
-
-    # If necessary build adolc_ampi
-    if all([mpi_support, modes['SU2_AD']]):
-	print 'MPI currently not supported when using ADOLC.'
-	sys.exit()
-        #ampi_path = check_output("pwd").rstrip() +  "/AdjoinableMPI"
-        #pkg_name = "adolc_ampi"
-        #pkg_version = "2.5.3-trunk"
-
-        #configure_command = configure_command + " --enable-ampi --with-ampi=" + ampi_path
-
-        #download_and_compile_adolc(configure_command, True, pkg_name, pkg_version, pkg_environ)
-
-    os.chdir(os.pardir)
-    return pkg_environ, True
-
-def download_and_compile_adolc(configure_command, ampi_needed, pkg_name, pkg_version, pkg_environ):
-
-    ampi_clone = 'hg clone http://mercurial.mcs.anl.gov/ad/AdjoinableMPI'
-    adolc_clone = 'git clone --depth 1 git@gitlab.com:adol-c/adol-c.git'
-    adolc_download = 'wget https://gitlab.com/adol-c/adol-c/repository/archive.zip'
-
-    pkg_call = "pkg-config --exists --print-errors ' " + pkg_name + " = " + pkg_version + " ' "
-
-    check_adolc = True
-    # pkg-config returns an error if package was not found
-    try:
-        subprocess.check_call(pkg_call, env = pkg_environ, shell=True)
-    except subprocess.CalledProcessError:
-        check_adolc = False
-
-
-    if check_adolc:
-        print "Found library " + pkg_name + "-" + pkg_version
-    else:
-        print "Since library " + pkg_name + "-" + pkg_version + " was not found, it will be downloaded and compiled"
-        # Download and build AdjoinableMPI library if mpi support is enabled
-        if ampi_needed:
-            if not os.path.exists('AdjoinableMPI'):
-                try:
-                    subprocess.check_call(ampi_clone, shell=True)
-                except subprocess.CalledProcessError:
-                    print "hg clone failed"
-                    pass
-
-            os.chdir('AdjoinableMPI')
-            # Generate configure script if it does not exist
-            if not os.path.exists('configure'):
-                subprocess.call('./autogen.sh', shell=True)
-            # Call configure and install it
-            subprocess.call('./configure --prefix=$PWD',shell=True)
-            subprocess.call('make install',shell=True)
-            os.chdir(os.pardir)
-
-        # Download and build ADOL-C
-        if not os.path.exists('adol-c'):
-            try:
-                subprocess.check_call(adolc_clone, shell=True)
-            except subprocess.CalledProcessError:
-                print "git clone failed, trying wget."
-                subprocess.check_call(adolc_download, shell=True)
-                subprocess.check_call('unzip archive.zip', shell=True)
-                subprocess.check_call('mv adol-c.git adol-c', shell=True)
-                os.remove('archive.zip')
-                pass
-
-        os.chdir('adol-c')
-
-        # Generate configure script if it does not exist
-        if not os.path.exists('configure'):
-            subprocess.call('autoreconf -fi',shell=True)
-
-        # Configure and build ADOL-C
-        subprocess.call(configure_command ,shell=True)
-        subprocess.call('make install',shell=True)
-
-        os.chdir(os.pardir)
-
-
-def configure(args,
+def configure(argument_dict,
               conf_environ,
               mpi_support,
               modes,
@@ -463,12 +426,6 @@ def configure(args,
 
     # Set the base command for running configure
     configure_base = '../configure'
-
-    # Create a dictionary from the arguments
-    argument_dict = dict(zip(args[::2],args[1::2]))
-
-    # Set the default installation path (if not set with --prefix)
-    argument_dict['--prefix'] = argument_dict.get('--prefix', check_output('pwd').rstrip())
 
     # Add the arguments to the configure command
     for arg in argument_dict:
@@ -504,9 +461,15 @@ def configure(args,
                 print ''
 
             print '====================================================================='
-            print  'Command: ' + configure_base + ' ' + configure_mode
-            run_command(configure_base + ' ' + configure_mode  , key, conf_environ)
-            print 'Log file written to ' + key +'/conf_'+key+'.log.'
+            log = check_output('pwd').rstrip() + '/conf_'+ key+'.log'
+            err = check_output('pwd').rstrip() + '/conf_'+ key+'.err'
+
+            if not os.path.exists(key):
+                os.mkdir(key)
+
+            os.chdir(key)
+            run_command(configure_base + ' ' + configure_mode, log, err, conf_environ)
+            os.chdir(os.pardir)
             build_dirs += key + ' '
 
     write_makefile(build_dirs)
@@ -540,34 +503,30 @@ def configure(args,
            '\texport PATH=$PATH:$SU2_RUN\n' \
            '\texport PYTHONPATH=$PYTHONPATH:$SU2_RUN\n'
 
-def run_command(command, folder, env):
-    log = 'conf_'+ folder+'.log'
-    err = 'conf_'+ folder+'.err'
+def run_command(command, log, err, env):
 
-    if not os.path.exists(folder):
-        os.mkdir(folder)
-
-    os.chdir(folder)
     try:
         logfile = open(log, 'w')
         errfile = open(err, 'w')
+        print 'Command: ' + command
         subprocess.check_call(command, env = env, stdout = logfile, stderr = errfile, shell=True)
+        print 'Logfile written to ' + log
         logfile.close()
         errfile.close()
     except subprocess.CalledProcessError:
         errfile = open(err, 'r')
-        print '\nThere was an error while running configure.'
-        print '=== Error Log from configure ==='
+        print '\nThere was an error while running command \'' + command + '\'.'
+        print '=== Error Log ==='
         print errfile.read()
         errfile.close()
         sys.exit(1)
 
-    os.chdir(os.pardir)
 
 def check_output(cmd):
-    return subprocess.Popen([cmd], stdout=subprocess.PIPE).communicate()[0]
-
-
+    std, err = subprocess.Popen([cmd], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell = True).communicate()
+    if err:
+        raise RuntimeError(err)
+    return std
 def write_makefile(build_dirs):
     print '\nCreating Makefile ...\n'
     makefile = open('Makefile', 'w')

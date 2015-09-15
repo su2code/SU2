@@ -1,5 +1,5 @@
 [submodule "externals/CoDi"]
-	path = externals/CoDi
+	path = externals/codi
 	url = https://github.com/SciCompKL/CoDiPack.git
         ignore = dirty
 [submodule "externals/adjointmpi"]
