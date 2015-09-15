@@ -297,8 +297,8 @@ Boolean_t ReadDataFileHeader(FileStream_s    *FileStream,
         if (IsOk)
         {
 #if !defined ENGINE /* TODO(RMS)-M 12/13/2005: ENGINE-P2 - no dialog feedback */
-            LgIndex_t NumGeoms = 0;
-            LgIndex_t NumTexts = 0;
+          //  LgIndex_t NumGeoms = 0;
+          //  LgIndex_t NumTexts = 0;
 #endif
 
             if (IsOk)

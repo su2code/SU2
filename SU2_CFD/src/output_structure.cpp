@@ -2,7 +2,7 @@
  * \file output_structure.cpp
  * \brief Main subroutines for output solver information
  * \author F. Palacios, T. Economon
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -540,7 +540,7 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
   
   unsigned short nDim = geometry->GetnDim(), iMarker;
-  su2double *Solution, *Normal, *d, *Coord;
+  su2double *Solution, *Coord;
   unsigned long Buffer_Send_nVertex[1], iVertex, iPoint, nVertex_Surface = 0, nLocalVertex_Surface = 0,
   MaxLocalVertex_Surface = 0, nBuffer_Scalar;
   unsigned long *Buffer_Receive_nVertex = NULL;
@@ -574,7 +574,7 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
   su2double *Buffer_Send_Phi_z= new su2double[MaxLocalVertex_Surface];
   su2double *Buffer_Send_PsiE= new su2double[MaxLocalVertex_Surface];
 
-  su2double *Buffer_Send_Sens_x, *Buffer_Send_Sens_y, *Buffer_Send_Sens_z;
+  su2double *Buffer_Send_Sens_x = NULL, *Buffer_Send_Sens_y = NULL, *Buffer_Send_Sens_z = NULL;
 
   if (config->GetDiscrete_Adjoint()){
     Buffer_Send_Sens_x = new su2double[MaxLocalVertex_Surface];
@@ -591,9 +591,9 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         if (geometry->node[iPoint]->GetDomain()) {
           Solution = AdjSolver->node[iPoint]->GetSolution();
-          Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+          //Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
           Coord = geometry->node[iPoint]->GetCoord();
-          d = AdjSolver->node[iPoint]->GetForceProj_Vector();
+          //d = AdjSolver->node[iPoint]->GetForceProj_Vector();
           Buffer_Send_GlobalPoint[nVertex_Surface] = geometry->node[iPoint]->GetGlobalIndex();
           Buffer_Send_Coord_x[nVertex_Surface] = Coord[0];
           Buffer_Send_Coord_y[nVertex_Surface] = Coord[1];
@@ -791,13 +791,9 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
   delete [] Buffer_Send_Phi_y;
   delete [] Buffer_Send_Phi_z;
   delete [] Buffer_Send_PsiE;
-  if (config->GetDiscrete_Adjoint()){
-    delete [] Buffer_Send_Sens_x;
-    delete [] Buffer_Send_Sens_y;
-    if (nDim == 3){
-      delete [] Buffer_Send_Sens_z;
-    }
-  }
+  if (Buffer_Send_Sens_x != NULL) delete [] Buffer_Send_Sens_x;
+  if (Buffer_Send_Sens_y != NULL) delete [] Buffer_Send_Sens_y;
+  if (Buffer_Send_Sens_z != NULL) delete [] Buffer_Send_Sens_z;
   
   SurfAdj_file.close();
   
@@ -834,8 +830,8 @@ void COutput::MergeConnectivity(CConfig *config, CGeometry *geometry, unsigned s
       MergeVolumetricConnectivity(config, geometry, TRIANGLE    );
       
       if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Quad != 0))
-        cout <<"Merging volumetric rectangle grid connectivity." << endl;
-      MergeVolumetricConnectivity(config, geometry, RECTANGLE   );
+        cout <<"Merging volumetric quadrilateral grid connectivity." << endl;
+      MergeVolumetricConnectivity(config, geometry, QUADRILATERAL   );
       
       if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Tetr != 0))
         cout <<"Merging volumetric tetrahedron grid connectivity." << endl;
@@ -868,8 +864,8 @@ void COutput::MergeConnectivity(CConfig *config, CGeometry *geometry, unsigned s
       MergeSurfaceConnectivity(config, geometry, TRIANGLE);
       
       if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_BoundQuad != 0))
-        cout <<"Merging surface rectangle grid connectivity." << endl;
-      MergeSurfaceConnectivity(config, geometry, RECTANGLE);
+        cout <<"Merging surface quadrilateral grid connectivity." << endl;
+      MergeSurfaceConnectivity(config, geometry, QUADRILATERAL);
       
     }
     
@@ -978,12 +974,9 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
   /*--- Local variables needed for merging the geometry with MPI. ---*/
   
   unsigned long iVertex, iMarker;
-  
-  int SendRecv, RecvFrom;
-  
   unsigned long Buffer_Send_nPoin[1], *Buffer_Recv_nPoin = NULL;
   unsigned long nLocalPoint = 0, MaxLocalPoint = 0;
-  unsigned long iGlobal_Index = 0, nBuffer_Scalar = 0, periodicNodes = 0;
+  unsigned long iGlobal_Index = 0, nBuffer_Scalar = 0;
   
   if (rank == MASTER_NODE) Buffer_Recv_nPoin = new unsigned long[nProcessor];
   
@@ -1000,8 +993,6 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
   } else {
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
-        SendRecv = config->GetMarker_All_SendRecv(iMarker);
-        RecvFrom = abs(SendRecv)-1;
         
         /*--- Checking for less than or equal to the rank, because there may
          be some periodic halo nodes that send info to the same rank. ---*/
@@ -1045,7 +1036,7 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
   su2double *Buffer_Send_Y = new su2double[MaxLocalPoint];
   su2double *Buffer_Recv_Y = NULL;
   
-  su2double *Buffer_Send_Z, *Buffer_Recv_Z = NULL;
+  su2double *Buffer_Send_Z = NULL, *Buffer_Recv_Z = NULL;
   if (nDim == 3) Buffer_Send_Z = new su2double[MaxLocalPoint];
   
   unsigned long *Buffer_Send_GlobalIndex = new unsigned long[MaxLocalPoint];
@@ -1140,12 +1131,12 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
   delete [] Local_Halo;
   delete [] Buffer_Send_X;
   delete [] Buffer_Send_Y;
-  if (nDim == 3) delete [] Buffer_Send_Z;
+  if (Buffer_Send_Z != NULL) delete [] Buffer_Send_Z;
   delete [] Buffer_Send_GlobalIndex;
   if (rank == MASTER_NODE) {
     delete [] Buffer_Recv_X;
     delete [] Buffer_Recv_Y;
-    if (nDim == 3)  delete [] Buffer_Recv_Z;
+    if (Buffer_Recv_Z != NULL)  delete [] Buffer_Recv_Z;
     delete [] Buffer_Recv_GlobalIndex;
     delete [] Buffer_Recv_nPoin;
   }
@@ -1195,7 +1186,7 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
       nLocalElem = geometry->GetnElemTria();
       NODES_PER_ELEMENT = N_POINTS_TRIANGLE;
       break;
-    case RECTANGLE:
+    case QUADRILATERAL:
       nLocalElem = geometry->GetnElemQuad();
       NODES_PER_ELEMENT = N_POINTS_QUADRILATERAL;
       break;
@@ -1494,7 +1485,7 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
         nGlobal_Tria = nElem_Total;
         if (nGlobal_Tria > 0) Conn_Tria = Conn_Elem;
         break;
-      case RECTANGLE:
+      case QUADRILATERAL:
         nGlobal_Quad = nElem_Total;
         if (nGlobal_Quad > 0) Conn_Quad = Conn_Elem;
         break;
@@ -1581,7 +1572,7 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
     case TRIANGLE:
       NODES_PER_ELEMENT = N_POINTS_TRIANGLE;
       break;
-    case RECTANGLE:
+    case QUADRILATERAL:
       NODES_PER_ELEMENT = N_POINTS_QUADRILATERAL;
       break;
     default:
@@ -1868,7 +1859,7 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
         nGlobal_BoundTria = nElem_Total;
         if (nGlobal_BoundTria > 0) Conn_BoundTria = Conn_Elem;
         break;
-      case RECTANGLE:
+      case QUADRILATERAL:
         nGlobal_BoundQuad = nElem_Total;
         if (nGlobal_BoundQuad > 0) Conn_BoundQuad = Conn_Elem;
         break;
@@ -1886,10 +1877,10 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   unsigned short iVar = 0, jVar = 0, FirstIndex = NONE, SecondIndex = NONE, ThirdIndex = NONE;
   unsigned short nVar_First = 0, nVar_Second = 0, nVar_Third = 0;
   unsigned short iVar_GridVel = 0, iVar_PressCp = 0, iVar_Density = 0, iVar_Lam = 0, iVar_MachMean = 0,
-  iVar_Tempv = 0, iVar_EF =0, iVar_Temp = 0, iVar_Mach = 0, iVar_Press = 0, iVar_TempLam = 0,
-  iVar_ViscCoeffs = 0, iVar_Sens = 0, iVar_FEA = 0, iVar_Extra = 0, iVar_Eddy = 0, iVar_Sharp = 0,
-  iVar_FEA_Vel = 0, iVar_FEA_Accel = 0, iVar_FEA_Stress = 0, iVar_FEA_Stress_3D = 0, iVar_FEA_Extra = 0,
-  iVar_SensDim = 0;
+  iVar_Tempv = 0, iVar_Temp = 0, iVar_Mach = 0, iVar_Press = 0, iVar_TempLam = 0,
+  iVar_ViscCoeffs = 0, iVar_Sens = 0, iVar_Extra = 0, iVar_Eddy = 0, iVar_Sharp = 0,
+  iVar_FEA_Vel = 0, iVar_FEA_Accel = 0, iVar_FEA_Stress = 0, iVar_FEA_Stress_3D = 0,
+  iVar_FEA_Extra = 0, iVar_SensDim = 0;
 
   unsigned long iPoint = 0, jPoint = 0, iVertex = 0, iMarker = 0;
   su2double Gas_Constant, Mach2Vel, Mach_Motion, RefDensity, RefPressure = 0.0, factor = 0.0;
@@ -1897,7 +1888,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   su2double *Aux_Frict = NULL, *Aux_Heat = NULL, *Aux_yPlus = NULL, *Aux_Sens = NULL;
   
   unsigned short CurrentIndex;
-  int SendRecv, RecvFrom, *Local_Halo;
+  int *Local_Halo;
   unsigned long Buffer_Send_nPoint[1], *Buffer_Recv_nPoint = NULL;
   unsigned long nLocalPoint = 0, MaxLocalPoint = 0;
   unsigned long iGlobal_Index = 0, nBuffer_Scalar = 0;
@@ -2041,9 +2032,9 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       iVar_TempLam = nVar_Total; nVar_Total += config->GetnSpecies()+3;
     }
     
-    if (Kind_Solver == POISSON_EQUATION) {
-      iVar_EF = nVar_Total; nVar_Total += geometry->GetnDim();
-    }
+    //if (Kind_Solver == POISSON_EQUATION) {
+    //  iVar_EF = nVar_Total; nVar_Total += geometry->GetnDim();
+    //}
     
     if (( Kind_Solver == ADJ_EULER              ) || ( Kind_Solver == ADJ_NAVIER_STOKES      ) ||
         ( Kind_Solver == ADJ_RANS               ) || ( Kind_Solver == ADJ_TNE2_EULER         ) ||
@@ -2105,8 +2096,6 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   } else {
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
-        SendRecv = config->GetMarker_All_SendRecv(iMarker);
-        RecvFrom = abs(SendRecv)-1;
         
         /*--- Checking for less than or equal to the rank, because there may
          be some periodic halo nodes that send info to the same rank. ---*/
@@ -3919,9 +3908,6 @@ void COutput::MergeBaselineSolution(CConfig *config, CGeometry *geometry, CSolve
   /*--- Local variables needed for merging with MPI ---*/
   
   unsigned long iVertex, iMarker;
-  
-  int SendRecv, RecvFrom;
-  
   unsigned long Buffer_Send_nPoint[1], *Buffer_Recv_nPoint = NULL;
   unsigned long nLocalPoint = 0, MaxLocalPoint = 0;
   unsigned long iGlobal_Index = 0, nBuffer_Scalar = 0;
@@ -3941,8 +3927,6 @@ void COutput::MergeBaselineSolution(CConfig *config, CGeometry *geometry, CSolve
   } else {
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
-        SendRecv = config->GetMarker_All_SendRecv(iMarker);
-        RecvFrom = abs(SendRecv)-1;
         
         /*--- Checking for less than or equal to the rank, because there may
          be some periodic halo nodes that send info to the same rank. ---*/
@@ -4355,7 +4339,6 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   bool output_per_surface = false;
   bool output_massflow = (config->GetKind_ObjFunc() == MASS_FLOW_RATE);
   if (config->GetnMarker_Monitoring() > 1) output_per_surface = true;
-  bool disc_adjoint = config->GetDiscrete_Adjoint();
   
   unsigned short direct_diff = config->GetDirectDiff();
 
@@ -4622,7 +4605,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     bool turbulent = ((config[val_iZone]->GetKind_Solver() == RANS) || (config[val_iZone]->GetKind_Solver() == ADJ_RANS) ||
                       (config[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS));
     bool adjoint = config[val_iZone]->GetAdjoint() || config[val_iZone]->GetDiscrete_Adjoint();
-    bool fluid_structure = (config[val_iZone]->GetFSI_Simulation());
     bool wave = (config[val_iZone]->GetKind_Solver() == WAVE_EQUATION);
     bool heat = (config[val_iZone]->GetKind_Solver() == HEAT_EQUATION);
     bool fea = (config[val_iZone]->GetKind_Solver() == LINEAR_ELASTICITY);
@@ -4655,10 +4637,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     su2double Total_Sens_Press = 0.0, Total_Sens_Temp = 0.0;
     
     /*--- Initialize variables to store information from all domains (direct differentiation) ---*/
-    su2double D_Total_CLift = 0.0, D_Total_CDrag = 0.0, D_Total_CSideForce = 0.0, D_Total_CMx = 0.0, D_Total_CMy = 0.0, D_Total_CMz = 0.0, D_Total_CEff = 0.0,
-    D_Total_CEquivArea = 0.0, D_Total_CNearFieldOF = 0.0, D_Total_CFx = 0.0, D_Total_CFy = 0.0, D_Total_CFz = 0.0, D_Total_CMerit = 0.0,
-    D_Total_CT = 0.0, D_Total_CQ = 0.0, D_Total_CFreeSurface = 0.0, D_Total_CWave = 0.0, D_Total_CHeat = 0.0, D_Total_CpDiff = 0.0, D_Total_HeatFluxDiff = 0.0,
-    D_Total_CFEA = 0.0, D_Total_Heat = 0.0, D_Total_MaxHeat = 0.0, D_Total_Mdot = 0.0;
+    su2double D_Total_CLift = 0.0, D_Total_CDrag = 0.0, D_Total_CSideForce = 0.0, D_Total_CMx = 0.0, D_Total_CMy = 0.0, D_Total_CMz = 0.0, D_Total_CEff = 0.0, D_Total_CFx = 0.0, D_Total_CFy = 0.0, D_Total_CFz = 0.0;
 
     /*--- Residual arrays ---*/
     su2double *residual_flow         = NULL,
@@ -6123,9 +6102,9 @@ void COutput::SetCFL_Number(CSolver ****solver_container, CConfig **config, unsi
   
   /*--- Compute MG factor ---*/
   
-  MGFactor[MESH_0] = 1.0;
-  for (iMesh = 1; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
-    MGFactor[iMesh] = MGFactor[iMesh-1] * config[val_iZone]->GetCFL(iMesh)/config[val_iZone]->GetCFL(iMesh-1);
+  for (iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
+    if (iMesh == MESH_0) MGFactor[iMesh] = 1.0;
+    else MGFactor[iMesh] = MGFactor[iMesh-1] * config[val_iZone]->GetCFL(iMesh)/config[val_iZone]->GetCFL(iMesh-1);
   }
   
   if (Div < 1.0) power = config[val_iZone]->GetCFL_AdaptParam(0);
@@ -6299,7 +6278,7 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
     
     Breakdown_file << endl <<"-------------------------------------------------------------------------" << endl;
     Breakdown_file <<"|    ___ _   _ ___                                                      |" << endl;
-    Breakdown_file <<"|   / __| | | |_  )   Release 4.0.0  \"Cardinal\"                         |" << endl;
+    Breakdown_file <<"|   / __| | | |_  )   Release 4.0.1  \"Cardinal\"                         |" << endl;
     Breakdown_file <<"|   \\__ \\ |_| |/ /                                                      |" << endl;
     Breakdown_file <<"|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl;
     Breakdown_file << "|                                                                       |" << endl;
@@ -7441,7 +7420,7 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
   
   unsigned long iVertex, iPoint;
   unsigned short iDim, iMarker, Out1D;
-  su2double *Normal = NULL, Area = 0.0, OverArea = 0.0, UnitaryNormal[3],
+  su2double *Normal = NULL, Area = 0.0, OverArea = 0.0, UnitNormal[3],
   Stag_Pressure, Mach, Temperature, Pressure = 0.0, Density = 0.0, Velocity2, Enthalpy, RhoU, U,// local values at each node (Velocity2 = V^2). U = normal velocity
   SumPressure = 0.0, SumStagPressure = 0.0, SumArea = 0.0, SumMach = 0.0, SumTemperature = 0.0, SumForUref = 0.0, SumRhoU = 0.0, SumEnthalpy = 0.0,// sum of (local value ) * (dA) (integral)
   AveragePressure = 0.0, AverageMach = 0.0, AverageTemperature = 0.0, MassFlowRate = 0.0, // Area Averaged value ( sum / A )
@@ -7477,7 +7456,7 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
           /*--- Compute area, and unitary normal ---*/
           Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
           Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
-          for (iDim = 0; iDim < nDim; iDim++) UnitaryNormal[iDim] = -Normal[iDim]/Area;
+          for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = -Normal[iDim]/Area;
           
           if (compressible) {
             Pressure = solver_container->node[iPoint]->GetPressure();
@@ -7492,7 +7471,7 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
           
           U = 0.0;
           for (iDim = 0; iDim < geometry->GetnDim(); iDim++) {
-            U += UnitaryNormal[iDim]*solver_container->node[iPoint]->GetVelocity(iDim);
+            U += UnitNormal[iDim]*solver_container->node[iPoint]->GetVelocity(iDim);
           }
           
           Enthalpy = solver_container->node[iPoint]->GetEnthalpy();

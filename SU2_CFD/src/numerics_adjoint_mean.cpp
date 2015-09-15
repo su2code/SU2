@@ -2,7 +2,7 @@
  * \file numerics_adjoint_mean.cpp
  * \brief This file contains all the convective term discretization.
  * \author F. Palacios, T. Economon
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -1184,8 +1184,9 @@ void CAvgGrad_AdjFlow::ComputeResidual(su2double *val_residual_i, su2double *val
                                    su2double **val_Jacobian_ii, su2double **val_Jacobian_ij,
                                    su2double **val_Jacobian_ji, su2double **val_Jacobian_jj, CConfig *config) {
 	unsigned short iDim, jDim;
-	su2double sq_vel_i, Energy_i, ViscDens_i, XiDens_i,
-  sq_vel_j, Energy_j, ViscDens_j, XiDens_j, dist_ij_2, dPhiE_dn;
+  su2double sq_vel_i, ViscDens_i, XiDens_i;
+  su2double sq_vel_j, ViscDens_j, XiDens_j;
+  su2double dist_ij_2, dPhiE_dn;
   
   su2double Prandtl_Lam      = config->GetPrandtl_Lam();
   su2double Prandtl_Turb     = config->GetPrandtl_Turb();
@@ -1200,7 +1201,6 @@ void CAvgGrad_AdjFlow::ComputeResidual(su2double *val_residual_i, su2double *val
   Pressure_i = V_i[nDim+1];
   Density_i = V_i[nDim+2];
   Enthalpy_i = V_i[nDim+3];
-  Energy_i = Enthalpy_i - Pressure_i/Density_i;
   SoundSpeed_i = sqrt(fabs(Pressure_i*Gamma/Density_i));
   
   /*--- Laminar and Eddy viscosity ---*/
@@ -1221,7 +1221,6 @@ void CAvgGrad_AdjFlow::ComputeResidual(su2double *val_residual_i, su2double *val
   Pressure_j = V_j[nDim+1];
   Density_j = V_j[nDim+2];
   Enthalpy_j = V_j[nDim+3];
-  Energy_j = Enthalpy_j - Pressure_j/Density_j;
   SoundSpeed_j = sqrt(fabs(Pressure_j*Gamma/Density_j));
   
   /*--- Laminar and Eddy viscosity ---*/
@@ -1307,16 +1306,21 @@ CAvgGradCorrected_AdjFlow::~CAvgGradCorrected_AdjFlow(void) {
   
 }
 
-void CAvgGradCorrected_AdjFlow::ComputeResidual(su2double *val_residual_i, su2double *val_residual_j, su2double **val_Jacobian_ii, su2double **val_Jacobian_ij,
-                                            su2double **val_Jacobian_ji, su2double **val_Jacobian_jj, CConfig *config) {
+void CAvgGradCorrected_AdjFlow::ComputeResidual(su2double *val_residual_i,
+                                                su2double *val_residual_j,
+                                                su2double **val_Jacobian_ii,
+                                                su2double **val_Jacobian_ij,
+                                            su2double **val_Jacobian_ji,
+                                                su2double **val_Jacobian_jj,
+                                                CConfig *config) {
   
 	unsigned short iVar, iDim, jDim;
-	su2double Density_i, sq_vel_i, Energy_i, SoundSpeed_i, Pressure_i, ViscDens_i, XiDens_i,
-	Density_j, sq_vel_j, Energy_j, SoundSpeed_j, Pressure_j, ViscDens_j, XiDens_j, dist_ij_2, dPhiE_dn;
+  su2double Density_i, sq_vel_i, Pressure_i, ViscDens_i, XiDens_i;
+  su2double Density_j, sq_vel_j, Pressure_j, ViscDens_j, XiDens_j;
+  su2double dist_ij_2, dPhiE_dn;
   
-  su2double Prandtl_Lam      = config->GetPrandtl_Lam();
-  su2double Prandtl_Turb     = config->GetPrandtl_Turb();
-  
+  su2double Prandtl_Lam  = config->GetPrandtl_Lam();
+  su2double Prandtl_Turb = config->GetPrandtl_Turb();
   
 	/*--- States in point i ---*/
   
@@ -1326,18 +1330,17 @@ void CAvgGradCorrected_AdjFlow::ComputeResidual(su2double *val_residual_i, su2do
     sq_vel_i += 0.5*Velocity_i[iDim]*Velocity_i[iDim];
   }
   Pressure_i = V_i[nDim+1];
-  Density_i = V_i[nDim+2];
+  Density_i  = V_i[nDim+2];
   Enthalpy_i = V_i[nDim+3];
-  Energy_i = Enthalpy_i - Pressure_i/Density_i;
-  SoundSpeed_i = sqrt(fabs(Pressure_i*Gamma/Density_i));
 
   /*--- Laminar and Eddy viscosity ---*/
   
   Laminar_Viscosity_i = V_i[nDim+5];
-  Eddy_Viscosity_i = V_i[nDim+6];
+  Eddy_Viscosity_i    = V_i[nDim+6];
   
 	ViscDens_i = (Laminar_Viscosity_i + Eddy_Viscosity_i) / Density_i;
-	XiDens_i = Gamma*(Laminar_Viscosity_i/Prandtl_Lam + Eddy_Viscosity_i/Prandtl_Turb) / Density_i;
+	XiDens_i   = Gamma*(Laminar_Viscosity_i/Prandtl_Lam +
+                      Eddy_Viscosity_i/Prandtl_Turb) / Density_i;
 
 	/*--- States in point j ---*/
   
@@ -1347,18 +1350,17 @@ void CAvgGradCorrected_AdjFlow::ComputeResidual(su2double *val_residual_i, su2do
     sq_vel_j += 0.5*Velocity_j[iDim]*Velocity_j[iDim];
   }
   Pressure_j = V_j[nDim+1];
-  Density_j = V_j[nDim+2];
+  Density_j  = V_j[nDim+2];
   Enthalpy_j = V_j[nDim+3];
-  Energy_j = Enthalpy_j - Pressure_j/Density_j;
-  SoundSpeed_j = sqrt(fabs(Pressure_j*Gamma/Density_j));
   
   /*--- Laminar and Eddy viscosity ---*/
   
   Laminar_Viscosity_j = V_j[nDim+5];
-  Eddy_Viscosity_j = V_j[nDim+6];
+  Eddy_Viscosity_j    = V_j[nDim+6];
   
 	ViscDens_j = (Laminar_Viscosity_j + Eddy_Viscosity_j) / Density_j;
-	XiDens_j = Gamma*(Laminar_Viscosity_j/Prandtl_Lam + Eddy_Viscosity_j/Prandtl_Turb) / Density_j;
+	XiDens_j   = Gamma*(Laminar_Viscosity_j/Prandtl_Lam +
+                      Eddy_Viscosity_j/Prandtl_Turb) / Density_j;
   
 	/*--- Compute vector going from iPoint to jPoint ---*/
   

@@ -2,7 +2,7 @@
  * \file datatype_structure.inl
  * \brief In-Line subroutines of the <i>datatype_structure.hpp</i> file.
  * \author T. Albring
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -35,11 +35,11 @@
 
 namespace SU2_TYPE{
   inline int Int(const su2double& data){
-    return int(SU2_TYPE::GetPrimary(data));
+    return int(SU2_TYPE::GetValue(data));
   }
 
   inline short Short(const su2double& data){
-    return short(SU2_TYPE::GetPrimary(data));
+    return short(SU2_TYPE::GetValue(data));
   }
 }
 
@@ -87,7 +87,7 @@ template< typename IN > struct Impl_getValue {
 template<> struct Impl_getValue<su2double> {
   typedef double OUT;
   static inline OUT getValue(const su2double& value) {
-    return SU2_TYPE::GetPrimary(value);
+    return SU2_TYPE::GetValue(value);
   }
 };
 

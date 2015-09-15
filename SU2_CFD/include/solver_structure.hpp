@@ -5,7 +5,7 @@
  *        <i>solution_direct.cpp</i>, <i>solution_adjoint.cpp</i>, and
  *        <i>solution_linearized.cpp</i> files.
  * \author F. Palacios, T. Economon
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -63,7 +63,7 @@ using namespace std;
  * \brief Main class for defining the PDE solution, it requires
  * a child class for each particular solver (Euler, Navier-Stokes, etc.)
  * \author F. Palacios
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  */
 class CSolver {
 protected:
@@ -2525,7 +2525,7 @@ public:
  * \class CBaselineSolver
  * \brief Main class for defining a baseline solution from a restart file (for output).
  * \author F. Palacios, T. Economon.
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  */
 class CBaselineSolver : public CSolver {
 public:
@@ -2579,7 +2579,7 @@ public:
  * \brief Main class for defining the Euler's flow solver.
  * \ingroup Euler_Equations
  * \author F. Palacios
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  */
 class CEulerSolver : public CSolver {
 protected:
@@ -3923,7 +3923,7 @@ public:
  * \brief Main class for defining the Navier-Stokes flow solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  */
 class CNSSolver : public CEulerSolver {
 private:
@@ -4187,7 +4187,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  */
 class CTurbSolver : public CSolver {
 protected:
@@ -4316,7 +4316,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  */
 
 class CTurbSASolver: public CTurbSolver {
@@ -4519,7 +4519,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author B. Tracey.
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  */
 
 class CTurbMLSolver: public CTurbSolver {
@@ -4665,7 +4665,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Aranake.
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  */
 
 class CTransLMSolver: public CTurbSolver {
@@ -4839,7 +4839,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Campos, F. Palacios, T. Economon
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  */
 
 class CTurbSSTSolver: public CTurbSolver {
@@ -4982,7 +4982,7 @@ public:
  * \brief Main class for defining the Euler's adjoint flow solver.
  * \ingroup Euler_Equations
  * \author F. Palacios
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  */
 class CAdjEulerSolver : public CSolver {
 protected:
@@ -5460,7 +5460,7 @@ public:
  * \brief Main class for defining the Navier-Stokes' adjoint flow solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  */
 class CAdjNSSolver : public CAdjEulerSolver {
 public:
@@ -5567,7 +5567,7 @@ public:
  * \brief Main class for defining the adjoint turbulence model solver.
  * \ingroup Turbulence_Model
  * \author F. Palacios, A. Bueno.
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  */
 class CAdjTurbSolver : public CSolver {
 private:
@@ -5713,15 +5713,13 @@ public:
  * \brief Main class for defining the linearized Euler solver.
  * \ingroup Euler_Equations
  * \author F. Palacios
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  */
 class CLinEulerSolver : public CSolver {
 private:
 	su2double DeltaRho_Inf,	/*!< \brief Linearized density variable at the infinity. */
 	DeltaE_Inf,				/*!< \brief Linearized energy at the infinity. */
 	*DeltaVel_Inf;			/*!< \brief Linearized velocity vector at the infinity. */
-	su2double *iPoint_UndLapl,	/*!< \brief Undivided Laplacians for centered scheme. */
-	*jPoint_UndLapl;			/*!< \brief Undivided Laplacians for centered scheme. */
 	su2double *CDeltaDrag_Inv, /*!< \brief Linearized drag coefficient (inviscid contribution) for each boundary. */
 	*CDeltaLift_Inv,		/*!< \brief Linearized lift coefficient (inviscid contribution) for each boundary. */
 	*DeltaForceInviscid;	/*!< \brief Linearized inviscid force for each boundary. */
@@ -5837,20 +5835,14 @@ public:
 /*! \class CPoissonSolver
  *  \brief Main class for defining the poisson potential solver.
  *  \author F. Palacios
- *  \version 4.0.0 "Cardinal"
+ *  \version 4.0.1 "Cardinal"
  *  \date May 3, 2010.
  */
 class CPoissonSolver : public CSolver {
 private:
-	su2double Total_CCharge;			/*!< \brief Total charge coefficient for all the domain. */
-	su2double *Source_Vector;		/*!< \brief Auxiliary vector for storing element source vector. */
-    
-    su2double Gamma;									/*!< \brief Fluid's Gamma constant (ratio of specific heats). */
-	su2double Gamma_Minus_One;				/*!< \brief Fluids's Gamma - 1.0  . */
-    
-    su2double **StiffMatrix_Elem,			/*!< \brief Auxiliary matrices for storing point to point Stiffness Matrices. */
-	**StiffMatrix_Node;							/*!< \brief Auxiliary matrices for storing point to point Stiffness Matrices. */
-    
+	su2double *Source_Vector;		  /*!< \brief Auxiliary vector for storing element source vector. */
+  su2double **StiffMatrix_Elem; /*!< \brief Auxiliary matrices for storing point to point Stiffness Matrices. */
+	su2double **StiffMatrix_Node;	/*!< \brief Auxiliary matrices for storing point to point Stiffness Matrices. */
     
 public:
     
@@ -5973,7 +5965,7 @@ public:
 /*! \class CWaveSolver
  *  \brief Main class for defining the wave solver.
  *  \author F. Palacios
- *  \version 4.0.0 "Cardinal"
+ *  \version 4.0.1 "Cardinal"
  *  \date May 3, 2010.
  */
 class CWaveSolver : public CSolver {
@@ -6128,20 +6120,19 @@ public:
 /*! \class CHeatSolver
  *  \brief Main class for defining the heat solver.
  *  \author F. Palacios
- *  \version 4.0.0 "Cardinal"
+ *  \version 4.0.1 "Cardinal"
  *  \date May 3, 2010.
  */
 class CHeatSolver : public CSolver {
 private:
-	su2double *CHeat;	/*!< \brief Heat strength for each boundary. */
-	su2double AllBound_CHeat;	/*!< \brief Total Heat strength for all the boundaries. */
+	su2double *CHeat;	     /*!< \brief Heat strength for each boundary. */
 	su2double Total_CHeat; /*!< \brief Total Heat strength for all the boundaries. */
     
   CSysMatrix StiffMatrixSpace; /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations. */
-	CSysMatrix StiffMatrixTime;	/*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations. */
+	CSysMatrix StiffMatrixTime;	 /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations. */
     
-  su2double **StiffMatrix_Elem,			/*!< \brief Auxiliary matrices for storing point to point Stiffness Matrices. */
-	**StiffMatrix_Node;							/*!< \brief Auxiliary matrices for storing point to point Stiffness Matrices. */
+  su2double **StiffMatrix_Elem; /*!< \brief Auxiliary matrices for storing point to point Stiffness Matrices. */
+	su2double **StiffMatrix_Node;	 /*!< \brief Auxiliary matrices for storing point to point Stiffness Matrices. */
     
 public:
     
@@ -6248,7 +6239,7 @@ public:
 /*! \class CFEASolver
  *  \brief Main class for defining the FEA solver.
  *  \author F. Palacios, R. Sanchez.
- *  \version 4.0.0 "Cardinal"
+ *  \version 4.0.1 "Cardinal"
  *  \date May 3, 2010.
  */
 class CFEASolver : public CSolver {
@@ -7096,7 +7087,7 @@ public:
  * \brief Main class for defining the level set solver.
  * \ingroup LevelSet_Model
  * \author F. Palacios
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  */
 class CAdjLevelSetSolver : public CSolver {
 protected:
@@ -7280,7 +7271,7 @@ public:
  * \brief Main class for defining the template model solver.
  * \ingroup Template_Flow_Equation
  * \author F. Palacios
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  */
 class CTemplateSolver : public CSolver {
 private:
@@ -8761,7 +8752,7 @@ public:
  * \brief Main class for defining the discrete adjoint solver.
  * \ingroup Discrete_Adjoint
  * \author T. Albring
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  */
 class CDiscAdjSolver : public CSolver {
 private:

@@ -3,7 +3,7 @@
 # \file Makefile.am
 # \brief Makefile for SU2_CFD
 # \author M. Colonno, T. Economon, F. Palacios
-# \version 4.0.0 "Cardinal"
+# \version 4.0.1 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -45,7 +45,7 @@ bin_PROGRAMS += ../bin/SU2_CFD_DIRECTDIFF
 endif
 
 if BUILD_REVERSE
-bin_PROGRAMS += ../bin/SU2_CFD_REVERSE
+bin_PROGRAMS += ../bin/SU2_CFD_AD
 endif
 
 
@@ -204,7 +204,7 @@ ___bin_SU2_CFD_DIRECTDIFF_LDADD = @DIRECTDIFF_LIBS@ ../../Common/lib/libSU2_DIRE
 endif
 
 if BUILD_REVERSE
-___bin_SU2_CFD_REVERSE_SOURCES = $(su2_cfd_sources)
-___bin_SU2_CFD_REVERSE_CXXFLAGS = @REVERSE_CXX@ ${su2_cfd_cxx_flags}
-___bin_SU2_CFD_REVERSE_LDADD = @REVERSE_LIBS@ ../../Common/lib/libSU2_REVERSE.a ${su2_cfd_ldadd}
+___bin_SU2_CFD_AD_SOURCES = $(su2_cfd_sources)
+___bin_SU2_CFD_AD_CXXFLAGS = @REVERSE_CXX@ ${su2_cfd_cxx_flags}
+___bin_SU2_CFD_AD_LDADD = @REVERSE_LIBS@ ../../Common/lib/libSU2_AD.a ${su2_cfd_ldadd}
 endif

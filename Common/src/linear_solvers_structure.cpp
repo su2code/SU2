@@ -2,7 +2,7 @@
  * \file linear_solvers_structure.cpp
  * \brief Main classes required for solving linear systems of equations
  * \author J. Hicken, F. Palacios, T. Economon
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -256,7 +256,7 @@ int rank = 0;
   }
   
   /*---  Loop over all search directions ---*/
-  for (i = 0; i < m; i++) {
+  for (i = 0; i < (int)m; i++) {
     
     /*--- Apply matrix to p to build Krylov subspace ---*/
     mat_vec(p, A_p);
@@ -400,7 +400,7 @@ int rank = 0;
   
   /*---  Loop over all search directions ---*/
   
-  for (i = 0; i < m; i++) {
+  for (i = 0; i < (int)m; i++) {
     
     /*---  Check if solution has converged ---*/
     
@@ -526,7 +526,7 @@ unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x,
 	
   /*---  Loop over all search directions ---*/
   
-  for (i = 0; i < m; i++) {
+  for (i = 0; i < (int)m; i++) {
 		
 		/*--- Compute rho_prime ---*/
     

@@ -3,7 +3,7 @@
  * \brief Headers of the mpi interface for generalized datatypes.
  *        The subroutines and functions are in the <i>mpi_structure.cpp</i> file.
  * \author T. Albring
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -62,7 +62,7 @@ typedef CMPIWrapper SU2_MPI;
  * \brief Class for defining the MPI wrapper routines; this class features as a base class for
  * MPI interfaces for non-primitive dataypes e.g. used by AD, complex etc.
  * \author T. Albring
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  */
 
 class CMPIWrapper {
@@ -103,11 +103,11 @@ public:
   static void Gather(void *sendbuf, int sendcnt,MPI_Datatype sendtype,
                      void *recvbuf, int recvcnt, MPI_Datatype recvtype, int root, MPI_Comm comm);
 
-  static void Allgather(void *sendbuf, int sendcnt, MPI_Datatype sendtype,
-                        void *recvbuf, int recvcnt, MPI_Datatype recvtype, MPI_Comm comm);
-
   static void Scatter(void *sendbuf, int sendcnt,MPI_Datatype sendtype,
                       void *recvbuf, int recvcnt, MPI_Datatype recvtype, int root, MPI_Comm comm);
+
+  static void Allgather(void *sendbuf, int sendcnt, MPI_Datatype sendtype,
+                        void *recvbuf, int recvcnt, MPI_Datatype recvtype, MPI_Comm comm);
 
   static void Sendrecv(void *sendbuf, int sendcnt, MPI_Datatype sendtype,
                        int dest, int sendtag, void *recvbuf, int recvcnt,
@@ -123,7 +123,7 @@ protected:
  * \brief Class for defining the MPI wrapper routines for the simplest non-primitive data where a
  * auxiliary variable is attached to each primary value.
  * \author T. Albring
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  */
 #if defined COMPLEX_TYPE || \
     defined ADOLC_FORWARD_TYPE || \
@@ -164,6 +164,9 @@ public:
 
   static void Gather(void *sendbuf, int sendcnt,MPI_Datatype sendtype,
                      void *recvbuf, int recvcnt, MPI_Datatype recvtype, int root, MPI_Comm comm);
+
+  static void Scatter(void *sendbuf, int sendcnt,MPI_Datatype sendtype,
+                      void *recvbuf, int recvcnt, MPI_Datatype recvtype, int root, MPI_Comm comm);
 
   static void Allgather(void *sendbuf, int sendcnt, MPI_Datatype sendtype,
                         void *recvbuf, int recvcnt, MPI_Datatype recvtype, MPI_Comm comm);
@@ -209,7 +212,7 @@ private:
  * \class CAdjointMPIWrapper
  * \brief Adjoint MPI wrapper functions.
  * \author T. Albring
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  */
 
 class CAdjointMPIWrapper: public CMPIWrapper {
@@ -249,6 +252,9 @@ public:
 
   static void Gather(void *sendbuf, int sendcnt,MPI_Datatype sendtype,
                      void *recvbuf, int recvcnt, MPI_Datatype recvtype, int root, MPI_Comm comm);
+
+  static void Scatter(void *sendbuf, int sendcnt,MPI_Datatype sendtype,
+                      void *recvbuf, int recvcnt, MPI_Datatype recvtype, int root, MPI_Comm comm);
 
   static void Allgather(void *sendbuf, int sendcnt, MPI_Datatype sendtype,
                         void *recvbuf, int recvcnt, MPI_Datatype recvtype, MPI_Comm comm);
