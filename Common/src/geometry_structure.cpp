@@ -714,7 +714,7 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
         Segment[0] = Xcoord[jVertex] - Xcoord[iVertex];
         Segment[1] = Ycoord[jVertex] - Ycoord[iVertex];
         Segment[2] = Zcoord[jVertex] - Zcoord[iVertex];
-        Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
+        Dist_Value = (pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
         if (Dist_Value < 1E-6) {
           Duplicate.push_back (jVertex);
         }
@@ -1236,8 +1236,6 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
           Dist += (Coord[iDim]-Buffer_Receive_Coord[(iProcessor*MaxLocalVertex+iVertex)*nDim+iDim])*
           (Coord[iDim]-Buffer_Receive_Coord[(iProcessor*MaxLocalVertex+iVertex)*nDim+iDim]);
         }
-        if (Dist!=0.0) Dist = sqrt(Dist);
-        else Dist = 0.0;
         if (Dist < MinDist) MinDist = Dist;
       }
     }
@@ -9509,8 +9507,8 @@ void CPhysicalGeometry::MatchInterface(CConfig *config) {
               for (jVertex = 0; jVertex < nVertex[jMarker]; jVertex++) {
                 jPoint = vertex[jMarker][jVertex]->GetNode();
                 Coord_j = node[jPoint]->GetCoord();
-                if (nDim == 2) dist = sqrt(pow(Coord_j[0]-Coord_i[0],2.0) + pow(Coord_j[1]-Coord_i[1],2.0));
-                if (nDim == 3) dist = sqrt(pow(Coord_j[0]-Coord_i[0],2.0) + pow(Coord_j[1]-Coord_i[1],2.0) + pow(Coord_j[2]-Coord_i[2],2.0));
+                if (nDim == 2) dist = (pow(Coord_j[0]-Coord_i[0],2.0) + pow(Coord_j[1]-Coord_i[1],2.0));
+                if (nDim == 3) dist = (pow(Coord_j[0]-Coord_i[0],2.0) + pow(Coord_j[1]-Coord_i[1],2.0) + pow(Coord_j[2]-Coord_i[2],2.0));
                 if (dist < mindist) {mindist = dist; pPoint = jPoint;}
               }
           maxdist = max(maxdist, mindist);
@@ -9621,7 +9619,7 @@ void CPhysicalGeometry::MatchInterface(CConfig *config) {
                 dist = 0.0; for (iDim = 0; iDim < nDim; iDim++) {
                   Coord_j[iDim] = Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_Interface+jVertex)*nDim+iDim];
                   dist += pow(Coord_j[iDim]-Coord_i[iDim],2.0);
-                } dist = sqrt(dist);
+                }
                 
                 if (((dist < mindist) && (iProcessor != rank)) ||
                     ((dist < mindist) && (iProcessor == rank) && (jPoint != iPoint))) {
@@ -9695,8 +9693,8 @@ void CPhysicalGeometry::MatchNearField(CConfig *config) {
               for (jVertex = 0; jVertex < nVertex[jMarker]; jVertex++) {
                 jPoint = vertex[jMarker][jVertex]->GetNode();
                 Coord_j = node[jPoint]->GetCoord();
-                if (nDim == 2) dist = sqrt(pow(Coord_j[0]-Coord_i[0],2.0) + pow(Coord_j[1]-Coord_i[1],2.0));
-                if (nDim == 3) dist = sqrt(pow(Coord_j[0]-Coord_i[0],2.0) + pow(Coord_j[1]-Coord_i[1],2.0) + pow(Coord_j[2]-Coord_i[2],2.0));
+                if (nDim == 2) dist = (pow(Coord_j[0]-Coord_i[0],2.0) + pow(Coord_j[1]-Coord_i[1],2.0));
+                if (nDim == 3) dist = (pow(Coord_j[0]-Coord_i[0],2.0) + pow(Coord_j[1]-Coord_i[1],2.0) + pow(Coord_j[2]-Coord_i[2],2.0));
                 if (dist < mindist) { mindist = dist; pPoint = jPoint; }
               }
           maxdist = max(maxdist, mindist);
@@ -9809,7 +9807,7 @@ void CPhysicalGeometry::MatchNearField(CConfig *config) {
                 dist = 0.0; for (iDim = 0; iDim < nDim; iDim++) {
                   Coord_j[iDim] = Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_NearField+jVertex)*nDim+iDim];
                   dist += pow(Coord_j[iDim]-Coord_i[iDim],2.0);
-                } dist = sqrt(dist);
+                }
                 
                 if (((dist < mindist) && (iProcessor != rank)) ||
                     ((dist < mindist) && (iProcessor == rank) && (jPoint != iPoint))) {
@@ -9986,8 +9984,8 @@ void CPhysicalGeometry::MatchActuator_Disk(CConfig *config) {
                     Coord_j[iDim] = Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_ActDisk+jVertex)*nDim+iDim];
                     dist += pow(Coord_j[iDim]-Coord_i[iDim], 2.0);
                   }
-                  dist = sqrt(dist);
                   
+
                   if (dist < mindist) {
                     mindist = dist; pProcessor = iProcessor; pPoint = jPoint;
                     if (dist == 0.0) break;
@@ -10060,8 +10058,8 @@ void CPhysicalGeometry::MatchZone(CConfig *config, CGeometry *geometry_donor, CC
         for (jVertex = 0; jVertex < geometry_donor->GetnVertex(jMarker); jVertex++) {
           jPoint = geometry_donor->vertex[jMarker][jVertex]->GetNode();
           Coord_j = geometry_donor->node[jPoint]->GetCoord();
-          if (nDim == 2) dist = sqrt(pow(Coord_j[0]-Coord_i[0],2.0) + pow(Coord_j[1]-Coord_i[1],2.0));
-          if (nDim == 3) dist = sqrt(pow(Coord_j[0]-Coord_i[0],2.0) + pow(Coord_j[1]-Coord_i[1],2.0) + pow(Coord_j[2]-Coord_i[2],2.0));
+          if (nDim == 2) dist = (pow(Coord_j[0]-Coord_i[0],2.0) + pow(Coord_j[1]-Coord_i[1],2.0));
+          if (nDim == 3) dist = (pow(Coord_j[0]-Coord_i[0],2.0) + pow(Coord_j[1]-Coord_i[1],2.0) + pow(Coord_j[2]-Coord_i[2],2.0));
           if (dist < mindist) { mindist = dist; pPoint = jPoint; }
         }
       
@@ -10154,7 +10152,7 @@ void CPhysicalGeometry::MatchZone(CConfig *config, CGeometry *geometry_donor, CC
             dist = 0.0; for (iDim = 0; iDim < nDim; iDim++) {
               Coord_j[iDim] = Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_Zone+jVertex)*nDim+iDim];
               dist += pow(Coord_j[iDim]-Coord_i[iDim],2.0);
-            } dist = sqrt(dist);
+            }
             
             if (((dist < mindist) && (iProcessor != rank)) ||
                 ((dist < mindist) && (iProcessor == rank) && (jPoint != iPoint))) {
@@ -11861,8 +11859,8 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
           for (iDim = 0; iDim < nDim; iDim++) {
             dist += (Coord_j[iDim]-rotCoord[iDim])*(Coord_j[iDim]-rotCoord[iDim]);
           }
-          dist = sqrt(dist);
           
+
           /*---  Store vertex information if this is the closest
            point found thus far. ---*/
           if (dist < mindist) { mindist = dist; pPoint = jPoint; }
@@ -12492,7 +12490,7 @@ su2double CPhysicalGeometry::Compute_MaxThickness(su2double *Plane_P0, su2double
   
   MaxDistance = 0.0; Trailing_Point = 0; Leading_Point = 0;
   for (iVertex = 1; iVertex < Xcoord_Airfoil.size(); iVertex++) {
-    Distance = sqrt(pow(Xcoord_Airfoil[iVertex] - Xcoord_Airfoil[Trailing_Point], 2.0) +
+    Distance = (pow(Xcoord_Airfoil[iVertex] - Xcoord_Airfoil[Trailing_Point], 2.0) +
                     pow(Ycoord_Airfoil[iVertex] - Ycoord_Airfoil[Trailing_Point], 2.0) +
                     pow(Zcoord_Airfoil[iVertex] - Zcoord_Airfoil[Trailing_Point], 2.0));
     
@@ -12599,7 +12597,7 @@ su2double CPhysicalGeometry::Compute_AoA(su2double *Plane_P0, su2double *Plane_N
   /*--- Find the leading and trailing edges and compute the angle of attack ---*/
   MaxDistance = 0.0; Trailing_Point = 0; Leading_Point = 0;
   for (iVertex = 1; iVertex < Xcoord_Airfoil.size(); iVertex++) {
-    Distance = sqrt(pow(Xcoord_Airfoil[iVertex] - Xcoord_Airfoil[Trailing_Point], 2.0) +
+    Distance = (pow(Xcoord_Airfoil[iVertex] - Xcoord_Airfoil[Trailing_Point], 2.0) +
                     pow(Ycoord_Airfoil[iVertex] - Ycoord_Airfoil[Trailing_Point], 2.0) +
                     pow(Zcoord_Airfoil[iVertex] - Zcoord_Airfoil[Trailing_Point], 2.0));
     
@@ -12620,7 +12618,7 @@ su2double CPhysicalGeometry::Compute_Chord(su2double *Plane_P0, su2double *Plane
   MaxDistance = 0.0; Trailing_Point = 0;
   for (iVertex = 1; iVertex < Xcoord_Airfoil.size(); iVertex++) {
     
-    Distance = sqrt(pow(Xcoord_Airfoil[iVertex] - Xcoord_Airfoil[Trailing_Point], 2.0) +
+    Distance = (pow(Xcoord_Airfoil[iVertex] - Xcoord_Airfoil[Trailing_Point], 2.0) +
                     pow(Ycoord_Airfoil[iVertex] - Ycoord_Airfoil[Trailing_Point], 2.0) +
                     pow(Zcoord_Airfoil[iVertex] - Zcoord_Airfoil[Trailing_Point], 2.0));
     
@@ -12642,7 +12640,7 @@ su2double CPhysicalGeometry::Compute_Thickness(su2double *Plane_P0, su2double *P
   
   MaxDistance = 0.0; Trailing_Point = 0; Leading_Point = 0;
   for (iVertex = 1; iVertex < Xcoord_Airfoil.size(); iVertex++) {
-    Distance = sqrt(pow(Xcoord_Airfoil[iVertex] - Xcoord_Airfoil[Trailing_Point], 2.0) +
+    Distance = (pow(Xcoord_Airfoil[iVertex] - Xcoord_Airfoil[Trailing_Point], 2.0) +
                     pow(Ycoord_Airfoil[iVertex] - Ycoord_Airfoil[Trailing_Point], 2.0) +
                     pow(Zcoord_Airfoil[iVertex] - Zcoord_Airfoil[Trailing_Point], 2.0));
     
@@ -12772,7 +12770,7 @@ su2double CPhysicalGeometry::Compute_Area(su2double *Plane_P0, su2double *Plane_
   
   MaxDistance = 0.0; Trailing_Point = 0; Leading_Point = 0;
   for (iVertex = 1; iVertex < Xcoord_Airfoil.size(); iVertex++) {
-    Distance = sqrt(pow(Xcoord_Airfoil[iVertex] - Xcoord_Airfoil[Trailing_Point], 2.0) +
+    Distance = (pow(Xcoord_Airfoil[iVertex] - Xcoord_Airfoil[Trailing_Point], 2.0) +
                     pow(Ycoord_Airfoil[iVertex] - Ycoord_Airfoil[Trailing_Point], 2.0) +
                     pow(Zcoord_Airfoil[iVertex] - Zcoord_Airfoil[Trailing_Point], 2.0));
     
@@ -13693,11 +13691,9 @@ bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, short mark
     else { agglomerate_CV = true; }
     
   }
-  
-  return agglomerate_CV;
-  
   delete [] copy_marker;
-  
+  return agglomerate_CV;
+
 }
 
 
