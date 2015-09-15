@@ -2,7 +2,7 @@
  * \file mpi_structure.cpp
  * \brief Main subroutines for the mpi structures.
  * \author T. Albring
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -62,7 +62,7 @@ void CAuxMPIWrapper::Isend(void *buf, int count, MPI_Datatype datatype,
     /* --- Extract real value and imag value --- */
 
     for (iVal = 0; iVal < count; iVal++) {
-      ValueBuffer[iVal] = SU2_TYPE::GetPrimary(SendBuffer[iVal]);
+      ValueBuffer[iVal] = SU2_TYPE::GetValue(SendBuffer[iVal]);
       AuxBuffer[iVal]   = SU2_TYPE::GetSecondary(SendBuffer[iVal]);
     }
 
@@ -164,7 +164,7 @@ void CAuxMPIWrapper::FinalizeCommunication(
     break;
   case IRECV:
     for (iVal = 0; iVal < count; iVal++) {
-      SU2_TYPE::SetPrimary(Buffer[iVal], ValueBuffer[iVal]);
+      SU2_TYPE::SetValue(Buffer[iVal], ValueBuffer[iVal]);
       SU2_TYPE::SetSecondary(Buffer[iVal], AuxBuffer[iVal]);
     }
     break;
@@ -225,7 +225,7 @@ void CAuxMPIWrapper::Send(void *buf, int count, MPI_Datatype datatype,
     unsigned long iVal;
 
     for (iVal = 0; iVal < count; iVal++) {
-      ValueBuffer[iVal] = SU2_TYPE::GetPrimary(SendBuffer[iVal]);
+      ValueBuffer[iVal] = SU2_TYPE::GetValue(SendBuffer[iVal]);
       AuxBuffer[iVal]   = SU2_TYPE::GetSecondary(SendBuffer[iVal]);
     }
 
@@ -252,7 +252,7 @@ void CAuxMPIWrapper::Recv(void *buf, int count, MPI_Datatype datatype,
     MPI_Recv(AuxBuffer,count,datatype,dest,tag+100,comm,status);
 
     for (iVal = 0; iVal < count; iVal++) {
-      SU2_TYPE::SetPrimary(RecvBuffer[iVal], ValueBuffer[iVal]);
+      SU2_TYPE::SetValue(RecvBuffer[iVal], ValueBuffer[iVal]);
       SU2_TYPE::SetSecondary(RecvBuffer[iVal], AuxBuffer[iVal]);
     }
 
@@ -274,7 +274,7 @@ void CAuxMPIWrapper::Bsend(void *buf, int count, MPI_Datatype datatype,
     unsigned long iVal;
 
     for (iVal = 0; iVal < count; iVal++) {
-      ValueBuffer[iVal] = SU2_TYPE::GetPrimary(SendBuffer[iVal]);
+      ValueBuffer[iVal] = SU2_TYPE::GetValue(SendBuffer[iVal]);
       AuxBuffer[iVal]   = SU2_TYPE::GetSecondary(SendBuffer[iVal]);
     }
 
@@ -311,7 +311,7 @@ void CAuxMPIWrapper::Reduce(void *sendbuf, void *recvbuf, int count,
       }
 
       for (iVal = 0; iVal < count; iVal++) {
-        SendValueBuffer[iVal] = SU2_TYPE::GetPrimary(SendBuffer[iVal]);
+        SendValueBuffer[iVal] = SU2_TYPE::GetValue(SendBuffer[iVal]);
         SendAuxBuffer[iVal]   = SU2_TYPE::GetSecondary(SendBuffer[iVal]);
       }
 
@@ -320,7 +320,7 @@ void CAuxMPIWrapper::Reduce(void *sendbuf, void *recvbuf, int count,
                  comm);
       if (rank == root) {
         for (iVal = 0; iVal < count; iVal++) {
-            SU2_TYPE::SetPrimary(RecvBuffer[iVal], RecvValueBuffer[iVal]);
+            SU2_TYPE::SetValue(RecvBuffer[iVal], RecvValueBuffer[iVal]);
             SU2_TYPE::SetSecondary(RecvBuffer[iVal], RecvAuxBuffer[iVal]);
         }
       }
@@ -337,7 +337,7 @@ void CAuxMPIWrapper::Reduce(void *sendbuf, void *recvbuf, int count,
       double temp = 0;
 
       for (iVal = 0; iVal < count; iVal++) {
-        SendValLoc[iVal].value = SU2_TYPE::GetPrimary(SendBuffer[iVal]);
+        SendValLoc[iVal].value = SU2_TYPE::GetValue(SendBuffer[iVal]);
         SendValLoc[iVal].rank = rank;
       }
 
@@ -356,7 +356,7 @@ void CAuxMPIWrapper::Reduce(void *sendbuf, void *recvbuf, int count,
           MPI_Recv(&temp,1, MPI_DOUBLE, RecvValLoc[iVal].rank, RecvValLoc[iVal].rank,
                    comm,
                    &status);
-          SU2_TYPE::SetPrimary(RecvBuffer[iVal], RecvValLoc[iVal].value);
+          SU2_TYPE::SetValue(RecvBuffer[iVal], RecvValLoc[iVal].value);
           SU2_TYPE::SetSecondary(RecvBuffer[iVal], temp);
         }
       }
@@ -399,7 +399,7 @@ void CAuxMPIWrapper::Gather(void *sendbuf, int sendcnt,
     su2double *RecvBuffer = static_cast< su2double* >(recvbuf);
 
     for (iVal = 0; iVal < sendcnt; iVal++) {
-      SendValueBuffer[iVal] = SU2_TYPE::GetPrimary(SendBuffer[iVal]);
+      SendValueBuffer[iVal] = SU2_TYPE::GetValue(SendBuffer[iVal]);
       SendAuxBuffer[iVal]   = SU2_TYPE::GetSecondary(SendBuffer[iVal]);
     }
 
@@ -410,7 +410,7 @@ void CAuxMPIWrapper::Gather(void *sendbuf, int sendcnt,
 
     if (rank == root) {
       for (iVal = 0; iVal < recvcnt*size; iVal++) {
-        SU2_TYPE::SetPrimary(RecvBuffer[iVal],  RecvValueBuffer[iVal]);
+        SU2_TYPE::SetValue(RecvBuffer[iVal],  RecvValueBuffer[iVal]);
         SU2_TYPE::SetSecondary(RecvBuffer[iVal], RecvAuxBuffer[iVal]);
       }
       delete [] RecvValueBuffer;
@@ -419,6 +419,59 @@ void CAuxMPIWrapper::Gather(void *sendbuf, int sendcnt,
 
     delete [] SendValueBuffer;
     delete [] SendAuxBuffer;
+  }
+}
+
+void CAuxMPIWrapper::Scatter(void *sendbuf, int sendcnt,
+                            MPI_Datatype sendtype, void *recvbuf, int recvcnt, MPI_Datatype recvtype,
+                            int root, MPI_Comm comm) {
+  if (sendtype != MPI_DOUBLE) {
+    MPI_Scatter(sendbuf,sendcnt,sendtype, recvbuf, recvcnt, recvtype,root,comm);
+  } else {
+
+    double* SendValueBuffer = NULL;
+    double* SendAuxBuffer   = NULL;
+
+    unsigned long iVal;
+
+    int rank, size;
+    MPI_Comm_rank(comm, &rank);
+    MPI_Comm_size(comm, &size);
+
+    double *RecvValueBuffer, *RecvAuxBuffer;
+
+    RecvValueBuffer = new double[recvcnt*size];
+    RecvAuxBuffer   = new double[recvcnt*size];
+
+    su2double *SendBuffer =  static_cast< su2double* >(sendbuf);
+    su2double *RecvBuffer =  static_cast< su2double* >(recvbuf);
+
+    if (rank == root){
+      double* SendValueBuffer = new double[sendcnt];
+      double* SendAuxuffer    = new double[sendcnt];
+
+      for (iVal = 0; iVal < sendcnt; iVal++) {
+        SendValueBuffer[iVal] = SU2_TYPE::GetValue(SendBuffer[iVal]);
+        SendAuxBuffer[iVal]   = SU2_TYPE::GetSecondary(SendBuffer[iVal]);
+      }
+    }
+
+    MPI_Scatter(SendValueBuffer, sendcnt, sendtype, RecvValueBuffer, recvcnt,
+               recvtype, root, comm);
+    MPI_Scatter(SendAuxBuffer, sendcnt, sendtype, RecvAuxBuffer, recvcnt,
+               recvtype, root, comm);
+
+    for (iVal = 0; iVal < recvcnt*size; iVal++) {
+      SU2_TYPE::SetValue(RecvBuffer[iVal],  RecvValueBuffer[iVal]);
+      SU2_TYPE::SetSecondary(RecvBuffer[iVal], RecvAuxBuffer[iVal]);
+    }
+    delete [] RecvValueBuffer;
+    delete [] RecvAuxBuffer;
+
+    if (rank == root){
+      delete [] SendValueBuffer;
+      delete [] SendAuxBuffer;
+    }
   }
 }
 
@@ -438,7 +491,7 @@ void CAuxMPIWrapper::Bcast(void *buf, int count, MPI_Datatype datatype,
 
     if (rank == root) {
       for (iVal = 0; iVal < count; iVal++) {
-        ValueBuffer[iVal] = SU2_TYPE::GetPrimary(Buffer[iVal]);
+        ValueBuffer[iVal] = SU2_TYPE::GetValue(Buffer[iVal]);
         AuxBuffer[iVal]   = SU2_TYPE::GetSecondary(Buffer[iVal]);
       }
     }
@@ -448,7 +501,7 @@ void CAuxMPIWrapper::Bcast(void *buf, int count, MPI_Datatype datatype,
 
     if (rank != root) {
       for (iVal = 0; iVal < count; iVal++) {
-        SU2_TYPE::SetPrimary(Buffer[iVal], ValueBuffer[iVal]);
+        SU2_TYPE::SetValue(Buffer[iVal], ValueBuffer[iVal]);
         SU2_TYPE::SetSecondary(Buffer[iVal], AuxBuffer[iVal]);
       }
     }

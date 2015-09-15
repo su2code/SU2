@@ -2,7 +2,7 @@
  * \file adolc_reverse_structure.inl
  * \brief Inline subroutines for <i>datatype_structure.hpp<i>.
  * \author T. Albring
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -49,9 +49,9 @@ namespace AD{
 
 }
 namespace SU2_TYPE{
-  inline void SetPrimary(su2double& data, const double &val){data = val;}
+  inline void SetValue(su2double& data, const double &val){data = val;}
 
-  inline double GetPrimary(const su2double& data){return data.value();}
+  inline double GetValue(const su2double& data){return data.value();}
 
   inline void SetSecondary(su2double& data, const double &val){AD::seedVector.push_back(val);}
 

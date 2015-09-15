@@ -2,7 +2,7 @@
  * \file variable_structure.inl
  * \brief In-Line subroutines of the <i>variable_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -1253,7 +1253,7 @@ inline void CVariable::RegisterSolution_time_n1(){
 
 inline void CVariable::SetAdjointSolution(su2double *adj_sol){
     for (unsigned short iVar = 0; iVar < nVar; iVar++)
-        SU2_TYPE::SetDerivative(Solution[iVar], SU2_TYPE::GetPrimary(adj_sol[iVar]));
+        SU2_TYPE::SetDerivative(Solution[iVar], SU2_TYPE::GetValue(adj_sol[iVar]));
 }
 
 
@@ -1265,7 +1265,7 @@ inline void CVariable::GetAdjointSolution(su2double *adj_sol){
 
 inline void CVariable::SetAdjointSolution_time_n(su2double *adj_sol){
   for (unsigned short iVar = 0; iVar < nVar; iVar++)
-      SU2_TYPE::SetDerivative(Solution_time_n[iVar], SU2_TYPE::GetPrimary(adj_sol[iVar]));
+      SU2_TYPE::SetDerivative(Solution_time_n[iVar], SU2_TYPE::GetValue(adj_sol[iVar]));
 }
 
 
@@ -1277,7 +1277,7 @@ inline void CVariable::GetAdjointSolution_time_n(su2double *adj_sol){
 
 inline void CVariable::SetAdjointSolution_time_n1(su2double *adj_sol){
   for (unsigned short iVar = 0; iVar < nVar; iVar++)
-      SU2_TYPE::SetDerivative(Solution_time_n1[iVar], SU2_TYPE::GetPrimary(adj_sol[iVar]));
+      SU2_TYPE::SetDerivative(Solution_time_n1[iVar], SU2_TYPE::GetValue(adj_sol[iVar]));
 }
 
 

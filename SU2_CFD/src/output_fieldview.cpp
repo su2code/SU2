@@ -2,7 +2,7 @@
  * \file output_fieldview.cpp
  * \brief Main subroutines for output solver information.
  * \author F. Palacios, T. Economon, M. Colonno
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -40,6 +40,8 @@ void COutput::SetFieldViewASCII(CConfig *config, CGeometry *geometry, unsigned s
   
   unsigned long iExtIter = config->GetExtIter();
   bool adjoint = config->GetAdjoint();
+  bool disc_adjoint = config->GetDiscrete_Adjoint();
+
   bool grid_movement  = config->GetGrid_Movement();
 
   char cstr[200], buffer[50];
@@ -47,7 +49,7 @@ void COutput::SetFieldViewASCII(CConfig *config, CGeometry *geometry, unsigned s
   
   /*--- Write file name with extension ---*/
   
-  if (adjoint) filename = config->GetAdj_FileName();
+  if (adjoint || disc_adjoint) filename = config->GetAdj_FileName();
   else filename = config->GetFlow_FileName();
   
   if (Kind_Solver == LINEAR_ELASTICITY)
@@ -230,6 +232,13 @@ void COutput::SetFieldViewASCII(CConfig *config, CGeometry *geometry, unsigned s
         ( Kind_Solver == ADJ_NAVIER_STOKES      ) ||
         ( Kind_Solver == ADJ_RANS               ) ) {
       FieldView_File << "Surface_Sensitivity\nSolution_Sensor" << endl;
+    }
+
+    if (( Kind_Solver == DISC_ADJ_EULER              ) ||
+        ( Kind_Solver == DISC_ADJ_NAVIER_STOKES      ) ||
+        ( Kind_Solver == DISC_ADJ_RANS               ) ) {
+      if (nDim == 2) FieldView_File << "Surface_Sensitivity\nSensitivity_x\nSensitivity_y" << endl;
+      else FieldView_File << "Surface_Sensitivity\nSensitivity_x\nSensitivity_y\nSensitivity_z" << endl;
     }
     
     /*--- SU2 does not generate boundary variables ---*/
@@ -476,13 +485,14 @@ void COutput::SetFieldViewBinary(CConfig *config, CGeometry *geometry, unsigned 
   unsigned long iPoint, iElem, iNode, nbfaces;
   unsigned long iExtIter = config->GetExtIter();
   bool adjoint = config->GetAdjoint();
+  bool disc_adjoint = config->GetDiscrete_Adjoint();
   
   char cstr[200], buffer[50];
   string filename;
   
   /*--- Write file name with extension ---*/
   
-  if (adjoint) filename = config->GetAdj_FileName();
+  if (adjoint || disc_adjoint) filename = config->GetAdj_FileName();
   else filename = config->GetFlow_FileName();
   
   if (Kind_Solver == LINEAR_ELASTICITY)

@@ -2,7 +2,7 @@
  * \file primitive_structure.inl
  * \brief Inline subroutines for <i>datatype_structure.hpp<i>.
  * \author T. Albring
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -30,9 +30,9 @@
  */
 #pragma once
 namespace SU2_TYPE{
-  inline void SetPrimary(double& data, const double &val){data = val;}
+  inline void SetValue(double& data, const double &val){data = val;}
 
-  inline double GetPrimary(const double& data){ return data;}
+  inline double GetValue(const double& data){ return data;}
 
   inline void SetSecondary(double& data, const double &val){}
 

@@ -9,10 +9,7 @@ compiler:
 notifications:
     email:
         recipients:
-           # - su2code-dev@lists.stanford.edu
-            - economon@stanford.edu
-            - padronas@stanford.edu
-            - tim.albring@scicomp.uni-kl.de
+            - su2code-dev@lists.stanford.edu
   
 branches:
     only:
@@ -20,14 +17,22 @@ branches:
 
 env:
     global:
-        CXXFLAGS=-O3
+        CXXFLAGS="-O3 -Wall -Wextra -Wno-unused-parameter -Wno-empty-body -Wno-format-security"
     matrix:
         # Serial build and test
-        - CONFIGURE_COMMAND="./configure --prefix=$TRAVIS_BUILD_DIR"
+        - CONFIGURE_COMMAND="./preconfigure.py --prefix=$TRAVIS_BUILD_DIR"
           TEST_SCRIPT=serial_regression.py
         # Parallel build and test
-        - CONFIGURE_COMMAND="./configure --enable-mpi --with-cc=mpicc --with-cxx=mpicxx --prefix=$TRAVIS_BUILD_DIR"
+        - CONFIGURE_COMMAND="./preconfigure.py --enable-mpi --with-cc=mpicc --with-cxx=mpicxx --prefix=$TRAVIS_BUILD_DIR"
           TEST_SCRIPT=parallel_regression.py
+        # Serial build and test for AD
+        - CONFIGURE_COMMAND="./preconfigure.py --prefix=$TRAVIS_BUILD_DIR --enable-autodiff"
+          TEST_SCRIPT=serial_regression_AD.py
+        # Parallel build and test for AD
+        - CONFIGURE_COMMAND="./preconfigure.py --enable-mpi --with-cc=mpicc --with-cxx=mpicxx --prefix=$TRAVIS_BUILD_DIR --enable-autodiff"
+          TEST_SCRIPT=parallel_regression_AD.py
+
+
 
 before_install:
     # install the necessary packages
@@ -38,7 +43,7 @@ install:
     - echo $TRAVIS_BUILD_DIR
     - echo $CONFIGURE_COMMAND
     - $CONFIGURE_COMMAND
-    - make -j 8
+    - make -j 4
     - make install
 
     # Add environmental variables according to the configure step
