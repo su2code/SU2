@@ -58,7 +58,7 @@ class CInterpolator {
 protected:
   unsigned int nZone;
   unsigned short nVar;
-  su2double ***Data; /*!\brief container for some data to be interpolated */
+  //su2double ***Data; /*!\brief container for some data to be interpolated */
 public:
   CGeometry*** Geometry; /*! \brief Vector which stores n zones of geometry. */
 
@@ -77,26 +77,26 @@ public:
    */
   virtual ~CInterpolator(void);
 
-  /*!
-     * \brief initialize the Data structure to the appropriate size.
-     */
-  void InitializeData(unsigned int* Zones, unsigned short val_nVar);
-
-  /*!
-   * \brief interpolate Data from one mesh to another.
-   * The data for zone 0 will be overwritten. transfer coefficients must be defined with Set_TransferCoeff.
-   * \param[in] iZone_0 - zone to recieve interpolated data
-   * \param[in] config
-   */
-  void Interpolate_Data(unsigned int iZone,  CConfig **config);
-
-  /*!
-   * \brief interpolate deformations from one mesh to another.
-   * Uses information stored by the geometry class, updates values in VarCoord of iZone_0. Set_TransferCoeff must be run first.
-   * \param[in] iZone_0 - zone to recieve interpolated data.
-   * \param[in] config
-   */
-  void Interpolate_Deformation(unsigned int iZone, CConfig **config);
+//  /*!
+//     * \brief initialize the Data structure to the appropriate size.
+//     */
+//  void InitializeData(unsigned int* Zones, unsigned short val_nVar);
+//
+//  /*!
+//   * \brief interpolate Data from one mesh to another.
+//   * The data for zone 0 will be overwritten. transfer coefficients must be defined with Set_TransferCoeff.
+//   * \param[in] iZone_0 - zone to recieve interpolated data
+//   * \param[in] config
+//   */
+//  void Interpolate_Data(unsigned int iZone,  CConfig **config);
+//
+//  /*!
+//   * \brief interpolate deformations from one mesh to another.
+//   * Uses information stored by the geometry class, updates values in VarCoord of iZone_0. Set_TransferCoeff must be run first.
+//   * \param[in] iZone_0 - zone to recieve interpolated data.
+//   * \param[in] config
+//   */
+//  void Interpolate_Deformation(unsigned int iZone, CConfig **config);
 
   /*!
    * \brief Set up transfer matrix defining relation between two meshes
@@ -106,23 +106,23 @@ public:
   virtual void Set_TransferCoeff(unsigned int* Zones, CConfig **config)=0;
 
 
-  /*!
-   * \brief Return the value of the Data at the specified zone, point, and dimension.
-   * \param[in] iZone - zone index
-   * \param[in] iPoint - point index
-   * \param[in[ iDim - index of the data
-   */
-  su2double GetData(unsigned int iZone, unsigned long iPoint, unsigned short iVar);
-
-  /*!
-   * \brief Return the pointer to the Data vector at the specified zone and point.
-   */
-  su2double* GetData(unsigned int iZone, unsigned long iPoint);
-
-  /*!
-   * \brief Set the value of the Data at the specified zone, point, and index.
-   */
-  void SetData(unsigned int iZone, unsigned long iPoint, unsigned short iVar, su2double val);
+//  /*!
+//   * \brief Return the value of the Data at the specified zone, point, and dimension.
+//   * \param[in] iZone - zone index
+//   * \param[in] iPoint - point index
+//   * \param[in[ iDim - index of the data
+//   */
+//  su2double GetData(unsigned int iZone, unsigned long iPoint, unsigned short iVar);
+//
+//  /*!
+//   * \brief Return the pointer to the Data vector at the specified zone and point.
+//   */
+//  su2double* GetData(unsigned int iZone, unsigned long iPoint);
+//
+//  /*!
+//   * \brief Set the value of the Data at the specified zone, point, and index.
+//   */
+//  void SetData(unsigned int iZone, unsigned long iPoint, unsigned short iVar, su2double val);
 
 
 
@@ -187,6 +187,6 @@ public:
    * \param[in] donor_elem - element index of the element to use for interpolation
    * \param[in[ nDonorPoints - number of donor points in the element.
    */
-  void Isoparameters(su2double* isoparams, unsigned int iZone_0, unsigned short iMarker, unsigned long iVertex, unsigned int nDim, unsigned int iZone_1, unsigned short jMarker, long donor_elem,  unsigned short iFace, unsigned int nDonorPoints);
+  void Isoparameters(su2double* isoparams, unsigned int iZone_0, unsigned short iMarker, unsigned long iVertex, unsigned short nDim, unsigned int iZone_1, unsigned short jMarker, long donor_elem,  unsigned short iFace, unsigned int nDonorPoints);
 
 };
