@@ -772,24 +772,92 @@ void FSI_Disp_Transfer(COutput *output, CIntegration ***integration_container, C
 
 	bool MatchingMesh = config_container[ZONE_0]->GetMatchingMesh();
 
-	/*--- Displacement transfer --  This will have to be modified for non-matching meshes ---*/
+	/*--- Select the transfer method and the appropriate mesh properties (matching or nonmatching mesh) ---*/
 
-	if (MatchingMesh){
-		solver_container[ZONE_0][MESH_0][FLOW_SOL]->SetFlow_Displacement(geometry_container[ZONE_0], grid_movement[ZONE_0],
-																   	   config_container[ZONE_0], config_container[ZONE_1],
-																   	   geometry_container[ZONE_1], solver_container[ZONE_1]);
-	}
-	else{
+    switch (config_container[ZONE_0]->GetKind_TransferMethod()) {
+		case BROADCAST_DATA:
+			if (MatchingMesh){
+				transfer_container[ZONE_1][ZONE_0]->Broadcast_InterfaceData_Matching(solver_container[ZONE_1][MESH_0][FEA_SOL],solver_container[ZONE_0][MESH_0][FLOW_SOL],
+																				   geometry_container[ZONE_1][MESH_0],geometry_container[ZONE_0][MESH_0],
+																				   config_container[ZONE_1], config_container[ZONE_0]);
+				/*--- Set the volume deformation for the fluid zone ---*/
+				grid_movement[ZONE_0]->SetVolume_Deformation(geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], true);
 
-		/*--- Transfer the information scattered (this is, each processor only receives the information it needs ---*/
-		transfer_container[ZONE_1][ZONE_0]->Broadcast_InterfaceData_Matching(solver_container[ZONE_1][MESH_0][FEA_SOL],solver_container[ZONE_0][MESH_0][FLOW_SOL],
-																		   geometry_container[ZONE_1][MESH_0],geometry_container[ZONE_0][MESH_0],
-																		   config_container[ZONE_1], config_container[ZONE_0]);
+			}
+			else {
+				transfer_container[ZONE_1][ZONE_0]->Broadcast_InterfaceData_Interpolate(solver_container[ZONE_1][MESH_0][FEA_SOL],solver_container[ZONE_0][MESH_0][FLOW_SOL],
+																				   geometry_container[ZONE_1][MESH_0],geometry_container[ZONE_0][MESH_0],
+																				   config_container[ZONE_1], config_container[ZONE_0]);
+				/*--- Set the volume deformation for the fluid zone ---*/
+				grid_movement[ZONE_0]->SetVolume_Deformation(geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], true);
 
-		/*--- Set the volume deformation for the fluid zone ---*/
-		grid_movement[ZONE_0]->SetVolume_Deformation(geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], true);
+			}
+			break;
+		case SCATTER_DATA:
+			if (MatchingMesh){
+				transfer_container[ZONE_1][ZONE_0]->Scatter_InterfaceData_Matching(solver_container[ZONE_1][MESH_0][FEA_SOL],solver_container[ZONE_0][MESH_0][FLOW_SOL],
+																				   geometry_container[ZONE_1][MESH_0],geometry_container[ZONE_0][MESH_0],
+																				   config_container[ZONE_1], config_container[ZONE_0]);
+				/*--- Set the volume deformation for the fluid zone ---*/
+				grid_movement[ZONE_0]->SetVolume_Deformation(geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], true);
+			}
+			else {
+				transfer_container[ZONE_1][ZONE_0]->Scatter_InterfaceData_Interpolate(solver_container[ZONE_1][MESH_0][FEA_SOL],solver_container[ZONE_0][MESH_0][FLOW_SOL],
+																				   geometry_container[ZONE_1][MESH_0],geometry_container[ZONE_0][MESH_0],
+																				   config_container[ZONE_1], config_container[ZONE_0]);
+				/*--- Set the volume deformation for the fluid zone ---*/
+				grid_movement[ZONE_0]->SetVolume_Deformation(geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], true);
+			}
+			break;
+		case ALLGATHER_DATA:
+			if (MatchingMesh){
+				transfer_container[ZONE_1][ZONE_0]->Allgather_InterfaceData_Matching(solver_container[ZONE_1][MESH_0][FEA_SOL],solver_container[ZONE_0][MESH_0][FLOW_SOL],
+																				   geometry_container[ZONE_1][MESH_0],geometry_container[ZONE_0][MESH_0],
+																				   config_container[ZONE_1], config_container[ZONE_0]);
+				/*--- Set the volume deformation for the fluid zone ---*/
+				grid_movement[ZONE_0]->SetVolume_Deformation(geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], true);
+			}
+			else {
+				transfer_container[ZONE_1][ZONE_0]->Allgather_InterfaceData_Interpolate(solver_container[ZONE_1][MESH_0][FEA_SOL],solver_container[ZONE_0][MESH_0][FLOW_SOL],
+																				   geometry_container[ZONE_1][MESH_0],geometry_container[ZONE_0][MESH_0],
+																				   config_container[ZONE_1], config_container[ZONE_0]);
+				/*--- Set the volume deformation for the fluid zone ---*/
+				grid_movement[ZONE_0]->SetVolume_Deformation(geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], true);
+			}
+			break;
+		case LEGACY_METHOD:
+			if (MatchingMesh){
+				solver_container[ZONE_0][MESH_0][FLOW_SOL]->SetFlow_Displacement(geometry_container[ZONE_0], grid_movement[ZONE_0],
+																		   	   config_container[ZONE_0], config_container[ZONE_1],
+																		   	   geometry_container[ZONE_1], solver_container[ZONE_1]);
+			}
+			else {
+				solver_container[ZONE_0][MESH_0][FLOW_SOL]->SetFlow_Displacement_Int(geometry_container[ZONE_0], grid_movement[ZONE_0],
+																		   	   config_container[ZONE_0], config_container[ZONE_1],
+																		   	   geometry_container[ZONE_1], solver_container[ZONE_1]);
+			}
+			break;
+    }
 
-	}
+
+//	/*--- Displacement transfer --  This will have to be modified for non-matching meshes ---*/
+//
+//	if (MatchingMesh){
+//		solver_container[ZONE_0][MESH_0][FLOW_SOL]->SetFlow_Displacement(geometry_container[ZONE_0], grid_movement[ZONE_0],
+//																   	   config_container[ZONE_0], config_container[ZONE_1],
+//																   	   geometry_container[ZONE_1], solver_container[ZONE_1]);
+//	}
+//	else{
+//
+//		/*--- Transfer the information scattered (this is, each processor only receives the information it needs ---*/
+//		transfer_container[ZONE_1][ZONE_0]->Broadcast_InterfaceData_Matching(solver_container[ZONE_1][MESH_0][FEA_SOL],solver_container[ZONE_0][MESH_0][FLOW_SOL],
+//																		   geometry_container[ZONE_1][MESH_0],geometry_container[ZONE_0][MESH_0],
+//																		   config_container[ZONE_1], config_container[ZONE_0]);
+//
+//		/*--- Set the volume deformation for the fluid zone ---*/
+//		grid_movement[ZONE_0]->SetVolume_Deformation(geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], true);
+//
+//	}
 
 
 }
@@ -815,21 +883,72 @@ void FSI_Load_Transfer(COutput *output, CIntegration ***integration_container, C
 
 	config_container[ZONE_1]->SetGlobalParam(FEM_ELASTICITY, RUNTIME_FEA_SYS, ExtIter);
 
-	if (MatchingMesh){
+	/*--- Select the transfer method and the appropriate mesh properties (matching or nonmatching mesh) ---*/
 
-		solver_container[ZONE_1][MESH_0][FEA_SOL]->SetFEA_Load(solver_container[ZONE_0], geometry_container[ZONE_1], geometry_container[ZONE_0],
-															   config_container[ZONE_1], config_container[ZONE_0], numerics_container[ZONE_1][MESH_0][SolContainer_Position_fea][VISC_TERM]);
+    switch (config_container[ZONE_0]->GetKind_TransferMethod()) {
+		case BROADCAST_DATA:
+			if (MatchingMesh){
+				transfer_container[ZONE_0][ZONE_1]->Broadcast_InterfaceData_Matching(solver_container[ZONE_0][MESH_0][FLOW_SOL],solver_container[ZONE_1][MESH_0][FEA_SOL],
+																				   geometry_container[ZONE_0][MESH_0],geometry_container[ZONE_1][MESH_0],
+																				   config_container[ZONE_0], config_container[ZONE_1]);
+			}
+			else {
+				transfer_container[ZONE_0][ZONE_1]->Broadcast_InterfaceData_Interpolate(solver_container[ZONE_0][MESH_0][FLOW_SOL],solver_container[ZONE_1][MESH_0][FEA_SOL],
+																				   geometry_container[ZONE_0][MESH_0],geometry_container[ZONE_1][MESH_0],
+																				   config_container[ZONE_0], config_container[ZONE_1]);
+			}
+			break;
+		case SCATTER_DATA:
+			if (MatchingMesh){
+				transfer_container[ZONE_0][ZONE_1]->Scatter_InterfaceData_Matching(solver_container[ZONE_0][MESH_0][FLOW_SOL],solver_container[ZONE_1][MESH_0][FEA_SOL],
+																				   geometry_container[ZONE_0][MESH_0],geometry_container[ZONE_1][MESH_0],
+																				   config_container[ZONE_0], config_container[ZONE_1]);
+			}
+			else {
+				transfer_container[ZONE_0][ZONE_1]->Scatter_InterfaceData_Interpolate(solver_container[ZONE_0][MESH_0][FLOW_SOL],solver_container[ZONE_1][MESH_0][FEA_SOL],
+																				   geometry_container[ZONE_0][MESH_0],geometry_container[ZONE_1][MESH_0],
+																				   config_container[ZONE_0], config_container[ZONE_1]);
+			}
+			break;
+		case ALLGATHER_DATA:
+			if (MatchingMesh){
+				transfer_container[ZONE_0][ZONE_1]->Allgather_InterfaceData_Matching(solver_container[ZONE_0][MESH_0][FLOW_SOL],solver_container[ZONE_1][MESH_0][FEA_SOL],
+																				   geometry_container[ZONE_0][MESH_0],geometry_container[ZONE_1][MESH_0],
+																				   config_container[ZONE_0], config_container[ZONE_1]);
+			}
+			else {
+				transfer_container[ZONE_0][ZONE_1]->Allgather_InterfaceData_Interpolate(solver_container[ZONE_0][MESH_0][FLOW_SOL],solver_container[ZONE_1][MESH_0][FEA_SOL],
+																				   geometry_container[ZONE_0][MESH_0],geometry_container[ZONE_1][MESH_0],
+																				   config_container[ZONE_0], config_container[ZONE_1]);
+			}
+			break;
+		case LEGACY_METHOD:
+			if (MatchingMesh){
+				solver_container[ZONE_1][MESH_0][FEA_SOL]->SetFEA_Load(solver_container[ZONE_0], geometry_container[ZONE_1], geometry_container[ZONE_0],
+						config_container[ZONE_1], config_container[ZONE_0], numerics_container[ZONE_1][MESH_0][SolContainer_Position_fea][VISC_TERM]);
+			}
+			else {
+				solver_container[ZONE_1][MESH_0][FEA_SOL]->SetFEA_Load_Int(solver_container[ZONE_0], geometry_container[ZONE_1], geometry_container[ZONE_0],
+						config_container[ZONE_1], config_container[ZONE_0], numerics_container[ZONE_1][MESH_0][SolContainer_Position_fea][VISC_TERM]);
+			}
+			break;
+    }
 
-	}
-	else{
-//		solver_container[ZONE_1][MESH_0][FEA_SOL]->SetFEA_Load_Int(solver_container[ZONE_0], geometry_container[ZONE_1], geometry_container[ZONE_0],
+//	if (MatchingMesh){
+//
+//		solver_container[ZONE_1][MESH_0][FEA_SOL]->SetFEA_Load(solver_container[ZONE_0], geometry_container[ZONE_1], geometry_container[ZONE_0],
 //															   config_container[ZONE_1], config_container[ZONE_0], numerics_container[ZONE_1][MESH_0][SolContainer_Position_fea][VISC_TERM]);
-
-		transfer_container[ZONE_0][ZONE_1]->Broadcast_InterfaceData_Matching(solver_container[ZONE_0][MESH_0][FLOW_SOL],solver_container[ZONE_1][MESH_0][FEA_SOL],
-																		   geometry_container[ZONE_0][MESH_0],geometry_container[ZONE_1][MESH_0],
-																		   config_container[ZONE_0], config_container[ZONE_1]);
-
-	}
+//
+//	}
+//	else{
+////		solver_container[ZONE_1][MESH_0][FEA_SOL]->SetFEA_Load_Int(solver_container[ZONE_0], geometry_container[ZONE_1], geometry_container[ZONE_0],
+////															   config_container[ZONE_1], config_container[ZONE_0], numerics_container[ZONE_1][MESH_0][SolContainer_Position_fea][VISC_TERM]);
+//
+//		transfer_container[ZONE_0][ZONE_1]->Broadcast_InterfaceData_Matching(solver_container[ZONE_0][MESH_0][FLOW_SOL],solver_container[ZONE_1][MESH_0][FEA_SOL],
+//																		   geometry_container[ZONE_0][MESH_0],geometry_container[ZONE_1][MESH_0],
+//																		   config_container[ZONE_0], config_container[ZONE_1]);
+//
+//	}
 
 
 }

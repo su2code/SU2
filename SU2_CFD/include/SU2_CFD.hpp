@@ -43,5 +43,6 @@
 #include "../../Common/include/config_structure.hpp"
 #include "../include/definition_structure.hpp"
 #include "../include/iteration_structure.hpp"
+#include "../include/transfer_structure.hpp"
 
 using namespace std;

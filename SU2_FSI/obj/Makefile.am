@@ -119,6 +119,7 @@ su2_fsi_sources = ../include/SU2_FSI.hpp \
 		../../SU2_CFD/src/solver_fem_elasticity.cpp \
 		../../SU2_CFD/src/solver_structure.cpp \
 		../../SU2_CFD/src/solver_template.cpp \
+		../../SU2_CFD/src/transfer_physics.cpp \
 		../../SU2_CFD/src/transfer_structure.cpp \
     	../../SU2_CFD/src/transport_model.cpp \
 		../../SU2_CFD/src/variable_adjoint_levelset.cpp \
