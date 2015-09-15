@@ -1,7 +1,7 @@
 /*!
  * \file transfer_structure.hpp
  * \brief Headers of the transfer structure
- *        The subroutines and functions are in the <i>transfer_structure.cpp</i> file.
+ *        The subroutines and functions are in the <i>transfer_structure.cpp</i> and <i>transfer_physics.cpp</i> files.
  * \author R. Sanchez
  * \version 4.0.0 "Cardinal"
  *

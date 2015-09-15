@@ -38,6 +38,7 @@
 #include "integration_structure.hpp"
 #include "output_structure.hpp"
 #include "numerics_structure.hpp"
+#include "transfer_structure.hpp"
 #include "../../Common/include/geometry_structure.hpp"
 #include "../../Common/include/config_structure.hpp"
 
@@ -96,3 +97,12 @@ void Numerics_Preprocessing(CNumerics ****numerics_container, CSolver ***solver_
  * \param[in] val_nZone - Total number of zones.
  */
 void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned short val_nZone);
+
+/*!
+ * \brief Do the interface preprocessing.
+ * \author R. Sanchez, H. Kline
+ * \param[in] geometry - Geometrical definition of the problem.
+ * \param[in] config - Definition of the particular problem.
+ * \param[in] val_nZone - Total number of zones.
+ */
+void Interface_Preprocessing(CTransfer ***transfer_container, CGeometry ***geometry_container, CConfig **config_container, unsigned short nZone, unsigned short nDim);

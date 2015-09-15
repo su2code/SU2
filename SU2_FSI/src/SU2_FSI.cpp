@@ -263,49 +263,46 @@ int main(int argc, char *argv[]) {
 
 	  }
 
-//	  if (!config_container[ZONE_0]->GetMatchingMesh()){
-//	    unsigned int Zones[2];
-//	    unsigned int nzn = 2; // temporary nZones for interpolation: 2 in the case of fluid-structure
-//	    Zones[0]=ZONE_0;
-//	    Zones[1]=ZONE_1;
-//	    if (config_container[ZONE_0]->GetKindInterpolation()== NEAREST_NEIGHBOR )
-//	      interpolator_container[iZone] = new CNearestNeighbor(geometry_container,config_container,Zones,nzn);
-//	    if (config_container[ZONE_0]->GetKindInterpolation()== CONSISTENT_AND_CONSERVATIVE )
-//        interpolator_container[iZone] = new CConsistConserve(geometry_container,config_container,Zones,nzn);
-//	  }
 
-	  if (!config_container[ZONE_0]->GetMatchingMesh()){
 
-		  for (iZone = 0; iZone < nZone; iZone++){
-		    transfer_container[iZone] = new CTransfer*[nZone];
-		   }
-		  for (iZone = 0; iZone < nZone; iZone++){
-			  for (jZone = 0; jZone < nZone; jZone++){
-				  transfer_container[iZone][jZone] = NULL;
-			  }
-		  }
-
-		  unsigned short nVarTransferFlow = 0, nVarTrasferStruct = 2;
-
-		  transfer_container[ZONE_0][ZONE_1] = new CTransfer_FlowTraction(nDim, nVarTransferFlow, config_container[ZONE_0]);
-		  transfer_container[ZONE_1][ZONE_0] = new CTransfer_StructuralDisplacements(nDim, nVarTrasferStruct, config_container[ZONE_1]);
-
-	  }
 
 	  /*--- For the time-spectral solver, set the grid node velocities. ---*/
 
 	  if (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_SPECTRAL)
 	    SetTimeSpectral_Velocities(geometry_container, config_container, nZone);
 
-	  /*--- Coupling between zones (limited to two zones at the moment) ---*/
+	  /*--- Definition of the interface and transfer conditions between different zones.
+	   *--- The transfer container is defined for zones paired one to one.
+	   *--- This only works for a multizone problem (nZone > 1).
+	   *--- Also, at the moment this capability is limited to two zones (nZone < 3).
+	   *--- This will change in the future. ---*/
 
-	  if (nZone == 2) {
-	    if (rank == MASTER_NODE)
-	      cout << endl <<"--------------------- Setting Coupling Between Zones --------------------" << endl;
-	    geometry_container[ZONE_0][MESH_0]->MatchZone(config_container[ZONE_0], geometry_container[ZONE_1][MESH_0],
-	                                                  config_container[ZONE_1], ZONE_0, nZone);
-	    geometry_container[ZONE_1][MESH_0]->MatchZone(config_container[ZONE_1], geometry_container[ZONE_0][MESH_0],
-	                                                  config_container[ZONE_0], ZONE_1, nZone);
+	  if (rank == MASTER_NODE)
+	    cout << endl <<"------------------- Multizone Interface Preprocessing -------------------" << endl;
+
+
+	  if ((nZone > 1) && (nZone < 3)) {
+
+		  //	  if (!config_container[ZONE_0]->GetMatchingMesh()){
+		  //	    unsigned int Zones[2];
+		  //	    unsigned int nzn = 2; // temporary nZones for interpolation: 2 in the case of fluid-structure
+		  //	    Zones[0]=ZONE_0;
+		  //	    Zones[1]=ZONE_1;
+		  //	    if (config_container[ZONE_0]->GetKindInterpolation()== NEAREST_NEIGHBOR )
+		  //	      interpolator_container[iZone] = new CNearestNeighbor(geometry_container,config_container,Zones,nzn);
+		  //	    if (config_container[ZONE_0]->GetKindInterpolation()== CONSISTENT_AND_CONSERVATIVE )
+		  //        interpolator_container[iZone] = new CConsistConserve(geometry_container,config_container,Zones,nzn);
+		  //	  }
+
+		  for (iZone = 0; iZone < nZone; iZone++){
+			  transfer_container[iZone] = new CTransfer*[nZone];
+			  for (jZone = 0; jZone < nZone; jZone++){
+				  transfer_container[iZone][jZone] = NULL;
+			  }
+		  }
+
+		  Interface_Preprocessing(transfer_container, geometry_container, config_container, nZone, nDim);
+
 	  }
 
 	  /*--- Definition of the output class (one for all zones). The output class

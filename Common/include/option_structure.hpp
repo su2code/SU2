@@ -736,6 +736,21 @@ static const map<string, ENUM_SPACE_ITE_FEA> Space_Ite_Map_FEA = CCreateMap<stri
 ("MODIFIED_NEWTON_RAPHSON", MODIFIED_NEWTON_RAPHSON);
 
 /*!
+ * \brief types of transfer methods
+ */
+enum ENUM_TRANSFER_METHOD {
+  BROADCAST_DATA = 1,	/*!< \brief Gather data on one processor and broadcast it into all of them, relating to global nodes. */
+  SCATTER_DATA = 2,   	/*!< \brief Gather data on one processor and scatter it into the one that needs it. */
+  ALLGATHER_DATA = 3,   /*!< \brief All processors gather data (this will be useful for operations over a group of data - averaging) */
+  LEGACY_METHOD = 4		/*!< \brief Original transfer method, maintained to check . */
+};
+static const map<string, ENUM_TRANSFER_METHOD> Transfer_Method_Map = CCreateMap<string, ENUM_TRANSFER_METHOD>
+("BROADCAST_DATA", BROADCAST_DATA)
+("SCATTER_DATA", SCATTER_DATA)
+("ALLGATHER_DATA", ALLGATHER_DATA)
+("LEGACY_METHOD", LEGACY_METHOD);
+
+/*!
  * \brief types of schemes to compute the flow gradient
  */
 enum ENUM_FLOW_GRADIENT {

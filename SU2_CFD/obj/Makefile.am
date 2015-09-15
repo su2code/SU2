@@ -73,6 +73,8 @@ su2_cfd_sources = \
   ../include/transport_model.inl \
   ../include/variable_structure.hpp \
   ../include/variable_structure.inl \
+  ../include/transfer_structure.hpp \
+  ../include/transfer_structure.inl \
   ../src/definition_structure.cpp \
   ../src/fluid_model.cpp \
   ../src/fluid_model_pig.cpp \
@@ -129,6 +131,8 @@ su2_cfd_sources = \
   ../src/solver_fem_elasticity.cpp \
   ../src/solver_structure.cpp \
   ../src/solver_template.cpp \
+  ../src/transfer_physics.cpp \
+  ../src/transfer_structure.cpp \
   ../src/SU2_CFD.cpp \
   ../src/transport_model.cpp \
   ../src/variable_adjoint_levelset.cpp \

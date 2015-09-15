@@ -10032,7 +10032,7 @@ void CPhysicalGeometry::MatchZone(CConfig *config, CGeometry *geometry_donor, CC
   unsigned long iVertex, iPoint, jVertex, jPoint = 0, pPoint = 0, pGlobalPoint = 0;
   su2double *Coord_i, *Coord_j, dist = 0.0, mindist, maxdist;
   
-  if (val_iZone == ZONE_0) cout << "Set zone boundary conditions (if any)." << endl;
+//  if (val_iZone == ZONE_0) cout << "Set zone boundary conditions (if any)." << endl;
   
   maxdist = 0.0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -10071,7 +10071,7 @@ void CPhysicalGeometry::MatchZone(CConfig *config, CGeometry *geometry_donor, CC
   unsigned long *Buffer_Send_nVertex = new unsigned long [1];
   unsigned long *Buffer_Receive_nVertex = new unsigned long [nProcessor];
   
-  if (val_iZone == ZONE_0) cout << "Set zone boundary conditions (if any)." << endl;
+//  if (val_iZone == ZONE_0 && rank == MASTER_NODE) cout << "Set zone boundary conditions (if any)." << endl;
   
   nLocalVertex_Zone = 0;
   for (iMarker = 0; iMarker < config_donor->GetnMarker_All(); iMarker++)

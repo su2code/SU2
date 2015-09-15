@@ -1513,3 +1513,81 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
   }
 
 }
+
+void Interface_Preprocessing(CTransfer ***transfer_container, CGeometry ***geometry_container,
+							 CConfig **config_container, unsigned short nZone, unsigned short nDim) {
+
+	int rank = MASTER_NODE;
+	unsigned short donorZone, targetZone;
+	unsigned short nVarTransfer;
+
+	/*--- Initialize some useful booleans ---*/
+	bool fluid_donor, structural_donor;
+	bool fluid_target, structural_target;
+
+	fluid_donor  = false;  structural_donor  = false;
+	fluid_target  = false;  structural_target  = false;
+
+
+#ifdef HAVE_MPI
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+	/*--- Coupling between zones (limited to two zones at the moment) ---*/
+	for (donorZone = 0; donorZone < nZone; donorZone++){
+
+		/*--- Initialize donor booleans ---*/
+		fluid_donor  = false;  structural_donor  = false;
+
+		/*--- Set the donor boolean: as of now, only Fluid-Structure Interaction considered ---*/
+		switch (config_container[donorZone]->GetKind_Solver()) {
+			case EULER : case NAVIER_STOKES: case RANS: fluid_donor  = true; 		break;
+			case FEM_ELASTICITY: 						structural_donor = true; 	break;
+		}
+
+		for (targetZone = 0; targetZone < nZone; targetZone++){
+
+			/*--- Initialize donor booleans ---*/
+			fluid_target  = false;  structural_target  = false;
+
+			/*--- Set the target boolean: as of now, only Fluid-Structure Interaction considered ---*/
+			switch (config_container[targetZone]->GetKind_Solver()) {
+				case EULER : case NAVIER_STOKES: case RANS: fluid_target  = true; 		break;
+				case FEM_ELASTICITY: 						structural_target = true; 	break;
+			}
+
+			/*--- Interface conditions are only defined between different zones ---*/
+			if (donorZone != targetZone){
+
+				/*--- Match Zones ---*/
+				if (rank == MASTER_NODE) cout << "Setting coupling ";
+
+				geometry_container[donorZone][MESH_0]->MatchZone(config_container[donorZone], geometry_container[targetZone][MESH_0],
+						config_container[targetZone], donorZone, nZone);
+
+				/*--- Initialize the appropriate transfer strategy ---*/
+				if (rank == MASTER_NODE) cout << "and transferring ";
+
+				if (fluid_donor && structural_target) {
+					nVarTransfer = 0;
+					transfer_container[donorZone][targetZone] = new CTransfer_FlowTraction(nDim, nVarTransfer, config_container[donorZone]);
+					if (rank == MASTER_NODE) cout << "flow tractions from zone " << donorZone << " to zone " << targetZone << ". "<< endl;
+				}
+				else if (structural_donor && fluid_target){
+					nVarTransfer = 2;
+					transfer_container[donorZone][targetZone] = new CTransfer_StructuralDisplacements(nDim, nVarTransfer, config_container[donorZone]);
+					if (rank == MASTER_NODE) cout << "structural displacements from zone " << donorZone << " to zone " << targetZone << ". "<< endl;
+				}
+				else {
+					if (rank == MASTER_NODE) cout << " between zone " << donorZone << " and zone " << targetZone << ". " << endl;
+				}
+
+			}
+
+
+		}
+
+	}
+
+
+}
