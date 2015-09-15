@@ -363,7 +363,7 @@ def init_codi(argument_dict, modes, mpi_support = False, update = False):
 def submodule_status(path, update):
 
     try:
-        status = check_output('gidt submodule status ' + path)
+        status = check_output('git submodule status ' + path)
     except RuntimeError:
         return False
 
