@@ -198,7 +198,7 @@ public:
    * of the edge is then stored in iFace, and the global index of the node (from which the edge
    * is referenced)
    */
-  void Isoparameters(su2double* isoparams, unsigned long iVertex,
+  void Isoparameters(su2double* isoparams,
       unsigned short nDim, unsigned int iZone_1,  long donor_elem,  unsigned short iFace,
       unsigned int nDonorPoints,  su2double* xj);
 

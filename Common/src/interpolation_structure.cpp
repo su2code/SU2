@@ -319,31 +319,25 @@ CIsoparametric::CIsoparametric(CGeometry ***geometry_container, CConfig **config
 CIsoparametric::~CIsoparametric(){}
 
 void CIsoparametric::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
-  unsigned long iPoint, jPoint, jPoint2, iVertex, jVertex,*nn, inode, jElem, iNearestNode=0, iNearestVertex=0;
+  unsigned long jPoint, iVertex, jVertex,*nn, inode, jElem, iNearestNode=0, iNearestVertex=0;
   long ivtx;
+  long donor_elem=0, temp_donor=0;
   unsigned short iDim, it;
   unsigned short nDim = Geometry[Zones[0]][MESH_0]->GetnDim();
-  su2double distance = 0.0, last_distance=-1.0, *Coord;
-  su2double myCoeff[10];
-  //su2double* myCoefftemp;
-  su2double* donorCoord;
-  su2double coeff, tmp, tmp2;
-  long donor_elem=0, temp_donor;
-
   unsigned short nMarkerInt, nMarkerDonor, nMarkerTarget;
   unsigned short iMarkerInt, iMarkerDonor, iMarkerTarget;
-  unsigned short markDonor, markTarget, iFace;
-
+  unsigned short markDonor=0, markTarget=0, iFace;
   unsigned int nNodes=0;
-  /*--- Restricted to 2-zone fluid-structure for now ---*/
+  /*--- Restricted to 2-zone for now ---*/
   unsigned int targetZone = Zones[0];
   unsigned int donorZone = Zones[1];
   unsigned int nFaces=1; //For 2D cases, we want to look at edges, not faces, as the 'interface'
   bool face_on_marker=true;
-  unsigned int it2=0;
+  su2double distance = 0.0, last_distance=-1.0, *Coord;
+  su2double myCoeff[10]; // Maximum # of donor points
+  su2double *donorCoord, *Normal;
   su2double projected_point[nDim];
-  su2double *Normal;
-
+  su2double tmp, tmp2;
   nn = new unsigned long[4];
 
   /*--- Number of markers on the interface ---*/
@@ -382,7 +376,6 @@ void CIsoparametric::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
     /*--- For the markers on the fluid side ---*/
     /*--- Loop over the vertices on the marker ---*/
     for (iVertex = 0; iVertex<Geometry[targetZone][MESH_0]->GetnVertex(markTarget); iVertex++) {
-      iPoint =Geometry[targetZone][MESH_0]->vertex[markTarget][iVertex]->GetNode(); // Global index of iVertex
       last_distance=-1.0;
 
       /*--- Loop over the vertices in the corresponding interface marker (zone 1), find the closest vertex --*/
@@ -472,7 +465,7 @@ void CIsoparametric::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
 
             /*--- find isoparametric representation. if the point is outside the face (or edge, in 2D), the method will return
              * coefficients associated with setting the nearest neighbor ---*/
-            Isoparameters( myCoeff, iVertex,nDim, donorZone, temp_donor, iFace, nNodes, projected_point);
+            Isoparameters( myCoeff, nDim, donorZone, temp_donor, iFace, nNodes, projected_point);
 
             distance = 0;
             for(it=0; it< nNodes; it++){
@@ -611,7 +604,7 @@ void CIsoparametric::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
   }
 }
 
-void CIsoparametric::Isoparameters(su2double* isoparams, unsigned long iVertex,
+void CIsoparametric::Isoparameters(su2double* isoparams,
     unsigned short nDim, unsigned int donorZone,  long donor_elem,  unsigned short iFace,
     unsigned int nDonorPoints,  su2double* xj){
   short i,j,k, iedge;
