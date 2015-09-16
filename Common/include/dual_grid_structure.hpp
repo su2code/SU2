@@ -878,10 +878,11 @@ private:
 	long PeriodicPoint[2];			/*!< \brief Store the periodic point of a boundary (iProcessor, iPoint) */
 	short Rotation_Type;			/*!< \brief Type of rotation associated with the vertex (MPI and periodic) */
 	unsigned long Normal_Neighbor; /*!< \brief Index of the closest neighbor. */
+	unsigned long *Donor_Points; /*!< \brief indices of donor points for interpolation across zones */
+	unsigned long *Donor_Proc; /*!< \brief indices of donor processor for interpolation across zones in parallel */
   unsigned long Donor_Elem;   /*!< \brief Store the donor element for interpolation across zones/ */
   unsigned short Donor_Face;  /*!<\brief Store the donor face (w/in donor element) for interpolation across zones */
   su2double Basis_Function[3]; /*!< \brief Basis function values for interpolation across zones. */
-  unsigned long **Donor_Info; /*!\brief Store a list of donor points (by global index) for interpolation across zones: zone,point,marker,vertex */
   su2double *Donor_Coeff; /*!\brief Store a list of coefficients corresponding to the donor points. */
   unsigned short nDonor_Points; /*!\brief Number of points in Donor_Points;*/
   
@@ -1055,7 +1056,7 @@ public:
 	 * \param[in] val_donorelem - donor element index.
 	 */
 	void SetDonorElem(long val_donorelem);
-  
+
   /*!
 	 * \brief Get the donor element of a vertex for interpolation across zones.
 	 * \return Value of the donor element of a vertex.
@@ -1118,22 +1119,6 @@ public:
 	unsigned short GetnDonorPoints(void);
 
 	/*!
-	 * \brief Set the values of a donor point.
-	 * \param[in] iDonor - Index of the donor point.
-	 * \param[in] val   - Pointer to the array of values to be set for the donor point. (zone, global point id, marker id, vertex within that marker)
-	 */
-	void SetDonorInfo(unsigned short iDonor, unsigned long*val);
-
-	/*!
-	 * \brief Return the values of a donor point.
-	 * \param[in] iDonor - Index of the donor point.
-	 * \param[in] it  - Index of the information to be returned.(zone, global point id, marker id, vertex within that marker)
-	 * \return    - the value stored at Donor_Info[iDonor][it].
-	 */
-	unsigned long GetDonorInfo(unsigned short iDonor, unsigned short it);
-
-
-	/*!
    * \brief Set the coefficient value of a donor point.
    * \param[in] iDonor - Index of the donor point.
    * \param[in] val  - Value of the coefficent for point iDonor.
@@ -1146,6 +1131,32 @@ public:
    * \return  - Value of the coefficent for point iDonor.
    */
 	su2double GetDonorCoeff(unsigned short iDonor);
+
+  /*!
+   * \brief Set the donor point of a vertex for interpolation across zones.
+   * \param[in] val_donorpoint- donor face index (w/in donor elem).
+   */
+  void SetInterpDonorPoint(unsigned short val_donorindex, long val_donorpoint);
+
+  /*!
+   * \brief Get the value of the donor point of a vertex (for interpolation).
+   * \return Value of the donor point of a vertex.
+   */
+  long GetInterpDonorPoint(unsigned short val_donorpoint);
+
+
+  /*!
+   * \brief Set the donor point of a vertex for interpolation across zones.
+   * \param[in] val_donorpoint- donor face index (w/in donor elem).
+   */
+  void SetInterpDonorProcessor(unsigned short val_donorindex, long val_rank);
+
+  /*!
+   * \brief Get the value of the donor point of a vertex (for interpolation).
+   * \return Value of the donor point of a vertex.
+   */
+  long GetInterpDonorProcessor(unsigned short val_donorindex);
+
 
 	/*!
    * \brief Allocate memory based on how many donor points need to be stored.
