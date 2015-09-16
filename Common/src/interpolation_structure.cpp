@@ -324,8 +324,8 @@ void CIsoparametric::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
   unsigned short iDim, it;
   unsigned short nDim = Geometry[Zones[0]][MESH_0]->GetnDim();
   su2double distance = 0.0, last_distance=-1.0, *Coord;
-  su2double* myCoeff;
-  su2double* myCoefftemp;
+  su2double myCoeff[10];
+  //su2double* myCoefftemp;
   su2double* donorCoord;
   su2double coeff, tmp, tmp2;
   long donor_elem=0, temp_donor;
@@ -438,7 +438,9 @@ void CIsoparametric::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
             for (unsigned int ifacenode=0; ifacenode<nNodes; ifacenode++){
               inode = Geometry[iZone_1][MESH_0]->node[iNearestNode]->GetEdge(iFace);
               jPoint = Geometry[iZone_1][MESH_0]->edge[inode]->GetNode(ifacenode);
+
               face_on_marker = (face_on_marker and (Geometry[iZone_1][MESH_0]->node[jPoint]->GetVertex(markFEA) !=-1));
+              //cout <<face_on_marker<<endl;
             }
           }
 
@@ -460,23 +462,38 @@ void CIsoparametric::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
               tmp2+=Normal[iDim]*(Coord[iDim]-donorCoord[iDim]);
             }
             tmp = 1/tmp;
-            //cout << " projected point: ";
             for (iDim=0; iDim<nDim; iDim++){
               // projection of \vec{q} onto plane defined by \vec{n} and \vec{p}:
               // \vec{q} - \vec{n} ( (\vec{q}-\vec{p} ) \cdot \vec{n})
               // tmp2 = ( (\vec{q}-\vec{p} ) \cdot \vec{N})
               // \vec{n} = \vec{N}/(|N|), tmp = 1/|N|^2
               projected_point[iDim]=Coord[iDim] - Normal[iDim]*tmp2*tmp;
-              //cout <<projected_point[iDim] <<" " ;
             }
-            //cout << endl;
 
             /*--- use Isoparametric rep. to find distance to projected point on the surface ---*/
 
+            if (nDim==3)
+              Isoparameters( myCoeff, iVertex,nDim, iZone_1, temp_donor, iFace, nNodes, projected_point);
+            else{
+              Isoparameters( myCoeff, iVertex,nDim, iZone_1, iNearestNode, iFace, nNodes, projected_point);
+            }
 
             distance = 0;
+            for(it=0; it< nNodes; it++){
+              if (nDim==3){
+                jPoint = Geometry[iZone_1][MESH_0]->elem[temp_donor]->GetNode(Geometry[iZone_1][MESH_0]->elem[temp_donor]->GetFaces(iFace,it));
+              }
+              else{
+                inode = Geometry[iZone_1][MESH_0]->node[iNearestNode]->GetEdge(iFace);
+                jPoint = Geometry[iZone_1][MESH_0]->edge[inode]->GetNode(it);
+              }
+              donorCoord = Geometry[iZone_1][MESH_0]->node[jPoint]->GetCoord();
+              for (iDim=0; iDim<nDim; iDim++){
+                Coord[iDim]-=myCoeff[it]*donorCoord[iDim];
+              }
+            }
             for (iDim=0; iDim<nDim; iDim++)
-              distance+=pow(projected_point[iDim]-Coord[iDim],2.0);
+              distance+=pow(Coord[iDim],2.0);
 
             /*--- If the distance is shorter than last closest (and nonzero nodes are on the boundary), update ---*/
             if ((last_distance==-1) or (distance<last_distance )){
@@ -484,43 +501,28 @@ void CIsoparametric::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
               last_distance = distance;
               /*--- Store info ---*/
               donor_elem = temp_donor;
-
-              myCoefftemp = new su2double[nNodes];
-              if (nDim==3)
-                Isoparameters( myCoefftemp, iVertex,nDim, iZone_1, temp_donor, iFace, nNodes, projected_point);
-              else{
-                Isoparameters( myCoefftemp, iVertex,nDim, iZone_1, iNearestNode, iFace, nNodes, projected_point);
-              }
               /*--- If closer than last closest projected point, save. ---*/
               Coord = Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->GetCoord();
 
               for (it=0; it< nNodes; it++){
                 /*--- If 3D loop over a face. if 2D loop over an element ---*/
                 if (nDim==3){
-                  //jPoint = Geometry[iZone_1][MESH_0]->elem[temp_donor]->GetFaces(iFace,it);
                   jPoint = Geometry[iZone_1][MESH_0]->elem[temp_donor]->GetNode(Geometry[iZone_1][MESH_0]->elem[temp_donor]->GetFaces(iFace,it));
-                  //cout << "jPoint  " << jPoint << endl;
                 }
                 else{
                   inode = Geometry[iZone_1][MESH_0]->node[iNearestNode]->GetEdge(iFace);
                   jPoint = Geometry[iZone_1][MESH_0]->edge[inode]->GetNode(it);
                 }
-
                 donorCoord = Geometry[iZone_1][MESH_0]->node[jPoint]->GetCoord();
-                //cout <<" isoparam: " << myCoefftemp[it] <<" Coord: ";
+                //cout <<" isoparam: " << myCoeff[it] <<" Coord: ";
                 for (iDim=0; iDim<nDim; iDim++){
-                  Coord[iDim]-=myCoefftemp[it]*donorCoord[iDim];
+                  Coord[iDim]-=myCoeff[it]*donorCoord[iDim];
                   //cout << donorCoord[iDim]<< " ";
                 }
                 //cout << endl;
               }
+              //cout << endl;
 
-
-              // mem leak?
-              myCoeff = new su2double[nNodes];
-              for (it=0; it< nNodes; it++){
-                myCoeff[it] = myCoefftemp[it];
-              }
               Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->SetDonorElem(temp_donor);
               Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->SetDonorFace(iFace);
               Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->SetnDonorPoints(nNodes);
@@ -535,7 +537,6 @@ void CIsoparametric::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
         nNodes=1;
         Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->SetnDonorPoints(nNodes);
         donor_elem = -1;
-        myCoeff = new su2double[1];
         myCoeff[0] = 1;
       }
 
@@ -564,7 +565,9 @@ void CIsoparametric::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
         //Geometry[iZone_1][MESH_0]->vertex[markFEA][ivtx]->IncrementnDonor();
         Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->SetDonorInfo(it,nn);
         Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->SetDonorCoeff(it,myCoeff[it]);
+        //cout <<" myCoeff  " << myCoeff[it] << " ";
       }
+      //cout << endl;
     }
 
     /*--- Now that all the transfer coefficients have been calculated, loop through the structure vertices
@@ -604,13 +607,6 @@ void CIsoparametric::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
 //      }
 //    }
   }
-  /*-- Delete locally allocated memory ---*/
-
-  if (myCoeff!=NULL)
-    delete[] myCoeff;
-  if (myCoefftemp!=NULL)
-    delete[] myCoefftemp;
-
 }
 
 void CIsoparametric::Isoparameters(su2double* isoparams, unsigned long iVertex,
@@ -627,22 +623,10 @@ void CIsoparametric::Isoparameters(su2double* isoparams, unsigned long iVertex,
 
 
   bool test[n0], testi[n0];
-  /*--- n0: # of dimensions + 1. n: n0 less any degenerate rows ---*/
-  n=n0;
-  m0=m;
-  /*--- Create Matrix A: 1st row all 1's, 2nd row x coordinates, 3rd row y coordinates, etc ---*/
-  /*--- Right hand side is [1, \vec{x}']'---*/
-  for (i=0; i<m*n; i++)
-    A[i]=0;
-  for (i=0; i<m; i++)
-    A[i]=1.0;
-  /*j,n: dimension. i,m: # neighbor point*/
-  x[0]=1.0;
-  for (iDim=0; iDim<nDim; iDim++)
-    x[iDim+1]=xj[iDim];
 
   /*--- 2D: line, no need to go through computation --*/
   if (nDim==2){
+
     iedge = Geometry[iZone_1][MESH_0]->node[donor_elem]->GetEdge(iFace);
     jPoint = Geometry[iZone_1][MESH_0]->edge[iedge]->GetNode(0);
     jPoint2= Geometry[iZone_1][MESH_0]->edge[iedge]->GetNode(1);
@@ -650,17 +634,32 @@ void CIsoparametric::Isoparameters(su2double* isoparams, unsigned long iVertex,
     tmp += pow(Geometry[iZone_1][MESH_0]->node[jPoint]->GetCoord(1)- Geometry[iZone_1][MESH_0]->node[jPoint2]->GetCoord(1),2.0);
     tmp = sqrt(tmp);
 
-    tmp2 = pow(Geometry[iZone_1][MESH_0]->node[jPoint]->GetCoord(0) - x[0],2.0);
-    tmp2 += pow(Geometry[iZone_1][MESH_0]->node[jPoint]->GetCoord(1) - x[1],2.0);
+    tmp2 = pow(Geometry[iZone_1][MESH_0]->node[jPoint]->GetCoord(0) - xj[0],2.0);
+    tmp2 += pow(Geometry[iZone_1][MESH_0]->node[jPoint]->GetCoord(1) - xj[1],2.0);
     tmp2 = sqrt(tmp2);
     isoparams[0] = tmp2/tmp;
 
-    tmp2 = pow(Geometry[iZone_1][MESH_0]->node[jPoint2]->GetCoord(0) - x[0],2.0);
-    tmp2 += pow(Geometry[iZone_1][MESH_0]->node[jPoint2]->GetCoord(1) - x[1],2.0);
+    tmp2 = pow(Geometry[iZone_1][MESH_0]->node[jPoint2]->GetCoord(0) - xj[0],2.0);
+    tmp2 += pow(Geometry[iZone_1][MESH_0]->node[jPoint2]->GetCoord(1) - xj[1],2.0);
     tmp2 = sqrt(tmp2);
     isoparams[1] = tmp2/tmp;
+
   }
   else{
+    /*--- n0: # of dimensions + 1. n: n0 less any degenerate rows ---*/
+    n=n0;
+    m0=m;
+    /*--- Create Matrix A: 1st row all 1's, 2nd row x coordinates, 3rd row y coordinates, etc ---*/
+    /*--- Right hand side is [1, \vec{x}']'---*/
+    for (i=0; i<m*n; i++)
+      A[i]=0;
+    for (i=0; i<m; i++)
+      A[i]=1.0;
+    /*j,n: dimension. i,m: # neighbor point*/
+    x[0]=1.0;
+    for (iDim=0; iDim<nDim; iDim++)
+      x[iDim+1]=xj[iDim];
+
     /*--- temp2 contains node #s that are on the surface (aka, we are excluding interior points) ---*/
     for (k=0; k<m0; k++){
       isoparams[k]=0;
@@ -762,56 +761,55 @@ void CIsoparametric::Isoparameters(su2double* isoparams, unsigned long iVertex,
         x_tmp[j]=x_tmp[j]-R[j*m+i]*isoparams[i];
     }
 
-    /*--- Isoparametric coefficients have been calculated. Run checks ---*/
+  }
+  /*--- Isoparametric coefficients have been calculated. Run checks to eliminate  ---*/
 
-    su2double tol = 1e-13; // hardcoded tolerance
-    /*--- Check 0: normalize to 1: corrects for points not in face---*/
-  //  tmp=0;
-  //  for (i=0; i<m; i++){
-  //    if (isoparams[i]>1) isoparams[i]=1;
-  //    if (isoparams[i]<0) isoparams[i]=0;
-  //    tmp+=isoparams[i]*isoparams[i];
-  //  }
-  //  tmp = pow(tmp,0.5);
-  //  for (i=0; i<m; i++){
-  //    isoparams[i] /= tmp;
-  //  }
-
-    /*--- Check 1: if close to 0, replace with 0 ---*/
+  su2double tol = 1e-13; // hardcoded tolerance
+  /*--- Check 0: normalize to 1: corrects for points not in face---*/
+//  tmp=0;
+//  for (i=0; i<m; i++){
+//    if (isoparams[i]>1) isoparams[i]=1;
+//    if (isoparams[i]<0) isoparams[i]=0;
+//    tmp+=isoparams[i]*isoparams[i];
+//  }
+//  tmp = pow(tmp,0.5);
+//  for (i=0; i<m; i++){
+//    isoparams[i] /= tmp;
+//  }
+  /*--- Check 1: if close to 0, replace with 0 ---*/
+  for (i=0; i<m; i++){
+    if (abs(isoparams[i])< tol )
+      isoparams[i]=0;
+  }
+  /*--- Check 2: if > 1, point is ouside face, not really represented accurately ---*/
+  bool inside_face = true;
+  for (i=0; i<m; i++){
+    if (isoparams[i]> 1.0 or  isoparams[i]<-0.0 )
+      inside_face = false;
+  }
+  if (!inside_face){
+    //cout <<"Reverted to nearest neighbor " << endl;
+    /*--- Revert to nearest neighbor ---*/
+    tmp=-1; tmp2=0.0; k=0;
     for (i=0; i<m; i++){
-      if (abs(isoparams[i])< tol )
-        isoparams[i]=0;
-    }
-    /*--- Check 2: if > 1, point is ouside face, not really represented accurately ---*/
-    bool inside_face = true;
-    for (i=0; i<m; i++){
-      if (abs(isoparams[i])> 1.1 )
-        inside_face = false;
-    }
-    if (!inside_face){
-      /*--- Revert to nearest neighbor ---*/
-      tmp=-1; tmp2=0.0; k=0;
-      for (i=0; i<m; i++){
-        /*--- If 3D loop over a face. if 2D loop over an element ---*/
-          //jPoint = Geometry[iZone_1][MESH_0]->elem[donor_elem]->GetFaces(iFace,i);
+      /*--- If 3D loop over a face. if 2D loop over an element ---*/
+        //jPoint = Geometry[iZone_1][MESH_0]->elem[donor_elem]->GetFaces(iFace,i);
+      if (nDim==3)
         jPoint = Geometry[iZone_1][MESH_0]->elem[donor_elem]->GetNode(Geometry[iZone_1][MESH_0]->elem[donor_elem]->GetFaces(iFace,i));
-        for (j=0;j<nDim;j++)
-          tmp2+=pow((Geometry[iZone_1][MESH_0]->node[jPoint]->GetCoord(j)-x[j]),2.0);
-        if (tmp==-1 or tmp2<tmp){
-          tmp=tmp2;
-          k=i;
-        }
-        isoparams[i]=0;
+      else{
+        iedge = Geometry[iZone_1][MESH_0]->node[donor_elem]->GetEdge(iFace);
+        jPoint = Geometry[iZone_1][MESH_0]->edge[iedge]->GetNode(i);
       }
-      isoparams[k]=1;
-    }
-    /*--- Check 3: reorg for neglected points---   */
-    i=m-1;
-    for (k=m0-1;k>=0;k--){
-      isoparams[k] = isoparams[i];
-      i--;
 
+      for (j=0;j<nDim;j++)
+        tmp2+=pow((Geometry[iZone_1][MESH_0]->node[jPoint]->GetCoord(j)-x[j]),2.0);
+      if (tmp==-1 or tmp2<tmp){
+        tmp=tmp2;
+        k=i;
+      }
+      isoparams[i]=0;
     }
+    isoparams[k]=1;
   }
     /*--- Check 4: print the result ---
     for (k=0; k<m0; k++){
