@@ -283,8 +283,8 @@ int main(int argc, char *argv[]) {
       Zones[1]=ZONE_1;
       if (config_container[ZONE_0]->GetKindInterpolation()== NEAREST_NEIGHBOR )
         interpolator_container[iZone] = new CNearestNeighbor(geometry_container,config_container,Zones,nzn);
-      if (config_container[ZONE_0]->GetKindInterpolation()== CONSISTENT_AND_CONSERVATIVE )
-        interpolator_container[iZone] = new CConsistConserve(geometry_container,config_container,Zones,nzn);
+      if (config_container[ZONE_0]->GetKindInterpolation()== ISOPARAMETRIC )
+        interpolator_container[iZone] = new CIsoparametric(geometry_container,config_container,Zones,nzn);
     }
 
 
