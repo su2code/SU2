@@ -10313,7 +10313,7 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
             /*--- Two dimensional problem ---*/
             if (change_face_orientation) edge[iEdge]->SetNodes_Coord(Coord_Elem_CG, Coord_Edge_CG);
             else edge[iEdge]->SetNodes_Coord(Coord_Edge_CG, Coord_Elem_CG);
-            Area = edge[iEdge]->GetVolume(Coord_FaceiPoint, Coord_Elem_CG, Coord_Edge_CG);
+            Area = edge[iEdge]->GetVolume(Coord_FaceiPoint, Coord_Edge_CG, Coord_Elem_CG);
             node[face_iPoint]->AddVolume(fabs(Area)); my_DomainVolume +=fabs(Area);
             Area = edge[iEdge]->GetVolume(Coord_FacejPoint, Coord_Edge_CG, Coord_Elem_CG);
             node[face_jPoint]->AddVolume(fabs(Area)); my_DomainVolume +=fabs(Area);
