@@ -2202,7 +2202,7 @@ void COutput::SetTecplotBinary_SurfaceMesh(CConfig *config, CGeometry *geometry,
 void COutput::SetTecplotBinary_SurfaceSolution(CConfig *config, CGeometry *geometry, unsigned short val_iZone) {
   
 #ifdef HAVE_TECIO
-  
+
   passivedouble   t;
   INTEGER4 i, iVar, err, Debug, NPts, NElm, IsDouble, KMax;
   INTEGER4 ICellMax, JCellMax, KCellMax, ZoneType, StrandID, ParentZn, FileType;

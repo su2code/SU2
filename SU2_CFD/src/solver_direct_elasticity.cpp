@@ -2134,7 +2134,6 @@ void CFEASolver::SetFEA_Load_Int(CSolver ***flow_solution, CGeometry **fea_geome
 
 	su2double Pinf;
 
-
 	su2double ModAmpl;
 	su2double CurrentTime=fea_config->GetCurrent_DynTime();
 	su2double Static_Time=fea_config->GetStatic_Time();

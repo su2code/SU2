@@ -1881,7 +1881,6 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   iVar_ViscCoeffs = 0, iVar_Sens = 0, iVar_Extra = 0, iVar_Eddy = 0, iVar_Sharp = 0,
   iVar_FEA_Vel = 0, iVar_FEA_Accel = 0, iVar_FEA_Stress = 0, iVar_FEA_Stress_3D = 0,
   iVar_FEA_Extra = 0, iVar_SensDim = 0;
-
   unsigned long iPoint = 0, jPoint = 0, iVertex = 0, iMarker = 0;
   su2double Gas_Constant, Mach2Vel, Mach_Motion, RefDensity, RefPressure = 0.0, factor = 0.0;
   
