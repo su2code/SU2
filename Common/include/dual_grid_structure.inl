@@ -352,13 +352,15 @@ inline void CVertex::SetNormal_Neighbor(unsigned long val_Normal_Neighbor) { Nor
 
 inline void CVertex::IncrementnDonor(void){nDonor_Points++;}
 
-inline void CVertex::SetDonorInfo(unsigned short iDonor, unsigned long *val){
-  for ( unsigned short it = 0; it < 5; it++) Donor_Info[iDonor][it]=val[it];
-}
+inline void CVertex::SetInterpDonorPoint(unsigned short val_donorindex, long val_donorpoint) { Donor_Points[val_donorindex] = val_donorpoint; }
+
+inline long CVertex::GetInterpDonorPoint(unsigned short val_donorindex) { return Donor_Points[val_donorindex]; }
+
+inline void CVertex::SetInterpDonorProcessor(unsigned short val_donorindex, long val_donorpoint) { Donor_Proc[val_donorindex] = val_donorpoint; }
+
+inline long CVertex::GetInterpDonorProcessor(unsigned short val_donorindex) { return Donor_Proc[val_donorindex]; }
 
 inline void CVertex::SetDonorCoeff(unsigned short iDonor, su2double val){ Donor_Coeff[iDonor] = val; }
-
-inline unsigned long CVertex::GetDonorInfo(unsigned short iDonor, unsigned short it){ return Donor_Info[iDonor][it];}
 
 inline su2double CVertex::GetDonorCoeff(unsigned short iDonor){ return Donor_Coeff[iDonor];}
 

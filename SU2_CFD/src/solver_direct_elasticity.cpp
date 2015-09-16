@@ -2262,7 +2262,7 @@ void CFEASolver::SetFEA_Load_Int(CSolver ***flow_solution, CGeometry **fea_geome
 
 			// Corresponding node on the structural mesh
 			// donorVertex[iVertex]=flow_geometry[MESH_0]->vertex[markFlow][iVertex]->GetDonorPoint();
-	        donorVertex[iVertex]=flow_geometry[MESH_0]->vertex[markFlow][iVertex]->GetDonorInfo(0,1); // If point
+	        donorVertex[iVertex]=flow_geometry[MESH_0]->vertex[markFlow][iVertex]->GetInterpDonorPoint(0); // If point
 	        //donorVertex[iVertex]=flow_geometry[MESH_0]->vertex[markFlow][iVertex]->GetDonorInfo(0,3); // If vertex
 
 			// Retrieve the values of pressure, viscosity and density

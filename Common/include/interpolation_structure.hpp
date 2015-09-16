@@ -166,6 +166,13 @@ public:
 
   /*!
    * \brief Constructor of the class.
+   * \param[in] geometry_container
+   * \param[in] config - config container
+   * \param[in] Zones - list of zone indices to use for interpolation. in the order: [Recipient/Target, Donor ]
+   * \param[in] nZone - number of zones
+   *
+   * Data is set in geometry[targetZone]
+   *
    */
   CIsoparametric(CGeometry ***geometry_container, CConfig **config,  unsigned int* Zones,unsigned int nZone);
 
@@ -176,23 +183,29 @@ public:
 
   /*!
    * \brief Set up transfer matrix defining relation between two meshes
-   * \param[in] Zones - list of zones to use for interpolation
-   * \param[in] config -
+   * \param[in] Zones - list of zones to use for interpolation. in the order: [Recipient/Target, Donor ]
+   * \param[in] config - config container
+   *
+   * Data is set in geometry[targetZone]
    */
   void Set_TransferCoeff(unsigned int* Zones, CConfig **config);
 
   /*!
    * \brief Calculate the isoparametric representation of point iVertex in marker iZone_0 by nodes of element donor_elem in marker jMarker of zone iZone_1.
-   * \param[out] isoparams - isoparametric coefficients. Must be allocated to size nNodes ahead of time.
-   * \param[in] iZone_0 - zone index of the point being interpolated
-   * \param[in] iMarker - marker index of the point being interpolated
+   * \param[out] isoparams - isoparametric coefficients. Must be allocated to size nNodes ahead of time. (size> nDonors)
    * \param[in] iVertex - vertex index of the point being interpolated.
    * \param[in] nDim - the dimension of the coordinates.
-   * \param[in] iZone_1 - zone index of the element to use for interpolation
-   * \param[in] jMarker - marker index of the element to use for interpolation
-   * \param[in] donor_elem - element index of the element to use for interpolation
+   * \param[in] iZone_1 - zone index of the element to use for interpolation (the DONOR zone)
+   * \param[in] donor_elem - element index of the element to use for interpolation (or global index of a point in 2D)
    * \param[in[ nDonorPoints - number of donor points in the element.
+   * \param[in[ xj - point projected onto the plane of the donor element.
+   *
+   * If the problem is 2D, the 'face' projected onto is actually an edge; the local index
+   * of the edge is then stored in iFace, and the global index of the node (from which the edge
+   * is referenced)
    */
-  void Isoparameters(su2double* isoparams, unsigned int iZone_0, unsigned short iMarker, unsigned long iVertex, unsigned short nDim, unsigned int iZone_1, unsigned short jMarker, long donor_elem,  unsigned short iFace, unsigned int nDonorPoints);
+  void Isoparameters(su2double* isoparams,
+      unsigned short nDim, unsigned int iZone_1,  long donor_elem,  unsigned short iFace,
+      unsigned int nDonorPoints,  su2double* xj);
 
 };
