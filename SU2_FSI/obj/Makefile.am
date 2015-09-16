@@ -39,13 +39,14 @@ bin_PROGRAMS = ../bin/SU2_FSI
 su2_fsi_sources = ../include/SU2_FSI.hpp \
 		../src/SU2_FSI.cpp \
 		../include/iteration_structure_fsi.hpp \
-		../src/iteration_structure_fsi.cpp
+		../src/iteration_structure_fsi.cpp \
+		../../SU2_CFD/include/definition_structure.hpp \
+		../../SU2_CFD/src/definition_structure.cpp
 
 su2_fsi_cxx_flags =
 su2_fsi_ldadd =
 
 su2_fsi_ldadd += \
-    ../../SU2_CFD/src/___bin_SU2_CFD-definition_structure.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-fluid_model.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-fluid_model_pig.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-fluid_model_pvdw.o \

@@ -1514,12 +1514,15 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
 
 }
 
-void Interface_Preprocessing(CTransfer ***transfer_container, CGeometry ***geometry_container,
-							 CConfig **config_container, unsigned short nZone, unsigned short nDim) {
+void Interface_Preprocessing(CTransfer ***transfer_container, CInterpolator ***interpolator_container,
+							 CGeometry ***geometry_container, CConfig **config_container,
+							 unsigned short nZone, unsigned short nDim) {
 
 	int rank = MASTER_NODE;
 	unsigned short donorZone, targetZone;
 	unsigned short nVarTransfer;
+	unsigned int Zones[2];
+	unsigned int nzn = 2; // Temporary, I'm not sure I need it
 
 	/*--- Initialize some useful booleans ---*/
 	bool fluid_donor, structural_donor;
@@ -1539,6 +1542,9 @@ void Interface_Preprocessing(CTransfer ***transfer_container, CGeometry ***geome
 		/*--- Initialize donor booleans ---*/
 		fluid_donor  = false;  structural_donor  = false;
 
+		/*--- Initialize donor zone for interpolation classes ---*/
+		Zones[0] = donorZone;
+
 		/*--- Set the donor boolean: as of now, only Fluid-Structure Interaction considered ---*/
 		switch (config_container[donorZone]->GetKind_Solver()) {
 			case EULER : case NAVIER_STOKES: case RANS: fluid_donor  = true; 		break;
@@ -1549,6 +1555,9 @@ void Interface_Preprocessing(CTransfer ***transfer_container, CGeometry ***geome
 
 			/*--- Initialize donor booleans ---*/
 			fluid_target  = false;  structural_target  = false;
+
+			/*--- Initialize target zone for interpolation classes ---*/
+			Zones[1] = targetZone;
 
 			/*--- Set the target boolean: as of now, only Fluid-Structure Interaction considered ---*/
 			switch (config_container[targetZone]->GetKind_Solver()) {
@@ -1562,8 +1571,22 @@ void Interface_Preprocessing(CTransfer ***transfer_container, CGeometry ***geome
 				/*--- Match Zones ---*/
 				if (rank == MASTER_NODE) cout << "Setting coupling ";
 
-				geometry_container[donorZone][MESH_0]->MatchZone(config_container[donorZone], geometry_container[targetZone][MESH_0],
-						config_container[targetZone], donorZone, nZone);
+				/*--- If the mesh is matching: match points ---*/
+				if (config_container[donorZone]->GetMatchingMesh()){
+					geometry_container[donorZone][MESH_0]->MatchZone(config_container[donorZone], geometry_container[targetZone][MESH_0],
+							config_container[targetZone], donorZone, nZone);
+				}
+				/*--- Else: interpolate ---*/
+				else {
+					switch (config_container[donorZone]->GetKindInterpolation()){
+						case NEAREST_NEIGHBOR:
+							interpolator_container[donorZone][targetZone] = new CNearestNeighbor(geometry_container, config_container, Zones, nzn);
+							break;
+						case ISOPARAMETRIC:
+							interpolator_container[donorZone][targetZone] = new CIsoparametric(geometry_container,config_container,Zones,nzn);
+							break;
+					}
+				}
 
 				/*--- Initialize the appropriate transfer strategy ---*/
 				if (rank == MASTER_NODE) cout << "and transferring ";

@@ -84,8 +84,6 @@ void CTransfer::Scatter_InterfaceData_Matching(CSolver *donor_solution, CSolver 
 
 	unsigned short iVar, jDim;
 
-
-
 	GetPhysical_Constants(donor_solution, target_solution, donor_geometry, target_geometry,
 						  donor_config, target_config);
 
