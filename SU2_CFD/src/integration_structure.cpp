@@ -819,7 +819,6 @@ void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *
 	#endif
 
 	unsigned short iCounter;
-
 	su2double FEA_check[2] = {0.0, 0.0};
 	su2double magResidualFSI, logResidualFSI_initial, logResidualFSI;
 	su2double magResidualFSI_criteria, logResidualFSI_criteria;

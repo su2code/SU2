@@ -263,9 +263,6 @@ int main(int argc, char *argv[]) {
 
 	  }
 
-
-
-
 	  /*--- For the time-spectral solver, set the grid node velocities. ---*/
 
 	  if (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_SPECTRAL)
@@ -304,6 +301,18 @@ int main(int argc, char *argv[]) {
 		  Interface_Preprocessing(transfer_container, geometry_container, config_container, nZone, nDim);
 
 	  }
+
+    if (!config_container[ZONE_0]->GetMatchingMesh()){
+      unsigned int Zones[2];
+      unsigned int nzn = 2; // temporary nZones for interpolation: 2 in the case of fluid-structure
+      Zones[0]=ZONE_0;
+      Zones[1]=ZONE_1;
+      if (config_container[ZONE_0]->GetKindInterpolation()== NEAREST_NEIGHBOR )
+        interpolator_container[iZone] = new CNearestNeighbor(geometry_container,config_container,Zones,nzn);
+      if (config_container[ZONE_0]->GetKindInterpolation()== ISOPARAMETRIC )
+        interpolator_container[iZone] = new CIsoparametric(geometry_container,config_container,Zones,nzn);
+    }
+
 
 	  /*--- Definition of the output class (one for all zones). The output class
 	   manages the writing of all restart, volume solution, surface solution,

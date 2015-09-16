@@ -879,6 +879,7 @@ private:
 	short Rotation_Type;			/*!< \brief Type of rotation associated with the vertex (MPI and periodic) */
 	unsigned long Normal_Neighbor; /*!< \brief Index of the closest neighbor. */
   unsigned long Donor_Elem;   /*!< \brief Store the donor element for interpolation across zones/ */
+  unsigned short Donor_Face;  /*!<\brief Store the donor face (w/in donor element) for interpolation across zones */
   su2double Basis_Function[3]; /*!< \brief Basis function values for interpolation across zones. */
   unsigned long **Donor_Info; /*!\brief Store a list of donor points (by global index) for interpolation across zones: zone,point,marker,vertex */
   su2double *Donor_Coeff; /*!\brief Store a list of coefficients corresponding to the donor points. */
@@ -1074,6 +1075,18 @@ public:
 	 * \return Value of the donor element of a vertex.
 	 */
 	long GetDonorElem(void);
+
+	/*!
+   * \brief Set the donor face of a vertex for interpolation across zones.
+   * \param[in] val_donorface- donor face index (w/in donor elem).
+   */
+  void SetDonorFace(unsigned short val_donorface);
+
+  /*!
+   * \brief Get the donor face of a vertex for interpolation across zones.
+   * \return Value of the donor face index (w/in donor elem).
+   */
+  unsigned short GetDonorFace(void);
   
   /*!
 	 * \brief Set the finite element basis functions needed for interpolation.
