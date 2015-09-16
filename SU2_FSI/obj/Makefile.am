@@ -39,20 +39,21 @@ bin_PROGRAMS = ../bin/SU2_FSI
 su2_fsi_sources = ../include/SU2_FSI.hpp \
 		../src/SU2_FSI.cpp \
 		../include/iteration_structure_fsi.hpp \
-		../src/iteration_structure_fsi.cpp
+		../src/iteration_structure_fsi.cpp \
+		../../SU2_CFD/include/definition_structure.hpp \
+		../../SU2_CFD/src/definition_structure.cpp
 
 su2_fsi_cxx_flags =
 su2_fsi_ldadd =
 
 su2_fsi_ldadd += \
-    ../../SU2_CFD/src/___bin_SU2_CFD-definition_structure.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-fluid_model.o \
-      ../../SU2_CFD/src/___bin_SU2_CFD-fluid_model_pig.o \
-      ../../SU2_CFD/src/___bin_SU2_CFD-fluid_model_pvdw.o \
-      ../../SU2_CFD/src/___bin_SU2_CFD-fluid_model_ppr.o \
-      ../../SU2_CFD/src/___bin_SU2_CFD-gauss_structure.o \
-      ../../SU2_CFD/src/___bin_SU2_CFD-element_linear.o \
-      ../../SU2_CFD/src/___bin_SU2_CFD-element_structure.o \
+    ../../SU2_CFD/src/___bin_SU2_CFD-fluid_model_pig.o \
+    ../../SU2_CFD/src/___bin_SU2_CFD-fluid_model_pvdw.o \
+    ../../SU2_CFD/src/___bin_SU2_CFD-fluid_model_ppr.o \
+    ../../SU2_CFD/src/___bin_SU2_CFD-gauss_structure.o \
+    ../../SU2_CFD/src/___bin_SU2_CFD-element_linear.o \
+    ../../SU2_CFD/src/___bin_SU2_CFD-element_structure.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-integration_structure.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-integration_time.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-iteration_structure.o \
@@ -80,9 +81,9 @@ su2_fsi_ldadd += \
     ../../SU2_CFD/src/___bin_SU2_CFD-output_cgns.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-output_structure.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-output_tecplot.o \
-      ../../SU2_CFD/src/___bin_SU2_CFD-output_fieldview.o \
-      ../../SU2_CFD/src/___bin_SU2_CFD-output_su2.o \
-      ../../SU2_CFD/src/___bin_SU2_CFD-output_paraview.o \
+    ../../SU2_CFD/src/___bin_SU2_CFD-output_fieldview.o \
+    ../../SU2_CFD/src/___bin_SU2_CFD-output_su2.o \
+    ../../SU2_CFD/src/___bin_SU2_CFD-output_paraview.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-solver_structure.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-solver_adjoint_levelset.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-solver_adjoint_mean.o \
@@ -101,6 +102,8 @@ su2_fsi_ldadd += \
     ../../SU2_CFD/src/___bin_SU2_CFD-solver_linearized_turbulent.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-solver_fem_elasticity.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-solver_template.o \
+    ../../SU2_CFD/src/___bin_SU2_CFD-transfer_physics.o \
+    ../../SU2_CFD/src/___bin_SU2_CFD-transfer_structure.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-transport_model.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-variable_structure.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-variable_adjoint_levelset.o \

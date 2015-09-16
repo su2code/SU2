@@ -1456,9 +1456,7 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
   unsigned short iMGlevel, nMGlevel = config_container->GetnMGLevels();
 
   su2double x, y, x_gust, dgust_dx, dgust_dy, dgust_dt;
-  su2double *Gust, *GridVel;
-  su2double NewGridVel[2] = {0.0,0.0};
-  su2double GustDer[3] = {0.0,0.0,0.0};
+  su2double *Gust, *GridVel, *NewGridVel, *GustDer;
 
   su2double Physical_dt = config_container->GetDelta_UnstTime();
   unsigned long ExtIter = config_container->GetExtIter();
@@ -1467,8 +1465,15 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
   su2double Uinf = solver_container[MESH_0][FLOW_SOL]->GetVelocity_Inf(0); // Assumption gust moves at infinity velocity
   
   Gust = new su2double [nDim];
+  NewGridVel = new su2double [nDim];
   for (iDim = 0; iDim < nDim; iDim++) {
     Gust[iDim] = 0.0;
+    NewGridVel[iDim] = 0.0;
+  }
+  
+  GustDer = new su2double [3];
+  for (unsigned short i = 0; i < 3; i++) {
+    GustDer[i] = 0.0;
   }
 
   // Vortex variables
@@ -1607,6 +1612,8 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
   }
   
   delete [] Gust;
+  delete [] GustDer;
+  delete [] NewGridVel;
   
 }
 

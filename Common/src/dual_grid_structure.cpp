@@ -459,7 +459,7 @@ CVertex::CVertex(unsigned long val_point, unsigned short val_nDim) : CDualGrid(v
   Donor_Points = NULL;
   Donor_Proc = NULL;
   Donor_Coeff = NULL;
-  nDonor_Points = 0;
+  nDonor_Points = 1;
 }
 
 CVertex::~CVertex() {
@@ -519,5 +519,4 @@ void CVertex::Allocate_DonorInfo(void){
   Donor_Points = new unsigned long[nDonor_Points];
   Donor_Proc = new unsigned long[nDonor_Points];
   Donor_Coeff = new su2double[nDonor_Points];
-
 }

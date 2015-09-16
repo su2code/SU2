@@ -37,8 +37,4 @@ typedef codi::RealReverse su2double;
 
 namespace AD{
   typedef codi::DataStore CheckpointHandler;
-  struct TapePosition{
-    typename codi::ChunkTape<double, int>::Position start;
-    typename codi::ChunkTape<double, int>::Position end;
-  };
 }

@@ -1825,8 +1825,8 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
 				VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
 				for (iDim = 0; iDim < nDim; iDim++) {
 					total_index = iPoint*nDim + iDim;
-          LinSysRes[total_index] = SU2_TYPE::GetPrimary(VarCoord[iDim] * VarIncrement);
-          LinSysSol[total_index] = SU2_TYPE::GetPrimary(VarCoord[iDim] * VarIncrement);
+          LinSysRes[total_index] = SU2_TYPE::GetValue(VarCoord[iDim] * VarIncrement);
+          LinSysSol[total_index] = SU2_TYPE::GetValue(VarCoord[iDim] * VarIncrement);
           StiffMatrix.DeleteValsRowi(total_index);
 				}
 			}
@@ -1858,8 +1858,8 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
 				VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
 				for (iDim = 0; iDim < nDim; iDim++) {
 					total_index = iPoint*nDim + iDim;
-          LinSysRes[total_index] = SU2_TYPE::GetPrimary(VarCoord[iDim] * VarIncrement);
-          LinSysSol[total_index] = SU2_TYPE::GetPrimary(VarCoord[iDim] * VarIncrement);
+          LinSysRes[total_index] = SU2_TYPE::GetValue(VarCoord[iDim] * VarIncrement);
+          LinSysSol[total_index] = SU2_TYPE::GetValue(VarCoord[iDim] * VarIncrement);
 					StiffMatrix.DeleteValsRowi(total_index);
 				}
 			}
@@ -1895,8 +1895,8 @@ void CVolumetricMovement::SetBoundaryDerivatives(CGeometry *geometry, CConfig *c
     for (iPoint = 0; iPoint < nPoint; iPoint++){
       for (iDim = 0; iDim < nDim; iDim++){
         total_index = iPoint*nDim + iDim;
-        LinSysRes[total_index] = SU2_TYPE::GetPrimary(geometry->GetSensitivity(iPoint, iDim));
-        LinSysSol[total_index] = SU2_TYPE::GetPrimary(geometry->GetSensitivity(iPoint, iDim));
+        LinSysRes[total_index] = SU2_TYPE::GetValue(geometry->GetSensitivity(iPoint, iDim));
+        LinSysSol[total_index] = SU2_TYPE::GetValue(geometry->GetSensitivity(iPoint, iDim));
       }
     }
   }
@@ -1917,7 +1917,7 @@ void CVolumetricMovement::UpdateGridCoord_Derivatives(CGeometry *geometry, CConf
       for (iDim = 0; iDim < nDim; iDim++) {
         total_index = iPoint*nDim + iDim;
         new_coord[iDim] = geometry->node[iPoint]->GetCoord(iDim);
-        SU2_TYPE::SetDerivative(new_coord[iDim], SU2_TYPE::GetPrimary(LinSysSol[total_index]));
+        SU2_TYPE::SetDerivative(new_coord[iDim], SU2_TYPE::GetValue(LinSysSol[total_index]));
       }
       geometry->node[iPoint]->SetCoord(new_coord);
     }
@@ -3075,21 +3075,29 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
   else if ((config->GetDesign_Variable(0) == ROTATION) ||
            (config->GetDesign_Variable(0) == TRANSLATION) ||
            (config->GetDesign_Variable(0) == SCALE)) {
-    /*--- If all markers are deforming, use volume method. If only some are deforming, use surface method ---*/
+    
+    /*--- If all markers are deforming, use volume method. 
+     If only some are deforming, use surface method ---*/
+    
+    /*--- iDV was uninitialized, so hard-coding to one. Check intended
+     behavior (might want to loop over all iDV in case we have trans & rotate. ---*/
+    iDV = 0;
     allmoving = true;
+    
     /*--- Loop over markers ---*/
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
       if (config->GetMarker_All_DV(iMarker) == NO)
         allmoving = false;
     }
+    
     if (!allmoving){
       /*---Only some markers are moving, use the surface method ---*/
       if (config->GetDesign_Variable(0) == ROTATION)
-        SetRotation(geometry, config,  iDV, false);
+        SetRotation(geometry, config, iDV, false);
       if (config->GetDesign_Variable(0) == SCALE)
-        SetScale(geometry, config,  iDV, false);
+        SetScale(geometry, config, iDV, false);
       if (config->GetDesign_Variable(0) == TRANSLATION)
-        SetTranslation(geometry, config,  iDV, false);
+        SetTranslation(geometry, config, iDV, false);
     }
     else{
       if (rank == MASTER_NODE)
@@ -5787,7 +5795,8 @@ void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
   unsigned short iMarker, nUpper, nLower, iUpper, iLower, iVar, iDim;
   su2double *VarCoord, *Coord, NewYCoord, NewXCoord, *Coord_i, *Coord_ip1, yp1, ypn,
   Airfoil_Coord[2]= {0.0,0.0}, factor, coeff = 10000, Upper, Lower, Arch = 0.0, TotalArch = 0.0,
-  x_i, x_ip1, y_i, y_ip1, AirfoilScale;
+  x_i, x_ip1, y_i, y_ip1;
+  passivedouble AirfoilScale;
   vector<su2double> Svalue, Xcoord, Ycoord, Xcoord2, Ycoord2, Xcoord_Aux, Ycoord_Aux;
   bool AddBegin = true, AddEnd = true;
   char AirfoilFile[256], AirfoilFormat[15], MeshOrientation[15], AirfoilClose[15];

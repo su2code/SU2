@@ -130,15 +130,16 @@ am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am_____bin_SU2_FSI_SOURCES_DIST = ../include/SU2_FSI.hpp \
 	../src/SU2_FSI.cpp ../include/iteration_structure_fsi.hpp \
-	../src/iteration_structure_fsi.cpp
+	../src/iteration_structure_fsi.cpp \
+	../../SU2_CFD/include/definition_structure.hpp \
+	../../SU2_CFD/src/definition_structure.cpp
 am__dirstamp = $(am__leading_dot)dirstamp
 am__objects_1 = ../src/___bin_SU2_FSI-SU2_FSI.$(OBJEXT) \
-	../src/___bin_SU2_FSI-iteration_structure_fsi.$(OBJEXT)
+	../src/___bin_SU2_FSI-iteration_structure_fsi.$(OBJEXT) \
+	../../SU2_CFD/src/___bin_SU2_FSI-definition_structure.$(OBJEXT)
 @BUILD_NORMAL_TRUE@am____bin_SU2_FSI_OBJECTS = $(am__objects_1)
 ___bin_SU2_FSI_OBJECTS = $(am____bin_SU2_FSI_OBJECTS)
-am__DEPENDENCIES_1 =  \
-	../../SU2_CFD/src/___bin_SU2_CFD-definition_structure.o \
-	../../SU2_CFD/src/___bin_SU2_CFD-fluid_model.o \
+am__DEPENDENCIES_1 = ../../SU2_CFD/src/___bin_SU2_CFD-fluid_model.o \
 	../../SU2_CFD/src/___bin_SU2_CFD-fluid_model_pig.o \
 	../../SU2_CFD/src/___bin_SU2_CFD-fluid_model_pvdw.o \
 	../../SU2_CFD/src/___bin_SU2_CFD-fluid_model_ppr.o \
@@ -193,6 +194,8 @@ am__DEPENDENCIES_1 =  \
 	../../SU2_CFD/src/___bin_SU2_CFD-solver_linearized_turbulent.o \
 	../../SU2_CFD/src/___bin_SU2_CFD-solver_fem_elasticity.o \
 	../../SU2_CFD/src/___bin_SU2_CFD-solver_template.o \
+	../../SU2_CFD/src/___bin_SU2_CFD-transfer_physics.o \
+	../../SU2_CFD/src/___bin_SU2_CFD-transfer_structure.o \
 	../../SU2_CFD/src/___bin_SU2_CFD-transport_model.o \
 	../../SU2_CFD/src/___bin_SU2_CFD-variable_structure.o \
 	../../SU2_CFD/src/___bin_SU2_CFD-variable_adjoint_levelset.o \
@@ -426,7 +429,9 @@ ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS}
 su2_fsi_sources = ../include/SU2_FSI.hpp \
 		../src/SU2_FSI.cpp \
 		../include/iteration_structure_fsi.hpp \
-		../src/iteration_structure_fsi.cpp
+		../src/iteration_structure_fsi.cpp \
+		../../SU2_CFD/include/definition_structure.hpp \
+		../../SU2_CFD/src/definition_structure.cpp
 
 
 # always link to built dependencies from ./externals
@@ -450,9 +455,7 @@ su2_fsi_sources = ../include/SU2_FSI.hpp \
 su2_fsi_cxx_flags = @su2_externals_INCLUDES@ @CGNS_CXX@ \
 	@MUTATIONPP_CXX@ @JSONCPP_CXX@ @HDF5_CXX@ @SZIP_CXX@ \
 	@ZLIB_CXX@ $(am__empty)
-su2_fsi_ldadd =  \
-	../../SU2_CFD/src/___bin_SU2_CFD-definition_structure.o \
-	../../SU2_CFD/src/___bin_SU2_CFD-fluid_model.o \
+su2_fsi_ldadd = ../../SU2_CFD/src/___bin_SU2_CFD-fluid_model.o \
 	../../SU2_CFD/src/___bin_SU2_CFD-fluid_model_pig.o \
 	../../SU2_CFD/src/___bin_SU2_CFD-fluid_model_pvdw.o \
 	../../SU2_CFD/src/___bin_SU2_CFD-fluid_model_ppr.o \
@@ -507,6 +510,8 @@ su2_fsi_ldadd =  \
 	../../SU2_CFD/src/___bin_SU2_CFD-solver_linearized_turbulent.o \
 	../../SU2_CFD/src/___bin_SU2_CFD-solver_fem_elasticity.o \
 	../../SU2_CFD/src/___bin_SU2_CFD-solver_template.o \
+	../../SU2_CFD/src/___bin_SU2_CFD-transfer_physics.o \
+	../../SU2_CFD/src/___bin_SU2_CFD-transfer_structure.o \
 	../../SU2_CFD/src/___bin_SU2_CFD-transport_model.o \
 	../../SU2_CFD/src/___bin_SU2_CFD-variable_structure.o \
 	../../SU2_CFD/src/___bin_SU2_CFD-variable_adjoint_levelset.o \
@@ -618,6 +623,15 @@ clean-binPROGRAMS:
 	../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_FSI-iteration_structure_fsi.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
+../../SU2_CFD/src/$(am__dirstamp):
+	@$(MKDIR_P) ../../SU2_CFD/src
+	@: > ../../SU2_CFD/src/$(am__dirstamp)
+../../SU2_CFD/src/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) ../../SU2_CFD/src/$(DEPDIR)
+	@: > ../../SU2_CFD/src/$(DEPDIR)/$(am__dirstamp)
+../../SU2_CFD/src/___bin_SU2_FSI-definition_structure.$(OBJEXT):  \
+	../../SU2_CFD/src/$(am__dirstamp) \
+	../../SU2_CFD/src/$(DEPDIR)/$(am__dirstamp)
 ../bin/$(am__dirstamp):
 	@$(MKDIR_P) ../bin
 	@: > ../bin/$(am__dirstamp)
@@ -628,11 +642,13 @@ clean-binPROGRAMS:
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
+	-rm -f ../../SU2_CFD/src/*.$(OBJEXT)
 	-rm -f ../src/*.$(OBJEXT)
 
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@../../SU2_CFD/src/$(DEPDIR)/___bin_SU2_FSI-definition_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_FSI-SU2_FSI.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_FSI-iteration_structure_fsi.Po@am__quote@
 
@@ -679,6 +695,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/iteration_structure_fsi.cpp' object='../src/___bin_SU2_FSI-iteration_structure_fsi.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_FSI_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_FSI-iteration_structure_fsi.obj `if test -f '../src/iteration_structure_fsi.cpp'; then $(CYGPATH_W) '../src/iteration_structure_fsi.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/iteration_structure_fsi.cpp'; fi`
+
+../../SU2_CFD/src/___bin_SU2_FSI-definition_structure.o: ../../SU2_CFD/src/definition_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_FSI_CXXFLAGS) $(CXXFLAGS) -MT ../../SU2_CFD/src/___bin_SU2_FSI-definition_structure.o -MD -MP -MF ../../SU2_CFD/src/$(DEPDIR)/___bin_SU2_FSI-definition_structure.Tpo -c -o ../../SU2_CFD/src/___bin_SU2_FSI-definition_structure.o `test -f '../../SU2_CFD/src/definition_structure.cpp' || echo '$(srcdir)/'`../../SU2_CFD/src/definition_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../../SU2_CFD/src/$(DEPDIR)/___bin_SU2_FSI-definition_structure.Tpo ../../SU2_CFD/src/$(DEPDIR)/___bin_SU2_FSI-definition_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../../SU2_CFD/src/definition_structure.cpp' object='../../SU2_CFD/src/___bin_SU2_FSI-definition_structure.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_FSI_CXXFLAGS) $(CXXFLAGS) -c -o ../../SU2_CFD/src/___bin_SU2_FSI-definition_structure.o `test -f '../../SU2_CFD/src/definition_structure.cpp' || echo '$(srcdir)/'`../../SU2_CFD/src/definition_structure.cpp
+
+../../SU2_CFD/src/___bin_SU2_FSI-definition_structure.obj: ../../SU2_CFD/src/definition_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_FSI_CXXFLAGS) $(CXXFLAGS) -MT ../../SU2_CFD/src/___bin_SU2_FSI-definition_structure.obj -MD -MP -MF ../../SU2_CFD/src/$(DEPDIR)/___bin_SU2_FSI-definition_structure.Tpo -c -o ../../SU2_CFD/src/___bin_SU2_FSI-definition_structure.obj `if test -f '../../SU2_CFD/src/definition_structure.cpp'; then $(CYGPATH_W) '../../SU2_CFD/src/definition_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../../SU2_CFD/src/definition_structure.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../../SU2_CFD/src/$(DEPDIR)/___bin_SU2_FSI-definition_structure.Tpo ../../SU2_CFD/src/$(DEPDIR)/___bin_SU2_FSI-definition_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../../SU2_CFD/src/definition_structure.cpp' object='../../SU2_CFD/src/___bin_SU2_FSI-definition_structure.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_FSI_CXXFLAGS) $(CXXFLAGS) -c -o ../../SU2_CFD/src/___bin_SU2_FSI-definition_structure.obj `if test -f '../../SU2_CFD/src/definition_structure.cpp'; then $(CYGPATH_W) '../../SU2_CFD/src/definition_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../../SU2_CFD/src/definition_structure.cpp'; fi`
 
 ID: $(am__tagged_files)
 	$(am__define_uniq_tagged_files); mkid -fID $$unique
@@ -795,6 +825,8 @@ clean-generic:
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
 	-test . = "$(srcdir)" || test -z "$(CONFIG_CLEAN_VPATH_FILES)" || rm -f $(CONFIG_CLEAN_VPATH_FILES)
+	-rm -f ../../SU2_CFD/src/$(DEPDIR)/$(am__dirstamp)
+	-rm -f ../../SU2_CFD/src/$(am__dirstamp)
 	-rm -f ../bin/$(am__dirstamp)
 	-rm -f ../src/$(DEPDIR)/$(am__dirstamp)
 	-rm -f ../src/$(am__dirstamp)
@@ -807,7 +839,7 @@ clean: clean-am
 clean-am: clean-binPROGRAMS clean-generic mostlyclean-am
 
 distclean: distclean-am
-	-rm -rf ../src/$(DEPDIR)
+	-rm -rf ../../SU2_CFD/src/$(DEPDIR) ../src/$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -853,7 +885,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-	-rm -rf ../src/$(DEPDIR)
+	-rm -rf ../../SU2_CFD/src/$(DEPDIR) ../src/$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
