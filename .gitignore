@@ -40,6 +40,15 @@ externals/autotools/share
 # externally downloaded tools
 externals/CoDi
 externals/adjointmpi
+.cproject
+.project
+.settings/
+Debug/
+go.sh
+log_make.txt
+log_make_install.txt
+SU2_FSI/bin/SU2_FSI
+discardMod.sh
 
 #logs and errors
 *.log

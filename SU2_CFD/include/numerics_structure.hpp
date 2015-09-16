@@ -5401,8 +5401,6 @@ public:
    */
   void ComputeResidual(su2double *val_residual, su2double **Jacobian_i, CConfig *config);
   
-private:
-  bool incompressible;
 };
 
 /*!
@@ -6205,7 +6203,6 @@ private:
   su2double *Mean_GradPsiE;	/*!< \brief Mean gradient in the adjoint  energy between nodes i and j. */
   su2double *Mean_GradPsiEve; /*!< \brief Mean gradient in the adjoint vibrational energy between nodes i and j. */
   su2double **Mean_GradPhi;	/*!< \brief Counter for dimensions of the problem. */
-  su2double **Mean_GPsi;  /*!< \brief Mean gradient of the adjoint variables. */
   su2double *Edge_Vector;	/*!< \brief Vector going from node i to node j. */
   su2double **SigmaPhi;
   su2double **SigmaPsiE;

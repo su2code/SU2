@@ -875,7 +875,7 @@ private:
 	su2double CartCoord[3];		/*!< \brief Vertex cartesians coordinates. */
 	su2double VarCoord[3];		/*!< \brief Used for storing the coordinate variation due to a surface modification. */
 	su2double *VarRot;   /*!< \brief Used for storing the rotation variation due to a surface modification. */
-	long PeriodicPoint[2];			/*!< \brief Store the periodic point of a boundary (iProcessor, iPoint) */
+	long PeriodicPoint[3];			/*!< \brief Store the periodic point of a boundary (iProcessor, iPoint) */
 	short Rotation_Type;			/*!< \brief Type of rotation associated with the vertex (MPI and periodic) */
 	unsigned long Normal_Neighbor; /*!< \brief Index of the closest neighbor. */
 	unsigned long *Donor_Points; /*!< \brief indices of donor points for interpolation across zones */
@@ -884,7 +884,7 @@ private:
   unsigned short Donor_Face;  /*!<\brief Store the donor face (w/in donor element) for interpolation across zones */
   su2double Basis_Function[3]; /*!< \brief Basis function values for interpolation across zones. */
   su2double *Donor_Coeff; /*!\brief Store a list of coefficients corresponding to the donor points. */
-  unsigned short nDonor_Points; /*!\brief Number of points in Donor_Points;*/
+  unsigned short nDonor_Points; /*!\brief Number of points in Donor_Points; at least there will be one donor point (if the mesh is matching)*/
   
 public:
 
@@ -1034,6 +1034,14 @@ public:
 	void SetDonorPoint(long val_periodicpoint, long val_processor);
 	
 	/*! 
+	 * \overload
+	 * \param[in] val_periodicpoint - Value of periodic point of the vertex.
+	 * \param[in] val_processor - Processor where the point belong.
+	 * \param[in] val_globalindex - Global index of the donor point.
+	 */
+	void SetDonorPoint(long val_periodicpoint, long val_processor, long val_globalindex);
+
+	/*!
 	 * \brief Get the value of the periodic point of a vertex.
 	 * \return Value of the periodic point of a vertex.
 	 */
@@ -1044,6 +1052,12 @@ public:
 	 * \return Value of the periodic point of a vertex.
 	 */
 	long GetDonorProcessor(void);
+
+  /*!
+	 * \brief Get the value of the global index for the donor point of a vertex.
+	 * \return Value of the global index for the donor point of a vertex.
+	 */
+	long GetGlobalDonorPoint(void);
   
 	/*! 
 	 * \brief Get the value of the periodic point of a vertex, and its somain

@@ -4907,7 +4907,7 @@ void CEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) {
 
   /*--- Barth-Jespersen limiter with Venkatakrishnan modification ---*/
 
-  if (config->GetKind_SlopeLimit() == BARTH_JESPERSEN) {
+  if (config->GetKind_SlopeLimit_Flow() == BARTH_JESPERSEN) {
 
     for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
@@ -4968,7 +4968,7 @@ void CEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) {
 
   /*--- Venkatakrishnan limiter ---*/
 
-  if (config->GetKind_SlopeLimit() == VENKATAKRISHNAN) {
+  if (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN) {
 
     /*-- Get limiter parameters from the configuration file ---*/
 
@@ -8482,8 +8482,8 @@ void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_conta
   bool tkeNeeded = (((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
                     (config->GetKind_Turb_Model() == SST));
 
-  su2double DampingFactor = config->GetDamp_Engine_Exhaust();
-  su2double Baseline_Press = 0.75 * config->GetPressure_FreeStreamND();
+//  su2double Target_Exhaust_Pressure, Exhaust_Pressure_old, Exhaust_Pressure_inc;
+//  su2double DampingFactor = config->GetDamp_Engine_Exhaust();
 
   su2double *Normal = new su2double[nDim];
 

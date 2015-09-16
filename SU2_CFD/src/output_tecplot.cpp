@@ -950,8 +950,8 @@ void COutput::SetTecplotBinary_DomainMesh(CConfig *config, CGeometry *geometry, 
   
 #ifdef HAVE_TECIO
   
-  su2double   t;
-  INTEGER4 i, N, err, Debug, NPts, NElm, IsDouble, KMax;
+  passivedouble   t;
+  INTEGER4 i, err, Debug, NPts, NElm, IsDouble, KMax;
   INTEGER4 ICellMax, JCellMax, KCellMax, ZoneType, StrandID, ParentZn, FileType;
   INTEGER4 *ShareFromZone = NULL, IsBlock, NumFaceConnections, FaceNeighborMode, ShareConnectivityFromZone;
   string buffer, variables;
@@ -1411,8 +1411,8 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
   
 #ifdef HAVE_TECIO
   
-  su2double   t;
-  INTEGER4 i, N, iVar, err, Debug, NPts, NElm, IsDouble, KMax;
+  passivedouble   t;
+  INTEGER4 i, iVar, err, Debug, NPts, NElm, IsDouble, KMax;
   INTEGER4 ICellMax, JCellMax, KCellMax, ZoneType, StrandID, ParentZn, FileType;
   INTEGER4 *ShareFromZone = NULL, IsBlock, NumFaceConnections, FaceNeighborMode, ShareConnectivityFromZone;
   string buffer, variables;
@@ -1428,7 +1428,7 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
   Debug						= 0;
   IsDouble					= 1;
   NPts						= (INTEGER4)nGlobal_Poin;
-  t							= SU2_TYPE::GetPrimary(iExtIter*config->GetDelta_UnstTime());
+  t							= SU2_TYPE::GetValue(iExtIter*config->GetDelta_UnstTime());
   KMax						= 0;
   ICellMax					= 0;
   JCellMax					= 0;
@@ -1903,8 +1903,8 @@ void COutput::SetTecplotBinary_SurfaceMesh(CConfig *config, CGeometry *geometry,
   
 #ifdef HAVE_TECIO
   
-  su2double   t;
-  INTEGER4 i, N, err, Debug, NPts, NElm, IsDouble, KMax;
+  passivedouble   t;
+  INTEGER4 i, err, Debug, NPts, NElm, IsDouble, KMax;
   INTEGER4 ICellMax, JCellMax, KCellMax, ZoneType, StrandID, ParentZn, FileType;
   INTEGER4 *ShareFromZone, IsBlock, NumFaceConnections, FaceNeighborMode, ShareConnectivityFromZone;
   string buffer, variables;
@@ -2202,9 +2202,9 @@ void COutput::SetTecplotBinary_SurfaceMesh(CConfig *config, CGeometry *geometry,
 void COutput::SetTecplotBinary_SurfaceSolution(CConfig *config, CGeometry *geometry, unsigned short val_iZone) {
   
 #ifdef HAVE_TECIO
-  
-  su2double   t;
-  INTEGER4 i, N, iVar, err, Debug, NPts, NElm, IsDouble, KMax;
+
+  passivedouble   t;
+  INTEGER4 i, iVar, err, Debug, NPts, NElm, IsDouble, KMax;
   INTEGER4 ICellMax, JCellMax, KCellMax, ZoneType, StrandID, ParentZn, FileType;
   INTEGER4 *ShareFromZone, IsBlock, NumFaceConnections, FaceNeighborMode, ShareConnectivityFromZone;
   string buffer, variables;
@@ -2321,7 +2321,7 @@ void COutput::SetTecplotBinary_SurfaceSolution(CConfig *config, CGeometry *geome
   Debug						= 0;
   IsDouble					= 1;
   NPts						= (INTEGER4)nSurf_Poin;
-  t							= SU2_TYPE::GetPrimary(iExtIter*config->GetDelta_UnstTime());
+  t							= SU2_TYPE::GetValue(iExtIter*config->GetDelta_UnstTime());
   KMax						= 0;
   ICellMax					= 0;
   JCellMax					= 0;

@@ -45,7 +45,7 @@ bin_PROGRAMS += ../bin/SU2_CFD_DIRECTDIFF
 endif
 
 if BUILD_REVERSE
-bin_PROGRAMS += ../bin/SU2_CFD_REVERSE
+bin_PROGRAMS += ../bin/SU2_CFD_AD
 endif
 
 
@@ -73,6 +73,8 @@ su2_cfd_sources = \
   ../include/transport_model.inl \
   ../include/variable_structure.hpp \
   ../include/variable_structure.inl \
+  ../include/transfer_structure.hpp \
+  ../include/transfer_structure.inl \
   ../src/definition_structure.cpp \
   ../src/fluid_model.cpp \
   ../src/fluid_model_pig.cpp \
@@ -129,6 +131,8 @@ su2_cfd_sources = \
   ../src/solver_fem_elasticity.cpp \
   ../src/solver_structure.cpp \
   ../src/solver_template.cpp \
+  ../src/transfer_physics.cpp \
+  ../src/transfer_structure.cpp \
   ../src/SU2_CFD.cpp \
   ../src/transport_model.cpp \
   ../src/variable_adjoint_levelset.cpp \
@@ -200,7 +204,7 @@ ___bin_SU2_CFD_DIRECTDIFF_LDADD = @DIRECTDIFF_LIBS@ ../../Common/lib/libSU2_DIRE
 endif
 
 if BUILD_REVERSE
-___bin_SU2_CFD_REVERSE_SOURCES = $(su2_cfd_sources)
-___bin_SU2_CFD_REVERSE_CXXFLAGS = @REVERSE_CXX@ ${su2_cfd_cxx_flags}
-___bin_SU2_CFD_REVERSE_LDADD = @REVERSE_LIBS@ ../../Common/lib/libSU2_REVERSE.a ${su2_cfd_ldadd}
+___bin_SU2_CFD_AD_SOURCES = $(su2_cfd_sources)
+___bin_SU2_CFD_AD_CXXFLAGS = @REVERSE_CXX@ ${su2_cfd_cxx_flags}
+___bin_SU2_CFD_AD_LDADD = @REVERSE_LIBS@ ../../Common/lib/libSU2_AD.a ${su2_cfd_ldadd}
 endif

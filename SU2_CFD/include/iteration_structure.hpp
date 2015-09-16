@@ -38,6 +38,7 @@
 #include "integration_structure.hpp"
 #include "output_structure.hpp"
 #include "numerics_structure.hpp"
+#include "transfer_structure.hpp"
 #include "../../Common/include/geometry_structure.hpp"
 #include "../../Common/include/grid_movement_structure.hpp"
 #include "../../Common/include/config_structure.hpp"

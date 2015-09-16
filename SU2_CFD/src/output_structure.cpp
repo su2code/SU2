@@ -1877,11 +1877,10 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   unsigned short iVar = 0, jVar = 0, FirstIndex = NONE, SecondIndex = NONE, ThirdIndex = NONE;
   unsigned short nVar_First = 0, nVar_Second = 0, nVar_Third = 0;
   unsigned short iVar_GridVel = 0, iVar_PressCp = 0, iVar_Density = 0, iVar_Lam = 0, iVar_MachMean = 0,
-  iVar_Tempv = 0, iVar_EF =0, iVar_Temp = 0, iVar_Mach = 0, iVar_Press = 0, iVar_TempLam = 0,
-  iVar_ViscCoeffs = 0, iVar_Sens = 0, iVar_FEA = 0, iVar_Extra = 0, iVar_Eddy = 0, iVar_Sharp = 0,
-  iVar_FEA_Vel = 0, iVar_FEA_Accel = 0, iVar_FEA_Stress = 0, iVar_FEA_Stress_3D = 0, iVar_FEA_Extra = 0,
-  iVar_SensDim = 0;
-
+  iVar_Tempv = 0, iVar_Temp = 0, iVar_Mach = 0, iVar_Press = 0, iVar_TempLam = 0,
+  iVar_ViscCoeffs = 0, iVar_Sens = 0, iVar_Extra = 0, iVar_Eddy = 0, iVar_Sharp = 0,
+  iVar_FEA_Vel = 0, iVar_FEA_Accel = 0, iVar_FEA_Stress = 0, iVar_FEA_Stress_3D = 0,
+  iVar_FEA_Extra = 0, iVar_SensDim = 0;
   unsigned long iPoint = 0, jPoint = 0, iVertex = 0, iMarker = 0;
   su2double Gas_Constant, Mach2Vel, Mach_Motion, RefDensity, RefPressure = 0.0, factor = 0.0;
   
@@ -4637,10 +4636,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     su2double Total_Sens_Press = 0.0, Total_Sens_Temp = 0.0;
     
     /*--- Initialize variables to store information from all domains (direct differentiation) ---*/
-    su2double D_Total_CLift = 0.0, D_Total_CDrag = 0.0, D_Total_CSideForce = 0.0, D_Total_CMx = 0.0, D_Total_CMy = 0.0, D_Total_CMz = 0.0, D_Total_CEff = 0.0,
-    D_Total_CEquivArea = 0.0, D_Total_CNearFieldOF = 0.0, D_Total_CFx = 0.0, D_Total_CFy = 0.0, D_Total_CFz = 0.0, D_Total_CMerit = 0.0,
-    D_Total_CT = 0.0, D_Total_CQ = 0.0, D_Total_CFreeSurface = 0.0, D_Total_CWave = 0.0, D_Total_CHeat = 0.0, D_Total_CpDiff = 0.0, D_Total_HeatFluxDiff = 0.0,
-    D_Total_CFEA = 0.0, D_Total_Heat = 0.0, D_Total_MaxHeat = 0.0, D_Total_Mdot = 0.0;
+    su2double D_Total_CLift = 0.0, D_Total_CDrag = 0.0, D_Total_CSideForce = 0.0, D_Total_CMx = 0.0, D_Total_CMy = 0.0, D_Total_CMz = 0.0, D_Total_CEff = 0.0, D_Total_CFx = 0.0, D_Total_CFy = 0.0, D_Total_CFz = 0.0;
 
     /*--- Residual arrays ---*/
     su2double *residual_flow         = NULL,

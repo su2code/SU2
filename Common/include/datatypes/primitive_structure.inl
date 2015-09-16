@@ -30,9 +30,9 @@
  */
 #pragma once
 namespace SU2_TYPE{
-  inline void SetPrimary(double& data, const double &val){data = val;}
+  inline void SetValue(double& data, const double &val){data = val;}
 
-  inline double GetPrimary(const double& data){ return data;}
+  inline double GetValue(const double& data){ return data;}
 
   inline void SetSecondary(double& data, const double &val){}
 
