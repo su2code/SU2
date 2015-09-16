@@ -399,7 +399,7 @@ void CIsoparametric::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
           iNearestVertex = jVertex;
         }
       }
-      cout <<" Nearest Neighbor for flow point " << iPoint <<" is "<< iNearestNode << "; d = " << last_distance << endl;
+      //cout <<" Nearest Neighbor for flow point " << iPoint <<" is "<< iNearestNode << "; d = " << last_distance << endl;
 
       donor_elem=-1;
       last_distance=-1;
@@ -499,10 +499,11 @@ void CIsoparametric::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
               /*--- Store info ---*/
               donor_elem = temp_donor;
               // Print check
+              /*
               for (iDim=0; iDim<nDim; iDim++)
                 Coord[iDim]=0;
               for (it=0; it< nNodes; it++){
-                /*--- If 3D loop over a face. if 2D loop over an element ---*/
+                //--- If 3D loop over a face. if 2D loop over an element ---
                 if (nDim==3){
                   jPoint = Geometry[donorZone][MESH_0]->elem[temp_donor]->GetNode(Geometry[donorZone][MESH_0]->elem[temp_donor]->GetFaces(iFace,it));
                 }
@@ -523,10 +524,11 @@ void CIsoparametric::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
               for (iDim=0; iDim<nDim; iDim++){
                 cout << " iso " << Coord[iDim] <<" proj " << projected_point[iDim] <<" NN " <<  donorCoord[iDim] << endl;
               }
+              */
               Geometry[targetZone][MESH_0]->vertex[markTarget][iVertex]->SetDonorElem(temp_donor); // in 2D is nearest neighbor
               Geometry[targetZone][MESH_0]->vertex[markTarget][iVertex]->SetDonorFace(iFace);
               Geometry[targetZone][MESH_0]->vertex[markTarget][iVertex]->SetnDonorPoints(nNodes);
-              cout <<"updated closest face/edge" << endl;
+              //cout <<"updated closest face/edge" << endl;
             }
           }
         }
@@ -789,7 +791,7 @@ void CIsoparametric::Isoparameters(su2double* isoparams, unsigned long iVertex,
       inside_face = false;
   }
   if (!inside_face){
-    cout <<"Reverted to nearest neighbor " << endl;
+    //cout <<"Reverted to nearest neighbor " << endl;
     /*--- Revert to nearest neighbor ---*/
     tmp=-1; tmp2=0.0; k=0;
     for (i=0; i<m0; i++){
