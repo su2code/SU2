@@ -519,7 +519,7 @@ void CVertex::Allocate_DonorInfo(void){
   Donor_Info = new unsigned long*[nDonor_Points];
   Donor_Coeff = new su2double[nDonor_Points];
   for (unsigned short iDonor=0; iDonor<nDonor_Points; iDonor++){
-    Donor_Info[iDonor]=new unsigned long[4];
+    Donor_Info[iDonor]=new unsigned long[5];
   }
 
 }

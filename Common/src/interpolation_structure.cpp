@@ -32,7 +32,16 @@
 #include "../include/interpolation_structure.hpp"
 
 CInterpolator::CInterpolator(void){
-  //Data = NULL;
+
+	nZone = 0;
+	Geometry = NULL;
+
+	donor_geometry  = NULL;
+	target_geometry = NULL;
+
+	donorZone  = 0;
+	targetZone = 0;
+
 }
 
 CInterpolator::~CInterpolator(void){}
@@ -42,7 +51,14 @@ CInterpolator::CInterpolator(CGeometry ***geometry_container, CConfig **config, 
 
   /* Store pointers*/
 	Geometry = geometry_container;
+
 	nZone = val_nZone;
+
+	donorZone  = Zones[0];
+	targetZone = Zones[1];
+
+	donor_geometry  = geometry_container[donorZone][MESH_0];
+	target_geometry = geometry_container[targetZone][MESH_0];
 
   /*--- Initialize transfer coefficients between the zones ---*/
 	/* Since this is a virtual function, call it in the child class constructor  */
@@ -51,6 +67,9 @@ CInterpolator::CInterpolator(CGeometry ***geometry_container, CConfig **config, 
   //Set_TransferCoeff(Zones,config);
 
 }
+
+inline void CInterpolator::Set_TransferCoeff(unsigned int* Zones, CConfig **config) { }
+
 /*
 void CInterpolator::InitializeData(unsigned int* Zones, unsigned short val_nVar){
   nVar=val_nVar;
@@ -186,9 +205,10 @@ void CInterpolator::InitializeData(unsigned int* Zones, unsigned short val_nVar)
 //    cout <<" CInterpolator object has not been initialized"<<endl;
 //}
 
+CNearestNeighbor::CNearestNeighbor(void):  CInterpolator(){ }
 
 /* Nearest Neighbor Interpolator */
-CNearestNeighbor::CNearestNeighbor(CGeometry ***geometry_container, CConfig **config,  unsigned int* Zones,unsigned int nZone) :  CInterpolator(geometry_container, config, Zones,nZone){
+CNearestNeighbor::CNearestNeighbor(CGeometry ***geometry_container, CConfig **config,  unsigned int* Zones, unsigned int nZone) :  CInterpolator(geometry_container, config, Zones, nZone){
   //unsigned short nDim = geometry_container[Zones[0]][MESH_0]->GetnDim();
   /*--- Initialize transfer coefficients between the zones ---*/
   Set_TransferCoeff(Zones,config);
@@ -201,109 +221,223 @@ CNearestNeighbor::CNearestNeighbor(CGeometry ***geometry_container, CConfig **co
 CNearestNeighbor::~CNearestNeighbor(){}
 
 void CNearestNeighbor::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
-  unsigned long iPoint, jPoint, iVertex, jVertex,*nn;
+
+  unsigned long iPoint, jPoint, iVertex, jVertex, *nn;
   unsigned short iMarker, iDim, jMarker;
-  unsigned short nDim = Geometry[Zones[0]][MESH_0]->GetnDim(), iDonor, jDonor;
+  unsigned short nDim = donor_geometry->GetnDim();
   su2double distance = 0.0, last_distance=-1.0;
 
+  unsigned short nMarkerInt, nMarkerDonor, nMarkerTarget;		// Number of markers on the interface, donor and target side
+  unsigned short iMarkerInt, iMarkerDonor, iMarkerTarget;		// Variables for iteration over markers
+  int Marker_Donor = -1, Marker_Target = -1;
+
+  unsigned long nVertexDonor = 0, nVertexTarget= 0;
+  unsigned long Point_Donor = 0, Point_Target = 0;
+  unsigned long Vertex_Donor = 0, Vertex_Target = 0;
+
+  unsigned long iVertexDonor, iPointDonor = 0;
+  unsigned long iVertexTarget, iPointTarget = 0;
+  unsigned long pPoint = 0, Global_Point = 0;
+  unsigned long jGlobalPoint = 0, pGlobalPoint = 0;
+  int iProcessor, pProcessor = 0;
+
+  unsigned long nLocalVertex_Donor = 0, nGlobalVertex_Donor = 0, MaxLocalVertex_Donor = 0;
+
+  unsigned long Global_Point_Donor;
+  int Donor_Processor;
+
+  /*--- Number of markers on the FSI interface ---*/
+  nMarkerInt     = (config[donorZone]->GetMarker_n_FSIinterface())/2;
+  nMarkerTarget  = target_geometry->GetnMarker();
+  nMarkerDonor   = donor_geometry->GetnMarker();
+
+  nn = new unsigned long[5];
+
+  su2double *Coord_i, Coord_j[3], dist = 0.0, mindist, maxdist;
+
+  int rank = MASTER_NODE;
+  int nProcessor = SINGLE_NODE;
+
   unsigned short int donorindex = 0;
-  unsigned short nMarkerFSIint, nMarkerFEA, nMarkerFlow;
-  unsigned short iMarkerFSIint, iMarkerFEA, iMarkerFlow;
-  unsigned short markFEA, markFlow;
 
-  /*--- Restricted to 2-zone fluid-structure for now ---*/
-  unsigned int iZone_0 = Zones[0];
-  unsigned int iZone_1 = Zones[1];
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+#endif
 
-  nn = new unsigned long[4];
+  // For the markers on the interface
+  for (iMarkerInt = 0; iMarkerInt < nMarkerInt; iMarkerInt++) {
 
-  /*--- Loop through the vertices in Interface of both zones
-   * for Nearest Neighbor each vertex has only one donor point, but for other types of
-   * interpolation the number of donor points must be determined first. ---*/
+	  Marker_Donor = -1;
+	  Marker_Target = -1;
 
-	/*--- Number of markers on the FSI interface ---*/
-	nMarkerFSIint = (config[iZone_0]->GetMarker_n_FSIinterface())/2;
-  nMarkerFEA  =  config[iZone_1]->GetnMarker_All();
-  nMarkerFlow =  config[iZone_0]->GetnMarker_All();
+	  /*--- On the donor side ---*/
 
-	/*--- For the number of markers on the interface... ---*/
-	for (iMarkerFSIint=0; iMarkerFSIint < nMarkerFSIint; iMarkerFSIint++){
-
-		/*--- ... the marker markFEA ... ---*/
-		for (iMarkerFEA=0; iMarkerFEA < nMarkerFEA; iMarkerFEA++){
-			if ( config[iZone_1]->GetMarker_All_FSIinterface(iMarkerFEA) == (iMarkerFSIint+1)){
-				markFEA=iMarkerFEA;
-			}
-		}
-		/*--- ... corresponds to the marker markFlow. ---*/
-		for (iMarkerFlow=0; iMarkerFlow < nMarkerFlow; iMarkerFlow++){
-			if (config[iZone_0]->GetMarker_All_FSIinterface(iMarkerFlow) == (iMarkerFSIint+1)){
-				markFlow=iMarkerFlow;
-			}
-		}
-
-		/*--- For the markers on the fluid side ---*/
-		/*--- Loop over the vertices on the marker ---*/
-    for (iVertex = 0; iVertex<Geometry[iZone_0][MESH_0]->GetnVertex(markFlow); iVertex++) {
-      iPoint =Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->GetNode();
-      last_distance=-1.0;
-      /*--- Allocate memory with known number of donor points (1 for nearest neighbor) ---*/
-      Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->SetnDonorPoints(1);
-      Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->Allocate_DonorInfo();
-      /*--- Loop over the vertices in the corresponding interface marker (zone 1) --*/
-
-		  for (jVertex = 0; jVertex<Geometry[iZone_1][MESH_0]->GetnVertex(markFEA); jVertex++) {
-        jPoint =Geometry[iZone_1][MESH_0]->vertex[markFEA][jVertex]->GetNode();
-        distance = 0.0;
-        for (iDim=0; iDim<nDim; iDim++)
-          distance+=pow(Geometry[iZone_1][MESH_0]->vertex[markFEA][jVertex]->GetCoord(iDim)-Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->GetCoord(iDim),2.0);
-        if ((last_distance==-1.0) or (distance<last_distance)){
-          last_distance=distance;
-          nn[0] = iZone_1; /* Zone of the donor point */
-          nn[1] = jPoint; /* global index of the donor point */
-          nn[2] = markFEA; /* marker of the donor point */
-          nn[3] = jVertex; /* vertex index within marker of the donor point */
-        }
+	  for (iMarkerDonor = 0; iMarkerDonor < nMarkerDonor; iMarkerDonor++){
+		  /*--- If the tag GetMarker_All_FSIinterface(iMarkerDonor) equals the index we are looping at ---*/
+		  if (config[donorZone]->GetMarker_All_FSIinterface(iMarkerDonor) == iMarkerInt ){
+			  /*--- We have identified the identifier for the structural marker ---*/
+			  Marker_Donor = iMarkerDonor;
+			  /*--- Store the number of local points that belong to Marker_Donor ---*/
+			  nVertexDonor = donor_geometry->GetnVertex(iMarkerDonor);
+			  break;
 		  }
+		  else {
+			  /*--- If the tag hasn't matched any tag within the donor markers ---*/
+			  Marker_Donor = -1;
+			  nVertexDonor = 0;
+		  }
+	  }
 
-      /*--- Set the information of the nearest neighbor (donorindex = 0)  ---*/
-		  /*--- Enable this to check that we are doing it fine ---*/
-      //cout << "The distance from the vertex " << iVertex << " in the Flow marker " << markFlow << " to the vertex " << nn[3] << " in the FEA marker " << markFEA << " is " << last_distance << endl;
+	  /*--- On the target side ---*/
+	  for (iMarkerTarget = 0; iMarkerTarget < nMarkerTarget; iMarkerTarget++){
+		  /*--- If the tag GetMarker_All_FSIinterface(iMarkerFlow) equals the index we are looping at ---*/
+		  if (config[targetZone]->GetMarker_All_FSIinterface(iMarkerTarget) == iMarkerInt ){
+			  /*--- We have identified the identifier for the target marker ---*/
+			  Marker_Target = iMarkerTarget;
+			  /*--- Store the number of local points that belong to Marker_Target ---*/
+			  nVertexTarget = target_geometry->GetnVertex(iMarkerTarget);
+			  break;
+		  }
+		  else {
+			  /*--- If the tag hasn't matched any tag within the Flow markers ---*/
+			  nVertexTarget = 0;
+			  Marker_Target = -1;
+		  }
+	  }
 
-      Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->SetDonorInfo(donorindex,nn);
-      Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->SetDonorCoeff(donorindex,1.0);
-    }
+	  unsigned long *Buffer_Send_nVertex = new unsigned long [1];
+	  unsigned long *Buffer_Receive_nVertex = new unsigned long [nProcessor];
 
-    /*--- For the marker on the FEA side ---*/
-    /*--- Loop over the vertices on the marker ---*/
-    for (iVertex = 0; iVertex<Geometry[iZone_1][MESH_0]->GetnVertex(markFEA); iVertex++) {
-      iPoint =Geometry[iZone_1][MESH_0]->vertex[markFEA][iVertex]->GetNode();
-      last_distance=-1.0;
-      /*--- Allocate memory with known number of donor points (1 for nearest neighbor) ---*/
-      Geometry[iZone_1][MESH_0]->vertex[markFEA][iVertex]->SetnDonorPoints(1);
-      Geometry[iZone_1][MESH_0]->vertex[markFEA][iVertex]->Allocate_DonorInfo();
-      /*--- Loop over vertices in the interface marker (zone 0) --*/
-      Geometry[iZone_1][MESH_0]->vertex[markFEA][iVertex]->SetDonorInfo(donorindex,nn);
-		  for (jVertex = 0; jVertex<Geometry[iZone_0][MESH_0]->GetnVertex(markFlow); jVertex++) {
-        jPoint =Geometry[iZone_0][MESH_0]->vertex[markFlow][jVertex]->GetNode();
-        distance = 0.0;
-        for (iDim=0; iDim<nDim; iDim++)
-          distance+=pow(Geometry[iZone_0][MESH_0]->vertex[markFlow][jVertex]->GetCoord(iDim)-Geometry[iZone_1][MESH_0]->vertex[markFEA][iVertex]->GetCoord(iDim),2.0);
-        if ((jVertex==0) or (distance<last_distance)){
-          last_distance=distance;
-          nn[0] = iZone_0; /* Zone of the donor point */
-          nn[1] = jPoint; /* global index of the donor point */
-          nn[2] = markFlow; /* marker of the donor point */
-          nn[3] = jVertex; /* vertex index within marker of the donor point */
-        }
-      }
-		  /*--- Enable this to check that we are doing it fine ---*/
-      //cout << "The distance from the vertex " << iVertex << " in the FEA marker " << markFEA << " to the vertex " << nn[3] << " in the Flow marker " << markFlow << " is " << last_distance << endl;
-      /*--- Set the information of the nearest neighbor ---*/
-      Geometry[iZone_1][MESH_0]->vertex[markFEA][iVertex]->SetDonorInfo(donorindex,nn);
-      Geometry[iZone_1][MESH_0]->vertex[markFEA][iVertex]->SetDonorCoeff(donorindex,1.0);
-    }
-	}
+	  nLocalVertex_Donor = 0;
+	  for (iVertex = 0; iVertex < nVertexDonor; iVertex++) {
+		iPoint = donor_geometry->vertex[Marker_Donor][iVertex]->GetNode();
+		if (donor_geometry->node[iPoint]->GetDomain()) nLocalVertex_Donor++;
+	  }
+
+	  Buffer_Send_nVertex[0] = nLocalVertex_Donor;
+
+	  /*--- Send Interface vertex information --*/
+#ifdef HAVE_MPI
+	  SU2_MPI::Allreduce(&nLocalVertex_Donor, &nGlobalVertex_Donor, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+	  SU2_MPI::Allreduce(&nLocalVertex_Donor, &MaxLocalVertex_Donor, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
+	  SU2_MPI::Allgather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+#else
+	  nGlobalVertex_Donor 		= nLocalVertex_Donor;
+	  MaxLocalVertex_Donor 		= nLocalVertex_Donor;
+	  Buffer_Receive_nVertex[0] = Buffer_Send_nVertex[0];
+#endif
+
+	  su2double *Buffer_Send_Coord = new su2double [MaxLocalVertex_Donor*nDim];
+	  unsigned long *Buffer_Send_Point = new unsigned long [MaxLocalVertex_Donor];
+	  unsigned long *Buffer_Send_GlobalPoint = new unsigned long [MaxLocalVertex_Donor];
+
+	  su2double *Buffer_Receive_Coord = new su2double [nProcessor*MaxLocalVertex_Donor*nDim];
+	  unsigned long *Buffer_Receive_Point = new unsigned long [nProcessor*MaxLocalVertex_Donor];
+	  unsigned long *Buffer_Receive_GlobalPoint = new unsigned long [nProcessor*MaxLocalVertex_Donor];
+
+	  unsigned long nBuffer_Coord = MaxLocalVertex_Donor*nDim;
+	  unsigned long nBuffer_Point = MaxLocalVertex_Donor;
+
+	  for (iVertex = 0; iVertex < MaxLocalVertex_Donor; iVertex++) {
+		Buffer_Send_Point[iVertex] = 0;
+		Buffer_Send_GlobalPoint[iVertex] = 0;
+		for (iDim = 0; iDim < nDim; iDim++)
+		  Buffer_Send_Coord[iVertex*nDim+iDim] = 0.0;
+	  }
+
+	  /*--- Copy coordinates and point to the auxiliar vector --*/
+	  nLocalVertex_Donor = 0;
+	  for (iMarker = 0; iMarker < config[donorZone]->GetnMarker_All(); iMarker++)
+		for (iVertex = 0; iVertex < donor_geometry->GetnVertex(iMarker); iVertex++) {
+		  iPoint = donor_geometry->vertex[iMarker][iVertex]->GetNode();
+		  if (donor_geometry->node[iPoint]->GetDomain()) {
+			Buffer_Send_Point[nLocalVertex_Donor] = iPoint;
+			Buffer_Send_GlobalPoint[nLocalVertex_Donor] = donor_geometry->node[iPoint]->GetGlobalIndex();
+			for (iDim = 0; iDim < nDim; iDim++)
+			  Buffer_Send_Coord[nLocalVertex_Donor*nDim+iDim] = donor_geometry->node[iPoint]->GetCoord(iDim);
+			nLocalVertex_Donor++;
+		  }
+		}
+
+#ifdef HAVE_MPI
+	  SU2_MPI::Allgather(Buffer_Send_Coord, nBuffer_Coord, MPI_DOUBLE, Buffer_Receive_Coord, nBuffer_Coord, MPI_DOUBLE, MPI_COMM_WORLD);
+	  SU2_MPI::Allgather(Buffer_Send_Point, nBuffer_Point, MPI_UNSIGNED_LONG, Buffer_Receive_Point, nBuffer_Point, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+	  SU2_MPI::Allgather(Buffer_Send_GlobalPoint, nBuffer_Point, MPI_UNSIGNED_LONG, Buffer_Receive_GlobalPoint, nBuffer_Point, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+#else
+	  for (iVertex = 0; iVertex < nBuffer_Coord; iVertex++){
+		  Buffer_Receive_Coord[iVertex] = Buffer_Send_Coord[iVertex];
+	  }
+	  for (iVertex = 0; iVertex < nBuffer_Point; iVertex++){
+		  Buffer_Receive_Point[iVertex] = Buffer_Send_Point[iVertex];
+		  Buffer_Receive_GlobalPoint[iVertex] = Buffer_Send_GlobalPoint[iVertex];
+	  }
+#endif
+
+	  /*--- Compute the closest point to a Near-Field boundary point ---*/
+	  maxdist = 0.0;
+	  for (iVertexTarget = 0; iVertexTarget < nVertexTarget; iVertexTarget++) {
+
+		  Point_Target = target_geometry->vertex[Marker_Target][iVertexTarget]->GetNode();
+
+		  if (target_geometry->node[Point_Target]->GetDomain()) {
+
+		      /*--- Allocate memory with known number of donor points (1 for nearest neighbor) ---*/
+			  target_geometry->vertex[Marker_Target][iVertexTarget]->SetnDonorPoints(1);
+			  target_geometry->vertex[Marker_Target][iVertexTarget]->Allocate_DonorInfo();
+
+			  /*--- Coordinates of the boundary point ---*/
+			  Coord_i = target_geometry->node[Point_Target]->GetCoord();
+			  mindist = 1E6; pProcessor = 0; pPoint = 0;
+
+			  /*--- Loop over all the boundaries to find the pair ---*/
+			  for (iProcessor = 0; iProcessor < nProcessor; iProcessor++){
+				  for (jVertex = 0; jVertex < Buffer_Receive_nVertex[iProcessor]; jVertex++) {
+					  Point_Donor = Buffer_Receive_Point[iProcessor*MaxLocalVertex_Donor+jVertex];
+					  Global_Point_Donor = Buffer_Receive_GlobalPoint[iProcessor*MaxLocalVertex_Donor+jVertex];
+
+					  /*--- Compute the distance ---*/
+					  dist = 0.0; for (iDim = 0; iDim < nDim; iDim++) {
+						  Coord_j[iDim] = Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_Donor+jVertex)*nDim+iDim];
+						  dist += pow(Coord_j[iDim]-Coord_i[iDim],2.0);
+					  }
+
+					  if (((dist < mindist) && (iProcessor != rank)) ||
+						  ((dist < mindist) && (iProcessor == rank) && (jPoint != iPoint))) {
+						  mindist = dist; pProcessor = iProcessor; pPoint = jPoint;
+						  pGlobalPoint = jGlobalPoint;
+					  }
+				  }
+			  }
+
+			  /*--- Store the value of the pair ---*/
+			  maxdist = max(maxdist, mindist);
+
+			  // This will be changed when merged with the new version
+	          nn[0] = donorZone; 		/* Zone of the donor point */
+	          nn[1] = pPoint; 			/* Local index of the donor point (if no MPI it's the same as the global) */
+	          nn[2] = Marker_Donor; 	/* marker of the donor point --> TODO: CONFLICT WITH DATA TYPE ---*/
+	          nn[3] = Vertex_Donor; 	/* vertex index within marker of the donor point */
+	          nn[4] = Global_Point_Donor;	    /* Global index of the donor point */
+
+			  target_geometry->vertex[Marker_Target][iVertexTarget]->SetDonorInfo(donorindex,nn);
+			  target_geometry->vertex[Marker_Target][iVertexTarget]->SetDonorCoeff(donorindex,1.0);
+
+		  }
+	  }
+
+	  delete[] Buffer_Send_Coord;
+	  delete[] Buffer_Send_Point;
+	  delete[] Buffer_Send_GlobalPoint;
+
+	  delete[] Buffer_Receive_Coord;
+	  delete[] Buffer_Receive_Point;
+	  delete[] Buffer_Receive_GlobalPoint;
+
+	  delete[] Buffer_Send_nVertex;
+	  delete[] Buffer_Receive_nVertex;
+  }
+
 }
 
 
@@ -344,7 +478,7 @@ void CIsoparametric::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
   su2double projected_point[nDim];
   su2double *Normal;
 
-  nn = new unsigned long[4];
+  nn = new unsigned long[5];
   //cout <<"SetTransfer Coeff"<< endl;
   /*--- Number of markers on the FSI interface ---*/
   nMarkerFSIint = (config[iZone_0]->GetMarker_n_FSIinterface())/2;

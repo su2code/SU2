@@ -45,8 +45,6 @@
 using namespace std;
 
 
-
-
 /*!
  * \class CInterpolator
  * \brief Main class for defining the interpolator, it requires
@@ -57,10 +55,13 @@ using namespace std;
 class CInterpolator {
 protected:
   unsigned int nZone;
-  unsigned short nVar;
+  unsigned int donorZone, targetZone;
+  //unsigned short nVar;
   //su2double ***Data; /*!\brief container for some data to be interpolated */
 public:
-  CGeometry*** Geometry; /*! \brief Vector which stores n zones of geometry. */
+  CGeometry*** Geometry; 		/*! \brief Vector which stores n zones of geometry. */
+  CGeometry* donor_geometry; 	/*! \brief Vector which stores the donor geometry. */
+  CGeometry* target_geometry; 	/*! \brief Vector which stores the target geometry. */
 
   /*!
    * \brief Constructor of the class.
@@ -103,7 +104,7 @@ public:
    * \param[in] Zones - list of zones to set up interpolation for. This method must be overwritten in the child classes.
    * \param[in] config
    */
-  virtual void Set_TransferCoeff(unsigned int* Zones, CConfig **config)=0;
+  virtual void Set_TransferCoeff(unsigned int* Zones, CConfig **config);
 
 
 //  /*!
@@ -138,7 +139,12 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CNearestNeighbor(CGeometry ***geometry_container, CConfig **config,  unsigned int* Zones,unsigned int nZone);
+  CNearestNeighbor(void);
+
+  /*!
+   * \brief Constructor of the class.
+   */
+  CNearestNeighbor(CGeometry ***geometry_container, CConfig **config,  unsigned int* Zones, unsigned int nZone);
 
   /*!
    * \brief Destructor of the class.

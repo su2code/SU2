@@ -353,7 +353,7 @@ inline void CVertex::SetNormal_Neighbor(unsigned long val_Normal_Neighbor) { Nor
 inline void CVertex::IncrementnDonor(void){nDonor_Points++;}
 
 inline void CVertex::SetDonorInfo(unsigned short iDonor, unsigned long *val){
-  for ( unsigned short it =0; it<4; it++) Donor_Info[iDonor][it]=val[it];
+  for ( unsigned short it = 0; it < 5; it++) Donor_Info[iDonor][it]=val[it];
 }
 
 inline void CVertex::SetDonorCoeff(unsigned short iDonor, su2double val){ Donor_Coeff[iDonor] = val; }

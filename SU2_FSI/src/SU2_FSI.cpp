@@ -64,17 +64,17 @@ int main(int argc, char *argv[]) {
 	   heirarchy over all zones, multigrid levels, equation sets, and equation
 	   terms as described in the comments below. ---*/
 
-	  COutput *output                       = NULL;
-	  CIntegration ***integration_container = NULL;
-	  CGeometry ***geometry_container       = NULL;
-	  CSolver ****solver_container          = NULL;
-	  CNumerics *****numerics_container     = NULL;
-	  CConfig **config_container            = NULL;
-	  CSurfaceMovement **surface_movement   = NULL;
-	  CVolumetricMovement **grid_movement   = NULL;
-	  CFreeFormDefBox*** FFDBox             = NULL;
-	  CInterpolator **interpolator_container= NULL;
-	  CTransfer ***transfer_container       = NULL;
+	  COutput *output                         = NULL;
+	  CIntegration ***integration_container   = NULL;
+	  CGeometry ***geometry_container         = NULL;
+	  CSolver ****solver_container            = NULL;
+	  CNumerics *****numerics_container       = NULL;
+	  CConfig **config_container              = NULL;
+	  CSurfaceMovement **surface_movement     = NULL;
+	  CVolumetricMovement **grid_movement     = NULL;
+	  CFreeFormDefBox*** FFDBox               = NULL;
+	  CInterpolator ***interpolator_container = NULL;
+	  CTransfer ***transfer_container         = NULL;
 
 	  /*--- Load in the number of zones and spatial dimensions in the mesh file (If no config
 	   file is specified, default.cfg is used) ---*/
@@ -102,7 +102,7 @@ int main(int argc, char *argv[]) {
 	  surface_movement      = new CSurfaceMovement*[nZone];
 	  grid_movement         = new CVolumetricMovement*[nZone];
 	  FFDBox                = new CFreeFormDefBox**[nZone];
-	  interpolator_container= new CInterpolator*[nZone];
+	  interpolator_container= new CInterpolator**[nZone];
 	  transfer_container    = new CTransfer**[nZone];
 
 	  for (iZone = 0; iZone < nZone; iZone++) {
@@ -293,25 +293,28 @@ int main(int argc, char *argv[]) {
 
 		  for (iZone = 0; iZone < nZone; iZone++){
 			  transfer_container[iZone] = new CTransfer*[nZone];
+			  interpolator_container[iZone] = new CInterpolator*[nZone];
 			  for (jZone = 0; jZone < nZone; jZone++){
 				  transfer_container[iZone][jZone] = NULL;
+				  interpolator_container[iZone][jZone] = NULL;
 			  }
 		  }
 
-		  Interface_Preprocessing(transfer_container, geometry_container, config_container, nZone, nDim);
+		  Interface_Preprocessing(transfer_container, interpolator_container, geometry_container,
+				  	  	  	  	  config_container, nZone, nDim);
 
 	  }
 
-    if (!config_container[ZONE_0]->GetMatchingMesh()){
-      unsigned int Zones[2];
-      unsigned int nzn = 2; // temporary nZones for interpolation: 2 in the case of fluid-structure
-      Zones[0]=ZONE_0;
-      Zones[1]=ZONE_1;
-      if (config_container[ZONE_0]->GetKindInterpolation()== NEAREST_NEIGHBOR )
-        interpolator_container[iZone] = new CNearestNeighbor(geometry_container,config_container,Zones,nzn);
-      if (config_container[ZONE_0]->GetKindInterpolation()== ISOPARAMETRIC )
-        interpolator_container[iZone] = new CIsoparametric(geometry_container,config_container,Zones,nzn);
-    }
+//    if (!config_container[ZONE_0]->GetMatchingMesh()){
+//      unsigned int Zones[2];
+//      unsigned int nzn = 2; // temporary nZones for interpolation: 2 in the case of fluid-structure
+//      Zones[0]=ZONE_0;
+//      Zones[1]=ZONE_1;
+//      if (config_container[ZONE_0]->GetKindInterpolation()== NEAREST_NEIGHBOR )
+//        interpolator_container[iZone] = new CNearestNeighbor(geometry_container,config_container,Zones,nzn);
+//      if (config_container[ZONE_0]->GetKindInterpolation()== ISOPARAMETRIC )
+//        interpolator_container[iZone] = new CIsoparametric(geometry_container,config_container,Zones,nzn);
+//    }
 
 
 	  /*--- Definition of the output class (one for all zones). The output class
