@@ -62,7 +62,7 @@ CInterpolator::CInterpolator(CGeometry ***geometry_container, CConfig **config, 
 
   /*--- Initialize transfer coefficients between the zones ---*/
 	/* Since this is a virtual function, call it in the child class constructor  */
-  //Set_TransferCoeff(iZone_0,iZone_1,config);
+  //Set_TransferCoeff(targetZone,donorZone,config);
   /*--- Initialize transfer coefficients between the zones ---*/
   //Set_TransferCoeff(Zones,config);
 
@@ -98,7 +98,7 @@ void CInterpolator::InitializeData(unsigned int* Zones, unsigned short val_nVar)
 //void CInterpolator::Interpolate_Data(unsigned int iZone, CConfig **config){
 //  unsigned long iPoint, jPoint, jVertex, iMarker, iVertex;
 //  unsigned short jMarker;
-//  unsigned int iZone_1;
+//  unsigned int donorZone;
 //  su2double weight=0.0;
 //
 //  /*--- Loop through points, increment Data in the input zone by the weight in the transfer matrix ---*/
@@ -115,14 +115,14 @@ void CInterpolator::InitializeData(unsigned int* Zones, unsigned short val_nVar)
 //        /*--- Interpolate ---*/
 //        for (unsigned short jDonor = 0; jDonor< Geometry[iZone][MESH_0]->vertex[iMarker][iVertex]->GetnDonorPoints(); jDonor++){
 //          /* Unpack info about the donor point */
-//          iZone_1 = Geometry[iZone][MESH_0]->vertex[iMarker][iVertex]->GetDonorInfo(jDonor,0);
+//          donorZone = Geometry[iZone][MESH_0]->vertex[iMarker][iVertex]->GetDonorInfo(jDonor,0);
 //          jPoint = Geometry[iZone][MESH_0]->vertex[iMarker][iVertex]->GetDonorInfo(jDonor,1);
 //          jMarker = Geometry[iZone][MESH_0]->vertex[iMarker][iVertex]->GetDonorInfo(jDonor,2);
 //          jVertex = Geometry[iZone][MESH_0]->vertex[iMarker][iVertex]->GetDonorInfo(jDonor,3);
 //          weight = Geometry[iZone][MESH_0]->vertex[iMarker][iVertex]->GetDonorCoeff(jDonor);
 //          /*--- Increment the value of the data ---*/
 //          for (unsigned short iVar=0; iVar<nVar; iVar++){
-//            Data[iZone][iPoint][iVar]+=Data[iZone_1][jPoint][iVar]*weight;
+//            Data[iZone][iPoint][iVar]+=Data[donorZone][jPoint][iVar]*weight;
 //          }
 //        }
 //      }
@@ -134,7 +134,7 @@ void CInterpolator::InitializeData(unsigned int* Zones, unsigned short val_nVar)
 //
 //  unsigned long GlobalIndex, iPoint, i2Point, jPoint, j2Point, iVertex, jVertex;
 //  unsigned short iMarker, jMarker, iDim;
-//  unsigned int iZone_1;
+//  unsigned int donorZone;
 //  su2double *NewVarCoord = NULL, *VarCoord, *VarRot, *distance = NULL;
 //  su2double weight;
 //  unsigned short nDim = Geometry[iZone][MESH_0]->GetnDim();
@@ -147,20 +147,20 @@ void CInterpolator::InitializeData(unsigned int* Zones, unsigned short val_nVar)
 //        for (iDim=0; iDim<nDim; iDim++) NewVarCoord[iDim]=0.0;
 //        /*--- Loop over vertices in the interface marker (zone 1) --*/
 //        for (unsigned short jDonor = 0; jDonor< Geometry[iZone][MESH_0]->vertex[iMarker][iVertex]->GetnDonorPoints(); jDonor++){
-//          iZone_1 = Geometry[iZone][MESH_0]->vertex[iMarker][iVertex]->GetDonorInfo(jDonor,0);
+//          donorZone = Geometry[iZone][MESH_0]->vertex[iMarker][iVertex]->GetDonorInfo(jDonor,0);
 //          jPoint = Geometry[iZone][MESH_0]->vertex[iMarker][iVertex]->GetDonorInfo(jDonor,1);
 //          jMarker = Geometry[iZone][MESH_0]->vertex[iMarker][iVertex]->GetDonorInfo(jDonor,2);
 //          jVertex = Geometry[iZone][MESH_0]->vertex[iMarker][iVertex]->GetDonorInfo(jDonor,3);
 //          weight = Geometry[iZone][MESH_0]->vertex[iMarker][iVertex]->GetDonorCoeff(jDonor);
 //          /* Get translation and rotation from the solution */
-//          VarCoord = Geometry[iZone_1][MESH_0]->vertex[jMarker][jVertex]->GetVarCoord();
-//          VarRot =   Geometry[iZone_1][MESH_0]->vertex[jMarker][jVertex]->GetVarRot();
+//          VarCoord = Geometry[donorZone][MESH_0]->vertex[jMarker][jVertex]->GetVarCoord();
+//          VarRot =   Geometry[donorZone][MESH_0]->vertex[jMarker][jVertex]->GetVarRot();
 //
 //          for (iDim=0; iDim<nDim; iDim++) distance[iDim]=0.0;
 //
 //          for (iDim=0; iDim<nDim; iDim++){
 //            NewVarCoord[iDim]+=VarCoord[iDim]*weight;
-//            distance[iDim] = Geometry[iZone][MESH_0]->vertex[iMarker][iVertex]->GetCoord(iDim)-Geometry[iZone_1][MESH_0]->node[jPoint]->GetCoord(iDim);
+//            distance[iDim] = Geometry[iZone][MESH_0]->vertex[iMarker][iVertex]->GetCoord(iDim)-Geometry[donorZone][MESH_0]->node[jPoint]->GetCoord(iDim);
 //          }
 //          /*--- Add contribution of rotation (cross product of donor point rotation and distance to donor point) ---*/
 //          if (nDim==2){
@@ -413,14 +413,8 @@ void CNearestNeighbor::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
 			  /*--- Store the value of the pair ---*/
 			  maxdist = max(maxdist, mindist);
 
-			  // This will be changed when merged with the new version
-	          nn[0] = donorZone; 		/* Zone of the donor point */
-	          nn[1] = pPoint; 			/* Local index of the donor point (if no MPI it's the same as the global) */
-	          nn[2] = Marker_Donor; 	/* marker of the donor point --> TODO: CONFLICT WITH DATA TYPE ---*/
-	          nn[3] = Vertex_Donor; 	/* vertex index within marker of the donor point */
-	          nn[4] = Global_Point_Donor;	    /* Global index of the donor point */
-
-			  target_geometry->vertex[Marker_Target][iVertexTarget]->SetDonorInfo(donorindex,nn);
+			  target_geometry->vertex[Marker_Target][iVertexTarget]->SetInterpDonorPoint(donorindex, pGlobalPoint);
+			  target_geometry->vertex[Marker_Target][iVertexTarget]->SetInterpDonorProcessor(donorindex, pProcessor);
 			  target_geometry->vertex[Marker_Target][iVertexTarget]->SetDonorCoeff(donorindex,1.0);
 
 		  }
@@ -453,39 +447,31 @@ CIsoparametric::CIsoparametric(CGeometry ***geometry_container, CConfig **config
 CIsoparametric::~CIsoparametric(){}
 
 void CIsoparametric::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
-  unsigned long iPoint, jPoint, iVertex, jVertex,*nn, inode, jElem, iNearestNode=0, iNearestVertex=0;
-  long ivtx;
+  unsigned long jPoint, iVertex, jVertex, inode, jElem, iNearestNode=0, iNearestVertex=0;
+  long donor_elem=0, temp_donor=0;
   unsigned short iDim, it;
   unsigned short nDim = Geometry[Zones[0]][MESH_0]->GetnDim();
-  su2double distance = 0.0, last_distance=-1.0, *Coord;
-  su2double* myCoeff;
-  su2double* myCoefftemp;
-  su2double* donorCoord;
-  su2double coeff, tmp, tmp2;
-  long donor_elem=0, temp_donor;
-
-  unsigned short nMarkerFSIint, nMarkerFEA, nMarkerFlow;
-  unsigned short iMarkerFSIint, iMarkerFEA, iMarkerFlow;
-  unsigned short markFEA, markFlow, iFace;
-  unsigned short index = 3; // index of the vertex info in the donorinfo array
+  unsigned short nMarkerInt, nMarkerDonor, nMarkerTarget;
+  unsigned short iMarkerInt, iMarkerDonor, iMarkerTarget;
+  unsigned short markDonor=0, markTarget=0, iFace;
   unsigned int nNodes=0;
-  /*--- Restricted to 2-zone fluid-structure for now ---*/
-  unsigned int iZone_0 = Zones[0];
-  unsigned int iZone_1 = Zones[1];
+  /*--- Restricted to 2-zone for now ---*/
+  unsigned int targetZone = Zones[0];
+  unsigned int donorZone = Zones[1];
   unsigned int nFaces=1; //For 2D cases, we want to look at edges, not faces, as the 'interface'
   bool face_on_marker=true;
-  unsigned int it2=0;
+  su2double distance = 0.0, last_distance=-1.0, *Coord;
+  su2double myCoeff[10]; // Maximum # of donor points
+  su2double *donorCoord, *Normal;
   su2double projected_point[nDim];
-  su2double *Normal;
+  su2double tmp, tmp2;
 
-  nn = new unsigned long[5];
-  //cout <<"SetTransfer Coeff"<< endl;
-  /*--- Number of markers on the FSI interface ---*/
-  nMarkerFSIint = (config[iZone_0]->GetMarker_n_FSIinterface())/2;
-  nMarkerFEA  =  config[iZone_1]->GetnMarker_All();
-  nMarkerFlow =  config[iZone_0]->GetnMarker_All();
+  /*--- Number of markers on the interface ---*/
+  nMarkerInt = (config[targetZone]->GetMarker_n_FSIinterface())/2;
+  nMarkerDonor  =  config[donorZone]->GetnMarker_All();
+  nMarkerTarget =  config[targetZone]->GetnMarker_All();
   /*--- For the number of markers on the interface... ---*/
-  for (iMarkerFSIint=0; iMarkerFSIint < nMarkerFSIint; iMarkerFSIint++){
+  for (iMarkerInt=0; iMarkerInt < nMarkerInt; iMarkerInt++){
     /*--- Procedure:
      * -Loop through vertices of the aero grid
      * -Find nearest element and allocate enough space in the aero grid donor point info
@@ -496,36 +482,33 @@ void CIsoparametric::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
      *    -Loop through the aero vertices and set the donor info at the structure vertices
      */
 
-    /*--- ... the marker markFEA ... ---*/
-    for (iMarkerFEA=0; iMarkerFEA < nMarkerFEA; iMarkerFEA++){
-      if ( config[iZone_1]->GetMarker_All_FSIinterface(iMarkerFEA) == (iMarkerFSIint+1)){
-        markFEA=iMarkerFEA;
+    /*--- ... the marker markDonor ... ---*/
+    for (iMarkerDonor=0; iMarkerDonor < nMarkerDonor; iMarkerDonor++){
+      if ( config[donorZone]->GetMarker_All_FSIinterface(iMarkerDonor) == (iMarkerInt+1)){
+        markDonor=iMarkerDonor;
       }
     }
 
-    /*--- ... corresponds to the marker markFlow. ---*/
-    for (iMarkerFlow=0; iMarkerFlow < nMarkerFlow; iMarkerFlow++){
-      if (config[iZone_0]->GetMarker_All_FSIinterface(iMarkerFlow) == (iMarkerFSIint+1)){
-        markFlow=iMarkerFlow;
+    /*--- ... corresponds to the marker markTarget. ---*/
+    for (iMarkerTarget=0; iMarkerTarget < nMarkerTarget; iMarkerTarget++){
+      if (config[targetZone]->GetMarker_All_FSIinterface(iMarkerTarget) == (iMarkerInt+1)){
+        markTarget=iMarkerTarget;
       }
     }
-    //cout <<"markers: " << markFEA << " " << markFlow << endl;
-    /*--Same for all points: -*/
-    nn[0] = iZone_1; /* Zone of the donor point */
-    nn[2] = markFEA; /* marker of the donor point */
+    //cout <<"markers: " << markDonor << " " << markTarget << endl;
+
     /*--- For the markers on the fluid side ---*/
     /*--- Loop over the vertices on the marker ---*/
-    for (iVertex = 0; iVertex<Geometry[iZone_0][MESH_0]->GetnVertex(markFlow); iVertex++) {
-      iPoint =Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->GetNode(); // Global index of iVertex
+    for (iVertex = 0; iVertex<Geometry[targetZone][MESH_0]->GetnVertex(markTarget); iVertex++) {
       last_distance=-1.0;
 
       /*--- Loop over the vertices in the corresponding interface marker (zone 1), find the closest vertex --*/
-      for (jVertex = 0; jVertex<Geometry[iZone_1][MESH_0]->GetnVertex(markFEA); jVertex++) {
-        jPoint =Geometry[iZone_1][MESH_0]->vertex[markFEA][jVertex]->GetNode(); // Global index of jVertex
+      for (jVertex = 0; jVertex<Geometry[donorZone][MESH_0]->GetnVertex(markDonor); jVertex++) {
+        jPoint =Geometry[donorZone][MESH_0]->vertex[markDonor][jVertex]->GetNode(); // Global index of jVertex
         distance = 0.0;
         for (iDim=0; iDim<nDim; iDim++)
-          distance+=pow(Geometry[iZone_1][MESH_0]->vertex[markFEA][jVertex]->GetCoord(iDim)-
-              Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->GetCoord(iDim),2.0);
+          distance+=pow(Geometry[donorZone][MESH_0]->vertex[markDonor][jVertex]->GetCoord(iDim)-
+              Geometry[targetZone][MESH_0]->vertex[markTarget][iVertex]->GetCoord(iDim),2.0);
         if ((last_distance==-1.0) or (distance<last_distance)){
           last_distance=distance;
           /*--- Info stored at the node: zone, point, marker, vertex ---*/
@@ -539,42 +522,53 @@ void CIsoparametric::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
       last_distance=-1;
 
       /*--- Now that we know the closest vertex, the closest element must be one of the ones connected to the vertex--*/
-      for (jElem=0; jElem<Geometry[iZone_1][MESH_0]->node[iNearestNode]->GetnElem(); jElem++){
-
-        temp_donor = Geometry[iZone_1][MESH_0]->node[iNearestNode]->GetElem(jElem);
-
-        if (nDim==3)
-          nFaces = Geometry[iZone_1][MESH_0]->elem[temp_donor]->GetnFaces();
+      for (jElem=0; jElem<Geometry[donorZone][MESH_0]->node[iNearestNode]->GetnElem(); jElem++){
 
         /*--- Loop over all the faces of this element to find ones on the interface boundary
-         * If a face is on markFEA, then find the distance and check against previous to find closest
+         * If a face is on markDonor, then find the distance and check against previous to find closest
          * face. ---*/
+        if (nDim==3){
+          temp_donor = Geometry[donorZone][MESH_0]->node[iNearestNode]->GetElem(jElem);
+          nFaces = Geometry[donorZone][MESH_0]->elem[temp_donor]->GetnFaces();
+        }
+        else{
+          temp_donor = iNearestNode;
+          nFaces = Geometry[donorZone][MESH_0]->node[iNearestNode]->GetnPoint();
+        }
+
         for (iFace=0; iFace<nFaces; iFace++){
           face_on_marker=true;
 
           /*--- If 3D loop over a face. if 2D loop over an element ---*/
           if (nDim==3){
-            nNodes = Geometry[iZone_1][MESH_0]->elem[temp_donor]->GetnNodesFace(iFace);
+            nNodes = Geometry[donorZone][MESH_0]->elem[temp_donor]->GetnNodesFace(iFace);
             /*-- Check if on marker of interface---*/
             for (unsigned int ifacenode=0; ifacenode<nNodes; ifacenode++){
               /*--- Local index of the node on face --*/
-              inode = Geometry[iZone_1][MESH_0]->elem[jElem]->GetFaces(iFace, ifacenode);
-              jPoint = Geometry[iZone_1][MESH_0]->elem[jElem]->GetNode(inode);
-
-              face_on_marker = (face_on_marker and (Geometry[iZone_1][MESH_0]->node[jPoint]->GetVertex(markFEA) !=-1));
+              inode = Geometry[donorZone][MESH_0]->elem[temp_donor]->GetFaces(iFace, ifacenode);
+              jPoint = Geometry[donorZone][MESH_0]->elem[temp_donor]->GetNode(inode);
+              face_on_marker = (face_on_marker and (Geometry[donorZone][MESH_0]->node[jPoint]->GetVertex(markDonor) !=-1));
             }
           }
-          else
-            nNodes = Geometry[iZone_1][MESH_0]->elem[temp_donor]->GetnNodes();
+          else{
+            /*-- 2D: 'face' is an edge connected to the nearest node ---*/
+            nNodes = 2; // edges have two nodes
+            for (unsigned int ifacenode=0; ifacenode<nNodes; ifacenode++){
+              inode = Geometry[donorZone][MESH_0]->node[iNearestNode]->GetEdge(iFace);
+              jPoint = Geometry[donorZone][MESH_0]->edge[inode]->GetNode(ifacenode);
+              face_on_marker = (face_on_marker and (Geometry[donorZone][MESH_0]->node[jPoint]->GetVertex(markDonor) !=-1));
+            }
+          }
 
-          /*--- face_on_marker is true iff all nodes on face iFace are in marker markFEA (or 2D) ---*/
 
-          /*--- if iFace is part of markFEA, calculate the isoparametric coefficients ---*/
+          /*--- face_on_marker is true iff all nodes on face iFace are in marker markDonor (or 2D) ---*/
+
+          /*--- if iFace is part of markDonor, calculate the isoparametric coefficients ---*/
           if (face_on_marker){
             /*--- Find projected distance ---*/
-            Coord = Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->GetCoord();
-            Normal = Geometry[iZone_1][MESH_0]->vertex[markFEA][iNearestVertex]->GetNormal();
-            donorCoord = Geometry[iZone_1][MESH_0]->vertex[markFEA][iNearestVertex]->GetCoord();
+            Coord = Geometry[targetZone][MESH_0]->vertex[markTarget][iVertex]->GetCoord();
+            Normal = Geometry[donorZone][MESH_0]->vertex[markDonor][iNearestVertex]->GetNormal();
+            donorCoord = Geometry[donorZone][MESH_0]->vertex[markDonor][iNearestVertex]->GetCoord();
             /*--- Project point xj onto surface --*/
 
             tmp = 0;
@@ -584,50 +578,36 @@ void CIsoparametric::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
               tmp2+=Normal[iDim]*(Coord[iDim]-donorCoord[iDim]);
             }
             tmp = 1/tmp;
-            //cout << " projected point: ";
+            tmp2 = tmp2*sqrt(tmp);
             for (iDim=0; iDim<nDim; iDim++){
               // projection of \vec{q} onto plane defined by \vec{n} and \vec{p}:
               // \vec{q} - \vec{n} ( (\vec{q}-\vec{p} ) \cdot \vec{n})
               // tmp2 = ( (\vec{q}-\vec{p} ) \cdot \vec{N})
               // \vec{n} = \vec{N}/(|N|), tmp = 1/|N|^2
-              projected_point[iDim]=Coord[iDim] - Normal[iDim]*tmp2*tmp;
-              //cout <<projected_point[iDim] <<" " ;
+              projected_point[iDim]=Coord[iDim] + Normal[iDim]*tmp2*tmp;
             }
-            //cout << endl;
 
-            /*--- use Isoparametric rep. to find distance to projected point on the surface ---*/
-
-            myCoefftemp = new su2double[nNodes];
-
-            Isoparameters( myCoefftemp, iZone_0,  markFlow, iVertex, nDim, iZone_1, markFEA, temp_donor, iFace, nNodes);
-
-            /*--- If closer than last closest projected point, save. ---*/
-            Coord = Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->GetCoord();
-
-            for (it=0; it< nNodes; it++){
-              /*--- If 3D loop over a face. if 2D loop over an element ---*/
-              if (nDim==3){
-                //jPoint = Geometry[iZone_1][MESH_0]->elem[temp_donor]->GetFaces(iFace,it);
-                jPoint = Geometry[iZone_1][MESH_0]->elem[temp_donor]->GetNode(Geometry[iZone_1][MESH_0]->elem[temp_donor]->GetFaces(iFace,it));
-                //cout << "jPoint  " << jPoint << endl;
-              }
-              else
-                jPoint = Geometry[iZone_1][MESH_0]->elem[temp_donor]->GetNode(it);
-
-              donorCoord = Geometry[iZone_1][MESH_0]->node[jPoint]->GetCoord();
-              //cout <<" isoparam: " << myCoefftemp[it] <<" Coord: ";
-              for (iDim=0; iDim<nDim; iDim++){
-                Coord[iDim]-=myCoefftemp[it]*donorCoord[iDim];
-                //cout << donorCoord[iDim]<< " ";
-              }
-              //cout << endl;
-            }
+            /*--- find isoparametric representation. if the point is outside the face (or edge, in 2D), the method will return
+             * coefficients associated with setting the nearest neighbor ---*/
+            Isoparameters( myCoeff, nDim, donorZone, temp_donor, iFace, nNodes, projected_point);
 
             distance = 0;
-            for (iDim=0; iDim<nDim; iDim++)
-              distance+=Coord[iDim]*Coord[iDim];
-
-            //cout << "distance " << distance <<  " for face/edge of element " << temp_donor <<" to iVertex " << iVertex <<endl;
+            for(it=0; it< nNodes; it++){
+              if (nDim==3){
+                jPoint = Geometry[donorZone][MESH_0]->elem[temp_donor]->GetNode(Geometry[donorZone][MESH_0]->elem[temp_donor]->GetFaces(iFace,it));
+              }
+              else{
+                inode = Geometry[donorZone][MESH_0]->node[iNearestNode]->GetEdge(iFace);
+                jPoint = Geometry[donorZone][MESH_0]->edge[inode]->GetNode(it);
+              }
+              donorCoord = Geometry[donorZone][MESH_0]->node[jPoint]->GetCoord();
+              for (iDim=0; iDim<nDim; iDim++){
+                Coord[iDim]-=myCoeff[it]*donorCoord[iDim];
+              }
+            }
+            for (iDim=0; iDim<nDim; iDim++){
+              distance+=pow(Coord[iDim],2.0);
+            }
 
             /*--- If the distance is shorter than last closest (and nonzero nodes are on the boundary), update ---*/
             if ((last_distance==-1) or (distance<last_distance )){
@@ -635,308 +615,281 @@ void CIsoparametric::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
               last_distance = distance;
               /*--- Store info ---*/
               donor_elem = temp_donor;
-              // mem leak?
-              myCoeff = new su2double[nNodes];
+              // Print check
+              /*
+              for (iDim=0; iDim<nDim; iDim++)
+                Coord[iDim]=0;
               for (it=0; it< nNodes; it++){
-                myCoeff[it] = myCoefftemp[it];
+                //--- If 3D loop over a face. if 2D loop over an element ---
+                if (nDim==3){
+                  jPoint = Geometry[donorZone][MESH_0]->elem[temp_donor]->GetNode(Geometry[donorZone][MESH_0]->elem[temp_donor]->GetFaces(iFace,it));
+                }
+                else{
+                  inode = Geometry[donorZone][MESH_0]->node[iNearestNode]->GetEdge(iFace);
+                  jPoint = Geometry[donorZone][MESH_0]->edge[inode]->GetNode(it);
+                }
+                donorCoord = Geometry[donorZone][MESH_0]->node[jPoint]->GetCoord();
+                cout <<" isoparam: " << myCoeff[it] <<" Coord: ";
+                for (iDim=0; iDim<nDim; iDim++){
+                  Coord[iDim]+=myCoeff[it]*donorCoord[iDim];
+                  cout << donorCoord[iDim]<< " ";
+                }
+                cout << endl;
               }
-              Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->SetDonorElem(temp_donor);
-              Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->SetDonorFace(iFace);
-              Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->SetnDonorPoints(nNodes);
+              donorCoord = Geometry[donorZone][MESH_0]->node[iNearestNode]->GetCoord();
+              cout << endl;
+              for (iDim=0; iDim<nDim; iDim++){
+                cout << " iso " << Coord[iDim] <<" proj " << projected_point[iDim] <<" NN " <<  donorCoord[iDim] << endl;
+              }
+              */
+              Geometry[targetZone][MESH_0]->vertex[markTarget][iVertex]->SetDonorElem(temp_donor); // in 2D is nearest neighbor
+              Geometry[targetZone][MESH_0]->vertex[markTarget][iVertex]->SetDonorFace(iFace);
+              Geometry[targetZone][MESH_0]->vertex[markTarget][iVertex]->SetnDonorPoints(nNodes);
               //cout <<"updated closest face/edge" << endl;
             }
           }
         }
       }
-
       /*--- If nDonorPoints ==0, no match was found, set nearest neighbor ---*/
 
-      if (Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->GetnDonorPoints()==0){
+      if (Geometry[targetZone][MESH_0]->vertex[markTarget][iVertex]->GetnDonorPoints()==0){
         nNodes=1;
-        Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->SetnDonorPoints(nNodes);
+        Geometry[targetZone][MESH_0]->vertex[markTarget][iVertex]->SetnDonorPoints(nNodes);
         donor_elem = -1;
-        myCoeff = new su2double[1];
         myCoeff[0] = 1;
       }
 
 
       /*--- Set the appropriate amount of memory ---*/
-      Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->Allocate_DonorInfo();
-      iFace = Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->GetDonorFace();
+      Geometry[targetZone][MESH_0]->vertex[markTarget][iVertex]->Allocate_DonorInfo();
+      /*--- Recal the closest face/edge ---*/
+      iFace = Geometry[targetZone][MESH_0]->vertex[markTarget][iVertex]->GetDonorFace();
 
-      /*--- Loop over vertices of the element ---*/
-      if (nDim==3){
-        it2=0;
-        for (it=0; it< Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->GetnDonorPoints(); it++){
-          if (donor_elem!=-1){
-            //Important: jPoint is set to the nearest neighbor above. Be careful not to overwrite it.
-            //jPoint = Geometry[iZone_1][MESH_0]->elem[donor_elem]->GetFaces(iFace,it);
-            jPoint = Geometry[iZone_1][MESH_0]->elem[temp_donor]->GetNode(Geometry[iZone_1][MESH_0]->elem[temp_donor]->GetFaces(iFace,it));
+      /*--- Loop over vertices of the element to set the values at the vertex ---*/
+      for (it=0; it< Geometry[targetZone][MESH_0]->vertex[markTarget][iVertex]->GetnDonorPoints(); it++){
+        if (donor_elem!=-1){
+          if (nDim==3){
+            jPoint = Geometry[donorZone][MESH_0]->elem[temp_donor]->GetNode(Geometry[donorZone][MESH_0]->elem[temp_donor]->GetFaces(iFace,it));
           }
           else{
-            jPoint = iNearestNode;
-          }
-          ivtx = Geometry[iZone_1][MESH_0]->node[jPoint]->GetVertex(markFEA);
-          if (ivtx!=-1){
-            nn[1] = jPoint; /* global index of the donor point */
-            nn[3] = ivtx; /* vertex index within marker of the donor point */
-            Geometry[iZone_1][MESH_0]->vertex[markFEA][ivtx]->IncrementnDonor();
-            Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->SetDonorInfo(it-it2,nn);
-            Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->SetDonorCoeff(it-it2,myCoeff[it]);
-          }
-          else{
-            /*---If this node of the element is not a vertex of markFEA GetVertex will return -1
-            and we should neglect this point (TODO: make sure this is also taken into account in isoparam)
-            Reduce the number of donor points --*/
-            Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->SetnDonorPoints(
-                Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->GetnDonorPoints()-1);
-            if (abs(myCoeff[it])>1e-12)
-              cout <<"Warning: interior pt assigned nonzero coeff."<< endl;
-            it2++;
+            inode = Geometry[donorZone][MESH_0]->node[iNearestNode]->GetEdge(iFace);
+            jPoint = Geometry[donorZone][MESH_0]->edge[inode]->GetNode(it);
           }
         }
+        else
+          jPoint = iNearestNode; // If no matching element is found, revert to Nearest Neighbor
+
+        /*--- NOTE: in parallel, jPoint must be converted to global index ---*/
+
+        //ivtx = Geometry[donorZone][MESH_0]->node[jPoint]->GetVertex(markDonor);
+
+
+
+        //Geometry[donorZone][MESH_0]->vertex[markDonor][ivtx]->IncrementnDonor();
+
+        Geometry[targetZone][MESH_0]->vertex[markTarget][iVertex]->SetInterpDonorPoint(it,jPoint);
+        Geometry[targetZone][MESH_0]->vertex[markTarget][iVertex]->SetDonorCoeff(it,myCoeff[it]);
+        // FOR PARALELL:
+        //Geometry[targetZone][MESH_0]->vertex[markTarget][iVertex]->SetInterpDonorProc(it,proc);
+        //cout <<" myCoeff  " << myCoeff[it] << " ";
       }
-      else{
-        it2=0;
-        for (it=0; it< Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->GetnDonorPoints(); it++){
-          if (donor_elem!=-1){
-            //Important: jPoint is set to the nearest neighbor above. Be careful not to overwrite it.
-            jPoint = Geometry[iZone_1][MESH_0]->elem[donor_elem]->GetNode(it);
-          }
-          else{
-            jPoint = iNearestNode;
-          }
-          ivtx = Geometry[iZone_1][MESH_0]->node[jPoint]->GetVertex(markFEA);
-          if (ivtx!=-1){
-            nn[1] = jPoint; /* global index of the donor point */
-            nn[3] = ivtx; /* vertex index within marker of the donor point */
-            Geometry[iZone_1][MESH_0]->vertex[markFEA][ivtx]->IncrementnDonor();
-            Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->SetDonorInfo(it-it2,nn);
-            Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->SetDonorCoeff(it-it2,myCoeff[it]);
-          }
-          else {
-            /*---If this node of the element is not a vertex of markFEA GetVertex will return -1
-            and we should neglect this point (TODO: make sure this is also taken into account in isoparam)
-            Reduce the number of donor points --*/
-            Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->SetnDonorPoints(
-                Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->GetnDonorPoints()-1);
-            if (abs(myCoeff[it])>1e-12)
-              cout <<"Warning: interior pt assigned nonzero coeff."<< endl;
-            it2++;
-          }
-        }
-      }
+      //cout << endl;
     }
+
     /*--- Now that all the transfer coefficients have been calculated, loop through the structure vertices
      * and set the same transfer coefficients at the matching points
      */
-    index=3;
-    for (jVertex = 0; jVertex<Geometry[iZone_1][MESH_0]->GetnVertex(markFEA); jVertex++) {
-      ivtx=0;
-      Geometry[iZone_1][MESH_0]->vertex[markFEA][jVertex]->Allocate_DonorInfo();
-      /*--- Loop over all aero points ---*/
-      for (iVertex=0; iVertex<Geometry[iZone_0][MESH_0]->GetnVertex(markFlow); iVertex++){
-        /*--- Loop over the donor vertices for iVertex (flow vertex) ---*/
-        for (inode=0; inode<Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->GetnDonorPoints(); inode++){
-          /*--- If one of the donor points is the same as the FEA vertex, add information ---*/
-          if (Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]-> GetDonorInfo(inode,index) == jVertex){
-            iPoint =Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->GetNode();
-            nn[0] = iZone_0; /* Zone of the donor point */
-            nn[1] = iPoint; /* global index of the donor point */
-            nn[2] = markFlow; /* marker of the donor point */
-            nn[3] = iVertex; /* vertex index within marker of the donor point */
-            coeff = Geometry[iZone_0][MESH_0]->vertex[markFlow][iVertex]->GetDonorCoeff(inode);
-            Geometry[iZone_1][MESH_0]->vertex[markFEA][jVertex]->SetDonorInfo(ivtx,nn);
-            Geometry[iZone_1][MESH_0]->vertex[markFEA][jVertex]->SetDonorCoeff(ivtx,coeff);
-            ivtx++;
-          }
-          if (ivtx>=Geometry[iZone_1][MESH_0]->vertex[markFEA][jVertex]->GetnDonorPoints()-1){
-            break;
-          }
-        }
-        if (ivtx>=Geometry[iZone_1][MESH_0]->vertex[markFEA][jVertex]->GetnDonorPoints()-1){
-          break;
-        }
-
-      }
-      if (ivtx>=Geometry[iZone_1][MESH_0]->vertex[markFEA][jVertex]->GetnDonorPoints()-1){
-        break;
-      }
-    }
+//    index=3;
+//    for (jVertex = 0; jVertex<Geometry[donorZone][MESH_0]->GetnVertex(markDonor); jVertex++) {
+//      ivtx=0;
+//      Geometry[donorZone][MESH_0]->vertex[markDonor][jVertex]->Allocate_DonorInfo();
+//      /*--- Loop over all aero points ---*/
+//      for (iVertex=0; iVertex<Geometry[targetZone][MESH_0]->GetnVertex(markTarget); iVertex++){
+//        /*--- Loop over the donor vertices for iVertex (flow vertex) ---*/
+//        for (inode=0; inode<Geometry[targetZone][MESH_0]->vertex[markTarget][iVertex]->GetnDonorPoints(); inode++){
+//          /*--- If one of the donor points is the same as the FEA vertex, add information ---*/
+//          if (Geometry[targetZone][MESH_0]->vertex[markTarget][iVertex]-> GetDonorInfo(inode,index) == jVertex){
+//            iPoint =Geometry[targetZone][MESH_0]->vertex[markTarget][iVertex]->GetNode();
+//            nn[0] = targetZone; /* Zone of the donor point */
+//            nn[1] = iPoint; /* global index of the donor point */
+//            nn[2] = markTarget; /* marker of the donor point */
+//            nn[3] = iVertex; /* vertex index within marker of the donor point */
+//            coeff = Geometry[targetZone][MESH_0]->vertex[markTarget][iVertex]->GetDonorCoeff(inode);
+//            Geometry[donorZone][MESH_0]->vertex[markDonor][jVertex]->SetDonorInfo(ivtx,nn);
+//            Geometry[donorZone][MESH_0]->vertex[markDonor][jVertex]->SetDonorCoeff(ivtx,coeff);
+//            ivtx++;
+//          }
+//          if (ivtx>=Geometry[donorZone][MESH_0]->vertex[markDonor][jVertex]->GetnDonorPoints()-1){
+//            break;
+//          }
+//        }
+//        if (ivtx>=Geometry[donorZone][MESH_0]->vertex[markDonor][jVertex]->GetnDonorPoints()-1){
+//          break;
+//        }
+//
+//      }
+//      if (ivtx>=Geometry[donorZone][MESH_0]->vertex[markDonor][jVertex]->GetnDonorPoints()-1){
+//        break;
+//      }
+//    }
   }
-  /*-- Delete locally allocated memory ---*/
-
-  if (myCoeff!=NULL)
-    delete[] myCoeff;
-  if (myCoefftemp!=NULL)
-    delete[] myCoefftemp;
-
 }
 
-void CIsoparametric::Isoparameters(su2double* isoparams, unsigned int iZone_0,
-  unsigned short iMarker, unsigned long iVertex, unsigned short nDim, unsigned int iZone_1,
-  unsigned short jMarker, long donor_elem,  unsigned short iFace, unsigned int nDonorPoints){
-  short i,j,k;
+void CIsoparametric::Isoparameters(su2double* isoparams,
+    unsigned short nDim, unsigned int donorZone,  long donor_elem,  unsigned short iFace,
+    unsigned int nDonorPoints,  su2double* xj){
+  short i,j,k, iedge;
   short n0 = nDim+1, n, iDim;
   short m =  nDonorPoints, m0;
-  unsigned long jPoint, jNode;
+  unsigned long jPoint, jPoint2;
   su2double tmp, tmp2;
-  su2double x[m], xj[m], x_tmp[m];
+  su2double x[m], x_tmp[m];
   su2double Q[m*m], R[m*m], A[n0*m];
   su2double x2[n0];
-  su2double* Normal;
-  bool test[n0], testi[n0],on_marker[m];
 
   /*--- n0: # of dimensions + 1. n: n0 less any degenerate rows ---*/
   n=n0;
   m0=m;
 
-  /*--- Create Matrix A: 1st row all 1's, 2nd row x coordinates, 3rd row y coordinates, etc ---*/
-  /*--- Right hand side is [1, \vec{x}']'---*/
-  for (i=0; i<m*n; i++)
-    A[i]=0;
-  for (i=0; i<m; i++)
-    A[i]=1.0;
+  bool test[n0], testi[n0];
 
-  /*j,n: dimension. i,m: # neighbor point*/
-  xj[0]=1;
-  x[0]=1;
-  for (j=1; j<n0; j++)
-    xj[j]=Geometry[iZone_0][MESH_0]->vertex[iMarker][iVertex]->GetCoord(j-1);
+  /*--- 2D: line, no need to go through computation --*/
+  if (nDim==2){
 
-  /*--- Project point xj onto surface --*/
-  jPoint = Geometry[iZone_1][MESH_0]->elem[donor_elem]->GetNode(Geometry[iZone_1][MESH_0]->elem[donor_elem]->GetFaces(iFace,0));
-  jNode = Geometry[iZone_1][MESH_0]->node[jPoint]->GetVertex(jMarker);
-  Normal = Geometry[iZone_1][MESH_0]->vertex[jMarker][jNode]->GetNormal();
-  tmp = 0;
-  tmp2=0;
-  for (iDim=0; iDim<nDim; iDim++){
-    tmp+=Normal[iDim]*Normal[iDim];
-    tmp2+=Normal[iDim]*(xj[iDim+1]-Geometry[iZone_1][MESH_0]->node[jPoint]->GetCoord(iDim));
+    iedge = Geometry[donorZone][MESH_0]->node[donor_elem]->GetEdge(iFace);
+    jPoint = Geometry[donorZone][MESH_0]->edge[iedge]->GetNode(0);
+    jPoint2= Geometry[donorZone][MESH_0]->edge[iedge]->GetNode(1);
+    tmp =  pow(Geometry[donorZone][MESH_0]->node[jPoint]->GetCoord(0)- Geometry[donorZone][MESH_0]->node[jPoint2]->GetCoord(0),2.0);
+    tmp += pow(Geometry[donorZone][MESH_0]->node[jPoint]->GetCoord(1)- Geometry[donorZone][MESH_0]->node[jPoint2]->GetCoord(1),2.0);
+    tmp = sqrt(tmp);
+
+    tmp2 = pow(Geometry[donorZone][MESH_0]->node[jPoint]->GetCoord(0) - xj[0],2.0);
+    tmp2 += pow(Geometry[donorZone][MESH_0]->node[jPoint]->GetCoord(1) - xj[1],2.0);
+    tmp2 = sqrt(tmp2);
+    isoparams[1] = tmp2/tmp;
+
+    tmp2 = pow(Geometry[donorZone][MESH_0]->node[jPoint2]->GetCoord(0) - xj[0],2.0);
+    tmp2 += pow(Geometry[donorZone][MESH_0]->node[jPoint2]->GetCoord(1) - xj[1],2.0);
+    tmp2 = sqrt(tmp2);
+    isoparams[0] = tmp2/tmp;
+
   }
-  //cout << tmp << endl;
-  tmp = 1/tmp;
-  for (iDim=0; iDim<nDim; iDim++){
-    // projection of \vec{q} onto plane defined by \vec{n} and \vec{p}:
-    // \vec{q} - \vec{n} ( (\vec{q}-\vec{p} ) \cdot \vec{n})
-    // tmp2 = ( (\vec{q}-\vec{p} ) \cdot \vec{N})
-    // \vec{n} = \vec{N}/(|N|), tmp = 1/|N|^2
-    x[iDim+1]=xj[iDim+1] - Normal[iDim]*tmp2*tmp;
-  }
+  else{
 
-  /*--- temp2 contains node #s that are on the surface (aka, we are excluding interior points) ---*/
-  for (k=0; k<m0; k++){
-    isoparams[k]=0;
-    /*--- If 3D loop over a face. if 2D loop over an element ---*/
-    if (nDim==3)
-      jPoint = Geometry[iZone_1][MESH_0]->elem[donor_elem]->GetNode(Geometry[iZone_1][MESH_0]->elem[donor_elem]->GetFaces(iFace,k));
-    else
-      jPoint = Geometry[iZone_1][MESH_0]->elem[donor_elem]->GetNode(k);
-    // Neglect donor points that are not members of the matching marker.
-    on_marker[k] =(Geometry[iZone_1][MESH_0]->node[jPoint]->GetVertex(jMarker)!=-1);
-    if (on_marker[k]){
+    /*--- Create Matrix A: 1st row all 1's, 2nd row x coordinates, 3rd row y coordinates, etc ---*/
+    /*--- Right hand side is [1, \vec{x}']'---*/
+    for (i=0; i<m*n; i++)
+      A[i]=0;
+    for (i=0; i<m; i++)
+      A[i]=1.0;
+    /*j,n: dimension. i,m: # neighbor point*/
+    x[0]=1.0;
+    for (iDim=0; iDim<nDim; iDim++)
+      x[iDim+1]=xj[iDim];
+
+    /*--- temp2 contains node #s that are on the surface (aka, we are excluding interior points) ---*/
+    for (k=0; k<m0; k++){
+      isoparams[k]=0;
+      /*--- If 3D loop over a face. if 2D loop over an element ---*/
+      jPoint = Geometry[donorZone][MESH_0]->elem[donor_elem]->GetNode(Geometry[donorZone][MESH_0]->elem[donor_elem]->GetFaces(iFace,k));
+      // Neglect donor points that are not members of the matching marker.
       // jth coordinate of the ith donor vertex
       for (j=1; j<n0; j++){
-        A[j*m+i] = Geometry[iZone_1][MESH_0]->node[jPoint]->GetCoord(j-1);
-        //cout <<" node  " << jPoint <<" dim "<< j-1 <<" Coord "<< A[j*m+i];
+        A[j*m+i] = Geometry[donorZone][MESH_0]->node[jPoint]->GetCoord(j-1);
       }
       i++;
-    }
-    else
-      m--;
-  }
 
-  /*--- Eliminate degenerate rows:
-   * for example, if z constant including the z values will make the system degenerate
-   * TODO: improve efficiency of this loop---*/
-  test[0]=true; // always keep the 1st row
-  for (i=1; i<n0; i++){
-    // Test this row against all previous
-    test[i]=true; // Assume that it is not degenerate
-    for (k=0; k<i; k++){
-      tmp=0; tmp2=0;
-      for (j=0;j<m;j++){
-        tmp+= A[i*m+j]*A[i*m+j];
-        tmp2+=A[k*m+j]*A[k*m+j];
+    }
+    /*--- Eliminate degenerate rows:
+     * for example, if z constant including the z values will make the system degenerate
+     * TODO: improve efficiency of this loop---*/
+    test[0]=true; // always keep the 1st row
+    for (i=1; i<n0; i++){
+      // Test this row against all previous
+      test[i]=true; // Assume that it is not degenerate
+      for (k=0; k<i; k++){
+        tmp=0; tmp2=0;
+        for (j=0;j<m;j++){
+          tmp+= A[i*m+j]*A[i*m+j];
+          tmp2+=A[k*m+j]*A[k*m+j];
+        }
+        tmp  = pow(tmp,0.5);
+        tmp2 = pow(tmp2,0.5);
+        testi[k]=false;
+        for (j=0; j<m; j++){
+          // If at least one ratio is non-matching row i is not degenerate w/ row k
+          if (A[i*m+j]/tmp != A[k*m+j]/tmp2)
+            testi[k]=true;
+        }
+        // If any of testi (k<i) are false, row i is degenerate
+        test[i]=(test[i] and testi[k]);
       }
-      tmp  = pow(tmp,0.5);
-      tmp2 = pow(tmp2,0.5);
-      testi[k]=false;
-      for (j=0; j<m; j++){
-        // If at least one ratio is non-matching row i is not degenerate w/ row k
-        if (A[i*m+j]/tmp != A[k*m+j]/tmp2)
-          testi[k]=true;
+      if (!test[i]) n--;
+    }
+    /*--- Initialize A2 now that we might have a smaller system --*/
+    su2double A2[n*m];
+    j=0;
+    /*--- Copy only the rows that are non-degenerate ---*/
+    for (i=0; i<n0; i++){
+      if (test[i]){
+        for (k=0;k<m;k++ ){
+          A2[m*j+k]=A[m*i+k];
+        }
+        x2[j]=x[i];
+        j++;
       }
-      // If any of testi (k<i) are false, row i is degenerate
-      test[i]=(test[i] and testi[k]);
     }
-    if (!test[i]) n--;
-  }
-  /*--- Initialize A2 now that we might have a smaller system --*/
-  su2double A2[n*m];
-  j=0;
-  /*--- Copy only the rows that are non-degenerate ---*/
-  for (i=0; i<n0; i++){
-    if (test[i]){
-      for (k=0;k<m;k++ ){
-        A2[m*j+k]=A[m*i+k];
-      }
-      x2[j]=x[i];
-      j++;
+    /*--- Initialize Q,R to 0 --*/
+    for (i=0; i<m*m; i++){
+      Q[i]=0;
+      R[i]=0;
     }
-  }
-
-  /*--- Initialize Q,R to 0 --*/
-  for (i=0; i<m*m; i++){
-    Q[i]=0;
-    R[i]=0;
-  }
-  /*--- TODO: make this loop more efficient ---*/
-  /*--- Solve for rectangular Q1 R1 ---*/
-  for (i=0; i<m; i++){
-    tmp=0;
-    for (j=0; j<n; j++)
-      tmp += (A2[j*m+i])*(A2[j*m+i]);
-
-    R[i*m+i]= pow(tmp,0.5);
-    if (tmp>eps && i<n){
-      for (j=0; j<n; j++)
-        Q[j*m+i]=A2[j*m+i]/R[i*m+i];
-    }
-    else if (tmp!=0){
-      for (j=0; j<n; j++)
-        Q[j*m+i]=A2[j*m+i]/tmp;
-    }
-    for (j=i+1; j<m; j++){
+    /*--- TODO: make this loop more efficient ---*/
+    /*--- Solve for rectangular Q1 R1 ---*/
+    for (i=0; i<m; i++){
       tmp=0;
-      for (k=0; k<n; k++)
-        tmp+=A2[k*m+j]*Q[k*m+i];
+      for (j=0; j<n; j++)
+        tmp += (A2[j*m+i])*(A2[j*m+i]);
 
-      R[i*m+j]=tmp;
+      R[i*m+i]= pow(tmp,0.5);
+      if (tmp>eps && i<n){
+        for (j=0; j<n; j++)
+          Q[j*m+i]=A2[j*m+i]/R[i*m+i];
+      }
+      else if (tmp!=0){
+        for (j=0; j<n; j++)
+          Q[j*m+i]=A2[j*m+i]/tmp;
+      }
+      for (j=i+1; j<m; j++){
+        tmp=0;
+        for (k=0; k<n; k++)
+          tmp+=A2[k*m+j]*Q[k*m+i];
 
-      for (k=0; k<n; k++)
-        A2[k*m+j]=A2[k*m+j]-Q[k*m+i]*R[i*m+j];
+        R[i*m+j]=tmp;
+
+        for (k=0; k<n; k++)
+          A2[k*m+j]=A2[k*m+j]-Q[k*m+i]*R[i*m+j];
+      }
     }
-  }
+    /*--- x_tmp = Q^T * x2 ---*/
+    for (i=0; i<m; i++)
+      x_tmp[i]=0.0;
+    for (i=0; i<m; i++){
+      for (j=0; j<n; j++)
+        x_tmp[i]+=Q[j*m+i]*x2[j];
+    }
+    /*--- solve x_tmp = R*isoparams for isoparams: upper triangular system ---*/
+    for (i=n-1; i>=0; i--){
+      if (R[i*m+i]>eps)
+        isoparams[i]=x_tmp[i]/R[i*m+i];
+      else
+        isoparams[i]=0;
+      for (j=0; j<i; j++)
+        x_tmp[j]=x_tmp[j]-R[j*m+i]*isoparams[i];
+    }
 
-  /*--- x_tmp = Q^T * x2 ---*/
-  for (i=0; i<m; i++)
-    x_tmp[i]=0.0;
-  for (i=0; i<m; i++){
-    for (j=0; j<n; j++)
-      x_tmp[i]+=Q[j*m+i]*x2[j];
   }
-  /*--- solve x_tmp = R*isoparams for isoparams: upper triangular system ---*/
-  for (i=n-1; i>=0; i--){
-    if (R[i*m+i]>eps)
-      isoparams[i]=x_tmp[i]/R[i*m+i];
-    else
-      isoparams[i]=0;
-    for (j=0; j<i; j++)
-      x_tmp[j]=x_tmp[j]-R[j*m+i]*isoparams[i];
-  }
-
-  /*--- Isoparametric coefficients have been calculated. Run checks ---*/
+  /*--- Isoparametric coefficients have been calculated. Run checks to eliminate  ---*/
 
   su2double tol = 1e-13; // hardcoded tolerance
   /*--- Check 0: normalize to 1: corrects for points not in face---*/
@@ -950,33 +903,32 @@ void CIsoparametric::Isoparameters(su2double* isoparams, unsigned int iZone_0,
 //  for (i=0; i<m; i++){
 //    isoparams[i] /= tmp;
 //  }
-
   /*--- Check 1: if close to 0, replace with 0 ---*/
   for (i=0; i<m; i++){
     if (abs(isoparams[i])< tol )
       isoparams[i]=0;
   }
-
   /*--- Check 2: if > 1, point is ouside face, not really represented accurately ---*/
   bool inside_face = true;
   for (i=0; i<m; i++){
-    if (abs(isoparams[i])> 1.1 )
+    if (isoparams[i]> 1.1 or  isoparams[i]<-0.1 )
       inside_face = false;
   }
   if (!inside_face){
+    //cout <<"Reverted to nearest neighbor " << endl;
     /*--- Revert to nearest neighbor ---*/
     tmp=-1; tmp2=0.0; k=0;
-    for (i=0; i<m; i++){
+    for (i=0; i<m0; i++){
       /*--- If 3D loop over a face. if 2D loop over an element ---*/
-      if (nDim==3){
-        //jPoint = Geometry[iZone_1][MESH_0]->elem[donor_elem]->GetFaces(iFace,i);
-        jPoint = Geometry[iZone_1][MESH_0]->elem[donor_elem]->GetNode(Geometry[iZone_1][MESH_0]->elem[donor_elem]->GetFaces(iFace,i));
+      if (nDim==3)
+        jPoint = Geometry[donorZone][MESH_0]->elem[donor_elem]->GetNode(Geometry[donorZone][MESH_0]->elem[donor_elem]->GetFaces(iFace,i));
+      else{
+        iedge = Geometry[donorZone][MESH_0]->node[donor_elem]->GetEdge(iFace);
+        jPoint = Geometry[donorZone][MESH_0]->edge[iedge]->GetNode(i);
       }
-      else
-        jPoint = Geometry[iZone_1][MESH_0]->elem[donor_elem]->GetNode(i);
 
       for (j=0;j<nDim;j++)
-        tmp2+=pow((Geometry[iZone_1][MESH_0]->node[jPoint]->GetCoord(j)-x[j]),2.0);
+        tmp2+=pow((Geometry[donorZone][MESH_0]->node[jPoint]->GetCoord(j)-x[j]),2.0);
       if (tmp==-1 or tmp2<tmp){
         tmp=tmp2;
         k=i;
@@ -985,29 +937,19 @@ void CIsoparametric::Isoparameters(su2double* isoparams, unsigned int iZone_0,
     }
     isoparams[k]=1;
   }
-  /*--- Check 3: reorg for neglected points---   */
-  i=m-1;
-  for (k=m0-1;k>=0;k--){
-    if (on_marker[k]){
-      isoparams[k] = isoparams[i];
-      i--;
-    }
-    else
-      isoparams[k] = 0;
-  }
-  /*--- Check 4: print the result ---
-  for (k=0; k<m0; k++){
-    cout <<" iDim " << k <<" Coord " << x[k+1] <<" ";
-    tmp =0;
-    for (i=0; i<n0; i++){
-      if (nDim==3)
-        jPoint = Geometry[iZone_1][MESH_0]->elem[donor_elem]->GetFaces(iFace,i);
-      else
-        jPoint = Geometry[iZone_1][MESH_0]->elem[donor_elem]->GetNode(i);
-      tmp+=isoparams[i]*(Geometry[iZone_1][MESH_0]->node[jPoint]->GetCoord(k));
-    }
-    cout << tmp << endl;
+    /*--- Check 4: print the result ---
+    for (k=0; k<m0; k++){
+      cout <<" iDim " << k <<" Coord " << x[k+1] <<" ";
+      tmp =0;
+      for (i=0; i<n0; i++){
+        if (nDim==3)
+          jPoint = Geometry[donorZone][MESH_0]->elem[donor_elem]->GetFaces(iFace,i);
+        else
+          jPoint = Geometry[donorZone][MESH_0]->elem[donor_elem]->GetNode(i);
+        tmp+=isoparams[i]*(Geometry[donorZone][MESH_0]->node[jPoint]->GetCoord(k));
+      }
+      cout << tmp << endl;
 
-  }
-  */
+    }
+    */
 }

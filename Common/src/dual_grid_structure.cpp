@@ -456,7 +456,8 @@ CVertex::CVertex(unsigned long val_point, unsigned short val_nDim) : CDualGrid(v
 	VarRot = NULL;
 
 	/*--- Set to NULL donor arrays for interpolation ---*/
-  Donor_Info = NULL;
+  Donor_Points = NULL;
+  Donor_Proc = NULL;
   Donor_Coeff = NULL;
   nDonor_Points = 1;
 }
@@ -467,10 +468,9 @@ CVertex::~CVertex() {
 	if (Nodes != NULL) delete[] Nodes;
 
   /*---  donor arrays for interpolation ---*/
-  if (Donor_Info != NULL)
-    for (unsigned long iDonor=0; iDonor<nDonor_Points; iDonor++)
-      delete[] Donor_Info[iDonor];
   if (Donor_Coeff != NULL) delete[] Donor_Coeff;
+  if (Donor_Proc != NULL) delete[] Donor_Proc;
+  if (Donor_Points != NULL) delete[] Donor_Points;
 
   if (VarRot!=NULL)
     delete[] VarRot;
@@ -516,10 +516,7 @@ void CVertex::AddNormal(su2double *val_face_normal) {
 }
 
 void CVertex::Allocate_DonorInfo(void){
-  Donor_Info = new unsigned long*[nDonor_Points];
+  Donor_Points = new unsigned long[nDonor_Points];
+  Donor_Proc = new unsigned long[nDonor_Points];
   Donor_Coeff = new su2double[nDonor_Points];
-  for (unsigned short iDonor=0; iDonor<nDonor_Points; iDonor++){
-    Donor_Info[iDonor]=new unsigned long[5];
-  }
-
 }
