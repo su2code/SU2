@@ -201,109 +201,7 @@ CNearestNeighbor::CNearestNeighbor(CGeometry ***geometry_container, CConfig **co
 CNearestNeighbor::~CNearestNeighbor(){}
 
 void CNearestNeighbor::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
-//  unsigned long iPoint, jPoint, iVertex, jVertex,*nn;
-//  unsigned short iMarker, iDim, jMarker;
-//  unsigned short nDim = Geometry[Zones[0]][MESH_0]->GetnDim(), iDonor, jDonor;
-//  su2double distance = 0.0, last_distance=-1.0;
-//
-//  unsigned short int donorindex = 0;
-//  unsigned short nMarkerInt, nMarkerDonor, nMarkerTarget;
-//  unsigned short iMarkerInt, iMarkerDonor, iMarkerTarget;
-//  unsigned short markDonor, markTarget;
-//
-//  /*--- Restricted to 2-zone fluid-structure for now ---*/
-//  unsigned int targetZone = Zones[0];
-//  unsigned int donorZone = Zones[1];
-//
-//  nn = new unsigned long[4];
-//
-//  /*--- Loop through the vertices in Interface of both zones
-//   * for Nearest Neighbor each vertex has only one donor point, but for other types of
-//   * interpolation the number of donor points must be determined first. ---*/
-//
-//	/*--- Number of markers on the FSI interface ---*/
-//	nMarkerInt = (config[targetZone]->GetMarker_n_FSIinterface())/2;
-//  nMarkerDonor  =  config[donorZone]->GetnMarker_All();
-//  nMarkerTarget =  config[targetZone]->GetnMarker_All();
-//
-//	/*--- For the number of markers on the interface... ---*/
-//	for (iMarkerInt=0; iMarkerInt < nMarkerInt; iMarkerInt++){
-//
-//		/*--- ... the marker markDonor ... ---*/
-//		for (iMarkerDonor=0; iMarkerDonor < nMarkerDonor; iMarkerDonor++){
-//			if ( config[donorZone]->GetMarker_All_FSIinterface(iMarkerDonor) == (iMarkerInt+1)){
-//				markDonor=iMarkerDonor;
-//			}
-//		}
-//		/*--- ... corresponds to the marker markTarget. ---*/
-//		for (iMarkerTarget=0; iMarkerTarget < nMarkerTarget; iMarkerTarget++){
-//			if (config[targetZone]->GetMarker_All_FSIinterface(iMarkerTarget) == (iMarkerInt+1)){
-//				markTarget=iMarkerTarget;
-//			}
-//		}
-//
-//		/*--- For the markers on the fluid side ---*/
-//		/*--- Loop over the vertices on the marker ---*/
-//    for (iVertex = 0; iVertex<Geometry[targetZone][MESH_0]->GetnVertex(markTarget); iVertex++) {
-//      iPoint =Geometry[targetZone][MESH_0]->vertex[markTarget][iVertex]->GetNode();
-//      last_distance=-1.0;
-//      /*--- Allocate memory with known number of donor points (1 for nearest neighbor) ---*/
-//      Geometry[targetZone][MESH_0]->vertex[markTarget][iVertex]->SetnDonorPoints(1);
-//      Geometry[targetZone][MESH_0]->vertex[markTarget][iVertex]->Allocate_DonorInfo();
-//      /*--- Loop over the vertices in the corresponding interface marker (zone 1) --*/
-//
-//		  for (jVertex = 0; jVertex<Geometry[donorZone][MESH_0]->GetnVertex(markDonor); jVertex++) {
-//        jPoint =Geometry[donorZone][MESH_0]->vertex[markDonor][jVertex]->GetNode();
-//        distance = 0.0;
-//        for (iDim=0; iDim<nDim; iDim++)
-//          distance+=pow(Geometry[donorZone][MESH_0]->vertex[markDonor][jVertex]->GetCoord(iDim)-Geometry[targetZone][MESH_0]->vertex[markTarget][iVertex]->GetCoord(iDim),2.0);
-//        if ((last_distance==-1.0) or (distance<last_distance)){
-//          last_distance=distance;
-//          nn[0] = donorZone; /* Zone of the donor point */
-//          nn[1] = jPoint; /* global index of the donor point */
-//          nn[2] = markDonor; /* marker of the donor point */
-//          nn[3] = jVertex; /* vertex index within marker of the donor point */
-//        }
-//		  }
-//
-//      /*--- Set the information of the nearest neighbor (donorindex = 0)  ---*/
-//		  /*--- Enable this to check that we are doing it fine ---*/
-//      //cout << "The distance from the vertex " << iVertex << " in the Flow marker " << markTarget << " to the vertex " << nn[3] << " in the FEA marker " << markDonor << " is " << last_distance << endl;
-//
-//      Geometry[targetZone][MESH_0]->vertex[markTarget][iVertex]->SetDonorInfo(donorindex,nn);
-//      Geometry[targetZone][MESH_0]->vertex[markTarget][iVertex]->SetDonorCoeff(donorindex,1.0);
-//    }
-//
-//    /*--- For the marker on the FEA side ---*/
-//    /*--- Loop over the vertices on the marker ---*/
-//    for (iVertex = 0; iVertex<Geometry[donorZone][MESH_0]->GetnVertex(markDonor); iVertex++) {
-//      iPoint =Geometry[donorZone][MESH_0]->vertex[markDonor][iVertex]->GetNode();
-//      last_distance=-1.0;
-//      /*--- Allocate memory with known number of donor points (1 for nearest neighbor) ---*/
-//      Geometry[donorZone][MESH_0]->vertex[markDonor][iVertex]->SetnDonorPoints(1);
-//      Geometry[donorZone][MESH_0]->vertex[markDonor][iVertex]->Allocate_DonorInfo();
-//      /*--- Loop over vertices in the interface marker (zone 0) --*/
-//      Geometry[donorZone][MESH_0]->vertex[markDonor][iVertex]->SetDonorInfo(donorindex,nn);
-//		  for (jVertex = 0; jVertex<Geometry[targetZone][MESH_0]->GetnVertex(markTarget); jVertex++) {
-//        jPoint =Geometry[targetZone][MESH_0]->vertex[markTarget][jVertex]->GetNode();
-//        distance = 0.0;
-//        for (iDim=0; iDim<nDim; iDim++)
-//          distance+=pow(Geometry[targetZone][MESH_0]->vertex[markTarget][jVertex]->GetCoord(iDim)-Geometry[donorZone][MESH_0]->vertex[markDonor][iVertex]->GetCoord(iDim),2.0);
-//        if ((jVertex==0) or (distance<last_distance)){
-//          last_distance=distance;
-//          nn[0] = targetZone; /* Zone of the donor point */
-//          nn[1] = jPoint; /* global index of the donor point */
-//          nn[2] = markTarget; /* marker of the donor point */
-//          nn[3] = jVertex; /* vertex index within marker of the donor point */
-//        }
-//      }
-//		  /*--- Enable this to check that we are doing it fine ---*/
-//      //cout << "The distance from the vertex " << iVertex << " in the FEA marker " << markDonor << " to the vertex " << nn[3] << " in the Flow marker " << markTarget << " is " << last_distance << endl;
-//      /*--- Set the information of the nearest neighbor ---*/
-//      Geometry[donorZone][MESH_0]->vertex[markDonor][iVertex]->SetDonorInfo(donorindex,nn);
-//      Geometry[donorZone][MESH_0]->vertex[markDonor][iVertex]->SetDonorCoeff(donorindex,1.0);
-//    }
-//	}
+
 }
 
 
@@ -319,8 +217,7 @@ CIsoparametric::CIsoparametric(CGeometry ***geometry_container, CConfig **config
 CIsoparametric::~CIsoparametric(){}
 
 void CIsoparametric::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
-  unsigned long jPoint, iVertex, jVertex,*nn, inode, jElem, iNearestNode=0, iNearestVertex=0;
-  long ivtx;
+  unsigned long jPoint, iVertex, jVertex, inode, jElem, iNearestNode=0, iNearestVertex=0;
   long donor_elem=0, temp_donor=0;
   unsigned short iDim, it;
   unsigned short nDim = Geometry[Zones[0]][MESH_0]->GetnDim();
@@ -338,7 +235,6 @@ void CIsoparametric::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
   su2double *donorCoord, *Normal;
   su2double projected_point[nDim];
   su2double tmp, tmp2;
-  nn = new unsigned long[4];
 
   /*--- Number of markers on the interface ---*/
   nMarkerInt = (config[targetZone]->GetMarker_n_FSIinterface())/2;
@@ -370,9 +266,7 @@ void CIsoparametric::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
       }
     }
     //cout <<"markers: " << markDonor << " " << markTarget << endl;
-    /*--Same for all points: -*/
-    nn[0] = donorZone; /* Zone of the donor point */
-    nn[2] = markDonor; /* marker of the donor point */
+
     /*--- For the markers on the fluid side ---*/
     /*--- Loop over the vertices on the marker ---*/
     for (iVertex = 0; iVertex<Geometry[targetZone][MESH_0]->GetnVertex(markTarget); iVertex++) {
@@ -538,9 +432,10 @@ void CIsoparametric::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
 
       /*--- Set the appropriate amount of memory ---*/
       Geometry[targetZone][MESH_0]->vertex[markTarget][iVertex]->Allocate_DonorInfo();
+      /*--- Recal the closest face/edge ---*/
       iFace = Geometry[targetZone][MESH_0]->vertex[markTarget][iVertex]->GetDonorFace();
 
-      /*--- Loop over vertices of the element ---*/
+      /*--- Loop over vertices of the element to set the values at the vertex ---*/
       for (it=0; it< Geometry[targetZone][MESH_0]->vertex[markTarget][iVertex]->GetnDonorPoints(); it++){
         if (donor_elem!=-1){
           if (nDim==3){
@@ -554,12 +449,18 @@ void CIsoparametric::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
         else
           jPoint = iNearestNode; // If no matching element is found, revert to Nearest Neighbor
 
-        ivtx = Geometry[donorZone][MESH_0]->node[jPoint]->GetVertex(markDonor);
-        nn[1] = jPoint; /* global index of the donor point */
-        nn[3] = ivtx; /* vertex index within marker of the donor point */
+        /*--- NOTE: in parallel, jPoint must be converted to global index ---*/
+
+        //ivtx = Geometry[donorZone][MESH_0]->node[jPoint]->GetVertex(markDonor);
+
+
+
         //Geometry[donorZone][MESH_0]->vertex[markDonor][ivtx]->IncrementnDonor();
-        Geometry[targetZone][MESH_0]->vertex[markTarget][iVertex]->SetDonorInfo(it,nn);
+
+        Geometry[targetZone][MESH_0]->vertex[markTarget][iVertex]->SetInterpDonorPoint(it,jPoint);
         Geometry[targetZone][MESH_0]->vertex[markTarget][iVertex]->SetDonorCoeff(it,myCoeff[it]);
+        // FOR PARALELL:
+        //Geometry[targetZone][MESH_0]->vertex[markTarget][iVertex]->SetInterpDonorProc(it,proc);
         //cout <<" myCoeff  " << myCoeff[it] << " ";
       }
       //cout << endl;
