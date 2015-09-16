@@ -10399,12 +10399,12 @@ void CEulerSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetricMo
 
 void CEulerSolver::SetFlow_Displacement_Int(CGeometry **flow_geometry, CVolumetricMovement *flow_grid_movement,
                                         CConfig *flow_config, CConfig *fea_config, CGeometry **fea_geometry, CSolver ***fea_solution) {
-    unsigned short iMarker, iDim;
+    unsigned short iMarker, iDim, nDonor;
     unsigned long iVertex, iPoint;
     su2double *Coord, VarCoord[3];
 
     unsigned long iPoint_Donor;
-    su2double *CoordDonor, *DisplacementDonor, *DisplacementDonor_Prev;
+    su2double *CoordDonor, *DisplacementDonor, *DisplacementDonor_Prev, coeff;
 
     for (iMarker = 0; iMarker < flow_config->GetnMarker_All(); iMarker++) {
 
@@ -10412,22 +10412,27 @@ void CEulerSolver::SetFlow_Displacement_Int(CGeometry **flow_geometry, CVolumetr
 
         for(iVertex = 0; iVertex < flow_geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
 
+          for (iDim = 0; iDim < nDim; iDim++)
+            VarCoord[iDim]=0.0;
+
           iPoint = flow_geometry[MESH_0]->vertex[iMarker][iVertex]->GetNode();
-
-          iPoint_Donor = flow_geometry[MESH_0]->vertex[iMarker][iVertex]->GetDonorInfo(0,1);
-
+          nDonor = flow_geometry[MESH_0]->vertex[iMarker][iVertex]->GetnDonorPoints();
+          for (unsigned short iDonor; iDonor < nDonor; iDonor++){
+            iPoint_Donor = flow_geometry[MESH_0]->vertex[iMarker][iVertex]->GetInterpDonorPoint(iDonor);
+            coeff = flow_geometry[MESH_0]->vertex[iMarker][iVertex]->GetDonorCoeff(iDonor);
 //          Coord = flow_geometry[MESH_0]->node[iPoint]->GetCoord();
 
 //          CoordDonor = fea_geometry[MESH_0]->node[iPoint_Donor]->GetCoord();
 
-          /*--- The displacements come from the predicted solution ---*/
-          DisplacementDonor = fea_solution[MESH_0][FEA_SOL]->node[iPoint_Donor]->GetSolution_Pred();
+            /*--- The displacements come from the predicted solution ---*/
+            DisplacementDonor = fea_solution[MESH_0][FEA_SOL]->node[iPoint_Donor]->GetSolution_Pred();
 
-          DisplacementDonor_Prev = fea_solution[MESH_0][FEA_SOL]->node[iPoint_Donor]->GetSolution_Pred_Old();
+            DisplacementDonor_Prev = fea_solution[MESH_0][FEA_SOL]->node[iPoint_Donor]->GetSolution_Pred_Old();
 
-          for (iDim = 0; iDim < nDim; iDim++)
+            for (iDim = 0; iDim < nDim; iDim++)
 
-        	  VarCoord[iDim] = DisplacementDonor[iDim] - DisplacementDonor_Prev[iDim];
+              VarCoord[iDim] += (DisplacementDonor[iDim] - DisplacementDonor_Prev[iDim])*coeff;
+          }
 
 //TODO Double check this to make sure the coordinates are updated as they should be
 
