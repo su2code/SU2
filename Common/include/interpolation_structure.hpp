@@ -187,6 +187,8 @@ public:
    * \param[in] donor_elem - element index of the element to use for interpolation
    * \param[in[ nDonorPoints - number of donor points in the element.
    */
-  void Isoparameters(su2double* isoparams, unsigned int iZone_0, unsigned short iMarker, unsigned long iVertex, unsigned short nDim, unsigned int iZone_1, unsigned short jMarker, long donor_elem,  unsigned short iFace, unsigned int nDonorPoints);
+  void Isoparameters(su2double* isoparams, unsigned long iVertex,
+      unsigned short nDim, unsigned int iZone_1,  long donor_elem,  unsigned short iFace,
+      unsigned int nDonorPoints,  su2double* xj);
 
 };
