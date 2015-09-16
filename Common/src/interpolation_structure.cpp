@@ -399,7 +399,7 @@ void CIsoparametric::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
           iNearestVertex = jVertex;
         }
       }
-      //cout <<" Nearest Neighbor for flow point " << iPoint <<" is "<< iNearestNode << "; d = " << last_distance << endl;
+      cout <<" Nearest Neighbor for flow point " << iPoint <<" is "<< iNearestNode << "; d = " << last_distance << endl;
 
       donor_elem=-1;
       last_distance=-1;
@@ -407,20 +407,17 @@ void CIsoparametric::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
       /*--- Now that we know the closest vertex, the closest element must be one of the ones connected to the vertex--*/
       for (jElem=0; jElem<Geometry[donorZone][MESH_0]->node[iNearestNode]->GetnElem(); jElem++){
 
-
-
         /*--- Loop over all the faces of this element to find ones on the interface boundary
          * If a face is on markDonor, then find the distance and check against previous to find closest
          * face. ---*/
         if (nDim==3){
-          nFaces = Geometry[donorZone][MESH_0]->elem[temp_donor]->GetnFaces();
           temp_donor = Geometry[donorZone][MESH_0]->node[iNearestNode]->GetElem(jElem);
+          nFaces = Geometry[donorZone][MESH_0]->elem[temp_donor]->GetnFaces();
         }
         else{
-          nFaces = Geometry[donorZone][MESH_0]->node[iNearestNode]->GetnPoint();
           temp_donor = iNearestNode;
+          nFaces = Geometry[donorZone][MESH_0]->node[iNearestNode]->GetnPoint();
         }
-
 
         for (iFace=0; iFace<nFaces; iFace++){
           face_on_marker=true;
@@ -433,7 +430,6 @@ void CIsoparametric::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
               /*--- Local index of the node on face --*/
               inode = Geometry[donorZone][MESH_0]->elem[temp_donor]->GetFaces(iFace, ifacenode);
               jPoint = Geometry[donorZone][MESH_0]->elem[temp_donor]->GetNode(inode);
-
               face_on_marker = (face_on_marker and (Geometry[donorZone][MESH_0]->node[jPoint]->GetVertex(markDonor) !=-1));
             }
           }
@@ -443,9 +439,7 @@ void CIsoparametric::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
             for (unsigned int ifacenode=0; ifacenode<nNodes; ifacenode++){
               inode = Geometry[donorZone][MESH_0]->node[iNearestNode]->GetEdge(iFace);
               jPoint = Geometry[donorZone][MESH_0]->edge[inode]->GetNode(ifacenode);
-
               face_on_marker = (face_on_marker and (Geometry[donorZone][MESH_0]->node[jPoint]->GetVertex(markDonor) !=-1));
-              //cout <<face_on_marker<<endl;
             }
           }
 
@@ -474,7 +468,6 @@ void CIsoparametric::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
               // tmp2 = ( (\vec{q}-\vec{p} ) \cdot \vec{N})
               // \vec{n} = \vec{N}/(|N|), tmp = 1/|N|^2
               projected_point[iDim]=Coord[iDim] + Normal[iDim]*tmp2*tmp;
-              cout << Coord[iDim] <<" " << projected_point[iDim]<< endl;
             }
 
             /*--- find isoparametric representation. if the point is outside the face (or edge, in 2D), the method will return
@@ -518,16 +511,17 @@ void CIsoparametric::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
                   jPoint = Geometry[donorZone][MESH_0]->edge[inode]->GetNode(it);
                 }
                 donorCoord = Geometry[donorZone][MESH_0]->node[jPoint]->GetCoord();
-                //cout <<" isoparam: " << myCoeff[it] <<" Coord: ";
+                cout <<" isoparam: " << myCoeff[it] <<" Coord: ";
                 for (iDim=0; iDim<nDim; iDim++){
                   Coord[iDim]+=myCoeff[it]*donorCoord[iDim];
-                  //cout << donorCoord[iDim]<< " ";
+                  cout << donorCoord[iDim]<< " ";
                 }
-                //cout << endl;
+                cout << endl;
               }
-              //cout << endl;
+              donorCoord = Geometry[donorZone][MESH_0]->node[iNearestNode]->GetCoord();
+              cout << endl;
               for (iDim=0; iDim<nDim; iDim++){
-                cout << " iso " << Coord[iDim] <<" proj " << projected_point[iDim] << endl;
+                cout << " iso " << Coord[iDim] <<" proj " << projected_point[iDim] <<" NN " <<  donorCoord[iDim] << endl;
               }
               Geometry[targetZone][MESH_0]->vertex[markTarget][iVertex]->SetDonorElem(temp_donor); // in 2D is nearest neighbor
               Geometry[targetZone][MESH_0]->vertex[markTarget][iVertex]->SetDonorFace(iFace);
@@ -627,6 +621,9 @@ void CIsoparametric::Isoparameters(su2double* isoparams, unsigned long iVertex,
   su2double Q[m*m], R[m*m], A[n0*m];
   su2double x2[n0];
 
+  /*--- n0: # of dimensions + 1. n: n0 less any degenerate rows ---*/
+  n=n0;
+  m0=m;
 
   bool test[n0], testi[n0];
 
@@ -652,9 +649,7 @@ void CIsoparametric::Isoparameters(su2double* isoparams, unsigned long iVertex,
 
   }
   else{
-    /*--- n0: # of dimensions + 1. n: n0 less any degenerate rows ---*/
-    n=n0;
-    m0=m;
+
     /*--- Create Matrix A: 1st row all 1's, 2nd row x coordinates, 3rd row y coordinates, etc ---*/
     /*--- Right hand side is [1, \vec{x}']'---*/
     for (i=0; i<m*n; i++)
@@ -790,16 +785,15 @@ void CIsoparametric::Isoparameters(su2double* isoparams, unsigned long iVertex,
   /*--- Check 2: if > 1, point is ouside face, not really represented accurately ---*/
   bool inside_face = true;
   for (i=0; i<m; i++){
-    if (isoparams[i]> 1.0 or  isoparams[i]<-0.0 )
+    if (isoparams[i]> 1.1 or  isoparams[i]<-0.1 )
       inside_face = false;
   }
   if (!inside_face){
-    //cout <<"Reverted to nearest neighbor " << endl;
+    cout <<"Reverted to nearest neighbor " << endl;
     /*--- Revert to nearest neighbor ---*/
     tmp=-1; tmp2=0.0; k=0;
-    for (i=0; i<m; i++){
+    for (i=0; i<m0; i++){
       /*--- If 3D loop over a face. if 2D loop over an element ---*/
-        //jPoint = Geometry[donorZone][MESH_0]->elem[donor_elem]->GetFaces(iFace,i);
       if (nDim==3)
         jPoint = Geometry[donorZone][MESH_0]->elem[donor_elem]->GetNode(Geometry[donorZone][MESH_0]->elem[donor_elem]->GetFaces(iFace,i));
       else{
