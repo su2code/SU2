@@ -10213,6 +10213,7 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
   Coord_FaceiPoint = new su2double [nDim];
   Coord_FacejPoint = new su2double [nDim];
 
+  my_DomainVolume = 0.0;
   for (iElem = 0; iElem < nElem; iElem++) {
     elementVolume = 0;
     for (iFace = 0; iFace < elem[iElem]->GetnFaces(); iFace++) {
@@ -10254,22 +10255,27 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
         switch (nDim) {
           case 2:
             /*--- Two dimensional problem ---*/
-            elementVolume += edge[iEdge]->GetVolume(Coord_FaceiPoint, Coord_Elem_CG, Coord_Edge_CG);
-            elementVolume += edge[iEdge]->GetVolume(Coord_FacejPoint, Coord_Edge_CG, Coord_Elem_CG);
+            Area = edge[iEdge]->GetVolume(Coord_FaceiPoint, Coord_Edge_CG, Coord_Elem_CG);
+            node[face_iPoint]->AddVolume(fabs(Area)); my_DomainVolume +=fabs(Area);
+            elementVolume -= Area;
+            Area = edge[iEdge]->GetVolume(Coord_FacejPoint, Coord_Edge_CG, Coord_Elem_CG);
+            node[face_jPoint]->AddVolume(fabs(Area)); my_DomainVolume +=fabs(Area);
+            elementVolume += Area;
             break;
           case 3:
             /*--- Three dimensional problem ---*/
-            elementVolume += edge[iEdge]->GetVolume(Coord_FaceiPoint, Coord_Edge_CG, Coord_FaceElem_CG, Coord_Elem_CG);
-            elementVolume += edge[iEdge]->GetVolume(Coord_FacejPoint, Coord_Elem_CG, Coord_FaceElem_CG, Coord_Edge_CG);
+            Volume = edge[iEdge]->GetVolume(Coord_FaceiPoint, Coord_Edge_CG, Coord_FaceElem_CG, Coord_Elem_CG);
+            node[face_iPoint]->AddVolume(fabs(Volume)); my_DomainVolume +=fabs(Volume);
+            elementVolume += Volume;
+            Volume = edge[iEdge]->GetVolume(Coord_FacejPoint, Coord_Edge_CG, Coord_FaceElem_CG, Coord_Elem_CG);
+            node[face_jPoint]->AddVolume(fabs(Volume)); my_DomainVolume +=fabs(Volume);
+            elementVolume -= Volume;
             break;
         }
       }
     }
 	  if (elementVolume < 0) elem[iElem]->Change_Orientation();
-  }
-  
-  my_DomainVolume = 0.0;
-  for (iElem = 0; iElem < nElem; iElem++) {
+
     for (iFace = 0; iFace < elem[iElem]->GetnFaces(); iFace++) {
       
       /*--- In 2D all the faces have only one edge ---*/
@@ -10296,37 +10302,21 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
         }
         
         /*--- We define a direction (from the smalest index to the greatest) --*/
-        change_face_orientation = false;
-        if (face_iPoint > face_jPoint) change_face_orientation = true;
         iEdge = FindEdge(face_iPoint, face_jPoint);
-        
+
         for (iDim = 0; iDim < nDim; iDim++) {
           Coord_Edge_CG[iDim] = edge[iEdge]->GetCG(iDim);
           Coord_Elem_CG[iDim] = elem[iElem]->GetCG(iDim);
           Coord_FaceElem_CG[iDim] = elem[iElem]->GetFaceCG(iFace, iDim);
-          Coord_FaceiPoint[iDim] = node[face_iPoint]->GetCoord(iDim);
-          Coord_FacejPoint[iDim] = node[face_jPoint]->GetCoord(iDim);
         }
         
-        switch (nDim) {
-          case 2:
-            /*--- Two dimensional problem ---*/
-            if (change_face_orientation) edge[iEdge]->SetNodes_Coord(Coord_Elem_CG, Coord_Edge_CG);
-            else edge[iEdge]->SetNodes_Coord(Coord_Edge_CG, Coord_Elem_CG);
-            Area = edge[iEdge]->GetVolume(Coord_FaceiPoint, Coord_Edge_CG, Coord_Elem_CG);
-            node[face_iPoint]->AddVolume(fabs(Area)); my_DomainVolume +=fabs(Area);
-            Area = edge[iEdge]->GetVolume(Coord_FacejPoint, Coord_Edge_CG, Coord_Elem_CG);
-            node[face_jPoint]->AddVolume(fabs(Area)); my_DomainVolume +=fabs(Area);
-            break;
-          case 3:
-            /*--- Three dimensional problem ---*/
-            if (change_face_orientation) edge[iEdge]->SetNodes_Coord(Coord_FaceElem_CG, Coord_Edge_CG, Coord_Elem_CG);
-            else edge[iEdge]->SetNodes_Coord(Coord_Edge_CG, Coord_FaceElem_CG, Coord_Elem_CG);
-            Volume = edge[iEdge]->GetVolume(Coord_FaceiPoint, Coord_Edge_CG, Coord_FaceElem_CG, Coord_Elem_CG);
-            node[face_iPoint]->AddVolume(fabs(Volume)); my_DomainVolume +=fabs(Volume);
-            Volume = edge[iEdge]->GetVolume(Coord_FacejPoint, Coord_Edge_CG, Coord_FaceElem_CG, Coord_Elem_CG);
-            node[face_jPoint]->AddVolume(fabs(Volume)); my_DomainVolume +=fabs(Volume);
-            break;
+        change_face_orientation = (face_iPoint > face_jPoint);
+        if (nDim == 2) {
+          if (change_face_orientation) edge[iEdge]->SetNodes_Coord(Coord_Elem_CG, Coord_Edge_CG);
+          else edge[iEdge]->SetNodes_Coord(Coord_Edge_CG, Coord_Elem_CG);
+        } else {
+          if (change_face_orientation) edge[iEdge]->SetNodes_Coord(Coord_FaceElem_CG, Coord_Edge_CG, Coord_Elem_CG);
+          else edge[iEdge]->SetNodes_Coord(Coord_Edge_CG, Coord_FaceElem_CG, Coord_Elem_CG);
         }
       }
     }
