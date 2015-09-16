@@ -279,12 +279,20 @@ int main(int argc, char *argv[]) {
     if (!config_container[ZONE_0]->GetMatchingMesh()){
       unsigned int Zones[2];
       unsigned int nzn = 2; // temporary nZones for interpolation: 2 in the case of fluid-structure
-      Zones[0]=ZONE_0;
-      Zones[1]=ZONE_1;
-      if (config_container[ZONE_0]->GetKindInterpolation()== NEAREST_NEIGHBOR )
-        interpolator_container[iZone] = new CNearestNeighbor(geometry_container,config_container,Zones,nzn);
-      if (config_container[ZONE_0]->GetKindInterpolation()== ISOPARAMETRIC )
-        interpolator_container[iZone] = new CIsoparametric(geometry_container,config_container,Zones,nzn);
+      for (iZone=0; iZone<nZone; iZone++){
+        if (iZone==ZONE_0){
+          Zones[0]=ZONE_0;
+          Zones[1]=ZONE_1;
+        }
+        else{
+          Zones[0]=ZONE_1;
+          Zones[1]=ZONE_0;
+        }
+        if (config_container[iZone]->GetKindInterpolation()== NEAREST_NEIGHBOR )
+          interpolator_container[iZone] = new CNearestNeighbor(geometry_container,config_container,Zones,nzn);
+        if (config_container[iZone]->GetKindInterpolation()== ISOPARAMETRIC )
+          interpolator_container[iZone] = new CIsoparametric(geometry_container,config_container,Zones,nzn);
+      }
     }
 
 
