@@ -1022,12 +1022,12 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
 					for (iDonorPoint = 0; iDonorPoint < nDonorPoints; iDonorPoint++){
 
 						/*--- Find the global index of the donor points for Point_Target ---*/
-						// Donor_Global_Index = target_geometry->vertex[Marker_Target][iVertex]->GetGlobalDonorPoint(iDonorPoint);
-						Donor_Global_Index = target_geometry->vertex[Marker_Target][iVertex]->GetGlobalDonorPoint();
+						Donor_Global_Index = target_geometry->vertex[Marker_Target][iVertex]->GetInterpDonorPoint(iDonorPoint);
+						//Donor_Global_Index = target_geometry->vertex[Marker_Target][iVertex]->GetGlobalDonorPoint();
 
 						/*--- We need to get the donor coefficient in a way like this: ---*/
-						// donorCoeff = target_geometry->vertex[Marker_Target][iVertex]->GetDonorCoeff(iDonorPoint);
-						donorCoeff = 1.0;
+						donorCoeff = target_geometry->vertex[Marker_Target][iVertex]->GetDonorCoeff(iDonorPoint);
+						//donorCoeff = 1.0;
 
 						/*--- Find the index of the global donor point in the buffer Buffer_Bcast_Indices ---*/
 						indexPoint_iVertex = std::distance(Buffer_Bcast_Indices, std::find(Buffer_Bcast_Indices, Buffer_Bcast_Indices + nBuffer_BcastIndices, Donor_Global_Index));
