@@ -209,7 +209,8 @@ CNearestNeighbor::CNearestNeighbor(void):  CInterpolator(){ }
 
 /* Nearest Neighbor Interpolator */
 CNearestNeighbor::CNearestNeighbor(CGeometry ***geometry_container, CConfig **config,  unsigned int* Zones, unsigned int nZone) :  CInterpolator(geometry_container, config, Zones, nZone){
-  //unsigned short nDim = geometry_container[Zones[0]][MESH_0]->GetnDim();
+
+	//unsigned short nDim = geometry_container[Zones[0]][MESH_0]->GetnDim();
   /*--- Initialize transfer coefficients between the zones ---*/
   Set_TransferCoeff(Zones,config);
 
@@ -222,7 +223,7 @@ CNearestNeighbor::~CNearestNeighbor(){}
 
 void CNearestNeighbor::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
 
-  unsigned long iPoint, jPoint, iVertex, jVertex, *nn;
+  unsigned long iPoint, jPoint, iVertex, jVertex;
   unsigned short iMarker, iDim, jMarker;
   unsigned short nDim = donor_geometry->GetnDim();
   su2double distance = 0.0, last_distance=-1.0;
@@ -241,24 +242,22 @@ void CNearestNeighbor::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
   unsigned long jGlobalPoint = 0, pGlobalPoint = 0;
   int iProcessor, pProcessor = 0;
 
-  unsigned long nLocalVertex_Donor = 0, nGlobalVertex_Donor = 0, MaxLocalVertex_Donor = 0;
+  unsigned long nLocalVertex_Donor = 0, nLocalVertex_Target = 0;
+  unsigned long nGlobalVertex_Donor = 0, MaxLocalVertex_Donor = 0;
 
   unsigned long Global_Point_Donor;
   int Donor_Processor;
+  unsigned short int donorindex = 0;
 
   /*--- Number of markers on the FSI interface ---*/
   nMarkerInt     = (config[donorZone]->GetMarker_n_FSIinterface())/2;
   nMarkerTarget  = target_geometry->GetnMarker();
   nMarkerDonor   = donor_geometry->GetnMarker();
 
-  nn = new unsigned long[5];
-
   su2double *Coord_i, Coord_j[3], dist = 0.0, mindist, maxdist;
 
   int rank = MASTER_NODE;
   int nProcessor = SINGLE_NODE;
-
-  unsigned short int donorindex = 0;
 
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -266,7 +265,7 @@ void CNearestNeighbor::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
 #endif
 
   // For the markers on the interface
-  for (iMarkerInt = 0; iMarkerInt < nMarkerInt; iMarkerInt++) {
+  for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++) {
 
 	  Marker_Donor = -1;
 	  Marker_Target = -1;
@@ -306,8 +305,11 @@ void CNearestNeighbor::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
 		  }
 	  }
 
-	  unsigned long *Buffer_Send_nVertex = new unsigned long [1];
-	  unsigned long *Buffer_Receive_nVertex = new unsigned long [nProcessor];
+	  unsigned long *Buffer_Send_nVertex_Donor = new unsigned long [1];
+	  unsigned long *Buffer_Receive_nVertex_Donor = new unsigned long [nProcessor];
+
+	  unsigned long *Buffer_Send_nVertex_Target = new unsigned long [1];
+	  unsigned long *Buffer_Receive_nVertex_Target = new unsigned long [nProcessor];
 
 	  nLocalVertex_Donor = 0;
 	  for (iVertex = 0; iVertex < nVertexDonor; iVertex++) {
@@ -315,17 +317,26 @@ void CNearestNeighbor::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
 		if (donor_geometry->node[iPoint]->GetDomain()) nLocalVertex_Donor++;
 	  }
 
-	  Buffer_Send_nVertex[0] = nLocalVertex_Donor;
+	  nLocalVertex_Target = 0;
+	  for (iVertex = 0; iVertex < nVertexTarget; iVertex++) {
+		iPoint = target_geometry->vertex[Marker_Target][iVertex]->GetNode();
+		if (target_geometry->node[iPoint]->GetDomain()) nLocalVertex_Target++;
+	  }
+
+	  Buffer_Send_nVertex_Donor[0] = nLocalVertex_Donor;
+	  Buffer_Send_nVertex_Target[0] = nLocalVertex_Target;
 
 	  /*--- Send Interface vertex information --*/
 #ifdef HAVE_MPI
 	  SU2_MPI::Allreduce(&nLocalVertex_Donor, &nGlobalVertex_Donor, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 	  SU2_MPI::Allreduce(&nLocalVertex_Donor, &MaxLocalVertex_Donor, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
-	  SU2_MPI::Allgather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+	  SU2_MPI::Allgather(Buffer_Send_nVertex_Donor, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex_Donor, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+	  SU2_MPI::Allgather(Buffer_Send_nVertex_Target, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex_Target, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
 #else
 	  nGlobalVertex_Donor 		= nLocalVertex_Donor;
 	  MaxLocalVertex_Donor 		= nLocalVertex_Donor;
-	  Buffer_Receive_nVertex[0] = Buffer_Send_nVertex[0];
+	  Buffer_Receive_nVertex_Donor[0] = Buffer_Send_nVertex_Donor[0];
+	  Buffer_Receive_nVertex_Target[0] = Buffer_Send_nVertex_Target[0];
 #endif
 
 	  su2double *Buffer_Send_Coord = new su2double [MaxLocalVertex_Donor*nDim];
@@ -348,14 +359,13 @@ void CNearestNeighbor::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
 
 	  /*--- Copy coordinates and point to the auxiliar vector --*/
 	  nLocalVertex_Donor = 0;
-	  for (iMarker = 0; iMarker < config[donorZone]->GetnMarker_All(); iMarker++)
-		for (iVertex = 0; iVertex < donor_geometry->GetnVertex(iMarker); iVertex++) {
-		  iPoint = donor_geometry->vertex[iMarker][iVertex]->GetNode();
-		  if (donor_geometry->node[iPoint]->GetDomain()) {
-			Buffer_Send_Point[nLocalVertex_Donor] = iPoint;
-			Buffer_Send_GlobalPoint[nLocalVertex_Donor] = donor_geometry->node[iPoint]->GetGlobalIndex();
+		for (iVertexDonor = 0; iVertexDonor < nVertexDonor; iVertexDonor++) {
+		  iPointDonor = donor_geometry->vertex[Marker_Donor][iVertexDonor]->GetNode();
+		  if (donor_geometry->node[iPointDonor]->GetDomain()) {
+			Buffer_Send_Point[nLocalVertex_Donor] = iPointDonor;
+			Buffer_Send_GlobalPoint[nLocalVertex_Donor] = donor_geometry->node[iPointDonor]->GetGlobalIndex();
 			for (iDim = 0; iDim < nDim; iDim++)
-			  Buffer_Send_Coord[nLocalVertex_Donor*nDim+iDim] = donor_geometry->node[iPoint]->GetCoord(iDim);
+			  Buffer_Send_Coord[nLocalVertex_Donor*nDim+iDim] = donor_geometry->node[iPointDonor]->GetCoord(iDim);
 			nLocalVertex_Donor++;
 		  }
 		}
@@ -382,7 +392,6 @@ void CNearestNeighbor::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
 
 		  if (target_geometry->node[Point_Target]->GetDomain()) {
 
-		      /*--- Allocate memory with known number of donor points (1 for nearest neighbor) ---*/
 			  target_geometry->vertex[Marker_Target][iVertexTarget]->SetnDonorPoints(1);
 			  target_geometry->vertex[Marker_Target][iVertexTarget]->Allocate_DonorInfo();
 
@@ -392,7 +401,7 @@ void CNearestNeighbor::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
 
 			  /*--- Loop over all the boundaries to find the pair ---*/
 			  for (iProcessor = 0; iProcessor < nProcessor; iProcessor++){
-				  for (jVertex = 0; jVertex < Buffer_Receive_nVertex[iProcessor]; jVertex++) {
+				  for (jVertex = 0; jVertex < Buffer_Receive_nVertex_Donor[iProcessor]; jVertex++) {
 					  Point_Donor = Buffer_Receive_Point[iProcessor*MaxLocalVertex_Donor+jVertex];
 					  Global_Point_Donor = Buffer_Receive_GlobalPoint[iProcessor*MaxLocalVertex_Donor+jVertex];
 
@@ -405,14 +414,13 @@ void CNearestNeighbor::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
 					  if (((dist < mindist) && (iProcessor != rank)) ||
 						  ((dist < mindist) && (iProcessor == rank) && (jPoint != iPoint))) {
 						  mindist = dist; pProcessor = iProcessor; pPoint = jPoint;
-						  pGlobalPoint = jGlobalPoint;
+						  pGlobalPoint = Global_Point_Donor;
 					  }
 				  }
 			  }
 
 			  /*--- Store the value of the pair ---*/
 			  maxdist = max(maxdist, mindist);
-
 			  target_geometry->vertex[Marker_Target][iVertexTarget]->SetInterpDonorPoint(donorindex, pGlobalPoint);
 			  target_geometry->vertex[Marker_Target][iVertexTarget]->SetInterpDonorProcessor(donorindex, pProcessor);
 			  target_geometry->vertex[Marker_Target][iVertexTarget]->SetDonorCoeff(donorindex,1.0);
@@ -428,8 +436,11 @@ void CNearestNeighbor::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
 	  delete[] Buffer_Receive_Point;
 	  delete[] Buffer_Receive_GlobalPoint;
 
-	  delete[] Buffer_Send_nVertex;
-	  delete[] Buffer_Receive_nVertex;
+	  delete[] Buffer_Send_nVertex_Donor;
+	  delete[] Buffer_Receive_nVertex_Donor;
+	  delete[] Buffer_Send_nVertex_Target;
+	  delete[] Buffer_Receive_nVertex_Target;
+
   }
 
 }
