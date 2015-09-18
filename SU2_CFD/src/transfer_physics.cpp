@@ -258,3 +258,100 @@ void CTransfer_StructuralDisplacements::SetTarget_Variable(CSolver *flow_solutio
 
 }
 
+CTransfer_StructuralDisplacements_NN::CTransfer_StructuralDisplacements_NN(void) : CTransfer() {
+
+}
+
+CTransfer_StructuralDisplacements_NN::CTransfer_StructuralDisplacements_NN(unsigned short val_nVar, unsigned short val_nConst, CConfig *config) : CTransfer(val_nVar, val_nConst, config) {
+
+}
+
+CTransfer_StructuralDisplacements_NN::~CTransfer_StructuralDisplacements_NN(void) {
+
+}
+
+
+void CTransfer_StructuralDisplacements_NN::GetPhysical_Constants(CSolver *struct_solution, CSolver *flow_solution,
+		   	   	   	   	   	   	   	   	   	   	   CGeometry *struct_geometry, CGeometry *flow_geometry,
+												   CConfig *struct_config, CConfig *flow_config){
+
+}
+
+void CTransfer_StructuralDisplacements_NN::GetDonor_Variable(CSolver *struct_solution, CGeometry *struct_geometry, CConfig *struct_config,
+					   	   	   	   	   	   	   	          unsigned long Marker_Struct, unsigned long Vertex_Struct, unsigned long Point_Struct){
+
+
+	su2double *DisplacementDonor, *DisplacementDonor_Prev;
+	unsigned short iVar;
+
+    /*--- The displacements come from the predicted solution ---*/
+    DisplacementDonor = struct_solution->node[Point_Struct]->GetSolution_Pred();
+
+    DisplacementDonor_Prev = struct_solution->node[Point_Struct]->GetSolution_Pred_Old();
+
+	for (iVar = 0; iVar < nVar; iVar++){
+		Donor_Variable[iVar] = DisplacementDonor[iVar] - DisplacementDonor_Prev[iVar];
+	}
+
+}
+
+void CTransfer_StructuralDisplacements_NN::SetTarget_Variable(CSolver *flow_solution, CGeometry *flow_geometry,
+														   CConfig *flow_config, unsigned long Marker_Flow,
+														   unsigned long Vertex_Flow, unsigned long Point_Flow){
+
+	su2double VarCoord[3] = {0.0, 0.0, 0.0};
+	unsigned short iVar;
+
+	for (iVar = 0; iVar < nVar; iVar++)
+		VarCoord[iVar] = Target_Variable[iVar];
+
+	flow_geometry->vertex[Marker_Flow][Vertex_Flow]->SetVarCoord(VarCoord);
+
+}
+
+
+
+CTransfer_ConservativeVars::CTransfer_ConservativeVars(void) : CTransfer() {
+
+}
+
+CTransfer_ConservativeVars::CTransfer_ConservativeVars(unsigned short val_nVar, unsigned short val_nConst, CConfig *config) : CTransfer(val_nVar, val_nConst, config) {
+
+}
+
+CTransfer_ConservativeVars::~CTransfer_ConservativeVars(void) {
+
+}
+
+
+void CTransfer_ConservativeVars::GetPhysical_Constants(CSolver *donor_solution, CSolver *target_solution,
+		   	   	   	   	   	   	   	   	   	   	       CGeometry *donor_geometry, CGeometry *target_geometry,
+													   CConfig *donor_config, CConfig *target_config){
+
+}
+
+void CTransfer_ConservativeVars::GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry, CConfig *donor_config,
+					   	   	   	   	   	   	   	   unsigned long Marker_Donor, unsigned long Vertex_Donor, unsigned long Point_Donor){
+
+	su2double *Solution;
+	unsigned short iVar;
+
+    /*--- Retrieve solution and set it as the donor variable ---*/
+	Solution = donor_solution->node[Point_Donor]->GetSolution();
+
+	for (iVar = 0; iVar < nVar; iVar++){
+		Donor_Variable[iVar] = Solution[iVar];
+	}
+
+
+}
+
+void CTransfer_ConservativeVars::SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry,
+													CConfig *target_config, unsigned long Marker_Target,
+													unsigned long Vertex_Target, unsigned long Point_Target){
+
+	/*--- Set the target solution with the value of the Target Variable ---*/
+	target_solution->node[Point_Target]->SetSolution(Target_Variable);
+
+}
+
