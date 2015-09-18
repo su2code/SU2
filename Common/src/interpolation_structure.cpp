@@ -482,7 +482,7 @@ void CIsoparametric::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
   nMarkerDonor  =  config[donorZone]->GetnMarker_All();
   nMarkerTarget =  config[targetZone]->GetnMarker_All();
   /*--- For the number of markers on the interface... ---*/
-  for (iMarkerInt=0; iMarkerInt < nMarkerInt; iMarkerInt++){
+  for (iMarkerInt=1; iMarkerInt < nMarkerInt; iMarkerInt++){
     /*--- Procedure:
      * -Loop through vertices of the aero grid
      * -Find nearest element and allocate enough space in the aero grid donor point info
