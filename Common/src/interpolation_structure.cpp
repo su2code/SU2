@@ -47,15 +47,15 @@ CInterpolator::CInterpolator(void){
 CInterpolator::~CInterpolator(void){}
 
 
-CInterpolator::CInterpolator(CGeometry ***geometry_container, CConfig **config, unsigned int* Zones, unsigned int val_nZone){
+CInterpolator::CInterpolator(CGeometry ***geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone){
 
   /* Store pointers*/
 	Geometry = geometry_container;
 
-	nZone = val_nZone;
+	nZone = 2;
 
-	donorZone  = Zones[0];
-	targetZone = Zones[1];
+	donorZone  = iZone;
+	targetZone = jZone;
 
 	donor_geometry  = geometry_container[donorZone][MESH_0];
 	target_geometry = geometry_container[targetZone][MESH_0];
@@ -68,7 +68,7 @@ CInterpolator::CInterpolator(CGeometry ***geometry_container, CConfig **config, 
 
 }
 
-inline void CInterpolator::Set_TransferCoeff(unsigned int* Zones, CConfig **config) { }
+inline void CInterpolator::Set_TransferCoeff(CConfig **config) { }
 
 /*
 void CInterpolator::InitializeData(unsigned int* Zones, unsigned short val_nVar){
@@ -208,11 +208,11 @@ void CInterpolator::InitializeData(unsigned int* Zones, unsigned short val_nVar)
 CNearestNeighbor::CNearestNeighbor(void):  CInterpolator(){ }
 
 /* Nearest Neighbor Interpolator */
-CNearestNeighbor::CNearestNeighbor(CGeometry ***geometry_container, CConfig **config,  unsigned int* Zones, unsigned int nZone) :  CInterpolator(geometry_container, config, Zones, nZone){
+CNearestNeighbor::CNearestNeighbor(CGeometry ***geometry_container, CConfig **config,  unsigned int iZone, unsigned int jZone) :  CInterpolator(geometry_container, config, iZone, jZone){
 
 	//unsigned short nDim = geometry_container[Zones[0]][MESH_0]->GetnDim();
   /*--- Initialize transfer coefficients between the zones ---*/
-  Set_TransferCoeff(Zones,config);
+  Set_TransferCoeff(config);
 
   /*--- For fluid-structure interaction data interpolated with have nDim dimensions ---*/
   //InitializeData(Zones,nDim);
@@ -221,12 +221,11 @@ CNearestNeighbor::CNearestNeighbor(CGeometry ***geometry_container, CConfig **co
 
 CNearestNeighbor::~CNearestNeighbor(){}
 
-void CNearestNeighbor::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
+void CNearestNeighbor::Set_TransferCoeff(CConfig **config){
 
   unsigned long iPoint, jPoint, iVertex, jVertex;
   unsigned short iMarker, iDim, jMarker;
   unsigned short nDim = donor_geometry->GetnDim();
-  su2double distance = 0.0, last_distance=-1.0;
 
   unsigned short nMarkerInt, nMarkerDonor, nMarkerTarget;		// Number of markers on the interface, donor and target side
   unsigned short iMarkerInt, iMarkerDonor, iMarkerTarget;		// Variables for iteration over markers
@@ -446,10 +445,12 @@ void CNearestNeighbor::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
 }
 
 
-CIsoparametric::CIsoparametric(CGeometry ***geometry_container, CConfig **config,  unsigned int* Zones,unsigned int nZone) :  CInterpolator(geometry_container, config, Zones,nZone){
-  unsigned short nDim = geometry_container[Zones[0]][MESH_0]->GetnDim();
+CIsoparametric::CIsoparametric(CGeometry ***geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone) :  CInterpolator(geometry_container, config, iZone, jZone){
+
+  unsigned short nDim = geometry_container[donorZone][MESH_0]->GetnDim();
+
   /*--- Initialize transfer coefficients between the zones ---*/
-  Set_TransferCoeff(Zones,config);
+  Set_TransferCoeff(config);
 
   /*--- For fluid-structure interaction data interpolated with have nDim dimensions ---*/
  // InitializeData(Zones,nDim);
@@ -457,18 +458,16 @@ CIsoparametric::CIsoparametric(CGeometry ***geometry_container, CConfig **config
 
 CIsoparametric::~CIsoparametric(){}
 
-void CIsoparametric::Set_TransferCoeff(unsigned int* Zones, CConfig **config){
+void CIsoparametric::Set_TransferCoeff(CConfig **config){
   unsigned long jPoint, iVertex, jVertex, inode, jElem, iNearestNode=0, iNearestVertex=0;
   long donor_elem=0, temp_donor=0;
   unsigned short iDim, it;
-  unsigned short nDim = Geometry[Zones[0]][MESH_0]->GetnDim();
+  unsigned short nDim = Geometry[targetZone][MESH_0]->GetnDim();
   unsigned short nMarkerInt, nMarkerDonor, nMarkerTarget;
   unsigned short iMarkerInt, iMarkerDonor, iMarkerTarget;
   unsigned short markDonor=0, markTarget=0, iFace;
   unsigned int nNodes=0;
   /*--- Restricted to 2-zone for now ---*/
-  unsigned int targetZone = Zones[0];
-  unsigned int donorZone = Zones[1];
   unsigned int nFaces=1; //For 2D cases, we want to look at edges, not faces, as the 'interface'
   bool face_on_marker=true;
   su2double distance = 0.0, last_distance=-1.0, *Coord;

@@ -107,4 +107,5 @@ void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned
  * \param[in] val_nZone - Total number of zones.
  */
 void Interface_Preprocessing(CTransfer ***transfer_container, CInterpolator ***interpolator_container,
-		CGeometry ***geometry_container, CConfig **config_container, unsigned short nZone, unsigned short nDim);
+		CGeometry ***geometry_container, CConfig **config_container, CSolver ****solver_container,
+		unsigned short nZone, unsigned short nDim);
