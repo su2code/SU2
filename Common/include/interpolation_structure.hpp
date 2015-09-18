@@ -71,7 +71,7 @@ public:
   /*!
  * \brief Constructor of the class.
  */
-  CInterpolator(CGeometry ***geometry_container, CConfig **config,  unsigned int* Zones, unsigned int nZone);
+  CInterpolator(CGeometry ***geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone);
 
   /*!
    * \brief Destructor of the class.
@@ -104,7 +104,7 @@ public:
    * \param[in] Zones - list of zones to set up interpolation for. This method must be overwritten in the child classes.
    * \param[in] config
    */
-  virtual void Set_TransferCoeff(unsigned int* Zones, CConfig **config);
+  virtual void Set_TransferCoeff(CConfig **config);
 
 
 //  /*!
@@ -144,7 +144,7 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CNearestNeighbor(CGeometry ***geometry_container, CConfig **config,  unsigned int* Zones, unsigned int nZone);
+  CNearestNeighbor(CGeometry ***geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone);
 
   /*!
    * \brief Destructor of the class.
@@ -154,7 +154,7 @@ public:
   /*!
    * \brief Set up transfer matrix defining relation between two meshes
    */
-  void Set_TransferCoeff(unsigned int* Zones, CConfig **config);
+  void Set_TransferCoeff(CConfig **config);
 
 };
 
@@ -168,13 +168,13 @@ public:
    * \brief Constructor of the class.
    * \param[in] geometry_container
    * \param[in] config - config container
-   * \param[in] Zones - list of zone indices to use for interpolation. in the order: [Recipient/Target, Donor ]
-   * \param[in] nZone - number of zones
+   * \param[in] iZone - First zone
+   * \param[in] jZone - Second zone
    *
    * Data is set in geometry[targetZone]
    *
    */
-  CIsoparametric(CGeometry ***geometry_container, CConfig **config,  unsigned int* Zones,unsigned int nZone);
+  CIsoparametric(CGeometry ***geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone);
 
   /*!
    * \brief Destructor of the class.
@@ -188,7 +188,7 @@ public:
    *
    * Data is set in geometry[targetZone]
    */
-  void Set_TransferCoeff(unsigned int* Zones, CConfig **config);
+  void Set_TransferCoeff(CConfig **config);
 
   /*!
    * \brief Calculate the isoparametric representation of point iVertex in marker iZone_0 by nodes of element donor_elem in marker jMarker of zone iZone_1.
