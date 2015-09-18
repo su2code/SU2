@@ -2,8 +2,8 @@
  * \file dual_grid_structure.hpp
  * \brief Headers of the main subroutines for doing the complete dual grid structure.
  *        The subroutines and functions are in the <i>dual_grid_structure.cpp</i> file.
- * \author F. Palacios
- * \version 3.2.9 "eagle"
+ * \author F. Palacios, T. Economon
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -32,9 +32,8 @@
 
 #pragma once
 
-#ifdef HAVE_MPI
-  #include "mpi.h"
-#endif
+#include "./mpi_structure.hpp"
+
 #include <cmath>
 #include <iostream>
 #include <cstdlib>
@@ -49,7 +48,7 @@ using namespace std;
  * \brief Class for controlling the dual volume definition. The dual volume is compose by 
  *        three main elements: points, edges, and vertices.
  * \author F. Palacios
- * \version 3.2.9 "eagle"
+ * \version 4.0.1 "Cardinal"
  */
 class CDualGrid{
 protected:
@@ -71,13 +70,13 @@ public:
 	/*! 
 	 * \brief A pure virtual member.
 	 */
-	virtual double *GetCoord(void) = 0;
+	virtual su2double *GetCoord(void) = 0;
 	
 	/*! 
 	 * \brief A pure virtual member.
 	 * \param[in] val_coord - Coordinate of the point.		 
 	 */
-	virtual void SetCoord(double *val_coord) = 0;
+	virtual void SetCoord(su2double *val_coord) = 0;
 	
 	/*! 
 	 * \brief A pure virtual member.
@@ -86,7 +85,7 @@ public:
 	 * \param[in] val_coord_Elem_CG - Coordinates of the centre of gravity of the element.
    * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG, double *val_coord_Elem_CG) = 0;
+	virtual void SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_FaceElem_CG, su2double *val_coord_Elem_CG) = 0;
 	
 	/*! 
 	 * \overload
@@ -94,24 +93,24 @@ public:
 	 * \param[in] val_coord_Elem_CG - Coordinates of the centre of gravity of the element.
    * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_Elem_CG) = 0;
+	virtual void SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_Elem_CG) = 0;
 	
 	/*! 
 	 * \brief A pure virtual member.
 	 * \param[in] val_normal - Coordinates of the normal.
 	 */
-	virtual void GetNormal(double *val_normal) = 0;
+	virtual void GetNormal(su2double *val_normal) = 0;
 	
 	/*! 
 	 * \brief A pure virtual member.
 	 */
-	virtual double *GetNormal(void) = 0;
+	virtual su2double *GetNormal(void) = 0;
 	
 	/*! 
 	 * \brief A pure virtual member.
 	 * \param[in] val_face_normal - Coordinates of the normal.
 	 */	
-	virtual void SetNormal(double *val_face_normal) = 0;
+	virtual void SetNormal(su2double *val_face_normal) = 0;
 
 	/*! 
 	 * \brief A pure virtual member.
@@ -127,14 +126,14 @@ public:
 	 * \brief A pure virtual member.
 	 * \param[in] val_face_normal - Normal vector to be added.
 	 */	
-	virtual void AddNormal(double *val_face_normal) = 0;
+	virtual void AddNormal(su2double *val_face_normal) = 0;
 };
 
 /*! 
  * \class CPoint
  * \brief Class for point definition (including control volume definition).
  * \author F. Palacios
- * \version 3.2.9 "eagle"
+ * \version 4.0.1 "Cardinal"
  */
 class CPoint : public CDualGrid {
 private:
@@ -143,20 +142,20 @@ private:
 	vector<long> Elem;		/*!< \brief Elements that set up a control volume around a node. */
 	vector<unsigned long> Point;	/*!< \brief Points surrounding the central node of the control volume. */
 	vector<long> Edge;		/*!< \brief Edges that set up a control volume. */
-	double *Volume;	/*!< \brief Volume or Area of the control volume in 3D and 2D. */
+	su2double *Volume;	/*!< \brief Volume or Area of the control volume in 3D and 2D. */
 	bool Domain,		/*!< \brief Indicates if a point must be computed or belong to another boundary */
 	Boundary,       /*!< \brief To see if a point belong to the boundary (including MPI). */
   PhysicalBoundary,			/*!< \brief To see if a point belong to the physical boundary (without includin MPI). */
   SolidBoundary;			/*!< \brief To see if a point belong to the physical boundary (without includin MPI). */
 	long *vertex; /*!< \brief Index of the vertex that correspond which the control volume (we need one for each marker in the same node). */
-	double *coord,	/*!< \brief vector with the coordinates of the node. */
+	su2double *coord,	/*!< \brief vector with the coordinates of the node. */
 	*Coord_old,		/*!< \brief Old coordinates vector for geometry smoothing. */
 	*Coord_sum,		/*!< \brief Sum of coordinates vector for geometry smoothing. */
   *Coord_n,		/*!< \brief Coordinates at time n for use with dynamic meshes. */
   *Coord_n1,		/*!< \brief Coordinates at time n-1 for use with dynamic meshes. */
   *Coord_p1;		/*!< \brief Coordinates at time n+1 for use with dynamic meshes. */
-	double *GridVel;	/*!< \brief Velocity of the grid for dynamic mesh cases. */
-  double **GridVel_Grad;  /*!< \brief Gradient of the grid velocity for dynamic meshes. */
+	su2double *GridVel;	/*!< \brief Velocity of the grid for dynamic mesh cases. */
+  su2double **GridVel_Grad;  /*!< \brief Gradient of the grid velocity for dynamic meshes. */
 	unsigned long Parent_CV;			/*!< \brief Index of the parent control volume in the agglomeration process. */
 	unsigned short nChildren_CV;		/*!< \brief Number of children in the agglomeration process. */
 	vector<unsigned long> Children_CV;		/*!< \brief Index of the children control volumes in the agglomeration process. */
@@ -164,9 +163,9 @@ private:
 	bool Agglomerate;					/*!< \brief This flag indicates if the element has been agglomerated. */
 	bool Move;					/*!< \brief This flag indicates if the point is going to be move in the grid deformation process. */
 	unsigned short color;	/*!< \brief Color of the point in the partitioning strategy. */
-	double Wall_Distance;	/*!< \brief Distance to the nearest wall. */
-  double SharpEdge_Distance;	/*!< \brief Distance to a sharp edge. */
-  double Curvature;	/*!< \brief Value of the surface curvature (SU2_GEO). */
+	su2double Wall_Distance;	/*!< \brief Distance to the nearest wall. */
+  su2double SharpEdge_Distance;	/*!< \brief Distance to a sharp edge. */
+  su2double Curvature;	/*!< \brief Value of the surface curvature (SU2_GEO). */
 	unsigned long GlobalIndex;	/*!< \brief Global index in the parallel simulation. */
 	unsigned short nNeighbor;	/*!< \brief Color of the point in the partitioning strategy. */
   bool Flip_Orientation;	/*!< \brief Flip the orientation of the normal. */
@@ -188,7 +187,7 @@ public:
 	 * \param[in] val_globalindex Global index in the parallel simulation.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CPoint(double val_coord_0, double val_coord_1, unsigned long val_globalindex, CConfig *config);
+	CPoint(su2double val_coord_0, su2double val_coord_1, unsigned long val_globalindex, CConfig *config);
 	
 	/*! 
 	 * \overload
@@ -198,7 +197,7 @@ public:
 	 * \param[in] val_globalindex Global index in the parallel simulation.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CPoint(double val_coord_0, double val_coord_1, double val_coord_2, unsigned long val_globalindex, CConfig *config);
+	CPoint(su2double val_coord_0, su2double val_coord_1, su2double val_coord_2, unsigned long val_globalindex, CConfig *config);
 	
 	/*! 
 	 * \brief Destructor of the class. 
@@ -221,37 +220,37 @@ public:
 	 * \brief Set the value of the distance to the nearest wall.
 	 * \param[in] val_distance - Value of the distance.
 	 */
-	void SetWall_Distance(double val_distance);
+	void SetWall_Distance(su2double val_distance);
   
   /*!
 	 * \brief Set the value of the distance to a sharp edge.
 	 * \param[in] val_distance - Value of the distance.
 	 */
-	void SetSharpEdge_Distance(double val_distance);
+	void SetSharpEdge_Distance(su2double val_distance);
 	
 	/*! 
 	 * \brief Get the value of the distance to the nearest wall.
 	 * \return Value of the distance to the nearest wall.
 	 */
-	double GetWall_Distance(void);
+	su2double GetWall_Distance(void);
 	
   /*!
 	 * \brief Set the value of the curvature at a surface node.
-	 * \param[in] val_distance - Value of the curvature.
+	 * \param[in] val_curvature - Value of the curvature.
 	 */
-	void SetCurvature(double val_curvature);
+	void SetCurvature(su2double val_curvature);
 	
 	/*!
 	 * \brief Get the value of the curvature at a surface node.
 	 * \return Value of the curvature.
 	 */
-	double GetCurvature(void);
+	su2double GetCurvature(void);
   
   /*!
 	 * \brief Get the value of the distance to a sharp edge
 	 * \return Value of the distance to the nearest wall.
 	 */
-	double GetSharpEdge_Distance(void);
+	su2double GetSharpEdge_Distance(void);
   
 	/*! 
 	 * \brief Set the number of elements that compose the control volume.
@@ -270,20 +269,20 @@ public:
 	 * \param[in] val_dim - Number of dimensions of the problem.
 	 * \return Coordinate that correspond with <i>val_dim</i>.
 	 */
-	double GetCoord(unsigned short val_dim);
+	su2double GetCoord(unsigned short val_dim);
 	
 	/*! 
 	 * \brief Get the coordinates of the control volume.
 	 * \return pointer to the coordinate of the point.
 	 */
-	double *GetCoord(void);
+	su2double *GetCoord(void);
 	
 	/*! 
 	 * \brief Set the coordinates for the control volume.
 	 * \param[in] val_dim - Position to store the coordinate.		 
 	 * \param[in] val_coord - Coordinate for val_dim.			 
 	 */
-	void SetCoord(unsigned short val_dim, double val_coord);
+	void SetCoord(unsigned short val_dim, su2double val_coord);
   
   /*!
 	 * \brief Get the coordinates of the control volume.
@@ -303,13 +302,13 @@ public:
 	 * \param[in] val_dim - Position to store the coordinate.
 	 * \param[in] val_coord - Coordinate for val_dim.
 	 */
-	void AddCoord(unsigned short val_dim, double val_coord);
+	void AddCoord(unsigned short val_dim, su2double val_coord);
   
 	/*! 
 	 * \overload
 	 * \param[in] val_coord - Coordinate of the point.		 
 	 */
-	void SetCoord(double *val_coord);
+	void SetCoord(su2double *val_coord);
 	
 	/*! 
 	 * \brief Get the number of elements that compose the control volume.
@@ -391,13 +390,13 @@ public:
 	 * \brief Adds some area or volume of the CV.
 	 * \param[in] val_Volume - Local volume to be added to the total one.
 	 */
-	void AddVolume(double val_Volume);
+	void AddVolume(su2double val_Volume);
 	
 	/*! 
 	 * \brief Get area or volume of the control volume.
 	 * \return Area or volume of the control volume.
 	 */
-	double GetVolume(void);
+	su2double GetVolume(void);
 	
 	/*! 
 	 * \brief Get information about the movement of the node.
@@ -494,13 +493,13 @@ public:
 	 * \brief Get the volume of the control volume at time n.
 	 * \return Volume of the control volume at time n
 	 */	
-	double GetVolume_n(void);
+	su2double GetVolume_n(void);
 	
 	/*! 
 	 * \brief Get the volume of the control volume at time n+1.
 	 * \return Volume of the control volume at time n+1
 	 */	
-	double GetVolume_nM1(void);
+	su2double GetVolume_nM1(void);
 	
 	/*! 
 	 * \brief Set the volume of the control volume at time n.
@@ -516,19 +515,19 @@ public:
 	 * \brief Get the coordinates of the control volume at time n.
 	 * \return Coordinates of the control volume at time n.
 	 */	
-	double* GetCoord_n(void);
+	su2double* GetCoord_n(void);
 	
 	/*! 
 	 * \brief Get the coordinates of the control volume at time n-1.
 	 * \return Volume of the control volume at time n-1
 	 */	
-	double* GetCoord_n1(void);
+	su2double* GetCoord_n1(void);
 	
   /*! 
 	 * \brief Get the coordinates of the control volume at time n+1.
 	 * \return Volume of the control volume at time n+1
 	 */	
-	double* GetCoord_p1(void);
+	su2double* GetCoord_p1(void);
   
 	/*! 
 	 * \brief Set the coordinates of the control volume at time n.
@@ -544,13 +543,13 @@ public:
 	 * \brief Set the coordinates of the control volume at time n+1.
 	 * \param[in] val_coord - Value of the grid coordinates at time n+1.
 	 */	
-	void SetCoord_p1(double *val_coord);
+	void SetCoord_p1(su2double *val_coord);
   
 	/*! 
 	 * \brief Set the volume of the control volume.
 	 * \param[in] val_Volume - Value of the volume.
 	 */
-	void SetVolume(double val_Volume);
+	void SetVolume(su2double val_Volume);
 	
 	/*! 
 	 * \brief Set if a element is going to be moved on the deformation process.
@@ -618,31 +617,31 @@ public:
 	 * \brief Get the value of the summed coordinates for implicit smoothing.
 	 * \return Sum of coordinates at a point.
 	 */	
-	double *GetCoord_Sum(void);
+	su2double *GetCoord_Sum(void);
 	
 	/*! 
 	 * \brief Get the value of the old coordinates for implicit smoothing.
 	 * \return Old coordinates at a point.
 	 */	
-	double *GetCoord_Old(void);
+	su2double *GetCoord_Old(void);
 	
 	/*! 
 	 * \brief Get the value of the grid velocity at the point.
 	 * \return Grid velocity at the point.
 	 */	
-	double *GetGridVel(void);
+	su2double *GetGridVel(void);
   
   /*!
 	 * \brief Get the value of the grid velocity gradient at the point.
 	 * \return Grid velocity gradient at the point.
 	 */
-	double **GetGridVel_Grad(void);
+	su2double **GetGridVel_Grad(void);
 	
 	/*! 
 	 * \brief Add the value of the coordinates to the <i>Coord_sum</i> vector for implicit smoothing.
 	 * \param[in] val_coord_sum - Value of the coordinates to add.
 	 */	
-	void AddCoord_Sum(double *val_coord_sum);
+	void AddCoord_Sum(su2double *val_coord_sum);
 	
 	/*! 
 	 * \brief Initialize the vector <i>Coord_sum</i>.
@@ -653,20 +652,20 @@ public:
 	 * \brief Set the value of the vector <i>Coord_old</i> for implicit smoothing.
 	 * \param[in] val_coord_old - Value of the coordinates.
 	 */	
-	void SetCoord_Old(double *val_coord_old);
+	void SetCoord_Old(su2double *val_coord_old);
 	
 	/*! 
 	 * \brief Set the value of the grid velocity at the point.
 	 * \param[in] val_dim - Index of the coordinate.
 	 * \param[in] val_gridvel - Value of the grid velocity.
 	 */	
-	void SetGridVel(unsigned short val_dim, double val_gridvel);
+	void SetGridVel(unsigned short val_dim, su2double val_gridvel);
 	
 	/*! 
 	 * \overload
 	 * \param[in] val_gridvel - Value of the grid velocity.
 	 */	
-	void SetGridVel(double *val_gridvel);
+	void SetGridVel(su2double *val_gridvel);
   
   /*!
 	 * \brief Set the gradient of the grid velocity.
@@ -674,37 +673,37 @@ public:
 	 * \param[in] val_dim - Index of the dimension.
 	 * \param[in] val_value - Value of the gradient.
 	 */
-	void SetGridVel_Grad(unsigned short val_var, unsigned short val_dim, double val_value);
+	void SetGridVel_Grad(unsigned short val_var, unsigned short val_dim, su2double val_value);
 	
 	/*! 
 	 * \brief This function does nothing (it comes from a pure virtual function, that implies the 
 	 *        definition of the function in all the derived classes).
 	 */
-	void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG, double *val_coord_Elem_CG);
+	void SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_FaceElem_CG, su2double *val_coord_Elem_CG);
 	
 	/*! 
 	 * \brief This function does nothing (it comes from a pure virtual function, that implies the 
 	 *        definition of the function in all the derived classes).
 	 */
-	void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_Elem_CG);
+	void SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_Elem_CG);
 
 	/*! 
 	 * \brief This function does nothing (it comes from a pure virtual function, that implies the 
 	 *        definition of the function in all the derived classes).
 	 */
-	void GetNormal(double *val_normal);
+	void GetNormal(su2double *val_normal);
 	
 	/*! 
 	 * \brief This function does nothing (it comes from a pure virtual function, that implies the 
 	 *		  definition of the function in all the derived classes).
 	 */
-	double *GetNormal(void);
+	su2double *GetNormal(void);
 	
 	/*! 
 	 * \brief This function does nothing (it comes from a pure virtual function, that implies the 
 	 *        definition of the function in all the derived classes).
 	 */
-	void SetNormal(double *val_face_normal);
+	void SetNormal(su2double *val_face_normal);
 	
 	/*! 
 	 * \brief This function does nothing (it comes from a pure virtual function, that implies the 
@@ -722,20 +721,20 @@ public:
 	 * \brief This function does nothing (it comes from a pure virtual function, that implies the 
 	 *        definition of the function in all the derived classes).
 	 */
-	void AddNormal(double *val_face_normal);
+	void AddNormal(su2double *val_face_normal);
 };
 
 /*! 
  * \class CEdge
  * \brief Class for defining an edge.
  * \author F. Palacios
- * \version 3.2.9 "eagle"
+ * \version 4.0.1 "Cardinal"
  */
 class CEdge : public CDualGrid {
 private:
-	double *Coord_CG;			/*!< \brief Center-of-gravity of the element. */
+	su2double *Coord_CG;			/*!< \brief Center-of-gravity of the element. */
 	unsigned long *Nodes;		/*!< \brief Vector to store the global nodes of an element. */
-	double *Normal;				/*!< \brief Normal al elemento y coordenadas de su centro de gravedad. */
+	su2double *Normal;				/*!< \brief Normal al elemento y coordenadas de su centro de gravedad. */
 
 public:
 		
@@ -756,14 +755,14 @@ public:
 	 * \brief Set the center of gravity of the edge.
 	 * \param[in] val_coord - Coordinates of all the nodes needed for computing the centre of gravity of an edge.
 	 */
-	void SetCG(double **val_coord);
+	void SetCG(su2double **val_coord);
 	
 	/*! 
 	 * \brief Obtain the centre of gravity of the edge.
 	 * \param[in] val_dim - Position to read the coordinate.		 
 	 * \return Coordinate <i>val_dim</i> of the centre of gravity.
 	 */
-	double GetCG(unsigned short val_dim);
+	su2double GetCG(unsigned short val_dim);
 	
 	/*! 
 	 * \brief Get the nodes of the edge.
@@ -787,7 +786,7 @@ public:
 	 * \param[in] val_coord_Point - Coordinates of the point that form the control volume.		 
 	 * \return Local volume associated to the edge.
 	 */
-	double GetVolume(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG, double *val_coord_Elem_CG, double *val_coord_Point);
+	su2double GetVolume(su2double *val_coord_Edge_CG, su2double *val_coord_FaceElem_CG, su2double *val_coord_Elem_CG, su2double *val_coord_Point);
 
 	/*! 
 	 * \overload
@@ -796,7 +795,7 @@ public:
 	 * \param[in] val_coord_Point - Coordinates of the point that form the control volume.
 	 * \return Local volume associated to the edge.
 	 */
-	double GetVolume(double *val_coord_Edge_CG, double *val_coord_Elem_CG, double *val_coord_Point);
+	su2double GetVolume(su2double *val_coord_Edge_CG, su2double *val_coord_Elem_CG, su2double *val_coord_Point);
 	
 	/*! 
 	 * \brief Set the face that correspond to an edge.
@@ -806,7 +805,7 @@ public:
    * \param[in] config - Definition of the particular problem.
 	 * \return Compute the normal (dimensional) to the face that makes the control volume boundaries.
 	 */
-	void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG, double *val_coord_Elem_CG);
+	void SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_FaceElem_CG, su2double *val_coord_Elem_CG);
 	
 	/*!
 	 * \overload
@@ -816,19 +815,19 @@ public:
    * \param[in] config - Definition of the particular problem.
 	 * \return Compute the normal (dimensional) to the face that makes the contorl volume boundaries.
 	 */
-	void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_Elem_CG);
+	void SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_Elem_CG);
 	
 	/*! 
 	 * \brief Copy the the normal vector of a face.
 	 * \param[in] val_normal - Vector where the subroutine is goint to copy the normal (dimensional).
 	 */
-	void GetNormal(double *val_normal);
+	void GetNormal(su2double *val_normal);
 	
 	/*! 
 	 * \brief Get the normal to a face of the control volume asociated with an edge.
 	 * \return Dimensional normal vector, the modulus is the area of the face.
 	 */
-	double *GetNormal(void);
+	su2double *GetNormal(void);
 	
 	/*! 
 	 * \brief Initialize normal vector.
@@ -840,25 +839,25 @@ public:
 	 * \param[in] val_face_normal - Vector to initialize the normal vector.
 	 * \return Value of the normal vector.
 	 */
-	void SetNormal(double *val_face_normal);
+	void SetNormal(su2double *val_face_normal);
 	
 	/*! 
 	 * \brief Add a vector to the normal vector.
 	 * \param[in] val_face_normal - Vector to add to the normal vector.
 	 */
-	void AddNormal(double *val_face_normal);
+	void AddNormal(su2double *val_face_normal);
 	
 	/*! 
 	 * \brief This function does nothing (it comes from a pure virtual function, that implies the 
 	 *        definition of the function in all the derived classes).
 	 */
-	double *GetCoord(void);
+	su2double *GetCoord(void);
 	
 	/*! 
 	 * \brief This function does nothing (it comes from a pure virtual function, that implies the 
 	 *        definition of the function in all the derived classes).
 	 */
-	void SetCoord(double *val_coord);
+	void SetCoord(su2double *val_coord);
 
 };
 
@@ -866,24 +865,26 @@ public:
  * \class CVertex
  * \brief Class for vertex definition (equivalent to edges, but for the boundaries).
  * \author F. Palacios
- * \version 3.2.9 "eagle"
+ * \version 4.0.1 "Cardinal"
  */
 class CVertex : public CDualGrid {
 private:
 	unsigned long *Nodes;	/*!< \brief Vector to store the global nodes of an element. */
-	double *Normal;			/*!< \brief Normal coordinates of the element and its center of gravity. */
-	double Aux_Var;			/*!< \brief Auxiliar variable defined only on the surface. */
-	double CartCoord[3];		/*!< \brief Vertex cartesians coordinates. */
-	double VarCoord[3];		/*!< \brief Used for storing the coordinate variation due to a surface modification. */
-	double *VarRot;   /*!< \brief Used for storing the rotation variation due to a surface modification. */
-	long PeriodicPoint[2];			/*!< \brief Store the periodic point of a boundary (iProcessor, iPoint) */
+	su2double *Normal;			/*!< \brief Normal coordinates of the element and its center of gravity. */
+	su2double Aux_Var;			/*!< \brief Auxiliar variable defined only on the surface. */
+	su2double CartCoord[3];		/*!< \brief Vertex cartesians coordinates. */
+	su2double VarCoord[3];		/*!< \brief Used for storing the coordinate variation due to a surface modification. */
+	su2double *VarRot;   /*!< \brief Used for storing the rotation variation due to a surface modification. */
+	long PeriodicPoint[3];			/*!< \brief Store the periodic point of a boundary (iProcessor, iPoint) */
 	short Rotation_Type;			/*!< \brief Type of rotation associated with the vertex (MPI and periodic) */
 	unsigned long Normal_Neighbor; /*!< \brief Index of the closest neighbor. */
+	unsigned long *Donor_Points; /*!< \brief indices of donor points for interpolation across zones */
+	unsigned long *Donor_Proc; /*!< \brief indices of donor processor for interpolation across zones in parallel */
   unsigned long Donor_Elem;   /*!< \brief Store the donor element for interpolation across zones/ */
-  double Basis_Function[3]; /*!< \brief Basis function values for interpolation across zones. */
-  unsigned long **Donor_Info; /*!\brief Store a list of donor points (by global index) for interpolation across zones: zone,point,marker,vertex */
-  double *Donor_Coeff; /*!\brief Store a list of coefficients corresponding to the donor points. */
-  unsigned short nDonor_Points; /*!\brief Number of points in Donor_Points;*/
+  unsigned short Donor_Face;  /*!<\brief Store the donor face (w/in donor element) for interpolation across zones */
+  su2double Basis_Function[3]; /*!< \brief Basis function values for interpolation across zones. */
+  su2double *Donor_Coeff; /*!\brief Store a list of coefficients corresponding to the donor points. */
+  unsigned short nDonor_Points; /*!\brief Number of points in Donor_Points; at least there will be one donor point (if the mesh is matching)*/
   
 public:
 
@@ -918,7 +919,7 @@ public:
 	 * \param[in] val_coord_Elem_CG - Coordinates of the centre of gravity of the element.
 	 * \return Compute the normal (dimensional) to the face that makes the vertex.
 	 */
-	void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG, double *val_coord_Elem_CG);
+	void SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_FaceElem_CG, su2double *val_coord_Elem_CG);
 	
 	/*! 
 	 * \overload
@@ -926,19 +927,19 @@ public:
 	 * \param[in] val_coord_Elem_CG - Coordinates of the centre of gravity of the element.
 	 * \return Compute the normal (dimensional) to the face that makes the vertex.
 	 */
-	void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_Elem_CG);
+	void SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_Elem_CG);
 	
 	/*! 
 	 * \brief Copy the the normal vector of a face.
 	 * \param[in] val_normal - Vector where the subroutine is goint to copy the normal (dimensional).
 	 */
-	void GetNormal(double *val_normal);
+	void GetNormal(su2double *val_normal);
 	
 	/*! 
 	 * \brief Get the normal to a face of the control volume asociated with a vertex.
 	 * \return Dimensional normal vector, the modulus is the area of the face.
 	 */
-	double *GetNormal(void);
+	su2double *GetNormal(void);
 	
 	/*! 
 	 * \brief Initialize normal vector.
@@ -949,69 +950,69 @@ public:
 	 * \brief Set the value of an auxiliary variable for gradient computation.
 	 * \param[in] val_auxvar - Value of the auxiliar variable.
 	 */
-	void SetAuxVar(double val_auxvar);
+	void SetAuxVar(su2double val_auxvar);
 	
 	/*! 
 	 * \brief Get the value of an auxiliary variable for gradient computation.
 	 * \return Value of the auxiliar variable.
 	 */
-	double GetAuxVar(void);
+	su2double GetAuxVar(void);
 
   /*!
 	 * \brief Add the value of an auxiliary variable for gradient computation.
 	 * \param[in] val_auxvar - Value of the auxiliar variable.
 	 */
-	void AddAuxVar(double val_auxvar);
+	void AddAuxVar(su2double val_auxvar);
   
 	/*! 
 	 * \brief Set the normal vector.
 	 * \param[in] val_face_normal - Vector to initialize the normal vector.
 	 * \return Value of the normal vector.
 	 */
-	void SetNormal(double *val_face_normal);
+	void SetNormal(su2double *val_face_normal);
 	
 	/*! 
 	 * \brief Add a vector to the normal vector.
 	 * \param[in] val_face_normal - Vector to add to the normal vector.
 	 */
-	void AddNormal(double *val_face_normal);
+	void AddNormal(su2double *val_face_normal);
 	
 	/*! 
 	 * \brief Set the value of the coordinate variation due to a surface modification.
 	 * \param[in] val_varcoord - Variation of the coordinate.
 	 */
-	void SetVarCoord(double *val_varcoord);
+	void SetVarCoord(su2double *val_varcoord);
 	
 	/*! 
 	 * \brief Add the value of the coordinate variation due to a surface modification.
 	 * \param[in] val_varcoord - Variation of the coordinate.
 	 */
-	void AddVarCoord(double *val_varcoord);
+	void AddVarCoord(su2double *val_varcoord);
 	
 	/*! 
 	 * \brief Get the value of the coordinate variation due to a surface modification.
 	 * \return Variation of the coordinate.
 	 */
-	double *GetVarCoord(void);
+	su2double *GetVarCoord(void);
 	
 	/*! 
 	 * \brief Set the value of the cartesian coordinate for the vertex.
 	 * \param[in] val_coord - Value of the cartesian coordinate.
 	 */
-	void SetCoord(double *val_coord);
+	void SetCoord(su2double *val_coord);
 	
 	/*! 
 	 * \brief Get the value of the cartesian coordinate for the vertex.
 	 * \return Value of the cartesian coordinate of the vertex.
 	 */
-	double *GetCoord(void);
+	su2double *GetCoord(void);
   
   /*!
 	 * \brief Get the value of the cartesian coordinate for the vertex.
    * \param[in] val_dim - Variable of the dimension.
 	 * \return Value of the cartesian coordinate of the vertex.
 	 */
-  double GetCoord(unsigned short val_dim);
+  su2double GetCoord(unsigned short val_dim);
 	
 	/*! 
 	 * \brief Set the type of rotation associated to the vertex.
@@ -1033,6 +1034,14 @@ public:
 	void SetDonorPoint(long val_periodicpoint, long val_processor);
 	
 	/*! 
+	 * \overload
+	 * \param[in] val_periodicpoint - Value of periodic point of the vertex.
+	 * \param[in] val_processor - Processor where the point belong.
+	 * \param[in] val_globalindex - Global index of the donor point.
+	 */
+	void SetDonorPoint(long val_periodicpoint, long val_processor, long val_globalindex);
+
+	/*!
 	 * \brief Get the value of the periodic point of a vertex.
 	 * \return Value of the periodic point of a vertex.
 	 */
@@ -1043,6 +1052,12 @@ public:
 	 * \return Value of the periodic point of a vertex.
 	 */
 	long GetDonorProcessor(void);
+
+  /*!
+	 * \brief Get the value of the global index for the donor point of a vertex.
+	 * \return Value of the global index for the donor point of a vertex.
+	 */
+	long GetGlobalDonorPoint(void);
   
 	/*! 
 	 * \brief Get the value of the periodic point of a vertex, and its somain
@@ -1055,26 +1070,38 @@ public:
 	 * \param[in] val_donorelem - donor element index.
 	 */
 	void SetDonorElem(long val_donorelem);
-  
+
   /*!
 	 * \brief Get the donor element of a vertex for interpolation across zones.
 	 * \return Value of the donor element of a vertex.
 	 */
 	long GetDonorElem(void);
+
+	/*!
+   * \brief Set the donor face of a vertex for interpolation across zones.
+   * \param[in] val_donorface- donor face index (w/in donor elem).
+   */
+  void SetDonorFace(unsigned short val_donorface);
+
+  /*!
+   * \brief Get the donor face of a vertex for interpolation across zones.
+   * \return Value of the donor face index (w/in donor elem).
+   */
+  unsigned short GetDonorFace(void);
   
   /*!
 	 * \brief Set the finite element basis functions needed for interpolation.
 	 * \param[in] val_node - a node index of the owner element.
    * \param[in] val_basis - basis function value for the node.
 	 */
-	void SetBasisFunction(unsigned short val_node, double val_basis);
+	void SetBasisFunction(unsigned short val_node, su2double val_basis);
 	
 	/*!
 	 * \brief Get the finite element basis functions needed for interpolation.
 	 * \param[in] val_node - a node index of the owner element.
    * \return Value of the basis function for this node.
 	 */
-	double GetBasisFunction(unsigned short val_node);
+	su2double GetBasisFunction(unsigned short val_node);
 	
 	/*! 
 	 * \brief Set the index of the closest neighbor to a point on the boundaries.
@@ -1106,34 +1133,44 @@ public:
 	unsigned short GetnDonorPoints(void);
 
 	/*!
-	 * \brief Set the values of a donor point.
-	 * \param[in] iDonor - Index of the donor point.
-	 * \param[in] val   - Pointer to the array of values to be set for the donor point. (zone, global point id, marker id, vertex within that marker)
-	 */
-	void SetDonorInfo(unsigned short iDonor, unsigned long*val);
-
-	/*!
-	 * \brief Return the values of a donor point.
-	 * \param[in] iDonor - Index of the donor point.
-	 * \param[in] it  - Index of the information to be returned.(zone, global point id, marker id, vertex within that marker)
-	 * \return    - the value stored at Donor_Info[iDonor][it].
-	 */
-	unsigned long GetDonorInfo(unsigned short iDonor, unsigned short it);
-
-
-	/*!
    * \brief Set the coefficient value of a donor point.
    * \param[in] iDonor - Index of the donor point.
    * \param[in] val  - Value of the coefficent for point iDonor.
    */
-	void SetDonorCoeff(unsigned short iDonor, double val);
+	void SetDonorCoeff(unsigned short iDonor, su2double val);
 
 	/*!
    * \brief Get the coefficient value of a donor point.
    * \param[in] iDonor - Index of the donor point.
    * \return  - Value of the coefficent for point iDonor.
    */
-	double GetDonorCoeff(unsigned short iDonor);
+	su2double GetDonorCoeff(unsigned short iDonor);
+
+  /*!
+   * \brief Set the donor point of a vertex for interpolation across zones.
+   * \param[in] val_donorpoint- donor face index (w/in donor elem).
+   */
+  void SetInterpDonorPoint(unsigned short val_donorindex, long val_donorpoint);
+
+  /*!
+   * \brief Get the value of the donor point of a vertex (for interpolation).
+   * \return Value of the donor point of a vertex.
+   */
+  long GetInterpDonorPoint(unsigned short val_donorpoint);
+
+
+  /*!
+   * \brief Set the donor point of a vertex for interpolation across zones.
+   * \param[in] val_donorpoint- donor face index (w/in donor elem).
+   */
+  void SetInterpDonorProcessor(unsigned short val_donorindex, long val_rank);
+
+  /*!
+   * \brief Get the value of the donor point of a vertex (for interpolation).
+   * \return Value of the donor point of a vertex.
+   */
+  long GetInterpDonorProcessor(unsigned short val_donorindex);
+
 
 	/*!
    * \brief Allocate memory based on how many donor points need to be stored.
@@ -1145,13 +1182,13 @@ public:
    * \brief Get the rotation variation
    * \return  - pointer to the vector defining the rotation
    */
-  double *GetVarRot(void);
+  su2double *GetVarRot(void);
 
   /*!
    * \brief Set the rotation variation
    * \return  - pointer to the vector defining the rotation
    */
-  void SetVarRot(double* val);
+  void SetVarRot(su2double* val);
 
 };
 

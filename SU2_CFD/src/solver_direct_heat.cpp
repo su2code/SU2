@@ -2,7 +2,7 @@
  * \file solution_direct_heat.cpp
  * \brief Main subrotuines for solving the heat equation
  * \author F. Palacios, T. Economon
- * \version 3.2.9 "eagle"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -49,26 +49,26 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config) : CSolver() {
 	node    =       new CVariable*[nPoint];
 	nVar    =       1;
   
-	Residual     = new double[nVar]; Residual_RMS = new double[nVar];
-	Solution     = new double[nVar];
-  Res_Sour     = new double[nVar];
-  Residual_Max = new double[nVar]; Point_Max = new unsigned long[nVar];
-  Point_Max_Coord = new double*[nVar];
+	Residual     = new su2double[nVar]; Residual_RMS = new su2double[nVar];
+	Solution     = new su2double[nVar];
+  Res_Sour     = new su2double[nVar];
+  Residual_Max = new su2double[nVar]; Point_Max = new unsigned long[nVar];
+  Point_Max_Coord = new su2double*[nVar];
   for (iVar = 0; iVar < nVar; iVar++) {
-    Point_Max_Coord[iVar] = new double[nDim];
+    Point_Max_Coord[iVar] = new su2double[nDim];
     for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
   }
   
 	/*--- Point to point stiffness matrix (only for triangles)---*/
   
-	StiffMatrix_Elem = new double*[nDim+1];
+	StiffMatrix_Elem = new su2double*[nDim+1];
 	for (iVar = 0; iVar < nDim+1; iVar++) {
-		StiffMatrix_Elem[iVar] = new double [nDim+1];
+		StiffMatrix_Elem[iVar] = new su2double [nDim+1];
 	}
   
-	StiffMatrix_Node = new double*[nVar];
+	StiffMatrix_Node = new su2double*[nVar];
 	for (iVar = 0; iVar < nVar; iVar++) {
-		StiffMatrix_Node[iVar] = new double [nVar];
+		StiffMatrix_Node[iVar] = new su2double [nVar];
 	}
   
 	/*--- Initialization of matrix structures ---*/
@@ -92,7 +92,7 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config) : CSolver() {
 
   /*--- Heat coefficient for all of the markers ---*/
   
-  CHeat = new double[config->GetnMarker_All()];
+  CHeat = new su2double[config->GetnMarker_All()];
   Total_CHeat = 0.0;
   
   /*--- Check for a restart (not really used), initialize from zero otherwise ---*/
@@ -201,8 +201,8 @@ void CHeatSolver::Source_Residual(CGeometry *geometry,
   if (config->GetUnsteady_Simulation() != STEADY) {
 
     unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0, Point_3 = 0;
-    double a[3] = {0.0,0.0,0.0}, b[3] = {0.0,0.0,0.0}, c[3] = {0.0,0.0,0.0}, d[3] = {0.0,0.0,0.0}, Area_Local = 0.0, Volume_Local = 0.0, Time_Num;
-    double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL, *Coord_3= NULL;
+    su2double a[3] = {0.0,0.0,0.0}, b[3] = {0.0,0.0,0.0}, c[3] = {0.0,0.0,0.0}, d[3] = {0.0,0.0,0.0}, Area_Local = 0.0, Volume_Local = 0.0, Time_Num;
+    su2double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL, *Coord_3= NULL;
     unsigned short iDim;
 
     /*--- Numerical time step (this system is uncoditional stable... a very big number can be used) ---*/
@@ -281,7 +281,7 @@ void CHeatSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
                                   CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
   
 	unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0, Point_3 = 0, total_index, iPoint;
-	double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL, *Coord_3 = NULL;
+	su2double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL, *Coord_3 = NULL;
   
 	if (nDim == 2 ) {
     
@@ -363,7 +363,7 @@ void CHeatSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contain
 void CHeatSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   
   unsigned long iPoint, iVertex, total_index;
-	double Twall;
+	su2double Twall;
   
   /*--- Identify the boundary ---*/
   
@@ -401,10 +401,10 @@ void CHeatSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
                                        unsigned short iMesh, unsigned short RunTime_EqSystem) {
 	
 	unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0, Point_3 = 0;
-  double a[3] = {0.0,0.0,0.0}, b[3] = {0.0,0.0,0.0}, c[3] = {0.0,0.0,0.0}, d[3] = {0.0,0.0,0.0}, Area_Local = 0.0, Volume_Local = 0.0, Time_Num;
-	double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL, *Coord_3= NULL;
+  su2double a[3] = {0.0,0.0,0.0}, b[3] = {0.0,0.0,0.0}, c[3] = {0.0,0.0,0.0}, d[3] = {0.0,0.0,0.0}, Area_Local = 0.0, Volume_Local = 0.0, Time_Num;
+	su2double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL, *Coord_3= NULL;
 	unsigned short iDim, iVar;
-	double TimeJac = 0.0;
+	su2double TimeJac = 0.0;
 	
 	/*--- Numerical time step (this system is uncoditional stable... a very big number can be used) ---*/
 	Time_Num = config->GetDelta_UnstTimeND();
@@ -476,7 +476,7 @@ void CHeatSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
 	}
 	
 	unsigned long iPoint, total_index;
-	double *U_time_nM1, *U_time_n, *U_time_nP1;
+	su2double *U_time_nM1, *U_time_n, *U_time_nP1;
 	
 	/*--- loop over points ---*/
   

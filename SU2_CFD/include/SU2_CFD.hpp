@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines of the code SU2_CFD.
  *        The subroutines and functions are in the <i>SU2_CFD.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 3.2.9 "eagle"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -30,9 +30,8 @@
 
 #pragma once
 
-#ifdef HAVE_MPI
-  #include "mpi.h"
-#endif
+#include "../../Common/include/mpi_structure.hpp"
+
 #include <ctime>
 
 #include "solver_structure.hpp"
@@ -42,7 +41,9 @@
 #include "../../Common/include/geometry_structure.hpp"
 #include "../../Common/include/grid_movement_structure.hpp"
 #include "../../Common/include/config_structure.hpp"
+#include "../../Common/include/interpolation_structure.hpp"
 #include "../include/definition_structure.hpp"
 #include "../include/iteration_structure.hpp"
+#include "../include/transfer_structure.hpp"
 
 using namespace std;

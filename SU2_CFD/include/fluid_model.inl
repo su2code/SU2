@@ -2,7 +2,7 @@
  * \file fluid_model.inl
  * \brief In-Line subroutines of the <i>solver_structure.hpp</i> file.
  * \author S. Vitale, M. Pini, G. Gori, A. Guardone, P. Colonna
- * \version 3.2.9 "eagle"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -29,20 +29,20 @@
 
 #pragma once
 
-inline double CFluidModel::GetPressure () { return Pressure; }
-inline double CFluidModel::GetSoundSpeed () { return sqrt(SoundSpeed2); }
-inline double CFluidModel::GetSoundSpeed2 () { return SoundSpeed2; }
-inline double CFluidModel::GetDensity () { return Density; }
-inline double CFluidModel::GetEntropy () { return Entropy; }
-inline double CFluidModel::GetStaticEnergy () { return StaticEnergy; }
-inline double CFluidModel::GetTemperature () { return Temperature; }
-inline double CFluidModel::GetCp () { return Cp; }
-inline double CFluidModel::GetdPdrho_e () { return dPdrho_e; }
-inline double CFluidModel::GetdPde_rho () { return dPde_rho; }
-inline double CFluidModel::GetdTdrho_e () { return dTdrho_e; }
-inline double CFluidModel::GetdTde_rho () { return dTde_rho; }
+inline su2double CFluidModel::GetPressure () { return Pressure; }
+inline su2double CFluidModel::GetSoundSpeed () { return sqrt(SoundSpeed2); }
+inline su2double CFluidModel::GetSoundSpeed2 () { return SoundSpeed2; }
+inline su2double CFluidModel::GetDensity () { return Density; }
+inline su2double CFluidModel::GetEntropy () { return Entropy; }
+inline su2double CFluidModel::GetStaticEnergy () { return StaticEnergy; }
+inline su2double CFluidModel::GetTemperature () { return Temperature; }
+inline su2double CFluidModel::GetCp () { return Cp; }
+inline su2double CFluidModel::GetdPdrho_e () { return dPdrho_e; }
+inline su2double CFluidModel::GetdPde_rho () { return dPde_rho; }
+inline su2double CFluidModel::GetdTdrho_e () { return dTdrho_e; }
+inline su2double CFluidModel::GetdTde_rho () { return dTde_rho; }
 
-inline double CFluidModel::GetLaminarViscosity () {
+inline su2double CFluidModel::GetLaminarViscosity () {
         LaminarViscosity->SetViscosity(Temperature, Density);
         Mu = LaminarViscosity->GetViscosity();
         LaminarViscosity->SetDerViscosity(Temperature, Density);
@@ -51,15 +51,15 @@ inline double CFluidModel::GetLaminarViscosity () {
         return Mu;
 }
 
-inline double CFluidModel::Getdmudrho_T () {
+inline su2double CFluidModel::Getdmudrho_T () {
         return LaminarViscosity->Getdmudrho_T();
 }
 
-inline double CFluidModel::GetdmudT_rho () {
+inline su2double CFluidModel::GetdmudT_rho () {
         return LaminarViscosity->GetdmudT_rho();
 }
 
-inline double CFluidModel::GetThermalConductivity () {
+inline su2double CFluidModel::GetThermalConductivity () {
         ThermalConductivity->SetConductivity(Temperature, Density, Mu, Cp);
         Kt = ThermalConductivity->GetConductivity();
         ThermalConductivity->SetDerConductivity(Temperature, Density, dmudrho_T, dmudT_rho, Cp);
@@ -69,17 +69,17 @@ inline double CFluidModel::GetThermalConductivity () {
 }
 
 
-inline double CFluidModel::Getdktdrho_T () {
+inline su2double CFluidModel::Getdktdrho_T () {
         return dktdrho_T;
 }
 
-inline double CFluidModel::GetdktdT_rho () {
+inline su2double CFluidModel::GetdktdT_rho () {
         return dktdT_rho;
 }
 
-inline void CFluidModel::SetTDState_rhoe (double rho, double e ) { }
-inline void CFluidModel::SetTDState_PT (double P, double T ) { }
-inline void CFluidModel::SetTDState_Prho (double P, double rho ) { }
-inline void CFluidModel::SetTDState_hs (double h, double s ) { }
-inline void CFluidModel::SetTDState_rhoT (double rho, double T ) { }
-inline void CFluidModel::SetEnergy_Prho (double P, double rho ) { }
+inline void CFluidModel::SetTDState_rhoe (su2double rho, su2double e ) { }
+inline void CFluidModel::SetTDState_PT (su2double P, su2double T ) { }
+inline void CFluidModel::SetTDState_Prho (su2double P, su2double rho ) { }
+inline void CFluidModel::SetTDState_hs (su2double h, su2double s ) { }
+inline void CFluidModel::SetTDState_rhoT (su2double rho, su2double T ) { }
+inline void CFluidModel::SetEnergy_Prho (su2double P, su2double rho ) { }

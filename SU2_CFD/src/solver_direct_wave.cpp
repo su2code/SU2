@@ -1,8 +1,8 @@
 /*!
  * \file solution_direct_wave.cpp
  * \brief Main subrotuines for solving the wave equation.
- * \author T. Economon
- * \version 3.2.9 "eagle"
+ * \author T. Economon, F. Palacios
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -48,29 +48,29 @@ CWaveSolver::CWaveSolver(CGeometry *geometry,
 	node    = new CVariable*[nPoint];
 	nVar    = 2; // solve as a 2 eq. system		
   
-	Residual     = new double[nVar]; Residual_RMS = new double[nVar];
-	Solution     = new double[nVar];
-  Res_Sour     = new double[nVar];
-  Residual_Max = new double[nVar];
+	Residual     = new su2double[nVar]; Residual_RMS = new su2double[nVar];
+	Solution     = new su2double[nVar];
+  Res_Sour     = new su2double[nVar];
+  Residual_Max = new su2double[nVar];
   
   /*--- Define some structures for locating max residuals ---*/
   Point_Max = new unsigned long[nVar];
   for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar] = 0;
-  Point_Max_Coord = new double*[nVar];
+  Point_Max_Coord = new su2double*[nVar];
   for (iVar = 0; iVar < nVar; iVar++) {
-    Point_Max_Coord[iVar] = new double[nDim];
+    Point_Max_Coord[iVar] = new su2double[nDim];
     for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
   }
   
 	/*--- Point to point stiffness matrix (only for triangles)---*/
-	StiffMatrix_Elem = new double*[nDim+1];
+	StiffMatrix_Elem = new su2double*[nDim+1];
 	for (iVar = 0; iVar < nDim+1; iVar++) {
-		StiffMatrix_Elem[iVar] = new double [nDim+1];
+		StiffMatrix_Elem[iVar] = new su2double [nDim+1];
 	}
   
-	StiffMatrix_Node = new double*[nVar];
+	StiffMatrix_Node = new su2double*[nVar];
 	for (iVar = 0; iVar < nVar; iVar++) {
-		StiffMatrix_Node[iVar] = new double [nVar];
+		StiffMatrix_Node[iVar] = new su2double [nVar];
 	}
   
 	/*--- Initialization of matrix structures ---*/
@@ -90,7 +90,7 @@ CWaveSolver::CWaveSolver(CGeometry *geometry,
   
   /* Wave strength coefficient for all of the markers */
   
-  CWave = new double[config->GetnMarker_All()];
+  CWave = new su2double[config->GetnMarker_All()];
   Total_CWave = 0.0;
   
   /* Check for a restart (not really used), initialize from zero otherwise */
@@ -197,8 +197,8 @@ void CWaveSolver::Source_Residual(CGeometry *geometry,
   /* Local variables and initialization */
   
 	unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0;
-  double a[3] = {0.0,0.0,0.0}, b[3] = {0.0,0.0,0.0}, Area_Local, Time_Num;
-	double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL;
+  su2double a[3] = {0.0,0.0,0.0}, b[3] = {0.0,0.0,0.0}, Area_Local, Time_Num;
+	su2double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL;
 	unsigned short iDim;
 	
   /*--- Numerical time step. This system is unconditionally stable,
@@ -291,7 +291,7 @@ void CWaveSolver::Viscous_Residual(CGeometry *geometry,
   /* Local variables and initialization */
   
 	unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0, iPoint, total_index;
-	double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL, wave_speed_2;
+	su2double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL, wave_speed_2;
 	unsigned short iVar;
 	
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
@@ -379,18 +379,18 @@ void CWaveSolver::BC_Euler_Wall(CGeometry *geometry,
 																	unsigned short val_marker) {
   
   unsigned long iPoint, iVertex, total_index, iter;
-  double deltaT, omega, time, ampl, *wave_sol;
+  su2double deltaT, omega, time, ampl, *wave_sol;
   unsigned short iVar;
   
   /*--- Set the values needed for periodic forcing ---*/
   
   deltaT = config->GetDelta_UnstTimeND();
   iter   = config->GetExtIter();  
-  time   = static_cast<double>(iter)*deltaT;
+  time   = static_cast<su2double>(iter)*deltaT;
   omega  = 1.0;
   ampl   = 1.0;
   
-  wave_sol = new double [nVar];
+  wave_sol = new su2double [nVar];
   
   for (iVar = 0; iVar < nVar; iVar++) {
     wave_sol[iVar] = 0.0;
@@ -438,7 +438,7 @@ void CWaveSolver::Wave_Strength(CGeometry *geometry, CConfig *config) {
 	
   unsigned long iPoint, iVertex;
   unsigned short iMarker, Boundary, Monitoring;
-  double WaveSol, WaveStrength = 0.0, factor;
+  su2double WaveSol, WaveStrength = 0.0, factor;
   
   /* Multiplying rho' by c^2 gives the acoustic pressure, p' */
   factor = config->GetWaveSpeed()*config->GetWaveSpeed();
@@ -483,10 +483,10 @@ void CWaveSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
                                         unsigned short iMesh, unsigned short RunTime_EqSystem) {
 	
 	unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0;
-	double a[3] = {0.0,0.0,0.0}, b[3] = {0.0,0.0,0.0}, Area_Local, Time_Num;
-	double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL;
+	su2double a[3] = {0.0,0.0,0.0}, b[3] = {0.0,0.0,0.0}, Area_Local, Time_Num;
+	su2double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL;
 	unsigned short iDim, iVar, jVar;
-	double TimeJac = 0.0;
+	su2double TimeJac = 0.0;
 	
 	/*--- Numerical time step (this system is uncoditional stable... a very big number can be used) ---*/
 	Time_Num = config->GetDelta_UnstTimeND();
@@ -552,7 +552,7 @@ void CWaveSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
 	}
 	
 	unsigned long iPoint, total_index;
-	double *U_time_nM1, *U_time_n, *U_time_nP1;
+	su2double *U_time_nM1, *U_time_n, *U_time_nP1;
 	
 	/*--- loop over points ---*/
 	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) { 
@@ -652,7 +652,7 @@ void CWaveSolver::SetSpace_Matrix(CGeometry *geometry,
 //  /* Local variables and initialization */
 //  
 //	unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0, iPoint, total_index;
-//	double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL, wave_speed_2;
+//	su2double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL, wave_speed_2;
 //	unsigned short iVar;
 //	
 //	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
@@ -738,22 +738,22 @@ void CWaveSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
     flowIter  = nFlowIter - adjIter - 1;
     unsigned short lastindex = restart_filename.find_last_of(".");
     restart_filename = restart_filename.substr(0, lastindex);
-    if ((int(flowIter) >= 0) && (int(flowIter) < 10)) sprintf (buffer, "_0000%d.dat", int(flowIter));
-    if ((int(flowIter) >= 10) && (int(flowIter) < 100)) sprintf (buffer, "_000%d.dat", int(flowIter));
-    if ((int(flowIter) >= 100) && (int(flowIter) < 1000)) sprintf (buffer, "_00%d.dat", int(flowIter));
-    if ((int(flowIter) >= 1000) && (int(flowIter) < 10000)) sprintf (buffer, "_0%d.dat", int(flowIter));
-    if (int(flowIter) >= 10000) sprintf (buffer, "_%d.dat", int(flowIter));
+    if ((SU2_TYPE::Int(flowIter) >= 0) && (SU2_TYPE::Int(flowIter) < 10)) SPRINTF (buffer, "_0000%d.dat", SU2_TYPE::Int(flowIter));
+    if ((SU2_TYPE::Int(flowIter) >= 10) && (SU2_TYPE::Int(flowIter) < 100)) SPRINTF (buffer, "_000%d.dat", SU2_TYPE::Int(flowIter));
+    if ((SU2_TYPE::Int(flowIter) >= 100) && (SU2_TYPE::Int(flowIter) < 1000)) SPRINTF (buffer, "_00%d.dat", SU2_TYPE::Int(flowIter));
+    if ((SU2_TYPE::Int(flowIter) >= 1000) && (SU2_TYPE::Int(flowIter) < 10000)) SPRINTF (buffer, "_0%d.dat", SU2_TYPE::Int(flowIter));
+    if (SU2_TYPE::Int(flowIter) >= 10000) SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(flowIter));
     UnstExt = string(buffer);
     restart_filename.append(UnstExt);
   } else {
     flowIter  =config->GetExtIter();
     unsigned short lastindex = restart_filename.find_last_of(".");
     restart_filename = restart_filename.substr(0, lastindex);
-    if ((int(flowIter) >= 0) && (int(flowIter) < 10)) sprintf (buffer, "_0000%d.dat", int(flowIter));
-    if ((int(flowIter) >= 10) && (int(flowIter) < 100)) sprintf (buffer, "_000%d.dat", int(flowIter));
-    if ((int(flowIter) >= 100) && (int(flowIter) < 1000)) sprintf (buffer, "_00%d.dat", int(flowIter));
-    if ((int(flowIter) >= 1000) && (int(flowIter) < 10000)) sprintf (buffer, "_0%d.dat", int(flowIter));
-    if (int(flowIter) >= 10000) sprintf (buffer, "_%d.dat", int(flowIter));
+    if ((SU2_TYPE::Int(flowIter) >= 0) && (SU2_TYPE::Int(flowIter) < 10)) SPRINTF (buffer, "_0000%d.dat", SU2_TYPE::Int(flowIter));
+    if ((SU2_TYPE::Int(flowIter) >= 10) && (SU2_TYPE::Int(flowIter) < 100)) SPRINTF (buffer, "_000%d.dat", SU2_TYPE::Int(flowIter));
+    if ((SU2_TYPE::Int(flowIter) >= 100) && (SU2_TYPE::Int(flowIter) < 1000)) SPRINTF (buffer, "_00%d.dat", SU2_TYPE::Int(flowIter));
+    if ((SU2_TYPE::Int(flowIter) >= 1000) && (SU2_TYPE::Int(flowIter) < 10000)) SPRINTF (buffer, "_0%d.dat", SU2_TYPE::Int(flowIter));
+    if (SU2_TYPE::Int(flowIter) >= 10000) SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(flowIter));
     UnstExt = string(buffer);
     restart_filename.append(UnstExt);
   }

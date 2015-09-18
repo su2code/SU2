@@ -2,7 +2,7 @@
  * \file definition_structure.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 3.2.9 "eagle"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -246,7 +246,7 @@ void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned
     /*--- Visualize a dual control volume if requested ---*/
     
     if ((config[iZone]->GetVisualize_CV() >= 0) &&
-        (config[iZone]->GetVisualize_CV() < geometry[iZone][MESH_0]->GetnPointDomain()))
+        (config[iZone]->GetVisualize_CV() < (long)geometry[iZone][MESH_0]->GetnPointDomain()))
       geometry[iZone][MESH_0]->VisualizeControlVolume(config[iZone], UPDATE);
     
     /*--- Identify closest normal neighbor ---*/
@@ -332,9 +332,9 @@ void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry,
   lin_euler, lin_ns,
   tne2_euler, tne2_ns,
   adj_tne2_euler, adj_tne2_ns,
-  poisson, wave, fea, heat,
+  poisson, wave, fea, heat, fem,
   spalart_allmaras, neg_spalart_allmaras, menter_sst, machine_learning, transition,
-  template_solver;
+  template_solver, disc_adj;
   
   /*--- Initialize some useful booleans ---*/
   
@@ -345,8 +345,8 @@ void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry,
   adj_tne2_euler   = false;  adj_tne2_ns     = false;
   spalart_allmaras = false;  menter_sst      = false;   machine_learning = false;
   poisson          = false;  neg_spalart_allmaras = false;
-  wave             = false;
-  fea              = false;
+  wave             = false;	 disc_adj        = false;
+  fea              = false;  fem = false;
   heat             = false;
   transition       = false;
   template_solver  = false;
@@ -364,12 +364,16 @@ void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry,
     case WAVE_EQUATION: wave = true; break;
     case HEAT_EQUATION: heat = true; break;
     case LINEAR_ELASTICITY: fea = true; break;
+    case FEM_ELASTICITY: fem = true; break;
     case ADJ_EULER : euler = true; adj_euler = true; break;
     case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
     case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
     case ADJ_TNE2_EULER : tne2_euler = true; adj_tne2_euler = true; break;
     case ADJ_TNE2_NAVIER_STOKES : tne2_ns = true; adj_tne2_ns = true; break;
     case LIN_EULER: euler = true; lin_euler = true; break;
+    case DISC_ADJ_EULER: euler = true; disc_adj = true; break;
+    case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; break;
+    case DISC_ADJ_RANS: ns = true; turbulent = true; disc_adj = true; break;
   }
   
   /*--- Assign turbulence model booleans --- */
@@ -445,6 +449,9 @@ void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry,
     if (fea) {
       solver_container[iMGlevel][FEA_SOL] = new CFEASolver(geometry[iMGlevel], config);
     }
+    if (fem) {
+      solver_container[iMGlevel][FEA_SOL] = new CFEM_ElasticitySolver(geometry[iMGlevel], config);
+    }
     
     /*--- Allocate solution for adjoint problem ---*/
     if (adj_euler) {
@@ -470,9 +477,13 @@ void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry,
     if (lin_ns) {
       cout <<"Equation not implemented." << endl; exit(EXIT_FAILURE); break;
     }
-    
+
+    if (disc_adj) {
+      solver_container[iMGlevel][ADJFLOW_SOL] = new CDiscAdjSolver(geometry[iMGlevel], config, solver_container[iMGlevel][FLOW_SOL], RUNTIME_FLOW_SYS, iMGlevel);
+      if (turbulent)
+        solver_container[iMGlevel][ADJTURB_SOL] = new CDiscAdjSolver(geometry[iMGlevel], config, solver_container[iMGlevel][TURB_SOL], RUNTIME_TURB_SYS, iMGlevel);
+    }
   }
-  
 }
 
 void Integration_Preprocessing(CIntegration **integration_container,
@@ -485,7 +496,7 @@ void Integration_Preprocessing(CIntegration **integration_container,
   turbulent, adj_turb,
   tne2_euler, adj_tne2_euler,
   tne2_ns, adj_tne2_ns,
-  poisson, wave, fea, heat, template_solver, transition;
+  poisson, wave, fea, fem, heat, template_solver, transition, disc_adj;
   
   /*--- Initialize some useful booleans ---*/
   euler            = false; adj_euler        = false; lin_euler         = false;
@@ -493,10 +504,10 @@ void Integration_Preprocessing(CIntegration **integration_container,
   turbulent        = false; adj_turb         = false;
   tne2_euler       = false; adj_tne2_euler   = false;
   tne2_ns          = false; adj_tne2_ns      = false;
-  poisson          = false;
+  poisson          = false; disc_adj         = false;
   wave             = false;
   heat             = false;
-  fea              = false;
+  fea              = false; fem = false;
   transition       = false;
   template_solver  = false;
   
@@ -512,12 +523,17 @@ void Integration_Preprocessing(CIntegration **integration_container,
     case WAVE_EQUATION: wave = true; break;
     case HEAT_EQUATION: heat = true; break;
     case LINEAR_ELASTICITY: fea = true; break;
+    case FEM_ELASTICITY: fem = true; break;
     case ADJ_EULER : euler = true; adj_euler = true; break;
     case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
     case ADJ_TNE2_EULER : tne2_euler = true; adj_tne2_euler = true; break;
     case ADJ_TNE2_NAVIER_STOKES : tne2_ns = true; adj_tne2_ns = true; break;
     case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
     case LIN_EULER: euler = true; lin_euler = true; break;
+    case DISC_ADJ_EULER : euler = true; disc_adj = true; break;
+    case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; break;
+    case DISC_ADJ_RANS : ns = true; turbulent = true; disc_adj = true; break;
+
   }
   
   /*--- Allocate solution for a template problem ---*/
@@ -534,6 +550,7 @@ void Integration_Preprocessing(CIntegration **integration_container,
   if (wave) integration_container[WAVE_SOL] = new CSingleGridIntegration(config);
   if (heat) integration_container[HEAT_SOL] = new CSingleGridIntegration(config);
   if (fea) integration_container[FEA_SOL] = new CStructuralIntegration(config);
+  if (fem) integration_container[FEA_SOL] = new CStructuralIntegration(config);
   
   /*--- Allocate solution for adjoint problem ---*/
   if (adj_euler) integration_container[ADJFLOW_SOL] = new CMultiGridIntegration(config);
@@ -545,6 +562,8 @@ void Integration_Preprocessing(CIntegration **integration_container,
   /*--- Allocate solution for linear problem (at the moment we use the same scheme as the adjoint problem) ---*/
   if (lin_euler) integration_container[LINFLOW_SOL] = new CMultiGridIntegration(config);
   if (lin_ns) { cout <<"Equation not implemented." << endl; exit(EXIT_FAILURE); }
+
+  if (disc_adj) integration_container[ADJFLOW_SOL] = new CIntegration(config);
   
 }
 
@@ -568,11 +587,12 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
   nPrimVarGrad_Adj_TNE2 = 0,
   nVar_Poisson          = 0,
   nVar_FEA              = 0,
+  nVar_FEM				= 0,
   nVar_Wave             = 0,
   nVar_Heat             = 0,
   nVar_Lin_Flow         = 0;
   
-  double *constants = NULL;
+  su2double *constants = NULL;
   
   bool
   euler, adj_euler, lin_euler,
@@ -583,7 +603,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
   spalart_allmaras, neg_spalart_allmaras, menter_sst, machine_learning,
   poisson,
   wave,
-  fea,
+  fea, fem,
   heat,
   transition,
   template_solver;
@@ -598,7 +618,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
   poisson          = false;
   adj_euler        = false;	  adj_ns           = false;	 adj_turb         = false;
   wave             = false;   heat             = false;   fea              = false;   spalart_allmaras = false; neg_spalart_allmaras = false;
-  tne2_euler       = false;   tne2_ns          = false;
+  tne2_euler       = false;   tne2_ns          = false;	fem				= false;
   adj_tne2_euler   = false;	  adj_tne2_ns      = false;
   lin_euler        = false;   menter_sst       = false;    machine_learning = false;
   transition       = false;
@@ -607,15 +627,16 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
   /*--- Assign booleans ---*/
   switch (config->GetKind_Solver()) {
     case TEMPLATE_SOLVER: template_solver = true; break;
-    case EULER : euler = true; break;
-    case NAVIER_STOKES: ns = true; break;
-    case RANS : ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; break;
+    case EULER : case DISC_ADJ_EULER: euler = true; break;
+    case NAVIER_STOKES: case DISC_ADJ_NAVIER_STOKES: ns = true; break;
+    case RANS : case DISC_ADJ_RANS:  ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; break;
     case TNE2_EULER : tne2_euler = true; break;
     case TNE2_NAVIER_STOKES: tne2_ns = true; break;
     case POISSON_EQUATION: poisson = true; break;
     case WAVE_EQUATION: wave = true; break;
     case HEAT_EQUATION: heat = true; break;
     case LINEAR_ELASTICITY: fea = true; break;
+    case FEM_ELASTICITY: fem = true; break;
     case ADJ_EULER : euler = true; adj_euler = true; break;
     case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
     case ADJ_TNE2_EULER : tne2_euler = true; adj_tne2_euler = true; break;
@@ -654,6 +675,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
   
   if (wave)				nVar_Wave = solver_container[MESH_0][WAVE_SOL]->GetnVar();
   if (fea)				nVar_FEA = solver_container[MESH_0][FEA_SOL]->GetnVar();
+  if (fem)				nVar_FEM = solver_container[MESH_0][FEA_SOL]->GetnVar();
   if (heat)				nVar_Heat = solver_container[MESH_0][HEAT_SOL]->GetnVar();
   
   /*--- Number of variables for adjoint problem ---*/
@@ -1462,4 +1484,143 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
     
   }
   
+  /*--- Solver definition for the FEM problem ---*/
+  if (fem) {
+	switch (config->GetGeometricConditions()) {
+    	case SMALL_DEFORMATIONS :
+    		switch (config->GetMaterialModel()) {
+    			case LINEAR_ELASTIC: numerics_container[MESH_0][FEA_SOL][VISC_TERM] = new CFEM_LinearElasticity(nDim, nVar_FEM, config); break;
+    			case NEO_HOOKEAN : cout << "Material model does not correspond to geometric conditions." << endl; exit(EXIT_FAILURE); break;
+    			default: cout << "Material model not implemented." << endl; exit(EXIT_FAILURE); break;
+    		}
+    		break;
+    	case LARGE_DEFORMATIONS :
+    		switch (config->GetMaterialModel()) {
+				case LINEAR_ELASTIC: cout << "Material model does not correspond to geometric conditions." << endl; exit(EXIT_FAILURE); break;
+    			case NEO_HOOKEAN :
+    				switch (config->GetMaterialCompressibility()) {
+    					case COMPRESSIBLE_MAT : numerics_container[MESH_0][FEA_SOL][VISC_TERM] = new CFEM_NeoHookean_Comp(nDim, nVar_FEM, config); break;
+    					case INCOMPRESSIBLE_MAT : numerics_container[MESH_0][FEA_SOL][VISC_TERM] = new CFEM_NeoHookean_Incomp(nDim, nVar_FEM, config); break;
+    					default: cout << "Material model not implemented." << endl; exit(EXIT_FAILURE); break;
+    				}
+    				break;
+    			default: cout << "Material model not implemented." << endl; exit(EXIT_FAILURE); break;
+    		}
+    		break;
+    	default: cout << " Solver not implemented." << endl; exit(EXIT_FAILURE); break;
+	}
+
+  }
+
+}
+
+void Interface_Preprocessing(CTransfer ***transfer_container, CInterpolator ***interpolator_container,
+							 CGeometry ***geometry_container, CConfig **config_container,
+							 unsigned short nZone, unsigned short nDim) {
+
+	int rank = MASTER_NODE;
+	unsigned short donorZone, targetZone;
+	unsigned short nVarTransfer;
+	unsigned int Zones[2];
+	unsigned int nzn = 2; // Temporary, I'm not sure I need it
+
+	/*--- Initialize some useful booleans ---*/
+	bool fluid_donor, structural_donor;
+	bool fluid_target, structural_target;
+
+	bool matching_mesh;
+
+	fluid_donor  = false;  structural_donor  = false;
+	fluid_target  = false;  structural_target  = false;
+
+
+#ifdef HAVE_MPI
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+	/*--- Coupling between zones (limited to two zones at the moment) ---*/
+	for (donorZone = 0; donorZone < nZone; donorZone++){
+
+		/*--- Initialize donor booleans ---*/
+		fluid_donor  = false;  structural_donor  = false;
+		matching_mesh = config_container[donorZone]->GetMatchingMesh();
+
+		/*--- Initialize donor zone for interpolation classes ---*/
+		Zones[0] = donorZone;
+
+		/*--- Set the donor boolean: as of now, only Fluid-Structure Interaction considered ---*/
+		switch (config_container[donorZone]->GetKind_Solver()) {
+			case EULER : case NAVIER_STOKES: case RANS: fluid_donor  = true; 		break;
+			case FEM_ELASTICITY: 						structural_donor = true; 	break;
+		}
+
+		for (targetZone = 0; targetZone < nZone; targetZone++){
+
+			/*--- Initialize donor booleans ---*/
+			fluid_target  = false;  structural_target  = false;
+
+			/*--- Initialize target zone for interpolation classes ---*/
+			Zones[1] = targetZone;
+
+			/*--- Set the target boolean: as of now, only Fluid-Structure Interaction considered ---*/
+			switch (config_container[targetZone]->GetKind_Solver()) {
+				case EULER : case NAVIER_STOKES: case RANS: fluid_target  = true; 		break;
+				case FEM_ELASTICITY: 						structural_target = true; 	break;
+			}
+
+			/*--- Interface conditions are only defined between different zones ---*/
+			if (donorZone != targetZone){
+
+				if (rank == MASTER_NODE) cout << "From zone " << donorZone << " to zone " << targetZone << ": " << endl;
+
+				/*--- Match Zones ---*/
+				if (rank == MASTER_NODE) cout << "Setting coupling ";
+
+				/*--- If the mesh is matching: match points ---*/
+				if (matching_mesh){
+					if (rank == MASTER_NODE) cout << "between matching meshes. " << endl;
+					geometry_container[donorZone][MESH_0]->MatchZone(config_container[donorZone], geometry_container[targetZone][MESH_0],
+							config_container[targetZone], donorZone, nZone);
+				}
+				/*--- Else: interpolate ---*/
+				else {
+					if (rank == MASTER_NODE) cout << "between non-matching meshes ";
+					switch (config_container[donorZone]->GetKindInterpolation()){
+						case NEAREST_NEIGHBOR:
+							interpolator_container[donorZone][targetZone] = new CNearestNeighbor(geometry_container, config_container, Zones, nzn);
+							if (rank == MASTER_NODE) cout << "using a nearest-neighbor approach." << endl;
+							break;
+						case ISOPARAMETRIC:
+							interpolator_container[donorZone][targetZone] = new CIsoparametric(geometry_container,config_container,Zones,nzn);
+							if (rank == MASTER_NODE) cout << "using an isoparametric approach." << endl;
+							break;
+					}
+				}
+
+				/*--- Initialize the appropriate transfer strategy ---*/
+				if (rank == MASTER_NODE) cout << "Transferring ";
+
+				if (fluid_donor && structural_target) {
+					nVarTransfer = 0;
+					transfer_container[donorZone][targetZone] = new CTransfer_FlowTraction(nDim, nVarTransfer, config_container[donorZone]);
+					if (rank == MASTER_NODE) cout << "flow tractions. "<< endl;
+				}
+				else if (structural_donor && fluid_target){
+					nVarTransfer = 2;
+					transfer_container[donorZone][targetZone] = new CTransfer_StructuralDisplacements(nDim, nVarTransfer, config_container[donorZone]);
+					if (rank == MASTER_NODE) cout << "structural displacements. "<< endl;
+				}
+				else {
+					nVarTransfer = 0;
+					if (rank == MASTER_NODE) cout << "generic conservative variables. " << endl;
+				}
+
+			}
+
+
+		}
+
+	}
+
+
 }

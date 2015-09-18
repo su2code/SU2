@@ -2,7 +2,7 @@
  * \file output_su2.cpp
  * \brief Main subroutines for output solver information.
  * \author F. Palacios, T. Economon, M. Colonno
- * \version 3.2.9 "eagle"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -36,7 +36,7 @@ void COutput::SetSU2_MeshASCII(CConfig *config, CGeometry *geometry) {
   char cstr[MAX_STRING_SIZE], out_file[MAX_STRING_SIZE];
   unsigned long iElem, iPoint, iElem_Bound, nElem_Bound_, vnodes_edge[2], vnodes_triangle[3], vnodes_quad[4], iNode, nElem;
   unsigned short iMarker, iDim, nDim = geometry->GetnDim(), iChar, iPeriodic, nPeriodic = 0, VTK_Type, nMarker_;
-  double *center, *angles, *transl;
+  su2double *center, *angles, *transl;
   ofstream output_file;
   ifstream input_file;
   string Grid_Marker, text_line, Marker_Tag, str;
@@ -180,7 +180,7 @@ void COutput::SetSU2_MeshASCII(CConfig *config, CGeometry *geometry) {
                 bound_line >> vnodes_triangle[0]; bound_line >> vnodes_triangle[1]; bound_line >> vnodes_triangle[2];
                 output_file << "\t" << vnodes_triangle[0] << "\t" << vnodes_triangle[1] << "\t" << vnodes_triangle[2] << endl;
                 break;
-              case RECTANGLE:
+              case QUADRILATERAL:
                 bound_line >> vnodes_quad[0]; bound_line >> vnodes_quad[1]; bound_line >> vnodes_quad[2]; bound_line >> vnodes_quad[3];
                 output_file << "\t" << vnodes_quad[0] << "\t" << vnodes_quad[1] << "\t" << vnodes_quad[2] << "\t" << vnodes_quad[3] << endl;
                 break;

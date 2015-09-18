@@ -2,7 +2,7 @@
  * \file variable_template.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios
- * \version 3.2.9 "eagle"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -33,7 +33,7 @@
 
 CTemplateVariable::CTemplateVariable(void) : CVariable() { }
 
-CTemplateVariable::CTemplateVariable(double val_Template, unsigned short val_nDim, 
+CTemplateVariable::CTemplateVariable(su2double val_Template, unsigned short val_nDim, 
 																		 unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) { }
 
 CTemplateVariable::~CTemplateVariable(void) { }

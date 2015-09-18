@@ -2,7 +2,7 @@
  * \file integration_structure.inl
  * \brief In-Line subroutines of the <i>integration_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 3.2.9 "eagle"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -31,7 +31,7 @@
 
 #pragma once
 
-inline double CIntegration::GetCauchy_Value(void) { return Cauchy_Value; }
+inline su2double CIntegration::GetCauchy_Value(void) { return Cauchy_Value; }
 
 inline bool CIntegration::GetConvergence(void) { return Convergence; }
 
@@ -52,7 +52,7 @@ inline void CIntegration::MultiGrid_Cycle(CGeometry ***geometry, CSolver ****sol
 										
 inline void CIntegration::NonDimensional_Parameters(CGeometry **geometry, CSolver ***solver_container, CNumerics ****numerics_container, 
 																											CConfig *config, unsigned short FinestMesh, unsigned short RunTime_EqSystem, unsigned long Iteration, 
-																											double *monitor) { }
+																											su2double *monitor) { }
 	
 inline void CIntegration::SetProlongated_Correction(CSolver *sol_fine, CGeometry *geo_fine, CConfig *config, unsigned short iMesh) { }
 
@@ -80,7 +80,11 @@ inline void CIntegration::SingleGrid_Iteration(CGeometry ***geometry, CSolver **
 inline void CIntegration::Structural_Iteration(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container, 
 											  CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone) { }
 
+inline void CIntegration::Structural_Iteration_FEM(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container, 
+											  CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone) { }
+
+
 inline void CIntegration::SetPotential_Solver(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container, 
                                               CConfig **config, unsigned short RunTime_EqSystem, unsigned short iMesh, unsigned short iZone) { }
                                               
-inline void CIntegration::Smooth_Solution(unsigned short RunTime_EqSystem, CSolver *solver, CGeometry *geometry, unsigned short val_nSmooth, double val_smooth_coeff, CConfig *config) { }
+inline void CIntegration::Smooth_Solution(unsigned short RunTime_EqSystem, CSolver *solver, CGeometry *geometry, unsigned short val_nSmooth, su2double val_smooth_coeff, CConfig *config) { }

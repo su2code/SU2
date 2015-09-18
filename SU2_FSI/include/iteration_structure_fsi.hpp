@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines used by SU2_CFD.
  *        The subroutines and functions are in the <i>definition_structure.cpp</i> file.
  * \author R. Sanchez
- * \version 3.2.9 "eagle"
+ * \version 4.0.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -30,15 +30,16 @@
 
 #pragma once
 
-#ifdef HAVE_MPI
-  #include "mpi.h"
-#endif
+#include "../../Common/include/mpi_structure.hpp"
+
 #include <ctime>
 
 #include "../../SU2_CFD/include/solver_structure.hpp"
 #include "../../SU2_CFD/include/integration_structure.hpp"
 #include "../../SU2_CFD/include/output_structure.hpp"
 #include "../../SU2_CFD/include/numerics_structure.hpp"
+#include "../../SU2_CFD/include/transfer_structure.hpp"
+
 #include "../../Common/include/geometry_structure.hpp"
 #include "../../Common/include/grid_movement_structure.hpp"
 #include "../../Common/include/config_structure.hpp"
@@ -63,7 +64,7 @@ using namespace std;
 void FSI_BGS_Iteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
 						  CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
 						  CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox,
-						  unsigned long iFluidIt, unsigned long nFluidIt);
+						  CTransfer*** transfer_container, unsigned long iFluidIt, unsigned long nFluidIt);
 
 /*!
  * \brief CFD Subiteration function for Fluid-Structure Interaction applications.
@@ -102,7 +103,7 @@ void Flow_Update(COutput *output, CIntegration ***integration_container, CGeomet
 
 
 /*!
- * \brief FEA Subiteration function for Fluid-Structure Interaction applications.
+ * \brief FEA Subiteration function for Fluid-Structure Interaction applications (legacy).
  * \author R. Sanchez.
  * \param[in] output - Pointer to the COutput class.
  * \param[in] integration_container - Container vector with all the integration methods.
@@ -120,6 +121,25 @@ void FEA_Subiteration(COutput *output, CIntegration ***integration_container, CG
 						 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox);
 
 /*!
+ * \brief FEM Subiteration function for Fluid-Structure Interaction applications (structural side).
+ * \author R. Sanchez.
+ * \param[in] output - Pointer to the COutput class.
+ * \param[in] integration_container - Container vector with all the integration methods.
+ * \param[in] geometry_container - Geometrical definition of the problem.
+ * \param[in] solver_container - Container vector with all the solutions.
+ * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
+ * \param[in] config_container - Definition of the particular problem.
+ * \param[in] surface_movement - Surface movement classes of the problem.
+ * \param[in] grid_movement - Volume grid movement classes of the problem.
+ * \param[in] FFDBox - FFD FFDBoxes of the problem.
+ * \param[in] ExtIter - Current physical time iteration number.
+ */
+void FEM_Subiteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
+					     CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
+						 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox);
+
+
+/*!
  * \brief Displacement transfer function for Fluid-Structure Interaction applications.
  * \author R. Sanchez.
  * \param[in] output - Pointer to the COutput class.
@@ -135,7 +155,8 @@ void FEA_Subiteration(COutput *output, CIntegration ***integration_container, CG
  */
 void FSI_Disp_Transfer(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
 					     CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
-						 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox);
+						 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox,
+						 CTransfer*** transfer_container);
 
 /*!
  * \brief Load transfer function for Fluid-Structure Interaction applications.
@@ -154,11 +175,11 @@ void FSI_Disp_Transfer(COutput *output, CIntegration ***integration_container, C
 void FSI_Load_Transfer(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
 					     CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
 						 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox,
-						 unsigned long ExtIter);
+						 CTransfer*** transfer_container, unsigned long ExtIter);
 
 
 /*!
- * \brief FEA update function for Fluid-Structure Interaction applications.
+ * \brief FEA update function for Fluid-Structure Interaction applications (legacy).
  * \param[in] output - Pointer to the COutput class.
  * \param[in] integration_container - Container vector with all the integration methods.
  * \param[in] geometry_container - Geometrical definition of the problem.
@@ -168,6 +189,18 @@ void FSI_Load_Transfer(COutput *output, CIntegration ***integration_container, C
  */
 void FEA_Update(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
 				   CSolver ****solver_container, CConfig **config_container, unsigned long ExtIter);
+
+/*!
+ * \brief FEM update function for Fluid-Structure Interaction applications.
+ * \param[in] output - Pointer to the COutput class.
+ * \param[in] integration_container - Container vector with all the integration methods.
+ * \param[in] geometry_container - Geometrical definition of the problem.
+ * \param[in] solver_container - Container vector with all the solutions.
+ * \param[in] config_container - Definition of the particular problem.
+ * \param[in] ExtIter - Current physical time iteration number.
+ */
+void FEM_Update(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
+				   CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container, unsigned long ExtIter);
 
 
 /*!

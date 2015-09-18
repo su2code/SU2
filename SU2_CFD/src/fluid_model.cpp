@@ -2,7 +2,7 @@
  * fluid_model.cpp
  * \brief Source of the main thermo-physical subroutines of the SU2 solvers.
  * \author S.Vitale, M.Pini, G.Gori, A.Guardone, P.Colonna
- * \version 3.2.9 "eagle"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).

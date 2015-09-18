@@ -2,7 +2,7 @@
  * \file numerics_linearized_mean.cpp
  * \brief This file contains all the convective term discretization.
  * \author F. Palacios
- * \version 3.2.9 "eagle"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -40,23 +40,23 @@ CCentJST_LinFlow::CCentJST_LinFlow(unsigned short val_nDim, unsigned short val_n
 	Param_p = 0.3;
 	Param_Kappa_4 = config->GetKappa_4th_LinFlow();
   
-	Diff_DeltaU = new double [nVar];
-	Diff_Lapl = new double [nVar];
-	Und_Lapl_i = new double [nVar];
-	Und_Lapl_j = new double [nVar];
-	Velocity_i = new double [nDim];
-	Velocity_j = new double [nDim];
-	MeanVelocity = new double [nDim];
-	MeanDeltaVel = new double [nDim];
-	MeanJacobian = new double* [nVar];
+	Diff_DeltaU = new su2double [nVar];
+	Diff_Lapl = new su2double [nVar];
+	Und_Lapl_i = new su2double [nVar];
+	Und_Lapl_j = new su2double [nVar];
+	Velocity_i = new su2double [nDim];
+	Velocity_j = new su2double [nDim];
+	MeanVelocity = new su2double [nDim];
+	MeanDeltaVel = new su2double [nDim];
+	MeanJacobian = new su2double* [nVar];
 	for (iVar = 0; iVar < nVar; iVar++)
-		MeanJacobian[iVar] = new double [nVar];
-	Jacobian_i = new double* [nVar];
+		MeanJacobian[iVar] = new su2double [nVar];
+	Jacobian_i = new su2double* [nVar];
 	for (iVar = 0; iVar < nVar; iVar++)
-		Jacobian_i[iVar] = new double [nVar];
-	Jacobian_j = new double* [nVar];
+		Jacobian_i[iVar] = new su2double [nVar];
+	Jacobian_j = new su2double* [nVar];
 	for (iVar = 0; iVar < nVar; iVar++)
-		Jacobian_j[iVar] = new double [nVar];
+		Jacobian_j[iVar] = new su2double [nVar];
 }
 
 CCentJST_LinFlow::~CCentJST_LinFlow(void) {
@@ -80,8 +80,8 @@ CCentJST_LinFlow::~CCentJST_LinFlow(void) {
 	delete [] Jacobian_j;
 }
 
-void CCentJST_LinFlow::ComputeResidual (double *val_resconv, double *val_resvisc, double **val_Jacobian_i,
-                                    double **val_Jacobian_j, CConfig *config) {
+void CCentJST_LinFlow::ComputeResidual (su2double *val_resconv, su2double *val_resvisc, su2double **val_Jacobian_i,
+                                    su2double **val_Jacobian_j, CConfig *config) {
   
 	/*--- Mean Values of the linealized variables ---*/
 	MeanDeltaRho =  0.5*(DeltaU_i[0]+DeltaU_j[0]);
@@ -153,7 +153,7 @@ void CCentJST_LinFlow::ComputeResidual (double *val_resconv, double *val_resvisc
 	Phi_j = pow(0.5*max(0.0,(Lambda_j - MeanLambda)/(MeanLambda)), Param_p);
 	StretchingFactor = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j);
   
-	sc4 = 9.0/(double(Neighbor_i*(1+Neighbor_i))) + 9.0/(double(Neighbor_j*(1+Neighbor_j)));
+	sc4 = 9.0/(su2double(Neighbor_i*(1+Neighbor_i))) + 9.0/(su2double(Neighbor_j*(1+Neighbor_j)));
   
 	Epsilon_4 = Param_Kappa_4*sc4;
   
@@ -172,20 +172,20 @@ CCentLax_LinFlow::CCentLax_LinFlow(unsigned short val_nDim, unsigned short val_n
 	Param_p = 0.3;
 	Param_Kappa_0 = config->GetKappa_1st_LinFlow();
   
-	Diff_DeltaU = new double [nVar];
-	Velocity_i = new double [nDim];
-	Velocity_j = new double [nDim];
-	MeanVelocity = new double [nDim];
-	MeanDeltaVel = new double [nDim];
-	MeanJacobian = new double* [nVar];
+	Diff_DeltaU = new su2double [nVar];
+	Velocity_i = new su2double [nDim];
+	Velocity_j = new su2double [nDim];
+	MeanVelocity = new su2double [nDim];
+	MeanDeltaVel = new su2double [nDim];
+	MeanJacobian = new su2double* [nVar];
 	for (iVar = 0; iVar < nVar; iVar++)
-		MeanJacobian[iVar] = new double [nVar];
-	Jacobian_i = new double* [nVar];
+		MeanJacobian[iVar] = new su2double [nVar];
+	Jacobian_i = new su2double* [nVar];
 	for (iVar = 0; iVar < nVar; iVar++)
-		Jacobian_i[iVar] = new double [nVar];
-	Jacobian_j = new double* [nVar];
+		Jacobian_i[iVar] = new su2double [nVar];
+	Jacobian_j = new su2double* [nVar];
 	for (iVar = 0; iVar < nVar; iVar++)
-		Jacobian_j[iVar] = new double [nVar];
+		Jacobian_j[iVar] = new su2double [nVar];
 }
 
 CCentLax_LinFlow::~CCentLax_LinFlow(void) {
@@ -207,8 +207,8 @@ CCentLax_LinFlow::~CCentLax_LinFlow(void) {
 	delete [] Jacobian_j;
 }
 
-void CCentLax_LinFlow::ComputeResidual (double *val_resconv, double *val_resvisc, double **val_Jacobian_i,
-                                    double **val_Jacobian_j, CConfig *config) {
+void CCentLax_LinFlow::ComputeResidual (su2double *val_resconv, su2double *val_resvisc, su2double **val_Jacobian_i,
+                                    su2double **val_Jacobian_j, CConfig *config) {
   
 	/*--- Mean Values of the linealized variables ---*/
 	MeanDeltaRho =  0.5*(DeltaU_i[0]+DeltaU_j[0]);
@@ -278,8 +278,8 @@ void CCentLax_LinFlow::ComputeResidual (double *val_resconv, double *val_resvisc
 	Phi_j = pow(Lambda_j/(4.0*MeanLambda), Param_p);
 	StretchingFactor = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j);
   
-	sc2 = 3.0*(double(Neighbor_i)+double(Neighbor_j))/(double(Neighbor_i)*double(Neighbor_j));
-	Epsilon_i = Param_Kappa_0*sc2*double(nDim)/3.0;
+	sc2 = 3.0*(su2double(Neighbor_i)+su2double(Neighbor_j))/(su2double(Neighbor_i)*su2double(Neighbor_j));
+	Epsilon_i = Param_Kappa_0*sc2*su2double(nDim)/3.0;
   
 	/*--- Evaluate artificial dissipation ---*/
 	for (iVar = 0; iVar < nVar; iVar++)

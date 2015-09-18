@@ -2,7 +2,7 @@
  * \file variable_direct_poisson.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios
- * \version 3.2.9 "eagle"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -38,7 +38,7 @@ CPotentialVariable::CPotentialVariable(void) : CVariable() {
   
 }
 
-CPotentialVariable::CPotentialVariable(double val_potential,
+CPotentialVariable::CPotentialVariable(su2double val_potential,
                                        unsigned short val_nDim,
                                        unsigned short val_nvar,
                                        CConfig *config) : CVariable(val_nDim,
@@ -46,15 +46,15 @@ CPotentialVariable::CPotentialVariable(double val_potential,
                                                                     config) {
 	unsigned short iVar;
   
-	Residual_Old = new double [nVar];
-	Residual_Sum = new double [nVar];
+	Residual_Old = new su2double [nVar];
+	Residual_Sum = new su2double [nVar];
   
 	/*--- Initialization of variables ---*/
 	for (iVar = 0; iVar< nVar; iVar++) {
 		Solution[iVar] = val_potential;
 		Solution_Old[iVar] = val_potential;
 	}
-	Charge_Density = new double [2];
+	Charge_Density = new su2double [2];
   
 }
 

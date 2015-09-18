@@ -1,8 +1,8 @@
 /*!
  * \file output_cgns.cpp
  * \brief Main subroutines for output solver information
- * \author T. Economon
- * \version 3.2.9 "eagle"
+ * \author T. Economon, M. Colonno
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -105,10 +105,10 @@ void COutput::SetCGNS_Coordinates(CConfig *config, CGeometry *geometry, unsigned
     
 		cgns_err = cg_open((char *)results_file.str().c_str(), CG_MODE_WRITE, &cgns_file);
 
-		element_dims = geometry->GetnDim();		// Currently (release 3.2.9 "eagle") only all-2D or all-3D zones permitted
+		element_dims = geometry->GetnDim();		// Currently (release 4.0.1 "Cardinal") only all-2D or all-3D zones permitted
 		physical_dims = element_dims;
 
-    /*--- write CGNS base data (one base assumed as of version 3.2.9 "eagle") ---*/
+    /*--- write CGNS base data (one base assumed as of version 4.0.1 "Cardinal") ---*/
 		cgns_err = cg_base_write(cgns_file,"SU2 Base", element_dims, physical_dims, &cgns_base_results);
 		if (cgns_err) cg_error_print();
 
@@ -180,7 +180,7 @@ void COutput::SetCGNS_Connectivity(CConfig *config, CGeometry *geometry, unsigne
 	string base_file, buffer, elements_name;
 	stringstream name, results_file;
 	bool unsteady = config->GetUnsteady_Simulation();
-	cgsize_t isize[3][1], elem_start, elem_end, N;
+	cgsize_t isize[3][1], elem_start, elem_end;
   
 	/*--- Create CGNS base file name ---*/
 	base_file = config->GetFlow_FileName();
@@ -212,7 +212,7 @@ void COutput::SetCGNS_Connectivity(CConfig *config, CGeometry *geometry, unsigne
 		element_dims = geometry->GetnDim();		// Currently (release 2.0) only all-2D or all-3D zones permitted
 		physical_dims = element_dims;
     
-		/*--- write CGNS base data (one base assumed as of version 3.2.9 "eagle") ---*/
+		/*--- write CGNS base data (one base assumed as of version 4.0.1 "Cardinal") ---*/
 		cgns_err = cg_base_write(cgns_file,"SU2 Base", element_dims, physical_dims, &cgns_base);
 		if (cgns_err) cg_error_print();
     
@@ -242,7 +242,7 @@ void COutput::SetCGNS_Connectivity(CConfig *config, CGeometry *geometry, unsigne
 		else cgns_err = cg_simulation_type_write(cgns_file, cgns_base, NonTimeAccurate);
 		if (cgns_err) cg_error_print();
     
-		cgns_err = cg_descriptor_write("Solver Information","SU2 version 3.2.9 \"eagle\"");
+		cgns_err = cg_descriptor_write("Solver Information","SU2 version 4.0.1 \"Cardinal\"");
 		if (cgns_err) cg_error_print();
 		
 		isize[0][0] = (cgsize_t)geometry->GetGlobal_nPointDomain(); //;				// vertex size
@@ -266,38 +266,37 @@ void COutput::SetCGNS_Connectivity(CConfig *config, CGeometry *geometry, unsigne
 		
     if (nGlobal_Tria > 0) {
 			elem_start = 1; elem_end = (int)nGlobal_Tria;
-      N = (int)nGlobal_Tria*N_POINTS_TRIANGLE;
 			cgns_err = cg_section_write(cgns_file, cgns_base, cgns_zone,
                                   "Triangle Elements", TRI_3, elem_start, elem_end,
                                   0,(cgsize_t *)Conn_Tria, &cgns_section);
     }
 		if (nGlobal_Quad > 0) {
-			elem_start = 1; elem_end = (int)nGlobal_Quad; N = (int)nGlobal_Quad*N_POINTS_QUADRILATERAL;
+			elem_start = 1; elem_end = (int)nGlobal_Quad;
 			cgns_err = cg_section_write(cgns_file, cgns_base, cgns_zone,"Quadrilateral Elements", QUAD_4,
                                   elem_start, elem_end,0,(cgsize_t *)Conn_Quad, &cgns_section);
 		}
 		if (nGlobal_Tetr > 0) {
-			elem_start = 1; elem_end = (int)nGlobal_Tetr; N = (int)nGlobal_Tetr*N_POINTS_TETRAHEDRON;
+			elem_start = 1; elem_end = (int)nGlobal_Tetr;
 			cgns_err = cg_section_write(cgns_file, cgns_base, cgns_zone,"Tetrahedral Elements", TETRA_4,
                                   elem_start, elem_end,0,(cgsize_t *)Conn_Tetr, &cgns_section);
 		}
 		if (nGlobal_Hexa > 0) {
-			elem_start = 1; elem_end = (int)nGlobal_Hexa; N = (int)nGlobal_Hexa*N_POINTS_HEXAHEDRON;
+			elem_start = 1; elem_end = (int)nGlobal_Hexa;
 			cgns_err = cg_section_write(cgns_file, cgns_base, cgns_zone,"Hexahedral Elements", HEXA_8,
                                   elem_start, elem_end,0,(cgsize_t *)Conn_Hexa, &cgns_section);
 		}
 		if (nGlobal_Pyra > 0) {
-			elem_start = 1; elem_end = (int)nGlobal_Pyra; N = (int)nGlobal_Pyra*N_POINTS_PYRAMID;
+			elem_start = 1; elem_end = (int)nGlobal_Pyra;
 			cgns_err = cg_section_write(cgns_file, cgns_base, cgns_zone,"Pyramid Elements", PYRA_5,
                                   elem_start, elem_end,0,(cgsize_t *)Conn_Pyra, &cgns_section);
 		}
 		if (nGlobal_Pris > 0) {
-			elem_start = 1; elem_end = (int)nGlobal_Pris; N = (int)nGlobal_Pris*N_POINTS_PRISM;
+			elem_start = 1; elem_end = (int)nGlobal_Pris;
 			cgns_err = cg_section_write(cgns_file, cgns_base, cgns_zone,"Prism Elements", PENTA_6,
                                   elem_start, elem_end,0,(cgsize_t *)Conn_Pris, &cgns_section);
 		}
 		if (nGlobal_Line > 0) {
-			elem_start = 1; elem_end = (int)nGlobal_Line; N = (int)nGlobal_Line*N_POINTS_LINE;
+			elem_start = 1; elem_end = (int)nGlobal_Line;
 			cgns_err = cg_section_write(cgns_file, cgns_base, cgns_zone,"Line Elements", BAR_2,
                                   elem_start, elem_end,0,(cgsize_t *)Conn_Line, &cgns_section);
 		}
@@ -322,12 +321,12 @@ void COutput::SetCGNS_Solution(CConfig *config, CGeometry *geometry, unsigned sh
 #ifdef HAVE_CGNS
   
 	/*--- local CGNS variables ---*/
-	int cgns_file, cgns_flow, cgns_field, element_dims, physical_dims, cgns_err;
+	int cgns_file, cgns_flow, cgns_field, cgns_err;
+//  int element_dims;
 	unsigned long jVar, iVar, iExtIter = config->GetExtIter();
 	string base_file, buffer, elements_name;
 	stringstream name, results_file;
 	bool unsteady = config->GetUnsteady_Simulation();
-	cgsize_t isize[3][1];
   
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   
@@ -350,11 +349,6 @@ void COutput::SetCGNS_Solution(CConfig *config, CGeometry *geometry, unsigned sh
 		if ((int)iExtIter >= 10000)							results_file << iExtIter;
 		results_file << ".cgns";
 	}
-		
-		isize[0][0] = (cgsize_t)nGlobal_Poin;				// vertex size
-		isize[1][0] = (cgsize_t)nGlobal_Elem;				// cell size
-		isize[2][0] = 0;						// boundary vertex size (zero if elements not sorted)
-    
     
 		if (!unsteady) {
       
@@ -362,8 +356,7 @@ void COutput::SetCGNS_Solution(CConfig *config, CGeometry *geometry, unsigned sh
       cgns_err = cg_open((char *)base_file.c_str(), CG_MODE_MODIFY, &cgns_file);
       if (cgns_err) cg_error_print();
       
-      element_dims = geometry->GetnDim();		// Currently (release 2.0) only all-2D or all-3D zones permitted
-      physical_dims = element_dims;
+//      element_dims = geometry->GetnDim();		// Currently (release 2.0) only all-2D or all-3D zones permitted
       
       /*--- write CGNS descriptor data ---*/
       cgns_err = cg_goto(cgns_file, cgns_base,"end");
@@ -388,16 +381,11 @@ void COutput::SetCGNS_Solution(CConfig *config, CGeometry *geometry, unsigned sh
     
 		cgns_err = cg_open((char *)results_file.str().c_str(), CG_MODE_MODIFY, &cgns_file);
     
-		element_dims = geometry->GetnDim();		// Currently (release 2.0) only all-2D or all-3D zones permitted
-		physical_dims = element_dims;
-    
-//		/*--- write CGNS base data (one base assumed as of version 3.2.9 "eagle") ---*/
+//		element_dims = geometry->GetnDim();		// Currently (release 2.0) only all-2D or all-3D zones permitted
+//    
+//		/*--- write CGNS base data (one base assumed as of version 4.0.1 "Cardinal") ---*/
 //		cgns_err = cg_base_write(cgns_file,"SU2 Base", element_dims, physical_dims, &cgns_base);
 //		if (cgns_err) cg_error_print();
-    
-		isize[0][0] = (cgsize_t)nGlobal_Poin;				// vertex size
-		isize[1][0] = (cgsize_t)nGlobal_Elem;				// cell size
-		isize[2][0] = 0;						// boundary vertex size (zero if elements not sorted)
     
 //		/*--- write CGNS zone data ---*/
 //		cgns_err = cg_zone_write(cgns_file, cgns_base,"SU2 Zone", isize[0],Unstructured, &cgns_zone);

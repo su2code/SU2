@@ -2,7 +2,7 @@
  * fluid_model_ppr.cpp
  * \brief Source of the Peng-Robinson model.
  * \author S. Vitale, G. Gori, M. Pini, A. Guardone, P. Colonna
- * \version 3.2.9 "eagle"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -36,7 +36,7 @@ CPengRobinson::CPengRobinson() : CIdealGas() {
 	TstarCrit = 0.0;
 }
 
-CPengRobinson::CPengRobinson(double gamma, double R, double Pstar, double Tstar, double w) : CIdealGas(gamma, R) {
+CPengRobinson::CPengRobinson(su2double gamma, su2double R, su2double Pstar, su2double Tstar, su2double w) : CIdealGas(gamma, R) {
 
 	a = 0.45724*Gas_Constant*Gas_Constant*Tstar*Tstar/Pstar;
 	b = 0.0778*Gas_Constant*Tstar/Pstar;
@@ -54,14 +54,14 @@ CPengRobinson::CPengRobinson(double gamma, double R, double Pstar, double Tstar,
 CPengRobinson::~CPengRobinson(void) { }
 
 
-double CPengRobinson::alpha2(double T) {
+su2double CPengRobinson::alpha2(su2double T) {
 
 	return ( 1 + k*(1 - sqrt(T/TstarCrit)))*( 1 + k*(1 - sqrt(T/TstarCrit)));
 }
 
-double CPengRobinson::T_v_h(double v, double h) {
-	double fv, A, B, C, T, d;
-	double sqrt2=sqrt(2.0);
+su2double CPengRobinson::T_v_h(su2double v, su2double h) {
+	su2double fv, A, B, C, T, d;
+	su2double sqrt2=sqrt(2.0);
 
 	d = (v*v+2*b*v-b*b);
 	fv = atanh( b*sqrt2 / (v + b));
@@ -75,10 +75,10 @@ double CPengRobinson::T_v_h(double v, double h) {
 	return T*T;
 }
 
-void CPengRobinson::SetTDState_rhoe (double rho, double e ) {
+void CPengRobinson::SetTDState_rhoe (su2double rho, su2double e ) {
 
-    double DpDd_T, DpDT_d, DeDd_T, Cv;
-    double A, B, C, sqrt2, fv, a2T, rho2;
+    su2double DpDd_T, DpDT_d, DeDd_T, Cv;
+    su2double A, B, C, sqrt2, fv, a2T, rho2;
 
     Density = rho;
     StaticEnergy = e;
@@ -125,11 +125,11 @@ void CPengRobinson::SetTDState_rhoe (double rho, double e ) {
 
 }
 
-void CPengRobinson::SetTDState_PT (double P, double T ) {
-	double toll= 1e-6;
-	double A, B, Z, DZ=1.0, F, F1;
-	double rho, fv, e;
-	double sqrt2=sqrt(2);
+void CPengRobinson::SetTDState_PT (su2double P, su2double T ) {
+	su2double toll= 1e-6;
+	su2double A, B, Z, DZ=1.0, F, F1;
+	su2double rho, fv, e;
+	su2double sqrt2=sqrt(2);
 	unsigned short nmax = 20, count=0;
 
 	A= a*alpha2(T)*P/(T*Gas_Constant)/(T*Gas_Constant);
@@ -162,7 +162,7 @@ void CPengRobinson::SetTDState_PT (double P, double T ) {
 	SetTDState_rhoe(rho, e);
 }
 
-void CPengRobinson::SetTDState_Prho (double P, double rho ) {
+void CPengRobinson::SetTDState_Prho (su2double P, su2double rho ) {
 
     SetEnergy_Prho(P, rho);
 
@@ -170,13 +170,13 @@ void CPengRobinson::SetTDState_Prho (double P, double rho ) {
 
 }
 
-void CPengRobinson::SetTDState_hs (double h, double s ) {
+void CPengRobinson::SetTDState_hs (su2double h, su2double s ) {
 
-	double T, fv, sqrt2=sqrt(2.0), A;
-	double f, v;
-	double x1, x2, xmid, dx, fx1, fx2, fmid, rtb;
-	double toll = 1e-9, FACTOR=0.2;
-	double cons_s, cons_h;
+	su2double T, fv, sqrt2=sqrt(2.0), A;
+	su2double f, v;
+	su2double x1, x2, xmid, dx, fx1, fx2, fmid, rtb;
+	su2double toll = 1e-9, FACTOR=0.2;
+	su2double cons_s, cons_h;
 	unsigned short countrtb=0, NTRY=10, ITMAX=100;
 
 	A = Gas_Constant / Gamma_Minus_One;
@@ -274,10 +274,10 @@ void CPengRobinson::SetTDState_hs (double h, double s ) {
 }
 
 
-void CPengRobinson::SetEnergy_Prho (double P, double rho) {
+void CPengRobinson::SetEnergy_Prho (su2double P, su2double rho) {
 
-    double ad;
-    double A, B, C, T, vb1, vb2;
+    su2double ad;
+    su2double A, B, C, T, vb1, vb2;
     vb1 = (1/rho -b);
     vb2 = (1/rho/rho + 2*b/rho - b*b);
 
@@ -296,8 +296,8 @@ void CPengRobinson::SetEnergy_Prho (double P, double rho) {
 
 }
 
-void CPengRobinson::SetTDState_rhoT (double rho, double T) {
-	double fv, e;
+void CPengRobinson::SetTDState_rhoT (su2double rho, su2double T) {
+	su2double fv, e;
 
 	fv = atanh( rho * b * sqrt(2)/(1 + rho*b));
 	e = T*Gas_Constant/Gamma_Minus_One - a*(k+1)*sqrt( alpha2(T) ) / ( b*sqrt(2) ) * fv;

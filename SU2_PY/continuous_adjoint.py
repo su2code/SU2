@@ -1,9 +1,9 @@
 #!/usr/bin/env python 
 
 ## \file continuous_adjoint.py
-#  \brief Python script for doing the continuous adjoint computation using the SU2 suite.
+#  \brief Python script for continuous adjoint computation using the SU2 suite.
 #  \author F. Palacios, T. Economon, T. Lukaczyk
-#  \version 3.2.9 "eagle"
+#  \version 4.0.1 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -138,7 +138,7 @@ def continuous_design( filename           ,
         state.FILES.MESH = config.MESH_FILENAME    
     
     # Adjoint Gradient
-    grads = SU2.eval.grad( ADJ_NAME, 'ADJOINT', config, state )
+    grads = SU2.eval.grad( ADJ_NAME, 'CONTINUOUS_ADJOINT', config, state )
     
     return state
 

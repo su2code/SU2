@@ -2,7 +2,7 @@
  * fluid_model_pvdw.cpp
  * \brief Source of the Polytropic Van der Waals model.
  * \author S. Vitale, G. Gori, M. Pini, A. Guardone, P. Colonna
- * \version 3.2.9 "eagle"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -37,7 +37,7 @@ CVanDerWaalsGas::CVanDerWaalsGas() : CIdealGas() {
 }
 
 
-CVanDerWaalsGas::CVanDerWaalsGas(double gamma, double R, double Pstar, double Tstar): CIdealGas(gamma, R) {
+CVanDerWaalsGas::CVanDerWaalsGas(su2double gamma, su2double R, su2double Pstar, su2double Tstar): CIdealGas(gamma, R) {
     a = 27.0/64.0*Gas_Constant*Gas_Constant*Tstar*Tstar/Pstar;
 	b = 1.0/8.0*Gas_Constant*Tstar/Pstar;
 	Zed = 1.0;
@@ -48,7 +48,7 @@ CVanDerWaalsGas::CVanDerWaalsGas(double gamma, double R, double Pstar, double Ts
 CVanDerWaalsGas::~CVanDerWaalsGas(void) { }
 
 
-void CVanDerWaalsGas::SetTDState_rhoe (double rho, double e ) {
+void CVanDerWaalsGas::SetTDState_rhoe (su2double rho, su2double e ) {
 	Density = rho;
 	StaticEnergy = e;
 
@@ -68,10 +68,10 @@ void CVanDerWaalsGas::SetTDState_rhoe (double rho, double e ) {
 }
 
 
-void CVanDerWaalsGas::SetTDState_PT (double P, double T ) {
-	double toll= 1e-5;
+void CVanDerWaalsGas::SetTDState_PT (su2double P, su2double T ) {
+	su2double toll= 1e-5;
 	unsigned short nmax = 20, count=0;
-	double A, B, Z, DZ=1.0, F, F1;
+	su2double A, B, Z, DZ=1.0, F, F1;
 	A= a*P/(T*Gas_Constant)/(T*Gas_Constant);
 	B= b*P/(T*Gas_Constant);
 
@@ -103,14 +103,14 @@ void CVanDerWaalsGas::SetTDState_PT (double P, double T ) {
 
 	Density = P/(Zed*Gas_Constant*T);
 
-    double e = T*Gas_Constant/Gamma_Minus_One - a*Density;
+    su2double e = T*Gas_Constant/Gamma_Minus_One - a*Density;
 	SetTDState_rhoe(Density, e);
 
 //	cout <<"After  "<< Pressure <<" "<< Temperature << endl;
 
 }
 
-void CVanDerWaalsGas::SetTDState_Prho (double P, double rho ) {
+void CVanDerWaalsGas::SetTDState_Prho (su2double P, su2double rho ) {
 
 	SetEnergy_Prho(P, rho);
 
@@ -118,13 +118,13 @@ void CVanDerWaalsGas::SetTDState_Prho (double P, double rho ) {
 
 }
 
-void CVanDerWaalsGas::SetTDState_hs (double h, double s ) {
+void CVanDerWaalsGas::SetTDState_hs (su2double h, su2double s ) {
 
-    double v, T, rho, f, fmid, rtb;
-    double x1,x2,xmid, dx, fx1, fx2;
-    double toll = 1e-5, FACTOR=0.2;
+    su2double v, T, rho, f, fmid, rtb;
+    su2double x1,x2,xmid, dx, fx1, fx2;
+    su2double toll = 1e-5, FACTOR=0.2;
     unsigned short count=0, NTRY=10, ITMAX=100;
-    double cons_s, cons_h;
+    su2double cons_s, cons_h;
 
 //    cout <<"Before  "<< h <<" "<< s << endl;
 
@@ -210,15 +210,15 @@ void CVanDerWaalsGas::SetTDState_hs (double h, double s ) {
 
 }
 
-void CVanDerWaalsGas::SetEnergy_Prho (double P, double rho ) {
-	double T = (P+rho*rho*a)*(1-rho*b)/(rho*Gas_Constant);
+void CVanDerWaalsGas::SetEnergy_Prho (su2double P, su2double rho ) {
+	su2double T = (P+rho*rho*a)*(1-rho*b)/(rho*Gas_Constant);
 	StaticEnergy = T*Gas_Constant/Gamma_Minus_One - rho*a;
 
 }
 
-void CVanDerWaalsGas::SetTDState_rhoT (double rho, double T) {
+void CVanDerWaalsGas::SetTDState_rhoT (su2double rho, su2double T) {
 
-	double e = T*Gas_Constant/Gamma_Minus_One - a*rho;
+	su2double e = T*Gas_Constant/Gamma_Minus_One - a*rho;
 	SetTDState_rhoe(rho, e);
 
 }

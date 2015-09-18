@@ -2,7 +2,7 @@
  * \file primal_grid_structure.inl
  * \brief In-Line subroutines of the <i>primal_grid_structure.hpp</i> file.
  * \author F. Palacios
- * \version 3.2.9 "eagle"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -45,9 +45,9 @@ inline void CPrimalGrid::SetNeighbor_Elements(unsigned long val_elem, unsigned s
 
 inline long CPrimalGrid::GetNeighbor_Elements(unsigned short val_face) { return Neighbor_Elements[val_face]; }
 
-inline double CPrimalGrid::GetCG(unsigned short val_dim) { return Coord_CG[val_dim]; }
+inline su2double CPrimalGrid::GetCG(unsigned short val_dim) { return Coord_CG[val_dim]; }
 
-inline double CPrimalGrid::GetFaceCG(unsigned short val_face, unsigned short val_dim) { return Coord_FaceElems_CG[val_face][val_dim]; }
+inline su2double CPrimalGrid::GetFaceCG(unsigned short val_face, unsigned short val_dim) { return Coord_FaceElems_CG[val_face][val_dim]; }
 
 inline void CPrimalGrid::SetDivide (bool val_divide) {	Divide = val_divide; }
 
@@ -133,31 +133,31 @@ inline void CTriangle::SetDomainElement(unsigned long val_domainelement) { Domai
 
 inline unsigned long CTriangle::GetDomainElement(void) { return DomainElement; }
 
-inline unsigned short CRectangle::GetFaces(unsigned short val_face, unsigned short val_index) { return Faces[val_face][val_index]; }
+inline unsigned short CQuadrilateral::GetFaces(unsigned short val_face, unsigned short val_index) { return Faces[val_face][val_index]; }
 
-inline unsigned short CRectangle::GetNeighbor_Nodes(unsigned short val_node, unsigned short val_index) { return Neighbor_Nodes[val_node][val_index]; }
+inline unsigned short CQuadrilateral::GetNeighbor_Nodes(unsigned short val_node, unsigned short val_index) { return Neighbor_Nodes[val_node][val_index]; }
 
-inline unsigned short CRectangle::GetnNodesFace(unsigned short val_face) { return nNodesFace[val_face]; }
+inline unsigned short CQuadrilateral::GetnNodesFace(unsigned short val_face) { return nNodesFace[val_face]; }
 
-inline unsigned short CRectangle::GetnNeighbor_Nodes(unsigned short val_node) { return nNeighbor_Nodes[val_node]; }
+inline unsigned short CQuadrilateral::GetnNeighbor_Nodes(unsigned short val_node) { return nNeighbor_Nodes[val_node]; }
 
-inline unsigned long CRectangle::GetNode(unsigned short val_node) { return Nodes[val_node]; }
+inline unsigned long CQuadrilateral::GetNode(unsigned short val_node) { return Nodes[val_node]; }
 
-inline void CRectangle::SetNode(unsigned short val_node, unsigned long val_point) { Nodes[val_node] = val_point; }
+inline void CQuadrilateral::SetNode(unsigned short val_node, unsigned long val_point) { Nodes[val_node] = val_point; }
 
-inline unsigned short CRectangle::GetnNodes(void) { return nNodes; }
+inline unsigned short CQuadrilateral::GetnNodes(void) { return nNodes; }
 
-inline unsigned short CRectangle::GetnFaces(void) { return nFaces; }
+inline unsigned short CQuadrilateral::GetnFaces(void) { return nFaces; }
 
-inline unsigned short CRectangle::GetVTK_Type(void) { return VTK_Type; }
+inline unsigned short CQuadrilateral::GetVTK_Type(void) { return VTK_Type; }
 
-inline unsigned short CRectangle::GetMaxNodesFace(void) { return maxNodesFace; }
+inline unsigned short CQuadrilateral::GetMaxNodesFace(void) { return maxNodesFace; }
 
-inline unsigned short CRectangle::GetnNeighbor_Elements(void) { return nNeighbor_Elements; }
+inline unsigned short CQuadrilateral::GetnNeighbor_Elements(void) { return nNeighbor_Elements; }
 
-inline void CRectangle::SetDomainElement(unsigned long val_domainelement) {	DomainElement = val_domainelement; }
+inline void CQuadrilateral::SetDomainElement(unsigned long val_domainelement) {	DomainElement = val_domainelement; }
 
-inline unsigned long CRectangle::GetDomainElement(void) { return DomainElement; }
+inline unsigned long CQuadrilateral::GetDomainElement(void) { return DomainElement; }
 
 inline unsigned short CTetrahedron::GetFaces(unsigned short val_face, unsigned short val_index) { return Faces[val_face][val_index]; }
 

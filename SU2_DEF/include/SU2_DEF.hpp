@@ -2,8 +2,8 @@
  * \file SU2_DEF.hpp
  * \brief Headers of the main subroutines of the code SU2_DEF.
  *        The subroutines and functions are in the <i>SU2_DEF.cpp</i> file.
- * \author F. Palacios
- * \version 3.2.9 "eagle"
+ * \author F. Palacios, T. Economon
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -32,9 +32,8 @@
 
 #pragma once
 
-#ifdef HAVE_MPI
-  #include "mpi.h"
-#endif
+#include "../../Common/include/mpi_structure.hpp"
+
 #include <cstdlib>
 #include <iostream>
 #include <iomanip>

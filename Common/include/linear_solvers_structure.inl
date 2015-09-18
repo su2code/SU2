@@ -1,8 +1,8 @@
 /*!
  * \file linear_solvers_structure.inl
  * \brief inline subroutines of the <i>linear_solvers_structure.hpp</i> file.
- * \author J. Hicken, F. Palacios
- * \version 3.2.9 "eagle"
+ * \author J. Hicken, F. Palacios, T. Economon
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -29,10 +29,12 @@
 
 #pragma once
 
-inline double CSysSolve::Sign(const double & x, const double & y) const {
+inline su2double CSysSolve::Sign(const su2double & x, const su2double & y) const {
   if (y == 0.0)
     return 0.0;
   else {
-    return (y < 0 ? -fabs(x) : fabs(x));
+//    return (y < 0 ? -fabs(x) : fabs(x));
+    if (y < 0) return -fabs(x);
+    else return fabs(x);
   }
 }

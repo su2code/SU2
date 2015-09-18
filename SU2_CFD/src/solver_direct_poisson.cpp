@@ -2,7 +2,7 @@
  * \file solution_direct_poisson.cpp
  * \brief Main subrotuines for solving direct problems
  * \author F. Palacios
- * \version 3.2.9 "eagle"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -49,41 +49,41 @@ CPoissonSolver::CPoissonSolver(CGeometry *geometry, CConfig *config) : CSolver()
 	nVar =          1;
 	node =          new CVariable*[nPoint];
   
-	Residual = new double[nVar]; Residual_RMS = new double[nVar];
-	Solution = new double[nVar];
-  Residual_Max = new double[nVar];
+	Residual = new su2double[nVar]; Residual_RMS = new su2double[nVar];
+	Solution = new su2double[nVar];
+  Residual_Max = new su2double[nVar];
   
   /*--- Define some structures for locating max residuals ---*/
   
   Point_Max = new unsigned long[nVar];
   for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar] = 0;
-  Point_Max_Coord = new double*[nVar];
+  Point_Max_Coord = new su2double*[nVar];
   for (iVar = 0; iVar < nVar; iVar++) {
-    Point_Max_Coord[iVar] = new double[nDim];
+    Point_Max_Coord[iVar] = new su2double[nDim];
     for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
   }
   
 	/*--- Point to point stiffness matrix ---*/
   
 	if (nDim == 2) {
-		StiffMatrix_Elem = new double* [3];
-		Source_Vector	 = new double [3];
+		StiffMatrix_Elem = new su2double* [3];
+		Source_Vector	 = new su2double [3];
 		for (unsigned short iVar = 0; iVar < 3; iVar++) {
-			StiffMatrix_Elem[iVar] = new double [3];
+			StiffMatrix_Elem[iVar] = new su2double [3];
 		}
 	}
   
 	if (nDim == 3) {
-		StiffMatrix_Elem = new double* [4];
-		Source_Vector	 = new double [4];
+		StiffMatrix_Elem = new su2double* [4];
+		Source_Vector	 = new su2double [4];
 		for (unsigned short iVar = 0; iVar < 4; iVar++) {
-			StiffMatrix_Elem[iVar] = new double [4];
+			StiffMatrix_Elem[iVar] = new su2double [4];
 		}
 	}
   
-	StiffMatrix_Node = new double* [1];
+	StiffMatrix_Node = new su2double* [1];
 	for (unsigned short iVar = 0; iVar < 1; iVar++) {
-		StiffMatrix_Node[iVar] = new double [1];
+		StiffMatrix_Node[iVar] = new su2double [1];
 	}
   
 	/*--- Initialization of the structure of the whole Jacobian ---*/
@@ -98,13 +98,13 @@ CPoissonSolver::CPoissonSolver(CGeometry *geometry, CConfig *config) : CSolver()
 
 	/*--- Computation of gradients by least squares ---*/
   
-	Smatrix = new double* [nDim]; // S matrix := inv(R)*traspose(inv(R))
+	Smatrix = new su2double* [nDim]; // S matrix := inv(R)*traspose(inv(R))
 	for (iDim = 0; iDim < nDim; iDim++)
-		Smatrix[iDim] = new double [nDim];
+		Smatrix[iDim] = new su2double [nDim];
   
-	cvector = new double* [nVar]; // c vector := transpose(WA)*(Wb)
+	cvector = new su2double* [nVar]; // c vector := transpose(WA)*(Wb)
 	for (iVar = 0; iVar < nVar; iVar++)
-		cvector[iVar] = new double [nDim];
+		cvector[iVar] = new su2double [nDim];
   
 	/*--- Always instantiate and initialize the variable to a zero value. ---*/
   
@@ -188,13 +188,13 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
                                      CConfig *config, unsigned short iMesh) {
 //  
 //	unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0, Point_3 = 0;
-//	double a[3], b[3], c[3], d[3], Area_Local, Volume_Local;
-//	//	double Local_Delta_Time;
-//	double **Gradient_0, **Gradient_1, **Gradient_2, **Gradient_3;
-//	double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL, *Coord_3= NULL;;
+//	su2double a[3], b[3], c[3], d[3], Area_Local, Volume_Local;
+//	//	su2double Local_Delta_Time;
+//	su2double **Gradient_0, **Gradient_1, **Gradient_2, **Gradient_3;
+//	su2double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL, *Coord_3= NULL;;
 //	unsigned short iDim;
-//	double  dt;
-//	//	double  dx, u, c;
+//	su2double  dt;
+//	//	su2double  dx, u, c;
 //	bool MacCormack_relaxation = (config->GetMacCormackRelaxation());
 //  
 //	if (nDim == 2) {
@@ -243,7 +243,7 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 //				LinSysRes.AddBlock(Point_1, &Source_Vector[1]);
 //				LinSysRes.AddBlock(Point_2, &Source_Vector[2]);
 //        
-//				if (geometry->elem[iElem]->GetVTK_Type() == RECTANGLE) {
+//				if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) {
 //          
 //					Point_0 = geometry->elem[iElem]->GetNode(3);
 //					Point_1 = geometry->elem[iElem]->GetNode(0);
@@ -349,8 +349,8 @@ void CPoissonSolver::Copy_Zone_Solution(CSolver ***solver1_solution,
                                         CConfig *solver2_config) {
 	unsigned long iPoint;
 	unsigned short iDim;
-	double neg_EFvalue;
-	double *E_field = new double [nDim];
+	su2double neg_EFvalue;
+	su2double *E_field = new su2double [nDim];
   
 	for (iPoint = 0; iPoint < solver1_geometry[MESH_0]->GetnPointDomain(); iPoint++) {
 		for (iDim =0; iDim < nDim; iDim ++) {
@@ -369,7 +369,7 @@ void CPoissonSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_cont
                                      CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
   
 	unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0, Point_3 = 0;
-	double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL, *Coord_3 = NULL;
+	su2double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL, *Coord_3 = NULL;
   
 	if (nDim == 2 ) {
 		for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
@@ -410,7 +410,7 @@ void CPoissonSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_cont
  * \brief Assemble the Global stiffness matrix
  * \author A. Lonkar
  */
-void CPoissonSolver::AddStiffMatrix(double **StiffMatrix_Elem, unsigned long Point_0, unsigned long Point_1, unsigned long Point_2, unsigned long Point_3) {
+void CPoissonSolver::AddStiffMatrix(su2double **StiffMatrix_Elem, unsigned long Point_0, unsigned long Point_1, unsigned long Point_2, unsigned long Point_3) {
   
 	if (nDim == 2 ) {
 		StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][0]; StiffMatrix.AddBlock(Point_0, Point_0, StiffMatrix_Node);

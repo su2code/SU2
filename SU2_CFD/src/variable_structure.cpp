@@ -2,7 +2,7 @@
  * \file variable_structure.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, T. Economon
- * \version 3.2.9 "eagle"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -77,7 +77,7 @@ CVariable::CVariable(unsigned short val_nvar, CConfig *config) {
 	/*--- Allocate the solution array - here it is also possible
 	 to allocate some extra flow variables that do not participate
 	 in the simulation ---*/
-	Solution = new double [nVar];
+	Solution = new su2double [nVar];
 	for (unsigned short iVar = 0; iVar < nVar; iVar++)
 		Solution[iVar] = 0.0;
   
@@ -110,23 +110,23 @@ CVariable::CVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *
 	 which is common for all the problems, here it is also possible 
 	 to allocate some extra flow variables that do not participate 
 	 in the simulation ---*/
-	Solution = new double [nVar];
+	Solution = new su2double [nVar];
 	
 	for (iVar = 0; iVar < nVar; iVar++)
 		Solution[iVar] = 0.0;
 
-	Solution_Old = new double [nVar];
+	Solution_Old = new su2double [nVar];
 	
-	Gradient = new double* [nVar];
+	Gradient = new su2double* [nVar];
 	for (iVar = 0; iVar < nVar; iVar++) {
-		Gradient[iVar] = new double [nDim];
+		Gradient[iVar] = new su2double [nDim];
 		for (iDim = 0; iDim < nDim; iDim ++)
 			Gradient[iVar][iDim] = 0.0;
 	}
 	
 	if (config->GetUnsteady_Simulation() != NO) {
-		Solution_time_n = new double [nVar];
-		Solution_time_n1 = new double [nVar];
+		Solution_time_n = new su2double [nVar];
+		Solution_time_n1 = new su2double [nVar];
 	}
 	
 }
@@ -155,17 +155,17 @@ CVariable::~CVariable(void) {
 
 }
 
-void CVariable::AddUnd_Lapl(double *val_und_lapl) {
+void CVariable::AddUnd_Lapl(su2double *val_und_lapl) {
 	for (unsigned short iVar = 0; iVar < nVar; iVar++)
 		Undivided_Laplacian[iVar] += val_und_lapl[iVar];
 }
 
-void CVariable::SubtractUnd_Lapl(double *val_und_lapl) {
+void CVariable::SubtractUnd_Lapl(su2double *val_und_lapl) {
 	for (unsigned short iVar = 0; iVar < nVar; iVar++)
 		Undivided_Laplacian[iVar] -= val_und_lapl[iVar];
 }
 
-void CVariable::SubtractUnd_Lapl(unsigned short val_var, double val_und_lapl) {
+void CVariable::SubtractUnd_Lapl(unsigned short val_var, su2double val_und_lapl) {
 	Undivided_Laplacian[val_var] -= val_und_lapl;
 }
 
@@ -176,13 +176,13 @@ void CVariable::SetUnd_LaplZero(void) {
   
 }
 
-void CVariable::SetUnd_Lapl(unsigned short val_var, double val_und_lapl) {
+void CVariable::SetUnd_Lapl(unsigned short val_var, su2double val_und_lapl) {
   
 		Undivided_Laplacian[val_var] = val_und_lapl;
   
 }
 
-void CVariable::SetSolution(double *val_solution) {
+void CVariable::SetSolution(su2double *val_solution) {
   
 	for (unsigned short iVar = 0; iVar < nVar; iVar++)
 		Solution[iVar] = val_solution[iVar];
@@ -196,21 +196,21 @@ void CVariable::Set_OldSolution(void) {
   
 }
 
-void CVariable::AddSolution(unsigned short val_var, double val_solution) {
+void CVariable::AddSolution(unsigned short val_var, su2double val_solution) {
   
   Solution[val_var] = Solution_Old[val_var] + val_solution;
   
 }
 
-void CVariable::AddClippedSolution(unsigned short val_var, double val_solution,
-                                   double lowerlimit, double upperlimit) {
+void CVariable::AddClippedSolution(unsigned short val_var, su2double val_solution,
+                                   su2double lowerlimit, su2double upperlimit) {
   
 	Solution[val_var] = min(max((Solution_Old[val_var] + val_solution), lowerlimit), upperlimit);
   
 }
 
-void CVariable::AddConservativeSolution(unsigned short val_var, double val_solution,
-		double val_density, double val_density_old, double lowerlimit, double upperlimit) {
+void CVariable::AddConservativeSolution(unsigned short val_var, su2double val_solution,
+		su2double val_density, su2double val_density_old, su2double lowerlimit, su2double upperlimit) {
   
 	Solution[val_var] = min(max((Solution_Old[val_var]*val_density_old + val_solution)/val_density,
 			lowerlimit), upperlimit);
@@ -238,42 +238,56 @@ void CVariable::Set_Solution_time_n1(void) {
   
 }
 
-void CVariable::AddRes_TruncError(double *val_truncation_error) {
+void CVariable::Set_Solution_time_n(su2double *val_sol) {
+
+  for (unsigned short iVar = 0; iVar < nVar; iVar++)
+    Solution_time_n[iVar] = val_sol[iVar];
+
+}
+
+void CVariable::Set_Solution_time_n1(su2double *val_sol) {
+
+  for (unsigned short iVar = 0; iVar < nVar; iVar++)
+    Solution_time_n1[iVar] = val_sol[iVar];
+
+}
+
+void CVariable::AddRes_TruncError(su2double *val_truncation_error) {
   
 	for (unsigned short iVar = 0; iVar < nVar; iVar++)
 		Res_TruncError[iVar] += val_truncation_error[iVar];
   
 }
 
-void CVariable::SubtractRes_TruncError(double *val_truncation_error) {
+void CVariable::SubtractRes_TruncError(su2double *val_truncation_error) {
   
 	for (unsigned short iVar = 0; iVar < nVar; iVar++)
 		Res_TruncError[iVar] -= val_truncation_error[iVar];
   
 }
 
-void CVariable::SetResidual_Old(double *val_residual_old) {
+void CVariable::SetResidual_Old(su2double *val_residual_old) {
   
 	for (unsigned short iVar = 0; iVar < nVar; iVar++)
 		Residual_Old[iVar] = val_residual_old[iVar];
   
 }
 
-void CVariable::SetSolution_Old(double *val_solution_old) {
+void CVariable::SetSolution_Old(su2double *val_solution_old) {
   
 	for (unsigned short iVar = 0; iVar < nVar; iVar++)
 		Solution_Old[iVar] = val_solution_old[iVar];
   
 }
 
-void CVariable::SetSolution_time_n(double *val_solution_time_n) {
+void CVariable::SetSolution_time_n(su2double *val_solution_time_n) {
 
 	for (unsigned short iVar = 0; iVar < nVar; iVar++)
 		Solution_time_n[iVar] = val_solution_time_n[iVar];
 
 }
 
-void CVariable::AddResidual_Sum(double *val_residual) {
+void CVariable::AddResidual_Sum(su2double *val_residual) {
   
 	for (unsigned short iVar = 0; iVar < nVar; iVar++)
 		Residual_Sum[iVar] += val_residual[iVar];
@@ -300,7 +314,7 @@ void CVariable::SetVelSolutionZero(void) {
   
 }
 
-void CVariable::SetVelSolutionVector(double *val_vector) {
+void CVariable::SetVelSolutionVector(su2double *val_vector) {
   
 	for (unsigned short iDim = 0; iDim < nDim; iDim++)
 		Solution[iDim+1] = val_vector[iDim];
@@ -314,7 +328,7 @@ void CVariable::SetVelSolutionOldZero(void) {
   
 }
 
-void CVariable::SetVelSolutionOldVector(double *val_vector) {
+void CVariable::SetVelSolutionOldVector(su2double *val_vector) {
   
 	for (unsigned short iDim = 0; iDim < nDim; iDim++)
 		Solution_Old[iDim+1] = val_vector[iDim];
@@ -356,7 +370,7 @@ void CVariable::SetAuxVarGradientZero(void) {
   
 }
 
-void CVariable::SetGradient(double **val_gradient) {
+void CVariable::SetGradient(su2double **val_gradient) {
   
 	for (unsigned short iVar = 0; iVar < nVar; iVar++)
 		for (unsigned short iDim = 0; iDim < nDim; iDim++)
@@ -377,14 +391,14 @@ void CVariable::SetVal_ResTruncError_Zero(unsigned short val_var) {
   
 }
 
-void CVariable::GetResidual_Sum(double *val_residual) {
+void CVariable::GetResidual_Sum(su2double *val_residual) {
   
 	for (unsigned short iVar = 0; iVar < nVar; iVar++)
 		val_residual[iVar] = Residual_Sum[iVar];
   
 }
 
-void CVariable::GetResTruncError(double *val_trunc_error) {
+void CVariable::GetResTruncError(su2double *val_trunc_error) {
   
 	for (unsigned short iVar = 0; iVar < nVar; iVar++)
 		val_trunc_error[iVar] = Res_TruncError[iVar];
@@ -393,7 +407,7 @@ void CVariable::GetResTruncError(double *val_trunc_error) {
 
 CBaselineVariable::CBaselineVariable(void) : CVariable() { }
 
-CBaselineVariable::CBaselineVariable(double *val_solution, unsigned short val_nvar, CConfig *config) : CVariable(val_nvar, config) {
+CBaselineVariable::CBaselineVariable(su2double *val_solution, unsigned short val_nvar, CConfig *config) : CVariable(val_nvar, config) {
   
 	for (unsigned short iVar = 0; iVar < nVar; iVar++)
 		Solution[iVar] = val_solution[iVar];

@@ -2,7 +2,7 @@
  * \file vector_structure.inl
  * \brief inline subroutines of the <i>vector_structure.hpp</i> file.
  * \author F. Palacios, J. Hicken
- * \version 3.2.9 "eagle"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -50,6 +50,6 @@ inline unsigned long CSysVector::GetNBlk() const { return nBlk; }
 
 inline unsigned long CSysVector::GetNBlkDomain() const { return nBlkDomain; }
 
-inline double & CSysVector::operator[](const unsigned long & i) { return vec_val[i]; }
+inline su2double & CSysVector::operator[](const unsigned long & i) { return vec_val[i]; }
 
-inline const double & CSysVector::operator[](const unsigned long & i) const { return vec_val[i]; }
+inline const su2double & CSysVector::operator[](const unsigned long & i) const { return vec_val[i]; }

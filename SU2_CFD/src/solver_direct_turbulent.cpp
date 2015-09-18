@@ -2,7 +2,7 @@
  * \file solution_direct_turbulent.cpp
  * \brief Main subrotuines for solving direct problems
  * \author F. Palacios, A. Bueno
- * \version 3.2.9 "eagle"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -64,7 +64,7 @@ CTurbSolver::~CTurbSolver(void) {
 void CTurbSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
   unsigned short iVar, iMarker, MarkerS, MarkerR;
   unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector, nBufferS_Scalar, nBufferR_Scalar;
-  double *Buffer_Receive_U = NULL, *Buffer_Send_U = NULL, *Buffer_Receive_muT = NULL, *Buffer_Send_muT = NULL;
+  su2double *Buffer_Receive_U = NULL, *Buffer_Send_U = NULL, *Buffer_Receive_muT = NULL, *Buffer_Send_muT = NULL;
   
 #ifdef HAVE_MPI
   int send_to, receive_from;
@@ -88,11 +88,11 @@ void CTurbSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
       nBufferS_Scalar = nVertexS;             nBufferR_Scalar = nVertexR;
       
       /*--- Allocate Receive and send buffers  ---*/
-      Buffer_Receive_U = new double [nBufferR_Vector];
-      Buffer_Send_U = new double[nBufferS_Vector];
+      Buffer_Receive_U = new su2double [nBufferR_Vector];
+      Buffer_Send_U = new su2double[nBufferS_Vector];
       
-      Buffer_Receive_muT = new double [nBufferR_Scalar];
-      Buffer_Send_muT = new double[nBufferS_Scalar];
+      Buffer_Receive_muT = new su2double [nBufferR_Scalar];
+      Buffer_Send_muT = new su2double[nBufferS_Scalar];
       
       /*--- Copy the solution that should be sended ---*/
       for (iVertex = 0; iVertex < nVertexS; iVertex++) {
@@ -105,9 +105,9 @@ void CTurbSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
 #ifdef HAVE_MPI
       
       /*--- Send/Receive information using Sendrecv ---*/
-      MPI_Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
+      SU2_MPI::Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
                    Buffer_Receive_U, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
-      MPI_Sendrecv(Buffer_Send_muT, nBufferS_Scalar, MPI_DOUBLE, send_to, 1,
+      SU2_MPI::Sendrecv(Buffer_Send_muT, nBufferS_Scalar, MPI_DOUBLE, send_to, 1,
                    Buffer_Receive_muT, nBufferR_Scalar, MPI_DOUBLE, receive_from, 1, MPI_COMM_WORLD, &status);
 #else
       
@@ -151,7 +151,7 @@ void CTurbSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
 void CTurbSolver::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config) {
   unsigned short iVar, iMarker, MarkerS, MarkerR;
   unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
-  double *Buffer_Receive_U = NULL, *Buffer_Send_U = NULL;
+  su2double *Buffer_Receive_U = NULL, *Buffer_Send_U = NULL;
   
 #ifdef HAVE_MPI
   int send_to, receive_from;
@@ -174,8 +174,8 @@ void CTurbSolver::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config) {
       nBufferS_Vector = nVertexS*nVar;        nBufferR_Vector = nVertexR*nVar;
       
       /*--- Allocate Receive and send buffers  ---*/
-      Buffer_Receive_U = new double [nBufferR_Vector];
-      Buffer_Send_U = new double[nBufferS_Vector];
+      Buffer_Receive_U = new su2double [nBufferR_Vector];
+      Buffer_Send_U = new su2double[nBufferS_Vector];
       
       /*--- Copy the solution old that should be sended ---*/
       for (iVertex = 0; iVertex < nVertexS; iVertex++) {
@@ -187,7 +187,7 @@ void CTurbSolver::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config) {
 #ifdef HAVE_MPI
       
       /*--- Send/Receive information using Sendrecv ---*/
-      MPI_Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
+      SU2_MPI::Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
                    Buffer_Receive_U, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
 #else
       
@@ -225,12 +225,12 @@ void CTurbSolver::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config) {
 void CTurbSolver::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *config) {
   unsigned short iVar, iDim, iMarker, iPeriodic_Index, MarkerS, MarkerR;
   unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
-  double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi,
+  su2double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi,
   *Buffer_Receive_Gradient = NULL, *Buffer_Send_Gradient = NULL;
   
-  double **Gradient = new double* [nVar];
+  su2double **Gradient = new su2double* [nVar];
   for (iVar = 0; iVar < nVar; iVar++)
-    Gradient[iVar] = new double[nDim];
+    Gradient[iVar] = new su2double[nDim];
   
 #ifdef HAVE_MPI
   int send_to, receive_from;
@@ -253,8 +253,8 @@ void CTurbSolver::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *config
       nBufferS_Vector = nVertexS*nVar*nDim;        nBufferR_Vector = nVertexR*nVar*nDim;
       
       /*--- Allocate Receive and send buffers  ---*/
-      Buffer_Receive_Gradient = new double [nBufferR_Vector];
-      Buffer_Send_Gradient = new double[nBufferS_Vector];
+      Buffer_Receive_Gradient = new su2double [nBufferR_Vector];
+      Buffer_Send_Gradient = new su2double[nBufferS_Vector];
       
       /*--- Copy the solution old that should be sended ---*/
       for (iVertex = 0; iVertex < nVertexS; iVertex++) {
@@ -267,7 +267,7 @@ void CTurbSolver::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *config
 #ifdef HAVE_MPI
       
       /*--- Send/Receive information using Sendrecv ---*/
-      MPI_Sendrecv(Buffer_Send_Gradient, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
+      SU2_MPI::Sendrecv(Buffer_Send_Gradient, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
                    Buffer_Receive_Gradient, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
 #else
       
@@ -347,9 +347,9 @@ void CTurbSolver::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *config
 void CTurbSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config) {
   unsigned short iVar, iMarker, MarkerS, MarkerR;
   unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
-  double *Buffer_Receive_Limit = NULL, *Buffer_Send_Limit = NULL;
+  su2double *Buffer_Receive_Limit = NULL, *Buffer_Send_Limit = NULL;
   
-  double *Limiter = new double [nVar];
+  su2double *Limiter = new su2double [nVar];
   
 #ifdef HAVE_MPI
   int send_to, receive_from;
@@ -372,8 +372,8 @@ void CTurbSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config)
       nBufferS_Vector = nVertexS*nVar;        nBufferR_Vector = nVertexR*nVar;
       
       /*--- Allocate Receive and send buffers  ---*/
-      Buffer_Receive_Limit = new double [nBufferR_Vector];
-      Buffer_Send_Limit = new double[nBufferS_Vector];
+      Buffer_Receive_Limit = new su2double [nBufferR_Vector];
+      Buffer_Send_Limit = new su2double[nBufferS_Vector];
       
       /*--- Copy the solution old that should be sended ---*/
       for (iVertex = 0; iVertex < nVertexS; iVertex++) {
@@ -385,7 +385,7 @@ void CTurbSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config)
 #ifdef HAVE_MPI
       
       /*--- Send/Receive information using Sendrecv ---*/
-      MPI_Sendrecv(Buffer_Send_Limit, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
+      SU2_MPI::Sendrecv(Buffer_Send_Limit, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
                    Buffer_Receive_Limit, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
 #else
       
@@ -426,7 +426,7 @@ void CTurbSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config)
 
 void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short iMesh) {
   
-  double *Turb_i, *Turb_j, *Limiter_i = NULL, *Limiter_j = NULL, *V_i, *V_j, **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j;
+  su2double *Turb_i, *Turb_j, *Limiter_i = NULL, *Limiter_j = NULL, *V_i, *V_j, **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j;
   unsigned long iEdge, iPoint, jPoint;
   unsigned short iDim, iVar;
   
@@ -606,7 +606,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
   
   unsigned short iVar;
   unsigned long iPoint, total_index;
-  double Delta, Vol, density_old = 0.0, density = 0.0;
+  su2double Delta, Vol, density_old = 0.0, density = 0.0;
   
   bool adjoint = config->GetAdjoint();
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
@@ -726,10 +726,10 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
   unsigned short iVar, jVar, iMarker, iDim;
   unsigned long iPoint, jPoint, iEdge, iVertex;
   
-  double *U_time_nM1, *U_time_n, *U_time_nP1;
-  double Volume_nM1, Volume_nP1, TimeStep;
-  double Density_nM1, Density_n, Density_nP1;
-  double *Normal = NULL, *GridVel_i = NULL, *GridVel_j = NULL, Residual_GCL;
+  su2double *U_time_nM1, *U_time_n, *U_time_nP1;
+  su2double Volume_nM1, Volume_nP1, TimeStep;
+  su2double Density_nM1, Density_n, Density_nP1;
+  su2double *Normal = NULL, *GridVel_i = NULL, *GridVel_j = NULL, Residual_GCL;
   
   bool implicit      = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
   bool grid_movement = config->GetGrid_Movement();
@@ -983,7 +983,7 @@ CTurbSASolver::CTurbSASolver(void) : CTurbSolver() { }
 CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned short iMesh, CFluidModel* FluidModel) : CTurbSolver() {
   unsigned short iVar, iDim, nLineLets;
   unsigned long iPoint, index;
-  double Density_Inf, Viscosity_Inf, Factor_nu_Inf, Factor_nu_Engine, dull_val;
+  su2double Density_Inf, Viscosity_Inf, Factor_nu_Inf, Factor_nu_Engine, dull_val;
 
   bool restart = (config->GetRestart() || config->GetRestart_Flow());
   bool adjoint = config->GetAdjoint();
@@ -1018,42 +1018,42 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
     
     /*--- Define some auxiliar vector related with the residual ---*/
     
-    Residual = new double[nVar];     for (iVar = 0; iVar < nVar; iVar++) Residual[iVar]  = 0.0;
-    Residual_RMS = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 0.0;
-    Residual_i = new double[nVar];   for (iVar = 0; iVar < nVar; iVar++) Residual_i[iVar]  = 0.0;
-    Residual_j = new double[nVar];   for (iVar = 0; iVar < nVar; iVar++) Residual_j[iVar]  = 0.0;
-    Residual_Max = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_Max[iVar]  = 0.0;
+    Residual = new su2double[nVar];     for (iVar = 0; iVar < nVar; iVar++) Residual[iVar]  = 0.0;
+    Residual_RMS = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 0.0;
+    Residual_i = new su2double[nVar];   for (iVar = 0; iVar < nVar; iVar++) Residual_i[iVar]  = 0.0;
+    Residual_j = new su2double[nVar];   for (iVar = 0; iVar < nVar; iVar++) Residual_j[iVar]  = 0.0;
+    Residual_Max = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_Max[iVar]  = 0.0;
     
     /*--- Define some structures for locating max residuals ---*/
     
     Point_Max = new unsigned long[nVar];
     for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar] = 0;
-    Point_Max_Coord = new double*[nVar];
+    Point_Max_Coord = new su2double*[nVar];
     for (iVar = 0; iVar < nVar; iVar++) {
-      Point_Max_Coord[iVar] = new double[nDim];
+      Point_Max_Coord[iVar] = new su2double[nDim];
       for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
     }
     
     /*--- Define some auxiliar vector related with the solution ---*/
     
-    Solution = new double[nVar];
-    Solution_i = new double[nVar]; Solution_j = new double[nVar];
+    Solution = new su2double[nVar];
+    Solution_i = new su2double[nVar]; Solution_j = new su2double[nVar];
     
     /*--- Define some auxiliar vector related with the geometry ---*/
     
-    Vector_i = new double[nDim]; Vector_j = new double[nDim];
+    Vector_i = new su2double[nDim]; Vector_j = new su2double[nDim];
     
     /*--- Define some auxiliar vector related with the flow solution ---*/
     
-    FlowPrimVar_i = new double [nDim+7]; FlowPrimVar_j = new double [nDim+7];
+    FlowPrimVar_i = new su2double [nDim+7]; FlowPrimVar_j = new su2double [nDim+7];
     
     /*--- Jacobians and vector structures for implicit computations ---*/
     
-    Jacobian_i = new double* [nVar];
-    Jacobian_j = new double* [nVar];
+    Jacobian_i = new su2double* [nVar];
+    Jacobian_j = new su2double* [nVar];
     for (iVar = 0; iVar < nVar; iVar++) {
-      Jacobian_i[iVar] = new double [nVar];
-      Jacobian_j[iVar] = new double [nVar];
+      Jacobian_i[iVar] = new su2double [nVar];
+      Jacobian_j[iVar] = new su2double [nVar];
     }
     
     /*--- Initialization of the structure of the whole Jacobian ---*/
@@ -1081,23 +1081,23 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
     
     if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
       /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
-      Smatrix = new double* [nDim];
+      Smatrix = new su2double* [nDim];
       for (iDim = 0; iDim < nDim; iDim++)
-        Smatrix[iDim] = new double [nDim];
+        Smatrix[iDim] = new su2double [nDim];
       
       /*--- c vector := transpose(WA)*(Wb) ---*/
       
-      cvector = new double* [nVar];
+      cvector = new su2double* [nVar];
       for (iVar = 0; iVar < nVar; iVar++)
-        cvector[iVar] = new double [nDim];
+        cvector[iVar] = new su2double [nDim];
     }
     
   }
   
   /*--- Initialize lower and upper limits--- */
   
-  lowerlimit = new double[nVar];
-  upperlimit = new double[nVar];
+  lowerlimit = new su2double[nVar];
+  upperlimit = new su2double[nVar];
   
   lowerlimit[0] = 1.0e-10;
   upperlimit[0] = 1.0;
@@ -1118,8 +1118,8 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
   nu_tilde_Engine  = Factor_nu_Engine*Viscosity_Inf/Density_Inf;
 
   /*--- Eddy viscosity at infinity ---*/
-  double Ji, Ji_3, fv1, cv1_3 = 7.1*7.1*7.1;
-  double muT_Inf;
+  su2double Ji, Ji_3, fv1, cv1_3 = 7.1*7.1*7.1;
+  su2double muT_Inf;
   Ji = nu_tilde_Inf/Viscosity_Inf*Density_Inf;
   Ji_3 = Ji*Ji*Ji;
   fv1 = Ji_3/(Ji_3+cv1_3);
@@ -1135,17 +1135,17 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
     /*--- Restart the solution from file information ---*/
     ifstream restart_file;
     string filename = config->GetSolution_FlowFileName();
-    double Density, StaticEnergy, Laminar_Viscosity, nu, nu_hat, muT = 0.0, U[5];
+    su2double Density, StaticEnergy, Laminar_Viscosity, nu, nu_hat, muT = 0.0, U[5];
     
     /*--- Modify file name for an unsteady restart ---*/
     if (dual_time) {
       int Unst_RestartIter;
       if (adjoint) {
-        Unst_RestartIter = int(config->GetUnst_AdjointIter()) - 1;
+        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter()) - 1;
       } else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
-        Unst_RestartIter = int(config->GetUnst_RestartIter())-1;
+        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
       else
-        Unst_RestartIter = int(config->GetUnst_RestartIter())-2;
+        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
       filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
     }
     
@@ -1286,8 +1286,8 @@ void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
 
 void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
   
-  double rho = 0.0, mu = 0.0, nu, *nu_hat, muT, Ji, Ji_3, fv1;
-  double cv1_3 = 7.1*7.1*7.1;
+  su2double rho = 0.0, mu = 0.0, nu, *nu_hat, muT, Ji, Ji_3, fv1;
+  su2double cv1_3 = 7.1*7.1*7.1;
   unsigned long iPoint;
   
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
@@ -1329,13 +1329,13 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
 void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
                                     CConfig *config, unsigned short iMesh) {
   unsigned long iPoint;
-  double LevelSet;
+  su2double LevelSet;
   unsigned short iVar, iDim, jDim;
   
   bool freesurface   = (config->GetKind_Regime() == FREESURFACE);
   bool time_spectral = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
   bool transition    = (config->GetKind_Trans_Model() == LM);
-  double epsilon     = config->GetFreeSurface_Thickness();
+  su2double epsilon     = config->GetFreeSurface_Thickness();
   
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     
@@ -1439,7 +1439,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
   
   if (time_spectral) {
     
-    double Volume, Source;
+    su2double Volume, Source;
     unsigned short nVar_Turb = solver_container[TURB_SOL]->GetnVar();
     
     /*--- Loop over points ---*/
@@ -1529,11 +1529,11 @@ void CTurbSASolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container
   
   unsigned long iPoint, iVertex;
   unsigned short iVar, iDim;
-  double *Normal, *V_infty, *V_domain;
+  su2double *Normal, *V_infty, *V_domain;
   
   bool grid_movement	= config->GetGrid_Movement();
   
-  Normal = new double[nDim];
+  Normal = new su2double[nDim];
   
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     
@@ -1592,9 +1592,9 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
   
   unsigned short iDim;
   unsigned long iVertex, iPoint, Point_Normal;
-  double *V_inlet, *V_domain, *Normal;
+  su2double *V_inlet, *V_domain, *Normal;
   
-  Normal = new double[nDim];
+  Normal = new su2double[nDim];
   
   bool grid_movement  = config->GetGrid_Movement();
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
@@ -1673,11 +1673,11 @@ void CTurbSASolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, C
                               CConfig *config, unsigned short val_marker) {
   unsigned long iPoint, iVertex, Point_Normal;
   unsigned short iVar, iDim;
-  double *V_outlet, *V_domain, *Normal;
+  su2double *V_outlet, *V_domain, *Normal;
   
   bool grid_movement  = config->GetGrid_Movement();
   
-  Normal = new double[nDim];
+  Normal = new su2double[nDim];
   
   /*--- Loop over all the vertices on this boundary marker ---*/
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -1756,9 +1756,9 @@ void CTurbSASolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_conta
   
   unsigned long iPoint, iVertex;
   unsigned short iDim;
-  double *V_inflow, *V_domain, *Normal;
+  su2double *V_inflow, *V_domain, *Normal;
   
-  Normal = new double[nDim];
+  Normal = new su2double[nDim];
   
   /*--- Loop over all the vertices on this boundary marker ---*/
   
@@ -1840,9 +1840,9 @@ void CTurbSASolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_cont
   
   unsigned short iDim;
   unsigned long iVertex, iPoint;
-  double *V_exhaust, *V_domain, *Normal;
+  su2double *V_exhaust, *V_domain, *Normal;
   
-  Normal = new double[nDim];
+  Normal = new su2double[nDim];
   
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   
@@ -1929,9 +1929,9 @@ void CTurbSASolver::BC_Engine_Bleed(CGeometry *geometry, CSolver **solver_contai
   
   unsigned short iDim;
   unsigned long iVertex, iPoint;
-  double *V_bleed, *V_domain, *Normal;
+  su2double *V_bleed, *V_domain, *Normal;
   
-  Normal = new double[nDim];
+  Normal = new su2double[nDim];
   
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   
@@ -2019,7 +2019,7 @@ void CTurbSASolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_
   //  unsigned long iVertex, iPoint, jPoint;
   //  unsigned short iVar, iDim;
   //
-  //  double *Vector = new double[nDim];
+  //  su2double *Vector = new su2double[nDim];
   //
   //#ifndef HAVE_MPI
   //
@@ -2069,12 +2069,12 @@ void CTurbSASolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_
   //#else
   //
   //  int rank = MPI::COMM_WORLD.Get_rank(), jProcessor;
-  //  double *Conserv_Var, *Flow_Var;
+  //  su2double *Conserv_Var, *Flow_Var;
   //  bool compute;
   //
   //  unsigned short Buffer_Size = nVar+solver_container[FLOW_SOL]->GetnVar();
-  //  double *Buffer_Send_U = new double [Buffer_Size];
-  //  double *Buffer_Receive_U = new double [Buffer_Size];
+  //  su2double *Buffer_Send_U = new su2double [Buffer_Size];
+  //  su2double *Buffer_Receive_U = new su2double [Buffer_Size];
   //
   //  /*--- Do the send process, by the moment we are sending each
   //   node individually, this must be changed ---*/
@@ -2181,7 +2181,7 @@ void CTurbSASolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_
   //  unsigned long iVertex, iPoint, jPoint;
   //  unsigned short iVar, iDim;
   //
-  //  double *Vector = new double[nDim];
+  //  su2double *Vector = new su2double[nDim];
   //
   //#ifndef HAVE_MPI
   //
@@ -2231,12 +2231,12 @@ void CTurbSASolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_
   //#else
   //
   //  int rank = MPI::COMM_WORLD.Get_rank(), jProcessor;
-  //  double *Conserv_Var, *Flow_Var;
+  //  su2double *Conserv_Var, *Flow_Var;
   //  bool compute;
   //
   //  unsigned short Buffer_Size = nVar+solver_container[FLOW_SOL]->GetnVar();
-  //  double *Buffer_Send_U = new double [Buffer_Size];
-  //  double *Buffer_Receive_U = new double [Buffer_Size];
+  //  su2double *Buffer_Send_U = new su2double [Buffer_Size];
+  //  su2double *Buffer_Receive_U = new su2double [Buffer_Size];
   //
   //  /*--- Do the send process, by the moment we are sending each
   //   node individually, this must be changed ---*/
@@ -2343,7 +2343,7 @@ void CTurbSASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig
   /*--- Restart the solution from file information ---*/
   unsigned short iVar, iMesh;
   unsigned long iPoint, index, iChildren, Point_Fine;
-  double dull_val, Area_Children, Area_Parent, *Solution_Fine;
+  su2double dull_val, Area_Children, Area_Parent, *Solution_Fine;
   bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface    = (config->GetKind_Regime() == FREESURFACE);
@@ -2460,7 +2460,7 @@ CTurbSSTSolver::CTurbSSTSolver(void) : CTurbSolver() {
 CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CTurbSolver() {
   unsigned short iVar, iDim, nLineLets;
   unsigned long iPoint, index;
-  double dull_val;
+  su2double dull_val;
   ifstream restart_file;
   string text_line;
   
@@ -2501,42 +2501,42 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
     
     /*--- Define some auxiliary vector related with the residual ---*/
     
-    Residual = new double[nVar];     for (iVar = 0; iVar < nVar; iVar++) Residual[iVar]  = 0.0;
-    Residual_RMS = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 0.0;
-    Residual_i = new double[nVar];   for (iVar = 0; iVar < nVar; iVar++) Residual_i[iVar]  = 0.0;
-    Residual_j = new double[nVar];   for (iVar = 0; iVar < nVar; iVar++) Residual_j[iVar]  = 0.0;
-    Residual_Max = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_Max[iVar]  = 0.0;
+    Residual = new su2double[nVar];     for (iVar = 0; iVar < nVar; iVar++) Residual[iVar]  = 0.0;
+    Residual_RMS = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 0.0;
+    Residual_i = new su2double[nVar];   for (iVar = 0; iVar < nVar; iVar++) Residual_i[iVar]  = 0.0;
+    Residual_j = new su2double[nVar];   for (iVar = 0; iVar < nVar; iVar++) Residual_j[iVar]  = 0.0;
+    Residual_Max = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_Max[iVar]  = 0.0;
     
     /*--- Define some structures for locating max residuals ---*/
     
     Point_Max = new unsigned long[nVar];
     for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar] = 0;
-    Point_Max_Coord = new double*[nVar];
+    Point_Max_Coord = new su2double*[nVar];
     for (iVar = 0; iVar < nVar; iVar++) {
-      Point_Max_Coord[iVar] = new double[nDim];
+      Point_Max_Coord[iVar] = new su2double[nDim];
       for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
     }
     
     /*--- Define some auxiliary vector related with the solution ---*/
     
-    Solution = new double[nVar];
-    Solution_i = new double[nVar]; Solution_j = new double[nVar];
+    Solution = new su2double[nVar];
+    Solution_i = new su2double[nVar]; Solution_j = new su2double[nVar];
     
     /*--- Define some auxiliary vector related with the geometry ---*/
     
-    Vector_i = new double[nDim]; Vector_j = new double[nDim];
+    Vector_i = new su2double[nDim]; Vector_j = new su2double[nDim];
     
     /*--- Define some auxiliary vector related with the flow solution ---*/
     
-    FlowPrimVar_i = new double [nDim+7]; FlowPrimVar_j = new double [nDim+7];
+    FlowPrimVar_i = new su2double [nDim+7]; FlowPrimVar_j = new su2double [nDim+7];
     
     /*--- Jacobians and vector structures for implicit computations ---*/
     
-    Jacobian_i = new double* [nVar];
-    Jacobian_j = new double* [nVar];
+    Jacobian_i = new su2double* [nVar];
+    Jacobian_j = new su2double* [nVar];
     for (iVar = 0; iVar < nVar; iVar++) {
-      Jacobian_i[iVar] = new double [nVar];
-      Jacobian_j[iVar] = new double [nVar];
+      Jacobian_i[iVar] = new su2double [nVar];
+      Jacobian_j[iVar] = new su2double [nVar];
     }
     
     /*--- Initialization of the structure of the whole Jacobian ---*/
@@ -2558,17 +2558,17 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
     /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
-    Smatrix = new double* [nDim];
+    Smatrix = new su2double* [nDim];
     for (iDim = 0; iDim < nDim; iDim++)
-    Smatrix[iDim] = new double [nDim];
+    Smatrix[iDim] = new su2double [nDim];
     /*--- c vector := transpose(WA)*(Wb) ---*/
-    cvector = new double* [nVar];
+    cvector = new su2double* [nVar];
     for (iVar = 0; iVar < nVar; iVar++)
-    cvector[iVar] = new double [nDim];
+    cvector[iVar] = new su2double [nDim];
   }
   
   /* --- Initialize value for model constants --- */
-  constants = new double[10];
+  constants = new su2double[10];
   constants[0] = 0.85;   //sigma_k1
   constants[1] = 1.0;    //sigma_k2
   constants[2] = 0.5;    //sigma_om1
@@ -2581,8 +2581,8 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   constants[9] = constants[5]/constants[6] - constants[3]*0.41*0.41/sqrt(constants[6]);  //alfa_2
   
   /* --- Initialize lower and upper limits--- */
-  lowerlimit = new double[nVar];
-  upperlimit = new double[nVar];
+  lowerlimit = new su2double[nVar];
+  upperlimit = new su2double[nVar];
   
   lowerlimit[0] = 1.0e-10;
   upperlimit[0] = 1.0e10;
@@ -2591,7 +2591,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   upperlimit[1] = 1.0e15;
   
   /*--- Flow infinity initialization stuff ---*/
-  double rhoInf, *VelInf, muLamInf, Intensity, viscRatio, muT_Inf;
+  su2double rhoInf, *VelInf, muLamInf, Intensity, viscRatio, muT_Inf;
   
   rhoInf    = config->GetDensity_FreeStreamND();
   VelInf    = config->GetVelocity_FreeStreamND();
@@ -2599,7 +2599,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   Intensity = config->GetTurbulenceIntensity_FreeStream();
   viscRatio = config->GetTurb2LamViscRatio_FreeStream();
   
-  double VelMag = 0;
+  su2double VelMag = 0;
   for (iDim = 0; iDim < nDim; iDim++)
   VelMag += VelInf[iDim]*VelInf[iDim];
   VelMag = sqrt(VelMag);
@@ -2625,11 +2625,11 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
     if (dual_time) {
       int Unst_RestartIter;
       if (adjoint) {
-        Unst_RestartIter = int(config->GetUnst_AdjointIter()) - 1;
+        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter()) - 1;
       } else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
-      Unst_RestartIter = int(config->GetUnst_RestartIter())-1;
+      Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
       else
-      Unst_RestartIter = int(config->GetUnst_RestartIter())-2;
+      Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
       filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
     }
     
@@ -2739,8 +2739,8 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 }
 
 void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
-  double rho = 0.0, mu = 0.0, dist, omega, kine, strMag, F2, muT, zeta;
-  double a1 = constants[7];
+  su2double rho = 0.0, mu = 0.0, dist, omega, kine, strMag, F2, muT, zeta;
+  su2double a1 = constants[7];
   unsigned long iPoint;
   
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
@@ -2858,7 +2858,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
   
   unsigned long iPoint, jPoint, iVertex, total_index;
   unsigned short iDim, iVar;
-  double distance, density = 0.0, laminar_viscosity = 0.0, beta_1;
+  su2double distance, density = 0.0, laminar_viscosity = 0.0, beta_1;
   
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
@@ -2915,7 +2915,7 @@ void CTurbSSTSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_co
   
   unsigned long iPoint, jPoint, iVertex, total_index;
   unsigned short iDim, iVar;
-  double distance, density = 0.0, laminar_viscosity = 0.0, beta_1;
+  su2double distance, density = 0.0, laminar_viscosity = 0.0, beta_1;
   
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
@@ -2970,12 +2970,12 @@ void CTurbSSTSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_co
 void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   
   unsigned long iPoint, iVertex;
-  double *Normal, *V_infty, *V_domain;
+  su2double *Normal, *V_infty, *V_domain;
   unsigned short iVar, iDim;
   
   bool grid_movement = config->GetGrid_Movement();
   
-  Normal = new double[nDim];
+  Normal = new su2double[nDim];
   
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     
@@ -3038,9 +3038,9 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
   
   unsigned short iVar, iDim;
   unsigned long iVertex, iPoint, Point_Normal;
-  double *V_inlet, *V_domain, *Normal;
+  su2double *V_inlet, *V_domain, *Normal;
   
-  Normal = new double[nDim];
+  Normal = new su2double[nDim];
   
   bool grid_movement  = config->GetGrid_Movement();
   
@@ -3127,11 +3127,11 @@ void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
   
   unsigned long iPoint, iVertex, Point_Normal;
   unsigned short iVar, iDim;
-  double *V_outlet, *V_domain, *Normal;
+  su2double *V_outlet, *V_domain, *Normal;
   
   bool grid_movement  = config->GetGrid_Movement();
   
-  Normal = new double[nDim];
+  Normal = new su2double[nDim];
   
   /*--- Loop over all the vertices on this boundary marker ---*/
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -3209,7 +3209,7 @@ void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
   
 }
 
-double* CTurbSSTSolver::GetConstants() {
+su2double* CTurbSSTSolver::GetConstants() {
   return constants;
 }
 
@@ -3218,7 +3218,7 @@ CTurbMLSolver::CTurbMLSolver(void) : CTurbSolver() { }
 CTurbMLSolver::CTurbMLSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CTurbSolver() {
   unsigned short iVar, iDim, nLineLets;
   unsigned long iPoint, index;
-  double Density_Inf, Viscosity_Inf, Factor_nu_Inf, dull_val, T_ref = 0.0, S = 0.0, Mu_ref = 0.0;
+  su2double Density_Inf, Viscosity_Inf, Factor_nu_Inf, dull_val, T_ref = 0.0, S = 0.0, Mu_ref = 0.0;
   
   bool restart = (config->GetRestart() || config->GetRestart_Flow());
   bool adjoint = config->GetAdjoint();
@@ -3249,35 +3249,35 @@ CTurbMLSolver::CTurbMLSolver(CGeometry *geometry, CConfig *config, unsigned shor
   if (iMesh == MESH_0) {
     
     /*--- Define some auxiliar vector related with the residual ---*/
-    Residual = new double[nVar]; Residual_RMS = new double[nVar];
-    Residual_i = new double[nVar]; Residual_j = new double[nVar];
-    Residual_Max = new double[nVar];
+    Residual = new su2double[nVar]; Residual_RMS = new su2double[nVar];
+    Residual_i = new su2double[nVar]; Residual_j = new su2double[nVar];
+    Residual_Max = new su2double[nVar];
     
     /*--- Define some structures for locating max residuals ---*/
     Point_Max = new unsigned long[nVar];
     for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar] = 0;
-    Point_Max_Coord = new double*[nVar];
+    Point_Max_Coord = new su2double*[nVar];
     for (iVar = 0; iVar < nVar; iVar++) {
-      Point_Max_Coord[iVar] = new double[nDim];
+      Point_Max_Coord[iVar] = new su2double[nDim];
       for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
     }
     
     /*--- Define some auxiliar vector related with the solution ---*/
-    Solution = new double[nVar];
-    Solution_i = new double[nVar]; Solution_j = new double[nVar];
+    Solution = new su2double[nVar];
+    Solution_i = new su2double[nVar]; Solution_j = new su2double[nVar];
     
     /*--- Define some auxiliar vector related with the geometry ---*/
-    Vector_i = new double[nDim]; Vector_j = new double[nDim];
+    Vector_i = new su2double[nDim]; Vector_j = new su2double[nDim];
     
     /*--- Define some auxiliar vector related with the flow solution ---*/
-    FlowPrimVar_i = new double [nDim+7]; FlowPrimVar_j = new double [nDim+7];
+    FlowPrimVar_i = new su2double [nDim+7]; FlowPrimVar_j = new su2double [nDim+7];
     
     /*--- Jacobians and vector structures for implicit computations ---*/
-    Jacobian_i = new double* [nVar];
-    Jacobian_j = new double* [nVar];
+    Jacobian_i = new su2double* [nVar];
+    Jacobian_j = new su2double* [nVar];
     for (iVar = 0; iVar < nVar; iVar++) {
-      Jacobian_i[iVar] = new double [nVar];
-      Jacobian_j[iVar] = new double [nVar];
+      Jacobian_i[iVar] = new su2double [nVar];
+      Jacobian_j[iVar] = new su2double [nVar];
     }
     
     /*--- Initialization of the structure of the whole Jacobian ---*/
@@ -3303,20 +3303,20 @@ CTurbMLSolver::CTurbMLSolver(CGeometry *geometry, CConfig *config, unsigned shor
     /*--- Computation of gradients by least squares ---*/
     if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
       /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
-      Smatrix = new double* [nDim];
+      Smatrix = new su2double* [nDim];
       for (iDim = 0; iDim < nDim; iDim++)
-        Smatrix[iDim] = new double [nDim];
+        Smatrix[iDim] = new su2double [nDim];
       /*--- c vector := transpose(WA)*(Wb) ---*/
-      cvector = new double* [nVar];
+      cvector = new su2double* [nVar];
       for (iVar = 0; iVar < nVar; iVar++)
-        cvector[iVar] = new double [nDim];
+        cvector[iVar] = new su2double [nDim];
     }
     
   }
   
   /* --- Initialize lower and upper limits--- */
-  lowerlimit = new double[nVar];
-  upperlimit = new double[nVar];
+  lowerlimit = new su2double[nVar];
+  upperlimit = new su2double[nVar];
   
   lowerlimit[0] = 1.0e-10;
   upperlimit[0] = 1.0;
@@ -3330,8 +3330,8 @@ CTurbMLSolver::CTurbMLSolver(CGeometry *geometry, CConfig *config, unsigned shor
   nu_tilde_Inf  = Factor_nu_Inf*Viscosity_Inf/Density_Inf;
   
   /*--- Eddy viscosity at infinity ---*/
-  double Ji, Ji_3, fv1, cv1_3 = 7.1*7.1*7.1;
-  double muT_Inf;
+  su2double Ji, Ji_3, fv1, cv1_3 = 7.1*7.1*7.1;
+  su2double muT_Inf;
   Ji = nu_tilde_Inf/Viscosity_Inf*Density_Inf;
   Ji_3 = Ji*Ji*Ji;
   fv1 = Ji_3/(Ji_3+cv1_3);
@@ -3347,21 +3347,21 @@ CTurbMLSolver::CTurbMLSolver(CGeometry *geometry, CConfig *config, unsigned shor
     /*--- Restart the solution from file information ---*/
     ifstream restart_file;
     string filename = config->GetSolution_FlowFileName();
-    double Density, Laminar_Viscosity, nu, nu_hat, muT = 0.0, U[5];
-    double Temperature, Temperature_Dim, Pressure;
-    double Temperature_Ref = config->GetTemperature_Ref();
-    double Viscosity_Ref   = config->GetViscosity_Ref();
-    double Gas_Constant    = config->GetGas_ConstantND();
+    su2double Density, Laminar_Viscosity, nu, nu_hat, muT = 0.0, U[5];
+    su2double Temperature, Temperature_Dim, Pressure;
+    su2double Temperature_Ref = config->GetTemperature_Ref();
+    su2double Viscosity_Ref   = config->GetViscosity_Ref();
+    su2double Gas_Constant    = config->GetGas_ConstantND();
     
     /*--- Modify file name for an unsteady restart ---*/
     if (dual_time) {
       int Unst_RestartIter;
       if (adjoint) {
-        Unst_RestartIter = int(config->GetUnst_AdjointIter()) - 1;
+        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter()) - 1;
       } else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
-        Unst_RestartIter = int(config->GetUnst_RestartIter())-1;
+        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
       else
-        Unst_RestartIter = int(config->GetUnst_RestartIter())-2;
+        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
       filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
     }
     
@@ -3495,8 +3495,8 @@ void CTurbMLSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
 }
 
 void CTurbMLSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
-  double rho = 0.0, mu = 0.0, nu, *nu_hat, muT, Ji, Ji_3, fv1;
-  double cv1_3 = 7.1*7.1*7.1;
+  su2double rho = 0.0, mu = 0.0, nu, *nu_hat, muT, Ji, Ji_3, fv1;
+  su2double cv1_3 = 7.1*7.1*7.1;
   unsigned long iPoint;
   
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
@@ -3532,7 +3532,7 @@ void CTurbMLSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
 void CTurbMLSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
                                     CConfig *config, unsigned short iMesh) {
   unsigned long iPoint;
-  double LevelSet;
+  su2double LevelSet;
   unsigned short iVar;
   unsigned short iDim;
   unsigned short jDim;
@@ -3540,7 +3540,7 @@ void CTurbMLSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool time_spectral = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
   bool transition = (config->GetKind_Trans_Model() == LM);
-  double epsilon          = config->GetFreeSurface_Thickness();
+  su2double epsilon          = config->GetFreeSurface_Thickness();
   
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     
@@ -3693,7 +3693,7 @@ void CTurbMLSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
   
   if (time_spectral) {
     
-    double Volume, Source;
+    su2double Volume, Source;
     unsigned short nVar_Turb = solver_container[TURB_SOL]->GetnVar();
     
     /*--- Loop over points ---*/
@@ -3775,11 +3775,11 @@ void CTurbMLSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container
   
   unsigned long iPoint, iVertex;
   unsigned short iVar, iDim;
-  double *Normal, *V_infty, *V_domain;
+  su2double *Normal, *V_infty, *V_domain;
   
   bool grid_movement	= config->GetGrid_Movement();
   
-  Normal = new double[nDim];
+  Normal = new su2double[nDim];
   
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     
@@ -3830,9 +3830,9 @@ void CTurbMLSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
   
   unsigned short iDim;
   unsigned long iVertex, iPoint, Point_Normal;
-  double *V_inlet, *V_domain, *Normal;
+  su2double *V_inlet, *V_domain, *Normal;
   
-  Normal = new double[nDim];
+  Normal = new su2double[nDim];
   
   bool grid_movement  = config->GetGrid_Movement();
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
@@ -3911,11 +3911,11 @@ void CTurbMLSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, C
                               CConfig *config, unsigned short val_marker) {
   unsigned long iPoint, iVertex, Point_Normal;
   unsigned short iVar, iDim;
-  double *V_outlet, *V_domain, *Normal;
+  su2double *V_outlet, *V_domain, *Normal;
   
   bool grid_movement  = config->GetGrid_Movement();
   
-  Normal = new double[nDim];
+  Normal = new su2double[nDim];
   
   /*--- Loop over all the vertices on this boundary marker ---*/
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -3995,7 +3995,7 @@ void CTurbMLSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig
   /*--- Restart the solution from file information ---*/
   unsigned short iVar, iMesh;
   unsigned long iPoint, index, iChildren, Point_Fine;
-  double dull_val, Area_Children, Area_Parent, *Solution_Fine;
+  su2double dull_val, Area_Children, Area_Parent, *Solution_Fine;
   bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface    = (config->GetKind_Regime() == FREESURFACE);

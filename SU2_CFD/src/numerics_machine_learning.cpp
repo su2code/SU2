@@ -1,8 +1,8 @@
 /*!
- * \file numerics_template.cpp
+ * \file numerics_machine_learning.cpp
  * \brief This file contains all the convective term discretization.
  * \author B. Tracey
- * \version 3.2.9 "eagle"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -80,10 +80,10 @@ CScaler::CScaler() {}
 CScaler::~CScaler() {}
 
 CNormalScaler::CNormalScaler() {}
-CNormalScaler::CNormalScaler(int dim, double *mu, double *sigma) {
+CNormalScaler::CNormalScaler(int dim, su2double *mu, su2double *sigma) {
 	this->dim = dim;
-	this->mu = new double[dim];
-	this->sigma = new double[dim];
+	this->mu = new su2double[dim];
+	this->sigma = new su2double[dim];
 	for (int i=0; i < dim; i++) {
 		this->mu[i] = mu[i];
 		this->sigma[i] = sigma[i];
@@ -104,7 +104,7 @@ CNormalScaler::CNormalScaler(Json::Value json) {
   if (muSize != nDim) {
     cout << "musize and Dim mismatch" << endl;
   }
-  double *mu = new double[muSize];
+  su2double *mu = new su2double[muSize];
   for (int i = 0; i < nDim; i++) {
     mu[i] = muVal[i].asDouble();
   }
@@ -115,7 +115,7 @@ CNormalScaler::CNormalScaler(Json::Value json) {
     cout << "sigmasize and and Dim mismatch" << endl;
   }
   
-  double * sigma = new double[sigmaSize];
+  su2double * sigma = new su2double[sigmaSize];
   for (int i = 0; i < nDim; i++) {
     sigma[i] = sigmaVal[i].asDouble();
   }
@@ -129,13 +129,13 @@ CNormalScaler::CNormalScaler(Json::Value json) {
 #endif
 
 
-void CNormalScaler::Scale(double * inputs) {
+void CNormalScaler::Scale(su2double * inputs) {
 	for (int i=0; i<dim; i++) {
 		inputs[i] = (inputs[i]-mu[i])/sigma[i];
 	}
 	return;
 }
-void CNormalScaler::Unscale(double * inputs) {
+void CNormalScaler::Unscale(su2double * inputs) {
 	for (int i=0; i<dim; i++) {
 		inputs[i] = inputs[i]*sigma[i] + mu[i];
 	}
@@ -155,23 +155,23 @@ CMulInputScaler::CMulInputScaler(Json::Value json) {
 #endif
 
 CMulInputScaler::~CMulInputScaler() {}
-void CMulInputScaler::Scale(double * inputs) {
+void CMulInputScaler::Scale(su2double * inputs) {
   inputs[0] /= this->MulScale;
-  double * second = &inputs[1];
+  su2double * second = &inputs[1];
   this->InnerScaler->Scale(second);
   return;
 }
 
-void CMulInputScaler::Unscale(double * inputs) {
+void CMulInputScaler::Unscale(su2double * inputs) {
   inputs[0] *= this->MulScale;
-  double * second = &inputs[1];
+  su2double * second = &inputs[1];
   this->InnerScaler->Unscale(second);
   return;
 }
 
 CMulOutputScaler::CMulOutputScaler() {}
 CMulOutputScaler::~CMulOutputScaler() {}
-void CMulOutputScaler::Scale(double * outputs) {
+void CMulOutputScaler::Scale(su2double * outputs) {
   outputs[0] /= this->MulScale;
   return;
 }
@@ -182,7 +182,7 @@ CMulOutputScaler::CMulOutputScaler(Json::Value json) {
 }
 #endif
 
-void CMulOutputScaler::Unscale(double * outputs) {
+void CMulOutputScaler::Unscale(su2double * outputs) {
   outputs[0] *= this->MulScale;
   return;
 }
@@ -196,9 +196,9 @@ CTanhActivator::CTanhActivator(Json::Value json) {
 }
 #endif
 CTanhActivator::~CTanhActivator() {}
-double CTanhActivator::Activate(double sum) {
+su2double CTanhActivator::Activate(su2double sum) {
   //cout << "In CTanhActivator" << endl;
-	double val =  1.7159 * tanh(2.0/3.0 *sum);
+	su2double val =  1.7159 * tanh(2.0/3.0 *sum);
   //cout << "Done CTanhActivator" << endl;
 	return val;
 }
@@ -211,7 +211,7 @@ CLinearActivator::CLinearActivator(Json::Value) {
 
 CLinearActivator::~CLinearActivator() {}
 
-double CLinearActivator::Activate(double sum) {
+su2double CLinearActivator::Activate(su2double sum) {
 //  cout << "In CLinear Activate" << endl;
 	return sum;
 }
@@ -241,8 +241,8 @@ CSumNeuron::~CSumNeuron() {
 	delete this->activator;
 }
 
-double CSumNeuron::Combine(double *parameters, int nParameters, double *inputs, int nInputs) {
-  double combination = 0;
+su2double CSumNeuron::Combine(su2double *parameters, int nParameters, su2double *inputs, int nInputs) {
+  su2double combination = 0;
 	for (int i = 0; i < nInputs; i++) {
 		combination += inputs[i] * parameters[i];
 	}
@@ -253,7 +253,7 @@ double CSumNeuron::Combine(double *parameters, int nParameters, double *inputs, 
 	return combination;
 }
 
-double CSumNeuron::Activate(double combination) {
+su2double CSumNeuron::Activate(su2double combination) {
   return this->activator->Activate(combination);
 }
 
@@ -279,8 +279,8 @@ CMulPredictor::CMulPredictor(Json::Value json) {
 
 CMulPredictor::~CMulPredictor() {}
 
-void CMulPredictor::Predict(double * input, double * output) {
-  double * secondInput = &input[1];
+void CMulPredictor::Predict(su2double * input, su2double * output) {
+  su2double * secondInput = &input[1];
   this->Inner->Predict(secondInput, output);
   for (int i = 0; i < this->OutputDim(); i++) {
     output[i] *= input[0];
@@ -310,7 +310,7 @@ CNeurNet::CNeurNet(Json::Value json) {
   this->nNeuronsInLayer = new int[nLayers];
   this->nParameters = new int *[nLayers];
   this->neurons = new CNeuron **[nLayers];
-  this->parameters = new double**[nLayers];
+  this->parameters = new su2double**[nLayers];
   
   // Per layer, get the number of neurons in the layer and then read in the neurons
   for (int i = 0; i < nLayers; i++) {
@@ -329,7 +329,7 @@ CNeurNet::CNeurNet(Json::Value json) {
     }
     this->neurons[i] = new CNeuron *[neuronsInLayer];
     this->nParameters[i] = new int[neuronsInLayer];
-    this->parameters[i] = new double *[neuronsInLayer];
+    this->parameters[i] = new su2double *[neuronsInLayer];
     
     // Loop over all the neurons in the layer and add the parameters and neuron itself
     for (int j = 0; j < neuronsInLayer; j++) {
@@ -338,10 +338,10 @@ CNeurNet::CNeurNet(Json::Value json) {
       // get the parameters
       int nParametersInNeuron = parameterLayer[j].size();
       this->nParameters[i][j] = nParametersInNeuron;
-      this->parameters[i][j] = new double [nParametersInNeuron];
+      this->parameters[i][j] = new su2double [nParametersInNeuron];
       for (int k = 0; k < nParametersInNeuron; k++) {
         
-        double val = parameterLayer[j][k].asDouble();
+        su2double val = parameterLayer[j][k].asDouble();
         this->parameters[i][j][k] = val;
         /*
         long *ptrFloatAsInt =(long *)( &val);
@@ -389,17 +389,17 @@ CNeurNet::~CNeurNet() {
   delete [] this->nParameters;
 }
 
-void CNeurNet::processLayer(double * input, int nInput, CNeuron **neurons, double **parameters, int nNeurons, int * nParameters, double *output) {
+void CNeurNet::processLayer(su2double * input, int nInput, CNeuron **neurons, su2double **parameters, int nNeurons, int * nParameters, su2double *output) {
   for (int i = 0; i < nNeurons; i++) {
-    double combination = neurons[i]->Combine(parameters[i], nParameters[i], input, nInput);
+    su2double combination = neurons[i]->Combine(parameters[i], nParameters[i], input, nInput);
     output[i] = neurons[i]->Activate(combination);
   }
   return;
 }
 
-void CNeurNet::Predict(double * input, double * output) {
-  double * prevTmpOutput = new double[this->maxNeurons];
-  double *tmpOutput = new double[this->maxNeurons];
+void CNeurNet::Predict(su2double * input, su2double * output) {
+  su2double * prevTmpOutput = new su2double[this->maxNeurons];
+  su2double *tmpOutput = new su2double[this->maxNeurons];
   
   int nLayers = this->nLayers;
   
@@ -423,7 +423,7 @@ void CNeurNet::Predict(double * input, double * output) {
   cout << "First layer tmp output" << endl;
   for (int i = 0; i < this->nNeuronsInLayer[0]; i++) {
     cout << tmpOutput[i] << endl;
-    double tmp = tmpOutput[i];
+    su2double tmp = tmpOutput[i];
     long *ptrFloatAsInt =(long *)( &tmp);
     cout << hex;
     cout << *ptrFloatAsInt << endl;
@@ -434,7 +434,7 @@ void CNeurNet::Predict(double * input, double * output) {
   
   // Middle layers use the previous output as input
   for (int i= 1; i < nLayers -1; i++) {
-    double *tmp;
+    su2double *tmp;
     tmp = prevTmpOutput;
     prevTmpOutput = tmpOutput;
     tmpOutput = tmp;
@@ -511,20 +511,20 @@ CScalePredictor::CScalePredictor(string filename) {
   for (int i = 0; i < nTestInputs; i++) {
     int nInputs = testInputs[i].size();
     int nOutputs = testOutputs[i].size();
-    double *input = new double[nInputs];
-    double *output = new double[nOutputs];
+    su2double *input = new su2double[nInputs];
+    su2double *output = new su2double[nOutputs];
     for (int j = 0; j < nInputs; j++) {
       input[j] = testInputs[i][j].asDouble();
     }
     for (int j=0; j < nOutputs; j++) {
       output[j] = testOutputs[i][j].asDouble();
     }
-    double *predOutput = new double[nOutputs];
+    su2double *predOutput = new su2double[nOutputs];
     
     this->Predict(input, predOutput);
     bool mismatch = 0;
     for (int j = 0; j < nOutputs; j++) {
-      double max = abs(output[j]);
+      su2double max = abs(output[j]);
       if (predOutput[j] > max) {
         max = abs(predOutput[j]);
       }
@@ -565,7 +565,7 @@ CScalePredictor::~CScalePredictor() {
   delete this->OutputScaler;
   return;
 }
-void CScalePredictor::Predict(double *input, double *output) {
+void CScalePredictor::Predict(su2double *input, su2double *output) {
   // Scale the input
   this->InputScaler->Scale(input);
   
@@ -579,22 +579,22 @@ void CScalePredictor::Predict(double *input, double *output) {
 
 CSANondimInputs::CSANondimInputs(int nDim) {
   this->nDim = nDim;
-  this->DNuHatDXBar = new double[nDim];
+  this->DNuHatDXBar = new su2double[nDim];
 };
 CSANondimInputs::~CSANondimInputs() {
   delete [] this->DNuHatDXBar;
 };
 
 void CSANondimInputs::Set(SpalartAllmarasInputs* sainputs) {
-  double kin_visc = sainputs->Laminar_Viscosity / sainputs->Density;
+  su2double kin_visc = sainputs->Laminar_Viscosity / sainputs->Density;
   this->Chi = sainputs->Turbulent_Kinematic_Viscosity / kin_visc;
-  double nuSum = sainputs->Turbulent_Kinematic_Viscosity + kin_visc;
-  double dist = sainputs->dist;
+  su2double nuSum = sainputs->Turbulent_Kinematic_Viscosity + kin_visc;
+  su2double dist = sainputs->dist;
   if (dist < 1e-10) {
     dist = 1e-10;
   }
   
-  double distSq = dist* dist;
+  su2double distSq = dist* dist;
   
   this->OmegaNondim = 1.0 / ( distSq / (nuSum) );
   this->OmegaBar = sainputs->Omega / this->OmegaNondim;
@@ -611,7 +611,7 @@ void CSANondimInputs::Set(SpalartAllmarasInputs* sainputs) {
     exit(EXIT_FAILURE);
   }
   
-  double * turbViscGrad = sainputs->GetTurbKinViscGradient();
+  su2double * turbViscGrad = sainputs->GetTurbKinViscGradient();
   this->NuHatGradNorm = 0;
   for (int i = 0; i < this->nDim; i++) {
     this->DNuHatDXBar[i] = turbViscGrad[i] / this->NuGradNondim;
@@ -619,13 +619,13 @@ void CSANondimInputs::Set(SpalartAllmarasInputs* sainputs) {
   }
   this->NuHatGradNormBar = this->NuHatGradNorm / this->SourceNondim;
 };
-void CSANondimInputs::NondimensionalizeSource(int nResidual, double * source) {
+void CSANondimInputs::NondimensionalizeSource(int nResidual, su2double * source) {
   for (int i = 0; i < nResidual; i++) {
     source[i] /= this->SourceNondim;
   }
 }
 
-void CSANondimInputs::DimensionalizeSource(int nResidual, double * source) {
+void CSANondimInputs::DimensionalizeSource(int nResidual, su2double * source) {
   
   for (int i = 0; i < nResidual; i++) {
     //    cout << "pre" << source[i] << endl;

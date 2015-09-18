@@ -1,11 +1,9 @@
 /*!
  * \file grid_adaptation_structure.hpp
  * \brief Headers of the main subroutines for doing the numerical grid
- *        movement (including volumetric movement, surface movement and Free From
- *        technique definition). The subroutines and functions are in
- *        the <i>grid_movement_structure.cpp</i> file.
+ *        adaptation.
  * \author F. Palacios
- * \version 3.2.9 "eagle"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -34,9 +32,8 @@
 
 #pragma once
 
-#ifdef HAVE_MPI
-  #include "mpi.h"
-#endif
+#include "./mpi_structure.hpp"
+
 #include <cmath>
 #include <iostream>
 #include <cstdlib>
@@ -59,19 +56,19 @@ protected:
 	nElem_new;					/*!< \brief Number of new elements. */
 	unsigned short nDim,	/*!< \brief Number of dimensions of the problem. */
 	nVar;					/*!< \brief Number of variables in the problem. */
-	double **ConsVar_Sol,	/*!< \brief Conservative variables (original solution). */
+	su2double **ConsVar_Sol,	/*!< \brief Conservative variables (original solution). */
 	**ConsVar_Res,			/*!< \brief Conservative variables (residual). */
 	**ConsVar_Adapt;		/*!< \brief Conservative variables (adapted solution). */
-	double **AdjVar_Sol,	/*!< \brief Adjoint variables (original solution). */
+	su2double **AdjVar_Sol,	/*!< \brief Adjoint variables (original solution). */
 	**AdjVar_Res,			/*!< \brief Adjoint variables (residual). */
 	**AdjVar_Adapt;			/*!< \brief Adjoint variables (adapted solution). */
-	double **LinVar_Sol,	/*!< \brief Linear variables (original solution). */
+	su2double **LinVar_Sol,	/*!< \brief Linear variables (original solution). */
 	**LinVar_Res,			/*!< \brief Linear variables (residual). */
 	**LinVar_Adapt;			/*!< \brief Linear variables (adapted solution). */
-	double **Gradient,		/*!< \brief Gradient value. */
+	su2double **Gradient,		/*!< \brief Gradient value. */
 	**Gradient_Flow,		/*!< \brief Gradient of the flow variables. */
 	**Gradient_Adj;			/*!< \brief Fradient of the adjoint variables. */
-	double *Index;			/*!< \brief Adaptation index (indicates the value of the adaptation). */
+	su2double *Index;			/*!< \brief Adaptation index (indicates the value of the adaptation). */
 	
 public:
 

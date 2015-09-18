@@ -2,7 +2,7 @@
  * \file numerics_direct_turbulent.cpp
  * \brief This file contains all the convective term discretization.
  * \author F. Palacios, A. Bueno
- * \version 3.2.9 "eagle"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -38,8 +38,8 @@ CUpwSca_TurbSA::CUpwSca_TurbSA(unsigned short val_nDim, unsigned short val_nVar,
   incompressible  = (config->GetKind_Regime() == INCOMPRESSIBLE);
   grid_movement   = config->GetGrid_Movement();
   
-  Velocity_i = new double [nDim];
-  Velocity_j = new double [nDim];
+  Velocity_i = new su2double [nDim];
+  Velocity_j = new su2double [nDim];
   
 }
 
@@ -50,7 +50,7 @@ CUpwSca_TurbSA::~CUpwSca_TurbSA(void) {
   
 }
 
-void CUpwSca_TurbSA::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+void CUpwSca_TurbSA::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
   
   q_ij = 0.0;
   
@@ -86,12 +86,12 @@ CAvgGrad_TurbSA::CAvgGrad_TurbSA(unsigned short val_nDim, unsigned short val_nVa
   
   sigma = 2./3.;
   
-  Edge_Vector = new double [nDim];
-  Proj_Mean_GradTurbVar_Kappa = new double [nVar];
-  Proj_Mean_GradTurbVar_Edge = new double [nVar];
-  Mean_GradTurbVar = new double* [nVar];
+  Edge_Vector = new su2double [nDim];
+  Proj_Mean_GradTurbVar_Kappa = new su2double [nVar];
+  Proj_Mean_GradTurbVar_Edge = new su2double [nVar];
+  Mean_GradTurbVar = new su2double* [nVar];
   for (iVar = 0; iVar < nVar; iVar++)
-    Mean_GradTurbVar[iVar] = new double [nDim];
+    Mean_GradTurbVar[iVar] = new su2double [nDim];
   
 }
 
@@ -106,7 +106,7 @@ CAvgGrad_TurbSA::~CAvgGrad_TurbSA(void) {
   
 }
 
-void CAvgGrad_TurbSA::ComputeResidual(double *val_residual, double **Jacobian_i, double **Jacobian_j, CConfig *config) {
+void CAvgGrad_TurbSA::ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config) {
   
   if (incompressible) {
     Density_i = V_i[nDim+1];            Density_j = V_j[nDim+1];
@@ -167,12 +167,12 @@ CAvgGrad_TurbSA_Neg::CAvgGrad_TurbSA_Neg(unsigned short val_nDim, unsigned short
   cn1   = 16.0;
   fn    = 0.0;
 
-  Edge_Vector = new double [nDim];
-  Proj_Mean_GradTurbVar_Kappa = new double [nVar];
-  Proj_Mean_GradTurbVar_Edge = new double [nVar];
-  Mean_GradTurbVar = new double* [nVar];
+  Edge_Vector = new su2double [nDim];
+  Proj_Mean_GradTurbVar_Kappa = new su2double [nVar];
+  Proj_Mean_GradTurbVar_Edge = new su2double [nVar];
+  Mean_GradTurbVar = new su2double* [nVar];
   for (iVar = 0; iVar < nVar; iVar++)
-    Mean_GradTurbVar[iVar] = new double [nDim];
+    Mean_GradTurbVar[iVar] = new su2double [nDim];
   
 }
 
@@ -187,7 +187,7 @@ CAvgGrad_TurbSA_Neg::~CAvgGrad_TurbSA_Neg(void) {
   
 }
 
-void CAvgGrad_TurbSA_Neg::ComputeResidual(double *val_residual, double **Jacobian_i, double **Jacobian_j, CConfig *config) {
+void CAvgGrad_TurbSA_Neg::ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config) {
   
   if (incompressible) {
     Density_i = V_i[nDim+1];            Density_j = V_j[nDim+1];
@@ -259,13 +259,13 @@ CAvgGradCorrected_TurbSA::CAvgGradCorrected_TurbSA(unsigned short val_nDim, unsi
   
   sigma = 2./3.;
   
-  Edge_Vector = new double [nDim];
-  Proj_Mean_GradTurbVar_Kappa = new double [nVar];
-  Proj_Mean_GradTurbVar_Edge = new double [nVar];
-  Proj_Mean_GradTurbVar_Corrected = new double [nVar];
-  Mean_GradTurbVar = new double* [nVar];
+  Edge_Vector = new su2double [nDim];
+  Proj_Mean_GradTurbVar_Kappa = new su2double [nVar];
+  Proj_Mean_GradTurbVar_Edge = new su2double [nVar];
+  Proj_Mean_GradTurbVar_Corrected = new su2double [nVar];
+  Mean_GradTurbVar = new su2double* [nVar];
   for (iVar = 0; iVar < nVar; iVar++)
-    Mean_GradTurbVar[iVar] = new double [nDim];
+    Mean_GradTurbVar[iVar] = new su2double [nDim];
   
 }
 
@@ -281,7 +281,7 @@ CAvgGradCorrected_TurbSA::~CAvgGradCorrected_TurbSA(void) {
   
 }
 
-void CAvgGradCorrected_TurbSA::ComputeResidual(double *val_residual, double **Jacobian_i, double **Jacobian_j, CConfig *config) {
+void CAvgGradCorrected_TurbSA::ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config) {
   
   if (incompressible) {
     Density_i = V_i[nDim+1];            Density_j = V_j[nDim+1];
@@ -348,13 +348,13 @@ CAvgGradCorrected_TurbSA_Neg::CAvgGradCorrected_TurbSA_Neg(unsigned short val_nD
   cn1   = 16.0;
   fn    = 0.0;
 
-  Edge_Vector = new double [nDim];
-  Proj_Mean_GradTurbVar_Kappa = new double [nVar];
-  Proj_Mean_GradTurbVar_Edge = new double [nVar];
-  Proj_Mean_GradTurbVar_Corrected = new double [nVar];
-  Mean_GradTurbVar = new double* [nVar];
+  Edge_Vector = new su2double [nDim];
+  Proj_Mean_GradTurbVar_Kappa = new su2double [nVar];
+  Proj_Mean_GradTurbVar_Edge = new su2double [nVar];
+  Proj_Mean_GradTurbVar_Corrected = new su2double [nVar];
+  Mean_GradTurbVar = new su2double* [nVar];
   for (iVar = 0; iVar < nVar; iVar++)
-    Mean_GradTurbVar[iVar] = new double [nDim];
+    Mean_GradTurbVar[iVar] = new su2double [nDim];
   
 }
 
@@ -370,7 +370,7 @@ CAvgGradCorrected_TurbSA_Neg::~CAvgGradCorrected_TurbSA_Neg(void) {
   
 }
 
-void CAvgGradCorrected_TurbSA_Neg::ComputeResidual(double *val_residual, double **Jacobian_i, double **Jacobian_j, CConfig *config) {
+void CAvgGradCorrected_TurbSA_Neg::ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config) {
   
   if (incompressible) {
     Density_i = V_i[nDim+1];            Density_j = V_j[nDim+1];
@@ -463,7 +463,7 @@ CSourcePieceWise_TurbSA::CSourcePieceWise_TurbSA(unsigned short val_nDim, unsign
 
 CSourcePieceWise_TurbSA::~CSourcePieceWise_TurbSA(void) { }
 
-void CSourcePieceWise_TurbSA::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+void CSourcePieceWise_TurbSA::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
   
   if (incompressible) {
     Density_i = V_i[nDim+1];
@@ -583,7 +583,7 @@ CSourcePieceWise_TurbSA_Neg::~CSourcePieceWise_TurbSA_Neg(void) {
   
 }
 
-void CSourcePieceWise_TurbSA_Neg::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+void CSourcePieceWise_TurbSA_Neg::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
   
   if (incompressible) {
     Density_i = V_i[nDim+1];
@@ -722,8 +722,8 @@ CUpwSca_TurbSST::CUpwSca_TurbSST(unsigned short val_nDim, unsigned short val_nVa
   incompressible  = (config->GetKind_Regime() == INCOMPRESSIBLE);
   grid_movement   = config->GetGrid_Movement();
   
-  Velocity_i = new double [nDim];
-  Velocity_j = new double [nDim];
+  Velocity_i = new su2double [nDim];
+  Velocity_j = new su2double [nDim];
   
 }
 
@@ -734,7 +734,7 @@ CUpwSca_TurbSST::~CUpwSca_TurbSST(void) {
   
 }
 
-void CUpwSca_TurbSST::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+void CUpwSca_TurbSST::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
   
   if (incompressible) {
     Density_i = V_i[nDim+1];
@@ -777,7 +777,7 @@ void CUpwSca_TurbSST::ComputeResidual(double *val_residual, double **val_Jacobia
   
 }
 
-CAvgGrad_TurbSST::CAvgGrad_TurbSST(unsigned short val_nDim, unsigned short val_nVar, double *constants, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+CAvgGrad_TurbSST::CAvgGrad_TurbSST(unsigned short val_nDim, unsigned short val_nVar, su2double *constants, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
   
   unsigned short iVar;
   
@@ -789,13 +789,13 @@ CAvgGrad_TurbSST::CAvgGrad_TurbSST(unsigned short val_nDim, unsigned short val_n
   sigma_k2  = constants[1];
   sigma_om2 = constants[3];
   
-  Edge_Vector = new double [nDim];
-  Proj_Mean_GradTurbVar_Normal = new double [nVar];
-  Proj_Mean_GradTurbVar_Edge = new double [nVar];
-  Proj_Mean_GradTurbVar_Corrected = new double [nVar];
-  Mean_GradTurbVar = new double* [nVar];
+  Edge_Vector = new su2double [nDim];
+  Proj_Mean_GradTurbVar_Normal = new su2double [nVar];
+  Proj_Mean_GradTurbVar_Edge = new su2double [nVar];
+  Proj_Mean_GradTurbVar_Corrected = new su2double [nVar];
+  Mean_GradTurbVar = new su2double* [nVar];
   for (iVar = 0; iVar < nVar; iVar++)
-    Mean_GradTurbVar[iVar] = new double [nDim];
+    Mean_GradTurbVar[iVar] = new su2double [nDim];
   
 }
 
@@ -813,10 +813,10 @@ CAvgGrad_TurbSST::~CAvgGrad_TurbSST(void) {
   
 }
 
-void CAvgGrad_TurbSST::ComputeResidual(double *val_residual, double **Jacobian_i, double **Jacobian_j, CConfig *config) {
+void CAvgGrad_TurbSST::ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config) {
   
-  double sigma_kine_i, sigma_kine_j, sigma_omega_i, sigma_omega_j;
-  double diff_i_kine, diff_i_omega, diff_j_kine, diff_j_omega;
+  su2double sigma_kine_i, sigma_kine_j, sigma_omega_i, sigma_omega_j;
+  su2double diff_i_kine, diff_i_omega, diff_j_kine, diff_j_omega;
   
   if (incompressible) {
     Density_i = V_i[nDim+1];            Density_j = V_j[nDim+1];
@@ -880,7 +880,7 @@ void CAvgGrad_TurbSST::ComputeResidual(double *val_residual, double **Jacobian_i
 }
 
 
-CAvgGradCorrected_TurbSST::CAvgGradCorrected_TurbSST(unsigned short val_nDim, unsigned short val_nVar, double *constants, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+CAvgGradCorrected_TurbSST::CAvgGradCorrected_TurbSST(unsigned short val_nDim, unsigned short val_nVar, su2double *constants, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
   
   unsigned short iVar;
   
@@ -892,13 +892,13 @@ CAvgGradCorrected_TurbSST::CAvgGradCorrected_TurbSST(unsigned short val_nDim, un
   sigma_k2  = constants[1];
   sigma_om2 = constants[3];
   
-  Edge_Vector = new double [nDim];
-  Proj_Mean_GradTurbVar_Normal = new double [nVar];
-  Proj_Mean_GradTurbVar_Edge = new double [nVar];
-  Proj_Mean_GradTurbVar_Corrected = new double [nVar];
-  Mean_GradTurbVar = new double* [nVar];
+  Edge_Vector = new su2double [nDim];
+  Proj_Mean_GradTurbVar_Normal = new su2double [nVar];
+  Proj_Mean_GradTurbVar_Edge = new su2double [nVar];
+  Proj_Mean_GradTurbVar_Corrected = new su2double [nVar];
+  Mean_GradTurbVar = new su2double* [nVar];
   for (iVar = 0; iVar < nVar; iVar++)
-    Mean_GradTurbVar[iVar] = new double [nDim];
+    Mean_GradTurbVar[iVar] = new su2double [nDim];
   
 }
 
@@ -916,10 +916,10 @@ CAvgGradCorrected_TurbSST::~CAvgGradCorrected_TurbSST(void) {
   
 }
 
-void CAvgGradCorrected_TurbSST::ComputeResidual(double *val_residual, double **Jacobian_i, double **Jacobian_j, CConfig *config) {
+void CAvgGradCorrected_TurbSST::ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config) {
   
-  double sigma_kine_i, sigma_kine_j, sigma_omega_i, sigma_omega_j;
-  double diff_i_kine, diff_i_omega, diff_j_kine, diff_j_omega;
+  su2double sigma_kine_i, sigma_kine_j, sigma_omega_i, sigma_omega_j;
+  su2double diff_i_kine, diff_i_omega, diff_j_kine, diff_j_omega;
   
   if (incompressible) {
     Density_i = V_i[nDim+1];            Density_j = V_j[nDim+1];
@@ -985,7 +985,7 @@ void CAvgGradCorrected_TurbSST::ComputeResidual(double *val_residual, double **J
   
 }
 
-CSourcePieceWise_TurbSST::CSourcePieceWise_TurbSST(unsigned short val_nDim, unsigned short val_nVar, double *constants,
+CSourcePieceWise_TurbSST::CSourcePieceWise_TurbSST(unsigned short val_nDim, unsigned short val_nVar, su2double *constants,
                                                    CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
   
   incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
@@ -1003,11 +1003,11 @@ CSourcePieceWise_TurbSST::CSourcePieceWise_TurbSST(unsigned short val_nDim, unsi
 
 CSourcePieceWise_TurbSST::~CSourcePieceWise_TurbSST(void) { }
 
-void CSourcePieceWise_TurbSST::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
   
   unsigned short iDim;
-  double alfa_blended, beta_blended;
-  double diverg, pk, pw, zeta;
+  su2double alfa_blended, beta_blended;
+  su2double diverg, pk, pw, zeta;
   
   if (incompressible) {
     Density_i = V_i[nDim+1];
@@ -1072,8 +1072,8 @@ CUpwSca_TurbML::CUpwSca_TurbML(unsigned short val_nDim, unsigned short val_nVar,
   incompressible  = (config->GetKind_Regime() == INCOMPRESSIBLE);
   grid_movement   = config->GetGrid_Movement();
   
-  Velocity_i = new double [nDim];
-  Velocity_j = new double [nDim];
+  Velocity_i = new su2double [nDim];
+  Velocity_j = new su2double [nDim];
   
 }
 
@@ -1084,7 +1084,7 @@ CUpwSca_TurbML::~CUpwSca_TurbML(void) {
   
 }
 
-void CUpwSca_TurbML::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+void CUpwSca_TurbML::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
   
   
   q_ij = 0.0;
@@ -1123,12 +1123,12 @@ CAvgGrad_TurbML::CAvgGrad_TurbML(unsigned short val_nDim, unsigned short val_nVa
   
   sigma = 2./3.;
   
-  Edge_Vector = new double [nDim];
-  Proj_Mean_GradTurbVar_Kappa = new double [nVar];
-  Proj_Mean_GradTurbVar_Edge = new double [nVar];
-  Mean_GradTurbVar = new double* [nVar];
+  Edge_Vector = new su2double [nDim];
+  Proj_Mean_GradTurbVar_Kappa = new su2double [nVar];
+  Proj_Mean_GradTurbVar_Edge = new su2double [nVar];
+  Mean_GradTurbVar = new su2double* [nVar];
   for (iVar = 0; iVar < nVar; iVar++)
-    Mean_GradTurbVar[iVar] = new double [nDim];
+    Mean_GradTurbVar[iVar] = new su2double [nDim];
   
 }
 
@@ -1144,7 +1144,7 @@ CAvgGrad_TurbML::~CAvgGrad_TurbML(void) {
   
 }
 
-void CAvgGrad_TurbML::ComputeResidual(double *val_residual, double **Jacobian_i, double **Jacobian_j, CConfig *config) {
+void CAvgGrad_TurbML::ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config) {
   
   if (incompressible) {
     Density_i = V_i[nDim+1];            Density_j = V_j[nDim+1];
@@ -1204,13 +1204,13 @@ CAvgGradCorrected_TurbML::CAvgGradCorrected_TurbML(unsigned short val_nDim, unsi
   
   sigma = 2./3.;
   
-  Edge_Vector = new double [nDim];
-  Proj_Mean_GradTurbVar_Kappa = new double [nVar];
-  Proj_Mean_GradTurbVar_Edge = new double [nVar];
-  Proj_Mean_GradTurbVar_Corrected = new double [nVar];
-  Mean_GradTurbVar = new double* [nVar];
+  Edge_Vector = new su2double [nDim];
+  Proj_Mean_GradTurbVar_Kappa = new su2double [nVar];
+  Proj_Mean_GradTurbVar_Edge = new su2double [nVar];
+  Proj_Mean_GradTurbVar_Corrected = new su2double [nVar];
+  Mean_GradTurbVar = new su2double* [nVar];
   for (iVar = 0; iVar < nVar; iVar++)
-    Mean_GradTurbVar[iVar] = new double [nDim];
+    Mean_GradTurbVar[iVar] = new su2double [nDim];
   
 }
 
@@ -1227,7 +1227,7 @@ CAvgGradCorrected_TurbML::~CAvgGradCorrected_TurbML(void) {
   
 }
 
-void CAvgGradCorrected_TurbML::ComputeResidual(double *val_residual, double **Jacobian_i, double **Jacobian_j, CConfig *config) {
+void CAvgGradCorrected_TurbML::ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config) {
   
   if (incompressible) {
     Density_i = V_i[nDim+1];            Density_j = V_j[nDim+1];
@@ -1286,7 +1286,7 @@ void CAvgGradCorrected_TurbML::ComputeResidual(double *val_residual, double **Ja
 CSourcePieceWise_TurbML::CSourcePieceWise_TurbML(unsigned short val_nDim, unsigned short val_nVar,
                                                  CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
   
-  double *uinf = config->GetVelocity_FreeStreamND();
+  su2double *uinf = config->GetVelocity_FreeStreamND();
   for (unsigned short i = 0; i < nDim; i++) {
     uInfinity += uinf[i] * uinf[i];
   }
@@ -1307,22 +1307,22 @@ CSourcePieceWise_TurbML::CSourcePieceWise_TurbML(unsigned short val_nDim, unsign
   nResidual = 4;
   nJacobian = 1;
   
-  SAResidual = new double[nResidual];
-  SANondimResidual = new double[nResidual];
-  Residual = new double[nResidual];
-  NondimResidual = new double[nResidual];
-  ResidualDiff = new double[nResidual];
-  NondimResidualDiff = new double[nResidual];
+  SAResidual = new su2double[nResidual];
+  SANondimResidual = new su2double[nResidual];
+  Residual = new su2double[nResidual];
+  NondimResidual = new su2double[nResidual];
+  ResidualDiff = new su2double[nResidual];
+  NondimResidualDiff = new su2double[nResidual];
   
-  SAJacobian = new double[nJacobian];
+  SAJacobian = new su2double[nJacobian];
   
-  //testResidual = new double[nResidual];
-  //testJacobian = new double[nJacobian];
-  DUiDXj = new double*[nDim];
+  //testResidual = new su2double[nResidual];
+  //testJacobian = new su2double[nJacobian];
+  DUiDXj = new su2double*[nDim];
   for (int i=0; i < nDim; i++) {
-    DUiDXj[i] = new double[nDim];
+    DUiDXj[i] = new su2double[nDim];
   }
-  DNuhatDXj = new double[nDim];
+  DNuhatDXj = new su2double[nDim];
   
   // Construct the nnet
   string readFile = config->GetML_Turb_Model_File();
@@ -1363,7 +1363,7 @@ CSourcePieceWise_TurbML::~CSourcePieceWise_TurbML(void) {
   delete SANondimInputs;
 }
 
-void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+void CSourcePieceWise_TurbML::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
   if (incompressible) {
     Density_i = V_i[nDim+1];
     Laminar_Viscosity_i = V_i[nDim+3];
@@ -1412,33 +1412,33 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
   fw = SAOtherOutputs->fw;
   
   // Need the individual terms of the NuHat Norm
-  double dNuHatDXBar = DNuhatDXj[0] / sqrt(SANondimInputs->SourceNondim);
-  double dNuHatDYBar = DNuhatDXj[1] / sqrt(SANondimInputs->SourceNondim);
-  double dUDXBar = DUiDXj[0][0] / SANondimInputs->OmegaNondim;
-  double dVDXBar = DUiDXj[1][0] / SANondimInputs->OmegaNondim;
-  double dUDYBar = DUiDXj[0][1] / SANondimInputs->OmegaNondim;
-  double dVDYBar = DUiDXj[1][1] / SANondimInputs->OmegaNondim;
-  double Turbulent_Kinematic_Viscosity = TurbVar_i[0];
+  su2double dNuHatDXBar = DNuhatDXj[0] / sqrt(SANondimInputs->SourceNondim);
+  su2double dNuHatDYBar = DNuhatDXj[1] / sqrt(SANondimInputs->SourceNondim);
+  su2double dUDXBar = DUiDXj[0][0] / SANondimInputs->OmegaNondim;
+  su2double dVDXBar = DUiDXj[1][0] / SANondimInputs->OmegaNondim;
+  su2double dUDYBar = DUiDXj[0][1] / SANondimInputs->OmegaNondim;
+  su2double dVDYBar = DUiDXj[1][1] / SANondimInputs->OmegaNondim;
+  su2double Turbulent_Kinematic_Viscosity = TurbVar_i[0];
   
-  double nuRef = 1.0;
-  double nu = Laminar_Viscosity_i / Density_i;
-  double nuscale = nu / nuRef;
-  double distalt = dist_i;
-  double nuhatalt = Turbulent_Kinematic_Viscosity / nuscale;
-  double omega = SANondimInputs->OmegaBar * SANondimInputs->OmegaNondim;
-  double omegaalt = omega / nuscale;
-  double nuhatgradmagalt = SANondimInputs->NuHatGradNorm / (nuscale * nuscale);
-  double omeganondimeralt = (1/distalt) * (nuhatalt / distalt);
-  double sourcenondimeralt = (nuhatalt / distalt) * (nuhatalt / distalt);
-  double nondim_nuhatgradmagalt = nuhatgradmagalt / sourcenondimeralt;
-  double nondimOmegaAlt = omegaalt / omeganondimeralt;
+  su2double nuRef = 1.0;
+  su2double nu = Laminar_Viscosity_i / Density_i;
+  su2double nuscale = nu / nuRef;
+  su2double distalt = dist_i;
+  su2double nuhatalt = Turbulent_Kinematic_Viscosity / nuscale;
+  su2double omega = SANondimInputs->OmegaBar * SANondimInputs->OmegaNondim;
+  su2double omegaalt = omega / nuscale;
+  su2double nuhatgradmagalt = SANondimInputs->NuHatGradNorm / (nuscale * nuscale);
+  su2double omeganondimeralt = (1/distalt) * (nuhatalt / distalt);
+  su2double sourcenondimeralt = (nuhatalt / distalt) * (nuhatalt / distalt);
+  su2double nondim_nuhatgradmagalt = nuhatgradmagalt / sourcenondimeralt;
+  su2double nondimOmegaAlt = omegaalt / omeganondimeralt;
   
-//  double Laminar_Kinematic_Viscosity = Laminar_Viscosity_i / Density_i;
+//  su2double Laminar_Kinematic_Viscosity = Laminar_Viscosity_i / Density_i;
   
   int nInputMLVariables = 0;
   int nOutputMLVariables = 0;
-  double* netInput = NULL;
-  double* netOutput = NULL;
+  su2double* netInput = NULL;
+  su2double* netOutput = NULL;
   
   if (featureset.compare("SA") == 0) {
     // Set the output equal to the spalart allmaras output.
@@ -1449,8 +1449,8 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
   } else if (featureset.compare("nondim_production") == 0) {
     nInputMLVariables = 2;
     nOutputMLVariables = 1;
-    netInput = new double[nInputMLVariables];
-    netOutput = new double[nOutputMLVariables];
+    netInput = new su2double[nInputMLVariables];
+    netOutput = new su2double[nOutputMLVariables];
     
     netInput[0] = SANondimInputs->Chi;
     netInput[1] = SANondimInputs->OmegaBar;
@@ -1477,8 +1477,8 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
   } else if (featureset.compare("nondim_production_log") == 0) {
     nInputMLVariables = 2;
     nOutputMLVariables = 1;
-    netInput = new double[nInputMLVariables];
-    netOutput = new double[nOutputMLVariables];
+    netInput = new su2double[nInputMLVariables];
+    netOutput = new su2double[nOutputMLVariables];
     
     netInput[0] = log10(SANondimInputs->Chi);
     netInput[1] = log10(SANondimInputs->OmegaBar);
@@ -1506,8 +1506,8 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
   } else if (featureset.compare("nondim_production_logchi") == 0) {
     nInputMLVariables = 2;
     nOutputMLVariables = 1;
-    netInput = new double[nInputMLVariables];
-    netOutput = new double[nOutputMLVariables];
+    netInput = new su2double[nInputMLVariables];
+    netOutput = new su2double[nOutputMLVariables];
     
     netInput[0] = log10(SANondimInputs->Chi);
     netInput[1] = SANondimInputs->OmegaBar;
@@ -1529,8 +1529,8 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
 //    cout <<"In production" << endl;
     nInputMLVariables = 3;
     nOutputMLVariables = 1;
-    netInput = new double[nInputMLVariables];
-    netOutput = new double[nOutputMLVariables];
+    netInput = new su2double[nInputMLVariables];
+    netOutput = new su2double[nOutputMLVariables];
     
     netInput[0] = SANondimInputs->SourceNondim;
     netInput[1] = SANondimInputs->Chi;
@@ -1563,8 +1563,8 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
     nInputMLVariables = 2;
     nOutputMLVariables = 1;
     
-    netInput = new double[nInputMLVariables];
-    netOutput = new double[nOutputMLVariables];
+    netInput = new su2double[nInputMLVariables];
+    netOutput = new su2double[nOutputMLVariables];
     
     netInput[0] = SANondimInputs->Chi;
     netInput[1] = SANondimInputs->OmegaBar;
@@ -1583,8 +1583,8 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
   } else if (featureset.compare("destruction") ==0) {
       nInputMLVariables = 3;
       nOutputMLVariables = 1;
-      netInput = new double[nInputMLVariables];
-      netOutput = new double[nOutputMLVariables];
+      netInput = new su2double[nInputMLVariables];
+      netOutput = new su2double[nOutputMLVariables];
     
       netInput[0] = SANondimInputs->SourceNondim;
       netInput[1] = SANondimInputs->Chi;
@@ -1606,8 +1606,8 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
   } else if (featureset.compare("nondim_crossproduction") ==0) {
     nInputMLVariables = 2;
     nOutputMLVariables = 1;
-    netInput = new double[nInputMLVariables];
-    netOutput = new double[nOutputMLVariables];
+    netInput = new su2double[nInputMLVariables];
+    netOutput = new su2double[nOutputMLVariables];
     
     netInput[0] = SANondimInputs->Chi;
     netInput[1] = SANondimInputs->NuHatGradNormBar;
@@ -1630,8 +1630,8 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
   } else if (featureset.compare("cross_production") ==0) {
     nInputMLVariables = 3;
     nOutputMLVariables = 1;
-    netInput = new double[nInputMLVariables];
-    netOutput = new double[nOutputMLVariables];
+    netInput = new su2double[nInputMLVariables];
+    netOutput = new su2double[nOutputMLVariables];
     
     netInput[0] = SANondimInputs->SourceNondim;
     netInput[1] = SANondimInputs->Chi;
@@ -1653,8 +1653,8 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
   } else if (featureset.compare("nondim_source") ==0) {
     nInputMLVariables = 3;
     nOutputMLVariables = 1;
-    netInput = new double[nInputMLVariables];
-    netOutput = new double[nOutputMLVariables];
+    netInput = new su2double[nInputMLVariables];
+    netOutput = new su2double[nOutputMLVariables];
     
     netInput[0] = SANondimInputs->Chi;
     netInput[1] = SANondimInputs->OmegaBar;
@@ -1675,8 +1675,8 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
   } else if (featureset.compare("source") ==0) {
     nInputMLVariables =4;
     nOutputMLVariables = 1;
-    netInput = new double[nInputMLVariables];
-    netOutput = new double[nOutputMLVariables];
+    netInput = new su2double[nInputMLVariables];
+    netOutput = new su2double[nOutputMLVariables];
     
     netInput[0] = SANondimInputs->SourceNondim;
     netInput[1] = SANondimInputs->Chi;
@@ -1700,8 +1700,8 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
   } else if (featureset.compare("source_alt") ==0) {
     nInputMLVariables =4;
     nOutputMLVariables = 1;
-    netInput = new double[nInputMLVariables];
-    netOutput = new double[nOutputMLVariables];
+    netInput = new su2double[nInputMLVariables];
+    netOutput = new su2double[nOutputMLVariables];
     
     netInput[0] = sourcenondimeralt;
     netInput[1] = SANondimInputs->Chi;
@@ -1727,8 +1727,8 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
   } else if (featureset.compare("source_dim_alt") == 0) {
     nInputMLVariables = 4;
     nOutputMLVariables = 1;
-    netInput = new double[nInputMLVariables];
-    netOutput = new double[nOutputMLVariables];
+    netInput = new su2double[nInputMLVariables];
+    netOutput = new su2double[nOutputMLVariables];
     
     
     
@@ -1757,8 +1757,8 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
   } else if (featureset.compare("source_all") ==0) {
     nInputMLVariables = 8;
     nOutputMLVariables = 1;
-    netInput = new double[nInputMLVariables];
-    netOutput = new double[nOutputMLVariables];
+    netInput = new su2double[nInputMLVariables];
+    netOutput = new su2double[nOutputMLVariables];
     
     netInput[0] = SANondimInputs->SourceNondim;
     netInput[1] = SANondimInputs->Chi;
@@ -1787,11 +1787,11 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
     throw("doesn't work");
     nInputMLVariables = 2;
     nOutputMLVariables = 1;
-    netInput = new double[nInputMLVariables];
-    netOutput = new double[nOutputMLVariables];
+    netInput = new su2double[nInputMLVariables];
+    netOutput = new su2double[nOutputMLVariables];
     
-    double chi = SANondimInputs->Chi;
-    double omegaBar = SANondimInputs->OmegaBar;
+    su2double chi = SANondimInputs->Chi;
+    su2double omegaBar = SANondimInputs->OmegaBar;
     // Karthik nondimensionalizes by d / vhat whereas I do by /(v + vhat)
     omegaBar *= 1 + 1/chi;
     
@@ -1800,8 +1800,8 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
     
     MLModel->Predict(netInput, netOutput);
     
-    double safw = SAOtherOutputs->fw;
-    double newfw = netOutput[0];
+    su2double safw = SAOtherOutputs->fw;
+    su2double newfw = netOutput[0];
     if (newfw < -1) {
       newfw = 1;
     }
@@ -1809,9 +1809,9 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
       newfw = 6;
     }
     // The output is the value of fw. Need to replace the destruction term with the new computation
-    double turbKinVisc = SAInputs->Turbulent_Kinematic_Viscosity;
-    double dist2 = SAInputs->dist * SAInputs->dist;
-    double newdestruction = SAConstants->cw1 * (newfw +safw) * turbKinVisc * turbKinVisc / dist2;
+    su2double turbKinVisc = SAInputs->Turbulent_Kinematic_Viscosity;
+    su2double dist2 = SAInputs->dist * SAInputs->dist;
+    su2double newdestruction = SAConstants->cw1 * (newfw +safw) * turbKinVisc * turbKinVisc / dist2;
     
     for (int i= 0; i < nResidual; i++) {
       Residual[i] = SAResidual[i];
@@ -1827,11 +1827,11 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
   } else if (featureset.compare("fw_hifi_2") ==0) {
     nInputMLVariables = 2;
     nOutputMLVariables = 1;
-    netInput = new double[nInputMLVariables];
-    netOutput = new double[nOutputMLVariables];
+    netInput = new su2double[nInputMLVariables];
+    netOutput = new su2double[nOutputMLVariables];
     
-    double chi = SANondimInputs->Chi;
-    double omegaBar = SANondimInputs->OmegaBar;
+    su2double chi = SANondimInputs->Chi;
+    su2double omegaBar = SANondimInputs->OmegaBar;
     // Karthik nondimensionalizes by d / vhat whereas I do by /(v + vhat)
     omegaBar *= 1 + 1/chi;
     
@@ -1840,12 +1840,12 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
     
     MLModel->Predict(netInput, netOutput);
     
-    double safw = SAOtherOutputs->fw;
-    double newfw = netOutput[0];
+    su2double safw = SAOtherOutputs->fw;
+    su2double newfw = netOutput[0];
     // The output is the value of fw. Need to replace the destruction term with the new computation
-    double turbKinVisc = SAInputs->Turbulent_Kinematic_Viscosity;
-    double dist2 = SAInputs->dist * SAInputs->dist;
-    double newdestruction = SAConstants->cw1 * (newfw +safw) * turbKinVisc * turbKinVisc / dist2;
+    su2double turbKinVisc = SAInputs->Turbulent_Kinematic_Viscosity;
+    su2double dist2 = SAInputs->dist * SAInputs->dist;
+    su2double newdestruction = SAConstants->cw1 * (newfw +safw) * turbKinVisc * turbKinVisc / dist2;
     
     for (int i= 0; i < nResidual; i++) {
       Residual[i] = SAResidual[i];
@@ -1861,17 +1861,17 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
   } else if (featureset.compare("fw") == 0) {
     nInputMLVariables = 2;
     nOutputMLVariables = 1;
-    netInput = new double[nInputMLVariables];
-    netOutput = new double[nOutputMLVariables];
-    double chi = SANondimInputs->Chi;
-    double omegaBar = SANondimInputs->OmegaBar;
+    netInput = new su2double[nInputMLVariables];
+    netOutput = new su2double[nOutputMLVariables];
+    su2double chi = SANondimInputs->Chi;
+    su2double omegaBar = SANondimInputs->OmegaBar;
     netInput[0] = chi;
     netInput[1] = omegaBar;
     MLModel->Predict(netInput, netOutput);
     
     // The output is fw. Replicate the destruction term.
-    double fw_ml = netOutput[0];
-    double mul_dest = SAConstants->cw1 * fw_ml;
+    su2double fw_ml = netOutput[0];
+    su2double mul_dest = SAConstants->cw1 * fw_ml;
     Residual[0] = SAResidual[0];
     Residual[1] = mul_dest * Turbulent_Kinematic_Viscosity * Turbulent_Kinematic_Viscosity / (dist_i * dist_i);
     Residual[2] = SAResidual[2];
@@ -1883,17 +1883,17 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
   } else if (featureset.compare("mul_destruction") == 0) {
     nInputMLVariables = 2;
     nOutputMLVariables = 1;
-    netInput = new double[nInputMLVariables];
-    netOutput = new double[nOutputMLVariables];
-    double chi = SANondimInputs->Chi;
-    double omegaBar = SANondimInputs->OmegaBar;
+    netInput = new su2double[nInputMLVariables];
+    netOutput = new su2double[nOutputMLVariables];
+    su2double chi = SANondimInputs->Chi;
+    su2double omegaBar = SANondimInputs->OmegaBar;
     netInput[0] = chi;
     netInput[1] = omegaBar;
     MLModel->Predict(netInput, netOutput);
     
     // The output is a multiplier to the destruction term. Replicate the
     // destruction term
-    double mul_dest = netOutput[0];
+    su2double mul_dest = netOutput[0];
     Residual[0] = SAResidual[0];
     Residual[1] = mul_dest * Turbulent_Kinematic_Viscosity * Turbulent_Kinematic_Viscosity / (dist_i * dist_i);
     Residual[2] = SAResidual[2];
@@ -1905,16 +1905,16 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
   } else if (featureset.compare("mul_production") ==0) {
     nInputMLVariables = 2;
     nOutputMLVariables = 1;
-    netInput = new double[nInputMLVariables];
-    netOutput = new double[nOutputMLVariables];
-    double chi = SANondimInputs->Chi;
-    double omegaBar = SANondimInputs->OmegaBar;
+    netInput = new su2double[nInputMLVariables];
+    netOutput = new su2double[nOutputMLVariables];
+    su2double chi = SANondimInputs->Chi;
+    su2double omegaBar = SANondimInputs->OmegaBar;
     netInput[0] = chi;
     netInput[1] = omegaBar;
     MLModel->Predict(netInput, netOutput);
     // The output is a multiplier to the destruction term. Replicate the
     // production term
-    double mul_prod = netOutput[0];
+    su2double mul_prod = netOutput[0];
     Residual[0] = mul_prod * Turbulent_Kinematic_Viscosity * SAOtherOutputs->Omega;
     Residual[1] = SAResidual[1];
     Residual[2] = SAResidual[2];
@@ -1943,18 +1943,18 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
   }
   
   // Compute Shivaji Medida's BL vs. Wake equation
-  double strainRateMag = 0;
+  su2double strainRateMag = 0;
   for (int i= 0; i < nDim; i++) {
     for (int j = 0; j < nDim; j++) {
-      double sij = 0.5 * (DUiDXj[i][j] + DUiDXj[j][i]);
+      su2double sij = 0.5 * (DUiDXj[i][j] + DUiDXj[j][i]);
       strainRateMag += 2 * (sij * sij);
     }
   }
   
   strainRateMag = sqrt(strainRateMag);
-  double ReS = Density_i * strainRateMag * dist_i * dist_i / (0.09 * Laminar_Viscosity_i);
+  su2double ReS = Density_i * strainRateMag * dist_i * dist_i / (0.09 * Laminar_Viscosity_i);
   fWake = exp(- (1e-10 * ReS * ReS));
-  double magU = 0;
+  su2double magU = 0;
   for (unsigned short i = 0; i < nDim; i++) {
     magU += V_i[1+i] * V_i[1+i];
   }

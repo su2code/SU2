@@ -2,7 +2,7 @@
  * \file numerics_adjoint_turbulent.cpp
  * \brief This file contains all the convective term discretization.
  * \author F. Palacios, A. Bueno
- * \version 3.2.9 "eagle"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -35,28 +35,28 @@ CUpwLin_AdjTurb::CUpwLin_AdjTurb(unsigned short val_nDim, unsigned short val_nVa
 	Gamma = config->GetGamma();
 	Gamma_Minus_One = Gamma - 1.0;
   
-	Velocity_i = new double [nDim];
+	Velocity_i = new su2double [nDim];
 }
 
 CUpwLin_AdjTurb::~CUpwLin_AdjTurb(void) {
 	delete [] Velocity_i;
 }
 
-void CUpwLin_AdjTurb::ComputeResidual (double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+void CUpwLin_AdjTurb::ComputeResidual (su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
 	bool implicit = (config->GetKind_TimeIntScheme_AdjTurb() == EULER_IMPLICIT);
   
 	/*--- Non-conservative term  -->  -\nabla \psi_\mu  B^{cv}
 	 B^{cv} = -v ---*/
   
 	unsigned short iDim;
-	double proj_conv_flux = 0;
+	su2double proj_conv_flux = 0;
   
 	for (iDim = 0; iDim < nDim; iDim++) {
 		Velocity_i[iDim] = U_i[iDim+1]/U_i[0];
 		proj_conv_flux += Velocity_i[iDim]*Normal[iDim]; // projection of convective flux at iPoint
 	}
-	double psinu0 = TurbPsi_i[0];
-	double psinu1;
+	su2double psinu0 = TurbPsi_i[0];
+	su2double psinu1;
 	if (proj_conv_flux > 0)
 		psinu1 = psinu0 + proj_conv_flux;
 	else
@@ -73,8 +73,8 @@ CUpwSca_AdjTurb::CUpwSca_AdjTurb(unsigned short val_nDim, unsigned short val_nVa
 	Gamma = config->GetGamma();
 	Gamma_Minus_One = Gamma - 1.0;
   
-	Velocity_i = new double [nDim];
-	Velocity_j = new double [nDim];
+	Velocity_i = new su2double [nDim];
+	Velocity_j = new su2double [nDim];
 }
 
 CUpwSca_AdjTurb::~CUpwSca_AdjTurb(void) {
@@ -82,9 +82,9 @@ CUpwSca_AdjTurb::~CUpwSca_AdjTurb(void) {
 	delete [] Velocity_j;
 }
 
-void CUpwSca_AdjTurb::ComputeResidual (double *val_residual_i, double *val_residual_j,
-                                   double **val_Jacobian_ii, double **val_Jacobian_ij,
-                                   double **val_Jacobian_ji, double **val_Jacobian_jj, CConfig *config) {
+void CUpwSca_AdjTurb::ComputeResidual (su2double *val_residual_i, su2double *val_residual_j,
+                                   su2double **val_Jacobian_ii, su2double **val_Jacobian_ij,
+                                   su2double **val_Jacobian_ji, su2double **val_Jacobian_jj, CConfig *config) {
   
 	bool implicit = (config->GetKind_TimeIntScheme_AdjTurb() == EULER_IMPLICIT);
   
@@ -92,8 +92,8 @@ void CUpwSca_AdjTurb::ComputeResidual (double *val_residual_i, double *val_resid
 	 B^{cv} = -\nabla \hat{nu}/\sigma + v ---*/
   
 	unsigned short iDim;
-	double proj_conv_flux_i = 0, proj_conv_flux_j = 0, proj_conv_flux_ij = 0;
-	double sigma = 2./3.;
+	su2double proj_conv_flux_i = 0, proj_conv_flux_j = 0, proj_conv_flux_ij = 0;
+	su2double sigma = 2./3.;
   
 	for (iDim = 0; iDim < nDim; iDim++) {
 		Velocity_i[iDim] = U_i[iDim+1]/U_i[0];
@@ -118,13 +118,13 @@ CAvgGradCorrected_AdjTurb::CAvgGradCorrected_AdjTurb(unsigned short val_nDim, un
   
 	Gamma = config->GetGamma();
 	Gamma_Minus_One = Gamma - 1.0;
-	Edge_Vector = new double [nDim];
-	Mean_GradTurbPsi = new double* [nVar];
-	Proj_Mean_GradTurbPsi_Kappa = new double [nVar];
-	Proj_Mean_GradTurbPsi_Edge = new double [nVar];
-	Proj_Mean_GradTurbPsi_Corrected = new double [nVar];
+	Edge_Vector = new su2double [nDim];
+	Mean_GradTurbPsi = new su2double* [nVar];
+	Proj_Mean_GradTurbPsi_Kappa = new su2double [nVar];
+	Proj_Mean_GradTurbPsi_Edge = new su2double [nVar];
+	Proj_Mean_GradTurbPsi_Corrected = new su2double [nVar];
 	for (unsigned short iVar = 0; iVar < nVar; iVar++)
-		Mean_GradTurbPsi[iVar] = new double [nDim];
+		Mean_GradTurbPsi[iVar] = new su2double [nDim];
 }
 
 CAvgGradCorrected_AdjTurb::~CAvgGradCorrected_AdjTurb(void) {
@@ -138,15 +138,15 @@ CAvgGradCorrected_AdjTurb::~CAvgGradCorrected_AdjTurb(void) {
 	delete [] Mean_GradTurbPsi;
 }
 
-void CAvgGradCorrected_AdjTurb::ComputeResidual(double *val_residual, double **val_Jacobian_i,
-                                                 double **val_Jacobian_j, CConfig *config) {
+void CAvgGradCorrected_AdjTurb::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i,
+                                                 su2double **val_Jacobian_j, CConfig *config) {
   
 	bool implicit = (config->GetKind_TimeIntScheme_AdjTurb() == EULER_IMPLICIT);
   
-	double sigma = 2./3.;
-	double nu_i, nu_j, nu_e;
-	double dist_ij_2 = 0;
-	double proj_vector_ij = 0;
+	su2double sigma = 2./3.;
+	su2double nu_i, nu_j, nu_e;
+	su2double dist_ij_2 = 0;
+	su2double proj_vector_ij = 0;
 	unsigned short iVar, iDim;
   
 	/*--- Compute mean effective viscosity ---*/
@@ -188,16 +188,16 @@ void CAvgGradCorrected_AdjTurb::ComputeResidual(double *val_residual, double **v
   
 }
 
-void CAvgGradCorrected_AdjTurb::ComputeResidual(double *val_residual_i, double *val_residual_j,
-                                                double **val_Jacobian_ii, double **val_Jacobian_ij,
-                                                double **val_Jacobian_ji, double **val_Jacobian_jj, CConfig *config) {
+void CAvgGradCorrected_AdjTurb::ComputeResidual(su2double *val_residual_i, su2double *val_residual_j,
+                                                su2double **val_Jacobian_ii, su2double **val_Jacobian_ij,
+                                                su2double **val_Jacobian_ji, su2double **val_Jacobian_jj, CConfig *config) {
   
 	bool implicit = (config->GetKind_TimeIntScheme_AdjTurb() == EULER_IMPLICIT);
   
-	double sigma = 2./3.;
-	double nu_i, nu_j, nu_e_i, nu_e_j;
-	double dist_ij_2 = 0;
-	double proj_vector_ij = 0;
+	su2double sigma = 2./3.;
+	su2double nu_i, nu_j, nu_e_i, nu_e_j;
+	su2double dist_ij_2 = 0;
+	su2double proj_vector_ij = 0;
 	unsigned short iVar, iDim;
   
 	/*--- Compute mean effective viscosity ---*/
@@ -248,13 +248,13 @@ CAvgGrad_AdjTurb::CAvgGrad_AdjTurb(unsigned short val_nDim, unsigned short val_n
   
 	Gamma = config->GetGamma();
 	Gamma_Minus_One = Gamma - 1.0;
-	Edge_Vector = new double [nDim];
-	Mean_GradTurbPsi = new double* [nVar];
-	Proj_Mean_GradTurbPsi_Kappa = new double [nVar];
-	Proj_Mean_GradTurbPsi_Edge = new double [nVar];
-	Proj_Mean_GradTurbPsi_Corrected = new double [nVar];
+	Edge_Vector = new su2double [nDim];
+	Mean_GradTurbPsi = new su2double* [nVar];
+	Proj_Mean_GradTurbPsi_Kappa = new su2double [nVar];
+	Proj_Mean_GradTurbPsi_Edge = new su2double [nVar];
+	Proj_Mean_GradTurbPsi_Corrected = new su2double [nVar];
 	for (unsigned short iVar = 0; iVar < nVar; iVar++)
-		Mean_GradTurbPsi[iVar] = new double [nDim];
+		Mean_GradTurbPsi[iVar] = new su2double [nDim];
 }
 
 CAvgGrad_AdjTurb::~CAvgGrad_AdjTurb(void) {
@@ -268,15 +268,15 @@ CAvgGrad_AdjTurb::~CAvgGrad_AdjTurb(void) {
 	delete [] Mean_GradTurbPsi;
 }
 
-void CAvgGrad_AdjTurb::ComputeResidual(double *val_residual, double **val_Jacobian_i,
-                                                double **val_Jacobian_j, CConfig *config) {
+void CAvgGrad_AdjTurb::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i,
+                                                su2double **val_Jacobian_j, CConfig *config) {
   
 	bool implicit = (config->GetKind_TimeIntScheme_AdjTurb() == EULER_IMPLICIT);
   
-	double sigma = 2./3.;
-	double nu_i, nu_j, nu_e;
-	double dist_ij_2 = 0;
-	double proj_vector_ij = 0;
+	su2double sigma = 2./3.;
+	su2double nu_i, nu_j, nu_e;
+	su2double dist_ij_2 = 0;
+	su2double proj_vector_ij = 0;
 	unsigned short iVar, iDim;
   
 	/*--- Compute mean effective viscosity ---*/
@@ -314,16 +314,16 @@ void CAvgGrad_AdjTurb::ComputeResidual(double *val_residual, double **val_Jacobi
   
 }
 
-void CAvgGrad_AdjTurb::ComputeResidual(double *val_residual_i, double *val_residual_j,
-                                                double **val_Jacobian_ii, double **val_Jacobian_ij,
-                                                double **val_Jacobian_ji, double **val_Jacobian_jj, CConfig *config) {
+void CAvgGrad_AdjTurb::ComputeResidual(su2double *val_residual_i, su2double *val_residual_j,
+                                                su2double **val_Jacobian_ii, su2double **val_Jacobian_ij,
+                                                su2double **val_Jacobian_ji, su2double **val_Jacobian_jj, CConfig *config) {
   
 	bool implicit = (config->GetKind_TimeIntScheme_AdjTurb() == EULER_IMPLICIT);
   
-	double sigma = 2./3.;
-	double nu_i, nu_j, nu_e_i, nu_e_j;
-	double dist_ij_2 = 0;
-	double proj_vector_ij = 0;
+	su2double sigma = 2./3.;
+	su2double nu_i, nu_j, nu_e_i, nu_e_j;
+	su2double dist_ij_2 = 0;
+	su2double proj_vector_ij = 0;
 	unsigned short iVar, iDim;
   
 	/*--- Compute mean effective viscosity ---*/
@@ -370,10 +370,10 @@ CSourcePieceWise_AdjTurb::CSourcePieceWise_AdjTurb(unsigned short val_nDim, unsi
 	Gamma = config->GetGamma();
 	Gamma_Minus_One = Gamma - 1.0;
   
-	Velocity = new double [nDim];
-	tau = new double* [nDim];
+	Velocity = new su2double [nDim];
+	tau = new su2double* [nDim];
 	for (unsigned short iDim = 0; iDim < nDim; iDim++)
-		tau[iDim] = new double [nDim];
+		tau[iDim] = new su2double [nDim];
 }
 
 CSourcePieceWise_AdjTurb::~CSourcePieceWise_AdjTurb(void) {
@@ -384,11 +384,11 @@ CSourcePieceWise_AdjTurb::~CSourcePieceWise_AdjTurb(void) {
 	delete [] tau;
 }
 
-void CSourcePieceWise_AdjTurb::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+void CSourcePieceWise_AdjTurb::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
 	unsigned short iDim, jDim;
   
 	bool implicit = (config->GetKind_TimeIntScheme_AdjTurb() == EULER_IMPLICIT);
-  double Prandtl_Turb = config->GetPrandtl_Turb();
+  su2double Prandtl_Turb = config->GetPrandtl_Turb();
   
 	val_residual[0] = 0.0;
 	if (implicit)
@@ -397,13 +397,13 @@ void CSourcePieceWise_AdjTurb::ComputeResidual(double *val_residual, double **va
 	if (dist_i > 0.0) {
     
 		/*--- Computation of Vorticity and Divergence of velocity ---*/
-		double div_vel = 0;
+		su2double div_vel = 0;
 		for (iDim = 0; iDim < nDim; iDim++) {
 			Velocity[iDim] = U_i[iDim+1]/U_i[0];
 			div_vel += PrimVar_Grad_i[iDim+1][iDim];
 		}
     
-		double Vorticity = (PrimVar_Grad_i[2][0]-PrimVar_Grad_i[1][1])*(PrimVar_Grad_i[2][0]-PrimVar_Grad_i[1][1]);
+		su2double Vorticity = (PrimVar_Grad_i[2][0]-PrimVar_Grad_i[1][1])*(PrimVar_Grad_i[2][0]-PrimVar_Grad_i[1][1]);
 		if (nDim == 3)
 			Vorticity += ( (PrimVar_Grad_i[3][1]-PrimVar_Grad_i[2][2])*(PrimVar_Grad_i[3][1]-PrimVar_Grad_i[2][2]) +
                     (PrimVar_Grad_i[1][2]-PrimVar_Grad_i[3][0])*(PrimVar_Grad_i[1][2]-PrimVar_Grad_i[3][0]) );
@@ -411,22 +411,22 @@ void CSourcePieceWise_AdjTurb::ComputeResidual(double *val_residual, double **va
     
 		/*--- FIRST PART: -Bs*TurbPsi_i ---*/
 		/*--- CLOUSURE CONSTANTS ---*/
-		double cv1 = 7.1;
-		double cv1_3 = cv1*cv1*cv1;
-		double k = 0.41;
-		double k2 = k*k;
-		double cb1 = 0.1355;
-		double cw2 = 0.3;
-		double cw3_6 = pow(2.0,6.0);
-		double sigma = 2./3.;
-		double cb2 = 0.622;
-		double cw1 = cb1/k2+(1+cb2)/sigma;
+		su2double cv1 = 7.1;
+		su2double cv1_3 = cv1*cv1*cv1;
+		su2double k = 0.41;
+		su2double k2 = k*k;
+		su2double cb1 = 0.1355;
+		su2double cw2 = 0.3;
+		su2double cw3_6 = pow(2.0,6.0);
+		su2double sigma = 2./3.;
+		su2double cb2 = 0.622;
+		su2double cw1 = cb1/k2+(1+cb2)/sigma;
     
-		double nu, Ji, fv1, fv2, Shat, dist_0_2, Ji_2, Ji_3, one_o_oneplusJifv1;
-		double r, g, g_6, glim, fw;
-		double dTs_nuhat, dTs_Shat, dShat_nuhat, dTs_fw, dfw_g, dg_r, dr_nuhat, dr_Shat;
-		double dShat_fv2, dfv2_fv1, dfv1_Ji, dJi_nuhat, dfv2_Ji;
-		double Bs;
+		su2double nu, Ji, fv1, fv2, Shat, dist_0_2, Ji_2, Ji_3, one_o_oneplusJifv1;
+		su2double r, g, g_6, glim, fw;
+		su2double dTs_nuhat, dTs_Shat, dShat_nuhat, dTs_fw, dfw_g, dg_r, dr_nuhat, dr_Shat;
+		su2double dShat_fv2, dfv2_fv1, dfv1_Ji, dJi_nuhat, dfv2_Ji;
+		su2double Bs;
     
 		dist_0_2 = dist_i*dist_i;
 		nu = Laminar_Viscosity_i/U_i[0];
@@ -471,7 +471,7 @@ void CSourcePieceWise_AdjTurb::ComputeResidual(double *val_residual, double **va
 			val_Jacobian_i[0][0] = -Bs*Volume;
     
 		/*---SECOND PART: \partial_nu_hat mu^k F^{vk} cdot \grad Psi ---*/
-		double dEddyVisc_nuhat;
+		su2double dEddyVisc_nuhat;
     if (!config->GetFrozen_Visc())
       dEddyVisc_nuhat = U_i[0]*fv1*(1.0 + 3.0*cv1_3/(Ji_3+cv1_3));
     else
@@ -483,9 +483,9 @@ void CSourcePieceWise_AdjTurb::ComputeResidual(double *val_residual, double **va
 			tau[iDim][iDim] -= TWO3*div_vel;
 		}
     
-		double Gas_Constant = config->GetGas_ConstantND();
-		double Cp = (Gamma/Gamma_Minus_One)*Gas_Constant;
-		double tau_gradphi = 0.0, vel_tau_gradpsi5 = 0.0, gradT_gradpsi5 = 0.0;
+		su2double Gas_Constant = config->GetGas_ConstantND();
+		su2double Cp = (Gamma/Gamma_Minus_One)*Gas_Constant;
+		su2double tau_gradphi = 0.0, vel_tau_gradpsi5 = 0.0, gradT_gradpsi5 = 0.0;
     
 		for (iDim = 0; iDim < nDim; iDim++) {
 			gradT_gradpsi5 += PrimVar_Grad_i[0][iDim]*PsiVar_Grad_i[nVar-1][iDim];
@@ -509,7 +509,7 @@ CSourceConservative_AdjTurb::CSourceConservative_AdjTurb(unsigned short val_nDim
 CSourceConservative_AdjTurb::~CSourceConservative_AdjTurb(void) {
 }
 
-void CSourceConservative_AdjTurb::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+void CSourceConservative_AdjTurb::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
   
 	/*--- SOURCE term  -->  \nabla ( \psi_\mu \B7 E^{s} )
 	 E^{s} = 2 c_{b2}/\sigma \nabla \hat{nu} ---*/
@@ -517,10 +517,10 @@ void CSourceConservative_AdjTurb::ComputeResidual(double *val_residual, double *
 	unsigned short iDim;
 	bool implicit = (config->GetKind_TimeIntScheme_AdjTurb() == EULER_IMPLICIT);
   
-	double cb2 = 0.622;
-	double sigma = 2./3.;
-	double coeff = 2.0*cb2/sigma;
-	double E_ij, proj_TurbVar_Grad_i, proj_TurbVar_Grad_j;
+	su2double cb2 = 0.622;
+	su2double sigma = 2./3.;
+	su2double coeff = 2.0*cb2/sigma;
+	su2double E_ij, proj_TurbVar_Grad_i, proj_TurbVar_Grad_j;
   
 	E_ij = 0.0;	proj_TurbVar_Grad_i = 0.0; proj_TurbVar_Grad_j = 0.0;
 	for (iDim = 0; iDim < nDim; iDim++) {

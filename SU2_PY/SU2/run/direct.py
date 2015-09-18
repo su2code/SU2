@@ -3,7 +3,7 @@
 ## \file direct.py
 #  \brief python package for running direct solutions
 #  \author T. Lukaczyk, F. Palacios
-#  \version 3.2.9 "eagle"
+#  \version 4.0.1 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -75,6 +75,8 @@ def direct ( config ):
     konfig['MATH_PROBLEM']  = 'DIRECT'
     konfig['CONV_FILENAME'] = konfig['CONV_FILENAME'] + '_direct'    
     
+    direct_diff = konfig.get('DIRECT_DIFF','NO') == "YES"
+
     # Run Solution
     SU2_CFD(konfig)
     

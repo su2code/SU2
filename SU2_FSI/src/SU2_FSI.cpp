@@ -35,12 +35,10 @@ using namespace std;
 
 int main(int argc, char *argv[]) {
 
-	  cout << endl <<"------------------------- Start running SU2_FSI -------------------------" << endl;
-
 	  bool StopCalc = false;
-	  double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
+	  su2double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
 	  unsigned long ExtIter = 0;
-	  unsigned short iMesh, iZone, iSol, nZone, nDim;
+	  unsigned short iMesh, iZone, jZone, iSol, nZone, nDim;
 	  char config_file_name[MAX_STRING_SIZE];
 	  char runtime_file_name[MAX_STRING_SIZE];
 	  ofstream ConvHist_file;
@@ -57,21 +55,26 @@ int main(int argc, char *argv[]) {
 	  MPI_Comm_size(MPI_COMM_WORLD, &size);
 	#endif
 
+	    if (rank == MASTER_NODE)
+		  cout << endl <<"------------------------- Start running SU2_FSI -------------------------" << endl;
+
+
 	  /*--- Create pointers to all of the classes that may be used throughout
 	   the SU2_FSI code. In general, the pointers are instantiated down a
 	   heirarchy over all zones, multigrid levels, equation sets, and equation
 	   terms as described in the comments below. ---*/
 
-	  COutput *output                       = NULL;
-	  CIntegration ***integration_container = NULL;
-	  CGeometry ***geometry_container       = NULL;
-	  CSolver ****solver_container          = NULL;
-	  CNumerics *****numerics_container     = NULL;
-	  CConfig **config_container            = NULL;
-	  CSurfaceMovement **surface_movement   = NULL;
-	  CVolumetricMovement **grid_movement   = NULL;
-	  CFreeFormDefBox*** FFDBox             = NULL;
-	  CInterpolator **interpolator_container= NULL;
+	  COutput *output                         = NULL;
+	  CIntegration ***integration_container   = NULL;
+	  CGeometry ***geometry_container         = NULL;
+	  CSolver ****solver_container            = NULL;
+	  CNumerics *****numerics_container       = NULL;
+	  CConfig **config_container              = NULL;
+	  CSurfaceMovement **surface_movement     = NULL;
+	  CVolumetricMovement **grid_movement     = NULL;
+	  CFreeFormDefBox*** FFDBox               = NULL;
+	  CInterpolator ***interpolator_container = NULL;
+	  CTransfer ***transfer_container         = NULL;
 
 	  /*--- Load in the number of zones and spatial dimensions in the mesh file (If no config
 	   file is specified, default.cfg is used) ---*/
@@ -99,7 +102,8 @@ int main(int argc, char *argv[]) {
 	  surface_movement      = new CSurfaceMovement*[nZone];
 	  grid_movement         = new CVolumetricMovement*[nZone];
 	  FFDBox                = new CFreeFormDefBox**[nZone];
-	  interpolator_container= new CInterpolator*[nZone];
+	  interpolator_container= new CInterpolator**[nZone];
+	  transfer_container    = new CTransfer**[nZone];
 
 	  for (iZone = 0; iZone < nZone; iZone++) {
 	    solver_container[iZone]       = NULL;
@@ -111,6 +115,7 @@ int main(int argc, char *argv[]) {
 	    grid_movement[iZone]          = NULL;
 	    FFDBox[iZone]                 = NULL;
 	    interpolator_container[iZone] = NULL;
+	    transfer_container[iZone]     = NULL;
 	  }
 
 	  /*--- Loop over all zones to initialize the various classes. In most
@@ -258,24 +263,38 @@ int main(int argc, char *argv[]) {
 
 	  }
 
-	  if (!config_container[ZONE_0]->GetMatchingMesh())
-	    interpolator_container[iZone] = new CNearestNeighbor(geometry_container,config_container,ZONE_0,ZONE_1,nZone);
-
 	  /*--- For the time-spectral solver, set the grid node velocities. ---*/
 
 	  if (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_SPECTRAL)
 	    SetTimeSpectral_Velocities(geometry_container, config_container, nZone);
 
-	  /*--- Coupling between zones (limited to two zones at the moment) ---*/
+	  /*--- Definition of the interface and transfer conditions between different zones.
+	   *--- The transfer container is defined for zones paired one to one.
+	   *--- This only works for a multizone problem (nZone > 1).
+	   *--- Also, at the moment this capability is limited to two zones (nZone < 3).
+	   *--- This will change in the future. ---*/
 
-	  if (nZone == 2) {
-	    if (rank == MASTER_NODE)
-	      cout << endl <<"--------------------- Setting Coupling Between Zones --------------------" << endl;
-	    geometry_container[ZONE_0][MESH_0]->MatchZone(config_container[ZONE_0], geometry_container[ZONE_1][MESH_0],
-	                                                  config_container[ZONE_1], ZONE_0, nZone);
-	    geometry_container[ZONE_1][MESH_0]->MatchZone(config_container[ZONE_1], geometry_container[ZONE_0][MESH_0],
-	                                                  config_container[ZONE_0], ZONE_1, nZone);
+	  if (rank == MASTER_NODE)
+	    cout << endl <<"------------------- Multizone Interface Preprocessing -------------------" << endl;
+
+
+	  if ((nZone > 1) && (nZone < 3)) {
+
+		  for (iZone = 0; iZone < nZone; iZone++){
+			  transfer_container[iZone] = new CTransfer*[nZone];
+			  interpolator_container[iZone] = new CInterpolator*[nZone];
+			  for (jZone = 0; jZone < nZone; jZone++){
+				  transfer_container[iZone][jZone] = NULL;
+				  interpolator_container[iZone][jZone] = NULL;
+			  }
+		  }
+
+		  Interface_Preprocessing(transfer_container, interpolator_container, geometry_container,
+				  	  	  	  	  config_container, nZone, nDim);
+
 	  }
+
+
 
 	  /*--- Definition of the output class (one for all zones). The output class
 	   manages the writing of all restart, volume solution, surface solution,
@@ -301,7 +320,7 @@ int main(int argc, char *argv[]) {
 	  /*--- Set up a timer for performance benchmarking (preprocessing time is not included) ---*/
 
 	#ifndef HAVE_MPI
-	  StartTime = double(clock())/double(CLOCKS_PER_SEC);
+	  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 	#else
 	  StartTime = MPI_Wtime();
 	#endif
@@ -350,7 +369,7 @@ int main(int argc, char *argv[]) {
 		    config_container[ZONE_1]->SetExtIter(ExtIter);
 		    FSI_BGS_Iteration(output, integration_container, geometry_container,
 		    	                		solver_container, numerics_container, config_container,
-		    	                		surface_movement, grid_movement, FFDBox,
+		    	                		surface_movement, grid_movement, FFDBox, transfer_container,
 		    	                		iFluidIt, nFluidIt);
 		}
 
@@ -372,7 +391,7 @@ int main(int argc, char *argv[]) {
 	     wall clock time required. ---*/
 
 	#ifndef HAVE_MPI
-	    StopTime = double(clock())/double(CLOCKS_PER_SEC);
+	    StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 	#else
 	    StopTime = MPI_Wtime();
 	#endif
@@ -393,9 +412,16 @@ int main(int argc, char *argv[]) {
 	    runtime = new CConfig(runtime_file_name, config_container[ZONE_0]);
 
 	    /*--- Update the convergence history file (serial and parallel computations). ---*/
+	    /*--- This is temporal and for practical purposes. ---*/
+	    if (rank == MASTER_NODE) cout << "---------------------------------------------------------------------------" << endl;
+	    for (iZone = 0; iZone < nZone; iZone++){
+	    	if (iZone == 0 && rank == MASTER_NODE) cout << "Fluid convergence: " << endl;
+	    	else if (iZone == 1 && rank == MASTER_NODE) cout << "Structural convergence: " << endl;
+	    	output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container,
+	                                	config_container, integration_container, false, UsedTime, iZone);
+	    }
 
-	    output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container,
-	                                config_container, integration_container, false, UsedTime, ZONE_0);
+	    if (rank == MASTER_NODE)cout << "---------------------------------------------------------------------------" << endl;
 
 	    /*--- Evaluate the new CFL number (adaptive). ---*/
 
@@ -520,7 +546,7 @@ int main(int argc, char *argv[]) {
 	   wall clock time required. ---*/
 
 	#ifndef HAVE_MPI
-	  StopTime = double(clock())/double(CLOCKS_PER_SEC);
+	  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 	#else
 	  StopTime = MPI_Wtime();
 	#endif
