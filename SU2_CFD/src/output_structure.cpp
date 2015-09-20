@@ -3794,6 +3794,7 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
     filename = config->GetObjFunc_Extension(filename);
   } else {
     filename = config->GetRestart_FlowFileName();
+    filename = config->GetRestart_FlowFileName(filename, val_iZone);
   }
   
   /*--- Unsteady problems require an iteration number to be appended. ---*/

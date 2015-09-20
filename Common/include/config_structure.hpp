@@ -3929,6 +3929,12 @@ public:
 	 * \brief Get the name of the restart file for the flow variables.
 	 * \return Name of the restart file for the flow variables.
 	 */
+	string GetRestart_FlowFileName(string val_filename, int val_iZone);
+    
+    /*!
+	 * \brief Get the name of the restart file for the flow variables.
+	 * \return Name of the restart file for the flow variables.
+	 */
 	string GetRestart_FlowFileName(void);
 
 	/*!
