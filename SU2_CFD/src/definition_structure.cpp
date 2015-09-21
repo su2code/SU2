@@ -1607,15 +1607,10 @@ void Interface_Preprocessing(CTransfer ***transfer_container, CInterpolator ***i
 					transfer_container[donorZone][targetZone] = new CTransfer_FlowTraction(nVar, nVarTransfer, config_container[donorZone]);
 					if (rank == MASTER_NODE) cout << "flow tractions. "<< endl;
 				}
-				else if (structural_donor && fluid_target && matching_mesh){
+				else if (structural_donor && fluid_target){
 					nVarTransfer = 0;
 					transfer_container[donorZone][targetZone] = new CTransfer_StructuralDisplacements(nVar, nVarTransfer, config_container[donorZone]);
 					if (rank == MASTER_NODE) cout << "structural displacements. "<< endl;
-				}
-				else if (structural_donor && fluid_target && !matching_mesh){
-					nVarTransfer = 0;
-					transfer_container[donorZone][targetZone] = new CTransfer_StructuralDisplacements_NN(nVar, nVarTransfer, config_container[donorZone]);
-					if (rank == MASTER_NODE) cout << "structural displacements (NN). "<< endl;
 				}
 				else {
 					nVarTransfer = 0;

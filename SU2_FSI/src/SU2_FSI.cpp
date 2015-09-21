@@ -295,7 +295,6 @@ int main(int argc, char *argv[]) {
 	  }
 
 
-
 	  /*--- Definition of the output class (one for all zones). The output class
 	   manages the writing of all restart, volume solution, surface solution,
 	   surface comma-separated value, and convergence history files (both in serial
