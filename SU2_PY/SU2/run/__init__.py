@@ -4,6 +4,7 @@ from interface import  \
     build_command     ,\
     run_command       ,\
     CFD               ,\
+    FSI               ,\
     MSH               ,\
     DEF               ,\
     DOT               ,\
