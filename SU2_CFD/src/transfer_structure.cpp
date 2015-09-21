@@ -1149,8 +1149,14 @@ void CTransfer::Allgather_InterfaceData_Interpolate(CSolver *donor_solution, CSo
 				/*--- We have identified the local index of the Donor marker ---*/
 				/*--- Now we are going to store the number of local points that belong to Marker_Donor on each processor ---*/
 				/*--- This are the number of points that will be sent from this particular processor ---*/
-				/*--- nLocalVertexDonor WILL include halo nodes ---*/
-				nLocalVertexDonor = donor_geometry->GetnVertex(iMarkerDonor);
+				/*--- nLocalVertexDonor WILL NOT include halo nodes ---*/
+				nLocalVertexDonor = 0;
+				for (iVertex = 0; iVertex < donor_geometry->GetnVertex(iMarkerDonor); iVertex++){
+					Point_Donor = donor_geometry->vertex[iMarkerDonor][iVertex]->GetNode();
+					if (donor_geometry->node[Point_Donor]->GetDomain()){
+						nLocalVertexDonor++;
+					}
+				}
 				/*--- Store the identifier for the structural marker ---*/
 				Marker_Donor = iMarkerDonor;
 				/*--- Exit the for loop: we have found the local index for iMarkerFSI on the FEA side ---*/
@@ -1179,8 +1185,8 @@ void CTransfer::Allgather_InterfaceData_Interpolate(CSolver *donor_solution, CSo
 			}
 		}
 
-		Buffer_Send_nVertexDonor[0] = nLocalVertexDonor;							   // Retrieve total number of vertices on Donor marker
-		if (rank == MASTER_NODE) Buffer_Recv_nVertexDonor = new unsigned long[size];   // Allocate memory to receive how many vertices are on each rank on the structural side
+		Buffer_Send_nVertexDonor[0] = nLocalVertexDonor;	  // Retrieve total number of vertices on Donor marker
+		Buffer_Recv_nVertexDonor = new unsigned long[size];   // Allocate memory to receive how many vertices are on each rank on the structural side
 
 #ifdef HAVE_MPI
 		/*--- We receive MaxLocalVertexDonor as the maximum number of vertices in one single processor on the donor side---*/
@@ -1212,36 +1218,41 @@ void CTransfer::Allgather_InterfaceData_Interpolate(CSolver *donor_solution, CSo
 		for (iVertex = 0; iVertex < nBuffer_DonorIndices; iVertex++)
 			Buffer_Send_DonorIndices[iVertex] = -1;
 
+		/*--- Also to avoid having random values in the variables vector ---*/
+		for (iVertex = 0; iVertex < nBuffer_DonorIndices; iVertex++){
+			for (iVar = 0; iVar < nVar; iVar++){
+				Buffer_Send_DonorVariables[iVertex*nVar + iVar] = 0.0;
+			}
+		}
+
 		if (Marker_Donor >= 0){
 
-			for (iVertex = 0; iVertex < nLocalVertexDonor; iVertex++){
+			iLocalVertex = 0;
+
+			for (iVertex = 0; iVertex < donor_geometry->GetnVertex(Marker_Donor); iVertex++){
 
 				Point_Donor = donor_geometry->vertex[Marker_Donor][iVertex]->GetNode();
 
 				GetDonor_Variable(donor_solution, donor_geometry, donor_config, Marker_Donor, iVertex, Point_Donor);
 
-				for (iVar = 0; iVar < nVar; iVar++){
-					Buffer_Send_DonorVariables[iVertex*nVar+iVar] = Donor_Variable[iVar];
-				}
-
 				/*--- If this processor owns the node ---*/
 				if (donor_geometry->node[Point_Donor]->GetDomain()){
+					for (iVar = 0; iVar < nVar; iVar++){
+						Buffer_Send_DonorVariables[iLocalVertex*nVar+iVar] = Donor_Variable[iVar];
+					}
+
 					Point_Donor_Global = donor_geometry->node[Point_Donor]->GetGlobalIndex();
-					Buffer_Send_DonorIndices[iVertex] = Point_Donor_Global;
-				}
-				else{
-					/*--- We set the values to be -1 to be able to identify them later as halo nodes ---*/
-					Buffer_Send_DonorIndices[iVertex]     = -1;
+					Buffer_Send_DonorIndices[iLocalVertex] = Point_Donor_Global;
+
+					iLocalVertex++;
 				}
 
 			}
 
 		}
 
-		cout << "STOPS HERE:" << endl;
-
 #ifdef HAVE_MPI
-		/*--- Once all the messages have been prepared, we gather them all into the MASTER_NODE ---*/
+		/*--- Once all the messages have been prepared, we gather them all into all the processors ---*/
 		SU2_MPI::Allgather(Buffer_Send_DonorVariables, nBuffer_DonorVariables, MPI_DOUBLE, Buffer_Recv_DonorVariables, nBuffer_DonorVariables, MPI_DOUBLE, MPI_COMM_WORLD);
 		SU2_MPI::Allgather(Buffer_Send_DonorIndices, nBuffer_DonorIndices, MPI_LONG, Buffer_Recv_DonorIndices, nBuffer_DonorIndices, MPI_LONG, MPI_COMM_WORLD);
 #else
@@ -1283,7 +1294,7 @@ void CTransfer::Allgather_InterfaceData_Interpolate(CSolver *donor_solution, CSo
 						donorCoeff = target_geometry->vertex[Marker_Target][iVertex]->GetDonorCoeff(iDonorPoint);
 
 						/*--- Find the index of the global donor point in the buffer Buffer_Bcast_Indices ---*/
-						indexPoint_iVertex = std::distance(Buffer_Recv_DonorIndices, std::find(Buffer_Recv_DonorIndices, Buffer_Recv_DonorIndices + nBuffer_DonorIndices, Donor_Global_Index));
+						indexPoint_iVertex = std::distance(Buffer_Recv_DonorIndices, std::find(Buffer_Recv_DonorIndices, Buffer_Recv_DonorIndices + nProcessor*nBuffer_DonorIndices, Donor_Global_Index));
 
 						Point_Target_Check = Buffer_Recv_DonorIndices[indexPoint_iVertex];
 
