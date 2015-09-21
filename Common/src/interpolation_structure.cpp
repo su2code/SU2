@@ -210,7 +210,6 @@ CNearestNeighbor::CNearestNeighbor(void):  CInterpolator(){ }
 /* Nearest Neighbor Interpolator */
 CNearestNeighbor::CNearestNeighbor(CGeometry ***geometry_container, CConfig **config,  unsigned int iZone, unsigned int jZone) :  CInterpolator(geometry_container, config, iZone, jZone){
 
-	//unsigned short nDim = geometry_container[Zones[0]][MESH_0]->GetnDim();
   /*--- Initialize transfer coefficients between the zones ---*/
   Set_TransferCoeff(config);
 

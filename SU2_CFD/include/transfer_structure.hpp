@@ -336,13 +336,13 @@ public:
 };
 
 /*!
- * \class CTransfer_StructuralDisplacements_NN
- * \brief Transfer structural displacements from a structural zone into a fluid zone using a nearest neighbor method
+ * \class CTransfer_StructuralDisplacements_Original
+ * \brief Transfer structural displacements from a structural zone into a fluid zone (legacy method, kept for V&V)
  * \author R. Sanchez
  * \version 4.0.1 "Cardinal"
  */
 
-class CTransfer_StructuralDisplacements_NN : public CTransfer {
+class CTransfer_StructuralDisplacements_Original : public CTransfer {
 
 protected:
 
@@ -351,19 +351,19 @@ public:
 	/*!
 	 * \brief Constructor of the class.
 	 */
-	CTransfer_StructuralDisplacements_NN(void);
+	CTransfer_StructuralDisplacements_Original(void);
 
 	/*!
 	 * \overload
 	 * \param[in] val_nVar - Number of variables that need to be transferred.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CTransfer_StructuralDisplacements_NN(unsigned short val_nVar, unsigned short val_nConst, CConfig *config);
+	CTransfer_StructuralDisplacements_Original(unsigned short val_nVar, unsigned short val_nConst, CConfig *config);
 
 	/*!
 	 * \brief Destructor of the class.
 	 */
-	virtual ~CTransfer_StructuralDisplacements_NN(void);
+	virtual ~CTransfer_StructuralDisplacements_Original(void);
 
 	/*!
 	 * \brief Retrieve some constants needed for the calculations.
