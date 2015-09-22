@@ -1817,7 +1817,7 @@ void CAdjEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
   bool rotating_frame = config->GetRotating_Frame();
   bool axisymmetric   = config->GetAxisymmetric();
   //	bool gravity        = (config->GetGravityForce() == YES);
-  bool time_spectral  = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
+  bool spectral_method  = (config->GetUnsteady_Simulation() == SPECTRAL_METHOD);
   //	bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   
   /*--- Initialize the source residual to zero ---*/
@@ -1847,7 +1847,7 @@ void CAdjEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
     }
   }
   
-  if (time_spectral) {
+  if (spectral_method) {
     
     su2double Volume, Source;
     
@@ -1859,7 +1859,7 @@ void CAdjEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       
       /*--- Get stored time spectral source term ---*/
       for (iVar = 0; iVar < nVar; iVar++) {
-        Source = node[iPoint]->GetTimeSpectral_Source(iVar);
+        Source = node[iPoint]->GetSpectralMethod_Source(iVar);
         Residual[iVar] = Source*Volume;
       }
       

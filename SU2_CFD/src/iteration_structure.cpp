@@ -38,9 +38,9 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
 	su2double Physical_dt, Physical_t;
 	unsigned short iMesh, iZone;
   
-	bool time_spectral = (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_SPECTRAL);
+	bool spectral_method = (config_container[ZONE_0]->GetUnsteady_Simulation() == SPECTRAL_METHOD);
 	unsigned short nZone = geometry_container[ZONE_0][MESH_0]->GetnZone();
-	if (time_spectral) {
+	if (spectral_method) {
     nZone = config_container[ZONE_0]->GetnTimeInstances();
   }
   unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
@@ -62,7 +62,7 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
     
     /*--- Dynamic mesh update ---*/
     
-		if ((config_container[iZone]->GetGrid_Movement()) && (!time_spectral)) {
+		if ((config_container[iZone]->GetGrid_Movement()) && (!spectral_method)) {
 			SetGrid_Movement(geometry_container[iZone], surface_movement[iZone], grid_movement[iZone], FFDBox[iZone], solver_container[iZone], config_container[iZone], iZone, IntIter, ExtIter);
     }
     
@@ -122,8 +122,8 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
     
 		/*--- Compute & store time-spectral source terms across all zones ---*/
     
-		if (time_spectral)
-			SetTimeSpectral(geometry_container, solver_container, config_container, nZone, (iZone+1)%nZone);
+		if (spectral_method)
+			SetSpectralMethod(geometry_container, solver_container, config_container, nZone, (iZone+1)%nZone);
     
 	}
   
@@ -247,10 +247,10 @@ void AdjMeanFlowIteration(COutput *output, CIntegration ***integration_container
 	su2double Physical_dt, Physical_t;
 	unsigned short iMesh, iZone;
   
-	bool time_spectral = (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_SPECTRAL);
+	bool spectral_method = (config_container[ZONE_0]->GetUnsteady_Simulation() == SPECTRAL_METHOD);
   bool grid_movement = config_container[ZONE_0]->GetGrid_Movement();
 	unsigned short nZone = geometry_container[ZONE_0][MESH_0]->GetnZone();
-	if (time_spectral) nZone = config_container[ZONE_0]->GetnTimeInstances();
+	if (spectral_method) nZone = config_container[ZONE_0]->GetnTimeInstances();
   unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
   unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
   
@@ -262,7 +262,7 @@ void AdjMeanFlowIteration(COutput *output, CIntegration ***integration_container
   /*--- For the unsteady adjoint, load a new direct solution from a restart file. ---*/
   
 	for (iZone = 0; iZone < nZone; iZone++) {
-		if (((grid_movement && ExtIter == 0) || config_container[ZONE_0]->GetUnsteady_Simulation()) && !time_spectral) {
+		if (((grid_movement && ExtIter == 0) || config_container[ZONE_0]->GetUnsteady_Simulation()) && !spectral_method) {
       int Direct_Iter = SU2_TYPE::Int(config_container[iZone]->GetUnst_AdjointIter()) - SU2_TYPE::Int(ExtIter) - 1;
       if (rank == MASTER_NODE && iZone == ZONE_0 && config_container[iZone]->GetUnsteady_Simulation())
         cout << endl << " Loading flow solution from direct iteration " << Direct_Iter << "." << endl;
@@ -1378,11 +1378,11 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
 	unsigned short Kind_Grid_Movement = config_container->GetKind_GridMovement(iZone);
   unsigned long iPoint;
   bool adjoint = config_container->GetAdjoint();
-	bool time_spectral = (config_container->GetUnsteady_Simulation() == TIME_SPECTRAL);
+	bool spectral_method = (config_container->GetUnsteady_Simulation() == SPECTRAL_METHOD);
   
 	/*--- For a time-spectral case, set "iteration number" to the zone number,
    so that the meshes are positioned correctly for each instance. ---*/
-	if (time_spectral) {
+	if (spectral_method) {
 		ExtIter = iZone;
 		Kind_Grid_Movement = config_container->GetKind_GridMovement(ZONE_0);
 	}
@@ -1696,7 +1696,7 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
   
 }
 
-void SetTimeSpectral(CGeometry ***geometry_container, CSolver ****solver_container,
+void SetSpectralMethod(CGeometry ***geometry_container, CSolver ****solver_container,
                      CConfig **config_container, unsigned short nZone, unsigned short iZone) {
   
   int rank = MASTER_NODE;
@@ -1724,7 +1724,7 @@ void SetTimeSpectral(CGeometry ***geometry_container, CSolver ****solver_contain
   su2double deltaU, deltaPsi;
   
   /*--- Compute period of oscillation ---*/
-  su2double period = config_container[ZONE_0]->GetTimeSpectral_Period();
+  su2double period = config_container[ZONE_0]->GetSpectralMethod_Period();
   
   /*--- allocate dynamic memory for D ---*/
   su2double **D = new su2double*[nZone];
@@ -1733,7 +1733,15 @@ void SetTimeSpectral(CGeometry ***geometry_container, CSolver ****solver_contain
   }
   
   /*--- Build the time-spectral operator matrix ---*/
-  ComputeTimeSpectral_Operator(D, period, nZone);
+  //ComputeSpectralMethod_Operator(D, period, nZone);
+    
+  /* Build operator matrix for Harmonic Balance method */
+  /* frequency values - hardcoded for now */
+  //su2double *Omega_HB = new su2double[nZone];
+  su2double *Omega_HB = config_container[ZONE_0]->GetOmega_HB();
+    
+  ComputeHarmonicBalance_Operator(D, Omega_HB, period, nZone);
+  //delete [] Omega_HB;
   
   /*--- Compute various source terms for explicit direct, implicit direct, and adjoint problems ---*/
   /*--- Loop over all grid levels ---*/
@@ -1779,10 +1787,10 @@ void SetTimeSpectral(CGeometry ***geometry_container, CSolver ****solver_contain
         /*--- Store sources for current row ---*/
         for (iVar = 0; iVar < nVar; iVar++) {
           if (!adjoint) {
-            solver_container[iZone][iMGlevel][FLOW_SOL]->node[iPoint]->SetTimeSpectral_Source(iVar, Source[iVar]);
+            solver_container[iZone][iMGlevel][FLOW_SOL]->node[iPoint]->SetSpectralMethod_Source(iVar, Source[iVar]);
           } 
           else {
-            solver_container[iZone][iMGlevel][ADJFLOW_SOL]->node[iPoint]->SetTimeSpectral_Source(iVar, Source[iVar]);
+            solver_container[iZone][iMGlevel][ADJFLOW_SOL]->node[iPoint]->SetSpectralMethod_Source(iVar, Source[iVar]);
           }
         }
         
@@ -1814,7 +1822,7 @@ void SetTimeSpectral(CGeometry ***geometry_container, CSolver ****solver_contain
         
         /*--- Store sources for current iZone ---*/
         for (iVar = 0; iVar < nVar_Turb; iVar++)
-          solver_container[iZone][MESH_0][TURB_SOL]->node[iPoint]->SetTimeSpectral_Source(iVar, Source_Turb[iVar]);
+          solver_container[iZone][MESH_0][TURB_SOL]->node[iPoint]->SetSpectralMethod_Source(iVar, Source_Turb[iVar]);
     }
     
     delete [] U_Turb;
@@ -1924,7 +1932,7 @@ void SetTimeSpectral(CGeometry ***geometry_container, CSolver ****solver_contain
   
 }
 
-void ComputeTimeSpectral_Operator(su2double **D, su2double period, unsigned short nZone) {
+void ComputeSpectralMethod_Operator(su2double **D, su2double period, unsigned short nZone) {
   
   unsigned short kZone, jZone;
 
@@ -1958,7 +1966,205 @@ void ComputeTimeSpectral_Operator(su2double **D, su2double period, unsigned shor
 
 }
 
-void SetTimeSpectral_Velocities(CGeometry ***geometry_container,
+
+/* Matrix - matrix product */
+void MatrixMatrixProduct(unsigned short nRows_prod, unsigned short nCols_prod, su2double *matrix_a, su2double *matrix_b, su2double *product)  {
+    
+    unsigned short iVar, jVar, kVar;
+    
+    for (iVar = 0; iVar < nRows_prod; iVar++) {
+        for (jVar = 0; jVar < nCols_prod; jVar++) {
+            product[iVar*nCols_prod+jVar] = 0.0;
+            for (kVar = 0; kVar < nRows_prod; kVar++) {
+                product[iVar*nCols_prod+jVar] += matrix_a[iVar*nRows_prod+kVar]*matrix_b[kVar*nCols_prod+jVar];
+            }
+        }
+    }
+    
+}
+
+/* Matrix inverse using Gauss-Jordan elimination */
+void InverseBlock(unsigned short nVar_mat, su2double *block, su2double *invBlock) {
+    
+    unsigned short i, j, k;
+    unsigned short temp;
+    su2double temporary, r;
+    su2double **augmentedmatrix = new su2double*[nVar_mat];
+    
+    for (i = 0; i < nVar_mat; i++) {
+        augmentedmatrix[i] = new su2double[2*nVar_mat];
+    }
+    
+    for(i=0; i<nVar_mat; i++)
+        for(j=0; j<nVar_mat; j++)
+            augmentedmatrix[i][j] = block[i*nVar_mat+j] ;
+    
+    /* augmenting with identity matrix of similar dimensions */
+    
+    for(i=0;i<nVar_mat; i++)
+        for(j=nVar_mat; j<2*nVar_mat; j++)
+            if(i==j%nVar_mat)
+                augmentedmatrix[i][j]=1;
+            else
+                augmentedmatrix[i][j]=0;
+    
+    /* using gauss-jordan elimination */
+    
+    for(j=0; j<nVar_mat; j++)
+    {
+        temp=j;
+        
+        /* swapping row if a[j][j]=0 with first non-zero row below jth row */
+        
+        if (augmentedmatrix[j][j]==0)
+        {
+            /* Finding first non-zero row */
+            for(i=j+1; i<nVar_mat; i++)
+                if(augmentedmatrix[i][j]!=0)
+                {
+                    temp=i;
+                    break;
+                }
+            
+            /* Swapping current row with temp row */
+            for(k=0; k<2*nVar_mat; k++)
+            {
+                temporary=augmentedmatrix[j][k] ;
+                augmentedmatrix[j][k]=augmentedmatrix[temp][k] ;
+                augmentedmatrix[temp][k]=temporary ;
+            }
+        }
+        
+        
+        
+        /* performing row operations to form required identity matrix out of the input matrix */
+        
+        for(i=0; i<nVar_mat; i++)
+            if(i!=j)
+            {
+                r=augmentedmatrix[i][j];
+                for(k=0; k<2*nVar_mat; k++)
+                {
+                    if (augmentedmatrix[j][j]!=0) {
+                        augmentedmatrix[i][k]-=(augmentedmatrix[j][k]/augmentedmatrix[j][j])*r ;
+                        
+                    }
+                }
+            }
+            else
+            {
+                r=augmentedmatrix[i][j];
+                if (r!=0) {
+                    for(k=0; k<2*nVar_mat; k++)
+                        augmentedmatrix[i][k]/=r ;
+                }
+                
+                
+            }
+        
+    }
+    
+    for(i=0; i<nVar_mat; i++)
+    {
+        for(j=nVar_mat; j<2*nVar_mat; j++)
+            invBlock[i*nVar_mat+j-nVar_mat] = augmentedmatrix[i][j];
+    }
+    
+    /*--- delete dynamic memory for augmented matrix ---*/
+    for (k = 0; k < nVar_mat; k++) {
+        delete [] augmentedmatrix[k];
+    }
+    delete [] augmentedmatrix;
+    
+}
+
+/* ----- Computing harmonic balance operator --------- */
+void ComputeHarmonicBalance_Operator(su2double **D, su2double *Omega_HB, su2double period, unsigned short nZone) {
+    
+    unsigned short iVar, jVar;
+    
+    su2double *Einv_Re  = new su2double[nZone*nZone];
+    su2double *Einv_Im  = new su2double[nZone*nZone];
+    su2double *E_Re     = new su2double[nZone*nZone];
+    su2double *E_Im     = new su2double[nZone*nZone];
+    su2double *D_diag   = new su2double[nZone*nZone];
+    
+    for (iVar = 0; iVar < nZone; iVar++) {
+        for (jVar = 0; jVar < nZone; jVar++) {
+            E_Re[iVar*nZone+jVar] = cos(Omega_HB[jVar]*(iVar*period/nZone));
+            E_Im[iVar*nZone+jVar] = sin(Omega_HB[jVar]*(iVar*period/nZone));
+            D_diag[iVar*nZone+jVar] = 0.;
+        }
+        D_diag[iVar*nZone+iVar] = Omega_HB[iVar];
+    }
+    
+    
+    /*---- Finding inverse of matrix E = E_Re + 1i*E_Im -----*/
+    su2double *L = new su2double[(2*nZone)*(2*nZone)];
+    su2double *L_inv = new su2double[(2*nZone)*(2*nZone)];
+    su2double *M = new su2double[(2*nZone)*nZone];
+    
+    for (iVar = 0; iVar < nZone; iVar++) {
+        for (jVar = 0; jVar < nZone; jVar++) {
+            L[iVar*(2*nZone)+jVar] = E_Re[iVar*nZone+jVar];
+            L[iVar*(2*nZone)+(nZone+jVar)] = -E_Im[iVar*nZone+jVar];
+            L[(iVar+nZone)*(2*nZone)+jVar] = E_Im[iVar*nZone+jVar];
+            L[(iVar+nZone)*(2*nZone)+(nZone+jVar)] = E_Re[iVar*nZone+jVar];
+            M[iVar*nZone+jVar] = 0.;
+            M[(iVar+nZone)*nZone+jVar] = 0.;
+        }
+        M[iVar*nZone+iVar] = 1.;
+    }
+    
+    /* Inverse of E ( 2nZone*nZone )- inv(L)*M */
+    InverseBlock(2*nZone, L, L_inv);
+    
+    su2double *Linv_M = new su2double[(2*nZone)*nZone];
+    MatrixMatrixProduct(2*nZone, nZone, L_inv, M, Linv_M);
+    
+    
+    for (iVar = 0; iVar < nZone; iVar++) {
+        for (jVar = 0; jVar < nZone; jVar++) {
+            Einv_Re[iVar*nZone+jVar] = Linv_M[iVar*nZone+jVar];
+            Einv_Im[iVar*nZone+jVar] = Linv_M[(iVar+nZone)*nZone+jVar];
+        }
+    }
+    delete [] L;
+    delete [] L_inv;
+    delete [] M;
+    delete [] Linv_M;
+    
+    
+    /* Spectral operator - inv(E)*D_diag*E= -E_Im*D_diag*Einv_Re - E_Re*D_diag*Einv_Im */
+    su2double *prod1 = new su2double[nZone*nZone];
+    su2double *prod2 = new su2double[nZone*nZone];
+    
+    /* E_Im*D_diag*Einv_Re stored in prod1 */
+    MatrixMatrixProduct(nZone, nZone, E_Im, D_diag, prod2);
+    MatrixMatrixProduct(nZone, nZone, prod2, Einv_Re, prod1);
+    
+    /* E_Re*D_diag*Einv_Im stored in prod2 */
+    MatrixMatrixProduct(nZone, nZone, E_Re, D_diag, E_Im);
+    MatrixMatrixProduct(nZone, nZone, E_Im, Einv_Im, prod2);
+    
+    /* Harmonic Balance spectral operator */
+    for (iVar = 0; iVar < nZone; iVar++) {
+        for (jVar = 0; jVar < nZone; jVar++) {
+            D[iVar][jVar] = -prod1[iVar*nZone+jVar] - prod2[iVar*nZone+jVar];
+        }
+    }
+    
+    delete [] prod1;
+    delete [] prod2;
+    delete [] E_Re;
+    delete [] E_Im;
+    delete [] Einv_Re;
+    delete [] Einv_Im;
+    delete [] D_diag;
+    
+}
+
+void SetSpectralMethod_Velocities(CGeometry ***geometry_container,
                                 CConfig **config_container, unsigned short nZone) {
   
 	unsigned short iZone, jDegree, iDim, iMGlevel;
@@ -1970,7 +2176,7 @@ void SetTimeSpectral_Velocities(CGeometry ***geometry_container,
   
   
 	/*--- Compute period of oscillation & compute time interval using nTimeInstances ---*/
-	su2double period = config_container[ZONE_0]->GetTimeSpectral_Period();
+	su2double period = config_container[ZONE_0]->GetSpectralMethod_Period();
 	su2double deltaT = period/(su2double)(config_container[ZONE_0]->GetnTimeInstances());
   
 	/*--- allocate dynamic memory for angular positions (these are the abscissas) ---*/

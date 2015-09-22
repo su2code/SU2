@@ -105,7 +105,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-  bool time_spectral  = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
+  bool spectral_method  = (config->GetUnsteady_Simulation() == SPECTRAL_METHOD);
   bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
   bool adjoint = config->GetAdjoint();
   string filename = config->GetSolution_FlowFileName();
@@ -479,7 +479,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
       filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
     }
       
-    else if (time_spectral) {
+    else if (spectral_method) {
         filename = config->GetUnsteady_FileName(filename, iZone);
     }
 
@@ -3669,7 +3669,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface    = (config->GetKind_Regime() == FREESURFACE);
   bool gravity        = (config->GetGravityForce() == YES);
-  bool time_spectral  = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
+  bool spectral_method  = (config->GetUnsteady_Simulation() == SPECTRAL_METHOD);
   bool windgust       = config->GetWind_Gust();
 
   /*--- Initialize the source residual to zero ---*/
@@ -3799,7 +3799,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
   }
 
-  if (time_spectral) {
+  if (spectral_method) {
 
     su2double Volume, Source;
 
@@ -3811,7 +3811,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
       /*--- Get stored time spectral source term ---*/
       for (iVar = 0; iVar < nVar; iVar++) {
-        Source = node[iPoint]->GetTimeSpectral_Source(iVar);
+        Source = node[iPoint]->GetSpectralMethod_Source(iVar);
         Residual[iVar] = Source*Volume;
       }
 
@@ -10528,7 +10528,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh,
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-  bool time_spectral  = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
+  bool spectral_method  = (config->GetUnsteady_Simulation() == SPECTRAL_METHOD);
   bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
   bool adjoint = config->GetAdjoint();
   string filename = config->GetSolution_FlowFileName();
@@ -10956,7 +10956,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh,
       filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
     }
       
-    else if (time_spectral) {
+    else if (spectral_method) {
         filename = config->GetUnsteady_FileName(filename, iZone);
     }
     

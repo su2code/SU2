@@ -248,7 +248,7 @@ int main(int argc, char *argv[]) {
       FFDBox[iZone] = new CFreeFormDefBox*[MAX_NUMBER_FFD];
       surface_movement[iZone] = new CSurfaceMovement();
       surface_movement[iZone]->CopyBoundary(geometry_container[iZone][MESH_0], config_container[iZone]);
-      if (config_container[iZone]->GetUnsteady_Simulation() == TIME_SPECTRAL && config_container[ZONE_0]->GetGrid_Movement())
+      if (config_container[iZone]->GetUnsteady_Simulation() == SPECTRAL_METHOD && config_container[ZONE_0]->GetGrid_Movement())
         SetGrid_Movement(geometry_container[iZone], surface_movement[iZone], grid_movement[iZone],
                          FFDBox[iZone], solver_container[iZone], config_container[iZone], iZone, 0, 0);
     }
@@ -283,8 +283,8 @@ int main(int argc, char *argv[]) {
   
   /*--- For the time-spectral solver, set the grid node velocities. ---*/
   
-  if (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_SPECTRAL && config_container[ZONE_0]->GetGrid_Movement())
-    SetTimeSpectral_Velocities(geometry_container, config_container, nZone);
+  if (config_container[ZONE_0]->GetUnsteady_Simulation() == SPECTRAL_METHOD && config_container[ZONE_0]->GetGrid_Movement())
+    SetSpectralMethod_Velocities(geometry_container, config_container, nZone);
   
   /*--- Coupling between zones (limited to two zones at the moment) ---*/
   

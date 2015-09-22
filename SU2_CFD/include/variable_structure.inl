@@ -495,7 +495,7 @@ inline su2double* CVariable::GetSolution_Direct() { return NULL; }
 
 inline void CVariable::SetSolution_Direct(su2double *val_solution_direct) { }
 
-inline void CVariable::SetTimeSpectral_Source(unsigned short val_var, su2double val_source) { }
+inline void CVariable::SetSpectralMethod_Source(unsigned short val_var, su2double val_source) { }
 
 inline unsigned short CVariable::GetRhosIndex(void) { return 0; }
 
@@ -517,7 +517,7 @@ inline unsigned short CVariable::GetRhoCvtrIndex(void) { return 0; }
 
 inline unsigned short CVariable::GetRhoCvveIndex(void) { return 0; }
 
-inline su2double CVariable::GetTimeSpectral_Source(unsigned short val_var) { return 0; }
+inline su2double CVariable::GetSpectralMethod_Source(unsigned short val_var) { return 0; }
 
 inline void CVariable::SetEddyViscSens(su2double *val_EddyViscSens, unsigned short numTotalVar) { }
 
@@ -728,9 +728,9 @@ inline su2double **CEulerVariable::GetGradient_Secondary(void) { return Gradient
 
 inline su2double *CEulerVariable::GetLimiter_Secondary(void) { return Limiter_Secondary; }
 
-inline void CEulerVariable::SetTimeSpectral_Source(unsigned short val_var, su2double val_source) { TS_Source[val_var] = val_source; }
+inline void CEulerVariable::SetSpectralMethod_Source(unsigned short val_var, su2double val_source) { TS_Source[val_var] = val_source; }
 
-inline su2double CEulerVariable::GetTimeSpectral_Source(unsigned short val_var) { return TS_Source[val_var]; }
+inline su2double CEulerVariable::GetSpectralMethod_Source(unsigned short val_var) { return TS_Source[val_var]; }
 
 inline su2double CEulerVariable::GetPreconditioner_Beta() { return Precond_Beta; }
 
@@ -826,9 +826,9 @@ inline void CAdjEulerVariable::SetIntBoundary_Jump(su2double *val_IntBoundary_Ju
 
 inline void CAdjEulerVariable::SetPhi_Old(su2double *val_phi) { for (unsigned short iDim = 0; iDim < nDim; iDim++) Solution_Old[iDim+1]=val_phi[iDim]; };
 
-inline void CAdjEulerVariable::SetTimeSpectral_Source(unsigned short val_var, su2double val_source) { TS_Source[val_var] = val_source; }
+inline void CAdjEulerVariable::SetSpectralMethod_Source(unsigned short val_var, su2double val_source) { TS_Source[val_var] = val_source; }
 
-inline su2double CAdjEulerVariable::GetTimeSpectral_Source(unsigned short val_var) { return TS_Source[val_var]; }
+inline su2double CAdjEulerVariable::GetSpectralMethod_Source(unsigned short val_var) { return TS_Source[val_var]; }
 
 inline su2double *CAdjNSVariable::GetForceProj_Vector(void) { return ForceProj_Vector; }
 
@@ -924,14 +924,14 @@ inline su2double* CHeatVariable::GetSolution_Direct() { return Solution_Direct;}
 
 inline void CHeatVariable::SetSolution_Direct(su2double *val_solution_direct) { for (unsigned short iVar = 0; iVar < nVar; iVar++) Solution_Direct[iVar] += val_solution_direct[iVar];}
 
-inline void CTurbSAVariable::SetTimeSpectral_Source(unsigned short val_var, su2double val_source) { TS_Source[val_var] = val_source; }
+inline void CTurbSAVariable::SetSpectralMethod_Source(unsigned short val_var, su2double val_source) { TS_Source[val_var] = val_source; }
 
-inline su2double CTurbSAVariable::GetTimeSpectral_Source(unsigned short val_var) { return TS_Source[val_var]; }
+inline su2double CTurbSAVariable::GetSpectralMethod_Source(unsigned short val_var) { return TS_Source[val_var]; }
 
 
-inline void CTurbMLVariable::SetTimeSpectral_Source(unsigned short val_var, su2double val_source) { TS_Source[val_var] = val_source; }
+inline void CTurbMLVariable::SetSpectralMethod_Source(unsigned short val_var, su2double val_source) { TS_Source[val_var] = val_source; }
 
-inline su2double CTurbMLVariable::GetTimeSpectral_Source(unsigned short val_var) { return TS_Source[val_var]; }
+inline su2double CTurbMLVariable::GetSpectralMethod_Source(unsigned short val_var) { return TS_Source[val_var]; }
 
 inline su2double CTurbSSTVariable::GetF1blending() { return F1; }
 

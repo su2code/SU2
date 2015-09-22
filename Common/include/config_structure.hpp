@@ -128,7 +128,7 @@ private:
 	FreeSurface_Damping_Length;  /*!< \brief Damping length of the free surface for a free surface problem. */
 	unsigned short Kind_Adaptation;	/*!< \brief Kind of numerical grid adaptation. */
 	unsigned short nTimeInstances;  /*!< \brief Number of periodic time instances for Time Spectral integration. */
-	su2double TimeSpectral_Period;		/*!< \brief Period of oscillation to be used with time-spectral computations. */
+	su2double SpectralMethod_Period;		/*!< \brief Period of oscillation to be used with time-spectral computations. */
 	su2double New_Elem_Adapt;			/*!< \brief Elements to adapt in the numerical grid adaptation process. */
 	su2double Delta_UnstTime,			/*!< \brief Time step for unsteady computations. */
 	Delta_UnstTimeND;						/*!< \brief Time step for unsteady computations (non dimensional). */
@@ -684,7 +684,8 @@ private:
   *Plunging_Omega_Z,           /*!< \brief Angular frequency of the mesh plunging in the z-direction. */
   *Plunging_Ampl_X,           /*!< \brief Plunging amplitude in the x-direction. */
   *Plunging_Ampl_Y,           /*!< \brief Plunging amplitude in the y-direction. */
-  *Plunging_Ampl_Z;           /*!< \brief Plunging amplitude in the z-direction. */
+  *Plunging_Ampl_Z,           /*!< \brief Plunging amplitude in the z-direction. */
+  *Omega_HB;                  /*!< \brief Frequency for Harmonic Balance Operator (in rad/s). */
   unsigned short nMotion_Origin_X,    /*!< \brief Number of X-coordinate mesh motion origins. */
 	nMotion_Origin_Y,           /*!< \brief Number of Y-coordinate mesh motion origins. */
 	nMotion_Origin_Z,           /*!< \brief Number of Z-coordinate mesh motion origins. */
@@ -709,6 +710,7 @@ private:
 	nPlunging_Ampl_X,           /*!< \brief Number of Plunging amplitudes in the x-direction. */
 	nPlunging_Ampl_Y,           /*!< \brief Number of Plunging amplitudes in the y-direction. */
 	nPlunging_Ampl_Z,           /*!< \brief Number of Plunging amplitudes in the z-direction. */
+    nOmega_HB,                  /*!< \brief Number of frequencies in Harmonic Balance Operator. */
   nMoveMotion_Origin,         /*!< \brief Number of motion origins. */
   *MoveMotion_Origin;         /*!< \brief Keeps track if we should move moment origin. */
   vector<vector<vector<su2double> > > Aeroelastic_np1, /*!< \brief Aeroelastic solution at time level n+1. */
@@ -2156,7 +2158,7 @@ public:
 	 * \brief Retrieves the period of oscillations to be used with Time Spectral.
 	 * \return: Period for Time Spectral.
 	 */
-	su2double GetTimeSpectral_Period(void);
+	su2double GetSpectralMethod_Period(void);
 
 	/*!
 	 * \brief Set the number of external iterations.
@@ -4318,6 +4320,12 @@ public:
 	 * \return Plunging amplitude in the z-direction.
 	 */
 	su2double GetPlunging_Ampl_Z(unsigned short val_iZone);
+    
+    /*!
+     * \brief Get the Harmonic Balance frequency pointer.
+     * \return Harmonic Balance Frequency pointer.
+     */
+    su2double* GetOmega_HB(void);
 
   /*!
 	 * \brief Get if we should update the motion origin.

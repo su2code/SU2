@@ -268,7 +268,7 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
  * \param[in] nZone - Total number of zones (periodic instances).
  * \param[in] iZone - Current zone number.
  */
-void SetTimeSpectral(CGeometry ***geometry_container, CSolver ****solver_container,
+void SetSpectralMethod(CGeometry ***geometry_container, CSolver ****solver_container,
 		CConfig **config_container, unsigned short nZone, unsigned short iZone);
 
 /*!
@@ -277,7 +277,36 @@ void SetTimeSpectral(CGeometry ***geometry_container, CSolver ****solver_contain
  * \param[in] D - su2double pointer to the operator matrix.
  * \param[in] nZone - Total number of zones (periodic instances).
  */
-void ComputeTimeSpectral_Operator(su2double **D, su2double period, unsigned short nZone);
+void ComputeSpectralMethod_Operator(su2double **D, su2double period, unsigned short nZone);
+
+/*!
+ * \brief Computation of the Time-Spectral operator matrix.                                                                                                                                                        * \author K. Naik                                                                                                                                                                                                 * \param[in] D - double pointer to the operator matrix.                                                                                                                                                           * \param[in] nZone - Total number of zones (periodic instances).
+ */
+void ComputeTimeSpectral_Operator(double **D, double period, unsigned short nZone);
+
+/*!
+ * \brief Dense matrix matrix Product A*B - A(nRows_prod*nRows_prod), B(nRows_prod*nCols_prod)
+ * \param[in] nRows_prod - nRows of product matrix, nCols_prod - nCols of product matrix
+ */
+void MatrixMatrixProduct(unsigned short nRows_prod, unsigned short nCols_prod, su2double *matrix_a, su2double *matrix_b, su2double *product);
+
+/*!
+ * \brief Inverse of dense square matrix using Gauss-Jordan elimination
+ * \author Sravya NImmagadda
+ * \param[in] nVar_mat - size of square matrix (nRows/nCols)
+ * *block and *invblock - pointers to matrix and its inverse
+ */
+void InverseBlock(unsigned short nVar_mat, su2double *block, su2double *invBlock);
+
+/*!
+ * \brief Computation of the Harmonic-Balance operator matrix.
+ * \author Sravya Nimmagadda
+ * \param[in] D - double pointer to the operator matrix.
+ * \param[in] omega_HB - single pointer to array of frequency values to be modelled.
+ * \param[in] nHarmonics - Total number of harmonics (Number of Frequency values).
+ * \param[in] nZone - Total number of zones (periodic instances).
+ */
+void ComputeHarmonicBalance_Operator(su2double **D, su2double *omega_HB, su2double period, unsigned short nZone);
 
 /*!
  * \brief Computation and storage of the time-spectral mesh velocities.
@@ -286,5 +315,5 @@ void ComputeTimeSpectral_Operator(su2double **D, su2double period, unsigned shor
  * \param[in] config - Definition of the particular problem.
  * \param[in] nZone - Total number of zones (periodic instances).
  */
-void SetTimeSpectral_Velocities(CGeometry ***geometry_container,
+void SetSpectralMethod_Velocities(CGeometry ***geometry_container,
 		CConfig **config_container, unsigned short nZone);

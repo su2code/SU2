@@ -1707,12 +1707,12 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] val_source - Value of the time spectral source.
 	 */
-	virtual void SetTimeSpectral_Source(unsigned short val_var, su2double val_source);
+	virtual void SetSpectralMethod_Source(unsigned short val_var, su2double val_source);
 
 	/*!
 	 * \brief A virtual member.
 	 */
-	virtual su2double GetTimeSpectral_Source(unsigned short val_var);
+	virtual su2double GetSpectralMethod_Source(unsigned short val_var);
 
 	/*!
 	 * \brief Set the Eddy Viscosity Sensitivity of the problem.
@@ -3022,14 +3022,14 @@ public:
 	 * \param[in] val_var - Index of the variable.
 	 * \param[in] val_solution - Value of the time spectral source term. for the index <i>val_var</i>.
 	 */
-	void SetTimeSpectral_Source(unsigned short val_var, su2double val_source);
+	void SetSpectralMethod_Source(unsigned short val_var, su2double val_source);
 
 	/*!
 	 * \brief Get the time spectral source term.
 	 * \param[in] val_var - Index of the variable.
 	 * \return Value of the time spectral source term for the index <i>val_var</i>.
 	 */
-	su2double GetTimeSpectral_Source(unsigned short val_var);
+	su2double GetSpectralMethod_Source(unsigned short val_var);
 
 	/*!
 	 * \brief Get the value of the preconditioner Beta.
@@ -3344,14 +3344,14 @@ public:
 	 * \param[in] val_var - Index of the variable.
 	 * \param[in] val_source - Value of the time spectral source term. for the index <i>val_var</i>.
 	 */
-	void SetTimeSpectral_Source(unsigned short val_var, su2double val_source);
+	void SetSpectralMethod_Source(unsigned short val_var, su2double val_source);
 
 	/*!
 	 * \brief Get the time spectral source term.
 	 * \param[in] val_var - Index of the variable.
 	 * \return Value of the time spectral source term for the index <i>val_var</i>.
 	 */
-	su2double GetTimeSpectral_Source(unsigned short val_var);
+	su2double GetSpectralMethod_Source(unsigned short val_var);
 
 };
 
@@ -3391,14 +3391,14 @@ public:
 	 * \param[in] val_var - Index of the variable.
 	 * \param[in] val_source - Value of the time spectral source term. for the index <i>val_var</i>.
 	 */
-	void SetTimeSpectral_Source(unsigned short val_var, su2double val_source);
+	void SetSpectralMethod_Source(unsigned short val_var, su2double val_source);
   
 	/*!
 	 * \brief Get the time spectral source term.
 	 * \param[in] val_var - Index of the variable.
 	 * \return Value of the time spectral source term for the index <i>val_var</i>.
 	 */
-	su2double GetTimeSpectral_Source(unsigned short val_var);
+	su2double GetSpectralMethod_Source(unsigned short val_var);
   
 };
 
@@ -3626,14 +3626,14 @@ public:
 	 * \param[in] val_var - Index of the variable.
 	 * \param[in] val_solution - Value of the time spectral source term. for the index <i>val_var</i>.
 	 */
-	void SetTimeSpectral_Source(unsigned short val_var, su2double val_source);
+	void SetSpectralMethod_Source(unsigned short val_var, su2double val_source);
 
 	/*!
 	 * \brief Get the time spectral source term.
 	 * \param[in] val_var - Index of the variable.
 	 * \return Value of the time spectral source term for the index <i>val_var</i>.
 	 */
-	su2double GetTimeSpectral_Source(unsigned short val_var);
+	su2double GetSpectralMethod_Source(unsigned short val_var);
 };
 
 /*! 

@@ -4805,7 +4805,7 @@ void CTNE2EulerSolver::GetRestart(CGeometry *geometry, CConfig *config, unsigned
 	unsigned short nZone = geometry->GetnZone();
   
 	/*--- Multi-zone restart files. ---*/
-	if (nZone > 1 && !(config->GetUnsteady_Simulation() == TIME_SPECTRAL)) {
+	if (nZone > 1 && !(config->GetUnsteady_Simulation() == SPECTRAL_METHOD)) {
 		restart_filename.erase(restart_filename.end()-4, restart_filename.end());
 		SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(val_iZone));
 		UnstExt = string(buffer);
@@ -4814,7 +4814,7 @@ void CTNE2EulerSolver::GetRestart(CGeometry *geometry, CConfig *config, unsigned
   
 	/*--- For the unsteady adjoint, we integrate backwards through
    physical time, so load in the direct solution files in reverse. ---*/
-	if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+	if (config->GetUnsteady_Simulation() == SPECTRAL_METHOD) {
 		flowIter = val_iZone;
 		restart_filename.erase(restart_filename.end()-4, restart_filename.end());
 		if (SU2_TYPE::Int(val_iZone) < 10) SPRINTF (buffer, "_0000%d.dat", SU2_TYPE::Int(val_iZone));

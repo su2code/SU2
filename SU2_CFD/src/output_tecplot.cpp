@@ -87,12 +87,12 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
   if ((Kind_Solver == EULER || Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS ||
        Kind_Solver == ADJ_EULER || Kind_Solver == ADJ_NAVIER_STOKES || Kind_Solver == ADJ_RANS ||
        Kind_Solver == DISC_ADJ_EULER || Kind_Solver == DISC_ADJ_NAVIER_STOKES || Kind_Solver == DISC_ADJ_RANS) &&
-      (val_nZone > 1) && (config->GetUnsteady_Simulation() != TIME_SPECTRAL)) {
+      (val_nZone > 1) && (config->GetUnsteady_Simulation() != SPECTRAL_METHOD)) {
     SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
     strcat(cstr, buffer);
   }
   
-  if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+  if (config->GetUnsteady_Simulation() == SPECTRAL_METHOD) {
     
     if (config->GetKind_SU2() == SU2_SOL) { val_iZone = iExtIter; }
     
@@ -291,9 +291,9 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
   Tecplot_File << "ZONE ";
   if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
     Tecplot_File << "STRANDID="<<SU2_TYPE::Int(iExtIter+1)<<", SOLUTIONTIME="<<config->GetDelta_UnstTime()*iExtIter<<", ";
-  } else if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+  } else if (config->GetUnsteady_Simulation() == SPECTRAL_METHOD) {
     /*--- Compute period of oscillation & compute time interval using nTimeInstances ---*/
-    su2double period = config->GetTimeSpectral_Period();
+    su2double period = config->GetSpectralMethod_Period();
     su2double deltaT = period/(su2double)(config->GetnTimeInstances());
     Tecplot_File << "STRANDID="<<SU2_TYPE::Int(iExtIter+1)<<", SOLUTIONTIME="<<deltaT*iExtIter<<", ";
   }

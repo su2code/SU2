@@ -7,14 +7,14 @@
 	<key>IDESourceControlProjectIdentifier</key>
 	<string>0060BFC0-6CDB-4485-A781-8C413A9376C8</string>
 	<key>IDESourceControlProjectName</key>
-	<string>project</string>
+	<string>SU2_CFD</string>
 	<key>IDESourceControlProjectOriginsDictionary</key>
 	<dict>
 		<key>C9B96DB20CD3AFB04E19B3B0D563C5699EDA895C</key>
 		<string>https://github.com/su2code/SU2.git</string>
 	</dict>
 	<key>IDESourceControlProjectPath</key>
-	<string>SU2_IDE/Xcode/SU2_CFD.xcodeproj/project.xcworkspace</string>
+	<string>SU2_IDE/Xcode/SU2_CFD.xcodeproj</string>
 	<key>IDESourceControlProjectRelativeInstallPathDictionary</key>
 	<dict>
 		<key>C9B96DB20CD3AFB04E19B3B0D563C5699EDA895C</key>

@@ -1867,7 +1867,7 @@ void CFEASolver::GetSurface_Pressure(CGeometry *geometry, CConfig *config) {
     /*--- Write file name with extension if unsteady or steady ---*/
     
     if ((config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) ||
-        (config->GetUnsteady_Simulation() == TIME_SPECTRAL)) {
+        (config->GetUnsteady_Simulation() == SPECTRAL_METHOD)) {
       if ((SU2_TYPE::Int(iExtIter) >= 0)    && (SU2_TYPE::Int(iExtIter) < 10))    SPRINTF (buffer, "_0000%d.csv", SU2_TYPE::Int(iExtIter));
       if ((SU2_TYPE::Int(iExtIter) >= 10)   && (SU2_TYPE::Int(iExtIter) < 100))   SPRINTF (buffer, "_000%d.csv",  SU2_TYPE::Int(iExtIter));
       if ((SU2_TYPE::Int(iExtIter) >= 100)  && (SU2_TYPE::Int(iExtIter) < 1000))  SPRINTF (buffer, "_00%d.csv",   SU2_TYPE::Int(iExtIter));
