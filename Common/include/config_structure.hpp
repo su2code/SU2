@@ -3,7 +3,7 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>config_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -53,7 +53,7 @@ using namespace std;
  * \brief Main class for defining the problem; basically this class reads the configuration file, and
  *        stores all the information.
  * \author F. Palacios
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  */
 
 class CConfig {
@@ -175,7 +175,7 @@ private:
 	nMarker_Neumann_Elec,				/*!< \brief Number of Neumann flow markers. */
 	nMarker_All,					/*!< \brief Total number of markers using the grid information. */
   nMarker_Max,					/*!< \brief Max number of number of markers using the grid information. */
-  nMarker_Config;					/*!< \brief Total number of markers using the config file
+  nMarker_CfgFile;					/*!< \brief Total number of markers using the config file
 									(note that using parallel computation this number can be different
 									from nMarker_All). */
 	string *Marker_Euler,			/*!< \brief Euler wall markers. */
@@ -577,7 +577,6 @@ private:
   *Diss;                /*!< \brief Dissociation potential. */
 	unsigned short nMass,                 /*!< \brief No of particle masses */
 	nTemp;						/*!< \brief No of freestream temperatures specified */
-	bool Inlet_Outlet_Defined; /*!< \brief  that inlet and outlet conditions are defined for each species*/
   su2double *Particle_Mass,         /*!< \brief Mass of all particles present in the plasma */
   *Molar_Mass,               /*!< \brief Molar mass of species in the plasma [kg/kmol] */
   Mixture_Molar_mass,       /*!< \brief Molar mass of the multi-species fluid [kg/kmol] */
@@ -1200,21 +1199,6 @@ public:
 	 */
 	su2double GetGamma(void);
 
-	/*!
-	 * \brief Get the value of the Gamma of fluid (ratio of specific heats) for a particular species.
-	 * \param[in] - val_Species: Index of desired species specific heat ratio.
-	 * \return Value of the constant: Species_Gamma[iSpecies]
-	 */
-
-	//su2double GetSpecies_Gamma(unsigned short val_Species);
-
-
-	/*!
-	 * \brief Get the value of the charge number for a particular species (1 for ions, -1 for electrons, 0 for neutral).
-	 * \param[in] - val_Species: Index of desired species charge number.
-	 * \return Value of the constant: Charge_Number[val_Species]
-	 */
-	//int GetCharge_Number(unsigned short val_Species);
   
   /*!
    * \brief Get the values of the CFL adapation.
@@ -1259,23 +1243,7 @@ public:
 	su2double GetBulk_Modulus(void);
 
 	/*!
-	 * \brief Get the value of the Gamma of fluid (ratio of specific heats) for monatomic species.
-	 * \return Value of the constant: GammaMonatomic
-	 */
 
-	//su2double GetGammaMonatomic(void);
-
-
-	/*!
-	 * \brief Get the value of the Gamma of fluid (ratio of specific heats) for diatomic species.
-	 * \return Value of the constant: Gamma
-	 */
-
-    
-	//su2double GetGammaDiatomic(void);
-
-
-	/*!
 	 * \brief Get the artificial compresibility factor.
 	 * \return Value of the artificial compresibility factor.
 	 */
@@ -1304,15 +1272,6 @@ public:
 	 * \return Value of the constant: Gamma
 	 */
 	su2double GetGas_ConstantND(void);
-
-	/*!
-	 * \brief Get the value of specific gas constant for a particular species.
-	 * \param[in] val_Species - Index of desired species gas constant.
-	 * \return Value of the constant: R
-	 */
-
-	//su2double GetSpecies_Gas_Constant(unsigned short val_Species);
-
 
 	/*!
 	 * \brief Get the coefficients of the Blottner viscosity model
@@ -2011,16 +1970,6 @@ public:
 	 * \return CFL number for each grid.
 	 */
 	void SetCFL(unsigned short val_mesh, su2double val_cfl);
-
-	/*!
-	 * \brief Get the Courant Friedrich Levi number for each grid, for each species
-	 * \param[in] val_mesh - Index of the mesh were the CFL is applied.
-	 * \param[in] val_Species - Index of the chemical species
-	 * \return CFL number for each grid.
-	 */
-
-	//su2double GetCFL(unsigned short val_mesh, unsigned short val_Species);
-
 
 	/*!
 	 * \brief Get the Courant Friedrich Levi number for unsteady simulations.
@@ -3782,13 +3731,6 @@ public:
 	 */
 	su2double GetInitial_Gas_Composition(unsigned short iSpecies);
 
-	/*!
-	 * \brief Retrieves the multi-species fluid mixture molar mass.
-	 * \return: Molar mass of the fluid mixture
-	 */
-
-	//su2double GetMixtureMolar_Mass();
-
 
   /*!
 	 * \brief Provides the formation enthalpy of the specified species at standard conditions
@@ -4855,65 +4797,6 @@ public:
 	 * \return The total pressure.
 	 */
 	su2double GetExhaust_Pressure_Target(string val_index);
-
-	/*!
-	 * \brief If inlet and outlet conditions are defined for multi species
-	 * \return true/false
-	 */
-	bool GetInletConditionsDefined();
-
-	/*!
-	 * \brief Get the temperature at an inlet boundary.
-	 * \param[in] iSpecies - Index of the species
-	 * \return The total temperature.
-	 */
-
-	//su2double GetInlet_Species_Temperature(unsigned short iSpecies);
-
-
-	/*!
-	 * \brief Get the temperature at an outlet boundary.
-	 * \param[in] iSpecies - Index of the species
-	 * \return The total temperature.
-	 */
-
-	//su2double GetOutlet_Species_Temperature(unsigned short iSpecies);
-
-
-	/*!
-	 * \brief Get the pressure at an inlet boundary.
-	 * \param[in] iSpecies - Index of the species
-	 * \return The total temperature.
-	 */
-
-	//su2double GetInlet_Species_Pressure(unsigned short iSpecies);
-
-
-	/*!
-	 * \brief Get the pressure at an outlet boundary.
-	 * \param[in] iSpecies - Index of the species
-	 * \return The total temperature.
-	 */
-
-	//su2double GetOutlet_Species_Pressure(unsigned short iSpecies);
-
-
-	/*!
-	 * \brief Get the velocity at an inlet boundary.
-	 * \param[in] iSpecies - Index of the species
-	 * \return The total temperature.
-	 */
-
-	//su2double GetInlet_Species_Velocity(unsigned short iSpecies);
-
-
-	/*!
-	 * \brief Get the velocity at an outlet boundary.
-	 * \param[in] iSpecies - Index of the species
-	 * \return The total temperature.
-	 */
- 
-	//su2double GetOutlet_Species_Velocity(unsigned short iSpecies);
 
 
   /*!

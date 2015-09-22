@@ -19,7 +19,7 @@
 # \file Makefile.am
 # \brief Global makefile for the SU2 project
 # \author M. Colonno, T. Economon, F. Palacios
-# \version 4.0.0 "Cardinal"
+# \version 4.0.1 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -121,16 +121,6 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-<<<<<<< HEAD
-@BUILD_CFD_TRUE@am__append_1 = SU2_CFD/obj
-@BUILD_DOT_TRUE@am__append_2 = SU2_DOT/obj
-@BUILD_MSH_TRUE@am__append_3 = SU2_MSH/obj
-@BUILD_DEF_TRUE@am__append_4 = SU2_DEF/obj
-@BUILD_SOL_TRUE@am__append_5 = SU2_SOL/obj
-@BUILD_GEO_TRUE@am__append_6 = SU2_GEO/obj
-@BUILD_pySU2_TRUE@am__append_7 = pySU2/obj
-subdir = .
-=======
 
 # Install the SU2 Python scripts to the proper location
 @BUILD_NORMAL_TRUE@am__append_1 = SU2_PY
@@ -147,7 +137,9 @@ DIST_COMMON = $(am__configure_deps) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(top_srcdir)/configure COPYING INSTALL \
 	ar-lib compile config.guess config.sub depcomp install-sh \
 	missing
->>>>>>> develop
+
+	compile config.guess config.sub depcomp install-sh missing
+
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/ax_tls.m4 \
 	$(top_srcdir)/m4/codi.m4 $(top_srcdir)/m4/compiler.m4 \

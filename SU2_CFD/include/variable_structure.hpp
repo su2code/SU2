@@ -4,7 +4,7 @@
  *        each kind of governing equation (direct, adjoint and linearized).
  *        The subroutines and functions are in the <i>variable_structure.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -49,7 +49,7 @@ using namespace std;
  * \class CVariable
  * \brief Main class for defining the variables.
  * \author F. Palacios
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  */
 class CVariable {
 protected:
@@ -2067,7 +2067,7 @@ public:
  * \class CBaselineVariable
  * \brief Main class for defining the variables of a baseline solution from a restart file (for output).
  * \author F. Palacios, T. Economon.
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  */
 class CBaselineVariable : public CVariable {
 public:
@@ -2097,7 +2097,7 @@ public:
  * \brief Main class for defining the variables of the potential solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  */
 class CPotentialVariable : public CVariable {
 	su2double *Charge_Density;
@@ -2141,7 +2141,7 @@ public:
  * \brief Main class for defining the variables of the wave equation solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  */
 class CWaveVariable : public CVariable {
 protected:
@@ -2187,7 +2187,7 @@ public:
  * \brief Main class for defining the variables of the Heat equation solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  */
 class CHeatVariable : public CVariable {
 protected:
@@ -2233,7 +2233,7 @@ public:
  * \brief Main class for defining the variables of the FEA equation solver.
  * \ingroup Structural Finite Element Analysis Variables
  * \author F. Palacios, R. Sanchez.
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  */
 class CFEAVariable : public CVariable {
 protected:
@@ -2592,7 +2592,7 @@ public:
  * \brief Main class for defining the variables of the Euler's solver.
  * \ingroup Euler_Equations
  * \author F. Palacios
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  */
 class CEulerVariable : public CVariable {
 protected:
@@ -2810,7 +2810,8 @@ public:
 	 * \brief Set all the primitive variables for compressible flows.
 	 */
 	bool SetPrimVar_Compressible(CFluidModel *FluidModel);
-
+  using CVariable::SetPrimVar_Compressible;
+  
 	/*!
 	 * \brief A virtual member.
 	 */
@@ -2820,12 +2821,14 @@ public:
 	 * \brief Set all the primitive variables for incompressible flows.
 	 */
 	bool SetPrimVar_Incompressible(su2double Density_Inf, CConfig *config);
+  using CVariable::SetPrimVar_Incompressible;
   
   /*!
 	 * \brief Set all the primitive variables for incompressible flows.
 	 */
 	bool SetPrimVar_FreeSurface(CConfig *config);
-	
+	using CVariable::SetPrimVar_FreeSurface;
+  
 	/*!
 	 * \brief Get the primitive variables.
 	 * \param[in] val_var - Index of the variable.
@@ -3043,13 +3046,6 @@ public:
 	 */
 	void SetPreconditioner_Beta(su2double val_Beta);
 
-	/*!
-	 * \brief Set the value of the magnetic field
-	 * \param[in] Value of the magnetic field
-	 */
-
-	//void SetMagneticField(su2double* val_B);
-
     
     /*!
 	 * \brief Get the value of the wind gust
@@ -3081,7 +3077,7 @@ public:
  * \brief Main class for defining the variables of the Navier-Stokes' solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  */
 class CNSVariable : public CEulerVariable {
 private:
@@ -3256,7 +3252,8 @@ public:
    * \brief Set all the primitive variables for compressible flows
    */
   bool SetPrimVar_Compressible(su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel);
-
+  using CVariable::SetPrimVar_Compressible;
+  
 	/*!
 	 * \brief Set all the secondary variables (partial derivatives) for compressible flows
 	 */
@@ -3266,11 +3263,14 @@ public:
 	 * \brief Set all the primitive variables for incompressible flows
 	 */
 	bool SetPrimVar_Incompressible(su2double Density_Inf, su2double Viscosity_Inf, su2double eddy_visc, su2double turb_ke, CConfig *config);
+  using CVariable::SetPrimVar_Incompressible;
   
   /*!
 	 * \brief Set all the primitive variables for incompressible flows
 	 */
 	bool SetPrimVar_FreeSurface(su2double eddy_visc, su2double turb_ke, CConfig *config);
+  using CVariable::SetPrimVar_FreeSurface;
+  
 };
 
 /*! 
@@ -3278,7 +3278,7 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  */
 class CTurbVariable : public CVariable {
 protected:
@@ -3322,7 +3322,7 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  */
 
 class CTurbSAVariable : public CTurbVariable {
@@ -3369,7 +3369,7 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  */
 
 class CTurbMLVariable : public CTurbVariable {
@@ -3415,7 +3415,7 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  */
 
 class CTransLMVariable : public CTurbVariable {
@@ -3467,7 +3467,7 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  */
 
 class CTurbSSTVariable : public CTurbVariable {
@@ -3524,49 +3524,14 @@ public:
 	su2double GetCrossDiff(void);
 };
 
-/*!
- * \class CAdjPotentialVariable
- * \brief Main class for defining the variables of the adjoint potential solver.
- * \ingroup Potential_Flow_Equation
- * \author F. Palacios
- * \version 4.0.0 "Cardinal"
- */
-class CAdjPotentialVariable : public CVariable {
-private:
-	su2double Psi;			/*!< \brief Value of the adjoint variable. */
-	su2double *ForceProj_Vector;	/*!< \brief Vector d. */
 
-public:
-
-
-//	/*!
-//	 * \brief Constructor of the class. 
-//	 */
-//	CAdjPotentialVariable(void);
-//
-//	/*!
-//	 * \overload
-//	 * \param[in] val_psi - Potential adjoint variable value (initialization value).
-//	 * \param[in] val_nDim - Number of dimensions of the problem.
-//	 * \param[in] val_nvar - Number of variables of the problem.
-//	 * \param[in] config - Definition of the particular problem.	 
-//	 */	
-//	CAdjPotentialVariable(su2double val_psi, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
-//
-//	/*!
-//	 * \brief Destructor of the class. 
-//	 */
-//
-//	~CAdjPotentialVariable(void);
-
-};
 
 /*! 
  * \class CAdjEulerVariable
  * \brief Main class for defining the variables of the adjoint Euler solver.
  * \ingroup Euler_Equations
  * \author F. Palacios
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  */
 class CAdjEulerVariable : public CVariable {
 protected:
@@ -3612,16 +3577,19 @@ public:
 	 * \brief Set all the primitive variables for compressible flows.
 	 */
 	bool SetPrimVar_Compressible(su2double SharpEdge_Distance, bool check, CConfig *config);
+  using CVariable::SetPrimVar_Compressible;
   
   /*!
 	 * \brief Set all the primitive variables for compressible flows.
 	 */
 	bool SetPrimVar_Incompressible(su2double SharpEdge_Distance, bool check, CConfig *config);
+  using CVariable::SetPrimVar_Incompressible;
   
   /*!
 	 * \brief Set all the primitive variables for compressible flows.
 	 */
 	bool SetPrimVar_FreeSurface(su2double SharpEdge_Distance, bool check, CConfig *config);
+  using CVariable::SetPrimVar_FreeSurface;
   
 	/*!
 	 * \brief Set the value of the adjoint velocity.
@@ -3685,7 +3653,7 @@ public:
  * \brief Main class for defining the variables of the adjoint Navier-Stokes solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  */
 class CAdjNSVariable : public CAdjEulerVariable {	
 private:
@@ -3757,7 +3725,7 @@ public:
  * \brief Main class for defining the variables of the adjoint turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  */
 class CAdjTurbVariable : public CVariable {
 protected:
@@ -3807,7 +3775,7 @@ public:
  * \brief Main class for defining the variables of the linearized potential equation.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  */
 class CLinPotentialVariable : public CVariable {
 public:	
@@ -3818,7 +3786,7 @@ public:
  * \brief Main class for defining the variables of the linearized Euler's equations.
  * \ingroup Euler_Equations
  * \author F. Palacios
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  */
 class CLinEulerVariable : public CVariable {
 private:
@@ -3895,7 +3863,7 @@ public:
  * \brief Main class for defining the variables of the linearized Navier-Stokes' equations.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  */
 class CLinNSVariable : public CLinEulerVariable {
 public:
@@ -3906,7 +3874,7 @@ public:
  * \brief Main class for defining the variables of the Level Set.
  * \ingroup LevelSet_Model
  * \author F. Palacios
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  */
 class CAdjLevelSetVariable : public CVariable {
 public:
@@ -4154,6 +4122,7 @@ public:
 	 * \brief Set all the primitive variables for compressible flows.
 	 */
 	bool SetPrimVar_Compressible(CConfig *config);
+  using CVariable::SetPrimVar_Compressible;
   
   /*!
 	 * \brief Set all the conserved variables.
@@ -4530,6 +4499,7 @@ public:
 	 * \brief Set all the primitive variables for compressible flows
 	 */
 	bool SetPrimVar_Compressible(CConfig *config);
+  using CVariable::SetPrimVar_Compressible;
   
 };
 
@@ -4593,6 +4563,7 @@ public:
 	bool SetPrimVar_Compressible(su2double SharpEdge_Distance,
                                bool check,
                                CConfig *config);
+  using CVariable::SetPrimVar_Compressible;
   
 	/*!
 	 * \brief Set the value of the adjoint velocity.
@@ -4717,7 +4688,7 @@ public:
  * \brief Main class for defining the variables of the potential solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  */
 class CTemplateVariable : public CVariable {
 public:
@@ -4747,7 +4718,7 @@ public:
  * \brief Main class for defining the variables of the adjoint solver.
  * \ingroup Discrete_Adjoint
  * \author T. Albring.
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  */
 class CDiscAdjVariable : public CVariable {
 private:
