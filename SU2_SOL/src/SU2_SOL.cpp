@@ -198,22 +198,22 @@ int main(int argc, char *argv[]) {
       if (StopCalc) break;
     }
     
-  } else if (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+  } else if (config_container[ZONE_0]->GetUnsteady_Simulation() == SPECTRAL_METHOD) {
 
 	  /*--- Time-spectral simulation: merge files for each time instance (each zone). ---*/
-	  unsigned short nTimeSpectral = config_container[ZONE_0]->GetnTimeInstances();
-	  unsigned short iTimeSpectral;
-	  for (iTimeSpectral = 0; iTimeSpectral < nTimeSpectral; iTimeSpectral++) {
+	  unsigned short nSpectralMethod = config_container[ZONE_0]->GetnTimeInstances();
+	  unsigned short iSpectralMethod;
+	  for (iSpectralMethod = 0; iSpectralMethod < nSpectralMethod; iSpectralMethod++) {
 
 		  /*--- Set the current instance number in the config class to "ExtIter." ---*/
-		  config_container[ZONE_0]->SetExtIter(iTimeSpectral);
+		  config_container[ZONE_0]->SetExtIter(iSpectralMethod);
 
 		  /*--- Read in the restart file for this time step ---*/
 		  /*--- N.B. In SU2_SOL, nZone != nTimeInstances ---*/
 		  for (iZone = 0; iZone < nZone; iZone++) {
 
 			  /*--- Either instantiate the solution class or load a restart file. ---*/
-			  if (iTimeSpectral == 0)
+			  if (iSpectralMethod == 0)
 				  solver_container[iZone] = new CBaselineSolver(geometry_container[iZone], config_container[iZone], MESH_0);
 			  else
 				  solver_container[iZone]->LoadRestart(geometry_container, &solver_container, config_container[iZone], SU2_TYPE::Int(MESH_0));
@@ -221,10 +221,10 @@ int main(int argc, char *argv[]) {
 
 		  /*--- Print progress in solution writing to the screen. ---*/
 		  if (rank == MASTER_NODE) {
-			  cout << "Writing the volume solution for time instance " << iTimeSpectral << "." << endl;
+			  cout << "Writing the volume solution for time instance " << iSpectralMethod << "." << endl;
 		  }
 
-		  output->SetBaselineResult_Files(solver_container, geometry_container, config_container, iTimeSpectral, nZone);
+		  output->SetBaselineResult_Files(solver_container, geometry_container, config_container, iSpectralMethod, nZone);
 	  }
   } else {
 

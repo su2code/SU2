@@ -167,6 +167,9 @@ void CConfig::SetPointersNull(void) {
   RefOriginMoment_X = NULL;   RefOriginMoment_Y = NULL;   RefOriginMoment_Z = NULL;
   MoveMotion_Origin = NULL;
 
+  /* Harmonic Balance Frequency pointer */
+  Omega_HB = NULL;
+    
   /*--- Variable initialization ---*/
   
   ExtIter = 0;
@@ -551,7 +554,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Integer number of periodic time instances for Time Spectral */
   addUnsignedShortOption("TIME_INSTANCES", nTimeInstances, 1);
   /* DESCRIPTION: Time period for Time Spectral wihtout moving meshes */
-  addDoubleOption("TIMESPECTRAL_PERIOD", TimeSpectral_Period, 0.0);
+  addDoubleOption("SPECTRALMETHOD_PERIOD", SpectralMethod_Period, 0.0);
   /* DESCRIPTION: Iteration number to begin unsteady restarts (dual time method) */
   addLongOption("UNST_RESTART_ITER", Unst_RestartIter, 0);
   /* DESCRIPTION: Starting direct solver iteration for the unsteady adjoint */
@@ -1064,6 +1067,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Direction of the gust X or Y dir */
   addEnumOption("GUST_DIR", Gust_Dir, Gust_Dir_Map, Y_DIR);
 
+  /* Harmonic Balance config */
+  /* DESCRIPTION: Omega(2*pi*f) - frequencies for Harmonic Balance method */
+  addDoubleListOption("OMEGA_HB", nOmega_HB, Omega_HB);
 
   /*!\par CONFIG_CATEGORY: Equivalent Area \ingroup Config*/
   /*--- Options related to the equivalent area ---*/
@@ -1640,7 +1646,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   if (Unsteady_Simulation == STEADY ||
       Unsteady_Simulation == TIME_STEPPING ||
-      Unsteady_Simulation == TIME_SPECTRAL  ||
+      Unsteady_Simulation == SPECTRAL_METHOD  ||
       Kind_Regime == FREESURFACE) { Wrt_Unsteady = false; }
   else { Wrt_Unsteady = true; }
 
@@ -2074,10 +2080,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
    There are THREE types of motion to consider, namely: rotation, pitching, and plunging.
    The largest period of motion is the one to be used for time-spectral calculations. ---*/
   
-  if (Unsteady_Simulation == TIME_SPECTRAL) {
+  if (Unsteady_Simulation == SPECTRAL_METHOD) {
       if (!(GetGrid_Movement())) {
           /* No grid movement - Time period from config file */
-          TimeSpectral_Period = GetTimeSpectral_Period();
+          SpectralMethod_Period = GetSpectralMethod_Period();
       }
       
       else {
@@ -2112,10 +2118,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
           /*--- determine which period is largest ---*/
           
           unsigned short iVar;
-          TimeSpectral_Period = 0.0;
+          SpectralMethod_Period = 0.0;
           for (iVar = 0; iVar < N_MOTION_TYPES; iVar++) {
-              if (periods[iVar] > TimeSpectral_Period)
-                  TimeSpectral_Period = periods[iVar];
+              if (periods[iVar] > SpectralMethod_Period)
+                  SpectralMethod_Period = periods[iVar];
           }
           
           delete periods;
@@ -2123,6 +2129,18 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     
   }
   
+  /* Initialize the Harmonic balance Frequency pointer */
+  if (Omega_HB == NULL) {
+    Omega_HB = new double[nOmega_HB];
+    for (iZone = 0; iZone < nOmega_HB; iZone++ )
+        Omega_HB[iZone] = 0.0;
+    }else {
+      if (nOmega_HB != nTimeInstances) {
+            cout << "Length of omega_HB  must match the number TIME_INSTANCES!!" << endl;
+            exit(EXIT_FAILURE);
+      }
+    }
+    
   /*--- Initialize the RefOriginMoment Pointer ---*/
   
   RefOriginMoment = NULL;
@@ -5532,6 +5550,11 @@ CConfig::~CConfig(void) {
   if (RefOriginMoment_Z != NULL)
     delete [] RefOriginMoment_Z;
 
+  /*--- Free memory for Harmonic Blance Frequency  pointer ---*/
+    
+  if (Omega_HB != NULL)
+    delete [] Omega_HB;
+    
   /*--- Marker pointers ---*/
   
   if (Marker_CfgFile_Out_1D!=NULL)   delete[] Marker_CfgFile_Out_1D;
@@ -5670,7 +5693,7 @@ string CConfig::GetUnsteady_FileName(string val_filename, int val_iter) {
   }
 
   /*--- Append iteration number for unsteady cases ---*/
-  if ((Wrt_Unsteady) || (Unsteady_Simulation == TIME_SPECTRAL)) {
+  if ((Wrt_Unsteady) || (Unsteady_Simulation == SPECTRAL_METHOD)) {
     unsigned short lastindex = UnstFilename.find_last_of(".");
     UnstFilename = UnstFilename.substr(0, lastindex);
     if ((val_iter >= 0)    && (val_iter < 10))    SPRINTF (buffer, "_0000%d.dat", val_iter);

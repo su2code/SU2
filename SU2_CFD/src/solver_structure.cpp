@@ -1627,7 +1627,7 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
   
   /*--- Unsteady problems require an iteration number to be appended. ---*/
   
-  if (config->GetWrt_Unsteady() || config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+  if (config->GetWrt_Unsteady() || config->GetUnsteady_Simulation() == SPECTRAL_METHOD) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   }
   
@@ -1921,7 +1921,7 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   }
   
   /*--- Unsteady problems require an iteration number to be appended. ---*/
-  if (config->GetWrt_Unsteady() || config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+  if (config->GetWrt_Unsteady() || config->GetUnsteady_Simulation() == SPECTRAL_METHOD) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   }
   

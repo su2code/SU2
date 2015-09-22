@@ -95,7 +95,7 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
   /*--- Write file name with extension if unsteady ---*/
   strcpy (cstr, config->GetSurfFlowCoeff_FileName().c_str());
   
-  if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+  if (config->GetUnsteady_Simulation() == SPECTRAL_METHOD) {
     if (SU2_TYPE::Int(val_iZone) < 10) SPRINTF (buffer, "_0000%d.csv", SU2_TYPE::Int(val_iZone));
     if ((SU2_TYPE::Int(val_iZone) >= 10)   && (SU2_TYPE::Int(val_iZone) < 100))   SPRINTF (buffer, "_000%d.csv", SU2_TYPE::Int(val_iZone));
     if ((SU2_TYPE::Int(val_iZone) >= 100)  && (SU2_TYPE::Int(val_iZone) < 1000))  SPRINTF (buffer, "_00%d.csv", SU2_TYPE::Int(val_iZone));
@@ -315,7 +315,7 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
     
     /*--- Write file name with extension if unsteady ---*/
     strcpy (cstr, filename.c_str());
-    if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+    if (config->GetUnsteady_Simulation() == SPECTRAL_METHOD) {
       if (SU2_TYPE::Int(val_iZone) < 10) SPRINTF (buffer, "_0000%d.csv", SU2_TYPE::Int(val_iZone));
       if ((SU2_TYPE::Int(val_iZone) >= 10) && (SU2_TYPE::Int(val_iZone) < 100)) SPRINTF (buffer, "_000%d.csv", SU2_TYPE::Int(val_iZone));
       if ((SU2_TYPE::Int(val_iZone) >= 100) && (SU2_TYPE::Int(val_iZone) < 1000)) SPRINTF (buffer, "_00%d.csv", SU2_TYPE::Int(val_iZone));
@@ -441,7 +441,7 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
   /*--- Write file name with extension if unsteady ---*/
   strcpy (cstr, config->GetSurfAdjCoeff_FileName().c_str());
   
-  if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+  if (config->GetUnsteady_Simulation() == SPECTRAL_METHOD) {
     if (SU2_TYPE::Int(val_iZone) < 10) SPRINTF (buffer, "_0000%d.csv", SU2_TYPE::Int(val_iZone));
     if ((SU2_TYPE::Int(val_iZone) >= 10) && (SU2_TYPE::Int(val_iZone) < 100)) SPRINTF (buffer, "_000%d.csv", SU2_TYPE::Int(val_iZone));
     if ((SU2_TYPE::Int(val_iZone) >= 100) && (SU2_TYPE::Int(val_iZone) < 1000)) SPRINTF (buffer, "_00%d.csv", SU2_TYPE::Int(val_iZone));
@@ -683,7 +683,7 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
     /*--- Write file name with extension if unsteady ---*/
     strcpy (cstr, filename.c_str());
     
-    if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+    if (config->GetUnsteady_Simulation() == SPECTRAL_METHOD) {
       if (SU2_TYPE::Int(val_iZone) < 10) SPRINTF (buffer, "_0000%d.csv", SU2_TYPE::Int(val_iZone));
       if ((SU2_TYPE::Int(val_iZone) >= 10) && (SU2_TYPE::Int(val_iZone) < 100)) SPRINTF (buffer, "_000%d.csv", SU2_TYPE::Int(val_iZone));
       if ((SU2_TYPE::Int(val_iZone) >= 100) && (SU2_TYPE::Int(val_iZone) < 1000)) SPRINTF (buffer, "_00%d.csv", SU2_TYPE::Int(val_iZone));
@@ -3814,7 +3814,7 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
   
   /*--- Unsteady problems require an iteration number to be appended. ---*/
   
-  if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+  if (config->GetUnsteady_Simulation() == SPECTRAL_METHOD) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(val_iZone));
   } else if (config->GetWrt_Unsteady()) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
@@ -7393,7 +7393,7 @@ void COutput::SetCp_InverseDesign(CSolver *solver_container, CGeometry *geometry
   /*--- Write file name with extension if unsteady or steady ---*/
   
   if ((config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) ||
-      (config->GetUnsteady_Simulation() == TIME_SPECTRAL)) {
+      (config->GetUnsteady_Simulation() == SPECTRAL_METHOD)) {
     if ((SU2_TYPE::Int(iExtIter) >= 0)    && (SU2_TYPE::Int(iExtIter) < 10))    SPRINTF (buffer, "_0000%d.dat", SU2_TYPE::Int(iExtIter));
     if ((SU2_TYPE::Int(iExtIter) >= 10)   && (SU2_TYPE::Int(iExtIter) < 100))   SPRINTF (buffer, "_000%d.dat",  SU2_TYPE::Int(iExtIter));
     if ((SU2_TYPE::Int(iExtIter) >= 100)  && (SU2_TYPE::Int(iExtIter) < 1000))  SPRINTF (buffer, "_00%d.dat",   SU2_TYPE::Int(iExtIter));
@@ -7551,7 +7551,7 @@ void COutput::SetHeat_InverseDesign(CSolver *solver_container, CGeometry *geomet
   /*--- Write file name with extension if unsteady or steady ---*/
   
   if ((config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) ||
-      (config->GetUnsteady_Simulation() == TIME_SPECTRAL)) {
+      (config->GetUnsteady_Simulation() == SPECTRAL_METHOD)) {
     if ((SU2_TYPE::Int(iExtIter) >= 0)    && (SU2_TYPE::Int(iExtIter) < 10))    SPRINTF (buffer, "_0000%d.dat", SU2_TYPE::Int(iExtIter));
     if ((SU2_TYPE::Int(iExtIter) >= 10)   && (SU2_TYPE::Int(iExtIter) < 100))   SPRINTF (buffer, "_000%d.dat",  SU2_TYPE::Int(iExtIter));
     if ((SU2_TYPE::Int(iExtIter) >= 100)  && (SU2_TYPE::Int(iExtIter) < 1000))  SPRINTF (buffer, "_00%d.dat",   SU2_TYPE::Int(iExtIter));

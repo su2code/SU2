@@ -993,7 +993,7 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-  bool time_spectral  = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
+  bool spectral_method  = (config->GetUnsteady_Simulation() == SPECTRAL_METHOD);
   
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -1151,7 +1151,7 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
       filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
     }
     
-    else if (time_spectral) {
+    else if (spectral_method) {
         filename = config->GetUnsteady_FileName(filename, iZone);
     }
       
@@ -1339,7 +1339,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
   unsigned short iVar, iDim, jDim;
   
   bool freesurface   = (config->GetKind_Regime() == FREESURFACE);
-  bool time_spectral = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
+  bool spectral_method = (config->GetUnsteady_Simulation() == SPECTRAL_METHOD);
   bool transition    = (config->GetKind_Trans_Model() == LM);
   su2double epsilon     = config->GetFreeSurface_Thickness();
   
@@ -1443,7 +1443,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
     
   }
   
-  if (time_spectral) {
+  if (spectral_method) {
     
     su2double Volume, Source;
     unsigned short nVar_Turb = solver_container[TURB_SOL]->GetnVar();
@@ -1459,7 +1459,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
       /*--- Access stored time spectral source term ---*/
       
       for (unsigned short iVar = 0; iVar < nVar_Turb; iVar++) {
-        Source = node[iPoint]->GetTimeSpectral_Source(iVar);
+        Source = node[iPoint]->GetSpectralMethod_Source(iVar);
         Residual[iVar] = Source*Volume;
       }
       
@@ -2478,7 +2478,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-  bool time_spectral  = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
+  bool spectral_method  = (config->GetUnsteady_Simulation() == SPECTRAL_METHOD);
   
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -2641,7 +2641,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
       filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
     }
       
-    else if (time_spectral) {
+    else if (spectral_method) {
         filename = config->GetUnsteady_FileName(filename, iZone);
     }
     
@@ -3550,7 +3550,7 @@ void CTurbMLSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
   unsigned short jDim;
   
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
-  bool time_spectral = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
+  bool spectral_method = (config->GetUnsteady_Simulation() == SPECTRAL_METHOD);
   bool transition = (config->GetKind_Trans_Model() == LM);
   su2double epsilon          = config->GetFreeSurface_Thickness();
   
@@ -3703,7 +3703,7 @@ void CTurbMLSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
     
   }
   
-  if (time_spectral) {
+  if (spectral_method) {
     
     su2double Volume, Source;
     unsigned short nVar_Turb = solver_container[TURB_SOL]->GetnVar();
@@ -3716,7 +3716,7 @@ void CTurbMLSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
       
       /*--- Access stored time spectral source term ---*/
       for (unsigned short iVar = 0; iVar < nVar_Turb; iVar++) {
-        Source = node[iPoint]->GetTimeSpectral_Source(iVar);
+        Source = node[iPoint]->GetSpectralMethod_Source(iVar);
         Residual[iVar] = Source*Volume;
       }
       

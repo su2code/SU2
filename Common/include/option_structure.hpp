@@ -1177,7 +1177,7 @@ enum ENUM_UNSTEADY {
   DT_STEPPING_1ST = 2,	/*!< \brief Use a dual time stepping strategy for unsteady computations (1st order). */
   DT_STEPPING_2ND = 3,	/*!< \brief Use a dual time stepping strategy for unsteady computations (2nd order). */
   ROTATIONAL_FRAME = 4,   /*!< \brief Use a rotational source term. */
-  TIME_SPECTRAL = 5       	/*!< \brief Use a time spectral source term. */
+  SPECTRAL_METHOD = 5       	/*!< \brief Use a time spectral source term. */
 
 };
 static const map<string, ENUM_UNSTEADY> Unsteady_Map = CCreateMap<string, ENUM_UNSTEADY>
@@ -1185,7 +1185,7 @@ static const map<string, ENUM_UNSTEADY> Unsteady_Map = CCreateMap<string, ENUM_U
 ("TIME_STEPPING", TIME_STEPPING)
 ("DUAL_TIME_STEPPING-1ST_ORDER", DT_STEPPING_1ST)
 ("DUAL_TIME_STEPPING-2ND_ORDER", DT_STEPPING_2ND)
-("TIME_SPECTRAL", TIME_SPECTRAL)
+("SPECTRAL_METHOD", SPECTRAL_METHOD)
 ("ROTATIONAL_FRAME", ROTATIONAL_FRAME);
 
 /*!
