@@ -290,10 +290,9 @@ int main(int argc, char *argv[]) {
 		  }
 
 		  Interface_Preprocessing(transfer_container, interpolator_container, geometry_container,
-				  	  	  	  	  config_container, nZone, nDim);
+				  	  	  	  	  config_container, solver_container, nZone, nDim);
 
 	  }
-
 
 
 	  /*--- Definition of the output class (one for all zones). The output class
