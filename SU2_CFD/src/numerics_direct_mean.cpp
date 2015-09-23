@@ -411,7 +411,7 @@ void CCentJST_KE_Flow::ComputeResidual(su2double *val_residual, su2double **val_
     Phi_j = pow(Lambda_j/(4.0*MeanLambda), Param_p);
     StretchingFactor = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j);
     
-    sc2 = 3.0*(double(Neighbor_i)+double(Neighbor_j))/(double(Neighbor_i)*double(Neighbor_j));
+    sc2 = 3.0*(su2double(Neighbor_i)+su2double(Neighbor_j))/(su2double(Neighbor_i)*su2double(Neighbor_j));
     sc4 = sc2*sc2/4.0;
     
     Epsilon_2 = Param_Kappa_2*0.5*(Sensor_i+Sensor_j)*sc2;
@@ -426,8 +426,8 @@ void CCentJST_KE_Flow::ComputeResidual(su2double *val_residual, su2double **val_
     
     if (implicit) {
         
-        cte_0 = (Epsilon_2 + Epsilon_4*double(Neighbor_i+1))*StretchingFactor*MeanLambda;
-        cte_1 = (Epsilon_2 + Epsilon_4*double(Neighbor_j+1))*StretchingFactor*MeanLambda;
+        cte_0 = (Epsilon_2 + Epsilon_4*su2double(Neighbor_i+1))*StretchingFactor*MeanLambda;
+        cte_1 = (Epsilon_2 + Epsilon_4*su2double(Neighbor_j+1))*StretchingFactor*MeanLambda;
         
         for (iVar = 0; iVar < (nVar-1); iVar++) {
             val_Jacobian_i[iVar][iVar] += cte_0;

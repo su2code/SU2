@@ -3011,17 +3011,17 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
       
     
     /* Set the variable to store the coordinates of each point */
-    Solution = new double[nVar];
-    double Xcoord, Xdiaf = 0.5;
+    Solution = new su2double[nVar];
+    su2double Xcoord, Xdiaf = 0.5;
     
     /* Set the left and right conditions for the Sod Shock tube */
-    double Pressure_l = 101325;//Pressure_Inf;
-    double density_l = 1.225;//Density_Inf;
-    double vel_l = 0.0;
+    su2double Pressure_l = 101325;//Pressure_Inf;
+    su2double density_l = 1.225;//Density_Inf;
+    su2double vel_l = 0.0;
    
-    double Pressure_r = Pressure_l*0.1;
-    double density_r = density_l*0.125;
-    double vel_r = 0.0;
+    su2double Pressure_r = Pressure_l*0.1;
+    su2double density_r = density_l*0.125;
+    su2double vel_r = 0.0;
 
     for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
     {
