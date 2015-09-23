@@ -2,7 +2,7 @@
  * \file variable_direct_transition.cpp
  * \brief Definition of the solution fields.
  * \author A. Aranake
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -33,7 +33,7 @@
 
 CTransLMVariable::CTransLMVariable(void) : CTurbVariable() {}
 
-CTransLMVariable::CTransLMVariable(double val_nu_tilde, double val_intermittency, double val_REth,  unsigned short val_nDim, unsigned short val_nvar, CConfig *config)
+CTransLMVariable::CTransLMVariable(su2double val_nu_tilde, su2double val_intermittency, su2double val_REth,  unsigned short val_nDim, unsigned short val_nvar, CConfig *config)
 : CTurbVariable(val_nDim, val_nvar, config) {
   
 	// Initialization of variables

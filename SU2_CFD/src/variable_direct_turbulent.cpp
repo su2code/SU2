@@ -2,7 +2,7 @@
  * \file variable_direct_turbulent.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, A. Bueno
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -50,19 +50,19 @@ CTurbVariable::CTurbVariable(unsigned short val_nDim, unsigned short val_nvar, C
 	/*--- Allocate space for the time spectral source terms ---*/
   
 	if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
-		TS_Source = new double[nVar];
+		TS_Source = new su2double[nVar];
 		for (iVar = 0; iVar < nVar; iVar++)
 			TS_Source[iVar] = 0.0;
 	}
   
 	/*--- Allocate space for the limiter ---*/
   
-  Limiter = new double [nVar];
+  Limiter = new su2double [nVar];
   for (iVar = 0; iVar < nVar; iVar++)
     Limiter[iVar] = 0.0;
   
-  Solution_Max = new double [nVar];
-  Solution_Min = new double [nVar];
+  Solution_Max = new su2double [nVar];
+  Solution_Min = new su2double [nVar];
   for (iVar = 0; iVar < nVar; iVar++) {
     Solution_Max[iVar] = 0.0;
     Solution_Min[iVar] = 0.0;
@@ -72,13 +72,13 @@ CTurbVariable::CTurbVariable(unsigned short val_nDim, unsigned short val_nvar, C
 
 CTurbVariable::~CTurbVariable(void) { }
 
-double CTurbVariable::GetmuT() { return muT; }
+su2double CTurbVariable::GetmuT() { return muT; }
 
-void CTurbVariable::SetmuT(double val_muT) { muT = val_muT; }
+void CTurbVariable::SetmuT(su2double val_muT) { muT = val_muT; }
 
 CTurbSAVariable::CTurbSAVariable(void) : CTurbVariable() { }
 
-CTurbSAVariable::CTurbSAVariable(double val_nu_tilde, double val_muT, unsigned short val_nDim, unsigned short val_nvar, CConfig *config)
+CTurbSAVariable::CTurbSAVariable(su2double val_nu_tilde, su2double val_muT, unsigned short val_nDim, unsigned short val_nvar, CConfig *config)
 : CTurbVariable(val_nDim, val_nvar, config) {
   
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
@@ -106,7 +106,7 @@ CTurbSAVariable::~CTurbSAVariable(void) {
 
 CTurbMLVariable::CTurbMLVariable(void) : CTurbVariable() { }
 
-CTurbMLVariable::CTurbMLVariable(double val_nu_tilde, double val_muT, unsigned short val_nDim, unsigned short val_nvar, CConfig *config)
+CTurbMLVariable::CTurbMLVariable(su2double val_nu_tilde, su2double val_muT, unsigned short val_nDim, unsigned short val_nvar, CConfig *config)
 : CTurbVariable(val_nDim, val_nvar, config) {
   
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
@@ -134,8 +134,8 @@ CTurbMLVariable::~CTurbMLVariable(void) {
 
 CTurbSSTVariable::CTurbSSTVariable(void) : CTurbVariable() { }
 
-CTurbSSTVariable::CTurbSSTVariable(double val_kine, double val_omega, double val_muT, unsigned short val_nDim, unsigned short val_nvar,
-                                   double *constants, CConfig *config)
+CTurbSSTVariable::CTurbSSTVariable(su2double val_kine, su2double val_omega, su2double val_muT, unsigned short val_nDim, unsigned short val_nvar,
+                                   su2double *constants, CConfig *config)
 : CTurbVariable(val_nDim, val_nvar, config) {
 
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
@@ -172,9 +172,9 @@ CTurbSSTVariable::~CTurbSSTVariable(void) {
   
 }
 
-void CTurbSSTVariable::SetBlendingFunc(double val_viscosity, double val_dist, double val_density) {
+void CTurbSSTVariable::SetBlendingFunc(su2double val_viscosity, su2double val_dist, su2double val_density) {
 	unsigned short iDim;
-	double arg2, arg2A, arg2B, arg1;
+	su2double arg2, arg2A, arg2B, arg1;
   
 	/*--- Cross diffusion ---*/
   

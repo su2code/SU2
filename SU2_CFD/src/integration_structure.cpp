@@ -2,7 +2,7 @@
  * \file integration_structure.cpp
  * \brief This subroutine includes the space and time integration structure
  * \author F. Palacios, T. Economon
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -38,7 +38,8 @@ CIntegration::CIntegration(CConfig *config) {
 	Convergence = false;
 	Convergence_FSI = false;
 	Convergence_FullMG = false;
-	Cauchy_Serie = new double [config->GetCauchy_Elems()+1];
+	Cauchy_Serie = new su2double [config->GetCauchy_Elems()+1];
+	InitResidual = 0.0;
 }
 
 CIntegration::~CIntegration(void) {
@@ -296,7 +297,7 @@ void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_contai
 }
 
 void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, unsigned long Iteration,
-                                          double monitor, unsigned short iMesh) {
+                                          su2double monitor, unsigned short iMesh) {
   
   unsigned short iCounter;
   int rank = MASTER_NODE;
@@ -397,7 +398,7 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
     /*--- Convergence criteria ---*/
     
     sbuf_conv[0] = Convergence;
-    MPI_Reduce(sbuf_conv, rbuf_conv, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Reduce(sbuf_conv, rbuf_conv, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
     
     /*-- Compute global convergence criteria in the master node --*/
     
@@ -407,7 +408,7 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
       else sbuf_conv[0] = 0;
     }
     
-    MPI_Bcast(sbuf_conv, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Bcast(sbuf_conv, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
     
     if (sbuf_conv[0] == 1) { Convergence = true; Convergence_FullMG = true; }
     else { Convergence = false; Convergence_FullMG = false; }
@@ -459,7 +460,7 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
     
     /*--- Also communicate plunge and pitch to the master node. Needed for output in case of parallel run ---*/
 #ifdef HAVE_MPI
-    double plunge, pitch, *plunge_all = NULL, *pitch_all = NULL;
+    su2double plunge, pitch, *plunge_all = NULL, *pitch_all = NULL;
     unsigned short iMarker, iMarker_Monitoring;
     unsigned long iProcessor, owner, *owner_all = NULL;
     
@@ -471,8 +472,8 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
 
     /*--- Only if mater node allocate memory ---*/
     if (rank == MASTER_NODE) {
-      plunge_all = new double[nProcessor];
-      pitch_all  = new double[nProcessor];
+      plunge_all = new su2double[nProcessor];
+      pitch_all  = new su2double[nProcessor];
       owner_all  = new unsigned long[nProcessor];
     }
     
@@ -493,13 +494,13 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
       pitch  = config->GetAeroelastic_pitch(iMarker_Monitoring);
       
       /*--- Gather the data on the master node. ---*/
-      MPI_Gather(&plunge, 1, MPI_DOUBLE, plunge_all, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-      MPI_Gather(&pitch, 1, MPI_DOUBLE, pitch_all, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-      MPI_Gather(&owner, 1, MPI_UNSIGNED_LONG, owner_all, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+      SU2_MPI::Gather(&plunge, 1, MPI_DOUBLE, plunge_all, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+      SU2_MPI::Gather(&pitch, 1, MPI_DOUBLE, pitch_all, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+      SU2_MPI::Gather(&owner, 1, MPI_UNSIGNED_LONG, owner_all, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
       
       /*--- Set plunge and pitch on the master node ---*/
       if (rank == MASTER_NODE) {
-        for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+        for (iProcessor = 0; iProcessor < (unsigned long)nProcessor; iProcessor++) {
           if (owner_all[iProcessor] == 1) {
             config->SetAeroelastic_plunge(iMarker_Monitoring, plunge_all[iProcessor]);
             config->SetAeroelastic_pitch(iMarker_Monitoring, pitch_all[iProcessor]);
@@ -538,7 +539,7 @@ void CIntegration::SetStructural_Solver(CGeometry *geometry, CSolver *solver, CC
 
 	  if (fsi){
 
-		  double WAitk=0.0;
+		  su2double WAitk=0.0;
 
 		  WAitk = solver->GetWAitken_Dyn();
 		  solver->SetWAitken_Dyn_tn1(WAitk);
@@ -550,17 +551,16 @@ void CIntegration::SetStructural_Solver(CGeometry *geometry, CSolver *solver, CC
 
 void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *fea_config, CSolver *fea_solver, unsigned long iFSIIter) {
 
-	unsigned short iCounter;
-	double FEA_check[2] = {0.0, 0.0};
-	double magResidualFSI, logResidualFSI_initial, logResidualFSI;
-	double magResidualFSI_criteria, logResidualFSI_criteria;
+	su2double FEA_check[2] = {0.0, 0.0};
+	su2double magResidualFSI, logResidualFSI_initial, logResidualFSI;
+	su2double magResidualFSI_criteria, logResidualFSI_criteria;
 
     unsigned long iPoint, iDim;
     unsigned long nPoint, nDim;
-    double *dispPred, *dispPred_Old;
-	double CurrentTime=fea_config->GetCurrent_DynTime();
-	double Static_Time=fea_config->GetStatic_Time();
-    double deltaU, deltaURad, deltaURes;
+    su2double *dispPred, *dispPred_Old;
+	su2double CurrentTime=fea_config->GetCurrent_DynTime();
+	su2double Static_Time=fea_config->GetStatic_Time();
+    su2double deltaU, deltaURad, deltaURes;
 
    	magResidualFSI_criteria = fea_config->GetOrderMagResidualFSI();
    	logResidualFSI_criteria = fea_config->GetMinLogResidualFSI();
@@ -596,7 +596,6 @@ void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *
 
 		for (iPoint=0; iPoint < nPoint; iPoint++){
 
-		deltaU = 0.0;
 		deltaURad = 0.0;
 
 		dispPred = fea_solver->node[iPoint]->GetSolution_Pred();

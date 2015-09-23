@@ -1,5 +1,9 @@
-# SU2 global Makefile.am
-# SU2 v3.2.7 "eagle"
+################################################################################
+#
+# \file Makefile.am
+# \brief Global makefile for the SU2 project
+# \author M. Colonno, T. Economon, F. Palacios
+# \version 4.0.1 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -25,27 +29,22 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 #
-# Created: 		10/26/12
-# Last updated: 	03/24/14
-#
-# Created by: 		M. Colonno
-# Updated by: 		T. Economon
-#
-# Major Changes/Contributions:
-# METIS & TECIO integration added by Ben Kirk, 3/24/2014
-#
-######################################################################################
+################################################################################
 
-# AUTOMAKE_OPTIONS = subdir-objects
 ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS} -I m4
 
-# build third-party optional dependencies first
+# Build third-party optional dependencies first
 SUBDIRS = externals
 
+# Build the SU2 C++ common library
 SUBDIRS += Common/lib
 
+# Install the SU2 Python scripts to the proper location
+if BUILD_NORMAL
 SUBDIRS += SU2_PY
+endif
 
+# Build each of the SU2 C++ modules
 if BUILD_CFD
 SUBDIRS +=SU2_CFD/obj
 endif

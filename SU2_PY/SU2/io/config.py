@@ -3,7 +3,7 @@
 ## \file config.py
 #  \brief python package for config 
 #  \author T. Lukaczyk, F. Palacios
-#  \version 4.0.0 "Cardinal"
+#  \version 4.0.1 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -201,7 +201,7 @@ class Config(ordered_bunch):
                     keys, each with values of a list of the different 
                     config values.
                 for example: 
-                config_diff.MATH_PROBLEM = ['DIRECT','ADJOINT']
+                config_diff.MATH_PROBLEM = ['DIRECT','CONTINUOUS_ADJOINT']
                 
         """
         

@@ -2,7 +2,7 @@
  * \file variable_adjoint_turbulent.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, A. Bueno
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -42,7 +42,7 @@ CAdjTurbVariable::CAdjTurbVariable(void) : CVariable() {
   
 }
 
-CAdjTurbVariable::CAdjTurbVariable(double val_psinu_inf, unsigned short val_nDim, unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
+CAdjTurbVariable::CAdjTurbVariable(su2double val_psinu_inf, unsigned short val_nDim, unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
   
   /*--- Array initialization ---*/
   
@@ -58,9 +58,9 @@ CAdjTurbVariable::CAdjTurbVariable(double val_psinu_inf, unsigned short val_nDim
 		Solution_Old[iVar] = val_psinu_inf;
 	}
   
-	Residual_Old = new double [nVar];
+	Residual_Old = new su2double [nVar];
   
-	if (config->GetSpatialOrder() == SECOND_ORDER_LIMITER) Limiter = new double [nVar];
+	if (config->GetSpatialOrder() == SECOND_ORDER_LIMITER) Limiter = new su2double [nVar];
   
 }
 

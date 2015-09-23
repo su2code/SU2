@@ -2,7 +2,7 @@
  * \file solution_direct_transition.cpp
  * \brief Main subrotuines for solving direct problems (Euler, Navier-Stokes, etc.).
  * \author A. Aranake
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -34,7 +34,7 @@ CTransLMSolver::CTransLMSolver(void) : CTurbSolver() {}
 CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CTurbSolver() {
 	unsigned short iVar, iDim, nLineLets;
 	unsigned long iPoint, index;
-	double Density_Inf, Viscosity_Inf, tu_Inf, nu_tilde_Inf, Factor_nu_Inf, dull_val, rey;
+	su2double Density_Inf, Viscosity_Inf, tu_Inf, nu_tilde_Inf, Factor_nu_Inf, dull_val, rey;
 	ifstream restart_file;
 	char *cstr;
 	string text_line;
@@ -63,25 +63,25 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
 	if (iMesh == MESH_0) {
 		
 		/*--- Define some auxillary vectors related to the residual ---*/
-		Residual     = new double[nVar]; Residual_RMS = new double[nVar];
-		Residual_i   = new double[nVar]; Residual_j   = new double[nVar];
-    Residual_Max = new double[nVar];
+		Residual     = new su2double[nVar]; Residual_RMS = new su2double[nVar];
+		Residual_i   = new su2double[nVar]; Residual_j   = new su2double[nVar];
+    Residual_Max = new su2double[nVar];
 
     /*--- Define some structures for locating max residuals ---*/
     Point_Max = new unsigned long[nVar];
     for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar] = 0;
-    Point_Max_Coord = new double*[nVar];
+    Point_Max_Coord = new su2double*[nVar];
     for (iVar = 0; iVar < nVar; iVar++) {
-      Point_Max_Coord[iVar] = new double[nDim];
+      Point_Max_Coord[iVar] = new su2double[nDim];
       for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
     }
 
 		/*--- Define some auxiliar vector related with the solution ---*/
-		Solution   = new double[nVar];
-		Solution_i = new double[nVar]; Solution_j = new double[nVar];
+		Solution   = new su2double[nVar];
+		Solution_i = new su2double[nVar]; Solution_j = new su2double[nVar];
 		
 		/*--- Define some auxiliar vector related with the geometry ---*/
-		Vector_i = new double[nDim]; Vector_j = new double[nDim];
+		Vector_i = new su2double[nDim]; Vector_j = new su2double[nDim];
 				
     LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
     LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
@@ -90,11 +90,11 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
 		if (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT) {
 
 			/*--- Point to point Jacobians ---*/
-			Jacobian_i = new double* [nVar];
-			Jacobian_j = new double* [nVar];
+			Jacobian_i = new su2double* [nVar];
+			Jacobian_j = new su2double* [nVar];
 			for (iVar = 0; iVar < nVar; iVar++) {
-				Jacobian_i[iVar] = new double [nVar];
-				Jacobian_j[iVar] = new double [nVar];
+				Jacobian_i[iVar] = new su2double [nVar];
+				Jacobian_j[iVar] = new su2double [nVar];
 			}
 			/*--- Initialization of the structure of the whole Jacobian ---*/
 			Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
@@ -110,13 +110,13 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
 	/*--- Computation of gradients by least squares ---*/
 	if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
 		/*--- S matrix := inv(R)*traspose(inv(R)) ---*/
-		Smatrix = new double* [nDim];
+		Smatrix = new su2double* [nDim];
 		for (iDim = 0; iDim < nDim; iDim++)
-			Smatrix[iDim] = new double [nDim];
+			Smatrix[iDim] = new su2double [nDim];
 		/*--- c vector := transpose(WA)*(Wb) ---*/
-		cvector = new double* [nVar];
+		cvector = new su2double* [nVar];
 		for (iVar = 0; iVar < nVar; iVar++)
-			cvector[iVar] = new double [nDim];
+			cvector[iVar] = new su2double [nDim];
 	}
 	
 	/*--- Read farfield conditions from config ---*/
@@ -224,7 +224,7 @@ void CTransLMSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
   
 	unsigned short iVar;
 	unsigned long iPoint, total_index;
-	double Delta, Delta_flow, Vol;
+	su2double Delta, Delta_flow, Vol;
   
   
   /*--- Set maximum residual to zero ---*/
@@ -290,7 +290,7 @@ void CTransLMSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
 }
 
 void CTransLMSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short iMesh) {
-  double *trans_var_i, *trans_var_j, *U_i, *U_j;
+  su2double *trans_var_i, *trans_var_j, *U_i, *U_j;
   unsigned long iEdge, iPoint, jPoint;
 
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
@@ -379,7 +379,7 @@ void CTransLMSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_cont
 void CTransLMSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
 																			 CConfig *config, unsigned short iMesh) {
   unsigned long iPoint;
-  double gamma_sep = 0.0;
+  su2double gamma_sep = 0.0;
 
   //cout << "Setting Trans residual -AA " << endl;
   cout << "\nBeginAA" << endl;
@@ -435,11 +435,11 @@ void CTransLMSolver::Source_Template(CGeometry *geometry, CSolver **solver_conta
 void CTransLMSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 	unsigned long iPoint, iVertex;
 	unsigned short iVar, iDim;
-  double *U_i;
-  double *U_domain = new double[nVar];
-  double *U_wall   = new double[nVar];
-  double *Normal   = new double[nDim];
-  double *Residual = new double[nVar];
+  su2double *U_i;
+  su2double *U_domain = new su2double[nVar];
+  su2double *U_wall   = new su2double[nVar];
+  su2double *Normal   = new su2double[nDim];
+  su2double *Residual = new su2double[nVar];
 
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT); 
 

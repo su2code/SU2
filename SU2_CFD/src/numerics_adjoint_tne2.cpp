@@ -2,7 +2,7 @@
  * \file numerics_adjoint_tne2.cpp
  * \brief This file contains all the convective term discretization.
  * \author S. Copeland
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -48,23 +48,23 @@ CUpwRoe_AdjTNE2::CUpwRoe_AdjTNE2(unsigned short val_nDim,
   nDim         = val_nDim;
   nSpecies     = config->GetnSpecies();
   
-  UnitNormal = new double[nDim];
-  MeanU      = new double[nVar];
-  MeanV      = new double[nPrimVar];
-  MeandPdU   = new double[nVar];
-  DiffPsi    = new double[nVar];
-  Lambda     = new double[nVar];
-  Ai     = new double* [nVar];
-  Aj     = new double* [nVar];
-  P      = new double* [nVar];
-  invP   = new double* [nVar];
-  PLPinv = new double* [nVar];
+  UnitNormal = new su2double[nDim];
+  MeanU      = new su2double[nVar];
+  MeanV      = new su2double[nPrimVar];
+  MeandPdU   = new su2double[nVar];
+  DiffPsi    = new su2double[nVar];
+  Lambda     = new su2double[nVar];
+  Ai     = new su2double* [nVar];
+  Aj     = new su2double* [nVar];
+  P      = new su2double* [nVar];
+  invP   = new su2double* [nVar];
+  PLPinv = new su2double* [nVar];
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-    Ai[iVar]     = new double [nVar];
-    Aj[iVar]     = new double [nVar];
-    P[iVar]      = new double [nVar];
-    invP[iVar]   = new double [nVar];
-    PLPinv[iVar] = new double [nVar];
+    Ai[iVar]     = new su2double [nVar];
+    Aj[iVar]     = new su2double [nVar];
+    P[iVar]      = new su2double [nVar];
+    invP[iVar]   = new su2double [nVar];
+    PLPinv[iVar] = new su2double [nVar];
   }  
 }
 
@@ -91,17 +91,17 @@ CUpwRoe_AdjTNE2::~CUpwRoe_AdjTNE2(void) {
   
 }
 
-void CUpwRoe_AdjTNE2::ComputeResidual (double *val_residual_i,
-                                       double *val_residual_j,
-                                       double **val_Jacobian_ii,
-                                       double **val_Jacobian_ij,
-                                       double **val_Jacobian_ji,
-                                       double **val_Jacobian_jj,
+void CUpwRoe_AdjTNE2::ComputeResidual (su2double *val_residual_i,
+                                       su2double *val_residual_j,
+                                       su2double **val_Jacobian_ii,
+                                       su2double **val_Jacobian_ij,
+                                       su2double **val_Jacobian_ji,
+                                       su2double **val_Jacobian_jj,
                                        CConfig *config) {
   
   unsigned short iDim, iVar, jVar, kVar;
-  double Area, ProjVel;
-  double MeanSoundSpeed;
+  su2double Area, ProjVel;
+  su2double MeanSoundSpeed;
   
   /*--- Roe flux: Fij = (Fi + Fj)/2 - 1/2*P|Lam|P^-1 * (Uj - Ui) ---*/
   // Notes:
@@ -227,21 +227,21 @@ CUpwSW_AdjTNE2::CUpwSW_AdjTNE2(unsigned short val_nDim,
   nDim         = val_nDim;
   nSpecies     = config->GetnSpecies();
   
-  UnitNormal = new double[nDim];
-  DiffPsi    = new double[nVar];
-  Lambda_i   = new double[nVar];
-  Lambda_j   = new double[nVar];
-  Ai     = new double* [nVar];
-  Aj     = new double* [nVar];
-  P      = new double* [nVar];
-  invP   = new double* [nVar];
-  PLPinv = new double* [nVar];
+  UnitNormal = new su2double[nDim];
+  DiffPsi    = new su2double[nVar];
+  Lambda_i   = new su2double[nVar];
+  Lambda_j   = new su2double[nVar];
+  Ai     = new su2double* [nVar];
+  Aj     = new su2double* [nVar];
+  P      = new su2double* [nVar];
+  invP   = new su2double* [nVar];
+  PLPinv = new su2double* [nVar];
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-    Ai[iVar]     = new double [nVar];
-    Aj[iVar]     = new double [nVar];
-    P[iVar]      = new double [nVar];
-    invP[iVar]   = new double [nVar];
-    PLPinv[iVar] = new double [nVar];
+    Ai[iVar]     = new su2double [nVar];
+    Aj[iVar]     = new su2double [nVar];
+    P[iVar]      = new su2double [nVar];
+    invP[iVar]   = new su2double [nVar];
+    PLPinv[iVar] = new su2double [nVar];
   }
   
 }
@@ -264,16 +264,16 @@ CUpwSW_AdjTNE2::~CUpwSW_AdjTNE2(void) {
   delete [] PLPinv;
 }
 
-void CUpwSW_AdjTNE2::ComputeResidual (double *val_residual_i,
-                                      double *val_residual_j,
-                                      double **val_Jacobian_ii,
-                                      double **val_Jacobian_ij,
-                                      double **val_Jacobian_ji,
-                                      double **val_Jacobian_jj,
+void CUpwSW_AdjTNE2::ComputeResidual (su2double *val_residual_i,
+                                      su2double *val_residual_j,
+                                      su2double **val_Jacobian_ii,
+                                      su2double **val_Jacobian_ij,
+                                      su2double **val_Jacobian_ji,
+                                      su2double **val_Jacobian_jj,
                                       CConfig *config) {
   
   unsigned short iDim, iVar, jVar, kVar;
-  double Area, ProjVel_i, ProjVel_j;
+  su2double Area, ProjVel_i, ProjVel_j;
   
   /*--- Roe flux: Fij = (Fi + Fj)/2 - 1/2*P|Lam|P^-1 * (Uj - Ui) ---*/
   // Notes:
@@ -419,10 +419,10 @@ CCentJST_AdjTNE2::CCentJST_AdjTNE2(unsigned short val_nDim, unsigned short val_n
 	grid_movement = config->GetGrid_Movement();
 	rotating_frame = config->GetRotating_Frame();
   
-	Diff_Psi = new double [nVar]; Diff_Lapl = new double [nVar];
-	Und_Lapl_i = new double [nVar]; Und_Lapl_j = new double [nVar];
-	Velocity_i = new double [nDim]; Velocity_j = new double [nDim];
-	MeanPhi = new double [nDim];
+	Diff_Psi = new su2double [nVar]; Diff_Lapl = new su2double [nVar];
+	Und_Lapl_i = new su2double [nVar]; Und_Lapl_j = new su2double [nVar];
+	Velocity_i = new su2double [nDim]; Velocity_j = new su2double [nDim];
+	MeanPhi = new su2double [nDim];
   
 	Param_p = 0.3;
 	Param_Kappa_2 = config->GetKappa_2nd_AdjTNE2();
@@ -438,10 +438,10 @@ CCentJST_AdjTNE2::~CCentJST_AdjTNE2(void) {
 	delete [] MeanPhi;
 }
 
-void CCentJST_AdjTNE2::ComputeResidual (double *val_resconv_i, double *val_resvisc_i,
-                                        double *val_resconv_j, double *val_resvisc_j,
-                                        double **val_Jacobian_ii, double **val_Jacobian_ij,
-                                        double **val_Jacobian_ji, double **val_Jacobian_jj,
+void CCentJST_AdjTNE2::ComputeResidual (su2double *val_resconv_i, su2double *val_resvisc_i,
+                                        su2double *val_resconv_j, su2double *val_resvisc_j,
+                                        su2double **val_Jacobian_ii, su2double **val_Jacobian_ij,
+                                        su2double **val_Jacobian_ji, su2double **val_Jacobian_jj,
                                         CConfig *config) {
   
 	/*--- Mean Values ---*/
@@ -471,7 +471,7 @@ void CCentJST_AdjTNE2::ComputeResidual (double *val_resconv_i, double *val_resvi
   
 	/*--- Flux contributions due to grid movement at point i (TDE) ---*/
 	if (grid_movement) {
-		double ProjGridVel = 0.0;
+		su2double ProjGridVel = 0.0;
 		for (iDim = 0; iDim < nDim; iDim++)
 			ProjGridVel += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
 		val_resconv_i[0] -= ProjGridVel*MeanPsiRho;
@@ -504,7 +504,7 @@ void CCentJST_AdjTNE2::ComputeResidual (double *val_resconv_i, double *val_resvi
     
 		/*--- Jacobian contributions due to grid movement at point i (TDE) ---*/
 		if (grid_movement) {
-			double ProjGridVel = 0.0;
+			su2double ProjGridVel = 0.0;
 			for (iDim = 0; iDim < nDim; iDim++)
 				ProjGridVel += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
 			for (iVar = 0; iVar < nVar; iVar++) {
@@ -534,7 +534,7 @@ void CCentJST_AdjTNE2::ComputeResidual (double *val_resconv_i, double *val_resvi
   
 	/*--- Flux contributions due to grid movement at point j (TDE) ---*/
 	if (grid_movement) {
-		double ProjGridVel = 0.0;
+		su2double ProjGridVel = 0.0;
 		for (iDim = 0; iDim < nDim; iDim++)
 			ProjGridVel += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
 		val_resconv_j[0] += ProjGridVel*MeanPsiRho;
@@ -567,7 +567,7 @@ void CCentJST_AdjTNE2::ComputeResidual (double *val_resconv_i, double *val_resvi
     
 		/*--- Jacobian contributions due to grid movement at point j (TDE) ---*/
 		if (grid_movement) {
-			double ProjGridVel = 0.0;
+			su2double ProjGridVel = 0.0;
 			for (iDim = 0; iDim < nDim; iDim++)
 				ProjGridVel += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
 			for (iVar = 0; iVar < nVar; iVar++) {
@@ -585,7 +585,7 @@ void CCentJST_AdjTNE2::ComputeResidual (double *val_resconv_i, double *val_resvi
   
 	/*--- Adjustment to projected velocity due to mesh motion (TDE) ---*/
 	if (grid_movement) {
-		double ProjGridVel_i = 0.0; double ProjGridVel_j = 0.0; double ProjGridVel = 0.0;
+		su2double ProjGridVel_i = 0.0; su2double ProjGridVel_j = 0.0; su2double ProjGridVel = 0.0;
 		for (iDim = 0; iDim < nDim; iDim++) {
 			ProjGridVel += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
 			ProjGridVel_i += GridVel_i[iDim]*Normal[iDim];
@@ -604,7 +604,7 @@ void CCentJST_AdjTNE2::ComputeResidual (double *val_resconv_i, double *val_resvi
 	Phi_j = pow(Lambda_j/(4.0*MeanLambda+EPS), Param_p);
 	StretchingFactor = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j+EPS);
   
-	double sc2 = 3.0*(double(Neighbor_i)+double(Neighbor_j))/(double(Neighbor_i)*double(Neighbor_j));
+	su2double sc2 = 3.0*(su2double(Neighbor_i)+su2double(Neighbor_j))/(su2double(Neighbor_i)*su2double(Neighbor_j));
 	sc4 = sc2*sc2/4.0;
 	Epsilon_2 = Param_Kappa_2*0.5*(Sensor_i+Sensor_j)*sc2;
 	Epsilon_4 = max(0.0, Param_Kappa_4-Epsilon_2)*sc4;
@@ -615,10 +615,10 @@ void CCentJST_AdjTNE2::ComputeResidual (double *val_resconv_i, double *val_resvi
 		val_resvisc_i[iVar] = -Residual;
 		val_resvisc_j[iVar] =  Residual;
 		if (implicit) {
-			val_Jacobian_ii[iVar][iVar] -= Epsilon_2 + double(Neighbor_i+1)*Epsilon_4*StretchingFactor*MeanLambda;
-			val_Jacobian_ij[iVar][iVar] += Epsilon_2 + double(Neighbor_j+1)*Epsilon_4*StretchingFactor*MeanLambda;
-			val_Jacobian_ji[iVar][iVar] += Epsilon_2 + double(Neighbor_i+1)*Epsilon_4*StretchingFactor*MeanLambda;
-			val_Jacobian_jj[iVar][iVar] -= Epsilon_2 + double(Neighbor_j+1)*Epsilon_4*StretchingFactor*MeanLambda;
+			val_Jacobian_ii[iVar][iVar] -= Epsilon_2 + su2double(Neighbor_i+1)*Epsilon_4*StretchingFactor*MeanLambda;
+			val_Jacobian_ij[iVar][iVar] += Epsilon_2 + su2double(Neighbor_j+1)*Epsilon_4*StretchingFactor*MeanLambda;
+			val_Jacobian_ji[iVar][iVar] += Epsilon_2 + su2double(Neighbor_i+1)*Epsilon_4*StretchingFactor*MeanLambda;
+			val_Jacobian_jj[iVar][iVar] -= Epsilon_2 + su2double(Neighbor_j+1)*Epsilon_4*StretchingFactor*MeanLambda;
 		}
 	}
 }
@@ -640,14 +640,14 @@ CCentLax_AdjTNE2::CCentLax_AdjTNE2(unsigned short val_nDim,
   nPrimVar     = val_nPrimVar;
   nPrimVarGrad = val_nPrimVarGrad;
   
-	DiffPsi   = new double [nVar];
-  MeanPsi    = new double [nVar];
+	DiffPsi   = new su2double [nVar];
+  MeanPsi    = new su2double [nVar];
   
-  Proj_Jac_Tensor_i = new double*[nVar];
-  Proj_Jac_Tensor_j = new double*[nVar];
+  Proj_Jac_Tensor_i = new su2double*[nVar];
+  Proj_Jac_Tensor_j = new su2double*[nVar];
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-    Proj_Jac_Tensor_i[iVar] = new double [nVar];
-    Proj_Jac_Tensor_j[iVar] = new double [nVar];
+    Proj_Jac_Tensor_i[iVar] = new su2double [nVar];
+    Proj_Jac_Tensor_j[iVar] = new su2double [nVar];
   }
   
 	Param_p = 0.3;
@@ -668,22 +668,22 @@ CCentLax_AdjTNE2::~CCentLax_AdjTNE2(void) {
   delete [] Proj_Jac_Tensor_j;
 }
 
-void CCentLax_AdjTNE2::ComputeResidual (double *val_resconv_i,
-                                        double *val_resvisc_i,
-                                        double *val_resconv_j,
-                                        double *val_resvisc_j,
-                                        double **val_Jacobian_ii,
-                                        double **val_Jacobian_ij,
-                                        double **val_Jacobian_ji,
-                                        double **val_Jacobian_jj,
+void CCentLax_AdjTNE2::ComputeResidual (su2double *val_resconv_i,
+                                        su2double *val_resvisc_i,
+                                        su2double *val_resconv_j,
+                                        su2double *val_resvisc_j,
+                                        su2double **val_Jacobian_ii,
+                                        su2double **val_Jacobian_ij,
+                                        su2double **val_Jacobian_ji,
+                                        su2double **val_Jacobian_jj,
                                         CConfig *config) {
 
   unsigned short iDim, iVar, jVar;
-  double ProjVel_i, ProjVel_j;
-  double Phi_i, Phi_j;
-  double Local_Lambda_i, Local_Lambda_j, MeanLambda;
-  double Residual;
-  double StretchingFactor, sc2, Epsilon_0;
+  su2double ProjVel_i, ProjVel_j;
+  su2double Phi_i, Phi_j;
+  su2double Local_Lambda_i, Local_Lambda_j, MeanLambda;
+  su2double Residual;
+  su2double StretchingFactor, sc2, Epsilon_0;
   
   /*--- Initialize the residuals ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -747,8 +747,8 @@ void CCentLax_AdjTNE2::ComputeResidual (double *val_resconv_i,
 	Phi_j = pow(Lambda_j/(4.0*MeanLambda+EPS), Param_p);
 	StretchingFactor = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j+EPS);
   
-	sc2 = 3.0*(double(Neighbor_i)+double(Neighbor_j))/(double(Neighbor_i)*double(Neighbor_j));
-	Epsilon_0 = Param_Kappa_0*sc2*double(nDim)/3.0;
+	sc2 = 3.0*(su2double(Neighbor_i)+su2double(Neighbor_j))/(su2double(Neighbor_i)*su2double(Neighbor_j));
+	Epsilon_0 = Param_Kappa_0*sc2*su2double(nDim)/3.0;
   
 	/*--- Artifical dissipation evaluation ---*/
 	for (iVar = 0; iVar < nVar; iVar++) {
@@ -782,21 +782,21 @@ CAvgGrad_AdjTNE2::CAvgGrad_AdjTNE2(unsigned short val_nDim,
   nSpecies     = config->GetnSpecies();
   nVar         = val_nVar;
   
-	vel   = new double[nDim];
-  vel_i = new double[nDim];
-  vel_j = new double[nDim];
-	Mean_GradPhi = new double* [nDim];
+	vel   = new su2double[nDim];
+  vel_i = new su2double[nDim];
+  vel_j = new su2double[nDim];
+	Mean_GradPhi = new su2double* [nDim];
 	for (iDim = 0; iDim < nDim; iDim++)
-		Mean_GradPhi[iDim] = new double [nDim];
-	Mean_GradPsiE = new double [nDim];
-  Mean_GradPsiEve = new double [nDim];
-	Edge_Vector = new double [nDim];
+		Mean_GradPhi[iDim] = new su2double [nDim];
+	Mean_GradPsiE = new su2double [nDim];
+  Mean_GradPsiEve = new su2double [nDim];
+	Edge_Vector = new su2double [nDim];
   
-  SigmaPhi  = new double*[nDim];
-  SigmaPsiE = new double*[nDim];
+  SigmaPhi  = new su2double*[nDim];
+  SigmaPsiE = new su2double*[nDim];
   for (iDim = 0; iDim < nDim; iDim++) {
-    SigmaPhi[iDim]  = new double[nDim];
-    SigmaPsiE[iDim] = new double[nDim];
+    SigmaPhi[iDim]  = new su2double[nDim];
+    SigmaPsiE[iDim] = new su2double[nDim];
   }
 }
 
@@ -821,20 +821,20 @@ CAvgGrad_AdjTNE2::~CAvgGrad_AdjTNE2(void) {
   
 }
 
-void CAvgGrad_AdjTNE2::ComputeResidual(double *val_residual_i,
-                                       double *val_residual_j,
-                                       double **val_Jacobian_ii,
-                                       double **val_Jacobian_ij,
-                                       double **val_Jacobian_ji,
-                                       double **val_Jacobian_jj,
+void CAvgGrad_AdjTNE2::ComputeResidual(su2double *val_residual_i,
+                                       su2double *val_residual_j,
+                                       su2double **val_Jacobian_ii,
+                                       su2double **val_Jacobian_ij,
+                                       su2double **val_Jacobian_ji,
+                                       su2double **val_Jacobian_jj,
                                        CConfig *config) {
 
   
   unsigned short iDim, jDim, iVar, jVar;
-  double mu_i, mu_j, ktr_i, ktr_j, kve_i, kve_j;
-  double rho_i, rho_j, un;
-  double GdotPhi, GPsiEdotVel, GPsiEdotn, GPsiEvedotn;
-  double dij, theta, thetax, thetay, thetaz, etax, etay, etaz;
+  su2double mu_i, mu_j, ktr_i, ktr_j, kve_i, kve_j;
+  su2double rho_i, rho_j, un;
+  su2double GdotPhi, GPsiEdotVel, GPsiEdotn, GPsiEvedotn;
+  su2double dij, theta, thetax, thetay, thetaz, etax, etay, etaz;
   
   /*--- Initialize residuals ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -1117,55 +1117,55 @@ CSource_AdjTNE2::CSource_AdjTNE2(unsigned short val_nDim,
   nPrimVar     = val_nPrimVar;
   nPrimVarGrad = val_nPrimVarGrad;
   
-  rhos = new double[nSpecies];
-  vel = new double[nDim];
+  rhos = new su2double[nSpecies];
+  vel = new su2double[nDim];
   
-  GInvRho  = new double[nDim];
-  GVeloRho = new double*[nDim];
-  GPhiGInvRho = new double[nDim];
-  GPsiEZetaTau = new double[nDim];
-  tau      = new double*[nDim];
-  eta      = new double*[nDim];
-  pi       = new double*[nDim];
-  zeta     = new double*[nDim];
+  GInvRho  = new su2double[nDim];
+  GVeloRho = new su2double*[nDim];
+  GPhiGInvRho = new su2double[nDim];
+  GPsiEZetaTau = new su2double[nDim];
+  tau      = new su2double*[nDim];
+  eta      = new su2double*[nDim];
+  pi       = new su2double*[nDim];
+  zeta     = new su2double*[nDim];
   for (iDim = 0; iDim < nDim; iDim++) {
-    GVeloRho[iDim] = new double[nDim];
-    tau[iDim]      = new double[nDim];
-    eta[iDim]      = new double[nDim];
-    pi[iDim]       = new double[nDim];
-    zeta[iDim]     = new double[nDim];
+    GVeloRho[iDim] = new su2double[nDim];
+    tau[iDim]      = new su2double[nDim];
+    eta[iDim]      = new su2double[nDim];
+    pi[iDim]       = new su2double[nDim];
+    zeta[iDim]     = new su2double[nDim];
   }
-  Av2 = new double *[nVar];
-  Av3 = new double *[nVar];
-  Av4 = new double *[nVar];
+  Av2 = new su2double *[nVar];
+  Av3 = new su2double *[nVar];
+  Av4 = new su2double *[nVar];
   for (iVar = 0; iVar < nVar; iVar++) {
-    Av2[iVar] = new double[nVar];
-    Av3[iVar] = new double[nVar];
-    Av4[iVar] = new double[nVar];
+    Av2[iVar] = new su2double[nVar];
+    Av3[iVar] = new su2double[nVar];
+    Av4[iVar] = new su2double[nVar];
   }
   
   
 //	unsigned short iDim;
 //  
-//	Velocity = new double [nVar];
-//	GradDensity = new double [nDim];
-//	GradInvDensity = new double [nDim];
-//	dPoDensity2 = new double [nDim];
-//	alpha = new double [nDim];
-//	beta = new double [nDim];
-//	Sigma_5_vec = new double [nDim];
+//	Velocity = new su2double [nVar];
+//	GradDensity = new su2double [nDim];
+//	GradInvDensity = new su2double [nDim];
+//	dPoDensity2 = new su2double [nDim];
+//	alpha = new su2double [nDim];
+//	beta = new su2double [nDim];
+//	Sigma_5_vec = new su2double [nDim];
 //  
-//	GradVel_o_Rho = new double* [nDim];
-//	sigma = new double* [nDim];
-//	Sigma_phi = new double* [nDim];
-//	Sigma_5_Tensor = new double* [nDim];
-//	Sigma = new double* [nDim];
+//	GradVel_o_Rho = new su2double* [nDim];
+//	sigma = new su2double* [nDim];
+//	Sigma_phi = new su2double* [nDim];
+//	Sigma_5_Tensor = new su2double* [nDim];
+//	Sigma = new su2double* [nDim];
 //	for (iDim = 0; iDim < nDim; iDim++) {
-//		GradVel_o_Rho[iDim] = new double [nDim];
-//		sigma[iDim] = new double [nDim];
-//		Sigma_phi[iDim] = new double [nDim];
-//		Sigma_5_Tensor[iDim] = new double [nDim];
-//		Sigma[iDim] = new double [nDim];
+//		GradVel_o_Rho[iDim] = new su2double [nDim];
+//		sigma[iDim] = new su2double [nDim];
+//		Sigma_phi[iDim] = new su2double [nDim];
+//		Sigma_5_Tensor[iDim] = new su2double [nDim];
+//		Sigma[iDim] = new su2double [nDim];
 //	}
 }
 
@@ -1222,13 +1222,13 @@ CSource_AdjTNE2::~CSource_AdjTNE2(void) {
 //	delete [] Sigma_5_vec;
 }
 
-void CSource_AdjTNE2::ComputeSourceViscous (double *val_residual, CConfig *config) {
+void CSource_AdjTNE2::ComputeSourceViscous (su2double *val_residual, CConfig *config) {
   
 	unsigned short iDim, jDim, iSpecies, iVar, jVar;
-  double rho, sqvel, rhoCvtr, rhoCvve, Cvtrs, Cvves, *Ms, *xi, Ru;
-  double div_vel, div_velorho, velGInvRho, GPhiEta, GPsiEvelPi;
-  double mu2, mu3, mu4;
-  double **GPsi;
+  su2double rho, sqvel, rhoCvtr, rhoCvve, Cvtrs, Cvves, *Ms, *xi, Ru;
+  su2double div_vel, div_velorho, velGInvRho, GPhiEta, GPsiEvelPi;
+  su2double mu2, mu3, mu4;
+  su2double **GPsi;
   
   /*--- Initialize arrays ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -1412,14 +1412,14 @@ void CSource_AdjTNE2::ComputeSourceViscous (double *val_residual, CConfig *confi
 //	Gamma = config->GetGamma();
 //	Gamma_Minus_One = Gamma - 1.0;
 //  
-//	Velocity = new double [nDim];
-//	Residual_i = new double [nVar];
-//	Residual_j = new double [nVar];
-//	Mean_Residual = new double [nVar];
+//	Velocity = new su2double [nDim];
+//	Residual_i = new su2double [nVar];
+//	Residual_j = new su2double [nVar];
+//	Mean_Residual = new su2double [nVar];
 //  
-//	Mean_PrimVar_Grad = new double* [nVar];
+//	Mean_PrimVar_Grad = new su2double* [nVar];
 //	for (unsigned short iVar = 0; iVar < nVar; iVar++)
-//		Mean_PrimVar_Grad[iVar] = new double [nDim];
+//		Mean_PrimVar_Grad[iVar] = new su2double [nDim];
 //}
 //
 //CSourceConservative_AdjFlow::~CSourceConservative_AdjFlow(void) {
@@ -1433,21 +1433,21 @@ void CSource_AdjTNE2::ComputeSourceViscous (double *val_residual, CConfig *confi
 //	delete [] Mean_PrimVar_Grad;
 //}
 
-void CSource_AdjTNE2::ComputeSourceConservative (double *val_residual,
+void CSource_AdjTNE2::ComputeSourceConservative (su2double *val_residual,
                                                  CConfig *config) {
 //	unsigned short iDim, jDim, iVar;
-//	double rho, nu, Ji, fv1, fv2, Omega, Shat, dist_sq, Ji_2, Ji_3, one_o_oneplusJifv1;
-//	double r, g, g_6, glim, dfw_g, dg_r, dr_nuhat, dr_Shat, Ms_coeff, invOmega;
+//	su2double rho, nu, Ji, fv1, fv2, Omega, Shat, dist_sq, Ji_2, Ji_3, one_o_oneplusJifv1;
+//	su2double r, g, g_6, glim, dfw_g, dg_r, dr_nuhat, dr_Shat, Ms_coeff, invOmega;
 //  
 //	/*--- CLOUSURE CONSTANTS ---*/
-//	double cv1_3 = 7.1*7.1*7.1;
-//	double k2 = 0.41*0.41;
-//	double cb1 = 0.1355;
-//	double cw2 = 0.3;
-//	double cw3_6 = pow(2.0,6.0);
-//	double sigma = 2./3.;
-//	double cb2 = 0.622;
-//	double cw1 = cb1/k2+(1+cb2)/sigma;
+//	su2double cv1_3 = 7.1*7.1*7.1;
+//	su2double k2 = 0.41*0.41;
+//	su2double cb1 = 0.1355;
+//	su2double cw2 = 0.3;
+//	su2double cw3_6 = pow(2.0,6.0);
+//	su2double sigma = 2./3.;
+//	su2double cb2 = 0.622;
+//	su2double cw1 = cb1/k2+(1+cb2)/sigma;
 //  
 //	for (iVar = 0; iVar < nVar; iVar++) {
 //		Residual_i[iVar] = 0.0;

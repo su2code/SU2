@@ -2,7 +2,7 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  *
  * Many of the classes in this file are templated, and therefore must
  * be declared and defined here; to keep all elements together, there
@@ -35,9 +35,8 @@
 
 #pragma once
 
-#ifdef HAVE_MPI
-  #include "mpi.h"
-#endif
+#include "./mpi_structure.hpp"
+
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -125,36 +124,36 @@ const unsigned int MESH_1 = 1; /*!< \brief Definition of the finest grid level. 
 const unsigned int ZONE_0 = 0; /*!< \brief Definition of the first grid domain. */
 const unsigned int ZONE_1 = 1; /*!< \brief Definition of the first grid domain. */
 
-const double AVOGAD_CONSTANT = 6.0221415E26;	     /*!< \brief Avogardro's constant, number of particles in one kmole. */
-const double BOLTZMANN_CONSTANT = 1.3806503E-23;   /*! \brief Boltzmann's constant [J K^-1] */
-const double UNIVERSAL_GAS_CONSTANT = 8314.462175; /*! \brief Universal gas constant [J kmol^-1 K^-1] */
-const double ELECTRON_CHARGE = 1.60217646E-19;	   /*!< \brief Electronic charge constant. */
-const double ELECTRON_MASS = 9.10938188E-31;	     /*!< \brief Mass of an electron. */
-const double FREE_PERMITTIVITY = 8.8541878176E-12; /*!< \brief Premittivity of free space. */
-const double MAGNETIC_CONSTANT = 1.25663706E-6;    /*!< \brief magnetic permeability of free space. */
-const double STANDART_GRAVITY = 9.80665;           /*!< \brief Acceleration due to gravity at surface of earth. */
+const su2double AVOGAD_CONSTANT = 6.0221415E26;	     /*!< \brief Avogardro's constant, number of particles in one kmole. */
+const su2double BOLTZMANN_CONSTANT = 1.3806503E-23;   /*! \brief Boltzmann's constant [J K^-1] */
+const su2double UNIVERSAL_GAS_CONSTANT = 8314.462175; /*! \brief Universal gas constant [J kmol^-1 K^-1] */
+const su2double ELECTRON_CHARGE = 1.60217646E-19;	   /*!< \brief Electronic charge constant. */
+const su2double ELECTRON_MASS = 9.10938188E-31;	     /*!< \brief Mass of an electron. */
+const su2double FREE_PERMITTIVITY = 8.8541878176E-12; /*!< \brief Premittivity of free space. */
+const su2double MAGNETIC_CONSTANT = 1.25663706E-6;    /*!< \brief magnetic permeability of free space. */
+const su2double STANDART_GRAVITY = 9.80665;           /*!< \brief Acceleration due to gravity at surface of earth. */
 
-const double EPS = 1.0E-16;		   /*!< \brief Error scale. */
-const double TURB_EPS = 1.0E-16; /*!< \brief Turbulent Error scale. */
+const su2double EPS = 1.0E-16;		   /*!< \brief Error scale. */
+const su2double TURB_EPS = 1.0E-16; /*!< \brief Turbulent Error scale. */
 
-const double ONE2 = 0.5;			   /*!< \brief One divided by two. */
-const double TWO3 = 2.0 / 3.0;	 /*!< \brief Two divided by three. */
-const double FOUR3 = 4.0 / 3.0;  /*!< \brief Four divided by three. */
+const su2double ONE2 = 0.5;			   /*!< \brief One divided by two. */
+const su2double TWO3 = 2.0 / 3.0;	 /*!< \brief Two divided by three. */
+const su2double FOUR3 = 4.0 / 3.0;  /*!< \brief Four divided by three. */
 
-const double PI_NUMBER = 4.0 * atan(1.0);	/*!< \brief Pi number. */
+const su2double PI_NUMBER = 4.0 * atan(1.0);	/*!< \brief Pi number. */
 
 const int MASTER_NODE = 0;			/*!< \brief Master node for MPI parallelization. */
 const int SINGLE_NODE = 1;			/*!< \brief There is only a node in the MPI parallelization. */
 const int SINGLE_ZONE = 1;			/*!< \brief There is only a zone. */
 
-const unsigned int N_ELEM_TYPES = 7;           /*!< \brief General output & CGNS defines. */
-const unsigned int N_POINTS_LINE = 2;          /*!< \brief General output & CGNS defines. */
-const unsigned int N_POINTS_TRIANGLE = 3;      /*!< \brief General output & CGNS defines. */
-const unsigned int N_POINTS_QUADRILATERAL = 4; /*!< \brief General output & CGNS defines. */
-const unsigned int N_POINTS_TETRAHEDRON = 4;   /*!< \brief General output & CGNS defines. */
-const unsigned int N_POINTS_HEXAHEDRON = 8;    /*!< \brief General output & CGNS defines. */
-const unsigned int N_POINTS_PYRAMID = 5;       /*!< \brief General output & CGNS defines. */
-const unsigned int N_POINTS_PRISM = 6;         /*!< \brief General output & CGNS defines. */
+const int N_ELEM_TYPES = 7;           /*!< \brief General output & CGNS defines. */
+const int N_POINTS_LINE = 2;          /*!< \brief General output & CGNS defines. */
+const int N_POINTS_TRIANGLE = 3;      /*!< \brief General output & CGNS defines. */
+const int N_POINTS_QUADRILATERAL = 4; /*!< \brief General output & CGNS defines. */
+const int N_POINTS_TETRAHEDRON = 4;   /*!< \brief General output & CGNS defines. */
+const int N_POINTS_HEXAHEDRON = 8;    /*!< \brief General output & CGNS defines. */
+const int N_POINTS_PYRAMID = 5;       /*!< \brief General output & CGNS defines. */
+const int N_POINTS_PRISM = 6;         /*!< \brief General output & CGNS defines. */
 
 /*!
  * \brief Boolean answers
@@ -200,7 +199,10 @@ enum ENUM_SOLVER {
   TNE2_EULER = 31,
   TNE2_NAVIER_STOKES = 32,
   ADJ_TNE2_EULER = 33,
-  ADJ_TNE2_NAVIER_STOKES = 34
+  ADJ_TNE2_NAVIER_STOKES = 34,
+  DISC_ADJ_EULER = 35,
+  DISC_ADJ_RANS = 36,
+  DISC_ADJ_NAVIER_STOKES = 37
 };
 /* BEGIN_CONFIG_ENUMS */
 static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVER>
@@ -221,6 +223,9 @@ static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVE
 ("WAVE_EQUATION", WAVE_EQUATION)
 ("HEAT_EQUATION", HEAT_EQUATION)
 ("LINEAR_ELASTICITY", LINEAR_ELASTICITY)
+("DISC_ADJ_EULER", DISC_ADJ_EULER)
+("DISC_ADJ_RANS", DISC_ADJ_RANS)
+("DISC_ADJ_NAVIERSTOKES", DISC_ADJ_EULER)
 ("FLUID_STRUCTURE_INTERACTION", FLUID_STRUCTURE_INTERACTION)
 
 ("TEMPLATE_SOLVER", TEMPLATE_SOLVER);
@@ -247,7 +252,7 @@ static const map<string, ENUM_FSI_FLUID_PROBLEM> FSI_Fluid_Solver_Map = CCreateM
 enum ENUM_FSI_STRUC_PROBLEM {
   NO_SOLVER_SFSI = 0,				/*!< \brief Definition of no solver. */
   LINEAR_ELASTICITY_SFSI = 11,		/*!< \brief Linear elasticity equations for the FSI problem */
-  NONLINEAR_ELASTICITY_SFSI = 2,		/*!< \brief Nonlinear elasticity equations for the FSI problem */
+  NONLINEAR_ELASTICITY_SFSI = 2		/*!< \brief Nonlinear elasticity equations for the FSI problem */
 };
 static const map<string, ENUM_FSI_STRUC_PROBLEM> FSI_Struc_Solver_Map = CCreateMap<string, ENUM_FSI_STRUC_PROBLEM>
 ("NONE", NO_SOLVER_SFSI)
@@ -287,7 +292,7 @@ static const map<string, ENUM_KIND_NONDIM> NonDim_Map = CCreateMap<string, ENUM_
  */
 enum ENUM_MEASUREMENTS {
   SI = 0,			/*!< \brief Definition of compressible solver. */
-  US = 1,				/*!< \brief Definition of incompressible solver. */
+  US = 1				/*!< \brief Definition of incompressible solver. */
 };
 static const map<string, ENUM_MEASUREMENTS> Measurements_Map = CCreateMap<string, ENUM_MEASUREMENTS>
 ("SI", SI)
@@ -345,14 +350,16 @@ const int VISC_BOUND_TERM = 5;       /*!< \brief Position of the viscous boundar
  * \brief types of mathematical problem to solve
  */
 enum ENUM_MATH_PROBLEM {
-  DIRECT_PROBLEM = 0,		/*!< \brief Direct problem */
-  ADJOINT_PROBLEM = 1,		/*!< \brief Adjoint problem */
-  LINEARIZED_PROBLEM = 2 /*< \brief Linearized numerical method */
+  DIRECT = 0,		/*!< \brief Direct problem */
+  CONTINUOUS_ADJOINT = 1,		/*!< \brief Continuous adjoint problem */
+  LINEARIZED = 2, /*< \brief Linearized numerical method */
+  DISCRETE_ADJOINT = 3 /*< \brief AD-based discrete adjoint problem. */
 };
 static const map<string, ENUM_MATH_PROBLEM> Math_Problem_Map = CCreateMap<string, ENUM_MATH_PROBLEM>
-("DIRECT", DIRECT_PROBLEM)
-("ADJOINT", ADJOINT_PROBLEM)
-("LINEARIZED", LINEARIZED_PROBLEM);
+("DIRECT", DIRECT)
+("CONTINUOUS_ADJOINT", CONTINUOUS_ADJOINT)
+("LINEARIZED", LINEARIZED)
+("DISCRETE_ADJOINT", DISCRETE_ADJOINT);
 
 /*!
  * \brief types of spatial discretizations
@@ -725,7 +732,7 @@ enum BC_TYPE {
   CLAMPED_BOUNDARY = 34,		/*!< \brief Clamped Boundary definition. */
   LOAD_DIR_BOUNDARY = 35,		/*!< \brief Boundary Load definition. */
   LOAD_SINE_BOUNDARY = 36,		/*!< \brief Sine-waveBoundary Load definition. */
-  SEND_RECEIVE = 99,		/*!< \brief Boundary send-receive definition. */
+  SEND_RECEIVE = 99		/*!< \brief Boundary send-receive definition. */
 };
 
 
@@ -734,7 +741,7 @@ enum BC_TYPE {
  */
 enum ENUM_2DFORM {
   PLANE_STRESS = 0,			/*!< \brief Definition of plane stress solver. */
-  PLANE_STRAIN = 1,			/*!< \brief Definition of plane strain solver. */
+  PLANE_STRAIN = 1			/*!< \brief Definition of plane strain solver. */
 };
 static const map<string, ENUM_2DFORM> ElasForm_2D = CCreateMap<string, ENUM_2DFORM>
 ("PLANE_STRESS", PLANE_STRESS)
@@ -747,7 +754,7 @@ static const map<string, ENUM_2DFORM> ElasForm_2D = CCreateMap<string, ENUM_2DFO
 enum ENUM_AITKEN {
   NO_RELAXATION = 0,			/*!< \brief No relaxation in the strongly coupled approach. */
   FIXED_PARAMETER = 1,			/*!< \brief Relaxation with a fixed parameter. */
-  AITKEN_DYNAMIC = 2,			/*!< \brief Relaxation using Aitken's dynamic parameter. */
+  AITKEN_DYNAMIC = 2			/*!< \brief Relaxation using Aitken's dynamic parameter. */
 };
 static const map<string, ENUM_AITKEN> AitkenForm_Map = CCreateMap<string, ENUM_AITKEN>
 ("NONE", NO_RELAXATION)
@@ -794,7 +801,7 @@ enum GEO_TYPE {
   VERTEX = 1,   		/*!< \brief VTK nomenclature for defining a vertex element. */
   LINE = 3,			/*!< \brief VTK nomenclature for defining a line element. */
   TRIANGLE = 5, 		/*!< \brief VTK nomenclature for defining a triangle element. */
-  RECTANGLE = 9,		/*!< \brief VTK nomenclature for defining a rectangle element. */
+  QUADRILATERAL = 9,		/*!< \brief VTK nomenclature for defining a quadrilateral element. */
   TETRAHEDRON = 10,     	/*!< \brief VTK nomenclature for defining a tetrahedron element. */
   HEXAHEDRON = 12,      	/*!< \brief VTK nomenclature for defining a hexahedron element. */
   PRISM = 13,     		/*!< \brief VTK nomenclature for defining a prism element. */
@@ -986,7 +993,7 @@ static const map<string, ENUM_OUTPUT> Output_Map = CCreateMap<string, ENUM_OUTPU
 enum MG_CYCLE {
   V_CYCLE = 0,  		/*!< \brief V cycle. */
   W_CYCLE = 1,			/*!< \brief W cycle. */
-  FULLMG_CYCLE = 2,			/*!< \brief FullMG cycle. */
+  FULLMG_CYCLE = 2  /*!< \brief FullMG cycle. */
 };
 static const map<string, MG_CYCLE> MG_Cycle_Map = CCreateMap<string, MG_CYCLE>
 ("V_CYCLE", V_CYCLE)
@@ -1040,7 +1047,7 @@ enum ENUM_PARAM {
   PARABOLIC = 15,		         /*!< \brief Parabolic airfoil definition as design variables. */
   NACA_4DIGITS = 16,	         /*!< \brief The four digits NACA airfoil family as design variables. */
   AIRFOIL = 17,		           /*!< \brief Airfoil definition as design variables. */
-  SURFACE_FILE = 18,		     /*!< Nodal coordinates set using a surface file. */
+  SURFACE_FILE = 18		     /*!< Nodal coordinates set using a surface file. */
 };
 static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("FFD_SETTING", FFD_SETTING)
@@ -1205,13 +1212,41 @@ static const map<string, ENUM_DEFORM_STIFFNESS> Deform_Stiffness_Map = CCreateMa
 ("INVERSE_VOLUME", INVERSE_VOLUME)
 ("WALL_DISTANCE", WALL_DISTANCE);
 
+/*!
+ * \brief The direct differentation variables.
+ */
+enum ENUM_DIRECTDIFF_VAR {
+  NO_DERIVATIVE = 0,
+  D_MACH = 1,   /*!< \brief Derivative with respect to the mach number */
+  D_AOA = 2,		 /*!< \brief Derivative with respect to the angle of attack */
+  D_PRESSURE = 3, /*!< \brief Derivative with respect to the freestream pressure */
+  D_TEMPERATURE = 4,/*!< \brief Derivative with respect to the freestream temperature */
+  D_DENSITY = 5,
+  D_TURB2LAM = 6,
+  D_SIDESLIP = 7,
+  D_VISCOSITY = 8,
+  D_REYNOLDS = 9,
+  D_DESIGN = 10
+};
+static const map<string, ENUM_DIRECTDIFF_VAR> DirectDiff_Var_Map = CCreateMap<string, ENUM_DIRECTDIFF_VAR>
+("NONE", NO_DERIVATIVE)
+("MACH", D_MACH)
+("AOA", D_AOA)
+("PRESSURE", D_PRESSURE)
+("TEMPERATURE", D_TEMPERATURE)
+("DENSITY", D_DENSITY)
+("TURB2LAM", D_TURB2LAM)
+("SIDESLIP", D_SIDESLIP)
+("VISCOSITY", D_VISCOSITY)
+("REYNOLDS", D_REYNOLDS)
+("DESIGN_VARIABLES", D_DESIGN);
 
 /*!
  * \brief types of schemes for dynamic structural computations
  */
 enum ENUM_DYNAMIC {
   STATIC = 0,             /*!< \brief A static structural computation. */
-  DYNAMIC = 1,		      /*!< \brief Use a time stepping strategy for dynamic computations. */
+  DYNAMIC = 1		      /*!< \brief Use a time stepping strategy for dynamic computations. */
 };
 static const map<string, ENUM_DYNAMIC> Dynamic_Map = CCreateMap<string, ENUM_DYNAMIC>
 ("NO", STATIC)
@@ -1295,12 +1330,12 @@ public:
 };
 
 class COptionDouble : public COptionBase{
-  double & field; // Reference to the fieldname
-  double def; // Default value
+  su2double & field; // Reference to the fieldname
+  su2double def; // Default value
   string name; // identifier for the option
 
 public:
-  COptionDouble(string option_field_name, double & option_field, double default_value) : field(option_field) {
+  COptionDouble(string option_field_name, su2double & option_field, su2double default_value) : field(option_field) {
     this->def = default_value;
     this->name = option_field_name;
   }
@@ -1308,17 +1343,17 @@ public:
   ~COptionDouble() {};
   string SetValue(vector<string> option_value) {
     // check if there is more than one value
-    string out = optionCheckMultipleValues(option_value, "double", this->name);
+    string out = optionCheckMultipleValues(option_value, "su2double", this->name);
     if (out.compare("") != 0) {
       return out;
     }
     istringstream is(option_value[0]);
-    double val;
+    su2double val;
     if (is >> val) {
       this->field = val;
       return "";
     }
-    return badValue(option_value, "double", this->name);
+    return badValue(option_value, "su2double", this->name);
   }
   void SetDefault() {
     this->field = this->def;
@@ -1339,7 +1374,7 @@ public:
   ~COptionString() {};
   string SetValue(vector<string> option_value) {
     // check if there is more than one value
-    string out = optionCheckMultipleValues(option_value, "double", this->name);
+    string out = optionCheckMultipleValues(option_value, "su2double", this->name);
     if (out.compare("") != 0) {
       return out;
     }
@@ -1552,13 +1587,13 @@ public:
 };
 
 class COptionDoubleArray : public COptionBase{
-  double * & field; // Reference to the feildname
+  su2double * & field; // Reference to the feildname
   string name; // identifier for the option
   const int size;
-  double * default_value;
+  su2double * default_value;
 
 public:
-  COptionDoubleArray(string option_field_name, const int list_size, double * & option_field, double * default_value) : field(option_field), size(list_size) {
+  COptionDoubleArray(string option_field_name, const int list_size, su2double * & option_field, su2double * default_value) : field(option_field), size(list_size) {
     this->name = option_field_name;
     this->default_value = default_value;
   }
@@ -1566,7 +1601,7 @@ public:
   ~COptionDoubleArray() {};
   string SetValue(vector<string> option_value) {
     // Check that the size is correct
-    if (option_value.size() != this->size) {
+    if (option_value.size() != (unsigned long)this->size) {
       string newstring;
       newstring.append(this->name);
       newstring.append(": wrong number of arguments: ");
@@ -1580,13 +1615,13 @@ public:
       newstring.append(" found");
       return newstring;
     }
-    double * vals = new double[this->size];
+    su2double * vals = new su2double[this->size];
     for (int i  = 0; i < this->size; i++) {
       istringstream is(option_value[i]);
-      double val;
+      su2double val;
       if (!(is >> val)) {
         delete [] vals;
-        return badValue(option_value, "double array", this->name);
+        return badValue(option_value, "su2double array", this->name);
       }
       vals[i] = val;
     }
@@ -1600,12 +1635,12 @@ public:
 };
 
 class COptionDoubleList : public COptionBase{
-  double * & field; // Reference to the feildname
+  su2double * & field; // Reference to the feildname
   string name; // identifier for the option
   unsigned short & size;
 
 public:
-  COptionDoubleList(string option_field_name, unsigned short & list_size, double * & option_field) : field(option_field), size(list_size) {
+  COptionDoubleList(string option_field_name, unsigned short & list_size, su2double * & option_field) : field(option_field), size(list_size) {
     this->name = option_field_name;
   }
 
@@ -1622,13 +1657,13 @@ public:
     this->size = option_size;
 
     // Parse all of the options
-    double * vals = new double[option_size];
-    for (int i  = 0; i < option_size; i++) {
+    su2double * vals = new su2double[option_size];
+    for (unsigned long i  = 0; i < option_size; i++) {
       istringstream is(option_value[i]);
-      double val;
+      su2double val;
       if (!(is >> val)) {
         delete [] vals;
-        return badValue(option_value, "double list", this->name);
+        return badValue(option_value, "su2double list", this->name);
       }
       vals[i] = val;
     }
@@ -1664,7 +1699,7 @@ public:
 
     // Parse all of the options
     unsigned short * vals = new unsigned short[option_size];
-    for (int i  = 0; i < option_size; i++) {
+    for (unsigned long i  = 0; i < option_size; i++) {
       istringstream is(option_value[i]);
       unsigned short val;
       if (!(is >> val)) {
@@ -1704,7 +1739,7 @@ public:
 
     // Parse all of the options
     string * vals = new string[option_size];
-    for (int i  = 0; i < option_size; i++) {
+    for (unsigned long i  = 0; i < option_size; i++) {
       vals[i].assign(option_value[i]);
     }
     this->field = vals;
@@ -1767,16 +1802,19 @@ class COptionMathProblem : public COptionBase{
   bool & adjoint;
   bool & linearized;
   bool & restart;
+  bool & disc_adjoint;
   bool adjoint_def;
   bool linearized_def;
   bool restart_def;
+  bool disc_adjoint_def;
 
 public:
-  COptionMathProblem(string option_field_name, bool & adjoint_field, bool adjoint_default, bool & linearized_field, bool linearized_default, bool & restart_field, bool restart_default) : adjoint(adjoint_field), linearized(linearized_field), restart(restart_field) {
+  COptionMathProblem(string option_field_name, bool & adjoint_field, bool adjoint_default, bool & linearized_field, bool linearized_default, bool & restart_field, bool restart_default, bool & disc_adjoint_field, bool disc_adjoint_default) : adjoint(adjoint_field), linearized(linearized_field), restart(restart_field), disc_adjoint(disc_adjoint_field){
     this->name = option_field_name;
     this->adjoint_def = adjoint_default;
     this->linearized_def = linearized_default;
     this->restart_def = restart_default;
+    this->disc_adjoint_def = disc_adjoint_default;
   }
 
   ~COptionMathProblem() {};
@@ -1785,6 +1823,9 @@ public:
     if (out.compare("") != 0) {
       return out;
     }
+    if (option_value[0] == "ADJOINT") {
+      return badValue(option_value, "math problem (try CONTINUOUS_ADJOINT)", this->name);
+    }
     if (Math_Problem_Map.find(option_value[0]) == Math_Problem_Map.end()) {
       return badValue(option_value, "math problem", this->name);
     }
@@ -1792,16 +1833,26 @@ public:
       this->adjoint = false;
       this->linearized = false;
       this->restart = false;
+      this->disc_adjoint = false;
       return "";
     }
-    if (option_value[0] == "ADJOINT") {
+    if (option_value[0] == "CONTINUOUS_ADJOINT") {
       this->adjoint= true;
       this->restart= true;
       this->linearized = false;
+      this->disc_adjoint = false;
       return "";
     }
     if (option_value[0] == "LINEARIZED") {
       this->linearized = true;
+      this->restart = true;
+      this->adjoint= false;
+      this->disc_adjoint = false;
+      return "";
+    }
+    if (option_value[0] == "DISCRETE_ADJOINT"){
+      this->disc_adjoint = true;
+      this->linearized = false;
       this->restart = true;
       this->adjoint= false;
       return "";
@@ -1813,18 +1864,19 @@ public:
     this->adjoint = this->adjoint_def;
     this->linearized = this->linearized_def;
     this->restart = this->restart_def;
+    this->disc_adjoint = this->disc_adjoint_def;
   }
 };
 
 class COptionDVParam : public COptionBase{
   string name; // identifier for the option
   unsigned short & nDV;
-  double ** & paramDV;
+  su2double ** & paramDV;
   string * & FFDTag;
   unsigned short* & design_variable;
 
 public:
-  COptionDVParam(string option_field_name, unsigned short & nDV_field, double** & paramDV_field, string* & FFDTag_field, unsigned short * & design_variable_field) : nDV(nDV_field), paramDV(paramDV_field), FFDTag(FFDTag_field), design_variable(design_variable_field) {
+  COptionDVParam(string option_field_name, unsigned short & nDV_field, su2double** & paramDV_field, string* & FFDTag_field, unsigned short * & design_variable_field) : nDV(nDV_field), paramDV(paramDV_field), FFDTag(FFDTag_field), design_variable(design_variable_field) {
     this->name = option_field_name;
   }
 
@@ -1872,9 +1924,9 @@ public:
       return newstring;
     }
 
-    this->paramDV = new double*[this->nDV];
+    this->paramDV = new su2double*[this->nDV];
     for (unsigned short iDV = 0; iDV < this->nDV; iDV++) {
-      this->paramDV[iDV] = new double[MAX_PARAMETERS];
+      this->paramDV[iDV] = new su2double[MAX_PARAMETERS];
     }
 
     this->FFDTag = new string[this->nDV];
@@ -1961,11 +2013,11 @@ public:
 class COptionFFDDef : public COptionBase{
   string name;
   unsigned short & nFFD;
-  double ** & CoordFFD;
+  su2double ** & CoordFFD;
   string * & FFDTag;
   
 public:
-  COptionFFDDef(string option_field_name, unsigned short & nFFD_field, double** & coordFFD_field, string* & FFDTag_field) : nFFD(nFFD_field), CoordFFD(coordFFD_field), FFDTag(FFDTag_field) {
+  COptionFFDDef(string option_field_name, unsigned short & nFFD_field, su2double** & coordFFD_field, string* & FFDTag_field) : nFFD(nFFD_field), CoordFFD(coordFFD_field), FFDTag(FFDTag_field) {
     this->name = option_field_name;
   }
   
@@ -2004,9 +2056,9 @@ public:
     // One more design variable than semicolon
     this->nFFD++;
     
-    this->CoordFFD = new double*[this->nFFD];
+    this->CoordFFD = new su2double*[this->nFFD];
     for (unsigned short iFFD = 0; iFFD < this->nFFD; iFFD++) {
-      this->CoordFFD[iFFD] = new double[25];
+      this->CoordFFD[iFFD] = new su2double[25];
     }
     
     this->FFDTag = new string[this->nFFD];
@@ -2140,16 +2192,16 @@ public:
   
 };
 
-// Class where the option is represented by (String, double, string, double, ...)
+// Class where the option is represented by (String, su2double, string, su2double, ...)
 class COptionStringDoubleList : public COptionBase{
   string name; // identifier for the option
-  unsigned short & size; // how many strings are there (same as number of doubles)
+  unsigned short & size; // how many strings are there (same as number of su2doubles)
 
   string * & s_f; // Reference to the string fields
-  double* & d_f; // reference to the double fields
+  su2double* & d_f; // reference to the su2double fields
 
 public:
-  COptionStringDoubleList(string option_field_name, unsigned short & list_size, string * & string_field, double* & double_field) : size(list_size), s_f(string_field), d_f(double_field) {
+  COptionStringDoubleList(string option_field_name, unsigned short & list_size, string * & string_field, su2double* & double_field) : size(list_size), s_f(string_field), d_f(double_field) {
     this->name = option_field_name;
   }
 
@@ -2171,14 +2223,14 @@ public:
     unsigned long nVals = totalVals / 2;
     this->size = nVals;
     this->s_f = new string[nVals];
-    this->d_f = new double[nVals];
+    this->d_f = new su2double[nVals];
 
-    for (int i = 0; i < nVals; i++) {
-      this->s_f[i].assign(option_value[2*i]); // 2 because have double and string
+    for (unsigned long i = 0; i < nVals; i++) {
+      this->s_f[i].assign(option_value[2*i]); // 2 because have su2double and string
       istringstream is(option_value[2*i + 1]);
-      double val;
+      su2double val;
       if (!(is >> val)) {
-        return badValue(option_value, "string double", this->name);
+        return badValue(option_value, "string su2double", this->name);
       }
       this->d_f[i] = val;
     }
@@ -2195,12 +2247,12 @@ class COptionInlet : public COptionBase{
   string name; // identifier for the option
   unsigned short & size;
   string * & marker;
-  double * & ttotal;
-  double * & ptotal;
-  double ** & flowdir;
+  su2double * & ttotal;
+  su2double * & ptotal;
+  su2double ** & flowdir;
 
 public:
-  COptionInlet(string option_field_name, unsigned short & nMarker_Inlet, string* & Marker_Inlet, double* & Ttotal, double* & Ptotal, double** & FlowDir) : size(nMarker_Inlet), marker(Marker_Inlet), ttotal(Ttotal), ptotal(Ptotal), flowdir(FlowDir) {
+  COptionInlet(string option_field_name, unsigned short & nMarker_Inlet, string* & Marker_Inlet, su2double* & Ttotal, su2double* & Ptotal, su2double** & FlowDir) : size(nMarker_Inlet), marker(Marker_Inlet), ttotal(Ttotal), ptotal(Ptotal), flowdir(FlowDir) {
     this->name = option_field_name;
   }
 
@@ -2232,14 +2284,14 @@ public:
     unsigned long nVals = totalVals / 6;
     this->size = nVals;
     this->marker = new string[nVals];
-    this->ttotal = new double[nVals];
-    this->ptotal = new double[nVals];
-    this->flowdir = new double*[nVals];
-    for (int i = 0; i < nVals; i++) {
-      this->flowdir[i] = new double[3];
+    this->ttotal = new su2double[nVals];
+    this->ptotal = new su2double[nVals];
+    this->flowdir = new su2double*[nVals];
+    for (unsigned long i = 0; i < nVals; i++) {
+      this->flowdir[i] = new su2double[3];
     }
 
-    for (int i = 0; i < nVals; i++) {
+    for (unsigned long i = 0; i < nVals; i++) {
       this->marker[i].assign(option_value[6*i]);
       istringstream ss_1st(option_value[6*i + 1]);
       if (!(ss_1st >> this->ttotal[i])) {
@@ -2279,16 +2331,16 @@ template <class Tenum>
 class COptionRiemann : public COptionBase{
 
   map<string, Tenum> m;
-  unsigned short* & field; // Reference to the feildname
   string name; // identifier for the option
   unsigned short & size;
   string * & marker;
-  double * & var1;
-  double * & var2;
-  double ** & flowdir;
+  unsigned short* & field; // Reference to the field name
+  su2double * & var1;
+  su2double * & var2;
+  su2double ** & flowdir;
 
 public:
-  COptionRiemann(string option_field_name, unsigned short & nMarker_Riemann, string* & Marker_Riemann, unsigned short* & option_field, const map<string, Tenum> m, double* & var1, double* & var2, double** & FlowDir) : size(nMarker_Riemann),
+  COptionRiemann(string option_field_name, unsigned short & nMarker_Riemann, string* & Marker_Riemann, unsigned short* & option_field, const map<string, Tenum> m, su2double* & var1, su2double* & var2, su2double** & FlowDir) : size(nMarker_Riemann),
   	  	  	  	  marker(Marker_Riemann), field(option_field), var1(var1), var2(var2), flowdir(FlowDir) {
     this->name = option_field_name;
     this->m = m;
@@ -2324,16 +2376,16 @@ public:
     unsigned long nVals = totalVals / 7;
     this->size = nVals;
     this->marker = new string[nVals];
-    this->var1 = new double[nVals];
-    this->var2 = new double[nVals];
-    this->flowdir = new double*[nVals];
+    this->var1 = new su2double[nVals];
+    this->var2 = new su2double[nVals];
+    this->flowdir = new su2double*[nVals];
     this->field = new unsigned short[nVals];
 
-    for (int i = 0; i < nVals; i++) {
-      this->flowdir[i] = new double[3];
+    for (unsigned long i = 0; i < nVals; i++) {
+      this->flowdir[i] = new su2double[3];
     }
 
-    for (int i = 0; i < nVals; i++) {
+    for (unsigned long i = 0; i < nVals; i++) {
       this->marker[i].assign(option_value[7*i]);
         // Check to see if the enum value is in the map
     if (this->m.find(option_value[7*i + 1]) == m.end()) {
@@ -2386,11 +2438,11 @@ class COptionExhaust : public COptionBase{
   string name; // identifier for the option
   unsigned short & size;
   string * & marker;
-  double * & ttotal;
-  double * & ptotal;
+  su2double * & ttotal;
+  su2double * & ptotal;
 
 public:
-  COptionExhaust(string option_field_name, unsigned short & nMarker_Exhaust, string* & Marker_Exhaust, double* & Ttotal, double* & Ptotal) : size(nMarker_Exhaust), marker(Marker_Exhaust), ttotal(Ttotal), ptotal(Ptotal) {
+  COptionExhaust(string option_field_name, unsigned short & nMarker_Exhaust, string* & Marker_Exhaust, su2double* & Ttotal, su2double* & Ptotal) : size(nMarker_Exhaust), marker(Marker_Exhaust), ttotal(Ttotal), ptotal(Ptotal) {
     this->name = option_field_name;
   }
 
@@ -2421,10 +2473,10 @@ public:
     unsigned long nVals = totalVals / 3;
     this->size = nVals;
     this->marker = new string[nVals];
-    this->ttotal = new double[nVals];
-    this->ptotal = new double[nVals];
+    this->ttotal = new su2double[nVals];
+    this->ptotal = new su2double[nVals];
 
-    for (int i = 0; i < nVals; i++) {
+    for (unsigned long i = 0; i < nVals; i++) {
       this->marker[i].assign(option_value[3*i]);
       istringstream ss_1st(option_value[3*i + 1]);
       if (!(ss_1st >> this->ttotal[i]))
@@ -2451,11 +2503,11 @@ class COptionBleed : public COptionBase{
   string name; // identifier for the option
   unsigned short & size;
   string * & marker;
-  double * & massflow_target;
-  double * & temp_target;
+  su2double * & massflow_target;
+  su2double * & temp_target;
   
 public:
-  COptionBleed(string option_field_name, unsigned short & nMarker_Bleed, string* & Marker_Bleed, double* & MassFlow_Target, double* & Temp_Target) : size(nMarker_Bleed), marker(Marker_Bleed), massflow_target(MassFlow_Target), temp_target(Temp_Target) {
+  COptionBleed(string option_field_name, unsigned short & nMarker_Bleed, string* & Marker_Bleed, su2double* & MassFlow_Target, su2double* & Temp_Target) : size(nMarker_Bleed), marker(Marker_Bleed), massflow_target(MassFlow_Target), temp_target(Temp_Target) {
     this->name = option_field_name;
   }
   
@@ -2486,10 +2538,10 @@ public:
     unsigned long nVals = totalVals / 3;
     this->size = nVals;
     this->marker = new string[nVals];
-    this->massflow_target = new double[nVals];
-    this->temp_target = new double[nVals];
+    this->massflow_target = new su2double[nVals];
+    this->temp_target = new su2double[nVals];
     
-    for (int i = 0; i < nVals; i++) {
+    for (unsigned long i = 0; i < nVals; i++) {
       this->marker[i].assign(option_value[3*i]);
       istringstream ss_1st(option_value[3*i + 1]);
       if (!(ss_1st >> this->massflow_target[i]))
@@ -2516,14 +2568,14 @@ class COptionPeriodic : public COptionBase{
   unsigned short & size;
   string * & marker_bound;
   string * & marker_donor;
-  double ** & rot_center;
-  double ** & rot_angles;
-  double ** & translation;
+  su2double ** & rot_center;
+  su2double ** & rot_angles;
+  su2double ** & translation;
 
 public:
   COptionPeriodic(const string option_field_name, unsigned short & nMarker_PerBound,
                   string* & Marker_PerBound, string* & Marker_PerDonor,
-                  double** & RotCenter, double** & RotAngles, double** & Translation) : size(nMarker_PerBound), marker_bound(Marker_PerBound), marker_donor(Marker_PerDonor), rot_center(RotCenter), rot_angles(RotAngles), translation(Translation) {
+                  su2double** & RotCenter, su2double** & RotAngles, su2double** & Translation) : size(nMarker_PerBound), marker_bound(Marker_PerBound), marker_donor(Marker_PerDonor), rot_center(RotCenter), rot_angles(RotAngles), translation(Translation) {
     this->name = option_field_name;
   }
 
@@ -2560,18 +2612,18 @@ public:
     this->size = nVals;
     this->marker_bound = new string[nVals];
     this->marker_donor = new string[nVals];
-    this->rot_center = new double*[nVals];
-    this->rot_angles = new double*[nVals];
-    this->translation = new double*[nVals];
-    for (int i = 0; i < nVals; i++) {
-      this->rot_center[i] = new double[3];
-      this->rot_angles[i] = new double[3];
-      this->translation[i] = new double[3];
+    this->rot_center = new su2double*[nVals];
+    this->rot_angles = new su2double*[nVals];
+    this->translation = new su2double*[nVals];
+    for (unsigned long i = 0; i < nVals; i++) {
+      this->rot_center[i] = new su2double[3];
+      this->rot_angles[i] = new su2double[3];
+      this->translation[i] = new su2double[3];
     }
 
-    double deg2rad = PI_NUMBER/180.0;
+    su2double deg2rad = PI_NUMBER/180.0;
 
-    for (int i = 0; i < (nVals/2); i++) {
+    for (unsigned long i = 0; i < (nVals/2); i++) {
       this->marker_bound[i].assign(option_value[mod_num*i]);
       this->marker_donor[i].assign(option_value[mod_num*i+1]);
       istringstream ss_1st(option_value[mod_num*i + 2]);
@@ -2688,7 +2740,7 @@ public:
   }
   ~COptionPython() {};
   // No checking happens with python options
-  string SetValue(vector<string> option_value) {
+  string SetValue(vector<string>) {
     return "";
   }
   // No defaults with python options
@@ -2703,16 +2755,16 @@ class COptionActuatorDisk : public COptionBase{
   unsigned short & outlet_size;
   string * & marker_inlet;
   string * & marker_outlet;
-  double ** & origin;
-  double * & root_radius;
-  double * & tip_radius;
-  double * & press_jump;
-  double * & temp_jump;
-  double * & omega;
+  su2double ** & origin;
+  su2double * & root_radius;
+  su2double * & tip_radius;
+  su2double * & press_jump;
+  su2double * & temp_jump;
+  su2double * & omega;
   unsigned short * & distribution;
 
 public:
-  COptionActuatorDisk(const string name, unsigned short & nMarker_ActDisk_Inlet, unsigned short & nMarker_ActDisk_Outlet, string * & Marker_ActDisk_Inlet, string * & Marker_ActDisk_Outlet, double ** & ActDisk_Origin, double * & ActDisk_RootRadius, double * & ActDisk_TipRadius, double * & ActDisk_PressJump, double * & ActDisk_TempJump, double * & ActDisk_Omega, unsigned short * & ActDisk_Distribution) : inlet_size(nMarker_ActDisk_Inlet), outlet_size(nMarker_ActDisk_Outlet), marker_inlet(Marker_ActDisk_Inlet), marker_outlet(Marker_ActDisk_Outlet), origin(ActDisk_Origin), root_radius(ActDisk_RootRadius), tip_radius(ActDisk_TipRadius), press_jump(ActDisk_PressJump), temp_jump(ActDisk_TempJump), omega(ActDisk_Omega), distribution(ActDisk_Distribution) {
+  COptionActuatorDisk(const string name, unsigned short & nMarker_ActDisk_Inlet, unsigned short & nMarker_ActDisk_Outlet, string * & Marker_ActDisk_Inlet, string * & Marker_ActDisk_Outlet, su2double ** & ActDisk_Origin, su2double * & ActDisk_RootRadius, su2double * & ActDisk_TipRadius, su2double * & ActDisk_PressJump, su2double * & ActDisk_TempJump, su2double * & ActDisk_Omega, unsigned short * & ActDisk_Distribution) : inlet_size(nMarker_ActDisk_Inlet), outlet_size(nMarker_ActDisk_Outlet), marker_inlet(Marker_ActDisk_Inlet), marker_outlet(Marker_ActDisk_Outlet), origin(ActDisk_Origin), root_radius(ActDisk_RootRadius), tip_radius(ActDisk_TipRadius), press_jump(ActDisk_PressJump), temp_jump(ActDisk_TempJump), omega(ActDisk_Omega), distribution(ActDisk_Distribution) {
     this->name = name;
   }
 
@@ -2738,16 +2790,16 @@ public:
     this->outlet_size = nVals;
     this->marker_inlet = new string[this->inlet_size];
     this->marker_outlet = new string[this->outlet_size];
-    this->root_radius = new double[this->inlet_size];
-    this->tip_radius = new double[this->inlet_size];
-    this->press_jump = new double[this->outlet_size];
-    this->temp_jump = new double[this->outlet_size];
-    this->omega = new double[this->inlet_size];
+    this->root_radius = new su2double[this->inlet_size];
+    this->tip_radius = new su2double[this->inlet_size];
+    this->press_jump = new su2double[this->outlet_size];
+    this->temp_jump = new su2double[this->outlet_size];
+    this->omega = new su2double[this->inlet_size];
     this->distribution = new unsigned short[this->inlet_size];
 
-    this->origin = new double*[this->inlet_size];
+    this->origin = new su2double*[this->inlet_size];
     for (int i = 0; i < this->inlet_size; i++) {
-      this->origin[i] = new double[3];
+      this->origin[i] = new su2double[3];
     }
 
     string tname = "actuator disk";

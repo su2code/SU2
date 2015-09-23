@@ -1,10 +1,10 @@
 /*!
- * \file su2mpi.cpp
- * \brief Header for caller functions of the turbulence models.
- * \author B. Tracey
- * \version 4.0.0 "Cardinal"
+ * \file codi_forward_structure.hpp
+ * \brief Header for codi forward type definition.
+ * \author T. Albring
+ * \version 4.0.1 "Cardinal"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
+ * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
@@ -12,6 +12,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *
+ * Copyright (C) 2012-2015 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,39 +28,9 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
+#pragma once
 
-#include "../include/su2mpi.hpp"
-/*
-namespace SU2MPI {
-  const int MASTER_NODE = 0;
-  // Safetly exits with MPI
-  void FinalizeAndExit1() {
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
-  
-  !<\brief Prints to the head node and exits (using MPI if applicable)
+#include "codi.hpp"
 
-  void PrintAndFinalize(std::string str) {
-    int rank = Rank();
-    if (rank == MASTER_NODE) {
-      std::cout << str << std::endl;
-    }
-    FinalizeAndExit1();
-  }
-  
-  !<\brief Returns the rank of the processor (always SU2MPI::MASTER_NODE if no MPI)
+typedef codi::RealForward su2double;
 
-  int Rank() {
-    int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-    return rank;
-  }
-}
-*/

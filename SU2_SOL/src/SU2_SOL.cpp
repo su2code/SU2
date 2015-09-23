@@ -2,7 +2,7 @@
  * \file SU2_SOL.cpp
  * \brief Main file for the solution export/conversion code (SU2_SOL).
  * \author F. Palacios, T. Economon
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -36,7 +36,7 @@ using namespace std;
 int main(int argc, char *argv[]) {
   
 	unsigned short iZone, nZone = SINGLE_ZONE;
-  double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
+  su2double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
 	ofstream ConvHist_file;
 	char config_file_name[MAX_STRING_SIZE];
 	int rank = MASTER_NODE;
@@ -45,7 +45,7 @@ int main(int argc, char *argv[]) {
   /*--- MPI initialization ---*/
 
 #ifdef HAVE_MPI
-	MPI_Init(&argc,&argv);
+	SU2_MPI::Init(&argc,&argv);
 	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
   MPI_Comm_size(MPI_COMM_WORLD,&size);
 #endif
@@ -128,7 +128,7 @@ int main(int argc, char *argv[]) {
 #ifdef HAVE_MPI
   StartTime = MPI_Wtime();
 #else
-  StartTime = double(clock())/double(CLOCKS_PER_SEC);
+  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #endif
   
   if (rank == MASTER_NODE)
@@ -145,7 +145,7 @@ int main(int argc, char *argv[]) {
     /*--- Unsteady simulation: merge all unsteady time steps. First,
      find the frequency and total number of files to write. ---*/
     
-    double Physical_dt, Physical_t;
+    su2double Physical_dt, Physical_t;
     unsigned long iExtIter = 0;
     bool StopCalc = false;
     bool SolutionInstantiated = false;
@@ -179,14 +179,14 @@ int main(int argc, char *argv[]) {
           
           /*--- Either instantiate the solution class or load a restart file. ---*/
           if (SolutionInstantiated == false && (iExtIter == 0 ||
-              (config_container[ZONE_0]->GetRestart() && (iExtIter == config_container[ZONE_0]->GetUnst_RestartIter() ||
+              (config_container[ZONE_0]->GetRestart() && ((long)iExtIter == config_container[ZONE_0]->GetUnst_RestartIter() ||
                                                 iExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0 ||
                                                 iExtIter+1 == config_container[ZONE_0]->GetnExtIter())))) {
             solver_container[iZone] = new CBaselineSolver(geometry_container[iZone], config_container[iZone], MESH_0);
             SolutionInstantiated = true;
           }
           else
-            solver_container[iZone]->LoadRestart(geometry_container, &solver_container, config_container[iZone], int(MESH_0));
+            solver_container[iZone]->LoadRestart(geometry_container, &solver_container, config_container[iZone], SU2_TYPE::Int(MESH_0));
         }
 
             if (rank == MASTER_NODE)
@@ -216,7 +216,7 @@ int main(int argc, char *argv[]) {
 			  if (iTimeSpectral == 0)
 				  solver_container[iZone] = new CBaselineSolver(geometry_container[iZone], config_container[iZone], MESH_0);
 			  else
-				  solver_container[iZone]->LoadRestart(geometry_container, &solver_container, config_container[iZone], int(MESH_0));
+				  solver_container[iZone]->LoadRestart(geometry_container, &solver_container, config_container[iZone], SU2_TYPE::Int(MESH_0));
 		  }
 
 		  /*--- Print progress in solution writing to the screen. ---*/
@@ -246,7 +246,7 @@ int main(int argc, char *argv[]) {
 #ifdef HAVE_MPI
   StopTime = MPI_Wtime();
 #else
-  StopTime = double(clock())/double(CLOCKS_PER_SEC);
+  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #endif
   
   /*--- Compute/print the total time for performance benchmarking. ---*/

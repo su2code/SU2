@@ -2,7 +2,7 @@
  * \file SU2_CFD.cpp
  * \brief Main file of the Computational Fluid Dynamics code
  * \author F. Palacios, T. Economon
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -36,7 +36,7 @@ using namespace std;
 int main(int argc, char *argv[]) {
   
   bool StopCalc = false;
-  double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
+  su2double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
   unsigned long ExtIter = 0;
   unsigned short iMesh, iZone, iSol, nZone, nDim;
   char config_file_name[MAX_STRING_SIZE];
@@ -49,7 +49,7 @@ int main(int argc, char *argv[]) {
   
 #ifdef HAVE_MPI
   int *bptr, bl;
-  MPI_Init(&argc, &argv);
+  SU2_MPI::Init(&argc, &argv);
   MPI_Buffer_attach( malloc(BUFSIZE), BUFSIZE );
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -120,7 +120,6 @@ int main(int argc, char *argv[]) {
     
     config_container[iZone] = new CConfig(config_file_name, SU2_CFD, iZone, nZone, nDim, VERB_HIGH);
     
-    
     /*--- Definition of the geometry class to store the primal grid in the
      partitioning process. ---*/
     
@@ -172,7 +171,8 @@ int main(int argc, char *argv[]) {
     /*--- Computation of wall distances for turbulence modeling ---*/
     
     if ( (config_container[iZone]->GetKind_Solver() == RANS) ||
-        (config_container[iZone]->GetKind_Solver() == ADJ_RANS) )
+        (config_container[iZone]->GetKind_Solver() == ADJ_RANS) ||
+         (config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS))
       geometry_container[iZone][MESH_0]->ComputeWall_Distance(config_container[iZone]);
     
     /*--- Computation of positive surface area in the z-plane which is used for
@@ -239,7 +239,8 @@ int main(int argc, char *argv[]) {
      flows on dynamic meshes, including rigid mesh transformations, dynamically
      deforming meshes, and time-spectral preprocessing. ---*/
     
-    if (config_container[iZone]->GetGrid_Movement()) {
+    if (config_container[iZone]->GetGrid_Movement() ||
+        (config_container[iZone]->GetDirectDiff() == D_DESIGN)) {
       if (rank == MASTER_NODE)
         cout << "Setting dynamic mesh structure." << endl;
       grid_movement[iZone] = new CVolumetricMovement(geometry_container[iZone][MESH_0]);
@@ -250,7 +251,33 @@ int main(int argc, char *argv[]) {
         SetGrid_Movement(geometry_container[iZone], surface_movement[iZone], grid_movement[iZone],
                          FFDBox[iZone], solver_container[iZone], config_container[iZone], iZone, 0, 0);
     }
-    
+
+    if (config_container[iZone]->GetDirectDiff() == D_DESIGN){
+      if (rank == MASTER_NODE)
+        cout << "Setting surface/volume derivatives." << endl;
+
+      /*--- Set the surface derivatives, i.e. the derivative of the surface mesh nodes with respect to the design variables ---*/
+
+      surface_movement[iZone]->SetSurface_Derivative(geometry_container[iZone][MESH_0],config_container[iZone]);
+
+      /*--- Call the volume deformation routine with derivative mode enabled.
+       This computes the derivative of the volume mesh with respect to the surface nodes ---*/
+
+      grid_movement[iZone]->SetVolume_Deformation(geometry_container[iZone][MESH_0],config_container[iZone], true, true);
+
+      /*--- Update the multi-grid structure to propagate the derivative information to the coarser levels ---*/
+
+      geometry_container[iZone][MESH_0]->UpdateGeometry(geometry_container[iZone],config_container[iZone]);
+
+      /*--- Set the derivative of the wall-distance with respect to the surface nodes ---*/
+
+      if ( (config_container[iZone]->GetKind_Solver() == RANS) ||
+          (config_container[iZone]->GetKind_Solver() == ADJ_RANS) ||
+           (config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS))
+        geometry_container[iZone][MESH_0]->ComputeWall_Distance(config_container[iZone]);
+    }
+
+
   }
   
   /*--- For the time-spectral solver, set the grid node velocities. ---*/
@@ -293,7 +320,7 @@ int main(int argc, char *argv[]) {
   /*--- Set up a timer for performance benchmarking (preprocessing time is not included) ---*/
   
 #ifndef HAVE_MPI
-  StartTime = double(clock())/double(CLOCKS_PER_SEC);
+  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #else
   StartTime = MPI_Wtime();
 #endif
@@ -398,6 +425,14 @@ int main(int argc, char *argv[]) {
                          solver_container, numerics_container, config_container,
                          surface_movement, grid_movement, FFDBox);
         break;
+
+      case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES:case DISC_ADJ_RANS:
+        DiscAdjMeanFlowIteration(output, integration_container, geometry_container,
+                                 solver_container, numerics_container, config_container,
+                                 surface_movement, grid_movement, FFDBox);
+        break;
+
+
     }
 	}
     
@@ -406,7 +441,7 @@ int main(int argc, char *argv[]) {
      wall clock time required. ---*/
     
 #ifndef HAVE_MPI
-    StopTime = double(clock())/double(CLOCKS_PER_SEC);
+    StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #else
     StopTime = MPI_Wtime();
 #endif
@@ -425,6 +460,7 @@ int main(int argc, char *argv[]) {
     CConfig *runtime = NULL;
     strcpy(runtime_file_name, "runtime.dat");
     runtime = new CConfig(runtime_file_name, config_container[ZONE_0]);
+    runtime->SetExtIter(ExtIter);
     
     /*--- Update the convergence history file (serial and parallel computations). ---*/
     
@@ -454,6 +490,7 @@ int main(int argc, char *argv[]) {
 //	        StopCalc = integration_container[ZONE_0][FEA_SOL]->GetConvergence(); break;
 	    	StopCalc = false; break;
 	      case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
+              case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
 	        StopCalc = integration_container[ZONE_0][ADJFLOW_SOL]->GetConvergence(); break;
 	      case ADJ_TNE2_EULER: case ADJ_TNE2_NAVIER_STOKES:
 	        StopCalc = integration_container[ZONE_0][ADJTNE2_SOL]->GetConvergence(); break;
@@ -467,32 +504,32 @@ int main(int argc, char *argv[]) {
 				
 				||
         
-        ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq() == 0) && (ExtIter != 0) &&
-         !((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-           (config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) ||
-				   (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_STEPPING)))
+				((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq() == 0) && (ExtIter != 0) &&
+				 !((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+					 (config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) ||
+					 (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_STEPPING)))
 				
-				 ||
-        
+				||
+				
         (StopCalc)
 				
 				||
-        
-        (((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+				
+				(((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
 				 (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_STEPPING)) &&
-         ((ExtIter == 0) || (ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0)))
+				 ((ExtIter == 0) || (ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0)))
 				
 				||
-        
-        ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) && (!fsi) &&
-         ((ExtIter == 0) || ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0) ||
-                             ((ExtIter-1) % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))))
+				
+				((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) && (!fsi) &&
+				 ((ExtIter == 0) || ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0) ||
+														 ((ExtIter-1) % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))))
 				
 				||
-
-        ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) && (fsi) &&
-        ((ExtIter == 0) || ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))))) {
-          
+				
+				((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) && (fsi) &&
+				 ((ExtIter == 0) || ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))))) {
+					
           /*--- Low-fidelity simulations (using a coarser multigrid level
            approximation to the solution) require an interpolation back to the
            finest grid. ---*/
@@ -566,7 +603,7 @@ int main(int argc, char *argv[]) {
    wall clock time required. ---*/
   
 #ifndef HAVE_MPI
-  StopTime = double(clock())/double(CLOCKS_PER_SEC);
+  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #else
   StopTime = MPI_Wtime();
 #endif

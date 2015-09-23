@@ -3,7 +3,7 @@
 ## \file functions.py
 #  \brief python package for functions
 #  \author T. Lukaczyk, F. Palacios
-#  \version 4.0.0 "Cardinal"
+#  \version 4.0.1 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -81,7 +81,7 @@ def function( func_name, config, state=None ):
     if not state['FUNCTIONS'].has_key(func_name):
         
         # Aerodynamics
-        if func_name == 'ALL' or func_name in su2io.optnames_aero:
+        if func_name == 'ALL' or func_name in su2io.optnames_aero + su2io.grad_names_directdiff:
             aerodynamics( config, state )
             
         # Stability
@@ -246,7 +246,7 @@ def aerodynamics( config, state=None ):
 
     # return output 
     funcs = su2util.ordered_bunch()
-    for key in su2io.optnames_aero:
+    for key in su2io.optnames_aero + su2io.grad_names_directdiff:
         if state['FUNCTIONS'].has_key(key):
             funcs[key] = state['FUNCTIONS'][key]
     return funcs
@@ -431,7 +431,7 @@ def geometry( func_name, config, state=None ):
     # ----------------------------------------------------
     
     # does decomposition and deformation
-    info = update_mesh(config,state)
+    #info = update_mesh(config,state)
 
 
     # ----------------------------------------------------    
