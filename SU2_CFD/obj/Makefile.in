@@ -111,6 +111,7 @@ am_____bin_SU2_CFD_SOURCES_DIST = ../include/definition_structure.hpp \
 	../include/fluid_model.hpp ../include/fluid_model.inl \
 	../include/integration_structure.hpp \
 	../include/integration_structure.inl \
+	../include/driver_structure.hpp \
 	../include/iteration_structure.hpp \
 	../include/numerics_structure.hpp \
 	../include/numerics_machine_learning.hpp \
@@ -126,7 +127,8 @@ am_____bin_SU2_CFD_SOURCES_DIST = ../include/definition_structure.hpp \
 	../src/definition_structure.cpp ../src/fluid_model.cpp \
 	../src/fluid_model_pig.cpp ../src/fluid_model_pvdw.cpp \
 	../src/fluid_model_ppr.cpp ../src/integration_structure.cpp \
-	../src/integration_time.cpp ../src/iteration_structure.cpp \
+	../src/integration_time.cpp ../src/driver_structure.cpp \
+	../src/iteration_structure.cpp \
 	../src/numerics_adjoint_levelset.cpp \
 	../src/numerics_adjoint_mean.cpp \
 	../src/numerics_adjoint_tne2.cpp \
@@ -185,6 +187,7 @@ am__objects_1 = ___bin_SU2_CFD-definition_structure.$(OBJEXT) \
 	___bin_SU2_CFD-fluid_model_ppr.$(OBJEXT) \
 	___bin_SU2_CFD-integration_structure.$(OBJEXT) \
 	___bin_SU2_CFD-integration_time.$(OBJEXT) \
+	___bin_SU2_CFD-driver_structure.$(OBJEXT) \
 	___bin_SU2_CFD-iteration_structure.$(OBJEXT) \
 	___bin_SU2_CFD-numerics_adjoint_levelset.$(OBJEXT) \
 	___bin_SU2_CFD-numerics_adjoint_mean.$(OBJEXT) \
@@ -260,6 +263,7 @@ am_____bin_SU2_CFD_AD_SOURCES_DIST =  \
 	../include/fluid_model.inl \
 	../include/integration_structure.hpp \
 	../include/integration_structure.inl \
+	../include/driver_structure.hpp \
 	../include/iteration_structure.hpp \
 	../include/numerics_structure.hpp \
 	../include/numerics_machine_learning.hpp \
@@ -275,7 +279,8 @@ am_____bin_SU2_CFD_AD_SOURCES_DIST =  \
 	../src/definition_structure.cpp ../src/fluid_model.cpp \
 	../src/fluid_model_pig.cpp ../src/fluid_model_pvdw.cpp \
 	../src/fluid_model_ppr.cpp ../src/integration_structure.cpp \
-	../src/integration_time.cpp ../src/iteration_structure.cpp \
+	../src/integration_time.cpp ../src/driver_structure.cpp \
+	../src/iteration_structure.cpp \
 	../src/numerics_adjoint_levelset.cpp \
 	../src/numerics_adjoint_mean.cpp \
 	../src/numerics_adjoint_tne2.cpp \
@@ -334,6 +339,7 @@ am__objects_2 = ___bin_SU2_CFD_AD-definition_structure.$(OBJEXT) \
 	___bin_SU2_CFD_AD-fluid_model_ppr.$(OBJEXT) \
 	___bin_SU2_CFD_AD-integration_structure.$(OBJEXT) \
 	___bin_SU2_CFD_AD-integration_time.$(OBJEXT) \
+	___bin_SU2_CFD_AD-driver_structure.$(OBJEXT) \
 	___bin_SU2_CFD_AD-iteration_structure.$(OBJEXT) \
 	___bin_SU2_CFD_AD-numerics_adjoint_levelset.$(OBJEXT) \
 	___bin_SU2_CFD_AD-numerics_adjoint_mean.$(OBJEXT) \
@@ -407,6 +413,7 @@ am_____bin_SU2_CFD_DIRECTDIFF_SOURCES_DIST =  \
 	../include/fluid_model.inl \
 	../include/integration_structure.hpp \
 	../include/integration_structure.inl \
+	../include/driver_structure.hpp \
 	../include/iteration_structure.hpp \
 	../include/numerics_structure.hpp \
 	../include/numerics_machine_learning.hpp \
@@ -422,7 +429,8 @@ am_____bin_SU2_CFD_DIRECTDIFF_SOURCES_DIST =  \
 	../src/definition_structure.cpp ../src/fluid_model.cpp \
 	../src/fluid_model_pig.cpp ../src/fluid_model_pvdw.cpp \
 	../src/fluid_model_ppr.cpp ../src/integration_structure.cpp \
-	../src/integration_time.cpp ../src/iteration_structure.cpp \
+	../src/integration_time.cpp ../src/driver_structure.cpp \
+	../src/iteration_structure.cpp \
 	../src/numerics_adjoint_levelset.cpp \
 	../src/numerics_adjoint_mean.cpp \
 	../src/numerics_adjoint_tne2.cpp \
@@ -482,6 +490,7 @@ am__objects_3 =  \
 	___bin_SU2_CFD_DIRECTDIFF-fluid_model_ppr.$(OBJEXT) \
 	___bin_SU2_CFD_DIRECTDIFF-integration_structure.$(OBJEXT) \
 	___bin_SU2_CFD_DIRECTDIFF-integration_time.$(OBJEXT) \
+	___bin_SU2_CFD_DIRECTDIFF-driver_structure.$(OBJEXT) \
 	___bin_SU2_CFD_DIRECTDIFF-iteration_structure.$(OBJEXT) \
 	___bin_SU2_CFD_DIRECTDIFF-numerics_adjoint_levelset.$(OBJEXT) \
 	___bin_SU2_CFD_DIRECTDIFF-numerics_adjoint_mean.$(OBJEXT) \
@@ -750,6 +759,7 @@ su2_cfd_sources = \
   ../include/fluid_model.inl \
   ../include/integration_structure.hpp \
   ../include/integration_structure.inl \
+  ../include/driver_structure.hpp \
   ../include/iteration_structure.hpp \
   ../include/numerics_structure.hpp \
   ../include/numerics_machine_learning.hpp \
@@ -771,6 +781,7 @@ su2_cfd_sources = \
   ../src/fluid_model_ppr.cpp \
   ../src/integration_structure.cpp \
   ../src/integration_time.cpp \
+  ../src/driver_structure.cpp \
   ../src/iteration_structure.cpp \
   ../src/numerics_adjoint_levelset.cpp \
   ../src/numerics_adjoint_mean.cpp \
@@ -962,6 +973,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/___bin_SU2_CFD-SU2_CFD.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/___bin_SU2_CFD-definition_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/___bin_SU2_CFD-driver_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/___bin_SU2_CFD-fluid_model.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/___bin_SU2_CFD-fluid_model_pig.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/___bin_SU2_CFD-fluid_model_ppr.Po@am__quote@
@@ -1030,6 +1042,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/___bin_SU2_CFD-variable_template.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/___bin_SU2_CFD_AD-SU2_CFD.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/___bin_SU2_CFD_AD-definition_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/___bin_SU2_CFD_AD-driver_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/___bin_SU2_CFD_AD-fluid_model.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/___bin_SU2_CFD_AD-fluid_model_pig.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/___bin_SU2_CFD_AD-fluid_model_ppr.Po@am__quote@
@@ -1098,6 +1111,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/___bin_SU2_CFD_AD-variable_template.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-SU2_CFD.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-definition_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-driver_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-fluid_model.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-fluid_model_pig.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-fluid_model_ppr.Po@am__quote@
@@ -1276,6 +1290,20 @@ ___bin_SU2_CFD-integration_time.obj: ../src/integration_time.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/integration_time.cpp' object='___bin_SU2_CFD-integration_time.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -c -o ___bin_SU2_CFD-integration_time.obj `if test -f '../src/integration_time.cpp'; then $(CYGPATH_W) '../src/integration_time.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/integration_time.cpp'; fi`
+
+___bin_SU2_CFD-driver_structure.o: ../src/driver_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -MT ___bin_SU2_CFD-driver_structure.o -MD -MP -MF $(DEPDIR)/___bin_SU2_CFD-driver_structure.Tpo -c -o ___bin_SU2_CFD-driver_structure.o `test -f '../src/driver_structure.cpp' || echo '$(srcdir)/'`../src/driver_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/___bin_SU2_CFD-driver_structure.Tpo $(DEPDIR)/___bin_SU2_CFD-driver_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/driver_structure.cpp' object='___bin_SU2_CFD-driver_structure.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -c -o ___bin_SU2_CFD-driver_structure.o `test -f '../src/driver_structure.cpp' || echo '$(srcdir)/'`../src/driver_structure.cpp
+
+___bin_SU2_CFD-driver_structure.obj: ../src/driver_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -MT ___bin_SU2_CFD-driver_structure.obj -MD -MP -MF $(DEPDIR)/___bin_SU2_CFD-driver_structure.Tpo -c -o ___bin_SU2_CFD-driver_structure.obj `if test -f '../src/driver_structure.cpp'; then $(CYGPATH_W) '../src/driver_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/driver_structure.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/___bin_SU2_CFD-driver_structure.Tpo $(DEPDIR)/___bin_SU2_CFD-driver_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/driver_structure.cpp' object='___bin_SU2_CFD-driver_structure.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -c -o ___bin_SU2_CFD-driver_structure.obj `if test -f '../src/driver_structure.cpp'; then $(CYGPATH_W) '../src/driver_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/driver_structure.cpp'; fi`
 
 ___bin_SU2_CFD-iteration_structure.o: ../src/iteration_structure.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -MT ___bin_SU2_CFD-iteration_structure.o -MD -MP -MF $(DEPDIR)/___bin_SU2_CFD-iteration_structure.Tpo -c -o ___bin_SU2_CFD-iteration_structure.o `test -f '../src/iteration_structure.cpp' || echo '$(srcdir)/'`../src/iteration_structure.cpp
@@ -2229,6 +2257,20 @@ ___bin_SU2_CFD_AD-integration_time.obj: ../src/integration_time.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -c -o ___bin_SU2_CFD_AD-integration_time.obj `if test -f '../src/integration_time.cpp'; then $(CYGPATH_W) '../src/integration_time.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/integration_time.cpp'; fi`
 
+___bin_SU2_CFD_AD-driver_structure.o: ../src/driver_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -MT ___bin_SU2_CFD_AD-driver_structure.o -MD -MP -MF $(DEPDIR)/___bin_SU2_CFD_AD-driver_structure.Tpo -c -o ___bin_SU2_CFD_AD-driver_structure.o `test -f '../src/driver_structure.cpp' || echo '$(srcdir)/'`../src/driver_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/___bin_SU2_CFD_AD-driver_structure.Tpo $(DEPDIR)/___bin_SU2_CFD_AD-driver_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/driver_structure.cpp' object='___bin_SU2_CFD_AD-driver_structure.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -c -o ___bin_SU2_CFD_AD-driver_structure.o `test -f '../src/driver_structure.cpp' || echo '$(srcdir)/'`../src/driver_structure.cpp
+
+___bin_SU2_CFD_AD-driver_structure.obj: ../src/driver_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -MT ___bin_SU2_CFD_AD-driver_structure.obj -MD -MP -MF $(DEPDIR)/___bin_SU2_CFD_AD-driver_structure.Tpo -c -o ___bin_SU2_CFD_AD-driver_structure.obj `if test -f '../src/driver_structure.cpp'; then $(CYGPATH_W) '../src/driver_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/driver_structure.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/___bin_SU2_CFD_AD-driver_structure.Tpo $(DEPDIR)/___bin_SU2_CFD_AD-driver_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/driver_structure.cpp' object='___bin_SU2_CFD_AD-driver_structure.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -c -o ___bin_SU2_CFD_AD-driver_structure.obj `if test -f '../src/driver_structure.cpp'; then $(CYGPATH_W) '../src/driver_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/driver_structure.cpp'; fi`
+
 ___bin_SU2_CFD_AD-iteration_structure.o: ../src/iteration_structure.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -MT ___bin_SU2_CFD_AD-iteration_structure.o -MD -MP -MF $(DEPDIR)/___bin_SU2_CFD_AD-iteration_structure.Tpo -c -o ___bin_SU2_CFD_AD-iteration_structure.o `test -f '../src/iteration_structure.cpp' || echo '$(srcdir)/'`../src/iteration_structure.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/___bin_SU2_CFD_AD-iteration_structure.Tpo $(DEPDIR)/___bin_SU2_CFD_AD-iteration_structure.Po
@@ -3180,6 +3222,20 @@ ___bin_SU2_CFD_DIRECTDIFF-integration_time.obj: ../src/integration_time.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/integration_time.cpp' object='___bin_SU2_CFD_DIRECTDIFF-integration_time.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -c -o ___bin_SU2_CFD_DIRECTDIFF-integration_time.obj `if test -f '../src/integration_time.cpp'; then $(CYGPATH_W) '../src/integration_time.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/integration_time.cpp'; fi`
+
+___bin_SU2_CFD_DIRECTDIFF-driver_structure.o: ../src/driver_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -MT ___bin_SU2_CFD_DIRECTDIFF-driver_structure.o -MD -MP -MF $(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-driver_structure.Tpo -c -o ___bin_SU2_CFD_DIRECTDIFF-driver_structure.o `test -f '../src/driver_structure.cpp' || echo '$(srcdir)/'`../src/driver_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-driver_structure.Tpo $(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-driver_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/driver_structure.cpp' object='___bin_SU2_CFD_DIRECTDIFF-driver_structure.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -c -o ___bin_SU2_CFD_DIRECTDIFF-driver_structure.o `test -f '../src/driver_structure.cpp' || echo '$(srcdir)/'`../src/driver_structure.cpp
+
+___bin_SU2_CFD_DIRECTDIFF-driver_structure.obj: ../src/driver_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -MT ___bin_SU2_CFD_DIRECTDIFF-driver_structure.obj -MD -MP -MF $(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-driver_structure.Tpo -c -o ___bin_SU2_CFD_DIRECTDIFF-driver_structure.obj `if test -f '../src/driver_structure.cpp'; then $(CYGPATH_W) '../src/driver_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/driver_structure.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-driver_structure.Tpo $(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-driver_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/driver_structure.cpp' object='___bin_SU2_CFD_DIRECTDIFF-driver_structure.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -c -o ___bin_SU2_CFD_DIRECTDIFF-driver_structure.obj `if test -f '../src/driver_structure.cpp'; then $(CYGPATH_W) '../src/driver_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/driver_structure.cpp'; fi`
 
 ___bin_SU2_CFD_DIRECTDIFF-iteration_structure.o: ../src/iteration_structure.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -MT ___bin_SU2_CFD_DIRECTDIFF-iteration_structure.o -MD -MP -MF $(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-iteration_structure.Tpo -c -o ___bin_SU2_CFD_DIRECTDIFF-iteration_structure.o `test -f '../src/iteration_structure.cpp' || echo '$(srcdir)/'`../src/iteration_structure.cpp
