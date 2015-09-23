@@ -2,7 +2,7 @@
  * \file complex_structure.inl
  * \brief In-Line subroutines of the <i>datatype_structure.hpp</i> file.
  * \author T. Albring
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -31,11 +31,11 @@
 #pragma once
 
 namespace SU2_TYPE{
-  inline void SetPrimary(su2double& data, const double &val){
+  inline void SetValue(su2double& data, const double &val){
     data = su2double(val, data.imag());
   }
 
-  inline double GetPrimary(const su2double& data){
+  inline double GetValue(const su2double& data){
     return data.real();
   }
 

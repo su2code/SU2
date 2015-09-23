@@ -2,7 +2,7 @@
  * \file variable_direct_elasticity.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, R. Sanchez
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -185,7 +185,7 @@ CFEABoundVariable::CFEABoundVariable(void) : CVariable() { }
 
 CFEABoundVariable::CFEABoundVariable(unsigned short val_nDim, unsigned short val_nvar, unsigned short val_nElBound, CConfig *config)
 : CVariable(val_nDim, val_nvar, config) {
-	unsigned short iVar, iDim, jDim;
+	unsigned short iDim, jDim;
 
 	/*--- Allocate residual structures ---*/
 	Residual_Sum = new su2double [nVar]; Residual_Old = new su2double [nVar];

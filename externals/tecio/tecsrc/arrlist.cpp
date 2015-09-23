@@ -308,6 +308,7 @@ static void DestroyItems(ArrayList_pa               ArrayList,
         LgIndex_t ItemIndex = (Index + ItemOffset) * ItemSize;
         Boolean_t CHECK_DoContinue;
         CHECK_DoContinue = ItemDestructor(static_cast<void*>(&ArrayList->Array[ItemIndex]), ClientData);
+	if (CHECK_DoContinue) { /*do nothing*/}
         CHECK(CHECK_DoContinue); /* this is a requirement of ArrayListItemDestructor_pf */
     }
 }

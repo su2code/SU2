@@ -2,7 +2,7 @@
  * \file SU2_DOT.cpp
  * \brief Main file of the Gradient Projection Code (SU2_DOT).
  * \author F. Palacios, T. Economon
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -254,7 +254,7 @@ int main(int argc, char *argv[]) {
           iPoint = geometry_container[ZONE_0]->vertex[iMarker][iVertex]->GetNode();
           for (iDim = 0; iDim < geometry_container[ZONE_0]->GetnDim(); iDim++){
             SU2_TYPE::SetDerivative(geometry_container[ZONE_0]->vertex[iMarker][iVertex]->GetVarCoord()[iDim],
-                                  SU2_TYPE::GetPrimary(geometry_container[ZONE_0]->GetSensitivity(iPoint, iDim)));
+                                  SU2_TYPE::GetValue(geometry_container[ZONE_0]->GetSensitivity(iPoint, iDim)));
 
           }
         }

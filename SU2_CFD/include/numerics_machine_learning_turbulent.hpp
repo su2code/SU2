@@ -2,7 +2,7 @@
  * \file numerics_machine_learning_direct_turbulent.hpp
  * \brief Header for caller functions of the turbulence models.
  * \author B. Tracey
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
