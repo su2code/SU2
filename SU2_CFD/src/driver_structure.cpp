@@ -31,19 +31,18 @@
 
 #include "../include/driver_structure.hpp"
 
-CDriver::CDriver(CConfig *config) {
-  /*--- For now, set the default to one zone. ---*/
-  nZone = 1;
+CDriver::CDriver(CConfig **config, unsigned short val_nZone) {
+  nZone = val_nZone;
 }
 
 CDriver::~CDriver(void) { }
 
-//! TO DO: Inline file for this perhaps? It's purely virtual.
-void CDriver::Run(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
-                  CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
-                  CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox) { }
+//! TDE: Inline file for this perhaps? It's purely virtual.
+inline void CDriver::Run(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
+                         CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
+                         CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox) { }
 
-CSingleZoneDriver::CSingleZoneDriver(CConfig *config) : CDriver(config) { }
+CSingleZoneDriver::CSingleZoneDriver(CConfig **config, unsigned short val_nZone) : CDriver(config, val_nZone) { }
 
 CSingleZoneDriver::~CSingleZoneDriver(void) { }
 
@@ -51,9 +50,11 @@ void CSingleZoneDriver::Run(COutput *output, CIntegration ***integration_contain
                             CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
                             CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox) {
   
+  /*--- To be implemented after iteration overhaul. ---*/
+  
 }
 
-CMultiZoneDriver::CMultiZoneDriver(CConfig *config) : CDriver(config) {}
+CMultiZoneDriver::CMultiZoneDriver(CConfig **config, unsigned short val_nZone) : CDriver(config, val_nZone) {}
 
 CMultiZoneDriver::~CMultiZoneDriver(void) { }
 
@@ -61,15 +62,19 @@ void CMultiZoneDriver::Run(COutput *output, CIntegration ***integration_containe
                            CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
                            CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox) {
   
+  /*--- To be implemented after iteration overhaul. ---*/
+  
 }
 
-CFSIDriver::CFSIDriver(CConfig *config) : CDriver(config) {}
+CFSIDriver::CFSIDriver(CConfig **config, unsigned short val_nZone) : CDriver(config, val_nZone) {}
 
 CFSIDriver::~CFSIDriver(void) { }
 
 void CFSIDriver::Run(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
                      CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
                      CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox) {
+  
+  /*--- For example, FSI BGS implementation here. ---*/
   
 }
 
