@@ -2715,10 +2715,15 @@ void CFEM_ElasticitySolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, 
 
     unsigned long iPoint, iDim;
     unsigned long nPoint, nDim;
+
+    su2double rbuf_numAitk = 0, sbuf_numAitk = 0;
+    su2double rbuf_denAitk = 0, sbuf_denAitk = 0;
+
+    su2double WAitken;
+
     su2double *dispPred, *dispCalc, *dispPred_Old, *dispCalc_Old;
     su2double deltaU[3] = {0.0, 0.0, 0.0}, deltaU_p1[3] = {0.0, 0.0, 0.0};
     su2double delta_deltaU[3] = {0.0, 0.0, 0.0};
-    su2double numAitk, denAitk, WAitken;
 	su2double CurrentTime=fea_config->GetCurrent_DynTime();
 	su2double Static_Time=fea_config->GetStatic_Time();
 	su2double WAitkDyn_tn1, WAitkDyn_Max, WAitkDyn;
@@ -2727,9 +2732,6 @@ void CFEM_ElasticitySolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, 
     nDim = fea_geometry[MESH_0]->GetnDim();
 
     WAitken=fea_config->GetAitkenStatRelax();
-
-	numAitk = 0.0;
-	denAitk = 0.0;
 
 	ofstream historyFile_FSI;
 	bool writeHistFSI = fea_config->GetWrite_Conv_FSI();
@@ -2783,17 +2785,26 @@ void CFEM_ElasticitySolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, 
 					delta_deltaU[iDim] = deltaU_p1[iDim] - deltaU[iDim];
 
 					/*--- Add numerator and denominator ---*/
-					numAitk += deltaU[iDim] * delta_deltaU[iDim];
-					denAitk += delta_deltaU[iDim] * delta_deltaU[iDim];
+					sbuf_numAitk += deltaU[iDim] * delta_deltaU[iDim];
+					sbuf_denAitk += delta_deltaU[iDim] * delta_deltaU[iDim];
 
 				}
 
 			}
 
+#ifdef HAVE_MPI
+    SU2_MPI::Allreduce(&sbuf_numAitk, &rbuf_numAitk, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&sbuf_denAitk, &rbuf_denAitk, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
+    rbuf_numAitk = sbuf_numAitk;
+    rbuf_denAitk = sbuf_denAitk;
+#endif
+
 				WAitkDyn = GetWAitken_Dyn();
 
-			if (denAitk > 1E-8){
-				WAitkDyn = - 1.0 * WAitkDyn * numAitk / denAitk ;
+			//TODO: double check this.
+			if (rbuf_denAitk > 1E-8){
+				WAitkDyn = - 1.0 * WAitkDyn * rbuf_numAitk / rbuf_denAitk ;
 			}
 
 				WAitkDyn = max(WAitkDyn, 0.1);

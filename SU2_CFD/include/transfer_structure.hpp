@@ -3,7 +3,7 @@
  * \brief Headers of the transfer structure
  *        The subroutines and functions are in the <i>transfer_structure.cpp</i> and <i>transfer_physics.cpp</i> files.
  * \author R. Sanchez
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -201,7 +201,7 @@ public:
  * \class CTransfer_FlowTraction
  * \brief Transfer flow tractions from a fluid zone into a structural zone
  * \author R. Sanchez
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  */
 
 class CTransfer_FlowTraction : public CTransfer {
@@ -267,10 +267,10 @@ public:
 };
 
 /*!
- * \class CTransfer_FlowTraction
- * \brief Transfer flow tractions from a fluid zone into a structural zone
+ * \class CTransfer_StructuralDisplacements
+ * \brief Transfer structural displacements from a structural zone into a fluid zone
  * \author R. Sanchez
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  */
 
 class CTransfer_StructuralDisplacements : public CTransfer {
@@ -332,6 +332,145 @@ public:
 	void SetTarget_Variable(CSolver *flow_solution, CGeometry *flow_geometry,
 							CConfig *flow_config, unsigned long Marker_Flow,
 							unsigned long Vertex_Flow, unsigned long Point_Flow);
+
+};
+
+/*!
+ * \class CTransfer_StructuralDisplacements_Original
+ * \brief Transfer structural displacements from a structural zone into a fluid zone (legacy method, kept for V&V)
+ * \author R. Sanchez
+ * \version 4.0.1 "Cardinal"
+ */
+
+class CTransfer_StructuralDisplacements_Original : public CTransfer {
+
+protected:
+
+public:
+
+	/*!
+	 * \brief Constructor of the class.
+	 */
+	CTransfer_StructuralDisplacements_Original(void);
+
+	/*!
+	 * \overload
+	 * \param[in] val_nVar - Number of variables that need to be transferred.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CTransfer_StructuralDisplacements_Original(unsigned short val_nVar, unsigned short val_nConst, CConfig *config);
+
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	virtual ~CTransfer_StructuralDisplacements_Original(void);
+
+	/*!
+	 * \brief Retrieve some constants needed for the calculations.
+	 * \param[in] donor_solution - Solution from the donor mesh.
+	 * \param[in] target_solution - Solution from the target mesh.
+	 * \param[in] donor_geometry - Geometry of the donor mesh.
+	 * \param[in] target_geometry - Geometry of the target mesh.
+	 * \param[in] donor_config - Definition of the problem at the donor mesh.
+	 * \param[in] target_config - Definition of the problem at the target mesh.
+	 */
+	void GetPhysical_Constants(CSolver *donor_solution, CSolver *target_solution,
+							   CGeometry *donor_geometry, CGeometry *target_geometry,
+							   CConfig *donor_config, CConfig *target_config);
+
+	/*!
+	 * \brief Retrieve the variable that will be sent from donor mesh to target mesh.
+	 * \param[in] donor_solution - Solution from the donor mesh.
+	 * \param[in] donor_geometry - Geometry of the donor mesh.
+	 * \param[in] donor_config - Definition of the problem at the donor mesh.
+	 * \param[in] Marker_Donor - Index of the donor marker.
+	 * \param[in] Vertex_Donor - Index of the donor vertex.
+	 */
+	void GetDonor_Variable(CSolver *struct_solution, CGeometry *struct_geometry, CConfig *struct_config,
+						   unsigned long Marker_Struct, unsigned long Vertex_Struct, unsigned long Point_Struct);
+
+	/*!
+	 * \brief Set the variable that has been received from the target mesh into the target mesh.
+	 * \param[in] target_solution - Solution from the target mesh.
+	 * \param[in] target_geometry - Geometry of the target mesh.
+	 * \param[in] target_config - Definition of the problem at the target mesh.
+	 * \param[in] Marker_Target - Index of the target marker.
+	 * \param[in] Vertex_Target - Index of the target vertex.
+	 * \param[in] Point_Target - Index of the target point.
+	 */
+	void SetTarget_Variable(CSolver *flow_solution, CGeometry *flow_geometry,
+							CConfig *flow_config, unsigned long Marker_Flow,
+							unsigned long Vertex_Flow, unsigned long Point_Flow);
+
+};
+
+/*!
+ * \class CTransfer_ConservativeVars
+ * \brief Transfer conservative variables from a generic zone into another
+ * \author R. Sanchez
+ * \version 4.0.1 "Cardinal"
+ */
+
+class CTransfer_ConservativeVars : public CTransfer {
+
+protected:
+
+public:
+
+	/*!
+	 * \brief Constructor of the class.
+	 */
+	CTransfer_ConservativeVars(void);
+
+	/*!
+	 * \overload
+	 * \param[in] val_nVar - Number of variables that need to be transferred.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CTransfer_ConservativeVars(unsigned short val_nVar, unsigned short val_nConst, CConfig *config);
+
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	virtual ~CTransfer_ConservativeVars(void);
+
+	/*!
+	 * \brief Retrieve some constants needed for the calculations.
+	 * \param[in] donor_solution - Solution from the donor mesh.
+	 * \param[in] target_solution - Solution from the target mesh.
+	 * \param[in] donor_geometry - Geometry of the donor mesh.
+	 * \param[in] target_geometry - Geometry of the target mesh.
+	 * \param[in] donor_config - Definition of the problem at the donor mesh.
+	 * \param[in] target_config - Definition of the problem at the target mesh.
+	 */
+	void GetPhysical_Constants(CSolver *donor_solution, CSolver *target_solution,
+							   CGeometry *donor_geometry, CGeometry *target_geometry,
+							   CConfig *donor_config, CConfig *target_config);
+
+	/*!
+	 * \brief Retrieve the variable that will be sent from donor mesh to target mesh.
+	 * \param[in] donor_solution - Solution from the donor mesh.
+	 * \param[in] donor_geometry - Geometry of the donor mesh.
+	 * \param[in] donor_config - Definition of the problem at the donor mesh.
+	 * \param[in] Marker_Donor - Index of the donor marker.
+	 * \param[in] Vertex_Donor - Index of the donor vertex.
+	 * \param[in] Point_Donor - Index of the donor point.
+	 */
+	void GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry, CConfig *donor_config,
+						   unsigned long Marker_Donor, unsigned long Vertex_Donor, unsigned long Point_Donor);
+
+	/*!
+	 * \brief Set the variable that has been received from the target mesh into the target mesh.
+	 * \param[in] target_solution - Solution from the target mesh.
+	 * \param[in] target_geometry - Geometry of the target mesh.
+	 * \param[in] target_config - Definition of the problem at the target mesh.
+	 * \param[in] Marker_Target - Index of the target marker.
+	 * \param[in] Vertex_Target - Index of the target vertex.
+	 * \param[in] Point_Target - Index of the target point.
+	 */
+	void SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry, CConfig *target_config,
+							unsigned long Marker_Target, unsigned long Vertex_Target, unsigned long Point_Target);
+
 
 };
 #include "transfer_structure.inl"

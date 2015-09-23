@@ -1516,12 +1516,11 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
 
 void Interface_Preprocessing(CTransfer ***transfer_container, CInterpolator ***interpolator_container,
 							 CGeometry ***geometry_container, CConfig **config_container,
-							 unsigned short nZone, unsigned short nDim) {
+							 CSolver ****solver_container, unsigned short nZone, unsigned short nDim) {
 
 	int rank = MASTER_NODE;
 	unsigned short donorZone, targetZone;
-	unsigned short nVarTransfer;
-	unsigned int Zones[2];
+	unsigned short nVar, nVarTransfer;
 	unsigned int nzn = 2; // Temporary, I'm not sure I need it
 
 	/*--- Initialize some useful booleans ---*/
@@ -1545,9 +1544,6 @@ void Interface_Preprocessing(CTransfer ***transfer_container, CInterpolator ***i
 		fluid_donor  = false;  structural_donor  = false;
 		matching_mesh = config_container[donorZone]->GetMatchingMesh();
 
-		/*--- Initialize donor zone for interpolation classes ---*/
-		Zones[0] = donorZone;
-
 		/*--- Set the donor boolean: as of now, only Fluid-Structure Interaction considered ---*/
 		switch (config_container[donorZone]->GetKind_Solver()) {
 			case EULER : case NAVIER_STOKES: case RANS: fluid_donor  = true; 		break;
@@ -1559,13 +1555,19 @@ void Interface_Preprocessing(CTransfer ***transfer_container, CInterpolator ***i
 			/*--- Initialize donor booleans ---*/
 			fluid_target  = false;  structural_target  = false;
 
-			/*--- Initialize target zone for interpolation classes ---*/
-			Zones[1] = targetZone;
-
 			/*--- Set the target boolean: as of now, only Fluid-Structure Interaction considered ---*/
 			switch (config_container[targetZone]->GetKind_Solver()) {
 				case EULER : case NAVIER_STOKES: case RANS: fluid_target  = true; 		break;
 				case FEM_ELASTICITY: 						structural_target = true; 	break;
+			}
+
+			/*--- Retrieve the number of conservative variables (for problems not involving structural analysis ---*/
+			if (!structural_donor && !structural_target){
+				nVar = solver_container[donorZone][MESH_0][FLOW_SOL]->GetnVar();
+			}
+			else{
+				/*--- If at least one of the components is structural ---*/
+				nVar = nDim;
 			}
 
 			/*--- Interface conditions are only defined between different zones ---*/
@@ -1587,11 +1589,11 @@ void Interface_Preprocessing(CTransfer ***transfer_container, CInterpolator ***i
 					if (rank == MASTER_NODE) cout << "between non-matching meshes ";
 					switch (config_container[donorZone]->GetKindInterpolation()){
 						case NEAREST_NEIGHBOR:
-							interpolator_container[donorZone][targetZone] = new CNearestNeighbor(geometry_container, config_container, Zones, nzn);
+							interpolator_container[donorZone][targetZone] = new CNearestNeighbor(geometry_container, config_container, donorZone, targetZone);
 							if (rank == MASTER_NODE) cout << "using a nearest-neighbor approach." << endl;
 							break;
 						case ISOPARAMETRIC:
-							interpolator_container[donorZone][targetZone] = new CIsoparametric(geometry_container,config_container,Zones,nzn);
+							interpolator_container[donorZone][targetZone] = new CIsoparametric(geometry_container, config_container, donorZone, targetZone);
 							if (rank == MASTER_NODE) cout << "using an isoparametric approach." << endl;
 							break;
 					}
@@ -1601,17 +1603,18 @@ void Interface_Preprocessing(CTransfer ***transfer_container, CInterpolator ***i
 				if (rank == MASTER_NODE) cout << "Transferring ";
 
 				if (fluid_donor && structural_target) {
-					nVarTransfer = 0;
-					transfer_container[donorZone][targetZone] = new CTransfer_FlowTraction(nDim, nVarTransfer, config_container[donorZone]);
+					nVarTransfer = 2;
+					transfer_container[donorZone][targetZone] = new CTransfer_FlowTraction(nVar, nVarTransfer, config_container[donorZone]);
 					if (rank == MASTER_NODE) cout << "flow tractions. "<< endl;
 				}
 				else if (structural_donor && fluid_target){
-					nVarTransfer = 2;
-					transfer_container[donorZone][targetZone] = new CTransfer_StructuralDisplacements(nDim, nVarTransfer, config_container[donorZone]);
+					nVarTransfer = 0;
+					transfer_container[donorZone][targetZone] = new CTransfer_StructuralDisplacements(nVar, nVarTransfer, config_container[donorZone]);
 					if (rank == MASTER_NODE) cout << "structural displacements. "<< endl;
 				}
 				else {
 					nVarTransfer = 0;
+					transfer_container[donorZone][targetZone] = new CTransfer_ConservativeVars(nVar, nVarTransfer, config_container[donorZone]);
 					if (rank == MASTER_NODE) cout << "generic conservative variables. " << endl;
 				}
 

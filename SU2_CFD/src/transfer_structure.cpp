@@ -1019,15 +1019,14 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
 					/*--- As we will be adding data, we need to set the variable to 0 ---*/
 					for (iVar = 0; iVar < nVar; iVar++) Target_Variable[iVar] = 0.0;
 
+					/*--- For the number of donor points ---*/
 					for (iDonorPoint = 0; iDonorPoint < nDonorPoints; iDonorPoint++){
 
 						/*--- Find the global index of the donor points for Point_Target ---*/
 						Donor_Global_Index = target_geometry->vertex[Marker_Target][iVertex]->GetInterpDonorPoint(iDonorPoint);
-						//Donor_Global_Index = target_geometry->vertex[Marker_Target][iVertex]->GetGlobalDonorPoint();
 
 						/*--- We need to get the donor coefficient in a way like this: ---*/
 						donorCoeff = target_geometry->vertex[Marker_Target][iVertex]->GetDonorCoeff(iDonorPoint);
-						//donorCoeff = 1.0;
 
 						/*--- Find the index of the global donor point in the buffer Buffer_Bcast_Indices ---*/
 						indexPoint_iVertex = std::distance(Buffer_Bcast_Indices, std::find(Buffer_Bcast_Indices, Buffer_Bcast_Indices + nBuffer_BcastIndices, Donor_Global_Index));
@@ -1072,6 +1071,259 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
 void CTransfer::Allgather_InterfaceData_Interpolate(CSolver *donor_solution, CSolver *target_solution,
 		   	   	   	   	   	   	                    CGeometry *donor_geometry, CGeometry *target_geometry,
 												    CConfig *donor_config, CConfig *target_config){
+
+
+	unsigned short nMarkerInt, nMarkerDonor, nMarkerTarget;		// Number of markers on the interface, donor and target side
+	unsigned short iMarkerInt, iMarkerDonor, iMarkerTarget;		// Variables for iteration over markers
+	int Marker_Donor = -1, Marker_Target = -1;
+
+	unsigned long nVertexDonor, nVertexTarget;					// Number of vertices on Donor and Target side
+	unsigned long iVertex, iPoint;								// Variables for iteration over vertices and nodes
+	unsigned long jVertex, jPoint;								// Variables for iteration over vertices and nodes
+
+	unsigned short iVar, jDim;
+
+	GetPhysical_Constants(donor_solution, target_solution, donor_geometry, target_geometry,
+						  donor_config, target_config);
+
+	unsigned long Point_Donor_Global, Donor_Global_Index;
+	unsigned long Point_Donor, Point_Target;
+	su2double *Normal_Donor, *Normal_Target;
+
+    int rank = MASTER_NODE;
+    int size = SINGLE_NODE;
+
+#ifdef HAVE_MPI
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+#endif
+
+    unsigned long iLocalVertex = 0;
+    unsigned long nLocalVertexDonor = 0;
+    unsigned long iVertexDonor = 0, iVertexTarget = 0;
+    unsigned long nPoint_Total = 0;
+
+	unsigned long MaxLocalVertexDonor = 0, MaxLocalVertexTarget = 0;
+	unsigned long TotalVertexDonor = 0;
+
+	unsigned long nBuffer_DonorVariables = 0, nBuffer_TargetVariables = 0;
+	unsigned long nBuffer_DonorIndices = 0, nBuffer_TargetIndices = 0;
+
+	unsigned long nBuffer_BcastVariables = 0, nBuffer_BcastIndices = 0;
+
+	unsigned long Processor_Donor, Processor_Target;
+
+	int iProcessor, nProcessor = 0;
+	unsigned long iVariable;
+
+	/*--- Number of markers on the FSI interface ---*/
+
+	nMarkerInt     = (donor_config->GetMarker_n_FSIinterface())/2;
+	nMarkerTarget  = target_geometry->GetnMarker();
+	nMarkerDonor   = donor_geometry->GetnMarker();
+
+	nProcessor = size;
+
+	/*--- Outer loop over the markers on the FSI interface: compute one by one ---*/
+	/*--- The tags are always an integer greater than 1: loop from 1 to nMarkerFSI ---*/
+
+	for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++){
+
+		Marker_Donor = -1;
+		Marker_Target = -1;
+
+		/*--- Initialize pointer buffers inside the loop, so we can delete for each marker. ---*/
+		/*--- We are only sending the values the processor owns ---*/
+		unsigned long Buffer_Send_nVertexDonor[1], *Buffer_Recv_nVertexDonor = NULL;
+
+		/*--- The donor and target markers are tagged with the same index.
+		 *--- This is independent of the MPI domain decomposition.
+		 *--- We need to loop over all markers on both sides and get the number of nodes
+		 *--- that belong to each FSI marker for each processor ---*/
+
+		/*--- On the donor side ---*/
+
+		for (iMarkerDonor = 0; iMarkerDonor < nMarkerDonor; iMarkerDonor++){
+			/*--- If the tag GetMarker_All_FSIinterface(iMarkerDonor) equals the index we are looping at ---*/
+			if ( donor_config->GetMarker_All_FSIinterface(iMarkerDonor) == iMarkerInt ){
+				/*--- We have identified the local index of the Donor marker ---*/
+				/*--- Now we are going to store the number of local points that belong to Marker_Donor on each processor ---*/
+				/*--- This are the number of points that will be sent from this particular processor ---*/
+				/*--- nLocalVertexDonor WILL NOT include halo nodes ---*/
+				nLocalVertexDonor = 0;
+				for (iVertex = 0; iVertex < donor_geometry->GetnVertex(iMarkerDonor); iVertex++){
+					Point_Donor = donor_geometry->vertex[iMarkerDonor][iVertex]->GetNode();
+					if (donor_geometry->node[Point_Donor]->GetDomain()){
+						nLocalVertexDonor++;
+					}
+				}
+				/*--- Store the identifier for the structural marker ---*/
+				Marker_Donor = iMarkerDonor;
+				/*--- Exit the for loop: we have found the local index for iMarkerFSI on the FEA side ---*/
+				break;
+			}
+			else {
+				/*--- If the tag hasn't matched any tag within the donor markers ---*/
+				nLocalVertexDonor = 0;
+				Marker_Donor = -1;
+			}
+		}
+
+		/*--- On the target side we only have to identify the marker; then we'll loop over it and retrieve from the donor points ---*/
+
+		for (iMarkerTarget = 0; iMarkerTarget < nMarkerTarget; iMarkerTarget++){
+			/*--- If the tag GetMarker_All_FSIinterface(iMarkerFlow) equals the index we are looping at ---*/
+			if ( target_config->GetMarker_All_FSIinterface(iMarkerTarget) == iMarkerInt ){
+				/*--- Store the identifier for the fluid marker ---*/
+				Marker_Target = iMarkerTarget;
+				/*--- Exit the for loop: we have found the local index for iMarkerFSI on the FEA side ---*/
+				break;
+			}
+			else {
+				/*--- If the tag hasn't matched any tag within the Flow markers ---*/
+				Marker_Target = -1;
+			}
+		}
+
+		Buffer_Send_nVertexDonor[0] = nLocalVertexDonor;	  // Retrieve total number of vertices on Donor marker
+		Buffer_Recv_nVertexDonor = new unsigned long[size];   // Allocate memory to receive how many vertices are on each rank on the structural side
+
+#ifdef HAVE_MPI
+		/*--- We receive MaxLocalVertexDonor as the maximum number of vertices in one single processor on the donor side---*/
+		SU2_MPI::Allreduce(&nLocalVertexDonor, &MaxLocalVertexDonor, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
+		/*--- We gather a vector in all processors that determines how many elements are there on each processor on the structural side ---*/
+		SU2_MPI::Allgather(&Buffer_Send_nVertexDonor, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nVertexDonor, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+#else
+		MaxLocalVertexDonor         = nLocalVertexDonor;
+		Buffer_Recv_nVertexDonor[0] = nLocalVertexDonor;
+#endif
+
+		/*--- We will be gathering the donor information into the master node ---*/
+		nBuffer_DonorVariables = MaxLocalVertexDonor * nVar;
+		nBuffer_DonorIndices = MaxLocalVertexDonor;
+
+		/*--- Send and Recv buffers ---*/
+
+		/*--- Buffers to send and receive the variables in the donor mesh ---*/
+		su2double *Buffer_Send_DonorVariables = new su2double[nBuffer_DonorVariables];
+		su2double *Buffer_Recv_DonorVariables = new su2double[size*nBuffer_DonorVariables];
+
+		/*--- Buffers to send and receive the indices in the donor mesh ---*/
+		long *Buffer_Send_DonorIndices = new long[nBuffer_DonorIndices];
+		long *Buffer_Recv_DonorIndices = new long[size*nBuffer_DonorIndices];
+
+		/*--- On the donor side ---*/
+		/*--- First we initialize all of the indices and processors to -1 ---*/
+		/*--- This helps on identifying halo nodes and avoids setting wrong values ---*/
+		for (iVertex = 0; iVertex < nBuffer_DonorIndices; iVertex++)
+			Buffer_Send_DonorIndices[iVertex] = -1;
+
+		/*--- Also to avoid having random values in the variables vector ---*/
+		for (iVertex = 0; iVertex < nBuffer_DonorIndices; iVertex++){
+			for (iVar = 0; iVar < nVar; iVar++){
+				Buffer_Send_DonorVariables[iVertex*nVar + iVar] = 0.0;
+			}
+		}
+
+		if (Marker_Donor >= 0){
+
+			iLocalVertex = 0;
+
+			for (iVertex = 0; iVertex < donor_geometry->GetnVertex(Marker_Donor); iVertex++){
+
+				Point_Donor = donor_geometry->vertex[Marker_Donor][iVertex]->GetNode();
+
+				GetDonor_Variable(donor_solution, donor_geometry, donor_config, Marker_Donor, iVertex, Point_Donor);
+
+				/*--- If this processor owns the node ---*/
+				if (donor_geometry->node[Point_Donor]->GetDomain()){
+					for (iVar = 0; iVar < nVar; iVar++){
+						Buffer_Send_DonorVariables[iLocalVertex*nVar+iVar] = Donor_Variable[iVar];
+					}
+
+					Point_Donor_Global = donor_geometry->node[Point_Donor]->GetGlobalIndex();
+					Buffer_Send_DonorIndices[iLocalVertex] = Point_Donor_Global;
+
+					iLocalVertex++;
+				}
+
+			}
+
+		}
+
+#ifdef HAVE_MPI
+		/*--- Once all the messages have been prepared, we gather them all into all the processors ---*/
+		SU2_MPI::Allgather(Buffer_Send_DonorVariables, nBuffer_DonorVariables, MPI_DOUBLE, Buffer_Recv_DonorVariables, nBuffer_DonorVariables, MPI_DOUBLE, MPI_COMM_WORLD);
+		SU2_MPI::Allgather(Buffer_Send_DonorIndices, nBuffer_DonorIndices, MPI_LONG, Buffer_Recv_DonorIndices, nBuffer_DonorIndices, MPI_LONG, MPI_COMM_WORLD);
+#else
+		for (iVariable = 0; iVariable < nBuffer_DonorVariables; iVariable++)
+			Buffer_Recv_DonorVariables[iVariable] = Buffer_Send_DonorVariables[iVariable];
+		for (iVariable = 0; iVariable < nBuffer_DonorIndices; iVariable++)
+			Buffer_Recv_DonorIndices[iVariable] = Buffer_Send_DonorIndices[iVariable];
+#endif
+
+		long indexPoint_iVertex, Point_Target_Check;
+		unsigned short iDonorPoint, nDonorPoints;
+		su2double donorCoeff;
+
+		/*--- For the target marker we are studying ---*/
+		if (Marker_Target >= 0){
+
+			/*--- We have identified the local index of the Structural marker ---*/
+			/*--- We loop over all the vertices in that marker and in that particular processor ---*/
+
+			for (iVertex = 0; iVertex < target_geometry->GetnVertex(Marker_Target); iVertex++){
+
+				Point_Target = target_geometry->vertex[Marker_Target][iVertex]->GetNode();
+
+				/*--- If this processor owns the node ---*/
+				if (target_geometry->node[Point_Target]->GetDomain()){
+
+					nDonorPoints = target_geometry->vertex[Marker_Target][iVertex]->GetnDonorPoints();
+
+					/*--- As we will be adding data, we need to set the variable to 0 ---*/
+					for (iVar = 0; iVar < nVar; iVar++) Target_Variable[iVar] = 0.0;
+
+					/*--- For the number of donor points ---*/
+					for (iDonorPoint = 0; iDonorPoint < nDonorPoints; iDonorPoint++){
+
+						/*--- Find the global index of the donor points for Point_Target ---*/
+						Donor_Global_Index = target_geometry->vertex[Marker_Target][iVertex]->GetInterpDonorPoint(iDonorPoint);
+
+						/*--- We need to get the donor coefficient in a way like this: ---*/
+						donorCoeff = target_geometry->vertex[Marker_Target][iVertex]->GetDonorCoeff(iDonorPoint);
+
+						/*--- Find the index of the global donor point in the buffer Buffer_Bcast_Indices ---*/
+						indexPoint_iVertex = std::distance(Buffer_Recv_DonorIndices, std::find(Buffer_Recv_DonorIndices, Buffer_Recv_DonorIndices + nProcessor*nBuffer_DonorIndices, Donor_Global_Index));
+
+						Point_Target_Check = Buffer_Recv_DonorIndices[indexPoint_iVertex];
+
+						if (Point_Target_Check < 0) {
+							cout << "WARNING: A nonphysical point is being considered for traction transfer." << endl;
+							exit(EXIT_FAILURE);
+						}
+
+						for (iVar = 0; iVar < nVar; iVar++)
+							Target_Variable[iVar] += donorCoeff * Buffer_Recv_DonorVariables[indexPoint_iVertex*nVar+iVar];
+					}
+
+					SetTarget_Variable(target_solution, target_geometry, target_config, Marker_Target, iVertex, Point_Target);
+
+				}
+
+			}
+
+		}
+
+		delete [] Buffer_Send_DonorVariables;
+		delete [] Buffer_Send_DonorIndices;
+
+		delete [] Buffer_Recv_DonorVariables;
+		delete [] Buffer_Recv_DonorIndices;
+
+		delete [] Buffer_Recv_nVertexDonor;
+
+	}
 
 
 }
