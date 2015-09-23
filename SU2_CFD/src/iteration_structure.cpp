@@ -1763,6 +1763,9 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
       grid_movement->Rigid_Rotation(geometry_container[MESH_0],
                                     config_container, iZone, ExtIter);
       
+      printf(" Add here the communication \n")'
+      
+      
       /*--- Update the multigrid structure after moving the finest grid,
        including computing the grid velocities on the coarser levels. ---*/
       

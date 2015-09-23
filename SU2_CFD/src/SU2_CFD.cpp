@@ -30,6 +30,7 @@
  */
 
 #include "../include/SU2_CFD.hpp"
+// #include "//Cprograms/Sources/lsipdx/Source/lsipdx.h "
 
 using namespace std;
 
@@ -351,6 +352,8 @@ int main(int argc, char *argv[]) {
   }
 
   while (ExtIter < config_container[ZONE_0]->GetnExtIter()) {
+	  
+	  printf(" ITERATION %d \n", ExtIter);
     
     /*--- Set the value of the external iteration. ---*/
     
