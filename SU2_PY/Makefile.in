@@ -314,6 +314,7 @@ bin_SCRIPTS = \
     finite_differences.py \
     mesh_deformation.py \
     parallel_computation.py \
+    parallel_computation_fsi.py \
     package_tests.py \
     patient_designspace.py \
     shape_optimization.py \
