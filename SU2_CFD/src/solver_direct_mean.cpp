@@ -4970,7 +4970,7 @@ void CEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) {
 
   /*--- Barth-Jespersen limiter with Venkatakrishnan modification ---*/
 
-  if (config->GetKind_SlopeLimit() == BARTH_JESPERSEN) {
+  if (config->GetKind_SlopeLimit_Flow() == BARTH_JESPERSEN) {
 
     for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
@@ -5031,7 +5031,7 @@ void CEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) {
 
   /*--- Venkatakrishnan limiter ---*/
 
-  if (config->GetKind_SlopeLimit() == VENKATAKRISHNAN) {
+  if (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN) {
 
     /*-- Get limiter parameters from the configuration file ---*/
 

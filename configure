@@ -6453,7 +6453,7 @@ else
 fi
 
 
-        CODIheader=${srcdir}/externals/CoDi/include/codi.hpp
+        CODIheader=${srcdir}/externals/codi/include/codi.hpp
         AMPIlib=${srcdir}/externals/adjointmpi/libAMPI.a
         AMPIheader=${srcdir}/externals/adjointmpi/include/ampi.h
 
@@ -6484,19 +6484,19 @@ fi
 
           if test "$have_CODI" == "no"
           then
-            as_fn_error $? "CODI header was not found in externals/CoDi/include. Use 'preconfigure.py --enable-reverse=CODI' to download it." "$LINENO" 5
+            as_fn_error $? "CODI header was not found in externals/CoDi/include. Use 'preconfigure.py --autodiff' to download it." "$LINENO" 5
           fi
         fi
 
         if test "$build_CODI_FORWARD" == "yes"
         then
-           DIRECTDIFF_CXX="-std=gnu++11 -DCODI_FORWARD_TYPE -I\$(top_srcdir)/externals/CoDi/include"
+           DIRECTDIFF_CXX="-std=c++0x -DCODI_FORWARD_TYPE -I\$(top_srcdir)/externals/codi/include"
            build_DIRECTDIFF=yes
            build_REVERSE=no
            build_NORMAL=no
         elif test "$build_CODI_REVERSE" == "yes"
         then
-           REVERSE_CXX="-std=gnu++11 -DCODI_REVERSE_TYPE -I\$(top_srcdir)/externals/CoDi/include"
+           REVERSE_CXX="-std=c++0x -DCODI_REVERSE_TYPE -I\$(top_srcdir)/externals/codi/include"
            if test "$enablempi" == "yes"
            then
               as_ac_File=`$as_echo "ac_cv_file_$AMPIlib" | $as_tr_sh`
@@ -6547,11 +6547,11 @@ fi
 
               if test "$have_AMPIlib" == "no"
               then
-                as_fn_error $? "AMPI library not found in externals/adjointmpi. Use 'preconfigure.py --enable-reverse=CODI --enable-mpi' to download it." "$LINENO" 5
+                as_fn_error $? "AMPI library not found in externals/adjointmpi. Use 'preconfigure.py --autodiff --enable-mpi' to download it." "$LINENO" 5
               fi
               if test "$have_AMPIheader" == "no"
               then
-                as_fn_error $? "AMPI header not found in externals/adjointmpi/include.  Use 'preconfigure.py --enable-reverse=CODI --enable-mpi' to download it." "$LINENO" 5
+                as_fn_error $? "AMPI header not found in externals/adjointmpi/include.  Use 'preconfigure.py --autodiff --enable-mpi' to download it." "$LINENO" 5
               fi
               REVERSE_CXX=$REVERSE_CXX" -I\$(top_srcdir)/externals/adjointmpi/include"
               REVERSE_LIBS="\$(top_srcdir)/externals/adjointmpi/libAMPI.a"

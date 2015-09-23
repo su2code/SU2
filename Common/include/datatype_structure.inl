@@ -35,11 +35,11 @@
 
 namespace SU2_TYPE{
   inline int Int(const su2double& data){
-    return int(SU2_TYPE::GetPrimary(data));
+    return int(SU2_TYPE::GetValue(data));
   }
 
   inline short Short(const su2double& data){
-    return short(SU2_TYPE::GetPrimary(data));
+    return short(SU2_TYPE::GetValue(data));
   }
 }
 
@@ -87,7 +87,7 @@ template< typename IN > struct Impl_getValue {
 template<> struct Impl_getValue<su2double> {
   typedef double OUT;
   static inline OUT getValue(const su2double& value) {
-    return SU2_TYPE::GetPrimary(value);
+    return SU2_TYPE::GetValue(value);
   }
 };
 
