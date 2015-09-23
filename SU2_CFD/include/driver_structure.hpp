@@ -53,13 +53,12 @@ class CDriver {
 protected:
   unsigned short nZone;	/*!< \brief Total number of zones in the problem. */
 
-
 public:
 	
 	/*! 
 	 * \brief Constructor of the class. 
 	 */
-	CDriver(CConfig *config);
+	CDriver(CConfig **config, unsigned short val_nZone);
 	
 	/*! 
 	 * \brief Destructor of the class. 
@@ -79,7 +78,7 @@ public:
    * \param[in] FFDBox - FFD FFDBoxes of the problem.
 	 */
   
-  //! TO DO: Add transfer container at end of list
+  //! TDE: Add transfer container at end of list
   virtual void Run(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
                    CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
                    CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox);
@@ -100,7 +99,7 @@ public:
 	 * \brief Constructor of the class.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CSingleZoneDriver(CConfig *config);
+	CSingleZoneDriver(CConfig **config, unsigned short val_nZone);
 	
 	/*! 
 	 * \brief Destructor of the class. 
@@ -120,7 +119,7 @@ public:
    * \param[in] FFDBox - FFD FFDBoxes of the problem.
 	 */
   
-  //! TO DO: Add transfer container at end of list
+  //! TDE: Add transfer container at end of list
   void Run(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
            CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
            CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox);
@@ -141,7 +140,7 @@ public:
    * \brief Constructor of the class.
    * \param[in] config - Definition of the particular problem.
    */
-  CMultiZoneDriver(CConfig *config);
+  CMultiZoneDriver(CConfig **config, unsigned short val_nZone);
   
   /*!
    * \brief Destructor of the class.
@@ -161,7 +160,7 @@ public:
    * \param[in] FFDBox - FFD FFDBoxes of the problem.
    */
   
-  //! TO DO: Add transfer container at end of list
+  //! TDE: Add transfer container at end of list
   void Run(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
            CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
            CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox);
@@ -182,7 +181,7 @@ public:
 	 * \brief Constructor of the class.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CFSIDriver(CConfig *config);
+	CFSIDriver(CConfig **config, unsigned short val_nZone);
 
 	/*!
 	 * \brief Destructor of the class.
@@ -202,7 +201,7 @@ public:
    * \param[in] FFDBox - FFD FFDBoxes of the problem.
 	 */
   
-  //! TO DO: Add transfer container at end of list
+  //! TDE: Add transfer container at end of list
   void Run(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
            CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
            CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox);

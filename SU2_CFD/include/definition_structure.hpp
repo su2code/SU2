@@ -33,7 +33,7 @@
 #include "../../Common/include/mpi_structure.hpp"
 
 #include <ctime>
-
+#include "driver_structure.hpp"
 #include "solver_structure.hpp"
 #include "integration_structure.hpp"
 #include "output_structure.hpp"
@@ -60,7 +60,14 @@ unsigned short GetnZone(string val_mesh_filename, unsigned short val_format, CCo
  */
 unsigned short GetnDim(string val_mesh_filename, unsigned short val_format);
 
-
+/*!
+ * \brief Definition of the driver class for single and multi-zone problems.
+ * \param[in] driver - Pointer to the driver object to be instantiated.
+ * \param[in] config - Definition of the particular problem.
+ * \param[in] nZone - Total number of zones in the problem.
+ */
+void Driver_Preprocessing(CDriver **driver, CConfig **config, unsigned short val_nZone);
+  
 /*! 
  * \brief Definition and allocation of all solution classes.
  * \param[in] solver_container - Container vector with all the solutions.

@@ -187,6 +187,41 @@ unsigned short GetnDim(string val_mesh_filename, unsigned short val_format) {
   return (unsigned short) nDim;
 }
 
+void Driver_Preprocessing(CDriver **driver, CConfig **config, unsigned short val_nZone) {
+  
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+  
+  if (val_nZone == SINGLE_ZONE) {
+    
+    /*--- Single zone problem: instantiate the single zone driver class. ---*/
+    if (rank == MASTER_NODE) cout << "Instantiating a single zone driver for the problem. " << endl;
+    
+    *driver = new CSingleZoneDriver(config, val_nZone);
+    
+  } else {
+    
+    /*--- Multi-zone problem: instantiate the multi-zone driver class by default
+     or a specialized driver class for a particular multi-physics problem. ---*/
+    
+    //! TDE: Just as an example here, commented out. Need to work on config
+    //! options for specifying the driver types. For now, we will just default
+    //! to the generic multi-zone driver so we can implement what is currently
+    //! available in iteration structure.
+    
+    //if (fsi) {
+    //  driver = new CFSIDriver(config, val_nZone);
+    //} else {
+    if (rank == MASTER_NODE) cout << "Instantiating a multi-zone driver for the problem. " << endl;
+    *driver = new CMultiZoneDriver(config, val_nZone);
+    //}
+    
+  }
+  
+}
+
 void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned short val_nZone) {
   
   unsigned short iMGlevel, iZone;

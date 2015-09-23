@@ -60,6 +60,7 @@ int main(int argc, char *argv[]) {
    heirarchy over all zones, multigrid levels, equation sets, and equation
    terms as described in the comments below. ---*/
   
+  CDriver *driver                       = NULL;
   COutput *output                       = NULL;
   CIntegration ***integration_container = NULL;
   CGeometry ***geometry_container       = NULL;
@@ -162,6 +163,14 @@ int main(int argc, char *argv[]) {
    computed, and the multigrid levels are created using an agglomeration procedure. ---*/
   
   Geometrical_Preprocessing(geometry_container, config_container, nZone);
+  
+  if (rank == MASTER_NODE)
+    cout << endl <<"------------------------- Driver Preprocessing --------------------------" << endl;
+  
+  /*--- First, given the basic information about the number of zones and the
+   solver types from the config, instantiate the appropriate driver for the problem. ---*/
+  
+  Driver_Preprocessing(&driver, config_container, nZone);
   
   if (rank == MASTER_NODE)
     cout << endl <<"------------------------- Solver Preprocessing --------------------------" << endl;
@@ -362,6 +371,15 @@ int main(int argc, char *argv[]) {
     if (config_container[ZONE_0]->GetInvDesign_HeatFlux() == YES)
       output->SetHeat_InverseDesign(solver_container[ZONE_0][MESH_0][FLOW_SOL],
                                     geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
+    
+    /*--- Run a single iteration of the problem using the driver class. ---*/
+    
+    //! TDE: This is a dummy version at the moment just to activate the
+    //! driver class. Next step is to overhaul the iteration class.
+    
+    driver->Run(output, integration_container, geometry_container,
+                solver_container, numerics_container, config_container,
+                surface_movement, grid_movement, FFDBox);
     
     /*--- Perform a single iteration of the chosen PDE solver. ---*/
     
