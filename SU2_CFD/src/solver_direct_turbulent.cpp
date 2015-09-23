@@ -2,7 +2,7 @@
  * \file solution_direct_turbulent.cpp
  * \brief Main subrotuines for solving direct problems
  * \author F. Palacios, A. Bueno
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -984,7 +984,9 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
   unsigned short iVar, iDim, nLineLets;
   unsigned long iPoint, index;
   su2double Density_Inf, Viscosity_Inf, Factor_nu_Inf, Factor_nu_Engine, dull_val;
-
+  
+  unsigned short iZone = config->GetiZone();
+  unsigned short nZone = geometry->GetnZone();
   bool restart = (config->GetRestart() || config->GetRestart_Flow());
   bool adjoint = config->GetAdjoint();
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
@@ -1148,6 +1150,9 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
         Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
       filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
     }
+    if (nZone >1)
+      filename= config->GetRestart_FlowFileName(filename, iZone);
+  
     
     /*--- Open the restart file, throw an error if this fails. ---*/
     restart_file.open(filename.data(), ios::in);
@@ -2464,6 +2469,8 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   ifstream restart_file;
   string text_line;
   
+  unsigned short iZone = config->GetiZone();
+  unsigned short nZone = geometry->GetnZone();
   bool restart = (config->GetRestart() || config->GetRestart_Flow());
   bool adjoint = config->GetAdjoint();
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
@@ -2632,6 +2639,9 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
       Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
       filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
     }
+    if (nZone >1)
+      filename= config->GetRestart_FlowFileName(filename, iZone);
+  
     
     /*--- Open the restart file, throw an error if this fails. ---*/
     restart_file.open(filename.data(), ios::in);

@@ -2,7 +2,7 @@
  * \file linear_solvers_structure_b.cpp
  * \brief Routines for the linear solver used in the reverse sweep of AD.
  * \author T. Albring
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -105,7 +105,7 @@ void CSysSolve_b::Solve_b(AD::CheckpointHandler* data){
 
   for (i = 0; i < size; i ++){
     int& index = LinSysRes_Indices[i];
-    AD::globalTape.gradient(index) += SU2_TYPE::GetPrimary(LinSysSol_b[i]);
+    AD::globalTape.gradient(index) += SU2_TYPE::GetValue(LinSysSol_b[i]);
   }
 
   delete mat_vec;

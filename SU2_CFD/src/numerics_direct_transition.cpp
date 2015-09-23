@@ -2,7 +2,7 @@
  * \file numerics_direct_transition.cpp
  * \brief This file contains all the convective term discretization.
  * \author A. Aranake
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -702,10 +702,7 @@ void CSourcePieceWise_TransLM::CSourcePieceWise_TransLM__ComputeResidual_TransLM
           result1 = pow(tu - 0.5658, -0.671);
           re_theta = 331.5*f_lambda*result1;
         }
-        if (re_theta < re_theta_lim)
-          re_theta = re_theta_lim;
-        else
-          re_theta = re_theta;
+        if (re_theta < re_theta_lim) re_theta = re_theta_lim;
         theta = re_theta*Laminar_Viscosity_i/(U_i[0]*Velocity_Mag);
         lambda = U_i[0]*theta*theta*du_ds/Laminar_Viscosity_i;
         if (-0.1 < lambda)

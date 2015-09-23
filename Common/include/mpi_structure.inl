@@ -2,7 +2,7 @@
  * \file mpi_structure.hpp
  * \brief In-Line subroutines of the <i>mpi_structure.hpp</i> file.
  * \author T. Albring
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -88,6 +88,11 @@ inline void CMPIWrapper::Allreduce(void *sendbuf, void *recvbuf, int count,
 inline void CMPIWrapper::Gather(void *sendbuf, int sendcnt,MPI_Datatype sendtype,
                                 void *recvbuf, int recvcnt, MPI_Datatype recvtype, int root, MPI_Comm comm){
   MPI_Gather(sendbuf,sendcnt,sendtype,recvbuf,recvcnt,recvtype,root,comm);
+}
+
+inline void CMPIWrapper::Scatter(void *sendbuf, int sendcnt,MPI_Datatype sendtype,
+                                 void *recvbuf, int recvcnt, MPI_Datatype recvtype, int root, MPI_Comm comm){
+  MPI_Scatter(sendbuf, sendcnt, sendtype, recvbuf, recvcnt, recvtype, root, comm);
 }
 
 inline void CMPIWrapper::Allgather(void *sendbuf, int sendcnt, MPI_Datatype sendtype,
@@ -222,6 +227,14 @@ inline void CAdjointMPIWrapper::Gather(void *sendbuf, int sendcnt,MPI_Datatype s
     MPI_Gather(sendbuf,sendcnt,sendtype,recvbuf,recvcnt,recvtype,root,comm);
   } else {
     AMPI_Gather(sendbuf,sendcnt,sendtype,recvbuf,recvcnt,recvtype,root,comm);
+  }
+}
+
+inline void CAdjointMPIWrapper::Scatter(void *sendbuf, int sendcnt,MPI_Datatype sendtype, void *recvbuf, int recvcnt, MPI_Datatype recvtype, int root, MPI_Comm comm){
+  if (sendtype != MPI_DOUBLE){
+    MPI_Scatter(sendbuf, sendcnt, sendtype, recvbuf, recvcnt, recvtype, root, comm);
+  }else{
+    AMPI_Scatter(sendbuf, sendcnt, sendtype, recvbuf, recvcnt, recvtype, root, comm);
   }
 }
 

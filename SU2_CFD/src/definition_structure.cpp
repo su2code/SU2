@@ -2,7 +2,7 @@
  * \file definition_structure.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -246,7 +246,7 @@ void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned
     /*--- Visualize a dual control volume if requested ---*/
     
     if ((config[iZone]->GetVisualize_CV() >= 0) &&
-        (config[iZone]->GetVisualize_CV() < geometry[iZone][MESH_0]->GetnPointDomain()))
+        (config[iZone]->GetVisualize_CV() < (long)geometry[iZone][MESH_0]->GetnPointDomain()))
       geometry[iZone][MESH_0]->VisualizeControlVolume(config[iZone], UPDATE);
     
     /*--- Identify closest normal neighbor ---*/
@@ -581,7 +581,6 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
   nPrimVar_Adj_TNE2     = 0,
   nPrimVarGrad_Adj_TNE2 = 0,
   nVar_Poisson          = 0,
-  nVar_FEA              = 0,
   nVar_Wave             = 0,
   nVar_Heat             = 0,
   nVar_Lin_Flow         = 0;
@@ -667,7 +666,6 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
   if (poisson)			nVar_Poisson = solver_container[MESH_0][POISSON_SOL]->GetnVar();
   
   if (wave)				nVar_Wave = solver_container[MESH_0][WAVE_SOL]->GetnVar();
-  if (fea)				nVar_FEA = solver_container[MESH_0][FEA_SOL]->GetnVar();
   if (heat)				nVar_Heat = solver_container[MESH_0][HEAT_SOL]->GetnVar();
   
   /*--- Number of variables for adjoint problem ---*/
