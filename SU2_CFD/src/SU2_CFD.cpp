@@ -177,8 +177,10 @@ int main(int argc, char *argv[]) {
   if (rank == MASTER_NODE)
     cout << endl <<"------------------------ Iteration Preprocessing ------------------------" << endl;
   
-  /*--- First, given the basic information about the number of zones and the
-   solver types from the config, instantiate the appropriate driver for the problem. ---*/
+  /*--- Instantiate the type of physics iteration to be executed within each zone. For
+   example, one can execute the same physics across multiple zones (mixing plane),
+   different physics in different zones (fluid-structure interaction), or couple multiple
+   systems tightly within a single zone by creating a new iteration class (e.g., RANS). ---*/
   
   Iteration_Preprocessing(iteration_container, config_container, nZone);
   
@@ -382,15 +384,6 @@ int main(int argc, char *argv[]) {
       output->SetHeat_InverseDesign(solver_container[ZONE_0][MESH_0][FLOW_SOL],
                                     geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
     
-    /*--- Run a single iteration of the problem using the driver class. ---*/
-    
-    //! TDE: This is a dummy version at the moment just to activate the
-    //! driver class. Next step is to overhaul the iteration class.
-    
-    driver->Run(output, integration_container, geometry_container,
-                solver_container, numerics_container, config_container,
-                surface_movement, grid_movement, FFDBox);
-    
     /*--- Perform a single iteration of the chosen PDE solver. ---*/
     
 	if (fsi){
@@ -406,9 +399,22 @@ int main(int argc, char *argv[]) {
     switch (config_container[ZONE_0]->GetKind_Solver()) {
         
       case EULER: case NAVIER_STOKES: case RANS:
-        MeanFlowIteration(output, integration_container, geometry_container,
-                          solver_container, numerics_container, config_container,
-                          surface_movement, grid_movement, FFDBox);
+        
+        /*--- Run a single iteration of the problem using the driver class. ---*/
+        
+        //! TDE: This is here at the moment just to activate the driver class
+        //! for the mean flow. Once we have implemented all of the iteration classes
+        //! we can remove all of the other iteration subroutines and leave just
+        //! the line below.
+        
+        driver->Run(iteration_container, output, integration_container,
+                    geometry_container, solver_container, numerics_container,
+                    config_container, surface_movement, grid_movement, FFDBox);
+        
+//        MeanFlowIteration(output, integration_container, geometry_container,
+//                          solver_container, numerics_container, config_container,
+//                          surface_movement, grid_movement, FFDBox);
+        
         break;
         
       case TNE2_EULER: case TNE2_NAVIER_STOKES:

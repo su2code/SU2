@@ -222,76 +222,77 @@ void Driver_Preprocessing(CDriver **driver, CConfig **config, unsigned short val
   
 }
 
-void Iteration_Preprocessing(CIteration **iteration, CConfig **config, unsigned short val_nZone) {
+void Iteration_Preprocessing(CIteration **iteration_container, CConfig **config, unsigned short val_nZone) {
   
   unsigned short iZone;
-  
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
+  /*--- Loop over all zones and instantiate the physics iteration. ---*/
+  
   for (iZone = 0; iZone < val_nZone; iZone++) {
-//  switch (config[iZone]->GetKind_Solver()) {
-//      
-//    case EULER: case NAVIER_STOKES: case RANS:
-//      MeanFlowIteration(output, integration_container, geometry_container,
-//                        solver_container, numerics_container, config_container,
-//                        surface_movement, grid_movement, FFDBox);
-//      break;
-//      
-//    case TNE2_EULER: case TNE2_NAVIER_STOKES:
-//      TNE2Iteration(output, integration_container,
-//                    geometry_container, solver_container,
-//                    numerics_container, config_container,
-//                    surface_movement, grid_movement, FFDBox);
-//      break;
-//      
-//    case WAVE_EQUATION:
-//      WaveIteration(output, integration_container, geometry_container,
-//                    solver_container, numerics_container, config_container,
-//                    surface_movement, grid_movement, FFDBox);
-//      break;
-//      
-//    case HEAT_EQUATION:
-//      HeatIteration(output, integration_container, geometry_container,
-//                    solver_container, numerics_container, config_container,
-//                    surface_movement, grid_movement, FFDBox);
-//      break;
-//      
-//    case POISSON_EQUATION:
-//      PoissonIteration(output, integration_container, geometry_container,
-//                       solver_container, numerics_container, config_container,
-//                       surface_movement, grid_movement, FFDBox);
-//      break;
-//      
-//    case LINEAR_ELASTICITY:
-//      FEAIteration(output, integration_container, geometry_container,
-//                   solver_container, numerics_container, config_container,
-//                   surface_movement, grid_movement, FFDBox);
-//      break;
-//      
-//    case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
-//      AdjMeanFlowIteration(output, integration_container, geometry_container,
-//                           solver_container, numerics_container, config_container,
-//                           surface_movement, grid_movement, FFDBox);
-//      break;
-//      
-//    case ADJ_TNE2_EULER: case ADJ_TNE2_NAVIER_STOKES:
-//      AdjTNE2Iteration(output, integration_container, geometry_container,
-//                       solver_container, numerics_container, config_container,
-//                       surface_movement, grid_movement, FFDBox);
-//      break;
-//      
-//    case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES:case DISC_ADJ_RANS:
-//      DiscAdjMeanFlowIteration(output, integration_container, geometry_container,
-//                               solver_container, numerics_container, config_container,
-//                               surface_movement, grid_movement, FFDBox);
-//      break;
-//      
-//      
-//  }
-}
+    
+    switch (config[iZone]->GetKind_Solver()) {
+        
+      case EULER: case NAVIER_STOKES: case RANS:
+        if (rank == MASTER_NODE)
+          cout << "Zone " << iZone+1 << ": mean flow iteration." << endl;
+        iteration_container[iZone] = new CMeanFlowIteration(config);
+        break;
+        
+      case TNE2_EULER: case TNE2_NAVIER_STOKES:
+        if (rank == MASTER_NODE)
+          cout << "Zone " << iZone+1 << ": TNE2 iteration." << endl;
+        iteration_container[iZone] = new CTNE2Iteration(config);
+        break;
+        
+      case WAVE_EQUATION:
+        if (rank == MASTER_NODE)
+          cout << "Zone " << iZone+1 << ": wave iteration." << endl;
+        iteration_container[iZone] = new CWaveIteration(config);
+        break;
+        
+      case HEAT_EQUATION:
+        if (rank == MASTER_NODE)
+          cout << "Zone " << iZone+1 << ": heat iteration." << endl;
+        iteration_container[iZone] = new CHeatIteration(config);
+        break;
+        
+      case POISSON_EQUATION:
+        if (rank == MASTER_NODE)
+          cout << "Zone " << iZone+1 << ": poisson iteration." << endl;
+        iteration_container[iZone] = new CPoissonIteration(config);
+        break;
+        
+      case LINEAR_ELASTICITY:
+        if (rank == MASTER_NODE)
+          cout << "Zone " << iZone+1 << ": FEA iteration." << endl;
+        iteration_container[iZone] = new CFEAIteration(config);
+        break;
+        
+      case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
+        if (rank == MASTER_NODE)
+          cout << "Zone " << iZone+1 << ": adjoint mean flow iteration." << endl;
+        iteration_container[iZone] = new CAdjMeanFlowIteration(config);
+        break;
+        
+      case ADJ_TNE2_EULER: case ADJ_TNE2_NAVIER_STOKES:
+        if (rank == MASTER_NODE)
+          cout << "Zone " << iZone+1 << ": adjoint TNE2 iteration." << endl;
+        iteration_container[iZone] = new CAdjTNE2Iteration(config);
+        break;
+        
+      case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+        if (rank == MASTER_NODE)
+          cout << "Zone " << iZone+1 << ": discrete adjoint mean flow iteration." << endl;
+        iteration_container[iZone] = new CMeanFlowIteration(config);
+        break;
+    }
+    
+  }
+  
 }
 
 void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned short val_nZone) {
