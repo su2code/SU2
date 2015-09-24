@@ -38,19 +38,48 @@ CDriver::CDriver(CConfig **config, unsigned short val_nZone) {
 CDriver::~CDriver(void) { }
 
 //! TDE: Inline file for this perhaps? It's purely virtual.
-inline void CDriver::Run(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
-                         CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
-                         CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox) { }
+inline void CDriver::Run(CIteration **iteration_container,
+                         COutput *output,
+                         CIntegration ***integration_container,
+                         CGeometry ***geometry_container,
+                         CSolver ****solver_container,
+                         CNumerics *****numerics_container,
+                         CConfig **config_container,
+                         CSurfaceMovement **surface_movement,
+                         CVolumetricMovement **grid_movement,
+                         CFreeFormDefBox*** FFDBox) { }
 
 CSingleZoneDriver::CSingleZoneDriver(CConfig **config, unsigned short val_nZone) : CDriver(config, val_nZone) { }
 
 CSingleZoneDriver::~CSingleZoneDriver(void) { }
 
-void CSingleZoneDriver::Run(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
-                            CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
-                            CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox) {
+void CSingleZoneDriver::Run(CIteration **iteration_container,
+                            COutput *output,
+                            CIntegration ***integration_container,
+                            CGeometry ***geometry_container,
+                            CSolver ****solver_container,
+                            CNumerics *****numerics_container,
+                            CConfig **config_container,
+                            CSurfaceMovement **surface_movement,
+                            CVolumetricMovement **grid_movement,
+                            CFreeFormDefBox*** FFDBox) {
   
-  /*--- To be implemented after iteration overhaul. ---*/
+  /*--- Run an iteration of the physics within this single zone.
+   We assume that the zone of interest is in the ZONE_0 container position. ---*/
+  
+  iteration_container[ZONE_0]->Preprocess(); /*--- Does nothing for now. ---*/
+  
+  iteration_container[ZONE_0]->Iterate(output, integration_container, geometry_container,
+                                       solver_container, numerics_container, config_container,
+                                       surface_movement, grid_movement, FFDBox);
+  
+  iteration_container[ZONE_0]->Update(); /*--- Does nothing for now. ---*/
+  
+  iteration_container[ZONE_0]->Monitor(); /*--- Does nothing for now. ---*/
+  
+  iteration_container[ZONE_0]->Output(); /*--- Does nothing for now. ---*/
+  
+  iteration_container[ZONE_0]->Postprocess(); /*--- Does nothing for now. ---*/
   
 }
 
@@ -58,11 +87,44 @@ CMultiZoneDriver::CMultiZoneDriver(CConfig **config, unsigned short val_nZone) :
 
 CMultiZoneDriver::~CMultiZoneDriver(void) { }
 
-void CMultiZoneDriver::Run(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
-                           CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
-                           CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox) {
+void CMultiZoneDriver::Run(CIteration **iteration_container,
+                           COutput *output,
+                           CIntegration ***integration_container,
+                           CGeometry ***geometry_container,
+                           CSolver ****solver_container,
+                           CNumerics *****numerics_container,
+                           CConfig **config_container,
+                           CSurfaceMovement **surface_movement,
+                           CVolumetricMovement **grid_movement,
+                           CFreeFormDefBox*** FFDBox) {
   
-  /*--- To be implemented after iteration overhaul. ---*/
+  unsigned short iZone;
+  
+  /*--- Run a single iteration of a multi-zone problem by looping over all
+   zones and executing the iterations. Note that data transers between zones
+   and other intermediate procedures may be required. ---*/
+  
+  for (iZone = 0; iZone < nZone; iZone++) {
+    
+    iteration_container[iZone]->Preprocess();  /*--- Does nothing for now. ---*/
+    
+    iteration_container[iZone]->Iterate(output, integration_container, geometry_container,
+                                         solver_container, numerics_container, config_container,
+                                         surface_movement, grid_movement, FFDBox);
+    
+    iteration_container[iZone]->Update();      /*--- Does nothing for now. ---*/
+    
+    iteration_container[iZone]->Monitor();     /*--- Does nothing for now. ---*/
+    
+    iteration_container[iZone]->Output();      /*--- Does nothing for now. ---*/
+    
+    iteration_container[iZone]->Postprocess(); /*--- Does nothing for now. ---*/
+    
+    //! TDE: here is where a call to CTransfer could be placed to move data
+    //! between zones. Or, something similar for mixing planes, sliding meshes,
+    //! time spectral, etc.
+    
+  }
   
 }
 
@@ -70,11 +132,18 @@ CFSIDriver::CFSIDriver(CConfig **config, unsigned short val_nZone) : CDriver(con
 
 CFSIDriver::~CFSIDriver(void) { }
 
-void CFSIDriver::Run(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
-                     CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
-                     CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox) {
+void CFSIDriver::Run(CIteration **iteration_container,
+                     COutput *output,
+                     CIntegration ***integration_container,
+                     CGeometry ***geometry_container,
+                     CSolver ****solver_container,
+                     CNumerics *****numerics_container,
+                     CConfig **config_container,
+                     CSurfaceMovement **surface_movement,
+                     CVolumetricMovement **grid_movement,
+                     CFreeFormDefBox*** FFDBox) {
   
-  /*--- For example, FSI BGS implementation here. ---*/
+  //! TDE: For example, FSI BGS implementation could go here here.
   
 }
 

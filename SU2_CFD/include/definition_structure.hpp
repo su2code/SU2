@@ -75,7 +75,7 @@ void Driver_Preprocessing(CDriver **driver, CConfig **config, unsigned short val
  * \param[in] config - Definition of the particular problem.
  * \param[in] nZone - Total number of zones in the problem.
  */
-void Iteration_Preprocessing(CIteration **iteration, CConfig **config, unsigned short val_nZone);
+void Iteration_Preprocessing(CIteration **iteration_container, CConfig **config, unsigned short val_nZone);
 
 /*! 
  * \brief Definition and allocation of all solution classes.
