@@ -103,7 +103,10 @@ void CMultiZoneDriver::Run(CIteration **iteration_container,
   /*--- Run a single iteration of a multi-zone problem by looping over all
    zones and executing the iterations. Note that data transers between zones
    and other intermediate procedures may be required. ---*/
-  
+
+  //!HK: instantiate transfer container and interpolator container here
+  //!HK: run interface preprocessing here to set up case-specific interpolation and transfer.
+
   for (iZone = 0; iZone < nZone; iZone++) {
     
     iteration_container[iZone]->Preprocess();  /*--- Does nothing for now. ---*/
