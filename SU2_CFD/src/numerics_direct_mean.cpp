@@ -452,7 +452,6 @@ void CCentJST_KE_Flow::ComputeResidual(su2double *val_residual, su2double **val_
 
 }
 
-
 CCentLax_Flow::CCentLax_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
   
   Gamma = config->GetGamma();
