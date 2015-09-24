@@ -4172,4 +4172,4 @@ void CSourceWindGust::ComputeResidual(su2double *val_residual, su2double **val_J
   
 }
 
-
+}
