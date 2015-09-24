@@ -61,6 +61,7 @@ int main(int argc, char *argv[]) {
    terms as described in the comments below. ---*/
   
   CDriver *driver                       = NULL;
+  CIteration **iteration_container      = NULL;
   COutput *output                       = NULL;
   CIntegration ***integration_container = NULL;
   CGeometry ***geometry_container       = NULL;
@@ -89,6 +90,7 @@ int main(int argc, char *argv[]) {
   
   /*--- Definition and of the containers for all possible zones. ---*/
   
+  iteration_container   = new CIteration*[nZone];
   solver_container      = new CSolver***[nZone];
   integration_container = new CIntegration**[nZone];
   numerics_container    = new CNumerics****[nZone];
@@ -171,6 +173,14 @@ int main(int argc, char *argv[]) {
    solver types from the config, instantiate the appropriate driver for the problem. ---*/
   
   Driver_Preprocessing(&driver, config_container, nZone);
+  
+  if (rank == MASTER_NODE)
+    cout << endl <<"------------------------ Iteration Preprocessing ------------------------" << endl;
+  
+  /*--- First, given the basic information about the number of zones and the
+   solver types from the config, instantiate the appropriate driver for the problem. ---*/
+  
+  Iteration_Preprocessing(iteration_container, config_container, nZone);
   
   if (rank == MASTER_NODE)
     cout << endl <<"------------------------- Solver Preprocessing --------------------------" << endl;

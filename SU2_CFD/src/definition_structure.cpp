@@ -222,10 +222,82 @@ void Driver_Preprocessing(CDriver **driver, CConfig **config, unsigned short val
   
 }
 
+void Iteration_Preprocessing(CIteration **iteration, CConfig **config, unsigned short val_nZone) {
+  
+  unsigned short iZone;
+  
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+  
+  for (iZone = 0; iZone < val_nZone; iZone++) {
+//  switch (config[iZone]->GetKind_Solver()) {
+//      
+//    case EULER: case NAVIER_STOKES: case RANS:
+//      MeanFlowIteration(output, integration_container, geometry_container,
+//                        solver_container, numerics_container, config_container,
+//                        surface_movement, grid_movement, FFDBox);
+//      break;
+//      
+//    case TNE2_EULER: case TNE2_NAVIER_STOKES:
+//      TNE2Iteration(output, integration_container,
+//                    geometry_container, solver_container,
+//                    numerics_container, config_container,
+//                    surface_movement, grid_movement, FFDBox);
+//      break;
+//      
+//    case WAVE_EQUATION:
+//      WaveIteration(output, integration_container, geometry_container,
+//                    solver_container, numerics_container, config_container,
+//                    surface_movement, grid_movement, FFDBox);
+//      break;
+//      
+//    case HEAT_EQUATION:
+//      HeatIteration(output, integration_container, geometry_container,
+//                    solver_container, numerics_container, config_container,
+//                    surface_movement, grid_movement, FFDBox);
+//      break;
+//      
+//    case POISSON_EQUATION:
+//      PoissonIteration(output, integration_container, geometry_container,
+//                       solver_container, numerics_container, config_container,
+//                       surface_movement, grid_movement, FFDBox);
+//      break;
+//      
+//    case LINEAR_ELASTICITY:
+//      FEAIteration(output, integration_container, geometry_container,
+//                   solver_container, numerics_container, config_container,
+//                   surface_movement, grid_movement, FFDBox);
+//      break;
+//      
+//    case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
+//      AdjMeanFlowIteration(output, integration_container, geometry_container,
+//                           solver_container, numerics_container, config_container,
+//                           surface_movement, grid_movement, FFDBox);
+//      break;
+//      
+//    case ADJ_TNE2_EULER: case ADJ_TNE2_NAVIER_STOKES:
+//      AdjTNE2Iteration(output, integration_container, geometry_container,
+//                       solver_container, numerics_container, config_container,
+//                       surface_movement, grid_movement, FFDBox);
+//      break;
+//      
+//    case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES:case DISC_ADJ_RANS:
+//      DiscAdjMeanFlowIteration(output, integration_container, geometry_container,
+//                               solver_container, numerics_container, config_container,
+//                               surface_movement, grid_movement, FFDBox);
+//      break;
+//      
+//      
+//  }
+}
+}
+
 void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned short val_nZone) {
   
   unsigned short iMGlevel, iZone;
-  unsigned long iPoint; 
+  unsigned long iPoint;
   int rank = MASTER_NODE;
 
 #ifdef HAVE_MPI

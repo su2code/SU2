@@ -34,6 +34,7 @@
 
 #include <ctime>
 #include "driver_structure.hpp"
+#include "iteration_structure.hpp"
 #include "solver_structure.hpp"
 #include "integration_structure.hpp"
 #include "output_structure.hpp"
@@ -67,7 +68,15 @@ unsigned short GetnDim(string val_mesh_filename, unsigned short val_format);
  * \param[in] nZone - Total number of zones in the problem.
  */
 void Driver_Preprocessing(CDriver **driver, CConfig **config, unsigned short val_nZone);
-  
+
+/*!
+ * \brief Definition of the physics iteration class or within a single zone.
+ * \param[in] iteration_container - Pointer to the iteration container to be instantiated.
+ * \param[in] config - Definition of the particular problem.
+ * \param[in] nZone - Total number of zones in the problem.
+ */
+void Iteration_Preprocessing(CIteration **iteration, CConfig **config, unsigned short val_nZone);
+
 /*! 
  * \brief Definition and allocation of all solution classes.
  * \param[in] solver_container - Container vector with all the solutions.
