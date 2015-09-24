@@ -128,6 +128,7 @@ public:
 	 */
   
   //! TDE: Add transfer container to list
+	//!HK: Alternative: instantiate CTransfer within multizone driver. This will avoid 'unused parameter' warnings.
   void Run(CIteration **iteration_container,
            COutput *output,
            CIntegration ***integration_container,
@@ -187,6 +188,9 @@ public:
            CVolumetricMovement **grid_movement,
            CFreeFormDefBox*** FFDBox);
   
+  //!HK: Add interface preprocessing prototype here
+  //!HK: Copy function from current iterface_preprocessing in FSI_FEA branch + SU2_CFD/src/definition_structure
+
 };
 
 
