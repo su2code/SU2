@@ -150,6 +150,8 @@ public:
  * \version 4.0.1 "Cardinal"
  */
 class CMultiZoneDriver : public CDriver {
+private:
+  CTransfer **transfer_container;
 public:
   
   /*!
@@ -187,9 +189,18 @@ public:
            CSurfaceMovement **surface_movement,
            CVolumetricMovement **grid_movement,
            CFreeFormDefBox*** FFDBox);
-  
-  //!HK: Add interface preprocessing prototype here
+
   //!HK: Copy function from current iterface_preprocessing in FSI_FEA branch + SU2_CFD/src/definition_structure
+  void Preprocess(CIteration **iteration_container,
+      COutput *output,
+      CIntegration ***integration_container,
+      CGeometry ***geometry_container,
+      CSolver ****solver_container,
+      CNumerics *****numerics_container,
+      CConfig **config_container,
+      CSurfaceMovement **surface_movement,
+      CVolumetricMovement **grid_movement,
+      CFreeFormDefBox*** FFDBox);
 
 };
 
