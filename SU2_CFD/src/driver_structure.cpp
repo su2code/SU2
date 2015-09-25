@@ -104,9 +104,6 @@ void CMultiZoneDriver::Run(CIteration **iteration_container,
    zones and executing the iterations. Note that data transers between zones
    and other intermediate procedures may be required. ---*/
 
-  //!HK: instantiate transfer container and interpolator container here
-  //!HK: run interface preprocessing here to set up case-specific interpolation and transfer.
-
   for (iZone = 0; iZone < nZone; iZone++) {
     
     iteration_container[iZone]->Preprocess();  /*--- Does nothing for now. ---*/
@@ -129,6 +126,20 @@ void CMultiZoneDriver::Run(CIteration **iteration_container,
     
   }
   
+}
+
+void CMultiZoneDriver::Preprocess(CIteration **iteration_container,
+    COutput *output,
+    CIntegration ***integration_container,
+    CGeometry ***geometry_container,
+    CSolver ****solver_container,
+    CNumerics *****numerics_container,
+    CConfig **config_container,
+    CSurfaceMovement **surface_movement,
+    CVolumetricMovement **grid_movement,
+    CFreeFormDefBox*** FFDBox){
+  //!HK: instantiate transfer container and interpolator container here
+  //!HK: run interface preprocessing here to set up case-specific interpolation and transfer.
 }
 
 CFSIDriver::CFSIDriver(CConfig **config, unsigned short val_nZone) : CDriver(config, val_nZone) {}
