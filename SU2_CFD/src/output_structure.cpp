@@ -1889,7 +1889,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   int *Local_Halo;
   unsigned long Buffer_Send_nPoint[1], *Buffer_Recv_nPoint = NULL;
   unsigned long nLocalPoint = 0, MaxLocalPoint = 0;
-  unsigned long iGlobal_Index = 0, nBuffer_Scalar = 0;
+  unsigned long iGlobal_Index = 0, HaloIndex = 0, nBuffer_Scalar = 0;
   bool Wrt_Halo = config->GetWrt_Halo(), isPeriodic;
 
   int iProcessor;

@@ -2393,6 +2393,7 @@ public:
 	 */
 	virtual void SetWAitken_Dyn_tn1(su2double waitk_tn1);
 
+  virtual unsigned long SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output);
 
 };
 
@@ -2785,7 +2786,7 @@ public:
                          CConfig *config, unsigned short iMesh);
     
 	/*!
-	 * \brief Compute the velocity^2, SoundSpeed, Pressure, Enthalpy, Viscosity.
+   * \brief Compute primitive variables and their gradients.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
 	 * \param[in] config - Definition of the particular problem.
@@ -2803,6 +2804,14 @@ public:
 	 */
 	void Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh);
   
+  /*!
+   * \brief Compute the velocity^2, SoundSpeed, Pressure, Enthalpy, Viscosity.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \return - The number of non-physical points.
+   */
+  unsigned long SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output);
+
 	/*!
 	 * \brief Compute a pressure sensor switch.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -3883,7 +3892,15 @@ public:
      * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 */
 	void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
-    
+      
+  /*!
+   * \brief Compute the velocity^2, SoundSpeed, Pressure, Enthalpy, Viscosity.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \return - The number of non-physical points.
+   */
+  unsigned long SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output);
+
     /*!
 	 * \brief Impose a constant heat-flux condition at the wall.
 	 * \param[in] geometry - Geometrical definition of the problem.
