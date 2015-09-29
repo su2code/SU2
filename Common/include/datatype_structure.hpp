@@ -168,6 +168,22 @@ namespace AD{
   void ComputeAdjoint();
 
 }
+
+#ifdef CODI_REVERSE_TYPE
+#define AD_BEGIN_PASSIVE         \
+  if(AD::globalTape.isActive()) {\
+     AD::globalTape.setPassive();\
+     AD::Status = true;          \
+  }
+#define AD_END_PASSIVE           \
+  if(AD::Status) {               \
+     AD::globalTape.setActive(); \
+     AD::Status = false;         \
+  }
+#else
+#define AD_BEGIN_PASSIVE
+#define AD_END_PASSIVE
+#endif
 #include "datatype_structure.inl"
 
 

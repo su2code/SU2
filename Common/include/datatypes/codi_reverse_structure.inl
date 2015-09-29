@@ -43,6 +43,7 @@ namespace AD{
   /*--- Reference to the tape ---*/
 
   extern codi::ChunkTape<double, int>& globalTape;
+  extern bool Status;
 
 }
 

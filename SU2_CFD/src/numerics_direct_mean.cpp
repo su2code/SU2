@@ -111,14 +111,17 @@ void CCentJST_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
     val_residual[iVar] = ProjFlux[iVar];
   
   /*--- Jacobians of the inviscid flux, scale = 0.5 because val_residual ~ 0.5*(fc_i+fc_j)*Normal ---*/
-  
+
+  AD_BEGIN_PASSIVE
+
   if (implicit) {
     GetInviscidProjJac(MeanVelocity, &MeanEnergy, Normal, 0.5, val_Jacobian_i);
     for (iVar = 0; iVar < nVar; iVar++)
       for (jVar = 0; jVar < nVar; jVar++)
         val_Jacobian_j[iVar][jVar] = val_Jacobian_i[iVar][jVar];
   }
-  
+
+  AD_END_PASSIVE
   /*--- Adjustment due to grid motion ---*/
   
   if (grid_movement) {
@@ -183,9 +186,11 @@ void CCentJST_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
     val_residual[iVar] += (Epsilon_2*Diff_U[iVar] - Epsilon_4*Diff_Lapl[iVar])*StretchingFactor*MeanLambda;
   
   /*--- Jacobian computation ---*/
-  
+
+  AD_BEGIN_PASSIVE
+
   if (implicit) {
-    
+
     cte_0 = (Epsilon_2 + Epsilon_4*su2double(Neighbor_i+1))*StretchingFactor*MeanLambda;
     cte_1 = (Epsilon_2 + Epsilon_4*su2double(Neighbor_j+1))*StretchingFactor*MeanLambda;
     
@@ -207,9 +212,10 @@ void CCentJST_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
     for (iDim = 0; iDim < nDim; iDim++)
       val_Jacobian_j[nVar-1][iDim+1] += cte_1*Gamma_Minus_One*Velocity_j[iDim];
     val_Jacobian_j[nVar-1][nVar-1] -= cte_1*Gamma;
-    
   }
-  
+
+  AD_END_PASSIVE
+
 }
 
 CCentJST_KE_Flow::CCentJST_KE_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
@@ -364,6 +370,8 @@ void CCentJST_KE_Flow::ComputeResidual(su2double *val_residual, su2double **val_
 
   /*--- Jacobian computation ---*/
 
+  AD_BEGIN_PASSIVE
+
   if (implicit) {
 
     cte_0 = Epsilon_2*StretchingFactor*MeanLambda;
@@ -388,6 +396,8 @@ void CCentJST_KE_Flow::ComputeResidual(su2double *val_residual, su2double **val_
     val_Jacobian_j[nVar-1][nVar-1] -= cte_1*Gamma;
 
   }
+
+  AD_END_PASSIVE
 
 }
 
@@ -470,13 +480,14 @@ void CCentLax_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
     val_residual[iVar] = ProjFlux[iVar];
   
   /*--- Jacobians of the inviscid flux, scale = 0.5 because val_residual ~ 0.5*(fc_i+fc_j)*Normal ---*/
-  
+  AD_BEGIN_PASSIVE
   if (implicit) {
     GetInviscidProjJac(MeanVelocity, &MeanEnergy, Normal, 0.5, val_Jacobian_i);
     for (iVar = 0; iVar < nVar; iVar++)
       for (jVar = 0; jVar < nVar; jVar++)
         val_Jacobian_j[iVar][jVar] = val_Jacobian_i[iVar][jVar];
   }
+  AD_END_PASSIVE
   
   /*--- Adjustment due to grid motion ---*/
   
@@ -487,8 +498,10 @@ void CCentLax_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
     for (iVar = 0; iVar < nVar; iVar++) {
       val_residual[iVar] -= ProjVelocity * 0.5*(U_i[iVar]+U_j[iVar]);
       if (implicit) {
+        AD_BEGIN_PASSIVE
         val_Jacobian_i[iVar][iVar] -= 0.5*ProjVelocity;
         val_Jacobian_j[iVar][iVar] -= 0.5*ProjVelocity;
+        AD_END_PASSIVE
       }
     }
   }
@@ -537,6 +550,8 @@ void CCentLax_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   
   /*--- Jacobian computation ---*/
   
+  AD_BEGIN_PASSIVE
+
   if (implicit) {
     cte = Epsilon_0*StretchingFactor*MeanLambda;
     for (iVar = 0; iVar < (nVar-1); iVar++) {
@@ -559,6 +574,8 @@ void CCentLax_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
     val_Jacobian_j[nVar-1][nVar-1] -= cte*Gamma;
     
   }
+
+  AD_BEGIN_PASSIVE
   
 }
 
@@ -665,12 +682,16 @@ void CUpwCUSP_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   
   /*--- Jacobians of the inviscid flux, scale = 0.5 because val_residual ~ 0.5*(fc_i+fc_j)*Normal ---*/
   
+  AD_BEGIN_PASSIVE
+
   if (implicit) {
     GetInviscidProjJac(MeanVelocity, &MeanEnergy, Normal, 0.5, val_Jacobian_i);
     for (iVar = 0; iVar < nVar; iVar++)
       for (jVar = 0; jVar < nVar; jVar++)
         val_Jacobian_j[iVar][jVar] = val_Jacobian_i[iVar][jVar];
   }
+
+  AD_END_PASSIVE
   
   /*--- Computes differences conservative variables,
    with a correction for the enthalpy ---*/
@@ -711,6 +732,8 @@ void CUpwCUSP_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
 
   /*--- Jacobian computation ---*/
   
+  AD_BEGIN_PASSIVE
+
   if (implicit) {
     
     cte_0 = 0.5*Nu_c*Area;
@@ -748,6 +771,8 @@ void CUpwCUSP_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
         val_Jacobian_j[iVar][jVar] -= cte_1*Jacobian[iVar][jVar];
     
   }
+
+  AD_END_PASSIVE
   
 }
 
@@ -870,6 +895,9 @@ void CUpwAUSM_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
     val_residual[iVar] *= Area;
   
   /*--- Roe's Jacobian for AUSM (this must be fixed) ---*/
+
+  AD_BEGIN_PASSIVE
+
   if (implicit) {
     
     /*--- Mean Roe variables iPoint and jPoint ---*/
@@ -918,6 +946,8 @@ void CUpwAUSM_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
       }
     }
   }
+
+  AD_END_PASSIVE
 }
 
 CUpwHLLC_Flow::CUpwHLLC_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
@@ -1095,6 +1125,8 @@ void CUpwHLLC_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   for (iVar = 0; iVar < nVar; iVar++)
     val_residual[iVar] *= Area;
   
+  AD_BEGIN_PASSIVE
+
   if (implicit) {
     
     /*--- Mean Roe variables iPoint and jPoint ---*/
@@ -1150,7 +1182,9 @@ void CUpwHLLC_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
       }
     }
   }
-  
+
+  AD_END_PASSIVE
+
 }
 
 #ifdef CHECK
@@ -1686,17 +1720,23 @@ void CUpwRoe_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jaco
   }
   
   else {
-    
+
+
     /*--- Compute inverse P ---*/
     
     GetPMatrix_inv(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitNormal, invP_Tensor);
-    
+
+
+    AD_BEGIN_PASSIVE
+
     /*--- Jacobians of the inviscid flux, scaled by
      kappa because val_resconv ~ kappa*(fc_i+fc_j)*Normal ---*/
     
     GetInviscidProjJac(Velocity_i, &Energy_i, Normal, kappa, val_Jacobian_i);
     GetInviscidProjJac(Velocity_j, &Energy_j, Normal, kappa, val_Jacobian_j);
-    
+
+    AD_END_PASSIVE
+
     /*--- Diference variables iPoint and jPoint ---*/
     
     for (iVar = 0; iVar < nVar; iVar++)
@@ -1716,8 +1756,11 @@ void CUpwRoe_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jaco
           Proj_ModJac_Tensor_ij += P_Tensor[iVar][kVar]*Lambda[kVar]*invP_Tensor[kVar][jVar];
         
         val_residual[iVar] -= (1.0-kappa)*Proj_ModJac_Tensor_ij*Diff_U[jVar]*Area;
+
+        AD_BEGIN_PASSIVE
         val_Jacobian_i[iVar][jVar] += (1.0-kappa)*Proj_ModJac_Tensor_ij*Area;
         val_Jacobian_j[iVar][jVar] -= (1.0-kappa)*Proj_ModJac_Tensor_ij*Area;
+        AD_END_PASSIVE
         
       }
       
@@ -1733,9 +1776,12 @@ void CUpwRoe_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jaco
         val_residual[iVar] -= ProjVelocity * 0.5*(U_i[iVar]+U_j[iVar]);
         
         /*--- Implicit terms ---*/
-        
+        AD_BEGIN_PASSIVE
+
         val_Jacobian_i[iVar][iVar] -= 0.5*ProjVelocity;
         val_Jacobian_j[iVar][iVar] -= 0.5*ProjVelocity;
+
+        AD_END_PASSIVE
       }
     }
     
@@ -1982,10 +2028,13 @@ void CUpwGeneralRoe_Flow::ComputeResidual(su2double *val_residual, su2double **v
 		 /*--- Jacobians of the inviscid flux, scaled by
 		  kappa because val_resconv ~ kappa*(fc_i+fc_j)*Normal ---*/
 
+    AD_BEGIN_PASSIVE
+
 		GetInviscidProjJac(Velocity_i, &Enthalpy_i, &Chi_i, &Kappa_i, Normal, kappa, val_Jacobian_i);
 
 		GetInviscidProjJac(Velocity_j, &Enthalpy_j, &Chi_j, &Kappa_j, Normal, kappa, val_Jacobian_j);
 
+    AD_END_PASSIVE
 
 		/*--- Diference variables iPoint and jPoint ---*/
 		for (iVar = 0; iVar < nVar; iVar++)
@@ -2003,8 +2052,10 @@ void CUpwGeneralRoe_Flow::ComputeResidual(su2double *val_residual, su2double **v
 					Proj_ModJac_Tensor_ij += P_Tensor[iVar][kVar]*Lambda[kVar]*invP_Tensor[kVar][jVar];
 
 				val_residual[iVar] -= (1.0-kappa)*Proj_ModJac_Tensor_ij*Diff_U[jVar]*Area;
+        AD_BEGIN_PASSIVE
 				val_Jacobian_i[iVar][jVar] += (1.0-kappa)*Proj_ModJac_Tensor_ij*Area;
 				val_Jacobian_j[iVar][jVar] -= (1.0-kappa)*Proj_ModJac_Tensor_ij*Area;
+        AD_END_PASSIVE
 			}
 		}
 
@@ -2016,8 +2067,10 @@ void CUpwGeneralRoe_Flow::ComputeResidual(su2double *val_residual, su2double **v
 			for (iVar = 0; iVar < nVar; iVar++) {
 				val_residual[iVar] -= ProjVelocity * 0.5*(U_i[iVar]+U_j[iVar]);
 				/*--- Implicit terms ---*/
+        AD_BEGIN_PASSIVE
 				val_Jacobian_i[iVar][iVar] -= 0.5*ProjVelocity;
 				val_Jacobian_j[iVar][iVar] -= 0.5*ProjVelocity;
+        AD_END_PASSIVE
 			}
 		}
 
@@ -2238,8 +2291,10 @@ void CUpwMSW_Flow::ComputeResidual(su2double *val_residual,
       for (kVar = 0; kVar < nVar; kVar++)
         Proj_ModJac_Tensor_i += P_Tensor[iVar][kVar]*Lambda_i[kVar]*invP_Tensor[kVar][jVar];
       Fc_i[iVar] += Proj_ModJac_Tensor_i*U_i[jVar]*Area;
+      AD_BEGIN_PASSIVE
       if (implicit)
         val_Jacobian_i[iVar][jVar] += Proj_ModJac_Tensor_i*Area;
+      AD_END_PASSIVE
     }
   }
   
@@ -2267,8 +2322,10 @@ void CUpwMSW_Flow::ComputeResidual(su2double *val_residual,
       for (kVar = 0; kVar < nVar; kVar++)
         Proj_ModJac_Tensor_j += P_Tensor[iVar][kVar]*Lambda_j[kVar]*invP_Tensor[kVar][jVar];
       Fc_j[iVar] += Proj_ModJac_Tensor_j*U_j[jVar]*Area;
+      AD_BEGIN_PASSIVE
       if (implicit)
         val_Jacobian_j[iVar][jVar] += Proj_ModJac_Tensor_j*Area;
+      AD_END_PASSIVE
     }
   }
   
@@ -2456,12 +2513,14 @@ void CUpwTurkel_Flow::ComputeResidual(su2double *val_residual, su2double **val_J
   /*--- Compute the matrix from entropic variables to conserved variables ---*/
   GetRMatrix(RoePressure, RoeSoundSpeed, RoeDensity, RoeVelocity, R_Tensor);
   
+  AD_BEGIN_PASSIVE
   if (implicit) {
     /*--- Jacobians of the inviscid flux, scaled by
      0.5 because val_residual ~ 0.5*(fc_i+fc_j)*Normal ---*/
     GetInviscidProjJac(Velocity_i, &Energy_i, Normal, 0.5, val_Jacobian_i);
     GetInviscidProjJac(Velocity_j, &Energy_j, Normal, 0.5, val_Jacobian_j);
   }
+  AD_END_PASSIVE
   
   for (iVar = 0; iVar < nVar; iVar ++) {
     for (jVar = 0; jVar < nVar; jVar ++) {
@@ -2484,10 +2543,12 @@ void CUpwTurkel_Flow::ComputeResidual(su2double *val_residual, su2double **val_J
     val_residual[iVar] = 0.5*(ProjFlux_i[iVar]+ProjFlux_j[iVar]);
     for (jVar = 0; jVar < nVar; jVar++) {
       val_residual[iVar] -= 0.5*Art_Visc[iVar][jVar]*Diff_U[jVar];
+      AD_BEGIN_PASSIVE
       if (implicit) {
         val_Jacobian_i[iVar][jVar] += 0.5*Art_Visc[iVar][jVar];
         val_Jacobian_j[iVar][jVar] -= 0.5*Art_Visc[iVar][jVar];
       }
+      AD_END_PASSIVE
     }
   }
   
@@ -2626,12 +2687,12 @@ void CUpwArtComp_Flow::ComputeResidual(su2double *val_residual, su2double **val_
   GetPArtCompMatrix_inv(&MeanDensity, MeanVelocity, &MeanBetaInc2, UnitNormal, invP_Tensor);
 
   /*--- Jacobian of the inviscid flux ---*/
-
+  AD_BEGIN_PASSIVE
   if (implicit) {
     GetInviscidArtCompProjJac(&DensityInc_i, Velocity_i, &BetaInc2_i, Normal, 0.5, val_Jacobian_i);
     GetInviscidArtCompProjJac(&DensityInc_j, Velocity_j, &BetaInc2_j, Normal, 0.5, val_Jacobian_j);
   }
-  
+  AD_END_PASSIVE
   /*--- Diference variables iPoint and jPoint ---*/
   
   Diff_U[0] = Pressure_j - Pressure_i;
@@ -2647,10 +2708,12 @@ void CUpwArtComp_Flow::ComputeResidual(su2double *val_residual, su2double **val_
       for (kVar = 0; kVar < nVar; kVar++)
         Proj_ModJac_Tensor_ij += P_Tensor[iVar][kVar]*Lambda[kVar]*invP_Tensor[kVar][jVar];
       val_residual[iVar] -= 0.5*Proj_ModJac_Tensor_ij*Diff_U[jVar];
+      AD_BEGIN_PASSIVE
       if (implicit) {
         val_Jacobian_i[iVar][jVar] += 0.5*Proj_ModJac_Tensor_ij;
         val_Jacobian_j[iVar][jVar] -= 0.5*Proj_ModJac_Tensor_ij;
       }
+      AD_END_PASSIVE
     }
   }
   
@@ -2901,14 +2964,14 @@ void CCentJSTArtComp_Flow::ComputeResidual(su2double *val_residual,
     val_residual[iVar] = ProjFlux[iVar];
   
   /*--- Jacobians of the inviscid flux ---*/
-  
+  AD_BEGIN_PASSIVE
   if (implicit) {
     GetInviscidArtCompProjJac(&MeanDensity, MeanVelocity, &MeanBetaInc2, Normal, 0.5, val_Jacobian_i);
     for (iVar = 0; iVar < nVar; iVar++)
       for (jVar = 0; jVar < nVar; jVar++)
         val_Jacobian_j[iVar][jVar] = val_Jacobian_i[iVar][jVar];
   }
-  
+  AD_END_PASSIVE
   /*--- Computes differences between Laplacians and conservative variables ---*/
   
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -2947,7 +3010,8 @@ void CCentJSTArtComp_Flow::ComputeResidual(su2double *val_residual,
   
   for (iVar = 0; iVar < nVar; iVar++)
     val_residual[iVar] += (Epsilon_2*Diff_U[iVar] - Epsilon_4*Diff_Lapl[iVar])*StretchingFactor*MeanLambda;
-  
+
+  AD_BEGIN_PASSIVE
   if (implicit) {
     cte_0 = (Epsilon_2 + Epsilon_4*su2double(Neighbor_i+1))*StretchingFactor*MeanLambda;
     cte_1 = (Epsilon_2 + Epsilon_4*su2double(Neighbor_j+1))*StretchingFactor*MeanLambda;
@@ -2957,6 +3021,7 @@ void CCentJSTArtComp_Flow::ComputeResidual(su2double *val_residual,
       val_Jacobian_j[iVar][iVar] -= cte_1;
     }
   }
+  AD_END_PASSIVE
   
 }
 
@@ -3036,13 +3101,14 @@ void CCentLaxArtComp_Flow::ComputeResidual(su2double *val_residual, su2double **
     val_residual[iVar] = ProjFlux[iVar];
   
   /*--- Jacobians of the inviscid flux ---*/
-  
+  AD_BEGIN_PASSIVE
   if (implicit) {
     GetInviscidArtCompProjJac(&MeanDensity, MeanVelocity, &MeanBetaInc2, Normal, 0.5, val_Jacobian_i);
     for (iVar = 0; iVar < nVar; iVar++)
       for (jVar = 0; jVar < nVar; jVar++)
         val_Jacobian_j[iVar][jVar] = val_Jacobian_i[iVar][jVar];
   }
+  AD_END_PASSIVE
   
   /*--- Computes differences btw. conservative variables ---*/
   
@@ -3076,13 +3142,14 @@ void CCentLaxArtComp_Flow::ComputeResidual(su2double *val_residual, su2double **
   /*--- Compute viscous part of the residual ---*/
   for (iVar = 0; iVar < nVar; iVar++)
     val_residual[iVar] += Epsilon_0*Diff_U[iVar]*StretchingFactor*MeanLambda;
-  
+  AD_BEGIN_PASSIVE
   if (implicit) {
     for (iVar = 0; iVar < nVar; iVar++) {
       val_Jacobian_i[iVar][iVar] += Epsilon_0*StretchingFactor*MeanLambda;
       val_Jacobian_j[iVar][iVar] -= Epsilon_0*StretchingFactor*MeanLambda;
     }
   }
+  AD_END_PASSIVE
   
 }
 
@@ -3158,7 +3225,7 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
 		val_residual[iVar] = Proj_Flux_Tensor[iVar];
   
 	/*--- Compute the implicit part ---*/
-  
+  AD_BEGIN_PASSIVE
 	if (implicit) {
     
 		dist_ij = 0.0;
@@ -3180,6 +3247,7 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
 		}
     
 	}
+  AD_END_PASSIVE
   
 }
 
@@ -3264,6 +3332,7 @@ void CGeneralAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **
   for (iVar = 0; iVar < nVar; iVar++)
     val_residual[iVar] = Proj_Flux_Tensor[iVar];
   
+  AD_BEGIN_PASSIVE
   /*--- Compute the implicit part ---*/
   if (implicit) {
     dist_ij = 0.0;
@@ -3288,6 +3357,7 @@ void CGeneralAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **
     }
     
   }
+  AD_END_PASSIVE
   
 }
 
@@ -3353,7 +3423,7 @@ void CAvgGradArtComp_Flow::ComputeResidual(su2double *val_residual, su2double **
     val_residual[iVar] = Proj_Flux_Tensor[iVar];
   
   /*--- Implicit part ---*/
-  
+  AD_BEGIN_PASSIVE
   if (implicit) {
     
     dist_ij = 0.0;
@@ -3375,6 +3445,7 @@ void CAvgGradArtComp_Flow::ComputeResidual(su2double *val_residual, su2double **
     }
     
   }
+  AD_END_PASSIVE
   
 }
 
@@ -3480,7 +3551,7 @@ void CAvgGradCorrected_Flow::ComputeResidual(su2double *val_residual, su2double 
 		val_residual[iVar] = Proj_Flux_Tensor[iVar];
   
 	/*--- Compute the implicit part ---*/
-  
+  AD_BEGIN_PASSIVE
 	if (implicit) {
     
 		if (dist_ij_2 == 0.0) {
@@ -3497,6 +3568,7 @@ void CAvgGradCorrected_Flow::ComputeResidual(su2double *val_residual, su2double 
 		}
     
 	}
+  AD_END_PASSIVE
   
 }
 
@@ -3738,7 +3810,7 @@ void CGeneralAvgGradCorrected_Flow::ComputeResidual(su2double *val_residual, su2
     val_residual[iVar] = Proj_Flux_Tensor[iVar];
   
   /*--- Compute the implicit part ---*/
-  
+  AD_BEGIN_PASSIVE
   if (implicit) {
     
     if (dist_ij_2 == 0.0) {
@@ -3757,6 +3829,7 @@ void CGeneralAvgGradCorrected_Flow::ComputeResidual(su2double *val_residual, su2
     }
     
   }
+  AD_END_PASSIVE
   
 }
 
@@ -3850,7 +3923,7 @@ void CAvgGradCorrectedArtComp_Flow::ComputeResidual(su2double *val_residual, su2
     val_residual[iVar] = Proj_Flux_Tensor[iVar];
   
   /*--- Implicit part ---*/
-  
+  AD_BEGIN_PASSIVE
   if (implicit) {
     
     if (dist_ij_2 == 0.0) {
@@ -3867,6 +3940,7 @@ void CAvgGradCorrectedArtComp_Flow::ComputeResidual(su2double *val_residual, su2
     }
     
   }
+  AD_END_PASSIVE
   
 }
 
@@ -3946,7 +4020,7 @@ void CSourceRotatingFrame_Flow::ComputeResidual(su2double *val_residual, su2doub
   }
   
   /*--- Calculate the source term Jacobian ---*/
-  
+  AD_BEGIN_PASSIVE
   if (implicit) {
     for (iVar = 0; iVar < nVar; iVar++)
       for (jVar = 0; jVar < nVar; jVar++)
@@ -3963,6 +4037,7 @@ void CSourceRotatingFrame_Flow::ComputeResidual(su2double *val_residual, su2doub
       val_Jacobian_i[3][2] =  Omega[0]*Volume;
     }
   }
+  AD_END_PASSIVE
   
 }
 
@@ -4009,7 +4084,7 @@ void CSourceAxisymmetric_Flow::ComputeResidual(su2double *val_residual, su2doubl
     val_residual[2] = yinv*Volume*U_i[2]*U_i[2]/DensityInc_i;
   }
   
-  
+  AD_BEGIN_PASSIVE
   if (implicit) {
     Jacobian_i[0][0] = 0;
     Jacobian_i[0][1] = 0;
@@ -4035,7 +4110,7 @@ void CSourceAxisymmetric_Flow::ComputeResidual(su2double *val_residual, su2doubl
       for (int jVar=0; jVar<4; jVar++)
         Jacobian_i[iVar][jVar] *= yinv*Volume;
   }
-  
+  AD_END_PASSIVE
 }
 
 CSourceWindGust::CSourceWindGust(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
@@ -4102,13 +4177,13 @@ void CSourceWindGust::ComputeResidual(su2double *val_residual, su2double **val_J
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   
   /*--- Calculate the source term Jacobian ---*/
-  
+  AD_BEGIN_PASSIVE
   if (implicit) {
     for (iVar = 0; iVar < nVar; iVar++)
       for (jVar = 0; jVar < nVar; jVar++)
         val_Jacobian_i[iVar][jVar] = 0.0;
   }
-  
+  AD_END_PASSIVE
 }
 
 
