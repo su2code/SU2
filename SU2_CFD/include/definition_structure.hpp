@@ -67,43 +67,14 @@ unsigned short GetnDim(string val_mesh_filename, unsigned short val_format);
  * \param[in] config - Definition of the particular problem.
  * \param[in] nZone - Total number of zones in the problem.
  */
-void Driver_Preprocessing(CDriver **driver, CConfig **config, unsigned short val_nZone);
+void Driver_Preprocessing(CDriver *driver, CConfig **config, unsigned short val_nZone,
+    CIteration **iteration_container,
+    CSolver ****solver_container,
+    CGeometry ***geometry_container,
+    CIntegration ***integration_container,
+    CNumerics *****numerics_container);
 
-/*!
- * \brief Definition of the physics iteration class or within a single zone.
- * \param[in] iteration_container - Pointer to the iteration container to be instantiated.
- * \param[in] config - Definition of the particular problem.
- * \param[in] nZone - Total number of zones in the problem.
- */
-void Iteration_Preprocessing(CIteration **iteration_container, CConfig **config, unsigned short val_nZone);
 
-/*! 
- * \brief Definition and allocation of all solution classes.
- * \param[in] solver_container - Container vector with all the solutions.
- * \param[in] geometry - Geometrical definition of the problem.
- * \param[in] config - Definition of the particular problem.
- * \param[in] iZone - Index of the zone.
- */
-void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry, CConfig *config, unsigned short iZone);
-
-/*! 
- * \brief Definition and allocation of all integration classes.
- * \param[in] integration_container - Container vector with all the integration methods.
- * \param[in] geometry - Geometrical definition of the problem.
- * \param[in] config - Definition of the particular problem.
- * \param[in] iZone - Index of the zone.
- */
-void Integration_Preprocessing(CIntegration **integration_container, CGeometry **geometry, CConfig *config, unsigned short iZone);
-
-/*! 
- * \brief Definition and allocation of all solver classes.
- * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
- * \param[in] solver_container - Container vector with all the solutions.
- * \param[in] geometry - Geometrical definition of the problem.
- * \param[in] config - Definition of the particular problem.
- * \param[in] iZone - Index of the zone.
- */
-void Numerics_Preprocessing(CNumerics ****numerics_container, CSolver ***solver_container, CGeometry **geometry, CConfig *config, unsigned short iZone);
 
 /*! 
  * \brief Do the geometrical preprocessing.

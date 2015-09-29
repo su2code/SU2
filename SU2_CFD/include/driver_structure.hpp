@@ -38,7 +38,6 @@
 #include "integration_structure.hpp"
 #include "output_structure.hpp"
 #include "numerics_structure.hpp"
-#include "definition_structure.hpp"
 #include "../../Common/include/geometry_structure.hpp"
 #include "../../Common/include/grid_movement_structure.hpp"
 #include "../../Common/include/config_structure.hpp"
@@ -60,7 +59,12 @@ public:
 	/*! 
 	 * \brief Constructor of the class. 
 	 */
-	CDriver(CConfig **config, unsigned short val_nZone);
+	CDriver(CConfig **config, unsigned short val_nZone,
+	    CIteration **iteration_container,
+	    CSolver ****solver_container,
+	    CGeometry ***geometry_container,
+	    CIntegration ***integration_container,
+	    CNumerics *****numerics_container);
 	
 	/*! 
 	 * \brief Destructor of the class. 
@@ -91,21 +95,43 @@ public:
                    CSurfaceMovement **surface_movement,
                    CVolumetricMovement **grid_movement,
                    CFreeFormDefBox*** FFDBox);
+  /*!
+   * \brief Definition of the physics iteration class or within a single zone.
+   * \param[in] iteration_container - Pointer to the iteration container to be instantiated.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] nZone - Total number of zones in the problem.
+   */
+  void Iteration_Preprocessing(CIteration **iteration_container, CConfig **config, unsigned short val_nZone);
 
-  void Preprocess(CIteration **iteration_container,
-      COutput *output,
-      CIntegration ***integration_container,
-      CGeometry ***geometry_container,
-      CSolver ****solver_container,
-      CNumerics *****numerics_container,
-      CConfig **config_container,
-      CSurfaceMovement **surface_movement,
-      CVolumetricMovement **grid_movement,
-      CFreeFormDefBox*** FFDBox);
+  /*!
+   * \brief Definition and allocation of all solution classes.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iZone - Index of the zone.
+   */
+  void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry, CConfig *config, unsigned short iZone);
+
+  /*!
+   * \brief Definition and allocation of all integration classes.
+   * \param[in] integration_container - Container vector with all the integration methods.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iZone - Index of the zone.
+   */
+  void Integration_Preprocessing(CIntegration **integration_container, CGeometry **geometry, CConfig *config, unsigned short iZone);
+
+  /*!
+   * \brief Definition and allocation of all solver classes.
+   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iZone - Index of the zone.
+   */
+  void Numerics_Preprocessing(CNumerics ****numerics_container, CSolver ***solver_container, CGeometry **geometry, CConfig *config, unsigned short iZone);
 
 };
-
-
 /*!
  * \class CSingleZoneDriver
  * \brief Class for driving an iteration of the physics within a single zone.
@@ -119,7 +145,12 @@ public:
 	 * \brief Constructor of the class.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CSingleZoneDriver(CConfig **config, unsigned short val_nZone);
+	CSingleZoneDriver(CConfig **config, unsigned short val_nZone,
+      CIteration **iteration_container,
+      CSolver ****solver_container,
+      CGeometry ***geometry_container,
+      CIntegration ***integration_container,
+      CNumerics *****numerics_container);
 	
 	/*! 
 	 * \brief Destructor of the class. 
@@ -152,17 +183,7 @@ public:
            CVolumetricMovement **grid_movement,
            CFreeFormDefBox*** FFDBox);
 
-  void Preprocess(CIteration **iteration_container,
-      COutput *output,
-      CIntegration ***integration_container,
-      CGeometry ***geometry_container,
-      CSolver ****solver_container,
-      CNumerics *****numerics_container,
-      CConfig **config_container,
-      CSurfaceMovement **surface_movement,
-      CVolumetricMovement **grid_movement,
-      CFreeFormDefBox*** FFDBox);
- 
+
 };
 
 
@@ -179,7 +200,12 @@ public:
    * \brief Constructor of the class.
    * \param[in] config - Definition of the particular problem.
    */
-  CMultiZoneDriver(CConfig **config, unsigned short val_nZone);
+  CMultiZoneDriver(CConfig **config, unsigned short val_nZone,
+      CIteration **iteration_container,
+      CSolver ****solver_container,
+      CGeometry ***geometry_container,
+      CIntegration ***integration_container,
+      CNumerics *****numerics_container);
   
   /*!
    * \brief Destructor of the class.
@@ -211,18 +237,6 @@ public:
            CVolumetricMovement **grid_movement,
            CFreeFormDefBox*** FFDBox);
 
-  //!HK: Copy function from current iterface_preprocessing in FSI_FEA branch + SU2_CFD/src/definition_structure
-  void Preprocess(CIteration **iteration_container,
-      COutput *output,
-      CIntegration ***integration_container,
-      CGeometry ***geometry_container,
-      CSolver ****solver_container,
-      CNumerics *****numerics_container,
-      CConfig **config_container,
-      CSurfaceMovement **surface_movement,
-      CVolumetricMovement **grid_movement,
-      CFreeFormDefBox*** FFDBox);
-
 };
 
 
@@ -239,7 +253,12 @@ public:
 	 * \brief Constructor of the class.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CFSIDriver(CConfig **config, unsigned short val_nZone);
+	CFSIDriver(CConfig **config, unsigned short val_nZone,
+      CIteration **iteration_container,
+      CSolver ****solver_container,
+      CGeometry ***geometry_container,
+      CIntegration ***integration_container,
+      CNumerics *****numerics_container);
 
 	/*!
 	 * \brief Destructor of the class.
