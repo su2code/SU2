@@ -49,6 +49,31 @@ inline void CDriver::Run(CIteration **iteration_container,
                          CVolumetricMovement **grid_movement,
                          CFreeFormDefBox*** FFDBox) { }
 
+
+void CDriver::Preprocess(CIteration **iteration_container,
+    COutput *output,
+    CIntegration ***integration_container,
+    CGeometry ***geometry_container,
+    CSolver ****solver_container,
+    CNumerics *****numerics_container,
+    CConfig **config_container,
+    CSurfaceMovement **surface_movement,
+    CVolumetricMovement **grid_movement,
+    CFreeFormDefBox*** FFDBox){
+
+  unsigned short iZone;
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+      Solver_Preprocessing(solver_container[iZone], geometry_container[iZone],
+                               config_container[iZone], iZone);
+      Integration_Preprocessing(integration_container[iZone], geometry_container[iZone],
+                                    config_container[iZone], iZone);
+      Numerics_Preprocessing(numerics_container[iZone], solver_container[iZone],
+                                 geometry_container[iZone], config_container[iZone], iZone);
+    }
+
+}
+
 CSingleZoneDriver::CSingleZoneDriver(CConfig **config, unsigned short val_nZone) : CDriver(config, val_nZone) { }
 
 CSingleZoneDriver::~CSingleZoneDriver(void) { }
@@ -82,6 +107,9 @@ void CSingleZoneDriver::Run(CIteration **iteration_container,
   iteration_container[ZONE_0]->Postprocess(); /*--- Does nothing for now. ---*/
   
 }
+
+
+
 
 CMultiZoneDriver::CMultiZoneDriver(CConfig **config, unsigned short val_nZone) : CDriver(config, val_nZone) {}
 
@@ -128,19 +156,6 @@ void CMultiZoneDriver::Run(CIteration **iteration_container,
   
 }
 
-void CMultiZoneDriver::Preprocess(CIteration **iteration_container,
-    COutput *output,
-    CIntegration ***integration_container,
-    CGeometry ***geometry_container,
-    CSolver ****solver_container,
-    CNumerics *****numerics_container,
-    CConfig **config_container,
-    CSurfaceMovement **surface_movement,
-    CVolumetricMovement **grid_movement,
-    CFreeFormDefBox*** FFDBox){
-  //!HK: instantiate transfer container and interpolator container here
-  //!HK: run interface preprocessing here to set up case-specific interpolation and transfer.
-}
 
 CFSIDriver::CFSIDriver(CConfig **config, unsigned short val_nZone) : CDriver(config, val_nZone) {}
 
@@ -160,4 +175,5 @@ void CFSIDriver::Run(CIteration **iteration_container,
   //! TDE: For example, FSI BGS implementation could go here here.
   
 }
+
 

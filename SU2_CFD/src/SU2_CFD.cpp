@@ -186,7 +186,8 @@ int main(int argc, char *argv[]) {
   
   if (rank == MASTER_NODE)
     cout << endl <<"------------------------- Solver Preprocessing --------------------------" << endl;
-  
+  //! HK: loop now contains geometry/config preprocess and allocation of memory for solver, numerics, and integration. Preprocessing of
+  //! solver, numerics, and integration moved to driver->Preprocess()
   for (iZone = 0; iZone < nZone; iZone++) {
     
     /*--- Computation of wall distances for turbulence modeling ---*/
@@ -225,8 +226,9 @@ int main(int argc, char *argv[]) {
       for (iSol = 0; iSol < MAX_SOLS; iSol++)
         solver_container[iZone][iMesh][iSol] = NULL;
     }
-    Solver_Preprocessing(solver_container[iZone], geometry_container[iZone],
-                         config_container[iZone], iZone);
+    //! HK: moved into driver preprocessing step
+    //Solver_Preprocessing(solver_container[iZone], geometry_container[iZone],
+    //                     config_container[iZone], iZone);
     
     if (rank == MASTER_NODE)
       cout << endl <<"----------------- Integration and Numerics Preprocessing ----------------" << endl;
@@ -238,8 +240,9 @@ int main(int argc, char *argv[]) {
      steady state or time-accurately. ---*/
     
     integration_container[iZone] = new CIntegration*[MAX_SOLS];
-    Integration_Preprocessing(integration_container[iZone], geometry_container[iZone],
-                              config_container[iZone], iZone);
+    //! HK: moved into driver preprocessing step
+    //Integration_Preprocessing(integration_container[iZone], geometry_container[iZone],
+    //                          config_container[iZone], iZone);
     
     if (rank == MASTER_NODE) cout << "Integration Preprocessing." << endl;
     
@@ -251,8 +254,9 @@ int main(int argc, char *argv[]) {
      (piecewise constant reconstruction) evaluated in each dual mesh volume. ---*/
     
     numerics_container[iZone] = new CNumerics***[config_container[iZone]->GetnMGLevels()+1];
-    Numerics_Preprocessing(numerics_container[iZone], solver_container[iZone],
-                           geometry_container[iZone], config_container[iZone], iZone);
+    //! HK: moved into driver preprocessing step
+    //Numerics_Preprocessing(numerics_container[iZone], solver_container[iZone],
+    //                       geometry_container[iZone], config_container[iZone], iZone);
     
     if (rank == MASTER_NODE) cout << "Numerics Preprocessing." << endl;
     
@@ -301,6 +305,10 @@ int main(int argc, char *argv[]) {
 
   }
   
+  driver->Preprocess(iteration_container, output, integration_container,
+                      geometry_container, solver_container, numerics_container,
+                      config_container, surface_movement, grid_movement, FFDBox);
+
   /*--- For the time-spectral solver, set the grid node velocities. ---*/
   
   if (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_SPECTRAL)
