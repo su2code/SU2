@@ -205,7 +205,7 @@ public:
    * is referenced)
    */
   void Isoparameters(su2double* isoparams,
-      unsigned short nDim, unsigned int iZone_1,  long donor_elem,  unsigned short iFace,
+      unsigned short nDim, long donor_elem,  unsigned short iFace,
       unsigned int nDonorPoints,  su2double* xj);
 
 };
