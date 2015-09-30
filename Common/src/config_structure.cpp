@@ -1814,6 +1814,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
    do not depend on surface specification). ---*/
   
   if (Grid_Movement &&
+      (Kind_GridMovement[ZONE_0] != EXTERNAL) &&
       (Kind_GridMovement[ZONE_0] != RIGID_MOTION) &&
       (Kind_GridMovement[ZONE_0] != ROTATING_FRAME) &&
       (Kind_GridMovement[ZONE_0] != STEADY_TRANSLATION) &&

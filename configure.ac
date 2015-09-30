@@ -189,6 +189,8 @@ fi
 AM_CONDITIONAL(BUILD_PARMETIS, test x$enableparmetis = xyes)
 AC_CONFIG_FILES([externals/parmetis/Makefile])
 
+su2_externals_LIBS="$su2_externals_LIBS  -L/home/jka/Cprograms/Sources/lsipdx/Source/ -lm3lsipdx -Wl,-rpath=/home/jka/Cprograms/Sources/lsipdx/Source/ "
+#su2_externals_LIBS="$su2_externals_LIBS  /home/jka/Cprograms/Sources/lsipdx/Source/libm3lsipdx.a -lpthread "
 
 AC_SUBST([su2_externals_INCLUDES])
 AC_SUBST([su2_externals_LIBS])
