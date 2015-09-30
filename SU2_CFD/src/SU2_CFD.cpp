@@ -60,7 +60,7 @@ int main(int argc, char *argv[]) {
    heirarchy over all zones, multigrid levels, equation sets, and equation
    terms as described in the comments below. ---*/
   
-  CDriver *driver                       = NULL;
+  CDriver *driver;//                       = NULL;
   CIteration **iteration_container      = NULL;
   COutput *output                       = NULL;
   CIntegration ***integration_container = NULL;
@@ -172,21 +172,9 @@ int main(int argc, char *argv[]) {
   /*--- First, given the basic information about the number of zones and the
    solver types from the config, instantiate the appropriate driver for the problem. ---*/
   
-  Driver_Preprocessing(&driver, config_container, nZone);
-  
-  if (rank == MASTER_NODE)
-    cout << endl <<"------------------------ Iteration Preprocessing ------------------------" << endl;
-  
-  /*--- Instantiate the type of physics iteration to be executed within each zone. For
-   example, one can execute the same physics across multiple zones (mixing plane),
-   different physics in different zones (fluid-structure interaction), or couple multiple
-   systems tightly within a single zone by creating a new iteration class (e.g., RANS). ---*/
-  
-  Iteration_Preprocessing(iteration_container, config_container, nZone);
-  
-  if (rank == MASTER_NODE)
-    cout << endl <<"------------------------- Solver Preprocessing --------------------------" << endl;
-  
+  Driver_Preprocessing(driver, config_container, nZone,iteration_container,solver_container,
+      geometry_container,integration_container,numerics_container);
+
   for (iZone = 0; iZone < nZone; iZone++) {
     
     /*--- Computation of wall distances for turbulence modeling ---*/
@@ -208,53 +196,6 @@ int main(int argc, char *argv[]) {
       geometry_container[iZone][iMesh]->MatchInterface(config_container[iZone]);
       geometry_container[iZone][iMesh]->MatchActuator_Disk(config_container[iZone]);
     }
-    
-    /*--- Definition of the solver class: solver_container[#ZONES][#MG_GRIDS][#EQ_SYSTEMS].
-     The solver classes are specific to a particular set of governing equations,
-     and they contain the subroutines with instructions for computing each spatial
-     term of the PDE, i.e. loops over the edges to compute convective and viscous
-     fluxes, loops over the nodes to compute source terms, and routines for
-     imposing various boundary condition type for the PDE. ---*/
-    
-    solver_container[iZone] = new CSolver** [config_container[iZone]->GetnMGLevels()+1];
-    for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++)
-      solver_container[iZone][iMesh] = NULL;
-    
-    for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++) {
-      solver_container[iZone][iMesh] = new CSolver* [MAX_SOLS];
-      for (iSol = 0; iSol < MAX_SOLS; iSol++)
-        solver_container[iZone][iMesh][iSol] = NULL;
-    }
-    Solver_Preprocessing(solver_container[iZone], geometry_container[iZone],
-                         config_container[iZone], iZone);
-    
-    if (rank == MASTER_NODE)
-      cout << endl <<"----------------- Integration and Numerics Preprocessing ----------------" << endl;
-    
-    /*--- Definition of the integration class: integration_container[#ZONES][#EQ_SYSTEMS].
-     The integration class orchestrates the execution of the spatial integration
-     subroutines contained in the solver class (including multigrid) for computing
-     the residual at each node, R(U) and then integrates the equations to a
-     steady state or time-accurately. ---*/
-    
-    integration_container[iZone] = new CIntegration*[MAX_SOLS];
-    Integration_Preprocessing(integration_container[iZone], geometry_container[iZone],
-                              config_container[iZone], iZone);
-    
-    if (rank == MASTER_NODE) cout << "Integration Preprocessing." << endl;
-    
-    /*--- Definition of the numerical method class:
-     numerics_container[#ZONES][#MG_GRIDS][#EQ_SYSTEMS][#EQ_TERMS].
-     The numerics class contains the implementation of the numerical methods for
-     evaluating convective or viscous fluxes between any two nodes in the edge-based
-     data structure (centered, upwind, galerkin), as well as any source terms
-     (piecewise constant reconstruction) evaluated in each dual mesh volume. ---*/
-    
-    numerics_container[iZone] = new CNumerics***[config_container[iZone]->GetnMGLevels()+1];
-    Numerics_Preprocessing(numerics_container[iZone], solver_container[iZone],
-                           geometry_container[iZone], config_container[iZone], iZone);
-    
-    if (rank == MASTER_NODE) cout << "Numerics Preprocessing." << endl;
     
     /*--- Instantiate the geometry movement classes for the solution of unsteady
      flows on dynamic meshes, including rigid mesh transformations, dynamically
