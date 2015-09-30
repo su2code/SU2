@@ -35,7 +35,7 @@
 #include "../include/tmpheader.h"
 
 
-int communicate(CSolver ****, angles_t *, double);
+int communicate(CSolver ****, d6dof_t *, double);
 
 void MeanFlowIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
                        CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
@@ -1669,9 +1669,9 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
   unsigned long iPoint;
   bool adjoint = config_container->GetAdjoint();
 	bool time_spectral = (config_container->GetUnsteady_Simulation() == TIME_SPECTRAL);
-  angles_t angle, *pangle;
+  d6dof_t angle, *pangle;
   pangle = &angle;
-  double buff_angles[3];
+//   double buff_angles[3], buff_rec_angles[3];
   
 	/*--- For a time-spectral case, set "iteration number" to the zone number,
    so that the meshes are positioned correctly for each instance. ---*/
@@ -1852,39 +1852,27 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
   * motion prescribed by external solver
   */ 
       if (rank == MASTER_NODE){
-        printf(" Add here the communication \n");
-	
-// 	SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_0);
+ /*
+  * MASTER node communicate with external solver
+  */
 
-// 	unsigned short FinestMesh = config_container[ZONE_0]->GetFinestMesh();
-// 	printf("  LIFT -------------   %lf\n", (&solver_container[ZONE_0][MESH_0][FLOW_SOL])->GetTotal_CLift());
-//         printf("  LIFT -------------   %lf\n",         (&solver_container[ZONE_0][MESH_0][FLOW_SOL])->GetTotal_CDrag());
-//        printf("  LIFT -------------   %lf\n",          (&solver_container[ZONE_0][MESH_0][FLOW_SOL])->GetTotal_CSideForce());
-//         printf("  LIFT -------------   %lf\n",         (&solver_container[ZONE_0][MESH_0][FLOW_SOL])->GetTotal_CEff());
-//         printf("  LIFT -------------   %lf\n",          (&solver_container[ZONE_0][MESH_0][FLOW_SOL])->GetTotal_CMx());
-//          printf("  LIFT -------------   %lf\n",         (&solver_container[ZONE_0][MESH_0][FLOW_SOL])->GetTotal_CMy());
-//          printf("  LIFT -------------   %lf\n",         (&solver_container[ZONE_0][MESH_0][FLOW_SOL])->GetTotal_CMz());
-//            printf("  LIFT -------------   %lf\n",       (&solver_container[ZONE_0][MESH_0][FLOW_SOL])->GetTotal_CFx());
-//         printf("  LIFT -------------   %lf\n",          (&solver_container[ZONE_0][MESH_0][FLOW_SOL])->GetTotal_CFy());
-//           printf("  LIFT -------------   %lf\n",        (&solver_container[ZONE_0][MESH_0][FLOW_SOL])->GetTotal_CFz());
-	  
-	  communicate(&solver_container, pangle, 1);
-	  
-	  printf(" Angles are %lf, %lf, %lf\n", pangle->alpha, pangle->beta, pangle->gamma);
-	  buff_angles[0] = pangle->alpha;
-	  buff_angles[1] = pangle->beta;
-	  buff_angles[2] = pangle->gamma;
-#ifdef HAVE_MPI
-//   SU2_MPI::Allgather(buff_angles, 3, MPI_DOUBLE, buff_angles, 3, MPI_DOUBLE, MPI_COMM_WORLD);
-// #else
-//   for (iVertex = 0; iVertex < Point_Critical.size(); iVertex++) {
-//     for (iDim = 0; iDim < nDim; iDim++) {
-//       Buffer_Receive_Coord[iVertex*nDim+iDim] = Buffer_Send_Coord[iVertex*nDim+iDim];
-//     }
-//   }
-#endif
-	
+          if( communicate(&solver_container, pangle, 1) != 0)
+              Error("Communicate()");
+/*
+ *recevied angles have to redistrbuted to all partitions
+ */  
+	  printf(" Angles are %lf, %lf, %lf\n", pangle->angles[0], pangle->angles[1], pangle->angles[2]);
+// 	  buff_angles[0] = pangle->alpha;
+// 	  buff_angles[1] = pangle->beta;
+// 	  buff_angles[2] = pangle->gamma;
       }
+      
+#ifdef HAVE_MPI
+      SU2_MPI::Bcast(pangle->angles, 3, MPI_DOUBLE, MASTER_NODE,MPI_COMM_WORLD);
+      SU2_MPI::Bcast(pangle->rotcenter, 3, MPI_DOUBLE, MASTER_NODE,MPI_COMM_WORLD);
+      SU2_MPI::Bcast(pangle->transvec, 3, MPI_DOUBLE, MASTER_NODE,MPI_COMM_WORLD);
+#endif	
+      
       geometry_container[MESH_0]->SetGridVelocity(config_container, ExtIter);
       
       /*--- Update the multigrid structure after moving the finest grid,
@@ -2447,32 +2435,7 @@ void SetTimeSpectral_Velocities(CGeometry ***geometry_container,
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-int   communicate(CSolver ****solver_container, angles_t *angle, double time)
+int   communicate(CSolver ****solver_container, d6dof_t *angle, double time)
 {
 /*
  * function is a communication routine through 
@@ -2505,25 +2468,24 @@ int   communicate(CSolver ****solver_container, angles_t *angle, double time)
 	node_t *Gnode=NULL, *TmpNode = NULL, *FoundNode = NULL;
 	size_t dim[1], i, tot_dim;
 
-	lmchar_t *hostname="localhost", channel_name[80];
-	lmint_t sockfd, portno;
+	char *hostname="localhost", channel_name[80];
+	int sockfd, portno;
 
-	lmchar_t *name ="CFD2SIM";
-	lmchar_t *name1="SIM2CFD";
+	char *name ="CFD2SIM";
+	char *name1="SIM2CFD";
 	
-	lmchar_t name_i[80], name_o[80];
+	char name_i[80], name_o[80];
 
-	lmdouble_t *tmpfloat, Lift, Drag, Side, Ceff, Cmx, Cmy, Cmz, Cfx, Cfy, Cfz;
+	double *tmpfloat, Lift, Drag, Side, Ceff, Cmx, Cmy, Cmz, Cfx, Cfy, Cfz;
 	client_fce_struct_t InpPar, *PInpPar;
 	opts_t *Popts_1, opts, opts_1, *Popts;
 	find_t *SFounds;
 	
 	portno = 31000;
 /*
- * get host name and port number
+ * get forces/moments
  */
-	
-	Lift =       solver_container[ZONE_0][MESH_0][FLOW_SOL]->GetTotal_CLift();
+        Lift =       solver_container[ZONE_0][MESH_0][FLOW_SOL]->GetTotal_CLift();
         Drag =    solver_container[ZONE_0][MESH_0][FLOW_SOL]->GetTotal_CDrag();
         Side =    solver_container[ZONE_0][MESH_0][FLOW_SOL]->GetTotal_CSideForce();
         Ceff =     solver_container[ZONE_0][MESH_0][FLOW_SOL]->GetTotal_CEff();
@@ -2533,7 +2495,7 @@ int   communicate(CSolver ****solver_container, angles_t *angle, double time)
         Cfx =      solver_container[ZONE_0][MESH_0][FLOW_SOL]->GetTotal_CFx();
         Cfy =      solver_container[ZONE_0][MESH_0][FLOW_SOL]->GetTotal_CFy();
         Cfz =      solver_container[ZONE_0][MESH_0][FLOW_SOL]->GetTotal_CFz();
-	
+/*	
         printf("  LIFT -------------   %lf\n", Lift);
         printf("  DRAG -------------   %lf\n", Drag);
        printf("  SIDE FORCE  -------------   %lf\n", Side);
@@ -2543,13 +2505,7 @@ int   communicate(CSolver ****solver_container, angles_t *angle, double time)
          printf("  CMZ -------------   %lf\n",   Cmz);
            printf("  CFX -------------   %lf\n",   Cfx);
         printf("  CFY -------------   %lf\n",      Cfy);
-          printf("  CFZ -------------   %lf\n",      Cfz);
-	
-// 	printf(" hostname is %s portnumber is %d\n", hostname, portno);
-
-	
-// 	printf(" Sending data to '%s' port %d and Channel '%s'   %d\n", hostname, portno, channel_name, *channel_len);
-// 	printf(" In and out channels are '%s' and '%s'\n",name_i, name_o);
+          printf("  CFZ -------------   %lf\n",      Cfz);*/
 /*
  * set connection parameters (data link etc)
  */
@@ -2593,8 +2549,8 @@ int   communicate(CSolver ****solver_container, angles_t *angle, double time)
 		Error("socket_edge2simulink: m3l_Mklist");
 	TmpNode->data.df[0] = time;
 
-	if(m3l_Cat(Gnode, "--all", "-P", "-L",  "*",   (char *)NULL) != 0)
-			Error("CatData");
+// 	if(m3l_Cat(Gnode, "--all", "-P", "-L",  "*",   (char *)NULL) != 0)
+// 			Error("CatData");
 /*
  * open socket
  */
@@ -2640,7 +2596,7 @@ int   communicate(CSolver ****solver_container, angles_t *angle, double time)
 /*
  * find Angles - rotation matrix and copy the values to Edge allocated memory
  */
-	if( (SFounds = m3l_Locate(Gnode, "/SIM_2_CFD/Angles", "/*/*",  (lmchar_t *)NULL)) != NULL){
+	if( (SFounds = m3l_Locate(Gnode, "/SIM_2_CFD/Angles", "/*/*",  (char *)NULL)) != NULL){
 
 		if( m3l_get_Found_number(SFounds) != 1)
 			Error("socket_edge2simulink: More then one Angles data set found");
@@ -2651,11 +2607,11 @@ int   communicate(CSolver ****solver_container, angles_t *angle, double time)
 			Error("socket_edge2simulink: Did not find 1st data pointer");
 		if( (tot_dim = m3l_get_List_totdim(FoundNode)) != 3)
 			Error("socket_edge2simulink: Wrong dimensions of Angles array");
-		if( (tmpfloat = (lmdouble_t *)m3l_get_data_pointer(FoundNode)) == NULL)
+		if( (tmpfloat = (double *)m3l_get_data_pointer(FoundNode)) == NULL)
 			Error("socket_edge2simulink: Did not find Angles data pointer");
-			angle->alpha = tmpfloat[0];
-			angle->beta = tmpfloat[1];
-			angle->gamma = tmpfloat[2];
+			angle->angles[0] = tmpfloat[0];
+			angle->angles[1] = tmpfloat[1];
+			angle->angles[2] = tmpfloat[2];
 /* 
  * free memory allocated in m3l_Locate
  */
@@ -2668,59 +2624,57 @@ int   communicate(CSolver ****solver_container, angles_t *angle, double time)
 /*
  * find center of rotation
  */
-// 	if( (SFounds = m3l_Locate(Gnode, "/SIM_2_CFD/RotCenter", "/*/*",  (lmchar_t *)NULL)) != NULL){
-// 
-// 		if( m3l_get_Found_number(SFounds) != 1)
-// 			Error("socket_edge2simulink: More then one RotCenter data set found");
-// /* 
-//  * pointer to list of found nodes
-//  */
-// 		if( (FoundNode = m3l_get_Found_node(SFounds, 0)) == NULL)
-// 			Error("socket_edge2simulink: Did not find 1st data pointer");
-// 		if( (tot_dim = m3l_get_List_totdim(FoundNode)) != 3)
-// 			Error("socket_edge2simulink: Wrong dimensions of RotCenter array");
-// 		if( (tmpfloat = (lmdouble_t *)m3l_get_data_pointer(FoundNode)) == NULL)
-// 			Error("socket_edge2simulink: Did not find RotCenter data pointer");
-// 
-// 		for (i=0; i<tot_dim; i++)
-// 			RotCenter[i]  = tmpfloat[i];
-// /* 
-//  * free memory allocated in m3l_Locate
-//  */
-// 		m3l_DestroyFound(&SFounds);
-// 	}
-// 	else
-// 	{
-// 		Error("socket_edge2simulink: RotCenter not found\n");
-// 	}
-// /*
-//  * find center of translation
-//  */
-// 	if( (SFounds = m3l_Locate(Gnode, "/SIM_2_CFD/TransVec", "/*/*",  (lmchar_t *)NULL)) != NULL){
-// 
-// 		if( m3l_get_Found_number(SFounds) != 1)
-// 			Error("socket_edge2simulink: More then one TransVec data set found");
-// /* 
-//  * pointer to list of found nodes
-//  */
-// 		if( (FoundNode = m3l_get_Found_node(SFounds, 0)) == NULL)
-// 			Error("socket_edge2simulink: Did not find 1st data pointer");
-// 		if( (tot_dim = m3l_get_List_totdim(FoundNode)) != 3)
-// 			Error("socket_edge2simulink: Wrong dimensions of TransVec array");
-// 		if( (tmpfloat = (lmdouble_t *)m3l_get_data_pointer(FoundNode)) == NULL)
-// 			Error("socket_edge2simulink: Did not find TransVec data pointer");
-// 
-// 		for (i=0; i<tot_dim; i++)
-// 			TransVec[i]  = tmpfloat[i];
-// /* 
-//  * free memory allocated in m3l_Locate
-//  */
-// 		m3l_DestroyFound(&SFounds);
-// 	}
-// 	else
-// 	{
-// 		Error("socket_edge2simulink: TransVec not found\n");
-// 	}
+	if( (SFounds = m3l_Locate(Gnode, "/SIM_2_CFD/RotCenter", "/*/*",  (char *)NULL)) != NULL){
+
+		if( m3l_get_Found_number(SFounds) != 1)
+			Error("socket_edge2simulink: More then one RotCenter data set found");
+/* 
+ * pointer to list of found nodes
+ */
+		if( (FoundNode = m3l_get_Found_node(SFounds, 0)) == NULL)
+			Error("socket_edge2simulink: Did not find 1st data pointer");
+		if( (tmpfloat = (double *)m3l_get_data_pointer(FoundNode)) == NULL)
+			Error("socket_edge2simulink: Did not find RotCenter data pointer");
+		
+		angle->rotcenter[0] = tmpfloat[0];
+		angle->rotcenter[1] = tmpfloat[1];
+		angle->rotcenter[2] = tmpfloat[2];
+/* 
+ * free memory allocated in m3l_Locate
+ */
+		m3l_DestroyFound(&SFounds);
+	}
+	else
+	{
+		Error("socket_edge2simulink: RotCenter not found\n");
+	}
+/*
+ * find center of translation
+ */
+	if( (SFounds = m3l_Locate(Gnode, "/SIM_2_CFD/TransVec", "/*/*",  (char *)NULL)) != NULL){
+
+		if( m3l_get_Found_number(SFounds) != 1)
+			Error("socket_edge2simulink: More then one TransVec data set found");
+/* 
+ * pointer to list of found nodes
+ */
+		if( (FoundNode = m3l_get_Found_node(SFounds, 0)) == NULL)
+			Error("socket_edge2simulink: Did not find 1st data pointer");
+		if( (tmpfloat = (double *)m3l_get_data_pointer(FoundNode)) == NULL)
+			Error("socket_edge2simulink: Did not find TransVec data pointer");
+
+		angle->transvec[0] = tmpfloat[0];
+		angle->transvec[1] = tmpfloat[1];
+		angle->transvec[2] = tmpfloat[2];
+/* 
+ * free memory allocated in m3l_Locate
+ */
+		m3l_DestroyFound(&SFounds);
+	}
+	else
+	{
+		Error("socket_edge2simulink: TransVec not found\n");
+	}
 /*
  * free borrowed memory
  */
