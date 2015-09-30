@@ -59,15 +59,16 @@ public:
 	/*! 
 	 * \brief Constructor of the class. 
 	 */
-	CDriver(CConfig **config, unsigned short val_nZone,
-	    CIteration **iteration_container,
-	    CSolver ****solver_container,
-	    CGeometry ***geometry_container,
-	    CIntegration ***integration_container,
-	    CNumerics *****numerics_container);
+  CDriver(CIteration **iteration_container,
+          CSolver ****solver_container,
+          CGeometry ***geometry_container,
+          CIntegration ***integration_container,
+          CNumerics *****numerics_container,
+          CConfig **config,
+          unsigned short val_nZone);
 	
-	/*! 
-	 * \brief Destructor of the class. 
+	/*!
+	 * \brief Destructor of the class.
 	 */
 	virtual ~CDriver(void);
 
@@ -84,7 +85,6 @@ public:
    * \param[in] FFDBox - FFD FFDBoxes of the problem.
 	 */
   
-  //! TDE: Add transfer container to list
   virtual void Run(CIteration **iteration_container,
                    COutput *output,
                    CIntegration ***integration_container,
@@ -145,15 +145,16 @@ public:
 	 * \brief Constructor of the class.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CSingleZoneDriver(CConfig **config, unsigned short val_nZone,
-      CIteration **iteration_container,
-      CSolver ****solver_container,
-      CGeometry ***geometry_container,
-      CIntegration ***integration_container,
-      CNumerics *****numerics_container);
+  CSingleZoneDriver(CIteration **iteration_container,
+                    CSolver ****solver_container,
+                    CGeometry ***geometry_container,
+                    CIntegration ***integration_container,
+                    CNumerics *****numerics_container,
+                    CConfig **config,
+                    unsigned short val_nZone);
 	
-	/*! 
-	 * \brief Destructor of the class. 
+	/*!
+	 * \brief Destructor of the class.
 	 */
 	~CSingleZoneDriver(void);
 	
@@ -170,8 +171,6 @@ public:
    * \param[in] FFDBox - FFD FFDBoxes of the problem.
 	 */
   
-  //! TDE: Add transfer container to list
-	//!HK: Alternative: instantiate CTransfer within multizone driver. This will avoid 'unused parameter' warnings.
   void Run(CIteration **iteration_container,
            COutput *output,
            CIntegration ***integration_container,
@@ -200,12 +199,13 @@ public:
    * \brief Constructor of the class.
    * \param[in] config - Definition of the particular problem.
    */
-  CMultiZoneDriver(CConfig **config, unsigned short val_nZone,
-      CIteration **iteration_container,
-      CSolver ****solver_container,
-      CGeometry ***geometry_container,
-      CIntegration ***integration_container,
-      CNumerics *****numerics_container);
+  CMultiZoneDriver(CIteration **iteration_container,
+                   CSolver ****solver_container,
+                   CGeometry ***geometry_container,
+                   CIntegration ***integration_container,
+                   CNumerics *****numerics_container,
+                   CConfig **config,
+                   unsigned short val_nZone);
   
   /*!
    * \brief Destructor of the class.
@@ -225,7 +225,6 @@ public:
    * \param[in] FFDBox - FFD FFDBoxes of the problem.
    */
   
-  //! TDE: Add transfer container to list
   void Run(CIteration **iteration_container,
            COutput *output,
            CIntegration ***integration_container,
@@ -253,12 +252,13 @@ public:
 	 * \brief Constructor of the class.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CFSIDriver(CConfig **config, unsigned short val_nZone,
-      CIteration **iteration_container,
-      CSolver ****solver_container,
-      CGeometry ***geometry_container,
-      CIntegration ***integration_container,
-      CNumerics *****numerics_container);
+  CFSIDriver(CIteration **iteration_container,
+             CSolver ****solver_container,
+             CGeometry ***geometry_container,
+             CIntegration ***integration_container,
+             CNumerics *****numerics_container,
+             CConfig **config,
+             unsigned short val_nZone);
 
 	/*!
 	 * \brief Destructor of the class.
@@ -278,7 +278,6 @@ public:
    * \param[in] FFDBox - FFD FFDBoxes of the problem.
 	 */
   
-  //! TDE: Add transfer container to list
   void Run(CIteration **iteration_container,
            COutput *output,
            CIntegration ***integration_container,
