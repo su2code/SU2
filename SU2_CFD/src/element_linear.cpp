@@ -38,7 +38,6 @@ CTRIA1::CTRIA1(void) : CElement() {
 CTRIA1::CTRIA1(unsigned short val_nDim, CConfig *config)
 : CElement(val_nDim, config) {
 
-	unsigned short iGaussPoint=0;
 	unsigned short iNode, iGauss, jNode;
 	unsigned short nDimSq;
 
@@ -168,16 +167,12 @@ CTRIA1::~CTRIA1(void) {
 
 void CTRIA1::ComputeGrad_Linear(void){
 
-	  su2double Xi, Eta;
 	  su2double Jacobian[2][2], dNiXj[3][2];
 	  su2double detJac, GradNi_Xj;
 	  su2double ad[2][2];
 	  unsigned short iNode, iDim, jDim, iGauss;
 
 	  for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
-
-		  Xi = GaussCoord[iGauss][0];
-		  Eta = GaussCoord[iGauss][1];
 
 		  /*--- dN/d xi, dN/d eta ---*/
 
@@ -235,16 +230,12 @@ void CTRIA1::ComputeGrad_Linear(void){
 
 void CTRIA1::ComputeGrad_NonLinear(void){
 
-	  su2double Xi, Eta;
 	  su2double Jac_Ref[2][2], Jac_Curr[2][2], dNiXj[3][2];
 	  su2double detJac_Ref, detJac_Curr, GradNi_Xj_Ref, GradNi_Xj_Curr;
 	  su2double ad_Ref[2][2], ad_Curr[2][2];
 	  unsigned short iNode, iDim, jDim, iGauss;
 
 	  for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
-
-		  Xi = GaussCoord[iGauss][0];
-		  Eta = GaussCoord[iGauss][1];
 
 		  /*--- dN/d xi, dN/d eta ---*/
 
@@ -321,7 +312,6 @@ CQUAD4::CQUAD4(void) : CElement() {
 CQUAD4::CQUAD4(unsigned short val_nDim, CConfig *config)
 : CElement(val_nDim, config) {
 
-	unsigned short iGaussPoint=0;
 	unsigned short iNode, iGauss, jNode;
 	unsigned short nDimSq;
 
@@ -630,7 +620,6 @@ CQUAD4P1::CQUAD4P1(void) : CQUAD4() {
 CQUAD4P1::CQUAD4P1(unsigned short val_nDim, CConfig *config)
 : CQUAD4(val_nDim, config) {
 
-	unsigned short iGaussPoint=0;
 	unsigned short iNode, iGauss, jNode;
 	unsigned short nDimSq;
 
@@ -773,7 +762,6 @@ CTETRA1::CTETRA1(void) : CElement() {
 CTETRA1::CTETRA1(unsigned short val_nDim, CConfig *config)
 : CElement(val_nDim, config) {
 
-	unsigned short iGaussPoint=0;
 	unsigned short iNode, iGauss, jNode;
 	unsigned short nDimSq;
 
@@ -902,17 +890,12 @@ CTETRA1::~CTETRA1(void) {
 
 void CTETRA1::ComputeGrad_Linear(void){
 
-	  su2double Xi, Eta, Zeta;
 	  su2double Jacobian[3][3], dNiXj[4][3];
 	  su2double detJac, GradNi_Xj;
 	  su2double ad[3][3];
 	  unsigned short iNode, iDim, jDim, iGauss;
 
 	  for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
-
-		  Xi = GaussCoord[iGauss][0];
-		  Eta = GaussCoord[iGauss][1];
-		  Zeta = GaussCoord[iGauss][2];
 
 		  /*--- dN/d xi, dN/d eta ---*/
 
@@ -976,17 +959,12 @@ void CTETRA1::ComputeGrad_Linear(void){
 
 void CTETRA1::ComputeGrad_NonLinear(void){
 
-	  su2double Xi, Eta, Zeta;
 	  su2double Jac_Ref[3][3], Jac_Curr[3][3], dNiXj[4][3];
 	  su2double detJac_Ref, detJac_Curr, GradNi_Xj_Ref, GradNi_Xj_Curr;
 	  su2double ad_Ref[3][3], ad_Curr[3][3];
 	  unsigned short iNode, iDim, jDim, iGauss;
 
 	  for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
-
-		  Xi = GaussCoord[iGauss][0];
-		  Eta = GaussCoord[iGauss][1];
-		  Zeta = GaussCoord[iGauss][2];
 
 		  /*--- dN/d xi, dN/d eta ---*/
 
@@ -1074,7 +1052,6 @@ CHEXA8::CHEXA8(void) : CElement() {
 CHEXA8::CHEXA8(unsigned short val_nDim, CConfig *config)
 : CElement(val_nDim, config) {
 
-	unsigned short iGaussPoint=0;
 	unsigned short iNode, iGauss, jNode;
 	unsigned short nDimSq;
 
@@ -1468,7 +1445,6 @@ CHEXA8P1::CHEXA8P1(void) : CHEXA8() {
 CHEXA8P1::CHEXA8P1(unsigned short val_nDim, CConfig *config)
 : CHEXA8(val_nDim, config) {
 
-	unsigned short iGaussPoint=0;
 	unsigned short iNode, iGauss, jNode;
 	unsigned short nDimSq;
 
