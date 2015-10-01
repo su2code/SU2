@@ -36,7 +36,7 @@ CDriver::CDriver(CConfig **config_container, unsigned short val_nZone, CIteratio
     CGeometry ***geometry_container,
     CIntegration ***integration_container,
     CNumerics *****numerics_container) {
-  unsigned short iMesh, iZone, iSol, nZone, nDim;
+  unsigned short iMesh, iZone, iSol, nZone;
 
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -48,17 +48,19 @@ CDriver::CDriver(CConfig **config_container, unsigned short val_nZone, CIteratio
   if (rank == MASTER_NODE)
     cout << endl <<"------------------------ Iteration Preprocessing ------------------------" << endl;
 
-  /*--- Instantiate the type of physics iteration to be executed within each zone. For
-   example, one can execute the same physics across multiple zones (mixing plane),
-   different physics in different zones (fluid-structure interaction), or couple multiple
-   systems tightly within a single zone by creating a new iteration class (e.g., RANS). ---*/
 
-  Iteration_Preprocessing(iteration_container, config_container, nZone);
 
   if (rank == MASTER_NODE)
     cout << endl <<"------------------------- Solver Preprocessing --------------------------" << endl;
 
   for (iZone = 0; iZone < nZone; iZone++) {
+
+    /*--- Instantiate the type of physics iteration to be executed within each zone. For
+     example, one can execute the same physics across multiple zones (mixing plane),
+     different physics in different zones (fluid-structure interaction), or couple multiple
+     systems tightly within a single zone by creating a new iteration class (e.g., RANS). ---*/
+    cout << "Zone " << iZone+1;
+    Iteration_Preprocessing(iteration_container[iZone], config_container[iZone]);
 
     /*--- Definition of the solver class: solver_container[#ZONES][#MG_GRIDS][#EQ_SYSTEMS].
      The solver classes are specific to a particular set of governing equations,
@@ -77,7 +79,7 @@ CDriver::CDriver(CConfig **config_container, unsigned short val_nZone, CIteratio
         solver_container[iZone][iMesh][iSol] = NULL;
     }
     Solver_Preprocessing(solver_container[iZone], geometry_container[iZone],
-                               config_container[iZone], iZone);
+                               config_container[iZone]);
 
 
     if (rank == MASTER_NODE)
@@ -91,7 +93,7 @@ CDriver::CDriver(CConfig **config_container, unsigned short val_nZone, CIteratio
 
     integration_container[iZone] = new CIntegration*[MAX_SOLS];
     Integration_Preprocessing(integration_container[iZone], geometry_container[iZone],
-                                  config_container[iZone], iZone);
+                                  config_container[iZone]);
 
 
     if (rank == MASTER_NODE) cout << "Integration Preprocessing." << endl;
@@ -105,7 +107,7 @@ CDriver::CDriver(CConfig **config_container, unsigned short val_nZone, CIteratio
 
     numerics_container[iZone] = new CNumerics***[config_container[iZone]->GetnMGLevels()+1];
     Numerics_Preprocessing(numerics_container[iZone], solver_container[iZone],
-                                   geometry_container[iZone], config_container[iZone], iZone);
+                                   geometry_container[iZone], config_container[iZone]);
 
     if (rank == MASTER_NODE) cout << "Numerics Preprocessing." << endl;
 
@@ -116,7 +118,7 @@ CDriver::CDriver(CConfig **config_container, unsigned short val_nZone, CIteratio
 
 
 void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry,
-                          CConfig *config, unsigned short iZone) {
+                          CConfig *config) {
 
   unsigned short iMGlevel;
   bool euler, ns, turbulent,
@@ -275,8 +277,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
 }
 
 void CDriver::Integration_Preprocessing(CIntegration **integration_container,
-                               CGeometry **geometry, CConfig *config,
-                               unsigned short iZone) {
+                               CGeometry **geometry, CConfig *config) {
 
   bool
   euler, adj_euler, lin_euler,
@@ -355,7 +356,7 @@ void CDriver::Integration_Preprocessing(CIntegration **integration_container,
 
 void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
                             CSolver ***solver_container, CGeometry **geometry,
-                            CConfig *config, unsigned short iZone) {
+                            CConfig *config) {
 
   unsigned short iMGlevel, iSol, nDim,
 
@@ -1267,95 +1268,76 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
 
 }
 
-void CDriver::Iteration_Preprocessing(CIteration **iteration_container, CConfig **config, unsigned short val_nZone) {
+void CDriver::Iteration_Preprocessing(CIteration *iteration_container, CConfig *config) {
 
-  unsigned short iZone;
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
-  /*--- Loop over all zones and instantiate the physics iteration. ---*/
+  switch (config->GetKind_Solver()) {
 
-  for (iZone = 0; iZone < val_nZone; iZone++) {
+    case EULER: case NAVIER_STOKES: case RANS:
+      if (rank == MASTER_NODE)
+        cout << ": mean flow iteration." << endl;
+      iteration_container = new CMeanFlowIteration(config);
+      break;
 
-    switch (config[iZone]->GetKind_Solver()) {
+    case TNE2_EULER: case TNE2_NAVIER_STOKES:
+      if (rank == MASTER_NODE)
+        cout <<  ": TNE2 iteration." << endl;
+      iteration_container = new CTNE2Iteration(config);
+      break;
 
-      case EULER: case NAVIER_STOKES: case RANS:
-        if (rank == MASTER_NODE)
-          cout << "Zone " << iZone+1 << ": mean flow iteration." << endl;
-        iteration_container[iZone] = new CMeanFlowIteration(config);
-        break;
+    case WAVE_EQUATION:
+      if (rank == MASTER_NODE)
+        cout << ": wave iteration." << endl;
+      iteration_container = new CWaveIteration(config);
+      break;
 
-      case TNE2_EULER: case TNE2_NAVIER_STOKES:
-        if (rank == MASTER_NODE)
-          cout << "Zone " << iZone+1 << ": TNE2 iteration." << endl;
-        iteration_container[iZone] = new CTNE2Iteration(config);
-        break;
+    case HEAT_EQUATION:
+      if (rank == MASTER_NODE)
+        cout << ": heat iteration." << endl;
+      iteration_container = new CHeatIteration(config);
+      break;
 
-      case WAVE_EQUATION:
-        if (rank == MASTER_NODE)
-          cout << "Zone " << iZone+1 << ": wave iteration." << endl;
-        iteration_container[iZone] = new CWaveIteration(config);
-        break;
+    case POISSON_EQUATION:
+      if (rank == MASTER_NODE)
+        cout  << ": poisson iteration." << endl;
+      iteration_container = new CPoissonIteration(config);
+      break;
 
-      case HEAT_EQUATION:
-        if (rank == MASTER_NODE)
-          cout << "Zone " << iZone+1 << ": heat iteration." << endl;
-        iteration_container[iZone] = new CHeatIteration(config);
-        break;
+    case LINEAR_ELASTICITY:
+      if (rank == MASTER_NODE)
+        cout << ": FEA iteration." << endl;
+      iteration_container = new CFEAIteration(config);
+      break;
 
-      case POISSON_EQUATION:
-        if (rank == MASTER_NODE)
-          cout << "Zone " << iZone+1 << ": poisson iteration." << endl;
-        iteration_container[iZone] = new CPoissonIteration(config);
-        break;
+    case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
+      if (rank == MASTER_NODE)
+        cout << ": adjoint mean flow iteration." << endl;
+      iteration_container = new CAdjMeanFlowIteration(config);
+      break;
 
-      case LINEAR_ELASTICITY:
-        if (rank == MASTER_NODE)
-          cout << "Zone " << iZone+1 << ": FEA iteration." << endl;
-        iteration_container[iZone] = new CFEAIteration(config);
-        break;
+    case ADJ_TNE2_EULER: case ADJ_TNE2_NAVIER_STOKES:
+      if (rank == MASTER_NODE)
+        cout << ": adjoint TNE2 iteration." << endl;
+      iteration_container = new CAdjTNE2Iteration(config);
+      break;
 
-      case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
-        if (rank == MASTER_NODE)
-          cout << "Zone " << iZone+1 << ": adjoint mean flow iteration." << endl;
-        iteration_container[iZone] = new CAdjMeanFlowIteration(config);
-        break;
-
-      case ADJ_TNE2_EULER: case ADJ_TNE2_NAVIER_STOKES:
-        if (rank == MASTER_NODE)
-          cout << "Zone " << iZone+1 << ": adjoint TNE2 iteration." << endl;
-        iteration_container[iZone] = new CAdjTNE2Iteration(config);
-        break;
-
-      case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-        if (rank == MASTER_NODE)
-          cout << "Zone " << iZone+1 << ": discrete adjoint mean flow iteration." << endl;
-        iteration_container[iZone] = new CMeanFlowIteration(config);
-        break;
-    }
-
+    case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+      if (rank == MASTER_NODE)
+        cout  << ": discrete adjoint mean flow iteration." << endl;
+      iteration_container = new CMeanFlowIteration(config);
+      break;
   }
+
 
 }
 
 
-
-
 CDriver::~CDriver(void) { }
 
-//! TDE: Inline file for this perhaps? It's purely virtual.
-inline void CDriver::Run(CIteration **iteration_container,
-                         COutput *output,
-                         CIntegration ***integration_container,
-                         CGeometry ***geometry_container,
-                         CSolver ****solver_container,
-                         CNumerics *****numerics_container,
-                         CConfig **config_container,
-                         CSurfaceMovement **surface_movement,
-                         CVolumetricMovement **grid_movement,
-                         CFreeFormDefBox*** FFDBox) { }
 
 CSingleZoneDriver::CSingleZoneDriver(CConfig **config, unsigned short val_nZone,
     CIteration **iteration_container,

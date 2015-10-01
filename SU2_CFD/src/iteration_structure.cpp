@@ -32,7 +32,7 @@
 #include "../include/iteration_structure.hpp"
 
 //! TDE: Base class for new iteration layer
-CIteration::CIteration(CConfig **config) { }
+CIteration::CIteration(CConfig *config) { }
 CIteration::~CIteration(void) { }
 
 //! TDE: Inline file for this perhaps? It's purely virtual.
@@ -52,7 +52,7 @@ void CIteration::Output()      { }
 void CIteration::Postprocess() { }
 
 
-CMeanFlowIteration::CMeanFlowIteration(CConfig **config) : CIteration(config) { }
+CMeanFlowIteration::CMeanFlowIteration(CConfig *config) : CIteration(config) { }
 CMeanFlowIteration::~CMeanFlowIteration(void) { }
 void CMeanFlowIteration::Preprocess() { }
 void CMeanFlowIteration::Iterate(COutput *output,
@@ -276,7 +276,7 @@ void CMeanFlowIteration::Output()      { }
 void CMeanFlowIteration::Postprocess() { }
 
 
-CTNE2Iteration::CTNE2Iteration(CConfig **config) : CIteration(config) { }
+CTNE2Iteration::CTNE2Iteration(CConfig *config) : CIteration(config) { }
 CTNE2Iteration::~CTNE2Iteration(void) { }
 void CTNE2Iteration::Preprocess() { }
 void CTNE2Iteration::Iterate(COutput *output,
@@ -294,7 +294,7 @@ void CTNE2Iteration::Output()      { }
 void CTNE2Iteration::Postprocess() { }
 
 
-CWaveIteration::CWaveIteration(CConfig **config) : CIteration(config) { }
+CWaveIteration::CWaveIteration(CConfig *config) : CIteration(config) { }
 CWaveIteration::~CWaveIteration(void) { }
 void CWaveIteration::Preprocess() { }
 void CWaveIteration::Iterate(COutput *output,
@@ -312,7 +312,7 @@ void CWaveIteration::Output()      { }
 void CWaveIteration::Postprocess() { }
 
 
-CHeatIteration::CHeatIteration(CConfig **config) : CIteration(config) { }
+CHeatIteration::CHeatIteration(CConfig *config) : CIteration(config) { }
 CHeatIteration::~CHeatIteration(void) { }
 void CHeatIteration::Preprocess() { }
 void CHeatIteration::Iterate(COutput *output,
@@ -330,7 +330,7 @@ void CHeatIteration::Output()      { }
 void CHeatIteration::Postprocess() { }
 
 
-CPoissonIteration::CPoissonIteration(CConfig **config) : CIteration(config) { }
+CPoissonIteration::CPoissonIteration(CConfig *config) : CIteration(config) { }
 CPoissonIteration::~CPoissonIteration(void) { }
 void CPoissonIteration::Preprocess() { }
 void CPoissonIteration::Iterate(COutput *output,
@@ -348,7 +348,7 @@ void CPoissonIteration::Output()      { }
 void CPoissonIteration::Postprocess() { }
 
 
-CFEAIteration::CFEAIteration(CConfig **config) : CIteration(config) { }
+CFEAIteration::CFEAIteration(CConfig *config) : CIteration(config) { }
 CFEAIteration::~CFEAIteration(void) { }
 void CFEAIteration::Preprocess() { }
 void CFEAIteration::Iterate(COutput *output,
@@ -366,7 +366,7 @@ void CFEAIteration::Output()      { }
 void CFEAIteration::Postprocess() { }
 
 
-CAdjMeanFlowIteration::CAdjMeanFlowIteration(CConfig **config) : CIteration(config) { }
+CAdjMeanFlowIteration::CAdjMeanFlowIteration(CConfig *config) : CIteration(config) { }
 CAdjMeanFlowIteration::~CAdjMeanFlowIteration(void) { }
 void CAdjMeanFlowIteration::Preprocess() { }
 void CAdjMeanFlowIteration::Iterate(COutput *output,
@@ -384,7 +384,7 @@ void CAdjMeanFlowIteration::Output()      { }
 void CAdjMeanFlowIteration::Postprocess() { }
 
 
-CAdjTNE2Iteration::CAdjTNE2Iteration(CConfig **config) : CIteration(config) { }
+CAdjTNE2Iteration::CAdjTNE2Iteration(CConfig *config) : CIteration(config) { }
 CAdjTNE2Iteration::~CAdjTNE2Iteration(void) { }
 void CAdjTNE2Iteration::Preprocess() { }
 void CAdjTNE2Iteration::Iterate(COutput *output,
@@ -402,7 +402,7 @@ void CAdjTNE2Iteration::Output()      { }
 void CAdjTNE2Iteration::Postprocess() { }
 
 
-CDiscAdjMeanFlowIteration::CDiscAdjMeanFlowIteration(CConfig **config) : CIteration(config) { }
+CDiscAdjMeanFlowIteration::CDiscAdjMeanFlowIteration(CConfig *config) : CIteration(config) { }
 CDiscAdjMeanFlowIteration::~CDiscAdjMeanFlowIteration(void) { }
 void CDiscAdjMeanFlowIteration::Preprocess() { }
 void CDiscAdjMeanFlowIteration::Iterate(COutput *output,
