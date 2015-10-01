@@ -67,7 +67,7 @@ CFEM_NonlinearElasticity::CFEM_NonlinearElasticity(unsigned short val_nDim, unsi
 
 CFEM_NonlinearElasticity::~CFEM_NonlinearElasticity(void) {
 
-	unsigned short iVar, jVar;
+	unsigned short iVar;
 
 	for (iVar = 0; iVar < 3; iVar++){
 		delete [] F_Mat[iVar];
@@ -109,7 +109,7 @@ void CFEM_NonlinearElasticity::Compute_Tangent_Matrix(CElement *element){
 
 	su2double Ks_Aux_ab;
 
-	su2double Weight, Jac_X, Jac_x;
+	su2double Weight, Jac_x;
 
 	su2double AuxMatrixKc[3][6];
 	su2double AuxMatrixKs[3];
@@ -117,7 +117,7 @@ void CFEM_NonlinearElasticity::Compute_Tangent_Matrix(CElement *element){
 	/*--- Initialize auxiliary matrices ---*/
 
 	if (nDim == 2) bDim = 3;
-	else if (nDim == 3) bDim = 6;
+	else bDim = 6;
 
 	for (iVar = 0; iVar < bDim; iVar++){
 		for (jVar = 0; jVar < nDim; jVar++){
@@ -147,7 +147,6 @@ void CFEM_NonlinearElasticity::Compute_Tangent_Matrix(CElement *element){
 	for (iGauss = 0; iGauss < nGauss; iGauss++){
 
 		Weight = element->GetWeight(iGauss);
-		Jac_X = element->GetJ_X(iGauss);
 		Jac_x = element->GetJ_x(iGauss);
 
 		/*--- Initialize the deformation gradient for each Gauss Point ---*/
@@ -379,7 +378,7 @@ void CFEM_NonlinearElasticity::Compute_MeanDilatation_Term(CElement *element){
 
 	}
 
-	if ((Vol_current != 0.0) && (Vol_reference != 0.0)) {
+	if ((Vol_current > 0.0) && (Vol_reference > 0.0)) {
 
 		/*--- It is necessary to divide over the current volume to obtain the averaged gradients ---*/
 		/*--- TODO: Check this operation and add exit if the volumes are 0. ---*/
@@ -397,6 +396,10 @@ void CFEM_NonlinearElasticity::Compute_MeanDilatation_Term(CElement *element){
 
 //		cout << "ELEMENT PRESSURE: " << el_Pressure << endl;
 
+	}
+	else {
+		cout << "Warning: Negative volume computed during FE structural analysis. Exiting..." << endl;
+		exit(EXIT_FAILURE);
 	}
 
 	for (iNode = 0; iNode < nNode; iNode++){
@@ -423,20 +426,10 @@ void CFEM_NonlinearElasticity::Compute_NodalStress_Term(CElement *element){
 
 	unsigned short iVar, jVar, kVar;
 	unsigned short iGauss, nGauss;
-	unsigned short iNode, jNode, nNode;
-	unsigned short iDim, bDim;
+	unsigned short iNode, nNode;
+	unsigned short iDim;
 
-	su2double Ks_Aux_ab;
-
-	su2double Weight, Jac_X, Jac_x;
-
-	su2double AuxMatrixKt[3];
-
-	/*--- Initialize auxiliary matrices ---*/
-
-	for (iVar = 0; iVar < 3; iVar++){
-		AuxMatrixKt[iVar] = 0.0;
-	}
+	su2double Weight, Jac_x;
 
 	element->clearElement(); 			/*--- Restarts the element: avoids adding over previous results in other elements --*/
 	element->ComputeGrad_NonLinear();	/*--- Check if we can take this out... so we don't have to do it twice ---*/
@@ -449,7 +442,6 @@ void CFEM_NonlinearElasticity::Compute_NodalStress_Term(CElement *element){
 	for (iGauss = 0; iGauss < nGauss; iGauss++){
 
 		Weight = element->GetWeight(iGauss);
-		Jac_X = element->GetJ_X(iGauss);
 		Jac_x = element->GetJ_x(iGauss);
 
 		/*--- Initialize the deformation gradient for each Gauss Point ---*/
@@ -535,12 +527,9 @@ void CFEM_NonlinearElasticity::Compute_Averaged_NodalStress(CElement *element){
 
 	unsigned short iVar, jVar, kVar;
 	unsigned short iGauss, nGauss;
-	unsigned short iNode, jNode, nNode;
-	unsigned short iDim, bDim;
+	unsigned short iDim, iNode, nNode;
 
-	su2double Ks_Aux_ab;
-
-	su2double Weight, Jac_X, Jac_x;
+	su2double Weight, Jac_x;
 
 	element->clearStress();				/*--- TODO: put these two together ---*/
 	element->clearElement(); 			/*--- Restarts the element: avoids adding over previous results in other elements --*/
@@ -554,7 +543,6 @@ void CFEM_NonlinearElasticity::Compute_Averaged_NodalStress(CElement *element){
 	for (iGauss = 0; iGauss < nGauss; iGauss++){
 
 		Weight = element->GetWeight(iGauss);
-		Jac_X = element->GetJ_X(iGauss);
 		Jac_x = element->GetJ_x(iGauss);
 
 		/*--- Initialize the deformation gradient for each Gauss Point ---*/
@@ -661,8 +649,7 @@ CFEM_NeoHookean_Comp::~CFEM_NeoHookean_Comp(void) {
 
 void CFEM_NeoHookean_Comp::Compute_Constitutive_Matrix(CElement *element) {
 
-	su2double Mu_p, Lambda_p;
-	su2double dij;
+	su2double Mu_p = 0.0, Lambda_p = 0.0;
 
 	/*--- This can be done in a better way ---*/
 	if (J_F != 0.0){
@@ -691,8 +678,8 @@ void CFEM_NeoHookean_Comp::Compute_Constitutive_Matrix(CElement *element) {
 void CFEM_NeoHookean_Comp::Compute_Stress_Tensor(CElement *element) {
 
 	unsigned short iVar,jVar;
-	su2double Mu_J, Lambda_J;
-	su2double dij;
+	su2double Mu_J = 0.0, Lambda_J = 0.0;
+	su2double dij = 0.0;
 
 	/*--- This can be done in a better way ---*/
 	if (J_F != 0.0){
@@ -723,7 +710,7 @@ CFEM_NeoHookean_Incomp::~CFEM_NeoHookean_Incomp(void) {
 void CFEM_NeoHookean_Incomp::Compute_Constitutive_Matrix(CElement *element) {
 
 	unsigned short iVar;
-	su2double dij, el_P;
+	su2double el_P;
 	su2double Ib = 0.0, Jft;
 
 	/*--- First invariant of b -> Ib = tr(b) ---*/

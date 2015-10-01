@@ -70,26 +70,22 @@ CTransfer::~CTransfer(void) {
 
 }
 
-void CTransfer::Scatter_InterfaceData_Matching(CSolver *donor_solution, CSolver *target_solution,
-		   	   	   	   	   	   	   	   	   	   CGeometry *donor_geometry, CGeometry *target_geometry,
-											   CConfig *donor_config, CConfig *target_config){
+void CTransfer::Scatter_InterfaceData(CSolver *donor_solution, CSolver *target_solution,
+		   	   	   	   	   	   	   	   	   CGeometry *donor_geometry, CGeometry *target_geometry,
+										   CConfig *donor_config, CConfig *target_config){
 
 	unsigned short nMarkerInt, nMarkerDonor, nMarkerTarget;		// Number of markers on the interface, donor and target side
 	unsigned short iMarkerInt, iMarkerDonor, iMarkerTarget;		// Variables for iteration over markers
 	int Marker_Donor = -1, Marker_Target = -1;
 
-	unsigned long nVertexDonor, nVertexTarget;					// Number of vertices on Donor and Target side
-	unsigned long iVertex, iPoint;								// Variables for iteration over vertices and nodes
-	unsigned long jVertex, jPoint;								// Variables for iteration over vertices and nodes
+	unsigned long iVertex;							// Variables for iteration over vertices and nodes
 
-	unsigned short iVar, jDim;
+	unsigned short iVar;
 
 	GetPhysical_Constants(donor_solution, target_solution, donor_geometry, target_geometry,
 						  donor_config, target_config);
 
-	unsigned long Check_Point_Global;
 	unsigned long Point_Donor, Point_Target;
-	su2double *Normal_Donor, *Normal_Target;
 
     int rank = MASTER_NODE;
     int size = SINGLE_NODE;
@@ -100,18 +96,14 @@ void CTransfer::Scatter_InterfaceData_Matching(CSolver *donor_solution, CSolver 
 #endif
 
     unsigned long nLocalVertexDonor = 0, nLocalVertexTarget= 0;
-    unsigned long iVertexDonor = 0, iVertexTarget;
-    unsigned long nPoint_Total = 0;
-
 	unsigned long MaxLocalVertexDonor = 0, MaxLocalVertexTarget = 0;
 
 	unsigned long nBuffer_DonorVariables = 0, nBuffer_TargetVariables = 0;
 	unsigned long nBuffer_DonorIndices = 0, nBuffer_TargetIndices = 0;
 
-	unsigned long Processor_Donor, Processor_Target;
+	unsigned long Processor_Target;
 
 	int iProcessor, nProcessor = 0;
-	unsigned long iVariable;
 
 	/*--- Number of markers on the FSI interface ---*/
 
@@ -288,9 +280,9 @@ void CTransfer::Scatter_InterfaceData_Matching(CSolver *donor_solution, CSolver 
 		SU2_MPI::Gather(Buffer_Send_DonorIndices, nBuffer_DonorIndices, MPI_LONG, Buffer_Recv_DonorIndices, nBuffer_DonorIndices, MPI_LONG, MASTER_NODE, MPI_COMM_WORLD);
 
 #else
-		for (iVariable = 0; iVariable < nBuffer_DonorVariables; iVariable++)
+		for (unsigned long iVariable = 0; iVariable < nBuffer_DonorVariables; iVariable++)
 			Buffer_Recv_DonorVariables[iVariable] = Buffer_Send_DonorVariables[iVariable];
-		for (iVariable = 0; iVariable < nBuffer_DonorIndices; iVariable++)
+		for (unsigned long iVariable = 0; iVariable < nBuffer_DonorIndices; iVariable++)
 			Buffer_Recv_DonorIndices[iVariable] = Buffer_Send_DonorIndices[iVariable];
 #endif
 
@@ -298,6 +290,7 @@ void CTransfer::Scatter_InterfaceData_Matching(CSolver *donor_solution, CSolver 
 		long *Counter_Processor_Target = NULL;
 		long iProcessor_Donor = 0, iIndex_Donor = 0;
 		long iProcessor_Target = 0, iPoint_Target = 0, iIndex_Target = 0;
+		long Point_Target_Send = 0, Processor_Target_Send = 0;
 
 		/*--- Now we pack the information to send it over to the different processors ---*/
 
@@ -332,8 +325,8 @@ void CTransfer::Scatter_InterfaceData_Matching(CSolver *donor_solution, CSolver 
 				for (iVertex = 0; iVertex < Buffer_Recv_nVertexDonor[iProcessor]; iVertex++) {
 
 					/*--- The processor and index for the flow are: ---*/
-					Processor_Target = Buffer_Recv_DonorIndices[iIndex_Donor+iVertex*2+1];
-					Point_Target     = Buffer_Recv_DonorIndices[iIndex_Donor+iVertex*2];
+					Processor_Target_Send = Buffer_Recv_DonorIndices[iIndex_Donor+iVertex*2+1];
+					Point_Target_Send     = Buffer_Recv_DonorIndices[iIndex_Donor+iVertex*2];
 
 					/*--- Load the buffer at the appropriate position ---*/
 					/*--- This is determined on the fluid side by:
@@ -350,18 +343,18 @@ void CTransfer::Scatter_InterfaceData_Matching(CSolver *donor_solution, CSolver 
 					 */
 
 					/*--- We check that we are not setting the value for a halo node ---*/
-					if (Point_Target != -1){
-						iProcessor_Target = Processor_Target*nBuffer_TargetVariables;
-						iIndex_Target = Processor_Target*nBuffer_TargetIndices;
-						iPoint_Target = Counter_Processor_Target[Processor_Target]*nVar;
+					if (Point_Target_Send != -1){
+						iProcessor_Target = Processor_Target_Send*nBuffer_TargetVariables;
+						iIndex_Target = Processor_Target_Send*nBuffer_TargetIndices;
+						iPoint_Target = Counter_Processor_Target[Processor_Target_Send]*nVar;
 
 						for (iVar = 0; iVar < nVar; iVar++)
 							Buffer_Send_TargetVariables[iProcessor_Target + iPoint_Target + iVar] = Buffer_Recv_DonorVariables[iProcessor_Donor + iVertex*nVar + iVar];
 
 						/*--- We set the fluid index at an appropriate position matching the coordinates ---*/
-						Buffer_Send_TargetIndices[iIndex_Target + Counter_Processor_Target[Processor_Target]] = Point_Target;
+						Buffer_Send_TargetIndices[iIndex_Target + Counter_Processor_Target[Processor_Target_Send]] = Point_Target_Send;
 
-						Counter_Processor_Target[Processor_Target]++;
+						Counter_Processor_Target[Processor_Target_Send]++;
 					}
 
 				}
@@ -375,9 +368,9 @@ void CTransfer::Scatter_InterfaceData_Matching(CSolver *donor_solution, CSolver 
 		SU2_MPI::Scatter(Buffer_Send_TargetVariables, nBuffer_TargetVariables, MPI_DOUBLE, Buffer_Recv_TargetVariables, nBuffer_TargetVariables, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
 		SU2_MPI::Scatter(Buffer_Send_TargetIndices, nBuffer_TargetIndices, MPI_LONG, Buffer_Recv_TargetIndices, nBuffer_TargetIndices, MPI_LONG, MASTER_NODE, MPI_COMM_WORLD);
 #else
-		for (iVariable = 0; iVariable < nBuffer_TargetVariables; iVariable++)
+		for (unsigned long iVariable = 0; iVariable < nBuffer_TargetVariables; iVariable++)
 			Buffer_Recv_TargetVariables[iVariable] = Buffer_Send_TargetVariables[iVariable];
-		for (iVariable = 0; iVariable < nBuffer_TargetIndices; iVariable++)
+		for (unsigned long iVariable = 0; iVariable < nBuffer_TargetIndices; iVariable++)
 			Buffer_Recv_TargetIndices[iVariable] = Buffer_Send_TargetIndices[iVariable];
 #endif
 
@@ -443,18 +436,15 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
 	unsigned short iMarkerInt, iMarkerDonor, iMarkerTarget;		// Variables for iteration over markers
 	int Marker_Donor = -1, Marker_Target = -1;
 
-	unsigned long nVertexDonor, nVertexTarget;					// Number of vertices on Donor and Target side
-	unsigned long iVertex, iPoint;								// Variables for iteration over vertices and nodes
-	unsigned long jVertex, jPoint;								// Variables for iteration over vertices and nodes
+	unsigned long iVertex;								// Variables for iteration over vertices and nodes
 
-	unsigned short iVar, jDim;
+	unsigned short iVar;
 
 	GetPhysical_Constants(donor_solution, target_solution, donor_geometry, target_geometry,
 						  donor_config, target_config);
 
 	unsigned long Point_Donor_Global, Donor_Global_Index;
 	unsigned long Point_Donor, Point_Target;
-	su2double *Normal_Donor, *Normal_Target;
 
     int rank = MASTER_NODE;
     int size = SINGLE_NODE;
@@ -466,21 +456,16 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
 
     unsigned long iLocalVertex = 0;
     unsigned long nLocalVertexDonor = 0, nLocalVertexDonorOwned = 0;
-    unsigned long iVertexDonor = 0, iVertexTarget = 0;
-    unsigned long nPoint_Total = 0;
 
-	unsigned long MaxLocalVertexDonor = 0, MaxLocalVertexTarget = 0;
+	unsigned long MaxLocalVertexDonor = 0;
 	unsigned long TotalVertexDonor = 0;
 
-	unsigned long nBuffer_DonorVariables = 0, nBuffer_TargetVariables = 0;
-	unsigned long nBuffer_DonorIndices = 0, nBuffer_TargetIndices = 0;
+	unsigned long nBuffer_DonorVariables = 0;
+	unsigned long nBuffer_DonorIndices = 0;
 
 	unsigned long nBuffer_BcastVariables = 0, nBuffer_BcastIndices = 0;
 
-	unsigned long Processor_Donor, Processor_Target;
-
-	int iProcessor, nProcessor = 0;
-	unsigned long iVariable;
+	int nProcessor = 0;
 
 	/*--- Number of markers on the FSI interface ---*/
 
@@ -500,8 +485,6 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
 
 		/*--- Initialize pointer buffers inside the loop, so we can delete for each marker. ---*/
 		unsigned long Buffer_Send_nVertexDonor[1], *Buffer_Recv_nVertexDonor = NULL;
-		unsigned long Buffer_Send_nVertexDonorOwned[1], *Buffer_Recv_nVertexDonorOwned = NULL;
-		unsigned long Buffer_Send_nVertexTarget[1], *Buffer_Recv_nVertexTarget = NULL;
 
 		/*--- The donor and target markers are tagged with the same index.
 		 *--- This is independent of the MPI domain decomposition.
@@ -639,9 +622,9 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
 		SU2_MPI::Gather(Buffer_Send_DonorIndices, nBuffer_DonorIndices, MPI_LONG, Buffer_Recv_DonorIndices, nBuffer_DonorIndices, MPI_LONG, MASTER_NODE, MPI_COMM_WORLD);
 
 #else
-		for (iVariable = 0; iVariable < nBuffer_DonorVariables; iVariable++)
+		for (unsigned long iVariable = 0; iVariable < nBuffer_DonorVariables; iVariable++)
 			Buffer_Recv_DonorVariables[iVariable] = Buffer_Send_DonorVariables[iVariable];
-		for (iVariable = 0; iVariable < nBuffer_DonorIndices; iVariable++)
+		for (unsigned long iVariable = 0; iVariable < nBuffer_DonorIndices; iVariable++)
 			Buffer_Recv_DonorIndices[iVariable] = Buffer_Send_DonorIndices[iVariable];
 #endif
 
@@ -726,28 +709,12 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
 
 		if (rank == MASTER_NODE) {
 			delete [] Buffer_Recv_nVertexDonor;
-			delete [] Buffer_Recv_nVertexTarget;
-			delete [] Buffer_Recv_nVertexDonorOwned;
 			delete [] Buffer_Recv_DonorVariables;
 			delete [] Buffer_Recv_DonorIndices;
 		}
 
 
 	}
-
-}
-
-
-void CTransfer::Allgather_InterfaceData_Matching(CSolver *donor_solution, CSolver *target_solution,
-		   	   	   	   	   	   	                 CGeometry *donor_geometry, CGeometry *target_geometry,
-												 CConfig *donor_config, CConfig *target_config){
-
-
-}
-
-void CTransfer::Scatter_InterfaceData_Interpolate(CSolver *donor_solution, CSolver *target_solution,
-		   	   	   	   	   	   	   	   	   	   	  CGeometry *donor_geometry, CGeometry *target_geometry,
-												  CConfig *donor_config, CConfig *target_config){
 
 }
 
@@ -760,18 +727,15 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
 	unsigned short iMarkerInt, iMarkerDonor, iMarkerTarget;		// Variables for iteration over markers
 	int Marker_Donor = -1, Marker_Target = -1;
 
-	unsigned long nVertexDonor, nVertexTarget;					// Number of vertices on Donor and Target side
-	unsigned long iVertex, iPoint;								// Variables for iteration over vertices and nodes
-	unsigned long jVertex, jPoint;								// Variables for iteration over vertices and nodes
+	unsigned long iVertex;							// Variables for iteration over vertices and nodes
 
-	unsigned short iVar, jDim;
+	unsigned short iVar;
 
 	GetPhysical_Constants(donor_solution, target_solution, donor_geometry, target_geometry,
 						  donor_config, target_config);
 
 	unsigned long Point_Donor_Global, Donor_Global_Index;
 	unsigned long Point_Donor, Point_Target;
-	su2double *Normal_Donor, *Normal_Target;
 
     int rank = MASTER_NODE;
     int size = SINGLE_NODE;
@@ -783,21 +747,15 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
 
     unsigned long iLocalVertex = 0;
     unsigned long nLocalVertexDonor = 0, nLocalVertexDonorOwned = 0;
-    unsigned long iVertexDonor = 0, iVertexTarget = 0;
-    unsigned long nPoint_Total = 0;
 
-	unsigned long MaxLocalVertexDonor = 0, MaxLocalVertexTarget = 0;
-	unsigned long TotalVertexDonor = 0;
+	unsigned long MaxLocalVertexDonor = 0, TotalVertexDonor = 0;
 
-	unsigned long nBuffer_DonorVariables = 0, nBuffer_TargetVariables = 0;
-	unsigned long nBuffer_DonorIndices = 0, nBuffer_TargetIndices = 0;
+	unsigned long nBuffer_DonorVariables = 0;
+	unsigned long nBuffer_DonorIndices = 0;
 
 	unsigned long nBuffer_BcastVariables = 0, nBuffer_BcastIndices = 0;
 
-	unsigned long Processor_Donor, Processor_Target;
-
-	int iProcessor, nProcessor = 0;
-	unsigned long iVariable;
+	int nProcessor = 0;
 
 	/*--- Number of markers on the FSI interface ---*/
 
@@ -817,8 +775,6 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
 
 		/*--- Initialize pointer buffers inside the loop, so we can delete for each marker. ---*/
 		unsigned long Buffer_Send_nVertexDonor[1], *Buffer_Recv_nVertexDonor = NULL;
-		unsigned long Buffer_Send_nVertexDonorOwned[1], *Buffer_Recv_nVertexDonorOwned = NULL;
-		unsigned long Buffer_Send_nVertexTarget[1], *Buffer_Recv_nVertexTarget = NULL;
 
 		/*--- The donor and target markers are tagged with the same index.
 		 *--- This is independent of the MPI domain decomposition.
@@ -956,9 +912,9 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
 		SU2_MPI::Gather(Buffer_Send_DonorIndices, nBuffer_DonorIndices, MPI_LONG, Buffer_Recv_DonorIndices, nBuffer_DonorIndices, MPI_LONG, MASTER_NODE, MPI_COMM_WORLD);
 
 #else
-		for (iVariable = 0; iVariable < nBuffer_DonorVariables; iVariable++)
+		for (unsigned long iVariable = 0; iVariable < nBuffer_DonorVariables; iVariable++)
 			Buffer_Recv_DonorVariables[iVariable] = Buffer_Send_DonorVariables[iVariable];
-		for (iVariable = 0; iVariable < nBuffer_DonorIndices; iVariable++)
+		for (unsigned long iVariable = 0; iVariable < nBuffer_DonorIndices; iVariable++)
 			Buffer_Recv_DonorIndices[iVariable] = Buffer_Send_DonorIndices[iVariable];
 #endif
 
@@ -1057,8 +1013,6 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
 
 		if (rank == MASTER_NODE) {
 			delete [] Buffer_Recv_nVertexDonor;
-			delete [] Buffer_Recv_nVertexTarget;
-			delete [] Buffer_Recv_nVertexDonorOwned;
 			delete [] Buffer_Recv_DonorVariables;
 			delete [] Buffer_Recv_DonorIndices;
 		}
@@ -1068,27 +1022,23 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
 
 }
 
-void CTransfer::Allgather_InterfaceData_Interpolate(CSolver *donor_solution, CSolver *target_solution,
-		   	   	   	   	   	   	                    CGeometry *donor_geometry, CGeometry *target_geometry,
-												    CConfig *donor_config, CConfig *target_config){
+void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target_solution,
+		   	   	   	   	   	   	             CGeometry *donor_geometry, CGeometry *target_geometry,
+		   	   	   	   	   	   	             CConfig *donor_config, CConfig *target_config){
 
 
 	unsigned short nMarkerInt, nMarkerDonor, nMarkerTarget;		// Number of markers on the interface, donor and target side
 	unsigned short iMarkerInt, iMarkerDonor, iMarkerTarget;		// Variables for iteration over markers
 	int Marker_Donor = -1, Marker_Target = -1;
 
-	unsigned long nVertexDonor, nVertexTarget;					// Number of vertices on Donor and Target side
-	unsigned long iVertex, iPoint;								// Variables for iteration over vertices and nodes
-	unsigned long jVertex, jPoint;								// Variables for iteration over vertices and nodes
-
-	unsigned short iVar, jDim;
+	unsigned long iVertex;								// Variables for iteration over vertices and nodes
+	unsigned short iVar;
 
 	GetPhysical_Constants(donor_solution, target_solution, donor_geometry, target_geometry,
 						  donor_config, target_config);
 
 	unsigned long Point_Donor_Global, Donor_Global_Index;
 	unsigned long Point_Donor, Point_Target;
-	su2double *Normal_Donor, *Normal_Target;
 
     int rank = MASTER_NODE;
     int size = SINGLE_NODE;
@@ -1100,21 +1050,13 @@ void CTransfer::Allgather_InterfaceData_Interpolate(CSolver *donor_solution, CSo
 
     unsigned long iLocalVertex = 0;
     unsigned long nLocalVertexDonor = 0;
-    unsigned long iVertexDonor = 0, iVertexTarget = 0;
-    unsigned long nPoint_Total = 0;
 
-	unsigned long MaxLocalVertexDonor = 0, MaxLocalVertexTarget = 0;
-	unsigned long TotalVertexDonor = 0;
+	unsigned long MaxLocalVertexDonor = 0;
 
-	unsigned long nBuffer_DonorVariables = 0, nBuffer_TargetVariables = 0;
-	unsigned long nBuffer_DonorIndices = 0, nBuffer_TargetIndices = 0;
+	unsigned long nBuffer_DonorVariables = 0;
+	unsigned long nBuffer_DonorIndices = 0;
 
-	unsigned long nBuffer_BcastVariables = 0, nBuffer_BcastIndices = 0;
-
-	unsigned long Processor_Donor, Processor_Target;
-
-	int iProcessor, nProcessor = 0;
-	unsigned long iVariable;
+	int nProcessor = 0;
 
 	/*--- Number of markers on the FSI interface ---*/
 
@@ -1256,9 +1198,9 @@ void CTransfer::Allgather_InterfaceData_Interpolate(CSolver *donor_solution, CSo
 		SU2_MPI::Allgather(Buffer_Send_DonorVariables, nBuffer_DonorVariables, MPI_DOUBLE, Buffer_Recv_DonorVariables, nBuffer_DonorVariables, MPI_DOUBLE, MPI_COMM_WORLD);
 		SU2_MPI::Allgather(Buffer_Send_DonorIndices, nBuffer_DonorIndices, MPI_LONG, Buffer_Recv_DonorIndices, nBuffer_DonorIndices, MPI_LONG, MPI_COMM_WORLD);
 #else
-		for (iVariable = 0; iVariable < nBuffer_DonorVariables; iVariable++)
+		for (unsigned long iVariable = 0; iVariable < nBuffer_DonorVariables; iVariable++)
 			Buffer_Recv_DonorVariables[iVariable] = Buffer_Send_DonorVariables[iVariable];
-		for (iVariable = 0; iVariable < nBuffer_DonorIndices; iVariable++)
+		for (unsigned long iVariable = 0; iVariable < nBuffer_DonorIndices; iVariable++)
 			Buffer_Recv_DonorIndices[iVariable] = Buffer_Send_DonorIndices[iVariable];
 #endif
 

@@ -217,8 +217,8 @@ void CIntegration::Space_Integration_FEM(CGeometry *geometry,
 	  unsigned short IterativeScheme = config->GetKind_SpaceIteScheme_FEA(); 			// Iterative schemes: NEWTON_RAPHSON, MODIFIED_NEWTON_RAPHSON
 	  unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
 
-	  bool restart = config->GetRestart();													// Restart solution
-	  bool initial_calc_restart = (config->GetExtIter() == config->GetDyn_RestartIter());	// Restart iteration
+	  bool restart = config->GetRestart();																	// Restart solution
+	  bool initial_calc_restart = (SU2_TYPE::Int(config->GetExtIter()) == config->GetDyn_RestartIter());	// Restart iteration
 
 	  /*--- Compute Mass Matrix ---*/
 	  /*--- The mass matrix is computed only once, at the beginning of the calculation, no matter whether the ---*/
@@ -393,7 +393,6 @@ void CIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver **solver_co
 	unsigned short iMarker;
 
 	unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
-	unsigned short KindSolver = config->GetKind_Solver();
 
 	/*--- Set the Jacobian according to the different time integration methods ---*/
 
@@ -818,7 +817,6 @@ void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *
     	MPI_Comm_size(MPI_COMM_WORLD, &size);
 	#endif
 
-	unsigned short iCounter;
 	su2double FEA_check[2] = {0.0, 0.0};
 	su2double magResidualFSI, logResidualFSI_initial, logResidualFSI;
 	su2double magResidualFSI_criteria, logResidualFSI_criteria;

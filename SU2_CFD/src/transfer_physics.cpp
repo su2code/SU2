@@ -59,7 +59,6 @@ void CTransfer_FlowTraction::GetPhysical_Constants(CSolver *flow_solution, CSolv
 
 	su2double *Velocity_ND, *Velocity_Real;
 	su2double Density_ND,  Density_Real, Velocity2_Real, Velocity2_ND;
-	su2double factorForces;
 
     Velocity_Real = flow_config->GetVelocity_FreeStream();
     Density_Real = flow_config->GetDensity_FreeStream();
@@ -118,7 +117,7 @@ void CTransfer_FlowTraction::GetDonor_Variable(CSolver *flow_solution, CGeometry
 	// div_vel: Velocity divergence
 	// Dij: Dirac delta
 	su2double Pn = 0.0, div_vel = 0.0, Dij = 0.0;
-	su2double Viscosity = 0.0, Density = 0.0;
+	su2double Viscosity = 0.0;
 	su2double **Grad_PrimVar;
 	su2double Tau[3][3] = { {0.0, 0.0, 0.0} ,
 							{0.0, 0.0, 0.0} ,
@@ -130,7 +129,7 @@ void CTransfer_FlowTraction::GetDonor_Variable(CSolver *flow_solution, CGeometry
 		// Get the normal at the vertex: this normal goes inside the fluid domain.
 	Normal_Flow = flow_geometry->vertex[Marker_Flow][Vertex_Flow]->GetNormal();
 
-	// Retrieve the values of pressure, viscosity and density
+	// Retrieve the values of pressure and viscosity
 	if (incompressible){
 
 		Pn = flow_solution->node[Point_Flow]->GetPressureInc();
@@ -139,7 +138,6 @@ void CTransfer_FlowTraction::GetDonor_Variable(CSolver *flow_solution, CGeometry
 
 			Grad_PrimVar = flow_solution->node[Point_Flow]->GetGradient_Primitive();
 			Viscosity = flow_solution->node[Point_Flow]->GetLaminarViscosityInc();
-			Density = flow_solution->node[Point_Flow]->GetDensityInc();
 
 		}
 	}
@@ -151,7 +149,6 @@ void CTransfer_FlowTraction::GetDonor_Variable(CSolver *flow_solution, CGeometry
 
 			Grad_PrimVar = flow_solution->node[Point_Flow]->GetGradient_Primitive();
 			Viscosity = flow_solution->node[Point_Flow]->GetLaminarViscosity();
-			Density = flow_solution->node[Point_Flow]->GetDensity();
 
 		}
 	}
@@ -163,7 +160,7 @@ void CTransfer_FlowTraction::GetDonor_Variable(CSolver *flow_solution, CGeometry
 
 	// Calculate tn in the fluid nodes for the viscous term
 
-	if (viscous_flow){
+	if ((incompressible || compressible) && viscous_flow){
 
 		// Divergence of the velocity
 		div_vel = 0.0; for (iVar = 0; iVar < nVar; iVar++) div_vel += Grad_PrimVar[iVar+1][iVar];

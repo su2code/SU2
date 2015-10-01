@@ -1480,7 +1480,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
   if (fea) {
     
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
-    numerics_container[MESH_0][FEA_SOL][VISC_TERM] = new CGalerkin_FEA(nDim, nVar_Wave, config);
+    numerics_container[MESH_0][FEA_SOL][VISC_TERM] = new CGalerkin_FEA(nDim, nVar_FEA, config);
     
   }
   
@@ -1521,7 +1521,6 @@ void Interface_Preprocessing(CTransfer ***transfer_container, CInterpolator ***i
 	int rank = MASTER_NODE;
 	unsigned short donorZone, targetZone;
 	unsigned short nVar, nVarTransfer;
-	unsigned int nzn = 2; // Temporary, I'm not sure I need it
 
 	/*--- Initialize some useful booleans ---*/
 	bool fluid_donor, structural_donor;

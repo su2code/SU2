@@ -912,7 +912,7 @@ void FEM_StructuralIteration(COutput *output, CIntegration ***integration_contai
 
 	su2double Physical_dt, Physical_t;
 	su2double loadIncrement;
-	unsigned short iMesh, iZone;
+	unsigned short iZone;
 	unsigned short nZone = geometry_container[ZONE_0][MESH_0]->GetnZone();
 	unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
   	unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();

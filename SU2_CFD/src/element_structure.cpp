@@ -99,7 +99,6 @@ CElement::CElement(unsigned short val_nDim, CConfig *config) {
 }
 
 CElement::~CElement(void) {
-	unsigned short iVar;
 
 	if (CurrentCoord       	!= NULL) delete [] CurrentCoord;
 	if (RefCoord           	!= NULL) delete [] RefCoord;
@@ -189,7 +188,7 @@ void CElement::clearStress(void){
 	unsigned short iNode, iStress, nStress;
 
 	if (nDim == 2) nStress = 3;
-	else if (nDim == 3) nStress = 6;
+	else nStress = 6;
 
 	for(iNode = 0; iNode < nNodes; iNode++) {
 		for (iStress = 0; iStress < nStress; iStress++){

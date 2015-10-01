@@ -9967,8 +9967,8 @@ void CEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_co
 
 void CEulerSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetricMovement *flow_grid_movement,
                                         CConfig *flow_config, CConfig *fea_config, CGeometry **fea_geometry, CSolver ***fea_solution) {
-    unsigned short iMarker, iDim;
-    unsigned long iVertex, iPoint;
+    unsigned short iDim;
+    unsigned long iVertex;
     su2double *Coord, VarCoord[3] = {0,0,0};
 
   #ifndef HAVE_MPI
@@ -10010,8 +10010,6 @@ void CEulerSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetricMo
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
     unsigned long nLocalVertexStruct = 0, nLocalVertexFlow = 0;
-    unsigned long iVertexFlow = 0;
-    unsigned long nPoint_Total = 0;
 
 	unsigned short nMarkerFSI, nMarkerStruct, nMarkerFlow;		// Number of markers on FSI problem, FEA and Flow side
 	unsigned short iMarkerFSI, iMarkerStruct, iMarkerFlow;		// Variables for iteration over markers
@@ -10022,7 +10020,8 @@ void CEulerSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetricMo
 	unsigned long nBuffer_DonorIndices = 0, nBuffer_SetIndex = 0;
 
 	unsigned long Point_Flow, Point_Struct;
-	unsigned long Processor_Flow, Processor_Struct;
+	long Point_Flow_Rcv, Processor_Flow_Rcv;
+	unsigned long Processor_Flow;
 
 	int Marker_Flow = -1, Marker_Struct = -1;
 
@@ -10177,22 +10176,6 @@ void CEulerSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetricMo
 		        /*--- The displacements come from the predicted solution ---*/
 		        Displacement_Struct = fea_solution[MESH_0][FEA_SOL]->node[Point_Struct]->GetSolution_Pred();
 
-//		        if (rank == MASTER_NODE){
-//		        	cout << "For point " << Point_Struct << " we have ";
-//					for (iDim = 0; iDim < nDim; iDim++){
-//						Buffer_Send_StructCoord[iVertex*nDim+iDim] = Coord_Struct[iDim] + Displacement_Struct[iDim];
-//						cout << "d" << iDim << "= " << Buffer_Send_StructCoord[iVertex*nDim+iDim] << ", ";
-//					}
-//					Buffer_Send_DonorIndices[2*iVertex]     = Point_Flow;
-//					cout << "the donor index is " << Buffer_Send_DonorIndices[2*iVertex] ;
-//					Buffer_Send_DonorIndices[2*iVertex + 1] = Processor_Flow;
-//					cout << " and the donor processor is " << Buffer_Send_DonorIndices[2*iVertex + 1];
-//
-//					if (fea_geometry[MESH_0]->node[Point_Struct]->GetDomain()) cout << ", and this processor owns it" << endl;
-//					else cout << ", and it's a halo node" << endl;
-//
-//		        }
-
 				for (iDim = 0; iDim < nDim; iDim++){
 					Buffer_Send_StructCoord[iVertex*nDim+iDim] = Coord_Struct[iDim] + Displacement_Struct[iDim];
 				}
@@ -10213,33 +10196,6 @@ void CEulerSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetricMo
 		/*--- Once all the messages have been sent, we gather them all into the MASTER_NODE ---*/
 		SU2_MPI::Gather(Buffer_Send_StructCoord, nBuffer_StructCoord, MPI_DOUBLE, Buffer_Recv_StructCoord, nBuffer_StructCoord, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
 		SU2_MPI::Gather(Buffer_Send_DonorIndices, nBuffer_DonorIndices, MPI_LONG, Buffer_Recv_DonorIndices, nBuffer_DonorIndices, MPI_LONG, MASTER_NODE, MPI_COMM_WORLD);
-
-//		if (rank == MASTER_NODE){
-//			cout << endl << "-----------------------------------------------------------" << endl;
-//			cout << "For tag " << iMarkerFSI << ":" << endl;
-//			for (iProcessor = 0; iProcessor < nProcessor; iProcessor++){
-//				cout << "The processor " << iProcessor << " has " << Buffer_Recv_nVertexStruct[iProcessor] << " nodes on the structural side and ";
-//				cout << Buffer_Recv_nVertexFlow[iProcessor] << " nodes on the fluid side " << endl;
-//			}
-//			cout << "The max number of vertices is " << MaxLocalVertexStruct << " on the structural side and ";
-//			cout << MaxLocalVertexFlow << " on the fluid side." << endl;
-//
-//			cout << "---------------- Check received buffers ---------------------" << endl;
-//			for (iProcessor = 0; iProcessor < nProcessor; iProcessor++){
-//				long initialIndex, initialIndex2;
-//				initialIndex = iProcessor*nBuffer_StructCoord;
-//				initialIndex2 = iProcessor*nBuffer_DonorIndices;
-//				for (long iCheck = 0; iCheck < Buffer_Recv_nVertexStruct[iProcessor]; iCheck++){
-//					cout << "From processor " << iProcessor << " we get coordinates (";
-//						for (iDim = 0; iDim < nDim; iDim++)
-//							cout << Buffer_Recv_StructCoord[initialIndex+iCheck*nDim+iDim] << ",";
-//					cout << "), the donor index for the flow " << Buffer_Recv_DonorIndices[initialIndex2+iCheck*2] ;
-//					cout << " and the donor processor " << Buffer_Recv_DonorIndices[initialIndex2+iCheck*2+1] << endl;
-//
-//				}
-//			}
-//
-//		}
 
 		/*--- Counter to determine where in the array we have to set the information ---*/
 		long *Counter_Processor_Flow = NULL;
@@ -10279,8 +10235,8 @@ void CEulerSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetricMo
 				for (iVertex = 0; iVertex < Buffer_Recv_nVertexStruct[iProcessor]; iVertex++) {
 
 					/*--- The processor and index for the flow are: ---*/
-					Processor_Flow = Buffer_Recv_DonorIndices[iIndex_Struct+iVertex*2+1];
-					Point_Flow     = Buffer_Recv_DonorIndices[iIndex_Struct+iVertex*2];
+					Processor_Flow_Rcv = Buffer_Recv_DonorIndices[iIndex_Struct+iVertex*2+1];
+					Point_Flow_Rcv     = Buffer_Recv_DonorIndices[iIndex_Struct+iVertex*2];
 
 					/*--- Load the buffer at the appropriate position ---*/
 					/*--- This is determined on the fluid side by:
@@ -10297,39 +10253,23 @@ void CEulerSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetricMo
 					 */
 
 					/*--- We check that we are not setting the value for a halo node ---*/
-					if (Point_Flow != -1){
-						iProcessor_Flow = Processor_Flow*nBuffer_FlowNewCoord;
-						iIndex_Flow = Processor_Flow*nBuffer_SetIndex;
-						iPoint_Flow = Counter_Processor_Flow[Processor_Flow]*nDim;
+					if (Point_Flow_Rcv != -1){
+						iProcessor_Flow = Processor_Flow_Rcv*nBuffer_FlowNewCoord;
+						iIndex_Flow = Processor_Flow_Rcv*nBuffer_SetIndex;
+						iPoint_Flow = Counter_Processor_Flow[Processor_Flow_Rcv]*nDim;
 
 						for (iDim = 0; iDim < nDim; iDim++)
 							Buffer_Send_FlowNewCoord[iProcessor_Flow + iPoint_Flow + iDim] = Buffer_Recv_StructCoord[iProcessor_Struct + iVertex*nDim + iDim];
 
 						/*--- We set the fluid index at an appropriate position matching the coordinates ---*/
-						Buffer_Send_SetIndex[iIndex_Flow + Counter_Processor_Flow[Processor_Flow]] = Point_Flow;
+						Buffer_Send_SetIndex[iIndex_Flow + Counter_Processor_Flow[Processor_Flow_Rcv]] = Point_Flow_Rcv;
 
-						Counter_Processor_Flow[Processor_Flow]++;
+						Counter_Processor_Flow[Processor_Flow_Rcv]++;
 					}
 
 				}
 
 			}
-
-//			cout << "---------------- Check send buffers ---------------------" << endl;
-//
-//			for (iProcessor = 0; iProcessor < nProcessor; iProcessor++){
-//				long initialIndex, initialIndex2;
-//				initialIndex = iProcessor*nBuffer_FlowNewCoord;
-//				initialIndex2 = iProcessor*nBuffer_SetIndex;
-//				for (long iCheck = 0; iCheck < Buffer_Recv_nVertexFlow[iProcessor]; iCheck++){
-//					cout << "Processor " << iProcessor << " will receive the node " ;
-//					cout << Buffer_Send_SetIndex[initialIndex2+iCheck] << " which corresponds to the coordinates ";
-//					for (iDim = 0; iDim < nDim; iDim++)
-//						cout << "x" << iDim << "=" << Buffer_Send_FlowNewCoord[initialIndex + iCheck*nDim + iDim] << ", ";
-//					cout << endl;
-//				}
-//
-//			}
 
 		}
 
@@ -10399,12 +10339,12 @@ void CEulerSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetricMo
 
 void CEulerSolver::SetFlow_Displacement_Int(CGeometry **flow_geometry, CVolumetricMovement *flow_grid_movement,
                                         CConfig *flow_config, CConfig *fea_config, CGeometry **fea_geometry, CSolver ***fea_solution) {
-    unsigned short iMarker, iDim, nDonor;
-    unsigned long iVertex, iPoint;
-    su2double *Coord, VarCoord[3];
+    unsigned short iMarker, iDim, iDonor, nDonor;
+    unsigned long iVertex;
+    su2double VarCoord[3];
 
     unsigned long iPoint_Donor;
-    su2double *CoordDonor, *DisplacementDonor, *DisplacementDonor_Prev, coeff;
+    su2double *DisplacementDonor, *DisplacementDonor_Prev, coeff;
 
     for (iMarker = 0; iMarker < flow_config->GetnMarker_All(); iMarker++) {
 
@@ -10415,14 +10355,11 @@ void CEulerSolver::SetFlow_Displacement_Int(CGeometry **flow_geometry, CVolumetr
           for (iDim = 0; iDim < nDim; iDim++)
             VarCoord[iDim]=0.0;
 
-          iPoint = flow_geometry[MESH_0]->vertex[iMarker][iVertex]->GetNode();
           nDonor = flow_geometry[MESH_0]->vertex[iMarker][iVertex]->GetnDonorPoints();
-          for (unsigned short iDonor; iDonor < nDonor; iDonor++){
+
+          for (iDonor = 0; iDonor < nDonor; iDonor++){
             iPoint_Donor = flow_geometry[MESH_0]->vertex[iMarker][iVertex]->GetInterpDonorPoint(iDonor);
             coeff = flow_geometry[MESH_0]->vertex[iMarker][iVertex]->GetDonorCoeff(iDonor);
-//          Coord = flow_geometry[MESH_0]->node[iPoint]->GetCoord();
-
-//          CoordDonor = fea_geometry[MESH_0]->node[iPoint_Donor]->GetCoord();
 
             /*--- The displacements come from the predicted solution ---*/
             DisplacementDonor = fea_solution[MESH_0][FEA_SOL]->node[iPoint_Donor]->GetSolution_Pred();
@@ -10433,10 +10370,6 @@ void CEulerSolver::SetFlow_Displacement_Int(CGeometry **flow_geometry, CVolumetr
 
               VarCoord[iDim] += (DisplacementDonor[iDim] - DisplacementDonor_Prev[iDim])*coeff;
           }
-
-//TODO Double check this to make sure the coordinates are updated as they should be
-
-            //VarCoord[iDim] = (CoordDonor[iDim]+DisplacementDonor[iDim])-Coord[iDim];
 
           flow_geometry[MESH_0]->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
         }
