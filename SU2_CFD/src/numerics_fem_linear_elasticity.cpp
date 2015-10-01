@@ -70,7 +70,7 @@ void CFEM_LinearElasticity::Compute_Tangent_Matrix(CElement *element){
 	/*--- Initialize auxiliary matrices ---*/
 
 	if (nDim == 2) bDim = 3;
-	else if (nDim == 3) bDim = 6;
+	else bDim = 6;
 
 	for (iVar = 0; iVar < bDim; iVar++){
 		for (jVar = 0; jVar < nDim; jVar++){
@@ -203,11 +203,8 @@ void CFEM_LinearElasticity::Compute_Averaged_NodalStress(CElement *element){
 
 	unsigned short iVar, jVar;
 	unsigned short iGauss, nGauss;
-	unsigned short iNode, jNode, nNode;
-	unsigned short iDim;
-	unsigned short bDim;
-
-	su2double Weight, Jac_X;
+	unsigned short iNode, nNode;
+	unsigned short iDim, bDim;
 
 	/*--- Auxiliary vector ---*/
 	su2double Strain[6], Stress[6];
@@ -215,7 +212,7 @@ void CFEM_LinearElasticity::Compute_Averaged_NodalStress(CElement *element){
 	/*--- Initialize auxiliary matrices ---*/
 
 	if (nDim == 2) bDim = 3;
-	else if (nDim == 3) bDim = 6;
+	else bDim = 6;
 
 	for (iVar = 0; iVar < bDim; iVar++){
 		for (jVar = 0; jVar < nDim; jVar++){

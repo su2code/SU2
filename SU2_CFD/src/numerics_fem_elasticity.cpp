@@ -86,7 +86,7 @@ CFEM_Elasticity::CFEM_Elasticity(unsigned short val_nDim, unsigned short val_nVa
 
 CFEM_Elasticity::~CFEM_Elasticity(void) {
 
-	unsigned short iVar, jVar;
+	unsigned short iVar;
 
 	for (iVar = 0; iVar < nDim; iVar++){
 		delete [] KAux_ab[iVar];
@@ -128,8 +128,6 @@ void CFEM_Elasticity::Compute_Mass_Matrix(CElement *element){
 
 	unsigned short iGauss, nGauss;
 	unsigned short iNode, jNode, nNode;
-	unsigned short iDim;
-	unsigned short bDim;
 
 	su2double Weight, Jac_X;
 

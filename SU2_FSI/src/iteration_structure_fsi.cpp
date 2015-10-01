@@ -36,8 +36,6 @@ void FSI_BGS_Iteration(COutput *output, CIntegration ***integration_container, C
                              CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox,
 							 CTransfer*** transfer_container, unsigned long iFluidIt, unsigned long nFluidIt) {
 
-	su2double Physical_dt, Physical_t;
-	unsigned short iMesh;
 	unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
 	unsigned long IntIter_Struct = 0; config_container[ZONE_1]->SetIntIter(IntIter_Struct);
 	unsigned long iFSIIter = 0;
@@ -167,7 +165,7 @@ void Flow_Subiteration(COutput *output, CIntegration ***integration_container, C
 	unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
 	unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
 
-	unsigned short iMesh, iZone;
+	unsigned short iZone;
 
 	/*--- Only one zone allowed for the fluid as for now ---*/
 	unsigned short nFluidZone = 1;
@@ -396,8 +394,6 @@ void FEM_Update(COutput *output, CIntegration ***integration_container, CGeometr
 	nTotalZone = nFluidZone + nStrucZone;
 
 	bool dynamic = (config_container[ZONE_STRUC]->GetDynamic_Analysis() == DYNAMIC);					// Dynamic problems
-	bool nonlinear = (config_container[ZONE_STRUC]->GetGeometricConditions() == LARGE_DEFORMATIONS);	// Geometrically non-linear problems
-
 
 	/*----------------- Compute averaged nodal stress ------------------------*/
 
@@ -426,9 +422,8 @@ void FEM_Update(COutput *output, CIntegration ***integration_container, CGeometr
 void FEA_Subiteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
                   CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
                   CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox) {
-	su2double Physical_dt, Physical_t;
-	unsigned short iMesh, iZone;
-	unsigned short nZone = geometry_container[ZONE_0][MESH_0]->GetnZone();
+
+	unsigned short iZone;
 	unsigned long IntIter_Struct = 0; //config_container[ZONE_0]->SetIntIter(IntIter);
   	unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
 
@@ -482,25 +477,21 @@ void FEM_Subiteration(COutput *output, CIntegration ***integration_container, CG
 
 	unsigned int ZONE_STRUC = nFluidZone;
 
-	su2double Physical_dt, Physical_t;
 	su2double loadIncrement;
-	unsigned short iMesh, iZone;
-	unsigned short nZone = geometry_container[ZONE_0][MESH_0]->GetnZone();
+	unsigned short iZone;
 	unsigned long IntIter = 0; config_container[ZONE_STRUC]->SetIntIter(IntIter);
   	unsigned long ExtIter = config_container[ZONE_STRUC]->GetExtIter();
 
   	unsigned long iIncrement;
   	unsigned long nIncrements = config_container[ZONE_STRUC]->GetNumberIncrements();
 
-	bool dynamic = (config_container[ZONE_STRUC]->GetDynamic_Analysis() == DYNAMIC);					// Dynamic problems
 	bool nonlinear = (config_container[ZONE_STRUC]->GetGeometricConditions() == LARGE_DEFORMATIONS);	// Geometrically non-linear problems
 	bool linear = (config_container[ZONE_STRUC]->GetGeometricConditions() == SMALL_DEFORMATIONS);	// Geometrically non-linear problems
 
 	bool initial_calc = config_container[ZONE_STRUC]->GetExtIter() == 0;				// Checks if it is the first calculation.
 	bool first_iter = config_container[ZONE_STRUC]->GetIntIter() == 0;				// Checks if it is the first iteration
 	bool restart = config_container[ZONE_STRUC]->GetRestart();												// Restart analysis
-	bool initial_calc_restart = (config_container[ZONE_STRUC]->GetExtIter() == config_container[ZONE_STRUC]->GetDyn_RestartIter()); // Initial calculation for restart
-
+	bool initial_calc_restart = (SU2_TYPE::Int(config_container[ZONE_STRUC]->GetExtIter()) == config_container[ZONE_STRUC]->GetDyn_RestartIter()); // Initial calculation for restart
 
 	su2double CurrentTime = config_container[ZONE_STRUC]->GetCurrent_DynTime();
 	su2double Static_Time = config_container[ZONE_STRUC]->GetStatic_Time();
@@ -795,31 +786,25 @@ void FSI_Disp_Transfer(COutput *output, CIntegration ***integration_container, C
 			break;
 		case SCATTER_DATA:
 			if (MatchingMesh){
-				transfer_container[ZONE_1][ZONE_0]->Scatter_InterfaceData_Matching(solver_container[ZONE_1][MESH_0][FEA_SOL],solver_container[ZONE_0][MESH_0][FLOW_SOL],
-																				   geometry_container[ZONE_1][MESH_0],geometry_container[ZONE_0][MESH_0],
-																				   config_container[ZONE_1], config_container[ZONE_0]);
+				transfer_container[ZONE_1][ZONE_0]->Scatter_InterfaceData(solver_container[ZONE_1][MESH_0][FEA_SOL],solver_container[ZONE_0][MESH_0][FLOW_SOL],
+																		  geometry_container[ZONE_1][MESH_0],geometry_container[ZONE_0][MESH_0],
+																		  config_container[ZONE_1], config_container[ZONE_0]);
 				/*--- Set the volume deformation for the fluid zone ---*/
 				grid_movement[ZONE_0]->SetVolume_Deformation(geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], true);
 			}
 			else {
-				transfer_container[ZONE_1][ZONE_0]->Scatter_InterfaceData_Interpolate(solver_container[ZONE_1][MESH_0][FEA_SOL],solver_container[ZONE_0][MESH_0][FLOW_SOL],
-																				   geometry_container[ZONE_1][MESH_0],geometry_container[ZONE_0][MESH_0],
-																				   config_container[ZONE_1], config_container[ZONE_0]);
-				/*--- Set the volume deformation for the fluid zone ---*/
-				grid_movement[ZONE_0]->SetVolume_Deformation(geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], true);
+				cout << "Scatter method not implemented for non-matching meshes. Exiting..." << endl;
+				exit(EXIT_FAILURE);
 			}
 			break;
 		case ALLGATHER_DATA:
 			if (MatchingMesh){
-				transfer_container[ZONE_1][ZONE_0]->Allgather_InterfaceData_Matching(solver_container[ZONE_1][MESH_0][FEA_SOL],solver_container[ZONE_0][MESH_0][FLOW_SOL],
-																				   geometry_container[ZONE_1][MESH_0],geometry_container[ZONE_0][MESH_0],
-																				   config_container[ZONE_1], config_container[ZONE_0]);
-				/*--- Set the volume deformation for the fluid zone ---*/
-				grid_movement[ZONE_0]->SetVolume_Deformation(geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], true);
+				cout << "Allgather method not yet implemented for matching meshes. Exiting..." << endl;
+				exit(EXIT_FAILURE);
 			}
 			else {
-				transfer_container[ZONE_1][ZONE_0]->Allgather_InterfaceData_Interpolate(solver_container[ZONE_1][MESH_0][FEA_SOL],solver_container[ZONE_0][MESH_0][FLOW_SOL],
-																				   geometry_container[ZONE_1][MESH_0],geometry_container[ZONE_0][MESH_0],
+				transfer_container[ZONE_1][ZONE_0]->Allgather_InterfaceData(solver_container[ZONE_1][MESH_0][FEA_SOL],solver_container[ZONE_0][MESH_0][FLOW_SOL],
+																				  geometry_container[ZONE_1][MESH_0],geometry_container[ZONE_0][MESH_0],
 																				   config_container[ZONE_1], config_container[ZONE_0]);
 				/*--- Set the volume deformation for the fluid zone ---*/
 				grid_movement[ZONE_0]->SetVolume_Deformation(geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], true);
@@ -838,26 +823,6 @@ void FSI_Disp_Transfer(COutput *output, CIntegration ***integration_container, C
 			}
 			break;
     }
-
-
-//	/*--- Displacement transfer --  This will have to be modified for non-matching meshes ---*/
-//
-//	if (MatchingMesh){
-//		solver_container[ZONE_0][MESH_0][FLOW_SOL]->SetFlow_Displacement(geometry_container[ZONE_0], grid_movement[ZONE_0],
-//																   	   config_container[ZONE_0], config_container[ZONE_1],
-//																   	   geometry_container[ZONE_1], solver_container[ZONE_1]);
-//	}
-//	else{
-//
-//		/*--- Transfer the information scattered (this is, each processor only receives the information it needs ---*/
-//		transfer_container[ZONE_1][ZONE_0]->Broadcast_InterfaceData_Matching(solver_container[ZONE_1][MESH_0][FEA_SOL],solver_container[ZONE_0][MESH_0][FLOW_SOL],
-//																		   geometry_container[ZONE_1][MESH_0],geometry_container[ZONE_0][MESH_0],
-//																		   config_container[ZONE_1], config_container[ZONE_0]);
-//
-//		/*--- Set the volume deformation for the fluid zone ---*/
-//		grid_movement[ZONE_0]->SetVolume_Deformation(geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], true);
-//
-//	}
 
 
 }
@@ -900,24 +865,22 @@ void FSI_Load_Transfer(COutput *output, CIntegration ***integration_container, C
 			break;
 		case SCATTER_DATA:
 			if (MatchingMesh){
-				transfer_container[ZONE_0][ZONE_1]->Scatter_InterfaceData_Matching(solver_container[ZONE_0][MESH_0][FLOW_SOL],solver_container[ZONE_1][MESH_0][FEA_SOL],
-																				   geometry_container[ZONE_0][MESH_0],geometry_container[ZONE_1][MESH_0],
-																				   config_container[ZONE_0], config_container[ZONE_1]);
+				transfer_container[ZONE_0][ZONE_1]->Scatter_InterfaceData(solver_container[ZONE_0][MESH_0][FLOW_SOL],solver_container[ZONE_1][MESH_0][FEA_SOL],
+																		  geometry_container[ZONE_0][MESH_0],geometry_container[ZONE_1][MESH_0],
+																		  config_container[ZONE_0], config_container[ZONE_1]);
 			}
 			else {
-				transfer_container[ZONE_0][ZONE_1]->Scatter_InterfaceData_Interpolate(solver_container[ZONE_0][MESH_0][FLOW_SOL],solver_container[ZONE_1][MESH_0][FEA_SOL],
-																				   geometry_container[ZONE_0][MESH_0],geometry_container[ZONE_1][MESH_0],
-																				   config_container[ZONE_0], config_container[ZONE_1]);
+				cout << "Scatter method not implemented for non-matching meshes. Exiting..." << endl;
+				exit(EXIT_FAILURE);
 			}
 			break;
 		case ALLGATHER_DATA:
 			if (MatchingMesh){
-				transfer_container[ZONE_0][ZONE_1]->Allgather_InterfaceData_Matching(solver_container[ZONE_0][MESH_0][FLOW_SOL],solver_container[ZONE_1][MESH_0][FEA_SOL],
-																				   geometry_container[ZONE_0][MESH_0],geometry_container[ZONE_1][MESH_0],
-																				   config_container[ZONE_0], config_container[ZONE_1]);
+				cout << "Allgather method not yet implemented for matching meshes. Exiting..." << endl;
+				exit(EXIT_FAILURE);
 			}
 			else {
-				transfer_container[ZONE_0][ZONE_1]->Allgather_InterfaceData_Interpolate(solver_container[ZONE_0][MESH_0][FLOW_SOL],solver_container[ZONE_1][MESH_0][FEA_SOL],
+				transfer_container[ZONE_0][ZONE_1]->Allgather_InterfaceData(solver_container[ZONE_0][MESH_0][FLOW_SOL],solver_container[ZONE_1][MESH_0][FEA_SOL],
 																				   geometry_container[ZONE_0][MESH_0],geometry_container[ZONE_1][MESH_0],
 																				   config_container[ZONE_0], config_container[ZONE_1]);
 			}
@@ -933,23 +896,6 @@ void FSI_Load_Transfer(COutput *output, CIntegration ***integration_container, C
 			}
 			break;
     }
-
-//	if (MatchingMesh){
-//
-//		solver_container[ZONE_1][MESH_0][FEA_SOL]->SetFEA_Load(solver_container[ZONE_0], geometry_container[ZONE_1], geometry_container[ZONE_0],
-//															   config_container[ZONE_1], config_container[ZONE_0], numerics_container[ZONE_1][MESH_0][SolContainer_Position_fea][VISC_TERM]);
-//
-//	}
-//	else{
-////		solver_container[ZONE_1][MESH_0][FEA_SOL]->SetFEA_Load_Int(solver_container[ZONE_0], geometry_container[ZONE_1], geometry_container[ZONE_0],
-////															   config_container[ZONE_1], config_container[ZONE_0], numerics_container[ZONE_1][MESH_0][SolContainer_Position_fea][VISC_TERM]);
-//
-//		transfer_container[ZONE_0][ZONE_1]->Broadcast_InterfaceData_Matching(solver_container[ZONE_0][MESH_0][FLOW_SOL],solver_container[ZONE_1][MESH_0][FEA_SOL],
-//																		   geometry_container[ZONE_0][MESH_0],geometry_container[ZONE_1][MESH_0],
-//																		   config_container[ZONE_0], config_container[ZONE_1]);
-//
-//	}
-
 
 }
 

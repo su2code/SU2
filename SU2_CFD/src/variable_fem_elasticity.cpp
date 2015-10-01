@@ -59,7 +59,7 @@ CFEM_ElasVariable::CFEM_ElasVariable(void) : CVariable() {
 
 CFEM_ElasVariable::CFEM_ElasVariable(su2double *val_fea, unsigned short val_nDim, unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
 
-	unsigned short iVar, iDim, jDim;
+	unsigned short iVar;
 	bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);	// Nonlinear analysis.
 	bool body_forces = false;		// Bool for adding body forces in the future.
 	bool incremental_load = config->GetIncrementalLoad();
