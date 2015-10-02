@@ -57,14 +57,7 @@ protected:
 public:
 	
 	/*! 
-	 * \brief Constructor of the class.
-	 * \param[in] config - Definition of the particular problem.
-   * \param[in] val_nZone - Total number of zones in the problem.
-   * \param[in] iteration_container - Container vector with all the iteration methods.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] geometry_container - Geometrical definition of the problem.
-   * \param[in] integration_container - Container vector with all the integration methods.
-   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
+	 * \brief Constructor of the class. 
 	 */
   CDriver(CIteration **iteration_container,
           CSolver ****solver_container,
@@ -101,30 +94,32 @@ public:
                    CConfig **config_container,
                    CSurfaceMovement **surface_movement,
                    CVolumetricMovement **grid_movement,
-                   CFreeFormDefBox*** FFDBox){};
+                   CFreeFormDefBox*** FFDBox);
   /*!
    * \brief Definition of the physics iteration class or within a single zone.
    * \param[in] iteration_container - Pointer to the iteration container to be instantiated.
    * \param[in] config - Definition of the particular problem.
    * \param[in] nZone - Total number of zones in the problem.
    */
-  void Iteration_Preprocessing(CIteration *iteration_container, CConfig *config);
+  void Iteration_Preprocessing(CIteration **iteration_container, CConfig **config, unsigned short val_nZone);
 
   /*!
    * \brief Definition and allocation of all solution classes.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] iZone - Index of the zone.
    */
-  void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry, CConfig *config);
+  void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry, CConfig *config, unsigned short iZone);
 
   /*!
    * \brief Definition and allocation of all integration classes.
    * \param[in] integration_container - Container vector with all the integration methods.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] iZone - Index of the zone.
    */
-  void Integration_Preprocessing(CIntegration **integration_container, CGeometry **geometry, CConfig *config);
+  void Integration_Preprocessing(CIntegration **integration_container, CGeometry **geometry, CConfig *config, unsigned short iZone);
 
   /*!
    * \brief Definition and allocation of all solver classes.
@@ -132,8 +127,9 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] iZone - Index of the zone.
    */
-  void Numerics_Preprocessing(CNumerics ****numerics_container, CSolver ***solver_container, CGeometry **geometry, CConfig *config);
+  void Numerics_Preprocessing(CNumerics ****numerics_container, CSolver ***solver_container, CGeometry **geometry, CConfig *config, unsigned short iZone);
 
 };
 /*!
@@ -148,12 +144,6 @@ public:
 	/*! 
 	 * \brief Constructor of the class.
 	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_nZone - Total number of zones in the problem.
-	 * \param[in] iteration_container - Container vector with all the iteration methods.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] geometry_container - Geometrical definition of the problem.
-	 * \param[in] integration_container - Container vector with all the integration methods.
-	 * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
 	 */
   CSingleZoneDriver(CIteration **iteration_container,
                     CSolver ****solver_container,
@@ -170,7 +160,6 @@ public:
 	
 	/*! 
 	 * \brief Run a single iteration of the physics within a single zone.
-	 * \param[in] iteration_container - Container vector with all the iteration methods.
    * \param[in] output - Pointer to the COutput class.
    * \param[in] integration_container - Container vector with all the integration methods.
    * \param[in] geometry_container - Geometrical definition of the problem.
@@ -209,12 +198,6 @@ public:
   /*!
    * \brief Constructor of the class.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] val_nZone - Total number of zones in the problem.
-   * \param[in] iteration_container - Container vector with all the iteration methods.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] geometry_container - Geometrical definition of the problem.
-   * \param[in] integration_container - Container vector with all the integration methods.
-   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
    */
   CMultiZoneDriver(CIteration **iteration_container,
                    CSolver ****solver_container,
@@ -267,13 +250,7 @@ public:
 
 	/*!
 	 * \brief Constructor of the class.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_nZone - Total number of zones in the problem.
-   * \param[in] iteration_container - Container vector with all the iteration methods.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] geometry_container - Geometrical definition of the problem.
-   * \param[in] integration_container - Container vector with all the integration methods.
-   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
+	 * \param[in] config - Definition of the particular problem.
 	 */
   CFSIDriver(CIteration **iteration_container,
              CSolver ****solver_container,
