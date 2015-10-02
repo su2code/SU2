@@ -32,7 +32,7 @@
 #include "../include/iteration_structure.hpp"
 
 //! TDE: Base class for new iteration layer
-CIteration::CIteration(CConfig **config) { }
+CIteration::CIteration(CConfig *config) { }
 CIteration::~CIteration(void) { }
 
 //! TDE: Inline file for this perhaps? It's purely virtual.
@@ -52,7 +52,7 @@ void CIteration::Output()      { }
 void CIteration::Postprocess() { }
 
 
-CMeanFlowIteration::CMeanFlowIteration(CConfig **config) : CIteration(config) { }
+CMeanFlowIteration::CMeanFlowIteration(CConfig *config) : CIteration(config) { }
 CMeanFlowIteration::~CMeanFlowIteration(void) { }
 void CMeanFlowIteration::Preprocess() { }
 void CMeanFlowIteration::Iterate(COutput *output,
@@ -75,38 +75,37 @@ void CMeanFlowIteration::Iterate(COutput *output,
   }
   unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
   unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
-  
 #ifdef HAVE_MPI
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-  
+
   /*--- Set the initial condition ---*/
   
   for (iZone = 0; iZone < nZone; iZone++)
     solver_container[iZone][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[iZone], solver_container[iZone], config_container[iZone], ExtIter);
-  
+
   /*--- Initial set up for unsteady problems with dynamic meshes. ---*/
   
   for (iZone = 0; iZone < nZone; iZone++) {
-    
+
     /*--- Dynamic mesh update ---*/
     
     if ((config_container[iZone]->GetGrid_Movement()) && (!time_spectral)) {
       SetGrid_Movement(geometry_container[iZone], surface_movement[iZone], grid_movement[iZone], FFDBox[iZone], solver_container[iZone], config_container[iZone], iZone, IntIter, ExtIter);
     }
-    
+
     /*--- Apply a Wind Gust ---*/
     
     if (config_container[ZONE_0]->GetWind_Gust()) {
       SetWind_GustField(config_container[iZone], geometry_container[iZone], solver_container[iZone]);
     }
   }
-  
+
   for (iZone = 0; iZone < nZone; iZone++) {
     
     /*--- Set the value of the internal iteration ---*/
-    
+
     IntIter = ExtIter;
     if ((config_container[iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
         (config_container[iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) IntIter = 0;
@@ -127,7 +126,7 @@ void CMeanFlowIteration::Iterate(COutput *output,
     }
     
     /*--- Solve the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes (RANS) equations (one iteration) ---*/
-    
+
     integration_container[iZone][FLOW_SOL]->MultiGrid_Iteration(geometry_container, solver_container, numerics_container,
                                                                 config_container, RUNTIME_FLOW_SYS, IntIter, iZone);
     
@@ -135,7 +134,7 @@ void CMeanFlowIteration::Iterate(COutput *output,
         (config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS)) {
       
       /*--- Solve the turbulence model ---*/
-      
+
       config_container[iZone]->SetGlobalParam(RANS, RUNTIME_TURB_SYS, ExtIter);
       integration_container[iZone][TURB_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
                                                                    config_container, RUNTIME_TURB_SYS, IntIter, iZone);
@@ -149,7 +148,7 @@ void CMeanFlowIteration::Iterate(COutput *output,
       }
       
     }
-    
+
     /*--- Compute & store time-spectral source terms across all zones ---*/
     
     if (time_spectral)
@@ -232,7 +231,7 @@ void CMeanFlowIteration::Iterate(COutput *output,
       if (integration_container[ZONE_0][FLOW_SOL]->GetConvergence()) break;
       
     }
-    
+
     for (iZone = 0; iZone < nZone; iZone++) {
       
       /*--- Update dual time solver on all mesh levels ---*/
@@ -267,7 +266,7 @@ void CMeanFlowIteration::Iterate(COutput *output,
     }
     
   }
-  
+
 }
 
 void CMeanFlowIteration::Update()      { }
@@ -276,7 +275,7 @@ void CMeanFlowIteration::Output()      { }
 void CMeanFlowIteration::Postprocess() { }
 
 
-CTNE2Iteration::CTNE2Iteration(CConfig **config) : CIteration(config) { }
+CTNE2Iteration::CTNE2Iteration(CConfig *config) : CIteration(config) { }
 CTNE2Iteration::~CTNE2Iteration(void) { }
 void CTNE2Iteration::Preprocess() { }
 void CTNE2Iteration::Iterate(COutput *output,
@@ -329,7 +328,7 @@ void CTNE2Iteration::Output()      { }
 void CTNE2Iteration::Postprocess() { }
 
 
-CWaveIteration::CWaveIteration(CConfig **config) : CIteration(config) { }
+CWaveIteration::CWaveIteration(CConfig *config) : CIteration(config) { }
 CWaveIteration::~CWaveIteration(void) { }
 void CWaveIteration::Preprocess() { }
 void CWaveIteration::Iterate(COutput *output,
@@ -391,7 +390,7 @@ void CWaveIteration::Output()      { }
 void CWaveIteration::Postprocess() { }
 
 
-CHeatIteration::CHeatIteration(CConfig **config) : CIteration(config) { }
+CHeatIteration::CHeatIteration(CConfig *config) : CIteration(config) { }
 CHeatIteration::~CHeatIteration(void) { }
 void CHeatIteration::Preprocess() { }
 void CHeatIteration::Iterate(COutput *output,
@@ -452,7 +451,7 @@ void CHeatIteration::Output()      { }
 void CHeatIteration::Postprocess() { }
 
 
-CPoissonIteration::CPoissonIteration(CConfig **config) : CIteration(config) { }
+CPoissonIteration::CPoissonIteration(CConfig *config) : CIteration(config) { }
 CPoissonIteration::~CPoissonIteration(void) { }
 void CPoissonIteration::Preprocess() { }
 void CPoissonIteration::Iterate(COutput *output,
@@ -491,7 +490,7 @@ void CPoissonIteration::Output()      { }
 void CPoissonIteration::Postprocess() { }
 
 
-CFEAIteration::CFEAIteration(CConfig **config) : CIteration(config) { }
+CFEAIteration::CFEAIteration(CConfig *config) : CIteration(config) { }
 CFEAIteration::~CFEAIteration(void) { }
 void CFEAIteration::Preprocess() { }
 void CFEAIteration::Iterate(COutput *output,
@@ -549,7 +548,7 @@ void CFEAIteration::Output()      { }
 void CFEAIteration::Postprocess() { }
 
 
-CAdjMeanFlowIteration::CAdjMeanFlowIteration(CConfig **config) : CIteration(config) { }
+CAdjMeanFlowIteration::CAdjMeanFlowIteration(CConfig *config) : CIteration(config) { }
 CAdjMeanFlowIteration::~CAdjMeanFlowIteration(void) { }
 void CAdjMeanFlowIteration::Preprocess() { }
 void CAdjMeanFlowIteration::Iterate(COutput *output,
@@ -749,7 +748,7 @@ void CAdjMeanFlowIteration::Output()      { }
 void CAdjMeanFlowIteration::Postprocess() { }
 
 
-CAdjTNE2Iteration::CAdjTNE2Iteration(CConfig **config) : CIteration(config) { }
+CAdjTNE2Iteration::CAdjTNE2Iteration(CConfig *config) : CIteration(config) { }
 CAdjTNE2Iteration::~CAdjTNE2Iteration(void) { }
 void CAdjTNE2Iteration::Preprocess() { }
 void CAdjTNE2Iteration::Iterate(COutput *output,
@@ -862,7 +861,7 @@ void CAdjTNE2Iteration::Output()      { }
 void CAdjTNE2Iteration::Postprocess() { }
 
 
-CDiscAdjMeanFlowIteration::CDiscAdjMeanFlowIteration(CConfig **config) : CIteration(config) { }
+CDiscAdjMeanFlowIteration::CDiscAdjMeanFlowIteration(CConfig *config) : CIteration(config) { }
 CDiscAdjMeanFlowIteration::~CDiscAdjMeanFlowIteration(void) { }
 void CDiscAdjMeanFlowIteration::Preprocess() { }
 void CDiscAdjMeanFlowIteration::Iterate(COutput *output,
