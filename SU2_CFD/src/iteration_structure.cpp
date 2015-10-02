@@ -30,12 +30,14 @@
  */
 
 #include "../include/iteration_structure.hpp"
-#include "/home/jka/Cprograms/Sources/libm3l/Source/libm3l.h"
-#include "/home/jka/Cprograms/Sources/lsipdx/Source/lsipdx.h"
 #include "../include/tmpheader.h"
+// #include "/home/jka/Cprograms/Sources/libm3l/Source/libm3l.h"
+// #include "/home/jka/Cprograms/Sources/lsipdx/Source/lsipdx.h"
+#include "libm3l.h"
+#include "lsipdx.h"
 
 
-int communicate(CSolver ****, d6dof_t *, double);
+int communicate(CConfig *, CSolver ****, d6dof_t *, int, conn_t *);
 
 void MeanFlowIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
                        CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
@@ -1669,9 +1671,11 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
   unsigned long iPoint;
   bool adjoint = config_container->GetAdjoint();
 	bool time_spectral = (config_container->GetUnsteady_Simulation() == TIME_SPECTRAL);
-  d6dof_t angle, *pangle;
-  pangle = &angle;
-//   double buff_angles[3], buff_rec_angles[3];
+  d6dof_t angle, *p_6DOFdata;
+  conn_t conn, *pconn;
+  
+  p_6DOFdata = &angle;
+  pconn = &conn;
   
 	/*--- For a time-spectral case, set "iteration number" to the zone number,
    so that the meshes are positioned correctly for each instance. ---*/
@@ -1855,23 +1859,29 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
  /*
   * MASTER node communicate with external solver
   */
-
-          if( communicate(&solver_container, pangle, 1) != 0)
+          cout << endl << " Sending and receving data from external process." << endl;
+          if( communicate(config_container,&solver_container, p_6DOFdata, ExtIter, pconn) != 0)
               Error("Communicate()");
 /*
  *recevied angles have to redistrbuted to all partitions
  */  
-	  printf(" Angles are %lf, %lf, %lf\n", pangle->angles[0], pangle->angles[1], pangle->angles[2]);
-// 	  buff_angles[0] = pangle->alpha;
-// 	  buff_angles[1] = pangle->beta;
-// 	  buff_angles[2] = pangle->gamma;
-      }
+	  printf(" Angles are %lf, %lf, %lf\n", p_6DOFdata->angles[0], p_6DOFdata->angles[1], p_6DOFdata->angles[2]);
+      }  
+
+//       config->GetTranslation_Rate_X(iZone);
+//       config->GetTranslation_Rate_Y(iZone);
+//       config->GetTranslation_Rate_Z(iZone);
       
 #ifdef HAVE_MPI
-      SU2_MPI::Bcast(pangle->angles, 3, MPI_DOUBLE, MASTER_NODE,MPI_COMM_WORLD);
-      SU2_MPI::Bcast(pangle->rotcenter, 3, MPI_DOUBLE, MASTER_NODE,MPI_COMM_WORLD);
-      SU2_MPI::Bcast(pangle->transvec, 3, MPI_DOUBLE, MASTER_NODE,MPI_COMM_WORLD);
+      SU2_MPI::Bcast(p_6DOFdata->angles, 3, MPI_DOUBLE, MASTER_NODE,MPI_COMM_WORLD);
+      SU2_MPI::Bcast(p_6DOFdata->rotcenter, 3, MPI_DOUBLE, MASTER_NODE,MPI_COMM_WORLD);
+      SU2_MPI::Bcast(p_6DOFdata->transvec, 3, MPI_DOUBLE, MASTER_NODE,MPI_COMM_WORLD);
 #endif	
+      
+      iZone = ZONE_0;
+      config_container->SetMotion_Origin_X(iZone,p_6DOFdata->angles[0]);
+      config_container->SetMotion_Origin_X(iZone,p_6DOFdata->angles[1]);
+      config_container->SetMotion_Origin_X(iZone,p_6DOFdata->angles[2]);
       
       geometry_container[MESH_0]->SetGridVelocity(config_container, ExtIter);
       
@@ -2435,7 +2445,7 @@ void SetTimeSpectral_Velocities(CGeometry ***geometry_container,
 }
 
 
-int   communicate(CSolver ****solver_container, d6dof_t *angle, double time)
+int   communicate(CConfig *config, CSolver ****solver_container, d6dof_t *angle, int iter, conn_t *conn)
 {
 /*
  * function is a communication routine through 
@@ -2477,6 +2487,7 @@ int   communicate(CSolver ****solver_container, d6dof_t *angle, double time)
 	char name_i[80], name_o[80];
 
 	double *tmpfloat, Lift, Drag, Side, Ceff, Cmx, Cmy, Cmz, Cfx, Cfy, Cfz;
+	double deltaT, time;
 	client_fce_struct_t InpPar, *PInpPar;
 	opts_t *Popts_1, opts, opts_1, *Popts;
 	find_t *SFounds;
@@ -2495,17 +2506,6 @@ int   communicate(CSolver ****solver_container, d6dof_t *angle, double time)
         Cfx =      solver_container[ZONE_0][MESH_0][FLOW_SOL]->GetTotal_CFx();
         Cfy =      solver_container[ZONE_0][MESH_0][FLOW_SOL]->GetTotal_CFy();
         Cfz =      solver_container[ZONE_0][MESH_0][FLOW_SOL]->GetTotal_CFz();
-/*	
-        printf("  LIFT -------------   %lf\n", Lift);
-        printf("  DRAG -------------   %lf\n", Drag);
-       printf("  SIDE FORCE  -------------   %lf\n", Side);
-        printf("  CEFF -------------   %lf\n", Ceff);
-        printf("  CMX -------------   %lf\n",   Cmx);
-         printf("  CMY -------------   %lf\n",  Cmy);
-         printf("  CMZ -------------   %lf\n",   Cmz);
-           printf("  CFX -------------   %lf\n",   Cfx);
-        printf("  CFY -------------   %lf\n",      Cfy);
-          printf("  CFZ -------------   %lf\n",      Cfz);*/
 /*
  * set connection parameters (data link etc)
  */
@@ -2541,16 +2541,17 @@ int   communicate(CSolver ****solver_container, d6dof_t *angle, double time)
 	TmpNode->data.df[7]= Cfx;
 	TmpNode->data.df[8]= Cfy;
 	TmpNode->data.df[9]= Cfz;
+	
+	printf("%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf \n", Lift, Drag, Side, Ceff, Cmx, Cmy, Cmz, Cfx, Cfy, Cfz);
 /*
  * add time
  */
+        deltaT = config->GetDelta_UnstTimeND();
+	time = static_cast<su2double>(iter)*deltaT;
 	dim[0] = 1;
 	if(  (TmpNode = m3l_Mklist("Time", "D", 1, dim, &Gnode, "/CFD_2_SIM", "./", (char *)NULL)) == 0)
 		Error("socket_edge2simulink: m3l_Mklist");
 	TmpNode->data.df[0] = time;
-
-// 	if(m3l_Cat(Gnode, "--all", "-P", "-L",  "*",   (char *)NULL) != 0)
-// 			Error("CatData");
 /*
  * open socket
  */
