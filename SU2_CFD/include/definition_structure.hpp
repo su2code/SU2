@@ -67,12 +67,14 @@ unsigned short GetnDim(string val_mesh_filename, unsigned short val_format);
  * \param[in] config - Definition of the particular problem.
  * \param[in] nZone - Total number of zones in the problem.
  */
-void Driver_Preprocessing(CDriver *driver, CConfig **config, unsigned short val_nZone,
+void Driver_Preprocessing(CDriver **driver,
     CIteration **iteration_container,
     CSolver ****solver_container,
     CGeometry ***geometry_container,
     CIntegration ***integration_container,
-    CNumerics *****numerics_container);
+    CNumerics *****numerics_container,
+                          CConfig **config,
+                          unsigned short val_nZone);
 
 
 

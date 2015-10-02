@@ -38,7 +38,7 @@ int main(int argc, char *argv[]) {
   bool StopCalc = false;
   su2double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
   unsigned long ExtIter = 0;
-  unsigned short iMesh, iZone, iSol, nZone, nDim;
+  unsigned short iMesh, iZone, nZone, nDim;
   char config_file_name[MAX_STRING_SIZE];
   char runtime_file_name[MAX_STRING_SIZE];
   ofstream ConvHist_file;
@@ -60,7 +60,7 @@ int main(int argc, char *argv[]) {
    heirarchy over all zones, multigrid levels, equation sets, and equation
    terms as described in the comments below. ---*/
   
-  CDriver *driver;//                       = NULL;
+  CDriver *driver                       = NULL;
   CIteration **iteration_container      = NULL;
   COutput *output                       = NULL;
   CIntegration ***integration_container = NULL;
@@ -136,7 +136,7 @@ int main(int argc, char *argv[]) {
     
     geometry_aux->SetColorGrid_Parallel(config_container[iZone]);
     
-    /*--- Allocate the memory of the current domain, and divide the grid 
+    /*--- Allocate the memory of the current domain, and divide the grid
      between the ranks. ---*/
     
     geometry_container[iZone] = new CGeometry *[config_container[iZone]->GetnMGLevels()+1];
@@ -172,16 +172,16 @@ int main(int argc, char *argv[]) {
   /*--- First, given the basic information about the number of zones and the
    solver types from the config, instantiate the appropriate driver for the problem. ---*/
   
-  Driver_Preprocessing(driver, config_container, nZone,iteration_container,solver_container,
-      geometry_container,integration_container,numerics_container);
-
+  Driver_Preprocessing(&driver, iteration_container, solver_container,
+                       geometry_container, integration_container, numerics_container, config_container, nZone);
+  
   for (iZone = 0; iZone < nZone; iZone++) {
     
     /*--- Computation of wall distances for turbulence modeling ---*/
     
     if ( (config_container[iZone]->GetKind_Solver() == RANS) ||
         (config_container[iZone]->GetKind_Solver() == ADJ_RANS) ||
-         (config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS))
+        (config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS))
       geometry_container[iZone][MESH_0]->ComputeWall_Distance(config_container[iZone]);
     
     /*--- Computation of positive surface area in the z-plane which is used for
@@ -213,33 +213,33 @@ int main(int argc, char *argv[]) {
         SetGrid_Movement(geometry_container[iZone], surface_movement[iZone], grid_movement[iZone],
                          FFDBox[iZone], solver_container[iZone], config_container[iZone], iZone, 0, 0);
     }
-
+    
     if (config_container[iZone]->GetDirectDiff() == D_DESIGN){
       if (rank == MASTER_NODE)
         cout << "Setting surface/volume derivatives." << endl;
-
+      
       /*--- Set the surface derivatives, i.e. the derivative of the surface mesh nodes with respect to the design variables ---*/
-
+      
       surface_movement[iZone]->SetSurface_Derivative(geometry_container[iZone][MESH_0],config_container[iZone]);
-
+      
       /*--- Call the volume deformation routine with derivative mode enabled.
        This computes the derivative of the volume mesh with respect to the surface nodes ---*/
-
+      
       grid_movement[iZone]->SetVolume_Deformation(geometry_container[iZone][MESH_0],config_container[iZone], true, true);
-
+      
       /*--- Update the multi-grid structure to propagate the derivative information to the coarser levels ---*/
-
+      
       geometry_container[iZone][MESH_0]->UpdateGeometry(geometry_container[iZone],config_container[iZone]);
-
+      
       /*--- Set the derivative of the wall-distance with respect to the surface nodes ---*/
-
+      
       if ( (config_container[iZone]->GetKind_Solver() == RANS) ||
           (config_container[iZone]->GetKind_Solver() == ADJ_RANS) ||
-           (config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS))
+          (config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS))
         geometry_container[iZone][MESH_0]->ComputeWall_Distance(config_container[iZone]);
     }
-
-
+    
+    
   }
   
   /*--- For the time-spectral solver, set the grid node velocities. ---*/
@@ -288,25 +288,25 @@ int main(int argc, char *argv[]) {
 #endif
   
   bool fsi = config_container[ZONE_0]->GetFSI_Simulation();
-
+  
   unsigned short iFluidIt, nFluidIt;
-
+  
   iFluidIt=0;
   nFluidIt=config_container[ZONE_0]->GetnIterFSI();
-
+  
   /*--- This is temporal and just to check. It will have to be added to the regular history file ---*/
-
+  
   ofstream historyFile_FSI;
   bool writeHistFSI = config_container[ZONE_0]->GetWrite_Conv_FSI();
   if (writeHistFSI){
-	  char cstrFSI[200];
-	  string filenameHistFSI = config_container[ZONE_0]->GetConv_FileName_FSI();
-	  strcpy (cstrFSI, filenameHistFSI.data());
-	  historyFile_FSI.open (cstrFSI);
-	  historyFile_FSI << "Time,Iteration,Aitken,URes,logResidual,orderMagnResidual" << endl;
-	  historyFile_FSI.close();
+    char cstrFSI[200];
+    string filenameHistFSI = config_container[ZONE_0]->GetConv_FileName_FSI();
+    strcpy (cstrFSI, filenameHistFSI.data());
+    historyFile_FSI.open (cstrFSI);
+    historyFile_FSI << "Time,Iteration,Aitken,URes,logResidual,orderMagnResidual" << endl;
+    historyFile_FSI.close();
   }
-
+  
   while (ExtIter < config_container[ZONE_0]->GetnExtIter()) {
     
     /*--- Set the value of the external iteration. ---*/
@@ -327,90 +327,23 @@ int main(int argc, char *argv[]) {
     
     /*--- Perform a single iteration of the chosen PDE solver. ---*/
     
-	if (fsi){
-	    config_container[ZONE_1]->SetExtIter(ExtIter);
-	    FluidStructureIteration(output, integration_container, geometry_container,
-	    	                		solver_container, numerics_container, config_container,
-	    	                		surface_movement, grid_movement, FFDBox,
-	    	                		iFluidIt, nFluidIt);
-	}
-
-	else {
-
-    switch (config_container[ZONE_0]->GetKind_Solver()) {
-        
-      case EULER: case NAVIER_STOKES: case RANS:
-        
-        /*--- Run a single iteration of the problem using the driver class. ---*/
-        
-        //! TDE: This is here at the moment just to activate the driver class
-        //! for the mean flow. Once we have implemented all of the iteration classes
-        //! we can remove all of the other iteration subroutines and leave just
-        //! the line below.
-        
-        driver->Run(iteration_container, output, integration_container,
-                    geometry_container, solver_container, numerics_container,
-                    config_container, surface_movement, grid_movement, FFDBox);
-        
-//        MeanFlowIteration(output, integration_container, geometry_container,
-//                          solver_container, numerics_container, config_container,
-//                          surface_movement, grid_movement, FFDBox);
-        
-        break;
-        
-      case TNE2_EULER: case TNE2_NAVIER_STOKES:
-        TNE2Iteration(output, integration_container,
-                      geometry_container, solver_container,
-                      numerics_container, config_container,
-                      surface_movement, grid_movement, FFDBox);
-        break;
-
-      case WAVE_EQUATION:
-        WaveIteration(output, integration_container, geometry_container,
-                      solver_container, numerics_container, config_container,
-                      surface_movement, grid_movement, FFDBox);
-        break;
-        
-      case HEAT_EQUATION:
-        HeatIteration(output, integration_container, geometry_container,
-                      solver_container, numerics_container, config_container,
-                      surface_movement, grid_movement, FFDBox);
-        break;
-        
-      case POISSON_EQUATION:
-        PoissonIteration(output, integration_container, geometry_container,
-                         solver_container, numerics_container, config_container,
-                         surface_movement, grid_movement, FFDBox);
-        break;
-        
-      case LINEAR_ELASTICITY:
-        FEAIteration(output, integration_container, geometry_container,
-                     solver_container, numerics_container, config_container,
-                     surface_movement, grid_movement, FFDBox);
-        break;
-        
-      case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
-        AdjMeanFlowIteration(output, integration_container, geometry_container,
-                             solver_container, numerics_container, config_container,
-                             surface_movement, grid_movement, FFDBox);
-        break;
-        
-      case ADJ_TNE2_EULER: case ADJ_TNE2_NAVIER_STOKES:
-        AdjTNE2Iteration(output, integration_container, geometry_container,
-                         solver_container, numerics_container, config_container,
-                         surface_movement, grid_movement, FFDBox);
-        break;
-
-      case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES:case DISC_ADJ_RANS:
-        DiscAdjMeanFlowIteration(output, integration_container, geometry_container,
-                                 solver_container, numerics_container, config_container,
-                                 surface_movement, grid_movement, FFDBox);
-        break;
-
-
+    if (fsi){
+      config_container[ZONE_1]->SetExtIter(ExtIter);
+      FluidStructureIteration(output, integration_container, geometry_container,
+                              solver_container, numerics_container, config_container,
+                              surface_movement, grid_movement, FFDBox,
+                              iFluidIt, nFluidIt);
     }
-	}
     
+    else {
+      
+      /*--- Run a single iteration of the problem using the driver class. ---*/
+      
+      driver->Run(iteration_container, output, integration_container,
+                  geometry_container, solver_container, numerics_container,
+                  config_container, surface_movement, grid_movement, FFDBox);
+      
+    }
     
     /*--- Synchronization point after a single solver iteration. Compute the
      wall clock time required. ---*/
@@ -451,25 +384,25 @@ int main(int argc, char *argv[]) {
     /*--- Check whether the current simulation has reached the specified
      convergence criteria, and set StopCalc to true, if so. ---*/
     
-	    switch (config_container[ZONE_0]->GetKind_Solver()) {
-	      case EULER: case NAVIER_STOKES: case RANS:
-	        StopCalc = integration_container[ZONE_0][FLOW_SOL]->GetConvergence(); break;
-	      case TNE2_EULER: case TNE2_NAVIER_STOKES:
-	        StopCalc = integration_container[ZONE_0][TNE2_SOL]->GetConvergence(); break;
-	      case WAVE_EQUATION:
-	        StopCalc = integration_container[ZONE_0][WAVE_SOL]->GetConvergence(); break;
-	      case HEAT_EQUATION:
-	        StopCalc = integration_container[ZONE_0][HEAT_SOL]->GetConvergence(); break;
-	      case LINEAR_ELASTICITY:
-	    	// This is a temporal fix, while we code the non-linear solver 
-//	        StopCalc = integration_container[ZONE_0][FEA_SOL]->GetConvergence(); break;
-	    	StopCalc = false; break;
-	      case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
-              case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-	        StopCalc = integration_container[ZONE_0][ADJFLOW_SOL]->GetConvergence(); break;
-	      case ADJ_TNE2_EULER: case ADJ_TNE2_NAVIER_STOKES:
-	        StopCalc = integration_container[ZONE_0][ADJTNE2_SOL]->GetConvergence(); break;
-	    }
+    switch (config_container[ZONE_0]->GetKind_Solver()) {
+      case EULER: case NAVIER_STOKES: case RANS:
+        StopCalc = integration_container[ZONE_0][FLOW_SOL]->GetConvergence(); break;
+      case TNE2_EULER: case TNE2_NAVIER_STOKES:
+        StopCalc = integration_container[ZONE_0][TNE2_SOL]->GetConvergence(); break;
+      case WAVE_EQUATION:
+        StopCalc = integration_container[ZONE_0][WAVE_SOL]->GetConvergence(); break;
+      case HEAT_EQUATION:
+        StopCalc = integration_container[ZONE_0][HEAT_SOL]->GetConvergence(); break;
+      case LINEAR_ELASTICITY:
+        // This is a temporal fix, while we code the non-linear solver
+        //	        StopCalc = integration_container[ZONE_0][FEA_SOL]->GetConvergence(); break;
+        StopCalc = false; break;
+      case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
+      case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+        StopCalc = integration_container[ZONE_0][ADJFLOW_SOL]->GetConvergence(); break;
+      case ADJ_TNE2_EULER: case ADJ_TNE2_NAVIER_STOKES:
+        StopCalc = integration_container[ZONE_0][ADJTNE2_SOL]->GetConvergence(); break;
+    }
     
     /*--- Solution output. Determine whether a solution needs to be written
      after the current iteration, and if so, execute the output file writing
@@ -489,9 +422,9 @@ int main(int argc, char *argv[]) {
         ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) && (!fsi) &&
          ((ExtIter == 0) || ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0) ||
                              ((ExtIter-1) % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0)))) ||
-
+        
         ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) && (fsi) &&
-        ((ExtIter == 0) || ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))))) {
+         ((ExtIter == 0) || ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))))) {
           
           /*--- Low-fidelity simulations (using a coarser multigrid level
            approximation to the solution) require an interpolation back to the

@@ -186,43 +186,41 @@ unsigned short GetnDim(string val_mesh_filename, unsigned short val_format) {
   return (unsigned short) nDim;
 }
 
-void Driver_Preprocessing(CDriver *driver, CConfig **config, unsigned short val_nZone,
-    CIteration **iteration_container,
-    CSolver ****solver_container,
-    CGeometry ***geometry_container,
-    CIntegration ***integration_container,
-    CNumerics *****numerics_container) {
+void Driver_Preprocessing(CDriver **driver,
+                          CIteration **iteration_container,
+                          CSolver ****solver_container,
+                          CGeometry ***geometry_container,
+                          CIntegration ***integration_container,
+                          CNumerics *****numerics_container,
+                          CConfig **config_container,
+                          unsigned short val_nZone) {
   
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
-  if (val_nZone == SINGLE_ZONE) {
+  /*--- For now, time spectral will use a single-zone driver. ---*/
+  bool time_spectral = (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_SPECTRAL);
+  
+  if (val_nZone == SINGLE_ZONE || time_spectral) {
     
     /*--- Single zone problem: instantiate the single zone driver class. ---*/
     if (rank == MASTER_NODE) cout << "Instantiating a single zone driver for the problem. " << endl;
     
-    driver = new CSingleZoneDriver(config, val_nZone,iteration_container,solver_container,
-        geometry_container,integration_container,numerics_container);
+    *driver = new CSingleZoneDriver(iteration_container, solver_container, geometry_container,
+                                    integration_container, numerics_container, config_container, val_nZone);
     
   } else {
     
     /*--- Multi-zone problem: instantiate the multi-zone driver class by default
      or a specialized driver class for a particular multi-physics problem. ---*/
     
-    //! TDE: Just as an example here, commented out. Need to work on config
-    //! options for specifying the driver types. For now, we will just default
-    //! to the generic multi-zone driver so we can implement what is currently
-    //! available in iteration structure.
-    
-    //if (fsi) {
-    //  driver = new CFSIDriver(config, val_nZone);
-    //} else {
     if (rank == MASTER_NODE) cout << "Instantiating a multi-zone driver for the problem. " << endl;
-    driver = new CMultiZoneDriver(config, val_nZone,iteration_container,solver_container,
-        geometry_container,integration_container,numerics_container);
-    //}
+    *driver = new CMultiZoneDriver(iteration_container, solver_container, geometry_container,
+                                   integration_container, numerics_container, config_container, val_nZone);
+    
+    /*--- Future multi-zone drivers instatiated here. ---*/
     
   }
   
@@ -234,7 +232,7 @@ void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned
   unsigned short iMGlevel, iZone;
   unsigned long iPoint;
   int rank = MASTER_NODE;
-
+  
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
@@ -267,7 +265,7 @@ void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned
     geometry[iZone][MESH_0]->SetBoundVolume();
     geometry[iZone][MESH_0]->Check_IntElem_Orientation(config[iZone]);
     geometry[iZone][MESH_0]->Check_BoundElem_Orientation(config[iZone]);
-
+    
     /*--- Create the edge structure ---*/
     
     if (rank == MASTER_NODE) cout << "Identifying edges and vertices." << endl;
