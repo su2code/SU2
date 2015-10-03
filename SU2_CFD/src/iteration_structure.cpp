@@ -31,8 +31,6 @@
 
 #include "../include/iteration_structure.hpp"
 #include "../include/tmpheader.h"
-// #include "/home/jka/Cprograms/Sources/libm3l/Source/libm3l.h"
-// #include "/home/jka/Cprograms/Sources/lsipdx/Source/lsipdx.h"
 #include "libm3l.h"
 #include "lsipdx.h"
 
@@ -1866,11 +1864,7 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
  *recevied angles have to redistrbuted to all partitions
  */  
 	  printf(" Angles are %lf, %lf, %lf\n", p_6DOFdata->angles[0], p_6DOFdata->angles[1], p_6DOFdata->angles[2]);
-      }  
-
-//       config->GetTranslation_Rate_X(iZone);
-//       config->GetTranslation_Rate_Y(iZone);
-//       config->GetTranslation_Rate_Z(iZone);
+      }
       
 #ifdef HAVE_MPI
       SU2_MPI::Bcast(p_6DOFdata->angles, 3, MPI_DOUBLE, MASTER_NODE,MPI_COMM_WORLD);
