@@ -30,6 +30,7 @@
  */
 
 #include "../include/grid_movement_structure.hpp"
+#include "../../SU2_CFD/include/tmpheader.h"
 #include <list>
 
 using namespace std;
@@ -2578,6 +2579,98 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
   UpdateDualGrid(geometry, config);
   
 }
+
+
+
+void CVolumetricMovement::D6dof_motion(CGeometry *geometry, CConfig *config,
+                                         unsigned short iZone, unsigned long iter, d6dof_t *motion_data) {
+  
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+  
+	/*--- Local variables ---*/
+	unsigned short iDim, nDim; 
+	unsigned long iPoint;
+  su2double r[3] = {0.0,0.0,0.0}, rotCoord[3] = {0.0,0.0,0.0}, *Coord;
+	su2double rotMatrix[3][3] = {{0.0,0.0,0.0}, {0.0,0.0,0.0}, {0.0,0.0,0.0}};
+	su2double dtheta, dphi, dpsi, cosTheta, sinTheta;
+	su2double cosPhi, sinPhi, cosPsi, sinPsi;
+	bool time_spectral = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
+	bool adjoint = config->GetAdjoint();
+
+	/*--- Problem dimension  ---*/
+	nDim = geometry->GetnDim();
+
+  /*--- For time-spectral, motion is the same in each zone (at each instance).
+   *    This is used for calls to the config container ---*/
+  if (time_spectral)
+	  iZone = ZONE_0;
+  
+  /*--- Compute delta change in the angle about the x, y, & z axes. ---*/
+
+  dtheta = motion_data->angles[0]*3.1415926/180.;
+  dphi    = motion_data->angles[1]*3.1415926/180.;
+  dpsi    = motion_data->angles[2]*3.1415926/180.;
+  
+	/*--- Store angles separately for clarity. Compute sines/cosines. ---*/
+  
+	cosTheta = cos(dtheta);  cosPhi = cos(dphi);  cosPsi = cos(dpsi);
+	sinTheta = sin(dtheta);  sinPhi = sin(dphi);  sinPsi = sin(dpsi);
+  
+	/*--- Compute the rotation matrix. Note that the implicit
+   ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
+  
+	rotMatrix[0][0] = cosPhi*cosPsi;
+	rotMatrix[1][0] = cosPhi*sinPsi;
+	rotMatrix[2][0] = -sinPhi;
+  
+	rotMatrix[0][1] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;
+	rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;
+	rotMatrix[2][1] = sinTheta*cosPhi;
+  
+	rotMatrix[0][2] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
+	rotMatrix[1][2] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
+	rotMatrix[2][2] = cosTheta*cosPhi;
+  
+	/*--- Loop over and rotate each node in the volume mesh ---*/
+	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+    
+    /*--- Coordinates of the current point ---*/
+    Coord   = geometry->node[iPoint]->GetCoord();
+    
+    /*--- Calculate non-dim. position from rotation center ---*/
+    r[0] = (Coord[0]-motion_data->rotcenter[0]);
+    r[1] = (Coord[1]-motion_data->rotcenter[1]);
+    if (nDim == 3) r[2] = (Coord[2]-motion_data->rotcenter[2]);
+    
+    /*--- Compute transformed point coordinates ---*/
+    rotCoord[0] = rotMatrix[0][0]*r[0] 
+                + rotMatrix[0][1]*r[1] 
+                + rotMatrix[0][2]*r[2];
+    
+    rotCoord[1] = rotMatrix[1][0]*r[0] 
+                + rotMatrix[1][1]*r[1] 
+                + rotMatrix[1][2]*r[2];
+    
+    rotCoord[2] = rotMatrix[2][0]*r[0] 
+                + rotMatrix[2][1]*r[1] 
+                + rotMatrix[2][2]*r[2];
+    
+    /*--- Store new node location & grid velocity. Add center. 
+     Do not store the grid velocity if this is an adjoint calculation.---*/
+    
+    for (iDim = 0; iDim < nDim; iDim++) {
+      geometry->node[iPoint]->SetCoord(iDim, rotCoord[iDim] + motion_data->rotcenter[iDim]);      
+    }
+  }
+	/*--- After moving all nodes, update geometry class ---*/
+  
+	UpdateDualGrid(geometry, config);
+
+}
+
 
 void CVolumetricMovement::SetVolume_Scaling(CGeometry *geometry, CConfig *config, bool UpdateGeo) {
   

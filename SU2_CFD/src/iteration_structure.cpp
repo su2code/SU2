@@ -1862,8 +1862,9 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
               Error("Communicate()");
 /*
  *recevied angles have to redistrbuted to all partitions
- */  
-	  printf(" Angles are %lf, %lf, %lf\n", p_6DOFdata->angles[0], p_6DOFdata->angles[1], p_6DOFdata->angles[2]);
+ */	  
+	  cout << "Agnles are: (" << p_6DOFdata->angles[0] << ", " << p_6DOFdata->angles[1];
+          cout << ", " << p_6DOFdata->angles[2]<< ") degrees." << endl;
       }
       
 #ifdef HAVE_MPI
@@ -1876,6 +1877,9 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
       config_container->SetMotion_Origin_X(iZone,p_6DOFdata->angles[0]);
       config_container->SetMotion_Origin_X(iZone,p_6DOFdata->angles[1]);
       config_container->SetMotion_Origin_X(iZone,p_6DOFdata->angles[2]);
+      
+      grid_movement->D6dof_motion(geometry_container[MESH_0],
+                                    config_container, iZone, ExtIter,p_6DOFdata);
       
       geometry_container[MESH_0]->SetGridVelocity(config_container, ExtIter);
       

@@ -48,6 +48,8 @@
 #include "vector_structure.hpp"
 #include "linear_solvers_structure.hpp"
 
+#include "../../SU2_CFD/include/tmpheader.h"
+
 using namespace std;
 
 /*!
@@ -980,6 +982,17 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] UpdateGeo - Update geometry.
    */
+  
+  	void D6dof_motion(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter, d6dof_t *motion_data);
+	
+  /*!
+	 * \brief Unsteady pitching grid movement using rigid mesh motion.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+   * \param[in] iZone - Zone number in the mesh.
+   * \param[in] iter - Physical time iteration number.
+   */
+  
   void SetVolume_Scaling(CGeometry *geometry, CConfig *config, bool UpdateGeo);
   
   /*!
