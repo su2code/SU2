@@ -2593,7 +2593,7 @@ void CVolumetricMovement::D6dof_motion(CGeometry *geometry, CConfig *config,
 	/*--- Local variables ---*/
 	unsigned short iDim, nDim; 
 	unsigned long iPoint;
-  su2double r[3] = {0.0,0.0,0.0}, rotCoord[3] = {0.0,0.0,0.0}, *Coord;
+	su2double r[3] = {0.0,0.0,0.0}, rotCoord[3] = {0.0,0.0,0.0}, *Coord;
 	su2double rotMatrix[3][3] = {{0.0,0.0,0.0}, {0.0,0.0,0.0}, {0.0,0.0,0.0}};
 	su2double AM[3][3],BM[3][3],CM[3][3];
 	su2double dtheta, dphi, dpsi, cosTheta, sinTheta;
@@ -2668,50 +2668,75 @@ void CVolumetricMovement::D6dof_motion(CGeometry *geometry, CConfig *config,
 //         MAT     = MATMUL(C,B)
 //         OMG_MAT = MATMUL(MAT, A)
 	
+	if(nDim == 3){
+		rotMatrix[0][0] = cosPhi*cosPsi;
+		rotMatrix[1][0] = cosPhi*sinPsi;
+		rotMatrix[2][0] = -sinPhi;
+  
+		rotMatrix[0][1] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;
+		rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;
+		rotMatrix[2][1] = sinTheta*cosPhi;
+  
+		rotMatrix[0][2] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
+		rotMatrix[1][2] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
+		rotMatrix[2][2] = cosTheta*cosPhi;
+  
+/*--- Loop over and rotate each node in the volume mesh ---*/
+		for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
 	
-	rotMatrix[0][0] = cosPhi*cosPsi;
-	rotMatrix[1][0] = cosPhi*sinPsi;
-	rotMatrix[2][0] = -sinPhi;
-  
-	rotMatrix[0][1] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;
-	rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;
-	rotMatrix[2][1] = sinTheta*cosPhi;
-  
-	rotMatrix[0][2] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
-	rotMatrix[1][2] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
-	rotMatrix[2][2] = cosTheta*cosPhi;
-  
-	/*--- Loop over and rotate each node in the volume mesh ---*/
-	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    
-    /*--- Coordinates of the current point ---*/
-    Coord   = geometry->node[iPoint]->GetCoord(); 
-    
+/*--- Coordinates of the current point ---*/
+			Coord   = geometry->node[iPoint]->GetCoord(); 
+   
     /*--- Calculate non-dim. position from rotation center ---*/
-    r[0] = (Coord[0]-motion_data->rotcenter[0]);
-    r[1] = (Coord[1]-motion_data->rotcenter[1]);
-    if (nDim == 3) r[2] = (Coord[2]-motion_data->rotcenter[2]);
+			r[0] = (Coord[0]-motion_data->rotcenter[0]);
+			r[1] = (Coord[1]-motion_data->rotcenter[1]);
+			r[2] = (Coord[2]-motion_data->rotcenter[2]);
   
     /*--- Compute transformed point coordinates ---*/
-    rotCoord[0] = rotMatrix[0][0]*r[0] 
-                + rotMatrix[0][1]*r[1] 
-                + rotMatrix[0][2]*r[2];
+			rotCoord[0] = rotMatrix[0][0]*r[0] 
+			+ rotMatrix[0][1]*r[1] 
+			+ rotMatrix[0][2]*r[2];
     
-    rotCoord[1] = rotMatrix[1][0]*r[0] 
-                + rotMatrix[1][1]*r[1] 
-                + rotMatrix[1][2]*r[2];
+			rotCoord[1] = rotMatrix[1][0]*r[0] 
+			+ rotMatrix[1][1]*r[1] 
+			+ rotMatrix[1][2]*r[2];
     
-    rotCoord[2] = rotMatrix[2][0]*r[0] 
-                + rotMatrix[2][1]*r[1] 
-                + rotMatrix[2][2]*r[2];
+			rotCoord[2] = rotMatrix[2][0]*r[0] 
+			+ rotMatrix[2][1]*r[1] 
+			+ rotMatrix[2][2]*r[2];
     
     /*--- Store new node location & grid velocity. Add center. 
      Do not store the grid velocity if this is an adjoint calculation.---*/
     
-    for (iDim = 0; iDim < nDim; iDim++) {
-      geometry->node[iPoint]->SetCoord(iDim, rotCoord[iDim] + motion_data->rotcenter[iDim]);      
-    }
-  }
+			geometry->node[iPoint]->SetCoord(0, rotCoord[0] + motion_data->rotcenter[0]);      
+			geometry->node[iPoint]->SetCoord(1, rotCoord[1] + motion_data->rotcenter[1]);      
+			geometry->node[iPoint]->SetCoord(2, rotCoord[2] + motion_data->rotcenter[2]);      
+		}
+	}
+	else
+	{
+		/*--- Loop over and rotate each node in the volume mesh ---*/
+		for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+	
+/*--- Coordinates of the current point ---*/
+			Coord   = geometry->node[iPoint]->GetCoord(); 
+   
+    /*--- Calculate non-dim. position from rotation center ---*/
+			r[0] = (Coord[0]-motion_data->rotcenter[0]);
+			r[1] = (Coord[1]-motion_data->rotcenter[1]);
+  
+    /*--- Compute transformed point coordinates ---*/
+			rotCoord[0] =  cosPsi*r[0] + sinPsi*r[1] ;
+			rotCoord[1] = -sinPsi*r[0]  + cosPsi*r[1] ;
+    
+    /*--- Store new node location & grid velocity. Add center. 
+     Do not store the grid velocity if this is an adjoint calculation.---*/
+    
+			geometry->node[iPoint]->SetCoord(0, rotCoord[0] + motion_data->rotcenter[0]);      
+			geometry->node[iPoint]->SetCoord(1, rotCoord[1] + motion_data->rotcenter[1]);      
+		}
+	    
+	}
 	/*--- After moving all nodes, update geometry class ---*/
   
 	UpdateDualGrid(geometry, config);
