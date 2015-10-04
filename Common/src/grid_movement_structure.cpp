@@ -2595,6 +2595,7 @@ void CVolumetricMovement::D6dof_motion(CGeometry *geometry, CConfig *config,
 	unsigned long iPoint;
   su2double r[3] = {0.0,0.0,0.0}, rotCoord[3] = {0.0,0.0,0.0}, *Coord;
 	su2double rotMatrix[3][3] = {{0.0,0.0,0.0}, {0.0,0.0,0.0}, {0.0,0.0,0.0}};
+	su2double AM[3][3],BM[3][3],CM[3][3];
 	su2double dtheta, dphi, dpsi, cosTheta, sinTheta;
 	su2double cosPhi, sinPhi, cosPsi, sinPsi;
 	bool time_spectral = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
@@ -2609,10 +2610,19 @@ void CVolumetricMovement::D6dof_motion(CGeometry *geometry, CConfig *config,
 	  iZone = ZONE_0;
   
   /*--- Compute delta change in the angle about the x, y, & z axes. ---*/
+   cout << "Angles are: " << motion_data->angles[0] << ", " << motion_data->angles[1]<< ", " << motion_data->angles[2]<< endl;
+   cout << "Centr of rotation is: " << motion_data->rotcenter[0] << ", " << motion_data->rotcenter[1]<< ", " << motion_data->rotcenter[2]<< endl;
 
-  dtheta = motion_data->angles[0]*3.1415926/180.;
-  dphi    = motion_data->angles[1]*3.1415926/180.;
-  dpsi    = motion_data->angles[2]*3.1415926/180.;
+//    *  psi - yaw
+//  *  theta - pitch
+//  *  phi - roll
+//  	tmpfloat[0] = psi;
+// 	tmpfloat[1] = theta;
+// 	tmpfloat[2] = phi;
+	
+  dtheta = motion_data->angles[2]*3.1415926/180.;   // pitch 
+  dphi   = motion_data->angles[1]*3.1415926/180.;  // roll
+  dpsi   = motion_data->angles[0]*3.1415926/180.;  // yaw  
   
 	/*--- Store angles separately for clarity. Compute sines/cosines. ---*/
   
@@ -2622,6 +2632,43 @@ void CVolumetricMovement::D6dof_motion(CGeometry *geometry, CConfig *config,
 	/*--- Compute the rotation matrix. Note that the implicit
    ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
   
+// 	AM[0][0] = cosPsi;
+// 	AM[0][0] = sinPsi;
+//  	AM[0][0] =0.;
+//         AM[1][1] = -sinPsi;
+//         AM[1][1] = cosPsi;
+//         AM[1][1] = 0.; 
+//         AM[2][2] = 0;
+//         AM[2][2] = 0;
+//         AM[2][2] = 1;
+// 
+// 	BM[0][0] = cosTheta;
+// 	BM[0][0] = 0;
+//  	BM[0][0] =sinTheta;
+//         BM[1][1] = 0;
+//         BM[1][1] = 1;
+//         BM[1][1] = 0.; 
+//         BM[2][2] = -sinTheta;
+//         BM[2][2] = 0;
+//         BM[2][2] = cosTheta;      
+// 
+// 	
+// 	CM[0][0] = 1;
+// 	CM[0][0] = 0;
+//  	CM[0][0] =0.;
+//         CM[1][1] = 0;
+//         CM[1][1] = cosPhi;
+//         CM[1][1] =sinPhi.; 
+//         CM[2][2] = 0;
+//         CM[2][2] = -sinPhi;
+//         CM[2][2] = cosPhi;
+// 	
+// 	M1[0][0]=
+//        
+//         MAT     = MATMUL(C,B)
+//         OMG_MAT = MATMUL(MAT, A)
+	
+	
 	rotMatrix[0][0] = cosPhi*cosPsi;
 	rotMatrix[1][0] = cosPhi*sinPsi;
 	rotMatrix[2][0] = -sinPhi;
@@ -2638,13 +2685,13 @@ void CVolumetricMovement::D6dof_motion(CGeometry *geometry, CConfig *config,
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
     
     /*--- Coordinates of the current point ---*/
-    Coord   = geometry->node[iPoint]->GetCoord();
+    Coord   = geometry->node[iPoint]->GetCoord(); 
     
     /*--- Calculate non-dim. position from rotation center ---*/
     r[0] = (Coord[0]-motion_data->rotcenter[0]);
     r[1] = (Coord[1]-motion_data->rotcenter[1]);
     if (nDim == 3) r[2] = (Coord[2]-motion_data->rotcenter[2]);
-    
+  
     /*--- Compute transformed point coordinates ---*/
     rotCoord[0] = rotMatrix[0][0]*r[0] 
                 + rotMatrix[0][1]*r[1] 
