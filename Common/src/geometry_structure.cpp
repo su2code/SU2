@@ -11463,9 +11463,8 @@ void CPhysicalGeometry::SetGridVelocity(CConfig *config, unsigned long iter) {
   
   for (iPoint = 0; iPoint < GetnPoint(); iPoint++) {
     
-    /*--- Coordinates of the current point at n+1, n, & n-1 time levels ---*/
+    /*--- Coordinates of the current point at n+1, n time levels ---*/
     
-    Coord_nM1 = node[iPoint]->GetCoord_n1();
     Coord_n   = node[iPoint]->GetCoord_n();
     Coord_nP1 = node[iPoint]->GetCoord();
     
@@ -11485,7 +11484,11 @@ void CPhysicalGeometry::SetGridVelocity(CConfig *config, unsigned long iter) {
 		}
 	}
 	else if(config->GetUnsteady_Simulation() == DT_STEPPING_2ND){
+  
+	/*--- Coordinates of the current point n-1 time level ---*/
     
+		Coord_nM1 = node[iPoint]->GetCoord_n1();
+   
 		for (iDim = 0; iDim < nDim; iDim++){
 			GridVel = ( 3.0*Coord_nP1[iDim] - 4.0*Coord_n[iDim]
 			+ 1.0*Coord_nM1[iDim] ) / (2.0*TimeStep);
@@ -14283,9 +14286,8 @@ void CMultiGridGeometry::SetGridVelocity(CConfig *config, unsigned long iter) {
   
   for (Point_Coarse = 0; Point_Coarse < GetnPoint(); Point_Coarse++) {
     
-    /*--- Coordinates of the current point at n+1, n, & n-1 time levels ---*/
+    /*--- Coordinates of the current point at n+1, n time levels ---*/
     
-    Coord_nM1 = node[Point_Coarse]->GetCoord_n1();
     Coord_n   = node[Point_Coarse]->GetCoord_n();
     Coord_nP1 = node[Point_Coarse]->GetCoord();
     
@@ -14294,11 +14296,24 @@ void CMultiGridGeometry::SetGridVelocity(CConfig *config, unsigned long iter) {
     TimeStep = config->GetDelta_UnstTimeND();
     
     /*--- Compute mesh velocity with 1st or 2nd-order approximation ---*/
-    
+    if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST){
     for (iDim = 0; iDim < nDim; iDim++) {
-      if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
         GridVel = ( Coord_nP1[iDim] - Coord_n[iDim] ) / TimeStep;
-      if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
+          
+      /*--- Store grid velocity for this point ---*/
+      
+      node[Point_Coarse]->SetGridVel(iDim, GridVel);
+      
+    }
+    }
+    else if(config->GetUnsteady_Simulation() == DT_STEPPING_2ND){
+    
+/*--- Coordinates of the current point at n-1 time level ---*/
+  
+        Coord_nM1 = node[Point_Coarse]->GetCoord_n1();
+   
+        for (iDim = 0; iDim < nDim; iDim++) {
+
         GridVel = ( 3.0*Coord_nP1[iDim] - 4.0*Coord_n[iDim]
                    +  1.0*Coord_nM1[iDim] ) / (2.0*TimeStep);
       
@@ -14307,6 +14322,8 @@ void CMultiGridGeometry::SetGridVelocity(CConfig *config, unsigned long iter) {
       node[Point_Coarse]->SetGridVel(iDim, GridVel);
       
     }
+    }
+    
   }
 }
 
