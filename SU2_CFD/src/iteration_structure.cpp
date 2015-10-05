@@ -1859,21 +1859,18 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
   */
           cout << endl << " Sending and receving data from external process." << endl;
           if( communicate(config_container,&solver_container, p_6DOFdata, ExtIter, pconn) != 0)
-              Error("Communicate()");
+              Error("Communicate()");  
+      }
 /*
  *recevied angles have to redistrbuted to all partitions
- */	  
-// 	  cout << "Angles are: (" << p_6DOFdata->angles[0] << ", " << p_6DOFdata->angles[1];
-//           cout << ", " << p_6DOFdata->angles[2]<< ") degrees." << endl;
-      }
-      
+ */   
 #ifdef HAVE_MPI
       SU2_MPI::Bcast(p_6DOFdata->angles, 3, MPI_DOUBLE, MASTER_NODE,MPI_COMM_WORLD);
       SU2_MPI::Bcast(p_6DOFdata->rotcenter, 3, MPI_DOUBLE, MASTER_NODE,MPI_COMM_WORLD);
       SU2_MPI::Bcast(p_6DOFdata->transvec, 3, MPI_DOUBLE, MASTER_NODE,MPI_COMM_WORLD);
-#endif	
+#endif
       
-      iZone = ZONE_0;
+//       iZone = ZONE_0;
 //       config_container->SetMotion_Origin_X(iZone,p_6DOFdata->angles[0]);
 //       config_container->SetMotion_Origin_X(iZone,p_6DOFdata->angles[1]);
 //       config_container->SetMotion_Origin_X(iZone,p_6DOFdata->angles[2]);
