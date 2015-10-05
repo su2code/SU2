@@ -1,0 +1,23 @@
+# In the TestCases/ directory, we would like to
+# ignore any of the data needed to run the cases
+# or their output data, i.e., meshes, solution
+# files, restart files, CSVs, etc. This will
+# also be useful in that we can merge in the 
+# independent TestCases/ repo that contains only
+# this data without corrupting our current SU2/
+# repo or accidentally commiting large file or
+# changes to the meshes/solutions/restarts.
+
+# Things appearing in TestCases/ repo to ignore:
+*.su2 
+*.dat 
+*.csv
+*.plt 
+*.pw 
+*.IGS 
+*.cgns 
+*.tgz
+COPYING
+README.md
+*.autotest
+config_*.cfg

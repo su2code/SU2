@@ -82,7 +82,11 @@
 		05F1089C1978D2AE00F2F288 /* fluid_model_pvdw.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05F108981978D2AE00F2F288 /* fluid_model_pvdw.cpp */; };
 		05F1089D1978D2AE00F2F288 /* fluid_model.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05F108991978D2AE00F2F288 /* fluid_model.cpp */; };
 		05F108A41978D2F200F2F288 /* transport_model.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05F108A31978D2F200F2F288 /* transport_model.cpp */; };
-		C6B325C118F7B9DE00C0E798 /* su2mpi.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C6B325C018F7B9DE00C0E798 /* su2mpi.cpp */; };
+		E941BB8E1B71D0D0005C6C06 /* solver_adjoint_discrete.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E941BB8D1B71D0D0005C6C06 /* solver_adjoint_discrete.cpp */; };
+		E941BB921B71D124005C6C06 /* datatype_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E941BB8F1B71D124005C6C06 /* datatype_structure.cpp */; };
+		E941BB931B71D124005C6C06 /* linear_solvers_structure_b.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E941BB901B71D124005C6C06 /* linear_solvers_structure_b.cpp */; };
+		E941BB941B71D124005C6C06 /* mpi_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E941BB911B71D124005C6C06 /* mpi_structure.cpp */; };
+		E941BBAE1B71D564005C6C06 /* variable_adjoint_discrete.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E941BBAD1B71D564005C6C06 /* variable_adjoint_discrete.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -213,8 +217,112 @@
 		05F108A01978D2D700F2F288 /* fluid_model.inl */ = {isa = PBXFileReference; lastKnownFileType = text; name = fluid_model.inl; path = ../../SU2_CFD/include/fluid_model.inl; sourceTree = "<group>"; };
 		05F108A11978D2D700F2F288 /* transport_model.inl */ = {isa = PBXFileReference; lastKnownFileType = text; name = transport_model.inl; path = ../../SU2_CFD/include/transport_model.inl; sourceTree = "<group>"; };
 		05F108A31978D2F200F2F288 /* transport_model.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = transport_model.cpp; path = ../../SU2_CFD/src/transport_model.cpp; sourceTree = "<group>"; };
-		C6B325BF18F7832900C0E798 /* su2mpi.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = su2mpi.hpp; path = ../../Common/include/su2mpi.hpp; sourceTree = "<group>"; };
-		C6B325C018F7B9DE00C0E798 /* su2mpi.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = su2mpi.cpp; path = ../../Common/src/su2mpi.cpp; sourceTree = "<group>"; };
+		E91CAC631B8C110D00EE3FCC /* .gitignore */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
+		E91CAC651B8C110E00EE3FCC /* ActDisk_Euler.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = ActDisk_Euler.cfg; sourceTree = "<group>"; };
+		E91CAC671B8C110E00EE3FCC /* aeroelastic_NACA64A010.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = aeroelastic_NACA64A010.cfg; sourceTree = "<group>"; };
+		E91CAC6A1B8C110E00EE3FCC /* inv_NACA0012.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = inv_NACA0012.cfg; sourceTree = "<group>"; };
+		E91CAC6C1B8C110E00EE3FCC /* inv_ONERAM6.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = inv_ONERAM6.cfg; sourceTree = "<group>"; };
+		E91CAC6F1B8C110E00EE3FCC /* incomp_NACA0012.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = incomp_NACA0012.cfg; sourceTree = "<group>"; };
+		E91CAC721B8C110E00EE3FCC /* lam_incomp_cylinder.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = lam_incomp_cylinder.cfg; sourceTree = "<group>"; };
+		E91CAC751B8C110E00EE3FCC /* lam_cylinder.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = lam_cylinder.cfg; sourceTree = "<group>"; };
+		E91CAC771B8C110E00EE3FCC /* lam_NACA0012.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = lam_NACA0012.cfg; sourceTree = "<group>"; };
+		E91CAC791B8C110E00EE3FCC /* lam_NACA0012.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = lam_NACA0012.cfg; sourceTree = "<group>"; };
+		E91CAC7C1B8C110E00EE3FCC /* turb_nasa.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = turb_nasa.cfg; sourceTree = "<group>"; };
+		E91CAC7E1B8C110E00EE3FCC /* turb_ONERAM6.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = turb_ONERAM6.cfg; sourceTree = "<group>"; };
+		E91CAC801B8C110E00EE3FCC /* turb_SA_RAE2822.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = turb_SA_RAE2822.cfg; sourceTree = "<group>"; };
+		E91CAC821B8C110E00EE3FCC /* inv_ONERAM6_moving.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = inv_ONERAM6_moving.cfg; sourceTree = "<group>"; };
+		E91CAC831B8C110E00EE3FCC /* inv_ONERAM6_setting.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = inv_ONERAM6_setting.cfg; sourceTree = "<group>"; };
+		E91CAC851B8C110E00EE3FCC /* optimize_project.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = optimize_project.py; sourceTree = "<group>"; };
+		E91CAC861B8C110E00EE3FCC /* plot_project.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = plot_project.py; sourceTree = "<group>"; };
+		E91CAC871B8C110E00EE3FCC /* pyopt_project.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = pyopt_project.py; sourceTree = "<group>"; };
+		E91CAC881B8C110E00EE3FCC /* rerun_project.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = rerun_project.py; sourceTree = "<group>"; };
+		E91CAC891B8C110E00EE3FCC /* run_project.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = run_project.py; sourceTree = "<group>"; };
+		E91CAC8C1B8C110E00EE3FCC /* BIPARABOLIC.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = BIPARABOLIC.cfg; sourceTree = "<group>"; };
+		E91CAC8E1B8C110E00EE3FCC /* inv_channel.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = inv_channel.cfg; sourceTree = "<group>"; };
+		E91CAC8F1B8C110E00EE3FCC /* inv_channel_RK.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = inv_channel_RK.cfg; sourceTree = "<group>"; };
+		E91CAC911B8C110E00EE3FCC /* inv_CRM_JST.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = inv_CRM_JST.cfg; sourceTree = "<group>"; };
+		E91CAC931B8C110E00EE3FCC /* inv_NACA0012.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = inv_NACA0012.cfg; sourceTree = "<group>"; };
+		E91CAC941B8C110E00EE3FCC /* inv_NACA0012_Roe.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = inv_NACA0012_Roe.cfg; sourceTree = "<group>"; };
+		E91CAC961B8C110E00EE3FCC /* inv_ONERAM6_JST.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = inv_ONERAM6_JST.cfg; sourceTree = "<group>"; };
+		E91CAC981B8C110E00EE3FCC /* inv_wedge_HLLC.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = inv_wedge_HLLC.cfg; sourceTree = "<group>"; };
+		E91CAC9B1B8C110E00EE3FCC /* configBeam_2d.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = configBeam_2d.cfg; sourceTree = "<group>"; };
+		E91CAC9D1B8C110E00EE3FCC /* configBeam_3d.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = configBeam_3d.cfg; sourceTree = "<group>"; };
+		E91CAC9F1B8C110E00EE3FCC /* configFSI_2D.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = configFSI_2D.cfg; sourceTree = "<group>"; };
+		E91CACA11B8C110E00EE3FCC /* configFSI_3D.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = configFSI_3D.cfg; sourceTree = "<group>"; };
+		E91CACA41B8C110E00EE3FCC /* inv_NACA0012.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = inv_NACA0012.cfg; sourceTree = "<group>"; };
+		E91CACA61B8C110E00EE3FCC /* inv_gust_NACA0012.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = inv_gust_NACA0012.cfg; sourceTree = "<group>"; };
+		E91CACA91B8C110E00EE3FCC /* incomp_NACA0012.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = incomp_NACA0012.cfg; sourceTree = "<group>"; };
+		E91CACAC1B8C110E00EE3FCC /* incomp_cylinder.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = incomp_cylinder.cfg; sourceTree = "<group>"; };
+		E91CACAF1B8C110E00EE3FCC /* AhmedBody.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = AhmedBody.cfg; sourceTree = "<group>"; };
+		E91CACB11B8C110E00EE3FCC /* naca0012.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = naca0012.cfg; sourceTree = "<group>"; };
+		E91CACB31B8C110E00EE3FCC /* beam.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = beam.cfg; sourceTree = "<group>"; };
+		E91CACB61B8C110E00EE3FCC /* lam_cavity.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = lam_cavity.cfg; sourceTree = "<group>"; };
+		E91CACB81B8C110E00EE3FCC /* spinning_cylinder.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = spinning_cylinder.cfg; sourceTree = "<group>"; };
+		E91CACBB1B8C110E00EE3FCC /* lam_cylinder.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = lam_cylinder.cfg; sourceTree = "<group>"; };
+		E91CACBD1B8C110E00EE3FCC /* lam_flatplate.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = lam_flatplate.cfg; sourceTree = "<group>"; };
+		E91CACBF1B8C110E00EE3FCC /* lam_NACA0012.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = lam_NACA0012.cfg; sourceTree = "<group>"; };
+		E91CACC21B8C110E00EE3FCC /* edge_PPR.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = edge_PPR.cfg; sourceTree = "<group>"; };
+		E91CACC31B8C110E00EE3FCC /* edge_VW.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = edge_VW.cfg; sourceTree = "<group>"; };
+		E91CACC51B8C110E00EE3FCC /* turb_SA_PR.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = turb_SA_PR.cfg; sourceTree = "<group>"; };
+		E91CACC61B8C110E00EE3FCC /* turb_SST_PR.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = turb_SST_PR.cfg; sourceTree = "<group>"; };
+		E91CACC91B8C110E00EE3FCC /* pitching_NACA64A010.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = pitching_NACA64A010.cfg; sourceTree = "<group>"; };
+		E91CACCB1B8C110E00EE3FCC /* pitching_ONERAM6.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = pitching_ONERAM6.cfg; sourceTree = "<group>"; };
+		E91CACCD1B8C110E00EE3FCC /* rotating_NACA0012.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = rotating_NACA0012.cfg; sourceTree = "<group>"; };
+		E91CACCF1B8C110E00EE3FCC /* inv_NACA0012.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = inv_NACA0012.cfg; sourceTree = "<group>"; };
+		E91CACD11B8C110E00EE3FCC /* inv_NACA0012_adv.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = inv_NACA0012_adv.cfg; sourceTree = "<group>"; };
+		E91CACD21B8C110E00EE3FCC /* inv_NACA0012_basic.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = inv_NACA0012_basic.cfg; sourceTree = "<group>"; };
+		E91CACD41B8C110E00EE3FCC /* inv_ONERAM6_adv.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = inv_ONERAM6_adv.cfg; sourceTree = "<group>"; };
+		E91CACD51B8C110E00EE3FCC /* inv_ONERAM6_basic.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = inv_ONERAM6_basic.cfg; sourceTree = "<group>"; };
+		E91CACD81B8C110E00EE3FCC /* turb_NACA64A010.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = turb_NACA64A010.cfg; sourceTree = "<group>"; };
+		E91CACDA1B8C110E00EE3FCC /* turb_ONERAM6.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = turb_ONERAM6.cfg; sourceTree = "<group>"; };
+		E91CACDC1B8C110E00EE3FCC /* turb_ONERAM6.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = turb_ONERAM6.cfg; sourceTree = "<group>"; };
+		E91CACDE1B8C110E00EE3FCC /* turb_SA_RAE2822.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = turb_SA_RAE2822.cfg; sourceTree = "<group>"; };
+		E91CACDF1B8C110E00EE3FCC /* parallel_regression.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = parallel_regression.py; sourceTree = "<group>"; };
+		E91CACE21B8C110E00EE3FCC /* turb_SA_flatplate.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = turb_SA_flatplate.cfg; sourceTree = "<group>"; };
+		E91CACE31B8C110E00EE3FCC /* turb_SST_flatplate.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = turb_SST_flatplate.cfg; sourceTree = "<group>"; };
+		E91CACE51B8C110E00EE3FCC /* turb_NACA0012_sa.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = turb_NACA0012_sa.cfg; sourceTree = "<group>"; };
+		E91CACE61B8C110E00EE3FCC /* turb_NACA0012_sa_neg.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = turb_NACA0012_sa_neg.cfg; sourceTree = "<group>"; };
+		E91CACE71B8C110E00EE3FCC /* turb_NACA0012_sst.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = turb_NACA0012_sst.cfg; sourceTree = "<group>"; };
+		E91CACE91B8C110E00EE3FCC /* turb_ONERAM6.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = turb_ONERAM6.cfg; sourceTree = "<group>"; };
+		E91CACEB1B8C110E00EE3FCC /* turb_SA_RAE2822.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = turb_SA_RAE2822.cfg; sourceTree = "<group>"; };
+		E91CACEC1B8C110E00EE3FCC /* turb_SST_RAE2822.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = turb_SST_RAE2822.cfg; sourceTree = "<group>"; };
+		E91CACEE1B8C110E00EE3FCC /* trans_s809.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = trans_s809.cfg; sourceTree = "<group>"; };
+		E91CACEF1B8C110E00EE3FCC /* turb_S809.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = turb_S809.cfg; sourceTree = "<group>"; };
+		E91CACF11B8C110E00EE3FCC /* turb_vki.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = turb_vki.cfg; sourceTree = "<group>"; };
+		E91CACF41B8C110E00EE3FCC /* rot_caradonna_tung.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = rot_caradonna_tung.cfg; sourceTree = "<group>"; };
+		E91CACF61B8C110E00EE3FCC /* rot_NACA0012.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = rot_NACA0012.cfg; sourceTree = "<group>"; };
+		E91CACF71B8C110E00EE3FCC /* serial_regression.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = serial_regression.py; sourceTree = "<group>"; };
+		E91CACF91B8C110E00EE3FCC /* spectral.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = spectral.cfg; sourceTree = "<group>"; };
+		E91CACFA1B8C110E00EE3FCC /* TestCase.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = TestCase.py; sourceTree = "<group>"; };
+		E91CACFD1B8C110E00EE3FCC /* ramc61km.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = ramc61km.cfg; sourceTree = "<group>"; };
+		E91CAD001B8C110E00EE3FCC /* pitching_NACA64A010.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = pitching_NACA64A010.cfg; sourceTree = "<group>"; };
+		E91CAD021B8C110E00EE3FCC /* turb_NACA64A010.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = turb_NACA64A010.cfg; sourceTree = "<group>"; };
+		E91CAD041B8C110E00EE3FCC /* plunging_NACA0012.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = plunging_NACA0012.cfg; sourceTree = "<group>"; };
+		E91CAD061B8C110E00EE3FCC /* turb_square.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = turb_square.cfg; sourceTree = "<group>"; };
+		E91CAD081B8C117A00EE3FCC /* inv_NACA0012.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = inv_NACA0012.cfg; sourceTree = "<group>"; };
+		E91CAD091B8C117A00EE3FCC /* mesh_NACA0012_inv.su2 */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = mesh_NACA0012_inv.su2; sourceTree = "<group>"; };
+		E941BB8D1B71D0D0005C6C06 /* solver_adjoint_discrete.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = solver_adjoint_discrete.cpp; path = ../../SU2_CFD/src/solver_adjoint_discrete.cpp; sourceTree = "<group>"; };
+		E941BB8F1B71D124005C6C06 /* datatype_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = datatype_structure.cpp; path = ../../Common/src/datatype_structure.cpp; sourceTree = "<group>"; };
+		E941BB901B71D124005C6C06 /* linear_solvers_structure_b.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = linear_solvers_structure_b.cpp; path = ../../Common/src/linear_solvers_structure_b.cpp; sourceTree = "<group>"; };
+		E941BB911B71D124005C6C06 /* mpi_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = mpi_structure.cpp; path = ../../Common/src/mpi_structure.cpp; sourceTree = "<group>"; };
+		E941BB951B71D1AB005C6C06 /* datatype_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = datatype_structure.hpp; path = ../../Common/include/datatype_structure.hpp; sourceTree = "<group>"; };
+		E941BB961B71D1AB005C6C06 /* datatype_structure.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = datatype_structure.inl; path = ../../Common/include/datatype_structure.inl; sourceTree = "<group>"; };
+		E941BB981B71D1AB005C6C06 /* adolc_forward_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = adolc_forward_structure.hpp; sourceTree = "<group>"; };
+		E941BB991B71D1AB005C6C06 /* adolc_forward_structure.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = adolc_forward_structure.inl; sourceTree = "<group>"; };
+		E941BB9A1B71D1AB005C6C06 /* adolc_reverse_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = adolc_reverse_structure.hpp; sourceTree = "<group>"; };
+		E941BB9B1B71D1AB005C6C06 /* adolc_reverse_structure.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = adolc_reverse_structure.inl; sourceTree = "<group>"; };
+		E941BB9C1B71D1AB005C6C06 /* codi_forward_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = codi_forward_structure.hpp; sourceTree = "<group>"; };
+		E941BB9D1B71D1AB005C6C06 /* codi_forward_structure.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = codi_forward_structure.inl; sourceTree = "<group>"; };
+		E941BB9E1B71D1AB005C6C06 /* codi_reverse_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = codi_reverse_structure.hpp; sourceTree = "<group>"; };
+		E941BB9F1B71D1AB005C6C06 /* codi_reverse_structure.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = codi_reverse_structure.inl; sourceTree = "<group>"; };
+		E941BBA01B71D1AB005C6C06 /* complex_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = complex_structure.hpp; sourceTree = "<group>"; };
+		E941BBA11B71D1AB005C6C06 /* complex_structure.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = complex_structure.inl; sourceTree = "<group>"; };
+		E941BBA21B71D1AB005C6C06 /* primitive_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = primitive_structure.hpp; sourceTree = "<group>"; };
+		E941BBA31B71D1AB005C6C06 /* primitive_structure.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = primitive_structure.inl; sourceTree = "<group>"; };
+		E941BBA41B71D1AB005C6C06 /* linear_solvers_structure_b.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = linear_solvers_structure_b.hpp; path = ../../Common/include/linear_solvers_structure_b.hpp; sourceTree = "<group>"; };
+		E941BBA51B71D1AB005C6C06 /* mpi_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = mpi_structure.hpp; path = ../../Common/include/mpi_structure.hpp; sourceTree = "<group>"; };
+		E941BBA61B71D1AB005C6C06 /* mpi_structure.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = mpi_structure.inl; path = ../../Common/include/mpi_structure.inl; sourceTree = "<group>"; };
+		E941BBAD1B71D564005C6C06 /* variable_adjoint_discrete.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = variable_adjoint_discrete.cpp; path = ../../SU2_CFD/src/variable_adjoint_discrete.cpp; sourceTree = "<group>"; };
 		E97B6C8117F941800008255B /* config_template.cfg */ = {isa = PBXFileReference; lastKnownFileType = text; name = config_template.cfg; path = ../../config_template.cfg; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -243,6 +351,7 @@
 				05E6DBFC17EB62A100FA1F7E /* variable_direct_wave.cpp */,
 				05E6DBEE17EB62A100FA1F7E /* variable_adjoint_levelset.cpp */,
 				05E6DBEF17EB62A100FA1F7E /* variable_adjoint_mean.cpp */,
+				E941BBAD1B71D564005C6C06 /* variable_adjoint_discrete.cpp */,
 				05E6DBF117EB62A100FA1F7E /* variable_adjoint_tne2.cpp */,
 				05E6DBF217EB62A100FA1F7E /* variable_adjoint_turbulent.cpp */,
 				05E6DBFD17EB62A100FA1F7E /* variable_linearized_mean.cpp */,
@@ -266,6 +375,7 @@
 				05E6DBE717EB62A100FA1F7E /* solver_direct_wave.cpp */,
 				05E6DBD917EB62A100FA1F7E /* solver_adjoint_levelset.cpp */,
 				05E6DBDA17EB62A100FA1F7E /* solver_adjoint_mean.cpp */,
+				E941BB8D1B71D0D0005C6C06 /* solver_adjoint_discrete.cpp */,
 				05E6DBDC17EB62A100FA1F7E /* solver_adjoint_tne2.cpp */,
 				05E6DBDD17EB62A100FA1F7E /* solver_adjoint_turbulent.cpp */,
 				05E6DBE817EB62A100FA1F7E /* solver_linearized_mean.cpp */,
@@ -313,6 +423,7 @@
 			isa = PBXGroup;
 			children = (
 				05E6DB8E17EB61E600FA1F7E /* linear_solvers_structure.cpp */,
+				E941BB901B71D124005C6C06 /* linear_solvers_structure_b.cpp */,
 				05E6DB8F17EB61E600FA1F7E /* matrix_structure.cpp */,
 				05E6DB9117EB61E600FA1F7E /* vector_structure.cpp */,
 			);
@@ -322,6 +433,8 @@
 		0541ABE41370DC56002D668B /* InLine */ = {
 			isa = PBXGroup;
 			children = (
+				E941BB961B71D1AB005C6C06 /* datatype_structure.inl */,
+				E941BBA61B71D1AB005C6C06 /* mpi_structure.inl */,
 				05E6DBB217EB624700FA1F7E /* solver_structure.inl */,
 				05F108A01978D2D700F2F288 /* fluid_model.inl */,
 				05F108A11978D2D700F2F288 /* transport_model.inl */,
@@ -345,6 +458,10 @@
 		0541ABE51370DC5E002D668B /* Include */ = {
 			isa = PBXGroup;
 			children = (
+				E941BB951B71D1AB005C6C06 /* datatype_structure.hpp */,
+				E941BB971B71D1AB005C6C06 /* datatypes */,
+				E941BBA41B71D1AB005C6C06 /* linear_solvers_structure_b.hpp */,
+				E941BBA51B71D1AB005C6C06 /* mpi_structure.hpp */,
 				05F1089E1978D2CE00F2F288 /* fluid_model.hpp */,
 				05F1089F1978D2CE00F2F288 /* transport_model.hpp */,
 				05E6DBBA17EB627400FA1F7E /* SU2_CFD.hpp */,
@@ -367,7 +484,6 @@
 				05E6DBB717EB627400FA1F7E /* numerics_structure.hpp */,
 				05DF0B0D18CFB29E00DC3CFE /* numerics_machine_learning.hpp */,
 				05DF0B0C18CFB29800DC3CFE /* numerics_machine_learning_turbulent.hpp */,
-				C6B325BF18F7832900C0E798 /* su2mpi.hpp */,
 			);
 			name = Include;
 			sourceTree = "<group>";
@@ -421,6 +537,8 @@
 			children = (
 				E97B6C8117F941800008255B /* config_template.cfg */,
 				0541C14E1A7EA6970095A680 /* config_template_basic.cfg */,
+				E91CAD071B8C117A00EE3FCC /* QuickStart */,
+				E91CAC621B8C110D00EE3FCC /* TestCases */,
 				08FB7795FE84155DC02AAC07 /* Source */,
 				0541ABE41370DC56002D668B /* InLine */,
 				0541ABE51370DC5E002D668B /* Include */,
@@ -436,7 +554,8 @@
 				05E6DB8917EB61E600FA1F7E /* config_structure.cpp */,
 				05E6DBBC17EB62A000FA1F7E /* definition_structure.cpp */,
 				05E6DBC017EB62A100FA1F7E /* iteration_structure.cpp */,
-				C6B325C018F7B9DE00C0E798 /* su2mpi.cpp */,
+				E941BB8F1B71D124005C6C06 /* datatype_structure.cpp */,
+				E941BB911B71D124005C6C06 /* mpi_structure.cpp */,
 				0530E57417FDF9CC00733CE8 /* LinearSolver */,
 				0530E57317FDF97F00733CE8 /* Geometry */,
 				052D51AB17A22E24003BE8B2 /* Output */,
@@ -456,6 +575,782 @@
 				0541ABEE1370F5A6002D668B /* SU2_CFD */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		E91CAC621B8C110D00EE3FCC /* TestCases */ = {
+			isa = PBXGroup;
+			children = (
+				E91CAC631B8C110D00EE3FCC /* .gitignore */,
+				E91CAC641B8C110E00EE3FCC /* actuator_disk */,
+				E91CAC661B8C110E00EE3FCC /* aeroelastic */,
+				E91CAC681B8C110E00EE3FCC /* cont_adj_euler */,
+				E91CAC6D1B8C110E00EE3FCC /* cont_adj_incomp_euler */,
+				E91CAC701B8C110E00EE3FCC /* cont_adj_incomp_navierstokes */,
+				E91CAC731B8C110E00EE3FCC /* cont_adj_navierstokes */,
+				E91CAC7A1B8C110E00EE3FCC /* cont_adj_rans */,
+				E91CAC811B8C110E00EE3FCC /* control_surface */,
+				E91CAC841B8C110E00EE3FCC /* designspace */,
+				E91CAC8A1B8C110E00EE3FCC /* euler */,
+				E91CAC991B8C110E00EE3FCC /* fea_fsi */,
+				E91CACA21B8C110E00EE3FCC /* fixed_cl */,
+				E91CACA51B8C110E00EE3FCC /* gust */,
+				E91CACA71B8C110E00EE3FCC /* incomp_euler */,
+				E91CACAA1B8C110E00EE3FCC /* incomp_navierstokes */,
+				E91CACAD1B8C110E00EE3FCC /* incomp_rans */,
+				E91CACB21B8C110E00EE3FCC /* linear_elasticity */,
+				E91CACB41B8C110E00EE3FCC /* moving_wall */,
+				E91CACB91B8C110E00EE3FCC /* navierstokes */,
+				E91CACC01B8C110E00EE3FCC /* nicf */,
+				E91CACC71B8C110E00EE3FCC /* optimization_euler */,
+				E91CACD61B8C110E00EE3FCC /* optimization_rans */,
+				E91CACDF1B8C110E00EE3FCC /* parallel_regression.py */,
+				E91CACE01B8C110E00EE3FCC /* rans */,
+				E91CACF21B8C110E00EE3FCC /* rotating */,
+				E91CACF71B8C110E00EE3FCC /* serial_regression.py */,
+				E91CACF81B8C110E00EE3FCC /* spectral_method */,
+				E91CACFA1B8C110E00EE3FCC /* TestCase.py */,
+				E91CACFB1B8C110E00EE3FCC /* tne2 */,
+				E91CACFE1B8C110E00EE3FCC /* unsteady */,
+			);
+			name = TestCases;
+			path = ../../TestCases;
+			sourceTree = "<group>";
+		};
+		E91CAC641B8C110E00EE3FCC /* actuator_disk */ = {
+			isa = PBXGroup;
+			children = (
+				E91CAC651B8C110E00EE3FCC /* ActDisk_Euler.cfg */,
+			);
+			path = actuator_disk;
+			sourceTree = "<group>";
+		};
+		E91CAC661B8C110E00EE3FCC /* aeroelastic */ = {
+			isa = PBXGroup;
+			children = (
+				E91CAC671B8C110E00EE3FCC /* aeroelastic_NACA64A010.cfg */,
+			);
+			path = aeroelastic;
+			sourceTree = "<group>";
+		};
+		E91CAC681B8C110E00EE3FCC /* cont_adj_euler */ = {
+			isa = PBXGroup;
+			children = (
+				E91CAC691B8C110E00EE3FCC /* naca0012 */,
+				E91CAC6B1B8C110E00EE3FCC /* oneram6 */,
+			);
+			path = cont_adj_euler;
+			sourceTree = "<group>";
+		};
+		E91CAC691B8C110E00EE3FCC /* naca0012 */ = {
+			isa = PBXGroup;
+			children = (
+				E91CAC6A1B8C110E00EE3FCC /* inv_NACA0012.cfg */,
+			);
+			path = naca0012;
+			sourceTree = "<group>";
+		};
+		E91CAC6B1B8C110E00EE3FCC /* oneram6 */ = {
+			isa = PBXGroup;
+			children = (
+				E91CAC6C1B8C110E00EE3FCC /* inv_ONERAM6.cfg */,
+			);
+			path = oneram6;
+			sourceTree = "<group>";
+		};
+		E91CAC6D1B8C110E00EE3FCC /* cont_adj_incomp_euler */ = {
+			isa = PBXGroup;
+			children = (
+				E91CAC6E1B8C110E00EE3FCC /* naca0012 */,
+			);
+			path = cont_adj_incomp_euler;
+			sourceTree = "<group>";
+		};
+		E91CAC6E1B8C110E00EE3FCC /* naca0012 */ = {
+			isa = PBXGroup;
+			children = (
+				E91CAC6F1B8C110E00EE3FCC /* incomp_NACA0012.cfg */,
+			);
+			path = naca0012;
+			sourceTree = "<group>";
+		};
+		E91CAC701B8C110E00EE3FCC /* cont_adj_incomp_navierstokes */ = {
+			isa = PBXGroup;
+			children = (
+				E91CAC711B8C110E00EE3FCC /* cylinder */,
+			);
+			path = cont_adj_incomp_navierstokes;
+			sourceTree = "<group>";
+		};
+		E91CAC711B8C110E00EE3FCC /* cylinder */ = {
+			isa = PBXGroup;
+			children = (
+				E91CAC721B8C110E00EE3FCC /* lam_incomp_cylinder.cfg */,
+			);
+			path = cylinder;
+			sourceTree = "<group>";
+		};
+		E91CAC731B8C110E00EE3FCC /* cont_adj_navierstokes */ = {
+			isa = PBXGroup;
+			children = (
+				E91CAC741B8C110E00EE3FCC /* cylinder */,
+				E91CAC761B8C110E00EE3FCC /* naca0012_sub */,
+				E91CAC781B8C110E00EE3FCC /* naca0012_trans */,
+			);
+			path = cont_adj_navierstokes;
+			sourceTree = "<group>";
+		};
+		E91CAC741B8C110E00EE3FCC /* cylinder */ = {
+			isa = PBXGroup;
+			children = (
+				E91CAC751B8C110E00EE3FCC /* lam_cylinder.cfg */,
+			);
+			path = cylinder;
+			sourceTree = "<group>";
+		};
+		E91CAC761B8C110E00EE3FCC /* naca0012_sub */ = {
+			isa = PBXGroup;
+			children = (
+				E91CAC771B8C110E00EE3FCC /* lam_NACA0012.cfg */,
+			);
+			path = naca0012_sub;
+			sourceTree = "<group>";
+		};
+		E91CAC781B8C110E00EE3FCC /* naca0012_trans */ = {
+			isa = PBXGroup;
+			children = (
+				E91CAC791B8C110E00EE3FCC /* lam_NACA0012.cfg */,
+			);
+			path = naca0012_trans;
+			sourceTree = "<group>";
+		};
+		E91CAC7A1B8C110E00EE3FCC /* cont_adj_rans */ = {
+			isa = PBXGroup;
+			children = (
+				E91CAC7B1B8C110E00EE3FCC /* naca0012 */,
+				E91CAC7D1B8C110E00EE3FCC /* oneram6 */,
+				E91CAC7F1B8C110E00EE3FCC /* rae2822 */,
+			);
+			path = cont_adj_rans;
+			sourceTree = "<group>";
+		};
+		E91CAC7B1B8C110E00EE3FCC /* naca0012 */ = {
+			isa = PBXGroup;
+			children = (
+				E91CAC7C1B8C110E00EE3FCC /* turb_nasa.cfg */,
+			);
+			path = naca0012;
+			sourceTree = "<group>";
+		};
+		E91CAC7D1B8C110E00EE3FCC /* oneram6 */ = {
+			isa = PBXGroup;
+			children = (
+				E91CAC7E1B8C110E00EE3FCC /* turb_ONERAM6.cfg */,
+			);
+			path = oneram6;
+			sourceTree = "<group>";
+		};
+		E91CAC7F1B8C110E00EE3FCC /* rae2822 */ = {
+			isa = PBXGroup;
+			children = (
+				E91CAC801B8C110E00EE3FCC /* turb_SA_RAE2822.cfg */,
+			);
+			path = rae2822;
+			sourceTree = "<group>";
+		};
+		E91CAC811B8C110E00EE3FCC /* control_surface */ = {
+			isa = PBXGroup;
+			children = (
+				E91CAC821B8C110E00EE3FCC /* inv_ONERAM6_moving.cfg */,
+				E91CAC831B8C110E00EE3FCC /* inv_ONERAM6_setting.cfg */,
+			);
+			path = control_surface;
+			sourceTree = "<group>";
+		};
+		E91CAC841B8C110E00EE3FCC /* designspace */ = {
+			isa = PBXGroup;
+			children = (
+				E91CAC851B8C110E00EE3FCC /* optimize_project.py */,
+				E91CAC861B8C110E00EE3FCC /* plot_project.py */,
+				E91CAC871B8C110E00EE3FCC /* pyopt_project.py */,
+				E91CAC881B8C110E00EE3FCC /* rerun_project.py */,
+				E91CAC891B8C110E00EE3FCC /* run_project.py */,
+			);
+			path = designspace;
+			sourceTree = "<group>";
+		};
+		E91CAC8A1B8C110E00EE3FCC /* euler */ = {
+			isa = PBXGroup;
+			children = (
+				E91CAC8B1B8C110E00EE3FCC /* biparabolic */,
+				E91CAC8D1B8C110E00EE3FCC /* channel */,
+				E91CAC901B8C110E00EE3FCC /* CRM */,
+				E91CAC921B8C110E00EE3FCC /* naca0012 */,
+				E91CAC951B8C110E00EE3FCC /* oneram6 */,
+				E91CAC971B8C110E00EE3FCC /* wedge */,
+			);
+			path = euler;
+			sourceTree = "<group>";
+		};
+		E91CAC8B1B8C110E00EE3FCC /* biparabolic */ = {
+			isa = PBXGroup;
+			children = (
+				E91CAC8C1B8C110E00EE3FCC /* BIPARABOLIC.cfg */,
+			);
+			path = biparabolic;
+			sourceTree = "<group>";
+		};
+		E91CAC8D1B8C110E00EE3FCC /* channel */ = {
+			isa = PBXGroup;
+			children = (
+				E91CAC8E1B8C110E00EE3FCC /* inv_channel.cfg */,
+				E91CAC8F1B8C110E00EE3FCC /* inv_channel_RK.cfg */,
+			);
+			path = channel;
+			sourceTree = "<group>";
+		};
+		E91CAC901B8C110E00EE3FCC /* CRM */ = {
+			isa = PBXGroup;
+			children = (
+				E91CAC911B8C110E00EE3FCC /* inv_CRM_JST.cfg */,
+			);
+			path = CRM;
+			sourceTree = "<group>";
+		};
+		E91CAC921B8C110E00EE3FCC /* naca0012 */ = {
+			isa = PBXGroup;
+			children = (
+				E91CAC931B8C110E00EE3FCC /* inv_NACA0012.cfg */,
+				E91CAC941B8C110E00EE3FCC /* inv_NACA0012_Roe.cfg */,
+			);
+			path = naca0012;
+			sourceTree = "<group>";
+		};
+		E91CAC951B8C110E00EE3FCC /* oneram6 */ = {
+			isa = PBXGroup;
+			children = (
+				E91CAC961B8C110E00EE3FCC /* inv_ONERAM6_JST.cfg */,
+			);
+			path = oneram6;
+			sourceTree = "<group>";
+		};
+		E91CAC971B8C110E00EE3FCC /* wedge */ = {
+			isa = PBXGroup;
+			children = (
+				E91CAC981B8C110E00EE3FCC /* inv_wedge_HLLC.cfg */,
+			);
+			path = wedge;
+			sourceTree = "<group>";
+		};
+		E91CAC991B8C110E00EE3FCC /* fea_fsi */ = {
+			isa = PBXGroup;
+			children = (
+				E91CAC9A1B8C110E00EE3FCC /* DynBeam_2d */,
+				E91CAC9C1B8C110E00EE3FCC /* StatBeam_3d */,
+				E91CAC9E1B8C110E00EE3FCC /* WallChannel_2d */,
+				E91CACA01B8C110E00EE3FCC /* WallChannel_3d */,
+			);
+			path = fea_fsi;
+			sourceTree = "<group>";
+		};
+		E91CAC9A1B8C110E00EE3FCC /* DynBeam_2d */ = {
+			isa = PBXGroup;
+			children = (
+				E91CAC9B1B8C110E00EE3FCC /* configBeam_2d.cfg */,
+			);
+			path = DynBeam_2d;
+			sourceTree = "<group>";
+		};
+		E91CAC9C1B8C110E00EE3FCC /* StatBeam_3d */ = {
+			isa = PBXGroup;
+			children = (
+				E91CAC9D1B8C110E00EE3FCC /* configBeam_3d.cfg */,
+			);
+			path = StatBeam_3d;
+			sourceTree = "<group>";
+		};
+		E91CAC9E1B8C110E00EE3FCC /* WallChannel_2d */ = {
+			isa = PBXGroup;
+			children = (
+				E91CAC9F1B8C110E00EE3FCC /* configFSI_2D.cfg */,
+			);
+			path = WallChannel_2d;
+			sourceTree = "<group>";
+		};
+		E91CACA01B8C110E00EE3FCC /* WallChannel_3d */ = {
+			isa = PBXGroup;
+			children = (
+				E91CACA11B8C110E00EE3FCC /* configFSI_3D.cfg */,
+			);
+			path = WallChannel_3d;
+			sourceTree = "<group>";
+		};
+		E91CACA21B8C110E00EE3FCC /* fixed_cl */ = {
+			isa = PBXGroup;
+			children = (
+				E91CACA31B8C110E00EE3FCC /* naca0012 */,
+			);
+			path = fixed_cl;
+			sourceTree = "<group>";
+		};
+		E91CACA31B8C110E00EE3FCC /* naca0012 */ = {
+			isa = PBXGroup;
+			children = (
+				E91CACA41B8C110E00EE3FCC /* inv_NACA0012.cfg */,
+			);
+			path = naca0012;
+			sourceTree = "<group>";
+		};
+		E91CACA51B8C110E00EE3FCC /* gust */ = {
+			isa = PBXGroup;
+			children = (
+				E91CACA61B8C110E00EE3FCC /* inv_gust_NACA0012.cfg */,
+			);
+			path = gust;
+			sourceTree = "<group>";
+		};
+		E91CACA71B8C110E00EE3FCC /* incomp_euler */ = {
+			isa = PBXGroup;
+			children = (
+				E91CACA81B8C110E00EE3FCC /* naca0012 */,
+			);
+			path = incomp_euler;
+			sourceTree = "<group>";
+		};
+		E91CACA81B8C110E00EE3FCC /* naca0012 */ = {
+			isa = PBXGroup;
+			children = (
+				E91CACA91B8C110E00EE3FCC /* incomp_NACA0012.cfg */,
+			);
+			path = naca0012;
+			sourceTree = "<group>";
+		};
+		E91CACAA1B8C110E00EE3FCC /* incomp_navierstokes */ = {
+			isa = PBXGroup;
+			children = (
+				E91CACAB1B8C110E00EE3FCC /* cylinder */,
+			);
+			path = incomp_navierstokes;
+			sourceTree = "<group>";
+		};
+		E91CACAB1B8C110E00EE3FCC /* cylinder */ = {
+			isa = PBXGroup;
+			children = (
+				E91CACAC1B8C110E00EE3FCC /* incomp_cylinder.cfg */,
+			);
+			path = cylinder;
+			sourceTree = "<group>";
+		};
+		E91CACAD1B8C110E00EE3FCC /* incomp_rans */ = {
+			isa = PBXGroup;
+			children = (
+				E91CACAE1B8C110E00EE3FCC /* AhmedBody */,
+				E91CACB01B8C110E00EE3FCC /* naca0012 */,
+			);
+			path = incomp_rans;
+			sourceTree = "<group>";
+		};
+		E91CACAE1B8C110E00EE3FCC /* AhmedBody */ = {
+			isa = PBXGroup;
+			children = (
+				E91CACAF1B8C110E00EE3FCC /* AhmedBody.cfg */,
+			);
+			path = AhmedBody;
+			sourceTree = "<group>";
+		};
+		E91CACB01B8C110E00EE3FCC /* naca0012 */ = {
+			isa = PBXGroup;
+			children = (
+				E91CACB11B8C110E00EE3FCC /* naca0012.cfg */,
+			);
+			path = naca0012;
+			sourceTree = "<group>";
+		};
+		E91CACB21B8C110E00EE3FCC /* linear_elasticity */ = {
+			isa = PBXGroup;
+			children = (
+				E91CACB31B8C110E00EE3FCC /* beam.cfg */,
+			);
+			path = linear_elasticity;
+			sourceTree = "<group>";
+		};
+		E91CACB41B8C110E00EE3FCC /* moving_wall */ = {
+			isa = PBXGroup;
+			children = (
+				E91CACB51B8C110E00EE3FCC /* cavity */,
+				E91CACB71B8C110E00EE3FCC /* spinning_cylinder */,
+			);
+			path = moving_wall;
+			sourceTree = "<group>";
+		};
+		E91CACB51B8C110E00EE3FCC /* cavity */ = {
+			isa = PBXGroup;
+			children = (
+				E91CACB61B8C110E00EE3FCC /* lam_cavity.cfg */,
+			);
+			path = cavity;
+			sourceTree = "<group>";
+		};
+		E91CACB71B8C110E00EE3FCC /* spinning_cylinder */ = {
+			isa = PBXGroup;
+			children = (
+				E91CACB81B8C110E00EE3FCC /* spinning_cylinder.cfg */,
+			);
+			path = spinning_cylinder;
+			sourceTree = "<group>";
+		};
+		E91CACB91B8C110E00EE3FCC /* navierstokes */ = {
+			isa = PBXGroup;
+			children = (
+				E91CACBA1B8C110E00EE3FCC /* cylinder */,
+				E91CACBC1B8C110E00EE3FCC /* flatplate */,
+				E91CACBE1B8C110E00EE3FCC /* naca0012 */,
+			);
+			path = navierstokes;
+			sourceTree = "<group>";
+		};
+		E91CACBA1B8C110E00EE3FCC /* cylinder */ = {
+			isa = PBXGroup;
+			children = (
+				E91CACBB1B8C110E00EE3FCC /* lam_cylinder.cfg */,
+			);
+			path = cylinder;
+			sourceTree = "<group>";
+		};
+		E91CACBC1B8C110E00EE3FCC /* flatplate */ = {
+			isa = PBXGroup;
+			children = (
+				E91CACBD1B8C110E00EE3FCC /* lam_flatplate.cfg */,
+			);
+			path = flatplate;
+			sourceTree = "<group>";
+		};
+		E91CACBE1B8C110E00EE3FCC /* naca0012 */ = {
+			isa = PBXGroup;
+			children = (
+				E91CACBF1B8C110E00EE3FCC /* lam_NACA0012.cfg */,
+			);
+			path = naca0012;
+			sourceTree = "<group>";
+		};
+		E91CACC01B8C110E00EE3FCC /* nicf */ = {
+			isa = PBXGroup;
+			children = (
+				E91CACC11B8C110E00EE3FCC /* edge */,
+				E91CACC41B8C110E00EE3FCC /* LS89 */,
+			);
+			path = nicf;
+			sourceTree = "<group>";
+		};
+		E91CACC11B8C110E00EE3FCC /* edge */ = {
+			isa = PBXGroup;
+			children = (
+				E91CACC21B8C110E00EE3FCC /* edge_PPR.cfg */,
+				E91CACC31B8C110E00EE3FCC /* edge_VW.cfg */,
+			);
+			path = edge;
+			sourceTree = "<group>";
+		};
+		E91CACC41B8C110E00EE3FCC /* LS89 */ = {
+			isa = PBXGroup;
+			children = (
+				E91CACC51B8C110E00EE3FCC /* turb_SA_PR.cfg */,
+				E91CACC61B8C110E00EE3FCC /* turb_SST_PR.cfg */,
+			);
+			path = LS89;
+			sourceTree = "<group>";
+		};
+		E91CACC71B8C110E00EE3FCC /* optimization_euler */ = {
+			isa = PBXGroup;
+			children = (
+				E91CACC81B8C110E00EE3FCC /* pitching_naca64a010 */,
+				E91CACCA1B8C110E00EE3FCC /* pitching_oneram6 */,
+				E91CACCC1B8C110E00EE3FCC /* rotating_naca0012 */,
+				E91CACCE1B8C110E00EE3FCC /* steady_inverse_design */,
+				E91CACD01B8C110E00EE3FCC /* steady_naca0012 */,
+				E91CACD31B8C110E00EE3FCC /* steady_oneram6 */,
+			);
+			path = optimization_euler;
+			sourceTree = "<group>";
+		};
+		E91CACC81B8C110E00EE3FCC /* pitching_naca64a010 */ = {
+			isa = PBXGroup;
+			children = (
+				E91CACC91B8C110E00EE3FCC /* pitching_NACA64A010.cfg */,
+			);
+			path = pitching_naca64a010;
+			sourceTree = "<group>";
+		};
+		E91CACCA1B8C110E00EE3FCC /* pitching_oneram6 */ = {
+			isa = PBXGroup;
+			children = (
+				E91CACCB1B8C110E00EE3FCC /* pitching_ONERAM6.cfg */,
+			);
+			path = pitching_oneram6;
+			sourceTree = "<group>";
+		};
+		E91CACCC1B8C110E00EE3FCC /* rotating_naca0012 */ = {
+			isa = PBXGroup;
+			children = (
+				E91CACCD1B8C110E00EE3FCC /* rotating_NACA0012.cfg */,
+			);
+			path = rotating_naca0012;
+			sourceTree = "<group>";
+		};
+		E91CACCE1B8C110E00EE3FCC /* steady_inverse_design */ = {
+			isa = PBXGroup;
+			children = (
+				E91CACCF1B8C110E00EE3FCC /* inv_NACA0012.cfg */,
+			);
+			path = steady_inverse_design;
+			sourceTree = "<group>";
+		};
+		E91CACD01B8C110E00EE3FCC /* steady_naca0012 */ = {
+			isa = PBXGroup;
+			children = (
+				E91CACD11B8C110E00EE3FCC /* inv_NACA0012_adv.cfg */,
+				E91CACD21B8C110E00EE3FCC /* inv_NACA0012_basic.cfg */,
+			);
+			path = steady_naca0012;
+			sourceTree = "<group>";
+		};
+		E91CACD31B8C110E00EE3FCC /* steady_oneram6 */ = {
+			isa = PBXGroup;
+			children = (
+				E91CACD41B8C110E00EE3FCC /* inv_ONERAM6_adv.cfg */,
+				E91CACD51B8C110E00EE3FCC /* inv_ONERAM6_basic.cfg */,
+			);
+			path = steady_oneram6;
+			sourceTree = "<group>";
+		};
+		E91CACD61B8C110E00EE3FCC /* optimization_rans */ = {
+			isa = PBXGroup;
+			children = (
+				E91CACD71B8C110E00EE3FCC /* pitching_naca64a010 */,
+				E91CACD91B8C110E00EE3FCC /* pitching_oneram6 */,
+				E91CACDB1B8C110E00EE3FCC /* steady_oneram6 */,
+				E91CACDD1B8C110E00EE3FCC /* steady_rae2822 */,
+			);
+			path = optimization_rans;
+			sourceTree = "<group>";
+		};
+		E91CACD71B8C110E00EE3FCC /* pitching_naca64a010 */ = {
+			isa = PBXGroup;
+			children = (
+				E91CACD81B8C110E00EE3FCC /* turb_NACA64A010.cfg */,
+			);
+			path = pitching_naca64a010;
+			sourceTree = "<group>";
+		};
+		E91CACD91B8C110E00EE3FCC /* pitching_oneram6 */ = {
+			isa = PBXGroup;
+			children = (
+				E91CACDA1B8C110E00EE3FCC /* turb_ONERAM6.cfg */,
+			);
+			path = pitching_oneram6;
+			sourceTree = "<group>";
+		};
+		E91CACDB1B8C110E00EE3FCC /* steady_oneram6 */ = {
+			isa = PBXGroup;
+			children = (
+				E91CACDC1B8C110E00EE3FCC /* turb_ONERAM6.cfg */,
+			);
+			path = steady_oneram6;
+			sourceTree = "<group>";
+		};
+		E91CACDD1B8C110E00EE3FCC /* steady_rae2822 */ = {
+			isa = PBXGroup;
+			children = (
+				E91CACDE1B8C110E00EE3FCC /* turb_SA_RAE2822.cfg */,
+			);
+			path = steady_rae2822;
+			sourceTree = "<group>";
+		};
+		E91CACE01B8C110E00EE3FCC /* rans */ = {
+			isa = PBXGroup;
+			children = (
+				E91CACE11B8C110E00EE3FCC /* flatplate */,
+				E91CACE41B8C110E00EE3FCC /* naca0012 */,
+				E91CACE81B8C110E00EE3FCC /* oneram6 */,
+				E91CACEA1B8C110E00EE3FCC /* rae2822 */,
+				E91CACED1B8C110E00EE3FCC /* s809 */,
+				E91CACF01B8C110E00EE3FCC /* vki_turbine */,
+			);
+			path = rans;
+			sourceTree = "<group>";
+		};
+		E91CACE11B8C110E00EE3FCC /* flatplate */ = {
+			isa = PBXGroup;
+			children = (
+				E91CACE21B8C110E00EE3FCC /* turb_SA_flatplate.cfg */,
+				E91CACE31B8C110E00EE3FCC /* turb_SST_flatplate.cfg */,
+			);
+			path = flatplate;
+			sourceTree = "<group>";
+		};
+		E91CACE41B8C110E00EE3FCC /* naca0012 */ = {
+			isa = PBXGroup;
+			children = (
+				E91CACE51B8C110E00EE3FCC /* turb_NACA0012_sa.cfg */,
+				E91CACE61B8C110E00EE3FCC /* turb_NACA0012_sa_neg.cfg */,
+				E91CACE71B8C110E00EE3FCC /* turb_NACA0012_sst.cfg */,
+			);
+			path = naca0012;
+			sourceTree = "<group>";
+		};
+		E91CACE81B8C110E00EE3FCC /* oneram6 */ = {
+			isa = PBXGroup;
+			children = (
+				E91CACE91B8C110E00EE3FCC /* turb_ONERAM6.cfg */,
+			);
+			path = oneram6;
+			sourceTree = "<group>";
+		};
+		E91CACEA1B8C110E00EE3FCC /* rae2822 */ = {
+			isa = PBXGroup;
+			children = (
+				E91CACEB1B8C110E00EE3FCC /* turb_SA_RAE2822.cfg */,
+				E91CACEC1B8C110E00EE3FCC /* turb_SST_RAE2822.cfg */,
+			);
+			path = rae2822;
+			sourceTree = "<group>";
+		};
+		E91CACED1B8C110E00EE3FCC /* s809 */ = {
+			isa = PBXGroup;
+			children = (
+				E91CACEE1B8C110E00EE3FCC /* trans_s809.cfg */,
+				E91CACEF1B8C110E00EE3FCC /* turb_S809.cfg */,
+			);
+			path = s809;
+			sourceTree = "<group>";
+		};
+		E91CACF01B8C110E00EE3FCC /* vki_turbine */ = {
+			isa = PBXGroup;
+			children = (
+				E91CACF11B8C110E00EE3FCC /* turb_vki.cfg */,
+			);
+			path = vki_turbine;
+			sourceTree = "<group>";
+		};
+		E91CACF21B8C110E00EE3FCC /* rotating */ = {
+			isa = PBXGroup;
+			children = (
+				E91CACF31B8C110E00EE3FCC /* caradonna_tung */,
+				E91CACF51B8C110E00EE3FCC /* naca0012 */,
+			);
+			path = rotating;
+			sourceTree = "<group>";
+		};
+		E91CACF31B8C110E00EE3FCC /* caradonna_tung */ = {
+			isa = PBXGroup;
+			children = (
+				E91CACF41B8C110E00EE3FCC /* rot_caradonna_tung.cfg */,
+			);
+			path = caradonna_tung;
+			sourceTree = "<group>";
+		};
+		E91CACF51B8C110E00EE3FCC /* naca0012 */ = {
+			isa = PBXGroup;
+			children = (
+				E91CACF61B8C110E00EE3FCC /* rot_NACA0012.cfg */,
+			);
+			path = naca0012;
+			sourceTree = "<group>";
+		};
+		E91CACF81B8C110E00EE3FCC /* spectral_method */ = {
+			isa = PBXGroup;
+			children = (
+				E91CACF91B8C110E00EE3FCC /* spectral.cfg */,
+			);
+			path = spectral_method;
+			sourceTree = "<group>";
+		};
+		E91CACFB1B8C110E00EE3FCC /* tne2 */ = {
+			isa = PBXGroup;
+			children = (
+				E91CACFC1B8C110E00EE3FCC /* ramc */,
+			);
+			path = tne2;
+			sourceTree = "<group>";
+		};
+		E91CACFC1B8C110E00EE3FCC /* ramc */ = {
+			isa = PBXGroup;
+			children = (
+				E91CACFD1B8C110E00EE3FCC /* ramc61km.cfg */,
+			);
+			path = ramc;
+			sourceTree = "<group>";
+		};
+		E91CACFE1B8C110E00EE3FCC /* unsteady */ = {
+			isa = PBXGroup;
+			children = (
+				E91CACFF1B8C110E00EE3FCC /* pitching_naca64a010_euler */,
+				E91CAD011B8C110E00EE3FCC /* pitching_naca64a010_rans */,
+				E91CAD031B8C110E00EE3FCC /* plunging_naca0012 */,
+				E91CAD051B8C110E00EE3FCC /* square_cylinder */,
+			);
+			path = unsteady;
+			sourceTree = "<group>";
+		};
+		E91CACFF1B8C110E00EE3FCC /* pitching_naca64a010_euler */ = {
+			isa = PBXGroup;
+			children = (
+				E91CAD001B8C110E00EE3FCC /* pitching_NACA64A010.cfg */,
+			);
+			path = pitching_naca64a010_euler;
+			sourceTree = "<group>";
+		};
+		E91CAD011B8C110E00EE3FCC /* pitching_naca64a010_rans */ = {
+			isa = PBXGroup;
+			children = (
+				E91CAD021B8C110E00EE3FCC /* turb_NACA64A010.cfg */,
+			);
+			path = pitching_naca64a010_rans;
+			sourceTree = "<group>";
+		};
+		E91CAD031B8C110E00EE3FCC /* plunging_naca0012 */ = {
+			isa = PBXGroup;
+			children = (
+				E91CAD041B8C110E00EE3FCC /* plunging_NACA0012.cfg */,
+			);
+			path = plunging_naca0012;
+			sourceTree = "<group>";
+		};
+		E91CAD051B8C110E00EE3FCC /* square_cylinder */ = {
+			isa = PBXGroup;
+			children = (
+				E91CAD061B8C110E00EE3FCC /* turb_square.cfg */,
+			);
+			path = square_cylinder;
+			sourceTree = "<group>";
+		};
+		E91CAD071B8C117A00EE3FCC /* QuickStart */ = {
+			isa = PBXGroup;
+			children = (
+				E91CAD081B8C117A00EE3FCC /* inv_NACA0012.cfg */,
+				E91CAD091B8C117A00EE3FCC /* mesh_NACA0012_inv.su2 */,
+			);
+			name = QuickStart;
+			path = ../../QuickStart;
+			sourceTree = "<group>";
+		};
+		E941BB971B71D1AB005C6C06 /* datatypes */ = {
+			isa = PBXGroup;
+			children = (
+				E941BB981B71D1AB005C6C06 /* adolc_forward_structure.hpp */,
+				E941BB991B71D1AB005C6C06 /* adolc_forward_structure.inl */,
+				E941BB9A1B71D1AB005C6C06 /* adolc_reverse_structure.hpp */,
+				E941BB9B1B71D1AB005C6C06 /* adolc_reverse_structure.inl */,
+				E941BB9C1B71D1AB005C6C06 /* codi_forward_structure.hpp */,
+				E941BB9D1B71D1AB005C6C06 /* codi_forward_structure.inl */,
+				E941BB9E1B71D1AB005C6C06 /* codi_reverse_structure.hpp */,
+				E941BB9F1B71D1AB005C6C06 /* codi_reverse_structure.inl */,
+				E941BBA01B71D1AB005C6C06 /* complex_structure.hpp */,
+				E941BBA11B71D1AB005C6C06 /* complex_structure.inl */,
+				E941BBA21B71D1AB005C6C06 /* primitive_structure.hpp */,
+				E941BBA31B71D1AB005C6C06 /* primitive_structure.inl */,
+			);
+			name = datatypes;
+			path = ../../Common/include/datatypes;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -525,10 +1420,11 @@
 				05E6DB9A17EB61E600FA1F7E /* vector_structure.cpp in Sources */,
 				05E6DC0117EB62A100FA1F7E /* definition_structure.cpp in Sources */,
 				05E6DC0317EB62A100FA1F7E /* integration_structure.cpp in Sources */,
+				E941BBAE1B71D564005C6C06 /* variable_adjoint_discrete.cpp in Sources */,
 				05E6DC0417EB62A100FA1F7E /* integration_time.cpp in Sources */,
 				05F1089B1978D2AE00F2F288 /* fluid_model_ppr.cpp in Sources */,
 				0530E57217FDF7D800733CE8 /* numerics_direct_poisson.cpp in Sources */,
-				C6B325C118F7B9DE00C0E798 /* su2mpi.cpp in Sources */,
+				E941BB8E1B71D0D0005C6C06 /* solver_adjoint_discrete.cpp in Sources */,
 				05E6DC0517EB62A100FA1F7E /* iteration_structure.cpp in Sources */,
 				05E6DC0717EB62A100FA1F7E /* numerics_adjoint_levelset.cpp in Sources */,
 				05E6DC0817EB62A100FA1F7E /* numerics_adjoint_mean.cpp in Sources */,
@@ -556,6 +1452,7 @@
 				0530E56C17FDF7BD00733CE8 /* variable_direct_poisson.cpp in Sources */,
 				05E6DC1D17EB62A100FA1F7E /* output_tecplot.cpp in Sources */,
 				05E6DC1E17EB62A100FA1F7E /* solver_adjoint_levelset.cpp in Sources */,
+				E941BB921B71D124005C6C06 /* datatype_structure.cpp in Sources */,
 				05F1089C1978D2AE00F2F288 /* fluid_model_pvdw.cpp in Sources */,
 				05E6DC1F17EB62A100FA1F7E /* solver_adjoint_mean.cpp in Sources */,
 				05E6DC2117EB62A100FA1F7E /* solver_adjoint_tne2.cpp in Sources */,
@@ -566,6 +1463,7 @@
 				05E6DC2A17EB62A100FA1F7E /* solver_direct_transition.cpp in Sources */,
 				05E6DC2B17EB62A100FA1F7E /* solver_direct_turbulent.cpp in Sources */,
 				05E6DC2C17EB62A100FA1F7E /* solver_direct_wave.cpp in Sources */,
+				E941BB941B71D124005C6C06 /* mpi_structure.cpp in Sources */,
 				05E6DC2D17EB62A100FA1F7E /* solver_linearized_mean.cpp in Sources */,
 				05E6DC2E17EB62A100FA1F7E /* solver_linearized_turbulent.cpp in Sources */,
 				05E6DC2F17EB62A100FA1F7E /* solver_structure.cpp in Sources */,
@@ -582,6 +1480,7 @@
 				05E6DC4017EB62A100FA1F7E /* variable_direct_turbulent.cpp in Sources */,
 				05E6DC4117EB62A100FA1F7E /* variable_direct_wave.cpp in Sources */,
 				05E6DC4217EB62A100FA1F7E /* variable_linearized_mean.cpp in Sources */,
+				E941BB931B71D124005C6C06 /* linear_solvers_structure_b.cpp in Sources */,
 				05DF0B1118CFB2C100DC3CFE /* numerics_machine_learning.cpp in Sources */,
 				05E6DC4317EB62A100FA1F7E /* variable_linearized_turbulent.cpp in Sources */,
 				05E6DC4417EB62A100FA1F7E /* variable_structure.cpp in Sources */,
@@ -611,7 +1510,7 @@
 				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = NO;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 3.2.9;
+				CURRENT_PROJECT_VERSION = 4.0.1;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 3;
@@ -655,6 +1554,11 @@
 				INSTALL_PATH = /usr/local/bin;
 				MACOSX_DEPLOYMENT_TARGET = 10.8;
 				PRODUCT_NAME = SU2_CFD;
+				WARNING_CFLAGS = (
+					"-Wall",
+					"-Wextra",
+					"-Wno-unused-parameter",
+				);
 			};
 			name = Debug;
 		};
@@ -675,7 +1579,7 @@
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = NO;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CURRENT_PROJECT_VERSION = 3.2.9;
+				CURRENT_PROJECT_VERSION = 4.0.1;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 3;
@@ -701,6 +1605,11 @@
 				INSTALL_PATH = /usr/local/bin;
 				MACOSX_DEPLOYMENT_TARGET = 10.8;
 				PRODUCT_NAME = SU2_CFD;
+				WARNING_CFLAGS = (
+					"-Wall",
+					"-Wextra",
+					"-Wno-unused-parameter",
+				);
 			};
 			name = Release;
 		};

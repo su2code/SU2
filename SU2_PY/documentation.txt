@@ -61,7 +61,7 @@ SU2.run.direct(config)
 SU2.run.adjoint(config)
 	checks decomp
 	ensures config:
-		'MATH_PROBLEM' = 'ADJOINT'
+		'MATH_PROBLEM' = 'CONTINUOUS_ADJOINT'
 		'CONV_FILENAME' = 'CONFIG_FILENAME' + '_adjoint'	
 	run CFD
 	read history
