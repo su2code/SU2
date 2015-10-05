@@ -44,6 +44,7 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
   
   bool grid_movement  = config->GetGrid_Movement();
   bool adjoint = config->GetAdjoint() || config->GetDiscrete_Adjoint();
+  bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
 
   char cstr[200], buffer[50];
   string filename;
@@ -60,7 +61,7 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
     else filename = config->GetFlow_FileName();
   }
   
-  if (Kind_Solver == LINEAR_ELASTICITY) {
+  if( (Kind_Solver == LINEAR_ELASTICITY) || (Kind_Solver == FEM_ELASTICITY)) {
     if (surf_sol) filename = config->GetSurfStructure_FileName().c_str();
     else filename = config->GetStructure_FileName().c_str();
   }
@@ -230,6 +231,21 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
         Tecplot_File << ", \"Von_Mises_Stress\", \"Flow_Pressure\"";
       }
       
+      if (Kind_Solver == FEM_ELASTICITY)  {
+        if (config->GetDynamic_Analysis() == DYNAMIC) {
+          Tecplot_File << ", \"Velocity_1\", \"Velocity_2\"";
+          if (nDim == 3)  Tecplot_File << ", \"Velocity_3\"";
+
+          Tecplot_File << ", \"Acceleration_1\", \"Acceleration_2\"";
+          if (nDim == 3)  Tecplot_File << ", \"Acceleration_3\"";
+        }
+
+        Tecplot_File << ", \"Sxx\", \"Syy\", \"Sxy\"";
+        if (nDim == 3)  Tecplot_File << ", \"Szz\", \"Sxz\", \"Syz\"";
+
+        Tecplot_File << ", \"Von_Mises_Stress\"";
+      }
+
       if (config->GetExtraOutput()) {
         string *headings = NULL;
         //if (Kind_Solver == RANS) {
