@@ -155,6 +155,10 @@ AM_CONDITIONAL(BUILD_PARMETIS, test x$enableparmetis = xyes)
 AC_CONFIG_FILES([externals/parmetis/Makefile])
 
 
+#su2_externals_LIBS="$su2_externals_LIBS /extra2/JKA/Cprograms/libm3l/Source/*.o /extra2/JKA/Cprograms/lsipdx/Source/*.o"
+#su2_externals_LIBS="$su2_externals_LIBS /extra2/JKA/Cprograms/lsipdx/Source/libm3llsipdx.a"
+su2_externals_LIBS="$su2_externals_LIBS -L/extra2/JKA/Cprograms/lsipdx/Source -lm3llsipdx -Wl,-rpath=/extra2/JKA/Cprograms/lsipdx/Source"
+
 AC_SUBST([su2_externals_INCLUDES])
 AC_SUBST([su2_externals_LIBS])
 

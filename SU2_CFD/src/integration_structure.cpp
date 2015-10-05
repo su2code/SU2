@@ -29,6 +29,12 @@
 
 #include "../include/integration_structure.hpp"
 
+#include "/extra2/JKA/Cprograms/libm3l/Source/libm3l.h"
+#include "/extra2/JKA/Cprograms/lsipdx/Source/lsipdx.h"
+#include "/extra2/JKA/Cprograms/lsipdx/Source/socket_op.h"
+
+void comm(void);
+
 CIntegration::CIntegration(CConfig *config) {
 	Cauchy_Value = 0;
 	Cauchy_Func = 0;
@@ -485,4 +491,197 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
 #endif
   }
   
+}
+
+
+
+void comm(){
+	node_t *Gnode=NULL, *TmpNode = NULL, *FoundNode = NULL;
+	size_t dim[1], i, tot_dim;
+
+	lmchar_t hostname[80], channel_name[80];
+	lmint_t sockfd, portno;
+
+	lmchar_t *name ="CFD2SIM";
+	lmchar_t *name1="SIM2CFD";
+	
+	lmdouble_t Forces_moments[6], Angles[3], RotCenter[3], TransVec[3];
+	
+	lmchar_t name_i[80], name_o[80];
+
+	lmdouble_t *tmpfloat;
+	client_fce_struct_t InpPar, *PInpPar;
+	opts_t *Popts_1, opts, opts_1, *Popts;
+	find_t *SFounds;
+	
+	PInpPar = &InpPar;
+	PInpPar->channel_name = name;
+	PInpPar->SR_MODE = 'S';
+	if ( (PInpPar->mode = get_exchange_channel_mode('D', 'N')) == -1)
+		Error("socket_edge2simulink: wrong client mode");
+
+	Popts   = &opts;
+	Popts_1 = &opts_1;
+	m3l_set_Send_receive_tcpipsocket(&Popts_1);
+	m3l_set_Find(&Popts);
+/*
+ * create data structure which will be sent
+ */
+	if(  (Gnode = m3l_Mklist("CFD_2_SIM", "DIR", 0, 0, (node_t **)NULL, (const char *)NULL, (const char *)NULL, (char *)NULL)) == 0)
+		Perror("socket_edge2simulink: m3l_Mklist");
+	
+	dim[0] = 6;
+/*
+ * store global forces moments
+ */
+	if(  (TmpNode = m3l_Mklist("ForcesMoments", "D", 1, dim, &Gnode, "/CFD_2_SIM", "./", "--no_malloc", (char *)NULL)) == 0)
+		Error("socket_edge2simulink: m3l_Mklist");
+	TmpNode->data.df = Forces_moments;
+/*
+ * add time
+ */
+// 	dim[0] = 1;
+// 	if(  (TmpNode = m3l_Mklist("Time", "D", 1, dim, &Gnode, "/CFD_2_SIM", "./", (char *)NULL)) == 0)
+// 		Error("socket_edge2simulink: m3l_Mklist");
+// 	TmpNode->data.df[0] = *ttime;
+/*
+ * open socket
+ */
+	if( (sockfd = open_connection_to_server(hostname, portno, PInpPar, Popts_1)) < 1)
+		Error("socket_edge2simulink: Error when opening socket");
+/*
+ * send data 
+ */
+	if ( client_sender(Gnode, sockfd, PInpPar, (opts_t *)NULL, (opts_t *)NULL) !=1 )
+		Error("socket_edge2simulink: client_sender()");
+#pragma omp critical
+{
+	if( close(sockfd) == -1)
+		Perror("socket_edge2simulink: close");
+/*
+ * free borrowed memory
+ */
+	if(m3l_Umount(&Gnode) != 1)
+		Perror("socket_edge2simulink: m3l_Umount");
+/*
+ * receive data 
+ */
+
+		
+	PInpPar = &InpPar;
+	PInpPar->channel_name = name1;
+	PInpPar->SR_MODE = 'R';
+	if ( (PInpPar->mode = get_exchange_channel_mode('D', 'N')) == -1)
+		Error("socket_edge2simulink: wrong client mode");
+
+	Popts   = &opts;
+	Popts_1 = &opts_1;
+	m3l_set_Send_receive_tcpipsocket(&Popts_1);
+	m3l_set_Find(&Popts);
+
+	if( (sockfd = open_connection_to_server(hostname, portno, PInpPar, Popts_1)) < 1)
+		Error("client_sender: Error when opening socket");
+}
+	if ( (Gnode = client_receiver(sockfd, PInpPar, (opts_t *)NULL, (opts_t *)NULL)) == NULL)
+		Error("socket_edge2simulink: client_receiver()");
+
+#pragma omp critical
+{
+/*
+ * close socket 
+ */
+	if( close(sockfd) == -1)
+		Perror("socket_edge2simulink: close");
+/*
+ * find Angles - rotation matrix and copy the values to Edge allocated memory
+ */
+	if( (SFounds = m3l_Locate(Gnode, "/SIM_2_CFD/Angles", "/*/*",  (lmchar_t *)NULL)) != NULL){
+
+		if( m3l_get_Found_number(SFounds) != 1)
+			Error("socket_edge2simulink: More then one Angles data set found");
+/* 
+ * pointer to list of found nodes
+ */
+		if( (FoundNode = m3l_get_Found_node(SFounds, 0)) == NULL)
+			Error("socket_edge2simulink: Did not find 1st data pointer");
+// 		if( (tot_dim = m3l_get_List_totdim(FoundNode)) != 9)
+		if( (tot_dim = m3l_get_List_totdim(FoundNode)) != 3)
+			Error("socket_edge2simulink: Wrong dimensions of Angles array");
+		if( (tmpfloat = (lmdouble_t *)m3l_get_data_pointer(FoundNode)) == NULL)
+			Error("socket_edge2simulink: Did not find Angles data pointer");
+
+		for (i=0; i<tot_dim; i++)
+			Angles[i]  = tmpfloat[i];
+/* 
+ * free memory allocated in m3l_Locate
+ */
+		m3l_DestroyFound(&SFounds);
+	}
+	else
+	{
+		Error("socket_edge2simulink: Angles not found\n");
+	}
+/*
+ * find center of rotation
+ */
+	if( (SFounds = m3l_Locate(Gnode, "/SIM_2_CFD/RotCenter", "/*/*",  (lmchar_t *)NULL)) != NULL){
+
+		if( m3l_get_Found_number(SFounds) != 1)
+			Error("socket_edge2simulink: More then one RotCenter data set found");
+/* 
+ * pointer to list of found nodes
+ */
+		if( (FoundNode = m3l_get_Found_node(SFounds, 0)) == NULL)
+			Error("socket_edge2simulink: Did not find 1st data pointer");
+		if( (tot_dim = m3l_get_List_totdim(FoundNode)) != 3)
+			Error("socket_edge2simulink: Wrong dimensions of RotCenter array");
+		if( (tmpfloat = (lmdouble_t *)m3l_get_data_pointer(FoundNode)) == NULL)
+			Error("socket_edge2simulink: Did not find RotCenter data pointer");
+
+		for (i=0; i<tot_dim; i++)
+			RotCenter[i]  = tmpfloat[i];
+/* 
+ * free memory allocated in m3l_Locate
+ */
+		m3l_DestroyFound(&SFounds);
+	}
+	else
+	{
+		Error("socket_edge2simulink: RotCenter not found\n");
+	}
+/*
+ * find center of translation
+ */
+	if( (SFounds = m3l_Locate(Gnode, "/SIM_2_CFD/TransVec", "/*/*",  (lmchar_t *)NULL)) != NULL){
+
+		if( m3l_get_Found_number(SFounds) != 1)
+			Error("socket_edge2simulink: More then one TransVec data set found");
+/* 
+ * pointer to list of found nodes
+ */
+		if( (FoundNode = m3l_get_Found_node(SFounds, 0)) == NULL)
+			Error("socket_edge2simulink: Did not find 1st data pointer");
+		if( (tot_dim = m3l_get_List_totdim(FoundNode)) != 3)
+			Error("socket_edge2simulink: Wrong dimensions of TransVec array");
+		if( (tmpfloat = (lmdouble_t *)m3l_get_data_pointer(FoundNode)) == NULL)
+			Error("socket_edge2simulink: Did not find TransVec data pointer");
+
+		for (i=0; i<tot_dim; i++)
+			TransVec[i]  = tmpfloat[i];
+/* 
+ * free memory allocated in m3l_Locate
+ */
+		m3l_DestroyFound(&SFounds);
+	}
+	else
+	{
+		Error("socket_edge2simulink: TransVec not found\n");
+	}
+/*
+ * free borrowed memory
+ */
+	if(m3l_Umount(&Gnode) != 1)
+		Perror("socket_edge2simulink: m3l_Umount");
+}
+	
 }

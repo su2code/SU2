@@ -2997,12 +2997,7 @@ AUTOHEADER=${AUTOHEADER-"${am_missing_run}autoheader"}
 
 MAKEINFO=${MAKEINFO-"${am_missing_run}makeinfo"}
 
-# For better backward compatibility.  To be removed once Automake 1.9.x
-# dies out for good.  For more background, see:
-# <http://lists.gnu.org/archive/html/automake/2012-07/msg00001.html>
-# <http://lists.gnu.org/archive/html/automake/2012-07/msg00014.html>
-mkdir_p='$(MKDIR_P)'
-
+mkdir_p="$MKDIR_P"
 # We need awk for the "check" target.  The system "awk" is bad on
 # some platforms.
 # Always define AMTAR for backward compatibility.  Yes, it's still used
@@ -5586,6 +5581,10 @@ fi
 ac_config_files="$ac_config_files externals/parmetis/Makefile"
 
 
+
+#su2_externals_LIBS="$su2_externals_LIBS /extra2/JKA/Cprograms/libm3l/Source/*.o /extra2/JKA/Cprograms/lsipdx/Source/*.o"
+#su2_externals_LIBS="$su2_externals_LIBS /extra2/JKA/Cprograms/lsipdx/Source/libm3llsipdx.a"
+su2_externals_LIBS="$su2_externals_LIBS -L/extra2/JKA/Cprograms/lsipdx/Source -lm3llsipdx -Wl,-rpath=/extra2/JKA/Cprograms/lsipdx/Source"
 
 
 
