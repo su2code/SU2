@@ -2597,7 +2597,7 @@ void CVolumetricMovement::D6dof_motion(CGeometry *geometry, CConfig *config,
 	su2double rotMatrix[3][3] = {{0.0,0.0,0.0}, {0.0,0.0,0.0}, {0.0,0.0,0.0}};
 	su2double AM[3][3],BM[3][3],CM[3][3];
 	su2double dtheta, dphi, dpsi, cosTheta, sinTheta;
-	su2double cosPhi, sinPhi, cosPsi, sinPsi;
+	su2double cosPhi, sinPhi, cosPsi, sinPsi,x,xn,y,yn;
 	bool time_spectral = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
 	bool adjoint = config->GetAdjoint();
 
@@ -2606,8 +2606,8 @@ void CVolumetricMovement::D6dof_motion(CGeometry *geometry, CConfig *config,
 
   /*--- For time-spectral, motion is the same in each zone (at each instance).
    *    This is used for calls to the config container ---*/
-  if (time_spectral)
-	  iZone = ZONE_0;
+//   if (time_spectral)
+// 	  iZone = ZONE_0;
   
   /*--- Compute delta change in the angle about the x, y, & z axes. ---*/
    cout << "Angles are: " << motion_data->angles[0] << ", " << motion_data->angles[1]<< ", " << motion_data->angles[2]<< endl;
@@ -2722,18 +2722,18 @@ void CVolumetricMovement::D6dof_motion(CGeometry *geometry, CConfig *config,
 			Coord   = geometry->node[iPoint]->GetCoord(); 
    
     /*--- Calculate non-dim. position from rotation center ---*/
-			r[0] = (Coord[0]-motion_data->rotcenter[0]);
-			r[1] = (Coord[1]-motion_data->rotcenter[1]);
+			x = (Coord[0]-motion_data->rotcenter[0]);
+			y = (Coord[1]-motion_data->rotcenter[1]);
   
     /*--- Compute transformed point coordinates ---*/
-			rotCoord[0] =  cosPsi*r[0] + sinPsi*r[1] ;
-			rotCoord[1] = -sinPsi*r[0]  + cosPsi*r[1] ;
+			xn =  cosPsi*x  - sinPsi*y ;
+			yn = +sinPsi*x  + cosPsi*y ;
     
     /*--- Store new node location & grid velocity. Add center. 
      Do not store the grid velocity if this is an adjoint calculation.---*/
     
-			geometry->node[iPoint]->SetCoord(0, rotCoord[0] + motion_data->rotcenter[0]);      
-			geometry->node[iPoint]->SetCoord(1, rotCoord[1] + motion_data->rotcenter[1]);      
+			geometry->node[iPoint]->SetCoord(0, xn + motion_data->rotcenter[0]);      
+			geometry->node[iPoint]->SetCoord(1, yn + motion_data->rotcenter[1]);      
 		}
 	    
 	}
