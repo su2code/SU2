@@ -643,10 +643,11 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
     
     /*--- Find marker and give it's plunge and pitch coordinate to the master node ---*/
     for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+
+      Monitoring_Tag = config->GetMarker_Monitoring(iMarker_Monitoring);
       
       for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
         
-        Monitoring_Tag = config->GetMarker_Monitoring(iMarker_Monitoring);
         Marker_Tag = config->GetMarker_All_TagBound(iMarker);
         if (Marker_Tag == Monitoring_Tag) { owner = 1; break;
         } else {
