@@ -606,16 +606,31 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
 		solver->node[iPoint]->Set_Solution_time_n1();
 		solver->node[iPoint]->Set_Solution_time_n();
-    
-		geometry->node[iPoint]->SetVolume_nM1();
-		geometry->node[iPoint]->SetVolume_n();
+/*
+ * this somehow does not make sense to me, if the volumes are
+ * different, than coorinates are different too
+ */
+// 		geometry->node[iPoint]->SetVolume_nM1();
+// 		geometry->node[iPoint]->SetVolume_n();
     
 		/*--- Store old coordinates in case there is grid movement ---*/
-		if (config->GetGrid_Movement()) {
+// 		if (config->GetGrid_Movement()) {
+// 			geometry->node[iPoint]->SetCoord_n1();
+// 			geometry->node[iPoint]->SetCoord_n();
+// 		}
+	}
+	
+	if (config->GetGrid_Movement()) {
+		for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+			
+			geometry->node[iPoint]->SetVolume_nM1();
+			geometry->node[iPoint]->SetVolume_n();
+		
 			geometry->node[iPoint]->SetCoord_n1();
 			geometry->node[iPoint]->SetCoord_n();
 		}
 	}
+	
   
   /*--- Store old aeroelastic solutions ---*/
   if (config->GetGrid_Movement() && config->GetAeroelastic_Simulation() && (iMesh == MESH_0)) {
