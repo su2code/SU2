@@ -11475,17 +11475,26 @@ void CPhysicalGeometry::SetGridVelocity(CConfig *config, unsigned long iter) {
     
     /*--- Compute mesh velocity with 1st or 2nd-order approximation ---*/
     
-    for (iDim = 0; iDim < nDim; iDim++) {
-      if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
-        GridVel = ( Coord_nP1[iDim] - Coord_n[iDim] ) / TimeStep;
-      if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
-        GridVel = ( 3.0*Coord_nP1[iDim] - 4.0*Coord_n[iDim]
-                   + 1.0*Coord_nM1[iDim] ) / (2.0*TimeStep);
+	if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST){
+		for (iDim = 0; iDim < nDim; iDim++) {
+			GridVel = ( Coord_nP1[iDim] - Coord_n[iDim] ) / TimeStep;
       
       /*--- Store grid velocity for this point ---*/
       
-      node[iPoint]->SetGridVel(iDim, GridVel);
-    }
+			node[iPoint]->SetGridVel(iDim, GridVel);
+		}
+	}
+	else if(config->GetUnsteady_Simulation() == DT_STEPPING_2ND){
+    
+		for (iDim = 0; iDim < nDim; iDim++){
+			GridVel = ( 3.0*Coord_nP1[iDim] - 4.0*Coord_n[iDim]
+			+ 1.0*Coord_nM1[iDim] ) / (2.0*TimeStep);
+		         
+      /*--- Store grid velocity for this point ---*/
+      
+			node[iPoint]->SetGridVel(iDim, GridVel);
+		}
+	}
   }
   
 }
