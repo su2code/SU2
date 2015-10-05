@@ -1669,10 +1669,11 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
   unsigned long iPoint;
   bool adjoint = config_container->GetAdjoint();
 	bool time_spectral = (config_container->GetUnsteady_Simulation() == TIME_SPECTRAL);
-  d6dof_t angle, *p_6DOFdata;
+  d6dof_t d6dofdata, d6dofdata_old, *p_6DOFdata, *p_6DOFdata_old;
   conn_t conn, *pconn;
   
-  p_6DOFdata = &angle;
+  p_6DOFdata = &d6dofdata;
+  p_6DOFdata_old = &d6dofdata_old;
   pconn = &conn;
   
 	/*--- For a time-spectral case, set "iteration number" to the zone number,
@@ -1852,7 +1853,12 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
     case EXTERNAL: 
   /*
   * motion prescribed by external solver
-  */ 
+  */
+  
+      p_6DOFdata_old->angles[0] = config_container->GetMotion_Origin_X(iZone);;
+      p_6DOFdata_old->angles[1] = p_6DOFdata->angles[1];
+      p_6DOFdata_old->angles[2] = p_6DOFdata->angles[2];
+       cout << "Old angles are: " << p_6DOFdata_old->angles[0] << ", " << p_6DOFdata_old->angles[1]<< ", " << p_6DOFdata_old->angles[2]<< endl;
       if (rank == MASTER_NODE){
  /*
   * MASTER node communicate with external solver
@@ -1861,6 +1867,9 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
           if( communicate(config_container,&solver_container, p_6DOFdata, ExtIter, pconn) != 0)
               Error("Communicate()");  
       }
+      
+      cout << endl << " Sharing data" << endl;
+
 /*
  *recevied angles have to redistrbuted to all partitions
  */   
@@ -1871,12 +1880,13 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
 #endif
       
 //       iZone = ZONE_0;
-//       config_container->SetMotion_Origin_X(iZone,p_6DOFdata->angles[0]);
+      config_container->SetMotion_Origin_X(iZone,p_6DOFdata->angles[0]);
 //       config_container->SetMotion_Origin_X(iZone,p_6DOFdata->angles[1]);
 //       config_container->SetMotion_Origin_X(iZone,p_6DOFdata->angles[2]);
       
+          cout << endl << " Moving mesh" << endl;
       grid_movement->D6dof_motion(geometry_container[MESH_0],
-                                    config_container, iZone, ExtIter,p_6DOFdata);
+                                    config_container, iZone, ExtIter,p_6DOFdata,p_6DOFdata_old);
       
       geometry_container[MESH_0]->SetGridVelocity(config_container, ExtIter);
       

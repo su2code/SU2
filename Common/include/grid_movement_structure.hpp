@@ -983,7 +983,7 @@ public:
    * \param[in] UpdateGeo - Update geometry.
    */
   
-  	void D6dof_motion(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter, d6dof_t *motion_data);
+  	void D6dof_motion(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter, d6dof_t *motion_data, d6dof_t *motion_data_old);
 	
   /*!
 	 * \brief Unsteady pitching grid movement using rigid mesh motion.
