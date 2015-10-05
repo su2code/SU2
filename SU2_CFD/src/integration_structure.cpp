@@ -716,8 +716,8 @@ void CIntegration::SetFEM_StructuralSolver(CGeometry *geometry, CSolver *solver,
 
 	unsigned long iPoint;
 
-	/*--- Update the solution only at the local points ---*/
-	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+	/*--- Update the solution at both the local points and the halo points ---*/
+	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
 
 		solver->node[iPoint]->SetSolution_time_n();
 		solver->node[iPoint]->SetSolution_Vel_time_n();

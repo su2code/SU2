@@ -1263,9 +1263,20 @@ void CFEM_ElasticitySolver::Compute_NodalStress(CGeometry *geometry, CSolver **s
 
 		  MaxVonMises_Stress = max(MaxVonMises_Stress, VonMises_Stress);
 
-		  // TODO: we need communication here
-
 	  }
+
+#ifdef HAVE_MPI
+
+	  /*--- Compute MaxVonMises_Stress using all the nodes ---*/
+
+	  su2double MyMaxVonMises_Stress = MaxVonMises_Stress; MaxVonMises_Stress = 0.0;
+	  SU2_MPI::Allreduce(&MyMaxVonMises_Stress, &MaxVonMises_Stress, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+
+#endif
+
+	/*--- Set the value of the MaxVonMises_Stress as the CFEA coeffient ---*/
+
+	Total_CFEA = MaxVonMises_Stress;
 
 
   	bool outputReactions = false;
@@ -1406,19 +1417,6 @@ void CFEM_ElasticitySolver::Compute_NodalStress(CGeometry *geometry, CSolver **s
 
 	}
 
-	#ifdef HAVE_MPI
-
-	  /*--- Compute MaxVonMises_Stress using all the nodes ---*/
-
-	  su2double MyMaxVonMises_Stress = MaxVonMises_Stress; MaxVonMises_Stress = 0.0;
-	  SU2_MPI::Allreduce(&MyMaxVonMises_Stress, &MaxVonMises_Stress, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-
-	#endif
-
-		  /*--- Set the value of the MaxVonMises_Stress as the CFEA coeffient ---*/
-
-	  Total_CFEA = MaxVonMises_Stress;
-
 }
 
 void CFEM_ElasticitySolver::Initialize_SystemMatrix(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
@@ -1458,65 +1456,69 @@ void CFEM_ElasticitySolver::BC_Clamped(CGeometry *geometry, CSolver **solver_con
 
 		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
-		if (nDim == 2) {
-			Solution[0] = 0.0;  Solution[1] = 0.0;
-			Residual[0] = 0.0;  Residual[1] = 0.0;
-		}
-		else {
-			Solution[0] = 0.0;  Solution[1] = 0.0;  Solution[2] = 0.0;
-			Residual[0] = 0.0;  Residual[1] = 0.0;  Residual[2] = 0.0;
-		}
+	    if (geometry->node[iPoint]->GetDomain()) {
 
-		node[iPoint]->SetSolution(Solution);
+	    	if (nDim == 2) {
+	    		Solution[0] = 0.0;  Solution[1] = 0.0;
+	    		Residual[0] = 0.0;  Residual[1] = 0.0;
+	    	}
+	    	else {
+	    		Solution[0] = 0.0;  Solution[1] = 0.0;  Solution[2] = 0.0;
+	    		Residual[0] = 0.0;  Residual[1] = 0.0;  Residual[2] = 0.0;
+	    	}
 
-		if (dynamic){
-			node[iPoint]->SetSolution_Vel(Solution);
-			node[iPoint]->SetSolution_Accel(Solution);
-		}
+	    	node[iPoint]->SetSolution(Solution);
 
-//		for (iVar = 0; iVar < nVar; iVar++){
-//			nodeReactions[iVar] = - 1.0 * LinSysRes.GetBlock(iPoint, iVar);
-//		}
-//
-//		LinSysReact.SetBlock(iPoint,nodeReactions);
+	    	if (dynamic){
+	    		node[iPoint]->SetSolution_Vel(Solution);
+	    		node[iPoint]->SetSolution_Accel(Solution);
+	    	}
 
-		/*--- Initialize the reaction vector ---*/
-		LinSysReact.SetBlock(iPoint, Residual);
+	    	//		for (iVar = 0; iVar < nVar; iVar++){
+	    	//			nodeReactions[iVar] = - 1.0 * LinSysRes.GetBlock(iPoint, iVar);
+	    	//		}
+	    	//
+	    	//		LinSysReact.SetBlock(iPoint,nodeReactions);
+
+	    	/*--- Initialize the reaction vector ---*/
+	    	LinSysReact.SetBlock(iPoint, Residual);
 
 
-		LinSysRes.SetBlock(iPoint, Residual);
+	    	LinSysRes.SetBlock(iPoint, Residual);
 
-		/*--- STRONG ENFORCEMENT OF THE DISPLACEMENT BOUNDARY CONDITION ---*/
+	    	/*--- STRONG ENFORCEMENT OF THE DISPLACEMENT BOUNDARY CONDITION ---*/
 
-		/*--- Delete the columns for a particular node ---*/
+	    	/*--- Delete the columns for a particular node ---*/
 
-		for (iVar = 0; iVar < nPoint; iVar++){
-			if (iVar==iPoint) {
-				Jacobian.SetBlock(iVar,iPoint,mId_Aux);
-			}
-			else {
-				Jacobian.SetBlock(iVar,iPoint,mZeros_Aux);
-			}
-		}
+	    	for (iVar = 0; iVar < nPoint; iVar++){
+	    		if (iVar==iPoint) {
+	    			Jacobian.SetBlock(iVar,iPoint,mId_Aux);
+	    		}
+	    		else {
+	    			Jacobian.SetBlock(iVar,iPoint,mZeros_Aux);
+	    		}
+	    	}
 
-		/*--- Delete the rows for a particular node ---*/
-		for (jVar = 0; jVar < nPoint; jVar++){
-			if (iPoint!=jVar) {
-				Jacobian.SetBlock(iPoint,jVar,mZeros_Aux);
-			}
-		}
+	    	/*--- Delete the rows for a particular node ---*/
+	    	for (jVar = 0; jVar < nPoint; jVar++){
+	    		if (iPoint!=jVar) {
+	    			Jacobian.SetBlock(iPoint,jVar,mZeros_Aux);
+	    		}
+	    	}
 
-		/*--- If the problem is dynamic ---*/
-		/*--- Enforce that in the previous time step all nodes had 0 U, U', U'' ---*/
-		/*--- TODO: Do I really need to do this? ---*/
+	    	/*--- If the problem is dynamic ---*/
+	    	/*--- Enforce that in the previous time step all nodes had 0 U, U', U'' ---*/
+	    	/*--- TODO: Do I really need to do this? ---*/
 
-		if(dynamic){
+	    	if(dynamic){
 
-			node[iPoint]->SetSolution_time_n(Solution);
-			node[iPoint]->SetSolution_Vel_time_n(Solution);
-			node[iPoint]->SetSolution_Accel_time_n(Solution);
+	    		node[iPoint]->SetSolution_time_n(Solution);
+	    		node[iPoint]->SetSolution_Vel_time_n(Solution);
+	    		node[iPoint]->SetSolution_Accel_time_n(Solution);
 
-		}
+	    	}
+
+	    }
 
 	}
 
@@ -1563,6 +1565,8 @@ void CFEM_ElasticitySolver::Postprocessing(CGeometry *geometry, CSolver **solver
 
 	su2double solNorm = 0.0;
 
+	// TODO: Check communication here to ensure the residuals are the same
+
 	if (nonlinear_analysis){
 
 		/*--- If the problem is nonlinear, we have 3 convergence criteria ---*/
@@ -1594,6 +1598,10 @@ void CFEM_ElasticitySolver::Postprocessing(CGeometry *geometry, CSolver **solver
 			Conv_Check[1] = LinSysRes.norm() / Conv_Ref[1];					// Norm of the residual
 			Conv_Check[2] = dotProd(LinSysSol, LinSysRes) / Conv_Ref[2];	// Position for the energy tolerance
 		}
+
+		/*--- MPI solution ---*/
+
+		Set_MPI_Solution(geometry, config);
 
 	}
 	else{
@@ -1845,8 +1853,8 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolv
 		if ((nonlinear_analysis && (newton_raphson || first_iter)) ||
 			(linear_analysis && initial_calc) ||
 			(linear_analysis && restart && initial_calc_restart)) {
-			for (iPoint = 0; iPoint < nPointDomain; iPoint++){
-				for (jPoint = 0; jPoint < nPointDomain; jPoint++){
+			for (iPoint = 0; iPoint < nPoint; iPoint++){
+				for (jPoint = 0; jPoint < nPoint; jPoint++){
 					for(iVar = 0; iVar < nVar; iVar++){
 						for (jVar = 0; jVar < nVar; jVar++){
 							Jacobian_ij[iVar][jVar] = a_dt[0] * MassMatrix.GetBlock(iPoint, jPoint, iVar, jVar);
@@ -1857,9 +1865,10 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolv
 			}
 		}
 
+
 		/*--- Loop over all points, and set aux vector TimeRes_Aux = a0*U+a2*U'+a3*U'' ---*/
 		if (linear_analysis){
-			for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+			for (iPoint = 0; iPoint < nPoint; iPoint++) {
 				for (iVar = 0; iVar < nVar; iVar++){
 					Residual[iVar] = a_dt[0]*node[iPoint]->GetSolution_time_n(iVar)+		//a0*U(t)
 								 	 a_dt[2]*node[iPoint]->GetSolution_Vel_time_n(iVar)+	//a2*U'(t)
@@ -1869,7 +1878,8 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolv
 			}
 		}
 		else if (nonlinear_analysis){
-			for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+			for (iPoint = 0; iPoint < nPoint; iPoint++) {
+
 				for (iVar = 0; iVar < nVar; iVar++){
 					Residual[iVar] =   a_dt[0]*node[iPoint]->GetSolution_time_n(iVar)  			//a0*U(t)
 									 - a_dt[0]*node[iPoint]->GetSolution(iVar) 					//a0*U(t+dt)(k-1)
@@ -1882,7 +1892,7 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolv
 		/*--- Once computed, compute M*TimeRes_Aux ---*/
 		MassMatrix.MatrixVectorProduct(TimeRes_Aux,TimeRes,geometry,config);
 		/*--- Add the components of M*TimeRes_Aux to the residual R(t+dt) ---*/
-		for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+		for (iPoint = 0; iPoint < nPoint; iPoint++) {
 			/*--- Dynamic contribution ---*/
 			/*--- TODO: Do I have to scale this one? I don't think so... ---*/
 			Res_Time_Cont = TimeRes.GetBlock(iPoint);
