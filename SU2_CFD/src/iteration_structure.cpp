@@ -1671,6 +1671,8 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
 	bool time_spectral = (config_container->GetUnsteady_Simulation() == TIME_SPECTRAL);
   d6dof_t d6dofdata, d6dofdata_old, *p_6DOFdata, *p_6DOFdata_old;
   conn_t conn, *pconn;
+  struct timespec now, tmstart;
+  double seconds;
   
   p_6DOFdata = &d6dofdata;
   p_6DOFdata_old = &d6dofdata_old;
@@ -1858,17 +1860,20 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
       p_6DOFdata_old->angles[0] = config_container->GetMotion_Origin_X(iZone);;
       p_6DOFdata_old->angles[1] = p_6DOFdata->angles[1];
       p_6DOFdata_old->angles[2] = p_6DOFdata->angles[2];
-       cout << "Old angles are: " << p_6DOFdata_old->angles[0] << ", " << p_6DOFdata_old->angles[1]<< ", " << p_6DOFdata_old->angles[2]<< endl;
       if (rank == MASTER_NODE){
  /*
   * MASTER node communicate with external solver
   */
-          cout << endl << " Sending and receving data from external process." << endl;
+          cout << endl << " Sending to external process." << endl;
+         clock_gettime(CLOCK_REALTIME, &tmstart);
+
           if( communicate(config_container,&solver_container, p_6DOFdata, ExtIter, pconn) != 0)
               Error("Communicate()");  
       }
-      
-      cout << endl << " Sharing data" << endl;
+      clock_gettime(CLOCK_REALTIME, &now);
+      seconds = (double)((now.tv_sec+now.tv_nsec*1e-9) - (double)(tmstart.tv_sec+tmstart.tv_nsec*1e-9));
+      printf("wall time %fs\n", seconds);
+      cout << endl << " Data from external process received" << endl;
 
 /*
  *recevied angles have to redistrbuted to all partitions
