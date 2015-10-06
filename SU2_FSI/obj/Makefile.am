@@ -41,7 +41,9 @@ su2_fsi_sources = ../include/SU2_FSI.hpp \
 		../include/iteration_structure_fsi.hpp \
 		../src/iteration_structure_fsi.cpp \
 		../../SU2_CFD/include/definition_structure.hpp \
-		../../SU2_CFD/src/definition_structure.cpp
+		../../SU2_CFD/src/definition_structure.cpp \
+		../../SU2_CFD/include/solver_structure.hpp \
+		../../SU2_CFD/include/numerics_structure.hpp 		
 
 su2_fsi_cxx_flags =
 su2_fsi_ldadd =

@@ -36,6 +36,7 @@ Makefile
 externals/autotools/bin
 externals/autotools/include
 externals/autotools/share
+externals/autotools/lib
 
 # externally downloaded tools
 externals/CoDi

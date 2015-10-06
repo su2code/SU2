@@ -87,7 +87,9 @@ am_____bin_SU2_FSI_SOURCES_DIST = ../include/SU2_FSI.hpp \
 	../src/SU2_FSI.cpp ../include/iteration_structure_fsi.hpp \
 	../src/iteration_structure_fsi.cpp \
 	../../SU2_CFD/include/definition_structure.hpp \
-	../../SU2_CFD/src/definition_structure.cpp
+	../../SU2_CFD/src/definition_structure.cpp \
+	../../SU2_CFD/include/solver_structure.hpp \
+	../../SU2_CFD/include/numerics_structure.hpp
 am__dirstamp = $(am__leading_dot)dirstamp
 am__objects_1 = ../src/___bin_SU2_FSI-SU2_FSI.$(OBJEXT) \
 	../src/___bin_SU2_FSI-iteration_structure_fsi.$(OBJEXT) \
@@ -353,7 +355,9 @@ su2_fsi_sources = ../include/SU2_FSI.hpp \
 		../include/iteration_structure_fsi.hpp \
 		../src/iteration_structure_fsi.cpp \
 		../../SU2_CFD/include/definition_structure.hpp \
-		../../SU2_CFD/src/definition_structure.cpp
+		../../SU2_CFD/src/definition_structure.cpp \
+		../../SU2_CFD/include/solver_structure.hpp \
+		../../SU2_CFD/include/numerics_structure.hpp 		
 
 
 # always link to built dependencies from ./externals
