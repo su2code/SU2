@@ -100,8 +100,8 @@ lib_sources = \
   ../src/linear_solvers_structure_b.cpp \
   ../src/datatype_structure.cpp \
   ../src/gauss_structure.cpp \
-  ../src/element_linear.cpp \
   ../src/element_structure.cpp \
+  ../src/element_linear.cpp \
   ../src/interpolation_structure.cpp
 
 lib_cxxflags =

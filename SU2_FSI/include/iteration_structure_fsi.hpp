@@ -34,6 +34,8 @@
 
 #include <ctime>
 
+#include "../../Common/include/gauss_structure.hpp"
+#include "../../Common/include/element_structure.hpp"
 #include "../../SU2_CFD/include/solver_structure.hpp"
 #include "../../SU2_CFD/include/integration_structure.hpp"
 #include "../../SU2_CFD/include/output_structure.hpp"
