@@ -53,10 +53,6 @@ su2_cfd_sources = \
   ../include/definition_structure.hpp \
   ../include/fluid_model.hpp \
   ../include/fluid_model.inl \
-  ../include/gauss_structure.hpp \
-  ../include/gauss_structure.inl \
-  ../include/element_structure.hpp \
-  ../include/element_structure.inl \
   ../include/integration_structure.hpp \
   ../include/integration_structure.inl \
   ../include/iteration_structure.hpp \
@@ -80,9 +76,6 @@ su2_cfd_sources = \
   ../src/fluid_model_pig.cpp \
   ../src/fluid_model_pvdw.cpp \
   ../src/fluid_model_ppr.cpp \
-  ../src/gauss_structure.cpp \
-  ../src/element_linear.cpp \
-  ../src/element_structure.cpp \
   ../src/integration_structure.cpp \
   ../src/integration_time.cpp \
   ../src/iteration_structure.cpp \

@@ -42,8 +42,8 @@
 #include <cstdlib>
 
 #include "../../Common/include/config_structure.hpp"
-#include "gauss_structure.hpp"
-#include "element_structure.hpp"
+#include "../../Common/include/gauss_structure.hpp"
+#include "../../Common/include/element_structure.hpp"
 #include "numerics_machine_learning.hpp"
 #include "numerics_machine_learning_turbulent.hpp"
 #include "variable_structure.hpp"
