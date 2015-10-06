@@ -32,14 +32,14 @@
 
 #pragma once
 
-#include "../../Common/include/mpi_structure.hpp"
+#include "mpi_structure.hpp"
 
 #include <cmath>
 #include <iostream>
 #include <cstdlib>
 
-#include "../../Common/include/config_structure.hpp"
-#include "../../Common/include/geometry_structure.hpp"
+#include "config_structure.hpp"
+#include "geometry_structure.hpp"
 
 using namespace std;
 

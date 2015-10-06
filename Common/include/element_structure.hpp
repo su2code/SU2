@@ -1,7 +1,8 @@
 /*!
  * \file element_structure.hpp
  * \brief Headers of the finite element structure (elements)
- *        The subroutines and functions are in the <i>element_structure.cpp</i> file.
+ *        The subroutines and functions are in the <i>element_structure.cpp</i>
+ *        and <i>element_linear.cpp</i> files.
  * \author R. Sanchez
  * \version 4.0.0 "Cardinal"
  *
@@ -32,14 +33,14 @@
 
 #pragma once
 
-#include "../../Common/include/mpi_structure.hpp"
+#include "mpi_structure.hpp"
 
 #include <cmath>
 #include <iostream>
 #include <cstdlib>
 
-#include "../../Common/include/config_structure.hpp"
-#include "../../Common/include/geometry_structure.hpp"
+#include "config_structure.hpp"
+#include "geometry_structure.hpp"
 #include "gauss_structure.hpp"
 
 using namespace std;

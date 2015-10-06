@@ -44,8 +44,8 @@
 #include <stdio.h>
 
 #include "fluid_model.hpp"
-#include "gauss_structure.hpp"
-#include "element_structure.hpp"
+#include "../../Common/include/gauss_structure.hpp"
+#include "../../Common/include/element_structure.hpp"
 #include "numerics_structure.hpp"
 #include "variable_structure.hpp"
 #include "../../Common/include/geometry_structure.hpp"
