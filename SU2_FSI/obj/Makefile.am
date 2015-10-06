@@ -43,7 +43,11 @@ su2_fsi_sources = ../include/SU2_FSI.hpp \
 		../../SU2_CFD/include/definition_structure.hpp \
 		../../SU2_CFD/src/definition_structure.cpp \
 		../../SU2_CFD/include/solver_structure.hpp \
-		../../SU2_CFD/include/numerics_structure.hpp 		
+		../../SU2_CFD/src/solver_fem_elasticity.cpp \
+		../../SU2_CFD/include/numerics_structure.hpp \
+		../../SU2_CFD/src/numerics_fem_elasticity.cpp \
+		../../SU2_CFD/src/numerics_fem_linear_elasticity.cpp \
+		../../SU2_CFD/src/numerics_fem_nonlinear_elasticity.cpp 
 
 su2_fsi_cxx_flags =
 su2_fsi_ldadd =
@@ -53,9 +57,6 @@ su2_fsi_ldadd += \
     ../../SU2_CFD/src/___bin_SU2_CFD-fluid_model_pig.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-fluid_model_pvdw.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-fluid_model_ppr.o \
-    ../../SU2_CFD/src/___bin_SU2_CFD-gauss_structure.o \
-    ../../SU2_CFD/src/___bin_SU2_CFD-element_linear.o \
-    ../../SU2_CFD/src/___bin_SU2_CFD-element_structure.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-integration_structure.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-integration_time.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-iteration_structure.o \
@@ -75,9 +76,6 @@ su2_fsi_ldadd += \
     ../../SU2_CFD/src/___bin_SU2_CFD-numerics_machine_learning.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-numerics_linearized_mean.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-numerics_linearized_turbulent.o \
-    ../../SU2_CFD/src/___bin_SU2_CFD-numerics_fem_nonlinear_elasticity.o \
-    ../../SU2_CFD/src/___bin_SU2_CFD-numerics_fem_linear_elasticity.o \
-    ../../SU2_CFD/src/___bin_SU2_CFD-numerics_fem_elasticity.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-numerics_machine_learning_turbulent.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-numerics_template.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-output_cgns.o \
@@ -102,7 +100,6 @@ su2_fsi_ldadd += \
     ../../SU2_CFD/src/___bin_SU2_CFD-solver_direct_wave.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-solver_linearized_mean.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-solver_linearized_turbulent.o \
-    ../../SU2_CFD/src/___bin_SU2_CFD-solver_fem_elasticity.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-solver_template.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-transfer_physics.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-transfer_structure.o \
