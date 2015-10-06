@@ -1869,11 +1869,12 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
 
           if( communicate(config_container,&solver_container, p_6DOFdata, ExtIter, pconn) != 0)
               Error("Communicate()");  
+      
+	clock_gettime(CLOCK_REALTIME, &now);
+	seconds = (double)((now.tv_sec+now.tv_nsec*1e-9) - (double)(tmstart.tv_sec+tmstart.tv_nsec*1e-9));
+	printf("wall time %fs\n", seconds);
+	cout << endl << " Data from external process received" << endl;
       }
-      clock_gettime(CLOCK_REALTIME, &now);
-      seconds = (double)((now.tv_sec+now.tv_nsec*1e-9) - (double)(tmstart.tv_sec+tmstart.tv_nsec*1e-9));
-      printf("wall time %fs\n", seconds);
-      cout << endl << " Data from external process received" << endl;
 
 /*
  *recevied angles have to redistrbuted to all partitions
