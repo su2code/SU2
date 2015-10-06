@@ -59,6 +59,8 @@ namespace AD{
   inline void ClearAdjoints(){}
 
   inline void ComputeAdjoint(){}
+
+  inline void Reset(){}
 }
 #endif
 

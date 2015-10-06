@@ -2393,7 +2393,19 @@ public:
 	 */
 	virtual void SetWAitken_Dyn_tn1(su2double waitk_tn1);
 
+  /*!
+   * \brief A virtual member.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] output - Reset the rhs vector.
+   */
   virtual unsigned long SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] kind_recording - Kind of AD recording.
+   */
+  virtual void SetRecording(unsigned short kind_recording);
 
 };
 
@@ -8322,6 +8334,11 @@ public:
    */
   su2double GetCSensitivity(unsigned short val_marker, unsigned long val_vertex);
 
+  /*!
+   * \brief Prepare the solver for a new recording.
+   * \param[in] kind_recording - Kind of AD recording.
+   */
+  void SetRecording(unsigned short kind_recording);
 
 };
 #include "solver_structure.inl"

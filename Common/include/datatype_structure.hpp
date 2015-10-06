@@ -167,6 +167,11 @@ namespace AD{
    */
   void ComputeAdjoint();
 
+  /*!
+   * \brief Reset the tape structure to be ready for a new recording.
+   */
+  void Reset();
+
 }
 
 #ifdef CODI_REVERSE_TYPE

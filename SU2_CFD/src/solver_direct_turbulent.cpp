@@ -1275,13 +1275,29 @@ void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
   /*--- Initialize the Jacobian matrices ---*/
   
   Jacobian.SetValZero();
+
+  /* --- Flow Primitive Variables --- */
+
+  solver_container[FLOW_SOL]->SetPrimitive_Variables(solver_container, config, false);
   
   /*--- Upwind second order reconstruction ---*/
-  
-  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
+
+  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
+    SetSolution_Gradient_GG(geometry, config);
+    solver_container[FLOW_SOL]->SetPrimitive_Gradient_GG(geometry, config);
+  }
+  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES){
+    SetSolution_Gradient_LS(geometry, config);
+    solver_container[FLOW_SOL]->SetPrimitive_Gradient_LS(geometry, config);
+  }
   if (config->GetSpatialOrder() == SECOND_ORDER_LIMITER) SetSolution_Limiter(geometry, config);
-  
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+
+    solver_container[FLOW_SOL]->node[iPoint]->SetVorticity(true);
+    solver_container[FLOW_SOL]->node[iPoint]->SetStrainMag(true);
+
+  }
 }
 
 void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
@@ -2732,10 +2748,20 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
   
   /*--- Upwind second order reconstruction ---*/
   
-  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
+  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
+    SetSolution_Gradient_GG(geometry, config);
+    solver_container[FLOW_SOL]->SetPrimitive_Gradient_GG(geometry, config);
+  }
+  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES){
+    SetSolution_Gradient_LS(geometry, config);
+    solver_container[FLOW_SOL]->SetPrimitive_Gradient_LS(geometry, config);
+  }
   if (config->GetSpatialOrder() == SECOND_ORDER_LIMITER) SetSolution_Limiter(geometry, config);
   
+  /* --- Flow Primitive Variables --- */
+
+  solver_container[FLOW_SOL]->SetPrimitive_Variables(solver_container, config, false);
+
 }
 
 void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
@@ -2750,11 +2776,11 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
   /*--- Compute mean flow and turbulence gradients ---*/
   
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
-    solver_container[FLOW_SOL]->SetPrimitive_Gradient_GG(geometry, config);
+//    solver_container[FLOW_SOL]->SetPrimitive_Gradient_GG(geometry, config);
     SetSolution_Gradient_GG(geometry, config);
   }
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
-    solver_container[FLOW_SOL]->SetPrimitive_Gradient_LS(geometry, config);
+//    solver_container[FLOW_SOL]->SetPrimitive_Gradient_LS(geometry, config);
     SetSolution_Gradient_LS(geometry, config);
   }
   

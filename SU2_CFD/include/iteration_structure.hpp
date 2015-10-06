@@ -111,7 +111,35 @@ public:
    * \param[in] ??? - Description here.
    */
   virtual void Postprocess();
-  
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   * \param[in] config_container - Definition of the particular problem.
+   * \param[in] iZone - Index of the zone.
+   * \param[in] kind_recording - Kind of recording, either FLOW_VARIABLES or GEOMETRY_VARIABLES
+   */
+  virtual void RegisterInput(CSolver ****solver_container, CGeometry*** geometry, CConfig** config, unsigned short iZone, unsigned short kind_recording){}
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   * \param[in] config_container - Definition of the particular problem.
+   * \param[in] iZone - Index of the zone.
+   */
+  virtual void RegisterOutput(CSolver ****solver_container, CGeometry*** geometry, CConfig** config, unsigned short iZone){}
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   * \param[in] config_container - Definition of the particular problem.
+   * \param[in] iZone - Index of the zone.
+   */
+  virtual void SetAdjointOutput(CSolver ****solver_container, CGeometry*** geometry, CConfig** config, unsigned short iZone){}
+
 };
 
 
@@ -666,6 +694,24 @@ public:
  * \version 4.0.1 "Cardinal"
  */
 class CDiscAdjMeanFlowIteration : public CIteration {
+
+private:
+
+  CIteration* meanflow_iteration; /*!< \brief Pointer to the mean flow iteration class. */
+  unsigned short CurrentRecording; /*!< \brief Stores the current status of the recording. */
+  bool turbulent;       /*!< \brief Stores the turbulent flag. */
+
+  enum RECORDING{
+    NONE = 0,      /*!< \brief Indicates that nothing is recorded. */
+    FLOW_VARIABLES = 1, /*!< \brief Indicates that the current recording
+                                    can be used to compute the gradients with respect
+                                    to the conservative flow variables. */
+    GEOMETRY_VARIABLES = 2 /*!< \brief Indicates that the current recording
+                                       can be used to compute the gradients with respect
+                                       to the geometry variables. */
+  };
+
+
 public:
   
   /*!
@@ -723,8 +769,36 @@ public:
    * \brief Postprocesses the discrete adjoint mean flow system before heading to another physics system or the next iteration.
    * \param[in] ??? - Description here.
    */
-  void Postprocess();
-  
+  void Postprocess(); 
+
+  /*!
+   * \brief Registers all input variables of the mean flow iteration.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   * \param[in] config_container - Definition of the particular problem.
+   * \param[in] iZone - Index of the zone.
+   * \param[in] kind_recording - Kind of recording, either FLOW_VARIABLES or GEOMETRY_VARIABLES
+   */
+  void RegisterInput(CSolver ****solver_container, CGeometry*** geometry_container, CConfig** config_container, unsigned short iZone, unsigned short kind_recording);
+
+  /*!
+   * \brief Registers all output variables of the mean flow iteration.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   * \param[in] config_container - Definition of the particular problem.
+   * \param[in] iZone - Index of the zone.
+   */
+  void RegisterOutput(CSolver ****solver_container, CGeometry*** geometry_container, CConfig** config_container, unsigned short iZone);
+
+  /*!
+   * \brief Initializes the adjoints of the output variables of the meanflow iteration.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   * \param[in] config_container - Definition of the particular problem.
+   * \param[in] iZone - Index of the zone.
+   */
+  void SetAdjointOutput(CSolver ****solver_container, CGeometry*** geometry_container, CConfig** config_container, unsigned short iZone);
+
 };
 
 /*!
