@@ -442,7 +442,7 @@ void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config){
 void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config){
   unsigned short iMarker,iDim;
   unsigned long iVertex, iPoint;
-  su2double *Normal, Prod, Sens = 0.0, SensDim;
+  su2double *Normal, Prod, Sens = 0.0, SensDim, Area;
   su2double Total_Sens_Geo_local = 0.0;
   Total_Sens_Geo = 0.0;
 
@@ -464,12 +464,16 @@ void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config
 
           /* --- calculate scalar product for projection onto the normal vector ---*/
           Prod += Normal[iDim]*SensDim;
+
+          Area += Normal[iDim]*Normal[iDim];
         }
+
+        Area = sqrt(Area);
 
         /* --- projection of the gradient
          *     calculated with AD onto the normal
          *     vector of the surface --- */
-        Sens = Prod;
+        Sens = Prod/Area;
 
         /*--- Compute sensitivity for each surface point ---*/
         CSensitivity[iMarker][iVertex] = -Sens;
