@@ -77,6 +77,14 @@ namespace AD{
   inline void ComputeAdjoint(){AD::globalTape.evaluate();
                                adjointVectorPosition = 0;}
 
+  inline void Reset(){
+    if (inputValues.size() != 0){
+      globalTape.reset();
+      adjointVectorPosition = 0;
+      inputValues.clear();
+    }
+  }
+
   inline void delete_handler(void *handler){
     CheckpointHandler *checkpoint = static_cast<CheckpointHandler*>(handler);
     checkpoint->clear();

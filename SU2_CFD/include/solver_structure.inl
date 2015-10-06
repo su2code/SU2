@@ -1058,3 +1058,5 @@ inline su2double CDiscAdjSolver::GetTotal_Sens_Temp() { return Total_Sens_Temp; 
 inline su2double CDiscAdjSolver::GetCSensitivity(unsigned short val_marker, unsigned long val_vertex) { return CSensitivity[val_marker][val_vertex]; }
 
 inline unsigned long CSolver::SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) {}
+
+inline void CSolver::SetRecording(unsigned short kind_recording){}

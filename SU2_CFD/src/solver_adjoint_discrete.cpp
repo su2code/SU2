@@ -202,6 +202,24 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
     /*--- Free memory needed for the transformation ---*/
     delete [] Global2Local;
   }
+
+  /* --- Store the direct solution --- */
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+    node[iPoint]->SetSolution_Direct(direct_solver->node[iPoint]->GetSolution());
+  }
+}
+
+void CDiscAdjSolver::SetRecording(unsigned short kind_recording){
+
+  unsigned long iPoint;
+  unsigned short iVar;
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+    direct_solver->node[iPoint]->SetSolution(node[iPoint]->GetSolution_Direct());
+  }
+
+  direct_solver->Jacobian.SetValZero();
 }
 
 void CDiscAdjSolver::RegisterInput(CGeometry *geometry, CConfig *config){
@@ -404,6 +422,8 @@ void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config){
     for (iDim = 0; iDim < nDim; iDim++){
 
       Sensitivity = SU2_TYPE::GetDerivative(Coord[iDim]);
+
+      Coord[iDim].getGradientData() = 0;
 
       /*--- If sharp edge, set the sensitivity to 0 on that region ---*/
 
