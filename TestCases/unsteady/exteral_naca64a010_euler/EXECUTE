@@ -1,0 +1,10 @@
+
+start server:
+
+Source/Server_Main.out --port 31000 --input_file Definition_File_SU2  --show
+
+
+start client and SU2:
+
+./Client1_FakedSimulink.out localhost 31000 
+
