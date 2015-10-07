@@ -222,7 +222,7 @@ CNearestNeighbor::~CNearestNeighbor(){}
 
 void CNearestNeighbor::Set_TransferCoeff(CConfig **config){
 
-  unsigned long iPoint, jPoint, iVertex, jVertex;
+  unsigned long iVertex, jVertex;
   unsigned short iDim;
   unsigned short nDim = donor_geometry->GetnDim();
 
@@ -311,14 +311,14 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config){
 
 	  nLocalVertex_Donor = 0;
 	  for (iVertex = 0; iVertex < nVertexDonor; iVertex++) {
-		iPoint = donor_geometry->vertex[markDonor][iVertex]->GetNode();
-		if (donor_geometry->node[iPoint]->GetDomain()) nLocalVertex_Donor++;
+		iPointDonor = donor_geometry->vertex[markDonor][iVertex]->GetNode();
+		if (donor_geometry->node[iPointDonor]->GetDomain()) nLocalVertex_Donor++;
 	  }
 
 	  nLocalVertex_Target = 0;
 	  for (iVertex = 0; iVertex < nVertexTarget; iVertex++) {
-		iPoint = target_geometry->vertex[markTarget][iVertex]->GetNode();
-		if (target_geometry->node[iPoint]->GetDomain()) nLocalVertex_Target++;
+		iPointTarget = target_geometry->vertex[markTarget][iVertex]->GetNode();
+		if (target_geometry->node[iPointTarget]->GetDomain()) nLocalVertex_Target++;
 	  }
 
 	  Buffer_Send_nVertex_Donor[0] = nLocalVertex_Donor;
@@ -409,11 +409,13 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config){
 						  dist += pow(Coord_j[iDim]-Coord_i[iDim],2.0);
 					  }
 
-					  if (((dist < mindist) && (iProcessor != rank)) ||
-						  ((dist < mindist) && (iProcessor == rank) && (jPoint != iPoint))) {
-						  mindist = dist; pProcessor = iProcessor; pPoint = jPoint;
-						  pGlobalPoint = Global_Point_Donor;
+//					  if (((dist < mindist) && (iProcessor != rank)) ||
+//						  ((dist < mindist) && (iProcessor == rank) && (Point_Donor != Point_Target))) {
+					  if (dist < mindist) {
+						  mindist = dist; pProcessor = iProcessor; pGlobalPoint = Global_Point_Donor;
 					  }
+
+					  if (dist == 0.0) break;
 				  }
 			  }
 
@@ -423,8 +425,8 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config){
 			  target_geometry->vertex[markTarget][iVertexTarget]->SetInterpDonorProcessor(donorindex, pProcessor);
 			  target_geometry->vertex[markTarget][iVertexTarget]->SetDonorCoeff(donorindex,1.0);
 
-	      //unsigned long gpoint = target_geometry->vertex[markTarget][iVertexTarget]->GetNode();
-	      //cout <<" Nearest Neighbor for target g.i " << target_geometry->node[gpoint]->GetGlobalIndex() <<" is "<< pGlobalPoint << "; d = " << mindist<< endl;
+//	      unsigned long gpoint = target_geometry->vertex[markTarget][iVertexTarget]->GetNode();
+//	      cout <<" Nearest Neighbor for target g.i " << target_geometry->node[gpoint]->GetGlobalIndex() <<" is "<< pGlobalPoint << "; d = " << mindist<< endl;
 		  }
 	  }
 
