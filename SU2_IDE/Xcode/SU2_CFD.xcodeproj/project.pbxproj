@@ -87,6 +87,7 @@
 		E941BB931B71D124005C6C06 /* linear_solvers_structure_b.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E941BB901B71D124005C6C06 /* linear_solvers_structure_b.cpp */; };
 		E941BB941B71D124005C6C06 /* mpi_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E941BB911B71D124005C6C06 /* mpi_structure.cpp */; };
 		E941BBAE1B71D564005C6C06 /* variable_adjoint_discrete.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E941BBAD1B71D564005C6C06 /* variable_adjoint_discrete.cpp */; };
+		E9AA98A71BB3436900B7FE37 /* driver_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9AA98A61BB3436900B7FE37 /* driver_structure.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -324,6 +325,8 @@
 		E941BBA61B71D1AB005C6C06 /* mpi_structure.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = mpi_structure.inl; path = ../../Common/include/mpi_structure.inl; sourceTree = "<group>"; };
 		E941BBAD1B71D564005C6C06 /* variable_adjoint_discrete.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = variable_adjoint_discrete.cpp; path = ../../SU2_CFD/src/variable_adjoint_discrete.cpp; sourceTree = "<group>"; };
 		E97B6C8117F941800008255B /* config_template.cfg */ = {isa = PBXFileReference; lastKnownFileType = text; name = config_template.cfg; path = ../../config_template.cfg; sourceTree = "<group>"; };
+		E9AA98A61BB3436900B7FE37 /* driver_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = driver_structure.cpp; path = ../../SU2_CFD/src/driver_structure.cpp; sourceTree = "<group>"; };
+		E9AA98A81BB3438F00B7FE37 /* driver_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = driver_structure.hpp; path = ../../SU2_CFD/include/driver_structure.hpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -458,6 +461,7 @@
 		0541ABE51370DC5E002D668B /* Include */ = {
 			isa = PBXGroup;
 			children = (
+				E9AA98A81BB3438F00B7FE37 /* driver_structure.hpp */,
 				E941BB951B71D1AB005C6C06 /* datatype_structure.hpp */,
 				E941BB971B71D1AB005C6C06 /* datatypes */,
 				E941BBA41B71D1AB005C6C06 /* linear_solvers_structure_b.hpp */,
@@ -553,6 +557,7 @@
 				05E6DBEC17EB62A100FA1F7E /* SU2_CFD.cpp */,
 				05E6DB8917EB61E600FA1F7E /* config_structure.cpp */,
 				05E6DBBC17EB62A000FA1F7E /* definition_structure.cpp */,
+				E9AA98A61BB3436900B7FE37 /* driver_structure.cpp */,
 				05E6DBC017EB62A100FA1F7E /* iteration_structure.cpp */,
 				E941BB8F1B71D124005C6C06 /* datatype_structure.cpp */,
 				E941BB911B71D124005C6C06 /* mpi_structure.cpp */,
@@ -1429,6 +1434,7 @@
 				05E6DC0717EB62A100FA1F7E /* numerics_adjoint_levelset.cpp in Sources */,
 				05E6DC0817EB62A100FA1F7E /* numerics_adjoint_mean.cpp in Sources */,
 				0530E56817FDF79500733CE8 /* solver_direct_poisson.cpp in Sources */,
+				E9AA98A71BB3436900B7FE37 /* driver_structure.cpp in Sources */,
 				05E6DC0A17EB62A100FA1F7E /* numerics_adjoint_tne2.cpp in Sources */,
 				05E6DC0B17EB62A100FA1F7E /* numerics_adjoint_turbulent.cpp in Sources */,
 				05F108A41978D2F200F2F288 /* transport_model.cpp in Sources */,
