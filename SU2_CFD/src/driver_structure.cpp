@@ -56,7 +56,6 @@ CDriver::CDriver(CIteration **iteration_container,
      different physics in different zones (fluid-structure interaction), or couple multiple
      systems tightly within a single zone by creating a new iteration class (e.g., RANS). ---*/
     if (rank == MASTER_NODE){
-      cout << "Zone " << iZone+1 << endl;
       cout << endl <<"------------------------ Iteration Preprocessing ------------------------" << endl;
     }
     Iteration_Preprocessing(iteration_container, config_container, iZone);
@@ -1275,13 +1274,17 @@ void CDriver::Iteration_Preprocessing(CIteration **iteration_container, CConfig 
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
+  /*--- Initial print to console for this zone. ---*/
+  
+  if (rank == MASTER_NODE) cout << "Zone " << iZone+1;
+  
   /*--- Loop over all zones and instantiate the physics iteration. ---*/
 
   switch (config[iZone]->GetKind_Solver()) {
 
     case EULER: case NAVIER_STOKES: case RANS:
       if (rank == MASTER_NODE)
-        cout << ": mean flow iteration." << endl;
+        cout << ": Euler/Navier-Stokes/RANS flow iteration." << endl;
       iteration_container[iZone] = new CMeanFlowIteration(config[iZone]);
       break;
 
@@ -1317,7 +1320,7 @@ void CDriver::Iteration_Preprocessing(CIteration **iteration_container, CConfig 
 
     case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
       if (rank == MASTER_NODE)
-        cout << ": adjoint mean flow iteration." << endl;
+        cout << ": adjoint Euler/Navier-Stokes/RANS flow iteration." << endl;
       iteration_container[iZone] = new CAdjMeanFlowIteration(config[iZone]);
       break;
 
@@ -1329,7 +1332,7 @@ void CDriver::Iteration_Preprocessing(CIteration **iteration_container, CConfig 
 
     case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
       if (rank == MASTER_NODE)
-        cout << ": discrete adjoint mean flow iteration." << endl;
+        cout << ": discrete adjoint Euler/Navier-Stokes/RANS flow iteration." << endl;
       iteration_container[iZone] = new CDiscAdjMeanFlowIteration(config[iZone]);
       break;
   }
