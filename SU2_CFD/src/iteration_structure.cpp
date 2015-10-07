@@ -1864,16 +1864,16 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
  /*
   * MASTER node communicate with external solver
   */
-          cout << endl << " Sending to external process." << endl;
+         cout << endl << " Sending data to external process." << endl;
          clock_gettime(CLOCK_REALTIME, &tmstart);
 
           if( communicate(config_container,&solver_container, p_6DOFdata, ExtIter, pconn) != 0)
               Error("Communicate()");  
       
-	clock_gettime(CLOCK_REALTIME, &now);
-	seconds = (double)((now.tv_sec+now.tv_nsec*1e-9) - (double)(tmstart.tv_sec+tmstart.tv_nsec*1e-9));
-	printf("wall time %fs\n", seconds);
-	cout << endl << " Data from external process received" << endl;
+	  clock_gettime(CLOCK_REALTIME, &now);
+	  seconds = (double)((now.tv_sec+now.tv_nsec*1e-9) - (double)(tmstart.tv_sec+tmstart.tv_nsec*1e-9));
+	  printf("wall time %fs\n", seconds);
+	  cout << endl << " Data from external process received" << endl;
       }
 
 /*
@@ -1886,6 +1886,11 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
 #endif
       
 //       iZone = ZONE_0;
+/*
+ * NOTE: save temporarily previous pitch angle in variable storing rotation center 
+ * so that you can turn mesh back to its original
+ * position. In the final version this has to be fixed
+ */
       config_container->SetMotion_Origin_X(iZone,p_6DOFdata->angles[0]);
 //       config_container->SetMotion_Origin_X(iZone,p_6DOFdata->angles[1]);
 //       config_container->SetMotion_Origin_X(iZone,p_6DOFdata->angles[2]);
@@ -2462,20 +2467,13 @@ int   communicate(CConfig *config, CSolver ****solver_container, d6dof_t *angle,
  * function is a communication routine through 
  * data link called "CFD2SIM"
  * 
- * the functions contains _ in the end of the name, it is due to fortran-C 
- * compilation issues
- * 
- * first it identifies the host name and port number of the server,
- * then creates list which contains vectors of forces and then 
- * sends the vector
- * 
  * on return it receives displacements data set
  * 
  * created: 		Adam Jirasek
  * date:		2014-03-05
  * 
  * input data:
- * 	Forces_moments  	- vectors of double (6), contains Fx, Fy, Fz, Mx, My, Mz
+ * 	Forces_moments  	- vectors of double (10)
  * 	ttime      	- time
  * 	host_len	- length of host name
  * 	host		- host name
@@ -2521,8 +2519,8 @@ int   communicate(CConfig *config, CSolver ****solver_container, d6dof_t *angle,
  * set connection parameters (data link etc)
  */
 	PInpPar = &InpPar;
-	PInpPar->channel_name = name;
-	PInpPar->SR_MODE = 'S';
+	PInpPar->channel_name = name;  /* name of channel */
+	PInpPar->SR_MODE = 'S';            /* process is sending data */
 	if ( (PInpPar->mode = get_exchange_channel_mode('D', 'N')) == -1)
 		Error("socket_edge2simulink: wrong client mode");
 
@@ -2585,8 +2583,8 @@ int   communicate(CConfig *config, CSolver ****solver_container, d6dof_t *angle,
  * receive data 
  */
 	PInpPar = &InpPar;
-	PInpPar->channel_name = name1;
-	PInpPar->SR_MODE = 'R';
+	PInpPar->channel_name = name1;  /* name of channel for receiving data */
+	PInpPar->SR_MODE = 'R';             /* process is receiving data */
 	if ( (PInpPar->mode = get_exchange_channel_mode('D', 'N')) == -1)
 		Error("socket_edge2simulink: wrong client mode");
 
