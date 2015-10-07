@@ -58,6 +58,8 @@
 #include "datatypes/primitive_structure.hpp"
 #endif
 
+/* --- This type can be used for (rare) compatiblity cases or for computations that are intended to be (always) passive. --- */
+typedef double passivedouble;
 
 /*!
  * \namespace SU2_TYPE
@@ -68,56 +70,56 @@
  */
 namespace SU2_TYPE{
   /*!
-   * \brief Set the primary (primitive) value of the datatype (needs to be implemented for each new type).
+   * \brief Set the (primitive) value of the datatype (needs to be implemented for each new type).
    * \param[in] data - The non-primitive datatype.
    * \param[in] val - The primitive value.
    */
-  void SetPrimary(su2double& data, const double &val);
+  void SetValue(su2double& data, const double &val);
 
   /*!
-   * \brief Set the secondary (primitive) value of the datatype (needs to be implemented for each new type).
+   * \brief Set the secondary value of the datatype (needs to be implemented for each new type).
    * \param[in] data - The non-primitive datatype.
    * \param[in] val - The primitive value.
    */
   void SetSecondary(su2double& data, const double &val);
 
   /*!
-   * \brief Get the primary (primitive) value of the datatype (needs to be implemented for each new type).
+   * \brief Get the (primitive) value of the datatype (needs to be implemented for each new type).
    * \param[in] data - The non-primitive datatype.
    * \return The primitive value.
    */
-  double GetPrimary(const su2double &data);
+  double GetValue(const su2double &data);
 
   /*!
-   * \brief Get the secondary (primitive) value of the datatype (needs to be implemented for each new type).
+   * \brief Get the secondary value of the datatype (needs to be implemented for each new type).
    * \param[in] data - The non-primitive datatype.
    * \return The primitive value.
    */
   double GetSecondary(const su2double &data);
 
   /*!
-   * \brief Get the derivative (primitive) value of the datatype (needs to be implemented for each new type).
+   * \brief Get the derivative value of the datatype (needs to be implemented for each new type).
    * \param[in] data - The non-primitive datatype.
    * \return The derivative value.
    */
   double GetDerivative(const su2double &data);
 
   /*!
-   * \brief Set the derivative (primitive) value of the datatype (needs to be implemented for each new type).
+   * \brief Set the derivative value of the datatype (needs to be implemented for each new type).
    * \param[in] data - The non-primitive datatype.
    * \param[in] val - The value of the derivative.
    */
   void SetDerivative(su2double &data, const double &val);
 
   /*!
-   * \brief Casts the primary value to int (uses GetPrimary, already implemented for each type).
+   * \brief Casts the primitive value to int (uses GetValue, already implemented for each type).
    * \param[in] data - The non-primitive datatype.
    * \return - The primary value casted to int.
    */
   int Int(const su2double& data);
 
   /*!
-   * \brief Casts the primary value to short (uses GetPrimary, already implemented for each type).
+   * \brief Casts the primitive value to short (uses GetValue, already implemented for each type).
    * \param[in] data - The non-primitive datatype.
    * \return - The primary value casted to short.
    */

@@ -43,7 +43,7 @@ class TestCase:
 
         # Indicate if the test is unsteady
         self.unsteady = False
-
+        
         # The test condition. These must be set after initialization
         self.test_iter = 1
         self.test_vals = []  

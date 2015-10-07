@@ -40,7 +40,7 @@ bin_PROGRAMS += ../bin/SU2_DOT
 endif
 
 if BUILD_REVERSE
-bin_PROGRAMS += ../bin/SU2_DOT_REVERSE
+bin_PROGRAMS += ../bin/SU2_DOT_AD
 endif
 
 su2_dot_sources = ../include/SU2_DOT.hpp \
@@ -90,7 +90,7 @@ ___bin_SU2_DOT_LDADD = ../../Common/lib/libSU2.a ${su2_dot_ldadd}
 endif
 
 if BUILD_REVERSE
-___bin_SU2_DOT_REVERSE_SOURCES = ${su2_dot_sources}
-___bin_SU2_DOT_REVERSE_CXXFLAGS = @REVERSE_CXX@ ${su2_dot_cxx_flags} 
-___bin_SU2_DOT_REVERSE_LDADD = @REVERSE_LIBS@ ../../Common/lib/libSU2_REVERSE.a ${su2_dot_ldadd}
+___bin_SU2_DOT_AD_SOURCES = ${su2_dot_sources}
+___bin_SU2_DOT_AD_CXXFLAGS = @REVERSE_CXX@ ${su2_dot_cxx_flags} 
+___bin_SU2_DOT_AD_LDADD = @REVERSE_LIBS@ ../../Common/lib/libSU2_AD.a ${su2_dot_ldadd}
 endif
