@@ -55,6 +55,7 @@ su2_cfd_sources = \
   ../include/fluid_model.inl \
   ../include/integration_structure.hpp \
   ../include/integration_structure.inl \
+  ../include/driver_structure.hpp \
   ../include/iteration_structure.hpp \
   ../include/numerics_structure.hpp \
   ../include/numerics_machine_learning.hpp \
@@ -76,6 +77,7 @@ su2_cfd_sources = \
   ../src/fluid_model_ppr.cpp \
   ../src/integration_structure.cpp \
   ../src/integration_time.cpp \
+  ../src/driver_structure.cpp \
   ../src/iteration_structure.cpp \
   ../src/numerics_adjoint_levelset.cpp \
   ../src/numerics_adjoint_mean.cpp \
