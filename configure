@@ -6120,9 +6120,11 @@ fi
 ac_config_files="$ac_config_files externals/parmetis/Makefile"
 
 
-su2_externals_INCLUDES="$su2_externals_INCLUDES -I/home/jka/Cprograms/Sources/libm3l/Source/ -I/home/jka/Cprograms/Sources/lsipdx/Source/"
-su2_externals_LIBS="$su2_externals_LIBS  -L/home/jka/Cprograms/Sources/lsipdx/Source/ -lm3lsipdx -Wl,-rpath=/home/jka/Cprograms/Sources/lsipdx/Source/ "
+su2_externals_INCLUDES="$su2_externals_INCLUDES -I/home/jka/Cprograms/Sources/libm3l/Source/ -I/home/jka/Cprograms/Sources/lsipdx/Source/ -lrt"
 #su2_externals_LIBS="$su2_externals_LIBS  /home/jka/Cprograms/Sources/lsipdx/Source/libm3lsipdx.a -lpthread "
+
+#su2_externals_LIBS="$su2_externals_LIBS /extra2/JKA/Cprograms/lsipdx/Source/libm3llsipdx.a"
+su2_externals_LIBS="$su2_externals_LIBS -L/home/jka/Cprograms/Sources/lsipdx/Source/ -lm3llsipdx -Wl,-rpath=/home/jka/Cprograms/Sources/lsipdx/Source/"
 
 
 

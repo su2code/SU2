@@ -189,13 +189,11 @@ fi
 AM_CONDITIONAL(BUILD_PARMETIS, test x$enableparmetis = xyes)
 AC_CONFIG_FILES([externals/parmetis/Makefile])
 
-su2_externals_INCLUDES="$su2_externals_INCLUDES -I/extra2/JKA/Cprograms/libm3l/Source -I/extra2/JKA/Cprograms/lsipdx/Source -lrt"
-#su2_externals_LIBS="$su2_externals_LIBS  -L/home/jka/Cprograms/Sources/lsipdx/Source/ -lm3lsipdx -Wl,-rpath=/home/jka/Cprograms/Sources/lsipdx/Source/ "
+su2_externals_INCLUDES="$su2_externals_INCLUDES -I/home/jka/Cprograms/Sources/libm3l/Source/ -I/home/jka/Cprograms/Sources/lsipdx/Source/ -lrt"
 #su2_externals_LIBS="$su2_externals_LIBS  /home/jka/Cprograms/Sources/lsipdx/Source/libm3lsipdx.a -lpthread "
 
-#su2_externals_LIBS="$su2_externals_LIBS /extra2/JKA/Cprograms/libm3l/Source/*.o /extra2/JKA/Cprograms/lsipdx/Source/*.o"
 #su2_externals_LIBS="$su2_externals_LIBS /extra2/JKA/Cprograms/lsipdx/Source/libm3llsipdx.a"
-su2_externals_LIBS="$su2_externals_LIBS -L/extra2/JKA/Cprograms/lsipdx/Source -lm3llsipdx -Wl,-rpath=/extra2/JKA/Cprograms/lsipdx/Source"
+su2_externals_LIBS="$su2_externals_LIBS -L/home/jka/Cprograms/Sources/lsipdx/Source/ -lm3llsipdx -Wl,-rpath=/home/jka/Cprograms/Sources/lsipdx/Source/"
 
 AC_SUBST([su2_externals_INCLUDES])
 AC_SUBST([su2_externals_LIBS])
