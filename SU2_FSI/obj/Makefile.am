@@ -38,6 +38,10 @@ bin_PROGRAMS = ../bin/SU2_FSI
 
 su2_fsi_sources = ../include/SU2_FSI.hpp \
 		../src/SU2_FSI.cpp \
+		../../SU2_CFD/include/driver_structure.hpp \
+		../../SU2_CFD/src/driver_structure.cpp \
+		../../SU2_CFD/include/iteration_structure.hpp \
+		../../SU2_CFD/src/iteration_structure.cpp \
 		../include/iteration_structure_fsi.hpp \
 		../src/iteration_structure_fsi.cpp \
 		../../SU2_CFD/include/definition_structure.hpp \
@@ -59,7 +63,6 @@ su2_fsi_ldadd += \
     ../../SU2_CFD/src/___bin_SU2_CFD-fluid_model_ppr.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-integration_structure.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-integration_time.o \
-    ../../SU2_CFD/src/___bin_SU2_CFD-iteration_structure.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-numerics_structure.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-numerics_adjoint_levelset.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-numerics_adjoint_mean.o \

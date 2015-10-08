@@ -40,7 +40,7 @@
 #include <cmath>
 
 #include "../../Common/include/interpolation_structure.hpp"
-
+#include "../../SU2_CFD/include/driver_structure.hpp"
 #include "../../Common/include/gauss_structure.hpp"
 #include "../../Common/include/element_structure.hpp"
 #include "../../SU2_CFD/include/solver_structure.hpp"
