@@ -59,7 +59,7 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CIteration(CConfig **config);
+  CIteration(CConfig *config);
   
   /*!
    * \brief Destructor of the class.
@@ -156,7 +156,7 @@ public:
    * \brief Constructor of the class.
    * \param[in] config - Definition of the particular problem.
    */
-  CMeanFlowIteration(CConfig **config);
+  CMeanFlowIteration(CConfig *config);
   
   /*!
    * \brief Destructor of the class.
@@ -224,7 +224,7 @@ public:
    * \brief Constructor of the class.
    * \param[in] config - Definition of the particular problem.
    */
-  CTNE2Iteration(CConfig **config);
+  CTNE2Iteration(CConfig *config);
   
   /*!
    * \brief Destructor of the class.
@@ -292,7 +292,7 @@ public:
    * \brief Constructor of the class.
    * \param[in] config - Definition of the particular problem.
    */
-  CWaveIteration(CConfig **config);
+  CWaveIteration(CConfig *config);
   
   /*!
    * \brief Destructor of the class.
@@ -360,7 +360,7 @@ public:
    * \brief Constructor of the class.
    * \param[in] config - Definition of the particular problem.
    */
-  CHeatIteration(CConfig **config);
+  CHeatIteration(CConfig *config);
   
   /*!
    * \brief Destructor of the class.
@@ -428,7 +428,7 @@ public:
    * \brief Constructor of the class.
    * \param[in] config - Definition of the particular problem.
    */
-  CPoissonIteration(CConfig **config);
+  CPoissonIteration(CConfig *config);
   
   /*!
    * \brief Destructor of the class.
@@ -496,7 +496,7 @@ public:
    * \brief Constructor of the class.
    * \param[in] config - Definition of the particular problem.
    */
-  CFEAIteration(CConfig **config);
+  CFEAIteration(CConfig *config);
   
   /*!
    * \brief Destructor of the class.
@@ -564,7 +564,7 @@ public:
    * \brief Constructor of the class.
    * \param[in] config - Definition of the particular problem.
    */
-  CAdjMeanFlowIteration(CConfig **config);
+  CAdjMeanFlowIteration(CConfig *config);
   
   /*!
    * \brief Destructor of the class.
@@ -632,7 +632,7 @@ public:
    * \brief Constructor of the class.
    * \param[in] config - Definition of the particular problem.
    */
-  CAdjTNE2Iteration(CConfig **config);
+  CAdjTNE2Iteration(CConfig *config);
   
   /*!
    * \brief Destructor of the class.
@@ -718,7 +718,7 @@ public:
    * \brief Constructor of the class.
    * \param[in] config - Definition of the particular problem.
    */
-  CDiscAdjMeanFlowIteration(CConfig **config);
+  CDiscAdjMeanFlowIteration(CConfig *config);
   
   /*!
    * \brief Destructor of the class.

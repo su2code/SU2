@@ -166,15 +166,6 @@ int main(int argc, char *argv[]) {
   
   Geometrical_Preprocessing(geometry_container, config_container, nZone);
   
-  if (rank == MASTER_NODE)
-    cout << endl <<"------------------------- Driver Preprocessing --------------------------" << endl;
-  
-  /*--- First, given the basic information about the number of zones and the
-   solver types from the config, instantiate the appropriate driver for the problem. ---*/
-  
-  Driver_Preprocessing(&driver, iteration_container, solver_container,
-                       geometry_container, integration_container, numerics_container, config_container, nZone);
-  
   for (iZone = 0; iZone < nZone; iZone++) {
     
     /*--- Computation of wall distances for turbulence modeling ---*/
@@ -200,9 +191,23 @@ int main(int argc, char *argv[]) {
       geometry_container[iZone][iMesh]->MatchActuator_Disk(config_container[iZone]);
     }
     
-    /*--- Instantiate the geometry movement classes for the solution of unsteady
-     flows on dynamic meshes, including rigid mesh transformations, dynamically
-     deforming meshes, and time-spectral preprocessing. ---*/
+  }
+  
+  if (rank == MASTER_NODE)
+    cout << endl <<"------------------------- Driver Preprocessing --------------------------" << endl;
+  
+  /*--- First, given the basic information about the number of zones and the
+   solver types from the config, instantiate the appropriate driver for the problem. ---*/
+  
+  Driver_Preprocessing(&driver, iteration_container, solver_container,
+                       geometry_container, integration_container, numerics_container, config_container, nZone);
+  
+  
+  /*--- Instantiate the geometry movement classes for the solution of unsteady
+   flows on dynamic meshes, including rigid mesh transformations, dynamically
+   deforming meshes, and time-spectral preprocessing. ---*/
+  
+  for (iZone = 0; iZone < nZone; iZone++) {
     
     if (config_container[iZone]->GetGrid_Movement() ||
         (config_container[iZone]->GetDirectDiff() == D_DESIGN)) {
