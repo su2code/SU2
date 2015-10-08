@@ -4911,7 +4911,7 @@ void CTNE2EulerSolver::GetRestart(CGeometry *geometry, CConfig *config, unsigned
 
 void CTNE2EulerSolver::SetVolume_Output(CConfig *config, CGeometry *geometry, su2double **data_container, unsigned short nOutput_Vars) {
   
-#ifdef DEBUG_TDE
+#ifdef DEBUG_OUTPUT
   
 	unsigned short iVar;
 	unsigned long iPoint;
