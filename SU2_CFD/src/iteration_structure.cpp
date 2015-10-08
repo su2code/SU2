@@ -979,7 +979,7 @@ void CDiscAdjMeanFlowIteration::Iterate(COutput *output,
   integration_container[ZONE_0][ADJFLOW_SOL]->Convergence_Monitoring(geometry_container[ZONE_0][MESH_0],config_container[ZONE_0],
                                                                          ExtIter,log10(solver_container[ZONE_0][MESH_0][ADJFLOW_SOL]->GetRes_RMS(0)), MESH_0);
 
-  if ((ExtIter+1 >= config_container[ZONE_0]->GetnExtIter()) ||
+  if (((unsigned short)(ExtIter+1) >= config_container[ZONE_0]->GetnExtIter()) ||
       ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq() == 0))){
 
     /*--- Reset tape ---*/

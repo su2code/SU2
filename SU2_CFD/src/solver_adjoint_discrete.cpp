@@ -213,7 +213,6 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
 void CDiscAdjSolver::SetRecording(unsigned short kind_recording){
 
   unsigned long iPoint;
-  unsigned short iVar;
 
   for (iPoint = 0; iPoint < nPoint; iPoint++){
     direct_solver->node[iPoint]->SetSolution(node[iPoint]->GetSolution_Direct());

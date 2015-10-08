@@ -98,6 +98,6 @@ namespace AD{
 template<class A> struct Impl_getValue<codi::Expression<double, A> > {
   typedef double OUT;
   static inline OUT getValue(const codi::Expression<double, A> &value) {
-    return value.cast().value();
+    return value.getValue();
   }
 };
