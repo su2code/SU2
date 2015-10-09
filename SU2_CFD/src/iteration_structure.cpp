@@ -303,6 +303,243 @@ void CMeanFlowIteration::Monitor()     { }
 void CMeanFlowIteration::Output()      { }
 void CMeanFlowIteration::Postprocess() { }
 
+void CMeanFlowIteration::SetWind_GustField(CConfig *config_container, CGeometry **geometry_container, CSolver ***solver_container) {
+  // The gust is imposed on the flow field via the grid velocities. This method called the Field Velocity Method is described in the
+  // NASA TM–2012-217771 - Development, Verification and Use of Gust Modeling in the NASA Computational Fluid Dynamics Code FUN3D
+  // the desired gust is prescribed as the negative of the grid velocity.
+  
+  // If a source term is included to account for the gust field, the method is described by Jones et al. as the Split Velocity Method in
+  // Simulation of Airfoil Gust Responses Using Prescribed Velocities.
+  // In this routine the gust derivatives needed for the source term are calculated when applicable.
+  // If the gust derivatives are zero the source term is also zero.
+  // The source term itself is implemented in the class CSourceWindGust
+  
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+  
+  if (rank == MASTER_NODE)
+    cout << endl << "Running simulation with a Wind Gust." << endl;
+  unsigned short iDim, nDim = geometry_container[MESH_0]->GetnDim(); //We assume nDim = 2
+  if (nDim != 2) {
+    if (rank == MASTER_NODE) {
+      cout << endl << "WARNING - Wind Gust capability is only verified for 2 dimensional simulations." << endl;
+    }
+  }
+  
+  /*--- Gust Parameters from config ---*/
+  unsigned short Gust_Type = config_container->GetGust_Type();
+  su2double xbegin = config_container->GetGust_Begin_Loc();    // Location at which the gust begins.
+  su2double L = config_container->GetGust_WaveLength();        // Gust size
+  su2double tbegin = config_container->GetGust_Begin_Time();   // Physical time at which the gust begins.
+  su2double gust_amp = config_container->GetGust_Ampl();       // Gust amplitude
+  su2double n = config_container->GetGust_Periods();           // Number of gust periods
+  unsigned short GustDir = config_container->GetGust_Dir(); // Gust direction
+  
+  /*--- Variables needed to compute the gust ---*/
+  unsigned short Kind_Grid_Movement = config_container->GetKind_GridMovement(ZONE_0);
+  unsigned long iPoint;
+  unsigned short iMGlevel, nMGlevel = config_container->GetnMGLevels();
+  
+  su2double x, y, x_gust, dgust_dx, dgust_dy, dgust_dt;
+  su2double *Gust, *GridVel, *NewGridVel, *GustDer;
+  
+  su2double Physical_dt = config_container->GetDelta_UnstTime();
+  unsigned long ExtIter = config_container->GetExtIter();
+  su2double Physical_t = ExtIter*Physical_dt;
+  
+  su2double Uinf = solver_container[MESH_0][FLOW_SOL]->GetVelocity_Inf(0); // Assumption gust moves at infinity velocity
+  
+  Gust = new su2double [nDim];
+  NewGridVel = new su2double [nDim];
+  for (iDim = 0; iDim < nDim; iDim++) {
+    Gust[iDim] = 0.0;
+    NewGridVel[iDim] = 0.0;
+  }
+  
+  GustDer = new su2double [3];
+  for (unsigned short i = 0; i < 3; i++) {
+    GustDer[i] = 0.0;
+  }
+  
+  // Vortex variables
+  unsigned long nVortex = 0;
+  vector<su2double> x0, y0, vort_strenth, r_core; //vortex is positive in clockwise direction.
+  if (Gust_Type == VORTEX) {
+    InitializeVortexDistribution(nVortex, x0, y0, vort_strenth, r_core);
+  }
+  
+  /*--- Check to make sure gust lenght is not zero or negative (vortex gust doesn't use this). ---*/
+  if (L <= 0.0 && Gust_Type != VORTEX) {
+    if (rank == MASTER_NODE) cout << "ERROR: The gust length needs to be positive" << endl;
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+  }
+  
+  /*--- Loop over all multigrid levels ---*/
+  
+  for (iMGlevel = 0; iMGlevel <= nMGlevel; iMGlevel++) {
+    
+    /*--- Loop over each node in the volume mesh ---*/
+    
+    for (iPoint = 0; iPoint < geometry_container[iMGlevel]->GetnPoint(); iPoint++) {
+      
+      /*--- Reset the Grid Velocity to zero if there is no grid movement ---*/
+      if (Kind_Grid_Movement == GUST) {
+        for (iDim = 0; iDim < nDim; iDim++)
+          geometry_container[iMGlevel]->node[iPoint]->SetGridVel(iDim, 0.0);
+      }
+      
+      /*--- initialize the gust and derivatives to zero everywhere ---*/
+      
+      for (iDim = 0; iDim < nDim; iDim++) {Gust[iDim]=0.0;}
+      dgust_dx = 0.0; dgust_dy = 0.0; dgust_dt = 0.0;
+      
+      /*--- Begin applying the gust ---*/
+      
+      if (Physical_t >= tbegin) {
+        
+        x = geometry_container[iMGlevel]->node[iPoint]->GetCoord()[0]; // x-location of the node.
+        y = geometry_container[iMGlevel]->node[iPoint]->GetCoord()[1]; // y-location of the node.
+        
+        // Gust coordinate
+        x_gust = (x - xbegin - Uinf*(Physical_t-tbegin))/L;
+        
+        /*--- Calculate the specified gust ---*/
+        switch (Gust_Type) {
+            
+          case TOP_HAT:
+            // Check if we are in the region where the gust is active
+            if (x_gust > 0 && x_gust < n) {
+              Gust[GustDir] = gust_amp;
+              // Still need to put the gust derivatives. Think about this.
+            }
+            break;
+            
+          case SINE:
+            // Check if we are in the region where the gust is active
+            if (x_gust > 0 && x_gust < n) {
+              Gust[GustDir] = gust_amp*(sin(2*PI_NUMBER*x_gust));
+              
+              // Gust derivatives
+              //dgust_dx = gust_amp*2*PI_NUMBER*(cos(2*PI_NUMBER*x_gust))/L;
+              //dgust_dy = 0;
+              //dgust_dt = gust_amp*2*PI_NUMBER*(cos(2*PI_NUMBER*x_gust))*(-Uinf)/L;
+            }
+            break;
+            
+          case ONE_M_COSINE:
+            // Check if we are in the region where the gust is active
+            if (x_gust > 0 && x_gust < n) {
+              Gust[GustDir] = gust_amp*(1-cos(2*PI_NUMBER*x_gust));
+              
+              // Gust derivatives
+              //dgust_dx = gust_amp*2*PI_NUMBER*(sin(2*PI_NUMBER*x_gust))/L;
+              //dgust_dy = 0;
+              //dgust_dt = gust_amp*2*PI_NUMBER*(sin(2*PI_NUMBER*x_gust))*(-Uinf)/L;
+            }
+            break;
+            
+          case EOG:
+            // Check if we are in the region where the gust is active
+            if (x_gust > 0 && x_gust < n) {
+              Gust[GustDir] = -0.37*gust_amp*sin(3*PI_NUMBER*x_gust)*(1-cos(2*PI_NUMBER*x_gust));
+            }
+            break;
+            
+          case VORTEX:
+            
+            /*--- Use vortex distribution ---*/
+            // Algebraic vortex equation.
+            for (unsigned long i=0; i<nVortex; i++) {
+              su2double r2 = pow(x-(x0[i]+Uinf*(Physical_t-tbegin)), 2) + pow(y-y0[i], 2);
+              su2double r = sqrt(r2);
+              su2double v_theta = vort_strenth[i]/(2*PI_NUMBER) * r/(r2+pow(r_core[i],2));
+              Gust[0] = Gust[0] + v_theta*(y-y0[i])/r;
+              Gust[1] = Gust[1] - v_theta*(x-(x0[i]+Uinf*(Physical_t-tbegin)))/r;
+            }
+            break;
+            
+          case NONE: default:
+            
+            /*--- There is no wind gust specified. ---*/
+            if (rank == MASTER_NODE) {
+              cout << "No wind gust specified." << endl;
+            }
+            break;
+            
+        }
+      }
+      
+      /*--- Set the Wind Gust, Wind Gust Derivatives and the Grid Velocities ---*/
+      
+      GustDer[0] = dgust_dx;
+      GustDer[1] = dgust_dy;
+      GustDer[2] = dgust_dt;
+      
+      solver_container[iMGlevel][FLOW_SOL]->node[iPoint]->SetWindGust(Gust);
+      solver_container[iMGlevel][FLOW_SOL]->node[iPoint]->SetWindGustDer(GustDer);
+      
+      GridVel = geometry_container[iMGlevel]->node[iPoint]->GetGridVel();
+      
+      /*--- Store new grid velocity ---*/
+      
+      for (iDim = 0; iDim < nDim; iDim++) {
+        NewGridVel[iDim] = GridVel[iDim] - Gust[iDim];
+        geometry_container[iMGlevel]->node[iPoint]->SetGridVel(iDim, NewGridVel[iDim]);
+      }
+      
+    }
+  }
+  
+  delete [] Gust;
+  delete [] GustDer;
+  delete [] NewGridVel;
+  
+}
+
+void CMeanFlowIteration::InitializeVortexDistribution(unsigned long &nVortex, vector<su2double>& x0, vector<su2double>& y0, vector<su2double>& vort_strength, vector<su2double>& r_core) {
+  /*--- Read in Vortex Distribution ---*/
+  std::string line;
+  std::ifstream file;
+  su2double x_temp, y_temp, vort_strength_temp, r_core_temp;
+  file.open("vortex_distribution.txt");
+  /*--- In case there is no vortex file ---*/
+  if (file.fail()) {
+    cout << "There is no vortex data file!!" << endl;
+    cout << "Press any key to exit..." << endl;
+    cin.get(); exit(EXIT_FAILURE);
+  }
+  
+  // Ignore line containing the header
+  getline(file, line);
+  // Read in the information of the vortices (xloc, yloc, lambda(strength), eta(size, gradient))
+  while (file.good())
+  {
+    getline(file, line);
+    std::stringstream ss(line);
+    if (line.size() != 0) { //ignore blank lines if they exist.
+      ss >> x_temp;
+      ss >> y_temp;
+      ss >> vort_strength_temp;
+      ss >> r_core_temp;
+      x0.push_back(x_temp);
+      y0.push_back(y_temp);
+      vort_strength.push_back(vort_strength_temp);
+      r_core.push_back(r_core_temp);
+    }
+  }
+  file.close();
+  // number of vortices
+  nVortex = x0.size();
+  
+}
+
 
 CTNE2Iteration::CTNE2Iteration(CConfig *config) : CIteration(config) { }
 CTNE2Iteration::~CTNE2Iteration(void) { }
@@ -1283,7 +1520,7 @@ void MeanFlowIteration(COutput *output,
     /*--- Apply a Wind Gust ---*/
     
     if (config_container[ZONE_0]->GetWind_Gust()) {
-      SetWind_GustField(config_container[iZone], geometry_container[iZone], solver_container[iZone]);
+      //SetWind_GustField(config_container[iZone], geometry_container[iZone], solver_container[iZone]);
     }
   }
   
@@ -1407,8 +1644,8 @@ void MeanFlowIteration(COutput *output,
                            solver_container[iZone], config_container[iZone], iZone, IntIter, ExtIter);
           /*--- Apply a Wind Gust ---*/
           if (config_container[ZONE_0]->GetWind_Gust()) {
-            if (IntIter % config_container[iZone]->GetAeroelasticIter() ==0)
-              SetWind_GustField(config_container[iZone], geometry_container[iZone], solver_container[iZone]);
+            //if (IntIter % config_container[iZone]->GetAeroelasticIter() ==0)
+            //  SetWind_GustField(config_container[iZone], geometry_container[iZone], solver_container[iZone]);
           }
         }
       }
@@ -1495,7 +1732,7 @@ void FluidStructureIteration(COutput *output, CIntegration ***integration_contai
     /*--- Apply a Wind Gust ---*/
     
     if (config_container[ZONE_0]->GetWind_Gust()){
-      SetWind_GustField(config_container[ZONE_0],geometry_container[ZONE_0],solver_container[ZONE_0]);
+      //SetWind_GustField(config_container[ZONE_0],geometry_container[ZONE_0],solver_container[ZONE_0]);
     }
     
     /*--- Set the value of the internal iteration ---*/
@@ -1685,243 +1922,6 @@ void FluidStructureIteration(COutput *output, CIntegration ***integration_contai
   
   integration_container[ZONE_1][FEA_SOL]->SetConvergence_FSI(false);
   
-  
-}
-
-void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container, CSolver ***solver_container) {
-  // The gust is imposed on the flow field via the grid velocities. This method called the Field Velocity Method is described in the
-  // NASA TM–2012-217771 - Development, Verification and Use of Gust Modeling in the NASA Computational Fluid Dynamics Code FUN3D
-  // the desired gust is prescribed as the negative of the grid velocity.
-  
-  // If a source term is included to account for the gust field, the method is described by Jones et al. as the Split Velocity Method in
-  // Simulation of Airfoil Gust Responses Using Prescribed Velocities.
-  // In this routine the gust derivatives needed for the source term are calculated when applicable.
-  // If the gust derivatives are zero the source term is also zero.
-  // The source term itself is implemented in the class CSourceWindGust
-  
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-  
-  if (rank == MASTER_NODE)
-    cout << endl << "Running simulation with a Wind Gust." << endl;
-  unsigned short iDim, nDim = geometry_container[MESH_0]->GetnDim(); //We assume nDim = 2
-  if (nDim != 2) {
-    if (rank == MASTER_NODE) {
-      cout << endl << "WARNING - Wind Gust capability is only verified for 2 dimensional simulations." << endl;
-    }
-  }
-  
-  /*--- Gust Parameters from config ---*/
-  unsigned short Gust_Type = config_container->GetGust_Type();
-  su2double xbegin = config_container->GetGust_Begin_Loc();    // Location at which the gust begins.
-  su2double L = config_container->GetGust_WaveLength();        // Gust size
-  su2double tbegin = config_container->GetGust_Begin_Time();   // Physical time at which the gust begins.
-  su2double gust_amp = config_container->GetGust_Ampl();       // Gust amplitude
-  su2double n = config_container->GetGust_Periods();           // Number of gust periods
-  unsigned short GustDir = config_container->GetGust_Dir(); // Gust direction
-  
-  /*--- Variables needed to compute the gust ---*/
-  unsigned short Kind_Grid_Movement = config_container->GetKind_GridMovement(ZONE_0);
-  unsigned long iPoint;
-  unsigned short iMGlevel, nMGlevel = config_container->GetnMGLevels();
-  
-  su2double x, y, x_gust, dgust_dx, dgust_dy, dgust_dt;
-  su2double *Gust, *GridVel, *NewGridVel, *GustDer;
-  
-  su2double Physical_dt = config_container->GetDelta_UnstTime();
-  unsigned long ExtIter = config_container->GetExtIter();
-  su2double Physical_t = ExtIter*Physical_dt;
-  
-  su2double Uinf = solver_container[MESH_0][FLOW_SOL]->GetVelocity_Inf(0); // Assumption gust moves at infinity velocity
-  
-  Gust = new su2double [nDim];
-  NewGridVel = new su2double [nDim];
-  for (iDim = 0; iDim < nDim; iDim++) {
-    Gust[iDim] = 0.0;
-    NewGridVel[iDim] = 0.0;
-  }
-  
-  GustDer = new su2double [3];
-  for (unsigned short i = 0; i < 3; i++) {
-    GustDer[i] = 0.0;
-  }
-  
-  // Vortex variables
-  unsigned long nVortex = 0;
-  vector<su2double> x0, y0, vort_strenth, r_core; //vortex is positive in clockwise direction.
-  if (Gust_Type == VORTEX) {
-    InitializeVortexDistribution(nVortex, x0, y0, vort_strenth, r_core);
-  }
-  
-  /*--- Check to make sure gust lenght is not zero or negative (vortex gust doesn't use this). ---*/
-  if (L <= 0.0 && Gust_Type != VORTEX) {
-    if (rank == MASTER_NODE) cout << "ERROR: The gust length needs to be positive" << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
-  
-  /*--- Loop over all multigrid levels ---*/
-  
-  for (iMGlevel = 0; iMGlevel <= nMGlevel; iMGlevel++) {
-    
-    /*--- Loop over each node in the volume mesh ---*/
-    
-    for (iPoint = 0; iPoint < geometry_container[iMGlevel]->GetnPoint(); iPoint++) {
-      
-      /*--- Reset the Grid Velocity to zero if there is no grid movement ---*/
-      if (Kind_Grid_Movement == GUST) {
-        for (iDim = 0; iDim < nDim; iDim++)
-          geometry_container[iMGlevel]->node[iPoint]->SetGridVel(iDim, 0.0);
-      }
-      
-      /*--- initialize the gust and derivatives to zero everywhere ---*/
-      
-      for (iDim = 0; iDim < nDim; iDim++) {Gust[iDim]=0.0;}
-      dgust_dx = 0.0; dgust_dy = 0.0; dgust_dt = 0.0;
-      
-      /*--- Begin applying the gust ---*/
-      
-      if (Physical_t >= tbegin) {
-        
-        x = geometry_container[iMGlevel]->node[iPoint]->GetCoord()[0]; // x-location of the node.
-        y = geometry_container[iMGlevel]->node[iPoint]->GetCoord()[1]; // y-location of the node.
-        
-        // Gust coordinate
-        x_gust = (x - xbegin - Uinf*(Physical_t-tbegin))/L;
-        
-        /*--- Calculate the specified gust ---*/
-        switch (Gust_Type) {
-            
-          case TOP_HAT:
-            // Check if we are in the region where the gust is active
-            if (x_gust > 0 && x_gust < n) {
-              Gust[GustDir] = gust_amp;
-              // Still need to put the gust derivatives. Think about this.
-            }
-            break;
-            
-          case SINE:
-            // Check if we are in the region where the gust is active
-            if (x_gust > 0 && x_gust < n) {
-              Gust[GustDir] = gust_amp*(sin(2*PI_NUMBER*x_gust));
-              
-              // Gust derivatives
-              //dgust_dx = gust_amp*2*PI_NUMBER*(cos(2*PI_NUMBER*x_gust))/L;
-              //dgust_dy = 0;
-              //dgust_dt = gust_amp*2*PI_NUMBER*(cos(2*PI_NUMBER*x_gust))*(-Uinf)/L;
-            }
-            break;
-            
-          case ONE_M_COSINE:
-            // Check if we are in the region where the gust is active
-            if (x_gust > 0 && x_gust < n) {
-              Gust[GustDir] = gust_amp*(1-cos(2*PI_NUMBER*x_gust));
-              
-              // Gust derivatives
-              //dgust_dx = gust_amp*2*PI_NUMBER*(sin(2*PI_NUMBER*x_gust))/L;
-              //dgust_dy = 0;
-              //dgust_dt = gust_amp*2*PI_NUMBER*(sin(2*PI_NUMBER*x_gust))*(-Uinf)/L;
-            }
-            break;
-            
-          case EOG:
-            // Check if we are in the region where the gust is active
-            if (x_gust > 0 && x_gust < n) {
-              Gust[GustDir] = -0.37*gust_amp*sin(3*PI_NUMBER*x_gust)*(1-cos(2*PI_NUMBER*x_gust));
-            }
-            break;
-            
-          case VORTEX:
-            
-            /*--- Use vortex distribution ---*/
-            // Algebraic vortex equation.
-            for (unsigned long i=0; i<nVortex; i++) {
-              su2double r2 = pow(x-(x0[i]+Uinf*(Physical_t-tbegin)), 2) + pow(y-y0[i], 2);
-              su2double r = sqrt(r2);
-              su2double v_theta = vort_strenth[i]/(2*PI_NUMBER) * r/(r2+pow(r_core[i],2));
-              Gust[0] = Gust[0] + v_theta*(y-y0[i])/r;
-              Gust[1] = Gust[1] - v_theta*(x-(x0[i]+Uinf*(Physical_t-tbegin)))/r;
-            }
-            break;
-            
-          case NONE: default:
-            
-            /*--- There is no wind gust specified. ---*/
-            if (rank == MASTER_NODE) {
-              cout << "No wind gust specified." << endl;
-            }
-            break;
-            
-        }
-      }
-      
-      /*--- Set the Wind Gust, Wind Gust Derivatives and the Grid Velocities ---*/
-      
-      GustDer[0] = dgust_dx;
-      GustDer[1] = dgust_dy;
-      GustDer[2] = dgust_dt;
-      
-      solver_container[iMGlevel][FLOW_SOL]->node[iPoint]->SetWindGust(Gust);
-      solver_container[iMGlevel][FLOW_SOL]->node[iPoint]->SetWindGustDer(GustDer);
-      
-      GridVel = geometry_container[iMGlevel]->node[iPoint]->GetGridVel();
-      
-      /*--- Store new grid velocity ---*/
-      
-      for (iDim = 0; iDim < nDim; iDim++) {
-        NewGridVel[iDim] = GridVel[iDim] - Gust[iDim];
-        geometry_container[iMGlevel]->node[iPoint]->SetGridVel(iDim, NewGridVel[iDim]);
-      }
-      
-    }
-  }
-  
-  delete [] Gust;
-  delete [] GustDer;
-  delete [] NewGridVel;
-  
-}
-
-void InitializeVortexDistribution(unsigned long &nVortex, vector<su2double>& x0, vector<su2double>& y0, vector<su2double>& vort_strength, vector<su2double>& r_core) {
-  /*--- Read in Vortex Distribution ---*/
-  std::string line;
-  std::ifstream file;
-  su2double x_temp, y_temp, vort_strength_temp, r_core_temp;
-  file.open("vortex_distribution.txt");
-  /*--- In case there is no vortex file ---*/
-  if (file.fail()) {
-    cout << "There is no vortex data file!!" << endl;
-    cout << "Press any key to exit..." << endl;
-    cin.get(); exit(EXIT_FAILURE);
-  }
-  
-  // Ignore line containing the header
-  getline(file, line);
-  // Read in the information of the vortices (xloc, yloc, lambda(strength), eta(size, gradient))
-  while (file.good())
-  {
-    getline(file, line);
-    std::stringstream ss(line);
-    if (line.size() != 0) { //ignore blank lines if they exist.
-      ss >> x_temp;
-      ss >> y_temp;
-      ss >> vort_strength_temp;
-      ss >> r_core_temp;
-      x0.push_back(x_temp);
-      y0.push_back(y_temp);
-      vort_strength.push_back(vort_strength_temp);
-      r_core.push_back(r_core_temp);
-    }
-  }
-  file.close();
-  // number of vortices
-  nVortex = x0.size();
   
 }
 
