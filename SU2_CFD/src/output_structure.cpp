@@ -5017,11 +5017,22 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                 cout << endl << "-------------------------------------------------------------------------" << endl;
                 cout << endl;
               }
+
               break;
 
             case TNE2_EULER: case TNE2_NAVIER_STOKES:
             case ADJ_TNE2_EULER: case ADJ_TNE2_NAVIER_STOKES:
               cout << endl << "Min Delta Time: " << solver_container[val_iZone][MESH_0][TNE2_SOL]->GetMin_Delta_Time()<< ". Max Delta Time: " << solver_container[val_iZone][MESH_0][TNE2_SOL]->GetMax_Delta_Time() << ".";
+              break;
+
+            case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+               cout << endl;
+               cout << "------------------------ Discrete Adjoint Summary -----------------------" << endl;
+               cout << "Total Geometry Sensitivity (updated every "  << config[val_iZone]->GetWrt_Sol_Freq() << " iterations): ";
+               cout.precision(4);
+               cout.setf(ios::scientific, ios::floatfield);
+               cout << Total_Sens_Geo;
+               cout << endl << "-------------------------------------------------------------------------" << endl;
               break;
           }
         }
@@ -5207,7 +5218,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             if (incompressible || freesurface) cout << "   Res[Psi_Press]" << "   Res[Psi_Velx]";
             else cout << "   Res[Psi_Rho]" << "     Res[Psi_E]";
             if (disc_adj){
-              cout << "     Res[Psi_U]" << endl;
+              cout << "    Sens_Press" << "     Sens_Mach" << endl;
             } else {
               cout << "      Sens_Geo" << "     Sens_Mach" << endl;
             }
@@ -5251,7 +5262,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               else cout << "     Res[Psi_E]";
             }
             if (disc_adj){
-              cout << "     Res[Psi_U]" << endl;
+              cout << "    Sens_Press" << "     Sens_Mach" << endl;
             } else {
               cout << "      Sens_Geo" << "     Sens_Mach" << endl;
             }
@@ -5512,7 +5523,10 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           }
 
           if (disc_adj){
-            cout.width(15); cout << log10(residual_adjflow[1]);
+            cout.precision(4);
+            cout.setf(ios::scientific, ios::floatfield);
+            cout.width(14); cout << Total_Sens_Press;
+            cout.width(14); cout << Total_Sens_Mach;
           }else{
             cout.precision(4);
             cout.setf(ios::scientific, ios::floatfield);
@@ -5569,7 +5583,10 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           }
 
           if (disc_adj){
-            cout.width(15); cout << log10(residual_adjflow[1]);
+            cout.precision(4);
+            cout.setf(ios::scientific, ios::floatfield);
+            cout.width(14); cout << Total_Sens_Press;
+            cout.width(14); cout << Total_Sens_Mach;
           }else{
             cout.precision(4);
             cout.setf(ios::scientific, ios::floatfield);

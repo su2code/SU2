@@ -491,7 +491,7 @@ void CPoissonIteration::Output()      { }
 void CPoissonIteration::Postprocess() { }
 
 
-CFEAIteration::CFEAIteration(CConfig **config) : CIteration(config) { }
+CFEAIteration::CFEAIteration(CConfig *config) : CIteration(config) { }
 CFEAIteration::~CFEAIteration(void) { }
 void CFEAIteration::Preprocess() { }
 void CFEAIteration::Iterate(COutput *output,
@@ -903,10 +903,10 @@ void CDiscAdjMeanFlowIteration::Iterate(COutput *output,
       
     for (iMesh = 0; iMesh <= config_container[ZONE_0]->GetnMGLevels(); iMesh++){
       
-      solver_container[ZONE_0][iMesh][ADJFLOW_SOL]->SetRecording(FLOW_VARIABLES);
+      solver_container[ZONE_0][iMesh][ADJFLOW_SOL]->SetRecording(geometry_container[ZONE_0][MESH_0], config_container[ZONE_0],FLOW_VARIABLES);
       
         if (turbulent){
-        solver_container[ZONE_0][iMesh][ADJTURB_SOL]->SetRecording(FLOW_VARIABLES);
+          solver_container[ZONE_0][iMesh][ADJTURB_SOL]->SetRecording(geometry_container[ZONE_0][MESH_0], config_container[ZONE_0],FLOW_VARIABLES);
       }
     }
     
@@ -918,8 +918,8 @@ void CDiscAdjMeanFlowIteration::Iterate(COutput *output,
 
     RegisterInput(solver_container, geometry_container, config_container, ZONE_0, FLOW_VARIABLES);
     
-    if (rank == MASTER_NODE){
-      cout << "Direct iteration to store computational graph - flow variables." << endl;
+    if ((rank == MASTER_NODE) && (ExtIter == 0)){
+      cout << "Direct iteration to store computational graph." << endl;
     }
     
     /* --- Run the direct iteration --- */
@@ -962,13 +962,16 @@ void CDiscAdjMeanFlowIteration::Iterate(COutput *output,
   
   /*--- Extract the adjoints of the conservative input variables and store them for the next iteration ---*/
 
-  solver_container[ZONE_0][MESH_0][ADJFLOW_SOL]->SetAdjointInput(geometry_container[ZONE_0][MESH_0],
+  solver_container[ZONE_0][MESH_0][ADJFLOW_SOL]->ExtractAdjoint_Solution(geometry_container[ZONE_0][MESH_0],
                                                                   config_container[ZONE_0]);
 
-      if (turbulent){
-    solver_container[ZONE_0][MESH_0][ADJTURB_SOL]->SetAdjointInput(geometry_container[ZONE_0][MESH_0],
+  solver_container[ZONE_0][MESH_0][ADJFLOW_SOL]->ExtractAdjoint_Variables(geometry_container[ZONE_0][MESH_0],
                                                                   config_container[ZONE_0]);
-    }
+
+  if (turbulent){
+    solver_container[ZONE_0][MESH_0][ADJTURB_SOL]->ExtractAdjoint_Solution(geometry_container[ZONE_0][MESH_0],
+                                                                  config_container[ZONE_0]);
+  }
     
   /*--- Clear all adjoints to re-use the stored computational graph in the next iteration ---*/
         
@@ -995,12 +998,12 @@ void CDiscAdjMeanFlowIteration::Iterate(COutput *output,
 
     for (iMesh = 0; iMesh <= config_container[ZONE_0]->GetnMGLevels(); iMesh++){
 
-      solver_container[ZONE_0][iMesh][ADJFLOW_SOL]->SetRecording(GEOMETRY_VARIABLES);
+      solver_container[ZONE_0][iMesh][ADJFLOW_SOL]->SetRecording(geometry_container[ZONE_0][MESH_0], config_container[ZONE_0],FLOW_VARIABLES);
 
         if (turbulent){
-        solver_container[ZONE_0][iMesh][ADJTURB_SOL]->SetRecording(GEOMETRY_VARIABLES);
-        }
+          solver_container[ZONE_0][iMesh][ADJTURB_SOL]->SetRecording(geometry_container[ZONE_0][MESH_0], config_container[ZONE_0],FLOW_VARIABLES);
       }
+    }
 
     /*--- Start recording of all operations ---*/
 
@@ -1009,10 +1012,6 @@ void CDiscAdjMeanFlowIteration::Iterate(COutput *output,
     /*--- Register all necessary geometry variables ---*/
 
     RegisterInput(solver_container, geometry_container, config_container, ZONE_0, GEOMETRY_VARIABLES);
-
-    if (rank == MASTER_NODE){
-      cout << "Direct iteration to store computational graph - geometry variables." << endl;
-    }
     
     /*--- Run the direct iteration ---*/
 
@@ -1041,9 +1040,6 @@ void CDiscAdjMeanFlowIteration::Iterate(COutput *output,
 
     solver_container[ZONE_0][MESH_0][ADJFLOW_SOL]->SetSensitivity(geometry_container[ZONE_0][MESH_0],config_container[ZONE_0]);
 
-    if (rank == MASTER_NODE){
-      cout << "Total Geo Sensitivity: " << std::setprecision(4) <<  solver_container[ZONE_0][MESH_0][ADJFLOW_SOL]->GetTotal_Sens_Geo() << endl;
-  }
     /*--- Update geometry to set all indices to zero --- */
     
     geometry_container[ZONE_0][MESH_0]->UpdateGeometry(geometry_container[ZONE_0], config_container[ZONE_0]);
@@ -1061,10 +1057,12 @@ void CDiscAdjMeanFlowIteration::RegisterInput(CSolver ****solver_container, CGeo
 
       /*--- Register flow and turbulent variables as input ---*/
 
-      solver_container[iZone][MESH_0][ADJFLOW_SOL]->RegisterInput(geometry_container[iZone][MESH_0], config_container[iZone]);
+      solver_container[iZone][MESH_0][ADJFLOW_SOL]->RegisterSolution(geometry_container[iZone][MESH_0], config_container[iZone]);
+
+      solver_container[iZone][MESH_0][ADJFLOW_SOL]->RegisterVariables(geometry_container[iZone][MESH_0], config_container[iZone]);
 
       if (turbulent){
-        solver_container[iZone][MESH_0][ADJTURB_SOL]->RegisterInput(geometry_container[iZone][MESH_0], config_container[iZone]);
+        solver_container[iZone][MESH_0][ADJTURB_SOL]->RegisterSolution(geometry_container[iZone][MESH_0], config_container[iZone]);
       }
 
       /*--- Compute coupling between flow and turbulent equations ---*/
@@ -1098,11 +1096,11 @@ void CDiscAdjMeanFlowIteration::RegisterOutput(CSolver ****solver_container, CGe
 
   solver_container[iZone][MESH_0][ADJFLOW_SOL]->RegisterOutput(geometry_container[iZone][MESH_0],config_container[iZone]);
 
-      if (turbulent){
+  if (turbulent){
     solver_container[iZone][MESH_0][ADJTURB_SOL]->RegisterOutput(geometry_container[iZone][MESH_0],
-                                                                     config_container[iZone]);
-      }
-    }
+                                                                 config_container[iZone]);
+  }
+}
   
 void CDiscAdjMeanFlowIteration::SetAdjointOutput(CSolver ****solver_container, CGeometry ***geometry_container, CConfig **config_container, unsigned short iZone){
   
@@ -1112,11 +1110,11 @@ void CDiscAdjMeanFlowIteration::SetAdjointOutput(CSolver ****solver_container, C
   
   /*--- Initialize the adjoints the conservative variables ---*/
 
-  solver_container[iZone][MESH_0][ADJFLOW_SOL]->SetAdjointOutput(geometry_container[iZone][MESH_0],
+  solver_container[iZone][MESH_0][ADJFLOW_SOL]->SetAdjoint_Output(geometry_container[iZone][MESH_0],
                                                                   config_container[iZone]);
 
   if (turbulent){
-    solver_container[iZone][MESH_0][ADJTURB_SOL]->SetAdjointOutput(geometry_container[iZone][MESH_0],
+    solver_container[iZone][MESH_0][ADJTURB_SOL]->SetAdjoint_Output(geometry_container[iZone][MESH_0],
                                                                    config_container[iZone]);
     }
   }
