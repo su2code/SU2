@@ -231,6 +231,26 @@ public:
    */
   void Postprocess();
   
+  /*!
+   * \brief Imposes a gust via the grid velocities.
+   * \author S. Padron
+   * \param[in] config_container - Definition of the particular problem.
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   */
+  void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container, CSolver ***solver_container);
+  
+  /*!
+   * \brief Reads and initializes the vortex positions, strengths and gradient.
+   * \author S. Padron
+   * \param[in] nVortex - number of vortices.
+   * \param[in] x0 - Vector of x-loc of the vortices.
+   * \param[in] y0 - Vector of y-loc of the vortices.
+   * \param[in] vort_strength - Vector of vortex strengths.
+   * \param[in] r_core - Vector of vortex core size.
+   */
+  void InitializeVortexDistribution(unsigned long &nVortex, vector<su2double>& x0, vector<su2double>& y0, vector<su2double>& vort_strength, vector<su2double>& r_core);
+  
 };
 
 /*!
@@ -1012,26 +1032,6 @@ void FluidStructureIteration(COutput *output, CIntegration ***integration_contai
 														 CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container, 
 														 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox,
 														 unsigned long iFluidIt, unsigned long nFluidIt);
-
-/*!
- * \brief Imposes a gust via the grid velocities.
- * \author S. Padron
- * \param[in] config_container - Definition of the particular problem.
- * \param[in] geometry_container - Geometrical definition of the problem.
- * \param[in] solver_container - Container vector with all the solutions.
- */
-void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container, CSolver ***solver_container);
-
-/*!
- * \brief Reads and initializes the vortex positions, strengths and gradient.
- * \author S. Padron
- * \param[in] nVortex - number of vortices.
- * \param[in] x0 - Vector of x-loc of the vortices.
- * \param[in] y0 - Vector of y-loc of the vortices.
- * \param[in] vort_strength - Vector of vortex strengths.
- * \param[in] r_core - Vector of vortex core size.
- */
-void InitializeVortexDistribution(unsigned long &nVortex, vector<su2double>& x0, vector<su2double>& y0, vector<su2double>& vort_strength, vector<su2double>& r_core);
 
 /*!
  * \brief Updates the positions and grid velocities for dynamic meshes between physical time steps.
