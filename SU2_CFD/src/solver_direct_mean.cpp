@@ -104,6 +104,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
   bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
   bool adjoint = config->GetAdjoint();
   string filename = config->GetSolution_FlowFileName();
@@ -464,15 +465,24 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   else {
 
-    /*--- Modify file name for an unsteady restart ---*/
+    /*--- Modify file name for a dual-time unsteady restart ---*/
     
     if (dual_time) {
-      
       if (adjoint) { Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter()) - 1; }
       else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
         Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
       else
         Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
+      
+      filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
+    }
+    
+    /*--- Modify file name for a simple unsteady restart ---*/
+    
+    if (time_stepping) {
+      if (adjoint) { Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter()) - 1; }
+      else
+      Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
       
       filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
     }
@@ -10150,6 +10160,7 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
   bool grid_movement  = config->GetGrid_Movement();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
   string UnstExt, text_line;
   ifstream restart_file;
 
@@ -10166,7 +10177,7 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
 
   /*--- Modify file name for an unsteady restart ---*/
   
-  if (dual_time)
+  if (dual_time || time_stepping)
     restart_filename = config->GetUnsteady_FileName(restart_filename, val_iter);
 
   /*--- Open the restart file, and throw an error if this fails. ---*/
@@ -10578,6 +10589,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
   bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
   bool adjoint = config->GetAdjoint();
   string filename = config->GetSolution_FlowFileName();
@@ -11004,6 +11016,17 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
       
       filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
     }
+    
+    /*--- Modify file name for a simple unsteady restart ---*/
+    
+    if (time_stepping) {
+      if (adjoint) { Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter()) - 1; }
+      else
+      Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
+      
+      filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
+    }
+    
     
     /*--- Open the restart file, throw an error if this fails. ---*/
     
