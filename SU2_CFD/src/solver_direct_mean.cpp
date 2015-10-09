@@ -3050,7 +3050,7 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 
   /*--- Upwind second order reconstruction ---*/
 
-  if ((second_order && !center) && ((iMesh == MESH_0) || low_fidelity)) {
+  if ((second_order && !center) && ((iMesh == MESH_0) || low_fidelity) && !Output) {
 
     /*--- Gradient computation ---*/
 
@@ -3066,7 +3066,7 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 
     /*--- Limiter computation ---*/
 
-    if ((limiter) && (iMesh == MESH_0)) {
+    if ((limiter) && (iMesh == MESH_0) && !Output) {
     	SetPrimitive_Limiter(geometry, config);
 //    	if (compressible && !ideal_gas) SetSecondary_Limiter(geometry, config);
     }
@@ -3075,7 +3075,7 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 
   /*--- Artificial dissipation ---*/
 
-  if (center) {
+  if (center && !Output) {
     SetMax_Eigenvalue(geometry, config);
     if ((center_jst) && ((iMesh == MESH_0) || low_fidelity)) {
       SetDissipation_Switch(geometry, config);
@@ -11253,7 +11253,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
 
   /*--- Artificial dissipation ---*/
 
-  if (center) {
+  if (center && !Output) {
     SetMax_Eigenvalue(geometry, config);
     if ((center_jst) && (iMesh == MESH_0)) {
       SetDissipation_Switch(geometry, config);
@@ -11275,12 +11275,12 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   /*--- Compute the limiter in case we need it in the turbulence model
    or to limit the viscous terms (check this logic with JST and 2nd order turbulence model) ---*/
 
-  if ((iMesh == MESH_0) && (limiter_flow || limiter_turb || limiter_adjflow || limiter_visc)) { SetPrimitive_Limiter(geometry, config);
+  if ((iMesh == MESH_0) && (limiter_flow || limiter_turb || limiter_adjflow || limiter_visc) && !Output) { SetPrimitive_Limiter(geometry, config);
 //  if (compressible && !ideal_gas) SetSecondary_Limiter(geometry, config);
   }
   
   /*--- Evaluate the vorticity and strain rate magnitude ---*/
-  
+
   StrainMag_Max = 0.0, Omega_Max = 0.0;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     
