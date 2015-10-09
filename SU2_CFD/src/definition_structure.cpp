@@ -200,16 +200,21 @@ void Driver_Preprocessing(CDriver **driver,
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
-  /*--- For now, time spectral will use a single-zone driver. ---*/
-  bool time_spectral = (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_SPECTRAL);
-  
-  if (val_nZone == SINGLE_ZONE || time_spectral) {
+  if (val_nZone == SINGLE_ZONE) {
     
     /*--- Single zone problem: instantiate the single zone driver class. ---*/
     if (rank == MASTER_NODE) cout << "Instantiating a single zone driver for the problem. " << endl;
     
     *driver = new CSingleZoneDriver(iteration_container, solver_container, geometry_container,
                                     integration_container, numerics_container, config_container, val_nZone);
+    
+  } else if (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+    
+    /*--- Use the spectral method driver. ---*/
+    
+    if (rank == MASTER_NODE) cout << "Instantiating a spectral method driver for the problem. " << endl;
+    *driver = new CSpectralDriver(iteration_container, solver_container, geometry_container,
+                                  integration_container, numerics_container, config_container, val_nZone);
     
   } else {
     
