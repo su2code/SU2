@@ -1375,15 +1375,15 @@ void CSingleZoneDriver::Run(CIteration **iteration_container,
   
   iteration_container[ZONE_0]->Preprocess(output, integration_container, geometry_container,
                                           solver_container, numerics_container, config_container,
-                                          surface_movement, grid_movement, FFDBox);
+                                          surface_movement, grid_movement, FFDBox, ZONE_0);
   
   iteration_container[ZONE_0]->Iterate(output, integration_container, geometry_container,
                                        solver_container, numerics_container, config_container,
-                                       surface_movement, grid_movement, FFDBox);
+                                       surface_movement, grid_movement, FFDBox, ZONE_0);
   
   iteration_container[ZONE_0]->Update(output, integration_container, geometry_container,
                                       solver_container, numerics_container, config_container,
-                                      surface_movement, grid_movement, FFDBox);
+                                      surface_movement, grid_movement, FFDBox, ZONE_0);
   
   iteration_container[ZONE_0]->Monitor();     /*--- Does nothing for now. ---*/
   
@@ -1431,15 +1431,15 @@ void CMultiZoneDriver::Run(CIteration **iteration_container,
     
     iteration_container[iZone]->Preprocess(output, integration_container, geometry_container,
                                            solver_container, numerics_container, config_container,
-                                           surface_movement, grid_movement, FFDBox);
+                                           surface_movement, grid_movement, FFDBox, iZone);
     
     iteration_container[iZone]->Iterate(output, integration_container, geometry_container,
                                         solver_container, numerics_container, config_container,
-                                        surface_movement, grid_movement, FFDBox);
+                                        surface_movement, grid_movement, FFDBox, iZone);
     
     iteration_container[iZone]->Update(output, integration_container, geometry_container,
                                        solver_container, numerics_container, config_container,
-                                       surface_movement, grid_movement, FFDBox);
+                                       surface_movement, grid_movement, FFDBox, iZone);
     
     iteration_container[iZone]->Monitor();     /*--- Does nothing for now. ---*/
     
