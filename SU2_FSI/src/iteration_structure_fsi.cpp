@@ -461,14 +461,14 @@ void FEA_Subiteration(COutput *output, CIntegration ***integration_container, CG
 }
 
 void FEM_Subiteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
-                  CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
-                  CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox) {
+		CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
+		CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox) {
 
 
-	#ifdef HAVE_MPI
-		int rank;
-			MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-	#endif
+#ifdef HAVE_MPI
+	int rank;
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
 
 	/*--- Only one zone allowed for the fluid as for now ---*/
 	unsigned short nFluidZone = 1, nStrucZone=1, nTotalZone;
@@ -480,10 +480,10 @@ void FEM_Subiteration(COutput *output, CIntegration ***integration_container, CG
 	su2double loadIncrement;
 	unsigned short iZone;
 	unsigned long IntIter = 0; config_container[ZONE_STRUC]->SetIntIter(IntIter);
-  	unsigned long ExtIter = config_container[ZONE_STRUC]->GetExtIter();
+	unsigned long ExtIter = config_container[ZONE_STRUC]->GetExtIter();
 
-  	unsigned long iIncrement;
-  	unsigned long nIncrements = config_container[ZONE_STRUC]->GetNumberIncrements();
+	unsigned long iIncrement;
+	unsigned long nIncrements = config_container[ZONE_STRUC]->GetNumberIncrements();
 
 	bool nonlinear = (config_container[ZONE_STRUC]->GetGeometricConditions() == LARGE_DEFORMATIONS);	// Geometrically non-linear problems
 	bool linear = (config_container[ZONE_STRUC]->GetGeometricConditions() == SMALL_DEFORMATIONS);	// Geometrically non-linear problems
@@ -518,7 +518,7 @@ void FEM_Subiteration(COutput *output, CIntegration ***integration_container, CG
 			/*--- Run the iteration ---*/
 
 			integration_container[iZone][FEA_SOL]->Structural_Iteration_FEM(geometry_container, solver_container, numerics_container,
-																			config_container, RUNTIME_FEA_SYS, IntIter, iZone);
+					config_container, RUNTIME_FEA_SYS, IntIter, iZone);
 
 		}
 
@@ -543,7 +543,7 @@ void FEM_Subiteration(COutput *output, CIntegration ***integration_container, CG
 				/*--- Run the iteration ---*/
 
 				integration_container[iZone][FEA_SOL]->Structural_Iteration_FEM(geometry_container, solver_container, numerics_container,
-		                                                                		config_container, RUNTIME_FEA_SYS, IntIter, iZone);
+						config_container, RUNTIME_FEA_SYS, IntIter, iZone);
 
 
 
@@ -562,7 +562,7 @@ void FEM_Subiteration(COutput *output, CIntegration ***integration_container, CG
 					config_container[iZone]->SetIntIter(IntIter);
 
 					integration_container[iZone][FEA_SOL]->Structural_Iteration_FEM(geometry_container, solver_container, numerics_container,
-																					config_container, RUNTIME_FEA_SYS, IntIter, iZone);
+							config_container, RUNTIME_FEA_SYS, IntIter, iZone);
 
 				}
 
@@ -581,36 +581,36 @@ void FEM_Subiteration(COutput *output, CIntegration ***integration_container, CG
 
 			for (iZone = nFluidZone; iZone < nTotalZone; iZone++) {
 
-					/*--- The load increment is 1.0: all the load applied ---*/
-					loadIncrement = 1.0;
-					solver_container[iZone][MESH_0][FEA_SOL]->SetLoad_Increment(loadIncrement);
+				/*--- The load increment is 1.0: all the load applied ---*/
+				loadIncrement = 1.0;
+				solver_container[iZone][MESH_0][FEA_SOL]->SetLoad_Increment(loadIncrement);
 
-					/*--- Set the value of the internal iteration ---*/
+				/*--- Set the value of the internal iteration ---*/
 
-					IntIter = 0;
+				IntIter = 0;
 
-					/*--- FEA equations ---*/
+				/*--- FEA equations ---*/
 
-					config_container[iZone]->SetGlobalParam(FEM_ELASTICITY, RUNTIME_FEA_SYS, ExtIter);
+				config_container[iZone]->SetGlobalParam(FEM_ELASTICITY, RUNTIME_FEA_SYS, ExtIter);
 
-					/*--- Run the first iteration ---*/
+				/*--- Run the first iteration ---*/
 
-					integration_container[iZone][FEA_SOL]->Structural_Iteration_FEM(geometry_container, solver_container, numerics_container,
-			                                                                		config_container, RUNTIME_FEA_SYS, IntIter, iZone);
+				integration_container[iZone][FEA_SOL]->Structural_Iteration_FEM(geometry_container, solver_container, numerics_container,
+						config_container, RUNTIME_FEA_SYS, IntIter, iZone);
 
 
-					/*--- Write the convergence history (only screen output) ---*/
+				/*--- Write the convergence history (only screen output) ---*/
 
-					output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_STRUC);
+				output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_STRUC);
 
-					/*--- Run the second iteration ---*/
+				/*--- Run the second iteration ---*/
 
-					IntIter = 1;
+				IntIter = 1;
 
-					config_container[iZone]->SetIntIter(IntIter);
+				config_container[iZone]->SetIntIter(IntIter);
 
-					integration_container[iZone][FEA_SOL]->Structural_Iteration_FEM(geometry_container, solver_container, numerics_container,
-			                                                                		config_container, RUNTIME_FEA_SYS, IntIter, iZone);
+				integration_container[iZone][FEA_SOL]->Structural_Iteration_FEM(geometry_container, solver_container, numerics_container,
+						config_container, RUNTIME_FEA_SYS, IntIter, iZone);
 
 			}
 
@@ -627,8 +627,8 @@ void FEM_Subiteration(COutput *output, CIntegration ***integration_container, CG
 			Residual_ETOL = log10(solver_container[ZONE_STRUC][MESH_0][FEA_SOL]->GetRes_FEM(2));
 
 			meetCriteria = ( ( Residual_UTOL <  Criteria_UTOL ) &&
-					 	 	 ( Residual_RTOL <  Criteria_RTOL ) &&
-							 ( Residual_ETOL <  Criteria_ETOL ) );
+					( Residual_RTOL <  Criteria_RTOL ) &&
+					( Residual_ETOL <  Criteria_ETOL ) );
 
 			/*--- If the criteria is met and the load is not "too big", do the regular calculation ---*/
 			if (meetCriteria){
@@ -637,14 +637,14 @@ void FEM_Subiteration(COutput *output, CIntegration ***integration_container, CG
 
 					for (iZone = nFluidZone; iZone < nTotalZone; iZone++) {
 
-					/*--- Write the convergence history (only screen output) ---*/
+						/*--- Write the convergence history (only screen output) ---*/
 
-					output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_STRUC);
+						output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_STRUC);
 
-					config_container[iZone]->SetIntIter(IntIter);
+						config_container[iZone]->SetIntIter(IntIter);
 
-					integration_container[iZone][FEA_SOL]->Structural_Iteration_FEM(geometry_container, solver_container, numerics_container,
-																					config_container, RUNTIME_FEA_SYS, IntIter, iZone);
+						integration_container[iZone][FEA_SOL]->Structural_Iteration_FEM(geometry_container, solver_container, numerics_container,
+								config_container, RUNTIME_FEA_SYS, IntIter, iZone);
 
 					}
 
@@ -702,7 +702,7 @@ void FEM_Subiteration(COutput *output, CIntegration ***integration_container, CG
 						/*--- Run the iteration ---*/
 
 						integration_container[iZone][FEA_SOL]->Structural_Iteration_FEM(geometry_container, solver_container, numerics_container,
-				                                                                		config_container, RUNTIME_FEA_SYS, IntIter, iZone);
+								config_container, RUNTIME_FEA_SYS, IntIter, iZone);
 
 
 
@@ -721,7 +721,7 @@ void FEM_Subiteration(COutput *output, CIntegration ***integration_container, CG
 							config_container[iZone]->SetIntIter(IntIter);
 
 							integration_container[iZone][FEA_SOL]->Structural_Iteration_FEM(geometry_container, solver_container, numerics_container,
-						                                                                		config_container, RUNTIME_FEA_SYS, IntIter, iZone);
+									config_container, RUNTIME_FEA_SYS, IntIter, iZone);
 
 						}
 
@@ -738,13 +738,13 @@ void FEM_Subiteration(COutput *output, CIntegration ***integration_container, CG
 
 	}
 	else if ( (nonlinear && statTime) &&
-			  ((first_iter && initial_calc) || (restart && initial_calc_restart))
-			){
+			((first_iter && initial_calc) || (restart && initial_calc_restart))
+	){
 
 		/*--- We need to do the preprocessing to compute the Mass Matrix and integration constants ---*/
 		for (iZone = nFluidZone; iZone < nTotalZone; iZone++)
-			  solver_container[iZone][MESH_0][FEA_SOL]->Preprocessing(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0],
-					  config_container[iZone], numerics_container[iZone][MESH_0][FEA_SOL], MESH_0, 0, RUNTIME_FEA_SYS, false);
+			solver_container[iZone][MESH_0][FEA_SOL]->Preprocessing(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0],
+					config_container[iZone], numerics_container[iZone][MESH_0][FEA_SOL], MESH_0, 0, RUNTIME_FEA_SYS, false);
 	}
 
 }

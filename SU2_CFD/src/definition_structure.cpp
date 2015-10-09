@@ -192,8 +192,11 @@ void Driver_Preprocessing(CDriver **driver,
                           CGeometry ***geometry_container,
                           CIntegration ***integration_container,
                           CNumerics *****numerics_container,
+                          CInterpolator ***interpolator_container,
+                          CTransfer ***transfer_container,
                           CConfig **config_container,
-                          unsigned short val_nZone) {
+                          unsigned short val_nZone,
+                          unsigned short val_nDim) {
   
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -202,6 +205,8 @@ void Driver_Preprocessing(CDriver **driver,
   
   /*--- For now, time spectral will use a single-zone driver. ---*/
   bool time_spectral = (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_SPECTRAL);
+  /*--- fsi implementations will use, as of now, BGS implentation. More to come. ---*/
+  bool fsi = config_container[ZONE_0]->GetFSI_Simulation();
   
   if (val_nZone == SINGLE_ZONE || time_spectral) {
     
@@ -209,8 +214,18 @@ void Driver_Preprocessing(CDriver **driver,
     if (rank == MASTER_NODE) cout << "Instantiating a single zone driver for the problem. " << endl;
     
     *driver = new CSingleZoneDriver(iteration_container, solver_container, geometry_container,
-                                    integration_container, numerics_container, config_container, val_nZone);
+                                    integration_container, numerics_container, interpolator_container,
+                                    transfer_container, config_container, val_nZone, val_nDim);
     
+  } else if ((val_nZone == 2) && fsi) {
+
+	    /*--- FSI problem: instantiate the FSI driver class. ---*/
+
+	 if (rank == MASTER_NODE) cout << "Instantiating a Fluid-Structure Interaction driver for the problem. " << endl;
+	 *driver = new CFSIDriver(iteration_container, solver_container, geometry_container,
+	            			  integration_container, numerics_container, interpolator_container,
+	                          transfer_container, config_container, val_nZone, val_nDim);
+
   } else {
     
     /*--- Multi-zone problem: instantiate the multi-zone driver class by default
@@ -218,7 +233,8 @@ void Driver_Preprocessing(CDriver **driver,
     
     if (rank == MASTER_NODE) cout << "Instantiating a multi-zone driver for the problem. " << endl;
     *driver = new CMultiZoneDriver(iteration_container, solver_container, geometry_container,
-                                   integration_container, numerics_container, config_container, val_nZone);
+            					   integration_container, numerics_container, interpolator_container,
+                                   transfer_container, config_container, val_nZone, val_nDim);
     
     /*--- Future multi-zone drivers instatiated here. ---*/
     
