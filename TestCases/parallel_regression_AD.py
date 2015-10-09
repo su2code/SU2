@@ -48,7 +48,7 @@ def main():
     discadj_naca0012.cfg_dir   = "cont_adj_euler/naca0012"
     discadj_naca0012.cfg_file  = "inv_NACA0012_discadj.cfg"
     discadj_naca0012.test_iter = 100
-    discadj_naca0012.test_vals = [-3.606963,-9.034619,2.1299e-02,0.0000e+00] #last 4 columns
+    discadj_naca0012.test_vals = [-3.610135,-9.033757,5.5717e-04,1.8964e-01] #last 4 columns
     discadj_naca0012.su2_exec  = "parallel_computation.py -f"
     discadj_naca0012.timeout   = 1600
     discadj_naca0012.tol       = 0.00001
@@ -63,7 +63,7 @@ def main():
     discadj_rans_naca0012_sa.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     discadj_rans_naca0012_sa.test_iter = 10
-    discadj_rans_naca0012_sa.test_vals = [-1.751829,0.485848,8.4873e+00,0.0000e+00] #last 4 columns
+    discadj_rans_naca0012_sa.test_vals = [-1.745650,0.455270,-2.3692e-01,-6.3068e-02] #last 4 columns
     discadj_rans_naca0012_sa.su2_exec  = "parallel_computation.py -f"
     discadj_rans_naca0012_sa.timeout   = 1600
     discadj_rans_naca0012_sa.tol       = 0.00001
@@ -74,7 +74,7 @@ def main():
     discadj_rans_naca0012_sst.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     discadj_rans_naca0012_sst.test_iter = 10
-    discadj_rans_naca0012_sst.test_vals = [-1.653636,-0.502900,7.0581e+00,0.0000e+00] #last 4 columns
+    discadj_rans_naca0012_sst.test_vals = [-1.638709,-0.522884,-3.9864e-01,-5.4715e-01] #last 4 columns
     discadj_rans_naca0012_sst.su2_exec  = "parallel_computation.py -f"
     discadj_rans_naca0012_sst.timeout   = 1600
     discadj_rans_naca0012_sst.tol       = 0.00001
