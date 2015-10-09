@@ -70,7 +70,15 @@ public:
    * \brief A virtual member.
    * \param[in] ??? - Description here.
    */
-  virtual void Preprocess();
+  virtual void Preprocess(COutput *output,
+                          CIntegration ***integration_container,
+                          CGeometry ***geometry_container,
+                          CSolver ****solver_container,
+                          CNumerics *****numerics_container,
+                          CConfig **config_container,
+                          CSurfaceMovement **surface_movement,
+                          CVolumetricMovement **grid_movement,
+                          CFreeFormDefBox*** FFDBox);
   
   /*!
    * \brief A virtual member.
@@ -92,7 +100,15 @@ public:
    * \brief A virtual member.
    * \param[in] ??? - Description here.
    */
-  virtual void Update();
+  virtual void Update(COutput *output,
+                      CIntegration ***integration_container,
+                      CGeometry ***geometry_container,
+                      CSolver ****solver_container,
+                      CNumerics *****numerics_container,
+                      CConfig **config_container,
+                      CSurfaceMovement **surface_movement,
+                      CVolumetricMovement **grid_movement,
+                      CFreeFormDefBox*** FFDBox);
   
   /*!
    * \brief A virtual member.
@@ -139,7 +155,15 @@ public:
    * \brief Preprocessing to prepare for an iteration of the physics.
    * \param[in] ??? - Description here.
    */
-  void Preprocess();
+  void Preprocess(COutput *output,
+                  CIntegration ***integration_container,
+                  CGeometry ***geometry_container,
+                  CSolver ****solver_container,
+                  CNumerics *****numerics_container,
+                  CConfig **config_container,
+                  CSurfaceMovement **surface_movement,
+                  CVolumetricMovement **grid_movement,
+                  CFreeFormDefBox*** FFDBox);
   
   /*!
    * \brief Perform a single iteration of the mean flow system.
@@ -161,7 +185,15 @@ public:
    * \brief Updates the containers for the mean flow system.
    * \param[in] ??? - Description here.
    */
-  void Update();
+  void Update(COutput *output,
+              CIntegration ***integration_container,
+              CGeometry ***geometry_container,
+              CSolver ****solver_container,
+              CNumerics *****numerics_container,
+              CConfig **config_container,
+              CSurfaceMovement **surface_movement,
+              CVolumetricMovement **grid_movement,
+              CFreeFormDefBox*** FFDBox);
   
   /*!
    * \brief Monitors the convergence and other metrics for the mean flow system.
@@ -207,7 +239,15 @@ public:
    * \brief Preprocessing to prepare for an iteration of the physics.
    * \param[in] ??? - Description here.
    */
-  void Preprocess();
+  void Preprocess(COutput *output,
+                  CIntegration ***integration_container,
+                  CGeometry ***geometry_container,
+                  CSolver ****solver_container,
+                  CNumerics *****numerics_container,
+                  CConfig **config_container,
+                  CSurfaceMovement **surface_movement,
+                  CVolumetricMovement **grid_movement,
+                  CFreeFormDefBox*** FFDBox);
   
   /*!
    * \brief Perform a single iteration of the TNE2 system.
@@ -229,7 +269,15 @@ public:
    * \brief Updates the containers for the TNE2 system.
    * \param[in] ??? - Description here.
    */
-  void Update();
+  void Update(COutput *output,
+              CIntegration ***integration_container,
+              CGeometry ***geometry_container,
+              CSolver ****solver_container,
+              CNumerics *****numerics_container,
+              CConfig **config_container,
+              CSurfaceMovement **surface_movement,
+              CVolumetricMovement **grid_movement,
+              CFreeFormDefBox*** FFDBox);
   
   /*!
    * \brief Monitors the convergence and other metrics for the TNE2 system.
@@ -275,7 +323,15 @@ public:
    * \brief Preprocessing to prepare for an iteration of the physics.
    * \param[in] ??? - Description here.
    */
-  void Preprocess();
+  void Preprocess(COutput *output,
+                  CIntegration ***integration_container,
+                  CGeometry ***geometry_container,
+                  CSolver ****solver_container,
+                  CNumerics *****numerics_container,
+                  CConfig **config_container,
+                  CSurfaceMovement **surface_movement,
+                  CVolumetricMovement **grid_movement,
+                  CFreeFormDefBox*** FFDBox);
   
   /*!
    * \brief Perform a single iteration of the wave system.
@@ -297,7 +353,15 @@ public:
    * \brief Updates the containers for the wave system.
    * \param[in] ??? - Description here.
    */
-  void Update();
+  void Update(COutput *output,
+              CIntegration ***integration_container,
+              CGeometry ***geometry_container,
+              CSolver ****solver_container,
+              CNumerics *****numerics_container,
+              CConfig **config_container,
+              CSurfaceMovement **surface_movement,
+              CVolumetricMovement **grid_movement,
+              CFreeFormDefBox*** FFDBox);
   
   /*!
    * \brief Monitors the convergence and other metrics for the wave system.
@@ -343,7 +407,15 @@ public:
    * \brief Preprocessing to prepare for an iteration of the physics.
    * \param[in] ??? - Description here.
    */
-  void Preprocess();
+  void Preprocess(COutput *output,
+                  CIntegration ***integration_container,
+                  CGeometry ***geometry_container,
+                  CSolver ****solver_container,
+                  CNumerics *****numerics_container,
+                  CConfig **config_container,
+                  CSurfaceMovement **surface_movement,
+                  CVolumetricMovement **grid_movement,
+                  CFreeFormDefBox*** FFDBox);
   
   /*!
    * \brief Perform a single iteration of the heat system.
@@ -365,7 +437,15 @@ public:
    * \brief Updates the containers for the heat system.
    * \param[in] ??? - Description here.
    */
-  void Update();
+  void Update(COutput *output,
+              CIntegration ***integration_container,
+              CGeometry ***geometry_container,
+              CSolver ****solver_container,
+              CNumerics *****numerics_container,
+              CConfig **config_container,
+              CSurfaceMovement **surface_movement,
+              CVolumetricMovement **grid_movement,
+              CFreeFormDefBox*** FFDBox);
   
   /*!
    * \brief Monitors the convergence and other metrics for the heat system.
@@ -411,7 +491,15 @@ public:
    * \brief Preprocessing to prepare for an iteration of the physics.
    * \param[in] ??? - Description here.
    */
-  void Preprocess();
+  void Preprocess(COutput *output,
+                  CIntegration ***integration_container,
+                  CGeometry ***geometry_container,
+                  CSolver ****solver_container,
+                  CNumerics *****numerics_container,
+                  CConfig **config_container,
+                  CSurfaceMovement **surface_movement,
+                  CVolumetricMovement **grid_movement,
+                  CFreeFormDefBox*** FFDBox);
   
   /*!
    * \brief Perform a single iteration of the poisson system.
@@ -433,7 +521,15 @@ public:
    * \brief Updates the containers for the poisson system.
    * \param[in] ??? - Description here.
    */
-  void Update();
+  void Update(COutput *output,
+              CIntegration ***integration_container,
+              CGeometry ***geometry_container,
+              CSolver ****solver_container,
+              CNumerics *****numerics_container,
+              CConfig **config_container,
+              CSurfaceMovement **surface_movement,
+              CVolumetricMovement **grid_movement,
+              CFreeFormDefBox*** FFDBox);
   
   /*!
    * \brief Monitors the convergence and other metrics for the poisson system.
@@ -479,7 +575,15 @@ public:
    * \brief Preprocessing to prepare for an iteration of the physics.
    * \param[in] ??? - Description here.
    */
-  void Preprocess();
+  void Preprocess(COutput *output,
+                  CIntegration ***integration_container,
+                  CGeometry ***geometry_container,
+                  CSolver ****solver_container,
+                  CNumerics *****numerics_container,
+                  CConfig **config_container,
+                  CSurfaceMovement **surface_movement,
+                  CVolumetricMovement **grid_movement,
+                  CFreeFormDefBox*** FFDBox);
   
   /*!
    * \brief Perform a single iteration of the FEA system.
@@ -501,7 +605,15 @@ public:
    * \brief Updates the containers for the FEA system.
    * \param[in] ??? - Description here.
    */
-  void Update();
+  void Update(COutput *output,
+              CIntegration ***integration_container,
+              CGeometry ***geometry_container,
+              CSolver ****solver_container,
+              CNumerics *****numerics_container,
+              CConfig **config_container,
+              CSurfaceMovement **surface_movement,
+              CVolumetricMovement **grid_movement,
+              CFreeFormDefBox*** FFDBox);
   
   /*!
    * \brief Monitors the convergence and other metrics for the FEA system.
@@ -547,7 +659,15 @@ public:
    * \brief Preprocessing to prepare for an iteration of the physics.
    * \param[in] ??? - Description here.
    */
-  void Preprocess();
+  void Preprocess(COutput *output,
+                  CIntegration ***integration_container,
+                  CGeometry ***geometry_container,
+                  CSolver ****solver_container,
+                  CNumerics *****numerics_container,
+                  CConfig **config_container,
+                  CSurfaceMovement **surface_movement,
+                  CVolumetricMovement **grid_movement,
+                  CFreeFormDefBox*** FFDBox);
   
   /*!
    * \brief Perform a single iteration of the adjoint mean flow system.
@@ -569,7 +689,15 @@ public:
    * \brief Updates the containers for the adjoint mean flow system.
    * \param[in] ??? - Description here.
    */
-  void Update();
+  void Update(COutput *output,
+              CIntegration ***integration_container,
+              CGeometry ***geometry_container,
+              CSolver ****solver_container,
+              CNumerics *****numerics_container,
+              CConfig **config_container,
+              CSurfaceMovement **surface_movement,
+              CVolumetricMovement **grid_movement,
+              CFreeFormDefBox*** FFDBox);
   
   /*!
    * \brief Monitors the convergence and other metrics for the adjoint mean flow system.
@@ -615,7 +743,15 @@ public:
    * \brief Preprocessing to prepare for an iteration of the physics.
    * \param[in] ??? - Description here.
    */
-  void Preprocess();
+  void Preprocess(COutput *output,
+                  CIntegration ***integration_container,
+                  CGeometry ***geometry_container,
+                  CSolver ****solver_container,
+                  CNumerics *****numerics_container,
+                  CConfig **config_container,
+                  CSurfaceMovement **surface_movement,
+                  CVolumetricMovement **grid_movement,
+                  CFreeFormDefBox*** FFDBox);
   
   /*!
    * \brief Perform a single iteration of the adjoint TNE2 system.
@@ -637,7 +773,15 @@ public:
    * \brief Updates the containers for the adjoint TNE2 system.
    * \param[in] ??? - Description here.
    */
-  void Update();
+  void Update(COutput *output,
+              CIntegration ***integration_container,
+              CGeometry ***geometry_container,
+              CSolver ****solver_container,
+              CNumerics *****numerics_container,
+              CConfig **config_container,
+              CSurfaceMovement **surface_movement,
+              CVolumetricMovement **grid_movement,
+              CFreeFormDefBox*** FFDBox);
   
   /*!
    * \brief Monitors the convergence and other metrics for the adjoint TNE2 system.
@@ -683,7 +827,15 @@ public:
    * \brief Preprocessing to prepare for an iteration of the physics.
    * \param[in] ??? - Description here.
    */
-  void Preprocess();
+  void Preprocess(COutput *output,
+                  CIntegration ***integration_container,
+                  CGeometry ***geometry_container,
+                  CSolver ****solver_container,
+                  CNumerics *****numerics_container,
+                  CConfig **config_container,
+                  CSurfaceMovement **surface_movement,
+                  CVolumetricMovement **grid_movement,
+                  CFreeFormDefBox*** FFDBox);
   
   /*!
    * \brief Perform a single iteration of the adjoint mean flow system.
@@ -705,7 +857,15 @@ public:
    * \brief Updates the containers for the discrete adjoint mean flow system.
    * \param[in] ??? - Description here.
    */
-  void Update();
+  void Update(COutput *output,
+              CIntegration ***integration_container,
+              CGeometry ***geometry_container,
+              CSolver ****solver_container,
+              CNumerics *****numerics_container,
+              CConfig **config_container,
+              CSurfaceMovement **surface_movement,
+              CVolumetricMovement **grid_movement,
+              CFreeFormDefBox*** FFDBox);
   
   /*!
    * \brief Monitors the convergence and other metrics for the discrete adjoint mean flow system.

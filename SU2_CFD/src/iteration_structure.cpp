@@ -36,7 +36,15 @@ CIteration::CIteration(CConfig *config) { }
 CIteration::~CIteration(void) { }
 
 //! TDE: Inline file for this perhaps? It's purely virtual.
-void CIteration::Preprocess() { }
+void CIteration::Preprocess(COutput *output,
+                            CIntegration ***integration_container,
+                            CGeometry ***geometry_container,
+                            CSolver ****solver_container,
+                            CNumerics *****numerics_container,
+                            CConfig **config_container,
+                            CSurfaceMovement **surface_movement,
+                            CVolumetricMovement **grid_movement,
+                            CFreeFormDefBox*** FFDBox) { }
 void CIteration::Iterate(COutput *output,
                          CIntegration ***integration_container,
                          CGeometry ***geometry_container,
@@ -46,7 +54,15 @@ void CIteration::Iterate(COutput *output,
                          CSurfaceMovement **surface_movement,
                          CVolumetricMovement **grid_movement,
                          CFreeFormDefBox*** FFDBox) { }
-void CIteration::Update()      { }
+void CIteration::Update(COutput *output,
+                        CIntegration ***integration_container,
+                        CGeometry ***geometry_container,
+                        CSolver ****solver_container,
+                        CNumerics *****numerics_container,
+                        CConfig **config_container,
+                        CSurfaceMovement **surface_movement,
+                        CVolumetricMovement **grid_movement,
+                        CFreeFormDefBox*** FFDBox)      { }
 void CIteration::Monitor()     { }
 void CIteration::Output()      { }
 void CIteration::Postprocess() { }
@@ -54,7 +70,49 @@ void CIteration::Postprocess() { }
 
 CMeanFlowIteration::CMeanFlowIteration(CConfig *config) : CIteration(config) { }
 CMeanFlowIteration::~CMeanFlowIteration(void) { }
-void CMeanFlowIteration::Preprocess() { }
+
+void CMeanFlowIteration::Preprocess(COutput *output,
+                                    CIntegration ***integration_container,
+                                    CGeometry ***geometry_container,
+                                    CSolver ****solver_container,
+                                    CNumerics *****numerics_container,
+                                    CConfig **config_container,
+                                    CSurfaceMovement **surface_movement,
+                                    CVolumetricMovement **grid_movement,
+                                    CFreeFormDefBox*** FFDBox) {
+
+  unsigned short iZone;
+  unsigned short nZone = geometry_container[ZONE_0][MESH_0]->GetnZone();
+
+  unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
+  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
+
+  bool time_spectral = (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_SPECTRAL);
+
+  /*--- Set the initial condition ---*/
+  
+  for (iZone = 0; iZone < nZone; iZone++)
+    solver_container[iZone][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[iZone], solver_container[iZone], config_container[iZone], ExtIter);
+  
+  /*--- Initial set up for unsteady problems with dynamic meshes. ---*/
+  
+  for (iZone = 0; iZone < nZone; iZone++) {
+    
+    /*--- Dynamic mesh update ---*/
+    
+    if ((config_container[iZone]->GetGrid_Movement()) && (!time_spectral)) {
+      SetGrid_Movement(geometry_container[iZone], surface_movement[iZone], grid_movement[iZone], FFDBox[iZone], solver_container[iZone], config_container[iZone], iZone, IntIter, ExtIter);
+    }
+    
+    /*--- Apply a Wind Gust ---*/
+    
+    if (config_container[ZONE_0]->GetWind_Gust()) {
+      SetWind_GustField(config_container[iZone], geometry_container[iZone], solver_container[iZone]);
+    }
+  }
+
+}
+
 void CMeanFlowIteration::Iterate(COutput *output,
                                  CIntegration ***integration_container,
                                  CGeometry ***geometry_container,
@@ -65,8 +123,7 @@ void CMeanFlowIteration::Iterate(COutput *output,
                                  CVolumetricMovement **grid_movement,
                                  CFreeFormDefBox*** FFDBox) {
   
-  su2double Physical_dt, Physical_t;
-  unsigned short iMesh, iZone;
+  unsigned short iZone;
   
   bool time_spectral = (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_SPECTRAL);
   unsigned short nZone = geometry_container[ZONE_0][MESH_0]->GetnZone();
@@ -79,28 +136,6 @@ void CMeanFlowIteration::Iterate(COutput *output,
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-
-  /*--- Set the initial condition ---*/
-  
-  for (iZone = 0; iZone < nZone; iZone++)
-    solver_container[iZone][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[iZone], solver_container[iZone], config_container[iZone], ExtIter);
-
-  /*--- Initial set up for unsteady problems with dynamic meshes. ---*/
-  
-  for (iZone = 0; iZone < nZone; iZone++) {
-
-    /*--- Dynamic mesh update ---*/
-    
-    if ((config_container[iZone]->GetGrid_Movement()) && (!time_spectral)) {
-      SetGrid_Movement(geometry_container[iZone], surface_movement[iZone], grid_movement[iZone], FFDBox[iZone], solver_container[iZone], config_container[iZone], iZone, IntIter, ExtIter);
-    }
-
-    /*--- Apply a Wind Gust ---*/
-    
-    if (config_container[ZONE_0]->GetWind_Gust()) {
-      SetWind_GustField(config_container[iZone], geometry_container[iZone], solver_container[iZone]);
-    }
-  }
 
   for (iZone = 0; iZone < nZone; iZone++) {
     
@@ -231,7 +266,32 @@ void CMeanFlowIteration::Iterate(COutput *output,
       if (integration_container[ZONE_0][FLOW_SOL]->GetConvergence()) break;
       
     }
+    
+  }
 
+}
+
+void CMeanFlowIteration::Update(COutput *output,
+                                CIntegration ***integration_container,
+                                CGeometry ***geometry_container,
+                                CSolver ****solver_container,
+                                CNumerics *****numerics_container,
+                                CConfig **config_container,
+                                CSurfaceMovement **surface_movement,
+                                CVolumetricMovement **grid_movement,
+                                CFreeFormDefBox*** FFDBox)      {
+
+  unsigned short iZone;
+  unsigned short iMesh;
+  su2double Physical_dt, Physical_t;
+  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
+
+
+  /*--- Dual time stepping strategy ---*/
+  
+  if ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+      (config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) {
+    
     for (iZone = 0; iZone < nZone; iZone++) {
       
       /*--- Update dual time solver on all mesh levels ---*/
@@ -266,10 +326,9 @@ void CMeanFlowIteration::Iterate(COutput *output,
     }
     
   }
-
+  
 }
 
-void CMeanFlowIteration::Update()      { }
 void CMeanFlowIteration::Monitor()     { }
 void CMeanFlowIteration::Output()      { }
 void CMeanFlowIteration::Postprocess() { }
@@ -277,7 +336,15 @@ void CMeanFlowIteration::Postprocess() { }
 
 CTNE2Iteration::CTNE2Iteration(CConfig *config) : CIteration(config) { }
 CTNE2Iteration::~CTNE2Iteration(void) { }
-void CTNE2Iteration::Preprocess() { }
+void CTNE2Iteration::Preprocess(COutput *output,
+                                CIntegration ***integration_container,
+                                CGeometry ***geometry_container,
+                                CSolver ****solver_container,
+                                CNumerics *****numerics_container,
+                                CConfig **config_container,
+                                CSurfaceMovement **surface_movement,
+                                CVolumetricMovement **grid_movement,
+                                CFreeFormDefBox*** FFDBox) { }
 void CTNE2Iteration::Iterate(COutput *output,
                              CIntegration ***integration_container,
                              CGeometry ***geometry_container,
@@ -322,7 +389,15 @@ void CTNE2Iteration::Iterate(COutput *output,
   
   
 }
-void CTNE2Iteration::Update()      { }
+void CTNE2Iteration::Update(COutput *output,
+                            CIntegration ***integration_container,
+                            CGeometry ***geometry_container,
+                            CSolver ****solver_container,
+                            CNumerics *****numerics_container,
+                            CConfig **config_container,
+                            CSurfaceMovement **surface_movement,
+                            CVolumetricMovement **grid_movement,
+                            CFreeFormDefBox*** FFDBox)      { }
 void CTNE2Iteration::Monitor()     { }
 void CTNE2Iteration::Output()      { }
 void CTNE2Iteration::Postprocess() { }
@@ -330,7 +405,15 @@ void CTNE2Iteration::Postprocess() { }
 
 CWaveIteration::CWaveIteration(CConfig *config) : CIteration(config) { }
 CWaveIteration::~CWaveIteration(void) { }
-void CWaveIteration::Preprocess() { }
+void CWaveIteration::Preprocess(COutput *output,
+                                CIntegration ***integration_container,
+                                CGeometry ***geometry_container,
+                                CSolver ****solver_container,
+                                CNumerics *****numerics_container,
+                                CConfig **config_container,
+                                CSurfaceMovement **surface_movement,
+                                CVolumetricMovement **grid_movement,
+                                CFreeFormDefBox*** FFDBox) { }
 void CWaveIteration::Iterate(COutput *output,
                              CIntegration ***integration_container,
                              CGeometry ***geometry_container,
@@ -384,7 +467,15 @@ void CWaveIteration::Iterate(COutput *output,
   
   
 }
-void CWaveIteration::Update()      { }
+void CWaveIteration::Update(COutput *output,
+                            CIntegration ***integration_container,
+                            CGeometry ***geometry_container,
+                            CSolver ****solver_container,
+                            CNumerics *****numerics_container,
+                            CConfig **config_container,
+                            CSurfaceMovement **surface_movement,
+                            CVolumetricMovement **grid_movement,
+                            CFreeFormDefBox*** FFDBox)      { }
 void CWaveIteration::Monitor()     { }
 void CWaveIteration::Output()      { }
 void CWaveIteration::Postprocess() { }
@@ -392,7 +483,15 @@ void CWaveIteration::Postprocess() { }
 
 CHeatIteration::CHeatIteration(CConfig *config) : CIteration(config) { }
 CHeatIteration::~CHeatIteration(void) { }
-void CHeatIteration::Preprocess() { }
+void CHeatIteration::Preprocess(COutput *output,
+                                CIntegration ***integration_container,
+                                CGeometry ***geometry_container,
+                                CSolver ****solver_container,
+                                CNumerics *****numerics_container,
+                                CConfig **config_container,
+                                CSurfaceMovement **surface_movement,
+                                CVolumetricMovement **grid_movement,
+                                CFreeFormDefBox*** FFDBox) { }
 void CHeatIteration::Iterate(COutput *output,
                              CIntegration ***integration_container,
                              CGeometry ***geometry_container,
@@ -445,7 +544,15 @@ void CHeatIteration::Iterate(COutput *output,
   }
   
 }
-void CHeatIteration::Update()      { }
+void CHeatIteration::Update(COutput *output,
+                            CIntegration ***integration_container,
+                            CGeometry ***geometry_container,
+                            CSolver ****solver_container,
+                            CNumerics *****numerics_container,
+                            CConfig **config_container,
+                            CSurfaceMovement **surface_movement,
+                            CVolumetricMovement **grid_movement,
+                            CFreeFormDefBox*** FFDBox)      { }
 void CHeatIteration::Monitor()     { }
 void CHeatIteration::Output()      { }
 void CHeatIteration::Postprocess() { }
@@ -453,7 +560,15 @@ void CHeatIteration::Postprocess() { }
 
 CPoissonIteration::CPoissonIteration(CConfig *config) : CIteration(config) { }
 CPoissonIteration::~CPoissonIteration(void) { }
-void CPoissonIteration::Preprocess() { }
+void CPoissonIteration::Preprocess(COutput *output,
+                                   CIntegration ***integration_container,
+                                   CGeometry ***geometry_container,
+                                   CSolver ****solver_container,
+                                   CNumerics *****numerics_container,
+                                   CConfig **config_container,
+                                   CSurfaceMovement **surface_movement,
+                                   CVolumetricMovement **grid_movement,
+                                   CFreeFormDefBox*** FFDBox) { }
 void CPoissonIteration::Iterate(COutput *output,
                                 CIntegration ***integration_container,
                                 CGeometry ***geometry_container,
@@ -484,7 +599,15 @@ void CPoissonIteration::Iterate(COutput *output,
   }
   
 }
-void CPoissonIteration::Update()      { }
+void CPoissonIteration::Update(COutput *output,
+                               CIntegration ***integration_container,
+                               CGeometry ***geometry_container,
+                               CSolver ****solver_container,
+                               CNumerics *****numerics_container,
+                               CConfig **config_container,
+                               CSurfaceMovement **surface_movement,
+                               CVolumetricMovement **grid_movement,
+                               CFreeFormDefBox*** FFDBox)      { }
 void CPoissonIteration::Monitor()     { }
 void CPoissonIteration::Output()      { }
 void CPoissonIteration::Postprocess() { }
@@ -492,7 +615,15 @@ void CPoissonIteration::Postprocess() { }
 
 CFEAIteration::CFEAIteration(CConfig *config) : CIteration(config) { }
 CFEAIteration::~CFEAIteration(void) { }
-void CFEAIteration::Preprocess() { }
+void CFEAIteration::Preprocess(COutput *output,
+                               CIntegration ***integration_container,
+                               CGeometry ***geometry_container,
+                               CSolver ****solver_container,
+                               CNumerics *****numerics_container,
+                               CConfig **config_container,
+                               CSurfaceMovement **surface_movement,
+                               CVolumetricMovement **grid_movement,
+                               CFreeFormDefBox*** FFDBox) { }
 void CFEAIteration::Iterate(COutput *output,
                             CIntegration ***integration_container,
                             CGeometry ***geometry_container,
@@ -542,7 +673,15 @@ void CFEAIteration::Iterate(COutput *output,
   }
   
 }
-void CFEAIteration::Update()      { }
+void CFEAIteration::Update(COutput *output,
+                           CIntegration ***integration_container,
+                           CGeometry ***geometry_container,
+                           CSolver ****solver_container,
+                           CNumerics *****numerics_container,
+                           CConfig **config_container,
+                           CSurfaceMovement **surface_movement,
+                           CVolumetricMovement **grid_movement,
+                           CFreeFormDefBox*** FFDBox)      { }
 void CFEAIteration::Monitor()     { }
 void CFEAIteration::Output()      { }
 void CFEAIteration::Postprocess() { }
@@ -550,7 +689,15 @@ void CFEAIteration::Postprocess() { }
 
 CAdjMeanFlowIteration::CAdjMeanFlowIteration(CConfig *config) : CIteration(config) { }
 CAdjMeanFlowIteration::~CAdjMeanFlowIteration(void) { }
-void CAdjMeanFlowIteration::Preprocess() { }
+void CAdjMeanFlowIteration::Preprocess(COutput *output,
+                                       CIntegration ***integration_container,
+                                       CGeometry ***geometry_container,
+                                       CSolver ****solver_container,
+                                       CNumerics *****numerics_container,
+                                       CConfig **config_container,
+                                       CSurfaceMovement **surface_movement,
+                                       CVolumetricMovement **grid_movement,
+                                       CFreeFormDefBox*** FFDBox) { }
 void CAdjMeanFlowIteration::Iterate(COutput *output,
                                     CIntegration ***integration_container,
                                     CGeometry ***geometry_container,
@@ -742,7 +889,15 @@ void CAdjMeanFlowIteration::Iterate(COutput *output,
   }
   
 }
-void CAdjMeanFlowIteration::Update()      { }
+void CAdjMeanFlowIteration::Update(COutput *output,
+                                   CIntegration ***integration_container,
+                                   CGeometry ***geometry_container,
+                                   CSolver ****solver_container,
+                                   CNumerics *****numerics_container,
+                                   CConfig **config_container,
+                                   CSurfaceMovement **surface_movement,
+                                   CVolumetricMovement **grid_movement,
+                                   CFreeFormDefBox*** FFDBox)      { }
 void CAdjMeanFlowIteration::Monitor()     { }
 void CAdjMeanFlowIteration::Output()      { }
 void CAdjMeanFlowIteration::Postprocess() { }
@@ -750,7 +905,15 @@ void CAdjMeanFlowIteration::Postprocess() { }
 
 CAdjTNE2Iteration::CAdjTNE2Iteration(CConfig *config) : CIteration(config) { }
 CAdjTNE2Iteration::~CAdjTNE2Iteration(void) { }
-void CAdjTNE2Iteration::Preprocess() { }
+void CAdjTNE2Iteration::Preprocess(COutput *output,
+                                   CIntegration ***integration_container,
+                                   CGeometry ***geometry_container,
+                                   CSolver ****solver_container,
+                                   CNumerics *****numerics_container,
+                                   CConfig **config_container,
+                                   CSurfaceMovement **surface_movement,
+                                   CVolumetricMovement **grid_movement,
+                                   CFreeFormDefBox*** FFDBox) { }
 void CAdjTNE2Iteration::Iterate(COutput *output,
                                 CIntegration ***integration_container,
                                 CGeometry ***geometry_container,
@@ -855,7 +1018,15 @@ void CAdjTNE2Iteration::Iterate(COutput *output,
   }
   
 }
-void CAdjTNE2Iteration::Update()      { }
+void CAdjTNE2Iteration::Update(COutput *output,
+                               CIntegration ***integration_container,
+                               CGeometry ***geometry_container,
+                               CSolver ****solver_container,
+                               CNumerics *****numerics_container,
+                               CConfig **config_container,
+                               CSurfaceMovement **surface_movement,
+                               CVolumetricMovement **grid_movement,
+                               CFreeFormDefBox*** FFDBox)      { }
 void CAdjTNE2Iteration::Monitor()     { }
 void CAdjTNE2Iteration::Output()      { }
 void CAdjTNE2Iteration::Postprocess() { }
@@ -863,7 +1034,15 @@ void CAdjTNE2Iteration::Postprocess() { }
 
 CDiscAdjMeanFlowIteration::CDiscAdjMeanFlowIteration(CConfig *config) : CIteration(config) { }
 CDiscAdjMeanFlowIteration::~CDiscAdjMeanFlowIteration(void) { }
-void CDiscAdjMeanFlowIteration::Preprocess() { }
+void CDiscAdjMeanFlowIteration::Preprocess(COutput *output,
+                                           CIntegration ***integration_container,
+                                           CGeometry ***geometry_container,
+                                           CSolver ****solver_container,
+                                           CNumerics *****numerics_container,
+                                           CConfig **config_container,
+                                           CSurfaceMovement **surface_movement,
+                                           CVolumetricMovement **grid_movement,
+                                           CFreeFormDefBox*** FFDBox) { }
 void CDiscAdjMeanFlowIteration::Iterate(COutput *output,
                                         CIntegration ***integration_container,
                                         CGeometry ***geometry_container,
@@ -1045,7 +1224,15 @@ void CDiscAdjMeanFlowIteration::Iterate(COutput *output,
   }
   
 }
-void CDiscAdjMeanFlowIteration::Update()      { }
+void CDiscAdjMeanFlowIteration::Update(COutput *output,
+                                       CIntegration ***integration_container,
+                                       CGeometry ***geometry_container,
+                                       CSolver ****solver_container,
+                                       CNumerics *****numerics_container,
+                                       CConfig **config_container,
+                                       CSurfaceMovement **surface_movement,
+                                       CVolumetricMovement **grid_movement,
+                                       CFreeFormDefBox*** FFDBox)      { }
 void CDiscAdjMeanFlowIteration::Monitor()     { }
 void CDiscAdjMeanFlowIteration::Output()      { }
 void CDiscAdjMeanFlowIteration::Postprocess() { }
