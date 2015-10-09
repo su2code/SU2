@@ -172,6 +172,11 @@ namespace AD{
    */
   void Reset();
 
+  /*!
+   * \brief Reset the variable (set index to zero).
+   */
+  void ResetInput(su2double &data);
+
 }
 
 #ifdef CODI_REVERSE_TYPE

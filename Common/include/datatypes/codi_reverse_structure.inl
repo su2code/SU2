@@ -68,6 +68,8 @@ namespace AD{
 
   inline void RegisterOutput(su2double& data){AD::globalTape.registerOutput(data);}
 
+  inline void ResetInput(su2double &data){data.getGradientData() = 0;}
+
   inline void StartRecording(){AD::globalTape.setActive();}
 
   inline void StopRecording(){AD::globalTape.setPassive();}

@@ -1029,13 +1029,13 @@ inline su2double CAdjTNE2EulerSolver::GetTotal_Sens_Press() { return Total_Sens_
 
 inline su2double CAdjTNE2EulerSolver::GetTotal_Sens_Temp() { return Total_Sens_Temp; }
 
-inline void CSolver::RegisterInput(CGeometry *geometry_container, CConfig *config){}
+inline void CSolver::RegisterSolution(CGeometry *geometry_container, CConfig *config){}
 
 inline void CSolver::RegisterOutput(CGeometry *geometry_container, CConfig *config){}
 
-inline void CSolver::SetAdjointOutput(CGeometry *geometry, CConfig *config){}
+inline void CSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){}
 
-inline void CSolver::SetAdjointInput(CGeometry *geometry, CConfig *config){}
+inline void CSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config){}
 
 inline void CSolver::RegisterObj_Func(CConfig *config){}
 
@@ -1059,4 +1059,17 @@ inline su2double CDiscAdjSolver::GetCSensitivity(unsigned short val_marker, unsi
 
 inline unsigned long CSolver::SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) {return 0;}
 
-inline void CSolver::SetRecording(unsigned short kind_recording){}
+inline void CSolver::SetRecording(CGeometry *geometry, CConfig *config, unsigned short kind_recording){}
+
+inline void CSolver::SetPressure_Inf(su2double p_inf){}
+
+inline void CSolver::SetTemperature_Inf(su2double t_inf){}
+
+inline void CEulerSolver::SetPressure_Inf(su2double p_inf){Pressure_Inf = p_inf;}
+
+inline void CEulerSolver::SetTemperature_Inf(su2double t_inf){Temperature_Inf = t_inf;}
+
+inline void CSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset){}
+
+inline void CSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config){}
+
