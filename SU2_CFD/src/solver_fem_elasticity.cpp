@@ -930,11 +930,11 @@ void CFEM_ElasticitySolver::Compute_StiffMatrix(CGeometry *geometry, CSolver **s
 
 				for (iVar = 0; iVar < nVar; iVar++){
 					for (jVar = 0; jVar < nVar; jVar++){
-						Jacobian_c_ij[iVar][jVar] = Kab[iVar*nVar+jVar];
+						Jacobian_ij[iVar][jVar] = Kab[iVar*nVar+jVar];
 					}
 				}
 
-				Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_c_ij);
+				Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_ij);
 
 			}
 

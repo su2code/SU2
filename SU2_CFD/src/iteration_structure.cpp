@@ -1108,6 +1108,8 @@ void CFEM_StructuralAnalysis::Iterate(COutput *output,
 	unsigned long IntIter = 0; config_container[val_iZone]->SetIntIter(IntIter);
 	unsigned long ExtIter = config_container[val_iZone]->GetExtIter();
 
+	bool fsi = config_container[val_iZone]->GetFSI_Simulation();
+
 	unsigned long iIncrement;
 	unsigned long nIncrements = config_container[val_iZone]->GetNumberIncrements();
 
@@ -1151,7 +1153,7 @@ void CFEM_StructuralAnalysis::Iterate(COutput *output,
 
 	}
 	/*--- If the structure is held static and the solver is nonlinear, we don't need to solve for static time, but we need to compute Mass Matrix and Integration constants ---*/
-	else if ((nonlinear) && (!statTime)){
+	else if ((nonlinear) && ((!statTime) || (!fsi))){
 
 		/*--- THIS IS THE DIRECT APPROACH (NO INCREMENTAL LOAD APPLIED) ---*/
 
@@ -1343,9 +1345,6 @@ void CFEM_StructuralAnalysis::Iterate(COutput *output,
 		/*--- We need to do the preprocessing to compute the Mass Matrix and integration constants ---*/
 		solver_container[val_iZone][MESH_0][FEA_SOL]->Preprocessing(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0],
 				config_container[val_iZone], numerics_container[val_iZone][MESH_0][FEA_SOL], MESH_0, 0, RUNTIME_FEA_SYS, false);
-
-	}
-	else {
 
 	}
 
