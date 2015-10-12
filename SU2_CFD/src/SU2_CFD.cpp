@@ -300,12 +300,7 @@ int main(int argc, char *argv[]) {
 #endif
   
   bool fsi = config_container[ZONE_0]->GetFSI_Simulation();
-  
-  unsigned short iFluidIt, nFluidIt;
-  
-  iFluidIt=0;
-  nFluidIt=config_container[ZONE_0]->GetnIterFSI();
-  
+
   /*--- This is temporal and just to check. It will have to be added to the regular history file ---*/
   
   ofstream historyFile_FSI;
@@ -383,6 +378,19 @@ int main(int argc, char *argv[]) {
     runtime = new CConfig(runtime_file_name, config_container[ZONE_0]);
     runtime->SetExtIter(ExtIter);
     
+//	/*--- Update the convergence history file (serial and parallel computations). ---*/
+//	if (fsi){
+//		if (rank == MASTER_NODE) cout << "---------------------------------------------------------------------------" << endl;
+//		for (iZone = 0; iZone < nZone; iZone++){
+//			if (iZone == 0 && rank == MASTER_NODE) cout << "Fluid convergence: " << endl;
+//			else if (iZone == 1 && rank == MASTER_NODE) cout << "Structural convergence: " << endl;
+//			output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container,
+//					config_container, integration_container, false, UsedTime, iZone);
+//		}
+//
+//		if (rank == MASTER_NODE)cout << "---------------------------------------------------------------------------" << endl;
+//	}
+
     /*--- Update the convergence history file (serial and parallel computations). ---*/
     
     output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container,

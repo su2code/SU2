@@ -203,8 +203,6 @@ void Driver_Preprocessing(CDriver **driver,
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
-  /*--- For now, time spectral will use a single-zone driver. ---*/
-  bool time_spectral = (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_SPECTRAL);
   /*--- fsi implementations will use, as of now, BGS implentation. More to come. ---*/
   bool fsi = config_container[ZONE_0]->GetFSI_Simulation();
   
