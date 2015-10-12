@@ -6980,11 +6980,11 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
   
   unsigned long iVertex, iPoint;
   unsigned short iDim, iMarker, Out1D;
-  su2double *Normal = NULL, Area = 0.0, OverArea = 0.0, UnitNormal[3],
-  Stag_Pressure, Mach, Temperature, Pressure = 0.0, Density = 0.0, Velocity2, Enthalpy, RhoU, U,// local values at each node (Velocity2 = V^2). U = normal velocity
-  SumPressure = 0.0, SumStagPressure = 0.0, SumArea = 0.0, SumMach = 0.0, SumTemperature = 0.0, SumForUref = 0.0, SumRhoU = 0.0, SumEnthalpy = 0.0,// sum of (local value ) * (dA) (integral)
-  AveragePressure = 0.0, AverageMach = 0.0, AverageTemperature = 0.0, MassFlowRate = 0.0, // Area Averaged value ( sum / A )
+  su2double *Normal = NULL, Area = 0.0, UnitNormal[3],
+  Tot_Pressure, Mach, Temperature, Pressure = 0.0, Velocity2, Enthalpy, RhoUA, U,// local values at each node (Velocity2 = V^2). U = normal velocity
+  AveragePt = 0.0, AverageMach = 0.0, AverageTemperature = 0.0, MassFlowRate = 0.0, // Area Averaged value ( sum / A )
   VelocityRef = 0.0, EnthalpyRef = 0.0, DensityRef = 0.0, PressureRef = 0.0; // Flux conserved values. TemperatureRef follows ideal gas
+  su2double BPressSensEstimate = 0.0, TotalArea=0.0;
   
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
@@ -7018,20 +7018,15 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
           Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
           for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = -Normal[iDim]/Area;
           
-          if (compressible) {
-            Pressure = solver_container->node[iPoint]->GetPressure();
-            Density = solver_container->node[iPoint]->GetDensity();
-          }
-          if (incompressible || freesurface) {
-            Pressure = solver_container->node[iPoint]->GetPressureInc();
-            Density = solver_container->node[iPoint]->GetDensityInc();
-          }
+          if (compressible)                    Pressure = solver_container->node[iPoint]->GetPressure();
+          if (incompressible || freesurface)   Pressure = solver_container->node[iPoint]->GetPressureInc();
           
           /*-- Find velocity normal to the marked surface/opening --*/
           
-          U = 0.0;
+          U = 0.0; RhoUA = 0.0;
           for (iDim = 0; iDim < geometry->GetnDim(); iDim++) {
             U += UnitNormal[iDim]*solver_container->node[iPoint]->GetVelocity(iDim);
+            RhoUA -=Normal[iDim]*solver_container->node[iPoint]->GetSolution(iDim+1);
           }
           
           Enthalpy = solver_container->node[iPoint]->GetEnthalpy();
@@ -7039,35 +7034,21 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
           Temperature = solver_container->node[iPoint]->GetTemperature();
           
           Mach = (sqrt(Velocity2))/ solver_container->node[iPoint]->GetSoundSpeed();
-          Stag_Pressure = Pressure*pow((1.0+((Gamma-1.0)/2.0)*pow(Mach, 2.0)),(Gamma/(Gamma-1.0)));
-          
-          RhoU = U*Density;
-          SumStagPressure += Stag_Pressure * Area;
-          SumArea += Area;
-          SumMach += Mach*Area;
-          SumPressure += Pressure * Area;
-          SumTemperature += Temperature*Area;
-          SumRhoU += RhoU*Area;
-          SumForUref+=RhoU*U*U*Area;
-          SumEnthalpy+=RhoU*Enthalpy*Area;
+          //Stag_Pressure = Pressure*pow((1.0+((Gamma-1.0)/2.0)*pow(Mach, 2.0)),( Gamma/(Gamma-1.0) ) );
+          Tot_Pressure = Pressure + 0.5*solver_container->node[iPoint]->GetDensity()*Velocity2;
+
+          AveragePt += Tot_Pressure * Area;
+          TotalArea += Area;
+          AverageMach += Mach*Area;
+          PressureRef += Pressure * Area;
+          AverageTemperature += Temperature*Area;
+          MassFlowRate += RhoUA; // RhoU is rho * vn * Area
+          VelocityRef+=RhoUA*U*U; // rho u A
+          EnthalpyRef+=RhoUA*Enthalpy;
           
         }
       }
-      
-      if (SumRhoU != 0.0) { // To avoid division by 0
-        
-        OverArea = 1.0/SumArea;
-        AveragePressure += abs(SumStagPressure*OverArea);
-        AverageMach += abs(SumMach*OverArea);
-        AverageTemperature += abs(SumTemperature*OverArea);
-        MassFlowRate += SumRhoU;
-        PressureRef += abs(SumPressure*OverArea);
-        VelocityRef += abs(sqrt(abs(SumForUref/SumRhoU)));
-        EnthalpyRef +=abs(SumEnthalpy/SumRhoU);
-        DensityRef +=abs(PressureRef*Gamma/(Gamma-1)/(EnthalpyRef-0.5*VelocityRef*VelocityRef));
-        
-      }
-      
+
     }
     
   }
@@ -7076,7 +7057,8 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
   
   /*--- Add AllBound information using all the nodes ---*/
   
-  su2double My_AveragePressure     = AveragePressure;    AveragePressure = 0.0;
+  su2double My_Area                = TotalArea;          TotalArea = 0.0;
+  su2double My_AveragePt           = AveragePt;          AveragePt = 0.0;
   su2double My_AverageMach         = AverageMach;        AverageMach = 0.0;
   su2double My_AverageTemperature  = AverageTemperature; AverageTemperature = 0.0;
   su2double My_MassFlowRate        = MassFlowRate;       MassFlowRate = 0.0;
@@ -7085,7 +7067,8 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
   su2double My_EnthalpyRef         = EnthalpyRef;        EnthalpyRef = 0.0;
   su2double My_DensityRef          = DensityRef;         DensityRef = 0.0;
   
-  SU2_MPI::Allreduce(&My_AveragePressure, &AveragePressure, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&My_Area, &TotalArea, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&My_AveragePt, &AveragePt, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&My_AverageMach, &AverageMach, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&My_AverageTemperature, &AverageTemperature, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&My_MassFlowRate, &MassFlowRate, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -7097,12 +7080,19 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
 #endif
   
   /*--- Set the 1D output ---*/
-  
-  solver_container->SetOneD_TotalPress(AveragePressure);
-  solver_container->SetOneD_Mach(AverageMach);
-  solver_container->SetOneD_Temp(AverageTemperature);
+  /*--- DensityRef depends on the final values of other flux avg variables ---*/
+  VelocityRef=sqrt(VelocityRef/MassFlowRate);
+  PressureRef=PressureRef/TotalArea;
+  EnthalpyRef=EnthalpyRef/MassFlowRate;
+  DensityRef =PressureRef*Gamma/(Gamma-1)/(EnthalpyRef-0.5*VelocityRef*VelocityRef);
+
+  /*Area averaged values*/
+  solver_container->SetOneD_TotalPress(AveragePt/TotalArea);
+  solver_container->SetOneD_Mach(AverageMach/TotalArea);
+  solver_container->SetOneD_Temp(AverageTemperature/TotalArea);
   solver_container->SetOneD_MassFlowRate(MassFlowRate);
-  
+
+  /*Flux averaged values*/
   solver_container->SetOneD_FluxAvgPress(PressureRef);
   solver_container->SetOneD_FluxAvgDensity(DensityRef);
   solver_container->SetOneD_FluxAvgVelocity(VelocityRef);
