@@ -137,34 +137,6 @@ public:
    */
   virtual void Postprocess();
 
-  /*!
-   * \brief A virtual member.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] geometry_container - Geometrical definition of the problem.
-   * \param[in] config_container - Definition of the particular problem.
-   * \param[in] iZone - Index of the zone.
-   * \param[in] kind_recording - Kind of recording, either FLOW_VARIABLES or GEOMETRY_VARIABLES
-   */
-  virtual void RegisterInput(CSolver ****solver_container, CGeometry*** geometry, CConfig** config, unsigned short iZone, unsigned short kind_recording){}
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] geometry_container - Geometrical definition of the problem.
-   * \param[in] config_container - Definition of the particular problem.
-   * \param[in] iZone - Index of the zone.
-   */
-  virtual void RegisterOutput(CSolver ****solver_container, CGeometry*** geometry, CConfig** config, unsigned short iZone){}
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] geometry_container - Geometrical definition of the problem.
-   * \param[in] config_container - Definition of the particular problem.
-   * \param[in] iZone - Index of the zone.
-   */
-  virtual void SetAdjointOutput(CSolver ****solver_container, CGeometry*** geometry, CConfig** config, unsigned short iZone){}
-
 };
 
 
