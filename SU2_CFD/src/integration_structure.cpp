@@ -235,7 +235,6 @@ void CIntegration::Space_Integration_FEM(CGeometry *geometry,
 	  }
 	  else if (!linear_analysis){
 		  /*--- If the analysis is nonlinear, also the stress terms need to be computed ---*/
-
 		  /*--- If the method is full Newton-Raphson, the stiffness matrix and the nodal term are updated every time ---*/
 		  /*--- They are calculated together to avoid looping twice over the elements ---*/
 		  if (IterativeScheme == NEWTON_RAPHSON){
