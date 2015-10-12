@@ -1568,8 +1568,6 @@ void CSingleZoneDriver::Run(CIteration **iteration_container,
                             CInterpolator ***interpolator_container,
                             CTransfer ***transfer_container) {
 
-  unsigned short iZone = ZONE_0;
-  
   /*--- Run an iteration of the physics within this single zone.
    We assume that the zone of interest is in the ZONE_0 container position. ---*/
   
@@ -2193,9 +2191,6 @@ void CFSIDriver::Run(CIteration **iteration_container,
 	unsigned long IntIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[IntIter]->SetIntIter(IntIter);
 	unsigned long iFSIIter = 0;
 	unsigned long nFSIIter = config_container[ZONE_FLOW]->GetnIterFSI();
-	unsigned long ExtIter = config_container[ZONE_FLOW]->GetExtIter();
-
-	bool fem_solver = (config_container[ZONE_1]->GetKind_Solver() == FEM_ELASTICITY);
 
 	int rank = MASTER_NODE;
 #ifdef HAVE_MPI
