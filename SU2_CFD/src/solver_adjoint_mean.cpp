@@ -55,7 +55,7 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   unsigned short iDim, iVar, iMarker, nLineLets;
   ifstream restart_file;
   string filename, AdjExt;
-  su2double dull_val;
+  su2double dull_val, myArea_Monitored, Area, *Normal;
   bool restart = config->GetRestart();
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
@@ -221,6 +221,29 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   Phi_Inf[0] = 0.0; Phi_Inf[1] = 0.0;
   if (nDim == 3) Phi_Inf[2] = 0.0;
   
+  /*--- If outflow objective, nonzero initialization ---*/
+  if ((config->GetKind_ObjFunc() == AVG_TOTAL_PRESSURE)){
+    su2double SoundSpeed,*vel_inf,R,vel2,vel;
+    R = config->GetGas_ConstantND();
+    vel_inf = config->GetVelocity_FreeStreamND();
+    vel2=0;
+    for (iDim=0; iDim<nDim; iDim++)
+      vel2 +=vel_inf[iDim]*vel_inf[iDim];
+    vel = pow(vel2,0.5);
+    SoundSpeed= pow(Gamma*config->GetTemperature_FreeStreamND()*R, 0.5);
+    PsiE_Inf = Gamma_Minus_One*vel2/(vel2-pow(SoundSpeed,2.0))*0.5/vel;
+    PsiRho_Inf += PsiE_Inf*(2*SoundSpeed*SoundSpeed+vel2*Gamma_Minus_One)/(2.0*Gamma_Minus_One);
+    // Assumes +x flow direction
+    // Assume v.n = |v|, n = -v/|v|
+
+    for (iDim=0; iDim<nDim; iDim++){
+      Phi_Inf[iDim] +=PsiE_Inf*(SoundSpeed*SoundSpeed/Gamma_Minus_One/vel2-1)*vel_inf[iDim];
+      // Assumes n in direction of v
+      Phi_Inf[iDim]+=vel_inf[iDim]/vel*(0.5);
+    }
+
+  }
+
   if (!restart || (iMesh != MESH_0)) {
     /*--- Restart the solution from infinity ---*/
     for (iPoint = 0; iPoint < nPoint; iPoint++)
@@ -304,6 +327,32 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   if (config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED) space_centered = true;
   else space_centered = false;
   
+  /*--- Calculate area monitored for area-averaged-outflow-quantity-based objectives ---*/
+  myArea_Monitored = 0.0;
+  if (config->GetKind_ObjFunc()==OUTLET_CHAIN_RULE || config->GetKind_ObjFunc()==AVG_TOTAL_PRESSURE ||
+    config->GetKind_ObjFunc()==AVG_OUTLET_PRESSURE){
+    for (iMarker =0; iMarker < config->GetnMarker_All();  iMarker++){
+      if (config->GetMarker_All_Monitoring(iMarker) == YES){
+        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          if (geometry->node[iPoint]->GetDomain()) {
+            Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+            Area = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++)
+              Area += Normal[iDim]*Normal[iDim];
+            myArea_Monitored += sqrt (Area);
+          }
+        }
+      }
+    }
+  }
+#ifdef HAVE_MPI
+  Area_Monitored = 0.0;
+  SU2_MPI::Allreduce(&myArea_Monitored, &Area_Monitored, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
+  Area_Monitored = myArea_Monitored;
+#endif
+
   /*--- MPI solution ---*/
   Set_MPI_Solution(geometry, config);
   
@@ -1133,7 +1182,7 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
               ForceProj_Vector[2] =  CTRCQ2*(y - y_origin);
             }
             break;
-          case INVERSE_DESIGN_HEATFLUX: case TOTAL_HEATFLUX : case MAXIMUM_HEATFLUX: case AVG_TOTAL_PRESSURE : case AVG_OUTLET_PRESSURE: case MASS_FLOW_RATE : case FREE_SURFACE :
+          default :
             if (nDim == 2) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; }
             if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = 0.0; }
             break;
@@ -2318,8 +2367,10 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
   
   if ((ObjFunc == INVERSE_DESIGN_HEATFLUX) || (ObjFunc == FREE_SURFACE) ||
       (ObjFunc == TOTAL_HEATFLUX) || (ObjFunc == MAXIMUM_HEATFLUX) ||
-      (ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE) ||
-      (ObjFunc == MASS_FLOW_RATE)) factor = 1.0;
+      (ObjFunc == MASS_FLOW_RATE) ) factor = 1.0;
+
+ if ((ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE) ||
+     (ObjFunc == OUTLET_CHAIN_RULE)) factor = 1.0/Area_Monitored;
   
   /*--- Initialize sensitivities to zero ---*/
   
@@ -5022,7 +5073,7 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   unsigned short iDim, iVar, iMarker, nLineLets;
   ifstream restart_file;
   string filename, AdjExt;
-  su2double dull_val;
+  su2double dull_val, Area=0.0, *Normal=NULL, myArea_Monitored;
   bool restart = config->GetRestart();
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
@@ -5258,6 +5309,32 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
     delete [] Global2Local;
   }
   
+  /*--- Calculate area monitored for area-averaged-outflow-quantity-based objectives ---*/
+  myArea_Monitored = 0.0;
+  if (config->GetKind_ObjFunc()==OUTLET_CHAIN_RULE || config->GetKind_ObjFunc()==AVG_TOTAL_PRESSURE ||
+    config->GetKind_ObjFunc()==AVG_OUTLET_PRESSURE){
+    for (iMarker =0; iMarker < config->GetnMarker_All();  iMarker++){
+      if (config->GetMarker_All_Monitoring(iMarker) == YES){
+        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          if (geometry->node[iPoint]->GetDomain()) {
+            Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+            Area = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++)
+              Area += Normal[iDim]*Normal[iDim];
+            myArea_Monitored += sqrt (Area);
+          }
+        }
+      }
+    }
+  }
+#ifdef HAVE_MPI
+  Area_Monitored = 0.0;
+  SU2_MPI::Allreduce(&myArea_Monitored, &Area_Monitored, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
+  Area_Monitored = myArea_Monitored;
+#endif
+
   /*--- MPI solution ---*/
   Set_MPI_Solution(geometry, config);
   
@@ -5639,8 +5716,11 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
   
   if ((ObjFunc == INVERSE_DESIGN_HEATFLUX) || (ObjFunc == FREE_SURFACE) ||
       (ObjFunc == TOTAL_HEATFLUX) || (ObjFunc == MAXIMUM_HEATFLUX) ||
-      (ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE) ||
-      (ObjFunc == MASS_FLOW_RATE)) factor = 1.0;
+      (ObjFunc == MASS_FLOW_RATE) ) factor = 1.0;
+
+ if ((ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE) ||
+     (ObjFunc == OUTLET_CHAIN_RULE)) factor = 1.0/Area_Monitored;
+
 
   /*--- Compute gradient of the grid velocity, if applicable ---*/
   
