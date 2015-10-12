@@ -1283,7 +1283,39 @@ void CDiscAdjMeanFlowIteration::Preprocess(COutput *output,
                                            CSurfaceMovement **surface_movement,
                                            CVolumetricMovement **grid_movement,
                                            CFreeFormDefBox*** FFDBox,
-                                           unsigned short val_iZone) { }
+                                           unsigned short val_iZone) {
+
+  unsigned short ExtIter = config_container[val_iZone]->GetExtIter();
+
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  if (CurrentRecording != FLOW_VARIABLES){
+
+    if ((rank == MASTER_NODE) && (ExtIter == 0)){
+      cout << "Direct iteration to store computational graph." << endl;
+    }
+
+    /* --- Record one mean flow iteration with flow variables as input --- */
+
+    SetRecording(output, integration_container, geometry_container, solver_container, numerics_container,
+                 config_container, surface_movement, grid_movement, FFDBox, val_iZone, FLOW_VARIABLES);
+
+    /*--- Print residuals in the first iteration ---*/
+
+    if (rank == MASTER_NODE && ExtIter == 0){
+      cout << "log10[RMS Density]: "<< log10(solver_container[val_iZone][MESH_0][FLOW_SOL]->GetRes_RMS(0))
+           <<", Drag: " <<solver_container[val_iZone][MESH_0][FLOW_SOL]->GetTotal_CDrag()
+          <<", Lift: " << solver_container[val_iZone][MESH_0][FLOW_SOL]->GetTotal_CLift() << "." << endl;
+
+      if (turbulent){
+        cout << "log10[RMS k]: " << log10(solver_container[val_iZone][MESH_0][TURB_SOL]->GetRes_RMS(0)) << endl;
+      }
+    }
+  }
+}
 void CDiscAdjMeanFlowIteration::Iterate(COutput *output,
                                         CIntegration ***integration_container,
                                         CGeometry ***geometry_container,
@@ -1295,80 +1327,17 @@ void CDiscAdjMeanFlowIteration::Iterate(COutput *output,
                                         CFreeFormDefBox*** FFDBox,
                                         unsigned short val_iZone) {
   
-  bool time_spectral = (config_container[val_iZone]->GetUnsteady_Simulation() == TIME_SPECTRAL);
-  if (time_spectral) {
-    nZone = config_container[val_iZone]->GetnTimeInstances();
-  }
   unsigned long IntIter = 0; config_container[val_iZone]->SetIntIter(IntIter);
-  unsigned short ExtIter = config_container[val_iZone]->GetExtIter(), iMesh;
+  unsigned short ExtIter = config_container[val_iZone]->GetExtIter();
   
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-  
-  if (CurrentRecording != FLOW_VARIABLES){
-    
-    /*--- Reset the tape ---*/
-    
-    AD::Reset();
-    
-    /*--- Prepare for recording --- */
-      
-    for (iMesh = 0; iMesh <= config_container[val_iZone]->GetnMGLevels(); iMesh++){
-      
-      solver_container[val_iZone][iMesh][ADJFLOW_SOL]->SetRecording(geometry_container[val_iZone][MESH_0], config_container[val_iZone],FLOW_VARIABLES);
-      
-        if (turbulent){
-          solver_container[val_iZone][iMesh][ADJTURB_SOL]->SetRecording(geometry_container[val_iZone][MESH_0], config_container[val_iZone],FLOW_VARIABLES);
-      }
-    }
-    
-    /*--- Start the recording of all operations ---*/
-    
-    AD::StartRecording();
-    
-    /*--- Register flow variables and compute coupling --- */
-
-    RegisterInput(solver_container, geometry_container, config_container, val_iZone, FLOW_VARIABLES);
-    
-    if ((rank == MASTER_NODE) && (ExtIter == 0)){
-      cout << "Direct iteration to store computational graph." << endl;
-    }
-    
-    /* --- Run the direct iteration --- */
-    
-    meanflow_iteration->Iterate(output,integration_container,geometry_container,solver_container,numerics_container,
-                              config_container,surface_movement,volume_grid_movement,FFDBox, val_iZone);
-
-    /*--- Print residuals in the first iteration ---*/
-
-    if (rank == MASTER_NODE && ExtIter == 0){
-      cout << "log10[RMS Density]: "<< log10(solver_container[val_iZone][MESH_0][FLOW_SOL]->GetRes_RMS(0))
-           <<", Drag: " <<solver_container[val_iZone][MESH_0][FLOW_SOL]->GetTotal_CDrag()
-           <<", Lift: " << solver_container[val_iZone][MESH_0][FLOW_SOL]->GetTotal_CLift() << "." << endl;
-
-    if (turbulent){
-        cout << "log10[RMS k]: " << log10(solver_container[val_iZone][MESH_0][TURB_SOL]->GetRes_RMS(0)) << endl;
-      }
-    }
-    
-    /*--- Register flow variables and objective function as output ---*/
-    
-    RegisterOutput(solver_container, geometry_container, config_container, val_iZone);
-    
-    /*--- Stop the recording ---*/
-    
-    AD::StopRecording();
-
-    /*--- Set the recording status ---*/
-
-    CurrentRecording = FLOW_VARIABLES;
-  }
     
   /*--- Set the adjoint values of the flow and objective function ---*/
 
-  SetAdjointOutput(solver_container, geometry_container, config_container, val_iZone);
+  InitializeAdjoint(solver_container, geometry_container, config_container, val_iZone);
 
   /*--- Run the adjoint computation ---*/
   
@@ -1382,10 +1351,10 @@ void CDiscAdjMeanFlowIteration::Iterate(COutput *output,
   solver_container[val_iZone][MESH_0][ADJFLOW_SOL]->ExtractAdjoint_Variables(geometry_container[val_iZone][MESH_0],
                                                                   config_container[val_iZone]);
 
-      if (turbulent){
+  if (turbulent){
     solver_container[val_iZone][MESH_0][ADJTURB_SOL]->ExtractAdjoint_Solution(geometry_container[val_iZone][MESH_0],
-                                                                  config_container[val_iZone]);
-    }
+                                                                              config_container[val_iZone]);
+  }
     
   /*--- Clear all adjoints to re-use the stored computational graph in the next iteration ---*/
         
@@ -1399,70 +1368,90 @@ void CDiscAdjMeanFlowIteration::Iterate(COutput *output,
   if (((unsigned short)(ExtIter+1) >= config_container[val_iZone]->GetnExtIter()) ||
       ((ExtIter % config_container[val_iZone]->GetWrt_Sol_Freq() == 0))){
 
-    /*--- Reset tape ---*/
+    /* --- Record one mean flow iteration with geometry variables as input --- */
 
-    AD::Reset();
-
-    /*--- Run one iteration while tape is passive - this clears all indices ---*/
-
-    meanflow_iteration->Iterate(output,integration_container,geometry_container,solver_container,numerics_container,
-                              config_container,surface_movement,volume_grid_movement,FFDBox, val_iZone);
-
-    /*--- Prepare recording ---*/
-
-    for (iMesh = 0; iMesh <= config_container[val_iZone]->GetnMGLevels(); iMesh++){
-
-      solver_container[val_iZone][iMesh][ADJFLOW_SOL]->SetRecording(geometry_container[val_iZone][MESH_0], config_container[val_iZone],FLOW_VARIABLES);
-
-        if (turbulent){
-          solver_container[val_iZone][iMesh][ADJTURB_SOL]->SetRecording(geometry_container[val_iZone][MESH_0], config_container[val_iZone],FLOW_VARIABLES);
-      }
-    }
-    
-    /*--- Start recording of all operations ---*/
-
-    AD::StartRecording();
-
-    /*--- Register all necessary geometry variables ---*/
-
-    RegisterInput(solver_container, geometry_container, config_container, val_iZone, GEOMETRY_VARIABLES);
-    
-    /*--- Run the direct iteration ---*/
-
-    meanflow_iteration->Iterate(output,integration_container,geometry_container,solver_container,numerics_container,
-                              config_container,surface_movement,volume_grid_movement,FFDBox, val_iZone);
-
-    /*--- Register flow variables and objective function as output ---*/
-
-    RegisterOutput(solver_container, geometry_container, config_container, val_iZone);
-
-    /*--- Stop recording of operations ---*/
-    
-    AD::StopRecording();
-    
-    /*--- Set the recording status ---*/
-
-    CurrentRecording = GEOMETRY_VARIABLES;
+    SetRecording(output, integration_container, geometry_container, solver_container, numerics_container,
+                 config_container, surface_movement, volume_grid_movement, FFDBox, val_iZone, GEOMETRY_VARIABLES);
 
     /*--- Set the adjoint values of the flow and objective function ---*/
 
-    SetAdjointOutput(solver_container, geometry_container, config_container, val_iZone);
+    InitializeAdjoint(solver_container, geometry_container, config_container, val_iZone);
 
     /*--- Run the adjoint computation ---*/
 
     AD::ComputeAdjoint();
 
+    /* --- Extract the sensitivities (adjoint of node coordinates) ---*/
+
     solver_container[val_iZone][MESH_0][ADJFLOW_SOL]->SetSensitivity(geometry_container[val_iZone][MESH_0],config_container[val_iZone]);
-
-    /*--- Update geometry to set all indices to zero --- */
-    
-    geometry_container[val_iZone][MESH_0]->UpdateGeometry(geometry_container[val_iZone], config_container[val_iZone]);
-
-    meanflow_iteration->Iterate(output,integration_container,geometry_container,solver_container,numerics_container,
-                              config_container,surface_movement,volume_grid_movement,FFDBox,val_iZone);
     
   }
 }
+
+void CDiscAdjMeanFlowIteration::SetRecording(COutput *output,
+                                       CIntegration ***integration_container,
+                                       CGeometry ***geometry_container,
+                                       CSolver ****solver_container,
+                                       CNumerics *****numerics_container,
+                                       CConfig **config_container,
+                                       CSurfaceMovement **surface_movement,
+                                       CVolumetricMovement **grid_movement,
+                                       CFreeFormDefBox*** FFDBox,
+                                       unsigned short val_iZone,
+                                       unsigned short kind_recording)      {
+
+  unsigned short iMesh;
+
+  /*--- Reset the tape ---*/
+
+  AD::Reset();
+
+  /*--- Update geometry to set all indices to zero --- */
+
+  geometry_container[val_iZone][MESH_0]->UpdateGeometry(geometry_container[val_iZone], config_container[val_iZone]);
+
+  /*--- Run one iteration while tape is passive - this clears all indices ---*/
+
+  meanflow_iteration->Iterate(output,integration_container,geometry_container,solver_container,numerics_container,
+                              config_container,surface_movement,grid_movement,FFDBox,val_iZone);
+
+  /*--- Prepare for recording --- */
+
+  for (iMesh = 0; iMesh <= config_container[val_iZone]->GetnMGLevels(); iMesh++){
+
+    solver_container[val_iZone][iMesh][ADJFLOW_SOL]->SetRecording(geometry_container[val_iZone][MESH_0], config_container[val_iZone], kind_recording);
+
+    if (turbulent){
+      solver_container[val_iZone][iMesh][ADJTURB_SOL]->SetRecording(geometry_container[val_iZone][MESH_0], config_container[val_iZone], kind_recording);
+    }
+  }
+
+  /*--- Start the recording of all operations ---*/
+
+  AD::StartRecording();
+
+  /*--- Register flow variables and compute coupling or update the geometry --- */
+
+  RegisterInput(solver_container, geometry_container, config_container, val_iZone, kind_recording);
+
+  /* --- Run the direct iteration --- */
+
+  meanflow_iteration->Iterate(output,integration_container,geometry_container,solver_container,numerics_container,
+                              config_container,surface_movement,grid_movement,FFDBox, val_iZone);
+
+  /*--- Register flow variables and objective function as output ---*/
+
+  RegisterOutput(solver_container, geometry_container, config_container, val_iZone);
+
+  /*--- Stop the recording ---*/
+
+  AD::StopRecording();
+
+  /*--- Set the recording status ---*/
+
+  CurrentRecording = kind_recording;
+}
+
     
 void CDiscAdjMeanFlowIteration::RegisterInput(CSolver ****solver_container, CGeometry ***geometry_container, CConfig **config_container, unsigned short iZone, unsigned short kind_recording){
 
@@ -1516,7 +1505,7 @@ void CDiscAdjMeanFlowIteration::RegisterOutput(CSolver ****solver_container, CGe
     }
   }
   
-void CDiscAdjMeanFlowIteration::SetAdjointOutput(CSolver ****solver_container, CGeometry ***geometry_container, CConfig **config_container, unsigned short iZone){
+void CDiscAdjMeanFlowIteration::InitializeAdjoint(CSolver ****solver_container, CGeometry ***geometry_container, CConfig **config_container, unsigned short iZone){
   
   /*--- Initialize the adjoint of the objective function (typically with 1.0) ---*/
   
