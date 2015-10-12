@@ -4866,7 +4866,8 @@ protected:
   su2double *FlowPrimVar_i,	/*!< \brief Store the flow solution at point i. */
 	*FlowPrimVar_j;        /*!< \brief Store the flow solution at point j. */
 
-  su2double pnorm;
+  su2double pnorm,
+  Area_Monitored; /*!< \brief Store the total area of the monitored outflow surface (used for normalization in continuous adjoint outflow conditions) */
     
 public:
     
