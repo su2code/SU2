@@ -42,6 +42,7 @@ CDriver::CDriver(CIteration **iteration_container,
                  unsigned short val_nZone,
                  unsigned short val_nDim) {
   
+
   unsigned short iMesh, iZone, jZone, iSol;
   unsigned short nZone, nDim;
   
@@ -50,12 +51,13 @@ CDriver::CDriver(CIteration **iteration_container,
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
+  /*--- Store the number of zones for the problem (class data member). ---*/
+  
   nZone = val_nZone;
   nDim = val_nDim;
   
-
   for (iZone = 0; iZone < nZone; iZone++) {
-
+    
     /*--- Instantiate the type of physics iteration to be executed within each zone. For
      example, one can execute the same physics across multiple zones (mixing plane),
      different physics in different zones (fluid-structure interaction), or couple multiple
@@ -64,7 +66,7 @@ CDriver::CDriver(CIteration **iteration_container,
       cout << endl <<"------------------------ Iteration Preprocessing ------------------------" << endl;
     }
     Iteration_Preprocessing(iteration_container, config_container, iZone);
-
+    
     /*--- Definition of the solver class: solver_container[#ZONES][#MG_GRIDS][#EQ_SYSTEMS].
      The solver classes are specific to a particular set of governing equations,
      and they contain the subroutines with instructions for computing each spatial
@@ -73,7 +75,7 @@ CDriver::CDriver(CIteration **iteration_container,
      imposing various boundary condition type for the PDE. ---*/
     if (rank == MASTER_NODE)
       cout << endl <<"------------------------- Solver Preprocessing --------------------------" << endl;
-
+    
     solver_container[iZone] = new CSolver** [config_container[iZone]->GetnMGLevels()+1];
     for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++)
       solver_container[iZone][iMesh] = NULL;
@@ -1349,70 +1351,68 @@ void CDriver::Iteration_Preprocessing(CIteration **iteration_container, CConfig 
   if (rank == MASTER_NODE) cout << "Zone " << iZone+1;
   
   /*--- Loop over all zones and instantiate the physics iteration. ---*/
-
+  
   switch (config[iZone]->GetKind_Solver()) {
-
+      
     case EULER: case NAVIER_STOKES: case RANS:
       if (rank == MASTER_NODE)
         cout << ": Euler/Navier-Stokes/RANS flow iteration." << endl;
       iteration_container[iZone] = new CMeanFlowIteration(config[iZone]);
       break;
-
+      
     case TNE2_EULER: case TNE2_NAVIER_STOKES:
       if (rank == MASTER_NODE)
         cout << ": TNE2 iteration." << endl;
       iteration_container[iZone] = new CTNE2Iteration(config[iZone]);
       break;
-
+      
     case WAVE_EQUATION:
       if (rank == MASTER_NODE)
         cout << ": wave iteration." << endl;
       iteration_container[iZone] = new CWaveIteration(config[iZone]);
       break;
-
+      
     case HEAT_EQUATION:
       if (rank == MASTER_NODE)
         cout << ": heat iteration." << endl;
       iteration_container[iZone] = new CHeatIteration(config[iZone]);
       break;
-
+      
     case POISSON_EQUATION:
       if (rank == MASTER_NODE)
         cout << ": poisson iteration." << endl;
       iteration_container[iZone] = new CPoissonIteration(config[iZone]);
       break;
-
+      
     case LINEAR_ELASTICITY:
       if (rank == MASTER_NODE)
         cout << ": FEA iteration." << endl;
       iteration_container[iZone] = new CFEAIteration(config[iZone]);
       break;
-
     case FEM_ELASTICITY:
       if (rank == MASTER_NODE)
-        cout << ": FEA iteration." << endl;
+        cout << ": FEM iteration." << endl;
       iteration_container[iZone] = new CFEM_StructuralAnalysis(config[iZone]);
       break;
-
     case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
       if (rank == MASTER_NODE)
         cout << ": adjoint Euler/Navier-Stokes/RANS flow iteration." << endl;
       iteration_container[iZone] = new CAdjMeanFlowIteration(config[iZone]);
       break;
-
+      
     case ADJ_TNE2_EULER: case ADJ_TNE2_NAVIER_STOKES:
       if (rank == MASTER_NODE)
         cout << ": adjoint TNE2 iteration." << endl;
       iteration_container[iZone] = new CAdjTNE2Iteration(config[iZone]);
       break;
-
+      
     case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
       if (rank == MASTER_NODE)
         cout << ": discrete adjoint Euler/Navier-Stokes/RANS flow iteration." << endl;
       iteration_container[iZone] = new CDiscAdjMeanFlowIteration(config[iZone]);
       break;
   }
-
+  
 }
 
 
@@ -1573,30 +1573,21 @@ void CSingleZoneDriver::Run(CIteration **iteration_container,
   /*--- Run an iteration of the physics within this single zone.
    We assume that the zone of interest is in the ZONE_0 container position. ---*/
   
-  iteration_container[ZONE_0]->Preprocess(); /*--- Does nothing for now. ---*/
+  iteration_container[ZONE_0]->Preprocess(output, integration_container, geometry_container,
+                                          solver_container, numerics_container, config_container,
+                                          surface_movement, grid_movement, FFDBox, ZONE_0);
   
-  bool checkSubiter = true;
+  iteration_container[ZONE_0]->Iterate(output, integration_container, geometry_container,
+                                       solver_container, numerics_container, config_container,
+                                       surface_movement, grid_movement, FFDBox, ZONE_0);
   
-  if (!checkSubiter){
-	  iteration_container[ZONE_0]->Iterate(output, integration_container, geometry_container,
-	                                       solver_container, numerics_container, config_container,
-	                                       surface_movement, grid_movement, FFDBox);
-  }
-  else {
-
-	  cout << "YES! I'M SUBITERATING!!!!" << endl;
-	  iteration_container[ZONE_0]->Subiterate(output, integration_container, geometry_container,
-	                                       solver_container, numerics_container, config_container,
-	                                       surface_movement, grid_movement, FFDBox, ZONE_0);
-
-	  iteration_container[ZONE_0]->Update(output, integration_container, geometry_container,
-	          solver_container, numerics_container, config_container,
-	          surface_movement, grid_movement, FFDBox, ZONE_0);
-  }
-
-  iteration_container[ZONE_0]->Monitor(); /*--- Does nothing for now. ---*/
+  iteration_container[ZONE_0]->Update(output, integration_container, geometry_container,
+                                      solver_container, numerics_container, config_container,
+                                      surface_movement, grid_movement, FFDBox, ZONE_0);
   
-  iteration_container[ZONE_0]->Output(); /*--- Does nothing for now. ---*/
+  iteration_container[ZONE_0]->Monitor();     /*--- Does nothing for now. ---*/
+  
+  iteration_container[ZONE_0]->Output();      /*--- Does nothing for now. ---*/
   
   iteration_container[ZONE_0]->Postprocess(); /*--- Does nothing for now. ---*/
   
@@ -1647,15 +1638,17 @@ void CMultiZoneDriver::Run(CIteration **iteration_container,
   
   for (iZone = 0; iZone < nZone; iZone++) {
     
-    iteration_container[iZone]->Preprocess();  /*--- Does nothing for now. ---*/
+    iteration_container[iZone]->Preprocess(output, integration_container, geometry_container,
+                                           solver_container, numerics_container, config_container,
+                                           surface_movement, grid_movement, FFDBox, iZone);
     
     iteration_container[iZone]->Iterate(output, integration_container, geometry_container,
                                         solver_container, numerics_container, config_container,
-                                        surface_movement, grid_movement, FFDBox);
+                                        surface_movement, grid_movement, FFDBox, iZone);
     
     iteration_container[iZone]->Update(output, integration_container, geometry_container,
-            solver_container, numerics_container, config_container,
-            surface_movement, grid_movement, FFDBox, iZone);      /*--- Does nothing for now. ---*/
+                                       solver_container, numerics_container, config_container,
+                                       surface_movement, grid_movement, FFDBox, iZone);
     
     iteration_container[iZone]->Monitor();     /*--- Does nothing for now. ---*/
     
@@ -1667,6 +1660,495 @@ void CMultiZoneDriver::Run(CIteration **iteration_container,
   
 }
 
+CSpectralDriver::CSpectralDriver(CIteration **iteration_container,
+                                 CSolver ****solver_container,
+                                 CGeometry ***geometry_container,
+                                 CIntegration ***integration_container,
+                                 CNumerics *****numerics_container,
+                                 CInterpolator ***interpolator_container,
+                                 CTransfer ***transfer_container,
+                                 CConfig **config_container,
+                                 unsigned short val_nZone,
+                                 unsigned short val_nDim) : CDriver(iteration_container,
+                                                                     solver_container,
+                                                                     geometry_container,
+                                                                     integration_container,
+                                                                     numerics_container,
+                                                                     interpolator_container,
+                                                                     transfer_container,
+                                                                     config_container,
+                                                                     val_nZone,
+                                                                     val_nDim) { }
+
+CSpectralDriver::~CSpectralDriver(void) { }
+
+void CSpectralDriver::Run(CIteration **iteration_container,
+        				COutput *output,
+        				CIntegration ***integration_container,
+        				CGeometry ***geometry_container,
+        				CSolver ****solver_container,
+        				CNumerics *****numerics_container,
+        				CConfig **config_container,
+        				CSurfaceMovement **surface_movement,
+        				CVolumetricMovement **grid_movement,
+        				CFreeFormDefBox*** FFDBox,
+        				CInterpolator ***interpolator_container,
+        				CTransfer ***transfer_container) {
+  
+  unsigned short iZone;
+  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
+  
+  /*--- If this is the first iteration, set up the spectral operators,
+   initialize the source terms, and compute any grid veocities, if necessary. ---*/
+  
+  if (ExtIter == 0) {
+    SetTimeSpectral_Velocities(geometry_container, config_container, nZone);
+    for (iZone = 0; iZone < nZone; iZone++)
+      SetTimeSpectral(geometry_container, solver_container, config_container, nZone, (iZone+1)%nZone);
+  }
+  
+  /*--- Run a single iteration of a spectral method problem. Preprocess all
+   all zones before beginning the iteration. ---*/
+  
+  for (iZone = 0; iZone < nZone; iZone++)
+    iteration_container[iZone]->Preprocess(output, integration_container, geometry_container,
+                                           solver_container, numerics_container, config_container,
+                                           surface_movement, grid_movement, FFDBox, iZone);
+  
+  for (iZone = 0; iZone < nZone; iZone++) {
+    iteration_container[iZone]->Iterate(output, integration_container, geometry_container,
+                                        solver_container, numerics_container, config_container,
+                                        surface_movement, grid_movement, FFDBox, iZone);
+    
+    
+    /*--- Update the spectral source terms across all zones ---*/
+    
+    SetTimeSpectral(geometry_container, solver_container, config_container, nZone, (iZone+1)%nZone);
+    
+    iteration_container[iZone]->Update(output, integration_container, geometry_container,
+                                       solver_container, numerics_container, config_container,
+                                       surface_movement, grid_movement, FFDBox, iZone);
+    
+    iteration_container[iZone]->Monitor();     /*--- Does nothing for now. ---*/
+    
+    iteration_container[iZone]->Output();      /*--- Does nothing for now. ---*/
+    
+    iteration_container[iZone]->Postprocess(); /*--- Does nothing for now. ---*/
+    
+  }
+  
+}
+
+void CSpectralDriver::SetTimeSpectral(CGeometry ***geometry_container, CSolver ****solver_container,
+                                      CConfig **config_container, unsigned short nZone, unsigned short iZone) {
+  
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+  
+  /*--- Local variables and initialization ---*/
+  //unsigned short iVar, kZone, jZone, iMGlevel;
+  unsigned short iVar, jZone, kZone, iMGlevel;
+  unsigned short nVar = solver_container[ZONE_0][MESH_0][FLOW_SOL]->GetnVar();
+  unsigned long iPoint;
+  bool implicit = (config_container[ZONE_0]->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool adjoint = (config_container[ZONE_0]->GetAdjoint());
+  if (adjoint) {
+    implicit = (config_container[ZONE_0]->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
+  }
+  
+  /*--- Retrieve values from the config file ---*/
+  su2double *U = new su2double[nVar];
+  su2double *U_old = new su2double[nVar];
+  su2double *Psi = new su2double[nVar];
+  su2double *Psi_old = new su2double[nVar];
+  su2double *Source = new su2double[nVar];
+  su2double deltaU, deltaPsi;
+  
+  /*--- Compute period of oscillation ---*/
+  su2double period = config_container[ZONE_0]->GetTimeSpectral_Period();
+  
+  /*--- allocate dynamic memory for D ---*/
+  su2double **D = new su2double*[nZone];
+  for (kZone = 0; kZone < nZone; kZone++) {
+    D[kZone] = new su2double[nZone];
+  }
+  
+  /*--- Build the time-spectral operator matrix ---*/
+  ComputeTimeSpectral_Operator(D, period, nZone);
+  //  for (kZone = 0; kZone < nZone; kZone++) {
+  //    for (jZone = 0; jZone < nZone; jZone++) {
+  //
+  //      if (nZone%2 == 0) {
+  //
+  //        /*--- For an even number of time instances ---*/
+  //        if (kZone == jZone) {
+  //          D[kZone][jZone] = 0.0;
+  //        }
+  //        else {
+  //          D[kZone][jZone] = (PI_NUMBER/period)*pow(-1.0,(kZone-jZone))*(1/tan(PI_NUMBER*(kZone-jZone)/nZone));
+  //        }
+  //      }
+  //      else {
+  //
+  //        /*--- For an odd number of time instances ---*/
+  //        if (kZone == jZone) {
+  //          D[kZone][jZone] = 0.0;
+  //        }
+  //        else {
+  //          D[kZone][jZone] = (PI_NUMBER/period)*pow(-1.0,(kZone-jZone))*(1/sin(PI_NUMBER*(kZone-jZone)/nZone));
+  //        }
+  //      }
+  //
+  //    }
+  //  }
+  
+  /*--- Compute various source terms for explicit direct, implicit direct, and adjoint problems ---*/
+  /*--- Loop over all grid levels ---*/
+  for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetnMGLevels(); iMGlevel++) {
+    
+    /*--- Loop over each node in the volume mesh ---*/
+    for (iPoint = 0; iPoint < geometry_container[ZONE_0][iMGlevel]->GetnPoint(); iPoint++) {
+      
+      for (iVar = 0; iVar < nVar; iVar++) {
+        Source[iVar] = 0.0;
+      }
+      
+      /*--- Step across the columns ---*/
+      for (jZone = 0; jZone < nZone; jZone++) {
+        
+        /*--- Retrieve solution at this node in current zone ---*/
+        for (iVar = 0; iVar < nVar; iVar++) {
+          
+          if (!adjoint) {
+            U[iVar] = solver_container[jZone][iMGlevel][FLOW_SOL]->node[iPoint]->GetSolution(iVar);
+            Source[iVar] += U[iVar]*D[iZone][jZone];
+            
+            if (implicit) {
+              U_old[iVar] = solver_container[jZone][iMGlevel][FLOW_SOL]->node[iPoint]->GetSolution_Old(iVar);
+              deltaU = U[iVar] - U_old[iVar];
+              Source[iVar] += deltaU*D[iZone][jZone];
+            }
+            
+          }
+          
+          else {
+            Psi[iVar] = solver_container[jZone][iMGlevel][ADJFLOW_SOL]->node[iPoint]->GetSolution(iVar);
+            Source[iVar] += Psi[iVar]*D[jZone][iZone];
+            
+            if (implicit) {
+              Psi_old[iVar] = solver_container[jZone][iMGlevel][ADJFLOW_SOL]->node[iPoint]->GetSolution_Old(iVar);
+              deltaPsi = Psi[iVar] - Psi_old[iVar];
+              Source[iVar] += deltaPsi*D[jZone][iZone];
+            }
+          }
+        }
+        
+        /*--- Store sources for current row ---*/
+        for (iVar = 0; iVar < nVar; iVar++) {
+          if (!adjoint) {
+            solver_container[iZone][iMGlevel][FLOW_SOL]->node[iPoint]->SetTimeSpectral_Source(iVar, Source[iVar]);
+          }
+          else {
+            solver_container[iZone][iMGlevel][ADJFLOW_SOL]->node[iPoint]->SetTimeSpectral_Source(iVar, Source[iVar]);
+          }
+        }
+        
+      }
+    }
+  }
+  
+  //	/*--- Loop over all grid levels ---*/
+  //	for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetnMGLevels(); iMGlevel++) {
+  //
+  //		/*--- Loop over each node in the volume mesh ---*/
+  //		for (iPoint = 0; iPoint < geometry_container[ZONE_0][iMGlevel]->GetnPoint(); iPoint++) {
+  //
+  //			for (iZone = 0; iZone < nZone; iZone++) {
+  //				for (iVar = 0; iVar < nVar; iVar++) Source[iVar] = 0.0;
+  //				for (jZone = 0; jZone < nZone; jZone++) {
+  //
+  //					/*--- Retrieve solution at this node in current zone ---*/
+  //					for (iVar = 0; iVar < nVar; iVar++) {
+  //						U[iVar] = solver_container[jZone][iMGlevel][FLOW_SOL]->node[iPoint]->GetSolution(iVar);
+  //						Source[iVar] += U[iVar]*D[iZone][jZone];
+  //					}
+  //				}
+  //				/*--- Store sources for current iZone ---*/
+  //				for (iVar = 0; iVar < nVar; iVar++)
+  //					solver_container[iZone][iMGlevel][FLOW_SOL]->node[iPoint]->SetTimeSpectral_Source(iVar, Source[iVar]);
+  //			}
+  //		}
+  //	}
+  
+  /*--- Source term for a turbulence model ---*/
+  if (config_container[ZONE_0]->GetKind_Solver() == RANS) {
+    
+    /*--- Extra variables needed if we have a turbulence model. ---*/
+    unsigned short nVar_Turb = solver_container[ZONE_0][MESH_0][TURB_SOL]->GetnVar();
+    su2double *U_Turb = new su2double[nVar_Turb];
+    su2double *Source_Turb = new su2double[nVar_Turb];
+    
+    /*--- Loop over only the finest mesh level (turbulence is always solved
+     on the original grid only). ---*/
+    for (iPoint = 0; iPoint < geometry_container[ZONE_0][MESH_0]->GetnPoint(); iPoint++) {
+      for (iVar = 0; iVar < nVar_Turb; iVar++) Source_Turb[iVar] = 0.0;
+      for (jZone = 0; jZone < nZone; jZone++) {
+        
+        /*--- Retrieve solution at this node in current zone ---*/
+        for (iVar = 0; iVar < nVar_Turb; iVar++) {
+          U_Turb[iVar] = solver_container[jZone][MESH_0][TURB_SOL]->node[iPoint]->GetSolution(iVar);
+          Source_Turb[iVar] += U_Turb[iVar]*D[iZone][jZone];
+        }
+      }
+      
+      /*--- Store sources for current iZone ---*/
+      for (iVar = 0; iVar < nVar_Turb; iVar++)
+        solver_container[iZone][MESH_0][TURB_SOL]->node[iPoint]->SetTimeSpectral_Source(iVar, Source_Turb[iVar]);
+    }
+    
+    delete [] U_Turb;
+    delete [] Source_Turb;
+  }
+  
+  /*--- delete dynamic memory for D ---*/
+  for (kZone = 0; kZone < nZone; kZone++) {
+    delete [] D[kZone];
+  }
+  delete [] D;
+  delete [] U;
+  delete [] U_old;
+  delete [] Psi;
+  delete [] Psi_old;
+  delete [] Source;
+  
+  /*--- Write file with force coefficients ---*/
+  ofstream TS_Flow_file;
+  ofstream mean_TS_Flow_file;
+  
+  /*--- MPI Send/Recv buffers ---*/
+  su2double *sbuf_force = NULL,  *rbuf_force = NULL;
+  
+  /*--- Other variables ---*/
+  unsigned short nVar_Force = 8;
+  unsigned long current_iter = config_container[ZONE_0]->GetExtIter();
+  
+  /*--- Allocate memory for send buffer ---*/
+  sbuf_force = new su2double[nVar_Force];
+  
+  su2double *averages = new su2double[nVar_Force];
+  for (iVar = 0; iVar < nVar_Force; iVar++)
+    averages[iVar] = 0;
+  
+  /*--- Allocate memory for receive buffer ---*/
+  if (rank == MASTER_NODE) {
+    rbuf_force = new su2double[nVar_Force];
+    
+    TS_Flow_file.precision(15);
+    TS_Flow_file.open("TS_force_coefficients.csv", ios::out);
+    TS_Flow_file <<  "\"time_instance\",\"lift_coeff\",\"drag_coeff\",\"moment_coeff_x\",\"moment_coeff_y\",\"moment_coeff_z\"" << endl;
+    
+    mean_TS_Flow_file.precision(15);
+    if (current_iter == 0 && iZone == 1) {
+      mean_TS_Flow_file.open("history_TS_forces.plt", ios::trunc);
+      mean_TS_Flow_file << "TITLE = \"SU2 TIME-SPECTRAL SIMULATION\"" << endl;
+      mean_TS_Flow_file <<  "VARIABLES = \"Iteration\",\"CLift\",\"CDrag\",\"CMx\",\"CMy\",\"CMz\",\"CT\",\"CQ\",\"CMerit\"" << endl;
+      mean_TS_Flow_file << "ZONE T= \"Average Convergence History\"" << endl;
+    }
+    else
+      mean_TS_Flow_file.open("history_TS_forces.plt", ios::out | ios::app);
+  }
+  
+  if (rank == MASTER_NODE) {
+    
+    /*--- Run through the zones, collecting the forces coefficients
+     N.B. Summing across processors within a given zone is being done
+     elsewhere. ---*/
+    for (kZone = 0; kZone < nZone; kZone++) {
+      
+      /*--- Flow solution coefficients (parallel) ---*/
+      sbuf_force[0] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CLift();
+      sbuf_force[1] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CDrag();
+      sbuf_force[2] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CMx();
+      sbuf_force[3] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CMy();
+      sbuf_force[4] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CMz();
+      sbuf_force[5] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CT();
+      sbuf_force[6] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CQ();
+      sbuf_force[7] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CMerit();
+      
+      for (iVar = 0; iVar < nVar_Force; iVar++) {
+        rbuf_force[iVar] = sbuf_force[iVar];
+      }
+      
+      TS_Flow_file << kZone << ", ";
+      for (iVar = 0; iVar < nVar_Force; iVar++)
+        TS_Flow_file << rbuf_force[iVar] << ", ";
+      TS_Flow_file << endl;
+      
+      /*--- Increment the total contributions from each zone, dividing by nZone as you go ---*/
+      for (iVar = 0; iVar < nVar_Force; iVar++) {
+        averages[iVar] += (1.0/su2double(nZone))*rbuf_force[iVar];
+      }
+    }
+  }
+  
+  if (rank == MASTER_NODE && iZone == ZONE_0) {
+    
+    mean_TS_Flow_file << current_iter << ", ";
+    for (iVar = 0; iVar < nVar_Force; iVar++) {
+      mean_TS_Flow_file << averages[iVar];
+      if (iVar < nVar_Force-1)
+        mean_TS_Flow_file << ", ";
+    }
+    mean_TS_Flow_file << endl;
+  }
+  
+  if (rank == MASTER_NODE) {
+    TS_Flow_file.close();
+    mean_TS_Flow_file.close();
+    delete [] rbuf_force;
+  }
+  
+  delete [] sbuf_force;
+  delete [] averages;
+  
+}
+
+void CSpectralDriver::ComputeTimeSpectral_Operator(su2double **D, su2double period, unsigned short nZone) {
+  
+  unsigned short kZone, jZone;
+  
+  /*--- Build the time-spectral operator matrix ---*/
+  for (kZone = 0; kZone < nZone; kZone++) {
+    for (jZone = 0; jZone < nZone; jZone++) {
+      
+      if (nZone%2 == 0) {
+        
+        /*--- For an even number of time instances ---*/
+        if (kZone == jZone) {
+          D[kZone][jZone] = 0.0;
+        }
+        else {
+          D[kZone][jZone] = (PI_NUMBER/period)*pow(-1.0,(kZone-jZone))*(1/tan(PI_NUMBER*(kZone-jZone)/nZone));
+        }
+      }
+      else {
+        
+        /*--- For an odd number of time instances ---*/
+        if (kZone == jZone) {
+          D[kZone][jZone] = 0.0;
+        }
+        else {
+          D[kZone][jZone] = (PI_NUMBER/period)*pow(-1.0,(kZone-jZone))*(1/sin(PI_NUMBER*(kZone-jZone)/nZone));
+        }
+      }
+      
+    }
+  }
+  
+}
+
+void CSpectralDriver::SetTimeSpectral_Velocities(CGeometry ***geometry_container,
+                                                 CConfig **config_container, unsigned short nZone) {
+  
+  unsigned short iZone, jDegree, iDim, iMGlevel;
+  unsigned short nDim = geometry_container[ZONE_0][MESH_0]->GetnDim();
+  
+  su2double angular_interval = 2.0*PI_NUMBER/(su2double)(nZone);
+  su2double *Coord;
+  unsigned long iPoint;
+  
+  /*--- Compute period of oscillation & compute time interval using nTimeInstances ---*/
+  su2double period = config_container[ZONE_0]->GetTimeSpectral_Period();
+  su2double deltaT = period/(su2double)(config_container[ZONE_0]->GetnTimeInstances());
+  
+  /*--- allocate dynamic memory for angular positions (these are the abscissas) ---*/
+  su2double *angular_positions = new su2double [nZone];
+  for (iZone = 0; iZone < nZone; iZone++) {
+    angular_positions[iZone] = iZone*angular_interval;
+  }
+  
+  /*--- find the highest-degree trigonometric polynomial allowed by the Nyquist criterion---*/
+  su2double high_degree = (nZone-1)/2.0;
+  int highest_degree = SU2_TYPE::Int(high_degree);
+  
+  /*--- allocate dynamic memory for a given point's coordinates ---*/
+  su2double **coords = new su2double *[nZone];
+  for (iZone = 0; iZone < nZone; iZone++) {
+    coords[iZone] = new su2double [nDim];
+  }
+  
+  /*--- allocate dynamic memory for vectors of Fourier coefficients ---*/
+  su2double *a_coeffs = new su2double [highest_degree+1];
+  su2double *b_coeffs = new su2double [highest_degree+1];
+  
+  /*--- allocate dynamic memory for the interpolated positions and velocities ---*/
+  su2double *fitted_coords = new su2double [nZone];
+  su2double *fitted_velocities = new su2double [nZone];
+  
+  /*--- Loop over all grid levels ---*/
+  for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetnMGLevels(); iMGlevel++) {
+    
+    /*--- Loop over each node in the volume mesh ---*/
+    for (iPoint = 0; iPoint < geometry_container[ZONE_0][iMGlevel]->GetnPoint(); iPoint++) {
+      
+      /*--- Populate the 2D coords array with the
+       coordinates of a given mesh point across
+       the time instances (i.e. the Zones) ---*/
+      /*--- Loop over each zone ---*/
+      for (iZone = 0; iZone < nZone; iZone++) {
+        /*--- get the coordinates of the given point ---*/
+        Coord = geometry_container[iZone][iMGlevel]->node[iPoint]->GetCoord();
+        for (iDim = 0; iDim < nDim; iDim++) {
+          /*--- add them to the appropriate place in the 2D coords array ---*/
+          coords[iZone][iDim] = Coord[iDim];
+        }
+      }
+      
+      /*--- Loop over each Dimension ---*/
+      for (iDim = 0; iDim < nDim; iDim++) {
+        
+        /*--- compute the Fourier coefficients ---*/
+        for (jDegree = 0; jDegree < highest_degree+1; jDegree++) {
+          a_coeffs[jDegree] = 0;
+          b_coeffs[jDegree] = 0;
+          for (iZone = 0; iZone < nZone; iZone++) {
+            a_coeffs[jDegree] = a_coeffs[jDegree] + (2.0/(su2double)nZone)*cos(jDegree*angular_positions[iZone])*coords[iZone][iDim];
+            b_coeffs[jDegree] = b_coeffs[jDegree] + (2.0/(su2double)nZone)*sin(jDegree*angular_positions[iZone])*coords[iZone][iDim];
+          }
+        }
+        
+        /*--- find the interpolation of the coordinates and its derivative (the velocities) ---*/
+        for (iZone = 0; iZone < nZone; iZone++) {
+          fitted_coords[iZone] = a_coeffs[0]/2.0;
+          fitted_velocities[iZone] = 0.0;
+          for (jDegree = 1; jDegree < highest_degree+1; jDegree++) {
+            fitted_coords[iZone] = fitted_coords[iZone] + a_coeffs[jDegree]*cos(jDegree*angular_positions[iZone]) + b_coeffs[jDegree]*sin(jDegree*angular_positions[iZone]);
+            fitted_velocities[iZone] = fitted_velocities[iZone] + (angular_interval/deltaT)*jDegree*(b_coeffs[jDegree]*cos(jDegree*angular_positions[iZone]) - a_coeffs[jDegree]*sin(jDegree*angular_positions[iZone]));
+          }
+        }
+        
+        /*--- Store grid velocity for this point, at this given dimension, across the Zones ---*/
+        for (iZone = 0; iZone < nZone; iZone++) {
+          geometry_container[iZone][iMGlevel]->node[iPoint]->SetGridVel(iDim, fitted_velocities[iZone]);
+        }
+      }
+    }
+  }
+  
+  /*--- delete dynamic memory for the abscissas, coefficients, et cetera ---*/
+  delete [] angular_positions;
+  delete [] a_coeffs;
+  delete [] b_coeffs;
+  delete [] fitted_coords;
+  delete [] fitted_velocities;
+  for (iZone = 0; iZone < nZone; iZone++) {
+    delete [] coords[iZone];
+  }
+  delete [] coords;
+  
+}
 
 CFSIDriver::CFSIDriver(CIteration **iteration_container,
                        CSolver ****solver_container,
@@ -1724,11 +2206,6 @@ void CFSIDriver::Run(CIteration **iteration_container,
 	/*---------------- Predict structural displacements ---------------*/
 	/*-----------------------------------------------------------------*/
 
-//	FSI_Disp_Predictor(output, integration_container, geometry_container,
-//                          solver_container, numerics_container, config_container,
-//                          surface_movement, grid_movement, FFDBox);
-
-
 	Predict_Displacements(output, integration_container, geometry_container,
             		      solver_container, numerics_container, config_container,
             		      surface_movement, grid_movement, FFDBox,
@@ -1740,10 +2217,6 @@ void CFSIDriver::Run(CIteration **iteration_container,
 		/*------------------------ Update mesh ----------------------------*/
 		/*-----------------------------------------------------------------*/
 
-//        FSI_Disp_Transfer(output, integration_container, geometry_container,
-//                          solver_container, numerics_container, config_container,
-//                          surface_movement, grid_movement, FFDBox, transfer_container);
-
 		Transfer_Displacements(output, integration_container, geometry_container,
                 solver_container, numerics_container, config_container,
                 surface_movement, grid_movement, FFDBox, transfer_container,
@@ -1753,11 +2226,11 @@ void CFSIDriver::Run(CIteration **iteration_container,
 		/*-------------------- Fluid subiteration -------------------------*/
 		/*-----------------------------------------------------------------*/
 
-//        Flow_Subiteration(output, integration_container, geometry_container,
-//                          solver_container, numerics_container, config_container,
-//                          surface_movement, grid_movement, FFDBox);
+		iteration_container[ZONE_FLOW]->Preprocess(output, integration_container, geometry_container,
+		                                       solver_container, numerics_container, config_container,
+		                                       surface_movement, grid_movement, FFDBox, ZONE_FLOW);
 
-		iteration_container[ZONE_FLOW]->Subiterate(output, integration_container, geometry_container,
+		iteration_container[ZONE_FLOW]->Iterate(output, integration_container, geometry_container,
 		                                       solver_container, numerics_container, config_container,
 		                                       surface_movement, grid_movement, FFDBox, ZONE_FLOW);
 
@@ -1769,10 +2242,6 @@ void CFSIDriver::Run(CIteration **iteration_container,
 		/*------------------- Set FEA loads from fluid --------------------*/
 		/*-----------------------------------------------------------------*/
 
-//        FSI_Load_Transfer(output, integration_container, geometry_container,
-//	                 	 solver_container, numerics_container, config_container,
-//	                 	 surface_movement, grid_movement, FFDBox, transfer_container, ExtIter);
-
 		Transfer_Tractions(output, integration_container, geometry_container,
                 solver_container, numerics_container, config_container,
                 surface_movement, grid_movement, FFDBox, transfer_container,
@@ -1782,18 +2251,7 @@ void CFSIDriver::Run(CIteration **iteration_container,
 		/*------------------ Structural subiteration ----------------------*/
 		/*-----------------------------------------------------------------*/
 
-//        if (fem_solver){
-//    	    FEM_Subiteration(output, integration_container, geometry_container,
-//    	                 	 solver_container, numerics_container, config_container,
-//    	                 	 surface_movement, grid_movement, FFDBox);
-//        }
-//        else{
-//    	    FEA_Subiteration(output, integration_container, geometry_container,
-//    	                 	 solver_container, numerics_container, config_container,
-//    	                 	 surface_movement, grid_movement, FFDBox);
-//        }
-
-		iteration_container[ZONE_STRUCT]->Subiterate(output, integration_container, geometry_container,
+		iteration_container[ZONE_STRUCT]->Iterate(output, integration_container, geometry_container,
 		                                       solver_container, numerics_container, config_container,
 		                                       surface_movement, grid_movement, FFDBox, ZONE_STRUCT);
 
@@ -1804,8 +2262,6 @@ void CFSIDriver::Run(CIteration **iteration_container,
 		/*-----------------------------------------------------------------*/
 		/*----------------- Displacements relaxation ----------------------*/
 		/*-----------------------------------------------------------------*/
-
-//	    FSI_Disp_Relaxation(output, geometry_container, solver_container, config_container, iFSIIter);
 
 		Relaxation_Displacements(output, geometry_container, solver_container, config_container,
 								 ZONE_STRUCT, ZONE_FLOW, iFSIIter);
@@ -1831,10 +2287,6 @@ void CFSIDriver::Run(CIteration **iteration_container,
   	/*-------------------- Update fluid solver ------------------------*/
 	/*-----------------------------------------------------------------*/
 
-//    Flow_Update(output, integration_container, geometry_container,
-//                solver_container, numerics_container, config_container,
-//                surface_movement, grid_movement, FFDBox, ExtIter);
-
 	iteration_container[ZONE_FLOW]->Update(output, integration_container, geometry_container,
 	          	  	  	  	  	  	  	  solver_container, numerics_container, config_container,
 	          	  	  	  	  	  	  	  surface_movement, grid_movement, FFDBox, ZONE_FLOW);
@@ -1842,15 +2294,6 @@ void CFSIDriver::Run(CIteration **iteration_container,
 	/*-----------------------------------------------------------------*/
   	/*----------------- Update structural solver ----------------------*/
 	/*-----------------------------------------------------------------*/
-
-//    if (fem_solver){
-//    	FEM_Update(output, integration_container, geometry_container,
-//                	solver_container, numerics_container, config_container, ExtIter);
-//    }
-//    else{
-//    	FEA_Update(output, integration_container, geometry_container,
-//                	solver_container, config_container, ExtIter);
-//    }
 
 	iteration_container[ZONE_STRUCT]->Update(output, integration_container, geometry_container,
 	          	  	  	  	  	  	  	  solver_container, numerics_container, config_container,

@@ -286,7 +286,7 @@ public:
 
 /*!
  * \class CMultiZoneDriver
- * \brief Class for driving an iteration of the physics within a single zone.
+ * \brief Class for driving an iteration of the physics within multiple zones.
  * \author T. Economon
  * \version 4.0.1 "Cardinal"
  */
@@ -346,6 +346,101 @@ public:
            CInterpolator ***interpolator_container,
            CTransfer ***transfer_container);
 
+};
+
+
+/*!
+ * \class CSpectralDriver
+ * \brief Class for driving an iteration of a spectral method problem using multiple zones.
+ * \author T. Economon
+ * \version 4.0.1 "Cardinal"
+ */
+class CSpectralDriver : public CDriver {
+public:
+  
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] iteration_container - Container vector with all the iteration methods.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   * \param[in] integration_container - Container vector with all the integration methods.
+   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_nZone - Total number of zones.
+   */
+  CSpectralDriver(CIteration **iteration_container,
+                   CSolver ****solver_container,
+                   CGeometry ***geometry_container,
+                   CIntegration ***integration_container,
+                   CNumerics *****numerics_container,
+                   CInterpolator ***interpolator_container,
+                   CTransfer ***transfer_container,
+                   CConfig **config,
+                   unsigned short val_nZone,
+                   unsigned short val_nDim);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CSpectralDriver(void);
+  
+  /*!
+   * \brief Run a single iteration of a spectral method problem.
+   * \param[in] iteration_container - Container vector with all the iteration methods.
+   * \param[in] output - Pointer to the COutput class.
+   * \param[in] integration_container - Container vector with all the integration methods.
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
+   * \param[in] config_container - Definition of the particular problem.
+   * \param[in] surface_movement - Surface movement classes of the problem.
+   * \param[in] grid_movement - Volume grid movement classes of the problem.
+   * \param[in] FFDBox - FFD FFDBoxes of the problem.
+   */
+  
+  void Run(CIteration **iteration_container,
+          COutput *output,
+          CIntegration ***integration_container,
+          CGeometry ***geometry_container,
+          CSolver ****solver_container,
+          CNumerics *****numerics_container,
+          CConfig **config_container,
+          CSurfaceMovement **surface_movement,
+          CVolumetricMovement **grid_movement,
+          CFreeFormDefBox*** FFDBox,
+          CInterpolator ***interpolator_container,
+          CTransfer ***transfer_container);
+  
+  /*!
+   * \brief Computation and storage of the time spectral source terms.
+   * \author T. Economon, K. Naik
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] nZone - Total number of zones (periodic instances).
+   * \param[in] iZone - Current zone number.
+   */
+  void SetTimeSpectral(CGeometry ***geometry_container, CSolver ****solver_container,
+                       CConfig **config_container, unsigned short nZone, unsigned short iZone);
+  
+  /*!
+   * \brief Computation of the Time-Spectral operator matrix.
+   * \author K. Naik
+   * \param[in] D - su2double pointer to the operator matrix.
+   * \param[in] nZone - Total number of zones (periodic instances).
+   */
+  void ComputeTimeSpectral_Operator(su2double **D, su2double period, unsigned short nZone);
+  
+  /*!
+   * \brief Computation and storage of the time-spectral mesh velocities.
+   * \author K. Naik, T. Economon
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] nZone - Total number of zones (periodic instances).
+   */
+  void SetTimeSpectral_Velocities(CGeometry ***geometry_container,
+                                  CConfig **config_container, unsigned short nZone);
+  
 };
 
 

@@ -267,11 +267,6 @@ int main(int argc, char *argv[]) {
 
 	}
 
-	/*--- For the time-spectral solver, set the grid node velocities. ---*/
-
-	if (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_SPECTRAL)
-		SetTimeSpectral_Velocities(geometry_container, config_container, nZone);
-
 	/*--- Definition of the interface and transfer conditions between different zones.
 	 *--- The transfer container is defined for zones paired one to one.
 	 *--- This only works for a multizone problem (nZone > 1).

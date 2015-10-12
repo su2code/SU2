@@ -208,7 +208,7 @@ void Driver_Preprocessing(CDriver **driver,
   /*--- fsi implementations will use, as of now, BGS implentation. More to come. ---*/
   bool fsi = config_container[ZONE_0]->GetFSI_Simulation();
   
-  if (val_nZone == SINGLE_ZONE || time_spectral) {
+  if (val_nZone == SINGLE_ZONE) {
     
     /*--- Single zone problem: instantiate the single zone driver class. ---*/
     if (rank == MASTER_NODE) cout << "Instantiating a single zone driver for the problem. " << endl;
@@ -217,6 +217,15 @@ void Driver_Preprocessing(CDriver **driver,
                                     integration_container, numerics_container, interpolator_container,
                                     transfer_container, config_container, val_nZone, val_nDim);
     
+  } else if (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+
+    /*--- Use the spectral method driver. ---*/
+
+    if (rank == MASTER_NODE) cout << "Instantiating a spectral method driver for the problem. " << endl;
+    *driver = new CSpectralDriver(iteration_container, solver_container, geometry_container,
+            					  integration_container, numerics_container, interpolator_container,
+            					  transfer_container, config_container, val_nZone, val_nDim);
+
   } else if ((val_nZone == 2) && fsi) {
 
 	    /*--- FSI problem: instantiate the FSI driver class. ---*/
