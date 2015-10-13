@@ -5262,7 +5262,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
 
             if (freesurface) {
-              cout << "   Res[Psi_Press]" << "   Res[Psi_Dist]" << "    Sens_Geo" <<;
+              cout << "   Res[Psi_Press]" << "   Res[Psi_Dist]" << "    Sens_Geo";
               if (output_1d)
                 cout << "     Sens_BPress" << endl;
               else
@@ -5523,10 +5523,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           cout.precision(4);
           cout.setf(ios::scientific, ios::floatfield);
           cout.width(14); cout << Total_Sens_Geo;
-          if (output_1d)
+          if (output_1d){
             cout.width(14); cout << Total_Sens_BPress;
-          else
+          }
+          else{
             cout.width(14); cout << Total_Sens_Mach;
+          }
           cout << endl;
           cout.unsetf(ios_base::floatfield);
           
@@ -5543,10 +5545,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             cout.precision(3);
             cout.setf(ios::scientific, ios::floatfield);
             cout.width(12); cout << Total_Sens_Geo;
-            if (output_1d)
+            if (output_1d){
               cout.width(12); cout << Total_Sens_BPress;
-            else
+            }
+            else{
               cout.width(12); cout << Total_Sens_Mach;
+            }
             cout.unsetf(ios_base::floatfield);
             cout << endl;
           }
@@ -5581,10 +5585,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           cout.precision(4);
           cout.setf(ios::scientific, ios::floatfield);
           cout.width(14); cout << Total_Sens_Geo;
-          if (output_1d)
+          if (output_1d){
             cout.width(14); cout << Total_Sens_BPress;
-          else
+          }
+          else{
             cout.width(14); cout << Total_Sens_Mach;
+          }
           cout << endl;
           cout.unsetf(ios_base::floatfield);
           if (freesurface) {
@@ -5602,10 +5608,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             cout.precision(4);
             cout.setf(ios::scientific, ios::floatfield);
             cout.width(12); cout << Total_Sens_Geo;
-            if (output_1d)
+            if (output_1d){
               cout.width(14); cout << Total_Sens_BPress;
-            else
+            }
+            else{
               cout.width(14); cout << Total_Sens_Mach;
+            }
             cout << endl;
             cout.unsetf(ios_base::floatfield);
           }
@@ -5628,10 +5636,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           cout.precision(4);
           cout.setf(ios::scientific, ios::floatfield);
           cout.width(14); cout << Total_Sens_Geo;
-          if (output_1d)
+          if (output_1d){
             cout.width(14); cout << Total_Sens_BPress;
-          else
+          }
+          else{
             cout.width(14); cout << Total_Sens_Mach;
+          }
           cout << endl;
           cout.unsetf(ios_base::floatfield);
           

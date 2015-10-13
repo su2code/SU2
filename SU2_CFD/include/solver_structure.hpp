@@ -1882,6 +1882,13 @@ public:
 	 *         (inviscid + viscous contribution).
 	 */
 	virtual su2double GetTotal_Sens_Temp(void);
+
+	/*!
+	 * \brief Set the total back pressure sensitivity coefficient.
+	 * \return Value of the back pressure sensitivity coefficient
+	 *         (inviscid + viscous contribution).
+	 */
+	virtual su2double GetTotal_Sens_BPress(void);
     
 	/*!
 	 * \brief A virtual member.
