@@ -2390,36 +2390,6 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
   /*--- Loop over boundary markers to select those for Euler walls ---*/
   
   for (iMarker = 0; iMarker < nMarker; iMarker++)
-    if (config->GetMarker_All_KindBC(iMarker) == OUTLET_FLOW){
-      Sens_BPress[iMarker] = 0.0;
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-
-        if (geometry->node[iPoint]->GetDomain()) {
-          Psi = node[iPoint]->GetSolution();
-          U = solver_container[FLOW_SOL]->node[iPoint]->GetSolution();
-          Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-
-          Mach_Inf   = config->GetMach();
-          if (grid_movement) Mach_Inf = config->GetMach_Motion();
-
-          Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-          Area = sqrt(Area);
-          for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = -Normal[iDim]/Area;
-          Velocity2 = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++) {
-            Velocity[iDim] = U[iDim+1]/U[0];
-            Velocity2 += Velocity[iDim]*Velocity[iDim];
-          }
-
-          SoundSpeed = solver_container[FLOW_SOL]->node[iPoint]->GetSoundSpeed();
-          Mach = (sqrt(Velocity2))/SoundSpeed;
-          if (Mach<1.0)
-            Sens_BPress[iMarker]+=Psi[nDim+1]*SoundSpeed*(Mach-1/Mach)/Gamma_Minus_One;
-        }
-      }
-      Total_Sens_BPress+= Sens_BPress[iMarker] * scale * factor;
-    }
 
     if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL)
       
@@ -2554,7 +2524,38 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
   if (compressible) {
     
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      
+
+      if (config->GetMarker_All_KindBC(iMarker) == OUTLET_FLOW){
+        Sens_BPress[iMarker] = 0.0;
+        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+          if (geometry->node[iPoint]->GetDomain()) {
+            Psi = node[iPoint]->GetSolution();
+            U = solver_container[FLOW_SOL]->node[iPoint]->GetSolution();
+            Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+
+            Mach_Inf   = config->GetMach();
+            if (grid_movement) Mach_Inf = config->GetMach_Motion();
+
+            Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
+            Area = sqrt(Area);
+            for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = -Normal[iDim]/Area;
+            Velocity2 = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++) {
+              Velocity[iDim] = U[iDim+1]/U[0];
+              Velocity2 += Velocity[iDim]*Velocity[iDim];
+            }
+
+            SoundSpeed = solver_container[FLOW_SOL]->node[iPoint]->GetSoundSpeed();
+            Mach = (sqrt(Velocity2))/SoundSpeed;
+            if (Mach<1.0)
+              Sens_BPress[iMarker]+=Psi[nDim+1]*SoundSpeed*(Mach-1/Mach)/Gamma_Minus_One;
+          }
+        }
+        Total_Sens_BPress+= Sens_BPress[iMarker] * scale * factor;
+      }
+
       if (config->GetMarker_All_KindBC(iMarker) == FAR_FIELD || config->GetMarker_All_KindBC(iMarker) == INLET_FLOW
           || config->GetMarker_All_KindBC(iMarker) == SUPERSONIC_INLET || config->GetMarker_All_KindBC(iMarker) == SUPERSONIC_OUTLET
           || config->GetMarker_All_KindBC(iMarker) == ENGINE_INFLOW  ) {
@@ -4764,9 +4765,9 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
         }
 
         /*--- Points in edge, coordinates and normal vector---*/
-
-        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
         visc_numerics->SetNormal(Normal);
+        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+
 
         /*--- Conservative variables w/o reconstruction and adjoint variables w/o reconstruction---*/
 
