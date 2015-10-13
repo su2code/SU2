@@ -40,6 +40,7 @@ CAdjEulerSolver::CAdjEulerSolver(void) : CSolver() {
   Sens_Geo = NULL;
   Sens_Press = NULL;
   Sens_Temp = NULL;
+  Sens_BPress = NULL;
   iPoint_UndLapl = NULL;
   jPoint_UndLapl = NULL;
   Jacobian_Axisymmetric = NULL;
@@ -74,6 +75,7 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   Sens_Geo = NULL;
   Sens_Press = NULL;
   Sens_Temp = NULL;
+  Sens_BPress = NULL;
   iPoint_UndLapl = NULL;
   jPoint_UndLapl = NULL;
   Jacobian_Axisymmetric = NULL;
@@ -204,6 +206,7 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   Sens_AoA  = new su2double[nMarker];
   Sens_Press = new su2double[nMarker];
   Sens_Temp  = new su2double[nMarker];
+  Sens_BPress = new su2double[nMarker];
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     Sens_Geo[iMarker]  = 0.0;
@@ -211,6 +214,7 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
     Sens_AoA[iMarker]  = 0.0;
     Sens_Press[iMarker] = 0.0;
     Sens_Temp[iMarker]  = 0.0;
+    Sens_BPress[iMarker] = 0.0;
     for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++)
       CSensitivity[iMarker][iVertex] = 0.0;
   }
@@ -367,6 +371,7 @@ CAdjEulerSolver::~CAdjEulerSolver(void) {
   if (Sens_Geo != NULL) delete [] Sens_Geo;
   if (Sens_Press != NULL) delete [] Sens_Press;
   if (Sens_Temp != NULL) delete [] Sens_Temp;
+  if (Sens_BPress != NULL) delete [] Sens_BPress;
   if (iPoint_UndLapl != NULL) delete [] iPoint_UndLapl;
   if (jPoint_UndLapl != NULL) delete [] jPoint_UndLapl;
   if (FlowPrimVar_i != NULL) delete [] FlowPrimVar_i;
@@ -2330,6 +2335,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
   LevelSet, Target_LevelSet, eps, r, ru, rv, rw, rE, p, T, dp_dr, dp_dru, dp_drv,
   dp_drw, dp_drE, dH_dr, dH_dru, dH_drv, dH_drw, dH_drE, H, *USens, D[3][3], Dd[3], scale = 1.0;
   su2double RefVel2, RefDensity, Mach2Vel, *Velocity_Inf, factor;
+  su2double Velocity2, Mach, SoundSpeed, Velocity[nDim];
   
   USens = new su2double[nVar];
   
@@ -2379,11 +2385,42 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
   Total_Sens_AoA = 0.0;
   Total_Sens_Press = 0.0;
   Total_Sens_Temp = 0.0;
+  Total_Sens_BPress = 0.0;
   
   /*--- Loop over boundary markers to select those for Euler walls ---*/
   
   for (iMarker = 0; iMarker < nMarker; iMarker++)
-    
+    if (config->GetMarker_All_KindBC(iMarker) == OUTLET_FLOW){
+      Sens_BPress[iMarker] = 0.0;
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+        if (geometry->node[iPoint]->GetDomain()) {
+          Psi = node[iPoint]->GetSolution();
+          U = solver_container[FLOW_SOL]->node[iPoint]->GetSolution();
+          Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+
+          Mach_Inf   = config->GetMach();
+          if (grid_movement) Mach_Inf = config->GetMach_Motion();
+
+          Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
+          Area = sqrt(Area);
+          for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = -Normal[iDim]/Area;
+          Velocity2 = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) {
+            Velocity[iDim] = U[iDim+1]/U[0];
+            Velocity2 += Velocity[iDim]*Velocity[iDim];
+          }
+
+          SoundSpeed = solver_container[FLOW_SOL]->node[iPoint]->GetSoundSpeed();
+          Mach = (sqrt(Velocity2))/SoundSpeed;
+          if (Mach<1.0)
+            Sens_BPress[iMarker]+=Psi[nDim+1]*SoundSpeed*(Mach-1/Mach)/Gamma_Minus_One;
+        }
+      }
+      Total_Sens_BPress+= Sens_BPress[iMarker] * scale * factor;
+    }
+
     if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL)
       
     /*--- Loop over points on the surface to store the auxiliary variable ---*/
@@ -2762,12 +2799,14 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
   su2double MyTotal_Sens_AoA   = Total_Sens_AoA;     Total_Sens_AoA = 0.0;
   su2double MyTotal_Sens_Press = Total_Sens_Press;   Total_Sens_Press = 0.0;
   su2double MyTotal_Sens_Temp  = Total_Sens_Temp;    Total_Sens_Temp = 0.0;
+  su2double MyTotal_Sens_BPress  = Total_Sens_BPress;    Total_Sens_BPress = 0.0;
   
   SU2_MPI::Allreduce(&MyTotal_Sens_Geo, &Total_Sens_Geo, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&MyTotal_Sens_Mach, &Total_Sens_Mach, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&MyTotal_Sens_AoA, &Total_Sens_AoA, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&MyTotal_Sens_Press, &Total_Sens_Press, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&MyTotal_Sens_Temp, &Total_Sens_Temp, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MyTotal_Sens_BPress, &Total_Sens_BPress, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   
 #endif
   
@@ -5257,6 +5296,7 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   Sens_AoA   = new su2double[nMarker];
   Sens_Press = new su2double[nMarker];
   Sens_Temp  = new su2double[nMarker];
+  Sens_BPress = new su2double[nMarker];
   
   /*--- Initialize sensitivities to zero ---*/
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -5265,6 +5305,7 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
     Sens_AoA[iMarker]   = 0.0;
     Sens_Press[iMarker] = 0.0;
     Sens_Temp[iMarker]  = 0.0;
+    Sens_BPress[iMarker] = 0.0;
     for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++)
       CSensitivity[iMarker][iVertex] = 0.0;
   }
@@ -5783,6 +5824,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
   Total_Sens_AoA = 0.0;
   Total_Sens_Press = 0.0;
   Total_Sens_Temp = 0.0;
+  Total_Sens_BPress = 0.0;
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
@@ -6052,6 +6094,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
         Sens_AoA[iMarker]   = 0.0;
         Sens_Press[iMarker] = 0.0;
         Sens_Temp[iMarker]  = 0.0;
+        Sens_BPress[iMarker] = 0.0;
         
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
@@ -6205,6 +6248,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
         Sens_AoA[iMarker]   = 0.0;
         Sens_Press[iMarker] = 0.0;
         Sens_Temp[iMarker]  = 0.0;
+        Sens_BPress[iMarker] = 0.0;
         
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
@@ -6290,12 +6334,14 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
   su2double MyTotal_Sens_AoA   = Total_Sens_AoA;     Total_Sens_AoA = 0.0;
   su2double MyTotal_Sens_Press = Total_Sens_Press;   Total_Sens_Press = 0.0;
   su2double MyTotal_Sens_Temp  = Total_Sens_Temp;    Total_Sens_Temp = 0.0;
+  su2double MyTotal_Sens_BPress = Total_Sens_BPress;   Total_Sens_BPress = 0.0;
   
   SU2_MPI::Allreduce(&MyTotal_Sens_Geo, &Total_Sens_Geo, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&MyTotal_Sens_Mach, &Total_Sens_Mach, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&MyTotal_Sens_AoA, &Total_Sens_AoA, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&MyTotal_Sens_Press, &Total_Sens_Press, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&MyTotal_Sens_Temp, &Total_Sens_Temp, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MyTotal_Sens_BPress, &Total_Sens_BPress, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   
 #endif
   

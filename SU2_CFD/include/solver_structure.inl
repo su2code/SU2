@@ -354,6 +354,8 @@ inline su2double CSolver::GetTotal_Sens_Press() { return 0; }
 
 inline su2double CSolver::GetTotal_Sens_Temp() { return 0; }
 
+inline su2double CSolver::GetTotal_Sens_BPress() { return 0; }
+
 inline su2double CSolver::GetDensity_Inf(void) { return 0; }
 
 inline su2double CSolver::GetDensity_Inf(unsigned short val_var) { return 0; }
@@ -886,6 +888,8 @@ inline su2double CAdjEulerSolver::GetTotal_Sens_Press() { return Total_Sens_Pres
 
 inline su2double CAdjEulerSolver::GetTotal_Sens_Temp() { return Total_Sens_Temp; }
 
+inline su2double CAdjEulerSolver::GetTotal_Sens_BPress() { return Total_Sens_BPress; }
+
 inline su2double CAdjEulerSolver::GetPsiRho_Inf(void) { return PsiRho_Inf; }
 
 inline su2double CAdjEulerSolver::GetPsiE_Inf(void) { return PsiE_Inf; }
@@ -1029,6 +1033,8 @@ inline su2double CAdjTNE2EulerSolver::GetTotal_Sens_Press() { return Total_Sens_
 
 inline su2double CAdjTNE2EulerSolver::GetTotal_Sens_Temp() { return Total_Sens_Temp; }
 
+inline su2double CAdjTNE2EulerSolver::GetTotal_Sens_BPress() { return Total_Sens_BPress; }
+
 inline void CSolver::RegisterInput(CGeometry *geometry_container, CConfig *config){}
 
 inline void CSolver::RegisterOutput(CGeometry *geometry_container, CConfig *config){}
@@ -1054,5 +1060,7 @@ inline su2double CDiscAdjSolver::GetTotal_Sens_AoA() { return Total_Sens_AoA; }
 inline su2double CDiscAdjSolver::GetTotal_Sens_Press() { return Total_Sens_Press; }
 
 inline su2double CDiscAdjSolver::GetTotal_Sens_Temp() { return Total_Sens_Temp; }
+
+inline su2double CDiscAdjSolver::GetTotal_Sens_BPress() { return Total_Sens_BPress; }
 
 inline su2double CDiscAdjSolver::GetCSensitivity(unsigned short val_marker, unsigned long val_vertex) { return CSensitivity[val_marker][val_vertex]; }
