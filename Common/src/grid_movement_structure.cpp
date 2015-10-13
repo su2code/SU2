@@ -38,13 +38,33 @@ CGridMovement::CGridMovement(void) { }
 
 CGridMovement::~CGridMovement(void) { }
 
-CVolumetricMovement::CVolumetricMovement(CGeometry *geometry) : CGridMovement() {
+CVolumetricMovement::CVolumetricMovement(CGeometry *geometry, CConfig *config) : CGridMovement() {
 	
-	nDim = geometry->GetnDim();
+	/*--- Initialize the number of spatial dimensions, length of the state
+	vector (same as spatial dimensions for grid deformation), and grid nodes. ---*/
+
+	nDim   = geometry->GetnDim();
+	nVar   = geometry->GetnDim();
+	nPoint = geometry->GetnPoint();
+	nPointDomain = geometry->GetnPointDomain();
+
+	/*--- Initialize matrix, solution, and r.h.s. structures for the linear solver. ---*/
+
+	config->SetKind_Linear_Solver_Prec(LU_SGS);
+	LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
+	LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
+	StiffMatrix.Initialize(nPoint, nPointDomain, nVar, nVar, false, geometry, config);
+
   
 }
 
 CVolumetricMovement::~CVolumetricMovement(void) {
+
+	/*--- Deallocate vectors for the linear system. ---*/
+
+	LinSysSol.~CSysVector();
+	LinSysRes.~CSysVector();
+	StiffMatrix.~CSysMatrix();
 
 }
 
@@ -111,60 +131,45 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 #endif
 
   /*--- Retrieve number or iterations, tol, output, etc. from config ---*/
-  
+
   Smoothing_Iter = config->GetGridDef_Linear_Iter();
   Screen_Output  = config->GetDeform_Output();
   Tol_Factor     = config->GetDeform_Tol_Factor();
   Nonlinear_Iter = config->GetGridDef_Nonlinear_Iter();
-  
+
   /*--- Disable the screen output if we're running SU2_CFD ---*/
-  
+
   if (config->GetKind_SU2() == SU2_CFD && !Derivative) Screen_Output = false;
 
   /*--- Set the number of nonlinear iterations to 1 if Derivative computation is enabled ---*/
 
   if (Derivative) Nonlinear_Iter = 1;
 
-  /*--- Initialize the number of spatial dimensions, length of the state
-   vector (same as spatial dimensions for grid deformation), and grid nodes. ---*/
-  
-  nDim   = geometry->GetnDim();
-  nVar   = geometry->GetnDim();
-  nPoint = geometry->GetnPoint();
-  nPointDomain = geometry->GetnPointDomain();
-  
-  /*--- Initialize matrix, solution, and r.h.s. structures for the linear solver. ---*/
-  
-  config->SetKind_Linear_Solver_Prec(LU_SGS);
-  LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
-  LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
-  StiffMatrix.Initialize(nPoint, nPointDomain, nVar, nVar, false, geometry, config);
-  
   /*--- Loop over the total number of grid deformation iterations. The surface
    deformation can be divided into increments to help with stability. In
    particular, the linear elasticity equations hold only for small deformations. ---*/
-  
+
   for (iNonlinear_Iter = 0; iNonlinear_Iter < Nonlinear_Iter; iNonlinear_Iter++) {
-    
+
     /*--- Initialize vector and sparse matrix ---*/
-    
+
     LinSysSol.SetValZero();
     LinSysRes.SetValZero();
     StiffMatrix.SetValZero();
-    
+
     /*--- Compute the stiffness matrix entries for all nodes/elements in the
      mesh. FEA uses a finite element method discretization of the linear
      elasticity equations (transfers element stiffnesses to point-to-point). ---*/
-    
+
     MinVolume = SetFEAMethodContributions_Elem(geometry, config);
-    
+
     /*--- Compute the tolerance of the linear solver using MinLength ---*/
-    
+
     NumError = MinVolume * Tol_Factor;
-    
+
     /*--- Set the boundary displacements (as prescribed by the design variable
      perturbations controlling the surface shape) as a Dirichlet BC. ---*/
-    
+
     SetBoundaryDisplacements(geometry, config);
 
     /*--- Set the boundary derivatives (overrides the actual displacements) ---*/
@@ -172,12 +177,12 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     if (Derivative){
       SetBoundaryDerivatives(geometry, config);
     }
-    
+
     /*--- Fix the location of any points in the domain, if requested. ---*/
-    
+
     if (config->GetHold_GridFixed())
       SetDomainDisplacements(geometry, config);
-    
+
     CMatrixVectorProduct* mat_vec = NULL;
     CPreconditioner* precond = NULL;
 
@@ -207,70 +212,70 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     }
 
     CSysSolve *system  = new CSysSolve();
-    
+
     switch (config->GetDeform_Linear_Solver()) {
-        
+
         /*--- Solve the linear system (GMRES with restart) ---*/
-        
+
       case RESTARTED_FGMRES:
-        
+
         Tot_Iter = 0; MaxIter = RestartIter;
-        
+
         system->FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 1, &Residual_Init, false);
-        
+
         if ((rank == MASTER_NODE) && Screen_Output) {
           cout << "\n# FGMRES (with restart) residual history" << endl;
           cout << "# Residual tolerance target = " << NumError << endl;
           cout << "# Initial residual norm     = " << Residual_Init << endl;
         }
-        
+
         if (rank == MASTER_NODE) { cout << "     " << Tot_Iter << "     " << Residual_Init/Residual_Init << endl; }
-        
+
         while (Tot_Iter < Smoothing_Iter) {
-          
+
           if (IterLinSol + RestartIter > Smoothing_Iter)
             MaxIter = Smoothing_Iter - IterLinSol;
-          
+
           IterLinSol = system->FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, MaxIter, &Residual, false);
           Tot_Iter += IterLinSol;
-          
+
           if ((rank == MASTER_NODE) && Screen_Output) { cout << "     " << Tot_Iter << "     " << Residual/Residual_Init << endl; }
-          
+
           if (Residual < Residual_Init*NumError) { break; }
-          
+
         }
-        
+
         if ((rank == MASTER_NODE) && Screen_Output) {
           cout << "# FGMRES (with restart) final (true) residual:" << endl;
           cout << "# Iteration = " << Tot_Iter << ": |res|/|res0| = " << Residual/Residual_Init << ".\n" << endl;
         }
-        
+
         break;
-        
+
         /*--- Solve the linear system (GMRES) ---*/
-        
+
       case FGMRES:
-        
+
         Tot_Iter = system->FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, &Residual, Screen_Output);
-        
+
         break;
-        
+
         /*--- Solve the linear system (BCGSTAB) ---*/
-        
+
       case BCGSTAB:
-        
+
         Tot_Iter = system->BCGSTAB_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, &Residual, Screen_Output);
-        
+
         break;
-        
+
     }
-    
+
     /*--- Deallocate memory needed by the Krylov linear solver ---*/
-    
+
     delete system;
     delete mat_vec;
     delete precond;
-    
+
     /*--- Update the grid coordinates and cell volumes using the solution
      of the linear system (usol contains the x, y, z displacements). ---*/
 
@@ -282,20 +287,20 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 
     if (UpdateGeo)
       UpdateDualGrid(geometry, config);
-    
+
     /*--- Check for failed deformation (negative volumes). ---*/
-    
+
     MinVolume = Check_Grid(geometry);
-    
+
     if (rank == MASTER_NODE) {
       cout << "Non-linear iter.: " << iNonlinear_Iter+1 << "/" << Nonlinear_Iter
       << ". Linear iter.: " << Tot_Iter << ". ";
       if (nDim == 2) cout << "Min. area: " << MinVolume << ". Error: " << Residual << "." << endl;
       else cout << "Min. volume: " << MinVolume << ". Error: " << Residual << "." << endl;
     }
-    
+
   }
-  
+
   if (fsi){
 	    /*--- Grid velocity (there is a function that does this -> Modify) ---*/
 
@@ -335,12 +340,6 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 
   }
 
-
-  /*--- Deallocate vectors for the linear system. ---*/
-  
-  LinSysSol.~CSysVector();
-  LinSysRes.~CSysVector();
-  StiffMatrix.~CSysMatrix();
   
 }
 
