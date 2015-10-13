@@ -757,7 +757,7 @@ public:
 	/*! 
 	 * \brief Constructor of the class.
 	 */
-	CVolumetricMovement(CGeometry *geometry);
+	CVolumetricMovement(CGeometry *geometry, CConfig *config);
 	
 	/*! 
 	 * \brief Destructor of the class. 
