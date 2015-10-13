@@ -38,14 +38,32 @@ CGridMovement::CGridMovement(void) { }
 
 CGridMovement::~CGridMovement(void) { }
 
-CVolumetricMovement::CVolumetricMovement(CGeometry *geometry) : CGridMovement() {
+CVolumetricMovement::CVolumetricMovement(CGeometry *geometry, CConfig *config) : CGridMovement() {
 	
-	nDim = geometry->GetnDim();
+	  /*--- Initialize the number of spatial dimensions, length of the state
+	   vector (same as spatial dimensions for grid deformation), and grid nodes. ---*/
+
+	  nDim   = geometry->GetnDim();
+	  nVar   = geometry->GetnDim();
+	  nPoint = geometry->GetnPoint();
+	  nPointDomain = geometry->GetnPointDomain();
+
+	  /*--- Initialize matrix, solution, and r.h.s. structures for the linear solver. ---*/
+
+	  config->SetKind_Linear_Solver_Prec(LU_SGS);
+	  LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
+	  LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
+	  StiffMatrix.Initialize(nPoint, nPointDomain, nVar, nVar, false, geometry, config);
   
 }
 
 CVolumetricMovement::~CVolumetricMovement(void) {
 
+	  /*--- Deallocate vectors for the linear system. ---*/
+
+	  LinSysSol.~CSysVector();
+	  LinSysRes.~CSysVector();
+	  StiffMatrix.~CSysMatrix();
 }
 
 
@@ -124,21 +142,6 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
   /*--- Set the number of nonlinear iterations to 1 if Derivative computation is enabled ---*/
 
   if (Derivative) Nonlinear_Iter = 1;
-
-  /*--- Initialize the number of spatial dimensions, length of the state
-   vector (same as spatial dimensions for grid deformation), and grid nodes. ---*/
-  
-  nDim   = geometry->GetnDim();
-  nVar   = geometry->GetnDim();
-  nPoint = geometry->GetnPoint();
-  nPointDomain = geometry->GetnPointDomain();
-  
-  /*--- Initialize matrix, solution, and r.h.s. structures for the linear solver. ---*/
-  
-  config->SetKind_Linear_Solver_Prec(LU_SGS);
-  LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
-  LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
-  StiffMatrix.Initialize(nPoint, nPointDomain, nVar, nVar, false, geometry, config);
   
   /*--- Loop over the total number of grid deformation iterations. The surface
    deformation can be divided into increments to help with stability. In
@@ -335,12 +338,6 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 
   }
 
-
-  /*--- Deallocate vectors for the linear system. ---*/
-  
-  LinSysSol.~CSysVector();
-  LinSysRes.~CSysVector();
-  StiffMatrix.~CSysMatrix();
   
 }
 

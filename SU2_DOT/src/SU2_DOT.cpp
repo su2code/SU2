@@ -162,7 +162,7 @@ int main(int argc, char *argv[]) {
     if (rank == MASTER_NODE) cout << "Reading surface sensitivities at each node from file." << endl;
     geometry_container[ZONE_0]->SetBoundSensitivity(config_container[ZONE_0]);
   } else {
-    mesh_movement = new CVolumetricMovement(geometry_container[ZONE_0]);
+    mesh_movement = new CVolumetricMovement(geometry_container[ZONE_0], config_container[ZONE_0]);
     geometry_container[ZONE_0]->SetSensitivity(config_container[ZONE_0]);
 
     if (rank == MASTER_NODE) cout << "Setting mesh sensitivity." << endl;
