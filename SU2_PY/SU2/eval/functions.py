@@ -244,11 +244,15 @@ def aerodynamics( config, state=None ):
 
     #: with output redirection
 
+    if config.OBJECTIVE_FUNCTION == 'OUTLET_CHAIN_RULE':    
+        import downstream_function
+        state['FUNCTIONS']['OUTLET_CHAIN_RULE']=downstream_function.downstream_function(config,state)
     # return output 
     funcs = su2util.ordered_bunch()
     for key in su2io.optnames_aero + su2io.grad_names_directdiff:
         if state['FUNCTIONS'].has_key(key):
             funcs[key] = state['FUNCTIONS'][key]
+
     return funcs
 
 #: def aerodynamics()

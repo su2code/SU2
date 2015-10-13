@@ -203,6 +203,10 @@ def get_headerMap():
                  "CNearFieldOF"    : "NEARFIELD_PRESSURE"      ,
                  "Avg_TotalPress"  : "AVG_TOTAL_PRESSURE"      ,
                  "FluxAvg_Pressure": "AVG_OUTLET_PRESSURE"     ,
+                 "FluxAvg_Density" : "FLUXAVG_OUTLET_DENSITY"  ,
+                 "FluxAvg_Velocity": "FLUXAVG_OUTLET_VELOCITY" ,
+                 "Avg_Mach"        : "AVG_OUTLET_MACH"         ,
+                 "Avg_Temperature" : "AVG_OUTLET_TEMPERATURE"  ,
                  "MassFlowRate"    : "MASS_FLOW_RATE"          ,
                  "Time(min)"       : "TIME"                    ,
                  "D(CLift)"        : "D_LIFT"                  ,
@@ -242,7 +246,10 @@ optnames_aero = [ "LIFT"                    ,
                   "THRUST"                  ,
                   "AVG_TOTAL_PRESSURE"      ,
                   "AVG_OUTLET_PRESSURE"     ,
+                  "AVG_OUTLET_DENSITY"      ,
+                  "AVG_OUTLET_VELOCITY"     ,
                   "MASS_FLOW_RATE"          ,
+                  "OUTLET_CHAIN_RULE"       ,
                   "EQUIVALENT_AREA"         ,
                   "NEARFIELD_PRESSURE"      ,
                   "INVERSE_DESIGN_PRESSURE" ,
@@ -398,6 +405,9 @@ def get_objectiveSign( ObjFun_name ):
             EFFICIENCY
             THRUST
             FIGURE_OF_MERIT
+            MASS_FLOW_RATE
+            AVG_OUTLET_PRESSURE
+            AVG_TOTAL_PRESSURE
         returns +1 otherwise
     """
     
@@ -406,6 +416,9 @@ def get_objectiveSign( ObjFun_name ):
     if ObjFun_name == "EFFICIENCY"      : return -1.0
     if ObjFun_name == "THRUST"          : return -1.0
     if ObjFun_name == "FIGURE_OF_MERIT" : return -1.0
+    if ObjFun_name == "MASS_FLOW_RATE" : return -1.0
+    if ObjFun_name == "AVG_TOTAL_PRESSURE" : return -1.0
+    if ObjFun_name == "AVG_OUTLET_PRESSURE" : return -1.0
     
     # otherwise
     return 1.0
@@ -459,8 +472,10 @@ def get_adjointSuffix(objective_function=None):
                  "FIGURE_OF_MERIT"         : "merit"     ,
                  "AVG_TOTAL_PRESSURE"      : "pt"        ,
                  "AVG_OUTLET_PRESSURE"     : "pe"        ,
-                 "MASS_FLOW_RATE"          : "mfw"       ,
-                 "FREE_SURFACE"            : "fs"        }
+                 "MASS_FLOW_RATE"          : "mfr"       ,
+                 "OUTLET_CHAIN_RULE"       : "chn"       ,
+                 "FREE_SURFACE"            : "fs"        ,
+                 "BACKPRESSURE_SENS_EST"   : "bps"  }
     
     # if none or false, return map
     if not objective_function:
@@ -601,6 +616,9 @@ def get_gradFileFormat(grad_type,plot_format,kindID,special_cases=[]):
             if key == "INV_DESIGN_HEATFLUX"     :
                 header.append(r',"Grad_HeatFlux_Diff"')
                 write_format.append(", %.10f")
+            if key =="OUTLET_CHAIN_RULE"    :
+                header.append(r',"Grad_Chain_Rule"')
+                write_format.append(", %.10f")
 
     # otherwise...
     else: raise Exception('Unrecognized Gradient Type')          
@@ -719,6 +737,9 @@ def get_optFileFormat(plot_format,special_cases=None):
         if key == "INV_DESIGN_HEATFLUX"     :
             header_list.extend(["HeatFlux_Diff"])
             write_format.append(r', %.10f')
+        if key =="OUTLET_CHAIN_RULE"    :
+            header_list.exted(["Chain_Rule"])
+            write_format.append([r", %.10f"])
 
     # finish formats
     header_format = (header_format) + ('"') + ('","').join(header_list) + ('"') + (' \n')
@@ -771,7 +792,8 @@ def get_specialCases(config):
                           'EQUIV_AREA'                       ,
                           '1D_OUTPUT'                        ,
                           'INV_DESIGN_CP'                    ,
-                          'INV_DESIGN_HEATFLUX'              ]
+                          'INV_DESIGN_HEATFLUX'              ,
+                          'OUTLET_CHAIN_RULE'                ]
     
     special_cases = []
     for key in all_special_cases:
