@@ -4850,12 +4850,14 @@ protected:
 	*Sens_Geo,			/*!< \brief Shape sensitivity coefficient for each boundary. */
 	*Sens_Press,			/*!< \brief Pressure sensitivity coefficient for each boundary. */
 	*Sens_Temp,			/*!< \brief Temperature sensitivity coefficient for each boundary. */
+	*Sens_BPress,     /*!< \brief Back pressure sensitivity coefficient for each boundary. */
 	**CSensitivity;		/*!< \brief Shape sensitivity coefficient for each boundary and vertex. */
 	su2double Total_Sens_Mach;	/*!< \brief Total mach sensitivity coefficient for all the boundaries. */
 	su2double Total_Sens_AoA;		/*!< \brief Total angle of attack sensitivity coefficient for all the boundaries. */
 	su2double Total_Sens_Geo;		/*!< \brief Total shape sensitivity coefficient for all the boundaries. */
 	su2double Total_Sens_Press;    /*!< \brief Total farfield sensitivity to pressure. */
 	su2double Total_Sens_Temp;    /*!< \brief Total farfield sensitivity to temperature. */
+	su2double Total_Sens_BPress;    /*!< \brief Total sensitivity to back pressure. */
 	su2double *iPoint_UndLapl,	/*!< \brief Auxiliary variable for the undivided Laplacians. */
 	*jPoint_UndLapl;			/*!< \brief Auxiliary variable for the undivided Laplacians. */
 	bool space_centered;  /*!< \brief True if space centered scheeme used. */
@@ -5287,6 +5289,13 @@ public:
 	 *         (inviscid + viscous contribution).
 	 */
 	su2double GetTotal_Sens_Temp(void);
+
+	/*!
+	 * \brief Set the total Back pressure number sensitivity coefficient.
+	 * \return Value of the Back sensitivity coefficient
+	 *         (inviscid + viscous contribution).
+	 */
+	su2double GetTotal_Sens_BPress(void);
   
 	/*!
 	 * \brief Set the total residual adding the term that comes from the Dual Time Strategy.
@@ -7790,12 +7799,14 @@ protected:
 	*Sens_Geo,			/*!< \brief Shape sensitivity coefficient for each boundary. */
 	*Sens_Press,			/*!< \brief Pressure sensitivity coefficient for each boundary. */
 	*Sens_Temp,			/*!< \brief Temperature sensitivity coefficient for each boundary. */
+	*Sens_BPress,      /*!< \brief Back Pressure sensitivity coefficient for each boundary. */
 	**CSensitivity;		/*!< \brief Shape sensitivity coefficient for each boundary and vertex. */
 	su2double Total_Sens_Mach;	/*!< \brief Total mach sensitivity coefficient for all the boundaries. */
 	su2double Total_Sens_AoA;		/*!< \brief Total angle of attack sensitivity coefficient for all the boundaries. */
 	su2double Total_Sens_Geo;		/*!< \brief Total shape sensitivity coefficient for all the boundaries. */
 	su2double Total_Sens_Press;    /*!< \brief Total farfield sensitivity to pressure. */
 	su2double Total_Sens_Temp;    /*!< \brief Total farfield sensitivity to temperature. */
+	su2double Total_Sens_BPress;    /*!< \brief Total sensitivity to back pressure. */
 	su2double *iPoint_UndLapl,	/*!< \brief Auxiliary variable for the undivided Laplacians. */
 	*jPoint_UndLapl;			/*!< \brief Auxiliary variable for the undivided Laplacians. */
 	bool space_centered;  /*!< \brief True if space centered scheeme used. */
@@ -8046,6 +8057,13 @@ public:
 	 *         (inviscid + viscous contribution).
 	 */
 	su2double GetTotal_Sens_Temp(void);
+
+  /*!
+   * \brief Set the total Back pressure sensitivity coefficient.
+   * \return Value of the Back sensitivity coefficient
+   *         (inviscid + viscous contribution).
+   */
+  su2double GetTotal_Sens_BPress(void);
   
   /*!
 	 * \brief Set the initial condition for the Euler Equations.
@@ -8175,6 +8193,7 @@ private:
   su2double Total_Sens_Geo;		/*!< \brief Total shape sensitivity coefficient for all the boundaries. */
   su2double Total_Sens_Press;    /*!< \brief Total farfield sensitivity to pressure. */
   su2double Total_Sens_Temp;    /*!< \brief Total farfield sensitivity to temperature. */
+  su2double Total_Sens_BPress;    /*!< \brief Total sensitivity to outlet pressure. */
   su2double ObjFunc_Value;        /*!< \brief Value of the objective function. */
   unsigned long nMarker;				/*!< \brief Total number of markers using the grid information. */
 
@@ -8297,6 +8316,13 @@ public:
    *         (inviscid + viscous contribution).
    */
   su2double GetTotal_Sens_Temp(void);
+
+  /*!
+   * \brief Set the total Back pressure number sensitivity coefficient.
+   * \return Value of the Back sensitivity coefficient
+   *         (inviscid + viscous contribution).
+   */
+  su2double GetTotal_Sens_BPress(void);
 
   /*!
    * \brief Get the shape sensitivity coefficient.
