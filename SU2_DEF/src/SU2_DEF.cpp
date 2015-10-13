@@ -190,7 +190,7 @@ int main(int argc, char *argv[]) {
       cout << endl << "----------------------- Volumetric grid deformation ---------------------" << endl;
     
     /*--- Definition of the Class for grid movement ---*/
-    grid_movement = new CVolumetricMovement(geometry_container[ZONE_0]);
+    grid_movement = new CVolumetricMovement(geometry_container[ZONE_0], config_container[ZONE_0]);
     
   }
 
