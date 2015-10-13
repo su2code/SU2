@@ -116,6 +116,8 @@ class Project(object):
             state  = copy.deepcopy(state)
             state  = su2io.State(state)
         state.find_files(config)
+        if config.OBJECTIVE_FUNCTION == 'OUTLET_CHAIN_RULE':
+            state.FILES['DownstreamFunction'] = 'downstream_function.py'
         if 'MESH' not in state.FILES:
             raise Exception , 'Could not find mesh file: %s' % config.MESH_FILENAME
         
