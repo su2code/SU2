@@ -469,7 +469,7 @@ void CCentJST_AdjTNE2::ComputeResidual (su2double *val_resconv_i, su2double *val
 		val_resconv_i[iDim+1] = ProjVelocity_i*MeanPhi[iDim] + phis2*Normal[iDim] - Gamma_Minus_One*phis1*Velocity_i[iDim];
 	val_resconv_i[nVar-1] = ProjVelocity_i*MeanPsiE + Gamma_Minus_One*phis1;
   
-	/*--- Flux contributions due to grid movement at point i (TDE) ---*/
+	/*--- Flux contributions due to grid movement at point i ---*/
 	if (grid_movement) {
 		su2double ProjGridVel = 0.0;
 		for (iDim = 0; iDim < nDim; iDim++)
@@ -502,7 +502,7 @@ void CCentJST_AdjTNE2::ComputeResidual (su2double *val_resconv_i, su2double *val
 			for (jVar = 0; jVar < nVar; jVar++)
 				val_Jacobian_ij[iVar][jVar] = val_Jacobian_ii[iVar][jVar];
     
-		/*--- Jacobian contributions due to grid movement at point i (TDE) ---*/
+		/*--- Jacobian contributions due to grid movement at point i ---*/
 		if (grid_movement) {
 			su2double ProjGridVel = 0.0;
 			for (iDim = 0; iDim < nDim; iDim++)
@@ -532,7 +532,7 @@ void CCentJST_AdjTNE2::ComputeResidual (su2double *val_resconv_i, su2double *val
 		val_resconv_j[iDim+1] = -(ProjVelocity_j*MeanPhi[iDim] + phis2*Normal[iDim] - Gamma_Minus_One*phis1*Velocity_j[iDim]);
 	val_resconv_j[nVar-1] = -(ProjVelocity_j*MeanPsiE + Gamma_Minus_One*phis1);
   
-	/*--- Flux contributions due to grid movement at point j (TDE) ---*/
+	/*--- Flux contributions due to grid movement at point j ---*/
 	if (grid_movement) {
 		su2double ProjGridVel = 0.0;
 		for (iDim = 0; iDim < nDim; iDim++)
@@ -565,7 +565,7 @@ void CCentJST_AdjTNE2::ComputeResidual (su2double *val_resconv_i, su2double *val
 			for (jVar = 0; jVar < nVar; jVar++)
 				val_Jacobian_ji[iVar][jVar] = val_Jacobian_jj[iVar][jVar];
     
-		/*--- Jacobian contributions due to grid movement at point j (TDE) ---*/
+		/*--- Jacobian contributions due to grid movement at point j ---*/
 		if (grid_movement) {
 			su2double ProjGridVel = 0.0;
 			for (iDim = 0; iDim < nDim; iDim++)
@@ -583,7 +583,7 @@ void CCentJST_AdjTNE2::ComputeResidual (su2double *val_resconv_i, su2double *val
 		Diff_Psi[iVar]  = Psi_i[iVar]-Psi_j[iVar];
 	}
   
-	/*--- Adjustment to projected velocity due to mesh motion (TDE) ---*/
+	/*--- Adjustment to projected velocity due to mesh motion ---*/
 	if (grid_movement) {
 		su2double ProjGridVel_i = 0.0; su2double ProjGridVel_j = 0.0; su2double ProjGridVel = 0.0;
 		for (iDim = 0; iDim < nDim; iDim++) {
