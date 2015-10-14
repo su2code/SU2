@@ -247,11 +247,6 @@ int main(int argc, char *argv[]) {
     
   }
   
-  /*--- For the time-spectral solver, set the grid node velocities. ---*/
-  
-  if (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_SPECTRAL)
-    SetTimeSpectral_Velocities(geometry_container, config_container, nZone);
-  
   /*--- Coupling between zones (limited to two zones at the moment) ---*/
   
   if (nZone == 2) {
@@ -412,7 +407,7 @@ int main(int argc, char *argv[]) {
     /*--- Solution output. Determine whether a solution needs to be written
      after the current iteration, and if so, execute the output file writing
      routines. ---*/
-    
+		
 		if ((ExtIter+1 >= config_container[ZONE_0]->GetnExtIter())
 				
 				||
@@ -442,7 +437,6 @@ int main(int argc, char *argv[]) {
 				
 				((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) && (fsi) &&
 				 ((ExtIter == 0) || ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))))) {
-					
 					
           /*--- Low-fidelity simulations (using a coarser multigrid level
            approximation to the solution) require an interpolation back to the
