@@ -59,11 +59,7 @@ CVolumetricMovement::CVolumetricMovement(CGeometry *geometry, CConfig *config) :
 
 CVolumetricMovement::~CVolumetricMovement(void) {
 
-	  /*--- Deallocate vectors for the linear system. ---*/
 
-	  LinSysSol.~CSysVector();
-	  LinSysRes.~CSysVector();
-	  StiffMatrix.~CSysMatrix();
 }
 
 
