@@ -1065,13 +1065,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("GUST_BEGIN_LOC", Gust_Begin_Loc, 0.0);
   /* DESCRIPTION: Direction of the gust X or Y dir */
   addEnumOption("GUST_DIR", Gust_Dir, Gust_Dir_Map, Y_DIR);
-
-  
-  /* CONFIG_CATEGORY: Shock Tube */
-  /*--- Options related to shock tube simulations ---*/
-    
-  /* DESCRIPTION: Set the initial condition for a Shock Tube */
-  addBoolOption("SHOCK_TUBE", Shock_Tube, false);
  
 
   /*!\par CONFIG_CATEGORY: Equivalent Area \ingroup Config*/

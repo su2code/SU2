@@ -1157,8 +1157,6 @@ inline unsigned short CConfig::GetAeroelasticIter(void) {return AeroelasticIter;
 
 inline bool CConfig::GetWind_Gust(void) { return Wind_Gust; }
 
-inline bool CConfig::GetShock_Tube(void) { return Shock_Tube; }
-
 inline bool CConfig::GetAeroelastic_Simulation(void) { return Aeroelastic_Simulation; }
 
 inline unsigned short CConfig::GetGust_Type(void) {return Gust_Type; }

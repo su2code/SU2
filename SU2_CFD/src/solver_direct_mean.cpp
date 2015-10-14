@@ -2690,7 +2690,6 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool gravity = (config->GetGravityForce() == YES);
   bool engine_intake = config->GetEngine_Intake();
-  bool shock_tube = config->GetShock_Tube();
   
 
   /*--- Set the location and value of the free-surface ---*/
@@ -3014,59 +3013,6 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
         }
       }
     }
-  }
-  
-  if ((shock_tube) && (ExtIter == 0))
-  {
-      
-    
-    /* Set the variable to store the coordinates of each point */
-    Solution = new su2double[nVar];
-    su2double Xcoord, Xdiaf = 0.5;
-    
-    /* Set the left and right conditions for the Sod Shock tube */
-    su2double Pressure_l = 101325;//Pressure_Inf;
-    su2double density_l = 1.225;//Density_Inf;
-    su2double vel_l = 0.0;
-   
-    su2double Pressure_r = Pressure_l*0.1;
-    su2double density_r = density_l*0.125;
-    su2double vel_r = 0.0;
-
-    for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
-    {
-      for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++)
-      {
-        /* Get the value for the x coordinate and compare it with the diaf location, based on this specify the state for the flow */
-        Xcoord = geometry[iMesh]->node[iPoint]->GetCoord(0);
-        
-        if (Xcoord <= Xdiaf) {
-          
-          
-          FluidModel->SetTDState_Prho(Pressure_l, density_l);
-          
-          Solution[0] = density_l;
-          Solution[1] = density_l*vel_l;
-          Solution[2] = 0;
-          Solution[3] = density_l*FluidModel->GetStaticEnergy();
-          
-          } else {
-          
-          FluidModel->SetTDState_Prho(Pressure_r, density_r);
-          
-          Solution[0] = density_r;
-          Solution[1] = density_r*vel_r;
-          Solution[2] = 0;
-          Solution[3] = density_r*FluidModel->GetStaticEnergy();
-          }
-          solver_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(Solution);
-          solver_container[iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n();
-          solver_container[iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n1();
-      }
-    }
-    
-    delete [] Solution;
-    cout << "Shock tube problem initial condition set up." << endl;
   }
 }
 
