@@ -105,7 +105,7 @@ void CSysSolve_b::Solve_b(AD::CheckpointHandler* data){
 
   for (i = 0; i < size; i ++){
     int& index = LinSysRes_Indices[i];
-    AD::globalTape.gradient(index) += SU2_TYPE::GetPrimary(LinSysSol_b[i]);
+    AD::globalTape.gradient(index) += SU2_TYPE::GetValue(LinSysSol_b[i]);
   }
 
   delete mat_vec;

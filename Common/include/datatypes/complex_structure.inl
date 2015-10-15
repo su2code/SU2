@@ -31,11 +31,11 @@
 #pragma once
 
 namespace SU2_TYPE{
-  inline void SetPrimary(su2double& data, const double &val){
+  inline void SetValue(su2double& data, const double &val){
     data = su2double(val, data.imag());
   }
 
-  inline double GetPrimary(const su2double& data){
+  inline double GetValue(const su2double& data){
     return data.real();
   }
 

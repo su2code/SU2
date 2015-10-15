@@ -79,24 +79,24 @@ private:
   bool Adjoint,			/*!< \brief Flag to know if the code is solving an adjoint problem. */
   Viscous,                /*!< \brief Flag to know if the code is solving a viscous problem. */
   EquivArea,				/*!< \brief Flag to know if the code is going to compute and plot the equivalent area. */
-  InvDesign_Cp,				/*!< \brief Flag to know if the code is going to compute and plot the inverse design. */
-  InvDesign_HeatFlux,				/*!< \brief Flag to know if the code is going to compute and plot the inverse design. */
+  InvDesign_Cp,             /*!< \brief Flag to know if the code is going to compute and plot the inverse design. */
+  InvDesign_HeatFlux,       /*!< \brief Flag to know if the code is going to compute and plot the inverse design. */
   Linearized,				/*!< \brief Flag to know if the code is solving a linearized problem. */
   Grid_Movement,			/*!< \brief Flag to know if there is grid movement. */
   Wind_Gust,              /*!< \brief Flag to know if there is a wind gust. */
-  Aeroelastic_Simulation, /*!< \brief Flag to know if there is an aeroelastic simulation. */
+	Aeroelastic_Simulation, /*!< \brief Flag to know if there is an aeroelastic simulation. */
   Rotating_Frame,			/*!< \brief Flag to know if there is a rotating frame. */
-	PoissonSolver,			/*!< \brief Flag to know if we are solving  poisson forces  in plasma solver. */
-	Low_Mach_Precon,		/*!< \brief Flag to know if we are using a low Mach number preconditioner. */
-	GravityForce,			/*!< \brief Flag to know if the gravity force is incuded in the formulation. */
-	SmoothNumGrid,			/*!< \brief Smooth the numerical grid. */
-	AdaptBoundary,			/*!< \brief Adapt the elements on the boundary. */
-	Engine_Intake,			/*!< \brief Engine intake subsonic region. */
-	Frozen_Visc,			/*!< \brief Flag for adjoint problem with/without frozen viscosity. */
-	Sens_Remove_Sharp,			/*!< \brief Flag for removing or not the sharp edges from the sensitivity computation. */
-	Hold_GridFixed,	/*!< \brief Flag hold fixed some part of the mesh during the deformation. */
-	Axisymmetric, /*!< \brief Flag for axisymmetric calculations */
-	DebugMode, /*!< \brief Flag for debug mode */
+  PoissonSolver,			/*!< \brief Flag to know if we are solving  poisson forces  in plasma solver. */
+  Low_Mach_Precon,		/*!< \brief Flag to know if we are using a low Mach number preconditioner. */
+  GravityForce,			/*!< \brief Flag to know if the gravity force is incuded in the formulation. */
+  SmoothNumGrid,			/*!< \brief Smooth the numerical grid. */
+  AdaptBoundary,			/*!< \brief Adapt the elements on the boundary. */
+  Engine_Intake,			/*!< \brief Engine intake subsonic region. */
+  Frozen_Visc,			/*!< \brief Flag for adjoint problem with/without frozen viscosity. */
+  Sens_Remove_Sharp,			/*!< \brief Flag for removing or not the sharp edges from the sensitivity computation. */
+  Hold_GridFixed,	/*!< \brief Flag hold fixed some part of the mesh during the deformation. */
+  Axisymmetric, /*!< \brief Flag for axisymmetric calculations */
+  DebugMode, /*!< \brief Flag for debug mode */
   ionization;  /*!< \brief Flag for determining if free electron gas is in the mixture */
   su2double Damp_Engine_Inflow;	/*!< \brief Damping factor for the engine inlet. */
   su2double Damp_Engine_Bleed;	/*!< \brief Damping factor for the engine bleed. */

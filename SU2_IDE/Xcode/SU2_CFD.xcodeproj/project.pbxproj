@@ -87,6 +87,7 @@
 		E941BB931B71D124005C6C06 /* linear_solvers_structure_b.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E941BB901B71D124005C6C06 /* linear_solvers_structure_b.cpp */; };
 		E941BB941B71D124005C6C06 /* mpi_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E941BB911B71D124005C6C06 /* mpi_structure.cpp */; };
 		E941BBAE1B71D564005C6C06 /* variable_adjoint_discrete.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E941BBAD1B71D564005C6C06 /* variable_adjoint_discrete.cpp */; };
+		E9AA98A71BB3436900B7FE37 /* driver_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9AA98A61BB3436900B7FE37 /* driver_structure.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -136,7 +137,7 @@
 		05E6DACC17EB608000FA1F7E /* option_structure.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = option_structure.hpp; path = ../../Common/include/option_structure.hpp; sourceTree = "<group>"; };
 		05E6DACD17EB608000FA1F7E /* primal_grid_structure.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = primal_grid_structure.hpp; path = ../../Common/include/primal_grid_structure.hpp; sourceTree = "<group>"; };
 		05E6DACE17EB608000FA1F7E /* vector_structure.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = vector_structure.hpp; path = ../../Common/include/vector_structure.hpp; sourceTree = "<group>"; };
-		05E6DB8917EB61E600FA1F7E /* config_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = config_structure.cpp; path = ../../Common/src/config_structure.cpp; sourceTree = "<group>"; };
+		05E6DB8917EB61E600FA1F7E /* config_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; indentWidth = 2; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = config_structure.cpp; path = ../../Common/src/config_structure.cpp; sourceTree = "<group>"; tabWidth = 2; };
 		05E6DB8A17EB61E600FA1F7E /* dual_grid_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = dual_grid_structure.cpp; path = ../../Common/src/dual_grid_structure.cpp; sourceTree = "<group>"; };
 		05E6DB8B17EB61E600FA1F7E /* geometry_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = geometry_structure.cpp; path = ../../Common/src/geometry_structure.cpp; sourceTree = "<group>"; };
 		05E6DB8C17EB61E600FA1F7E /* grid_adaptation_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = grid_adaptation_structure.cpp; path = ../../Common/src/grid_adaptation_structure.cpp; sourceTree = "<group>"; };
@@ -166,7 +167,7 @@
 		05E6DBC517EB62A100FA1F7E /* numerics_adjoint_tne2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = numerics_adjoint_tne2.cpp; path = ../../SU2_CFD/src/numerics_adjoint_tne2.cpp; sourceTree = "<group>"; };
 		05E6DBC617EB62A100FA1F7E /* numerics_adjoint_turbulent.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = numerics_adjoint_turbulent.cpp; path = ../../SU2_CFD/src/numerics_adjoint_turbulent.cpp; sourceTree = "<group>"; };
 		05E6DBC917EB62A100FA1F7E /* numerics_direct_heat.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = numerics_direct_heat.cpp; path = ../../SU2_CFD/src/numerics_direct_heat.cpp; sourceTree = "<group>"; };
-		05E6DBCB17EB62A100FA1F7E /* numerics_direct_mean.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = numerics_direct_mean.cpp; path = ../../SU2_CFD/src/numerics_direct_mean.cpp; sourceTree = "<group>"; };
+		05E6DBCB17EB62A100FA1F7E /* numerics_direct_mean.cpp */ = {isa = PBXFileReference; fileEncoding = 4; indentWidth = 2; lastKnownFileType = sourcecode.cpp.cpp; name = numerics_direct_mean.cpp; path = ../../SU2_CFD/src/numerics_direct_mean.cpp; sourceTree = "<group>"; tabWidth = 2; };
 		05E6DBCD17EB62A100FA1F7E /* numerics_direct_tne2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = numerics_direct_tne2.cpp; path = ../../SU2_CFD/src/numerics_direct_tne2.cpp; sourceTree = "<group>"; };
 		05E6DBCE17EB62A100FA1F7E /* numerics_direct_transition.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = numerics_direct_transition.cpp; path = ../../SU2_CFD/src/numerics_direct_transition.cpp; sourceTree = "<group>"; };
 		05E6DBCF17EB62A100FA1F7E /* numerics_direct_turbulent.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = numerics_direct_turbulent.cpp; path = ../../SU2_CFD/src/numerics_direct_turbulent.cpp; sourceTree = "<group>"; };
@@ -184,7 +185,7 @@
 		05E6DBDC17EB62A100FA1F7E /* solver_adjoint_tne2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = solver_adjoint_tne2.cpp; path = ../../SU2_CFD/src/solver_adjoint_tne2.cpp; sourceTree = "<group>"; };
 		05E6DBDD17EB62A100FA1F7E /* solver_adjoint_turbulent.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = solver_adjoint_turbulent.cpp; path = ../../SU2_CFD/src/solver_adjoint_turbulent.cpp; sourceTree = "<group>"; };
 		05E6DBE017EB62A100FA1F7E /* solver_direct_heat.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = solver_direct_heat.cpp; path = ../../SU2_CFD/src/solver_direct_heat.cpp; sourceTree = "<group>"; };
-		05E6DBE217EB62A100FA1F7E /* solver_direct_mean.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = solver_direct_mean.cpp; path = ../../SU2_CFD/src/solver_direct_mean.cpp; sourceTree = "<group>"; };
+		05E6DBE217EB62A100FA1F7E /* solver_direct_mean.cpp */ = {isa = PBXFileReference; fileEncoding = 4; indentWidth = 2; lastKnownFileType = sourcecode.cpp.cpp; name = solver_direct_mean.cpp; path = ../../SU2_CFD/src/solver_direct_mean.cpp; sourceTree = "<group>"; tabWidth = 2; usesTabs = 0; };
 		05E6DBE417EB62A100FA1F7E /* solver_direct_tne2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = solver_direct_tne2.cpp; path = ../../SU2_CFD/src/solver_direct_tne2.cpp; sourceTree = "<group>"; };
 		05E6DBE517EB62A100FA1F7E /* solver_direct_transition.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = solver_direct_transition.cpp; path = ../../SU2_CFD/src/solver_direct_transition.cpp; sourceTree = "<group>"; };
 		05E6DBE617EB62A100FA1F7E /* solver_direct_turbulent.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = solver_direct_turbulent.cpp; path = ../../SU2_CFD/src/solver_direct_turbulent.cpp; sourceTree = "<group>"; };
@@ -324,6 +325,8 @@
 		E941BBA61B71D1AB005C6C06 /* mpi_structure.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = mpi_structure.inl; path = ../../Common/include/mpi_structure.inl; sourceTree = "<group>"; };
 		E941BBAD1B71D564005C6C06 /* variable_adjoint_discrete.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = variable_adjoint_discrete.cpp; path = ../../SU2_CFD/src/variable_adjoint_discrete.cpp; sourceTree = "<group>"; };
 		E97B6C8117F941800008255B /* config_template.cfg */ = {isa = PBXFileReference; lastKnownFileType = text; name = config_template.cfg; path = ../../config_template.cfg; sourceTree = "<group>"; };
+		E9AA98A61BB3436900B7FE37 /* driver_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = driver_structure.cpp; path = ../../SU2_CFD/src/driver_structure.cpp; sourceTree = "<group>"; };
+		E9AA98A81BB3438F00B7FE37 /* driver_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = driver_structure.hpp; path = ../../SU2_CFD/include/driver_structure.hpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -458,6 +461,7 @@
 		0541ABE51370DC5E002D668B /* Include */ = {
 			isa = PBXGroup;
 			children = (
+				E9AA98A81BB3438F00B7FE37 /* driver_structure.hpp */,
 				E941BB951B71D1AB005C6C06 /* datatype_structure.hpp */,
 				E941BB971B71D1AB005C6C06 /* datatypes */,
 				E941BBA41B71D1AB005C6C06 /* linear_solvers_structure_b.hpp */,
@@ -553,6 +557,7 @@
 				05E6DBEC17EB62A100FA1F7E /* SU2_CFD.cpp */,
 				05E6DB8917EB61E600FA1F7E /* config_structure.cpp */,
 				05E6DBBC17EB62A000FA1F7E /* definition_structure.cpp */,
+				E9AA98A61BB3436900B7FE37 /* driver_structure.cpp */,
 				05E6DBC017EB62A100FA1F7E /* iteration_structure.cpp */,
 				E941BB8F1B71D124005C6C06 /* datatype_structure.cpp */,
 				E941BB911B71D124005C6C06 /* mpi_structure.cpp */,
@@ -1380,7 +1385,7 @@
 		08FB7793FE84155DC02AAC07 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0510;
+				LastUpgradeCheck = 0700;
 			};
 			buildConfigurationList = 1DEB923508733DC60010E9CD /* Build configuration list for PBXProject "SU2_CFD" */;
 			compatibilityVersion = "Xcode 3.2";
@@ -1429,6 +1434,7 @@
 				05E6DC0717EB62A100FA1F7E /* numerics_adjoint_levelset.cpp in Sources */,
 				05E6DC0817EB62A100FA1F7E /* numerics_adjoint_mean.cpp in Sources */,
 				0530E56817FDF79500733CE8 /* solver_direct_poisson.cpp in Sources */,
+				E9AA98A71BB3436900B7FE37 /* driver_structure.cpp in Sources */,
 				05E6DC0A17EB62A100FA1F7E /* numerics_adjoint_tne2.cpp in Sources */,
 				05E6DC0B17EB62A100FA1F7E /* numerics_adjoint_turbulent.cpp in Sources */,
 				05F108A41978D2F200F2F288 /* transport_model.cpp in Sources */,
@@ -1616,6 +1622,7 @@
 		1DEB923608733DC60010E9CD /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_OPTIMIZATION_LEVEL = 3;
 				GCC_PREPROCESSOR_DEFINITIONS = "";
