@@ -556,6 +556,7 @@ void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
         Prod = 0.0;
+        Area = 0.0;
         for (iDim = 0; iDim < nDim; iDim++){
           /* --- retrieve the gradient calculated with AD -- */
           SensDim = node[iPoint]->GetSensitivity(iDim);
