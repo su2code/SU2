@@ -63,7 +63,7 @@ def main():
     discadj_rans_naca0012_sa.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     discadj_rans_naca0012_sa.test_iter = 10
-    discadj_rans_naca0012_sa.test_vals = [-1.748611,0.485996,-3.8922e-01,-1.0707e-01] #last 4 columns
+    discadj_rans_naca0012_sa.test_vals = [-1.751947, 0.485758, 0.181440, -0.385110] #last 4 columns
     discadj_rans_naca0012_sa.su2_exec  = "SU2_CFD_AD"
     discadj_rans_naca0012_sa.timeout   = 1600
     discadj_rans_naca0012_sa.tol       = 0.00001
