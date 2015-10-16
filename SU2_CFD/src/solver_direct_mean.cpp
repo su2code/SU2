@@ -6605,6 +6605,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
   su2double SoundSpeed_Infty, Entropy_Infty, Vel2_Infty, Vn_Infty, Qn_Infty;
   su2double RiemannPlus, RiemannMinus;
   su2double *V_infty, *V_domain;
+  su2double *S_infty, *S_domain;
 
   su2double Gas_Constant     = config->GetGas_ConstantND();
 
@@ -6619,6 +6620,8 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
                     && (config->GetKind_Turb_Model() == SST));
 
   su2double *Normal = new su2double[nDim];
+  su2double *S_infty = new su2double[2];
+  su2double *S_domain = new su2double[2];
 
   /*--- Loop over all the vertices on this boundary marker ---*/
 
@@ -6810,6 +6813,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
       /*--- Set various quantities in the numerics class ---*/
       
       conv_numerics->SetPrimitive(V_domain, V_infty);
+
 
       if (grid_movement) {
         conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),

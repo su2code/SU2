@@ -1662,7 +1662,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     exit(EXIT_FAILURE);
   }
   
-  /*--- Check for Convective scheme available for NICF ---*/
+  /*--- Check for Convective scheme available for NICFD ---*/
   
   if (!ideal_gas) {
     if (Kind_ConvNumScheme_Flow != SPACE_UPWIND) {
@@ -1670,14 +1670,14 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       exit(EXIT_FAILURE);
     }
     else {
-      if (Kind_Upwind_Flow != ROE) {
-        cout << "Only ROE Upwind scheme can be used for Not Ideal Compressible Fluids" << endl;
+      if (Kind_Upwind_Flow != ROE && Kind_Upwind_Flow !=  AUSMPlus && Kind_Upwind_Flow !=  JST) {
+        cout << "Only ROE, AUSM+ and JST Upwind scheme can be used for Not Ideal Compressible Fluids" << endl;
         exit(EXIT_FAILURE);
       }
     }
   }
   
-  /*--- Check for Boundary condition available for NICF ---*/
+  /*--- Check for Boundary condition available for NICFD ---*/
   
   if (!ideal_gas) {
     if (nMarker_Inlet != 0) {
@@ -1696,7 +1696,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     
   }
   
-  /*--- Check for Boundary condition available for NICF ---*/
+  /*--- Check for Boundary condition available for NICFD ---*/
   
   if (ideal_gas) {
     if (SystemMeasurements == US && standard_air) {

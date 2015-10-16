@@ -1431,7 +1431,7 @@ void CMultiZoneDriver::Run(CIteration **iteration_container,
   
   unsigned short iZone;
   
-  /*--- Run a single iteration of a multi-zone problem by looping over all
+  /*--- Run a single iteration of a multi-zone problem by los/Aoping over all
    zones and executing the iterations. Note that data transers between zones
    and other intermediate procedures may be required. ---*/
   
