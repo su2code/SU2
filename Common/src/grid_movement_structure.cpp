@@ -1770,7 +1770,7 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
 	/*--- As initialization, set to zero displacements of all the surfaces except the symmetry
 	 plane and the receive boundaries. ---*/
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-		if (((config->GetMarker_All_KindBC(iMarker) != SYMMETRY_PLANE) || (nDim==2))
+		if (((config->GetMarker_All_KindBC(iMarker) != SYMMETRY_PLANE) )
         && (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE)) {
 			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
@@ -1787,7 +1787,7 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
   /*--- Set to zero displacements of the normal component for the symmetry plane condition ---*/
   
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-		if ((config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) && (nDim == 3)) {
+		if ((config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) ) {
       
 			for (iDim = 0; iDim < nDim; iDim++) MeanCoord[iDim] = 0.0;
 			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
@@ -1797,10 +1797,15 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
 					MeanCoord[iDim] += VarCoord[iDim]*VarCoord[iDim];
 			}
 			for (iDim = 0; iDim < nDim; iDim++) MeanCoord[iDim] = sqrt(MeanCoord[iDim]);
-			
-			if ((MeanCoord[0] <= MeanCoord[1]) && (MeanCoord[0] <= MeanCoord[2])) axis = 0;
-			if ((MeanCoord[1] <= MeanCoord[0]) && (MeanCoord[1] <= MeanCoord[2])) axis = 1;
-			if ((MeanCoord[2] <= MeanCoord[0]) && (MeanCoord[2] <= MeanCoord[1])) axis = 2;
+			if (nDim==3){
+        if ((MeanCoord[0] <= MeanCoord[1]) && (MeanCoord[0] <= MeanCoord[2])) axis = 0;
+        if ((MeanCoord[1] <= MeanCoord[0]) && (MeanCoord[1] <= MeanCoord[2])) axis = 1;
+        if ((MeanCoord[2] <= MeanCoord[0]) && (MeanCoord[2] <= MeanCoord[1])) axis = 2;
+			}
+			else{
+			  if ((MeanCoord[0] <= MeanCoord[1]) ) axis = 0;
+        if ((MeanCoord[1] <= MeanCoord[0]) ) axis = 1;
+			}
 						
 			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
