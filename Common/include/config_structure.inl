@@ -1232,6 +1232,8 @@ inline bool CConfig::GetDeadLoad(void) { return DeadLoad; }
 
 inline bool CConfig::GetMatchingMesh(void) { return MatchingMesh; }
 
+inline bool CConfig::GetSteadyRestart(void) { return SteadyRestart; }
+
 inline unsigned short CConfig::GetDynamic_Analysis(void) { return Dynamic_Analysis; }
 
 inline su2double CConfig::GetDelta_DynTime(void) { return Delta_DynTime; }

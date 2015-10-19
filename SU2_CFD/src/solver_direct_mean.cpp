@@ -9972,7 +9972,8 @@ void CEulerSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetricMo
     su2double *Coord, VarCoord[3] = {0,0,0};
 
   #ifndef HAVE_MPI
-    unsigned long iPoint_Donor;
+    unsigned long iPoint_Donor, iPoint;
+    unsigned short iMarker;
     su2double *CoordDonor, *DisplacementDonor;
 
     for (iMarker = 0; iMarker < flow_config->GetnMarker_All(); iMarker++) {
@@ -10392,6 +10393,7 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
   bool grid_movement  = config->GetGrid_Movement();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool steady_restart = config->GetSteadyRestart();
   string UnstExt, text_line;
   ifstream restart_file;
 
@@ -10485,10 +10487,15 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
         }
 
         /*--- Read in the next 2 or 3 variables which are the grid velocities ---*/
+        /*--- If we are restarting the solution from a previously computed steady state calculation ---*/
+        /*--- the grid velocities are set to 0. This is useful for FSI computations ---*/
         
         su2double GridVel[3] = {0.0,0.0,0.0};
-        if (nDim == 2) point_line >> GridVel[0] >> GridVel[1];
-        else point_line >> GridVel[0] >> GridVel[1] >> GridVel[2];
+        if (!steady_restart){
+            if (nDim == 2) point_line >> GridVel[0] >> GridVel[1];
+            else point_line >> GridVel[0] >> GridVel[1] >> GridVel[2];
+        }
+
         
         for (iDim = 0; iDim < nDim; iDim++) {
           geometry[MESH_0]->node[iPoint_Local]->SetCoord(iDim, Coord[iDim]);
