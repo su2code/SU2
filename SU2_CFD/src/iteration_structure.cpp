@@ -1291,7 +1291,8 @@ void CDiscAdjMeanFlowIteration::Iterate(COutput *output,
   
   unsigned short iZone, iMesh, ExtIter = config_container[ZONE_0]->GetExtIter();
   unsigned short nZone = config_container[ZONE_0]->GetnZone();
-  
+  unsigned short FinestMesh = config_container[ZONE_0]->GetFinestMesh();
+
   bool turbulent = false, flow = false;
   
   switch(config_container[ZONE_0]->GetKind_Solver()){
