@@ -2233,6 +2233,10 @@ void CFSIDriver::Run(CIteration **iteration_container,
 
 		output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_FLOW);
 
+		/*--- Set the fluid convergence to false (to make sure FSI subiterations converge) ---*/
+
+		integration_container[ZONE_FLOW][FLOW_SOL]->SetConvergence(false);
+
 		/*-----------------------------------------------------------------*/
 		/*------------------- Set FEA loads from fluid --------------------*/
 		/*-----------------------------------------------------------------*/
@@ -2253,6 +2257,10 @@ void CFSIDriver::Run(CIteration **iteration_container,
 		/*--- Write the convergence history for the structure (only screen output) ---*/
 
 		output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_STRUCT);
+
+		/*--- Set the fluid convergence to false (to make sure FSI subiterations converge) ---*/
+
+		integration_container[ZONE_STRUCT][FEA_SOL]->SetConvergence(false);
 
 		/*-----------------------------------------------------------------*/
 		/*----------------- Displacements relaxation ----------------------*/

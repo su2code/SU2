@@ -747,6 +747,7 @@ private:
   bool ExtraOutput;
   bool DeadLoad; 		/*!< Application of dead loads to the FE analysis */
   bool MatchingMesh; 	/*!< Matching mesh (while implementing interpolation procedures). */
+  bool SteadyRestart; 	/*!< Restart from a steady state for FSI problems. */
   su2double Newmark_alpha,			/*!< \brief Parameter alpha for Newmark method. */
   Newmark_delta;				/*!< \brief Parameter delta for Newmark method. */
   bool Gradual_Load,		/*!< \brief Apply the load gradually. */
@@ -5489,6 +5490,14 @@ public:
 	  */
 
 	bool GetMatchingMesh(void);
+
+	/*!
+	  * \brief Identifies if we want to restart from a steady or an unsteady solution.
+	  * \return <code>TRUE</code> if we restart from steady state solution, <code>FALSE</code> otherwise.
+	  */
+
+	bool GetSteadyRestart(void);
+
 
 	/*!
 	 * \brief Provides information about the time integration of the structural analysis, and change the write in the output

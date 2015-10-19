@@ -1272,6 +1272,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Maximum number of iterations of the linear solver for the implicit formulation */
   addUnsignedLongOption("FSI_LINEAR_SOLVER_ITER_STRUC", Linear_Solver_Iter_FSI_Struc, 500);
 
+  /* DESCRIPTION: Restart from a steady state (sets grid velocities to 0 when loading the restart). */
+  addBoolOption("RESTART_STEADY_STATE", SteadyRestart, false);
+
   /*  DESCRIPTION: Apply dead loads
   *  Options: NO, YES \ingroup Config */
   addBoolOption("MATCHING_MESH", MatchingMesh, true);
