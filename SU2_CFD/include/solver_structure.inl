@@ -420,6 +420,8 @@ inline su2double CSolver::GetAveragedEntropy(unsigned short valMarker){ return 0
 
 inline su2double* CSolver::GetAveragedVelocity(unsigned short valMarker){ return 0;}
 
+inline su2double* CSolver::GetAveragedGridVelocity(unsigned short valMarker){ return 0;}
+
 inline su2double CSolver::GetAveragedNormalVelocity(unsigned short valMarker){ return 0;}
 
 inline su2double CSolver::GetAveragedTangVelocity(unsigned short valMarker){ return 0;}
@@ -578,7 +580,7 @@ inline void CSolver::Set_MPI_MaxEigenvalue(CGeometry *geometry, CConfig *config)
 
 inline void CSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) { }
 
-inline void CSolver::TurboPerformance(CSolver *solver, CConfig *config, unsigned short inMarker,  unsigned short outMarker, unsigned short Kind_TurboPerf){ }
+inline void CSolver::TurboPerformance(CSolver *solver, CConfig *config, unsigned short inMarker,  unsigned short outMarker, unsigned short Kind_TurboPerf, unsigned short inMarkerTP ){ }
 
 inline void CSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) { }
 
@@ -881,6 +883,8 @@ inline su2double CEulerSolver::GetAveragedEnthalpy(unsigned short valMarker){ret
 inline su2double CEulerSolver::GetAveragedEntropy(unsigned short valMarker){return AveragedEntropy[valMarker];}
 
 inline su2double* CEulerSolver::GetAveragedVelocity(unsigned short valMarker){return AveragedVelocity[valMarker];}
+
+inline su2double* CEulerSolver::GetAveragedGridVelocity(unsigned short valMarker){return AveragedGridVel[valMarker];}
 
 inline su2double CEulerSolver::GetAveragedNormalVelocity(unsigned short valMarker){return AveragedNormalVelocity[valMarker];}
 

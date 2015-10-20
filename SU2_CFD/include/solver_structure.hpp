@@ -1029,24 +1029,35 @@ public:
 	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
 	  */
 	 virtual su2double GetAveragedPressure(unsigned short valMarker);
+
 	 /*!
 	  * \brief A virtual member.
 	  * \param[in] val_marker - bound marker.
 	  * \return Value of the Average Enthalpy on the surface <i>val_marker</i>.
 	  */
 	 virtual su2double GetAveragedEnthalpy(unsigned short valMarker);
+
 	 /*!
 	  * \brief A virtual member.
 	  * \param[in] val_marker - bound marker.
 	  * \return Value of the Average Enthalpy on the surface <i>val_marker</i>.
 	  */
 	 virtual su2double* GetAveragedVelocity(unsigned short valMarker);
+
+	 /*!
+	  * \brief A virtual member.
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Average Enthalpy on the surface <i>val_marker</i>.
+	  */
+	 virtual su2double* GetAveragedGridVelocity(unsigned short valMarker);
+
 	 /*!
 	  * \brief A virtual member.
 	  * \param[in] val_marker - bound marker.
 	  * \return Value of the Average Entropy on the surface <i>val_marker</i>.
 	  */
 	 virtual su2double GetAveragedEntropy(unsigned short valMarker);
+
 	 /*!
 	  * \brief A virtual member.
 	  * \param[in] val_marker - bound marker.
@@ -1131,7 +1142,7 @@ public:
 	 * \param[in] inMarker - marker related to the inlet.
 	 * \param[in] outMarker - marker related to the outlet.
 	 */
-	virtual void TurboPerformance(CSolver *solver,  CConfig *config, unsigned short inMarker,  unsigned short outMarker, unsigned short Kind_TurboPerf);
+	virtual void TurboPerformance(CSolver *solver,  CConfig *config, unsigned short inMarker,  unsigned short outMarker, unsigned short Kind_TurboPerf, unsigned short inMarkerTP);
 
 	/*!
 	 * \brief A virtual member.
@@ -3392,6 +3403,13 @@ public:
 	 su2double* GetAveragedVelocity(unsigned short valMarker);
 
 	 /*!
+	  * \brief Provide the average pressure at the boundary of interest.
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  */
+	 su2double* GetAveragedGridVelocity(unsigned short valMarker);
+
+	 /*!
 	  * \brief Provide the Average Normal Velocity at the boundary of interest.
 	  * \param[in] val_marker - bound marker.
 	  * \return Value of the Average Normal Velocity on the surface <i>val_marker</i>.
@@ -3476,7 +3494,7 @@ public:
 	 * \param[in] inMarker - marker related to the inlet.
 	 * \param[in] outMarker - marker related to the outlet.
 	 */
-	void TurboPerformance(CSolver *solver,  CConfig *config, unsigned short inMarker,  unsigned short outMarker, unsigned short );
+	void TurboPerformance(CSolver *solver,  CConfig *config, unsigned short inMarker,  unsigned short outMarker, unsigned short Kind_TurboPerf , unsigned short inMarkerTP );
 
 	/*!
 	 * \brief Provide the non dimensional lift coefficient (inviscid contribution).

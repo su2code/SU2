@@ -4508,31 +4508,57 @@ void CEulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
 
 }
 
-void CEulerSolver::TurboPerformance(CSolver *solver, CConfig *config, unsigned short inMarker,  unsigned short outMarker, unsigned short Kind_TurboPerf){
+void CEulerSolver::TurboPerformance(CSolver *solver, CConfig *config, unsigned short inMarker,  unsigned short outMarker, unsigned short Kind_TurboPerf, unsigned short inMarkerTP ){
 
 	su2double  eta_tt, //Total-Total efficiency
 			   eta_ts, //Total-Static efficiency
 			   y,      //Total pressure loss coefficient
 			   zeta;   //Kinetic energy loss coefficient
-	su2double  avgVel2In, avgVel2Out, avgTotalEnthalpyIn= 0.0, avgTotalEnthalpyOut= 0.0, avgTotalEnthalpyOutIs=0.0,avgEnthalpyOut, avgEnthalpyOutIs,
-			   avgPressureIn, avgPressureOut, avgTotalPressureIn=0.0, avgTotalPressureOut=0.0, avgDensityOut, avgEntropyIn, avgEntropyOut;
+	su2double  avgVel2In, avgVel2Out,avgVelRel2In, avgVelRel2Out, avgGridVel2In, avgGridVel2Out, avgTotalEnthalpyIn= 0.0,avgTotalRothalpyIn,
+			  avgTotalEnthalpyOut, avgTotalRothalpyOut, avgTotalEnthalpyOutIs, avgEnthalpyOut, avgEnthalpyOutIs,
+			   avgPressureIn, avgPressureOut, avgTotalRelPressureIn, avgTotalRelPressureOut, avgDensityOut, avgEntropyIn, avgEntropyOut;
 	unsigned short iDim;
-	for (iDim = 0; iDim < nDim; iDim++) avgVel2In += AveragedVelocity[inMarker][iDim]*AveragedVelocity[inMarker][iDim];
-	for (iDim = 0; iDim < nDim; iDim++) avgVel2Out += solver->GetAveragedVelocity(outMarker)[iDim]*solver->GetAveragedVelocity(outMarker)[iDim];
 
+
+
+	/*--- compute or retrieve inlet information ---*/
+	avgVelRel2In= 0.0;
+	avgGridVel2In= 0.0;
+	avgVel2In= 0.0;
+	for (iDim = 0; iDim < nDim; iDim++){
+		avgVelRel2In +=( AveragedVelocity[inMarker][iDim] - AveragedGridVel[inMarker][iDim])*( AveragedVelocity[inMarker][iDim] - AveragedGridVel[inMarker][iDim]);
+		avgGridVel2In += AveragedGridVel[inMarker][iDim]*AveragedGridVel[inMarker][iDim];
+		avgVel2In += AveragedVelocity[inMarker][iDim]*AveragedVelocity[inMarker][iDim];
+	}
+
+	avgTotalRothalpyIn = AveragedEnthalpy[inMarker] + 0.5*avgVelRel2In - 0.5*avgGridVel2In;
 	avgTotalEnthalpyIn = AveragedEnthalpy[inMarker] + 0.5*avgVel2In;
-	avgTotalEnthalpyOut = solver->GetAveragedEnthalpy(outMarker) + 0.5*avgVel2Out;
 	avgEntropyIn = AveragedEntropy[inMarker];
-	avgEntropyOut = solver->GetAveragedEntropy(outMarker);
-	FluidModel->SetTDState_hs(avgTotalEnthalpyIn, avgEntropyIn);
-	avgTotalPressureIn  = FluidModel->GetPressure();
-	FluidModel->SetTDState_hs(avgTotalEnthalpyOut, avgEntropyOut);
-	avgTotalPressureOut  =  FluidModel->GetPressure();
+	FluidModel->SetTDState_hs(avgTotalRothalpyIn, avgEntropyIn);
+	avgTotalRelPressureIn  = FluidModel->GetPressure();
 	avgPressureIn= AveragedPressure[inMarker];
+
+
+	/*--- compute or retrieve outlet information ---*/
+	avgVelRel2Out = 0.0;
+	avgGridVel2Out = 0.0;
+	avgVel2Out = 0.0;
+	for (iDim = 0; iDim < nDim; iDim++){
+		avgVelRel2Out += (solver->GetAveragedVelocity(outMarker)[iDim]- solver->GetAveragedGridVelocity(outMarker)[iDim])*(solver->GetAveragedVelocity(outMarker)[iDim]- solver->GetAveragedGridVelocity(outMarker)[iDim]);
+		avgGridVel2Out += solver->GetAveragedGridVelocity(outMarker)[iDim]*solver->GetAveragedGridVelocity(outMarker)[iDim];
+		avgVel2Out += solver->GetAveragedVelocity(outMarker)[iDim]*solver->GetAveragedVelocity(outMarker)[iDim];
+	}
+	avgTotalRothalpyOut = solver->GetAveragedEnthalpy(outMarker) + 0.5*avgVelRel2Out - 0.5*avgGridVel2Out;
+	avgTotalEnthalpyOut = solver->GetAveragedEnthalpy(outMarker) + 0.5*avgVel2Out;
+
+	avgEntropyOut = solver->GetAveragedEntropy(outMarker);
+    avgEnthalpyOut = solver->GetAveragedEnthalpy(outMarker);
+    FluidModel->SetTDState_hs(avgTotalRothalpyOut, avgEntropyOut);
+	avgTotalRelPressureOut  =  FluidModel->GetPressure();
 	avgPressureOut= solver->GetAveragedPressure(outMarker);
 	avgDensityOut= solver->GetAveragedDensity(outMarker);
-    FluidModel->SetTDState_Prho(avgPressureOut,avgDensityOut);
-	avgEnthalpyOut = FluidModel->GetStaticEnergy() + avgPressureOut/avgDensityOut;
+
+	/*--- compute or retrieve outlet isoentropic condition ---*/
 	FluidModel->SetTDState_Ps(avgPressureOut, avgEntropyIn);
 	avgEnthalpyOutIs = FluidModel->GetStaticEnergy() + avgPressureOut/FluidModel->GetDensity();
 	avgTotalEnthalpyOutIs = avgEnthalpyOutIs + 0.5*avgVel2Out;
@@ -4540,25 +4566,21 @@ void CEulerSolver::TurboPerformance(CSolver *solver, CConfig *config, unsigned s
 
     switch(Kind_TurboPerf){
     	case TOT_PRESSURE_LOSS:
-    	    y = (avgTotalPressureIn - avgTotalPressureOut)/(avgTotalPressureOut - avgPressureOut) ;
-    		cout << "total_pressure_loss "<< y <<endl;
+    	    y = (avgTotalRelPressureIn - avgTotalRelPressureOut)/(avgTotalRelPressureOut - avgPressureOut) ;
+    		cout << "total_pressure_loss "<< y << " in zone " << inMarkerTP<< endl;
     	    break;
     	case KINETIC_ENERGY_LOSS:
-    	    zeta = (AveragedEnthalpy[outMarker] - avgEnthalpyOutIs)/(avgTotalEnthalpyOut - AveragedEnthalpy[outMarker]);
-    		cout << "kin_energy_loss "<< zeta<<endl;
+    	    zeta = (avgEnthalpyOut - avgEnthalpyOutIs)/(avgTotalRothalpyIn - avgEnthalpyOut + 0.5*avgGridVel2Out);
+    		cout << "kin_energy_loss "<< zeta << " in zone " << inMarkerTP <<  endl;
     	    break;
     	case ETA_TT: //Total-Total efficiency
     		eta_tt = (avgTotalEnthalpyIn - avgTotalEnthalpyOut)/(avgTotalEnthalpyIn - avgTotalEnthalpyOutIs);
-    		cout << "eta_tt "<< eta_tt<<endl;
+    		cout << "eta_tt "<< eta_tt<<" in zone " << inMarkerTP<< endl;
     		break;
     	case ETA_TS: //Total-Static efficiency
     	    eta_ts = (avgTotalEnthalpyIn - avgEnthalpyOut)/(avgTotalEnthalpyIn - avgEnthalpyOutIs);
-    		cout << "eta_ts "<< eta_ts<<endl;
+    		cout << "eta_ts "<< eta_ts<<" in zone " << inMarkerTP<< endl;
     	    break;
-//    	case MASSFLOW_DIFF: //mass flow rate in-out difference
-//    	    eta_ts = (avgTotalEnthalpyIn - avgEnthalpyOut)/(avgTotalEnthalpyIn - avgEnthalpyOutIs);
-//    		cout << "eta_ts "<< eta_ts<<endl;
-//    	    break;
     	default:
     		cout << "Warning! Invalid Turbo Performance option!" << endl;
     		exit(EXIT_FAILURE);
