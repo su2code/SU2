@@ -74,9 +74,13 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
 
     /*--- Calcualte and set Mixing Plane averaged quantities at interfaces ---*/
 
-		if(config_container[iZone]->GetBoolMixingPlane())
-			SetMixingPlane(geometry_container, solver_container, config_container,nZone, iZone);
+	if(config_container[iZone]->GetBoolMixingPlane())
+		SetMixingPlane(geometry_container, solver_container, config_container,nZone, iZone);
+
+	if(config_container[iZone]->GetBoolTurboPerf())
+		SetTurboPerformance(geometry_container, solver_container, config_container,nZone, iZone);
 	}
+
   
 	for (iZone = 0; iZone < nZone; iZone++) {
     
@@ -2154,4 +2158,26 @@ void SetMixingPlane(CGeometry ***geometry_container, CSolver ****solver_containe
 
 }
 
+void SetTurboPerformance(CGeometry ***geometry_container, CSolver ****solver_container, CConfig **config_container, unsigned short nZone, unsigned short iZone) {
 
+	unsigned short  jZone, inMarker, outMarker, inMarkerTP, outMarkerTP, Kind_TurboPerf;
+	string inMarker_Tag, outMarker_Tag;
+
+
+	/*-- Loop on all the boundary to find MIXING_PLANE boundary --*/
+	for (inMarker = 0; inMarker < config_container[iZone]->GetnMarker_All(); inMarker++)
+		for (inMarkerTP=0; inMarkerTP < config_container[iZone]->Get_nMarkerTurboPerf(); inMarkerTP++)
+			if (config_container[iZone]->GetMarker_All_TagBound(inMarker) == config_container[iZone]->GetMarker_TurboPerf_BoundIn(inMarkerTP) ) {
+				outMarker_Tag =	config_container[iZone]->GetMarker_TurboPerf_BoundOut(inMarkerTP);
+				Kind_TurboPerf = config_container[iZone]->GetKind_TurboPerf(inMarkerTP);
+				for (jZone = 0; jZone < nZone; jZone++)
+					for (outMarker = 0; outMarker < config_container[jZone]->GetnMarker_All(); outMarker++)
+						if (config_container[jZone]->GetMarker_All_TagBound(outMarker) == outMarker_Tag){
+//							cout<<"in " << config_container[iZone]->GetMarker_All_TagBound(inMarker)<< " iZone "<< iZone << endl;
+//							cout<<"out " <<config_container[jZone]->GetMarker_All_TagBound(outMarker) << " jZone "<< jZone << endl;
+							solver_container[iZone][MESH_0][FLOW_SOL]->Mixing_Process(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0], config_container[iZone], inMarker);
+							solver_container[jZone][MESH_0][FLOW_SOL]->Mixing_Process(geometry_container[jZone][MESH_0], solver_container[jZone][MESH_0], config_container[jZone], outMarker);
+							solver_container[iZone][MESH_0][FLOW_SOL]->TurboPerformance(solver_container[jZone][MESH_0][FLOW_SOL], config_container[iZone], inMarker, outMarker, Kind_TurboPerf);
+						}
+			}
+}

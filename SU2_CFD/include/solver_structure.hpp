@@ -1032,6 +1032,24 @@ public:
 	 /*!
 	  * \brief A virtual member.
 	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Average Enthalpy on the surface <i>val_marker</i>.
+	  */
+	 virtual su2double GetAveragedEnthalpy(unsigned short valMarker);
+	 /*!
+	  * \brief A virtual member.
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Average Enthalpy on the surface <i>val_marker</i>.
+	  */
+	 virtual su2double* GetAveragedVelocity(unsigned short valMarker);
+	 /*!
+	  * \brief A virtual member.
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Average Entropy on the surface <i>val_marker</i>.
+	  */
+	 virtual su2double GetAveragedEntropy(unsigned short valMarker);
+	 /*!
+	  * \brief A virtual member.
+	  * \param[in] val_marker - bound marker.
 	  * \return Value of the Average Density on the surface <i>val_marker</i>.
 	  */
 	 virtual su2double GetAveragedTotTemperature(unsigned short valMarker);
@@ -1106,6 +1124,14 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	virtual void Inviscid_Forces(CGeometry *geometry, CConfig *config);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] solver - solver containing the outlet information.
+	 * \param[in] inMarker - marker related to the inlet.
+	 * \param[in] outMarker - marker related to the outlet.
+	 */
+	virtual void TurboPerformance(CSolver *solver,  CConfig *config, unsigned short inMarker,  unsigned short outMarker, unsigned short Kind_TurboPerf);
 
 	/*!
 	 * \brief A virtual member.
@@ -3346,6 +3372,26 @@ public:
 	  */
 	 su2double GetAveragedPressure(unsigned short valMarker);
 	 /*!
+	  * \brief Provide the average pressure at the boundary of interest.
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  */
+	 su2double GetAveragedEnthalpy(unsigned short valMarker);
+	 /*!
+	  * \brief Provide the average pressure at the boundary of interest.
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  */
+	 su2double GetAveragedEntropy(unsigned short valMarker);
+
+	 /*!
+	  * \brief Provide the average pressure at the boundary of interest.
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  */
+	 su2double* GetAveragedVelocity(unsigned short valMarker);
+
+	 /*!
 	  * \brief Provide the Average Normal Velocity at the boundary of interest.
 	  * \param[in] val_marker - bound marker.
 	  * \return Value of the Average Normal Velocity on the surface <i>val_marker</i>.
@@ -3423,6 +3469,14 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void Inviscid_Forces(CGeometry *geometry, CConfig *config);
+
+	/*!
+	 * \brief Compute turbomachinery performance.
+	 * \param[in] solver - solver containing the outlet information.
+	 * \param[in] inMarker - marker related to the inlet.
+	 * \param[in] outMarker - marker related to the outlet.
+	 */
+	void TurboPerformance(CSolver *solver,  CConfig *config, unsigned short inMarker,  unsigned short outMarker, unsigned short );
 
 	/*!
 	 * \brief Provide the non dimensional lift coefficient (inviscid contribution).
