@@ -2177,7 +2177,7 @@ void SetTurboPerformance(CGeometry ***geometry_container, CSolver ****solver_con
 //							cout<<"out " <<config_container[jZone]->GetMarker_All_TagBound(outMarker) << " jZone "<< jZone << endl;
 							solver_container[iZone][MESH_0][FLOW_SOL]->Mixing_Process(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0], config_container[iZone], inMarker);
 							solver_container[jZone][MESH_0][FLOW_SOL]->Mixing_Process(geometry_container[jZone][MESH_0], solver_container[jZone][MESH_0], config_container[jZone], outMarker);
-							solver_container[iZone][MESH_0][FLOW_SOL]->TurboPerformance(solver_container[jZone][MESH_0][FLOW_SOL], config_container[iZone], inMarker, outMarker, Kind_TurboPerf);
+							solver_container[iZone][MESH_0][FLOW_SOL]->TurboPerformance(solver_container[jZone][MESH_0][FLOW_SOL], config_container[iZone], inMarker, outMarker, Kind_TurboPerf, inMarkerTP);
 						}
 			}
 }
