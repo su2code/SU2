@@ -310,4 +310,4 @@ void SetMixingPlane(CGeometry ***geometry_container, CSolver ****solver_containe
  * \param[in] nZone - Total number of zones (periodic instances).
  * \param[in] iZone - Total number of zones (periodic instances).
  */
-void SetTurboPerformance(CGeometry ***geometry_container, CSolver ****solver_container, CConfig **config_container, unsigned short nZone, unsigned short iZone);
+void SetTurboPerformance(CGeometry ***geometry_container, CSolver ****solver_container, CConfig **config_container, COutput *output, unsigned short iZone);
