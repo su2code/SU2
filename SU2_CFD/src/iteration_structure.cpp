@@ -78,7 +78,7 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
 		SetMixingPlane(geometry_container, solver_container, config_container,nZone, iZone);
 
 	if(config_container[iZone]->GetBoolTurboPerf())
-		SetTurboPerformance(geometry_container, solver_container, config_container,nZone, iZone);
+		SetTurboPerformance(geometry_container, solver_container, config_container, output, iZone);
 	}
 
   
@@ -2158,9 +2158,10 @@ void SetMixingPlane(CGeometry ***geometry_container, CSolver ****solver_containe
 
 }
 
-void SetTurboPerformance(CGeometry ***geometry_container, CSolver ****solver_container, CConfig **config_container, unsigned short nZone, unsigned short iZone) {
+void SetTurboPerformance(CGeometry ***geometry_container, CSolver ****solver_container, CConfig **config_container, COutput *output, unsigned short iZone) {
 
 	unsigned short  jZone, inMarker, outMarker, inMarkerTP, outMarkerTP, Kind_TurboPerf;
+	unsigned short nZone = geometry_container[iZone][MESH_0]->GetnZone();
 	string inMarker_Tag, outMarker_Tag;
 
 
