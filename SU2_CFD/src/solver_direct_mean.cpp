@@ -109,7 +109,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   string filename = config->GetSolution_FlowFileName();
 
   unsigned short direct_diff = config->GetDirectDiff();
-
+  unsigned short nMarkerTurboPerf = config->Get_nMarkerTurboPerf();
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -442,7 +442,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
     Bleed_Area[iMarker]          = 0.0;
   }
 
-  /*--- Initializate quantities for the mixing process*/
+  /*--- Initializate quantities for the mixing process ---*/
 
   AveragedVelocity = new su2double* [nMarker];
   AveragedNormal = new su2double* [nMarker];
@@ -489,6 +489,15 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   AveragedMach = new su2double[nMarker];
   AveragedNormalMach = new su2double[nMarker];
   AveragedTangMach = new su2double[nMarker];
+
+
+  /*--- Initializate quantities for turboperformace ---*/
+
+  TotalStaticEfficiency = new su2double[nMarkerTurboPerf];
+  TotalTotalEfficiency = new su2double[nMarkerTurboPerf];
+  KineticEnergyLoss= new su2double[nMarkerTurboPerf];
+  TotalPressureLoss= new su2double[nMarkerTurboPerf];
+
 
   /*--- Initialize the cauchy critera array for fixed CL mode ---*/
 
@@ -4564,28 +4573,33 @@ void CEulerSolver::TurboPerformance(CSolver *solver, CConfig *config, unsigned s
 	avgTotalEnthalpyOutIs = avgEnthalpyOutIs + 0.5*avgVel2Out;
 
 
+
+
+
     switch(Kind_TurboPerf){
     	case TOT_PRESSURE_LOSS:
-    	    y = (avgTotalRelPressureIn - avgTotalRelPressureOut)/(avgTotalRelPressureOut - avgPressureOut) ;
-    		cout << "total_pressure_loss "<< y << " in zone " << inMarkerTP<< endl;
+    		TotalPressureLoss[inMarkerTP] = (avgTotalRelPressureIn - avgTotalRelPressureOut)/(avgTotalRelPressureOut - avgPressureOut) ;
+    		cout << "total_pressure_loss "<<TotalPressureLoss[inMarkerTP] << " in zone " << inMarkerTP<< endl;
     	    break;
     	case KINETIC_ENERGY_LOSS:
-    	    zeta = (avgEnthalpyOut - avgEnthalpyOutIs)/(avgTotalRothalpyIn - avgEnthalpyOut + 0.5*avgGridVel2Out);
-    		cout << "kin_energy_loss "<< zeta << " in zone " << inMarkerTP <<  endl;
+    		KineticEnergyLoss[inMarkerTP] = (avgEnthalpyOut - avgEnthalpyOutIs)/(avgTotalRothalpyIn - avgEnthalpyOut + 0.5*avgGridVel2Out);
+    		cout << "kin_energy_loss "<< KineticEnergyLoss[inMarkerTP] << " in zone " << inMarkerTP <<  endl;
     	    break;
     	case ETA_TT: //Total-Total efficiency
-    		eta_tt = (avgTotalEnthalpyIn - avgTotalEnthalpyOut)/(avgTotalEnthalpyIn - avgTotalEnthalpyOutIs);
-    		cout << "eta_tt "<< eta_tt<<" in zone " << inMarkerTP<< endl;
+    		TotalTotalEfficiency[inMarkerTP] = (avgTotalEnthalpyIn - avgTotalEnthalpyOut)/(avgTotalEnthalpyIn - avgTotalEnthalpyOutIs);
+    		cout << "eta_tt "<< TotalTotalEfficiency[inMarkerTP]<<" in zone " << inMarkerTP<< endl;
     		break;
     	case ETA_TS: //Total-Static efficiency
-    	    eta_ts = (avgTotalEnthalpyIn - avgEnthalpyOut)/(avgTotalEnthalpyIn - avgEnthalpyOutIs);
-    		cout << "eta_ts "<< eta_ts<<" in zone " << inMarkerTP<< endl;
+    		TotalStaticEfficiency[inMarkerTP] = (avgTotalEnthalpyIn - avgEnthalpyOut)/(avgTotalEnthalpyIn - avgEnthalpyOutIs);
+    		cout << "eta_ts "<< TotalStaticEfficiency[inMarkerTP]<<" in zone " << inMarkerTP<< endl;
     	    break;
     	default:
     		cout << "Warning! Invalid Turbo Performance option!" << endl;
     		exit(EXIT_FAILURE);
     		break;
     }
+
+
 
 
 
@@ -11585,6 +11599,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   string filename = config->GetSolution_FlowFileName();
 
   unsigned short direct_diff = config->GetDirectDiff();
+  unsigned short nMarkerTurboPerf = config->Get_nMarkerTurboPerf();
 
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -12018,6 +12033,14 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   AveragedMach = new su2double[nMarker];
   AveragedNormalMach = new su2double[nMarker];
   AveragedTangMach = new su2double[nMarker];
+
+
+  /*--- Initializate quantities for turboperformace ---*/
+
+  TotalStaticEfficiency = new su2double[nMarkerTurboPerf];
+  TotalTotalEfficiency = new su2double[nMarkerTurboPerf];
+  KineticEnergyLoss= new su2double[nMarkerTurboPerf];
+  TotalPressureLoss= new su2double[nMarkerTurboPerf];
 
 
   /*--- Initialize the cauchy critera array for fixed CL mode ---*/

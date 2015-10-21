@@ -2774,7 +2774,10 @@ protected:
 		  *ExtAveragedDensity,
 		  *AveragedSoundSpeed,
 		  *AveragedEntropy;
-
+  su2double *TotalStaticEfficiency,
+  	  	  	*TotalTotalEfficiency,
+			*KineticEnergyLoss,
+			*TotalPressureLoss;
 
 
 public:
