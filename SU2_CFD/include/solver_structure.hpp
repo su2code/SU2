@@ -1071,6 +1071,34 @@ public:
 	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
 	  */
 	 virtual su2double GetAveragedTotPressure(unsigned short valMarker);
+
+	 /*!
+	  * \brief A virtual member.
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  */
+	 virtual su2double GetTotalPressureLoss(unsigned short inMarkerTP);
+
+	 /*!
+	  * \brief A virtual member.
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  */
+	 virtual su2double GetKineticEnergyLoss(unsigned short inMarkerTP);
+
+	 /*!
+	  * \brief A virtual member.
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  */
+	 virtual su2double GetTotalTotalEfficiency(unsigned short inMarkerTP);
+
+	 /*!
+	  * \brief A virtual member.
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  */
+	 virtual su2double GetTotalStaticEfficiency(unsigned short inMarkerTP);
 	 /*!
 	  * \brief A virtual member.
 	  * \param[in] val_marker - bound marker.
@@ -1143,6 +1171,15 @@ public:
 	 * \param[in] outMarker - marker related to the outlet.
 	 */
 	virtual void TurboPerformance(CSolver *solver,  CConfig *config, unsigned short inMarker,  unsigned short outMarker, unsigned short Kind_TurboPerf, unsigned short inMarkerTP);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] solver - solver containing the outlet information.
+	 * \param[in] inMarker - marker related to the inlet.
+	 * \param[in] outMarker - marker related to the outlet.
+	 */
+	virtual void StoreTurboPerformance(CSolver *solver, unsigned short inMarkerTP);
+
 
 	/*!
 	 * \brief A virtual member.
@@ -3373,6 +3410,34 @@ public:
 	 su2double GetAveragedTotPressure(unsigned short valMarker);
 
 	 /*!
+	  * \brief.
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  */
+	 su2double GetTotalPressureLoss(unsigned short inMarkerTP);
+
+	 /*!
+	  * \brief .
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  */
+	 su2double GetKineticEnergyLoss(unsigned short inMarkerTP);
+
+	 /*!
+	  * \brief .
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  */
+	 su2double GetTotalTotalEfficiency(unsigned short inMarkerTP);
+
+	 /*!
+	  * \brief .
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  */
+	 su2double GetTotalStaticEfficiency(unsigned short inMarkerTP);
+
+	 /*!
 	  * \brief Provide the average density at the boundary of interest.
 	  * \param[in] val_marker - bound marker.
 	  * \return Value of the Average Density on the surface <i>val_marker</i>.
@@ -3498,6 +3563,14 @@ public:
 	 * \param[in] outMarker - marker related to the outlet.
 	 */
 	void TurboPerformance(CSolver *solver,  CConfig *config, unsigned short inMarker,  unsigned short outMarker, unsigned short Kind_TurboPerf , unsigned short inMarkerTP );
+
+	/*!
+	 * \brief Compute turbomachinery performance.
+	 * \param[in] solver - solver containing the outlet information.
+	 * \param[in] inMarker - marker related to the inlet.
+	 * \param[in] outMarker - marker related to the outlet.
+	 */
+	void StoreTurboPerformance(CSolver *solver,  unsigned short inMarkerTP );
 
 	/*!
 	 * \brief Provide the non dimensional lift coefficient (inviscid contribution).

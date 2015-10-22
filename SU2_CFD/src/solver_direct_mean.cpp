@@ -4579,19 +4579,19 @@ void CEulerSolver::TurboPerformance(CSolver *solver, CConfig *config, unsigned s
     switch(Kind_TurboPerf){
     	case TOT_PRESSURE_LOSS:
     		TotalPressureLoss[inMarkerTP] = (avgTotalRelPressureIn - avgTotalRelPressureOut)/(avgTotalRelPressureOut - avgPressureOut) ;
-    		cout << "total_pressure_loss "<<TotalPressureLoss[inMarkerTP] << " in zone " << inMarkerTP<< endl;
+//    		cout << "total_pressure_loss "<<TotalPressureLoss[inMarkerTP] << " in zone " << inMarkerTP<< endl;
     	    break;
     	case KINETIC_ENERGY_LOSS:
     		KineticEnergyLoss[inMarkerTP] = (avgEnthalpyOut - avgEnthalpyOutIs)/(avgTotalRothalpyIn - avgEnthalpyOut + 0.5*avgGridVel2Out);
-    		cout << "kin_energy_loss "<< KineticEnergyLoss[inMarkerTP] << " in zone " << inMarkerTP <<  endl;
+//    		cout << "kin_energy_loss "<< KineticEnergyLoss[inMarkerTP] << " in zone " << inMarkerTP <<  endl;
     	    break;
     	case ETA_TT: //Total-Total efficiency
     		TotalTotalEfficiency[inMarkerTP] = (avgTotalEnthalpyIn - avgTotalEnthalpyOut)/(avgTotalEnthalpyIn - avgTotalEnthalpyOutIs);
-    		cout << "eta_tt "<< TotalTotalEfficiency[inMarkerTP]<<" in zone " << inMarkerTP<< endl;
+//    		cout << "eta_tt "<< TotalTotalEfficiency[inMarkerTP]<<" in zone " << inMarkerTP<< endl;
     		break;
     	case ETA_TS: //Total-Static efficiency
     		TotalStaticEfficiency[inMarkerTP] = (avgTotalEnthalpyIn - avgEnthalpyOut)/(avgTotalEnthalpyIn - avgEnthalpyOutIs);
-    		cout << "eta_ts "<< TotalStaticEfficiency[inMarkerTP]<<" in zone " << inMarkerTP<< endl;
+//    		cout << "eta_ts "<< TotalStaticEfficiency[inMarkerTP]<<" in zone " << inMarkerTP<< endl;
     	    break;
     	default:
     		cout << "Warning! Invalid Turbo Performance option!" << endl;

@@ -430,6 +430,15 @@ inline su2double CSolver::GetAveragedTotTemperature(unsigned short valMarker){re
 
 inline su2double CSolver::GetAveragedTotPressure(unsigned short valMarker){return 0;}
 
+inline su2double CSolver::GetTotalPressureLoss(unsigned short inMarkerTP){return 0;}
+
+inline su2double CSolver::GetKineticEnergyLoss(unsigned short inMarkerTP){return 0;}
+
+inline su2double CSolver::GetTotalTotalEfficiency(unsigned short inMarkerTP){return 0;}
+
+inline su2double CSolver::GetTotalStaticEfficiency(unsigned short inMarkerTP){return 0;}
+
+
 inline void CSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
 									 unsigned short val_marker) { }
 
@@ -581,6 +590,8 @@ inline void CSolver::Set_MPI_MaxEigenvalue(CGeometry *geometry, CConfig *config)
 inline void CSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::TurboPerformance(CSolver *solver, CConfig *config, unsigned short inMarker,  unsigned short outMarker, unsigned short Kind_TurboPerf, unsigned short inMarkerTP ){ }
+
+inline void CSolver::StoreTurboPerformance(CSolver *solver, unsigned short inMarkerTP ){ }
 
 inline void CSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) { }
 
@@ -894,6 +905,14 @@ inline su2double CEulerSolver::GetAveragedTotTemperature(unsigned short valMarke
 
 inline su2double CEulerSolver::GetAveragedTotPressure(unsigned short valMarker){return AveragedTotPressure[valMarker];}
 
+inline su2double CEulerSolver::GetTotalPressureLoss(unsigned short inMarkerTP){return TotalPressureLoss[inMarkerTP];}
+
+inline su2double CEulerSolver::GetKineticEnergyLoss(unsigned short inMarkerTP){return TotalPressureLoss[inMarkerTP];}
+
+inline su2double CEulerSolver::GetTotalTotalEfficiency(unsigned short inMarkerTP){return TotalPressureLoss[inMarkerTP];}
+
+inline su2double CEulerSolver::GetTotalStaticEfficiency(unsigned short inMarkerTP){return TotalPressureLoss[inMarkerTP];}
+
 
 inline void CEulerSolver::SetExtAveragedValue(CSolver *solver_container, unsigned short intMarker,  unsigned short extMarker){
 	ExtAveragedDensity[extMarker]= solver_container->GetAveragedDensity(intMarker);
@@ -904,6 +923,13 @@ inline void CEulerSolver::SetExtAveragedValue(CSolver *solver_container, unsigne
     ExtAveragedTotPressure[extMarker]= solver_container->GetAveragedTotPressure(intMarker);
 }
 
+inline void CEulerSolver::StoreTurboPerformance(CSolver *solver, unsigned short inMarkerTP ){
+	TotalPressureLoss[inMarkerTP] = solver->GetTotalPressureLoss(inMarkerTP);
+	KineticEnergyLoss[inMarkerTP] = solver->GetKineticEnergyLoss(inMarkerTP);
+	TotalTotalEfficiency[inMarkerTP] = solver->GetTotalTotalEfficiency(inMarkerTP);
+	TotalStaticEfficiency[inMarkerTP]= solver->GetTotalStaticEfficiency(inMarkerTP);
+
+}
 
 inline su2double CNSSolver::GetViscosity_Inf(void) { return Viscosity_Inf; }
 
