@@ -210,7 +210,7 @@ int main(int argc, char *argv[]) {
         (config_container[iZone]->GetDirectDiff() == D_DESIGN)) {
       if (rank == MASTER_NODE)
         cout << "Setting dynamic mesh structure." << endl;
-      grid_movement[iZone] = new CVolumetricMovement(geometry_container[iZone][MESH_0]);
+      grid_movement[iZone] = new CVolumetricMovement(geometry_container[iZone][MESH_0], config_container[iZone]);
       FFDBox[iZone] = new CFreeFormDefBox*[MAX_NUMBER_FFD];
       surface_movement[iZone] = new CSurfaceMovement();
       surface_movement[iZone]->CopyBoundary(geometry_container[iZone][MESH_0], config_container[iZone]);
