@@ -499,6 +499,14 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   TotalPressureLoss= new su2double[nMarkerTurboPerf];
 
 
+  for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++){
+ 	    TotalStaticEfficiency[iMarker]= 0.0;
+ 	    TotalTotalEfficiency[iMarker]= 0.0;
+ 	    KineticEnergyLoss[iMarker]= 0.0;
+ 	    TotalPressureLoss[iMarker]= 0.0;
+   }
+
+
   /*--- Initialize the cauchy critera array for fixed CL mode ---*/
 
   if (config->GetFixed_CL_Mode())
@@ -12041,6 +12049,13 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   TotalTotalEfficiency = new su2double[nMarkerTurboPerf];
   KineticEnergyLoss= new su2double[nMarkerTurboPerf];
   TotalPressureLoss= new su2double[nMarkerTurboPerf];
+
+  for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++){
+	    TotalStaticEfficiency[iMarker]= 0.0;
+	    TotalTotalEfficiency[iMarker]= 0.0;
+	    KineticEnergyLoss[iMarker]= 0.0;
+	    TotalPressureLoss[iMarker]= 0.0;
+  }
 
 
   /*--- Initialize the cauchy critera array for fixed CL mode ---*/
