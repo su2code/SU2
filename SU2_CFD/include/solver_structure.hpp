@@ -1884,6 +1884,7 @@ public:
 	virtual su2double GetTotal_Sens_Temp(void);
 
 	/*!
+	 * \author H. Kline
 	 * \brief Set the total back pressure sensitivity coefficient.
 	 * \return Value of the back pressure sensitivity coefficient
 	 *         (inviscid + viscous contribution).
@@ -5298,6 +5299,7 @@ public:
 	su2double GetTotal_Sens_Temp(void);
 
 	/*!
+	 * \author H. Kline
 	 * \brief Set the total Back pressure number sensitivity coefficient.
 	 * \return Value of the Back sensitivity coefficient
 	 *         (inviscid + viscous contribution).
@@ -8066,6 +8068,7 @@ public:
 	su2double GetTotal_Sens_Temp(void);
 
   /*!
+   * \author H. Kline
    * \brief Set the total Back pressure sensitivity coefficient.
    * \return Value of the Back sensitivity coefficient
    *         (inviscid + viscous contribution).
@@ -8325,6 +8328,7 @@ public:
   su2double GetTotal_Sens_Temp(void);
 
   /*!
+   * \author H. Kline
    * \brief Set the total Back pressure number sensitivity coefficient.
    * \return Value of the Back sensitivity coefficient
    *         (inviscid + viscous contribution).

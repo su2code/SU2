@@ -3578,6 +3578,7 @@ public:
 	unsigned short GetKind_ObjFunc(void);
 
 	/*!
+	 * \author H. Kline
 	 * \brief Get the coefficients of the objective defined by the chain rule with primitive variables.
    * \note This objective is only applicable to gradient calculations. Objective value must be
    * calculated using the area averaged outlet values of density, velocity, and pressure.
