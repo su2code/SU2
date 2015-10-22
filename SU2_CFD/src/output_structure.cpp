@@ -4310,6 +4310,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     (config[val_iZone]->GetKind_Solver() == RANS) || (config[val_iZone]->GetKind_Solver() == ADJ_EULER) ||
     (config[val_iZone]->GetKind_Solver() == ADJ_NAVIER_STOKES) || (config[val_iZone]->GetKind_Solver() == ADJ_RANS);
     
+    bool turbo = config[val_iZone]->GetBoolTurboPerf();
+
     bool output_per_surface = false;
     if (config[val_iZone]->GetnMarker_Monitoring() > 1) output_per_surface = true;
 
@@ -5076,6 +5078,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               else if (rotating_frame && nDim == 3) cout << "     Res[Rho]" << "     Res[RhoE]" << " CThrust(Total)" << " CTorque(Total)" << endl;
               else if (aeroelastic) cout << "     Res[Rho]" << "     Res[RhoE]" << "   CLift(Total)" << "   CDrag(Total)" << "         plunge" << "          pitch" << endl;
               else if (equiv_area) cout << "     Res[Rho]" << "   CLift(Total)" << "   CDrag(Total)" << "    CPress(N-F)" << endl;
+              else if (turbo)      cout << "     Res[Rho]" << "     Res[RhoE]" << "   Efficiency(%)" << "   DeltaMassFlow(%)" << endl;
               else cout << "     Res[Rho]" << "     Res[RhoE]" << "   CLift(Total)" << "   CDrag(Total)" << endl;
 //            }
 //            else if (fluid_structure) cout << "     Res[Rho]" << "   Res[Displx]" << "   CLift(Total)" << "   CDrag(Total)" << endl;
@@ -5153,6 +5156,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             else if (rotating_frame && nDim == 3 ) cout << "   CThrust(Total)" << "   CTorque(Total)" << endl;
             else if (aeroelastic) cout << "   CLift(Total)" << "   CDrag(Total)" << "         plunge" << "          pitch" << endl;
             else if (equiv_area) cout << "   CLift(Total)" << "   CDrag(Total)" << "    CPress(N-F)" << endl;
+            else if (turbo)      cout << "   Efficiency(%)" << "   DeltaMassFlow(%)" << endl;
             else cout << "   CLift(Total)"   << "   CDrag(Total)"   << endl;
             
             break;
@@ -5391,6 +5395,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             cout.precision(4);
             cout.setf(ios::scientific, ios::floatfield);
             cout << Total_CNearFieldOF; }
+          if (turbo) {
+        	cout.setf(ios::scientific, ios::floatfield);
+		    cout.width(15); cout << solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotalStaticEfficiency(0); cout.width(15);
+		    cout << solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotalPressureLoss(0);
+		    cout.unsetf(ios_base::floatfield);
+		  }
           else { cout.width(15); cout << min(10000.0, max(-10000.0, Total_CLift)); cout.width(15); cout << min(10000.0, max(-10000.0, Total_CDrag)); }
           
           if (aeroelastic) {
