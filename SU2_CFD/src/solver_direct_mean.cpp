@@ -3419,14 +3419,12 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
     LinSysRes.SubtractBlock(jPoint, Res_Conv);
 
     /*--- Set implicit computation ---*/
-    AD_BEGIN_PASSIVE
     if (implicit) {
       Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
       Jacobian.AddBlock(iPoint, jPoint, Jacobian_j);
       Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
       Jacobian.SubtractBlock(jPoint, jPoint, Jacobian_j);
     }
-    AD_END_PASSIVE
   }
 
 }
@@ -3606,14 +3604,14 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
     LinSysRes.SubtractBlock(jPoint, Res_Conv);
     
     /*--- Set implicit Jacobians ---*/
-    AD_BEGIN_PASSIVE
+    
     if (implicit) {
       Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
       Jacobian.AddBlock(iPoint, jPoint, Jacobian_j);
       Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
       Jacobian.SubtractBlock(jPoint, jPoint, Jacobian_j);
     }
-    AD_END_PASSIVE
+    
     /*--- Roe Turkel preconditioning, set the value of beta ---*/
     
     if (roe_turkel) {
@@ -3708,12 +3706,9 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
       /*--- Add the source residual to the total ---*/
       LinSysRes.AddBlock(iPoint, Residual);
 
-      AD_BEGIN_PASSIVE
-
       /*--- Add the implicit Jacobian contribution ---*/
       if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
 
-      AD_END_PASSIVE
     }
   }
 
@@ -3749,13 +3744,9 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
       /*--- Add Residual ---*/
       LinSysRes.AddBlock(iPoint, Residual);
 
-      AD_BEGIN_PASSIVE
-
       /*--- Implicit part ---*/
       if (implicit)
         Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-
-      AD_END_PASSIVE
     }
   }
 
@@ -3812,16 +3803,11 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
       }
 
       Residual[nDim+1] = Vol*(levelset-z)*DampingFactor;
-
-      LinSysRes.AddBlock(iPoint, Residual);
-
-      AD_BEGIN_PASSIVE
-
       Jacobian_i[nDim+1][nDim+1] = Vol*DampingFactor;
 
+      LinSysRes.AddBlock(iPoint, Residual);
       if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
 
-      AD_END_PASSIVE
     }
 
   }
@@ -3871,12 +3857,9 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
       /*--- Add the source residual to the total ---*/
       LinSysRes.AddBlock(iPoint, Residual);
 
-      AD_BEGIN_PASSIVE
-
       /*--- Add the implicit Jacobian contribution ---*/
       if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
 
-      AD_END_PASSIVE
     }
   }
 
@@ -6545,8 +6528,6 @@ void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container
       /*--- Add value to the residual ---*/
       
       LinSysRes.AddBlock(iPoint, Residual);
-      
-      AD_BEGIN_PASSIVE
 
       /*--- Form Jacobians for implicit computations ---*/
       
@@ -6612,9 +6593,6 @@ void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container
         }
         
       }
-
-      AD_END_PASSIVE
-
     }
   }
   
@@ -12442,8 +12420,6 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
 
       /*--- Calculate Jacobian for implicit time stepping ---*/
 
-      AD_BEGIN_PASSIVE
-
       if (implicit) {
 
         for (iVar = 0; iVar < nVar; iVar ++)
@@ -12475,8 +12451,6 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
         Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
 
       }
-
-      AD_END_PASSIVE
 
       /*--- If the wall is moving, there are additional residual contributions
        due to pressure (p v_wall.n) and shear stress (tau.v_wall.n). ---*/
@@ -12538,7 +12512,7 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
           Res_Visc[nDim+1] += tau_vel[iDim]*UnitNormal[iDim]*Area;
 
         /*--- Implicit Jacobian contributions due to moving walls ---*/
-        AD_BEGIN_PASSIVE
+
         if (implicit) {
 
           /*--- Jacobian contribution related to the pressure term ---*/
@@ -12603,7 +12577,6 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
 
           Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
         }
-        AD_END_PASSIVE
 
       }
 
