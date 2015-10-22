@@ -907,11 +907,11 @@ inline su2double CEulerSolver::GetAveragedTotPressure(unsigned short valMarker){
 
 inline su2double CEulerSolver::GetTotalPressureLoss(unsigned short inMarkerTP){return TotalPressureLoss[inMarkerTP];}
 
-inline su2double CEulerSolver::GetKineticEnergyLoss(unsigned short inMarkerTP){return TotalPressureLoss[inMarkerTP];}
+inline su2double CEulerSolver::GetKineticEnergyLoss(unsigned short inMarkerTP){return KineticEnergyLoss[inMarkerTP];}
 
-inline su2double CEulerSolver::GetTotalTotalEfficiency(unsigned short inMarkerTP){return TotalPressureLoss[inMarkerTP];}
+inline su2double CEulerSolver::GetTotalTotalEfficiency(unsigned short inMarkerTP){return TotalTotalEfficiency[inMarkerTP];}
 
-inline su2double CEulerSolver::GetTotalStaticEfficiency(unsigned short inMarkerTP){return TotalPressureLoss[inMarkerTP];}
+inline su2double CEulerSolver::GetTotalStaticEfficiency(unsigned short inMarkerTP){return TotalStaticEfficiency[inMarkerTP];}
 
 
 inline void CEulerSolver::SetExtAveragedValue(CSolver *solver_container, unsigned short intMarker,  unsigned short extMarker){

@@ -4527,10 +4527,6 @@ void CEulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
 
 void CEulerSolver::TurboPerformance(CSolver *solver, CConfig *config, unsigned short inMarker,  unsigned short outMarker, unsigned short Kind_TurboPerf, unsigned short inMarkerTP ){
 
-	su2double  eta_tt, //Total-Total efficiency
-			   eta_ts, //Total-Static efficiency
-			   y,      //Total pressure loss coefficient
-			   zeta;   //Kinetic energy loss coefficient
 	su2double  avgVel2In, avgVel2Out,avgVelRel2In, avgVelRel2Out, avgGridVel2In, avgGridVel2Out, avgTotalEnthalpyIn= 0.0,avgTotalRothalpyIn,
 			  avgTotalEnthalpyOut, avgTotalRothalpyOut, avgTotalEnthalpyOutIs, avgEnthalpyOut, avgEnthalpyOutIs,
 			   avgPressureIn, avgPressureOut, avgTotalRelPressureIn, avgTotalRelPressureOut, avgDensityOut, avgEntropyIn, avgEntropyOut;
@@ -4585,24 +4581,17 @@ void CEulerSolver::TurboPerformance(CSolver *solver, CConfig *config, unsigned s
 
 
     switch(Kind_TurboPerf){
-    	case TOT_PRESSURE_LOSS:
+    	case BLADE:
     		TotalPressureLoss[inMarkerTP] = (avgTotalRelPressureIn - avgTotalRelPressureOut)/(avgTotalRelPressureOut - avgPressureOut) ;
-//    		cout << "total_pressure_loss "<<TotalPressureLoss[inMarkerTP] << " in zone " << inMarkerTP<< endl;
-    	    break;
-    	case KINETIC_ENERGY_LOSS:
     		KineticEnergyLoss[inMarkerTP] = (avgEnthalpyOut - avgEnthalpyOutIs)/(avgTotalRothalpyIn - avgEnthalpyOut + 0.5*avgGridVel2Out);
-//    		cout << "kin_energy_loss "<< KineticEnergyLoss[inMarkerTP] << " in zone " << inMarkerTP <<  endl;
     	    break;
-    	case ETA_TT: //Total-Total efficiency
+    	case STAGE: case TURBINE:
     		TotalTotalEfficiency[inMarkerTP] = (avgTotalEnthalpyIn - avgTotalEnthalpyOut)/(avgTotalEnthalpyIn - avgTotalEnthalpyOutIs);
-//    		cout << "eta_tt "<< TotalTotalEfficiency[inMarkerTP]<<" in zone " << inMarkerTP<< endl;
-    		break;
-    	case ETA_TS: //Total-Static efficiency
     		TotalStaticEfficiency[inMarkerTP] = (avgTotalEnthalpyIn - avgEnthalpyOut)/(avgTotalEnthalpyIn - avgEnthalpyOutIs);
 //    		cout << "eta_ts "<< TotalStaticEfficiency[inMarkerTP]<<" in zone " << inMarkerTP<< endl;
     	    break;
     	default:
-    		cout << "Warning! Invalid Turbo Performance option!" << endl;
+    		cout << "Warning! Invalid TurboPerformance option!" << endl;
     		exit(EXIT_FAILURE);
     		break;
     }

@@ -818,17 +818,15 @@ static const map<string, MIXINGPROCESS_TYPE> MixingProcess_Map = CCreateMap<stri
  * \brief types of Turbomachinery performance indicators.
  */
 enum TURBO_PERFORMANCE_TYPE {
-  TOT_PRESSURE_LOSS   = 1,		/*!< \brief Turbomachinery row performance total pressure loss. */
-  KINETIC_ENERGY_LOSS = 2,      /*!< \brief Turbomachinery row kinetic energy loss. */
-  ETA_TS              = 3,		/*!< \brief Turbomachinery Total-Static efficiency. */
-  ETA_TT              = 4		/*!< \brief Turbomachinery Total-Total efficiency. */
+  BLADE   = 1,		/*!< \brief Turbomachinery blade performances. */
+  STAGE = 2,      /*!< \brief Turbomachinery blade stage performances. */
+  TURBINE              = 3		/*!< \brief Turbomachinery turbine performances. */
 };
 
 static const map<string, TURBO_PERFORMANCE_TYPE> TurboPerformance_Map = CCreateMap<string, TURBO_PERFORMANCE_TYPE>
-("TOT_PRESSURE_LOSS", TOT_PRESSURE_LOSS)
-("KINETIC_ENERGY_LOSS", KINETIC_ENERGY_LOSS)
-("ETA_TS", ETA_TS)
-("ETA_TT", ETA_TT);
+("BLADE", BLADE)
+("STAGE", STAGE)
+("TURBINE", TURBINE);
 
 /*!
  * \brief types inlet boundary treatments
