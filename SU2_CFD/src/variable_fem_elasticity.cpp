@@ -44,6 +44,9 @@ CFEM_ElasVariable::CFEM_ElasVariable(void) : CVariable() {
 	Residual_Ext_Surf 		= NULL;		// Residual component due to external surface forces
 	Residual_Ext_Body 		= NULL;		// Residual component due to body forces
 
+	FlowTraction_n			= NULL;		// Nodal traction due to the fluid (fsi) at time n (for gen-alpha methods)
+	Residual_Ext_Surf_n		= NULL;		// Residual component due to external surface forces at time n (for gen-alpha methods)
+
 	Solution_time_n			= NULL;		// Solution at the node at the previous subiteration
 
 	Solution_Vel			= NULL;		// Velocity at the node at time t+dt
@@ -63,6 +66,7 @@ CFEM_ElasVariable::CFEM_ElasVariable(su2double *val_fea, unsigned short val_nDim
 	bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);	// Nonlinear analysis.
 	bool body_forces = false;		// Bool for adding body forces in the future.
 	bool incremental_load = config->GetIncrementalLoad();
+	bool gen_alpha = (config->GetKind_TimeIntScheme_FEA() == GENERALIZED_ALPHA);	// Generalized alpha method requires residual at previous time step.
 
 	VonMises_Stress = 0.0;
 
@@ -120,6 +124,15 @@ CFEM_ElasVariable::CFEM_ElasVariable(su2double *val_fea, unsigned short val_nDim
 		Solution_Old 			=  new su2double [nVar];
 	}
 
+	/*--- If we are going to use a generalized alpha integration method, we need a way to store the old residuals ---*/
+	if (gen_alpha){
+		Residual_Ext_Surf_n		= new su2double [nVar];
+
+		if (fsi_analysis) FlowTraction_n = new su2double [nVar];
+		else FlowTraction_n = NULL;
+
+	}
+
 //	if (nonlinear_analysis) Residual_Int = new su2double [nVar];	else Residual_Int = NULL;
 	if (body_forces) Residual_Ext_Body = new su2double [nVar];	else Residual_Ext_Body = NULL;
 	Residual_Ext_Surf = new su2double [nVar];
@@ -137,6 +150,9 @@ CFEM_ElasVariable::~CFEM_ElasVariable(void) {
 //	if (Residual_Int 			!= NULL) delete [] Residual_Int;
 	if (Residual_Ext_Surf 		!= NULL) delete [] Residual_Ext_Surf;
 	if (Residual_Ext_Body 		!= NULL) delete [] Residual_Ext_Body;
+
+	if (FlowTraction_n 			!= NULL) delete [] FlowTraction_n;
+	if (Residual_Ext_Surf_n		!= NULL) delete [] Residual_Ext_Surf_n;
 
 	if (Solution_time_n 		!= NULL) delete [] Solution_time_n;
 

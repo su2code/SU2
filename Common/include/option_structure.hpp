@@ -717,12 +717,12 @@ static const map<string, ENUM_TIME_INT> Time_Int_Map = CCreateMap<string, ENUM_T
 enum ENUM_TIME_INT_FEA {
   CD_EXPLICIT = 1,			/*!< \brief Support for implementing an explicit method. */
   NEWMARK_IMPLICIT = 2,   	/*!< \brief Implicit Newmark integration definition. */
-  GA_IMPLICIT = 3   		/*!< \brief Support for implementing another implicit method. */
+  GENERALIZED_ALPHA = 3   		/*!< \brief Support for implementing another implicit method. */
 };
 static const map<string, ENUM_TIME_INT_FEA> Time_Int_Map_FEA = CCreateMap<string, ENUM_TIME_INT_FEA>
 ("CD_EXPLICIT", CD_EXPLICIT)
 ("NEWMARK_IMPLICIT", NEWMARK_IMPLICIT)
-("GA_IMPLICIT", GA_IMPLICIT);
+("GENERALIZED_ALPHA", GENERALIZED_ALPHA);
 
 /*!
  * \brief type of time integration schemes
