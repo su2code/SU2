@@ -2181,6 +2181,8 @@ void SetTurboPerformance(CGeometry ***geometry_container, CSolver ****solver_con
 							solver_container[iZone][MESH_0][FLOW_SOL]->TurboPerformance(solver_container[jZone][MESH_0][FLOW_SOL], config_container[iZone], inMarker, outMarker, Kind_TurboPerf, inMarkerTP);
 							solver_container[ZONE_0][MESH_0][FLOW_SOL]->StoreTurboPerformance(solver_container[iZone][MESH_0][FLOW_SOL], inMarkerTP);
 //							cout << solver_container[ZONE_0][MESH_0][FLOW_SOL]->GetTotalPressureLoss(inMarkerTP) << endl;
+//							cout << solver_container[ZONE_0][MESH_0][FLOW_SOL]->GetTotalStaticEfficiency(inMarkerTP) << endl;
+
 						}
 			}
 }
