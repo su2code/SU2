@@ -1231,6 +1231,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Time while the load is to be increased linearly */
   addDoubleOption("RAMP_TIME", Ramp_Time, 1.0);
 
+  /* DESCRIPTION: Newmark - Generalized alpha - coefficients */
+  addDoubleListOption("TIME_INT_STRUCT_COEFFS", nIntCoeffs, Int_Coeffs);
 
   /*  DESCRIPTION: Apply dead loads. Options: NO, YES \ingroup Config */
   addBoolOption("INCREMENTAL_LOAD", IncrementalLoad, false);
@@ -2472,6 +2474,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     RK_Alpha_Step = new su2double[1]; RK_Alpha_Step[0] = 1.0;
   }
   
+  if (nIntCoeffs == 0) {
+	nIntCoeffs = 2;
+	Int_Coeffs = new su2double[2]; Int_Coeffs[0] = 0.25; Int_Coeffs[1] = 0.5;
+  }
+
   if ((Kind_SU2 == SU2_CFD) && (Kind_Solver == NO_SOLVER)) {
     cout << "PHYSICAL_PROBLEM must be set in the configuration file" << endl;
     exit(EXIT_FAILURE);

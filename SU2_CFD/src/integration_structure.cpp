@@ -378,7 +378,7 @@ void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_contai
 		case (NEWMARK_IMPLICIT):
 		  solver_container[MainSolver]->ImplicitNewmark_Iteration(geometry, solver_container, config);
 		  break;
-		case (GA_IMPLICIT):
+		case (GENERALIZED_ALPHA):
 		  solver_container[MainSolver]->ImplicitEuler_Iteration(geometry, solver_container, config);
 		  break;
 	  }
@@ -402,8 +402,8 @@ void CIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver **solver_co
 		case (NEWMARK_IMPLICIT):
 		  solver_container[MainSolver]->ImplicitNewmark_Iteration(geometry, solver_container, config);
 		  break;
-		case (GA_IMPLICIT):
-		  solver_container[MainSolver]->ImplicitEuler_Iteration(geometry, solver_container, config);
+		case (GENERALIZED_ALPHA):
+		  solver_container[MainSolver]->GeneralizedAlpha_Iteration(geometry, solver_container, config);
 		  break;
 	  }
 
@@ -432,8 +432,8 @@ void CIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver **solver_co
 			case (NEWMARK_IMPLICIT):
 			  solver_container[MainSolver]->ImplicitNewmark_Update(geometry, solver_container, config);
 			  break;
-			case (GA_IMPLICIT):
-			  solver_container[MainSolver]->ImplicitNewmark_Update(geometry, solver_container, config);
+			case (GENERALIZED_ALPHA):
+			  solver_container[MainSolver]->GeneralizedAlpha_UpdateDisp(geometry, solver_container, config);
 			  break;
 		  }
 
@@ -711,16 +711,29 @@ void CIntegration::SetStructural_Solver(CGeometry *geometry, CSolver *solver, CC
 
 }
 
-void CIntegration::SetFEM_StructuralSolver(CGeometry *geometry, CSolver *solver, CConfig *config, unsigned short iMesh) {
+void CIntegration::SetFEM_StructuralSolver(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
 
 	unsigned long iPoint;
 
-	/*--- Update the solution at both the local points and the halo points ---*/
+	/*--- Update the solution according to the integration scheme used ---*/
+
+	switch (config->GetKind_TimeIntScheme_FEA()) {
+		case (CD_EXPLICIT):
+		  break;
+		case (NEWMARK_IMPLICIT):
+		  break;
+		case (GENERALIZED_ALPHA):
+		  solver_container[FEA_SOL]->GeneralizedAlpha_UpdateSolution(geometry, solver_container, config);
+		  solver_container[FEA_SOL]->GeneralizedAlpha_UpdateLoads(geometry, solver_container, config);
+		  break;
+	  }
+
+	/*--- Store the solution at t+1 as solution at t, both for the local points and for the halo points ---*/
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
 
-		solver->node[iPoint]->SetSolution_time_n();
-		solver->node[iPoint]->SetSolution_Vel_time_n();
-		solver->node[iPoint]->SetSolution_Accel_time_n();
+		solver_container[FEA_SOL]->node[iPoint]->SetSolution_time_n();
+		solver_container[FEA_SOL]->node[iPoint]->SetSolution_Vel_time_n();
+		solver_container[FEA_SOL]->node[iPoint]->SetSolution_Accel_time_n();
 
 	}
 
@@ -732,8 +745,8 @@ void CIntegration::SetFEM_StructuralSolver(CGeometry *geometry, CSolver *solver,
 
 		  su2double WAitk=0.0;
 
-		  WAitk = solver->GetWAitken_Dyn();
-		  solver->SetWAitken_Dyn_tn1(WAitk);
+		  WAitk = solver_container[FEA_SOL]->GetWAitken_Dyn();
+		  solver_container[FEA_SOL]->SetWAitken_Dyn_tn1(WAitk);
 
 	  }
 

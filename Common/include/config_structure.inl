@@ -1248,6 +1248,10 @@ inline su2double CConfig::GetNewmark_alpha(void) { return Newmark_alpha; }
 
 inline su2double CConfig::GetNewmark_delta(void) { return Newmark_delta; }
 
+inline unsigned short CConfig::GetnIntCoeffs(void) { return nIntCoeffs; }
+
+inline su2double CConfig::Get_Int_Coeffs(unsigned short val_coeff) { return Int_Coeffs[val_coeff]; }
+
 inline bool CConfig::GetGradual_Load(void) { return Gradual_Load; }
 
 inline bool CConfig::GetRamp_Load(void) { return Ramp_Load; }

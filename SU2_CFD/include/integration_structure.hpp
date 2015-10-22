@@ -231,10 +231,10 @@ public:
 	/*!
 	 * \brief Save the structural solution at different time steps.
 	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solution - Flow solution.
+	 * \param[in] solver_container - Structural solution.
    * \param[in] config - Definition of the particular problem.
 	 */
-	void SetFEM_StructuralSolver(CGeometry *geometry, CSolver *solver, CConfig *config, unsigned short iMesh);
+	void SetFEM_StructuralSolver(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh);
 
 	/*!
 	 * \brief A virtual member.

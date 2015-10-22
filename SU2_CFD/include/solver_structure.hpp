@@ -172,6 +172,13 @@ public:
 	virtual void Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config);
 
 	/*!
+	 * \brief Impose the send-receive boundary condition for velocities and accelerations in structural solutions.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	virtual void Set_MPI_Solution_DispOnly(CGeometry *geometry, CConfig *config);
+
+	/*!
 	 * \brief Impose the send-receive boundary condition for predicted FSI structural solutions.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
@@ -1008,7 +1015,39 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	virtual void ImplicitNewmark_Update(CGeometry *geometry, CSolver **solver_container, CConfig *config);
-    
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	virtual void GeneralizedAlpha_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	virtual void GeneralizedAlpha_UpdateDisp(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	virtual void GeneralizedAlpha_UpdateSolution(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	virtual void GeneralizedAlpha_UpdateLoads(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -6265,7 +6304,7 @@ private:
 	*DeadLoadVector_Elem,				/*!< \brief Auxiliary vector for storing point to point Dead Loads. */
 	*DeadLoadVector_Node;				/*!< \brief Auxiliary vector for storing point to point Dead Loads. */
 
-  su2double a_dt[8];			/*!< \brief Integration constants. */
+  su2double a_dt[8];				/*!< \brief Integration constants. */
 
   su2double WAitken_Dyn;			/*!< \brief Aitken's dynamic coefficient */
   su2double WAitken_Dyn_tn1;		/*!< \brief Aitken's dynamic coefficient in the previous iteration */
@@ -6669,6 +6708,8 @@ private:
 
 	su2double *solutionPredictor;		/*!< \brief Auxiliary vector to store the solution predictor */
 
+	su2double *Solution_Interm;		/*!< \brief Auxiliary vector to store the intermediate solution */
+
 	su2double *SolRest;			/*!< \brief Auxiliary vector to restart the solution */
 
 	su2double *nodeReactions;			/*!< \brief Auxiliary vector to store the reactions */
@@ -6679,7 +6720,7 @@ private:
 	su2double **mZeros_Aux;			/*!< \brief Submatrix to make zeros and impose clamped boundary conditions. */
 	su2double **mId_Aux;				/*!< \brief Diagonal submatrix to impose clamped boundary conditions. */
 
-	su2double a_dt[8];					/*!< \brief Integration constants. */
+	su2double a_dt[9];					/*!< \brief Integration constants. */
 
 	su2double Conv_Ref[3];				/*!< \brief Reference values for convergence check: DTOL, RTOL, ETOL */
 	su2double Conv_Check[3];			/*!< \brief Current values for convergence check: DTOL, RTOL, ETOL */
@@ -6723,6 +6764,13 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void Set_MPI_Solution(CGeometry *geometry, CConfig *config);
+
+	/*!
+	 * \brief Impose the send-receive boundary condition only for displacements in structural solutions.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void Set_MPI_Solution_DispOnly(CGeometry *geometry, CConfig *config);
 
 	/*!
 	 * \brief Impose the send-receive boundary condition for predicted FSI structural solutions.
@@ -6940,6 +6988,38 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void ImplicitNewmark_Update(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+
+	/*!
+	 * \brief Iterate using an implicit Generalized Alpha solver.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void GeneralizedAlpha_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+
+	/*!
+	 * \brief Update the solution using an implicit Generalized Alpha solver.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void GeneralizedAlpha_UpdateDisp(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+
+	/*!
+	 * \brief Update the solution using an implicit Generalized Alpha solver.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void GeneralizedAlpha_UpdateSolution(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+
+	/*!
+	 * \brief Update the solution using an implicit Generalized Alpha solver.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void GeneralizedAlpha_UpdateLoads(CGeometry *geometry, CSolver **solver_container, CConfig *config);
 
 	/*!
 	 * \brief Postprocessing.

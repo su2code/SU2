@@ -72,6 +72,8 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(void) : CSolver() {
 	normalVertex = NULL;
 	stressTensor = NULL;
 
+	Solution_Interm = NULL;
+
 }
 
 CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *config) : CSolver() {
@@ -82,6 +84,7 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 	bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);							// Dynamic simulations.
 	bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);	// Nonlinear analysis.
 	bool fsi = config->GetFSI_Simulation();												// FSI simulation
+	bool gen_alpha = (config->GetKind_TimeIntScheme_FEA() == GENERALIZED_ALPHA);	// Generalized alpha method requires residual at previous time step.
 
 	int rank = MASTER_NODE;
 	#ifdef HAVE_MPI
@@ -130,6 +133,14 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 	/*--- Define some auxiliary vectors related to the solution ---*/
 
 	Solution   = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
+
+	if (gen_alpha) {
+		Solution_Interm = new su2double[nVar];
+		for (iVar = 0; iVar < nVar; iVar++) Solution_Interm[iVar] = 0.0;
+	}
+	else{
+		Solution_Interm = NULL;
+	}
 
 	nodeReactions = new su2double[nVar];  for (iVar = 0; iVar < nVar; iVar++) nodeReactions[iVar]   = 0.0;
 
@@ -600,6 +611,88 @@ void CFEM_ElasticitySolver::Set_MPI_Solution(CGeometry *geometry, CConfig *confi
 	            }
 
 	        }
+
+	      }
+
+	      /*--- Deallocate receive buffer ---*/
+	      delete [] Buffer_Receive_U;
+
+	    }
+
+	  }
+
+}
+
+void CFEM_ElasticitySolver::Set_MPI_Solution_DispOnly(CGeometry *geometry, CConfig *config) {
+
+
+	  unsigned short iVar, iMarker, MarkerS, MarkerR;
+	  unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
+	  su2double *Buffer_Receive_U = NULL, *Buffer_Send_U = NULL;
+
+	#ifdef HAVE_MPI
+	  int send_to, receive_from;
+	  MPI_Status status;
+	#endif
+
+	  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+
+	    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
+	        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
+
+	      MarkerS = iMarker;  MarkerR = iMarker+1;
+
+	#ifdef HAVE_MPI
+	      send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
+	      receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
+	#endif
+
+	      nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
+	      nBufferS_Vector = nVertexS*nVar;     	  nBufferR_Vector = nVertexR*nVar;
+
+	      /*--- Allocate Receive and send buffers  ---*/
+	      Buffer_Receive_U = new su2double [nBufferR_Vector];
+	      Buffer_Send_U = new su2double[nBufferS_Vector];
+
+	      /*--- Copy the solution that should be sent ---*/
+	      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
+	        iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
+	        for (iVar = 0; iVar < nVar; iVar++)
+	          Buffer_Send_U[iVar*nVertexS+iVertex] = node[iPoint]->GetSolution(iVar);
+	      }
+
+	#ifdef HAVE_MPI
+
+	      /*--- Send/Receive information using Sendrecv ---*/
+	      SU2_MPI::Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
+	                   Buffer_Receive_U, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
+
+	#else
+
+	      /*--- Receive information without MPI ---*/
+	      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+	        for (iVar = 0; iVar < nVar; iVar++)
+	          Buffer_Receive_U[iVar*nVertexR+iVertex] = Buffer_Send_U[iVar*nVertexR+iVertex];
+	      }
+
+	#endif
+
+	      /*--- Deallocate send buffer ---*/
+	      delete [] Buffer_Send_U;
+
+	      /*--- Do the coordinate transformation ---*/
+	      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+
+	        /*--- Find point and its type of transformation ---*/
+	        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
+
+	        /*--- Copy solution variables. ---*/
+	        for (iVar = 0; iVar < nVar; iVar++)
+	        	SolRest[iVar] = Buffer_Receive_U[iVar*nVertexR+iVertex];
+
+	        /*--- Store received values back into the variable. ---*/
+	        for (iVar = 0; iVar < nVar; iVar++)
+	          node[iPoint]->SetSolution(iVar, SolRest[iVar]);
 
 	      }
 
@@ -1404,7 +1497,7 @@ void CFEM_ElasticitySolver::Compute_NodalStress(CGeometry *geometry, CSolver **s
 
 
 				  break;
-				case (GA_IMPLICIT):
+				case (GENERALIZED_ALPHA):
 						  cout << "NOT IMPLEMENTED YET" << endl;
 				  break;
 			  }
@@ -1426,18 +1519,50 @@ void CFEM_ElasticitySolver::Initialize_SystemMatrix(CGeometry *geometry, CSolver
 void CFEM_ElasticitySolver::Compute_IntegrationConstants(CConfig *config) {
 
 	su2double Delta_t= config->GetDelta_DynTime();
+
 	su2double delta = config->GetNewmark_delta(), alpha = config->GetNewmark_alpha();
 
-	/*--- Integration constants for Newmark scheme ---*/
+	su2double beta = config->Get_Int_Coeffs(0), gamma =  config->Get_Int_Coeffs(1);
+	su2double alpha_f = config->Get_Int_Coeffs(2), alpha_m =  config->Get_Int_Coeffs(3);
 
-	a_dt[0]= 1 / (alpha*pow(Delta_t,2.0));
-	a_dt[1]= delta / (alpha*Delta_t);
-	a_dt[2]= 1 / (alpha*Delta_t);
-	a_dt[3]= 1 /(2*alpha) - 1;
-	a_dt[4]= delta/alpha - 1;
-	a_dt[5]= (Delta_t/2) * (delta/alpha - 2);
-	a_dt[6]= Delta_t * (1-delta);
-	a_dt[7]= delta * Delta_t;
+	switch (config->GetKind_TimeIntScheme_FEA()) {
+		case (CD_EXPLICIT):
+				  cout << "NOT IMPLEMENTED YET" << endl;
+		  break;
+		case (NEWMARK_IMPLICIT):
+
+			/*--- Integration constants for Newmark scheme ---*/
+
+			a_dt[0]= 1 / (alpha*pow(Delta_t,2.0));
+			a_dt[1]= delta / (alpha*Delta_t);
+			a_dt[2]= 1 / (alpha*Delta_t);
+			a_dt[3]= 1 /(2*alpha) - 1;
+			a_dt[4]= delta/alpha - 1;
+			a_dt[5]= (Delta_t/2) * (delta/alpha - 2);
+			a_dt[6]= Delta_t * (1-delta);
+			a_dt[7]= delta * Delta_t;
+			a_dt[8]= 0.0;
+
+			break;
+
+		case (GENERALIZED_ALPHA):
+
+			/*--- Integration constants for Generalized Alpha ---*/
+			/*--- Needs to be updated if accounting for structural damping ---*/
+
+			a_dt[0]= (1 / (beta*pow(Delta_t,2.0))) * ((1 - alpha_m) / (1 - alpha_f)) ;
+			a_dt[1]= 0.0 ;
+			a_dt[2]= (1 - alpha_m) / (beta*Delta_t);
+			a_dt[3]= ((1 - 2*beta)*(1-alpha_m) / (2*beta)) - alpha_m;
+			a_dt[4]= 0.0;
+			a_dt[5]= 0.0;
+			a_dt[6]= Delta_t * (1-delta);
+			a_dt[7]= delta * Delta_t;
+			a_dt[8]= (1 - alpha_m) / (beta*pow(Delta_t,2.0));
+
+			break;
+	}
+
 
 }
 
@@ -1782,7 +1907,6 @@ void CFEM_ElasticitySolver::BC_Dir_Load(CGeometry *geometry, CSolver **solver_co
     	      node[Point_2]->Add_SurfaceLoad_Res(Residual);
     	      node[Point_3]->Add_SurfaceLoad_Res(Residual);
 
-
     	  }
 
       }
@@ -1879,7 +2003,6 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolv
 		}
 		else if (nonlinear_analysis){
 			for (iPoint = 0; iPoint < nPoint; iPoint++) {
-
 				for (iVar = 0; iVar < nVar; iVar++){
 					Residual[iVar] =   a_dt[0]*node[iPoint]->GetSolution_time_n(iVar)  			//a0*U(t)
 									 - a_dt[0]*node[iPoint]->GetSolution(iVar) 					//a0*U(t+dt)(k-1)
@@ -1934,7 +2057,7 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Update(CGeometry *geometry, CSolver 
 
 	bool linear = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);		// Geometrically linear problems
 	bool nonlinear = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);	// Geometrically non-linear problems
-	bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);							// Dynamic simulations.
+	bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);					// Dynamic simulations.
 
 	/*--- Update solution ---*/
 
@@ -1996,6 +2119,262 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Update(CGeometry *geometry, CSolver 
 
 	Set_MPI_Solution(geometry, config);
 
+
+}
+
+
+void CFEM_ElasticitySolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+
+	unsigned long iPoint, jPoint;
+	unsigned short iVar, jVar;
+
+	bool initial_calc = (config->GetExtIter() == 0);									// Checks if it is the first calculation.
+	bool first_iter = (config->GetIntIter() == 0);
+	bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);							// Dynamic simulations.
+	bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);	// Linear analysis.
+	bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);	// Nonlinear analysis.
+	bool newton_raphson = (config->GetKind_SpaceIteScheme_FEA() == NEWTON_RAPHSON);		// Newton-Raphson method
+	bool fsi = config->GetFSI_Simulation();												// FSI simulation.
+
+	bool restart = config->GetRestart();													// Restart solution
+	bool initial_calc_restart = (SU2_TYPE::Int(config->GetExtIter()) == config->GetDyn_RestartIter());	// Restart iteration
+
+	su2double alpha_f = config->Get_Int_Coeffs(2), alpha_m =  config->Get_Int_Coeffs(3);
+
+	bool incremental_load = config->GetIncrementalLoad();
+
+	if (!dynamic){
+
+		for (iPoint = 0; iPoint < nPointDomain; iPoint++){
+			/*--- Add the external contribution to the residual    ---*/
+			/*--- (the terms that are constant over the time step) ---*/
+			if (incremental_load){
+				for (iVar = 0; iVar < nVar; iVar++){
+					Res_Ext_Surf[iVar] = loadIncrement * node[iPoint]->Get_SurfaceLoad_Res(iVar);
+				}
+			}
+			else {
+				Res_Ext_Surf = node[iPoint]->Get_SurfaceLoad_Res();
+			}
+
+			LinSysRes.AddBlock(iPoint, Res_Ext_Surf);
+		}
+
+	}
+
+	if (dynamic) {
+
+		/*--- Add the mass matrix contribution to the Jacobian ---*/
+
+		/*
+		 * If the problem is nonlinear, we need to add the Mass Matrix contribution to the Jacobian at the beginning
+		 * of each time step. If the solution method is Newton Rapshon, we repeat this step at the beginning of each
+		 * iteration, as the Jacobian is recomputed
+		 *
+		 * If the problem is linear, we add the Mass Matrix contribution to the Jacobian at the first calculation.
+		 * From then on, the Jacobian is always the same matrix.
+		 *
+		 */
+
+		if ((nonlinear_analysis && (newton_raphson || first_iter)) ||
+			(linear_analysis && initial_calc) ||
+			(linear_analysis && restart && initial_calc_restart)) {
+			for (iPoint = 0; iPoint < nPoint; iPoint++){
+				for (jPoint = 0; jPoint < nPoint; jPoint++){
+					for(iVar = 0; iVar < nVar; iVar++){
+						for (jVar = 0; jVar < nVar; jVar++){
+							Jacobian_ij[iVar][jVar] = a_dt[0] * MassMatrix.GetBlock(iPoint, jPoint, iVar, jVar);
+						}
+					}
+					Jacobian.AddBlock(iPoint, jPoint, Jacobian_ij);
+				}
+			}
+		}
+
+
+		/*--- Loop over all points, and set aux vector TimeRes_Aux = a0*U+a2*U'+a3*U'' ---*/
+		if (linear_analysis){
+			for (iPoint = 0; iPoint < nPoint; iPoint++) {
+				for (iVar = 0; iVar < nVar; iVar++){
+					Residual[iVar] = a_dt[0]*node[iPoint]->GetSolution_time_n(iVar)+		//a0*U(t)
+								 	 a_dt[2]*node[iPoint]->GetSolution_Vel_time_n(iVar)+	//a2*U'(t)
+								 	 a_dt[3]*node[iPoint]->GetSolution_Accel_time_n(iVar);	//a3*U''(t)
+				}
+				TimeRes_Aux.SetBlock(iPoint, Residual);
+			}
+		}
+		else if (nonlinear_analysis){
+			for (iPoint = 0; iPoint < nPoint; iPoint++) {
+				for (iVar = 0; iVar < nVar; iVar++){
+					Residual[iVar] =   a_dt[0]*node[iPoint]->GetSolution_time_n(iVar)  			//a0*U(t)
+									 - a_dt[0]*node[iPoint]->GetSolution(iVar) 					//a0*U(t+dt)(k-1)
+								 	 + a_dt[2]*node[iPoint]->GetSolution_Vel_time_n(iVar)		//a2*U'(t)
+								 	 + a_dt[3]*node[iPoint]->GetSolution_Accel_time_n(iVar);	//a3*U''(t)
+				}
+				TimeRes_Aux.SetBlock(iPoint, Residual);
+			}
+		}
+		/*--- Once computed, compute M*TimeRes_Aux ---*/
+		MassMatrix.MatrixVectorProduct(TimeRes_Aux,TimeRes,geometry,config);
+		/*--- Add the components of M*TimeRes_Aux to the residual R(t+dt) ---*/
+		for (iPoint = 0; iPoint < nPoint; iPoint++) {
+			/*--- Dynamic contribution ---*/
+			/*--- TODO: Do I have to scale this one? I don't think so... ---*/
+			Res_Time_Cont = TimeRes.GetBlock(iPoint);
+			LinSysRes.AddBlock(iPoint, Res_Time_Cont);
+			/*--- External surface load contribution ---*/
+			if (incremental_load){
+				for (iVar = 0; iVar < nVar; iVar++){
+					Res_Ext_Surf[iVar] = loadIncrement * ( (1 - alpha_f) * node[iPoint]->Get_SurfaceLoad_Res(iVar) +
+															    alpha_f  * node[iPoint]->Get_SurfaceLoad_Res_n(iVar) );
+				}
+			}
+			else {
+				for (iVar = 0; iVar < nVar; iVar++){
+					Res_Ext_Surf[iVar] = (1 - alpha_f) * node[iPoint]->Get_SurfaceLoad_Res(iVar) +
+										      alpha_f  * node[iPoint]->Get_SurfaceLoad_Res_n(iVar);
+				}
+			}
+			LinSysRes.AddBlock(iPoint, Res_Ext_Surf);
+
+			/*--- Add FSI contribution ---*/
+			if (fsi) {
+				/*--- TODO: It may be worthy restricting the flow traction to the boundary elements... ---*/
+				if (incremental_load){
+					for (iVar = 0; iVar < nVar; iVar++){
+						Res_FSI_Cont[iVar] = loadIncrement * ( (1 - alpha_f) * node[iPoint]->Get_FlowTraction(iVar) +
+							    									alpha_f  * node[iPoint]->Get_FlowTraction_n(iVar) );
+					}
+				}
+				else {
+					for (iVar = 0; iVar < nVar; iVar++){
+						Res_FSI_Cont[iVar] = (1 - alpha_f) * node[iPoint]->Get_FlowTraction(iVar) +
+												  alpha_f  * node[iPoint]->Get_FlowTraction_n(iVar);
+					}
+				}
+				LinSysRes.AddBlock(iPoint, Res_FSI_Cont);
+			}
+		}
+	}
+
+}
+
+void CFEM_ElasticitySolver::GeneralizedAlpha_UpdateDisp(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+
+    unsigned short iVar;
+	unsigned long iPoint;
+
+	bool linear = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);		// Geometrically linear problems
+	bool nonlinear = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);	// Geometrically non-linear problems
+
+	/*--- Update solution ---*/
+
+	for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+		for (iVar = 0; iVar < nVar; iVar++) {
+
+			/*--- Displacements component of the solution ---*/
+
+			/*--- If it's a non-linear problem, the result is the DELTA_U, not U itself ---*/
+
+			if (linear) node[iPoint]->SetSolution(iVar, LinSysSol[iPoint*nVar+iVar]);
+
+			if (nonlinear)	node[iPoint]->Add_DeltaSolution(iVar, LinSysSol[iPoint*nVar+iVar]);
+
+		}
+
+	}
+
+	/*--- Perform the MPI communication of the solution, displacements only ---*/
+
+	Set_MPI_Solution_DispOnly(geometry, config);
+
+}
+
+void CFEM_ElasticitySolver::GeneralizedAlpha_UpdateSolution(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+
+    unsigned short iVar;
+	unsigned long iPoint;
+
+	bool linear = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);		// Geometrically linear problems
+	bool nonlinear = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);	// Geometrically non-linear problems
+	bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);					// Dynamic simulations.
+
+	su2double alpha_f = config->Get_Int_Coeffs(2), alpha_m =  config->Get_Int_Coeffs(3);
+
+	/*--- Compute solution at t_n+1, and update velocities and accelerations ---*/
+
+	for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+		for (iVar = 0; iVar < nVar; iVar++) {
+
+			/*--- Compute the solution from the previous time step and the solution computed at t+1-alpha_f ---*/
+			/*--- U(t+dt) = 1/alpha_f*(U(t+1-alpha_f)-alpha_f*U(t)) ---*/
+
+			Solution[iVar]=(1 / (1 - alpha_f))*(node[iPoint]->GetSolution(iVar) -
+							alpha_f * node[iPoint]->GetSolution_time_n(iVar));
+
+		}
+
+		/*--- Set the solution in the node structure ---*/
+
+		node[iPoint]->SetSolution(Solution);
+
+		for (iVar = 0; iVar < nVar; iVar++) {
+
+			/*--- Acceleration component of the solution ---*/
+			/*--- U''(t+dt-alpha_m) = a8*(U(t+dt)-U(t))+a2*(U'(t))+a3*(U''(t)) ---*/
+
+			Solution_Interm[iVar]=a_dt[8]*( node[iPoint]->GetSolution(iVar) -
+						   	   	    		node[iPoint]->GetSolution_time_n(iVar)) -
+						   	   	  a_dt[2]* node[iPoint]->GetSolution_Vel_time_n(iVar) -
+						   	   	  a_dt[3]* node[iPoint]->GetSolution_Accel_time_n(iVar);
+
+			/*--- Compute the solution from the previous time step and the solution computed at t+1-alpha_f ---*/
+			/*--- U''(t+dt) = 1/alpha_m*(U''(t+1-alpha_m)-alpha_m*U''(t)) ---*/
+
+			Solution[iVar]=(1 / (1 - alpha_m))*(Solution_Interm[iVar] - alpha_m * node[iPoint]->GetSolution_Accel_time_n(iVar));
+		}
+
+		/*--- Set the acceleration in the node structure ---*/
+
+		node[iPoint]->SetSolution_Accel(Solution);
+
+		for (iVar = 0; iVar < nVar; iVar++) {
+
+			/*--- Velocity component of the solution ---*/
+			/*--- U'(t+dt) = U'(t)+ a6*(U''(t)) + a7*(U''(t+dt)) ---*/
+
+			Solution[iVar]=node[iPoint]->GetSolution_Vel_time_n(iVar)+
+						   a_dt[6]* node[iPoint]->GetSolution_Accel_time_n(iVar) +
+						   a_dt[7]* node[iPoint]->GetSolution_Accel(iVar);
+
+		}
+
+		/*--- Set the velocity in the node structure ---*/
+
+		node[iPoint]->SetSolution_Vel(Solution);
+
+	}
+
+	/*--- Perform the MPI communication of the solution ---*/
+
+	Set_MPI_Solution(geometry, config);
+
+}
+
+void CFEM_ElasticitySolver::GeneralizedAlpha_UpdateLoads(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+
+	unsigned long iPoint;
+	bool fsi = config->GetFSI_Simulation();
+
+	/*--- Set the load conditions of the time step n+1 as the load conditions for time step n ---*/
+	for (iPoint = 0; iPoint < nPointDomain; iPoint++){
+		node[iPoint]->Set_SurfaceLoad_Res_n();
+		if (fsi) node[iPoint]->Set_FlowTraction_n();
+	}
+
+	/*--- TODO: Perform the MPI communication of the solution (I think this may be needed) ---*/
 
 }
 

@@ -77,6 +77,10 @@ inline su2double CVariable::Get_SurfaceLoad_Res(unsigned short iVar) {return 0.0
 
 inline void CVariable::Clear_SurfaceLoad_Res(void) { }
 
+inline void CVariable::Set_SurfaceLoad_Res_n(void) { }
+
+inline su2double CVariable::Get_SurfaceLoad_Res_n(unsigned short iVar) { return 0.0;}
+
 inline void CVariable::Set_FlowTraction(su2double *val_flowTraction) { }
 
 inline void CVariable::Add_FlowTraction(su2double *val_flowTraction) { }
@@ -86,6 +90,10 @@ inline su2double *CVariable::Get_FlowTraction(void) {return NULL;}
 inline su2double CVariable::Get_FlowTraction(unsigned short iVar) {return 0.0;}
 
 inline void CVariable::Clear_FlowTraction(void) { }
+
+inline void CVariable::Set_FlowTraction_n(void) { }
+
+inline su2double CVariable::Get_FlowTraction_n(unsigned short iVar) { return 0.0; }
 
 inline su2double CVariable::GetBetaInc2(void) { return 0; }
 
@@ -917,6 +925,12 @@ inline void CFEM_ElasVariable::Clear_SurfaceLoad_Res(void) {
 	for (unsigned short iVar = 0; iVar < nVar; iVar++)	Residual_Ext_Surf[iVar] = 0.0;
 }
 
+inline void CFEM_ElasVariable::Set_SurfaceLoad_Res_n(void) {
+	for (unsigned short iVar = 0; iVar < nVar; iVar++)	Residual_Ext_Surf_n[iVar] = Residual_Ext_Surf[iVar];
+}
+
+inline su2double CFEM_ElasVariable::Get_SurfaceLoad_Res_n(unsigned short iVar) {return Residual_Ext_Surf_n[iVar];}
+
 inline void CFEM_ElasVariable::Set_FlowTraction(su2double *val_flowTraction) {
 	for (unsigned short iVar = 0; iVar < nVar; iVar++)
 		FlowTraction[iVar] = val_flowTraction[iVar];
@@ -934,6 +948,12 @@ inline su2double CFEM_ElasVariable::Get_FlowTraction(unsigned short iVar) {retur
 inline void CFEM_ElasVariable::Clear_FlowTraction(void) {
 	for (unsigned short iVar = 0; iVar < nVar; iVar++)	FlowTraction[iVar] = 0.0;
 }
+
+inline void CFEM_ElasVariable::Set_FlowTraction_n(void) {
+	for (unsigned short iVar = 0; iVar < nVar; iVar++)	FlowTraction_n[iVar] = FlowTraction[iVar];
+}
+
+inline su2double CFEM_ElasVariable::Get_FlowTraction_n(unsigned short iVar) {return FlowTraction_n[iVar];}
 
 inline void CFEM_ElasVariable::SetSolution_time_n(void) {
 	for (unsigned short iVar = 0; iVar < nVar; iVar++)	Solution_time_n[iVar] = Solution[iVar];

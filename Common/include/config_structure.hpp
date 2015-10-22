@@ -750,6 +750,8 @@ private:
   bool SteadyRestart; 	/*!< Restart from a steady state for FSI problems. */
   su2double Newmark_alpha,			/*!< \brief Parameter alpha for Newmark method. */
   Newmark_delta;				/*!< \brief Parameter delta for Newmark method. */
+  unsigned short nIntCoeffs;	/*!< \brief Number of integration coeffs for structural calculations. */
+  su2double *Int_Coeffs;		/*!< \brief Time integration coefficients for structural method. */
   bool Gradual_Load,		/*!< \brief Apply the load gradually. */
   Ramp_Load;				/*!< \brief Apply the load with linear increases. */
   bool IncrementalLoad;		/*!< \brief Apply the load in increments (for nonlinear structural analysis). */
@@ -5544,6 +5546,19 @@ public:
 	 * \return Value of the Newmark delta parameter.
 	 */
 	su2double GetNewmark_delta(void);
+
+	/*!
+	 * \brief Get the number of integration coefficients provided by the user.
+	 * \return Number of integration coefficients.
+	 */
+	unsigned short GetnIntCoeffs(void);
+
+	/*!
+	 * \brief Get the integration coefficients for the Generalized Alpha - Newmark integration integration scheme.
+	 * \param[in] val_coeff - Index of the coefficient.
+	 * \return Alpha coefficient for the Runge-Kutta integration scheme.
+	 */
+	su2double Get_Int_Coeffs(unsigned short val_coeff);
 
 	/*!
 	 * \brief Check if the user wants to apply the load gradually.

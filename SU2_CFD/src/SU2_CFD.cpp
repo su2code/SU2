@@ -313,7 +313,7 @@ int main(int argc, char *argv[]) {
     historyFile_FSI << "Time,Iteration,Aitken,URes,logResidual,orderMagnResidual" << endl;
     historyFile_FSI.close();
   }
-  
+
   while (ExtIter < config_container[ZONE_0]->GetnExtIter()) {
     
     /*--- Set the value of the external iteration. ---*/
@@ -389,6 +389,11 @@ int main(int argc, char *argv[]) {
 		}
 
 		if (rank == MASTER_NODE)cout << "---------------------------------------------------------------------------" << endl;
+	}
+	else {
+		output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container,
+				config_container, integration_container, false, UsedTime, ZONE_0);
+
 	}
 
 //    /*--- Update the convergence history file (serial and parallel computations). ---*/

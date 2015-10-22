@@ -1198,7 +1198,7 @@ void CFEM_StructuralAnalysis::Update(COutput *output,
 	/*----------------- Update structural solver ----------------------*/
 
 	if (dynamic){
-		integration_container[val_iZone][FEA_SOL]->SetFEM_StructuralSolver(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0][FEA_SOL], config_container[val_iZone], MESH_0);
+		integration_container[val_iZone][FEA_SOL]->SetFEM_StructuralSolver(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0], config_container[val_iZone], MESH_0);
 		integration_container[val_iZone][FEA_SOL]->SetConvergence(false);
 
 	    /*--- Verify convergence criteria (based on total time) ---*/
@@ -2027,7 +2027,7 @@ void FEM_StructuralIteration(COutput *output, CIntegration ***integration_contai
 
 	if (dynamic){
 		for (iZone = 0; iZone < nZone; iZone++) {
-			integration_container[iZone][FEA_SOL]->SetFEM_StructuralSolver(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0][FEA_SOL], config_container[iZone], MESH_0);
+			integration_container[iZone][FEA_SOL]->SetFEM_StructuralSolver(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0], config_container[iZone], MESH_0);
 			integration_container[iZone][FEA_SOL]->SetConvergence(false);
 		}
 
