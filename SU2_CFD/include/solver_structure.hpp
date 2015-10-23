@@ -1077,6 +1077,34 @@ public:
 	  * \param[in] val_marker - bound marker.
 	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
 	  */
+	 virtual su2double GetFlowAngle(unsigned short valMarker);
+
+	 /*!
+	  * \brief A virtual member.
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Mach Number on the surface <i>val_marker</i>.
+	  */
+	 virtual su2double GetAveragedMach(unsigned short valMarker);
+
+	 /*!
+	  * \brief A virtual member.
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Normal Mach Number on the surface <i>val_marker</i>.
+	  */
+	 virtual su2double GetAveragedNormalMach(unsigned short valMarker);
+
+	 /*!
+	  * \brief A virtual member.
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  */
+	 virtual su2double GetMassFlow(unsigned short valMarker);
+
+	 /*!
+	  * \brief A virtual member.
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  */
 	 virtual su2double GetTotalPressureLoss(unsigned short inMarkerTP);
 
 	 /*!
@@ -1099,6 +1127,98 @@ public:
 	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
 	  */
 	 virtual su2double GetTotalStaticEfficiency(unsigned short inMarkerTP);
+
+	 /*!
+	  * \brief .
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  */
+	 virtual su2double GetEulerianWork(unsigned short inMarkerTP);
+
+	 /*!
+	  * \brief .
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  */
+	 virtual su2double GetFlowAngleIn(unsigned short inMarkerTP);
+
+	 /*!
+	  * \brief .
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  */
+	 virtual su2double GetFlowAngleOut(unsigned short inMarkerTP);
+
+	 /*!
+	  * \brief .
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  */
+	 virtual su2double GetMassFlowIn(unsigned short inMarkerTP);
+
+	 /*!
+	  * \brief .
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  */
+	 virtual su2double GetMassFlowOut(unsigned short inMarkerTP);
+
+	 /*!
+	  * \brief .
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  */
+	 virtual su2double GetMachIn(unsigned short inMarkerTP);
+
+	 /*!
+	  * \brief .
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  */
+	 virtual su2double GetMachOut(unsigned short inMarkerTP);
+
+	 /*!
+	  * \brief .
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  */
+	 virtual su2double GetNormalMachIn(unsigned short inMarkerTP);
+
+	 /*!
+	  * \brief .
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  */
+	 virtual su2double GetNormalMachOut(unsigned short inMarkerTP);
+
+	 /*!
+	  * \brief .
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  */
+	 virtual su2double GetEnthalpyOut(unsigned short inMarkerTP);
+
+	 /*!
+	  * \brief .
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  */
+	 virtual su2double GetVelocityOutIs(unsigned short inMarkerTP);
+
+	 /*!
+	  * \brief .
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  */
+	 virtual su2double GetPressureOut(unsigned short inMarkerTP);
+
+	 /*!
+	  * \brief .
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  */
+	 virtual su2double GetPressureRatio(unsigned short inMarkerTP);
+
 	 /*!
 	  * \brief A virtual member.
 	  * \param[in] val_marker - bound marker.
@@ -2792,6 +2912,7 @@ protected:
 		 **AveragedGridVel,
   	  	  **AveragedFlux,
 		  **TotalFlux,
+		  *TotalArea,
 		  *AveragedNormalVelocity,
 		  *ExtAveragedNormalVelocity,
 		  *AveragedTangVelocity,
@@ -2810,11 +2931,28 @@ protected:
 		  *AveragedDensity,
 		  *ExtAveragedDensity,
 		  *AveragedSoundSpeed,
-		  *AveragedEntropy;
+		  *AveragedEntropy,
+		  *MassFlow,
+		  *FlowAngle;
   su2double *TotalStaticEfficiency,
   	  	  	*TotalTotalEfficiency,
 			*KineticEnergyLoss,
-			*TotalPressureLoss;
+			*TotalPressureLoss,
+  	  	  	*MassFlowIn,
+			*MassFlowOut,
+			*FlowAngleIn,
+			*FlowAngleOut,
+			*EulerianWork,
+			*TotalEnthalpyIn,
+			*PressureRatio,
+			*PressureOut,
+			*EnthalpyOut,
+			*MachIn,
+			*MachOut,
+			*NormalMachIn,
+			*NormalMachOut,
+			*VelocityOutIs;
+
 
 
 public:
@@ -3438,6 +3576,97 @@ public:
 	 su2double GetTotalStaticEfficiency(unsigned short inMarkerTP);
 
 	 /*!
+	  * \brief .
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  */
+	 su2double GetEulerianWork(unsigned short inMarkerTP);
+
+	 /*!
+	  * \brief .
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  */
+	 su2double GetFlowAngleIn(unsigned short inMarkerTP);
+
+	 /*!
+	  * \brief .
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  */
+	 su2double GetFlowAngleOut(unsigned short inMarkerTP);
+
+	 /*!
+	  * \brief .
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  */
+	 su2double GetMassFlowIn(unsigned short inMarkerTP);
+
+	 /*!
+	  * \brief .
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  */
+	 su2double GetMassFlowOut(unsigned short inMarkerTP);
+
+	 /*!
+	  * \brief .
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  */
+	 su2double GetMachIn(unsigned short inMarkerTP);
+
+	 /*!
+	  * \brief .
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  */
+	 su2double GetMachOut(unsigned short inMarkerTP);
+
+	 /*!
+	  * \brief .
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  */
+	 su2double GetNormalMachIn(unsigned short inMarkerTP);
+
+	 /*!
+	  * \brief .
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  */
+	 su2double GetNormalMachOut(unsigned short inMarkerTP);
+
+	 /*!
+	  * \brief .
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  */
+	 su2double GetEnthalpyOut(unsigned short inMarkerTP);
+
+	 /*!
+	  * \brief .
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  */
+	 su2double GetVelocityOutIs(unsigned short inMarkerTP);
+
+	 /*!
+	  * \brief .
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  */
+	 su2double GetPressureOut(unsigned short inMarkerTP);
+
+	 /*!
+	  * \brief .
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  */
+	 su2double GetPressureRatio(unsigned short inMarkerTP);
+
+	 /*!
 	  * \brief Provide the average density at the boundary of interest.
 	  * \param[in] val_marker - bound marker.
 	  * \return Value of the Average Density on the surface <i>val_marker</i>.
@@ -3450,12 +3679,42 @@ public:
 	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
 	  */
 	 su2double GetAveragedPressure(unsigned short valMarker);
+
+	 /*!
+	  * \brief Provide the MassFlow at the boundary of interest.
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the MassFLow on the surface <i>val_marker</i>.
+	  */
+	 su2double GetMassFlow(unsigned short valMarker);
+
+	 /*!
+	  * \brief Provide the Flow Angle at the boundary of interest.
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Flow Angle on the surface <i>val_marker</i>.
+	  */
+	 su2double GetFlowAngle(unsigned short valMarker);
+
+	 /*!
+	  * \brief Provide the Mach number at the boundary of interest.
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Mach number on the surface <i>val_marker</i>.
+	  */
+	 su2double GetAveragedMach(unsigned short valMarker);
+
+	 /*!
+	  * \brief Provide the Normal Mach number at the boundary of interest.
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Normal Mach number on the surface <i>val_marker</i>.
+	  */
+	 su2double GetAveragedNormalMach(unsigned short valMarker);
+
 	 /*!
 	  * \brief Provide the average pressure at the boundary of interest.
 	  * \param[in] val_marker - bound marker.
 	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
 	  */
 	 su2double GetAveragedEnthalpy(unsigned short valMarker);
+
 	 /*!
 	  * \brief Provide the average pressure at the boundary of interest.
 	  * \param[in] val_marker - bound marker.

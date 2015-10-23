@@ -5397,7 +5397,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             cout << Total_CNearFieldOF; }
           if (turbo) {
         	cout.setf(ios::scientific, ios::floatfield);
-		    cout.width(15); cout << solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotalStaticEfficiency(0); cout.width(15);
+        	cout.width(15); cout << solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotalStaticEfficiency(0); cout.width(15);
 		    cout << solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotalPressureLoss(0);
 		    cout.unsetf(ios_base::floatfield);
 		  }
