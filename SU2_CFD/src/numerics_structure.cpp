@@ -87,31 +87,7 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
   sumdFdYjh   = NULL;
   sumdFdYieve = NULL;
   sumdFdYjeve = NULL;
-  
-  if ((config->GetKind_Solver() == TNE2_EULER)            ||
-      (config->GetKind_Solver() == TNE2_NAVIER_STOKES)    ||
-      (config->GetKind_Solver() == ADJ_TNE2_EULER)        ||
-      (config->GetKind_Solver() == ADJ_TNE2_NAVIER_STOKES)  ) {
-    nSpecies = nVar - nDim - 2;
-    Ys = new su2double[nSpecies];
-    dFdYi = new su2double *[nSpecies];
-    dFdYj = new su2double *[nSpecies];
-    for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-      dFdYi[iSpecies] = new su2double[nSpecies];
-      dFdYj[iSpecies] = new su2double[nSpecies];
-    }
-    sumdFdYih   = new su2double[nSpecies];
-    sumdFdYjh   = new su2double[nSpecies];
-    sumdFdYieve = new su2double[nSpecies];
-    sumdFdYjeve = new su2double[nSpecies];
     
-    Diffusion_Coeff_i = new su2double[nSpecies];
-    Diffusion_Coeff_j = new su2double[nSpecies];
-    unsigned short nPrimVar     = nSpecies+nDim+8;
-    unsigned short nPrimVarGrad = nSpecies+nDim+8;
-    var = new CTNE2EulerVariable(nDim, nVar, nPrimVar, nPrimVarGrad, config);
-  }
-  
   Vector = new su2double[nDim];
   
   l = new su2double [nDim];
