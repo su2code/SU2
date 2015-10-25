@@ -45,15 +45,15 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
 	Point.clear(); nPoint = 0;
 	Edge.clear();
   
-  Volume = NULL;  vertex = NULL;
-	coord = NULL; Coord_old = NULL; Coord_sum = NULL;
+  Volume = NULL;  Vertex = NULL;
+	Coord = NULL; Coord_Old = NULL; Coord_Sum = NULL;
 	Coord_n = NULL; Coord_n1 = NULL;  Coord_p1 = NULL;
 	GridVel = NULL; GridVel_Grad = NULL;
 
 	/*--- Volume (0 -> Vol_nP1, 1-> Vol_n, 2 -> Vol_nM1 ) and coordinates of the control volume ---*/
 	if (config->GetUnsteady_Simulation() == NO) { Volume = new su2double[1]; Volume[0] = 0.0; }
 	else { Volume = new su2double[3]; Volume[0] = 0.0; Volume[1] = 0.0; Volume[2] = 0.0; }
-	coord = new su2double[nDim];
+	Coord = new su2double[nDim];
 
 	/*--- Indicator if the control volume has been agglomerated ---*/
 	Agglomerate = false;
@@ -80,8 +80,8 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
 
 	/*--- For smoothing the numerical grid coordinates ---*/
 	if (config->GetSmoothNumGrid()) {
-		Coord_old = new su2double[nDim];
-		Coord_sum = new su2double[nDim];
+		Coord_Old = new su2double[nDim];
+		Coord_Sum = new su2double[nDim];
 	}
 	
 	/*--- Storage of grid velocities for dynamic meshes ---*/
@@ -120,15 +120,15 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, unsigned long val_g
 	Point.clear(); nPoint = 0;
 	Edge.clear();
   
-  Volume = NULL;  vertex = NULL;
-	coord = NULL; Coord_old = NULL; Coord_sum = NULL;
+  Volume = NULL;  Vertex = NULL;
+	Coord = NULL; Coord_Old = NULL; Coord_Sum = NULL;
 	Coord_n = NULL; Coord_n1 = NULL;  Coord_p1 = NULL;
 	GridVel = NULL; GridVel_Grad = NULL;
 
 	/*--- Volume (0 -> Vol_nP1, 1-> Vol_n, 2 -> Vol_nM1 ) and coordinates of the control volume ---*/
 	if (config->GetUnsteady_Simulation() == NO) { Volume = new su2double[1]; Volume[0] = 0.0; }
 	else { Volume = new su2double[3]; Volume[0] = 0.0; Volume[1] = 0.0; Volume[2] = 0.0; }
-	coord = new su2double[nDim]; coord[0] = val_coord_0; coord[1] = val_coord_1;
+	Coord = new su2double[nDim]; Coord[0] = val_coord_0; Coord[1] = val_coord_1;
 	
 	/*--- Indicator if the control volume has been agglomerated ---*/
 	Agglomerate = false;
@@ -155,8 +155,8 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, unsigned long val_g
 	
 	/*--- For smoothing the numerical grid coordinates ---*/
 	if (config->GetSmoothNumGrid()) {
-		Coord_old = new su2double[nDim];
-		Coord_sum = new su2double[nDim];
+		Coord_Old = new su2double[nDim];
+		Coord_Sum = new su2double[nDim];
 	}
 	
 	/*--- Storage of grid velocities for dynamic meshes ---*/
@@ -180,9 +180,9 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, unsigned long val_g
       Coord_n  = new su2double[nDim];
       Coord_n1 = new su2double[nDim];
       for (iDim = 0; iDim < nDim; iDim ++) {
-        Coord_p1[iDim] = coord[iDim];
-        Coord_n[iDim]  = coord[iDim];
-        Coord_n1[iDim] = coord[iDim];
+        Coord_p1[iDim] = Coord[iDim];
+        Coord_n[iDim]  = Coord[iDim];
+        Coord_n1[iDim] = Coord[iDim];
       }
     }
 	}
@@ -200,15 +200,15 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, su2double val_coord
 	Point.clear(); nPoint = 0;
 	Edge.clear();
   
-	Volume = NULL;  vertex = NULL;
-	coord = NULL; Coord_old = NULL; Coord_sum = NULL;
+	Volume = NULL;  Vertex = NULL;
+	Coord = NULL; Coord_Old = NULL; Coord_Sum = NULL;
 	Coord_n = NULL; Coord_n1 = NULL;  Coord_p1 = NULL;
 	GridVel = NULL; GridVel_Grad = NULL;
   
 	/*--- Volume (0 -> Vol_nP1, 1-> Vol_n, 2 -> Vol_nM1 ) and coordinates of the control volume ---*/
 	if (config->GetUnsteady_Simulation() == NO) { Volume = new su2double[1]; Volume[0] = 0.0; }
 	else { Volume = new su2double[3]; Volume[0] = 0.0; Volume[1] = 0.0; Volume[2] = 0.0; }
-	coord = new su2double[nDim]; coord[0] = val_coord_0; coord[1] = val_coord_1; coord[2] = val_coord_2;
+	Coord = new su2double[nDim]; Coord[0] = val_coord_0; Coord[1] = val_coord_1; Coord[2] = val_coord_2;
 
 	/*--- Indicator if the control volume has been agglomerated ---*/
 	Agglomerate = false;
@@ -235,8 +235,8 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, su2double val_coord
 	
 	/*--- For smoothing the numerical grid coordinates ---*/
 	if (config->GetSmoothNumGrid()) {
-		Coord_old = new su2double[nDim];
-		Coord_sum = new su2double[nDim];
+		Coord_Old = new su2double[nDim];
+		Coord_Sum = new su2double[nDim];
 	}
 	
 	/*--- Storage of grid velocities for dynamic meshes ---*/
@@ -260,9 +260,9 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, su2double val_coord
       Coord_n  = new su2double[nDim];
       Coord_n1 = new su2double[nDim];
       for (iDim = 0; iDim < nDim; iDim ++) {
-        Coord_p1[iDim] = coord[iDim];
-        Coord_n[iDim]  = coord[iDim];
-        Coord_n1[iDim] = coord[iDim];
+        Coord_p1[iDim] = Coord[iDim];
+        Coord_n[iDim]  = Coord[iDim];
+        Coord_n1[iDim] = Coord[iDim];
       }
     }
 	}
@@ -280,10 +280,10 @@ CPoint::~CPoint() {
   Children_CV.~vector();
 
 	if (Volume != NULL) delete[] Volume;
-	if (vertex != NULL) delete[] vertex;
-	if (coord != NULL) delete[] coord;
-	if (Coord_old != NULL) delete[] Coord_old;
-	if (Coord_sum != NULL) delete[] Coord_sum;
+	if (Vertex != NULL) delete[] Vertex;
+	if (Coord != NULL) delete[] Coord;
+	if (Coord_Old != NULL) delete[] Coord_Old;
+	if (Coord_Sum != NULL) delete[] Coord_Sum;
 	if (Coord_n != NULL) delete[] Coord_n;
 	if (Coord_n1 != NULL) delete[] Coord_n1;
 	if (Coord_p1 != NULL) delete[] Coord_p1;
@@ -321,12 +321,13 @@ void CPoint::SetBoundary(unsigned short val_nmarker) {
 	
 	/*--- To be sure that we are not goint to initializate twice the same vertex ---*/
 	if (!Boundary) {
-		vertex = new long[val_nmarker];
+		Vertex = new long[val_nmarker];
 		/*--- The initialization is made with -1 ---*/
 		for (imarker = 0; imarker < val_nmarker; imarker++) 
-			vertex[imarker] = -1;
+			Vertex[imarker] = -1;
 	}
 	Boundary = true;
+  
 }
 
 CEdge::CEdge(unsigned long val_iPoint, unsigned long val_jPoint, unsigned short val_nDim) : CDualGrid(val_nDim) {

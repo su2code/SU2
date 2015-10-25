@@ -196,10 +196,6 @@ enum ENUM_SOLVER {
   LIN_EULER = 21,						/*!< \brief Definition of the linear Euler's solver. */
   LIN_NAVIER_STOKES = 22,				/*!< \brief Definition of the linear Navier-Stokes' solver. */
   TEMPLATE_SOLVER = 30,                 /*!< \brief Definition of template solver. */
-  TNE2_EULER = 31,
-  TNE2_NAVIER_STOKES = 32,
-  ADJ_TNE2_EULER = 33,
-  ADJ_TNE2_NAVIER_STOKES = 34,
   DISC_ADJ_EULER = 35,
   DISC_ADJ_RANS = 36,
   DISC_ADJ_NAVIER_STOKES = 37
@@ -216,10 +212,6 @@ static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVE
 ("ADJ_RANS", ADJ_RANS )
 ("LIN_EULER", LIN_EULER)
 ("LIN_NAVIER_STOKES", LIN_NAVIER_STOKES)
-("TNE2_EULER", TNE2_EULER)
-("TNE2_NAVIER_STOKES", TNE2_NAVIER_STOKES)
-("ADJ_TNE2_EULER", ADJ_TNE2_EULER)
-("ADJ_TNE2_NAVIER_STOKES", ADJ_TNE2_NAVIER_STOKES)
 ("WAVE_EQUATION", WAVE_EQUATION)
 ("HEAT_EQUATION", HEAT_EQUATION)
 ("LINEAR_ELASTICITY", LINEAR_ELASTICITY)
@@ -315,8 +307,6 @@ enum RUNTIME_TYPE {
   RUNTIME_FEA_SYS = 20,		/*!< \brief One-physics case, the code is solving the FEA equation. */
   RUNTIME_HEAT_SYS = 21,		/*!< \brief One-physics case, the code is solving the heat equation. */
   RUNTIME_TRANS_SYS = 22,			/*!< \brief One-physics case, the code is solving the turbulence model. */
-  RUNTIME_TNE2_SYS = 23,  /*!< \brief One-physics case, the code is solving the two-temperature model. */
-  RUNTIME_ADJTNE2_SYS = 24  /*!< \brief One-physics case, the code is solving the two-temperature model. */
 };
 
 const int FLOW_SOL = 0;		/*!< \brief Position of the mean flow solution in the solver container array. */
@@ -326,10 +316,6 @@ const int LINFLOW_SOL = 1;	/*!< \brief Position of the linearized flow solution 
 const int TURB_SOL = 2;		/*!< \brief Position of the turbulence model solution in the solver container array. */
 const int ADJTURB_SOL = 3;	/*!< \brief Position of the continuous adjoint turbulence solution in the solver container array. */
 const int LINTURB_SOL = 3;	/*!< \brief Position of the linearized turbulence model in the solver container array. */
-
-const int TNE2_SOL = 0;		/*!< \brief Position of the mean flow solution in the solution container array. */
-const int ADJTNE2_SOL = 1;	/*!< \brief Position of the continuous adjoint flow solution in the solution container array. */
-const int LINTNE2_SOL = 1;	/*!< \brief Position of the linearized flow solution in the solution container array. */
 
 const int TRANS_SOL = 4;	/*!< \brief Position of the transition model solution in the solver container array. */
 const int POISSON_SOL = 2;		/*!< \brief Position of the electronic potential solution in the solver container array. */
@@ -616,14 +602,12 @@ enum ENUM_TURB_MODEL {
   SA      = 1, /*!< \brief Kind of Turbulent model (Spalart-Allmaras). */
   SA_NEG  = 2, /*!< \brief Kind of Turbulent model (Spalart-Allmaras). */
   SST     = 3, /*!< \brief Kind of Turbulence model (Menter SST). */
-  ML      = 4  /*!< \brief Kind of Turbulence model (Machine Learning). */
 };
 static const map<string, ENUM_TURB_MODEL> Turb_Model_Map = CCreateMap<string, ENUM_TURB_MODEL>
 ("NONE", NO_TURB_MODEL)
 ("SA", SA)
 ("SA_NEG", SA_NEG)
-("SST", SST)
-("ML", ML);
+("SST", SST);
 
 /*!
  * \brief types of transition models

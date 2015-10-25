@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 
 ## \file configure.py
 #  \brief An extended configuration script.
