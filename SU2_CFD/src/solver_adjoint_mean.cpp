@@ -4460,7 +4460,6 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   su2double dpterm,Mach_Exit_Normal=0.0;
   su2double a1=0.0,a2=0.0,a3=0.0,a4=0.0,dPdn=0.0, drhodn=0.0; /*Placeholder terms to simplify expression/ repeated terms*/
   su2double ProjGridVel = 0.0;
-  su2double Psi_stress[3] = {0.0,0.0,0.0}, Visc_stress[3] = {0.0,0.0,0.0}, total_viscosity=0.0;
   su2double densgrad, pressgrad, velgrad;
   
   bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
