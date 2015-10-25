@@ -474,8 +474,7 @@ def get_adjointSuffix(objective_function=None):
                  "AVG_OUTLET_PRESSURE"     : "pe"        ,
                  "MASS_FLOW_RATE"          : "mfr"       ,
                  "OUTLET_CHAIN_RULE"       : "chn"       ,
-                 "FREE_SURFACE"            : "fs"        ,
-                 "BACKPRESSURE_SENS_EST"   : "bps"  }
+                 "FREE_SURFACE"            : "fs"       }
     
     # if none or false, return map
     if not objective_function:
