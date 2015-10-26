@@ -1263,7 +1263,10 @@ CTurbSASolver::~CTurbSASolver(void) {
 void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
   
   unsigned long iPoint;
-  
+
+  unsigned long ExtIter      = config->GetExtIter();
+  bool limiter_flow          = ((config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER) && (ExtIter <= config->GetLimiterIter()));
+
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
     
     /*--- Initialize the residual vector ---*/
@@ -1275,13 +1278,16 @@ void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
   /*--- Initialize the Jacobian matrices ---*/
   
   Jacobian.SetValZero();
-  
-  /*--- Upwind second order reconstruction ---*/
-  
+
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
+
+  /*--- Upwind second order reconstruction ---*/
+
   if (config->GetSpatialOrder() == SECOND_ORDER_LIMITER) SetSolution_Limiter(geometry, config);
-  
+
+  if (limiter_flow) solver_container[FLOW_SOL]->SetPrimitive_Limiter(geometry, config);
+
 }
 
 void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
@@ -2717,7 +2723,10 @@ CTurbSSTSolver::~CTurbSSTSolver(void) {
 void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
   
   unsigned long iPoint;
-  
+
+  unsigned long ExtIter      = config->GetExtIter();
+  bool limiter_flow          = ((config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER) && (ExtIter <= config->GetLimiterIter()));
+
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
     
     /*--- Initialize the residual vector ---*/
@@ -2729,13 +2738,16 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
   /*--- Initialize the Jacobian matrices ---*/
   
   Jacobian.SetValZero();
-  
+
   /*--- Upwind second order reconstruction ---*/
   
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
+
   if (config->GetSpatialOrder() == SECOND_ORDER_LIMITER) SetSolution_Limiter(geometry, config);
   
+  if (limiter_flow) solver_container[FLOW_SOL]->SetPrimitive_Limiter(geometry, config);
+
 }
 
 void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
@@ -2750,11 +2762,11 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
   /*--- Compute mean flow and turbulence gradients ---*/
   
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
-    solver_container[FLOW_SOL]->SetPrimitive_Gradient_GG(geometry, config);
+//    solver_container[FLOW_SOL]->SetPrimitive_Gradient_GG(geometry, config);
     SetSolution_Gradient_GG(geometry, config);
   }
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
-    solver_container[FLOW_SOL]->SetPrimitive_Gradient_LS(geometry, config);
+//    solver_container[FLOW_SOL]->SetPrimitive_Gradient_LS(geometry, config);
     SetSolution_Gradient_LS(geometry, config);
   }
   

@@ -170,6 +170,9 @@ int main(int argc, char *argv[]) {
     
     /*--- Computation of wall distances for turbulence modeling ---*/
     
+    if (rank == MASTER_NODE)
+      cout << "Computing wall distances." << endl;
+
     if ( (config_container[iZone]->GetKind_Solver() == RANS) ||
         (config_container[iZone]->GetKind_Solver() == ADJ_RANS) ||
         (config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS))
@@ -434,9 +437,10 @@ int main(int argc, char *argv[]) {
             integration_container[ZONE_0][FLOW_SOL]->SetProlongated_Solution(RUNTIME_FLOW_SYS, solver_container[ZONE_0][MESH_0][FLOW_SOL], solver_container[ZONE_0][MESH_1][FLOW_SOL], geometry_container[ZONE_0][MESH_0], geometry_container[ZONE_0][MESH_1], config_container[ZONE_0]);
             integration_container[ZONE_0][FLOW_SOL]->Smooth_Solution(RUNTIME_FLOW_SYS, solver_container[ZONE_0][MESH_0][FLOW_SOL], geometry_container[ZONE_0][MESH_0], 3, 1.25, config_container[ZONE_0]);
             solver_container[ZONE_0][MESH_0][config_container[ZONE_0]->GetContainerPosition(RUNTIME_FLOW_SYS)]->Set_MPI_Solution(geometry_container[ZONE_0][MESH_0], config_container[ZONE_0]);
-            solver_container[ZONE_0][MESH_0][config_container[ZONE_0]->GetContainerPosition(RUNTIME_FLOW_SYS)]->Preprocessing(geometry_container[ZONE_0][MESH_0], solver_container[ZONE_0][MESH_0], config_container[ZONE_0], MESH_0, 0, RUNTIME_FLOW_SYS, false);
+            solver_container[ZONE_0][MESH_0][config_container[ZONE_0]->GetContainerPosition(RUNTIME_FLOW_SYS)]->Preprocessing(geometry_container[ZONE_0][MESH_0], solver_container[ZONE_0][MESH_0], config_container[ZONE_0], MESH_0, 0, RUNTIME_FLOW_SYS, true);
           }
-          
+
+
           if (rank == MASTER_NODE) cout << endl << "-------------------------- File Output Summary --------------------------";
           
           /*--- Execute the routine for writing restart, volume solution,
