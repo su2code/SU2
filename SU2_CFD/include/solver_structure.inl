@@ -448,6 +448,8 @@ inline su2double CSolver::GetTotalStaticEfficiency(unsigned short inMarkerTP){re
 
 inline su2double CSolver::GetEulerianWork(unsigned short inMarkerTP){return 0;}
 
+inline su2double CSolver::GetTotalEnthalpyIn(unsigned short inMarkerTP){return 0;}
+
 inline su2double CSolver::GetFlowAngleIn(unsigned short inMarkerTP){return 0;}
 
 inline su2double CSolver::GetFlowAngleOut(unsigned short inMarkerTP){return 0;}
@@ -954,6 +956,8 @@ inline su2double CEulerSolver::GetTotalTotalEfficiency(unsigned short inMarkerTP
 
 inline su2double CEulerSolver::GetEulerianWork(unsigned short inMarkerTP){return EulerianWork[inMarkerTP];}
 
+inline su2double CEulerSolver::GetTotalEnthalpyIn(unsigned short inMarkerTP){return TotalEnthalpyIn[inMarkerTP];}
+
 inline su2double CEulerSolver::GetFlowAngleIn(unsigned short inMarkerTP){return FlowAngleIn[inMarkerTP];}
 
 inline su2double CEulerSolver::GetFlowAngleOut(unsigned short inMarkerTP){return FlowAngleOut[inMarkerTP];}
@@ -978,7 +982,6 @@ inline su2double CEulerSolver::GetPressureOut(unsigned short inMarkerTP){return 
 
 inline su2double CEulerSolver::GetPressureRatio(unsigned short inMarkerTP){return PressureRatio[inMarkerTP];}
 
-
 inline void CEulerSolver::SetExtAveragedValue(CSolver *solver_container, unsigned short intMarker,  unsigned short extMarker){
 	ExtAveragedDensity[extMarker]= solver_container->GetAveragedDensity(intMarker);
     ExtAveragedPressure[extMarker]= solver_container->GetAveragedPressure(intMarker);
@@ -994,6 +997,7 @@ inline void CEulerSolver::StoreTurboPerformance(CSolver *solver, unsigned short 
 	TotalTotalEfficiency[inMarkerTP] = solver->GetTotalTotalEfficiency(inMarkerTP);
 	TotalStaticEfficiency[inMarkerTP]= solver->GetTotalStaticEfficiency(inMarkerTP);
 	EulerianWork[inMarkerTP] = solver->GetEulerianWork(inMarkerTP);
+	TotalEnthalpyIn[inMarkerTP]= solver->GetTotalEnthalpyIn(inMarkerTP);
 	FlowAngleIn[inMarkerTP]= solver->GetFlowAngleIn(inMarkerTP);
 	FlowAngleOut[inMarkerTP]= solver->GetFlowAngleOut(inMarkerTP);
 	MassFlowIn[inMarkerTP]= solver->GetMassFlowIn(inMarkerTP);

@@ -4326,6 +4326,28 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     su2double OneD_AvgStagPress = 0.0, OneD_AvgMach = 0.0, OneD_AvgTemp = 0.0, OneD_MassFlowRate = 0.0,
     OneD_FluxAvgPress = 0.0, OneD_FluxAvgDensity = 0.0, OneD_FluxAvgVelocity = 0.0, OneD_FluxAvgEntalpy = 0.0;
     
+    /*--- Initialize variables to store information from all zone for turboperformance (direct solution) ---*/
+    su2double *TotalStaticEfficiency = NULL,
+    *TotalTotalEfficiency = NULL,
+	*KineticEnergyLoss 	  = NULL,
+	*TotalPressureLoss 	  = NULL,
+	*MassFlowIn 		  = NULL,
+	*MassFlowOut          = NULL,
+	*FlowAngleIn          = NULL,
+	*FlowAngleOut         = NULL,
+	*EulerianWork         = NULL,
+	*TotalEnthalpyIn      = NULL,
+	*PressureRatio        = NULL,
+	*PressureOut          = NULL,
+	*EnthalpyOut          = NULL,
+	*MachIn               = NULL,
+	*MachOut              = NULL,
+	*NormalMachIn         = NULL,
+	*NormalMachOut        = NULL,
+	*VelocityOutIs        = NULL;
+
+
+
     /*--- Initialize variables to store information from all domains (adjoint solution) ---*/
     su2double Total_Sens_Geo = 0.0, Total_Sens_Mach = 0.0, Total_Sens_AoA = 0.0;
     su2double Total_Sens_Press = 0.0, Total_Sens_Temp = 0.0;
@@ -4425,6 +4447,30 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     Surface_CMy        = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
     Surface_CMz        = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
     
+    /*--- Allocate memory for the turboperformace ---*/
+    TotalStaticEfficiency = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
+    TotalTotalEfficiency  = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
+    KineticEnergyLoss 	  = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
+    TotalPressureLoss 	  = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
+    MassFlowIn 		      = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
+    MassFlowOut           = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
+    FlowAngleIn           = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
+    FlowAngleOut          = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
+    EulerianWork          = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
+    TotalEnthalpyIn       = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
+    PressureRatio         = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
+    PressureOut           = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
+    EnthalpyOut           = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
+    MachIn                = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
+    MachOut               = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
+    NormalMachIn          = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
+    NormalMachOut         = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
+    VelocityOutIs         = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
+
+
+
+
+
     /*--- Write information from nodes ---*/
     switch (config[val_iZone]->GetKind_Solver()) {
         
@@ -4512,6 +4558,34 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           }
         }
         
+        if (turbo) {
+
+		  /*--- Loop over the nMarker of turboperformance and get the desired values ---*/
+
+		  for (iMarker_Monitoring = 0; iMarker_Monitoring < config[ZONE_0]->Get_nMarkerTurboPerf(); iMarker_Monitoring++) {
+			TotalStaticEfficiency = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotalStaticEfficiency(iMarker_Monitoring);
+			TotalTotalEfficiency  = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotalTotalEfficiency(iMarker_Monitoring);
+			KineticEnergyLoss 	  = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetKineticEnergyLoss(iMarker_Monitoring);
+			TotalPressureLoss 	  = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotalPressureLoss(iMarker_Monitoring);
+			MassFlowIn 		      = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetMassFlowIn(iMarker_Monitoring);
+			MassFlowOut           = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetMassFlowOut(iMarker_Monitoring);
+			FlowAngleIn           = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetFlowAngleIn(iMarker_Monitoring);
+			FlowAngleOut          = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetFlowAngleOut(iMarker_Monitoring);
+			EulerianWork          = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetEulerianWork(iMarker_Monitoring);
+			TotalEnthalpyIn       = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotalEnthalpyIn(iMarker_Monitoring);
+			PressureRatio         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetPressureRatio(iMarker_Monitoring);
+			PressureOut           = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetPressureOut(iMarker_Monitoring);
+			EnthalpyOut           = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetEnthalpyOut(iMarker_Monitoring);
+			MachIn                = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetMachIn(iMarker_Monitoring);
+			MachOut               = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetMachOut(iMarker_Monitoring);
+			NormalMachIn          = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetNormalMachIn(iMarker_Monitoring);
+			NormalMachOut         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetNormalMachOut(iMarker_Monitoring);
+			VelocityOutIs         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetVelocityOutIs(iMarker_Monitoring);
+
+		  }
+		}
+
+
 //        if (fluid_structure) {
 //          Total_CFEA  = solver_container[ZONE_0][FinestMesh][FEA_SOL]->GetTotal_CFEA();
 //        }
