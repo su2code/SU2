@@ -167,7 +167,33 @@ namespace AD{
    */
   void ComputeAdjoint();
 
+  /*!
+   * \brief Reset the tape structure to be ready for a new recording.
+   */
+  void Reset();
+
+  /*!
+   * \brief Reset the variable (set index to zero).
+   */
+  void ResetInput(su2double &data);
+
 }
+
+#ifdef CODI_REVERSE_TYPE
+#define AD_BEGIN_PASSIVE         \
+  if(AD::globalTape.isActive()) {\
+     AD::globalTape.setPassive();\
+     AD::Status = true;          \
+  }
+#define AD_END_PASSIVE           \
+  if(AD::Status) {               \
+     AD::globalTape.setActive(); \
+     AD::Status = false;         \
+  }
+#else
+#define AD_BEGIN_PASSIVE
+#define AD_END_PASSIVE
+#endif
 #include "datatype_structure.inl"
 
 

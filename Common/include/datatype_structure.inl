@@ -59,6 +59,10 @@ namespace AD{
   inline void ClearAdjoints(){}
 
   inline void ComputeAdjoint(){}
+
+  inline void Reset(){}
+
+  inline void ResetInput(su2double &data){}
 }
 #endif
 
