@@ -4621,6 +4621,7 @@ void CEulerSolver::TurboPerformance(CSolver *solver, CConfig *config, unsigned s
     		TotalPressureLoss[inMarkerTP] = (avgTotalRelPressureIn - avgTotalRelPressureOut)/(avgTotalRelPressureOut - avgPressureOut) ;
     		KineticEnergyLoss[inMarkerTP] = (avgEnthalpyOut - avgEnthalpyOutIs)/(avgTotalRothalpyIn - avgEnthalpyOut + 0.5*avgGridVel2Out);
     		EulerianWork[inMarkerTP] = avgTotalEnthalpyIn - avgTotalEnthalpyOut;
+    		TotalEnthalpyIn[inMarkerTP] = avgTotalRothalpyIn;
     		FlowAngleIn[inMarkerTP]= FlowAngle[inMarker];
     		FlowAngleOut[inMarkerTP]= solver->GetFlowAngle(outMarker);
     		MassFlowIn[inMarkerTP]= MassFlow[inMarker];
@@ -4664,7 +4665,10 @@ void CEulerSolver::TurboPerformance(CSolver *solver, CConfig *config, unsigned s
     	case STAGE: case TURBINE:
     		TotalTotalEfficiency[inMarkerTP] = (avgTotalEnthalpyIn - avgTotalEnthalpyOut)/(avgTotalEnthalpyIn - avgTotalEnthalpyOutIs);
     		TotalStaticEfficiency[inMarkerTP] = (avgTotalEnthalpyIn - avgTotalEnthalpyOut)/(avgTotalEnthalpyIn - avgEnthalpyOutIs);
-//    		cout << "eta_ts "<< TotalStaticEfficiency[inMarkerTP]<<" in zone " << inMarkerTP<< endl;
+    		TotalEnthalpyIn[inMarkerTP]= avgTotalEnthalpyIn;
+    		EnthalpyOut[inMarker] = avgTotalEnthalpyOut;
+
+    		//    		cout << "eta_ts "<< TotalStaticEfficiency[inMarkerTP]<<" in zone " << inMarkerTP<< endl;
     	    break;
     	default:
     		cout << "Warning! Invalid TurboPerformance option!" << endl;

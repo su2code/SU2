@@ -1140,6 +1140,13 @@ public:
 	  * \param[in] val_marker - bound marker.
 	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
 	  */
+	 virtual su2double GetTotalEnthalpyIn(unsigned short inMarkerTP);
+
+	 /*!
+	  * \brief .
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  */
 	 virtual su2double GetFlowAngleIn(unsigned short inMarkerTP);
 
 	 /*!
@@ -3581,6 +3588,13 @@ public:
 	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
 	  */
 	 su2double GetEulerianWork(unsigned short inMarkerTP);
+
+	 /*!
+	  * \brief .
+	  * \param[in] val_marker - bound marker.
+	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  */
+	 su2double GetTotalEnthalpyIn(unsigned short inMarkerTP);
 
 	 /*!
 	  * \brief .
