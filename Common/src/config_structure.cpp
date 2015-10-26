@@ -125,7 +125,7 @@ void CConfig::SetPointersNull(void) {
   Marker_FlowLoad=NULL;       Marker_Neumann=NULL;          Marker_Neumann_Elec=NULL;
   Marker_All_TagBound=NULL;        Marker_CfgFile_TagBound=NULL;       Marker_All_KindBC=NULL;
   Marker_CfgFile_KindBC=NULL;    Marker_All_SendRecv=NULL; Marker_All_PerBound=NULL;
-  Marker_FSIinterface=NULL;
+  Marker_FSIinterface=NULL;	Marker_Riemann=NULL;
 
   /*--- Boundary Condition settings ---*/
 
@@ -1662,7 +1662,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     exit(EXIT_FAILURE);
   }
   
-  /*--- Check for Convective scheme available for NICF ---*/
+  /*--- Check for Convective scheme available for NICFD ---*/
   
   if (!ideal_gas) {
     if (Kind_ConvNumScheme_Flow != SPACE_UPWIND) {
@@ -1677,7 +1677,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
   }
   
-  /*--- Check for Boundary condition available for NICF ---*/
+  /*--- Check for Boundary condition available for NICFD ---*/
   
   if (!ideal_gas) {
     if (nMarker_Inlet != 0) {
