@@ -111,14 +111,14 @@ void CCentJST_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
     val_residual[iVar] = ProjFlux[iVar];
   
   /*--- Jacobians of the inviscid flux, scale = 0.5 because val_residual ~ 0.5*(fc_i+fc_j)*Normal ---*/
-  
+
   if (implicit) {
     GetInviscidProjJac(MeanVelocity, &MeanEnergy, Normal, 0.5, val_Jacobian_i);
     for (iVar = 0; iVar < nVar; iVar++)
       for (jVar = 0; jVar < nVar; jVar++)
         val_Jacobian_j[iVar][jVar] = val_Jacobian_i[iVar][jVar];
   }
-  
+
   /*--- Adjustment due to grid motion ---*/
   
   if (grid_movement) {
@@ -183,9 +183,9 @@ void CCentJST_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
     val_residual[iVar] += (Epsilon_2*Diff_U[iVar] - Epsilon_4*Diff_Lapl[iVar])*StretchingFactor*MeanLambda;
   
   /*--- Jacobian computation ---*/
-  
+
   if (implicit) {
-    
+
     cte_0 = (Epsilon_2 + Epsilon_4*su2double(Neighbor_i+1))*StretchingFactor*MeanLambda;
     cte_1 = (Epsilon_2 + Epsilon_4*su2double(Neighbor_j+1))*StretchingFactor*MeanLambda;
     
@@ -209,7 +209,7 @@ void CCentJST_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
     val_Jacobian_j[nVar-1][nVar-1] -= cte_1*Gamma;
     
   }
-  
+
 }
 
 CCentJST_KE_Flow::CCentJST_KE_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
@@ -536,7 +536,7 @@ void CCentLax_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
     val_residual[iVar] += Epsilon_0*Diff_U[iVar]*StretchingFactor*MeanLambda;
   
   /*--- Jacobian computation ---*/
-  
+
   if (implicit) {
     cte = Epsilon_0*StretchingFactor*MeanLambda;
     for (iVar = 0; iVar < (nVar-1); iVar++) {
@@ -664,7 +664,7 @@ void CUpwCUSP_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
     val_residual[iVar] = ProjFlux[iVar];
   
   /*--- Jacobians of the inviscid flux, scale = 0.5 because val_residual ~ 0.5*(fc_i+fc_j)*Normal ---*/
-  
+
   if (implicit) {
     GetInviscidProjJac(MeanVelocity, &MeanEnergy, Normal, 0.5, val_Jacobian_i);
     for (iVar = 0; iVar < nVar; iVar++)
@@ -710,7 +710,7 @@ void CUpwCUSP_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
     val_residual[iVar] += (0.5*Nu_c*Diff_U[iVar] + 0.5*Beta*Diff_Flux[iVar])*Area;
 
   /*--- Jacobian computation ---*/
-  
+
   if (implicit) {
     
     cte_0 = 0.5*Nu_c*Area;
@@ -1094,7 +1094,7 @@ void CUpwHLLC_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   
   for (iVar = 0; iVar < nVar; iVar++)
     val_residual[iVar] *= Area;
-  
+
   if (implicit) {
     
     /*--- Mean Roe variables iPoint and jPoint ---*/
@@ -1150,7 +1150,7 @@ void CUpwHLLC_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
       }
     }
   }
-  
+
 }
 
 #ifdef CHECK
@@ -1686,17 +1686,17 @@ void CUpwRoe_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jaco
   }
   
   else {
-    
+
     /*--- Compute inverse P ---*/
     
     GetPMatrix_inv(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitNormal, invP_Tensor);
-    
+
     /*--- Jacobians of the inviscid flux, scaled by
      kappa because val_resconv ~ kappa*(fc_i+fc_j)*Normal ---*/
     
     GetInviscidProjJac(Velocity_i, &Energy_i, Normal, kappa, val_Jacobian_i);
     GetInviscidProjJac(Velocity_j, &Energy_j, Normal, kappa, val_Jacobian_j);
-    
+
     /*--- Diference variables iPoint and jPoint ---*/
     
     for (iVar = 0; iVar < nVar; iVar++)
@@ -1733,7 +1733,7 @@ void CUpwRoe_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jaco
         val_residual[iVar] -= ProjVelocity * 0.5*(U_i[iVar]+U_j[iVar]);
         
         /*--- Implicit terms ---*/
-        
+
         val_Jacobian_i[iVar][iVar] -= 0.5*ProjVelocity;
         val_Jacobian_j[iVar][iVar] -= 0.5*ProjVelocity;
       }
@@ -2949,7 +2949,7 @@ void CCentJSTArtComp_Flow::ComputeResidual(su2double *val_residual,
   
   for (iVar = 0; iVar < nVar; iVar++)
     val_residual[iVar] += (Epsilon_2*Diff_U[iVar] - Epsilon_4*Diff_Lapl[iVar])*StretchingFactor*MeanLambda;
-  
+
   if (implicit) {
     cte_0 = (Epsilon_2 + Epsilon_4*su2double(Neighbor_i+1))*StretchingFactor*MeanLambda;
     cte_1 = (Epsilon_2 + Epsilon_4*su2double(Neighbor_j+1))*StretchingFactor*MeanLambda;

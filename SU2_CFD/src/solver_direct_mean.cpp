@@ -3102,8 +3102,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
 
 void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 
-  unsigned long iPoint, ErrorCounter = 0;
-  bool RightSol = true;
+  unsigned long ErrorCounter = 0;
 
 #ifdef HAVE_MPI
   int rank;
@@ -3118,8 +3117,6 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   bool limiter          = ((config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER) && (!low_fidelity) && (ExtIter <= config->GetLimiterIter()));
   bool center           = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
   bool center_jst       = center && (config->GetKind_Centered_Flow() == JST);
-  bool compressible     = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible   = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface      = (config->GetKind_Regime() == FREESURFACE);
   bool engine           = ((config->GetnMarker_EngineInflow() != 0) || (config->GetnMarker_EngineBleed() != 0) || (config->GetnMarker_EngineExhaust() != 0));
   bool actuator_disk    = ((config->GetnMarker_ActDisk_Inlet() != 0) || (config->GetnMarker_ActDisk_Outlet() != 0));
@@ -3141,33 +3138,13 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 
   if (freesurface) { SetFreeSurface_Distance(geometry, config); }
 
-  for (iPoint = 0; iPoint < nPoint; iPoint ++) {
+  /*--- Set the primitive variables --- */
 
-    /*--- Initialize the non-physical points vector ---*/
-    
-    node[iPoint]->SetNon_Physical(false);
-    
-    /*--- Incompressible flow, primitive variables nDim+3, (P, vx, vy, vz, rho, beta),
-     FreeSurface Incompressible flow, primitive variables nDim+5, (P, vx, vy, vz, rho, beta, LevelSet, Dist),
-     Compressible flow, primitive variables nDim+5, (T, vx, vy, vz, P, rho, h, c) ---*/
-
-    if (compressible) {
-    	RightSol = node[iPoint]->SetPrimVar_Compressible(FluidModel);
-    	node[iPoint]->SetSecondaryVar_Compressible(FluidModel);
-    }
-    if (incompressible) { RightSol = node[iPoint]->SetPrimVar_Incompressible(Density_Inf, config); }
-    if (freesurface) {    RightSol = node[iPoint]->SetPrimVar_FreeSurface(config); }
-    if (!RightSol) { node[iPoint]->SetNon_Physical(true); ErrorCounter++; }
-
-    /*--- Initialize the residual vector (except for output of the residuals) ---*/
-
-    if (!Output) LinSysRes.SetBlock_Zero(iPoint);
-
-  }
+  ErrorCounter = SetPrimitive_Variables(solver_container, config, Output);
 
   /*--- Upwind second order reconstruction ---*/
 
-  if ((second_order && !center) && ((iMesh == MESH_0) || low_fidelity)) {
+  if ((second_order && !center) && ((iMesh == MESH_0) || low_fidelity) && !Output) {
 
     /*--- Gradient computation ---*/
 
@@ -3183,7 +3160,7 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 
     /*--- Limiter computation ---*/
 
-    if ((limiter) && (iMesh == MESH_0)) {
+    if ((limiter) && (iMesh == MESH_0) && !Output) {
     	SetPrimitive_Limiter(geometry, config);
 //    	if (compressible && !ideal_gas) SetSecondary_Limiter(geometry, config);
     }
@@ -3192,7 +3169,7 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 
   /*--- Artificial dissipation ---*/
 
-  if (center) {
+  if (center && !Output) {
     SetMax_Eigenvalue(geometry, config);
     if ((center_jst) && ((iMesh == MESH_0) || low_fidelity)) {
       SetDissipation_Switch(geometry, config);
@@ -3219,6 +3196,49 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 void CEulerSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                   unsigned short iMesh) { }
 
+unsigned long CEulerSolver::SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) {
+
+  unsigned long iPoint, ErrorCounter = 0;
+  bool RightSol = true;
+
+  bool compressible         = (config->GetKind_Regime() == COMPRESSIBLE);
+  bool incompressible       = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool freesurface          = (config->GetKind_Regime() == FREESURFACE);
+
+  for (iPoint = 0; iPoint < nPoint; iPoint ++) {
+
+    /*--- Initialize the non-physical points vector ---*/
+
+    node[iPoint]->SetNon_Physical(false);
+
+    /*--- Incompressible flow, primitive variables nDim+3, (P, vx, vy, vz, rho, beta),
+     FreeSurface Incompressible flow, primitive variables nDim+4, (P, vx, vy, vz, rho, beta, dist),
+     Compressible flow, primitive variables nDim+5, (T, vx, vy, vz, P, rho, h, c, lamMu, eddyMu, ThCond, Cp) ---*/
+
+    if (compressible) {
+      RightSol = node[iPoint]->SetPrimVar_Compressible(FluidModel);
+      node[iPoint]->SetSecondaryVar_Compressible(FluidModel);
+    }
+
+    if (incompressible) {
+      RightSol = node[iPoint]->SetPrimVar_Incompressible(Density_Inf, config);
+    }
+
+
+    if (freesurface){
+      RightSol = node[iPoint]->SetPrimVar_FreeSurface(config);
+    }
+
+    if (!RightSol) { node[iPoint]->SetNon_Physical(true); ErrorCounter++; }
+
+    /*--- Initialize the convective, source and viscous residual vector ---*/
+
+    if (!Output) LinSysRes.SetBlock_Zero(iPoint);
+
+  }
+
+  return ErrorCounter;
+}
 void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                 unsigned short iMesh, unsigned long Iteration) {
 
@@ -6703,7 +6723,7 @@ void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container
       /*--- Add value to the residual ---*/
       
       LinSysRes.AddBlock(iPoint, Residual);
-      
+
       /*--- Form Jacobians for implicit computations ---*/
       
       if (implicit) {
@@ -12403,8 +12423,7 @@ CNSSolver::~CNSSolver(void) {
 void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 
   unsigned long iPoint, ErrorCounter = 0;
-  su2double eddy_visc = 0.0, turb_ke = 0.0, StrainMag = 0.0, Omega = 0.0, *Vorticity;
-  bool RightSol = true;
+  su2double StrainMag = 0.0, Omega = 0.0, *Vorticity;
 
 #ifdef HAVE_MPI
   int rank;
@@ -12413,7 +12432,6 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
 
   unsigned long ExtIter     = config->GetExtIter();
   bool adjoint              = config->GetAdjoint();
-  unsigned short turb_model = config->GetKind_Turb_Model();
   bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool center               = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
   bool center_jst           = center && config->GetKind_Centered_Flow() == JST;
@@ -12421,10 +12439,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   bool limiter_turb         = ((config->GetSpatialOrder_Turb() == SECOND_ORDER_LIMITER) && (ExtIter <= config->GetLimiterIter()));
   bool limiter_adjflow      = ((config->GetSpatialOrder_AdjFlow() == SECOND_ORDER_LIMITER) && (ExtIter <= config->GetLimiterIter()));
   bool limiter_visc         = config->GetViscous_Limiter_Flow();
-  bool compressible         = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible       = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface          = (config->GetKind_Regime() == FREESURFACE);
-  bool tkeNeeded            = (turb_model == SST);
   bool fixed_cl             = config->GetFixed_CL_Mode();
   bool engine               = ((config->GetnMarker_EngineInflow() != 0) || (config->GetnMarker_EngineBleed() != 0) || (config->GetnMarker_EngineExhaust() != 0));
   bool actuator_disk        = ((config->GetnMarker_ActDisk_Inlet() != 0) || (config->GetnMarker_ActDisk_Outlet() != 0));
@@ -12445,41 +12460,13 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
 
   if (freesurface) { SetFreeSurface_Distance(geometry, config); }
 
-  for (iPoint = 0; iPoint < nPoint; iPoint ++) {
+  /*--- Set the primitive variables --- */
 
-    /*--- Retrieve the value of the kinetic energy (if need it) ---*/
-
-    if (turb_model != NONE) {
-      eddy_visc = solver_container[TURB_SOL]->node[iPoint]->GetmuT();
-      if (tkeNeeded) turb_ke = solver_container[TURB_SOL]->node[iPoint]->GetSolution(0);
-    }
-    
-    /*--- Initialize the non-physical points vector ---*/
-    
-    node[iPoint]->SetNon_Physical(false);
-
-    /*--- Incompressible flow, primitive variables nDim+3, (P, vx, vy, vz, rho, beta),
-     FreeSurface Incompressible flow, primitive variables nDim+4, (P, vx, vy, vz, rho, beta, dist),
-     Compressible flow, primitive variables nDim+5, (T, vx, vy, vz, P, rho, h, c, lamMu, eddyMu, ThCond, Cp) ---*/
-    
-    if (compressible) {
-    	RightSol = node[iPoint]->SetPrimVar_Compressible(eddy_visc, turb_ke, FluidModel);
-    	node[iPoint]->SetSecondaryVar_Compressible(FluidModel);
-    }
-
-    if (incompressible) RightSol = node[iPoint]->SetPrimVar_Incompressible(Density_Inf, Viscosity_Inf, eddy_visc, turb_ke, config);
-    if (freesurface) RightSol = node[iPoint]->SetPrimVar_FreeSurface(eddy_visc, turb_ke, config);
-    if (!RightSol) { node[iPoint]->SetNon_Physical(true); ErrorCounter++; }
-
-    /*--- Initialize the convective, source and viscous residual vector ---*/
-
-    if (!Output) LinSysRes.SetBlock_Zero(iPoint);
-
-  }
+  ErrorCounter = SetPrimitive_Variables(solver_container, config, Output);
 
   /*--- Artificial dissipation ---*/
 
-  if (center) {
+  if (center && !Output) {
     SetMax_Eigenvalue(geometry, config);
     if ((center_jst) && (iMesh == MESH_0)) {
       SetDissipation_Switch(geometry, config);
@@ -12501,12 +12488,12 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   /*--- Compute the limiter in case we need it in the turbulence model
    or to limit the viscous terms (check this logic with JST and 2nd order turbulence model) ---*/
 
-  if ((iMesh == MESH_0) && (limiter_flow || limiter_turb || limiter_adjflow || limiter_visc)) { SetPrimitive_Limiter(geometry, config);
+  if ((iMesh == MESH_0) && (limiter_flow || limiter_turb || limiter_adjflow || limiter_visc) && !Output) { SetPrimitive_Limiter(geometry, config);
 //  if (compressible && !ideal_gas) SetSecondary_Limiter(geometry, config);
   }
   
   /*--- Evaluate the vorticity and strain rate magnitude ---*/
-  
+
   StrainMag_Max = 0.0, Omega_Max = 0.0;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     
@@ -12548,6 +12535,59 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
     
   }
 
+}
+
+unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) {
+
+  unsigned long iPoint, ErrorCounter = 0;
+  su2double eddy_visc = 0.0, turb_ke = 0.0;
+  unsigned short turb_model = config->GetKind_Turb_Model();
+  bool RightSol = true;
+
+  bool tkeNeeded            = (turb_model == SST);
+  bool compressible         = (config->GetKind_Regime() == COMPRESSIBLE);
+  bool incompressible       = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool freesurface          = (config->GetKind_Regime() == FREESURFACE);
+
+  for (iPoint = 0; iPoint < nPoint; iPoint ++) {
+
+    /*--- Retrieve the value of the kinetic energy (if need it) ---*/
+
+    if (turb_model != NONE) {
+      eddy_visc = solver_container[TURB_SOL]->node[iPoint]->GetmuT();
+      if (tkeNeeded) turb_ke = solver_container[TURB_SOL]->node[iPoint]->GetSolution(0);
+    }
+
+    /*--- Initialize the non-physical points vector ---*/
+
+    node[iPoint]->SetNon_Physical(false);
+
+    /*--- Incompressible flow, primitive variables nDim+3, (P, vx, vy, vz, rho, beta),
+     FreeSurface Incompressible flow, primitive variables nDim+4, (P, vx, vy, vz, rho, beta, dist),
+     Compressible flow, primitive variables nDim+5, (T, vx, vy, vz, P, rho, h, c, lamMu, eddyMu, ThCond, Cp) ---*/
+
+    if (compressible) {
+      RightSol = node[iPoint]->SetPrimVar_Compressible(eddy_visc, turb_ke, FluidModel);
+      node[iPoint]->SetSecondaryVar_Compressible(FluidModel);
+    }
+
+    if (incompressible){
+      RightSol = node[iPoint]->SetPrimVar_Incompressible(Density_Inf, Viscosity_Inf, eddy_visc, turb_ke, config);
+    }
+
+    if (freesurface){
+      RightSol = node[iPoint]->SetPrimVar_FreeSurface(eddy_visc, turb_ke, config);
+    }
+
+    if (!RightSol) { node[iPoint]->SetNon_Physical(true); ErrorCounter++; }
+
+    /*--- Initialize the convective, source and viscous residual vector ---*/
+
+    if (!Output) LinSysRes.SetBlock_Zero(iPoint);
+
+  }
+
+  return ErrorCounter;
 }
 
 void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned long Iteration) {
