@@ -100,12 +100,12 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ***geometry,
   MultiGrid_Cycle(geometry, solver_container, numerics_container, config,
                   FinestMesh, RecursiveParam, RunTime_EqSystem,
                   Iteration, iZone);
-  
+
   /*--- Computes primitive variables and gradients in the finest mesh (useful for the next solver (turbulence) and output ---*/
-  
-  solver_container[iZone][MESH_0][SolContainer_Position]->Preprocessing(geometry[iZone][MESH_0],
-                                                                        solver_container[iZone][MESH_0], config[iZone],
-                                                                        MESH_0, NO_RK_ITER, RunTime_EqSystem, true);
+
+   solver_container[iZone][MESH_0][SolContainer_Position]->Preprocessing(geometry[iZone][MESH_0],
+                                                                         solver_container[iZone][MESH_0], config[iZone],
+                                                                         MESH_0, NO_RK_ITER, RunTime_EqSystem, true);
   
   /*--- Compute non-dimensional parameters and the convergence monitor ---*/
   

@@ -3193,6 +3193,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       exit(EXIT_FAILURE);
     }
 #endif
+
+    /* --- Disable writing of limiters if enabled --- */
+    Wrt_Limiters = false;
+
     switch(Kind_Solver){
       case EULER:
         Kind_Solver = DISC_ADJ_EULER;
