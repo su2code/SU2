@@ -8657,7 +8657,7 @@ void CPhysicalGeometry::Check_BoundElem_Orientation(CConfig *config) {
 void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
   
   su2double *coord, dist;
-  su2double dist2, diff;
+  passivedouble dist2, diff;
   unsigned short iDim, iMarker;
   unsigned long iPoint, iVertex, nVertex_SolidWall, iVertex_nearestWall = 0;
   
@@ -8665,9 +8665,7 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-  if (rank == MASTER_NODE)
-    cout << "Computing wall distances." << endl;
-  
+
 #ifndef HAVE_MPI
   
   /*--- Compute the total number of nodes on no-slip boundaries ---*/
