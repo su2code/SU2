@@ -2168,6 +2168,7 @@ private:
   unsigned short iDim, iVar, jVar, kVar;
   su2double tmp, velRoe[3], uRoe, gamPdivRho, sq_velRoe, cRoe, sL, sR, sM, pStar, invSLmSs, sLmuL, rhoSL, rhouSL[3],
   eSL, invSRmSs, sRmuR, rhoSR, rhouSR[3], eSR, kappa;
+su2double Rrho, sq_velRoe_2;
 
   su2double StaticEnthalpy_i, StaticEnergy_i, StaticEnthalpy_j, StaticEnergy_j, Kappa_i, Kappa_j, Chi_i, Chi_j, Velocity2_i, Velocity2_j;
   su2double RoeKappa, RoeChi, RoeKappaStaticEnthalpy;

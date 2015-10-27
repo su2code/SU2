@@ -606,13 +606,13 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
               break;
               
             case HLLC:
-		if (!ideal_gas) {
+		if (ideal_gas) {
 		      for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
 		        numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwHLLC_Flow(nDim, nVar_Flow, config);
 		        numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwHLLC_Flow(nDim, nVar_Flow, config);
 		      }
 		}
-		else {cout << "!!!!!!!!!!!!!!!!! GENERAL HLLC" << endl;
+		else {
 		      for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
 		        numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwGeneralHLLC_Flow(nDim, nVar_Flow, config);
 		        numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwGeneralHLLC_Flow(nDim, nVar_Flow, config);
