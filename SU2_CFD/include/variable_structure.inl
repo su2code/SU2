@@ -1155,3 +1155,11 @@ inline su2double CVariable::GetSensitivity(unsigned short iDim){ return 0.0; }
 inline void CDiscAdjVariable::SetSensitivity(unsigned short iDim, su2double val){Sensitivity[iDim] = val;}
 
 inline su2double CDiscAdjVariable::GetSensitivity(unsigned short iDim){return Sensitivity[iDim];}
+
+inline su2double* CDiscAdjVariable::GetSolution_Direct() { return Solution_Direct; }
+
+inline void CDiscAdjVariable::SetSolution_Direct(su2double *val_solution_direct) {
+  for (unsigned short iVar = 0; iVar < nVar; iVar++){
+    Solution_Direct[iVar] = val_solution_direct[iVar];
+  }
+}
