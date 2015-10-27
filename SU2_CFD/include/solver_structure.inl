@@ -952,6 +952,8 @@ inline su2double CEulerSolver::GetTotalPressureLoss(unsigned short inMarkerTP){r
 
 inline su2double CEulerSolver::GetKineticEnergyLoss(unsigned short inMarkerTP){return KineticEnergyLoss[inMarkerTP];}
 
+inline su2double CEulerSolver::GetTotalStaticEfficiency(unsigned short inMarkerTP){return TotalStaticEfficiency[inMarkerTP];}
+
 inline su2double CEulerSolver::GetTotalTotalEfficiency(unsigned short inMarkerTP){return TotalTotalEfficiency[inMarkerTP];}
 
 inline su2double CEulerSolver::GetEulerianWork(unsigned short inMarkerTP){return EulerianWork[inMarkerTP];}

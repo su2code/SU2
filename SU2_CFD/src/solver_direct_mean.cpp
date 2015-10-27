@@ -4633,32 +4633,6 @@ void CEulerSolver::TurboPerformance(CSolver *solver, CConfig *config, unsigned s
 			EnthalpyOut[inMarkerTP]= avgEnthalpyOut;
 			VelocityOutIs[inMarkerTP]=sqrt(2.0*(avgTotalRothalpyIn - avgEnthalpyOut + 0.5*avgGridVel2Out));
 
-//    		cout<<"Eulerian Work " << EulerianWork[inMarkerTP]<<endl;
-//    		cout<<"FlowAngleIn " << 180.0/PI_NUMBER*FlowAngleIn[inMarkerTP]<<endl;
-//    		cout<<"FlowAngleOut " << 180.0/PI_NUMBER*FlowAngleOut[inMarkerTP]<<endl;
-//    		cout<<"MassFlowIn " << MassFlowIn[inMarkerTP]<<endl;
-//    		cout<<"MassFlowOut " << MassFlowOut[inMarkerTP]<<endl;
-//    		cout<<"MachIn " << MachIn[inMarkerTP]<<endl;
-//    		cout<<"MachOut " << MachOut[inMarkerTP]<<endl;
-/*			  su2double *TotalStaticEfficiency,
-			  	  	  	*TotalTotalEfficiency,
-						*KineticEnergyLoss,
-						*TotalPressureLoss,
-			  	  	  	*MassFlowIn,
-						*MassFlowOut,
-						*FlowAngleIn,
-						*FlowAngleOut,
-						*EulerianWork,
-						*TotalEnthalpyIn,
-						*PressureRatio,
-						*PressureOut,
-						*EnthalpyOut,
-						*MachIn,
-						*MachOut,
-						*NormalMachIn,
-						*NormalMachOut,
-						*VelocityOutIs;*/
-
 
 
     	    break;
@@ -4668,7 +4642,6 @@ void CEulerSolver::TurboPerformance(CSolver *solver, CConfig *config, unsigned s
     		TotalEnthalpyIn[inMarkerTP]= avgTotalEnthalpyIn;
     		EnthalpyOut[inMarker] = avgTotalEnthalpyOut;
 
-    		//    		cout << "eta_ts "<< TotalStaticEfficiency[inMarkerTP]<<" in zone " << inMarkerTP<< endl;
     	    break;
     	default:
     		cout << "Warning! Invalid TurboPerformance option!" << endl;
@@ -7916,7 +7889,8 @@ void CEulerSolver::Mixing_Process(CGeometry *geometry, CSolver **solver_containe
 	AveragedNormalVelocity[val_Marker]= AveragedNormal[val_Marker][0]*AveragedVelocity[val_Marker][0] + AveragedNormal[val_Marker][1]*AveragedVelocity[val_Marker][1];
 	AveragedTangVelocity[val_Marker]= AveragedNormal[val_Marker][0]*AveragedVelocity[val_Marker][1] - AveragedNormal[val_Marker][1]*AveragedVelocity[val_Marker][0];
 	MassFlow[val_Marker]= AveragedDensity[val_Marker]*AveragedNormalVelocity[val_Marker]*TotalArea;
-	FlowAngle[val_Marker]= atan(AveragedTangVelocity[val_Marker]/AveragedNormalVelocity[val_Marker]);
+//    MassFlow[val_Marker]= TotalFlux[val_Marker][0];
+    FlowAngle[val_Marker]= atan(AveragedTangVelocity[val_Marker]/AveragedNormalVelocity[val_Marker]);
 
 	/* --- compure total averaged quantities ---*/
 	avgVel2 = 0.0;
@@ -7948,7 +7922,7 @@ void CEulerSolver::Mixing_Process(CGeometry *geometry, CSolver **solver_containe
 
 
 	if (isnan(AveragedDensity[val_Marker]) or isnan(AveragedEnthalpy[val_Marker]))
-	cout<<"nan in mixing process"<<endl;
+		cout<<"nan in mixing process in boundary "<<config->GetMarker_All_TagBound(val_Marker)<< endl;
 
 	/*--- Free locally allocated memory ---*/
 	delete [] Velocity;
