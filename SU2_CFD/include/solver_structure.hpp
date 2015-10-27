@@ -46,6 +46,8 @@
 #include "fluid_model.hpp"
 #include "numerics_structure.hpp"
 #include "variable_structure.hpp"
+#include "../../Common/include/gauss_structure.hpp"
+#include "../../Common/include/element_structure.hpp"
 #include "../../Common/include/geometry_structure.hpp"
 #include "../../Common/include/config_structure.hpp"
 #include "../../Common/include/matrix_structure.hpp"
