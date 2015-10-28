@@ -1414,14 +1414,14 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
       OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = numerics->dist_i;
       OutputHeadingNames[idx] = "WallDist";
       idx++;
-      for (iDim = 0; iDim<nDim; iDim++) {
+      for (iDim = 0; iDim < nDim; iDim++) {
         OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = numerics->TurbVar_Grad_i[0][iDim];
         stringstream intstr;
         intstr << iDim;
         OutputHeadingNames[idx] = "DNuTildeDX_" + intstr.str();
         idx++;
       }
-      for (iDim = 0; iDim<nDim; iDim++) {
+      for (iDim = 0; iDim < nDim; iDim++) {
         for (jDim = 0; jDim<nDim; jDim++) {
           OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = numerics->PrimVar_Grad_i[iDim + 1][jDim];
           stringstream intstr;

@@ -193,8 +193,6 @@ enum ENUM_SOLVER {
   ADJ_EULER = 18,						/*!< \brief Definition of the continuous adjoint Euler's solver. */
   ADJ_NAVIER_STOKES = 19,				/*!< \brief Definition of the continuous adjoint Navier-Stokes' solver. */
   ADJ_RANS = 20,						/*!< \brief Definition of the continuous adjoint Reynolds-averaged Navier-Stokes' (RANS) solver. */
-  LIN_EULER = 21,						/*!< \brief Definition of the linear Euler's solver. */
-  LIN_NAVIER_STOKES = 22,				/*!< \brief Definition of the linear Navier-Stokes' solver. */
   TEMPLATE_SOLVER = 30,                 /*!< \brief Definition of template solver. */
   DISC_ADJ_EULER = 35,
   DISC_ADJ_RANS = 36,
@@ -210,8 +208,6 @@ static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVE
 ("ADJ_EULER", ADJ_EULER)
 ("ADJ_NAVIER_STOKES", ADJ_NAVIER_STOKES)
 ("ADJ_RANS", ADJ_RANS )
-("LIN_EULER", LIN_EULER)
-("LIN_NAVIER_STOKES", LIN_NAVIER_STOKES)
 ("WAVE_EQUATION", WAVE_EQUATION)
 ("HEAT_EQUATION", HEAT_EQUATION)
 ("LINEAR_ELASTICITY", LINEAR_ELASTICITY)
@@ -301,8 +297,6 @@ enum RUNTIME_TYPE {
   RUNTIME_ADJFLOW_SYS = 6,		/*!< \brief One-physics case, the code is solving the adjoint equations is being solved (Euler and Navier-Stokes). */
   RUNTIME_ADJTURB_SYS = 7,		/*!< \brief One-physics case, the code is solving the adjoint turbulence model. */
   RUNTIME_WAVE_SYS = 8,		/*!< \brief One-physics case, the code is solving the wave equation. */
-  RUNTIME_LINPOT_SYS = 9,		/*!< \brief One-physics case, the code is solving the linear potential flow equations. */
-  RUNTIME_LINFLOW_SYS = 10,		/*!< \brief One-physics case, the code is solving the linear equations is being solved (Euler and Navier-Stokes). */
   RUNTIME_MULTIGRID_SYS = 14,   	/*!< \brief Full Approximation Storage Multigrid system of equations. */
   RUNTIME_FEA_SYS = 20,		/*!< \brief One-physics case, the code is solving the FEA equation. */
   RUNTIME_HEAT_SYS = 21,		/*!< \brief One-physics case, the code is solving the heat equation. */
@@ -311,11 +305,9 @@ enum RUNTIME_TYPE {
 
 const int FLOW_SOL = 0;		/*!< \brief Position of the mean flow solution in the solver container array. */
 const int ADJFLOW_SOL = 1;	/*!< \brief Position of the continuous adjoint flow solution in the solver container array. */
-const int LINFLOW_SOL = 1;	/*!< \brief Position of the linearized flow solution in the solution solver array. */
 
 const int TURB_SOL = 2;		/*!< \brief Position of the turbulence model solution in the solver container array. */
 const int ADJTURB_SOL = 3;	/*!< \brief Position of the continuous adjoint turbulence solution in the solver container array. */
-const int LINTURB_SOL = 3;	/*!< \brief Position of the linearized turbulence model in the solver container array. */
 
 const int TRANS_SOL = 4;	/*!< \brief Position of the transition model solution in the solver container array. */
 const int POISSON_SOL = 2;		/*!< \brief Position of the electronic potential solution in the solver container array. */
@@ -338,13 +330,11 @@ const int VISC_BOUND_TERM = 5;       /*!< \brief Position of the viscous boundar
 enum ENUM_MATH_PROBLEM {
   DIRECT = 0,		/*!< \brief Direct problem */
   CONTINUOUS_ADJOINT = 1,		/*!< \brief Continuous adjoint problem */
-  LINEARIZED = 2, /*< \brief Linearized numerical method */
-  DISCRETE_ADJOINT = 3 /*< \brief AD-based discrete adjoint problem. */
+  DISCRETE_ADJOINT = 2 /*< \brief AD-based discrete adjoint problem. */
 };
 static const map<string, ENUM_MATH_PROBLEM> Math_Problem_Map = CCreateMap<string, ENUM_MATH_PROBLEM>
 ("DIRECT", DIRECT)
 ("CONTINUOUS_ADJOINT", CONTINUOUS_ADJOINT)
-("LINEARIZED", LINEARIZED)
 ("DISCRETE_ADJOINT", DISCRETE_ADJOINT);
 
 /*!
@@ -427,32 +417,6 @@ enum ENUM_CONDUCTIVITYMODEL {
 static const map<string, ENUM_CONDUCTIVITYMODEL> ConductivityModel_Map = CCreateMap<string, ENUM_CONDUCTIVITYMODEL>
 ("CONSTANT_CONDUCTIVITY", CONSTANT_CONDUCTIVITY)
 ("CONSTANT_PRANDTL", CONSTANT_PRANDTL);
-
-/*!
- * \brief types of spatial discretizations
- */
-enum ENUM_GASMODEL {
-  NO_MODEL = 0, /*!< \brief _____. */
-  ARGON = 1,		/*!< \brief _____. */
-  AIR7 = 2,		/*!< \brief _______. */
-  AIR21 = 3,		/*!< \brief _______. */
-  O2 = 4,
-  N2 = 5,
-  AIR5 = 6,
-  ARGON_SID = 7,
-  ONESPECIES = 8
-
-};
-static const map<string, ENUM_GASMODEL> GasModel_Map = CCreateMap<string, ENUM_GASMODEL>
-("NONE", NO_MODEL)
-("ARGON", ARGON)
-("AIR-7", AIR7)
-("AIR-21", AIR21)
-("O2", O2)
-("N2", N2)
-("AIR-5", AIR5)
-("ARGON-SID", ARGON_SID)
-("ONESPECIES", ONESPECIES);
 
 /*!
  * \brief types of unsteady mesh motion
@@ -888,17 +852,6 @@ static const map<string, ENUM_SENS> Sens_Map = CCreateMap<string, ENUM_SENS>
 ("SENS_AOS", SENS_AOS);
 
 /*!
- * \brief types of linearized objective functions
- */
-enum ENUM_LINEAR_OBJ {
-  DELTA_DRAG_COEFFICIENT = 1,	/*!< \brief Linearized Drag objective function definition. */
-  DELTA_LIFT_COEFFICIENT = 2	/*!< \brief Linearized Lift objective function definition. */
-};
-static const map<string, ENUM_LINEAR_OBJ> Linear_Obj_Map = CCreateMap<string, ENUM_LINEAR_OBJ>
-("DELTA_DRAG", DELTA_DRAG_COEFFICIENT)
-("DELTA_LIFT", DELTA_LIFT_COEFFICIENT);
-
-/*!
  * \brief types of grid adaptation/refinement
  */
 enum ENUM_ADAPT {
@@ -906,14 +859,12 @@ enum ENUM_ADAPT {
   FULL = 1,			/*!< \brief Do a complete grid refinement of all the computational grids. */
   FULL_FLOW = 2,		/*!< \brief Do a complete grid refinement of the flow grid. */
   FULL_ADJOINT = 3,		/*!< \brief Do a complete grid refinement of the adjoint grid. */
-  FULL_LINEAR = 4,		/*!< \brief Do a complete grid refinement of the linear grid. */
   GRAD_FLOW = 5,		/*!< \brief Do a gradient based grid adaptation of the flow grid. */
   GRAD_ADJOINT = 6,		/*!< \brief Do a gradient based grid adaptation of the adjoint grid. */
   GRAD_FLOW_ADJ = 7,		/*!< \brief Do a gradient based grid adaptation of the flow and adjoint grid. */
   ROBUST = 8,			/*!< \brief Apply a robust grid adaptation (residual based). */
   COMPUTABLE = 9,		/*!< \brief Apply a computable error grid adaptation. */
   REMAINING = 10,		/*!< \brief Apply a remaining error grid adaptation. */
-  COMPUTABLE_ROBUST = 11,	/*!< \brief Apply a computable robust grid adaptation (using linearized problem). */
   WAKE = 12,			/*!< \brief Do a grid refinement on the wake. */
   SMOOTHING = 14,		/*!< \brief Do a grid smoothing of the geometry. */
   SUPERSONIC_SHOCK = 15,	/*!< \brief Do a grid smoothing. */
@@ -924,14 +875,12 @@ static const map<string, ENUM_ADAPT> Adapt_Map = CCreateMap<string, ENUM_ADAPT>
 ("FULL", FULL)
 ("FULL_FLOW", FULL_FLOW)
 ("FULL_ADJOINT", FULL_ADJOINT)
-("FULL_LINEAR", FULL_LINEAR)
 ("GRAD_FLOW", GRAD_FLOW)
 ("GRAD_ADJOINT", GRAD_ADJOINT)
 ("GRAD_FLOW_ADJ", GRAD_FLOW_ADJ)
 ("ROBUST", ROBUST)
 ("COMPUTABLE", COMPUTABLE)
 ("REMAINING", REMAINING)
-("COMPUTABLE_ROBUST", COMPUTABLE_ROBUST)
 ("WAKE", WAKE)
 ("SMOOTHING", SMOOTHING)
 ("SUPERSONIC_SHOCK", SUPERSONIC_SHOCK)
@@ -1631,7 +1580,7 @@ public:
   ~COptionDoubleList() {};
   string SetValue(vector<string> option_value) {
     // The size is the length of option_value
-    unsigned long option_size = option_value.size();
+    unsigned short option_size = option_value.size();
     if (option_size == 1 && option_value[0].compare("NONE") == 0) {
       // No options
       this->size = 0;
@@ -1673,7 +1622,7 @@ public:
   ~COptionUShortList() {};
   string SetValue(vector<string> option_value) {
     // The size is the length of option_value
-    unsigned long option_size = option_value.size();
+    unsigned short option_size = option_value.size();
     if (option_size == 1 && option_value[0].compare("NONE") == 0) {
       // No options
       this->size = 0;
@@ -1714,7 +1663,7 @@ public:
   ~COptionStringList() {};
   string SetValue(vector<string> option_value) {
     // The size is the length of option_value
-    unsigned long option_size = option_value.size();
+    unsigned short option_size = option_value.size();
     if (option_size == 1 && option_value[0].compare("NONE") == 0) {
       this->size = 0;
       return "";
@@ -1784,19 +1733,16 @@ public:
 class COptionMathProblem : public COptionBase{
   string name; // identifier for the option
   bool & adjoint;
-  bool & linearized;
   bool & restart;
   bool & disc_adjoint;
   bool adjoint_def;
-  bool linearized_def;
   bool restart_def;
   bool disc_adjoint_def;
 
 public:
-  COptionMathProblem(string option_field_name, bool & adjoint_field, bool adjoint_default, bool & linearized_field, bool linearized_default, bool & restart_field, bool restart_default, bool & disc_adjoint_field, bool disc_adjoint_default) : adjoint(adjoint_field), linearized(linearized_field), restart(restart_field), disc_adjoint(disc_adjoint_field){
+  COptionMathProblem(string option_field_name, bool & adjoint_field, bool adjoint_default, bool & restart_field, bool restart_default, bool & disc_adjoint_field, bool disc_adjoint_default) : adjoint(adjoint_field), restart(restart_field), disc_adjoint(disc_adjoint_field){
     this->name = option_field_name;
     this->adjoint_def = adjoint_default;
-    this->linearized_def = linearized_default;
     this->restart_def = restart_default;
     this->disc_adjoint_def = disc_adjoint_default;
   }
@@ -1815,7 +1761,6 @@ public:
     }
     if (option_value[0] == "DIRECT") {
       this->adjoint = false;
-      this->linearized = false;
       this->restart = false;
       this->disc_adjoint = false;
       return "";
@@ -1823,20 +1768,11 @@ public:
     if (option_value[0] == "CONTINUOUS_ADJOINT") {
       this->adjoint= true;
       this->restart= true;
-      this->linearized = false;
-      this->disc_adjoint = false;
-      return "";
-    }
-    if (option_value[0] == "LINEARIZED") {
-      this->linearized = true;
-      this->restart = true;
-      this->adjoint= false;
       this->disc_adjoint = false;
       return "";
     }
     if (option_value[0] == "DISCRETE_ADJOINT"){
       this->disc_adjoint = true;
-      this->linearized = false;
       this->restart = true;
       this->adjoint= false;
       return "";
@@ -1846,7 +1782,6 @@ public:
 
   void SetDefault() {
     this->adjoint = this->adjoint_def;
-    this->linearized = this->linearized_def;
     this->restart = this->restart_def;
     this->disc_adjoint = this->disc_adjoint_def;
   }
@@ -2192,7 +2127,7 @@ public:
   ~COptionStringDoubleList() {};
   string SetValue(vector<string> option_value) {
     // There must be an even number of entries (same number of strings and doubles
-    unsigned long totalVals = option_value.size();
+    unsigned short totalVals = option_value.size();
     if ((totalVals % 2) != 0) {
       if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
         // It's okay to say its NONE
@@ -2204,7 +2139,7 @@ public:
       newstring.append(": must have an even number of entries");
       return newstring;
     }
-    unsigned long nVals = totalVals / 2;
+    unsigned short nVals = totalVals / 2;
     this->size = nVals;
     this->s_f = new string[nVals];
     this->d_f = new su2double[nVals];
@@ -2243,7 +2178,7 @@ public:
   ~COptionInlet() {};
   string SetValue(vector<string> option_value) {
 
-    unsigned long totalVals = option_value.size();
+    unsigned short totalVals = option_value.size();
     if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
       this->size = 0;
       this->marker = NULL;
@@ -2265,7 +2200,7 @@ public:
       return newstring;
     }
 
-    unsigned long nVals = totalVals / 6;
+    unsigned short nVals = totalVals / 6;
     this->size = nVals;
     this->marker = new string[nVals];
     this->ttotal = new su2double[nVals];
@@ -2333,7 +2268,7 @@ public:
 
   string SetValue(vector<string> option_value) {
 
-    unsigned long totalVals = option_value.size();
+    unsigned short totalVals = option_value.size();
     if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
       this->size = 0;
       this->marker = NULL;
@@ -2357,7 +2292,7 @@ public:
       return newstring;
     }
 
-    unsigned long nVals = totalVals / 7;
+    unsigned short nVals = totalVals / 7;
     this->size = nVals;
     this->marker = new string[nVals];
     this->var1 = new su2double[nVals];
@@ -2434,7 +2369,7 @@ public:
   
   string SetValue(vector<string> option_value) {
 
-    unsigned long totalVals = option_value.size();
+    unsigned short totalVals = option_value.size();
     if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
       this->size = 0;
       this->marker = NULL;
@@ -2454,7 +2389,7 @@ public:
       return newstring;
     }
 
-    unsigned long nVals = totalVals / 3;
+    unsigned short nVals = totalVals / 3;
     this->size = nVals;
     this->marker = new string[nVals];
     this->ttotal = new su2double[nVals];
@@ -2499,7 +2434,7 @@ public:
   
   string SetValue(vector<string> option_value) {
     
-    unsigned long totalVals = option_value.size();
+    unsigned short totalVals = option_value.size();
     if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
       this->size = 0;
       this->marker = NULL;
@@ -2519,7 +2454,7 @@ public:
       return newstring;
     }
     
-    unsigned long nVals = totalVals / 3;
+    unsigned short nVals = totalVals / 3;
     this->size = nVals;
     this->marker = new string[nVals];
     this->massflow_target = new su2double[nVals];
@@ -2568,7 +2503,7 @@ public:
 
     const int mod_num = 11;
 
-    unsigned long totalVals = option_value.size();
+    unsigned short totalVals = option_value.size();
     if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
       this->size = 0;
       this->marker_bound = NULL;
@@ -2592,7 +2527,7 @@ public:
       return newstring;
     }
 
-    unsigned long nVals = 2 * (totalVals / mod_num); // To account for periodic and donor
+    unsigned short nVals = 2 * (totalVals / mod_num); // To account for periodic and donor
     this->size = nVals;
     this->marker_bound = new string[nVals];
     this->marker_donor = new string[nVals];
@@ -2755,7 +2690,7 @@ public:
   ~COptionActuatorDisk() {};
   string SetValue(vector<string> option_value) {
     const int mod_num = 11;
-    unsigned long totalVals = option_value.size();
+    unsigned short totalVals = option_value.size();
     if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
       this->SetDefault();
       return "";
@@ -2769,7 +2704,7 @@ public:
       return newstring;
     }
 
-    unsigned long nVals = totalVals / mod_num;
+    unsigned short nVals = totalVals / mod_num;
     this->inlet_size = nVals;
     this->outlet_size = nVals;
     this->marker_inlet = new string[this->inlet_size];

@@ -138,7 +138,7 @@ int main(int argc, char *argv[]) {
 	/*--- Create the edge structure ---*/
   
 	cout << "Identify faces, edges and vertices." <<endl;
-	geometry_container[ZONE_0]->SetFaces(); geometry_container[ZONE_0]->SetEdges(); geometry_container[ZONE_0]->SetVertex(config_container[ZONE_0]); geometry_container[ZONE_0]->SetCG();
+	geometry_container[ZONE_0]->SetFaces(); geometry_container[ZONE_0]->SetEdges(); geometry_container[ZONE_0]->SetVertex(config_container[ZONE_0]); geometry_container[ZONE_0]->SetCoord_CG();
 	
 	/*--- Create the control volume structures ---*/
   
@@ -185,10 +185,6 @@ int main(int argc, char *argv[]) {
 				grid_adaptation->GetAdjSolution(geometry_container[ZONE_0], config_container[ZONE_0]);
 				grid_adaptation->SetComplete_Refinement(geometry_container[ZONE_0], 1);
 				break;
-			case FULL_LINEAR:
-				grid_adaptation->GetLinSolution(geometry_container[ZONE_0], config_container[ZONE_0]);
-				grid_adaptation->SetComplete_Refinement(geometry_container[ZONE_0], 1);
-				break;
 			case GRAD_FLOW:
 				grid_adaptation->SetIndicator_Flow(geometry_container[ZONE_0], config_container[ZONE_0], 1);
 				break;
@@ -215,11 +211,6 @@ int main(int argc, char *argv[]) {
 				grid_adaptation->GetFlowResidual(geometry_container[ZONE_0], config_container[ZONE_0]);
 				grid_adaptation->GetAdjResidual(geometry_container[ZONE_0], config_container[ZONE_0]);
 				grid_adaptation->SetIndicator_Robust(geometry_container[ZONE_0], config_container[ZONE_0]);
-				break;
-			case COMPUTABLE_ROBUST:
-				grid_adaptation->GetAdjSolution(geometry_container[ZONE_0], config_container[ZONE_0]);
-				grid_adaptation->GetLinResidual(geometry_container[ZONE_0], config_container[ZONE_0]);
-				grid_adaptation->SetIndicator_Computable_Robust(geometry_container[ZONE_0], config_container[ZONE_0]);
 				break;
 			default :
 				cout << "The adaptation is not defined" << endl;
@@ -271,13 +262,10 @@ int main(int argc, char *argv[]) {
 		
 		if ((config_container[ZONE_0]->GetKind_Adaptation() == GRAD_FLOW_ADJ) || (config_container[ZONE_0]->GetKind_Adaptation() == GRAD_ADJOINT)
 				|| (config_container[ZONE_0]->GetKind_Adaptation() == FULL_ADJOINT) || (config_container[ZONE_0]->GetKind_Adaptation() == ROBUST)
-				|| (config_container[ZONE_0]->GetKind_Adaptation() == COMPUTABLE) || (config_container[ZONE_0]->GetKind_Adaptation() == COMPUTABLE_ROBUST) ||
+				|| (config_container[ZONE_0]->GetKind_Adaptation() == COMPUTABLE) ||
 				(config_container[ZONE_0]->GetKind_Adaptation() == REMAINING))
 			grid_adaptation->SetRestart_AdjSolution(config_container[ZONE_0], geo_adapt, config_container[ZONE_0]->GetRestart_AdjFileName());
 		
-		if ((config_container[ZONE_0]->GetKind_Adaptation() == FULL_LINEAR) || (config_container[ZONE_0]->GetKind_Adaptation() == COMPUTABLE_ROBUST)) {
-			grid_adaptation->SetRestart_LinSolution(config_container[ZONE_0], geo_adapt, config_container[ZONE_0]->GetRestart_LinFileName());
-		}
 	}
 	else {
     

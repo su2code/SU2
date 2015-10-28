@@ -370,7 +370,7 @@ public:
 	/*! 
 	 * \brief A virtual member.
 	 */		
-	virtual void SetCG(void);
+	virtual void SetCoord_CG(void);
 
 	/*! 
 	 * \brief A virtual member.
@@ -1071,7 +1071,7 @@ public:
 	/*! 
 	 * \brief Set the center of gravity of the face, elements and edges.
 	 */
-	void SetCG(void);
+	void SetCoord_CG(void);
 
 	/*! 
 	 * \brief Set the edge structure of the control volume.

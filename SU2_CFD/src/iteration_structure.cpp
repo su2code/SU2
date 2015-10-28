@@ -1092,7 +1092,8 @@ void CDiscAdjMeanFlowIteration::Iterate(COutput *output,
                                         CFreeFormDefBox*** FFDBox,
                                         unsigned short val_iZone) {
   
-  unsigned short iZone, iMesh, ExtIter = config_container[ZONE_0]->GetExtIter();
+  unsigned short iZone, iMesh;
+  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
   unsigned short nZone = config_container[ZONE_0]->GetnZone();
   
   bool turbulent = false, flow = false;

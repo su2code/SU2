@@ -55,13 +55,11 @@ using namespace std;
 class CNumerics {
 protected:
   unsigned short nDim, nVar;	/*!< \brief Number of dimensions and variables. */
-  unsigned short nSpecies; 	/*!< \brief No of species present in plasma */
   su2double Gamma;				/*!< \brief Fluid's Gamma constant (ratio of specific heats). */
   su2double Gamma_Minus_One;		/*!< \brief Fluids's Gamma - 1.0  . */
   su2double Gas_Constant;		 		/*!< \brief Gas constant. */
   su2double *Vector; /*!< \brief Auxiliary vector. */
   su2double *Enthalpy_formation;
-  unsigned short nDiatomics, nMonatomics;
   su2double Prandtl_Lam;				/*!< \brief Laminar Prandtl's number. */
   su2double Prandtl_Turb;		/*!< \brief Turbulent Prandtl's number. */
   
@@ -391,13 +389,6 @@ public:
    * \param[in] val_psi_j - Value of the adjoint variable at point j.
    */
   void SetAdjointVar(su2double *val_psi_i, su2double *val_psi_j);
-  
-  /*!
-   * \brief Set the value of the linearized conservative variables.
-   * \param[in] val_deltau_i - Value of the linearized conservative variable at point i.
-   * \param[in] val_deltau_j - Value of the linearized conservative variable at point j.
-   */
-  void SetLinearizedVar(su2double *val_deltau_i, su2double *val_deltau_j);
   
   /*!
    * \brief Set the gradient of the adjoint variables.
@@ -792,17 +783,7 @@ public:
   void GetInviscidProjFlux(su2double *val_density, su2double *val_velocity,
                            su2double *val_pressure, su2double *val_enthalpy,
                            su2double *val_normal, su2double *val_Proj_Flux);
-  
-  /*!
-   * \brief Compute the projected inviscid flux vector.
-   * \param[in] val_U - Conserved variables
-   * \param[in] val_V - Primitive variables
-   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-   * \param[out] val_Proj_Flux - Pointer to the projected flux.
-   */
-  void GetInviscidProjFlux(su2double *val_U, su2double *val_V, su2double *val_normal,
-                           su2double *val_Proj_Flux);
-  
+    
   /*!
    * \brief Compute the projected inviscid flux vector for incompresible simulations
    * \param[in] val_density - Pointer to the density.
@@ -868,29 +849,7 @@ public:
                           su2double val_eddy_viscosity,
                           su2double val_thermal_conductivity,
                           su2double val_heat_capacity_cp);
-  
-  
-  
-  /*!
-   * * \brief Compute the projection of the viscous fluxes into a direction.
-   * \brief Overloaded function for multiple species viscous calculations
-   * \param[in] val_primvar - Primitive variables.
-   * \param[in] val_gradprimvar - Gradient of the primitive variables.
-   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-   * \param[in] val_diffusioncoeff
-   * \param[in] val_therm_conductivity
-   * \param[in] val_therm_conductivity_ve
-   * \param[in] config
-   */
-  void GetViscousProjFlux(su2double *val_primvar,
-                          su2double **val_gradprimvar,
-                          su2double *val_normal,
-                          su2double *val_diffusioncoeff,
-                          su2double val_viscosity,
-                          su2double val_therm_conductivity,
-                          su2double val_therm_conductivity_ve,
-                          CConfig *config);
-  
+    
   /*
    * \brief Compute the projection of the viscous fluxes into a direction (artificial compresibility method).
    * \param[in] val_primvar - Primitive variables.
@@ -963,20 +922,6 @@ public:
                           su2double **val_Proj_Jac_tensor);
   
   /*!
-   * \overload
-   * \brief Compute the projection of the inviscid Jacobian matrices for the two-temperature model.
-   * \param[in] val_U - Vector conserved variables.
-   * \param[in] val_V - Vector of primitive variables.
-   * \param[in] val_dPdU - Vector of partial derivatives of pressure w.r.t. conserved vars.
-   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-   * \param[in] val_scale - Scale of the projection.
-   * \param[out] val_Proj_Jac_tensor - Pointer to the projected inviscid Jacobian.
-   */
-  void GetInviscidProjJac(su2double *val_U, su2double *val_V, su2double *val_dPdU,
-                          su2double *val_normal, su2double val_scale,
-                          su2double **val_Proj_Jac_Tensor);
-  
-  /*!
    * \brief TSL-Approximation of Viscous NS Jacobians.
    * \param[in] val_Mean_PrimVar - Mean value of the primitive variables.
    * \param[in] val_laminar_viscosity - Value of the laminar viscosity.
@@ -1035,31 +980,7 @@ public:
   void GetPrimitive2Conservative (su2double *val_Mean_PrimVar,
                                   su2double *val_Mean_SecVar,
                                   su2double **val_Jac_PC);
-  
-  /*!
-   * \brief TSL-Approximation of Viscous NS Jacobians.
-   * \param[in] val_Mean_PrimVar - Mean value of the primitive variables.
-   * \param[in] val_laminar_viscosity - Value of the laminar viscosity.
-   * \param[in] val_thermal_conductivity
-   * \param[in] val_dist_ij - Distance between the points.
-   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-   * \param[in] val_dS - Area of the face between two nodes.
-   * \param[in] val_Proj_Visc_Flux - Pointer to the projected viscous flux.
-   * \param[out] val_Proj_Jac_Tensor_i - Pointer to the projected viscous Jacobian at point i.
-   * \param[out] val_Proj_Jac_Tensor_j - Pointer to the projected viscous Jacobian at point j.
-   */
-  void GetViscousProjJacs(su2double *val_Mean_PrimVar,
-                          su2double *val_diffusion_coeff,
-                          su2double val_laminar_viscosity,
-                          su2double val_thermal_conductivity,
-                          su2double val_thermal_conductivity_ve,
-                          su2double val_dist_ij,
-                          su2double *val_normal, su2double val_dS,
-                          su2double *val_Proj_Visc_Flux,
-                          su2double **val_Proj_Jac_Tensor_i,
-                          su2double **val_Proj_Jac_Tensor_j,
-                          CConfig *config);
-  
+   
   /*!
    * \brief Compute the projection of the viscous Jacobian matrices.
    * \param[in] val_laminar_viscosity - Value of the laminar viscosity.
@@ -1104,22 +1025,6 @@ public:
   void GetPMatrix(su2double *val_density, su2double *val_velocity,
                   su2double *val_soundspeed, su2double *val_normal,
                   su2double **val_p_tensor);
-  
-  /*!
-   * \overload
-   * \brief Computation of the matrix P, this matrix diagonalizes the conservative Jacobians
-   *        in the form $P^{-1}(A.Normal)P=Lambda$.
-   * \param[in] U - Vector of conserved variables (really only need rhoEve)
-   * \param[in] V - Vector of primitive variables
-   * \param[in] val_dPdU - Vector of derivatives of pressure w.r.t. conserved vars.
-   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-   * \param[in] l - Tangential vector to face.
-   * \param[in] m - Tangential vector to face (mutually orthogonal to val_normal & l).
-   * \param[out] val_invp_tensor - Pointer to inverse of the P matrix.
-   */
-  void GetPMatrix(su2double *U, su2double *V, su2double *val_dPdU,
-                  su2double *val_normal, su2double *l, su2double *m,
-                  su2double **val_p_tensor) ;
   
   /*!
    * \brief Computation of the matrix Rinv*Pe.
@@ -1213,23 +1118,7 @@ public:
   void GetPMatrix_inv(su2double *val_density, su2double *val_velocity,
                       su2double *val_soundspeed, su2double *val_normal,
                       su2double **val_invp_tensor);
-  
-  /*!
-   * \overload
-   * \brief Computation of the matrix P^{-1}, this matrix diagonalizes the conservative Jacobians
-   *        in the form $P^{-1}(A.Normal)P=Lambda$.
-   * \param[in] U - Vector of conserved variables.
-   * \param[in] V - Vector of primitive variables.
-   * \param[in] val_dPdU - Vector of derivatives of pressure w.r.t. conserved variables
-   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-   * \param[in] l - Tangential vector to face.
-   * \param[in] m - Tangential vector to face (mutually orthogonal to val_normal & l).
-   * \param[out] val_invp_tensor - Pointer to inverse of the P matrix.
-   */
-  void GetPMatrix_inv(su2double *U, su2double *V, su2double *val_dPdU,
-                      su2double *val_normal, su2double *l, su2double *m,
-                      su2double **val_invp_tensor) ;
-  
+
   /*!
    * \brief Computation of the matrix P^{-1} (artificial compresibility), this matrix diagonalize the conservative Jacobians
    *        in the form $P^{-1}(A.Normal)P=Lambda$.
@@ -2715,54 +2604,6 @@ public:
 };
 
 /*!
- * \class CCentJST_LinFlow
- * \brief Class for linearized centered scheme - JST.
- * \ingroup ConvDiscr
- * \author F. Palacios
- * \version 4.0.1 "Cardinal"
- */
-class CCentJST_LinFlow : public CNumerics {
-private:
-  su2double *Diff_DeltaU, *Diff_Lapl;
-  su2double *Velocity_i, *Velocity_j;
-  su2double *MeanDeltaVel, *MeanVelocity;
-  su2double **MeanJacobian;
-  su2double **Jacobian_i, **Jacobian_j;
-  unsigned short iDim, iVar, jVar;
-  su2double sq_vel, Density_i, DensityEnergy_i, Energy_i, Pressure_i, Density_j, DensityEnergy_j, Energy_j,
-  Pressure_j, Param_p, Param_Kappa_4, Local_Lambda_i, Local_Lambda_j, MeanLambda, sc4, StretchingFactor,
-  Epsilon_4, MeanDeltaRho, MeanDeltaE, ProjVelocity_i, ProjVelocity_j, MeanDensity, MeanPressure,
-  MeanEnthalpy, MeanEnergy, Phi_i, Phi_j;
-  
-  
-public:
-  
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nVar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CCentJST_LinFlow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-  
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CCentJST_LinFlow(void);
-  
-  /*!
-   * \brief Compute the linearized flow residual using a JST method.
-   * \param[out] val_resconv - Pointer to the convective residual.
-   * \param[out] val_resvisc - Pointer to the artificial viscosity residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeResidual (su2double *val_resconv, su2double *val_resvisc, su2double **val_Jacobian_i, su2double **val_Jacobian_j,
-                        CConfig *config);
-};
-
-/*!
  * \class CCentLax_Flow
  * \brief Class for computing the Lax-Friedrich centered scheme.
  * \ingroup ConvDiscr
@@ -2964,56 +2805,6 @@ public:
   void ComputeResidual (su2double *val_resconv_i, su2double *val_resvisc_i, su2double *val_resconv_j, su2double *val_resvisc_j,
                         su2double **val_Jacobian_ii, su2double **val_Jacobian_ij, su2double **val_Jacobian_ji, su2double **val_Jacobian_jj,
                         CConfig *config);
-};
-
-/*!
- * \class CCentLax_LinFlow
- * \brief Class for computing the Lax-Friedrich linearized centered scheme.
- * \ingroup ConvDiscr
- * \author F. Palacios
- * \version 4.0.1 "Cardinal"
- */
-class CCentLax_LinFlow : public CNumerics {
-private:
-  su2double *Diff_DeltaU;
-  su2double *Velocity_i, *Velocity_j;
-  su2double *MeanDeltaVel, *MeanVelocity;
-  su2double **MeanJacobian;
-  su2double **Jacobian_i;
-  su2double **Jacobian_j;
-  unsigned short iDim, iVar, jVar;
-  su2double sq_vel, Density_i, DensityEnergy_i, Energy_i, Pressure_i, Density_j,
-  DensityEnergy_j, Energy_j, Pressure_j, Param_p, Param_Kappa_0,
-  Local_Lambda_i, Local_Lambda_j, MeanLambda, StretchingFactor,
-  Epsilon_i, MeanDeltaRho, MeanDeltaE, ProjVelocity_i, ProjVelocity_j,
-  MeanDensity, MeanPressure,
-  MeanEnthalpy, MeanEnergy, Phi_i, Phi_j,
-  sc2;
-  
-public:
-  
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nVar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CCentLax_LinFlow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-  
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CCentLax_LinFlow(void);
-  
-  /*!
-   * \brief Compute the linearized flow residual using a Lax method.
-   * \param[out] val_resconv - Pointer to the convective residual.
-   * \param[out] val_resvisc - Pointer to the artificial viscosity residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeResidual(su2double *val_resconv, su2double *val_resvisc, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
 };
 
 /*!

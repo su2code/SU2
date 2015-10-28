@@ -292,10 +292,6 @@ inline void CSolver::SetTotal_CFreeSurface(su2double val_freesurface) { }
 
 inline void CSolver::SetTotal_CNearFieldOF(su2double val_cnearfieldpress) { }
 
-inline su2double CSolver::GetTotal_CDeltaLift() { return 0; }
-
-inline su2double CSolver::GetTotal_CDeltaDrag() { return 0; }
-
 inline su2double CSolver::GetTotal_CWave() { return 0; }
 
 inline su2double CSolver::GetTotal_CHeat() { return 0; }
@@ -440,15 +436,7 @@ inline void CSolver::BC_Pressure(CGeometry *geometry, CSolver **solver_container
                   
 inline void CSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) { }
 
-inline void CSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) { }
-
-inline void CSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) { }
-                  
 inline void CSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) { }
-
-inline void CSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) { }
-
-inline void CSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) { }
 									
 inline void CSolver::BC_Dirichlet(CGeometry *geometry, CSolver **solver_container, CConfig *config, 
 								  unsigned short val_marker) { }
@@ -891,10 +879,6 @@ inline su2double CAdjEulerSolver::GetPsiRho_Inf(void) { return PsiRho_Inf; }
 inline su2double CAdjEulerSolver::GetPsiE_Inf(void) { return PsiE_Inf; }
 
 inline su2double CAdjEulerSolver::GetPhi_Inf(unsigned short val_dim) { return Phi_Inf[val_dim]; }
-
-inline su2double CLinEulerSolver::GetTotal_CDeltaLift() { return Total_CDeltaLift; }
-
-inline su2double CLinEulerSolver::GetTotal_CDeltaDrag() { return Total_CDeltaDrag; }
 
 inline su2double CFEASolver::GetTotal_CFEA() { return Total_CFEA; }
 

@@ -5,7 +5,7 @@
 #  \author T. Albring
 #  \version 4.0.1 "Cardinal"
 #
-# SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
+# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
 #
 # SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
@@ -565,8 +565,8 @@ def header():
           '|   |___/\___//___|   Pre-configuration Script                          | \n'\
           '|                                                                       | \n'\
           '------------------------------------------------------------------------- \n'\
-          '| SU2 Lead Dev.: Dr. Francisco Palacios (francisco.palacios@boeing.com).| \n'\
-          '|                Dr. Thomas D. Economon (economon@stanford.edu).        | \n'\
+          '| SU2 Lead Dev.: Dr. Francisco Palacios, Francisco.D.Palacios@boeing.com| \n'\
+          '|                Dr. Thomas D. Economon, economon@stanford.edu          | \n'\
           '------------------------------------------------------------------------- \n'\
           '| SU2 Developers:                                                       | \n'\
           '| - Prof. Juan J. Alonso\'s group at Stanford University.                | \n'\
