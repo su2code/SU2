@@ -8170,7 +8170,6 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
       FluidModel->SetTDState_rhoe(Density_i, StaticEnergy_i);
 
       Pressure_i = FluidModel->GetPressure();
-//      cout << "loacal pressure "<<  Pressure_i << endl;
       Enthalpy_i = Energy_i + Pressure_i/Density_i;
 
       SoundSpeed_i = FluidModel->GetSoundSpeed();
@@ -8182,88 +8181,57 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
       for (iDim = 0; iDim < nDim; iDim++)
         ProjVelocity_i += Velocity_i[iDim]*UnitNormal[iDim];
 
-      /*--- Build the external state u_e from boundary data and internal node ---*/
 
       switch(config->GetKind_Data_NRBC(Marker_Tag))
       {
 
-//        case MIXING_IN:
-//
-//    	  deltaDensity = ExtAveragedDensity[val_marker] - AveragedDensity[val_marker];
-//      	  deltaPressure = ExtAveragedPressure[val_marker] - AveragedPressure[val_marker];
-//
-//		  NormalVelocity= UnitNormal[0]*Velocity_i[0] + UnitNormal[1]*Velocity_i[1];
-//		  deltaTangVelocity= -(AveragedTangVelocity[val_marker] + ExtAveragedTangVelocity[val_marker]);
-//
-//		  deltaNormalVelocity= -(AveragedNormalVelocity[val_marker] + ExtAveragedNormalVelocity[val_marker]);
-//
-//		  avg_c1= -cc*deltaDensity +deltaPressure;
-//		  avg_c2= rhoc*deltaTangVelocity;
-//		  avg_c3= rhoc*deltaNormalVelocity + deltaPressure;
-//		  c4j=-rhoc*(NormalVelocity - AveragedNormalVelocity[val_marker]) + (Pressure_i - AveragedPressure[val_marker]);
-//
-//		  delta_c[0] = avg_c1;
-//		  delta_c[1] = avg_c2;
-//		  delta_c[2] = avg_c3;
-//		  delta_c[3] = c4j;
-//		  for (int i=0; i < nVar; i++)
-//			  cout << "characteristic variable mix in " << i+1 << " "<< delta_c[i]<<endl;
+      case MIXING_IN:
+
+    	  deltaDensity = ExtAveragedDensity[val_marker] - AveragedDensity[val_marker];
+    	  deltaPressure = ExtAveragedPressure[val_marker] - AveragedPressure[val_marker];
+
+		  NormalVelocity= UnitNormal[0]*Velocity_i[0] + UnitNormal[1]*Velocity_i[1];
+		  deltaTangVelocity= ExtAveragedTangVelocity[val_marker]+AveragedTangVelocity[val_marker];
+		  deltaNormalVelocity= ExtAveragedNormalVelocity[val_marker]+AveragedNormalVelocity[val_marker];
+
+		  avg_c1= -cc*deltaDensity +deltaPressure;
+		  avg_c2= (rhoc*deltaTangVelocity);
+		  avg_c3= (rhoc*deltaNormalVelocity +deltaPressure);
+		  c4j= -rhoc*(-NormalVelocity +AveragedNormalVelocity[val_marker]) +(Pressure_i - AveragedPressure[val_marker]);
+		  //
+		  delta_c[0] = avg_c1;
+		  delta_c[1] = avg_c2;
+		  delta_c[2] = avg_c3;
+		  delta_c[3] = c4j;
           break;
 
-        case MIXING_OUT:
 
-//		  deltaDensity = Density_i - AveragedDensity[val_marker];
-//		  deltaPressure = Pressure_i - AveragedPressure[val_marker];
-//		  TangVelocity= UnitNormal[0]*Velocity_i[1] - UnitNormal[1]*Velocity_i[0];
-//		  NormalVelocity= UnitNormal[0]*Velocity_i[0] + UnitNormal[1]*Velocity_i[1];
-//		  deltaTangVelocity= TangVelocity - AveragedTangVelocity[val_marker];
-//		  deltaNormalVelocity= NormalVelocity - AveragedNormalVelocity[val_marker];
-//
-//		  c1j= -cc*deltaDensity +deltaPressure;
-//		  c2j= rhoc*deltaTangVelocity;
-//		  c3j=rhoc*deltaNormalVelocity + deltaPressure;
-//		  c4j=-rhoc*deltaNormalVelocity + deltaPressure;
-////		  cout << "mixing out deltanormal vel c3j "<< rhoc*deltaNormalVelocity<<endl;
-////		  cout << "mixing out deltaPres vel c3j "<< deltaPressure<<endl;
-//
-//		  avg_c4 = rhoc*(AveragedNormalVelocity[val_marker]+ ExtAveragedNormalVelocity[val_marker]) + (ExtAveragedPressure[val_marker] - AveragedPressure[val_marker]);
-////		  cout << "mixing out deltanormal vel avgc4 "<<-rhoc*(AveragedNormalVelocity[val_marker]+ ExtAveragedNormalVelocity[val_marker])<<endl;
-////		  cout << "mixing out deltaPres vel avgc4 "<< AveragedPressure[val_marker] - ExtAveragedPressure[val_marker]<<endl;
-//		  /* --- avoid numerical issue for Mach number lower than one ---*/
-//		  if (AvgMach < 1.01)AvgMach = 1.01;
-//
-//		  GilesBeta = -copysign(1.0, AveragedTangVelocity[val_marker])*sqrt(pow(AvgMach,2)-1.0);
-//		  c4js= (2.0 * AveragedNormalMach[val_marker])/(GilesBeta - AveragedTangMach[val_marker])*c2j - (GilesBeta+AveragedTangMach[val_marker])/(GilesBeta-AveragedTangMach[val_marker])*c3j;
-//		  dc4js = c4js;
-//
-//		  delta_c[0] = c1j;
-//		  delta_c[1] = c2j;
-//		  delta_c[2] = c3j;
-//		  delta_c[3] = avg_c4 + dc4js;
-////		  for (int i=0; i < nVar teceristic variable mix out " << i+1 << " "<< delta_c[i]<<endl;
-//          break;
-          Pressure_e = ExtAveragedPressure[val_marker];
+
+      case MIXING_OUT:
 
 		  deltaDensity = Density_i - AveragedDensity[val_marker];
 		  deltaPressure = Pressure_i - AveragedPressure[val_marker];
+
 		  TangVelocity= UnitNormal[0]*Velocity_i[1] - UnitNormal[1]*Velocity_i[0];
-		  NormalVelocity= UnitNormal[0]*Velocity_i[0] + UnitNormal[1]*Velocity_i[1];
+          NormalVelocity= UnitNormal[0]*Velocity_i[0] + UnitNormal[1]*Velocity_i[1];
 		  deltaTangVelocity= TangVelocity - AveragedTangVelocity[val_marker];
 		  deltaNormalVelocity= NormalVelocity - AveragedNormalVelocity[val_marker];
 
 		  c1j= -cc*deltaDensity +deltaPressure;
 		  c2j= rhoc*deltaTangVelocity;
-		  c3j=rhoc*deltaNormalVelocity + deltaPressure;
-		  c4j=-rhoc*deltaNormalVelocity + deltaPressure;
+		  c3j= rhoc*deltaNormalVelocity + deltaPressure;
 
-		  avg_c4 = -2.0*(AveragedPressure[val_marker]-Pressure_e);
+		  avg_c4 = rhoc*(AveragedNormalVelocity[val_marker]+ExtAveragedNormalVelocity[val_marker]) -(AveragedPressure[val_marker]-ExtAveragedPressure[val_marker]);
 
-		  /* --- implementation of subsonic and supersonic NRBC ---*/
-		  if (AvgMach < 1.001) AvgMach=1.01;
-		  GilesBeta = -copysign(1.0, AveragedTangVelocity[val_marker])*sqrt(pow(AvgMach,2)-1.0);
-		  c4js= (2.0 * AveragedNormalMach[val_marker])/(GilesBeta - AveragedTangMach[val_marker])*c2j - (GilesBeta+AveragedTangMach[val_marker])/(GilesBeta-AveragedTangMach[val_marker])*c3j;
-		  dc4js = c4js;
+		  /* --- Non reflecting supersonic component ---*/
 
+		  if (AvgMach > 1.001) {
+			  GilesBeta = -copysign(1.0, AveragedTangVelocity[val_marker])*sqrt(pow(AvgMach,2)-1.0);
+			  c4js= (2.0 * AveragedNormalMach[val_marker])/(GilesBeta - AveragedTangMach[val_marker])*c2j - (GilesBeta+AveragedTangMach[val_marker])/(GilesBeta-AveragedTangMach[val_marker])*c3j;
+			  dc4js = c4js;
+		  }else{
+			  dc4js = 0.0;
+		  }
 		  delta_c[0] = c1j;
 		  delta_c[1] = c2j;
 		  delta_c[2] = c3j;
@@ -8290,16 +8258,18 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 
 		  avg_c4 = -2.0*(AveragedPressure[val_marker]-Pressure_e);
 
-		  /* --- implementation of subsonic and supersonic NRBC ---*/
-		  if (AvgMach < 1.001) AvgMach=1.01;
-			  GilesBeta = -copysign(1.0, AveragedTangVelocity[val_marker])*sqrt(pow(AvgMach,2)-1.0);
-			  c4js= (2.0 * AveragedNormalMach[val_marker])/(GilesBeta - AveragedTangMach[val_marker])*c2j - (GilesBeta+AveragedTangMach[val_marker])/(GilesBeta-AveragedTangMach[val_marker])*c3j;
-			  dc4js = c4js;
-
-			  delta_c[0] = c1j;
-			  delta_c[1] = c2j;
-			  delta_c[2] = c3j;
-			  delta_c[3] = avg_c4 + dc4js;
+		  /* --- implementation of supersonic NRBC ---*/
+		  if (AvgMach > 1.001){
+		  GilesBeta = -copysign(1.0, AveragedTangVelocity[val_marker])*sqrt(pow(AvgMach,2)-1.0);
+		  c4js= (2.0 * AveragedNormalMach[val_marker])/(GilesBeta - AveragedTangMach[val_marker])*c2j - (GilesBeta+AveragedTangMach[val_marker])/(GilesBeta-AveragedTangMach[val_marker])*c3j;
+		  dc4js = c4js;
+      	  }else{
+      		  dc4js = 0.0;
+     	  }
+		  delta_c[0] = c1j;
+		  delta_c[1] = c2j;
+		  delta_c[2] = c3j;
+		  delta_c[3] = avg_c4 + dc4js;
 
 
 
@@ -8349,15 +8319,28 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
         Lambda_i[iDim] = ProjVelocity_i;
       Lambda_i[nVar-2] = ProjVelocity_i + SoundSpeed_i;
       Lambda_i[nVar-1] = ProjVelocity_i - SoundSpeed_i;
-      double sigma;
+      su2double sigma;
       sigma = 1.0;
 
       Density_b = AveragedDensity[val_marker] + sigma*deltaprim[0];
       Pressure_b = AveragedPressure[val_marker] + sigma*deltaprim[3];
-      NormalVelocity = AveragedNormalVelocity[val_marker] + sigma*deltaprim[1];
-      TangVelocity = AveragedTangVelocity[val_marker] + sigma*deltaprim[2];
+      switch(config->GetKind_Data_NRBC(Marker_Tag)){
+      	  case MIXING_IN:
+      		  NormalVelocity = AveragedNormalVelocity[val_marker] - sigma*deltaprim[1];
+      		  TangVelocity = AveragedTangVelocity[val_marker] - sigma*deltaprim[2];
+      		  break;
+		  case MIXING_OUT: case STATIC_PRESSURE:
+              NormalVelocity = AveragedNormalVelocity[val_marker] + sigma*deltaprim[1];
+			  TangVelocity = AveragedTangVelocity[val_marker] + sigma*deltaprim[2];
+              break;
+		  default:
+			  cout << "Warning! Invalid NRBC input!" << endl;
+              exit(EXIT_FAILURE);
+              break;
 
-	  Velocity_b[0] = NormalVelocity*UnitNormal[0] - TangVelocity*UnitNormal[1];
+           }
+
+      Velocity_b[0] = NormalVelocity*UnitNormal[0] - TangVelocity*UnitNormal[1];
 	  Velocity_b[1]	= NormalVelocity*UnitNormal[1] + TangVelocity*UnitNormal[0];
 	  Velocity2_b = 0.0;
 	  for (iDim = 0; iDim < nDim; iDim++) {
