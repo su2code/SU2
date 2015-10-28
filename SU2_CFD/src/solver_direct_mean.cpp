@@ -96,7 +96,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   su2double StaticEnergy, Density, Velocity2, Pressure, Temperature, dull_val;
   int Unst_RestartIter;
   ifstream restart_file;
-
+  unsigned short iZone = config->GetiZone();
   unsigned short nZone = geometry->GetnZone();
   bool restart = (config->GetRestart() || config->GetRestart_Flow());
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
@@ -453,16 +453,14 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
    the farfield values bc the solver will immediately interpolate
    the solution from the finest mesh to the coarser levels. ---*/
   
-  if (!restart || (iMesh != MESH_0) || nZone > 1) {
+  if (!restart || (iMesh != MESH_0)) {
 
     /*--- Restart the solution from the free-stream state ---*/
     
     for (iPoint = 0; iPoint < nPoint; iPoint++)
       node[iPoint] = new CEulerVariable(Density_Inf, Velocity_Inf, Energy_Inf, nDim, nVar, config);
     
-  }
-
-  else {
+  } else {
 
     /*--- Modify file name for an unsteady restart ---*/
     
@@ -476,6 +474,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
       
       filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
     }
+    if (nZone >1)
+      filename= config->GetRestart_FlowFileName(filename, iZone);
 
     /*--- Open the restart file, throw an error if this fails. ---*/
     
@@ -10521,7 +10521,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   su2double Density, Velocity2, Pressure, Temperature, dull_val, StaticEnergy;
   int Unst_RestartIter;
   ifstream restart_file;
-
+  unsigned short iZone = config->GetiZone();
   unsigned short nZone = geometry->GetnZone();
   bool restart = (config->GetRestart() || config->GetRestart_Flow());
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
@@ -10931,7 +10931,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
    the farfield values bc the solver will immediately interpolate
    the solution from the finest mesh to the coarser levels. ---*/
   
-  if (!restart || (iMesh != MESH_0) || nZone > 1) {
+  if (!restart || (iMesh != MESH_0)) {
     
     /*--- Restart the solution from the free-stream state ---*/
     
@@ -10954,7 +10954,11 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
         Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
       
       filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
+        
     }
+      
+    if (nZone >1)
+      filename= config->GetRestart_FlowFileName(filename, iZone);
     
     /*--- Open the restart file, throw an error if this fails. ---*/
     
