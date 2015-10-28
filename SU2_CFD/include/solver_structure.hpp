@@ -46,6 +46,8 @@
 #include "fluid_model.hpp"
 #include "numerics_structure.hpp"
 #include "variable_structure.hpp"
+#include "../../Common/include/gauss_structure.hpp"
+#include "../../Common/include/element_structure.hpp"
 #include "../../Common/include/geometry_structure.hpp"
 #include "../../Common/include/config_structure.hpp"
 #include "../../Common/include/matrix_structure.hpp"
@@ -2259,7 +2261,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config_container - The particular config.
    */
-  virtual void RegisterInput(CGeometry *geometry, CConfig *config);
+  virtual void RegisterSolution(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief A virtual member.
@@ -2273,7 +2275,7 @@ public:
    * \param[in] geometry - The geometrical definition of the problem.
    * \param[in] config - The particular config.
    */
-  virtual void SetAdjointOutput(CGeometry *geometry, CConfig *config);
+  virtual void SetAdjoint_Output(CGeometry *geometry, CConfig *config);
 
    /*!
    * \brief A virtual member.
@@ -2281,7 +2283,7 @@ public:
    * \param[in] solver_container - The solver container holding all solutions.
    * \param[in] config - The particular config.
    */
-  virtual void SetAdjointInput(CGeometry *geometry,  CConfig *config);
+  virtual void ExtractAdjoint_Solution(CGeometry *geometry,  CConfig *config);
 
   /*!
   * \brief A virtual member
@@ -2393,7 +2395,45 @@ public:
 	 */
 	virtual void SetWAitken_Dyn_tn1(su2double waitk_tn1);
 
+  /*!
+   * \brief A virtual member.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] output - Reset the rhs vector.
+   */
+  virtual unsigned long SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output);
 
+  /*!
+   * \brief A virtual member.
+   * \param[in] Value of freestream pressure.
+   */
+  virtual void SetPressure_Inf(su2double p_inf);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] Value of freestream temperature.
+   */
+  virtual void SetTemperature_Inf(su2double t_inf);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] kind_recording - Kind of AD recording.
+   */
+  virtual void SetRecording(CGeometry *geometry, CConfig *config, unsigned short kind_recording);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void RegisterVariables(CGeometry *geometry, CConfig *config, bool reset = false);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config);
 };
 
 /*!
@@ -2785,7 +2825,7 @@ public:
                          CConfig *config, unsigned short iMesh);
     
 	/*!
-	 * \brief Compute the velocity^2, SoundSpeed, Pressure, Enthalpy, Viscosity.
+   * \brief Compute primitive variables and their gradients.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
 	 * \param[in] config - Definition of the particular problem.
@@ -2803,6 +2843,14 @@ public:
 	 */
 	void Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh);
   
+  /*!
+   * \brief Compute the velocity^2, SoundSpeed, Pressure, Enthalpy, Viscosity.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \return - The number of non-physical points.
+   */
+  unsigned long SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output);
+
 	/*!
 	 * \brief Compute a pressure sensor switch.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -3772,6 +3820,18 @@ public:
 	 */
 	void SetFreeSurface_Distance(CGeometry *geometry, CConfig *config);
   
+
+  /*!
+   * \brief Set the freestream pressure.
+   * \param[in] Value of freestream pressure.
+   */
+  void SetPressure_Inf(su2double p_inf);
+
+  /*!
+   * \brief Set the freestream temperature.
+   * \param[in] Value of freestream temperature.
+   */
+  void SetTemperature_Inf(su2double t_inf);
 };
 
 /*!
@@ -3883,7 +3943,15 @@ public:
      * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 */
 	void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
-    
+      
+  /*!
+   * \brief Compute the velocity^2, SoundSpeed, Pressure, Enthalpy, Viscosity.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \return - The number of non-physical points.
+   */
+  unsigned long SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output);
+
     /*!
 	 * \brief Impose a constant heat-flux condition at the wall.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -8175,6 +8243,7 @@ private:
   su2double Total_Sens_Press;    /*!< \brief Total farfield sensitivity to pressure. */
   su2double Total_Sens_Temp;    /*!< \brief Total farfield sensitivity to temperature. */
   su2double ObjFunc_Value;        /*!< \brief Value of the objective function. */
+  su2double Mach, Alpha, Beta, Pressure, Temperature;
   unsigned long nMarker;				/*!< \brief Total number of markers using the grid information. */
 
 public:
@@ -8207,7 +8276,7 @@ public:
    * \param[in] geometry_container - The geometry container holding all grid levels.
    * \param[in] config_container - The particular config.
    */
-  void RegisterInput(CGeometry *geometry, CConfig *config);
+  void RegisterSolution(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Performs the preprocessing of the adjoint AD-based solver.
@@ -8224,7 +8293,7 @@ public:
   * \param[in] geometry - The geometrical definition of the problem.
   * \param[in] config - The particular config.
   */
-  void SetAdjointOutput(CGeometry *geometry, CConfig *config);
+  void SetAdjoint_Output(CGeometry *geometry, CConfig *config);
 
   /*!
   * \brief Sets the adjoint values of the input variables of the flow (+turb.) iteration
@@ -8232,7 +8301,7 @@ public:
   * \param[in] geometry - The geometrical definition of the problem.
   * \param[in] config - The particular config.
   */
-  void SetAdjointInput(CGeometry *geometry, CConfig *config);
+  void ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config);
 
   /*!
   * \brief Register the objective function as output.
@@ -8305,6 +8374,24 @@ public:
    */
   su2double GetCSensitivity(unsigned short val_marker, unsigned long val_vertex);
 
+  /*!
+   * \brief Prepare the solver for a new recording.
+   * \param[in] kind_recording - Kind of AD recording.
+   */
+  void SetRecording(CGeometry *geometry, CConfig *config, unsigned short kind_recording);
 
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void RegisterVariables(CGeometry *geometry, CConfig *config, bool reset = false);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config);
 };
 #include "solver_structure.inl"

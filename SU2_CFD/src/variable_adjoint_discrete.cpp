@@ -44,6 +44,9 @@ CDiscAdjVariable::CDiscAdjVariable(su2double* val_solution, unsigned short val_n
     DualTime_Derivative = new su2double[nVar];
     DualTime_Derivative_n = new su2double[nVar];
   }
+
+  Solution_Direct = new su2double[nVar];
+
   Sensitivity = new su2double[nDim];
 
   unsigned short iVar,iDim;
