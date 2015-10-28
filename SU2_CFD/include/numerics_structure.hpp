@@ -2158,22 +2158,23 @@ public:
 class CUpwGeneralHLLC_Flow : public CNumerics {
 private:
   bool implicit;
+  unsigned short iDim, iVar, jVar, kVar;
+  
   su2double *Diff_U;
   su2double *Velocity_i, *Velocity_j, *RoeVelocity;
   su2double *ProjFlux_i, *ProjFlux_j;
   su2double *delta_wave, *delta_vel;
   su2double *Lambda, *Epsilon;
   su2double **P_Tensor, **invP_Tensor;
-  su2double sq_vel, sq_vel_i, sq_vel_j, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
-  Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoeDensity, RoeEnthalpy, RoeSoundSpeed, RoeSoundSpeed2,
-  ProjVelocity, ProjVelocity_i, ProjVelocity_j;
-  unsigned short iDim, iVar, jVar, kVar;
-  su2double tmp, velRoe[3], uRoe, gamPdivRho, sq_velRoe, cRoe, sL, sR, sM, pStar, invSLmSs, sLmuL, rhoSL, rhouSL[3],
-  eSL, invSRmSs, sRmuR, rhoSR, rhouSR[3], eSR, kappa;
-su2double Rrho, sq_velRoe_2;
+  
+  su2double sq_vel_i, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i, ProjVelocity_i, StaticEnthalpy_i, StaticEnergy_i;
+  su2double sq_vel_j, Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, ProjVelocity_j, StaticEnthalpy_j, StaticEnergy_j;
+  
+  su2double sq_velRoe, Proj_ModJac_Tensor_ij, RoeDensity, RoeEnthalpy, RoeSoundSpeed, RoeSoundSpeed2, RoeProjVelocity;
+  su2double Kappa_i, Kappa_j, Chi_i, Chi_j, RoeKappa, RoeChi, RoeKappaStaticEnthalpy;
 
-  su2double StaticEnthalpy_i, StaticEnergy_i, StaticEnthalpy_j, StaticEnergy_j, Kappa_i, Kappa_j, Chi_i, Chi_j, Velocity2_i, Velocity2_j;
-  su2double RoeKappa, RoeChi, RoeKappaStaticEnthalpy;
+  su2double sL, sR, sM, pStar, invSLmSs, sLmuL, rhoSL, rhouSL[3], Rrho, eSL, invSRmSs, sRmuR, rhoSR, rhouSR[3], eSR, kappa;
+
   
 public:
   
@@ -2205,13 +2206,13 @@ public:
 
    /*!
 
-   * \brief Compute the Average for a general fluid flux between two nodes i and j.
+   * \brief Compute the Average quantities for a general fluid flux between two nodes i and j.
 
    * Using the approach of Vinokur and Montagne'
 
    */
   
-  void ComputeRoeAverage();
+  void VinokurMontagne();
 
 };
 
